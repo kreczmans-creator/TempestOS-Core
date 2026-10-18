@@ -1,0 +1,15 @@
+{
+  "version": "0.39.0",
+  "scope": "Aluminium temper-aware mechanical deepening",
+  "temper_records": 15,
+  "unique_alloys": 13,
+  "temper_specific_mechanical": "15 records",
+  "fatigue": "framework established; quantitative data open",
+  "fracture": "framework established; quantitative data open",
+  "shear_modulus": "derived for temper records",
+  "bearing_strength": "not yet populated",
+  "temperature_dependence": "not yet populated",
+  "evidence_verified": 0,
+  "approved_for_design": 0,
+  "next": "aluminium temperature-dependent and fatigue/bearing evidence"
+}

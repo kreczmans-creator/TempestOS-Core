@@ -45,11 +45,14 @@ internal sealed record ReferenceRecordSnapshot(
     ReferenceProvenance Provenance,
     SourceCitation? Source,
     ReferenceValidationState ValidationState,
-    int RevisionNumber);
+    int RevisionNumber,
+    int ContentRevision = 1);
 
 /// <summary>One revision in a record's own history, as the Revision history section shows it.</summary>
+/// <remarks><see cref="RevisionNumber"/> is the stored version stamp (what pins cite); <see cref="ContentRevision"/> is the revision a person is shown — lifecycle moves share one content revision (runbook B2).</remarks>
 internal sealed record ReferenceRecordRevisionRow(
-    int RevisionNumber, ReferenceValidationState ValidationState, DateTimeOffset RecordedAt, string AuthorPrincipalId, string? ChangeSummary);
+    int RevisionNumber, ReferenceValidationState ValidationState, DateTimeOffset RecordedAt, string AuthorPrincipalId, string? ChangeSummary,
+    int ContentRevision = 1);
 
 /// <summary>
 /// The one per-library switch a reference-record editor needs — every
@@ -102,7 +105,7 @@ internal static class ReferenceLibraryAccess
             ? null
             : new ReferenceRecordSnapshot(
                 catalog.LibraryName, record.Id, displayName(record.Definition), record.Definition,
-                record.Provenance, record.Source, record.ValidationState, record.RevisionNumber);
+                record.Provenance, record.Source, record.ValidationState, record.RevisionNumber, record.ContentRevision);
     }
 
     /// <summary>Every revision of a record's own history, oldest first, each decoded for the validation state it carried at that point.</summary>
@@ -136,7 +139,8 @@ internal static class ReferenceLibraryAccess
             // re-read through the catalogue's own `GetRevisionAsync`
             // rather than duplicating its decode here.
             var atRevision = await catalog.GetRevisionAsync(recordId, revision.RevisionNumber, cancellationToken).ConfigureAwait(false);
-            rows.Add(new ReferenceRecordRevisionRow(revision.RevisionNumber, atRevision.ValidationState, revision.CreatedAt, revision.AuthorPrincipalId, revision.ChangeSummary));
+            rows.Add(new ReferenceRecordRevisionRow(
+                revision.RevisionNumber, atRevision.ValidationState, revision.CreatedAt, revision.AuthorPrincipalId, revision.ChangeSummary, atRevision.ContentRevision));
         }
 
         return rows;
@@ -280,6 +284,7 @@ public sealed class ReferenceRecordView : UserControl
     private string? _library;
     private string? _recordId;
     private ReferenceRecordSnapshot? _current;
+    private Dictionary<int, int> _contentRevisionByVersion = [];
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -382,7 +387,7 @@ public sealed class ReferenceRecordView : UserControl
     private void PopulateIdentity(ReferenceRecordSnapshot snapshot)
     {
         _titleText.Text = $"{ReferenceLibraryAccess.DisplayNameFor(snapshot.Library)} — {snapshot.RecordId}";
-        _identityText.Text = $"{snapshot.DisplayName}  •  rev {snapshot.RevisionNumber}  •  {snapshot.ValidationState}";
+        _identityText.Text = $"{snapshot.DisplayName}  •  rev {snapshot.ContentRevision}  •  {snapshot.ValidationState}";
     }
 
     private void PopulateDefinition(ReferenceRecordSnapshot snapshot)
@@ -397,11 +402,12 @@ public sealed class ReferenceRecordView : UserControl
         _historyPanel.Children.Clear();
 
         var rows = await ReferenceLibraryAccess.GetHistoryAsync(_catalogues, _library!, _recordId!, cancellationToken).ConfigureAwait(true);
+        _contentRevisionByVersion = rows.ToDictionary(r => r.RevisionNumber, r => r.ContentRevision);
 
         foreach (var row in rows)
         {
             var isCurrent = _current is not null && row.RevisionNumber == _current.RevisionNumber;
-            var text = $"Rev {row.RevisionNumber}{(isCurrent ? " (current)" : string.Empty)}  •  {row.ValidationState}  •  {row.RecordedAt:yyyy-MM-dd}"
+            var text = $"Rev {row.ContentRevision}{(isCurrent ? " (current)" : string.Empty)}  •  {row.ValidationState}  •  {row.RecordedAt:yyyy-MM-dd}"
                 + (string.IsNullOrWhiteSpace(row.ChangeSummary) ? string.Empty : $"  •  {row.ChangeSummary}");
             _historyPanel.Children.Add(new TextBlock
             {
@@ -461,7 +467,7 @@ public sealed class ReferenceRecordView : UserControl
 
         var text = new TextBlock
         {
-            Text = $"{citation.EvidenceDisplayName}  •  {citation.ProjectLabel}  •  {citation.Status}  •  cited at rev {citation.CitedRevisionNumber}",
+            Text = $"{citation.EvidenceDisplayName}  •  {citation.ProjectLabel}  •  {citation.Status}  •  cited at rev {(_contentRevisionByVersion.TryGetValue(citation.CitedRevisionNumber, out var cited) ? cited : citation.CitedRevisionNumber)}",
             TextWrapping = TextWrapping.Wrap,
             FontSize = DesignTokens.FontSizeBody,
             VerticalAlignment = VerticalAlignment.Center,

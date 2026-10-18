@@ -724,15 +724,9 @@ public sealed class EngineeringCalculationLifecycleTests
         await Task.Yield();
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
+    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null)
     {
-        var deadline = DesktopTestHelpers.Deadline(10);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-        }
-
+        await DesktopTestHelpers.WaitUntilAsync(condition, 10, null, DesktopTestHelpers.OpenPhaseOf(window), what);
         LayOut(window);
     }
 

@@ -1,0 +1,129 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "selection": [
+    {
+      "family": "ABS",
+      "good_for": [
+        "housings",
+        "covers",
+        "enclosures"
+      ],
+      "avoid_or_watch": [
+        "high temperature",
+        "UV",
+        "aggressive chemicals"
+      ]
+    },
+    {
+      "family": "PA",
+      "good_for": [
+        "gears",
+        "bushes",
+        "structural mouldings"
+      ],
+      "avoid_or_watch": [
+        "high humidity without conditioning",
+        "long-term high-temperature load"
+      ]
+    },
+    {
+      "family": "POM",
+      "good_for": [
+        "gears",
+        "bearings",
+        "precision mechanisms",
+        "snap fits"
+      ],
+      "avoid_or_watch": [
+        "strong oxidisers",
+        "high continuous temperature"
+      ]
+    },
+    {
+      "family": "PC",
+      "good_for": [
+        "impact-resistant guards",
+        "transparent covers",
+        "housings"
+      ],
+      "avoid_or_watch": [
+        "solvents",
+        "UV without stabilisation",
+        "long-term high stress"
+      ]
+    },
+    {
+      "family": "PBT",
+      "good_for": [
+        "connectors",
+        "electrical housings",
+        "precision mouldings"
+      ],
+      "avoid_or_watch": [
+        "hydrolysis-prone environments",
+        "unqualified high-temperature exposure"
+      ]
+    },
+    {
+      "family": "PPS",
+      "good_for": [
+        "high-temperature electrical",
+        "chemical-processing components",
+        "under-hood parts"
+      ],
+      "avoid_or_watch": [
+        "brittleness-sensitive impact applications"
+      ]
+    },
+    {
+      "family": "PEI",
+      "good_for": [
+        "aerospace interiors",
+        "electrical components",
+        "precision structures"
+      ],
+      "avoid_or_watch": [
+        "chemical attack",
+        "long-term creep"
+      ]
+    },
+    {
+      "family": "PPA",
+      "good_for": [
+        "high-temperature connectors",
+        "automotive components",
+        "structural mouldings"
+      ],
+      "avoid_or_watch": [
+        "moisture",
+        "fibre-orientation effects"
+      ]
+    },
+    {
+      "family": "LCP",
+      "good_for": [
+        "thin-wall connectors",
+        "precision electrical mouldings"
+      ],
+      "avoid_or_watch": [
+        "anisotropy",
+        "weld-line weakness"
+      ]
+    },
+    {
+      "family": "PEEK",
+      "good_for": [
+        "wear components",
+        "seals",
+        "high-temperature structures",
+        "chemical service"
+      ],
+      "avoid_or_watch": [
+        "cost",
+        "processing",
+        "long-term creep"
+      ]
+    }
+  ]
+}

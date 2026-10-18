@@ -1,0 +1,29 @@
+version: 2.0.0
+state_transitions:
+- from: candidate_reference
+  to: sourced
+  requires:
+  - source_id
+  - source_locator
+  - applicability
+- from: sourced
+  to: reviewed
+  requires:
+  - identity_review
+  - applicability_review
+  - unit_review
+  - semantic_review
+- from: reviewed
+  to: verified
+  requires:
+  - independent_review_or_authoritative_normative_basis
+  - conflict_check
+  - traceable_source
+- from: verified
+  to: approved_for_design
+  requires:
+  - defined_design_basis
+  - allowable_method_or_standard_basis
+  - engineering_authorisation
+current_rule: This release closes the first review gate but does not promote any observation
+  to verified or approved_for_design.

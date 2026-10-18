@@ -16,6 +16,7 @@ public sealed class ReferenceRecord<TDefinition> : IReferenceRecord<TDefinition>
     /// <param name="underlyingDocumentId">The backing document's Id.</param>
     /// <param name="revisionNumber">The backing document's current revision number.</param>
     /// <param name="source">A structured citation of the exact line the record's own values were read from, if held.</param>
+    /// <param name="contentRevision">The user-visible content revision; defaults to 1.</param>
     public ReferenceRecord(
         string id,
         TDefinition definition,
@@ -24,7 +25,8 @@ public sealed class ReferenceRecord<TDefinition> : IReferenceRecord<TDefinition>
         string? supersededByRecordId,
         Guid underlyingDocumentId,
         int revisionNumber,
-        SourceCitation? source = null)
+        SourceCitation? source = null,
+        int contentRevision = 1)
     {
         Id = id;
         Definition = definition;
@@ -34,6 +36,7 @@ public sealed class ReferenceRecord<TDefinition> : IReferenceRecord<TDefinition>
         UnderlyingDocumentId = underlyingDocumentId;
         RevisionNumber = revisionNumber;
         Source = source;
+        ContentRevision = contentRevision;
     }
 
     /// <inheritdoc />
@@ -59,4 +62,7 @@ public sealed class ReferenceRecord<TDefinition> : IReferenceRecord<TDefinition>
 
     /// <inheritdoc />
     public int RevisionNumber { get; }
+
+    /// <inheritdoc />
+    public int ContentRevision { get; }
 }

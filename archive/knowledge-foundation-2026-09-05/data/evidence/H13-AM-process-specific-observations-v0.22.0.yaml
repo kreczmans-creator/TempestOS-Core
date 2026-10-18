@@ -1,0 +1,90 @@
+- observation_id: OBS-H13-LPBF-OERLIKON-UTS
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / UNS T20813 / 1.2344 / X40CrMoV5-1
+  property: ultimate_tensile_strength
+  value:
+    XY_mean: 1894
+    Z_mean: 1886
+  unit: MPa
+  source_id: WEB-OERLIKON-H13-AM
+  source_url: https://www.oerlikon.com/ecoma/files/DSM-0322_AM_H13_ToolSteel.pdf?download=true
+  source_locator: Typical Post Heat Treatment Properties, MetcoAdd H13-A; Concept
+    Laser M2 Cusing
+  applicability:
+    manufacturing_process: laser powder bed fusion
+    post_heat_treatment: 1010 °C ±14 °C solutionize 45 min, air cool; 537 °C ±? temper
+      4 h, air cool
+    test_standard: ASTM E8
+    specimen: 6.35 mm round bar from coupons
+    orientation:
+    - XY
+    - Z
+  evidence_status: sourced
+  data_class: process_specific
+  design_use: reference_only
+- observation_id: OBS-H13-LPBF-OERLIKON-YS
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / UNS T20813 / 1.2344 / X40CrMoV5-1
+  property: yield_strength
+  value:
+    XY_mean: 1512
+    Z_mean: 1510
+  unit: MPa
+  source_id: WEB-OERLIKON-H13-AM
+  source_url: https://www.oerlikon.com/ecoma/files/DSM-0322_AM_H13_ToolSteel.pdf?download=true
+  source_locator: Typical Post Heat Treatment Properties, MetcoAdd H13-A; Concept
+    Laser M2 Cusing
+  applicability:
+    manufacturing_process: laser powder bed fusion
+    post_heat_treatment: 1010 °C ±14 °C solutionize 45 min; 537 °C temper 4 h
+    test_standard: ASTM E8
+    orientation:
+    - XY
+    - Z
+  evidence_status: sourced
+  data_class: process_specific
+  design_use: reference_only
+- observation_id: OBS-H13-LPBF-OERLIKON-ELONG
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / UNS T20813 / 1.2344 / X40CrMoV5-1
+  property: elongation_at_break
+  value:
+    XY_mean: 10
+    Z_mean: 10
+  unit: percent
+  source_id: WEB-OERLIKON-H13-AM
+  source_url: https://www.oerlikon.com/ecoma/files/DSM-0322_AM_H13_ToolSteel.pdf?download=true
+  source_locator: Typical Post Heat Treatment Properties, MetcoAdd H13-A; Concept
+    Laser M2 Cusing
+  applicability:
+    manufacturing_process: laser powder bed fusion
+    post_heat_treatment: 1010 °C ±14 °C solutionize 45 min; 537 °C temper 4 h
+    test_standard: ASTM E8
+    orientation:
+    - XY
+    - Z
+  evidence_status: sourced
+  data_class: process_specific
+  design_use: reference_only
+- observation_id: OBS-H13-LPBF-OERLIKON-HARDNESS
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / UNS T20813 / 1.2344 / X40CrMoV5-1
+  property: hardness
+  value:
+    XY_mean: 568
+    Z_mean: 571
+  unit: HV
+  source_id: WEB-OERLIKON-H13-AM
+  source_url: https://www.oerlikon.com/ecoma/files/DSM-0322_AM_H13_ToolSteel.pdf?download=true
+  source_locator: Typical Post Heat Treatment Properties, MetcoAdd H13-A; hardness
+    VHN300 ASTM E384-17
+  applicability:
+    manufacturing_process: laser powder bed fusion
+    post_heat_treatment: 1010 °C ±14 °C solutionize 45 min; 537 °C temper 4 h
+    test_standard: ASTM E384-17
+    orientation:
+    - XY
+    - Z
+  evidence_status: sourced
+  data_class: process_specific
+  design_use: reference_only

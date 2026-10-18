@@ -1,0 +1,15 @@
+{
+  "version": "0.67.0",
+  "equations": [
+    "Δd = α·d0·ΔT"
+  ],
+  "purpose": "Screen thermal change in an interference or clearance fit.",
+  "checks": [
+    "differential CTE",
+    "assembly temperature",
+    "contact pressure",
+    "yielding",
+    "temperature range"
+  ],
+  "warning": "Screening relationship only; application-specific design requires validated material/joint data and appropriate standards."
+}

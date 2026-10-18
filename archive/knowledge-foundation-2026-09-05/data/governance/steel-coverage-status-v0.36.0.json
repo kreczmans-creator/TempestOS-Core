@@ -1,0 +1,16 @@
+{
+  "version": "0.36.0",
+  "steel_grades": 16,
+  "standards_mapping": "16/16",
+  "test_method_mapping": "16/16",
+  "cost_availability_use": "16/16 qualitative",
+  "manufacturing_selection": "family + priority-grade coverage",
+  "remaining_before_aluminium": [
+    "Replace generic/reference mappings with specification-linked procurement records where required.",
+    "Add detailed grade/condition-specific joining and machinability evidence.",
+    "Complete quantitative fatigue/fracture/environment evidence where design use demands it.",
+    "Perform final steel fundamentals completeness audit."
+  ],
+  "verified": 0,
+  "approved_for_design": 0
+}

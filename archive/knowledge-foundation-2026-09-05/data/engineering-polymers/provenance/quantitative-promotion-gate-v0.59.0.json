@@ -1,0 +1,23 @@
+{
+  "version": "0.59.0",
+  "status": "screening-only",
+  "rule": "No screening value may be presented as a design allowable.",
+  "promotion_requirements": [
+    "exact grade",
+    "reinforcement/filler",
+    "product form",
+    "condition",
+    "test method",
+    "test temperature",
+    "conditioning",
+    "orientation where relevant",
+    "authoritative source"
+  ],
+  "polymer_controls": [
+    "dry vs conditioned",
+    "short vs long duration",
+    "fibre orientation",
+    "processing history",
+    "chemical environment"
+  ]
+}

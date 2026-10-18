@@ -1,0 +1,29 @@
+{
+  "version": "0.68.0",
+  "problem": "Assess a rotating shaft under combined bending and torsion.",
+  "inputs": [
+    "geometry",
+    "bending moment",
+    "torque",
+    "speed",
+    "load spectrum",
+    "surface condition",
+    "material condition"
+  ],
+  "workflow": [
+    "calculate nominal bending and torsional stresses",
+    "identify stress concentrations",
+    "combine multiaxial loading appropriately",
+    "establish fatigue criterion",
+    "account for surface/process effects",
+    "check static margin",
+    "check critical speed/stability",
+    "define verification evidence"
+  ],
+  "key_equations": [
+    "σb = M·y/I",
+    "τ = T·r/J"
+  ],
+  "output": "A repeatable assessment structure; numerical fatigue allowables remain grade- and application-specific.",
+  "status": "worked-framework"
+}

@@ -1,0 +1,33 @@
+{
+  "version": "0.63.0",
+  "application": "threaded_bolted_joints",
+  "selection_rule": "Treat clamp load as time dependent; use inserts or appropriate thread forms where repeated assembly or high clamp retention is required.",
+  "principal_failure_modes": [
+    "thread stripping",
+    "creep loss of preload",
+    "stress relaxation",
+    "bearing failure",
+    "cracking",
+    "thermal loosening"
+  ],
+  "engineering_controls": [
+    "preload",
+    "thread engagement",
+    "bearing area",
+    "temperature",
+    "time",
+    "washer geometry",
+    "insert material",
+    "conditioning"
+  ],
+  "candidate_families": [
+    "PA66",
+    "PA6",
+    "POM",
+    "PC",
+    "PEEK",
+    "PEI"
+  ],
+  "evidence_status": "screening-level design rule",
+  "design_use": "decision support only; validate application-specific design"
+}

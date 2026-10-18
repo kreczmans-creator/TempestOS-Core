@@ -1,0 +1,35 @@
+{
+  "version": "0.60.0",
+  "family": "PPS",
+  "domain": "electrical",
+  "electrical_class": "high-performance electrical insulating thermoplastic",
+  "volume_resistivity": "typically very high",
+  "dielectric_strength": "generally high",
+  "relative_permittivity": "relatively stable; grade/frequency dependent",
+  "dissipation_factor": "generally low",
+  "moisture_sensitivity": "low",
+  "key_controls": [
+    "temperature",
+    "frequency",
+    "fillers",
+    "surface contamination"
+  ],
+  "required_quantitative_fields": [
+    "volume_resistivity",
+    "surface_resistivity",
+    "dielectric_strength",
+    "relative_permittivity",
+    "dissipation_factor",
+    "arc_resistance_where_relevant",
+    "tracking_resistance_where_relevant"
+  ],
+  "test_context": [
+    "frequency",
+    "temperature",
+    "humidity/conditioning",
+    "specimen/product form",
+    "test method"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

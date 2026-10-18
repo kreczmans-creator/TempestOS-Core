@@ -1,0 +1,13 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "relationship": "Q = k·A·ΔT/L for steady one-dimensional conduction through a uniform section.",
+  "checks": [
+    "temperature-dependent conductivity",
+    "contact resistance",
+    "geometry",
+    "transients",
+    "heat generation"
+  ],
+  "boundary": "The simple relation is a screening model and does not capture multidimensional or transient effects."
+}

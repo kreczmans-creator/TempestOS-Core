@@ -1,0 +1,32 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "modes": [
+    "HCF",
+    "LCF",
+    "thermo-mechanical fatigue",
+    "fatigue crack growth",
+    "contact fatigue where relevant"
+  ],
+  "drivers": [
+    "temperature",
+    "surface roughness",
+    "carbide morphology",
+    "casting/deposition defects",
+    "notches",
+    "mean stress",
+    "thermal cycling",
+    "oxidation",
+    "residual stress"
+  ],
+  "required_evidence": [
+    "S-N or strain-life data",
+    "crack-growth data where relevant",
+    "test temperature",
+    "environment",
+    "surface condition",
+    "product form",
+    "processing condition"
+  ],
+  "rule": "Hardfacing and cast microstructures require process-specific fatigue evidence; wrought high-temperature alloy evidence must not be inherited."
+}

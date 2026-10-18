@@ -1,0 +1,18 @@
+{
+  "version": "0.63.0",
+  "workflow": [
+    "define duty cycle and environment",
+    "define load/speed/temperature/media",
+    "select candidate material families",
+    "select exact grade and reinforcement",
+    "check short-term properties",
+    "check creep/stress relaxation",
+    "check fatigue where cyclic",
+    "check wear/tribology where sliding",
+    "check dimensional stability and tolerance",
+    "check chemical/electrical requirements",
+    "validate manufacturing process",
+    "perform application-specific verification"
+  ],
+  "fundamental_rule": "Polymer selection is a coupled material/process/application decision."
+}

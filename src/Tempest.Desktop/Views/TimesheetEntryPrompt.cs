@@ -6,6 +6,8 @@ using Avalonia.Layout;
 using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ReferenceData;
+using Tempest.Core.Timesheets;
+using Tempest.Workspace.Projects;
 using Tempest.Workspace.Mechanical;
 using Tempest.Desktop.Theming;
 
@@ -17,8 +19,9 @@ namespace Tempest.Desktop.Views;
 /// <param name="Hours">How many hours.</param>
 /// <param name="Billable">Whether the time is billable.</param>
 /// <param name="Grade">The grade this time is recorded at — one of the project's own pinned rate card's grades.</param>
-/// <param name="Task">What the work was.</param>
-public sealed record TimesheetEntryInput(Guid ProjectId, DateOnly Date, decimal Hours, bool Billable, string Grade, string Task);
+/// <param name="Task">What the work was — the chosen deliverable's own "identifier — title" label.</param>
+/// <param name="DeliverableId">The project deliverable the time is booked against (runbook G1). <see langword="null"/> only for a caller that never chose one.</param>
+public sealed record TimesheetEntryInput(Guid ProjectId, DateOnly Date, decimal Hours, bool Billable, string Grade, string Task, Guid? DeliverableId = null);
 
 /// <summary>
 /// The weekly timesheet view's own Record dialog (`WP 19.0A`, `ADR-0150`;
@@ -26,7 +29,12 @@ public sealed record TimesheetEntryInput(Guid ProjectId, DateOnly Date, decimal 
 /// not — a date (defaulting to today), hours, billable, a grade drawn from
 /// the chosen project's own pinned card, and a task. Choosing a project
 /// with no pinned rate card disables Grade/Hours and states why, with an
-/// Open Details action to fix it right there. Initially hidden, shares the
+/// Open Details action to fix it right there. The task is a drop-down of
+/// the chosen project's own live deliverables (runbook G1, Product Owner:
+/// "task should be drop down from project deliverables"), refreshed every
+/// time the project changes; there is deliberately no free-text "Other"
+/// entry, so every recorded hour is attributable to a deliverable — a
+/// project with none says so ("Add a deliverable to this project first"). Initially hidden, shares the
 /// Dialog Framework's own established panel styling and real modal
 /// behaviour (mirrors <see cref="CheckEntry"/>).
 /// </summary>
@@ -42,7 +50,8 @@ public sealed class TimesheetEntryPrompt : Border
     private readonly NumericUpDown _hours = new() { Minimum = 0.25m, Maximum = 24m, Increment = 0.25m, Value = 1m, MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly CheckBox _billable = new() { Content = "Billable", IsChecked = true, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly ComboBox _grade = new() { MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
-    private readonly TextBox _task = new() { Watermark = "Task", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+    private readonly ComboBox _task = new() { PlaceholderText = "Task (project deliverable)", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
+    private readonly TextBlock _noDeliverablesHint = new() { Text = NoDeliverablesHint, FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, TextWrapping = Avalonia.Media.TextWrapping.Wrap, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), IsVisible = false };
     private readonly TextBlock _validation = new() { FontSize = DesignTokens.FontSizeCaption, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), IsVisible = false };
 
     // `WP 20.10A` (Product Owner finding D12): "project drop down doesnt
@@ -58,7 +67,11 @@ public sealed class TimesheetEntryPrompt : Border
     private readonly Button _recordButton = new() { Content = "Record", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.ControlSizeMedium };
 
+    /// <summary>The hint shown under the task drop-down when the chosen project has no live deliverable to book time against (runbook G1).</summary>
+    public const string NoDeliverablesHint = "Add a deliverable to this project first.";
+
     private IReadOnlyList<(Guid Id, string Label, ReferencePin? Pin)> _projects = [];
+    private int _deliverablesLoad;
     private TaskCompletionSource<TimesheetEntryInput?>? _pending;
 
     /// <summary>Initialises a new instance of the <see cref="TimesheetEntryPrompt"/> class, initially hidden.</summary>
@@ -110,6 +123,7 @@ public sealed class TimesheetEntryPrompt : Border
         body.Children.Add(_grade);
         body.Children.Add(_noRateCardSlot);
         body.Children.Add(_task);
+        body.Children.Add(_noDeliverablesHint);
         body.Children.Add(_validation);
         body.Children.Add(buttons);
         Child = body;
@@ -130,7 +144,7 @@ public sealed class TimesheetEntryPrompt : Border
         ToolTip.SetTip(_recordButton, "Record");
         ToolTip.SetTip(_cancelButton, "Cancel");
 
-        _project.SelectionChanged += async (_, _) => await ReloadGradesAsync().ConfigureAwait(true);
+        _project.SelectionChanged += async (_, _) => await ReloadForProjectAsync().ConfigureAwait(true);
         _recordButton.Click += (_, _) => TryComplete();
         _cancelButton.Click += (_, _) => Complete(null);
         _openDetailsButton.Click += (_, _) => _ = OnOpenDetailsAsync();
@@ -151,7 +165,7 @@ public sealed class TimesheetEntryPrompt : Border
         _date.SelectedDate = DateTimeOffset.Now;
         _hours.Value = 1m;
         _billable.IsChecked = true;
-        _task.Text = string.Empty;
+        _task.ItemsSource = null;
         _validation.IsVisible = false;
 
         await ReloadProjectsAsync(cancellationToken).ConfigureAwait(true);
@@ -195,7 +209,46 @@ public sealed class TimesheetEntryPrompt : Border
         _project.ItemsSource = _projects.Select(p => new ComboBoxItem { Content = p.Label, Tag = p.Id }).ToList();
         _project.SelectedIndex = _projects.Count > 0 ? 0 : -1;
 
+        await ReloadForProjectAsync().ConfigureAwait(true);
+    }
+
+    private async Task ReloadForProjectAsync()
+    {
         await ReloadGradesAsync().ConfigureAwait(true);
+        await ReloadDeliverablesAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Runbook G1: the task drop-down lists the chosen project's own live
+    /// deliverables, by identifier and title, read fresh every time the
+    /// project changes. A slower read for a project no longer selected is
+    /// discarded rather than allowed to overwrite the current one.
+    /// </summary>
+    private async Task ReloadDeliverablesAsync()
+    {
+        var load = ++_deliverablesLoad;
+        _task.ItemsSource = null;
+        _task.SelectedIndex = -1;
+        _noDeliverablesHint.IsVisible = false;
+
+        if (_project.SelectedItem is not ComboBoxItem { Tag: Guid projectId })
+            return;
+
+        var members = await ProjectMembership.ListProjectMembersAsync(_domainContext.Repository, projectId, CancellationToken.None).ConfigureAwait(true);
+        if (load != _deliverablesLoad)
+            return;
+
+        var items = members
+            .OfType<Deliverable>()
+            .Where(d => d is not IDeletable { IsDeleted: true })
+            .OrderBy(d => d.Identifier ?? d.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(d => d.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .Select(d => new ComboBoxItem { Content = TimesheetService.DeliverableTaskLabel(d), Tag = d.Id })
+            .ToList();
+
+        _task.ItemsSource = items;
+        _task.SelectedIndex = -1;
+        _noDeliverablesHint.IsVisible = items.Count == 0;
     }
 
     private async Task ReloadGradesAsync()
@@ -290,14 +343,13 @@ public sealed class TimesheetEntryPrompt : Border
             return;
         }
 
-        var task = _task.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(task))
+        if (_task.SelectedItem is not ComboBoxItem { Tag: Guid deliverableId, Content: string task })
         {
-            ShowValidationError("A task is required.");
+            ShowValidationError(_noDeliverablesHint.IsVisible ? $"A task is required. {NoDeliverablesHint}" : "A task is required.");
             return;
         }
 
-        Complete(new TimesheetEntryInput(projectId, DateOnly.FromDateTime(date.Date), hours, _billable.IsChecked ?? false, grade, task));
+        Complete(new TimesheetEntryInput(projectId, DateOnly.FromDateTime(date.Date), hours, _billable.IsChecked ?? false, grade, task, deliverableId));
     }
 
     private void ShowValidationError(string message)

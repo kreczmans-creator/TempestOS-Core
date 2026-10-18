@@ -1,0 +1,23 @@
+{
+  "version": "0.31.0",
+  "record_type": "fatigue_curve_point",
+  "required_fields": [
+    "material_state_id",
+    "property",
+    "stress_ratio_R",
+    "temperature_C",
+    "environment",
+    "test_method",
+    "cycles_or_deltaK",
+    "value",
+    "source_id",
+    "evidence_class"
+  ],
+  "rules": [
+    "Every numerical fatigue datum must retain the specimen/product form and heat-treatment condition.",
+    "Stress ratio R and temperature are mandatory when applicable; unknown values must be explicitly null rather than inferred.",
+    "Environment is mandatory for corrosion-fatigue evidence and explicit ambient-air evidence should still be recorded where known.",
+    "AM and wrought evidence remain separate populations.",
+    "Component allowables require an engineering verification path and are never created by copying a database value."
+  ]
+}

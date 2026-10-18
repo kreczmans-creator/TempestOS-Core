@@ -1,0 +1,14 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "workflow": [
+    "define physical variable",
+    "select sensor",
+    "define signal path",
+    "define actuator/control response",
+    "identify latency and bandwidth",
+    "identify failure modes",
+    "verify end-to-end performance"
+  ],
+  "rule": "End-to-end performance is governed by the complete sensor → controller → actuator → mechanism chain."
+}

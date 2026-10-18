@@ -1,0 +1,25 @@
+{
+  "version": "0.66.0",
+  "family": "aluminium-alloy",
+  "failure_modes": [
+    "yielding",
+    "fatigue",
+    "fracture",
+    "bearing failure",
+    "buckling",
+    "corrosion/environmental degradation",
+    "manufacturing defect"
+  ],
+  "screening_sequence": [
+    "static strength",
+    "stability/buckling",
+    "fatigue",
+    "fracture/toughness",
+    "wear/contact",
+    "environment",
+    "thermal effects",
+    "manufacturing/process state"
+  ],
+  "rule": "Failure mode selection precedes allowable selection.",
+  "evidence_status": "foundation reference"
+}

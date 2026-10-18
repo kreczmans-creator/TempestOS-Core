@@ -16,7 +16,7 @@ namespace Tempest.Desktop.Views;
 
 /// <summary>
 /// The Engineering module's own rail landing page (`WP 19.7A`, Product
-/// Owner IA sketches item 6, sheet 8): a tree — Dashboard + Reports, Tasks
+/// Owner IA sketches item 6, sheet 8): a tree — Dashboard, Tasks
 /// (Calculations, Reviews, Approvals), Modules (Mechanical; Electrical and
 /// Structural are future and not shown), Reference data — with a right
 /// pane over whichever node is selected.
@@ -24,9 +24,11 @@ namespace Tempest.Desktop.Views;
 /// <remarks>
 /// <para>
 /// Every node embeds an already-built, already-tested view rather than
-/// rendering anything new: Dashboard + Reports carries
-/// <see cref="EngineeringDashboardView"/> (`WP 19.7B`) plus the existing
-/// <see cref="ReportsView"/>; Tasks shows the existing
+/// rendering anything new: Dashboard carries
+/// <see cref="EngineeringDashboardView"/> (`WP 19.7B`; the
+/// <see cref="ReportsView"/> list beneath it was withdrawn for the RC —
+/// reports return once real client use shows what they need to be);
+/// Tasks shows the existing
 /// <see cref="ITasksReadModel"/>'s own Calculations, Reviews and Approvals
 /// (`WP 20.1B`, `TD-181` gives the read model its own Calculations bucket
 /// — the sketched sub-heading this view used to disclose as missing);
@@ -46,7 +48,6 @@ public sealed class EngineeringAreaView : UserControl
 {
     private readonly IShellNavigator _navigator;
     private readonly ITasksReadModel _tasksReadModel;
-    private readonly ReportsView _reportsView;
     private readonly EngineeringCalculationView _engineeringCalculation;
     private readonly LibrariesView _referenceData;
     private readonly EngineeringAssetsView _engineeringAssets;
@@ -66,7 +67,7 @@ public sealed class EngineeringAreaView : UserControl
     private readonly StackPanel _tasksPanel = new() { Spacing = DesignTokens.SpaceLg, Margin = DesignTokens.PagePadding };
     private readonly ScrollViewer _tasksScroll;
 
-    private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard + Reports" };
+    private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard" };
     private readonly TreeViewItem _tasksNode = new() { Header = "Tasks" };
     private readonly TreeViewItem _modulesNode = new() { Header = "Modules", IsExpanded = true };
     private readonly TreeViewItem _mechanicalNode = new() { Header = "Mechanical" };
@@ -84,7 +85,7 @@ public sealed class EngineeringAreaView : UserControl
     /// <summary>Raised after Complete completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
 
-    /// <summary>The change feed the Dashboard + Reports and Tasks nodes reload from while shown.</summary>
+    /// <summary>The change feed the Dashboard and Tasks nodes reload from while shown.</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
         get => _workspaceChanges.Feed;
@@ -97,7 +98,7 @@ public sealed class EngineeringAreaView : UserControl
     /// <param name="calculators">The Engineering Calculators (`WP 21.7B`) — Modules → Calculators: every product calculation from a generated form.</param>
     /// <param name="onCalculatorsSelected">Re-reads the calculators' catalogue and released materials on entry, the same shape as <paramref name="onEngineeringCalculationSelected"/>.</param>
     public EngineeringAreaView(
-        IShellNavigator navigator, ITasksReadModel tasksReadModel, ReportsView reportsView,
+        IShellNavigator navigator, ITasksReadModel tasksReadModel,
         EngineeringCalculationView engineeringCalculation, LibrariesView referenceData,
         EngineeringDashboardView dashboard, Func<Task> onEngineeringCalculationSelected,
         ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp,
@@ -105,7 +106,6 @@ public sealed class EngineeringAreaView : UserControl
     {
         ArgumentNullException.ThrowIfNull(navigator);
         ArgumentNullException.ThrowIfNull(tasksReadModel);
-        ArgumentNullException.ThrowIfNull(reportsView);
         ArgumentNullException.ThrowIfNull(engineeringCalculation);
         ArgumentNullException.ThrowIfNull(referenceData);
         ArgumentNullException.ThrowIfNull(dashboard);
@@ -118,7 +118,6 @@ public sealed class EngineeringAreaView : UserControl
 
         _navigator = navigator;
         _tasksReadModel = tasksReadModel;
-        _reportsView = reportsView;
         _engineeringCalculation = engineeringCalculation;
         _referenceData = referenceData;
         _engineeringAssets = engineeringAssets;
@@ -132,7 +131,6 @@ public sealed class EngineeringAreaView : UserControl
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _dashboardStack.Children.Add(_dashboard);
-        _dashboardStack.Children.Add(_reportsView);
         _dashboardScroll = new ScrollViewer { Content = _dashboardStack };
         _tasksScroll = new ScrollViewer { Content = _tasksPanel };
 
@@ -148,7 +146,7 @@ public sealed class EngineeringAreaView : UserControl
 
         foreach (var (node, name) in new[]
                  {
-                     (_dashboardNode, "Dashboard + Reports"), (_tasksNode, "Tasks"), (_modulesNode, "Modules"),
+                     (_dashboardNode, "Dashboard"), (_tasksNode, "Tasks"), (_modulesNode, "Modules"),
                      (_mechanicalNode, "Mechanical"), (_calculationsNode, "Engineering Calculations"), (_calculatorsNode, "Calculators"),
                      (_assetsNode, "Engineering Assets"), (_referenceDataNode, "Reference data"),
                  })
@@ -171,7 +169,7 @@ public sealed class EngineeringAreaView : UserControl
 
     /// <summary>
     /// Selects the node named <paramref name="automationName"/>
-    /// ("Dashboard + Reports", "Tasks", "Modules", "Mechanical",
+    /// ("Dashboard", "Tasks", "Modules", "Mechanical",
     /// "Engineering Calculations" or "Reference data") — the same name a
     /// screen reader announces, and what a journey test drives the tree
     /// by.
@@ -228,7 +226,7 @@ public sealed class EngineeringAreaView : UserControl
             // method must see real content the instant it returns, not
             // only once that later task happens to complete.
             _dashboardNode.IsSelected = true;
-            await Task.WhenAll(_dashboard.RefreshAsync(), _reportsView.RefreshAsync()).ConfigureAwait(true);
+            await _dashboard.RefreshAsync().ConfigureAwait(true);
             _detail.Content = _dashboardScroll;
             return;
         }
@@ -246,7 +244,7 @@ public sealed class EngineeringAreaView : UserControl
 
         if (ReferenceEquals(selected, _dashboardNode))
         {
-            await Task.WhenAll(_dashboard.RefreshAsync(), _reportsView.RefreshAsync()).ConfigureAwait(true);
+            await _dashboard.RefreshAsync().ConfigureAwait(true);
             _detail.Content = _dashboardScroll;
             return;
         }

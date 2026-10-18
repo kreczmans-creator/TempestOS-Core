@@ -5,9 +5,11 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.BusinessOperations.Crm;
+using Tempest.Core.Projects;
 using Tempest.Core.ReferenceData;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Theming;
+using Tempest.Workspace.Projects;
 
 namespace Tempest.Desktop.Views;
 
@@ -17,8 +19,17 @@ namespace Tempest.Desktop.Views;
 /// <param name="ClientOrganisationId">The client's own record id in the Organisation catalogue (`WP 20.10A`, Product Owner finding D2). <see langword="null"/> when no client was chosen.</param>
 /// <param name="RateCardId">The Released rate card's own record id to pin (`WP 20.10A`, Product Owner finding D12). <see langword="null"/> for "None" — the project is created with no pin, and cannot have time recorded against it until one is pinned.</param>
 /// <param name="PurchaseOrderReference">The client's own purchase-order reference. <see langword="null"/> when left blank.</param>
+/// <param name="Identifier">
+/// The project-centric identifier to create the project under —
+/// <c>CUSTOMER-PROJECTREF</c>, for example <c>ACME1-BRIDG1</c> (Product Owner
+/// decision 2026-10-01 §3, `ADR-0156`) — when the chosen client has a
+/// customer code. <see langword="null"/> otherwise (no client, or a client
+/// recorded before customer codes existed): the caller falls back to the
+/// old <c>P-NNNN</c> identifier it suggested.
+/// </param>
 public sealed record NewProjectPromptResult(
-    string Name, bool OpenQuotation, string? ClientOrganisationId, string? RateCardId, string? PurchaseOrderReference);
+    string Name, bool OpenQuotation, string? ClientOrganisationId, string? RateCardId, string? PurchaseOrderReference,
+    string? Identifier = null);
 
 /// <summary>
 /// The New Project prompt (`WP 19.5B`, `ADR-0152`, Product Owner comment
@@ -52,6 +63,18 @@ public sealed record NewProjectPromptResult(
 /// no client and one set later, from the Details tab.
 /// </para>
 /// <para>
+/// <b>Project reference (Product Owner decision 2026-10-01 §3,
+/// `ADR-0156`).</b> A six-character code (letters A–Z, digits 0–9), suggested from the project's own
+/// name as it is typed (until edited by hand), upper-cased, and refused
+/// unless it is six characters A–Z or 0–9 held by no other project. With a client
+/// that has a customer code it makes the new project's identifier
+/// <c>CUSTOMER-PROJECTREF</c> (shown live beneath it); with no client, or
+/// a client with no code yet, the old <c>P-NNNN</c> identifier is used and
+/// the reference is not required. The Client drop-down lists customers
+/// (and organisations that are both) from Business → Customers &amp;
+/// Suppliers, each with its own code.
+/// </para>
+/// <para>
 /// <b>Rate card (`WP 20.10A`, D12).</b> A drop-down of Released rate cards
 /// only — an unreleased card is never offered, mirroring
 /// <see cref="RateCardPicker"/>'s own identical "released records only"
@@ -79,6 +102,7 @@ public sealed class NewProjectPrompt : Border
     private readonly IOrganisationCatalog _organisations;
     private readonly IRateCardCatalog _rateCards;
     private readonly OrganisationPicker _organisationPicker;
+    private readonly IProjectDirectory? _projects;
 
     private readonly TextBlock _title = new() { FontSize = DesignTokens.FontSizeHeading, FontWeight = DesignTokens.WeightHeading };
     private readonly TextBlock _label = new() { FontSize = DesignTokens.FontSizeBody, Opacity = 0.8, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, DesignTokens.SpaceXs) };
@@ -86,6 +110,10 @@ public sealed class NewProjectPrompt : Border
 
     private readonly TextBlock _clientLabel = FieldLabel("Client");
     private readonly ComboBox _client = new() { MinHeight = DesignTokens.ControlSizeMedium, HorizontalAlignment = HorizontalAlignment.Stretch };
+
+    private readonly TextBlock _projectReferenceLabel = FieldLabel("Project reference");
+    private readonly TextBox _projectReferenceBox = new() { MinHeight = DesignTokens.ControlSizeMedium, Watermark = "Six characters, e.g. BRIDG1", MaxLength = ProjectNumbering.ProjectReferenceLength };
+    private readonly TextBlock _identifierPreview = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), TextWrapping = Avalonia.Media.TextWrapping.Wrap };
 
     private readonly TextBlock _rateCardLabel = FieldLabel("Rate card");
     private readonly ComboBox _rateCard = new() { MinHeight = DesignTokens.ControlSizeMedium, HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -100,10 +128,19 @@ public sealed class NewProjectPrompt : Border
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.ControlSizeMedium };
 
     private bool _suppressClientSelection;
+    private bool _referenceEditedByHand;
+    private bool _settingReference;
+    private string _fallbackIdentifier = string.Empty;
+    private IReadOnlyList<string> _takenProjectReferences = [];
+    private Dictionary<string, string?> _customerCodes = new(StringComparer.Ordinal);
     private TaskCompletionSource<NewProjectPromptResult?>? _pending;
 
     /// <summary>Initialises a new instance of the <see cref="NewProjectPrompt"/> class, initially hidden.</summary>
-    public NewProjectPrompt(IOrganisationCatalog organisations, IRateCardCatalog rateCards, OrganisationPicker organisationPicker)
+    /// <param name="organisations">The Customers &amp; Suppliers list the Client drop-down reads.</param>
+    /// <param name="rateCards">The rate cards the Rate card drop-down reads.</param>
+    /// <param name="organisationPicker">The picker "Add organisation…" opens.</param>
+    /// <param name="projects">Every existing project, read for the project references already taken. <see langword="null"/> checks only the reference's own shape — uniqueness is then still enforced by <see cref="IProjectDirectory.CreateAsync"/> on the identifier as a whole.</param>
+    public NewProjectPrompt(IOrganisationCatalog organisations, IRateCardCatalog rateCards, OrganisationPicker organisationPicker, IProjectDirectory? projects = null)
     {
         ArgumentNullException.ThrowIfNull(organisations);
         ArgumentNullException.ThrowIfNull(rateCards);
@@ -111,6 +148,7 @@ public sealed class NewProjectPrompt : Border
         _organisations = organisations;
         _rateCards = rateCards;
         _organisationPicker = organisationPicker;
+        _projects = projects;
 
         IsVisible = false;
         IsHitTestVisible = true;
@@ -134,6 +172,9 @@ public sealed class NewProjectPrompt : Border
         body.Children.Add(_nameBox);
         body.Children.Add(_clientLabel);
         body.Children.Add(_client);
+        body.Children.Add(_projectReferenceLabel);
+        body.Children.Add(_projectReferenceBox);
+        body.Children.Add(_identifierPreview);
         body.Children.Add(_rateCardLabel);
         body.Children.Add(_rateCard);
         body.Children.Add(_rateCardConsequence);
@@ -150,6 +191,8 @@ public sealed class NewProjectPrompt : Border
         AutomationProperties.SetName(_cancelButton, "Cancel");
         AutomationProperties.SetName(_nameBox, "Name");
         AutomationProperties.SetName(_client, "Client");
+        AutomationProperties.SetName(_projectReferenceBox, "Project reference");
+        AutomationProperties.SetName(_identifierPreview, "Project identifier");
         AutomationProperties.SetName(_rateCard, "Rate card");
         AutomationProperties.SetName(_purchaseOrderBox, "PO reference");
         AutomationProperties.SetName(_openQuotationBox, "Open a quotation for this project");
@@ -168,6 +211,19 @@ public sealed class NewProjectPrompt : Border
         };
         _client.SelectionChanged += async (_, _) => await OnClientSelectionChangedAsync().ConfigureAwait(true);
         _rateCard.SelectionChanged += (_, _) => UpdateRateCardConsequence();
+        _nameBox.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBox.TextProperty)
+                SuggestProjectReference();
+        };
+        _projectReferenceBox.PropertyChanged += (_, e) =>
+        {
+            if (e.Property != TextBox.TextProperty)
+                return;
+            if (!_settingReference)
+                _referenceEditedByHand = !string.IsNullOrWhiteSpace(_projectReferenceBox.Text);
+            UpdateIdentifierPreview();
+        };
 
         DialogModality.Install(this);
     }
@@ -176,7 +232,10 @@ public sealed class NewProjectPrompt : Border
     /// Shows this dialog, returning the collected values if the user
     /// confirms, or <see langword="null"/> if they cancel.
     /// </summary>
-    public async Task<NewProjectPromptResult?> PromptAsync(string title, string label)
+    /// <param name="title">The dialog's own title.</param>
+    /// <param name="label">The name field's own label.</param>
+    /// <param name="fallbackIdentifier">The old-scheme identifier (<c>P-NNNN</c>) the caller will use when no project-centric one applies — shown in the identifier preview only.</param>
+    public async Task<NewProjectPromptResult?> PromptAsync(string title, string label, string? fallbackIdentifier = null)
     {
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(label);
@@ -185,6 +244,12 @@ public sealed class NewProjectPrompt : Border
 
         _title.Text = title;
         _label.Text = label;
+        _fallbackIdentifier = fallbackIdentifier ?? string.Empty;
+        _referenceEditedByHand = false;
+        _takenProjectReferences = _projects is null
+            ? []
+            : ProjectNumbering.ProjectReferencesIn((await _projects.ListAsync().ConfigureAwait(true)).Select(p => p.Identifier));
+        SetProjectReference(null);
         _nameBox.Text = string.Empty;
         _purchaseOrderBox.Text = string.Empty;
         _openQuotationBox.IsChecked = true;
@@ -193,6 +258,7 @@ public sealed class NewProjectPrompt : Border
 
         await ReloadOrganisationsAsync(selectRecordId: null).ConfigureAwait(true);
         await ReloadRateCardsAsync().ConfigureAwait(true);
+        UpdateIdentifierPreview();
 
         IsVisible = true;
         _nameBox.Focus();
@@ -205,13 +271,19 @@ public sealed class NewProjectPrompt : Border
     private async Task ReloadOrganisationsAsync(string? selectRecordId)
     {
         var all = await _organisations.ListAsync().ConfigureAwait(true);
+        _customerCodes = all.ToDictionary(r => r.Id, r => r.Definition.CustomerCode, StringComparer.Ordinal);
 
         _suppressClientSelection = true;
         try
         {
+            // Product Owner decision 2026-10-01 §2: the client is chosen
+            // from Business → Customers & Suppliers — customers, and
+            // organisations that are both (a supplier-only record is not
+            // a client) — each shown with its own customer code.
             var items = all
+                .Where(r => r.Definition.TradingType != OrganisationTradingType.Supplier || r.Id == selectRecordId)
                 .OrderBy(r => r.Definition.Name, StringComparer.OrdinalIgnoreCase)
-                .Select(r => new ComboBoxItem { Content = $"{r.Definition.Name} ({r.Id})", Tag = r.Id })
+                .Select(r => new ComboBoxItem { Content = $"{r.Definition.Name} ({r.Definition.CustomerCode ?? r.Id})", Tag = r.Id })
                 .ToList();
             items.Add(new ComboBoxItem { Content = "Add organisation…", Tag = AddOrganisationTag });
 
@@ -224,6 +296,60 @@ public sealed class NewProjectPrompt : Border
         {
             _suppressClientSelection = false;
         }
+
+        UpdateIdentifierPreview();
+    }
+
+    /// <summary>The selected client's own customer code, or <see langword="null"/> when no client is chosen or it has none yet.</summary>
+    private string? SelectedCustomerCode =>
+        _client.SelectedItem is ComboBoxItem { Tag: string id } && _customerCodes.TryGetValue(id, out var code) && ProjectNumbering.IsValidCustomerCode(code)
+            ? code
+            : null;
+
+    private void SetProjectReference(string? reference)
+    {
+        _settingReference = true;
+        try
+        {
+            _projectReferenceBox.Text = reference ?? string.Empty;
+        }
+        finally
+        {
+            _settingReference = false;
+        }
+    }
+
+    /// <summary>Suggests a free project reference from the name while the reference box has not been edited by hand (§3: "suggest from project name, editable, unique").</summary>
+    private void SuggestProjectReference()
+    {
+        if (_referenceEditedByHand)
+            return;
+
+        SetProjectReference(string.IsNullOrWhiteSpace(_nameBox.Text)
+            ? null
+            : ProjectNumbering.SuggestProjectReference(_nameBox.Text, _takenProjectReferences));
+        UpdateIdentifierPreview();
+    }
+
+    private void UpdateIdentifierPreview()
+    {
+        var customerCode = SelectedCustomerCode;
+        var reference = ProjectNumbering.Normalise(_projectReferenceBox.Text);
+
+        if (customerCode is null)
+        {
+            var reason = _client.SelectedItem is ComboBoxItem { Tag: string }
+                ? "this client has no customer code yet — set one in Business → Customers & Suppliers"
+                : "no client chosen";
+            _identifierPreview.Text = string.IsNullOrEmpty(_fallbackIdentifier)
+                ? $"Identifier: the next P- number ({reason})."
+                : $"Identifier: {_fallbackIdentifier} ({reason}).";
+            return;
+        }
+
+        _identifierPreview.Text = ProjectNumbering.IsValidProjectReference(reference)
+            ? $"Identifier: {customerCode}-{reference}"
+            : $"Identifier: {customerCode}-?????? (enter a six-character project reference)";
     }
 
     /// <summary>Re-reads every Released rate card into the Rate card drop-down, defaulting to the most recently released one — "None" if there are none.</summary>
@@ -252,6 +378,8 @@ public sealed class NewProjectPrompt : Border
     {
         if (_suppressClientSelection)
             return;
+
+        UpdateIdentifierPreview();
 
         if (_client.SelectedItem is not ComboBoxItem { Tag: { } tag } || !ReferenceEquals(tag, AddOrganisationTag))
             return;
@@ -301,8 +429,23 @@ public sealed class NewProjectPrompt : Border
         if (string.IsNullOrEmpty(purchaseOrderReference))
             purchaseOrderReference = null;
 
+        // Product Owner decision 2026-10-01 §3: a client with a customer
+        // code makes the identifier CUSTOMER-PROJECTREF, and the project
+        // reference is then required, six characters, and unique.
+        string? identifier = null;
+        if (SelectedCustomerCode is { } customerCode)
+        {
+            if (ProjectNumbering.ValidateProjectReference(_projectReferenceBox.Text, _takenProjectReferences) is { } refusal)
+            {
+                ShowValidationError(refusal);
+                return;
+            }
+
+            identifier = ProjectNumbering.ComposeProjectIdentifier(customerCode, _projectReferenceBox.Text!);
+        }
+
         Complete(new NewProjectPromptResult(
-            value, _openQuotationBox.IsChecked ?? false, clientOrganisationId, rateCardId, purchaseOrderReference));
+            value, _openQuotationBox.IsChecked ?? false, clientOrganisationId, rateCardId, purchaseOrderReference, identifier));
     }
 
     private void ShowValidationError(string message)

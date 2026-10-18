@@ -1,0 +1,20 @@
+{
+  "version": "0.64.0",
+  "problem": "Assess polymer clamp-load retention.",
+  "inputs": [
+    "bolt size",
+    "preload",
+    "joint temperature",
+    "duration",
+    "washer/bearing geometry"
+  ],
+  "method": [
+    "define preload",
+    "check local bearing stress",
+    "evaluate stress relaxation/creep",
+    "check thread engagement or insert",
+    "consider thermal cycling",
+    "verify retained preload"
+  ],
+  "output": "Screening workflow; no universal torque/preload rule is asserted."
+}

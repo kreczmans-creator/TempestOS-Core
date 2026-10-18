@@ -1,0 +1,20 @@
+{
+  "version": "0.59.0",
+  "required": [
+    "Tg where applicable",
+    "Tm where applicable",
+    "HDT",
+    "continuous service temperature",
+    "CTE",
+    "thermal conductivity",
+    "specific heat"
+  ],
+  "context": [
+    "grade",
+    "reinforcement",
+    "conditioning",
+    "test method",
+    "temperature range",
+    "source"
+  ]
+}

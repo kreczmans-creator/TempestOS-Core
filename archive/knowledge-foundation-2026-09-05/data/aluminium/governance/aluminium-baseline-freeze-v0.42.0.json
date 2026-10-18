@@ -1,0 +1,38 @@
+{
+  "version": "0.42.0",
+  "baseline": "ALUMINIUM-FUNDAMENTALS-BASELINE-0.42",
+  "scope": [
+    "15 temper-aware mechanical records",
+    "14 shear/bearing screening records",
+    "5 fatigue screening records",
+    "5 fracture screening ranges",
+    "4 temperature screening curves",
+    "thermal/electrical/environmental/manufacturing/commercial layers"
+  ],
+  "fundamentals_coverage": {
+    "composition_and_designation": true,
+    "temper": true,
+    "product_form": true,
+    "mechanical": true,
+    "thermal": true,
+    "electrical": true,
+    "corrosion_environment": true,
+    "manufacturing": true,
+    "joining": true,
+    "shear_and_bearing": true,
+    "fatigue": true,
+    "fracture": true,
+    "temperature_dependence": true,
+    "standards_framework": true,
+    "cost_and_availability": true,
+    "common_uses": true,
+    "provenance_model": true
+  },
+  "verification_state": {
+    "authoritatively_verified_records": 0,
+    "design_approved_records": 0,
+    "screening_reference_records": 43
+  },
+  "release_disposition": "FROZEN AS LIBRARY FOUNDATION; quantitative design use remains blocked pending source verification.",
+  "next_family": "tungsten"
+}

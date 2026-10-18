@@ -1,0 +1,18 @@
+{
+  "version": "0.69.0",
+  "problem": "Choose between cast and forged metallic product forms.",
+  "comparison": [
+    "geometry complexity",
+    "section thickness",
+    "defect sensitivity",
+    "fatigue requirement",
+    "grain flow",
+    "NDT capability",
+    "production volume",
+    "machining allowance",
+    "cost",
+    "traceability"
+  ],
+  "acceptance": "The selected process must support the critical functional and verification requirements.",
+  "status": "worked-framework"
+}

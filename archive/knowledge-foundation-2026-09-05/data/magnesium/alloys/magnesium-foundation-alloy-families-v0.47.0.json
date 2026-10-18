@@ -1,0 +1,285 @@
+[
+  {
+    "id": "MG-PURE",
+    "designation": "Commercially pure magnesium",
+    "family": "magnesium metal",
+    "composition": "Mg, commercially pure / high-purity forms vary by specification",
+    "density_g_cm3": [
+      1.73,
+      1.75
+    ],
+    "elastic_modulus_GPa": [
+      44,
+      46
+    ],
+    "poisson_ratio": [
+      0.29,
+      0.3
+    ],
+    "yield_strength_MPa": [
+      20,
+      90
+    ],
+    "ultimate_tensile_strength_MPa": [
+      70,
+      200
+    ],
+    "elongation_percent": [
+      2,
+      15
+    ],
+    "thermal_conductivity_W_mK": [
+      150,
+      160
+    ],
+    "cte_20_100C_per_K": [
+      2.5e-05,
+      2.7e-05
+    ],
+    "electrical_resistivity_ohm_m": [
+      4.3e-08,
+      4.7e-08
+    ],
+    "corrosion": "Reactive; galvanic coupling and aqueous corrosion require careful control.",
+    "manufacturing": "Cast, wrought and machined forms exist; exact process route materially affects properties.",
+    "machinability": "Generally excellent cutting behaviour, but chip ignition/fire risk must be controlled.",
+    "cost": "medium",
+    "availability": "good in specialist/non-commodity engineering supply",
+    "uses": [
+      "lightweight components",
+      "sacrificial/anode applications",
+      "specialist engineering"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against exact grade, product form, temper/condition, specification and primary/manufacturer source before design use."
+  },
+  {
+    "id": "AZ31B",
+    "designation": "AZ31B",
+    "family": "wrought magnesium alloy",
+    "composition": "Mg-Al-Zn wrought alloy; exact limits depend on applicable specification/product form",
+    "density_g_cm3": [
+      1.77,
+      1.78
+    ],
+    "elastic_modulus_GPa": [
+      44,
+      46
+    ],
+    "poisson_ratio": [
+      0.29,
+      0.3
+    ],
+    "yield_strength_MPa": [
+      180,
+      260
+    ],
+    "ultimate_tensile_strength_MPa": [
+      240,
+      300
+    ],
+    "elongation_percent": [
+      7,
+      20
+    ],
+    "thermal_conductivity_W_mK": [
+      90,
+      100
+    ],
+    "cte_20_100C_per_K": [
+      2.5e-05,
+      2.7e-05
+    ],
+    "electrical_resistivity_ohm_m": [
+      9e-08,
+      1e-07
+    ],
+    "corrosion": "Requires corrosion protection in many aqueous/galvanic environments.",
+    "manufacturing": "Sheet, plate, bar, extrusion and other wrought products; texture and processing condition affect anisotropy.",
+    "machinability": "excellent with appropriate chip/fire controls",
+    "cost": "medium",
+    "availability": "good for established magnesium supply chains",
+    "uses": [
+      "aerospace/lightweight structures",
+      "electronics housings",
+      "general lightweight fabricated components"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against exact grade, product form, temper/condition, specification and primary/manufacturer source before design use."
+  },
+  {
+    "id": "AZ91D",
+    "designation": "AZ91D",
+    "family": "cast magnesium alloy",
+    "composition": "Mg-Al-Zn cast alloy; specification controls exact composition and product requirements",
+    "density_g_cm3": [
+      1.8,
+      1.83
+    ],
+    "elastic_modulus_GPa": [
+      44,
+      46
+    ],
+    "poisson_ratio": [
+      0.29,
+      0.3
+    ],
+    "yield_strength_MPa": [
+      140,
+      170
+    ],
+    "ultimate_tensile_strength_MPa": [
+      200,
+      250
+    ],
+    "elongation_percent": [
+      2,
+      7
+    ],
+    "thermal_conductivity_W_mK": [
+      50,
+      70
+    ],
+    "cte_20_100C_per_K": [
+      2.5e-05,
+      2.7e-05
+    ],
+    "electrical_resistivity_ohm_m": [
+      1.2e-07,
+      1.5e-07
+    ],
+    "corrosion": "Corrosion behaviour is strongly condition/environment dependent; coatings and isolation may be required.",
+    "manufacturing": "High-pressure die casting and related casting routes; porosity and microstructure are important.",
+    "machinability": "good, subject to chip/fire controls",
+    "cost": "medium",
+    "availability": "good in die-casting supply chains",
+    "uses": [
+      "die-cast housings",
+      "automotive components",
+      "electronics housings",
+      "lightweight castings"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against exact grade, product form, temper/condition, specification and primary/manufacturer source before design use."
+  },
+  {
+    "id": "WE43",
+    "designation": "WE43",
+    "family": "rare-earth magnesium alloy",
+    "composition": "Mg-Y-rare-earth-Zr family; exact chemistry depends on specification and product form",
+    "density_g_cm3": [
+      1.8,
+      1.9
+    ],
+    "elastic_modulus_GPa": [
+      42,
+      46
+    ],
+    "poisson_ratio": [
+      0.29,
+      0.31
+    ],
+    "yield_strength_MPa": [
+      180,
+      260
+    ],
+    "ultimate_tensile_strength_MPa": [
+      250,
+      350
+    ],
+    "elongation_percent": [
+      3,
+      12
+    ],
+    "thermal_conductivity_W_mK": [
+      50,
+      90
+    ],
+    "cte_20_100C_per_K": [
+      2.5e-05,
+      2.7e-05
+    ],
+    "electrical_resistivity_ohm_m": [
+      1.2e-07,
+      1.8e-07
+    ],
+    "corrosion": "Better high-temperature capability than common Mg-Al alloys, but corrosion protection remains application dependent.",
+    "manufacturing": "Cast and wrought variants; heat treatment and ageing are important to final properties.",
+    "machinability": "good with controlled cutting/fire precautions",
+    "cost": "expensive",
+    "availability": "specialist",
+    "uses": [
+      "aerospace",
+      "motorsport",
+      "high-temperature lightweight components",
+      "specialist castings"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against exact grade, product form, temper/condition, specification and primary/manufacturer source before design use."
+  },
+  {
+    "id": "ZK60A",
+    "designation": "ZK60A",
+    "family": "wrought magnesium alloy",
+    "composition": "Mg-Zn-Zr wrought alloy; exact chemistry and temper depend on specification",
+    "density_g_cm3": [
+      1.82,
+      1.84
+    ],
+    "elastic_modulus_GPa": [
+      44,
+      46
+    ],
+    "poisson_ratio": [
+      0.29,
+      0.31
+    ],
+    "yield_strength_MPa": [
+      200,
+      300
+    ],
+    "ultimate_tensile_strength_MPa": [
+      280,
+      360
+    ],
+    "elongation_percent": [
+      5,
+      15
+    ],
+    "thermal_conductivity_W_mK": [
+      90,
+      110
+    ],
+    "cte_20_100C_per_K": [
+      2.4e-05,
+      2.7e-05
+    ],
+    "electrical_resistivity_ohm_m": [
+      9e-08,
+      1.2e-07
+    ],
+    "corrosion": "Requires environment-specific assessment and galvanic isolation where applicable.",
+    "manufacturing": "Extrusion/forging and other wrought routes; texture and temper materially affect performance.",
+    "machinability": "good to excellent with appropriate controls",
+    "cost": "expensive",
+    "availability": "specialist",
+    "uses": [
+      "high-strength lightweight structures",
+      "aerospace",
+      "motorsport",
+      "specialist extrusions"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against exact grade, product form, temper/condition, specification and primary/manufacturer source before design use."
+  }
+]

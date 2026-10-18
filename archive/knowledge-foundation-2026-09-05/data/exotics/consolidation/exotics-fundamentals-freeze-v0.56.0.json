@@ -1,0 +1,34 @@
+{
+  "version": "0.56.0",
+  "scope": "Exotics fundamentals",
+  "status": "FUNDAMENTALS FREEZE CANDIDATE",
+  "included_families": [
+    "applications",
+    "cobalt-base-alloys",
+    "economics",
+    "environment",
+    "governance",
+    "manufacturing",
+    "nickel-base-superalloys",
+    "properties",
+    "provenance",
+    "refractory-metals-alloys",
+    "specialty-corrosion-high-performance-alloys",
+    "standards",
+    "titanium"
+  ],
+  "freeze_basis": [
+    "common fundamental sections established",
+    "canonical property domains defined",
+    "selection/provenance rules established",
+    "manufacturing/joining/environment considerations represented",
+    "remaining gaps classified as evidence-depth or standards-population work"
+  ],
+  "not_claimed": [
+    "complete quantitative database",
+    "design allowables",
+    "certified material data",
+    "complete standard-edition verification"
+  ],
+  "next": "Begin Engineering Polymers after accepting the Exotics fundamentals freeze."
+}

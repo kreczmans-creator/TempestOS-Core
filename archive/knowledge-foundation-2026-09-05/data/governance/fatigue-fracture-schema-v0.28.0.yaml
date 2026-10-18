@@ -1,0 +1,29 @@
+version: 0.28.0
+fatigue_and_fracture:
+  fatigue_record_required:
+  - material_state
+  - condition
+  - product_form
+  - specimen_orientation
+  - surface_condition_if_stated
+  - stress_ratio_R
+  - frequency_if_stated
+  - environment_if_stated
+  - test_standard_if_stated
+  - source
+  fracture_toughness_record_required:
+  - material_state
+  - condition
+  - product_form
+  - specimen_orientation
+  - temperature
+  - test_method_or_standard
+  - units
+  - source
+  rule: Do not merge fatigue or fracture data from different conditions, product forms
+    or test environments into one generic material value.
+temperature_data:
+  rule: Store source temperatures and ranges explicitly. Do not interpolate or extrapolate
+    silently.
+  design_boundary: Reference data is not an allowable unless the governing design
+    basis explicitly permits its use.

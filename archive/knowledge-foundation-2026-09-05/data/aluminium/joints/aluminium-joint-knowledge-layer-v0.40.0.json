@@ -1,0 +1,92 @@
+{
+  "version": "0.40.0",
+  "scope": "Aluminium joint and connection knowledge layer",
+  "joint_types": [
+    {
+      "type": "bolted",
+      "considerations": [
+        "bearing",
+        "net-section",
+        "shear-out",
+        "bolt preload",
+        "slip",
+        "fretting",
+        "galvanic isolation",
+        "fatigue"
+      ]
+    },
+    {
+      "type": "riveted",
+      "considerations": [
+        "bearing",
+        "net-section",
+        "rivet installation",
+        "hole quality",
+        "fatigue",
+        "corrosion protection"
+      ]
+    },
+    {
+      "type": "welded",
+      "considerations": [
+        "parent material",
+        "HAZ",
+        "weld metal",
+        "temper loss",
+        "distortion",
+        "residual stress",
+        "fatigue detail class",
+        "corrosion"
+      ]
+    },
+    {
+      "type": "adhesively_bonded",
+      "considerations": [
+        "surface preparation",
+        "adhesive temperature range",
+        "joint geometry",
+        "peel",
+        "environment",
+        "cure process",
+        "ageing"
+      ]
+    },
+    {
+      "type": "machined_integral",
+      "considerations": [
+        "grain direction",
+        "surface finish",
+        "stress concentration",
+        "residual stress",
+        "minimum section",
+        "fatigue"
+      ]
+    },
+    {
+      "type": "cast",
+      "considerations": [
+        "porosity",
+        "shrinkage",
+        "microstructure",
+        "defect population",
+        "section thickness",
+        "inspection",
+        "fatigue"
+      ]
+    },
+    {
+      "type": "additive_manufactured",
+      "considerations": [
+        "build orientation",
+        "porosity",
+        "surface condition",
+        "heat treatment",
+        "process qualification",
+        "inspection",
+        "fatigue"
+      ]
+    }
+  ],
+  "status": "qualitative_foundation",
+  "design_use": "screening_and_review_prompt_only"
+}

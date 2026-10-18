@@ -1,0 +1,52 @@
+{
+  "version": "0.50.0",
+  "scope": "exotics",
+  "cost_scale": [
+    "cheap",
+    "medium",
+    "expensive"
+  ],
+  "availability_scale": [
+    "good",
+    "moderate",
+    "specialist"
+  ],
+  "screening_assessment": [
+    {
+      "family": "titanium",
+      "cost": "expensive",
+      "availability": "good specialist"
+    },
+    {
+      "family": "nickel-base superalloys",
+      "cost": "expensive",
+      "availability": "good specialist"
+    },
+    {
+      "family": "cobalt-base alloys",
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    {
+      "family": "refractory metals",
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    {
+      "family": "shape-memory alloys",
+      "cost": "expensive",
+      "availability": "specialist"
+    }
+  ],
+  "drivers": [
+    "form",
+    "grade",
+    "certification",
+    "machining",
+    "forging",
+    "heat treatment",
+    "surface treatment",
+    "volume",
+    "supplier qualification"
+  ]
+}

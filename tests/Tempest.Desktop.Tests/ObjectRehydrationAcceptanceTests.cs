@@ -377,13 +377,6 @@ public sealed class ObjectRehydrationAcceptanceTests
         (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
 
     /// <summary>Pumps the dispatcher until <paramref name="condition"/> holds or five seconds pass — for a tree node's own fire-and-forget selection handler to settle.</summary>
-    private static async Task PumpUntilAsync(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(5);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-        }
-    }
+    private static Task PumpUntilAsync(Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 5, what: what);
 }

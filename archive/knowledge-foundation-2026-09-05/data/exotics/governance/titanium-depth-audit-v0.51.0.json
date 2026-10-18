@@ -1,0 +1,23 @@
+{
+  "version": "0.51.0",
+  "family": "titanium",
+  "status": "DEPTH PASS \u2014 representative titanium taxonomy and engineering selection framework established",
+  "complete": [
+    "identity",
+    "family classification",
+    "selection logic",
+    "thermal framework",
+    "corrosion/galvanic framework",
+    "manufacturing framework",
+    "joining framework",
+    "application mapping",
+    "provenance gate"
+  ],
+  "open": [
+    "authoritative quantitative datasets",
+    "exact standards editions",
+    "grade-specific fatigue/fracture",
+    "high-temperature creep/rupture"
+  ],
+  "certification": "not certified"
+}

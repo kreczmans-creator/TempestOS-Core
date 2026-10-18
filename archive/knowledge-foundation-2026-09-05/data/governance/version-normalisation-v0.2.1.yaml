@@ -1,0 +1,13 @@
+historical_generated_labels:
+- v1.3.0
+- v1.4.0
+- v1.5.0
+- v1.6.0
+- v1.7.0
+- v1.8.0
+- v1.9.0
+- v2.0.0
+project_stream: 0.x
+current_package_version: 0.21.0
+mapping_note: The earlier labels were packaging mistakes; TempestOS has not released
+  v1. This package is the authoritative 0.x continuation.

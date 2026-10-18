@@ -90,12 +90,9 @@ public sealed class OrganisationPickerPaymentTermsTests
         }
     }
 
-    private static async Task RenderUntilStandaloneAsync(Func<bool> condition)
+    private static async Task RenderUntilStandaloneAsync(Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-            await Task.Delay(10);
-
+        await DesktopTestHelpers.WaitUntilAsync(condition, 20, what: what);
         Dispatcher.UIThread.RunJobs();
     }
 }

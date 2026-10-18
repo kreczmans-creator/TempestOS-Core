@@ -1,0 +1,22 @@
+{
+  "version": "0.68.0",
+  "problem": "Evaluate a proposed replacement alloy.",
+  "inputs": [
+    "original designation/condition",
+    "candidate designation/condition",
+    "load cases",
+    "environment",
+    "manufacturing process",
+    "approval constraints"
+  ],
+  "workflow": [
+    "build equivalence matrix",
+    "identify changed failure modes",
+    "review process/joining effects",
+    "review corrosion/surface system",
+    "run targeted analysis/tests",
+    "update controlled documentation"
+  ],
+  "output": "Controlled engineering-change workflow.",
+  "status": "worked-framework"
+}

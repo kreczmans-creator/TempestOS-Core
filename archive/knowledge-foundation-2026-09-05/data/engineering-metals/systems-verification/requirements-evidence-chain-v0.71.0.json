@@ -1,0 +1,14 @@
+{
+  "version": "0.71.0",
+  "status": "verification-framework",
+  "workflow": [
+    "capture requirement",
+    "define verification method",
+    "define acceptance criterion",
+    "identify evidence owner",
+    "execute verification",
+    "record objective result",
+    "review deviations",
+    "close traceability"
+  ]
+}

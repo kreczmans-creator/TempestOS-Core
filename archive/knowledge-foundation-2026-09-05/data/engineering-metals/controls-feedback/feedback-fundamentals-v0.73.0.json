@@ -1,0 +1,24 @@
+{
+  "version": "0.73.0",
+  "status": "verification-framework",
+  "purpose": "Provide the engineering foundation for closed-loop control reasoning.",
+  "concepts": [
+    "open-loop versus closed-loop",
+    "reference, measurement, error and command",
+    "plant, controller and feedback path",
+    "disturbance rejection",
+    "steady-state error",
+    "transient response",
+    "stability"
+  ],
+  "workflow": [
+    "define controlled variable",
+    "define operating range",
+    "identify plant dynamics",
+    "identify disturbances",
+    "select feedback measurement",
+    "define controller objective",
+    "analyse stability and response",
+    "verify against requirements"
+  ]
+}

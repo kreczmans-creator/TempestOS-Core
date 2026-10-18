@@ -1,0 +1,16 @@
+{
+  "version": "0.70.0",
+  "status": "worked-framework",
+  "problem": "Screen a bracket under axial force, bending and torsion.",
+  "workflow": [
+    "define free-body diagram",
+    "resolve reactions",
+    "identify critical section",
+    "calculate axial/bending stress",
+    "calculate torsional shear",
+    "perform static interaction screening",
+    "assess fatigue if cyclic",
+    "check local stress concentration and fastener interfaces",
+    "verify by appropriate analysis/test"
+  ]
+}

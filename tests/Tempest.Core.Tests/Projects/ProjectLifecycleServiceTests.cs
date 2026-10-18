@@ -319,6 +319,7 @@ public sealed class ProjectLifecycleServiceTests
             carriedDeliverableId: deliverable.Id);
         Assert.True(lineAdded.Succeeded, lineAdded.Reason);
 
+        await QuotationReviewTestSupport.SubmitAndApproveAsync(quotations, QuotationTestHost.Principals(host), changeOrder.Quotation.Id);
         Assert.True((await quotations.SendAsync(changeOrder.Quotation.Id)).Succeeded);
         var declined = await quotations.DeclineAsync(changeOrder.Quotation.Id);
         Assert.True(declined.Succeeded, declined.Reason);

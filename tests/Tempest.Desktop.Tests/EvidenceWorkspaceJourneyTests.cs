@@ -426,9 +426,8 @@ public sealed class EvidenceWorkspaceJourneyTests
             // its own "Release" button. `.First`, not `.Single`, within
             // that row: a control inside a `TabControl`'s own selected tab
             // is reachable via two logical-tree paths.
-            var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()
-                .First(g => g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("mat-lib-release", StringComparison.Ordinal)));
-            var releaseButton = recordRow.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Release"));
+            var releaseButton = librariesView.GetLogicalDescendants().OfType<Button>()
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == "Release mat-lib-release");
             releaseButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             IReferenceRecord<MaterialDefinition>? record = null;
@@ -585,16 +584,8 @@ public sealed class EvidenceWorkspaceJourneyTests
         return path;
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = Deadline(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(MainWindow window)
     {

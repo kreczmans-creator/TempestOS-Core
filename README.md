@@ -25,7 +25,9 @@ for a small engineering consultancy — not an ERP, not a PLM
 As of the `v0.21.0` release candidate it ships a
 project/quotation/deliverable/timesheet/invoicing consultancy seam,
 evidence recorded, independently checked and issued against governed
-reference data, eleven engineering calculation modules with an
+reference data, fourteen engineering calculation modules (the eleven of
+`WP 21.7A`, plus tolerance stack-up and two thermal modules recovered from
+the v0.16.0 suite) with an
 Engineering Calculators surface (Re-run/Compare), the Engineering Assets
 surfaces, documents rendered from templates, a Velopack Windows
 installer with backup and restore, and undo across commands. See
@@ -59,7 +61,7 @@ src/
 │                            # domain built on `v0.17.0`'s substrates —
 │                            # Evidence, ReferenceData, Invoicing,
 │                            # Quotations, Timesheets, PurchaseOrders,
-│                            # Expenses, Deliverables and eleven
+│                            # Expenses, Deliverables and fourteen
 │                            # engineering Calculations.Modules — see
 │                            # `docs/releases/v1.0.0/WorkPackages.md`.
 ├── Tempest.Workspace/       # The shared Engineering Workspace domain layer
@@ -171,8 +173,9 @@ dotnet test src/TempestOS.slnx
 ```
 
 TempestOS also has a CI pipeline (`.github/workflows/ci.yml`) that builds
-Debug and Release and runs the complete test suite on every push, pull
-request, and manual dispatch — see
+Debug and Release and runs the complete test suite on every pull request,
+on pushes to `main`, `release/**` branches and version tags, and on manual
+dispatch — see
 [`docs/academy/06 Engineering Standards/04-continuous-integration.md`](docs/academy/06%20Engineering%20Standards/04-continuous-integration.md).
 
 ## Archive

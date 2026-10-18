@@ -213,19 +213,19 @@ public class BracketEngineeringDemonstrationTests
     [Fact]
     public async Task ARefusedCheckCannotBeWrittenIntoAnEngineeringRecord()
     {
-        // 5083 has no density, so there is no result. Nothing may be written
+        // PTFE has no published yield strength, so there is no result. Nothing may be written
         // into the pack or the verification artefact on the strength of it.
         var harness = new Harness();
         await harness.PrepareAsync();
 
         await harness.Review.VerifyAsync(
             harness.Materials,
-            MaterialSeed.Aluminium5083OH111,
-            new ReferenceReviewStatement("Aalco 5083 datasheet"));
-        await harness.Review.ReleaseAsync(harness.Materials, MaterialSeed.Aluminium5083OH111, "For comparison.");
+            MaterialSeed.PolymerPtfe,
+            new ReferenceReviewStatement("Ensinger TECAFLON PTFE natural product data"));
+        await harness.Review.ReleaseAsync(harness.Materials, MaterialSeed.PolymerPtfe, "For comparison.");
 
         var refused = await harness.Check.CheckAsync(
-            BracketRequest() with { MaterialRecordId = MaterialSeed.Aluminium5083OH111 });
+            BracketRequest() with { MaterialRecordId = MaterialSeed.PolymerPtfe });
 
         Assert.Equal(BracketCheckRefusal.RequiredPropertyMissing, refused.Refusal);
 

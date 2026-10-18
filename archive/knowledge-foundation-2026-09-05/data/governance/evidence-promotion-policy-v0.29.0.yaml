@@ -1,0 +1,19 @@
+version: 0.29.0
+evidence_classes:
+- DESIGN_STANDARD
+- MILL_OR_SUPPLIER_DATA
+- PEER_REVIEWED_LITERATURE
+- REFERENCE_DATA
+- INTERNAL_VERIFICATION
+promotion_rules:
+- Retain exact condition and test context for literature values.
+- Keep AM, wrought, forged, cast and powder routes separate unless equivalence is
+  demonstrated.
+- Never store fatigue strength without stress ratio or an explicit unavailable marker.
+- Never store fracture toughness without temperature, orientation/product form and
+  test method where available.
+- Never substitute Charpy impact energy for fracture toughness.
+- Typical supplier values remain screening/reference values unless independently verified.
+current_status:
+  verified: 0
+  approved_for_design: 0

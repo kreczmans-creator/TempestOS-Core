@@ -80,12 +80,34 @@ public interface IInvoicingService
     Task<InvoiceRequestResult> ReconcileAsync(Guid requestId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Voids <paramref name="requestId"/>'s own request locally — only for
+    /// Voids <paramref name="requestId"/>'s own request: a
     /// <see cref="InvoiceRequestStatus.Draft"/> or
-    /// <see cref="InvoiceRequestStatus.Rejected"/>. A request that already
-    /// reached the provider is voided there instead, and read back through
-    /// <see cref="ReconcileAsync"/>.
+    /// <see cref="InvoiceRequestStatus.Rejected"/> one locally; and, with a
+    /// connector that keeps the invoice as a draft (Xero, `v0.24.0` X4), a
+    /// <see cref="InvoiceRequestStatus.Sent"/> one whose invoice the
+    /// accounting system still holds as a draft — that draft is deleted there
+    /// first. A request the accounting system has approved is voided there
+    /// instead, and read back through <see cref="ReconcileAsync"/>.
     /// </summary>
-    /// <remarks>Refused, as a result, when <paramref name="requestId"/> does not identify a live request, or when that request's own status is neither <see cref="InvoiceRequestStatus.Draft"/> nor <see cref="InvoiceRequestStatus.Rejected"/>.</remarks>
+    /// <remarks>Refused, as a result, when <paramref name="requestId"/> does not identify a live request, or when its status (or the accounting system's own) does not allow a void here; the refusal says why.</remarks>
     Task<InvoiceRequestResult> VoidAsync(Guid requestId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Revises the lines of <paramref name="requestId"/>'s own request
+    /// (`v0.24.0` X4, exposed by review-board fix M4): each
+    /// <see cref="InvoiceRequestLineRevision"/> names a line by its source and
+    /// gives its new description, quantity, unit rate and VAT rate; lines not
+    /// named are unchanged, and no source is ever added or dropped. A
+    /// <see cref="InvoiceRequestStatus.Draft"/> or
+    /// <see cref="InvoiceRequestStatus.Rejected"/> request is revised locally;
+    /// a <see cref="InvoiceRequestStatus.Sent"/> one only through its
+    /// connector's draft seam, and only while the accounting system still holds
+    /// the invoice as a draft — otherwise refused with the reason, the request
+    /// left exactly as it was.
+    /// </summary>
+    /// <param name="requestId">The request to revise.</param>
+    /// <param name="revisions">The line revisions (at least one; each source once).</param>
+    /// <param name="cancellationToken">Cancels the act.</param>
+    /// <returns>The revised request, or a refusal saying why it was not revised.</returns>
+    Task<InvoiceRequestResult> ReviseLinesAsync(Guid requestId, IReadOnlyList<InvoiceRequestLineRevision> revisions, CancellationToken cancellationToken = default);
 }

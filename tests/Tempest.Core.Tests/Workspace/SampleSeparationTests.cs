@@ -90,6 +90,10 @@ public sealed class SampleSeparationTests
         typeof(ThickWalledCylinderCalculationDefinition),
         typeof(ThermalExpansionStressCalculationDefinition),
         typeof(FatigueMinerCalculationDefinition),
+        // The tolerance and thermal modules recovered from the v0.16.0 suite.
+        typeof(ToleranceStackCalculationDefinition),
+        typeof(ThermalResistanceChainCalculationDefinition),
+        typeof(PlaneWallHeatTransferCalculationDefinition),
     ];
 
     // ================================================================
@@ -235,8 +239,9 @@ public sealed class SampleSeparationTests
             // hand-built input records would test the definitions, which
             // `EachProductCalculation_IsDeclaredInTheDomain_NotInSamples`
             // and the definitions' own tests already do.
-            // Five original definitions and the eleven `WP 21.7A` modules.
-            Assert.Equal(16, ProductCalculationCatalogue.CalculationIds.Count);
+            // Five original definitions, the eleven `WP 21.7A` modules and the
+            // three recovered tolerance and thermal modules.
+            Assert.Equal(19, ProductCalculationCatalogue.CalculationIds.Count);
         }
         finally
         {

@@ -1,0 +1,15 @@
+{
+  "version": "0.72.0",
+  "status": "worked-framework",
+  "problem": "Verify a multi-domain actuator-to-mechanism interface.",
+  "workflow": [
+    "define interface requirements",
+    "map mechanical/electrical/thermal/control interfaces",
+    "identify interface failure modes",
+    "define verification methods",
+    "test worst-case combinations",
+    "record configuration and measurements",
+    "review anomalies",
+    "close evidence chain"
+  ]
+}

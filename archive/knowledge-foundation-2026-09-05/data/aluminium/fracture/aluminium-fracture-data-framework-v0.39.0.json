@@ -1,0 +1,22 @@
+{
+  "purpose": "Fracture/fatigue-crack-growth data model definition",
+  "required_fields": [
+    "alloy",
+    "temper",
+    "product_form",
+    "orientation",
+    "specification",
+    "test_temperature_C",
+    "K_IC_or_equivalent",
+    "J_IC_or_equivalent",
+    "fatigue_crack_growth_parameters",
+    "R_ratio",
+    "environment",
+    "test_standard",
+    "source",
+    "evidence_status"
+  ],
+  "selection_note": "Do not substitute tensile strength for fracture toughness. Damage-tolerant design requires material- and condition-specific fracture evidence.",
+  "status": "schema_established",
+  "design_use": "not_for_allowables"
+}

@@ -18,8 +18,11 @@ public static class InvoicingCommandIds
     /// <summary>Reconciles a request against its connector.</summary>
     public const string Reconcile = "invoicing.reconcile";
 
-    /// <summary>Voids a local-only request.</summary>
+    /// <summary>Voids a request: a Draft or Rejected one locally, or a Sent one whose invoice Xero still holds as a draft (deleted there first).</summary>
     public const string Void = "invoicing.void";
+
+    /// <summary>Edits one line of a request — a Sent one only while Xero still holds its invoice as a draft (`v0.24.0` review-board fix M4).</summary>
+    public const string ReviseLines = "invoicing.reviseLines";
 }
 
 /// <summary>
@@ -77,6 +80,8 @@ public static class InvoicingWorkspaceRegistration
         commandDispatcher.RegisterHandler<SendInvoiceCommand>(new SendInvoiceCommandHandler(invoicingService));
         commandDispatcher.RegisterHandler<ReconcileInvoiceCommand>(new ReconcileInvoiceCommandHandler(invoicingService));
         commandDispatcher.RegisterHandler<VoidInvoiceCommand>(new VoidInvoiceCommandHandler(invoicingService));
+        commandDispatcher.RegisterHandler<ReviseInvoiceLinesCommand>(new ReviseInvoiceLinesCommandHandler(
+            invoicingService, async (id, ct) => await domainContext.Repository.FindAsync(id, ct).ConfigureAwait(false) as InvoiceRequest));
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: InvoicingCommandIds.Raise, displayName: "Raise Invoice Request", category: "Invoicing",
@@ -97,7 +102,7 @@ public static class InvoicingWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new SendInvoiceCommand(WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: InvoiceRequestKind,
-                confirmationMessage: "Send the selected invoice request?"),
+                confirmationMessage: "Send the selected invoice request? With Xero it is created there as a draft invoice for you to review and approve in Xero; nothing is approved or emailed by TempestOS."),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -113,13 +118,35 @@ public static class InvoicingWorkspaceRegistration
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: InvoicingCommandIds.Void, displayName: "Void Invoice Request", category: "Invoicing",
-            description: "Voids the selected invoice request. Only a Draft or Rejected request can be voided here — one that reached the provider is voided there, and read back.")
+            description: "Voids the selected invoice request: a Draft or Rejected one here; a Sent one whose invoice Xero still holds as a draft is voided here too (its Xero draft is deleted). One the accounting system has approved is voided there, and read back.")
         {
             Binding = new CommandBinding(
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new VoidInvoiceCommand(WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: InvoiceRequestKind,
                 confirmationMessage: "Void the selected invoice request? This cannot be undone."),
+        });
+
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: InvoicingCommandIds.ReviseLines, displayName: "Edit Invoice Lines", category: "Invoicing",
+            description: "Edits one line of the selected invoice request — description, quantity, unit rate or VAT rate (blank keeps the current value). A Sent request is edited only while Xero still holds its invoice as a draft, and that draft is updated to match; nothing is approved or emailed.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new ReviseInvoiceLinesCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind,
+                    values["Line"], values["Description"], values["Quantity"], values["UnitRate"], values["VatRate"]),
+                parameters:
+                [
+                    new CommandParameter("Line", "Line number (from 1)", "1", Validate: ReviseInvoiceLinesCommandHandler.CheckLineNumber),
+                    new CommandParameter("Description", "New description (blank keeps it)", string.Empty),
+                    new CommandParameter("Quantity", "New quantity (blank keeps it)", string.Empty, Validate: ReviseInvoiceLinesCommandHandler.CheckOptionalAmount),
+                    new CommandParameter("UnitRate", "New unit rate (blank keeps it)", string.Empty, Validate: ReviseInvoiceLinesCommandHandler.CheckOptionalAmount),
+                    new CommandParameter("VatRate", "New VAT rate (blank keeps it)", string.Empty, Validate: ReviseInvoiceLinesCommandHandler.CheckOptionalVatRate),
+                ],
+                appliesToKinds: InvoiceRequestKind,
+                confirmationMessage: "Edit this invoice line? A sent invoice's Xero draft is updated to match.",
+                mutates: true),
         });
     }
 }

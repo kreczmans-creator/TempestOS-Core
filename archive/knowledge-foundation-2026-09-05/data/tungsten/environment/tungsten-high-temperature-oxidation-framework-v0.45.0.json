@@ -1,0 +1,23 @@
+{
+  "version": "0.45.0",
+  "status": "qualitative_engineering_layer",
+  "controls": [
+    "air exposure",
+    "oxygen partial pressure",
+    "temperature",
+    "exposure duration",
+    "surface condition",
+    "protective atmosphere",
+    "coatings",
+    "volatile oxide formation"
+  ],
+  "key_rule": "High-temperature tungsten service in air cannot be assessed from mechanical properties alone because oxidation can dominate material loss and integrity.",
+  "design_options": [
+    "vacuum",
+    "inert atmosphere",
+    "controlled oxygen potential",
+    "protective coatings",
+    "short-duration exposure"
+  ],
+  "quantitative_status": "awaiting authoritative oxidation-rate data"
+}

@@ -46,8 +46,8 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     private readonly string _clientOrganisationId;
     private readonly string? _purchaseOrderReference;
     private readonly CurrencyCode _currency;
-    private readonly List<InvoiceRequestLine> _lines;
-    private readonly Money _total;
+    private List<InvoiceRequestLine> _lines;
+    private Money _total;
     private InvoiceRequestStatus _status;
     private string? _externalId;
     private string? _externalInvoiceNumber;
@@ -59,6 +59,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     private DateTimeOffset? _sentAtUtc;
     private PaymentTerms _paymentTerms;
     private DateOnly? _dueOn;
+    private string? _externalReference;
 
     /// <summary>Initialises a new instance of the <see cref="InvoiceRequest"/> class.</summary>
     public InvoiceRequest(
@@ -70,7 +71,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         string? externalId = null, string? externalInvoiceNumber = null, string? externalStatus = null,
         DateOnly? issuedDate = null, DateOnly? paidDate = null, string? lastError = null,
         string? connector = null, DateTimeOffset? sentAtUtc = null,
-        PaymentTerms paymentTerms = PaymentTerms.UpFront, DateOnly? dueOn = null)
+        PaymentTerms paymentTerms = PaymentTerms.UpFront, DateOnly? dueOn = null, string? externalReference = null)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(clientOrganisationId);
@@ -92,6 +93,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         _sentAtUtc = sentAtUtc;
         _paymentTerms = paymentTerms;
         _dueOn = dueOn;
+        _externalReference = externalReference;
     }
 
     /// <summary>The client this invoice is raised against — an Organisation-catalogue id, never validated as a real record by this class.</summary>
@@ -103,13 +105,13 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     /// <summary>The currency every line and <see cref="Total"/> are stated in — resolved from the project's own pinned rate card at the moment this request was raised.</summary>
     public CurrencyCode Currency => _currency;
 
-    /// <summary>This request's own lines — read-only once raised; a line never mutates independently of the request it belongs to.</summary>
+    /// <summary>This request's own lines — a line never mutates independently of the request it belongs to; the lines as a whole are revised only through <see cref="InvoicingService.ReviseLinesAsync"/> (`v0.24.0` X4), which keeps every line's own source.</summary>
     public IReadOnlyList<InvoiceRequestLine> Lines => _lines;
 
     /// <summary>The sum of every line's own <c>Amount</c> (net of VAT).</summary>
     public Money Total => _total;
 
-    /// <summary>The sum of every line's own <see cref="InvoiceRequestLine.VatAmount"/> (`WP 21.3B`) — computed from <see cref="Lines"/>, which never change after this request is raised, exactly as <see cref="Total"/> itself is fixed once at creation.</summary>
+    /// <summary>The sum of every line's own <see cref="InvoiceRequestLine.VatAmount"/> (`WP 21.3B`) — computed from <see cref="Lines"/>, so it follows a revision exactly as <see cref="Total"/> does.</summary>
     public Money VatTotal => Money.Sum(_lines.Select(l => l.VatAmount), _currency);
 
     /// <summary>The sum of every line's own <see cref="InvoiceRequestLine.GrossAmount"/> — <see cref="Total"/> plus <see cref="VatTotal"/> (`WP 21.3B`).</summary>
@@ -175,10 +177,35 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     /// </summary>
     public DateOnly? DueOn => _dueOn;
 
+    /// <summary>
+    /// The reference text this request's first send through a draft seam
+    /// carried (`v0.24.0` X4: Xero's <c>Reference</c>,
+    /// <c>{project code} · {deliverable}</c>) — frozen at that first send,
+    /// so a retry or reconciliation after a lost answer looks for, and
+    /// sends, exactly what Xero may already hold, even if the project or
+    /// deliverable has been renamed since. <see langword="null"/> until
+    /// then, and for every request sent before `v0.24.0`.
+    /// <para>
+    /// It is frozen on any send attempted through the seam, including one
+    /// that never reached the accounting system (a transport failure takes
+    /// the request back to Draft): TempestOS cannot tell whether that system
+    /// committed the send, so it keeps the reference it may hold. The
+    /// accepted cost is that a project or deliverable renamed after such an
+    /// attempt still goes out under the old name in the reference on the
+    /// next send.
+    /// </para>
+    /// </summary>
+    internal string? ExternalReference => _externalReference;
+
     /// <summary>Moves this request to <see cref="InvoiceRequestStatus.Sending"/> and records which connector the attempt is through. <see cref="InvoicingService.SendAsync"/> checks <see cref="InvoiceRequestStatusTransitions"/> before this ever runs.</summary>
-    internal Task MoveToSendingAsync(string connectorName, CancellationToken cancellationToken = default)
+    /// <param name="connectorName">The connector the attempt is through.</param>
+    /// <param name="externalReference">The reference text the attempt carries (`v0.24.0` X4, a draft seam's send); kept as <see cref="ExternalReference"/> unless one is already frozen. <see langword="null"/> leaves it as it was.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    internal Task MoveToSendingAsync(string connectorName, string? externalReference = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectorName);
+
+        var reference = _externalReference ?? (string.IsNullOrWhiteSpace(externalReference) ? null : externalReference);
 
         return MutateTypeStateAndPersistAsync(
             () => new Dictionary<string, string?>(StringComparer.Ordinal)
@@ -186,12 +213,14 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
                 [nameof(Status)] = InvoiceRequestStatus.Sending.ToString(),
                 [nameof(Connector)] = connectorName,
                 [nameof(LastError)] = null,
+                [nameof(ExternalReference)] = reference,
             },
             () =>
             {
                 _status = InvoiceRequestStatus.Sending;
                 _connector = connectorName;
                 _lastError = null;
+                _externalReference = reference;
             },
             $"Sending via '{connectorName}'.",
             cancellationToken);
@@ -204,11 +233,18 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     /// <paramref name="sentAtUtc"/>'s own date plus <see cref="PaymentTerms"/>'s
     /// own days (`TD-180`) — the one place <see cref="DueOn"/> is ever set.
     /// </summary>
-    internal Task MarkSentAsync(string externalId, string? externalInvoiceNumber, DateTimeOffset sentAtUtc, CancellationToken cancellationToken = default)
+    /// <param name="externalId">The accounting system's own id for the created invoice.</param>
+    /// <param name="externalInvoiceNumber">The accounting system's own invoice number, when it holds one already.</param>
+    /// <param name="sentAtUtc">When the send happened.</param>
+    /// <param name="externalStatus">The accounting system's own status word for the created invoice, when the connector reports it (`v0.24.0` X4: Xero's <c>DRAFT</c>); <see langword="null"/> leaves <see cref="ExternalStatus"/> as it was.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    internal Task MarkSentAsync(
+        string externalId, string? externalInvoiceNumber, DateTimeOffset sentAtUtc, string? externalStatus = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(externalId);
 
         var dueOn = DateOnly.FromDateTime(sentAtUtc.UtcDateTime).AddDays(_paymentTerms.Days());
+        var status = externalStatus ?? _externalStatus;
 
         return MutateTypeStateAndPersistAsync(
             () =>
@@ -218,6 +254,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
                     [nameof(Status)] = InvoiceRequestStatus.Sent.ToString(),
                     [nameof(ExternalId)] = externalId,
                     [nameof(ExternalInvoiceNumber)] = externalInvoiceNumber,
+                    [nameof(ExternalStatus)] = status,
                     [nameof(LastError)] = null,
                     [nameof(SentAtUtc)] = sentAtUtc.ToString("O", CultureInfo.InvariantCulture),
                 };
@@ -229,6 +266,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
                 _status = InvoiceRequestStatus.Sent;
                 _externalId = externalId;
                 _externalInvoiceNumber = externalInvoiceNumber;
+                _externalStatus = status;
                 _lastError = null;
                 _sentAtUtc = sentAtUtc;
                 _dueOn = dueOn;
@@ -288,11 +326,20 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     }
 
     /// <summary>Records a status reading from the connector — <paramref name="status"/> may equal <see cref="Status"/> already (a refresh with nothing new to report).</summary>
+    /// <param name="status">The status the reading means for this request.</param>
+    /// <param name="externalStatus">The accounting system's own status word, verbatim.</param>
+    /// <param name="externalInvoiceNumber">The accounting system's own invoice number, when it reported one.</param>
+    /// <param name="issuedDate">When it was issued, when the reading says so.</param>
+    /// <param name="paidDate">When it was paid, read from the connector only.</param>
+    /// <param name="note">A note for the engineer (`v0.24.0` X4: <i>"Deleted in Xero."</i>), kept in <see cref="LastError"/>; <see langword="null"/> leaves <see cref="LastError"/> as it was.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
     internal Task RecordStatusReadingAsync(
         InvoiceRequestStatus status, string externalStatus, string? externalInvoiceNumber, DateOnly? issuedDate, DateOnly? paidDate,
-        CancellationToken cancellationToken = default)
+        string? note = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(externalStatus);
+
+        var lastError = note ?? _lastError;
 
         return MutateTypeStateAndPersistAsync(
             () =>
@@ -302,6 +349,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
                     [nameof(Status)] = status.ToString(),
                     [nameof(ExternalStatus)] = externalStatus,
                     [nameof(ExternalInvoiceNumber)] = externalInvoiceNumber ?? _externalInvoiceNumber,
+                    [nameof(LastError)] = lastError,
                 };
                 WriteJson(state, nameof(IssuedDate), issuedDate ?? _issuedDate);
                 WriteJson(state, nameof(PaidDate), paidDate ?? _paidDate);
@@ -314,8 +362,45 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
                 _externalInvoiceNumber = externalInvoiceNumber ?? _externalInvoiceNumber;
                 _issuedDate = issuedDate ?? _issuedDate;
                 _paidDate = paidDate ?? _paidDate;
+                _lastError = lastError;
             },
-            $"Status read: '{externalStatus}' -> {status}.",
+            note is null ? $"Status read: '{externalStatus}' -> {status}." : $"Status read: '{externalStatus}' -> {status}. {note}",
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces this request's lines with <paramref name="lines"/> and its
+    /// total with <paramref name="total"/> (`v0.24.0` X4) —
+    /// <see cref="InvoicingService.ReviseLinesAsync"/> decides first whether
+    /// the revision is permitted (locally while Draft or Rejected; once Sent,
+    /// only after Xero has taken the same change on its draft) and keeps
+    /// every line's own source.
+    /// </summary>
+    /// <param name="lines">The revised lines, in order.</param>
+    /// <param name="total">Their net total.</param>
+    /// <param name="auditDetail">What the audit row says.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    internal Task ReviseLinesAsync(IReadOnlyList<InvoiceRequestLine> lines, Money total, string auditDetail, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        ArgumentException.ThrowIfNullOrWhiteSpace(auditDetail);
+
+        var revised = lines.ToList();
+
+        return MutateTypeStateAndPersistAsync(
+            () =>
+            {
+                var state = new Dictionary<string, string?>(StringComparer.Ordinal);
+                WriteJson(state, nameof(Lines), revised);
+                WriteJson(state, nameof(Total), total);
+                return state;
+            },
+            () =>
+            {
+                _lines = revised;
+                _total = total;
+            },
+            auditDetail,
             cancellationToken);
     }
 
@@ -361,6 +446,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         state[nameof(SentAtUtc)] = _sentAtUtc?.ToString("O", CultureInfo.InvariantCulture);
         state[nameof(PaymentTerms)] = _paymentTerms.ToString();
         WriteJson(state, nameof(DueOn), _dueOn);
+        state[nameof(ExternalReference)] = _externalReference;
     }
 
     /// <inheritdoc />
@@ -377,6 +463,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         _sentAtUtc = ParseSentAtUtc(state);
         _paymentTerms = ReadPaymentTerms(state);
         _dueOn = ReadDueOn(state, _sentAtUtc);
+        _externalReference = state.Type(nameof(ExternalReference));
     }
 
     private static InvoiceRequestStatus ReadStatus(EngineeringObjectState state) =>
@@ -424,6 +511,21 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
             state.Type(nameof(Connector)),
             sentAtUtc,
             ReadPaymentTerms(state),
-            ReadDueOn(state, sentAtUtc));
+            ReadDueOn(state, sentAtUtc),
+            state.Type(nameof(ExternalReference)));
     }
 }
+
+/// <summary>
+/// One line's revision (`v0.24.0` X4, <see cref="InvoicingService.ReviseLinesAsync"/>):
+/// what an engineer may change on a raised line. The line is named by its
+/// own source, which never changes — a revision re-prices and re-words the
+/// work already carried, it never adds or drops a source.
+/// </summary>
+/// <param name="SourceId">The <see cref="InvoiceRequestLine.SourceId"/> of the line to revise.</param>
+/// <param name="Description">The new description (not blank).</param>
+/// <param name="Quantity">The new quantity (greater than zero).</param>
+/// <param name="UnitRate">The new net unit rate, in the request's own currency.</param>
+/// <param name="VatRate">The new VAT rate.</param>
+public sealed record InvoiceRequestLineRevision(Guid SourceId, string Description, decimal Quantity, Money UnitRate, VatRate VatRate);
+

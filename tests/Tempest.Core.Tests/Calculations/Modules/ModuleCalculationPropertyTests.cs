@@ -406,4 +406,94 @@ public class ModuleCalculationPropertyTests
             AssertSame(baseline.BlockLives[1], alternate.BlockLives[1], "BlockLives[1]");
         });
     }
+
+    [Fact]
+    public void ToleranceStack_ResultInvariant_UnderInputUnitChange()
+    {
+        var gen = Gen.Select(
+            Gen.Select(Field(0.03, 0.06, LengthUnits.All), Field(1e-5, 2e-4, LengthUnits.All), Field(-2e-4, 0.0, LengthUnits.All)),
+            Gen.Select(Field(0.01, 0.02, LengthUnits.All), Field(0.0, 1e-4, LengthUnits.All), Field(-1e-4, -1e-5, LengthUnits.All)),
+            Gen.Select(Field(0.01, 0.015, LengthUnits.All), Field(1e-5, 1e-4, LengthUnits.All), Field(-1e-4, 0.0, LengthUnits.All)),
+            Field(-0.01, 0.0, LengthUnits.All),
+            Field(0.01, 0.05, LengthUnits.All),
+            Gen.Double[1.0, 6.0]);
+
+        gen.Sample(t =>
+        {
+            var (a, b, c, minimum, maximum, sigma) = t;
+            var definition = new ToleranceStackCalculationDefinition();
+
+            ToleranceStackInput Input(Func<(double, Unit<Length>, Unit<Length>), Quantity<Length>> q) => new(
+                [
+                    new("A", ToleranceDirection.Adds, q(a.Item1), q(a.Item2), q(a.Item3)),
+                    new("B", ToleranceDirection.Subtracts, q(b.Item1), q(b.Item2), q(b.Item3)),
+                    new("C", ToleranceDirection.Subtracts, q(c.Item1), q(c.Item2), q(c.Item3)),
+                ],
+                q(minimum), q(maximum), sigma, "capable, centred, independent");
+
+            var baseline = definition.Calculate(Input(A), new CalculationContext());
+            var alternate = definition.Calculate(Input(B), new CalculationContext());
+
+            Assert.Equal(baseline.Outcome, alternate.Outcome);
+            AssertSame(baseline.MeanResult.BaseValue, alternate.MeanResult.BaseValue, "MeanResult");
+            AssertSame(baseline.WorstCaseMinimum.BaseValue, alternate.WorstCaseMinimum.BaseValue, "WorstCaseMinimum");
+            AssertSame(baseline.WorstCaseMaximum.BaseValue, alternate.WorstCaseMaximum.BaseValue, "WorstCaseMaximum");
+            AssertSame(baseline.RootSumSquareTolerance, alternate.RootSumSquareTolerance, "RootSumSquareTolerance");
+            AssertSame(baseline.ProcessCapabilityIndex, alternate.ProcessCapabilityIndex, "ProcessCapabilityIndex");
+        });
+    }
+
+    [Fact]
+    public void ThermalResistanceChain_ResultInvariant_UnderInputUnitChange()
+    {
+        var gen = Gen.Select(
+            Field(1.0, 100.0, PowerUnits.All),
+            Field(250.0, 320.0, TemperatureUnits.All),
+            Field(0.0, 1.0, ThermalResistanceUnits.All),
+            Field(0.0, 0.5, ThermalResistanceUnits.All),
+            Field(0.1, 3.0, ThermalResistanceUnits.All),
+            Field(80.0, 150.0, TemperatureDeltaUnits.All));
+
+        gen.Sample(t =>
+        {
+            var (power, ambient, junction, interfaceMaterial, sink, headroom) = t;
+            var maximum = (ambient.Base + headroom.Base, ambient.From, ambient.To);
+            var definition = new ThermalResistanceChainCalculationDefinition();
+
+            var baseline = definition.Calculate(new ThermalResistanceChainInput(A(power), A(ambient), [new("JC", A(junction)), new("CS", A(interfaceMaterial)), new("SA", A(sink))], A(maximum)), new CalculationContext());
+            var alternate = definition.Calculate(new ThermalResistanceChainInput(B(power), B(ambient), [new("JC", B(junction)), new("CS", B(interfaceMaterial)), new("SA", B(sink))], B(maximum)), new CalculationContext());
+
+            Assert.Equal(baseline.Outcome, alternate.Outcome);
+            AssertSame(baseline.SourceTemperature.BaseValue, alternate.SourceTemperature.BaseValue, "SourceTemperature");
+            AssertSame(baseline.TotalThermalResistance.BaseValue, alternate.TotalThermalResistance.BaseValue, "TotalThermalResistance");
+            AssertSame(baseline.ThermalMargin.BaseValue, alternate.ThermalMargin.BaseValue, "ThermalMargin");
+            AssertSame(baseline.Utilisation, alternate.Utilisation, "Utilisation");
+        });
+    }
+
+    [Fact]
+    public void PlaneWallHeatTransfer_ResultInvariant_UnderInputUnitChange()
+    {
+        var gen = Gen.Select(
+            Field(280.0, 400.0, TemperatureUnits.All),
+            Field(200.0, 300.0, TemperatureUnits.All),
+            Field(2.0, 100.0, HeatTransferCoefficientUnits.All),
+            Field(2.0, 100.0, HeatTransferCoefficientUnits.All),
+            Gen.Select(Field(0.001, 0.3, LengthUnits.All), Field(0.02, 50.0, ThermalConductivityUnits.All)),
+            Gen.Select(Field(0.001, 0.3, LengthUnits.All), Field(0.02, 50.0, ThermalConductivityUnits.All)),
+            Field(0.1, 10.0, AreaUnits.All));
+
+        gen.Sample(t =>
+        {
+            var (hot, cold, h1, h2, layer1, layer2, area) = t;
+            var definition = new PlaneWallHeatTransferCalculationDefinition();
+
+            var baseline = definition.Calculate(new PlaneWallHeatTransferInput(A(hot), A(h1), [new("1", A(layer1.Item1), A(layer1.Item2)), new("2", A(layer2.Item1), A(layer2.Item2))], A(h2), A(cold), A(area)), new CalculationContext());
+            var alternate = definition.Calculate(new PlaneWallHeatTransferInput(B(hot), B(h1), [new("1", B(layer1.Item1), B(layer1.Item2)), new("2", B(layer2.Item1), B(layer2.Item2))], B(h2), B(cold), B(area)), new CalculationContext());
+
+            AssertSame(baseline.HeatFlow.BaseValue, alternate.HeatFlow.BaseValue, "HeatFlow");
+            AssertSame(baseline.OverallHeatTransferCoefficient.BaseValue, alternate.OverallHeatTransferCoefficient.BaseValue, "U");
+            AssertSame(baseline.SurfaceTemperatures[1].BaseValue, alternate.SurfaceTemperatures[1].BaseValue, "Interface temperature");
+        });
+    }
 }

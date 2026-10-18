@@ -34,6 +34,50 @@ public sealed record TimesheetDocumentModel(
     DateTimeOffset GeneratedAtUtc,
     string ApplicationVersionText);
 
+/// <summary>
+/// Resolves the person name a timesheet document is headed with. The
+/// session's own identity id is an OS security identifier on Windows
+/// (<c>S-1-12-1-…</c>) — a stable key for audit rows, never something to
+/// print on a document a client or approver reads. This prefers the
+/// principal's display name and never falls back to a raw SID or GUID.
+/// </summary>
+public static class TimesheetPrincipalLabel
+{
+    /// <summary>The label used when no readable name is available.</summary>
+    public const string Unnamed = "Unnamed person";
+
+    /// <summary>The label used when no principal is signed in at all.</summary>
+    public const string NoPrincipal = "No principal signed in";
+
+    /// <summary>Returns the readable name for the timesheet's own heading.</summary>
+    /// <param name="displayName">The principal's display name, when known.</param>
+    /// <param name="identityId">The principal's identity id, when known — used only if it is itself a readable name (e.g. an OS account name on Linux/macOS).</param>
+    public static string Resolve(string? displayName, string? identityId)
+    {
+        if (IsReadable(displayName))
+            return displayName!.Trim();
+
+        if (IsReadable(identityId))
+            return identityId!.Trim();
+
+        return string.IsNullOrWhiteSpace(displayName) && string.IsNullOrWhiteSpace(identityId) ? NoPrincipal : Unnamed;
+    }
+
+    /// <summary>Whether <paramref name="value"/> is a non-empty name rather than a machine identifier (a Windows SID or a GUID).</summary>
+    public static bool IsReadable(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && !IsSecurityIdentifier(value.Trim()) && !Guid.TryParse(value.Trim(), out _);
+
+    private static bool IsSecurityIdentifier(string value)
+    {
+        // S-<revision>-<authority>(-<sub-authority>)* — every part numeric.
+        if (!value.StartsWith("S-", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var parts = value[2..].Split('-');
+        return parts.Length >= 2 && parts.All(p => p.Length > 0 && p.All(char.IsAsciiDigit));
+    }
+}
+
 /// <summary>Renders a <see cref="TimesheetDocumentModel"/> as an A4 PDF (`WP 21.2A`, scope item 2) — hours by project and day, totals, and a signed approval block — through <see cref="DocumentTemplate"/>.</summary>
 /// <remarks>
 /// <b>No real approver.</b> <c>TimesheetEntry</c> carries no approval field

@@ -1,0 +1,15 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "problem": "Develop and verify a feedback-controlled electromechanical axis.",
+  "workflow": [
+    "define motion requirement",
+    "model mechanism and actuator",
+    "define sensor and feedback path",
+    "identify disturbances",
+    "select control architecture",
+    "analyse stability and transient response",
+    "check saturation and fault modes",
+    "verify end-to-end motion performance"
+  ]
+}

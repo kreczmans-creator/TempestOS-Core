@@ -41,6 +41,12 @@ public sealed record QuotationSheetLineRow(string Description, string? Hours, st
 /// <param name="Status">The quotation's own status at the moment the sheet is generated.</param>
 /// <param name="GeneratedAtUtc">When this sheet was generated — supplied, never <see cref="DateTime.Now"/>.</param>
 /// <param name="ApplicationVersionText">The running application's own version text — <c>"TempestOS &lt;version&gt; (&lt;commit&gt;)"</c>.</param>
+/// <param name="Revision">
+/// Runbook C3: the approved revision the sheet prints — <c>R1</c>, <c>R2</c>,
+/// … — or <see cref="QuotationExport.DraftMarker"/> for a quotation not
+/// (or not yet again) approved by a second person. <see langword="null"/>
+/// omits the revision line altogether.
+/// </param>
 public sealed record QuotationSheetModel(
     string IssuerName,
     string ProjectCode,
@@ -55,7 +61,8 @@ public sealed record QuotationSheetModel(
     string? Terms,
     string Status,
     DateTimeOffset GeneratedAtUtc,
-    string ApplicationVersionText);
+    string ApplicationVersionText,
+    string? Revision = null);
 
 /// <summary>
 /// Renders a <see cref="QuotationSheetModel"/> as an A4 PDF (`WP 19.5B`,
@@ -115,7 +122,9 @@ public sealed class QuotationSheetRenderer : IDocumentRenderer<QuotationSheetMod
 
         DocumentTemplate.AddHeaderBand(
             state, measure, "QUOTATION",
-            $"{model.Reference}  ·  {FormatDate(model.QuoteDate)}  ·  {model.Status}");
+            model.Revision is { } headerRevision
+                ? $"{model.Reference}  ·  {headerRevision}  ·  {FormatDate(model.QuoteDate)}  ·  {model.Status}"
+                : $"{model.Reference}  ·  {FormatDate(model.QuoteDate)}  ·  {model.Status}");
         DocumentTemplate.AddGap(state, 4f);
 
         DocumentTemplate.AddWrappedLine(state, measure, model.IssuerName, DocumentTemplate.HeadingSize, bold: true, color: DocumentTemplate.Ink900);
@@ -126,6 +135,13 @@ public sealed class QuotationSheetRenderer : IDocumentRenderer<QuotationSheetMod
             $"Reference: {model.Reference}  •  Date: {FormatDate(model.QuoteDate)}  •  Valid {model.ValidityDays} day(s), until {FormatDate(model.QuoteDate.AddDays(model.ValidityDays))}",
             DocumentTemplate.BodySize, bold: false);
         DocumentTemplate.AddWrappedLine(state, measure, $"Status: {model.Status}  •  Currency: {model.Currency}", DocumentTemplate.BodySize, bold: false);
+        if (model.Revision is { } revision)
+        {
+            DocumentTemplate.AddWrappedLine(
+                state, measure,
+                revision == QuotationExport.DraftMarker ? $"Revision: {revision} — not approved for issue" : $"Revision: {revision}",
+                DocumentTemplate.BodySize, bold: true, color: DocumentTemplate.Ink900);
+        }
         DocumentTemplate.AddGap(state, 4f);
         DocumentTemplate.AddRule(state);
 
@@ -157,7 +173,7 @@ public sealed class QuotationSheetRenderer : IDocumentRenderer<QuotationSheetMod
     private static string FormatFooterDetail(QuotationSheetModel model) => string.Format(
         CultureInfo.InvariantCulture,
         "{0} · {1} · Generated {2:yyyy-MM-dd HH:mm} UTC",
-        model.ApplicationVersionText, model.Reference, model.GeneratedAtUtc.UtcDateTime);
+        model.ApplicationVersionText, model.Revision is { } revision ? $"{model.Reference} {revision}" : model.Reference, model.GeneratedAtUtc.UtcDateTime);
 
     private static string FormatDate(DateOnly value) => value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 }

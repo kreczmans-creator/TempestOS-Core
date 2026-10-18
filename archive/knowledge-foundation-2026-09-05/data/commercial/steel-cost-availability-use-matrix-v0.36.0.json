@@ -1,0 +1,178 @@
+[
+  {
+    "relative_cost": "cheap",
+    "availability": "very_high",
+    "common_uses": [
+      "frames",
+      "brackets",
+      "plates",
+      "general fabrication"
+    ],
+    "grade": "S235JR",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "cheap",
+    "availability": "very_high",
+    "common_uses": [
+      "structural frames",
+      "plates",
+      "machinery fabrications"
+    ],
+    "grade": "S355JR",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "cheap",
+    "availability": "high",
+    "common_uses": [
+      "shafts",
+      "pins",
+      "gears",
+      "general machine parts"
+    ],
+    "grade": "C45",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "shafts",
+      "high-load pins",
+      "gears",
+      "high-strength machine parts"
+    ],
+    "grade": "42CrMo4",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "medium",
+    "availability": "very_high",
+    "common_uses": [
+      "fabrication",
+      "enclosures",
+      "fasteners",
+      "general corrosion-resistant parts"
+    ],
+    "grade": "304",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "medium",
+    "availability": "very_high",
+    "common_uses": [
+      "marine-adjacent hardware",
+      "process equipment",
+      "fabrication"
+    ],
+    "grade": "316L",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "expensive",
+    "availability": "medium",
+    "common_uses": [
+      "aerospace components",
+      "valves",
+      "high-strength corrosion-resistant parts"
+    ],
+    "grade": "17-4 PH",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "expensive",
+    "availability": "high",
+    "common_uses": [
+      "dies",
+      "tooling",
+      "hot-work tooling"
+    ],
+    "grade": "H13",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "shafts",
+      "valves",
+      "wear components"
+    ],
+    "grade": "410",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "cutting components",
+      "valves",
+      "wear-resistant parts"
+    ],
+    "grade": "420",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "expensive",
+    "availability": "medium",
+    "common_uses": [
+      "aerospace",
+      "high-strength corrosion-resistant components"
+    ],
+    "grade": "15-5 PH",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "expensive",
+    "availability": "medium",
+    "common_uses": [
+      "aerospace",
+      "high-strength precision components"
+    ],
+    "grade": "13-8 Mo",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "expensive",
+    "availability": "medium",
+    "common_uses": [
+      "high-temperature fabrications",
+      "furnace components"
+    ],
+    "grade": "310S",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "expensive",
+    "availability": "high",
+    "common_uses": [
+      "high-temperature tubing",
+      "exhaust and process components"
+    ],
+    "grade": "321",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "medium",
+    "availability": "very_high",
+    "common_uses": [
+      "appliances",
+      "trim",
+      "general corrosion-resistant sheet"
+    ],
+    "grade": "430",
+    "status": "qualitative_screening_metadata"
+  },
+  {
+    "relative_cost": "expensive",
+    "availability": "high",
+    "common_uses": [
+      "bearings",
+      "cutting/wear components",
+      "precision mechanisms"
+    ],
+    "grade": "440C",
+    "status": "qualitative_screening_metadata"
+  }
+]

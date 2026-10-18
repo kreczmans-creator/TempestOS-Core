@@ -1,0 +1,22 @@
+{
+  "version": "0.43.0",
+  "family": "tungsten",
+  "foundation_records": 6,
+  "material_families_represented": [
+    "commercially pure tungsten",
+    "tungsten-rhenium",
+    "tungsten-copper composite",
+    "tungsten carbide",
+    "lanthanated tungsten"
+  ],
+  "mechanical": "initial population",
+  "thermal": "initial population",
+  "electrical": "initial population",
+  "environment": "initial qualitative population",
+  "manufacturing": "initial qualitative population",
+  "standards": "framework established",
+  "cost_availability_uses": "initial population",
+  "authoritatively_verified": 0,
+  "design_approved": 0,
+  "next": "expand heavy-alloy grades and tungsten carbide grade model"
+}

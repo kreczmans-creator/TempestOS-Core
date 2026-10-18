@@ -425,13 +425,15 @@ public sealed class ProjectTaskAcceptanceTests
             await GoToTasksAsync(host, window, project.Id);
             Assert.Single(window.GetLogicalDescendants().OfType<ProjectTasksView>().Distinct());
 
+            // Waits for the area that was opened, not for the Tasks surface to
+            // leave the logical tree: it never does (the project workspace
+            // keeps it), so the old "is null" wait always ran to its deadline
+            // and passed on the assertion after it (v0.23.0 CI board G-01).
             await host.ShellNavigator!.OpenProjectAsync(project.Id, ProjectArea.Documents);
-            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is null);
-            Assert.Single(window.GetLogicalDescendants().OfType<ProjectDocumentsView>().Distinct());
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<ProjectDocumentsView>().Distinct().Count() == 1);
 
             await host.ShellNavigator!.OpenProjectAsync(project.Id, ProjectArea.Requirements);
-            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is null);
-            Assert.Single(window.GetLogicalDescendants().OfType<ProjectRequirementsView>().Distinct());
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<ProjectRequirementsView>().Distinct().Count() == 1);
 
             // And navigating away and back keeps the project context.
             await GoToTasksAsync(host, window, project.Id);
@@ -610,14 +612,17 @@ public sealed class ProjectTaskAcceptanceTests
     /// waits for; it decides only *when* to assert, and every assertion at the
     /// call sites is unchanged.
     /// </remarks>
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
+    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null)
     {
         var deadline = DesktopTestHelpers.Deadline(2);
         while (true)
         {
             await window.RenderCurrentModuleAsync();
-            if (condition() || DateTime.UtcNow >= deadline)
+            if (condition())
                 return;
+            // v0.23.0 CI board G-01: a timed-out wait fails, naming what it waited for.
+            if (DateTime.UtcNow >= deadline)
+                Assert.Fail($"Timed out waiting for: {what} (last open phase: {window.LastOpenPhase})");
 
             await Task.Delay(10);
         }

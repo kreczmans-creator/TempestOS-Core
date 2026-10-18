@@ -1,0 +1,15 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "problem": "Convert a hazardous motion function into a fault-aware architecture.",
+  "workflow": [
+    "define hazardous function",
+    "identify credible initiating faults",
+    "perform FMEA/fault-tree reasoning",
+    "define safe state",
+    "identify detection and containment",
+    "assess common-cause vulnerabilities",
+    "verify protective behaviour",
+    "record residual risk"
+  ]
+}

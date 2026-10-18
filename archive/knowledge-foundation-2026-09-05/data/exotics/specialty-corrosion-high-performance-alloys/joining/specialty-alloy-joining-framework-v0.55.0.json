@@ -1,0 +1,50 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "methods": [
+    {
+      "method": "fusion welding",
+      "controls": [
+        "HAZ chemistry",
+        "sensitisation/precipitation",
+        "heat input",
+        "corrosion resistance",
+        "filler compatibility"
+      ]
+    },
+    {
+      "method": "brazing",
+      "controls": [
+        "filler chemistry",
+        "temperature",
+        "wetting",
+        "interfacial phases",
+        "corrosion compatibility"
+      ]
+    },
+    {
+      "method": "mechanical fastening",
+      "controls": [
+        "galvanic coupling",
+        "galling",
+        "preload",
+        "thermal expansion",
+        "crevice formation"
+      ]
+    },
+    {
+      "method": "diffusion bonding",
+      "controls": [
+        "surface cleanliness",
+        "temperature",
+        "pressure",
+        "time",
+        "interfacial microstructure"
+      ]
+    }
+  ],
+  "special_cases": {
+    "zirconium": "welding atmosphere and contamination control are critical",
+    "Nitinol": "joining must preserve transformation/functionality and corrosion performance"
+  }
+}

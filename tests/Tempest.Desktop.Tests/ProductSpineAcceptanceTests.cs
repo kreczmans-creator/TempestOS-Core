@@ -51,7 +51,7 @@ public sealed class ProductSpineAcceptanceTests
             var projectsArea = window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single();
             Assert.NotNull(projectsArea);
             projectsArea.SelectNode("Open");
-            var deadline = DateTime.UtcNow.AddSeconds(5);
+            var deadline = DesktopTestHelpers.Deadline(5);
             while (!window.GetLogicalDescendants().OfType<ProjectBrowserView>().Any() && DateTime.UtcNow < deadline)
             {
                 await Task.Delay(10);

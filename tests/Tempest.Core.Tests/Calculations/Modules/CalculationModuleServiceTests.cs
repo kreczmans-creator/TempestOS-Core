@@ -208,6 +208,85 @@ public class CalculationModuleServiceTests
     }
 
     [Fact]
+    public async Task ARowMayNameItselfAndChooseADirection_TheToleranceStackRunsFromTheForm()
+    {
+        var libraries = Build();
+        var fields = new List<CalculationFormField>
+        {
+            new("Contributors", Rows: ["Housing bore depth, Adds, 40 mm, 0.1 mm, 0 mm", "Bearing width, subtracts, 20 mm, 0 mm, -0.12 mm", "Spacer, Subtracts, 19.5 mm, 0.02 mm, -0.02 mm"]),
+            F("MinimumResult", "0.40", "mm"),
+            F("MaximumResult", "0.80", "mm"),
+            F("SigmaPerTolerance", "3"),
+        };
+
+        // No statistical basis typed: worst case only, and still a verdict.
+        var outcome = await RunAsync(libraries, ToleranceStackCalculationDefinition.Id, fields);
+
+        Assert.True(outcome.WasPerformed, outcome.Reason);
+        var run = outcome.Run!;
+        Assert.Equal("Meets its criteria", run.OutcomeSummary);
+        Assert.Contains(run.Results, r => r.Label == "Worst case minimum" && r.Display == "0.48 mm");
+        Assert.Contains(run.Results, r => r.Label == "Worst case maximum" && r.Display == "0.74 mm");
+        Assert.Contains(run.Results, r => r.Label == "Root sum square tolerance" && r.Display == "—");
+
+        // With a basis, the statistical figures appear; with no limits, no verdict.
+        fields.Add(F("StatisticalBasis", "capable, centred and independent"));
+        fields.RemoveAll(f => f.Name is "MinimumResult" or "MaximumResult");
+        var statistical = await RunAsync(libraries, ToleranceStackCalculationDefinition.Id, fields);
+        Assert.True(statistical.WasPerformed, statistical.Reason);
+        Assert.Equal("Computed", statistical.Run!.OutcomeSummary);
+        Assert.DoesNotContain(statistical.Run.Results, r => r.Label == "Outcome");
+        Assert.Contains(statistical.Run.Results, r => r.Label == "Root sum square tolerance" && r.Display == "0.0806226 mm");
+
+        // A direction that is not one of the choices is named, and nothing runs.
+        fields[0] = new("Contributors", Rows: ["Housing, Sideways, 40 mm, 0.1 mm, 0 mm"]);
+        var wrong = await RunAsync(libraries, ToleranceStackCalculationDefinition.Id, fields);
+        Assert.Equal(CalculationModuleRefusal.InputIncomplete, wrong.Refusal);
+        Assert.Contains(wrong.Problems, p => p.InputName == "Contributors" && p.Problem.Contains("'Sideways' is not one of Adds, Subtracts", StringComparison.Ordinal));
+
+        fields[0] = new("Contributors", Rows: ["Housing, 1, 40 mm, 0.1 mm, 0 mm"]);
+        var numeric = await RunAsync(libraries, ToleranceStackCalculationDefinition.Id, fields);
+        Assert.Equal(CalculationModuleRefusal.InputIncomplete, numeric.Refusal);
+    }
+
+    [Fact]
+    public async Task TheThermalModules_RunFromTheForm_WithTemperaturesInCelsius()
+    {
+        var libraries = Build();
+
+        var chain = await RunAsync(
+            libraries,
+            ThermalResistanceChainCalculationDefinition.Id,
+            [
+                F("PowerDissipation", "25", "W"),
+                F("AmbientTemperature", "40", "degC"),
+                new("Stages", Rows: ["Junction to case, 0.5 K/W", "Case to heat sink, 0.2 degC/W", "Heat sink to ambient, 1.8 K/W"]),
+                F("MaximumSourceTemperature", "125", "degC"),
+            ]);
+
+        Assert.True(chain.WasPerformed, chain.Reason);
+        Assert.Equal("Meets its criteria", chain.Run!.OutcomeSummary);
+        Assert.Contains(chain.Run.Results, r => r.Label == "Source temperature" && r.Display == "102.5 degC");
+        Assert.Contains(chain.Run.Results, r => r.Label == "Node temperatures" && r.Display == "102.5 degC; 90 degC; 85 degC");
+
+        var wall = await RunAsync(
+            libraries,
+            PlaneWallHeatTransferCalculationDefinition.Id,
+            [
+                F("HotSideTemperature", "20", "degC"),
+                F("HotSideFilmCoefficient", "10", "W/(m².K)"),
+                new("Layers", Rows: ["Glass, 8 mm, 0.78 W/(m.K)"]),
+                F("ColdSideFilmCoefficient", "40", "W/(m².K)"),
+                F("ColdSideTemperature", "-10", "degC"),
+                F("Area", "1.2", "m²"),
+            ]);
+
+        Assert.True(wall.WasPerformed, wall.Reason);
+        Assert.Equal("Computed", wall.Run!.OutcomeSummary);
+        Assert.Contains(wall.Run.Results, r => r.Label == "Heat flow" && r.Display == "266.161 W");
+    }
+
+    [Fact]
     public async Task AnOriginalDefinition_RunsFromTheSameRequest()
     {
         // Bolt shear: pi/4 x 20^2 x 2 planes x 400 MPa / 1.5 = 167 552 N.

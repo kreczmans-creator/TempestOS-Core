@@ -35,6 +35,19 @@ namespace Tempest.Desktop.Views;
 /// cited on its record. Nothing is offered that has not been released.
 /// </para>
 /// <para>
+/// <b>A reference diagram beside the inputs</b> (`PO-2`, `ADR-0158`): the
+/// calculation's own <see cref="Tempest.Core.Calculations.Modules.Diagrams.CalculationDiagramSpec"/>,
+/// drawn by <see cref="CalculationDiagramView"/> in a fixed panel, redrawn
+/// as any field changes; focusing a field highlights its shapes, and
+/// pointing at or clicking a shape marks or focuses its field. Not to
+/// scale, inputs only. Where the Inputs section is narrower than
+/// <see cref="DiagramBesideMinimumWidth"/> (a laptop window), the panel
+/// stacks above the inputs instead (the Product Owner, 2026-10-01), so no
+/// value box is squeezed and the drawing is in view without scrolling;
+/// the tab order still starts at the first input, since the panel holds
+/// no tab stop and stays after the inputs in the logical order.
+/// </para>
+/// <para>
 /// <b>This view decides nothing.</b> It collects text, raises intent and
 /// renders what comes back. A refusal is shown as the outcome the
 /// definition reported, not as an error; Re-run and Compare are the
@@ -66,6 +79,18 @@ public sealed class CalculationModulesView : UserControl
 
     /// <summary>Automation name of the right column (about, inputs, results, working, comparison).</summary>
     public const string RightColumnAutomationName = "Engineering calculators right column";
+
+    /// <summary>The fixed width of the reference diagram panel beside the inputs (`PO-2`).</summary>
+    public const double DiagramPanelWidth = 380;
+
+    /// <summary>
+    /// The narrowest Inputs section that keeps the diagram beside the
+    /// inputs: a 220 px label, a value box of 200 px or more, a 120 px
+    /// unit picker, the gap and the panel. Narrower, the panel stacks
+    /// above the inputs (the board's F1, a 1180 x 760 window; above, not
+    /// under, by the Product Owner's decision of 2026-10-01).
+    /// </summary>
+    public const double DiagramBesideMinimumWidth = 220 + 200 + 120 + DesignTokens.SpaceLg + DiagramPanelWidth;
 
     /// <summary>What the surface says before a calculation is chosen.</summary>
     public const string PickModuleGuidance = "Choose a calculation from the catalogue on the left. Its inputs, with their units and limits, appear here.";
@@ -99,11 +124,17 @@ public sealed class CalculationModulesView : UserControl
     private readonly Expander _workingSection;
     private readonly Expander _comparisonSection;
 
+    private readonly CalculationDiagramView _diagram = new() { Width = DiagramPanelWidth, VerticalAlignment = VerticalAlignment.Top, IsVisible = false };
     private readonly Dictionary<ReferenceLibrary, IReadOnlyList<ReleasedRecordOption>> _released = new();
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
     private bool _replacingPickers;
+    private string? _markedInput;
 
-    private sealed record FieldControls(CalculationInputDescriptor Descriptor, TextBox? Text, ComboBox? Unit, ComboBox? Choice, CheckBox? Flag, TextBox? Rows, ComboBox? Picker);
+    private sealed record FieldControls(CalculationInputDescriptor Descriptor, TextBox? Text, ComboBox? Unit, ComboBox? Choice, CheckBox? Flag, TextBox? Rows, ComboBox? Picker, Grid? Row = null)
+    {
+        /// <summary>Every control of the field that can take focus or change its value.</summary>
+        public IEnumerable<Control> Controls => new Control?[] { Text, Unit, Choice, Flag, Rows, Picker }.OfType<Control>();
+    }
 
     /// <summary>Initialises a new instance of the <see cref="CalculationModulesView"/> class.</summary>
     public CalculationModulesView()
@@ -130,6 +161,14 @@ public sealed class CalculationModulesView : UserControl
         {
             ClearResult();
             _status.Text = "Left the recorded calculation; the next Calculate records a new one.";
+        };
+
+        _diagram.InputActivated += name => FieldControl(name)?.Focus();
+        _diagram.InputHovered += MarkHoveredRow;
+        ActualThemeVariantChanged += (_, _) =>
+        {
+            if (_markedInput is not null)
+                MarkHoveredRow(_markedInput);
         };
 
         _resultsSection = Section("Results", BuildResultsPanel());
@@ -251,15 +290,16 @@ public sealed class CalculationModulesView : UserControl
     }
 
     /// <summary>The form as typed, one field per input the form shows; a reference field carries its picked record id.</summary>
-    public IReadOnlyList<CalculationFormField> ReadForm() =>
-        _fields.Values.Select(f => new CalculationFormField(
-            f.Descriptor.Name,
-            f.Text?.Text,
-            f.Unit?.SelectedItem as string,
-            f.Choice?.SelectedItem as string,
-            f.Flag?.IsChecked ?? false,
-            f.Rows is { } rows ? (rows.Text ?? string.Empty).Split('\n').Select(r => r.TrimEnd('\r')).ToList() : null,
-            (f.Picker?.SelectedItem as ReleasedRecordOption)?.RecordId)).ToList();
+    public IReadOnlyList<CalculationFormField> ReadForm() => _fields.Values.Select(Read).ToList();
+
+    /// <summary>The reference diagram beside the inputs (`PO-2`): drawn from the chosen calculation's own diagram, redrawn as the form changes.</summary>
+    public CalculationDiagramView Diagram => _diagram;
+
+    /// <summary>The form row of <paramref name="inputName"/> (its label and its controls), or <see langword="null"/>.</summary>
+    public Control? FieldRow(string inputName) => _fields.TryGetValue(inputName, out var f) ? f.Row : null;
+
+    /// <summary>Whether the row of <paramref name="inputName"/> is marked because the pointer is on its shape in the diagram.</summary>
+    public bool IsRowMarked(string inputName) => _fields.TryGetValue(inputName, out var f) && f.Row?.Background is not null;
 
     /// <summary>Sets one field of the form, as a test or a fill would.</summary>
     /// <exception cref="ArgumentException">The form shows no input named <paramref name="inputName"/>.</exception>
@@ -433,10 +473,95 @@ public sealed class CalculationModulesView : UserControl
         _specification.Text = module.SpecificationPath is { } path ? $"Specification: {path}" : "Specification: the definition's own metadata (this calculation predates the written specifications).";
 
         foreach (var input in module.Inputs)
-            _form.Children.Add(BuildRow(input));
+        {
+            var row = BuildRow(input);
+            _form.Children.Add(row);
+            if (_fields.TryGetValue(input.Name, out var field))
+                _fields[input.Name] = Bind(field with { Row = row as Grid });
+        }
 
         _calculateButton.IsEnabled = true;
+        _diagram.IsVisible = true;
+        _diagram.Show(module, name => _fields.TryGetValue(name, out var f) ? Read(f) : null);
     }
+
+    // ---- The reference diagram, bound both ways ----
+
+    private FieldControls Bind(FieldControls field)
+    {
+        var name = field.Descriptor.Name;
+        foreach (var control in field.Controls)
+        {
+            control.GotFocus += (_, _) => _diagram.Highlight(name);
+            control.LostFocus += (_, _) =>
+            {
+                if (string.Equals(_diagram.HighlightedInput, name, StringComparison.Ordinal))
+                    _diagram.Highlight(null);
+            };
+
+            switch (control)
+            {
+                case TextBox box:
+                    box.PropertyChanged += (_, e) =>
+                    {
+                        if (e.Property == TextBox.TextProperty)
+                            _diagram.Refresh();
+                    };
+                    break;
+                case ComboBox combo:
+                    combo.SelectionChanged += (_, _) => _diagram.Refresh();
+                    break;
+                case CheckBox check:
+                    check.IsCheckedChanged += (_, _) => _diagram.Refresh();
+                    break;
+            }
+        }
+
+        return field;
+    }
+
+    /// <summary>
+    /// Marks the row of the input whose shape the pointer is on: the accent
+    /// wash behind it and its label bold in the focus-ring colour (a wash
+    /// alone measured about 1.1:1, barely visible). Re-applied on a theme
+    /// change, so a marked row never keeps the old theme's brushes.
+    /// </summary>
+    private void MarkHoveredRow(string? inputName)
+    {
+        _markedInput = inputName;
+        var wash = ThemeReactiveBrush.Resolve(this, ApplicationPalette.AccentPanelBackgroundBrushKey) ?? Brushes.LightBlue;
+        var ring = ThemeReactiveBrush.Resolve(this, ApplicationPalette.FocusRingBrushKey) ?? Brushes.RoyalBlue;
+
+        foreach (var field in _fields.Values.Where(f => f.Row is not null))
+        {
+            var marked = field.Descriptor.Name == inputName;
+            field.Row!.Background = marked ? wash : null;
+            if (field.Row.Children.OfType<TextBlock>().FirstOrDefault() is not { } label)
+                continue;
+
+            if (marked)
+            {
+                label.Foreground = ring;
+                label.FontWeight = FontWeight.Bold;
+                label.Opacity = 1;
+            }
+            else
+            {
+                label.ClearValue(TextBlock.ForegroundProperty);
+                label.FontWeight = FontWeight.Normal;
+                label.Opacity = 0.8;
+            }
+        }
+    }
+
+    private static CalculationFormField Read(FieldControls f) => new(
+        f.Descriptor.Name,
+        f.Text?.Text,
+        f.Unit?.SelectedItem as string,
+        f.Choice?.SelectedItem as string,
+        f.Flag?.IsChecked ?? false,
+        f.Rows is { } rows ? (rows.Text ?? string.Empty).Split('\n').Select(r => r.TrimEnd('\r')).ToList() : null,
+        (f.Picker?.SelectedItem as ReleasedRecordOption)?.RecordId);
 
     private Control BuildRow(CalculationInputDescriptor input)
     {
@@ -618,7 +743,13 @@ public sealed class CalculationModulesView : UserControl
         inputs.Children.Add(_calculateButton);
         inputs.Children.Add(_problems);
         inputs.Children.Add(_status);
-        right.Children.Add(Section("Inputs", inputs));
+
+        // The reference diagram sits in a fixed panel beside the inputs (`PO-2`), or above them where that would squeeze them.
+        // The inputs stay the first child, so the tab order runs through them whichever way the panel is placed.
+        var inputsBeside = new BesideOrAbovePanel(DiagramBesideMinimumWidth, DesignTokens.SpaceLg);
+        inputsBeside.Children.Add(inputs);
+        inputsBeside.Children.Add(_diagram);
+        right.Children.Add(Section("Inputs", inputsBeside));
 
         right.Children.Add(_resultsSection);
         right.Children.Add(_workingSection);
@@ -764,4 +895,56 @@ public sealed class CalculationModulesView : UserControl
         MinHeight = DesignTokens.MinControlSize,
         HorizontalAlignment = HorizontalAlignment.Stretch,
     };
+    /// <summary>
+    /// Two children: the first fills the width, the second (a fixed-width
+    /// panel) sits beside it on the right while the width allows at least
+    /// <c>minimumBeside</c>, and above it otherwise. Only the placement
+    /// changes: the first child stays first in the logical (tab) order.
+    /// </summary>
+    private sealed class BesideOrAbovePanel(double minimumBeside, double gap) : Panel
+    {
+        private bool Beside(double width) => double.IsInfinity(width) || width >= minimumBeside;
+
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            if (Children.Count != 2)
+                return base.MeasureOverride(availableSize);
+
+            var (main, side) = (Children[0], Children[1]);
+            if (Beside(availableSize.Width))
+            {
+                side.Measure(availableSize);
+                var mainWidth = Math.Max(0, availableSize.Width - side.DesiredSize.Width - gap);
+                main.Measure(availableSize.WithWidth(mainWidth));
+                return new Size(
+                    double.IsInfinity(availableSize.Width) ? main.DesiredSize.Width + gap + side.DesiredSize.Width : availableSize.Width,
+                    Math.Max(main.DesiredSize.Height, side.DesiredSize.Height));
+            }
+
+            main.Measure(availableSize);
+            side.Measure(availableSize);
+            return new Size(Math.Max(main.DesiredSize.Width, side.DesiredSize.Width), main.DesiredSize.Height + gap + side.DesiredSize.Height);
+        }
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            if (Children.Count != 2)
+                return base.ArrangeOverride(finalSize);
+
+            var (main, side) = (Children[0], Children[1]);
+            var sideWidth = Math.Min(side.DesiredSize.Width, finalSize.Width);
+            if (Beside(finalSize.Width))
+            {
+                main.Arrange(new Rect(0, 0, Math.Max(0, finalSize.Width - sideWidth - gap), finalSize.Height));
+                side.Arrange(new Rect(finalSize.Width - sideWidth, 0, sideWidth, side.DesiredSize.Height));
+            }
+            else
+            {
+                side.Arrange(new Rect(0, 0, sideWidth, side.DesiredSize.Height));
+                main.Arrange(new Rect(0, side.DesiredSize.Height + gap, finalSize.Width, main.DesiredSize.Height));
+            }
+
+            return finalSize;
+        }
+    }
 }

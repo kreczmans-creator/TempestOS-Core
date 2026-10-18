@@ -1,0 +1,32 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "mechanisms": [
+    "abrasive wear",
+    "adhesive wear",
+    "erosive wear",
+    "cavitation",
+    "galling/sliding contact",
+    "high-temperature wear"
+  ],
+  "selection_factors": [
+    "contact pressure",
+    "sliding speed",
+    "counterface material",
+    "temperature",
+    "lubrication",
+    "particle contamination",
+    "impact loading",
+    "surface preparation"
+  ],
+  "hardfacing_controls": [
+    "deposition process",
+    "dilution",
+    "layer thickness",
+    "preheat/interpass control",
+    "cracking",
+    "machining allowance",
+    "substrate metallurgy"
+  ],
+  "rule": "Wear resistance is a tribological system property, not a scalar material property."
+}

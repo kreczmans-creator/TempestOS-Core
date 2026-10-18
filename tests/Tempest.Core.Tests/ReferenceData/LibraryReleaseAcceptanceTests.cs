@@ -65,7 +65,9 @@ public class LibraryReleaseAcceptanceTests
 
         await RunAgainstRunningHostAsync(temp.Path, async host =>
         {
-            var seeder = (ReferenceSeedService)host.Services!.GetService(typeof(ReferenceSeedService))!;
+            // This test exercises a person's own review of an unreleased record, so it
+            // seeds without the host's release-at-seed policy (PO decision 2026-10-01).
+            var seeder = new ReferenceSeedService();
             var materials = (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog))!;
             var fasteners = (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog))!;
             var bearings = (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog))!;
@@ -145,7 +147,9 @@ public class LibraryReleaseAcceptanceTests
 
         await RunAgainstRunningHostAsync(temp.Path, async host =>
         {
-            var seeder = (ReferenceSeedService)host.Services!.GetService(typeof(ReferenceSeedService))!;
+            // This test exercises a person's own review of an unreleased record, so it
+            // seeds without the host's release-at-seed policy (PO decision 2026-10-01).
+            var seeder = new ReferenceSeedService();
             var standards = (IStandardCatalog)host.Services!.GetService(typeof(IStandardCatalog))!;
             await seeder.ApplyAsync(standards, StandardSeed.Instance);
 

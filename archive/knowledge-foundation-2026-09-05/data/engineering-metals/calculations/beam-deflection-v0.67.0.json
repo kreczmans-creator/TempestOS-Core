@@ -1,0 +1,15 @@
+{
+  "version": "0.67.0",
+  "equations": [
+    "δ depends on load, span, E and second moment I"
+  ],
+  "purpose": "Screen elastic deflection of a metallic beam/bracket.",
+  "checks": [
+    "boundary conditions",
+    "load case",
+    "stiffness",
+    "buckling",
+    "fatigue"
+  ],
+  "warning": "Screening relationship only; application-specific design requires validated material/joint data and appropriate standards."
+}

@@ -1,0 +1,19 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "purpose": "Screen harmonic forced response.",
+  "inputs": [
+    "mass",
+    "stiffness",
+    "damping",
+    "forcing amplitude",
+    "forcing frequency"
+  ],
+  "checks": [
+    "resonance",
+    "phase",
+    "dynamic amplification",
+    "stress amplitude",
+    "fatigue"
+  ]
+}

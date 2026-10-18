@@ -1,0 +1,808 @@
+- id: MAT-STEEL-S275JR
+  family: steels
+  designation: S275JR
+  aliases:
+  - '1.0044'
+  mechanical:
+    density_kg_m3: 7850
+    youngs_modulus_GPa: 210
+    poissons_ratio: 0.3
+    yield_strength_MPa: 275
+    uts_MPa_range:
+    - 410
+    - 560
+    elongation_pct_min: 23
+  electrical:
+    resistivity_ohm_m_typical: 1.5e-07
+  cost_tier: cheap
+  availability: very_high
+  uses:
+  - fabrications
+  - frames
+  - brackets
+  - general structures
+  standards:
+  - EN 10025-2
+  data_status: candidate_reference
+  source_note: Typical room-temperature engineering values; verify against the specified
+    product form/thickness and current material certificate before design-authoritative
+    use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-S355J2
+  family: steels
+  designation: S355J2
+  aliases:
+  - '1.0577'
+  mechanical:
+    density_kg_m3: 7850
+    youngs_modulus_GPa: 210
+    poissons_ratio: 0.3
+    yield_strength_MPa: 355
+    uts_MPa_range:
+    - 470
+    - 630
+    elongation_pct_min: 22
+  electrical:
+    resistivity_ohm_m_typical: 1.5e-07
+  cost_tier: cheap
+  availability: very_high
+  uses:
+  - welded structures
+  - machine frames
+  - fabrications
+  - baseplates
+  standards:
+  - EN 10025-2
+  data_status: candidate_reference
+  source_note: Typical room-temperature values; yield strength depends on product
+    thickness.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-C45
+  family: steels
+  designation: C45
+  aliases:
+  - '1.0503'
+  - '1.1191'
+  mechanical:
+    density_kg_m3: 7850
+    youngs_modulus_GPa: 210
+    poissons_ratio: 0.3
+    yield_strength_MPa_typical: 370
+    uts_MPa_range:
+    - 570
+    - 700
+    elongation_pct_typical: 16
+  electrical:
+    resistivity_ohm_m_typical: 1.6e-07
+  cost_tier: cheap
+  availability: high
+  uses:
+  - shafts
+  - pins
+  - axles
+  - machined components
+  - general mechanical parts
+  standards:
+  - EN 10083-2
+  - ISO 683-1
+  data_status: candidate_reference
+  source_note: Heat treatment and section size materially affect strength.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-42CRMO4
+  family: steels
+  designation: 42CrMo4
+  aliases:
+  - '1.7225'
+  mechanical:
+    density_kg_m3: 7850
+    youngs_modulus_GPa: 210
+    poissons_ratio: 0.3
+    yield_strength_MPa_typical: 650
+    uts_MPa_range:
+    - 850
+    - 1000
+    elongation_pct_typical: 13
+  electrical:
+    resistivity_ohm_m_typical: 2.0e-07
+  cost_tier: medium
+  availability: high
+  uses:
+  - shafts
+  - high-load pins
+  - gears
+  - high-strength machined parts
+  standards:
+  - EN 10083-3
+  - ISO 683-1
+  data_status: candidate_reference
+  source_note: Values are representative only; strength depends strongly on heat treatment
+    and section.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-4140
+  family: steels
+  designation: AISI/SAE 4140
+  aliases:
+  - UNS G41400
+  mechanical:
+    density_kg_m3: 7850
+    youngs_modulus_GPa: 205
+    poissons_ratio: 0.29
+    yield_strength_MPa_typical: 655
+    uts_MPa_range:
+    - 850
+    - 1000
+    elongation_pct_typical: 15
+  electrical:
+    resistivity_ohm_m_typical: 2.2e-07
+  cost_tier: medium
+  availability: high
+  uses:
+  - shafts
+  - gears
+  - studs
+  - high-strength machinery
+  standards:
+  - ASTM A29/A29M
+  - SAE J404
+  data_status: candidate_reference
+  source_note: Condition/heat treatment and product form must be specified.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-SS-304
+  family: stainless_steels
+  designation: '304'
+  aliases:
+  - '1.4301'
+  - X5CrNi18-10
+  mechanical:
+    density_kg_m3: 8000
+    youngs_modulus_GPa: 193
+    poissons_ratio: 0.29
+    yield_strength_MPa_typical: 215
+    uts_MPa_typical: 505
+    elongation_pct_typical: 70
+  electrical:
+    resistivity_ohm_m_typical: 7.2e-07
+  cost_tier: medium
+  availability: very_high
+  uses:
+  - fabrications
+  - enclosures
+  - food equipment
+  - general corrosion-resistant parts
+  standards:
+  - EN 10088-2
+  - ASTM A240/A240M
+  data_status: candidate_reference
+  source_note: Typical annealed values; cold work changes strength substantially.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-SS-316L
+  family: stainless_steels
+  designation: 316L
+  aliases:
+  - '1.4404'
+  - X2CrNiMo17-12-2
+  mechanical:
+    density_kg_m3: 8000
+    youngs_modulus_GPa: 193
+    poissons_ratio: 0.3
+    yield_strength_MPa_typical: 170
+    uts_MPa_typical: 485
+    elongation_pct_typical: 40
+  electrical:
+    resistivity_ohm_m_typical: 7.4e-07
+  cost_tier: medium_expensive
+  availability: high
+  uses:
+  - corrosion-resistant fabrications
+  - chemical equipment
+  - marine-adjacent applications
+  - enclosures
+  standards:
+  - EN 10088-2
+  - ASTM A240/A240M
+  data_status: candidate_reference
+  source_note: Typical annealed values; service environment and product form matter.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-SS-17-4PH
+  family: stainless_steels
+  designation: 17-4 PH
+  aliases:
+  - '1.4542'
+  - UNS S17400
+  mechanical:
+    density_kg_m3: 7800
+    youngs_modulus_GPa: 200
+    poissons_ratio: 0.29
+    yield_strength_MPa_range:
+    - 450
+    - 1170
+    uts_MPa_range:
+    - 790
+    - 1310
+    elongation_pct_range:
+    - 10
+    - 17
+  electrical:
+    resistivity_ohm_m_typical: 8.0e-07
+  cost_tier: expensive
+  availability: medium
+  uses:
+  - high-strength corrosion-resistant components
+  - shafts
+  - aerospace fittings
+  - valves
+  standards:
+  - EN 10088-3
+  - ASTM A564/A564M
+  data_status: candidate_reference
+  source_note: Strength is heat-treatment-condition dependent; H900/H1025 etc. must
+    be explicit.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-6061-T6
+  family: aluminiums
+  designation: 6061-T6
+  aliases:
+  - AA6061-T6
+  - UNS A96061
+  mechanical:
+    density_kg_m3: 2700
+    youngs_modulus_GPa: 68.9
+    poissons_ratio: 0.33
+    yield_strength_MPa: 276
+    uts_MPa: 310
+    elongation_pct_typical: 12
+  electrical:
+    resistivity_ohm_m: 3.99e-08
+    conductivity_MSI_per_m_typical: 43
+  cost_tier: cheap
+  availability: very_high
+  uses:
+  - machined parts
+  - frames
+  - brackets
+  - extrusions
+  - fixtures
+  - electrical hardware
+  standards:
+  - ASTM B209
+  - ASTM B221
+  - EN 573-3
+  - EN 755-2
+  data_status: candidate_reference
+  source_note: ASM/MatWeb reports typical AA values and notes wide availability; property
+    values are not design-authoritative without product/source verification.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-6082-T6
+  family: aluminiums
+  designation: 6082-T6
+  aliases:
+  - EN AW-6082-T6
+  mechanical:
+    density_kg_m3: 2700
+    youngs_modulus_GPa: 69
+    poissons_ratio: 0.33
+    yield_strength_MPa_typical: 250
+    uts_MPa_typical: 310
+    elongation_pct_typical: 10
+  electrical:
+    resistivity_ohm_m_typical: 4.0e-08
+  cost_tier: cheap
+  availability: very_high
+  uses:
+  - machined components
+  - structural extrusions
+  - plates
+  - fabrications
+  standards:
+  - EN 573-3
+  - EN 755-2
+  - EN 485-2
+  data_status: candidate_reference
+  source_note: Temper and product form must be retained.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-7075-T6
+  family: aluminiums
+  designation: 7075-T6
+  aliases:
+  - AA7075-T6
+  - UNS A97075
+  mechanical:
+    density_kg_m3: 2810
+    youngs_modulus_GPa: 71.7
+    poissons_ratio: 0.33
+    yield_strength_MPa: 503
+    uts_MPa: 572
+    elongation_pct: 11
+  electrical:
+    resistivity_ohm_m: 5.2e-08
+  cost_tier: medium_expensive
+  availability: high
+  uses:
+  - high-strength machined parts
+  - aerospace structures
+  - gears
+  - shafts
+  - fixtures
+  standards:
+  - ASTM B209
+  - ASTM B221
+  - AMS 4045
+  data_status: candidate_reference
+  source_note: ASM/MatWeb reports typical AA values; corrosion/stress-corrosion behaviour
+    must be considered.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-2024-T3
+  family: aluminiums
+  designation: 2024-T3
+  aliases:
+  - AA2024-T3
+  - UNS A92024
+  mechanical:
+    density_kg_m3: 2780
+    youngs_modulus_GPa: 73.1
+    poissons_ratio: 0.33
+    yield_strength_MPa_typical: 345
+    uts_MPa_typical: 485
+    elongation_pct_typical: 18
+  electrical:
+    resistivity_ohm_m_typical: 5.1e-08
+  cost_tier: medium
+  availability: high
+  uses:
+  - aerospace sheet
+  - high-strength panels
+  - machined aerospace components
+  standards:
+  - ASTM B209
+  - AMS 4037
+  data_status: candidate_reference
+  source_note: T3 temper and product form are essential to interpretation.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-5083-H111
+  family: aluminiums
+  designation: 5083-H111
+  aliases:
+  - EN AW-5083-H111
+  mechanical:
+    density_kg_m3: 2660
+    youngs_modulus_GPa: 70.3
+    poissons_ratio: 0.33
+    yield_strength_MPa_typical: 125
+    uts_MPa_typical: 275
+    elongation_pct_typical: 12
+  electrical:
+    resistivity_ohm_m_typical: 5.8e-08
+  cost_tier: cheap
+  availability: high
+  uses:
+  - welded fabrications
+  - marine structures
+  - pressure vessels where permitted
+  - frames
+  standards:
+  - EN 485-2
+  - EN 573-3
+  - ASTM B209
+  data_status: candidate_reference
+  source_note: Welded-condition properties may differ from parent material.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-TI-CP-GR2
+  family: titanium
+  designation: Titanium Grade 2
+  aliases:
+  - UNS R50400
+  mechanical:
+    density_kg_m3: 4510
+    youngs_modulus_GPa: 105
+    poissons_ratio: 0.34
+    yield_strength_MPa_typical: 275
+    uts_MPa_typical: 345
+    elongation_pct_typical: 20
+  electrical:
+    resistivity_ohm_m_typical: 4.2e-07
+  cost_tier: expensive
+  availability: medium
+  uses:
+  - corrosion-resistant components
+  - chemical equipment
+  - marine components
+  standards:
+  - ASTM B265
+  - ASTM B348
+  data_status: candidate_reference
+  source_note: Grade and product form must be explicit.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-TI-6AL4V
+  family: titanium
+  designation: Ti-6Al-4V / Grade 5
+  aliases:
+  - UNS R56400
+  mechanical:
+    density_kg_m3: 4430
+    youngs_modulus_GPa: 114
+    poissons_ratio: 0.33
+    yield_strength_MPa: 830
+    uts_MPa_typical: 895
+    elongation_pct: 10
+  electrical:
+    resistivity_ohm_m: 1.78e-06
+  cost_tier: expensive
+  availability: high
+  uses:
+  - aerospace
+  - high-performance mechanical parts
+  - medical components
+  - lightweight high-strength structures
+  standards:
+  - ASTM B265
+  - ASTM B348
+  - AMS 4928
+  data_status: candidate_reference
+  source_note: MatWeb example is annealed bar; heat treatment and product form change
+    properties.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-MG-AZ31B
+  family: magnesium
+  designation: AZ31B
+  aliases:
+  - UNS M11311
+  mechanical:
+    density_kg_m3: 1770
+    youngs_modulus_GPa: 45
+    poissons_ratio: 0.35
+    yield_strength_MPa_typical: 200
+    uts_MPa_typical: 260
+    elongation_pct_typical: 15
+  electrical:
+    resistivity_ohm_m_typical: 9.0e-08
+  cost_tier: medium
+  availability: medium
+  uses:
+  - lightweight housings
+  - aerospace/transport structures
+  - machined prototypes
+  standards:
+  - ASTM B107/B107M
+  data_status: candidate_reference
+  source_note: Extruded AZ31B properties are strongly direction/product dependent.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-MG-AZ91D
+  family: magnesium
+  designation: AZ91D
+  aliases:
+  - ASTM/UNS family alloy
+  mechanical:
+    density_kg_m3: 1810
+    youngs_modulus_GPa: 45
+    poissons_ratio: 0.35
+    yield_strength_MPa_typical: 160
+    uts_MPa_typical: 230
+    elongation_pct_typical: 3
+  electrical:
+    resistivity_ohm_m_typical: 1.0e-07
+  cost_tier: medium
+  availability: medium
+  uses:
+  - die-cast housings
+  - covers
+  - portable equipment
+  - automotive components
+  standards:
+  - ASTM B93/B93M
+  data_status: candidate_reference
+  source_note: Cast alloy; casting process and section size affect properties.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-W-W1
+  family: tungsten
+  designation: Commercially pure tungsten
+  aliases:
+  - W
+  - W-1 class; grade varies by supplier
+  mechanical:
+    density_kg_m3: 19300
+    youngs_modulus_GPa: 400
+    poissons_ratio: 0.28
+    yield_strength_MPa_typical: 550
+    uts_MPa_range:
+    - 550
+    - 1200
+    elongation_pct_typical: 2
+  electrical:
+    resistivity_ohm_m_typical: 5.6e-08
+  cost_tier: expensive
+  availability: low
+  uses:
+  - high-temperature tooling
+  - electrodes
+  - radiation shielding
+  - counterweights
+  - thermal applications
+  standards:
+  - ASTM B760
+  data_status: candidate_reference
+  source_note: Tungsten properties are highly sensitive to purity, processing, grain
+    structure and temperature; use product-specific data for design.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-CU-C11000
+  family: copper_alloys
+  designation: C11000
+  aliases:
+  - ETP copper
+  - UNS C11000
+  mechanical:
+    density_kg_m3: 8890
+    youngs_modulus_GPa: 117
+    poissons_ratio: 0.34
+    yield_strength_MPa_typical: 70
+    uts_MPa_typical: 220
+    elongation_pct_typical: 45
+  electrical:
+    resistivity_ohm_m_typical: 1.72e-08
+    conductivity_IACS_pct_typical: 100
+  cost_tier: medium
+  availability: very_high
+  uses:
+  - busbars
+  - electrical conductors
+  - heat exchangers
+  - machined electrical parts
+  standards:
+  - ASTM B152/B152M
+  - ASTM B187/B187M
+  data_status: candidate_reference
+  source_note: Temper changes mechanical properties; conductivity depends on condition.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-PEEK
+  family: engineering_polymers
+  designation: PEEK unfilled
+  aliases:
+  - polyether ether ketone
+  mechanical:
+    density_kg_m3: 1320
+    youngs_modulus_GPa_typical: 3.6
+    poissons_ratio_typical: 0.38
+    yield_strength_MPa_typical: 100
+    uts_MPa_typical: 100
+    elongation_pct_typical: 20
+  electrical:
+    resistivity_ohm_m_typical: 10000000000000.0
+  cost_tier: very_expensive
+  availability: medium
+  uses:
+  - high-temperature components
+  - electrical insulation
+  - bearings
+  - seals
+  - aerospace/chemical components
+  standards:
+  - ISO 1874 family
+  data_status: candidate_reference
+  source_note: Polymer properties vary substantially with grade, crystallinity, temperature,
+    humidity and processing.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-PA6
+  family: engineering_polymers
+  designation: PA6 unfilled
+  aliases:
+  - nylon 6
+  mechanical:
+    density_kg_m3_typical: 1140
+    youngs_modulus_GPa_typical: 2.8
+    poissons_ratio_typical: 0.39
+    yield_strength_MPa_typical: 70
+    uts_MPa_typical: 75
+    elongation_pct_typical: 40
+  electrical:
+    resistivity_ohm_m_range:
+    - 40000000000.0
+    - 10000000000000.0
+  cost_tier: cheap
+  availability: very_high
+  uses:
+  - gears
+  - bushes
+  - rollers
+  - covers
+  - machine guards
+  - general engineering components
+  standards:
+  - ISO 1874 family
+  - ISO 16396 family
+  data_status: candidate_reference
+  source_note: MatWeb data demonstrates very wide electrical/mechanical variation
+    across nylon grades and conditioning; moisture conditioning must be captured.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-PA66-GF30
+  family: engineering_polymers
+  designation: PA66 GF30
+  aliases:
+  - 30% glass-filled polyamide 66
+  mechanical:
+    density_kg_m3_typical: 1360
+    youngs_modulus_GPa_typical: 8.5
+    poissons_ratio_typical: 0.35
+    yield_strength_MPa_typical: 150
+    uts_MPa_typical: 170
+    elongation_pct_typical: 3
+  electrical:
+    resistivity_ohm_m_typical: 1000000000000.0
+  cost_tier: medium
+  availability: high
+  uses:
+  - structural housings
+  - brackets
+  - automotive components
+  - electromechanical parts
+  standards:
+  - ISO 1874 family
+  - ISO 16396 family
+  data_status: candidate_reference
+  source_note: Glass orientation, moisture and processing strongly affect anisotropy
+    and stiffness.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-POM
+  family: engineering_polymers
+  designation: POM unfilled
+  aliases:
+  - acetal
+  - polyoxymethylene
+  mechanical:
+    density_kg_m3_typical: 1410
+    youngs_modulus_GPa_typical: 3.0
+    poissons_ratio_typical: 0.35
+    yield_strength_MPa_typical: 65
+    uts_MPa_typical: 65
+    elongation_pct_typical: 20
+  electrical:
+    resistivity_ohm_m_typical: 10000000000000.0
+  cost_tier: cheap
+  availability: very_high
+  uses:
+  - gears
+  - low-friction parts
+  - precision machined components
+  - bushes
+  - sliding components
+  standards:
+  - ISO 9988 family
+  data_status: candidate_reference
+  source_note: Grade and processing route matter; creep and temperature dependence
+    are important in structural use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-ABS
+  family: general_polymers
+  designation: ABS
+  aliases:
+  - acrylonitrile butadiene styrene
+  mechanical:
+    density_kg_m3_typical: 1040
+    youngs_modulus_GPa_typical: 2.2
+    poissons_ratio_typical: 0.35
+    yield_strength_MPa_typical: 40
+    uts_MPa_typical: 45
+    elongation_pct_typical: 10
+  electrical:
+    resistivity_ohm_m_typical: 10000000000000.0
+  cost_tier: cheap
+  availability: very_high
+  uses:
+  - covers
+  - enclosures
+  - consumer products
+  - prototypes
+  - 3D printing
+  standards:
+  - ISO 2580 family
+  data_status: candidate_reference
+  source_note: Grade, impact modifier, processing and temperature materially affect
+    properties.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-PP
+  family: general_polymers
+  designation: Polypropylene (PP)
+  aliases:
+  - PP
+  mechanical:
+    density_kg_m3_typical: 905
+    youngs_modulus_GPa_typical: 1.5
+    poissons_ratio_typical: 0.42
+    yield_strength_MPa_typical: 30
+    uts_MPa_typical: 35
+    elongation_pct_typical: 200
+  electrical:
+    resistivity_ohm_m_typical: 100000000000000.0
+  cost_tier: very_cheap
+  availability: very_high
+  uses:
+  - containers
+  - covers
+  - living hinges
+  - ducting
+  - chemical-resistant parts
+  standards:
+  - ISO 1873 family
+  data_status: candidate_reference
+  source_note: Creep and temperature dependence are dominant design considerations.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-PE-HD
+  family: general_polymers
+  designation: HDPE
+  aliases:
+  - high-density polyethylene
+  - PE-HD
+  mechanical:
+    density_kg_m3_typical: 950
+    youngs_modulus_GPa_typical: 1.0
+    poissons_ratio_typical: 0.46
+    yield_strength_MPa_typical: 25
+    uts_MPa_typical: 30
+    elongation_pct_typical: 500
+  electrical:
+    resistivity_ohm_m_typical: 1000000000000000.0
+  cost_tier: very_cheap
+  availability: very_high
+  uses:
+  - liners
+  - tanks
+  - ducts
+  - wear strips
+  - chemical handling components
+  standards:
+  - ISO 4427 family
+  - ISO 1872 family
+  data_status: candidate_reference
+  source_note: Very strong time/temperature dependence; long-term creep data is required
+    for structural design.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true

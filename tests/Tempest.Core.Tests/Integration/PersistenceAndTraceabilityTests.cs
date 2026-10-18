@@ -44,7 +44,9 @@ public class PersistenceAndTraceabilityTests
 
     private static async Task SeedScenarioAsync(ITempestHost host)
     {
-        var seeder = (ReferenceSeedService)host.Services!.GetService(typeof(ReferenceSeedService))!;
+        // This test exercises a person's own review of an unreleased record, so it
+        // seeds without the host's release-at-seed policy (PO decision 2026-10-01).
+        var seeder = new ReferenceSeedService();
         var standards = (IStandardCatalog)host.Services!.GetService(typeof(IStandardCatalog))!;
         var materials = (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog))!;
         var templates = (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog))!;
@@ -301,7 +303,7 @@ public class PersistenceAndTraceabilityTests
 
             var after = await register.ListLibraryAsync("Materials");
 
-            Assert.Equal(6, after.RecordCount);
+            Assert.Equal(MaterialSeed.Instance.Records.Count, after.RecordCount);
             Assert.Equal(0, after.ReleasedCount);
 
             // The distinction the whole lifecycle exists to protect: this

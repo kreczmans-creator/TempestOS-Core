@@ -93,6 +93,25 @@ public sealed record PostalAddress(
 }
 
 /// <summary>
+/// What an organisation is to the business in the Customers &amp; Suppliers
+/// list (Product Owner decision 2026-10-01 §2): customers and suppliers
+/// share one organisation model and one level of detail, told apart only
+/// by this. Stored as <see cref="Organisation.Roles"/> — never as a second
+/// field — so a record written before this decision reads correctly.
+/// </summary>
+public enum OrganisationTradingType
+{
+    /// <summary>Somebody the business sells to.</summary>
+    Customer,
+
+    /// <summary>Somebody the business buys from.</summary>
+    Supplier,
+
+    /// <summary>Both at once.</summary>
+    Both
+}
+
+/// <summary>
 /// An organisation the business deals with.
 /// </summary>
 /// <remarks>
@@ -152,6 +171,30 @@ public sealed record Organisation
     /// <summary>Its website. <see langword="null"/> where unrecorded.</summary>
     public string? Website { get; init; }
 
+    /// <summary>
+    /// Its unique five-character <b>customer code</b> (Product Owner decision
+    /// 2026-10-01 §3, `ADR-0156`) — upper-case A–Z or digits 0–9, the <c>CUSTOMER</c> in
+    /// every project-centric identifier (<c>ACME1-BRIDG1</c>) and document
+    /// number (<c>ACME1-BRIDG1-Q-001</c>). Suggested from <see cref="Name"/>
+    /// by <see cref="Tempest.Core.Projects.ProjectNumbering.SuggestCustomerCode"/>,
+    /// editable, and unique across the library
+    /// (<see cref="IOrganisationCatalog.FindByCustomerCodeAsync"/>).
+    /// <see langword="null"/> for an organisation recorded before this
+    /// decision — a project created for it falls back to the old
+    /// <c>P-NNNN</c> identifier until a code is set.
+    /// </summary>
+    /// <remarks>
+    /// Changing it later never renumbers anything: a project's identifier,
+    /// and every number generated inside it, are frozen at creation.
+    /// </remarks>
+    public string? CustomerCode { get; init; }
+
+    /// <summary>Its main telephone number (Product Owner decision 2026-10-01 §1). <see langword="null"/> where unrecorded.</summary>
+    public string? TelephoneNumber { get; init; }
+
+    /// <summary>Its main e-mail address (Product Owner decision 2026-10-01 §1). <see langword="null"/> where unrecorded.</summary>
+    public string? EmailAddress { get; init; }
+
     /// <summary>What it does, in the organisation's own words. <see langword="null"/> where nothing was written.</summary>
     public string? Sector { get; init; }
 
@@ -188,6 +231,40 @@ public sealed record Organisation
 
     /// <summary>Whether the business buys from this organisation as well as selling to it.</summary>
     public bool IsAlsoASupplier => SupplierRecordId is not null || Roles.Contains(PartyKind.Supplier);
+
+    /// <summary>
+    /// Customer, Supplier or Both, read from <see cref="Roles"/> (Product
+    /// Owner decision 2026-10-01 §2). An organisation stating neither role
+    /// reads as <see cref="OrganisationTradingType.Customer"/> — every
+    /// organisation recorded before this decision was registered as a
+    /// project's client.
+    /// </summary>
+    public OrganisationTradingType TradingType =>
+        (Roles.Contains(PartyKind.Customer) || Roles.Contains(PartyKind.Prospect), Roles.Contains(PartyKind.Supplier)) switch
+        {
+            (true, true) => OrganisationTradingType.Both,
+            (false, true) => OrganisationTradingType.Supplier,
+            _ => OrganisationTradingType.Customer,
+        };
+
+    /// <summary>
+    /// <see cref="Roles"/> with the customer/supplier roles replaced to
+    /// state <paramref name="type"/>, every other role kept — the one way
+    /// the Customers &amp; Suppliers editor writes a type. A
+    /// <see cref="PartyKind.Prospect"/> role is replaced too, since
+    /// <see cref="TradingType"/> reads it as a customer: a prospect saved as
+    /// Supplier must read back as Supplier, not Both.
+    /// </summary>
+    public IReadOnlyList<PartyKind> RolesFor(OrganisationTradingType type)
+    {
+        var kept = Roles.Where(r => r is not (PartyKind.Customer or PartyKind.Supplier or PartyKind.Prospect)).ToList();
+        if (type is OrganisationTradingType.Customer or OrganisationTradingType.Both)
+            kept.Insert(0, PartyKind.Customer);
+        if (type is OrganisationTradingType.Supplier or OrganisationTradingType.Both)
+            kept.Add(PartyKind.Supplier);
+
+        return kept;
+    }
 
     /// <summary>Whether anything identifies the organisation beyond its name.</summary>
     /// <remarks>

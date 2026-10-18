@@ -40,4 +40,14 @@ public interface IReferenceSeed<TDefinition>
 
     /// <summary>Every record this dataset offers, in a fixed order.</summary>
     IReadOnlyList<ReferenceSeedRecord<TDefinition>> Records { get; }
+
+    /// <summary>
+    /// Whether this dataset is shipped reference data the Product Owner has
+    /// ruled must be usable from day one (PO decision 2026-10-01), and so is
+    /// released at seed when the seeding service carries a
+    /// <see cref="ReferenceSeedReleasePolicy"/>. False by default: authored
+    /// engineering assets, demonstration content and anything not named by
+    /// that decision stay Draft until a person releases them.
+    /// </summary>
+    bool ReleaseAtSeed => false;
 }

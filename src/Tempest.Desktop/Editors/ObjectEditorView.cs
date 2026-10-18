@@ -75,7 +75,9 @@ public sealed record EvidenceEditorSupport(
 /// (`WP 19.1A-R1` disclosure #4, wired by `WP 19.2B`) resolve,
 /// asynchronously and never blocking, what the Commercial section actually
 /// shows for the client and the rate card — the organisation's own name
-/// and the card's own code, name and pinned revision, rather than the bare
+/// and the card's own code, name and pinned content revision (the
+/// revision a person reads, not the pin's internal version stamp — runbook
+/// B2), rather than the bare
 /// id/<see cref="Tempest.Core.ReferenceData.ReferencePin"/> a reader cannot
 /// otherwise place. Both are optional trailing parameters, not required
 /// alongside the three above: <see langword="null"/> (any test, or a
@@ -89,7 +91,7 @@ public sealed record ProjectCommercialEditorSupport(
     Func<CancellationToken, Task<string?>> PickRateCardIdAsync,
     Func<string?> CurrentPrincipalIdentityId,
     Func<string, CancellationToken, Task<string?>>? ResolveClientNameAsync = null,
-    Func<ReferencePin, CancellationToken, Task<(string Code, string Name)?>>? ResolveRateCardAsync = null);
+    Func<ReferencePin, CancellationToken, Task<(string Code, string Name, int Revision)?>>? ResolveRateCardAsync = null);
 
 /// <summary>
 /// The requirement Owner section's own collaborators (`WP 20.10F`, Product

@@ -1,0 +1,15 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "workflow": [
+    "identify proposed change",
+    "identify affected configuration items",
+    "identify requirements",
+    "identify interfaces",
+    "identify analyses/tests",
+    "assess regression scope",
+    "obtain required approval",
+    "implement controlled change",
+    "rerun affected verification"
+  ]
+}

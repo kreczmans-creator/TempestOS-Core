@@ -28,6 +28,21 @@ public sealed class RecordExpenseCommand : ICommand
         Billable = billable;
     }
 
+    /// <summary>
+    /// Initialises a new instance of the <see cref="RecordExpenseCommand"/>
+    /// class carrying the optional supplier and supplier invoice number
+    /// (`v0.24.0` X5, build decisions Q3, Q4), recorded in the expense's first
+    /// revision.
+    /// </summary>
+    public RecordExpenseCommand(
+        Guid? projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
+        string? supplierOrganisationId, string? supplierInvoiceNumber)
+        : this(projectId, date, description, category, netAmount, vatAmount, billable)
+    {
+        SupplierOrganisationId = supplierOrganisationId;
+        SupplierInvoiceNumber = supplierInvoiceNumber;
+    }
+
     /// <summary>Gets where the new expense goes — the open project, or a chosen container (<c>CreationPlacement</c>). <see langword="null"/> when neither resolves.</summary>
     public Guid? ProjectId { get; }
 
@@ -48,6 +63,12 @@ public sealed class RecordExpenseCommand : ICommand
 
     /// <summary>Gets whether the expense is billable to the client.</summary>
     public bool Billable { get; }
+
+    /// <summary>Gets the supplier the cost was paid to (a Customers &amp; Suppliers record id); <see langword="null"/> when none (`v0.24.0` Q3).</summary>
+    public string? SupplierOrganisationId { get; }
+
+    /// <summary>Gets the supplier's own invoice number; <see langword="null"/> when none (`v0.24.0` Q4).</summary>
+    public string? SupplierInvoiceNumber { get; }
 }
 
 /// <summary>Handles <see cref="RecordExpenseCommand"/>.</summary>
@@ -73,7 +94,9 @@ public sealed class RecordExpenseCommandHandler : ICommandHandler<RecordExpenseC
         try
         {
             result = await _service
-                .RecordAsync(projectId, command.Date, command.Description, command.Category, command.NetAmount, command.VatAmount, command.Billable, cancellationToken)
+                .RecordAsync(
+                    projectId, command.Date, command.Description, command.Category, command.NetAmount, command.VatAmount, command.Billable,
+                    sourcePurchaseOrderId: null, command.SupplierOrganisationId, command.SupplierInvoiceNumber, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (ArgumentException ex)

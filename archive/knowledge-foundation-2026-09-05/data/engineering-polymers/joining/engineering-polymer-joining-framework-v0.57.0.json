@@ -1,0 +1,25 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "methods": [
+    "mechanical fastening",
+    "threaded inserts",
+    "snap fits",
+    "ultrasonic welding",
+    "heat staking",
+    "thermal welding",
+    "solvent bonding where compatible",
+    "adhesive bonding"
+  ],
+  "controls": [
+    "creep under preload",
+    "joint temperature",
+    "chemical compatibility",
+    "surface preparation",
+    "weld-line orientation",
+    "insertion loads",
+    "CTE mismatch",
+    "stress concentration"
+  ],
+  "design_rule": "Fastener preload and insert retention must be assessed as time- and temperature-dependent problems."
+}

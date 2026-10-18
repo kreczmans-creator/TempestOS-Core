@@ -1,0 +1,35 @@
+{
+  "version": "0.60.0",
+  "family": "PPA",
+  "domain": "electrical",
+  "electrical_class": "engineering insulation; formulation dependent",
+  "volume_resistivity": "typically high when appropriately conditioned",
+  "dielectric_strength": "generally good",
+  "relative_permittivity": "moisture/frequency dependent",
+  "dissipation_factor": "grade/conditioning dependent",
+  "moisture_sensitivity": "moderate-to-high",
+  "key_controls": [
+    "conditioning",
+    "frequency",
+    "temperature",
+    "reinforcement"
+  ],
+  "required_quantitative_fields": [
+    "volume_resistivity",
+    "surface_resistivity",
+    "dielectric_strength",
+    "relative_permittivity",
+    "dissipation_factor",
+    "arc_resistance_where_relevant",
+    "tracking_resistance_where_relevant"
+  ],
+  "test_context": [
+    "frequency",
+    "temperature",
+    "humidity/conditioning",
+    "specimen/product form",
+    "test method"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

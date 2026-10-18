@@ -57,6 +57,13 @@ public sealed class AvaloniaFilePicker : IFilePicker
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <see cref="SavePickerRequest.StartFolder"/> becomes the dialog's own
+    /// suggested start location (PO decision 2026-10-01: a quote exports
+    /// "direct to the quote section" of the project folder); a folder the
+    /// storage provider cannot resolve is simply not suggested, leaving
+    /// the dialog's own default exactly as before.
+    /// </remarks>
     public async Task<string?> PickSavePathAsync(SavePickerRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -64,13 +71,38 @@ public sealed class AvaloniaFilePicker : IFilePicker
         if (TopLevel.GetTopLevel(_owner) is not { } topLevel)
             return null;
 
+        IStorageFolder? startLocation = null;
+        if (!string.IsNullOrWhiteSpace(request.StartFolder) && Directory.Exists(request.StartFolder))
+            startLocation = await topLevel.StorageProvider.TryGetFolderFromPathAsync(request.StartFolder).ConfigureAwait(true);
+
         var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             Title = request.Title,
             SuggestedFileName = request.SuggestedFileName,
+            SuggestedStartLocation = startLocation,
         }).ConfigureAwait(true);
 
         return file?.TryGetLocalPath() ?? file?.Path.ToString();
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> PickFolderAsync(string title, string? startFolder = null, CancellationToken cancellationToken = default)
+    {
+        if (TopLevel.GetTopLevel(_owner) is not { } topLevel)
+            return null;
+
+        IStorageFolder? startLocation = null;
+        if (!string.IsNullOrWhiteSpace(startFolder) && Directory.Exists(startFolder))
+            startLocation = await topLevel.StorageProvider.TryGetFolderFromPathAsync(startFolder).ConfigureAwait(true);
+
+        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            SuggestedStartLocation = startLocation,
+        }).ConfigureAwait(true);
+
+        return folders.Count == 0 ? null : folders[0].TryGetLocalPath() ?? folders[0].Path.ToString();
     }
 
     private static PickedFile ToPickedFile(IStorageFile file) =>

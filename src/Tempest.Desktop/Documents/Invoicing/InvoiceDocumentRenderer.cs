@@ -48,7 +48,18 @@ public sealed record InvoiceDocumentModel(
     string Total,
     string Status,
     DateTimeOffset GeneratedAtUtc,
-    string ApplicationVersionText);
+    string ApplicationVersionText)
+{
+    /// <summary>
+    /// `v0.24.0` review-board fix m17: the invoice number the invoice carries
+    /// in TempestOS and in Xero alike (<c>InvoicingService.InvoiceNumberFor</c>);
+    /// <see langword="null"/> prints none.
+    /// </summary>
+    public string? InvoiceNumber { get; init; }
+
+    /// <summary>`v0.24.0` review-board fix m17: the date the invoice was sent to the accounting system; <see langword="null"/> when it has not been.</summary>
+    public DateOnly? SentDate { get; init; }
+}
 
 /// <summary>
 /// Renders an <see cref="InvoiceDocumentModel"/> as an A4 PDF (`WP 21.2A`,
@@ -102,6 +113,24 @@ public sealed class InvoiceDocumentRenderer : IDocumentRenderer<InvoiceDocumentM
         return DocumentTemplate.RenderPdf(pages, metadata);
     }
 
+    /// <summary>
+    /// The invoice number and send date line (`v0.24.0` review-board fix m17):
+    /// <c>"Invoice number: P0012-INV-001  •  Sent: 2026-10-02"</c>;
+    /// <see langword="null"/> when the model carries neither.
+    /// </summary>
+    /// <param name="model">The invoice.</param>
+    public static string? NumberLine(InvoiceDocumentModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(model.InvoiceNumber))
+            parts.Add($"Invoice number: {model.InvoiceNumber.Trim()}");
+        if (model.SentDate is { } sent)
+            parts.Add($"Sent: {FormatDate(sent)}");
+        return parts.Count == 0 ? null : string.Join("  •  ", parts);
+    }
+
     private static List<DocumentTemplate.PagePlan> Layout(InvoiceDocumentModel model, OrganisationIdentity identity)
     {
         var state = DocumentTemplate.BeginLayout();
@@ -120,6 +149,8 @@ public sealed class InvoiceDocumentRenderer : IDocumentRenderer<InvoiceDocumentM
             $"Reference: {model.Reference}  •  Date: {FormatDate(model.IssueDate)}  •  Payment terms: {model.PaymentTermsDisplay}"
                 + (model.DueDate is { } due ? $"  •  Due: {FormatDate(due)}" : string.Empty),
             DocumentTemplate.BodySize, bold: false);
+        if (NumberLine(model) is { } numberLine)
+            DocumentTemplate.AddWrappedLine(state, measure, numberLine, DocumentTemplate.BodySize, bold: true);
         if (model.PurchaseOrderReference is { Length: > 0 } po)
             DocumentTemplate.AddWrappedLine(state, measure, $"Purchase order: {po}", DocumentTemplate.BodySize, bold: false);
         DocumentTemplate.AddWrappedLine(state, measure, $"Status: {model.Status}  •  Currency: {model.Currency}", DocumentTemplate.BodySize, bold: false);

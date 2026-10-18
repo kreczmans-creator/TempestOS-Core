@@ -179,8 +179,10 @@ public sealed class BracketCalculationWorkbench
     /// still matters for the case the automatic pass deliberately leaves
     /// alone: a library that already held a record of its own (a sample
     /// module's, or one a person registered by hand) before the shipped
-    /// corpus ever got a chance to seed it. Every record this adds still
-    /// lands <see cref="ReferenceValidationState.Draft"/>, and
+    /// corpus ever got a chance to seed it. Under the PO decision of
+    /// 2026-10-01 every record this adds is released at seed by the host's
+    /// seeder (through the governed review path, as the named seed
+    /// principal), and
     /// <see cref="ReferenceSeedService.ApplyAsync{TDefinition}"/> is still
     /// additive and idempotent per record, so pressing it twice, or after
     /// the automatic pass, is harmless and can never overwrite a value

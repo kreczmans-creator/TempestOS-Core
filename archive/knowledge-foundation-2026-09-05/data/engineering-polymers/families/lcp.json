@@ -1,0 +1,28 @@
+{
+  "version": "0.57.0",
+  "family": "LCP",
+  "examples": [
+    "thermotropic LCP",
+    "glass/mineral-filled LCP"
+  ],
+  "character": "highly processable high-performance thermoplastic with exceptional flow and dimensional stability",
+  "common_uses": [
+    "fine-pitch electrical connectors",
+    "thin-wall components",
+    "precision mouldings"
+  ],
+  "selection_drivers": [
+    "thin-wall mouldability",
+    "electrical performance",
+    "dimensional stability",
+    "temperature"
+  ],
+  "watchouts": [
+    "anisotropy",
+    "weld-line behaviour",
+    "brittleness",
+    "processing window"
+  ],
+  "evidence_status": "screening taxonomy",
+  "design_use": "screening_only"
+}

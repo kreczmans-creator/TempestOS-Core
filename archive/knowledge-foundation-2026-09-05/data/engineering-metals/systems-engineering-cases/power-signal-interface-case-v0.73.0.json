@@ -1,0 +1,15 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "problem": "Define electrical interfaces for a motorised mechanism.",
+  "workflow": [
+    "define supply and load profile",
+    "define motor/controller interface",
+    "define encoder interface",
+    "map power and signal grounds",
+    "define cable/connector requirements",
+    "identify EMI/EMC risks",
+    "define protections",
+    "verify voltage/current/signal margins"
+  ]
+}

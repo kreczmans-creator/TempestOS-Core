@@ -1,0 +1,36 @@
+{
+  "version": "0.66.0",
+  "family": "titanium-alloy",
+  "property_domains": [
+    "elastic modulus",
+    "Poisson ratio",
+    "yield strength",
+    "ultimate strength",
+    "elongation",
+    "hardness",
+    "fracture toughness",
+    "fatigue",
+    "shear/compression",
+    "bearing/contact behaviour"
+  ],
+  "dominant_failure_mechanisms": [
+    "yielding",
+    "fatigue",
+    "fracture",
+    "fretting",
+    "galling"
+  ],
+  "context_variables": [
+    "temperature",
+    "loading rate",
+    "surface condition",
+    "section size",
+    "heat treatment",
+    "temper/condition",
+    "weld/HAZ state where applicable",
+    "product form and orientation"
+  ],
+  "design_rule": "Use condition-specific allowables and account for manufacturing/process state.",
+  "evidence_status": "foundation reference",
+  "design_use": "not an allowable"
+}

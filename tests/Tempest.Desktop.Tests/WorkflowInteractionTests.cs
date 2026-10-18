@@ -177,7 +177,7 @@ public sealed class WorkflowInteractionTests
             Assert.False(settings.ConfirmBeforeDelete);
 
             var reloaded = new UserSettings(settingsProvider);
-            var deadline = DateTime.UtcNow.AddSeconds(5);
+            var deadline = DesktopTestHelpers.Deadline(5);
             do
             {
                 await Task.Delay(10);

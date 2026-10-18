@@ -1,0 +1,20 @@
+{
+  "version": "0.74.0",
+  "purpose": "Evidence discipline for instrumentation, controls, maintainability, production quality and system architecture.",
+  "required_evidence": [
+    "controlled requirement",
+    "configuration identity",
+    "defined operating envelope",
+    "applicable engineering method or standard",
+    "assumptions",
+    "measurement/verification method",
+    "objective result",
+    "review and traceability"
+  ],
+  "promotion_levels": [
+    "screening",
+    "verified",
+    "qualified"
+  ],
+  "boundary": "Frameworks do not substitute for product-specific qualification, regulatory compliance, safety certification or production approval."
+}

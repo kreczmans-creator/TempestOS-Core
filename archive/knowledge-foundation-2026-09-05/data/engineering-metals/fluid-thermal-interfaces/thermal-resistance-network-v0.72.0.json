@@ -1,0 +1,19 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "concepts": [
+    "conduction",
+    "convection",
+    "thermal resistance",
+    "thermal contact resistance",
+    "radiation"
+  ],
+  "workflow": [
+    "define heat sources",
+    "map heat paths",
+    "construct resistance network",
+    "calculate temperatures",
+    "identify thermal bottlenecks",
+    "check material and component limits"
+  ]
+}

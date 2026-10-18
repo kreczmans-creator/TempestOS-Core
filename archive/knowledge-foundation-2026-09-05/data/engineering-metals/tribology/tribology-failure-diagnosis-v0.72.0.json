@@ -1,0 +1,21 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "modes": [
+    "adhesive wear",
+    "abrasive wear",
+    "surface fatigue",
+    "fretting",
+    "scuffing",
+    "galling",
+    "lubricant starvation"
+  ],
+  "diagnostic_inputs": [
+    "wear morphology",
+    "debris",
+    "temperature history",
+    "load/speed history",
+    "lubricant condition",
+    "surface hardness"
+  ]
+}

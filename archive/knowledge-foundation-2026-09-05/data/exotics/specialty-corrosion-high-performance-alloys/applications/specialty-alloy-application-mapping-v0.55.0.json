@@ -1,0 +1,79 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "mapping": [
+    {
+      "material": "Zr 702 / Zr 705",
+      "uses": [
+        "chemical processing",
+        "process vessels",
+        "heat exchangers",
+        "piping"
+      ],
+      "drivers": [
+        "corrosion",
+        "temperature",
+        "hydrogen",
+        "welding"
+      ]
+    },
+    {
+      "material": "C-276 / C-22",
+      "uses": [
+        "severe chemical processing",
+        "scrubbers",
+        "pollution control",
+        "mixed chemical environments"
+      ],
+      "drivers": [
+        "localized corrosion",
+        "environment",
+        "temperature"
+      ]
+    },
+    {
+      "material": "Alloy 825 / Alloy 59",
+      "uses": [
+        "chemical processing",
+        "acid service",
+        "heat exchangers",
+        "oil and gas"
+      ],
+      "drivers": [
+        "corrosion",
+        "stress corrosion",
+        "temperature"
+      ]
+    },
+    {
+      "material": "MP35N",
+      "uses": [
+        "aerospace fasteners",
+        "springs",
+        "medical devices",
+        "marine hardware"
+      ],
+      "drivers": [
+        "strength",
+        "corrosion",
+        "fatigue",
+        "condition"
+      ]
+    },
+    {
+      "material": "Nitinol",
+      "uses": [
+        "medical devices",
+        "actuators",
+        "springs",
+        "deployable mechanisms"
+      ],
+      "drivers": [
+        "transformation",
+        "superelasticity",
+        "functional fatigue",
+        "surface"
+      ]
+    }
+  ]
+}

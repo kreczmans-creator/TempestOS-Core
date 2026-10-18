@@ -464,6 +464,14 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IAuditQuery, AuditQuery>();
 
+        // `ADR-0161` (Product Owner decision 2026-10-01): the one global
+        // "Second-person sign-off" switch every separation-of-duty rule
+        // consults (quotation approval, evidence's independent check).
+        // Registered once here, over Settings (durable, so it survives a
+        // restart) and Audit (so every change of it is recorded), so it is
+        // the same answer for every module. Off by default.
+        services.Singleton<Tempest.Core.Governance.ISignOffPolicy, Tempest.Core.Governance.SignOffPolicy>();
+
         // ADR-0051: Export/Import reads from whatever service owns the
         // exported data (Settings, Reporting) via that service's own
         // public interface, never IPersistenceStore directly - registered
@@ -617,8 +625,16 @@ public sealed class TempestHost : ITempestHost
         // composition root every real launch goes through
         // (`EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync`):
         // a library still holding no record at all is populated from its
-        // shipped seed, Draft only; a library a person has already
-        // touched — populated, edited, or seeded before — is left alone.
+        // shipped seed; a library a person has already put a record of their
+        // own into is left alone.
+        //
+        // PO decision 2026-10-01: shipped reference data must be usable from
+        // day one, so the host's seeder carries the release-at-seed policy.
+        // Every record it registers is verified and released through
+        // ReferenceReviewService as the named seed principal
+        // ('tempest.reference-seed'), with the ordinary permission checks and
+        // audit rows — never a direct write of a validation state.
+        services.Singleton<ReferenceSeedReleasePolicy>();
         services.Singleton<ReferenceSeedService>();
 
         services.Singleton<IStandardCatalog, StandardCatalog>();
@@ -953,10 +969,21 @@ public sealed class TempestHost : ITempestHost
         }
 
         IInvoicingConnector invoicingConnector;
+        var xeroComposed = false;
 
         if (string.Equals(configuredConnectorName, "Xero", StringComparison.OrdinalIgnoreCase))
         {
-            invoicingConnector = BuildXeroConnector(configuration, secretStore, microsoftLoggerFactory);
+            // `v0.24.0` (`ADR-0162`, task B1): the connector and the typed
+            // Xero client share one `HttpClient` whose pipeline starts with
+            // `XeroWriteSafetyHandler` (D3/D4/D7) — composed, and every Xero
+            // service registered, by `XeroServiceRegistration`. The handler
+            // resolves the settings reader, Settings and the audit recorder
+            // from the container once it exists, per write.
+            var xero = XeroServiceRegistration.Compose(
+                configuration, secretStore, microsoftLoggerFactory, () => { lock (_gate) return _services; });
+            XeroServiceRegistration.Register(services, xero);
+            invoicingConnector = xero.Connector;
+            xeroComposed = true;
         }
         else if (string.Equals(configuredConnectorName, "QuickBooksOnline", StringComparison.OrdinalIgnoreCase))
         {
@@ -1049,6 +1076,12 @@ public sealed class TempestHost : ITempestHost
         }
 
         logger.Information("Host lifecycle phase completed: Dependency Injection Built.");
+
+        // `v0.24.0` B1: the Xero Settings definitions (D7's
+        // `Xero.AllowLiveOrganisation`), registered once now rather than on
+        // the first write that reads them.
+        if (xeroComposed)
+            XeroServiceRegistration.RegisterSettingDefinitions(serviceProvider);
 
         runToken.ThrowIfCancellationRequested();
 
@@ -1251,32 +1284,6 @@ public sealed class TempestHost : ITempestHost
             $"'{SqlitePersistenceStore.BackendConfigurationKey}' is configured as '{backend}', which is not a " +
             $"persistence backend this build has. The only valid value is '{SqlitePersistenceStore.SqliteBackendValue}' " +
             "(the default); the file-per-key backend this key once also selected is deleted (v0.18.0, ADR-0144).");
-    }
-
-    /// <summary>
-    /// Builds the real Xero <see cref="IInvoicingConnector"/> (`WP 19.1A`
-    /// part 2): the redirect URI a sandbox app must register is a fresh
-    /// loopback port every run (<c>OAuthLoopbackListener</c>'s own remarks)
-    /// — never one of these fixed endpoints.
-    /// </summary>
-    private static XeroConnector BuildXeroConnector(
-        IConfigurationProvider configuration, ISecretStore secretStore, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory)
-    {
-        var httpClient = new HttpClient(new InvoicingHttpLoggingHandler(loggerFactory.CreateLogger("Tempest.Core.Invoicing.Xero")))
-        {
-            BaseAddress = new Uri("https://api.xero.com/api.xro/2.0/"),
-        };
-
-        var profile = new OAuthProviderProfile(
-            Provider: "Xero",
-            AuthorizationEndpoint: new Uri("https://login.xero.com/identity/connect/authorize"),
-            TokenEndpoint: new Uri("https://identity.xero.com/connect/token"),
-            Scopes: ["openid", "profile", "email", "accounting.transactions", "accounting.contacts", "offline_access"],
-            TenantResolutionEndpoint: new Uri("https://api.xero.com/connections"));
-
-        var authoriser = new OAuthAuthoriser(profile, configuration, secretStore, new SystemBrowserLauncher(), httpClient);
-
-        return new XeroConnector(httpClient, authoriser, configuration);
     }
 
     /// <summary>

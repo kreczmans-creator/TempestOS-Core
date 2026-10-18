@@ -1,0 +1,38 @@
+{
+  "version": "0.48.0",
+  "family": "magnesium",
+  "status": "screening_framework",
+  "reference_temperature_bands_C": {
+    "ambient_engineering_use": [
+      -40,
+      80
+    ],
+    "elevated_temperature_screening": [
+      80,
+      150
+    ],
+    "specialist_high_temperature": [
+      150,
+      250
+    ]
+  },
+  "behaviour": {
+    "strength": "Common magnesium alloys lose strength as temperature rises; exact retention is grade/temper dependent.",
+    "creep": "Creep becomes increasingly important for sustained load at elevated temperature, particularly in common Mg-Al alloys.",
+    "fatigue": "Temperature alters cyclic deformation and environmental sensitivity.",
+    "dimensional_stability": "CTE and temperature-dependent modulus must be included for precision applications."
+  },
+  "required_fields": [
+    "grade",
+    "temper",
+    "stress",
+    "temperature_C",
+    "duration_h",
+    "strain",
+    "creep_rate",
+    "rupture_time",
+    "environment",
+    "source"
+  ],
+  "rule": "The temperature bands are screening categories, not service-temperature limits."
+}

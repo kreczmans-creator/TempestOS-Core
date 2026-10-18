@@ -1,0 +1,23 @@
+{
+  "version": "0.59.0",
+  "family": "PPS",
+  "hdt_or_service_reference_c": "85\u2013100",
+  "thermal_context": [
+    "Tg/Tm are distinct from service temperature",
+    "CTE and conductivity require grade/context data"
+  ],
+  "evidence_status": "screening range",
+  "design_use": "not approved",
+  "required_context": [
+    "exact grade",
+    "reinforcement/filler",
+    "product form",
+    "condition",
+    "test method",
+    "test temperature",
+    "conditioning",
+    "orientation where relevant",
+    "authoritative source"
+  ],
+  "warning": "Ranges are family-level engineering screening data, not design allowables."
+}

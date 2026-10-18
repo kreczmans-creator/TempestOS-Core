@@ -46,6 +46,7 @@ public sealed class ProjectStatusReadModelTests
         var blockedQuote = await quotations.CreateAsync(blockedId);
         Assert.True(blockedQuote.Succeeded, blockedQuote.Reason);
         await quotations.AddLineAsync(blockedQuote.Quotation!.Id, "Detailed design", 20m, new Money(100m, CurrencyCode.Gbp), null);
+        await QuotationReviewTestSupport.SubmitAndApproveAsync(quotations, QuotationTestHost.Principals(host), blockedQuote.Quotation!.Id);
         await quotations.SendAsync(blockedQuote.Quotation.Id);
         var blockedAccepted = await quotations.AcceptAsync(blockedQuote.Quotation.Id);
         Assert.True(blockedAccepted.Succeeded, blockedAccepted.Reason);
@@ -122,6 +123,7 @@ public sealed class ProjectStatusReadModelTests
 
         var quote = await quotations.CreateAsync(projectId);
         await quotations.AddLineAsync(quote.Quotation!.Id, "Design", 5m, new Money(100m, CurrencyCode.Gbp), null);
+        await QuotationReviewTestSupport.SubmitAndApproveAsync(quotations, QuotationTestHost.Principals(host), quote.Quotation!.Id);
         await quotations.SendAsync(quote.Quotation.Id);
         var accepted = await quotations.AcceptAsync(quote.Quotation.Id);
         Assert.True(accepted.Succeeded, accepted.Reason);

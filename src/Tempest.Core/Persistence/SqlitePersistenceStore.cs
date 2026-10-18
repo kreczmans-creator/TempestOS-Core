@@ -101,6 +101,27 @@ public sealed class SqlitePersistenceStore
     /// </summary>
     public const string RootPathConfigurationKey = "Persistence:RootPath";
 
+    /// <summary>
+    /// The configuration key that relaxes <c>PRAGMA synchronous</c> from
+    /// <c>FULL</c> to <c>NORMAL</c> when set to <see cref="RelaxedSynchronousValue"/>
+    /// (any other value, or none, keeps <c>FULL</c>). For test runs only
+    /// (`ADR-0144` amendment, 2026-10-01): a test host starts against a
+    /// fresh root and seeds every shipped reference record, a few thousand
+    /// commits, and on a Windows CI runner each <c>FULL</c> commit's fsync
+    /// costs milliseconds. Under WAL, <c>NORMAL</c> is still crash
+    /// consistent; it only gives up the durability of the last commits on
+    /// power loss, which a test run does not need and a person's data does.
+    /// The key is reachable from ordinary configuration (the Desktop test
+    /// assembly sets it through the <c>TEMPEST_Persistence__Synchronous</c>
+    /// environment variable), so a store opened at <c>NORMAL</c> logs a
+    /// Warning saying so every time — a production install that picked it up
+    /// by accident is visible in its own log (colour review board v0.23.0, M14).
+    /// </summary>
+    public const string SynchronousConfigurationKey = "Persistence:Synchronous";
+
+    /// <summary>The <see cref="SynchronousConfigurationKey"/> value that selects <c>PRAGMA synchronous = NORMAL</c>.</summary>
+    public const string RelaxedSynchronousValue = "Normal";
+
     /// <summary>The root path used when <see cref="RootPathConfigurationKey"/> is not configured.</summary>
     public const string DefaultRootPath = "persistence-data";
 
@@ -140,6 +161,10 @@ public sealed class SqlitePersistenceStore
     private readonly string _databasePath;
     private readonly string _lockFilePath;
     private readonly string _connectionString;
+    private readonly string _pragmas;
+
+    /// <summary>The <c>PRAGMA synchronous</c> level every connection is opened at — <c>FULL</c> unless <see cref="SynchronousConfigurationKey"/> relaxes it.</summary>
+    internal string SynchronousLevel { get; }
     private readonly ILogger? _logger;
     private readonly FileStream _lockFile;
 
@@ -182,9 +207,27 @@ public sealed class SqlitePersistenceStore
 
         ValidateRootPath(_rootPath);
 
+        SynchronousLevel = configuration.TryGetValue(SynchronousConfigurationKey, out var synchronous)
+            && string.Equals(synchronous?.Trim(), RelaxedSynchronousValue, StringComparison.OrdinalIgnoreCase)
+            ? "NORMAL"
+            : "FULL";
+        _pragmas =
+            "PRAGMA busy_timeout = 5000; " +
+            "PRAGMA journal_mode = WAL; " +
+            $"PRAGMA synchronous = {SynchronousLevel}; " +
+            "PRAGMA foreign_keys = ON;";
+
         _databasePath = Path.Combine(_rootPath, DatabaseFileName);
         _lockFilePath = Path.Combine(_rootPath, LockFileName);
         _logger = logger;
+
+        if (SynchronousLevel == "NORMAL")
+        {
+            _logger?.Warning(
+                $"Persistence is running at PRAGMA synchronous = NORMAL ({SynchronousConfigurationKey} = {RelaxedSynchronousValue}) "
+                + $"for '{_rootPath}'. This setting is for test runs only: the last commits before a power loss may be lost. "
+                + "Remove it from any installation that holds a person's data.");
+        }
 
         _connectionString = new SqliteConnectionStringBuilder
         {
@@ -1176,6 +1219,27 @@ public sealed class SqlitePersistenceStore
         return Convert.ToInt64(value, CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// Test hook (colour review board v0.23.0, N4): opens a connection exactly
+    /// as the store's own reads and writes do and returns what
+    /// <c>PRAGMA synchronous</c> reports on it — <c>1</c> for NORMAL,
+    /// <c>2</c> for FULL — so a test asserts the level the store's own
+    /// connections run at, not the string it composed.
+    /// </summary>
+    /// <param name="cancellationToken">A token observed while reading.</param>
+    /// <returns>The connection's <c>synchronous</c> level.</returns>
+    internal async Task<long> ReadSynchronousPragmaAsync(CancellationToken cancellationToken = default)
+    {
+        var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA synchronous;";
+            var value = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+        }
+    }
+
     private async Task<SqliteConnection> OpenConnectionAsync(CancellationToken cancellationToken)
     {
         var connection = new SqliteConnection(_connectionString);
@@ -1237,14 +1301,10 @@ public sealed class SqlitePersistenceStore
     /// opens exactly once during this Work Package's own test runs, which
     /// is once more than a persistence layer gets.
     /// </remarks>
-    private static void ApplyPragmas(SqliteConnection connection)
+    private void ApplyPragmas(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
-        command.CommandText =
-            "PRAGMA busy_timeout = 5000; " +
-            "PRAGMA journal_mode = WAL; " +
-            "PRAGMA synchronous = FULL; " +
-            "PRAGMA foreign_keys = ON;";
+        command.CommandText = _pragmas;
         command.ExecuteNonQuery();
     }
 

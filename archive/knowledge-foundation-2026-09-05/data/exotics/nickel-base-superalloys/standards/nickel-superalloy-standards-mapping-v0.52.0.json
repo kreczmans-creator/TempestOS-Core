@@ -1,0 +1,73 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "mapping_targets": [
+    {
+      "designation": "Alloy 718",
+      "identifiers": [
+        "UNS N07718"
+      ],
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "ASME"
+      ],
+      "rule": "Resolve exact product specification and heat-treatment condition."
+    },
+    {
+      "designation": "Alloy 625",
+      "identifiers": [
+        "UNS N06625"
+      ],
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "ASME"
+      ],
+      "rule": "Resolve exact product specification and condition."
+    },
+    {
+      "designation": "Haynes 230",
+      "identifiers": [
+        "UNS N06230"
+      ],
+      "bodies": [
+        "ASTM",
+        "ASME",
+        "manufacturer specification"
+      ],
+      "rule": "Use controlling product specification for exact form/condition."
+    },
+    {
+      "designation": "718Plus",
+      "identifiers": [],
+      "bodies": [
+        "specialist aerospace/manufacturer specifications"
+      ],
+      "rule": "Treat qualification and supplier specification as critical."
+    },
+    {
+      "designation": "Waspaloy",
+      "identifiers": [],
+      "bodies": [
+        "AMS",
+        "manufacturer specifications"
+      ],
+      "rule": "Resolve exact product form and heat treatment."
+    }
+  ],
+  "record_fields": [
+    "designation",
+    "UNS_if_applicable",
+    "standard_number",
+    "edition",
+    "product_form",
+    "condition",
+    "chemistry",
+    "mechanical_requirements",
+    "test_methods",
+    "source",
+    "verification_date"
+  ],
+  "status": "framework; exact edition population remains open"
+}

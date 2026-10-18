@@ -1,0 +1,30 @@
+{
+  "version": "0.68.0",
+  "purpose": "Establish a structured approach to cyclic-life assessment.",
+  "methods": [
+    "stress-life (S-N)",
+    "strain-life (ε-N)",
+    "fracture mechanics crack-growth"
+  ],
+  "inputs": [
+    "stress/strain spectrum",
+    "mean stress",
+    "surface condition",
+    "size",
+    "temperature",
+    "environment",
+    "notch/stress concentration",
+    "material condition"
+  ],
+  "checks": [
+    "load spectrum",
+    "mean-stress effects",
+    "surface finish",
+    "residual stress",
+    "manufacturing defects",
+    "corrosion/fretting",
+    "inspection interval"
+  ],
+  "boundary": "Method selection and fatigue allowables are material-, geometry-, environment- and process-specific.",
+  "status": "design-framework"
+}

@@ -20,12 +20,13 @@ namespace Tempest.Core.ReferenceData.Seeding;
 /// builds leaves
 /// <see cref="ReferenceProvenance.VerificationStatus"/> at
 /// <see cref="ReferenceVerificationStatus.NotVerified"/> and both reviewer
-/// fields <see langword="null"/>, because no person has checked these
-/// transcriptions back against their sources. That is not an oversight to
-/// be tidied up later — it is the true state, and
-/// <see cref="ReferenceValidationStates.DescribeProvenanceShortfall"/>
-/// relies on it to keep every seeded record out of
-/// <see cref="ReferenceValidationState.Released"/>.
+/// fields <see langword="null"/>, because the transcription itself is not a
+/// review. Verification, where it happens, is a separate governed act
+/// through <see cref="Review.ReferenceReviewService"/>: since the PO
+/// decision of 2026-10-01 the host's seeder performs that act at seed time
+/// as the named seed principal (<see cref="ReferenceSeedReleasePolicy"/>),
+/// and the statement it records says the check was against the cited
+/// secondary source, not the primary standard.
 /// </para>
 /// <para>
 /// <b>Extraction method is recorded honestly.</b> A machine-readable table
@@ -38,7 +39,7 @@ namespace Tempest.Core.ReferenceData.Seeding;
 /// person typed these in from the page.
 /// </para>
 /// </remarks>
-public static class SeedSources
+public static partial class SeedSources
 {
     /// <summary>The date every source below was retrieved on.</summary>
     /// <remarks>

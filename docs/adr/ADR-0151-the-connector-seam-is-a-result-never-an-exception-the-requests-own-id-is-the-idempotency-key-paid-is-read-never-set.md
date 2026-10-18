@@ -5,6 +5,22 @@
 Accepted — `WP 19.1A` part 1 (Outbound invoicing connector, model and
 substrate only — no HTTP, no UI), 2026-09-10.
 
+**Amended by `ADR-0162` (`v0.24.0`, 2026-10-02/03)** for the Xero
+connector only: §9 below is superseded where it says the contact is sent
+as `{"Name": ClientOrganisationId}` and that the request id is the
+invoice's `Reference` found by `FindByReferenceAsync`. Since `v0.24.0`
+`XeroConnector` creates the invoice as a `DRAFT` with TempestOS's own
+invoice number (`ADR-0156`), names the contact only by the `ContactID` of
+the client's confirmed link (an unlinked client is refused before
+anything is sent — review item M21), puts the project and deliverable in
+`Reference`, attaches the PDF, and reconciles a lost response by looking
+the invoice up by its number (a request sent before `v0.24.0` still
+reconciles by its old `Reference`). Its `Idempotency-Key` is no longer
+the bare request id but derived from the request, the operation and the
+body (`XeroIdempotencyKey`), so a changed draft is a new request and a
+repeat of the same one is replayed. The rest of this decision — a result,
+never an exception; paid is read, never set — is unchanged.
+
 ## Context
 
 `v0.19.0` closes the consultancy seam a third time: `WP 19.0A` (`ADR-0150`)
@@ -237,10 +253,10 @@ fresh ephemeral port every run, which Xero's and Intuit's own app
 consoles cannot accept — both require one exact redirect URI, registered
 ahead of time. `OAuthLoopbackListener` now binds the port
 `OAuthAuthoriser.ResolveLoopbackPort()` resolves from
-`Invoicing:OAuth:LoopbackPort` — `49301` by default, `0` kept as the
+`Invoicing:OAuth:LoopbackPort` — `48131` by default (`49301` until the `v1.0.0` candidate; `TD-183`), `0` kept as the
 original ephemeral behaviour (a test's own choice only). **The exact
 redirect URI to register in a Xero or QuickBooks Online sandbox app is
-`http://127.0.0.1:49301/callback/`** — unchanged unless an operator
+`http://127.0.0.1:48131/callback/`** — unchanged unless an operator
 configures a different port. When the configured port is already bound by
 something else, `AuthoriseAsync` returns `OAuthResult.Failed`, naming both
 the port attempted and the `Invoicing:OAuth:LoopbackPort` key — never a

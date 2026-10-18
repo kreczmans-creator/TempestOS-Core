@@ -1,0 +1,26 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "concepts": [
+    "measurand",
+    "range",
+    "resolution",
+    "sensitivity",
+    "linearity",
+    "hysteresis",
+    "repeatability",
+    "drift",
+    "bandwidth",
+    "sampling"
+  ],
+  "workflow": [
+    "define physical variable",
+    "define range and dynamics",
+    "define accuracy and uncertainty",
+    "select sensing principle",
+    "define conditioning and interface",
+    "identify environmental effects",
+    "define calibration strategy",
+    "verify the complete measurement chain"
+  ]
+}

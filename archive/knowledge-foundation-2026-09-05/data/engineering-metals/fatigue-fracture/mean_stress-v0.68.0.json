@@ -1,0 +1,18 @@
+{
+  "version": "0.68.0",
+  "purpose": "Screen the effect of non-zero mean stress on fatigue.",
+  "relationships": [
+    "stress amplitude σa",
+    "mean stress σm",
+    "stress ratio R"
+  ],
+  "checks": [
+    "material behaviour",
+    "notch effects",
+    "surface condition",
+    "temperature",
+    "environment"
+  ],
+  "boundary": "Goodman/Gerber/Soderberg-style corrections are screening models, not universal truth.",
+  "status": "design-framework"
+}

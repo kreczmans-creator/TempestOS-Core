@@ -1,0 +1,22 @@
+{
+  "version": "0.69.0",
+  "family": "carbon-steel",
+  "interaction": [
+    "corrosion pits create stress concentrations",
+    "corrosion can accelerate crack initiation",
+    "crack growth may be environment-sensitive",
+    "protective coatings can alter initiation behaviour",
+    "inspection intervals affect allowable life"
+  ],
+  "workflow": [
+    "define environment",
+    "identify corrosion mechanism",
+    "identify cyclic stress spectrum",
+    "assess surface protection",
+    "assess crack initiation",
+    "assess crack growth where appropriate",
+    "define inspection/maintenance strategy"
+  ],
+  "rule": "Dry-air fatigue evidence cannot automatically be transferred to corrosive service.",
+  "status": "design-framework"
+}

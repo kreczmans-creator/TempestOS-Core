@@ -1,0 +1,22 @@
+{
+  "version": "0.48.0",
+  "family": "magnesium",
+  "status": "framework",
+  "required_properties": [
+    "fracture_toughness_K_IC_or_appropriate_metric",
+    "crack_growth_rate_da_dN",
+    "threshold_delta_K",
+    "notch_sensitivity",
+    "plane_strain_or_applicable_constraint",
+    "orientation",
+    "temperature",
+    "environment"
+  ],
+  "screening_principles": [
+    "Wrought magnesium can exhibit strong orientation dependence.",
+    "Cast porosity and inclusions can materially reduce fracture resistance and increase scatter.",
+    "Corrosive environments can accelerate crack initiation/growth and must be treated explicitly where applicable.",
+    "Do not substitute tensile strength for fracture toughness."
+  ],
+  "qualification_rule": "Fracture-critical use requires product-form-, orientation- and environment-specific fracture evidence."
+}

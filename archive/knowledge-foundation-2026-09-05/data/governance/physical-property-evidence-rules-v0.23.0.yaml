@@ -1,0 +1,16 @@
+version: 0.23.0
+physical_property_rules:
+- Every numerical physical/electrical property must carry a source_id and source_locator.
+- Temperature must be explicit for temperature-dependent properties.
+- Product form and heat-treatment condition must be retained where the source differentiates
+  them.
+- Electrical resistivity must not be derived from conductivity unless an explicit
+  conversion is recorded.
+- Values labelled typical by a supplier are not minimum design allowables.
+- Source-specific values must not be silently collapsed into a single generic grade
+  value.
+current_promotions:
+  sourced: true
+  reviewed: true
+  verified: false
+  approved_for_design: false

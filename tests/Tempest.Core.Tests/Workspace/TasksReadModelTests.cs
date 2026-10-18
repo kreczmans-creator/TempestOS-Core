@@ -93,6 +93,7 @@ public sealed class TasksReadModelTests
         var (quoteProjectId, _) = await SetUpBillableProjectAsync(host, "QUOTE");
         var chaseQuote = await quotations.CreateAsync(quoteProjectId);
         await quotations.AddLineAsync(chaseQuote.Quotation!.Id, "Chase me", 10m, new Money(100m, CurrencyCode.Gbp), null);
+        await QuotationReviewTestSupport.SubmitAndApproveAsync(quotations, QuotationTestHost.Principals(host), chaseQuote.Quotation.Id);
         var sentQuote = await backdatedQuotations.SendAsync(chaseQuote.Quotation.Id);
         Assert.True(sentQuote.Succeeded, sentQuote.Reason);
 

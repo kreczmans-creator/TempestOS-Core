@@ -98,7 +98,7 @@ public sealed class ArchivedProjectReadOnlyTests
             Assert.True(toBeSent.Succeeded, toBeSent.Reason);
             var sentQuoteId = toBeSent.Quotation!.Id;
             await quotationService.AddLineAsync(sentQuoteId, "Detailed pack", null, null, new Money(2500m, toBeSent.Quotation.Currency));
-            var sendResult = await quotationService.SendAsync(sentQuoteId);
+            var sendResult = await Tempest.Desktop.Tests.Quotations.QuotationReviewSupport.ApproveAndSendAsync(host, quotationService, sentQuoteId);
             Assert.True(sendResult.Succeeded, sendResult.Reason);
 
             // `WP 19.10R`: a Part for the Structure tab's own Ribbon/Palette
@@ -161,7 +161,11 @@ public sealed class ArchivedProjectReadOnlyTests
             AssertDisabledWithTooltip(quoteView, "Add line");
             AssertDisabledWithTooltip(quoteView, "Edit");
             AssertDisabledWithTooltip(quoteView, "Remove");
-            AssertDisabledWithTooltip(quoteView, "Send");
+
+            // Runbook C3: a draft offers Save draft and Submit for review
+            // (Send only appears once a second person has approved it).
+            AssertDisabledWithTooltip(quoteView, "Save draft");
+            AssertDisabledWithTooltip(quoteView, "Submit for review");
 
             // New Quote is deliberately not in the brief's own list of
             // controls to disable — QuotationService.CreateAsync already
@@ -317,16 +321,8 @@ public sealed class ArchivedProjectReadOnlyTests
         return (T)field.GetValue(instance)!;
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(15);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 15, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(Window window)
     {

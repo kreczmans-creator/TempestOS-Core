@@ -104,7 +104,8 @@ satisfying it.
    errors. Non-negotiable, checked before every commit and before every
    completion report. **Machine-verified from `WP 11.1A` onward** —
    `.github/workflows/ci.yml` builds both Debug and Release with warnings
-   promoted to errors on every push, pull request, and manual dispatch; see
+   promoted to errors on every pull request, on pushes to `main`,
+   `release/**` and version tags, and on manual dispatch; see
    `docs/academy/06 Engineering Standards/04-continuous-integration.md`. A
    local run before pushing remains expected, not replaced.
 2. **Test Gate.** `dotnet test` against the full solution: every test passes,
@@ -275,7 +276,13 @@ own tagging *mechanics*. Neither addition changes any rule below.
    stakeholder can follow — summary, new features, improvements, bug fixes,
    validation status, next milestone.
 3. The Build Gate and Test Gate (§2) must pass on `main` itself, not merely on
-   the feature branch that fed into it, immediately before tagging.
+   the feature branch that fed into it, immediately before tagging. **Tag
+   only when the commit is ready (`ADR-0160`, 2026-10-01):** the release
+   workflow publishes nothing until `CI Gate` has concluded `success` on
+   the exact tagged commit (the tag push runs `ci.yml` on it, and
+   `release.yml` waits for that result). A red or cancelled `CI Gate` on
+   the tag blocks the release; under item 4 it does not free the tag to
+   be moved.
 4. An annotated tag is created only after the above are satisfied, and only
    once — a tag, once created and pushed, is not moved or recreated; if a
    mistake is discovered after tagging, a new version and a new tag are cut,

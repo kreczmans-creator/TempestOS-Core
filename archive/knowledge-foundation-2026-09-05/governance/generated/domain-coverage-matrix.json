@@ -1,0 +1,1636 @@
+{
+ "generated": "2026-09-05",
+ "generator": "tools/validate.py + domain rollup",
+ "depth_standard": "15 elements; see governance/V1.0.0-Definition-of-Done.md",
+ "domains": [
+  {
+   "domain": "engineering-polymers/families",
+   "files": 32,
+   "bytes": 34111,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 2915,
+   "maturity": {
+    "placeholder": 32
+   }
+  },
+  {
+   "domain": "engineering-metals/worked-design-cases",
+   "files": 28,
+   "bytes": 14116,
+   "median_depth_of_15": 2,
+   "max_depth": 4,
+   "words": 1381,
+   "maturity": {
+    "placeholder": 28
+   }
+  },
+  {
+   "domain": "engineering-metals/joints-fasteners",
+   "files": 18,
+   "bytes": 9441,
+   "median_depth_of_15": 2,
+   "max_depth": 3,
+   "words": 852,
+   "maturity": {
+    "placeholder": 18
+   }
+  },
+  {
+   "domain": "engineering-metals/product-form-design",
+   "files": 18,
+   "bytes": 8457,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 696,
+   "maturity": {
+    "placeholder": 18
+   }
+  },
+  {
+   "domain": "evidence",
+   "files": 18,
+   "bytes": 205039,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 25294,
+   "maturity": {
+    "placeholder": 13,
+    "sourced": 2,
+    "review-required": 2,
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/electrical",
+   "files": 14,
+   "bytes": 13556,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 1200,
+   "maturity": {
+    "placeholder": 12,
+    "undeclared": 2
+   }
+  },
+  {
+   "domain": "engineering-polymers/environmental",
+   "files": 14,
+   "bytes": 12243,
+   "median_depth_of_15": 3,
+   "max_depth": 3,
+   "words": 1070,
+   "maturity": {
+    "placeholder": 12,
+    "undeclared": 2
+   }
+  },
+  {
+   "domain": "engineering-polymers/mechanical",
+   "files": 14,
+   "bytes": 8356,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 781,
+   "maturity": {
+    "placeholder": 12,
+    "undeclared": 2
+   }
+  },
+  {
+   "domain": "engineering-polymers/standards",
+   "files": 14,
+   "bytes": 22602,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 2029,
+   "maturity": {
+    "undeclared": 13,
+    "review-required": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/thermal",
+   "files": 14,
+   "bytes": 8689,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 874,
+   "maturity": {
+    "placeholder": 12,
+    "undeclared": 2
+   }
+  },
+  {
+   "domain": "engineering-polymers/creep",
+   "files": 13,
+   "bytes": 9257,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 939,
+   "maturity": {
+    "placeholder": 12,
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/dimensional-stability",
+   "files": 13,
+   "bytes": 10459,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 1041,
+   "maturity": {
+    "placeholder": 12,
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/fatigue",
+   "files": 13,
+   "bytes": 8737,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 862,
+   "maturity": {
+    "placeholder": 12,
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/processing",
+   "files": 13,
+   "bytes": 12927,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 1254,
+   "maturity": {
+    "placeholder": 12,
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/reinforcement",
+   "files": 13,
+   "bytes": 8061,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 834,
+   "maturity": {
+    "placeholder": 12,
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/wear",
+   "files": 13,
+   "bytes": 12582,
+   "median_depth_of_15": 3,
+   "max_depth": 3,
+   "words": 1197,
+   "maturity": {
+    "placeholder": 12,
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-metals/corrosion-fatigue",
+   "files": 12,
+   "bytes": 6794,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 624,
+   "maturity": {
+    "placeholder": 12
+   }
+  },
+  {
+   "domain": "engineering-metals/pressure-components",
+   "files": 12,
+   "bytes": 7454,
+   "median_depth_of_15": 3,
+   "max_depth": 3,
+   "words": 732,
+   "maturity": {
+    "placeholder": 12
+   }
+  },
+  {
+   "domain": "engineering-metals/welded-structures",
+   "files": 12,
+   "bytes": 7088,
+   "median_depth_of_15": 1,
+   "max_depth": 3,
+   "words": 684,
+   "maturity": {
+    "placeholder": 12
+   }
+  },
+  {
+   "domain": "exotics/cobalt-base-alloys",
+   "files": 11,
+   "bytes": 15601,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 1305,
+   "maturity": {
+    "undeclared": 9,
+    "placeholder": 2
+   }
+  },
+  {
+   "domain": "exotics/nickel-base-superalloys",
+   "files": 11,
+   "bytes": 16362,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 1359,
+   "maturity": {
+    "undeclared": 9,
+    "placeholder": 2
+   }
+  },
+  {
+   "domain": "exotics/refractory-metals-alloys",
+   "files": 11,
+   "bytes": 19452,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 1589,
+   "maturity": {
+    "undeclared": 9,
+    "placeholder": 2
+   }
+  },
+  {
+   "domain": "exotics/specialty-corrosion-high-performance-alloys",
+   "files": 11,
+   "bytes": 22543,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 1797,
+   "maturity": {
+    "undeclared": 9,
+    "placeholder": 2
+   }
+  },
+  {
+   "domain": "engineering-polymers/application-design",
+   "files": 10,
+   "bytes": 7522,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 707,
+   "maturity": {
+    "placeholder": 8,
+    "undeclared": 2
+   }
+  },
+  {
+   "domain": "steel-depth",
+   "files": 10,
+   "bytes": 42304,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 5214,
+   "maturity": {
+    "placeholder": 4,
+    "undeclared": 4,
+    "review-required": 2
+   }
+  },
+  {
+   "domain": "exotics/titanium",
+   "files": 8,
+   "bytes": 13435,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 1192,
+   "maturity": {
+    "undeclared": 6,
+    "review-required": 1,
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "standards",
+   "files": 7,
+   "bytes": 15217,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 1635,
+   "maturity": {
+    "undeclared": 6,
+    "review-required": 1
+   }
+  },
+  {
+   "domain": "engineering-metals/corrosion-surface",
+   "files": 6,
+   "bytes": 4968,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 429,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-metals/environmental",
+   "files": 6,
+   "bytes": 3351,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 306,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-metals/failure-modes",
+   "files": 6,
+   "bytes": 3379,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 272,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-metals/heat-treatment",
+   "files": 6,
+   "bytes": 4364,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 379,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-metals/identity",
+   "files": 6,
+   "bytes": 3048,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 298,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-metals/joining",
+   "files": 6,
+   "bytes": 4536,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 393,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-metals/manufacturing",
+   "files": 6,
+   "bytes": 4903,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 396,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-metals/mechanical",
+   "files": 6,
+   "bytes": 5065,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 458,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-metals/microstructure",
+   "files": 6,
+   "bytes": 4085,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 321,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-metals/processing",
+   "files": 6,
+   "bytes": 3409,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 306,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-metals/thermal",
+   "files": 6,
+   "bytes": 3499,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 324,
+   "maturity": {
+    "review-required": 6
+   }
+  },
+  {
+   "domain": "engineering-polymers/calculations",
+   "files": 6,
+   "bytes": 3182,
+   "median_depth_of_15": 4,
+   "max_depth": 4,
+   "words": 298,
+   "maturity": {
+    "placeholder": 6
+   }
+  },
+  {
+   "domain": "tungsten",
+   "files": 6,
+   "bytes": 13481,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 1248,
+   "maturity": {
+    "placeholder": 3,
+    "review-required": 1,
+    "undeclared": 2
+   }
+  },
+  {
+   "domain": "engineering-metals/applications",
+   "files": 5,
+   "bytes": 2410,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 218,
+   "maturity": {
+    "undeclared": 5
+   }
+  },
+  {
+   "domain": "engineering-metals/gdt-tolerancing",
+   "files": 5,
+   "bytes": 1843,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 164,
+   "maturity": {
+    "placeholder": 5
+   }
+  },
+  {
+   "domain": "engineering-metals/systems-engineering-cases",
+   "files": 5,
+   "bytes": 2321,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 225,
+   "maturity": {
+    "placeholder": 5
+   }
+  },
+  {
+   "domain": "materials",
+   "files": 5,
+   "bytes": 83549,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 7961,
+   "maturity": {
+    "undeclared": 5
+   }
+  },
+  {
+   "domain": "engineering-knowledge",
+   "files": 4,
+   "bytes": 9034,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 896,
+   "maturity": {
+    "undeclared": 3,
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "engineering-metals/calculations",
+   "files": 4,
+   "bytes": 1697,
+   "median_depth_of_15": 3,
+   "max_depth": 4,
+   "words": 168,
+   "maturity": {
+    "undeclared": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/configuration-change-control",
+   "files": 4,
+   "bytes": 1348,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 109,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/digital-control",
+   "files": 4,
+   "bytes": 1621,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 142,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/electronics-instrumentation",
+   "files": 4,
+   "bytes": 1679,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 133,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/environmental-engineering",
+   "files": 4,
+   "bytes": 1523,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 121,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/fatigue-fracture",
+   "files": 4,
+   "bytes": 2241,
+   "median_depth_of_15": 4,
+   "max_depth": 5,
+   "words": 216,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/human-factors-maintainability",
+   "files": 4,
+   "bytes": 1421,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 113,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/mechanisms-motion",
+   "files": 4,
+   "bytes": 1311,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 117,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/production-quality",
+   "files": 4,
+   "bytes": 1406,
+   "median_depth_of_15": 1,
+   "max_depth": 3,
+   "words": 112,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/safety-reliability",
+   "files": 4,
+   "bytes": 1777,
+   "median_depth_of_15": 1,
+   "max_depth": 3,
+   "words": 165,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/systems-architecture-interfaces",
+   "files": 4,
+   "bytes": 1581,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 116,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-metals/systems-verification",
+   "files": 4,
+   "bytes": 1494,
+   "median_depth_of_15": 0,
+   "max_depth": 2,
+   "words": 126,
+   "maturity": {
+    "placeholder": 4
+   }
+  },
+  {
+   "domain": "engineering-polymers/worked-examples",
+   "files": 4,
+   "bytes": 2042,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 201,
+   "maturity": {
+    "undeclared": 4
+   }
+  },
+  {
+   "domain": "aluminium/fatigue",
+   "files": 3,
+   "bytes": 3610,
+   "median_depth_of_15": 1,
+   "max_depth": 3,
+   "words": 352,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "aluminium/fracture",
+   "files": 3,
+   "bytes": 2350,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 241,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/actuation-transmission",
+   "files": 3,
+   "bytes": 1259,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 105,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/bearings",
+   "files": 3,
+   "bytes": 1156,
+   "median_depth_of_15": 1,
+   "max_depth": 3,
+   "words": 96,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/combined-loading",
+   "files": 3,
+   "bytes": 1404,
+   "median_depth_of_15": 5,
+   "max_depth": 5,
+   "words": 141,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/contact-wear",
+   "files": 3,
+   "bytes": 1633,
+   "median_depth_of_15": 1,
+   "max_depth": 3,
+   "words": 142,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/controls-feedback",
+   "files": 3,
+   "bytes": 1698,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 156,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/dynamics-vibration",
+   "files": 3,
+   "bytes": 1169,
+   "median_depth_of_15": 3,
+   "max_depth": 5,
+   "words": 104,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/electromechanical-interfaces",
+   "files": 3,
+   "bytes": 1209,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 105,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/electronics-interfaces",
+   "files": 3,
+   "bytes": 1306,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 112,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/fits-tolerances",
+   "files": 3,
+   "bytes": 1588,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 138,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/fluid-thermal-interfaces",
+   "files": 3,
+   "bytes": 1487,
+   "median_depth_of_15": 3,
+   "max_depth": 3,
+   "words": 144,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/gears",
+   "files": 3,
+   "bytes": 1164,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 105,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/manufacturing-design",
+   "files": 3,
+   "bytes": 1676,
+   "median_depth_of_15": 2,
+   "max_depth": 4,
+   "words": 153,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/materials-process-selection",
+   "files": 3,
+   "bytes": 1782,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 155,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/metrology",
+   "files": 3,
+   "bytes": 1321,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 105,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/stability-buckling",
+   "files": 3,
+   "bytes": 1318,
+   "median_depth_of_15": 3,
+   "max_depth": 4,
+   "words": 122,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/systems-verification-deep",
+   "files": 3,
+   "bytes": 1261,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 92,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/thermal-mechanical",
+   "files": 3,
+   "bytes": 1330,
+   "median_depth_of_15": 3,
+   "max_depth": 5,
+   "words": 121,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/tribology",
+   "files": 3,
+   "bytes": 1189,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 91,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "engineering-metals/verification",
+   "files": 3,
+   "bytes": 1224,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 104,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "environment",
+   "files": 3,
+   "bytes": 7287,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 797,
+   "maturity": {
+    "undeclared": 3
+   }
+  },
+  {
+   "domain": "exotics/consolidation",
+   "files": 3,
+   "bytes": 15202,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 981,
+   "maturity": {
+    "undeclared": 1,
+    "review-required": 2
+   }
+  },
+  {
+   "domain": "magnesium/mechanical",
+   "files": 3,
+   "bytes": 4496,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 424,
+   "maturity": {
+    "placeholder": 3
+   }
+  },
+  {
+   "domain": "manufacturing",
+   "files": 3,
+   "bytes": 3911,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 369,
+   "maturity": {
+    "undeclared": 3
+   }
+  },
+  {
+   "domain": "property-observations",
+   "files": 3,
+   "bytes": 101316,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 12588,
+   "maturity": {
+    "placeholder": 2,
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "aluminium/mechanical",
+   "files": 2,
+   "bytes": 22885,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 1963,
+   "maturity": {
+    "placeholder": 2
+   }
+  },
+  {
+   "domain": "aluminium/shear-bearing",
+   "files": 2,
+   "bytes": 7761,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 780,
+   "maturity": {
+    "placeholder": 2
+   }
+  },
+  {
+   "domain": "aluminium/temperature",
+   "files": 2,
+   "bytes": 3283,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 292,
+   "maturity": {
+    "placeholder": 2
+   }
+  },
+  {
+   "domain": "bulk-catalogue",
+   "files": 2,
+   "bytes": 38671,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 3917,
+   "maturity": {
+    "placeholder": 2
+   }
+  },
+  {
+   "domain": "designation-mappings",
+   "files": 2,
+   "bytes": 2633,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 320,
+   "maturity": {
+    "undeclared": 2
+   }
+  },
+  {
+   "domain": "electrical",
+   "files": 2,
+   "bytes": 4569,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 468,
+   "maturity": {
+    "placeholder": 1,
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-metals/substitution",
+   "files": 2,
+   "bytes": 1316,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 115,
+   "maturity": {
+    "placeholder": 2
+   }
+  },
+  {
+   "domain": "engineering-polymers/joining",
+   "files": 2,
+   "bytes": 1380,
+   "median_depth_of_15": 1,
+   "max_depth": 2,
+   "words": 130,
+   "maturity": {
+    "undeclared": 1,
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "exotics/properties",
+   "files": 2,
+   "bytes": 8166,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 703,
+   "maturity": {
+    "undeclared": 1,
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "magnesium/economics",
+   "files": 2,
+   "bytes": 2637,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 198,
+   "maturity": {
+    "undeclared": 2
+   }
+  },
+  {
+   "domain": "magnesium/manufacturing",
+   "files": 2,
+   "bytes": 2890,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 245,
+   "maturity": {
+    "review-required": 1,
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "magnesium/standards",
+   "files": 2,
+   "bytes": 1776,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 173,
+   "maturity": {
+    "review-required": 1,
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "selection",
+   "files": 2,
+   "bytes": 2426,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 282,
+   "maturity": {
+    "undeclared": 2
+   }
+  },
+  {
+   "domain": "tungsten/carbide",
+   "files": 2,
+   "bytes": 4599,
+   "median_depth_of_15": 0,
+   "max_depth": 1,
+   "words": 411,
+   "maturity": {
+    "placeholder": 2
+   }
+  },
+  {
+   "domain": "aluminium",
+   "files": 1,
+   "bytes": 8338,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 846,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "aluminium/commercial",
+   "files": 1,
+   "bytes": 3637,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 304,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "aluminium/electrical",
+   "files": 1,
+   "bytes": 4906,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 517,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "aluminium/environment",
+   "files": 1,
+   "bytes": 1215,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 146,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "aluminium/joints",
+   "files": 1,
+   "bytes": 1911,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 123,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "aluminium/manufacturing",
+   "files": 1,
+   "bytes": 1023,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 94,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "aluminium/standards",
+   "files": 1,
+   "bytes": 520,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 59,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "aluminium/thermal",
+   "files": 1,
+   "bytes": 4832,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 427,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "chemistry",
+   "files": 1,
+   "bytes": 1924,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 249,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "commercial",
+   "files": 1,
+   "bytes": 3894,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 306,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "copper",
+   "files": 1,
+   "bytes": 5195,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 554,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-metals/standards",
+   "files": 1,
+   "bytes": 1130,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 107,
+   "maturity": {
+    "review-required": 1
+   }
+  },
+  {
+   "domain": "engineering-metals/standards-design",
+   "files": 1,
+   "bytes": 968,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 100,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers",
+   "files": 1,
+   "bytes": 7885,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 811,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/applications",
+   "files": 1,
+   "bytes": 2620,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 191,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/compatibility",
+   "files": 1,
+   "bytes": 2086,
+   "median_depth_of_15": 2,
+   "max_depth": 2,
+   "words": 175,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/economics",
+   "files": 1,
+   "bytes": 1212,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 92,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/evidence-workflow",
+   "files": 1,
+   "bytes": 901,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 69,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/fatigue-creep",
+   "files": 1,
+   "bytes": 770,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 74,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/manufacturing",
+   "files": 1,
+   "bytes": 882,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 71,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/manufacturing-inspection",
+   "files": 1,
+   "bytes": 1046,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 88,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "engineering-polymers/selection-metadata",
+   "files": 1,
+   "bytes": 3546,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 0,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "exotic-alloys",
+   "files": 1,
+   "bytes": 11809,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 1260,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "exotics/applications",
+   "files": 1,
+   "bytes": 1147,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 78,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "exotics/economics",
+   "files": 1,
+   "bytes": 979,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 67,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "exotics/environment",
+   "files": 1,
+   "bytes": 555,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 54,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "exotics/manufacturing",
+   "files": 1,
+   "bytes": 1628,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 104,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "exotics/standards",
+   "files": 1,
+   "bytes": 752,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 70,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "general-polymers",
+   "files": 1,
+   "bytes": 6454,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 669,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "magnesium",
+   "files": 1,
+   "bytes": 6889,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 761,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "magnesium/alloys",
+   "files": 1,
+   "bytes": 7688,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 680,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "magnesium/corrosion",
+   "files": 1,
+   "bytes": 1163,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 107,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "magnesium/electrical",
+   "files": 1,
+   "bytes": 1158,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 109,
+   "maturity": {
+    "review-required": 1
+   }
+  },
+  {
+   "domain": "magnesium/environment",
+   "files": 1,
+   "bytes": 710,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 69,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "magnesium/joining",
+   "files": 1,
+   "bytes": 1704,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 134,
+   "maturity": {
+    "review-required": 1
+   }
+  },
+  {
+   "domain": "magnesium/properties",
+   "files": 1,
+   "bytes": 1062,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 90,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "magnesium/surface-treatment",
+   "files": 1,
+   "bytes": 1654,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 108,
+   "maturity": {
+    "review-required": 1
+   }
+  },
+  {
+   "domain": "magnesium/thermal",
+   "files": 1,
+   "bytes": 1375,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 153,
+   "maturity": {
+    "review-required": 1
+   }
+  },
+  {
+   "domain": "material-states",
+   "files": 1,
+   "bytes": 2078,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 256,
+   "maturity": {
+    "review-required": 1
+   }
+  },
+  {
+   "domain": "mechanical",
+   "files": 1,
+   "bytes": 8830,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 698,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "sources",
+   "files": 1,
+   "bytes": 531,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 54,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "thermal",
+   "files": 1,
+   "bytes": 7641,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 717,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "tungsten-refractory",
+   "files": 1,
+   "bytes": 7026,
+   "median_depth_of_15": 1,
+   "max_depth": 1,
+   "words": 755,
+   "maturity": {
+    "undeclared": 1
+   }
+  },
+  {
+   "domain": "tungsten/environment",
+   "files": 1,
+   "bytes": 685,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 65,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "tungsten/heavy-alloys",
+   "files": 1,
+   "bytes": 4598,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 404,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "tungsten/high-temperature",
+   "files": 1,
+   "bytes": 5850,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 521,
+   "maturity": {
+    "placeholder": 1
+   }
+  },
+  {
+   "domain": "validation",
+   "files": 1,
+   "bytes": 1505,
+   "median_depth_of_15": 0,
+   "max_depth": 0,
+   "words": 173,
+   "maturity": {
+    "undeclared": 1
+   }
+  }
+ ]
+}

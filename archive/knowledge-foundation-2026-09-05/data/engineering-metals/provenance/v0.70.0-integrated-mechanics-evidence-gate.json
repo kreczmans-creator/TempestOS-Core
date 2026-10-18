@@ -1,0 +1,20 @@
+{
+  "version": "0.70.0",
+  "required_evidence": [
+    "requirements and load traceability",
+    "exact material designation and condition",
+    "geometry and boundary conditions",
+    "temperature/environment",
+    "applicable analytical or numerical method",
+    "independent calculation/check",
+    "test/correlation evidence where required",
+    "acceptance criteria",
+    "revision and traceability"
+  ],
+  "promotion_levels": [
+    "screening",
+    "verified",
+    "qualified"
+  ],
+  "rule": "Integrated mechanics frameworks do not create certified design allowables or waive application-specific verification."
+}

@@ -1,0 +1,40 @@
+{
+  "machinability": {
+    "410": "moderate",
+    "420": "moderate",
+    "440C": "poor_to_moderate_after_hardening",
+    "17-4 PH": "condition_dependent",
+    "15-5 PH": "condition_dependent",
+    "13-8 Mo": "condition_dependent",
+    "H13": "moderate"
+  },
+  "weldability": {
+    "410": "specialist_procedure_required",
+    "420": "specialist_procedure_required",
+    "440C": "difficult",
+    "17-4 PH": "generally_weldable_with_condition_control",
+    "15-5 PH": "generally_weldable_with_condition_control",
+    "13-8 Mo": "procedure_and_condition_sensitive",
+    "H13": "specialist_procedure_required"
+  },
+  "forming": {
+    "martensitic_stainless": "limited_after_hardening; cold forming depends on condition",
+    "austenitic_stainless": "generally_good_formability",
+    "ferritic_stainless": "moderate",
+    "precipitation_hardening": "condition_dependent"
+  },
+  "surface_treatment": {
+    "martensitic_stainless": [
+      "passivation",
+      "polishing",
+      "coating_where_required"
+    ],
+    "precipitation_hardening": [
+      "passivation",
+      "surface_engineering_where_required"
+    ],
+    "tool_steel": [
+      "nitriding/coating/grinding as application requires"
+    ]
+  }
+}

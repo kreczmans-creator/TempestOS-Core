@@ -13,7 +13,7 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 
 /// <summary>
 /// Periodically writes <c>engineering-status.json</c>/<c>programme.json</c>/
-/// <c>contracts.json</c>/<c>quotes.json</c> to
+/// <c>contracts.json</c>/<c>quotes.json</c>/<c>reviews.json</c> to
 /// <see cref="DashboardExportOptions.ExportDirectory"/>, on
 /// <see cref="DashboardExportOptions.IntervalSeconds"/> — the Core-side half
 /// of the Core→Dashboard integration contract (§3.4): Core has no outbound
@@ -47,8 +47,8 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// type), so this constructor deliberately takes only ordinary,
 /// already-platform-registered services and constructs
 /// <see cref="EngineeringStatusExportAdapter"/>/<see cref="ProgrammeHierarchyExportAdapter"/>/
-/// <see cref="ContractsExportAdapter"/>/<see cref="QuotesExportAdapter"/>
-/// itself, composition-root style (`new`), exactly as it constructs the
+/// <see cref="ContractsExportAdapter"/>/<see cref="QuotesExportAdapter"/>/
+/// <see cref="ReviewQueueExportAdapter"/> itself, composition-root style (`new`), exactly as it constructs the
 /// Cockpit read models it reuses — rather than declaring them as
 /// constructor parameters, which would need a registration this Work
 /// Package has no natural place to add (Core's own central service
@@ -68,6 +68,7 @@ public sealed class DashboardExportHostedService : IHostedService
     private readonly ProgrammeHierarchyExportAdapter _programme;
     private readonly ContractsExportAdapter _contracts;
     private readonly QuotesExportAdapter _quotes;
+    private readonly ReviewQueueExportAdapter _reviews;
     private readonly IConfigurationProvider _configuration;
     private readonly ILogger? _logger;
 
@@ -79,7 +80,7 @@ public sealed class DashboardExportHostedService : IHostedService
 
     /// <summary>Initialises a new instance of the <see cref="DashboardExportHostedService"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository — passed straight through to both freshly-constructed adapters.</param>
-    /// <param name="requirementsService">The Requirements Framework's own service — passed straight through to <see cref="EngineeringStatusExportAdapter"/>.</param>
+    /// <param name="requirementsService">The Requirements Framework's own service — passed straight through to <see cref="EngineeringStatusExportAdapter"/> and <see cref="ReviewQueueExportAdapter"/>.</param>
     /// <param name="requirementValidationService">The Requirements Framework's own validation service — passed straight through to <see cref="EngineeringStatusExportAdapter"/>.</param>
     /// <param name="navigationProvider">The Platform's own navigation provider — passed straight through to <see cref="EngineeringStatusExportAdapter"/>, whose headless <c>EngineeringCockpit</c> (schema v2) needs one to construct; never consulted by anything exported.</param>
     /// <param name="commandRegistry">The Platform's own command registry — likewise passed straight through to <see cref="EngineeringStatusExportAdapter"/> for its <c>EngineeringCockpit</c>.</param>
@@ -111,6 +112,7 @@ public sealed class DashboardExportHostedService : IHostedService
         _programme = new ProgrammeHierarchyExportAdapter(domainContext, requirementsService, requirementValidationService, navigationProvider, commandRegistry);
         _contracts = new ContractsExportAdapter(contractCatalog);
         _quotes = new QuotesExportAdapter(quotationCatalog);
+        _reviews = new ReviewQueueExportAdapter(domainContext, requirementsService);
         _configuration = configuration;
         _logger = logger;
     }
@@ -200,6 +202,7 @@ public sealed class DashboardExportHostedService : IHostedService
             await WriteAsync(_programme, Path.Combine(directory, "programme.json"), cancellationToken).ConfigureAwait(false);
             await WriteAsync(_contracts, Path.Combine(directory, "contracts.json"), cancellationToken).ConfigureAwait(false);
             await WriteAsync(_quotes, Path.Combine(directory, "quotes.json"), cancellationToken).ConfigureAwait(false);
+            await WriteAsync(_reviews, Path.Combine(directory, "reviews.json"), cancellationToken).ConfigureAwait(false);
 
             LastExportSucceeded = true;
             LastExportException = null;

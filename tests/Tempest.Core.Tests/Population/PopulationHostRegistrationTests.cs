@@ -91,7 +91,11 @@ public class PopulationHostRegistrationTests
             await seeder.ApplyAsync(standards, StandardSeed.Instance);
             var outcome = await seeder.ApplyAsync(materials, MaterialSeed.Instance);
 
-            Assert.Equal(6, outcome.RegisteredCount);
+            Assert.Equal(MaterialSeed.Instance.Records.Count, outcome.RegisteredCount);
+
+            // PO decision 2026-10-01: the host's seeder releases shipped
+            // reference data at seed, through the review path.
+            Assert.Equal(outcome.RegisteredCount, outcome.ReleasedCount);
 
             // Read back through a second resolution of the same service, so
             // the record is coming out of the container's singleton and its
@@ -101,7 +105,8 @@ public class PopulationHostRegistrationTests
 
             Assert.NotNull(record);
             Assert.Equal("S355J2", record.Definition.Designation);
-            Assert.Equal(ReferenceValidationState.Draft, record.ValidationState);
+            Assert.Equal(ReferenceValidationState.Released, record.ValidationState);
+            Assert.Equal(ReferenceSeedReleasePolicy.SeedPrincipalId, record.Provenance.ReviewerPrincipalId);
 
             // The standard the material cites resolves through the
             // container too, which is the cross-library link working in the
@@ -147,7 +152,12 @@ public class PopulationHostRegistrationTests
             // And so did the provenance, which is the part that makes the
             // value worth having.
             Assert.Equal("Aalco Metals Limited", record.Provenance.SourceOrganisation);
-            Assert.False(record.Provenance.IsVerified);
+
+            // Verified at seed by the named seed principal (PO decision
+            // 2026-10-01) — attributable, and saying what it checked against.
+            Assert.True(record.Provenance.IsVerified);
+            Assert.Equal(ReferenceSeedReleasePolicy.SeedPrincipalId, record.Provenance.ReviewerPrincipalId);
+            Assert.Contains("verify against the primary standard before issue", record.Provenance.Notes);
 
             // Re-seeding the restarted host recognises what is already
             // there rather than failing on duplicates.
@@ -155,7 +165,7 @@ public class PopulationHostRegistrationTests
             var second = await seeder.ApplyAsync(materials, MaterialSeed.Instance);
 
             Assert.True(second.MadeNoChange);
-            Assert.Equal(6, second.AlreadyPresentCount);
+            Assert.Equal(MaterialSeed.Instance.Records.Count, second.AlreadyPresentCount);
         });
     }
 }

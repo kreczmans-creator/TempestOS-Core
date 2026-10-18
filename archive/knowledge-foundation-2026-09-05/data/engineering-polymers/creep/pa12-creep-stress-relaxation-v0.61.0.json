@@ -1,0 +1,24 @@
+{
+  "version": "0.61.0",
+  "family": "PA12",
+  "domain": "time_dependent_mechanics",
+  "creep_screen": "moderate; moisture and temperature dependent",
+  "stress_relaxation_screen": "moderate-to-significant",
+  "critical_variables": [
+    "stress",
+    "temperature",
+    "time",
+    "moisture/conditioning",
+    "grade",
+    "geometry"
+  ],
+  "engineering_methods": [
+    "isochronous stress-strain curves",
+    "creep compliance",
+    "creep rupture where applicable",
+    "master-curve/time-temperature methods only when validated"
+  ],
+  "design_warning": "Do not use short-term tensile strength as a sustained-load allowable.",
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

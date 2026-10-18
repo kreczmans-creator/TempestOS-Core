@@ -16,25 +16,25 @@ public class SeededSourceCitationCoverageTests
     [Fact]
     public void Materials_EveryRecord_CarriesACitation()
     {
-        AssertCoverage(MaterialSeed.Instance.Records, withSource: 6, withoutSource: 0);
+        AssertCoverage(MaterialSeed.Instance.Records, withSource: 77, withoutSource: 0);
     }
 
     [Fact]
     public void Fasteners_EveryRecord_CarriesACitation()
     {
-        AssertCoverage(FastenerSeed.Instance.Records, withSource: 7, withoutSource: 0);
+        AssertCoverage(FastenerSeed.Instance.Records, withSource: 131, withoutSource: 0);
     }
 
     [Fact]
     public void Bearings_EveryRecord_CarriesACitation()
     {
-        AssertCoverage(BearingSeed.Instance.Records, withSource: 2, withoutSource: 0);
+        AssertCoverage(BearingSeed.Instance.Records, withSource: 39, withoutSource: 0);
     }
 
     [Fact]
     public void Standards_EveryRecord_CarriesACitation()
     {
-        AssertCoverage(StandardSeed.Instance.Records, withSource: 14, withoutSource: 0);
+        AssertCoverage(StandardSeed.Instance.Records, withSource: 29, withoutSource: 0);
     }
 
     [Fact]

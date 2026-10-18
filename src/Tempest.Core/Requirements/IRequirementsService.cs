@@ -137,9 +137,20 @@ public interface IRequirementsService
     /// <exception cref="RequirementGroupHasChildrenException">The group still has live (non-deleted) sub-groups or grouped requirements.</exception>
     Task<IRequirementGroup> DeleteGroupAsync(Guid groupId, CancellationToken cancellationToken = default);
 
+    /// <summary>Restores a soft-deleted group — the Undo half of <see cref="DeleteGroupAsync"/>'s own compensation and the Redo half of <see cref="CreateGroupAsync"/>'s (`v1.0.0` RC; the same two-guard shape as <see cref="UndeleteAsync"/>).</summary>
+    /// <exception cref="EngineeringDocumentNotFoundException"><paramref name="groupId"/> does not exist.</exception>
+    /// <exception cref="RequirementGroupNotDeletedException"><paramref name="groupId"/> is not currently deleted.</exception>
+    /// <exception cref="RequirementParentGroupDeletedException">The group's own parent group has itself been deleted in the meantime.</exception>
+    Task<IRequirementGroup> UndeleteGroupAsync(Guid groupId, CancellationToken cancellationToken = default);
+
     /// <summary>Soft-deletes the collection. Never affects any member requirement — a collection is a view over requirements, not a container that owns them (`WP7.2B Requirements Domain Model.md` §2).</summary>
     /// <exception cref="EngineeringDocumentNotFoundException"><paramref name="collectionId"/> does not exist.</exception>
     Task<IRequirementCollection> DeleteCollectionAsync(Guid collectionId, CancellationToken cancellationToken = default);
+
+    /// <summary>Restores a soft-deleted collection — the Undo half of <see cref="DeleteCollectionAsync"/>'s own compensation and the Redo half of <see cref="CreateCollectionAsync"/>'s (`v1.0.0` RC). Its membership links were never removed, so they come back with it.</summary>
+    /// <exception cref="EngineeringDocumentNotFoundException"><paramref name="collectionId"/> does not exist.</exception>
+    /// <exception cref="RequirementCollectionNotDeletedException"><paramref name="collectionId"/> is not currently deleted.</exception>
+    Task<IRequirementCollection> UndeleteCollectionAsync(Guid collectionId, CancellationToken cancellationToken = default);
 
     // ---- WP 9.1A: additive enumeration (ADR-0084) ----
 

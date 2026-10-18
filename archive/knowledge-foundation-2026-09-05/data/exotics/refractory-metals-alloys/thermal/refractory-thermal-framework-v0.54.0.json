@@ -1,0 +1,21 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "principles": [
+    "High melting point does not imply suitability for service in air.",
+    "Thermal conductivity varies materially among refractory systems and is temperature- and purity-dependent.",
+    "CTE mismatch can generate substantial thermal stresses in joints and coatings.",
+    "Thermal cycling can interact with oxidation, grain growth, residual stress and joining interfaces."
+  ],
+  "required_inputs": [
+    "temperature-dependent modulus",
+    "thermal conductivity",
+    "specific heat",
+    "CTE",
+    "temperature-dependent strength",
+    "emissivity where radiation matters",
+    "exposure duration",
+    "atmosphere"
+  ],
+  "rule": "Always model the actual atmosphere and thermal exposure history."
+}

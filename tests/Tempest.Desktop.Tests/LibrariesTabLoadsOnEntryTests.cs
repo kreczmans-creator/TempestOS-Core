@@ -57,24 +57,96 @@ public sealed class LibrariesTabLoadsOnEntryTests
                 Assert.True(count >= 1, $"{library} lists no records.");
             }
 
-            // `WP 19.10P` (D15): every one of the nine governed libraries
+            // `WP 19.10P` (D15): every one of the seven governed libraries
             // gets its own heading, whether or not it currently holds a
-            // record — Manufacturing, Components, the rate-card library
-            // (its own routing key stays "BusinessRateCards"; its screen
-            // name is "Rate cards") and People (`WP 20.10F`, Product Owner
-            // finding D8 — nobody is seeded, "the first person is added by
-            // the user") carry no baseline seed (only the five above do),
-            // so on a genuinely fresh root they are the four that read
-            // "(0)" with "No records yet" beneath, rather than being
-            // missing entirely.
-            foreach (var library in new[] { "Manufacturing", "Components", "Rate cards", "People" })
+            // record — Manufacturing and Components carry no baseline seed
+            // (only the five above do), so on a genuinely fresh root they
+            // are the two that read "(0)" with "No records yet" beneath,
+            // rather than being missing entirely. People moved to Business →
+            // Staff (Product Owner runbook B1) and rate cards to Business →
+            // Rate cards (Product Owner decision 2026-10-01); neither is
+            // listed here at all.
+            foreach (var library in new[] { "Manufacturing", "Components" })
                 Assert.Contains(headings, h => h == $"{library} (0)");
+            Assert.DoesNotContain(headings, h => h.StartsWith("People (", StringComparison.Ordinal));
+            Assert.DoesNotContain(headings, h => h.StartsWith("Rate cards (", StringComparison.Ordinal));
+            Assert.DoesNotContain(librariesView.GetLogicalDescendants().OfType<Button>(), b => Equals(b.Content, "Add Rate Card"));
 
             var emptyLibraryTexts = librariesView.GetLogicalDescendants().OfType<TextBlock>()
                 .Count(t => t.Text == "No records yet");
-            Assert.Equal(4, emptyLibraryTexts);
+            Assert.Equal(2, emptyLibraryTexts);
 
             Assert.DoesNotContain(librariesView.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "No reference records are seeded.");
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Product Owner runbook F1 (2026-10-01): a library lists one compact
+    /// row per record — its title and release status, nothing else — under
+    /// collapsible family groups whose headings carry counts; a group's
+    /// collapsed state survives a refresh for the rest of the session.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task Libraries_ListTitleAndStatusRows_UnderCollapsibleFamilyGroups_RememberedAcrossRefresh()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+
+            const string recordId = "mat-f1-grouping";
+            await host.Materials!.RegisterAsync(
+                recordId,
+                new Tempest.Core.Materials.MaterialDefinition { Name = "Runbook F1 Stainless", Family = Tempest.Core.Materials.MaterialFamily.StainlessSteel, Designation = recordId },
+                new Tempest.Core.ReferenceData.ReferenceProvenance(SourceOrganisation: "Test Handbook Publisher", SourceDocument: "Test Handbook"));
+
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringDepartment);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Reference data");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<LibrariesView>().Any());
+            LayOut(window);
+
+            var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
+
+            // The row: title and status badge only — no id, revision or
+            // source citation in the list.
+            var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == $"Open {recordId}");
+            var row = (Grid)openButton.Parent!;
+            var rowTexts = row.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty).Where(t => t.Length > 0).ToList();
+            Assert.Contains("Runbook F1 Stainless", rowTexts);
+            Assert.Contains("Draft", rowTexts);
+            Assert.DoesNotContain(rowTexts, t => t.Contains(recordId, StringComparison.Ordinal) || t.Contains("rev ", StringComparison.Ordinal) || t.Contains("source citation", StringComparison.Ordinal));
+            Assert.DoesNotContain(row.GetLogicalDescendants().OfType<Button>(), b => Equals(b.Content, "Verify") || Equals(b.Content, "Revise"));
+
+            // Its family group, with a count, collapses and expands.
+            var group = librariesView.GetLogicalDescendants().OfType<CollapsibleSection>().Single(s => s.Title == "Stainless steels");
+            Assert.Contains(group.Header.GetLogicalDescendants().OfType<TextBlock>(), t => (t.Text ?? string.Empty).StartsWith("Stainless steels (", StringComparison.Ordinal));
+            Assert.Equal("Stainless steels group", Avalonia.Automation.AutomationProperties.GetName(group.Header));
+
+            var before = group.IsExpanded;
+            group.Header.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal(!before, group.IsExpanded);
+            LayOut(window);
+            Assert.Equal(!before, row.IsEffectivelyVisible);
+
+            // Remembered across a refresh.
+            await librariesView.RefreshAsync();
+            LayOut(window);
+            var rebuilt = librariesView.GetLogicalDescendants().OfType<CollapsibleSection>().Single(s => s.Title == "Stainless steels");
+            Assert.Equal(!before, rebuilt.IsExpanded);
+
+            // The library heading itself collapses too.
+            var library = librariesView.GetLogicalDescendants().OfType<CollapsibleSection>().Single(s => s.Title == "Materials");
+            Assert.Equal("Materials library", Avalonia.Automation.AutomationProperties.GetName(library.Header));
         }
         finally
         {
@@ -157,9 +229,16 @@ public sealed class LibrariesTabLoadsOnEntryTests
             var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
             LayOut(window);
 
-            var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()
-                .First(g => g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(recordId, StringComparison.Ordinal)));
-            var reviseButton = recordRow.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Revise"));
+            // Runbook F1: a row is title and status only — Revise lives on
+            // the open record.
+            var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == $"Open {recordId}");
+            openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () =>
+                librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } opened
+                && opened.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(recordId, StringComparison.Ordinal)));
+            var reviseButton = librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().First()
+                .GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Revise"));
             reviseButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             var reviseEntry = GetPrivateField<ReviseReferenceRecordEntry>(window, "_reviseReferenceRecordEntry");
@@ -180,6 +259,11 @@ public sealed class LibrariesTabLoadsOnEntryTests
             Assert.Contains(
                 detailView.GetLogicalDescendants().OfType<TextBlock>(),
                 t => (t.Text ?? string.Empty).Contains("Detail Pane Revised Alloy", StringComparison.Ordinal));
+
+            // A content revision is revision 2 (runbook B2).
+            Assert.Contains(
+                detailView.GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains("rev 2", StringComparison.Ordinal));
         }
         finally
         {
@@ -187,16 +271,8 @@ public sealed class LibrariesTabLoadsOnEntryTests
         }
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = Deadline(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(MainWindow window)
     {

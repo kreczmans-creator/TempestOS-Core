@@ -182,7 +182,7 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
 
             await RequireSecondaryKeyFreeAsync(definition, recordId, cancellationToken).ConfigureAwait(false);
 
-            var dto = new ReferenceDocumentDto<TDefinition>(recordId, definition, provenance, ReferenceValidationState.Draft, null, source);
+            var dto = new ReferenceDocumentDto<TDefinition>(recordId, definition, provenance, ReferenceValidationState.Draft, null, source, ContentRevision: 1);
             var content = Serialise(dto);
             var documentId = Guid.NewGuid();
             IDocumentRevision? revision = null;
@@ -216,7 +216,7 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
             _logger?.Information($"{LibraryName} record registered: '{recordId}' (document '{documentId}').");
 
             return new ReferenceRecord<TDefinition>(
-                recordId, definition, provenance, ReferenceValidationState.Draft, null, documentId, revision!.RevisionNumber, source);
+                recordId, definition, provenance, ReferenceValidationState.Draft, null, documentId, revision!.RevisionNumber, source, contentRevision: 1);
         }
     }
 
@@ -347,7 +347,10 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
 
             var previousKey = GetSecondaryKey(current.Definition);
             var effectiveSource = sourceSpecified ? source : current.Source;
+            var currentContentRevision = await ResolveContentRevisionAsync(current, documentId, cancellationToken).ConfigureAwait(false);
             var revised = current with { Definition = definition, Provenance = provenance, Source = effectiveSource };
+            var contentRevision = HasContentChanged(current, revised) ? currentContentRevision + 1 : currentContentRevision;
+            revised = revised with { ContentRevision = contentRevision };
             var content = Serialise(revised);
             IDocumentRevision? revision = null;
 
@@ -379,7 +382,7 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
 
             return new ReferenceRecord<TDefinition>(
                 recordId, definition, provenance, current.ValidationState, current.SupersededByRecordId, documentId, revisionNumber,
-                effectiveSource);
+                effectiveSource, contentRevision);
         }
     }
 
@@ -407,7 +410,10 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
             if (ReferenceValidationStates.DescribeProvenanceShortfall(current.Provenance, state) is { } shortfall)
                 throw new ReferenceProvenanceIncompleteException(LibraryName, recordId, state, shortfall);
 
-            var updated = current with { ValidationState = state };
+            // A lifecycle move never changes the user-visible revision
+            // (runbook B2): the content revision is carried forward as is.
+            var contentRevision = await ResolveContentRevisionAsync(current, documentId, cancellationToken).ConfigureAwait(false);
+            var updated = current with { ValidationState = state, ContentRevision = contentRevision };
             var revision = await _documentStore
                 .ReviseAsync(documentId, Serialise(updated), changeSummary, cancellationToken)
                 .ConfigureAwait(false);
@@ -416,7 +422,7 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
 
             return new ReferenceRecord<TDefinition>(
                 recordId, current.Definition, current.Provenance, state, current.SupersededByRecordId, documentId, revision.RevisionNumber,
-                current.Source);
+                current.Source, contentRevision);
         }
     }
 
@@ -443,10 +449,12 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
             if (!ReferenceValidationStates.IsPermitted(current.ValidationState, ReferenceValidationState.Superseded))
                 throw new InvalidReferenceStateTransitionException(LibraryName, recordId, current.ValidationState, ReferenceValidationState.Superseded);
 
+            var contentRevision = await ResolveContentRevisionAsync(current, documentId, cancellationToken).ConfigureAwait(false);
             var updated = current with
             {
                 ValidationState = ReferenceValidationState.Superseded,
                 SupersededByRecordId = replacementRecordId,
+                ContentRevision = contentRevision,
             };
             var content = Serialise(updated);
             IDocumentRevision? revision = null;
@@ -498,7 +506,8 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
                 replacementRecordId,
                 documentId,
                 revision!.RevisionNumber,
-                current.Source);
+                current.Source,
+                contentRevision);
         }
     }
 
@@ -529,9 +538,11 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
                 $"{LibraryName} record '{recordId}' has no revision {revisionNumber} (revisions 1 to {history.Count} exist).");
 
         var dto = Deserialise(recordId, documentId, revision.Content);
+        var contentRevision = dto.ContentRevision
+            ?? DeriveContentRevision(recordId, documentId, history.Where(r => r.RevisionNumber <= revisionNumber));
         return new ReferenceRecord<TDefinition>(
             dto.RecordId, dto.Definition, dto.Provenance, dto.ValidationState, dto.SupersededByRecordId, documentId, revision.RevisionNumber,
-            dto.Source);
+            dto.Source, contentRevision);
     }
 
     private async Task<IDisposable> AcquireSecondaryLockAsync(string? secondaryKey, CancellationToken cancellationToken) =>
@@ -630,11 +641,81 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
             return null;
 
         var (dto, revisionNumber) = result.Value;
+        var contentRevision = await ResolveContentRevisionAsync(dto, documentId, cancellationToken).ConfigureAwait(false);
 
         return new ReferenceRecord<TDefinition>(
             dto.RecordId, dto.Definition, dto.Provenance, dto.ValidationState, dto.SupersededByRecordId, documentId, revisionNumber,
-            dto.Source);
+            dto.Source, contentRevision);
     }
+
+    /// <summary>
+    /// The content revision <paramref name="dto"/> carries, or — for
+    /// content written before the field existed — the one derived from the
+    /// record's own revision history (<see cref="DeriveContentRevision"/>).
+    /// The history read is paid only for such legacy content; the next
+    /// write to the record stamps the value so it is never derived again.
+    /// </summary>
+    private async Task<int> ResolveContentRevisionAsync(ReferenceDocumentDto<TDefinition> dto, Guid documentId, CancellationToken cancellationToken)
+    {
+        if (dto.ContentRevision is { } stored)
+            return stored;
+
+        var history = await _documentStore.GetRevisionHistoryAsync(documentId, cancellationToken).ConfigureAwait(false);
+        return DeriveContentRevision(dto.RecordId, documentId, history);
+    }
+
+    /// <summary>
+    /// Counts the content revisions in <paramref name="history"/>: the
+    /// first revision is content revision 1, and each later revision whose
+    /// content differs from the one before it (<see cref="HasContentChanged"/>)
+    /// adds one. A revision that already carries a stamped value resets
+    /// the count to it.
+    /// </summary>
+    private int DeriveContentRevision(string recordId, Guid documentId, IEnumerable<IDocumentRevision> history)
+    {
+        var count = 0;
+        ReferenceDocumentDto<TDefinition>? previous = null;
+
+        foreach (var revision in history.OrderBy(r => r.RevisionNumber))
+        {
+            var dto = Deserialise(recordId, documentId, revision.Content);
+            if (dto.ContentRevision is { } stamped)
+                count = stamped;
+            else if (previous is null || HasContentChanged(previous, dto))
+                count++;
+
+            previous = dto;
+        }
+
+        return Math.Max(count, 1);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="after"/> revises the content of
+    /// <paramref name="before"/>: its definition, its source citation, or
+    /// the source identity in its provenance. The verification stamp
+    /// (status, reviewer, date) and the provenance notes that verification
+    /// appends to are lifecycle, not content, so changing only those is not
+    /// a content revision.
+    /// </summary>
+    private static bool HasContentChanged(ReferenceDocumentDto<TDefinition> before, ReferenceDocumentDto<TDefinition> after) =>
+        !string.Equals(ContentSignature(before), ContentSignature(after), StringComparison.Ordinal);
+
+    private static string ContentSignature(ReferenceDocumentDto<TDefinition> dto) =>
+        JsonSerializer.Serialize(
+            new ReferenceContentSignature(
+                dto.Definition,
+                dto.Source,
+                dto.Provenance with
+                {
+                    VerificationStatus = ReferenceVerificationStatus.NotVerified,
+                    ReviewerPrincipalId = null,
+                    VerificationDate = null,
+                    Notes = null,
+                }),
+            ReferenceSerialisation.Options);
+
+    private sealed record ReferenceContentSignature(TDefinition Definition, SourceCitation? Source, ReferenceProvenance Provenance);
 
     private static string Serialise(ReferenceDocumentDto<TDefinition> dto) =>
         JsonSerializer.Serialize(dto, ReferenceSerialisation.Options);

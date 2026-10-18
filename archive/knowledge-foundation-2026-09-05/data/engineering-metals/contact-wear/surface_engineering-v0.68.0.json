@@ -1,0 +1,23 @@
+{
+  "version": "0.68.0",
+  "options": [
+    "carburising",
+    "nitriding",
+    "induction hardening",
+    "hard coatings",
+    "plating",
+    "anodising for aluminium",
+    "conversion coatings"
+  ],
+  "selection_factors": [
+    "substrate",
+    "load",
+    "contact mode",
+    "corrosion environment",
+    "temperature",
+    "coating adhesion",
+    "dimensional allowance"
+  ],
+  "rule": "Surface treatments must be assessed for both performance benefit and failure/degradation mode.",
+  "status": "design-framework"
+}

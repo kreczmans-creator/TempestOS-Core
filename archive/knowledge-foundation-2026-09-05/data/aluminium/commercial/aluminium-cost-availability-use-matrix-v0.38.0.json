@@ -1,0 +1,166 @@
+[
+  {
+    "designation": "1050A",
+    "family": "wrought, commercially pure aluminium",
+    "relative_cost": "cheap",
+    "availability": "very_high",
+    "common_uses": [
+      "sheet",
+      "heat exchangers",
+      "electrical/general fabrication"
+    ]
+  },
+  {
+    "designation": "1200",
+    "family": "wrought, commercially pure aluminium",
+    "relative_cost": "cheap",
+    "availability": "high",
+    "common_uses": [
+      "sheet",
+      "general fabrication",
+      "thermal/electrical applications"
+    ]
+  },
+  {
+    "designation": "2014A",
+    "family": "wrought Al-Cu-Mg-Si alloy",
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "machined aerospace/machine components",
+      "structures",
+      "high-strength parts"
+    ]
+  },
+  {
+    "designation": "2024",
+    "family": "wrought Al-Cu-Mg alloy",
+    "relative_cost": "medium",
+    "availability": "very_high",
+    "common_uses": [
+      "aerospace structures",
+      "machined parts",
+      "sheet"
+    ]
+  },
+  {
+    "designation": "2219",
+    "family": "wrought Al-Cu alloy",
+    "relative_cost": "expensive",
+    "availability": "medium",
+    "common_uses": [
+      "aerospace",
+      "cryogenic/pressure structures",
+      "welded structures"
+    ]
+  },
+  {
+    "designation": "5083",
+    "family": "wrought Al-Mg alloy",
+    "relative_cost": "medium",
+    "availability": "very_high",
+    "common_uses": [
+      "marine structures",
+      "pressure vessels",
+      "fabrication"
+    ]
+  },
+  {
+    "designation": "5086",
+    "family": "wrought Al-Mg alloy",
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "marine fabrication",
+      "tanks",
+      "structures"
+    ]
+  },
+  {
+    "designation": "6060",
+    "family": "wrought Al-Mg-Si extrusion alloy",
+    "relative_cost": "cheap",
+    "availability": "very_high",
+    "common_uses": [
+      "extrusions",
+      "enclosures",
+      "frames"
+    ]
+  },
+  {
+    "designation": "6061",
+    "family": "wrought Al-Mg-Si alloy",
+    "relative_cost": "cheap",
+    "availability": "very_high",
+    "common_uses": [
+      "machined parts",
+      "structures",
+      "extrusions"
+    ]
+  },
+  {
+    "designation": "6082",
+    "family": "wrought Al-Mg-Si alloy",
+    "relative_cost": "cheap",
+    "availability": "very_high",
+    "common_uses": [
+      "structures",
+      "machined parts",
+      "extrusions"
+    ]
+  },
+  {
+    "designation": "7020",
+    "family": "wrought Al-Zn-Mg alloy",
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "welded structures",
+      "transport structures",
+      "machined parts"
+    ]
+  },
+  {
+    "designation": "7075",
+    "family": "wrought Al-Zn-Mg-Cu alloy",
+    "relative_cost": "medium",
+    "availability": "very_high",
+    "common_uses": [
+      "aerospace structures",
+      "high-strength machined components",
+      "mechanisms"
+    ]
+  },
+  {
+    "designation": "7050",
+    "family": "wrought Al-Zn-Mg-Cu alloy",
+    "relative_cost": "expensive",
+    "availability": "medium",
+    "common_uses": [
+      "aerospace thick plate",
+      "high-strength structures"
+    ]
+  },
+  {
+    "designation": "A356",
+    "family": "cast Al-Si-Mg alloy",
+    "relative_cost": "cheap",
+    "availability": "high",
+    "common_uses": [
+      "cast housings",
+      "automotive components",
+      "general engineering castings"
+    ]
+  },
+  {
+    "designation": "AlSi10Mg",
+    "family": "cast/additive Al-Si-Mg alloy",
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "castings",
+      "AM components",
+      "complex housings"
+    ]
+  }
+]

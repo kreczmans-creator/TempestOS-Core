@@ -1,0 +1,15 @@
+{
+  "version": "0.71.0",
+  "status": "worked-framework",
+  "problem": "Build a verification chain from system requirement to evidence.",
+  "workflow": [
+    "identify system requirement",
+    "decompose to component/interface requirements",
+    "select verification methods",
+    "define measurable acceptance criteria",
+    "execute component checks",
+    "execute integrated verification",
+    "review anomalies and deviations",
+    "close objective evidence"
+  ]
+}

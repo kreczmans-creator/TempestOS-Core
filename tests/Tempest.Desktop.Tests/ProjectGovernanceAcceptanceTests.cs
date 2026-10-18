@@ -476,14 +476,18 @@ public sealed class ProjectGovernanceAcceptanceTests
     /// </remarks>
     private static async Task RenderUntilDecisionsAsync(
         MainWindow window,
-        Func<IReadOnlyList<ProjectDecisionEntry>, bool> condition)
+        Func<IReadOnlyList<ProjectDecisionEntry>, bool> condition,
+        [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null)
     {
         var deadline = DesktopTestHelpers.Deadline(2);
         while (true)
         {
             await window.RenderCurrentModuleAsync();
-            if (condition(DecisionsOrEmpty(window)) || DateTime.UtcNow >= deadline)
+            if (condition(DecisionsOrEmpty(window)))
                 return;
+            // v0.23.0 CI board G-01: a timed-out wait fails, naming what it waited for.
+            if (DateTime.UtcNow >= deadline)
+                Assert.Fail($"Timed out waiting for decisions matching: {what}");
 
             await Task.Delay(10);
         }
@@ -559,14 +563,17 @@ public sealed class ProjectGovernanceAcceptanceTests
     /// state it waits for; it decides only *when* to assert, and every assertion
     /// at the call sites is unchanged.
     /// </remarks>
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
+    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null)
     {
         var deadline = DesktopTestHelpers.Deadline(2);
         while (true)
         {
             await window.RenderCurrentModuleAsync();
-            if (condition() || DateTime.UtcNow >= deadline)
+            if (condition())
                 return;
+            // v0.23.0 CI board G-01: a timed-out wait fails, naming what it waited for.
+            if (DateTime.UtcNow >= deadline)
+                Assert.Fail($"Timed out waiting for: {what} (last open phase: {window.LastOpenPhase})");
 
             await Task.Delay(10);
         }

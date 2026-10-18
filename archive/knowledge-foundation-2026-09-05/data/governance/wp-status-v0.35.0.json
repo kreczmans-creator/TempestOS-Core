@@ -1,0 +1,11 @@
+{
+  "version": "0.35.0",
+  "scope": "Steel environmental fundamentals",
+  "environmental_family_coverage": "6/6",
+  "priority_grades_covered": 16,
+  "manufacturing_family_metadata": "6/6",
+  "quantitative_corrosion_rates": "not asserted",
+  "verified": 0,
+  "approved_for_design": 0,
+  "next_phase": "steel standards and final fundamentals audit"
+}

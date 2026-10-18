@@ -53,6 +53,56 @@ public class DocumentsCommandsTests
         Assert.Single(await context.Repository.ListByKindAsync(kind));
     }
 
+    /// <summary>
+    /// Product Owner decision 2026-10-01 §3 (`ADR-0156`): a Document,
+    /// Drawing or CAD model created with no identifier inside a
+    /// <c>CUSTOMER-PROJECTREF</c> project — directly or below one of its
+    /// members — is numbered <c>CUSTOMER-PROJECTREF-DOC|DWG|CAD-NNN</c>, a
+    /// sequence per project per type from 001; inside an older project, or
+    /// standalone, it stays unnumbered; a given identifier is kept.
+    /// </summary>
+    [Fact]
+    public async Task Create_InsideAProjectCentricProject_IsNumberedPerProjectPerType_ElsewhereUnnumbered()
+    {
+        var context = BuildContext();
+        var registry = new DocumentObjectFactoryRegistry(context);
+        var handler = new CreateDocumentObjectCommandHandler(registry, context);
+
+        var bridge = await CreateProjectAsync(context, "ACMEE-BRIDG");
+        var legacy = await CreateProjectAsync(context, "P-0001");
+
+        async Task<string?> CreateAsync(string kind, Guid? parentId, string? identifier = null)
+        {
+            var result = await handler.HandleAsync(new CreateDocumentObjectCommand(kind, $"{kind} under test", identifier, parentId), default);
+            Assert.True(result.Succeeded, result.Message);
+            return ((IHasBusinessIdentifier)(await context.Repository.FindAsync(result.SubjectId!.Value))!).Identifier;
+        }
+
+        var first = await CreateAsync(DocumentObjectFactoryRegistry.Document, bridge);
+        Assert.Equal("ACMEE-BRIDG-DOC-001", first);
+        Assert.Equal("ACMEE-BRIDG-DOC-002", await CreateAsync(DocumentObjectFactoryRegistry.Document, bridge));
+        Assert.Equal("ACMEE-BRIDG-DWG-001", await CreateAsync(DocumentObjectFactoryRegistry.Drawing, bridge));
+        Assert.Equal("ACMEE-BRIDG-CAD-001", await CreateAsync(DocumentObjectFactoryRegistry.CadModel, bridge));
+
+        // Below a member of the project, not only directly under it.
+        var firstId = (await context.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
+            .Single(e => ((IHasBusinessIdentifier)context.Repository.FindAsync(e.Id).GetAwaiter().GetResult()!).Identifier == first).Id;
+        Assert.Equal("ACMEE-BRIDG-DOC-003", await CreateAsync(DocumentObjectFactoryRegistry.Document, firstId));
+
+        Assert.Null(await CreateAsync(DocumentObjectFactoryRegistry.Document, legacy));
+        Assert.Null(await CreateAsync(DocumentObjectFactoryRegistry.Document, parentId: null));
+        Assert.Equal("MY-DOC", await CreateAsync(DocumentObjectFactoryRegistry.Document, bridge, "MY-DOC"));
+    }
+
+    private static async Task<Guid> CreateProjectAsync(EngineeringDomainContext context, string identifier)
+    {
+        var factory = new EngineeringObjectFactory<Project>(
+            Tempest.Workspace.Projects.ProjectDirectory.ProjectKind, context,
+            (doc, rev) => new Project(doc, rev, context, identifier, $"Project {identifier}", EngineeringObjectMetadata.Empty));
+
+        return (await factory.CreateAsync($"Project {identifier} — for test purposes.").ConfigureAwait(false)).Id;
+    }
+
     [Fact]
     public async Task Create_UnsupportedKind_Fails()
     {

@@ -1,0 +1,53 @@
+{
+  "version": "0.50.0",
+  "scope": "exotics",
+  "mapping": [
+    {
+      "family": "titanium",
+      "uses": [
+        "aerospace",
+        "chemical processing",
+        "medical",
+        "motorsport",
+        "lightweight mechanisms"
+      ]
+    },
+    {
+      "family": "nickel-base superalloys",
+      "uses": [
+        "turbomachinery",
+        "combustion",
+        "furnaces",
+        "chemical processing",
+        "high-temperature fasteners"
+      ]
+    },
+    {
+      "family": "cobalt-base alloys",
+      "uses": [
+        "wear surfaces",
+        "hot-section components",
+        "valves",
+        "medical/dental specialist applications"
+      ]
+    },
+    {
+      "family": "refractory metals",
+      "uses": [
+        "extreme-temperature hardware",
+        "vacuum/high-temperature furnaces",
+        "specialist propulsion/research hardware"
+      ]
+    },
+    {
+      "family": "shape-memory alloys",
+      "uses": [
+        "actuators",
+        "thermal switches",
+        "medical devices",
+        "deployable mechanisms"
+      ]
+    }
+  ],
+  "rule": "Application mappings are candidate-use guidance, not qualification."
+}

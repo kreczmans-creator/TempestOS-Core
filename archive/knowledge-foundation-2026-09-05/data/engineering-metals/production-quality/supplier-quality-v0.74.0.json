@@ -1,0 +1,13 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "checks": [
+    "drawing/configuration revision",
+    "material certification",
+    "special processes",
+    "inspection evidence",
+    "traceability",
+    "change notification",
+    "nonconformance handling"
+  ]
+}

@@ -13,13 +13,14 @@ namespace Tempest.Workspace.Quotations;
 /// </summary>
 public sealed class QuotationNodeProvider : IProjectExplorerNodeProvider
 {
-    // Written out, in QuotationStatus's own declaration order —
+    // Written out, in lifecycle order (runbook C3 appended In review and
+    // Approved to the enum; they group between Draft and Sent here) —
     // QuotationStatusTransitions.AllStatuses is internal to Tempest.Core
     // (InvoiceRequestStatusTransitions.AllStatuses is too; neither grants
     // Tempest.Workspace access), so this is this provider's own,
     // independent statement of the vocabulary it groups by.
     private static readonly IReadOnlyList<QuotationStatus> Statuses =
-        [QuotationStatus.Draft, QuotationStatus.Sent, QuotationStatus.Accepted, QuotationStatus.Declined];
+        [QuotationStatus.Draft, QuotationStatus.InReview, QuotationStatus.Approved, QuotationStatus.Sent, QuotationStatus.Accepted, QuotationStatus.Declined];
 
     private readonly EngineeringDomainContext _context;
 
@@ -62,7 +63,7 @@ public sealed class QuotationNodeProvider : IProjectExplorerNodeProvider
             foreach (var status in Statuses)
             {
                 var count = underProject.Count(q => q.Status == status);
-                groupNodes.Add(new ProjectExplorerNode(GroupNodeId(nodeId, status), status.ToString(), null, count > 0, ProjectExplorerNodeType.Category));
+                groupNodes.Add(new ProjectExplorerNode(GroupNodeId(nodeId, status), status == QuotationStatus.InReview ? "In review" : status.ToString(), null, count > 0, ProjectExplorerNodeType.Category));
             }
 
             return groupNodes;

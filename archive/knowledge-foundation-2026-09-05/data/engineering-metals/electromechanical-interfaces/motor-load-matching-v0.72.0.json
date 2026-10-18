@@ -1,0 +1,22 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "inputs": [
+    "required torque",
+    "speed",
+    "inertia",
+    "duty cycle",
+    "supply voltage",
+    "controller limits",
+    "environment"
+  ],
+  "checks": [
+    "continuous torque",
+    "peak torque",
+    "speed limit",
+    "acceleration",
+    "thermal load",
+    "regeneration",
+    "stall/fault behaviour"
+  ]
+}

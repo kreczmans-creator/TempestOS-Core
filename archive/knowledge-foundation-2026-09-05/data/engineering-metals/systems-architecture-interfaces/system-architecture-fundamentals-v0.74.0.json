@@ -1,0 +1,21 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "elements": [
+    "functions",
+    "logical elements",
+    "physical elements",
+    "interfaces",
+    "constraints",
+    "operating modes"
+  ],
+  "workflow": [
+    "capture stakeholder need",
+    "define system functions",
+    "allocate functions to elements",
+    "define interfaces",
+    "identify dependencies",
+    "define performance budgets",
+    "verify allocations"
+  ]
+}

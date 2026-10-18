@@ -1,0 +1,20 @@
+{
+  "version": "0.71.0",
+  "status": "verification-framework",
+  "levels": [
+    "requirement",
+    "analysis",
+    "component verification",
+    "subassembly verification",
+    "system verification",
+    "validation in representative use"
+  ],
+  "traceability": [
+    "requirement ID",
+    "verification method",
+    "test/analysis procedure",
+    "acceptance criterion",
+    "result",
+    "evidence location"
+  ]
+}

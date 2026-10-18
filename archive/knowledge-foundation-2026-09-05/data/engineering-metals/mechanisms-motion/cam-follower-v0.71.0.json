@@ -1,0 +1,18 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "concepts": [
+    "displacement law",
+    "velocity",
+    "acceleration",
+    "pressure angle",
+    "follower force"
+  ],
+  "checks": [
+    "contact stress",
+    "wear",
+    "dynamic loads",
+    "lubrication",
+    "manufacturing accuracy"
+  ]
+}

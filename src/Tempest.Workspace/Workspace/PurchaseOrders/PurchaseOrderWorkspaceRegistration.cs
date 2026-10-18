@@ -93,7 +93,7 @@ public static class PurchaseOrderWorkspaceRegistration
                     context.ProjectId ?? Guid.Empty, WorkspaceCommandBindings.OrNull(values["reference"]),
                     WorkspaceCommandBindings.OrNull(values["supplier"]), ParseOptionalDate(values["expectedDelivery"])),
                 [
-                    new CommandParameter("reference", "Reference (blank to generate PO-<year>-<nnn>)", DefaultValue: string.Empty),
+                    new CommandParameter("reference", "Reference (blank for the project's next number, <customer>-<project>-PO-<nnn>)", DefaultValue: string.Empty),
                     new CommandParameter("supplier", "Supplier", DefaultValue: string.Empty),
                     new CommandParameter("expectedDelivery", "Expected delivery (yyyy-MM-dd, blank if unknown)", DefaultValue: string.Empty, Validate: ValidateOptionalDate),
                 ],

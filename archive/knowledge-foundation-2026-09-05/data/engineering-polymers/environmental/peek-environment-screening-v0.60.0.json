@@ -1,0 +1,34 @@
+{
+  "version": "0.60.0",
+  "family": "PEEK",
+  "domain": "environmental_chemical",
+  "compatibility_screen": {
+    "water": "very low absorption",
+    "dilute_acids_alkalis": "generally excellent resistance",
+    "oils_fuels": "generally excellent resistance",
+    "organic_solvents": "generally excellent, but chemical-specific validation required",
+    "UV": "long-term exposure can require stabilisation/qualification",
+    "hydrolysis": "generally strong resistance",
+    "vacuum_outgassing": "often favourable; exact grade/application must be qualified"
+  },
+  "critical_variables": [
+    "chemical identity",
+    "concentration",
+    "temperature",
+    "exposure duration",
+    "stress state",
+    "surface condition"
+  ],
+  "failure_modes": [
+    "swelling",
+    "plasticisation",
+    "stress cracking",
+    "hydrolysis",
+    "oxidation",
+    "UV degradation",
+    "embrittlement",
+    "loss of strength"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

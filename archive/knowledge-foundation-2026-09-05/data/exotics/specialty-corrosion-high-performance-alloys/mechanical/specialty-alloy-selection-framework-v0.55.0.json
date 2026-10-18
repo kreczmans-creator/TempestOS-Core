@@ -1,0 +1,64 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "selection_framework": {
+    "corrosion": "Select against actual chemistry, concentration, temperature, aeration, impurities and flow regime; nominal alloy family is insufficient.",
+    "localized_corrosion": "Pitting, crevice corrosion and galvanic coupling can dominate even where general corrosion resistance is excellent.",
+    "stress_corrosion": "Retain stress state, residual stress, environment and temperature in the material identity.",
+    "hydrogen": "Hydrogen absorption and embrittlement/pickup are critical considerations for selected zirconium, titanium and high-strength alloy systems.",
+    "functional_alloys": "For shape-memory/superelastic materials, transformation behaviour and functional fatigue are first-class engineering properties.",
+    "high_strength": "Cold work and age treatment can materially change strength and ductility; condition is mandatory."
+  },
+  "screening_matrix": [
+    {
+      "need": "extreme chemical-process corrosion resistance",
+      "candidate": "Zr 702 / Zr 705",
+      "watch": [
+        "environment",
+        "hydrogen",
+        "temperature",
+        "welding"
+      ]
+    },
+    {
+      "need": "mixed severe chemical environments",
+      "candidate": "C-276 / C-22",
+      "watch": [
+        "chemistry",
+        "localized corrosion",
+        "welding",
+        "temperature"
+      ]
+    },
+    {
+      "need": "strong corrosion-resistant process alloy",
+      "candidate": "Alloy 825 / Alloy 59",
+      "watch": [
+        "environment",
+        "chlorides",
+        "temperature",
+        "condition"
+      ]
+    },
+    {
+      "need": "very high strength plus corrosion resistance",
+      "candidate": "MP35N",
+      "watch": [
+        "cold work",
+        "age treatment",
+        "stress",
+        "environment"
+      ]
+    },
+    {
+      "need": "functional actuation/superelasticity",
+      "candidate": "Nitinol",
+      "watch": [
+        "transformation temperatures",
+        "functional fatigue",
+        "processing"
+      ]
+    }
+  ],
+  "rule": "Corrosion resistance is an environment-specific property; strength and corrosion data must never be decoupled from material condition."
+}

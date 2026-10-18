@@ -170,6 +170,37 @@ rail contains only what works. Expected duration: six weeks.
 
 ## Release `v1.0.0` — Release Candidate and General Availability
 
+### BLOCKER — Reference libraries fully populated and released for day-one use (PO decision 2026-10-01)
+
+> "need materials database ... fully populate ... Seed as much information into
+> those databases as possible from recognised internet sources to ensure these
+> are fully usable from day 1, otherwise it's a hard block against v1.0.0."
+> — Product Owner, 2026-10-01. The physical-review runbook step C8 (beam
+> bending with S355J2, E 210 GPa, fy 355 MPa) could not be run because seeded
+> materials landed Draft and no calculator could use them.
+
+**`v1.0.0` does not tag until this row is closed.**
+
+| Work Package | Scope | Type | Status |
+|---|---|---|---|
+| `WP RC.0G` | **Day-one reference libraries.** Populate Standards, Materials, Constants, Fasteners and Bearings from recognised, citable sources with full provenance, and release them at seed so every calculator works on a fresh install. | Reference data | **Delivered in part on `wt/reference-seeds` (2026-10-01); open items below** |
+
+*Delivered on `wt/reference-seeds`:*
+
+- Materials 6 → **77** (structural EN 10025/10210 steels, EN 10083/10277 and AISI engineering steels, 13 stainless, 11 aluminium, 6 copper, 3 cast irons, Ti Grade 2/5, INCONEL 600/625/718, 5 magnesium, 15 thermoplastics); every one carries density, E, yield, UTS and CTE except eight documented gaps; 10 carry fatigue strength.
+- Fasteners 7 → **131** (ISO 898-1 4.6/5.6/8.8/10.9/12.9 at M3–M36 with Rm, ReL/Rp0.2, Sp, Fp, A, HV, As; ISO 3506-1 A2-70/A4-70/A4-80 at M3–M24). Bearings 2 → **39** (RHD 6000/6200/6300 series 00–12). Standards index 14 → **29**.
+- Every value traces to a named, addressable source (Aalco, SteelNumber, Siderticino, Ovako, Swiss Steel, Saarstahl, AZoM, Kaiser Aluminum, CDA, CASTFAST, Ensinger, Röchling, Röhm, Special Metals, Würth, RHD) — `docs/governance/Data/Seed Data Sources Register.md`.
+- **Release at seed:** the host's seeder carries `ReferenceSeedReleasePolicy`; each record is verified and released through `ReferenceReviewService` as `tempest.reference-seed`, recording "Seeded from <source>; released at seed for day-one use (PO decision 2026-10-01); verify against the primary standard before issue." Start-up tops up a library holding only shipped records (refreshing untouched Draft seeds) and never touches a library holding a person's own record.
+- `DayOneReferenceLibraryTests`: counts, validation with no errors, calculator-consumed properties, released at seed, idempotent reseed, key-conflict and person-revised records untouched, beam bending on S355J2 and a bolted joint on M12 8.8 without manual release.
+
+*Remaining before the blocker closes:*
+
+1. Re-run runbook step C8 on Windows from a clean persistence root and record it (`WP RC.0E`).
+2. A person verifies the most-used records (S355J2, S275JR, 6082-T6, 1.4301, 1.4404, 8.8 M8–M24) against the primary standards and supersedes them with person-verified revisions.
+3. 29 knowledge-foundation archive materials not yet seeded (tool and bearing steels, Hardox, maraging, 1008/1018, P355NH, 310S, 15-5 PH, 2024-T3, 5083-H116, Hastelloy, Monel, Nimonic, L-605, refractory metals) and CW453K.
+4. Bearing families other than deep groove ball; an electrical-resistivity dimension.
+
+
 **Goal.** Prove the whole journey on a clean machine, make installation
 and upgrade a non-event, state the security posture, and ship. Expected
 duration: three weeks.
@@ -182,6 +213,34 @@ duration: three weeks.
 | `WP RC.0D` | **Determinism and load.** Five consecutive full-suite runs on Windows CI while the layout-verification job runs concurrently; any failure is a defect to fix, not a matrix to re-run. Suite duration recorded. | Tests | `TD-119` class | 2 |
 | `WP RC.0E` | **Physical review on a clean machine, recorded.** A person who did not build it follows `PHYSICAL_REVIEW.md` from a fresh Windows install through the five sentences in "What v1.0.0 is", using the installer, in under thirty minutes; every finding is fixed or filed in `BACKLOG.md` before tagging; the recording (screenshots and the reviewer's notes) is committed under `docs/releases/v1.0.0/`. | Verification | — | 2 |
 | `WP RC.0F` | **Release.** `VERSION` → `1.0.0`; Release Notes summarising `v0.17.0` to `v1.0.0`; root `CHANGELOG.md`; tag via `new-release.ps1`; `release.yml` publishes the installer and the harness; Product Approval recorded as one line in the Release Notes by the Product Owner. | Release | — | 1 |
+
+### v1.0.0 release blockers (must be closed before `WP RC.0F` tags)
+
+| ID | Blocker | Raised | Closes when |
+|---|---|---|---|
+| `V1-BLOCKER-01` | **BLOCKER for v1.0.0 — Define the standard project subfolder set (PO decision 2026-10-01).** Project folders are generated in `D:\01 Projects` (`Projects:FolderRoot`): customer folder found or created, then the project folder found or created (`ProjectFolderService`, `src/Tempest.Core/Projects/`). The PO's "then a standard set of folders within that" is **TBC**, so `ProjectFolderOptions.DefaultStandardSubfolders` ships empty with a TODO marker, and the quote export's own subfolder (`Projects:QuoteSubfolder`) defaults to the project folder itself. | Product Owner, 2026-10-01 | The Product Owner names the standard subfolder set (and which one is "the quote section"); `DefaultStandardSubfolders` and the `Projects:QuoteSubfolder` default are set to it, with a test pinning the set. Also tracked in `BACKLOG.md`. |
+
+### Recovered into v1.0.0: tolerance stack-up and thermal calculators (PO request 2026-10-01)
+
+The v0.16.0 release-candidate calculation suite's Tolerance Analysis and
+Heat Sink / Thermal calculators were lost when `feature/v0.16.0-integration`
+was deleted unmerged; they were recovered from the archived ref and ported
+into the `WP 21.7A` module architecture, bringing the product catalogue to
+**nineteen** calculations (five original, eleven `WP 21.7A`, three recovered),
+all listed in Engineering → Modules → Calculators:
+
+| Module | Id | Specification |
+|---|---|---|
+| Linear tolerance stack-up (worst case and RSS) | `calc.tolerance-stack` | `docs/engineering/calculations/calc.tolerance-stack.md` |
+| Heat sink thermal resistance chain | `calc.thermal-resistance-chain` | `docs/engineering/calculations/calc.thermal-resistance-chain.md` |
+| Plane wall heat transfer (conduction layers and convection films) | `calc.plane-wall-heat-transfer` | `docs/engineering/calculations/calc.plane-wall-heat-transfer.md` |
+
+New unit dimensions: `ThermalResistance` (K/W), `HeatTransferCoefficient`
+(W/(m²·K)) and `HeatFlux` (W/m²); `Power`, `Temperature`,
+`ThermalResistance`, `ThermalConductivity` and `HeatTransferCoefficient`
+are now offered by the generated calculator form. A list input's row may now
+carry a text cell (a contributor's or stage's name) and a choice cell (a
+contributor's direction).
 
 **Release total: 14 developer-days.**
 

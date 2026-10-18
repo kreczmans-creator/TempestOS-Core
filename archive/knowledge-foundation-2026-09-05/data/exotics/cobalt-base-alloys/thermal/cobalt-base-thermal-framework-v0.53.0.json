@@ -1,0 +1,20 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "principles": [
+    "Cobalt-base alloys are used where retention of strength, hardness, wear resistance or oxidation resistance at elevated temperature is important.",
+    "Thermal conductivity and CTE must be treated as grade- and temperature-dependent inputs.",
+    "Thermal cycling can interact with carbide/matrix microstructure and surface damage.",
+    "Hot-service selection must include exposure time, not temperature alone."
+  ],
+  "required_inputs": [
+    "temperature-dependent modulus",
+    "thermal conductivity",
+    "specific heat",
+    "CTE",
+    "temperature-dependent strength/hardness",
+    "exposure duration",
+    "oxidation environment"
+  ],
+  "rule": "Do not extrapolate room-temperature mechanical or hardness data into high-temperature service."
+}

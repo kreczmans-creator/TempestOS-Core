@@ -1,0 +1,13 @@
+{
+  "version": "0.32.0",
+  "scope": "Steel Fundamentals Audit",
+  "priority_grades": 16,
+  "fundamental_categories": 36,
+  "grade_property_cells": 576,
+  "present_cells": 48,
+  "gap_cells": 528,
+  "verified_cells": 0,
+  "approved_for_design_cells": 0,
+  "architecture_status": "fundamental ontology established",
+  "population_status": "in progress"
+}

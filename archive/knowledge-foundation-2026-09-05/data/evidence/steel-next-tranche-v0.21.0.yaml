@@ -1,0 +1,89 @@
+- observation_id: OBS-304-A240-YIELD-OUTOKUMPU
+  material_state_id: MAT-STEEL-304
+  designation: EN 1.4301 / ASTM A240 Type 304 / UNS S30400
+  property: yield_strength_Rp0.2
+  value: 230
+  unit: MPa
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Mechanical properties table; Supra 304/4301; EN 10088-2; cold rolled
+    sheet/coil
+  applicability:
+    product_form: cold rolled coil and sheet
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  status: sourced
+- observation_id: OBS-304-A240-UTS-OUTOKUMPU
+  material_state_id: MAT-STEEL-304
+  designation: EN 1.4301 / ASTM A240 Type 304 / UNS S30400
+  property: ultimate_tensile_strength
+  value:
+    min: 540
+    max: 750
+  unit: MPa
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Mechanical properties table; Supra 304/4301; EN 10088-2; cold rolled
+    sheet/coil
+  applicability:
+    product_form: cold rolled coil and sheet
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  status: sourced
+- observation_id: OBS-304-A240-ELONG-OUTOKUMPU
+  material_state_id: MAT-STEEL-304
+  designation: EN 1.4301 / ASTM A240 Type 304 / UNS S30400
+  property: elongation_A
+  value: 0.45
+  unit: '1'
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Mechanical properties table; Supra 304/4301; EN 10088-2; cold rolled
+    sheet/coil
+  applicability:
+    product_form: cold rolled coil and sheet
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  status: sourced
+- observation_id: OBS-174PH-A564-H900-YIELD
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: yield_strength
+  value: 1170
+  unit: MPa
+  source_id: WEB-AK-17-4PH
+  source_url: https://www.aksteel.nl/files/downloads/AK_Steel_17-4_PH.pdf
+  source_locator: 17-4 PH stainless steel datasheet; H900 heat treatment; mechanical
+    properties
+  applicability:
+    condition: H900
+    temperature_C: 20
+    product_form: bar / wrought product as stated by source
+  status: sourced
+- observation_id: OBS-174PH-A564-H900-UTS
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: ultimate_tensile_strength
+  value: 1310
+  unit: MPa
+  source_id: WEB-AK-17-4PH
+  source_url: https://www.aksteel.nl/files/downloads/AK_Steel_17-4_PH.pdf
+  source_locator: 17-4 PH stainless steel datasheet; H900 heat treatment; mechanical
+    properties
+  applicability:
+    condition: H900
+    temperature_C: 20
+    product_form: bar / wrought product as stated by source
+  status: sourced
+- observation_id: OBS-H13-ISO4957-IDENTITY
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  property: standard_designation_mapping
+  value: H13 ↔ X40CrMoV5-1
+  unit: text
+  source_id: STD-ISO4957
+  source_url: https://www.iso.org/standard/63075.html
+  source_locator: ISO 4957:2018 tool steels; designation/listing framework
+  applicability:
+    standard_basis: ISO 4957
+  status: sourced

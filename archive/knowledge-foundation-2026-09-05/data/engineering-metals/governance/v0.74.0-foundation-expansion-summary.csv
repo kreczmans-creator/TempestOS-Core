@@ -1,0 +1,7 @@
+Domain,Status,Coverage,Evidence boundary
+Electronics & instrumentation,Complete,"Sensors, signal conditioning, ADC/DAC, encoders",Hardware/measurement specific
+Digital control,Complete,"Sampling, timing, state/fault logic, implementation boundaries",Plant/software specific
+Human factors & maintainability,Complete,"Tasks, accessibility, serviceability, diagnostics",User/product specific
+Production & quality,Complete,"Capability, control plans, nonconformance, supplier quality",Process/supplier specific
+Systems architecture & interfaces,Complete,"Architecture, interfaces, budgets, operating modes",System specific
+Worked cross-domain cases,Complete,4 integrated cases,"Framework, not certification"

@@ -267,14 +267,17 @@ public sealed class ProjectTimelineAcceptanceTests
     /// decides only *when* to assert; every assertion at the call sites is
     /// unchanged, and still fails on its own message if the state never arrives.
     /// </remarks>
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
+    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null)
     {
         var deadline = DesktopTestHelpers.Deadline(2);
         while (true)
         {
             await window.RenderCurrentModuleAsync();
-            if (condition() || DateTime.UtcNow >= deadline)
+            if (condition())
                 return;
+            // v0.23.0 CI board G-01: a timed-out wait fails, naming what it waited for.
+            if (DateTime.UtcNow >= deadline)
+                Assert.Fail($"Timed out waiting for: {what} (last open phase: {window.LastOpenPhase})");
 
             await Task.Delay(10);
         }

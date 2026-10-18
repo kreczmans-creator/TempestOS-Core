@@ -1,0 +1,20 @@
+{
+  "version": "0.73.0",
+  "purpose": "Define the minimum evidence discipline for cross-domain engineering knowledge and design decisions.",
+  "required_evidence": [
+    "controlled requirement",
+    "configuration identity",
+    "assumptions and operating envelope",
+    "applicable standard or validated engineering method",
+    "independent check where risk warrants",
+    "objective verification result",
+    "traceable evidence location",
+    "review/approval state"
+  ],
+  "promotion_levels": [
+    "screening",
+    "verified",
+    "qualified"
+  ],
+  "boundary": "These are engineering reasoning frameworks. They do not create product-specific safety certification, reliability qualification, EMC compliance or environmental qualification."
+}

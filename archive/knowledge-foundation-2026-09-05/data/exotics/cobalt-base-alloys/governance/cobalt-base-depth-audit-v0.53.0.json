@@ -1,0 +1,34 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "status": "DEPTH PASS \u2014 representative cobalt-base alloy foundation established",
+  "representative_grades": [
+    "CoCrMo",
+    "Stellite 6",
+    "Haynes 188",
+    "Haynes 25 / L-605"
+  ],
+  "complete": [
+    "taxonomy",
+    "grade roles",
+    "mechanical selection",
+    "thermal framework",
+    "wear framework",
+    "corrosion framework",
+    "fatigue framework",
+    "manufacturing",
+    "joining",
+    "standards mapping",
+    "economics",
+    "applications",
+    "provenance"
+  ],
+  "open": [
+    "authoritative quantitative datasets",
+    "exact standards editions",
+    "grade/condition-specific fatigue and creep allowables",
+    "process-specific wear data",
+    "combined environment/tribology evidence"
+  ],
+  "certification": "not certified"
+}

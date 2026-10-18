@@ -1,0 +1,15 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "problem": "Develop an environmental verification plan for a precision electromechanical assembly.",
+  "workflow": [
+    "define mission profile",
+    "identify temperature/vibration/shock/ingress exposures",
+    "map environments to failure mechanisms",
+    "define combined environmental cases",
+    "derive inspection and functional checks",
+    "execute representative testing",
+    "inspect post-test condition",
+    "close requirement evidence"
+  ]
+}

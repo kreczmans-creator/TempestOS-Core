@@ -27,7 +27,7 @@ public enum EvidenceRefusal
     /// <summary>The requested status move is not in <c>EvidenceStatusTransitions</c>' own permitted table.</summary>
     TransitionNotPermitted,
 
-    /// <summary>The independent-check rule is on, and the acting principal is also this evidence's own author.</summary>
+    /// <summary>The independent-check rule is on, second-person sign-off is on (`ADR-0161`), and the acting principal is also this evidence's own author.</summary>
     CheckerMustDifferFromAuthor,
 
     /// <summary>The independent-check rule is on, and nobody is signed in to be held to the check.</summary>

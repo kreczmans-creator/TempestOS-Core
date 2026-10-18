@@ -1,0 +1,11 @@
+{
+  "version": "0.36.0",
+  "scope": "Steel standards, manufacturing and commercial metadata",
+  "grades": 16,
+  "standards_mapped": 16,
+  "test_methods_mapped": 16,
+  "commercial_metadata": 16,
+  "verified": 0,
+  "approved_for_design": 0,
+  "next": "final steel fundamentals audit"
+}
