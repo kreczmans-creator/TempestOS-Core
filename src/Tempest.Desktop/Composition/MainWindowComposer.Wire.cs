@@ -98,7 +98,17 @@ internal sealed partial class MainWindowComposer
         {
             var area = workspace.Navigation.Areas.FirstOrDefault(a => a.Title.Contains(category, StringComparison.OrdinalIgnoreCase));
             if (area is null)
+            {
+                // A discipline with commands but no Explorer area (Evidence):
+                // say so, rather than leave the previous discipline's tree.
+                views.ExplorerView.ShowNoTree(
+                    $"{category} has no tree here.",
+                    $"Use the commands above. {category} records are listed in each project's {category} tab.");
+                callbacks.SetCurrentArea(category);
                 return;
+            }
+
+            views.ExplorerView.ClearNoTree();
 
             await views.BusyOverlay.RunAsync($"Switching to {area.Title}…", async () =>
             {
@@ -128,7 +138,7 @@ internal sealed partial class MainWindowComposer
 
         // `WP 19.7A`: the Projects tree's own project leaves open a project
         // exactly as the retired standalone Projects rail button always
-        // did; the Engineering tree's own Modules → Mechanical node
+        // did; the Engineering tree's own Disciplines nodes
         // navigates on to the ribbon-and-docking surface the same way
         // the project workspace's own "Enter Engineering" button does.
         views.ProjectsAreaView.OpenProjectRequestedAsync += async projectId =>
@@ -137,6 +147,18 @@ internal sealed partial class MainWindowComposer
             await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
         };
         views.EngineeringAreaView.EngineeringRequested += () => _ = callbacks.RenderCurrentModuleAsync();
+
+        // `v0.24.0` Product Owner review: the Engineering tree and the
+        // Structure tab's discipline list choose the command bar's
+        // discipline (its own tab strip is hidden), and both follow it
+        // when something else changes it — an object opened right up.
+        views.EngineeringAreaView.DisciplineSelected += views.Ribbon.ShowCategory;
+        views.ProjectWorkspace.DisciplineSelected += views.Ribbon.ShowCategory;
+        views.Ribbon.CurrentCategoryChanged += category =>
+        {
+            views.EngineeringAreaView.HighlightDiscipline(category);
+            views.ProjectWorkspace.HighlightDiscipline(category);
+        };
 
         // The Documents area opens a file through the same `TD-80` launcher
         // the object editor uses.

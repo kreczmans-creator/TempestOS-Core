@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using Tempest.Workspace;
 using Tempest.Core.Commands;
@@ -80,7 +81,7 @@ public sealed class RibbonViewTests
                 "Calculations", "Documents", "Evidence", "Manufacturing", "Mechanical", "Requirements", "Verification",
             });
 
-            var categories = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().Select(t => (string)t.Tag!).ToList();
+            var categories = ribbon.Tabs.Items.OfType<TabItem>().Select(t => (string)t.Tag!).ToList();
 
             Assert.DoesNotContain("Deliverables", categories);
             Assert.DoesNotContain("Invoicing", categories);
@@ -117,7 +118,7 @@ public sealed class RibbonViewTests
             var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
             var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
 
-            var tabs = (TabControl)ribbon.Content!;
+            var tabs = ribbon.Tabs;
             var accentsByCategory = tabs.Items
                 .OfType<TabItem>()
                 .ToDictionary(t => (string)t.Tag!, t => ((Border)((StackPanel)t.Header!).Children[0]).Background);
@@ -175,44 +176,16 @@ public sealed class RibbonViewTests
     }
 
     /// <summary>
-    /// Responsive Ribbon closure (`WP-Z4`) — at a width narrow enough that
-    /// a discipline's command groups genuinely overflow the visible tab
-    /// area, the horizontal <see cref="ScrollBar"/> that lets the user
-    /// reach the hidden groups must actually render, not merely exist as
-    /// a logically-correct but visually invisible
-    /// <see cref="ScrollViewer.Extent"/>/<see cref="ScrollViewer.Viewport"/>
-    /// pair.
+    /// The `v0.24.0` Product Owner review's command bar: at a narrow,
+    /// ~1000px-class width the bar stays one short row — no horizontal
+    /// scroll, no wrapping block of commands — and every group is still
+    /// one click away: its selector shows that group's commands and hides
+    /// the others, while every command stays built in the tree. This
+    /// replaces `WP-Z4`'s scrollbar tests: with nothing overflowing there
+    /// is no scrollbar left to prove.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>What this test would have missed before the fix, and why it does
-    /// not now.</b> Before this fix, `ScrollViewer.Extent.Width` already
-    /// exceeded `Viewport.Width` whenever a tab's own command groups
-    /// overflowed a narrow window — the underlying scroll mechanism was
-    /// never broken. What was missing was the one thing a user actually
-    /// sees: nothing upstream of the ScrollViewer (a vertical
-    /// <see cref="StackPanel"/>, itself sized to its own content) ever
-    /// gave it more height than the button rows alone need, so `Auto`
-    /// horizontal scrollbar visibility had no room to draw the scrollbar
-    /// into and rendered nothing — real command groups past that width
-    /// were clipped in total silence, with no affordance telling the user
-    /// scrolling was even possible. A test on `Extent`/`Viewport` alone
-    /// would have passed against that broken build; this one specifically
-    /// finds the real `ScrollBar` control in the rendered visual tree and
-    /// asserts it is actually visible.
-    /// </para>
-    /// <para>
-    /// Real layout only happens once a control is part of a shown
-    /// <see cref="Window"/>'s visual tree (the same discipline this
-    /// project's own <c>DocumentAreaTabSelectionTests</c>/
-    /// <c>DialogFrameworkKeyboardTests</c> already establish) — a bare
-    /// <c>Measure</c>/<c>Arrange</c> call without a real
-    /// <see cref="Window"/> host does not reliably reproduce the same
-    /// scrollbar-visibility decision the real running application makes.
-    /// </para>
-    /// </remarks>
     [AvaloniaFact]
-    public async Task NarrowWindow_RibbonHorizontalScrollbar_ActuallyRendersWhenCommandGroupsOverflow()
+    public async Task NarrowWindow_CommandBar_StaysOneShortRow_AndEachSelectorOpensItsGroup()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -220,73 +193,35 @@ public sealed class RibbonViewTests
             await host.StartAsync();
             var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
             var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
+            ribbon.SetCategoryFilter(EngineeringDisciplines.Categories);
+            ribbon.ShowCategory("Requirements");
 
-            // The real Mechanical tab's own command set is wide enough,
-            // at a real ~1000px-class shell width, to genuinely overflow —
-            // the exact width class this closure's own diagnosis named.
-            var window = new Window { Content = ribbon, Width = 1000, Height = 260 };
+            var window = new Window { Content = ribbon, Width = 1000, Height = 400 };
             window.Show();
-            // Measuring/arranging the ribbon directly, not the Window —
-            // the headless test platform does not reliably propagate a
-            // Window's own Width/Height into a real layout pass (the
-            // identical, already-documented reason
-            // WorkspaceLayoutHostTests measures/arranges its own control
-            // under test directly rather than driving Window.Width).
-            ribbon.Measure(new Size(1000, 260));
-            ribbon.Arrange(new Rect(0, 0, 1000, 260));
-            // A second pass: the fix's own scrollbar-height reservation is
-            // applied on the ScrollViewer's first LayoutUpdated, which
-            // itself invalidates layout once more to take effect.
-            ribbon.Measure(new Size(1000, 260));
-            ribbon.Arrange(new Rect(0, 0, 1000, 260));
+            ribbon.Measure(new Size(1000, 400));
+            ribbon.Arrange(new Rect(0, 0, 1000, 400));
 
-            var scroller = ribbon.GetVisualDescendants().OfType<ScrollViewer>().Single();
-            Assert.True(scroller.Extent.Width > scroller.Viewport.Width, "This test's own premise requires the real command set to genuinely overflow at this width.");
+            Assert.DoesNotContain(ribbon.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ScrollBar>(), b => b.IsEffectivelyVisible);
+            Assert.True(ribbon.DesiredSize.Height <= 160, $"The bar should stay one short row; it measured {ribbon.DesiredSize.Height}px tall.");
 
-            var horizontalScrollBar = ribbon.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ScrollBar>()
-                .Single(b => b.Orientation == Avalonia.Layout.Orientation.Horizontal);
-            Assert.True(horizontalScrollBar.IsEffectivelyVisible, "The horizontal scrollbar must actually render once the ribbon's command groups overflow — not merely exist as an invisible, logically-correct ScrollViewer.");
-            Assert.True(horizontalScrollBar.Bounds.Height > 0, "The scrollbar must be given real, non-zero screen space, not collapsed to nothing by a starved parent.");
+            var tab = ribbon.Tabs.Items.OfType<TabItem>().Single(t => Equals(t.Tag, "Requirements"));
+            var content = (Control)tab.Content!;
+            var commandButtons = content.GetLogicalDescendants().OfType<Button>()
+                .Where(b => registry.Items.Any(d => d.Category == "Requirements" && Equals(Avalonia.Automation.AutomationProperties.GetName(b), d.DisplayName)))
+                .ToList();
+            Assert.Equal(registry.Items.Count(d => d.Category == "Requirements"), commandButtons.Count);
 
-            window.Close();
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
+            foreach (var group in new[] { "Organize", "Lifecycle", "Actions" })
+            {
+                var selector = content.GetLogicalDescendants().OfType<Button>()
+                    .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"{group} commands");
+                selector.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+                ribbon.Measure(new Size(1000, 400));
+                ribbon.Arrange(new Rect(0, 0, 1000, 400));
 
-    /// <summary>
-    /// The same closure's own explicit "preserve normal-width layout"
-    /// requirement — at a width wide enough that no discipline's command
-    /// groups ever overflow, the scrollbar-height reservation this fix
-    /// adds must not force a visible horizontal scrollbar to appear where
-    /// none is needed.
-    /// </summary>
-    [AvaloniaFact]
-    public async Task WideWindow_RibbonHorizontalScrollbar_StaysHiddenWhenNothingOverflows()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
-
-            var window = new Window { Content = ribbon, Width = 4000, Height = 260 };
-            window.Show();
-            ribbon.Measure(new Size(4000, 260));
-            ribbon.Arrange(new Rect(0, 0, 4000, 260));
-            ribbon.Measure(new Size(4000, 260));
-            ribbon.Arrange(new Rect(0, 0, 4000, 260));
-
-            var scroller = ribbon.GetVisualDescendants().OfType<ScrollViewer>().Single();
-            Assert.True(scroller.Extent.Width <= scroller.Viewport.Width, "This test's own premise requires the real command set to fit without overflowing at this width.");
-
-            var horizontalScrollBar = ribbon.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ScrollBar>()
-                .Single(b => b.Orientation == Avalonia.Layout.Orientation.Horizontal);
-            Assert.False(horizontalScrollBar.IsEffectivelyVisible, "Reserving room for the scrollbar must not force it to show up when nothing overflows.");
+                Assert.Contains(selector.Classes, c => c == ChromeStyles.Primary);
+                Assert.True(ribbon.DesiredSize.Height <= 240, $"With {group} open the bar measured {ribbon.DesiredSize.Height}px tall.");
+            }
 
             window.Close();
         }
@@ -607,12 +542,12 @@ public sealed class RibbonViewTests
     }
 
     private static int CountTabs(RibbonView ribbon) =>
-        ((TabControl)ribbon.Content!).Items.Count;
+        ribbon.Tabs.Items.Count;
 
     private static Button FindButtonById(RibbonView ribbon, ICommandRegistry registry, string commandId)
     {
         var descriptor = registry.Items.Single(d => d.Id == commandId);
-        var tabs = (TabControl)ribbon.Content!;
+        var tabs = ribbon.Tabs;
         var tab = tabs.Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
 
         return FindButtonsWithText((Control)tab.Content!, descriptor.DisplayName).First();
@@ -711,7 +646,7 @@ public sealed class RibbonViewTests
 
             var manager = new CountingWorkspaceManager(host.Manager!);
             var ribbon = new RibbonView(registry, manager, workspace, _ => { }, _ => { });
-            var tabsBefore = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().ToList();
+            var tabsBefore = ribbon.Tabs.Items.OfType<TabItem>().ToList();
 
             // `TD-119`: both assertions below are negative or count-based, so
             // there is nothing to poll for in them. `ActionCompleted` is the
@@ -768,7 +703,7 @@ public sealed class RibbonViewTests
 
             // The tabs are the same live instances throughout — nothing
             // was torn down by either click.
-            var tabsAfter = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().ToList();
+            var tabsAfter = ribbon.Tabs.Items.OfType<TabItem>().ToList();
             Assert.Equal(tabsBefore.Count, tabsAfter.Count);
             for (var i = 0; i < tabsBefore.Count; i++)
                 Assert.Same(tabsBefore[i], tabsAfter[i]);

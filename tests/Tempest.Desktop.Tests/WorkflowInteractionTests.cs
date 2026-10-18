@@ -732,7 +732,7 @@ public sealed class WorkflowInteractionTests
     private static Button FindButtonById(RibbonView ribbon, ICommandRegistry registry, string commandId)
     {
         var descriptor = registry.Items.Single(d => d.Id == commandId);
-        var tabs = (TabControl)ribbon.Content!;
+        var tabs = ribbon.Tabs;
         var tab = tabs.Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
 
         return FindButtonsWithText((Control)tab.Content!, descriptor.DisplayName).First();

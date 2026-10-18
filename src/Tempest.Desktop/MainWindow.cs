@@ -284,7 +284,7 @@ public sealed class MainWindow : Window
             // never a bare module swap any more — see
             // `ResolveEngineeringSurfaceHost`/`EnterEngineeringAsync`.
             // `WP 19.7A`: reached from the rail via `EngineeringDepartment`'s
-            // own Modules → Mechanical node now, not a rail button of its
+            // own Disciplines nodes now, not a rail button of its
             // own — this entry itself is otherwise unchanged.
             [ShellArea.Engineering] = new(
                 () => ResolveEngineeringSurfaceHost(projectScoped: _navigator.Current.ProjectId is not null),
@@ -569,14 +569,29 @@ public sealed class MainWindow : Window
             if (ReferenceEquals(_moduleHost.Content, _engineeringSurface))
                 _moduleHost.Content = null;
 
+            _engineeringAreaView.ClearEngineeringSurface();
             _projectWorkspace.SetEngineeringSurface(_engineeringSurface);
+            if (_ribbon.CurrentCategory is { } shown)
+                _projectWorkspace.HighlightDiscipline(shown);
+
             return _projectWorkspace;
         }
 
         // The reverse direction: free the surface from the Structure tab
-        // (a no-op if it was not there) before handing it back directly.
+        // (a no-op if it was not there) and from the module host (the
+        // construction-time placeholder), then show it beside the
+        // Engineering tree — standalone Engineering keeps the tree on
+        // screen, so there is always a way back out (`v0.24.0` Product
+        // Owner review).
         _projectWorkspace.ClearEngineeringSurface();
-        return _engineeringSurface;
+        if (ReferenceEquals(_moduleHost.Content, _engineeringSurface))
+            _moduleHost.Content = null;
+
+        _engineeringAreaView.ShowEngineeringSurface(_engineeringSurface);
+        if (_ribbon.CurrentCategory is { } category)
+            _engineeringAreaView.HighlightDiscipline(category);
+
+        return _engineeringAreaView;
     }
 
     /// <summary>
@@ -849,6 +864,7 @@ public sealed class MainWindow : Window
         if (areaId is not null && workspace.Navigation.Areas.FirstOrDefault(a => a.Id == areaId) is { } area)
         {
             await workspace.Navigation.SwitchAreaAsync(area.Id).ConfigureAwait(true);
+            _explorerView.ClearNoTree();
             _ribbon.SelectTabForArea(area.Title);
             SetCurrentArea(area.Title);
         }

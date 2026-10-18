@@ -43,7 +43,7 @@ public sealed class AutomationNameResolutionTests
             var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
 
             var descriptor = registry.Items.Single(d => d.Id == "mechanical.rename");
-            var tabs = (TabControl)ribbon.Content!;
+            var tabs = ribbon.Tabs;
             var tab = tabs.Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
             var button = FindButtonsWithText((Control)tab.Content!, descriptor.DisplayName).First();
 

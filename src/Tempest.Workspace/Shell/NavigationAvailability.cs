@@ -90,7 +90,7 @@ public static class ShellAreas
         // Reports, Tasks, Modules, Reference data); `Engineering` itself
         // (below, excluded from the rail exactly as it already was)
         // remains the ribbon-and-docking surface's own scope-aware
-        // location, reached from this tree's own Modules → Mechanical
+        // location, reached from this tree's own Disciplines nodes
         // node, from a project's Structure tab, or from open-right-up.
         new(ShellArea.EngineeringDepartment, "Engineering", "⚙", NavigationAvailability.Implemented,
             "Dashboard, Tasks (Calculations, Reviews, Approvals), Modules (Mechanical; Electrical and Structural are future) and Reference data — the governed libraries evidence and calculations cite."),
@@ -111,10 +111,9 @@ public static class ShellAreas
         // embeds the ribbon and docking surface directly in that tab), or
         // from open-right-up. Standalone engineering (`TD-89`, no project
         // open) has no dedicated rail button either, but is not stranded:
-        // Home renders the identical engineering surface (ribbon,
-        // explorer, docking), unchanged, and `WP 19.7A`'s own
-        // `EngineeringDepartment` tree offers Modules → Mechanical as a
-        // second, discoverable route to the same place. The descriptor
+        // `EngineeringDepartment`'s tree offers each discipline as a node,
+        // and shows the surface beside that tree (`v0.24.0` Product Owner
+        // review), with the rail's Engineering entry highlighted. The descriptor
         // stays, excluded from `RailModules` exactly as `ProjectWorkspace`'s
         // always has been, because `ShellArea.Engineering` remains a real
         // navigator scope other code still names it by

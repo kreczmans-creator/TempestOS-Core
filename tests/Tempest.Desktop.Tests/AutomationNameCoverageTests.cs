@@ -122,8 +122,8 @@ public sealed class AutomationNameCoverageTests
             {
                 foreach (var node in TreeNodesFor(module.Area))
                 {
-                    if (node == "Mechanical")
-                        continue; // Real navigation to the shared engineering surface — ShellArea.Home's own scan above already covers it.
+                    if (node == "Requirements discipline")
+                        continue; // Real navigation to the shared engineering surface — the project Structure tab scan below covers it.
 
                     await ScanTreeNodeAsync(module.Area, module.Title, node, missing).ConfigureAwait(true);
                 }
@@ -154,14 +154,14 @@ public sealed class AutomationNameCoverageTests
     /// The real, non-placeholder nodes <see cref="ShellArea"/>'s own tree
     /// area (Projects, Engineering, Business — `WP 19.7A`) offers. The pure
     /// group header "Modules" carries no content of its own and is not
-    /// walked; "Mechanical" is walked (it navigates on) but not scanned
-    /// here — the surface it lands on is the identical shared one
-    /// <see cref="ShellArea.Home"/>'s own scan already covers.
+    /// walked; a Disciplines node ("Requirements discipline") is walked (it
+    /// navigates on) but not scanned here — the surface it lands on is the
+    /// identical shared one the project Structure tab scan covers.
     /// </summary>
     private static IReadOnlyList<string> TreeNodesFor(ShellArea area) => area switch
     {
         ShellArea.Projects => ["Dashboard", "Open", "Closed", "Archive"],
-        ShellArea.EngineeringDepartment => ["Dashboard", "Tasks", "Mechanical", "Engineering Calculations", "Calculators", "Engineering Assets", "Reference data"],
+        ShellArea.EngineeringDepartment => ["Dashboard", "Tasks", "Requirements discipline", "Engineering Calculations", "Calculators", "Engineering Assets", "Reference data"],
         ShellArea.Business => ["Dashboard", "Staff", "Rate cards", "Quotes", "Invoices", "Timesheets", "Subscriptions"],
         _ => [],
     };

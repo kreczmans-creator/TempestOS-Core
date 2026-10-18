@@ -154,7 +154,7 @@ public enum ShellArea
     /// pane over the selected node — distinct from <see cref="Engineering"/>
     /// itself, which stays the ribbon-and-docking engineering surface's own
     /// scope-aware location (a project's Structure tab, or standalone).
-    /// Selecting Modules → Mechanical from this tree's own content
+    /// Selecting a Disciplines node from this tree's own content
     /// navigates on to <see cref="Engineering"/> exactly as it always has;
     /// this member exists only so the rail can offer a real landing page
     /// first, per the Product Owner's IA sketches, without touching
