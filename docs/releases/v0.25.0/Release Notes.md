@@ -68,6 +68,8 @@ Tests: `EngineeringDisciplineNavigationTests.cs`, and
 `RibbonViewTests.NarrowWindow_CommandBar_StaysOneShortRow_AndEachSelectorOpensItsGroup`,
 which replaces `WP-Z4`'s two scrollbar tests because nothing scrolls any more.
 
+- **The Cockpit's DETAIL cards no longer spill out of their grid** at some pane widths. The grid's negative left/right margin made Avalonia arrange it narrower than it measured it. This was found by CI's layout walk at 1,600×900 beside the new discipline column, and reproduced locally at 1,200, 1,640–1,710 and 1,930–1,950 px. The grid now sits 8 px in from the page edge.
+
 ## Also in this build
 
 - CI's `actions/download-artifact` is bumped to 8.0.2 (Dependabot, PR #18).
@@ -92,6 +94,10 @@ which replaces `WP-Z4`'s two scrollbar tests because nothing scrolls any more.
   Resize or maximise it.
 - **Requirements → Actions (13) wraps to three rows (stress F4).** It
   wraps only while that group is open.
+- **Explorer's favourite button is clipped at 1,200–1,220 px.** Between
+  the compact threshold and about 1,220 px, the Structure tab's Explorer is
+  narrow enough that its favourite button is cut off. Below 1,200 px the
+  rail folds and it fits.
 - **The status bar's AREA keeps the last discipline (stress F5).** It
   still shows it on the Engineering dashboard and in other modules.
 - **The real-shell journey script is out of date on main.**
