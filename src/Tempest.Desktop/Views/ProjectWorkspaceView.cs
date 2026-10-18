@@ -99,6 +99,55 @@ public sealed class ProjectWorkspaceView : UserControl
     // content.
     private readonly ContentControl _structureHost = new();
 
+    // The Structure tab's discipline list, left of the engineering surface
+    // (`v0.24.0` Product Owner review): the same seven disciplines the
+    // standalone Engineering tree lists, replacing the command bar's own
+    // hidden tab strip as the way a discipline is chosen.
+    private readonly ListBox _disciplines = new();
+    private bool _suppressDisciplineSelection;
+
+    /// <summary>Raised when the Structure tab's discipline list picks a discipline, carrying its command category.</summary>
+    public event Action<string>? DisciplineSelected;
+
+    /// <summary>Highlights <paramref name="category"/> in the Structure tab's discipline list without raising <see cref="DisciplineSelected"/>.</summary>
+    public void HighlightDiscipline(string category)
+    {
+        var item = _disciplines.Items.OfType<ListBoxItem>().FirstOrDefault(i => Equals(i.Tag, category));
+        if (item is null || ReferenceEquals(_disciplines.SelectedItem, item))
+            return;
+
+        _suppressDisciplineSelection = true;
+        _disciplines.SelectedItem = item;
+        _suppressDisciplineSelection = false;
+    }
+
+    private Control BuildStructurePane()
+    {
+        foreach (var category in EngineeringDisciplines.All)
+        {
+            var item = new ListBoxItem { Content = category, Tag = category };
+            AutomationProperties.SetName(item, EngineeringDisciplines.NavigatorName(category));
+            _disciplines.Items.Add(item);
+        }
+
+        AutomationProperties.SetName(_disciplines, "Disciplines");
+        _disciplines.SelectionChanged += (_, e) =>
+        {
+            if (!ReferenceEquals(e.Source, _disciplines) || _suppressDisciplineSelection)
+                return;
+
+            if (_disciplines.SelectedItem is ListBoxItem { Tag: string category })
+                DisciplineSelected?.Invoke(category);
+        };
+
+        var pane = new DockPanel();
+        var column = new CollapsibleColumn("Disciplines", _disciplines);
+        DockPanel.SetDock(column, Dock.Left);
+        pane.Children.Add(column);
+        pane.Children.Add(_structureHost);
+        return pane;
+    }
+
     private bool _suppressAreaSelection;
 
     /// <summary>Raised after the user asks to enter Engineering, so the shell can render it.</summary>
@@ -643,7 +692,7 @@ public sealed class ProjectWorkspaceView : UserControl
             // `MainWindow`/`MainWindowComposer` has built that surface (see
             // `SetEngineeringSurface`) — never built here, which would be too
             // early.
-            ProjectArea.Engineering => (Control)_structureHost,
+            ProjectArea.Engineering => BuildStructurePane(),
             ProjectArea.Documents => _documentsView,
             ProjectArea.Requirements => _requirementsView,
             ProjectArea.Tasks => _tasksView,

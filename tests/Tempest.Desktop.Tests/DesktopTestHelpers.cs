@@ -551,7 +551,7 @@ internal static class DesktopTestHelpers
         ArgumentNullException.ThrowIfNull(registry);
 
         var descriptor = registry.Items.Single(d => d.Id == commandId);
-        var tab = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
+        var tab = ribbon.Tabs.Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
 
         return ((Control)tab.Content!).GetLogicalDescendants()
             .OfType<Button>()

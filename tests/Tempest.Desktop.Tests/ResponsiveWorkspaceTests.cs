@@ -49,7 +49,7 @@ public sealed class ResponsiveWorkspaceTests
             await host.StartAsync();
             var registry = (Tempest.Core.Commands.ICommandRegistry)host.Services!.GetService(typeof(Tempest.Core.Commands.ICommandRegistry));
             var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
-            var tabs = (TabControl)ribbon.Content!;
+            var tabs = ribbon.Tabs;
             var tabCount = tabs.Items.Count;
 
             Assert.False(ribbon.IsCollapsed);
@@ -86,7 +86,7 @@ public sealed class ResponsiveWorkspaceTests
             ribbon.SetCollapsed(true);
             ribbon.Rebuild();
 
-            var tabs = (TabControl)ribbon.Content!;
+            var tabs = ribbon.Tabs;
             Assert.True(ribbon.IsCollapsed);
             Assert.All(tabs.Items.OfType<TabItem>(), t => Assert.False(((Control)t.Content!).IsVisible));
         }

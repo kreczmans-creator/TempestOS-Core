@@ -167,7 +167,7 @@ internal sealed partial class MainWindowComposer
         // project setup, not something a calc sheet or drawing cites, and
         // `po-comments.md` #3 itself names Projects alongside Deliverables/
         // Invoicing/Timesheets as belonging to other rail areas.
-        views.Ribbon.SetCategoryFilter(EngineeringRibbonCategories);
+        views.Ribbon.SetCategoryFilter(EngineeringDisciplines.Categories);
 
         // ---- The Product Spine's own shell composition (`TD-84`) ----
         // `WP 19.4A`: the Ribbon docks directly at the top now — no
@@ -362,24 +362,4 @@ internal sealed partial class MainWindowComposer
     /// <summary>One shell action's own <see cref="CommandDescriptor"/>, built around <paramref name="action"/> (`WP 19.4A`).</summary>
     private static void RegisterShellAction(ICommandRegistry registry, string id, string displayName, string category, Func<Task<CommandResult>> action) =>
         registry.RegisterDescriptor(new CommandDescriptor(id, displayName, category: category, createDefault: () => new ShellActionCommand { Action = action }));
-
-    /// <summary>
-    /// The engineering-discipline <see cref="CommandDescriptor.Category"/>
-    /// values <see cref="RibbonView.SetCategoryFilter"/> allow-lists inside
-    /// the engineering surface (`WP 19.4A`) — the seven real discipline
-    /// registrations (<c>CalculationsWorkspaceRegistration</c>,
-    /// <c>DocumentsWorkspaceRegistration</c>,
-    /// <c>EvidenceWorkspaceRegistration</c>,
-    /// <c>ManufacturingWorkspaceRegistration</c>,
-    /// <c>MechanicalWorkspaceRegistration</c>,
-    /// <c>RequirementsWorkspaceRegistration</c>,
-    /// <c>VerificationWorkspaceRegistration</c>), an exact, exhaustive
-    /// list — not "everything except Deliverables/Invoicing/Timesheets/
-    /// Projects/Quotations" — so a future business-scoped category joins
-    /// the excluded set automatically, with no second edit here.
-    /// </summary>
-    private static readonly HashSet<string> EngineeringRibbonCategories = new(StringComparer.Ordinal)
-    {
-        "Calculations", "Documents", "Evidence", "Manufacturing", "Mechanical", "Requirements", "Verification",
-    };
 }

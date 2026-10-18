@@ -77,7 +77,7 @@ public sealed class GlobalNavigationRail : UserControl
         // `WP 19.7A`: every rail button is a plain global module now —
         // `ShellArea.Engineering`'s own scope-aware verbs
         // (`GoToEngineeringAsync`) are reached from
-        // `EngineeringDepartment`'s own Modules → Mechanical node instead
+        // `EngineeringDepartment`'s own Disciplines nodes instead
         // of from this rail directly (see `ShellArea.EngineeringDepartment`'s
         // own remarks), so every button here goes through the one plain
         // `GoToModuleAsync`.
@@ -185,18 +185,30 @@ public sealed class GlobalNavigationRail : UserControl
         _collapseChevronIconHost.Content = IconGeometry.Build(_collapsedByUser ? IconGeometry.ChevronRight : IconGeometry.ChevronLeft, 14);
     }
 
+    /// <summary>The rail entry <see cref="RefreshSelection"/> last highlighted, or <see langword="null"/> when none is.</summary>
+    internal ShellArea? HighlightedArea { get; private set; }
+
     /// <summary>Re-highlights whichever module the navigator currently reports — called after every shell move, and again on a theme switch so the state brushes re-resolve for the new variant.</summary>
     public void RefreshSelection()
     {
-        var current = _navigator.Current.Area;
+        var location = _navigator.Current;
+        var current = location.Area;
+        HighlightedArea = null;
 
         foreach (var item in _modules)
         {
+            // The engineering surface has no rail entry of its own: inside
+            // a project it belongs to Projects, standalone to the
+            // Engineering entry whose tree it is shown beside.
             var isCurrent = item.Area == current
-                || (item.Area == ShellArea.Projects && current == ShellArea.ProjectWorkspace);
+                || (item.Area == ShellArea.Projects && current == ShellArea.ProjectWorkspace)
+                || (item.Area == ShellArea.Projects && current == ShellArea.Engineering && location.ProjectId is not null)
+                || (item.Area == ShellArea.EngineeringDepartment && location.IsStandaloneEngineering);
 
             item.Title.FontWeight = isCurrent ? DesignTokens.WeightHeading : DesignTokens.WeightBody;
             item.Rule.IsVisible = isCurrent;
+            if (isCurrent)
+                HighlightedArea = item.Area;
             item.Frame.Background = isCurrent ? BrandPalette.Brush(BrandPalette.SelectedBackgroundBrushKey) : Brushes.Transparent;
             item.Title.Foreground = BrandPalette.Brush(isCurrent ? BrandPalette.HeadingTextBrushKey : BrandPalette.BodyTextBrushKey);
             item.Icon.Foreground = BrandPalette.Brush(isCurrent ? BrandPalette.AccentBrushKey : BrandPalette.MutedTextBrushKey);

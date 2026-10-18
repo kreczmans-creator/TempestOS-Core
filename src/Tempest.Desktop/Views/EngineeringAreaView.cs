@@ -17,9 +17,8 @@ namespace Tempest.Desktop.Views;
 /// <summary>
 /// The Engineering module's own rail landing page (`WP 19.7A`, Product
 /// Owner IA sketches item 6, sheet 8): a tree — Dashboard + Reports, Tasks
-/// (Calculations, Reviews, Approvals), Modules (Mechanical; Electrical and
-/// Structural are future and not shown), Reference data — with a right
-/// pane over whichever node is selected.
+/// (Calculations, Reviews, Approvals), Disciplines, Modules, Reference
+/// data — with a right pane over whichever node is selected.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -30,12 +29,13 @@ namespace Tempest.Desktop.Views;
 /// <see cref="ITasksReadModel"/>'s own Calculations, Reviews and Approvals
 /// (`WP 20.1B`, `TD-181` gives the read model its own Calculations bucket
 /// — the sketched sub-heading this view used to disclose as missing);
-/// Modules → Mechanical navigates on to
-/// <see cref="ShellArea.Engineering"/>, the ribbon-and-docking surface's
-/// own long-established scope-aware location, exactly as it always has
-/// (see <see cref="ShellArea.EngineeringDepartment"/>'s own remarks) —
-/// Electrical and Structural are the Product Owner's own sketched
-/// "future" modules and are deliberately not shown; Modules → Engineering
+/// each Disciplines node (Calculations, Documents, Evidence, Manufacturing,
+/// Mechanical, Requirements, Verification — <see cref="EngineeringDisciplines"/>)
+/// navigates to <see cref="ShellArea.Engineering"/> and shows that
+/// discipline's command bar, Explorer and Properties *in this right pane*,
+/// with the tree still beside it (`v0.24.0` Product Owner review: the old
+/// Modules → Mechanical node swapped the whole tree away, leaving no way
+/// back out); Modules → Engineering
 /// Calculations embeds the existing calculation surface; Reference data
 /// embeds a second <see cref="LibrariesView"/> instance (the first is
 /// already parented inside <see cref="EvidenceWorkspaceView"/>, and a
@@ -69,7 +69,8 @@ public sealed class EngineeringAreaView : UserControl
     private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard + Reports" };
     private readonly TreeViewItem _tasksNode = new() { Header = "Tasks" };
     private readonly TreeViewItem _modulesNode = new() { Header = "Modules", IsExpanded = true };
-    private readonly TreeViewItem _mechanicalNode = new() { Header = "Mechanical" };
+    private readonly TreeViewItem _disciplinesNode = new() { Header = "Disciplines", IsExpanded = true };
+    private readonly Dictionary<string, TreeViewItem> _disciplineNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _calculationsNode = new() { Header = "Engineering Calculations" };
     private readonly TreeViewItem _calculatorsNode = new() { Header = "Calculators" };
     private readonly TreeViewItem _assetsNode = new() { Header = "Engineering Assets" };
@@ -78,8 +79,11 @@ public sealed class EngineeringAreaView : UserControl
     private readonly WorkspaceChangesSubscription _workspaceChanges;
     private bool _suppressSelection;
 
-    /// <summary>Raised after the user asks to enter the Mechanical module, so the shell can render the ribbon-and-docking surface.</summary>
+    /// <summary>Raised after a tree node moved the shell between this landing page and the engineering surface, so the shell re-renders its module.</summary>
     public event Action? EngineeringRequested;
+
+    /// <summary>Raised when a Disciplines node is picked, carrying its command category — the shell shows that discipline's commands and Explorer area.</summary>
+    public event Action<string>? DisciplineSelected;
 
     /// <summary>Raised after Complete completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -136,20 +140,27 @@ public sealed class EngineeringAreaView : UserControl
         _dashboardScroll = new ScrollViewer { Content = _dashboardStack };
         _tasksScroll = new ScrollViewer { Content = _tasksPanel };
 
-        _modulesNode.Items.Add(_mechanicalNode);
+        foreach (var category in EngineeringDisciplines.All)
+        {
+            var node = new TreeViewItem { Header = category, Tag = category };
+            AutomationProperties.SetName(node, EngineeringDisciplines.NavigatorName(category));
+            _disciplineNodes[category] = node;
+            _disciplinesNode.Items.Add(node);
+        }
         _modulesNode.Items.Add(_calculationsNode);
         _modulesNode.Items.Add(_calculatorsNode);
         _modulesNode.Items.Add(_assetsNode);
 
         _tree.Items.Add(_dashboardNode);
         _tree.Items.Add(_tasksNode);
+        _tree.Items.Add(_disciplinesNode);
         _tree.Items.Add(_modulesNode);
         _tree.Items.Add(_referenceDataNode);
 
         foreach (var (node, name) in new[]
                  {
-                     (_dashboardNode, "Dashboard + Reports"), (_tasksNode, "Tasks"), (_modulesNode, "Modules"),
-                     (_mechanicalNode, "Mechanical"), (_calculationsNode, "Engineering Calculations"), (_calculatorsNode, "Calculators"),
+                     (_dashboardNode, "Dashboard + Reports"), (_tasksNode, "Tasks"), (_disciplinesNode, "Disciplines"), (_modulesNode, "Modules"),
+                     (_calculationsNode, "Engineering Calculations"), (_calculatorsNode, "Calculators"),
                      (_assetsNode, "Engineering Assets"), (_referenceDataNode, "Reference data"),
                  })
             AutomationProperties.SetName(node, name);
@@ -171,8 +182,9 @@ public sealed class EngineeringAreaView : UserControl
 
     /// <summary>
     /// Selects the node named <paramref name="automationName"/>
-    /// ("Dashboard + Reports", "Tasks", "Modules", "Mechanical",
-    /// "Engineering Calculations" or "Reference data") — the same name a
+    /// ("Dashboard + Reports", "Tasks", "Disciplines", "Requirements
+    /// discipline" and its siblings, "Modules", "Engineering Calculations" or
+    /// "Reference data") — the same name a
     /// screen reader announces, and what a journey test drives the tree
     /// by.
     /// </summary>
@@ -180,11 +192,53 @@ public sealed class EngineeringAreaView : UserControl
     {
         var item = new[]
             {
-                _dashboardNode, _tasksNode, _modulesNode, _mechanicalNode, _calculationsNode, _calculatorsNode, _assetsNode, _referenceDataNode,
+                _dashboardNode, _tasksNode, _disciplinesNode, _modulesNode, _calculationsNode, _calculatorsNode, _assetsNode, _referenceDataNode,
             }
+            .Concat(_disciplineNodes.Values)
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
     }
+
+    /// <summary>
+    /// Shows the engineering surface (command bar + docking) in the right
+    /// pane, beside the tree — standalone Engineering's own render. The
+    /// caller detaches <paramref name="surface"/> from wherever it was
+    /// first; Avalonia refuses to reparent an attached control.
+    /// </summary>
+    public void ShowEngineeringSurface(Control surface)
+    {
+        ArgumentNullException.ThrowIfNull(surface);
+        _engineeringSurface = surface;
+        if (!ReferenceEquals(_detail.Content, surface))
+            _detail.Content = surface;
+    }
+
+    /// <summary>Frees the engineering surface from the right pane, so the shell can hand it to a project's Structure tab. A no-op when it is not here.</summary>
+    public void ClearEngineeringSurface()
+    {
+        if (_engineeringSurface is not null && ReferenceEquals(_detail.Content, _engineeringSurface))
+            _detail.Content = null;
+    }
+
+    /// <summary>
+    /// Highlights <paramref name="category"/>'s Disciplines node without
+    /// navigating — the shell calls it whenever the command bar's
+    /// category changes (an object opened right up, say), and only while
+    /// the surface is shown here.
+    /// </summary>
+    public void HighlightDiscipline(string category)
+    {
+        if (!IsShowingSurface || !_disciplineNodes.TryGetValue(category, out var node) || ReferenceEquals(_tree.SelectedItem, node))
+            return;
+
+        _suppressSelection = true;
+        _tree.SelectedItem = node;
+        _suppressSelection = false;
+    }
+
+    private Control? _engineeringSurface;
+
+    private bool IsShowingSurface => _engineeringSurface is not null && ReferenceEquals(_detail.Content, _engineeringSurface);
 
     /// <summary>
     /// Narrows the tree below the shell's own compact threshold, giving
@@ -219,6 +273,22 @@ public sealed class EngineeringAreaView : UserControl
     public async Task RefreshAsync()
     {
         RefreshCount++;
+
+        // While the surface is shown beside the tree it refreshes itself;
+        // a background workspace change must not swap it for the dashboard.
+        if (_navigator.Current.Area == ShellArea.Engineering && IsShowingSurface)
+            return;
+
+        // Arriving at this landing page with a discipline still selected
+        // (the rail's Engineering entry, after working in a discipline)
+        // starts again at the dashboard rather than bouncing straight back
+        // into the surface.
+        if (_tree.SelectedItem is TreeViewItem { Tag: string })
+        {
+            _suppressSelection = true;
+            _tree.SelectedItem = null;
+            _suppressSelection = false;
+        }
 
         if (_tree.SelectedItem is null)
         {
@@ -258,22 +328,31 @@ public sealed class EngineeringAreaView : UserControl
             return;
         }
 
-        if (ReferenceEquals(selected, _mechanicalNode))
+        if (selected.Tag is string category)
         {
-            // Real navigation away, to the ribbon-and-docking surface —
-            // reset the tree's own selection first, suppressed so it does
-            // not re-enter this handler: leaving Mechanical selected would
-            // make the next entry into this area navigate straight back
-            // out again (`RefreshAsync`'s own "something is already
-            // selected, re-read it" branch) instead of showing the tree.
-            _suppressSelection = true;
-            _tree.SelectedItem = null;
-            _suppressSelection = false;
+            // Into the engineering surface, beside this tree: navigate only
+            // when not already there (a re-pick just switches discipline).
+            if (_navigator.Current.Area != ShellArea.Engineering || !IsShowingSurface)
+            {
+                await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
+                EngineeringRequested?.Invoke();
+            }
 
-            await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
+            DisciplineSelected?.Invoke(category);
+            return;
+        }
+
+        // Any other node, picked while the surface is shown: back to this
+        // landing page's own location first, then render the node.
+        if (_navigator.Current.Area == ShellArea.Engineering)
+        {
+            await _navigator.GoToModuleAsync(ShellArea.EngineeringDepartment).ConfigureAwait(true);
             EngineeringRequested?.Invoke();
             return;
         }
+
+        if (ReferenceEquals(selected, _disciplinesNode) || ReferenceEquals(selected, _modulesNode))
+            return;
 
         if (ReferenceEquals(selected, _calculationsNode))
         {

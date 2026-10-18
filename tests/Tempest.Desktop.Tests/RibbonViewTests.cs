@@ -80,7 +80,7 @@ public sealed class RibbonViewTests
                 "Calculations", "Documents", "Evidence", "Manufacturing", "Mechanical", "Requirements", "Verification",
             });
 
-            var categories = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().Select(t => (string)t.Tag!).ToList();
+            var categories = ribbon.Tabs.Items.OfType<TabItem>().Select(t => (string)t.Tag!).ToList();
 
             Assert.DoesNotContain("Deliverables", categories);
             Assert.DoesNotContain("Invoicing", categories);
@@ -117,7 +117,7 @@ public sealed class RibbonViewTests
             var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
             var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
 
-            var tabs = (TabControl)ribbon.Content!;
+            var tabs = ribbon.Tabs;
             var accentsByCategory = tabs.Items
                 .OfType<TabItem>()
                 .ToDictionary(t => (string)t.Tag!, t => ((Border)((StackPanel)t.Header!).Children[0]).Background);
@@ -607,12 +607,12 @@ public sealed class RibbonViewTests
     }
 
     private static int CountTabs(RibbonView ribbon) =>
-        ((TabControl)ribbon.Content!).Items.Count;
+        ribbon.Tabs.Items.Count;
 
     private static Button FindButtonById(RibbonView ribbon, ICommandRegistry registry, string commandId)
     {
         var descriptor = registry.Items.Single(d => d.Id == commandId);
-        var tabs = (TabControl)ribbon.Content!;
+        var tabs = ribbon.Tabs;
         var tab = tabs.Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
 
         return FindButtonsWithText((Control)tab.Content!, descriptor.DisplayName).First();
@@ -711,7 +711,7 @@ public sealed class RibbonViewTests
 
             var manager = new CountingWorkspaceManager(host.Manager!);
             var ribbon = new RibbonView(registry, manager, workspace, _ => { }, _ => { });
-            var tabsBefore = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().ToList();
+            var tabsBefore = ribbon.Tabs.Items.OfType<TabItem>().ToList();
 
             // `TD-119`: both assertions below are negative or count-based, so
             // there is nothing to poll for in them. `ActionCompleted` is the
@@ -768,7 +768,7 @@ public sealed class RibbonViewTests
 
             // The tabs are the same live instances throughout — nothing
             // was torn down by either click.
-            var tabsAfter = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().ToList();
+            var tabsAfter = ribbon.Tabs.Items.OfType<TabItem>().ToList();
             Assert.Equal(tabsBefore.Count, tabsAfter.Count);
             for (var i = 0; i < tabsBefore.Count; i++)
                 Assert.Same(tabsBefore[i], tabsAfter[i]);

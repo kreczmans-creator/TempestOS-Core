@@ -49,6 +49,16 @@ namespace Tempest.Desktop.Views;
 /// unreachable.
 /// </para>
 /// <para>
+/// <b>One discipline at a time, chosen outside the ribbon.</b> After the
+/// `v0.24.0` Product Owner review the ribbon is a single-row command bar:
+/// the discipline tab strip is hidden, and the Engineering tree or the
+/// project's Structure tab picks the discipline
+/// (<see cref="ShowCategory"/>). The tabs still exist underneath — one per
+/// category, exactly as before — so every command, its grouping and its
+/// enablement are unchanged; only how a discipline is chosen moved. The
+/// groups wrap onto a second row instead of scrolling off the edge.
+/// </para>
+/// <para>
 /// <b>Command grouping and icons are still derived, not authored.</b> No
 /// descriptor sets <see cref="CommandDescriptor.Icon"/> (real per-command
 /// icons remain <c>FCR-0069</c>), so this class picks a tab group and a
@@ -65,6 +75,9 @@ public sealed class RibbonView : UserControl
     private readonly Action<string?> _setHint;
     private readonly Action<IWorkspaceView> _openDocument;
     private readonly TabControl _tabs = new();
+    private readonly TextBlock _categoryTitle = new();
+    private readonly Border _categoryDot = new() { Width = 8, Height = 8, CornerRadius = new Avalonia.CornerRadius(4), VerticalAlignment = VerticalAlignment.Center };
+    private readonly Button _collapseToggle = new();
     private readonly List<string> _recentCommandIds = [];
     private readonly List<(Button Button, CommandDescriptor Descriptor)> _selectionAwareButtons = [];
     private readonly Dictionary<string, ContentControl> _recentSectionHosts = new(StringComparer.Ordinal);
@@ -78,8 +91,30 @@ public sealed class RibbonView : UserControl
     /// <summary>Raised after a ribbon action completes (successfully or not), carrying a human-readable status message and its <see cref="ActionOutcome"/> — mirrors every other Desktop View's own identical <c>ActionCompleted</c> convention (`TD-58`: the outcome is what lets the subscriber refresh dependent surfaces only when the workspace actually changed).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
 
-    /// <summary>Raised when the user clicks a discipline tab directly (not via <see cref="SelectTabForArea"/>) — the caller's own cue to switch the Navigation area to match.</summary>
+    /// <summary>Raised when a discipline navigator picks a category (<see cref="ShowCategory"/>, not <see cref="SelectTabForArea"/>) — the caller's own cue to switch the Navigation area to match.</summary>
     public event Action<string>? CategorySelected;
+
+    /// <summary>Raised whenever the category shown changes, however it was chosen — the discipline navigators' cue to highlight it.</summary>
+    public event Action<string>? CurrentCategoryChanged;
+
+    /// <summary>The category whose commands are shown, or <see langword="null"/> before the first build.</summary>
+    public string? CurrentCategory => (_tabs.SelectedItem as TabItem)?.Tag as string;
+
+    /// <summary>The per-category tabs underneath the command bar — their strip is hidden; tests and <see cref="ShowCategory"/> select one.</summary>
+    internal TabControl Tabs => _tabs;
+
+    /// <summary>
+    /// Shows <paramref name="category"/>'s commands, raising
+    /// <see cref="CategorySelected"/> when that is a change — what the
+    /// Engineering tree and the Structure tab's discipline list call. An
+    /// unknown category is ignored.
+    /// </summary>
+    public void ShowCategory(string category)
+    {
+        var tab = _tabs.Items.OfType<TabItem>().FirstOrDefault(t => Equals(t.Tag, category));
+        if (tab is not null)
+            _tabs.SelectedItem = tab;
+    }
 
     /// <summary>
     /// Raised after a create command succeeds, with the id and Kind of what
@@ -122,6 +157,11 @@ public sealed class RibbonView : UserControl
     {
         foreach (var content in _tabContents)
             content.IsVisible = !_isCollapsed;
+
+        var actionName = _isCollapsed ? "Show commands" : "Hide commands";
+        AutomationProperties.SetName(_collapseToggle, actionName);
+        ToolTip.SetTip(_collapseToggle, actionName);
+        _collapseToggle.Content = Icons.IconGeometry.Build(_isCollapsed ? Icons.IconGeometry.ChevronDown : Icons.IconGeometry.ChevronUp, 12);
     }
 
     /// <summary>
@@ -197,21 +237,49 @@ public sealed class RibbonView : UserControl
         ThemeReactiveBrush.Bind(_tabs, BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
         BorderThickness = new Avalonia.Thickness(0, 0, 0, 1);
         ThemeReactiveBrush.Bind(this, BorderBrushProperty, BrandPalette.HairlineBrushKey);
-        Content = _tabs;
 
-        // Double-click a tab header to minimise/restore — the convention
-        // every ribbon application shares (`TD-70`).
-        _tabs.DoubleTapped += (_, e) =>
+        // The discipline tab strip is hidden (class remarks): the
+        // navigators beside the surface choose the category, and the bar
+        // names it in its own header instead.
+        _tabs.TemplateApplied += (_, e) =>
         {
-            if (e.Source is Visual source && source.FindAncestorOfType<TabItem>(includeSelf: true) is not null)
-            {
-                ToggleCollapsed();
-                e.Handled = true;
-            }
+            if (e.NameScope.Find<Control>("PART_ItemsPresenter") is { } strip)
+                strip.IsVisible = false;
         };
+
+        // The header row: which discipline these commands act on, and the
+        // minimise/restore toggle that the hidden tab strip's double-click
+        // used to be (`TD-70`) — so a minimised bar can always be restored.
+        _categoryTitle.FontFamily = DesignTokens.TitleFont;
+        _categoryTitle.FontWeight = DesignTokens.WeightHeading;
+        _categoryTitle.VerticalAlignment = VerticalAlignment.Center;
+        _collapseToggle.Classes.Add(ChromeStyles.Subtle);
+        _collapseToggle.MinHeight = DesignTokens.ControlSizeSmall;
+        _collapseToggle.Click += (_, _) => ToggleCollapsed();
+
+        var headerRow = new DockPanel { Margin = new Avalonia.Thickness(DesignTokens.SpaceLg, DesignTokens.SpaceSm, DesignTokens.SpaceSm, 0) };
+        DockPanel.SetDock(_collapseToggle, Dock.Right);
+        headerRow.Children.Add(_collapseToggle);
+        var titleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        titleRow.Children.Add(_categoryDot);
+        titleRow.Children.Add(_categoryTitle);
+        headerRow.Children.Add(titleRow);
+
+        var root = new DockPanel();
+        DockPanel.SetDock(headerRow, Dock.Top);
+        root.Children.Add(headerRow);
+        root.Children.Add(_tabs);
+        Content = root;
 
         _tabs.SelectionChanged += (_, _) =>
         {
+            if (_tabs.SelectedItem is TabItem { Tag: string shown })
+            {
+                _categoryTitle.Text = $"{shown} commands";
+                _categoryDot.Background = DisciplineColors.Resolve(shown);
+                CurrentCategoryChanged?.Invoke(shown);
+            }
+
             // Only a change of category is a request to switch area: a
             // re-attach or a rebuild that re-selects the tab already shown
             // must not bounce the explorer back to that tab's area (the
@@ -401,39 +469,14 @@ public sealed class RibbonView : UserControl
         root.Children.Add(recentSectionHost);
         UpdateRecentSection(category);
 
-        var groupsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        // The groups wrap rather than scroll (class remarks): a discipline
+        // with many commands (Requirements) takes a second row instead of
+        // running off the right edge.
+        var groupsRow = new WrapPanel { Orientation = Orientation.Horizontal };
         foreach (var groupedByVerb in descriptors.GroupBy(d => ClassifyGroup(d.Id)).OrderBy(g => GroupOrder(g.Key)))
             groupsRow.Children.Add(BuildGroup(groupedByVerb.Key, groupedByVerb.ToList()));
 
-        var scroller = new ScrollViewer { Content = groupsRow, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
-
-        // The real, root cause fix (`WP-Z4`, responsive Ribbon closure):
-        // a ScrollViewer's `Auto` horizontal scrollbar only ever occupies
-        // room its own final size already has *slack* for — it never
-        // grows itself purely to make room for its own scrollbar. Nothing
-        // upstream of this ScrollViewer (a vertical StackPanel, itself
-        // sized to content) ever gives it more height than the button
-        // rows alone need, so at any width narrow enough that
-        // `groupsRow` genuinely overflows, the ScrollViewer had nowhere
-        // to draw the one affordance that would tell the user horizontal
-        // scrolling was even possible — the command groups past that
-        // width were simply clipped, in total silence. Reserving one
-        // scrollbar's worth of height (`DesignTokens.SpaceXl`, the
-        // platform's own existing spacing step, not a new magic number)
-        // costs nothing at a width wide enough that no scrollbar ever
-        // appears, and is exactly what lets `Auto` actually show one the
-        // moment it is needed. Read once after the first real layout
-        // pass, from `groupsRow`'s own measured height — itself
-        // independent of window width — never a literal pixel total.
-        void ReserveScrollbarHeightOnce(object? _, EventArgs __)
-        {
-            scroller.LayoutUpdated -= ReserveScrollbarHeightOnce;
-            scroller.MinHeight = groupsRow.DesiredSize.Height + DesignTokens.SpaceXl;
-        }
-
-        scroller.LayoutUpdated += ReserveScrollbarHeightOnce;
-        root.Children.Add(scroller);
-
+        root.Children.Add(groupsRow);
         return root;
     }
 

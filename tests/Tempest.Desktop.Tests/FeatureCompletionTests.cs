@@ -57,7 +57,7 @@ public sealed class FeatureCompletionTests
         // Scoped to the command's own discipline tab: "Request Review" is a
         // real DisplayName in three of them, so a ribbon-wide search finds
         // whichever discipline happens to sort first.
-        var tab = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
+        var tab = ribbon.Tabs.Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
         var button = ((Control)tab.Content!).GetLogicalDescendants()
             .OfType<Button>()
             .First(b => b.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text == descriptor.DisplayName));
