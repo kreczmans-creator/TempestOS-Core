@@ -148,7 +148,7 @@ public sealed class EngineeringDisciplineNavigationTests
 
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(5);
+        var deadline = DesktopTestHelpers.Deadline(5);
         while (!condition() && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10);
