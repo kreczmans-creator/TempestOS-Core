@@ -117,6 +117,19 @@ approved, posted or emailed by TempestOS.
   `PHYSICAL_REVIEW.md` §7m (a short Xero walk pointing at the runbook).
 - **Version.** `VERSION` reads `0.24.0`: the test build installs into
   `C:\TempestOS-rc24-data` and its title bar reads `TempestOS 0.24.0 (…)`.
+- **Folded in from PR #14 (the v1.0 RC polish tranche, 2026-10-01).**
+  `TD-186` — status bar, refusals and completion messages name objects by
+  display name, never by GUID. `TD-187` — the Invoices "Outstanding /
+  Overdue" heading says what the group means instead of citing a backlog
+  id. `TD-188` — a per-line VAT rate picker on the Quote tab, alongside the
+  rate-card choice; a line left on *VAT: Settings default* behaves as
+  before. `TD-183` — the OAuth loopback port moved from `49301` to
+  `48131`. Requirements: create/delete of a Requirement Group or
+  Collection is undoable. `scripts/run-realshell-linux.sh` creates `--out`
+  before starting Xvfb. The draft `docs/releases/v1.0.0/Release Notes.md`
+  is superseded by these notes.
+- **Dependencies.** Stryker 5.0.0 (#13); `actions/upload-artifact` 7.0.2
+  (#16).
 
 ## Product Owner decisions (D1–D7, 2026-10-02)
 
@@ -171,9 +184,9 @@ report's *Open items* table here.
   offline for most of those 5 minutes straight after the create. Open item
   F1 confirms the window on the real Xero. A *Can't tell* badge offers no
   **Retry** *(needs m15)*.
-- **Loopback port.** This build still listens on `49301` for the Xero
-  sign-in (`TD-183`, the move to `48131`, has not merged); register the
-  port the browser shows.
+- **Loopback port.** The Xero sign-in listens on `48131`
+  (`TD-183`; earlier builds used `49301`). Register
+  `http://127.0.0.1:48131/callback/` in the Xero app.
 - **Going live.** Do not turn on *Allow live organisation* (runbook XG7)
   until the integrator confirms review-board items M1, M2 and M7 are
   merged: before them, switching from the Demo Company can copy Demo test

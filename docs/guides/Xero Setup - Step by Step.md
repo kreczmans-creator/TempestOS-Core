@@ -32,11 +32,9 @@ to any organisation that is not Xero's Demo Company.
 
    - `127.0.0.1`, not `localhost`.
    - It ends in a `/` after `callback`.
-   - The port is **48131** from the v1.0.0 RC build onwards (`TD-183`).
-     Builds up to v0.22 used `49301`; if you are on one of those, type
-     `49301` instead. **v0.24.0 test builds** still listen on `49301`
-     until `TD-183` merges (v0.23.0 Release Notes, "Known, carried
-     forward"); if Xero answers *Invalid redirect_uri*, register the port
+   - The port is **48131** from v0.24.0 onwards (`TD-183`). Builds up
+     to v0.23 used `49301`; if you are on one of those, type `49301`
+     instead. If Xero answers *Invalid redirect_uri*, register the port
      the browser's address bar shows after `redirect_uri=`.
 7. Tick the terms box and click **Create app**.
 8. You land on the app's page. Click **Configuration** on the left.
@@ -227,7 +225,7 @@ reported *not checked (supplied token)*.
 |---|---|---|
 | Browser: *"Invalid redirect_uri"* / *unauthorized_client* | Step 6 differs by a character, or the build uses the other port | Compare the address bar's `redirect_uri=` with step 6; fix the app's Redirect URI in Xero to match it exactly, Save, retry step 24 |
 | Browser: *invalid_scope* | The build still asks for the old `accounting.transactions` scope | You are on a build older than this guide; update TempestOS |
-| TempestOS: *Authorisation failed. Port 49301 is already in use; free it or configure a different port under 'Invoicing:OAuth:LoopbackPort'.* | Another program holds the port | Restart Windows and retry step 24; if it persists, tell the project chat |
+| TempestOS: *Authorisation failed. Port 48131 is already in use; free it or configure a different port under 'Invoicing:OAuth:LoopbackPort'.* | Another program holds the port | Restart Windows and retry step 24; if it persists, tell the project chat |
 | TempestOS: *No sign-in completed within 5 minutes. Try Authorise again.* or *Authorisation failed. The provider reported: access_denied.* | You took more than 5 minutes, or clicked Cancel on Xero's consent page | Repeat from step 24 |
 | After restart, status reads *Not authorised. not configured* | The id/secret did not save | Repeat Part 2 |
 | *Accounts reading: unavailable: …* | Signed in, but a read failed | Copy the full line into the project chat |

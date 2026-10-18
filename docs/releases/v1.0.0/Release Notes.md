@@ -1,5 +1,8 @@
 # TempestOS v1.0.0 — Release Notes
 
+**Superseded (2026-10-18):** this tranche ships in `v0.24.0`; see
+`docs/releases/v0.24.0/Release Notes.md`. Kept as the record of PR #14.
+
 **Status: DRAFT (2026-10-01), not released.** `VERSION` still reads
 `0.22.0`; `scripts/new-release.ps1 -Version 1.0.0` refuses until the
 Product Owner bumps it. The one remaining gate is the first live Xero
