@@ -1,0 +1,22 @@
+- material_state_id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  source_family:
+  - EN 10088
+  - ASTM A240
+  status: source_binding_required
+- material_state_id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  source_family:
+  - EN 10088
+  - ASTM A240
+  status: source_binding_required
+- material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  source_family:
+  - ASTM A564
+  status: source_binding_required
+- material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  source_family:
+  - ISO 4957
+  status: source_binding_required

@@ -1,0 +1,21 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "failure_modes": [
+    "tooth bending fatigue",
+    "pitting",
+    "scuffing",
+    "wear",
+    "fracture"
+  ],
+  "workflow": [
+    "define torque/speed spectrum",
+    "define gear geometry",
+    "select material and heat treatment",
+    "check tooth bending",
+    "check contact stress",
+    "check lubrication/scuffing",
+    "check life and duty cycle",
+    "verify against applicable gear standard"
+  ]
+}

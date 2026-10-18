@@ -1,0 +1,14 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "workflow": [
+    "identify compression/shear instability mode",
+    "determine effective geometry",
+    "calculate slenderness or plate slenderness",
+    "select appropriate stability model/code",
+    "include imperfections",
+    "check material yielding",
+    "verify boundary conditions"
+  ],
+  "rule": "Stability is a system response and can govern before nominal material strength."
+}

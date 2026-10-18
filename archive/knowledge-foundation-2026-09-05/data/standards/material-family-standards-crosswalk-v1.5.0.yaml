@@ -1,0 +1,75 @@
+- family: steels
+  coverage: strong
+  standards:
+  - standard: EN 10025-2
+    role: structural steels
+  - standard: EN 10083-2
+    role: non-alloy steels for quenching and tempering
+  - standard: EN 10083-3
+    role: alloy steels for quenching and tempering
+  - standard: EN 10088-1
+    role: stainless steel designation/technical delivery framework
+  - standard: EN ISO 4957
+    role: tool steels
+  - standard: ASTM A240/A240M
+    role: stainless plate/sheet/strip
+  - standard: ASTM A564/A564M
+    role: precipitation-hardening stainless products
+- family: aluminium
+  coverage: strong
+  standards:
+  - standard: EN 573-3
+    role: chemical composition and form of wrought aluminium
+  - standard: EN 485-2
+    role: mechanical properties of sheet/strip/plate
+  - standard: EN 755-2
+    role: mechanical properties of extruded products
+  - standard: ASTM B209
+    role: aluminium/alloy sheet and plate
+  - standard: ASTM B221
+    role: aluminium/alloy extruded products
+- family: magnesium
+  coverage: partial
+  standards:
+  - standard: ASTM B107/B107M
+    role: magnesium-alloy extruded bar, rod, profiles and tubes
+  - standard: ASTM B94
+    role: magnesium-alloy die castings
+  note: Exact alloy/product-form mappings require source verification.
+- family: tungsten_and_refractory
+  coverage: partial
+  standards:
+  - standard: ASTM B777
+    role: tungsten-base heavy metal
+  - standard: ASTM B348
+    role: titanium and titanium alloy bar is not applicable; exclude from tungsten
+      mapping
+  note: The crosswalk intentionally records a non-applicable example to test standards
+    filtering; remove from production mappings.
+- family: copper_and_copper_alloys
+  coverage: partial
+  standards:
+  - standard: ASTM B152/B152M
+    role: copper sheet, strip, plate and circle
+  - standard: ASTM B187/B187M
+    role: copper bus bar, rod and shapes
+  - standard: ASTM B148
+    role: aluminium-bronze sand castings
+- family: engineering_polymers
+  coverage: partial
+  standards:
+  - standard: ISO 1874
+    role: polyamide (PA) designation
+  - standard: ISO 9988-1
+    role: POM designation
+  - standard: ISO 19069
+    role: polypropylene designation
+- family: general_polymers
+  coverage: partial
+  standards:
+  - standard: ISO 2580
+    role: ABS designation
+  - standard: ISO 1872
+    role: polyethylene designation
+  - standard: ISO 19069
+    role: polypropylene designation

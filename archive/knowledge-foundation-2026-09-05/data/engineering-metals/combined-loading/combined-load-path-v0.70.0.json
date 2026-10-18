@@ -1,0 +1,15 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "purpose": "Provide a disciplined load-path workflow for assemblies.",
+  "workflow": [
+    "identify applied actions",
+    "trace force/moment transfer",
+    "define interfaces",
+    "resolve local load components",
+    "identify critical sections",
+    "calculate local responses",
+    "select failure criteria",
+    "verify assumptions experimentally or by validated analysis"
+  ]
+}

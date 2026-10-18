@@ -1,0 +1,17 @@
+{
+  "version": "0.61.0",
+  "status": "screening-only",
+  "promotion_requirements": [
+    "exact grade/formulation",
+    "product form",
+    "conditioning",
+    "stress/strain history",
+    "temperature",
+    "duration/frequency",
+    "environment",
+    "counterface for tribology",
+    "test method",
+    "authoritative source"
+  ],
+  "explicit_prohibition": "Do not infer long-term allowable stress, fatigue limit or wear life from generic family-level values."
+}

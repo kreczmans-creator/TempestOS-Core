@@ -1,0 +1,44 @@
+[
+  {
+    "id": "W-GAP-009",
+    "area": "heavy-alloy binder chemistry",
+    "priority": "high",
+    "status": "open",
+    "next": "Create grade-level Ni-Fe and Ni-Cu composition records with authoritative sources."
+  },
+  {
+    "id": "W-GAP-010",
+    "area": "heavy-alloy tensile data",
+    "priority": "high",
+    "status": "open",
+    "next": "Replace screening ranges with specification-linked values by density/grade and processing condition."
+  },
+  {
+    "id": "W-GAP-011",
+    "area": "carbide grain size",
+    "priority": "high",
+    "status": "open",
+    "next": "Model WC grain size as an explicit property affecting hardness/toughness."
+  },
+  {
+    "id": "W-GAP-012",
+    "area": "carbide binder chemistry",
+    "priority": "high",
+    "status": "open",
+    "next": "Add Co, Ni and alternative binder systems as separate grade attributes."
+  },
+  {
+    "id": "W-GAP-013",
+    "area": "carbide thermal shock",
+    "priority": "medium",
+    "status": "open",
+    "next": "Add thermal shock, oxidation and hot-hardness evidence."
+  },
+  {
+    "id": "W-GAP-014",
+    "area": "wear data",
+    "priority": "medium",
+    "status": "open",
+    "next": "Add application-specific wear test methods and evidence rather than a single generic wear number."
+  }
+]

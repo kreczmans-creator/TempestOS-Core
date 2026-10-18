@@ -1,0 +1,158 @@
+[
+  {
+    "id": "WC-Co-06",
+    "designation": "WC-Co ~6% Co",
+    "family": "cemented tungsten carbide",
+    "binder_wt_percent": 6,
+    "wc_grain_size_class": "fine/submicron range",
+    "density_g_cm3": [
+      14.5,
+      15.1
+    ],
+    "hardness_HV": [
+      1400,
+      1900
+    ],
+    "elastic_modulus_GPa": [
+      600,
+      680
+    ],
+    "transverse_rupture_strength_MPa": [
+      1800,
+      2600
+    ],
+    "fracture_toughness_MPa_sqrt_m": [
+      7,
+      11
+    ],
+    "thermal_conductivity_W_mK": [
+      70,
+      110
+    ],
+    "cte_20_100C_per_K": [
+      4.5e-06,
+      5.5e-06
+    ],
+    "electrical_resistivity_ohm_m": [
+      1.5e-07,
+      3e-07
+    ],
+    "behaviour": "Very hard and wear resistant; comparatively lower fracture toughness than higher-binder grades.",
+    "manufacturing": "Powder blending, compaction, liquid-phase sintering and precision grinding/EDM.",
+    "machinability": "poor by conventional cutting; grinding and specialised EDM processes used",
+    "uses": [
+      "cutting tools",
+      "wear inserts",
+      "micro-tools",
+      "precision dies"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against grade-specific specification/manufacturer/primary literature before design use."
+  },
+  {
+    "id": "WC-Co-10",
+    "designation": "WC-Co ~10% Co",
+    "family": "cemented tungsten carbide",
+    "binder_wt_percent": 10,
+    "wc_grain_size_class": "medium/fine",
+    "density_g_cm3": [
+      14.2,
+      14.8
+    ],
+    "hardness_HV": [
+      1200,
+      1700
+    ],
+    "elastic_modulus_GPa": [
+      560,
+      650
+    ],
+    "transverse_rupture_strength_MPa": [
+      2000,
+      3000
+    ],
+    "fracture_toughness_MPa_sqrt_m": [
+      9,
+      14
+    ],
+    "thermal_conductivity_W_mK": [
+      65,
+      105
+    ],
+    "cte_20_100C_per_K": [
+      5e-06,
+      6e-06
+    ],
+    "electrical_resistivity_ohm_m": [
+      1.7e-07,
+      3.5e-07
+    ],
+    "behaviour": "Balanced hardness, strength and toughness; widely representative of general cemented-carbide tooling.",
+    "manufacturing": "Powder metallurgy, liquid-phase sintering, grinding and finishing.",
+    "machinability": "poor by conventional cutting",
+    "uses": [
+      "general cutting tools",
+      "wear components",
+      "dies",
+      "mining/tooling components"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against grade-specific specification/manufacturer/primary literature before design use."
+  },
+  {
+    "id": "WC-Co-15",
+    "designation": "WC-Co ~15% Co",
+    "family": "cemented tungsten carbide",
+    "binder_wt_percent": 15,
+    "wc_grain_size_class": "medium/coarse",
+    "density_g_cm3": [
+      13.8,
+      14.5
+    ],
+    "hardness_HV": [
+      1000,
+      1500
+    ],
+    "elastic_modulus_GPa": [
+      500,
+      600
+    ],
+    "transverse_rupture_strength_MPa": [
+      2200,
+      3300
+    ],
+    "fracture_toughness_MPa_sqrt_m": [
+      11,
+      16
+    ],
+    "thermal_conductivity_W_mK": [
+      60,
+      100
+    ],
+    "cte_20_100C_per_K": [
+      5.5e-06,
+      6.5e-06
+    ],
+    "electrical_resistivity_ohm_m": [
+      2e-07,
+      4e-07
+    ],
+    "behaviour": "Higher binder fraction generally increases toughness and lowers hardness/stiffness relative to low-binder grades.",
+    "manufacturing": "Powder metallurgy and liquid-phase sintering; grinding/EDM for final geometry.",
+    "machinability": "poor by conventional cutting",
+    "uses": [
+      "impact-resistant tooling",
+      "mining tools",
+      "wear parts",
+      "forming dies"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against grade-specific specification/manufacturer/primary literature before design use."
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "principles": [
+    "Nickel superalloys retain useful strength at temperatures where many structural alloys lose substantial strength.",
+    "Thermal conductivity is generally relatively low compared with aluminium and copper, so thermal gradients and machining heat must be considered.",
+    "CTE remains material- and temperature-dependent and must be combined with adjacent-material CTE in precision assemblies.",
+    "Oxidation and microstructural stability become coupled with thermal exposure."
+  ],
+  "required_analysis_inputs": [
+    "temperature-dependent modulus",
+    "temperature-dependent yield/flow stress",
+    "thermal conductivity",
+    "specific heat",
+    "CTE",
+    "emissivity where radiation matters",
+    "thermal exposure duration"
+  ],
+  "rule": "Do not extrapolate room-temperature datasheet values into hot-section analysis."
+}

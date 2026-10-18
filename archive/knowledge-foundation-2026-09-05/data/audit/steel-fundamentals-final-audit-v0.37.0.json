@@ -1,0 +1,46 @@
+{
+  "version": "0.37.0",
+  "scope": "Steel Fundamentals final structural audit",
+  "priority_grade_count": 16,
+  "grade_list": [
+    "13-8 Mo",
+    "15-5 PH",
+    "17-4 PH",
+    "304",
+    "310S",
+    "316L",
+    "321",
+    "410",
+    "420",
+    "42CrMo4",
+    "430",
+    "440C",
+    "C45",
+    "H13",
+    "S235JR",
+    "S355JR"
+  ],
+  "coverage": {
+    "mechanical_core": "16/16",
+    "thermal": "16/16",
+    "electrical_resistivity": "16/16",
+    "magnetic_classification": "16/16",
+    "environmental_family_coverage": "16/16",
+    "standards_and_test_methods": "16/16",
+    "cost_availability_use": "16/16",
+    "manufacturing": "family + priority-grade coverage"
+  },
+  "structural_result": "PASS",
+  "evidence_state": "reference/screening",
+  "design_approval": "NONE",
+  "open_evidence_depth": [
+    "Exact specification/condition/product-form evidence",
+    "Temperature-dependent properties",
+    "Fatigue/S-N data where design use requires it",
+    "Fracture toughness/fatigue-crack-growth where design use requires it",
+    "Environment-specific quantitative corrosion data",
+    "Grade-specific process qualifications and joining procedures",
+    "Live supplier/pricing records"
+  ],
+  "decision": "Steel foundation schema is sufficiently complete to establish a reusable family baseline and begin aluminium population; evidence-depth work remains controlled and must not be represented as completed certification."
+}

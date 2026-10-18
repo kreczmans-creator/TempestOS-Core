@@ -1,0 +1,20 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "methods": [
+    "FMEA",
+    "FMECA",
+    "fault tree analysis",
+    "single-point failure analysis"
+  ],
+  "workflow": [
+    "define system boundary",
+    "identify functions",
+    "identify failure modes",
+    "identify effects and causes",
+    "identify detection/controls",
+    "rank risk where required",
+    "derive design actions",
+    "verify mitigation"
+  ]
+}

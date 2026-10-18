@@ -1,0 +1,18 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "purpose": "Screen combined bending and torsion.",
+  "relationships": [
+    "σb = M·y/I",
+    "τ = T·r/J",
+    "von Mises screening: σvm = sqrt(σ² + 3τ²)"
+  ],
+  "checks": [
+    "static strength",
+    "fatigue",
+    "stress concentration",
+    "shaft stiffness",
+    "surface condition"
+  ],
+  "boundary": "Multiaxial fatigue requires an appropriate fatigue criterion; von Mises is not a universal fatigue model."
+}

@@ -89,7 +89,7 @@ public sealed class ShellDockingSeamTests
             await navigator.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
             window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode("Open");
-            var browserDeadline = DateTime.UtcNow.AddSeconds(5);
+            var browserDeadline = DesktopTestHelpers.Deadline(5);
             while (!window.GetLogicalDescendants().OfType<ProjectBrowserView>().Any() && DateTime.UtcNow < browserDeadline)
             {
                 await Task.Delay(10);

@@ -1,0 +1,34 @@
+{
+  "version": "0.41.0",
+  "status": "quantitative-reference-framework",
+  "typical_room_temperature_KIC_MPa_sqrt_m_ranges": {
+    "2xxx_plate": [
+      25,
+      45
+    ],
+    "5xxx_plate": [
+      25,
+      50
+    ],
+    "6xxx_plate": [
+      20,
+      40
+    ],
+    "7xxx_high_strength_plate": [
+      20,
+      40
+    ],
+    "cast_Al-Si-Mg": [
+      12,
+      25
+    ]
+  },
+  "crack_growth_parameters": "Not populated as numerical constants because they require alloy, temper, orientation, stress ratio, environment and test-method linkage.",
+  "controls": [
+    "KIC is not interchangeable with UTS or yield strength.",
+    "Orientation and thickness/product form must accompany fracture evidence.",
+    "Use authoritative damage-tolerance datasets for safety-critical design."
+  ],
+  "evidence_status": "unverified_screening_reference",
+  "design_use": "not_for_allowables"
+}

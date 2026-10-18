@@ -1,0 +1,31 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "modes": [
+    "cyclic fatigue",
+    "creep",
+    "creep-fatigue interaction",
+    "stress relaxation",
+    "wear"
+  ],
+  "drivers": [
+    "temperature",
+    "frequency",
+    "mean stress",
+    "humidity",
+    "surface finish",
+    "notches",
+    "fibre orientation",
+    "moulding history",
+    "chemical environment",
+    "load duration"
+  ],
+  "design_methods": [
+    "S-N data where applicable",
+    "strain-life data where available",
+    "creep curves",
+    "stress-relaxation curves",
+    "time-temperature superposition only within validated assumptions"
+  ],
+  "rule": "For polymers, time is a material-design variable; short-duration strength data cannot establish long-term structural adequacy."
+}

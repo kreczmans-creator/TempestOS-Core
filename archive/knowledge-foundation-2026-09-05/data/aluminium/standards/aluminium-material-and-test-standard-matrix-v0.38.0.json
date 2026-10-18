@@ -1,0 +1,19 @@
+{
+  "common_material_specification_frameworks": [
+    "EN 573",
+    "EN 485",
+    "EN 755",
+    "EN 1706",
+    "ASTM B209",
+    "ASTM B221",
+    "ASTM B26/B26M",
+    "ASTM B108/B108M"
+  ],
+  "common_test_frameworks": [
+    "EN ISO 6892-1",
+    "ASTM E8/E8M",
+    "ASTM E18",
+    "ASTM E23"
+  ],
+  "control_note": "These are common reference frameworks, not blanket procurement requirements. Verify current edition, alloy, product form, temper and inspection/certification requirements for each purchase specification."
+}

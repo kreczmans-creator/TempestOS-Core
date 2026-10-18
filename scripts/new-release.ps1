@@ -28,13 +28,13 @@ Write-Host ""
 #
 # Verify branch
 #
-# Engineering Governance §7.1: "A release is only cut from main, never
+# Engineering Governance section 7.1: "A release is only cut from main, never
 # from a feature branch." This check is this policy's own mechanical
 # enforcement - see WP11.1B Engineering Workflow.md's own "Evidence &
 # Findings" section for a real, disclosed instance where this policy was
 # not followed (the v0.10.0 tag itself points to the feature branch's own
 # pre-merge tip, not to main) - the tag was never moved to correct it,
-# per Governance §7.4's own "never silently altered" rule, but this
+# per Governance section 7.4's own "never silently altered" rule, but this
 # script's own unconditional check is exactly what prevents a recurrence
 # when actually used.
 #
@@ -111,7 +111,7 @@ if ($existingTag)
 #
 # CI status for this commit (best-effort - `gh` is not a required
 # dependency of this script; every check below it still runs
-# unconditionally). Engineering Governance §2 has required the Build
+# unconditionally). Engineering Governance section 2 has required the Build
 # Gate and Test Gate to be machine-verified via .github/workflows/ci.yml
 # since WP 11.1A - this is that requirement's own reminder at the one
 # point in the release process a human is about to tag and push.
@@ -123,7 +123,7 @@ if ($existingTag)
 # branch protection still being unconfigured (`TD-45`), nothing mechanically
 # stopped that. It is now a hard stop. Note the specific hazard the review
 # board caught live: a run superseded by a later push completes as
-# `cancelled`, not `failure` — so anything short of an explicit `success`
+# `cancelled`, not `failure` - so anything short of an explicit `success`
 # must block, never merely "not a failure".
 
 $ghAvailable = Get-Command gh -ErrorAction SilentlyContinue
@@ -195,6 +195,14 @@ if ($LASTEXITCODE -ne 0)
 #
 # Create annotated tag
 #
+# Tag only when the commit is ready to ship (ADR-0160, v0.23.0 CI board
+# G-21). A pushed tag is never moved (Engineering Governance 7.4), and
+# .github/workflows/release.yml publishes nothing until the 'CI Gate' check
+# of ci.yml has concluded 'success' on this exact commit: the tag push
+# starts ci.yml on the same SHA, and release.yml's first job waits for it
+# (up to 75 minutes). A red or cancelled CI Gate on the tag therefore
+# blocks the release; it does not free the tag for re-use.
+#
 
 Write-Host ""
 
@@ -232,10 +240,12 @@ if ($Push)
     }
 
     Write-Host ""
-    Write-Host "Pushing the tag triggers .github/workflows/release.yml, which"
-    Write-Host "re-builds, re-tests, and publishes a GitHub Release with the"
-    Write-Host "Release build output attached - see WP11.1B Engineering"
-    Write-Host "Workflow.md, 'Version-Tagging Workflow'."
+    Write-Host "Pushing the tag triggers .github/workflows/release.yml. It waits"
+    Write-Host "for the 'CI Gate' check of ci.yml on this exact commit (the tag"
+    Write-Host "push runs CI again) and publishes nothing unless it is green;"
+    Write-Host "meanwhile it re-builds, re-tests and packages the tag, then"
+    Write-Host "publishes the GitHub Release (ADR-0160; see WP11.1B Engineering"
+    Write-Host "Workflow.md, 'Version-Tagging Workflow')."
 }
 
 Write-Host ""

@@ -1,0 +1,44 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "routes": {
+    "wrought_nickel_alloys": [
+      "rolling",
+      "forging",
+      "solution treatment",
+      "stabilisation/age treatment where applicable"
+    ],
+    "zirconium": [
+      "rolling",
+      "forging",
+      "tube manufacture",
+      "controlled welding",
+      "surface conditioning"
+    ],
+    "MP35N": [
+      "cold work",
+      "solution treatment",
+      "age treatment",
+      "wire/strip processing"
+    ],
+    "Nitinol": [
+      "drawing",
+      "rolling",
+      "shape setting",
+      "heat treatment",
+      "surface finishing",
+      "controlled joining"
+    ]
+  },
+  "process_controls": [
+    "composition",
+    "contamination",
+    "grain structure",
+    "heat treatment",
+    "cold work",
+    "surface finish",
+    "weld heat input",
+    "post-process treatment"
+  ],
+  "rule": "Processing route and final condition are mandatory fields, particularly for MP35N and Nitinol."
+}

@@ -1,0 +1,7 @@
+Domain,Status,Coverage,Evidence boundary
+Combined loading,Complete,"Axial+bending, bending+torsion, assembly load paths",Application-specific
+Stability/buckling,Complete,"Columns, local plates, stability workflow",Geometry/boundary specific
+Thermal-mechanical coupling,Complete,"Expansion, restraint, gradients, thermal cycles",Temperature/constraint specific
+Dynamics/vibration,Complete,"SDOF, forced response, modal workflow",Validated dynamic model where critical
+Verification,Complete,"Analysis review, correlation, verification/validation distinction",Requirement-specific
+Worked cases,Complete,5 integrated design/verification frameworks,"Framework, not certification"

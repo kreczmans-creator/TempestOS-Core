@@ -1,0 +1,34 @@
+- id: VER-001
+  rule: Exact source locator present
+  pass_condition: source_locator is non-empty and reproducible
+  failure: open
+- id: VER-002
+  rule: Material identity resolved
+  pass_condition: designation maps to one canonical material identity/state
+  failure: open
+- id: VER-003
+  rule: Condition resolved
+  pass_condition: delivery/heat-treatment state is explicitly known
+  failure: open
+- id: VER-004
+  rule: Product applicability resolved
+  pass_condition: product form and thickness/section requirements are satisfied or
+    explicitly not applicable
+  failure: open
+- id: VER-005
+  rule: Units validated
+  pass_condition: value is expressed in canonical unit or has a documented conversion
+  failure: open
+- id: VER-006
+  rule: Property semantics validated
+  pass_condition: the source property definition matches TempestOS property semantics
+  failure: open
+- id: VER-007
+  rule: No silent conflict
+  pass_condition: conflicting applicable observations are resolved or retained as
+    separate states
+  failure: open
+- id: VER-008
+  rule: Promotion controlled
+  pass_condition: only reviewed/verified observations may advance
+  failure: open

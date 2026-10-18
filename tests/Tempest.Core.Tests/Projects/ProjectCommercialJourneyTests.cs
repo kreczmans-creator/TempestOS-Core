@@ -177,12 +177,18 @@ public sealed class ProjectCommercialJourneyTests
             Assert.True(completion.Succeeded);
             completionId = completion.Completion!.Id;
             Assert.Single(completion.Completion.IssuedEvidenceIds);
+            // `TD-186`: the completion's own content is what the editor opens
+            // on — it names the deliverable, never its id.
+            Assert.Equal("Deliverable 'Deliverable One' completed.", completion.Completion.Content);
+            Assert.DoesNotContain(deliverableId.ToString(), completion.Completion.Content);
 
             // ---- A second completion is refused, with the first shown ----
             var secondCompletion = await deliverables.CompleteAsync(deliverableId, projectId, deliverableCompletionDate.AddDays(1));
             Assert.False(secondCompletion.Succeeded);
             Assert.Equal(DeliverableCompletionRefusal.AlreadyCompleted, secondCompletion.Refusal);
             Assert.Equal(completionId, secondCompletion.Completion!.Id);
+            Assert.Contains("'Deliverable One'", secondCompletion.Reason);
+            Assert.DoesNotContain(deliverableId.ToString(), secondCompletion.Reason);
 
             // ---- List the principal's week, and the project's unbilled entries ----
             var weekEntries = await timesheets.ListForPrincipalWeekAsync(ProjectCommercialTestHost.PrincipalId, week);

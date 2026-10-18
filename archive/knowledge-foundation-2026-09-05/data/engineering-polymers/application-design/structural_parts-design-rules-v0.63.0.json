@@ -1,0 +1,37 @@
+{
+  "version": "0.63.0",
+  "application": "structural_parts",
+  "selection_rule": "Use long-term stiffness/strength and environmental stability, not short-term tensile strength alone, for structural polymer design.",
+  "principal_failure_modes": [
+    "creep",
+    "fatigue",
+    "buckling",
+    "stress cracking",
+    "impact fracture",
+    "thermal distortion",
+    "moisture-driven property change"
+  ],
+  "engineering_controls": [
+    "stress",
+    "strain",
+    "time",
+    "temperature",
+    "humidity",
+    "impact",
+    "fatigue cycles",
+    "geometry",
+    "reinforcement orientation"
+  ],
+  "candidate_families": [
+    "PA6",
+    "PA66",
+    "PPA",
+    "PBT",
+    "PC",
+    "PEI",
+    "PPS",
+    "PEEK"
+  ],
+  "evidence_status": "screening-level design rule",
+  "design_use": "decision support only; validate application-specific design"
+}

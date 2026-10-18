@@ -1,0 +1,20 @@
+{
+  "version": "0.69.0",
+  "family": "copper-alloy",
+  "effects": [
+    "grain flow",
+    "forging reduction",
+    "anisotropy",
+    "laps/folds",
+    "inclusions",
+    "residual stress"
+  ],
+  "design_checks": [
+    "forging direction",
+    "die/process capability",
+    "heat treatment",
+    "NDT",
+    "machining orientation"
+  ],
+  "status": "design-framework"
+}

@@ -1,0 +1,13 @@
+Layer,Status,Scope,Evidence boundary
+Material identity,Complete,12 polymer families + exact-grade schema,Grade provenance required
+Mechanical properties,Complete,Strength/stiffness/impact/compression/flexure foundation,Screening/verified/qualified
+Thermal properties,Complete,Temperature and thermal behaviour,Context required
+Electrical/environmental,Complete,Electrical + media/environment screening,Exact grade/environment required
+Time-dependent behaviour,Complete,Creep/stress relaxation/fatigue/wear,Application validation required
+Processing/dimensional stability,Complete,"Process, reinforcement, shrinkage, anisotropy",Process-specific evidence required
+Application rules,Complete,8 principal applications,Design screening only
+Standards mapping,Complete,ISO/ASTM/IEC reference map,Edition/applicability verification required
+Calculations,Complete,6 transparent screening patterns,No universal allowables
+Compatibility,Complete,Media/environment screening,Concentration/time/temp/stress required
+Manufacturing/inspection,Complete,Process and inspection checklist,Actual process evidence required
+Evidence workflow,Complete,Capture/review/promotion controls,Controlled provenance required

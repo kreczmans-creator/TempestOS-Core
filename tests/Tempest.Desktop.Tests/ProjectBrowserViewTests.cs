@@ -35,12 +35,12 @@ public sealed class ProjectBrowserViewTests
 
             // Mirrors MainWindow.PromptForNewProjectAsync's own real shape:
             // creates the project with the suggested identifier and returns
-            // whether it was created, never touching navigation itself —
-            // navigating into it is ProjectBrowserView's own job.
-            Func<string, string, Task<bool>> promptForNewProject = async (identifier, _) =>
+            // the identifier it was created under, never touching navigation
+            // itself — navigating into it is ProjectBrowserView's own job.
+            Func<string, string, Task<string?>> promptForNewProject = async (identifier, _) =>
             {
                 await directory.CreateAsync(identifier, "New From Test").ConfigureAwait(true);
-                return true;
+                return identifier;
             };
 
             var browser = new ProjectBrowserView(directory, navigator, promptForNewProject);
@@ -148,16 +148,8 @@ public sealed class ProjectBrowserViewTests
         }
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(15);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 15, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(Window window)
     {

@@ -1,0 +1,22 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "variables": [
+    "tool geometry",
+    "cutting speed",
+    "feed",
+    "depth of cut",
+    "material condition",
+    "workholding",
+    "machine stiffness",
+    "tool access"
+  ],
+  "failure_modes": [
+    "chatter",
+    "tool deflection",
+    "thermal distortion",
+    "burrs",
+    "surface damage",
+    "dimensional drift"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "version": "0.63.0",
+  "application": "bearings",
+  "selection_rule": "Choose the polymer grade against load, speed, temperature, lubrication and counterface; self-lubricating formulations may be required.",
+  "principal_failure_modes": [
+    "wear",
+    "creep",
+    "bearing deformation",
+    "thermal runaway",
+    "transfer-film failure",
+    "shaft/counterface damage"
+  ],
+  "engineering_controls": [
+    "PV",
+    "contact pressure",
+    "sliding speed",
+    "temperature",
+    "shaft hardness/roughness",
+    "lubrication",
+    "duty cycle"
+  ],
+  "candidate_families": [
+    "POM",
+    "PA12",
+    "PEEK",
+    "PPS",
+    "PTFE-based formulations"
+  ],
+  "evidence_status": "screening-level design rule",
+  "design_use": "decision support only; validate application-specific design"
+}

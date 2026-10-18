@@ -1,0 +1,15 @@
+{
+  "version": "0.37.0",
+  "steel_structural_audit": "PASS",
+  "steel_reference_baseline": "ESTABLISHED",
+  "priority_grades": 16,
+  "mechanical": "16/16",
+  "thermal": "16/16",
+  "electrical": "16/16",
+  "magnetic": "16/16",
+  "environmental": "16/16",
+  "standards": "16/16",
+  "commercial": "16/16",
+  "design_approved": "0/16",
+  "next": "Aluminium family population"
+}

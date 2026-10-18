@@ -1,0 +1,37 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "screening": {
+    "Alloy 718": {
+      "cost": "expensive",
+      "availability": "good specialist"
+    },
+    "Alloy 625": {
+      "cost": "expensive",
+      "availability": "good specialist"
+    },
+    "Haynes 230": {
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    "718Plus": {
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    "Waspaloy": {
+      "cost": "expensive",
+      "availability": "specialist"
+    }
+  },
+  "drivers": [
+    "raw alloying additions",
+    "product form",
+    "forging/casting route",
+    "heat treatment",
+    "certification",
+    "machining",
+    "supplier qualification",
+    "volume"
+  ],
+  "rule": "These are relative planning classifications, not live market quotations."
+}

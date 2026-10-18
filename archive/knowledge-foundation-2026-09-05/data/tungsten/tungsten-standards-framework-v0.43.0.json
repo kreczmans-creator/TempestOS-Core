@@ -1,0 +1,43 @@
+{
+  "version": "0.43.0",
+  "scope": "Tungsten standards and specification framework",
+  "standard_domains": [
+    {
+      "domain": "wrought tungsten products",
+      "examples": [
+        "ASTM/ISO specification families applicable to tungsten products"
+      ],
+      "status": "framework_only"
+    },
+    {
+      "domain": "tungsten heavy alloys",
+      "examples": [
+        "ASTM specification families for tungsten-base heavy metal products"
+      ],
+      "status": "framework_only"
+    },
+    {
+      "domain": "tungsten carbide",
+      "examples": [
+        "ISO/ASTM carbide grade and tooling standards"
+      ],
+      "status": "framework_only"
+    },
+    {
+      "domain": "tungsten-rhenium",
+      "examples": [
+        "thermocouple/material specifications applicable to W-Re systems"
+      ],
+      "status": "framework_only"
+    },
+    {
+      "domain": "powder metallurgy",
+      "examples": [
+        "powder characterisation, sintering and density/test standards"
+      ],
+      "status": "framework_only"
+    }
+  ],
+  "rule": "Exact edition and applicability must be captured in provenance records; standard-family names alone are not evidence of compliance.",
+  "evidence_status": "unverified"
+}

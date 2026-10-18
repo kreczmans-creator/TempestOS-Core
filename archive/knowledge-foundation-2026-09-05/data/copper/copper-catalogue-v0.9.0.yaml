@@ -1,0 +1,196 @@
+- id: MAT-CU-C110
+  designation: C11000
+  family: high_conductivity_copper
+  standard_references:
+  - ASTM B152
+  - ASTM B187
+  - UNS C11000
+  cost_tier: medium
+  availability: very_high
+  typical_uses:
+  - busbars
+  - electrical conductors
+  - heat exchangers
+  - machined electrical parts
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 8890
+      unit: kg/m^3
+    youngs_modulus:
+      value: 117000000000.0
+      unit: Pa
+    yield_strength:
+      value: 70000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 220000000.0
+      unit: Pa
+    elongation:
+      value: 0.4
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.6499999999999998e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 391
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.72e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-CU-C101
+  designation: C10100 OFHC copper
+  family: oxygen_free_copper
+  standard_references:
+  - ASTM B170
+  - UNS C10100
+  cost_tier: expensive
+  availability: high
+  typical_uses:
+  - RF components
+  - vacuum equipment
+  - high-conductivity electrical parts
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 8940
+      unit: kg/m^3
+    youngs_modulus:
+      value: 117000000000.0
+      unit: Pa
+    yield_strength:
+      value: 70000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 220000000.0
+      unit: Pa
+    elongation:
+      value: 0.35
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.6499999999999998e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 391
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.72e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-CU-C95400
+  designation: C95400 aluminium bronze
+  family: aluminium_bronze
+  standard_references:
+  - ASTM B148
+  - UNS C95400
+  cost_tier: medium_expensive
+  availability: high
+  typical_uses:
+  - bearings
+  - valves
+  - marine components
+  - wear-resistant mechanical parts
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 7600
+      unit: kg/m^3
+    youngs_modulus:
+      value: 105000000000.0
+      unit: Pa
+    yield_strength:
+      value: 240000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 600000000.0
+      unit: Pa
+    elongation:
+      value: 0.15
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.7e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 59
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-CU-C63000
+  designation: C63000 aluminium bronze
+  family: nickel_aluminium_bronze
+  standard_references:
+  - ASTM B150
+  - UNS C63000
+  cost_tier: expensive
+  availability: medium
+  typical_uses:
+  - marine shafts
+  - valves
+  - high-load bushings
+  - corrosion-resistant components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 7500
+      unit: kg/m^3
+    youngs_modulus:
+      value: 110000000000.0
+      unit: Pa
+    yield_strength:
+      value: 450000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 760000000.0
+      unit: Pa
+    elongation:
+      value: 0.15
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.55e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 50
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true

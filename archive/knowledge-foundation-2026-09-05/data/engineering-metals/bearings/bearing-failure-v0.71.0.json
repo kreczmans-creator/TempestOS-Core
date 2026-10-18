@@ -1,0 +1,15 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "modes": [
+    "fatigue spalling",
+    "brinelling",
+    "false brinelling",
+    "fretting",
+    "lubricant failure",
+    "contamination damage",
+    "misalignment",
+    "overheating"
+  ],
+  "diagnostic_rule": "Failure diagnosis should distinguish load, lubrication, contamination, fit, alignment and assembly causes."
+}

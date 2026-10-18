@@ -1,5 +1,6 @@
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Invoicing;
+using Tempest.Core.Invoicing.Xero.Settings;
 
 namespace Tempest.Core.Tests.Invoicing;
 
@@ -94,6 +95,66 @@ public sealed class VatRateTaxTypeMappingTests
 
             Assert.True(result.Outcome == ConnectorOutcome.Ok, $"{rate} was refused: {result.Reason}");
         }
+    }
+
+    // ------------------------------------------------- `v0.24.0` X1 (D6, design §8)
+
+    [Theory]
+    [InlineData(VatRate.Standard, "INPUT2")]
+    [InlineData(VatRate.Reduced, "RRINPUT")]
+    [InlineData(VatRate.Zero, "ZERORATEDINPUT")]
+    [InlineData(VatRate.Exempt, "EXEMPTINPUT")]
+    [InlineData(VatRate.OutOfScope, "NONE")]
+    public void TryMap_Purchases_MapsEveryDeclaredRate_ToXerosInputTaxType(VatRate rate, string expectedTaxType)
+    {
+        Assert.True(VatRateTaxTypeMapping.TryMap(rate, VatTaxDirection.Purchases, out var taxType));
+        Assert.Equal(expectedTaxType, taxType);
+    }
+
+    [Fact]
+    public void TryMap_Sales_IsTheOriginalOutputTable()
+    {
+        foreach (var rate in Enum.GetValues<VatRate>())
+        {
+            Assert.True(VatRateTaxTypeMapping.TryMap(rate, out var original));
+            Assert.True(VatRateTaxTypeMapping.TryMap(rate, VatTaxDirection.Sales, out var sales));
+            Assert.Equal(original, sales);
+        }
+    }
+
+    [Fact]
+    public void TryMap_AnUndeclaredRateOrDirection_ReturnsFalse()
+    {
+        Assert.False(VatRateTaxTypeMapping.TryMap((VatRate)99, VatTaxDirection.Purchases, out var byRate));
+        Assert.Null(byRate);
+        Assert.False(VatRateTaxTypeMapping.TryMap(VatRate.Standard, (VatTaxDirection)7, out var byDirection));
+        Assert.Null(byDirection);
+    }
+
+    [Theory]
+    [InlineData("OUTPUT2", VatTaxDirection.Sales, null)]
+    [InlineData("output2", VatTaxDirection.Sales, null)]
+    [InlineData("NONE", VatTaxDirection.Sales, null)]
+    [InlineData("NONE", VatTaxDirection.Purchases, null)]
+    [InlineData("INPUT2", VatTaxDirection.Purchases, null)]
+    [InlineData("OUTPUT9", VatTaxDirection.Sales, "Xero has no active tax rate OUTPUT9.")]
+    [InlineData("OUTPUT", VatTaxDirection.Sales, "Xero has no active tax rate OUTPUT.")]
+    [InlineData("RRINPUT", VatTaxDirection.Purchases, "Xero has no active tax rate RRINPUT.")]
+    [InlineData("INPUT2", VatTaxDirection.Sales, "Xero's tax rate INPUT2 (20% (VAT on Expenses)) cannot be used on sales lines.")]
+    [InlineData("OUTPUT2", VatTaxDirection.Purchases, "Xero's tax rate OUTPUT2 (20% (VAT on Income)) cannot be used on purchase lines.")]
+    [InlineData("", VatTaxDirection.Sales, "No Xero tax type is chosen for this line.")]
+    public void FindTaxTypeProblem_ChecksTheCodeAgainstXerosOwnRates(string taxType, VatTaxDirection direction, string? expected)
+    {
+        XeroTaxRate[] xero =
+        [
+            new("OUTPUT2", "20% (VAT on Income)", 20m, "ACTIVE", true, false),
+            new("INPUT2", "20% (VAT on Expenses)", 20m, "ACTIVE", false, true),
+            new("NONE", "No VAT", 0m, "ACTIVE", true, true),
+            new("OUTPUT", "17.5% (VAT on Income)", 17.5m, "DELETED", true, false),
+            new("RRINPUT", "5% (VAT on Expenses)", 5m, "ARCHIVED", false, true),
+        ];
+
+        Assert.Equal(expected, VatRateTaxTypeMapping.FindTaxTypeProblem(taxType, direction, xero));
     }
 
     private static InvoiceRequestLine Line(VatRate rate, string description = "Engineering time") =>

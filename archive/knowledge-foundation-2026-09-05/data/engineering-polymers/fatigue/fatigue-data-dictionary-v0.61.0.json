@@ -1,0 +1,22 @@
+{
+  "version": "0.61.0",
+  "core_properties": [
+    "S-N curves",
+    "strain-life data where applicable",
+    "fatigue crack growth where applicable",
+    "endurance behaviour"
+  ],
+  "minimum_context": [
+    "exact grade",
+    "stress ratio/mean stress",
+    "frequency",
+    "temperature",
+    "environment",
+    "conditioning",
+    "specimen geometry/notch",
+    "surface state",
+    "test method",
+    "source"
+  ],
+  "selection_rule": "Fatigue allowables require application-relevant cycling conditions."
+}

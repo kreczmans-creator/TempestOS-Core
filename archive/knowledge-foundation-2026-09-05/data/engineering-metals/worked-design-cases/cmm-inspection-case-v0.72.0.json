@@ -1,0 +1,15 @@
+{
+  "version": "0.72.0",
+  "status": "worked-framework",
+  "problem": "Create an inspection strategy for a GD&T-controlled precision component.",
+  "workflow": [
+    "identify critical characteristics",
+    "establish datum reference frame",
+    "select CMM/measurement method",
+    "define probing/measurement strategy",
+    "evaluate uncertainty",
+    "define acceptance decision",
+    "calibrate/trace measurement equipment",
+    "record objective evidence"
+  ]
+}

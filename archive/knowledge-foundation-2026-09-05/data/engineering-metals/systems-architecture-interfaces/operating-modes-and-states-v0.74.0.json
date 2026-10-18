@@ -1,0 +1,22 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "states": [
+    "off",
+    "initialisation",
+    "standby",
+    "active",
+    "degraded",
+    "fault",
+    "safe",
+    "maintenance"
+  ],
+  "checks": [
+    "entry conditions",
+    "exit conditions",
+    "allowed commands",
+    "fault transitions",
+    "data/configuration validity",
+    "recovery"
+  ]
+}

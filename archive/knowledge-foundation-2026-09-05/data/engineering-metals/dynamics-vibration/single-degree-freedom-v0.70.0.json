@@ -1,0 +1,17 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "purpose": "Establish first-order vibration response.",
+  "relationships": [
+    "ωn = sqrt(k/m)",
+    "fn = ωn/(2π)"
+  ],
+  "checks": [
+    "forcing frequency",
+    "resonance proximity",
+    "damping",
+    "response amplitude",
+    "fatigue"
+  ],
+  "boundary": "Real structures require validated modal properties where distributed mass/stiffness or nonlinearities matter."
+}

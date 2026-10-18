@@ -1,0 +1,63 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "mapping": [
+    {
+      "material": "CoCrMo",
+      "uses": [
+        "medical implants",
+        "wear/corrosion components",
+        "specialist fluid handling"
+      ],
+      "drivers": [
+        "corrosion",
+        "fatigue",
+        "surface",
+        "biocompatibility"
+      ]
+    },
+    {
+      "material": "Stellite 6",
+      "uses": [
+        "valve seats",
+        "hardfacing",
+        "erosion/wear surfaces",
+        "high-temperature contacts"
+      ],
+      "drivers": [
+        "wear",
+        "hardness",
+        "temperature",
+        "deposition process"
+      ]
+    },
+    {
+      "material": "Haynes 188",
+      "uses": [
+        "gas turbines",
+        "combustion systems",
+        "high-temperature structures"
+      ],
+      "drivers": [
+        "creep",
+        "oxidation",
+        "fatigue",
+        "temperature"
+      ]
+    },
+    {
+      "material": "Haynes 25 / L-605",
+      "uses": [
+        "high-temperature sheet structures",
+        "springs",
+        "aerospace hardware"
+      ],
+      "drivers": [
+        "temperature",
+        "fatigue",
+        "forming",
+        "oxidation"
+      ]
+    }
+  ]
+}

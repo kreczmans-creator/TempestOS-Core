@@ -1,0 +1,12 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "purpose": "Establish a functional reference frame for geometric control.",
+  "concepts": [
+    "datum feature",
+    "datum reference frame",
+    "primary/secondary/tertiary constraint",
+    "functional datum selection"
+  ],
+  "rule": "Datums should represent the functional interfaces and degrees of freedom that matter to assembly or operation."
+}

@@ -1,0 +1,51 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "routes": {
+    "forging": [
+      "temperature control",
+      "reduction schedule",
+      "grain size",
+      "segregation control",
+      "heat treatment"
+    ],
+    "machining": [
+      "work hardening",
+      "low thermal conductivity",
+      "tool wear",
+      "cutting heat",
+      "rigidity",
+      "coolant"
+    ],
+    "casting": [
+      "solidification",
+      "segregation",
+      "porosity",
+      "grain structure",
+      "heat treatment"
+    ],
+    "additive": [
+      "powder quality",
+      "build parameters",
+      "porosity",
+      "anisotropy",
+      "residual stress",
+      "HIP/heat treatment",
+      "surface finish"
+    ],
+    "welding": [
+      "heat input",
+      "precipitation response",
+      "HAZ behaviour",
+      "cracking susceptibility",
+      "post-weld treatment"
+    ]
+  },
+  "718_specific": [
+    "solution treatment",
+    "ageing response",
+    "welded-condition property changes",
+    "AM process qualification"
+  ],
+  "rule": "Manufacturing route and heat treatment must remain attached to every quantitative material record."
+}

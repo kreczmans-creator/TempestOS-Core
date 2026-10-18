@@ -1,0 +1,12 @@
+{
+  "version": "0.40.0",
+  "scope": "Aluminium temperature, shear/bearing and joint layer",
+  "temperature": "framework established",
+  "shear_bearing": "schema established; 0 quantitative records",
+  "joints": "qualitative foundation established",
+  "fatigue": "evidence model ready; 0 quantitative records",
+  "fracture": "evidence model ready; 0 quantitative records",
+  "verified": 0,
+  "approved_for_design": 0,
+  "next": "quantitative evidence population + aluminium completeness audit"
+}

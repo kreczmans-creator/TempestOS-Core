@@ -1,0 +1,22 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "concepts": [
+    "natural frequency",
+    "resonance",
+    "random vibration",
+    "sine vibration",
+    "shock response",
+    "mounting stiffness",
+    "damping",
+    "fatigue accumulation"
+  ],
+  "workflow": [
+    "define excitation spectrum",
+    "identify structural modes",
+    "calculate/measure response",
+    "check fasteners/interfaces",
+    "check fatigue",
+    "verify with representative testing"
+  ]
+}

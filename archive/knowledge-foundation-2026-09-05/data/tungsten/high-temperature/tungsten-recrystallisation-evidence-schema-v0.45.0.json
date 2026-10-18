@@ -1,0 +1,22 @@
+{
+  "version": "0.45.0",
+  "status": "engineering-model-layer",
+  "fields": [
+    "grade",
+    "initial_microstructure",
+    "processing_history",
+    "recrystallisation_onset_temperature_C",
+    "exposure_time_h",
+    "grain_growth_observation",
+    "strength_change_percent",
+    "ductility_change_percent",
+    "test_method",
+    "source"
+  ],
+  "engineering_significance": [
+    "Recrystallisation can alter strength, ductility, creep response and dimensional stability.",
+    "Onset is not a single universal material constant; it depends on prior deformation, purity, grain structure, exposure time and environment.",
+    "Design data must therefore retain processing history."
+  ],
+  "quantitative_status": "awaiting_authoritative_grade-level data"
+}

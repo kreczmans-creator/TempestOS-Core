@@ -1,0 +1,20 @@
+{
+  "version": "0.64.0",
+  "problem": "Screen a reinforced polymer structural component.",
+  "inputs": [
+    "load cases",
+    "temperature",
+    "humidity",
+    "fatigue duty",
+    "manufacturing orientation"
+  ],
+  "method": [
+    "select reinforced families",
+    "separate flow and transverse properties",
+    "check creep",
+    "check fatigue",
+    "check buckling/deflection",
+    "validate process and environmental conditioning"
+  ],
+  "output": "Screening workflow; exact design values require qualified grade data."
+}

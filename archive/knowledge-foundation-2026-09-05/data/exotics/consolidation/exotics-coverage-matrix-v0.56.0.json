@@ -1,0 +1,284 @@
+{
+  "version": "0.56.0",
+  "columns": [
+    "family",
+    "grades",
+    "mechanical",
+    "thermal",
+    "corrosion",
+    "fatigue",
+    "manufacturing",
+    "joining",
+    "standards",
+    "provenance",
+    "economics",
+    "applications",
+    "governance"
+  ],
+  "rows": [
+    {
+      "family": "applications",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "cobalt-base-alloys",
+      "fundamental_sections_present": [
+        "applications",
+        "corrosion",
+        "economics",
+        "fatigue",
+        "governance",
+        "grades",
+        "joining",
+        "manufacturing",
+        "mechanical",
+        "provenance",
+        "standards",
+        "thermal"
+      ],
+      "missing_fundamental_sections": [],
+      "file_count": 13,
+      "structurally_complete": true
+    },
+    {
+      "family": "economics",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "environment",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "governance",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 9,
+      "structurally_complete": false
+    },
+    {
+      "family": "manufacturing",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "nickel-base-superalloys",
+      "fundamental_sections_present": [
+        "applications",
+        "economics",
+        "fatigue",
+        "grades",
+        "joining",
+        "manufacturing",
+        "mechanical",
+        "provenance",
+        "standards",
+        "thermal"
+      ],
+      "missing_fundamental_sections": [
+        "corrosion",
+        "governance"
+      ],
+      "file_count": 12,
+      "structurally_complete": false
+    },
+    {
+      "family": "properties",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 2,
+      "structurally_complete": false
+    },
+    {
+      "family": "provenance",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "refractory-metals-alloys",
+      "fundamental_sections_present": [
+        "applications",
+        "economics",
+        "fatigue",
+        "governance",
+        "grades",
+        "joining",
+        "manufacturing",
+        "mechanical",
+        "provenance",
+        "standards",
+        "thermal"
+      ],
+      "missing_fundamental_sections": [
+        "corrosion"
+      ],
+      "file_count": 13,
+      "structurally_complete": false
+    },
+    {
+      "family": "specialty-corrosion-high-performance-alloys",
+      "fundamental_sections_present": [
+        "applications",
+        "corrosion",
+        "economics",
+        "fatigue",
+        "governance",
+        "grades",
+        "joining",
+        "manufacturing",
+        "mechanical",
+        "provenance",
+        "standards",
+        "thermal"
+      ],
+      "missing_fundamental_sections": [],
+      "file_count": 13,
+      "structurally_complete": true
+    },
+    {
+      "family": "standards",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "titanium",
+      "fundamental_sections_present": [
+        "applications",
+        "corrosion",
+        "grades",
+        "joining",
+        "manufacturing",
+        "mechanical",
+        "provenance",
+        "standards",
+        "thermal"
+      ],
+      "missing_fundamental_sections": [
+        "fatigue",
+        "economics",
+        "governance"
+      ],
+      "file_count": 9,
+      "structurally_complete": false
+    }
+  ],
+  "status": "Consolidated structural coverage matrix"
+}

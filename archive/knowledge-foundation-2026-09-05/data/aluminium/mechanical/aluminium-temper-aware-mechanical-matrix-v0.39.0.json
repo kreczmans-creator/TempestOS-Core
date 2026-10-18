@@ -1,0 +1,422 @@
+[
+  {
+    "designation": "2014A",
+    "temper": "T6",
+    "product_form": "wrought",
+    "yield_MPa": [
+      380,
+      450
+    ],
+    "uts_MPa": [
+      440,
+      490
+    ],
+    "elongation_pct": [
+      8,
+      16
+    ],
+    "hardness_HB": [
+      120,
+      150
+    ],
+    "elastic_modulus_GPa": 73,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 27.4,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "2024",
+    "temper": "T3",
+    "product_form": "wrought",
+    "yield_MPa": [
+      300,
+      350
+    ],
+    "uts_MPa": [
+      430,
+      485
+    ],
+    "elongation_pct": [
+      10,
+      20
+    ],
+    "hardness_HB": [
+      105,
+      140
+    ],
+    "elastic_modulus_GPa": 73,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 27.4,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "2024",
+    "temper": "T351",
+    "product_form": "plate",
+    "yield_MPa": [
+      300,
+      350
+    ],
+    "uts_MPa": [
+      430,
+      485
+    ],
+    "elongation_pct": [
+      10,
+      20
+    ],
+    "hardness_HB": [
+      105,
+      140
+    ],
+    "elastic_modulus_GPa": 73,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 27.4,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "2219",
+    "temper": "T851",
+    "product_form": "plate",
+    "yield_MPa": [
+      330,
+      430
+    ],
+    "uts_MPa": [
+      410,
+      480
+    ],
+    "elongation_pct": [
+      6,
+      15
+    ],
+    "hardness_HB": [
+      110,
+      145
+    ],
+    "elastic_modulus_GPa": 73,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 27.4,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "5083",
+    "temper": "H116",
+    "product_form": "plate",
+    "yield_MPa": [
+      215,
+      260
+    ],
+    "uts_MPa": [
+      300,
+      340
+    ],
+    "elongation_pct": [
+      10,
+      18
+    ],
+    "hardness_HB": [
+      70,
+      95
+    ],
+    "elastic_modulus_GPa": 70,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 26.3,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "5086",
+    "temper": "H116",
+    "product_form": "plate",
+    "yield_MPa": [
+      190,
+      240
+    ],
+    "uts_MPa": [
+      275,
+      330
+    ],
+    "elongation_pct": [
+      10,
+      20
+    ],
+    "hardness_HB": [
+      65,
+      90
+    ],
+    "elastic_modulus_GPa": 70,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 26.3,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "6060",
+    "temper": "T6",
+    "product_form": "extrusion",
+    "yield_MPa": [
+      150,
+      220
+    ],
+    "uts_MPa": [
+      190,
+      250
+    ],
+    "elongation_pct": [
+      8,
+      16
+    ],
+    "hardness_HB": [
+      55,
+      85
+    ],
+    "elastic_modulus_GPa": 69,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 25.9,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "6061",
+    "temper": "T6",
+    "product_form": "wrought",
+    "yield_MPa": [
+      240,
+      280
+    ],
+    "uts_MPa": [
+      290,
+      330
+    ],
+    "elongation_pct": [
+      8,
+      14
+    ],
+    "hardness_HB": [
+      85,
+      105
+    ],
+    "elastic_modulus_GPa": 69,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 25.9,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "6082",
+    "temper": "T6",
+    "product_form": "wrought",
+    "yield_MPa": [
+      250,
+      310
+    ],
+    "uts_MPa": [
+      290,
+      350
+    ],
+    "elongation_pct": [
+      8,
+      15
+    ],
+    "hardness_HB": [
+      80,
+      110
+    ],
+    "elastic_modulus_GPa": 69,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 25.9,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "7020",
+    "temper": "T6",
+    "product_form": "wrought",
+    "yield_MPa": [
+      280,
+      350
+    ],
+    "uts_MPa": [
+      350,
+      410
+    ],
+    "elongation_pct": [
+      8,
+      14
+    ],
+    "hardness_HB": [
+      100,
+      125
+    ],
+    "elastic_modulus_GPa": 72,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 27.1,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "7050",
+    "temper": "T7451",
+    "product_form": "plate",
+    "yield_MPa": [
+      430,
+      500
+    ],
+    "uts_MPa": [
+      500,
+      570
+    ],
+    "elongation_pct": [
+      8,
+      15
+    ],
+    "hardness_HB": [
+      130,
+      155
+    ],
+    "elastic_modulus_GPa": 71.7,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 27.0,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "7075",
+    "temper": "T6",
+    "product_form": "wrought",
+    "yield_MPa": [
+      430,
+      510
+    ],
+    "uts_MPa": [
+      500,
+      570
+    ],
+    "elongation_pct": [
+      7,
+      13
+    ],
+    "hardness_HB": [
+      140,
+      175
+    ],
+    "elastic_modulus_GPa": 71.7,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 27.0,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "7075",
+    "temper": "T73",
+    "product_form": "wrought",
+    "yield_MPa": [
+      350,
+      430
+    ],
+    "uts_MPa": [
+      430,
+      505
+    ],
+    "elongation_pct": [
+      8,
+      15
+    ],
+    "hardness_HB": [
+      125,
+      155
+    ],
+    "elastic_modulus_GPa": 71.7,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 27.0,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "A356",
+    "temper": "T6",
+    "product_form": "casting",
+    "yield_MPa": [
+      180,
+      230
+    ],
+    "uts_MPa": [
+      250,
+      320
+    ],
+    "elongation_pct": [
+      2,
+      8
+    ],
+    "hardness_HB": [
+      70,
+      100
+    ],
+    "elastic_modulus_GPa": 72,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 27.1,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  },
+  {
+    "designation": "AlSi10Mg",
+    "temper": "T6/reference",
+    "product_form": "cast_or_AM",
+    "yield_MPa": [
+      200,
+      280
+    ],
+    "uts_MPa": [
+      300,
+      370
+    ],
+    "elongation_pct": [
+      2,
+      10
+    ],
+    "hardness_HB": [
+      80,
+      115
+    ],
+    "elastic_modulus_GPa": 70,
+    "poissons_ratio": 0.33,
+    "shear_modulus_GPa": 26.3,
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Replace/confirm with specification- and product-form-linked source before design use."
+  }
+]

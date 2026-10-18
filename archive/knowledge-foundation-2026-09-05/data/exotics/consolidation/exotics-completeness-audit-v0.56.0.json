@@ -1,0 +1,329 @@
+{
+  "version": "0.56.0",
+  "scope": "Exotics",
+  "families_found": [
+    "applications",
+    "cobalt-base-alloys",
+    "economics",
+    "environment",
+    "governance",
+    "manufacturing",
+    "nickel-base-superalloys",
+    "properties",
+    "provenance",
+    "refractory-metals-alloys",
+    "specialty-corrosion-high-performance-alloys",
+    "standards",
+    "titanium"
+  ],
+  "family_count": 13,
+  "total_files": 77,
+  "fundamental_sections_expected": [
+    "grades",
+    "mechanical",
+    "thermal",
+    "corrosion",
+    "fatigue",
+    "manufacturing",
+    "joining",
+    "standards",
+    "provenance",
+    "economics",
+    "applications",
+    "governance"
+  ],
+  "matrix": [
+    {
+      "family": "applications",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "cobalt-base-alloys",
+      "fundamental_sections_present": [
+        "applications",
+        "corrosion",
+        "economics",
+        "fatigue",
+        "governance",
+        "grades",
+        "joining",
+        "manufacturing",
+        "mechanical",
+        "provenance",
+        "standards",
+        "thermal"
+      ],
+      "missing_fundamental_sections": [],
+      "file_count": 13,
+      "structurally_complete": true
+    },
+    {
+      "family": "economics",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "environment",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "governance",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 9,
+      "structurally_complete": false
+    },
+    {
+      "family": "manufacturing",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "nickel-base-superalloys",
+      "fundamental_sections_present": [
+        "applications",
+        "economics",
+        "fatigue",
+        "grades",
+        "joining",
+        "manufacturing",
+        "mechanical",
+        "provenance",
+        "standards",
+        "thermal"
+      ],
+      "missing_fundamental_sections": [
+        "corrosion",
+        "governance"
+      ],
+      "file_count": 12,
+      "structurally_complete": false
+    },
+    {
+      "family": "properties",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 2,
+      "structurally_complete": false
+    },
+    {
+      "family": "provenance",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "refractory-metals-alloys",
+      "fundamental_sections_present": [
+        "applications",
+        "economics",
+        "fatigue",
+        "governance",
+        "grades",
+        "joining",
+        "manufacturing",
+        "mechanical",
+        "provenance",
+        "standards",
+        "thermal"
+      ],
+      "missing_fundamental_sections": [
+        "corrosion"
+      ],
+      "file_count": 13,
+      "structurally_complete": false
+    },
+    {
+      "family": "specialty-corrosion-high-performance-alloys",
+      "fundamental_sections_present": [
+        "applications",
+        "corrosion",
+        "economics",
+        "fatigue",
+        "governance",
+        "grades",
+        "joining",
+        "manufacturing",
+        "mechanical",
+        "provenance",
+        "standards",
+        "thermal"
+      ],
+      "missing_fundamental_sections": [],
+      "file_count": 13,
+      "structurally_complete": true
+    },
+    {
+      "family": "standards",
+      "fundamental_sections_present": [],
+      "missing_fundamental_sections": [
+        "grades",
+        "mechanical",
+        "thermal",
+        "corrosion",
+        "fatigue",
+        "manufacturing",
+        "joining",
+        "standards",
+        "provenance",
+        "economics",
+        "applications",
+        "governance"
+      ],
+      "file_count": 1,
+      "structurally_complete": false
+    },
+    {
+      "family": "titanium",
+      "fundamental_sections_present": [
+        "applications",
+        "corrosion",
+        "grades",
+        "joining",
+        "manufacturing",
+        "mechanical",
+        "provenance",
+        "standards",
+        "thermal"
+      ],
+      "missing_fundamental_sections": [
+        "fatigue",
+        "economics",
+        "governance"
+      ],
+      "file_count": 9,
+      "structurally_complete": false
+    }
+  ],
+  "cross_family_findings": [
+    {
+      "id": "EX-CONS-001",
+      "severity": "AMBER",
+      "finding": "The Exotics family has now been given a canonical fundamental-section and property-domain schema, but existing quantitative datasets remain screening-level.",
+      "disposition": "OPEN \u2014 evidence population, not a structural blocker"
+    },
+    {
+      "id": "EX-CONS-002",
+      "severity": "YELLOW",
+      "finding": "Electrical-property coverage is part of the canonical schema but is not yet uniformly populated as a dedicated section in every family.",
+      "disposition": "Carry into evidence-population pass"
+    },
+    {
+      "id": "EX-CONS-003",
+      "severity": "YELLOW",
+      "finding": "Exact standard numbers/editions remain open in several specialist material mappings.",
+      "disposition": "Carry into standards evidence pass"
+    },
+    {
+      "id": "EX-CONS-004",
+      "severity": "YELLOW",
+      "finding": "Cost and availability are deliberately relative screening classifications rather than live market data.",
+      "disposition": "Retain as planning metadata"
+    }
+  ],
+  "conclusion": "Exotics fundamentals are structurally established across the current families. The remaining work is evidence depth and exact standards/product-form population, not expansion of the fundamental conceptual schema.",
+  "freeze_candidate": true,
+  "certification": "not certified"
+}

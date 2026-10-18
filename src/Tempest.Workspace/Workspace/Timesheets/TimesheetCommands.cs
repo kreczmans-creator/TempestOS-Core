@@ -13,7 +13,15 @@ namespace Tempest.Workspace.Timesheets;
 public sealed class RecordTimesheetCommand : ICommand
 {
     /// <summary>Initialises a new instance of the <see cref="RecordTimesheetCommand"/> class.</summary>
-    public RecordTimesheetCommand(Guid? projectId, DateOnly date, decimal hours, bool billable, string grade, string task)
+    /// <param name="deliverableId">
+    /// The project deliverable this time is booked against (runbook G1).
+    /// When set, the handler records through
+    /// <see cref="ITimesheetService.RecordAgainstDeliverableAsync"/> and the
+    /// stored task text is the deliverable's own label; <paramref name="task"/>
+    /// is then only what the caller displayed. <see langword="null"/> (the
+    /// Ribbon/Command Palette's free-text path) records exactly as before.
+    /// </param>
+    public RecordTimesheetCommand(Guid? projectId, DateOnly date, decimal hours, bool billable, string grade, string task, Guid? deliverableId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(grade);
         ArgumentException.ThrowIfNullOrWhiteSpace(task);
@@ -24,7 +32,11 @@ public sealed class RecordTimesheetCommand : ICommand
         Billable = billable;
         Grade = grade;
         Task = task;
+        DeliverableId = deliverableId;
     }
+
+    /// <summary>Gets the project deliverable this time is booked against, or <see langword="null"/> for a free-text task.</summary>
+    public Guid? DeliverableId { get; }
 
     /// <summary>Gets where the new entry goes — the open project, or a chosen container (`CreationPlacement`). <see langword="null"/> when neither resolves.</summary>
     public Guid? ProjectId { get; }
@@ -67,9 +79,13 @@ public sealed class RecordTimesheetCommandHandler : ICommandHandler<RecordTimesh
 
         try
         {
-            result = await _service
-                .RecordAsync(projectId, command.Date, command.Hours, command.Billable, command.Grade, command.Task, cancellationToken)
-                .ConfigureAwait(false);
+            result = command.DeliverableId is { } deliverableId
+                ? await _service
+                    .RecordAgainstDeliverableAsync(projectId, deliverableId, command.Date, command.Hours, command.Billable, command.Grade, cancellationToken)
+                    .ConfigureAwait(false)
+                : await _service
+                    .RecordAsync(projectId, command.Date, command.Hours, command.Billable, command.Grade, command.Task, cancellationToken)
+                    .ConfigureAwait(false);
         }
         catch (ArgumentException ex)
         {
@@ -86,10 +102,14 @@ public sealed class RecordTimesheetCommandHandler : ICommandHandler<RecordTimesh
 public sealed class AmendTimesheetCommand : IWorkspaceCommand
 {
     /// <summary>Initialises a new instance of the <see cref="AmendTimesheetCommand"/> class.</summary>
-    public AmendTimesheetCommand(Guid targetObjectId, string targetKind, decimal hours, string task, bool billable)
+    /// <param name="targetObjectId">The entry to amend.</param>
+    /// <param name="targetKind">The entry's Kind.</param>
+    /// <param name="hours">The amended hours.</param>
+    /// <param name="task">The amended task; <see langword="null"/> or blank keeps the entry's current task (v0.23.0 board M3).</param>
+    /// <param name="billable">The amended billable flag.</param>
+    public AmendTimesheetCommand(Guid targetObjectId, string targetKind, decimal hours, string? task, bool billable)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
-        ArgumentException.ThrowIfNullOrWhiteSpace(task);
 
         TargetObjectId = targetObjectId;
         TargetKind = targetKind;
@@ -107,8 +127,8 @@ public sealed class AmendTimesheetCommand : IWorkspaceCommand
     /// <summary>Gets the amended hours.</summary>
     public decimal Hours { get; }
 
-    /// <summary>Gets the amended task.</summary>
-    public string Task { get; }
+    /// <summary>Gets the amended task; <see langword="null"/> keeps the entry's current task.</summary>
+    public string? Task { get; }
 
     /// <summary>Gets the amended billable flag.</summary>
     public bool Billable { get; }

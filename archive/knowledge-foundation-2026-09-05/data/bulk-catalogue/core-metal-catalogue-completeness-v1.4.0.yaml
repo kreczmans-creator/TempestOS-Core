@@ -1,0 +1,26 @@
+version: 1.4.0
+records_added: 28
+steel_records: 16
+aluminium_records: 12
+property_observations_added: 252
+coverage:
+  carbon_and_low_alloy_steels: 6
+  low_alloy_steels: 3
+  stainless_steels: 2
+  precipitation_hardening_stainless: 2
+  tool_steels: 2
+  high_speed_tool_steels: 1
+  wrought_aluminium: 12
+status: candidate_reference
+not_claimed: standard-certified minimum properties
+next_data_quality_gate:
+- exact source per observation
+- product form
+- section/thickness
+- heat treatment/temper
+- test method
+- temperature curve
+- fatigue data
+- fracture toughness
+- cost geography/date
+- availability geography/date

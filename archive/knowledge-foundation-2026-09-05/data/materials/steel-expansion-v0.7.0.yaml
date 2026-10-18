@@ -1,0 +1,670 @@
+- id: MAT-STEEL-304
+  designation: AISI 304
+  family: austenitic_stainless
+  standard_references:
+  - ASTM A240
+  - EN 10088-2
+  cost_tier: medium
+  availability: very_high
+  typical_uses:
+  - fabrication
+  - sheet
+  - enclosures
+  - general corrosion-resistant components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 8000
+      unit: kg/m^3
+    youngs_modulus:
+      value: 193000000000.0
+      unit: Pa
+    yield_strength:
+      value: 215000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 505000000.0
+      unit: Pa
+    elongation:
+      value: 0.7
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.7199999999999998e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 16.2
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 7.2e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-316L
+  designation: AISI 316L
+  family: austenitic_stainless
+  standard_references:
+  - ASTM A240
+  - EN 10088-2
+  cost_tier: medium_expensive
+  availability: very_high
+  typical_uses:
+  - marine
+  - chemical
+  - food
+  - corrosion-resistant fabrications
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 8000
+      unit: kg/m^3
+    youngs_modulus:
+      value: 193000000000.0
+      unit: Pa
+    yield_strength:
+      value: 170000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 485000000.0
+      unit: Pa
+    elongation:
+      value: 0.4
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.59e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 16.3
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 7.4e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-321
+  designation: AISI 321
+  family: stabilised_austenitic_stainless
+  standard_references:
+  - ASTM A240
+  - EN 10088-2
+  cost_tier: medium_expensive
+  availability: high
+  typical_uses:
+  - elevated-temperature fabrications
+  - exhausts
+  - chemical equipment
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 8027
+      unit: kg/m^3
+    youngs_modulus:
+      value: 193000000000.0
+      unit: Pa
+    yield_strength:
+      value: 205000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 515000000.0
+      unit: Pa
+    elongation:
+      value: 0.4
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.6499999999999998e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 16.1
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 7.1e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-17-4PH
+  designation: 17-4 PH
+  family: precipitation_hardening_stainless
+  standard_references:
+  - ASTM A564
+  - EN 10088-3
+  cost_tier: expensive
+  availability: high
+  typical_uses:
+  - shafts
+  - valves
+  - fixtures
+  - aerospace/mechanical components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 7800
+      unit: kg/m^3
+    youngs_modulus:
+      value: 200000000000.0
+      unit: Pa
+    yield_strength:
+      value: 1000000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1100000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.08e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 17
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 8.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-15-5PH
+  designation: 15-5 PH
+  family: precipitation_hardening_stainless
+  standard_references:
+  - AMS 5862
+  - ASTM A564
+  cost_tier: expensive
+  availability: medium
+  typical_uses:
+  - aerospace
+  - high-strength corrosion-resistant components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 7800
+      unit: kg/m^3
+    youngs_modulus:
+      value: 200000000000.0
+      unit: Pa
+    yield_strength:
+      value: 1000000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1100000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.08e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 17
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 8.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-440C
+  designation: AISI 440C
+  family: martensitic_stainless
+  standard_references:
+  - ASTM A276
+  - EN 10088-3
+  cost_tier: medium_expensive
+  availability: high
+  typical_uses:
+  - bearings
+  - wear parts
+  - precision components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 7650
+      unit: kg/m^3
+    youngs_modulus:
+      value: 200000000000.0
+      unit: Pa
+    yield_strength:
+      value: 450000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 760000000.0
+      unit: Pa
+    elongation:
+      value: 0.02
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.0199999999999999e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 24.2
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 6.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-H13
+  designation: H13 / 1.2344
+  family: hot_work_tool_steel
+  standard_references:
+  - EN ISO 4957
+  - ASTM A681
+  cost_tier: expensive
+  availability: high
+  typical_uses:
+  - dies
+  - tooling
+  - hot-work moulds
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 7800
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 1000000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1200000000.0
+      unit: Pa
+    elongation:
+      value: 0.08
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.1e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 28
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 6.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-D2
+  designation: D2 / 1.2379
+  family: cold_work_tool_steel
+  standard_references:
+  - EN ISO 4957
+  - ASTM A681
+  cost_tier: expensive
+  availability: high
+  typical_uses:
+  - cutting tools
+  - dies
+  - wear-resistant tooling
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 7700
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 1500000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 2000000000.0
+      unit: Pa
+    elongation:
+      value: 0.02
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.05e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 20
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 6.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-O1
+  designation: O1 / 1.2510
+  family: cold_work_tool_steel
+  standard_references:
+  - EN ISO 4957
+  - ASTM A681
+  cost_tier: medium_expensive
+  availability: high
+  typical_uses:
+  - jigs
+  - dies
+  - small tooling
+  - blades
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 1400000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1700000000.0
+      unit: Pa
+    elongation:
+      value: 0.03
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.1e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 25
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 6.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-51CRV4
+  designation: 51CrV4
+  family: spring_steel
+  standard_references:
+  - EN 10089
+  cost_tier: medium
+  availability: high
+  typical_uses:
+  - springs
+  - clips
+  - resilient components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 1200000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1400000000.0
+      unit: Pa
+    elongation:
+      value: 0.08
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.15e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 40
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 5.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-SAE9255
+  designation: SAE 9255
+  family: silicon_manganese_spring_steel
+  standard_references:
+  - SAE J404
+  cost_tier: medium
+  availability: medium
+  typical_uses:
+  - heavy-duty springs
+  - high-cycle components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 205000000000.0
+      unit: Pa
+    yield_strength:
+      value: 1200000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1400000000.0
+      unit: Pa
+    elongation:
+      value: 0.08
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.15e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 45
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 5.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-HARDOX450
+  designation: Hardox 450
+  family: wear_resistant_plate
+  standard_references:
+  - manufacturer_grade
+  cost_tier: expensive
+  availability: high
+  typical_uses:
+  - wear plates
+  - chutes
+  - liners
+  - earthmoving equipment
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 1250000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1400000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.15e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 40
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 5.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-PV270
+  designation: P355NH
+  family: pressure_vessel_steel
+  standard_references:
+  - EN 10028-3
+  cost_tier: medium
+  availability: high
+  typical_uses:
+  - pressure vessels
+  - boilers
+  - fabricated pressure equipment
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 355000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 510000000.0
+      unit: Pa
+    elongation:
+      value: 0.2
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.2e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 45
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.5e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-MARAGING250
+  designation: Maraging 250
+  family: ultra_high_strength_steel
+  standard_references:
+  - AMS 6515
+  cost_tier: very_expensive
+  availability: medium
+  typical_uses:
+  - aerospace
+  - tooling
+  - high-strength precision structures
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form must be resolved
+  properties:
+    density:
+      value: 8000
+      unit: kg/m^3
+    youngs_modulus:
+      value: 190000000000.0
+      unit: Pa
+    yield_strength:
+      value: 1700000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1800000000.0
+      unit: Pa
+    elongation:
+      value: 0.08
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.05e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 25
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 7.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Indicative engineering reference data only; verify exact standard edition,
+      condition, product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true

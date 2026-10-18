@@ -1,0 +1,51 @@
+[
+  {
+    "id": "RF-GAP-001",
+    "severity": "AMBER",
+    "area": "Molybdenum/TZM quantitative data",
+    "status": "open",
+    "next": "Populate authoritative temperature-dependent strength, creep and thermal-property datasets."
+  },
+  {
+    "id": "RF-GAP-002",
+    "severity": "AMBER",
+    "area": "Niobium quantitative data",
+    "status": "open",
+    "next": "Populate grade/product-form/environment-specific mechanical datasets."
+  },
+  {
+    "id": "RF-GAP-003",
+    "severity": "AMBER",
+    "area": "Tantalum quantitative data",
+    "status": "open",
+    "next": "Populate exact alloy/product-form corrosion and mechanical evidence."
+  },
+  {
+    "id": "RF-GAP-004",
+    "severity": "AMBER",
+    "area": "Rhenium/Mo-Re",
+    "status": "open",
+    "next": "Populate authoritative specialist high-temperature and processing evidence."
+  },
+  {
+    "id": "RF-GAP-005",
+    "severity": "AMBER",
+    "area": "Oxidation/protection",
+    "status": "open",
+    "next": "Add validated coating/protection systems and service-temperature envelopes."
+  },
+  {
+    "id": "RF-GAP-006",
+    "severity": "YELLOW",
+    "area": "Standards",
+    "status": "open",
+    "next": "Resolve exact standard numbers and editions."
+  },
+  {
+    "id": "RF-GAP-007",
+    "severity": "YELLOW",
+    "area": "Supply chain",
+    "status": "open",
+    "next": "Add supplier concentration and procurement lead-time fields when sourcing work begins."
+  }
+]

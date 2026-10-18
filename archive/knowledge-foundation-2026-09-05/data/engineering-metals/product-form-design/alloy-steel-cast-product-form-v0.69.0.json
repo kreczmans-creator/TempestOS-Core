@@ -1,0 +1,22 @@
+{
+  "version": "0.69.0",
+  "family": "alloy-steel",
+  "effects": [
+    "porosity",
+    "shrinkage",
+    "segregation",
+    "dendritic structure",
+    "inclusions",
+    "hot tearing",
+    "surface defects"
+  ],
+  "design_checks": [
+    "casting process",
+    "critical-section quality",
+    "NDT capability",
+    "machining stock",
+    "fatigue sensitivity"
+  ],
+  "rule": "Cast material must not automatically inherit wrought-product fatigue or toughness assumptions.",
+  "status": "design-framework"
+}

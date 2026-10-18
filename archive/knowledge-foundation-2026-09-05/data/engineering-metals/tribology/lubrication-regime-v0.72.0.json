@@ -1,0 +1,20 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "regimes": [
+    "boundary",
+    "mixed",
+    "hydrodynamic",
+    "elastohydrodynamic"
+  ],
+  "selection_factors": [
+    "load",
+    "speed",
+    "viscosity",
+    "temperature",
+    "surface finish",
+    "contact geometry",
+    "contamination"
+  ],
+  "rule": "Lubricant selection is a contact-system decision including viscosity, temperature, materials, seals and contamination."
+}

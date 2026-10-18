@@ -1,0 +1,22 @@
+{
+  "version": "0.59.0",
+  "family": "LCP",
+  "density_g_cm3": 1.4,
+  "elastic_modulus_gpa": "5.0\u201315.0",
+  "tensile_strength_mpa": "120\u2013220",
+  "elongation_percent": "1\u20135",
+  "evidence_status": "screening range",
+  "design_use": "not approved",
+  "required_context": [
+    "exact grade",
+    "reinforcement/filler",
+    "product form",
+    "condition",
+    "test method",
+    "test temperature",
+    "conditioning",
+    "orientation where relevant",
+    "authoritative source"
+  ],
+  "warning": "Ranges are family-level engineering screening data, not design allowables."
+}

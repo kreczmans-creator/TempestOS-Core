@@ -1,0 +1,36 @@
+material_state_id: MAT-STEEL-H13
+designation_map:
+  AISI: H13
+  UNS: T20813
+  EN_material_number: '1.2344'
+  EN_designation: X40CrMoV5-1
+  JIS: SKD61
+source_id: WEB-BOHLER-W302
+source_url: https://www.us.bohler.com/en-us/products/w302-isodisc/
+source_locator: BÖHLER W302 ISODISC product page
+standards:
+- EN ISO 4957
+- JIS G4404
+product_forms:
+- long products
+- open die forgings
+- plates
+material_route: airmelted
+properties_context:
+  toughness: good
+  ductility: good
+  wear_resistance: high
+  machinability: very high
+  hot_hardness: high
+  thermal_conductivity: good
+applications:
+- hot extrusion
+- hot/semi-hot forging
+- gravity/low-pressure die casting
+- high-pressure die casting
+- mechanical engineering
+evidence_status: sourced
+review_status: reviewed
+design_use: screening_only
+note: Page states that presented data refer exclusively to long products; detailed
+  datasheet is required before importing numerical mechanical properties.

@@ -1,0 +1,38 @@
+{
+  "version": "0.65.0",
+  "processes": {
+    "injection_moulding": [
+      "drying/conditioning per grade",
+      "melt and mould temperature control",
+      "fill/pack/cool control",
+      "gate and weld-line assessment",
+      "shrinkage/warpage measurement"
+    ],
+    "machining": [
+      "tool geometry",
+      "heat generation",
+      "clamping distortion",
+      "residual stress",
+      "chip evacuation",
+      "post-machining conditioning where relevant"
+    ],
+    "additive_manufacturing": [
+      "build orientation",
+      "thermal history",
+      "interlayer properties",
+      "moisture control",
+      "support removal",
+      "post-processing",
+      "inspection"
+    ],
+    "inspection": [
+      "dimensional measurement strategy",
+      "CTE/environmental conditioning",
+      "surface finish",
+      "visual defects",
+      "material/grade traceability",
+      "process capability"
+    ]
+  },
+  "fundamental_rule": "Manufacturing and inspection conditions must be linked to the material state and functional requirements."
+}

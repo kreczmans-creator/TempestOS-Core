@@ -213,6 +213,15 @@ public class AffineUnitTests
     public void ThermalExpansionUnits_AreInternallyConsistent() => AssertCatalogueConsistent(ThermalExpansionUnits.All, ThermalExpansionUnits.PerKelvin);
 
     [Fact]
+    public void ThermalResistanceUnits_AreInternallyConsistent() => AssertCatalogueConsistent(ThermalResistanceUnits.All, ThermalResistanceUnits.KelvinPerWatt);
+
+    [Fact]
+    public void HeatTransferCoefficientUnits_AreInternallyConsistent() => AssertCatalogueConsistent(HeatTransferCoefficientUnits.All, HeatTransferCoefficientUnits.WattPerSquareMetreKelvin);
+
+    [Fact]
+    public void HeatFluxUnits_AreInternallyConsistent() => AssertCatalogueConsistent(HeatFluxUnits.All, HeatFluxUnits.WattPerSquareMetre);
+
+    [Fact]
     public void SpecificHeatCapacityUnits_AreInternallyConsistent() => AssertCatalogueConsistent(SpecificHeatCapacityUnits.All, SpecificHeatCapacityUnits.JoulePerKilogramKelvin);
 
     [Fact]
@@ -235,6 +244,8 @@ public class AffineUnitTests
         Assert.All(LengthUnits.All, u => Assert.False(u.IsAffine));
         Assert.All(MassDensityUnits.All, u => Assert.False(u.IsAffine));
         Assert.All(ThermalExpansionUnits.All, u => Assert.False(u.IsAffine));
+        Assert.All(ThermalResistanceUnits.All, u => Assert.False(u.IsAffine));
+        Assert.All(HeatTransferCoefficientUnits.All, u => Assert.False(u.IsAffine));
         Assert.All(DimensionlessUnits.All, u => Assert.False(u.IsAffine));
         Assert.Equal(2, TemperatureUnits.All.Count(u => u.IsAffine));
     }

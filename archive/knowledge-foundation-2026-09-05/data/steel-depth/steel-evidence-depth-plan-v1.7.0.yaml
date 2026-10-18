@@ -1,0 +1,29 @@
+version: 1.7.0
+objective: Convert the 16-steel screening catalogue into traceable engineering knowledge.
+order:
+- stage: 1
+  activity: Identity and standard cross-reference
+  deliverable: designation/UNS/EN mapping with exact standard reference
+- stage: 2
+  activity: Product form and condition
+  deliverable: bar/plate/sheet/forging/etc plus heat-treatment/temper state
+- stage: 3
+  activity: Mechanical properties
+  deliverable: yield, UTS, elongation and hardness with thickness/section applicability
+- stage: 4
+  activity: Physical/electrical properties
+  deliverable: density, modulus, Poisson ratio, CTE, resistivity with source
+- stage: 5
+  activity: Elevated-temperature data
+  deliverable: temperature-property observations where source data exists
+- stage: 6
+  activity: Fatigue/fracture
+  deliverable: test-method-specific fatigue and fracture observations
+- stage: 7
+  activity: Environment
+  deliverable: corrosion/environment evidence separated from generic grade claims
+- stage: 8
+  activity: Promotion
+  deliverable: candidate → sourced → reviewed → verified, with approval only when
+    design basis is established
+principle: Prefer fewer highly traceable observations over many weakly sourced values.

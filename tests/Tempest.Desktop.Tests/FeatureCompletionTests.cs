@@ -72,7 +72,12 @@ public sealed class FeatureCompletionTests
         {
             await WaitUntilVisibleAsync(dialog);
 
-            dialog.GetLogicalDescendants().OfType<TextBox>().Single().Text = value;
+            // A fixed-list parameter is a dropdown; anything else is typed.
+            var choice = dialog.GetLogicalDescendants().OfType<ComboBox>().Single();
+            if (choice.IsVisible)
+                choice.SelectedItem = choice.Items.OfType<string>().Single(i => string.Equals(i, value, StringComparison.OrdinalIgnoreCase));
+            else
+                dialog.GetLogicalDescendants().OfType<TextBox>().Single().Text = value;
             dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"))
                 .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 

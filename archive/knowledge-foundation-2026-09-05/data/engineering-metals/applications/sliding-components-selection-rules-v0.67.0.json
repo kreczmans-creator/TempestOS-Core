@@ -1,0 +1,15 @@
+{
+  "version": "0.67.0",
+  "application": "sliding-components",
+  "checks": [
+    "contact stress",
+    "wear",
+    "lubrication",
+    "surface hardness",
+    "friction",
+    "temperature",
+    "galling"
+  ],
+  "selection": "Evaluate both contacting materials and surface treatments.",
+  "evidence_boundary": "Screening guidance; exact alloy, condition, geometry, process and service environment require application-specific verification."
+}

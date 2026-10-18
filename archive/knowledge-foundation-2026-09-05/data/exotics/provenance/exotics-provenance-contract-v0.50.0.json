@@ -1,0 +1,23 @@
+{
+  "version": "0.50.0",
+  "scope": "exotics",
+  "minimum_source_chain": [
+    "exact specification",
+    "exact grade/designation",
+    "product form",
+    "condition/heat treatment",
+    "test method",
+    "temperature/environment",
+    "source revision",
+    "traceable source location",
+    "applicability assessment"
+  ],
+  "confidence_states": [
+    "unverified",
+    "source-linked",
+    "cross-checked",
+    "engineering-reviewed",
+    "design-approved"
+  ],
+  "trade_name_rule": "Commercial/trade names must never be used as the sole material identity."
+}

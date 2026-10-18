@@ -53,7 +53,7 @@ public class BracketCalculationJourneyTests
     [AvaloniaFact]
     public async Task AnEngineerCanReviewReleaseCalculateAndRetrieveTheResult()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -120,7 +120,7 @@ public class BracketCalculationJourneyTests
     [AvaloniaFact]
     public async Task AnOverloadedBracketIsReportedAsNotMeetingItsCriteria_NotAsAnError()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -152,7 +152,7 @@ public class BracketCalculationJourneyTests
     [AvaloniaFact]
     public async Task AReviewPerformedThroughTheApplicationIsAttributedToTheSignedInEngineer()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();

@@ -1,0 +1,63 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "mapping": [
+    {
+      "material": "Alloy 718",
+      "uses": [
+        "engine structures",
+        "fasteners",
+        "turbomachinery",
+        "pressure hardware",
+        "AM"
+      ],
+      "dominant_drivers": [
+        "strength",
+        "fatigue",
+        "fabricability",
+        "temperature"
+      ]
+    },
+    {
+      "material": "Alloy 625",
+      "uses": [
+        "chemical processing",
+        "marine",
+        "heat exchangers",
+        "aerospace",
+        "AM"
+      ],
+      "dominant_drivers": [
+        "corrosion",
+        "weldability",
+        "temperature"
+      ]
+    },
+    {
+      "material": "Haynes 230",
+      "uses": [
+        "furnaces",
+        "combustion systems",
+        "heat exchangers",
+        "power generation"
+      ],
+      "dominant_drivers": [
+        "oxidation",
+        "creep",
+        "temperature"
+      ]
+    },
+    {
+      "material": "718Plus/Waspaloy",
+      "uses": [
+        "aerospace hot-section and rotating hardware"
+      ],
+      "dominant_drivers": [
+        "creep",
+        "rupture",
+        "fatigue",
+        "qualification"
+      ]
+    }
+  ]
+}

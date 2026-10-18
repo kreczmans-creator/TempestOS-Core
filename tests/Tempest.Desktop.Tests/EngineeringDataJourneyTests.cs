@@ -25,7 +25,7 @@ public class EngineeringDataJourneyTests
     [AvaloniaFact]
     public async Task TheApplicationReachesTheReferenceLibrariesThroughItsOwnComposition()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -54,10 +54,10 @@ public class EngineeringDataJourneyTests
 
             var byLibrary = populated.ToDictionary(l => l.Library);
             Assert.Equal(2, byLibrary["Materials"].RecordCount);
-            Assert.Equal(14, byLibrary["Standards"].RecordCount);
+            Assert.Equal(StandardSeed.Instance.Records.Count, byLibrary["Standards"].RecordCount);
             Assert.Equal(12, byLibrary["Constants"].RecordCount);
-            Assert.Equal(7, byLibrary["Fasteners"].RecordCount);
-            Assert.Equal(2, byLibrary["Bearings"].RecordCount);
+            Assert.Equal(FastenerSeed.Instance.Records.Count, byLibrary["Fasteners"].RecordCount);
+            Assert.Equal(BearingSeed.Instance.Records.Count, byLibrary["Bearings"].RecordCount);
 
             var stillEmpty = Assert.Single(libraries, l => l.IsEmpty);
             Assert.Equal("Manufacturing", stillEmpty.Library);
@@ -72,7 +72,7 @@ public class EngineeringDataJourneyTests
     [AvaloniaFact]
     public async Task AnEngineerCanFindPopulatedDataAndBeToldWhyItIsNotYetUsable()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -88,7 +88,7 @@ public class EngineeringDataJourneyTests
 
             // Six seeded grades plus the two fictional sample alloys the
             // application registers at start-up.
-            Assert.Equal(8, summary.RecordCount);
+            Assert.Equal(2 + MaterialSeed.Instance.Records.Count, summary.RecordCount);
             Assert.Equal(0, summary.ReleasedCount);
 
             // The distinction an engineer has to be shown: full, and not
@@ -113,7 +113,7 @@ public class EngineeringDataJourneyTests
     [AvaloniaFact]
     public async Task AnEngineerCanFollowACalculationBackToTheDocumentItsNumbersCameFrom()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -163,7 +163,7 @@ public class EngineeringDataJourneyTests
         var rootPath = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
         int pinnedRevision;
 
-        var host = new WorkspaceHost(rootPath);
+        var host = new WorkspaceHost(rootPath, commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -217,7 +217,7 @@ public class EngineeringDataJourneyTests
         // so the only protection is that they say what they are — in
         // provenance, which is where a claim about where data came from
         // belongs, rather than in a naming convention a record could drop.
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -241,7 +241,7 @@ public class EngineeringDataJourneyTests
                 .Where(e => e.SourceOrganisation != "TempestOS sample module")
                 .ToList();
 
-            Assert.Equal(6, sourced.Count);
+            Assert.Equal(MaterialSeed.Instance.Records.Count, sourced.Count);
             Assert.DoesNotContain(sourced, e => e.SourceOrganisation is null);
 
             // Neither kind can be relied on, and for the same reason —

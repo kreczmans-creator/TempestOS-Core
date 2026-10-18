@@ -121,7 +121,7 @@ public sealed class AuthorisableConnectorTests
             .Build();
         var profile = new OAuthProviderProfile(
             "Xero", new Uri("https://login.example.test/identity/connect/authorize"), new Uri("https://identity.example.test/token"),
-            ["accounting.transactions", "offline_access"], new Uri("https://api.example.test/connections"));
+            XeroScopes.Required, new Uri("https://api.example.test/connections"));
         var launcher = new FakeBrowserLauncher();
         var authoriser = new OAuthAuthoriser(profile, configuration, secretStore, launcher, httpClient);
 

@@ -1,0 +1,121 @@
+[
+  {
+    "id": "MG-GAP-001",
+    "severity": "AMBER",
+    "area": "authoritative provenance",
+    "status": "open",
+    "next": "Attach source-level evidence to each grade/product-form/temper record."
+  },
+  {
+    "id": "MG-GAP-002",
+    "severity": "AMBER",
+    "area": "fatigue",
+    "status": "open",
+    "next": "Populate S-N and fatigue-notch data by grade, condition and surface state."
+  },
+  {
+    "id": "MG-GAP-003",
+    "severity": "AMBER",
+    "area": "corrosion",
+    "status": "open",
+    "next": "Add quantitative corrosion/galvanic evidence and test-method mapping."
+  },
+  {
+    "id": "MG-GAP-004",
+    "severity": "AMBER",
+    "area": "temperature",
+    "status": "open",
+    "next": "Populate temperature-dependent tensile, creep and fatigue data."
+  },
+  {
+    "id": "MG-GAP-005",
+    "severity": "AMBER",
+    "area": "machining fire",
+    "status": "open",
+    "next": "Add controlled safety guidance and recognised fire-test/source references."
+  },
+  {
+    "id": "MG-GAP-006",
+    "severity": "YELLOW",
+    "area": "standards",
+    "status": "open",
+    "next": "Map exact standards editions and product forms."
+  },
+  {
+    "id": "MG-GAP-007",
+    "severity": "AMBER",
+    "area": "fatigue data",
+    "status": "open",
+    "next": "Replace screening ranges with authoritative S-N datasets by grade, temper, orientation and environment."
+  },
+  {
+    "id": "MG-GAP-008",
+    "severity": "AMBER",
+    "area": "fracture data",
+    "status": "open",
+    "next": "Populate fracture toughness and crack-growth datasets with product-form and orientation metadata."
+  },
+  {
+    "id": "MG-GAP-009",
+    "severity": "AMBER",
+    "area": "creep",
+    "status": "open",
+    "next": "Populate elevated-temperature creep/rupture evidence by alloy and condition."
+  },
+  {
+    "id": "MG-GAP-010",
+    "severity": "AMBER",
+    "area": "galvanic corrosion",
+    "status": "open",
+    "next": "Add quantitative galvanic/corrosion evidence with area ratio and environment."
+  },
+  {
+    "id": "MG-GAP-011",
+    "severity": "AMBER",
+    "area": "joining",
+    "status": "open",
+    "next": "Add process-specific joint efficiency, defect and qualification evidence."
+  },
+  {
+    "id": "MG-GAP-012",
+    "severity": "YELLOW",
+    "area": "surface treatment",
+    "status": "open",
+    "next": "Map treatment systems to recognised specifications and durability tests."
+  },
+  {
+    "id": "MG-GAP-013",
+    "severity": "AMBER",
+    "area": "thermal data",
+    "status": "open",
+    "next": "Attach authoritative temperature-dependent conductivity, heat capacity and expansion datasets."
+  },
+  {
+    "id": "MG-GAP-014",
+    "severity": "AMBER",
+    "area": "electrical data",
+    "status": "open",
+    "next": "Attach grade/surface/temperature resistivity and contact-resistance evidence."
+  },
+  {
+    "id": "MG-GAP-015",
+    "severity": "AMBER",
+    "area": "standards",
+    "status": "open",
+    "next": "Resolve exact standard numbers and editions for each supported product form."
+  },
+  {
+    "id": "MG-GAP-016",
+    "severity": "AMBER",
+    "area": "provenance",
+    "status": "open",
+    "next": "Populate source-level citations and revision identifiers."
+  },
+  {
+    "id": "MG-GAP-017",
+    "severity": "YELLOW",
+    "area": "cost/availability",
+    "status": "open",
+    "next": "Replace relative classifications with supplier/market evidence where commercial planning requires it."
+  }
+]

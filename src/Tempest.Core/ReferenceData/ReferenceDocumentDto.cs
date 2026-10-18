@@ -23,11 +23,13 @@ namespace Tempest.Core.ReferenceData;
 /// <param name="ValidationState">The record's own lifecycle position.</param>
 /// <param name="SupersededByRecordId">The record that replaced this one, if any.</param>
 /// <param name="Source">A structured citation of the exact line the record's own values were read from, if held (`ADR-0149`). Absent from content written before this field existed, which deserialises it as <see langword="null"/>.</param>
+/// <param name="ContentRevision">The record's user-visible content revision (see <see cref="IReferenceRecord{TDefinition}.ContentRevision"/>). Absent from content written before this field existed, which deserialises it as <see langword="null"/>; the catalogue then derives it from the revision history.</param>
 internal sealed record ReferenceDocumentDto<TDefinition>(
     string RecordId,
     TDefinition Definition,
     ReferenceProvenance Provenance,
     ReferenceValidationState ValidationState,
     string? SupersededByRecordId,
-    SourceCitation? Source = null)
+    SourceCitation? Source = null,
+    int? ContentRevision = null)
     where TDefinition : class;

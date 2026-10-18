@@ -1,0 +1,21 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "concepts": [
+    "operator task",
+    "situational awareness",
+    "human error",
+    "feedback",
+    "affordance",
+    "cognitive load",
+    "error tolerance"
+  ],
+  "workflow": [
+    "identify users and tasks",
+    "identify consequential errors",
+    "define information required",
+    "design controls and feedback",
+    "consider accessibility",
+    "validate representative workflows"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "version": "0.67.0",
+  "family": "alloy-steel",
+  "processes": [
+    "casting",
+    "forging",
+    "rolling",
+    "extrusion",
+    "machining",
+    "additive manufacturing where applicable",
+    "heat treatment",
+    "surface treatment"
+  ],
+  "variation_sources": [
+    "raw material variability",
+    "grain/texture",
+    "porosity/inclusions",
+    "residual stress",
+    "heat-treatment variation",
+    "surface condition",
+    "machining damage",
+    "process capability"
+  ],
+  "inspection": [
+    "dimensional inspection",
+    "hardness",
+    "surface inspection",
+    "NDT as appropriate",
+    "material certification",
+    "traceability"
+  ],
+  "rule": "Manufacturing capability and inspection evidence must support the required functional characteristic.",
+  "evidence_status": "foundation reference"
+}

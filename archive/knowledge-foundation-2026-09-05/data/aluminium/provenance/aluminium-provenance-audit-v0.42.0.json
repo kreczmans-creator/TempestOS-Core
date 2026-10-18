@@ -1,0 +1,37 @@
+[
+  {
+    "record_group": "temper-aware mechanical",
+    "records": 15,
+    "current_status": "unverified_screening_reference",
+    "release_disposition": "retain_for_screening",
+    "design_use": "blocked_until_authoritative_source"
+  },
+  {
+    "record_group": "shear-bearing",
+    "records": 14,
+    "current_status": "unverified_screening_reference",
+    "release_disposition": "retain_for_screening",
+    "design_use": "blocked_until_authoritative_source"
+  },
+  {
+    "record_group": "fatigue",
+    "records": 5,
+    "current_status": "unverified_screening_reference",
+    "release_disposition": "retain_for_screening",
+    "design_use": "blocked_until_authoritative_source"
+  },
+  {
+    "record_group": "fracture",
+    "records": 5,
+    "current_status": "unverified_screening_reference",
+    "release_disposition": "retain_for_screening",
+    "design_use": "blocked_until_authoritative_source"
+  },
+  {
+    "record_group": "temperature",
+    "records": 4,
+    "current_status": "unverified_screening_reference",
+    "release_disposition": "retain_for_screening",
+    "design_use": "blocked_until_authoritative_source"
+  }
+]

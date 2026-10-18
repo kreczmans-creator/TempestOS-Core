@@ -1,0 +1,197 @@
+[
+  {
+    "designation": "1050A",
+    "reference_temper": "H14",
+    "density_kg_m3": 2705,
+    "thermal_conductivity_W_mK": 222,
+    "coefficient_thermal_expansion_um_mK": [
+      23.1,
+      23.6
+    ],
+    "specific_heat_J_kgK": 900,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "1200",
+    "reference_temper": "H14",
+    "density_kg_m3": 2705,
+    "thermal_conductivity_W_mK": 215,
+    "coefficient_thermal_expansion_um_mK": [
+      23.1,
+      23.6
+    ],
+    "specific_heat_J_kgK": 900,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "2014A",
+    "reference_temper": "T6",
+    "density_kg_m3": 2800,
+    "thermal_conductivity_W_mK": 150,
+    "coefficient_thermal_expansion_um_mK": [
+      22.5,
+      23.5
+    ],
+    "specific_heat_J_kgK": 880,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "2024",
+    "reference_temper": "T3/T4",
+    "density_kg_m3": 2780,
+    "thermal_conductivity_W_mK": 120,
+    "coefficient_thermal_expansion_um_mK": [
+      22.5,
+      23.5
+    ],
+    "specific_heat_J_kgK": 875,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "2219",
+    "reference_temper": "T851",
+    "density_kg_m3": 2840,
+    "thermal_conductivity_W_mK": 115,
+    "coefficient_thermal_expansion_um_mK": [
+      22.5,
+      23.5
+    ],
+    "specific_heat_J_kgK": 880,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "5083",
+    "reference_temper": "H116",
+    "density_kg_m3": 2660,
+    "thermal_conductivity_W_mK": 117,
+    "coefficient_thermal_expansion_um_mK": [
+      23.5,
+      24.0
+    ],
+    "specific_heat_J_kgK": 900,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "5086",
+    "reference_temper": "H116",
+    "density_kg_m3": 2660,
+    "thermal_conductivity_W_mK": 117,
+    "coefficient_thermal_expansion_um_mK": [
+      23.5,
+      24.0
+    ],
+    "specific_heat_J_kgK": 900,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "6060",
+    "reference_temper": "T6",
+    "density_kg_m3": 2700,
+    "thermal_conductivity_W_mK": 200,
+    "coefficient_thermal_expansion_um_mK": [
+      23.0,
+      23.7
+    ],
+    "specific_heat_J_kgK": 900,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "6061",
+    "reference_temper": "T6",
+    "density_kg_m3": 2700,
+    "thermal_conductivity_W_mK": 167,
+    "coefficient_thermal_expansion_um_mK": [
+      23.0,
+      23.6
+    ],
+    "specific_heat_J_kgK": 896,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "6082",
+    "reference_temper": "T6",
+    "density_kg_m3": 2700,
+    "thermal_conductivity_W_mK": 170,
+    "coefficient_thermal_expansion_um_mK": [
+      23.0,
+      23.6
+    ],
+    "specific_heat_J_kgK": 900,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "7020",
+    "reference_temper": "T6",
+    "density_kg_m3": 2780,
+    "thermal_conductivity_W_mK": 150,
+    "coefficient_thermal_expansion_um_mK": [
+      22.8,
+      23.5
+    ],
+    "specific_heat_J_kgK": 880,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "7075",
+    "reference_temper": "T6",
+    "density_kg_m3": 2810,
+    "thermal_conductivity_W_mK": 130,
+    "coefficient_thermal_expansion_um_mK": [
+      23.0,
+      23.5
+    ],
+    "specific_heat_J_kgK": 960,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "7050",
+    "reference_temper": "T7451",
+    "density_kg_m3": 2830,
+    "thermal_conductivity_W_mK": 140,
+    "coefficient_thermal_expansion_um_mK": [
+      23.0,
+      23.5
+    ],
+    "specific_heat_J_kgK": 960,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "A356",
+    "reference_temper": "T6",
+    "density_kg_m3": 2680,
+    "thermal_conductivity_W_mK": 150,
+    "coefficient_thermal_expansion_um_mK": [
+      21.0,
+      22.5
+    ],
+    "specific_heat_J_kgK": 963,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  },
+  {
+    "designation": "AlSi10Mg",
+    "reference_temper": "T6/reference",
+    "density_kg_m3": 2670,
+    "thermal_conductivity_W_mK": 140,
+    "coefficient_thermal_expansion_um_mK": [
+      20.5,
+      22.0
+    ],
+    "specific_heat_J_kgK": 900,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only"
+  }
+]

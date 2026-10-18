@@ -1,0 +1,15 @@
+{
+  "version": "0.72.0",
+  "status": "verification-framework",
+  "workflow": [
+    "identify requirement risk",
+    "identify uncertainty",
+    "select verification method",
+    "define margin and acceptance criterion",
+    "identify independent evidence",
+    "execute verification",
+    "review deviations",
+    "close traceability"
+  ],
+  "principle": "Verification effort should be commensurate with consequence, uncertainty and novelty."
+}

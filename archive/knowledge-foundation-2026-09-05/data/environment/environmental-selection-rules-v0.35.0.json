@@ -1,0 +1,27 @@
+[
+  {
+    "rule_id": "ENV-001",
+    "condition": "chloride_exposure",
+    "action": "Do not select solely from general corrosion rating; assess pitting/crevice resistance, temperature, concentration, aeration and stress state."
+  },
+  {
+    "rule_id": "ENV-002",
+    "condition": "tensile_stress_plus_aggressive_environment",
+    "action": "Perform SCC assessment; generic corrosion resistance is insufficient."
+  },
+  {
+    "rule_id": "ENV-003",
+    "condition": "hydrogen_charging_possible",
+    "action": "Assess hardness/strength, charging source, traps, stress intensity and fracture/fatigue consequences."
+  },
+  {
+    "rule_id": "ENV-004",
+    "condition": "dissimilar_metals_plus_electrolyte",
+    "action": "Perform galvanic compatibility assessment including area ratio and electrical isolation/protection."
+  },
+  {
+    "rule_id": "ENV-005",
+    "condition": "corrosion_protection_present",
+    "action": "Record coating/plating/passivation system separately from base-material corrosion capability."
+  }
+]

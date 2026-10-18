@@ -1,0 +1,21 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "required_properties": [
+    "glass_transition_temperature_where_applicable",
+    "melting_temperature_for_semicrystalline_polymers",
+    "heat_deflection_temperature",
+    "thermal_conductivity",
+    "specific_heat",
+    "CTE",
+    "continuous_service_temperature",
+    "short_term_peak_temperature"
+  ],
+  "principles": [
+    "Tg and melting point are not interchangeable with continuous service temperature.",
+    "Heat deflection temperature is test-method-specific and is not a universal allowable.",
+    "Thermal cycling can drive dimensional change, residual stress and joint preload change.",
+    "Filled polymers may have substantially different CTE and conductivity from neat resin."
+  ],
+  "design_rule": "Use application-specific time-temperature evidence for sustained structural loads."
+}

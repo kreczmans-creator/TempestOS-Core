@@ -1,0 +1,24 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "concepts": [
+    "failure rate",
+    "MTBF",
+    "useful life",
+    "wear-out",
+    "infant mortality",
+    "mission profile",
+    "duty cycle",
+    "environmental acceleration"
+  ],
+  "checks": [
+    "failure modes",
+    "load spectrum",
+    "temperature",
+    "vibration",
+    "contamination",
+    "maintenance strategy",
+    "demonstration evidence"
+  ],
+  "boundary": "MTBF is not a substitute for product-specific reliability demonstration or failure-mode analysis."
+}

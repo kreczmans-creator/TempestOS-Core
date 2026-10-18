@@ -122,10 +122,11 @@ the one-time code the browser is redirected back with once approval is
 given. PKCE is the extra proof: a random secret generated before the
 browser opens, checked again at the token exchange, so a code
 intercepted in transit is useless without it. `WP 19.1A-R1` (`926be24`)
-fixed the loopback port to `49301` because Xero's and Intuit's own
-consoles require one exact redirect URI registered ahead of time — so
+fixed the loopback port because Xero's and Intuit's own consoles require
+one exact redirect URI registered ahead of time; the `v1.0.0` candidate
+moved it from `49301` (inside Windows' dynamic range) to `48131` — so
 **the URI to register in a sandbox app today is
-`http://127.0.0.1:49301/callback/`, exactly**.
+`http://127.0.0.1:48131/callback/`, exactly**.
 
 ## The platform's own `IHostedService`, finally consumed
 
@@ -241,7 +242,7 @@ disclosed cost, not an oversight.
   catalogue for; an unconfigured real sandbox will likely answer
   400/422 — `Rejected`, never a crash.
 - **The OAuth redirect URI is now fixed**: a sandbox app must register
-  `http://127.0.0.1:49301/callback/` exactly, or a busy port names
+  `http://127.0.0.1:48131/callback/` exactly, or a busy port names
   itself and the configuration key rather than failing silently.
 - **Accounts reads are written to the documented API shape, not proven
   live** — the first real authorisation against a live account is the

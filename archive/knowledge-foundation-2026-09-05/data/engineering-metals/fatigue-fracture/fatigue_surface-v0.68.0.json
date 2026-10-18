@@ -1,0 +1,16 @@
+{
+  "version": "0.68.0",
+  "purpose": "Connect surface/process state to fatigue performance.",
+  "factors": [
+    "machining marks",
+    "roughness",
+    "residual stress",
+    "decarburisation",
+    "shot peening",
+    "coatings",
+    "corrosion pits",
+    "fretting"
+  ],
+  "rule": "Surface condition is a design variable in fatigue-critical metallic components.",
+  "status": "design-framework"
+}

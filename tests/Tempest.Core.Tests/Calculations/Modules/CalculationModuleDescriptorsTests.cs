@@ -25,7 +25,7 @@ public class CalculationModuleDescriptorsTests
         var catalogueIds = ProductCalculationCatalogue.CalculationIds.OrderBy(id => id, StringComparer.Ordinal).ToList();
 
         Assert.Equal(catalogueIds, describedIds);
-        Assert.Equal(16, describedIds.Count);
+        Assert.Equal(19, describedIds.Count);
         Assert.All(describedIds, id => Assert.NotNull(CalculationModuleDescriptors.For(id)));
         Assert.Null(CalculationModuleDescriptors.For("calc.no-such-module"));
     }

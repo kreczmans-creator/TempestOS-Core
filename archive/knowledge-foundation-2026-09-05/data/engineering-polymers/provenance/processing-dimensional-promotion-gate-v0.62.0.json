@@ -1,0 +1,17 @@
+{
+  "version": "0.62.0",
+  "status": "screening-only",
+  "promotion_requirements": [
+    "exact grade/formulation",
+    "reinforcement state",
+    "manufacturing process",
+    "processing conditions",
+    "part geometry",
+    "orientation",
+    "conditioning",
+    "thermal history",
+    "measurement/test method",
+    "authoritative source"
+  ],
+  "explicit_prohibition": "Do not infer production tolerance, shrinkage allowance or anisotropic design property from family-level generic data."
+}

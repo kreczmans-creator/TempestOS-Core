@@ -1,0 +1,27 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "mandatory_identity": [
+    "designation",
+    "composition",
+    "specification",
+    "product form",
+    "condition",
+    "processing route where applicable"
+  ],
+  "environment_identity": [
+    "atmosphere",
+    "oxygen partial pressure",
+    "temperature",
+    "time",
+    "surface/protection condition"
+  ],
+  "evidence_states": [
+    "unverified",
+    "source-linked",
+    "cross-checked",
+    "engineering-reviewed",
+    "design-approved"
+  ],
+  "promotion_rule": "No refractory-metal quantitative record becomes a design allowable without exact grade/product-form/condition and environmental context."
+}

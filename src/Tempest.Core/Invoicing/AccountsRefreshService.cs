@@ -46,8 +46,15 @@ public sealed class AccountsRefreshService : IHostedService
     /// <summary>The poll interval used when <see cref="PollMinutesConfigurationKey"/> is not configured, or is configured to something other than a positive integer.</summary>
     public const int DefaultPollMinutes = 60;
 
-    /// <summary>How far ahead <see cref="IAccountsConnector.ListBillsDueAsync"/> is asked to read — wide enough to cover both the 30-day payable tile and the 12-week (84-day) cash-flow series <see cref="AccountsSnapshot"/> computes from this reading.</summary>
-    internal const int BillsHorizonDays = 90;
+    /// <summary>
+    /// How far ahead <see cref="IAccountsConnector.ListBillsDueAsync"/> is asked
+    /// to read — wide enough to cover the 30-day payable tile, the 12-week
+    /// (84-day) cash-flow series <see cref="AccountsSnapshot"/> computes from
+    /// this reading and (`v0.24.0` X7) the six calendar months of
+    /// <see cref="ForwardCashProjection"/>: today plus five whole months
+    /// after the current one is at most 6 × 31 = 186 days.
+    /// </summary>
+    internal const int BillsHorizonDays = ForwardCashProjection.DefaultMonths * 31;
 
     private readonly IAccountsConnector _connector;
     private readonly IAccountsReadingStore _store;

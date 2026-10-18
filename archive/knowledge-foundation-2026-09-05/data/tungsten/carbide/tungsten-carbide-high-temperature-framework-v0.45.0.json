@@ -1,0 +1,23 @@
+{
+  "version": "0.45.0",
+  "status": "screening_framework",
+  "properties": [
+    "hot_hardness",
+    "transverse_rupture_strength",
+    "fracture_toughness",
+    "thermal_conductivity",
+    "thermal_expansion",
+    "thermal_shock_resistance",
+    "oxidation_resistance",
+    "binder_phase_stability"
+  ],
+  "grade_variables": [
+    "WC grain size",
+    "binder fraction",
+    "binder chemistry",
+    "carbon balance",
+    "porosity",
+    "manufacturing route"
+  ],
+  "design_note": "Room-temperature hardness alone is insufficient for high-temperature carbide selection."
+}

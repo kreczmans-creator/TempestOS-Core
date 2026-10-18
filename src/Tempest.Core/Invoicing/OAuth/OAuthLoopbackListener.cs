@@ -24,7 +24,7 @@ internal sealed record OAuthCallback(string? Code, string? State, string? Error,
 /// consoles require an exact redirect URI to be registered ahead of time,
 /// which an ephemeral port — a fresh one every run — can never satisfy.
 /// <see cref="OAuthAuthoriser"/> resolves the configured port
-/// (<c>Invoicing:OAuth:LoopbackPort</c>, default <c>49301</c>) and passes
+/// (<c>Invoicing:OAuth:LoopbackPort</c>, default <c>48131</c>) and passes
 /// it to <paramref name="port"/> here; <c>0</c> (only ever a test's own
 /// choice) keeps the original ephemeral behaviour, so a suite running many
 /// authorisation round trips in parallel never fights itself over one

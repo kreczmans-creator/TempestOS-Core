@@ -1,0 +1,21 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "workflow": [
+    "identify critical characteristics",
+    "select measurement method",
+    "define datum/reference scheme",
+    "define resolution and uncertainty requirement",
+    "define calibration/traceability",
+    "define sampling",
+    "record objective evidence"
+  ],
+  "methods": [
+    "caliper/micrometer",
+    "CMM",
+    "optical measurement",
+    "surface measurement",
+    "gauging",
+    "functional inspection"
+  ]
+}

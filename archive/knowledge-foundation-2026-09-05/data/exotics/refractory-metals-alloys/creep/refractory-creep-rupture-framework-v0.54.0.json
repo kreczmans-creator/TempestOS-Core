@@ -1,0 +1,34 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "mechanisms": [
+    "dislocation creep",
+    "diffusion creep",
+    "grain-boundary processes",
+    "grain growth",
+    "microstructural coarsening"
+  ],
+  "required_data": [
+    "temperature",
+    "stress",
+    "time",
+    "strain",
+    "minimum creep rate",
+    "rupture time",
+    "grain size",
+    "processing route",
+    "environment"
+  ],
+  "assessment_methods": [
+    "creep strain versus time",
+    "minimum creep rate",
+    "stress rupture",
+    "time-temperature parameterisation where validated",
+    "service-life extrapolation within evidence bounds"
+  ],
+  "rules": [
+    "High melting point is not a substitute for creep data.",
+    "Creep performance can depend strongly on grain size and processing history.",
+    "Extrapolation beyond validated temperature/time ranges requires explicit justification."
+  ]
+}

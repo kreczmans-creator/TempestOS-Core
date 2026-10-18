@@ -1,0 +1,45 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "methods": [
+    {
+      "method": "fusion welding",
+      "controls": [
+        "filler compatibility",
+        "heat input",
+        "HAZ",
+        "cracking",
+        "post-weld heat treatment"
+      ]
+    },
+    {
+      "method": "brazing",
+      "controls": [
+        "filler",
+        "brazing temperature",
+        "base-metal microstructure",
+        "joint clearance"
+      ]
+    },
+    {
+      "method": "bolting",
+      "controls": [
+        "preload",
+        "galling",
+        "thermal expansion",
+        "lubricant/coating compatibility"
+      ]
+    },
+    {
+      "method": "diffusion bonding",
+      "controls": [
+        "surface preparation",
+        "temperature",
+        "pressure",
+        "time",
+        "interface cleanliness"
+      ]
+    }
+  ],
+  "rule": "Joint properties may govern the assembly even where the parent material has excellent high-temperature properties."
+}

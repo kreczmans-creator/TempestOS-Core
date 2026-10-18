@@ -462,6 +462,21 @@ public sealed class MainWindowCompositionTests
     }
 
     /// <summary>
+    /// v0.23.0 board N9: the composer builds no withdrawn <c>ReportsView</c>
+    /// (nothing shows it), and builds no <c>ReferenceLibraryCatalogues</c>
+    /// of its own — Staff and Rate cards share the Libraries view's one set.
+    /// </summary>
+    [Fact]
+    public void MainWindowComposer_BuildsNoWithdrawnReportsView_AndSharesOneCatalogueSet()
+    {
+        var source = File.ReadAllText(Path.Combine(RepositoryRoot, "src", "Tempest.Desktop", "Composition", "MainWindowComposer.cs"));
+
+        Assert.DoesNotContain("new ReportsView(", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("new ReferenceLibraryCatalogues(", source, StringComparison.Ordinal);
+        Assert.Equal(2, Regex.Matches(source, @"librariesView\.Catalogues\b").Count);
+    }
+
+    /// <summary>
     /// <see cref="MainWindowComposer"/>'s own four phases —
     /// <c>BuildViews</c>, <c>BuildCoordinators</c>, <c>Wire</c>,
     /// <c>Layout</c> — exist, and <see cref="MainWindow"/>'s own

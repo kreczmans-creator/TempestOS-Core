@@ -1,0 +1,14 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "checks": [
+    "inspection points",
+    "lubrication access",
+    "wear indicators",
+    "consumables",
+    "calibration access",
+    "safe isolation",
+    "replacement procedure",
+    "post-maintenance verification"
+  ]
+}

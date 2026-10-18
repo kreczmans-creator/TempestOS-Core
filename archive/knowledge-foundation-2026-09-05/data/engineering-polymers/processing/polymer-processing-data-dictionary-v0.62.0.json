@@ -1,0 +1,31 @@
+{
+  "version": "0.62.0",
+  "processing_domains": [
+    "injection moulding",
+    "extrusion",
+    "thermoforming",
+    "machining",
+    "compression moulding",
+    "additive manufacturing where applicable"
+  ],
+  "required_context": [
+    "exact grade",
+    "process",
+    "machine/tool conditions",
+    "part geometry",
+    "thermal history",
+    "conditioning",
+    "source"
+  ],
+  "failure_modes": [
+    "sink",
+    "voids",
+    "warpage",
+    "weld lines",
+    "residual stress",
+    "short shot",
+    "burning/degradation",
+    "orientation-driven property variation"
+  ],
+  "rule": "Processing history is part of the material state for polymer engineering."
+}

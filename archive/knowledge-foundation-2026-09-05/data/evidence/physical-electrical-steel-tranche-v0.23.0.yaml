@@ -1,0 +1,142 @@
+- observation_id: OBS-304-PHYSICAL-OUTOKUMPU
+  material_state_id: MAT-STEEL-304
+  designation: EN 1.4301 / ASTM 304 / UNS S30400
+  source_id: WEB-OUTOKUMPU-CORE-PHYSICAL
+  source_url: https://otke-cdn.outokumpu.com/-/media/files/products/core/outokumpu-core-range-datasheet.pdf
+  source_locator: Physical properties, Table 7; Core 304/4301; values according to
+    EN 10088-1
+  temperature_C: 20
+  properties:
+    density:
+      value: 7.9
+      unit: kg/dm3
+    modulus_of_elasticity:
+      value: 200
+      unit: GPa
+    thermal_expansion_20_100:
+      value: 16.0
+      unit: 1e-6/K
+    thermal_conductivity:
+      value: 15
+      unit: W/m/K
+    thermal_capacity:
+      value: 500
+      unit: J/kg/K
+    electrical_resistivity:
+      value: 0.73
+      unit: ohm*mm2/m
+    magnetizable:
+      value: false
+      unit: boolean
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-316L-PHYSICAL-OUTOKUMPU
+  material_state_id: MAT-STEEL-316L
+  designation: EN 1.4404 / ASTM 316L / UNS S31603
+  source_id: WEB-OUTOKUMPU-SUPRA-PHYSICAL
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Physical properties, Table 7; Supra 316L/4404; values according
+    to EN 10088-1
+  temperature_C: 20
+  properties:
+    density:
+      value: 8.0
+      unit: kg/dm3
+    modulus_of_elasticity:
+      value: 200
+      unit: GPa
+    thermal_expansion_20_100:
+      value: 16.0
+      unit: 1e-6/K
+    thermal_conductivity:
+      value: 15
+      unit: W/m/K
+    thermal_capacity:
+      value: 500
+      unit: J/kg/K
+    electrical_resistivity:
+      value: 0.75
+      unit: ohm*mm2/m
+    magnetizable:
+      value: false
+      unit: boolean
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-PHYSICAL-AKSTEEL
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  source_id: WEB-AK-17-4PH-PHYSICAL
+  source_url: https://www.aksteel.nl/files/downloads/172888_armco_17-4_ph_pdb_euro_final_secured_89.pdf
+  source_locator: Table 17 — Physical Properties; conditions A, H900, H1075, H1150
+  temperature_C: 20
+  properties:
+    density:
+      A:
+        value: 7.78
+        unit: g/cm3
+      H900:
+        value: 7.8
+        unit: g/cm3
+      H1075:
+        value: 7.81
+        unit: g/cm3
+      H1150:
+        value: 7.82
+        unit: g/cm3
+    electrical_resistivity:
+      A:
+        value: 100
+        unit: microohm*cm
+      H900:
+        value: 80
+        unit: microohm*cm
+      H1075:
+        value: 80
+        unit: microohm*cm
+    specific_heat:
+      A:
+        value: 460
+        unit: J/kg/K
+      H900:
+        value: 460
+        unit: J/kg/K
+    thermal_expansion:
+      21_93_C:
+        A: 10.8
+        H900: 10.8
+        H1075: 11.3
+        H1150: 11.9
+      21_204_C:
+        A: 10.8
+        H900: 10.8
+        H1075: 11.7
+        H1150: 12.4
+      21_316_C:
+        A: 11.2
+        H900: 11.3
+        H1075: 11.9
+        H1150: 12.8
+      21_427_C:
+        A: 11.3
+        H900: 11.7
+        H1075: 12.2
+        H1150: 12.9
+    thermal_expansion_unit: 1e-6/K
+    thermal_conductivity:
+      149_C:
+        H900: 17.9
+        unit: W/m/K
+      260_C:
+        H900: 19.5
+        unit: W/m/K
+      460_C:
+        H900: 22.5
+        unit: W/m/K
+      482_C:
+        H900: 22.6
+        unit: W/m/K
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only

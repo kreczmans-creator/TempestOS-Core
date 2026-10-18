@@ -85,8 +85,9 @@ public class DashboardExportHostedServiceTests
         var programmePath = Path.Combine(exportDir.Path, "programme.json");
         var contractsPath = Path.Combine(exportDir.Path, "contracts.json");
         var quotesPath = Path.Combine(exportDir.Path, "quotes.json");
+        var reviewsPath = Path.Combine(exportDir.Path, "reviews.json");
 
-        foreach (var path in new[] { statusPath, programmePath, contractsPath, quotesPath })
+        foreach (var path in new[] { statusPath, programmePath, contractsPath, quotesPath, reviewsPath })
         {
             Assert.True(File.Exists(path), path);
             Assert.False(File.Exists(path + ".tmp"), path);
@@ -95,6 +96,7 @@ public class DashboardExportHostedServiceTests
 
         Assert.Empty(JsonNode.Parse(await File.ReadAllTextAsync(contractsPath))!["contracts"]!.AsArray());
         Assert.Empty(JsonNode.Parse(await File.ReadAllTextAsync(quotesPath))!["quotes"]!.AsArray());
+        Assert.Empty(JsonNode.Parse(await File.ReadAllTextAsync(reviewsPath))!["items"]!.AsArray());
 
         Assert.NotNull(service.LastExportAttemptedAt);
 

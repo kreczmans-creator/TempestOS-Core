@@ -133,14 +133,15 @@ public sealed class InvoicesGroupingTests
             Assert.Contains($"Terms {sentRecent.PaymentTerms.DisplayName()}", sentText, StringComparison.Ordinal);
             Assert.Contains($"Due {sentRecent.DueOn:yyyy-MM-dd}", sentText, StringComparison.Ordinal);
 
-            // ---- captions state the counts and, for Outstanding, the own-due-date rule (`TD-180`) ----
+            // ---- captions state the counts and, for Outstanding, the own-due-date rule (`TD-180`) — in the operator's words, never a code reference (`TD-187`) ----
             AssertHeaderPresent(view, "New (1)");
             AssertHeaderPresent(view, "Available to invoice (1)");
             AssertHeaderPresent(view, "Sent (3)");
             Assert.Contains(
                 view.GetLogicalDescendants().OfType<TextBlock>(),
                 t => t.Text != null && t.Text.StartsWith("Outstanding / Overdue (3)", StringComparison.Ordinal)
-                     && t.Text.Contains("its own due date", StringComparison.Ordinal));
+                     && t.Text.Contains("its due date", StringComparison.Ordinal)
+                     && !t.Text.Contains("TD-", StringComparison.Ordinal));
 
             // ---- Closed is collapsed by default ----
             var closedExpander = Assert.IsType<Expander>(groups["Closed"]);

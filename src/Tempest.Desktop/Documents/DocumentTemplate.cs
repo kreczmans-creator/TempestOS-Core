@@ -21,6 +21,7 @@ namespace Tempest.Desktop.Documents;
 /// <param name="BankAccountNumber">The bank account number. <see langword="null"/> when none is recorded.</param>
 /// <param name="BankAccountName">The account holder's own name, where it differs from <see cref="LegalName"/> enough to state separately. <see langword="null"/> when none is recorded.</param>
 /// <param name="BankIban">The IBAN, for an international client. <see langword="null"/> when none is recorded.</param>
+/// <param name="VatNumber">The VAT registration number (`v0.24.0` U1, design §8 "PDF identity": Xero's <c>TaxNumber</c> when a reading of Xero exists). <see langword="null"/> when none is recorded — the footer then shows no VAT number, as before.</param>
 public sealed record OrganisationIdentity(
     string LegalName,
     string? CompanyNumber,
@@ -32,7 +33,8 @@ public sealed record OrganisationIdentity(
     string? BankSortCode = null,
     string? BankAccountNumber = null,
     string? BankAccountName = null,
-    string? BankIban = null)
+    string? BankIban = null,
+    string? VatNumber = null)
 {
     /// <summary>
     /// The Tempest Design Engineering Ltd defaults — transcribed verbatim
@@ -63,7 +65,7 @@ public sealed record OrganisationIdentity(
 
     /// <summary>
     /// The footer's own left-hand text — legal name, then "Company No.
-    /// {n}" and any address lines/email/phone that are actually recorded,
+    /// {n}", "VAT No. {n}" (`v0.24.0` U1) and any address lines/email/phone that are actually recorded,
     /// each joined with " · " — the same left-hand shape the design
     /// system's own footer slot uses (name, then company number).
     /// </summary>
@@ -73,6 +75,8 @@ public sealed record OrganisationIdentity(
 
         if (!string.IsNullOrWhiteSpace(CompanyNumber))
             parts.Add($"Company No. {CompanyNumber}");
+        if (!string.IsNullOrWhiteSpace(VatNumber))
+            parts.Add($"VAT No. {VatNumber}");
         if (!string.IsNullOrWhiteSpace(AddressLine1))
             parts.Add(AddressLine1!);
         if (!string.IsNullOrWhiteSpace(AddressLine2))
@@ -521,7 +525,7 @@ public static class DocumentTemplate
     /// <param name="documentType">The document's own type, upper case (e.g. "QUOTATION", "ISSUE SHEET").</param>
     /// <param name="referenceLine">The reference/date/status row — already formatted by the caller (each document's own fields differ).</param>
     /// <remarks>
-    /// <b>The lockup, when it loaded (`WP 21.2A`).</b> <see cref="DocumentLogo.HorizontalNavy"/>
+    /// <b>The lockup, when it loaded (`WP 21.2A`).</b> <see cref="DocumentLogo.HorizontalInk"/>
     /// draws in place of the plain "TEMPEST"/"OS" text pair this method drew
     /// before this Work Package — the identical fallback
     /// <see cref="DocumentTemplate"/>'s own class remarks already disclosed
@@ -538,7 +542,7 @@ public static class DocumentTemplate
         var top = state.Y;
         float leftBlockBottom;
 
-        if (DocumentLogo.HorizontalNavy is { } logo && logo.Height > 0)
+        if (DocumentLogo.HorizontalInk is { } logo && logo.Height > 0)
         {
             const float logoHeight = 18f;
             var logoWidth = logoHeight * logo.Width / logo.Height;
@@ -620,7 +624,7 @@ public static class DocumentTemplate
     /// then every text run, per page, in that order; each <see cref="TextRun.FontRole"/>
     /// resolved to its own embedded typeface via <see cref="DocumentFonts.For"/>
     /// (`WP 21.2A`), each <see cref="ImageRun"/> drawn from
-    /// <see cref="DocumentLogo.HorizontalNavy"/> (today's only image source —
+    /// <see cref="DocumentLogo.HorizontalInk"/> (today's only image source —
     /// see that property's own remarks for what an unloadable resource
     /// degrades to instead). <paramref name="landscape"/> must match the
     /// <see cref="LayoutState.Landscape"/> <paramref name="pages"/> was laid
@@ -640,7 +644,7 @@ public static class DocumentTemplate
             using var textPaint = new SKPaint { IsAntialias = true };
             using var linePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
             using var imagePaint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High };
-            var logo = DocumentLogo.HorizontalNavy;
+            var logo = DocumentLogo.HorizontalInk;
 
             foreach (var page in pages)
             {

@@ -1,0 +1,22 @@
+{
+  "version": "0.62.0",
+  "reinforcement_classes": [
+    "glass fibre",
+    "carbon fibre",
+    "mineral",
+    "PTFE/tribological fillers",
+    "other formulation additives"
+  ],
+  "required_context": [
+    "matrix polymer",
+    "exact grade",
+    "filler type",
+    "filler loading",
+    "fibre length/form",
+    "orientation",
+    "process",
+    "conditioning",
+    "source"
+  ],
+  "rule": "Reinforcement can change mechanical, thermal, electrical and dimensional behaviour simultaneously."
+}

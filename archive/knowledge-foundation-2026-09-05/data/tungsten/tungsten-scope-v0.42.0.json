@@ -1,0 +1,46 @@
+{
+  "version": "0.42.0",
+  "status": "foundation_started",
+  "families": [
+    "commercially_pure_tungsten",
+    "tungsten_heavy_alloys",
+    "tungsten_carbide",
+    "tungsten_copper_composites",
+    "tungsten_rhenium",
+    "tungsten_lanthanated"
+  ],
+  "required_dimensions": [
+    "designation",
+    "composition",
+    "density",
+    "melting_point",
+    "elastic_modulus",
+    "poissons_ratio",
+    "yield_strength",
+    "uts",
+    "elongation",
+    "hardness",
+    "thermal_conductivity",
+    "cte",
+    "specific_heat",
+    "electrical_resistivity",
+    "corrosion_environment",
+    "manufacturing",
+    "joining",
+    "machinability",
+    "standards",
+    "cost",
+    "availability",
+    "uses",
+    "provenance",
+    "evidence_status"
+  ],
+  "special_engineering_controls": [
+    "brittle_ductile_transition_behaviour",
+    "high_temperature_strength_and_recrystallisation",
+    "radiation_erosion_environment_where_relevant",
+    "powder_metallurgy_and_sintering_routes",
+    "heavy_alloy_binder_composition",
+    "carbide_versus_metal_distinction"
+  ]
+}

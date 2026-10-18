@@ -1,0 +1,248 @@
+[
+  {
+    "id": "TI-CP",
+    "designation": "Commercially pure titanium",
+    "family": "titanium",
+    "system": "alpha titanium",
+    "density_g_cm3": [
+      4.5,
+      4.52
+    ],
+    "elastic_modulus_GPa": [
+      100,
+      110
+    ],
+    "yield_strength_MPa": [
+      170,
+      550
+    ],
+    "ultimate_tensile_strength_MPa": [
+      240,
+      620
+    ],
+    "thermal_conductivity_W_mK": [
+      15,
+      25
+    ],
+    "cte_per_K": [
+      8.5e-06,
+      9e-06
+    ],
+    "electrical_resistivity_ohm_m": [
+      4e-07,
+      5.5e-07
+    ],
+    "corrosion": "Excellent resistance in many oxidising/aqueous environments; application-specific chemistry still governs.",
+    "manufacturing": "Wrought, sheet, plate, bar, tube and specialist additive/cast forms.",
+    "machinability": "Poor-to-moderate; low thermal conductivity and chemical reactivity demand controlled machining.",
+    "cost": "expensive",
+    "availability": "good specialist",
+    "uses": [
+      "chemical equipment",
+      "aerospace",
+      "medical devices",
+      "lightweight corrosion-resistant structures"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify exact grade, product form, heat treatment, temperature, test method and primary source before design use."
+  },
+  {
+    "id": "TI64",
+    "designation": "Ti-6Al-4V",
+    "family": "titanium",
+    "system": "alpha-beta titanium",
+    "density_g_cm3": [
+      4.42,
+      4.45
+    ],
+    "elastic_modulus_GPa": [
+      105,
+      115
+    ],
+    "yield_strength_MPa": [
+      800,
+      1000
+    ],
+    "ultimate_tensile_strength_MPa": [
+      900,
+      1100
+    ],
+    "thermal_conductivity_W_mK": [
+      6,
+      8
+    ],
+    "cte_per_K": [
+      8.5e-06,
+      9.5e-06
+    ],
+    "electrical_resistivity_ohm_m": [
+      1.6e-06,
+      1.8e-06
+    ],
+    "corrosion": "Excellent general corrosion resistance; galvanic compatibility remains relevant.",
+    "manufacturing": "Widely available wrought, forged, sheet, bar and additive forms.",
+    "machinability": "difficult; heat generation, tool wear and galling require control.",
+    "cost": "expensive",
+    "availability": "good specialist",
+    "uses": [
+      "aerospace structures",
+      "rotating hardware",
+      "medical implants",
+      "high-performance mechanisms"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify exact grade, product form, heat treatment, temperature, test method and primary source before design use."
+  },
+  {
+    "id": "IN718",
+    "designation": "Inconel 718 / nickel alloy 718",
+    "family": "nickel-base superalloy",
+    "system": "Ni-Fe-Cr precipitation-hardened",
+    "density_g_cm3": [
+      8.1,
+      8.2
+    ],
+    "elastic_modulus_GPa": [
+      190,
+      205
+    ],
+    "yield_strength_MPa": [
+      900,
+      1200
+    ],
+    "ultimate_tensile_strength_MPa": [
+      1100,
+      1450
+    ],
+    "thermal_conductivity_W_mK": [
+      10,
+      15
+    ],
+    "cte_per_K": [
+      1.2e-05,
+      1.4e-05
+    ],
+    "electrical_resistivity_ohm_m": [
+      1.1e-06,
+      1.4e-06
+    ],
+    "corrosion": "Good oxidation/corrosion resistance; service environment and temperature must be specified.",
+    "manufacturing": "Wrought, forged, cast and additive forms; heat treatment is critical.",
+    "machinability": "difficult; work hardening and heat retention are significant.",
+    "cost": "expensive",
+    "availability": "good specialist",
+    "uses": [
+      "gas turbines",
+      "aerospace engines",
+      "high-temperature fasteners",
+      "pressure hardware"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify exact grade, product form, heat treatment, temperature, test method and primary source before design use."
+  },
+  {
+    "id": "IN625",
+    "designation": "Inconel 625 / nickel alloy 625",
+    "family": "nickel-base superalloy",
+    "system": "Ni-Cr-Mo-Nb solid-solution strengthened",
+    "density_g_cm3": [
+      8.4,
+      8.5
+    ],
+    "elastic_modulus_GPa": [
+      200,
+      210
+    ],
+    "yield_strength_MPa": [
+      400,
+      800
+    ],
+    "ultimate_tensile_strength_MPa": [
+      800,
+      1000
+    ],
+    "thermal_conductivity_W_mK": [
+      9,
+      12
+    ],
+    "cte_per_K": [
+      1.2e-05,
+      1.4e-05
+    ],
+    "electrical_resistivity_ohm_m": [
+      1.2e-06,
+      1.4e-06
+    ],
+    "corrosion": "Strong resistance across many aggressive environments; exact chemistry/service condition remains decisive.",
+    "manufacturing": "Wrought and additive forms widely used; welding performance is an important advantage.",
+    "machinability": "difficult to moderate depending on condition.",
+    "cost": "expensive",
+    "availability": "good specialist",
+    "uses": [
+      "chemical processing",
+      "marine",
+      "aerospace",
+      "heat exchangers",
+      "additive-manufactured hardware"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify exact grade, product form, heat treatment, temperature, test method and primary source before design use."
+  },
+  {
+    "id": "H230",
+    "designation": "Haynes 230",
+    "family": "nickel-base superalloy",
+    "system": "Ni-Cr-W-Mo",
+    "density_g_cm3": [
+      8.9,
+      9.1
+    ],
+    "elastic_modulus_GPa": [
+      190,
+      210
+    ],
+    "yield_strength_MPa": [
+      250,
+      500
+    ],
+    "ultimate_tensile_strength_MPa": [
+      600,
+      900
+    ],
+    "thermal_conductivity_W_mK": [
+      8,
+      12
+    ],
+    "cte_per_K": [
+      1.2e-05,
+      1.4e-05
+    ],
+    "electrical_resistivity_ohm_m": [
+      1.1e-06,
+      1.3e-06
+    ],
+    "corrosion": "Designed for oxidation resistance and high-temperature environments.",
+    "manufacturing": "Wrought sheet/plate/bar and specialist fabrication routes.",
+    "machinability": "difficult.",
+    "cost": "expensive",
+    "availability": "specialist",
+    "uses": [
+      "combustion systems",
+      "furnaces",
+      "heat exchangers",
+      "high-temperature tooling"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify exact grade, product form, heat treatment, temperature, test method and primary source before design use."
+  }
+]

@@ -42,7 +42,30 @@ Every Work Package still ships with:
 - The architecture invariants (`DependencyDirectionTests`) green.
 - An ADR for any decision that constrains future code.
 - A row in `PHYSICAL_REVIEW.md` §7 for any new user-facing surface.
+- For a new engineering calculation, its 2D reference diagram in
+  `CalculationDiagrams.All` (`ADR-0158`, Engineering Principle 33): a
+  calculation is not complete without one, and the coverage test fails
+  until it is drawn.
 - One Release Notes line.
+
+## NuGet lock files
+
+Every project commits a `packages.lock.json` (`ADR-0160`), and CI and
+the release workflow restore with `--locked-mode`, so a lock that does
+not match the project fails the build. After adding, removing or
+changing a `PackageReference`, regenerate every lock and commit them
+with the change:
+
+```
+dotnet restore src/TempestOS.slnx --force-evaluate
+```
+
+Locally (no `CI=true`) a plain `dotnet restore` also rewrites a stale
+lock; check `git status` for changed `packages.lock.json` files before
+pushing. Each lock carries `net10.0`, `net10.0/win-x64` and
+`net10.0/linux-x64` sections (`RuntimeIdentifiers` in
+`Directory.Build.props`); that is expected. Dependabot's NuGet pull
+requests update the lock files themselves.
 
 ## Branch protection on `main`
 
@@ -50,7 +73,9 @@ Configured in GitHub under **Settings → Branches → Branch protection
 rules** for `main`:
 
 - Required status check: `CI Gate`, strict (branch must be up to date
-  before merging).
+  before merging). CI runs on a pull request, not on a push to a
+  feature branch: open the PR (a draft is fine) or run the workflow by
+  hand to get a CI result for a branch.
 - Pull request required before merging.
 - **0 required approvals** — this is a solo-owner repository, and an
   owner cannot approve their own PR; the required `CI Gate` check and

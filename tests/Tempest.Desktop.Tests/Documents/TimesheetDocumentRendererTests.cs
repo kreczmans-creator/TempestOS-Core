@@ -91,3 +91,35 @@ internal static class TimesheetDocumentModelFixtures
         GeneratedAtUtc: new DateTimeOffset(2026, 3, 8, 9, 5, 0, TimeSpan.Zero),
         ApplicationVersionText: "TempestOS 0.21.0 (2e655db)");
 }
+
+/// <summary>The timesheet heading names the person, never the Windows SID or a GUID that is the session's identity id.</summary>
+[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("linux")]
+[SupportedOSPlatform("macos")]
+public sealed class TimesheetPrincipalLabelTests
+{
+    private const string Sid = "S-1-12-1-1748531820-1234567890-987654321-123456789";
+
+    [Theory]
+    [InlineData("Priya Patel", Sid, "Priya Patel")]
+    [InlineData("  Priya Patel ", Sid, "Priya Patel")]
+    [InlineData(null, "priya.patel", "priya.patel")]
+    [InlineData(Sid, Sid, TimesheetPrincipalLabel.Unnamed)]
+    [InlineData(null, Sid, TimesheetPrincipalLabel.Unnamed)]
+    [InlineData(null, "3f2504e0-4f89-11d3-9a0c-0305e82c3301", TimesheetPrincipalLabel.Unnamed)]
+    [InlineData("", "  ", TimesheetPrincipalLabel.NoPrincipal)]
+    [InlineData(null, null, TimesheetPrincipalLabel.NoPrincipal)]
+    public void Resolve_PrefersTheDisplayName_AndNeverReturnsAMachineIdentifier(string? displayName, string? identityId, string expected) =>
+        Assert.Equal(expected, TimesheetPrincipalLabel.Resolve(displayName, identityId));
+
+    [AvaloniaFact]
+    public void Render_ForAWindowsPrincipal_HeadsTheDocumentWithTheDisplayName_NotTheSid()
+    {
+        var model = TimesheetDocumentModelFixtures.Minimal() with { PrincipalName = TimesheetPrincipalLabel.Resolve("Priya Patel", Sid) };
+
+        var text = PdfTextExtractor.ExtractText(new TimesheetDocumentRenderer().Render(model).ToArray());
+
+        Assert.Contains("Priya Patel", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("S-1-12-1", text, StringComparison.Ordinal);
+    }
+}

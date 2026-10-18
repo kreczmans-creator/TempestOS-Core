@@ -3,7 +3,7 @@ using Tempest.Desktop.Documents;
 namespace Tempest.Desktop.Tests.Documents;
 
 /// <summary>
-/// The design system's three type families and the horizontal navy lockup,
+/// The design system's three type families and the horizontal ink lockup,
 /// embedded as <c>Tempest.Desktop</c> resources (`WP 21.2A`, closing `WP
 /// 20.10G`'s own disclosed gap) — that every resource genuinely loads
 /// through <see cref="DocumentFonts"/>/<see cref="DocumentLogo"/>, no
@@ -30,9 +30,9 @@ public sealed class DocumentFontsAndLogoTests
     public void InterVariable_LoadsFromTheEmbeddedResource() => Assert.True(DocumentFonts.InterVariableLoaded);
 
     [Fact]
-    public void HorizontalNavyLockup_DecodesFromTheEmbeddedResource()
+    public void HorizontalInkLockup_DecodesFromTheEmbeddedResource()
     {
-        var logo = DocumentLogo.HorizontalNavy;
+        var logo = DocumentLogo.HorizontalInk;
 
         Assert.NotNull(logo);
         Assert.True(logo!.Width > 0);

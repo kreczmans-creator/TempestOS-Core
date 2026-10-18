@@ -1,0 +1,23 @@
+{
+  "version": "0.69.0",
+  "purpose": "Map major design domains to commonly used standards/codes.",
+  "domains": {
+    "fasteners-joints": [
+      "ISO 898-1 — mechanical and physical properties of fasteners made of carbon steel and alloy steel",
+      "VDI 2230 — systematic calculation of highly stressed bolted joints"
+    ],
+    "welding": [
+      "ISO 15614 — specification and qualification of welding procedures for metallic materials",
+      "ISO 5817 — quality levels for imperfections in fusion-welded joints"
+    ],
+    "pressure": [
+      "ASME BPVC Section VIII — pressure vessels",
+      "EN 13445 — unfired pressure vessels"
+    ],
+    "metallic-fatigue": [
+      "ISO 12107 — fatigue testing statistical planning and analysis",
+      "ASTM E466 — constant-amplitude axial fatigue"
+    ]
+  },
+  "rule": "The applicable customer, regulatory, product and jurisdictional code takes precedence; editions must be confirmed for the project."
+}

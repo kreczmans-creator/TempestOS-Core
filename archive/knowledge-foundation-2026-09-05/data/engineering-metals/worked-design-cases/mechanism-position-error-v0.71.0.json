@@ -1,0 +1,15 @@
+{
+  "version": "0.71.0",
+  "status": "worked-framework",
+  "problem": "Estimate output-position error in a linkage.",
+  "workflow": [
+    "define nominal geometry",
+    "identify dimensional/angular contributors",
+    "calculate kinematic sensitivity",
+    "include joint clearance/backlash",
+    "include compliance where significant",
+    "evaluate worst-case positions",
+    "allocate tolerances",
+    "verify measured motion"
+  ]
+}

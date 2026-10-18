@@ -1,0 +1,21 @@
+{
+  "version": "0.65.0",
+  "purpose": "Screen sustained-load deformation.",
+  "equation": "ε(t) = J(t,T,condition)·σ for linear viscoelastic screening where applicable",
+  "inputs": [
+    "stress history",
+    "time",
+    "temperature",
+    "conditioning",
+    "creep compliance J"
+  ],
+  "checks": [
+    "nonlinear stress effects",
+    "temperature dependence",
+    "physical ageing",
+    "environment",
+    "exact grade"
+  ],
+  "warning": "Do not extrapolate beyond validated stress/time/temperature ranges.",
+  "status": "screening calculation pattern"
+}

@@ -1,0 +1,58 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "relative_screening": {
+    "ABS": {
+      "cost": "cheap",
+      "availability": "very good"
+    },
+    "PA": {
+      "cost": "cheap-to-medium",
+      "availability": "very good"
+    },
+    "POM": {
+      "cost": "medium",
+      "availability": "very good"
+    },
+    "PC": {
+      "cost": "medium",
+      "availability": "very good"
+    },
+    "PBT": {
+      "cost": "medium",
+      "availability": "good"
+    },
+    "PPS": {
+      "cost": "expensive",
+      "availability": "good specialist"
+    },
+    "PEI": {
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    "PPA": {
+      "cost": "medium-to-expensive",
+      "availability": "good specialist"
+    },
+    "LCP": {
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    "PEEK": {
+      "cost": "very expensive",
+      "availability": "specialist"
+    }
+  },
+  "drivers": [
+    "resin price",
+    "reinforcement",
+    "additives",
+    "grade volume",
+    "processing temperature",
+    "tooling",
+    "machining",
+    "certification",
+    "supplier concentration"
+  ],
+  "rule": "Cost classifications are screening metadata and are not live quotations."
+}

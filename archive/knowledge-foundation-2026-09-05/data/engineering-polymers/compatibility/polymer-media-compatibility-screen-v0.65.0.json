@@ -1,0 +1,94 @@
+{
+  "version": "0.65.0",
+  "purpose": "First-pass media compatibility screening; not a resistance certification.",
+  "media": [
+    "water",
+    "humidity",
+    "acids",
+    "alkalis",
+    "oils",
+    "fuels",
+    "hydrocarbons",
+    "alcohols",
+    "ketones",
+    "esters",
+    "aromatic solvents",
+    "UV/weathering",
+    "vacuum/outgassing"
+  ],
+  "records": [
+    [
+      "PA6",
+      "water/humidity",
+      "High sensitivity",
+      "Conditioning and dimensional change must be assessed"
+    ],
+    [
+      "PA66",
+      "water/humidity",
+      "High sensitivity",
+      "Conditioning and dimensional change must be assessed"
+    ],
+    [
+      "PA12",
+      "water/humidity",
+      "Moderate sensitivity",
+      "Lower uptake than PA6/66 but still state dependent"
+    ],
+    [
+      "POM",
+      "water/humidity",
+      "Generally lower sensitivity",
+      "Check dimensional and chemical context"
+    ],
+    [
+      "PC",
+      "solvents/stress cracking",
+      "High concern",
+      "Chemical exposure under stress requires specific evidence"
+    ],
+    [
+      "PBT",
+      "water/humidity/hydrolysis",
+      "Application dependent",
+      "Temperature, moisture and grade matter"
+    ],
+    [
+      "PPS",
+      "chemicals",
+      "Generally strong resistance",
+      "Verify exact medium, temperature and grade"
+    ],
+    [
+      "PEI",
+      "chemicals",
+      "Application dependent",
+      "Verify exact medium and temperature"
+    ],
+    [
+      "PPA",
+      "water/humidity",
+      "Condition dependent",
+      "Moisture affects dimensions and properties"
+    ],
+    [
+      "LCP",
+      "chemicals/moisture",
+      "Generally strong resistance",
+      "Verify exact formulation"
+    ],
+    [
+      "PEEK",
+      "chemicals/high temperature",
+      "Generally strong resistance",
+      "Verify exact medium and grade"
+    ],
+    [
+      "ABS",
+      "solvents/UV",
+      "Application dependent",
+      "Environmental stress cracking may be relevant"
+    ]
+  ],
+  "rule": "Compatibility depends on concentration, temperature, exposure time, stress and exact grade."
+}

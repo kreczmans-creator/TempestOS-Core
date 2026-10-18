@@ -8,6 +8,7 @@ using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Core.Quotations;
 using Tempest.Desktop;
 using Tempest.Desktop.Quotations;
@@ -78,6 +79,24 @@ public sealed class QuotesView : UserControl
     private readonly Button _newQuoteButton = new() { Content = "New Quote", MinHeight = DesignTokens.ControlSizeMedium };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
+    private readonly List<XeroSyncBadgeControl> _xeroBadges = [];
+
+    /// <summary>
+    /// Where each quotation's Xero badge is read from (`v0.24.0` U3,
+    /// <see cref="XeroSyncBadgeControl"/>). <see langword="null"/> — Xero is
+    /// not the configured connector, or a test that does not thread it
+    /// through — shows no badge.
+    /// </summary>
+    public IXeroBadgeSource? XeroBadges { get; set; }
+
+    /// <summary>
+    /// Where an export starts — the quote's own project folder (or its
+    /// quote subfolder), exactly as the project's Quote tab does
+    /// (<c>ProjectQuoteView.ProjectFolders</c>, colour review board B4).
+    /// <see langword="null"/>, or a locator with nothing to offer, leaves
+    /// the picker at its own default.
+    /// </summary>
+    public ProjectFolderLocator? ProjectFolders { get; set; }
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -178,14 +197,23 @@ public sealed class QuotesView : UserControl
 
         var asOf = _time.GetUtcNow();
 
-        var draft = rows.Where(r => r.Quotation.Status == QuotationStatus.Draft).OrderByDescending(r => r.Quotation.QuoteDate).ToList();
+        // Runbook C3: "New" is everything not yet sent — a draft, one in
+        // review, and an approved revision waiting to go.
+        var draft = rows
+            .Where(r => r.Quotation.Status is QuotationStatus.Draft or QuotationStatus.InReview or QuotationStatus.Approved)
+            .OrderByDescending(r => r.Quotation.QuoteDate).ToList();
         var sent = rows.Where(r => r.Quotation.Status == QuotationStatus.Sent).OrderByDescending(r => r.Quotation.SentOn).ToList();
         var outstanding = sent.Where(r => IsOutstanding(r.Quotation, asOf)).ToList();
 
         _groups.Children.Clear();
+        _xeroBadges.Clear();
         _groups.Children.Add(BuildGroup("New", draft));
         _groups.Children.Add(BuildGroup("Sent", sent));
         _groups.Children.Add(BuildGroup("Outstanding (sent more than seven days ago)", outstanding));
+
+        // `v0.24.0` U3: each badge reads local state only (never Xero), off
+        // no thread but this one's continuations — the list is already shown.
+        await Task.WhenAll(_xeroBadges.Select(b => b.LoadAsync())).ConfigureAwait(true);
     }
 
     /// <summary>A disclosed heuristic — Sent, and more than seven days since <see cref="Quotation.SentOn"/>, mirroring <c>OperationalGovernance.IsOverdueAt</c>'s own named "days since" shape.</summary>
@@ -252,7 +280,7 @@ public sealed class QuotesView : UserControl
 
         rows.Children.Add(new TextBlock
         {
-            Text = $"{referenceLabel} — {row.ProjectName} — Client {row.ClientName} — {MoneyDisplay.Format(quote.Total)}",
+            Text = $"{referenceLabel} {QuotationExport.RevisionText(quote)} — {QuotationExport.StatusText(quote)} — {row.ProjectName} — Client {row.ClientName} — {MoneyDisplay.Format(quote.Total)}",
             FontWeight = DesignTokens.WeightHeading,
             FontSize = DesignTokens.FontSizeBody,
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,
@@ -285,6 +313,15 @@ public sealed class QuotesView : UserControl
         actions.Children.Add(export);
 
         rows.Children.Add(actions);
+
+        if (XeroBadges is { } xero)
+        {
+            var badge = new XeroSyncBadgeControl(
+                xero, XeroDocumentRef.For(XeroDocumentKind.Quote, quote.Id), quote.Reference, offerSendToXero: XeroIssuedPdf.IsIssued(quote));
+            badge.ActionCompleted += (message, outcome) => Report(message, outcome.Succeeded);
+            _xeroBadges.Add(badge);
+            rows.Children.Add(badge);
+        }
 
         var border = new Border
         {
@@ -325,13 +362,19 @@ public sealed class QuotesView : UserControl
             _openQuote(id, createdId);
     }
 
+    /// <summary>
+    /// Renders and saves the sheet — the identical model, start folder and
+    /// status text the project's own Quote tab exports
+    /// (<see cref="QuotationSheetModelBuilder"/>, colour review board B4).
+    /// </summary>
     private async Task OnExportAsync(Guid quotationId)
     {
         if (await _domainContext.Repository.FindAsync(quotationId, CancellationToken.None).ConfigureAwait(true) is not Quotation quote)
             return;
 
+        var startFolder = await QuotationSheetModelBuilder.StartFolderAsync(ProjectFolders, quote.ParentId, CancellationToken.None).ConfigureAwait(true);
         var destination = await _filePicker
-            .PickSavePathAsync(new SavePickerRequest($"Export {quote.Reference}", $"{SanitiseFileNameSegment(quote.Reference)}-quote.pdf"), CancellationToken.None)
+            .PickSavePathAsync(new SavePickerRequest($"Export {quote.Reference} {QuotationExport.RevisionText(quote)}", QuotationExport.FileName(quote), startFolder), CancellationToken.None)
             .ConfigureAwait(true);
 
         if (destination is null)
@@ -340,53 +383,23 @@ public sealed class QuotesView : UserControl
             return;
         }
 
-        var (projectCode, projectName) = await ResolveProjectAsync(quote.ParentId).ConfigureAwait(true);
-        var clientName = await ResolveClientNameAsync(quote.ClientOrganisationId).ConfigureAwait(true);
-
-        var lines = quote.Lines.Select(l => new QuotationSheetLineRow(
-            l.Description,
-            l.Basis == QuotationLineBasis.Hourly ? l.Hours?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : null,
-            l.Basis == QuotationLineBasis.Hourly ? MoneyDisplay.Format(l.Rate!.Value) : null,
-            MoneyDisplay.Format(l.Amount))).ToList();
-
-        var model = new QuotationSheetModel(
-            IssuerName: _issuerName(),
-            ProjectCode: projectCode,
-            ProjectName: projectName,
-            Client: clientName,
-            Reference: quote.Reference,
-            QuoteDate: quote.QuoteDate,
-            ValidityDays: quote.ValidityDays,
-            Currency: quote.Currency.ToString(),
-            Lines: lines,
-            Total: MoneyDisplay.Format(quote.Total),
-            Terms: quote.Terms,
-            Status: quote.Status.ToString(),
-            GeneratedAtUtc: _time.GetUtcNow(),
-            ApplicationVersionText: _applicationVersionText());
-
+        var model = await QuotationSheetModelBuilder.BuildAsync(
+            quote, _domainContext, _organisations, _issuerName(), _applicationVersionText(), _time.GetUtcNow(), CancellationToken.None).ConfigureAwait(true);
         var bytes = _sheetRenderer.Render(model).ToArray();
         await File.WriteAllBytesAsync(destination, bytes, CancellationToken.None).ConfigureAwait(true);
 
-        Report($"Exported to '{destination}'.", succeeded: true);
+        // `v0.24.0` U3: an issued quotation keeps the exact bytes saved, so
+        // its Xero copy carries the same PDF (X6's file source reads it back);
+        // a re-export of the unchanged sheet keeps nothing more.
+        var attached = XeroIssuedPdf.IsIssued(quote)
+                       && await XeroIssuedPdf.AttachAsync(
+                           quote, QuotationExport.FileName(quote), bytes, at => _sheetRenderer.Render(model with { GeneratedAtUtc = at }), CancellationToken.None).ConfigureAwait(true);
+
+        Report($"Exported to '{destination}'.{(attached ? " Quote sheet kept on the quotation." : string.Empty)}", succeeded: true);
     }
 
-    private async Task<(string Code, string Name)> ResolveProjectAsync(Guid? projectId)
-    {
-        if (projectId is not { } id || await _domainContext.Repository.FindAsync(id, CancellationToken.None).ConfigureAwait(true) is not { } project)
-            return (string.Empty, string.Empty);
-
-        return ((project as IHasBusinessIdentifier)?.Identifier ?? string.Empty, (project as IHasBusinessIdentifier)?.DisplayName ?? string.Empty);
-    }
-
-    private async Task<string> ResolveClientNameAsync(string? clientOrganisationId)
-    {
-        if (string.IsNullOrWhiteSpace(clientOrganisationId))
-            return "(none)";
-
-        var found = await _organisations.FindAsync(clientOrganisationId, CancellationToken.None).ConfigureAwait(true);
-        return found?.Definition.Name ?? clientOrganisationId;
-    }
+    private Task<string> ResolveClientNameAsync(string? clientOrganisationId) =>
+        QuotationSheetModelBuilder.ResolveClientNameAsync(_organisations, clientOrganisationId, CancellationToken.None);
 
     private void OnWorkspaceChanged(WorkspaceChange change)
     {
@@ -410,13 +423,6 @@ public sealed class QuotesView : UserControl
     {
         _status.Text = message;
         ActionCompleted?.Invoke(message, ActionOutcome.From(succeeded));
-    }
-
-    private static string SanitiseFileNameSegment(string value)
-    {
-        var invalid = Path.GetInvalidFileNameChars();
-        var chars = value.Select(c => invalid.Contains(c) ? '-' : c).ToArray();
-        return new string(chars);
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();

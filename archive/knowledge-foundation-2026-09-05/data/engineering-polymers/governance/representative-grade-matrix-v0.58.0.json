@@ -1,0 +1,222 @@
+[
+  {
+    "family": "ABS",
+    "representative_grade": "general-purpose ABS",
+    "cost": "cheap",
+    "availability": "very good",
+    "primary_selection_drivers": "good toughness; good mouldability; low cost",
+    "primary_watchouts": "temperature; UV; solvents; creep",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "ABS",
+    "representative_grade": "flame-retardant ABS",
+    "cost": "medium",
+    "availability": "good",
+    "primary_selection_drivers": "flammability performance; processability",
+    "primary_watchouts": "FR package effects; temperature; chemical exposure",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PA",
+    "representative_grade": "polyamide 6",
+    "cost": "cheap",
+    "availability": "very good",
+    "primary_selection_drivers": "strength; wear; cost",
+    "primary_watchouts": "moisture; creep; temperature",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PA",
+    "representative_grade": "polyamide 66",
+    "cost": "cheap-to-medium",
+    "availability": "very good",
+    "primary_selection_drivers": "higher-temperature capability than many PA6 applications; strength",
+    "primary_watchouts": "moisture; creep; conditioning",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PA",
+    "representative_grade": "polyamide 12",
+    "cost": "medium",
+    "availability": "good",
+    "primary_selection_drivers": "lower moisture sensitivity; toughness; chemical resistance",
+    "primary_watchouts": "temperature; creep",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "POM",
+    "representative_grade": "polyacetal copolymer",
+    "cost": "medium",
+    "availability": "very good",
+    "primary_selection_drivers": "low friction; dimensional stability; fatigue",
+    "primary_watchouts": "strong oxidisers; temperature; creep",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "POM",
+    "representative_grade": "polyacetal homopolymer",
+    "cost": "medium",
+    "availability": "good",
+    "primary_selection_drivers": "stiffness; wear; machinability",
+    "primary_watchouts": "oxidising environments; temperature; creep",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PC",
+    "representative_grade": "general-purpose polycarbonate",
+    "cost": "medium",
+    "availability": "very good",
+    "primary_selection_drivers": "impact resistance; transparency; processability",
+    "primary_watchouts": "solvents; UV; creep; stress cracking",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PC",
+    "representative_grade": "glass-filled polycarbonate",
+    "cost": "medium-to-expensive",
+    "availability": "good",
+    "primary_selection_drivers": "stiffness; dimensional stability",
+    "primary_watchouts": "anisotropy; impact changes; creep; processing history",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PBT",
+    "representative_grade": "unfilled PBT",
+    "cost": "medium",
+    "availability": "good",
+    "primary_selection_drivers": "electrical insulation; dimensional stability; processability",
+    "primary_watchouts": "hydrolysis; moisture; creep",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PBT",
+    "representative_grade": "glass-filled PBT",
+    "cost": "medium",
+    "availability": "good",
+    "primary_selection_drivers": "stiffness; dimensional stability; temperature",
+    "primary_watchouts": "anisotropy; hydrolysis; weld lines",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PPS",
+    "representative_grade": "unfilled PPS",
+    "cost": "expensive",
+    "availability": "specialist",
+    "primary_selection_drivers": "temperature; chemical resistance; low moisture uptake",
+    "primary_watchouts": "brittleness; processing",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PPS",
+    "representative_grade": "glass-filled PPS",
+    "cost": "expensive",
+    "availability": "good specialist",
+    "primary_selection_drivers": "stiffness; temperature; chemical resistance",
+    "primary_watchouts": "anisotropy; weld lines; brittleness",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PEI",
+    "representative_grade": "unfilled PEI",
+    "cost": "expensive",
+    "availability": "specialist",
+    "primary_selection_drivers": "temperature; flame performance; dimensional stability",
+    "primary_watchouts": "creep; chemical exposure; notch sensitivity",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PEI",
+    "representative_grade": "glass-filled PEI",
+    "cost": "expensive",
+    "availability": "specialist",
+    "primary_selection_drivers": "stiffness; dimensional stability; temperature",
+    "primary_watchouts": "anisotropy; processing; creep",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PPA",
+    "representative_grade": "semi-aromatic polyamide",
+    "cost": "medium-to-expensive",
+    "availability": "good specialist",
+    "primary_selection_drivers": "temperature; chemical resistance",
+    "primary_watchouts": "moisture; creep",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PPA",
+    "representative_grade": "glass-filled PPA",
+    "cost": "medium-to-expensive",
+    "availability": "good specialist",
+    "primary_selection_drivers": "stiffness; temperature; dimensional stability",
+    "primary_watchouts": "moisture; anisotropy; processing",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "LCP",
+    "representative_grade": "thermotropic liquid-crystal polymer",
+    "cost": "expensive",
+    "availability": "specialist",
+    "primary_selection_drivers": "flow; thin-wall mouldability; electrical performance",
+    "primary_watchouts": "anisotropy; weld lines; brittleness",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "LCP",
+    "representative_grade": "filled LCP",
+    "cost": "expensive",
+    "availability": "specialist",
+    "primary_selection_drivers": "stiffness; dimensional stability; flow",
+    "primary_watchouts": "anisotropy; weld lines; processing",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PEEK",
+    "representative_grade": "unfilled PEEK",
+    "cost": "very expensive",
+    "availability": "specialist",
+    "primary_selection_drivers": "temperature; chemical resistance; wear",
+    "primary_watchouts": "cost; creep; processing",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PEEK",
+    "representative_grade": "glass-filled PEEK",
+    "cost": "very expensive",
+    "availability": "specialist",
+    "primary_selection_drivers": "stiffness; dimensional stability; wear",
+    "primary_watchouts": "anisotropy; processing; creep",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  },
+  {
+    "family": "PEEK",
+    "representative_grade": "carbon-filled PEEK",
+    "cost": "very expensive",
+    "availability": "specialist",
+    "primary_selection_drivers": "wear; stiffness; dimensional stability",
+    "primary_watchouts": "counterface compatibility; anisotropy; processing; creep",
+    "quantitative_design_data": "not yet populated",
+    "status": "foundation-depth"
+  }
+]

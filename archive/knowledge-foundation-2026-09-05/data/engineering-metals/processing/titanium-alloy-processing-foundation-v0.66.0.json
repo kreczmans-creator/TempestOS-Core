@@ -1,0 +1,25 @@
+{
+  "version": "0.66.0",
+  "family": "titanium-alloy",
+  "process_domains": [
+    "casting",
+    "forging",
+    "rolling",
+    "extrusion",
+    "machining",
+    "heat treatment",
+    "welding/joining where applicable",
+    "surface treatment"
+  ],
+  "process_effects": [
+    "grain structure",
+    "residual stress",
+    "porosity/inclusions",
+    "work hardening",
+    "precipitation/phase state",
+    "weld HAZ effects",
+    "surface integrity"
+  ],
+  "rule": "Process history is part of the engineering material state.",
+  "evidence_status": "foundation reference"
+}

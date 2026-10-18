@@ -1,0 +1,13 @@
+{
+  "version": "0.74.0",
+  "status": "verification-framework",
+  "timing_terms": [
+    "sensor latency",
+    "controller execution time",
+    "communication latency",
+    "actuator update time",
+    "jitter",
+    "synchronisation"
+  ],
+  "principle": "Timing behaviour is part of control-loop stability and performance, not merely an implementation detail."
+}

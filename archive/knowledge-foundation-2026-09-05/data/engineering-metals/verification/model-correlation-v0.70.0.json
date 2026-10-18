@@ -1,0 +1,13 @@
+{
+  "version": "0.70.0",
+  "status": "verification-framework",
+  "checks": [
+    "mass properties",
+    "stiffness",
+    "natural frequencies",
+    "static deflection",
+    "strain/stress response",
+    "boundary conditions"
+  ],
+  "rule": "Correlation evidence must identify model/test differences and their engineering significance."
+}

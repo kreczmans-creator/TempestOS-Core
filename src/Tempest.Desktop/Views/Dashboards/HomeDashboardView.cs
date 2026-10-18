@@ -59,6 +59,7 @@ public sealed class HomeDashboardView : UserControl
     private readonly Action<Guid, string>? _onOpenFavourite;
     private readonly Func<int, Task>? _onOpenRecentlyChanged;
     private readonly Action? _onNewProject;
+    private readonly Func<Guid, Task>? _onOpenProject;
 
     // `WP 20.10A` (Product Owner finding D1: "Lets add a 'New Project'
     // button on the home page").
@@ -93,11 +94,15 @@ public sealed class HomeDashboardView : UserControl
     /// honestly unavailable" discipline every other optional collaborator
     /// across this platform's Desktop views already follows.
     /// </param>
+    /// <param name="onOpenProject">
+    /// Opens a Continue entry's project (RC: every right-rail entry is a
+    /// working link). <see langword="null"/> leaves Continue as plain text.
+    /// </param>
     public HomeDashboardView(
         ITasksReadModel tasksReadModel, IProjectStatusReadModel projectStatusReadModel, IAccountsReadModel accountsReadModel,
         EngineeringDomainContext domainContext, EngineeringCockpit cockpit, FavouriteObjectsState? favourites,
         Func<Guid, string, Task> openObjectRightUp, Action openTasks, Func<int, Task> onOpenRecent,
-        Action<Guid, string>? onOpenFavourite = null, Func<int, Task>? onOpenRecentlyChanged = null, Action? onNewProject = null)
+        Action<Guid, string>? onOpenFavourite = null, Func<int, Task>? onOpenRecentlyChanged = null, Action? onNewProject = null, Func<Guid, Task>? onOpenProject = null)
     {
         ArgumentNullException.ThrowIfNull(tasksReadModel);
         ArgumentNullException.ThrowIfNull(projectStatusReadModel);
@@ -120,6 +125,7 @@ public sealed class HomeDashboardView : UserControl
         _onOpenFavourite = onOpenFavourite;
         _onOpenRecentlyChanged = onOpenRecentlyChanged;
         _onNewProject = onNewProject;
+        _onOpenProject = onOpenProject;
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
@@ -136,7 +142,7 @@ public sealed class HomeDashboardView : UserControl
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         var titleStack = new StackPanel();
         titleStack.Children.Add(PageHeading.Label("HOME"));
-        titleStack.Children.Add(PageHeading.Title("Home"));
+        titleStack.Children.Add(PageHeading.Title("Dashboard"));
         Grid.SetColumn(titleStack, 0);
         header.Children.Add(titleStack);
         Grid.SetColumn(_newProjectButton, 1);
@@ -184,7 +190,8 @@ public sealed class HomeDashboardView : UserControl
         var projectsTask = _projectStatusReadModel.ReadAsync();
         var accountsTask = _accountsReadModel.ReadAsync();
         var quotesTask = ReadOpenQuotationsAsync();
-        await Task.WhenAll(tasksTask, projectsTask, accountsTask, quotesTask).ConfigureAwait(true);
+        var continueTask = ReadContinueProjectsAsync();
+        await Task.WhenAll(tasksTask, projectsTask, accountsTask, quotesTask, continueTask).ConfigureAwait(true);
         await _cockpit.PrimeAsync().ConfigureAwait(true);
 
         RenderTiles(tasksTask.Result);
@@ -192,7 +199,7 @@ public sealed class HomeDashboardView : UserControl
         RenderProjectStatus(projectsTask.Result);
         RenderMilestones(tasksTask.Result);
         RenderTaskList(tasksTask.Result);
-        RenderRightRail();
+        RenderRightRail(continueTask.Result);
     }
 
     private void RenderTiles(TasksSnapshot snapshot)
@@ -302,15 +309,23 @@ public sealed class HomeDashboardView : UserControl
         }
     }
 
-    private void RenderRightRail()
+    private void RenderRightRail(IReadOnlyList<Project> recentProjects)
     {
         _continueList.Children.Clear();
-        var recentProjects = _cockpit.RecentProjects.Take(3).ToList();
         if (recentProjects.Count == 0)
+        {
             _continueList.Children.Add(Muted("No projects yet."));
+        }
         else
-            foreach (var name in recentProjects)
-                _continueList.Children.Add(new TextBlock { Text = name, FontSize = DesignTokens.FontSizeBody });
+        {
+            foreach (var project in recentProjects)
+            {
+                var projectId = project.Id;
+                _continueList.Children.Add(_onOpenProject is { } open
+                    ? ActionRow(project.DisplayName, () => open(projectId))
+                    : new TextBlock { Text = project.DisplayName, FontSize = DesignTokens.FontSizeBody });
+            }
+        }
 
         _recentList.Children.Clear();
         var recentActivity = _cockpit.RecentActivity.Take(5).ToList();
@@ -405,6 +420,33 @@ public sealed class HomeDashboardView : UserControl
         ThemeReactiveBrush.Bind(block, TextBlock.ForegroundProperty, BrandPalette.HeadingTextBrushKey);
         return block;
     }
+
+    /// <summary>
+    /// Continue's own entries (v0.23.0 board M1): the three most recently
+    /// created live projects that are still Open — never a Closed or
+    /// Archive one (<see cref="Tempest.Core.Projects.ProjectArchival.IsClosed"/>),
+    /// newest first. Until v0.23.0 Continue read the Cockpit's
+    /// <c>ProjectHealth</c> in repository insertion order, so it showed
+    /// the three oldest projects, closed ones included.
+    /// </summary>
+    private async Task<IReadOnlyList<Project>> ReadContinueProjectsAsync()
+    {
+        var entries = await _domainContext.Repository.ListByKindAsync("Project").ConfigureAwait(true);
+        var live = entries.Where(e => !e.IsDeleted).ToList();
+        var projects = await _domainContext.Repository.MaterialiseAsync<Project>(live).ConfigureAwait(true);
+        // Ties on CreatedAt (same clock tick) fall back to the later index entry.
+        return projects
+            .Select((project, index) => (project, index))
+            .Where(p => !Tempest.Core.Projects.ProjectArchival.IsClosed(p.project))
+            .OrderByDescending(p => p.project.CreatedAt)
+            .ThenByDescending(p => p.index)
+            .Take(ContinueLimit)
+            .Select(p => p.project)
+            .ToList();
+    }
+
+    /// <summary>How many projects Continue lists.</summary>
+    internal const int ContinueLimit = 3;
 
     private async Task<IReadOnlyList<Quotation>> ReadOpenQuotationsAsync()
     {

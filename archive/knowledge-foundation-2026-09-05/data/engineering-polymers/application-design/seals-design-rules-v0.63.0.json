@@ -1,0 +1,34 @@
+{
+  "version": "0.63.0",
+  "application": "seals",
+  "selection_rule": "Seal selection is driven by media compatibility, temperature, pressure, compression set/relaxation and dynamic motion.",
+  "principal_failure_modes": [
+    "compression set",
+    "stress relaxation",
+    "extrusion",
+    "swelling",
+    "chemical attack",
+    "thermal ageing",
+    "abrasion",
+    "leakage"
+  ],
+  "engineering_controls": [
+    "pressure",
+    "temperature",
+    "media",
+    "contact stress",
+    "surface finish",
+    "clearance gap",
+    "cycle rate",
+    "conditioning"
+  ],
+  "candidate_families": [
+    "PA12",
+    "PEEK",
+    "PPS",
+    "PEI",
+    "PBT"
+  ],
+  "evidence_status": "screening-level design rule",
+  "design_use": "decision support only; validate application-specific design"
+}

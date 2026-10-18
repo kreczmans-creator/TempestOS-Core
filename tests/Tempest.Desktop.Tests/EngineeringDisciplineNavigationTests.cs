@@ -56,7 +56,7 @@ public sealed class EngineeringDisciplineNavigationTests
             Assert.True(navigator.Current.IsStandaloneEngineering);
 
             // The way back out: the dashboard node, right there in the tree.
-            area.SelectNode("Dashboard + Reports");
+            area.SelectNode("Dashboard");
             await WaitUntilAsync(() => navigator.Current.Area == ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             Assert.Null(ribbon.FindLogicalAncestorOfType<EngineeringAreaView>());

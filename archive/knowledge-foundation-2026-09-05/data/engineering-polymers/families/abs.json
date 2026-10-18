@@ -1,0 +1,30 @@
+{
+  "version": "0.57.0",
+  "family": "ABS",
+  "examples": [
+    "general-purpose ABS",
+    "flame-retardant ABS",
+    "impact-modified ABS"
+  ],
+  "character": "general engineering thermoplastic balancing toughness, processability and cost",
+  "common_uses": [
+    "housings",
+    "covers",
+    "enclosures",
+    "consumer/industrial components"
+  ],
+  "selection_drivers": [
+    "cost",
+    "toughness",
+    "appearance",
+    "processability"
+  ],
+  "watchouts": [
+    "temperature",
+    "UV",
+    "chemical resistance",
+    "creep"
+  ],
+  "evidence_status": "screening taxonomy",
+  "design_use": "screening_only"
+}

@@ -99,6 +99,17 @@ public sealed class WorkspacePersistenceCollection : ICollectionFixture<Persiste
     /// </summary>
     public static string NewIsolatedPersistenceRootPath() =>
         Path.Combine(RunRootPath, $"{Guid.NewGuid():N}");
+
+    /// <summary>
+    /// Command-line arguments that switch the host's release-at-seed policy
+    /// off (<c>ReferenceData:ReleaseAtSeed=false</c>), so shipped records land
+    /// Draft. For tests whose subject is a person's own review and release of
+    /// a seeded record — the product default since the PO decision of
+    /// 2026-10-01 releases at seed, which <c>DayOneReleaseAtSeedJourneyTests</c>
+    /// covers through the real window.
+    /// </summary>
+    public static IReadOnlyList<string> PersonReviewsSeededRecordsArgs { get; } =
+        ["--ReferenceData:ReleaseAtSeed=false"];
 }
 
 /// <summary>

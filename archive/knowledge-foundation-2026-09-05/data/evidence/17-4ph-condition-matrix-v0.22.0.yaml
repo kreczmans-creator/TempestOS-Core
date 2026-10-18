@@ -1,0 +1,336 @@
+- observation_id: OBS-174PH-H900-UTS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H900
+  property: ultimate_tensile_strength
+  value: 1379
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H900
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H900-YS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H900
+  property: yield_strength_0p2
+  value: 1276
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H900
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H900-ELONG-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H900
+  property: elongation
+  value: 10
+  unit: percent
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H900
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H900-HARDNESS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H900
+  property: hardness
+  value: 388
+  unit: HB
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H900
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1025-UTS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1025
+  property: ultimate_tensile_strength
+  value: 1138
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1025
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1025-YS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1025
+  property: yield_strength_0p2
+  value: 1000
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1025
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1025-ELONG-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1025
+  property: elongation
+  value: 12
+  unit: percent
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1025
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1025-HARDNESS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1025
+  property: hardness
+  value: 331
+  unit: HB
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1025
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1075-UTS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1075
+  property: ultimate_tensile_strength
+  value: 1000
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1075
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1075-YS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1075
+  property: yield_strength_0p2
+  value: 860
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1075
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1075-ELONG-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1075
+  property: elongation
+  value: 13
+  unit: percent
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1075
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1075-HARDNESS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1075
+  property: hardness
+  value: 311
+  unit: HB
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1075
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150-UTS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150
+  property: ultimate_tensile_strength
+  value: 930
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150-YS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150
+  property: yield_strength_0p2
+  value: 725
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150-ELONG-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150
+  property: elongation
+  value: 16
+  unit: percent
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150-HARDNESS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150
+  property: hardness
+  value: 277
+  unit: HB
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150M-UTS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150M
+  property: ultimate_tensile_strength
+  value: 862
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150M
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150M-YS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150M
+  property: yield_strength_0p2
+  value: 517
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150M
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150M-ELONG-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150M
+  property: elongation
+  value: 18
+  unit: percent
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150M
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150M-HARDNESS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150M
+  property: hardness
+  value: 255
+  unit: HB
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150M
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150-D-UTS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150-D
+  property: ultimate_tensile_strength
+  value: 862
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150-D
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150-D-YS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150-D
+  property: yield_strength_0p2
+  value: 725
+  unit: MPa
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150-D
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150-D-ELONG-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150-D
+  property: elongation
+  value: 16
+  unit: percent
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150-D
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-174PH-H1150-D-HARDNESS-ATI
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / EN 1.4542 / UNS S17400
+  condition: H1150-D
+  property: hardness
+  value: 255
+  unit: HB
+  source_id: WEB-ATI-17-4PH
+  source_url: https://atimena.com/17-4-ph-1-4542/
+  source_locator: Mechanical Properties table; condition H1150-D
+  temperature_C: 20
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only

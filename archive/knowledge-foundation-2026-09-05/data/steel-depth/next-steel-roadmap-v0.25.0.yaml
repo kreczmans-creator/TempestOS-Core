@@ -1,0 +1,26 @@
+- grade: 15-5 PH
+  families:
+  - precipitation-hardening stainless
+  priority: next
+- grade: 13-8 Mo
+  families:
+  - precipitation-hardening stainless
+  priority: next
+- grade: 310S
+  families:
+  - austenitic stainless
+  - high-temperature
+  priority: next
+- grade: '321'
+  families:
+  - austenitic stainless
+  - stabilised
+  priority: next
+- grade: '430'
+  families:
+  - ferritic stainless
+  priority: next
+- grade: 440C
+  families:
+  - martensitic/tool stainless
+  priority: next

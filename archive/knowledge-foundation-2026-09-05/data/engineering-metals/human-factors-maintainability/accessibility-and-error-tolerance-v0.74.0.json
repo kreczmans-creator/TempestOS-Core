@@ -1,0 +1,11 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "checks": [
+    "clear status indication",
+    "unambiguous controls",
+    "keyboard/alternative interaction where applicable",
+    "fault messages that support recovery",
+    "prevention of dangerous ambiguous actions"
+  ]
+}

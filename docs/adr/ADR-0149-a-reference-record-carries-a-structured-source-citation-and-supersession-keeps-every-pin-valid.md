@@ -92,6 +92,15 @@ this platform's provenance discipline (`ADR-0124`) refuses.
 tertiary placeholder, an unresolved standard) have nothing this precise
 to state.
 
+## Amendment (2026-10-01): two revision numbers
+
+Amended by `ADR-0159`. A record's `RevisionNumber` stays the stored
+version stamp a `ReferencePin` cites and advances on every write,
+lifecycle moves included; the revision a person is shown is the new
+`ContentRevision`, which advances only when the definition, the source
+citation or the provenance's source identity changes. Supersession still
+keeps every pin valid, because pins still cite `RevisionNumber`.
+
 ## Related Documents
 
 `ADR-0124` (`ReferenceProvenance`, `ReferenceDataCatalog<TDefinition>`);

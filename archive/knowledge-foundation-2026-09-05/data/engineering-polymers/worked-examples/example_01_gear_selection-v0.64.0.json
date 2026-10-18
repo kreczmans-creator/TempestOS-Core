@@ -1,0 +1,20 @@
+{
+  "version": "0.64.0",
+  "problem": "Screen polymer families for a small driven gear.",
+  "inputs": [
+    "cyclic torque",
+    "speed",
+    "ambient temperature",
+    "lubrication",
+    "target life"
+  ],
+  "method": [
+    "identify POM/PA/PEEK/PPS candidates",
+    "check creep and fatigue",
+    "check tooth wear and PV",
+    "check moisture/temperature effects",
+    "select exact grade",
+    "verify by application test"
+  ],
+  "output": "Screening workflow; no numerical allowable is asserted."
+}

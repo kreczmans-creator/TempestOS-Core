@@ -1,0 +1,22 @@
+{
+  "id": "",
+  "family": "",
+  "supplier": "",
+  "trade_name": "",
+  "grade": "",
+  "reinforcement": {
+    "type": "unfilled",
+    "loading": null,
+    "orientation": null
+  },
+  "process_form": [
+    ""
+  ],
+  "colour": "",
+  "property_records": [],
+  "environmental_records": [],
+  "processing_window": {},
+  "conditioning_state": "",
+  "provenance": [],
+  "status": "draft"
+}

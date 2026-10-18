@@ -24,10 +24,32 @@ namespace Tempest.Desktop.Tests;
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class ReferenceRecordViewTests
 {
+    /// <summary>
+    /// v0.23.0 board N12: a record row's Open and Release buttons are
+    /// announced by the visible title, not the record id; the id stays on
+    /// the AutomationId, unique where titles need not be.
+    /// </summary>
+    [AvaloniaFact]
+    public void RecordRow_AnnouncesTheTitle_AndKeepsTheIdAsAutomationId()
+    {
+        var row = ReferenceRecordListBuilder.BuildRow(
+            "fst-m10-coarse", "M10 x 1.5 coarse", Tempest.Core.ReferenceData.ReferenceValidationState.Draft,
+            () => Task.CompletedTask, () => Task.CompletedTask);
+        var buttons = row.Children.OfType<Button>().ToList();
+
+        var open = buttons.Single(b => Equals(b.Content, "Open"));
+        Assert.Equal("Open M10 x 1.5 coarse", Avalonia.Automation.AutomationProperties.GetName(open));
+        Assert.Equal("Open fst-m10-coarse", Avalonia.Automation.AutomationProperties.GetAutomationId(open));
+
+        var release = buttons.Single(b => Equals(b.Content, "Release"));
+        Assert.Equal("Release M10 x 1.5 coarse", Avalonia.Automation.AutomationProperties.GetName(release));
+        Assert.Equal("Release fst-m10-coarse", Avalonia.Automation.AutomationProperties.GetAutomationId(release));
+    }
+
     [AvaloniaFact]
     public async Task OpeningFstM10Coarse_ShowsDefinitionHistoryAndCitation_VerifyReleaseAndCitedByAllWork()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -46,9 +68,11 @@ public sealed class ReferenceRecordViewTests
             var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
             LayOut(window);
 
-            var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()
-                .First(g => g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("fst-m10-coarse", StringComparison.Ordinal)));
-            var openButton = recordRow.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Open"));
+            // Runbook F1: rows show the title and status only; the record
+            // Id is carried by the row's own automation names.
+            var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == "Open fst-m10-coarse");
+            var recordRow = (Grid)openButton.Parent!;
             openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             await RenderUntilAsync(window, () =>
@@ -137,7 +161,7 @@ public sealed class ReferenceRecordViewTests
     [AvaloniaFact]
     public async Task OpeningARecord_SitsBesideTheListWhenWide_AndReplacesItWithBackWhenNarrow()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -155,9 +179,11 @@ public sealed class ReferenceRecordViewTests
             var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
             LayOut(window);
 
-            var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()
-                .First(g => g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("fst-m10-coarse", StringComparison.Ordinal)));
-            var openButton = recordRow.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Open"));
+            // Runbook F1: rows show the title and status only; the record
+            // Id is carried by the row's own automation names.
+            var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == "Open fst-m10-coarse");
+            var recordRow = (Grid)openButton.Parent!;
             openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             await RenderUntilAsync(window, () =>
@@ -167,10 +193,9 @@ public sealed class ReferenceRecordViewTests
             // Wide (the window's own default in this suite, 1900px):
             // beside the list — both a row and the record are on screen,
             // no Back control.
-            var listRows = librariesView.GetLogicalDescendants().OfType<Grid>()
-                .Where(g => g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("fst-m10-coarse", StringComparison.Ordinal)))
-                .ToList();
-            Assert.NotEmpty(listRows);
+            // Opening the record revealed its row: its family group (collapsed
+            // by default, runbook F1) expanded with it.
+            Assert.True(recordRow.IsEffectivelyVisible);
             Assert.DoesNotContain(
                 librariesView.GetLogicalDescendants().OfType<Button>(),
                 b => Equals(b.Content, "← Back to Libraries") && b.IsEffectivelyVisible);
@@ -181,7 +206,7 @@ public sealed class ReferenceRecordViewTests
 
             Assert.DoesNotContain(
                 librariesView.GetLogicalDescendants().OfType<Grid>(),
-                g => g.IsEffectivelyVisible && g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("fst-m10-coarse", StringComparison.Ordinal)));
+                g => g.IsEffectivelyVisible && ReferenceEquals(g, recordRow));
             var backButton = librariesView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "← Back to Libraries"));
             Assert.True(backButton.IsEffectivelyVisible);
 
@@ -190,7 +215,7 @@ public sealed class ReferenceRecordViewTests
             LayOut(window);
             Assert.Contains(
                 librariesView.GetLogicalDescendants().OfType<Grid>(),
-                g => g.IsEffectivelyVisible && g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("fst-m10-coarse", StringComparison.Ordinal)));
+                g => g.IsEffectivelyVisible && ReferenceEquals(g, recordRow));
         }
         finally
         {
@@ -201,16 +226,8 @@ public sealed class ReferenceRecordViewTests
     private static List<string> DetailText(ReferenceRecordView detail) =>
         detail.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty).ToList();
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = Deadline(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(MainWindow window)
     {

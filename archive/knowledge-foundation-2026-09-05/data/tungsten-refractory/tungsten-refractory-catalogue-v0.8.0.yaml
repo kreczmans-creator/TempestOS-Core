@@ -1,0 +1,247 @@
+- id: MAT-W-COMMERCIAL
+  designation: Commercially pure tungsten
+  family: tungsten
+  standard_references:
+  - ASTM B777/B777M
+  cost_tier: very_expensive
+  availability: medium
+  typical_uses:
+  - radiation shielding
+  - high-temperature tooling
+  - electrodes
+  - counterweights
+  notes: Very high density and melting temperature; brittle at room temperature compared
+    with engineering steels.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition/product
+    form/process must be resolved
+  properties:
+    density:
+      value: 19300
+      unit: kg/m^3
+    youngs_modulus:
+      value: 400000000000.0
+      unit: Pa
+    yield_strength:
+      value: 550000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 900000000.0
+      unit: Pa
+    elongation:
+      value: 0.02
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 4.5e-06
+      unit: 1/K
+    thermal_conductivity:
+      value: 174
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 5.6e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only. Verify exact grade, condition, process, product
+      form, standard edition and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-W-LANTHANATED
+  designation: Lanthanated tungsten
+  family: tungsten_electrode_material
+  standard_references:
+  - AWS A5.12/A5.12M
+  cost_tier: very_expensive
+  availability: medium
+  typical_uses:
+  - TIG electrodes
+  - specialist electrical/thermal applications
+  notes: Alloyed tungsten electrode material; properties depend on oxide content and
+    product form.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition/product
+    form/process must be resolved
+  properties:
+    density:
+      value: 19300
+      unit: kg/m^3
+    youngs_modulus:
+      value: 400000000000.0
+      unit: Pa
+    yield_strength:
+      value: 550000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 900000000.0
+      unit: Pa
+    elongation:
+      value: 0.02
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 4.5e-06
+      unit: 1/K
+    thermal_conductivity:
+      value: 160
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 6.0e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only. Verify exact grade, condition, process, product
+      form, standard edition and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-W-HEAVY-ALLOY-90
+  designation: 90W heavy alloy
+  family: tungsten_heavy_alloy
+  standard_references:
+  - ASTM B777/B777M
+  cost_tier: very_expensive
+  availability: medium
+  typical_uses:
+  - counterweights
+  - inertia masses
+  - radiation shielding
+  - vibration-control masses
+  notes: Tungsten heavy alloy rather than pure tungsten; binder chemistry and density
+    grade must be captured.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition/product
+    form/process must be resolved
+  properties:
+    density:
+      value: 17000
+      unit: kg/m^3
+    youngs_modulus:
+      value: 300000000000.0
+      unit: Pa
+    yield_strength:
+      value: 700000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 900000000.0
+      unit: Pa
+    elongation:
+      value: 0.05
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 6.0e-06
+      unit: 1/K
+    thermal_conductivity:
+      value: 100
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only. Verify exact grade, condition, process, product
+      form, standard edition and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-MO-COMMERCIAL
+  designation: Commercially pure molybdenum
+  family: refractory_metal
+  standard_references:
+  - ASTM B387/B387M
+  cost_tier: very_expensive
+  availability: low
+  typical_uses:
+  - high-temperature furnace components
+  - heat shields
+  - electrodes
+  - specialist tooling
+  notes: High-temperature refractory metal; oxidation resistance in air is a major
+    design constraint.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition/product
+    form/process must be resolved
+  properties:
+    density:
+      value: 10220
+      unit: kg/m^3
+    youngs_modulus:
+      value: 330000000000.0
+      unit: Pa
+    yield_strength:
+      value: 550000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 700000000.0
+      unit: Pa
+    elongation:
+      value: 0.05
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 4.9999999999999996e-06
+      unit: 1/K
+    thermal_conductivity:
+      value: 138
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 5.2e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only. Verify exact grade, condition, process, product
+      form, standard edition and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-TA-COMMERCIAL
+  designation: Commercially pure tantalum
+  family: refractory_metal
+  standard_references:
+  - ASTM B708
+  cost_tier: very_expensive
+  availability: low
+  typical_uses:
+  - chemical processing
+  - corrosion-resistant components
+  - high-temperature specialist equipment
+  notes: Excellent corrosion resistance in many environments; material cost and supply
+    are specialist considerations.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition/product
+    form/process must be resolved
+  properties:
+    density:
+      value: 16650
+      unit: kg/m^3
+    youngs_modulus:
+      value: 186000000000.0
+      unit: Pa
+    yield_strength:
+      value: 170000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 300000000.0
+      unit: Pa
+    elongation:
+      value: 0.25
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 6.5e-06
+      unit: 1/K
+    thermal_conductivity:
+      value: 57
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.35e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only. Verify exact grade, condition, process, product
+      form, standard edition and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true

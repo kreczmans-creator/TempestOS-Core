@@ -1,0 +1,80 @@
+{
+  "version": "0.48.0",
+  "family": "magnesium",
+  "status": "engineering_framework_with_screening_ranges",
+  "records": [
+    {
+      "grade": "AZ31B",
+      "condition": "wrought product, condition dependent",
+      "fatigue_character": "Strongly affected by texture, surface finish, stress concentration, mean stress, environment and loading frequency.",
+      "screening_endurance_strength_MPa": [
+        70,
+        130
+      ],
+      "fatigue_strength_reference_cycles": "10^6 to 10^7 cycle region may be used only as a screening reference; exact value requires product/temper/test-method evidence.",
+      "dominant_controls": [
+        "surface finish",
+        "notch sensitivity",
+        "rolling/extrusion direction",
+        "mean stress",
+        "corrosion/environment",
+        "temperature"
+      ],
+      "design_rule": "Use grade-, temper-, orientation- and surface-specific S-N data for qualification."
+    },
+    {
+      "grade": "AZ91D",
+      "condition": "cast",
+      "fatigue_character": "Cast defects, porosity and microstructure can dominate fatigue scatter.",
+      "screening_endurance_strength_MPa": [
+        45,
+        90
+      ],
+      "fatigue_strength_reference_cycles": "10^6 cycle region only as screening context.",
+      "dominant_controls": [
+        "porosity",
+        "casting process",
+        "surface finish",
+        "stress concentration",
+        "mean stress",
+        "environment"
+      ],
+      "design_rule": "Casting quality and defect population must be retained as part of the material evidence."
+    },
+    {
+      "grade": "WE43",
+      "condition": "heat-treated condition dependent",
+      "fatigue_character": "High-strength rare-earth magnesium with strong dependence on heat treatment, surface condition and environment.",
+      "screening_endurance_strength_MPa": [
+        80,
+        150
+      ],
+      "fatigue_strength_reference_cycles": "10^6 cycle region only as screening context.",
+      "dominant_controls": [
+        "heat treatment",
+        "surface finish",
+        "microstructure",
+        "mean stress",
+        "temperature",
+        "environment"
+      ],
+      "design_rule": "Use condition-specific fatigue evidence."
+    }
+  ],
+  "test_fields_required": [
+    "grade",
+    "temper",
+    "product_form",
+    "orientation",
+    "surface_finish",
+    "specimen_geometry",
+    "stress_ratio_R",
+    "frequency",
+    "environment",
+    "temperature_C",
+    "S_N_data",
+    "standard",
+    "source"
+  ],
+  "evidence_boundary": "Screening ranges are not design allowables."
+}

@@ -89,7 +89,7 @@ public sealed class WorkspaceChangesReattachTests
         {
             await host.StartAsync();
             var domainContext = Resolve<EngineeringDomainContext>(host);
-            var projectBrowser = new ProjectBrowserView(host.ProjectDirectory!, host.ShellNavigator!, (_, _) => Task.FromResult(true));
+            var projectBrowser = new ProjectBrowserView(host.ProjectDirectory!, host.ShellNavigator!, (_, _) => Task.FromResult<string?>(null));
             var dashboard = new ProjectsDashboardView(new ProjectStatusReadModel(Resolve<IQueryablePersistenceStore>(host)));
             var view = new ProjectsAreaView(domainContext, projectBrowser, dashboard);
 
@@ -158,7 +158,9 @@ public sealed class WorkspaceChangesReattachTests
                 domainContext, commandDispatcher, commandRegistry, () => null, new ProjectPicker(host.ProjectDirectory!),
                 new InputDialog(), new PurchaseOrderLinePrompt(), (_, _) => { });
 
-            var view = new BusinessAreaView(quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView);
+            var view = new BusinessAreaView(
+                quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView,
+                new CustomersSuppliersView(organisationCatalog, Resolve<IContactCatalog>(host)));
 
             await AssertReattachAsync(view, f => view.WorkspaceChanges = f, () => view.RefreshCount);
         }
@@ -180,7 +182,6 @@ public sealed class WorkspaceChangesReattachTests
             var queryableStore = Resolve<IQueryablePersistenceStore>(host);
             var tasksReadModel = new TasksReadModelService(queryableStore);
 
-            var reportsView = new ReportsView(domainContext, host.ProjectDirectory!, host.ProjectDocuments!, (_, _) => { }, (_, _) => { });
             var engineeringCalculation = new EngineeringCalculationView();
             var referenceCitationIndex = new ReferenceCitationIndex(domainContext, host.ProjectDirectory!);
             var librariesView = new LibrariesView(
@@ -194,7 +195,7 @@ public sealed class WorkspaceChangesReattachTests
                 host.BracketCheck!, host.BracketEngineeringRecords!, new StubFilePicker(), () => host.SessionPrincipal?.IdentityId);
 
             var view = new EngineeringAreaView(
-                host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, librariesView, engineeringDashboard,
+                host.ShellNavigator!, tasksReadModel, engineeringCalculation, librariesView, engineeringDashboard,
                 () => Task.CompletedTask, Resolve<ICommandDispatcher>(host), (_, _) => { }, engineeringAssets,
                 new CalculationModulesView(), () => Task.CompletedTask);
 
@@ -437,15 +438,8 @@ public sealed class WorkspaceChangesReattachTests
         Assert.True(getRefreshCount() > beforeReattachRaise, "Expected a refresh again after reattaching — WP 19.7C.");
     }
 
-    private static async Task PumpUntilAsync(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-        }
-    }
+    private static Task PumpUntilAsync(Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 10, what: what);
 
     /// <summary>Pumps the dispatcher for a short, bounded window with nothing to wait for — used to prove a re-read did <em>not</em> happen, where waiting for a condition would mean waiting out the full timeout every time.</summary>
     private static async Task PumpBrieflyAsync()

@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 
 namespace Tempest.Desktop.Input;
 
@@ -31,16 +32,29 @@ public static class KeyboardShortcuts
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(actions);
 
+        // Ctrl+K — open the Command Palette (WP 10.0B). Tunnelling, and
+        // seen even when already handled: as a plain bubbling handler, any
+        // focused control that marked the key handled first swallowed it
+        // (PO runbook D9, "search shortcut doesn't work"). Only Ctrl+K is
+        // moved — the others below stay bubbling so a focused text box's
+        // own Ctrl+Z/Ctrl+Y still reach it first.
+        target.AddHandler(
+            InputElement.KeyDownEvent,
+            (_, e) =>
+            {
+                if (e.Key == Key.K && e.KeyModifiers == KeyModifiers.Control)
+                {
+                    actions.OpenCommandPalette();
+                    e.Handled = true;
+                }
+            },
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+
         target.KeyDown += async (_, e) =>
         {
-            // Ctrl+K — open the Command Palette (WP 10.0B, unchanged).
-            if (e.Key == Key.K && e.KeyModifiers == KeyModifiers.Control)
-            {
-                actions.OpenCommandPalette();
-                e.Handled = true;
-            }
             // Ctrl+Tab / Ctrl+Shift+Tab — document switching (WP 10.2A Navigation).
-            else if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.Control)
+            if (e.Key == Key.Tab && e.KeyModifiers == KeyModifiers.Control)
             {
                 actions.SelectNextDocument();
                 e.Handled = true;

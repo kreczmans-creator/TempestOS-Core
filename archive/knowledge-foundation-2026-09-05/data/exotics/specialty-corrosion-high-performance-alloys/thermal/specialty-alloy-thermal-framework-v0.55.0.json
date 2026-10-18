@@ -1,0 +1,18 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "required_inputs": [
+    "temperature-dependent modulus",
+    "CTE",
+    "thermal conductivity",
+    "specific heat",
+    "temperature-dependent strength",
+    "service duration"
+  ],
+  "principles": [
+    "Corrosion-resistant alloys may have substantially different thermal properties from aluminium or copper systems.",
+    "CTE mismatch can be important in dissimilar-material assemblies.",
+    "Temperature changes can alter corrosion mechanisms, phase stability and mechanical condition.",
+    "Nitinol requires temperature-dependent transformation behaviour in addition to conventional thermal properties."
+  ]
+}

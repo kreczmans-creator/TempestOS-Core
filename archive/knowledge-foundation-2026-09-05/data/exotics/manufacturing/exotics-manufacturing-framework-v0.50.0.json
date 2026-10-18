@@ -1,0 +1,79 @@
+{
+  "version": "0.50.0",
+  "scope": "exotics",
+  "routes": [
+    {
+      "route": "forging",
+      "families": [
+        "titanium",
+        "nickel superalloys",
+        "cobalt alloys"
+      ],
+      "controls": [
+        "temperature window",
+        "strain",
+        "grain flow",
+        "heat treatment"
+      ]
+    },
+    {
+      "route": "machining",
+      "families": [
+        "titanium",
+        "nickel superalloys",
+        "cobalt alloys"
+      ],
+      "controls": [
+        "tool wear",
+        "work hardening",
+        "heat",
+        "coolant",
+        "surface integrity"
+      ]
+    },
+    {
+      "route": "additive manufacturing",
+      "families": [
+        "titanium",
+        "nickel superalloys",
+        "specialty alloys"
+      ],
+      "controls": [
+        "powder/feedstock",
+        "build orientation",
+        "porosity",
+        "residual stress",
+        "post-processing"
+      ]
+    },
+    {
+      "route": "welding",
+      "families": [
+        "titanium",
+        "nickel superalloys",
+        "cobalt alloys"
+      ],
+      "controls": [
+        "shielding",
+        "heat input",
+        "joint metallurgy",
+        "contamination",
+        "post-weld treatment"
+      ]
+    },
+    {
+      "route": "powder metallurgy",
+      "families": [
+        "refractory",
+        "specialty high-temperature alloys"
+      ],
+      "controls": [
+        "powder condition",
+        "densification",
+        "microstructure",
+        "contamination"
+      ]
+    }
+  ],
+  "rule": "Manufacturing route is a material identity attribute whenever it materially changes microstructure or properties."
+}

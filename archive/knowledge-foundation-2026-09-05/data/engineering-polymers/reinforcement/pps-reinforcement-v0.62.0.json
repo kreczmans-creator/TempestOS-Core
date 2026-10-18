@@ -1,0 +1,17 @@
+{
+  "version": "0.62.0",
+  "family": "PPS",
+  "filled_grade_screen": "glass/mineral/carbon-filled grades common",
+  "common_reinforcement_effects": [
+    "increased stiffness and strength",
+    "often reduced ductility",
+    "potentially increased wear resistance",
+    "changed thermal expansion",
+    "changed shrinkage/warpage",
+    "flow-direction anisotropy",
+    "different moisture/chemical behaviour depending on matrix and filler"
+  ],
+  "selection_rule": "Never substitute an unfilled-family property for a reinforced grade.",
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

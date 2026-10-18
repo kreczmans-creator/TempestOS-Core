@@ -1,0 +1,14 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "checks": [
+    "minimum temperature",
+    "maximum temperature",
+    "temperature cycling",
+    "thermal gradients",
+    "CTE mismatch",
+    "lubricant limits",
+    "electronics junction/ambient limits",
+    "thermal soak time"
+  ]
+}

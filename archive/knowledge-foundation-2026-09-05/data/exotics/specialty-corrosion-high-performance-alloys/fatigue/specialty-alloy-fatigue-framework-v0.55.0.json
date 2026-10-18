@@ -1,0 +1,33 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "modes": [
+    "HCF",
+    "LCF",
+    "fatigue crack growth",
+    "corrosion fatigue",
+    "stress-corrosion interaction",
+    "functional fatigue for shape-memory alloys"
+  ],
+  "drivers": [
+    "surface finish",
+    "environment",
+    "stress ratio",
+    "mean stress",
+    "notches",
+    "residual stress",
+    "microstructure",
+    "cold work",
+    "heat treatment",
+    "temperature"
+  ],
+  "special_note": "For Nitinol, repeated phase transformation can cause functional degradation even when conventional structural fatigue criteria appear acceptable.",
+  "required_evidence": [
+    "S-N or strain-life",
+    "crack growth where relevant",
+    "environment",
+    "temperature",
+    "surface condition",
+    "processing condition"
+  ]
+}

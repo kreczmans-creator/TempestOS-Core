@@ -1,0 +1,114 @@
+[
+  {
+    "grade": "S235JR",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.15,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "S355JR",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.15,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "C45",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.16,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "42CrMo4",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.2,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "304",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.72,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "316L",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.74,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "17-4 PH",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.8,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "H13",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.55,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "410",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.6,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "420",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.6,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "15-5 PH",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.8,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "13-8 Mo",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.8,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "310S",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.78,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "321",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.78,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "430",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.6,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  },
+  {
+    "grade": "440C",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.65,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Confirm exact condition and temperature coefficient before electrical design."
+  }
+]

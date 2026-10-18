@@ -135,7 +135,7 @@ public enum ShellArea
 
     /// <summary>
     /// The Business module (`WP 19.7A`, Product Owner IA sketches items 6
-    /// and 7): Dashboard &amp; Reports, Quotes, Invoices, Timesheets and
+    /// and 7): Dashboard, Quotes, Invoices, Timesheets and
     /// Subscriptions, as one tree with a right pane over the selected
     /// node.
     /// </summary>
@@ -150,7 +150,7 @@ public enum ShellArea
 
     /// <summary>
     /// The Engineering module's own rail destination (`WP 19.7A`): a tree
-    /// (Dashboard + Reports, Tasks, Modules, Reference data) with a right
+    /// (Dashboard, Tasks, Modules, Reference data) with a right
     /// pane over the selected node — distinct from <see cref="Engineering"/>
     /// itself, which stays the ribbon-and-docking engineering surface's own
     /// scope-aware location (a project's Structure tab, or standalone).

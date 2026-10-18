@@ -1,0 +1,10 @@
+schema_version: 1.0.0
+rules:
+- Do not average conflicting published values into a synthetic engineering value.
+- Retain source-specific observations when legitimate applicability differs.
+- Prefer exact condition/product-form evidence over generic grade-level values.
+- If sources conflict under the same applicability, flag the conflict for review.
+- Do not promote a conflicting observation to approved_for_design without a documented
+  resolution.
+- A supplier certificate is evidence for the supplied batch, not automatically a generic
+  grade property.

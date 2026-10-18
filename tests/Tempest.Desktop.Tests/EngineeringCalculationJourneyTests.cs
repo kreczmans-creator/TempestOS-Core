@@ -63,7 +63,7 @@ public sealed class EngineeringCalculationJourneyTests
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
         Guid recordId;
 
-        var first = new WorkspaceHost(root);
+        var first = new WorkspaceHost(root, commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await first.StartAsync();
@@ -176,7 +176,7 @@ public sealed class EngineeringCalculationJourneyTests
         }
 
         // --- 9. Relaunch, and recover the persisted result --------------
-        var second = new WorkspaceHost(root);
+        var second = new WorkspaceHost(root, commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await second.StartAsync();
@@ -211,7 +211,7 @@ public sealed class EngineeringCalculationJourneyTests
     public async Task RevisingTheReferenceAfterwards_DoesNotAlterTheHistoricalResult()
     {
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
-        var host = new WorkspaceHost(root);
+        var host = new WorkspaceHost(root, commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -285,7 +285,7 @@ public sealed class EngineeringCalculationJourneyTests
     public async Task IncompleteAndInvalidInput_IsRejectedVisibly_AndNothingIsCalculated()
     {
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
-        var host = new WorkspaceHost(root);
+        var host = new WorkspaceHost(root, commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -331,7 +331,7 @@ public sealed class EngineeringCalculationJourneyTests
     public async Task AReleaseAttemptedWithNobodySignedIn_IsRefused_AndTheRecordStaysDraft()
     {
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
-        var host = new WorkspaceHost(root);
+        var host = new WorkspaceHost(root, commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -375,7 +375,7 @@ public sealed class EngineeringCalculationJourneyTests
     public async Task ThePopulateAction_IsVisibleAtNonZeroBounds_WheneverTheSurfaceIsOpen()
     {
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
-        var host = new WorkspaceHost(root);
+        var host = new WorkspaceHost(root, commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -468,7 +468,7 @@ public sealed class EngineeringCalculationJourneyTests
     public async Task Journey_AddOwnMaterial_Release_PickItBesideTheInputs_Calculate()
     {
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
-        var host = new WorkspaceHost(root);
+        var host = new WorkspaceHost(root, commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -719,21 +719,8 @@ public sealed class EngineeringCalculationJourneyTests
     }
 
     /// <summary>Re-renders until <paramref name="condition"/> holds, or a deadline expires. `TD-119`: no fixed wait.</summary>
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = DesktopTestHelpers.Deadline(5);
-        while (true)
-        {
-            if (condition())
-                return;
-
-            if (DateTime.UtcNow >= deadline)
-                return;
-
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 5, null, DesktopTestHelpers.OpenPhaseOf(window), what);
 
     /// <summary>Asserts the text is genuinely on screen at a real laid-out size, not merely in the logical tree.</summary>
     private static void AssertRenderedContains(MainWindow window, Control surface, string fragment)

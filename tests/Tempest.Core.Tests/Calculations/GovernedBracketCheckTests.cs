@@ -73,7 +73,9 @@ public class GovernedBracketCheckTests
 
     private static async Task SeedAsync(ITempestHost host)
     {
-        var seeder = (ReferenceSeedService)host.Services!.GetService(typeof(ReferenceSeedService))!;
+        // This test exercises a person's own review of an unreleased record, so it
+        // seeds without the host's release-at-seed policy (PO decision 2026-10-01).
+        var seeder = new ReferenceSeedService();
         await seeder.ApplyAsync(Materials(host), MaterialSeed.Instance);
     }
 
@@ -414,29 +416,32 @@ public class GovernedBracketCheckTests
     [Fact]
     public async Task AMissingRequiredPropertyIsRefused_AndNothingIsSubstituted()
     {
-        // 5083's source publishes an impossible density, and the population
-        // phase omitted it rather than inventing 2.65 g/cm3. This is where
-        // that decision earns its keep: the calculation refuses instead of
-        // producing a mass nobody can stand behind.
+        // PTFE's manufacturer publishes no yield strength (PTFE creeps
+        // rather than yielding), and the day-one dataset omits it rather
+        // than borrowing one. This is where that decision earns its keep:
+        // the calculation refuses instead of producing a margin nobody can
+        // stand behind. (Until the day-one acquisition, 5083's misprinted
+        // density played this part; it now carries the same publisher's
+        // correct figure from its H32 datasheet.)
         using var temp = new TempDirectory();
 
         await RunAgainstRunningHostAsync(temp.Path, async host =>
         {
             await SeedAsync(host);
-            await ReviewAndReleaseAsync(host, MaterialSeed.Aluminium5083OH111);
+            await ReviewAndReleaseAsync(host, MaterialSeed.PolymerPtfe);
 
             var check = await new GovernedBracketCheckService(Materials(host), Engine(host))
-                .CheckAsync(Request(MaterialSeed.Aluminium5083OH111));
+                .CheckAsync(Request(MaterialSeed.PolymerPtfe));
 
             Assert.False(check.WasPerformed);
             Assert.Equal(BracketCheckRefusal.RequiredPropertyMissing, check.Refusal);
-            Assert.Contains("records no Density", check.Reason!, StringComparison.Ordinal);
+            Assert.Contains("records no YieldStrength", check.Reason!, StringComparison.Ordinal);
             Assert.Contains("substituting a typical figure", check.Reason!, StringComparison.Ordinal);
             Assert.Null(check.Record);
 
-            // The record really is still without a density.
-            var material = await Materials(host).FindAsync(MaterialSeed.Aluminium5083OH111);
-            Assert.False(material!.Definition.Properties.ContainsKey(MaterialPropertyNames.Density));
+            // The record really is still without a yield strength.
+            var material = await Materials(host).FindAsync(MaterialSeed.PolymerPtfe);
+            Assert.False(material!.Definition.Properties.ContainsKey(MaterialPropertyNames.YieldStrength));
         });
     }
 
@@ -682,12 +687,12 @@ public class GovernedBracketCheckTests
         await RunAgainstRunningHostAsync(temp.Path, async host =>
         {
             await SeedAsync(host);
-            await ReviewAndReleaseAsync(host, MaterialSeed.Aluminium5083OH111);
+            await ReviewAndReleaseAsync(host, MaterialSeed.PolymerPtfe);
 
             var check = await new GovernedBracketCheckService(Materials(host), Engine(host))
-                .CheckAsync(Request(MaterialSeed.Aluminium5083OH111));
+                .CheckAsync(Request(MaterialSeed.PolymerPtfe));
 
-            Assert.Contains("records no Density", check.Reason!, StringComparison.Ordinal);
+            Assert.Contains("records no YieldStrength", check.Reason!, StringComparison.Ordinal);
             Assert.Contains("value is absent from the record", check.Reason!, StringComparison.Ordinal);
             Assert.Contains("substituting a typical figure", check.Reason!, StringComparison.Ordinal);
         });

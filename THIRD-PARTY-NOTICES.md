@@ -107,8 +107,10 @@ licence text.
 
 ## Brand assets
 
-The horizontal navy Tempest wordmark lockup
-(`src/Tempest.Desktop/Documents/Assets/Logo/tempest-logo-horizontal-navy.png`,
-embedded `WP 21.2A`) is Tempest Design Engineering Ltd's own asset — not
+The horizontal ink (light-ground) Tempest wordmark lockup
+(`src/Tempest.Desktop/Documents/Assets/Logo/tempest-logo-horizontal-ink.png`,
+a 4x raster of the design system's
+`docs/design/system/assets/logo/derived/logo-horizontal-transparent-ink.svg`;
+replaced the navy lockup embedded `WP 21.2A`) is Tempest Design Engineering Ltd's own asset — not
 third-party — carried here only because this file collects every embedded
 asset's provenance in one place.

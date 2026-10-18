@@ -329,7 +329,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // object (the same register the bracket workbench uses) and offers
         // the record's own Re-run and Compare commands through the
         // dispatcher and the Template registry — every module registered
-        // there so the commands reach all sixteen.
+        // there so the commands reach all nineteen.
         CalculationModuleService = new CalculationModuleService(
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
             (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),

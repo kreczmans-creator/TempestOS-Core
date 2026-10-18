@@ -1,0 +1,15 @@
+{
+  "version": "0.74.0",
+  "status": "verification-framework",
+  "topics": [
+    "discrete PID",
+    "anti-windup",
+    "rate limiting",
+    "command saturation",
+    "feed-forward",
+    "filtering",
+    "calibration constants",
+    "parameter configuration"
+  ],
+  "boundary": "Implementation parameters require plant-specific tuning and verification; generic defaults are not design acceptance criteria."
+}

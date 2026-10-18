@@ -1,0 +1,27 @@
+{
+  "version": "0.69.0",
+  "family": "aluminium-alloy",
+  "checks": [
+    "weld throat/section",
+    "base-metal stress",
+    "HAZ properties",
+    "fatigue class",
+    "distortion",
+    "residual stress",
+    "weld defects",
+    "buckling",
+    "corrosion"
+  ],
+  "workflow": [
+    "define joint load path",
+    "select weld type",
+    "determine static and cyclic loads",
+    "identify critical weld toes/roots",
+    "select applicable weld design method",
+    "check fatigue",
+    "define fabrication controls",
+    "define NDT/acceptance criteria"
+  ],
+  "rule": "Welded-joint fatigue performance is governed by joint detail and fabrication quality, not parent-metal strength alone.",
+  "status": "design-framework"
+}

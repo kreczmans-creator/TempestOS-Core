@@ -1,0 +1,32 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "modes": [
+    "HCF",
+    "LCF",
+    "thermo-mechanical fatigue",
+    "dwell fatigue",
+    "fatigue-crack growth"
+  ],
+  "drivers": [
+    "temperature",
+    "frequency",
+    "dwell time",
+    "oxidation",
+    "surface finish",
+    "notches",
+    "mean stress",
+    "microstructure",
+    "residual stress"
+  ],
+  "required_evidence": [
+    "S-N or strain-life data",
+    "crack-growth data where relevant",
+    "test temperature",
+    "environment",
+    "R-ratio/mean stress",
+    "surface condition",
+    "product form"
+  ],
+  "rule": "For hot-section components, fatigue evidence must be considered together with creep and environmental damage."
+}
