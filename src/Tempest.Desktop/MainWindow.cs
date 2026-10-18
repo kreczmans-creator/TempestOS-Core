@@ -864,6 +864,7 @@ public sealed class MainWindow : Window
         if (areaId is not null && workspace.Navigation.Areas.FirstOrDefault(a => a.Id == areaId) is { } area)
         {
             await workspace.Navigation.SwitchAreaAsync(area.Id).ConfigureAwait(true);
+            _explorerView.ClearNoTree();
             _ribbon.SelectTabForArea(area.Title);
             SetCurrentArea(area.Title);
         }

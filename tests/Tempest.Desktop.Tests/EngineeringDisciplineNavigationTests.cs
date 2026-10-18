@@ -69,6 +69,48 @@ public sealed class EngineeringDisciplineNavigationTests
         }
     }
 
+    /// <summary>
+    /// Real-shell stress finding F1: Evidence registers commands but no
+    /// Explorer area, and picking it left the previous discipline's tree
+    /// on screen under the Evidence command bar. It now says so instead,
+    /// and the next discipline brings its own tree back.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task PickingEvidence_ShowsThatItHasNoTree_InsteadOfThePreviousDisciplines()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+            var navigator = host.ShellNavigator!;
+            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
+            await window.RenderCurrentModuleAsync();
+            var area = window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single();
+
+            area.SelectNode(EngineeringDisciplines.NavigatorName("Verification"));
+            await WaitUntilAsync(() => navigator.Current.Area == ShellArea.Engineering);
+            await window.RenderCurrentModuleAsync();
+            var ribbon = window.GetLogicalDescendants().OfType<RibbonView>().Single();
+            await WaitUntilAsync(() => ribbon.CurrentCategory == "Verification");
+
+            var explorer = window.GetLogicalDescendants().OfType<ProjectExplorerView>().Single();
+            bool SaysNoTree() => explorer.GetLogicalDescendants().OfType<TextBlock>()
+                .Any(t => t.Text == "Evidence has no tree here." && t.FindLogicalAncestorOfType<EmptyStateView>() is { IsVisible: true });
+
+            area.SelectNode(EngineeringDisciplines.NavigatorName("Evidence"));
+            await WaitUntilAsync(() => ribbon.CurrentCategory == "Evidence" && SaysNoTree());
+
+            area.SelectNode(EngineeringDisciplines.NavigatorName("Verification"));
+            await WaitUntilAsync(() => ribbon.CurrentCategory == "Verification" && !SaysNoTree());
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
     [AvaloniaFact]
     public async Task TheStructureTab_ListsTheDisciplines_AndPickingOneSwitchesTheCommandBar()
     {

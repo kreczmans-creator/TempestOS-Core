@@ -502,8 +502,43 @@ public sealed class ProjectExplorerView : UserControl
     /// this Work Package's own "preserve existing architecture" instruction
     /// argues against attempting here.
     /// </remarks>
+    /// <summary>
+    /// Shows that the chosen discipline has no tree here — Evidence, which
+    /// registers commands but no Explorer area — instead of leaving the
+    /// previous discipline's tree on screen under another discipline's
+    /// command bar (`v0.25.0` real-shell stress finding F1). Reloads keep the
+    /// message until <see cref="ClearNoTree"/>, which an area switch calls.
+    /// </summary>
+    public void ShowNoTree(string title, string detail)
+    {
+        _noTree = (title, detail);
+        ApplyNoTree();
+    }
+
+    /// <summary>Ends <see cref="ShowNoTree"/>; the next <see cref="LoadAsync"/> shows the current area's tree again.</summary>
+    public void ClearNoTree() => _noTree = null;
+
+    private (string Title, string Detail)? _noTree;
+
+    private void ApplyNoTree()
+    {
+        if (_noTree is not { } noTree)
+            return;
+
+        _allItems = new AvaloniaList<ExplorerNodeItem>();
+        _tree.ItemsSource = _allItems;
+        _emptyHint.IsVisible = true;
+        _emptyHint.SetMessage(noTree.Title, noTree.Detail);
+    }
+
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
+        if (_noTree is not null)
+        {
+            ApplyNoTree();
+            return;
+        }
+
         var selectedId = (_tree.SelectedItem as ExplorerNodeItem)?.Node.Id;
         var oldIds = new HashSet<Guid>();
         CollectIds(_allItems, oldIds);

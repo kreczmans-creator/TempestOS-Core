@@ -51,7 +51,14 @@ downloadable build that contains them.
   - Standalone engineering highlights **Engineering**.
   - Engineering inside a project highlights **Projects**.
   - Before this, the engineering surface highlighted nothing.
-- **More room for the Explorer.** The Engineering tree narrows while a discipline is shown beside it.
+- **More room for the Explorer.** The Engineering tree narrows to its longest row while a discipline is shown beside it.
+- **Evidence says it has no tree.** Evidence has commands but no Explorer area. Picking it used to leave the previous discipline's tree on screen under the Evidence command bar; that was the case with the old ribbon tab too. The Explorer now says *"Evidence has no tree here."* and points to the project's Evidence tab.
+- **Found by the remote stress runs and fixed before tagging:**
+  - the Evidence tree (F1);
+  - the narrowed tree clipping its own rows (F2);
+  - the group selectors shifting sideways when one was opened (F4).
+
+  See `docs/reviews/engineering-navigation-2026-10/stress/`.
 
 Code: `EngineeringDisciplines.cs`, `RibbonView.cs` (`ShowCategory`,
 `CurrentCategoryChanged`, the group selectors), `EngineeringAreaView.cs`,
@@ -79,6 +86,18 @@ which replaces `WP-Z4`'s two scrollbar tests because nothing scrolls any more.
   1 Oct register, `docs/reviews/RC PO Feedback Actions (2026-10-01).md`.
 
 ## Known limitations
+
+- **The window is not shrunk to fit a smaller screen (stress F3).** A
+  window saved at 1280x800 opens at that size on a 1180x760 display.
+  Resize or maximise it.
+- **Requirements → Actions (13) wraps to three rows (stress F4).** It
+  wraps only while that group is open.
+- **The status bar's AREA keeps the last discipline (stress F5).** It
+  still shows it on the Engineering dashboard and in other modules.
+- **The real-shell journey script is out of date on main.**
+  `scripts/run-realshell-linux.sh` still expects pre-`v0.23.0` identifiers
+  (`P-0001`, `Q-2026-001`). The same steps fail on `main`, so this build
+  does not cause it.
 
 These are carried from `v0.23.0` and `v0.24.0` unchanged:
 
