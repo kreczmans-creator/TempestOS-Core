@@ -176,6 +176,15 @@ public sealed class EngineeringAreaView : UserControl
         _detail.Content = _dashboardScroll;
         split.Children.Add(_detail);
 
+        // The engineering surface needs the width more than the tree does:
+        // the tree narrows while the surface is shown beside it, so the
+        // Explorer is not squeezed, and widens again when it leaves.
+        _detail.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == ContentControl.ContentProperty)
+                _treeColumn.SetCompact(_shellCompact || IsShowingSurface);
+        };
+
         AutomationProperties.SetName(this, "Engineering");
         Content = split;
     }
@@ -220,6 +229,8 @@ public sealed class EngineeringAreaView : UserControl
             _detail.Content = null;
     }
 
+    private bool _shellCompact;
+
     /// <summary>
     /// Highlights <paramref name="category"/>'s Disciplines node without
     /// navigating — the shell calls it whenever the command bar's
@@ -249,7 +260,8 @@ public sealed class EngineeringAreaView : UserControl
     /// </summary>
     public void SetCompact(bool compact)
     {
-        _treeColumn.SetCompact(compact);
+        _shellCompact = compact;
+        _treeColumn.SetCompact(compact || IsShowingSurface);
         _engineeringAssets.SetCompact(compact);
     }
 
@@ -314,20 +326,6 @@ public sealed class EngineeringAreaView : UserControl
         if (_tree.SelectedItem is not TreeViewItem selected)
             return;
 
-        if (ReferenceEquals(selected, _dashboardNode))
-        {
-            await Task.WhenAll(_dashboard.RefreshAsync(), _reportsView.RefreshAsync()).ConfigureAwait(true);
-            _detail.Content = _dashboardScroll;
-            return;
-        }
-
-        if (ReferenceEquals(selected, _tasksNode))
-        {
-            await RenderTasksAsync().ConfigureAwait(true);
-            _detail.Content = _tasksScroll;
-            return;
-        }
-
         if (selected.Tag is string category)
         {
             // Into the engineering surface, beside this tree: navigate only
@@ -342,6 +340,10 @@ public sealed class EngineeringAreaView : UserControl
             return;
         }
 
+        // Group headers carry no content of their own.
+        if (ReferenceEquals(selected, _disciplinesNode) || ReferenceEquals(selected, _modulesNode))
+            return;
+
         // Any other node, picked while the surface is shown: back to this
         // landing page's own location first, then render the node.
         if (_navigator.Current.Area == ShellArea.Engineering)
@@ -351,8 +353,19 @@ public sealed class EngineeringAreaView : UserControl
             return;
         }
 
-        if (ReferenceEquals(selected, _disciplinesNode) || ReferenceEquals(selected, _modulesNode))
+        if (ReferenceEquals(selected, _dashboardNode))
+        {
+            await Task.WhenAll(_dashboard.RefreshAsync(), _reportsView.RefreshAsync()).ConfigureAwait(true);
+            _detail.Content = _dashboardScroll;
             return;
+        }
+
+        if (ReferenceEquals(selected, _tasksNode))
+        {
+            await RenderTasksAsync().ConfigureAwait(true);
+            _detail.Content = _tasksScroll;
+            return;
+        }
 
         if (ReferenceEquals(selected, _calculationsNode))
         {

@@ -141,7 +141,7 @@ public sealed class ProjectWorkspaceView : UserControl
         };
 
         var pane = new DockPanel();
-        var column = new CollapsibleColumn("Disciplines", _disciplines);
+        var column = new CollapsibleColumn("Disciplines", _disciplines, expandedWidth: CollapsibleColumn.CompactWidth);
         DockPanel.SetDock(column, Dock.Left);
         pane.Children.Add(column);
         pane.Children.Add(_structureHost);

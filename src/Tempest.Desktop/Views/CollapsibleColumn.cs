@@ -73,20 +73,24 @@ public sealed class CollapsibleColumn : Border
     /// <summary>Gets whether the column is currently collapsed to its own strip (the manual toggle's own state — independent of whether the responsive rule is separately narrowing it, see <see cref="SetCompact"/>).</summary>
     public bool IsCollapsed => _isCollapsed;
 
+    private readonly double _expandedWidth;
+
     /// <summary>Gets whether the column is currently narrowed by the shell's own responsive rule.</summary>
     public bool IsCompact => _isCompact;
 
     /// <summary>Initialises a new instance of the <see cref="CollapsibleColumn"/> class.</summary>
     /// <param name="areaCaption">Names the area this column belongs to ("Projects", "Engineering", "Business") — shown as the collapsed strip's own vertical caption, and used to build the chevron's own automation name.</param>
     /// <param name="treeContent">The area's own tree — reparented nowhere; this class only ever toggles its visibility, never detaches it.</param>
-    public CollapsibleColumn(string areaCaption, Control treeContent)
+    /// <param name="expandedWidth">The expanded width, for a column narrower than a tree (the Structure tab's discipline list); <see cref="ExpandedWidth"/> by default.</param>
+    public CollapsibleColumn(string areaCaption, Control treeContent, double expandedWidth = ExpandedWidth)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(areaCaption);
         ArgumentNullException.ThrowIfNull(treeContent);
 
         _areaCaption = areaCaption;
+        _expandedWidth = expandedWidth;
 
-        Width = ExpandedWidth;
+        Width = _expandedWidth;
         BorderThickness = new Thickness(0, 0, 1, 0);
         ThemeReactiveBrush.Bind(this, BorderBrushProperty, BrandPalette.HairlineBrushKey);
 
@@ -167,7 +171,7 @@ public sealed class CollapsibleColumn : Border
 
     private void ApplyState()
     {
-        Width = _isCompact ? CompactWidth : (_isCollapsed ? CollapsedWidth : ExpandedWidth);
+        Width = _isCompact ? Math.Min(CompactWidth, _expandedWidth) : (_isCollapsed ? CollapsedWidth : _expandedWidth);
 
         // The responsive rule wins: below the compact threshold the tree
         // itself stays visible (narrowed, `WP 19.7A`'s own existing

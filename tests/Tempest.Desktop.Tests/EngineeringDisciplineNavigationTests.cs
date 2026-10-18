@@ -33,12 +33,16 @@ public sealed class EngineeringDisciplineNavigationTests
             await window.RenderCurrentModuleAsync();
 
             var area = window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single();
-            var ribbon = window.GetLogicalDescendants().OfType<RibbonView>().Single();
             var rail = window.GetLogicalDescendants().OfType<GlobalNavigationRail>().Single();
 
+            // The command bar is not on screen until a discipline is picked.
+            Assert.Empty(window.GetLogicalDescendants().OfType<RibbonView>());
+
             area.SelectNode(EngineeringDisciplines.NavigatorName("Requirements"));
-            await WaitUntilAsync(() => navigator.Current.Area == ShellArea.Engineering && ribbon.CurrentCategory == "Requirements");
+            await WaitUntilAsync(() => navigator.Current.Area == ShellArea.Engineering);
             await window.RenderCurrentModuleAsync();
+            var ribbon = window.GetLogicalDescendants().OfType<RibbonView>().Single();
+            await WaitUntilAsync(() => ribbon.CurrentCategory == "Requirements");
 
             // The surface sits inside the Engineering view, beside its tree.
             Assert.True(navigator.Current.IsStandaloneEngineering);

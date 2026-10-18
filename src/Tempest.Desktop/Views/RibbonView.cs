@@ -56,7 +56,9 @@ namespace Tempest.Desktop.Views;
 /// (<see cref="ShowCategory"/>). The tabs still exist underneath — one per
 /// category, exactly as before — so every command, its grouping and its
 /// enablement are unchanged; only how a discipline is chosen moved. The
-/// groups wrap onto a second row instead of scrolling off the edge.
+/// bar is one short row: the Create tile, then Organize / Lifecycle /
+/// Actions selectors over a drawer showing one group at a time, so it
+/// neither scrolls off the edge nor grows tall.
 /// </para>
 /// <para>
 /// <b>Command grouping and icons are still derived, not authored.</b> No
@@ -329,6 +331,7 @@ public sealed class RibbonView : UserControl
         _recentSectionHosts.Clear();
         _tabContents.Clear();
         _commandLabels.Clear();
+        _groupSwitches.Clear();
 
         var byCategory = _commandRegistry.Items
             .Where(d => _categoryAllowList is null || _categoryAllowList.Contains(d.Category ?? "General"))
@@ -469,15 +472,81 @@ public sealed class RibbonView : UserControl
         root.Children.Add(recentSectionHost);
         UpdateRecentSection(category);
 
-        // The groups wrap rather than scroll (class remarks): a discipline
-        // with many commands (Requirements) takes a second row instead of
-        // running off the right edge.
-        var groupsRow = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var groupedByVerb in descriptors.GroupBy(d => ClassifyGroup(d.Id)).OrderBy(g => GroupOrder(g.Key)))
-            groupsRow.Children.Add(BuildGroup(groupedByVerb.Key, groupedByVerb.ToList()));
+        // One short row (class remarks): the Create tile, then a selector
+        // per remaining group (Organize, Lifecycle, Actions) over a
+        // drawer that shows one group's commands at a time. Every button
+        // is still built, enablement-tracked and in the tree — a closed
+        // group's buttons are only hidden — so nothing becomes
+        // unreachable and nothing scrolls off the edge.
+        var body = new DockPanel();
+        var selectors = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
+        var drawer = new Panel();
+        var switches = new List<(string Name, Button Selector, Control Group)>();
 
-        root.Children.Add(groupsRow);
+        foreach (var groupedByVerb in descriptors.GroupBy(d => ClassifyGroup(d.Id)).OrderBy(g => GroupOrder(g.Key)))
+        {
+            if (groupedByVerb.Key == "Create")
+            {
+                var create = BuildGroup(groupedByVerb.Key, groupedByVerb.ToList());
+                DockPanel.SetDock(create, Dock.Left);
+                body.Children.Add(create);
+                continue;
+            }
+
+            var name = groupedByVerb.Key;
+            var group = BuildGroupRow(groupedByVerb.ToList());
+            var selector = new Button { Content = $"{name} ({groupedByVerb.Count()}) ▾", MinHeight = DesignTokens.ControlSizeSmall };
+            AutomationProperties.SetName(selector, $"{name} commands");
+            selector.Click += (_, _) =>
+            {
+                _openGroup = name;
+                ApplyOpenGroup();
+            };
+            selectors.Children.Add(selector);
+            drawer.Children.Add(group);
+            switches.Add((name, selector, group));
+        }
+
+        _groupSwitches.Add(switches);
+        var right = new StackPanel { Spacing = DesignTokens.SpaceXs, Margin = new Avalonia.Thickness(DesignTokens.SpaceMd, 0, 0, 0) };
+        right.Children.Add(selectors);
+        right.Children.Add(drawer);
+        body.Children.Add(right);
+        root.Children.Add(body);
+        ApplyOpenGroup();
         return root;
+    }
+
+    /// <summary>Which non-Create group the command bar shows; shared across disciplines, falling back to a discipline's first group when it has no such group.</summary>
+    private string _openGroup = "Organize";
+
+    private readonly List<List<(string Name, Button Selector, Control Group)>> _groupSwitches = [];
+
+    private void ApplyOpenGroup()
+    {
+        foreach (var switches in _groupSwitches)
+        {
+            if (switches.Count == 0)
+                continue;
+
+            var open = switches.Any(s => s.Name == _openGroup) ? _openGroup : switches[0].Name;
+            foreach (var (name, selector, group) in switches)
+            {
+                var isOpen = name == open;
+                group.IsVisible = isOpen;
+                selector.Classes.Set(ChromeStyles.Primary, isOpen);
+                selector.Classes.Set(ChromeStyles.Subtle, !isOpen);
+            }
+        }
+    }
+
+    private Control BuildGroupRow(IReadOnlyList<CommandDescriptor> descriptors)
+    {
+        var wrap = new WrapPanel { Orientation = Orientation.Horizontal };
+        foreach (var descriptor in descriptors.OrderBy(d => d.Id, StringComparer.Ordinal))
+            wrap.Children.Add(BuildCommandButton(descriptor, large: false, registerForEnablement: true));
+
+        return wrap;
     }
 
     /// <summary>
