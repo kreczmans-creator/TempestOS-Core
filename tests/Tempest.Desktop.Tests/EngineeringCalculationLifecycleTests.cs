@@ -43,7 +43,7 @@ namespace Tempest.Desktop.Tests;
 public sealed class EngineeringCalculationLifecycleTests
 {
     private const string EngineerId = "lifecycle-test-engineer";
-    private const string RailEntry = "Engineering Calculations";
+    private const string RailEntry = "Calculation register";
     private const string EngineeringRailEntry = "Engineering";
 
     [AvaloniaFact]

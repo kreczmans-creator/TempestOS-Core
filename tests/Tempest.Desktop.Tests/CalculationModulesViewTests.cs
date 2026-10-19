@@ -491,7 +491,7 @@ public sealed class CalculationModulesViewTests
     private static async Task ReenterAsync(MainWindow window, ReferenceLibrary library)
     {
         var area = window.GetLogicalDescendants().OfType<EngineeringAreaView>().Distinct().Single();
-        area.SelectNode("Engineering Calculations");
+        area.SelectNode("Calculation register");
         await RenderUntilAsync(window, () => !window.GetLogicalDescendants().OfType<CalculationModulesView>().Any(v => v.IsVisible && v.Bounds.Width > 0));
         area.SelectNode(NodeName);
         await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<CalculationModulesView>().Any(v => v.Released(library).Count > 0));

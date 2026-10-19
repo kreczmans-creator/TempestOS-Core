@@ -50,7 +50,7 @@ namespace Tempest.Desktop.Tests;
 public sealed class EngineeringCalculationJourneyTests
 {
     /// <summary>The rail entry an engineer looks for. Deliberately the words, not the enum name.</summary>
-    private const string CalculationsRailEntry = "Engineering Calculations";
+    private const string CalculationsRailEntry = "Calculation register";
     private const string EngineeringRailEntry = "Engineering";
 
     private const string EngineerId = "desktop-journey-engineer";

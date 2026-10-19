@@ -162,7 +162,7 @@ public sealed class LayoutWalkTests
                     // walks every rail entry.
                     foreach (var node in TreeNodesFor(module.Area))
                     {
-                        if (node == "Requirements discipline")
+                        if (node is "Mechanical discipline" or "Requirements module")
                         {
                             // Real navigation away, to the ribbon-and-docking
                             // surface (`ShellArea.Engineering`) — walked here
@@ -186,7 +186,7 @@ public sealed class LayoutWalkTests
                         pngCount++;
                         findings.AddRange(CollectLayoutFindings(window, nodeArea));
 
-                        if (node == "Requirements discipline")
+                        if (node is "Mechanical discipline" or "Requirements module")
                         {
                             // Back to the tree for the remaining nodes.
                             await navigator.GoToModuleAsync(module.Area);
@@ -403,7 +403,7 @@ public sealed class LayoutWalkTests
     private static IReadOnlyList<string> TreeNodesFor(ShellArea area) => area switch
     {
         ShellArea.Projects => ["Dashboard", "Open", "Closed", "Archive"],
-        ShellArea.EngineeringDepartment => ["Dashboard", "Tasks", "Requirements discipline", "Engineering Calculations", "Calculators", "Engineering Assets", "Reference data"],
+        ShellArea.EngineeringDepartment => ["Dashboard", "Tasks", "Mechanical discipline", "Requirements module", "Calculators", "Calculation register", "Packs and templates", "Reference data"],
         ShellArea.Business => ["Dashboard", "Staff", "Rate cards", "Quotes", "Invoices", "Timesheets", "Subscriptions"],
         _ => [],
     };

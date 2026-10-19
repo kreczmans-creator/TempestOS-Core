@@ -122,7 +122,7 @@ public sealed class AutomationNameCoverageTests
             {
                 foreach (var node in TreeNodesFor(module.Area))
                 {
-                    if (node == "Requirements discipline")
+                    if (node is "Mechanical discipline" or "Requirements module")
                         continue; // Real navigation to the shared engineering surface — the project Structure tab scan below covers it.
 
                     await ScanTreeNodeAsync(module.Area, module.Title, node, missing).ConfigureAwait(true);
@@ -161,7 +161,7 @@ public sealed class AutomationNameCoverageTests
     private static IReadOnlyList<string> TreeNodesFor(ShellArea area) => area switch
     {
         ShellArea.Projects => ["Dashboard", "Open", "Closed", "Archive"],
-        ShellArea.EngineeringDepartment => ["Dashboard", "Tasks", "Requirements discipline", "Engineering Calculations", "Calculators", "Engineering Assets", "Reference data"],
+        ShellArea.EngineeringDepartment => ["Dashboard", "Tasks", "Mechanical discipline", "Requirements module", "Calculators", "Calculation register", "Packs and templates", "Reference data"],
         ShellArea.Business => ["Dashboard", "Staff", "Rate cards", "Quotes", "Invoices", "Timesheets", "Subscriptions"],
         _ => [],
     };

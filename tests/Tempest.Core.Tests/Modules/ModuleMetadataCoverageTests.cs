@@ -55,7 +55,9 @@ public class ModuleMetadataCoverageTests
         // Dashboard Export capability (2026-09-20/21) added a seventh
         // Tempest.Workspace module, `DashboardExportModule`, carrying
         // `[ModuleMetadata]` exactly like its six siblings.
-        Assert.Equal(33, moduleTypes.Count);
+        // 33 -> 36 (`ADR-0163`): the Structural, Electrical and Building
+        // Services Explorer area modules.
+        Assert.Equal(36, moduleTypes.Count);
 
         var missingMetadata = moduleTypes
             .Where(type => type.GetCustomAttribute<ModuleMetadataAttribute>() is null)

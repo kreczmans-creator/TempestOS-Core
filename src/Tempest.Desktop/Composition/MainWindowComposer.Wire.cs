@@ -533,6 +533,7 @@ internal sealed partial class MainWindowComposer
         _ when ManufacturingObjectFactoryRegistry.SupportedKinds.Contains(kind) => isMove ? ManufacturingCommandIds.Move : ManufacturingCommandIds.Copy,
         _ when MechanicalObjectFactoryRegistry.SupportedKinds.Contains(kind) => isMove ? MechanicalCommandIds.Move : MechanicalCommandIds.Copy,
         "VerificationActivity" => isMove ? VerificationCommandIds.Move : VerificationCommandIds.Copy,
+        _ when isMove && Tempest.Workspace.Disciplines.DisciplineCatalogue.ForKind(kind) is { } discipline => discipline.CommandId("move"),
         "Requirement" when isMove => RequirementsCommandIds.Move,
         "RequirementGroup" when isMove => RequirementsCommandIds.MoveGroup,
         _ => null,

@@ -31,7 +31,7 @@ namespace Tempest.Desktop.Tests;
 public sealed class EngineeringCalculationWorkspaceTests
 {
     private const string EngineerId = "workspace-test-engineer";
-    private const string RailEntry = "Engineering Calculations";
+    private const string RailEntry = "Calculation register";
     private const string EngineeringRailEntry = "Engineering";
 
     // `WP 17.0A`. The `v0.16.0` build set Grid.Column on the StackPanels

@@ -87,22 +87,15 @@ public sealed class DocumentAreaView : UserControl, IDocumentOpener
     }
 
     /// <summary>
-    /// Sets (or replaces) the permanent, non-closable "Home" tab — the
-    /// Engineering Cockpit (`WP 10.1A`, `ADR-0069` — the Workspace's own
-    /// default landing screen), always first, always present, distinct
-    /// from every object tab <see cref="ShowTab"/> opens: closing an
-    /// object tab never affects it, and it carries no close glyph of its
-    /// own.
+    /// Sets (or replaces) the permanent, non-closable "Start" tab — always
+    /// first, always present, distinct from every object tab
+    /// <see cref="ShowTab"/> opens: closing an object tab never affects it,
+    /// and it carries no close glyph of its own.
     /// </summary>
     /// <remarks>
-    /// <b>The Document Area's own "empty workspace experience" (`WP 10.2A`):</b>
-    /// this permanent Home tab already <em>is</em> that experience —
-    /// realised, not omitted, one Work Package earlier (`WP 10.1A`,
-    /// `ADR-0069`): the Document Area is never genuinely empty, since the
-    /// Cockpit is always present and always selected first
-    /// (<c>MainWindow</c>'s own <c>SetHomeTab</c> call). No separate,
-    /// second "zero open documents" placeholder is built here — it would
-    /// never be reachable.
+    /// Until `ADR-0163` this tab held the Engineering Cockpit. Project
+    /// status now lives on each project's own Overview tab, so the Start
+    /// tab (<see cref="BuildStartPage"/>) only says how to open something.
     /// </remarks>
     public void SetHomeTab(Control content)
     {
@@ -111,16 +104,32 @@ public sealed class DocumentAreaView : UserControl, IDocumentOpener
         if (_homeTab is not null)
             _tabs.Items.Remove(_homeTab);
 
-        // The Home tab carries the mark itself — the one place in the
-        // document strip the brand appears, so the Cockpit is visibly the
-        // product's own landing surface rather than one document among many.
+        // The Start tab carries the mark itself — the one place in the
+        // document strip the brand appears.
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm + 2, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
         header.Children.Add(new Branding.TempestLogoControl { Width = 14, Height = 14, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
-        header.Children.Add(new TextBlock { Text = "Cockpit", VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+        header.Children.Add(new TextBlock { Text = "Start", VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
         _homeTab = new TabItem { Header = header, Content = content };
-        Avalonia.Automation.AutomationProperties.SetName(_homeTab, "Cockpit");
+        Avalonia.Automation.AutomationProperties.SetName(_homeTab, "Start");
         _tabs.Items.Insert(0, _homeTab);
         _tabs.SelectedItem = _homeTab;
+    }
+
+    /// <summary>The Start tab's own content: how to open something, and where project status now lives.</summary>
+    public static Control BuildStartPage()
+    {
+        var page = new StackPanel { Spacing = DesignTokens.SpaceSm, Margin = DesignTokens.PagePadding };
+        page.Children.Add(PageHeading.Label("ENGINEERING"));
+        page.Children.Add(PageHeading.Title("Nothing open yet"));
+        page.Children.Add(new TextBlock
+        {
+            Text = "Pick an object in the Project Explorer to open it here, or use Create in the command bar above. Project status lives on each project's Overview tab.",
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            MaxWidth = 560,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left,
+        });
+        Avalonia.Automation.AutomationProperties.SetName(page, "Start page");
+        return page;
     }
 
     /// <summary>Adds (or focuses, if already present) a tab for <paramref name="view"/>.</summary>

@@ -197,6 +197,8 @@ public sealed class NoBlockingPersistenceCallsTests
             (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
         [Path.Combine("Workspace", "Documents", "DocumentsWorkspaceViewFactory.cs")] =
             (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
+        [Path.Combine("Workspace", "Disciplines", "DisciplineWorkspaceView.cs")] =
+            (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs (ADR-0163)."),
         [Path.Combine("Workspace", "Manufacturing", "ManufacturingWorkspaceViewFactory.cs")] =
             (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
         [Path.Combine("Workspace", "Mechanical", "MechanicalWorkspaceViewFactory.cs")] =
@@ -338,10 +340,11 @@ public sealed class NoBlockingPersistenceCallsTests
     /// silently widen.
     /// </summary>
     [Fact]
-    public void TheWorkspaceAllowList_PinsExactlyEighteenSites_AcrossSixteenFiles()
+    public void TheWorkspaceAllowList_PinsExactlyNineteenSites_AcrossSeventeenFiles()
     {
-        Assert.Equal(16, AllowedWorkspaceBlockingCallSites.Count);
-        Assert.Equal(18, AllowedWorkspaceBlockingCallSites.Values.Sum(v => v.Count));
+        // 16 files / 18 sites -> 17 / 19 (`ADR-0163`): DisciplineWorkspaceView.cs.
+        Assert.Equal(17, AllowedWorkspaceBlockingCallSites.Count);
+        Assert.Equal(19, AllowedWorkspaceBlockingCallSites.Values.Sum(v => v.Count));
 
         foreach (var (relative, allowed) in AllowedWorkspaceBlockingCallSites)
         {
