@@ -495,7 +495,16 @@ public sealed class RibbonView : UserControl
 
             var name = groupedByVerb.Key;
             var group = BuildGroupRow(groupedByVerb.ToList());
-            var selector = new Button { Content = $"{name} ({groupedByVerb.Count()}) ▾", MinHeight = DesignTokens.ControlSizeSmall };
+            // Padding and border set here, not by the class: Primary and
+            // Subtle differ in both, and the selectors shifted sideways as
+            // the open one changed (real-shell stress finding F4).
+            var selector = new Button
+            {
+                Content = $"{name} ({groupedByVerb.Count()}) ▾",
+                MinHeight = DesignTokens.ControlSizeSmall,
+                Padding = new Avalonia.Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceXs),
+                BorderThickness = new Avalonia.Thickness(1),
+            };
             AutomationProperties.SetName(selector, $"{name} commands");
             selector.Click += (_, _) =>
             {

@@ -98,7 +98,17 @@ internal sealed partial class MainWindowComposer
         {
             var area = workspace.Navigation.Areas.FirstOrDefault(a => a.Title.Contains(category, StringComparison.OrdinalIgnoreCase));
             if (area is null)
+            {
+                // A discipline with commands but no Explorer area (Evidence):
+                // say so, rather than leave the previous discipline's tree.
+                views.ExplorerView.ShowNoTree(
+                    $"{category} has no tree here.",
+                    $"Use the commands above. {category} records are listed in each project's {category} tab.");
+                callbacks.SetCurrentArea(category);
                 return;
+            }
+
+            views.ExplorerView.ClearNoTree();
 
             await views.BusyOverlay.RunAsync($"Switching to {area.Title}…", async () =>
             {

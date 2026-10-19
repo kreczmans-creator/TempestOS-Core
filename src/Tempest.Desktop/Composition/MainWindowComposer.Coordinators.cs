@@ -151,6 +151,7 @@ internal sealed partial class MainWindowComposer
             onSwitchArea: async areaId =>
             {
                 await workspace.Navigation.SwitchAreaAsync(areaId).ConfigureAwait(true);
+                views.ExplorerView.ClearNoTree();
                 await views.ExplorerView.LoadAsync().ConfigureAwait(true);
                 callbacks.SetCurrentArea(workspace.Navigation.Areas.FirstOrDefault(a => a.Id == areaId)?.Title);
             },
