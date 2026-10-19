@@ -47,7 +47,7 @@ attachment bytes. Nothing spanned them, because — as
 transaction capable of spanning them. Every mutator wrote memory first,
 then disk, hoping nothing failed in between.
 
-Something eventually did, and it is the only row `BACKLOG.md`'s history
+Something eventually did, and it is the only row `docs/governance/Quality/Technical Debt Register.md`'s history
 records as having been marked **Release Blocking**:
 
 > `TD-147` — an object creation whose initial durable write failed still

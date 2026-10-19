@@ -22,7 +22,7 @@ The overnight campaign produced a **credible v1.0 release candidate, ready for P
 | **`WP 21.0K` — docking** | `ADR-0153` decision 8 (`Ctrl+Shift+,`/`.` reorder) delivered; keyboard gestures now reach the controller with a visible focus ring; **a critical pre-existing defect fixed**: closing one tab in a floating window discarded every other window's panels. K1/K2/K3/K6 + the new keys verified on a real X11 screen; a floating window restores to its exact place on one monitor. | `5c170f34`; `WP21.0K … Report.md`; `evidence/docking/` (6 PNGs) |
 | **`WP 21.5C` (Linux) — the real-shell journey** | A runner starts the real application in-process and drives it with genuine X11 input: 35 steps (33 Verified, 2 pinned to reported defects) + 8-step relaunch verify reading the screen and `tempest.db`; identical across two clean runs; **a major defect fixed** (the organisation picker opened under its prompt). Wired into CI's Linux job as advisory. | `3ba0709f`; `WP21.5C Real-Shell Journey (Linux) Report.md`; `evidence/realshell/` (25 PNGs) |
 | **Three journey defects fixed** | No way to create a rate card (so no priced time, no invoice on a clean install) → *Add a rate card* in Libraries; Accept left Requirements/Deliverables empty until reopen → refreshed in place; Home undercounted open projects → six buckets. Driven in the real application. | `37264671`; `evidence/fixes/01–06.png` |
-| Backlog audit | 10 → 7 live rows (three stale rows closed on inspection) → 10 with the three residues filed tonight; every row carries an explicit classification. | `BACKLOG.md` |
+| Backlog audit | 10 → 7 live rows (three stale rows closed on inspection) → 10 with the three residues filed tonight; every row carries an explicit classification. | `docs/governance/Quality/Technical Debt Register.md` |
 | Release documents | Release Notes (rows, figures, warnings), `PHYSICAL_REVIEW.md` §7j corrected + K7/K8, §7k (Xero), §7c C2 and §7h R3 corrected, Execution Plan §6, `PROJECT_STATUS.md`, this pack, `OVERNIGHT_FINAL_ACCEPTANCE_REPORT.md`. | the branch head |
 
 ## 3. Current repository state
@@ -40,7 +40,7 @@ The overnight campaign produced a **credible v1.0 release candidate, ready for P
 | Real shell | The journey runner on the final code head: the `WP 21.5C` runner on the final head, display :105, 2026-09-16 01:38–01:42 UTC: **journey 37 steps — 37 Verified, 0 Failed; relaunch verify 8 of 8 — PASSED**, now including the rate card created and released through the new form, the New Project prompt offering it, the timesheet prompt offering its grade, and the invoice request raised on completion (`evidence/realshell/gate-run-*-on-the-final-head.md`). Two earlier runs tonight on the same product code: 34/35 (before the runner learned the rate-card form) and 35/36 (the stale Raise-invoice expectation). Plus the hand-driven checks in `evidence/xero/`, `evidence/docking/`, `evidence/fixes/`, `evidence/quality/`. | `scripts/run-realshell-linux.sh` |
 | Installer | **Never produced by the pipeline** — `release.yml` runs on tags; newest tag `v0.18.0`. Script and 8 tests exist. Windows-only work for you (§4 step 19). | `WP21.9.1 Release Quality Evidence.md` §3 |
 | Backup / restore | Verified in the real application: a valid `.db` (`integrity_check ok`), restore refused while a project is open, data survives close and relaunch. | `evidence/quality/` |
-| Live backlog | 10 of 30, every row classified. | `BACKLOG.md` |
+| Live backlog | 10 of 30, every row classified. | `docs/governance/Quality/Technical Debt Register.md` |
 
 ## 4. Product acceptance journey (about 90 minutes, in this order)
 
@@ -116,7 +116,7 @@ folders are under `docs/releases/v0.21.0/evidence/`.
 
 **Unresolved defects (none open that block the journey; these are the honest residues)**
 - Every blocking defect found tonight was fixed with a test: the Linux secrets-directory mode; the three Xero authorisation-path defects and the Fake "Authorised." misreport; the floating-window close that discarded other windows' panels; the organisation picker opening under its prompt; no way to create a rate card; the Requirements/Deliverables tabs not refreshing after Accept; Home's undercount of open projects.
-- **Filed, user-visible, not fixed** (`BACKLOG.md`): raw GUIDs shown in three places (`TD-186`); a literal "(`TD-180`)" in an Invoices heading (`TD-187`); no per-line VAT control on the Quote tab — the default from Settings applies to every line (`TD-188`, a question for you). One `SIGABRT` on process exit seen once in nine runner runs, undiagnosed (Release Notes, Warnings).
+- **Filed, user-visible, not fixed** (`docs/governance/Quality/Technical Debt Register.md`): raw GUIDs shown in three places (`TD-186`); a literal "(`TD-180`)" in an Invoices heading (`TD-187`); no per-line VAT control on the Quote tab — the default from Settings applies to every line (`TD-188`, a question for you). One `SIGABRT` on process exit seen once in nine runner runs, undiagnosed (Release Notes, Warnings).
 - The one-off catalogue selection jump recorded on 2026-09-15 was not reproduced then or tonight.
 - Linux only: `StatusBarCollapseTests` diverges under the Linux headless host (font fallback, Inferred); green on Windows CI; not a product defect on the supported platform.
 

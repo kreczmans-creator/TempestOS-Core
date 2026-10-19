@@ -26,7 +26,7 @@ namespace Tempest.Core.Projects;
 /// set of folders within that, TBC"). Until it is, <see cref="DefaultStandardSubfolders"/>
 /// is deliberately empty and the service creates only the customer and
 /// project folders. Tracked in <c>docs/releases/v1.0.0/WorkPackages.md</c>
-/// and <c>BACKLOG.md</c>.
+/// and <c>docs/governance/Quality/Technical Debt Register.md</c>.
 /// </para>
 /// </remarks>
 /// <param name="Root">The root folder every customer folder lives under. <see langword="null"/> or blank switches folder generation off.</param>

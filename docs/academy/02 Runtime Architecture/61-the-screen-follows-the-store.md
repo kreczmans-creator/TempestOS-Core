@@ -177,7 +177,7 @@ area and reveals the object is explicitly *kept*, "because the
 subscription's own async reload cannot give that ordering guarantee."
 What the feed adds instead is the wider guarantee: whichever tab a user
 is looking at can no longer disagree with the store, since every view
-reacts to every commit, not only the one that caused it. `BACKLOG.md`
+reacts to every commit, not only the one that caused it. `docs/governance/Quality/Technical Debt Register.md`
 still credits `TD-172`'s formal closure to `WP 17.9.3`/`17.9.4` alone.
 Left genuinely untouched despite sharing `TD-108`'s own "Closes" row:
 `TD-90`, a docking re-render not restoring keyboard focus — reconciliation

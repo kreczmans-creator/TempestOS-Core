@@ -156,7 +156,7 @@ full suite before the next began:
 | `62e753f` | Of 83 classes tagged `"Console output capture"`, only 8 actually read the captured text; those move to a new `RecordingLogSink`. Found and fenced a second, previously-masked race: 15 classes building a real dynamic plugin assembly, unsafe to run concurrently — a dedicated collection. |
 | `54d1806` | Strips console redirection from the remaining ~60 files outright, freeing them to run in parallel. Removing that serialisation exposed a further genuine race in two files legitimately capturing real console output; fixed at the source with a private, injectable writer. |
 | `12f09f9` | 19 exact-count fixture pins become property assertions (no duplicate ID, every field present) plus one explicit structural check — an exact count is brittle whenever the number is incidental to the invariant. |
-| `56d6d74` | Deletes six passing tests whose only purpose was documenting a known, still-open defect — a bug pinned as a permanently green test is a backlog row wearing a test's clothes. Moved to `BACKLOG.md`. |
+| `56d6d74` | Deletes six passing tests whose only purpose was documenting a known, still-open defect — a bug pinned as a permanently green test is a backlog row wearing a test's clothes. Moved to `docs/governance/Quality/Technical Debt Register.md`. |
 | `fe10a42` | Adds Stryker.NET mutation testing, scoped to `Calculations/**` and `UnitsAndQuantities/**`, on a job gated to manual dispatch and a weekly schedule only. Also corrects ten places where "mutation-proved" had been written before any mutation tool existed — every one was a hand-run exercise, now labelled "hand-mutation-checked (not tool-produced)". |
 
 ## What the numbers say

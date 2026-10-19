@@ -147,7 +147,7 @@ against `git log` first.
 
 Worth naming honestly: the Release Notes' "known surface gaps" list, written
 between `17.9.3` and `17.9.4`, still records this class as a `TD-172` residual
-owed to `WP 18.1A`. `BACKLOG.md`'s register shows `TD-172` closed in full by
+owed to `WP 18.1A`. `docs/governance/Quality/Technical Debt Register.md`'s register shows `TD-172` closed in full by
 `17.9.3` and `17.9.4` together — the line outlived the fix that overtook it
 twelve hours later.
 

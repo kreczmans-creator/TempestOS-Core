@@ -79,7 +79,7 @@ Read, in this order, before anything below:
   the register suite existed, and the "Unknown is preferable to invented
   data" discipline that still applies to every document you write from
   here on. The registers themselves (`Governance Index.md` and the rest)
-  are archived beside it; `BACKLOG.md` and `docs/adr/` are the live
+  are archived beside it; `docs/governance/Quality/Technical Debt Register.md` and `docs/adr/` are the live
   answers to what still needs doing and what was decided.
 
 ### 4. How the platform works
@@ -236,7 +236,7 @@ the gate your pull request will meet.
   Markdown lines than code lines (`CONTRIBUTING.md`; enforced by
   `scripts/governance-healthcheck.ps1`). Update an ADR or architecture
   document your change makes untrue in the same pull request; file
-  anything you find but do not fix as a row in `BACKLOG.md`. The Academy
+  anything you find but do not fix as a row in `docs/governance/Quality/Technical Debt Register.md`. The Academy
   is no longer updated per Work Package — see the September 2026 note in
   `00 Introduction/00-welcome-to-the-academy.md` for how it is maintained
   now.
@@ -262,7 +262,7 @@ moves again, this is the line to fix.
 ## Related Documents
 
 `docs/academy/Academy Index.md` (the Academy's own table of contents);
-`docs/releases/FOUNDATION.md`; `CONTRIBUTING.md`; `BACKLOG.md`;
+`docs/releases/FOUNDATION.md`; `CONTRIBUTING.md`; `docs/governance/Quality/Technical Debt Register.md`;
 `docs/releases/v1.0.0/WorkPackages.md`; `docs/academy/06 Engineering
 Standards/Engineering Lifecycle.md`; the archived
 `archive/docs-2026-09/governance/Future Work Package Guidelines.md`.

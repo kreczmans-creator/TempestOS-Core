@@ -4,7 +4,7 @@ Read-only, code-derived audit of the shipped Desktop shell against what it claim
 
 Context: Product Owner's first Windows review (2026-09-08): "the engineering workspace doesn't open properly, it's a really hard to navigate place that doesn't actually contain half of the things it claims to have." Two concrete defects cited: Create Mechanical Object made an object nobody could find, and no way to add a material — both marked fixed as WP 17.9.2 in-repo.
 
-Editor's note (chief engineer, after this audit was written): the placement defect this audit calls "TD-171-class" was renumbered `TD-172` during the review, because `TD-171` was already assigned in `BACKLOG.md` to the verification-model collapse. The findings in §3 and §9 (items 5–8) are now recorded as `TD-172` and `TD-173` in `BACKLOG.md`. Read "TD-171" below as `TD-172`.
+Editor's note (chief engineer, after this audit was written): the placement defect this audit calls "TD-171-class" was renumbered `TD-172` during the review, because `TD-171` was already assigned in `docs/governance/Quality/Technical Debt Register.md` to the verification-model collapse. The findings in §3 and §9 (items 5–8) are now recorded as `TD-172` and `TD-173` in `docs/governance/Quality/Technical Debt Register.md`. Read "TD-171" below as `TD-172`.
 
 ---
 

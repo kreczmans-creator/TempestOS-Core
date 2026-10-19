@@ -46,7 +46,7 @@ publishes a `WorkspaceChange` once a commit lands. `RequirementsService`
 was never wired through it — its fourteen mutating methods wrote
 straight to the document and persistence stores, so a docked
 Requirements Explorer or Cockpit went stale until a user navigated away
-and back. `BACKLOG.md`'s audit named this `TD-28` and corrected its own
+and back. `docs/governance/Quality/Technical Debt Register.md`'s audit named this `TD-28` and corrected its own
 earlier framing: not a bulk-command defect, but every Requirements
 write, single or bulk.
 
@@ -70,7 +70,7 @@ indivisible commits as a consequence of the fix, not its purpose.
 New tests (`65f1185`) prove the publish per mutator and that a
 refused write publishes nothing; a `Tempest.Desktop.Tests` integration
 test proves a docked subscriber sees a real write through the real
-`WorkspaceHost`. `BACKLOG.md` closes `TD-28` directly, the last of three
+`WorkspaceHost`. `docs/governance/Quality/Technical Debt Register.md` closes `TD-28` directly, the last of three
 rows once carried as "judgement calls".
 
 ## A name that cannot collide, within a project

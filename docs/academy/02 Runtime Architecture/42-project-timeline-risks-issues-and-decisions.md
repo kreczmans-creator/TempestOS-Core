@@ -180,7 +180,7 @@ Resources, Knowledge, Administration, and "Gantt/scheduling proper".
 `ProjectAreas` now marks both `Risks` and `Timeline` **Implemented**, leaving
 only Reports and Settings `Declared` in the project workspace's tab strip.
 
-`BACKLOG.md`'s own live `TD-81` row, written by the later `WP 17.0B` register
+`docs/governance/Quality/Technical Debt Register.md`'s own live `TD-81` row, written by the later `WP 17.0B` register
 triage, has not caught up: it still reads "Whole mock-up modules
 unimplemented: Tasks, Commercial, Resources, Knowledge, Admin" — wording that
 predates all three closures, Tasks included. The two Work Packages' own commit

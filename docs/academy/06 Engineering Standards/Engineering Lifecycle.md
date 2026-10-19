@@ -5,7 +5,7 @@
 > (2026-09-08): the *Academy* stage is no longer a per-Work-Package
 > retrospective (the pull request description carries that record), the
 > *Governance* stage no longer updates a register suite (it files rows in
-> `BACKLOG.md`), and *Release* is the gate described in
+> `docs/governance/Quality/Technical Debt Register.md`), and *Release* is the gate described in
 > `08-the-physical-review-and-the-release-gate.md`. `CONTRIBUTING.md`
 > states the current Definition of Done; `00 Introduction/01-how-tempestos-gets-built.md`
 > walks the stages as they are run today.

@@ -331,7 +331,7 @@ git log -100 --shortstat --format= | awk '/file/ { matched+=1; if (match($0, /([
 | src/Tempest.Core/Persistence/SqlitePersistenceStore.cs | 4 |
 | src/Tempest.Workspace/Workspace/WorkspaceManager.cs | 3 |
 | PROJECT_STATUS.md | 144 |
-| BACKLOG.md | 5 |
+| docs/governance/Quality/Technical Debt Register.md | 5 |
 
 Command:
 ```bash

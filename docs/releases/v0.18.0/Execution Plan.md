@@ -66,7 +66,7 @@ in the order listed; the gate runs after every merge.
 | 3 | `WP 18.2A` Evidence workspace | 18.0A, 18.0B, 18.1A | Sonnet (Opus if a second attempt is needed) | new `Views/EvidenceWorkspaceView.cs`, `Views/LibrariesView.cs`, `IFilePicker` + Avalonia implementation + headless stub, `ShellArea`/`NavigationAvailability`/`GlobalNavigationRail`/`MainWindow` (Evidence area), `ObjectEditorView.cs` (declaration-per-Kind, Where-used, BOM input removal from Part), `MechanicalPropertyFacetProvider.cs`, journey tests |
 | 3 | `WP 18.1B` Findability | 18.1A | Sonnet | new `SearchIndex` (SQLite FTS5) in `Persistence/`, `CommandPaletteOverlay.cs`, `ProjectExplorerView.cs` (filter only), `CockpitView.cs` (Recently changed card), tests |
 | 4 | `WP 18.2B` Independent check and issue sheet | 18.2A | Sonnet | `Evidence/Check*`, `Evidence/Issue*`, new `IssueSheetRenderer` (PDF), `EvidenceWorkspaceView.cs` (check/issue region), journey tests with two principals |
-| 5 | `WP 18.9.0` Release | all | lead + Haiku for counts | `PHYSICAL_REVIEW.md` §8, Release Notes, `PROJECT_STATUS.md`, `BACKLOG.md`, `VERSION`, tag |
+| 5 | `WP 18.9.0` Release | all | lead + Haiku for counts | `PHYSICAL_REVIEW.md` §8, Release Notes, `PROJECT_STATUS.md`, `docs/governance/Quality/Technical Debt Register.md`, `VERSION`, tag |
 
 Waves 1 and 3 run three and two agents in parallel; waves 2, 4 and 5
 are serial. The lead merges, gates and re-briefs; no agent merges.

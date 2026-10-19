@@ -9,7 +9,7 @@ technical debt acquired through the implementation of this software."
 **Method.** Every row below was re-verified against the code on
 `wp/19.10G` at `5abeb57d` (worktree `D:/tempest-wt/19.10G`, clean),
 read-only, by five parallel evidence passes plus direct inspection —
-never assumed from `BACKLOG.md`'s own prose. `BACKLOG.md`'s "Owned by
+never assumed from `docs/governance/Quality/Technical Debt Register.md`'s own prose. `docs/governance/Quality/Technical Debt Register.md`'s "Owned by
 Programme" section (lines 173–345) is the *Part D* source; its
 "Archived with the Layer" section (lines 346–377) is *Part E*'s; the
 frozen `archive/docs-2026-09/governance/Quality/Technical Debt
@@ -18,9 +18,9 @@ reconciliations `947c50d` (v0.19.0) and this branch's own `WP 19.9.1`
 passes (`b0fc7025`, `1f237d62`, `dfbd6379`) were read first and are
 built on, not repeated.
 
-**Headline counts.** Of the 57 rows `BACKLOG.md` places "Owned by
+**Headline counts.** Of the 57 rows `docs/governance/Quality/Technical Debt Register.md` places "Owned by
 Programme": **26 Closed, 4 Partly closed, 27 Not closed.** Two of the
-26 (`TD-137`, `TD-149`) are closed but `BACKLOG.md` does not yet say so
+26 (`TD-137`, `TD-149`) are closed but `docs/governance/Quality/Technical Debt Register.md` does not yet say so
 — a real, disclosed drift this document corrects. Of the 16
 "Archived with the Layer" rows, 13 genuinely sit in frozen code with no
 live dependency; 2 (`TD-161`, `TD-162`) were never actually frozen
@@ -163,7 +163,7 @@ was raised.
 
 ### D.3 Two closures the file doesn't yet credit
 
-`TD-137` (fsync) and `TD-149` (legacy-encoded resurrection) are both genuinely **closed** — `SqlitePersistenceStore.cs` (`:874-877` for the WAL `synchronous=FULL` pragma; `:271-287` for the single atomic `DELETE`) and `ADR-0144` state this outright — but `BACKLOG.md` still lists their owner as merely `WP 17.1A` (i.e., not yet moved to a "Closed" table). Both landed with `WP 17.1A`/`WP 18.1A`'s `ADR-0144` rewrite (2026-09-08/09), the same substrate change that closed the neighbouring `TD-36`/`TD-67`/etc. rows this document confirms are still open — the register was evidently updated selectively at the time. This is a `BACKLOG.md` housekeeping gap, not a code gap; no code action follows from it.
+`TD-137` (fsync) and `TD-149` (legacy-encoded resurrection) are both genuinely **closed** — `SqlitePersistenceStore.cs` (`:874-877` for the WAL `synchronous=FULL` pragma; `:271-287` for the single atomic `DELETE`) and `ADR-0144` state this outright — but `docs/governance/Quality/Technical Debt Register.md` still lists their owner as merely `WP 17.1A` (i.e., not yet moved to a "Closed" table). Both landed with `WP 17.1A`/`WP 18.1A`'s `ADR-0144` rewrite (2026-09-08/09), the same substrate change that closed the neighbouring `TD-36`/`TD-67`/etc. rows this document confirms are still open — the register was evidently updated selectively at the time. This is a `docs/governance/Quality/Technical Debt Register.md` housekeeping gap, not a code gap; no code action follows from it.
 
 ---
 
@@ -190,7 +190,7 @@ Three of the sixteen rows do not fit the section's own premise and are marked as
 | `TD-61` | Plugin-folder containment check does not resolve symlinks | `Tempest.Core.Plugins` (trust) | (same layer) | No |
 | `TD-64` | `TD-52`'s gate closure has no end-to-end production-wiring test | `Tempest.Core.Plugins` (trust) | (same layer) | No |
 
-For scale, the same `WP 18.0C` freeze also moved six much larger namespaces out of `Tempest.Core` under `ADR-0127`–`ADR-0142` — `EngineeringIntelligence` (P02, 9,100 lines), `CommercialIntelligence` (P03, 7,461 lines), `BusinessOperations` (P04, 2,505 lines), `EngineeringAssets` (P05, 1,755 lines), `Knowledge` (P06, 3,966 lines) and `BusinessGovernance` (P07, 7,527 lines) — 32,308 lines total (`src/Frozen/README.md:44-53`). No `BACKLOG.md` row names any of these six directly (their own debt, if any, froze with them); they are noted here only as size context for what a P02–P07 unfreeze would actually cost, an order of magnitude past the REST/Licensing/Plugins figures above.
+For scale, the same `WP 18.0C` freeze also moved six much larger namespaces out of `Tempest.Core` under `ADR-0127`–`ADR-0142` — `EngineeringIntelligence` (P02, 9,100 lines), `CommercialIntelligence` (P03, 7,461 lines), `BusinessOperations` (P04, 2,505 lines), `EngineeringAssets` (P05, 1,755 lines), `Knowledge` (P06, 3,966 lines) and `BusinessGovernance` (P07, 7,527 lines) — 32,308 lines total (`src/Frozen/README.md:44-53`). No `docs/governance/Quality/Technical Debt Register.md` row names any of these six directly (their own debt, if any, froze with them); they are noted here only as size context for what a P02–P07 unfreeze would actually cost, an order of magnitude past the REST/Licensing/Plugins figures above.
 
 ---
 
@@ -198,7 +198,7 @@ For scale, the same `WP 18.0C` freeze also moved six much larger namespaces out 
 
 ### F.1 What the frozen register holds
 
-**170 rows ever raised** (`TD-01`–`TD-170`, contiguous, no gaps — `archive/docs-2026-09/governance/Quality/Technical Debt Register.md:13`). Of those, **69 closed before the `WP 17.0B` triage** (2026-09-08): 63 Resolved + 6 Closed (register metadata, same line), leaving the 101 (93 Open + 7 Partially resolved + 1 Deferred) that became `BACKLOG.md`'s own starting set — matching `docs/releases/v0.17.0/Release Notes.md:137`'s own "101 debt rows triaged: 27 live, 61 owned by a programme WP, the rest archived with their layer or closed."
+**170 rows ever raised** (`TD-01`–`TD-170`, contiguous, no gaps — `archive/docs-2026-09/governance/Quality/Technical Debt Register.md:13`). Of those, **69 closed before the `WP 17.0B` triage** (2026-09-08): 63 Resolved + 6 Closed (register metadata, same line), leaving the 101 (93 Open + 7 Partially resolved + 1 Deferred) that became `docs/governance/Quality/Technical Debt Register.md`'s own starting set — matching `docs/releases/v0.17.0/Release Notes.md:137`'s own "101 debt rows triaged: 27 live, 61 owned by a programme WP, the rest archived with their layer or closed."
 
 **By what they closed:** the large majority — 66 of the 69 — closed through implementation work credited to a specific Work Package, numbered (`WP 6.1`, `WP 13.2A`, `WP 16.4B-R7`, …) or lettered (`WP-A1`, `WP-A2`, `WP-C`, `WP-D1`, `WP-D2`, `WP-F`, `WP-G`, `WP-Z2`, …) in the row's own Status cell. The remaining 3 (`TD-70`, `TD-71`, `TD-72` region — specifically `TD-70`, `TD-71`, `TD-94`) closed through a dated review/audit pass (the "2026-08-28 audit pass," "cleanliness pass") that predates the programme's WP-lettering convention rather than carrying a WP id of its own. None of the 69 read as a pure re-scoping decision with no code change — every Resolved/Closed row this register carries names a concrete fix, a test, or a superseding architecture.
 
@@ -229,9 +229,9 @@ Ranked by the length and depth of the register's own remediation text for each r
 | `v0.19.0` | 0 | 8 full + 1 partial (`TD-65`, `73`, `74`, `76`, `81`, `109`, `128`, `132`; `TD-133` partial) |
 | `v0.19.1` | 10 minted (`TD-176`–`185`); 3 withdrawn as not-debt (`183`–`185`, folded into the release notes' own Warnings); net 6 remain open (`176`, `177`, `179`–`182`) | 1, same-pass (`TD-178`, raised and closed in the `WP 19.9.1` reconciliation itself); 0 pre-existing rows (`WP 19.9.1`'s own reconciliation: "0 closed/0 partly/0 not closed") |
 
-(Sources: `BACKLOG.md`'s own "Owned by Programme"/"Live Backlog" closure notes; `docs/releases/v0.17.0/Release Notes.md:137,163-164`; `947c50d` and this branch's `b0fc7025`/`1f237d62`/`dfbd6379` commit messages; first-appearance commits for `TD-171`–`185` found by `git log --reverse -S"TD-nnn" -- BACKLOG.md`.)
+(Sources: `docs/governance/Quality/Technical Debt Register.md`'s own "Owned by Programme"/"Live Backlog" closure notes; `docs/releases/v0.17.0/Release Notes.md:137,163-164`; `947c50d` and this branch's `b0fc7025`/`1f237d62`/`dfbd6379` commit messages; first-appearance commits for `TD-171`–`185` found by `git log --reverse -S"TD-nnn" -- docs/governance/Quality/Technical Debt Register.md`.)
 
-**What the trend says.** The pattern is not "raising faster than closing" in any worrying sense — it is front-loaded payoff followed by a deliberate audit spike. `v0.17.0` and `v0.18.0` together closed sixteen rows, including the release-blocking `TD-147` and the whole refuse-after-mutate class, while raising only five, three of which closed in the same release they were raised. `v0.19.0` raised nothing and closed nine (a full accessibility/navigation/composition sweep) as pure debt reduction. `v0.19.1`'s ten new IDs look like a spike, but it is a disclosed one: it is the product of a deliberate audit (`WP 19.9.1` cross-checking every v0.19.1 Work Package's own report against `BACKLOG.md`, closing zero pre-existing rows in the process precisely because it found none it could honestly claim), three of the ten were judged not to be product debt at all and were withdrawn before the release closed, and every surviving row is individually small (a UI edge case, a missing bucket, a heuristic) and already named in the v0.19.1 Release Notes' own Warnings section rather than hidden. The two undisclosed closures this document found (`TD-137`, `TD-149`, Part D.3) point the other way — the register understates what has already been paid down, not what remains owed.
+**What the trend says.** The pattern is not "raising faster than closing" in any worrying sense — it is front-loaded payoff followed by a deliberate audit spike. `v0.17.0` and `v0.18.0` together closed sixteen rows, including the release-blocking `TD-147` and the whole refuse-after-mutate class, while raising only five, three of which closed in the same release they were raised. `v0.19.0` raised nothing and closed nine (a full accessibility/navigation/composition sweep) as pure debt reduction. `v0.19.1`'s ten new IDs look like a spike, but it is a disclosed one: it is the product of a deliberate audit (`WP 19.9.1` cross-checking every v0.19.1 Work Package's own report against `docs/governance/Quality/Technical Debt Register.md`, closing zero pre-existing rows in the process precisely because it found none it could honestly claim), three of the ten were judged not to be product debt at all and were withdrawn before the release closed, and every surviving row is individually small (a UI edge case, a missing bucket, a heuristic) and already named in the v0.19.1 Release Notes' own Warnings section rather than hidden. The two undisclosed closures this document found (`TD-137`, `TD-149`, Part D.3) point the other way — the register understates what has already been paid down, not what remains owed.
 
 ---
 

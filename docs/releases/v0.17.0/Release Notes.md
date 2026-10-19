@@ -134,7 +134,7 @@ second person could pick up on day one.
 | WP | Delivered |
 |---|---|
 | 17.0A | Calculation-view column fix; overlap-aware layout assertions; write-through fsync on the file store; critical hosted service whose constructor throws is Host-fatal; DI default-parameter fallback restricted to nullable parameters and logged; test deadlines scale by `TEMPEST_TEST_TIMEOUT_FACTOR`; no test touches the real persistence root; stray run artefacts removed and ignored. |
-| 17.0B | 807 governance files moved to `archive/docs-2026-09/` with history intact; `PROJECT_STATUS.md` cut to one screen; `CONTRIBUTING.md` and `BACKLOG.md` (101 debt rows triaged: 27 live, 61 owned by a programme WP, the rest archived with their layer or closed); health check reduced from 16 checks to 5 source-derived ones plus a Markdown-must-not-exceed-code check; branch protection configured on `main` (strict `CI Gate`, PR required, no force pushes). |
+| 17.0B | 807 governance files moved to `archive/docs-2026-09/` with history intact; `PROJECT_STATUS.md` cut to one screen; `CONTRIBUTING.md` and `docs/governance/Quality/Technical Debt Register.md` (101 debt rows triaged: 27 live, 61 owned by a programme WP, the rest archived with their layer or closed); health check reduced from 16 checks to 5 source-derived ones plus a Markdown-must-not-exceed-code check; branch protection configured on `main` (strict `CI Gate`, PR required, no force pushes). |
 | 17.0C | One `RunningHostFixture` replaces 93 copied host-polling loops; console capture removed from 83 test classes so they run in parallel; a real parallelism hazard in dynamic plugin-assembly emission fenced; exact-count fixture pins converted to property assertions; six tests that passed on known bugs deleted; Stryker.NET configured for the calculation and units namespaces on a scheduled CI job; coverage and per-assembly duration published in the CI summary. |
 | 17.1A | `SqlitePersistenceStore` (WAL, `synchronous=FULL`, exact case-sensitive keys) behind the unchanged four-method interfaces plus `IQueryablePersistenceStore` (prefix listing, read-all, read-many, `ExecuteInTransactionAsync`); one instance registered under all three interfaces and disposed by the host; instance lock file; `Persistence:Backend` switch keeping the file store for exactly this release. 10,000 keys: seed 127 ms, list 5 ms, read-all 8 ms. ADR-0144. |
 | 17.1B | One store is authoritative. Every mutator and both factories write object state, document revisions, references, attachment bytes and one audit row in a single transaction under one domain-wide lock; memory is applied only after commit, inside the lock. Deleted: rollback-on-failure, the mutation rollback point, the attachment write-intent store and the reconciliation sweep (1,802 lines). `EngineeringObjectBase` 1,819 → 821 lines plus a 203-line state partial. TD-147 (the Release Blocking row) closed, with TD-142/144/145/146/148. Two defects found in the WP's own first attempt and fixed. ADR-0145. |
@@ -160,7 +160,7 @@ second person could pick up on day one.
 | Desktop suite duration (local, Debug) | ~15 min | ~3 min |
 | Live documentation files | 1,062 | 257 |
 | ADRs | 143 | 147 (four new: 0144 to 0147; ten marked Frozen) |
-| Technical debt rows | 170 in one 468 KB register | 27 live in `BACKLOG.md` |
+| Technical debt rows | 170 in one 468 KB register | 27 live in `docs/governance/Quality/Technical Debt Register.md` |
 | Release Blocking rows | 1 (TD-147) | 0 |
 | Commits on the release branch | — | 53 |
 
@@ -242,5 +242,5 @@ plan are in `docs/releases/v1.0.0/`.
 
 ## Related
 
-`docs/releases/v1.0.0/WorkPackages.md`; `BACKLOG.md`; `CONTRIBUTING.md`;
+`docs/releases/v1.0.0/WorkPackages.md`; `docs/governance/Quality/Technical Debt Register.md`; `CONTRIBUTING.md`;
 `PHYSICAL_REVIEW.md`; ADR-0144, ADR-0145, ADR-0146, ADR-0147.

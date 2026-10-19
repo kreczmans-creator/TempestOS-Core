@@ -29,7 +29,7 @@ matters, the entry says so rather than implying it has shipped.
   to finish, so the program can keep responding meanwhile. In TempestOS:
   saving to disk is asynchronous so the screen never freezes — see **thread/UI
   thread**.
-- **backlog.** A list of known work not yet done. In TempestOS: `BACKLOG.md`,
+- **backlog.** A list of known work not yet done. In TempestOS: `docs/governance/Quality/Technical Debt Register.md`,
   the live technical-debt list, capped at 30 rows.
 - **branch.** A private, named copy of the code, changed without affecting
   anyone else's, until merged back. In TempestOS: one branch, and one git
@@ -604,7 +604,7 @@ matters, the entry says so rather than implying it has shipped.
   Move could not be reached by keyboard and Copy had no working path anywhere
   in the shipped Desktop, across twelve commands. In TempestOS: `S2-2` was
   closed by `WP 20.2A`'s **object picker**, alongside `TD-115` and `TD-77`.
-  See: `BACKLOG.md`.
+  See: `docs/governance/Quality/Technical Debt Register.md`.
 - **seam.** A single point in the code every path to a particular outcome is
   made to pass through, so a rule enforced there cannot be bypassed by an
   undiscovered second route. `EvidenceService` is one: every act with a
@@ -655,7 +655,7 @@ matters, the entry says so rather than implying it has shipped.
   Product Owner's review of the ADR. See: `76-tear-out-and-dock-everywhere.md`
   and `docs/releases/v0.21.0/Release Notes.md`.
 - **technical debt row (`TD-`).** One numbered, honestly recorded shortcoming
-  in `BACKLOG.md`, mapped to the Work Package expected to close it, or marked
+  in `docs/governance/Quality/Technical Debt Register.md`, mapped to the Work Package expected to close it, or marked
   unowned.
 - **timesheet entry.** One person's record of hours worked on a project on a
   given day, with the billing and cost rate it was recorded at frozen onto it

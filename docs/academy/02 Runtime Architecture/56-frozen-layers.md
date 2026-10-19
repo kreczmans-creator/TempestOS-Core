@@ -179,7 +179,7 @@ tagged to," not an ERP, not a PLM. `59-evidence.md` covers what `v0.18.0`
 built in the space this freed; the case study `07-the-design-freeze-review.md`
 covers the review itself in full.
 
-Freezing did not claim more than it delivered — `BACKLOG.md` still lists
+Freezing did not claim more than it delivered — `docs/governance/Quality/Technical Debt Register.md` still lists
 `TD-161`/`TD-162` as things `WP 18.0C` claims but does not close, since
 `EngineeringTraceRegister` and `BracketEngineeringRecordService` still ship
 outside `src/Frozen/`. Nor did it touch part 2 of `WP 17.2A` — Configuration,

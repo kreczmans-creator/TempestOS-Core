@@ -6,7 +6,7 @@
 `TD-176`, `TD-179` (residual), `TD-41`, `TD-156`, `TD-158`, `TD-92`;
 `TD-131`, `TD-134`, `TD-154`, `TD-63`, `TD-93`; `TD-42`, `TD-78`, `TD-137`,
 `TD-149`, `TD-25` (register-only findings) · **Decision:** `ADR-0145`
-addendum · **Code:** `BACKLOG.md`,
+addendum · **Code:** `docs/governance/Quality/Technical Debt Register.md`,
 `src/Tempest.Core/Persistence/SqlitePersistenceStore.cs`,
 `src/Tempest.Workspace/Projects/ProjectContext.cs`,
 `src/Tempest.Core/Commands/ArchivedProjectCommandGuard.cs`,
@@ -26,7 +26,7 @@ project says about itself.
 
 ## What "technical debt" means here, and why a rationalisation is not a list
 
-`BACKLOG.md` sorts every disclosed shortcoming into three buckets:
+`docs/governance/Quality/Technical Debt Register.md` sorts every disclosed shortcoming into three buckets:
 **Owned by Programme** (a past Work Package already closed it),
 **Archived with the Layer** (the code lives in `src/Frozen/`, unshipped),
 or the **Live Backlog**, capped at 30 rows a user could still notice
@@ -54,13 +54,13 @@ rows plus the debt the code and ADRs disclose that no row names,
 audited by six parallel code passes plus two source audits. **Part 2**
 (`WP 19.10G`, merged `f2b8ff4`) covers the Owned-by-Programme rows, the
 Archived-with-the-Layer rows, and the 170-row frozen register
-`BACKLOG.md` grew out of. Both were read-only, against the identical
+`docs/governance/Quality/Technical Debt Register.md` grew out of. Both were read-only, against the identical
 commit (`5abeb57d`, this branch's own base) — so that sixteen Work
 Packages already racing to fix things that night could not make the
 audit's own count drift while it was still being written.
 
 Part 2's headline finding is the sharper of the two: of the **57 rows**
-`BACKLOG.md` listed as Owned by Programme — each meaning some past
+`docs/governance/Quality/Technical Debt Register.md` listed as Owned by Programme — each meaning some past
 release had claimed it done — only **26 were actually closed**, **4**
 were partly closed, and **27 were not closed at all**. Nearly half of
 what a prior release marked finished was not, on re-inspection.
@@ -77,7 +77,7 @@ files — never debt at all. `TD-137` (every write fsync'd) and `TD-149`
 (a deleted legacy record cannot resurrect) were both genuinely fixed
 months earlier by the same rewrite that fixed their still-open
 neighbours; `ADR-0145`'s own "Closed" section had claimed `TD-150`
-alongside them prematurely, and its addendum records that `BACKLOG.md`'s
+alongside them prematurely, and its addendum records that `docs/governance/Quality/Technical Debt Register.md`'s
 row was the one that had it right, keeping `TD-150` open the whole time
 against the ADR's own over-claim.
 
@@ -201,7 +201,7 @@ place the test suite could not previously have caught one.
 The Live Backlog's own heading tells the rest: **30 of 30** before that
 night, **13 of 30** by the time `v0.20.0` was cut — most of the
 difference this chapter's sixteen closures. Two honest exceptions travel
-with that number: `TD-42`'s row still sits in `BACKLOG.md` as if open,
+with that number: `TD-42`'s row still sits in `docs/governance/Quality/Technical Debt Register.md` as if open,
 because already-fixed is not the same as formally closed; and
 `TD-137`/`TD-149` still carry no "Closed" note of their own, even now,
 for the identical reason. Fixing the finding and fixing the file are two

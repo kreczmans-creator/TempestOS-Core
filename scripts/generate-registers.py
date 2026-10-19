@@ -1,8 +1,8 @@
-"""Renders the ADR register and the technical debt register (BACKLOG.md) as
+"""Renders the ADR register and the technical debt register as
 HTML documents in the Tempest document style, into docs/governance/html/.
 
 Usage (from anywhere):  python3 scripts/generate-registers.py
-Re-run after the ADR Register or BACKLOG.md changes (each release).
+Re-run after the ADR Register or the Technical Debt Register changes (each release).
 """
 import re, html, sys, datetime, collections, pathlib
 ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
@@ -146,8 +146,8 @@ body = f'''<h1>Architecture Decision Record register</h1>
 <div class="wrap"><table><thead><tr><th style="width:96px">ADR</th><th>Title</th><th style="width:190px">Status</th><th style="width:200px">Date</th><th style="width:80px">Verified</th></tr></thead><tbody>{''.join(trs)}</tbody></table></div>'''
 open(f'{OUT}/ADR Register.html', 'w').write(page('ADR Register', 'ADR REGISTER', f'TDE-OS-GOV-ADR · {len(rows)} RECORDS · ISSUED {today}', body))
 
-# ---------- Technical debt register (BACKLOG.md) ----------
-md = open(f'{ROOT}/BACKLOG.md').read()
+# ---------- Technical debt register ----------
+md = open(f'{ROOT}/docs/governance/Quality/Technical Debt Register.md').read()
 tabs = tables_by_section(md)
 groups = collections.OrderedDict()
 for h2, h3, header, rows_, intro in tabs:
@@ -175,7 +175,7 @@ for n in names:
             trs.append(f'<tr class="td" data-k="{label}">{"".join(tds)}</tr>')
         parts.append(f'<div class="wrap"><table><thead><tr>{th}</tr></thead><tbody>{"".join(trs)}</tbody></table></div>')
 body = f'''<h1>Technical debt register</h1>
-<p class="lede">The live technical-debt list (<code>BACKLOG.md</code>), which replaced the frozen 170-row register in <code>WP 17.0B</code>: what is still open, what each work package closed and how, and what was archived with a frozen layer.</p>
+<p class="lede">The live technical-debt list (<code>docs/governance/Quality/Technical Debt Register.md</code>, formerly <code>BACKLOG.md</code>), which replaced the frozen 170-row register in <code>WP 17.0B</code>: what is still open, what each work package closed and how, and what was archived with a frozen layer.</p>
 <div class="kpis">{kpis}</div>
 <div class="tools" data-filter="tr.td"><input type="search" placeholder="Search debt — ID, title, owner, fix…" aria-label="Search the register"><select aria-label="State"><option value="">Open, closed and archived</option><option value="Open">Open only</option><option value="Closed">Closed only</option><option value="Archived">Archived only</option></select><span class="count"></span></div>
 {''.join(parts)}'''
@@ -288,7 +288,7 @@ input.addEventListener('input',apply);apply();})();
 </script>'''
 
 made = [('ADR Register', 'Architecture Decision Record register', 'docs/governance/Architecture/ADR Register.md'),
-        ('Technical Debt Register', 'Technical debt register', 'BACKLOG.md')]
+        ('Technical Debt Register', 'Technical debt register', 'docs/governance/Quality/Technical Debt Register.md')]
 for src, name, eyebrow, ref in GENERAL:
     md = open(f'{ROOT}/{src}', encoding='utf-8').read()
     title, body_html = render_markdown(md)

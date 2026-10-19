@@ -3,7 +3,7 @@
 > **Status note, September 2026.** The register suite this document
 > describes was archived by `WP 17.0B` (2026-09-08) to
 > `archive/docs-2026-09/governance/`. What remains live is `docs/adr/`
-> with its `docs/governance/Architecture/ADR Register.md`, and `BACKLOG.md`
+> with its `docs/governance/Architecture/ADR Register.md`, and `docs/governance/Quality/Technical Debt Register.md`
 > at the repository root in place of the Technical Debt Register. Read this
 > document as history; `09-the-governance-reset-and-how-a-release-is-now-run.md`
 > explains why.

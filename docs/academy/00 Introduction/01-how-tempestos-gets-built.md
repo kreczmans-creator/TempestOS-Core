@@ -159,7 +159,7 @@ warnings, because a warning ignored today is a defect tomorrow. `main` is
 protected: nothing can be merged into it without the gate.
 
 Then one review, one round. A finding is fixed in the same PR or written
-into `BACKLOG.md` as a numbered row of **technical debt** — a known
+into `docs/governance/Quality/Technical Debt Register.md` as a numbered row of **technical debt** — a known
 shortcoming, honestly recorded, with an owner. A finding is never silently
 dropped. Only one kind of finding stops a merge: data loss a user can
 reproduce from the running application.
@@ -190,7 +190,7 @@ assuming the workflow succeeded.
 
 ## Stage 8 — Living with it
 
-Every release leaves a `BACKLOG.md` a little different. Debt is paid down
+Every release leaves a `docs/governance/Quality/Technical Debt Register.md` a little different. Debt is paid down
 by later Work Packages, whose "Closes" column names the rows. Two
 disciplines from the archived `Governance Philosophy.md`
 (`archive/docs-2026-09/governance/`) still run through every document you
