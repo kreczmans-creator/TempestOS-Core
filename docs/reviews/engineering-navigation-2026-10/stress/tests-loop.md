@@ -63,7 +63,23 @@ These export or issue a PDF, then assert on text extracted from it. The failure 
 - `origin/main` already fixes this: `b4ce0cb1` (v0.25.0) uses `DesktopTestHelpers.Deadline(5)`. The branch does not contain that commit (`origin/main` is not an ancestor of `9306eca3`). Merging main into the branch should fix this test.
 - Under contention the navigation tests still finished inside the 5 s window in every run, so the unscaled deadline did not cause any timing failure here.
 
-## Verdict
+## Rerun after merging main (2026-10-19) — current verdict: **FLAKE-FREE**
+
+What changed: `claude/stress-nav-tests` @ `695351b3` merges `origin/main` into the branch. The branch now carries `b4ce0cb1`, so `EngineeringDisciplineNavigationTests` uses `DesktopTestHelpers.Deadline(5)`. The steps followed `runbook.md`.
+
+| Step | Runs | Passed | Failed | Wall |
+|---|---|---|---|---|
+| Targeted filter | 15/15 pass | 61 | 0 | 93–112 s |
+| Full suite, idle | normal1–3 | 1101 | 22 | 13 m 10 s – 13 m 20 s |
+| Full suite, 4× `yes` | stress1–3 | 1101 | 22 | 21 m 17 s – 21 m 30 s |
+
+- All six full runs failed the same 22 tests.
+- Those 22 are the 17 baseline renderer tests plus the 5 PDF text-extraction tests listed below.
+- Nothing was left after removing that baseline.
+- `UnscaledTestDeadlineTests` now passes.
+- No failure was intermittent and none appeared only under load.
+
+## Original verdict (2026-10-18, before the merge)
 
 **BROKEN: `UnscaledTestDeadlineTests.NoDesktopTest_BuildsAnUnscaledUtcNowAddSecondsDeadline`.** It fails deterministically; the fix is on main, so merge `origin/main`.
 
