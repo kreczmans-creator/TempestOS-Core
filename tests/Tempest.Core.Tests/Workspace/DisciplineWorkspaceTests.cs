@@ -18,7 +18,7 @@ namespace Tempest.Core.Tests.Workspace;
 /// </summary>
 public class DisciplineWorkspaceTests
 {
-    private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ICommandDispatcher Dispatcher, ICommandRegistry Registry, EngineeringDomainContext Domain)> StartAsync(string rootPath)
+    private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ICommandDispatcher Dispatcher, ICommandRegistry Registry, EngineeringDomainContext Domain)> StartAsync(string rootPath, bool production = false)
     {
         var host = new TempestHostBuilder(
         [
@@ -40,10 +40,19 @@ public class DisciplineWorkspaceTests
         var dispatcher = (ICommandDispatcher)services.GetService(typeof(ICommandDispatcher));
         var registry = (ICommandRegistry)services.GetService(typeof(ICommandRegistry));
 
-        // The production composition: every discipline, every rehydrator,
-        // then the persisted objects brought back.
-        EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host);
-        await EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync(host);
+        if (production)
+        {
+            // The restart test needs the production composition: every
+            // discipline, every rehydrator, then the persisted objects
+            // brought back. It costs about 3 s per host, so the other tests
+            // register only what they exercise.
+            EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host);
+            await EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync(host);
+        }
+        else
+        {
+            DisciplineWorkspaceRegistration.Register(manager, domain, dispatcher, registry);
+        }
 
         return (workspace, manager, dispatcher, registry, domain);
     }
@@ -143,7 +152,7 @@ public class DisciplineWorkspaceTests
         using var temp = new TempDirectory();
         Guid id;
         {
-            var (_, manager, dispatcher, _, _) = await StartAsync(temp.Path);
+            var (_, manager, dispatcher, _, _) = await StartAsync(temp.Path, production: true);
             var created = await dispatcher.DispatchAsync(new CreateDisciplineObjectCommand("BuildingServicesZone", "Level 2 office"), CancellationToken.None);
             id = created.SubjectId!.Value;
             await dispatcher.DispatchAsync(new SetDisciplineAttributeCommand(id, "BuildingServicesZone", "Floor area (m²)", "420"), CancellationToken.None);
@@ -158,7 +167,7 @@ public class DisciplineWorkspaceTests
         }
 
         {
-            var (_, manager, _, _, domain) = await StartAsync(temp.Path);
+            var (_, manager, _, _, domain) = await StartAsync(temp.Path, production: true);
             var zone = Assert.IsAssignableFrom<IDisciplineObject>(await domain.Repository.FindAsync(id));
 
             Assert.Equal("BuildingServicesZone", zone.Kind);

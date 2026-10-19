@@ -135,7 +135,7 @@ These are carried from `v0.23.0` and `v0.24.0` unchanged:
   someone must check Xero.
 - **Issued evidence sheets cannot be opened from the shell** while Reports
   is withdrawn (`v0.23.0`).
-- **First-run data-location dialog (`C-01`).** It can hang. Install with
+- **First-run data-location dialog (`C-01`).** It can hang. Fixed in `v0.25.1`. Install with
   `scripts/install-test-build.ps1`, which records the data folder first,
   or launch the downloaded build from a shortcut with `--persistence-root`
   (runbook step A2).
