@@ -10,3 +10,18 @@ docs/design/system/assets/logo/
 # graphify's own Claude Code wiring is tooling, not project content.
 .claude/
 CLAUDE.md
+# Secrets and machine-local configuration never enter the graph. graphify also
+# skips any file its sensitive-content heuristic flags (e.g. a tokens.css): leave
+# those skipped - do not whitelist them.
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+secrets/
+config/local.json
+data/
