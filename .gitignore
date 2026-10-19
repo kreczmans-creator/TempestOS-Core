@@ -52,9 +52,11 @@ out/
 # SessionStart hook and the graphify project skill.
 .claude/*
 !.claude/settings.json
+!.claude/CLAUDE.md
 !.claude/hooks/
 !.claude/skills/
 .claude/settings.local.json
+.claude/skills/graphify/SKILL.md.bak
 
 # MSBuild / test results
 TestResults/
@@ -83,3 +85,4 @@ build-*.log
 /graphify-out/.graphify_python
 /graphify-out/.graphify_root
 /graphify-out/cache/last_query_stamp
+/graphify-out/cache/hook_sessions/

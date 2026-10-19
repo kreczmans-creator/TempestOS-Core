@@ -1,0 +1,12 @@
+# graphify corpus scope (see CLAUDE.md): superseded material, evidence PNGs and the
+# design-system site export are deliberately outside the knowledge graph.
+archive/
+docs/design/system/site-export/
+*.png
+# Rendered design artefacts (component cards, UI-kit pages, document templates,
+# website export) and the logo SVG variants: brand assets, not architecture.
+docs/design/**/*.html
+docs/design/system/assets/logo/
+# graphify's own Claude Code wiring is tooling, not project content.
+.claude/
+CLAUDE.md
