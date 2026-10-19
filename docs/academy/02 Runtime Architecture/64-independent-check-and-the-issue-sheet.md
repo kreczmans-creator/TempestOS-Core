@@ -175,13 +175,13 @@ expect everywhere else.
   deferred from `WP 17.1B` to this Work Package, was not collapsed here
   either: the Execution Plan's decision 5 states Check and Issue are "not
   a fourth verification model" and leave the three untouched, and
-  `BACKLOG.md` still lists `TD-171` under Live Backlog, owned by
+  `docs/governance/Quality/Technical Debt Register.md` still lists `TD-171` under Live Backlog, owned by
   `WP 18.2B`, not under Closed. The debt survives this release.
 - **`TD-25`** (`RequirementsService` has no compare-and-swap) and
   **`TD-38`** (`EngineeringObjectFactory` enforces no business-identifier
   uniqueness) are also listed as owned by `WP 18.2B`, but neither is
   named in any commit this Work Package made nor appears in
-  `BACKLOG.md`'s Closed section — open still, owner named, not closer.
+  `docs/governance/Quality/Technical Debt Register.md`'s Closed section — open still, owner named, not closer.
 
 ## What was deliberately not built
 
@@ -213,7 +213,7 @@ for Evidence too. The three-commit issue window named here as `B2`
 closes the same candidate (`WP 20.3A`, `b5227eb`): the sheet is now
 attached before the issue record that names it. The rationalisation
 rates both this chapter's own deferred debts **P4**: `TD-25`, deferred
-by its governing `ADR-0060`, `BACKLOG.md`'s stale `WP 18.2B` owner
+by its governing `ADR-0060`, `docs/governance/Quality/Technical Debt Register.md`'s stale `WP 18.2B` owner
 still uncorrected; and `TD-171`, reverified **Not closed**. `WP 19.5B`'s
 quote PDF duplicates, rather than reuses, `IssueSheetRenderer`'s
 layout — now its own row, `TD-182`. See

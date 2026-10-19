@@ -330,7 +330,7 @@ exception to `EngineeringDomainContext.ExecuteWriteAsync`, which runs
 `afterCommit` (§"Commit and apply are one critical section", above) only
 when nothing threw. The object was durably on disk; the running
 application never registered it; the caller was told the write failed.
-`WP 19.10F`'s audit found the gap (rated P1) and `BACKLOG.md` had in fact
+`WP 19.10F`'s audit found the gap (rated P1) and `docs/governance/Quality/Technical Debt Register.md` had in fact
 kept `TD-150`'s own row open the whole time, against this ADR's premature
 "Closed" claim — the register discrepancy this addendum also closes.
 

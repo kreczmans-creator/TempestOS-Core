@@ -53,7 +53,7 @@ live Xero/QuickBooks connector run `v1.0.0` is waiting on.
   contract, a layout overflow in ADR-0155's new Project Health card, and
   one version-pinned test) found and fixed; see the "Fix merge-caused…"
   commit for detail.
-- Live backlog: `BACKLOG.md`.
+- Live backlog: `docs/governance/Quality/Technical Debt Register.md`.
 
 ## Released
 
@@ -68,7 +68,7 @@ live Xero/QuickBooks connector run `v1.0.0` is waiting on.
 - **`PRODUCT_OWNER_ACCEPTANCE.md`** — the acceptance pack; §9 is the Product Owner's `v0.22.0` verdict.
 - **`OVERNIGHT_FINAL_ACCEPTANCE_REPORT.md`** — the engineering record of the acceptance campaign.
 - **`docs/releases/v0.22.0/Release Notes.md`** — what shipped in this release.
-- **`BACKLOG.md`** — the live technical-debt list a user could still notice.
+- **`docs/governance/Quality/Technical Debt Register.md`** — the live technical-debt list a user could still notice.
 - **`CONTRIBUTING.md`** — how a Work Package becomes a branch, a PR and a merge.
 - **`PHYSICAL_REVIEW.md`** — the running-application checklist every release is verified against.
 - **`docs/releases/v1.0.0/WorkPackages.md`** — the programme the next Work Package executes.

@@ -110,7 +110,7 @@ screenshots every screen in CI.
   refuses, naming that request. Before this guard it raised a second Draft
   with the same lines — found by the Desktop journey one run in two, fixed
   at `WP 19.9.0`, `ADR-0151`'s own last addendum.
-- **Two `BACKLOG.md` rows named a `v0.19.0` Work Package as their closer
+- **Two `docs/governance/Quality/Technical Debt Register.md` rows named a `v0.19.0` Work Package as their closer
   and are not actually closed** (`WP 19.9.0` backlog reconciliation):
   `TD-33` (`EngineeringCockpit.FormatCoverage`'s wrong-discipline
   zero-state string — `WP 19.1B` never touches
@@ -118,7 +118,7 @@ screenshots every screen in CI.
   production construction path, pending `FCR-0073` — `WP 19.2A`'s own
   touch to `RequirementsWorkspaceRegistration.cs` is a `CommandIds`
   constants rename, not an object picker). Both rows stay open in
-  `BACKLOG.md` with a note.
+  `docs/governance/Quality/Technical Debt Register.md` with a note.
 
 ## Related
 

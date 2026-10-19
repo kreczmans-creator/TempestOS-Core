@@ -173,7 +173,7 @@ suite grew from 453 to 474 with no regressions.
 
 ## What remains open
 
-Check `BACKLOG.md` for current status; it is authoritative over this
+Check `docs/governance/Quality/Technical Debt Register.md` for current status; it is authoritative over this
 chapter for anything that has since moved.
 
 - **`TD-65`**, the systemic gap, is still listed with a future Work

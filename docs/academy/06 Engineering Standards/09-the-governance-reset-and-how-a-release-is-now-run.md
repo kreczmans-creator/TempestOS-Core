@@ -2,7 +2,7 @@
 
 **Release:** `v0.17.0` (`WP 17.0B`, 2026-09-08) · **Debt:** `TD-45`,
 `TD-123`–`TD-125`, `TD-127`, `TD-151`–`TD-153`, `TD-164` · **Code:**
-`CONTRIBUTING.md`, `BACKLOG.md`, `PROJECT_STATUS.md`,
+`CONTRIBUTING.md`, `docs/governance/Quality/Technical Debt Register.md`, `PROJECT_STATUS.md`,
 `.github/pull_request_template.md`, `scripts/governance-healthcheck.ps1`
 
 **In plain terms.** For most of this project's life, almost every piece
@@ -61,10 +61,10 @@ it rather than certifying it.
   retrospective, readiness review or completion certification — "the PR
   description is the retrospective."
 - **One review, one round.** Findings are fixed in the same PR or filed
-  to `BACKLOG.md` before merge; never dropped, never reopened.
+  to `docs/governance/Quality/Technical Debt Register.md` before merge; never dropped, never reopened.
 - **Release Blocking narrows to one thing**: "data loss a user can
   reproduce from the running UI." A rough edge or a missing surface goes
-  in `BACKLOG.md`, not in the way of the merge.
+  in `docs/governance/Quality/Technical Debt Register.md`, not in the way of the merge.
 - **The Markdown budget.** A PR may not add more Markdown lines than
   code lines, enforced by `scripts/governance-healthcheck.ps1` comparing
   `git diff --numstat` against the branch's merge base with `main` — the
@@ -82,9 +82,9 @@ it rather than certifying it.
   approvals is deliberate: a solo owner cannot approve their own PR, so
   the `CI Gate` check and the one-round review stand in for a signature.
 
-## `BACKLOG.md`, `PROJECT_STATUS.md` and the reduced health check
+## `docs/governance/Quality/Technical Debt Register.md`, `PROJECT_STATUS.md` and the reduced health check
 
-`BACKLOG.md` replaces the Technical Debt Register. Its heading states the
+`docs/governance/Quality/Technical Debt Register.md` replaces the Technical Debt Register. Its heading states the
 rule it was built from: of the register's 170 rows, **101** had a final
 status of Open, Partially resolved or Deferred (93 Open alone); each was
 sorted into **Owned by Programme** (closed by a named substrate or
@@ -99,7 +99,7 @@ rather than silently misfiled.
 
 `PROJECT_STATUS.md` is now one screen: branch, version, the five "What
 v1.0.0 is" sentences marked against what a user can do today, the Work
-Package in flight, current gate figures, and links to `BACKLOG.md`,
+Package in flight, current gate figures, and links to `docs/governance/Quality/Technical Debt Register.md`,
 `CONTRIBUTING.md`, `PHYSICAL_REVIEW.md` and the programme document.
 `scripts/governance-healthcheck.ps1` fell from 16 checks to 5 — the ADR
 Register against `docs/adr/`, `VERSION` against a release folder, every

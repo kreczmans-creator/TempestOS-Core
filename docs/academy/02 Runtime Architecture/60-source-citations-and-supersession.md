@@ -164,7 +164,7 @@ readable regardless, the invariant the property test above proves. What
 is missing is only the notification on top. The Release Notes say so
 under Warnings: *"A cited record that is later superseded is not yet
 flagged on the evidence (`TD-157`)… the 'superseded' warning is a
-`v0.19.0` item."* `BACKLOG.md` records the same fact against the row,
+`v0.19.0` item."* `docs/governance/Quality/Technical Debt Register.md` records the same fact against the row,
 verified against the shipped tree rather than assumed from the title.
 
 ## What evidence does with a citation

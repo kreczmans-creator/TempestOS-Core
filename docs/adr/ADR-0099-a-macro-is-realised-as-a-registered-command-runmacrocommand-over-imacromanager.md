@@ -285,7 +285,7 @@ instead — a materially different persistence path the archived-project
 guard (which reads `EngineeringDomainContext.Repository` directly) may
 not even resolve a Requirement through, and one with no restore
 capability of its own to invert a delete into. Left untouched rather
-than built against uncertain foundations in one night; see `BACKLOG.md`'s
+than built against uncertain foundations in one night; see `docs/governance/Quality/Technical Debt Register.md`'s
 own `WP 21.1A` entry for the reasoning in full.
 
 ## Related Documents

@@ -6,27 +6,27 @@ Audit date: 2026-09-08. Repository: `D:\Tempest\01 Projects\TempestOS`. Read-onl
 
 ## 1. Debt register digest
 
-Source: `BACKLOG.md` (223 lines), read in full.
+Source: `docs/governance/Quality/Technical Debt Register.md` (223 lines), read in full.
 
 ### 1.1 Counts by owner/bucket
 
-`BACKLOG.md` is organized into four buckets, not one flat list. Counts below are rows actually present in each bucket's tables (not the narrative totals quoted in the doc's own prose, which are called out separately).
+`docs/governance/Quality/Technical Debt Register.md` is organized into four buckets, not one flat list. Counts below are rows actually present in each bucket's tables (not the narrative totals quoted in the doc's own prose, which are called out separately).
 
 | Bucket | Row count | Notes |
 |---|---|---|
 | Live Backlog (unowned) | 15 | TD-05, 24, 41, 42, 63, 78, 84, 91, 92, 93, 99, 101, 131, 134, 154 |
 | Live Backlog (owned by a WP, kept live because judgement/partial) | 12 | TD-17,25,27,28,33,38,76,98,150,155,157,163 (owners: 18.0B x4, 18.2B x2, 17.1B x1 "judgement", 18.1A x1 "judgement", 19.1B x1, 19.0A x1, 18.3A x1 "partial", 17.0C x1) |
-| **Live Backlog total** | **27** | Doc header says "28 of 30 cap" — the 28th (TD-147) is called out in prose as already closed by `WP 17.1B` and "no longer appears below" (`BACKLOG.md:30-40`), so 27 rows are actually tabulated today. |
-| Closed by WP 17.1B (own table) | 6 | TD-142,144,145,146,147,148 (`BACKLOG.md:98-106`) |
-| Owned by Programme (open, mapped to a future WP's "Closes" column) | 43 | `BACKLOG.md:119-163`; by owner: WP 17.1A=9, WP 17.1B=8 (+TD-29 dual with 18.0A), WP 17.2A=3, WP 18.0A=5 (incl. TD-29 dual), WP 17.3A=1 (TD-29 dual), WP 18.2B=1, WP 18.1A=4, WP 18.2A=3, WP 19.2A=2, WP 19.2B=8 |
-| Closed (own table) | 1 | TD-01, plus TD-02 called out in prose only (no table row) (`BACKLOG.md:170-177`) |
-| Archived with the Layer | 16 | TD-161,162,82,13,14,15,16,49,50,53,54,55,56,61,64,129 (`BACKLOG.md:196-213`); doc's own prose says "sixteen rows land here in the currently-open subset" (`BACKLOG.md:215`) |
+| **Live Backlog total** | **27** | Doc header says "28 of 30 cap" — the 28th (TD-147) is called out in prose as already closed by `WP 17.1B` and "no longer appears below" (`docs/governance/Quality/Technical Debt Register.md:30-40`), so 27 rows are actually tabulated today. |
+| Closed by WP 17.1B (own table) | 6 | TD-142,144,145,146,147,148 (`docs/governance/Quality/Technical Debt Register.md:98-106`) |
+| Owned by Programme (open, mapped to a future WP's "Closes" column) | 43 | `docs/governance/Quality/Technical Debt Register.md:119-163`; by owner: WP 17.1A=9, WP 17.1B=8 (+TD-29 dual with 18.0A), WP 17.2A=3, WP 18.0A=5 (incl. TD-29 dual), WP 17.3A=1 (TD-29 dual), WP 18.2B=1, WP 18.1A=4, WP 18.2A=3, WP 19.2A=2, WP 19.2B=8 |
+| Closed (own table) | 1 | TD-01, plus TD-02 called out in prose only (no table row) (`docs/governance/Quality/Technical Debt Register.md:170-177`) |
+| Archived with the Layer | 16 | TD-161,162,82,13,14,15,16,49,50,53,54,55,56,61,64,129 (`docs/governance/Quality/Technical Debt Register.md:196-213`); doc's own prose says "sixteen rows land here in the currently-open subset" (`docs/governance/Quality/Technical Debt Register.md:215`) |
 
-Register provenance (`BACKLOG.md:3-27`): this file replaces a 468 KB `Technical Debt Register.md`, archived at `archive/docs-2026-09/governance/Quality/Technical Debt Register.md`. Triage basis is `WP 17.0B` (2026-09-08): 101 of 170 total register rows were `Open`/`Partially resolved`/`Deferred` (93 of the 101 `Open` alone — the figure `docs/releases/v1.0.0/WorkPackages.md` cites). Nine rows (TD-45, TD-123–125, TD-127, TD-151–153, TD-164, TD-43) close by `WP 17.0B` itself and appear in none of the tables above.
+Register provenance (`docs/governance/Quality/Technical Debt Register.md:3-27`): this file replaces a 468 KB `Technical Debt Register.md`, archived at `archive/docs-2026-09/governance/Quality/Technical Debt Register.md`. Triage basis is `WP 17.0B` (2026-09-08): 101 of 170 total register rows were `Open`/`Partially resolved`/`Deferred` (93 of the 101 `Open` alone — the figure `docs/releases/v1.0.0/WorkPackages.md` cites). Nine rows (TD-45, TD-123–125, TD-127, TD-151–153, TD-164, TD-43) close by `WP 17.0B` itself and appear in none of the tables above.
 
 ### 1.2 Every Live Backlog row (id, title, owner, classification)
 
-Classification legend — **Substrate** (domain/persistence/composition-root correctness), **Surface** (Desktop UI/UX), **Governance** (process/scripts/registers), **Test-only** (the debt is itself about test coverage/visibility rather than a behavioural defect). Judgement calls, made for this audit — not present in `BACKLOG.md`.
+Classification legend — **Substrate** (domain/persistence/composition-root correctness), **Surface** (Desktop UI/UX), **Governance** (process/scripts/registers), **Test-only** (the debt is itself about test coverage/visibility rather than a behavioural defect). Judgement calls, made for this audit — not present in `docs/governance/Quality/Technical Debt Register.md`.
 
 | ID | Title | Owner | Classification |
 |---|---|---|---|
@@ -60,7 +60,7 @@ Classification legend — **Substrate** (domain/persistence/composition-root cor
 
 ### 1.3 Rows judged Release-blocking for v1.0
 
-Judgement calls made for this audit; `BACKLOG.md` itself marks no currently-open row "Release Blocking" (the one row it did mark that way, TD-147, is reported closed by `WP 17.1B`, `BACKLOG.md:32-40`).
+Judgement calls made for this audit; `docs/governance/Quality/Technical Debt Register.md` itself marks no currently-open row "Release Blocking" (the one row it did mark that way, TD-147, is reported closed by `WP 17.1B`, `docs/governance/Quality/Technical Debt Register.md:32-40`).
 
 | ID | Reason |
 |---|---|
@@ -281,7 +281,7 @@ Coverage is collected (`--collect:"XPlat Code Coverage"`, `coverlet.collector`) 
 - Conversation resolution required before merging.
 - `enforce_admins` is off (admins not blocked by the review rule), so the solo owner can merge a green PR without a second account; `CI Gate` still applies to everyone.
 
-Related CONTRIBUTING.md provisions: a Work Package is one branch + one PR, no separate retrospective document (`CONTRIBUTING.md:3-8`); one review, one round — findings are fixed in-PR or filed to `BACKLOG.md`, never silently dropped, never reopening a second round (lines 10-15); **Release Blocking** is defined narrowly as "data loss a user can reproduce from the running UI" — everything else goes to `BACKLOG.md` (lines 17-23); a Markdown-lines-added-vs-code-lines-added budget enforced by the health check (lines 25-33); Definition of Done requires 0 warnings/0 errors both configs, all tests passing both configs, `DependencyDirectionTests` green, an ADR for constraining decisions, a `PHYSICAL_REVIEW.md` §7 row for new user-facing surface, and one Release Notes line (lines 35-45).
+Related CONTRIBUTING.md provisions: a Work Package is one branch + one PR, no separate retrospective document (`CONTRIBUTING.md:3-8`); one review, one round — findings are fixed in-PR or filed to `docs/governance/Quality/Technical Debt Register.md`, never silently dropped, never reopening a second round (lines 10-15); **Release Blocking** is defined narrowly as "data loss a user can reproduce from the running UI" — everything else goes to `docs/governance/Quality/Technical Debt Register.md` (lines 17-23); a Markdown-lines-added-vs-code-lines-added budget enforced by the health check (lines 25-33); Definition of Done requires 0 warnings/0 errors both configs, all tests passing both configs, `DependencyDirectionTests` green, an ADR for constraining decisions, a `PHYSICAL_REVIEW.md` §7 row for new user-facing surface, and one Release Notes line (lines 35-45).
 
 ---
 
@@ -349,7 +349,7 @@ Source: `docs/releases/v0.17.0/Release Notes.md`, "What shipped, by Work Package
 | WP (plan) | Status | Evidence |
 |---|---|---|
 | `WP 17.0A` | **Done** | Release Notes row 97: layout fix, overlap-aware assertions, write-through fsync, Host-fatal critical-service constructor, DI fallback restriction, `TEMPEST_TEST_TIMEOUT_FACTOR`, persistence-root test isolation, stray-artefact cleanup — all items from the plan's own scope text are named as delivered. |
-| `WP 17.0B` | **Done** | Row 98: 807 governance files archived, `PROJECT_STATUS.md`/`CONTRIBUTING.md`/`BACKLOG.md` written (101 debt rows triaged: 27 live), health check reduced 16→5+1 checks, branch protection configured. |
+| `WP 17.0B` | **Done** | Row 98: 807 governance files archived, `PROJECT_STATUS.md`/`CONTRIBUTING.md`/`docs/governance/Quality/Technical Debt Register.md` written (101 debt rows triaged: 27 live), health check reduced 16→5+1 checks, branch protection configured. |
 | `WP 17.0C` | **Done** | Row 99: `RunningHostFixture` (93 loops replaced — plan said "sixty"), console capture removed from 83 classes, fixture pins converted, six defect-characterisation facts deleted, Stryker configured, coverage/duration published. |
 | `WP 17.1A` | **Done** | Row 100: `SqlitePersistenceStore` (WAL, `synchronous=FULL`), `IQueryablePersistenceStore`, instance lock, `Persistence:Backend` switch, performance figures given. ADR-0144. |
 | `WP 17.1B` | **Done** | Row 101: one authoritative store, single transaction under one domain-wide lock, rollback machinery deleted, `EngineeringObjectBase` reduced 1,819→821+203 lines, `TD-147` (the Release Blocking row) closed with `TD-142/144/145/146/148`. ADR-0145. |
@@ -366,7 +366,7 @@ Source: `docs/releases/v0.17.0/Release Notes.md`, "What shipped, by Work Package
 - **`WP 17.9.2`** (row 107) — second round: `CommandContext.ProjectId` threading (Ribbon/Palette/input bindings all supply it — directly overlaps `WP 19.0A`'s "project commercial core" scope and the plan's own `TD-76` disposition, "no project context anywhere in the running application," owned by `WP 19.0A`); `MechanicalCreateParentPolicy` (created objects land under the selected container or the open project; a "Not in any project" Explorer node lists orphans); `BracketCalculationWorkbench.AddMaterialAsync` (an engineer's own material record, Draft-then-release) — this pre-empts scope `WP 18.0B` ("Reference tables with structured citation") will need to formalise for every reference type, not just materials. **Not fixed here either: `TD-171`.**
 - **"Unplanned"** (row 105) — the command-invocation-draining and SQLite-provider fixes analysed in §3.1 above (`88f36de`, `a7c33cf`, `94bf990`, `1dcf8df`).
 
-**Finding: `TD-171` is used for two different defects across governance documents, an ID collision.** `BACKLOG.md:146` defines `TD-171` as "Three verification models remain (`Core/Verification`, `EngineeringDomain/RequirementsVerification`, `EngineeringAssets/Verification`); collapse deferred to `WP 18.2B`," owner `WP 18.2B` — consistent with `WorkPackages.md:153` ("Collapsing them was deferred from WP 17.1B to WP 18.2B as `TD-171`"). But `docs/releases/v0.17.0/Release Notes.md:106-107` uses the identical id `TD-171` for a distinct, unrelated defect — an object created from the palette while another discipline tab is active is not shown where the user is looking — and assigns it to `WP 18.1A`, not `18.2A`/`18.2B`. This second usage is corroborated as a real, broader defect (not a typo for a different TD number) by this same review's own `docs/reviews/design-freeze-2026-09/evidence/surface-audit.md:168-171`, which documents a "TD-171-class" placement defect independently reproduced in Requirements (there, worse: the created object becomes fully unreachable in its own module's Explorer tree) and calls the identical number "TD-171" throughout its own analysis. Neither `BACKLOG.md` nor `WorkPackages.md` carries a row for the palette/discipline-tab defect under any other id — it exists only in the Release Notes and the other evidence file's prose, on a number the debt register itself has already assigned to something else.
+**Finding: `TD-171` is used for two different defects across governance documents, an ID collision.** `docs/governance/Quality/Technical Debt Register.md:146` defines `TD-171` as "Three verification models remain (`Core/Verification`, `EngineeringDomain/RequirementsVerification`, `EngineeringAssets/Verification`); collapse deferred to `WP 18.2B`," owner `WP 18.2B` — consistent with `WorkPackages.md:153` ("Collapsing them was deferred from WP 17.1B to WP 18.2B as `TD-171`"). But `docs/releases/v0.17.0/Release Notes.md:106-107` uses the identical id `TD-171` for a distinct, unrelated defect — an object created from the palette while another discipline tab is active is not shown where the user is looking — and assigns it to `WP 18.1A`, not `18.2A`/`18.2B`. This second usage is corroborated as a real, broader defect (not a typo for a different TD number) by this same review's own `docs/reviews/design-freeze-2026-09/evidence/surface-audit.md:168-171`, which documents a "TD-171-class" placement defect independently reproduced in Requirements (there, worse: the created object becomes fully unreachable in its own module's Explorer tree) and calls the identical number "TD-171" throughout its own analysis. Neither `docs/governance/Quality/Technical Debt Register.md` nor `WorkPackages.md` carries a row for the palette/discipline-tab defect under any other id — it exists only in the Release Notes and the other evidence file's prose, on a number the debt register itself has already assigned to something else.
 
 **Search results for the requested cross-reference terms**, run against `docs/releases/v1.0.0/WorkPackages.md` specifically:
 - `"discipline-centric"` — **zero matches** in `WorkPackages.md` (or anywhere under live `docs/`); the phrase exists only in archived/worktree copies of `docs/governance/Quality/Product Compliance Audit (2026-08-28).md`, outside this plan.
@@ -460,7 +460,7 @@ Read in full (501 lines). Per its own header, `WP 17.0B` reduced this script fro
 4. **`docs/adr/`'s file count matches the ADR Register's row count** (`Test-AdrCountMatchesRegister`) — a raw count comparison, independent of check 1's per-id matching.
 5. **Markdown lines added must not exceed code lines added** (`Test-MarkdownLinesDoNotExceedCodeLines`) — new at `WP 17.0B`, enforcing `CONTRIBUTING.md`'s PR budget; runs `git diff --numstat` between `HEAD` and its merge-base with `origin/main`/`main`, sums added/deleted lines split by `.md` vs. everything else, and fails only if Markdown-added exceeds code-added. Skips (Warn, not Fail) when not in a git repo, on `main` itself, when no `main` ref resolves, or when there is no diff — each an explicit, named skip reason rather than a silent pass.
 
-Every check is read-only (script never writes inside `-RepoRoot`, enforced by a path-containment guard on `-SummaryPath` at lines 69-92); a check that throws is itself recorded as a `Fail` naming the exception type and message (lines 421-441, the generic-exception-handling behaviour `BACKLOG.md`'s `TD-43` narrative — §1.1 above — says is carried forward unchanged). Exit code is 1 if any check fails, 0 otherwise (Warn does not fail the run).
+Every check is read-only (script never writes inside `-RepoRoot`, enforced by a path-containment guard on `-SummaryPath` at lines 69-92); a check that throws is itself recorded as a `Fail` naming the exception type and message (lines 421-441, the generic-exception-handling behaviour `docs/governance/Quality/Technical Debt Register.md`'s `TD-43` narrative — §1.1 above — says is carried forward unchanged). Exit code is 1 if any check fails, 0 otherwise (Warn does not fail the run).
 
 ### 7.4 `CONTRIBUTING.md` length
 

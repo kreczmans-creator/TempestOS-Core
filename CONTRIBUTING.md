@@ -10,7 +10,7 @@ and what evidence backs the change (build, tests, physical review).
 ## Review
 
 One review per PR, one round. The reviewer's findings are either fixed
-in the same PR or filed to `BACKLOG.md` before merge — a finding is
+in the same PR or filed to `docs/governance/Quality/Technical Debt Register.md` before merge — a finding is
 never silently dropped, and it is never allowed to reopen the review
 into a second round.
 
@@ -20,7 +20,7 @@ A finding is **Release Blocking** only if it is **data loss a user can
 reproduce from the running UI.** Everything else — a rough edge, a
 missing surface, a gap an engineer would only find by reading the
 code — is real but is not Release Blocking, and belongs in
-`BACKLOG.md`, not in the way of the merge.
+`docs/governance/Quality/Technical Debt Register.md`, not in the way of the merge.
 
 ## Markdown budget
 

@@ -22,7 +22,7 @@ The candidate `release/v0.21.0` @ `a4ab1915` was taken through every remaining t
 | Core tests (Linux) | 5,317 total: 5,306 passed, 11 failed — 10 Windows-only (6 spawn `powershell`, 4 DPAPI), 1 genuine Linux finding (`FileSecretStore` left a pre-existing secrets directory `0755`). | `dotnet test` |
 | Desktop tests (Linux) | 884 total: 883 passed, 1 failed (`StatusBarCollapseTests…`, deterministic on Linux, green on Windows CI). | `dotnet test` |
 | Real application | Launches under Xvfb; `Host -> Running.` and `Desktop -> Composed.`; Home renders. | `xvfb-run`, screenshot |
-| Backlog | 10 live rows of 30; `TD-182` listed live while its own row said closed; `TD-78` contradicted by the shipped design system; `TD-42` contradicted by the script. | `BACKLOG.md` read against the tree |
+| Backlog | 10 live rows of 30; `TD-182` listed live while its own row said closed; `TD-78` contradicted by the shipped design system; `TD-42` contradicted by the script. | `docs/governance/Quality/Technical Debt Register.md` read against the tree |
 | Documentation drift | `VISION.md` "zero Engineering Modules" in the present tense; `README.md` Avalonia 11.2.3; roadmap last reviewed 2026-09-04; Academy landing said `v0.21.0` "held a plan and no code". | `WP 21.9.1` |
 | Xero path (found in reconnaissance, before any change) | **Authorise never authorised**: `OAuthAuthoriser.AuthoriseAsync` had no caller in `src/`; Settings stored the client id under `Invoicing:ClientId`, the authoriser reads `Invoicing:Xero:ClientId`; the connector chosen in Settings never reached the host. | code reading, `grep` |
 
@@ -49,7 +49,7 @@ The candidate `release/v0.21.0` @ `a4ab1915` was taken through every remaining t
 |---|---|---|
 | `TD-42` (`new-release.ps1` never checks `$LASTEXITCODE`) | Already fixed: checked after `git tag`, `git push origin main`, `git push origin v<Version>`, each throw naming `TD-42`. Row closed on inspection. | `scripts/new-release.ps1` lines 203–232 |
 | `TD-78` (design system absent from the Desktop) | Shipped by `WP 20.10G`/`WP 21.2A`: `Theming/DesignTokens.cs`, `BrandPalette.cs`, `TempestTheme.cs`, embedded Inter/Chakra Petch/Space Mono. Row closed. | tree; every screenshot tonight |
-| `TD-182` | Its own row already said "Closed by `WP 20.10G`". Moved out of the live table. | `BACKLOG.md` |
+| `TD-182` | Its own row already said "Closed by `WP 20.10G`". Moved out of the live table. | `docs/governance/Quality/Technical Debt Register.md` |
 | Docking steps 1–2 (`WP 21.0A`) | Present and working on a real screen (K1/K2/K3/K6) — after `WP 21.0K` fixed the floating-window close defect that `WP 20.10D` introduced and `21.0A` carried. | `evidence/docking/` |
 | Docking steps 3–4 (`WP 21.0B`/`21.0C`) | **Not built, deliberately.** Gated on the Product Owner's review of `ADR-0153` (status *Proposed*); building six days of shell-level docking unreviewed overnight would be exactly the over-engineering the brief forbids. Only decision 8 (two key bindings the ADR specifies) and decision 7's visible-focus refinement were delivered. | `ADR-0153` status |
 | Governance health check | 5 of 5 on every head tonight. | `pwsh scripts/governance-healthcheck.ps1` |
@@ -83,7 +83,7 @@ Eleven of eleven that were fixable tonight (rows 1–11 above), each with a regr
 
 ## 7. Remaining defects
 
-- **Filed** (`BACKLOG.md`, live table): `TD-186` raw GUIDs shown (three places); `TD-187` a code reference in an Invoices heading; `TD-188` no per-line VAT control on the Quote tab — a question for the Product Owner.
+- **Filed** (`docs/governance/Quality/Technical Debt Register.md`, live table): `TD-186` raw GUIDs shown (three places); `TD-187` a code reference in an Invoices heading; `TD-188` no per-line VAT control on the Quote tab — a question for the Product Owner.
 - **Recorded, undiagnosed:** one `SIGABRT` at exit in nine runner runs.
 - **Environment, not product:** the Linux-only status-bar test divergence; the ten Windows-only Core tests failing on Linux by construction.
 - **Not defects, owed:** docking steps 3–4 (gated), K4/K5 and save-on-close on Windows hardware, the live Xero sign-in, the first `Setup.exe`.

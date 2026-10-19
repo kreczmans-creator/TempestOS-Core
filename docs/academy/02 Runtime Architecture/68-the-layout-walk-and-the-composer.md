@@ -183,7 +183,7 @@ class, so a command id is a constant, never a repeated literal.
 
 `MainWindow.cs` went from 1,475 lines to 579 at that commit (`wc -l`
 on the two revisions). By
-the time `BACKLOG.md` closed `TD-109` against it the figure quoted there
+the time `docs/governance/Quality/Technical Debt Register.md` closed `TD-109` against it the figure quoted there
 was 782; at the `v0.20.0` candidate head it is 894 (`wc -l`). Chapter
 `45-deleting-dead-architecture-and-consolidating-duplicates.md` already
 tracked this same file once, from 1,577 to 1,042 lines at `WP-G`, then

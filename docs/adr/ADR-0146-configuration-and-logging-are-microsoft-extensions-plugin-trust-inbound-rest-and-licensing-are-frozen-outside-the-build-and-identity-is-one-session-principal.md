@@ -406,6 +406,6 @@ Plugins one, and is untouched by this freeze.
   `Shutdown Sequence.md` — phase tables updated to remove the frozen
   phases.
 - `docs/releases/v1.0.0/WorkPackages.md`, `WP 17.2A`.
-- `BACKLOG.md` — `TD-06`, `TD-13`, `TD-14`, `TD-49`–`TD-56`, `TD-61`,
+- `docs/governance/Quality/Technical Debt Register.md` — `TD-06`, `TD-13`, `TD-14`, `TD-49`–`TD-56`, `TD-61`,
   `TD-62`, `TD-64`, `TD-94`, `TD-129` and any other row whose subject is a
   frozen type, moved to "Archived with the layer".

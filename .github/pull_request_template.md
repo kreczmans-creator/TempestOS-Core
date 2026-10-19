@@ -28,10 +28,10 @@
 - **ADR:** <!-- link it, or write "no decision in this PR constrains
   future code" -->
 
-## Findings filed to `BACKLOG.md`
+## Findings filed to the Technical Debt Register
 
 <!-- Anything the reviewer or author found that isn't fixed here, filed
-     as a row in BACKLOG.md, or "none". A finding is Release Blocking
+     as a row in docs/governance/Quality/Technical Debt Register.md, or "none". A finding is Release Blocking
      only if it is data loss a user can reproduce from the running UI —
      see CONTRIBUTING.md. -->
 

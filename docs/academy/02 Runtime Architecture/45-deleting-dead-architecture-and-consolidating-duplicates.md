@@ -69,7 +69,7 @@ tidy-up.
 
 **The row that closed twice.** Both the commit message and this
 programme's own retrospective call this the closure of the debt row.
-The current live register, `BACKLOG.md`, disagrees in a way worth
+The current live register, `docs/governance/Quality/Technical Debt Register.md`, disagrees in a way worth
 recording rather than smoothing over: it attributes the row's actual
 closure to a later Work Package, `WP 17.2A`, because the row's real
 complaint — two logging mechanisms coexisting — had a second, less
@@ -222,7 +222,7 @@ composition root proper and a set of genuinely shell-level services
 (rendering the current view, the status bar, layout save and restore),
 which is a different question from the one this row names. Overstating
 what one extraction achieved would have hidden how much of the file is
-still doing the wrong kind of work. At the current release, `BACKLOG.md`
+still doing the wrong kind of work. At the current release, `docs/governance/Quality/Technical Debt Register.md`
 still lists `TD-109` as open, owned by a Work Package that has not yet
 run (`WP 19.2A`), and `MainWindow` (now
 `src/Tempest.Desktop/MainWindow.cs`) is 1,475 lines — grown again since

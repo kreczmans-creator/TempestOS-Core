@@ -77,7 +77,7 @@ three plus a fourth, unnumbered one:
 - **`TD-90`** — no docking re-render restores keyboard focus. Verified
   absent as recently as `WP 19.9.0` (2026-09-10): "still no `Focus`
   reference in `WorkspaceLayoutController`, `WorkspaceLayoutHost` or
-  `WorkspaceDockingComposer`" (`BACKLOG.md:591-595`).
+  `WorkspaceDockingComposer`" (`docs/governance/Quality/Technical Debt Register.md:591-595`).
 - **`TD-91`** — `IWorkspaceLayout`, the frozen `WP8.0B` shadow contract
   (`src/Tempest.Workspace/Workspace/IWorkspaceLayout.cs`), speaks only in
   `Left`/`Right`/`Bottom`, a size, and visibility, and cannot express a
@@ -92,7 +92,7 @@ three plus a fourth, unnumbered one:
 - **`TD-133`** — closed for repositioning and resizing
   (`Ctrl+Shift+Arrow` moves a panel to an edge, `Ctrl+Shift+[`/`]`
   resizes its split share, `WP 19.2B`) but explicitly not for tab
-  *reordering*, left "out of this Work Package's own brief" (`BACKLOG.md:566`).
+  *reordering*, left "out of this Work Package's own brief" (`docs/governance/Quality/Technical Debt Register.md:566`).
 - **The capture-lost routing defect**, disclosed by `WP 19.10N` but never
   given a row: `WorkspaceLayoutController`'s own `PointerCaptureLostEvent`
   handler is registered `RoutingStrategies.Tunnel`
@@ -105,7 +105,7 @@ three plus a fourth, unnumbered one:
   OS-forced capture loss — only on the two pointer-released paths that
   call it directly. `_draggingPanelId`/`_dragActive` are the residual
   exposure: state that likely never resets on a real capture-loss
-  cancel (`BACKLOG.md:441-458`, "Recommend a follow-up row").
+  cancel (`docs/governance/Quality/Technical Debt Register.md:441-458`, "Recommend a follow-up row").
 
 This ADR is the follow-up row, for all four, because a package that adds
 many more draggable things, across many more windows, is exactly the
@@ -511,7 +511,7 @@ never replaces); `ADR-0064` (the settings substrate the arrangement
 persists through, unchanged in mechanism); `ADR-0115` (the document
 viewer, already proof that a new panel kind can dock, tab, split and
 float into the inner tree with no code of its own for any of it);
-`BACKLOG.md` (`TD-90`, `TD-91`, `TD-133`, and the capture-lost routing
+`docs/governance/Quality/Technical Debt Register.md` (`TD-90`, `TD-91`, `TD-133`, and the capture-lost routing
 defect, each absorbed by this package — see its own reconciliation
 note); `docs/design/Docking Everywhere — Design Note.md` (the Product
 Owner-facing walk of the same decisions); `WorkPackages.md` (this row

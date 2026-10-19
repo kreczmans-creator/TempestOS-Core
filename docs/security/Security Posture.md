@@ -257,7 +257,7 @@ structural coverage test enumerating every mutating call site in the
 codebase and asserting each one audits, the way `NoBlockingPersistenceCallsTests`
 does for the blocking-call convention. This review did not find a gap; it
 also did not exhaustively prove there is none. Recorded here, not in
-`BACKLOG.md`, because it names a verification gap, not a code defect this
+`docs/governance/Quality/Technical Debt Register.md`, because it names a verification gap, not a code defect this
 review has evidence of.
 
 **Update, `WP 21.6A` (2026-09-15):** the exact counterexample this note
@@ -409,4 +409,4 @@ against — still current, not superseded); `Platform Security Review
 v0.5.0.md` (the last full audit before this one); `Plugin Trust &
 Isolation Architecture.md` (the design this document's "Frozen layers"
 section assumes, since frozen); `src/Frozen/README.md` (the freeze's own
-terms); `BACKLOG.md` (`TD-184`, `TD-185`); `PHYSICAL_REVIEW.md` §8.
+terms); `docs/governance/Quality/Technical Debt Register.md` (`TD-184`, `TD-185`); `PHYSICAL_REVIEW.md` §8.

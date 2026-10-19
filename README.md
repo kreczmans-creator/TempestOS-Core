@@ -105,7 +105,7 @@ is for, see [`ADR-0101`](docs/adr/ADR-0101-tempest-app-workspaceshell-is-tempest
 The wider governance register suite this section used to point to — every
 platform service, module and piece of technical debt indexed and
 cross-referenced — was archived by `WP 17.0B` (below); `docs/adr/` and
-`BACKLOG.md` are now the live sources for the two questions it answered
+`docs/governance/Quality/Technical Debt Register.md` are now the live sources for the two questions it answered
 most often: what was decided, and what still needs doing.
 
 ## Documentation
@@ -127,7 +127,7 @@ archive/docs-2026-09/. What remains live is deliberately smaller:
   `docs/releases/v1.0.0/WorkPackages.md` (the current programme), and one
   `Release Notes.md` per shipped release (a release candidate carries its
   own before it ships, marked as a candidate in its own Status line).
-- **`BACKLOG.md`** (repository root) — the live technical-debt list a user
+- **`docs/governance/Quality/Technical Debt Register.md`** — the live technical-debt list a user
   could still notice, each row mapped to the Work Package that owns it.
 - **`CONTRIBUTING.md`** (repository root) — how a Work Package becomes a
   branch, a PR, and a merge.
