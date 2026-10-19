@@ -580,7 +580,7 @@ internal static class MainJourney
             "The named calculation is listed against its own project",
             () =>
             {
-                if (!Act.ClickRow("Engineering Calculations", settleMs: 3_000))
+                if (!Act.ClickRow("Calculation register", settleMs: 3_000))
                     return Act.Failed(Act.LastProblem);
 
                 if (!Ui.WaitForText(CalculationName, 20_000))

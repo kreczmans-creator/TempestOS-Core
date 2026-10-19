@@ -45,3 +45,21 @@ There were no crashes, hangs, unhandled exceptions or blank panes in roughly 1,1
 ## Screenshots
 
 All PNGs in this folder are cropped to the application window. The 1180x760 window-overflow shot is the full screen, which is the point of that image.
+
+## Re-verification on 05d1b3ef
+
+- **Build:** `claude/nice-archimedes-airhlx` @ `05d1b3ef`, RealShell runner rebuilt with warnings as errors (0 errors)
+- **Setup:** a copy of the persistence root above, with the saved window size reset to 1280x800 so measurements compare like for like with the first run. 1600x1000 Xvfb display.
+- **Re-run:** a (both the `act` and raw-click passes), b, c, e and e′. Roughly 600 driven actions; no crash, hang or blank pane, and no `Error`/`Exception` in the log.
+
+| Finding | Result | What I saw |
+|---|---|---|
+| F1 Evidence leaves the previous explorer | **PASS** | From the tree (b, and e′ after Verification) and from Structure → Disciplines (e, after Documents and after Requirements), Evidence now shows "Evidence has no tree here. Use the commands above. Evidence records are listed in each project's Evidence tab." AREA reads "Evidence". No other discipline's content leaks through. `r-f1-evidence-empty-state.png`, `r-f1-structure-evidence.png` |
+| F2 Tree overflows when it narrows | **PASS** | Beside the surface the tree is 215 px and its rows are 215 px, matching the tree. There is no horizontal scrollbar, after both rapid passes rows still start at the tree's left edge (x = 210, no sideways scroll), and "Engineering Calculations" and "Engineering Assets" show in full. Side effect: the Project Explorer header is now narrower and clips to "PROJECT EX". `r-f2-tree-216px.png` |
+| F4 Selector jitter and one-row bar | **PARTIAL** | The jitter is fixed in practice: every selector is 28 px high whether active or not (was 28/30), and the active one is only 1–2 px wider (Organize 102→103, Lifecycle 101→103, Actions 92→94; was +7 px). However, Requirements → Actions (13) now wraps to **four** rows at 1280 px (was three), so the bar is still not one row for large groups. `r-f4-requirements-actions.png` |
+
+Scenario outcomes on 05d1b3ef: a PASS (ended on Verification in both passes), b PASS (Evidence end: Evidence bar, empty-state explorer, AREA Evidence; Dashboard end: dashboard only), c PASS (19/19 selectors; Evidence and Mechanical have no Lifecycle group, as before), e PASS, e′ PASS.
+
+### Overall on 05d1b3ef: **GO**
+
+The blocking defect (F1) is fixed, and so is F2. The remaining F4 wrap for 13-command groups is cosmetic. It, the "PROJECT EX" header clip, and F3/F5 are known limitations, not blockers.

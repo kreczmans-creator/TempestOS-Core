@@ -108,7 +108,7 @@ internal static class VerifyJourney
             "The named calculation and its runs are still recorded against the project",
             () =>
             {
-                if (!Act.Click("Engineering", settleMs: 1_500) || !Act.ClickRow("Engineering Calculations", settleMs: 3_500))
+                if (!Act.Click("Engineering", settleMs: 1_500) || !Act.ClickRow("Calculation register", settleMs: 3_500))
                     return Act.Failed(Act.LastProblem);
 
                 if (!Ui.WaitForText(CalculationName, 20_000))

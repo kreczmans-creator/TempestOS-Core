@@ -1,5 +1,6 @@
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Deliverables;
+using Tempest.Workspace.Disciplines;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Invoicing;
@@ -55,6 +56,13 @@ public static class DisciplineAreas
 
         foreach (var kind in ManufacturingObjectFactoryRegistry.SupportedKinds)
             map[kind] = ManufacturingWorkspaceExplorerModule.NavigationItemId;
+
+        // `ADR-0163`.
+        foreach (var definition in DisciplineCatalogue.All)
+        {
+            foreach (var kind in definition.KindNames)
+                map[kind] = definition.NavigationItemId;
+        }
 
         map[Tempest.Core.Evidence.Evidence.CanonicalKind] = EvidenceWorkspaceRegistration.ExplorerAreaId;
 

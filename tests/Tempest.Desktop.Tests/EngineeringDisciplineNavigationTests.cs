@@ -133,7 +133,7 @@ public sealed class EngineeringDisciplineNavigationTests
 
             Assert.Equal(
                 EngineeringDisciplines.All.Select(EngineeringDisciplines.NavigatorName),
-                list.Items.OfType<ListBoxItem>().Select(i => AutomationProperties.GetName(i)));
+                list.Items.OfType<ListBoxItem>().Where(i => i.Tag is string).Select(i => AutomationProperties.GetName(i)));
 
             list.SelectedItem = list.Items.OfType<ListBoxItem>().Single(i => Equals(i.Tag, "Verification"));
             await WaitUntilAsync(() => ribbon.CurrentCategory == "Verification");

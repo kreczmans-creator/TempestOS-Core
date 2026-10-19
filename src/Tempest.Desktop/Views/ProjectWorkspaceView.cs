@@ -100,7 +100,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly ContentControl _structureHost = new();
 
     // The Structure tab's discipline list, left of the engineering surface
-    // (`v0.24.0` Product Owner review): the same seven disciplines the
+    // (`v0.24.0` Product Owner review): the same disciplines and modules the
     // standalone Engineering tree lists, replacing the command bar's own
     // hidden tab strip as the way a discipline is chosen.
     private readonly ListBox _disciplines = new();
@@ -123,11 +123,20 @@ public sealed class ProjectWorkspaceView : UserControl
 
     private Control BuildStructurePane()
     {
-        foreach (var category in EngineeringDisciplines.All)
+        // `ADR-0163`: disciplines, then the shared modules, each under a
+        // heading that cannot itself be picked.
+        foreach (var (heading, categories) in new[] { ("DISCIPLINES", EngineeringDisciplines.Disciplines), ("MODULES", EngineeringDisciplines.Modules) })
         {
-            var item = new ListBoxItem { Content = category, Tag = category };
-            AutomationProperties.SetName(item, EngineeringDisciplines.NavigatorName(category));
-            _disciplines.Items.Add(item);
+            var header = new ListBoxItem { Content = heading, IsEnabled = false, FontSize = DesignTokens.FontSizeCaption, Opacity = 0.7 };
+            AutomationProperties.SetName(header, $"{heading.ToLowerInvariant()} heading");
+            _disciplines.Items.Add(header);
+
+            foreach (var category in categories)
+            {
+                var item = new ListBoxItem { Content = EngineeringDisciplines.Label(category), Tag = category };
+                AutomationProperties.SetName(item, EngineeringDisciplines.NavigatorName(category));
+                _disciplines.Items.Add(item);
+            }
         }
 
         AutomationProperties.SetName(_disciplines, "Disciplines");

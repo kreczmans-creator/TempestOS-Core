@@ -70,6 +70,20 @@ which replaces `WP-Z4`'s two scrollbar tests because nothing scrolls any more.
 
 - **The Cockpit's DETAIL cards no longer spill out of their grid** at some pane widths. The grid's negative left/right margin made Avalonia arrange it narrower than it measured it. This was found by CI's layout walk at 1,600×900 beside the new discipline column, and reproduced locally at 1,200, 1,640–1,710 and 1,930–1,950 px. The grid now sits 8 px in from the page edge.
 
+### Engineering restructure (`ADR-0163`, Product Owner direction of 19 Oct)
+
+- **Disciplines and Modules.** The tree, and a project's Structure tab, list **Disciplines** — Mechanical, **Structural**, **Electrical**, **Building Services / HVAC**, Manufacturing — then **Modules** shared beneath them: Calculations, Requirements, Verification, Documents, Evidence, Reference data. This supersedes the seven-entry Disciplines list above.
+- **One home for calculations.** Modules → **Calculations** shows the calculation objects; beneath it sit **Calculators**, the **Calculation register** (the issued-sheet record, formerly *Engineering Calculations*, kept) and **Packs and templates** (formerly *Engineering Assets*).
+- **Three new disciplines,** each with its own Explorer folders, Properties, command bar (Create, Rename, Edit, Delete with undo, Move, Request review, Approve, Release, Set attribute) and restart persistence:
+  - Structural — members, connections, foundations, load cases;
+  - Electrical — distribution boards, circuits, loads, cables;
+  - Building Services / HVAC — systems, zones, equipment, ductwork and pipework runs.
+
+  Each kind carries declared attributes (section, rating, floor area…), recorded exactly as typed — no design-code check.
+- **The Cockpit is gone from the documents area.** It opens on a **Start** tab; project status lives on the project's Overview.
+
+Code: `DisciplineObject.cs`, `Workspace/Disciplines/`, `EngineeringDisciplines.cs`, `EngineeringAreaView.cs`, `ProjectWorkspaceView.cs`, `DocumentAreaView.cs`. Tests: `DisciplineWorkspaceTests.cs`.
+
 ## Also in this build
 
 - CI's `actions/download-artifact` is bumped to 8.0.2 (Dependabot, PR #18).
@@ -89,10 +103,15 @@ which replaces `WP-Z4`'s two scrollbar tests because nothing scrolls any more.
 
 ## Known limitations
 
+- **New disciplines have no Copy/Duplicate yet,** and their objects are not
+  yet linked to each other (a circuit to its board). `ADR-0163` follow-ups.
+- **An issued calculation sheet is not yet tied into its project's
+  register.** `ADR-0163` follow-up 1.
+
 - **The window is not shrunk to fit a smaller screen (stress F3).** A
   window saved at 1280x800 opens at that size on a 1180x760 display.
   Resize or maximise it.
-- **Requirements → Actions (13) wraps to three rows (stress F4).** It
+- **Requirements → Actions (13) wraps to several rows (stress F4).** It
   wraps only while that group is open.
 - **Explorer's favourite button is clipped at 1,200–1,220 px.** Between
   the compact threshold and about 1,220 px, the Structure tab's Explorer is

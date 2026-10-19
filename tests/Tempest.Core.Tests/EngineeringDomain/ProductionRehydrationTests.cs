@@ -127,6 +127,16 @@ public sealed class ProductionRehydrationTests
         data.Add(CanonicalObjectKinds.Test, typeof(Test));
         data.Add(CanonicalObjectKinds.Verification, typeof(Tempest.Core.EngineeringDomain.Verification));
 
+        // `ADR-0163` — every Structural, Electrical and Building Services
+        // Kind comes back as the one shared DisciplineObject.
+        foreach (var kind in new[]
+                 {
+                     "StructuralMember", "StructuralConnection", "StructuralFoundation", "StructuralLoadCase",
+                     "ElectricalDistributionBoard", "ElectricalCircuit", "ElectricalLoad", "ElectricalCable",
+                     "BuildingServicesSystem", "BuildingServicesZone", "BuildingServicesEquipment", "BuildingServicesDistribution",
+                 })
+            data.Add(kind, typeof(DisciplineObject));
+
         return data;
     }
 
@@ -262,6 +272,7 @@ public sealed class ProductionRehydrationTests
         CalculationObjectFactoryRegistry.RegisterRehydrators(registry, context);
         VerificationActivityFactoryRegistry.RegisterRehydrators(registry, context);
         ManufacturingObjectFactoryRegistry.RegisterRehydrators(registry, context);
+        Tempest.Workspace.Disciplines.DisciplineWorkspaceRegistration.RegisterRehydrators(registry, context);
         registry.Register<Tempest.Core.Evidence.Evidence>(Tempest.Core.Evidence.Evidence.CanonicalKind, context);
         registry.Register<TimesheetEntry>(TimesheetEntry.CanonicalKind, context);
         registry.Register<DeliverableCompletion>(DeliverableCompletion.CanonicalKind, context);

@@ -166,7 +166,11 @@ internal sealed partial class MainWindowComposer
                 var item = items[index - 1];
                 await callbacks.OpenObjectAsync(item.ObjectId, item.Kind).ConfigureAwait(true);
             }) { WorkspaceChanges = composition.WorkspaceChanges };
-        views.DocumentArea.SetHomeTab(cockpitView);
+        // `ADR-0163`: the Cockpit no longer occupies the Documents area;
+        // project status lives on each project's Overview tab. The view is
+        // still built and attached, unshown, for the coordinators that
+        // refresh it, until its removal is completed.
+        views.DocumentArea.SetHomeTab(DocumentAreaView.BuildStartPage());
         viewCoordinator.Attach(cockpitView);
 
         // `WP 19.7B` (Product Owner comment item 6, sheets 1-2): the Home

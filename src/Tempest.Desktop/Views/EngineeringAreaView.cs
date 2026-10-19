@@ -17,8 +17,8 @@ namespace Tempest.Desktop.Views;
 /// <summary>
 /// The Engineering module's own rail landing page (`WP 19.7A`, Product
 /// Owner IA sketches item 6, sheet 8): a tree — Dashboard, Tasks
-/// (Calculations, Reviews, Approvals), Disciplines, Modules, Reference
-/// data — with a right pane over whichever node is selected.
+/// (Calculations, Reviews, Approvals), Disciplines, Modules — with a
+/// right pane over whichever node is selected.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,17 +31,16 @@ namespace Tempest.Desktop.Views;
 /// <see cref="ITasksReadModel"/>'s own Calculations, Reviews and Approvals
 /// (`WP 20.1B`, `TD-181` gives the read model its own Calculations bucket
 /// — the sketched sub-heading this view used to disclose as missing);
-/// each Disciplines node (Calculations, Documents, Evidence, Manufacturing,
-/// Mechanical, Requirements, Verification — <see cref="EngineeringDisciplines"/>)
-/// navigates to <see cref="ShellArea.Engineering"/> and shows that
-/// discipline's command bar, Explorer and Properties *in this right pane*,
-/// with the tree still beside it (`v0.24.0` Product Owner review: the old
-/// Modules → Mechanical node swapped the whole tree away, leaving no way
-/// back out); Modules → Engineering
-/// Calculations embeds the existing calculation surface; Reference data
-/// embeds a second <see cref="LibrariesView"/> instance (the first is
-/// already parented inside <see cref="EvidenceWorkspaceView"/>, and a
-/// control can only ever be parented once).
+/// each Disciplines node (<see cref="EngineeringDisciplines.Disciplines"/>)
+/// and each Modules node (<see cref="EngineeringDisciplines.Modules"/>,
+/// `ADR-0163`) navigates to <see cref="ShellArea.Engineering"/> and shows
+/// that category's command bar, Explorer and Properties *in this right
+/// pane*, with the tree still beside it (`v0.24.0` Product Owner review);
+/// Modules → Calculations' own children embed the calculators, the
+/// register of issued sheets and the packs and templates; Modules →
+/// Reference data embeds a second <see cref="LibrariesView"/> instance
+/// (the first is already parented inside <see cref="EvidenceWorkspaceView"/>,
+/// and a control can only ever be parented once).
 /// </para>
 /// </remarks>
 public sealed class EngineeringAreaView : UserControl
@@ -72,9 +71,9 @@ public sealed class EngineeringAreaView : UserControl
     private readonly TreeViewItem _modulesNode = new() { Header = "Modules", IsExpanded = true };
     private readonly TreeViewItem _disciplinesNode = new() { Header = "Disciplines", IsExpanded = true };
     private readonly Dictionary<string, TreeViewItem> _disciplineNodes = new(StringComparer.Ordinal);
-    private readonly TreeViewItem _calculationsNode = new() { Header = "Engineering Calculations" };
+    private readonly TreeViewItem _calculationsNode = new() { Header = "Calculation register" };
     private readonly TreeViewItem _calculatorsNode = new() { Header = "Calculators" };
-    private readonly TreeViewItem _assetsNode = new() { Header = "Engineering Assets" };
+    private readonly TreeViewItem _assetsNode = new() { Header = "Packs and templates" };
     private readonly TreeViewItem _referenceDataNode = new() { Header = "Reference data" };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
@@ -98,7 +97,7 @@ public sealed class EngineeringAreaView : UserControl
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringAreaView"/> class.</summary>
     /// <param name="openObjectRightUp">Opens a Tasks row's own source object right up — the same delegate every other rail area's Tasks/dashboard rows already use.</param>
-    /// <param name="engineeringAssets">The merged engineering capability's own area (`WP 21.2B`; `TD-160`, `TD-165`) — Modules → Engineering Assets.</param>
+    /// <param name="engineeringAssets">The merged engineering capability's own area (`WP 21.2B`; `TD-160`, `TD-165`) — Modules → Calculations → Packs and templates.</param>
     /// <param name="calculators">The Engineering Calculators (`WP 21.7B`) — Modules → Calculators: every product calculation from a generated form.</param>
     /// <param name="onCalculatorsSelected">Re-reads the calculators' catalogue and released materials on entry, the same shape as <paramref name="onEngineeringCalculationSelected"/>.</param>
     public EngineeringAreaView(
@@ -138,28 +137,41 @@ public sealed class EngineeringAreaView : UserControl
         _dashboardScroll = new ScrollViewer { Content = _dashboardStack };
         _tasksScroll = new ScrollViewer { Content = _tasksPanel };
 
-        foreach (var category in EngineeringDisciplines.All)
+        // `ADR-0163`: Disciplines are engineering domains; Modules are the
+        // shared tools beneath them. Each picks the engineering surface,
+        // tagged with its command category. Calculations is the one home
+        // for calculation work: its own node shows the project's
+        // calculations on the surface, and its children hold the
+        // calculators, the register of issued sheets, and the packs and
+        // templates (what was Modules → Engineering Assets).
+        foreach (var category in EngineeringDisciplines.Disciplines)
+            _disciplinesNode.Items.Add(SurfaceNode(category));
+
+        foreach (var category in EngineeringDisciplines.Modules)
         {
-            var node = new TreeViewItem { Header = category, Tag = category };
-            AutomationProperties.SetName(node, EngineeringDisciplines.NavigatorName(category));
-            _disciplineNodes[category] = node;
-            _disciplinesNode.Items.Add(node);
+            var node = SurfaceNode(category);
+            if (category == "Calculations")
+            {
+                node.IsExpanded = true;
+                node.Items.Add(_calculatorsNode);
+                node.Items.Add(_calculationsNode);
+                node.Items.Add(_assetsNode);
+            }
+
+            _modulesNode.Items.Add(node);
         }
-        _modulesNode.Items.Add(_calculationsNode);
-        _modulesNode.Items.Add(_calculatorsNode);
-        _modulesNode.Items.Add(_assetsNode);
+        _modulesNode.Items.Add(_referenceDataNode);
 
         _tree.Items.Add(_dashboardNode);
         _tree.Items.Add(_tasksNode);
         _tree.Items.Add(_disciplinesNode);
         _tree.Items.Add(_modulesNode);
-        _tree.Items.Add(_referenceDataNode);
 
         foreach (var (node, name) in new[]
                  {
                      (_dashboardNode, "Dashboard"), (_tasksNode, "Tasks"), (_disciplinesNode, "Disciplines"), (_modulesNode, "Modules"),
-                     (_calculationsNode, "Engineering Calculations"), (_calculatorsNode, "Calculators"),
-                     (_assetsNode, "Engineering Assets"), (_referenceDataNode, "Reference data"),
+                     (_calculationsNode, "Calculation register"), (_calculatorsNode, "Calculators"),
+                     (_assetsNode, "Packs and templates"), (_referenceDataNode, "Reference data"),
                  })
             AutomationProperties.SetName(node, name);
         AutomationProperties.SetName(_tree, "Engineering tree");
@@ -189,10 +201,19 @@ public sealed class EngineeringAreaView : UserControl
         Content = split;
     }
 
+    private TreeViewItem SurfaceNode(string category)
+    {
+        var node = new TreeViewItem { Header = EngineeringDisciplines.Label(category), Tag = category };
+        AutomationProperties.SetName(node, EngineeringDisciplines.NavigatorName(category));
+        _disciplineNodes[category] = node;
+        return node;
+    }
+
     /// <summary>
     /// Selects the node named <paramref name="automationName"/>
-    /// ("Dashboard", "Tasks", "Disciplines", "Requirements
-    /// discipline" and its siblings, "Modules", "Engineering Calculations" or
+    /// ("Dashboard", "Tasks", "Disciplines", "Mechanical discipline" and
+    /// its siblings, "Modules", "Requirements module" and its siblings,
+    /// "Calculators", "Calculation register", "Packs and templates" or
     /// "Reference data") — the same name a
     /// screen reader announces, and what a journey test drives the tree
     /// by.
@@ -229,7 +250,7 @@ public sealed class EngineeringAreaView : UserControl
             _detail.Content = null;
     }
 
-    /// <summary>The tree's width beside the engineering surface: its longest row ("Engineering Calculations", nested) plus the column's border.</summary>
+    /// <summary>The tree's width beside the engineering surface: its longest row ("Building Services / HVAC", nested) plus the column's border.</summary>
     private const double SurfaceTreeWidth = 216;
 
     /// <summary>
@@ -254,7 +275,7 @@ public sealed class EngineeringAreaView : UserControl
 
     /// <summary>
     /// Narrows the tree below the shell's own compact threshold, giving
-    /// embedded content (Engineering Calculations, at the narrowest
+    /// embedded content (the calculation register, at the narrowest
     /// supported width) the room it needs — the same one threshold
     /// <c>GlobalNavigationRail</c>/<c>RibbonView</c>/<c>LibrariesView</c>
     /// already fold on.

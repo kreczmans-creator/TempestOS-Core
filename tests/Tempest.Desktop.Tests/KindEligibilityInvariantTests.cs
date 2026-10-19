@@ -70,6 +70,12 @@ public sealed class KindEligibilityInvariantTests
             [MechanicalCommandIds.Edit] = Verb.Revise,
             [VerificationCommandIds.Edit] = Verb.Revise,
             [RequirementsCommandIds.Revise] = Verb.Revise,
+            ["structural.rename"] = Verb.Rename,
+            ["electrical.rename"] = Verb.Rename,
+            ["building-services.rename"] = Verb.Rename,
+            ["structural.edit"] = Verb.Revise,
+            ["electrical.edit"] = Verb.Revise,
+            ["building-services.edit"] = Verb.Revise,
         };
 
     private static readonly IReadOnlyList<string> DeleteRouted =
@@ -77,6 +83,7 @@ public sealed class KindEligibilityInvariantTests
         CalculationsCommandIds.Delete, DocumentsCommandIds.Delete, EvidenceCommandIds.Delete, ManufacturingCommandIds.Delete, MechanicalCommandIds.Delete,
         VerificationCommandIds.Delete, RequirementsCommandIds.Delete, RequirementsCommandIds.DeleteGroup,
         RequirementsCommandIds.DeleteCollection, TimesheetCommandIds.Delete, ExpenseCommandIds.Delete,
+        "structural.delete", "electrical.delete", "building-services.delete",
     ];
 
     /// <summary>Every Kind this platform declares, from the disciplines' own public constants.</summary>
@@ -88,6 +95,7 @@ public sealed class KindEligibilityInvariantTests
         .. MechanicalObjectFactoryRegistry.SupportedKinds,
         .. RequirementsWorkspaceRegistration.SupportedKinds,
         .. VerificationWorkspaceRegistration.SupportedKinds,
+        .. Tempest.Workspace.Disciplines.DisciplineCatalogue.AllKinds,
     ];
 
     private static bool Can(IWorkspaceManager manager, Verb verb, string kind) => verb switch

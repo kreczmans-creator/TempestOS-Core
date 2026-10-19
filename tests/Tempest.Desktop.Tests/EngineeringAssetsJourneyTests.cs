@@ -60,7 +60,7 @@ public sealed class EngineeringAssetsJourneyTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Engineering Assets");
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Packs and templates");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<EngineeringAssetsView>().Any());
             LayOut(window);
 
@@ -107,7 +107,7 @@ public sealed class EngineeringAssetsJourneyTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Engineering Assets");
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Packs and templates");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<EngineeringAssetsView>().Any());
             LayOut(window);
 

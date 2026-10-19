@@ -960,7 +960,7 @@ public sealed class RailSurfaceContractTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
             var engineeringArea = window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single();
-            engineeringArea.SelectNode("Engineering Calculations");
+            engineeringArea.SelectNode("Calculation register");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Any());
             LayOut(window);
             var view = window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Single();
@@ -1023,7 +1023,7 @@ public sealed class RailSurfaceContractTests
             await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Engineering Calculations");
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Calculation register");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Any());
             LayOut(window);
 

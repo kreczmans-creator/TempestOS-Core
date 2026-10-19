@@ -1,5 +1,6 @@
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Disciplines;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Expenses;
@@ -48,7 +49,8 @@ internal static class SurfaceCommandPolicy
     /// rename of its own: a Requirement's editable field is its Statement,
     /// which is what <c>requirements.revise</c> is.
     /// </remarks>
-    internal static readonly IReadOnlySet<string> ObjectEditorCommandIds = new HashSet<string>(StringComparer.Ordinal)
+    internal static readonly IReadOnlySet<string> ObjectEditorCommandIds = new HashSet<string>(
+        DisciplineCatalogue.All.SelectMany(d => new[] { d.CommandId("rename"), d.CommandId("edit") }), StringComparer.Ordinal)
     {
         CalculationsCommandIds.Rename, CalculationsCommandIds.Edit,
         DocumentsCommandIds.Rename, DocumentsCommandIds.Edit,
@@ -74,7 +76,8 @@ internal static class SurfaceCommandPolicy
     /// say</i> before deleting — its own ConfirmationMessage — so Core
     /// remains the single source of the confirmation text.
     /// </remarks>
-    internal static readonly IReadOnlySet<string> DeleteCommandIds = new HashSet<string>(StringComparer.Ordinal)
+    internal static readonly IReadOnlySet<string> DeleteCommandIds = new HashSet<string>(
+        DisciplineCatalogue.All.Select(d => d.CommandId("delete")), StringComparer.Ordinal)
     {
         CalculationsCommandIds.Delete,
         DocumentsCommandIds.Delete,

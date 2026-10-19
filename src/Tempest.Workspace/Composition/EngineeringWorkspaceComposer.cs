@@ -6,6 +6,7 @@ using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Expenses;
 using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Macros;
+using Tempest.Workspace.Disciplines;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Projects;
@@ -280,6 +281,9 @@ public static class EngineeringWorkspaceComposer
         // wired (ManufacturingWorkspaceRegistration's own remarks).
         ManufacturingWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry);
 
+        // `ADR-0163`: Structural, Electrical and Building Services / HVAC.
+        DisciplineWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry);
+
         // The User Command Macro foundation (`WP 10.6A`) — not a seventh
         // Engineering Discipline (MacroWorkspaceRegistration's own
         // remarks); registered here purely because it needs the identical
@@ -298,6 +302,7 @@ public static class EngineeringWorkspaceComposer
         CalculationObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         VerificationActivityFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         ManufacturingObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        DisciplineWorkspaceRegistration.RegisterRehydrators(rehydrators, domainContext);
         rehydrators.Register<Tempest.Core.Evidence.Evidence>(Tempest.Core.Evidence.Evidence.CanonicalKind, domainContext);
 
         // `ADR-0150` (`WP 19.0A`) — the fortieth and forty-first Kinds with

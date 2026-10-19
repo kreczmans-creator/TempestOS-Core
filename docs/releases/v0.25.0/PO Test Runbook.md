@@ -73,26 +73,30 @@ The script:
 
 ## N. New in v0.25.0 — Engineering navigation
 
-The Engineering tree now lists the disciplines, and picking one keeps the
-tree beside the work. The command bar above the work is one row. Use a
+The Engineering tree now lists the disciplines and, beneath them, the
+shared modules (`ADR-0163`); picking either keeps the tree beside the work. The command bar above the work is one row. Use a
 window of at least 1280 px wide, then repeat N9 narrow.
 
 | # | Action | Expect | Blocking | Result | Comments |
 |---|---|---|---|---|---|
-| N1 | Rail → **Engineering** (no project open: use the header's project chip → **Close Project** first if one is open) | The tree reads **Dashboard, Tasks, Disciplines** (expanded: Calculations, Documents, Evidence, Manufacturing, Mechanical, Requirements, Verification), **Modules** (Engineering Calculations, Calculators, Engineering Assets), **Reference data**. There is **no Mechanical** under Modules. The right pane shows the Dashboard | Yes | | |
-| N2 | Disciplines → **Requirements** | The right pane shows **"Requirements commands"** above the Project Explorer, Documents/Cockpit and Properties. **The tree stays on the left** (narrower), and the rail highlights **Engineering**. There is **no row of discipline tabs** (Calculations / Documents / Evidence…) anywhere | Yes | | |
+| N1 | Rail → **Engineering** (no project open: use the header's project chip → **Close Project** first if one is open) | The tree reads **Dashboard, Tasks, Disciplines** (expanded: Mechanical, Structural, Electrical, Building Services / HVAC, Manufacturing), **Modules** (expanded: **Calculations** with Calculators, Calculation register and Packs and templates beneath it; Requirements, Verification, Documents, Evidence, Reference data). The right pane shows the Dashboard | Yes | | |
+| N2 | Modules → **Requirements** | The right pane shows **"Requirements commands"** above the Project Explorer, Documents (opening on a **Start** tab, not the Cockpit) and Properties. **The tree stays on the left** (narrower), and the rail highlights **Engineering**. There is **no row of discipline tabs** (Calculations / Documents / Evidence…) anywhere | Yes | | |
 | N3 | Look at the command bar | One row: the **Create Requirement** tile, then **Organize (3) ▾**, **Lifecycle (1) ▾**, **Actions (13) ▾**. One group's buttons show under the selectors. Nothing is cut off at the right edge, and there is no horizontal scroll bar | Yes | | |
 | N4 | Click **Actions (13) ▾**, then **Lifecycle (1) ▾**, then **Organize (3) ▾** | Each click shows that group's buttons (Actions: Create Requirement Group, Link Requirement, Set Requirement Owner …) and hides the others. The chosen selector is highlighted | Yes | | |
-| N5 | Disciplines → **Calculations** → **Create Calculation** → give it a name | The bar switches to *Calculations commands* and the Explorer to Calculations, without leaving the screen. The new calculation opens right up in an editor tab, and the status bar says it was created | Yes | | |
+| N5 | Modules → **Calculations** → **Create Calculation** → give it a name | The bar switches to *Calculations commands* and the Explorer to Calculations, without leaving the screen. The new calculation opens right up in an editor tab, and the status bar says it was created | Yes | | |
 | N6 | Select that calculation in the Explorer → **Organize ▾** → **Rename Calculation** | The Object Editor opens; rename and save; the Explorer shows the new name | Yes | | |
 | N7 | Click **Dashboard** in the tree | One click returns you to the Engineering Dashboard. Then click **Mechanical**: you are back in the surface with *Mechanical commands* | Yes | | |
-| N7a | Disciplines → **Evidence** | *Evidence commands* above; the Explorer says **"Evidence has no tree here."** and points to the project's Evidence tab — never the previous discipline's tree. Pick **Verification**: its tree comes back | Yes | | |
+| N7a | Modules → **Evidence** | *Evidence commands* above; the Explorer says **"Evidence has no tree here."** and points to the project's Evidence tab — never the previous discipline's tree. Pick **Verification**: its tree comes back | Yes | | |
 | N8 | The **^** chevron at the right of the command bar | The commands fold away and the *"… commands"* header stays. The chevron (now **Show commands**) brings them back. Fold it, close TempestOS, relaunch, go to a discipline: it is still folded, and the chevron restores it | Yes | | |
 | N9 | Make the window narrow (under 1,200 px) and repeat N2–N4 | The rail folds to icons, the buttons compact to icons with tooltips, and nothing overlaps or is clipped | No | | |
-| N10 | Projects → open a project → **Structure** tab | A narrow **Disciplines** list on the left, then the command bar, Explorer, Documents and Properties. The rail highlights **Projects** | Yes | | |
+| N10 | Projects → open a project → **Structure** tab | A narrow list on the left headed **DISCIPLINES** then **MODULES**, the same entries as the Engineering tree, then the command bar, Explorer, Documents and Properties. The rail highlights **Projects** | Yes | | |
 | N11 | In the Structure tab's list pick **Verification**, then **Mechanical** → **Create** a Part | The bar and Explorer follow each pick. The Part is created under the open project and opens right up | Yes | | |
 | N12 | Ctrl+K → type *requirement* → pick **Create Requirement** | The palette lists every Requirements command, and running one behaves as from the bar. The Structure list's highlight moves to **Requirements** if it was not already | No | | |
 | N13 | Rail → **Home** → rail → **Engineering** | The landing page shows **Dashboard**, not the surface you left | No | | |
+| N15 | Disciplines → **Structural** → **Create Structural object** → Kind *StructuralMember* → name it *Ground floor beam B1* | The Explorer shows **Members, Connections, Foundations, Load cases**; the beam lists under **Members** and opens right up | Yes | | |
+| N16 | With the beam selected → **Actions ▾** → **Set attribute** → *Section* → *UB 305x165x40* | Properties lists every member attribute (Member type, Section, Material, Grade, Length (mm)); Section reads the value, the rest *(not recorded)*. Close and relaunch: it is still there | Yes | | |
+| N17 | Repeat N15 for **Electrical** (a *Circuit*) and **Building Services / HVAC** (a *Zone*) | Their own folders (Distribution boards, Circuits, Loads, Cables / Systems, Zones, Equipment, Ductwork and pipework) and attributes. **Lifecycle ▾** offers Request review → Approve → Release, in that order | Yes | | |
+| N18 | Modules → Calculations → **Calculation register** | The issued-sheet register (formerly Engineering Calculations), unchanged | No | | |
 | N14 | Your own judgement: find **Approve** for a Document, then **Record Verification Result**, without help | Each takes at most 3 clicks from the Engineering tree, and you can always see how to get back | Yes | | |
 
 **Gate G1 — Navigation: GO / NO-GO**
