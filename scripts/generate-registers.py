@@ -181,3 +181,136 @@ body = f'''<h1>Technical debt register</h1>
 {''.join(parts)}'''
 open(f'{OUT}/Technical Debt Register.html', 'w').write(page('Technical Debt Register', 'TECHNICAL DEBT REGISTER', f'TDE-OS-GOV-TDR · {allrows} ROWS · ISSUED {today}', body))
 print(len(rows), 'adr;', allrows, 'td rows;', [(n, count(n)) for n in names])
+
+# ---------- every other register and tracker: a general Markdown renderer ----------
+GENERAL = [
+    # (source, output name, eyebrow, reference)
+    ('docs/governance/Future Capability Register.md', 'Future Capability Register', 'FUTURE CAPABILITY REGISTER', 'TDE-OS-GOV-FCR'),
+    ('docs/governance/Data/Seed Data Sources Register.md', 'Seed Data Sources Register', 'SEED DATA SOURCES REGISTER', 'TDE-OS-GOV-SDS'),
+    ('docs/governance/Product Roadmap.md', 'Product Roadmap', 'PRODUCT ROADMAP', 'TDE-OS-GOV-RMP'),
+    ('docs/releases/v1.0.0/WorkPackages.md', 'v1.0.0 Work Packages', 'WORK PACKAGE TRACKER', 'TDE-OS-REL-WPK'),
+    ('PROJECT_STATUS.md', 'Project Status', 'PROJECT STATUS', 'TDE-OS-GOV-STS'),
+    ('PRODUCT_OWNER_ACCEPTANCE.md', 'Product Owner Acceptance', 'ACCEPTANCE TRACKER', 'TDE-OS-REL-ACC'),
+    ('docs/reviews/RC PO Feedback Actions (2026-10-01).md', 'PO Feedback Actions', 'ACTION REGISTER', 'TDE-OS-REV-ACT'),
+    ('PHYSICAL_REVIEW.md', 'Physical Review Guide', 'PHYSICAL REVIEW CHECKLIST', 'TDE-OS-REL-PHR'),
+    ('docs/releases/v0.25.0/PO Test Runbook.md', 'PO Test Runbook v0.25.0', 'TEST RUNBOOK', 'TDE-OS-REL-RUN'),
+    ('THIRD-PARTY-NOTICES.md', 'Third-Party Notices', 'THIRD-PARTY REGISTER', 'TDE-OS-GOV-3PN'),
+]
+
+def render_markdown(md):
+    """A small Markdown renderer covering what these files use: headings,
+    paragraphs, lists, block quotes, fenced code, rules and tables. Each
+    `##`/`###` section is wrapped so the search box can hide it."""
+    lines = md.split('\n')
+    out, para, i, title = [], [], 0, None
+    open_section = False
+
+    def flush():
+        if para:
+            out.append(f'<p>{inline(" ".join(para))}</p>')
+            para.clear()
+
+    while i < len(lines):
+        l = lines[i]
+        s = l.strip()
+        if s.startswith('```'):
+            flush(); i += 1; code = []
+            while i < len(lines) and not lines[i].strip().startswith('```'):
+                code.append(lines[i]); i += 1
+            out.append(f'<pre>{html.escape(chr(10).join(code))}</pre>'); i += 1; continue
+        m = re.match(r'^(#{1,4})\s+(.*)$', s)
+        if m:
+            flush(); level = len(m.group(1)); text = m.group(2)
+            if level == 1 and title is None:
+                title = text; i += 1; continue
+            if level <= 3:
+                if open_section: out.append('</section>')
+                out.append('<section class="sec">'); open_section = True
+            tag = {1: 'h2', 2: 'h2', 3: 'h3', 4: 'h4'}[level]
+            out.append(f'<{tag}>{inline(text)}</{tag}>'); i += 1; continue
+        if s.startswith('|') and i + 1 < len(lines) and re.match(r'^\|\s*:?-{3,}', lines[i + 1].strip()):
+            flush(); header = cells(s); i += 2; rows_ = []
+            while i < len(lines) and lines[i].strip().startswith('|'):
+                rows_.append(cells(lines[i].strip())); i += 1
+            th = ''.join(f'<th>{inline(h)}</th>' for h in header)
+            idcol = bool(rows_) and all(re.match(r'^`?[A-Z][A-Za-z0-9.\-]*[0-9]', r[0] or '') or len(r[0]) <= 12 for r in rows_[:8])
+            trs = []
+            for r in rows_:
+                r = (r + [''] * len(header))[:len(header)]
+                tds = ''.join(f'<td class="{"id" if k == 0 and idcol else "t" if k == 0 else ""}">{inline(c)}</td>' for k, c in enumerate(r))
+                trs.append(f'<tr class="row">{tds}</tr>')
+            out.append(f'<div class="wrap"><table class="gen"><thead><tr>{th}</tr></thead><tbody>{"".join(trs)}</tbody></table></div>')
+            continue
+        if re.match(r'^(-{3,}|\*{3,})$', s):
+            flush(); out.append('<hr>'); i += 1; continue
+        if re.match(r'^([-*]|\d+\.)\s+', s):
+            flush(); ordered = bool(re.match(r'^\d+\.', s)); items = []
+            while i < len(lines) and (re.match(r'^\s*([-*]|\d+\.)\s+', lines[i]) or (lines[i].startswith('  ') and lines[i].strip() and items)):
+                li = lines[i]
+                if re.match(r'^\s*([-*]|\d+\.)\s+', li):
+                    items.append([re.sub(r'^\s*([-*]|\d+\.)\s+', '', li), len(li) - len(li.lstrip())])
+                else:
+                    items[-1][0] += ' ' + li.strip()
+                i += 1
+            tag = 'ol' if ordered else 'ul'
+            out.append(f'<{tag}>' + ''.join(f'<li style="margin-left:{min(ind, 8) * 6}px">{inline(t)}</li>' for t, ind in items) + f'</{tag}>')
+            continue
+        if s.startswith('>'):
+            flush(); q = []
+            while i < len(lines) and lines[i].strip().startswith('>'):
+                q.append(lines[i].strip().lstrip('>').strip()); i += 1
+            out.append(f'<blockquote>{inline(" ".join(q))}</blockquote>'); continue
+        if not s:
+            flush()
+        else:
+            para.append(s)
+        i += 1
+    flush()
+    if open_section: out.append('</section>')
+    return title, ''.join(out)
+
+GEN_CSS = '''
+.doc-body p,.doc-body li{max-width:860px}
+.doc-body h4{font-family:var(--font-display);font-size:13px;color:var(--strong);margin:16px 0 4px}
+.doc-body pre{font-family:var(--font-mono);font-size:11.5px;background:var(--head);padding:10px 12px;overflow-x:auto}
+.doc-body blockquote{margin:10px 0;padding:6px 14px;border-left:3px solid var(--accent);color:var(--muted)}
+.doc-body hr{border:0;border-top:1px solid var(--rule2);margin:20px 0}
+.doc-body table{margin:8px 0 14px}
+'''
+JS_GEN = '''<script>
+(function(){var box=document.querySelector('[data-gen]');if(!box)return;var input=box.querySelector('input'),count=box.querySelector('.count');
+var rows=[].slice.call(document.querySelectorAll('tr.row')),secs=[].slice.call(document.querySelectorAll('section.sec'));
+function apply(){var q=(input.value||'').toLowerCase(),n=0;
+ rows.forEach(function(r){var ok=!q||r.textContent.toLowerCase().indexOf(q)>=0;r.style.display=ok?'':'none';if(ok)n++});
+ secs.forEach(function(s){s.style.display=!q||s.textContent.toLowerCase().indexOf(q)>=0?'':'none'});
+ count.textContent=q?(n+' of '+rows.length+' table rows match'):(rows.length+' table rows');}
+input.addEventListener('input',apply);apply();})();
+</script>'''
+
+made = [('ADR Register', 'Architecture Decision Record register', 'docs/governance/Architecture/ADR Register.md'),
+        ('Technical Debt Register', 'Technical debt register', 'BACKLOG.md')]
+for src, name, eyebrow, ref in GENERAL:
+    md = open(f'{ROOT}/{src}', encoding='utf-8').read()
+    title, body_html = render_markdown(md)
+    title = title or name
+    nrows = body_html.count('<tr class="row">')
+    nsec = body_html.count('<section class="sec">')
+    body = f'''<h1>{inline(title)}</h1>
+<p class="lede">Rendered from <code>{html.escape(src)}</code>.</p>
+<div class="kpis"><div class="kpi"><b>{nsec}</b><span>Sections</span></div><div class="kpi"><b>{nrows}</b><span>Table rows</span></div></div>
+<div class="tools" data-gen><input type="search" placeholder="Search this document…" aria-label="Search this document"><span class="count"></span></div>
+<div class="doc-body">{body_html}</div>'''
+    doc = page(name, eyebrow, f'{ref} · {nrows} ROWS · ISSUED {today}', body)
+    doc = doc.replace('</style>', GEN_CSS + '</style>', 1).replace('</body>', JS_GEN + '</body>', 1)
+    open(f'{OUT}/{name}.html', 'w', encoding='utf-8').write(doc)
+    made.append((name, re.sub(r'[`*]', '', title), src))
+
+# ---------- index ----------
+items = ''.join(f'<tr class="ix"><td class="t"><a href="{html.escape(n)}.html">{html.escape(n)}</a></td><td>{inline(t)}</td><td><code>{html.escape(s)}</code></td></tr>' for n, t, s in made)
+body = f'''<h1>Registers and trackers</h1>
+<p class="lede">Every live TempestOS register and tracker, rendered from its Markdown source by <code>scripts/generate-registers.py</code>. Re-run that script after a source changes; the Markdown stays the source of truth.</p>
+<div class="wrap"><table><thead><tr><th style="width:28%">Document</th><th>Title</th><th style="width:34%">Source</th></tr></thead><tbody>{items}</tbody></table></div>'''
+idx = page('Registers and Trackers', 'REGISTERS &amp; TRACKERS', f'TDE-OS-GOV-IDX · {len(made)} DOCUMENTS · ISSUED {today}', body)
+idx = idx.replace('</style>', 'a{color:var(--accent)}</style>', 1)
+open(f'{OUT}/index.html', 'w', encoding='utf-8').write(idx)
+print('made', len(made), 'documents + index')
