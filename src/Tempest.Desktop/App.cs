@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Tempest.Core.Configuration;
 using Tempest.Desktop.Startup;
 using Tempest.Desktop.Theming;
@@ -58,7 +59,14 @@ public sealed class App : Application
             // both for this resolution and — unchanged below — as the
             // Host's own default configuration source.
             var args = desktop.Args ?? [];
+            // `C-01`: the first-run dialog and its bootstrap owner are the
+            // only windows open while it shows. Closing them must not count
+            // as closing the application's last window, or the lifetime
+            // shuts the dispatcher down before MainWindow exists.
+            var shutdownMode = desktop.ShutdownMode;
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             var persistenceRootOverride = ResolvePersistenceRootOverride(args);
+            desktop.ShutdownMode = shutdownMode;
 
             // `WP 17.2A` (ADR-0146): Avalonia's own classic desktop
             // lifetime carries Program.Main(string[] args) through
@@ -151,12 +159,19 @@ public sealed class App : Application
     /// before any window this application's own shell owns — exists, so a
     /// small, otherwise-invisible owner window is created purely so
     /// <see cref="Window.ShowDialog{TResult}(Window)"/> has one to be modal
-    /// against; Avalonia's own <c>ShowDialog</c> pumps its own nested
-    /// dispatcher frame while awaited, so blocking on it here — the same
-    /// <c>GetAwaiter().GetResult()</c> convention already used for
-    /// <see cref="WorkspaceHost.StartAsync"/>, immediately below this
-    /// method's own caller — does not deadlock the UI thread.
+    /// against.
     /// </summary>
+    /// <remarks>
+    /// <b>`C-01`: never block on the dialog's task.</b> <c>ShowDialog</c>
+    /// does not pump a dispatcher frame of its own, so the old
+    /// <c>GetAwaiter().GetResult()</c> here blocked the UI thread: the dialog
+    /// window was created but never painted or took a click. On Windows it
+    /// sometimes survived only because a blocked STA thread still pumps some
+    /// window messages, which is why it hung from the Start menu but not
+    /// always from a shortcut; on Linux it hung every time. A nested
+    /// <see cref="Dispatcher.MainLoop"/> runs until the dialog's task
+    /// completes, so the dialog renders and responds normally.
+    /// </remarks>
     private static string ShowFirstRunDialogBlocking(string suggestedDefault)
     {
         var bootstrapOwner = new Window
@@ -173,7 +188,19 @@ public sealed class App : Application
         try
         {
             var dialog = new FirstRunPersistenceLocationWindow(suggestedDefault);
-            return dialog.ShowDialog<string>(bootstrapOwner).GetAwaiter().GetResult() ?? suggestedDefault;
+            var chosen = dialog.ShowDialog<string?>(bootstrapOwner);
+
+            using var closed = new CancellationTokenSource();
+            chosen.ContinueWith(
+                _ =>
+                {
+                    closed.Cancel();
+                    Dispatcher.UIThread.Post(static () => { });
+                },
+                TaskScheduler.Default);
+            Dispatcher.UIThread.MainLoop(closed.Token);
+
+            return chosen.GetAwaiter().GetResult() ?? suggestedDefault;
         }
         finally
         {

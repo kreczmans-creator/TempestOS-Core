@@ -6,11 +6,10 @@ name: Release Publish
 # versioning policy (see docs/releases/v0.11.0/WP11.1B Engineering
 # Workflow.md, "Versioning Policy"): a final release ("v0.11.0",
 # "v0.11.1"), a hotfix patch ("v0.10.1"), or a release candidate
-# ("v0.11.0-rc.1"). Re-builds and re-tests Release configuration at the
-# exact tagged commit — a release is not considered published until this
-# workflow's own Build Gate and Test Gate pass a second, independent
-# time, against the tag itself, not only against whatever CI run the
-# feature branch happened to produce earlier — then publishes a GitHub
+# ("v0.11.0-rc.1"). Re-builds Release configuration at the exact tagged
+# commit and publishes only once ci.yml's CI Gate is green for that same
+# commit (ADR-0164: the tests are not run a second time here) — then
+# publishes a GitHub
 # Release with two separate assets attached: Tempest.Desktop's own build
 # (TempestOS's shipped application) and, separately, Tempest.Harness's
 # own build (the Internal Engineering Harness, ADR-0101, amended
@@ -35,20 +34,21 @@ name: Release Publish
 # this workflow into three jobs:
 #
 #   ci-gate  waits for the `CI Gate` check run of ci.yml on this exact
-#            commit and fails unless it concluded `success`. The tag push
-#            starts ci.yml on the same SHA, so a release is published only
-#            when CI is green on the tagged commit (until v0.23.0 the two
-#            ran in parallel and a red CI did not stop the publish).
-#   build    re-builds, re-tests and packages the tag with a read-only
+#            commit and fails unless it concluded `success`. Tag a commit
+#            CI has already run on (anything merged to main or pushed to
+#            release/**); ci.yml no longer re-runs on the tag push
+#            (ADR-0164). Tagging an untested commit: run CI on it first
+#            (Actions → CI → Run workflow, on the tag).
+#   build    re-builds and packages the tag with a read-only
 #            token that is not persisted in .git/config, and uploads the
 #            assets, SHA256SUMS.txt and the release notes as one artifact.
-#            Restore, build, test and vpk (third-party code) never see a
+#            Restore, build and vpk (third-party code) never see a
 #            token that can write to the repository.
 #   publish  the only job with `contents: write`. It runs no repository
 #            code: it downloads that artifact, checks every asset against
 #            SHA256SUMS.txt and creates the GitHub Release. It needs both
 #            jobs above, so a red, cancelled or missing CI Gate, or any
-#            build/test/packaging failure, publishes nothing.
+#            build/packaging failure, publishes nothing.
 #
 # A failed release run can be re-run once the cause is fixed (for example
 # after CI on the tag is re-run green): "Re-run failed jobs" re-polls the
@@ -139,26 +139,24 @@ jobs:
               echo "::warning::Could not query check runs for $SHA; retrying."
             fi
             if [ "$(date +%s)" -ge "$deadline" ]; then
-              echo "::error::No completed CI Gate check run for $SHA after 75 minutes. This tag will not be published. Confirm ci.yml ran on the tag, then re-run this workflow's failed jobs."
+              echo "::error::No completed CI Gate check run for $SHA after 75 minutes. This tag will not be published. Run CI on this commit (Actions → CI → Run workflow, on the tag; ci.yml no longer runs on tag pushes, ADR-0164), then re-run this workflow's failed jobs."
               exit 1
             fi
             sleep 30
           done
 
   build:
-    name: Build, Test & Package Release
+    name: Build & Package Release
     runs-on: windows-2022
     # Read-only token, and not persisted (below): this job runs restore,
-    # build, test and vpk, i.e. third-party code (ADR-0160, G-05).
+    # build and vpk, i.e. third-party code (ADR-0160, G-05).
     permissions:
       contents: read
-    # Measured: the v0.22.0 release job took about 21 min, its unsharded
-    # Release test step 18:16 (CI's Release Desktop shards summed to 25:46
-    # for the same commit, so shard sums overstate this job). v0.23.0's
-    # Release Desktop shards sum to 25:14, so expect about 18-21 min of
-    # testing here. 30 leaves about 9 min of headroom; `--blame-hang`
-    # below names a hung test long before that runs out.
-    timeout-minutes: 30
+    # Measured: v0.25.0's job spent 22:53 of about 27 min in an unsharded
+    # Release test step that repeated what CI Gate had already proved for
+    # the same commit (ADR-0164 removed it). Restore, build, governance
+    # and packaging take about 6 min; 20 leaves ample headroom.
+    timeout-minutes: 20
     steps:
       - name: Checkout tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -202,26 +200,10 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      # A tagged commit that fails its own re-verification here is not
-      # published. Per Engineering Governance §7.4, a pushed tag is never
-      # moved or recreated - if this happens, the corrective action is a
-      # new patch version and a new tag (see "Rollback Procedure"),
-      # never editing this one.
-      - name: Test (Release)
-        shell: pwsh
-        run: |
-          dotnet test "${{ env.SOLUTION_PATH }}" `
-            --configuration Release `
-            --no-build `
-            --logger trx `
-            --logger "console;verbosity=normal" `
-            --results-directory "TestResults/Release" `
-            --blame-hang `
-            --blame-hang-timeout 5m
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "One or more tests failed for tag '${{ github.ref_name }}' - this tag will not be published."
-            exit $LASTEXITCODE
-          }
+      # No test step (ADR-0164): `ci-gate` already requires CI Gate =
+      # success for this exact commit, which ran every test in both
+      # configurations. Running them again here cost about 23 minutes per
+      # release and proved nothing new about the same SHA.
 
       # The release path must not be weaker than the merge path. `WP 16.1A`
       # made `CI Gate` depend on the Governance Health Check, so no branch

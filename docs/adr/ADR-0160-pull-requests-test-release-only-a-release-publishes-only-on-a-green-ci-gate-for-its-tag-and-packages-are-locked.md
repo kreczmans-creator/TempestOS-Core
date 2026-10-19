@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — Product Owner decisions (2026-10-01) on the `v0.23.0` CI
+Accepted (amended by `ADR-0164`, 2026-10-19: no CI run on the tag push, no second test run in `release.yml`) — Product Owner decisions (2026-10-01) on the `v0.23.0` CI
 colour review board (G-05, G-07, G-20, G-21) and the NuGet lock-file
 proposal.
 

@@ -11,8 +11,8 @@ name: CI
 # Work Package retrospectives was a manually-run, self-reported
 # assertion — see docs/releases/v0.11.0/WP11.0A Platform Architecture
 # Review.md, finding R-1. This workflow closes that gap: the claim is now
-# machine-verified on every pull request, on pushes to main, release/**
-# and version tags, and on demand (see `on:` below for why other pushes
+# machine-verified on every pull request, on pushes to main and
+# release/** (not on version tags, ADR-0164), and on demand (see `on:` below for why other pushes
 # are not built).
 #
 # See docs/academy/06 Engineering Standards/04-continuous-integration.md
@@ -58,14 +58,14 @@ name: CI
 # request runs the Release test legs only. Its Debug legs still restore and
 # build with TreatWarningsAsErrors (a Debug-only compile break is still
 # caught), but every Debug test step is skipped on `pull_request`. A push
-# to main, release/** or a tag, a manual run and the schedule keep the full
+# to main or release/**, a manual run and the schedule keep the full
 # Debug + Release test matrix, so every commit that lands is still tested
 # in both configurations. The skip is per step, not per job: all eight
 # matrix legs exist on every event, so job names stay stable and CI Gate's
 # strict `success` check below needs no special case (see its remark).
 
 on:
-  # Push runs only main, release branches and tags; every other branch is
+  # Push runs only main and release branches; every other branch is
   # gated by its pull request. With both triggers unfiltered, one push to a
   # branch with an open PR started two complete runs (the push run under
   # refs/heads/<branch> and the PR run under refs/pull/<n>/merge, separate
@@ -85,8 +85,9 @@ on:
     branches:
       - main
       - "release/**"
-    tags:
-      - "v*.*.*"
+    # No `tags:` (ADR-0164): a release tag points at a commit CI has
+    # already run on, and release.yml's ci-gate accepts that run. Running
+    # the whole matrix again on the tag push re-proved the same SHA.
   pull_request:
   workflow_dispatch: {}
   # WP 17.0C: the mutation job below (Stryker.NET) is deliberately scoped
@@ -100,7 +101,7 @@ on:
     - cron: "0 6 * * 1"
 
 # cancel-in-progress applies to pull request runs only. A pushed ref
-# (main, release/**, a tag) is a commit that has landed, and each one is
+# (main, release/**) is a commit that has landed, and each one is
 # gated in its own right: with cancellation on for release branches, runs
 # #420 to #427 on release/v0.21.0 (2026-09-15) were each cancelled by the
 # next push, so seven consecutive heads - three of them carrying the fix
@@ -597,7 +598,7 @@ jobs:
               $lines.Add("_Could not rank the slowest tests: $($_.Exception.Message)_")
             }
           } elseif ($config -eq "Debug" -and "${{ github.event_name }}" -eq "pull_request") {
-            $lines.Add("_Debug tests are not run on a pull request (ADR-0160): this leg built only. Pushes to main, release/** and tags run them._")
+            $lines.Add("_Debug tests are not run on a pull request (ADR-0160): this leg built only. Pushes to main and release/** run them._")
           } else {
             $lines.Add("_No test results found - the test step did not complete._")
           }
@@ -1128,6 +1129,6 @@ jobs:
           }
           if ($failed) { exit 1 }
           if ("${{ github.event_name }}" -eq "pull_request") {
-            Write-Host "Pull request: Debug built in every leg; its tests are not run on a pull request (ADR-0160) and run on the push to main, release/** or a tag."
+            Write-Host "Pull request: Debug built in every leg; its tests are not run on a pull request (ADR-0160) and run on the push to main or release/**."
           }
           Write-Host "All Build & Test configurations, the Governance Health Check and the Dependency Scan succeeded."
