@@ -175,12 +175,14 @@ public sealed class EngineeringAreaView : UserControl
         split.Children.Add(_detail);
 
         // The engineering surface needs the width more than the tree does:
-        // the tree narrows while the surface is shown beside it, so the
-        // Explorer is not squeezed, and widens again when it leaves.
+        // the tree narrows to its longest row while the surface is shown
+        // beside it, so the Explorer is not squeezed, and widens again when
+        // it leaves. Not the compact width: rows there clip and scroll
+        // sideways (real-shell stress finding F2).
         _detail.PropertyChanged += (_, e) =>
         {
             if (e.Property == ContentControl.ContentProperty)
-                _treeColumn.SetCompact(_shellCompact || IsShowingSurface);
+                _treeColumn.SetExpandedWidth(IsShowingSurface ? SurfaceTreeWidth : CollapsibleColumn.ExpandedWidth);
         };
 
         AutomationProperties.SetName(this, "Engineering");
@@ -227,7 +229,8 @@ public sealed class EngineeringAreaView : UserControl
             _detail.Content = null;
     }
 
-    private bool _shellCompact;
+    /// <summary>The tree's width beside the engineering surface: its longest row ("Engineering Calculations", nested) plus the column's border.</summary>
+    private const double SurfaceTreeWidth = 216;
 
     /// <summary>
     /// Highlights <paramref name="category"/>'s Disciplines node without
@@ -258,8 +261,7 @@ public sealed class EngineeringAreaView : UserControl
     /// </summary>
     public void SetCompact(bool compact)
     {
-        _shellCompact = compact;
-        _treeColumn.SetCompact(compact || IsShowingSurface);
+        _treeColumn.SetCompact(compact);
         _engineeringAssets.SetCompact(compact);
     }
 

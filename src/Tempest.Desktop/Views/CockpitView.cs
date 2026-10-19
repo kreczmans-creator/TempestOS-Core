@@ -80,7 +80,12 @@ internal sealed class CockpitView : UserControl
     private readonly WrapPanel _periodBar = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
     private readonly WrapPanel _tiles = new() { Orientation = Orientation.Horizontal };
     private readonly WrapPanel _disciplines = new() { Orientation = Orientation.Horizontal };
-    private readonly WrapPanel _cards = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(-DesignTokens.SpaceMd) };
+    // No negative left/right margin (it once cancelled the outer cards'
+    // own margins): Avalonia arranges a left-aligned panel with negative
+    // horizontal margins narrower than it measured it, so its rows
+    // re-wrapped at arrange time and the last cards spilled out of the
+    // grid at some pane widths (`v0.25.0` CI layout walk, 1600x900).
+    private readonly WrapPanel _cards = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, -DesignTokens.SpaceMd, 0, -DesignTokens.SpaceMd) };
 
     // `WP 19.1B` — the KPI period selector (`ADR-0150`): the six named
     // presets plus an explicit custom range, built once here (never

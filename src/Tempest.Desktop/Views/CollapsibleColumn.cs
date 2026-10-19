@@ -73,7 +73,7 @@ public sealed class CollapsibleColumn : Border
     /// <summary>Gets whether the column is currently collapsed to its own strip (the manual toggle's own state — independent of whether the responsive rule is separately narrowing it, see <see cref="SetCompact"/>).</summary>
     public bool IsCollapsed => _isCollapsed;
 
-    private readonly double _expandedWidth;
+    private double _expandedWidth;
 
     /// <summary>Gets whether the column is currently narrowed by the shell's own responsive rule.</summary>
     public bool IsCompact => _isCompact;
@@ -160,6 +160,13 @@ public sealed class CollapsibleColumn : Border
     public void ToggleCollapsed() => SetCollapsed(!_isCollapsed);
 
     /// <summary>Narrows the column below the shell's own compact threshold, or restores it — the same responsive rule `WP 19.7A` already applied, unchanged; this always wins over <see cref="IsCollapsed"/> while active (the brief's "the responsive rule wins").</summary>
+    /// <summary>Changes the expanded width — the Engineering tree narrows to fit its longest row while the engineering surface sits beside it.</summary>
+    public void SetExpandedWidth(double width)
+    {
+        _expandedWidth = width;
+        ApplyState();
+    }
+
     public void SetCompact(bool compact)
     {
         if (_isCompact == compact)
