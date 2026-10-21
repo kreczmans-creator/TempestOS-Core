@@ -421,3 +421,52 @@ public sealed class SetDisciplineAttributeCommandHandler(EngineeringDomainContex
             : CommandResult.Success($"{command.AttributeName} set to '{command.Value.Trim()}' on '{disciplineObject.DisplayName}'.");
     }
 }
+
+/// <summary>Records several attributes of one discipline object at once — the per-kind <c>Set … attributes</c> command.</summary>
+public sealed class SetDisciplineAttributesCommand : IWorkspaceCommand
+{
+    /// <summary>Initialises a new instance of the <see cref="SetDisciplineAttributesCommand"/> class.</summary>
+    public SetDisciplineAttributesCommand(Guid targetObjectId, string targetKind, IReadOnlyDictionary<string, string> values)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
+        ArgumentNullException.ThrowIfNull(values);
+
+        TargetObjectId = targetObjectId;
+        TargetKind = targetKind;
+        Values = values;
+    }
+
+    /// <inheritdoc />
+    public Guid TargetObjectId { get; }
+
+    /// <inheritdoc />
+    public string TargetKind { get; }
+
+    /// <summary>The attributes to record, by name; an attribute not named here is left as it is.</summary>
+    public IReadOnlyDictionary<string, string> Values { get; }
+}
+
+/// <summary>Handles <see cref="SetDisciplineAttributesCommand"/>.</summary>
+public sealed class SetDisciplineAttributesCommandHandler(EngineeringDomainContext context) : ICommandHandler<SetDisciplineAttributesCommand>
+{
+    /// <inheritdoc />
+    public async Task<CommandResult> HandleAsync(SetDisciplineAttributesCommand command, CancellationToken cancellationToken)
+    {
+        var target = await context.Repository.FindAsync(command.TargetObjectId, cancellationToken).ConfigureAwait(false);
+        if (target is not IDisciplineObject disciplineObject)
+            return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or is not a discipline object.");
+
+        var known = DisciplineCatalogue.ForKind(disciplineObject.Kind)?.Find(disciplineObject.Kind)?.Attributes ?? [];
+        var unknown = command.Values.Keys.Where(name => !known.Contains(name, StringComparer.Ordinal)).ToList();
+        if (unknown.Count > 0)
+            return CommandResult.Failure($"A {disciplineObject.Kind} has no '{string.Join("', '", unknown)}' — expected: {string.Join(", ", known)}.");
+
+        if (command.Values.Count == 0)
+            return CommandResult.Success($"Nothing changed on '{disciplineObject.DisplayName}' — every value was left blank.");
+
+        foreach (var name in known.Where(command.Values.ContainsKey))
+            await disciplineObject.SetAttributeAsync(name, command.Values[name].Trim(), cancellationToken).ConfigureAwait(false);
+
+        return CommandResult.Success($"Recorded {command.Values.Count} attribute(s) on '{disciplineObject.DisplayName}': {string.Join(", ", command.Values.Keys)}.");
+    }
+}

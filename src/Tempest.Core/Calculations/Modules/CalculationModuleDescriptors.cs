@@ -43,6 +43,7 @@ public enum CalculationInputKind
 /// <param name="Library">For a reference, which governed library its record comes from.</param>
 /// <param name="SourceInputName">For an input read from a picked record rather than typed, the reference input whose record supplies it.</param>
 /// <param name="SourcePropertyName">For an input read from a picked record, the property the library's reader answers (`WP 21.7C`).</param>
+/// <param name="StandardValues">For a quantity that comes in standard sizes or grades, the standard values (in <paramref name="DefaultUnitSymbol"/>) a form offers as a dropdown; a typed value is still accepted.</param>
 public sealed record CalculationInputDescriptor(
     string Name,
     string Label,
@@ -55,10 +56,47 @@ public sealed record CalculationInputDescriptor(
     bool IsOptional = false,
     ReferenceLibrary? Library = null,
     string? SourceInputName = null,
-    string? SourcePropertyName = null)
+    string? SourcePropertyName = null,
+    IReadOnlyList<StandardValue>? StandardValues = null)
 {
     /// <summary>Whether the input is read from a picked record rather than typed.</summary>
     public bool IsSourced => SourceInputName is not null;
+}
+
+/// <summary>One standard size or grade a quantity input offers, e.g. `M12` = 12 mm.</summary>
+/// <param name="Label">What the dropdown shows.</param>
+/// <param name="Value">The value it fills, in the input's default unit.</param>
+public sealed record StandardValue(string Label, double Value);
+
+/// <summary>The standard-part series the calculators offer as dropdowns (PO review C1).</summary>
+public static class StandardParts
+{
+    /// <summary>ISO 261 coarse metric bolt nominal diameters, mm.</summary>
+    public static IReadOnlyList<StandardValue> MetricBoltDiameters { get; } =
+        [.. new[] { 3, 4, 5, 6, 8, 10, 12, 14, 16, 20, 22, 24, 27, 30, 36 }.Select(d => new StandardValue($"M{d}", d))];
+
+    /// <summary>ISO 898-1 property classes, as ultimate shear strength taken as 0.6 x the nominal tensile strength, MPa.</summary>
+    public static IReadOnlyList<StandardValue> BoltShearStrengths { get; } =
+    [
+        new("Class 4.6 (fub 400)", 240),
+        new("Class 5.6 (fub 500)", 300),
+        new("Class 8.8 (fub 800)", 480),
+        new("Class 10.9 (fub 1000)", 600),
+        new("Class 12.9 (fub 1200)", 720),
+    ];
+
+    /// <summary>ISO 273 medium-series clearance holes for the metric bolts above, mm.</summary>
+    public static IReadOnlyList<StandardValue> ClearanceHoles { get; } =
+    [
+        new("M3 (3.4)", 3.4), new("M4 (4.5)", 4.5), new("M5 (5.5)", 5.5), new("M6 (6.6)", 6.6),
+        new("M8 (9)", 9), new("M10 (11)", 11), new("M12 (13.5)", 13.5), new("M14 (15.5)", 15.5),
+        new("M16 (17.5)", 17.5), new("M20 (22)", 22), new("M22 (24)", 24), new("M24 (26)", 26),
+        new("M27 (30)", 30), new("M30 (33)", 33), new("M36 (39)", 39),
+    ];
+
+    /// <summary>Common stocked steel plate thicknesses, mm.</summary>
+    public static IReadOnlyList<StandardValue> PlateThicknesses { get; } =
+        [.. new[] { 3, 4, 5, 6, 8, 10, 12, 15, 16, 20, 25, 30, 40, 50 }.Select(t => new StandardValue($"{t} mm", t))];
 }
 
 /// <summary>One calculation module, as a catalogue should list it and a form should build it.</summary>
@@ -133,8 +171,8 @@ public static class CalculationModuleDescriptors
             "Allowable shear capacity of a bolted joint from the shear-plane area, the ultimate shear strength and a safety factor: the standard single- and double-shear hand check.",
             null, typeof(BoltShearCapacityCalculationDefinition),
             [
-                Q("Diameter", "Bolt diameter", nameof(Length), "mm", "> 0", "The bolt's nominal shank diameter."),
-                Q("UltimateShearStrength", "Ultimate shear strength", nameof(Pressure), "MPa", "> 0", "The bolt material's ultimate shear strength."),
+                Q("Diameter", "Bolt diameter", nameof(Length), "mm", "> 0", "The bolt's nominal shank diameter.", standard: StandardParts.MetricBoltDiameters),
+                Q("UltimateShearStrength", "Ultimate shear strength", nameof(Pressure), "MPa", "> 0", "The bolt material's ultimate shear strength.", standard: StandardParts.BoltShearStrengths),
                 Number("ShearPlanes", "Shear planes", "1 or 2", "1 for single shear, 2 for double shear."),
                 Number("SafetyFactor", "Safety factor", ">= 1", "The factor the allowable capacity is derived under."),
             ]),
@@ -154,8 +192,8 @@ public static class CalculationModuleDescriptors
             "Allowable bearing load at a bolted or pinned hole from the projected bearing area (diameter times thickness), a bearing strength and a safety factor.",
             null, typeof(BearingLoadCapacityCalculationDefinition),
             [
-                Q("HoleDiameter", "Hole diameter", nameof(Length), "mm", "> 0", "The hole diameter."),
-                Q("PlateThickness", "Plate thickness", nameof(Length), "mm", "> 0", "The bearing plate thickness."),
+                Q("HoleDiameter", "Hole diameter", nameof(Length), "mm", "> 0", "The hole diameter.", standard: StandardParts.ClearanceHoles),
+                Q("PlateThickness", "Plate thickness", nameof(Length), "mm", "> 0", "The bearing plate thickness.", standard: StandardParts.PlateThicknesses),
                 Q("BearingStrength", "Bearing strength", nameof(Pressure), "MPa", "Any", "The plate material's ultimate bearing strength."),
                 Number("SafetyFactor", "Safety factor", ">= 1", "The factor the allowable capacity is derived under."),
             ]),
@@ -385,8 +423,8 @@ public static class CalculationModuleDescriptors
     public static CalculationModuleDescriptor? For(string calculationId) =>
         All.FirstOrDefault(d => string.Equals(d.Id, calculationId, StringComparison.Ordinal));
 
-    private static CalculationInputDescriptor Q(string name, string label, string dimension, string unit, string limits, string description, string? source = null, string? property = null, bool optional = false) =>
-        new(name, label, CalculationInputKind.Quantity, dimension, unit, limits, description, IsOptional: optional, SourceInputName: source, SourcePropertyName: property);
+    private static CalculationInputDescriptor Q(string name, string label, string dimension, string unit, string limits, string description, string? source = null, string? property = null, bool optional = false, IReadOnlyList<StandardValue>? standard = null) =>
+        new(name, label, CalculationInputKind.Quantity, dimension, unit, limits, description, IsOptional: optional, SourceInputName: source, SourcePropertyName: property, StandardValues: standard);
 
     private static CalculationInputDescriptor Number(string name, string label, string limits, string description) =>
         new(name, label, CalculationInputKind.Number, null, null, limits, description);

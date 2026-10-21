@@ -111,7 +111,7 @@ internal sealed partial class MainWindowComposer
         // constructed fresh here since this coordinator is built in a
         // separate phase (`BuildCoordinators`) that does not receive those
         // locals, over the identical `host`/`views` this phase already has.
-        var documentExporter = new Tempest.Desktop.Documents.DocumentExporter(views.EvidenceFilePicker);
+        var documentExporter = new Tempest.Desktop.Documents.DocumentExporter(views.EvidenceFilePicker) { Revisions = views.Session.ExportRevisions };
         var technicalReportRenderer = new Tempest.Desktop.Documents.TechnicalReports.TechnicalReportDocumentRenderer
         {
             IdentityProvider = () => views.Session.OrganisationIdentity.ToIdentity(),
@@ -126,6 +126,7 @@ internal sealed partial class MainWindowComposer
             workspaceChanges: composition.WorkspaceChanges, declarations: views.KindEditorDeclarations, evidenceSupport: views.EvidenceSupport,
             auditQuery: host.AuditQuery, commercialSupport: commercialSupport, ownerSupport: ownerSupport,
             documentExporter: documentExporter, technicalReportRenderer: technicalReportRenderer, applicationVersionText: ApplicationVersionText);
+        viewCoordinator.ProjectFolders = () => views.ProjectWorkspace.ProjectFolders;
 
         // Resolves the one remaining construction-order cycle: the
         // Document Area needs the coordinator's own content builder, which

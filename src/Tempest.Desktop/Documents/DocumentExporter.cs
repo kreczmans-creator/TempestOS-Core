@@ -37,18 +37,31 @@ public sealed class DocumentExporter
     /// never thrown.
     /// </summary>
     /// <param name="startFolder">The folder the save picker opens in (<see cref="SavePickerRequest.StartFolder"/>). <see langword="null"/> leaves the picker's own default.</param>
+    /// <summary>
+    /// Counts each document's export revisions (`v0.25.1` PO decision: every
+    /// document is revision controlled). When set, an export with no
+    /// <c>revision</c> of its own takes the next one for its reference and
+    /// is named <c>&lt;reference&gt;-R&lt;n&gt;-&lt;template&gt;.pdf</c>.
+    /// </summary>
+    public ExportRevisionLog? Revisions { get; init; }
+
     public async Task<DocumentExportResult> ExportAsync<TModel>(
         IDocumentRenderer<TModel> renderer, TModel model, string reference, OrganisationIdentity? identity = null,
-        string? startFolder = null, CancellationToken cancellationToken = default)
+        string? startFolder = null, CancellationToken cancellationToken = default, int? revision = null)
     {
         ArgumentNullException.ThrowIfNull(renderer);
         ArgumentNullException.ThrowIfNull(model);
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
 
-        var fileName = $"{SanitiseFileNameSegment(reference)}-{renderer.TemplateName}.pdf";
+        // A document with a revision of its own passes it; any other takes
+        // the next export revision for its reference.
+        var counted = revision is null && Revisions is not null;
+        var effectiveRevision = revision ?? (Revisions is { } log ? await log.NextAsync(reference, cancellationToken).ConfigureAwait(true) : null);
+        var revisedReference = effectiveRevision is { } r ? $"{reference}-R{r}" : reference;
+        var fileName = $"{SanitiseFileNameSegment(revisedReference)}-{renderer.TemplateName}.pdf";
 
         var destination = await _filePicker
-            .PickSavePathAsync(new SavePickerRequest($"Export {reference}", fileName, startFolder), cancellationToken)
+            .PickSavePathAsync(new SavePickerRequest($"Export {revisedReference}", fileName, startFolder), cancellationToken)
             .ConfigureAwait(true);
 
         if (destination is null)
@@ -56,6 +69,9 @@ public sealed class DocumentExporter
 
         var bytes = renderer.Render(model, identity);
         await File.WriteAllBytesAsync(destination, bytes.ToArray(), cancellationToken).ConfigureAwait(true);
+
+        if (counted && effectiveRevision is { } recorded)
+            await Revisions!.RecordAsync(reference, recorded, cancellationToken).ConfigureAwait(true);
 
         return new DocumentExportResult(true, destination, $"Exported to '{destination}'.");
     }

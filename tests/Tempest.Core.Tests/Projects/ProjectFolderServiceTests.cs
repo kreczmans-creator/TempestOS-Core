@@ -126,12 +126,32 @@ public sealed class ProjectFolderServiceTests
     public void Ensure_WithAnEmptyStandardSubfolderSet_CreatesOnlyTheCustomerAndProjectFolders()
     {
         using var temp = new TempDirectory();
-        var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, ProjectFolderOptions.DefaultStandardSubfolders));
+        var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, []));
 
         var outcome = service.Ensure(new ProjectFolderRequest("P-0004", "Bracket", "ACMEX", "Acme"));
 
-        Assert.Empty(ProjectFolderOptions.DefaultStandardSubfolders);
         Assert.Empty(Directory.GetDirectories(outcome.ProjectFolder!));
+    }
+
+    /// <summary>`v0.25.2`: the PO-approved standard set is created by default, and each export type starts in its own folder.</summary>
+    [Fact]
+    public void TheDefaultSet_CreatesTheStandardFolders_AndEachExportStartsInItsOwn()
+    {
+        using var temp = new TempDirectory();
+        var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, ProjectFolderOptions.DefaultStandardSubfolders));
+        var request = new ProjectFolderRequest("ACMEE-BRIDGE", "Bridge Upgrade", "ACMEE", "Acme");
+
+        var project = service.Ensure(request).ProjectFolder!;
+
+        foreach (var folder in new[] { "01 Commercial", "02 Customer Data", "03 Requirements", "04 Design", "05 Documents", "06 Evidence & Verification", "07 Reports", "08 Correspondence", "09 Issued to Customer", "10 Sign-off & Handover", "99 Superseded" })
+            Assert.True(Directory.Exists(Path.Combine(project, folder)), folder);
+
+        Assert.Equal(Path.Combine(project, "01 Commercial", "01 Quotes"), service.QuoteFolderFor(request));
+        Assert.Equal(Path.Combine(project, "01 Commercial", "04 Invoices"), service.ExportFolderFor(request, ProjectNumbering.InvoiceRequest));
+        Assert.Equal(Path.Combine(project, "04 Design", "02 Drawings"), service.ExportFolderFor(request, ProjectNumbering.Register));
+        Assert.Equal(Path.Combine(project, "07 Reports"), service.ExportFolderFor(request, ProjectNumbering.Report));
+        Assert.Equal(Path.Combine(project, "05 Documents"), service.ExportFolderFor(request, ProjectNumbering.Document));
+        Assert.Equal(project, service.ExportFolderFor(request, ProjectNumbering.Timesheet));
     }
 
     [Fact]
@@ -306,7 +326,7 @@ public sealed class ProjectFolderServiceTests
 
         Assert.Equal(ProjectFolderOptions.DefaultWindowsRoot, ProjectFolderOptions.FromConfiguration(empty, isWindows: true).Root);
         Assert.Null(ProjectFolderOptions.FromConfiguration(empty, isWindows: false).Root);
-        Assert.Empty(ProjectFolderOptions.FromConfiguration(empty, isWindows: true).StandardSubfolders);
+        Assert.Equal(ProjectFolderOptions.DefaultStandardSubfolders, ProjectFolderOptions.FromConfiguration(empty, isWindows: true).StandardSubfolders);
         Assert.Null(ProjectFolderOptions.FromConfiguration(empty, isWindows: true).QuoteSubfolder);
     }
 

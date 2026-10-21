@@ -174,5 +174,17 @@ public sealed class ProjectNumberingTests
         Assert.Contains(ProjectNumbering.Drawing, codes);
         Assert.Contains(ProjectNumbering.CadModel, codes);
         Assert.Contains(ProjectNumbering.Calculation, codes);
+        Assert.Contains(ProjectNumbering.Register, codes);
+        Assert.Contains(ProjectNumbering.Report, codes);
+        Assert.Contains(ProjectNumbering.Evidence, codes);
+        Assert.Contains(ProjectNumbering.Timesheet, codes);
     }
+
+    [Theory]
+    [InlineData("ACMEE-BRIDGE", "REG", "2026-10-21", "ACMEE-BRIDGE-REG-2026-10-21")]
+    [InlineData(" ACMEE-BRIDGE ", "EVI", "ISS-7-B", "ACMEE-BRIDGE-EVI-ISS-7-B")]
+    [InlineData(null, "TSHT", "STEVEN-2026-10-19", "TSHT-STEVEN-2026-10-19")]
+    [InlineData("", "RPT", "2026-10-21", "RPT-2026-10-21")]
+    public void ExportReference_LeadsWithTheProject_ThenTheDesignator(string? project, string designator, string distinguisher, string expected) =>
+        Assert.Equal(expected, ProjectNumbering.ExportReference(project, designator, distinguisher));
 }

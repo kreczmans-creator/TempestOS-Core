@@ -409,7 +409,9 @@ public sealed class PurchaseOrdersView : UserControl
         var model = await BuildDocumentModelAsync(order, issued).ConfigureAwait(true);
         var bytes = renderer.Render(model);
         return await XeroIssuedPdf.AttachAsync(
-            order, $"{SanitiseFileNameSegment(order.Reference)}-{renderer.TemplateName}.pdf", bytes, at => renderer.Render(model with { GeneratedAtUtc = at }), CancellationToken.None).ConfigureAwait(true);
+            // Revision controlled like every export (`v0.25.1` PO decision); a
+            // purchase order is issued once, so its PDF is R1.
+            order, $"{SanitiseFileNameSegment(order.Reference)}-R1-{renderer.TemplateName}.pdf", bytes, at => renderer.Render(model with { GeneratedAtUtc = at }), CancellationToken.None).ConfigureAwait(true);
     }
 
     private async Task<PurchaseOrderDocumentModel> BuildDocumentModelAsync(PurchaseOrder order, DateOnly issued)

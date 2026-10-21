@@ -129,7 +129,7 @@ public sealed class CalculationModuleService
                 var records = await _materials.ListAsync(cancellationToken).ConfigureAwait(false);
                 return records
                     .Where(r => r.ValidationState == ReferenceValidationState.Released)
-                    .OrderBy(r => r.Definition.Designation ?? r.Definition.Name, StringComparer.Ordinal)
+                    .OrderBy(r => r.Definition.Designation ?? r.Definition.Name, DesignationOrder.Comparer)
                     .Select(r => new ReleasedRecordOption(library, r.Id, Label(r.Definition.Designation, r.Definition.Name), ReferencePin.For(_materials.LibraryName, r)))
                     .ToList();
             }
@@ -139,7 +139,7 @@ public sealed class CalculationModuleService
                 var records = await _fasteners.ListAsync(cancellationToken).ConfigureAwait(false);
                 return records
                     .Where(r => r.ValidationState == ReferenceValidationState.Released)
-                    .OrderBy(r => r.Definition.Designation, StringComparer.Ordinal)
+                    .OrderBy(r => r.Definition.Designation, DesignationOrder.Comparer)
                     .Select(r => new ReleasedRecordOption(
                         library, r.Id,
                         r.Definition.Mechanical.PropertyClass is { } propertyClass ? $"{r.Definition.Designation} — class {propertyClass}" : $"{r.Definition.Designation} — geometry only",
@@ -152,7 +152,7 @@ public sealed class CalculationModuleService
                 var records = await _bearings.ListAsync(cancellationToken).ConfigureAwait(false);
                 return records
                     .Where(r => r.ValidationState == ReferenceValidationState.Released)
-                    .OrderBy(r => r.Definition.Identity.ManufacturerPartNumber, StringComparer.Ordinal)
+                    .OrderBy(r => r.Definition.Identity.ManufacturerPartNumber, DesignationOrder.Comparer)
                     .Select(r => new ReleasedRecordOption(
                         library, r.Id,
                         $"{r.Definition.Identity.Manufacturer} {r.Definition.Identity.ManufacturerPartNumber} — {r.Definition.Identity.FamilyDesignation ?? r.Definition.Family.ToString()}",

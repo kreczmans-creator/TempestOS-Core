@@ -194,6 +194,7 @@ GENERAL = [
     ('docs/reviews/RC PO Feedback Actions (2026-10-01).md', 'PO Feedback Actions', 'ACTION REGISTER', 'TDE-OS-REV-ACT'),
     ('PHYSICAL_REVIEW.md', 'Physical Review Guide', 'PHYSICAL REVIEW CHECKLIST', 'TDE-OS-REL-PHR'),
     ('docs/releases/v0.25.0/PO Test Runbook.md', 'PO Test Runbook v0.25.0', 'TEST RUNBOOK', 'TDE-OS-REL-RUN'),
+    ('docs/releases/v0.25.2/PO Test Runbook.md', 'PO Test Runbook v0.25.2', 'TEST RUNBOOK', 'TDE-OS-REL-RUN-2'),
     ('THIRD-PARTY-NOTICES.md', 'Third-Party Notices', 'THIRD-PARTY REGISTER', 'TDE-OS-GOV-3PN'),
 ]
 

@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Theming;
@@ -191,6 +193,21 @@ public sealed class CommandPaletteOverlay : Border
         // Real modal behaviour (`WP 16.5A`, `TD-65`) — see
         // `DialogModality`'s own remarks.
         DialogModality.Install(this);
+
+        // A click anywhere outside the palette closes it, as Escape does
+        // (`v0.25.1` PO runbook R1: it used to stay open until something
+        // in it was clicked). Tunnelled and handled-too, so a click on a
+        // control that handles its own press still counts.
+        AttachedToVisualTree += (_, _) =>
+            TopLevel.GetTopLevel(this)?.AddHandler(PointerPressedEvent, OnTopLevelPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+        DetachedFromVisualTree += (_, e) =>
+            (e.Root as TopLevel)?.RemoveHandler(PointerPressedEvent, OnTopLevelPointerPressed);
+    }
+
+    private void OnTopLevelPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (IsVisible && e.Source is Visual source && !ReferenceEquals(source, this) && !this.IsVisualAncestorOf(source))
+            Close();
     }
 
     /// <summary>

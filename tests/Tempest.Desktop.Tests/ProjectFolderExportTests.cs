@@ -151,8 +151,11 @@ public sealed class ProjectFolderExportTests
             await quoteView.SelectQuoteAsync(created.Quotation!.Id);
             LayOut(window);
 
+            // `v0.25.2`: the default standard set is created, and a quote
+            // starts in its own 01 Commercial\01 Quotes folder.
+            Assert.True(Directory.Exists(Path.Combine(expected, "07 Reports")));
             await ExportAsync(window, quoteView, filePicker);
-            Assert.Equal(expected, filePicker.SaveRequests[^1].StartFolder);
+            Assert.Equal(Path.Combine(expected, "01 Commercial", "01 Quotes"), filePicker.SaveRequests[^1].StartFolder);
         }
         finally
         {

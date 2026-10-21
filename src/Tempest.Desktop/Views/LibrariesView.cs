@@ -283,7 +283,7 @@ public sealed class LibrariesView : UserControl
 
         foreach (var libraryName in AllLibraryNames.OrderBy(name => name, StringComparer.Ordinal))
         {
-            var records = byLibrary[libraryName].OrderBy(r => r.DisplayName, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.RecordId, StringComparer.Ordinal).ToList();
+            var records = byLibrary[libraryName].OrderBy(r => r.DisplayName, DesignationOrder.Comparer).ThenBy(r => r.RecordId, StringComparer.Ordinal).ToList();
             var libraryBody = new StackPanel { Spacing = 0 };
 
             // `WP 19.10P` (D15): sorted and looked up by the routing key

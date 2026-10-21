@@ -122,6 +122,21 @@ public sealed class IssueEvidenceCommandHandler : ICommandHandler<IssueEvidenceC
 
     /// <inheritdoc />
     /// <remarks>Refused, not thrown, unless the evidence is <see cref="EvidenceStatus.Checked"/>.</remarks>
+    /// <summary>
+    /// The issue sheet's file name, carrying its project and revision like
+    /// every export (`v0.25.1` PO decisions): <c>TESTY-TRIALX-EVI-ISS-7-R2-issue-sheet.pdf</c>.
+    /// A revision typed as a bare <c>2</c> or <c>B</c> reads <c>R2</c>/<c>RB</c>;
+    /// one already starting with R is kept.
+    /// </summary>
+    internal static string IssueSheetFileName(string? projectCode, string issueReference, string revision)
+    {
+        var rev = revision.Trim();
+        if (!rev.StartsWith('R') && !rev.StartsWith('r'))
+            rev = "R" + rev;
+        var reference = Tempest.Core.Projects.ProjectNumbering.ExportReference(projectCode, Tempest.Core.Projects.ProjectNumbering.Evidence, issueReference);
+        return $"{SanitiseFileNameSegment(reference)}-{SanitiseFileNameSegment(rev.ToUpperInvariant())}-issue-sheet.pdf";
+    }
+
     public async Task<CommandResult> HandleAsync(IssueEvidenceCommand command, CancellationToken cancellationToken)
     {
         // Set only when attachIssueSheetAsync below actually ran and
@@ -139,7 +154,7 @@ public sealed class IssueEvidenceCommandHandler : ICommandHandler<IssueEvidenceC
                     var bytes = _issueSheetRenderer.Render(model);
 
                     var attachment = await evidence.AttachContentAsync(
-                        $"{SanitiseFileNameSegment(command.IssueReference)}-{SanitiseFileNameSegment(command.Revision)}-issue-sheet.pdf",
+                        IssueSheetFileName(model.ProjectCode, command.IssueReference, command.Revision),
                         "application/pdf", bytes, token).ConfigureAwait(false);
 
                     attachedIssueSheet = true;

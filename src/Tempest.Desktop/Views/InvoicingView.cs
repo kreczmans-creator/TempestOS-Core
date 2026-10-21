@@ -128,6 +128,9 @@ public sealed class InvoicingView : UserControl
     /// </summary>
     public IXeroBadgeSource? XeroBadges { get; set; }
 
+    /// <summary>Locates the invoice's project folder, so Export starts in its <c>01 Commercial\04 Invoices</c> folder (`v0.25.2`).</summary>
+    public Tempest.Workspace.Projects.ProjectFolderLocator? ProjectFolders { get; set; }
+
     /// <summary>The change feed this view reloads its own list from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
@@ -1090,7 +1093,12 @@ public sealed class InvoicingView : UserControl
         // renderer is wrapped only to keep the exact bytes it saved, so a sent
         // request keeps them and its Xero copy carries the same PDF.
         var capturing = new CapturingDocumentRenderer<InvoiceDocumentModel>(_invoiceRenderer);
-        var result = await _documentExporter.ExportAsync(capturing, model, request.DisplayName, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        // Named by the invoice number, as a quote is by its reference
+        // (`v0.25.1` PO runbook X6): `CUSTOMER-PROJECTREF-INV-00n-invoice.pdf`,
+        // the number Xero shows too — not the request's display name.
+        var result = await _documentExporter.ExportAsync(capturing, model, InvoicingService.InvoiceNumberFor(request),
+            startFolder: await ProjectExport.StartFolderAsync(ProjectFolders, request.ParentId, Tempest.Core.Projects.ProjectNumbering.InvoiceRequest).ConfigureAwait(true),
+            cancellationToken: CancellationToken.None).ConfigureAwait(true);
         if (result.Succeeded && result.Destination is { } destination && capturing.LastRender is { } bytes && XeroIssuedPdf.IsSent(request.Status))
         {
             await XeroIssuedPdf.AttachAsync(
