@@ -35,6 +35,7 @@ public static class DisciplineWorkspaceRegistration
         commandDispatcher.RegisterHandler<MoveDisciplineObjectCommand>(new MoveDisciplineObjectCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<SetDisciplineObjectStatusCommand>(new SetDisciplineObjectStatusCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<SetDisciplineAttributeCommand>(new SetDisciplineAttributeCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<SetDisciplineAttributesCommand>(new SetDisciplineAttributesCommandHandler(domainContext));
 
         foreach (var definition in DisciplineCatalogue.All)
             RegisterDiscipline(definition, manager, domainContext, commandRegistry);
@@ -168,6 +169,42 @@ public static class DisciplineWorkspaceRegistration
                 kinds,
                 mutates: true),
         });
+        RegisterSetAttributes(commandRegistry, definition);
+    }
+
+    /// <summary>
+    /// One command per object kind that asks for every one of that kind's
+    /// attributes in turn (`v0.25.1` PO runbook N16: <c>Set attribute</c>
+    /// records one at a time, so a whole member took five commands). A
+    /// value left blank keeps what is recorded.
+    /// </summary>
+    private static void RegisterSetAttributes(ICommandRegistry commandRegistry, DisciplineDefinition definition)
+    {
+        foreach (var kind in definition.Kinds)
+        {
+            var slug = System.Text.RegularExpressions.Regex.Replace(kind.Label.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+            var label = kind.Label.ToLowerInvariant();
+            var parameters = kind.Attributes
+                .Select((attribute, i) => WorkspaceCommandBindings.Text($"attribute{i}", $"{attribute} (blank keeps it)"))
+                .ToList();
+
+            commandRegistry.RegisterDescriptor(new CommandDescriptor(
+                id: definition.CommandId($"set-{slug}-attributes"), displayName: $"Set {label} attributes", category: definition.Category,
+                description: $"Records every attribute of the selected {label} in one go ({string.Join(", ", kind.Attributes)}); a value left blank keeps what is recorded.")
+            {
+                Binding = new CommandBinding(
+                    CommandContextRequirement.SelectedObject,
+                    (context, values) => new SetDisciplineAttributesCommand(
+                        WorkspaceCommandBindings.Target(context).ObjectId,
+                        WorkspaceCommandBindings.Target(context).Kind,
+                        kind.Attributes.Select((attribute, i) => (attribute, WorkspaceCommandBindings.OrNull(values[$"attribute{i}"])))
+                            .Where(pair => pair.Item2 is not null)
+                            .ToDictionary(pair => pair.attribute, pair => pair.Item2!, StringComparer.Ordinal)),
+                    parameters,
+                    [kind.Kind],
+                    mutates: true),
+            });
+        }
     }
 
     private static CommandBinding StatusBinding(LifecycleState status, IReadOnlyList<string> appliesToKinds) =>
