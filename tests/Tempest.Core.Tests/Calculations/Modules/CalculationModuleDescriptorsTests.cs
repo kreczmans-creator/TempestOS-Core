@@ -199,4 +199,25 @@ public class CalculationModuleDescriptorsTests
         var inches = CalculationInputUnits.TryParseWithUnit(nameof(Length), "2 in", out _);
         Assert.Equal(50.8, CalculationInputUnits.ValueIn(nameof(Length), inches!, "mm"), 1e-9);
     }
+
+    [Fact]
+    public void BoltShear_OffersStandardSizesAndGrades_InItsDefaultUnits()
+    {
+        var bolt = CalculationModuleDescriptors.For(BoltShearCapacityCalculationDefinition.Id)!;
+        var diameter = bolt.Inputs.Single(i => i.Name == "Diameter");
+        var strength = bolt.Inputs.Single(i => i.Name == "UltimateShearStrength");
+
+        Assert.Contains(diameter.StandardValues!, v => v.Label == "M12" && v.Value == 12);
+        Assert.Contains(strength.StandardValues!, v => v.Label.StartsWith("Class 8.8", StringComparison.Ordinal) && v.Value == 480);
+        Assert.Equal("mm", diameter.DefaultUnitSymbol);
+        Assert.Equal("MPa", strength.DefaultUnitSymbol);
+
+        // Only quantities carry standard values, and every one is positive and labelled once.
+        foreach (var input in CalculationModuleDescriptors.All.SelectMany(d => d.Inputs).Where(i => i.StandardValues is not null))
+        {
+            Assert.Equal(CalculationInputKind.Quantity, input.Kind);
+            Assert.All(input.StandardValues!, v => Assert.True(v.Value > 0));
+            Assert.Equal(input.StandardValues!.Count, input.StandardValues.Select(v => v.Label).Distinct().Count());
+        }
+    }
 }

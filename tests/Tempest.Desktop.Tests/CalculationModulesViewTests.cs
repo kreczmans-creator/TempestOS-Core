@@ -346,6 +346,37 @@ public sealed class CalculationModulesViewTests
         });
     }
 
+    /// <summary>PO review C1: standard parts come from a dropdown, which fills the value box.</summary>
+    [AvaloniaFact]
+    public async Task BoltShear_StandardDiameterAndGrade_ArePickedFromDropdowns_AndRun()
+    {
+        await InCalculatorsAsync(async (host, window, view) =>
+        {
+            view.SelectModule(BoltShearCapacityCalculationDefinition.Id);
+            LayOut(window);
+
+            ComboBox Standard(string label) => view.GetLogicalDescendants().OfType<ComboBox>().Distinct()
+                .Single(c => AutomationProperties.GetName(c) == $"{label} standard");
+            TextBox Box(string label) => view.GetLogicalDescendants().OfType<TextBox>().Distinct()
+                .Single(t => AutomationProperties.GetName(t) == label);
+
+            var diameter = Standard("Bolt diameter");
+            AssertUsable(window, diameter, "the bolt diameter dropdown");
+            diameter.SelectedItem = "M20";
+            Standard("Ultimate shear strength").SelectedItem = "Class 8.8 (fub 800)";
+            Assert.Equal("20", Box("Bolt diameter").Text);
+            Assert.Equal("480", Box("Ultimate shear strength").Text);
+
+            view.SetField("ShearPlanes", "2");
+            view.SetField("SafetyFactor", "1.5");
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).LastRun is not null);
+            view = SurfaceOf(window);
+            Assert.Equal("Computed", view.LastRun!.OutcomeSummary);
+            AssertRendered(window, view, "201062 N");
+        });
+    }
+
     [AvaloniaFact]
     public async Task ATypingMistake_IsNamedOnTheForm_AndNothingIsRecorded()
     {

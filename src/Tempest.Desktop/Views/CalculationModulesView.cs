@@ -588,10 +588,36 @@ public sealed class CalculationModulesView : UserControl
                     box.Watermark = $"from the record picked for {LabelOf(input.SourceInputName!)}";
                 }
 
-                var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,120") };
+                var row = new Grid { ColumnDefinitions = new ColumnDefinitions(input.StandardValues is { Count: > 0 } ? "*,170,120" : "*,120") };
                 Grid.SetColumn(box, 0);
-                Grid.SetColumn(units, 1);
                 row.Children.Add(box);
+
+                // Standard sizes and grades (PO review C1): picking one fills
+                // the value in the default unit; a typed value still stands.
+                if (input.StandardValues is { Count: > 0 } standards && !input.IsSourced)
+                {
+                    var preset = new ComboBox
+                    {
+                        ItemsSource = standards.Select(v => v.Label).ToList(),
+                        PlaceholderText = "Standard…",
+                        FontSize = DesignTokens.FontSizeBody,
+                        MinHeight = DesignTokens.MinControlSize,
+                        HorizontalAlignment = HorizontalAlignment.Stretch,
+                    };
+                    AutomationProperties.SetName(preset, $"{input.Label} standard");
+                    ToolTip.SetTip(preset, $"Pick a standard {input.Label.ToLowerInvariant()}, or type your own value.");
+                    preset.SelectionChanged += (_, _) =>
+                    {
+                        if (standards.FirstOrDefault(v => v.Label == preset.SelectedItem as string) is not { } picked)
+                            return;
+                        box.Text = picked.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        units.SelectedItem = input.DefaultUnitSymbol;
+                    };
+                    Grid.SetColumn(preset, 1);
+                    row.Children.Add(preset);
+                }
+
+                Grid.SetColumn(units, row.ColumnDefinitions.Count - 1);
                 row.Children.Add(units);
                 _fields[input.Name] = new FieldControls(input, box, units, null, null, null, null);
                 return LabelledRow(input.Label, row);
