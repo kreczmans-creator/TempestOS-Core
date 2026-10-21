@@ -1,4 +1,4 @@
-# Product Owner Test Runbook — v0.25.0 (release candidate 1)
+# Product Owner Test Runbook — v0.25.x (install v0.25.1)
 
 **Tester:** ____________ (Product Owner). **Date:** ____________.
 **Build (title bar):** ____________. **Commit (from the installer script or the release page):** ____________.
@@ -26,7 +26,7 @@ The sections are in priority order, so the newest and riskiest come first.
 
 | Block | Sections | About | Needed for a decision? |
 |---|---|---|---|
-| Must | A, N, S, X (XA–XQ, XI) | 90 min | Yes: these gates decide whether rc.1 becomes `v0.25.0` |
+| Must | A, N, S, X (XA–XQ, XI) | 90 min | Yes: these gates decide whether `v0.25.x` is accepted |
 | Should | B, X (the rest) | 60 min | Yes, if time allows; otherwise record SKIP and the gate stays open |
 | Could | C, R | 30 min | No; findings feed the next round |
 
@@ -45,29 +45,29 @@ pwsh -NoProfile -File scripts/install-test-build.ps1
 
 The script:
 
-- builds the installer at `VERSION` 0.25.0 and installs it;
+- builds the installer at `VERSION` (0.25.1) and installs it;
 - records `C:\TempestOS-rc25-data` as the data folder;
-- puts a **TempestOS 0.25.0 (test)** shortcut on the desktop;
+- puts a **TempestOS 0.25.1 (test)** shortcut on the desktop;
 - prints the version and commit.
 
 **Route 2 — download:**
 
-1. Open <https://github.com/kreczmans-creator/TempestOS-Core/releases>, then the release **TempestOS v0.25.0-rc.1**.
-2. Download `TempestOS-v0.25.0-rc.1-Setup.exe` and `SHA256SUMS.txt`.
-3. Check the hash: `Get-FileHash .\TempestOS-v0.25.0-rc.1-Setup.exe` must match the line in `SHA256SUMS.txt`.
+1. Open <https://github.com/kreczmans-creator/TempestOS-Core/releases/tag/v0.25.1>.
+2. Download `TempestOS-v0.25.1-Setup.exe` and `SHA256SUMS.txt`.
+3. Check the hash: `Get-FileHash .\TempestOS-v0.25.1-Setup.exe` must match the line in `SHA256SUMS.txt`.
 4. Run the Setup.exe.
-5. Before the first launch, make a desktop shortcut to `%LOCALAPPDATA%\TempestOS\current\Tempest.Desktop.exe` with the argument `--persistence-root "C:\TempestOS-rc25-data"`. This skips the first-run data-location dialog, which can hang (`C-01`).
+5. On first launch, pick `C:\TempestOS-rc25-data` in the *Where should your data live?* dialog. `v0.25.1` fixed the hang in that dialog (`C-01`), so no shortcut workaround is needed.
 
 | # | Action | Expect | Blocking | Result | Comments |
 |---|---|---|---|---|---|
-| A1 | Install by route 1 or 2 | Finishes without an error; route 1 prints `0.25.0` and a commit | Yes | | |
-| A2 | Launch from the **TempestOS 0.25.0 (test)** shortcut (or your route-2 shortcut) | The window opens on **Home** within about 10 s; the title bar reads `TempestOS 0.25.0 (…)`; no data-location dialog | Yes | | |
+| A1 | Install by route 1 or 2 | Finishes without an error; route 1 prints `0.25.1` and a commit | Yes | | |
+| A2 | Launch from the **TempestOS 0.25.1 (test)** shortcut (route 1) or the Start menu (route 2) | Route 2 shows the data-location dialog once, and it answers clicks; then the window opens on **Home** within about 10 s and the title bar reads `TempestOS 0.25.1 (…)` | Yes | | |
 | A3 | Look at the rail | Exactly **Home, Projects, Tasks, Engineering, Business** | Yes | | |
 | A4 | Close the window (X) and relaunch | Opens again on the same data folder; no error dialog; nothing in `C:\TempestOS-rc25-data\logs\tempestos-crash.log` | Yes | | |
 
 **Gate G0 — Installable: GO / NO-GO**
 
-- **No-Go triggers:** an installer error; the title bar is not 0.25.0; any crash dialog; a crash log appears.
+- **No-Go triggers:** an installer error; the title bar is not 0.25.1; the data-location dialog does not respond; any crash dialog; a crash log appears.
 
 ---
 
@@ -208,13 +208,13 @@ the results here.
 | R1 | v0.23 D9: header search box inert | Click the header search box: the palette opens with the cursor in it | | |
 | R2 | v0.23: fixed-list parameters typed | Create Document → Kind is a dropdown | | |
 | R3 | v0.23: Home Recent opened into a hidden pane | Home → Recent → an object opens visibly in Engineering | | |
-| R4 | v0.22: the old shortcut opened an old data folder | Only the *TempestOS 0.25.0 (test)* shortcut is on the desktop | | |
+| R4 | v0.22: the old shortcut opened an old data folder | Only the *TempestOS 0.25.1 (test)* shortcut is on the desktop | | |
 
 ---
 
 ## Decision
 
-| Gate | Blocking for v0.25.0 final? | GO / NO-GO / OPEN | Failing steps |
+| Gate | Blocking for acceptance? | GO / NO-GO / OPEN | Failing steps |
 |---|---|---|---|
 | G0 Installable | Yes | | |
 | G1 Navigation | Yes | | |
@@ -225,12 +225,12 @@ the results here.
 
 **Rules:**
 
-- **All blocking gates GO** → tag `v0.25.0` final from the same commit. No code changes.
-- **Any blocking gate NO-GO** → send the failing step ids, screenshots and comments back. The fixes ship as `v0.25.0-rc.2`, and only the failed sections are re-walked.
-- **G3 OPEN (not walked)** → `v0.25.0` may still be tagged if G0, G1, G2 and G4 are GO. G3 is then walked first next time.
+- **All blocking gates GO** → `v0.25.1` is accepted as it stands. No code changes.
+- **Any blocking gate NO-GO** → send the failing step ids, screenshots and comments back. The fixes ship as `v0.25.2`, and only the failed sections are re-walked.
+- **G3 OPEN (not walked)** → `v0.25.1` may still be accepted if G0, G1, G2 and G4 are GO. G3 is then walked first next time.
 - **A No-Go trigger in G2 or G4** (data loss, a live-organisation write, TempestOS approving or emailing in Xero) → **stop using this build for real work.** Report it at once.
 
-**Verdict:** GO / NO-GO for `v0.25.0` — signed ____________ date ____________
+**Verdict:** GO / NO-GO for `v0.25.1` — signed ____________ date ____________
 
 **Top three things to change next (free text):**
 
