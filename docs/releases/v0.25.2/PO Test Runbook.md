@@ -54,6 +54,7 @@ Use a project with an identifier (e.g. *TESTY-TRIALX*) that has a project folder
 |---|---|---|---|---|
 | C1 | Calculators → *Bolt shear capacity* → **Bolt diameter** dropdown **M20**, **Ultimate shear strength** dropdown **Class 8.8 (fub 800)**, 2 planes, safety factor 1.5 → Calculate | The boxes fill with 20 and 480. Result **201062 N**. Typing your own value still works | | |
 | C1a | Calculators → *Bearing load capacity at a hole* | **Hole diameter** offers M3 (3.4) … M36 (39), and **Plate thickness** offers 3 … 50 mm | | |
+| C1b | Calculators → *Bolted joint preload* → open the fastener picker; also Engineering → Reference data → Fasteners | Listed smallest to largest: M3, M4, M5, M6, M8, M10, M12 … never M10 before M3 | | |
 | R1 | Ctrl+K, then click anywhere outside the palette | The palette closes. A click inside it does not close it | | |
 
 ---

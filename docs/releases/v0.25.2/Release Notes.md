@@ -35,6 +35,7 @@ Re-walk: `docs/releases/v0.25.2/PO Test Runbook.md`.
     - Clearance hole M3–M36 (ISO 273 medium).
     - Plate thickness 3–50 mm.
   - Picking a value fills the box, and you can still type a value of your own.
+- **Standard-part pickers list smallest to largest.** Fastener, material and bearing pickers, and the Libraries list, now sort numbers by value (M3, M4, M5 … M10, M12), not as text (M10, M12 … M3).
 
 ## Not changed
 

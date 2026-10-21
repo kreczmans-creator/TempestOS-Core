@@ -226,7 +226,7 @@ public sealed class BracketVerificationView : UserControl
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
         _materialRecords = [.. (await _materials.ListAsync(cancellationToken).ConfigureAwait(true))
-            .OrderBy(r => r.Definition.Designation ?? r.Definition.Name, StringComparer.Ordinal)];
+            .OrderBy(r => r.Definition.Designation ?? r.Definition.Name, DesignationOrder.Comparer)];
         _materialBox.ItemsSource = _materialRecords
             .Select(r => $"{r.Id} — {r.Definition.Designation ?? r.Definition.Name} ({r.ValidationState})")
             .ToList();

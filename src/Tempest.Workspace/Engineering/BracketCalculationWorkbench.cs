@@ -96,7 +96,7 @@ public sealed class BracketCalculationWorkbench
         var records = await _materials.ListAsync(cancellationToken).ConfigureAwait(false);
 
         return records
-            .OrderBy(r => r.Definition.Designation ?? r.Definition.Name, StringComparer.Ordinal)
+            .OrderBy(r => r.Definition.Designation ?? r.Definition.Name, DesignationOrder.Comparer)
             .Select(Describe)
             .ToList();
     }
