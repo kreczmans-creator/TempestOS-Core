@@ -195,6 +195,7 @@ GENERAL = [
     ('PHYSICAL_REVIEW.md', 'Physical Review Guide', 'PHYSICAL REVIEW CHECKLIST', 'TDE-OS-REL-PHR'),
     ('docs/releases/v0.25.0/PO Test Runbook.md', 'PO Test Runbook v0.25.0', 'TEST RUNBOOK', 'TDE-OS-REL-RUN'),
     ('docs/releases/v0.25.2/PO Test Runbook.md', 'PO Test Runbook v0.25.2', 'TEST RUNBOOK', 'TDE-OS-REL-RUN-2'),
+    ('docs/releases/v0.25.2/Independent Test Runbook.md', 'Independent Test Runbook v0.25.2', 'TEST RUNBOOK', 'TDE-OS-REL-RUN-IND'),
     ('THIRD-PARTY-NOTICES.md', 'Third-Party Notices', 'THIRD-PARTY REGISTER', 'TDE-OS-GOV-3PN'),
 ]
 
