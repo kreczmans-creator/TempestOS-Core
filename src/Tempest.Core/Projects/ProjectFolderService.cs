@@ -154,15 +154,33 @@ public sealed class ProjectFolderService
     /// </summary>
     /// <param name="request">The project the quote belongs to.</param>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
-    public string? QuoteFolderFor(ProjectFolderRequest request)
+    public string? QuoteFolderFor(ProjectFolderRequest request) => ExportFolderFor(request, ProjectNumbering.Quotation);
+
+    /// <summary>
+    /// The folder an export of <paramref name="designator"/> (a
+    /// <see cref="ProjectNumbering"/> code) starts in: its folder in
+    /// <see cref="ProjectFolderOptions.DefaultExportFolders"/> when the
+    /// configured standard set includes it, else the project folder. A
+    /// configured <see cref="ProjectFolderOptions.QuoteSubfolder"/> still
+    /// wins for quotes and change orders. <see langword="null"/> when there
+    /// is no project folder to offer.
+    /// </summary>
+    public string? ExportFolderFor(ProjectFolderRequest request, string designator)
     {
         var outcome = Ensure(request);
         if (outcome.ProjectFolder is not { } projectFolder)
             return null;
 
-        return SanitiseRelativePath(Options.QuoteSubfolder) is { } relative
-            ? Path.Combine(projectFolder, relative)
-            : projectFolder;
+        if (designator is ProjectNumbering.Quotation or ProjectNumbering.ChangeOrder
+            && SanitiseRelativePath(Options.QuoteSubfolder) is { } quote)
+            return Path.Combine(projectFolder, quote);
+
+        if (ProjectFolderOptions.DefaultExportFolders.TryGetValue(designator, out var folder)
+            && SanitiseRelativePath(folder) is { } relative
+            && Options.StandardSubfolders.Any(s => string.Equals(SanitiseRelativePath(s), relative, StringComparison.OrdinalIgnoreCase)))
+            return Path.Combine(projectFolder, relative);
+
+        return projectFolder;
     }
 
     /// <summary>

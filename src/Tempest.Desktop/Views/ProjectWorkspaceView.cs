@@ -127,7 +127,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private static string ExportReference(ProjectSummary project) =>
         ProjectNumbering.ExportReference(project.Identifier, ProjectNumbering.Register, "001");
 
-    private Task<string?> ExportFolderAsync(Guid projectId) => ProjectExport.StartFolderAsync(ProjectFolders, projectId);
+    private Task<string?> ExportFolderAsync(Guid projectId) => ProjectExport.StartFolderAsync(ProjectFolders, projectId, ProjectNumbering.Register);
 
     private Control BuildStructurePane()
     {

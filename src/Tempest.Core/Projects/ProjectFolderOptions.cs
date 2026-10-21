@@ -54,7 +54,47 @@ public sealed record ProjectFolderOptions(string? Root, IReadOnlyList<string> St
     /// TODO (v1.0.0 BLOCKER — PO decision 2026-10-01): replace with the
     /// Product Owner's own defined set before v1.0.0 ships.
     /// </summary>
-    public static IReadOnlyList<string> DefaultStandardSubfolders { get; } = [];
+    public static IReadOnlyList<string> DefaultStandardSubfolders { get; } =
+    [
+        @"01 Commercial\01 Quotes",
+        @"01 Commercial\02 Customer PO & Contract",
+        @"01 Commercial\03 Purchase Orders",
+        @"01 Commercial\04 Invoices",
+        "02 Customer Data",
+        "03 Requirements",
+        @"04 Design\01 CAD",
+        @"04 Design\02 Drawings",
+        @"04 Design\03 Calculations",
+        "05 Documents",
+        "06 Evidence & Verification",
+        "07 Reports",
+        "08 Correspondence",
+        "09 Issued to Customer",
+        "10 Sign-off & Handover",
+        "99 Superseded",
+    ];
+
+    /// <summary>
+    /// Where each exported document type starts its save dialog, by its
+    /// <see cref="ProjectNumbering"/> designator, relative to the project
+    /// folder (`v0.25.2`, PO-approved folder set). A designator whose folder
+    /// is not in the configured <see cref="StandardSubfolders"/> starts in
+    /// the project folder itself.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> DefaultExportFolders { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        [ProjectNumbering.Quotation] = @"01 Commercial\01 Quotes",
+        [ProjectNumbering.ChangeOrder] = @"01 Commercial\01 Quotes",
+        [ProjectNumbering.PurchaseOrder] = @"01 Commercial\03 Purchase Orders",
+        [ProjectNumbering.InvoiceRequest] = @"01 Commercial\04 Invoices",
+        [ProjectNumbering.CadModel] = @"04 Design\01 CAD",
+        [ProjectNumbering.Drawing] = @"04 Design\02 Drawings",
+        [ProjectNumbering.Register] = @"04 Design\02 Drawings",
+        [ProjectNumbering.Calculation] = @"04 Design\03 Calculations",
+        [ProjectNumbering.Document] = "05 Documents",
+        [ProjectNumbering.Evidence] = "06 Evidence & Verification",
+        [ProjectNumbering.Report] = "07 Reports",
+    };
 
     /// <summary>Options with generation switched off — what a caller with no configuration uses.</summary>
     public static ProjectFolderOptions Disabled { get; } = new(null, []);

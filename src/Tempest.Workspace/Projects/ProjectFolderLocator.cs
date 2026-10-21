@@ -84,10 +84,14 @@ public sealed class ProjectFolderLocator
     /// </summary>
     /// <param name="projectId">The project the quote belongs to.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    public async Task<string?> QuoteFolderForAsync(Guid projectId, CancellationToken cancellationToken = default)
+    public Task<string?> QuoteFolderForAsync(Guid projectId, CancellationToken cancellationToken = default) =>
+        ExportFolderForAsync(projectId, Tempest.Core.Projects.ProjectNumbering.Quotation, cancellationToken);
+
+    /// <summary>The folder an export of <paramref name="designator"/> for <paramref name="projectId"/> starts in (see <see cref="ProjectFolderService.ExportFolderFor"/>), or <see langword="null"/> when there is none.</summary>
+    public async Task<string?> ExportFolderForAsync(Guid projectId, string designator, CancellationToken cancellationToken = default)
     {
         var (request, _) = await RequestForAsync(projectId, cancellationToken).ConfigureAwait(false);
-        return request is null ? null : await Task.Run(() => _service.QuoteFolderFor(request), cancellationToken).ConfigureAwait(false);
+        return request is null ? null : await Task.Run(() => _service.ExportFolderFor(request, designator), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The customer code a project's folder is matched and named on — <see cref="Organisation.CustomerCode"/>, trimmed; <see langword="null"/> when it has none, so the folder falls back to the customer's name (see this class's own remarks).</summary>

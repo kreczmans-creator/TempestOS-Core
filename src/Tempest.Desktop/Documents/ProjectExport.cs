@@ -16,7 +16,19 @@ internal static class ProjectExport
     /// <summary>Today's date as an export distinguisher: <c>2026-10-21</c>.</summary>
     public static string Today() => DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
 
-    /// <summary>The folder a project's export starts in, or <see langword="null"/> when there is none to offer (no project, folders off, or the folder cannot be reached).</summary>
-    public static Task<string?> StartFolderAsync(ProjectFolderLocator? folders, Guid? projectId, CancellationToken cancellationToken = default) =>
-        QuotationSheetModelBuilder.StartFolderAsync(folders, projectId, cancellationToken);
+    /// <summary>The folder a project's <paramref name="designator"/> export starts in — its standard subfolder (`v0.25.2`) — or <see langword="null"/> when there is none to offer (no project, folders off, or the folder cannot be reached).</summary>
+    public static async Task<string?> StartFolderAsync(ProjectFolderLocator? folders, Guid? projectId, string designator, CancellationToken cancellationToken = default)
+    {
+        if (folders is null || projectId is not { } id)
+            return null;
+
+        try
+        {
+            return await folders.ExportFolderForAsync(id, designator, cancellationToken).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            return null;
+        }
+    }
 }

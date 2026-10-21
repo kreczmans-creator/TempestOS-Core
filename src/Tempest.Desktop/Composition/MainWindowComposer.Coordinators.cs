@@ -126,6 +126,7 @@ internal sealed partial class MainWindowComposer
             workspaceChanges: composition.WorkspaceChanges, declarations: views.KindEditorDeclarations, evidenceSupport: views.EvidenceSupport,
             auditQuery: host.AuditQuery, commercialSupport: commercialSupport, ownerSupport: ownerSupport,
             documentExporter: documentExporter, technicalReportRenderer: technicalReportRenderer, applicationVersionText: ApplicationVersionText);
+        viewCoordinator.ProjectFolders = () => views.ProjectWorkspace.ProjectFolders;
 
         // Resolves the one remaining construction-order cycle: the
         // Document Area needs the coordinator's own content builder, which

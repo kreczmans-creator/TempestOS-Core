@@ -730,6 +730,7 @@ internal sealed partial class MainWindowComposer
             new Tempest.Core.Projects.ProjectFolderService(Tempest.Core.Projects.ProjectFolderOptions.FromConfiguration(configurationProvider), composition.Logger),
             projectDirectory, organisationCatalog);
         projectQuoteView.ProjectFolders = projectFolderLocator;
+        invoicingView.ProjectFolders = projectFolderLocator;
         var projectFolderCoordinator = new ProjectFolderCoordinator(projectFolderLocator, (message, outcome) => actionReporter.ReportAsync(message, outcome));
         composition.EventBus.Subscribe(projectFolderCoordinator);
 

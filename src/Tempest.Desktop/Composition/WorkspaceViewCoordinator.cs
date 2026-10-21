@@ -121,6 +121,9 @@ internal sealed class WorkspaceViewCoordinator
     private readonly RequirementOwnerEditorSupport? _ownerSupport;
 
     // `WP 21.2A`, scope item 3: "a Document's editor Export as report".
+    /// <summary>Supplies the project-folder locator, so a Document's report export starts in its project's <c>05 Documents</c> folder (`v0.25.2`).</summary>
+    public Func<Tempest.Workspace.Projects.ProjectFolderLocator?>? ProjectFolders { get; set; }
+
     private readonly DocumentExporter? _documentExporter;
     private readonly TechnicalReportDocumentRenderer? _technicalReportRenderer;
     private readonly Func<string>? _applicationVersionText;
@@ -320,7 +323,7 @@ internal sealed class WorkspaceViewCoordinator
         var title = (target as IHasBusinessIdentifier)?.DisplayName ?? "Document";
         var reference = (target as IHasBusinessIdentifier)?.Identifier;
 
-        var (projectCode, projectName) = await ResolveOwningProjectAsync(target).ConfigureAwait(true);
+        var (projectCode, projectName, projectId) = await ResolveOwningProjectAsync(target).ConfigureAwait(true);
 
         var revisionHistory = await _domainContext.Store.GetRevisionHistoryAsync(objectId).ConfigureAwait(true);
         var revisions = revisionHistory
@@ -341,18 +344,20 @@ internal sealed class WorkspaceViewCoordinator
             GeneratedAtUtc: DateTimeOffset.UtcNow,
             ApplicationVersionText: _applicationVersionText());
 
-        var result = await _documentExporter.ExportAsync(_technicalReportRenderer, model, reference ?? Tempest.Core.Projects.ProjectNumbering.ExportReference(projectCode, Tempest.Core.Projects.ProjectNumbering.Document, title), cancellationToken: CancellationToken.None, revision: latest.RevisionNumber).ConfigureAwait(true);
+        var result = await _documentExporter.ExportAsync(_technicalReportRenderer, model, reference ?? Tempest.Core.Projects.ProjectNumbering.ExportReference(projectCode, Tempest.Core.Projects.ProjectNumbering.Document, title),
+            startFolder: await ProjectExport.StartFolderAsync(ProjectFolders?.Invoke(), projectId, Tempest.Core.Projects.ProjectNumbering.Document).ConfigureAwait(true),
+            cancellationToken: CancellationToken.None, revision: latest.RevisionNumber).ConfigureAwait(true);
         await _reporter.ReportAsync(result.Message, ActionOutcome.From(result.Succeeded)).ConfigureAwait(true);
     }
 
     /// <summary>Walks <paramref name="target"/>'s own <c>IHasParent.ParentId</c> chain up to the nearest <c>"Project"</c> Kind — a Document's own project ancestor, capped at a generous depth so a malformed parent cycle can never loop forever.</summary>
-    private async Task<(string Code, string Name)> ResolveOwningProjectAsync(IEngineeringObject target)
+    private async Task<(string Code, string Name, Guid? Id)> ResolveOwningProjectAsync(IEngineeringObject target)
     {
         IEngineeringObject? current = target;
         for (var depth = 0; current is not null && depth < 20; depth++)
         {
             if (current.Kind == "Project")
-                return ((current as IHasBusinessIdentifier)?.Identifier ?? string.Empty, (current as IHasBusinessIdentifier)?.DisplayName ?? string.Empty);
+                return ((current as IHasBusinessIdentifier)?.Identifier ?? string.Empty, (current as IHasBusinessIdentifier)?.DisplayName ?? string.Empty, current.Id);
 
             if (current is not IHasParent { ParentId: { } parentId })
                 break;
@@ -360,7 +365,7 @@ internal sealed class WorkspaceViewCoordinator
             current = await _domainContext.Repository.FindAsync(parentId).ConfigureAwait(true);
         }
 
-        return (string.Empty, string.Empty);
+        return (string.Empty, string.Empty, null);
     }
 
     /// <summary>

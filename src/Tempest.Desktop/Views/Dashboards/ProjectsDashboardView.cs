@@ -265,7 +265,7 @@ public sealed class ProjectsDashboardView : UserControl
         var result = await _documentExporter.ExportAsync(
             _progressReportRenderer, model,
             Tempest.Core.Projects.ProjectNumbering.ExportReference(identifier ?? row.ProjectName, Tempest.Core.Projects.ProjectNumbering.Report, "001"),
-            startFolder: await ProjectExport.StartFolderAsync(ProjectFolders, projectId).ConfigureAwait(true),
+            startFolder: await ProjectExport.StartFolderAsync(ProjectFolders, projectId, Tempest.Core.Projects.ProjectNumbering.Report).ConfigureAwait(true),
             cancellationToken: CancellationToken.None).ConfigureAwait(true);
         _exportStatus.Text = result.Message;
     }
