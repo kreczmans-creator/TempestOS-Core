@@ -287,6 +287,95 @@ function apply(){var q=(input.value||'').toLowerCase(),n=0;
 input.addEventListener('input',apply);apply();})();
 </script>'''
 
+# ---------- interactive runbooks ----------
+# A document whose tables carry a "Result" column is a test runbook: its
+# Result cells become PASS / FAIL / SKIP buttons, its Comments cells
+# become text boxes, each "Gate Gn" line shows a live GO / NO-GO / OPEN
+# worked out from its section's blocking steps, and the Decision table
+# fills itself in. Progress is kept in this browser (localStorage) and
+# "Export results" downloads a Markdown summary to send back.
+RUN_CSS = """
+.runbar{position:sticky;top:0;z-index:5;background:var(--sheet);border:1px solid var(--rule2);padding:10px 12px;margin:14px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.runbar input{font:inherit;padding:5px 8px;border:1px solid var(--rule2);background:var(--sheet);color:var(--strong);width:150px}
+.runbar button,.res button{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;padding:4px 8px;border:1px solid var(--rule2);background:var(--sheet);color:var(--text);cursor:pointer}
+.runbar button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.prog{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.res{display:flex;gap:4px;flex-wrap:wrap}
+.res button.on[data-v=PASS]{background:rgba(18,185,129,.22);border-color:#12b981;color:var(--strong)}
+.res button.on[data-v=FAIL]{background:rgba(229,72,77,.22);border-color:#e5484d;color:var(--strong)}
+.res button.on[data-v=SKIP]{background:rgba(245,165,36,.22);border-color:#f5a524;color:var(--strong)}
+tr.r-PASS td.id{box-shadow:inset 3px 0 #12b981}tr.r-FAIL td.id{box-shadow:inset 3px 0 #e5484d}tr.r-SKIP td.id{box-shadow:inset 3px 0 #f5a524}
+textarea.cm{font:inherit;font-size:12px;width:100%;min-height:30px;resize:vertical;border:1px solid var(--rule2);background:var(--sheet);color:var(--strong);padding:4px 6px}
+.gate{margin-left:8px}
+@media print{.runbar button{display:none}textarea.cm{border:0}}
+"""
+RUN_JS = r"""<script>
+(function(){
+var KEY='tempestos-runbook:'+document.title, st={};
+try{st=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+var body=document.querySelector('.doc-body'); if(!body)return;
+var bar=document.createElement('div'); bar.className='runbar';
+bar.innerHTML='<input data-f="tester" placeholder="Tester"><input data-f="date" placeholder="Date"><input data-f="build" placeholder="Build (title bar)">'+
+ '<span class="prog"></span><span style="flex:1"></span><button class="primary" data-a="export">Export results</button><button data-a="reset">Reset</button>';
+body.parentNode.insertBefore(bar,body);
+bar.querySelectorAll('input[data-f]').forEach(function(i){var f=i.getAttribute('data-f');i.value=(st._h||{})[f]||'';
+ i.addEventListener('input',function(){st._h=st._h||{};st._h[f]=i.value;save()})});
+var steps=[];
+document.querySelectorAll('.doc-body table').forEach(function(t){
+ var hs=[].map.call(t.querySelectorAll('thead th'),function(h){return h.textContent.trim().toLowerCase()});
+ var ri=hs.indexOf('result'), ci=hs.indexOf('comments'), bi=hs.indexOf('blocking');
+ if(ri<0)return;
+ var W={'#':'6%','blocking':'8%','result':'15%','comments':'18%'};
+ t.querySelectorAll('thead th').forEach(function(th,k){var w=W[hs[k]];if(w)th.style.width=w});
+ t.querySelectorAll('tbody tr').forEach(function(tr){
+  var td=tr.children, id=td[0].textContent.trim(); if(!id)return;
+  var s=st[id]=st[id]||{}; var step={id:id,tr:tr,blocking:bi>=0&&/^yes/i.test(td[bi].textContent.trim()),
+   sec:tr.closest('section'),action:td[1]?td[1].textContent.trim():''};
+  steps.push(step);
+  var box=document.createElement('div');box.className='res';
+  ['PASS','FAIL','SKIP'].forEach(function(v){var b=document.createElement('button');b.textContent=v;b.setAttribute('data-v',v);
+   b.addEventListener('click',function(){s.r=s.r===v?'':v;save();paint()});box.appendChild(b)});
+  td[ri].textContent='';td[ri].appendChild(box);step.box=box;
+  if(ci>=0){var ta=document.createElement('textarea');ta.className='cm';ta.placeholder='What you saw';ta.value=s.c||'';
+   ta.addEventListener('input',function(){s.c=ta.value;save()});td[ci].textContent='';td[ci].appendChild(ta)}
+ });
+});
+var gates={};
+document.querySelectorAll('.doc-body strong').forEach(function(g){var m=/^Gate (G\d+)/.exec(g.textContent);
+ if(!m)return;var c=document.createElement('span');c.className='chip gate';g.parentNode.appendChild(c);
+ gates[m[1]]={chip:c,sec:g.closest('section'),manual:/your call/i.test(g.textContent)}});
+function gateOf(gate){if(gate.manual)return {v:'YOUR CALL',f:[]};var sec=gate.sec;var b=steps.filter(function(x){return x.sec===sec&&x.blocking});
+ var fails=b.filter(function(x){return (st[x.id]||{}).r==='FAIL'}).map(function(x){return x.id});
+ if(fails.length)return {v:'NO-GO',f:fails};
+ if(b.length&&b.every(function(x){return (st[x.id]||{}).r==='PASS'}))return {v:'GO',f:[]};
+ return {v:'OPEN',f:[]}}
+function paint(){var n={PASS:0,FAIL:0,SKIP:0};
+ steps.forEach(function(x){var r=(st[x.id]||{}).r||'';if(r)n[r]++;x.tr.className='row'+(r?' r-'+r:'');
+  x.box.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===r)})});
+ bar.querySelector('.prog').textContent=n.PASS+' pass · '+n.FAIL+' fail · '+n.SKIP+' skip · '+(steps.length-n.PASS-n.FAIL-n.SKIP)+' to do';
+ Object.keys(gates).forEach(function(k){var g=gateOf(gates[k]);gates[k].res=g;
+  gates[k].chip.textContent=g.v;gates[k].chip.className='chip gate '+(g.v==='GO'?'ok':g.v==='NO-GO'?'bad':'warn')});
+ document.querySelectorAll('.doc-body table').forEach(function(t){
+  var hs=[].map.call(t.querySelectorAll('thead th'),function(h){return h.textContent.trim().toLowerCase()});
+  var vi=hs.findIndex(function(h){return h.indexOf('no-go')>=0}), fi=hs.indexOf('failing steps');
+  if(vi<0)return;
+  t.querySelectorAll('tbody tr').forEach(function(tr){var m=/^(G\d+)/.exec(tr.children[0].textContent.trim());
+   if(!m||!gates[m[1]]||!gates[m[1]].res)return;var g=gates[m[1]].res;
+   tr.children[vi].innerHTML='<span class="chip '+(g.v==='GO'?'ok':g.v==='NO-GO'?'bad':'warn')+'">'+g.v+'</span>';
+   if(fi>=0)tr.children[fi].textContent=g.f.join(', ')})});}
+paint();
+bar.querySelector('[data-a=reset]').addEventListener('click',function(){if(confirm('Clear every result and comment in this runbook?')){st={};save();location.reload()}});
+bar.querySelector('[data-a=export]').addEventListener('click',function(){
+ var h=st._h||{},L=['# Results — '+document.title,'','Tester: '+(h.tester||'')+' · Date: '+(h.date||'')+' · Build: '+(h.build||''),'','## Gates',''];
+ Object.keys(gates).forEach(function(k){var g=gates[k].res;L.push('- '+k+': '+g.v+(g.f.length?' (failing: '+g.f.join(', ')+')':''))});
+ L.push('','## Steps','','| Step | Result | Blocking | Comments |','|---|---|---|---|');
+ steps.forEach(function(x){var s=st[x.id]||{};L.push('| '+x.id+' | '+(s.r||'—')+' | '+(x.blocking?'Yes':'No')+' | '+(s.c||'').replace(/\|/g,'/').replace(/\n/g,' ')+' |')});
+ var blob=new Blob([L.join('\n')+'\n'],{type:'text/markdown'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);a.download=document.title.replace(/[^\w.-]+/g,'-')+'-results.md';document.body.appendChild(a);a.click();a.remove()});
+})();
+</script>"""
+
 made = [('ADR Register', 'Architecture Decision Record register', 'docs/governance/Architecture/ADR Register.md'),
         ('Technical Debt Register', 'Technical debt register', 'docs/governance/Quality/Technical Debt Register.md')]
 for src, name, eyebrow, ref in GENERAL:
@@ -302,6 +391,8 @@ for src, name, eyebrow, ref in GENERAL:
 <div class="doc-body">{body_html}</div>'''
     doc = page(name, eyebrow, f'{ref} · {nrows} ROWS · ISSUED {today}', body)
     doc = doc.replace('</style>', GEN_CSS + '</style>', 1).replace('</body>', JS_GEN + '</body>', 1)
+    if '<th>Result</th>' in body_html:
+        doc = doc.replace('</style>', RUN_CSS + '</style>', 1).replace('</body>', RUN_JS + '</body>', 1)
     open(f'{OUT}/{name}.html', 'w', encoding='utf-8').write(doc)
     made.append((name, re.sub(r'[`*]', '', title), src))
 
