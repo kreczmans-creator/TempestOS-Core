@@ -94,6 +94,18 @@ public static class ProjectNumbering
     /// <summary>An engineering calculation (reserved — calculations are not yet numbered by the platform; see `ADR-0156`).</summary>
     public const string Calculation = "CALC";
 
+    /// <summary>A register exported from a project — the drawing register (`v0.25.1` PO export designators).</summary>
+    public const string Register = "REG";
+
+    /// <summary>A report exported from a project — the progress report.</summary>
+    public const string Report = "RPT";
+
+    /// <summary>An issued evidence sheet.</summary>
+    public const string Evidence = "EVI";
+
+    /// <summary>A timesheet — one person's week, across projects.</summary>
+    public const string Timesheet = "TSHT";
+
     /// <summary>
     /// The document-type code table — the one definition of every
     /// <c>DOCTYPE</c> the platform writes into a project-centric number
@@ -109,7 +121,32 @@ public static class ProjectNumbering
         new(Drawing, "Drawing"),
         new(CadModel, "CAD model"),
         new(Calculation, "Calculation (reserved)"),
+        new(Register, "Register (export)"),
+        new(Report, "Report (export)"),
+        new(Evidence, "Evidence issue sheet (export)"),
+        new(Timesheet, "Timesheet (export)"),
     ];
+
+    /// <summary>
+    /// The reference an exported file is named by: the project's own
+    /// identifier, the document's designator, then what tells this export
+    /// apart — <c>ACMEE-BRIDGE-REG-2026-10-21</c> — so every export carries
+    /// its project the way a quote's <c>ACMEE-BRIDGE-Q-001</c> does (`v0.25.1`
+    /// PO request). With no project identifier it is just the designator
+    /// and the rest.
+    /// </summary>
+    /// <param name="projectIdentifier">The project's identifier, e.g. <c>ACMEE-BRIDGE</c>; blank when there is no project.</param>
+    /// <param name="designator">One of this class's document codes, e.g. <see cref="Register"/>.</param>
+    /// <param name="distinguisher">What tells this export apart from the others of its kind — a date, a number, a revision.</param>
+    public static string ExportReference(string? projectIdentifier, string designator, string distinguisher)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(designator);
+        ArgumentException.ThrowIfNullOrWhiteSpace(distinguisher);
+        return string.IsNullOrWhiteSpace(projectIdentifier)
+            ? $"{designator}-{distinguisher.Trim()}"
+            : $"{projectIdentifier.Trim()}-{designator}-{distinguisher.Trim()}";
+    }
+
 
     /// <summary>Whether <paramref name="code"/> is exactly five characters, each an upper-case letter A–Z or a digit 0–9 — the shape of a customer code.</summary>
     public static bool IsValidCustomerCode(string? code) => IsCode(code, CustomerCodeLength, allowDigits: true);

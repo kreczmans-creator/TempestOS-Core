@@ -355,7 +355,9 @@ public sealed class TimesheetWeekView : UserControl
             GeneratedAtUtc: DateTimeOffset.UtcNow,
             ApplicationVersionText: _applicationVersionText());
 
-        var reference = $"{principalName}-{_weekStart:yyyy-MM-dd}";
+        // `v0.25.1` PO designator TSHT: one person's week, across projects,
+        // so no project leads it — `TSHT-<person>-<week start>-R<n>`.
+        var reference = Tempest.Core.Projects.ProjectNumbering.ExportReference(null, Tempest.Core.Projects.ProjectNumbering.Timesheet, $"{principalName}-{_weekStart:yyyy-MM-dd}");
         var start = TimesheetExportFolder.Prepare(ExportFolder?.Invoke());
         var result = await _documentExporter
             .ExportAsync(_timesheetRenderer, model, reference, startFolder: start.Folder, cancellationToken: CancellationToken.None)

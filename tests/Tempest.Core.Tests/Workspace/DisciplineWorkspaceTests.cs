@@ -117,6 +117,48 @@ public class DisciplineWorkspaceTests
         await manager.ShutdownAsync();
     }
 
+    /// <summary>`v0.25.1` PO runbook N16: one command per kind records every attribute in one go; a blank keeps what is recorded.</summary>
+    [Fact]
+    public async Task SetMemberAttributes_RecordsSeveralAtOnce_AndLeavesTheRestAlone()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, dispatcher, registry, _) = await StartAsync(temp.Path);
+
+        Assert.Contains(registry.Items, d => d.Id == "structural.set-member-attributes" && d.DisplayName == "Set member attributes");
+        Assert.Contains(registry.Items, d => d.Id == "building-services.set-ductwork-pipework-run-attributes");
+
+        var created = await dispatcher.DispatchAsync(new CreateDisciplineObjectCommand("StructuralMember", "Ground floor beam B1"), CancellationToken.None);
+        var id = created.SubjectId!.Value;
+        await dispatcher.DispatchAsync(new SetDisciplineAttributeCommand(id, "StructuralMember", "Grade", "S275"), CancellationToken.None);
+
+        var set = await dispatcher.DispatchAsync(new SetDisciplineAttributesCommand(id, "StructuralMember", new Dictionary<string, string>
+        {
+            ["Member type"] = "Beam",
+            ["Section"] = "UB 305x165x40",
+            ["Length (mm)"] = "6000",
+        }), CancellationToken.None);
+        Assert.True(set.Succeeded, set.Message);
+
+        await workspace.Selection.SelectAsync(id, "StructuralMember");
+        var facets = workspace.PropertyInspector.CurrentFacets;
+        Assert.Contains(facets, f => f is { Name: "Member type", Value: "Beam" });
+        Assert.Contains(facets, f => f is { Name: "Section", Value: "UB 305x165x40" });
+        Assert.Contains(facets, f => f is { Name: "Length (mm)", Value: "6000" });
+        Assert.Contains(facets, f => f is { Name: "Grade", Value: "S275" });
+
+        var refused = await dispatcher.DispatchAsync(new SetDisciplineAttributesCommand(id, "StructuralMember", new Dictionary<string, string> { ["Voltage (V)"] = "230" }), CancellationToken.None);
+        Assert.False(refused.Succeeded);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Theory]
+    [InlineData("TESTY-TRIALX", "ISS-7", "2", "TESTY-TRIALX-EVI-ISS-7-R2-issue-sheet.pdf")]
+    [InlineData("TESTY-TRIALX", "ISS-7", "R3", "TESTY-TRIALX-EVI-ISS-7-R3-issue-sheet.pdf")]
+    [InlineData("", "ISS-7", "b", "EVI-ISS-7-RB-issue-sheet.pdf")]
+    public void IssueSheetFileName_CarriesProjectDesignatorAndRevision(string project, string reference, string revision, string expected) =>
+        Assert.Equal(expected, Tempest.Workspace.Evidence.IssueEvidenceCommandHandler.IssueSheetFileName(project, reference, revision));
+
     [Fact]
     public async Task SetAttribute_RefusesAnAttributeTheKindDoesNotDeclare()
     {

@@ -365,7 +365,7 @@ public sealed class BadgeViewsTests
         Assert.Equal($"{reference}.pdf", file.FileName);
         Assert.Equal("%PDF"u8.ToArray(), file.Content[..4].ToArray());
         var attachment = Assert.Single(await PdfAttachmentsAsync(fixture.Domain, orderId));
-        Assert.Equal($"{reference}-purchase-order.pdf", attachment.FileName);
+        Assert.Equal($"{reference}-R1-purchase-order.pdf", attachment.FileName);
         Assert.Contains("Deliver to site office.", PdfTextExtractor.ExtractText(file.Content.ToArray()), StringComparison.Ordinal);
 
         await BadgeControlTests.WaitUntilAsync(() => view.GetLogicalDescendants().OfType<XeroSyncBadgeControl>().Any(b => b.Document == document && b.Status is not null));

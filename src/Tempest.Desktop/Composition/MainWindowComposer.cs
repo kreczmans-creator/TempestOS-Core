@@ -621,7 +621,7 @@ internal sealed partial class MainWindowComposer
         // `ApplicationVersionText` local functions further down, visible
         // throughout this whole method's own block regardless of where
         // they are textually declared).
-        var documentExporter = new Tempest.Desktop.Documents.DocumentExporter(evidenceFilePicker);
+        var documentExporter = new Tempest.Desktop.Documents.DocumentExporter(evidenceFilePicker) { Revisions = session.ExportRevisions };
         var invoiceRenderer = new Tempest.Desktop.Documents.Invoicing.InvoiceDocumentRenderer
         {
             IdentityProvider = () => session.OrganisationIdentity.ToIdentity(),
@@ -853,6 +853,7 @@ internal sealed partial class MainWindowComposer
             host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView, projectQuoteView,
             evidenceWorkspace, signOffView, projectDetailsView, composition.DomainContext,
             documentExporter, drawingRegisterRenderer, ApplicationVersionText);
+        projectWorkspace.ProjectFolders = projectFolderLocator;
         projectWorkspace.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         // `WP 19.7A` (`po-comments.md` item 6 delta (a)): the Tasks
@@ -877,7 +878,11 @@ internal sealed partial class MainWindowComposer
         tasksAreaView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         var projectsDashboardView = new ProjectsDashboardView(
-            projectStatusReadModel, host.ProjectGovernance!, documentExporter, progressReportRenderer, ApplicationVersionText);
+            projectStatusReadModel, host.ProjectGovernance!, documentExporter, progressReportRenderer, ApplicationVersionText)
+        {
+            ProjectFolders = projectFolderLocator,
+            ProjectIdentifierSource = async id => (await projectDirectory.FindAsync(id).ConfigureAwait(true))?.Identifier,
+        };
         var projectsAreaView = new ProjectsAreaView(composition.DomainContext, projectBrowser, projectsDashboardView)
         {
             WorkspaceChanges = composition.WorkspaceChanges,

@@ -39,6 +39,9 @@ internal sealed class DesktopSessionState
     /// <summary>Gets the restored Recent Objects list (`WP 10.6A`).</summary>
     public RecentObjectsState RecentObjects { get; }
 
+    /// <summary>The last revision each exported document reached (`v0.25.1` PO decision: exports are revision controlled).</summary>
+    public Tempest.Desktop.Documents.ExportRevisionLog ExportRevisions { get; }
+
     /// <summary>Gets the restored Favourite Objects list (`WP 10.6A`).</summary>
     public FavouriteObjectsState FavouriteObjects { get; }
 
@@ -65,6 +68,7 @@ internal sealed class DesktopSessionState
         // Recent/Favourite Objects (`WP 10.6A`) — loaded synchronously
         // here, the identical established discipline every other
         // persisted Desktop-local state above already uses.
+        ExportRevisions = new Tempest.Desktop.Documents.ExportRevisionLog(settingsProvider, logger);
         RecentObjects = new RecentObjectsState(settingsProvider, logger);
         RecentObjects.LoadAsync().GetAwaiter().GetResult();
         FavouriteObjects = new FavouriteObjectsState(settingsProvider, logger);

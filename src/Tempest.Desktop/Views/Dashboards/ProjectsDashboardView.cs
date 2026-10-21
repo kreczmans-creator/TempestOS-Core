@@ -28,6 +28,12 @@ namespace Tempest.Desktop.Views.Dashboards;
 /// </remarks>
 public sealed class ProjectsDashboardView : UserControl
 {
+    /// <summary>Locates a project's own folder, so its progress report export starts there (`v0.25.1` PO request).</summary>
+    public Tempest.Workspace.Projects.ProjectFolderLocator? ProjectFolders { get; init; }
+
+    /// <summary>Reads a project's identifier (e.g. <c>ACMEE-BRIDGE</c>) for the export's file name; <see cref="ProjectStatusRow"/> carries none.</summary>
+    public Func<Guid, Task<string?>>? ProjectIdentifierSource { get; init; }
+
     private readonly IProjectStatusReadModel _readModel;
     private readonly IProjectGovernanceRegister? _governance;
     private readonly DocumentExporter? _documentExporter;
@@ -233,12 +239,16 @@ public sealed class ProjectsDashboardView : UserControl
             ];
         }
 
+        // `v0.25.1` PO designator RPT: TESTY-TRIALX-RPT-001-R<n>, the
+        // project's identifier leading as on every export.
+        var identifier = ProjectIdentifierSource is null ? null : await ProjectIdentifierSource(projectId).ConfigureAwait(true);
+
         var model = new ProgressReportDocumentModel(
             // `ProjectStatusRow` carries no business identifier of its own
             // (only `ProjectId`/`ProjectName`) — the project's own name
             // stands in for both fields rather than leaving the header
             // band's own eyebrow blank.
-            ProjectCode: row.ProjectName,
+            ProjectCode: identifier ?? row.ProjectName,
             ProjectName: row.ProjectName,
             AsOfDate: today,
             HealthStatus: row.Status.ToString(),
@@ -252,7 +262,11 @@ public sealed class ProjectsDashboardView : UserControl
             GeneratedAtUtc: DateTimeOffset.UtcNow,
             ApplicationVersionText: _applicationVersionText());
 
-        var result = await _documentExporter.ExportAsync(_progressReportRenderer, model, row.ProjectName, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        var result = await _documentExporter.ExportAsync(
+            _progressReportRenderer, model,
+            Tempest.Core.Projects.ProjectNumbering.ExportReference(identifier ?? row.ProjectName, Tempest.Core.Projects.ProjectNumbering.Report, "001"),
+            startFolder: await ProjectExport.StartFolderAsync(ProjectFolders, projectId).ConfigureAwait(true),
+            cancellationToken: CancellationToken.None).ConfigureAwait(true);
         _exportStatus.Text = result.Message;
     }
 

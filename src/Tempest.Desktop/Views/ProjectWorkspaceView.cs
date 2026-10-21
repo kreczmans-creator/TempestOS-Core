@@ -121,6 +121,14 @@ public sealed class ProjectWorkspaceView : UserControl
         _suppressDisciplineSelection = false;
     }
 
+    /// <summary>Locates the project's own folder, so an export starts there as quote export does; <see langword="null"/> starts the save dialog wherever the system chooses.</summary>
+    public ProjectFolderLocator? ProjectFolders { get; set; }
+
+    private static string ExportReference(ProjectSummary project) =>
+        ProjectNumbering.ExportReference(project.Identifier, ProjectNumbering.Register, "001");
+
+    private Task<string?> ExportFolderAsync(Guid projectId) => ProjectExport.StartFolderAsync(ProjectFolders, projectId);
+
     private Control BuildStructurePane()
     {
         // `ADR-0163`: disciplines, then the shared modules, each under a
@@ -665,7 +673,7 @@ public sealed class ProjectWorkspaceView : UserControl
             GeneratedAtUtc: DateTimeOffset.UtcNow,
             ApplicationVersionText: _applicationVersionText());
 
-        var result = await _documentExporter.ExportAsync(_drawingRegisterRenderer, model, project.Label, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        var result = await _documentExporter.ExportAsync(_drawingRegisterRenderer, model, ExportReference(project), startFolder: await ExportFolderAsync(project.Id).ConfigureAwait(true), cancellationToken: CancellationToken.None).ConfigureAwait(true);
         ActionCompleted?.Invoke(result.Message, ActionOutcome.From(result.Succeeded));
     }
 

@@ -341,7 +341,7 @@ internal sealed class WorkspaceViewCoordinator
             GeneratedAtUtc: DateTimeOffset.UtcNow,
             ApplicationVersionText: _applicationVersionText());
 
-        var result = await _documentExporter.ExportAsync(_technicalReportRenderer, model, reference ?? title, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        var result = await _documentExporter.ExportAsync(_technicalReportRenderer, model, reference ?? Tempest.Core.Projects.ProjectNumbering.ExportReference(projectCode, Tempest.Core.Projects.ProjectNumbering.Document, title), cancellationToken: CancellationToken.None, revision: latest.RevisionNumber).ConfigureAwait(true);
         await _reporter.ReportAsync(result.Message, ActionOutcome.From(result.Succeeded)).ConfigureAwait(true);
     }
 
