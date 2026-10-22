@@ -40,6 +40,11 @@ public sealed class AccountingExportAdapter : IExportable, IExportableKind
 
     private const string Source = "xero";
 
+    // GET where-filters, read only: the dashboard ledger's outstanding rows.
+    // Each line is on XeroSafetyArchitectureTests' read-side list.
+    private const string ReceivableWhere = "Type==\"ACCREC\" AND Status==\"AUTHORISED\"";
+    private const string PayableWhere = "Type==\"ACCPAY\" AND Status==\"AUTHORISED\"";
+
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -75,8 +80,8 @@ public sealed class AccountingExportAdapter : IExportable, IExportableKind
         var since = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-PaidWindowDays);
         var sinceExpression = string.Create(CultureInfo.InvariantCulture, $"DateTime({since.Year},{since.Month},{since.Day})");
 
-        var receivable = await ReadAsync("""Type=="ACCREC" AND Status=="AUTHORISED" """.Trim(), "DueDate", "receivable invoices", cancellationToken).ConfigureAwait(false);
-        var payable = await ReadAsync("""Type=="ACCPAY" AND Status=="AUTHORISED" """.Trim(), "DueDate", "bills", cancellationToken).ConfigureAwait(false);
+        var receivable = await ReadAsync(ReceivableWhere, "DueDate", "receivable invoices", cancellationToken).ConfigureAwait(false);
+        var payable = await ReadAsync(PayableWhere, "DueDate", "bills", cancellationToken).ConfigureAwait(false);
         var paid = await ReadAsync($"""Type=="ACCREC" AND Status=="PAID" AND FullyPaidOnDate>={sinceExpression}""", "UpdatedDateUTC DESC", "paid invoices", cancellationToken).ConfigureAwait(false);
 
         var export = new AccountingExport(

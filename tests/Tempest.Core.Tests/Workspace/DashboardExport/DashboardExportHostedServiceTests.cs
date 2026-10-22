@@ -131,6 +131,11 @@ public class DashboardExportHostedServiceTests
             Get<Tempest.Core.Commands.ICommandRegistry>(), Get<Tempest.Core.BusinessGovernance.Contracts.IIssuedContractCatalog>(),
             Get<Tempest.Core.BusinessGovernance.Quotations.IQuotationCatalog>(), Get<IConfigurationProvider>(), xeroApi: xero);
 
+        // The host's own export service writes the same five files on its
+        // first tick; let it finish (the next is 300 s away) so the two never
+        // race on the same .tmp paths.
+        await GetService(host).ExportOnceAsync();
+
         var accountingPath = Path.Combine(exportDir.Path, "accounting.json");
         await File.WriteAllTextAsync(accountingPath, "{\"last\":\"good\"}");
 
