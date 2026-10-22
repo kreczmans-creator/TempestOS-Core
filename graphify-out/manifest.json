@@ -6792,8 +6792,8 @@
     "semantic_hash": "6c9e3ba961b4f55a384b943e17f14ca4"
   },
   "src/Tempest.Desktop/App.cs": {
-    "mtime": 1792661710.2174714,
-    "seen": 1792662375.744278,
+    "mtime": 1792663498.8929455,
+    "seen": 1792664459.1587746,
     "ast_hash": "c542b1e215ca0df2eeaa3640a7e9c184",
     "semantic_hash": ""
   },
@@ -6858,9 +6858,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Composition/MainWindowComposer.Layout.cs": {
-    "mtime": 1792587689.5574136,
-    "seen": 1792588036.431527,
-    "ast_hash": "d0b07d784693d8d0f2616e804747017b",
+    "mtime": 1792663747.598972,
+    "seen": 1792664459.1587944,
+    "ast_hash": "8a4496c0ed793fa8b0a456eb8e5592d4",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Composition/MainWindowComposer.Wire.cs": {
@@ -6870,9 +6870,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Composition/MainWindowComposer.cs": {
-    "mtime": 1792596773.245123,
-    "seen": 1792598293.5056956,
-    "ast_hash": "30bc74dad6dd7bca2cc787790e0a40f7",
+    "mtime": 1792663747.597665,
+    "seen": 1792664459.158799,
+    "ast_hash": "54e0bf53966ffb041a9875b250d38bc7",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Composition/ProjectDeliveryCoordinator.cs": {
@@ -7242,9 +7242,9 @@
     "semantic_hash": "1bea628e903309b24f81fe412d570bbb"
   },
   "src/Tempest.Desktop/MainWindow.cs": {
-    "mtime": 1792587689.5682073,
-    "seen": 1792588036.4324846,
-    "ast_hash": "d663ef75993e383a63a070d448c9671d",
+    "mtime": 1792663752.074698,
+    "seen": 1792664459.1597002,
+    "ast_hash": "ec24b544bf758592f0476f42e7308342",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/MoneyDisplay.cs": {
@@ -7284,8 +7284,8 @@
     "semantic_hash": "5e9a050c235decfd4aef83a109f70dc7"
   },
   "src/Tempest.Desktop/Startup/IInstalledAppLocator.cs": {
-    "mtime": 1792661710.2163172,
-    "seen": 1792662375.7452424,
+    "mtime": 1792663498.8932703,
+    "seen": 1792664459.15973,
     "ast_hash": "23b8b16fe624e30dabe4e8b1cbe9e67e",
     "semantic_hash": ""
   },
@@ -7296,14 +7296,14 @@
     "semantic_hash": "5432fa03f029047f7436dc1bb7b1891e"
   },
   "src/Tempest.Desktop/Startup/PersistenceRootResolver.cs": {
-    "mtime": 1792661710.2170086,
-    "seen": 1792662375.7452471,
+    "mtime": 1792663498.8937585,
+    "seen": 1792664459.159736,
     "ast_hash": "6c12a05bd391214abea7c13f1af273be",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Startup/VelopackInstalledAppLocator.cs": {
-    "mtime": 1792661710.2166626,
-    "seen": 1792662375.7452493,
+    "mtime": 1792663498.894056,
+    "seen": 1792664459.159738,
     "ast_hash": "bb30a26c0be3e8b3652ed127a39d84c8",
     "semantic_hash": ""
   },
@@ -7452,9 +7452,9 @@
     "semantic_hash": "1ba81b487ce0d2f37afaa0c7599425d2"
   },
   "src/Tempest.Desktop/Views/BusinessAreaView.cs": {
-    "mtime": 1792587689.5698464,
-    "seen": 1792588036.4325829,
-    "ast_hash": "bb20838b5775d1cb202ede650457316f",
+    "mtime": 1792663741.1612418,
+    "seen": 1792664459.1597998,
+    "ast_hash": "71dbe138e65830762e8864e249940006",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/BusyOverlay.cs": {
@@ -7524,8 +7524,8 @@
     "semantic_hash": "cfa5dc268a8cede861b37458aa86b4f4"
   },
   "src/Tempest.Desktop/Views/Dashboards/EngineeringDashboardView.cs": {
-    "mtime": 1792662009.3105888,
-    "seen": 1792662375.7453218,
+    "mtime": 1792663498.8950975,
+    "seen": 1792664459.159848,
     "ast_hash": "2177b7ef65e12f2e8b40a0bc00577433",
     "semantic_hash": ""
   },
@@ -7650,9 +7650,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/GlobalNavigationRail.cs": {
-    "mtime": 1792587689.5775251,
-    "seen": 1792588036.4327006,
-    "ast_hash": "bbbab658ab5e882a709c12e266a9371c",
+    "mtime": 1792663563.8242674,
+    "seen": 1792664459.1599038,
+    "ast_hash": "96520e43ef5f26d00edf4dae82061966",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/InputDialog.cs": {
@@ -7872,15 +7872,15 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/SettingsView.cs": {
-    "mtime": 1792587689.5834873,
-    "seen": 1792588036.4328592,
-    "ast_hash": "d9e71f90a7d182c8f610234131d54c13",
+    "mtime": 1792664214.8302176,
+    "seen": 1792664459.16,
+    "ast_hash": "f6537ea7ec9d7897cac93d14e03bf5d8",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/ShellHeaderView.cs": {
-    "mtime": 1792587689.5836873,
-    "seen": 1792588036.4328625,
-    "ast_hash": "a6bfb5ac96a5304a7d69a5c738a7a968",
+    "mtime": 1792663886.0991328,
+    "seen": 1792664459.1600034,
+    "ast_hash": "0e576f9c800f0336734bce92feadf3a3",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/StatusBarView.cs": {
@@ -8232,9 +8232,9 @@
     "semantic_hash": "96f6d07a318e3fc6309b754229313a1f"
   },
   "src/Tempest.Workspace/Shell/NavigationAvailability.cs": {
-    "mtime": 1792587689.5874436,
-    "seen": 1792588036.4330695,
-    "ast_hash": "fe5a889ed291f50facdbb4b815f4b85c",
+    "mtime": 1792663556.5235136,
+    "seen": 1792664459.1601841,
+    "ast_hash": "e8af09796fb594da1db3ee46a6fa7690",
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Shell/ProjectArea.cs": {
@@ -8250,9 +8250,9 @@
     "semantic_hash": "9daa2f328d2e2e78a50d4aa35ba70303"
   },
   "src/Tempest.Workspace/Shell/ShellArea.cs": {
-    "mtime": 1792587689.58786,
-    "seen": 1792588036.4330761,
-    "ast_hash": "7206da37e3bed977114d902271fe49ad",
+    "mtime": 1792663556.5225468,
+    "seen": 1792664459.1601913,
+    "ast_hash": "e7754059ed14aa0fa3c0d39c0fcf1718",
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Shell/ShellLocation.cs": {
@@ -13188,9 +13188,9 @@
     "semantic_hash": "f1d7f9152b3e5d132a998b924fa2d7b4"
   },
   "tests/Tempest.Desktop.RealShell/MainJourney.cs": {
-    "mtime": 1792587689.6255105,
-    "seen": 1792588036.4361744,
-    "ast_hash": "73a5c435131faf343f6af0804507517d",
+    "mtime": 1792663881.060105,
+    "seen": 1792664459.1622202,
+    "ast_hash": "3f3fafdd0064cafc68d2aab466e1f849",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.RealShell/OsInput.cs": {
@@ -13956,8 +13956,8 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Startup/PersistenceRootResolverTests.cs": {
-    "mtime": 1792661789.1784132,
-    "seen": 1792662375.7476623,
+    "mtime": 1792663498.8978388,
+    "seen": 1792664459.1625435,
     "ast_hash": "10f1951f592c66b57551cb46398de236",
     "semantic_hash": ""
   },
@@ -16338,8 +16338,8 @@
     "semantic_hash": "7290835dceddfd135ae3220fd3f4498d"
   },
   "docs/governance/Quality/Technical Debt Register.md": {
-    "mtime": 1792662135.3204932,
-    "seen": 1792662375.7506757,
+    "mtime": 1792663498.15636,
+    "seen": 1792664459.1658967,
     "ast_hash": "0e8f6cefd429c03bcbc5ebaa07118f1c",
     "semantic_hash": ""
   },
@@ -16578,8 +16578,8 @@
     "semantic_hash": "e342c61ff95456e9a729aaca1a73fc76"
   },
   "scripts/install-test-build.ps1": {
-    "mtime": 1792661748.412833,
-    "seen": 1792662375.7406466,
+    "mtime": 1792663498.892167,
+    "seen": 1792664459.156741,
     "ast_hash": "69abf342936a6945ae0a6a83f019d305",
     "semantic_hash": ""
   },
@@ -17130,8 +17130,8 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/CustomersSuppliersView.cs": {
-    "mtime": 1792661940.817742,
-    "seen": 1792662375.7453158,
+    "mtime": 1792663498.8944502,
+    "seen": 1792664459.1598406,
     "ast_hash": "475bf4905f287a2cccdc2dda7f378d99",
     "semantic_hash": ""
   },
@@ -17754,8 +17754,8 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/CustomersSuppliersJourneyTests.cs": {
-    "mtime": 1792662063.5822868,
-    "seen": 1792662375.7474244,
+    "mtime": 1792663498.8967476,
+    "seen": 1792664459.162292,
     "ast_hash": "d3ab466d4674a9825450e8b5a604ff2a",
     "semantic_hash": ""
   },
@@ -17892,8 +17892,8 @@
     "semantic_hash": ""
   },
   "PHYSICAL_REVIEW.md": {
-    "mtime": 1792662135.3184865,
-    "seen": 1792662375.74779,
+    "mtime": 1792663498.1545894,
+    "seen": 1792664459.162684,
     "ast_hash": "36d7053ba68299975a6d2299c2d93d1f",
     "semantic_hash": ""
   },
@@ -30246,9 +30246,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/SettingsXeroIdentityTests.cs": {
-    "mtime": 1792587689.64693,
-    "seen": 1792588036.4366906,
-    "ast_hash": "8f5b16d342b21c9b0017eb308292edb4",
+    "mtime": 1792663842.939152,
+    "seen": 1792664459.1626463,
+    "ast_hash": "08b961699da65c481ad01edf6c2d9d6a",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/SettingsXeroSectionTests.cs": {
@@ -30330,8 +30330,8 @@
     "semantic_hash": ""
   },
   "scripts/xero-demo-smoke.ps1": {
-    "mtime": 1792661760.9303546,
-    "seen": 1792662375.7406619,
+    "mtime": 1792663498.892167,
+    "seen": 1792664459.156751,
     "ast_hash": "7c201d32c209f0fd1eefe8636804634e",
     "semantic_hash": ""
   },
@@ -30384,8 +30384,8 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/Xero/Live/XeroDemoSmokeScriptTests.cs": {
-    "mtime": 1792661789.1764631,
-    "seen": 1792662375.7466943,
+    "mtime": 1792663498.895558,
+    "seen": 1792664459.1614792,
     "ast_hash": "c4cf8ed298e9b1f755a5bd1b1607d0e1",
     "semantic_hash": ""
   },
@@ -30648,8 +30648,8 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/EngineeringDisciplineNavigationTests.cs": {
-    "mtime": 1792662016.3593082,
-    "seen": 1792662375.7474968,
+    "mtime": 1792663498.8973808,
+    "seen": 1792664459.1623628,
     "ast_hash": "9d2ef55c50d25cad9cec3a40a431c6e7",
     "semantic_hash": ""
   },
@@ -30912,8 +30912,8 @@
     "semantic_hash": ""
   },
   "scripts/generate-registers.py": {
-    "mtime": 1792603341.814713,
-    "seen": 1792662375.7406359,
+    "mtime": 1792663498.8915076,
+    "seen": 1792664459.1567335,
     "ast_hash": "53ea9ce3111977abef0d6567ffd1af05",
     "semantic_hash": ""
   },
@@ -30948,8 +30948,8 @@
     "semantic_hash": ""
   },
   "docs/governance/html/Physical Review Guide.html": {
-    "mtime": 1792662135.470578,
-    "seen": 1792662375.7506945,
+    "mtime": 1792663498.1585357,
+    "seen": 1792664459.1659184,
     "ast_hash": "7bb0ce59d8e2ddb0bab08917baf31729",
     "semantic_hash": ""
   },
@@ -30978,8 +30978,8 @@
     "semantic_hash": ""
   },
   "docs/governance/html/Technical Debt Register.html": {
-    "mtime": 1792662135.3826702,
-    "seen": 1792662375.7507036,
+    "mtime": 1792663498.1598878,
+    "seen": 1792664459.16593,
     "ast_hash": "25dccfb2a1bff409499b95634c39bb7d",
     "semantic_hash": ""
   },
@@ -30990,8 +30990,8 @@
     "semantic_hash": ""
   },
   "docs/governance/html/index.html": {
-    "mtime": 1792662135.4820666,
-    "seen": 1792662375.7507071,
+    "mtime": 1792663498.1614537,
+    "seen": 1792664459.165934,
     "ast_hash": "0595c08a0ecafecf478023dc7f444f60",
     "semantic_hash": ""
   },
@@ -31032,14 +31032,14 @@
     "semantic_hash": ""
   },
   "docs/governance/html/PO Test Runbook v0.25.2.html": {
-    "mtime": 1792662135.4775834,
-    "seen": 1792662375.750692,
+    "mtime": 1792663498.1581347,
+    "seen": 1792664459.1659162,
     "ast_hash": "33452a9da693214585f5e629f1035a29",
     "semantic_hash": ""
   },
   "docs/releases/v0.25.2/PO Test Runbook.md": {
-    "mtime": 1792662099.047994,
-    "seen": 1792662375.750816,
+    "mtime": 1792663498.162378,
+    "seen": 1792664459.1660516,
     "ast_hash": "b3ab286c2d4c008dd01d071efbddd2d5",
     "semantic_hash": ""
   },
@@ -31062,21 +31062,33 @@
     "semantic_hash": ""
   },
   "docs/governance/html/Independent Test Runbook v0.25.2.html": {
-    "mtime": 1792662135.480135,
-    "seen": 1792662375.7506845,
+    "mtime": 1792663498.1576915,
+    "seen": 1792664459.1659064,
     "ast_hash": "04c0405120fb75e27c12ddec2916047f",
     "semantic_hash": ""
   },
   "docs/releases/v0.25.2/Independent Test Runbook.md": {
-    "mtime": 1792662099.0475788,
-    "seen": 1792662375.7508135,
+    "mtime": 1792663498.1614537,
+    "seen": 1792664459.166049,
     "ast_hash": "037c6c205b163165636cb9948946f4b3",
     "semantic_hash": ""
   },
   "docs/releases/v0.25.3/Release Notes.md": {
-    "mtime": 1792662116.0688784,
-    "seen": 1792662375.7508194,
-    "ast_hash": "7292b0f9db67c205cab53338393d2da7",
+    "mtime": 1792664257.0553546,
+    "seen": 1792664459.1660576,
+    "ast_hash": "68975cd3fa8cef3192929beccda2d7a3",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Desktop/Views/OrganisationView.cs": {
+    "mtime": 1792663702.8469114,
+    "seen": 1792664459.1599307,
+    "ast_hash": "437121c1d594ddd9877525abcdf597df",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Desktop.Tests/SettingsSplitTests.cs": {
+    "mtime": 1792664214.8332925,
+    "seen": 1792664459.162536,
+    "ast_hash": "1543e45c81b4464a5a8567fae81d7699",
     "semantic_hash": ""
   }
 }
