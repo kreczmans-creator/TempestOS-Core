@@ -29,11 +29,21 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// time, rather than replacing it with an empty or partial ledger that would
 /// understate the money.
 /// </para>
+/// <para>
+/// <b>Schema v2: the Business dashboard's money pictures.</b> <c>cash</c>
+/// (bank balances), <c>cashFlow</c> (the next 12 weeks) and
+/// <c>forwardCash</c> (the next 6 months) are copied from the same
+/// <see cref="IAccountsReadModel"/>/<see cref="IForwardCashReadModel"/>
+/// Core's own Business dashboard renders, never recomputed. Both read
+/// TempestOS's saved accounts reading, never the network. Each is
+/// <see langword="null"/> when there is no read model or no reading, so the
+/// dashboard says so rather than showing zeros.
+/// </para>
 /// </remarks>
 public sealed class AccountingExportAdapter : IExportable, IExportableKind
 {
     /// <summary>The schema version of <c>accounting.json</c>.</summary>
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     /// <summary>How far back <c>paid</c> reaches: the dashboard's "Received 30d".</summary>
     public const int PaidWindowDays = 30;
@@ -52,15 +62,18 @@ public sealed class AccountingExportAdapter : IExportable, IExportableKind
     };
 
     private readonly XeroAccountingApi _xero;
+    private readonly IAccountsReadModel? _accounts;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="AccountingExportAdapter"/> class.</summary>
     /// <param name="xero">Core's Xero API — read only here.</param>
     /// <param name="timeProvider">The clock for <c>generatedAt</c> and the paid window.</param>
-    public AccountingExportAdapter(XeroAccountingApi xero, TimeProvider? timeProvider = null)
+    /// <param name="accounts">Core's accounts read model, for <c>cash</c>, <c>cashFlow</c> and (when it is also an <see cref="IForwardCashReadModel"/>) <c>forwardCash</c>; <see langword="null"/> exports all three as <see langword="null"/>.</param>
+    public AccountingExportAdapter(XeroAccountingApi xero, TimeProvider? timeProvider = null, IAccountsReadModel? accounts = null)
     {
         ArgumentNullException.ThrowIfNull(xero);
         _xero = xero;
+        _accounts = accounts;
         _time = timeProvider ?? TimeProvider.System;
     }
 
@@ -84,13 +97,20 @@ public sealed class AccountingExportAdapter : IExportable, IExportableKind
         var payable = await ReadAsync(PayableWhere, "DueDate", "bills", cancellationToken).ConfigureAwait(false);
         var paid = await ReadAsync($"""Type=="ACCREC" AND Status=="PAID" AND FullyPaidOnDate>={sinceExpression}""", "UpdatedDateUTC DESC", "paid invoices", cancellationToken).ConfigureAwait(false);
 
+        var snapshot = _accounts is null ? null : await _accounts.ReadAsync(cancellationToken).ConfigureAwait(false);
+        var forward = _accounts is IForwardCashReadModel forwardCash
+            ? await forwardCash.ReadForwardCashAsync(cancellationToken).ConfigureAwait(false)
+            : null;
+
         var export = new AccountingExport(
             SchemaVersion,
             EngineeringStatusExportAdapter.FormatUtc(now),
             [.. receivable.Select(ToOutstanding)],
             [.. payable.Select(ToOutstanding)],
             [.. paid.Select(ToPaid)],
-            Cash: null);
+            snapshot is { IsAvailable: true } ? ToCash(snapshot) : null,
+            snapshot is { IsAvailable: true } ? ToCashFlow(snapshot) : null,
+            forward is null ? null : ToForwardCash(forward));
 
         await JsonSerializer.SerializeAsync(destination, export, SerializerOptions, cancellationToken).ConfigureAwait(false);
     }
@@ -124,6 +144,27 @@ public sealed class AccountingExportAdapter : IExportable, IExportableKind
         Source,
         UrlOf(invoice));
 
+    private static CashSection ToCash(AccountsSnapshot snapshot) => new(
+        snapshot.TotalCash.Amount,
+        snapshot.TotalCash.Currency.ToString(),
+        [.. snapshot.Cash.Select(a => new CashAccountRow(a.Name, a.Balance.Amount, a.Balance.Currency.ToString(), Iso(a.AsOf)))],
+        snapshot.ReadAt is { } readAt ? EngineeringStatusExportAdapter.FormatUtc(readAt) : null);
+
+    private static CashFlowSection ToCashFlow(AccountsSnapshot snapshot) => new(
+        snapshot.TotalCash.Currency.ToString(),
+        [.. snapshot.CashFlowSeries.Select(w => new CashFlowWeekRow(Iso(w.WeekStart), w.ReceivableIn.Amount, w.PayableOut.Amount, w.ClosingCash.Amount))]);
+
+    // A figure the read model could not work out stays null, never 0.
+    private static ForwardCashSection ToForwardCash(ForwardCashPicture picture) => new(
+        picture.Currency.ToString(),
+        picture.VatBasis,
+        [.. picture.Months.Select(m => new ForwardCashMonthRow(
+            m.MonthStart.ToString("yyyy-MM", CultureInfo.InvariantCulture),
+            m.OpeningCash.Amount?.Amount, m.MoneyIn.Amount?.Amount, m.MoneyOut.Amount?.Amount, m.ClosingCash.Amount?.Amount))],
+        picture.UndatedTotal.Amount);
+
+    private static string Iso(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
     private static string? Date(string? raw) =>
         XeroWire.ParseDate(raw)?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
@@ -133,7 +174,19 @@ public sealed class AccountingExportAdapter : IExportable, IExportableKind
     private sealed record AccountingExport(
         int SchemaVersion, string GeneratedAt,
         IReadOnlyList<OutstandingRow> Invoices, IReadOnlyList<OutstandingRow> Bills, IReadOnlyList<PaidRow> Paid,
-        object? Cash);
+        CashSection? Cash, CashFlowSection? CashFlow, ForwardCashSection? ForwardCash);
+
+    private sealed record CashSection(decimal Balance, string Currency, IReadOnlyList<CashAccountRow> Accounts, string? ReadAt);
+
+    private sealed record CashAccountRow(string Name, decimal Balance, string Currency, string AsOf);
+
+    private sealed record CashFlowSection(string Currency, IReadOnlyList<CashFlowWeekRow> Weeks);
+
+    private sealed record CashFlowWeekRow(string WeekStart, decimal ReceivableIn, decimal PayableOut, decimal ClosingCash);
+
+    private sealed record ForwardCashSection(string Currency, string VatBasis, IReadOnlyList<ForwardCashMonthRow> Months, decimal UndatedTotal);
+
+    private sealed record ForwardCashMonthRow(string Month, decimal? OpeningCash, decimal? MoneyIn, decimal? MoneyOut, decimal? ClosingCash);
 
     private sealed record OutstandingRow(
         string Id, string Reference, string Client, decimal AmountDue, string Currency,

@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json.Nodes;
 using System.Web;
+using Tempest.Core.BusinessGovernance;
+using Tempest.Core.Invoicing;
 using Tempest.Core.Invoicing.Xero.Api;
 using Tempest.Core.Tests.Invoicing.Xero.Api;
 using Tempest.Workspace.Integration.DashboardExport;
@@ -77,10 +79,15 @@ public sealed class AccountingExportAdapterTests
 
         var json = await ExportAsync(api);
 
-        Assert.Equal(1, (int)json["schemaVersion"]!);
+        Assert.Equal(2, (int)json["schemaVersion"]!);
         Assert.Equal("2026-10-22T09:00:00Z", (string)json["generatedAt"]!);
-        Assert.Null(json["cash"]);
-        Assert.True(json.AsObject().ContainsKey("cash"));
+
+        // No accounts read model: the money pictures are honestly absent, never zero.
+        foreach (var key in new[] { "cash", "cashFlow", "forwardCash" })
+        {
+            Assert.True(json.AsObject().ContainsKey(key), key);
+            Assert.Null(json[key]);
+        }
 
         var invoice = json["invoices"]![0]!;
         Assert.Equal("i1", (string)invoice["id"]!);
@@ -141,5 +148,55 @@ public sealed class AccountingExportAdapterTests
             () => new AccountingExportAdapter(api, new ManualClock(Now)).ExportAsync(stream));
 
         Assert.Equal(0, stream.Length);
+    }
+
+    [Fact]
+    public async Task CashCashFlowAndForwardCash_AreCopiedFromCoresAccountsReadModel()
+    {
+        var (api, network) = await XeroWithAsync([], [], []);
+        var asOf = new DateOnly(2026, 10, 22);
+        static Money Gbp(decimal amount) => new(amount, CurrencyCode.Gbp);
+        var reading = new AccountsReading(
+            Bills: [new BillDue("Steel Supplies", "B1", asOf, asOf.AddDays(10), Gbp(400m), "AUTHORISED")],
+            RepeatingBills: [],
+            Cash: [new CashAccountBalance("Business Current", Gbp(9000m), asOf)],
+            ReadAt: Now,
+            Connector: "Xero");
+        var snapshot = AccountsSnapshot.From(reading, [], asOf);
+        ForwardCashFigure Figure(decimal? amount) => amount is { } a ? new(Gbp(a), ForwardCashSource.Derived) : new(null, ForwardCashSource.Derived, "No reading.");
+        var month = new ForwardCashMonth(
+            new DateOnly(2026, 10, 1), asOf, new DateOnly(2026, 10, 31),
+            Figure(9000m), Figure(0m), Figure(0m), Figure(1500m), Figure(400m), Figure(0m), Figure(400m), Figure(null), []);
+        var forward = new ForwardCashPicture(asOf, CurrencyCode.Gbp, [month], [], [], [], Now, "Xero", null);
+        var accounts = new FakeAccounts(snapshot, forward);
+        using var stream = new MemoryStream();
+
+        await new AccountingExportAdapter(api, new ManualClock(Now), accounts).ExportAsync(stream);
+        var json = JsonNode.Parse(stream.ToArray())!;
+
+        Assert.Equal(9000m, (decimal)json["cash"]!["balance"]!);
+        Assert.Equal("GBP", (string)json["cash"]!["currency"]!);
+        Assert.Equal("Business Current", (string)json["cash"]!["accounts"]![0]!["name"]!);
+
+        var weeks = json["cashFlow"]!["weeks"]!.AsArray();
+        Assert.Equal(snapshot.CashFlowSeries.Count, weeks.Count);
+        Assert.Equal(snapshot.CashFlowSeries[^1].ClosingCash.Amount, (decimal)weeks[^1]!["closingCash"]!);
+        Assert.Equal(400m, weeks.Sum(w => (decimal)w!["payableOut"]!));
+
+        var months = json["forwardCash"]!["months"]!.AsArray();
+        Assert.Equal("2026-10", (string)months[0]!["month"]!);
+        Assert.Equal(1500m, (decimal)months[0]!["moneyIn"]!);
+        Assert.Null(months[0]!["closingCash"]);
+
+        // Still read only: the money pictures add no Xero call.
+        Assert.All(network.Received, r => Assert.Equal(HttpMethod.Get, r.Request.Method));
+        Assert.Equal(3, network.Received.Count);
+    }
+
+    private sealed class FakeAccounts(AccountsSnapshot snapshot, ForwardCashPicture forward) : IAccountsReadModel, IForwardCashReadModel
+    {
+        public Task<AccountsSnapshot> ReadAsync(CancellationToken cancellationToken = default) => Task.FromResult(snapshot);
+
+        public Task<ForwardCashPicture> ReadForwardCashAsync(CancellationToken cancellationToken = default) => Task.FromResult(forward);
     }
 }

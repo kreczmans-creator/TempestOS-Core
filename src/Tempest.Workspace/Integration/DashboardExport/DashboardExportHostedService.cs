@@ -5,6 +5,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ExportImport;
+using Tempest.Core.Invoicing;
 using Tempest.Core.Invoicing.Xero.Api;
 using Tempest.Core.Logging;
 using Tempest.Core.Navigation;
@@ -92,6 +93,7 @@ public sealed class DashboardExportHostedService : IHostedService
     /// <param name="configuration">Read once per tick for <see cref="DashboardExportOptions.ExportDirectory"/> — a directory change takes effect on the very next export, no restart required.</param>
     /// <param name="logger">An optional logger for diagnostic output.</param>
     /// <param name="xeroApi">Core's Xero API, registered only when Xero is the invoicing connector; <see langword="null"/> writes no <c>accounting.json</c>, so the dashboard shows no ledger rather than an empty one.</param>
+    /// <param name="accountsReadModel">Core's accounts read model, passed straight through to <see cref="AccountingExportAdapter"/> for its cash, cash flow and forward cash sections.</param>
     public DashboardExportHostedService(
         EngineeringDomainContext domainContext,
         IRequirementsService requirementsService,
@@ -102,7 +104,8 @@ public sealed class DashboardExportHostedService : IHostedService
         IQuotationCatalog quotationCatalog,
         IConfigurationProvider configuration,
         ILogger? logger = null,
-        XeroAccountingApi? xeroApi = null)
+        XeroAccountingApi? xeroApi = null,
+        IAccountsReadModel? accountsReadModel = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(requirementsService);
@@ -118,7 +121,7 @@ public sealed class DashboardExportHostedService : IHostedService
         _contracts = new ContractsExportAdapter(contractCatalog);
         _quotes = new QuotesExportAdapter(quotationCatalog);
         _reviews = new ReviewQueueExportAdapter(domainContext, requirementsService);
-        _accounting = xeroApi is null ? null : new AccountingExportAdapter(xeroApi);
+        _accounting = xeroApi is null ? null : new AccountingExportAdapter(xeroApi, accounts: accountsReadModel);
         _configuration = configuration;
         _logger = logger;
     }

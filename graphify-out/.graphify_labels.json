@@ -4,7 +4,6 @@
   "12": "Quantity",
   "29": "EngineeringDomainContext",
   "33": "DocumentObjectFactoryRegistry",
-  "41": "RecordVerificationResultCommand",
   "44": "ManufacturingObjectFactoryRegistry",
   "54": "WorkspaceManager",
   "64": "CalculationException",

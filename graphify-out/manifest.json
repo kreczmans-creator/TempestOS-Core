@@ -10752,9 +10752,9 @@
     "semantic_hash": "59c6e3098e0cd6997d23185f5e4a56db"
   },
   "tests/Tempest.Core.Tests/Commands/CommandInvocationContractTests.cs": {
-    "mtime": 1792587689.5938237,
-    "seen": 1792588036.4347816,
-    "ast_hash": "c080f3dcc69b7a60f79486477c32e750",
+    "mtime": 1792666328.6699386,
+    "seen": 1792701622.6169193,
+    "ast_hash": "8607a6bb38788af43e19d3e1d60f8de3",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Commands/CommandRegistryTests.cs": {
@@ -11436,9 +11436,9 @@
     "semantic_hash": "98a610c8be19fde441ddd0b0f78211c7"
   },
   "tests/Tempest.Core.Tests/Invoicing/Connectors/OAuthAuthoriserTests.cs": {
-    "mtime": 1792587689.595875,
-    "seen": 1792588036.4350367,
-    "ast_hash": "865b175e7004f1592e6ccc2fdc6d9b21",
+    "mtime": 1792667642.4860542,
+    "seen": 1792701622.61713,
+    "ast_hash": "db3284b55c831a7000a8f37eb56f19c2",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/Connectors/QuickBooksOnlineConnectorAccountsTests.cs": {
@@ -11502,10 +11502,10 @@
     "semantic_hash": "c186f985dd80e5e5f8932dbdd9d8ad7a"
   },
   "tests/Tempest.Core.Tests/Invoicing/SecretStoreTests.cs": {
-    "mtime": 1792350470.1544173,
-    "seen": 1792588036.4350615,
-    "ast_hash": "397d43922a8d9bd081b39ec445b41207",
-    "semantic_hash": "397d43922a8d9bd081b39ec445b41207"
+    "mtime": 1792667642.4921794,
+    "seen": 1792701622.61715,
+    "ast_hash": "0a5530c9986000ad9dfe4c756ce5e37d",
+    "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/VatRateTaxTypeMappingTests.cs": {
     "mtime": 1792587689.5962617,
@@ -12144,9 +12144,9 @@
     "semantic_hash": "e5e4eb2aa19d1bb140e6f6fd11baf1b7"
   },
   "tests/Tempest.Core.Tests/ReleaseEngineering/PackagingScriptTests.cs": {
-    "mtime": 1792587689.621601,
-    "seen": 1792588036.435681,
-    "ast_hash": "0fd7d7ecadadceb260e9085c00c78a49",
+    "mtime": 1792667642.5093915,
+    "seen": 1792701622.6175652,
+    "ast_hash": "e3b02dd192bf7fa3e19956bc2178073e",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Reporting/ExceptionTests.cs": {
@@ -12486,10 +12486,10 @@
     "semantic_hash": "51300e5ec493cd44a621c9686550f214"
   },
   "tests/Tempest.Core.Tests/Security/CheckVulnerablePackagesScriptTests.cs": {
-    "mtime": 1792350470.1984172,
-    "seen": 1792588036.4359462,
-    "ast_hash": "fa555f6ce54c25f9db7ac6774cf0b725",
-    "semantic_hash": "fa555f6ce54c25f9db7ac6774cf0b725"
+    "mtime": 1792667642.5151162,
+    "seen": 1792701622.6177564,
+    "ast_hash": "a59054f7dc8d92be70339dfc22ee4860",
+    "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Security/FileSecretStoreTests.cs": {
     "mtime": 1792350470.2026436,
@@ -13872,10 +13872,10 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Quotations/PdfTextExtractor.cs": {
-    "mtime": 1792350470.2904172,
-    "seen": 1792588036.4365313,
-    "ast_hash": "cc560b9edc7d8032f35f8b7de8cf5bc5",
-    "semantic_hash": "cc560b9edc7d8032f35f8b7de8cf5bc5"
+    "mtime": 1792667453.1879337,
+    "seen": 1792701622.6182451,
+    "ast_hash": "8ead0d975b1440542623d0949b800f5a",
+    "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Quotations/QuotationSheetRendererTests.cs": {
     "mtime": 1792350470.2904172,
@@ -14154,15 +14154,15 @@
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1792587687.0094135,
-    "seen": 1792588036.436712,
-    "ast_hash": "ee141319ff55100e5e30c73e9e399917",
+    "mtime": 1792700090.2393956,
+    "seen": 1792701622.6184306,
+    "ast_hash": "dc04dffc535dc6c6b5849db5b87105e9",
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
-    "mtime": 1792587687.0094135,
-    "seen": 1792588036.436714,
-    "ast_hash": "104506644daae37d8745906a68f724d7",
+    "mtime": 1792672151.8471124,
+    "seen": 1792701622.6184332,
+    "ast_hash": "f1f169ce0ade140ba38ea3fc0522851b",
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
@@ -17172,9 +17172,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Integration/DashboardExport/DashboardExportHostedService.cs": {
-    "mtime": 1792587689.5857038,
-    "seen": 1792588036.4329705,
-    "ast_hash": "6c2cf8ec8f1eff849507eeac21007076",
+    "mtime": 1792701410.1805065,
+    "seen": 1792701622.6160474,
+    "ast_hash": "004fe52a274260ab77c203c871e6dcce",
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Integration/DashboardExport/DashboardExportModule.cs": {
@@ -17190,9 +17190,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Integration/DashboardExport/EngineeringStatusExportAdapter.cs": {
-    "mtime": 1792350470.0049222,
-    "seen": 1792588036.432981,
-    "ast_hash": "92309587994b08bddb5da41b288ef62f",
+    "mtime": 1792701410.1805065,
+    "seen": 1792701622.6160526,
+    "ast_hash": "286b7e23e7b30d52714301e7bba40176",
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Integration/DashboardExport/ExportDashboardDataNowCommand.cs": {
@@ -17274,9 +17274,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Architecture/XeroSafetyArchitectureTests.cs": {
-    "mtime": 1792587689.5908968,
-    "seen": 1792588036.4345624,
-    "ast_hash": "a8313e13930fea70f3afd7bf81b5864d",
+    "mtime": 1792668993.6682103,
+    "seen": 1792701622.6167622,
+    "ast_hash": "19292dd85a3240a9d0ee963258c1d976",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/BusinessGovernance/ContractTests.cs": {
@@ -17646,9 +17646,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/ReleaseEngineering/InstallTestBuildScriptTests.cs": {
-    "mtime": 1792587689.621601,
-    "seen": 1792588036.4356756,
-    "ast_hash": "d0f08d5c0f3a687f1746d60316c4d7ac",
+    "mtime": 1792667642.5040376,
+    "seen": 1792701622.6175616,
+    "ast_hash": "61d53f0864a31d523d7542798b848a5a",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/ReleaseEngineering/NuGetLockFileTests.cs": {
@@ -17670,9 +17670,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Workspace/DashboardExport/DashboardExportHostedServiceTests.cs": {
-    "mtime": 1792587689.6228707,
-    "seen": 1792588036.4360437,
-    "ast_hash": "e8814b647150bea6a337515132254281",
+    "mtime": 1792669224.335478,
+    "seen": 1792701622.6178668,
+    "ast_hash": "752f184e9b285929d49c5786709985c7",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Workspace/DashboardExport/DashboardExportOptionsTests.cs": {
@@ -17682,15 +17682,15 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Workspace/DashboardExport/DashboardExportTestHost.cs": {
-    "mtime": 1792350470.2169394,
-    "seen": 1792588036.4360473,
+    "mtime": 1792701262.828498,
+    "seen": 1792701622.6178706,
     "ast_hash": "a8c33633233cf1ff1cc360e9bdb07e61",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Workspace/DashboardExport/EngineeringStatusExportAdapterTests.cs": {
-    "mtime": 1792350470.2169394,
-    "seen": 1792588036.4360495,
-    "ast_hash": "d99f753362db11b84a0dc3e23e55d22f",
+    "mtime": 1792701410.1824481,
+    "seen": 1792701622.6178727,
+    "ast_hash": "281b5c199f7a5c5bb89ccf7a154a6c16",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Workspace/DashboardExport/ProgrammeHierarchyExportAdapterTests.cs": {
@@ -17880,9 +17880,9 @@
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1792350468.949321,
-    "seen": 1792588036.4367163,
-    "ast_hash": "a4a31859dde0e6d6af153a95554d7591",
+    "mtime": 1792700104.5283122,
+    "seen": 1792701622.6184363,
+    "ast_hash": "1122acd1fbfc8ec07e30d49ee9406e9f",
     "semantic_hash": ""
   },
   "LICENSE.md": {
@@ -30018,9 +30018,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Api/XeroAccountingApi.Invoices.cs": {
-    "mtime": 1792587689.4908614,
-    "seen": 1792588036.4304602,
-    "ast_hash": "244b08480c68964a4dd2e602783677af",
+    "mtime": 1792668343.7942088,
+    "seen": 1792701622.6138837,
+    "ast_hash": "ec74a61f7b25b9260a4043a83dbd873b",
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Api/XeroAccountingApi.Quotes.cs": {
@@ -30384,9 +30384,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/Xero/Live/XeroDemoSmokeScriptTests.cs": {
-    "mtime": 1792663498.895558,
-    "seen": 1792664459.1614792,
-    "ast_hash": "c4cf8ed298e9b1f755a5bd1b1607d0e1",
+    "mtime": 1792667642.4979367,
+    "seen": 1792701622.6171935,
+    "ast_hash": "964dd775e30037d6d0b121edeb3d709b",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/Xero/Live/XeroLiveConnection.cs": {
@@ -30912,9 +30912,9 @@
     "semantic_hash": ""
   },
   "scripts/generate-registers.py": {
-    "mtime": 1792663498.8915076,
-    "seen": 1792664459.1567335,
-    "ast_hash": "53ea9ce3111977abef0d6567ffd1af05",
+    "mtime": 1792667141.225073,
+    "seen": 1792701622.6124973,
+    "ast_hash": "0481b2bae37eb17839679fa17b04b23c",
     "semantic_hash": ""
   },
   "docs/adr/ADR-0164-a-release-is-tested-once-by-ci-on-its-commit-not-again-by-the-tag.md": {
@@ -30924,80 +30924,74 @@
     "semantic_hash": ""
   },
   "docs/governance/html/ADR Register.html": {
-    "mtime": 1792662140.2853956,
-    "seen": 1792662375.7506778,
+    "mtime": 1792667150.8072472,
+    "seen": 1792701622.6213384,
     "ast_hash": "c9b0ad74949e20ec6dccc3cb0dc86c87",
     "semantic_hash": ""
   },
   "docs/governance/html/Future Capability Register.html": {
-    "mtime": 1792662140.3016481,
-    "seen": 1792662375.7506807,
+    "mtime": 1792667150.819498,
+    "seen": 1792701622.6213417,
     "ast_hash": "00993735d0ceeeaec89f0d5f08e76e7b",
     "semantic_hash": ""
   },
   "docs/governance/html/PO Feedback Actions.html": {
-    "mtime": 1792662140.3174114,
-    "seen": 1792662375.750687,
+    "mtime": 1792667150.8321786,
+    "seen": 1792701622.6213472,
     "ast_hash": "50a28258f8dac7844caae6a771c1a17c",
     "semantic_hash": ""
   },
-  "docs/governance/html/PO Test Runbook v0.25.0.html": {
-    "mtime": 1792662140.3318155,
-    "seen": 1792662375.7506897,
-    "ast_hash": "ecf047de1da2d1fcc914a9645b0a3124",
-    "semantic_hash": ""
-  },
   "docs/governance/html/Physical Review Guide.html": {
-    "mtime": 1792663498.1585357,
-    "seen": 1792664459.1659184,
+    "mtime": 1792667141.400997,
+    "seen": 1792701622.6213508,
     "ast_hash": "7bb0ce59d8e2ddb0bab08917baf31729",
     "semantic_hash": ""
   },
   "docs/governance/html/Product Owner Acceptance.html": {
-    "mtime": 1792662140.345576,
-    "seen": 1792662375.7506964,
+    "mtime": 1792667150.8469827,
+    "seen": 1792701622.6213524,
     "ast_hash": "29ab69fc6a674b36fca505607c486671",
     "semantic_hash": ""
   },
   "docs/governance/html/Product Roadmap.html": {
-    "mtime": 1792662140.3628712,
-    "seen": 1792662375.7506986,
+    "mtime": 1792667150.8596632,
+    "seen": 1792701622.6213546,
     "ast_hash": "2c7eba38c81fe1dc0706604ff639f4c8",
     "semantic_hash": ""
   },
   "docs/governance/html/Project Status.html": {
-    "mtime": 1792662140.3756142,
-    "seen": 1792662375.7507,
+    "mtime": 1792667150.871837,
+    "seen": 1792701622.621356,
     "ast_hash": "3072eff24528ab995a1db2f96f44ba7e",
     "semantic_hash": ""
   },
   "docs/governance/html/Seed Data Sources Register.html": {
-    "mtime": 1792662140.394239,
-    "seen": 1792662375.750702,
+    "mtime": 1792667150.8853593,
+    "seen": 1792701622.621358,
     "ast_hash": "e001fa9ffd2190aeed0a153cc19da9ce",
     "semantic_hash": ""
   },
   "docs/governance/html/Technical Debt Register.html": {
-    "mtime": 1792663498.1598878,
-    "seen": 1792664459.16593,
+    "mtime": 1792667141.3114576,
+    "seen": 1792701622.6213598,
     "ast_hash": "25dccfb2a1bff409499b95634c39bb7d",
     "semantic_hash": ""
   },
   "docs/governance/html/Third-Party Notices.html": {
-    "mtime": 1792662140.4053957,
-    "seen": 1792662375.7507057,
+    "mtime": 1792667150.900977,
+    "seen": 1792701622.6213617,
     "ast_hash": "05708102aa7d452f67ddf77495bd9b12",
     "semantic_hash": ""
   },
   "docs/governance/html/index.html": {
-    "mtime": 1792663498.1614537,
-    "seen": 1792664459.165934,
-    "ast_hash": "0595c08a0ecafecf478023dc7f444f60",
+    "mtime": 1792667141.4079661,
+    "seen": 1792701622.6213632,
+    "ast_hash": "9e91c172ce7b75315341e8b52c72039d",
     "semantic_hash": ""
   },
   "docs/governance/html/v1.0.0 Work Packages.html": {
-    "mtime": 1792662140.4293957,
-    "seen": 1792662375.7507093,
+    "mtime": 1792667150.9136646,
+    "seen": 1792701622.621365,
     "ast_hash": "b7d788fe4701a5e0e1fea9e6bab113b8",
     "semantic_hash": ""
   },
@@ -31031,12 +31025,6 @@
     "ast_hash": "d76661da69dba329c6aa80bdc6c0a402",
     "semantic_hash": ""
   },
-  "docs/governance/html/PO Test Runbook v0.25.2.html": {
-    "mtime": 1792663498.1581347,
-    "seen": 1792664459.1659162,
-    "ast_hash": "33452a9da693214585f5e629f1035a29",
-    "semantic_hash": ""
-  },
   "docs/releases/v0.25.2/PO Test Runbook.md": {
     "mtime": 1792663498.162378,
     "seen": 1792664459.1660516,
@@ -31061,22 +31049,10 @@
     "ast_hash": "86bbcabe81e0e7a74d326ad7d816e5db",
     "semantic_hash": ""
   },
-  "docs/governance/html/Independent Test Runbook v0.25.2.html": {
-    "mtime": 1792663498.1576915,
-    "seen": 1792664459.1659064,
-    "ast_hash": "04c0405120fb75e27c12ddec2916047f",
-    "semantic_hash": ""
-  },
-  "docs/releases/v0.25.2/Independent Test Runbook.md": {
-    "mtime": 1792663498.1614537,
-    "seen": 1792664459.166049,
-    "ast_hash": "037c6c205b163165636cb9948946f4b3",
-    "semantic_hash": ""
-  },
   "docs/releases/v0.25.3/Release Notes.md": {
-    "mtime": 1792665716.2030149,
-    "seen": 1792665912.7161376,
-    "ast_hash": "1aef9d7279f831f1e79630abe87d47e4",
+    "mtime": 1792668608.394264,
+    "seen": 1792701622.621491,
+    "ast_hash": "55febe56f584954d87963fa3ee45aab4",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/OrganisationView.cs": {
@@ -31101,6 +31077,54 @@
     "mtime": 1792665554.1033819,
     "seen": 1792665912.7123454,
     "ast_hash": "7a7620d82034c6871da9420e742406c8",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Core/Invoicing/Xero/Api/XeroAccountingApi.Ledger.cs": {
+    "mtime": 1792668343.7997518,
+    "seen": 1792701622.613889,
+    "ast_hash": "b553d07225d7e1c63d39f996716e4ed5",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Workspace/Integration/DashboardExport/AccountingExportAdapter.cs": {
+    "mtime": 1792701410.1805065,
+    "seen": 1792701622.616042,
+    "ast_hash": "24a46ac4220c3cc71a5122f60e69bb17",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Core.Tests/WindowsFactAttribute.cs": {
+    "mtime": 1792667558.4339273,
+    "seen": 1792701622.6178465,
+    "ast_hash": "50d383b203dcc54547a6f95a68a5f5a2",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Core.Tests/Workspace/DashboardExport/AccountingExportAdapterTests.cs": {
+    "mtime": 1792701410.1822743,
+    "seen": 1792701622.617862,
+    "ast_hash": "800da6aea46b8d407ab22e07d8c72397",
+    "semantic_hash": ""
+  },
+  "docs/governance/html/Independent Test Runbook v0.25.3.html": {
+    "mtime": 1792667141.4059734,
+    "seen": 1792701622.6213446,
+    "ast_hash": "665955cf925cfbe5ca9bf7bad14500a2",
+    "semantic_hash": ""
+  },
+  "docs/governance/html/PO Test Runbook v0.25.3.html": {
+    "mtime": 1792667141.4033906,
+    "seen": 1792701622.6213484,
+    "ast_hash": "0f34587f04fca80c250873634cd28dc8",
+    "semantic_hash": ""
+  },
+  "docs/releases/v0.25.3/Independent Test Runbook.md": {
+    "mtime": 1792667141.2240057,
+    "seen": 1792701622.6214867,
+    "ast_hash": "7320fdcd0d8ef4b8ee531d0d7242166a",
+    "semantic_hash": ""
+  },
+  "docs/releases/v0.25.3/PO Test Runbook.md": {
+    "mtime": 1792667127.5221233,
+    "seen": 1792701622.6214886,
+    "ast_hash": "991d0be804980e1dbe13bcf662c987cc",
     "semantic_hash": ""
   }
 }

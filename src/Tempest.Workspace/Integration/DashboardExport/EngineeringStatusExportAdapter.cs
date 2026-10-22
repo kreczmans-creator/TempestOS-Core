@@ -6,6 +6,7 @@ using Tempest.Core.Evidence;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Navigation;
 using Tempest.Core.Requirements;
+using Tempest.Workspace.Disciplines;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
 
@@ -103,9 +104,13 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
     /// integration contract document's §2.1 (v1), plus the additive
     /// Cockpit sections (<c>health</c>/<c>kpis</c>/<c>attention</c>/
     /// <c>blockedItems</c>/<c>overdueActions</c>) that make it v2. Every
-    /// v1 key is unchanged in name, shape and meaning.
+    /// v1 key is unchanged in name, shape and meaning. From v3, <c>disciplines</c> adds the Structural, Electrical and
+    /// Building Services disciplines (<see cref="DisciplineCatalogue"/>),
+    /// which have no Cockpit health: their live object counts, by type and by
+    /// lifecycle state, so the dashboard can show them beside the others
+    /// without a health word Core never worked out.
     /// </summary>
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     /// <summary>The most attention-worthy individual records <see cref="BuildItems"/> reports, capped.</summary>
     public const int MaxItems = 25;
@@ -189,7 +194,8 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
             BuildKpiSection(_cockpit),
             BuildAttentionSection(_cockpit),
             _cockpit.BlockedItems,
-            BuildOverdueActionsSection(_cockpit));
+            BuildOverdueActionsSection(_cockpit),
+            await BuildDisciplinesSectionAsync(cancellationToken).ConfigureAwait(false));
 
         await JsonSerializer.SerializeAsync(destination, export, SerializerOptions, cancellationToken).ConfigureAwait(false);
     }
@@ -412,6 +418,35 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
     /// <see cref="EngineeringCockpit.Health"/> itself deliberately
     /// excludes, so it is omitted too rather than exported as a signal.
     /// </summary>
+    /// <summary>
+    /// Live object counts for each <see cref="DisciplineCatalogue"/>
+    /// discipline, in the Engineering tree's own order — by type (the tree's
+    /// folder name) and by lifecycle state. Counts only: no Cockpit read
+    /// model covers these disciplines, so no health word is exported.
+    /// </summary>
+    private async Task<IReadOnlyList<DisciplineExport>> BuildDisciplinesSectionAsync(CancellationToken cancellationToken)
+    {
+        var disciplines = new List<DisciplineExport>();
+        foreach (var discipline in DisciplineCatalogue.All)
+        {
+            var byKind = new Dictionary<string, int>();
+            var byLifecycle = Enum.GetValues<LifecycleState>().ToDictionary(FormatEnum, _ => 0);
+            foreach (var kind in discipline.Kinds)
+            {
+                var entries = await _domainContext.Repository.ListByKindAsync(kind.Kind, cancellationToken).ConfigureAwait(false);
+                var live = await _domainContext.Repository.MaterialiseAsync<IEngineeringObject>(
+                    [.. entries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
+                byKind[kind.Folder] = live.Count;
+                foreach (var o in live.OfType<IHasLifecycle>())
+                    byLifecycle[FormatEnum(o.Status)]++;
+            }
+
+            disciplines.Add(new DisciplineExport(discipline.CommandPrefix, discipline.Category, byKind.Values.Sum(), byKind, byLifecycle));
+        }
+
+        return disciplines;
+    }
+
     private static HealthSection BuildHealthSection(EngineeringCockpit cockpit) =>
         new(
             FormatHealth(cockpit.Health),
@@ -508,7 +543,10 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
         Dictionary<string, IReadOnlyList<KpiCardExport>> Kpis,
         IReadOnlyList<AttentionExport> Attention,
         IReadOnlyList<string> BlockedItems,
-        IReadOnlyList<OverdueActionExport> OverdueActions);
+        IReadOnlyList<OverdueActionExport> OverdueActions,
+        IReadOnlyList<DisciplineExport> Disciplines);
+
+    private sealed record DisciplineExport(string Key, string Label, int Objects, Dictionary<string, int> ByType, Dictionary<string, int> ByLifecycle);
 
     private sealed record EvidenceSection(int Total, Dictionary<string, int> ByStatus, Dictionary<string, int> ByClassification, ChecksSection Checks, int OpenIssuesSheetsPending);
 
