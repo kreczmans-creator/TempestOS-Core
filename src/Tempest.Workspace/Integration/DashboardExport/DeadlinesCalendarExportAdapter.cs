@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ExportImport;
@@ -9,8 +10,9 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 
 /// <summary>
 /// Writes <c>deadlines.ics</c>: every agreed project milestone as a 30-minute
-/// Outlook event at 15:00 UK time on its target date, titled with the project
-/// ("PRJ-021 Davit redesign — Stage 2 issue"). Outlook subscribes to it as its
+/// Outlook event at 15:00 UK time on its target date, titled in the standard
+/// output style — "Customer - Project name - Milestone number" — with the
+/// milestone's description in the body. Outlook subscribes to it as its
 /// own "Tempest deadlines" calendar; Tempest-Dashboard reads the same file for
 /// its due dates, so the two can never disagree.
 /// </summary>
@@ -49,15 +51,18 @@ public sealed class DeadlinesCalendarExportAdapter : IExportable, IExportableKin
         [LifecycleState.Cancelled, LifecycleState.Superseded, LifecycleState.Obsolete, LifecycleState.Archived];
 
     private readonly EngineeringDomainContext _domainContext;
+    private readonly IOrganisationCatalog? _organisations;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="DeadlinesCalendarExportAdapter"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository, read for projects and their milestones.</param>
     /// <param name="timeProvider">The clock for <c>DTSTAMP</c>; <see langword="null"/> uses <see cref="TimeProvider.System"/>.</param>
-    public DeadlinesCalendarExportAdapter(EngineeringDomainContext domainContext, TimeProvider? timeProvider = null)
+    /// <param name="organisations">Where a project's client name is read; <see langword="null"/>, or a client not in it, leaves the customer out of the title rather than printing an id.</param>
+    public DeadlinesCalendarExportAdapter(EngineeringDomainContext domainContext, TimeProvider? timeProvider = null, IOrganisationCatalog? organisations = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         _domainContext = domainContext;
+        _organisations = organisations;
         _time = timeProvider ?? TimeProvider.System;
     }
 
@@ -96,7 +101,7 @@ public sealed class DeadlinesCalendarExportAdapter : IExportable, IExportableKin
             Line(ics, $"DTSTART;TZID=Europe/London:{Local(start)}");
             Line(ics, $"DTEND;TZID=Europe/London:{Local(end)}");
             Line(ics, $"SUMMARY:{Escape(d.Summary)}");
-            Line(ics, $"DESCRIPTION:{Escape($"Milestone deadline from TempestOS: {d.MilestoneName}.")}");
+            Line(ics, $"DESCRIPTION:{Escape(d.Description)}");
             Line(ics, "CATEGORIES:Tempest deadline");
             Line(ics, "TRANSP:OPAQUE");
             Line(ics, "END:VEVENT");
@@ -123,20 +128,41 @@ public sealed class DeadlinesCalendarExportAdapter : IExportable, IExportableKin
                 !entry.IsDeleted &&
                 !string.Equals(entry.DisplayName, DeliverableService.UnquotedMilestoneTitle, StringComparison.Ordinal));
 
-            var milestones = await repository.MaterialiseAsync<IMilestone>([.. milestoneEntries], cancellationToken).ConfigureAwait(false);
-            var projectName = string.Join(' ', new[] { project.Identifier, project.DisplayName }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            var milestones = (await repository.MaterialiseAsync<IMilestone>([.. milestoneEntries], cancellationToken).ConfigureAwait(false))
+                .Where(m => !NotADeadline.Contains(m.Status))
+                .ToList();
+            if (milestones.Count == 0)
+                continue;
 
-            foreach (var milestone in milestones.Where(m => !NotADeadline.Contains(m.Status)))
+            var customer = await ClientNameAsync(project.Id, cancellationToken).ConfigureAwait(false);
+
+            foreach (var milestone in milestones)
             {
+                // Standard output style: Customer - Project name - Milestone number.
+                // A milestone with no number falls back to its title so the event still names it.
+                var title = string.Join(" - ", new[] { customer, project.DisplayName, milestone.Identifier ?? milestone.DisplayName }
+                    .Where(part => !string.IsNullOrWhiteSpace(part)));
                 deadlines.Add(new Deadline(
                     milestone.Id,
                     DateOnly.FromDateTime(milestone.TargetDate.UtcDateTime),
-                    $"{projectName} — {milestone.DisplayName}",
+                    title,
                     milestone.DisplayName));
             }
         }
 
         return [.. deadlines.OrderBy(d => d.Date).ThenBy(d => d.Summary, StringComparer.Ordinal).ThenBy(d => d.MilestoneId)];
+    }
+
+    private async Task<string?> ClientNameAsync(Guid projectId, CancellationToken cancellationToken)
+    {
+        if (_organisations is null)
+            return null;
+
+        var project = (await _domainContext.Repository.MaterialiseAsync<IProject>([projectId], cancellationToken).ConfigureAwait(false)).SingleOrDefault();
+        if (project?.ClientOrganisationId is not { Length: > 0 } clientId)
+            return null;
+
+        return (await _organisations.FindAsync(clientId, cancellationToken).ConfigureAwait(false))?.Definition.Name;
     }
 
     private static string Local(DateTime value) => value.ToString("yyyyMMdd'T'HHmmss", CultureInfo.InvariantCulture);
@@ -193,5 +219,5 @@ public sealed class DeadlinesCalendarExportAdapter : IExportable, IExportableKin
         "END:VTIMEZONE",
     ];
 
-    private sealed record Deadline(Guid MilestoneId, DateOnly Date, string Summary, string MilestoneName);
+    private sealed record Deadline(Guid MilestoneId, DateOnly Date, string Summary, string Description);
 }

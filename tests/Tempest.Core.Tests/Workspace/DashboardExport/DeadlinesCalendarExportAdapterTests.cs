@@ -1,5 +1,8 @@
 using System.Text;
+using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Deliverables;
+using Tempest.Core.Projects;
+using Tempest.Core.Tests.BusinessOperations;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Tests.Invoicing.Xero.Api;
 using Tempest.Core.Tests.Plugins;
@@ -9,7 +12,8 @@ namespace Tempest.Core.Tests.Workspace.DashboardExport;
 
 /// <summary>
 /// <c>deadlines.ics</c>: each agreed milestone is a 30-minute Outlook event
-/// at 15:00 UK time, titled with its project, with a stable UID.
+/// at 15:00 UK time, titled "Customer - Project name - Milestone number"
+/// with the milestone's description in the body, and a stable UID.
 /// </summary>
 public sealed class DeadlinesCalendarExportAdapterTests
 {
@@ -18,18 +22,23 @@ public sealed class DeadlinesCalendarExportAdapterTests
     private static async Task<string> ExportAsync(Tempest.Core.Runtime.ITempestHost host)
     {
         using var stream = new MemoryStream();
-        await new DeadlinesCalendarExportAdapter(DashboardExportTestHost.Domain(host), new ManualClock(Now)).ExportAsync(stream);
+        var organisations = (IOrganisationCatalog)host.Services!.GetService(typeof(IOrganisationCatalog));
+        await new DeadlinesCalendarExportAdapter(DashboardExportTestHost.Domain(host), new ManualClock(Now), organisations).ExportAsync(stream);
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 
     private static DateTimeOffset Day(int month, int day) => new(2026, month, day, 0, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task EachAgreedMilestone_IsA30MinuteEventAt1500UkTime_TitledWithItsProject()
+    public async Task EachAgreedMilestone_IsA30MinuteEventAt1500UkTime_TitledInTheStandardOutputStyle()
     {
         using var temp = new TempDirectory();
         var (host, manager) = await DashboardExportTestHost.StartAsync(temp.Path);
         var project = await DashboardExportTestHost.CreateProjectAsync(host, "PRJ-021", "Davit redesign");
+        var organisations = (IOrganisationCatalog)host.Services!.GetService(typeof(IOrganisationCatalog));
+        await organisations.RegisterAsync("HARB", OperationsFixtures.Organisation("HARB") with { Name = "Harbour Trust" }, OperationsFixtures.Verified());
+        var commercial = (IProjectCommercialService)host.Services!.GetService(typeof(IProjectCommercialService));
+        Assert.True((await commercial.SetClientAsync(project.Id, "HARB")).Succeeded);
         var stage2 = await DashboardExportTestHost.CreateMilestoneAsync(host, "MS-2", "Stage 2 issue", project.Id, Day(11, 5));
 
         var ics = await ExportAsync(host);
@@ -41,8 +50,24 @@ public sealed class DeadlinesCalendarExportAdapterTests
         Assert.Contains($"UID:milestone-{stage2.Id:D}@tempestos\r\n", ics, StringComparison.Ordinal);
         Assert.Contains("DTSTART;TZID=Europe/London:20261105T150000\r\n", ics, StringComparison.Ordinal);
         Assert.Contains("DTEND;TZID=Europe/London:20261105T153000\r\n", ics, StringComparison.Ordinal);
-        Assert.Contains("SUMMARY:PRJ-021 Davit redesign — Stage 2 issue\r\n", ics, StringComparison.Ordinal);
+        Assert.Contains("SUMMARY:Harbour Trust - Davit redesign - MS-2\r\n", ics, StringComparison.Ordinal);
+        Assert.Contains("DESCRIPTION:Stage 2 issue\r\n", ics, StringComparison.Ordinal);
         Assert.Contains("DTSTAMP:20261022T090000Z\r\n", ics, StringComparison.Ordinal);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task NoClient_LeavesTheCustomerOut_RatherThanPrintingAnId()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await DashboardExportTestHost.StartAsync(temp.Path);
+        var project = await DashboardExportTestHost.CreateProjectAsync(host, "PRJ-050", "Internal rig");
+        await DashboardExportTestHost.CreateMilestoneAsync(host, "MS-1", "Rig commissioning", project.Id, Day(11, 3));
+
+        var ics = await ExportAsync(host);
+
+        Assert.Contains("SUMMARY:Internal rig - MS-1\r\n", ics, StringComparison.Ordinal);
 
         await manager.ShutdownAsync();
     }
