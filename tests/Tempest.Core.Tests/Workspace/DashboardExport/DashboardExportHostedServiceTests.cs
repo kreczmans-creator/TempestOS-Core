@@ -98,7 +98,49 @@ public class DashboardExportHostedServiceTests
         Assert.Empty(JsonNode.Parse(await File.ReadAllTextAsync(quotesPath))!["quotes"]!.AsArray());
         Assert.Empty(JsonNode.Parse(await File.ReadAllTextAsync(reviewsPath))!["items"]!.AsArray());
 
+        // No Xero connector here: no ledger at all, never an empty one the dashboard would read as live.
+        Assert.False(File.Exists(Path.Combine(exportDir.Path, "accounting.json")));
+
         Assert.NotNull(service.LastExportAttemptedAt);
+
+        await host.StopAsync();
+        await runTask;
+    }
+
+    /// <summary>A Xero read that fails keeps the last good <c>accounting.json</c>, and never stops the other five files.</summary>
+    [Fact]
+    public async Task AFailedLedgerRead_KeepsTheLastAccountingFile_AndWritesTheRest()
+    {
+        using var temp = new TempDirectory();
+        using var exportDir = new TempDirectory();
+        var host = BuilderFor(temp.Path, exportDir.Path).Build();
+        var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
+
+        var network = new Tempest.Core.Tests.Invoicing.Xero.Api.TerminalHandler
+        {
+            Respond = _ => Tempest.Core.Tests.Invoicing.Xero.Api.TerminalHandler.Json(System.Net.HttpStatusCode.ServiceUnavailable, "{}"),
+        };
+        var (authoriser, _) = await Tempest.Core.Tests.Invoicing.Xero.Api.XeroTestAuthoriser.CreateAsync();
+        var xero = new Tempest.Core.Invoicing.Xero.Api.XeroAccountingApi(new HttpClient(network) { BaseAddress = new Uri("https://api.xero.com/api.xro/2.0/") }, authoriser);
+
+        T Get<T>() => (T)host.Services!.GetService(typeof(T));
+        var service = new DashboardExportHostedService(
+            Get<Tempest.Core.EngineeringDomain.EngineeringDomainContext>(), Get<Tempest.Core.Requirements.IRequirementsService>(),
+            Get<Tempest.Core.Requirements.IRequirementValidationService>(), Get<Tempest.Core.Navigation.INavigationProvider>(),
+            Get<Tempest.Core.Commands.ICommandRegistry>(), Get<Tempest.Core.BusinessGovernance.Contracts.IIssuedContractCatalog>(),
+            Get<Tempest.Core.BusinessGovernance.Quotations.IQuotationCatalog>(), Get<IConfigurationProvider>(), xeroApi: xero);
+
+        var accountingPath = Path.Combine(exportDir.Path, "accounting.json");
+        await File.WriteAllTextAsync(accountingPath, "{\"last\":\"good\"}");
+
+        await service.ExportOnceAsync();
+
+        Assert.True(service.LastExportSucceeded, service.LastExportException?.ToString());
+        Assert.IsType<AccountingExportUnavailableException>(service.LastAccountingExportException);
+        Assert.Equal("{\"last\":\"good\"}", await File.ReadAllTextAsync(accountingPath));
+        Assert.False(File.Exists(accountingPath + ".tmp"));
+        Assert.True(File.Exists(Path.Combine(exportDir.Path, "reviews.json")));
 
         await host.StopAsync();
         await runTask;

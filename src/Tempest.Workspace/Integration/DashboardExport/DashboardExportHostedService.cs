@@ -5,6 +5,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ExportImport;
+using Tempest.Core.Invoicing.Xero.Api;
 using Tempest.Core.Logging;
 using Tempest.Core.Navigation;
 using Tempest.Core.Requirements;
@@ -13,7 +14,8 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 
 /// <summary>
 /// Periodically writes <c>engineering-status.json</c>/<c>programme.json</c>/
-/// <c>contracts.json</c>/<c>quotes.json</c>/<c>reviews.json</c> to
+/// <c>contracts.json</c>/<c>quotes.json</c>/<c>reviews.json</c> and, when
+/// Xero is the invoicing connector, <c>accounting.json</c> to
 /// <see cref="DashboardExportOptions.ExportDirectory"/>, on
 /// <see cref="DashboardExportOptions.IntervalSeconds"/> — the Core-side half
 /// of the Core→Dashboard integration contract (§3.4): Core has no outbound
@@ -69,6 +71,7 @@ public sealed class DashboardExportHostedService : IHostedService
     private readonly ContractsExportAdapter _contracts;
     private readonly QuotesExportAdapter _quotes;
     private readonly ReviewQueueExportAdapter _reviews;
+    private readonly AccountingExportAdapter? _accounting;
     private readonly IConfigurationProvider _configuration;
     private readonly ILogger? _logger;
 
@@ -88,6 +91,7 @@ public sealed class DashboardExportHostedService : IHostedService
     /// <param name="quotationCatalog">The quotation library — passed straight through to <see cref="QuotesExportAdapter"/> (`ADR-0154`).</param>
     /// <param name="configuration">Read once per tick for <see cref="DashboardExportOptions.ExportDirectory"/> — a directory change takes effect on the very next export, no restart required.</param>
     /// <param name="logger">An optional logger for diagnostic output.</param>
+    /// <param name="xeroApi">Core's Xero API, registered only when Xero is the invoicing connector; <see langword="null"/> writes no <c>accounting.json</c>, so the dashboard shows no ledger rather than an empty one.</param>
     public DashboardExportHostedService(
         EngineeringDomainContext domainContext,
         IRequirementsService requirementsService,
@@ -97,7 +101,8 @@ public sealed class DashboardExportHostedService : IHostedService
         IIssuedContractCatalog contractCatalog,
         IQuotationCatalog quotationCatalog,
         IConfigurationProvider configuration,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        XeroAccountingApi? xeroApi = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(requirementsService);
@@ -113,6 +118,7 @@ public sealed class DashboardExportHostedService : IHostedService
         _contracts = new ContractsExportAdapter(contractCatalog);
         _quotes = new QuotesExportAdapter(quotationCatalog);
         _reviews = new ReviewQueueExportAdapter(domainContext, requirementsService);
+        _accounting = xeroApi is null ? null : new AccountingExportAdapter(xeroApi);
         _configuration = configuration;
         _logger = logger;
     }
@@ -125,6 +131,9 @@ public sealed class DashboardExportHostedService : IHostedService
 
     /// <summary>The exception the most recent export attempt failed with, or <see langword="null"/> if it succeeded (or none has run yet).</summary>
     public Exception? LastExportException { get; private set; }
+
+    /// <summary>Why the most recent <c>accounting.json</c> was not written (the last good file stands), or <see langword="null"/> when it was, or when there is no Xero.</summary>
+    public Exception? LastAccountingExportException { get; private set; }
 
     /// <inheritdoc />
     /// <remarks>Never blocks Host start on the first export — the loop's first tick runs immediately, but asynchronously, on its own <see cref="Task"/>.</remarks>
@@ -203,6 +212,7 @@ public sealed class DashboardExportHostedService : IHostedService
             await WriteAsync(_contracts, Path.Combine(directory, "contracts.json"), cancellationToken).ConfigureAwait(false);
             await WriteAsync(_quotes, Path.Combine(directory, "quotes.json"), cancellationToken).ConfigureAwait(false);
             await WriteAsync(_reviews, Path.Combine(directory, "reviews.json"), cancellationToken).ConfigureAwait(false);
+            await WriteAccountingAsync(directory, cancellationToken).ConfigureAwait(false);
 
             LastExportSucceeded = true;
             LastExportException = null;
@@ -219,12 +229,42 @@ public sealed class DashboardExportHostedService : IHostedService
         }
     }
 
+    /// <summary>
+    /// The ledger, last and on its own: a Xero read that fails (offline,
+    /// reauthorisation needed) keeps the last good <c>accounting.json</c>, and
+    /// never stops the other five files being written.
+    /// </summary>
+    private async Task WriteAccountingAsync(string directory, CancellationToken cancellationToken)
+    {
+        if (_accounting is null)
+            return;
+
+        try
+        {
+            await WriteAsync(_accounting, Path.Combine(directory, "accounting.json"), cancellationToken).ConfigureAwait(false);
+            LastAccountingExportException = null;
+        }
+        catch (AccountingExportUnavailableException ex)
+        {
+            LastAccountingExportException = ex;
+            _logger?.Warning($"Dashboard accounting export skipped; the last accounting.json stands. {ex.Message}");
+        }
+    }
+
     private static async Task WriteAsync(IExportable exportable, string finalPath, CancellationToken cancellationToken)
     {
         var tempPath = finalPath + ".tmp";
 
-        await using (var file = File.Create(tempPath))
-            await exportable.ExportAsync(file, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await using (var file = File.Create(tempPath))
+                await exportable.ExportAsync(file, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            File.Delete(tempPath);
+            throw;
+        }
 
         File.Move(tempPath, finalPath, overwrite: true);
     }
