@@ -109,6 +109,9 @@ public static class ProjectNumbering
     /// <summary>A requirement's generated identifier (`v0.25.3` independent test E2): <c>TESTY-TRIALX-REQ-001</c>.</summary>
     public const string Requirement = "REQ";
 
+    /// <summary>A project milestone, as its Outlook deadline is named: <c>ACMEE-BRIDGE-M-002</c>.</summary>
+    public const string Milestone = "M";
+
     /// <summary>
     /// The document-type code table — the one definition of every
     /// <c>DOCTYPE</c> the platform writes into a project-centric number
@@ -152,6 +155,38 @@ public static class ProjectNumbering
 
 
     /// <summary>Whether <paramref name="code"/> is exactly five characters, each an upper-case letter A–Z or a digit 0–9 — the shape of a customer code.</summary>
+    /// <summary>
+    /// A milestone's export reference, <c>ACMEE-BRIDGE-M-002</c>: the
+    /// project identifier, <see cref="Milestone"/>, then the milestone's own
+    /// number to three digits. A number already written in that full form is
+    /// kept as it is; otherwise the last run of digits in it is the number
+    /// ("2", "MS-2" and "M-002" all read 002). A milestone number with no
+    /// digits at all is used as written.
+    /// </summary>
+    /// <param name="projectIdentifier">The project's identifier, e.g. <c>ACMEE-BRIDGE</c>.</param>
+    /// <param name="milestoneNumber">The milestone's own number as entered on the project.</param>
+    public static string MilestoneReference(string? projectIdentifier, string milestoneNumber)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(milestoneNumber);
+        var number = milestoneNumber.Trim();
+        var prefix = string.IsNullOrWhiteSpace(projectIdentifier) ? $"{Milestone}-" : $"{projectIdentifier.Trim()}-{Milestone}-";
+        if (number.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return number;
+
+        var end = number.Length;
+        while (end > 0 && !char.IsAsciiDigit(number[end - 1]))
+            end--;
+        var start = end;
+        while (start > 0 && char.IsAsciiDigit(number[start - 1]))
+            start--;
+
+        var distinguisher = end > start
+            && int.TryParse(number.AsSpan(start, end - start), NumberStyles.None, CultureInfo.InvariantCulture, out var n)
+            ? n.ToString("000", CultureInfo.InvariantCulture)
+            : number;
+        return ExportReference(projectIdentifier, Milestone, distinguisher);
+    }
+
     public static bool IsValidCustomerCode(string? code) => IsCode(code, CustomerCodeLength, allowDigits: true);
 
     /// <summary>Whether <paramref name="code"/> is exactly six characters, each an upper-case letter A–Z or a digit 0–9 — the shape of a new project reference.</summary>

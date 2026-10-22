@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Tempest.Core.BackgroundServices;
 using Tempest.Core.BusinessGovernance.Contracts;
 using Tempest.Core.BusinessGovernance.Quotations;
@@ -5,6 +6,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ExportImport;
+using Tempest.Core.Invoicing;
 using Tempest.Core.Invoicing.Xero.Api;
 using Tempest.Core.Logging;
 using Tempest.Core.Navigation;
@@ -71,6 +73,7 @@ public sealed class DashboardExportHostedService : IHostedService
     private readonly ContractsExportAdapter _contracts;
     private readonly QuotesExportAdapter _quotes;
     private readonly ReviewQueueExportAdapter _reviews;
+    private readonly DeadlinesCalendarExportAdapter _deadlines;
     private readonly AccountingExportAdapter? _accounting;
     private readonly IConfigurationProvider _configuration;
     private readonly ILogger? _logger;
@@ -92,6 +95,7 @@ public sealed class DashboardExportHostedService : IHostedService
     /// <param name="configuration">Read once per tick for <see cref="DashboardExportOptions.ExportDirectory"/> — a directory change takes effect on the very next export, no restart required.</param>
     /// <param name="logger">An optional logger for diagnostic output.</param>
     /// <param name="xeroApi">Core's Xero API, registered only when Xero is the invoicing connector; <see langword="null"/> writes no <c>accounting.json</c>, so the dashboard shows no ledger rather than an empty one.</param>
+    /// <param name="accountsReadModel">Core's accounts read model, passed straight through to <see cref="AccountingExportAdapter"/> for its cash, cash flow and forward cash sections.</param>
     public DashboardExportHostedService(
         EngineeringDomainContext domainContext,
         IRequirementsService requirementsService,
@@ -102,7 +106,8 @@ public sealed class DashboardExportHostedService : IHostedService
         IQuotationCatalog quotationCatalog,
         IConfigurationProvider configuration,
         ILogger? logger = null,
-        XeroAccountingApi? xeroApi = null)
+        XeroAccountingApi? xeroApi = null,
+        IAccountsReadModel? accountsReadModel = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(requirementsService);
@@ -118,7 +123,8 @@ public sealed class DashboardExportHostedService : IHostedService
         _contracts = new ContractsExportAdapter(contractCatalog);
         _quotes = new QuotesExportAdapter(quotationCatalog);
         _reviews = new ReviewQueueExportAdapter(domainContext, requirementsService);
-        _accounting = xeroApi is null ? null : new AccountingExportAdapter(xeroApi);
+        _deadlines = new DeadlinesCalendarExportAdapter(domainContext);
+        _accounting = xeroApi is null ? null : new AccountingExportAdapter(xeroApi, accounts: accountsReadModel);
         _configuration = configuration;
         _logger = logger;
     }
@@ -212,6 +218,7 @@ public sealed class DashboardExportHostedService : IHostedService
             await WriteAsync(_contracts, Path.Combine(directory, "contracts.json"), cancellationToken).ConfigureAwait(false);
             await WriteAsync(_quotes, Path.Combine(directory, "quotes.json"), cancellationToken).ConfigureAwait(false);
             await WriteAsync(_reviews, Path.Combine(directory, "reviews.json"), cancellationToken).ConfigureAwait(false);
+            await WriteDeadlinesAsync(directory, cancellationToken).ConfigureAwait(false);
             await WriteAccountingAsync(directory, cancellationToken).ConfigureAwait(false);
 
             LastExportSucceeded = true;
@@ -234,6 +241,24 @@ public sealed class DashboardExportHostedService : IHostedService
     /// reauthorisation needed) keeps the last good <c>accounting.json</c>, and
     /// never stops the other five files being written.
     /// </summary>
+    /// <summary>
+    /// Writes <c>deadlines.ics</c> — the file Outlook subscribes to — and
+    /// <c>deadlines.json</c>, the same calendar wrapped as
+    /// <c>{ "ics": "…" }</c> for the dashboard agent, which pushes JSON
+    /// bytes verbatim.
+    /// </summary>
+    private async Task WriteDeadlinesAsync(string directory, CancellationToken cancellationToken)
+    {
+        var icsPath = Path.Combine(directory, "deadlines.ics");
+        await WriteAsync(_deadlines, icsPath, cancellationToken).ConfigureAwait(false);
+
+        var ics = await File.ReadAllTextAsync(icsPath, cancellationToken).ConfigureAwait(false);
+        var jsonPath = Path.Combine(directory, "deadlines.json");
+        var tempPath = jsonPath + ".tmp";
+        await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(new { schemaVersion = DeadlinesCalendarExportAdapter.CurrentSchemaVersion, ics }), cancellationToken).ConfigureAwait(false);
+        File.Move(tempPath, jsonPath, overwrite: true);
+    }
+
     private async Task WriteAccountingAsync(string directory, CancellationToken cancellationToken)
     {
         if (_accounting is null)

@@ -1,4 +1,6 @@
 using System.Text.Json.Nodes;
+using Tempest.Core.Commands;
+using Tempest.Workspace.Disciplines;
 using Tempest.Workspace;
 using Tempest.Workspace.Integration.DashboardExport;
 using Tempest.Workspace.Requirements;
@@ -52,7 +54,7 @@ public class EngineeringStatusExportAdapterTests
 
         var json = await ExportAsync(host);
 
-        Assert.Equal(2, json["schemaVersion"]!.GetValue<int>());
+        Assert.Equal(3, json["schemaVersion"]!.GetValue<int>());
         Assert.Equal(0, json["evidence"]!["total"]!.GetValue<int>());
         Assert.Equal(0, json["requirements"]!["total"]!.GetValue<int>());
         Assert.Equal(0, json["verification"]!["recorded"]!.GetValue<int>());
@@ -226,6 +228,41 @@ public class EngineeringStatusExportAdapterTests
         Assert.Equal(cockpit.PassedVerificationCount, verification["byOutcome"]!["pass"]!.GetValue<int>());
         Assert.Equal(cockpit.FailedVerificationCount, verification["byOutcome"]!["fail"]!.GetValue<int>());
         Assert.Equal(cockpit.ConditionalVerificationCount, verification["byOutcome"]!["conditional"]!.GetValue<int>());
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task ExportAsync_Disciplines_CountLiveObjectsByTypeAndLifecycle_InTheTreesOrder()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await DashboardExportTestHost.StartAsync(temp.Path);
+        var dispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
+        DisciplineWorkspaceRegistration.Register(manager, DashboardExportTestHost.Domain(host), dispatcher, DashboardExportTestHost.CommandRegistry(host));
+
+        foreach (var (kind, name) in new[] { ("StructuralMember", "Beam B1"), ("StructuralMember", "Beam B2"), ("StructuralFoundation", "Pad F1"), ("ElectricalCircuit", "Circuit 1") })
+        {
+            var created = await dispatcher.DispatchAsync(new CreateDisciplineObjectCommand(kind, name), CancellationToken.None);
+            Assert.True(created.Succeeded, created.Message);
+        }
+
+        var json = await ExportAsync(host);
+        var disciplines = json["disciplines"]!.AsArray();
+
+        Assert.Equal(["structural", "electrical", "building-services"], disciplines.Select(d => d!["key"]!.GetValue<string>()));
+        Assert.Equal("Building Services", disciplines[2]!["label"]!.GetValue<string>());
+
+        var structural = disciplines[0]!;
+        Assert.Equal(3, structural["objects"]!.GetValue<int>());
+        Assert.Equal(2, structural["byType"]!["Members"]!.GetValue<int>());
+        Assert.Equal(1, structural["byType"]!["Foundations"]!.GetValue<int>());
+        Assert.Equal(0, structural["byType"]!["Connections"]!.GetValue<int>());
+        Assert.Equal(3, structural["byLifecycle"]!["draft"]!.GetValue<int>());
+        Assert.Equal(1, disciplines[1]!["objects"]!.GetValue<int>());
+        Assert.Equal(0, disciplines[2]!["objects"]!.GetValue<int>());
+
+        // Counts only: these disciplines have no Cockpit health to export.
+        Assert.Null(structural["health"]);
 
         await manager.ShutdownAsync();
     }

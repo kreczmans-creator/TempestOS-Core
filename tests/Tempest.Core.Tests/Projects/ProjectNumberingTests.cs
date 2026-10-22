@@ -187,4 +187,15 @@ public sealed class ProjectNumberingTests
     [InlineData("", "RPT", "2026-10-21", "RPT-2026-10-21")]
     public void ExportReference_LeadsWithTheProject_ThenTheDesignator(string? project, string designator, string distinguisher, string expected) =>
         Assert.Equal(expected, ProjectNumbering.ExportReference(project, designator, distinguisher));
+
+    [Theory]
+    [InlineData("ACMEE-BRIDGE", "2", "ACMEE-BRIDGE-M-002")]
+    [InlineData("ACMEE-BRIDGE", "MS-2", "ACMEE-BRIDGE-M-002")]
+    [InlineData("ACMEE-BRIDGE", "M-012", "ACMEE-BRIDGE-M-012")]
+    [InlineData("ACMEE-BRIDGE", " 7 ", "ACMEE-BRIDGE-M-007")]
+    [InlineData("ACMEE-BRIDGE", "ACMEE-BRIDGE-M-003", "ACMEE-BRIDGE-M-003")]
+    [InlineData("ACMEE-BRIDGE", "Final", "ACMEE-BRIDGE-M-Final")]
+    [InlineData(null, "4", "M-004")]
+    public void MilestoneReference_IsTheProjectThenMThenTheNumberToThreeDigits(string? project, string number, string expected) =>
+        Assert.Equal(expected, ProjectNumbering.MilestoneReference(project, number));
 }
