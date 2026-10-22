@@ -535,7 +535,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // Runbook C3: `quotation.return-to-draft.comment` is Required, so a blank is refused — 91 becomes 92.
         // v0.23.0 board M3: `timesheet.amend.task` is free text (blank keeps the current task) — 92 becomes 91.
         // v0.24.0 F3: `invoicing.reviseLines` adds four rule-having parameters (`Line`, `Quantity`, `UnitRate`, `VatRate`, each refusing a bad value; `Description` is free text) — 91 becomes 95.
-        Assert.Equal(95, refused);
+        // v0.25.3 E2: `requirements.create`'s identifier may be left blank (the next in sequence) — 95 becomes 94.
+        Assert.Equal(94, refused);
     }
 
     [Fact]
@@ -565,6 +566,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
                 "project.set-purchase-order.reference",
                 "quotation.create.reference",
                 "requirements.bulk-set-owner.owner",
+                "requirements.create.identifier",
                 "requirements.set-owner.owner",
                 "timesheet.amend.task",
                 "verification.edit.newContent",
