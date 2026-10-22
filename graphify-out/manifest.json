@@ -6870,9 +6870,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Composition/MainWindowComposer.cs": {
-    "mtime": 1792663747.597665,
-    "seen": 1792664459.158799,
-    "ast_hash": "54e0bf53966ffb041a9875b250d38bc7",
+    "mtime": 1792665204.822374,
+    "seen": 1792665912.7088475,
+    "ast_hash": "e2b3d9c4f63d1e5df9f43e0bad241017",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Composition/ProjectDeliveryCoordinator.cs": {
@@ -7806,9 +7806,9 @@
     "semantic_hash": "35f370bb879de92acd3d183eab0a40f5"
   },
   "src/Tempest.Desktop/Views/ProjectWorkspaceView.cs": {
-    "mtime": 1792596745.1171687,
-    "seen": 1792598293.5065663,
-    "ast_hash": "d338a26907ef0be1de2760b731b62549",
+    "mtime": 1792665204.8214378,
+    "seen": 1792665912.7099853,
+    "ast_hash": "dd050e39c38289962b1fde1940fefaca",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/ProjectsAreaView.cs": {
@@ -7974,9 +7974,9 @@
     "semantic_hash": "8b3c96e4ed3c32490c0cc8fd67c940db"
   },
   "src/Tempest.Workspace/Composition/EngineeringWorkspaceComposer.cs": {
-    "mtime": 1792587689.5857038,
-    "seen": 1792588036.432929,
-    "ast_hash": "42ce3eb738d3b7298fe0749fe2ce2b47",
+    "mtime": 1792665381.9794862,
+    "seen": 1792665912.7101064,
+    "ast_hash": "3e92caf8cef364c3e54ce695d2fe417c",
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Editors/KindEditorDeclaration.cs": {
@@ -8238,16 +8238,16 @@
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Shell/ProjectArea.cs": {
-    "mtime": 1792350470.0127957,
-    "seen": 1792588036.4330719,
-    "ast_hash": "2d3f70c5f6572f19f1a4b24502ea948c",
-    "semantic_hash": "2d3f70c5f6572f19f1a4b24502ea948c"
+    "mtime": 1792665204.8188946,
+    "seen": 1792665912.7102244,
+    "ast_hash": "83afbec536215c7256919e266d8be63f",
+    "semantic_hash": ""
   },
   "src/Tempest.Workspace/Shell/ProjectAreas.cs": {
-    "mtime": 1792350470.0127957,
-    "seen": 1792588036.4330742,
-    "ast_hash": "9daa2f328d2e2e78a50d4aa35ba70303",
-    "semantic_hash": "9daa2f328d2e2e78a50d4aa35ba70303"
+    "mtime": 1792665204.8202496,
+    "seen": 1792665912.7102265,
+    "ast_hash": "726c6c394b5dec1879f15253aa6ca09c",
+    "semantic_hash": ""
   },
   "src/Tempest.Workspace/Shell/ShellArea.cs": {
     "mtime": 1792663556.5225468,
@@ -9336,10 +9336,10 @@
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Workspace/Requirements/CreateRequirementCommand.cs": {
-    "mtime": 1792350470.0504992,
-    "seen": 1792588036.4339466,
-    "ast_hash": "079a248e909a4210c1d7447961b3b32f",
-    "semantic_hash": "079a248e909a4210c1d7447961b3b32f"
+    "mtime": 1792665376.1956046,
+    "seen": 1792665912.710576,
+    "ast_hash": "baa31393e70615438abfb238dd5772dc",
+    "semantic_hash": ""
   },
   "src/Tempest.Workspace/Workspace/Requirements/CreateRequirementGroupCommand.cs": {
     "mtime": 1792587689.5900092,
@@ -9414,9 +9414,9 @@
     "semantic_hash": "bbcdbe35c7d782bdc83ad29352f9ea4a"
   },
   "src/Tempest.Workspace/Workspace/Requirements/RequirementsWorkspaceRegistration.cs": {
-    "mtime": 1792587689.5904708,
-    "seen": 1792588036.433982,
-    "ast_hash": "1e857f68abca92164f925e2e0ae89565",
+    "mtime": 1792665381.985392,
+    "seen": 1792665912.710599,
+    "ast_hash": "fe844e5071c4a6dcda4ba21e0d258be1",
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Workspace/Requirements/RequirementsWorkspaceView.cs": {
@@ -12810,9 +12810,9 @@
     "semantic_hash": "f9f7fc0af22486a54d48f91687a4fbc0"
   },
   "tests/Tempest.Core.Tests/Workspace/CommandDescriptorBindingTests.cs": {
-    "mtime": 1792587689.6228707,
-    "seen": 1792588036.436037,
-    "ast_hash": "61440122082cc08dc4cc98bfdfbe9498",
+    "mtime": 1792665515.9466348,
+    "seen": 1792665912.7119236,
+    "ast_hash": "0dfbcb2d798d3ee09baf72d359494efe",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Workspace/CreateEvidenceFromFilesCommandTests.cs": {
@@ -16962,9 +16962,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/Projects/ProjectNumbering.cs": {
-    "mtime": 1792595882.6381292,
-    "seen": 1792598293.505219,
-    "ast_hash": "c6751a75b3257f58b58f6068b1570c7a",
+    "mtime": 1792665376.196443,
+    "seen": 1792665912.708334,
+    "ast_hash": "4c7cff108acd42c4fa2700b268deaf31",
     "semantic_hash": ""
   },
   "src/Tempest.Core/ReferenceData/Seeding/Datasets/BearingSeed.Series.cs": {
@@ -31074,9 +31074,9 @@
     "semantic_hash": ""
   },
   "docs/releases/v0.25.3/Release Notes.md": {
-    "mtime": 1792664257.0553546,
-    "seen": 1792664459.1660576,
-    "ast_hash": "68975cd3fa8cef3192929beccda2d7a3",
+    "mtime": 1792665716.2030149,
+    "seen": 1792665912.7161376,
+    "ast_hash": "1aef9d7279f831f1e79630abe87d47e4",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/OrganisationView.cs": {
@@ -31089,6 +31089,18 @@
     "mtime": 1792664214.8332925,
     "seen": 1792664459.162536,
     "ast_hash": "1543e45c81b4464a5a8567fae81d7699",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Core.Tests/Workspace/RequirementAutoNumberingTests.cs": {
+    "mtime": 1792665454.090828,
+    "seen": 1792665912.7120032,
+    "ast_hash": "b5fb2c297cae1ef1652568d6455574c5",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Desktop.Tests/ProjectInvoicesTabTests.cs": {
+    "mtime": 1792665554.1033819,
+    "seen": 1792665912.7123454,
+    "ast_hash": "7a7620d82034c6871da9420e742406c8",
     "semantic_hash": ""
   }
 }
