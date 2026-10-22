@@ -69,8 +69,8 @@ The left-hand **rail** switches between **Home, Projects, Tasks, Engineering** a
 |---|---|---|---|---|
 | Q1 | In *Trial Bridge*, create a quote with two lines (any description, quantity, rate) and save it | Numbered `TESTY-…-Q-001`. Totals add up, with VAT if shown | | |
 | Q2 | Export the quote to PDF | The save dialog opens in the project's `01 Commercial\01 Quotes` folder. The suggested name is `TESTY-…-Q-001-R1-quote.pdf`. Open the PDF: it is readable and the figures match | | |
-| Q3 | Export the same quote again | The name now ends `-R2-…`. Cancel instead of saving, then export again: still `-R2-` | | |
-| Q4 | Close TempestOS, reopen, and export the quote again | Carries on from where it was (`-R2-`, or `-R3-` if you saved R2). It never goes back to R1 | | |
+| Q3 | Export the same quote again, unchanged. Then edit a line, save, and export | Unchanged, it stays **-R1-**: a quote carries its own revision. After the edit it is **-R2-** | | |
+| Q4 | Close TempestOS, reopen, and export the quote again | Still the revision it had (R2). It never goes back to R1 | | |
 | Q5 | Business → **Invoices** → create an invoice for *Trial Bridge* and export it | Opens in `01 Commercial\04 Invoices`. The file is named by the invoice number with `-R1-` | | |
 | Q6 | Business → **Timesheets** → record a few hours against *Trial Bridge* this week → export the week | Hours add up. The file name starts `TSHT-` | | |
 

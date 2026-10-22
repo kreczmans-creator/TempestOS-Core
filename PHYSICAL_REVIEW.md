@@ -131,7 +131,7 @@ launch — only where data lives changes (§4).
 > running an installed build.** See §4. Running
 > via `dotnet run` from the repository root puts data in the repository
 > root; double-clicking the built executable puts it beside the executable;
-> an installed build always uses `%LOCALAPPDATA%\TempestOS\persistence-data`
+> an installed build always uses `%LOCALAPPDATA%\TempestOS-Data\persistence-data`
 > (or wherever the first-run dialog was pointed instead). Pick one and stay
 > with it for the whole review, or the second launch will look like it lost
 > your work when it has simply looked in a different place.
@@ -237,7 +237,7 @@ All persisted state is written under a single folder:
 - **`<root>` depends on how you are running TempestOS** (`WP 21.5A`,
   closing `TD-36` for the installed case):
   - **Installed** (via the Velopack-packaged `Setup.exe`, §2a/§3):
-    `%LOCALAPPDATA%\TempestOS\persistence-data` by default — a real
+    `%LOCALAPPDATA%\TempestOS-Data\persistence-data` by default — a real
     Windows per-user data folder, decided once by Velopack's own "is this
     process running from an install" answer
     (`Velopack.Locators.VelopackLocator`), never a heuristic on paths.
@@ -246,7 +246,7 @@ All persisted state is written under a single folder:
     launch of an installed build shows a one-page dialog naming the
     default location, with **Change…** (a folder picker) and
     **Continue** — the choice is then recorded
-    (`%LOCALAPPDATA%\TempestOS\first-run.json`) so it is never asked
+    (`%LOCALAPPDATA%\TempestOS-Data\first-run.json`) so it is never asked
     again.
   - **Everything else** (`dotnet run`, a plain built `bin/` exe, the
     plain release zip): unchanged from before `WP 21.5A` — the value of

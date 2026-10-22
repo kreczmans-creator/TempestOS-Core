@@ -49,11 +49,8 @@
 
 .PARAMETER DataFolder
     The TempestOS data folder whose secrets hold the Xero tokens - the one
-    the app you connected Xero from uses. Defaults to
-    C:\TempestOS-rc<minor>-data, as scripts/install-test-build.ps1 does,
-    with <minor> read from the repository's VERSION file: VERSION reads
-    0.24.0, so the default is C:\TempestOS-rc24-data. The runbook and the
-    setup guide still pass -DataFolder C:\TempestOS-rc24-data explicitly.
+    the app you connected Xero from uses. Defaults to C:\TempestOS-data,
+    as scripts/install-test-build.ps1 does since v0.25.3.
 
 .PARAMETER Connect
     Sign in first: a browser opens; choose the Demo Company. The new tokens
@@ -124,9 +121,7 @@ if ($AccessToken -and -not $TenantId) {
 }
 
 if (-not $DataFolder) {
-    $version = (Get-Content (Join-Path $repoRoot "VERSION") -Raw).Trim()
-    $minor = ($version -split '\.')[1]
-    $DataFolder = "C:\TempestOS-rc$minor-data"
+    $DataFolder = "C:\TempestOS-data"
 }
 
 if (-not $Report) {

@@ -142,6 +142,17 @@ public sealed class App : Application
             .Load()
             .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.OrdinalIgnoreCase);
 
+        // Before v0.25.3 the choice lived inside Velopack's install root,
+        // which a reinstall clears: carry it out first (P1). A failure here
+        // only means the dialog asks again, never lost data.
+        try
+        {
+            resolver.MigrateLegacyChoice();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+
         var resolution = resolver.Resolve(args, generalConfiguration);
 
         if (!resolution.ShowFirstRunDialog)

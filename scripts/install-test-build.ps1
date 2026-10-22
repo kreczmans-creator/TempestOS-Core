@@ -32,9 +32,10 @@
 
 .PARAMETER DataFolder
     The data folder the versioned shortcut opens. Defaults to
-    C:\TempestOS-rc<minor>-data (C:\TempestOS-rc23-data for 0.23.x), so a
-    retest of the same version keeps its projects and a new version starts
-    clean.
+    C:\TempestOS-data for every version, so projects, customers and the
+    Xero connection carry across updates (v0.25.2 independent test, P1).
+    The first time, it is seeded with a copy of the newest older
+    C:\TempestOS-rc<minor>-data folder; the old folder is left untouched.
 
 .PARAMETER Pull
     Run `git pull` on the current branch first.
@@ -64,8 +65,15 @@ $commit = (git -C $repoRoot rev-parse --short HEAD).Trim()
 $branch = (git -C $repoRoot rev-parse --abbrev-ref HEAD).Trim()
 
 if (-not $DataFolder) {
-    $minor = ($version -split '\.')[1]
-    $DataFolder = "C:\TempestOS-rc$minor-data"
+    $DataFolder = "C:\TempestOS-data"
+    if (-not (Test-Path $DataFolder)) {
+        $previous = Get-ChildItem -Path "C:\" -Directory -Filter "TempestOS-rc*-data" -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($previous) {
+            Write-Host "Seeding $DataFolder with a copy of $($previous.FullName) (left as it is)."
+            Copy-Item -Path $previous.FullName -Destination $DataFolder -Recurse
+        }
+    }
 }
 # A trailing backslash would escape the closing quote in the shortcut's
 # --persistence-root "..." argument (v0.23.0 board N2). A drive root keeps it.
