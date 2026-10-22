@@ -17,6 +17,45 @@ A patch on `v0.25.2`, from the independent from-scratch test (2026-10-22).
 - **E7:** the Engineering Dashboard is left-aligned like every other page.
 - **Runbooks Q3 / E3:** the steps now say that a quote carries its own revision. Re-exporting an unchanged quote stays at R1; editing a line makes it R2.
 
+## Changed
+
+- **Settings are split by who they belong to.**
+  - **Settings, at the foot of the rail** (system-wide):
+    - persistence root, backup and restore;
+    - sign-off, evidence;
+    - connector authorisation, Xero;
+    - VAT, workflow, updates.
+  - **Account settings, from your name in the header** (your own): job role, appearance, notifications and timesheets.
+  - **Business → Organisation:** organisation identity and bank details, with their own Save.
+  - Code: `ShellArea.SystemSettings`, `GlobalNavigationRail.cs`, `SettingsView.cs` (`SettingsPage`), `OrganisationView.cs`, `BusinessAreaView.cs`.
+
+## Added
+
+- **Q5: a project's invoices are in the project.** A new **Invoices** tab sits right after **Quote**. It is the invoicing surface scoped to that project: New, Available to invoice, Sent, Outstanding and Closed, with Raise, Send, Reconcile, Void and Export.
+- **E2: requirement identifiers number themselves.**
+  - Leave **Identifier** blank on *Create Requirement* and it takes the next number in the project's own sequence, e.g. `TESTY-TRIALX-REQ-001`, `-002`, and so on.
+  - Outside a customer-coded project, the sequence is `REQ-001`.
+  - A typed identifier still stands, and the sequence carries on past the highest number used. A number is never reissued.
+
+## Dashboard ledger (`accounting.json`)
+
+- **Core now exports the ledger for the wall dashboard.** `DashboardExportHostedService` writes a sixth file, `accounting.json`, beside the other five, on the same cadence. It is built by `AccountingExportAdapter`, from Core's own Xero connection.
+- **Contents:** receivable invoices and payable bills still outstanding, and receivables paid in the last 30 days, as rows in the dashboard's Invoice shape (Tempest-Dashboard `docs/DATA-CONTRACTS.md` §Accounting). `cash` is `null`.
+- **Rows, never totals, and never capped.** Every Xero page is walked (`XeroAccountingApi.ListInvoicesAsync`, 100 a page, stopping only on a short page).
+- **All or nothing.** If a Xero read fails, nothing is written, the last good `accounting.json` stands (the dashboard flags it stale after 3,900 s), and the other five files are still written.
+- **No Xero, no ledger.** Without Xero as the connector, no `accounting.json` is written, so the dashboard shows no ledger rather than an empty one.
+- **Read only.** The export only issues GET requests.
+
+## Test programme
+
+- **A red result means a real failure.**
+  - The PDF text extractor used by the document tests now reads one-byte (Type3) fonts as well as two-byte ones. The default body font embedded that way read back blank, failing 22 Desktop tests on any machine that embeds it so.
+  - The 12 Windows-only tests (DPAPI, Windows PowerShell 5) carry `[WindowsFact]`: they run on Windows and every CI leg, and report skipped with the reason elsewhere.
+  - CI Gate names a run cancelled by a newer push as such; it still fails.
+
+- **One current runbook:** `docs/releases/v0.25.3/PO Test Runbook.md`, with gates G0 (data survives an update), G7 (Settings), G3 (Business) and G1 (Engineering). It replaces the `v0.25.0` and `v0.25.2` runbooks, which stay in their release folders as the record but are no longer published as pages.
+- **The independent from-scratch runbook** moves to `docs/releases/v0.25.3/` and covers the new Settings places, Business → Organisation, the project Invoices tab and requirement numbering.
+
 ## Upgrading from v0.25.2 — do this once
 
 - **Using the in-app update?** Nothing to do: your data location is carried over.

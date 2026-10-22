@@ -51,6 +51,12 @@ public sealed class XeroSafetyArchitectureTests
         ("src/Tempest.Core/Invoicing/QuickBooksOnline/QuickBooksOnlineConnector.cs",
             """return "SUBMITTED";""",
             "QuickBooks' own status word, read back (not Xero)"),
+        ("src/Tempest.Workspace/Integration/DashboardExport/AccountingExportAdapter.cs",
+            """private const string ReceivableWhere = "Type==\"ACCREC\" AND Status==\"AUTHORISED\"";""",
+            "v0.25.3 dashboard ledger: a GET filter on approved, outstanding sales invoices"),
+        ("src/Tempest.Workspace/Integration/DashboardExport/AccountingExportAdapter.cs",
+            """private const string PayableWhere = "Type==\"ACCPAY\" AND Status==\"AUTHORISED\"";""",
+            "v0.25.3 dashboard ledger: a GET filter on approved, outstanding bills"),
     ];
 
     private static readonly Regex[] ForbiddenInCode =

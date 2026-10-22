@@ -129,14 +129,19 @@ public sealed class SettingsXeroIdentityTests
             var view = new SettingsView(
                 new ThemeService(settings), new UserSettings(settings), settings,
                 (IConfigurationProvider)host.Services!.GetService(typeof(IConfigurationProvider)), "(test)",
-                organisationIdentity: identity, xeroSettings: section);
+                xeroSettings: section);
+            view.ShowPage(SettingsPage.System);
             window = new Window { Width = 1200, Height = 900, Content = view };
             window.Show();
             await view.RefreshAsync();
             Dispatcher.UIThread.RunJobs();
 
             Assert.Contains(view.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "Xero");
-            var note = view.GetLogicalDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == "Organisation identity source");
+
+            // v0.25.3: organisation identity lives in Business → Organisation, which says where documents take it from.
+            var organisation = new OrganisationView(identity);
+            await organisation.RefreshAsync();
+            var note = organisation.GetLogicalDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == "Organisation identity source");
             Assert.True(note.IsVisible);
             Assert.StartsWith("Documents print the company details from Xero (from Xero, read at", note.Text, StringComparison.Ordinal);
 
@@ -167,12 +172,13 @@ public sealed class SettingsXeroIdentityTests
             var settings = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
             var view = new SettingsView(
                 new ThemeService(settings), new UserSettings(settings), settings,
-                (IConfigurationProvider)host.Services!.GetService(typeof(IConfigurationProvider)), "(test)",
-                organisationIdentity: new OrganisationIdentitySettings(settings));
+                (IConfigurationProvider)host.Services!.GetService(typeof(IConfigurationProvider)), "(test)");
             await view.RefreshAsync();
+            var organisation = new OrganisationView(new OrganisationIdentitySettings(settings));
+            await organisation.RefreshAsync();
 
             Assert.Empty(view.GetLogicalDescendants().OfType<XeroSettingsSection>());
-            Assert.False(view.GetLogicalDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == "Organisation identity source").IsVisible);
+            Assert.False(organisation.GetLogicalDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == "Organisation identity source").IsVisible);
 
             // The Fake connector's host registers no Xero services: the application builds no section.
             Assert.Null(XeroSettingsSectionServices.FromServices(host.Services!));

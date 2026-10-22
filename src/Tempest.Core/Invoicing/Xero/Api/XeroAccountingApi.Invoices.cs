@@ -218,6 +218,8 @@ public sealed record XeroWireInvoiceWrite(
 /// <param name="FullyPaidOnDate">When it was paid in full, read from Xero only.</param>
 /// <param name="UpdatedDateUTC">When Xero last changed it.</param>
 /// <param name="LineItems">The lines, as Xero holds them.</param>
+/// <param name="AmountDue">What is still owed on it.</param>
+/// <param name="AmountPaid">What has been paid against it.</param>
 public sealed record XeroWireInvoice(
     [property: JsonPropertyName("InvoiceID")] string? InvoiceID,
     [property: JsonPropertyName("Type")] string? Type = null,
@@ -233,4 +235,6 @@ public sealed record XeroWireInvoice(
     [property: JsonPropertyName("Total")] decimal? Total = null,
     [property: JsonPropertyName("FullyPaidOnDate")] string? FullyPaidOnDate = null,
     [property: JsonPropertyName("UpdatedDateUTC")] string? UpdatedDateUTC = null,
-    [property: JsonPropertyName("LineItems")] IReadOnlyList<XeroWireLineItem>? LineItems = null);
+    [property: JsonPropertyName("LineItems")] IReadOnlyList<XeroWireLineItem>? LineItems = null,
+    [property: JsonPropertyName("AmountDue")] decimal? AmountDue = null,
+    [property: JsonPropertyName("AmountPaid")] decimal? AmountPaid = null);

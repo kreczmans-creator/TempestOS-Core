@@ -358,7 +358,6 @@ internal sealed partial class MainWindowComposer
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
             accountsReadModel, accountsRefreshService,
             people: peopleDirectory, confirmationDialog: confirmationDialog, switchPrincipal: SwitchPrincipal,
-            organisationIdentity: session.OrganisationIdentity,
             persistenceDatabasePath: persistenceDatabasePath, auditRecorder: auditRecorder, projectContext: host.ProjectContext,
             prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker,
             signOffPolicy: (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)),
@@ -731,6 +730,20 @@ internal sealed partial class MainWindowComposer
             projectDirectory, organisationCatalog);
         projectQuoteView.ProjectFolders = projectFolderLocator;
         invoicingView.ProjectFolders = projectFolderLocator;
+
+        // `v0.25.3` independent test Q5: the project's own Invoices tab — a
+        // second invoicing surface, scoped to the open project as the
+        // Business one already is when a project is open.
+        var projectInvoicesView = new InvoicingView(
+            composition.DomainContext, composition.CommandRegistry, () => host.ProjectContext!.Current?.Id, openObjectRightUp,
+            organisationCatalog, documentExporter, invoiceRenderer, IssuerName, ApplicationVersionText)
+        {
+            ParameterPrompt = commandPrompt.Prompt,
+            WorkspaceChanges = composition.WorkspaceChanges,
+            XeroBadges = xeroBadges,
+            ProjectFolders = projectFolderLocator,
+        };
+        projectInvoicesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
         var projectFolderCoordinator = new ProjectFolderCoordinator(projectFolderLocator, (message, outcome) => actionReporter.ReportAsync(message, outcome));
         composition.EventBus.Subscribe(projectFolderCoordinator);
 
@@ -853,7 +866,8 @@ internal sealed partial class MainWindowComposer
             host.ProjectContext!, host.ProjectDirectory!, host.ShellNavigator!, host.ProjectDocuments!, host.ProjectRequirements!,
             host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView, projectQuoteView,
             evidenceWorkspace, signOffView, projectDetailsView, composition.DomainContext,
-            documentExporter, drawingRegisterRenderer, ApplicationVersionText);
+            documentExporter, drawingRegisterRenderer, ApplicationVersionText,
+            projectInvoicesView);
         projectWorkspace.ProjectFolders = projectFolderLocator;
         projectWorkspace.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
@@ -938,6 +952,11 @@ internal sealed partial class MainWindowComposer
         };
         rateCardsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
+        // `v0.25.3` PO request: organisation identity and bank details live
+        // in Business, not Settings.
+        var organisationView = new OrganisationView(session.OrganisationIdentity);
+        organisationView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         var businessDashboardView = new BusinessDashboardView(accountsReadModel, composition.DomainContext, openObjectRightUp);
         var businessAreaView = new BusinessAreaView(
             quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView,
@@ -950,7 +969,8 @@ internal sealed partial class MainWindowComposer
                 XeroContacts = ResolveXeroContactLinker(services),
             },
             staffView,
-            rateCardsView)
+            rateCardsView,
+            organisationView)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };

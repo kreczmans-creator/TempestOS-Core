@@ -85,4 +85,14 @@ public enum ProjectArea
     /// declaration order, not this enum's, decides tab position.
     /// </remarks>
     Details,
+
+    /// <summary>
+    /// This project's own invoices (`v0.25.3` independent test Q5): the
+    /// invoicing surface scoped to the open project, beside its Quote.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted — see <see cref="Details"/>'s own remarks;
+    /// <see cref="ProjectAreas.All"/>'s order decides tab position.
+    /// </remarks>
+    Invoices,
 }

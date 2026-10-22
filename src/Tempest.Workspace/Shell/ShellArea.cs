@@ -165,4 +165,16 @@ public enum ShellArea
     /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
     /// </remarks>
     EngineeringDepartment,
+
+    /// <summary>
+    /// System settings (`v0.25.3` PO request): persistence, backup and
+    /// restore, sign-off, evidence, connectors and the business-wide
+    /// settings, reached from the foot of the rail. <see cref="Settings"/>
+    /// keeps only the signed-in person's own account settings.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted — see <see cref="EngineeringCalculation"/>'s
+    /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
+    /// </remarks>
+    SystemSettings,
 }

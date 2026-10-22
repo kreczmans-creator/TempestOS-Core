@@ -27,7 +27,7 @@ public sealed class PackagingScriptTests
         Assert.True(File.Exists(ScriptPath), $"Expected to find '{ScriptPath}'.");
     }
 
-    [Fact]
+    [WindowsFact]
     public void PackageInstallerScript_IsSyntacticallyValidPowerShell()
     {
         var (exitCode, output) = RunPowerShellSyntaxCheck(ScriptPath);

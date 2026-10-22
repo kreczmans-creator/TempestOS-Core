@@ -112,7 +112,6 @@ public sealed class SettingsView : UserControl
     private readonly AccountsRefreshService? _accountsRefreshService;
     private readonly IConfigurationProvider _configuration;
     private readonly string _persistenceRootPath;
-    private readonly OrganisationIdentitySettings? _organisationIdentity;
 
     // `WP 21.5A` (`WP RC.0A` scope item 4): Settings → Data's own backup
     // and restore, and Settings → Updates. Both sections are entirely
@@ -175,7 +174,6 @@ public sealed class SettingsView : UserControl
 
     // `v0.24.0` U1 (design §8): says, beside Settings → Organisation, that
     // documents print the company details from Xero while a reading exists.
-    private readonly TextBlock _orgXeroNote = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.85, TextWrapping = TextWrapping.Wrap, IsVisible = false };
     // Runbook G2: where Business → Timesheets → Export week saves by default.
     private readonly TextBox _timesheetExportFolder = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 320 };
     private readonly Button _browseTimesheetExportFolder = new() { Content = "Browse…", MinHeight = DesignTokens.ControlSizeMedium };
@@ -194,22 +192,41 @@ public sealed class SettingsView : UserControl
     // `WP 20.10G` (PO finding D4): Settings → Organisation identity — the
     // fields every exported document's footer reads at render time
     // (`Documents.DocumentTemplate`), pre-filled with the Tempest defaults.
-    private readonly TextBox _orgLegalName = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 260 };
-    private readonly TextBox _orgCompanyNumber = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160 };
-    private readonly TextBox _orgWebsite = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
-    private readonly TextBox _orgAddressLine1 = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 260 };
-    private readonly TextBox _orgAddressLine2 = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 260 };
-    private readonly TextBox _orgEmail = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
-    private readonly TextBox _orgPhone = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 180 };
 
     // `WP 21.2A`: the invoice document's own "Payment details" section —
     // read at render time exactly as the six fields above already are.
-    private readonly TextBox _orgBankSortCode = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 120 };
-    private readonly TextBox _orgBankAccountNumber = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160 };
-    private readonly TextBox _orgBankAccountName = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
-    private readonly TextBox _orgBankIban = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
 
     private bool _invoicingSettingsRegistered;
+
+    private readonly List<Control> _accountSections = [];
+    private readonly List<Control> _systemSections = [];
+    private readonly TextBlock _pageLabel = PageHeading.Label("SETTINGS");
+    private readonly TextBlock _pageTitle = PageHeading.Title("Settings");
+    private readonly TextBlock _pageLead = PageHeading.Lead(string.Empty);
+
+    /// <summary>Which page the view is showing (`v0.25.3`).</summary>
+    public SettingsPage Page { get; private set; }
+
+    /// <summary>
+    /// Shows the account page (job role, appearance, notifications,
+    /// timesheets) or the system page (everything system-wide). One view
+    /// and one Save, so the two pages never disagree about a stored value.
+    /// </summary>
+    public void ShowPage(SettingsPage page)
+    {
+        Page = page;
+        foreach (var section in _accountSections)
+            section.IsVisible = page == SettingsPage.Account;
+        foreach (var section in _systemSections)
+            section.IsVisible = page == SettingsPage.System;
+
+        var account = page == SettingsPage.Account;
+        _pageLabel.Text = account ? "ACCOUNT" : "SYSTEM";
+        _pageTitle.Text = account ? "Account settings" : "Settings";
+        _pageLead.Text = account
+            ? "Your own account: job role, appearance, notifications and timesheets."
+            : "System-wide settings: persistence, backup and restore, sign-off, evidence, connectors, the organisation and updates.";
+    }
 
     /// <summary>Opens <paramref name="folderPath"/> in the operating system's own file manager — real by default (<see cref="Process.Start(ProcessStartInfo)"/>), overridable by a test.</summary>
     public Action<string> OpenFolder { get; set; } = DefaultOpenFolder;
@@ -233,7 +250,6 @@ public sealed class SettingsView : UserControl
         IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null,
         IInvoicingConnector? invoicingConnector = null, ISecretStore? secretStore = null,
         IAccountsReadModel? accountsReadModel = null, AccountsRefreshService? accountsRefreshService = null,
-        OrganisationIdentitySettings? organisationIdentity = null,
         string? persistenceDatabasePath = null, IAuditRecorder? auditRecorder = null,
         IProjectContext? projectContext = null, Func<Task>? prepareForRestartAsync = null,
         IUpdateService? updateService = null, UpdateAvailability? updateAvailability = null,
@@ -258,7 +274,6 @@ public sealed class SettingsView : UserControl
         _secretStore = secretStore;
         _accountsReadModel = accountsReadModel;
         _accountsRefreshService = accountsRefreshService;
-        _organisationIdentity = organisationIdentity;
         _persistenceDatabasePath = persistenceDatabasePath;
         _auditRecorder = auditRecorder;
         _projectContext = projectContext;
@@ -312,23 +327,12 @@ public sealed class SettingsView : UserControl
         _secondPersonSignOff.MaxWidth = 720;
         ToolTip.SetTip(_secondPersonSignOff, "On: nobody may approve a quote, or check evidence, that they authored, submitted or changed. Off: they may, and the record says it was a self-approval. Every change of this switch is audited.");
         AutomationProperties.SetName(_invoicingAuthoriseButton, "Authorise invoicing connector");
-        AutomationProperties.SetName(_orgLegalName, "Organisation legal name");
-        AutomationProperties.SetName(_orgCompanyNumber, "Organisation company number");
-        AutomationProperties.SetName(_orgWebsite, "Organisation website");
-        AutomationProperties.SetName(_orgAddressLine1, "Organisation address line 1");
-        AutomationProperties.SetName(_orgAddressLine2, "Organisation address line 2");
-        AutomationProperties.SetName(_orgEmail, "Organisation email");
-        AutomationProperties.SetName(_orgPhone, "Organisation phone");
         AutomationProperties.SetName(_backUpNowButton, "Back up now");
         AutomationProperties.SetName(_restoreButton, "Restore from backup");
         AutomationProperties.SetName(_openBackupsFolderButton, "Open backups folder");
         AutomationProperties.SetName(_checkForUpdatesOnLaunch, "Check for updates automatically on launch");
         AutomationProperties.SetName(_checkForUpdatesNowButton, "Check for updates now");
         AutomationProperties.SetName(_applyUpdateButton, "Apply update");
-        AutomationProperties.SetName(_orgBankSortCode, "Organisation bank sort code");
-        AutomationProperties.SetName(_orgBankAccountNumber, "Organisation bank account number");
-        AutomationProperties.SetName(_orgBankAccountName, "Organisation bank account name");
-        AutomationProperties.SetName(_orgBankIban, "Organisation bank IBAN");
 
         var persistenceRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         persistenceRow.Children.Add(_persistenceRootBox);
@@ -378,7 +382,7 @@ public sealed class SettingsView : UserControl
             principalStack.Children.Add(_switchPersonStatus);
         }
 
-        var principal = BuildSection("Principal", principalStack);
+        var principal = BuildSection("Job role", principalStack);
 
         // `WP 21.3B`: Organisation identity — a minimal stand-in for `WP
         // 20.10G`'s own fuller section (see this class's own field remarks).
@@ -436,83 +440,66 @@ public sealed class SettingsView : UserControl
 
         var invoicing = BuildSection("Connector authorisation", invoicingStack);
 
-        // `WP 20.10G` (PO finding D4): the fields every exported
-        // document's footer shows — `DocumentTemplate.AppendFooters`
-        // reads `OrganisationIdentitySettings.ToIdentity()` at render
-        // time, never a constant baked into a renderer.
-        var orgStack = new StackPanel { Spacing = DesignTokens.SpaceSm };
-        orgStack.Children.Add(LabeledRow("Legal name", _orgLegalName));
-        orgStack.Children.Add(LabeledRow("Company number", _orgCompanyNumber));
-        orgStack.Children.Add(LabeledRow("Website", _orgWebsite));
-        orgStack.Children.Add(LabeledRow("Address line 1", _orgAddressLine1));
-        orgStack.Children.Add(LabeledRow("Address line 2", _orgAddressLine2));
-        orgStack.Children.Add(LabeledRow("Email", _orgEmail));
-        orgStack.Children.Add(LabeledRow("Phone", _orgPhone));
-        orgStack.Children.Add(_orgXeroNote);
-        AutomationProperties.SetName(_orgXeroNote, "Organisation identity source");
-        var organisation = BuildSection("Organisation identity", orgStack);
-
-        // `WP 21.2A`, scope item 2: the invoice renderer's own "Payment
-        // details" section — a separate BuildSection, not folded into
-        // "Organisation identity" above, since a bank detail is never part
-        // of a document's footer (`DocumentTemplate.AppendFooters` reads
-        // only the seven identity fields) and deserves its own visible
-        // grouping instead of six fields silently gaining four unrelated
-        // neighbours.
-        var bankStack = new StackPanel { Spacing = DesignTokens.SpaceSm };
-        bankStack.Children.Add(LabeledRow("Sort code", _orgBankSortCode));
-        bankStack.Children.Add(LabeledRow("Account number", _orgBankAccountNumber));
-        bankStack.Children.Add(LabeledRow("Account name", _orgBankAccountName));
-        bankStack.Children.Add(LabeledRow("IBAN", _orgBankIban));
-        var bankDetails = BuildSection("Bank details (invoice payment details)", bankStack);
 
         var saveRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, VerticalAlignment = VerticalAlignment.Center };
         saveRow.Children.Add(_saveButton);
         saveRow.Children.Add(_savedStatus);
 
         var body = new StackPanel { Margin = DesignTokens.PagePadding, Spacing = DesignTokens.SpaceLg };
-        body.Children.Add(PageHeading.Label("SETTINGS"));
-        body.Children.Add(PageHeading.Title("Settings"));
-        body.Children.Add(PageHeading.Lead("Persistence, the current principal, connector authorisation, working pattern and the platform's own working preferences."));
-        body.Children.Add(persistence);
+        body.Children.Add(_pageLabel);
+        body.Children.Add(_pageTitle);
+        body.Children.Add(_pageLead);
 
-        if (_persistenceDatabasePath is not null && _filePicker is not null)
-            body.Children.Add(backup);
+        // `v0.25.3` PO request: one view, two pages. The account page (the
+        // header's user menu) holds only the person's own settings; the
+        // system page (the rail's foot) holds everything system-wide.
+        void Account(Control section)
+        {
+            _accountSections.Add(section);
+            body.Children.Add(section);
+        }
 
-        body.Children.Add(principal);
-        body.Children.Add(vatDefaults);
-        body.Children.Add(appearance);
-        body.Children.Add(notifications);
-        body.Children.Add(workflow);
+        void System(Control section)
+        {
+            _systemSections.Add(section);
+            body.Children.Add(section);
+        }
 
-        if (_signOffPolicy is not null)
-            body.Children.Add(signOff);
-
-        body.Children.Add(evidence);
+        Account(principal);
+        Account(appearance);
+        Account(notifications);
 
         if (_workingPatterns is not null && _principals is not null)
-            body.Children.Add(timesheets);
+            Account(timesheets);
 
-        body.Children.Add(timesheetExport);
+        Account(timesheetExport);
+
+        System(persistence);
+
+        if (_persistenceDatabasePath is not null && _filePicker is not null)
+            System(backup);
+
+        if (_signOffPolicy is not null)
+            System(signOff);
+
+        System(evidence);
 
         if (_invoicingConnector is not null && _secretStore is not null)
-            body.Children.Add(invoicing);
+            System(invoicing);
 
         if (_xeroSettings is not null)
         {
-            body.Children.Add(BuildSection("Xero", _xeroSettings));
+            System(BuildSection("Xero", _xeroSettings));
             _xeroSettings.ActionCompleted += (message, outcome) => ActionCompleted?.Invoke(message, outcome);
-            _xeroSettings.ReadingChanged += _ => DescribeOrganisationIdentitySource();
         }
 
-        if (_organisationIdentity is not null)
-        {
-            body.Children.Add(organisation);
-            body.Children.Add(bankDetails);
-        }
+        System(vatDefaults);
+        System(workflow);
 
         if (_updateService is not null)
-            body.Children.Add(updates);
+            System(updates);
+
+        ShowPage(SettingsPage.Account);
 
         body.Children.Add(saveRow);
 
@@ -584,24 +571,9 @@ public sealed class SettingsView : UserControl
         if (_accountsReadModel is not null)
             await RefreshAccountsReadingStatusAsync().ConfigureAwait(true);
 
-        if (_organisationIdentity is not null)
-        {
-            _orgLegalName.Text = _organisationIdentity.LegalName;
-            _orgCompanyNumber.Text = _organisationIdentity.CompanyNumber;
-            _orgWebsite.Text = _organisationIdentity.Website;
-            _orgAddressLine1.Text = _organisationIdentity.AddressLine1;
-            _orgAddressLine2.Text = _organisationIdentity.AddressLine2;
-            _orgEmail.Text = _organisationIdentity.Email;
-            _orgPhone.Text = _organisationIdentity.Phone;
-            _orgBankSortCode.Text = _organisationIdentity.BankSortCode;
-            _orgBankAccountNumber.Text = _organisationIdentity.BankAccountNumber;
-            _orgBankAccountName.Text = _organisationIdentity.BankAccountName;
-            _orgBankIban.Text = _organisationIdentity.BankIban;
-        }
         if (_xeroSettings is not null)
             await _xeroSettings.RefreshAsync().ConfigureAwait(true);
 
-        DescribeOrganisationIdentitySource();
 
         if (_persistenceDatabasePath is not null)
             _backupStatus.Text = string.Empty;
@@ -948,21 +920,6 @@ public sealed class SettingsView : UserControl
         if (_invoicingConnector is not null && _secretStore is not null)
             await SaveInvoicingSectionAsync().ConfigureAwait(true);
 
-        if (_organisationIdentity is not null)
-        {
-            _organisationIdentity.LegalName = _orgLegalName.Text ?? string.Empty;
-            _organisationIdentity.CompanyNumber = _orgCompanyNumber.Text ?? string.Empty;
-            _organisationIdentity.Website = _orgWebsite.Text ?? string.Empty;
-            _organisationIdentity.AddressLine1 = _orgAddressLine1.Text ?? string.Empty;
-            _organisationIdentity.AddressLine2 = _orgAddressLine2.Text ?? string.Empty;
-            _organisationIdentity.Email = _orgEmail.Text ?? string.Empty;
-            _organisationIdentity.Phone = _orgPhone.Text ?? string.Empty;
-            _organisationIdentity.BankSortCode = _orgBankSortCode.Text ?? string.Empty;
-            _organisationIdentity.BankAccountNumber = _orgBankAccountNumber.Text ?? string.Empty;
-            _organisationIdentity.BankAccountName = _orgBankAccountName.Text ?? string.Empty;
-            _organisationIdentity.BankIban = _orgBankIban.Text ?? string.Empty;
-            await _organisationIdentity.SaveAsync().ConfigureAwait(true);
-        }
 
         if (_defaultVatRateSelector.SelectedItem is ComboBoxItem { Tag: VatRate selectedVatRate })
         {
@@ -1022,21 +979,6 @@ public sealed class SettingsView : UserControl
         ActionCompleted?.Invoke($"Switched to {person.DisplayName}.", ActionOutcome.Changed);
 
         await RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>`v0.24.0` U1 (design §8): beside Settings → Organisation, whether documents print these values or the company details read from Xero.</summary>
-    private void DescribeOrganisationIdentitySource()
-    {
-        if (_organisationIdentity?.XeroCompanyDetails is { } xero)
-        {
-            _orgXeroNote.Text = $"Documents print the company details from Xero ({xero.SourceNote()}) — see Xero, above. The values here are used when there is no reading of Xero.";
-            _orgXeroNote.IsVisible = true;
-        }
-        else
-        {
-            _orgXeroNote.Text = string.Empty;
-            _orgXeroNote.IsVisible = false;
-        }
     }
 
     private async Task LoadInvoicingSectionAsync()
@@ -1347,4 +1289,14 @@ public sealed class SettingsView : UserControl
         row.Children.Add(valueControl);
         return row;
     }
+}
+
+/// <summary>The two pages of <see cref="SettingsView"/> (`v0.25.3`).</summary>
+public enum SettingsPage
+{
+    /// <summary>The signed-in person's own settings, from the header's user menu.</summary>
+    Account,
+
+    /// <summary>System-wide settings, from the foot of the navigation rail.</summary>
+    System,
 }

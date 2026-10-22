@@ -1,4 +1,4 @@
-# Independent Test Runbook — TempestOS v0.25.2 (from scratch)
+# Independent Test Runbook — TempestOS v0.25.3 (from scratch)
 
 **Tester:** ____________. **Date:** ____________. **PC / Windows version:** ____________.
 **Build (title bar):** ____________.
@@ -13,7 +13,7 @@ TempestOS is a desktop app for a small engineering consultancy. It covers:
 - quotes, invoices and timesheets;
 - the engineering work itself: requirements, calculations, documents and evidence.
 
-The left-hand **rail** switches between **Home, Projects, Tasks, Engineering** and **Business**.
+The left-hand **rail** switches between **Home, Projects, Tasks, Engineering** and **Business**. **Settings** sits at the foot of the rail; your own account settings are under your name in the header.
 
 ## How to score
 
@@ -27,9 +27,9 @@ The left-hand **rail** switches between **Home, Projects, Tasks, Engineering** a
 
 ## 1. Install (10 min)
 
-1. Open <https://github.com/kreczmans-creator/TempestOS-Core/releases/tag/v0.25.2>.
-2. Download `TempestOS-v0.25.2-Setup.exe` and `SHA256SUMS.txt`.
-3. Optional hash check. In PowerShell run `Get-FileHash .\TempestOS-v0.25.2-Setup.exe`; the result should match the line in `SHA256SUMS.txt`.
+1. Open <https://github.com/kreczmans-creator/TempestOS-Core/releases/tag/v0.25.3>.
+2. Download `TempestOS-v0.25.3-Setup.exe` and `SHA256SUMS.txt`.
+3. Optional hash check. In PowerShell run `Get-FileHash .\TempestOS-v0.25.3-Setup.exe`; the result should match the line in `SHA256SUMS.txt`.
 4. Run the Setup.exe. Windows SmartScreen may warn about an unknown publisher: **More info → Run anyway**.
 
 | # | Action | Expect | Result | Comments |
@@ -48,6 +48,7 @@ The left-hand **rail** switches between **Home, Projects, Tasks, Engineering** a
 | F2 | Press **Ctrl+K**, type *project*, then click anywhere outside the box | A command search box appears and lists matching commands. Clicking outside closes it | | |
 | F3 | Click the ◐ button in the header | Switches light/dark theme. Both are readable | | |
 | F4 | Make the window narrow (half the screen), then wide again | The layout adapts. Nothing becomes unusable | | |
+| F5 | Click **Settings** at the foot of the rail, then click **your name** in the header | Settings shows system things (where the data lives, backup, sign-off, connectors). Your name opens **Account settings** (job role, appearance, notifications, timesheets) | | |
 
 ---
 
@@ -57,9 +58,10 @@ The left-hand **rail** switches between **Home, Projects, Tasks, Engineering** a
 |---|---|---|---|---|
 | P1 | Business → **Customers & Suppliers** → add a customer: name *Testy Ltd*, code **TESTY** | Saved, and listed | | |
 | P2 | Add a contact to Testy Ltd (any name and email) | Saved on the customer | | |
-| P3 | Add a second customer with the **same** code TESTY | Refused, with a message saying why | | |
+| P3 | Add a second customer with the **same** code TESTY | Refused, with a red message beside **Save organisation** saying why | | |
 | P4 | Projects → **New Project…** → client *Testy Ltd* → name *Trial Bridge* | Created with a reference beginning `TESTY-` and opens | | |
 | P5 | In the project, find its **project folder** on disk (the project page shows or opens it) | The folder exists and holds the numbered set: `01 Commercial`, `02 Customer Data`, `03 Requirements`, `04 Design`, `05 Documents`, `06 Evidence & Verification`, `07 Reports`, `08 Correspondence`, `09 Issued to Customer`, `10 Sign-off & Handover`, `99 Superseded` | | |
+| P6 | Business → **Organisation** → fill in a company name, phone and bank details → **Save** | Saved. They print on the quote and invoice you export next | | |
 
 ---
 
@@ -71,7 +73,7 @@ The left-hand **rail** switches between **Home, Projects, Tasks, Engineering** a
 | Q2 | Export the quote to PDF | The save dialog opens in the project's `01 Commercial\01 Quotes` folder. The suggested name is `TESTY-…-Q-001-R1-quote.pdf`. Open the PDF: it is readable and the figures match | | |
 | Q3 | Export the same quote again, unchanged. Then edit a line, save, and export | Unchanged, it stays **-R1-**: a quote carries its own revision. After the edit it is **-R2-** | | |
 | Q4 | Close TempestOS, reopen, and export the quote again | Still the revision it had (R2). It never goes back to R1 | | |
-| Q5 | Business → **Invoices** → create an invoice for *Trial Bridge* and export it | Opens in `01 Commercial\04 Invoices`. The file is named by the invoice number with `-R1-` | | |
+| Q5 | Open *Trial Bridge* → **Invoices** tab (right after Quote) → create an invoice and export it | The tab lists only this project's invoices. The export opens in `01 Commercial\04 Invoices` and is named by the invoice number with `-R1-` | | |
 | Q6 | Business → **Timesheets** → record a few hours against *Trial Bridge* this week → export the week | Hours add up. The file name starts `TSHT-` | | |
 
 ---
@@ -81,12 +83,12 @@ The left-hand **rail** switches between **Home, Projects, Tasks, Engineering** a
 | # | Action | Expect | Result | Comments |
 |---|---|---|---|---|
 | E1 | Rail → **Engineering** | A tree on the left: Dashboard, Tasks, **Disciplines** (Mechanical, Structural, Electrical, Building Services / HVAC, Manufacturing) and **Modules** (Calculations, Requirements, Verification, Documents, Evidence, Reference data) | | |
-| E2 | Modules → **Requirements** → **Create Requirement** → name it | Created and opens. The tree stays on the left | | |
+| E2 | In *Trial Bridge*: Modules → **Requirements** → **Create Requirement** → leave **Identifier** blank, enter a statement. Then create a second one the same way | Numbered for you: `TESTY-…-REQ-001`, then `-002`. The tree stays on the left | | |
 | E3 | Disciplines → **Mechanical** → **Create Mechanical Object** → Kind **Part** → name it | Created and listed in the Mechanical Explorer | | |
 | E4 | Disciplines → **Structural** → **Create Structural object** → Kind *StructuralMember* → name *Beam B1*. With it selected → **Actions ▾ → Set member attributes** → fill every prompt | Properties shows every value you entered. Close and reopen TempestOS: they are still there | | |
 | E5 | Modules → Calculations → **Calculators** → *Bolt shear capacity*. Bolt diameter dropdown **M20**, shear strength dropdown **Class 8.8**, shear planes 2, safety factor 1.5 → Calculate | Boxes fill with 20 and 480. Result **201062 N**. The dropdowns list sizes smallest to largest (M3, M4 … M36) | | |
 | E6 | Same calculator: type `abc` as the diameter → Calculate | Says the diameter is not a number. Nothing crashes | | |
-| E7 | Try to get back to the Engineering **Dashboard** from anywhere above | One click, from the tree | | |
+| E7 | Try to get back to the Engineering **Dashboard** from anywhere above | One click, from the tree. The dashboard sits at the left of the page, like the others | | |
 
 ---
 
