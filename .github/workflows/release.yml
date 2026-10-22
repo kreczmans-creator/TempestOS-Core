@@ -407,11 +407,27 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
+        # A release made by hand on GitHub for this tag (v0.25.3 was) used to
+        # stop the publish with "a release with the same tag name already
+        # exists", leaving it with no assets. Now that release is completed
+        # instead: its title and notes are replaced with the ones for this
+        # tag, and the assets uploaded (--clobber replaces any of the same
+        # name), so the release always ends up the same either way.
         run: |
           set -euo pipefail
           mapfile -t assets < release-assets.txt
-          args=(release create "$TAG" --verify-tag --title "TempestOS $TAG" --notes-file release-notes.md)
+          prerelease=false
           if [[ "$TAG" =~ -rc\.[0-9]+$ ]]; then
-            args+=(--prerelease)
+            prerelease=true
           fi
-          gh "${args[@]}" "${assets[@]}" SHA256SUMS.txt
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "A release for $TAG already exists - completing it rather than failing."
+            gh release edit "$TAG" --title "TempestOS $TAG" --notes-file release-notes.md --prerelease="$prerelease" --draft=false
+            gh release upload "$TAG" "${assets[@]}" SHA256SUMS.txt --clobber
+          else
+            args=(release create "$TAG" --verify-tag --title "TempestOS $TAG" --notes-file release-notes.md)
+            if [[ "$prerelease" == true ]]; then
+              args+=(--prerelease)
+            fi
+            gh "${args[@]}" "${assets[@]}" SHA256SUMS.txt
+          fi
