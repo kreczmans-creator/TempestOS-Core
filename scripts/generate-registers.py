@@ -193,9 +193,10 @@ GENERAL = [
     ('PRODUCT_OWNER_ACCEPTANCE.md', 'Product Owner Acceptance', 'ACCEPTANCE TRACKER', 'TDE-OS-REL-ACC'),
     ('docs/reviews/RC PO Feedback Actions (2026-10-01).md', 'PO Feedback Actions', 'ACTION REGISTER', 'TDE-OS-REV-ACT'),
     ('PHYSICAL_REVIEW.md', 'Physical Review Guide', 'PHYSICAL REVIEW CHECKLIST', 'TDE-OS-REL-PHR'),
-    ('docs/releases/v0.25.0/PO Test Runbook.md', 'PO Test Runbook v0.25.0', 'TEST RUNBOOK', 'TDE-OS-REL-RUN'),
-    ('docs/releases/v0.25.2/PO Test Runbook.md', 'PO Test Runbook v0.25.2', 'TEST RUNBOOK', 'TDE-OS-REL-RUN-2'),
-    ('docs/releases/v0.25.2/Independent Test Runbook.md', 'Independent Test Runbook v0.25.2', 'TEST RUNBOOK', 'TDE-OS-REL-RUN-IND'),
+    # Only the current runbooks: a superseded one stays in its release
+    # folder as the record, never as a page anyone might test from.
+    ('docs/releases/v0.25.3/PO Test Runbook.md', 'PO Test Runbook v0.25.3', 'TEST RUNBOOK', 'TDE-OS-REL-RUN'),
+    ('docs/releases/v0.25.3/Independent Test Runbook.md', 'Independent Test Runbook v0.25.3', 'TEST RUNBOOK', 'TDE-OS-REL-RUN-IND'),
     ('THIRD-PARTY-NOTICES.md', 'Third-Party Notices', 'THIRD-PARTY REGISTER', 'TDE-OS-GOV-3PN'),
 ]
 

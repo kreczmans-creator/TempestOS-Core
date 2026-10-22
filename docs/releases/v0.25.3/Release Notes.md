@@ -37,6 +37,11 @@ A patch on `v0.25.2`, from the independent from-scratch test (2026-10-22).
   - Outside a customer-coded project, the sequence is `REQ-001`.
   - A typed identifier still stands, and the sequence carries on past the highest number used. A number is never reissued.
 
+## Test programme
+
+- **One current runbook:** `docs/releases/v0.25.3/PO Test Runbook.md`, with gates G0 (data survives an update), G7 (Settings), G3 (Business) and G1 (Engineering). It replaces the `v0.25.0` and `v0.25.2` runbooks, which stay in their release folders as the record but are no longer published as pages.
+- **The independent from-scratch runbook** moves to `docs/releases/v0.25.3/` and covers the new Settings places, Business → Organisation, the project Invoices tab and requirement numbering.
+
 ## Upgrading from v0.25.2 — do this once
 
 - **Using the in-app update?** Nothing to do: your data location is carried over.
