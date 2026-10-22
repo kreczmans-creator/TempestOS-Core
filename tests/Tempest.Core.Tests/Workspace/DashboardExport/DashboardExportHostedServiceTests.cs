@@ -94,6 +94,14 @@ public class DashboardExportHostedServiceTests
             Assert.NotNull(JsonNode.Parse(await File.ReadAllTextAsync(path)));
         }
 
+        // deadlines.ics for Outlook, and the same calendar wrapped for the agent.
+        var icsPath = Path.Combine(exportDir.Path, "deadlines.ics");
+        var ics = await File.ReadAllTextAsync(icsPath);
+        Assert.StartsWith("BEGIN:VCALENDAR", ics, StringComparison.Ordinal);
+        var wrapped = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(exportDir.Path, "deadlines.json")))!;
+        Assert.Equal(ics, (string)wrapped["ics"]!);
+        Assert.False(File.Exists(Path.Combine(exportDir.Path, "deadlines.json.tmp")));
+
         Assert.Empty(JsonNode.Parse(await File.ReadAllTextAsync(contractsPath))!["contracts"]!.AsArray());
         Assert.Empty(JsonNode.Parse(await File.ReadAllTextAsync(quotesPath))!["quotes"]!.AsArray());
         Assert.Empty(JsonNode.Parse(await File.ReadAllTextAsync(reviewsPath))!["items"]!.AsArray());

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Tempest.Core.BackgroundServices;
 using Tempest.Core.BusinessGovernance.Contracts;
 using Tempest.Core.BusinessGovernance.Quotations;
@@ -72,6 +73,7 @@ public sealed class DashboardExportHostedService : IHostedService
     private readonly ContractsExportAdapter _contracts;
     private readonly QuotesExportAdapter _quotes;
     private readonly ReviewQueueExportAdapter _reviews;
+    private readonly DeadlinesCalendarExportAdapter _deadlines;
     private readonly AccountingExportAdapter? _accounting;
     private readonly IConfigurationProvider _configuration;
     private readonly ILogger? _logger;
@@ -121,6 +123,7 @@ public sealed class DashboardExportHostedService : IHostedService
         _contracts = new ContractsExportAdapter(contractCatalog);
         _quotes = new QuotesExportAdapter(quotationCatalog);
         _reviews = new ReviewQueueExportAdapter(domainContext, requirementsService);
+        _deadlines = new DeadlinesCalendarExportAdapter(domainContext);
         _accounting = xeroApi is null ? null : new AccountingExportAdapter(xeroApi, accounts: accountsReadModel);
         _configuration = configuration;
         _logger = logger;
@@ -215,6 +218,7 @@ public sealed class DashboardExportHostedService : IHostedService
             await WriteAsync(_contracts, Path.Combine(directory, "contracts.json"), cancellationToken).ConfigureAwait(false);
             await WriteAsync(_quotes, Path.Combine(directory, "quotes.json"), cancellationToken).ConfigureAwait(false);
             await WriteAsync(_reviews, Path.Combine(directory, "reviews.json"), cancellationToken).ConfigureAwait(false);
+            await WriteDeadlinesAsync(directory, cancellationToken).ConfigureAwait(false);
             await WriteAccountingAsync(directory, cancellationToken).ConfigureAwait(false);
 
             LastExportSucceeded = true;
@@ -237,6 +241,24 @@ public sealed class DashboardExportHostedService : IHostedService
     /// reauthorisation needed) keeps the last good <c>accounting.json</c>, and
     /// never stops the other five files being written.
     /// </summary>
+    /// <summary>
+    /// Writes <c>deadlines.ics</c> — the file Outlook subscribes to — and
+    /// <c>deadlines.json</c>, the same calendar wrapped as
+    /// <c>{ "ics": "…" }</c> for the dashboard agent, which pushes JSON
+    /// bytes verbatim.
+    /// </summary>
+    private async Task WriteDeadlinesAsync(string directory, CancellationToken cancellationToken)
+    {
+        var icsPath = Path.Combine(directory, "deadlines.ics");
+        await WriteAsync(_deadlines, icsPath, cancellationToken).ConfigureAwait(false);
+
+        var ics = await File.ReadAllTextAsync(icsPath, cancellationToken).ConfigureAwait(false);
+        var jsonPath = Path.Combine(directory, "deadlines.json");
+        var tempPath = jsonPath + ".tmp";
+        await File.WriteAllTextAsync(tempPath, JsonSerializer.Serialize(new { schemaVersion = DeadlinesCalendarExportAdapter.CurrentSchemaVersion, ics }), cancellationToken).ConfigureAwait(false);
+        File.Move(tempPath, jsonPath, overwrite: true);
+    }
+
     private async Task WriteAccountingAsync(string directory, CancellationToken cancellationToken)
     {
         if (_accounting is null)
