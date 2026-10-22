@@ -289,7 +289,10 @@ public sealed class MainWindow : Window
             [ShellArea.Engineering] = new(
                 () => ResolveEngineeringSurfaceHost(projectScoped: _navigator.Current.ProjectId is not null),
                 EnterEngineeringAsync),
-            [ShellArea.Settings] = new(() => _settingsView, () => _settingsView.RefreshAsync()),
+            // `v0.25.3`: one settings view, two pages — the account page from
+            // the header's user menu, the system page from the rail's foot.
+            [ShellArea.Settings] = new(() => ShowSettingsPage(SettingsPage.Account), () => _settingsView.RefreshAsync()),
+            [ShellArea.SystemSettings] = new(() => ShowSettingsPage(SettingsPage.System), () => _settingsView.RefreshAsync()),
         };
 
         // `TD-84`: no Explorer area is selected by default — the
@@ -557,6 +560,12 @@ public sealed class MainWindow : Window
     /// returned, exactly as Home and standalone Engineering always showed
     /// it directly.
     /// </param>
+    private Control ShowSettingsPage(SettingsPage page)
+    {
+        _settingsView.ShowPage(page);
+        return _settingsView;
+    }
+
     private Control ResolveEngineeringSurfaceHost(bool projectScoped)
     {
         if (projectScoped)

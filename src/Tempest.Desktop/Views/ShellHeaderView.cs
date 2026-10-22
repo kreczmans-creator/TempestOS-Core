@@ -363,7 +363,7 @@ public sealed class ShellHeaderView : UserControl
         _principal.Text = string.IsNullOrWhiteSpace(role) ? displayName ?? string.Empty : $"{displayName} · {role}";
         _principalChip.IsVisible = !string.IsNullOrWhiteSpace(displayName);
         if (!string.IsNullOrWhiteSpace(displayName))
-            ToolTip.SetTip(_principalChip, $"Signed in as {displayName}{(string.IsNullOrWhiteSpace(role) ? string.Empty : $" ({role})")} — click for Settings");
+            ToolTip.SetTip(_principalChip, $"Signed in as {displayName}{(string.IsNullOrWhiteSpace(role) ? string.Empty : $" ({role})")} — click for your account settings");
     }
 
     /// <summary>

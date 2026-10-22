@@ -38,6 +38,7 @@ public sealed class BusinessAreaView : UserControl
     private readonly CustomersSuppliersView _customersSuppliers;
     private readonly StaffView? _staff;
     private readonly RateCardsView? _rateCards;
+    private readonly OrganisationView? _organisation;
 
     private readonly TreeView _tree = new();
     private readonly ContentControl _detail = new();
@@ -52,6 +53,7 @@ public sealed class BusinessAreaView : UserControl
     private readonly TreeViewItem _customersSuppliersNode = new() { Header = "Customers & Suppliers" };
     private readonly TreeViewItem _staffNode = new() { Header = "Staff" };
     private readonly TreeViewItem _rateCardsNode = new() { Header = "Rate cards" };
+    private readonly TreeViewItem _organisationNode = new() { Header = "Organisation" };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
 
@@ -66,7 +68,7 @@ public sealed class BusinessAreaView : UserControl
     public BusinessAreaView(
         QuotesView quotes, InvoicingView invoices, PurchaseOrdersView purchaseOrders, TimesheetWeekView timesheets,
         SubscriptionsView subscriptions, BusinessDashboardView dashboard, CustomersSuppliersView customersSuppliers,
-        StaffView? staff = null, RateCardsView? rateCards = null)
+        StaffView? staff = null, RateCardsView? rateCards = null, OrganisationView? organisation = null)
     {
         ArgumentNullException.ThrowIfNull(quotes);
         ArgumentNullException.ThrowIfNull(invoices);
@@ -85,6 +87,7 @@ public sealed class BusinessAreaView : UserControl
         _customersSuppliers = customersSuppliers;
         _staff = staff;
         _rateCards = rateCards;
+        _organisation = organisation;
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
@@ -99,12 +102,14 @@ public sealed class BusinessAreaView : UserControl
         _tree.Items.Add(_purchaseOrdersNode);
         _tree.Items.Add(_timesheetsNode);
         _tree.Items.Add(_subscriptionsNode);
+        if (organisation is not null)
+            _tree.Items.Add(_organisationNode);
 
         foreach (var (node, name) in new[]
                  {
                      (_dashboardNode, "Dashboard"), (_customersSuppliersNode, "Customers & Suppliers"), (_quotesNode, "Quotes"), (_invoicesNode, "Invoices"),
                      (_purchaseOrdersNode, "Purchase orders"), (_timesheetsNode, "Timesheets"), (_subscriptionsNode, "Subscriptions"),
-                     (_staffNode, "Staff"), (_rateCardsNode, "Rate cards"),
+                     (_staffNode, "Staff"), (_rateCardsNode, "Rate cards"), (_organisationNode, "Organisation"),
                  })
             AutomationProperties.SetName(node, name);
         AutomationProperties.SetName(_tree, "Business tree");
@@ -126,12 +131,12 @@ public sealed class BusinessAreaView : UserControl
     /// <summary>
     /// Selects the node named <paramref name="automationName"/>
     /// ("Dashboard", "Customers &amp; Suppliers", "Staff", "Rate cards", "Quotes",
-    /// "Invoices", "Purchase orders", "Timesheets" or "Subscriptions") — the same name a screen
+    /// "Invoices", "Purchase orders", "Timesheets", "Subscriptions" or "Organisation") — the same name a screen
     /// reader announces, and what a journey test drives the tree by.
     /// </summary>
     public void SelectNode(string automationName)
     {
-        var item = new[] { _dashboardNode, _customersSuppliersNode, _staffNode, _rateCardsNode, _quotesNode, _invoicesNode, _purchaseOrdersNode, _timesheetsNode, _subscriptionsNode }
+        var item = new[] { _dashboardNode, _customersSuppliersNode, _staffNode, _rateCardsNode, _quotesNode, _invoicesNode, _purchaseOrdersNode, _timesheetsNode, _subscriptionsNode, _organisationNode }
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
     }
@@ -205,6 +210,13 @@ public sealed class BusinessAreaView : UserControl
         {
             await _rateCards.RefreshAsync().ConfigureAwait(true);
             _detail.Content = _rateCards;
+            return;
+        }
+
+        if (_organisation is not null && ReferenceEquals(selected, _organisationNode))
+        {
+            await _organisation.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _organisation;
             return;
         }
 

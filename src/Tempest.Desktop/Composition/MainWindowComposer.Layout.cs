@@ -205,7 +205,7 @@ internal sealed partial class MainWindowComposer
             ShellArea.EngineeringDepartment => views.EngineeringAreaView,
             ShellArea.Business => views.BusinessAreaView,
             ShellArea.ProjectWorkspace => views.ProjectWorkspace,
-            ShellArea.Settings => views.SettingsView,
+            ShellArea.Settings or ShellArea.SystemSettings => views.SettingsView,
             _ => engineeringSurface,
         };
 

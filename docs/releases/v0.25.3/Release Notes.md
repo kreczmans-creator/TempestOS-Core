@@ -17,6 +17,18 @@ A patch on `v0.25.2`, from the independent from-scratch test (2026-10-22).
 - **E7:** the Engineering Dashboard is left-aligned like every other page.
 - **Runbooks Q3 / E3:** the steps now say that a quote carries its own revision. Re-exporting an unchanged quote stays at R1; editing a line makes it R2.
 
+## Changed
+
+- **Settings are split by who they belong to.**
+  - **Settings, at the foot of the rail** (system-wide):
+    - persistence root, backup and restore;
+    - sign-off, evidence;
+    - connector authorisation, Xero;
+    - VAT, workflow, updates.
+  - **Account settings, from your name in the header** (your own): job role, appearance, notifications and timesheets.
+  - **Business → Organisation:** organisation identity and bank details, with their own Save.
+  - Code: `ShellArea.SystemSettings`, `GlobalNavigationRail.cs`, `SettingsView.cs` (`SettingsPage`), `OrganisationView.cs`, `BusinessAreaView.cs`.
+
 ## Upgrading from v0.25.2 — do this once
 
 - **Using the in-app update?** Nothing to do: your data location is carried over.

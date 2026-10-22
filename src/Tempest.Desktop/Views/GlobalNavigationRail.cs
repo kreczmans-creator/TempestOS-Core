@@ -110,7 +110,16 @@ public sealed class GlobalNavigationRail : UserControl
         _collapseChevron.Classes.Add(ChromeStyles.Flat);
         _collapseChevron.Click += (_, _) => ToggleCollapsed();
 
-        var footer = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Child = _collapseChevron };
+        // `v0.25.3` PO request: system settings sit at the rail's foot,
+        // above the chevron, apart from the modules.
+        var footerModules = new StackPanel { Margin = new Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceSm, DesignTokens.SpaceMd, 0) };
+        var settingsModule = ShellAreas.RailFooterModule;
+        AddModule(settingsModule, () => _navigator.GoToModuleAsync(settingsModule.Area), footerModules);
+        var footerStack = new StackPanel();
+        footerStack.Children.Add(footerModules);
+        footerStack.Children.Add(_collapseChevron);
+
+        var footer = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Child = footerStack };
         ThemeReactiveBrush.Bind(footer, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
         DockPanel.SetDock(footer, Dock.Bottom);
 
@@ -215,7 +224,7 @@ public sealed class GlobalNavigationRail : UserControl
         }
     }
 
-    private void AddModule(ShellAreaDescriptor module, Func<Task> navigate)
+    private void AddModule(ShellAreaDescriptor module, Func<Task> navigate, Panel? into = null)
     {
         // The icon inherits its Foreground from this host, which the
         // selection state paints — so one binding tints the vector.
@@ -292,7 +301,7 @@ public sealed class GlobalNavigationRail : UserControl
             Background = Brushes.Transparent,
         };
 
-        _buttons.Children.Add(frame);
+        (into ?? _buttons).Children.Add(frame);
         _modules.Add(new ModuleItem(module.Area, button, frame, rule, title, iconHost));
     }
 
@@ -307,6 +316,7 @@ public sealed class GlobalNavigationRail : UserControl
         ShellArea.EngineeringDepartment => IconGeometry.Gear,
         ShellArea.Business => IconGeometry.Currency,
         ShellArea.Settings => IconGeometry.Sliders,
+        ShellArea.SystemSettings => IconGeometry.Sliders,
         _ => IconGeometry.Dot,
     };
 

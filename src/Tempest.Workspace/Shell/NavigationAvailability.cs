@@ -127,8 +127,13 @@ public static class ShellAreas
         // header's own principal chip, `WP 19.7A`), excluded from the rail
         // itself: "Settings behind the header's login details" is this
         // Work Package's own brief, scope item 1.
-        new(ShellArea.Settings, "Settings", "⚙", NavigationAvailability.Implemented,
-            "Persistence root, principal override, connector authorisation, working pattern, the independent-check toggle, theme, toast duration and confirm-before-delete."),
+        new(ShellArea.Settings, "Account settings", "⚙", NavigationAvailability.Implemented,
+            "Your own account: job role, appearance, notifications and timesheets."),
+
+        // `v0.25.3` PO request: system-level settings sit at the foot of
+        // the rail, apart from the person's own account settings.
+        new(ShellArea.SystemSettings, "Settings", "⚙", NavigationAvailability.Implemented,
+            "System settings: persistence root, backup and restore, sign-off, evidence, connector authorisation, organisation and updates."),
 
         // `WP 19.2B` (`TD-81`): Commercial, Resources, Knowledge and
         // Administration are removed from the rail, not dimmed — no
@@ -164,6 +169,9 @@ public static class ShellAreas
     public static IReadOnlyList<ShellAreaDescriptor> RailModules =>
         Descriptors.Where(d => d.Area is ShellArea.Home or ShellArea.Projects or ShellArea.Tasks
             or ShellArea.EngineeringDepartment or ShellArea.Business).ToList();
+
+    /// <summary>The module pinned to the rail's foot, apart from <see cref="RailModules"/>: system settings (`v0.25.3`).</summary>
+    public static ShellAreaDescriptor RailFooterModule => For(ShellArea.SystemSettings);
 
     /// <summary>The descriptor for <paramref name="area"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="area"/> is not declared here.</exception>

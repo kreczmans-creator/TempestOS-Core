@@ -919,21 +919,20 @@ internal static class MainJourney
             required: false);
 
         journal.Step(
-            "settings", "The header's own account button → Settings", "mouse",
-            "Settings opens as an area of its own, showing where the data lives and who is signed in",
+            "settings", "The rail's own Settings entry, at its foot (v0.25.3)", "mouse",
+            "System settings open as an area of their own, showing where the data lives and the connector",
             () =>
             {
-                if (!Act.Click("Account — opens Settings", settleMs: 3_000))
+                if (!Act.Click("Settings", settleMs: 3_000))
                     return Act.Failed(Act.LastProblem);
 
-                if (!Ui.WaitUntil(() => Ui.ByName("Settings") is not null, 15_000))
+                if (!Ui.WaitUntil(() => Ui.FirstTextContaining("Persistence root") is not null, 15_000))
                     return Act.Unknown($"Settings did not open; Location reads '{Ui.ByName("Location")?.Text}'");
 
                 var root = Ui.VisibleText().FirstOrDefault(text => text.Contains("realshell", StringComparison.OrdinalIgnoreCase) || text.Contains("persistence", StringComparison.OrdinalIgnoreCase));
-                var principal = Ui.VisibleText().FirstOrDefault(text => text.Contains("Engineer", StringComparison.Ordinal));
                 var connector = Ui.FirstTextContaining("Fake");
 
-                return Act.Verified($"Settings opened; persistence \"{Trim(root ?? "(not shown)")}\"; principal \"{Trim(principal ?? "(not shown)")}\"; invoicing connector \"{connector ?? "(not shown)"}\"");
+                return Act.Verified($"Settings opened; persistence \"{Trim(root ?? "(not shown)")}\"; invoicing connector \"{connector ?? "(not shown)"}\"");
             },
             required: false);
 

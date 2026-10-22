@@ -358,7 +358,6 @@ internal sealed partial class MainWindowComposer
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
             accountsReadModel, accountsRefreshService,
             people: peopleDirectory, confirmationDialog: confirmationDialog, switchPrincipal: SwitchPrincipal,
-            organisationIdentity: session.OrganisationIdentity,
             persistenceDatabasePath: persistenceDatabasePath, auditRecorder: auditRecorder, projectContext: host.ProjectContext,
             prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker,
             signOffPolicy: (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)),
@@ -938,6 +937,11 @@ internal sealed partial class MainWindowComposer
         };
         rateCardsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
+        // `v0.25.3` PO request: organisation identity and bank details live
+        // in Business, not Settings.
+        var organisationView = new OrganisationView(session.OrganisationIdentity);
+        organisationView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         var businessDashboardView = new BusinessDashboardView(accountsReadModel, composition.DomainContext, openObjectRightUp);
         var businessAreaView = new BusinessAreaView(
             quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView,
@@ -950,7 +954,8 @@ internal sealed partial class MainWindowComposer
                 XeroContacts = ResolveXeroContactLinker(services),
             },
             staffView,
-            rateCardsView)
+            rateCardsView,
+            organisationView)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
