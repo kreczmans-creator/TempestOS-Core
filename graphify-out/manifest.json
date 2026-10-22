@@ -6792,9 +6792,9 @@
     "semantic_hash": "6c9e3ba961b4f55a384b943e17f14ca4"
   },
   "src/Tempest.Desktop/App.cs": {
-    "mtime": 1792587689.5053594,
-    "seen": 1792588036.431497,
-    "ast_hash": "16ae9e846f5df7b5b20102e1fb62d246",
+    "mtime": 1792661710.2174714,
+    "seen": 1792662375.744278,
+    "ast_hash": "c542b1e215ca0df2eeaa3640a7e9c184",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/AssemblyInfo.cs": {
@@ -7284,10 +7284,10 @@
     "semantic_hash": "5e9a050c235decfd4aef83a109f70dc7"
   },
   "src/Tempest.Desktop/Startup/IInstalledAppLocator.cs": {
-    "mtime": 1792350469.949801,
-    "seen": 1792588036.4325116,
-    "ast_hash": "3332ff7ddd87e3001c17d5032d4b68d0",
-    "semantic_hash": "3332ff7ddd87e3001c17d5032d4b68d0"
+    "mtime": 1792661710.2163172,
+    "seen": 1792662375.7452424,
+    "ast_hash": "23b8b16fe624e30dabe4e8b1cbe9e67e",
+    "semantic_hash": ""
   },
   "src/Tempest.Desktop/Startup/IUpdateService.cs": {
     "mtime": 1792350469.949801,
@@ -7296,16 +7296,16 @@
     "semantic_hash": "5432fa03f029047f7436dc1bb7b1891e"
   },
   "src/Tempest.Desktop/Startup/PersistenceRootResolver.cs": {
-    "mtime": 1792350469.949801,
-    "seen": 1792588036.4325175,
-    "ast_hash": "34ca39140253bbed24d61e35c7e79561",
-    "semantic_hash": "34ca39140253bbed24d61e35c7e79561"
+    "mtime": 1792661710.2170086,
+    "seen": 1792662375.7452471,
+    "ast_hash": "6c12a05bd391214abea7c13f1af273be",
+    "semantic_hash": ""
   },
   "src/Tempest.Desktop/Startup/VelopackInstalledAppLocator.cs": {
-    "mtime": 1792350469.949801,
-    "seen": 1792588036.43252,
-    "ast_hash": "6c09b0f2fc9d9d54f025236a982211f6",
-    "semantic_hash": "6c09b0f2fc9d9d54f025236a982211f6"
+    "mtime": 1792661710.2166626,
+    "seen": 1792662375.7452493,
+    "ast_hash": "bb30a26c0be3e8b3652ed127a39d84c8",
+    "semantic_hash": ""
   },
   "src/Tempest.Desktop/Startup/VelopackUpdateService.cs": {
     "mtime": 1792350469.949801,
@@ -7524,9 +7524,9 @@
     "semantic_hash": "cfa5dc268a8cede861b37458aa86b4f4"
   },
   "src/Tempest.Desktop/Views/Dashboards/EngineeringDashboardView.cs": {
-    "mtime": 1792587689.5752752,
-    "seen": 1792588036.4326313,
-    "ast_hash": "a9413431a479b2fb701032ffa548b6be",
+    "mtime": 1792662009.3105888,
+    "seen": 1792662375.7453218,
+    "ast_hash": "2177b7ef65e12f2e8b40a0bc00577433",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/Dashboards/HomeDashboardView.cs": {
@@ -13956,10 +13956,10 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Startup/PersistenceRootResolverTests.cs": {
-    "mtime": 1792350470.2944171,
-    "seen": 1792588036.4365838,
-    "ast_hash": "06081fb7f06ec88e7b0ee51b23e9d52e",
-    "semantic_hash": "06081fb7f06ec88e7b0ee51b23e9d52e"
+    "mtime": 1792661789.1784132,
+    "seen": 1792662375.7476623,
+    "ast_hash": "10f1951f592c66b57551cb46398de236",
+    "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/StatusBarCollapseTests.cs": {
     "mtime": 1792350470.2944171,
@@ -16338,9 +16338,9 @@
     "semantic_hash": "7290835dceddfd135ae3220fd3f4498d"
   },
   "docs/governance/Quality/Technical Debt Register.md": {
-    "mtime": 1792587687.8663576,
-    "seen": 1792588036.441552,
-    "ast_hash": "57bb7038e41c97d96c8ea3465308ae2c",
+    "mtime": 1792662135.3204932,
+    "seen": 1792662375.7506757,
+    "ast_hash": "0e8f6cefd429c03bcbc5ebaa07118f1c",
     "semantic_hash": ""
   },
   "docs/releases/FOUNDATION.md": {
@@ -16578,9 +16578,9 @@
     "semantic_hash": "e342c61ff95456e9a729aaca1a73fc76"
   },
   "scripts/install-test-build.ps1": {
-    "mtime": 1792587689.4774137,
-    "seen": 1792588036.4290414,
-    "ast_hash": "06fa901e390818c9bc0bdad0ebf6b7c1",
+    "mtime": 1792661748.412833,
+    "seen": 1792662375.7406466,
+    "ast_hash": "69abf342936a6945ae0a6a83f019d305",
     "semantic_hash": ""
   },
   "src/Samples/Tempest.Samples/packages.lock.json": {
@@ -17130,9 +17130,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/CustomersSuppliersView.cs": {
-    "mtime": 1792587689.573986,
-    "seen": 1792588036.432612,
-    "ast_hash": "e73694e2f40969265964e08ef5d58c7e",
+    "mtime": 1792661940.817742,
+    "seen": 1792662375.7453158,
+    "ast_hash": "475bf4905f287a2cccdc2dda7f378d99",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/RateCardsView.cs": {
@@ -17754,9 +17754,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/CustomersSuppliersJourneyTests.cs": {
-    "mtime": 1792587689.6303325,
-    "seen": 1792588036.436292,
-    "ast_hash": "bad3feb59a1537512269ea091dfe016c",
+    "mtime": 1792662063.5822868,
+    "seen": 1792662375.7474244,
+    "ast_hash": "d3ab466d4674a9825450e8b5a604ff2a",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Dashboards/HomeRightRailLinksTests.cs": {
@@ -17892,9 +17892,9 @@
     "semantic_hash": ""
   },
   "PHYSICAL_REVIEW.md": {
-    "mtime": 1792587687.169941,
-    "seen": 1792588036.4367352,
-    "ast_hash": "91e21c48e789fd4d8b5457dcad45cc62",
+    "mtime": 1792662135.3184865,
+    "seen": 1792662375.74779,
+    "ast_hash": "36d7053ba68299975a6d2299c2d93d1f",
     "semantic_hash": ""
   },
   "THIRD-PARTY-NOTICES.md": {
@@ -30330,9 +30330,9 @@
     "semantic_hash": ""
   },
   "scripts/xero-demo-smoke.ps1": {
-    "mtime": 1792587689.4842336,
-    "seen": 1792588036.4290595,
-    "ast_hash": "b6e2df3ef3e5ab947ed7b54046c4d3f5",
+    "mtime": 1792661760.9303546,
+    "seen": 1792662375.7406619,
+    "ast_hash": "7c201d32c209f0fd1eefe8636804634e",
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/XeroDocumentLinkActions.cs": {
@@ -30384,9 +30384,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/Xero/Live/XeroDemoSmokeScriptTests.cs": {
-    "mtime": 1792587689.5978782,
-    "seen": 1792588036.4351187,
-    "ast_hash": "c0473e49c30ecce156c32fdf3f5cacef",
+    "mtime": 1792661789.1764631,
+    "seen": 1792662375.7466943,
+    "ast_hash": "c4cf8ed298e9b1f755a5bd1b1607d0e1",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/Xero/Live/XeroLiveConnection.cs": {
@@ -30648,9 +30648,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/EngineeringDisciplineNavigationTests.cs": {
-    "mtime": 1792587689.6339755,
-    "seen": 1792588036.436375,
-    "ast_hash": "d9bbe7ebc4701dcece8e04826523f3e8",
+    "mtime": 1792662016.3593082,
+    "seen": 1792662375.7474968,
+    "ast_hash": "9d2ef55c50d25cad9cec3a40a431c6e7",
     "semantic_hash": ""
   },
   "docs/releases/v0.25.0/PO Test Runbook.md": {
@@ -30912,9 +30912,9 @@
     "semantic_hash": ""
   },
   "scripts/generate-registers.py": {
-    "mtime": 1792597295.0947847,
-    "seen": 1792598293.5036006,
-    "ast_hash": "f5ee46edc1fb0051bfe1ecb4b783a855",
+    "mtime": 1792603341.814713,
+    "seen": 1792662375.7406359,
+    "ast_hash": "53ea9ce3111977abef0d6567ffd1af05",
     "semantic_hash": ""
   },
   "docs/adr/ADR-0164-a-release-is-tested-once-by-ci-on-its-commit-not-again-by-the-tag.md": {
@@ -30924,80 +30924,80 @@
     "semantic_hash": ""
   },
   "docs/governance/html/ADR Register.html": {
-    "mtime": 1792598838.7719867,
-    "seen": 1792598980.172733,
+    "mtime": 1792662140.2853956,
+    "seen": 1792662375.7506778,
     "ast_hash": "c9b0ad74949e20ec6dccc3cb0dc86c87",
     "semantic_hash": ""
   },
   "docs/governance/html/Future Capability Register.html": {
-    "mtime": 1792598838.8234038,
-    "seen": 1792598980.1727364,
+    "mtime": 1792662140.3016481,
+    "seen": 1792662375.7506807,
     "ast_hash": "00993735d0ceeeaec89f0d5f08e76e7b",
     "semantic_hash": ""
   },
   "docs/governance/html/PO Feedback Actions.html": {
-    "mtime": 1792598838.8477225,
-    "seen": 1792598980.1727388,
+    "mtime": 1792662140.3174114,
+    "seen": 1792662375.750687,
     "ast_hash": "50a28258f8dac7844caae6a771c1a17c",
     "semantic_hash": ""
   },
   "docs/governance/html/PO Test Runbook v0.25.0.html": {
-    "mtime": 1792598838.8707826,
-    "seen": 1792598980.172741,
+    "mtime": 1792662140.3318155,
+    "seen": 1792662375.7506897,
     "ast_hash": "ecf047de1da2d1fcc914a9645b0a3124",
     "semantic_hash": ""
   },
   "docs/governance/html/Physical Review Guide.html": {
-    "mtime": 1792598838.8662608,
-    "seen": 1792598980.172745,
-    "ast_hash": "44bddda7b93937f11808f55cc4420567",
+    "mtime": 1792662135.470578,
+    "seen": 1792662375.7506945,
+    "ast_hash": "7bb0ce59d8e2ddb0bab08917baf31729",
     "semantic_hash": ""
   },
   "docs/governance/html/Product Owner Acceptance.html": {
-    "mtime": 1792598838.8455703,
-    "seen": 1792598980.1727467,
+    "mtime": 1792662140.345576,
+    "seen": 1792662375.7506964,
     "ast_hash": "29ab69fc6a674b36fca505607c486671",
     "semantic_hash": ""
   },
   "docs/governance/html/Product Roadmap.html": {
-    "mtime": 1792598838.8299916,
-    "seen": 1792598980.1727483,
+    "mtime": 1792662140.3628712,
+    "seen": 1792662375.7506986,
     "ast_hash": "2c7eba38c81fe1dc0706604ff639f4c8",
     "semantic_hash": ""
   },
   "docs/governance/html/Project Status.html": {
-    "mtime": 1792598838.8396156,
-    "seen": 1792598980.17275,
+    "mtime": 1792662140.3756142,
+    "seen": 1792662375.7507,
     "ast_hash": "3072eff24528ab995a1db2f96f44ba7e",
     "semantic_hash": ""
   },
   "docs/governance/html/Seed Data Sources Register.html": {
-    "mtime": 1792598838.827374,
-    "seen": 1792598980.172752,
+    "mtime": 1792662140.394239,
+    "seen": 1792662375.750702,
     "ast_hash": "e001fa9ffd2190aeed0a153cc19da9ce",
     "semantic_hash": ""
   },
   "docs/governance/html/Technical Debt Register.html": {
-    "mtime": 1792598838.7804816,
-    "seen": 1792598980.1727533,
-    "ast_hash": "5acb443bf8c64f174b56ee8d0b30e863",
+    "mtime": 1792662135.3826702,
+    "seen": 1792662375.7507036,
+    "ast_hash": "25dccfb2a1bff409499b95634c39bb7d",
     "semantic_hash": ""
   },
   "docs/governance/html/Third-Party Notices.html": {
-    "mtime": 1792598838.8740366,
-    "seen": 1792598980.1727552,
+    "mtime": 1792662140.4053957,
+    "seen": 1792662375.7507057,
     "ast_hash": "05708102aa7d452f67ddf77495bd9b12",
     "semantic_hash": ""
   },
   "docs/governance/html/index.html": {
-    "mtime": 1792598838.8744104,
-    "seen": 1792598980.172757,
-    "ast_hash": "4ab060f6722854244ae64312049ef0bd",
+    "mtime": 1792662135.4820666,
+    "seen": 1792662375.7507071,
+    "ast_hash": "0595c08a0ecafecf478023dc7f444f60",
     "semantic_hash": ""
   },
   "docs/governance/html/v1.0.0 Work Packages.html": {
-    "mtime": 1792598838.8383281,
-    "seen": 1792598980.1727586,
+    "mtime": 1792662140.4293957,
+    "seen": 1792662375.7507093,
     "ast_hash": "b7d788fe4701a5e0e1fea9e6bab113b8",
     "semantic_hash": ""
   },
@@ -31032,15 +31032,15 @@
     "semantic_hash": ""
   },
   "docs/governance/html/PO Test Runbook v0.25.2.html": {
-    "mtime": 1792598838.872399,
-    "seen": 1792598980.1727428,
-    "ast_hash": "26b36c306e797e60ea42c015b027870a",
+    "mtime": 1792662135.4775834,
+    "seen": 1792662375.750692,
+    "ast_hash": "33452a9da693214585f5e629f1035a29",
     "semantic_hash": ""
   },
   "docs/releases/v0.25.2/PO Test Runbook.md": {
-    "mtime": 1792598838.7236083,
-    "seen": 1792598980.1728525,
-    "ast_hash": "e6952798858b65bafbe2974b21b7deb0",
+    "mtime": 1792662099.047994,
+    "seen": 1792662375.750816,
+    "ast_hash": "b3ab286c2d4c008dd01d071efbddd2d5",
     "semantic_hash": ""
   },
   "docs/releases/v0.25.2/Release Notes.md": {
@@ -31059,6 +31059,24 @@
     "mtime": 1792598724.694411,
     "seen": 1792598980.1693716,
     "ast_hash": "86bbcabe81e0e7a74d326ad7d816e5db",
+    "semantic_hash": ""
+  },
+  "docs/governance/html/Independent Test Runbook v0.25.2.html": {
+    "mtime": 1792662135.480135,
+    "seen": 1792662375.7506845,
+    "ast_hash": "04c0405120fb75e27c12ddec2916047f",
+    "semantic_hash": ""
+  },
+  "docs/releases/v0.25.2/Independent Test Runbook.md": {
+    "mtime": 1792662099.0475788,
+    "seen": 1792662375.7508135,
+    "ast_hash": "037c6c205b163165636cb9948946f4b3",
+    "semantic_hash": ""
+  },
+  "docs/releases/v0.25.3/Release Notes.md": {
+    "mtime": 1792662116.0688784,
+    "seen": 1792662375.7508194,
+    "ast_hash": "7292b0f9db67c205cab53338393d2da7",
     "semantic_hash": ""
   }
 }
