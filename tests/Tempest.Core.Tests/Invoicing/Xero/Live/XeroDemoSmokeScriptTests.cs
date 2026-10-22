@@ -32,7 +32,7 @@ public sealed class XeroDemoSmokeScriptTests
         Assert.DoesNotContain(bytes, b => b > 0x7F);
     }
 
-    [Fact]
+    [WindowsFact]
     public void Script_IsSyntacticallyValidPowerShell()
     {
         var (exitCode, output) = PackagingScriptTests.RunPowerShellSyntaxCheck(ScriptPath);

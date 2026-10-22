@@ -1115,6 +1115,12 @@ jobs:
         shell: pwsh
         run: |
           $failed = $false
+          # A run cancelled because a newer push superseded it stays red,
+          # but says so: the newer commit's own run is the one that counts.
+          if ("${{ needs.build-and-test.result }}" -eq "cancelled") {
+            Write-Host "::error::Cancelled, usually because a newer push to this branch superseded the run. Read the newest commit's own CI Gate, not this one."
+            exit 1
+          }
           if ("${{ needs.build-and-test.result }}" -ne "success") {
             Write-Host "::error::One or more Build & Test configurations did not succeed - see the build-and-test job matrix for details."
             $failed = $true

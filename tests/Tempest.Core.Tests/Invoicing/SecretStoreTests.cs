@@ -16,7 +16,7 @@ namespace Tempest.Core.Tests.Invoicing;
 [SupportedOSPlatform("windows")]
 public sealed class SecretStoreTests
 {
-    [Fact]
+    [WindowsFact]
     public async Task WindowsDpapiSecretStore_RoundTrips_GetSetRemove()
     {
         using var temp = new TempDirectory();
@@ -41,7 +41,7 @@ public sealed class SecretStoreTests
         await store.RemoveAsync(key);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task WindowsDpapiSecretStore_EncryptsOnDisk_TheFileNeverCarriesThePlaintext()
     {
         using var temp = new TempDirectory();
@@ -66,7 +66,7 @@ public sealed class SecretStoreTests
         Assert.DoesNotContain(key, Path.GetFileName(file), StringComparison.Ordinal);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task AStoredSecret_NeverAppearsInTempestDb()
     {
         using var temp = new TempDirectory();

@@ -372,7 +372,7 @@ public sealed class OAuthAuthoriserTests
         Assert.Null(await secretStore.GetAsync($"Invoicing:{Provider}:TenantId"));
     }
 
-    [Fact]
+    [WindowsFact]
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public async Task AStoredToken_IsNeverWrittenToTempestDb()
     {

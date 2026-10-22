@@ -38,6 +38,14 @@ namespace Tempest.Desktop.Tests.Quotations;
 /// operator, resolved through the page's <c>/Resources/Font</c> dictionary
 /// to the font object that carries that CID's own <c>ToUnicode</c> stream —
 /// and decoding against that font's own CMap alone.
+/// <para>
+/// <b>One- and two-byte codes.</b> A CID-keyed (<c>Type0</c>) font draws
+/// two-byte codes; a simple font draws one-byte codes. SkiaSharp embeds
+/// <c>SKTypeface.Default</c> as a <c>Type3</c> font whenever the platform's
+/// default face cannot be embedded as TrueType (the Linux container's
+/// default did, every body line coming back blank), so each font's code
+/// width is read from its own <c>/Subtype</c>, never assumed.
+/// </para>
 /// </remarks>
 internal static class PdfTextExtractor
 {
@@ -83,6 +91,8 @@ internal static class PdfTextExtractor
         // once and cached — each font object's body names its own
         // ToUnicode stream's object number directly.
         var cmapByFontObject = new Dictionary<int, Dictionary<int, char>>();
+        int HexDigitsPerCode(int fontObjectNumber) =>
+            objectBodies.TryGetValue(fontObjectNumber, out var body) && !body.Contains("/Type0", StringComparison.Ordinal) ? 2 : 4;
         Dictionary<int, char> CMapFor(int fontObjectNumber)
         {
             if (cmapByFontObject.TryGetValue(fontObjectNumber, out var cached))
@@ -114,6 +124,7 @@ internal static class PdfTextExtractor
                 continue;
 
             var activeCMap = new Dictionary<int, char>();
+            var digits = 4;
 
             foreach (Match token in tokenPattern.Matches(content))
             {
@@ -123,13 +134,14 @@ internal static class PdfTextExtractor
                     activeCMap = fontResourceToObject.TryGetValue(resourceName, out var fontObjectNumber)
                         ? CMapFor(fontObjectNumber)
                         : [];
+                    digits = fontResourceToObject.TryGetValue(resourceName, out fontObjectNumber) ? HexDigitsPerCode(fontObjectNumber) : 4;
                     continue;
                 }
 
                 var hex = token.Groups["hex"].Value;
-                for (var i = 0; i + 4 <= hex.Length; i += 4)
+                for (var i = 0; i + digits <= hex.Length; i += digits)
                 {
-                    var code = ParseHex(hex.Substring(i, 4));
+                    var code = ParseHex(hex.Substring(i, digits));
                     builder.Append(activeCMap.TryGetValue(code, out var ch) ? ch : ' ');
                 }
             }
@@ -235,7 +247,7 @@ internal static class PdfTextExtractor
     {
         foreach (Match section in Regex.Matches(content, @"beginbfchar(.*?)endbfchar", RegexOptions.Singleline | RegexOptions.Compiled))
         {
-            foreach (Match m in Regex.Matches(section.Groups[1].Value, @"<([0-9A-Fa-f]{4})>\s*<([0-9A-Fa-f]{4,})>", RegexOptions.Compiled))
+            foreach (Match m in Regex.Matches(section.Groups[1].Value, @"<([0-9A-Fa-f]{2,4})>\s*<([0-9A-Fa-f]{4,})>", RegexOptions.Compiled))
             {
                 var code = ParseHex(m.Groups[1].Value);
                 var unicode = ParseHex(m.Groups[2].Value[..4]);
@@ -245,7 +257,7 @@ internal static class PdfTextExtractor
 
         foreach (Match section in Regex.Matches(content, @"beginbfrange(.*?)endbfrange", RegexOptions.Singleline | RegexOptions.Compiled))
         {
-            foreach (Match m in Regex.Matches(section.Groups[1].Value, @"<([0-9A-Fa-f]{4})>\s*<([0-9A-Fa-f]{4})>\s*<([0-9A-Fa-f]{4,})>", RegexOptions.Compiled))
+            foreach (Match m in Regex.Matches(section.Groups[1].Value, @"<([0-9A-Fa-f]{2,4})>\s*<([0-9A-Fa-f]{2,4})>\s*<([0-9A-Fa-f]{4,})>", RegexOptions.Compiled))
             {
                 var lo = ParseHex(m.Groups[1].Value);
                 var hi = ParseHex(m.Groups[2].Value);

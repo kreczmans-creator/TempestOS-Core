@@ -47,7 +47,7 @@ public sealed class CheckVulnerablePackagesScriptTests
         Assert.True(File.Exists(ScriptPath), $"Expected the dependency-scan parser at '{ScriptPath}'.");
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task SelfTest_PassesItsOwnTwoFixtures()
     {
         // The script's own -SelfTest mode (a clean fixture and a synthetic
@@ -61,7 +61,7 @@ public sealed class CheckVulnerablePackagesScriptTests
         Assert.Contains("All self-test assertions passed.", output, StringComparison.Ordinal);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task ACleanScan_ExitsZero()
     {
         using var temp = new TempDirectory();
@@ -85,7 +85,7 @@ public sealed class CheckVulnerablePackagesScriptTests
         Assert.Contains("no vulnerable packages", output, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task ASyntheticVulnerableLine_ExitsNonZero()
     {
         using var temp = new TempDirectory();
@@ -113,7 +113,7 @@ public sealed class CheckVulnerablePackagesScriptTests
         Assert.Contains("Vulnerable package(s) reported", output, StringComparison.Ordinal);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task AnUnparsableScan_ExitsNonZero_RatherThanSilentlyPassing()
     {
         // No recognisable "<project> has ..." line at all — a crashed or
@@ -130,7 +130,7 @@ public sealed class CheckVulnerablePackagesScriptTests
         Assert.Contains("could not confirm any project was actually scanned", output, StringComparison.Ordinal);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task NeitherSelfTestNorInputPath_ExitsNonZero_WithAClearReason()
     {
         var (exitCode, output) = await RunAsync(string.Empty);
