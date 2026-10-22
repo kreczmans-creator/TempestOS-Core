@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text;
-using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ExportImport;
+using Tempest.Core.Projects;
 using Tempest.Workspace.Mechanical;
 
 namespace Tempest.Workspace.Integration.DashboardExport;
@@ -11,18 +11,23 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// <summary>
 /// Writes <c>deadlines.ics</c>: every agreed project milestone as a 30-minute
 /// Outlook event at 15:00 UK time on its target date, titled in the standard
-/// output style — "Customer - Project name - Milestone number" — with the
-/// milestone's description in the body. Outlook subscribes to it as its
+/// export style every exported file uses — <c>ACMEE-BRIDGE-M-002</c>, customer
+/// code, project reference, milestone number
+/// (<see cref="ProjectNumbering.MilestoneReference"/>) — so everything in
+/// Outlook says whose work it is and what to bill. The body is the
+/// milestone's title, then the work its description sets out. Outlook subscribes to it as its
 /// own "Tempest deadlines" calendar; Tempest-Dashboard reads the same file for
 /// its due dates, so the two can never disagree.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Agreed only.</b> A project's default "Unquoted" milestone
-/// (<see cref="DeliverableService.UnquotedMilestoneTitle"/>) carries a
-/// placeholder date nobody agreed, and a cancelled, superseded, obsolete or
-/// archived milestone is no longer a deadline; neither is exported. Nor is a
-/// milestone of a deleted project.
+/// <b>Agreed only.</b> Only a numbered milestone — one set on the project
+/// with a milestone number — is a deadline. The two milestones Core makes for
+/// itself have no number and no agreed date: a project's default "Unquoted"
+/// milestone (<see cref="DeliverableService.UnquotedMilestoneTitle"/>, a
+/// placeholder date) and an accepted quote's reference milestone (dated to the
+/// quote's validity expiry). A cancelled, superseded, obsolete or archived
+/// milestone is no longer a deadline, and nor is one on a deleted project.
 /// </para>
 /// <para>
 /// <b>Stable.</b> Each event's UID is the milestone's own id, so a moved date
@@ -51,18 +56,15 @@ public sealed class DeadlinesCalendarExportAdapter : IExportable, IExportableKin
         [LifecycleState.Cancelled, LifecycleState.Superseded, LifecycleState.Obsolete, LifecycleState.Archived];
 
     private readonly EngineeringDomainContext _domainContext;
-    private readonly IOrganisationCatalog? _organisations;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="DeadlinesCalendarExportAdapter"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository, read for projects and their milestones.</param>
     /// <param name="timeProvider">The clock for <c>DTSTAMP</c>; <see langword="null"/> uses <see cref="TimeProvider.System"/>.</param>
-    /// <param name="organisations">Where a project's client name is read; <see langword="null"/>, or a client not in it, leaves the customer out of the title rather than printing an id.</param>
-    public DeadlinesCalendarExportAdapter(EngineeringDomainContext domainContext, TimeProvider? timeProvider = null, IOrganisationCatalog? organisations = null)
+    public DeadlinesCalendarExportAdapter(EngineeringDomainContext domainContext, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         _domainContext = domainContext;
-        _organisations = organisations;
         _time = timeProvider ?? TimeProvider.System;
     }
 
@@ -129,40 +131,38 @@ public sealed class DeadlinesCalendarExportAdapter : IExportable, IExportableKin
                 !string.Equals(entry.DisplayName, DeliverableService.UnquotedMilestoneTitle, StringComparison.Ordinal));
 
             var milestones = (await repository.MaterialiseAsync<IMilestone>([.. milestoneEntries], cancellationToken).ConfigureAwait(false))
-                .Where(m => !NotADeadline.Contains(m.Status))
+                .Where(m => !string.IsNullOrWhiteSpace(m.Identifier) && !NotADeadline.Contains(m.Status))
                 .ToList();
             if (milestones.Count == 0)
                 continue;
 
-            var customer = await ClientNameAsync(project.Id, cancellationToken).ConfigureAwait(false);
-
             foreach (var milestone in milestones)
             {
-                // Standard output style: Customer - Project name - Milestone number.
-                // A milestone with no number falls back to its title so the event still names it.
-                var title = string.Join(" - ", new[] { customer, project.DisplayName, milestone.Identifier ?? milestone.DisplayName }
-                    .Where(part => !string.IsNullOrWhiteSpace(part)));
+                var number = milestone.Identifier!.Trim();
                 deadlines.Add(new Deadline(
                     milestone.Id,
                     DateOnly.FromDateTime(milestone.TargetDate.UtcDateTime),
-                    title,
-                    milestone.DisplayName));
+                    ProjectNumbering.MilestoneReference(project.Identifier, number),
+                    Body(number, milestone)));
             }
         }
 
         return [.. deadlines.OrderBy(d => d.Date).ThenBy(d => d.Summary, StringComparer.Ordinal).ThenBy(d => d.MilestoneId)];
     }
 
-    private async Task<string?> ClientNameAsync(Guid projectId, CancellationToken cancellationToken)
+    /// <summary>
+    /// The milestone's title, then the work its description sets out when one
+    /// was written —
+    /// not the placeholder <c>ProjectMilestoneService</c> stores when none was
+    /// ("Milestone MS-2 — Stage 2 issue."), which only repeats the title.
+    /// </summary>
+    private static string Body(string number, IMilestone milestone)
     {
-        if (_organisations is null)
-            return null;
-
-        var project = (await _domainContext.Repository.MaterialiseAsync<IProject>([projectId], cancellationToken).ConfigureAwait(false)).SingleOrDefault();
-        if (project?.ClientOrganisationId is not { Length: > 0 } clientId)
-            return null;
-
-        return (await _organisations.FindAsync(clientId, cancellationToken).ConfigureAwait(false))?.Definition.Name;
+        var description = (milestone as IHasRevisions)?.Content?.Trim();
+        var placeholder = $"Milestone {number} — {milestone.DisplayName.Trim()}.";
+        return string.IsNullOrEmpty(description) || string.Equals(description, placeholder, StringComparison.Ordinal)
+            ? milestone.DisplayName
+            : $"{milestone.DisplayName}\n\n{description}";
     }
 
     private static string Local(DateTime value) => value.ToString("yyyyMMdd'T'HHmmss", CultureInfo.InvariantCulture);

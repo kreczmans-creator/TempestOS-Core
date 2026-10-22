@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Tempest.Core.BackgroundServices;
-using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessGovernance.Contracts;
 using Tempest.Core.BusinessGovernance.Quotations;
 using Tempest.Core.Commands;
@@ -96,7 +95,6 @@ public sealed class DashboardExportHostedService : IHostedService
     /// <param name="configuration">Read once per tick for <see cref="DashboardExportOptions.ExportDirectory"/> — a directory change takes effect on the very next export, no restart required.</param>
     /// <param name="logger">An optional logger for diagnostic output.</param>
     /// <param name="xeroApi">Core's Xero API, registered only when Xero is the invoicing connector; <see langword="null"/> writes no <c>accounting.json</c>, so the dashboard shows no ledger rather than an empty one.</param>
-    /// <param name="organisations">The organisation catalogue, passed straight through to <see cref="DeadlinesCalendarExportAdapter"/> for each deadline's customer name.</param>
     /// <param name="accountsReadModel">Core's accounts read model, passed straight through to <see cref="AccountingExportAdapter"/> for its cash, cash flow and forward cash sections.</param>
     public DashboardExportHostedService(
         EngineeringDomainContext domainContext,
@@ -109,8 +107,7 @@ public sealed class DashboardExportHostedService : IHostedService
         IConfigurationProvider configuration,
         ILogger? logger = null,
         XeroAccountingApi? xeroApi = null,
-        IAccountsReadModel? accountsReadModel = null,
-        IOrganisationCatalog? organisations = null)
+        IAccountsReadModel? accountsReadModel = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(requirementsService);
@@ -126,7 +123,7 @@ public sealed class DashboardExportHostedService : IHostedService
         _contracts = new ContractsExportAdapter(contractCatalog);
         _quotes = new QuotesExportAdapter(quotationCatalog);
         _reviews = new ReviewQueueExportAdapter(domainContext, requirementsService);
-        _deadlines = new DeadlinesCalendarExportAdapter(domainContext, organisations: organisations);
+        _deadlines = new DeadlinesCalendarExportAdapter(domainContext);
         _accounting = xeroApi is null ? null : new AccountingExportAdapter(xeroApi, accounts: accountsReadModel);
         _configuration = configuration;
         _logger = logger;
