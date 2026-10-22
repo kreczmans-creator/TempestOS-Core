@@ -149,6 +149,45 @@ public sealed class PersistenceRootResolver
         File.WriteAllText(markerPath, JsonSerializer.Serialize(new FirstRunMarker(chosenRoot)));
     }
 
+    /// <summary>
+    /// Carries a first-run choice recorded by a build before `v0.25.3` out of
+    /// Velopack's install root, where a reinstall would clear it, into
+    /// <see cref="IInstalledAppLocator.InstalledDataDirectory"/>. Data kept
+    /// in the old default folder moves with it. Does nothing once the new
+    /// folder holds a choice, or when there is nothing to carry.
+    /// </summary>
+    /// <returns>The persistence root now recorded, or <see langword="null"/> when nothing was carried.</returns>
+    public string? MigrateLegacyChoice()
+    {
+        if (_locator.InstalledDataDirectory is not { } dataDirectory
+            || _locator.LegacyDataDirectory is not { } legacyDirectory
+            || string.Equals(Path.GetFullPath(dataDirectory), Path.GetFullPath(legacyDirectory), StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (File.Exists(Path.Combine(dataDirectory, FirstRunMarkerFileName))
+            || !TryReadFirstRunMarker(Path.Combine(legacyDirectory, FirstRunMarkerFileName), out var recordedRoot)
+            || recordedRoot is null)
+        {
+            return null;
+        }
+
+        var legacyDefault = Path.Combine(legacyDirectory, InstalledPersistenceFolderName);
+        var newDefault = Path.Combine(dataDirectory, InstalledPersistenceFolderName);
+        if (string.Equals(Path.GetFullPath(recordedRoot), Path.GetFullPath(legacyDefault), StringComparison.OrdinalIgnoreCase)
+            && Directory.Exists(legacyDefault)
+            && !Directory.Exists(newDefault))
+        {
+            Directory.CreateDirectory(dataDirectory);
+            Directory.Move(legacyDefault, newDefault);
+            recordedRoot = newDefault;
+        }
+
+        RecordFirstRunChoice(recordedRoot);
+        return recordedRoot;
+    }
+
     private static bool TryReadCliArgument(IReadOnlyList<string> args, out string? value)
     {
         const string equalsPrefix = CliArgumentName + "=";

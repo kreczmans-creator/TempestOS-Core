@@ -38,6 +38,10 @@ public sealed class EngineeringDisciplineNavigationTests
             // The command bar is not on screen until a discipline is picked.
             Assert.Empty(window.GetLogicalDescendants().OfType<RibbonView>());
 
+            // v0.25.2 independent test E7: the dashboard sits at the left, like every other page.
+            var dashboard = window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.EngineeringDashboardView>().Single();
+            Assert.Equal(Avalonia.Layout.HorizontalAlignment.Left, dashboard.GetLogicalDescendants().OfType<StackPanel>().First(p => p.MaxWidth == 900).HorizontalAlignment);
+
             area.SelectNode(EngineeringDisciplines.NavigatorName("Requirements"));
             await WaitUntilAsync(() => navigator.Current.Area == ShellArea.Engineering);
             await window.RenderCurrentModuleAsync();

@@ -108,6 +108,13 @@ public sealed class CustomersSuppliersJourneyTests
             await RenderUntilAsync(window, () => view.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("already in use", StringComparison.Ordinal) == true));
             Assert.Single(await organisations.ListAsync());
 
+            // v0.25.2 independent test P3: the refusal is in red beside the button, not only at the top.
+            var problem = view.GetLogicalDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == "Save problem");
+            Assert.Equal("Customer code 'ACMEE' is already in use.", problem.Text);
+            Assert.Same(problem.Parent, view.GetLogicalDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == "Save organisation").Parent);
+            var red = Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(problem.Foreground).Color;
+            Assert.True(red.R > red.G && red.R > red.B, $"The save problem should be red, not {red}.");
+
             code.Text = "ACM";
             ClickButton(view, "Save organisation");
             await RenderUntilAsync(window, () => view.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("exactly 5 characters", StringComparison.Ordinal) == true));

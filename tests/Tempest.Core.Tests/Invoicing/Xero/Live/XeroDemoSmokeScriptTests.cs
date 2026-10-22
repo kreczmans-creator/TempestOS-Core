@@ -83,14 +83,14 @@ public sealed class XeroDemoSmokeScriptTests
     }
 
     [Fact]
-    public void Script_DataFolderHelp_SaysTheDefaultFollowsVersion_AndHowToNameTheRc24Folder()
+    public void Script_DataFolderHelp_NamesTheOneStableDataFolder()
     {
         var content = File.ReadAllText(ScriptPath, Encoding.ASCII);
         var help = content[content.IndexOf(".PARAMETER DataFolder", StringComparison.Ordinal)..content.IndexOf(".PARAMETER Connect", StringComparison.Ordinal)];
 
-        // The default follows VERSION (0.24.0: the rc24 folder); the runbook still names it explicitly.
-        Assert.Contains("VERSION", help, StringComparison.Ordinal);
-        Assert.Contains("-DataFolder C:\\TempestOS-rc24-data", help, StringComparison.Ordinal);
+        // v0.25.3 (P1): one data folder for every version, so the Xero connection carries across updates.
+        Assert.Contains("C:\\TempestOS-data", help, StringComparison.Ordinal);
+        Assert.Contains("$DataFolder = \"C:\\TempestOS-data\"", content, StringComparison.Ordinal);
     }
 
     [Fact]

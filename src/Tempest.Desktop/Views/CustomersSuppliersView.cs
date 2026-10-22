@@ -101,6 +101,10 @@ public sealed class CustomersSuppliersView : UserControl
     private readonly TextBox _website = Field("Website");
     private readonly Button _saveButton = new() { Content = "Save organisation", MinHeight = DesignTokens.ControlSizeMedium };
 
+    // Why a save was refused, in red beside the button where the eye is
+    // (`v0.25.2` independent test P3: the note at the top went unseen).
+    private readonly TextBlock _saveProblem = new() { FontWeight = Avalonia.Media.FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center, TextWrapping = Avalonia.Media.TextWrapping.Wrap, MaxWidth = 600 };
+
     private readonly StackPanel _contactsSection = new() { Spacing = DesignTokens.SpaceSm, IsVisible = false };
     private readonly ListBox _contactList = new() { MaxHeight = 200 };
     private readonly TextBox _contactName = Field("Contact name");
@@ -289,7 +293,12 @@ public sealed class CustomersSuppliersView : UserControl
         body.Children.Add(_status);
         body.Children.Add(_formHeading);
         body.Children.Add(form);
-        body.Children.Add(_saveButton);
+        ThemeReactiveBrush.Bind(_saveProblem, TextBlock.ForegroundProperty, BrandPalette.DangerBrushKey);
+        AutomationProperties.SetName(_saveProblem, "Save problem");
+        var saveRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd };
+        saveRow.Children.Add(_saveButton);
+        saveRow.Children.Add(_saveProblem);
+        body.Children.Add(saveRow);
         body.Children.Add(_xeroSection);
         body.Children.Add(_contactsSection);
 
@@ -538,6 +547,7 @@ public sealed class CustomersSuppliersView : UserControl
         _email.Text = o.EmailAddress;
         _website.Text = o.Website;
         _status.Text = string.Empty;
+        _saveProblem.Text = string.Empty;
 
         _contactsSection.IsVisible = true;
         _contactList.ItemsSource = null;
@@ -574,6 +584,7 @@ public sealed class CustomersSuppliersView : UserControl
         HideXero();
         _list.SelectedItem = null;
         _status.Text = string.Empty;
+        _saveProblem.Text = string.Empty;
         _name.Focus();
     }
 
@@ -610,12 +621,22 @@ public sealed class CustomersSuppliersView : UserControl
             SetCode(suggestion);
     }
 
+    private void RefuseSave(string reason)
+    {
+        _status.Text = reason;
+        _saveProblem.Text = reason;
+    }
+
+    /// <summary>What the red note beside <c>Save organisation</c> says, or empty.</summary>
+    internal string SaveProblemText => _saveProblem.Text ?? string.Empty;
+
     private async Task SaveAsync()
     {
+        _saveProblem.Text = string.Empty;
         var name = _name.Text?.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
-            _status.Text = "A legal name is required.";
+            RefuseSave("A legal name is required.");
             return;
         }
 
@@ -629,7 +650,7 @@ public sealed class CustomersSuppliersView : UserControl
             .SelectMany(r => new[] { r.Definition.CustomerCode, r.Id, r.Definition.Reference });
         if (ProjectNumbering.ValidateCustomerCode(code, takenElsewhere) is { } refusal)
         {
-            _status.Text = refusal;
+            RefuseSave(refusal);
             return;
         }
 
@@ -654,7 +675,7 @@ public sealed class CustomersSuppliersView : UserControl
                 var current = await _organisations.FindAsync(_editingRecordId).ConfigureAwait(true);
                 if (current is null)
                 {
-                    _status.Text = $"'{_editingRecordId}' is no longer registered.";
+                    RefuseSave($"'{_editingRecordId}' is no longer registered.");
                     return;
                 }
 
@@ -665,7 +686,7 @@ public sealed class CustomersSuppliersView : UserControl
         }
         catch (Exception ex) when (ex is ReferenceDataException or ArgumentException)
         {
-            _status.Text = ex.Message;
+            RefuseSave(ex.Message);
             return;
         }
 

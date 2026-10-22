@@ -34,9 +34,9 @@ Use a project with an identifier (e.g. *TESTY-TRIALX*) that has a project folder
 |---|---|---|---|---|---|
 | E1 | Create a **new** project with a folder → open the folder in File Explorer | The standard set: `01 Commercial` (01 Quotes, 02 Customer PO & Contract, 03 Purchase Orders, 04 Invoices), `02 Customer Data`, `03 Requirements`, `04 Design` (01 CAD, 02 Drawings, 03 Calculations), `05 Documents`, `06 Evidence & Verification`, `07 Reports`, `08 Correspondence`, `09 Issued to Customer`, `10 Sign-off & Handover`, `99 Superseded` | Yes | | |
 | E2 | Export a quote PDF | The save dialog opens in `01 Commercial\01 Quotes`. File `<project>-Q-<n>-R1-quote.pdf` | Yes | | |
-| E3 | Export the **same** quote again | Suggested name ends in **-R2-**. Cancel the dialog, export once more: still **-R2-** (a cancel uses no revision) | Yes | | |
+| E3 | Export the **same** quote again, unchanged; then edit a line and export | Unchanged it stays **-R1-** (a quote carries its own revision); after the edit **-R2-** | Yes | | |
 | E4 | Invoicing → export an invoice (was X6) | The dialog opens in `01 Commercial\04 Invoices`. The file is named by the **invoice number** (the same as in Xero) plus `-R1-` | Yes | | |
-| E5 | Close and relaunch TempestOS, then export the E3 quote again | **-R3-**: revisions survive a restart | Yes | | |
+| E5 | Close and relaunch TempestOS, then export a progress report twice (Projects dashboard) | The second is one revision above the first, and both are above any report exported before the relaunch: revisions survive a restart | Yes | | |
 | E6 | Projects dashboard → export a progress report | Opens in `07 Reports`. File `<project>-RPT-001-R<n>-…pdf` | No | | |
 | E7 | Project → drawing register export | Opens in `04 Design\02 Drawings`. File `<project>-REG-001-R<n>-…pdf` | No | | |
 | E8 | Timesheet → export the week | File `TSHT-<you>-<week start>-R<n>-…pdf` | No | | |

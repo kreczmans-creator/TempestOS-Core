@@ -22,16 +22,24 @@ public interface IInstalledAppLocator
 
     /// <summary>
     /// This install's own fixed, per-user data folder (on Windows,
-    /// <c>%LOCALAPPDATA%\TempestOS</c>) — where the first-run marker lives,
-    /// and the parent of the installed default persistence root
-    /// (<c>...\TempestOS\persistence-data</c>). <see langword="null"/> when
-    /// <see cref="IsInstalled"/> is <see langword="false"/>.
+    /// <c>%LOCALAPPDATA%\TempestOS-Data</c>) — where the first-run marker
+    /// lives, and the parent of the installed default persistence root
+    /// (<c>...\TempestOS-Data\persistence-data</c>). <see langword="null"/>
+    /// when <see cref="IsInstalled"/> is <see langword="false"/>.
     /// </summary>
     /// <remarks>
-    /// Deliberately not Velopack's own <see cref="Velopack.Locators.IVelopackLocator.RootAppDir"/>:
-    /// that folder holds Velopack's own versioned application content and
-    /// package files, which an application's own persisted user data has no
-    /// business sitting beside.
+    /// Outside Velopack's own install root (<c>%LOCALAPPDATA%\TempestOS</c>,
+    /// named by the package id), which <c>Setup.exe</c> clears when it
+    /// reinstalls over an existing install: data kept there was lost on
+    /// every reinstall (`v0.25.2` independent test, P1).
     /// </remarks>
     string? InstalledDataDirectory { get; }
+
+    /// <summary>
+    /// Where builds before `v0.25.3` kept the first-run marker and default
+    /// data (<c>%LOCALAPPDATA%\TempestOS</c>, inside Velopack's install
+    /// root), so <see cref="PersistenceRootResolver.MigrateLegacyChoice"/>
+    /// can carry them out; <see langword="null"/> when there is none.
+    /// </summary>
+    string? LegacyDataDirectory => null;
 }

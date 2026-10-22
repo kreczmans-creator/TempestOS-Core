@@ -49,7 +49,7 @@ public sealed class EngineeringDashboardView : UserControl
         _commandDispatcher = commandDispatcher;
         _openObjectRightUp = openObjectRightUp;
 
-        var page = new StackPanel { Margin = DesignTokens.PagePadding, Spacing = DesignTokens.SpaceXl, MaxWidth = 900 };
+        var page = new StackPanel { Margin = DesignTokens.PagePadding, Spacing = DesignTokens.SpaceXl, MaxWidth = 900, HorizontalAlignment = HorizontalAlignment.Left };
         page.Children.Add(PageHeading.Label("ENGINEERING"));
         page.Children.Add(PageHeading.Title("Dashboard"));
         page.Children.Add(Section("Calculations", _calculationsList));

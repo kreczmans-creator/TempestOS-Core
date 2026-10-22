@@ -24,8 +24,11 @@ namespace Tempest.Desktop.Startup;
 /// </remarks>
 public sealed class VelopackInstalledAppLocator : IInstalledAppLocator
 {
-    /// <summary>The fixed, per-user data folder name under <see cref="Environment.SpecialFolder.LocalApplicationData"/>.</summary>
-    public const string InstalledDataFolderName = "TempestOS";
+    /// <summary>The fixed, per-user data folder name under <see cref="Environment.SpecialFolder.LocalApplicationData"/>, outside Velopack's own <c>TempestOS</c> install root.</summary>
+    public const string InstalledDataFolderName = "TempestOS-Data";
+
+    /// <summary>The folder name builds before `v0.25.3` used: Velopack's own install root, cleared on reinstall.</summary>
+    public const string LegacyDataFolderName = "TempestOS";
 
     /// <inheritdoc />
     public bool IsInstalled =>
@@ -35,5 +38,11 @@ public sealed class VelopackInstalledAppLocator : IInstalledAppLocator
     public string? InstalledDataDirectory =>
         IsInstalled
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), InstalledDataFolderName)
+            : null;
+
+    /// <inheritdoc />
+    public string? LegacyDataDirectory =>
+        IsInstalled
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LegacyDataFolderName)
             : null;
 }
