@@ -1,3 +1,12 @@
+## Branch naming (hard rule)
+
+Every branch carries the version it ships in, so stale branches can be found and cleaned up by version alone.
+
+- Name a new branch `v<version>/<topic>`, lower case, e.g. `v0.25.4/invoice-tab`; a release branch is `release/v<version>`. `<version>` is the release the work will ship in: the next one after `VERSION`, unless it is already bumped.
+- A Claude cloud session cannot choose its branch (it is assigned `claude/...` and may push only there). Its pull request title must instead start with the version: `v0.25.4: what it does`.
+- Dependabot's `dependabot/...` branches are exempt.
+- CI enforces this: the `Branch Name` job fails any pull request that breaks it, and the CI Gate requires that job.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

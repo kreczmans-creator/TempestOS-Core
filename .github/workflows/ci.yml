@@ -792,6 +792,48 @@ jobs:
   # unit of work everywhere else in this pipeline. Independent of
   # build-and-test (needs nothing it produces — only a restore of its own),
   # so it runs in parallel, as governance-health-check does.
+  # Branch naming (PO rule, 2026-10-22; CLAUDE.md "Branch naming"): every
+  # branch carries the version it ships in, so a stale branch can be told
+  # apart, and cleaned up, by version alone. A pull request's head branch is
+  # `v<version>/<topic>` or `release/v<version>`. Two kinds of branch cannot
+  # choose their own name, so the version goes elsewhere: a Claude cloud
+  # session's assigned `claude/...` branch puts it at the start of the PR
+  # title (`v0.25.4: ...`), and Dependabot's `dependabot/...` is exempt.
+  # Pushes (main, release/**, schedule, dispatch) have no head branch to
+  # check, and pass.
+  branch-name:
+    name: Branch Name
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require a versioned branch name
+        env:
+          EVENT: ${{ github.event_name }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT" != "pull_request" ]]; then
+            echo "Not a pull request: no head branch to check."
+            exit 0
+          fi
+          version='v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?'
+          if [[ "$HEAD_REF" =~ ^${version}/[a-z0-9][a-z0-9._-]*$ || "$HEAD_REF" =~ ^release/${version}$ ]]; then
+            echo "Branch '$HEAD_REF' carries its version."
+          elif [[ "$HEAD_REF" == dependabot/* ]]; then
+            echo "Dependabot branch '$HEAD_REF': exempt."
+          elif [[ "$HEAD_REF" == claude/* ]]; then
+            if [[ "$PR_TITLE" =~ ^${version}:\  ]]; then
+              echo "Claude session branch '$HEAD_REF': the PR title carries the version."
+            else
+              echo "::error::Claude session branch '$HEAD_REF' needs the version at the start of the PR title, e.g. 'v0.25.4: what it does' (CLAUDE.md, Branch naming). Edit the title, then re-run this check."
+              exit 1
+            fi
+          else
+            echo "::error::Branch '$HEAD_REF' is not versioned. Name it v<version>/<topic> (e.g. v0.25.4/invoice-tab) or release/v<version> (CLAUDE.md, Branch naming)."
+            exit 1
+          fi
+
   dependency-scan:
     name: Dependency Scan
     runs-on: windows-2022
@@ -1106,7 +1148,7 @@ jobs:
   # printed (v0.23.0 CI board G-23).
   gate:
     name: CI Gate
-    needs: [build-and-test, governance-health-check, dependency-scan]
+    needs: [build-and-test, governance-health-check, dependency-scan, branch-name]
     if: always()
     runs-on: windows-2022
     timeout-minutes: 5
@@ -1131,6 +1173,10 @@ jobs:
           }
           if ("${{ needs.dependency-scan.result }}" -ne "success") {
             Write-Host "::error::Dependency Scan did not succeed - see that job's log for the finding."
+            $failed = $true
+          }
+          if ("${{ needs.branch-name.result }}" -ne "success") {
+            Write-Host "::error::Branch Name did not succeed - the branch (or, for a Claude session branch, the PR title) must carry its version; see that job's log."
             $failed = $true
           }
           if ($failed) { exit 1 }
