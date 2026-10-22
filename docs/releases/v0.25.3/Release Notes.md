@@ -29,6 +29,14 @@ A patch on `v0.25.2`, from the independent from-scratch test (2026-10-22).
   - **Business → Organisation:** organisation identity and bank details, with their own Save.
   - Code: `ShellArea.SystemSettings`, `GlobalNavigationRail.cs`, `SettingsView.cs` (`SettingsPage`), `OrganisationView.cs`, `BusinessAreaView.cs`.
 
+## Added
+
+- **Q5: a project's invoices are in the project.** A new **Invoices** tab sits right after **Quote**. It is the invoicing surface scoped to that project: New, Available to invoice, Sent, Outstanding and Closed, with Raise, Send, Reconcile, Void and Export.
+- **E2: requirement identifiers number themselves.**
+  - Leave **Identifier** blank on *Create Requirement* and it takes the next number in the project's own sequence, e.g. `TESTY-TRIALX-REQ-001`, `-002`, and so on.
+  - Outside a customer-coded project, the sequence is `REQ-001`.
+  - A typed identifier still stands, and the sequence carries on past the highest number used. A number is never reissued.
+
 ## Upgrading from v0.25.2 — do this once
 
 - **Using the in-app update?** Nothing to do: your data location is carried over.

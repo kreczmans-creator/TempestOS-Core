@@ -719,7 +719,6 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("requirements.create", "identifier")]
     [InlineData("requirements.create", "statement")]
     [InlineData("requirements.create-group", "name")]
     [InlineData("requirements.create-collection", "name")]
@@ -732,6 +731,16 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         Assert.Null(parameter.Check("REQ-001"));
         Assert.NotNull(parameter.Check(""));
         Assert.NotNull(parameter.Check("   "));
+    }
+
+    /// <summary>`v0.25.3` independent test E2: a blank identifier takes the next in the project's sequence.</summary>
+    [Fact]
+    public void RequirementsCreate_Identifier_MayBeLeftBlank()
+    {
+        var parameter = Parameter(Binding("requirements.create"), "identifier");
+
+        Assert.Null(parameter.Check("REQ-001"));
+        Assert.Null(parameter.Check(""));
     }
 
     [Fact]
@@ -780,7 +789,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         var invocation = await _registry.InvokeAsync(
             "requirements.create",
             CommandContext.Empty,
-            Answering(("identifier", "   "), ("statement", "Blank identifiers must not reach the constructor.")));
+            Answering(("identifier", "REQ-001"), ("statement", "   ")));
 
         Assert.Equal(CommandOutcome.Unavailable, invocation.Outcome);
         Assert.Contains("required", invocation.Reason!, StringComparison.OrdinalIgnoreCase);

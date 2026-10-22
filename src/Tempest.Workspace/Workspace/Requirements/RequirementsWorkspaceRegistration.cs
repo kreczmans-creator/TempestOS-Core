@@ -52,7 +52,8 @@ public static class RequirementsWorkspaceRegistration
 
     /// <summary>Registers every Requirements Management Workspace extension point.</summary>
     public static void Register(
-        IWorkspaceManager manager, IRequirementsService requirementsService, ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry)
+        IWorkspaceManager manager, IRequirementsService requirementsService, ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry,
+        Func<Guid, CancellationToken, Task<string?>>? projectIdentifierOf = null)
     {
         ArgumentNullException.ThrowIfNull(manager);
         ArgumentNullException.ThrowIfNull(requirementsService);
@@ -100,7 +101,7 @@ public static class RequirementsWorkspaceRegistration
         // uses. UndeleteRequirementCommand is registered as a handler only
         // — never a CommandDescriptor — reached solely as a compensation,
         // exactly as `EngineeringDomain`'s own `Undelete*ObjectCommand`s.
-        commandDispatcher.RegisterHandler<CreateRequirementCommand>(new CreateRequirementCommandHandler(requirementsService, commandDispatcher));
+        commandDispatcher.RegisterHandler<CreateRequirementCommand>(new CreateRequirementCommandHandler(requirementsService, commandDispatcher, projectIdentifierOf));
         commandDispatcher.RegisterHandler<ReviseRequirementCommand>(new ReviseRequirementCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<SetRequirementStatusCommand>(new SetRequirementStatusCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<SetRequirementOwnerCommand>(new SetRequirementOwnerCommandHandler(requirementsService));
@@ -133,7 +134,7 @@ public static class RequirementsWorkspaceRegistration
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.Create, displayName: "Create Requirement", category: "Requirements",
-            description: "Creates a new Requirement with a business identifier and statement.")
+            description: "Creates a new Requirement with a statement and a business identifier — the next in the project's sequence when left blank.")
         {
             // Both prompts the Ribbon's own Create flow already collects, with the
             // identical "an identifier is required"/"a statement is required"
@@ -143,9 +144,11 @@ public static class RequirementsWorkspaceRegistration
                 CommandContextRequirement.None,
                 (context, values) => new CreateRequirementCommand(
                     values["identifier"], values["statement"],
-                    groupId: context.Primary is { Kind: RequirementsService.RequirementGroupDocumentKind } selectedGroup ? selectedGroup.ObjectId : null),
+                    groupId: context.Primary is { Kind: RequirementsService.RequirementGroupDocumentKind } selectedGroup ? selectedGroup.ObjectId : null,
+                    projectId: context.ProjectId),
                 [
-                    WorkspaceCommandBindings.Required("identifier", "Identifier (e.g. REQ-001)"),
+                    // `v0.25.3` independent test E2: blank takes the next number in the project's sequence.
+                    WorkspaceCommandBindings.Text("identifier", "Identifier (blank for the next number)"),
                     WorkspaceCommandBindings.Required("statement", "Statement"),
                 ],
                 mutates: true),

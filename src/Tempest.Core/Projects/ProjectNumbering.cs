@@ -106,6 +106,9 @@ public static class ProjectNumbering
     /// <summary>A timesheet — one person's week, across projects.</summary>
     public const string Timesheet = "TSHT";
 
+    /// <summary>A requirement's generated identifier (`v0.25.3` independent test E2): <c>TESTY-TRIALX-REQ-001</c>.</summary>
+    public const string Requirement = "REQ";
+
     /// <summary>
     /// The document-type code table — the one definition of every
     /// <c>DOCTYPE</c> the platform writes into a project-centric number

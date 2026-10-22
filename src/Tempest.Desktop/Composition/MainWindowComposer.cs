@@ -730,6 +730,20 @@ internal sealed partial class MainWindowComposer
             projectDirectory, organisationCatalog);
         projectQuoteView.ProjectFolders = projectFolderLocator;
         invoicingView.ProjectFolders = projectFolderLocator;
+
+        // `v0.25.3` independent test Q5: the project's own Invoices tab — a
+        // second invoicing surface, scoped to the open project as the
+        // Business one already is when a project is open.
+        var projectInvoicesView = new InvoicingView(
+            composition.DomainContext, composition.CommandRegistry, () => host.ProjectContext!.Current?.Id, openObjectRightUp,
+            organisationCatalog, documentExporter, invoiceRenderer, IssuerName, ApplicationVersionText)
+        {
+            ParameterPrompt = commandPrompt.Prompt,
+            WorkspaceChanges = composition.WorkspaceChanges,
+            XeroBadges = xeroBadges,
+            ProjectFolders = projectFolderLocator,
+        };
+        projectInvoicesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
         var projectFolderCoordinator = new ProjectFolderCoordinator(projectFolderLocator, (message, outcome) => actionReporter.ReportAsync(message, outcome));
         composition.EventBus.Subscribe(projectFolderCoordinator);
 
@@ -852,7 +866,8 @@ internal sealed partial class MainWindowComposer
             host.ProjectContext!, host.ProjectDirectory!, host.ShellNavigator!, host.ProjectDocuments!, host.ProjectRequirements!,
             host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView, projectQuoteView,
             evidenceWorkspace, signOffView, projectDetailsView, composition.DomainContext,
-            documentExporter, drawingRegisterRenderer, ApplicationVersionText);
+            documentExporter, drawingRegisterRenderer, ApplicationVersionText,
+            projectInvoicesView);
         projectWorkspace.ProjectFolders = projectFolderLocator;
         projectWorkspace.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 

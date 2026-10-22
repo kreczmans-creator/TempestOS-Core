@@ -53,6 +53,11 @@ public static class ProjectAreas
         new(ProjectArea.Quote, "Quote", "◐", NavigationAvailability.Implemented,
             "This project's own quotation(s) — identity, lines and totals while Draft, Send/Accept/Decline/Export, and the deliverables and requirements a quote creates once accepted."),
 
+        // `v0.25.3` independent test Q5: the project's invoices sit beside
+        // its quote, as the commercial pair.
+        new(ProjectArea.Invoices, "Invoices", "£", NavigationAvailability.Implemented,
+            "This project's own invoice requests — New, Available to invoice, Sent, Outstanding and Closed — with Raise, Send, Reconcile, Void and Export."),
+
         // `WP 19.2B`: this tab's own title changed from "Engineering" to
         // "Structure" — the surface itself is unchanged (still the real
         // Engineering Workspace, ribbon and docking, scoped to this

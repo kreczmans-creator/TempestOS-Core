@@ -202,7 +202,9 @@ public static class EngineeringWorkspaceComposer
         var purchaseOrderService = (IPurchaseOrderService)services.GetService(typeof(IPurchaseOrderService));
 
         MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
-        RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
+        RequirementsWorkspaceRegistration.Register(
+            manager, requirementsService, commandDispatcher, commandRegistry,
+            async (projectId, ct) => (await domainContext.Repository.FindAsync(projectId, ct).ConfigureAwait(false) as Tempest.Core.EngineeringDomain.Project)?.Identifier);
         var calculationTemplateRegistry = CalculationsWorkspaceRegistration.Register(manager, domainContext, calculationEngine, commandDispatcher, commandRegistry);
         DocumentsWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry);
         VerificationWorkspaceRegistration.Register(manager, domainContext, verificationService, commandDispatcher, commandRegistry);

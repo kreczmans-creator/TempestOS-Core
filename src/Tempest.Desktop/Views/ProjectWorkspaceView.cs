@@ -64,6 +64,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly ProjectTimelineView _timelineView = new();
     private readonly ProjectDeliverablesView _deliverablesView;
     private readonly ProjectQuoteView _quoteView;
+    private readonly InvoicingView? _invoicesView;
     private readonly EvidenceWorkspaceView _evidenceView;
     private readonly ProjectSignOffView _signOffView;
     private readonly ProjectDetailsView _detailsView;
@@ -296,7 +297,8 @@ public sealed class ProjectWorkspaceView : UserControl
         EngineeringDomainContext domainContext,
         DocumentExporter? documentExporter = null,
         DrawingRegisterDocumentRenderer? drawingRegisterRenderer = null,
-        Func<string>? applicationVersionText = null)
+        Func<string>? applicationVersionText = null,
+        InvoicingView? invoicesView = null)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
         ArgumentNullException.ThrowIfNull(directory);
@@ -323,6 +325,7 @@ public sealed class ProjectWorkspaceView : UserControl
         _milestones = milestones;
         _deliverablesView = deliverablesView;
         _quoteView = quoteView;
+        _invoicesView = invoicesView;
 
         // DEFECT-2 of the overnight real-shell journey (2026-09-16, `WP 21.5C`
         // Linux): Accept created the Deliverables and Requirements but the
@@ -614,6 +617,8 @@ public sealed class ProjectWorkspaceView : UserControl
         await _deliverablesView.RefreshAsync().ConfigureAwait(true);
         _quoteView.SetArchived(isArchived);
         await _quoteView.RefreshAsync().ConfigureAwait(true);
+        if (_invoicesView is not null)
+            await _invoicesView.RefreshAsync().ConfigureAwait(true);
         _evidenceView.SetArchived(isArchived);
         await _evidenceView.RefreshAsync().ConfigureAwait(true);
         await _signOffView.RefreshAsync().ConfigureAwait(true);
@@ -704,6 +709,7 @@ public sealed class ProjectWorkspaceView : UserControl
             ProjectArea.Details => _detailsView,
             ProjectArea.Overview => _overview,
             ProjectArea.Quote => _quoteView,
+            ProjectArea.Invoices => (Control?)_invoicesView ?? new TextBlock { Text = "Invoicing is not available in this session." },
             // `WP 19.2B`: the Structure tab embeds the engineering surface
             // (ribbon + docking) through `_structureHost`, filled once
             // `MainWindow`/`MainWindowComposer` has built that surface (see
