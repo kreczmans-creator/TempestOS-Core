@@ -217,7 +217,7 @@ public sealed class Red_ConcurrencyAndTamper
         Assert.True(stored.Status == CalcInstanceStatus.Superseded || drafts.Count == 0, $"the original is {stored.Status} and {drafts.Count} orphan draft(s) exist; a retry {(retryError is null ? "succeeded" : "threw " + retryError.GetType().Name)}");
         Assert.True(retryError is null, $"after a crash mid-revise the issued calculation can never be revised again: {retryError?.GetType().Name}: {retryError?.Message}");
         Assert.True(retried!.Succeeded, $"after a crash mid-revise the retry is refused: {retried.Reason}");
-        Assert.Single((await host.Store.ListInstancesAsync(issued.ProjectId)).Where(i => i.PredecessorId == issued.Id));
+        Assert.Single(await host.Store.ListInstancesAsync(issued.ProjectId), i => i.PredecessorId == issued.Id);
     }
 
     /// <summary>R-19: four concurrent checks on one draft all succeed; the Evidence records a check four times over (no optimistic concurrency in RecordCheckAsync either).</summary>
@@ -332,7 +332,7 @@ public sealed class Red_ConcurrencyAndTamper
         var stored = (await host.Store.FindInstanceAsync(instance.Id))!;
         Assert.True(ex is null, $"Issue threw {ex?.GetType().Name}: {ex?.Message}");
         Assert.True(stored.Issue is null || stored.Issue.SheetText.Length < 400_000, $"the issued sheet text is {stored.Issue!.SheetText.Length} characters");
-        Assert.True(false, "a 2 MB provenance reference was accepted by UpdateInputs");
+        Assert.Fail("a 2 MB provenance reference was accepted by UpdateInputs");
     }
 
     /// <summary>Tried (Low): a crash on the instance write of Create leaves an Evidence and a register entry that govern nothing.</summary>
