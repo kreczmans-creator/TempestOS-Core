@@ -1,0 +1,190 @@
+[
+  {
+    "Symbol": "F_x",
+    "Number": 0,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-CASE-1",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "F_y",
+    "Number": -50,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-CASE-1",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "-50"
+  },
+  {
+    "Symbol": "M_x",
+    "Number": 0,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-CASE-1",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "M_y",
+    "Number": 0,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-CASE-1",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "N",
+    "Number": 0,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-CASE-1",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "T_R",
+    "Number": 45,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "M12 8.8 tension resistance per project calc",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "45"
+  },
+  {
+    "Symbol": "T_z",
+    "Number": 0,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-CASE-1",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "V_R",
+    "Number": 40,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "M12 8.8 shear resistance, EN 1993-1-8 Table 3.4 per project calc",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "bolts",
+    "Rows": [
+      {
+        "Cells": {
+          "x": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "A": {
+            "Number": 84.3,
+            "Unit": "mm^2"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": 100,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "A": {
+            "Number": 84.3,
+            "Unit": "mm^2"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": 100,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": 100,
+            "Unit": "mm"
+          },
+          "A": {
+            "Number": 84.3,
+            "Unit": "mm^2"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": 100,
+            "Unit": "mm"
+          },
+          "A": {
+            "Number": 84.3,
+            "Unit": "mm^2"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-BRK-09",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4 row(s)"
+  },
+  {
+    "Symbol": "e_x",
+    "Number": 200,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-BRK-09",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "200"
+  },
+  {
+    "Symbol": "e_y",
+    "Number": 50,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-BRK-09",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  }
+]
