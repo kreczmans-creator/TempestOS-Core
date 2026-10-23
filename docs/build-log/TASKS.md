@@ -11,6 +11,7 @@
 - [ ] Issue in one transaction + crash-mid-issue test; auto-link to Calculation register; calc packs; stale marker
 - [ ] Reports: issued calc sheet opens from shell; page < 200 KB
 - [ ] Generic: tornado sweep, Monte Carlo sampler, CSV import/export
+- [ ] Desktop: shared CalcSheetView per §3.8a (live recalc, unit pickers, validation, provenance, governing bar, Ctrl+K, Show working, read-only issued)
 - [ ] 1D stack + thick-cylinder migrated onto the engine; old tests pass
 - [ ] Yellow pass
 ## Phase 2 — mechanical (`v0.26.0/phase-2-mech`)
