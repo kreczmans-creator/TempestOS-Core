@@ -26,7 +26,7 @@ internal sealed class Parser
 
         var tokens = new Lexer(text, limits).Tokenize();
         var parser = new Parser(tokens, limits);
-        var node = parser.ParseConversion();
+        var node = parser.ParseOr();
 
         if (parser.Current.Kind != TokenKind.End)
             throw new CalcParseException($"Unexpected '{parser.Current.Text}'.", parser.Current.Position);
@@ -58,7 +58,7 @@ internal sealed class Parser
 
     private Node ParseConversion()
     {
-        var node = ParseOr();
+        var node = ParseAdditive();
 
         while (IsOperator("in"))
         {
@@ -167,12 +167,12 @@ internal sealed class Parser
 
     private Node ParseComparison()
     {
-        var left = ParseAdditive();
+        var left = ParseConversion();
 
         if (Current.Kind == TokenKind.Operator && Current.Text is "<" or "<=" or ">" or ">=" or "==" or "!=")
         {
             var op = Advance();
-            var right = ParseAdditive();
+            var right = ParseConversion();
             left = new BinaryNode(op.Text, left, right, op.Position);
 
             if (Current.Kind == TokenKind.Operator && Current.Text is "<" or "<=" or ">" or ">=" or "==" or "!=")
@@ -203,7 +203,7 @@ internal sealed class Parser
     {
         var left = ParseUnary();
 
-        while (Current.Kind == TokenKind.Operator && Current.Text is "*" or "/" or "%")
+        while (Current.Kind == TokenKind.Operator && Current.Text is "*" or "/")
         {
             var op = Advance();
             left = new BinaryNode(op.Text, left, ParseUnary(), op.Position);
@@ -250,12 +250,12 @@ internal sealed class Parser
         {
             var at = Advance().Position;
             Enter();
-            var indices = new List<Node> { ParseConversion() };
+            var indices = new List<Node> { ParseOr() };
 
             if (Current.Kind == TokenKind.Comma)
             {
                 _pos++;
-                indices.Add(ParseConversion());
+                indices.Add(ParseOr());
             }
 
             Leave();
@@ -295,7 +295,7 @@ internal sealed class Parser
 
                     if (Current.Kind != TokenKind.RightParen)
                     {
-                        args.Add(ParseConversion());
+                        args.Add(ParseOr());
 
                         while (Current.Kind == TokenKind.Comma)
                         {
@@ -304,7 +304,7 @@ internal sealed class Parser
                             if (args.Count >= _limits.MaxFunctionArguments)
                                 throw new CalcLimitException(nameof(CalcLimits.MaxFunctionArguments), $"A function call takes at most {_limits.MaxFunctionArguments} arguments.");
 
-                            args.Add(ParseConversion());
+                            args.Add(ParseOr());
                         }
                     }
 
@@ -324,7 +324,7 @@ internal sealed class Parser
             {
                 _pos++;
                 Enter();
-                var inner = ParseConversion();
+                var inner = ParseOr();
                 Leave();
                 Expect(TokenKind.RightParen, "')'");
                 return inner;
@@ -342,7 +342,7 @@ internal sealed class Parser
                 {
                     while (true)
                     {
-                        row.Add(ParseConversion());
+                        row.Add(ParseOr());
 
                         if (++elements > _limits.MaxArrayElements)
                             throw new CalcLimitException(nameof(CalcLimits.MaxArrayElements), $"An array literal holds at most {_limits.MaxArrayElements} elements.");

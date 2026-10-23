@@ -90,7 +90,7 @@ internal sealed class Lexer(string text, CalcLimits limits)
                 case ']': tokens.Add(new Token(TokenKind.RightBracket, "]", start)); break;
                 case ',': tokens.Add(new Token(TokenKind.Comma, ",", start)); break;
                 case ';': tokens.Add(new Token(TokenKind.Semicolon, ";", start)); break;
-                case '+' or '-' or '*' or '/' or '^' or '%' or '·' or '−' or '×' or '÷':
+                case '+' or '-' or '*' or '/' or '^' or '·' or '−' or '×' or '÷':
                     tokens.Add(new Token(TokenKind.Operator, Normalise(c), start));
                     break;
                 case '<' or '>' or '=' or '!':
@@ -175,12 +175,43 @@ internal sealed class Lexer(string text, CalcLimits limits)
         if (_pos < _text.Length && IsUnitStart(_text[_pos]) && !LooksLikeKeyword())
         {
             var unitStart = _pos;
+            var parenDepth = 0;
 
-            while (_pos < _text.Length && IsUnitChar(_text[_pos]))
+            while (_pos < _text.Length)
+            {
+                var u = _text[_pos];
+
+                if (u == '(')
+                {
+                    // A bracket belongs to the unit only right after '/' or '*' and only when closed before a space.
+                    if (_pos == unitStart || _text[_pos - 1] is not ('/' or '*' or '·'))
+                        break;
+
+                    var close = _text.IndexOf(')', _pos);
+                    var space = _text.IndexOfAny([' ', ',', ';', ']'], _pos);
+
+                    if (close < 0 || (space >= 0 && space < close))
+                        break;
+
+                    parenDepth++;
+                }
+                else if (u == ')')
+                {
+                    if (parenDepth == 0)
+                        break;
+
+                    parenDepth--;
+                }
+                else if (!IsUnitChar(u))
+                {
+                    break;
+                }
+
                 _pos++;
+            }
 
             // Do not swallow a trailing operator that was meant for the expression ("2 m *3" vs "2 m*s").
-            var unit = _text[unitStart.._pos].TrimEnd('*', '/', '·', '^', '.');
+            var unit = _text[unitStart.._pos].TrimEnd('*', '/', '·', '^', '.', '-');
             _pos = unitStart + unit.Length;
 
             if (unit.Length > 0)
@@ -218,7 +249,7 @@ internal sealed class Lexer(string text, CalcLimits limits)
 
     private static bool IsUnitStart(char c) => char.IsLetter(c) || c is '°' or 'µ' or 'Ω' or '%' or '‰';
 
-    private static bool IsUnitChar(char c) => char.IsLetterOrDigit(c) || c is '°' or 'µ' or 'Ω' or '%' or '‰' or '/' or '*' or '·' or '^' or '(' or ')' or '-' or '⁻' or '²' or '³' or '⁴';
+    private static bool IsUnitChar(char c) => char.IsLetterOrDigit(c) || c is '°' or 'µ' or 'Ω' or '%' or '‰' or '/' or '*' or '·' or '^' or '-' or '⁻' or '²' or '³' or '⁴';
 
     private void SkipWhitespace()
     {

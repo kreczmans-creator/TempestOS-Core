@@ -47,7 +47,17 @@ public abstract record CalcValue
             return value.ToString("0." + new string('#', sig - 1) + "e+0", CultureInfo.InvariantCulture);
 
         var decimals = (int)Math.Max(0, sig - 1 - magnitude);
-        var rounded = Math.Round(value, Math.Min(decimals, 15), MidpointRounding.ToEven);
+        double rounded;
+
+        if (sig - 1 - magnitude < 0)
+        {
+            var scale = Math.Pow(10, magnitude - sig + 1);
+            rounded = Math.Round(value / scale, MidpointRounding.ToEven) * scale;
+        }
+        else
+        {
+            rounded = Math.Round(value, Math.Min(decimals, 15), MidpointRounding.ToEven);
+        }
 
         if (rounded == 0)
             return "0";

@@ -46,7 +46,7 @@ public sealed partial class CalcSession : ICalcSession
     public CalcStep Assign(string symbol, string expression, string? unit = null, string? description = null, string? clause = null)
     {
         CheckSymbol(symbol);
-        ArgumentException.ThrowIfNullOrWhiteSpace(expression);
+        CheckExpression(expression);
 
         var node = Parser.Parse(expression, Limits);
         var value = _evaluator.Evaluate(node);
@@ -69,7 +69,7 @@ public sealed partial class CalcSession : ICalcSession
 
     public CalcValue Evaluate(string expression)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(expression);
+        CheckExpression(expression);
         return _evaluator.Evaluate(Parser.Parse(expression, Limits));
     }
 
@@ -133,6 +133,12 @@ public sealed partial class CalcSession : ICalcSession
 
         if (symbol is "pi" or "π" or "e" or "g_n" or "true" or "false" or "and" or "or" or "not" or "in" or "if")
             throw new CalcParseException($"'{symbol}' is reserved.");
+    }
+
+    private static void CheckExpression(string? expression)
+    {
+        if (string.IsNullOrWhiteSpace(expression))
+            throw new CalcParseException("The expression is empty.", 0);
     }
 
     private static void CheckFinite(string symbol, CalcValue value)

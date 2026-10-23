@@ -120,17 +120,6 @@ internal sealed class Evaluator(Func<string, CalcValue?> lookup, CalcLimits limi
             case "-": return Add(left, right, -1.0, "−");
             case "*": return Multiply(left, right);
             case "/": return Divide(left, right);
-            case "%":
-            {
-                var (a, b) = Scalars(left, right, "%");
-                RequireSame(a, b, "%");
-
-                if (b.Si == 0)
-                    throw new CalcEvaluationException("Modulo by zero.");
-
-                return new ScalarValue(a.Si - b.Si * Math.Floor(a.Si / b.Si), a.Dimension, a.DisplayUnit);
-            }
-
             case "^": return Power(left, right);
             case "<" or "<=" or ">" or ">=" or "==" or "!=":
             {
@@ -579,6 +568,7 @@ internal sealed class Evaluator(Func<string, CalcValue?> lookup, CalcLimits limi
             "sum" => Sum(args),
             "avg" => Average(args),
             "len" => Length(args),
+            "mod" => Mod(args),
             "pow" => args.Count == 2 ? Power(args[0], args[1]) : throw new CalcEvaluationException("pow(x, n) takes two arguments."),
             "hypot" => Hypot(args),
             "interp" => Interp(args),
@@ -780,6 +770,19 @@ internal sealed class Evaluator(Func<string, CalcValue?> lookup, CalcLimits limi
         };
     }
 
+    private static CalcValue Mod(IReadOnlyList<CalcValue> args)
+    {
+        if (args.Count != 2 || args[0] is not ScalarValue a || args[1] is not ScalarValue b)
+            throw new CalcEvaluationException("mod(a, b) takes two numbers.");
+
+        RequireSame(a, b, "mod");
+
+        if (b.Si == 0)
+            throw new CalcEvaluationException("Modulo by zero.");
+
+        return new ScalarValue(a.Si - b.Si * Math.Floor(a.Si / b.Si), a.Dimension, a.DisplayUnit);
+    }
+
     private static CalcValue Hypot(IReadOnlyList<CalcValue> args)
     {
         var values = Flatten(args, "hypot");
@@ -874,9 +877,11 @@ internal sealed class Evaluator(Func<string, CalcValue?> lookup, CalcLimits limi
             NumberNode n => n.Unit is null ? n.Literal : $"{n.Literal} {n.Unit}",
             TextNode t => $"\"{t.Value}\"",
             BoolNode b => b.Value ? "true" : "false",
-            IdentifierNode id => Constants.ContainsKey(id.Name) ? id.Name : (_lookup(id.Name)?.Format(significantFigures) ?? id.Name),
+            IdentifierNode id => Constants.ContainsKey(id.Name) ? (id.Name == "pi" ? "π" : id.Name) : (_lookup(id.Name)?.Format(significantFigures) ?? id.Name),
             UnaryNode u => u.Operator == "not" ? $"not {Substitute(u.Operand, significantFigures)}" : $"−{WrapIfCompound(u.Operand, significantFigures)}",
-            BinaryNode b => $"{WrapIf(b, b.Left, significantFigures, false)} {Symbol(b.Operator)} {WrapIf(b, b.Right, significantFigures, true)}",
+            BinaryNode b => b.Operator == "^"
+                ? $"{WrapIf(b, b.Left, significantFigures, false)}^{WrapIf(b, b.Right, significantFigures, true)}"
+                : $"{WrapIf(b, b.Left, significantFigures, false)} {Symbol(b.Operator)} {WrapIf(b, b.Right, significantFigures, true)}",
             ConvertNode c => $"{Substitute(c.Operand, significantFigures)} in {c.Unit}",
             CallNode c => $"{c.Name}({string.Join(", ", c.Arguments.Select(a => Substitute(a, significantFigures)))})",
             IndexNode ix => $"{Substitute(ix.Target, significantFigures)}[{string.Join(", ", ix.Indices.Select(a => Substitute(a, significantFigures)))}]",
@@ -901,7 +906,7 @@ internal sealed class Evaluator(Func<string, CalcValue?> lookup, CalcLimits limi
         "and" => 2,
         "<" or "<=" or ">" or ">=" or "==" or "!=" => 3,
         "+" or "-" => 4,
-        "*" or "/" or "%" => 5,
+        "*" or "/" => 5,
         "^" => 6,
         _ => 7,
     };

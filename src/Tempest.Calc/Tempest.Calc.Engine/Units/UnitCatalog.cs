@@ -399,7 +399,7 @@ public static class UnitCatalog
                     throw new CalcUnitException($"Missing ')' in unit '{_text}'.");
 
                 _pos++;
-                return inner with { Symbol = $"({inner.Symbol})" };
+                return inner;
             }
 
             if (_text[_pos] == '1')
@@ -410,18 +410,28 @@ public static class UnitCatalog
 
             var start = _pos;
 
-            while (_pos < _text.Length && IsAtomChar(_text[_pos]))
+            while (_pos < _text.Length && (IsAtomChar(_text[_pos]) || char.IsAsciiDigit(_text[_pos])))
                 _pos++;
 
             if (start == _pos)
                 throw new CalcUnitException($"Unexpected '{_text[_pos]}' in unit '{_text}'.");
 
-            var symbol = _text[start.._pos];
+            // Longest known symbol wins ("mmH2O" before "mm" + exponent "2"); a trailing digit run is an exponent.
+            for (var end = _pos; end > start; end--)
+            {
+                var candidate = _text[start..end];
 
-            if (!TryGetAtomic(symbol, out var unit))
-                throw new CalcUnitException($"Unknown unit '{symbol}'.");
+                if (TryGetAtomic(candidate, out var unit))
+                {
+                    _pos = end;
+                    return unit;
+                }
 
-            return unit;
+                if (!char.IsAsciiDigit(_text[end - 1]) && end < _pos)
+                    break;
+            }
+
+            throw new CalcUnitException($"Unknown unit '{_text[start.._pos]}'.");
         }
 
         private static bool IsAtomChar(char c) => char.IsLetter(c) || c is '°' or 'µ' or 'Ω' or '%' or '‰';
