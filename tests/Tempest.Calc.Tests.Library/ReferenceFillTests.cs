@@ -124,6 +124,11 @@ public sealed class ReferenceFillTests
         Assert.Equal("R_p02", rp.Symbol);
         Assert.Equal(600, rp.Number!.Value, 9);
 
+        // Black B-26: the optional stress area this record does not supply is left derived, with a warning, not a refusal.
+        var absent = Assert.Single(fill.Problems);
+        Assert.Equal(CalcNoticeSeverity.Warning, absent.Severity);
+        Assert.StartsWith("A_s_given: not filled", absent.Message, StringComparison.Ordinal);
+
         var inputs = CalcTemplateHasher.DefaultInputs(calculator.Template);
         inputs.Set(rp);
         var result = CalcRunner.Run(calculator, inputs);

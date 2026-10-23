@@ -108,3 +108,11 @@ Run at the end of each build phase (§4) and again in Phase 7. Findings: ID, sev
 | Y11-03 | Info | Calculation register | Calculation objects created by the retired surface lose their Re-run command; their runs are archives (read-only). | ADR-0167 Amendment 1. | Accepted: re-enter the inputs in the worksheet template for a run with working. | Closed |
 | Y11-04 | Info | Real-shell journey | `MainJourney.Calculators` now drives Worksheets; it needs a display and was not run in this container. | Code change only. | Run on the owner's Windows machine with the runbook. | Open → owner |
 
+
+## v0.27.0 final (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y12-01 | Info | Open items | Y11-04 (the real-shell journey on Windows) is the only open Yellow item; it needs the owner's machine. | Handover step 3. | — | Open → owner |
+| Y12-02 | Info | Results that change | Bolted-joint sheets saved under v0.26.0 with a failed separation check understated bolt stress (G-05); their template hash changes, so they show the stale marker until re-run. | `StalenessAsync` (template hash). | Release notes tell the owner to re-run them. | Closed |
+| Y12-03 | Low | Lesson | B-26 was a regression in a suite not rerun after a template change. | Black on the clean clone found it. | Before a merge, run every Calc suite, not only the one changed. | Closed |
