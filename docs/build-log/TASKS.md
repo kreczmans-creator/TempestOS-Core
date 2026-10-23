@@ -36,5 +36,10 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 - [ ] Legacy definitions, descriptors, diagrams and their tests retired under ADR-0167 (after the migration passes)
 - [ ] Desktop full suite green
 ## Phase 5 — reviews and gates (`v0.27.0/phase-5-reviews`)
-- [ ] Green: every carried vector recomputed; Grey: upgrade from v0.25 and v0.26 databases; Black on a clean clone; Red delta on the new templates and the migration; Yellow final
-- [ ] CHANGELOG, release notes, handover; rc1 tag when every gate passes
+- [x] Green: every legacy vector traced and carried at 5e-5 (G-05…G-08 fixed; D-42)
+- [x] Grey: real v0.25.3 and v0.26.0-rc1 databases (Phase 4)
+- [ ] Black on a clean clone (gate running)
+- [x] Red delta on the new templates, migration, compare, archives and diagrams
+- [ ] Yellow final
+- [x] CHANGELOG, release notes, handover
+- [ ] rc1 gates; draft PR; tag (owner)
