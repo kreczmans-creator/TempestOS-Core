@@ -79,3 +79,13 @@ Run at the end of each build phase (§4) and again in Phase 7. Findings: ID, sev
 | Y8-04 | Low | `ColumnBucklingCalculator.Run` | The slenderness block formats λ with a .NET format string rather than `CalcValue.FormatNumber`, the convention every other sheet message uses. | Code read. | Fixed after the Phase 1 gate (same output under invariant globalization). | Fixed |
 | Y8-05 | Info | `SpecHandArithmeticTests` | Spec arithmetic is generated from stored sheets; a template change now needs three write passes (golden, worked examples, spec), in that order, because the spec reads the sheet the worked examples wrote. | Two drift failures during Phase 1, both caught by the test. | Documented in `docs/worked-examples/README.md` regeneration line. | Closed |
 | Y8-06 | Info | Archives | A migrated record has no project and no register entry, so nothing in the Desktop lists it yet; the coordinator opens it by Id. | `ALegacyArchive_IsShownReadOnly_…`. | Phase 4 (Desktop retirement) lists archives where the legacy Calculators surface listed records. | Open → Phase 4 |
+
+## v0.27.0 Phase 2 — mechanical ports (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y9-01 | Medium | `BearingLifeCalculator` | A load of 1e-300 kN passed the hard limits and drove (C/P)^p to infinity; the engine blocked the step, but its message named NaN on the sheet. | `Hostile_Numbers_Never_Throw_And_Never_Reach_A_Sheet(mech.bearing-life)`. | `light-load` block below P/C = 10⁻⁶ (life effectively unlimited). | Fixed |
+| Y9-02 | Low | `ThinVesselCalculator` | Keeps the legacy design factor `n` on the computed thickness, which UG-27 does not have. | Spec, input description. | Kept so a legacy record re-entered gives the same thickness; defaults to 1 and is labelled "legacy". | Closed |
+| Y9-03 | Info | `MaterialMarginCalculator` | Adds `k_u` (ultimate factor relative to yield), which the legacy module did not have; with `f_u` empty the sheet reduces to the legacy yield margin. | `ka-margin-yield-only`. | None. | Closed |
+| Y9-04 | Info | `FatigueMinerCalculator` | Two outputs per block (N_i, d_i): a 200-block spectrum gives 400 outputs on the results table. | Code read. | Accepted; the sheet's results are the record of the spectrum. | Closed |
+| Y9-05 | Info | Known answers | Every legacy hand calculation of the five ported modules reproduces to five significant figures (17 cases); the two originals with property tests only gained two hand calculations each. | 468 Calculators tests. | None. | Closed |

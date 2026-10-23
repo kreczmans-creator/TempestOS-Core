@@ -1,0 +1,73 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: receiver-2MPa    Revision: A
+Title: Thin cylindrical shell under internal pressure
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+Minimum shell thickness of a thin cylindrical pressure vessel under internal pressure for circumferential and longitudinal stress, the governing required thickness with corrosion allowance and design factor, the hoop stress at the corroded thickness provided, and the provided thickness against the requirement.
+t_c = P·R/(S·E − 0.6·P) (circumferential); t_l = P·R/(2·S·E + 0.4·P) (longitudinal). t_req = n·max(t_c, t_l) + c. σ_θ = P·(R + 0.6·t)/(E·t) at t = t_p − c. Valid while t_c ≤ R/2 and P ≤ 0.385·S·E.
+  Ref: ASME BPVC Section VIII Division 1 UG-27(c)(1) — Thickness of shells under internal pressure, circumferential stress
+  Ref: ASME BPVC Section VIII Division 1 UG-27(c)(2) — Thickness of shells under internal pressure, longitudinal stress
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  P | Internal design pressure | 2 | MPa | spec: LOAD-SCHEDULE-01 | 0.01 … 100 MPa
+  R | Inside radius (corroded) | 500 | mm | drawing: DRG-PV-601 rev A | 5 … 10000 mm
+  S | Allowable stress at design temperature | 138 | MPa | spec: SPEC-MECH-03 design criteria | 10 … 1000 MPa
+  E_j | Joint efficiency | 0.85 |  | spec: SPEC-MECH-03 design criteria | 0.45 … 1
+  n | Design factor on the computed thickness (legacy; 1 for none) | 1 |  | spec: SPEC-MECH-03 design criteria | 1 … 5
+  c | Corrosion allowance | 3 | mm | spec: SPEC-MECH-03 design criteria | 0 … 25 mm
+  t_p | Shell thickness provided (nominal, before corrosion) | 12 | mm | drawing: DRG-PV-601 rev A | 0.5 … 500 mm
+
+3. ASSUMPTIONS
+  A1. Cylindrical shell away from heads, nozzles and supports; membrane stresses only. (UG-27 scope.)
+  A2. The joint efficiency reduces the allowable stress uniformly. (Code-form simplification carried from the legacy module.)
+
+4. WORKING
+  [8] t_c = P * R / (S * E_j - 0.6 * P)    « ASME VIII-1 UG-27(c)(1)
+      = 2 MPa × 500 mm / (138 MPa × 0.85 − 0.6 × 2 MPa)
+      = 8.6133 mm
+        Thickness for circumferential stress
+  [9] t_l = P * R / (2 * S * E_j + 0.4 * P)    « ASME VIII-1 UG-27(c)(2)
+      = 2 MPa × 500 mm / (2 × 138 MPa × 0.85 + 0.4 × 2 MPa)
+      = 4.2481 mm
+        Thickness for longitudinal stress
+  [10] t_req = n * max(t_c, t_l) + c
+      = 1 × max(8.6133 mm, 4.2481 mm) + 3 mm
+      = 11.613 mm
+        Required nominal thickness (design factor and corrosion allowance included)
+  [11] t_corr = t_p - c
+      = 12 mm − 3 mm
+      = 9 mm
+        Corroded thickness provided
+  [12] sigma_h = P * (R + 0.6 * t_corr) / (E_j * t_corr)    « ASME VIII-1 UG-27(c)(1)
+      = 2 MPa × (500 mm + 0.6 × 9 mm) / (0.85 × 9 mm)
+      = 132.13 MPa
+        Hoop stress at the corroded thickness provided
+  [13] u = t_req / t_p
+      = 11.613 mm / 12 mm
+      = 0.96777
+        Required over provided thickness
+
+5. RESULTS
+  t_c = 8.6133 mm    Thickness, circumferential stress
+  t_l = 4.2481 mm    Thickness, longitudinal stress
+  t_req = 11.613 mm    Required nominal thickness
+  sigma_h = 132.13 MPa    Hoop stress at the corroded thickness
+  u = 0.96777    Thickness utilisation
+
+6. CHECKS (governing first)
+  PASS  Provided thickness against required: u = 0.96777 vs u ≤ 1  utilisation 0.968  « ASME VIII-1 UG-27
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.thin-vessel@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 2/2
+  Test run: —

@@ -1,0 +1,78 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: mech.fatigue-miner    Revision: A
+Title: Fatigue damage (Palmgren–Miner)
+
+1. SCOPE AND METHOD
+Cumulative fatigue damage of a stress-range spectrum against an S–N curve of one slope through a reference point, with an optional endurance limit below which a range does no damage; the spectrum repetitions to failure.
+N_i = N_ref·(S_ref/S_i)^m, unbounded when S_i ≤ S_e. d_i = n_i/N_i. D = Σ d_i; repetitions to failure = 1/D. The damage passes when D ≤ 1.
+  Ref: BS EN 1993-1-9 §8 — Fatigue resistance (S–N curves by detail category)
+  Ref: Shigley's Mechanical Engineering Design §6-15 — Cumulative fatigue damage
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  S_ref | Reference stress range (detail category or material fatigue strength) | 71 | MPa | manual | 1 … 2000 MPa
+  N_ref | Cycles at the reference stress range | 2000000 |  | manual | 10000 … 1000000000
+  m | S–N slope | 3 |  | manual | 2 … 15
+  blocks | Stress-range blocks | 3 row(s) |  | manual | any
+  blocks[1] |  | S = 100 MPa; n = 100000 |  |  | 
+  blocks[2] |  | S = 60 MPa; n = 500000 |  |  | 
+  blocks[3] |  | S = 40 MPa; n = 2000000 |  |  | 
+
+3. ASSUMPTIONS
+  A1. Damage accumulates linearly and independently of the order of the blocks. (Palmgren–Miner rule.)
+  A2. One S–N slope over the whole range; no second slope below a knee. (Simplified curve; a two-slope curve is entered as two sheets or a lower slope.)
+
+4. WORKING
+  [4] N_1 = N_ref · (S_ref / S_1)^m    « BS EN 1993-1-9 §8
+      = 2000000 × (71 MPa / 100 MPa)^3
+      = 715820
+        Life at block 1
+  [5] d_1 = n_1 / N_1
+      = 100000 / 715820
+      = 0.1397
+        Damage of block 1
+  [6] N_2 = N_ref · (S_ref / S_2)^m    « BS EN 1993-1-9 §8
+      = 2000000 × (71 MPa / 60 MPa)^3
+      = 3314000
+        Life at block 2
+  [7] d_2 = n_2 / N_2
+      = 500000 / 3314000
+      = 0.15088
+        Damage of block 2
+  [8] N_3 = N_ref · (S_ref / S_3)^m    « BS EN 1993-1-9 §8
+      = 2000000 × (71 MPa / 40 MPa)^3
+      = 11185000
+        Life at block 3
+  [9] d_3 = n_3 / N_3
+      = 2000000 / 11185000
+      = 0.17882
+        Damage of block 3
+  [10] D = Σ d_i    « Shigley §6-15
+      = 0.1397 + 0.15088 + 0.17882
+      = 0.46939
+        Total damage (Palmgren–Miner)
+  [11] R_f = 1 / D
+      = 1 / 0.46939
+      = 2.1304
+        Spectrum repetitions to failure
+
+5. RESULTS
+  D = 0.46939    Total damage
+  R_f = 2.1304    Repetitions to failure
+  N_1 = 715820    Life at block 1
+  d_1 = 0.1397    Damage of block 1
+  N_2 = 3314000    Life at block 2
+  d_2 = 0.15088    Damage of block 2
+  N_3 = 11185000    Life at block 3
+  d_3 = 0.17882    Damage of block 3
+
+6. CHECKS (governing first)
+  PASS  Cumulative damage D ≤ 1: D = 0.46939 vs D ≤ 1  utilisation 0.469  « Shigley §6-15
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.fatigue-miner@1.0.0
+  Known-answer cases passed: 2/2

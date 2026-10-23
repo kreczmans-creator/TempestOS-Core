@@ -11,6 +11,13 @@ public static class MechanicalCalculators
         new Iso286FitCalculator(),
         new PressFitCalculator(),
         new ThickCylinderCalculator(),
+        new LiftingLugCalculator(),
+        new BearingLifeCalculator(),
+        new FatigueMinerCalculator(),
+        new ShaftStressCalculator(),
+        new ThermalExpansionCalculator(),
+        new ThinVesselCalculator(),
+        new MaterialMarginCalculator(),
         new BoltedJointCalculator(),
         new BoltGroupCalculator(),
     ];

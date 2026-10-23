@@ -1,3 +1,4 @@
+using Tempest.Calc.Engine.Values;
 using Tempest.Calc.Sheets;
 
 namespace Tempest.Calc.Structural;
@@ -90,7 +91,7 @@ public sealed class ColumnBucklingCalculator : ICalcCalculator
 
         if (c.Si("lambda") > 180)
         {
-            c.Block("slenderness", $"lambda: the slenderness {c.Si("lambda"):0.0} exceeds 180, outside the method (BS 5950-1 4.7.3.2).");
+            c.Block("slenderness", $"lambda: the slenderness {CalcValue.FormatNumber(c.Si("lambda"), 4)} exceeds 180, outside the method (BS 5950-1 4.7.3.2).");
             return;
         }
 

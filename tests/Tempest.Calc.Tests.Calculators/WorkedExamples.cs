@@ -15,6 +15,7 @@ public static class WorkedExamples
     public static IReadOnlyList<WorkedExample> All { get; } =
     [
         .. Mechanical.MechanicalWorkedExamples.All,
+        .. Mechanical.MechanicalPortWorkedExamples.All,
         .. Structural.StructuralWorkedExamples.All,
         .. BuildingServices.BuildingServicesWorkedExamples.All,
         .. Electrical.ElectricalWorkedExamples.All,
