@@ -8,5 +8,8 @@ public static class MechanicalCalculators
     public static IReadOnlyList<ICalcCalculator> All { get; } =
     [
         new ToleranceStackCalculator(),
+        new Iso286FitCalculator(),
+        new PressFitCalculator(),
+        new ThickCylinderCalculator(),
     ];
 }
