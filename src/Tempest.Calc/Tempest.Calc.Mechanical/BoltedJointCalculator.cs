@@ -124,7 +124,24 @@ public sealed class BoltedJointCalculator : ICalcCalculator
         c.Assign("m_min", "S_strip * F_S_max / (0.5 * pi * d * tau_B)", "mm", "Thread engagement needed against stripping", "VDI 2230 §5.5.5");
         c.Assign("u_strip", "m_min / m_eff", null, "Engagement utilisation");
 
-        foreach (var (s, t) in new[] { ("A_s", "Tensile stress area"), ("F_M", "Assembly preload (maximum)"), ("F_M_min", "Minimum preload"), ("sigma_M", "Preload stress"), ("nu_M", "Assembly utilisation of proof strength"), ("k_S", "Bolt stiffness"), ("k_P", "Members' stiffness"), ("Phi", "Load factor"), ("F_Z", "Embedding loss"), ("F_SA", "Additional bolt load"), ("F_KR", "Residual clamp"), ("F_S_max", "Maximum bolt load"), ("sigma_red_B", "Working equivalent stress"), ("sigma_a", "Fatigue amplitude"), ("m_min", "Engagement needed") })
+        // Joint-diagram load factors (carried from the legacy calc.bolted-joint-preload module, ADR-0167): how far the working
+        // load can grow before the members separate, and before the bolt's axial stress reaches the proof strength.
+        c.Assign("F_A_sep", "(F_M_min - F_Z) / (1 - Phi)", "kN", "Working load at which the members separate (minimum preload, after embedding)", "VDI 2230 R7");
+        c.Assign("F_proof", "R_p02 * A_s", "kN", "Bolt load at the proof (yield) strength");
+
+        if (c.Si("F_A") > 0)
+        {
+            c.Assign("n_0", "F_A_sep / F_A", null, "Load factor against separation (F_A,sep / F_A)");
+            c.Output("n_0", "Load factor against separation");
+
+            if (c.Si("F_proof") > c.Si("F_M"))
+            {
+                c.Assign("n_L", "(F_proof - F_M) / F_SA", null, "Load factor against axial yield of the bolt, torsion excluded ((F_proof − F_M) / F_SA)");
+                c.Output("n_L", "Load factor against axial yield");
+            }
+        }
+
+        foreach (var (s, t) in new[] { ("A_s", "Tensile stress area"), ("F_M", "Assembly preload (maximum)"), ("F_M_min", "Minimum preload"), ("sigma_M", "Preload stress"), ("nu_M", "Assembly utilisation of proof strength"), ("k_S", "Bolt stiffness"), ("k_P", "Members' stiffness"), ("Phi", "Load factor"), ("F_Z", "Embedding loss"), ("F_SA", "Additional bolt load"), ("F_KR", "Residual clamp"), ("F_A_sep", "Separation load"), ("F_S_max", "Maximum bolt load"), ("sigma_red_B", "Working equivalent stress"), ("sigma_a", "Fatigue amplitude"), ("m_min", "Engagement needed") })
             c.Output(s, t);
 
         if (c.Si("F_KR") <= 0)

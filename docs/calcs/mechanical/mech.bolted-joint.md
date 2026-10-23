@@ -8,7 +8,7 @@
 
 **Inputs.** Bolt `d`, `P`, `R_p02`, `E_S`, `sigma_A`; joint `l_k`, `d_h`, `d_w`, `E_P`, `n`, `f_Z`; tightening `method`, `M_A`, `K`, `mu_G`, `mu_K`, `alpha_A`; loads `F_A`, `F_KR_req`; thread `tau_B`, `m_eff`, `S_strip`.
 
-**Outputs.** `A_s`, `F_M`, `F_M_min`, `sigma_M`, `nu_M`, `k_S`, `k_P`, `Phi`, `F_Z`, `F_SA`, `F_KR`, `F_S_max`, `sigma_red_B`, `sigma_a`, `m_min`. **Checks.** no separation; residual clamp vs required; yield; fatigue; stripping.
+**Outputs.** `A_s`, `F_M`, `F_M_min`, `sigma_M`, `nu_M`, `k_S`, `k_P`, `Phi`, `F_Z`, `F_SA`, `F_KR`, `F_A_sep` (working load at separation), `F_S_max`, `sigma_red_B`, `sigma_a`, `m_min`; with a working load, the joint-diagram load factors `n_0 = F_A,sep/F_A` (against separation) and `n_L = (R_p02·A_s − F_M)/F_SA` (against axial yield, torsion excluded), carried from the legacy `calc.bolted-joint-preload` (ADR-0167). **Checks.** no separation; residual clamp vs required; yield; fatigue; stripping.
 
 **Limitations.** Concentric only; frusta with the hole diameter inside; torsion kept at 50 % in service; stripping by a half-pitch shear area; no thermal or transverse-slip checks.
 
@@ -32,7 +32,7 @@ W_p = π / 16 × (9.8529 mm)^3 = 187.81 mm³
 tau_M = 42.158 N·m / 187.81 mm³ = 224.47 MPa
 sigma_red_M = sqrt((482.87 MPa)^2 + 3 × (224.47 MPa)^2) = 619.94 MPa
 nu_M = 619.94 MPa / 640 MPa = 0.96866
-… 19 more step(s) on the sheet
+… 23 more step(s) on the sheet
 Governing: PASS  Yield in the working state: u_yield = 0.82574 vs u_yield ≤ 1  utilisation 0.826  « VDI 2230 R8
 ```
 <!-- hand-arithmetic:end -->

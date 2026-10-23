@@ -174,8 +174,26 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
       = 6.5437 mm / 12 mm
       = 0.54531
         Engagement utilisation
+  [56] F_A_sep = (F_M_min - F_Z) / (1 - Phi)    « VDI 2230 R7
+      = (24.219 kN − 3.024 kN) / (1 − 0.072047)
+      = 22.84 kN
+        Working load at which the members separate (minimum preload, after embedding)
+  [57] F_proof = R_p02 * A_s
+      = 640 MPa × 84.266 mm²
+      = 53.93 kN
+        Bolt load at the proof (yield) strength
+  [58] n_0 = F_A_sep / F_A
+      = 22.84 kN / 10 kN
+      = 2.284
+        Load factor against separation (F_A,sep / F_A)
+  [59] n_L = (F_proof - F_M) / F_SA
+      = (53.93 kN − 38.75 kN) / 0.72047 kN
+      = 21.07
+        Load factor against axial yield of the bolt, torsion excluded ((F_proof − F_M) / F_SA)
 
 5. RESULTS
+  n_0 = 2.284    Load factor against separation
+  n_L = 21.07    Load factor against axial yield
   A_s = 84.266 mm²    Tensile stress area
   F_M = 38.75 kN    Assembly preload (maximum)
   F_M_min = 24.219 kN    Minimum preload
@@ -187,6 +205,7 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
   F_Z = 3.024 kN    Embedding loss
   F_SA = 0.72047 kN    Additional bolt load
   F_KR = 11.915 kN    Residual clamp
+  F_A_sep = 22.84 kN    Separation load
   F_S_max = 39.47 kN    Maximum bolt load
   sigma_red_B = 503.66 MPa    Working equivalent stress
   sigma_a = 4.2749 MPa    Fatigue amplitude

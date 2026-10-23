@@ -40,6 +40,37 @@ public sealed class BoltTests
     }
 
     [Fact]
+    public void Separation_Load_Factor_Is_Where_The_Residual_Clamp_Reaches_Zero()
+    {
+        // ADR-0167: the legacy joint-diagram load factor n_0 = F_A,sep / F_A, checked by re-running at F_A,sep.
+        var r = CalcRunner.Run(Joint, JointInputs());
+        var sep = r.OutputSi("F_A_sep");
+        Assert.Equal(sep / 10_000, r.OutputSi("n_0"), 9);
+        var atSep = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Quantity("F_A", sep / 1000, "kN")));
+        Assert.True(Math.Abs(atSep.OutputSi("F_KR")) < 1e-6 * r.OutputSi("F_M"), $"F_KR at F_A,sep is {atSep.OutputSi("F_KR")} N");
+    }
+
+    [Fact]
+    public void Yield_Load_Factor_Is_Where_The_Bolt_Load_Reaches_The_Proof_Load()
+    {
+        var r = CalcRunner.Run(Joint, JointInputs());
+        var nL = r.OutputSi("n_L");
+        Assert.True(nL > 1);
+        var atYield = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Quantity("F_A", 10 * nL, "kN")));
+        Assert.Equal(640e6 * r.OutputSi("A_s"), atYield.OutputSi("F_S_max"), 6);
+    }
+
+    [Fact]
+    public void Load_Factors_Are_Omitted_Without_A_Working_Load()
+    {
+        var r = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Quantity("F_A", 0, "kN")));
+        Assert.False(r.IsBlocked);
+        Assert.Null(r.FindOutput("n_0"));
+        Assert.Null(r.FindOutput("n_L"));
+        Assert.NotNull(r.FindOutput("F_A_sep"));
+    }
+
+    [Fact]
     public void Load_Factor_Lies_Between_Zero_And_The_Introduction_Factor()
     {
         Gen.Select(Gen.Double[0, 1], Gen.Double[10, 200], Gen.Double[6, 30]).Sample((n, lk, d) =>
