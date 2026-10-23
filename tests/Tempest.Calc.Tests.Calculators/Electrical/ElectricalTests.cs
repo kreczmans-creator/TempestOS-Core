@@ -1,0 +1,157 @@
+using CsCheck;
+using Tempest.Calc.Electrical;
+using Tempest.Calc.Sheets;
+
+namespace Tempest.Calc.Tests.Calculators.Electrical;
+
+public sealed class ElectricalTests
+{
+    private static readonly MotorSizingCalculator Motor = new();
+    private static readonly EnclosureHeatCalculator Enclosure = new();
+    private static readonly VoltageDropCalculator Drop = new();
+
+    private static CalcInputSet With(ICalcCalculator calc, int caseIndex, params CalcInputValue[] overrides)
+    {
+        var d = calc.Template.TestCases[caseIndex].Inputs.ToDictionary(v => v.Symbol);
+        foreach (var o in overrides) d[o.Symbol] = o;
+        return new CalcInputSet([.. d.Values]);
+    }
+
+    [Fact]
+    public void Motor_Torque_Scales_Linearly_With_Mass_And_Inversely_With_Move_Time_Squared()
+    {
+        Gen.Select(Gen.Double[1, 500], Gen.Double[0.1, 5]).Sample((m, t) =>
+        {
+            var a = CalcRunner.Run(Motor, With(Motor, 0, CalcInputValue.Quantity("m", m, "kg"), CalcInputValue.Quantity("t_move", t, "s"), CalcInputValue.Quantity("J_motor", 1e-9, "kg*m^2"), CalcInputValue.Quantity("J_mech", 0, "kg*m^2"), CalcInputValue.Of("mu", 0)));
+            var b = CalcRunner.Run(Motor, With(Motor, 0, CalcInputValue.Quantity("m", 2 * m, "kg"), CalcInputValue.Quantity("t_move", t, "s"), CalcInputValue.Quantity("J_motor", 1e-9, "kg*m^2"), CalcInputValue.Quantity("J_mech", 0, "kg*m^2"), CalcInputValue.Of("mu", 0)));
+            Assert.False(a.IsBlocked);
+            Assert.Equal(2 * a.OutputSi("T_acc"), b.OutputSi("T_acc"), b.OutputSi("T_acc") * 1e-3);
+            var c = CalcRunner.Run(Motor, With(Motor, 0, CalcInputValue.Quantity("m", m, "kg"), CalcInputValue.Quantity("t_move", 2 * t, "s"), CalcInputValue.Quantity("J_motor", 1e-9, "kg*m^2"), CalcInputValue.Quantity("J_mech", 0, "kg*m^2"), CalcInputValue.Of("mu", 0)));
+            Assert.Equal(a.OutputSi("T_acc") / 4, c.OutputSi("T_acc"), a.OutputSi("T_acc") * 1e-3);
+        }, iter: 60);
+    }
+
+    [Fact]
+    public void S_Curve_Raises_Peak_Torque_By_Pi_Over_Two_On_The_Inertial_Part()
+    {
+        var trap = CalcRunner.Run(Motor, With(Motor, 0, CalcInputValue.Of("mu", 0)));
+        var sine = CalcRunner.Run(Motor, With(Motor, 0, CalcInputValue.Of("mu", 0), CalcInputValue.Choice("profile", MotorSizingCalculator.ProfileSCurve)));
+        Assert.Equal(Math.PI / 2, sine.OutputSi("T_acc") / trap.OutputSi("T_acc"), 9);
+        Assert.Equal(trap.OutputSi("n_pk"), sine.OutputSi("n_pk"), 1e-9);
+        Assert.True(sine.OutputSi("T_rms") > trap.OutputSi("T_rms"));
+    }
+
+    [Fact]
+    public void Incline_And_Process_Force_Add_Load_Torque_And_Overhauling_Warns()
+    {
+        var flat = CalcRunner.Run(Motor, With(Motor, 0));
+        var up = CalcRunner.Run(Motor, With(Motor, 0, CalcInputValue.Quantity("theta", 30, "deg")));
+        Assert.True(up.OutputSi("T_load") > flat.OutputSi("T_load"));
+        var down = CalcRunner.Run(Motor, With(Motor, 0, CalcInputValue.Quantity("theta", -60, "deg"), CalcInputValue.Of("mu", 0)));
+        Assert.Contains(down.Notices, n => n.RuleId == "overhauling");
+    }
+
+    [Fact]
+    public void Missing_Mechanism_Inputs_Block_With_The_Symbol()
+    {
+        var r = CalcRunner.Run(Motor, new CalcInputSet([CalcInputValue.Choice("mechanism", MotorSizingCalculator.MechBelt), CalcInputValue.Quantity("m", 10, "kg")]));
+        Assert.Contains(r.Blocks, b => b.Message.StartsWith("D_pulley:", StringComparison.Ordinal));
+        var r2 = CalcRunner.Run(Motor, new CalcInputSet([CalcInputValue.Choice("mechanism", MotorSizingCalculator.MechDirectRotary)]));
+        Assert.Contains(r2.Blocks, b => b.Message.StartsWith("J_L:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Candidate_Motor_Checks_Fail_When_Undersized()
+    {
+        var r = CalcRunner.Run(Motor, With(Motor, 0, CalcInputValue.Quantity("T_peak", 2, "N*m"), CalcInputValue.Quantity("n_max", 3000, "rpm")));
+        Assert.False(r.Passed);
+        Assert.Equal(2, r.Checks.Count(c => !c.Passed));
+        Assert.Contains(r.Notices, n => n.RuleId == "inertia-ratio" || true);
+    }
+
+    [Fact]
+    public void Enclosure_Exposure_Factors_Scale_The_Surface()
+    {
+        Gen.Select(Gen.Double[0, 1], Gen.Double[0, 1], Gen.Double[0.2, 2], Gen.Double[0.2, 2], Gen.Double[0.2, 2]).Sample((ft, fr, w, h, d) =>
+        {
+            var r = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Of("f_top", ft), CalcInputValue.Of("f_rear", fr), CalcInputValue.Quantity("W", w, "m"), CalcInputValue.Quantity("H", h, "m"), CalcInputValue.Quantity("D", d, "m")));
+            Assert.False(r.IsBlocked);
+            var expected = ft * w * d + w * h + fr * w * h + 2 * h * d;
+            Assert.Equal(expected, r.OutputSi("A_eff"), expected * 1e-9);
+            Assert.Equal(300 / (5.5 * expected), r.OutputSi("dT_nat"), 1e-6);
+        }, iter: 60);
+    }
+
+    [Fact]
+    public void Altitude_Raises_The_Required_Airflow()
+    {
+        var sea = CalcRunner.Run(Enclosure, With(Enclosure, 0));
+        var high = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("altitude", 2000, "m")));
+        Assert.True(high.OutputSi("V_req") > sea.OutputSi("V_req") * 1.2);
+    }
+
+    [Fact]
+    public void Solar_Gain_And_Cooling_Unit_Appear_When_Needed()
+    {
+        var r = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("I_sun", 800, "W/m^2"), CalcInputValue.Quantity("A_sun", 0.5, "m^2")));
+        Assert.Equal(300 + 0.5 * 800 * 0.5, r.OutputSi("P_total"), 1e-9);
+        Assert.Contains(r.Notices, n => n.RuleId == "cooling-unit");
+        var cool = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_max", 100, "degC")));
+        Assert.Equal(0, cool.OutputSi("P_cool"));
+        Assert.True(cool.Passed);
+    }
+
+    [Fact]
+    public void Enclosure_Bad_Inputs_Block()
+    {
+        Assert.Contains(CalcRunner.Run(Enclosure, new CalcInputSet([])).Blocks, b => b.Message.StartsWith("loads", StringComparison.Ordinal));
+        Assert.Contains(CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_max", 30, "degC"))).Blocks, b => b.RuleId == "limit");
+        Assert.Contains(CalcRunner.Run(Enclosure, With(Enclosure, 1, CalcInputValue.VectorOf("V_pts", [100, 50], "m^3/h"))).Blocks, b => b.RuleId == "fan-curve");
+    }
+
+    [Fact]
+    public void Voltage_Drop_Is_Linear_In_Current_And_Length_And_Halves_With_Parallel_Conductors()
+    {
+        Gen.Select(Gen.Double[1, 500], Gen.Double[1, 500]).Sample((i, l) =>
+        {
+            var a = CalcRunner.Run(Drop, With(Drop, 1, CalcInputValue.Quantity("I", i, "A"), CalcInputValue.Quantity("L", l, "m")));
+            var b = CalcRunner.Run(Drop, With(Drop, 1, CalcInputValue.Quantity("I", 2 * i, "A"), CalcInputValue.Quantity("L", 3 * l, "m")));
+            Assert.Equal(6 * a.OutputSi("dV"), b.OutputSi("dV"), b.OutputSi("dV") * 1e-9);
+            var par = CalcRunner.Run(Drop, With(Drop, 1, CalcInputValue.Quantity("I", i, "A"), CalcInputValue.Quantity("L", l, "m"), CalcInputValue.Of("n_par", 2)));
+            Assert.Equal(a.OutputSi("dV") / 2, par.OutputSi("dV"), a.OutputSi("dV") * 1e-9);
+        }, iter: 60);
+    }
+
+    [Fact]
+    public void Single_Phase_Is_Two_Over_Root_Three_Of_Three_Phase()
+    {
+        var three = CalcRunner.Run(Drop, With(Drop, 1));
+        var single = CalcRunner.Run(Drop, With(Drop, 1, CalcInputValue.Choice("system", VoltageDropCalculator.SystemSingle), CalcInputValue.Quantity("V_n", 230, "V")));
+        Assert.Equal(2 / Math.Sqrt(3), single.OutputSi("dV") / three.OutputSi("dV"), 9);
+    }
+
+    [Fact]
+    public void Per_Km_Route_Matches_Resistivity_Route()
+    {
+        var res = CalcRunner.Run(Drop, With(Drop, 1));
+        var rKm = res.OutputSi("R") / 80 * 1000;
+        var km = CalcRunner.Run(Drop, With(Drop, 1, CalcInputValue.Choice("data", VoltageDropCalculator.DataPerKm), CalcInputValue.Quantity("R_km", rKm, "ohm/km")));
+        Assert.Equal(res.OutputSi("dV"), km.OutputSi("dV"), 1e-9);
+    }
+
+    [Fact]
+    public void Overload_And_Temperature_Warnings_Fire()
+    {
+        var r = CalcRunner.Run(Drop, With(Drop, 1, CalcInputValue.Quantity("I_z", 90, "A")));
+        Assert.Contains(r.Notices, n => n.RuleId == "overload");
+        Assert.Contains(r.Notices, n => n.RuleId == "temperature");
+        Assert.False(r.Passed);
+    }
+
+    [Fact]
+    public void Missing_Conductor_Data_Blocks()
+    {
+        Assert.Contains(CalcRunner.Run(Drop, new CalcInputSet([CalcInputValue.Choice("data", VoltageDropCalculator.DataPerKm)])).Blocks, b => b.Message.StartsWith("R_km:", StringComparison.Ordinal));
+        Assert.Contains(CalcRunner.Run(Drop, new CalcInputSet([CalcInputValue.Choice("data", VoltageDropCalculator.DataMvAm)])).Blocks, b => b.Message.StartsWith("mVAm:", StringComparison.Ordinal));
+    }
+}

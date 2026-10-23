@@ -15,5 +15,6 @@ public static class CalcCalculatorComposition
         .. Tempest.Calc.Mechanical.MechanicalCalculators.All,
         .. Tempest.Calc.Structural.StructuralCalculators.All,
         .. Tempest.Calc.BuildingServices.BuildingServicesCalculators.All,
+        .. Tempest.Calc.Electrical.ElectricalCalculators.All,
     ];
 }
