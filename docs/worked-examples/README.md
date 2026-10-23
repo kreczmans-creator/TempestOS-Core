@@ -47,4 +47,4 @@
 
 - [bracket-assembly-m2-m3-s1](packs/bracket-assembly-m2-m3-s1/README.md)
 
-Regenerate every example with `TEMPEST_WRITE_WORKED_EXAMPLES=1 dotnet test tests/Tempest.Calc.Tests.Calculators` (inputs, README expectations, sheet text) and `TEMPEST_WRITE_WORKED_EXAMPLES=1 dotnet test tests/Tempest.Desktop.Tests --filter CalcSheets` (PDFs).
+After a template change, regenerate in this order (each step reads what the one before wrote): goldens with `TEMPEST_UPDATE_GOLDEN=1`, then examples, then the spec blocks — regenerate every example with `TEMPEST_WRITE_WORKED_EXAMPLES=1 dotnet test tests/Tempest.Calc.Tests.Calculators` (inputs, README expectations, sheet text) and `TEMPEST_WRITE_WORKED_EXAMPLES=1 dotnet test tests/Tempest.Desktop.Tests --filter CalcSheets` (PDFs). Spec hand-arithmetic blocks are rewritten by `SpecHandArithmeticTests` under the same variable.
