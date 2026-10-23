@@ -23,9 +23,11 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 - [x] mech.thin-vessel; mech.material-margin (referenced material record)
 - [x] Legacy vectors carried as known-answer cases (same figures, 5 s.f.); two worked examples each; Yellow pass (Y9-01…Y9-05)
 ## Phase 3 — structural and thermal ports (`v0.27.0/phase-3-struct-thermal`)
-- [ ] struct.fillet-weld
-- [ ] bs.plane-wall; bs.thermal-chain
-- [ ] Legacy vectors carried; worked examples; Yellow pass
+- [x] struct.fillet-weld (simplified method; long-joint warning above 150·a)
+- [x] bs.plane-wall; elec.thermal-chain (filed under Electrical, D-40)
+- [x] Legacy vectors carried (9 hand calculations, 5 s.f.); two worked examples each; behaviour tests; Yellow pass (Y10)
+- [x] Behaviour tests for the seven Phase 2 ports, to the Phase 3 level (Y10-03: 26 tests)
+- [ ] Phase 3 gate; merge to release
 ## Phase 4 — Desktop retirement (`v0.27.0/phase-4-desktop`)
 - [ ] Legacy Calculators surface (Engineering → Modules → Calculators, Re-run/Compare) replaced by Worksheets; Compare reimplemented over calc instances
 - [ ] Legacy definitions, descriptors, diagrams and their tests retired under ADR-0167 (after the migration passes)

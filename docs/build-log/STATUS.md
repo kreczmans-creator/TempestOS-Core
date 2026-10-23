@@ -1,9 +1,9 @@
-# STATUS — 2026-10-23 21:10 UTC (v0.27.0)
-Phase: 0/5 — setup; v0.26.0-rc1 close-out running in parallel on release/v0.26.0
-Done since last: v0.26.0 Phase 7 merged (Linux gate green); legacy-calculator review and D-38 plan; release/v0.27.0 branched; VERSION 0.27.0; task list for five phases
-Now: Windows CI on release/v0.26.0 @ 2523221 (rc1 tag when green); ADR-0167; v0.27.0 draft PR; Phase 1 foundations (record migration, reference-library fill, spec raise)
-Next: Phase 2 mechanical ports (lifting lug, bearing life, fatigue, shaft, thermal expansion, thin vessel, material margin)
-Tests: v0.26.0 gate — Core 7,221 / Desktop 1,193 / Calc 849 pass, 0 fail, 1 skipped (D-32)
-Build: green (Linux)   Branch: release/v0.27.0 @ 2523221 + setup
-Decisions taken: D-00…D-39 (docs/decisions/)
-Risks: Windows CI on the v0.26.0 candidate not yet green; record migration must keep every stored legacy run readable (non-negotiable #3)
+# STATUS — 2026-10-23 20:55 UTC (v0.27.0)
+Phase: 3/5 — structural and thermal ports, built and tested; Phase 3 gate next
+Done since last: Phase 1 foundations merged (record migration, reference fill, spec raise, column buckling, beam and bolted-joint raises); Phase 2 seven mechanical ports merged (gate green: Core 7,221, Calc Engine 384, Sheets 93, Library 53, Calculators 468, Desktop 1,212); Phase 3 struct.fillet-weld, bs.plane-wall, elec.thermal-chain (D-40) with legacy known answers, worked examples, PDFs, specs and behaviour tests
+Now: Phase 3 Yellow pass (Y10); behaviour tests for the seven Phase 2 ports raised to the Phase 3 level; Phase 3 gate
+Next: Phase 4 Desktop retirement (archive listing Y8-06, Compare over calc instances, legacy surface retired under ADR-0167)
+Tests: Calculators 556/0, Library 53/0 (+1 skip), Desktop worksheets 80/0; full gate pending
+Build: green (Linux, warnings as errors)   Branch: v0.27.0/phase-3-struct-thermal from release/v0.27.0 @ e7b4bcf
+Decisions taken: D-00…D-40 (docs/decisions/)
+Risks: v0.26.0-rc1 tag still waits on the owner (tag push refused, HTTP 403); legacy surface retirement must wait for the migration to pass Grey

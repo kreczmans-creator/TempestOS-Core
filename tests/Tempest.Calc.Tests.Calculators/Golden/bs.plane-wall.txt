@@ -1,0 +1,84 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: bs.plane-wall    Revision: A
+Title: Plane wall heat transfer (layers and films)
+
+1. SCOPE AND METHOD
+Steady heat flow through a composite plane wall between two fluids, or between two known surface temperatures: each layer's conduction resistance, each film's convection resistance, the overall U-value, the heat flow and flux, and every surface and interface temperature.
+Film R = 1/(h·A); layer R_i = t_i/(k_i·A). R_tot = Σ R, hot side first. Q = (T_1 − T_2)/R_tot; q = Q/A; U = 1/(R_tot·A). Each surface temperature steps down from T_1 by Q·R across each resistance in turn.
+  Ref: Incropera & DeWitt, Fundamentals of Heat and Mass Transfer §3.1 — The plane wall: thermal resistance and the composite wall
+  Ref: Çengel & Ghajar, Heat and Mass Transfer §3-3 — Generalized thermal resistance networks (multilayer plane walls)
+  Ref: BS EN ISO 6946 §6 — Thermal resistance of building components (method)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  T_1 | Side 1 temperature (the fluid's, or the surface's when no film is given) | 20 | degC | manual | -60 … 400 degC
+  h_1 | Side 1 film coefficient (omit when T_1 is the surface temperature) | 10 | W/(m^2*K) | manual | 2 … 10000 W/(m^2*K)
+  layers | Conducting layers, side 1 first | 1 row(s) |  | manual | any
+  layers[1] |  | name = glass; t = 8 mm; k = 0.78 W/(m*K) |  |  | 
+  h_2 | Side 2 film coefficient (omit when T_2 is the surface temperature) | 40 | W/(m^2*K) | manual | 2 … 10000 W/(m^2*K)
+  T_2 | Side 2 temperature (the fluid's, or the surface's when no film is given) | -10 | degC | manual | -60 … 400 degC
+  A | Wall area normal to the heat flow | 1.2 | m^2 | manual | 0.001 … 10000 m^2
+
+3. ASSUMPTIONS
+  A1. Steady, one-dimensional conduction through plane layers of constant conductivity, with no internal heat generation. (Thermal-circuit idealisation: equal layer areas, no edge losses.)
+  A2. Layers are in perfect thermal contact; each film coefficient is constant over its surface. (A contact resistance can be entered as a thin layer of equivalent thickness and conductivity.)
+
+4. WORKING
+  [6] R_h1 = 1 / (h_1 · A)    « Incropera §3.1
+      = 1 / (10 W/(m²·K) × 1.2 m²)
+      = 0.083333 K/W
+        Side 1 film resistance
+  [7] R_1 = t_1 / (k_1 · A)    « Incropera §3.1
+      = 8 mm / (0.78 W/(m·K) × 1.2 m²)
+      = 0.008547 K/W
+        Conduction resistance of glass
+  [8] R_h2 = 1 / (h_2 · A)    « Incropera §3.1
+      = 1 / (40 W/(m²·K) × 1.2 m²)
+      = 0.020833 K/W
+        Side 2 film resistance
+  [9] R_tot = Σ R    « Çengel §3-3
+      = 0.083333 + 0.008547 + 0.020833 K/W
+      = 0.11271 K/W
+        Total thermal resistance
+  [10] Q = (T_1 - T_2) / R_tot
+      = (20 degC − (-10 degC)) / 0.11271 K/W
+      = 266.16 W
+        Heat flow from side 1 to side 2
+  [11] q = Q / A
+      = 266.16 W / 1.2 m²
+      = 221.8 W/m²
+        Heat flux
+  [12] U = 1 / (R_tot * A)
+      = 1 / (0.11271 K/W × 1.2 m²)
+      = 7.3934 W/(m²·K)
+        Overall heat transfer coefficient
+  [13] T_s0 = T_1 − Q · R_h1
+      = 20 °C − 266.16 W × 0.083333 K/W
+      = -2.1801 degC
+        Side 1 surface
+  [14] T_s1 = T_s0 − Q · R_1
+      = -2.1801 °C − 266.16 W × 0.008547 K/W
+      = -4.455 degC
+        Side 2 surface
+
+5. RESULTS
+  Q = 266.16 W    Heat flow
+  q = 221.8 W/m²    Heat flux
+  U = 7.3934 W/(m²·K)    Overall heat transfer coefficient
+  R_tot = 0.11271 K/W    Total thermal resistance
+  R_h1 = 0.083333 K/W    Side 1 film resistance
+  R_1 = 0.008547 K/W    Layer 1 resistance
+  R_h2 = 0.020833 K/W    Side 2 film resistance
+  T_s0 = -2.1801 degC    Side 1 surface temperature
+  T_s1 = -4.455 degC    Side 2 surface temperature
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: bs.plane-wall@1.0.0
+  Known-answer cases passed: 3/3
