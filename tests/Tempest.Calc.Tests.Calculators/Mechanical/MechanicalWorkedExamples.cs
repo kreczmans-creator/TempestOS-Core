@@ -131,5 +131,55 @@ public static class MechanicalWorkedExamples
             ]),
             [new CalcExpectedValue("sigma_t_a", -72, "MPa", 1e-6), new CalcExpectedValue("sigma_vm_a", 62.354, "MPa", 1e-4), new CalcExpectedValue("u", 0.62354, "", 1e-4)],
             "External pressure puts the whole wall in compression: bore hoop −72 MPa, outer −52 MPa; von Mises 62 MPa at the bore, 62 % of the allowable."),
+
+        new(BoltedJointCalculator.Id, "m12-88-flange", "M12 class 8.8 flange bolt, 80 N·m, 10 kN working load",
+            new CalcReferenceSource("Analytic (VDI 2230 Part 1 steps R0–R9; Shigley eqs 8-17, 8-20)", null, "F_M = 40.69 kN; Φ = 0.0720; F_KR = 25.4 − 9.3 − 3.0 ≈ 13 kN"),
+            JointInputs(80, "friction", 10),
+            [new CalcExpectedValue("F_M", 40.69, "kN", 2e-3), new CalcExpectedValue("Phi", 0.07205, "", 3e-3)],
+            "A steel flange clamped 40 mm thick by an M12 class 8.8 bolt torqued to 80 N·m with μ = 0.12: the bolt takes 7 % of the 10 kN working load, keeps about 13 kN of clamp after scatter and embedding, and sits well inside yield and the 50 MPa endurance amplitude."),
+
+        new(BoltedJointCalculator.Id, "m12-88-overloaded", "The same bolt under a 60 kN working load (separation)",
+            new CalcReferenceSource("Analytic (VDI 2230 R7)", null, "F_KR = F_M,min − (1 − Φ) F_A − F_Z < 0"),
+            JointInputs(80, "friction", 60),
+            [new CalcExpectedValue("F_M", 40.69, "kN", 2e-3)],
+            "With a 60 kN working load the relieved member load exceeds the minimum preload: the residual clamp goes negative, the joint separates and the sheet fails the separation and clamp checks."),
+
+        new(BoltGroupCalculator.Id, "four-bolt-bracket", "Four-bolt bracket, 50 kN at 150 mm eccentricity",
+            new CalcReferenceSource("Analytic (elastic method; AISC Manual Part 7 procedure)", null, "governing bolt resultant 36.44 kN"),
+            GroupInputs(((0, 0), (100, 0), (100, 100), (0, 100)), fy: -50, ex: 200, ey: 50, mx: 0, vr: 40, tr: 45),
+            [new CalcExpectedValue("v_max", 36.443, "kN", 1e-3), new CalcExpectedValue("u_max", 0.91109, "", 1e-3)],
+            "A 100 mm square pattern carrying 50 kN downward 150 mm from its centroid: 12.5 kN direct plus 26.5 kN torsional shear per bolt; the two bolts on the far side govern at 36.4 kN, 91 % of a 40 kN shear resistance."),
+
+        new(BoltGroupCalculator.Id, "end-plate-moment", "End-plate with two bolt rows under 20 kN·m",
+            new CalcReferenceSource("Analytic (elastic method)", null, "t = M_x y / Σ y² = 20e6 × 100 / 40000 per unit area = 50 kN per bolt"),
+            GroupInputs(((0, -100), (100, -100), (0, 100), (100, 100)), fy: 0, ex: 0, ey: 0, mx: 20, vr: 40, tr: 60),
+            [new CalcExpectedValue("t_max", 50, "kN", 1e-6), new CalcExpectedValue("u_max", 0.83333, "", 1e-4)],
+            "Four bolts in two rows 200 mm apart under a 20 kN·m moment: the tension row sees 50 kN per bolt, 83 % of a 60 kN tension resistance; no shear."),
     ];
+
+    private static CalcInputSet JointInputs(double torque, string method, double workingLoad) => new(
+    [
+        CalcInputValue.Quantity("d", 12, "mm", CalcProvenance.Drawing("DRG-FLG-02", "A")), CalcInputValue.Quantity("P", 1.75, "mm", CalcProvenance.Specification("ISO 261 coarse pitch")),
+        CalcInputValue.Quantity("R_p02", 640, "MPa", CalcProvenance.Specification("ISO 898-1 class 8.8")), CalcInputValue.Quantity("E_S", 205, "GPa", CalcProvenance.Specification("steel")),
+        CalcInputValue.Quantity("sigma_A", 50, "MPa", CalcProvenance.Assumed("Rolled-before-heat-treatment M12, VDI 2230 order of magnitude.")),
+        CalcInputValue.Quantity("l_k", 40, "mm", CalcProvenance.Drawing("DRG-FLG-02", "A")), CalcInputValue.Quantity("d_h", 13, "mm", CalcProvenance.Drawing("DRG-FLG-02", "A")),
+        CalcInputValue.Quantity("d_w", 18, "mm", CalcProvenance.Specification("ISO 4762 head bearing")), CalcInputValue.Quantity("E_P", 205, "GPa", CalcProvenance.Specification("steel")),
+        CalcInputValue.Of("n", 0.5, CalcProvenance.Assumed("Load introduced at mid-thickness.")), CalcInputValue.Quantity("f_Z", 11, "µm", CalcProvenance.Assumed("Three interfaces, machined.")),
+        CalcInputValue.Choice("method", method, CalcProvenance.Specification("Assembly procedure AP-7")), CalcInputValue.Quantity("M_A", torque, "N*m", CalcProvenance.Specification("Assembly procedure AP-7")),
+        CalcInputValue.Of("K", 0.2, CalcProvenance.Assumed("Not used by the friction method.")), CalcInputValue.Of("mu_G", 0.12, CalcProvenance.Assumed("Lightly oiled zinc-plated thread.")),
+        CalcInputValue.Of("mu_K", 0.12, CalcProvenance.Assumed("Lightly oiled head bearing.")), CalcInputValue.Of("alpha_A", 1.6, CalcProvenance.Assumed("Torque wrench, VDI 2230 Table A8 order.")),
+        CalcInputValue.Quantity("F_A", workingLoad, "kN", CalcProvenance.Specification("LOAD-CASE-3")), CalcInputValue.Quantity("F_KR_req", 5, "kN", CalcProvenance.Specification("SPEC-FLG §6 sealing")),
+        CalcInputValue.Quantity("tau_B", 400, "MPa", CalcProvenance.Assumed("Nut material shear strength.")), CalcInputValue.Quantity("m_eff", 12, "mm", CalcProvenance.Drawing("DRG-FLG-02", "A")),
+        CalcInputValue.Of("S_strip", 1.25, CalcProvenance.Assumed("Stripping safety factor.")),
+    ]);
+
+    private static CalcInputSet GroupInputs((double X, double Y)[] points, double fy, double ex, double ey, double mx, double vr, double tr) => new(
+    [
+        CalcInputValue.Table("bolts", points.Select(p => CalcRow.Of(("x", new CalcCell(p.X, "mm")), ("y", new CalcCell(p.Y, "mm")), ("A", new CalcCell(84.3, "mm^2")))).ToList(), CalcProvenance.Drawing("DRG-BRK-09", "B")),
+        CalcInputValue.Quantity("F_x", 0, "kN", CalcProvenance.Specification("LOAD-CASE-1")), CalcInputValue.Quantity("F_y", fy, "kN", CalcProvenance.Specification("LOAD-CASE-1")),
+        CalcInputValue.Quantity("e_x", ex, "mm", CalcProvenance.Drawing("DRG-BRK-09", "B")), CalcInputValue.Quantity("e_y", ey, "mm", CalcProvenance.Drawing("DRG-BRK-09", "B")),
+        CalcInputValue.Quantity("T_z", 0, "kN*m", CalcProvenance.Specification("LOAD-CASE-1")), CalcInputValue.Quantity("N", 0, "kN", CalcProvenance.Specification("LOAD-CASE-1")),
+        CalcInputValue.Quantity("M_x", mx, "kN*m", CalcProvenance.Specification("LOAD-CASE-1")), CalcInputValue.Quantity("M_y", 0, "kN*m", CalcProvenance.Specification("LOAD-CASE-1")),
+        CalcInputValue.Quantity("V_R", vr, "kN", CalcProvenance.Specification("M12 8.8 shear resistance, EN 1993-1-8 Table 3.4 per project calc")), CalcInputValue.Quantity("T_R", tr, "kN", CalcProvenance.Specification("M12 8.8 tension resistance per project calc")),
+    ]);
 }

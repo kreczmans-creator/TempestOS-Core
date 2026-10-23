@@ -11,5 +11,7 @@ public static class MechanicalCalculators
         new Iso286FitCalculator(),
         new PressFitCalculator(),
         new ThickCylinderCalculator(),
+        new BoltedJointCalculator(),
+        new BoltGroupCalculator(),
     ];
 }
