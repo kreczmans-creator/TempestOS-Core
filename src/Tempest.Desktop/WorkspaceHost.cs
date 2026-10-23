@@ -323,18 +323,6 @@ public sealed class WorkspaceHost : IAsyncDisposable
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
             (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog)));
 
-        // `WP 21.7B`/`WP 21.7C`: the Engineering Calculators. The governed
-        // service runs any product calculation on pinned records from the
-        // three libraries; the workbench names each run as a Calculation
-        // object (the same register the bracket workbench uses) and offers
-        // the record's own Re-run and Compare commands through the
-        // dispatcher and the Template registry — every module registered
-        // there so the commands reach all nineteen.
-        CalculationModuleService = new CalculationModuleService(
-            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
-            (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
-            (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
-            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
         // `v0.26.0` (ADR-0165): the worksheet calculation surface. The
         // catalogue is composed statically (`CalcCalculatorComposition`),
         // instances live in the one store, and Issue goes through the
@@ -363,15 +351,6 @@ public sealed class WorkspaceHost : IAsyncDisposable
             LegacyMigrationReport = new Tempest.Calc.Library.LegacyMigrationReport(0, 0, [(Guid.Empty, failure.Message)]);
         }
 
-        CalculationModules = new CalculationModuleWorkbench(
-            CalculationModuleService,
-            CalculationTemplates!,
-            new EngineeringCalculationRegister(
-                domainContext,
-                (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
-                projectContext),
-            (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
-            domainContext);
 
         // `WP 21.2B` (`TD-160`, `TD-165`): the merged engineering capability's
         // own three governed libraries and their validation services, so the
@@ -562,9 +541,6 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// </remarks>
     public BracketCalculationWorkbench? BracketCalculations { get; private set; }
 
-    /// <summary>Gets the Engineering Calculators' own read-and-run model (`WP 21.7B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
-    public CalculationModuleWorkbench? CalculationModules { get; private set; }
-
     /// <summary>`v0.26.0` (ADR-0165): every worksheet calculator this build composes in.</summary>
     public Tempest.Calc.Library.CalcCatalogue? CalcCatalogue { get; private set; }
 
@@ -576,9 +552,6 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>`v0.26.0`: the calc-sheet PDF renderer, so the composer can hand it the organisation identity.</summary>
     public Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer? CalcSheetRenderer { get; private set; }
-
-    /// <summary>Gets the governed entry point of every calculation module (`WP 21.7C`): a form-less caller runs a module on pinned records through it. <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
-    public CalculationModuleService? CalculationModuleService { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }
