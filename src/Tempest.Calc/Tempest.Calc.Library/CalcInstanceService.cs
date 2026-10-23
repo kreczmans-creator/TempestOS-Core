@@ -172,6 +172,9 @@ public sealed class CalcInstanceService
     /// <summary>Records the check on the governing Evidence and moves the instance to Checked. Blocks stop a check.</summary>
     public async Task<CalcActionResult> CheckAsync(Guid instanceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, CancellationToken cancellationToken = default)
     {
+        if ((MissingText(checkerName, "A checker name") ?? MissingText(checkerOrganisation, "The checker's organisation")) is { } missing)
+            return CalcActionResult.Refused(missing);
+
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
 
         if (instance is null)
@@ -186,10 +189,30 @@ public sealed class CalcInstanceService
         if (instance.EvidenceId is not { } evidenceId)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' has no Evidence to check.", instance);
 
+        // What Issue will demand is demanded here, so a checked calculation is never a dead end (Black B-13).
+        var provenanceGate = ProvenanceGate(instance);
+
+        if (provenanceGate is not null)
+            return CalcActionResult.Refused(provenanceGate.Replace("before the sheet can be issued", "before it can be checked", StringComparison.Ordinal), instance);
+
         if (outcome == CheckOutcome.Rejected)
         {
-            var rejected = await _evidence.RecordCheckAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome, cancellationToken).ConfigureAwait(false);
-            return CalcActionResult.Refused(rejected.Succeeded ? "The checker rejected the calculation; it stays a draft." : rejected.Reason ?? "The check was refused.", instance);
+            // A rejection is kept on the instance only: the Evidence stays Draft so the calculation can be corrected,
+            // checked again and issued (Black B-12 — Core's check record always moves the Evidence to Checked).
+            var when = _time.GetUtcNow();
+            var note = CalcSheetTextRenderer.Clean($"Rejected by {checkerName} ({checkerOrganisation}) on {when:yyyy-MM-dd}: {statement}");
+            var rejectedInstance = instance with { LastRejection = note.Length > 1_000 ? note[..1_000] : note, UpdatedAt = when };
+
+            try
+            {
+                await _store.SaveInstanceAsync(rejectedInstance, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
+            }
+            catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+            {
+                return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
+            }
+
+            return CalcActionResult.Refused($"The checker rejected the calculation; it stays a draft. {statement}".TrimEnd(), rejectedInstance);
         }
 
         // The Evidence check record and the instance's Checked mark commit together, after a
@@ -216,6 +239,19 @@ public sealed class CalcInstanceService
         return CalcActionResult.Ok(updated with { CheckedBy = checker });
     }
 
+    private static string? MissingText(string? value, string what) => string.IsNullOrWhiteSpace(value) ? $"{what} is needed." : null;
+
+    /// <summary>The first provenance block Issue would raise for this instance's inputs, or <see langword="null"/>.</summary>
+    private string? ProvenanceGate(CalcInstance instance)
+    {
+        var entry = _catalogue.Find(instance.TemplateReference);
+
+        if (entry is null)
+            return null;
+
+        return CalcInputValidator.ValidateProvenanceForIssue(entry.Template, new CalcInputSet(instance.Inputs)).FirstOrDefault()?.Message;
+    }
+
     /// <summary>
     /// Issues a checked instance: in <b>one</b> transaction the Evidence
     /// records its issue and attaches the rendered sheet, and the instance
@@ -226,8 +262,8 @@ public sealed class CalcInstanceService
     /// </summary>
     public async Task<CalcActionResult> IssueAsync(Guid instanceId, string issueReference, string client, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(issueReference);
-        ArgumentException.ThrowIfNullOrWhiteSpace(client);
+        if ((MissingText(issueReference, "An issue reference") ?? MissingText(client, "A client")) is { } missing)
+            return CalcActionResult.Refused(missing);
 
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
 
@@ -465,6 +501,9 @@ public sealed class CalcInstanceService
     /// <summary>Checks a pack's Evidence; every member must be a block-free draft or already checked.</summary>
     public async Task<CalcActionResult> CheckPackAsync(Guid packId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, CancellationToken cancellationToken = default)
     {
+        if ((MissingText(checkerName, "A checker name") ?? MissingText(checkerOrganisation, "The checker's organisation")) is { } missing)
+            return CalcActionResult.Refused(missing);
+
         var pack = await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false);
 
         if (pack is null || pack.EvidenceId is not { } evidenceId)
@@ -482,15 +521,19 @@ public sealed class CalcInstanceService
 
             if (member.Blocks.Count > 0)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is blocked: {member.Blocks[0].Message}");
+
+            if (ProvenanceGate(member) is { } gate)
+                return CalcActionResult.Refused($"Pack member '{member.Name}': {gate.Replace("before the sheet can be issued", "before the pack can be checked", StringComparison.Ordinal)}");
         }
+
+        // A rejection leaves the pack and its Evidence as drafts (Black B-12).
+        if (outcome == CheckOutcome.Rejected)
+            return CalcActionResult.Refused($"The checker rejected the pack; it stays a draft. {statement}".TrimEnd());
 
         var result = await _evidence.RecordCheckAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome, cancellationToken).ConfigureAwait(false);
 
         if (!result.Succeeded)
             return CalcActionResult.Refused(result.Reason ?? "The check was refused.");
-
-        if (outcome == CheckOutcome.Rejected)
-            return CalcActionResult.Refused("The checker rejected the pack; it stays a draft.");
 
         var now = _time.GetUtcNow();
         await _store.SavePackAsync(pack with { Status = CalcInstanceStatus.Checked, UpdatedAt = now }, cancellationToken).ConfigureAwait(false);
@@ -500,8 +543,8 @@ public sealed class CalcInstanceService
     /// <summary>Issues a pack: one Evidence, one sheet (cover with index and revision table, then every member sheet), every member snapshot written Issued — all in one transaction.</summary>
     public async Task<CalcActionResult> IssuePackAsync(Guid packId, string issueReference, string client, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(issueReference);
-        ArgumentException.ThrowIfNullOrWhiteSpace(client);
+        if ((MissingText(issueReference, "An issue reference") ?? MissingText(client, "A client")) is { } missing)
+            return CalcActionResult.Refused(missing);
 
         var pack = await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false);
 

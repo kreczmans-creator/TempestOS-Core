@@ -39,7 +39,7 @@ Axial stress in a prismatic member under a tensile or compressive load, compared
   u = 0.375    Utilisation
 
 6. CHECKS (governing first)
-  PASS  Direct stress: 0.375 vs 1  utilisation 0.375  « EN 1993-1-1 §6.2.3
+  PASS  Direct stress: u = 0.375 vs u ≤ 1  utilisation 0.375  « EN 1993-1-1 §6.2.3
 
 7. APPLICABILITY
   No warnings.

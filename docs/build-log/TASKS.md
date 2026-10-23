@@ -41,8 +41,9 @@
 ## Phase 7 — reviews and gates (`v0.26.0/phase-7-reviews`)
 - [x] Green (219/219 recomputed; G-01…G-04 fixed), White, Orange, Blue, Purple written
 - [x] Red (R-01…R-24: 23 findings, 22 fixed, R-22 accepted D-32), Blue/Purple updated, Grey upgrade test passes
-- [ ] Black (after merge), Grey Windows CI verdict, Yellow final
+- [x] Black (clean clone; B-01…B-25; Highs + 5 Mediums fixed, ADR-0166), Yellow final
+- [ ] Grey Windows CI verdict (two release runs failed; fixes on phase-7)
 - [ ] Release notes, handover, STATUS gates, rc1 tag
 - [x] 24 worked examples + 1 calc pack
-- [ ] CHANGELOG, release notes, THIRD-PARTY-NOTICES, handover
+- [x] CHANGELOG, release notes, THIRD-PARTY-NOTICES (unchanged, complete), handover
 - [ ] All §10 gates; tag v0.26.0-rc1

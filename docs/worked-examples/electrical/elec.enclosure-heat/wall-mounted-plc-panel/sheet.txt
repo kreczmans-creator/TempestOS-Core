@@ -16,6 +16,8 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   loads | Heat loads | 2 row(s) |  | spec: Panel schedule PNL-04 | any
+  loads[1] |  | name = PLC and I/O; P = 80 W; qty = 1; duty = 1 |  |  | 
+  loads[2] |  | name = drives; P = 55 W; qty = 4; duty = 1 |  |  | 
   I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m^2 | default | 0 … 1200 W/m^2
   A_sun | Sunlit area | 0 | m^2 | default | 0 … 100 m^2
   alpha_sun | Surface absorptivity | 0.5 |  | default | 0.1 … 1
@@ -130,10 +132,20 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   u_fan = 0.5493    Airflow utilisation
 
 6. CHECKS (governing first)
-  FAIL  Natural dissipation holds T_max: 3.1898 vs 1  utilisation 3.19
-  PASS  Fan delivers the required airflow: 0.5493 vs 1  utilisation 0.549
+  FAIL  Natural dissipation holds T_max: u_nat = 3.1898 vs u_nat ≤ 1  utilisation 3.19
+  PASS  Fan delivers the required airflow: u_fan = 0.5493 vs u_fan ≤ 1  utilisation 0.549
 
 7. APPLICABILITY
+  WARNING input.I_sun: I_sun (Solar irradiance on the enclosure (0 = indoors)) was not entered; the template default 0 W/m^2 is used.
+  WARNING input.A_sun: A_sun (Sunlit area) was not entered; the template default 0 m^2 is used.
+  WARNING input.alpha_sun: alpha_sun (Surface absorptivity) was not entered; the template default 0.5 is used.
+  WARNING input.f_top: f_top (Top exposure (1 free, 0 covered)) was not entered; the template default 1 is used.
+  WARNING input.f_front: f_front (Front exposure) was not entered; the template default 1 is used.
+  WARNING input.f_rear: f_rear (Rear exposure (0 = wall-mounted)) was not entered; the template default 0 is used.
+  WARNING input.f_left: f_left (Left side exposure) was not entered; the template default 1 is used.
+  WARNING input.f_right: f_right (Right side exposure) was not entered; the template default 1 is used.
+  WARNING input.f_bottom: f_bottom (Bottom exposure (0 = on the floor)) was not entered; the template default 0 is used.
+  WARNING input.h: h (Overall heat-transfer coefficient of the enclosure surface (editable reference value)) was not entered; the template default 5.5 W/(m^2*K) is used.
   WARNING cooling-unit: T_max: natural dissipation holds 94.05 W of 300 W; ventilate or fit a 206 W cooling unit.
 
 8. VERIFICATION

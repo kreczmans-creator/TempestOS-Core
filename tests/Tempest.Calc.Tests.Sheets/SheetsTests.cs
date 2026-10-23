@@ -31,7 +31,13 @@ public sealed class SheetsTests
     }
 
     [Fact]
-    public void Missing_Input_With_Default_Is_Fine() => Assert.Empty(CalcInputValidator.Validate(Calculator.Template, new CalcInputSet()));
+    public void Missing_Input_With_Default_Is_Fine()
+    {
+        // A defaulted input runs, but says so (ADR-0166, Black B-01): a warning per input, never a block.
+        var notices = CalcInputValidator.Validate(Calculator.Template, new CalcInputSet());
+        Assert.DoesNotContain(notices, n => n.Severity == CalcNoticeSeverity.Block);
+        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Warning && n.Message.StartsWith("F (Axial load) was not entered; the template default 12 kN is used.", StringComparison.Ordinal));
+    }
 
     [Theory]
     [InlineData(double.NaN)]
@@ -283,7 +289,7 @@ public sealed class SheetsTests
     public void Checks_Show_Governing_First_With_Pass_Fail()
     {
         var text = CalcSheetTextRenderer.Render(Sheet());
-        Assert.Contains("PASS  Direct stress: 0.375 vs 1  utilisation 0.375", text, StringComparison.Ordinal);
+        Assert.Contains("PASS  Direct stress: u = 0.375 vs u ≤ 1  utilisation 0.375", text, StringComparison.Ordinal);
         Assert.Contains("FAIL  Direct stress", CalcSheetTextRenderer.Render(Sheet(Inputs(f: 40))), StringComparison.Ordinal);
     }
 

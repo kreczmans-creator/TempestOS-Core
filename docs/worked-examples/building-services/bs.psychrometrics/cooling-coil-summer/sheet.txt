@@ -175,7 +175,7 @@ p_ws from Hyland–Wexler (over water ≥ 0 °C, over ice below); W = 0.621945 p
   No pass/fail checks in this calculation.
 
 7. APPLICABILITY
-  No warnings.
+  WARNING input.h_steam: h_steam (Steam enthalpy (steam humidification)) was not entered; the template default 2676 is used.
 
 8. VERIFICATION
   Template: bs.psychrometrics@1.0.0

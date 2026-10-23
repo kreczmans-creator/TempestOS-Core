@@ -36,6 +36,7 @@ public sealed class CalcSheetView : UserControl
     public const string ReviseCaption = "Revise";
     public const string ShowWorkingCaption = "Show working";
     public const string ExportCsvCaption = "Export inputs (CSV)";
+    public const string ImportCaption = "Import inputs (CSV/JSON)";
     public const string StaleMarker = "Recalculating…";
     public const string PickGuidance = "Choose a worksheet from the catalogue on the left. Its inputs, with their units, sources and limits, appear here.";
 
@@ -64,6 +65,9 @@ public sealed class CalcSheetView : UserControl
     private readonly Button _issueButton = new() { Content = IssueCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly Button _reviseButton = new() { Content = ReviseCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly Button _exportButton = new() { Content = ExportCsvCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
+    private readonly Button _importButton = new() { Content = ImportCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
+    /// <summary>Inputs the form has no field for (tables, vectors): carried from the seed so an imported or saved set keeps them (§3.8).</summary>
+    private readonly List<CalcInputValue> _carriedInputs = [];
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
     private readonly Dictionary<string, StackPanel> _stepRows = new(StringComparer.Ordinal);
     private bool _loadingForm;
@@ -90,6 +94,7 @@ public sealed class CalcSheetView : UserControl
         AutomationProperties.SetName(_reviseButton, ReviseCaption);
         AutomationProperties.SetName(_showWorking, ShowWorkingCaption);
         AutomationProperties.SetName(_exportButton, ExportCsvCaption);
+        AutomationProperties.SetName(_importButton, ImportCaption);
         AutomationProperties.SetName(_working, "Working");
         AutomationProperties.SetName(_results, "Results");
 
@@ -99,6 +104,7 @@ public sealed class CalcSheetView : UserControl
         _issueButton.Click += (_, _) => IssueRequested?.Invoke();
         _reviseButton.Click += (_, _) => ReviseRequested?.Invoke();
         _exportButton.Click += (_, _) => ExportRequested?.Invoke();
+        _importButton.Click += (_, _) => ImportRequested?.Invoke();
         _showWorking.IsCheckedChanged += (_, _) => _working.IsVisible = _showWorking.IsChecked == true;
         _governingLink.Click += (_, _) => RevealGoverningStep();
 
@@ -119,6 +125,9 @@ public sealed class CalcSheetView : UserControl
     public event Action? ReviseRequested;
 
     public event Action? ExportRequested;
+
+    /// <summary>The user asked to import inputs (CSV or JSON) from the clipboard.</summary>
+    public event Action? ImportRequested;
 
     public CalcCatalogueEntry? SelectedTemplate { get; private set; }
 
@@ -197,7 +206,10 @@ public sealed class CalcSheetView : UserControl
     }
 
     /// <summary>Builds the form for a template, seeding it from an instance (its inputs) or the template's defaults.</summary>
-    public void ShowTemplate(CalcCatalogueEntry entry, CalcInstance? instance = null)
+    public void ShowTemplate(CalcCatalogueEntry entry, CalcInstance? instance = null) => ShowTemplate(entry, instance, null);
+
+    /// <summary>Shows a template with the form seeded from <paramref name="seedOverride"/> (an import) instead of the instance or the template defaults.</summary>
+    public void ShowTemplate(CalcCatalogueEntry entry, CalcInstance? instance, CalcInputSet? seedOverride)
     {
         ArgumentNullException.ThrowIfNull(entry);
         SelectedTemplate = entry;
@@ -218,7 +230,9 @@ public sealed class CalcSheetView : UserControl
         _problems.Text = string.Empty;
         _status.Text = IsReadOnly ? $"This calculation is {instance!.Status}; it is read-only. Revise it to start a new revision." : string.Empty;
 
-        var seed = instance is null ? CalcTemplateHasher.DefaultInputs(entry.Template) : new CalcInputSet(instance.Inputs);
+        var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.DefaultInputs(entry.Template) : new CalcInputSet(instance.Inputs));
+        _carriedInputs.Clear();
+        _carriedInputs.AddRange(entry.Template.Inputs.Where(s => s.Kind is CalcInputKind.Table or CalcInputKind.Vector).Select(s => seed.Find(s.Symbol)).OfType<CalcInputValue>());
         string? lastGroup = null;
 
         foreach (var spec in entry.Template.Inputs)
@@ -323,6 +337,7 @@ public sealed class CalcSheetView : UserControl
 
         _saveButton.IsEnabled = !IsReadOnly && SelectedTemplate is not null && !result.IsBlocked;
         _exportButton.IsEnabled = SelectedTemplate is not null;
+        _importButton.IsEnabled = SelectedTemplate is not null && !IsReadOnly;
         UpdateActions();
     }
 
@@ -390,7 +405,21 @@ public sealed class CalcSheetView : UserControl
             }
         }
 
+        foreach (var carried in _carriedInputs)
+            set.Set(carried);
+
         return set;
+    }
+
+    /// <summary>Re-seeds the form from an imported input set (the current instance, if any, stays the one being edited).</summary>
+    public void ApplyImportedInputs(CalcInputSet inputs)
+    {
+        ArgumentNullException.ThrowIfNull(inputs);
+
+        if (SelectedTemplate is not { } entry || IsReadOnly)
+            return;
+
+        ShowTemplate(entry, CurrentInstance, inputs);
     }
 
     /// <summary>Sets one field as a test or an import would: the value text, the unit, the choice or the flag.</summary>
@@ -715,6 +744,7 @@ public sealed class CalcSheetView : UserControl
         actions.Children.Add(_issueButton);
         actions.Children.Add(_reviseButton);
         actions.Children.Add(_exportButton);
+        actions.Children.Add(_importButton);
         right.Children.Add(actions);
         right.Children.Add(_status);
 

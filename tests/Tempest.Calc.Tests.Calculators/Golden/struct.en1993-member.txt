@@ -203,13 +203,13 @@ N_pl,Rd = A f_y/γ_M0; M_c,Rd = W f_y/γ_M0 with W = W_pl (class 1–2) or W_el 
   u_member = 0.8168    Member interaction
 
 6. CHECKS (governing first)
-  PASS  Flexural buckling N_Ed ≤ N_b,Rd: 0.8168 vs 1  utilisation 0.817  « 6.3.1.1
-  PASS  Member interaction (simplified): 0.8168 vs 1  utilisation 0.817  « 6.3.3
-  PASS  Compression N_Ed ≤ N_c,Rd: 0.43189 vs 1  utilisation 0.432  « 6.2.4
-  PASS  Cross-section interaction: 0.43189 vs 1  utilisation 0.432  « 6.2.1(7)
-  PASS  Bending y M_y,Ed ≤ M_y,c,Rd: 0 vs 1  utilisation 0  « 6.2.5
-  PASS  Bending z M_z,Ed ≤ M_z,c,Rd: 0 vs 1  utilisation 0  « 6.2.5
-  PASS  Shear V_Ed ≤ V_pl,Rd: 0 vs 1  utilisation 0  « 6.2.6
+  PASS  Flexural buckling N_Ed ≤ N_b,Rd: u_buckling = 0.8168 vs u_buckling ≤ 1  utilisation 0.817  « 6.3.1.1
+  PASS  Member interaction (simplified): u_member = 0.8168 vs u_member ≤ 1  utilisation 0.817  « 6.3.3
+  PASS  Compression N_Ed ≤ N_c,Rd: u_N = 0.43189 vs u_N ≤ 1  utilisation 0.432  « 6.2.4
+  PASS  Cross-section interaction: u_section = 0.43189 vs u_section ≤ 1  utilisation 0.432  « 6.2.1(7)
+  PASS  Bending y M_y,Ed ≤ M_y,c,Rd: u_M_y = 0 vs u_M_y ≤ 1  utilisation 0  « 6.2.5
+  PASS  Bending z M_z,Ed ≤ M_z,c,Rd: u_M_z = 0 vs u_M_z ≤ 1  utilisation 0  « 6.2.5
+  PASS  Shear V_Ed ≤ V_pl,Rd: u_V = 0 vs u_V ≤ 1  utilisation 0  « 6.2.6
 
 7. APPLICABILITY
   WARNING no-ltb: M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.

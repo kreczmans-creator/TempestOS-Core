@@ -41,6 +41,27 @@ what shipped and what is still owed.
 TempestOS is implemented in C# on .NET 10. This is the sole canonical,
 actively developed codebase.
 
+### v0.26.0 — the calculation surface (`Tempest.Calc.*`)
+
+- **What it is.** A transparent, unit-aware worksheet engine and twelve
+  engineering calculators (sixteen worksheet templates) across Mechanical,
+  Structural, Building Services and Electrical, each sheet showing
+  formula → substitution → result with clause references and issued
+  through the Evidence lifecycle (ADR-0165, `docs/releases/v0.26.0/`).
+- **Where.** `src/Tempest.Calc/` holds Engine, Sheets, Verification,
+  Library (the only assembly that depends on Core) and the four
+  calculator assemblies; the Desktop composes them in
+  `CalcCalculatorComposition` and shows them under Modules → Calculations.
+- **Worked examples.** `docs/worked-examples/README.md` indexes 32 cases
+  and a calculation pack, each with `inputs.json` (loads into the
+  worksheet), `sheet.txt` and `sheet.pdf`.
+- **Tests.** `tests/Tempest.Calc.Tests.{Engine,Sheets,Library,Calculators}`
+  run in seconds; `tests/Tempest.Desktop.Tests --filter CalcSheets` covers
+  the form and the PDF. The known-answer cases of every template run in
+  the suite and are printed in each sheet's verification footer.
+- **SDK.** `global.json` pins 10.0.302 with `rollForward: latestFeature`,
+  so any 10.0.3xx or later feature band of the 10.0 SDK builds it.
+
 ## Architecture
 
 The solution is organised as follows:

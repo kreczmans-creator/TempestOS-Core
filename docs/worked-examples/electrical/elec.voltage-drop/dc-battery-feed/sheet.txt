@@ -83,10 +83,12 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   P_loss = 82.511 W    Power loss
 
 6. CHECKS (governing first)
-  FAIL  Voltage drop ≤ limit: 1.719 vs 1  utilisation 1.72  « BS 7671 525
+  FAIL  Voltage drop ≤ limit: u_dv = 1.719 vs u_dv ≤ 1  utilisation 1.72  « BS 7671 525
 
 7. APPLICABILITY
-  No warnings.
+  WARNING input.cos_phi: cos_phi (Power factor (AC)) was not entered; the template default 0.85 is used.
+  WARNING input.T_rated: T_rated (Conductor rated temperature) was not entered; the template default 70 degC is used.
+  WARNING input.T_amb: T_amb (Ambient temperature) was not entered; the template default 30 degC is used.
 
 8. VERIFICATION
   Template: elec.voltage-drop@1.0.0

@@ -16,7 +16,11 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   contributors | Contributors in the loop | 4 row(s) |  | spec: Shigley 9e Ch. 1 example, part dimensions | any
-  minimum | Minimum acceptable result | 0.003 | in | spec: Shigley 9e Ch. 1 example, required gap | -1000000 … 1000000 mm
+  contributors[1] |  | name = a shoulder length; direction = adds; nominal = 1.75 in; upper = 0.003 in; lower = -0.003 in |  |  | 
+  contributors[2] |  | name = b sleeve; direction = subtracts; nominal = 0.75 in; upper = 0.001 in; lower = -0.001 in |  |  | 
+  contributors[3] |  | name = c washer; direction = subtracts; nominal = 0.12 in; upper = 0.005 in; lower = -0.005 in |  |  | 
+  contributors[4] |  | name = d sleeve; direction = subtracts; nominal = 0.875 in; upper = 0.001 in; lower = -0.001 in |  |  | 
+  minimum | Minimum acceptable result | 0.003 | in | spec: Shigley 9e Ch. 1 example, required gap | -39370 … 39370 in
   k | Standard deviations per half-band (normal contributors) | 3 |  | assumption: Each part at ±3σ within its band. | 1 … 6
   f_rss | Modified-RSS factor (Bender-style) | 1.5 |  | assumption: Bender factor 1.5. | 1 … 2
   cpk_target | Required C_pk | 1.33 |  | assumption: Usual capability target. | 1 … 2
@@ -158,7 +162,7 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
 
 6. CHECKS (governing first)
   FAIL  Worst case within requirement: -0.005 … 0.015 in vs 0.003 … open in  utilisation —
-  FAIL  C_pk against target: 3.99 vs 1  utilisation 3.99
+  FAIL  C_pk against target: u_cpk = 3.99 vs u_cpk ≤ 1  utilisation 3.99
 
 7. APPLICABILITY
   No warnings.

@@ -33,4 +33,14 @@ Red-team findings are appended below as they are verified.
 | R-22 (orphan Evidence on Create crash) | 2 orphan objects. | Unchanged — accepted (D-32). | `Crash_Mid_Create_Leaves_No_Orphan_Evidence` (skipped with the justification) | Accepted |
 | R-24 (PDF control characters) | NUL/ESC in the extracted text. | None; document structure intact; 50-sheet hostile pack within budget. | `Red_PdfRendererAttacks` (7 cases; the helper keeps the hostile revision within the new 40-character cap so the run is not blocked before layout) | Closed |
 
+## Black-team findings (verified after the fixes)
+
+| Finding | Before | After the fix | Permanent regression test | Status |
+|---|---|---|---|---|
+| B-01 | Empty file ran on defaults with no notice. | One warning per defaulted input ("F (Axial load) was not entered; the template default 12 kN is used."). | `SheetsTests.Missing_Input_With_Default_Is_Fine` | Closed |
+| B-12 | Rejection moved the Evidence to Checked; instance stuck. | Instance and Evidence Draft; re-check and issue succeed. | `CalcInstanceServiceTests.Rejected_Check_Leaves_Instance_And_Evidence_Draft_And_Can_Be_Checked_Again` | Closed |
+| B-13 | Check succeeded without provenance; issue refused; no way back. | Check refused with the provenance message; after the source is supplied, check and issue succeed. | `CalcInstanceServiceTests.Check_And_Issue_Are_Refused_Without_Provenance` | Closed |
+| B-14 | `ArgumentException` for empty strings. | Refusals in the service's voice. | `CalcInstanceServiceTests.Empty_Checker_Or_Issue_Fields_Are_Refused_Not_Thrown` | Closed |
+| B-17, B-18, B-20 | "4 row(s)"; `3.99 vs 1`; ranges in mm for an inch input. | Rows on the sheet; `u = … vs u ≤ …`; ranges in the entered unit. | 16 goldens, 32 worked-example sheets, `SheetsTests.Checks_Show_Governing_First_With_Pass_Fail` | Closed |
+
 Suites after the fixes: Engine 384/384, Sheets 93/93, Calculators 328/328, Library 42/42 (+1 skipped), Core Evidence 92/92, Desktop CalcSheets + Documents 157/157.

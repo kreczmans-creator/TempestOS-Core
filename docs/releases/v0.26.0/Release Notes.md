@@ -1,6 +1,6 @@
 # TempestOS v0.26.0 — Release Notes (release candidate)
 
-**Theme.** Tempest computes. A transparent, unit-aware worksheet engine (`Tempest.Calc.*`) with twelve engineering calculators across four disciplines, every sheet showing formula → substitution → result with clause references, issued through the existing Evidence lifecycle in one transaction (ADR-0165).
+**Theme.** Tempest computes. A transparent, unit-aware worksheet engine (`Tempest.Calc.*`) with twelve engineering calculators (sixteen worksheet templates) across four disciplines, every sheet showing formula → substitution → result with clause references, issued through the existing Evidence lifecycle in one transaction (ADR-0165).
 
 ## What is new
 

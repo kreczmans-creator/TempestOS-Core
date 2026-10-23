@@ -104,7 +104,7 @@ A = (a² p_i − b² p_o)/(b² − a²), B = a² b² (p_i − p_o)/(b² − a²)
   k_wall = 1.5    Wall ratio
 
 6. CHECKS (governing first)
-  PASS  von Mises against allowable: 0.62354 vs 1  utilisation 0.624
+  PASS  von Mises against allowable: u = 0.62354 vs u ≤ 1  utilisation 0.624
 
 7. APPLICABILITY
   No warnings.

@@ -13,6 +13,8 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   loads | Heat loads | 2 row(s) |  | manual | any
+  loads[1] |  | name = PLC and I/O; P = 80 W; qty = 1; duty = 1 |  |  | 
+  loads[2] |  | name = drives; P = 55 W; qty = 4; duty = 1 |  |  | 
   I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m^2 | manual | 0 … 1200 W/m^2
   A_sun | Sunlit area | 0 | m^2 | manual | 0 … 100 m^2
   alpha_sun | Surface absorptivity | 0.5 |  | manual | 0.1 … 1
@@ -109,7 +111,7 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   V_req_net = 42.893 m³/h    Required airflow (net)
 
 6. CHECKS (governing first)
-  FAIL  Natural dissipation holds T_max: 3.1898 vs 1  utilisation 3.19
+  FAIL  Natural dissipation holds T_max: u_nat = 3.1898 vs u_nat ≤ 1  utilisation 3.19
 
 7. APPLICABILITY
   WARNING cooling-unit: T_max: natural dissipation holds 94.05 W of 300 W; ventilate or fit a 206 W cooling unit.

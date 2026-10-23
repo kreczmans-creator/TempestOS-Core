@@ -20,6 +20,9 @@ v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/�
   T | Fluid temperature | 6 | degC | spec: SPEC-M-04 §3: 6 °C flow | 0 … 100 degC
   Q | Design flow rate | 30 | m^3/h | spec: Schedule CHW-01 design flow | 0.01 … 100000 m^3/h
   segments | Pipe segments in series | 3 row(s) |  | drawing: DRG-M-110 rev C | any
+  segments[1] |  | name = plantroom suction; L = 8 m; D = 100 mm; eps = 0.045 mm; K = 3; L_eq = 0 m; dz = 0 m; side = suction |  |  | 
+  segments[2] |  | name = riser DN80; L = 60 m; D = 80 mm; eps = 0.045 mm; K = 8; L_eq = 0 m; dz = 10 m; side = discharge |  |  | 
+  segments[3] |  | name = index run DN65; L = 45 m; D = 65 mm; eps = 0.045 mm; K = 12; L_eq = 6 m; dz = 2 m; side = discharge |  |  | 
   h_out | Pressure head required at the outlet | 3 | m | spec: Terminal unit: 30 kPa ≈ 3 m | 0 … 1000 m
   v_max | Velocity limit (warning) | 2.5 | m/s | spec: CIBSE Guide C practice limit, assumed | 0.5 … 10 m/s
   Q_pump | Pump curve: flow points | [0, 20, 40, 60] | m^3/h | spec: Pump datasheet P-01 rev 2, curve points | any
@@ -218,8 +221,8 @@ v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/�
   v_peak = 2.5113 m/s    Highest velocity
 
 6. CHECKS (governing first)
-  FAIL  Velocity ≤ limit: 1.0045 vs 1  utilisation 1
-  PASS  NPSH_r ≤ NPSH_a: 0.25066 vs 1  utilisation 0.251
+  FAIL  Velocity ≤ limit: u_v = 1.0045 vs u_v ≤ 1  utilisation 1
+  PASS  NPSH_r ≤ NPSH_a: u_npsh = 0.25066 vs u_npsh ≤ 1  utilisation 0.251
   PASS  Duty point exists (as entered): 31.569 m³/h vs 29.059 m  utilisation 0
   PASS  Duty point exists (after the affinity shift): 26.238 m³/h vs 24.712 m  utilisation 0
 

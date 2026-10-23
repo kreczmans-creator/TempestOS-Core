@@ -48,6 +48,22 @@ Red's proof-of-concept tests stay in the suite as the regression tests (`Red_Imp
 
 Worked-example `inputs.json` files are unchanged: `IsWithinLimits` is `[JsonIgnore]` so the exchange format did not move.
 
+## Black findings (B-01…B-25) — mitigations
+
+| Finding | Mitigation | Where |
+|---|---|---|
+| B-01 High — defaulted inputs pass silently | One Warning per non-optional input that takes its template default (ADR-0166). | `CalcInputValidator.cs` |
+| B-02 / B-03 Medium — JSON wording, duplicate symbols | Plain-words malformed-document notice; duplicate symbol and ValueText-only values refused by name. | `CalcInputJson.cs` |
+| B-12 High — rejection strands the calculation | A Rejected check is kept on the instance (`LastRejection`); the Evidence stays Draft. | `CalcInstanceService.cs`, `CalcInstance.cs` |
+| B-13 High — check without provenance is a dead end | Check and CheckPack demand the provenance Issue demands. | `CalcInstanceService.cs` |
+| B-14 Medium — empty strings throw | Refusals: "A checker name is needed." etc. | `CalcInstanceService.cs` |
+| B-17 High — table rows absent from the sheet | Up to 100 rows per table written under the summary row; the rest counted. | `CalcSheetBuilder.cs` |
+| B-18 Medium — ratios read as demands | `u = 0.375 vs u ≤ 1`. | `RunResult.cs` |
+| B-20 Medium — ranges in the template unit | Range converted to the entered unit when it parses. | `CalcSheetBuilder.cs` |
+| B-15, B-19 Medium | Justified (D-35). | — |
+| B-24 Low — no way to load an example into the form | *Import inputs (CSV/JSON)* on the worksheet form re-seeds it from the clipboard, table and vector inputs carried through (D-37); `docs/worked-examples/README.md` says how. | `CalcSheetView.cs`, `CalcSheetCoordinator.cs` |
+| Windows CI (Grey) | Subsetter keeps only PDF-relevant tables; Red budgets honour the CI timeout factor (D-36). | `TrueTypeSubsetter.cs`, `Red_*` |
+
 ## Validation layer, logging, secure defaults
 
 - Validation: `CalcInputValidator` (kinds, limits, rows) → `CalcInputBinder` → calculator guards (`Block` with the symbol) → `CalcRunner` (never throws). Table text is cleaned at render and FTS index time.
