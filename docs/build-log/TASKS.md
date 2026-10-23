@@ -31,7 +31,7 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 ## Phase 4 — Desktop retirement (`v0.27.0/phase-4-desktop`)
 - [x] Compare reimplemented over calc instances (`CalcInstanceComparer`, Compare with previous revision); archives listed in the worksheet catalogue (Y8-06)
 - [x] Grey: real v0.25.3 and v0.26.0-rc1 databases (46 records, 19 calculations) migrate with nothing lost (`GreyLegacyDatabaseTests`)
-- [ ] Reference diagram in the worksheet form for every template (ADR-0158, Principle 33; D-41) — prerequisite of the retirement
+- [x] Reference diagram in the worksheet form for every template (ADR-0158, Principle 33; D-41): 27 diagrams, 60 drawings; coverage, reading and focus tests; every drawing rendered and reviewed for overlaps
 - [ ] Legacy Calculators surface (Engineering → Modules → Calculators) retired; parked on `v0.27.0/phase-4-retirement-wip`
 - [ ] Legacy definitions, descriptors, diagrams and their tests retired under ADR-0167 (after the migration passes)
 - [ ] Desktop full suite green

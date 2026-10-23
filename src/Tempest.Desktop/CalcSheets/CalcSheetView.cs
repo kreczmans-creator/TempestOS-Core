@@ -75,6 +75,9 @@ public sealed class CalcSheetView : UserControl
     private readonly Button _compareButton = new() { Content = CompareCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly SelectableTextBlock _comparison = new() { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap, IsVisible = false };
     private IReadOnlyList<CalcInstance> _archives = [];
+
+    // ADR-0158, D-41: the template's reference diagram beside the inputs, read against the form as it stands.
+    private readonly Tempest.Desktop.Views.CalculationDiagramView _diagram = new() { Width = Tempest.Desktop.Views.CalculationDiagramView.PanelWidth, VerticalAlignment = VerticalAlignment.Top, IsVisible = false };
     /// <summary>Inputs the form has no field for (tables, vectors): carried from the seed so an imported or saved set keeps them (§3.8).</summary>
     private readonly List<CalcInputValue> _carriedInputs = [];
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
@@ -122,6 +125,7 @@ public sealed class CalcSheetView : UserControl
         _compareButton.Click += (_, _) => CompareRequested?.Invoke();
         _showWorking.IsCheckedChanged += (_, _) => _working.IsVisible = _showWorking.IsChecked == true;
         _governingLink.Click += (_, _) => RevealGoverningStep();
+        _diagram.InputActivated += FocusField;
 
         Content = BuildLayout();
     }
@@ -390,8 +394,24 @@ public sealed class CalcSheetView : UserControl
         }
 
         _loadingForm = false;
+        var template = entry.Template;
+        _diagram.IsVisible = true;
+        _diagram.ShowReading(template.Title, () => SelectedTemplate is { } t ? CalcDiagramReader.Read(t.Template, ReadForm()) : null, symbol => template.FindInput(symbol)?.Description);
         UpdateActions();
         RaiseInputsChanged();
+    }
+
+    /// <summary>The reference diagram beside the inputs (ADR-0158, D-41).</summary>
+    public Tempest.Desktop.Views.CalculationDiagramView Diagram => _diagram;
+
+    /// <summary>A shape on the diagram was clicked: its input's own control takes focus.</summary>
+    private void FocusField(string symbol)
+    {
+        if (FieldControl(symbol) is { } control)
+        {
+            control.Focus();
+            control.BringIntoView();
+        }
     }
 
     /// <summary>Shows a run: governing bar, results, checks, notices, working. Clears the stale marker.</summary>
@@ -633,6 +653,7 @@ public sealed class CalcSheetView : UserControl
             f.Problem.IsVisible = false;
 
         _stale.IsVisible = true;
+        _diagram.Refresh();
         InputsChanged?.Invoke(ReadForm());
     }
 
@@ -654,6 +675,8 @@ public sealed class CalcSheetView : UserControl
         CurrentInstance = instance;
         IsReadOnly = true;
         ClearComparison();
+        _diagram.ShowReading(null, null);
+        _diagram.IsVisible = false;
         LastRun = null;
         _title.Text = instance.Name;
         _reference.Text = instance.TemplateReference;
@@ -786,6 +809,12 @@ public sealed class CalcSheetView : UserControl
         block.Children.Add(row);
         block.Children.Add(problem);
 
+        foreach (var control in new Control?[] { text, unit, choice, flag }.OfType<Control>())
+        {
+            control.GotFocus += (_, _) => _diagram.Highlight(spec.Symbol);
+            control.LostFocus += (_, _) => _diagram.Highlight(null);
+        }
+
         var controls = new FieldControls(spec, text, unit, choice, flag, provenance, reference, problem, row);
         _fields[spec.Symbol] = controls;
         SetEnabled(controls, !IsReadOnly);
@@ -906,7 +935,13 @@ public sealed class CalcSheetView : UserControl
         right.Children.Add(_reference);
         right.Children.Add(_scope);
         right.Children.Add(LabelledRow("Calculation name", _nameBox));
-        right.Children.Add(Section("Inputs", _form));
+        var inputsRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var inputs = Section("Inputs", _form);
+        Grid.SetColumn(_diagram, 1);
+        _diagram.Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0);
+        inputsRow.Children.Add(inputs);
+        inputsRow.Children.Add(_diagram);
+        right.Children.Add(inputsRow);
         right.Children.Add(_problems);
 
         var resultsHead = new StackPanel { Spacing = DesignTokens.SpaceXs };

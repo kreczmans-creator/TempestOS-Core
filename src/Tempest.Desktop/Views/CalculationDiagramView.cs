@@ -60,6 +60,9 @@ public sealed class CalculationDiagramView : UserControl
     /// <summary>This control's own automation name and heading.</summary>
     public const string Heading = "Reference diagram";
 
+    /// <summary>The panel's width beside a form (the legacy calculators' 380).</summary>
+    public const double PanelWidth = 380;
+
     /// <summary>The automation name of the drawing itself; its help text is the diagram in words.</summary>
     public const string DrawingAutomationName = "Reference diagram drawing";
 
@@ -83,6 +86,11 @@ public sealed class CalculationDiagramView : UserControl
 
     private CalculationModuleDescriptor? _module;
     private Func<string, CalculationFormField?> _read = _ => null;
+
+    // ADR-0167, D-41: a worksheet supplies its own reading (its symbols, its values) and a tip per input.
+    private Func<CalculationDiagramReading?>? _reader;
+    private string? _title;
+    private Func<string, string?> _tip = _ => null;
     private string? _focused;
     private string? _hovered;
 
@@ -173,16 +181,36 @@ public sealed class CalculationDiagramView : UserControl
 
         _module = module;
         _read = read;
+        _reader = null;
+        _title = module?.Title;
+        _tip = input => _module?.Inputs.FirstOrDefault(i => i.Name == input)?.Label;
         _focused = null;
         _hovered = null;
         Spec = module is null ? null : CalculationDiagrams.For(module.Id);
         Refresh();
     }
 
+    /// <summary>
+    /// Shows a diagram read by the caller (a worksheet form: ADR-0167, D-41): <paramref name="reader"/> is asked again on
+    /// every <see cref="Refresh"/>, so the drawing follows the form; <see langword="null"/> clears the panel.
+    /// </summary>
+    public void ShowReading(string? title, Func<CalculationDiagramReading?>? reader, Func<string, string?>? tip = null)
+    {
+        _module = null;
+        _read = _ => null;
+        _reader = reader;
+        _title = title;
+        _tip = tip ?? (_ => null);
+        _focused = null;
+        _hovered = null;
+        Spec = reader?.Invoke()?.Spec;
+        Refresh();
+    }
+
     /// <summary>Re-reads the form and redraws: the variant its choices select, every label as now typed.</summary>
     public void Refresh()
     {
-        Reading = Spec is not null && _module is not null ? CalculationDiagramReader.Read(Spec, _module, _read) : null;
+        Reading = _reader is not null ? _reader() : Spec is not null && _module is not null ? CalculationDiagramReader.Read(Spec, _module, _read) : null;
         Redraw();
     }
 
@@ -236,8 +264,8 @@ public sealed class CalculationDiagramView : UserControl
 
         if (reading is null)
         {
-            _fallback.Text = _module is null ? "Choose a calculation to see its reference diagram." : NoDiagramYetText;
-            AutomationProperties.SetHelpText(this, _module is null ? _fallback.Text : $"{_module.Title}. {NoDiagramYetText}");
+            _fallback.Text = _title is null ? "Choose a calculation to see its reference diagram." : NoDiagramYetText;
+            AutomationProperties.SetHelpText(this, _title is null ? _fallback.Text : $"{_title}. {NoDiagramYetText}");
             return;
         }
 
@@ -514,7 +542,7 @@ public sealed class CalculationDiagramView : UserControl
                 Activate(input);
                 e.Handled = true;
             };
-            ToolTip.SetTip(visual, _module?.Inputs.FirstOrDefault(i => i.Name == input)?.Label);
+            ToolTip.SetTip(visual, _tip(input));
         }
         else
         {
