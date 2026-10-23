@@ -28,7 +28,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
     public CalcTemplate Template { get; } = new(
         Id, "1.0.0", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
         "Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.",
-        "P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive.",
+        "P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive.",
         [
             new CalcInputSpec("loads", "Heat loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 500, Group: "Heat load"),
             new CalcInputSpec("I_sun", "Solar irradiance on the enclosure (0 = indoors)", CalcInputKind.Quantity, "W/m^2", Default: 0, Min: 0, Max: 1200, HardMin: 0, HardMax: 2000, Group: "Heat load"),
@@ -68,7 +68,6 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
             new CalcApplicabilityRule("fan-curve", "The fan curve needs at least two points with matching counts, flows increasing.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("no-fan-duty", "The fan curve and the system resistance do not cross: no duty point.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("cooling-unit", "Natural dissipation cannot hold the limit: forced ventilation or a cooling unit is needed.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("ventilation-limit", "Ventilation cannot cool below ambient: the target rise is small or negative; a cooling unit is needed.", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-wall-mounted", "Wall-mounted 600 × 800 × 300 enclosure, 300 W (analytic)",

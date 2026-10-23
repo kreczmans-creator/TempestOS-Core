@@ -232,7 +232,11 @@ public sealed class CalcInstanceService
         var report = KnownAnswerRunner.Run(entry.Calculator, _time);
         CalcInstance? issued = null;
 
-        var outcome = await _evidence.IssueInOneTransactionAsync(
+        EvidenceActionResult outcome;
+
+        try
+        {
+            outcome = await _evidence.IssueInOneTransactionAsync(
             evidenceId, issueReference, instance.Revision, client,
             renderSheetAsync: async (evidence, issuedAtUtc, token) =>
             {
@@ -255,8 +259,13 @@ public sealed class CalcInstanceService
 
                 return new IssueSheetContent(fileName, _renderer is null ? "text/plain" : "application/pdf", bytes, attachmentId);
             },
-            alsoWrite: (transaction, token) => CalcInstanceStore.WriteInstanceAsync(transaction, issued!, token),
+            alsoWrite: (transaction, token) => CalcInstanceStore.WriteIssuedInstanceAsync(transaction, issued!, token),
             cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+        catch (CalcConcurrentIssueException ex)
+        {
+            return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
+        }
 
         if (!outcome.Succeeded || issued is not { } committed)
             return CalcActionResult.Refused(outcome.Reason ?? "The issue was refused.", instance);
@@ -489,7 +498,7 @@ public sealed class CalcInstanceService
             alsoWrite: async (transaction, token) =>
             {
                 foreach (var m in issuedMembers)
-                    await CalcInstanceStore.WriteInstanceAsync(transaction, m, token).ConfigureAwait(false);
+                    await CalcInstanceStore.WriteIssuedInstanceAsync(transaction, m, token).ConfigureAwait(false);
 
                 await CalcInstanceStore.WritePackAsync(transaction, issuedPack!, token).ConfigureAwait(false);
             },

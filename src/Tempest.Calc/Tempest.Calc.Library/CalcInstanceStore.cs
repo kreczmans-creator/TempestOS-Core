@@ -79,6 +79,30 @@ public sealed class CalcInstanceStore
         await _store.ExecuteInTransactionAsync((tx, token) => WriteInstanceAsync(tx, instance, token), cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Writes an issued instance inside the Issue transaction after re-reading
+    /// the stored copy under that same transaction: if another writer issued
+    /// (or superseded) it since the caller looked, the whole transaction —
+    /// Evidence status, attachment, issue record — rolls back
+    /// (<see cref="CalcConcurrentIssueException"/>). Two Issues raced on one
+    /// instance therefore leave exactly one issued revision.
+    /// </summary>
+    public static async Task WriteIssuedInstanceAsync(IPersistenceTransaction transaction, CalcInstance instance, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+        ArgumentNullException.ThrowIfNull(instance);
+
+        var stored = Deserialise<CalcInstance>(await transaction.ReadAsync(InstanceCollection, Key(instance.ProjectId, instance.Id), cancellationToken).ConfigureAwait(false));
+
+        if (stored is null)
+            throw new CalcConcurrentIssueException($"Calculation '{instance.Name}' was deleted while it was being issued.");
+
+        if (stored.Status is CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded)
+            throw new CalcConcurrentIssueException($"Calculation '{instance.Name}' is already {stored.Status}: another issue completed first.");
+
+        await WriteInstanceAsync(transaction, instance, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Writes an instance inside a caller's transaction (the one-transaction Issue).</summary>
     public static async Task WriteInstanceAsync(IPersistenceTransaction transaction, CalcInstance instance, CancellationToken cancellationToken)
     {
@@ -184,4 +208,14 @@ public sealed class CalcInstanceImmutableException : InvalidOperationException
     public Guid InstanceId { get; }
 
     public CalcInstanceStatus Status { get; }
+}
+
+/// <summary>Raised inside the Issue transaction when the stored instance is no longer Checked: a concurrent issue won the race. The transaction rolls back and the caller reports a refusal.</summary>
+public sealed class CalcConcurrentIssueException : InvalidOperationException
+{
+    public CalcConcurrentIssueException(string message) : base(message) { }
+
+    public CalcConcurrentIssueException() { }
+
+    public CalcConcurrentIssueException(string message, Exception innerException) : base(message, innerException) { }
 }

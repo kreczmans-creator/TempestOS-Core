@@ -58,7 +58,7 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
         Vertical reaction at node 1
   [10] R1_m = reaction at node 1, moment
       = Σ member end moments − applied nodal couple
-      = 2.9104e-14 kN·m
+      = -1.4552e-14 kN·m
         Moment reaction at node 1
   [11] R4_x = reaction at node 4, x
       = Σ member end forces − applied nodal loads
@@ -70,7 +70,7 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
         Vertical reaction at node 4
   [13] R4_m = reaction at node 4, moment
       = Σ member end moments − applied nodal couple
-      = 0 kN·m
+      = -2.9104e-14 kN·m
         Moment reaction at node 4
   [14] sum_R_y = Σ R_y
       = all supports
@@ -188,10 +188,10 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
 5. RESULTS
   R1_x = -2.9968 kN    R_x node 1
   R1_y = 45 kN    R_y node 1
-  R1_m = 2.9104e-14 kN·m    M node 1
+  R1_m = -1.4552e-14 kN·m    M node 1
   R4_x = -21.003 kN    R_x node 4
   R4_y = 75 kN    R_y node 4
-  R4_m = 0 kN·m    M node 4
+  R4_m = -2.9104e-14 kN·m    M node 4
   sum_R_y = 120 kN    Σ R_y
   sum_R_x = -24 kN    Σ R_x
   M_max_e1 = 14.984 kN·m    M max, member 1

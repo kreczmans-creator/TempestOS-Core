@@ -285,7 +285,20 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
                 _issue = recorded;
                 _status = EvidenceStatus.Issued;
             },
-            applyAttachments: attachment is null ? null : () => [.. AttachmentsSnapshot(), attachment]).ConfigureAwait(false);
+            applyAttachments: attachment is null ? null : () => [.. AttachmentsSnapshot(), attachment],
+            verifyBeforeWrite: async (transaction, token) =>
+            {
+                // The caller checked the status before the transaction opened;
+                // a second Issue racing this one may have committed since.
+                // Read the stored state under this transaction and refuse
+                // unless it still permits the move — the whole transaction
+                // (attachment, issue record, anything in alsoWrite) rolls back.
+                var stored = await EngineeringDomain.EngineeringObjectStateStore.ReadInTransactionAsync(transaction, Id, token).ConfigureAwait(false);
+                var storedStatus = stored?.TypeState.TryGetValue(nameof(Status), out var s) == true && Enum.TryParse<EvidenceStatus>(s, out var parsed) ? parsed : Status;
+
+                if (!EvidenceStatusTransitions.IsPermitted(storedStatus, EvidenceStatus.Issued))
+                    throw new ConcurrentIssueException($"Evidence '{Id}' is {storedStatus}: another issue completed first; nothing was written.");
+            }).ConfigureAwait(false);
 
         return attachmentId;
     }
@@ -362,4 +375,14 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
             ReadClassification(state), state.TypeGuid(nameof(SubjectId)), state.Type(nameof(AuthorIdentityId)) ?? string.Empty,
             ReadCitations(state), ReadDeclaredFigures(state), ReadStatus(state),
             state.TypeJson<CheckRecord>(nameof(Check)), state.TypeJson<IssueRecord>(nameof(Issue)));
+}
+
+/// <summary>Raised inside the Issue transaction when the stored Evidence no longer permits issuing (a concurrent Issue won); the transaction rolls back.</summary>
+public sealed class ConcurrentIssueException : InvalidOperationException
+{
+    public ConcurrentIssueException(string message) : base(message) { }
+
+    public ConcurrentIssueException() { }
+
+    public ConcurrentIssueException(string message, Exception innerException) : base(message, innerException) { }
 }

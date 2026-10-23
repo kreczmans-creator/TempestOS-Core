@@ -111,7 +111,7 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
         Predicted defects per million
   [25] yield = 1 − dpmo / 10⁶
       = 1 − 7.7759e-7 / 10⁶
-      = 10000 %
+      = 100 %
         Predicted yield
   [26] u_cpk = cpk_target / cpk
       = 1.33 / 2.3567
@@ -139,7 +139,7 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
         Monte Carlo 95 %
   [34] mc_yield = samples inside the requirement
       = 10000 of 10000
-      = 10000 %
+      = 100 %
         Monte Carlo yield
 
 5. RESULTS
@@ -156,12 +156,12 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
   cp = 2.4807    C_p
   cpk = 2.3567    C_pk
   dpmo = 7.7759e-7    DPMO (predicted)
-  yield = 10000 %    Yield (predicted)
+  yield = 100 %    Yield (predicted)
   mc_mean = 0.60987 mm    Monte Carlo mean
   mc_sigma = 0.027228 mm    Monte Carlo σ
   mc_p05 = 0.56589 mm    Monte Carlo 5th percentile
   mc_p95 = 0.65462 mm    Monte Carlo 95th percentile
-  mc_yield = 10000 %    Monte Carlo yield
+  mc_yield = 100 %    Monte Carlo yield
 
 6. CHECKS (governing first)
   PASS  C_pk against target: 0.56436 vs 1  utilisation 0.564

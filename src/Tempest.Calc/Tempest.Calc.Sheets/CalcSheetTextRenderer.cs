@@ -152,7 +152,7 @@ public static class CalcSheetTextRenderer
         if (f.ApplicationVersion is { Length: > 0 })
             sb.Append("  Application: ").AppendLine(Clean(f.ApplicationVersion));
 
-        return sb.ToString();
+        return sb.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
     }
 
     /// <summary>Strips the lines that legitimately change between runs (dates, hashes, engine and application versions) so a golden file compares content only.</summary>
@@ -195,6 +195,6 @@ public static class CalcSheetTextRenderer
         foreach (var c in s)
             sb.Append(char.IsControl(c) ? ' ' : c);
 
-        return sb.ToString();
+        return sb.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
     }
 }

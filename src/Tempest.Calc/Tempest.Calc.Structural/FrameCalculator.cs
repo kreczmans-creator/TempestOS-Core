@@ -57,7 +57,7 @@ public sealed class FrameCalculator : ICalcCalculator
         new("target", "Node (nodal) or element", CalcInputKind.Number, HardMin: 1, HardMax: 1e6),
         new("a", "a from end i", CalcInputKind.Quantity, "m", HardMin: 0, HardMax: 1e5, IsOptional: true),
         new("b", "b from end i (distributed)", CalcInputKind.Quantity, "m", HardMin: 0, HardMax: 1e5, IsOptional: true),
-        new("w1", "w at a", CalcInputKind.Quantity, "kN/m", HardMin: -1e6, HardMax: 1e6, IsOptional: true),
+        new("w1", "w at a (+ towards local y, i.e. left of i→j; gravity rows: + downward)", CalcInputKind.Quantity, "kN/m", HardMin: -1e6, HardMax: 1e6, IsOptional: true),
         new("w2", "w at b (trapezoid)", CalcInputKind.Quantity, "kN/m", HardMin: -1e6, HardMax: 1e6, IsOptional: true),
         new("F_x", "F_x (global)", CalcInputKind.Quantity, "kN", HardMin: -1e7, HardMax: 1e7, IsOptional: true),
         new("F_y", "F_y (global)", CalcInputKind.Quantity, "kN", HardMin: -1e7, HardMax: 1e7, IsOptional: true),

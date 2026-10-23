@@ -392,7 +392,15 @@ public sealed class EvidenceService : IEvidenceService
         // bytes it returns are written inside it with everything else.
         var sheet = renderSheetAsync is null ? null : await renderSheetAsync(evidence, issuedAtUtc, cancellationToken).ConfigureAwait(false);
         var issue = new IssueRecord(issueReference, revision, client, issuedAtUtc, null);
-        await evidence.RecordIssueAsync(issue, sheet, alsoWrite, cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await evidence.RecordIssueAsync(issue, sheet, alsoWrite, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ConcurrentIssueException ex)
+        {
+            return new EvidenceActionResult(EvidenceRefusal.TransitionNotPermitted, ex.Message, evidence);
+        }
 
         return new EvidenceActionResult(EvidenceRefusal.None, null, evidence);
     }

@@ -174,9 +174,12 @@ public static class FrameSolver
         var dof = new int[3 * n];
         var free = 0;
 
-        foreach (var node in model.Nodes)
+        // Number the free degrees of freedom in the reordered node sequence,
+        // so the half-bandwidth computed from node-index differences holds.
+        foreach (var nodeId in order)
         {
-            var i = nodeIndex[node.Id];
+            var node = model.NodeById[nodeId];
+            var i = nodeIndex[nodeId];
             dof[3 * i] = node.FixX ? -1 : free++;
             dof[3 * i + 1] = node.FixY ? -1 : free++;
             dof[3 * i + 2] = node.FixR ? -1 : free++;
@@ -621,6 +624,10 @@ public static class FrameSolver
         public void Add(int i, int j, double v)
         {
             if (j < i) (i, j) = (j, i);
+
+            if (j - i > _half)
+                throw new InvalidOperationException($"band overflow: ({i}, {j}) with half-bandwidth {_half}.");
+
             _a[Index(i, j)] += v;
         }
 
@@ -643,7 +650,7 @@ public static class FrameSolver
                 }
 
                 if (!(djj > 1e-10 * scale))
-                    throw new FrameModelException("the structure is a mechanism (a non-positive stiffness pivot): check the supports and the releases.");
+                    throw new FrameModelException($"the structure is a mechanism (non-positive stiffness pivot {j} of {_n}: {djj:G3} against {scale:G3}): check the supports and the releases.");
 
                 _a[Index(j, j)] = djj;
                 var hi = Math.Min(_n - 1, j + _half);

@@ -114,7 +114,7 @@ public sealed class ToleranceStackTests
         Assert.Equal(a.OutputSi("mc_mean"), b.OutputSi("mc_mean"));
         Assert.Equal(a.OutputSi("x_mean"), a.OutputSi("mc_mean"), 6);
         Assert.Equal(a.OutputSi("sigma"), a.OutputSi("mc_sigma"), 6);
-        Assert.InRange(a.OutputSi("mc_yield"), 99.9, 100.0);
+        Assert.InRange(a.OutputSi("mc_yield"), 0.999, 1.0);
         Assert.Contains(a.Series, s => s.Name == "Monte Carlo histogram" && s.Points.Count == 30);
         Assert.Contains(a.Series, s => s.Name == "Contribution, statistical" && Math.Abs(s.Points.Sum(p => p.Y) - 100) < 1e-9);
     }

@@ -40,7 +40,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
     public CalcTemplate Template { get; } = new(
         Id, "1.0.0", CalcDiscipline.BuildingServices, "Duct sizing",
         "Sizes each duct section by the equal-friction method (a target friction rate) or the velocity method (a target velocity), rounds to standard sizes, and reports velocity, friction rate, friction and fitting losses per section and the total pressure drop along the index run, with warnings against user velocity and pressure-drop limits.",
-        "Round: D from the target (friction: Colebrook with the air properties at T; velocity: D = √(4Q/πv)), rounded up to the next standard size. Rectangular: equivalent diameter D_e = 1.30 (ab)^0.625/(a + b)^0.25 (equal friction and capacity); flat oval: D_e = 1.55 A^0.625/P^0.25 with A = πb²/4 + b(a − b), P = πb + 2(a − b). Friction rate Δp/L = f ρ v²/(2D); fitting loss ΣC ρ v²/2; totals summed over the index-run sections.",
+        "Round: D from the target (friction: Colebrook with the air properties at T; velocity: D = √(4Q/πv)), rounded up to the next standard size. Rectangular: equivalent diameter D_e = 1.30 (ab)^0.625/(a + b)^0.25 (equal friction and capacity); flat oval: D_e = 1.55 A^0.625/P^0.25 with A = πb²/4 + b(a − b), P = πb + 2(a − b). Friction rate Δp/L = f ρ v_e²/(2D_e) with v_e the velocity in the equivalent round duct; fitting loss ΣC ρ v²/2 at the actual velocity; totals summed over the index-run sections.",
         [
             new CalcInputSpec("method", "Sizing method", CalcInputKind.Choice, Choices: [MethodEqualFriction, MethodVelocity], DefaultChoice: MethodEqualFriction, Group: "Design"),
             new CalcInputSpec("dp_target", "Target friction rate (equal friction)", CalcInputKind.Quantity, "Pa/m", Default: 1.0, Min: 0.3, Max: 5, HardMin: 0.01, HardMax: 100, Group: "Design"),
@@ -77,9 +77,9 @@ public sealed class DuctSizingCalculator : ICalcCalculator
                 [CalcInputValue.Choice("method", MethodEqualFriction), CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("eps", 0.09, "mm"), Sections(("main", 1.0, 10, ShapeRound, 0, 400, 0, 0, true))],
                 [new CalcExpectedValue("v_s1", 7.958, "m/s", 1e-3), new CalcExpectedValue("f_s1", 0.01714, "", 5e-3), new CalcExpectedValue("dpL_s1", 1.633, "Pa/m", 5e-3), new CalcExpectedValue("dp_index", 16.33, "Pa", 5e-3)]),
             new CalcTestCase("ka-rectangular-equivalent", "Rectangular 600 × 300 equivalent diameter (ASHRAE Ch. 21 relation)",
-                new CalcReferenceSource("ASHRAE Handbook — Fundamentals", "2017", "Ch. 21 equivalent round duct for a rectangular duct: D_e = 1.30 (ab)^0.625/(a + b)^0.25; 600 × 300 → 457 mm"),
+                new CalcReferenceSource("ASHRAE Handbook — Fundamentals", "2017", "Ch. 21 equivalent round duct for a rectangular duct: D_e = 1.30 (ab)^0.625/(a + b)^0.25; 600 × 300 → 457 mm; friction rate through D_e at v_e = 4Q/πD_e² = 4.87 m/s ≈ 0.556 Pa/m (independent recomputation, Green G-01)"),
                 [CalcInputValue.Choice("method", MethodEqualFriction), CalcInputValue.Quantity("T", 20, "degC"), Sections(("branch", 0.8, 12, ShapeRectangular, 600, 300, 0.5, 0, true))],
-                [new CalcExpectedValue("De_s1", 457.3, "mm", 2e-3), new CalcExpectedValue("v_s1", 4.444, "m/s", 1e-3)]),
+                [new CalcExpectedValue("De_s1", 457.3, "mm", 2e-3), new CalcExpectedValue("v_s1", 4.444, "m/s", 1e-3), new CalcExpectedValue("dpL_s1", 0.556, "Pa/m", 1e-2)]),
             new CalcTestCase("ka-velocity-method", "Velocity method sizes to the next standard round size (analytic)",
                 new CalcReferenceSource("Analytic", null, "Q = 0.5 m³/s at 6 m/s: D = √(4Q/πv) = 325.7 mm → 350 mm standard; actual v = 5.197 m/s"),
                 [CalcInputValue.Choice("method", MethodVelocity), CalcInputValue.Quantity("v_target", 6, "m/s"), CalcInputValue.Quantity("round_to", 50, "mm"), Sections(("riser", 0.5, 8, ShapeRound, 0, 0, 1.2, 50, true))],
@@ -202,7 +202,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
             }
             else
             {
-                // Fixed side a (or default a = 2× target de rounded); find b for the equivalent diameter, round up.
+                // Fixed side a (default 1.5 × the target equivalent diameter, rounded); find b for the equivalent diameter, round up.
                 dimA = double.IsNaN(aGiven) ? RoundUp(deTarget * 1.5, roundTo) : aGiven;
 
                 if (!double.IsNaN(dGiven))
@@ -224,9 +224,11 @@ public sealed class DuctSizingCalculator : ICalcCalculator
             }
 
             var v = q / area;
-            var re = rho * v * de / mu;
+            // Friction through the equivalent round duct: D_e carries the same airflow at the same friction rate, so the friction velocity is 4Q/(πD_e²), not Q/A (G-01).
+            var vFriction = 4 * q / (Math.PI * de * de);
+            var re = rho * vFriction * de / mu;
             var (f, _) = re < Friction.LaminarLimit ? (Friction.Laminar(Math.Max(re, 1)), 0) : Friction.Colebrook(re, eps / de);
-            var dpL = f * rho * v * v / (2 * de);
+            var dpL = f * rho * vFriction * vFriction / (2 * de);
             var dpFriction = dpL * l;
             var pv = rho * v * v / 2;
             var dpFit = cSum * pv;
@@ -260,9 +262,9 @@ public sealed class DuctSizingCalculator : ICalcCalculator
             }
 
             c.Record($"v_{k}", $"{name}: Q / A", $"{F(q)} / {F(area)}", ScalarValue.Of(v, mps), $"Velocity, {name}");
-            c.Record($"Re_{k}", $"{name}: ρ v D_e / μ", $"{F(rho)} × {F(v)} × {F(de)} / {F(mu)}", new ScalarValue(re), $"Reynolds number, {name}");
+            c.Record($"Re_{k}", $"{name}: ρ v_e D_e / μ (v_e = 4Q/πD_e²)", $"{F(rho)} × {F(vFriction)} × {F(de)} / {F(mu)}", new ScalarValue(re), $"Reynolds number, {name}");
             c.Record($"f_{k}", $"{name}: friction factor", re < Friction.LaminarLimit ? "64/Re" : "Colebrook–White", new ScalarValue(f), $"Friction factor, {name}");
-            c.Record($"dpL_{k}", $"{name}: f ρ v² / (2 D_e)", $"{F(f)} × {F(rho)} × {F(v)}² / (2 × {F(de)})", ScalarValue.Of(dpL, paPerM), $"Friction rate, {name}");
+            c.Record($"dpL_{k}", $"{name}: f ρ v_e² / (2 D_e)", $"{F(f)} × {F(rho)} × {F(vFriction)}² / (2 × {F(de)})", ScalarValue.Of(dpL, paPerM), $"Friction rate, {name}");
             c.Record($"dp_f_{k}", $"{name}: (Δp/L) L", $"{F(dpL)} × {F(l)}", ScalarValue.Of(dpFriction, pa), $"Friction loss, {name}");
             c.Record($"dp_fit_{k}", $"{name}: ΣC ρ v²/2", $"{F(cSum)} × {F(pv)}", ScalarValue.Of(dpFit, pa), $"Fitting loss, {name}");
             c.Record($"dp_{k}", $"{name}: friction + fittings + equipment", $"{F(dpFriction)} + {F(dpFit)} + {F(dpEq)}", ScalarValue.Of(dpSection, pa), $"Section loss, {name}{(onIndex ? " (index run)" : "")}");

@@ -176,7 +176,8 @@ public abstract partial class EngineeringObjectBase :
         CancellationToken cancellationToken,
         Func<IPersistenceTransaction, EngineeringObjectState, CancellationToken, Task>? alsoWrite = null,
         Action<EngineeringObjectState>? alsoApply = null,
-        Func<IReadOnlyList<IAttachment>>? applyAttachments = null)
+        Func<IReadOnlyList<IAttachment>>? applyAttachments = null,
+        Func<IPersistenceTransaction, CancellationToken, Task>? verifyBeforeWrite = null)
     {
         EngineeringObjectState? committed = null;
 
@@ -184,6 +185,9 @@ public abstract partial class EngineeringObjectBase :
             async (transaction, token) =>
             {
                 ThrowIfSuperseded();
+
+                if (verifyBeforeWrite is not null)
+                    await verifyBeforeWrite(transaction, token).ConfigureAwait(false);
 
                 var next = project(CaptureState());
 

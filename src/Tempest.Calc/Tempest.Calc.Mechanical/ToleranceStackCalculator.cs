@@ -286,7 +286,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                 }
 
                 c.Record("dpmo", "10⁶ × P(outside)", $"10⁶ × Φ-tails at σ = {F(sigmaSi, unit)}", new ScalarValue(dpmo), "Predicted defects per million");
-                c.Record("yield", "1 − dpmo / 10⁶", $"1 − {CalcValue.FormatNumber(dpmo)} / 10⁶", new ScalarValue((1 - dpmo / 1e6) * 100, Dimension.None, UnitCatalog.Parse("%")), "Predicted yield");
+                c.Record("yield", "1 − dpmo / 10⁶", $"1 − {CalcValue.FormatNumber(dpmo)} / 10⁶", ScalarValue.Of((1 - dpmo / 1e6) * 100, "%"), "Predicted yield");
                 c.Output("cpk", "C_pk");
                 c.Output("dpmo", "DPMO (predicted)");
                 c.Output("yield", "Yield (predicted)");
@@ -355,7 +355,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
 
         if (mc.Yield is { } y)
         {
-            c.Record("mc_yield", "samples inside the requirement", $"{n - (int)Math.Round((mc.DefectsPerMillion ?? 0) / 1e6 * n)} of {n}", new ScalarValue(y * 100, Dimension.None, UnitCatalog.Parse("%")), "Monte Carlo yield");
+            c.Record("mc_yield", "samples inside the requirement", $"{n - (int)Math.Round((mc.DefectsPerMillion ?? 0) / 1e6 * n)} of {n}", ScalarValue.Of(y * 100, "%"), "Monte Carlo yield");
             c.Output("mc_yield", "Monte Carlo yield");
         }
 
