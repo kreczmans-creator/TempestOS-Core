@@ -65,6 +65,31 @@ public sealed class CalcSheetViewTests
     }
 
     [AvaloniaFact]
+    public void ALegacyArchive_IsShownReadOnly_WithItsSheet_AndNoLifecycleActions()
+    {
+        // ADR-0167: a migrated legacy record opens as its archive sheet; it cannot be saved, checked, issued or revised.
+        var (view, _) = NewView();
+        var at = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
+        var archive = new CalcInstance(
+            Guid.NewGuid(), CalcInstance.LegacyReferencePrefix + "calc.bolted-joint-preload@1", "legacy", null, "calc.bolted-joint-preload 2026-03-01 09:00", "A",
+            [CalcInputValue.Quantity("Preload", 37935, "N", CalcProvenance.Manual)], [new CalcOutputSnapshot("Bolt load", "result", "42935 N", 42935, "N")], [], [], [],
+            CalcInstanceStatus.Draft, null, null, "steven", at, at, Notes: ["Migrated from calculation record."]);
+        var sheet = LegacyArchiveSheet.Build(archive, "—", "steven", "engine", null, at);
+
+        view.ShowArchive(archive, CalcSheetTextRenderer.Render(sheet));
+
+        Assert.True(view.IsReadOnly);
+        Assert.Null(view.SelectedTemplate);
+        var text = view.GetLogicalDescendants().OfType<SelectableTextBlock>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.ArchiveSheetName);
+        Assert.Contains("Bolt load = 42935 N", text.Text, StringComparison.Ordinal);
+        foreach (var caption in new[] { CalcSheetView.SaveCaption, CalcSheetView.CheckCaption, CalcSheetView.IssueCaption, CalcSheetView.ReviseCaption, CalcSheetView.ImportCaption })
+        {
+            var button = view.GetLogicalDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == caption);
+            Assert.False(button.IsVisible && button.IsEnabled, $"{caption} is available on an archive");
+        }
+    }
+
+    [AvaloniaFact]
     public void ATemplateWithoutReferenceInputs_ShowsNoPicker()
     {
         var (view, _) = NewView();

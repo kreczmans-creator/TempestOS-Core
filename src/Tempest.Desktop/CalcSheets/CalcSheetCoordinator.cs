@@ -67,6 +67,13 @@ public sealed class CalcSheetCoordinator
             return;
         }
 
+        if (instance.IsLegacyArchive)
+        {
+            var archive = await _service.RunAsync(instance).ConfigureAwait(true);
+            _view.ShowArchive(instance, archive.SheetText);
+            return;
+        }
+
         var entry = _service.Catalogue.Find(instance.TemplateReference);
 
         if (entry is null)

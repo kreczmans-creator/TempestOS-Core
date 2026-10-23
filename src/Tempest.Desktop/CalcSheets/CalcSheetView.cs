@@ -560,12 +560,51 @@ public sealed class CalcSheetView : UserControl
         InputsChanged?.Invoke(ReadForm());
     }
 
+    /// <summary>Automation name of the read-only text an archived legacy record shows.</summary>
+    public const string ArchiveSheetName = "Archived legacy calculation";
+
+    /// <summary>
+    /// Shows a migrated legacy calculation record (ADR-0167) as its archive
+    /// sheet: read-only, no form, no lifecycle actions. Its inputs can be
+    /// re-entered in the matching worksheet template for a sheet with working.
+    /// </summary>
+    public void ShowArchive(CalcInstance instance, string sheetText)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(sheetText);
+
+        _loadingForm = true;
+        SelectedTemplate = null;
+        CurrentInstance = instance;
+        IsReadOnly = true;
+        LastRun = null;
+        _title.Text = instance.Name;
+        _reference.Text = instance.TemplateReference;
+        _scope.Text = LegacyArchiveSheet.MethodText;
+        _watermark.Text = "ARCHIVE";
+        _watermark.IsVisible = true;
+        _watermark.Foreground = Brushes.Gray;
+        _form.Children.Clear();
+        _fields.Clear();
+        _referencePickers.Clear();
+        _carriedInputs.Clear();
+        _problems.Text = string.Empty;
+        var text = new SelectableTextBlock { Text = sheetText, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap };
+        AutomationProperties.SetName(text, ArchiveSheetName);
+        _form.Children.Add(new ScrollViewer { Content = text, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
+        _status.Text = "A migrated legacy calculation record: read-only. Re-enter its inputs in the matching worksheet template for a sheet with working.";
+        _exportButton.IsEnabled = false;
+        _importButton.IsEnabled = false;
+        _loadingForm = false;
+        UpdateActions();
+    }
+
     private void UpdateActions()
     {
         var instance = CurrentInstance;
         _saveButton.Content = instance is null ? SaveCaption : "Save changes";
         _saveButton.IsEnabled = !IsReadOnly && SelectedTemplate is not null && LastRun is { IsBlocked: false };
-        _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft };
+        _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft, IsLegacyArchive: false };
         _issueButton.IsVisible = instance is { Status: CalcInstanceStatus.Checked };
         _reviseButton.IsVisible = instance is { Status: CalcInstanceStatus.Issued };
     }
