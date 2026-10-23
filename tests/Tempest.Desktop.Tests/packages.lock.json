@@ -559,6 +559,12 @@
           "Tempest.Calc.Engine": "[0.26.0, )"
         }
       },
+      "tempest.calc.structural": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.calc.verification": {
         "type": "Project",
         "dependencies": {
@@ -588,6 +594,7 @@
           "Svg.Skia": "[2.0.0.8, )",
           "Tempest.Calc.Library": "[0.26.0, )",
           "Tempest.Calc.Mechanical": "[0.26.0, )",
+          "Tempest.Calc.Structural": "[0.26.0, )",
           "Tempest.Workspace": "[0.26.0, )",
           "Tmds.DBus.Protocol": "[0.21.3, )",
           "Velopack": "[1.2.0, )"
