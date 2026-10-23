@@ -122,5 +122,5 @@ Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² −
   Content hash: 45cae33eae60ff08
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-23 19:59 UTC
+  Test run: 2026-10-23 22:12 UTC
   Application: TempestOS test

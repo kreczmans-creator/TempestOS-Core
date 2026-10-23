@@ -18,7 +18,7 @@ public sealed record CalcReferenceOption(string Library, string RecordId, string
 /// <summary>What one fill produced: the input values with their pinned provenance, and the inputs the record could not supply.</summary>
 public sealed record CalcReferenceFillResult(IReadOnlyList<CalcInputValue> Values, IReadOnlyList<CalcNotice> Problems, string? Pin, string? Label)
 {
-    public bool Succeeded => Values.Count > 0 && Problems.Count == 0;
+    public bool Succeeded => Values.Count > 0 && Problems.All(p => p.Severity != CalcNoticeSeverity.Block);
 }
 
 /// <summary>
@@ -132,7 +132,11 @@ public sealed class CalcReferenceFill
 
                 if (reading.Si is not { } si)
                 {
-                    problems.Add(new CalcNotice("reference." + spec.Symbol, CalcNoticeSeverity.Block, $"{spec.Symbol}: {reading.Reason ?? "the record does not supply it"}"));
+                    // An optional input the (found, released) record does not supply stays as it is — derived or blank — and the
+                    // fill still succeeds (Black B-26: a fastener record without a stress area must still fill the proof strength).
+                    var optionalAndAbsent = spec.IsOptional && reading.Pin is not null;
+                    problems.Add(new CalcNotice("reference." + spec.Symbol, optionalAndAbsent ? CalcNoticeSeverity.Warning : CalcNoticeSeverity.Block,
+                        optionalAndAbsent ? $"{spec.Symbol}: not filled — the record does not supply it; the value is left as it is." : $"{spec.Symbol}: {reading.Reason ?? "the record does not supply it"}"));
                     continue;
                 }
 

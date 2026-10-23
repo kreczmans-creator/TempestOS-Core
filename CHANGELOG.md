@@ -1,10 +1,23 @@
 # Changelog
 
-## v0.27.0 (in progress)
+## v0.27.0 (release candidate in preparation)
 
-### Planned (D-38, `docs/reviews/legacy-calculators-review.md`)
-- Replace the sixteen legacy calculation modules (`Tempest.Core.Calculations`) with `Tempest.Calc` templates; migrate stored calculation records to calc-instance snapshots; retire the legacy Calculators surface.
-- Raise the v0.26.0 templates where the legacy modules were better: a teaching-register "In plain terms" paragraph and hand arithmetic in every spec; reference-library fill (materials, fasteners, bearings) into worksheet inputs with released-record pins.
+### Added
+- Eleven worksheet templates replacing the legacy calculation modules (ADR-0167): `struct.column-buckling` (Perry–Robertson), `mech.lifting-lug`, `mech.bearing-life` (ISO 281), `mech.fatigue-miner`, `mech.shaft-stress`, `mech.thermal-expansion`, `mech.thin-vessel`, `mech.material-margin`, `struct.fillet-weld` (EN 1993-1-8 simplified method, long-joint warning), `bs.plane-wall`, `elec.thermal-chain` (D-40). Every legacy test vector is carried as a known-answer case at 5 × 10⁻⁵; each template has behaviour tests, a spec and two worked examples with PDFs.
+- Reference diagrams in the worksheet form for all 27 templates (ADR-0158, Principle 33, D-41): input-bound, not to scale, beside the inputs or above them on a laptop window, focus and pointer linked both ways.
+- Legacy record migration: every stored legacy calculation record opens as a read-only archive worksheet (same Id), listed in the worksheet catalogue; verified on real v0.25.3 and v0.26.0-rc1 databases (Grey).
+- Compare with previous revision over calc instances (inputs row by row, outputs with relative change, checks).
+- Reference-library fill of worksheet inputs from released materials, fasteners and bearings, with the record's pin as the source.
+- Every spec gains an "In plain terms" paragraph and the hand arithmetic of its first worked example, generated from the sheet and drift-guarded.
+
+### Changed
+- `mech.bolted-joint` 1.1.0: once the joint separates the clamp is zero and the bolt carries the whole working load (before, the bolt load was understated: the overloaded example showed yield at 89 % instead of 115 %); fatigue amplitude from the bolt-load range; separation-aware yield factor (D-42); a given-preload method with optional given stiffnesses and stress area; legacy joint-diagram load factors n_0, n_L.
+- `mech.bolt-group` 1.1.0: a single bolt takes direct shear; a moment the bolts cannot resist is refused instead of dropped.
+- `struct.beam-formulas`: the legacy stress and deflection-limit checks and cases.
+- Statistics: the upper tail of the normal distribution keeps its precision deep in the tail (DPMO at 7σ was right to four digits only).
+
+### Removed
+- The legacy Engineering Calculators surface (Modules → Calculations → Calculators) and its module service and workbench (ADR-0167 Amendment 1). Worksheets replace it. The legacy engine, its records and the module definitions stay; records migrate to archives.
 
 ## v0.26.0 (release candidate)
 

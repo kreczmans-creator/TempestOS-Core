@@ -120,8 +120,8 @@ Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) �
   No warnings.
 
 8. VERIFICATION
-  Template: mech.bolt-group@1.0.0
+  Template: mech.bolt-group@1.1.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 2/2
+  Known-answer cases passed: 7/7
   Test run: —

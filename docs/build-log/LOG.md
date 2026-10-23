@@ -15,3 +15,5 @@
 2026-10-23 20:55 UTC | v0.27.0 phase-3 | struct.fillet-weld (long-joint warning), bs.plane-wall, elec.thermal-chain (D-40); 9 legacy hand calculations as known answers; 6 worked examples + PDFs; 17 behaviour tests | Calculators 530/0, Library 53/0, Desktop worksheets 80/0
 2026-10-23 21:00 UTC | v0.27.0 phase-3 merged | gate green: Core 7,221/0, Engine 384/0, Sheets 93/0, Library 53/0 (+1 skip), Calculators 556/0, Desktop 1,218/0
 2026-10-23 | v0.27.0 phase-4 | Compare over calc instances; archive listing; Grey on real v0.25.3/v0.26.0-rc1 databases; D-41 diagrams for 27 templates; Calculators surface retired (ADR-0167 Am. 1); Yellow Y11 | affected suites green; full gate running
+2026-10-23 21:55 UTC | v0.27.0 phase-4 merged | gate green: Core 7,194/0 (27 superseded), Engine 384/0, Sheets 93/0, Library 60/0, Calculators 556/0, Desktop 1,271/0
+2026-10-23 22:50 UTC | v0.27.0 phase-5 | Green (G-05…G-08, D-42), Black clean clone (B-26), Red delta, Yellow final, release docs | rc1 gate on a clean clone: Core 7,194/0, Engine 386/0, Sheets 93/0, Library 60/0, Calculators 560/0, Desktop 1,271/0, 0 warnings

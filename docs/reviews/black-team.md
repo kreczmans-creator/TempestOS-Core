@@ -101,3 +101,11 @@ Fix first:
 | B-04…B-09, B-16, B-21…B-24 | Low | Logged for v0.26.1 in the handover (unit hint when none is given, case-insensitive units, every refused CSV row, near-match symbol suggestion, mechanism wording, mixed row units, revision history on a revision B sheet, zero snapping, unused-input hiding, live footers in published examples). B-24 partly addressed: `docs/worked-examples/README.md` now indexes the examples and says how to load one. |
 | B-10, B-11, B-25 | Info | No change. |
 | Build notes | — | README gains a v0.26.0 section (`Tempest.Calc.*`, worksheets, worked examples, the Calc test projects, the SDK pin's roll-forward); the release notes say "twelve calculators, sixteen worksheet templates"; CONTRIBUTING's "0 warnings" holds because CI builds with `-p:TreatWarningsAsErrors=true` (the three analyser warnings were fixed in `e5573fb`). |
+
+## v0.27.0 — clean clone (2026-10-23)
+
+A fresh clone of `v0.27.0/phase-5-reviews` at `b2d1647` (no untracked files, no build output carried over), built in Release with warnings as errors and every suite run: Core 7,194/0 (+15 skipped), Calc Engine 386/0, Sheets 93/0, Library 59/1 (+1 skipped), Calculators 560/0, Desktop 1,271/0; the clone stayed clean after the run.
+
+| ID | Sev | Where | Finding | Fix | Status |
+|---|---|---|---|---|---|
+| B-26 | Medium | `CalcReferenceFill` | Picking a fastener record that has no stress area refused the whole fill, so the bolt's proof strength could no longer be filled from it: the new optional `A_s_given` input (Green G-08) is fillable from fasteners, and any property a record lacks was a block. Missed in the Phase 5 run because only the Calculators suite was rerun after the template change. | An optional input the record does not supply is left as it is, with a warning; the fill succeeds when nothing blocks. `A_Released_Fastener_Fills_The_Bolt_Proof_Strength…` asserts both. | Fixed |

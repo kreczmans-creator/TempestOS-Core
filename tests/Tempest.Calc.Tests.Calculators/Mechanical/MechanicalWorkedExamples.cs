@@ -139,10 +139,10 @@ public static class MechanicalWorkedExamples
             "A steel flange clamped 40 mm thick by an M12 class 8.8 bolt torqued to 80 N·m with μ = 0.12: the bolt takes 7 % of the 10 kN working load, keeps about 13 kN of clamp after scatter and embedding, and sits well inside yield and the 50 MPa endurance amplitude."),
 
         new(BoltedJointCalculator.Id, "m12-88-overloaded", "The same bolt under a 60 kN working load (separation)",
-            new CalcReferenceSource("Analytic (VDI 2230 R7)", null, "F_KR = F_M,min − (1 − Φ) F_A − F_Z < 0"),
+            new CalcReferenceSource("Analytic (VDI 2230 R7; after separation the bolt carries the whole working load)", null, "F_M,min − (1 − Φ) F_A − F_Z < 0, so F_KR = 0 and F_S,max = F_A = 60 kN; σ_z = 60 kN / 84.27 mm² = 712.0 MPa"),
             JointInputs(80, "friction", 60),
-            [new CalcExpectedValue("F_M", 40.69, "kN", 2e-3)],
-            "With a 60 kN working load the relieved member load exceeds the minimum preload: the residual clamp goes negative, the joint separates and the sheet fails the separation and clamp checks."),
+            [new CalcExpectedValue("F_M", 40.69, "kN", 2e-3), new CalcExpectedValue("F_KR", 0, "kN", 1e-9), new CalcExpectedValue("F_S_max", 60, "kN", 5e-5)],
+            "With a 60 kN working load the relieved member load exceeds the minimum preload: the joint separates, the clamp falls to zero and the bolt carries the whole 60 kN. The sheet fails separation, clamp, fatigue and yield (115 % of proof): before v0.27.0 it reported yield at 89 % because it kept adding only Φ·F_A after separation (Green G-05)."),
 
         new(BoltGroupCalculator.Id, "four-bolt-bracket", "Four-bolt bracket, 50 kN at 150 mm eccentricity",
             new CalcReferenceSource("Analytic (elastic method; AISC Manual Part 7 procedure)", null, "governing bolt resultant 36.44 kN"),

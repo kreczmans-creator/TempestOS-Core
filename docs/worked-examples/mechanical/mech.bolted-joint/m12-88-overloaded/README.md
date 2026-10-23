@@ -1,8 +1,8 @@
 # The same bolt under a 60 kN working load (separation) (`mech.bolted-joint`)
 
-**Source.** Analytic (VDI 2230 R7), F_KR = F_M,min − (1 − Φ) F_A − F_Z < 0 — Confirmed.
+**Source.** Analytic (VDI 2230 R7; after separation the bolt carries the whole working load), F_M,min − (1 − Φ) F_A − F_Z < 0, so F_KR = 0 and F_S,max = F_A = 60 kN; σ_z = 60 kN / 84.27 mm² = 712.0 MPa — Confirmed.
 
-With a 60 kN working load the relieved member load exceeds the minimum preload: the residual clamp goes negative, the joint separates and the sheet fails the separation and clamp checks.
+With a 60 kN working load the relieved member load exceeds the minimum preload: the joint separates, the clamp falls to zero and the bolt carries the whole 60 kN. The sheet fails separation, clamp, fatigue and yield (115 % of proof): before v0.27.0 it reported yield at 89 % because it kept adding only Φ·F_A after separation (Green G-05).
 
 | Input | Value | Source |
 |---|---|---|
@@ -32,5 +32,7 @@ With a 60 kN working load the relieved member load exceeds the minimum preload: 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
 | `F_M` | 40.69 kN | 40.6899 kN | PASS |
+| `F_KR` | 0 kN | 0 kN | PASS |
+| `F_S_max` | 60 kN | 60 kN | PASS |
 
 Governing check: No separation — FAIL (utilisation —). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

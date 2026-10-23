@@ -1,4 +1,4 @@
-# M3b — Bolt group, elastic method (`mech.bolt-group@1.0.0`)
+# M3b — Bolt group, elastic method (`mech.bolt-group@1.1.0`)
 
 **In plain terms.** When a load acts away from the centre of a bolt group, each bolt carries an equal share of the load directly plus a share of the twisting moment that grows with its distance from the centre. Adding the two as vectors gives the most heavily loaded bolt, which is then checked in shear, in tension where the load also pulls, and for the two acting together.
 
@@ -10,9 +10,9 @@
 
 **Outputs.** `T`, `J`, `v_max`, `t_max`, `u_max`, `governing`; per-bolt rows `b1…bn` in the working; series: bolt pattern. **Checks.** interaction on the governing bolt; shear alone; tension alone.
 
-**Limitations.** Rigid parts, linear-elastic distribution, no bearing/slip resistance, prying as a simple lever.
+**Limitations.** Rigid parts, linear-elastic distribution, no bearing/slip resistance, prying as a simple lever. A single bolt takes direct shear only (the retired `calc.bolt-shear-capacity` case) and blocks under a torque; a moment about an axis all the bolts lie on blocks rather than being dropped.
 
-**Test cases.** `ka-four-bolt-eccentric` (v_max 36.44 kN, u 0.911 — analytic, Confirmed); `ka-moment-tension` (t_max 50 kN — analytic, Confirmed).
+**Test cases.** `ka-four-bolt-eccentric` (v_max 36.44 kN, u 0.911 — analytic, Confirmed); `ka-moment-tension` (t_max 50 kN — analytic, Confirmed); the legacy module's four hand calculations `ka-legacy-four-bolts`, `-line`, `-inclined`, `-centroid`, and `ka-legacy-single-bolt`.
 
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
 **Worked example, by hand.** Four-bolt bracket, 50 kN at 150 mm eccentricity ([sheet](../../worked-examples/mechanical/mech.bolt-group/four-bolt-bracket/sheet.txt)).

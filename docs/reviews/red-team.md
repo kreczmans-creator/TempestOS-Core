@@ -43,3 +43,17 @@
 - **Solvers:** a mechanism beside a member 10¹² times stiffer and a released chain under transverse load are both reported as mechanisms (the pivot test is relative to the largest diagonal, so the error is in the safe direction); frame E/A/I/length/load at every hard limit; polygon sections: a 2 000-vertex star, a bow-tie, collinear and duplicate vertices, 200 loops, ±10⁵ mm coordinates, 10⁻⁹ mm slivers; every numeric input and table column of every calculator at its hard limits, zero and ±10⁻³⁰⁰ with 500 rows (only R-20/R-21 fell out).
 - **Library:** two simultaneous Issues (existing test), crash mid-Issue then retry (one attachment, one Issued), UpdateInputs/Check/DeleteDraft/plain store write on an Issued instance are refused, two concurrent Revises are stopped by the Evidence title (albeit by exception, R-16).
 - **PDF:** DDE, script, bidi overrides, PDF syntax and 64 unbalanced parentheses in every field are escaped and drawn as text with the document structure intact; a 50-sheet pack with hostile index and revision rows renders within budget (control characters and oversized text are R-24 and R-05).
+
+## v0.27.0 delta (2026-10-23)
+
+Surfaces new since v0.26.0, attacked with the existing PoC families (every template is enumerated, so the 11 new templates are in each):
+
+| Surface | Attack | Evidence | Outcome |
+|---|---|---|---|
+| 11 new templates, new bolted-joint and bolt-group inputs | Extremes, NaN text, 1e-300 / 1e300 in every numeric input; hostile strings in table text cells | `Extremes_In_Every_Numeric_Input_Never_Throw` (27 templates), `Hostile_Numbers_Never_Throw_And_Never_Reach_A_Sheet` | Pass; Y9-01 found and fixed the one NaN path (bearing light load) |
+| Legacy migration | Real v0.25.3 / v0.26.0-rc1 databases; re-run; corrupt record | `GreyLegacyDatabaseTests`, `LegacyMigrationTests` | Pass: idempotent, a failed record is reported and never fatal |
+| Compare | 520 differing table rows | `Table_Inputs_Compare_Row_By_Row_And_Long_Comparisons_Are_Capped` | Pass: capped at 500 rows, the rest counted |
+| Archive list | 503 archives | `Archives_BeyondTheCap_AreCounted_NotListed` | Pass: capped at 500 |
+| Diagram labels | Unparseable, infinite and missing values | `CalculationDiagramViewTests`, `CalcDiagramsTests` | Pass: shown as "?" or "not given", never NaN |
+
+Observation R-25 (Info): `Extremes_In_Every_Numeric_Input_Never_Throw(mech.tolerance-stack)` ran past its 5 s budget once while the whole Calculators suite ran in parallel on this 2-core container; alone it takes 3 s, and CI applies a ×3 timeout factor. Watched in the gates; no change.

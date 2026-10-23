@@ -56,9 +56,9 @@ public sealed class FilletWeldCalculator : ICalcCalculator
             new CalcTestCase("ka-legacy-s355-shear", "Legacy example 1: S355 lap weld in longitudinal shear", Legacy(1), Example(150, 0, 0, 200, 5, 490, 0.9),
                 [new CalcExpectedValue("f_vw_d", 251.47, "MPa", 5e-5), new CalcExpectedValue("tau_w", 150.00, "MPa", 5e-5), new CalcExpectedValue("F_w_Rd", 251.468, "kN", 5e-5), new CalcExpectedValue("u", 0.59650, "", 5e-5), new CalcExpectedValue("a_calc", 2.9825, "mm", 5e-5), new CalcExpectedValue("a_req", 3.0, "mm", 5e-5)]),
             new CalcTestCase("ka-legacy-s235-combined", "Legacy example 2: S235, combined parallel and transverse load", Legacy(2), Example(40, 30, 0, 120, 4, 360, 0.8),
-                [new CalcExpectedValue("F", 50, "kN", 5e-5), new CalcExpectedValue("f_vw_d", 207.85, "MPa", 5e-5), new CalcExpectedValue("tau_w", 104.17, "MPa", 5e-5), new CalcExpectedValue("u", 0.50117, "", 5e-5), new CalcExpectedValue("a_calc", 2.0047, "mm", 5e-5)]),
+                [new CalcExpectedValue("F", 50, "kN", 5e-5), new CalcExpectedValue("f_vw_d", 207.85, "MPa", 5e-5), new CalcExpectedValue("tau_w", 104.17, "MPa", 5e-5), new CalcExpectedValue("u", 0.50117, "", 5e-5), new CalcExpectedValue("a_calc", 2.0047, "mm", 5e-5), new CalcExpectedValue("F_w_Rd", 99.766, "kN", 5e-5), new CalcExpectedValue("a_req", 3.0, "mm", 5e-5)]),
             new CalcTestCase("ka-legacy-overloaded", "Legacy example 3: overloaded normal weld", Legacy(3), Example(0, 0, 120, 100, 4, 490, 0.9),
-                [new CalcExpectedValue("tau_w", 300.00, "MPa", 5e-5), new CalcExpectedValue("u", 1.1930, "", 5e-5), new CalcExpectedValue("a_calc", 4.7719, "mm", 5e-5)]),
+                [new CalcExpectedValue("tau_w", 300.00, "MPa", 5e-5), new CalcExpectedValue("u", 1.1930, "", 5e-5), new CalcExpectedValue("a_calc", 4.7719, "mm", 5e-5), new CalcExpectedValue("F_w_Rd", 100.587, "kN", 5e-5), new CalcExpectedValue("a_req", 4.7719, "mm", 5e-5)]),
         ],
         Category: "Connections");
 
