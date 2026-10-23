@@ -145,7 +145,7 @@ public sealed class Red_ImportAttacks
         var reference = new string('R', 1_500_000);
         var json = "[{\"Symbol\":\"F\",\"Number\":12,\"Unit\":\"kN\",\"Provenance\":{\"Kind\":\"Drawing\",\"Reference\":\"" + reference + "\",\"Revision\":\"B\"}}]";
         var (inputs, notices) = CalcInputJson.Read(json);
-        Assert.Empty(notices.Where(n => n.Severity == CalcNoticeSeverity.Block));
+        Assert.DoesNotContain(notices, n => n.Severity == CalcNoticeSeverity.Block);
 
         var validation = CalcInputValidator.Validate(Template, inputs);
         var blocked = validation.Any(n => n.Severity == CalcNoticeSeverity.Block);
