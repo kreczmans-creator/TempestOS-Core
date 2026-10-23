@@ -323,12 +323,37 @@ public static class TrueTypeSubsetter
         }
     }
 
-    private static byte[] Assemble(ReadOnlySpan<byte> font, List<TableRecord> tables, Dictionary<uint, byte[]> replaced)
+    /// <summary>
+    /// Tables a PDF needs from an embedded TrueType font: metrics, mapping,
+    /// outlines, hinting programs and names. Layout tables (GSUB/GPOS/GDEF,
+    /// kern), bitmap strikes, digital signatures and device metrics are the
+    /// bulk of a system face (Windows's default face carries several hundred
+    /// kilobytes of them) and play no part in glyph-id text drawn by Skia.
+    /// </summary>
+    private static readonly HashSet<uint> KeptTags =
+    [
+        Tag("head"), Tag("hhea"), Tag("maxp"), Tag("OS/2"), Tag("hmtx"), Tag("cmap"), Tag("loca"), Tag("glyf"),
+        Tag("name"), Tag("post"), Tag("cvt "), Tag("fpgm"), Tag("prep"), Tag("gasp"),
+    ];
+
+    private static uint Tag(string s) => (uint)(s[0] << 24 | s[1] << 16 | s[2] << 8 | s[3]);
+
+    private static byte[] Assemble(ReadOnlySpan<byte> font, List<TableRecord> allTables, Dictionary<uint, byte[]> replaced)
     {
+        var tables = allTables.Where(t => KeptTags.Contains(t.Tag)).ToList();
         var count = tables.Count;
         var directoryLength = 12 + count * 16;
         var output = new MemoryStream();
         var header = font.Slice(0, 12).ToArray();
+        BinaryPrimitives.WriteUInt16BigEndian(header.AsSpan(4), (ushort)count);
+        // searchRange / entrySelector / rangeShift for the kept table count.
+        var entrySelector = 0;
+        while ((2 << entrySelector) <= count)
+            entrySelector++;
+        var searchRange = (1 << entrySelector) * 16;
+        BinaryPrimitives.WriteUInt16BigEndian(header.AsSpan(6), (ushort)searchRange);
+        BinaryPrimitives.WriteUInt16BigEndian(header.AsSpan(8), (ushort)entrySelector);
+        BinaryPrimitives.WriteUInt16BigEndian(header.AsSpan(10), (ushort)(count * 16 - searchRange));
         output.Write(header);
         output.Write(new byte[count * 16]);
 

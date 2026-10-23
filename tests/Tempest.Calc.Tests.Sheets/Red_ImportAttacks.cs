@@ -13,6 +13,9 @@ namespace Tempest.Calc.Tests.Sheets;
 /// </summary>
 public sealed class Red_ImportAttacks
 {
+    /// <summary>The CI runners scale every deadline by <c>TEMPEST_TEST_TIMEOUT_FACTOR</c> (3 on the Windows matrix); the budgets here scale the same way.</summary>
+    private static readonly double TimeoutFactor = double.TryParse(Environment.GetEnvironmentVariable("TEMPEST_TEST_TIMEOUT_FACTOR"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) && f >= 1 ? f : 1;
+
     private static readonly DirectStressCalculator Calculator = new();
 
     private static CalcTemplate Template => Calculator.Template;
@@ -274,9 +277,9 @@ public sealed class Red_ImportAttacks
         var inputs = CalcTemplateHasher.DefaultInputs(Template);
         var distributions = new Dictionary<string, Distribution> { ["F"] = Distribution.Normal(12_000, 100) };
         var sw = Stopwatch.StartNew();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5 * TimeoutFactor));
         var ex = Record.Exception(() => CalcRunner.MonteCarlo(Calculator, inputs, "sigma", distributions, samples: MonteCarlo.MaxSamples, cancellationToken: cts.Token));
         sw.Stop();
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5) && ex is not OperationCanceledException, $"a Monte Carlo at the cap ran for {sw.Elapsed.TotalSeconds:F1} s ({ex?.GetType().Name ?? "completed"})");
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5 * TimeoutFactor) && ex is not OperationCanceledException, $"a Monte Carlo at the cap ran for {sw.Elapsed.TotalSeconds:F1} s ({ex?.GetType().Name ?? "completed"})");
     }
 }
