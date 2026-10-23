@@ -1,10 +1,10 @@
-# Worked examples — v0.26.0
+# Worked examples
 
-32 worked examples (two per worksheet template) and 1 calculation pack. Each folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF).
+34 worked examples (two per worksheet template) and 1 calculation pack. Each folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF).
 
 **How to use one.** In the Desktop open Modules → Calculations → Worksheets (or the discipline's own Calculations node) and pick the template named in the table; the form opens on the template's defaults. Enter the values from the example's README (every input lists its value, unit and source); the form recalculates at once, *Show working* is the `sheet.txt` text and the issued sheet is `sheet.pdf`. `inputs.json` is the same input set in the exchange form the Calc API reads: headless, `CalcInputJson.Read` → `CalcRunner.Run` → `CalcSheetBuilder.Build` → `CalcSheetTextRenderer.Render` reproduces the sheet (`tests/Tempest.Calc.Tests.Calculators/WorkedExamples.cs`). To load an example into the form, copy the text of its `inputs.json` to the clipboard and press *Import inputs (CSV/JSON)*; the form re-seeds from it (table inputs included) and recalculates. *Export inputs (CSV)* copies the current inputs back out in the CSV the same button reads.
 
-Seven examples end on a **FAIL** governing check on purpose: they show how an overloaded or undersized design reads on the sheet. The verification footers in the stored sheets carry fixed placeholder values (hash `0000…`, engine `engine`); a sheet rendered in the product carries the real hash, engine version and test-run time.
+8 examples end on a **FAIL** governing check on purpose: they show how an overloaded or undersized design reads on the sheet. The verification footers in the stored sheets carry fixed placeholder values (hash `0000…`, engine `engine`); a sheet rendered in the product carries the real hash, engine version and test-run time.
 
 | Discipline | Template | Example | Governing check |
 |---|---|---|---|
@@ -34,6 +34,8 @@ Seven examples end on a **FAIL** governing check on purpose: they show how an ov
 | mechanical | `mech.tolerance-stack` | [shouldered-screw-gap](mechanical/mech.tolerance-stack/shouldered-screw-gap/README.md) | FAIL — Worst case within requirement |
 | structural | `struct.beam-formulas` | [propped-cantilever-udl](structural/struct.beam-formulas/propped-cantilever-udl/README.md) | no pass/fail checks |
 | structural | `struct.beam-formulas` | [ss-point-offcentre](structural/struct.beam-formulas/ss-point-offcentre/README.md) | no pass/fail checks |
+| structural | `struct.column-buckling` | [rhs-column-curve-c](structural/struct.column-buckling/rhs-column-curve-c/README.md) | PASS — Axial load against compression resistance |
+| structural | `struct.column-buckling` | [slender-strut-curve-b](structural/struct.column-buckling/slender-strut-curve-b/README.md) | FAIL — Axial load against compression resistance |
 | structural | `struct.en1993-member` | [ub-beam-bending-shear](structural/struct.en1993-member/ub-beam-bending-shear/README.md) | PASS — Bending y M_y,Ed ≤ M_y,c,Rd |
 | structural | `struct.en1993-member` | [uc-column-axial-moment](structural/struct.en1993-member/uc-column-axial-moment/README.md) | FAIL — Member interaction (simplified) |
 | structural | `struct.frame-2d` | [pinned-portal-gravity-wind](structural/struct.frame-2d/pinned-portal-gravity-wind/README.md) | no pass/fail checks |

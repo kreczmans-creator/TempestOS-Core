@@ -1,0 +1,98 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: rhs-column-curve-c    Revision: A
+Title: Column buckling (Perry–Robertson)
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+Compressive strength and resistance of a pin-ended strut of a given effective length, from Euler's critical stress reduced for initial imperfection by the Perry–Robertson formula, with the Robertson constant chosen by strut curve; utilisation against an applied axial load.
+r = √(I/A); λ = L_E/r. p_E = π²E/λ²; P_E = p_E·A. λ_0 = 0.2·√(π²E/p_y). η = max(0.001·a·(λ − λ_0), 0). φ = (p_y + (η + 1)·p_E)/2. p_c = p_E·p_y/(φ + √(φ² − p_E·p_y)); P_c = p_c·A; u = P/P_c. Robertson constant a = 2.0, 3.5, 5.5, 8.0 for curves a–d.
+  Ref: BS 5950-1:2000 Annex C — Compressive strength (Perry strut formula)
+  Ref: BS 5950-1:2000 4.7.3.2 — Maximum slenderness
+  Ref: BS 5950-1:2000 Table 23 — Allocation of strut curve
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  L_E | Effective length | 3 | m | drawing: DRG-ST-410 rev B | 0.1 … 50 m
+  A | Cross-section area | 2000 | mm^2 | spec: SPEC-ST-02 section schedule | 10 … 1000000 mm^2
+  I | Second moment of area about the weaker axis | 200 | cm^4 | spec: SPEC-ST-02 section schedule | 0.01 … 10000000 cm^4
+  E | Modulus of elasticity | 205 | GPa | spec: BS 5950-1 3.1.3: E = 205 GPa | 50 … 450 GPa
+  p_y | Design strength (yield) | 275 | MPa | spec: SPEC-ST-02: S275, t ≤ 16 mm | 100 … 1000 MPa
+  curve | Strut curve (selects the Robertson constant) | c |  | spec: BS 5950-1 Table 23: welded box, curve c | any
+  P | Applied axial load | 150 | kN | assumption: Factored axial load from the frame analysis | 0 … 100000 kN
+
+3. ASSUMPTIONS
+  A1. Pin-ended, prismatic strut under axial load only; buckling about the axis of the given second moment. (Effective length carries the end restraint.)
+  A2. Initial imperfection represented by the Perry factor η = 0.001·a·(λ − λ_0), with a from the strut curve. (Robertson's fit to strut tests.)
+  A3. P (Applied axial load) is taken as 150 kN. (Factored axial load from the frame analysis)
+
+4. WORKING
+  [8] a_R = 5.5    « BS 5950-1 Annex C
+      = 5.5
+        Robertson constant for strut curve c
+  [9] r = sqrt(I / A)
+      = sqrt(200 cm⁴ / 2000 mm²)
+      = 31.623 mm
+        Radius of gyration
+  [10] lambda = L_E / r
+      = 3 m / 31.623 mm
+      = 94.868
+        Slenderness
+  [11] p_E = pi^2 * E / lambda^2    « BS 5950-1 Annex C
+      = π^2 × 205 GPa / 94.868^2
+      = 224.81 MPa
+        Euler critical stress
+  [12] P_E = p_E * A
+      = 224.81 MPa × 2000 mm²
+      = 449.62 kN
+        Euler critical load
+  [13] lambda_0 = 0.2 * sqrt(pi^2 * E / p_y)    « BS 5950-1 Annex C
+      = 0.2 × sqrt(π^2 × 205 GPa / 275 MPa)
+      = 17.155
+        Limiting slenderness
+  [14] eta = max(0.001 * a_R * (lambda - lambda_0), 0)    « BS 5950-1 Annex C
+      = max(0.001 × 5.5 × (94.868 − 17.155), 0)
+      = 0.42742
+        Perry factor (initial imperfection)
+  [15] phi = (p_y + (eta + 1) * p_E) / 2
+      = (275 MPa + (0.42742 + 1) × 224.81 MPa) / 2
+      = 297.95 MPa
+        Perry–Robertson φ
+  [16] p_c = p_E * p_y / (phi + sqrt(phi^2 - p_E * p_y))    « BS 5950-1 Annex C
+      = 224.81 MPa × 275 MPa / (297.95 MPa + sqrt((297.95 MPa)^2 − 224.81 MPa × 275 MPa))
+      = 133.78 MPa
+        Compressive strength
+  [17] P_c = p_c * A
+      = 133.78 MPa × 2000 mm²
+      = 267.56 kN
+        Compression resistance
+  [18] u = P / P_c
+      = 150 kN / 267.56 kN
+      = 0.56062
+        Utilisation
+
+5. RESULTS
+  r = 31.623 mm    Radius of gyration
+  lambda = 94.868    Slenderness
+  p_E = 224.81 MPa    Euler stress
+  P_E = 449.62 kN    Euler load
+  lambda_0 = 17.155    Limiting slenderness
+  eta = 0.42742    Perry factor
+  p_c = 133.78 MPa    Compressive strength
+  P_c = 267.56 kN    Compression resistance
+  u = 0.56062    Utilisation
+
+6. CHECKS (governing first)
+  PASS  Axial load against compression resistance: u = 0.56062 vs u ≤ 1  utilisation 0.561  « BS 5950-1 Annex C
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: struct.column-buckling@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 3/3
+  Test run: —
