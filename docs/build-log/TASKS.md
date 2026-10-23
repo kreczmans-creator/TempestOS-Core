@@ -4,7 +4,7 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 
 ## Phase 0 — setup (`release/v0.27.0`)
 - [x] Branch from release/v0.26.0; VERSION 0.27.0; CHANGELOG section; v0.27.0-DECISIONS (D-39)
-- [ ] ADR-0167: the legacy calculation modules are superseded by Tempest.Calc templates; records migrate; tests carried as known-answer cases
+- [x] ADR-0167: the legacy calculation modules are superseded by Tempest.Calc templates; records migrate; tests carried as known-answer cases
 - [ ] Draft PR release/v0.27.0 → main (dashboard)
 ## Phase 1 — foundations (`v0.27.0/phase-1-foundations`)
 - [ ] Record migration: every stored `CalculationRecord` readable as a `CalcInstance` snapshot (Draft, provenance Manual, inputs/intermediates preserved); Grey upgrade test over a real v0.26 database with legacy records
