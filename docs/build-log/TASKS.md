@@ -11,7 +11,8 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 - [x] Reference-library fill: `CalcReferenceFill` (released records only; `FromReference` pin per value; library slots such as `Materials:hub`); declared on struct.en1993-member, struct.beam-formulas, struct.frame-2d, mech.press-fit (hub/shaft), mech.bolted-joint (fastener + members); one picker per library in the worksheet form
 - [x] Spec raise: "In plain terms" paragraph (hand-written) + hand arithmetic of the first worked example (generated from its sheet, drift-guarded by `SpecHandArithmeticTests`) in all 16 specs
 - [x] Bolted-joint joint-diagram load factors (F_A_sep, n_0, n_L) with consistency tests; golden, worked examples, PDFs, pack and spec regenerated
-- [ ] Beam-formula cases from the legacy deflection set; Euler/Johnson `struct.column-buckling`
+- [x] Beam formulas: legacy stress (M·c/I) and deflection-limit checks, deep-beam warning, four legacy hand calculations as known-answer cases (8/8)
+- [ ] Euler/Johnson `struct.column-buckling` (legacy calc.column-buckling port)
 - [ ] Yellow pass
 ## Phase 2 — mechanical ports (`v0.27.0/phase-2-mech`)
 - [ ] mech.lifting-lug (5 checks, governing)

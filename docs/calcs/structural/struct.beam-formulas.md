@@ -6,9 +6,9 @@
 
 **Method.** Roark Table 8.1 in own notation, every step an engine formula (formula → substitution → result). Simply supported point load deflection uses the shorter segment `c` with `δ = P c √((L² − c²)³) / (9√3 L EI)`; a load left of midspan mirrors the beam (warning).
 
-**Inputs.** `case`, `L`, `E`, `I`, and `w` / `P` / `M_0` / `a` as the case needs. **Outputs.** `R_A`, `R_B`, `M_max`, `x_M`, `M_min`, `V_max`, `delta_max`, `x_delta`.
+**Inputs.** `case`, `L`, `E`, `I`, and `w` / `P` / `M_0` / `a` as the case needs; optional checks `y_c` with `sigma_allow` (bending stress M·c/I) and `delta_limit` (deflection), carried from the legacy `calc.beam-deflection` (ADR-0167). **Outputs.** `R_A`, `R_B`, `M_max`, `x_M`, `M_min`, `V_max`, `delta_max`, `x_delta`; with the stress inputs `M_abs`, `sigma_b`. **Checks.** bending stress, deflection (each when its inputs are given); a deep-beam warning when L/(2·y_c) < 10.
 
-**Test cases.** SS UDL, SS off-centre point, cantilever tip, fixed UDL — analytic, Confirmed; the propped-cantilever worked example cross-checks the frame solver.
+**Test cases.** SS UDL, SS off-centre point, cantilever tip, fixed UDL — analytic, Confirmed; the four legacy `calc.beam-deflection` hand calculations (`ka-legacy-*`, moment, stress and deflection to five significant figures); the propped-cantilever worked example cross-checks the frame solver.
 
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
 **Worked example, by hand.** Simply supported beam, off-centre point load ([sheet](../../worked-examples/structural/struct.beam-formulas/ss-point-offcentre/sheet.txt)).

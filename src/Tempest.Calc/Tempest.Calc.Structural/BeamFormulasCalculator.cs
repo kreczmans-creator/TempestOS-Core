@@ -33,6 +33,9 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
             new CalcInputSpec("P", "Point load (downward)", CalcInputKind.Quantity, "kN", Default: 50, Min: 0, Max: 1e5, HardMin: 0, HardMax: 1e8, IsOptional: true),
             new CalcInputSpec("M_0", "Applied couple", CalcInputKind.Quantity, "kN*m", Default: 20, Min: 0, Max: 1e6, HardMin: 0, HardMax: 1e9, IsOptional: true),
             new CalcInputSpec("a", "Load position from the left end", CalcInputKind.Quantity, "m", Default: 3, Min: 0, Max: 100, HardMin: 0, HardMax: 1e4, IsOptional: true),
+            new CalcInputSpec("y_c", "Extreme-fibre distance from the neutral axis (for the stress check)", CalcInputKind.Quantity, "mm", Min: 1, Max: 2000, HardMin: 1e-3, HardMax: 1e5, IsOptional: true, Group: "Checks"),
+            new CalcInputSpec("sigma_allow", "Allowable bending stress", CalcInputKind.Quantity, "MPa", Min: 1, Max: 2000, HardMin: 1e-3, HardMax: 1e5, IsOptional: true, Group: "Checks"),
+            new CalcInputSpec("delta_limit", "Deflection limit", CalcInputKind.Quantity, "mm", Min: 0.01, Max: 1000, HardMin: 1e-6, HardMax: 1e6, IsOptional: true, Group: "Checks"),
         ],
         [
             new CalcAssumption("Prismatic, linear elastic, Euler–Bernoulli beam; small deflections.", "Roark Table 8.1 conditions."),
@@ -58,6 +61,19 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
             new CalcTestCase("ka-fixed-udl", "Fixed-ended UDL", new CalcReferenceSource("Roark's Formulas for Stress and Strain", "8th ed.", "Table 8.1 case 2d: M_ends = −wL²/12, M_mid = wL²/24, δ = wL⁴/384EI"),
                 [CalcInputValue.Choice("case", FixedUdl), CalcInputValue.Quantity("L", 6, "m"), CalcInputValue.Quantity("E", 210, "GPa"), CalcInputValue.Quantity("I", 8000, "cm^4"), CalcInputValue.Quantity("w", 10, "kN/m")],
                 [new CalcExpectedValue("M_min", -30, "kN*m", 1e-9), new CalcExpectedValue("M_max", 15, "kN*m", 1e-9), new CalcExpectedValue("delta_max", 2.00893, "mm", 1e-4)]),
+            // The legacy calc.beam-deflection worked examples, carried as known-answer cases (ADR-0167); loads given there as totals W are w = W/L here.
+            new CalcTestCase("ka-legacy-ss-centre-point", "Legacy example 1: simply supported, central point load", new CalcReferenceSource("TempestOS calc.beam-deflection (v0.21.0) hand calculation", null, "docs/engineering/calculations/calc.beam-deflection.md, Example 1"),
+                [CalcInputValue.Choice("case", SsPoint), CalcInputValue.Quantity("L", 2, "m"), CalcInputValue.Quantity("E", 210, "GPa"), CalcInputValue.Quantity("I", 200, "cm^4"), CalcInputValue.Quantity("P", 10, "kN"), CalcInputValue.Quantity("a", 1, "m"), CalcInputValue.Quantity("y_c", 50, "mm"), CalcInputValue.Quantity("sigma_allow", 165, "MPa"), CalcInputValue.Quantity("delta_limit", 8, "mm")],
+                [new CalcExpectedValue("M_max", 5, "kN*m", 5e-5), new CalcExpectedValue("sigma_b", 125.00, "MPa", 5e-5), new CalcExpectedValue("delta_max", 3.9683, "mm", 5e-5)]),
+            new CalcTestCase("ka-legacy-cantilever-udl", "Legacy example 2: cantilever, uniformly distributed load (fails both checks)", new CalcReferenceSource("TempestOS calc.beam-deflection (v0.21.0) hand calculation", null, "docs/engineering/calculations/calc.beam-deflection.md, Example 2"),
+                [CalcInputValue.Choice("case", CantUdl), CalcInputValue.Quantity("L", 1.5, "m"), CalcInputValue.Quantity("E", 70, "GPa"), CalcInputValue.Quantity("I", 100, "cm^4"), CalcInputValue.Quantity("w", 4, "kN/m"), CalcInputValue.Quantity("y_c", 40, "mm"), CalcInputValue.Quantity("sigma_allow", 150, "MPa"), CalcInputValue.Quantity("delta_limit", 20, "mm")],
+                [new CalcExpectedValue("M_abs", 4.5, "kN*m", 5e-5), new CalcExpectedValue("sigma_b", 180.00, "MPa", 5e-5), new CalcExpectedValue("delta_max", 36.161, "mm", 5e-5)]),
+            new CalcTestCase("ka-legacy-ss-udl", "Legacy example 3: simply supported, uniformly distributed load", new CalcReferenceSource("TempestOS calc.beam-deflection (v0.21.0) hand calculation", null, "docs/engineering/calculations/calc.beam-deflection.md, Example 3"),
+                [CalcInputValue.Choice("case", SsUdl), CalcInputValue.Quantity("L", 4, "m"), CalcInputValue.Quantity("E", 210, "GPa"), CalcInputValue.Quantity("I", 1943, "cm^4"), CalcInputValue.Quantity("w", 5, "kN/m"), CalcInputValue.Quantity("y_c", 100, "mm"), CalcInputValue.Quantity("sigma_allow", 235, "MPa"), CalcInputValue.Quantity("delta_limit", 16, "mm")],
+                [new CalcExpectedValue("M_max", 10, "kN*m", 5e-5), new CalcExpectedValue("sigma_b", 51.467, "MPa", 5e-5), new CalcExpectedValue("delta_max", 4.0847, "mm", 5e-5)]),
+            new CalcTestCase("ka-legacy-cantilever-point", "Legacy example 4: cantilever end load, stress exactly on the allowable", new CalcReferenceSource("TempestOS calc.beam-deflection (v0.21.0) hand calculation", null, "docs/engineering/calculations/calc.beam-deflection.md, Example 4"),
+                [CalcInputValue.Choice("case", CantPoint), CalcInputValue.Quantity("L", 0.5, "m"), CalcInputValue.Quantity("E", 200, "GPa"), CalcInputValue.Quantity("I", 5, "cm^4"), CalcInputValue.Quantity("P", 2, "kN"), CalcInputValue.Quantity("a", 0.5, "m"), CalcInputValue.Quantity("y_c", 12.5, "mm"), CalcInputValue.Quantity("sigma_allow", 250, "MPa"), CalcInputValue.Quantity("delta_limit", 10, "mm")],
+                [new CalcExpectedValue("M_abs", 1, "kN*m", 5e-5), new CalcExpectedValue("sigma_b", 250.00, "MPa", 5e-5), new CalcExpectedValue("delta_max", 8.3333, "mm", 5e-5)]),
         ],
         DiagramKey: "beam-formulas",
         Category: "Analysis");
@@ -189,5 +205,28 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
 
         foreach (var (symbol, text) in new[] { ("R_A", "Left reaction"), ("R_B", "Right reaction"), ("M_max", "Maximum sagging moment"), ("x_M", "Position of M_max"), ("M_min", "Minimum (hogging) moment"), ("V_max", "Maximum shear"), ("delta_max", "Maximum deflection"), ("x_delta", "Position of δ_max") })
             c.Output(symbol, text);
+
+        // Stress and deflection checks, carried from the legacy calc.beam-deflection module (ADR-0167); each runs when its inputs are given.
+        if (c.Has("y_c") && c.Has("sigma_allow"))
+        {
+            c.Input("y_c");
+            c.Input("sigma_allow");
+            c.Assign("M_abs", "max(abs(M_max), abs(M_min))", "kN*m", "Largest bending moment, either sign");
+            c.Assign("sigma_b", "M_abs * y_c / I", "MPa", "Maximum bending stress (M·c/I)", "Roark Ch. 8");
+            c.Assign("u_stress", "sigma_b / sigma_allow", null, "Bending stress utilisation");
+            c.Output("M_abs", "Largest bending moment, either sign");
+            c.Output("sigma_b", "Maximum bending stress");
+            c.CheckUtilisation("Bending stress", "u_stress", "Roark Ch. 8");
+
+            if (c.Si("L") / (2 * c.Si("y_c")) < 10)
+                c.Warn("deep-beam", "L / (2·y_c) is below 10: a deep beam, where shear deformation adds to the bending deflection this sheet reports.");
+        }
+
+        if (c.Has("delta_limit"))
+        {
+            c.Input("delta_limit");
+            c.Assign("u_deflection", "abs(delta_max) / delta_limit", null, "Deflection utilisation");
+            c.CheckUtilisation("Deflection", "u_deflection");
+        }
     }
 }
