@@ -38,8 +38,9 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 ## Phase 5 — reviews and gates (`v0.27.0/phase-5-reviews`)
 - [x] Green: every legacy vector traced and carried at 5e-5 (G-05…G-08 fixed; D-42)
 - [x] Grey: real v0.25.3 and v0.26.0-rc1 databases (Phase 4)
-- [ ] Black on a clean clone (gate running)
+- [x] Black on a clean clone (B-26 found and fixed; rc1 gate green on a fresh clone)
 - [x] Red delta on the new templates, migration, compare, archives and diagrams
-- [ ] Yellow final
+- [x] Yellow final (Y12; Y11-04 open to the owner)
 - [x] CHANGELOG, release notes, handover
-- [ ] rc1 gates; draft PR; tag (owner)
+- [x] rc1 gates (clean clone, Release, every suite)
+- [ ] Draft PR to main and tag `v0.27.0-rc1` (owner)

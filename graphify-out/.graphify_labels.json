@@ -1,6 +1,5 @@
 {
   "4": "avalonia_controls",
-  "8": "Length",
   "12": "Quantity",
   "54": "WorkspaceManager",
   "64": "CalculationException",
@@ -50,7 +49,6 @@
   "345": "WP 6.0 — Reporting Framework Implementation",
   "347": "RecordTimesheetCommand",
   "389": "ImageSlot",
-  "392": "CalculationModuleServiceTests",
   "437": "template.json",
   "442": "CalculationInputUnits",
   "457": "Tempest Engineering Brand Identity",
