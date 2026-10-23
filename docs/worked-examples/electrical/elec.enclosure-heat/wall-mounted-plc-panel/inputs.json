@@ -1,0 +1,165 @@
+[
+  {
+    "Symbol": "D",
+    "Number": 0.3,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Enclosure datasheet AE-1380: 600 \u00D7 800 \u00D7 300",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.3"
+  },
+  {
+    "Symbol": "H",
+    "Number": 0.8,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Enclosure datasheet AE-1380: 600 \u00D7 800 \u00D7 300",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.8"
+  },
+  {
+    "Symbol": "T_amb",
+    "Number": 35,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Site conditions SC-2: 35 \u00B0C plant room; 50 \u00B0C inside limit for the drives",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "35"
+  },
+  {
+    "Symbol": "T_max",
+    "Number": 50,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Site conditions SC-2: 35 \u00B0C plant room; 50 \u00B0C inside limit for the drives",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "V_pts",
+    "Unit": "m^3/h",
+    "Vector": [
+      0,
+      100,
+      200
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Fan datasheet FF-120: curve points",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "[0, 100, 200]"
+  },
+  {
+    "Symbol": "V_ref",
+    "Number": 100,
+    "Unit": "m^3/h",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Filter datasheet: 20 Pa at 100 m\u00B3/h",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "W",
+    "Number": 0.6,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Enclosure datasheet AE-1380: 600 \u00D7 800 \u00D7 300",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.6"
+  },
+  {
+    "Symbol": "altitude",
+    "Number": 0,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Wall mounted on a floor plinth: rear and bottom covered; indoors.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "loads",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "PLC and I/O"
+          },
+          "P": {
+            "Number": 80,
+            "Unit": "W"
+          },
+          "qty": {
+            "Number": 1
+          },
+          "duty": {
+            "Number": 1
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "drives"
+          },
+          "P": {
+            "Number": 55,
+            "Unit": "W"
+          },
+          "qty": {
+            "Number": 4
+          },
+          "duty": {
+            "Number": 1
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Panel schedule PNL-04",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2 row(s)"
+  },
+  {
+    "Symbol": "p_pts",
+    "Unit": "Pa",
+    "Vector": [
+      60,
+      30,
+      0
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Fan datasheet FF-120: curve points",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "[60, 30, 0]"
+  },
+  {
+    "Symbol": "p_sys",
+    "Number": 20,
+    "Unit": "Pa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Filter datasheet: 20 Pa at 100 m\u00B3/h",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  }
+]

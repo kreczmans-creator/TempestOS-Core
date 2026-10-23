@@ -17,6 +17,7 @@ public static class WorkedExamples
         .. Mechanical.MechanicalWorkedExamples.All,
         .. Structural.StructuralWorkedExamples.All,
         .. BuildingServices.BuildingServicesWorkedExamples.All,
+        .. Electrical.ElectricalWorkedExamples.All,
     ];
 
     public static TheoryData<string> Keys => [.. All.Select(e => e.TemplateId + "/" + e.Slug)];

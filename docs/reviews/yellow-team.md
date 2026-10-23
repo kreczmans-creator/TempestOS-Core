@@ -39,3 +39,12 @@ Run at the end of each build phase (§4) and again in Phase 7. Findings: ID, sev
 | Y4-03 | Low | `MoistAir.WetBulb` | Wet-bulb below 0 °C uses the ice form of the adiabatic-saturation relation with constant coefficients; sublimation enthalpy is treated as constant. | Property test `Every_Route_To_A_State_Agrees_With_The_Others` over −20 … 50 °C. | Acceptable for HVAC range; documented. | Justified |
 | Y4-04 | Low | `DuctSizingCalculator` | Rectangular sizing picks side a = 1.5 × target D_e rounded when no side is fixed; aspect ratio is not optimised. | Known-answer with a fixed side (600 × 300) matches the ASHRAE relation. | Documented; user fixes a side in practice. | Justified |
 | Y4-05 | Info | Known-answer sources | ASHRAE Ch. 1 Example 1 and the Ch. 21 friction-chart point are reproduced from the same published relations, not read from the printed example (Unconfirmed / chart tolerance). | STATUS lists unconfirmed count. | Owner may confirm against the handbook. | Open (owner) |
+
+## Phase 5 — E1–E3 (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y5-01 | Low | `MotorSizingCalculator` | Efficiency is applied in the deceleration phase as in acceleration (the mechanism then helps the motor less than it really does), so T_dec is slightly pessimistic in magnitude; T_rms is conservative. | Analytic known answers use the same convention. | Assumption A1 states it. | Justified |
+| Y5-02 | Low | `EnclosureHeatCalculator` | The forced-ventilation airflow neglects natural dissipation (conservative); `V_req_net` credits it for comparison. Solar gain uses one absorptivity and one sunlit area. | Analytic case. | Documented. | Justified |
+| Y5-03 | Medium | `VoltageDropCalculator` | A mV/A/m figure is used as entered with its own convention; mixing a single-phase figure into a three-phase sheet is a user error the sheet cannot detect. | Known-answer `ka-mvam`. | Input description says "from the cable table"; Orange guide to note. | Justified |
+| Y5-04 | Low | `EnclosureHeatCalculator` | First hand expectation for the fan duty point was wrong (quadratic solved by hand); the sheet's bisection was right. Re-derived and recorded in the reference text. | Suite green after the fix. | Closed. | Closed |

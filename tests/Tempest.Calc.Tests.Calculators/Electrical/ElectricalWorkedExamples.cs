@@ -1,0 +1,106 @@
+using Tempest.Calc.Electrical;
+using Tempest.Calc.Sheets;
+
+namespace Tempest.Calc.Tests.Calculators.Electrical;
+
+public static class ElectricalWorkedExamples
+{
+    private static CalcProvenance Spec(string s) => CalcProvenance.Specification(s);
+
+    private static CalcInputSet FromCase(ICalcCalculator calc, int index, Func<string, CalcProvenance> provenance, params CalcInputValue[] overrides)
+    {
+        var d = calc.Template.TestCases[index].Inputs.Select(v => v with { Provenance = provenance(v.Symbol) }).ToDictionary(v => v.Symbol);
+        foreach (var o in overrides) d[o.Symbol] = o;
+        return new CalcInputSet([.. d.Values]);
+    }
+
+    public static IReadOnlyList<WorkedExample> All { get; } =
+    [
+        new(MotorSizingCalculator.Id, "ball-screw-pick-and-place", "Ball-screw axis of a pick-and-place machine",
+            new CalcReferenceSource("Analytic servo-sizing relations (Hughes & Drury; manufacturer sizing guides)", null, "Reflected inertia, trapezoidal 1/3 profile, RMS torque with dwell"),
+            FromCase(new MotorSizingCalculator(), 0, s => s switch
+            {
+                "m" => Spec("Mechanical layout ML-12: carriage + gripper 50 kg"),
+                "p_screw" => Spec("Screw datasheet BS-1610: 10 mm lead"),
+                "J_mech" => Spec("Screw datasheet BS-1610 + coupling: 1.0e-4 kg·m²"),
+                "eta" => Spec("Screw datasheet BS-1610: 90 %"),
+                "mu" => CalcProvenance.Assumed("Linear guides with seals: μ = 0.1."),
+                "J_motor" or "T_rated" or "T_peak" or "n_max" => Spec("Motor datasheet SM-040: 2.0e-4 kg·m², 2.0 / 6.0 N·m, 10 000 rpm"),
+                "s" or "t_move" or "t_dwell" or "f_acc" => Spec("Cycle specification CS-3: 0.5 m in 0.5 s, 0.5 s dwell, 1/3 ramps"),
+                _ => CalcProvenance.Assumed("Sizing convention."),
+            }),
+            [new CalcExpectedValue("T_pk", 2.579, "N*m", 1e-3), new CalcExpectedValue("T_rms", 1.4402, "N*m", 1e-3), new CalcExpectedValue("n_pk", 9000, "rpm", 1e-6)],
+            "A 50 kg carriage on a 10 mm-lead ball screw moving 0.5 m in 0.5 s. The candidate motor's peak (6 N·m) and continuous (2 N·m) torques are checked with a 1.25 margin; the 9000 rpm peak speed is the sizing driver, suggesting a coarser lead or a gearbox."),
+
+        new(MotorSizingCalculator.Id, "geared-index-table", "Rotary index table through a 10:1 gearbox",
+            new CalcReferenceSource("Analytic servo-sizing relations", null, "Reflected inertia J_L/(i² η); inertia ratio above 10 warns"),
+            FromCase(new MotorSizingCalculator(), 1, s => s switch
+            {
+                "J_L" => Spec("S1-style inertia calc of the 600 mm table with fixtures: 0.5 kg·m²"),
+                "i" or "eta" => Spec("Gearbox datasheet PG-10: 10:1, 85 %"),
+                "J_motor" or "T_rated" or "T_peak" or "n_max" => Spec("Motor datasheet SM-060: 5.0e-4 kg·m², 3.0 / 9.0 N·m, 3000 rpm"),
+                "s" or "t_move" or "t_dwell" or "f_acc" => Spec("Cycle specification CS-7: 90° index in 0.3 s, 0.7 s dwell"),
+                _ => CalcProvenance.Assumed("Sizing convention."),
+            }),
+            [new CalcExpectedValue("T_pk", 5.0126, "N*m", 1e-3), new CalcExpectedValue("J_ratio", 11.76, "", 2e-3)],
+            "A 90° index in 0.3 s through a 10:1 gearbox: the motor sees 5.9e-3 kg·m² of reflected inertia, nearly twelve times its own rotor inertia, so the sheet warns on the inertia ratio even though the torque and speed checks pass."),
+
+        new(EnclosureHeatCalculator.Id, "wall-mounted-plc-panel", "Wall-mounted PLC panel, natural dissipation and fan",
+            new CalcReferenceSource("Effective-surface method (IEC TR 60890 approach; manufacturer guides)", null, "A_eff from face exposure; ΔT = P/(h A_eff); V = P/(ρ c_p ΔT)"),
+            FromCase(new EnclosureHeatCalculator(), 1, s => s switch
+            {
+                "loads" => Spec("Panel schedule PNL-04: PLC 80 W, 4 drives at 55 W"),
+                "W" or "H" or "D" => Spec("Enclosure datasheet AE-1380: 600 × 800 × 300"),
+                "h" => CalcProvenance.FromReference("Reference record: painted steel enclosure, still air, 5.5 W/m²K (manufacturer guide)"),
+                "T_amb" or "T_max" => Spec("Site conditions SC-2: 35 °C plant room; 50 °C inside limit for the drives"),
+                "V_pts" or "p_pts" => Spec("Fan datasheet FF-120: curve points"),
+                "p_sys" or "V_ref" => Spec("Filter datasheet: 20 Pa at 100 m³/h"),
+                _ => CalcProvenance.Assumed("Wall mounted on a floor plinth: rear and bottom covered; indoors."),
+            }, EnclosureHeatCalculator.Loads(("PLC and I/O", 80, 1, 1), ("drives", 55, 4, 1)) with { Provenance = Spec("Panel schedule PNL-04") }),
+            [new CalcExpectedValue("dT_nat", 47.847, "K", 1e-4), new CalcExpectedValue("V_duty", 113.75, "m^3/h", 1e-3)],
+            "300 W in a wall-mounted 600 × 800 × 300 enclosure gives a 48 K natural rise against a 15 K allowance, so natural dissipation fails; a filter fan delivering 114 m³/h at its duty point covers the 62 m³/h needed with margin."),
+
+        new(EnclosureHeatCalculator.Id, "outdoor-kiosk-cooling-unit", "Outdoor kiosk in the sun: cooling-unit capacity",
+            new CalcReferenceSource("Effective-surface method with solar gain", null, "P_cool = P_total − h A_eff (T_max − T_amb)"),
+            FromCase(new EnclosureHeatCalculator(), 0, s => s switch
+            {
+                "loads" => Spec("Panel schedule PNL-09"),
+                "W" or "H" or "D" => Spec("Enclosure datasheet AE-1380"),
+                "h" => CalcProvenance.FromReference("Reference record: painted steel enclosure, still air, 5.5 W/m²K"),
+                "T_amb" or "T_max" => Spec("Site conditions SC-5: 40 °C design ambient; 45 °C inside limit"),
+                _ => CalcProvenance.Assumed("Free-standing kiosk, bottom on a plinth."),
+            }, CalcInputValue.Quantity("T_amb", 40, "degC", Spec("Site conditions SC-5")), CalcInputValue.Quantity("T_max", 45, "degC", Spec("Site conditions SC-5")), CalcInputValue.Quantity("I_sun", 800, "W/m^2", Spec("Site conditions SC-5: 800 W/m² on the sunlit side")), CalcInputValue.Quantity("A_sun", 0.48, "m^2", CalcProvenance.Assumed("One 600 × 800 face in the sun.")), CalcInputValue.Of("alpha_sun", 0.5, CalcProvenance.Assumed("Light-grey paint.")), CalcInputValue.Of("f_rear", 1, CalcProvenance.Assumed("Free-standing."))),
+            [new CalcExpectedValue("P_total", 492, "W", 1e-9)],
+            "With 192 W of solar gain on top of 300 W internal load and only 5 K allowed above a 40 °C ambient, natural dissipation holds a fraction of the load; ventilation at 5 K rise would need a large airflow, so the sheet reports the cooling-unit capacity needed."),
+
+        new(VoltageDropCalculator.Id, "three-phase-motor-feeder", "Three-phase motor feeder, 100 A over 80 m",
+            new CalcReferenceSource("Analytic (√3 I (R cos φ + X sin φ)); BS 7671 Appendix 4 method for the temperature estimate", null, "R from resistivity at 70 °C; X′ = 0.08 Ω/km"),
+            FromCase(new VoltageDropCalculator(), 1, s => s switch
+            {
+                "I" => Spec("Motor schedule MS-01: 100 A full-load current"),
+                "L" => CalcProvenance.Drawing("DRG-E-120", "B"),
+                "A_c" => Spec("Cable schedule CS-01: 35 mm² Cu XLPE/SWA"),
+                "rho_20" or "alpha" => CalcProvenance.FromReference("Reference record: annealed copper 0.01724 Ω·mm²/m, 0.00393/K (Hughes)"),
+                "X_km" => Spec("Cable datasheet: 0.08 Ω/km"),
+                "I_z" => Spec("Cable schedule CS-01: I_z = 119 A for the installation method"),
+                "dv_limit" => Spec("Project spec ES-3 §4: 5 % (BS 7671 Appendix 4 §6.4 default for other uses)"),
+                _ => CalcProvenance.Assumed("Design convention."),
+            }),
+            [new CalcExpectedValue("dV_pct", 1.8815, "", 1e-3), new CalcExpectedValue("T_c_est", 58.25, "degC", 1e-3)],
+            "A 35 mm² copper feeder carrying 100 A over 80 m drops 7.5 V (1.9 %) against the 5 % project limit; the conductor runs at an estimated 58 °C, below the 70 °C used for the resistance, so the drop figure is on the safe side."),
+
+        new(VoltageDropCalculator.Id, "dc-battery-feed", "48 V DC battery feed, 20 A over 30 m",
+            new CalcReferenceSource("Analytic (2 I R with temperature-corrected resistivity)", null, "6 mm² copper at 70 °C"),
+            FromCase(new VoltageDropCalculator(), 0, s => s switch
+            {
+                "I" => Spec("Load schedule DC-02: 20 A"),
+                "L" => CalcProvenance.Drawing("DRG-E-301", "A"),
+                "A_c" => Spec("Cable schedule CS-02: 6 mm² Cu"),
+                "rho_20" or "alpha" => CalcProvenance.FromReference("Reference record: annealed copper (Hughes)"),
+                "dv_limit" => Spec("Battery system spec BS-1: 5 % at the load"),
+                _ => CalcProvenance.Assumed("Design convention."),
+            }),
+            [new CalcExpectedValue("dV", 4.1256, "V", 1e-4), new CalcExpectedValue("dV_pct", 8.595, "", 1e-3)],
+            "A 48 V DC feed on 6 mm² copper drops 4.1 V (8.6 %), failing the 5 % limit: the next size up (10 mm²) or a shorter route is needed. The I²R loss of 83 W is reported for the battery budget."),
+    ];
+}

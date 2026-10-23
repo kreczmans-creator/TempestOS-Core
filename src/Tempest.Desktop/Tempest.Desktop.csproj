@@ -117,6 +117,7 @@
     <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.Mechanical\Tempest.Calc.Mechanical.csproj" />
     <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.Structural\Tempest.Calc.Structural.csproj" />
     <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.BuildingServices\Tempest.Calc.BuildingServices.csproj" />
+    <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.Electrical\Tempest.Calc.Electrical.csproj" />
   </ItemGroup>
 
   <!-- WP 17.2A / ADR-0146: documents every configuration key the platform
