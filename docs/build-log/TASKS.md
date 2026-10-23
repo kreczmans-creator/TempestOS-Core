@@ -26,7 +26,7 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 - [x] struct.fillet-weld (simplified method; long-joint warning above 150·a)
 - [x] bs.plane-wall; elec.thermal-chain (filed under Electrical, D-40)
 - [x] Legacy vectors carried (9 hand calculations, 5 s.f.); two worked examples each; behaviour tests; Yellow pass (Y10)
-- [ ] Behaviour tests for the seven Phase 2 ports, to the Phase 3 level (Y10-03)
+- [x] Behaviour tests for the seven Phase 2 ports, to the Phase 3 level (Y10-03: 26 tests)
 - [ ] Phase 3 gate; merge to release
 ## Phase 4 — Desktop retirement (`v0.27.0/phase-4-desktop`)
 - [ ] Legacy Calculators surface (Engineering → Modules → Calculators, Re-run/Compare) replaced by Worksheets; Compare reimplemented over calc instances
