@@ -29,7 +29,10 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 - [x] Behaviour tests for the seven Phase 2 ports, to the Phase 3 level (Y10-03: 26 tests)
 - [ ] Phase 3 gate; merge to release
 ## Phase 4 — Desktop retirement (`v0.27.0/phase-4-desktop`)
-- [ ] Legacy Calculators surface (Engineering → Modules → Calculators, Re-run/Compare) replaced by Worksheets; Compare reimplemented over calc instances
+- [x] Compare reimplemented over calc instances (`CalcInstanceComparer`, Compare with previous revision); archives listed in the worksheet catalogue (Y8-06)
+- [x] Grey: real v0.25.3 and v0.26.0-rc1 databases (46 records, 19 calculations) migrate with nothing lost (`GreyLegacyDatabaseTests`)
+- [x] Reference diagram in the worksheet form for every template (ADR-0158, Principle 33; D-41): 27 diagrams, 60 drawings; coverage, reading and focus tests; every drawing rendered and reviewed for overlaps
+- [x] Legacy Calculators surface (Engineering → Modules → Calculators) retired (ADR-0167 Amendment 1): view, coordinator, workbench, module service; tests superseded as listed there; real-shell journey moved to Worksheets
 - [ ] Legacy definitions, descriptors, diagrams and their tests retired under ADR-0167 (after the migration passes)
 - [ ] Desktop full suite green
 ## Phase 5 — reviews and gates (`v0.27.0/phase-5-reviews`)

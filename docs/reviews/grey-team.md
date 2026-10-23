@@ -11,3 +11,12 @@
 | Reports path opens an issued calc sheet; page < 200 KB | `WorkedExamplePdfTests` renders all 24 examples through the Desktop renderer: max 187 KB, mean 168 KB on Linux; the issued sheet is a normal Evidence attachment the Reports view already lists. | Pass (Linux); Windows pending CI |
 
 Findings: GR-01 (Low, Open until CI): the Windows PDF size depends on DirectWrite accepting the subset fonts (RR-01). GR-02 (Info): the upgrade test rehydrates with the Workspace registries plus the Evidence kind, mirroring `EngineeringWorkspaceComposer`; if the composer's kind list grows, the test's list must follow.
+
+## v0.27.0 — legacy records on real release databases (ADR-0167 §2)
+
+| Item | Evidence | Status |
+|---|---|---|
+| Real v0.25.3 and v0.26.0-rc1 databases migrate with nothing lost | `GreyLegacyDatabaseTests` (Library): two SQLite fixtures, each written by that release's own code — its legacy module tests (worked examples and vectors) and the five original definitions executed through a SQLite store with the product's record index — hold 46 records of all 19 legacy calculations. Under the current code every record lists, migrates to an archive (same Id, Draft, Manual provenance), carries a figure, renders an archive sheet with no NaN, and stays readable as a legacy record; on reopening, a second migration adds nothing. | Pass |
+| Fixture regeneration | `git worktree add <dir> <release>`; in that worktree only, point `ModuleTestSupport.BareEngine` at a `SqlitePersistenceStore` rooted at an output folder (passing it as `recordIndex`) and add a test executing the five original definitions; run `dotnet test tests/Tempest.Core.Tests --filter Calculations.Modules` single-threaded; `VACUUM`, gzip and copy to `tests/Tempest.Calc.Tests.Library/Fixtures/`. The release branches are not changed. | Documented |
+
+Findings: GR-03 (Info): the fixtures are written by the release code's engine and store, not by a Desktop session, so they hold no project, Evidence or register objects beside the records; the v0.26 `UpgradeTests` already covers those beside a legacy record.

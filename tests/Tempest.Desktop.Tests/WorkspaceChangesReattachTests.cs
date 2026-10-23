@@ -197,7 +197,6 @@ public sealed class WorkspaceChangesReattachTests
             var view = new EngineeringAreaView(
                 host.ShellNavigator!, tasksReadModel, engineeringCalculation, librariesView, engineeringDashboard,
                 () => Task.CompletedTask, Resolve<ICommandDispatcher>(host), (_, _) => { }, engineeringAssets,
-                new CalculationModulesView(), () => Task.CompletedTask,
                 new Tempest.Desktop.CalcSheets.CalcSheetView(), () => Task.CompletedTask);
 
             await AssertReattachAsync(view, f => view.WorkspaceChanges = f, () => view.RefreshCount);

@@ -8,6 +8,7 @@ using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.ReferenceData.Seeding.Datasets;
 using Tempest.Core.Standards;
+using Tempest.Core.UnitsAndQuantities;
 using static Tempest.Core.Tests.Calculations.Modules.ModuleTestSupport;
 
 namespace Tempest.Core.Tests.Population;
@@ -309,31 +310,22 @@ public sealed class DayOneReferenceLibraryTests
     }
 
     [Fact]
-    public async Task TheBeamCalculation_RunsOnTheSeededS355J2_WithNobodyReleasingItByHand()
+    public async Task TheSeededS355J2_SuppliesEAndFy_ToAReferenceFill_WithNobodyReleasingItByHand()
     {
+        // ADR-0167: superseded the legacy Calculators run of runbook C8 (beam on S355J2). The worksheet's reference fill
+        // reads a released record through MaterialPropertyReader, the same reader the legacy form used; the beam run itself
+        // is `DayOneReleaseAtSeedJourneyTests` on the beam worksheet (3.96825 mm, unchanged).
         var harness = NewHarness();
         await SeedAllAsync(harness, Releasing());
 
-        var service = new CalculationModuleService(harness.Materials, harness.Fasteners, harness.Bearings, BareEngine());
+        var e = await MaterialPropertyReader.ReadAsync<Pressure>(harness.Materials, MaterialSeed.S355J2, "YoungsModulus");
+        var fy = await MaterialPropertyReader.ReadAsync<Pressure>(harness.Materials, MaterialSeed.S355J2, "YieldStrength");
 
-        var outcome = await service.RunAsync(new CalculationModuleRequest(BeamDeflectionCalculationDefinition.Id,
-        [
-            new("MaterialPin", RecordId: MaterialSeed.S355J2),
-            new("Support", Choice: nameof(BeamSupport.SimplySupported)),
-            new("Loading", Choice: nameof(BeamLoading.PointLoad)),
-            new("Load", "10", "kN"),
-            new("Span", "2000", "mm"),
-            new("SecondMomentOfArea", "2000000", "mm^4"),
-            new("ExtremeFibreDistance", "50", "mm"),
-            new("DeflectionLimit", "8", "mm"),
-        ]));
-
-        Assert.True(outcome.WasPerformed, outcome.Reason);
-        Assert.Contains(MaterialSeed.S355J2, outcome.Run!.ReferencedMaterialIds);
-
-        // E 210 GPa and fy 355 MPa came from the record itself.
-        Assert.Contains(outcome.Fills, f => f.ReferenceInputName == "MaterialPin" && f.Record.RecordId == MaterialSeed.S355J2);
-        Assert.Contains(outcome.Run.Results, r => r.Label == "Maximum deflection" && r.Display == "3.96825 mm");
+        Assert.True(e.Succeeded, e.Reason);
+        Assert.True(fy.Succeeded, fy.Reason);
+        Assert.Equal(210e9, e.Value!.Value.BaseValue, 3);
+        Assert.Equal(355e6, fy.Value!.Value.BaseValue, 3);
+        Assert.Equal(MaterialSeed.S355J2, e.Pin!.RecordId);
     }
 
     [Fact]
@@ -341,14 +333,12 @@ public sealed class DayOneReferenceLibraryTests
     {
         var harness = NewHarness();
         await SeedAllAsync(harness, Releasing());
-
-        var service = new CalculationModuleService(harness.Materials, harness.Fasteners, harness.Bearings, BareEngine());
         var fastenerId = FastenerSeed.PropertyClassRecordId(12, "8.8");
 
-        var options = await service.ListReleasedAsync(ReferenceLibrary.Fasteners);
-        Assert.Contains(options, o => o.RecordId == fastenerId);
-
+        // ADR-0167: the legacy Calculators' released-record list is superseded by the worksheet's reference fill, which
+        // lists released records only; the seeded fastener is released at seed.
         var fastener = (await harness.Fasteners.FindAsync(fastenerId))!;
+        Assert.Equal(ReferenceValidationState.Released, fastener.ValidationState);
         Assert.Equal("8.8", fastener.Definition.Mechanical.PropertyClass);
         Assert.Equal(84.3e-6, fastener.Definition.Mechanical.StressArea!.CanonicalValue, 12);
         Assert.Equal(580e6, fastener.Definition.Mechanical.ProofStrength!.CanonicalValue, 3);

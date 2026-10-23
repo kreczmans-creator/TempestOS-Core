@@ -37,6 +37,12 @@ public sealed class CalcSheetView : UserControl
     public const string ShowWorkingCaption = "Show working";
     public const string ExportCsvCaption = "Export inputs (CSV)";
     public const string ImportCaption = "Import inputs (CSV/JSON)";
+    public const string CompareCaption = "Compare with previous revision";
+    public const string ComparisonName = "Comparison";
+    public const string ArchivesNodeName = "Archived legacy calculations";
+
+    /// <summary>Archived legacy records listed in the catalogue; the rest are counted (§3.8 caps).</summary>
+    public const int MaxArchivesListed = 500;
     public const string StaleMarker = "Recalculating…";
     public const string PickGuidance = "Choose a worksheet from the catalogue on the left. Its inputs, with their units, sources and limits, appear here.";
 
@@ -66,6 +72,16 @@ public sealed class CalcSheetView : UserControl
     private readonly Button _reviseButton = new() { Content = ReviseCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly Button _exportButton = new() { Content = ExportCsvCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly Button _importButton = new() { Content = ImportCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
+    private readonly Button _compareButton = new() { Content = CompareCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly SelectableTextBlock _comparison = new() { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap, IsVisible = false };
+    private IReadOnlyList<CalcInstance> _archives = [];
+
+    // ADR-0158, D-41: the template's reference diagram beside the inputs, read against the form as it stands.
+    private readonly Tempest.Desktop.Views.CalculationDiagramView _diagram = new() { Width = Tempest.Desktop.Views.CalculationDiagramView.PanelWidth, VerticalAlignment = VerticalAlignment.Top, IsVisible = false };
+    private string? _markedSymbol;
+
+    /// <summary>Below this width of the right column the diagram stacks above the inputs (a laptop window): label, value, unit, source and reference columns, plus the panel.</summary>
+    public const double DiagramBesideMinimumWidth = 200 + 160 + 90 + 120 + 150 + DesignTokens.SpaceLg + Tempest.Desktop.Views.CalculationDiagramView.PanelWidth;
     /// <summary>Inputs the form has no field for (tables, vectors): carried from the seed so an imported or saved set keeps them (§3.8).</summary>
     private readonly List<CalcInputValue> _carriedInputs = [];
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
@@ -97,6 +113,9 @@ public sealed class CalcSheetView : UserControl
         AutomationProperties.SetName(_showWorking, ShowWorkingCaption);
         AutomationProperties.SetName(_exportButton, ExportCsvCaption);
         AutomationProperties.SetName(_importButton, ImportCaption);
+        AutomationProperties.SetName(_compareButton, CompareCaption);
+        AutomationProperties.SetName(_governingLink, "Go to the governing step");
+        AutomationProperties.SetName(_comparison, ComparisonName);
         AutomationProperties.SetName(_working, "Working");
         AutomationProperties.SetName(_results, "Results");
 
@@ -107,8 +126,12 @@ public sealed class CalcSheetView : UserControl
         _reviseButton.Click += (_, _) => ReviseRequested?.Invoke();
         _exportButton.Click += (_, _) => ExportRequested?.Invoke();
         _importButton.Click += (_, _) => ImportRequested?.Invoke();
+        _compareButton.Click += (_, _) => CompareRequested?.Invoke();
         _showWorking.IsCheckedChanged += (_, _) => _working.IsVisible = _showWorking.IsChecked == true;
         _governingLink.Click += (_, _) => RevealGoverningStep();
+        _diagram.InputActivated += FocusField;
+        _diagram.InputHovered += MarkRow;
+        ActualThemeVariantChanged += (_, _) => MarkRow(_markedSymbol);
 
         Content = BuildLayout();
     }
@@ -130,6 +153,45 @@ public sealed class CalcSheetView : UserControl
 
     /// <summary>The user asked to import inputs (CSV or JSON) from the clipboard.</summary>
     public event Action? ImportRequested;
+
+    /// <summary>Raised by Compare with previous revision (ADR-0167 §4).</summary>
+    public event Action? CompareRequested;
+
+    /// <summary>Raised when an archived legacy record is picked in the catalogue; carries its instance Id.</summary>
+    public event Action<Guid>? ArchiveSelected;
+
+    /// <summary>The comparison last shown, or null.</summary>
+    public CalcComparison? LastComparison { get; private set; }
+
+    /// <summary>The archived legacy records the catalogue lists.</summary>
+    public IReadOnlyList<CalcInstance> Archives => _archives;
+
+    /// <summary>Lists the migrated legacy records under their own catalogue node, newest first (Y8-06).</summary>
+    public void ShowArchives(IReadOnlyList<CalcInstance> archives)
+    {
+        ArgumentNullException.ThrowIfNull(archives);
+        _archives = [.. archives.Where(a => a.IsLegacyArchive).OrderByDescending(a => a.CreatedAt).ThenBy(a => a.Name, StringComparer.Ordinal)];
+        ShowCatalogue(Catalogue);
+    }
+
+    /// <summary>Shows two revisions side by side as text: every input, output and check that differs.</summary>
+    public void ShowComparison(CalcComparison comparison)
+    {
+        ArgumentNullException.ThrowIfNull(comparison);
+        LastComparison = comparison;
+        _comparison.Text = comparison.Text;
+        _comparison.IsVisible = true;
+    }
+
+    private void ClearComparison()
+    {
+        LastComparison = null;
+        _comparison.Text = string.Empty;
+        _comparison.IsVisible = false;
+    }
+
+    /// <summary>The text of the comparison shown, or empty.</summary>
+    public string ComparisonText => _comparison.IsVisible ? _comparison.Text ?? string.Empty : string.Empty;
 
     /// <summary>The user picked a released reference record for a library (or slot): the library key and the index into the options last set by <see cref="SetReferenceOptions"/>.</summary>
     public event Action<string, int>? ReferencePicked;
@@ -233,6 +295,25 @@ public sealed class CalcSheetView : UserControl
             _catalogue.Items.Add(node);
         }
 
+        if (_archives.Count > 0)
+        {
+            var node = new TreeViewItem { Header = $"{ArchivesNodeName} ({_archives.Count})", IsExpanded = false };
+            AutomationProperties.SetName(node, ArchivesNodeName);
+
+            foreach (var archive in _archives.Take(MaxArchivesListed))
+            {
+                var leaf = new TreeViewItem { Header = $"{archive.Name}  ·  {archive.CreatedAt:yyyy-MM-dd}", Tag = archive };
+                AutomationProperties.SetName(leaf, archive.Name);
+                ToolTip.SetTip(leaf, $"{archive.TemplateReference}\nRead-only archive of a legacy calculation record (ADR-0167).");
+                node.Items.Add(leaf);
+            }
+
+            if (_archives.Count > MaxArchivesListed)
+                node.Items.Add(new TreeViewItem { Header = $"… and {_archives.Count - MaxArchivesListed} more", IsEnabled = false });
+
+            _catalogue.Items.Add(node);
+        }
+
         if (entries.Count == 0)
             _scope.Text = "No worksheets are registered in this build.";
     }
@@ -262,6 +343,7 @@ public sealed class CalcSheetView : UserControl
         SelectedTemplate = entry;
         CurrentInstance = instance;
         IsReadOnly = instance is { IsImmutable: true };
+        ClearComparison();
         _loadingForm = true;
 
         _title.Text = entry.Template.Title;
@@ -318,8 +400,61 @@ public sealed class CalcSheetView : UserControl
         }
 
         _loadingForm = false;
+        var template = entry.Template;
+        _diagram.IsVisible = true;
+        _diagram.ShowReading(template.Title, () => SelectedTemplate is { } t ? CalcDiagramReader.Read(t.Template, ReadForm()) : null, symbol => template.FindInput(symbol)?.Description);
         UpdateActions();
         RaiseInputsChanged();
+    }
+
+    /// <summary>The reference diagram beside the inputs (ADR-0158, D-41).</summary>
+    public Tempest.Desktop.Views.CalculationDiagramView Diagram => _diagram;
+
+    /// <summary>The row of <paramref name="symbol"/>'s field, or <see langword="null"/>.</summary>
+    public Control? FieldRow(string symbol) => _fields.TryGetValue(symbol, out var f) ? f.Row : null;
+
+    /// <summary>Whether <paramref name="symbol"/>'s row is marked (the pointer is on one of its shapes).</summary>
+    public bool IsRowMarked(string symbol) => _fields.TryGetValue(symbol, out var f) && f.Row.Background is not null;
+
+    /// <summary>
+    /// Marks the row of the input whose shape the pointer is on: the accent wash behind it and its label bold in the
+    /// focus-ring colour (a wash alone is barely visible). Re-applied on a theme change.
+    /// </summary>
+    private void MarkRow(string? symbol)
+    {
+        _markedSymbol = symbol;
+        var wash = ThemeReactiveBrush.Resolve(this, ApplicationPalette.AccentPanelBackgroundBrushKey) ?? Brushes.LightBlue;
+        var ring = ThemeReactiveBrush.Resolve(this, ApplicationPalette.FocusRingBrushKey) ?? Brushes.RoyalBlue;
+
+        foreach (var (key, field) in _fields)
+        {
+            var marked = key == symbol;
+            field.Row.Background = marked ? wash : null;
+
+            if (field.Row.Children.OfType<TextBlock>().FirstOrDefault() is not { } label)
+                continue;
+
+            if (marked)
+            {
+                label.Foreground = ring;
+                label.FontWeight = FontWeight.Bold;
+            }
+            else
+            {
+                label.ClearValue(TextBlock.ForegroundProperty);
+                label.FontWeight = FontWeight.Normal;
+            }
+        }
+    }
+
+    /// <summary>A shape on the diagram was clicked: its input's own control takes focus.</summary>
+    private void FocusField(string symbol)
+    {
+        if (FieldControl(symbol) is { } control)
+        {
+            control.Focus();
+            control.BringIntoView();
+        }
     }
 
     /// <summary>Shows a run: governing bar, results, checks, notices, working. Clears the stale marker.</summary>
@@ -546,6 +681,10 @@ public sealed class CalcSheetView : UserControl
             ShowTemplate(entry);
             TemplateSelected?.Invoke(entry);
         }
+        else if (_catalogue.SelectedItem is TreeViewItem { Tag: CalcInstance archive })
+        {
+            ArchiveSelected?.Invoke(archive.Id);
+        }
     }
 
     private void RaiseInputsChanged()
@@ -557,6 +696,7 @@ public sealed class CalcSheetView : UserControl
             f.Problem.IsVisible = false;
 
         _stale.IsVisible = true;
+        _diagram.Refresh();
         InputsChanged?.Invoke(ReadForm());
     }
 
@@ -577,6 +717,9 @@ public sealed class CalcSheetView : UserControl
         SelectedTemplate = null;
         CurrentInstance = instance;
         IsReadOnly = true;
+        ClearComparison();
+        _diagram.ShowReading(null, null);
+        _diagram.IsVisible = false;
         LastRun = null;
         _title.Text = instance.Name;
         _reference.Text = instance.TemplateReference;
@@ -605,6 +748,7 @@ public sealed class CalcSheetView : UserControl
         _saveButton.Content = instance is null ? SaveCaption : "Save changes";
         _saveButton.IsEnabled = !IsReadOnly && SelectedTemplate is not null && LastRun is { IsBlocked: false };
         _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft, IsLegacyArchive: false };
+        _compareButton.IsVisible = instance is { PredecessorId: not null, IsLegacyArchive: false };
         _issueButton.IsVisible = instance is { Status: CalcInstanceStatus.Checked };
         _reviseButton.IsVisible = instance is { Status: CalcInstanceStatus.Issued };
     }
@@ -707,6 +851,12 @@ public sealed class CalcSheetView : UserControl
         var block = new StackPanel { Spacing = 0 };
         block.Children.Add(row);
         block.Children.Add(problem);
+
+        foreach (var control in new Control?[] { text, unit, choice, flag }.OfType<Control>())
+        {
+            control.GotFocus += (_, _) => _diagram.Highlight(spec.Symbol);
+            control.LostFocus += (_, _) => _diagram.Highlight(null);
+        }
 
         var controls = new FieldControls(spec, text, unit, choice, flag, provenance, reference, problem, row);
         _fields[spec.Symbol] = controls;
@@ -828,7 +978,11 @@ public sealed class CalcSheetView : UserControl
         right.Children.Add(_reference);
         right.Children.Add(_scope);
         right.Children.Add(LabelledRow("Calculation name", _nameBox));
-        right.Children.Add(Section("Inputs", _form));
+        // The diagram sits beside the inputs, or above them on a laptop window; the inputs stay first in the tab order.
+        var inputsBeside = new Tempest.Desktop.Views.BesideOrAbovePanel(DiagramBesideMinimumWidth, DesignTokens.SpaceLg);
+        inputsBeside.Children.Add(_form);
+        inputsBeside.Children.Add(_diagram);
+        right.Children.Add(Section("Inputs", inputsBeside));
         right.Children.Add(_problems);
 
         var resultsHead = new StackPanel { Spacing = DesignTokens.SpaceXs };
@@ -852,8 +1006,10 @@ public sealed class CalcSheetView : UserControl
         actions.Children.Add(_reviseButton);
         actions.Children.Add(_exportButton);
         actions.Children.Add(_importButton);
+        actions.Children.Add(_compareButton);
         right.Children.Add(actions);
         right.Children.Add(_status);
+        right.Children.Add(new ScrollViewer { Content = _comparison, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
 
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("300,*") };
         var leftScroll = new ScrollViewer { Content = left };

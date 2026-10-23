@@ -213,6 +213,79 @@ public sealed class CalcSheetViewTests
         Assert.Contains("      = 60 MPa", lines);
     }
 
+    private static CalcInstance Archive(string name, DateTimeOffset at) => new(
+        Guid.NewGuid(), CalcInstance.LegacyReferencePrefix + "calc.bolted-joint-preload@1", "legacy", null, name, "A",
+        [CalcInputValue.Quantity("Preload", 37935, "N", CalcProvenance.Manual)], [], [], [], [], CalcInstanceStatus.Draft, null, null, "steven", at, at);
+
+    private static CalcInstance Revision(CalcCatalogueEntry entry, string revision, double force, string sigma, CalcInstanceStatus status, Guid? predecessor) => new(
+        Guid.NewGuid(), entry.Reference, entry.ContentHash, null, "CALC-12", revision,
+        [CalcInputValue.Quantity("F", force, "kN", CalcProvenance.Drawing("D1")), CalcInputValue.Quantity("A", 200, "mm^2", CalcProvenance.Drawing("D1")), CalcInputValue.Quantity("sigma_allow", 160, "MPa", CalcProvenance.Specification("S1")), CalcInputValue.Choice("grade", "S275", CalcProvenance.Assumed())],
+        [new CalcOutputSnapshot("sigma", "Direct stress", sigma, null, "MPa")], [], [], [], status, Guid.NewGuid(), null, "s.k", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch, PredecessorId: predecessor);
+
+    [AvaloniaFact]
+    public void Compare_IsOfferedOnlyOnARevision_AndShowsWhatDiffers_UntilAnotherCalculationOpens()
+    {
+        // ADR-0167 §4: Compare is reimplemented over calc instances before the legacy surface goes.
+        var (view, catalogue) = NewView();
+        var entry = catalogue.Get("test.desktop-stress");
+        var a = Revision(entry, "A", 12, "60 MPa", CalcInstanceStatus.Superseded, null);
+        var b = Revision(entry, "B", 16, "80 MPa", CalcInstanceStatus.Draft, a.Id);
+        Button Compare() => view.GetLogicalDescendants().OfType<Button>().Single(x => AutomationProperties.GetName(x) == CalcSheetView.CompareCaption);
+
+        view.ShowTemplate(entry, a);
+        Assert.False(Compare().IsVisible);
+
+        view.ShowTemplate(entry, b);
+        Assert.True(Compare().IsVisible);
+        var raised = 0;
+        view.CompareRequested += () => raised++;
+        Compare().RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal(1, raised);
+
+        view.ShowComparison(CalcInstanceComparer.Compare(a, b));
+        Assert.Contains("F: 12 kN → 16 kN  (+33.3 %)", view.ComparisonText, StringComparison.Ordinal);
+        Assert.Contains("sigma: 60 MPa → 80 MPa", view.ComparisonText, StringComparison.Ordinal);
+        Assert.NotNull(view.LastComparison);
+
+        view.ShowTemplate(entry, a);
+        Assert.Equal(string.Empty, view.ComparisonText);
+        Assert.Null(view.LastComparison);
+    }
+
+    [AvaloniaFact]
+    public void Archives_AreListedUnderTheirOwnNode_NewestFirst_AndPickingOneAsksToOpenIt()
+    {
+        // Y8-06: a migrated record has no project or register entry, so the catalogue lists it.
+        var (view, catalogue) = NewView();
+        var older = Archive("legacy run 1", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var newer = Archive("legacy run 2", new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero));
+        var live = Revision(catalogue.Get("test.desktop-stress"), "A", 12, "60 MPa", CalcInstanceStatus.Draft, null);
+        view.ShowArchives([older, live, newer]);
+
+        var tree = view.GetLogicalDescendants().OfType<TreeView>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.CatalogueAutomationName);
+        var node = tree.Items.OfType<TreeViewItem>().Single(n => AutomationProperties.GetName(n) == CalcSheetView.ArchivesNodeName);
+        Assert.Equal(["legacy run 2", "legacy run 1"], node.Items.OfType<TreeViewItem>().Select(l => AutomationProperties.GetName(l)));
+        Assert.Contains(tree.Items.OfType<TreeViewItem>(), n => AutomationProperties.GetName(n) == "Structural");
+
+        Guid? opened = null;
+        view.ArchiveSelected += id => opened = id;
+        tree.SelectedItem = node.Items.OfType<TreeViewItem>().Last();
+        Assert.Equal(older.Id, opened);
+    }
+
+    [AvaloniaFact]
+    public void Archives_BeyondTheCap_AreCounted_NotListed()
+    {
+        var (view, _) = NewView();
+        var start = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        view.ShowArchives([.. Enumerable.Range(0, CalcSheetView.MaxArchivesListed + 3).Select(i => Archive($"run {i}", start.AddMinutes(i)))]);
+
+        var tree = view.GetLogicalDescendants().OfType<TreeView>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.CatalogueAutomationName);
+        var node = tree.Items.OfType<TreeViewItem>().Single(n => AutomationProperties.GetName(n) == CalcSheetView.ArchivesNodeName);
+        Assert.Equal(CalcSheetView.MaxArchivesListed + 1, node.Items.Count);
+        Assert.Equal("… and 3 more", node.Items.OfType<TreeViewItem>().Last().Header);
+    }
+
     [AvaloniaFact]
     public void AnIssuedInstance_IsReadOnly_UnderAnIssuedWatermark()
     {

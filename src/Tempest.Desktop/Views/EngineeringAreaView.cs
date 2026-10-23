@@ -36,7 +36,7 @@ namespace Tempest.Desktop.Views;
 /// `ADR-0163`) navigates to <see cref="ShellArea.Engineering"/> and shows
 /// that category's command bar, Explorer and Properties *in this right
 /// pane*, with the tree still beside it (`v0.24.0` Product Owner review);
-/// Modules → Calculations' own children embed the calculators, the
+/// Modules → Calculations' own children embed the worksheets, the
 /// register of issued sheets and the packs and templates; Modules →
 /// Reference data embeds a second <see cref="LibrariesView"/> instance
 /// (the first is already parented inside <see cref="EvidenceWorkspaceView"/>,
@@ -50,9 +50,7 @@ public sealed class EngineeringAreaView : UserControl
     private readonly EngineeringCalculationView _engineeringCalculation;
     private readonly LibrariesView _referenceData;
     private readonly EngineeringAssetsView _engineeringAssets;
-    private readonly CalculationModulesView _calculators;
     private readonly Func<Task> _onEngineeringCalculationSelected;
-    private readonly Func<Task> _onCalculatorsSelected;
     private readonly Tempest.Desktop.CalcSheets.CalcSheetView _worksheets;
     private readonly Func<Task> _onWorksheetsSelected;
     private readonly ICommandDispatcher _commandDispatcher;
@@ -74,7 +72,6 @@ public sealed class EngineeringAreaView : UserControl
     private readonly TreeViewItem _disciplinesNode = new() { Header = "Disciplines", IsExpanded = true };
     private readonly Dictionary<string, TreeViewItem> _disciplineNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _calculationsNode = new() { Header = "Calculation register" };
-    private readonly TreeViewItem _calculatorsNode = new() { Header = "Calculators" };
     private readonly TreeViewItem _worksheetsNode = new() { Header = "Worksheets" };
     private readonly Dictionary<string, TreeViewItem> _disciplineWorksheetNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _assetsNode = new() { Header = "Packs and templates" };
@@ -102,14 +99,12 @@ public sealed class EngineeringAreaView : UserControl
     /// <summary>Initialises a new instance of the <see cref="EngineeringAreaView"/> class.</summary>
     /// <param name="openObjectRightUp">Opens a Tasks row's own source object right up — the same delegate every other rail area's Tasks/dashboard rows already use.</param>
     /// <param name="engineeringAssets">The merged engineering capability's own area (`WP 21.2B`; `TD-160`, `TD-165`) — Modules → Calculations → Packs and templates.</param>
-    /// <param name="calculators">The Engineering Calculators (`WP 21.7B`) — Modules → Calculators: every product calculation from a generated form.</param>
-    /// <param name="onCalculatorsSelected">Re-reads the calculators' catalogue and released materials on entry, the same shape as <paramref name="onEngineeringCalculationSelected"/>.</param>
     public EngineeringAreaView(
         IShellNavigator navigator, ITasksReadModel tasksReadModel,
         EngineeringCalculationView engineeringCalculation, LibrariesView referenceData,
         EngineeringDashboardView dashboard, Func<Task> onEngineeringCalculationSelected,
         ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp,
-        EngineeringAssetsView engineeringAssets, CalculationModulesView calculators, Func<Task> onCalculatorsSelected,
+        EngineeringAssetsView engineeringAssets,
         Tempest.Desktop.CalcSheets.CalcSheetView worksheets, Func<Task> onWorksheetsSelected)
     {
         ArgumentNullException.ThrowIfNull(navigator);
@@ -121,8 +116,6 @@ public sealed class EngineeringAreaView : UserControl
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(openObjectRightUp);
         ArgumentNullException.ThrowIfNull(engineeringAssets);
-        ArgumentNullException.ThrowIfNull(calculators);
-        ArgumentNullException.ThrowIfNull(onCalculatorsSelected);
         ArgumentNullException.ThrowIfNull(worksheets);
         ArgumentNullException.ThrowIfNull(onWorksheetsSelected);
 
@@ -131,8 +124,6 @@ public sealed class EngineeringAreaView : UserControl
         _engineeringCalculation = engineeringCalculation;
         _referenceData = referenceData;
         _engineeringAssets = engineeringAssets;
-        _calculators = calculators;
-        _onCalculatorsSelected = onCalculatorsSelected;
         _worksheets = worksheets;
         _onWorksheetsSelected = onWorksheetsSelected;
         _dashboard = dashboard;
@@ -151,7 +142,8 @@ public sealed class EngineeringAreaView : UserControl
         // tagged with its command category. Calculations is the one home
         // for calculation work: its own node shows the project's
         // calculations on the surface, and its children hold the
-        // calculators, the register of issued sheets, and the packs and
+        // worksheets (ADR-0167: they replaced the legacy Calculators), the
+        // register of issued sheets, and the packs and
         // templates (what was Modules → Engineering Assets).
         foreach (var category in EngineeringDisciplines.Disciplines)
             _disciplinesNode.Items.Add(SurfaceNode(category));
@@ -162,7 +154,6 @@ public sealed class EngineeringAreaView : UserControl
             if (category == "Calculations")
             {
                 node.IsExpanded = true;
-                node.Items.Add(_calculatorsNode);
                 node.Items.Add(_worksheetsNode);
                 node.Items.Add(_calculationsNode);
                 node.Items.Add(_assetsNode);
@@ -180,7 +171,7 @@ public sealed class EngineeringAreaView : UserControl
         foreach (var (node, name) in new[]
                  {
                      (_dashboardNode, "Dashboard"), (_tasksNode, "Tasks"), (_disciplinesNode, "Disciplines"), (_modulesNode, "Modules"),
-                     (_calculationsNode, "Calculation register"), (_calculatorsNode, "Calculators"), (_worksheetsNode, "Worksheets"),
+                     (_calculationsNode, "Calculation register"), (_worksheetsNode, "Worksheets"),
                      (_assetsNode, "Packs and templates"), (_referenceDataNode, "Reference data"),
                  })
             AutomationProperties.SetName(node, name);
@@ -250,7 +241,7 @@ public sealed class EngineeringAreaView : UserControl
     /// Selects the node named <paramref name="automationName"/>
     /// ("Dashboard", "Tasks", "Disciplines", "Mechanical discipline" and
     /// its siblings, "Modules", "Requirements module" and its siblings,
-    /// "Calculators", "Calculation register", "Packs and templates" or
+    /// "Worksheets", "Calculation register", "Packs and templates" or
     /// "Reference data") — the same name a
     /// screen reader announces, and what a journey test drives the tree
     /// by.
@@ -259,7 +250,7 @@ public sealed class EngineeringAreaView : UserControl
     {
         var item = new[]
             {
-                _dashboardNode, _tasksNode, _disciplinesNode, _modulesNode, _calculationsNode, _calculatorsNode, _assetsNode, _referenceDataNode,
+                _dashboardNode, _tasksNode, _disciplinesNode, _modulesNode, _calculationsNode, _assetsNode, _referenceDataNode,
             }
             .Concat(_disciplineNodes.Values)
             .Concat(_disciplineWorksheetNodes.Values)
@@ -439,13 +430,6 @@ public sealed class EngineeringAreaView : UserControl
         {
             await _onEngineeringCalculationSelected().ConfigureAwait(true);
             _detail.Content = _engineeringCalculation;
-            return;
-        }
-
-        if (ReferenceEquals(selected, _calculatorsNode))
-        {
-            await _onCalculatorsSelected().ConfigureAwait(true);
-            _detail.Content = _calculators;
             return;
         }
 

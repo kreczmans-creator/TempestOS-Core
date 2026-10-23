@@ -55,23 +55,29 @@ public class DayOneReleaseAtSeedJourneyTests
             Assert.Equal(ReferenceValidationState.Released, steel.ValidationState);
             Assert.Contains("released at seed for day-one use (PO decision 2026-10-01)", steel.Provenance.Notes);
 
-            // Runbook C8: beam bending with S355J2 — E and fy come from the record.
-            var outcome = await host.CalculationModuleService!.RunAsync(new CalculationModuleRequest(
-                BeamDeflectionCalculationDefinition.Id,
-                [
-                    new("MaterialPin", RecordId: MaterialSeed.S355J2),
-                    new("Support", Choice: nameof(BeamSupport.SimplySupported)),
-                    new("Loading", Choice: nameof(BeamLoading.PointLoad)),
-                    new("Load", "10", "kN"),
-                    new("Span", "2000", "mm"),
-                    new("SecondMomentOfArea", "2000000", "mm^4"),
-                    new("ExtremeFibreDistance", "50", "mm"),
-                    new("DeflectionLimit", "8", "mm"),
-                ]));
+            // Runbook C8: beam bending with S355J2 — E comes from the record. ADR-0167: superseded the legacy Calculators
+            // run with the beam worksheet and its reference fill; the deflection is the same 3.96825 mm.
+            var beam = host.CalcCatalogue!.Get(Tempest.Calc.Structural.BeamFormulasCalculator.Id);
+            var fill = await new Tempest.Calc.Library.CalcReferenceFill(host.Materials!, host.Fasteners!, host.Bearings!)
+                .FillAsync(beam.Template, "Materials", MaterialSeed.S355J2);
+            Assert.Empty(fill.Problems);
+            var modulus = Assert.Single(fill.Values, v => v.Symbol == "E");
+            Assert.Equal(Tempest.Calc.Sheets.CalcProvenanceKind.Reference, modulus.Provenance!.Kind);
+            Assert.Contains(MaterialSeed.S355J2, modulus.Provenance.Reference, StringComparison.Ordinal);
 
-            Assert.True(outcome.WasPerformed, outcome.Reason);
-            Assert.Contains(MaterialSeed.S355J2, outcome.Run!.ReferencedMaterialIds);
-            Assert.Contains(outcome.Run.Results, r => r.Label == "Maximum deflection" && r.Display == "3.96825 mm");
+            var inputs = Tempest.Calc.Sheets.CalcTemplateHasher.DefaultInputs(beam.Template)
+                .With(Tempest.Calc.Sheets.CalcInputValue.Choice("case", Tempest.Calc.Structural.BeamFormulasCalculator.SsPoint))
+                .With(Tempest.Calc.Sheets.CalcInputValue.Quantity("L", 2000, "mm"))
+                .With(Tempest.Calc.Sheets.CalcInputValue.Quantity("I", 2_000_000, "mm^4"))
+                .With(Tempest.Calc.Sheets.CalcInputValue.Quantity("P", 10, "kN"))
+                .With(Tempest.Calc.Sheets.CalcInputValue.Quantity("a", 1000, "mm"));
+
+            foreach (var value in fill.Values)
+                inputs = inputs.With(value);
+
+            var run = host.CalcInstances!.Preview(beam.Reference, inputs);
+            Assert.False(run.IsBlocked, string.Join(" ", run.Blocks.Select(b => b.Message)));
+            Assert.Equal(3.96825e-3, run.OutputSi("delta_max"), 8);
 
             // And the bracket check on 6082-T6 runs without a manual release.
             var check = await host.BracketCheck!.CheckAsync(new GovernedBracketCheckRequest(

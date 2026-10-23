@@ -458,6 +458,14 @@ calculation registered without one, its message telling the author the
 calculation is not complete without its reference diagram. A form an
 engineer cannot picture is a form an engineer can fill in wrongly.
 
+Since v0.27.0 (ADR-0167, D-41) the rule covers every worksheet template:
+`CalcDiagrams.All` holds exactly one diagram per template in
+`CalcCalculatorComposition.All()`, each shape bound to a worksheet input
+symbol, drawn beside the worksheet form and redrawn as the inputs change;
+`CalcDiagramsTests.Every_Template_Has_Exactly_One_Diagram_And_No_Diagram_Is_Orphaned`
+enforces it, and a choice that selects drawings must have one for each of
+its members.
+
 ## What This Document Does Not Cover
 
 - **Discipline-specific engineering principles** (a structural

@@ -78,7 +78,7 @@ Run at the end of each build phase (§4) and again in Phase 7. Findings: ID, sev
 | Y8-03 | Info | `LegacyCalculationMigration.MigrateAsync` | One instance read per legacy record on every start-up (idempotence check). | Upgrade test. | Accepted: record counts are hundreds, not millions; a migration marker is unnecessary until measured. | Closed |
 | Y8-04 | Low | `ColumnBucklingCalculator.Run` | The slenderness block formats λ with a .NET format string rather than `CalcValue.FormatNumber`, the convention every other sheet message uses. | Code read. | Fixed after the Phase 1 gate (same output under invariant globalization). | Fixed |
 | Y8-05 | Info | `SpecHandArithmeticTests` | Spec arithmetic is generated from stored sheets; a template change now needs three write passes (golden, worked examples, spec), in that order, because the spec reads the sheet the worked examples wrote. | Two drift failures during Phase 1, both caught by the test. | Documented in `docs/worked-examples/README.md` regeneration line. | Closed |
-| Y8-06 | Info | Archives | A migrated record has no project and no register entry, so nothing in the Desktop lists it yet; the coordinator opens it by Id. | `ALegacyArchive_IsShownReadOnly_…`. | Phase 4 (Desktop retirement) lists archives where the legacy Calculators surface listed records. | Open → Phase 4 |
+| Y8-06 | Info | Archives | A migrated record has no project and no register entry, so nothing in the Desktop lists it yet; the coordinator opens it by Id. | `ALegacyArchive_IsShownReadOnly_…`. | Phase 4: the worksheet catalogue lists archives under their own node, newest first, capped at 500 (`Archives_AreListedUnderTheirOwnNode…`). | Fixed |
 
 ## v0.27.0 Phase 2 — mechanical ports (2026-10-23)
 
@@ -98,4 +98,13 @@ Run at the end of each build phase (§4) and again in Phase 7. Findings: ID, sev
 | Y10-02 | Info | `PlaneWallCalculator` | No pass/fail check: the result is a heat flow. No condensation (dew-point) check on the cold surface; the single-pane example's −2.2 °C inner surface would frost. | Worked example `single-pane-window`. | Stated in the spec's limitations and the example's notes. | Closed |
 | Y10-03 | Low | Phase 2 ports | Phase 3's templates have behaviour tests (properties, blocks, warnings); the seven Phase 2 ports have known answers and the shared hostile-input and template tests only. | `tests/Tempest.Calc.Tests.Calculators/Mechanical` has no port tests. | `MechanicalPortTests`: 26 tests over all seven (linearity, limit cases, Tresca/von Mises relations, gap and restraint limits, UG-27 inverse, Miner additivity, every block). | Fixed |
 | Y10-04 | Info | Known answers | All nine legacy hand calculations of the three ported modules reproduce to five significant figures, including the exactly-on-limit chain (u = 1, margin 0). | 530 Calculators tests. | None. | Closed |
+
+## v0.27.0 Phase 4 — Desktop retirement (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y11-01 | High | Worksheet form | The legacy calculators drew an input-bound reference diagram for every calculation (ADR-0158, Principle 33); the worksheet form drew none, so retiring the legacy surface would have lost it. | Found while retiring: `CalculationDiagramViewTests` exercised the diagram only through the legacy form. | D-41: retirement parked; `CalcDiagrams` (27 templates, 60 drawings) and `CalcDiagramReader`; the legacy form's behaviours (beside or above, focus both ways, row marking, theme) moved to the worksheet form and its 11 tests ported. Every drawing rendered and checked for overlapping labels. | Fixed |
+| Y11-02 | Low | `CalcSheetView` | The governing-check "Go to step" button had no automation name; the coverage scan never reached the Worksheets node because Calculators stood first. | `AutomationNameCoverageTests` after the node change. | Named. | Fixed |
+| Y11-03 | Info | Calculation register | Calculation objects created by the retired surface lose their Re-run command; their runs are archives (read-only). | ADR-0167 Amendment 1. | Accepted: re-enter the inputs in the worksheet template for a run with working. | Closed |
+| Y11-04 | Info | Real-shell journey | `MainJourney.Calculators` now drives Worksheets; it needs a display and was not run in this container. | Code change only. | Run on the owner's Windows machine with the runbook. | Open → owner |
 
