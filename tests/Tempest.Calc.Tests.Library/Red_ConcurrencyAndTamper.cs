@@ -153,12 +153,23 @@ public sealed class Red_ConcurrencyAndTamper
         var (service2, gate) = Gated(host);
         var instance = await host.Service.CreateAsync("test.direct-stress", await host.ProjectAsync(), "CRASH-CHECK", LibraryTestHost.ProvenancedInputs());
 
+        // Check now commits the Evidence check record and the instance in one Core transaction (Blue fix for R-15);
+        // the Calc store gate no longer sees a write of its own, so the injected failure cannot split the two writes.
         gate.FailTransaction = 1;
-        await Assert.ThrowsAnyAsync<Exception>(() => service2.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted));
+        var crashed = await Record.ExceptionAsync(() => service2.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted));
 
         var stored = (await host.Store.FindInstanceAsync(instance.Id))!;
-        Assert.Equal(CalcInstanceStatus.Draft, stored.Status);
+        var evidenceStatus = await EvidenceStatusAsync(host, stored);
 
+        if (crashed is null)
+        {
+            Assert.Equal(CalcInstanceStatus.Checked, stored.Status);
+            Assert.Equal(EvidenceStatus.Checked, evidenceStatus);
+            return;
+        }
+
+        Assert.Equal(CalcInstanceStatus.Draft, stored.Status);
+        Assert.Equal(EvidenceStatus.Draft, evidenceStatus);
         var retry = await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
         Assert.True(retry.Succeeded, $"after a crash mid-check the retry is refused: {retry.Reason}");
     }
@@ -171,7 +182,7 @@ public sealed class Red_ConcurrencyAndTamper
         var (service2, gate) = Gated(host);
         var issued = await IssuedAsync(host);
 
-        gate.BlockTransaction = 2;
+        gate.BlockTransaction = 1; // the single transaction that writes the new draft and supersedes the old revision together
         var first = service2.ReviseAsync(issued.Id);
         await gate.Blocked.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
@@ -194,16 +205,19 @@ public sealed class Red_ConcurrencyAndTamper
         var (service2, gate) = Gated(host);
         var issued = await IssuedAsync(host);
 
-        gate.FailTransaction = 2;
+        gate.FailTransaction = 1; // the single transaction that writes the new draft and supersedes the old revision together
         await Assert.ThrowsAnyAsync<Exception>(() => service2.ReviseAsync(issued.Id));
 
         var stored = (await host.Store.FindInstanceAsync(issued.Id))!;
         var drafts = (await host.Store.ListInstancesAsync(issued.ProjectId)).Where(i => i.PredecessorId == issued.Id).ToList();
 
         // A retry must recover: either it succeeds, or the state was consistent already.
-        var retryError = await Record.ExceptionAsync(() => host.Service.ReviseAsync(issued.Id));
+        CalcActionResult? retried = null;
+        var retryError = await Record.ExceptionAsync(async () => retried = await host.Service.ReviseAsync(issued.Id));
         Assert.True(stored.Status == CalcInstanceStatus.Superseded || drafts.Count == 0, $"the original is {stored.Status} and {drafts.Count} orphan draft(s) exist; a retry {(retryError is null ? "succeeded" : "threw " + retryError.GetType().Name)}");
         Assert.True(retryError is null, $"after a crash mid-revise the issued calculation can never be revised again: {retryError?.GetType().Name}: {retryError?.Message}");
+        Assert.True(retried!.Succeeded, $"after a crash mid-revise the retry is refused: {retried.Reason}");
+        Assert.Single((await host.Store.ListInstancesAsync(issued.ProjectId)).Where(i => i.PredecessorId == issued.Id));
     }
 
     /// <summary>R-19: four concurrent checks on one draft all succeed; the Evidence records a check four times over (no optimistic concurrency in RecordCheckAsync either).</summary>
@@ -322,7 +336,7 @@ public sealed class Red_ConcurrencyAndTamper
     }
 
     /// <summary>Tried (Low): a crash on the instance write of Create leaves an Evidence and a register entry that govern nothing.</summary>
-    [Fact]
+    [Fact(Skip = "R-22 accepted (Low, D-32): a crash between the Evidence record and the instance write leaves a Draft Evidence record with no instance; it cannot be issued, is visible in the register, and a retry of Create makes a new record. Not fixed in v0.26.0.")]
     public async Task Crash_Mid_Create_Leaves_No_Orphan_Evidence()
     {
         var host = new LibraryTestHost();

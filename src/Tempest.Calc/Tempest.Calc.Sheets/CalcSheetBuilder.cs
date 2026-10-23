@@ -25,8 +25,8 @@ public static class CalcSheetBuilder
 
             var shown = value ?? DefaultValue(spec);
             var unit = spec.Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? (shown.Unit ?? spec.DefaultUnit) : string.Empty;
-            var source = shown.Provenance?.ToString() ?? (value is null ? "default" : "manual");
-            inputRows.Add(new CalcSheetInputRow(spec.Symbol, spec.Description, shown.ValueText, unit, source, spec.RangeText));
+            var source = Truncate(shown.Provenance?.ToString() ?? (value is null ? "default" : "manual"));
+            inputRows.Add(new CalcSheetInputRow(spec.Symbol, spec.Description, Truncate(shown.ValueText), unit, source, spec.RangeText));
 
             if (shown.Provenance is { Kind: CalcProvenanceKind.Assumption } p)
                 assumptions.Add(new CalcAssumption($"{spec.Symbol} ({spec.Description}) is taken as {shown.ValueText}{(unit.Length > 0 ? " " + unit : string.Empty)}.", p.Reference));
@@ -49,4 +49,7 @@ public static class CalcSheetBuilder
         CalcInputKind.Boolean => new CalcInputValue(spec.Symbol, Flag: spec.Default is { } d && d != 0),
         _ => new CalcInputValue(spec.Symbol, Number: spec.Default, Unit: spec.DefaultUnit.Length > 0 ? spec.DefaultUnit : null),
     };
+
+    /// <summary>An entered value longer than the text cap is shown cut (R-06: a blocked draft must not carry a megabyte of text).</summary>
+    private static string Truncate(string s) => s.Length > CalcInputValidator.MaxTextLength ? s[..CalcInputValidator.MaxTextLength] + "…" : s;
 }

@@ -6,3 +6,4 @@
 2026-10-23 12:30 UTC | phase-3 merged | S1–S3 (4 templates), 66 new calculator tests, 8 worked examples + PDFs; Desktop 1,172/0; lock files updated | Calc 591/0 (Calculators 154)
 2026-10-23 14:10 UTC | phase-4 merged | B1–B3 (3 templates), 53 new calculator tests, 6 worked examples + PDFs; Desktop 1,178/0 | Calc 644/0 (Calculators 207)
 2026-10-23 16:40 UTC | phase-5 merged; phase-6 | E1–E3 merged (Desktop 1,184/0); Phase 6: SEC-05 concurrent-issue guard (Core+Library), Green G-01…G-04 fixes, frame band-overflow fix, LF sheets, Body-font subsetting (Windows CI PDFs 650 KB) | Core 7,221/0, Calc 669/0, Desktop docs+sheets 150/0
+2026-10-23 18:30 UTC | phase-6 (Red/Blue) | Red 138 PoCs → 23 findings; Blue fixed 22 (R-22 accepted D-32); PoCs kept as regression tests; Purple verified; D-29…D-33 | Core 7,221/0, Engine 384/0, Sheets 93/0, Library 42/0 (+1 skip), Calculators 328/0, Desktop 1,191/0

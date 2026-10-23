@@ -48,15 +48,15 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
     private ReadOnlyMemory<byte> Finish(List<DocumentTemplate.PagePlan> pages, CalcSheet sheet)
     {
         var identity = IdentityProvider?.Invoke() ?? OrganisationIdentity.TempestDefaults;
-        DocumentTemplate.AppendFooters(pages, identity, $"{sheet.Footer.TemplateReference} · {sheet.Footer.ContentHash} · {sheet.Footer.EngineVersion}");
+        DocumentTemplate.AppendFooters(pages, identity, $"{T(sheet.Footer.TemplateReference, 120)} · {T(sheet.Footer.ContentHash, 80)} · {T(sheet.Footer.EngineVersion, 40)}");
 
         var metadata = new SKDocumentPdfMetadata
         {
-            Title = $"{sheet.Header.CalcId} — {sheet.Header.Title}",
-            Author = sheet.Header.Author,
+            Title = $"{T(sheet.Header.CalcId, 120)} — {T(sheet.Header.Title)}",
+            Author = T(sheet.Header.Author),
             Subject = "Calculation sheet",
-            Creator = sheet.Footer.ApplicationVersion ?? "TempestOS",
-            Producer = sheet.Footer.ApplicationVersion ?? "TempestOS",
+            Creator = T(sheet.Footer.ApplicationVersion, 80, "TempestOS"),
+            Producer = T(sheet.Footer.ApplicationVersion, 80, "TempestOS"),
             Creation = (sheet.Header.IssuedAt ?? sheet.Footer.TestRunAt ?? DateTimeOffset.UnixEpoch).UtcDateTime,
             Modified = (sheet.Header.IssuedAt ?? sheet.Footer.TestRunAt ?? DateTimeOffset.UnixEpoch).UtcDateTime,
         };
@@ -69,14 +69,14 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         var h = sheet.Header;
         var status = h.Status.ToString().ToUpperInvariant();
 
-        DocumentTemplate.AddHeaderBand(state, measure, $"CALCULATION SHEET — {status}", $"{h.CalcId}  ·  Revision {h.Revision}  ·  {Date(h.IssuedAt ?? h.CheckedAt ?? h.AuthoredAt)}");
+        DocumentTemplate.AddHeaderBand(state, measure, $"CALCULATION SHEET — {status}", $"{T(h.CalcId, 120)}  ·  Revision {T(h.Revision, 40)}  ·  {Date(h.IssuedAt ?? h.CheckedAt ?? h.AuthoredAt)}");
         DocumentTemplate.AddGap(state, 4f);
-        Line(state, measure, $"Project: {h.Project}");
-        Line(state, measure, $"Title: {h.Title}");
-        Line(state, measure, $"Status: {status}    Author: {h.Author} ({Date(h.AuthoredAt)})    Checker: {h.Checker ?? "—"} ({Date(h.CheckedAt)})    Issued: {Date(h.IssuedAt)}");
+        Line(state, measure, $"Project: {T(h.Project)}");
+        Line(state, measure, $"Title: {T(h.Title)}");
+        Line(state, measure, $"Status: {status}    Author: {T(h.Author)} ({Date(h.AuthoredAt)})    Checker: {T(h.Checker, MaxFieldChars, "—")} ({Date(h.CheckedAt)})    Issued: {Date(h.IssuedAt)}");
 
         if (h.IssueReference is { Length: > 0 } || h.Client is { Length: > 0 })
-            Line(state, measure, $"Issue: {h.IssueReference ?? "—"}    Client: {h.Client ?? "—"}");
+            Line(state, measure, $"Issue: {T(h.IssueReference, MaxFieldChars, "—")}    Client: {T(h.Client, MaxFieldChars, "—")}");
 
         DocumentTemplate.AddGap(state, 4f);
         DocumentTemplate.AddRule(state);
@@ -87,7 +87,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             DocumentTemplate.AddTable(
                 state, measure, ["#", "Calc", "Title", "Rev", "Status", "Governing"],
                 [W(0.05f), W(0.18f), W(0.35f), W(0.07f), W(0.12f), W(0.23f)],
-                [.. index.Select(r => new[] { r.Number.ToString(CultureInfo.InvariantCulture), r.CalcId, r.Title, r.Revision, r.Status, r.Governing ?? "—" })],
+                [.. index.Select(r => new[] { r.Number.ToString(CultureInfo.InvariantCulture), CalcSheetTextRenderer.Clean(r.CalcId), CalcSheetTextRenderer.Clean(r.Title), CalcSheetTextRenderer.Clean(r.Revision), CalcSheetTextRenderer.Clean(r.Status), CalcSheetTextRenderer.Clean(r.Governing ?? "—") })],
                 [SKTextAlign.Right, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left]);
             DocumentTemplate.AddGap(state, 6f);
         }
@@ -98,7 +98,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             DocumentTemplate.AddTable(
                 state, measure, ["Rev", "Date", "By", "Description"],
                 [W(0.08f), W(0.16f), W(0.22f), W(0.54f)],
-                [.. revisions.Select(r => new[] { r.Revision, Date(r.Date), r.Author, r.Description })],
+                [.. revisions.Select(r => new[] { T(r.Revision, 40), Date(r.Date), T(r.Author), T(r.Description) })],
                 [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left]);
             DocumentTemplate.AddGap(state, 6f);
         }
@@ -122,7 +122,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             DocumentTemplate.AddTable(
                 state, measure, ["Symbol", "Description", "Value", "Unit", "Source", "Valid range"],
                 [W(0.12f), W(0.30f), W(0.12f), W(0.08f), W(0.22f), W(0.16f)],
-                [.. sheet.Inputs.Select(i => new[] { i.Symbol, i.Description, i.Value, i.Unit, i.Source, i.ValidRange })],
+                [.. sheet.Inputs.Select(i => new[] { T(i.Symbol), T(i.Description), T(i.Value), T(i.Unit), T(i.Source), T(i.ValidRange) })],
                 [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left]);
             DocumentTemplate.AddGap(state, 6f);
         }
@@ -153,7 +153,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
                 {
                     // The clause reference sits in the right margin of the formula line.
                     var last = state.Page.Texts[^1];
-                    state.Page.Texts.Add(new DocumentTemplate.TextRun(state.ContentRight, last.Y, s.Clause, DocumentTemplate.CaptionSize, false, SKTextAlign.Right, DocumentTemplate.Indigo600, DocumentFontRole.Display));
+                    state.Page.Texts.Add(new DocumentTemplate.TextRun(state.ContentRight, last.Y, T(s.Clause, 120), DocumentTemplate.CaptionSize, false, SKTextAlign.Right, DocumentTemplate.Indigo600, DocumentFontRole.Display));
                 }
 
                 if (!string.Equals(s.Substitution, s.Formula, StringComparison.Ordinal))
@@ -174,7 +174,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             DocumentTemplate.AddTable(
                 state, measure, ["Symbol", "Value", "Description"],
                 [W(0.18f), W(0.27f), W(0.55f)],
-                [.. sheet.Outputs.Select(o => new[] { o.Symbol, o.ValueText, o.Description })],
+                [.. sheet.Outputs.Select(o => new[] { T(o.Symbol), T(o.ValueText), T(o.Description) })],
                 [SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left]);
             DocumentTemplate.AddGap(state, 6f);
         }
@@ -192,9 +192,9 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
                 [W(0.09f), W(0.29f), W(0.16f), W(0.16f), W(0.12f), W(0.18f)],
                 [.. sheet.Checks.Select(c => new[]
                 {
-                    c.Passed ? "PASS" : "FAIL", c.Name, c.DemandText, c.CapacityText,
+                    c.Passed ? "PASS" : "FAIL", T(c.Name), T(c.DemandText), T(c.CapacityText),
                     double.IsInfinity(c.Utilisation) ? "—" : Tempest.Calc.Engine.Values.CalcValue.FormatNumber(c.Utilisation, 3),
-                    c.Clause ?? string.Empty,
+                    T(c.Clause),
                 })],
                 [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Left]);
         }
@@ -214,14 +214,31 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         DocumentTemplate.AddGap(state, 6f);
         DocumentTemplate.AddHeading(state, measure, "8. Verification");
         var f = sheet.Footer;
-        Line(state, measure, $"Template {f.TemplateReference}    Content hash {f.ContentHash}    Engine {f.EngineVersion}", DocumentTemplate.CaptionSize, DocumentFontRole.Mono);
-        Line(state, measure, $"Known-answer cases passed {f.KnownAnswerPassed}/{f.KnownAnswerTotal}    Test run {Date(f.TestRunAt, true)}    {f.ApplicationVersion ?? string.Empty}", DocumentTemplate.CaptionSize, DocumentFontRole.Mono);
+        Line(state, measure, $"Template {T(f.TemplateReference, 120)}    Content hash {T(f.ContentHash, 80)}    Engine {T(f.EngineVersion, 40)}", DocumentTemplate.CaptionSize, DocumentFontRole.Mono);
+        Line(state, measure, $"Known-answer cases passed {f.KnownAnswerPassed}/{f.KnownAnswerTotal}    Test run {Date(f.TestRunAt, true)}    {T(f.ApplicationVersion, 80)}", DocumentTemplate.CaptionSize, DocumentFontRole.Mono);
     }
 
     private static float W(float fraction) => DocumentTemplate.ContentWidth * fraction;
 
     private static void Line(DocumentTemplate.LayoutState state, SKPaint measure, string text, float size = DocumentTemplate.BodySize, DocumentFontRole fontRole = DocumentFontRole.Body, SKColor? color = null) =>
-        DocumentTemplate.AddWrappedLine(state, measure, CalcSheetTextRenderer.Clean(text), size, bold: false, color: color, fontRole: fontRole);
+        DocumentTemplate.AddWrappedLine(state, measure, T(text, MaxLineChars), size, bold: false, color: color, fontRole: fontRole);
+
+    /// <summary>A field of the sheet holds at most this many characters in the PDF; the sheet builder caps values and provenance, this caps everything else (R-05, R-24).</summary>
+    private const int MaxFieldChars = 400;
+
+    /// <summary>One wrapped paragraph holds at most this many characters; past it the file and the page count stop growing with the input.</summary>
+    private const int MaxLineChars = 4_000;
+
+    /// <summary>Every string drawn goes through here: control, separator and format characters are stripped and the text is cut at <paramref name="max"/> with an ellipsis.</summary>
+    private static string T(string? text, int max = MaxFieldChars, string whenEmpty = "")
+    {
+        var clean = CalcSheetTextRenderer.Clean(text);
+
+        if (clean.Length == 0)
+            return whenEmpty;
+
+        return clean.Length > max ? clean[..max] + "…" : clean;
+    }
 
     private static string Date(DateTimeOffset? d, bool withTime = false) =>
         d is null ? "—" : d.Value.UtcDateTime.ToString(withTime ? "yyyy-MM-dd HH:mm 'UTC'" : "yyyy-MM-dd", CultureInfo.InvariantCulture);

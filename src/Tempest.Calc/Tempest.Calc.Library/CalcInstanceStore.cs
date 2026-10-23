@@ -67,16 +67,46 @@ public sealed class CalcInstanceStore
         return list.OrderByDescending(i => i.UpdatedAt).ToList();
     }
 
-    /// <summary>Writes a draft or checked instance in its own transaction. Refuses to overwrite an issued one.</summary>
-    public async Task SaveInstanceAsync(CalcInstance instance, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Writes a draft or checked instance in its own transaction. Refuses to
+    /// overwrite an issued one. With <paramref name="expectedUpdatedAt"/>,
+    /// the stored copy is re-read under the transaction and the write is
+    /// refused (<see cref="CalcConcurrencyException"/>) when someone else
+    /// changed it since the caller read it (R-15).
+    /// </summary>
+    public Task SaveInstanceAsync(CalcInstance instance, CancellationToken cancellationToken = default) => SaveInstanceAsync(instance, expectedUpdatedAt: null, cancellationToken);
+
+    public async Task SaveInstanceAsync(CalcInstance instance, DateTimeOffset? expectedUpdatedAt, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(instance);
-        var existing = await FindInstanceAsync(instance.Id, cancellationToken).ConfigureAwait(false);
+        await _store.ExecuteInTransactionAsync((tx, token) => WriteGuardedAsync(tx, instance, expectedUpdatedAt, token), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Writes several instances in one transaction with the same guards (Revise: the new draft and the superseded old one).</summary>
+    public async Task SaveInstancesAsync(IReadOnlyList<(CalcInstance Instance, DateTimeOffset? ExpectedUpdatedAt)> instances, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(instances);
+        await _store.ExecuteInTransactionAsync(async (tx, token) =>
+        {
+            foreach (var (instance, expected) in instances)
+                await WriteGuardedAsync(tx, instance, expected, token).ConfigureAwait(false);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Re-reads the stored instance under the transaction, enforces immutability and the optimistic version, then writes.</summary>
+    public static async Task WriteGuardedAsync(IPersistenceTransaction transaction, CalcInstance instance, DateTimeOffset? expectedUpdatedAt, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+        ArgumentNullException.ThrowIfNull(instance);
+        var existing = Deserialise<CalcInstance>(await transaction.ReadAsync(InstanceCollection, Key(instance.ProjectId, instance.Id), cancellationToken).ConfigureAwait(false));
 
         if (existing is { IsImmutable: true } && !(existing.Status == CalcInstanceStatus.Issued && instance.Status == CalcInstanceStatus.Superseded && SameIssuedContent(existing, instance)))
             throw new CalcInstanceImmutableException(instance.Id, existing.Status);
 
-        await _store.ExecuteInTransactionAsync((tx, token) => WriteInstanceAsync(tx, instance, token), cancellationToken).ConfigureAwait(false);
+        if (expectedUpdatedAt is { } expected && existing is not null && existing.UpdatedAt != expected)
+            throw new CalcConcurrencyException($"Calculation '{instance.Name}' was changed by someone else at {existing.UpdatedAt:O}; reload it and try again.");
+
+        await WriteInstanceAsync(transaction, instance, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -185,8 +215,9 @@ public sealed class CalcInstanceStore
         return keys.FirstOrDefault(k => k.EndsWith(suffix, StringComparison.Ordinal));
     }
 
-    private static bool SameIssuedContent(CalcInstance a, CalcInstance b) =>
-        a.Inputs.Count == b.Inputs.Count && a.Outputs.Count == b.Outputs.Count && a.Issue == b.Issue && a.IssuedAt == b.IssuedAt && a.EvidenceId == b.EvidenceId;
+    /// <summary>The superseded mark may change the status and the update time of an issued record and nothing else: the whole serialised record is compared (R-14).</summary>
+    private static bool SameIssuedContent(CalcInstance issued, CalcInstance superseded) =>
+        string.Equals(Serialise(issued with { Status = superseded.Status, UpdatedAt = superseded.UpdatedAt }), Serialise(superseded), StringComparison.Ordinal);
 }
 
 /// <summary>Thrown when a write would change an issued or superseded instance or pack.</summary>
@@ -218,4 +249,14 @@ public sealed class CalcConcurrentIssueException : InvalidOperationException
     public CalcConcurrentIssueException() { }
 
     public CalcConcurrentIssueException(string message, Exception innerException) : base(message, innerException) { }
+}
+
+/// <summary>Raised inside a write transaction when the stored instance changed since the caller read it (optimistic concurrency); the caller reports a refusal.</summary>
+public sealed class CalcConcurrencyException : InvalidOperationException
+{
+    public CalcConcurrencyException(string message) : base(message) { }
+
+    public CalcConcurrencyException() { }
+
+    public CalcConcurrencyException(string message, Exception innerException) : base(message, innerException) { }
 }

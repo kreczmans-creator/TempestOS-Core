@@ -16,6 +16,38 @@ Inputs: `security-review.md` (SEC-01…SEC-05), `green-team.md` (G-01…G-14), `
 | PERF-1 — frame band overflow | Free DOFs numbered in the reordered node sequence; band overflow now throws instead of corrupting; 510-element grid solves in < 1 s. | `FrameSolver.cs` | `PerformanceBudgetTests`, `FrameTests` |
 | Hostile text in sheets | Every template run with formula prefixes, markup, control characters, SQL text, 5 k strings and bidi overrides in each free-text input and text column. | — | `HostileInputTests` (16 templates × 6 strings) |
 
+## Red findings (R-01…R-24) — mitigations
+
+Red's proof-of-concept tests stay in the suite as the regression tests (`Red_ImportAttacks`, `Red_EngineAttacks`, `Red_SolverAttacks`, `Red_ConcurrencyAndTamper`, `Red_PdfRendererAttacks`); the only change to a PoC is noted below.
+
+| Finding | Mitigation | Where |
+|---|---|---|
+| R-01 Medium — duplicate CSV header throws | Column map built with `TryAdd` (first column wins). | `CalcCsv.cs` |
+| R-02 Medium — quoted CSV cell escapes the field cap | `MaxFieldLength` enforced inside the quoted branch too. | `CalcCsv.cs` |
+| R-03 Medium — sign-prefixed DDE formulas | Only a cell that `double.TryParse` accepts as a whole is exempt; everything else starting with `+`/`-`/`=`/`@` is prefixed on export and refused on import. | `CalcCsv.cs` |
+| R-04 Medium — `[null]` JSON element throws | Read as `List<CalcInputValue?>`; a null element or a null table row is a block notice. | `CalcInputJson.cs` |
+| R-05 High — unbounded provenance text | `CalcProvenance.MaxReferenceLength` 200 / `MaxRevisionLength` 40 (`IsWithinLimits`), blocked by the validator and refused by `UpdateInputsAsync`; `IssueAsync` maps the document-size cap to a refusal; the PDF renderer caps every field (400 chars) and paragraph (4,000 chars) (D-31). | `InputValues.cs`, `CalcInputValidator.cs`, `CalcInstanceService.cs`, `CalcSheetPdfRenderer.cs` |
+| R-06 Medium — blocked oversized text printed whole | The sheet builder truncates the value and the provenance text in the inputs table. | `CalcSheetBuilder.cs` |
+| R-07 Low — undefined provenance kind issues | `IsSufficientToIssue` requires `Enum.IsDefined(Kind)`. | `InputValues.cs` |
+| R-08 Low — U+2028/U+2029 forge lines | `Clean` also replaces `LineSeparator`, `ParagraphSeparator` and `Format` (bidi overrides, zero-width marks). | `CalcSheetTextRenderer.cs` |
+| R-09 Medium / R-21 Medium — Monte Carlo at the engine cap overruns | `CalcRunner.MaxCalculatorSamples` = 100,000 for calculator-level Monte Carlo (the engine's 1,000,000 cap stays for direct engine use); `n_mc` hard maximum follows it (D-29). | `CalcRunner.cs`, `ToleranceStackCalculator.cs` |
+| R-10 High — variadic reducers allocate every element | `Flatten` checks the summed length against `MaxArrayElements` before copying and reduces over `double` spans, not boxed scalars. | `Evaluator.cs` |
+| R-11 High — table row without cells throws | `CalcRow.Cells` defaults null to empty; the validator blocks a null row; the runner catches `NullReferenceException`. | `InputValues.cs`, `CalcInputValidator.cs`, `CalcRunner.cs` |
+| R-12 Medium — 20,000 loads on one member | `FrameLimits.MaxLoadsPerMember` = 200 (a block names the member) (D-30). | `FrameModel.cs`, `FrameCalculator.cs` |
+| R-13 Medium — O(n·b²) factor at the node cap | `FrameLimits.MaxFactorWork` = 1.5 × 10⁹ (free × half-bandwidth²) refused before factoring; the factor polls cancellation (D-30). | `FrameSolver.cs` |
+| R-14 High — issued content rewritten under a Superseded mark | `SameIssuedContent` compares the full record except `Status`/`UpdatedAt`. | `CalcInstanceStore.cs` |
+| R-15 High — Update racing a Check; crash mid-Check | Optimistic concurrency on every instance write (`SaveInstanceAsync(instance, expectedUpdatedAt)`, `WriteGuardedAsync`); Check records the Evidence check and writes the instance in one Core transaction (`IEvidenceService.RecordCheckInOneTransactionAsync`, `Evidence.RecordCheckAsync(check, alsoWrite)` with the transaction-time re-check) (D-33). PoC re-targeted: the gate can no longer split the two writes, so it asserts the atomic outcome. | `CalcInstanceService.cs`, `CalcInstanceStore.cs`, `Evidence.cs`, `EvidenceService.cs` |
+| R-16 Medium — Revise in two transactions; duplicate escapes | New draft and Superseded mark written in one transaction (`SaveInstancesAsync`); a concurrent Revise is refused (`DuplicateBusinessIdentifierException` mapped, the register entry claimed before the draft); a retry after a crash adopts the abandoned register entry and its Draft Evidence record (`FindAbandonedRevisionAsync`) (D-33). PoCs re-targeted to the single write transaction. | `CalcInstanceService.cs` |
+| R-17 High — pack member changed after the pack check | `UpdateInputsAsync` refuses a member of a checked pack; `IssuePackAsync` refuses when any member's `UpdatedAt` is later than the pack's. | `CalcInstanceService.cs` |
+| R-18 Low — duplicate pack members | `CreatePackAsync` takes `Distinct()` ids; `IssuePackAsync` maps `CalcConcurrentIssueException` to a refusal. | `CalcInstanceService.cs` |
+| R-19 Medium — concurrent checks all succeed | The check status transition is re-verified inside the transaction (`ConcurrentCheckException` → `TransitionNotPermitted`). | `Evidence.cs`, `EvidenceService.cs` |
+| R-20 Medium — unbounded validator notices | `CalcInputValidator.MaxNoticesPerInput` = 20, then one "… and N more" notice. | `CalcInputValidator.cs` |
+| R-22 Low — orphan Evidence after a crash mid-Create | Accepted (D-32): the orphan is a Draft Evidence record and register entry that govern nothing and cannot be issued; the PoC is skipped with the justification. | — |
+| R-24 Low — PDF draws raw control characters | Every drawn string passes through `Clean` and the field/paragraph caps (`T(...)` in the renderer), including the header band, metadata, footers and every table cell. | `CalcSheetPdfRenderer.cs` |
+| R-23 Info | No change (PoC passes). | — |
+
+Worked-example `inputs.json` files are unchanged: `IsWithinLimits` is `[JsonIgnore]` so the exchange format did not move.
+
 ## Validation layer, logging, secure defaults
 
 - Validation: `CalcInputValidator` (kinds, limits, rows) → `CalcInputBinder` → calculator guards (`Block` with the symbol) → `CalcRunner` (never throws). Table text is cleaned at render and FTS index time.

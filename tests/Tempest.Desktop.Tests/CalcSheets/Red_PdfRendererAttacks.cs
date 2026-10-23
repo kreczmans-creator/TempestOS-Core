@@ -19,7 +19,7 @@ public sealed class Red_PdfRendererAttacks
         var calculator = new TestWorksheetCalculator();
         var inputs = new CalcInputSet(
         [
-            CalcInputValue.Quantity("F", 12, "kN", new CalcProvenance(CalcProvenanceKind.Drawing, new string('R', referenceLength), hostile)),
+            CalcInputValue.Quantity("F", 12, "kN", new CalcProvenance(CalcProvenanceKind.Drawing, new string('R', referenceLength), hostile.Length <= CalcProvenance.MaxRevisionLength ? hostile : hostile[..CalcProvenance.MaxRevisionLength])), // the revision cap (Blue, R-05) would otherwise block the run before the sheet is laid out
             CalcInputValue.Quantity("A", 200, "mm^2", CalcProvenance.Assumed(hostile)),
             CalcInputValue.Quantity("sigma_allow", 160, "MPa", CalcProvenance.Specification(hostile)),
             CalcInputValue.Choice("grade", "S275", CalcProvenance.Assumed(hostile)),

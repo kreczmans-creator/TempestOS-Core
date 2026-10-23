@@ -117,9 +117,26 @@ public sealed class CalcInstanceService
         if (entry is null)
             return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
 
-        var updated = instance with { Inputs = inputs.ToList(), UpdatedAt = _time.GetUtcNow() };
+        if (instance.PackId is { } packId && await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false) is { Status: not CalcInstanceStatus.Draft } pack)
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' belongs to pack '{pack.Title}', which is {pack.Status}; its inputs are frozen (R-17).", instance);
+
+        var newInputs = inputs.ToList();
+
+        if (newInputs.Any(v => v.Provenance is { } p && !p.IsWithinLimits))
+            return CalcActionResult.Refused($"A provenance reference is longer than {CalcProvenance.MaxReferenceLength} characters.", instance);
+
+        var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow() };
         updated = await RunAndSnapshotAsync(entry, updated, cancellationToken).ConfigureAwait(false);
-        await _store.SaveInstanceAsync(updated, cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await _store.SaveInstanceAsync(updated, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException || ex.Message.Contains("larger than", StringComparison.Ordinal))
+        {
+            return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
+        }
+
         return CalcActionResult.Ok(updated);
     }
 
@@ -169,19 +186,34 @@ public sealed class CalcInstanceService
         if (instance.EvidenceId is not { } evidenceId)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' has no Evidence to check.", instance);
 
-        var result = await _evidence.RecordCheckAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome, cancellationToken).ConfigureAwait(false);
+        if (outcome == CheckOutcome.Rejected)
+        {
+            var rejected = await _evidence.RecordCheckAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome, cancellationToken).ConfigureAwait(false);
+            return CalcActionResult.Refused(rejected.Succeeded ? "The checker rejected the calculation; it stays a draft." : rejected.Reason ?? "The check was refused.", instance);
+        }
+
+        // The Evidence check record and the instance's Checked mark commit together, after a
+        // transaction-time re-read of both (R-15: an Update racing this check is refused; R-19: a second check is refused).
+        var checkedAt = _time.GetUtcNow();
+        var updated = instance with { Status = CalcInstanceStatus.Checked, CheckedBy = checkerName, CheckedAt = checkedAt, UpdatedAt = checkedAt };
+        EvidenceActionResult result;
+
+        try
+        {
+            result = await _evidence.RecordCheckInOneTransactionAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome,
+                alsoWrite: (transaction, token) => CalcInstanceStore.WriteGuardedAsync(transaction, updated, instance.UpdatedAt, token),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        {
+            return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
+        }
 
         if (!result.Succeeded)
             return CalcActionResult.Refused(result.Reason ?? "The check was refused.", instance);
 
-        if (outcome == CheckOutcome.Rejected)
-            return CalcActionResult.Refused("The checker rejected the calculation; it stays a draft.", instance);
-
         var checker = result.Evidence?.Check?.CheckerIdentityId ?? checkerName;
-        var checkedAt = _time.GetUtcNow();
-        var updated = instance with { Status = CalcInstanceStatus.Checked, CheckedBy = checker, CheckedAt = checkedAt, UpdatedAt = checkedAt };
-        await _store.SaveInstanceAsync(updated, cancellationToken).ConfigureAwait(false);
-        return CalcActionResult.Ok(updated);
+        return CalcActionResult.Ok(updated with { CheckedBy = checker });
     }
 
     /// <summary>
@@ -262,7 +294,7 @@ public sealed class CalcInstanceService
             alsoWrite: (transaction, token) => CalcInstanceStore.WriteIssuedInstanceAsync(transaction, issued!, token),
             cancellationToken: cancellationToken).ConfigureAwait(false);
         }
-        catch (CalcConcurrentIssueException ex)
+        catch (InvalidOperationException ex) when (ex is CalcConcurrentIssueException || ex.Message.Contains("larger than", StringComparison.Ordinal))
         {
             return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
         }
@@ -290,17 +322,74 @@ public sealed class CalcInstanceService
         var author = _domain.ResolveCurrentPrincipalId();
         var id = Guid.NewGuid();
         var nextRevision = NextRevision(instance.Revision);
-        var evidence = await _evidence.CreateAsync(instance.ProjectId, EvidenceTitle(instance.Name, entry.Template.Title, nextRevision), EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
-        var register = await CreateRegisterEntryAsync(instance.ProjectId, $"{instance.Name} (rev {nextRevision})", evidence.Id, cancellationToken).ConfigureAwait(false);
+
+        // A revision that already exists (an earlier attempt that crashed after its Evidence was created, or a concurrent Revise) is adopted, not duplicated (R-16).
+        var existingSuccessor = (await _store.ListInstancesAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false))
+            .FirstOrDefault(i => i.PredecessorId == instance.Id && string.Equals(i.Revision, nextRevision, StringComparison.Ordinal));
+
+        if (existingSuccessor is not null)
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' already has revision {nextRevision} ({existingSuccessor.Status}).", existingSuccessor);
+
+        // An earlier attempt that crashed after the register entry (and perhaps the Evidence record) was created but before the
+        // draft was written left both behind; adopt them so the calculation can still be revised. A completed entry, or a record
+        // past Draft, belongs to a live revision and refuses.
+        var registerName = $"{instance.Name} (rev {nextRevision})";
+        var (adoptedRegister, adoptedEvidence, adoptionRefusal) = await FindAbandonedRevisionAsync(instance.ProjectId, registerName, cancellationToken).ConfigureAwait(false);
+
+        if (adoptionRefusal is not null)
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' revision {nextRevision} {adoptionRefusal}", instance);
+
+        var evidence = adoptedEvidence;
+
+        if (evidence is null)
+        {
+            try
+            {
+                evidence = await _evidence.CreateAsync(instance.ProjectId, EvidenceTitle(instance.Name, entry.Template.Title, nextRevision), EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
+            }
+            catch (DuplicateBusinessIdentifierException ex)
+            {
+                return CalcActionResult.Refused($"Calculation '{instance.Name}' revision {nextRevision} is already being created: {ex.Message}", instance);
+            }
+        }
+
+        IEngineeringObject? register;
+
+        if (adoptedRegister is not null)
+        {
+            register = adoptedRegister;
+
+            if (adoptedEvidence is null)
+                await LinkRegisterEntryAsync(register, evidence.Id, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            try
+            {
+                register = await CreateRegisterEntryAsync(instance.ProjectId, registerName, evidence.Id, cancellationToken).ConfigureAwait(false);
+            }
+            catch (DuplicateBusinessIdentifierException ex)
+            {
+                // A concurrent Revise won the register entry between the lookup above and this write; it owns revision B.
+                return CalcActionResult.Refused($"Calculation '{instance.Name}' revision {nextRevision} is already being created: {ex.Message}", instance);
+            }
+        }
 
         var next = new CalcInstance(
             id, entry.Reference, entry.ContentHash, instance.ProjectId, instance.Name, nextRevision,
             instance.Inputs, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, author, now, now, PredecessorId: instance.Id);
         next = await RunAndSnapshotAsync(entry, next, cancellationToken).ConfigureAwait(false);
 
-        // The superseded mark on the old instance changes only its status; its issued content is untouched (the store checks).
-        await _store.SaveInstanceAsync(next, cancellationToken).ConfigureAwait(false);
-        await _store.SaveInstanceAsync(instance with { Status = CalcInstanceStatus.Superseded, UpdatedAt = now }, cancellationToken).ConfigureAwait(false);
+        // The new draft and the superseded mark on the old instance commit together; the mark changes only status and time (the store checks the rest).
+        try
+        {
+            await _store.SaveInstancesAsync([(next, null), (instance with { Status = CalcInstanceStatus.Superseded, UpdatedAt = now }, instance.UpdatedAt)], cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        {
+            return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
+        }
+
         return CalcActionResult.Ok(next);
     }
 
@@ -349,6 +438,8 @@ public sealed class CalcInstanceService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
         ArgumentNullException.ThrowIfNull(instanceIds);
+
+        instanceIds = instanceIds.Distinct().ToList();
 
         if (instanceIds.Count == 0 || instanceIds.Count > CalcPack.MaxInstances)
             throw new ArgumentException($"A pack holds between 1 and {CalcPack.MaxInstances} calculations.", nameof(instanceIds));
@@ -432,6 +523,9 @@ public sealed class CalcInstanceService
             if (member.Status is CalcInstanceStatus.Superseded)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is superseded.");
 
+            if (member.UpdatedAt > pack.UpdatedAt)
+                return CalcActionResult.Refused($"Pack member '{member.Name}' changed after the pack was checked; check the pack again.");
+
             var entry = _catalogue.Find(member.TemplateReference);
 
             if (entry is null)
@@ -454,7 +548,11 @@ public sealed class CalcInstanceService
         var issuedMembers = new List<CalcInstance>();
         CalcPack? issuedPack = null;
 
-        var outcome = await _evidence.IssueInOneTransactionAsync(
+        EvidenceActionResult outcome;
+
+        try
+        {
+            outcome = await _evidence.IssueInOneTransactionAsync(
             evidenceId, issueReference, pack.Revision, client,
             renderSheetAsync: async (evidence, issuedAtUtc, token) =>
             {
@@ -503,6 +601,12 @@ public sealed class CalcInstanceService
                 await CalcInstanceStore.WritePackAsync(transaction, issuedPack!, token).ConfigureAwait(false);
             },
             cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        }
+        catch (InvalidOperationException ex) when (ex is CalcConcurrentIssueException or CalcConcurrencyException or CalcInstanceImmutableException || ex.Message.Contains("larger than", StringComparison.Ordinal))
+        {
+            return CalcActionResult.Refused(ex.Message);
+        }
 
         if (!outcome.Succeeded || issuedPack is null)
             return CalcActionResult.Refused(outcome.Reason ?? "The issue was refused.");
@@ -597,11 +701,38 @@ public sealed class CalcInstanceService
         if (created is IHasParent hasParent)
             await hasParent.MoveAsync(projectId, cancellationToken).ConfigureAwait(false);
 
-        if (created is IHasRelationships relationships)
+        await LinkRegisterEntryAsync(created, evidenceId, cancellationToken).ConfigureAwait(false);
+        return created;
+    }
+
+    private async Task LinkRegisterEntryAsync(IEngineeringObject register, Guid evidenceId, CancellationToken cancellationToken)
+    {
+        if (register is IHasRelationships relationships)
             await relationships.LinkAsync(evidenceId, DocumentedByRelationship, cancellationToken).ConfigureAwait(false);
 
-        await _evidence.SetSubjectAsync(evidenceId, created.Id, cancellationToken).ConfigureAwait(false);
-        return created;
+        await _evidence.SetSubjectAsync(evidenceId, register.Id, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Finds the register entry an earlier Revise left behind when it crashed before its draft was written (R-16), with the
+    /// Evidence record it had linked, if any. Returns a refusal reason when the entry belongs to a live revision instead.
+    /// </summary>
+    private async Task<(IEngineeringObject? Register, Evidence? Evidence, string? Refusal)> FindAbandonedRevisionAsync(Guid? projectId, string registerName, CancellationToken cancellationToken)
+    {
+        if (projectId is not { } scope || _domain.BusinessIdentifierIndex.FindConflict(RegisterKind, scope, registerName, Guid.Empty) is not { } existingId)
+            return (null, null, null);
+
+        if (await _domain.Repository.FindAsync(existingId, cancellationToken).ConfigureAwait(false) is not Calculation { Completed: false } register)
+            return (null, null, "already exists in the register as an issued calculation.");
+
+        var link = (await register.GetRelationshipsAsync(cancellationToken).ConfigureAwait(false))
+            .FirstOrDefault(r => r.SourceId == register.Id && string.Equals(r.RelationshipKind, DocumentedByRelationship, StringComparison.Ordinal));
+        var evidence = link is null ? null : await FindEvidenceAsync(link.TargetId, cancellationToken).ConfigureAwait(false);
+
+        if (evidence is not null && evidence.Status != EvidenceStatus.Draft)
+            return (null, null, $"already exists with its evidence {evidence.Status}.");
+
+        return (register, evidence, null);
     }
 
     private async Task CompleteRegisterEntryAsync(CalcInstance issued, CancellationToken cancellationToken)

@@ -58,3 +58,11 @@ Run at the end of each build phase (§4) and again in Phase 7. Findings: ID, sev
 | Y7-03 | Low | `FrameSolver` | Band overflow was silent until Phase 6 (DOF numbering in model order); now numbered in the reordered sequence and guarded. | `PerformanceBudgetTests`, `FrameTests`. | Fixed. | Closed |
 | Y7-04 | Info | API consistency | Every calculator exposes a static table/vector helper for tests and worked examples (`Table`, `Segments`, `Nodes`, `Loads`, …) and a `*Calculators.All` list; ids follow `discipline.topic`; outputs use `u_*` for utilisations. Sheet text is LF on every platform. | Template hygiene theory over 16 templates. | None. | Closed |
 | Y7-05 | Info | Documentation | 16 specs under `docs/calcs/`, 24 worked examples + 1 pack, 9 colour-team reports, security review, handover. Markdown lines added ≈ 1.6 k against ≈ 20 k code lines. | `git diff --stat`. | None. | Closed |
+
+## Phase 6/7 — Red/Blue pass (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y7-06 | Info | Red PoCs | 138 Red proof-of-concept tests kept as regression tests; three re-targeted to the one-transaction Check/Revise design (the gate they used can no longer split the writes) and one skipped with the D-32 justification. | `Red_*` files, `blue-team.md`, `purple-team.md`. | None. | Closed |
+| Y7-07 | Low | `CalcInstanceService.ReviseAsync` | Recovery after a crash mid-Revise relies on the register entry's business identifier (`"<name> (rev B)"`) being unique per project; a project-less instance (no register entry) falls back to the Evidence-title refusal. | `Crash_Mid_Revise_Leaves_No_Orphan_Draft`. | Accepted: project-less instances are a test convenience; the Desktop always creates inside a project. | Closed |
+| Y7-08 | Info | `CalcSheetPdfRenderer.T` | One helper now cleans and caps every drawn string; the text renderer's `Clean` is the single source of the character rules. | `Red_PdfRendererAttacks`. | None. | Closed |

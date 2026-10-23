@@ -53,7 +53,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             new CalcInputSpec("k", "Standard deviations per half-band (normal contributors)", CalcInputKind.Number, Default: 3, Min: 1, Max: 6, HardMin: 0.1, HardMax: 100),
             new CalcInputSpec("f_rss", "Modified-RSS factor (Bender-style)", CalcInputKind.Number, Default: 1.5, Min: 1, Max: 2, HardMin: 0.1, HardMax: 10),
             new CalcInputSpec("cpk_target", "Required C_pk", CalcInputKind.Number, Default: 1.33, Min: 1, Max: 2, HardMin: 0.01, HardMax: 10),
-            new CalcInputSpec("n_mc", "Monte Carlo samples", CalcInputKind.Number, Default: 10_000, Min: 1_000, Max: 100_000, HardMin: 1, HardMax: MonteCarlo.MaxSamples),
+            new CalcInputSpec("n_mc", "Monte Carlo samples", CalcInputKind.Number, Default: 10_000, Min: 1_000, Max: 100_000, HardMin: 1, HardMax: CalcRunner.MaxCalculatorSamples),
             new CalcInputSpec("seed", "Monte Carlo seed", CalcInputKind.Number, Default: 1, HardMin: 0, HardMax: 4_294_967_295),
             new CalcInputSpec("notation", "Drawing notation", CalcInputKind.Choice, Choices: ["BS 8888", "ASME Y14.5"], DefaultChoice: "BS 8888"),
         ],

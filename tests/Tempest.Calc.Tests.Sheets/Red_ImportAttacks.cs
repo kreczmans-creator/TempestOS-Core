@@ -67,11 +67,11 @@ public sealed class Red_ImportAttacks
     public void Csv_Export_Neutralises_Sign_Prefixed_Formulas(string payload)
     {
         var escaped = CalcCsv.Escape(payload);
-        Assert.StartsWith("'", escaped, StringComparison.Ordinal);
+        Assert.StartsWith("'", escaped.TrimStart('"'), StringComparison.Ordinal); // a cell holding quotes is itself quoted; the apostrophe sits first inside it
 
         var set = new CalcInputSet([CalcInputValue.Choice("note", payload)]);
         var csv = CalcCsv.ExportInputs(Template, set);
-        Assert.Contains("'" + payload.Split(',')[0], csv, StringComparison.Ordinal);
+        Assert.Contains("'" + payload.Split(',')[0].Split('"')[0], csv, StringComparison.Ordinal); // quotes inside a cell are doubled by CSV quoting
     }
 
     /// <summary>R-03 (import side): the same payload in a text cell must be refused on import.</summary>

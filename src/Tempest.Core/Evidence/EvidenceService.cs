@@ -234,8 +234,15 @@ public sealed class EvidenceService : IEvidenceService
     }
 
     /// <inheritdoc />
-    public async Task<EvidenceActionResult> RecordCheckAsync(
+    public Task<EvidenceActionResult> RecordCheckAsync(
         Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome,
+        CancellationToken cancellationToken = default) =>
+        RecordCheckInOneTransactionAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome, alsoWrite: null, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<EvidenceActionResult> RecordCheckInOneTransactionAsync(
+        Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome,
+        Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(checkerName);
@@ -299,7 +306,14 @@ public sealed class EvidenceService : IEvidenceService
         var recordedBy = principal?.Identity.Id ?? _context.ResolveCurrentPrincipalId();
         var check = new CheckRecord(checkerName, checkerOrganisation, checkerIdentityId, recordedBy, _time.GetUtcNow(), statement, outcome, selfCheck);
 
-        await evidence.RecordCheckAsync(check, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await evidence.RecordCheckAsync(check, alsoWrite, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ConcurrentCheckException ex)
+        {
+            return new EvidenceActionResult(EvidenceRefusal.TransitionNotPermitted, ex.Message, evidence);
+        }
 
         return new EvidenceActionResult(EvidenceRefusal.None, null, evidence);
     }

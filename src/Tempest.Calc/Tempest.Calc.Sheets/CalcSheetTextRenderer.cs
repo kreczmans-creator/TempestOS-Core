@@ -193,7 +193,11 @@ public static class CalcSheetTextRenderer
         var sb = new StringBuilder(s.Length);
 
         foreach (var c in s)
-            sb.Append(char.IsControl(c) ? ' ' : c);
+        {
+            var category = char.GetUnicodeCategory(c);
+            // Controls, line/paragraph separators and format characters (bidi overrides, zero-width marks) never reach a sheet (R-08).
+            sb.Append(char.IsControl(c) || category is System.Globalization.UnicodeCategory.LineSeparator or System.Globalization.UnicodeCategory.ParagraphSeparator or System.Globalization.UnicodeCategory.Format ? ' ' : c);
+        }
 
         return sb.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
     }

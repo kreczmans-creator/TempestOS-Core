@@ -207,26 +207,48 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
     }
 
     /// <summary>Records <paramref name="check"/> and moves <see cref="Status"/> to <see cref="EvidenceStatus.Checked"/>, as one transaction.</summary>
-    internal Task RecordCheckAsync(CheckRecord check, CancellationToken cancellationToken = default)
+    internal Task RecordCheckAsync(CheckRecord check, CancellationToken cancellationToken = default) => RecordCheckAsync(check, alsoWrite: null, cancellationToken);
+
+    /// <summary>
+    /// `v0.26.0` Phase 6 (R-15, R-19): records <paramref name="check"/> and
+    /// moves <see cref="Status"/> to <see cref="EvidenceStatus.Checked"/> in
+    /// one transaction with whatever <paramref name="alsoWrite"/> adds (a
+    /// calculation instance's own Checked mark), after re-reading the
+    /// stored status under that transaction: a second check racing this
+    /// one is refused with <see cref="ConcurrentCheckException"/> and
+    /// nothing is written.
+    /// </summary>
+    internal Task RecordCheckAsync(CheckRecord check, Func<IPersistenceTransaction, CancellationToken, Task>? alsoWrite, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(check);
 
-        return MutateTypeStateAndPersistAsync(
-            () =>
+        return MutateAndPersistAsync(
+            current =>
             {
-                var state = new Dictionary<string, string?>(StringComparer.Ordinal);
+                var state = new Dictionary<string, string?>(current.TypeState, StringComparer.Ordinal);
                 WriteJson(state, nameof(Check), check);
                 state[nameof(Status)] = EvidenceStatus.Checked.ToString();
-                return state;
+                return current with { TypeState = state };
             },
-            () =>
+            EngineeringAuditActions.StateChanged,
+            $"Checked by '{check.CheckerName}' ({check.CheckerOrganisation}): {check.Outcome}."
+            + (check.SelfCheck ? $" Checked by its own author — {Governance.SignOffPolicy.SelfApprovalNote}." : string.Empty),
+            WorkspaceChangeType.Updated,
+            cancellationToken,
+            alsoWrite: alsoWrite is null ? null : (transaction, _, token) => alsoWrite(transaction, token),
+            alsoApply: _ =>
             {
                 _check = check;
                 _status = EvidenceStatus.Checked;
             },
-            $"Checked by '{check.CheckerName}' ({check.CheckerOrganisation}): {check.Outcome}."
-            + (check.SelfCheck ? $" Checked by its own author — {Governance.SignOffPolicy.SelfApprovalNote}." : string.Empty),
-            cancellationToken);
+            verifyBeforeWrite: async (transaction, token) =>
+            {
+                var stored = await EngineeringDomain.EngineeringObjectStateStore.ReadInTransactionAsync(transaction, Id, token).ConfigureAwait(false);
+                var storedStatus = stored?.TypeState.TryGetValue(nameof(Status), out var s) == true && Enum.TryParse<EvidenceStatus>(s, out var parsed) ? parsed : Status;
+
+                if (!EvidenceStatusTransitions.IsPermitted(storedStatus, EvidenceStatus.Checked))
+                    throw new ConcurrentCheckException($"Evidence '{Id}' is {storedStatus}: another check completed first; nothing was written.");
+            });
     }
 
     /// <summary>Records <paramref name="issue"/> and moves <see cref="Status"/> to <see cref="EvidenceStatus.Issued"/>, as one transaction.</summary>
@@ -385,4 +407,14 @@ public sealed class ConcurrentIssueException : InvalidOperationException
     public ConcurrentIssueException() { }
 
     public ConcurrentIssueException(string message, Exception innerException) : base(message, innerException) { }
+}
+
+/// <summary>Raised inside the Check transaction when the stored Evidence no longer permits checking (a concurrent Check won); the transaction rolls back.</summary>
+public sealed class ConcurrentCheckException : InvalidOperationException
+{
+    public ConcurrentCheckException(string message) : base(message) { }
+
+    public ConcurrentCheckException() { }
+
+    public ConcurrentCheckException(string message, Exception innerException) : base(message, innerException) { }
 }

@@ -98,7 +98,7 @@ public sealed class FrameCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("model", "The model is incomplete or inconsistent (a missing node, a zero-length member, a load off the member).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("mechanism", "The structure is a mechanism: a non-positive stiffness pivot.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("size", "The model exceeds a cap (2,000 nodes, 4,000 elements, 50 cases).", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("size", "The model exceeds a cap (2,000 nodes, 4,000 elements, 50 cases, 200 load rows per member, factorisation work).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("summary-only", "More than 50 members or supports: per-member and per-support lines are omitted from the sheet; the extremes and envelope remain.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("large-deflection", "A deflection exceeds 1/50 of its member length: the small-displacement assumption is doubtful.", CalcNoticeSeverity.Warning),
         ],
@@ -154,11 +154,11 @@ public sealed class FrameCalculator : ICalcCalculator
         try
         {
             model = Build(c, eDefault);
-            results = FrameSolver.Solve(model);
+            results = FrameSolver.Solve(model, c.CancellationToken);
         }
         catch (FrameModelException ex)
         {
-            var rule = ex.Message.Contains("mechanism", StringComparison.Ordinal) ? "mechanism" : ex.Message.Contains("at most", StringComparison.Ordinal) ? "size" : "model";
+            var rule = ex.Message.Contains("mechanism", StringComparison.Ordinal) ? "mechanism" : ex.Message.Contains("at most", StringComparison.Ordinal) || ex.Message.Contains("too wide", StringComparison.Ordinal) || ex.Message.Contains("entries", StringComparison.Ordinal) ? "size" : "model";
             c.Block(rule, ex.Message);
             return;
         }

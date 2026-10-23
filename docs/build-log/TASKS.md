@@ -37,11 +37,12 @@
 ## Phase 6 — security (`v0.26.0/phase-6-security`)
 - [x] STRIDE + tests + analyzers + vulnerable scan; docs/reviews/security-review.md (SEC-05 High fixed: concurrent Issue guard)
 - [x] Hostile-input, concurrency, performance-budget tests; pack worked example (M2+M3+S1)
-- [ ] Phase 6 gate (full suites) and merge
+- [x] Phase 6 gate (full suites: Core 7,221, Desktop 1,191, Calc 847) and merge
 ## Phase 7 — reviews and gates (`v0.26.0/phase-7-reviews`)
 - [x] Green (219/219 recomputed; G-01…G-04 fixed), White, Orange, Blue, Purple written
-- [ ] Red (running), Black (after merge), Grey (upgrade test + Windows CI), Yellow final
+- [x] Red (R-01…R-24: 23 findings, 22 fixed, R-22 accepted D-32), Blue/Purple updated, Grey upgrade test passes
+- [ ] Black (after merge), Grey Windows CI verdict, Yellow final
 - [ ] Release notes, handover, STATUS gates, rc1 tag
-- [ ] 24 worked examples + 1 calc pack
+- [x] 24 worked examples + 1 calc pack
 - [ ] CHANGELOG, release notes, THIRD-PARTY-NOTICES, handover
 - [ ] All §10 gates; tag v0.26.0-rc1
