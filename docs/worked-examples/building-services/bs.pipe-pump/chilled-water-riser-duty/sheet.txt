@@ -1,0 +1,234 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: chilled-water-riser-duty    Revision: A
+Title: Pipe pressure drop and pump duty
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
+v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+  Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
+  Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
+  Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
+  Ref: Kell, J. Chem. Eng. Data 20(1), 1975 — Density of liquid water
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  fluid | Fluid | water |  | spec: SPEC-M-04 §3: chilled water, no glycol | any
+  T | Fluid temperature | 6 | degC | spec: SPEC-M-04 §3: 6 °C flow | 0 … 100 degC
+  Q | Design flow rate | 30 | m^3/h | spec: Schedule CHW-01 design flow | 0.01 … 100000 m^3/h
+  segments | Pipe segments in series | 3 row(s) |  | drawing: DRG-M-110 rev C | any
+  h_out | Pressure head required at the outlet | 3 | m | spec: Terminal unit: 30 kPa ≈ 3 m | 0 … 1000 m
+  v_max | Velocity limit (warning) | 2.5 | m/s | spec: CIBSE Guide C practice limit, assumed | 0.5 … 10 m/s
+  Q_pump | Pump curve: flow points | [0, 20, 40, 60] | m^3/h | spec: Pump datasheet P-01 rev 2, curve points | any
+  H_pump | Pump curve: head points | [40, 36, 24, 4] | m | spec: Pump datasheet P-01 rev 2, curve points | any
+  n_ratio | Speed ratio n₂/n₁ (affinity) | 0.9 |  | assumption: Inverter turn-down to 90 % speed. | 0.2 … 2
+  D_ratio | Impeller diameter ratio D₂/D₁ (affinity) | 1 |  | assumption: Impeller unchanged. | 0.7 … 1.1
+  eta_pump | Pump efficiency at duty (for shaft power) | 0.68 |  | spec: Pump datasheet P-01 rev 2 | 0.2 … 0.95
+  p_atm | Atmospheric pressure (NPSH) | 101.325 | kPa | assumption: Sea level. | 50 … 110 kPa
+  z_s | Static head at the pump suction (+ flooded, − lift) | 2 | m | drawing: DRG-M-110 rev C | -10 … 100 m
+  NPSH_r | NPSH required by the pump (optional) | 3 | m | spec: Pump datasheet P-01 rev 2 | 0 … 50 m
+
+3. ASSUMPTIONS
+  A1. Steady, incompressible, fully developed flow; all segments carry the full design flow in series. (Darcy–Weisbach.)
+  A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
+  A3. The system curve scales friction losses with Q² from the design flow (turbulent assumption); the static part is independent of flow. (H_sys = H_static + k Q².)
+  A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
+  A5. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 0.9. (Inverter turn-down to 90 % speed.)
+  A6. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Impeller unchanged.)
+  A7. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sea level.)
+
+4. WORKING
+  [3] rho = Kell (1975) density of water at T    « Kell 1975
+      = T = 6 °C
+      = 999.94 kg/m³
+        Density
+  [4] mu = Vogel fit μ = 0.02939 exp(507.88/(T_K − 149.3)) mPa·s
+      = T_K = 279.15 K
+      = 1.4684 mPa·s
+        Dynamic viscosity
+  [5] p_v = Hyland–Wexler saturation pressure
+      = T = 6 °C
+      = 0.93525 kPa
+        Vapour pressure (NPSH)
+  [9] v_s1 = plantroom suction: Q / (π D²/4)
+      = 30 m³/h / (π × 100² mm² / 4)
+      = 1.061 m/s
+        Velocity, plantroom suction
+  [10] Re_s1 = plantroom suction: ρ v D / μ
+      = 999.94 × 1.061 × 0.1 / 0.0014684
+      = 72253
+        Reynolds number, plantroom suction
+  [11] f_s1 = plantroom suction: Darcy friction factor
+      = Colebrook–White, 10 iterations (Swamee–Jain start 0.021152)
+      = 0.021093
+        Friction factor, plantroom suction
+  [12] f_sj_s1 = plantroom suction: Swamee–Jain check
+      = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
+      = 0.021152
+        Explicit cross-check, plantroom suction
+  [13] h_f_s1 = plantroom suction: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.021093 × (8 + 0) / 0.1 × 0.057399 + 3 × 0.057399
+      = 0.26906 m
+        Head loss, plantroom suction
+  [14] v_s2 = riser DN80: Q / (π D²/4)
+      = 30 m³/h / (π × 80² mm² / 4)
+      = 1.6579 m/s
+        Velocity, riser DN80
+  [15] Re_s2 = riser DN80: ρ v D / μ
+      = 999.94 × 1.6579 × 0.08 / 0.0014684
+      = 90316
+        Reynolds number, riser DN80
+  [16] f_s2 = riser DN80: Darcy friction factor
+      = Colebrook–White, 10 iterations (Swamee–Jain start 0.020946)
+      = 0.020849
+        Friction factor, riser DN80
+  [17] f_sj_s2 = riser DN80: Swamee–Jain check
+      = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
+      = 0.020946
+        Explicit cross-check, riser DN80
+  [18] h_f_s2 = riser DN80: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.020849 × (60 + 0) / 0.08 × 0.14014 + 8 × 0.14014
+      = 3.3123 m
+        Head loss, riser DN80
+  [19] v_s3 = index run DN65: Q / (π D²/4)
+      = 30 m³/h / (π × 65² mm² / 4)
+      = 2.5113 m/s
+        Velocity, index run DN65
+  [20] Re_s3 = index run DN65: ρ v D / μ
+      = 999.94 × 2.5113 × 0.065 / 0.0014684
+      = 111160
+        Reynolds number, index run DN65
+  [21] f_s3 = index run DN65: Darcy friction factor
+      = Colebrook–White, 9 iterations (Swamee–Jain start 0.020964)
+      = 0.020834
+        Friction factor, index run DN65
+  [22] f_sj_s3 = index run DN65: Swamee–Jain check
+      = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
+      = 0.020964
+        Explicit cross-check, index run DN65
+  [23] h_f_s3 = index run DN65: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.020834 × (45 + 6) / 0.065 × 0.32155 + 12 × 0.32155
+      = 9.1151 m
+        Head loss, index run DN65
+  [24] h_f_total = Σ h_f
+      = 3 segment(s)
+      = 12.696 m
+        Total friction and fitting loss at the design flow
+  [25] H_static = Σ dz + h_out
+      = 12 + 3
+      = 15 m
+        Static head
+  [26] H_sys = H_static + h_f_total
+      = 15 m + 12.696 m
+      = 27.696 m
+        System head at the design flow
+  [27] dp_total = rho * 9.80665 m/s^2 * h_f_total
+      = 999.94 kg/m³ × 9.80665 m/s^2 × 12.696 m
+      = 124.5 kPa
+        Friction pressure drop at the design flow
+  [28] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 999.94 kg/m³ × 9.80665 m/s^2 × 27.696 m
+      = 271.59 kPa
+        System pressure at the design flow
+  [29] P_hyd = rho * 9.80665 m/s^2 * Q * H_sys
+      = 999.94 kg/m³ × 9.80665 m/s^2 × 30 m³/h × 27.696 m
+      = 2.2633 kW
+        Hydraulic power at the design point
+  [35] Q_duty = duty flow (as entered)
+      = H_pump(Q) = H_sys(Q), bisection
+      = 31.569 m³/h
+        Duty flow as entered
+  [36] H_duty = duty head (as entered)
+      = H_sys(31.569 m³/h)
+      = 29.059 m
+        Duty head as entered
+  [37] P_shaft = ρ g Q H / η
+      = 999.94 × 9.8066 × 0.008769 × 29.059 / 0.68
+      = 3.6747 kW
+        Shaft power at duty as entered
+  [38] affinity = Q₂ = Q₁ (n₂/n₁)(D₂/D₁)³, H₂ = H₁ (n₂/n₁)²(D₂/D₁)²
+      = n₂/n₁ = 0.9, D₂/D₁ = 1
+      = "curve scaled"
+        Affinity laws applied to the pump curve
+  [39] Q_duty2 = duty flow (after the affinity shift)
+      = H_pump(Q) = H_sys(Q), bisection
+      = 26.238 m³/h
+        Duty flow after the affinity shift
+  [40] H_duty2 = duty head (after the affinity shift)
+      = H_sys(26.238 m³/h)
+      = 24.712 m
+        Duty head after the affinity shift
+  [41] P_shaft2 = ρ g Q H / η
+      = 999.94 × 9.8066 × 0.0072883 × 24.712 / 0.68
+      = 2.5972 kW
+        Shaft power at duty after the affinity shift
+  [44] h_f_suction = Σ h_f on the suction side
+      = 1 suction segment(s)
+      = 0.26906 m
+        Suction-side friction loss
+  [45] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
+      = 101.32 kPa / (999.94 kg/m³ × 9.80665 m/s^2) + 2 m − 0.26906 m − 0.93525 kPa / (999.94 kg/m³ × 9.80665 m/s^2)
+      = 11.968 m
+        NPSH available
+  [47] u_npsh = NPSH_r / NPSH_a
+      = 3 m / 11.968 m
+      = 0.25066
+        NPSH utilisation (required / available)
+  [48] v_peak = highest segment velocity
+      = 2.5113 m/s
+      = 2.5113 m/s
+        Highest velocity
+  [49] u_v = v_peak / v_max
+      = 2.5113 / 2.5
+      = 1.0045
+        Velocity utilisation
+
+5. RESULTS
+  v_s1 = 1.061 m/s    Velocity, plantroom suction
+  Re_s1 = 72253    Re, plantroom suction
+  f_s1 = 0.021093    f, plantroom suction
+  f_sj_s1 = 0.021152    f (Swamee–Jain), plantroom suction
+  h_f_s1 = 0.26906 m    h_f, plantroom suction
+  v_s2 = 1.6579 m/s    Velocity, riser DN80
+  Re_s2 = 90316    Re, riser DN80
+  f_s2 = 0.020849    f, riser DN80
+  f_sj_s2 = 0.020946    f (Swamee–Jain), riser DN80
+  h_f_s2 = 3.3123 m    h_f, riser DN80
+  v_s3 = 2.5113 m/s    Velocity, index run DN65
+  Re_s3 = 111160    Re, index run DN65
+  f_s3 = 0.020834    f, index run DN65
+  f_sj_s3 = 0.020964    f (Swamee–Jain), index run DN65
+  h_f_s3 = 9.1151 m    h_f, index run DN65
+  h_f_total = 12.696 m    Σ h_f
+  H_static = 15 m    Static head
+  H_sys = 27.696 m    System head at Q
+  dp_total = 124.5 kPa    Friction Δp
+  dp_sys = 271.59 kPa    System Δp
+  P_hyd = 2.2633 kW    Hydraulic power
+  Q_duty = 31.569 m³/h    Duty flow as entered
+  H_duty = 29.059 m    Duty head as entered
+  P_shaft = 3.6747 kW    Shaft power as entered
+  Q_duty2 = 26.238 m³/h    Duty flow after the affinity shift
+  H_duty2 = 24.712 m    Duty head after the affinity shift
+  P_shaft2 = 2.5972 kW    Shaft power after the affinity shift
+  NPSH_a = 11.968 m    NPSH available
+  v_peak = 2.5113 m/s    Highest velocity
+
+6. CHECKS (governing first)
+  FAIL  Velocity ≤ limit: 1.0045 vs 1  utilisation 1
+  PASS  NPSH_r ≤ NPSH_a: 0.25066 vs 1  utilisation 0.251
+  PASS  Duty point exists (as entered): 31.569 m³/h vs 29.059 m  utilisation 0
+  PASS  Duty point exists (after the affinity shift): 26.238 m³/h vs 24.712 m  utilisation 0
+
+7. APPLICABILITY
+  WARNING velocity: segments: index run DN65 runs at 2.5113 m/s, above the 2.5 m/s limit.
+
+8. VERIFICATION
+  Template: bs.pipe-pump@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 3/3
+  Test run: —

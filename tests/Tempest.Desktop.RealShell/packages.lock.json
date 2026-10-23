@@ -421,6 +421,12 @@
         "resolved": "1.2.0",
         "contentHash": "Rz67gJL619fSBS6omaSINUxyDuwhIxkm5mmubf7uLd5Qgi6LLKaKCha+QFP6n+Bw/UjA0vutnH4JQfYzn6ANtw=="
       },
+      "tempest.calc.buildingservices": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.calc.engine": {
         "type": "Project"
       },
@@ -476,6 +482,7 @@
           "Avalonia.Themes.Fluent": "[11.3.20, )",
           "PDFtoImage": "[4.1.1, )",
           "Svg.Skia": "[2.0.0.8, )",
+          "Tempest.Calc.BuildingServices": "[0.26.0, )",
           "Tempest.Calc.Library": "[0.26.0, )",
           "Tempest.Calc.Mechanical": "[0.26.0, )",
           "Tempest.Calc.Structural": "[0.26.0, )",

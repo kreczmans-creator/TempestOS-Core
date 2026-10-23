@@ -1,0 +1,116 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: bs.duct-sizing    Revision: A
+Title: Duct sizing
+
+1. SCOPE AND METHOD
+Sizes each duct section by the equal-friction method (a target friction rate) or the velocity method (a target velocity), rounds to standard sizes, and reports velocity, friction rate, friction and fitting losses per section and the total pressure drop along the index run, with warnings against user velocity and pressure-drop limits.
+Round: D from the target (friction: Colebrook with the air properties at T; velocity: D = √(4Q/πv)), rounded up to the next standard size. Rectangular: equivalent diameter D_e = 1.30 (ab)^0.625/(a + b)^0.25 (equal friction and capacity); flat oval: D_e = 1.55 A^0.625/P^0.25 with A = πb²/4 + b(a − b), P = πb + 2(a − b). Friction rate Δp/L = f ρ v²/(2D); fitting loss ΣC ρ v²/2; totals summed over the index-run sections.
+  Ref: ASHRAE Handbook — Fundamentals Ch. 21 — Duct design (friction chart basis, equivalent diameters, loss coefficients)
+  Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts
+  Ref: BS EN 1505 — Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions
+  Ref: BS EN 1506 — Ventilation for buildings: sheet metal air ducts and fittings with circular cross-section, dimensions
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  method | Sizing method | equal friction |  | manual | any
+  dp_target | Target friction rate (equal friction) | 1 | Pa/m | manual | 0.3 … 5 Pa/m
+  v_target | Target velocity (velocity method) | 6 | m/s | manual | 2 … 20 m/s
+  T | Air temperature | 20 | degC | manual | -20 … 60 degC
+  p_atm | Barometric pressure | 101.325 | kPa | manual | 80 … 105 kPa
+  eps | Duct roughness | 0.09 | mm | manual | 0.03 … 3 mm
+  sections | Duct sections | 1 row(s) |  | manual | any
+  v_limit | Velocity limit (warning and check) | 8 | m/s | manual | 2 … 30 m/s
+  dp_limit | Total pressure-drop limit (check) | 300 | Pa | manual | 50 … 2000 Pa
+  round_to | Round sizes up to a multiple of | 50 | mm | manual | 1 … 100 mm
+
+3. ASSUMPTIONS
+  A1. Air is dry at the stated temperature and pressure (ρ = p/(287.055 T)); viscosity by Sutherland's law. (Standard air properties.)
+  A2. Rectangular and flat-oval ducts are sized through the equivalent diameter for equal friction and capacity. (Huebscher / Heyt–Diaz relations as given in ASHRAE Fundamentals Ch. 21.)
+  A3. Fitting loss coefficients C are user-supplied (manufacturer or ASHRAE/CIBSE data, not embedded) and refer to the section's velocity pressure. (Non-negotiable: no standard tables embedded.)
+
+4. WORKING
+  [10] rho = p / (287.055 T)
+      = 101320 Pa / (287.055 × 293.15 K)
+      = 1.2041 kg/m³
+        Air density
+  [11] mu = Sutherland's law
+      = T = 293.15 K
+      = 18.133 uPa·s
+        Air dynamic viscosity
+  [12] D_s1 = main: diameter
+      = as given
+      = 400 mm
+        Diameter, main
+  [13] v_s1 = main: Q / A
+      = 1 / 0.12566
+      = 7.9577 m/s
+        Velocity, main
+  [14] Re_s1 = main: ρ v D_e / μ
+      = 1.2041 × 7.9577 × 0.4 / 0.000018133
+      = 211370
+        Reynolds number, main
+  [15] f_s1 = main: friction factor
+      = Colebrook–White
+      = 0.017137
+        Friction factor, main
+  [16] dpL_s1 = main: f ρ v² / (2 D_e)
+      = 0.017137 × 1.2041 × 7.9577² / (2 × 0.4)
+      = 1.6333 Pa/m
+        Friction rate, main
+  [17] dp_f_s1 = main: (Δp/L) L
+      = 1.6333 × 10
+      = 16.333 Pa
+        Friction loss, main
+  [18] dp_fit_s1 = main: ΣC ρ v²/2
+      = 0 × 38.125
+      = 0 Pa
+        Fitting loss, main
+  [19] dp_s1 = main: friction + fittings + equipment
+      = 16.333 + 0 + 0
+      = 16.333 Pa
+        Section loss, main (index run)
+  [20] dp_index = Σ section losses on the index run
+      = 1 section(s)
+      = 16.333 Pa
+        Index-run pressure drop
+  [21] dp_all = Σ section losses, all sections
+      = 1 section(s)
+      = 16.333 Pa
+        Sum over every section (not a path)
+  [22] v_peak = highest section velocity
+      = 
+      = 7.9577 m/s
+        Highest velocity
+  [23] u_dp = dp_index / dp_limit
+      = 16.333 / 300
+      = 0.054445
+        Pressure-drop utilisation
+  [24] u_v = v_peak / v_limit
+      = 7.9577 / 8
+      = 0.99472
+        Velocity utilisation
+
+5. RESULTS
+  D_s1 = 400 mm    D, main
+  v_s1 = 7.9577 m/s    v, main
+  Re_s1 = 211370    Re, main
+  f_s1 = 0.017137    f, main
+  dpL_s1 = 1.6333 Pa/m    Δp/L, main
+  dp_f_s1 = 16.333 Pa    Friction loss, main
+  dp_fit_s1 = 0 Pa    Fitting loss, main
+  dp_s1 = 16.333 Pa    Section loss, main
+  dp_index = 16.333 Pa    Index-run Δp
+  dp_all = 16.333 Pa    Σ all sections
+  v_peak = 7.9577 m/s    Highest velocity
+
+6. CHECKS (governing first)
+  PASS  Velocity ≤ limit: 0.99472 vs 1  utilisation 0.995
+  PASS  Index-run Δp ≤ limit: 0.054445 vs 1  utilisation 0.0544
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: bs.duct-sizing@1.0.0
+  Known-answer cases passed: 3/3

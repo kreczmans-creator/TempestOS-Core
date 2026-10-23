@@ -1,0 +1,257 @@
+[
+  {
+    "Symbol": "T",
+    "Number": 20,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Supply air 20 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "dp_limit",
+    "Number": 250,
+    "Unit": "Pa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Fan external static allowance 250 Pa",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "250"
+  },
+  {
+    "Symbol": "dp_target",
+    "Number": 1,
+    "Unit": "Pa/m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-07 \u00A75: 1 Pa/m design friction rate",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "eps",
+    "Number": 0.09,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Galvanised sheet, medium roughness (ASHRAE Ch. 21 category)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.09"
+  },
+  {
+    "Symbol": "method",
+    "Text": "equal friction",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Equal friction for a low-pressure system.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "equal friction"
+  },
+  {
+    "Symbol": "p_atm",
+    "Number": 101.325,
+    "Unit": "kPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sea level.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "101.325"
+  },
+  {
+    "Symbol": "round_to",
+    "Number": 50,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1505 / 1506 preferred sizes, 50 mm steps",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "sections",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "AHU to riser"
+          },
+          "Q": {
+            "Number": 2,
+            "Unit": "m^3/s"
+          },
+          "L": {
+            "Number": 15,
+            "Unit": "m"
+          },
+          "shape": {
+            "Text": "rectangular"
+          },
+          "a": {
+            "Number": 800,
+            "Unit": "mm"
+          },
+          "D": {},
+          "C": {
+            "Number": 0.8
+          },
+          "dp_eq": {
+            "Number": 0,
+            "Unit": "Pa"
+          },
+          "index": {
+            "Flag": true
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "riser"
+          },
+          "Q": {
+            "Number": 2,
+            "Unit": "m^3/s"
+          },
+          "L": {
+            "Number": 12,
+            "Unit": "m"
+          },
+          "shape": {
+            "Text": "round"
+          },
+          "a": {},
+          "D": {},
+          "C": {
+            "Number": 0.3
+          },
+          "dp_eq": {
+            "Number": 0,
+            "Unit": "Pa"
+          },
+          "index": {
+            "Flag": true
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "floor main"
+          },
+          "Q": {
+            "Number": 1.2,
+            "Unit": "m^3/s"
+          },
+          "L": {
+            "Number": 25,
+            "Unit": "m"
+          },
+          "shape": {
+            "Text": "rectangular"
+          },
+          "a": {
+            "Number": 500,
+            "Unit": "mm"
+          },
+          "D": {},
+          "C": {
+            "Number": 1.1
+          },
+          "dp_eq": {
+            "Number": 0,
+            "Unit": "Pa"
+          },
+          "index": {
+            "Flag": true
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "branch to VAV"
+          },
+          "Q": {
+            "Number": 0.4,
+            "Unit": "m^3/s"
+          },
+          "L": {
+            "Number": 10,
+            "Unit": "m"
+          },
+          "shape": {
+            "Text": "round"
+          },
+          "a": {},
+          "D": {},
+          "C": {
+            "Number": 0.9
+          },
+          "dp_eq": {
+            "Number": 60,
+            "Unit": "Pa"
+          },
+          "index": {
+            "Flag": true
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "other branch"
+          },
+          "Q": {
+            "Number": 0.8,
+            "Unit": "m^3/s"
+          },
+          "L": {
+            "Number": 18,
+            "Unit": "m"
+          },
+          "shape": {
+            "Text": "round"
+          },
+          "a": {},
+          "D": {},
+          "C": {
+            "Number": 1
+          },
+          "dp_eq": {
+            "Number": 60,
+            "Unit": "Pa"
+          },
+          "index": {
+            "Flag": false
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-205",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5 row(s)"
+  },
+  {
+    "Symbol": "v_limit",
+    "Number": 8,
+    "Unit": "m/s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-07 \u00A75: 8 m/s in risers",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8"
+  }
+]
