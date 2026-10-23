@@ -23,6 +23,11 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
   p_atm | Barometric pressure | 101.325 | kPa | assumption: Sea level. | 80 … 105 kPa
   eps | Duct roughness | 0.09 | mm | spec: Galvanised sheet, medium roughness (ASHRAE Ch. 21 category) | 0.03 … 3 mm
   sections | Duct sections | 5 row(s) |  | drawing: DRG-M-205 rev B | any
+  sections[1] |  | name = AHU to riser; Q = 2 m^3/s; L = 15 m; shape = rectangular; a = 800 mm; D = —; C = 0.8; dp_eq = 0 Pa; index = yes |  |  | 
+  sections[2] |  | name = riser; Q = 2 m^3/s; L = 12 m; shape = round; a = —; D = —; C = 0.3; dp_eq = 0 Pa; index = yes |  |  | 
+  sections[3] |  | name = floor main; Q = 1.2 m^3/s; L = 25 m; shape = rectangular; a = 500 mm; D = —; C = 1.1; dp_eq = 0 Pa; index = yes |  |  | 
+  sections[4] |  | name = branch to VAV; Q = 0.4 m^3/s; L = 10 m; shape = round; a = —; D = —; C = 0.9; dp_eq = 60 Pa; index = yes |  |  | 
+  sections[5] |  | name = other branch; Q = 0.8 m^3/s; L = 18 m; shape = round; a = —; D = —; C = 1; dp_eq = 60 Pa; index = no |  |  | 
   v_limit | Velocity limit (warning and check) | 8 | m/s | spec: SPEC-M-07 §5: 8 m/s in risers | 2 … 30 m/s
   dp_limit | Total pressure-drop limit (check) | 250 | Pa | spec: Fan external static allowance 250 Pa | 50 … 2000 Pa
   round_to | Round sizes up to a multiple of | 50 | mm | spec: BS EN 1505 / 1506 preferred sizes, 50 mm steps | 1 … 100 mm
@@ -291,11 +296,11 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
   v_peak = 7.0736 m/s    Highest velocity
 
 6. CHECKS (governing first)
-  PASS  Velocity ≤ limit: 0.88419 vs 1  utilisation 0.884
-  PASS  Index-run Δp ≤ limit: 0.67616 vs 1  utilisation 0.676
+  PASS  Velocity ≤ limit: u_v = 0.88419 vs u_v ≤ 1  utilisation 0.884
+  PASS  Index-run Δp ≤ limit: u_dp = 0.67616 vs u_dp ≤ 1  utilisation 0.676
 
 7. APPLICABILITY
-  No warnings.
+  WARNING input.v_target: v_target (Target velocity (velocity method)) was not entered; the template default 6 m/s is used.
 
 8. VERIFICATION
   Template: bs.duct-sizing@1.0.0

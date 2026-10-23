@@ -14,6 +14,9 @@ namespace Tempest.Desktop.Tests.CalcSheets;
 /// </summary>
 public sealed class Red_PdfRendererAttacks
 {
+    /// <summary>The CI runners scale every deadline by <c>TEMPEST_TEST_TIMEOUT_FACTOR</c> (3 on the Windows matrix); the budgets here scale the same way.</summary>
+    private static readonly double TimeoutFactor = double.TryParse(Environment.GetEnvironmentVariable("TEMPEST_TEST_TIMEOUT_FACTOR"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) && f >= 1 ? f : 1;
+
     private static CalcSheet Sheet(string hostile, int referenceLength)
     {
         var calculator = new TestWorksheetCalculator();
@@ -42,7 +45,7 @@ public sealed class Red_PdfRendererAttacks
     {
         var sw = Stopwatch.StartNew();
         var bytes = new CalcSheetPdfRenderer().Render(Sheet(hostile, 10)).ToArray();
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5), $"render took {sw.Elapsed.TotalSeconds:F1} s");
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5 * TimeoutFactor), $"render took {sw.Elapsed.TotalSeconds:F1} s");
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(bytes, 0, 4));
         Assert.True(bytes.Length < 400 * 1024, $"the sheet is {bytes.Length / 1024} KB");
         var text = PdfTextExtractor.ExtractText(bytes);
@@ -62,7 +65,7 @@ public sealed class Red_PdfRendererAttacks
     {
         var sw = Stopwatch.StartNew();
         var bytes = new CalcSheetPdfRenderer().Render(Sheet(new string('T', 200_000), 200_000)).ToArray();
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5), $"render took {sw.Elapsed.TotalSeconds:F1} s");
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5 * TimeoutFactor), $"render took {sw.Elapsed.TotalSeconds:F1} s");
         Assert.True(bytes.Length < 400 * 1024, $"the sheet is {bytes.Length / 1024} KB");
     }
 
@@ -77,7 +80,7 @@ public sealed class Red_PdfRendererAttacks
         };
         var sw = Stopwatch.StartNew();
         var bytes = new CalcSheetPdfRenderer().RenderPack(cover, Enumerable.Range(0, 50).Select(_ => Sheet("=cmd()\r\n", 1_000)).ToList()).ToArray();
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5), $"render took {sw.Elapsed.TotalSeconds:F1} s");
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5 * TimeoutFactor), $"render took {sw.Elapsed.TotalSeconds:F1} s");
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(bytes, 0, 4));
     }
 }

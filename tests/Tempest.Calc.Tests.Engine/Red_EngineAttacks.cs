@@ -13,6 +13,9 @@ namespace Tempest.Calc.Tests.Engine;
 /// </summary>
 public sealed class Red_EngineAttacks
 {
+    /// <summary>The CI runners scale every deadline by <c>TEMPEST_TEST_TIMEOUT_FACTOR</c> (3 on the Windows matrix); the budgets here scale the same way.</summary>
+    private static readonly double TimeoutFactor = double.TryParse(Environment.GetEnvironmentVariable("TEMPEST_TEST_TIMEOUT_FACTOR"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) && f >= 1 ? f : 1;
+
     private static ICalcSession Session() => CalcEngine.Instance.CreateSession();
 
     private static ICalcSession WithMillionVector()
@@ -36,7 +39,7 @@ public sealed class Red_EngineAttacks
         var ex = Record.Exception(() => s.Evaluate(expression));
         sw.Stop();
         var allocated = GC.GetTotalAllocatedBytes(true) - before;
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5), $"{function} over 64 maximal vectors took {sw.Elapsed.TotalSeconds:F1} s and allocated {allocated / 1_000_000} MB ({ex?.GetType().Name ?? "completed"})");
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5 * TimeoutFactor), $"{function} over 64 maximal vectors took {sw.Elapsed.TotalSeconds:F1} s and allocated {allocated / 1_000_000} MB ({ex?.GetType().Name ?? "completed"})");
         Assert.True(allocated < 500_000_000, $"{function} over 64 maximal vectors allocated {allocated / 1_000_000} MB before any cap applied");
     }
 

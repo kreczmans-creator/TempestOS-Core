@@ -38,7 +38,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-23 13:45 UTC
+  Test run: 2026-10-23 19:12 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -165,7 +165,7 @@ Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² −
   Content hash: 45cae33eae60ff08
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-23 13:45 UTC
+  Test run: 2026-10-23 19:12 UTC
   Application: TempestOS test
 
 
@@ -367,10 +367,10 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
   m_min = 6.5437 mm    Engagement needed
 
 6. CHECKS (governing first)
-  PASS  Yield in the working state: 0.78697 vs 1  utilisation 0.787  « VDI 2230 R8
-  PASS  Thread stripping: 0.54531 vs 1  utilisation 0.545  « VDI 2230 §5.5.5
-  PASS  Residual clamp against requirement: 0.41963 vs 1  utilisation 0.42  « VDI 2230 R7
-  PASS  Fatigue amplitude: 0.085499 vs 1  utilisation 0.0855  « VDI 2230 R9
+  PASS  Yield in the working state: u_yield = 0.78697 vs u_yield ≤ 1  utilisation 0.787  « VDI 2230 R8
+  PASS  Thread stripping: u_strip = 0.54531 vs u_strip ≤ 1  utilisation 0.545  « VDI 2230 §5.5.5
+  PASS  Residual clamp against requirement: u_clamp = 0.41963 vs u_clamp ≤ 1  utilisation 0.42  « VDI 2230 R7
+  PASS  Fatigue amplitude: u_fatigue = 0.085499 vs u_fatigue ≤ 1  utilisation 0.0855  « VDI 2230 R9
   PASS  No separation: 11.915 kN vs > 0 kN  utilisation 0  « VDI 2230 R7
 
 7. APPLICABILITY
@@ -381,7 +381,7 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
   Content hash: 171bd836528ea883
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-23 13:45 UTC
+  Test run: 2026-10-23 19:12 UTC
   Application: TempestOS test
 
 
@@ -524,5 +524,5 @@ Outline loops are integrated by Green's theorem: A = ½∮(x dy − y dx), Ixx =
   Content hash: 7f7a93ac64011ba4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-23 13:45 UTC
+  Test run: 2026-10-23 19:12 UTC
   Application: TempestOS test

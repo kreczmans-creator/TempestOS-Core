@@ -51,11 +51,24 @@ public static class CalcInputJson
             if (values.Any(v => v!.Rows is { } rows && rows.Any(r => r is null)))
                 return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, "A table holds an empty (null) row.")]);
 
+            var duplicate = values.GroupBy(v => v!.Symbol, StringComparer.Ordinal).FirstOrDefault(g => g.Count() > 1);
+
+            if (duplicate is not null)
+                return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, $"'{duplicate.Key}' appears {duplicate.Count()} times ({string.Join(", ", duplicate.Select(v => v!.ValueText))}); keep one.")]);
+
+            var textOnly = values.FirstOrDefault(v => v!.Number is null && v.Text is null && v.Flag is null && v.Vector is null && v.Rows is null && !string.IsNullOrWhiteSpace(v.ValueText));
+
+            if (textOnly is not null)
+                return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, $"'{textOnly.Symbol}' has only a ValueText ('{Truncate(textOnly.ValueText)}'); give the value as \"Number\" (with \"Unit\"), \"Text\", \"Flag\", \"Vector\" or \"Rows\".")]);
+
             return (new CalcInputSet(values.Select(v => v!).ToList()), []);
         }
         catch (JsonException e)
         {
-            return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, $"The file is not a valid inputs document: {Truncate(e.Message)}")]);
+            var reason = e.Message.Contains("could not be converted", StringComparison.Ordinal)
+                ? "the file must be a JSON list of inputs, each an object with \"Symbol\" and a \"Number\" (with \"Unit\"), \"Text\", \"Flag\", \"Vector\" or \"Rows\"" + (e.Path is { Length: > 0 } ? $" (at {e.Path})" : string.Empty)
+                : Truncate(e.Message);
+            return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, $"The file is not a valid inputs document: {reason}.")]);
         }
     }
 

@@ -17,9 +17,22 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
   Symbol | Description | Value | Unit | Source | Valid range
   E | Default modulus of elasticity | 210 | GPa | spec: BS EN 1993-1-1 3.2.6: E = 210 GPa | 1 … 500 GPa
   nodes | Nodes | 3 row(s) |  | drawing: DRG-FL-201 rev A | any
+  nodes[1] |  | id = 1; x = 0 m; y = 0 m; support = pin |  |  | 
+  nodes[2] |  | id = 2; x = 6 m; y = 0 m; support = roller (vertical) |  |  | 
+  nodes[3] |  | id = 3; x = 12 m; y = 0 m; support = roller (vertical) |  |  | 
   elements | Elements | 2 row(s) |  | reference: UB 305×165×40 (Blue Book) | any
+  elements[1] |  | id = 1; i = 1; j = 2; A = 51.3 cm^2; I = 8503 cm^4; rel_i = no; rel_j = no |  |  | 
+  elements[2] |  | id = 2; i = 2; j = 3; A = 51.3 cm^2; I = 8503 cm^4; rel_i = no; rel_j = no |  |  | 
   loads | Loads | 4 row(s) |  | spec: Load schedule LS-01: G = 8 kN/m, Q = 12 kN/m | any
+  loads[1] |  | case = 1; kind = udl; target = 1; a = 0 m; b = 6 m; w1 = -8 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
+  loads[2] |  | case = 1; kind = udl; target = 2; a = 0 m; b = 6 m; w1 = -8 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
+  loads[3] |  | case = 2; kind = udl; target = 1; a = 0 m; b = 6 m; w1 = -12 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
+  loads[4] |  | case = 2; kind = udl; target = 2; a = 0 m; b = 6 m; w1 = -12 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
   combinations | Combinations (blank = each case alone) | 4 row(s) |  | spec: BS EN 1990 6.4.3.2 eq. 6.10 (γ_G 1.35, γ_Q 1.5); SLS characteristic | any
+  combinations[1] |  | name = ULS; case = 1; factor = 1.35 |  |  | 
+  combinations[2] |  | name = ULS; case = 2; factor = 1.5 |  |  | 
+  combinations[3] |  | name = SLS; case = 1; factor = 1 |  |  | 
+  combinations[4] |  | name = SLS; case = 2; factor = 1 |  |  | 
   report | Combination to report in detail (blank = first) | ULS |  | assumption: ULS reported in detail; SLS in the envelope. | any
   n_div | Stations per member | 24 |  | assumption: 24 stations per span. | 4 … 100
 

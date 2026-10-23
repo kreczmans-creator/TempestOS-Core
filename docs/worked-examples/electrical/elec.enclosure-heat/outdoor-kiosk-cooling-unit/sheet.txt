@@ -16,6 +16,8 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   loads | Heat loads | 2 row(s) |  | spec: Panel schedule PNL-09 | any
+  loads[1] |  | name = PLC and I/O; P = 80 W; qty = 1; duty = 1 |  |  | 
+  loads[2] |  | name = drives; P = 55 W; qty = 4; duty = 1 |  |  | 
   I_sun | Solar irradiance on the enclosure (0 = indoors) | 800 | W/m^2 | spec: Site conditions SC-5: 800 W/m² on the sunlit side | 0 … 1200 W/m^2
   A_sun | Sunlit area | 0.48 | m^2 | assumption: One 600 × 800 face in the sun. | 0 … 100 m^2
   alpha_sun | Surface absorptivity | 0.5 |  | assumption: Light-grey paint. | 0.1 … 1
@@ -121,9 +123,11 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   V_req_net = 284.11 m³/h    Required airflow (net)
 
 6. CHECKS (governing first)
-  FAIL  Natural dissipation holds T_max: 11.044 vs 1  utilisation 11
+  FAIL  Natural dissipation holds T_max: u_nat = 11.044 vs u_nat ≤ 1  utilisation 11
 
 7. APPLICABILITY
+  WARNING input.p_sys: p_sys (System resistance (filters, grilles) at the reference airflow) was not entered; the template default 20 Pa is used.
+  WARNING input.V_ref: V_ref (Reference airflow for the system resistance) was not entered; the template default 100 m^3/h is used.
   WARNING cooling-unit: T_max: natural dissipation holds 44.55 W of 492 W; ventilate or fit a 447.4 W cooling unit.
 
 8. VERIFICATION

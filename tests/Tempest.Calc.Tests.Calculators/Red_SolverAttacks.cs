@@ -16,7 +16,10 @@ namespace Tempest.Calc.Tests.Calculators;
 /// </summary>
 public sealed class Red_SolverAttacks
 {
-    private static readonly TimeSpan Budget = TimeSpan.FromSeconds(5);
+    /// <summary>The CI runners scale every deadline by <c>TEMPEST_TEST_TIMEOUT_FACTOR</c> (3 on the Windows matrix); the budgets here scale the same way.</summary>
+    private static readonly double TimeoutFactor = double.TryParse(Environment.GetEnvironmentVariable("TEMPEST_TEST_TIMEOUT_FACTOR"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) && f >= 1 ? f : 1;
+
+    private static readonly TimeSpan Budget = TimeSpan.FromSeconds(5 * TimeoutFactor);
 
     private static CalcInputSet WithOverride(CalcTemplate template, params CalcInputValue[] overrides)
     {

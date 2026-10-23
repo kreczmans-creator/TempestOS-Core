@@ -22,6 +22,7 @@ v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/�
   mu_custom | Dynamic viscosity (custom fluid) | 800 | mPa*s | spec: Oil datasheet ISO VG 680 at 20 °C | 0.1 … 1000 mPa*s
   Q | Design flow rate | 1 | m^3/h | spec: Transfer pump duty | 0.01 … 100000 m^3/h
   segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-L-020 rev A | any
+  segments[1] |  | name = transfer line; L = 40 m; D = 50 mm; eps = 0 mm; K = 0; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
   h_out | Pressure head required at the outlet | 0 | m | assumption: Open discharge. | 0 … 1000 m
   v_max | Velocity limit (warning) | 3 | m/s | assumption: Practice limit. | 0.5 … 10 m/s
   n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | default | 0.2 … 2
@@ -111,9 +112,14 @@ v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/�
   v_peak = 0.14147 m/s    Highest velocity
 
 6. CHECKS (governing first)
-  PASS  Velocity ≤ limit: 0.047157 vs 1  utilisation 0.0472
+  PASS  Velocity ≤ limit: u_v = 0.047157 vs u_v ≤ 1  utilisation 0.0472
 
 7. APPLICABILITY
+  WARNING input.n_ratio: n_ratio (Speed ratio n₂/n₁ (affinity)) was not entered; the template default 1 is used.
+  WARNING input.D_ratio: D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) was not entered; the template default 1 is used.
+  WARNING input.eta_pump: eta_pump (Pump efficiency at duty (for shaft power)) was not entered; the template default 0.7 is used.
+  WARNING input.p_atm: p_atm (Atmospheric pressure (NPSH)) was not entered; the template default 101.3 kPa is used.
+  WARNING input.z_s: z_s (Static head at the pump suction (+ flooded, − lift)) was not entered; the template default 0 m is used.
   WARNING laminar: segments: transfer line is laminar (Re = 7.8516); f = 64/Re.
 
 8. VERIFICATION

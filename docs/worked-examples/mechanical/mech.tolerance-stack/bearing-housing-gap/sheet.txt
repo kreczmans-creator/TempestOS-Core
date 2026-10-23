@@ -16,6 +16,9 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   contributors | Contributors in the loop | 3 row(s) |  | drawing: DRG-HSG-001 rev B | any
+  contributors[1] |  | name = Housing bore depth; direction = adds; nominal = 40 mm; upper = 0.1 mm; lower = 0 mm |  |  | 
+  contributors[2] |  | name = Bearing width; direction = subtracts; nominal = 20 mm; upper = 0 mm; lower = -0.12 mm |  |  | 
+  contributors[3] |  | name = Spacer; direction = subtracts; nominal = 19.5 mm; upper = 0.02 mm; lower = -0.02 mm |  |  | 
   minimum | Minimum acceptable result | 0.4 | mm | spec: SPEC-BRG-7 §4.2 | -1000000 … 1000000 mm
   maximum | Maximum acceptable result | 0.8 | mm | spec: SPEC-BRG-7 §4.2 | -1000000 … 1000000 mm
   k | Standard deviations per half-band (normal contributors) | 3 |  | assumption: Each part at ±3σ within its band. | 1 … 6
@@ -164,7 +167,7 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
   mc_yield = 100 %    Monte Carlo yield
 
 6. CHECKS (governing first)
-  PASS  C_pk against target: 0.56436 vs 1  utilisation 0.564
+  PASS  C_pk against target: u_cpk = 0.56436 vs u_cpk ≤ 1  utilisation 0.564
   PASS  Worst case within requirement: 0.48 … 0.74 mm vs 0.4 … 0.8 mm  utilisation 0
 
 7. APPLICABILITY

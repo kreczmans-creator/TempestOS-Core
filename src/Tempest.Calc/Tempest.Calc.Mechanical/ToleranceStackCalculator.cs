@@ -334,12 +334,13 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
         }
 
         var signs = contributors.Select(x => x.Sign).ToArray();
+        var keys = contributors.Select((_, i) => $"c{i + 1}").ToArray(); // built once: a string per sample per contributor dominated the run at the caps (R-21)
         var mc = MonteCarlo.Run(v =>
         {
             var s = 0.0;
 
             for (var i = 0; i < signs.Length; i++)
-                s += signs[i] * v[$"c{i + 1}"];
+                s += signs[i] * v[keys[i]];
 
             return s;
         }, nominalMap, dists, n, seed, minSi, maxSi, cancellationToken: c.CancellationToken);

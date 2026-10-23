@@ -18,6 +18,14 @@ Outline loops are integrated by Green's theorem: A = ½∮(x dy − y dx), Ixx =
   Symbol | Description | Value | Unit | Source | Valid range
   shape | Shape | polygon |  | drawing: DRG-BG-100 rev C | any
   vertices | Polygon vertices (polygon shape) | 8 row(s) |  | drawing: DRG-BG-100 rev C | any
+  vertices[1] |  | x = -200 mm; y = -300 mm; loop = 1 |  |  | 
+  vertices[2] |  | x = 200 mm; y = -300 mm; loop = 1 |  |  | 
+  vertices[3] |  | x = 200 mm; y = 300 mm; loop = 1 |  |  | 
+  vertices[4] |  | x = -200 mm; y = 300 mm; loop = 1 |  |  | 
+  vertices[5] |  | x = -180 mm; y = -280 mm; loop = 2 |  |  | 
+  vertices[6] |  | x = 180 mm; y = -280 mm; loop = 2 |  |  | 
+  vertices[7] |  | x = 180 mm; y = 280 mm; loop = 2 |  |  | 
+  vertices[8] |  | x = -180 mm; y = 280 mm; loop = 2 |  |  | 
 
 3. ASSUMPTIONS
   A1. A polygon outline is simple (no self-intersection); holes lie inside the outline and do not overlap. (Green's theorem integrates the signed loops as given.)

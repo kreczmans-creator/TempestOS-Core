@@ -64,7 +64,8 @@ public sealed record CalcInstance(
     Guid? PredecessorId = null,
     Guid? PackId = null,
     string? OutputsHash = null,
-    IReadOnlyDictionary<string, string>? UpstreamHashes = null)
+    IReadOnlyDictionary<string, string>? UpstreamHashes = null,
+    string? LastRejection = null)
 {
     [JsonIgnore]
     public bool IsImmutable => Status is CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded;

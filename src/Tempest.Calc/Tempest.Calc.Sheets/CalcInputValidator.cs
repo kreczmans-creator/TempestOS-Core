@@ -33,6 +33,11 @@ public static class CalcInputValidator
 
             if (value is null || IsEmpty(value))
             {
+                // A defaulted input is visible on the sheet ("default" source) and now in the notices too, so a sheet
+                // computed from an empty or truncated file cannot pass for an entered one (Black B-01).
+                if (!spec.IsOptional && spec.Kind is not CalcInputKind.Boolean and not CalcInputKind.Text && (spec.Default is not null || spec.DefaultChoice is not null))
+                    notices.Add(new CalcNotice("input." + spec.Symbol, CalcNoticeSeverity.Warning, $"{spec.Symbol} ({spec.Description}) was not entered; the template default {DefaultText(spec)} is used."));
+
                 if (spec.IsOptional || spec.Default is not null || spec.DefaultChoice is not null || spec.Kind is CalcInputKind.Boolean or CalcInputKind.Text)
                     continue;
 
@@ -304,6 +309,10 @@ public static class CalcInputValidator
     }
 
     private static CalcNotice Block(string symbol, string message) => new("input." + symbol, CalcNoticeSeverity.Block, message);
+
+    private static string DefaultText(CalcInputSpec spec) => spec.DefaultChoice is { } choice
+        ? $"'{choice}'"
+        : Engine.Values.CalcValue.FormatNumber(spec.Default ?? 0, 4) + (spec.DefaultUnit.Length > 0 ? " " + spec.DefaultUnit : string.Empty);
 
     private static string F(double v) => Engine.Values.CalcValue.FormatNumber(v, 5);
 }

@@ -129,15 +129,58 @@ public sealed class CalcInstanceServiceTests
     }
 
     [Fact]
-    public async Task Issue_Is_Refused_Without_Provenance()
+    public async Task Check_And_Issue_Are_Refused_Without_Provenance()
     {
+        // The check demands what the issue will demand, so a checked calculation is never a dead end (ADR-0166, Black B-13).
         var host = new LibraryTestHost();
         var inputs = LibraryTestHost.ProvenancedInputs().Select(i => i.Symbol == "A" ? i with { Provenance = CalcProvenance.Manual } : i).ToList();
         var instance = await host.Service.CreateAsync("test.direct-stress", await host.ProjectAsync(), "C3", inputs);
-        Assert.True((await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        var checkResult = await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
+        Assert.False(checkResult.Succeeded);
+        Assert.StartsWith("A needs a source", checkResult.Reason, StringComparison.Ordinal);
+        Assert.Equal(CalcInstanceStatus.Draft, (await host.Store.FindInstanceAsync(instance.Id))!.Status);
+
         var issued = await host.Service.IssueAsync(instance.Id, "ISS-2", "Client Co");
         Assert.False(issued.Succeeded);
-        Assert.StartsWith("A needs a source", issued.Reason, StringComparison.Ordinal);
+        Assert.Contains("check it before issuing", issued.Reason, StringComparison.Ordinal);
+
+        // With the source supplied the same draft checks and issues.
+        Assert.True((await host.Service.UpdateInputsAsync(instance.Id, LibraryTestHost.ProvenancedInputs())).Succeeded);
+        Assert.True((await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.IssueAsync(instance.Id, "ISS-2", "Client Co")).Succeeded);
+    }
+
+    [Fact]
+    public async Task Rejected_Check_Leaves_Instance_And_Evidence_Draft_And_Can_Be_Checked_Again()
+    {
+        // ADR-0166, Black B-12: a rejection is kept on the instance; the Evidence stays Draft.
+        var host = new LibraryTestHost();
+        var instance = await host.Service.CreateAsync("test.direct-stress", await host.ProjectAsync(), "C3R", LibraryTestHost.ProvenancedInputs());
+        var rejected = await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "Section too small", CheckOutcome.Rejected);
+        Assert.False(rejected.Succeeded);
+        Assert.Contains("rejected", rejected.Reason, StringComparison.Ordinal);
+
+        var stored = (await host.Store.FindInstanceAsync(instance.Id))!;
+        Assert.Equal(CalcInstanceStatus.Draft, stored.Status);
+        Assert.Contains("Section too small", stored.LastRejection, StringComparison.Ordinal);
+        Assert.Equal(EvidenceStatus.Draft, ((Evidence)(await host.Context.Repository.FindAsync(instance.EvidenceId!.Value))!).Status);
+
+        Assert.True((await host.Service.UpdateInputsAsync(instance.Id, LibraryTestHost.ProvenancedInputs())).Succeeded);
+        Assert.True((await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK now", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.IssueAsync(instance.Id, "ISS-3", "Client Co")).Succeeded);
+    }
+
+    [Fact]
+    public async Task Empty_Checker_Or_Issue_Fields_Are_Refused_Not_Thrown()
+    {
+        // Black B-14.
+        var host = new LibraryTestHost();
+        var instance = await host.Service.CreateAsync("test.direct-stress", await host.ProjectAsync(), "C3E", LibraryTestHost.ProvenancedInputs());
+        Assert.Equal("A checker name is needed.", (await host.Service.CheckAsync(instance.Id, " ", "Client Co", "OK", CheckOutcome.Accepted)).Reason);
+        Assert.Equal("The checker's organisation is needed.", (await host.Service.CheckAsync(instance.Id, "J. Reviewer", "", "OK", CheckOutcome.Accepted)).Reason);
+        Assert.True((await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.Equal("An issue reference is needed.", (await host.Service.IssueAsync(instance.Id, "", "Client Co")).Reason);
+        Assert.Equal("A client is needed.", (await host.Service.IssueAsync(instance.Id, "ISS-4", " ")).Reason);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
 using Tempest.Core.Evidence;
@@ -40,6 +41,7 @@ public sealed class CalcSheetCoordinator
         _view.IssueRequested += () => _ = GuardedAsync(IssueAsync, "issue that calculation");
         _view.ReviseRequested += () => _ = GuardedAsync(ReviseAsync, "revise that calculation");
         _view.ExportRequested += () => _ = GuardedAsync(ExportAsync, "export the inputs");
+        _view.ImportRequested += () => _ = GuardedAsync(ImportAsync, "import the inputs");
     }
 
     public Task RefreshAsync()
@@ -154,6 +156,55 @@ public sealed class CalcSheetCoordinator
 
         await clipboard.SetTextAsync(csv).ConfigureAwait(true);
         _view.ShowStatus($"Copied {entry.Template.Inputs.Count} input row(s) as CSV to the clipboard.");
+    }
+
+    /// <summary>Inputs come in from the clipboard as the CSV the form exports or as a worked example's <c>inputs.json</c>; the file formats' own caps and notices apply (§3.8).</summary>
+    private async Task ImportAsync()
+    {
+        if (_view.SelectedTemplate is null)
+            return;
+
+        var clipboard = TopLevel.GetTopLevel(_view)?.Clipboard;
+        var text = clipboard is null ? null : await clipboard.TryGetTextAsync().ConfigureAwait(true);
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            _view.ShowStatus("Copy the inputs (CSV or JSON) to the clipboard first.");
+            return;
+        }
+
+        ImportInputsText(text);
+    }
+
+    /// <summary>Parses <paramref name="text"/> as JSON (a list) or CSV, reports every notice, and re-seeds the form when nothing blocks.</summary>
+    public void ImportInputsText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        if (_view.SelectedTemplate is not { } entry)
+            return;
+
+        var (inputs, notices) = ParseInputs(entry.Template, text);
+        var blocks = notices.Where(n => n.Severity == CalcNoticeSeverity.Block).ToList();
+
+        if (blocks.Count > 0)
+        {
+            _view.ShowStatus("Nothing imported: " + string.Join(" ", blocks.Select(b => b.Message)));
+            return;
+        }
+
+        var known = inputs.Values.Count(v => entry.Template.FindInput(v.Symbol) is not null);
+        _view.ApplyImportedInputs(inputs);
+        _view.ShowStatus($"Imported {known} input(s){(notices.Count > 0 ? "; " + string.Join(" ", notices.Select(n => n.Message)) : ".")}");
+    }
+
+    /// <summary>JSON when the text starts a list or an object, else CSV. Shared with the tests.</summary>
+    public static (CalcInputSet Inputs, IReadOnlyList<CalcNotice> Notices) ParseInputs(CalcTemplate template, string text)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        ArgumentNullException.ThrowIfNull(text);
+        var trimmed = text.TrimStart('\uFEFF', ' ', '\t', '\r', '\n');
+        return trimmed.StartsWith('[') || trimmed.StartsWith('{') ? CalcInputJson.Read(trimmed) : CalcCsv.ImportInputs(template, text);
     }
 
     private void Report(CalcActionResult result, string success)

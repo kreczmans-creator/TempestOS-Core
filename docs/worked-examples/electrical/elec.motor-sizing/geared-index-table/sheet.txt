@@ -161,11 +161,14 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   u_speed = 0.25    Speed utilisation
 
 6. CHECKS (governing first)
-  PASS  RMS torque SF·T_rms ≤ T_rated: 0.93406 vs 1  utilisation 0.934
-  PASS  Peak torque SF·T_pk ≤ T_peak: 0.69621 vs 1  utilisation 0.696
-  PASS  Speed n_pk ≤ n_max: 0.25 vs 1  utilisation 0.25
+  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.93406 vs u_rms ≤ 1  utilisation 0.934
+  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.69621 vs u_peak ≤ 1  utilisation 0.696
+  PASS  Speed n_pk ≤ n_max: u_speed = 0.25 vs u_speed ≤ 1  utilisation 0.25
 
 7. APPLICABILITY
+  WARNING input.mu: mu (Friction coefficient (guide / bearing)) was not entered; the template default 0.1 is used.
+  WARNING input.theta: theta (Incline from horizontal (+ moving uphill)) was not entered; the template default 0 deg is used.
+  WARNING input.F_p: F_p (Process force opposing the move (linear)) was not entered; the template default 0 N is used.
   WARNING inertia-ratio: J_motor: the inertia ratio 11.8 exceeds 10.
   WARNING overhauling: T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.
 

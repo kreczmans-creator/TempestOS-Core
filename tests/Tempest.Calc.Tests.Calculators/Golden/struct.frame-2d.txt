@@ -14,8 +14,12 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
   Symbol | Description | Value | Unit | Source | Valid range
   E | Default modulus of elasticity | 210 | GPa | manual | 1 … 500 GPa
   nodes | Nodes | 2 row(s) |  | manual | any
+  nodes[1] |  | id = 1; x = 0 m; y = 0 m; support = pin |  |  | 
+  nodes[2] |  | id = 2; x = 6 m; y = 0 m; support = roller (vertical) |  |  | 
   elements | Elements | 1 row(s) |  | manual | any
+  elements[1] |  | id = 1; i = 1; j = 2; A = 100 cm^2; I = 8000 cm^4; rel_i = no; rel_j = no |  |  | 
   loads | Loads | 1 row(s) |  | manual | any
+  loads[1] |  | case = 1; kind = udl; target = 1; a = 0 m; b = 6 m; w1 = -10 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
   n_div | Stations per member | 20 |  | manual | 4 … 100
 
 3. ASSUMPTIONS

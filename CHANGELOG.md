@@ -11,6 +11,13 @@
 - Building-services worksheets: B1 `bs.pipe-pump` (Darcy–Weisbach, Colebrook with Swamee–Jain check, K and equivalent-length fittings, system curve, pump duty point, affinity laws, NPSH; water correlations Kell/Vogel/Hyland–Wexler); B2 `bs.psychrometrics` (state from any second property, sensible/cooling-dehumidification/steam/evaporative/mixing processes, chart series); B3 `bs.duct-sizing` (equal-friction and velocity methods, round/rectangular/flat-oval equivalent diameters, fittings by user coefficients, index-run totals, limit checks). Same DoD.
 - Electrical worksheets: E1 `elec.motor-sizing` (linear and rotary loads through screw / belt / rack / gearbox, trapezoidal and S-curve profiles, peak and RMS torque, inertia ratio, candidate-motor checks); E2 `elec.enclosure-heat` (heat-load schedule, effective surface by face exposure, editable heat-transfer coefficient, natural rise, forced-ventilation airflow with altitude correction, fan duty point, solar gain, cooling-unit capacity); E3 `elec.voltage-drop` (DC, single- and three-phase from resistivity, R/X per km or mV/A/m; parallel conductors; loss; conductor temperature estimate; user limits, BS 7671 cited not embedded). Same DoD.
 
+### Changed (Phase 7 — Black/Blue, ADR-0166)
+- Desktop worksheet form: *Import inputs (CSV/JSON)* re-seeds the form from the clipboard (a worked example's `inputs.json` or the exported CSV), carrying table and vector inputs the form has no field for; every import notice is shown and a blocking one imports nothing.
+- Check and CheckPack refuse a draft whose inputs lack provenance; a Rejected check stays on the instance and leaves the Evidence Draft; empty checker, organisation, issue reference and client are refusals.
+- Sheets: table inputs are written row by row (up to 100 rows); utilisation checks read `u = 0.375 vs u ≤ 1`; valid ranges follow the entered unit; a non-optional input that takes its template default raises a warning naming the default.
+- JSON import: duplicate symbols and ValueText-only values are refused by name; a malformed document is described in plain words.
+- PDFs: the font subsetter keeps only the tables a PDF needs, so Windows's default face embeds at the same size as the brand faces.
+
 ### Security (Phase 6 — Red/Blue)
 - Imports: duplicate CSV headers, quoted-cell length, sign-prefixed DDE formulas, null JSON entries and null table rows are refused with notices (never exceptions); provenance reference/revision capped at 200/40 characters; validator notices capped per input.
 - Engine and solvers: variadic reducers bounded before allocation; calculator Monte Carlo capped at 100,000 samples; frame solver bounded per member (200 loads) and by factor work.

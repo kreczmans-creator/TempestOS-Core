@@ -33,6 +33,49 @@ public sealed class CalcSheetViewTests
     }
 
     [AvaloniaFact]
+    public void ImportedInputs_SeedTheForm_AndRoundTripThroughReadForm()
+    {
+        // §3.8 / Black B-24: a worked example's inputs.json (or the exported CSV) re-seeds the form; the form reads the same set back.
+        var (view, catalogue) = NewView();
+        view.SelectTemplate("test.desktop-stress");
+        var template = catalogue.Get("test.desktop-stress").Template;
+        var imported = new CalcInputSet(
+        [
+            CalcInputValue.Quantity("F", 30, "kN", CalcProvenance.Drawing("DRG-1", "B")),
+            CalcInputValue.Quantity("A", 150, "mm^2", CalcProvenance.Assumed("plate")),
+        ]);
+        var json = CalcInputJson.Write(imported);
+
+        var (parsed, notices) = CalcSheetCoordinator.ParseInputs(template, json);
+        Assert.Empty(notices);
+        view.ApplyImportedInputs(parsed);
+
+        Assert.Equal("30", ((TextBox)view.FieldControl("F")!).Text);
+        var read = view.ReadForm();
+        Assert.Equal(30, read.Find("F")!.Number);
+        Assert.Equal("kN", read.Find("F")!.Unit);
+        Assert.Equal(CalcProvenanceKind.Drawing, read.Find("F")!.Provenance?.Kind);
+        Assert.Equal(150, read.Find("A")!.Number);
+        Assert.StartsWith("FAIL — Direct stress", view.GoverningText, StringComparison.Ordinal);
+
+        var csv = CalcCsv.ExportInputs(template, read);
+        var (fromCsv, csvNotices) = CalcSheetCoordinator.ParseInputs(template, csv);
+        Assert.DoesNotContain(csvNotices, n => n.Severity == CalcNoticeSeverity.Block);
+        Assert.Equal(30, fromCsv.Find("F")!.Number);
+    }
+
+    [AvaloniaFact]
+    public void MalformedImport_IsReported_AndTheFormIsUnchanged()
+    {
+        var (view, catalogue) = NewView();
+        view.SelectTemplate("test.desktop-stress");
+        var template = catalogue.Get("test.desktop-stress").Template;
+        var (_, notices) = CalcSheetCoordinator.ParseInputs(template, "{");
+        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("JSON list of inputs", StringComparison.Ordinal));
+        Assert.Equal("12", ((TextBox)view.FieldControl("F")!).Text);
+    }
+
+    [AvaloniaFact]
     public void SelectingATemplate_BuildsTheForm_AndRecalculatesAtOnce()
     {
         var (view, _) = NewView();

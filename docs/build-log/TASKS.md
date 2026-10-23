@@ -41,8 +41,17 @@
 ## Phase 7 — reviews and gates (`v0.26.0/phase-7-reviews`)
 - [x] Green (219/219 recomputed; G-01…G-04 fixed), White, Orange, Blue, Purple written
 - [x] Red (R-01…R-24: 23 findings, 22 fixed, R-22 accepted D-32), Blue/Purple updated, Grey upgrade test passes
-- [ ] Black (after merge), Grey Windows CI verdict, Yellow final
+- [x] Black (clean clone; B-01…B-25; Highs + 5 Mediums fixed, ADR-0166), Yellow final
+- [ ] Grey Windows CI verdict (two release runs failed; fixes on phase-7)
 - [ ] Release notes, handover, STATUS gates, rc1 tag
 - [x] 24 worked examples + 1 calc pack
-- [ ] CHANGELOG, release notes, THIRD-PARTY-NOTICES, handover
+- [x] CHANGELOG, release notes, THIRD-PARTY-NOTICES (unchanged, complete), handover
 - [ ] All §10 gates; tag v0.26.0-rc1
+
+## Resume from here (Phase 7 close-out, 2026-10-23 20:45 UTC) — exact steps, no judgement calls needed
+1. Branch `v0.26.0/phase-7-reviews` at `42686a0` (pushed). Working tree clean except graphify hook cache files (`git checkout -- graphify-out/cache/hook_sessions/`; never commit them).
+2. Final Linux gate logs are in the session scratchpad (`build-release3.log`, `desktop3.log`, `calc3-*.log`, `core3.log`). If any log is missing, run: `dotnet build src/TempestOS.slnx -c Release -p:TreatWarningsAsErrors=true`, then `dotnet test` on `tests/Tempest.Core.Tests`, `tests/Tempest.Desktop.Tests`, `tests/Tempest.Calc.Tests.{Engine,Sheets,Library,Calculators}`. Expected: 0 errors, 0 warnings; Core 7,221 pass; Desktop 1,193 pass; Engine 384, Sheets 93, Library 44 (+1 skipped, D-32), Calculators 328 pass.
+3. If green: `git checkout release/v0.26.0 && git merge --no-ff v0.26.0/phase-7-reviews` (message "Merge branch 'v0.26.0/phase-7-reviews' into release/v0.26.0"), `git push origin release/v0.26.0`. Never touch `main`.
+4. Read the CI run for the new release head (GitHub Actions, workflow `ci.yml`, branch `release/v0.26.0`, event push). Three Windows-only causes are already fixed: xUnit analyser rules (CI builds with `-p:TreatWarningsAsErrors=true`; build locally the same way), PDFs over 200 KB from the Windows default face (subsetter keeps only PDF tables, D-36), Red budgets under the slower runners (`TEMPEST_TEST_TIMEOUT_FACTOR`). A new failure: fetch the failed job's log, find `FAILED:` lines, fix on `v0.26.0/phase-7-reviews`, re-gate, repeat step 3. If PDFs are still over 200 KB on Windows only, record RR-01 as open in STATUS and the handover and do not tag.
+5. If CI Gate is green: tick every §10 line in STATUS.md ("Tests: … Windows CI green on <sha>"), update PR #31's body (Phase 7 done, rc1 tagged), then `git tag -a v0.26.0-rc1 <release sha> -m "v0.26.0-rc1"` and `git push origin v0.26.0-rc1`. Never tag `v0.26.0`.
+6. Append one LOG.md line and push STATUS/TASKS/LOG on `release/v0.26.0` (a docs-only commit is fine there; it is the dashboard).

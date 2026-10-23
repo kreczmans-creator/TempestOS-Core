@@ -1,9 +1,9 @@
-# STATUS — 2026-10-23 18:30 UTC
-Phase: 6→7 — Red/Blue cycle closed; Phase 6 gate run; merging to release
-Done since last: Red team ran 138 PoC tests (23 findings, 44 failing); Blue fixed R-01…R-21 and R-24 (import caps, provenance caps, reducer allocation, null rows, Monte Carlo and frame work bounds, full-record immutability, optimistic concurrency, one-transaction Check, atomic/recoverable Revise, pack freeze, PDF cleaning); R-22 accepted (D-32); Purple verified; security review, Blue, Purple, Yellow, handover, changelog updated; D-29…D-33
-Now: Phase 6 gate green (Core 7,221/0, Desktop 1,191/0, Calc 847/0) → merged phase-6 → release → pushed (Windows CI running)
-Next: Black team on a clean clone; Grey Windows CI verdict; Yellow final; §10 gates; rc1 tag
-Tests: Core 7,221 pass / 0 fail; Calc Engine 384, Sheets 93, Library 42 (+1 skipped D-32), Calculators 328 — all 0 fail; Desktop 1,191 pass / 0 fail; 3 unconfirmed-reference known-answer cases (M1, S3, B2)
-Build: green (Linux)   Branch: v0.26.0/phase-6-security (PR #31 release/v0.26.0 → main, draft)
-Decisions taken: D-00…D-33 (see docs/decisions/v0.26.0-DECISIONS.md)
-Risks: Windows PDF size depends on DirectWrite accepting subset fonts (RR-01); reference values from mirrors (RR-04); R-22 orphan Draft Evidence after a crash mid-Create (accepted)
+# STATUS — 2026-10-23 20:05 UTC
+Phase: 7/7 — Black review answered; final gate running; then merge, Windows CI, rc1
+Done since last: Phase 6 merged; Red (23 findings → 22 fixed, R-22 accepted); Black black-box review on a clean clone (4 High, 7 Medium → 4 High + 5 Medium fixed under ADR-0166, 2 justified, Lows deferred); Windows CI failures diagnosed and fixed (xUnit analysers, 285 KB system-font PDFs → subsetter keeps PDF tables only, tolerance-stack Monte Carlo keys, Red budgets × CI factor); goldens + 32 worked examples + pack regenerated; README/worked-example index/release notes/handover updated; graph refreshed
+Now: Linux gate green (Release build 0 warnings; Core 7,221 / Desktop 1,193 / Calc 849 pass, 0 fail, 1 skipped D-32) → phase-7 merged into release → Windows CI running
+Next: Grey Windows verdict; §10 checklist; tag v0.26.0-rc1 only if every gate passes
+Tests: Core 7,221 pass / 0 fail; Desktop 1,193 pass / 0 fail; Calc Engine 384, Sheets 93, Library 44 (+1 skipped D-32), Calculators 328 pass / 0 fail; 3 unconfirmed-reference known-answer cases (M1, S3, B2)
+Build: green (Linux, Debug + Release, warnings as errors)   Branch: v0.26.0/phase-7-reviews (PR #31 release/v0.26.0 → main, draft)
+Decisions taken: D-00…D-38; ADR-0165, ADR-0166; legacy-calculator replacement planned for v0.27.0 (D-38)
+Risks: Windows CI not yet green on release (two runs failed on the fixed issues); R-22 orphan Draft Evidence after a crash mid-Create (accepted)
