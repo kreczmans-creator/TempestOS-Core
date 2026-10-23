@@ -25,10 +25,10 @@
 - [x] S3 EN 1993-1-1 member checks
 - [x] Yellow pass (Y3-01…Y3-05)
 ## Phase 4 — building services (`v0.26.0/phase-4-bs`)
-- [ ] B1 pipe pressure drop / pump duty
-- [ ] B2 psychrometrics
-- [ ] B3 duct sizing
-- [ ] Yellow pass
+- [x] B1 pipe pressure drop / pump duty
+- [x] B2 psychrometrics
+- [x] B3 duct sizing
+- [x] Yellow pass (Y4-01…Y4-05)
 ## Phase 5 — electrical (`v0.26.0/phase-5-elec`)
 - [ ] E1 motor sizing
 - [ ] E2 enclosure heat
