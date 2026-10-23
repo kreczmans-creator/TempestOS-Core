@@ -9,7 +9,7 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 ## Phase 1 — foundations (`v0.27.0/phase-1-foundations`)
 - [x] Record migration: every stored `CalculationRecord` readable as a `CalcInstance` archive snapshot (`LegacyCalculationMigration`, `LegacyArchiveSheet`, `ICalculationEngine.FindRecordDocumentAsync`); lifecycle refusals on archives; Grey upgrade test over a real SQLite database with a legacy bolted-joint record
 - [x] Reference-library fill: `CalcReferenceFill` (released records only; `FromReference` pin per value; library slots such as `Materials:hub`); declared on struct.en1993-member, struct.beam-formulas, struct.frame-2d, mech.press-fit (hub/shaft), mech.bolted-joint (fastener + members); one picker per library in the worksheet form
-- [ ] Spec raise: "In plain terms" paragraph + hand arithmetic of one worked example in all 16 v0.26.0 specs
+- [x] Spec raise: "In plain terms" paragraph (hand-written) + hand arithmetic of the first worked example (generated from its sheet, drift-guarded by `SpecHandArithmeticTests`) in all 16 specs
 - [ ] Shipped-template additions: bolted-joint load factors n_0/n_L; beam-formula cases from the legacy deflection set; Euler/Johnson `struct.column-buckling`
 - [ ] Yellow pass
 ## Phase 2 — mechanical ports (`v0.27.0/phase-2-mech`)
