@@ -1,0 +1,241 @@
+[
+  {
+    "Symbol": "E_P",
+    "Number": 205,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "steel",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "205"
+  },
+  {
+    "Symbol": "E_S",
+    "Number": 205,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "steel",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "205"
+  },
+  {
+    "Symbol": "F_A",
+    "Number": 60,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-CASE-3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "F_KR_req",
+    "Number": 5,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-FLG \u00A76 sealing",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
+    "Symbol": "K",
+    "Number": 0.2,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used by the friction method.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.2"
+  },
+  {
+    "Symbol": "M_A",
+    "Number": 80,
+    "Unit": "N*m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Assembly procedure AP-7",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "80"
+  },
+  {
+    "Symbol": "P",
+    "Number": 1.75,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "ISO 261 coarse pitch",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.75"
+  },
+  {
+    "Symbol": "R_p02",
+    "Number": 640,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "ISO 898-1 class 8.8",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "640"
+  },
+  {
+    "Symbol": "S_strip",
+    "Number": 1.25,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Stripping safety factor.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.25"
+  },
+  {
+    "Symbol": "alpha_A",
+    "Number": 1.6,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Torque wrench, VDI 2230 Table A8 order.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.6"
+  },
+  {
+    "Symbol": "d",
+    "Number": 12,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-FLG-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "12"
+  },
+  {
+    "Symbol": "d_h",
+    "Number": 13,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-FLG-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "13"
+  },
+  {
+    "Symbol": "d_w",
+    "Number": 18,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "ISO 4762 head bearing",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "18"
+  },
+  {
+    "Symbol": "f_Z",
+    "Number": 11,
+    "Unit": "\u00B5m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Three interfaces, machined.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "11"
+  },
+  {
+    "Symbol": "l_k",
+    "Number": 40,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-FLG-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "m_eff",
+    "Number": 12,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-FLG-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "12"
+  },
+  {
+    "Symbol": "method",
+    "Text": "friction",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Assembly procedure AP-7",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "friction"
+  },
+  {
+    "Symbol": "mu_G",
+    "Number": 0.12,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Lightly oiled zinc-plated thread.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.12"
+  },
+  {
+    "Symbol": "mu_K",
+    "Number": 0.12,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Lightly oiled head bearing.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.12"
+  },
+  {
+    "Symbol": "n",
+    "Number": 0.5,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Load introduced at mid-thickness.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.5"
+  },
+  {
+    "Symbol": "sigma_A",
+    "Number": 50,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Rolled-before-heat-treatment M12, VDI 2230 order of magnitude.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "tau_B",
+    "Number": 400,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Nut material shear strength.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "400"
+  }
+]

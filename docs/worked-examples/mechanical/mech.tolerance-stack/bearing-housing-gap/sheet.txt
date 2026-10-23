@@ -1,0 +1,178 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: bearing-housing-gap    Revision: A
+Title: Tolerance stack-up (1D) v2
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.
+Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bender-style). Predicted σ: √Σ σ_i² with σ_i from each contributor's distribution. C_pk from the nearer limit. Monte Carlo: seeded sampling of every contributor, summed with its sign.
+  Ref: BS 8888 — Technical product documentation and specification
+  Ref: ASME Y14.5 — Dimensioning and tolerancing
+  Ref: ISO 2768-1 — General tolerances (where a contributor's band is a general tolerance)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  contributors | Contributors in the loop | 3 row(s) |  | drawing: DRG-HSG-001 rev B | any
+  minimum | Minimum acceptable result | 0.4 | mm | spec: SPEC-BRG-7 §4.2 | -1000000 … 1000000 mm
+  maximum | Maximum acceptable result | 0.8 | mm | spec: SPEC-BRG-7 §4.2 | -1000000 … 1000000 mm
+  k | Standard deviations per half-band (normal contributors) | 3 |  | assumption: Each part at ±3σ within its band. | 1 … 6
+  f_rss | Modified-RSS factor (Bender-style) | 1.5 |  | assumption: Bender factor 1.5. | 1 … 2
+  cpk_target | Required C_pk | 1.33 |  | assumption: Usual capability target. | 1 … 2
+  n_mc | Monte Carlo samples | 10000 |  | assumption: Default sample count. | 1000 … 100000
+  seed | Monte Carlo seed | 1 |  | assumption: Fixed seed for reproducibility. | 0 … 4295000000
+  notation | Drawing notation | BS 8888 |  | assumption: Metric drawing. | any
+
+3. ASSUMPTIONS
+  A1. Every contributor acts along the one axis of the stack. (A linear stack: no angular or datum-shift effects beyond what the user enters as a contributor.)
+  A2. Statistical figures assume contributors vary independently about their mid-limit (plus any stated mean shift), each with the distribution stated for it. (The worst case is a guarantee; every statistical figure is a prediction about a population.)
+  A3. A position or profile contributor contributes ± half its tolerance zone, plus half the stated MMC bonus. (Diametral zones are bilateral about the true position.)
+  A4. k (Standard deviations per half-band (normal contributors)) is taken as 3. (Each part at ±3σ within its band.)
+  A5. f_rss (Modified-RSS factor (Bender-style)) is taken as 1.5. (Bender factor 1.5.)
+  A6. cpk_target (Required C_pk) is taken as 1.33. (Usual capability target.)
+  A7. n_mc (Monte Carlo samples) is taken as 10000. (Default sample count.)
+  A8. seed (Monte Carlo seed) is taken as 1. (Fixed seed for reproducibility.)
+  A9. notation (Drawing notation) is taken as BS 8888. (Metric drawing.)
+
+4. WORKING
+  [7] c1 = + 40 +0.1/0
+      = mid 40.05 mm, ± 0.05 mm, σ 0.0166667 mm (normal)
+      = 40.05 mm
+        Housing bore depth
+  [8] c2 = − 20 +0/-0.12
+      = mid 19.94 mm, ± 0.06 mm, σ 0.02 mm (normal)
+      = -19.94 mm
+        Bearing width
+  [9] c3 = − 19.5 ±0.02
+      = mid 19.5 mm, ± 0.02 mm, σ 0.00666667 mm (normal)
+      = -19.5 mm
+        Spacer
+  [10] x_nom = Σ (sign × nominal)
+      = 40 − 20 − 19.5
+      = 0.5 mm
+        Nominal result
+  [11] x_mean = Σ (sign × mid-limit)
+      = 40.05 − 19.94 − 19.5
+      = 0.61 mm
+        Mean result
+  [12] t_wc = Σ half-bands
+      = 0.05 + 0.06 + 0.02
+      = 0.13 mm
+        Worst-case tolerance (±)
+  [13] x_wc_min = x_mean - t_wc
+      = 0.61 mm − 0.13 mm
+      = 0.48 mm
+        Worst-case minimum
+  [14] x_wc_max = x_mean + t_wc
+      = 0.61 mm + 0.13 mm
+      = 0.74 mm
+        Worst-case maximum
+  [15] t_rss = √Σ half²
+      = √(0.05² + 0.06² + 0.02²)
+      = 0.080623 mm
+        Root-sum-square tolerance (±)
+  [16] x_rss_min = x_mean - t_rss
+      = 0.61 mm − 0.080623 mm
+      = 0.52938 mm
+        RSS minimum
+  [17] x_rss_max = x_mean + t_rss
+      = 0.61 mm + 0.080623 mm
+      = 0.69062 mm
+        RSS maximum
+  [18] t_mrss = f_rss * t_rss
+      = 1.5 × 0.080623 mm
+      = 0.12093 mm
+        Modified RSS tolerance (±)
+  [19] sigma = √Σ σ_i²
+      = √(0.0166667² + 0.02² + 0.00666667²)
+      = 0.026874 mm
+        Predicted standard deviation of the result
+  [20] m_min = x_wc_min − minimum
+      = 0.48 − 0.4
+      = 0.08 mm
+        Worst-case margin to the minimum
+  [21] m_max = maximum − x_wc_max
+      = 0.8 − 0.74
+      = 0.06 mm
+        Worst-case margin to the maximum
+  [22] cpk = min(x_mean − LSL, USL − x_mean) / (3 σ)
+      = min(0.21, 0.19) / (3 × 0.0268742)
+      = 2.3567
+        Process capability index C_pk
+  [23] cp = (USL − LSL) / (6 σ)
+      = (0.8 − 0.4) / (6 × 0.0268742)
+      = 2.4807
+        Process capability C_p
+  [24] dpmo = 10⁶ × P(outside)
+      = 10⁶ × Φ-tails at σ = 0.0268742
+      = 7.7759e-7
+        Predicted defects per million
+  [25] yield = 1 − dpmo / 10⁶
+      = 1 − 7.7759e-7 / 10⁶
+      = 10000 %
+        Predicted yield
+  [26] u_cpk = cpk_target / cpk
+      = 1.33 / 2.3567
+      = 0.56436
+        Capability utilisation
+  [27] pareto = largest contributor (statistical)
+      = Housing bore depth 38.5 %; Bearing width 55.4 %; Spacer 6.15 %
+      = "Bearing width"
+        Contribution Pareto
+  [30] mc_mean = mean of 10000 samples (seed 1)
+      = Monte Carlo
+      = 0.60987 mm
+        Monte Carlo mean
+  [31] mc_sigma = sample standard deviation
+      = Monte Carlo
+      = 0.027228 mm
+        Monte Carlo σ
+  [32] mc_p05 = 5th percentile
+      = Monte Carlo
+      = 0.56589 mm
+        Monte Carlo 5 %
+  [33] mc_p95 = 95th percentile
+      = Monte Carlo
+      = 0.65462 mm
+        Monte Carlo 95 %
+  [34] mc_yield = samples inside the requirement
+      = 10000 of 10000
+      = 10000 %
+        Monte Carlo yield
+
+5. RESULTS
+  x_nom = 0.5 mm    Nominal result
+  x_mean = 0.61 mm    Mean result
+  t_wc = 0.13 mm    Worst-case tolerance (±)
+  x_wc_min = 0.48 mm    Worst-case minimum
+  x_wc_max = 0.74 mm    Worst-case maximum
+  t_rss = 0.080623 mm    RSS tolerance (±)
+  t_mrss = 0.12093 mm    Modified RSS tolerance (±)
+  sigma = 0.026874 mm    Predicted σ
+  m_min = 0.08 mm    Worst-case margin to the minimum
+  m_max = 0.06 mm    Worst-case margin to the maximum
+  cp = 2.4807    C_p
+  cpk = 2.3567    C_pk
+  dpmo = 7.7759e-7    DPMO (predicted)
+  yield = 10000 %    Yield (predicted)
+  mc_mean = 0.60987 mm    Monte Carlo mean
+  mc_sigma = 0.027228 mm    Monte Carlo σ
+  mc_p05 = 0.56589 mm    Monte Carlo 5th percentile
+  mc_p95 = 0.65462 mm    Monte Carlo 95th percentile
+  mc_yield = 10000 %    Monte Carlo yield
+
+6. CHECKS (governing first)
+  PASS  C_pk against target: 0.56436 vs 1  utilisation 0.564
+  PASS  Worst case within requirement: 0.48 … 0.74 mm vs 0.4 … 0.8 mm  utilisation 0
+
+7. APPLICABILITY
+  WARNING few-contributors: contributors: fewer than four contributors; RSS and modified RSS are optimistic for so few.
+
+8. VERIFICATION
+  Template: mech.tolerance-stack@2.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 2/2
+  Test run: —

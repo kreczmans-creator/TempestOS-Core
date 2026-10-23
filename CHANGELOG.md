@@ -3,4 +3,7 @@
 ## v0.26.0 (in progress)
 
 ### Added
-- `Tempest.Calc.*` module family: transparent worksheet engine, sheets, library, verification (ADR-0165).
+- `Tempest.Calc.*` module family: transparent worksheet engine, sheets, library, verification (ADR-0165). Engine: unit-aware expressions over a runtime SI dimension vector, step log (formula → substitution → result), caps, seeded Monte Carlo, tornado sweeps. Sheets: the one §3.4 sheet shape, validation, CSV/JSON exchange. Library: calculation instances with provenance, Evidence-governed Check/Issue in one transaction, Calculation-register link, calc packs, stale marker.
+- `IEvidenceService.IssueInOneTransactionAsync`: the issue sheet bytes, attachment, issue record and status commit together; the Workspace issue command uses it.
+- Desktop: **Worksheets** node under Modules → Calculations with the shared worksheet form (live recalculation, unit pickers, provenance per input, governing-check bar, Show working, read-only issued instances); calc-sheet PDF renderer; TrueType glyph subsetting for every PDF (issue sheet 222 → 162 KB).
+- Mechanical worksheets: M1 `mech.tolerance-stack` v2 (WC, RSS, modified RSS, distributions, C_p/C_pk/DPMO/yield, Pareto, Monte Carlo, GD&T contributors, BS 8888/ASME notation); M2 `mech.iso286-fit` (ISO 286-1 formulae), `mech.press-fit`, `mech.thick-cylinder` (migrated); M3 `mech.bolted-joint` (simplified VDI 2230), `mech.bolt-group` (elastic method). Each with known-answer, property, robustness and golden tests, a spec under `docs/calcs/`, and two worked examples under `docs/worked-examples/`.

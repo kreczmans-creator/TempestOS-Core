@@ -1,0 +1,223 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: m12-88-overloaded    Revision: A
+Title: Bolted joint (simplified VDI 2230)
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+One bolt clamping members under an axial working load: the preload from the tightening torque with its scatter, the stiffness of bolt and members, how much of the working load the bolt sees, the residual clamp after embedding, separation, yield under preload plus working load, the thread engagement needed against stripping, and the fatigue amplitude.
+A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut factor: F_M = M_A/(K d). Friction: F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K). F_M,min = F_M/α_A. δ_S = (0.4 d + 0.4 d)/(E_S A_N) + l_k/(E_S A_s) + 0.5 d/(E_S A_d3). Members: two frusta, k = 0.5774 π E d / ln[((1.155 t + d_w − d_h)(d_w + d_h))/((1.155 t + d_w + d_h)(d_w − d_h))]. Φ = n k_S/(k_S + k_P). F_Z = f_Z (k_S k_P)/(k_S + k_P). F_KR = F_M,min − (1 − Φ) F_A − F_Z. F_S,max = F_M + Φ F_A. σ_red = √(σ_z² + 3 (0.5 τ)²). σ_a = Φ F_A/(2 A_s). m_min = S F_S,max/(0.5 π d τ_B).
+  Ref: VDI 2230 Part 1:2015 §5.1–§5.5 — Systematic calculation of highly stressed bolted joints — calculation steps R0–R13
+  Ref: ISO 898-1:2013 §9.1.6 — Tensile stress area of the thread
+  Ref: Shigley's Mechanical Engineering Design §8-5, §8-7 — Joint stiffness (frusta); preload and torque
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  d | Nominal thread diameter | 12 | mm | drawing: DRG-FLG-02 rev A | 3 … 64 mm
+  P | Thread pitch | 1.75 | mm | spec: ISO 261 coarse pitch | 0.35 … 6 mm
+  R_p02 | Bolt 0.2 % proof (yield) strength | 640 | MPa | spec: ISO 898-1 class 8.8 | 200 … 1200 MPa
+  E_S | Bolt Young's modulus | 205 | GPa | spec: steel | 60 … 250 GPa
+  sigma_A | Bolt endurance limit (stress amplitude) | 50 | MPa | assumption: Rolled-before-heat-treatment M12, VDI 2230 order of magnitude. | 10 … 200 MPa
+  l_k | Clamp length | 40 | mm | drawing: DRG-FLG-02 rev A | 1 … 2000 mm
+  d_h | Hole diameter | 13 | mm | drawing: DRG-FLG-02 rev A | 1 … 100 mm
+  d_w | Head / washer bearing diameter | 18 | mm | spec: ISO 4762 head bearing | 2 … 200 mm
+  E_P | Clamped members' Young's modulus | 205 | GPa | spec: steel | 5 … 250 GPa
+  n | Load introduction factor (0 = at the clamped faces, 1 = under the head) | 0.5 |  | assumption: Load introduced at mid-thickness. | 0 … 1
+  f_Z | Embedding (settling) loss | 11 | µm | assumption: Three interfaces, machined. | 0 … 100 µm
+  method | Preload method | friction |  | spec: Assembly procedure AP-7 | any
+  M_A | Tightening torque | 80 | N*m | spec: Assembly procedure AP-7 | 0.1 … 10000 N*m
+  K | Nut factor (nut-factor method) | 0.2 |  | assumption: Not used by the friction method. | 0.1 … 0.35
+  mu_G | Thread friction coefficient | 0.12 |  | assumption: Lightly oiled zinc-plated thread. | 0.06 … 0.25
+  mu_K | Head / nut bearing friction coefficient | 0.12 |  | assumption: Lightly oiled head bearing. | 0.06 … 0.25
+  alpha_A | Tightening scatter factor (F_M,max / F_M,min) | 1.6 |  | assumption: Torque wrench, VDI 2230 Table A8 order. | 1 … 4
+  F_A | Axial working load (per bolt) | 60 | kN | spec: LOAD-CASE-3 | 0 … 5000 kN
+  F_KR_req | Required residual clamp force | 5 | kN | spec: SPEC-FLG §6 sealing | 0 … 5000 kN
+  tau_B | Nut / internal-thread material shear strength | 400 | MPa | assumption: Nut material shear strength. | 50 … 1200 MPa
+  m_eff | Thread engagement length provided | 12 | mm | drawing: DRG-FLG-02 rev A | 1 … 200 mm
+  S_strip | Safety factor on stripping | 1.25 |  | assumption: Stripping safety factor. | 1 … 3
+
+3. ASSUMPTIONS
+  A1. The joint is concentrically clamped and concentrically loaded; the members behave as two 30° frusta in series. (Eccentric clamping and loading (VDI 2230 full procedure) are outside this sheet.)
+  A2. Thread torsion is taken at 50 % in the equivalent stress for the working state. (Common VDI 2230 practice (k_τ = 0.5).)
+  A3. The working load is a pulsating 0…F_A load; the fatigue amplitude is Φ F_A / (2 A_s). (Compare with the bolt's endurance limit as entered.)
+  A4. Thread stripping uses a shear area of half the pitch per unit length on the nominal diameter. (A conservative simplification of ISO 898-2 / VDI 2230 §5.5.5.)
+  A5. sigma_A (Bolt endurance limit (stress amplitude)) is taken as 50 MPa. (Rolled-before-heat-treatment M12, VDI 2230 order of magnitude.)
+  A6. n (Load introduction factor (0 = at the clamped faces, 1 = under the head)) is taken as 0.5. (Load introduced at mid-thickness.)
+  A7. f_Z (Embedding (settling) loss) is taken as 11 µm. (Three interfaces, machined.)
+  A8. K (Nut factor (nut-factor method)) is taken as 0.2. (Not used by the friction method.)
+  A9. mu_G (Thread friction coefficient) is taken as 0.12. (Lightly oiled zinc-plated thread.)
+  A10. mu_K (Head / nut bearing friction coefficient) is taken as 0.12. (Lightly oiled head bearing.)
+  A11. alpha_A (Tightening scatter factor (F_M,max / F_M,min)) is taken as 1.6. (Torque wrench, VDI 2230 Table A8 order.)
+  A12. tau_B (Nut / internal-thread material shear strength) is taken as 400 MPa. (Nut material shear strength.)
+  A13. S_strip (Safety factor on stripping) is taken as 1.25. (Stripping safety factor.)
+
+4. WORKING
+  [23] d_2 = d - 0.6495 * P    « ISO 898-1 §9.1.6
+      = 12 mm − 0.6495 × 1.75 mm
+      = 10.863 mm
+        Pitch diameter
+  [24] d_3 = d - 1.2269 * P    « ISO 898-1 §9.1.6
+      = 12 mm − 1.2269 × 1.75 mm
+      = 9.8529 mm
+        Minor diameter
+  [25] A_s = pi / 4 * ((d_2 + d_3) / 2)^2    « ISO 898-1 §9.1.6
+      = π / 4 × ((10.863 mm + 9.8529 mm) / 2)^2
+      = 84.266 mm²
+        Tensile stress area
+  [26] A_N = pi / 4 * d^2
+      = π / 4 × (12 mm)^2
+      = 113.1 mm²
+        Nominal shank area
+  [27] A_d3 = pi / 4 * d_3^2
+      = π / 4 × (9.8529 mm)^2
+      = 76.247 mm²
+        Minor-diameter area
+  [28] D_Km = (d_w + d_h) / 2
+      = (18 mm + 13 mm) / 2
+      = 15.5 mm
+        Mean bearing diameter under the head
+  [29] F_M = M_A / (0.16 * P + 0.58 * d_2 * mu_G + 0.5 * D_Km * mu_K)    « VDI 2230 §5.4.3
+      = 80 N·m / (0.16 × 1.75 mm + 0.58 × 10.863 mm × 0.12 + 0.5 × 15.5 mm × 0.12)
+      = 40.69 kN
+        Assembly preload (friction)
+  [30] F_M_min = F_M / alpha_A    « VDI 2230 R2
+      = 40.69 kN / 1.6
+      = 25.431 kN
+        Minimum preload after scatter
+  [31] sigma_M = F_M / A_s
+      = 40.69 kN / 84.266 mm²
+      = 482.87 MPa
+        Preload stress
+  [32] M_G = F_M * (0.16 * P + 0.58 * d_2 * mu_G)    « VDI 2230 §5.4.3
+      = 40.69 kN × (0.16 × 1.75 mm + 0.58 × 10.863 mm × 0.12)
+      = 42.158 N·m
+        Thread torque under preload
+  [33] W_p = pi / 16 * d_3^3
+      = π / 16 × (9.8529 mm)^3
+      = 187.81 mm³
+        Polar section modulus at the minor diameter
+  [34] tau_M = M_G / W_p
+      = 42.158 N·m / 187.81 mm³
+      = 224.47 MPa
+        Thread torsional stress under preload
+  [35] sigma_red_M = sqrt(sigma_M^2 + 3 * tau_M^2)    « VDI 2230 R8
+      = sqrt((482.87 MPa)^2 + 3 × (224.47 MPa)^2)
+      = 619.94 MPa
+        Equivalent stress at assembly (full torsion)
+  [36] nu_M = sigma_red_M / R_p02
+      = 619.94 MPa / 640 MPa
+      = 0.96866
+        Utilisation of proof strength at assembly
+  [37] delta_S = 0.4 * d / (E_S * A_N) + l_k / (E_S * A_s) + 0.5 * d / (E_S * A_d3) + 0.4 * d / (E_S * A_N)    « VDI 2230 §5.1.1
+      = 0.4 × 12 mm / (205 GPa × 113.1 mm²) + 40 mm / (205 GPa × 84.266 mm²) + 0.5 × 12 mm / (205 GPa × 76.247 mm²) + 0.4 × 12 mm / (205 GPa × 113.1 mm²)
+      = 0.0000031135 m/kN
+        Bolt resilience (head, shank, engaged thread, nut)
+  [38] k_S = 1 / delta_S
+      = 1 / 0.0000031135 m/kN
+      = 321190 kN/m
+        Bolt stiffness
+  [39] t_f = l_k / 2
+      = 40 mm / 2
+      = 20 mm
+        Frustum height (two equal frusta)
+  [40] k_f = 0.5774 * pi * E_P * d / ln(((1.155 * t_f + d_w - d_h) * (d_w + d_h)) / ((1.155 * t_f + d_w + d_h) * (d_w - d_h)))    « Shigley eq. 8-20
+      = 0.5774 × π × 205 GPa × 12 mm / ln((1.155 × 20 mm + 18 mm − 13 mm) × (18 mm + 13 mm) / ((1.155 × 20 mm + 18 mm + 13 mm) × (18 mm − 13 mm)))
+      = 3815600 kN/m
+        Stiffness of one frustum
+  [41] k_P = k_f / 2    « Shigley eq. 8-21
+      = 3815600 kN/m / 2
+      = 1907800 kN/m
+        Clamped members' stiffness (two frusta in series)
+  [42] Phi = n * k_S / (k_S + k_P)    « VDI 2230 R3
+      = 0.5 × 321190 kN/m / (321190 kN/m + 1907800 kN/m)
+      = 0.072047
+        Load factor
+  [43] F_Z = f_Z * (k_S * k_P) / (k_S + k_P)    « VDI 2230 R4
+      = 11 µm × 321190 kN/m × 1907800 kN/m / (321190 kN/m + 1907800 kN/m)
+      = 3.024 kN
+        Preload loss from embedding
+  [44] F_SA = Phi * F_A
+      = 0.072047 × 60 kN
+      = 4.3228 kN
+        Additional bolt load from the working load
+  [45] F_PA = (1 - Phi) * F_A
+      = (1 − 0.072047) × 60 kN
+      = 55.677 kN
+        Load relieved from the members
+  [46] F_KR = F_M_min - F_PA - F_Z    « VDI 2230 R7
+      = 25.431 kN − 55.677 kN − 3.024 kN
+      = -33.27 kN
+        Residual clamp force (minimum)
+  [47] F_S_max = F_M + F_SA
+      = 40.69 kN + 4.3228 kN
+      = 45.013 kN
+        Maximum bolt load (maximum preload + additional load)
+  [48] sigma_z_max = F_S_max / A_s
+      = 45.013 kN / 84.266 mm²
+      = 534.17 MPa
+        Maximum bolt tensile stress
+  [49] sigma_red_B = sqrt(sigma_z_max^2 + 3 * (0.5 * tau_M)^2)    « VDI 2230 R8
+      = sqrt((534.17 MPa)^2 + 3 × (0.5 × 224.47 MPa)^2)
+      = 568.44 MPa
+        Equivalent stress in the working state (50 % torsion)
+  [50] u_yield = sigma_red_B / R_p02
+      = 568.44 MPa / 640 MPa
+      = 0.88819
+        Yield utilisation in the working state
+  [51] sigma_a = F_SA / (2 * A_s)    « VDI 2230 R9
+      = 4.3228 kN / (2 × 84.266 mm²)
+      = 25.65 MPa
+        Fatigue stress amplitude (pulsating load)
+  [52] u_fatigue = sigma_a / sigma_A
+      = 25.65 MPa / 50 MPa
+      = 0.51299
+        Fatigue utilisation
+  [53] u_clamp = F_KR_req / F_KR
+      = 5 kN / (-33.27 kN)
+      = -0.15029
+        Required over available residual clamp
+  [54] m_min = S_strip * F_S_max / (0.5 * pi * d * tau_B)    « VDI 2230 §5.5.5
+      = 1.25 × 45.013 kN / (0.5 × π × 12 mm × 400 MPa)
+      = 7.4625 mm
+        Thread engagement needed against stripping
+  [55] u_strip = m_min / m_eff
+      = 7.4625 mm / 12 mm
+      = 0.62187
+        Engagement utilisation
+
+5. RESULTS
+  A_s = 84.266 mm²    Tensile stress area
+  F_M = 40.69 kN    Assembly preload (maximum)
+  F_M_min = 25.431 kN    Minimum preload
+  sigma_M = 482.87 MPa    Preload stress
+  nu_M = 0.96866    Assembly utilisation of proof strength
+  k_S = 321190 kN/m    Bolt stiffness
+  k_P = 1907800 kN/m    Members' stiffness
+  Phi = 0.072047    Load factor
+  F_Z = 3.024 kN    Embedding loss
+  F_SA = 4.3228 kN    Additional bolt load
+  F_KR = -33.27 kN    Residual clamp
+  F_S_max = 45.013 kN    Maximum bolt load
+  sigma_red_B = 568.44 MPa    Working equivalent stress
+  sigma_a = 25.65 MPa    Fatigue amplitude
+  m_min = 7.4625 mm    Engagement needed
+
+6. CHECKS (governing first)
+  FAIL  No separation: -33.27 kN vs > 0 kN  utilisation —  « VDI 2230 R7
+  PASS  Yield in the working state: 0.88819 vs 1  utilisation 0.888  « VDI 2230 R8
+  PASS  Thread stripping: 0.62187 vs 1  utilisation 0.622  « VDI 2230 §5.5.5
+  PASS  Fatigue amplitude: 0.51299 vs 1  utilisation 0.513  « VDI 2230 R9
+  PASS  Residual clamp against requirement: -0.15029 vs 1  utilisation -0.15  « VDI 2230 R7
+
+7. APPLICABILITY
+  WARNING preload-yield: M_A: the preload alone takes the bolt above 90 % of its proof strength.
+  WARNING separation: F_KR: the residual clamp force is not positive; the joint separates under the working load.
+
+8. VERIFICATION
+  Template: mech.bolted-joint@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 2/2
+  Test run: —

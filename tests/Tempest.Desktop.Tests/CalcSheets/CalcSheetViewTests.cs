@@ -140,3 +140,32 @@ public sealed class CalcSheetViewTests
         Assert.Equal("S275", inputs.Find("grade")!.Text);
     }
 }
+
+public sealed class CalcSheetDisciplineFilterTests
+{
+    [AvaloniaFact]
+    public void Filter_Shows_Only_One_Discipline_And_Clears()
+    {
+        var catalogue = new CalcCatalogue([new TestWorksheetCalculator(), .. Tempest.Calc.Mechanical.MechanicalCalculators.All]);
+        var view = new CalcSheetView();
+        view.ShowCatalogue(catalogue.Current());
+        var tree = view.GetLogicalDescendants().OfType<TreeView>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.CatalogueAutomationName);
+        Assert.Equal(2, tree.Items.Count);
+
+        view.FilterDiscipline(CalcDiscipline.Mechanical);
+        var only = Assert.Single(tree.Items.OfType<TreeViewItem>());
+        Assert.Equal("Mechanical", AutomationProperties.GetName(only));
+        Assert.Equal(Tempest.Calc.Mechanical.MechanicalCalculators.All.Count, only.Items.Count);
+
+        view.FilterDiscipline(null);
+        Assert.Equal(2, tree.Items.Count);
+    }
+
+    [AvaloniaFact]
+    public void Discipline_Mapping_Covers_The_Four_Disciplines()
+    {
+        Assert.Equal(CalcDiscipline.Mechanical, CalcSheetView.DisciplineFor("Mechanical"));
+        Assert.Equal(CalcDiscipline.BuildingServices, CalcSheetView.DisciplineFor("Building Services"));
+        Assert.Null(CalcSheetView.DisciplineFor("Manufacturing"));
+    }
+}

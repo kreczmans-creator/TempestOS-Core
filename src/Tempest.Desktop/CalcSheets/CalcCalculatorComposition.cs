@@ -10,5 +10,8 @@ namespace Tempest.Desktop.CalcSheets;
 /// </summary>
 public static class CalcCalculatorComposition
 {
-    public static IReadOnlyList<ICalcCalculator> All() => [];
+    public static IReadOnlyList<ICalcCalculator> All() =>
+    [
+        .. Tempest.Calc.Mechanical.MechanicalCalculators.All,
+    ];
 }

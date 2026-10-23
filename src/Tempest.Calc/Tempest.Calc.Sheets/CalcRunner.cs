@@ -36,6 +36,12 @@ public static class CalcRunner
         {
             context.Block("cancelled", "The calculation was cancelled before it finished.");
         }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or ArithmeticException or IndexOutOfRangeException or KeyNotFoundException)
+        {
+            // A calculator's own guard or a numeric edge the engine did not
+            // see: still a block on the sheet, never a crash in the form.
+            context.Block("engine", $"The calculation could not be completed: {e.Message}");
+        }
 
         var result = context.ToResult();
         return result with { Notices = [.. notices, .. result.Notices] };

@@ -114,6 +114,7 @@
     <ProjectReference Include="..\Tempest.Workspace\Tempest.Workspace.csproj" />
     <!-- v0.26.0 (ADR-0165): the calculation surface; Library brings Sheets, Verification and Engine. -->
     <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.Library\Tempest.Calc.Library.csproj" />
+    <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.Mechanical\Tempest.Calc.Mechanical.csproj" />
   </ItemGroup>
 
   <!-- WP 17.2A / ADR-0146: documents every configuration key the platform

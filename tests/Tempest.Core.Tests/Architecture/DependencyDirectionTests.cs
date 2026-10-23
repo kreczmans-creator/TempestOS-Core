@@ -51,6 +51,18 @@ public sealed class DependencyDirectionTests
     private const string Workspace = "Tempest.Workspace";
     private const string Harness = "Tempest.Harness";
     private const string Desktop = "Tempest.Desktop";
+    private const string CalcLibrary = "Tempest.Calc.Library";
+    private const string CalcPrefix = "Tempest.Calc.";
+
+    private static bool IsCalcProject(string name) => name.StartsWith(CalcPrefix, StringComparison.Ordinal);
+
+    /// <summary>Every <c>src/Tempest.Calc/*/*.csproj</c>, by project name.</summary>
+    private static IReadOnlyList<(string Name, string File)> CalcProjectFiles() =>
+    [
+        .. Directory.GetFiles(Path.Combine(RepositoryPaths.RepositoryRoot, "src", "Tempest.Calc"), "*.csproj", SearchOption.AllDirectories)
+            .Select(file => (Path.GetFileNameWithoutExtension(file), file))
+            .OrderBy(entry => entry.Item1, StringComparer.Ordinal),
+    ];
 
     private static readonly IReadOnlyDictionary<string, string> ProjectFiles =
         new Dictionary<string, string>(StringComparer.Ordinal)
@@ -62,9 +74,11 @@ public sealed class DependencyDirectionTests
         };
 
     private static XDocument Project(string name) =>
-        XDocument.Load(Path.Combine(RepositoryPaths.RepositoryRoot, ProjectFiles[name]));
+        XDocument.Load(ProjectFiles.TryGetValue(name, out var relative)
+            ? Path.Combine(RepositoryPaths.RepositoryRoot, relative)
+            : name);
 
-    /// <summary>The project names this project declares a <c>ProjectReference</c> to.</summary>
+    /// <summary>The project names this project (by name, or by full path) declares a <c>ProjectReference</c> to.</summary>
     private static IReadOnlyList<string> ReferencedProjects(string name) =>
     [
         .. Project(name).Descendants("ProjectReference")
@@ -112,11 +126,44 @@ public sealed class DependencyDirectionTests
     [Fact]
     public void Desktop_DependsOnWorkspace_AndReachesCoreThroughIt()
     {
-        // Desktop names Workspace only; Core arrives transitively, exactly
-        // as it does for Harness — two independent presentation layers over
-        // the identical shared domain layer, neither one referencing the
-        // other.
-        Assert.Equal([Workspace], ReferencedProjects(Desktop));
+        // Desktop names Workspace, and since ADR-0165 the calculation module
+        // family (Tempest.Calc.*) that it composes into the worksheet form.
+        // Core still arrives transitively through Workspace, exactly as it
+        // does for Harness — two independent presentation layers over the
+        // identical shared domain layer, neither one referencing the other.
+        var references = ReferencedProjects(Desktop);
+        Assert.Contains(Workspace, references);
+        Assert.Equal([Workspace], references.Where(project => !IsCalcProject(project)).ToList());
+    }
+
+    // ==================================================================
+    // The calculation module family (ADR-0165) sits beside Workspace
+    // ==================================================================
+
+    [Fact]
+    public void CalcProjects_NeverReachWorkspaceHarnessOrDesktop()
+    {
+        // ADR-0165 §6: calculator assemblies depend on Engine and Sheets;
+        // only Tempest.Calc.Library depends on Core; nothing in the family
+        // sees a presentation layer or the Workspace layer, so each module
+        // can be lifted out independently.
+        var projects = CalcProjectFiles();
+        Assert.NotEmpty(projects);
+        foreach (var (name, file) in projects)
+        {
+            var references = ReferencedProjects(file);
+            Assert.DoesNotContain(Workspace, references);
+            Assert.DoesNotContain(Harness, references);
+            Assert.DoesNotContain(Desktop, references);
+            if (!string.Equals(name, CalcLibrary, StringComparison.Ordinal))
+            {
+                Assert.DoesNotContain(Core, references);
+            }
+
+            Assert.All(references, reference => Assert.True(
+                IsCalcProject(reference) || string.Equals(reference, Core, StringComparison.Ordinal),
+                $"{name} references {reference}"));
+        }
     }
 
     // ==================================================================

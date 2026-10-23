@@ -421,6 +421,34 @@
         "resolved": "1.2.0",
         "contentHash": "Rz67gJL619fSBS6omaSINUxyDuwhIxkm5mmubf7uLd5Qgi6LLKaKCha+QFP6n+Bw/UjA0vutnH4JQfYzn6ANtw=="
       },
+      "tempest.calc.engine": {
+        "type": "Project"
+      },
+      "tempest.calc.library": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Verification": "[0.26.0, )",
+          "Tempest.Core": "[0.26.0, )"
+        }
+      },
+      "tempest.calc.mechanical": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
+      "tempest.calc.sheets": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Engine": "[0.26.0, )"
+        }
+      },
+      "tempest.calc.verification": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.core": {
         "type": "Project",
         "dependencies": {
@@ -442,7 +470,9 @@
           "Avalonia.Themes.Fluent": "[11.3.20, )",
           "PDFtoImage": "[4.1.1, )",
           "Svg.Skia": "[2.0.0.8, )",
-          "Tempest.Workspace": "[0.23.0, )",
+          "Tempest.Calc.Library": "[0.26.0, )",
+          "Tempest.Calc.Mechanical": "[0.26.0, )",
+          "Tempest.Workspace": "[0.26.0, )",
           "Tmds.DBus.Protocol": "[0.21.3, )",
           "Velopack": "[1.2.0, )"
         }
@@ -450,7 +480,7 @@
       "tempest.workspace": {
         "type": "Project",
         "dependencies": {
-          "Tempest.Core": "[0.23.0, )"
+          "Tempest.Core": "[0.26.0, )"
         }
       }
     },

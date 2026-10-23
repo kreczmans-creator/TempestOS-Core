@@ -1,0 +1,117 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: four-bolt-bracket    Revision: A
+Title: Bolt group (elastic method)
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.
+Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar J = Σ A r². Shear per bolt: v = A (F/ΣA) + T·A·r/J (vector sum). Tension per bolt: t = A N/ΣA + M_x A y'/Σ A y'² + M_y A x'/Σ A x'². Prying: t_p = t (1 + b/a) when a and b are given. Utilisation: (v/V_R)² + (t_p/T_R)² ≤ 1 (interaction) and each alone.
+  Ref: EN 1993-1-8:2005 §3.6, §3.8 — Design resistance of individual fasteners; elastic distribution in a bolt group
+  Ref: AISC Steel Construction Manual Part 7 — Eccentrically loaded bolt groups — elastic method
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  bolts | Bolt positions and areas | 4 row(s) |  | drawing: DRG-BRK-09 rev B | any
+  F_x | In-plane force, x | 0 | kN | spec: LOAD-CASE-1 | -1000000 … 1000000 kN
+  F_y | In-plane force, y | -50 | kN | spec: LOAD-CASE-1 | -1000000 … 1000000 kN
+  e_x | Point of application, x | 200 | mm | drawing: DRG-BRK-09 rev B | -100000 … 100000 mm
+  e_y | Point of application, y | 50 | mm | drawing: DRG-BRK-09 rev B | -100000 … 100000 mm
+  T_z | Additional in-plane torque about the centroid | 0 | kN*m | spec: LOAD-CASE-1 | -1000000 … 1000000 kN*m
+  N | Axial (out-of-plane) load, tension positive | 0 | kN | spec: LOAD-CASE-1 | -1000000 … 1000000 kN
+  M_x | Out-of-plane moment about x (tension on +y side) | 0 | kN*m | spec: LOAD-CASE-1 | -1000000 … 1000000 kN*m
+  M_y | Out-of-plane moment about y (tension on +x side) | 0 | kN*m | spec: LOAD-CASE-1 | -1000000 … 1000000 kN*m
+  V_R | Shear resistance per bolt | 40 | kN | spec: M12 8.8 shear resistance, EN 1993-1-8 Table 3.4 per project calc | 0.1 … 10000 kN
+  T_R | Tension resistance per bolt | 45 | kN | spec: M12 8.8 tension resistance per project calc | 0.1 … 10000 kN
+
+3. ASSUMPTIONS
+  A1. The connected parts are rigid; bolt forces vary linearly with distance from the centroid (elastic method). (Conservative compared with plastic / instantaneous-centre methods.)
+  A2. Resistances are per bolt as entered, with their source (a design-code capacity or a manufacturer value). (No code capacity is computed here.)
+  A3. Prying uses a simple lever: the bolt tension rises by the factor (1 + b/a). (An optional, conservative first estimate.)
+
+4. WORKING
+  [11] n_b = number of bolts
+      = 4
+      = 4
+        Bolts in the group
+  [12] x_c = Σ A x / Σ A
+      = 84.3×0 + 84.3×100 + 84.3×100 + 84.3×0 / 337.2
+      = 50 mm
+        Centroid x
+  [13] y_c = Σ A y / Σ A
+      = 84.3×0 + 84.3×0 + 84.3×100 + 84.3×100 / 337.2
+      = 50 mm
+        Centroid y
+  [14] T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z
+      = -50 × 150 − 0 × 0 + 0
+      = -7.5 kN·m
+        In-plane torque about the centroid
+  [15] J = Σ A r²
+      = about the centroid
+      = 1686000 mm⁴
+        Polar second moment of the bolt areas
+  [16] b1 = bolt 1 at (0, 0) mm
+      = v = (-18.75, 6.25) kN, t = 0 kN
+      = 0.49411
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.494
+  [17] b2 = bolt 2 at (100, 0) mm
+      = v = (-18.75, -31.25) kN, t = 0 kN
+      = 0.91109
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.911
+  [18] b3 = bolt 3 at (100, 100) mm
+      = v = (18.75, -31.25) kN, t = 0 kN
+      = 0.91109
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.911
+  [19] b4 = bolt 4 at (0, 100) mm
+      = v = (18.75, 6.25) kN, t = 0 kN
+      = 0.49411
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.494
+  [20] v_max = governing bolt shear
+      = bolt 2
+      = 36.443 kN
+        Maximum bolt shear
+  [21] t_max = governing bolt tension (with prying)
+      = bolt 2
+      = 0 kN
+        Maximum bolt tension
+  [22] u_max = √((v/V_R)² + (t/T_R)²)
+      = √((36.443/40)² + (0/45)²)
+      = 0.91109
+        Governing interaction utilisation
+  [23] governing = governing bolt
+      = bolt 2
+      = "bolt 2"
+        The bolt with the highest utilisation
+  [24] u_v = v_max / V_R
+      = 36.443 kN / 40 kN
+      = 0.91109
+        Shear utilisation of the governing bolt
+  [25] u_t = t_max / T_R
+      = 0 kN / 45 kN
+      = 0
+        Tension utilisation of the governing bolt
+
+5. RESULTS
+  T = -7.5 kN·m    Torque about the centroid
+  J = 1686000 mm⁴    Polar second moment of bolt areas
+  v_max = 36.443 kN    Maximum bolt shear
+  t_max = 0 kN    Maximum bolt tension
+  u_max = 0.91109    Governing interaction utilisation
+  governing = "bolt 2"    Governing bolt
+
+6. CHECKS (governing first)
+  PASS  Shear–tension interaction (governing bolt): 0.91109 vs 1  utilisation 0.911  « EN 1993-1-8 Table 3.4
+  PASS  Shear alone: 0.91109 vs 1  utilisation 0.911
+  PASS  Tension alone: 0 vs 1  utilisation 0
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.bolt-group@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 2/2
+  Test run: —

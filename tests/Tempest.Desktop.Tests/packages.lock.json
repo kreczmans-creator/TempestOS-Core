@@ -547,6 +547,12 @@
           "Tempest.Core": "[0.26.0, )"
         }
       },
+      "tempest.calc.mechanical": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.calc.sheets": {
         "type": "Project",
         "dependencies": {
@@ -581,6 +587,7 @@
           "PDFtoImage": "[4.1.1, )",
           "Svg.Skia": "[2.0.0.8, )",
           "Tempest.Calc.Library": "[0.26.0, )",
+          "Tempest.Calc.Mechanical": "[0.26.0, )",
           "Tempest.Workspace": "[0.26.0, )",
           "Tmds.DBus.Protocol": "[0.21.3, )",
           "Velopack": "[1.2.0, )"
