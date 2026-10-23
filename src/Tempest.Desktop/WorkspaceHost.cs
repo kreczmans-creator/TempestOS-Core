@@ -335,6 +335,19 @@ public sealed class WorkspaceHost : IAsyncDisposable
             (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
             (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
             (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
+        // `v0.26.0` (ADR-0165): the worksheet calculation surface. The
+        // catalogue is composed statically (`CalcCalculatorComposition`),
+        // instances live in the one store, and Issue goes through the
+        // Evidence service in one transaction with the rendered PDF.
+        CalcCatalogue = new Tempest.Calc.Library.CalcCatalogue(Tempest.Desktop.CalcSheets.CalcCalculatorComposition.All());
+        CalcInstances = new Tempest.Calc.Library.CalcInstanceService(
+            CalcCatalogue,
+            new Tempest.Calc.Library.CalcInstanceStore(domainContext.PersistenceStore),
+            EvidenceService!,
+            domainContext,
+            CalcSheetRenderer = new Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer(),
+            applicationVersion: $"TempestOS {typeof(WorkspaceHost).Assembly.GetName().Version?.ToString(3)}");
+
         CalculationModules = new CalculationModuleWorkbench(
             CalculationModuleService,
             CalculationTemplates!,
@@ -536,6 +549,15 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>Gets the Engineering Calculators' own read-and-run model (`WP 21.7B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public CalculationModuleWorkbench? CalculationModules { get; private set; }
+
+    /// <summary>`v0.26.0` (ADR-0165): every worksheet calculator this build composes in.</summary>
+    public Tempest.Calc.Library.CalcCatalogue? CalcCatalogue { get; private set; }
+
+    /// <summary>`v0.26.0` (ADR-0165): the worksheet instance service (create, run, check, issue, revise, packs).</summary>
+    public Tempest.Calc.Library.CalcInstanceService? CalcInstances { get; private set; }
+
+    /// <summary>`v0.26.0`: the calc-sheet PDF renderer, so the composer can hand it the organisation identity.</summary>
+    public Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer? CalcSheetRenderer { get; private set; }
 
     /// <summary>Gets the governed entry point of every calculation module (`WP 21.7C`): a form-less caller runs a module on pinned records through it. <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public CalculationModuleService? CalculationModuleService { get; private set; }

@@ -667,7 +667,7 @@ public sealed class CalcInstanceService
         $"{Safe(instance.Name)}-{Safe(issueReference)}-{Safe(instance.Revision)}{(_renderer is null ? ".txt" : SheetFileExtension)}";
 
     /// <summary>A file name fragment: letters, digits, '-' and '_' only, at most 40 characters; no path separators can ever get in.</summary>
-    internal static string Safe(string s)
+    public static string Safe(string s)
     {
         var sb = new StringBuilder();
 

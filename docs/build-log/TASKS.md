@@ -3,15 +3,15 @@
 - [x] release/v0.26.0 from main; VERSION 0.26.0
 - [ ] STATUS/TASKS/LOG/DECISIONS; orientation doc; draft PR
 ## Phase 1 — engine, sheets, library, reports (`v0.26.0/phase-1-engine`)
-- [ ] ADR-0165 (transparent worksheet engine; Evidence governs)
-- [ ] D-01 engine spike (CalcpadCE vs own engine), 8 h box
-- [ ] Tempest.Calc.Engine: parser, units, dimension checks, functions, vectors/matrices, step log, caps; 150+ tests
-- [ ] Tempest.Calc.Sheets: sheet model (§3.4), text + PDF render, golden normalisation
-- [ ] Tempest.Calc.Library: CalcTemplate/CalcInstance, hashing, versioning, catalogue, known-answer registry
-- [ ] Issue in one transaction + crash-mid-issue test; auto-link to Calculation register; calc packs; stale marker
-- [ ] Reports: issued calc sheet opens from shell; page < 200 KB
-- [ ] Generic: tornado sweep, Monte Carlo sampler, CSV import/export
-- [ ] Desktop: shared CalcSheetView per §3.8a (live recalc, unit pickers, validation, provenance, governing bar, Ctrl+K, Show working, read-only issued)
+- [x] ADR-0165 (transparent worksheet engine; Evidence governs)
+- [x] D-01 engine spike (CalcpadCE vs own engine), 8 h box
+- [x] Tempest.Calc.Engine: parser, units, dimension checks, functions, vectors/matrices, step log, caps; 150+ tests
+- [x] Tempest.Calc.Sheets: sheet model (§3.4), text + PDF render, golden normalisation
+- [x] Tempest.Calc.Library: CalcTemplate/CalcInstance, hashing, versioning, catalogue, known-answer registry
+- [x] Issue in one transaction + crash-mid-issue test; auto-link to Calculation register; calc packs; stale marker
+- [x] Reports: issued calc sheet opens from shell; page < 200 KB
+- [x] Generic: tornado sweep, Monte Carlo sampler, CSV import/export
+- [x] Desktop: shared CalcSheetView per §3.8a (live recalc, unit pickers, validation, provenance, governing bar, Show working, read-only issued); Ctrl+K entries per calculator → Phases 2–5
 - [ ] 1D stack + thick-cylinder migrated onto the engine; old tests pass
 - [ ] Yellow pass
 ## Phase 2 — mechanical (`v0.26.0/phase-2-mech`)

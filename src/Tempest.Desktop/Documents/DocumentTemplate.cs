@@ -646,6 +646,13 @@ public static class DocumentTemplate
             using var imagePaint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High };
             var logo = DocumentLogo.HorizontalInk;
 
+            // `v0.26.0` (§3.6): each brand face is embedded as a subset of
+            // the glyphs this document draws, not whole (`TrueTypeSubsetter`).
+            var subsets = DocumentFonts.SubsetsFor(pages.SelectMany(p => p.Texts));
+
+            try
+            {
+
             foreach (var page in pages)
             {
                 var canvas = document.BeginPage(pageWidth, pageHeight);
@@ -676,7 +683,7 @@ public static class DocumentTemplate
                     textPaint.FakeBoldText = text.Bold && text.FontRole == DocumentFontRole.Body;
                     textPaint.TextAlign = text.Align;
                     textPaint.Color = text.Color;
-                    textPaint.Typeface = DocumentFonts.For(text.FontRole, text.Bold);
+                    textPaint.Typeface = subsets.TryGetValue((text.FontRole, text.Bold), out var subset) ? subset : DocumentFonts.For(text.FontRole, text.Bold);
                     canvas.DrawText(text.Text, text.X, text.Y, textPaint);
                 }
 
@@ -684,6 +691,12 @@ public static class DocumentTemplate
             }
 
             document.Close();
+            }
+            finally
+            {
+                foreach (var typeface in subsets.Values)
+                    typeface.Dispose();
+            }
         }
 
         return stream.ToArray();
