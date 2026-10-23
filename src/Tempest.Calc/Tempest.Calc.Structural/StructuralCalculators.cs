@@ -10,5 +10,6 @@ public static class StructuralCalculators
         new SectionPropertiesCalculator(),
         new FrameCalculator(),
         new BeamFormulasCalculator(),
+        new MemberChecksCalculator(),
     ];
 }
