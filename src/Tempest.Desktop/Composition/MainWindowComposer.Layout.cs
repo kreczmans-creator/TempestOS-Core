@@ -67,6 +67,22 @@ internal sealed partial class MainWindowComposer
                     return Task.FromResult(CommandResult.Success("Layout reset to its default arrangement."));
                 });
 
+            // `v0.26.0` (ADR-0165, D-11): one Ctrl+K entry per worksheet
+            // calculator, filed under its discipline's command category,
+            // opening the Worksheets node with that template selected.
+            foreach (var entry in host.CalcCatalogue?.Current() ?? [])
+            {
+                var reference = entry.Reference;
+                var category = entry.Template.Discipline == Tempest.Calc.Sheets.CalcDiscipline.BuildingServices ? "Building Services" : entry.Template.Discipline.ToString();
+                RegisterShellAction(
+                    composition.CommandRegistry, $"calc.worksheet.{entry.Template.Id}", $"Open worksheet: {entry.Template.Title}", category,
+                    async () =>
+                    {
+                        await views.EngineeringAreaView.OpenWorksheetAsync(reference).ConfigureAwait(true);
+                        return CommandResult.Success($"Opened the {entry.Template.Title} worksheet.");
+                    });
+            }
+
             // `WP 20.10D`, PO finding T4: "dock the Requirements tree
             // beside a requirement's editor ... its disappeared somewhere
             // and broken away — need to review it all." One route to every

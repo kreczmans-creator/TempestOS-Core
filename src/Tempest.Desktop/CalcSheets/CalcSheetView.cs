@@ -136,13 +136,32 @@ public sealed class CalcSheetView : UserControl
 
     public bool IsStale => _stale.IsVisible;
 
+    /// <summary>The worksheet discipline a Disciplines-tree category maps to, or <see langword="null"/> (Manufacturing has no worksheets yet).</summary>
+    public static CalcDiscipline? DisciplineFor(string category) => category switch
+    {
+        "Mechanical" => CalcDiscipline.Mechanical,
+        "Structural" => CalcDiscipline.Structural,
+        "Electrical" => CalcDiscipline.Electrical,
+        "Building Services" => CalcDiscipline.BuildingServices,
+        _ => null,
+    };
+
+    private CalcDiscipline? _filter;
+
+    /// <summary>Shows only one discipline's worksheets (a discipline's own Worksheets node), or every worksheet.</summary>
+    public void FilterDiscipline(CalcDiscipline? discipline)
+    {
+        _filter = discipline;
+        ShowCatalogue(Catalogue);
+    }
+
     public void ShowCatalogue(IReadOnlyList<CalcCatalogueEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
         Catalogue = entries;
         _catalogue.Items.Clear();
 
-        foreach (var group in entries.GroupBy(e => e.Template.Discipline).OrderBy(g => g.Key))
+        foreach (var group in entries.Where(e => _filter is null || e.Template.Discipline == _filter).GroupBy(e => e.Template.Discipline).OrderBy(g => g.Key))
         {
             var node = new TreeViewItem { Header = DisciplineLabel(group.Key), IsExpanded = true };
             AutomationProperties.SetName(node, DisciplineLabel(group.Key));

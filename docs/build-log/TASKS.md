@@ -15,9 +15,9 @@
 - [ ] 1D stack + thick-cylinder migrated onto the engine; old tests pass
 - [ ] Yellow pass
 ## Phase 2 — mechanical (`v0.26.0/phase-2-mech`)
-- [ ] M1 tolerance stack v2
-- [ ] M2 ISO 286 fits + press fit
-- [ ] M3 bolted joint + bolt group
+- [x] M1 tolerance stack v2
+- [x] M2 ISO 286 fits + press fit
+- [x] M3 bolted joint + bolt group
 - [ ] Yellow pass
 ## Phase 3 — structural (`v0.26.0/phase-3-struct`)
 - [ ] S1 section properties
