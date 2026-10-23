@@ -103,6 +103,9 @@ public sealed class CalcInstanceService
     /// <summary>Replaces the inputs of a draft instance and re-runs it. Refused once the instance is checked or issued.</summary>
     public async Task<CalcActionResult> UpdateInputsAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, CancellationToken cancellationToken = default)
     {
+        if (await LegacyRefusalAsync(instanceId, cancellationToken).ConfigureAwait(false) is { } legacy)
+            return legacy;
+
         ArgumentNullException.ThrowIfNull(inputs);
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
 
@@ -150,6 +153,15 @@ public sealed class CalcInstanceService
     public async Task<CalcInstanceRun> RunAsync(CalcInstance instance, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(instance);
+
+        if (instance.IsLegacyArchive)
+        {
+            // A migrated legacy record has no calculator: its run is the archive sheet (ADR-0167).
+            var archive = await SheetAsync(instance, cancellationToken).ConfigureAwait(false);
+            var archived = new CalcRunResult([], archive.Outputs, archive.Checks, archive.Warnings, [], archive.Assumptions);
+            return new CalcInstanceRun(instance, archived, archive, CalcSheetTextRenderer.Render(archive));
+        }
+
         var entry = _catalogue.Get(instance.TemplateReference);
         var inputs = new CalcInputSet(instance.Inputs);
         var result = CalcRunner.Run(entry.Calculator, inputs, _engine, cancellationToken: cancellationToken);
@@ -179,6 +191,9 @@ public sealed class CalcInstanceService
 
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
+
+        if (instance.IsLegacyArchive)
+            return CalcActionResult.Refused(LegacyMessage(instance), instance);
 
         if (instance.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only a draft can be checked.", instance);
@@ -241,6 +256,16 @@ public sealed class CalcInstanceService
 
     private static string? MissingText(string? value, string what) => string.IsNullOrWhiteSpace(value) ? $"{what} is needed." : null;
 
+    /// <summary>A migrated legacy record (ADR-0167) is an archive: readable, never changed, checked, issued or revised.</summary>
+    private static string LegacyMessage(CalcInstance instance) =>
+        $"Calculation '{instance.Name}' is a migrated legacy record; it can be read but not changed, checked, issued or revised. Re-enter its inputs in the matching worksheet template.";
+
+    private async Task<CalcActionResult?> LegacyRefusalAsync(Guid instanceId, CancellationToken cancellationToken)
+    {
+        var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
+        return instance is { IsLegacyArchive: true } ? CalcActionResult.Refused(LegacyMessage(instance), instance) : null;
+    }
+
     /// <summary>The first provenance block Issue would raise for this instance's inputs, or <see langword="null"/>.</summary>
     private string? ProvenanceGate(CalcInstance instance)
     {
@@ -269,6 +294,9 @@ public sealed class CalcInstanceService
 
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
+
+        if (instance.IsLegacyArchive)
+            return CalcActionResult.Refused(LegacyMessage(instance), instance);
 
         if (instance.Status != CalcInstanceStatus.Checked)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; check it before issuing.", instance);
@@ -349,6 +377,9 @@ public sealed class CalcInstanceService
 
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
+
+        if (instance.IsLegacyArchive)
+            return CalcActionResult.Refused(LegacyMessage(instance), instance);
 
         if (instance.Status != CalcInstanceStatus.Issued)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only an issued calculation can be revised.", instance);
@@ -668,6 +699,10 @@ public sealed class CalcInstanceService
     public async Task<CalcSheet> SheetAsync(CalcInstance instance, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(instance);
+
+        if (instance.IsLegacyArchive)
+            return LegacyArchiveSheet.Build(instance, await ProjectLabelAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false), instance.CreatedBy, _engine.EngineVersion, _applicationVersion, _time.GetUtcNow());
+
         var entry = _catalogue.Get(instance.TemplateReference);
         var inputs = new CalcInputSet(instance.Inputs);
         var result = CalcRunner.Run(entry.Calculator, inputs, _engine, cancellationToken: cancellationToken);
