@@ -107,6 +107,7 @@ public sealed class CalcSheetView : UserControl
         AutomationProperties.SetName(_exportButton, ExportCsvCaption);
         AutomationProperties.SetName(_importButton, ImportCaption);
         AutomationProperties.SetName(_compareButton, CompareCaption);
+        AutomationProperties.SetName(_governingLink, "Go to the governing step");
         AutomationProperties.SetName(_comparison, ComparisonName);
         AutomationProperties.SetName(_working, "Working");
         AutomationProperties.SetName(_results, "Results");
