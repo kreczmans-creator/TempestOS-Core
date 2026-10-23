@@ -1,9 +1,9 @@
-# STATUS — 2026-10-23 20:55 UTC (v0.27.0)
-Phase: 3/5 — structural and thermal ports, built and tested; Phase 3 gate next
-Done since last: Phase 1 foundations merged (record migration, reference fill, spec raise, column buckling, beam and bolted-joint raises); Phase 2 seven mechanical ports merged (gate green: Core 7,221, Calc Engine 384, Sheets 93, Library 53, Calculators 468, Desktop 1,212); Phase 3 struct.fillet-weld, bs.plane-wall, elec.thermal-chain (D-40) with legacy known answers, worked examples, PDFs, specs and behaviour tests
-Now: Phase 3 Yellow pass (Y10); behaviour tests for the seven Phase 2 ports raised to the Phase 3 level; Phase 3 gate
-Next: Phase 4 Desktop retirement (archive listing Y8-06, Compare over calc instances, legacy surface retired under ADR-0167)
-Tests: Calculators 556/0, Library 53/0 (+1 skip), Desktop worksheets 80/0; full gate pending
-Build: green (Linux, warnings as errors)   Branch: v0.27.0/phase-3-struct-thermal from release/v0.27.0 @ e7b4bcf
-Decisions taken: D-00…D-40 (docs/decisions/)
-Risks: v0.26.0-rc1 tag still waits on the owner (tag push refused, HTTP 403); legacy surface retirement must wait for the migration to pass Grey
+# STATUS — 2026-10-23 (v0.27.0)
+Phase: 4/5 — Desktop retirement built and tested; Phase 4 gate running
+Done since last: Phase 3 merged (gate green: Core 7,221, Calculators 556, Desktop 1,218); Compare over calc instances; archives listed; Grey on real v0.25.3 and v0.26.0-rc1 databases (46 records, 19 calculations); reference diagrams for all 27 templates in the worksheet form (D-41); legacy Calculators surface retired (ADR-0167 Amendment 1)
+Now: Phase 4 gate (Release); Phase 5 Green inventory of legacy vectors carried
+Next: merge Phase 4; Phase 5 — carry any missing vectors, Black on a clean clone, Red delta, Yellow final, CHANGELOG, release notes, handover, rc1 gates
+Tests: affected suites green (Library 58/0 +1 skip, Desktop worksheets and diagrams 177/0); full gate pending
+Build: green (Linux, warnings as errors)   Branch: v0.27.0/phase-4-desktop
+Decisions taken: D-00…D-41 (docs/decisions/)
+Risks: v0.26.0-rc1 tag still waits on the owner (HTTP 403); the real-shell journey (Y11-04) needs a Windows run
