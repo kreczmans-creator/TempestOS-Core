@@ -15,6 +15,7 @@ public static class WorkedExamples
     public static IReadOnlyList<WorkedExample> All { get; } =
     [
         .. Mechanical.MechanicalWorkedExamples.All,
+        .. Structural.StructuralWorkedExamples.All,
     ];
 
     public static TheoryData<string> Keys => [.. All.Select(e => e.TemplateId + "/" + e.Slug)];

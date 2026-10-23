@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Tempest.Calc\Tempest.Calc.Verification\Tempest.Calc.Verification.csproj" />
     <ProjectReference Include="..\..\src\Tempest.Calc\Tempest.Calc.Mechanical\Tempest.Calc.Mechanical.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.Calc\Tempest.Calc.Structural\Tempest.Calc.Structural.csproj" />
   </ItemGroup>
 
   <ItemGroup>
