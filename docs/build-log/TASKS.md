@@ -30,14 +30,18 @@
 - [x] B3 duct sizing
 - [x] Yellow pass (Y4-01…Y4-05)
 ## Phase 5 — electrical (`v0.26.0/phase-5-elec`)
-- [ ] E1 motor sizing
-- [ ] E2 enclosure heat
-- [ ] E3 voltage drop
-- [ ] Yellow pass
+- [x] E1 motor sizing
+- [x] E2 enclosure heat
+- [x] E3 voltage drop
+- [x] Yellow pass (Y5-01…Y5-04)
 ## Phase 6 — security (`v0.26.0/phase-6-security`)
-- [ ] STRIDE + tests + analyzers + vulnerable scan; docs/reviews/security-review.md
+- [x] STRIDE + tests + analyzers + vulnerable scan; docs/reviews/security-review.md (SEC-05 High fixed: concurrent Issue guard)
+- [x] Hostile-input, concurrency, performance-budget tests; pack worked example (M2+M3+S1)
+- [ ] Phase 6 gate (full suites) and merge
 ## Phase 7 — reviews and gates (`v0.26.0/phase-7-reviews`)
-- [ ] Red, Blue, Purple, Green, Yellow, Black, Grey, White, Orange reports
+- [x] Green (219/219 recomputed; G-01…G-04 fixed), White, Orange, Blue, Purple written
+- [ ] Red (running), Black (after merge), Grey (upgrade test + Windows CI), Yellow final
+- [ ] Release notes, handover, STATUS gates, rc1 tag
 - [ ] 24 worked examples + 1 calc pack
 - [ ] CHANGELOG, release notes, THIRD-PARTY-NOTICES, handover
 - [ ] All §10 gates; tag v0.26.0-rc1

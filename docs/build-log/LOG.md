@@ -5,3 +5,4 @@
 2026-10-23 10:40 UTC | phase-2 merged | Desktop full suite 1164/0; architecture test amended for the Calc family (D-12); phase-2 → release/v0.26.0 --no-ff | Core 7221/0 (arch tests 7/7), Calc 519/0
 2026-10-23 12:30 UTC | phase-3 merged | S1–S3 (4 templates), 66 new calculator tests, 8 worked examples + PDFs; Desktop 1,172/0; lock files updated | Calc 591/0 (Calculators 154)
 2026-10-23 14:10 UTC | phase-4 merged | B1–B3 (3 templates), 53 new calculator tests, 6 worked examples + PDFs; Desktop 1,178/0 | Calc 644/0 (Calculators 207)
+2026-10-23 16:40 UTC | phase-5 merged; phase-6 | E1–E3 merged (Desktop 1,184/0); Phase 6: SEC-05 concurrent-issue guard (Core+Library), Green G-01…G-04 fixes, frame band-overflow fix, LF sheets, Body-font subsetting (Windows CI PDFs 650 KB) | Core 7,221/0, Calc 669/0, Desktop docs+sheets 150/0

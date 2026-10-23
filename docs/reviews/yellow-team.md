@@ -48,3 +48,13 @@ Run at the end of each build phase (§4) and again in Phase 7. Findings: ID, sev
 | Y5-02 | Low | `EnclosureHeatCalculator` | The forced-ventilation airflow neglects natural dissipation (conservative); `V_req_net` credits it for comparison. Solar gain uses one absorptivity and one sunlit area. | Analytic case. | Documented. | Justified |
 | Y5-03 | Medium | `VoltageDropCalculator` | A mV/A/m figure is used as entered with its own convention; mixing a single-phase figure into a three-phase sheet is a user error the sheet cannot detect. | Known-answer `ka-mvam`. | Input description says "from the cable table"; Orange guide to note. | Justified |
 | Y5-04 | Low | `EnclosureHeatCalculator` | First hand expectation for the fan duty point was wrong (quadratic solved by hand); the sheet's bisection was right. Re-derived and recorded in the reference text. | Suite green after the fix. | Closed. | Closed |
+
+## Phase 7 — final pass (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y7-01 | Info | Performance | Budgets met: every sheet renders < 1 s (16 templates), 10,000-sample Monte Carlo < 2 s, 510-element frame 47 ms. | `PerformanceBudgetTests` (×3 CI multiplier). | None. | Closed |
+| Y7-02 | Low | `EnclosureHeatCalculator.PressureAtAltitude`, `MoistAir.PressureAtAltitude` | The standard-atmosphere formula is written twice (Electrical and BuildingServices cannot share without a reference between calculator assemblies). | Both tested. | Accepted: a shared `Tempest.Calc.Physics` helper is a v0.26.1 refactor. | Justified |
+| Y7-03 | Low | `FrameSolver` | Band overflow was silent until Phase 6 (DOF numbering in model order); now numbered in the reordered sequence and guarded. | `PerformanceBudgetTests`, `FrameTests`. | Fixed. | Closed |
+| Y7-04 | Info | API consistency | Every calculator exposes a static table/vector helper for tests and worked examples (`Table`, `Segments`, `Nodes`, `Loads`, …) and a `*Calculators.All` list; ids follow `discipline.topic`; outputs use `u_*` for utilisations. Sheet text is LF on every platform. | Template hygiene theory over 16 templates. | None. | Closed |
+| Y7-05 | Info | Documentation | 16 specs under `docs/calcs/`, 24 worked examples + 1 pack, 9 colour-team reports, security review, handover. Markdown lines added ≈ 1.6 k against ≈ 20 k code lines. | `git diff --stat`. | None. | Closed |
