@@ -1,6 +1,12 @@
 # Changelog
 
-## v0.26.0 (in progress)
+## v0.27.0 (in progress)
+
+### Planned (D-38, `docs/reviews/legacy-calculators-review.md`)
+- Replace the sixteen legacy calculation modules (`Tempest.Core.Calculations`) with `Tempest.Calc` templates; migrate stored calculation records to calc-instance snapshots; retire the legacy Calculators surface.
+- Raise the v0.26.0 templates where the legacy modules were better: a teaching-register "In plain terms" paragraph and hand arithmetic in every spec; reference-library fill (materials, fasteners, bearings) into worksheet inputs with released-record pins.
+
+## v0.26.0 (release candidate)
 
 ### Added
 - `Tempest.Calc.*` module family: transparent worksheet engine, sheets, library, verification (ADR-0165). Engine: unit-aware expressions over a runtime SI dimension vector, step log (formula → substitution → result), caps, seeded Monte Carlo, tornado sweeps. Sheets: the one §3.4 sheet shape, validation, CSV/JSON exchange. Library: calculation instances with provenance, Evidence-governed Check/Issue in one transaction, Calculation-register link, calc packs, stale marker.
