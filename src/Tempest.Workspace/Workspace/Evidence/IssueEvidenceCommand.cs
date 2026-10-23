@@ -144,23 +144,21 @@ public sealed class IssueEvidenceCommandHandler : ICommandHandler<IssueEvidenceC
         // that, since a refused issue never calls it at all (`B2`).
         var attachedIssueSheet = false;
 
-        var result = await _service.IssueAsync(
+        // `v0.26.0` (ADR-0165): the sheet is rendered first, then its bytes,
+        // the attachment metadata, the issue record and the Issued status
+        // commit in one transaction (`IEvidenceService.IssueInOneTransactionAsync`).
+        var result = await _service.IssueInOneTransactionAsync(
             command.TargetObjectId, command.IssueReference, command.Revision, command.Client,
-            attachIssueSheetAsync: _issueSheetRenderer is null
+            renderSheetAsync: _issueSheetRenderer is null
                 ? null
                 : async (evidence, issuedAtUtc, token) =>
                 {
                     var model = await BuildModelAsync(evidence, command, issuedAtUtc, token).ConfigureAwait(false);
                     var bytes = _issueSheetRenderer.Render(model);
-
-                    var attachment = await evidence.AttachContentAsync(
-                        IssueSheetFileName(model.ProjectCode, command.IssueReference, command.Revision),
-                        "application/pdf", bytes, token).ConfigureAwait(false);
-
                     attachedIssueSheet = true;
-                    return attachment.Id;
+                    return new IssueSheetContent(IssueSheetFileName(model.ProjectCode, command.IssueReference, command.Revision), "application/pdf", bytes);
                 },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken: cancellationToken).ConfigureAwait(false);
 
         if (!result.Succeeded)
             return CommandResult.Failure(result.Reason ?? "The issue was refused.");

@@ -1,0 +1,96 @@
+using System.Text.Json.Serialization;
+using Tempest.Calc.Sheets;
+
+namespace Tempest.Calc.Library;
+
+/// <summary>Mirrors the Evidence lifecycle for an instance.</summary>
+public enum CalcInstanceStatus
+{
+    Draft,
+    Checked,
+    Issued,
+    Superseded,
+}
+
+/// <summary>A stored output: text for display, SI value and unit for re-use.</summary>
+public sealed record CalcOutputSnapshot(string Symbol, string Description, string Text, double? Si, string? Unit);
+
+/// <summary>A stored check row.</summary>
+public sealed record CalcCheckSnapshot(string Name, string Demand, string Capacity, double Utilisation, bool Passed);
+
+/// <summary>A stored notice.</summary>
+public sealed record CalcNoticeSnapshot(string RuleId, string Severity, string Message);
+
+/// <summary>What Issue freezes alongside the Evidence revision: the rendered sheet text, the template text, the engine version and the test results.</summary>
+public sealed record CalcIssueSnapshot(
+    string SheetText,
+    string TemplateText,
+    string EngineVersion,
+    int KnownAnswerPassed,
+    int KnownAnswerTotal,
+    DateTimeOffset TestRunAt,
+    string? SheetAttachmentId,
+    string? ApplicationVersion);
+
+/// <summary>
+/// §3.5: one calculation instance — a template reference, a project, the
+/// inputs with provenance, the latest outputs, warnings and blocks, its
+/// status, and the Evidence that governs it. Serialised as JSON into the
+/// <c>Calc.Instances</c> collection.
+/// </summary>
+public sealed record CalcInstance(
+    Guid Id,
+    string TemplateReference,
+    string TemplateHash,
+    Guid? ProjectId,
+    string Name,
+    string Revision,
+    IReadOnlyList<CalcInputValue> Inputs,
+    IReadOnlyList<CalcOutputSnapshot> Outputs,
+    IReadOnlyList<CalcCheckSnapshot> Checks,
+    IReadOnlyList<CalcNoticeSnapshot> Warnings,
+    IReadOnlyList<CalcNoticeSnapshot> Blocks,
+    CalcInstanceStatus Status,
+    Guid? EvidenceId,
+    Guid? RegisterObjectId,
+    string CreatedBy,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
+    string? CheckedBy = null,
+    DateTimeOffset? CheckedAt = null,
+    DateTimeOffset? IssuedAt = null,
+    string? IssueReference = null,
+    CalcIssueSnapshot? Issue = null,
+    Guid? PredecessorId = null,
+    Guid? PackId = null,
+    string? OutputsHash = null,
+    IReadOnlyDictionary<string, string>? UpstreamHashes = null)
+{
+    [JsonIgnore]
+    public bool IsImmutable => Status is CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded;
+
+    [JsonIgnore]
+    public string TemplateId => TemplateReference.Split('@')[0];
+
+    [JsonIgnore]
+    public string TemplateVersion => TemplateReference.Contains('@', StringComparison.Ordinal) ? TemplateReference.Split('@')[1] : string.Empty;
+
+    /// <summary>The input provenance reference prefix that names another instance as the source of a value.</summary>
+    public const string UpstreamPrefix = "calc:";
+
+    /// <summary>Instance ids this instance takes inputs from (provenance "reference: calc:&lt;id&gt;").</summary>
+    [JsonIgnore]
+    public IReadOnlyList<Guid> UpstreamIds => Inputs
+        .Select(i => i.Provenance)
+        .Where(p => p is { Kind: CalcProvenanceKind.Reference, Reference: { } r } && r.StartsWith(UpstreamPrefix, StringComparison.Ordinal))
+        .Select(p => Guid.TryParse(p!.Reference![UpstreamPrefix.Length..], out var g) ? g : Guid.Empty)
+        .Where(g => g != Guid.Empty)
+        .Distinct()
+        .ToList();
+}
+
+/// <summary>Why an instance is stale, if it is.</summary>
+public sealed record CalcStaleness(bool IsStale, IReadOnlyList<string> Reasons)
+{
+    public static CalcStaleness Fresh { get; } = new(false, []);
+}

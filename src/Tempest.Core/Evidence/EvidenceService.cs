@@ -356,6 +356,48 @@ public sealed class EvidenceService : IEvidenceService
     }
 
     /// <inheritdoc />
+    public async Task<EvidenceActionResult> IssueInOneTransactionAsync(
+        Guid evidenceId, string issueReference, string revision, string client,
+        Func<Evidence, DateTimeOffset, CancellationToken, Task<IssueSheetContent?>>? renderSheetAsync = null,
+        Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(issueReference);
+        ArgumentException.ThrowIfNullOrWhiteSpace(revision);
+        ArgumentException.ThrowIfNullOrWhiteSpace(client);
+
+        var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
+        if (evidence is null)
+            return new EvidenceActionResult(EvidenceRefusal.EvidenceNotFound, $"No evidence '{evidenceId}' is registered.", null);
+
+        if (!EvidenceStatusTransitions.IsPermitted(evidence.Status, EvidenceStatus.Issued))
+        {
+            return new EvidenceActionResult(
+                EvidenceRefusal.TransitionNotPermitted,
+                $"Evidence '{evidenceId}' is {evidence.Status}; it cannot be issued from that status. Check it first.",
+                evidence);
+        }
+
+        if (await FindArchivedOwningProjectAsync(evidence.Id, cancellationToken).ConfigureAwait(false) is { } archivedForIssue)
+        {
+            return new EvidenceActionResult(
+                EvidenceRefusal.ProjectArchived,
+                $"Project '{archivedForIssue.Id}' is archived (closed {archivedForIssue.ClosedOn:O}); this evidence is read-only.",
+                evidence);
+        }
+
+        var issuedAtUtc = _time.GetUtcNow();
+
+        // Rendering is pure and happens before the transaction opens; the
+        // bytes it returns are written inside it with everything else.
+        var sheet = renderSheetAsync is null ? null : await renderSheetAsync(evidence, issuedAtUtc, cancellationToken).ConfigureAwait(false);
+        var issue = new IssueRecord(issueReference, revision, client, issuedAtUtc, null);
+        await evidence.RecordIssueAsync(issue, sheet, alsoWrite, cancellationToken).ConfigureAwait(false);
+
+        return new EvidenceActionResult(EvidenceRefusal.None, null, evidence);
+    }
+
+    /// <inheritdoc />
     public async Task<EvidenceActionResult> ReviseAsync(Guid evidenceId, CancellationToken cancellationToken = default)
     {
         var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);

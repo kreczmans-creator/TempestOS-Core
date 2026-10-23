@@ -429,6 +429,28 @@
         "resolved": "10.0.11",
         "contentHash": "PNoxCTPb+Tlux+GJyq4c89ddYdpioVSqfGx8pqOF6shCSKwUNNctXhQtRkCICjbJmGrJJsW8NY52kVYO/b8mlQ=="
       },
+      "tempest.calc.engine": {
+        "type": "Project"
+      },
+      "tempest.calc.library": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Verification": "[0.26.0, )",
+          "Tempest.Core": "[0.26.0, )"
+        }
+      },
+      "tempest.calc.sheets": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Engine": "[0.26.0, )"
+        }
+      },
+      "tempest.calc.verification": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.core": {
         "type": "Project",
         "dependencies": {
@@ -444,7 +466,7 @@
       "tempest.workspace": {
         "type": "Project",
         "dependencies": {
-          "Tempest.Core": "[0.23.0, )"
+          "Tempest.Core": "[0.26.0, )"
         }
       }
     },

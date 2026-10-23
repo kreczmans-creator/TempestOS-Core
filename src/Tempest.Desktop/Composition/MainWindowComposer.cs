@@ -65,6 +65,8 @@ internal sealed record ComposedViews(
     EngineeringCalculationView EngineeringCalculation,
     // `WP 21.7B`: the Engineering Calculators, threaded to `BuildCoordinators` for their own collaborator.
     CalculationModulesView CalculationModules,
+    // `v0.26.0` (ADR-0165): the worksheet calculators (§3.8a form).
+    Tempest.Desktop.CalcSheets.CalcSheetView Worksheets,
     LibrariesView LibrariesView,
     OrganisationPicker OrganisationPicker,
     RateCardPicker RateCardPicker,
@@ -137,7 +139,8 @@ internal sealed record MainWindowCallbacks(
     Func<string, string, Task<string?>> PromptForNewProjectAsync,
     Func<Task> RenderCurrentModuleAsync,
     Func<Task> EnterEngineeringCalculationAsync,
-    Func<Task> EnterCalculationModulesAsync);
+    Func<Task> EnterCalculationModulesAsync,
+    Func<Task> EnterWorksheetsAsync);
 
 /// <summary>
 /// Assembles <see cref="MainWindow"/>'s entire object graph — every view,
@@ -801,6 +804,7 @@ internal sealed partial class MainWindowComposer
         // `WP 21.7B`: the Engineering Calculators — every product
         // calculation from a form generated from its own descriptor.
         var calculationModules = new CalculationModulesView();
+        var worksheets = new Tempest.Desktop.CalcSheets.CalcSheetView();
 
         // `WP 19.6A`: the "cited by" read side — a fresh Evidence scan
         // over the same already-composed domain, holding no state of its
@@ -920,7 +924,7 @@ internal sealed partial class MainWindowComposer
         var engineeringAreaView = new EngineeringAreaView(
             host.ShellNavigator!, tasksReadModel, engineeringCalculation, referenceDataLibrariesView,
             engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp,
-            engineeringAssetsView, calculationModules, callbacks.EnterCalculationModulesAsync)
+            engineeringAssetsView, calculationModules, callbacks.EnterCalculationModulesAsync, worksheets, callbacks.EnterWorksheetsAsync)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
@@ -980,7 +984,7 @@ internal sealed partial class MainWindowComposer
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, calculationModules, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
+            engineeringCalculation, calculationModules, worksheets, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,

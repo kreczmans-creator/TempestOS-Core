@@ -1,8 +1,15 @@
 <Solution>
+  <Project Path="../tests/Tempest.Calc.Tests.Engine/Tempest.Calc.Tests.Engine.csproj" />
+  <Project Path="../tests/Tempest.Calc.Tests.Sheets/Tempest.Calc.Tests.Sheets.csproj" />
+  <Project Path="../tests/Tempest.Calc.Tests.Library/Tempest.Calc.Tests.Library.csproj" />
   <Project Path="../tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj" />
   <Project Path="../tests/Tempest.Desktop.RealShell/Tempest.Desktop.RealShell.csproj" />
   <Project Path="../tests/Tempest.Desktop.Tests/Tempest.Desktop.Tests.csproj" />
   <Project Path="Samples/Tempest.Samples/Tempest.Samples.csproj" />
+  <Project Path="Tempest.Calc/Tempest.Calc.Engine/Tempest.Calc.Engine.csproj" />
+  <Project Path="Tempest.Calc/Tempest.Calc.Sheets/Tempest.Calc.Sheets.csproj" />
+  <Project Path="Tempest.Calc/Tempest.Calc.Verification/Tempest.Calc.Verification.csproj" />
+  <Project Path="Tempest.Calc/Tempest.Calc.Library/Tempest.Calc.Library.csproj" />
   <Project Path="Tempest.Core/Tempest.Core.csproj" />
   <Project Path="Tempest.Desktop/Tempest.Desktop.csproj" />
   <Project Path="Tempest.Harness/Tempest.Harness.csproj" />

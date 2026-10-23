@@ -195,7 +195,7 @@ jobs:
         # shard heavily; each shard's own filter is spelled out in its
         # own step below, not centralised, so a moved boundary is a
         # two-step edit (this remark, the two affected filters).
-        shard: [core, desktop-1, desktop-2, desktop-3]
+        shard: [core, calc, desktop-1, desktop-2, desktop-3]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -297,6 +297,51 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             Write-Error "One or more Core tests failed for configuration 'Release' (exit code $LASTEXITCODE)."
             exit $LASTEXITCODE
+          }
+
+      # `v0.26.0` (ADR-0165): the Tempest.Calc test assemblies run as their
+      # own shard, in series, the same shape as Core's leg.
+      - name: Test Calc (Release)
+        if: matrix.configuration == 'Release' && matrix.shard == 'calc'
+        timeout-minutes: 25
+        shell: pwsh
+        run: |
+          foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators")) {
+            if (-not (Test-Path $project)) { continue }
+            dotnet test $project `
+              --configuration Release `
+              --no-build `
+              --logger trx `
+              --logger "console;verbosity=normal" `
+              --results-directory "TestResults/Release/calc" `
+              --collect:"XPlat Code Coverage" `
+              --blame-hang `
+              --blame-hang-timeout 5m
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "One or more Calc tests failed in '$project' for configuration 'Release' (exit code $LASTEXITCODE)."
+              exit $LASTEXITCODE
+            }
+          }
+
+      - name: Test Calc (Debug)
+        if: matrix.configuration == 'Debug' && matrix.shard == 'calc' && github.event_name != 'pull_request'
+        timeout-minutes: 25
+        shell: pwsh
+        run: |
+          foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators")) {
+            if (-not (Test-Path $project)) { continue }
+            dotnet test $project `
+              --configuration Debug `
+              --no-build `
+              --logger trx `
+              --logger "console;verbosity=normal" `
+              --results-directory "TestResults/Debug/calc" `
+              --blame-hang `
+              --blame-hang-timeout 5m
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "One or more Calc tests failed in '$project' for configuration 'Debug' (exit code $LASTEXITCODE)."
+              exit $LASTEXITCODE
+            }
           }
 
       - name: Test Core (Debug)
