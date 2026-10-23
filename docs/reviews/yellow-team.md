@@ -89,3 +89,13 @@ Run at the end of each build phase (§4) and again in Phase 7. Findings: ID, sev
 | Y9-03 | Info | `MaterialMarginCalculator` | Adds `k_u` (ultimate factor relative to yield), which the legacy module did not have; with `f_u` empty the sheet reduces to the legacy yield margin. | `ka-margin-yield-only`. | None. | Closed |
 | Y9-04 | Info | `FatigueMinerCalculator` | Two outputs per block (N_i, d_i): a 200-block spectrum gives 400 outputs on the results table. | Code read. | Accepted; the sheet's results are the record of the spectrum. | Closed |
 | Y9-05 | Info | Known answers | Every legacy hand calculation of the five ported modules reproduces to five significant figures (17 cases); the two originals with property tests only gained two hand calculations each. | 468 Calculators tests. | None. | Closed |
+
+## v0.27.0 Phase 3 — structural and thermal ports (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y10-01 | Medium | `FilletWeldCalculator` | A lap weld longer than 150·a carries less than the simplified method says (BS EN 1993-1-8 4.11 long-joint reduction β_Lw); the legacy module and the first port said nothing. | `Long_Welds_Warn_That_The_Long_Joint_Reduction_Is_Not_Applied`. | `long-joint` warning above 150·a; spec limitation updated. | Fixed |
+| Y10-02 | Info | `PlaneWallCalculator` | No pass/fail check: the result is a heat flow. No condensation (dew-point) check on the cold surface; the single-pane example's −2.2 °C inner surface would frost. | Worked example `single-pane-window`. | Stated in the spec's limitations and the example's notes. | Closed |
+| Y10-03 | Low | Phase 2 ports | Phase 3's templates have behaviour tests (properties, blocks, warnings); the seven Phase 2 ports have known answers and the shared hostile-input and template tests only. | `tests/Tempest.Calc.Tests.Calculators/Mechanical` has no port tests. | Behaviour tests added for all seven, to the Phase 3 level. | Open → this phase |
+| Y10-04 | Info | Known answers | All nine legacy hand calculations of the three ported modules reproduce to five significant figures, including the exactly-on-limit chain (u = 1, margin 0). | 530 Calculators tests. | None. | Closed |
+

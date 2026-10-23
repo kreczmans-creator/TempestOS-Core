@@ -1,10 +1,10 @@
 # Worked examples
 
-48 worked examples (two per worksheet template) and 1 calculation pack. Each folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF).
+54 worked examples (two per worksheet template) and 1 calculation pack. Each folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF).
 
 **How to use one.** In the Desktop open Modules → Calculations → Worksheets (or the discipline's own Calculations node) and pick the template named in the table; the form opens on the template's defaults. Enter the values from the example's README (every input lists its value, unit and source); the form recalculates at once, *Show working* is the `sheet.txt` text and the issued sheet is `sheet.pdf`. `inputs.json` is the same input set in the exchange form the Calc API reads: headless, `CalcInputJson.Read` → `CalcRunner.Run` → `CalcSheetBuilder.Build` → `CalcSheetTextRenderer.Render` reproduces the sheet (`tests/Tempest.Calc.Tests.Calculators/WorkedExamples.cs`). To load an example into the form, copy the text of its `inputs.json` to the clipboard and press *Import inputs (CSV/JSON)*; the form re-seeds from it (table inputs included) and recalculates. *Export inputs (CSV)* copies the current inputs back out in the CSV the same button reads.
 
-12 examples end on a **FAIL** governing check on purpose: they show how an overloaded or undersized design reads on the sheet. The verification footers in the stored sheets carry fixed placeholder values (hash `0000…`, engine `engine`); a sheet rendered in the product carries the real hash, engine version and test-run time.
+14 examples end on a **FAIL** governing check on purpose: they show how an overloaded or undersized design reads on the sheet. The verification footers in the stored sheets carry fixed placeholder values (hash `0000…`, engine `engine`); a sheet rendered in the product carries the real hash, engine version and test-run time.
 
 | Discipline | Template | Example | Governing check |
 |---|---|---|---|
@@ -12,12 +12,16 @@
 | building-services | `bs.duct-sizing` | [office-supply-equal-friction](building-services/bs.duct-sizing/office-supply-equal-friction/README.md) | PASS — Velocity ≤ limit |
 | building-services | `bs.pipe-pump` | [chilled-water-riser-duty](building-services/bs.pipe-pump/chilled-water-riser-duty/README.md) | FAIL — Velocity ≤ limit |
 | building-services | `bs.pipe-pump` | [oil-transfer-laminar](building-services/bs.pipe-pump/oil-transfer-laminar/README.md) | PASS — Velocity ≤ limit |
+| building-services | `bs.plane-wall` | [double-pane-window](building-services/bs.plane-wall/double-pane-window/README.md) | no pass/fail checks |
+| building-services | `bs.plane-wall` | [single-pane-window](building-services/bs.plane-wall/single-pane-window/README.md) | no pass/fail checks |
 | building-services | `bs.psychrometrics` | [cooling-coil-summer](building-services/bs.psychrometrics/cooling-coil-summer/README.md) | no pass/fail checks |
 | building-services | `bs.psychrometrics` | [winter-mixing-and-steam](building-services/bs.psychrometrics/winter-mixing-and-steam/README.md) | no pass/fail checks |
 | electrical | `elec.enclosure-heat` | [outdoor-kiosk-cooling-unit](electrical/elec.enclosure-heat/outdoor-kiosk-cooling-unit/README.md) | FAIL — Natural dissipation holds T_max |
 | electrical | `elec.enclosure-heat` | [wall-mounted-plc-panel](electrical/elec.enclosure-heat/wall-mounted-plc-panel/README.md) | FAIL — Natural dissipation holds T_max |
 | electrical | `elec.motor-sizing` | [ball-screw-pick-and-place](electrical/elec.motor-sizing/ball-screw-pick-and-place/README.md) | PASS — RMS torque SF·T_rms ≤ T_rated |
 | electrical | `elec.motor-sizing` | [geared-index-table](electrical/elec.motor-sizing/geared-index-table/README.md) | PASS — RMS torque SF·T_rms ≤ T_rated |
+| electrical | `elec.thermal-chain` | [three-stage-25W](electrical/elec.thermal-chain/three-stage-25W/README.md) | PASS — Source temperature T_1 ≤ T_max |
+| electrical | `elec.thermal-chain` | [three-stage-40W-fails](electrical/elec.thermal-chain/three-stage-40W-fails/README.md) | FAIL — Source temperature T_1 ≤ T_max |
 | electrical | `elec.voltage-drop` | [dc-battery-feed](electrical/elec.voltage-drop/dc-battery-feed/README.md) | FAIL — Voltage drop ≤ limit |
 | electrical | `elec.voltage-drop` | [three-phase-motor-feeder](electrical/elec.voltage-drop/three-phase-motor-feeder/README.md) | PASS — I ≤ I_z |
 | mechanical | `mech.bearing-life` | [ball-bearing-combined-95](mechanical/mech.bearing-life/ball-bearing-combined-95/README.md) | PASS — Modified life against required life |
@@ -52,6 +56,8 @@
 | structural | `struct.column-buckling` | [slender-strut-curve-b](structural/struct.column-buckling/slender-strut-curve-b/README.md) | FAIL — Axial load against compression resistance |
 | structural | `struct.en1993-member` | [ub-beam-bending-shear](structural/struct.en1993-member/ub-beam-bending-shear/README.md) | PASS — Bending y M_y,Ed ≤ M_y,c,Rd |
 | structural | `struct.en1993-member` | [uc-column-axial-moment](structural/struct.en1993-member/uc-column-axial-moment/README.md) | FAIL — Member interaction (simplified) |
+| structural | `struct.fillet-weld` | [normal-load-overloaded](structural/struct.fillet-weld/normal-load-overloaded/README.md) | FAIL — Weld resistance |
+| structural | `struct.fillet-weld` | [s355-lap-shear](structural/struct.fillet-weld/s355-lap-shear/README.md) | PASS — Weld resistance |
 | structural | `struct.frame-2d` | [pinned-portal-gravity-wind](structural/struct.frame-2d/pinned-portal-gravity-wind/README.md) | no pass/fail checks |
 | structural | `struct.frame-2d` | [two-span-continuous-beam](structural/struct.frame-2d/two-span-continuous-beam/README.md) | no pass/fail checks |
 | structural | `struct.section-properties` | [fabricated-box-girder](structural/struct.section-properties/fabricated-box-girder/README.md) | no pass/fail checks |

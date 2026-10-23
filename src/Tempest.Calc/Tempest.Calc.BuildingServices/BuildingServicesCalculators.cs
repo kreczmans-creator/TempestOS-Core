@@ -10,5 +10,6 @@ public static class BuildingServicesCalculators
         new PipeFlowCalculator(),
         new PsychrometricsCalculator(),
         new DuctSizingCalculator(),
+        new PlaneWallCalculator(),
     ];
 }

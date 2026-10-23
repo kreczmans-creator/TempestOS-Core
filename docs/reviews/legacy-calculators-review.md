@@ -41,7 +41,7 @@ Requested by the owner on 2026-10-23 ("review all of the currently built work â€
 | `calc.fatigue-miner` | Port | `mech.fatigue-miner` |
 | `calc.shaft-combined-stress` | Port | `mech.shaft-stress` |
 | `calc.plane-wall-heat-transfer` | Port | `bs.plane-wall` |
-| `calc.thermal-resistance-chain` | Port | `bs.thermal-chain` |
+| `calc.thermal-resistance-chain` | Port | `elec.thermal-chain` (D-40) |
 | `calc.thermal-expansion-stress` | Port | `mech.thermal-expansion` |
 | `calc.bolt-shear-capacity` | Retire (covered) | `mech.bolt-group` single-bolt case |
 | `calc.beam-bending-stress` | Retire (covered) | `struct.beam-formulas` + `struct.section-properties` |
