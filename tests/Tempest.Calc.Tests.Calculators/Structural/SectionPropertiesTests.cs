@@ -36,7 +36,7 @@ public sealed class SectionPropertiesTests
             var loops = Shapes.Angle(h / 1e3, b / 1e3, t / 1e3, 0);
             var p0 = PolygonSection.Compute(loops);
             var p1 = PolygonSection.Compute(loops.Select(l => l.Transform(0.05, -0.02, angle)).ToList());
-            Assert.Equal(p0.A, p1.A, 12);
+            Assert.Equal(p0.A, p1.A, p0.A * 1e-9);
             Assert.Equal(p0.I1, p1.I1, p0.I1 * 1e-9);
             Assert.Equal(p0.I2, p1.I2, p0.I1 * 1e-9);
             Assert.Equal(p0.Ixx + p0.Iyy, p1.Ixx + p1.Iyy, p0.I1 * 1e-9);

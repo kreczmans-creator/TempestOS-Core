@@ -9,6 +9,7 @@ public static class AllCalculators
     [
         .. Tempest.Calc.Mechanical.MechanicalCalculators.All,
         .. Tempest.Calc.Structural.StructuralCalculators.All,
+        .. Tempest.Calc.BuildingServices.BuildingServicesCalculators.All,
     ];
 
     public static TheoryData<string> Ids => [.. All.Select(c => c.Template.Id)];

@@ -105,6 +105,12 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
+      "tempest.calc.buildingservices": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.calc.engine": {
         "type": "Project"
       },
