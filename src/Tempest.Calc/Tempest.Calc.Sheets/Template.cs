@@ -56,8 +56,14 @@ public sealed record CalcInputSpec(
     bool IsOptional = false,
     string? Group = null,
     IReadOnlyList<CalcColumnSpec>? Columns = null,
-    int MaxRows = 500)
+    int MaxRows = 500,
+    string? ReferenceLibrary = null,
+    string? ReferenceProperty = null,
+    string? ReferenceDimension = null)
 {
+    /// <summary>Whether a released reference record (materials, fasteners, bearings) can fill this input with a pinned provenance (ADR-0167 §3).</summary>
+    public bool IsReferenceFillable => ReferenceLibrary is { Length: > 0 } && ReferenceProperty is { Length: > 0 };
+
     /// <summary>The dimension this input measures, from its default unit.</summary>
     public Dimension Dimension => Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? UnitCatalog.Parse(DefaultUnit).Dimension : Dimension.None;
 

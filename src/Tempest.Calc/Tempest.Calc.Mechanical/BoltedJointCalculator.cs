@@ -15,13 +15,13 @@ public sealed class BoltedJointCalculator : ICalcCalculator
         [
             new CalcInputSpec("d", "Nominal thread diameter", CalcInputKind.Quantity, "mm", Default: 12, Min: 3, Max: 64, HardMin: 0.5, HardMax: 500, Group: "Bolt"),
             new CalcInputSpec("P", "Thread pitch", CalcInputKind.Quantity, "mm", Default: 1.75, Min: 0.35, Max: 6, HardMin: 0.05, HardMax: 50, Group: "Bolt"),
-            new CalcInputSpec("R_p02", "Bolt 0.2 % proof (yield) strength", CalcInputKind.Quantity, "MPa", Default: 640, Min: 200, Max: 1200, HardMin: 1, HardMax: 1e4, Group: "Bolt"),
+            new CalcInputSpec("R_p02", "Bolt 0.2 % proof (yield) strength", CalcInputKind.Quantity, "MPa", ReferenceLibrary: "Fasteners", ReferenceProperty: "YieldStrength", ReferenceDimension: "Pressure", Default: 640, Min: 200, Max: 1200, HardMin: 1, HardMax: 1e4, Group: "Bolt"),
             new CalcInputSpec("E_S", "Bolt Young's modulus", CalcInputKind.Quantity, "GPa", Default: 205, Min: 60, Max: 250, HardMin: 1, HardMax: 2000, Group: "Bolt"),
             new CalcInputSpec("sigma_A", "Bolt endurance limit (stress amplitude)", CalcInputKind.Quantity, "MPa", Default: 50, Min: 10, Max: 200, HardMin: 0.1, HardMax: 1e4, Group: "Bolt"),
             new CalcInputSpec("l_k", "Clamp length", CalcInputKind.Quantity, "mm", Default: 40, Min: 1, Max: 2000, HardMin: 0.1, HardMax: 1e5, Group: "Joint"),
             new CalcInputSpec("d_h", "Hole diameter", CalcInputKind.Quantity, "mm", Default: 13, Min: 1, Max: 100, HardMin: 0.1, HardMax: 1000, Group: "Joint"),
             new CalcInputSpec("d_w", "Head / washer bearing diameter", CalcInputKind.Quantity, "mm", Default: 18, Min: 2, Max: 200, HardMin: 0.1, HardMax: 1000, Group: "Joint"),
-            new CalcInputSpec("E_P", "Clamped members' Young's modulus", CalcInputKind.Quantity, "GPa", Default: 205, Min: 5, Max: 250, HardMin: 1, HardMax: 2000, Group: "Joint"),
+            new CalcInputSpec("E_P", "Clamped members' Young's modulus", CalcInputKind.Quantity, "GPa", ReferenceLibrary: "Materials", ReferenceProperty: "YoungsModulus", ReferenceDimension: "Pressure", Default: 205, Min: 5, Max: 250, HardMin: 1, HardMax: 2000, Group: "Joint"),
             new CalcInputSpec("n", "Load introduction factor (0 = at the clamped faces, 1 = under the head)", CalcInputKind.Number, Default: 0.5, Min: 0, Max: 1, HardMin: 0, HardMax: 1, Group: "Joint"),
             new CalcInputSpec("f_Z", "Embedding (settling) loss", CalcInputKind.Quantity, "µm", Default: 11, Min: 0, Max: 100, HardMin: 0, HardMax: 1e4, Group: "Joint"),
             new CalcInputSpec("method", "Preload method", CalcInputKind.Choice, Choices: ["nut factor", "friction"], DefaultChoice: "friction", Group: "Tightening"),
@@ -124,7 +124,24 @@ public sealed class BoltedJointCalculator : ICalcCalculator
         c.Assign("m_min", "S_strip * F_S_max / (0.5 * pi * d * tau_B)", "mm", "Thread engagement needed against stripping", "VDI 2230 §5.5.5");
         c.Assign("u_strip", "m_min / m_eff", null, "Engagement utilisation");
 
-        foreach (var (s, t) in new[] { ("A_s", "Tensile stress area"), ("F_M", "Assembly preload (maximum)"), ("F_M_min", "Minimum preload"), ("sigma_M", "Preload stress"), ("nu_M", "Assembly utilisation of proof strength"), ("k_S", "Bolt stiffness"), ("k_P", "Members' stiffness"), ("Phi", "Load factor"), ("F_Z", "Embedding loss"), ("F_SA", "Additional bolt load"), ("F_KR", "Residual clamp"), ("F_S_max", "Maximum bolt load"), ("sigma_red_B", "Working equivalent stress"), ("sigma_a", "Fatigue amplitude"), ("m_min", "Engagement needed") })
+        // Joint-diagram load factors (carried from the legacy calc.bolted-joint-preload module, ADR-0167): how far the working
+        // load can grow before the members separate, and before the bolt's axial stress reaches the proof strength.
+        c.Assign("F_A_sep", "(F_M_min - F_Z) / (1 - Phi)", "kN", "Working load at which the members separate (minimum preload, after embedding)", "VDI 2230 R7");
+        c.Assign("F_proof", "R_p02 * A_s", "kN", "Bolt load at the proof (yield) strength");
+
+        if (c.Si("F_A") > 0)
+        {
+            c.Assign("n_0", "F_A_sep / F_A", null, "Load factor against separation (F_A,sep / F_A)");
+            c.Output("n_0", "Load factor against separation");
+
+            if (c.Si("F_proof") > c.Si("F_M"))
+            {
+                c.Assign("n_L", "(F_proof - F_M) / F_SA", null, "Load factor against axial yield of the bolt, torsion excluded ((F_proof − F_M) / F_SA)");
+                c.Output("n_L", "Load factor against axial yield");
+            }
+        }
+
+        foreach (var (s, t) in new[] { ("A_s", "Tensile stress area"), ("F_M", "Assembly preload (maximum)"), ("F_M_min", "Minimum preload"), ("sigma_M", "Preload stress"), ("nu_M", "Assembly utilisation of proof strength"), ("k_S", "Bolt stiffness"), ("k_P", "Members' stiffness"), ("Phi", "Load factor"), ("F_Z", "Embedding loss"), ("F_SA", "Additional bolt load"), ("F_KR", "Residual clamp"), ("F_A_sep", "Separation load"), ("F_S_max", "Maximum bolt load"), ("sigma_red_B", "Working equivalent stress"), ("sigma_a", "Fatigue amplitude"), ("m_min", "Engagement needed") })
             c.Output(s, t);
 
         if (c.Si("F_KR") <= 0)

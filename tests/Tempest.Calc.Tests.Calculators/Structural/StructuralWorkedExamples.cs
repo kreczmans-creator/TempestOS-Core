@@ -160,5 +160,35 @@ public static class StructuralWorkedExamples
             ]),
             [new CalcExpectedValue("M_y_c_Rd", 171.325, "kN*m", 1e-4), new CalcExpectedValue("V_pl_Rd", 318.62, "kN", 1e-3), new CalcExpectedValue("u_M_y", 0.70043, "", 1e-3)],
             "The two-span floor beam from the S2 worked example, checked in bending and shear with the rolled-I shear-area helper. Bending governs at 0.70; shear is low enough that no 6.2.8 reduction applies. Lateral-torsional buckling is flagged as not checked (deck restraint assumed)."),
+
+        new(ColumnBucklingCalculator.Id, "rhs-column-curve-c", "Pin-ended column, curve c, intermediate slenderness",
+            new CalcReferenceSource("TempestOS calc.column-buckling (v0.21.0) hand calculation", null, "docs/engineering/calculations/calc.column-buckling.md, Example 1"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Quantity("L_E", 3, "m", CalcProvenance.Drawing("DRG-ST-410", "B")),
+                CalcInputValue.Quantity("A", 2000, "mm^2", CalcProvenance.Specification("SPEC-ST-02 section schedule")),
+                CalcInputValue.Quantity("I", 200, "cm^4", CalcProvenance.Specification("SPEC-ST-02 section schedule")),
+                CalcInputValue.Quantity("E", 205, "GPa", CalcProvenance.Specification("BS 5950-1 3.1.3: E = 205 GPa")),
+                CalcInputValue.Quantity("p_y", 275, "MPa", CalcProvenance.Specification("SPEC-ST-02: S275, t ≤ 16 mm")),
+                CalcInputValue.Choice("curve", ColumnBucklingCalculator.CurveC, CalcProvenance.Specification("BS 5950-1 Table 23: welded box, curve c")),
+                CalcInputValue.Quantity("P", 150, "kN", CalcProvenance.Assumed("Factored axial load from the frame analysis")),
+            ]),
+            [new CalcExpectedValue("lambda", 94.868, "", 5e-5), new CalcExpectedValue("p_c", 133.78, "MPa", 5e-5), new CalcExpectedValue("P_c", 267.56, "kN", 5e-5), new CalcExpectedValue("u", 0.56062, "", 5e-5)],
+            "A column of intermediate slenderness. The Perry factor reduces the strength from the 275 MPa design strength to 134 MPa, about 60 % of Euler's 225 MPa; the column carries 150 kN at a utilisation of 0.56. The legacy module's hand calculation is reproduced to five significant figures."),
+
+        new(ColumnBucklingCalculator.Id, "slender-strut-curve-b", "Slender strut, curve b, S355 — fails",
+            new CalcReferenceSource("TempestOS calc.column-buckling (v0.21.0) hand calculation", null, "docs/engineering/calculations/calc.column-buckling.md, Example 2"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Quantity("L_E", 1.5, "m", CalcProvenance.Drawing("DRG-ST-411", "A")),
+                CalcInputValue.Quantity("A", 1200, "mm^2", CalcProvenance.Specification("SPEC-ST-02 section schedule")),
+                CalcInputValue.Quantity("I", 12, "cm^4", CalcProvenance.Specification("SPEC-ST-02 section schedule")),
+                CalcInputValue.Quantity("E", 205, "GPa", CalcProvenance.Specification("BS 5950-1 3.1.3: E = 205 GPa")),
+                CalcInputValue.Quantity("p_y", 355, "MPa", CalcProvenance.Specification("SPEC-ST-02: S355")),
+                CalcInputValue.Choice("curve", ColumnBucklingCalculator.CurveB, CalcProvenance.Specification("BS 5950-1 Table 23: hot-finished tube, curve b")),
+                CalcInputValue.Quantity("P", 100, "kN", CalcProvenance.Assumed("Factored brace force")),
+            ]),
+            [new CalcExpectedValue("lambda", 150.00, "", 5e-5), new CalcExpectedValue("p_c", 77.973, "MPa", 5e-5), new CalcExpectedValue("P_c", 93.567, "kN", 5e-5), new CalcExpectedValue("u", 1.0688, "", 5e-5)],
+            "A slender strut at λ = 150. Its strength is governed by buckling, not by the higher S355 design strength: 78 MPa against an Euler stress of 90 MPa, so 100 kN is 7 % over the 93.6 kN resistance. The sheet shows the failing check; a shorter effective length or a stockier section is the fix."),
     ];
 }

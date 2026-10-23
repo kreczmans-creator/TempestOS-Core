@@ -90,5 +90,5 @@ Roark Table 8.1 formulas in own notation. For the simply supported point load at
   Template: struct.beam-formulas@1.0.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 4/4
+  Known-answer cases passed: 8/8
   Test run: —

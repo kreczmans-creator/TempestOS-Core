@@ -69,6 +69,8 @@ public sealed class CalcSheetView : UserControl
     /// <summary>Inputs the form has no field for (tables, vectors): carried from the seed so an imported or saved set keeps them (§3.8).</summary>
     private readonly List<CalcInputValue> _carriedInputs = [];
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
+    /// <summary>One picker per reference library (or slot) the template draws on; items are the released records' labels (ADR-0167 §3).</summary>
+    private readonly Dictionary<string, ComboBox> _referencePickers = new(StringComparer.Ordinal);
     private readonly Dictionary<string, StackPanel> _stepRows = new(StringComparer.Ordinal);
     private bool _loadingForm;
     private string? _governingStep;
@@ -128,6 +130,51 @@ public sealed class CalcSheetView : UserControl
 
     /// <summary>The user asked to import inputs (CSV or JSON) from the clipboard.</summary>
     public event Action? ImportRequested;
+
+    /// <summary>The user picked a released reference record for a library (or slot): the library key and the index into the options last set by <see cref="SetReferenceOptions"/>.</summary>
+    public event Action<string, int>? ReferencePicked;
+
+    public static string ReferencePickerName(string library) => $"{library} record";
+
+    /// <summary>The libraries the shown template draws on, in input order; empty when none.</summary>
+    public IReadOnlyList<string> ReferenceLibraries => _referencePickers.Keys.ToList();
+
+    /// <summary>Fills a library's picker with the released records' labels; the selection is cleared.</summary>
+    public void SetReferenceOptions(string library, IReadOnlyList<string> labels)
+    {
+        ArgumentNullException.ThrowIfNull(labels);
+
+        if (!_referencePickers.TryGetValue(library, out var picker))
+            return;
+
+        _loadingForm = true;
+        picker.ItemsSource = labels;
+        picker.SelectedIndex = -1;
+        picker.IsEnabled = labels.Count > 0 && !IsReadOnly;
+        picker.PlaceholderText = labels.Count == 0 ? "No released record" : $"Pick a released record ({labels.Count})";
+        _loadingForm = false;
+    }
+
+    /// <summary>Writes the values a reference record supplied into their fields, with the record's pin as the source.</summary>
+    public void ApplyReferenceFill(IReadOnlyList<CalcInputValue> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+
+        if (IsReadOnly)
+            return;
+
+        foreach (var value in values)
+        {
+            if (value.Unit is { } unit)
+                SetField(value.Symbol, unit: unit);
+
+            SetField(value.Symbol,
+                text: value.Number is { } n ? n.ToString("R", CultureInfo.InvariantCulture) : null,
+                choice: value.Text,
+                provenance: ProvenanceLabel(CalcProvenanceKind.Reference),
+                reference: value.Provenance?.Reference ?? string.Empty);
+        }
+    }
 
     public CalcCatalogueEntry? SelectedTemplate { get; private set; }
 
@@ -227,6 +274,7 @@ public sealed class CalcSheetView : UserControl
         _watermark.Foreground = instance?.Status == CalcInstanceStatus.Issued ? Brushes.SeaGreen : instance?.Status == CalcInstanceStatus.Superseded ? Brushes.Gray : Brushes.DarkOrange;
         _form.Children.Clear();
         _fields.Clear();
+        _referencePickers.Clear();
         _problems.Text = string.Empty;
         _status.Text = IsReadOnly ? $"This calculation is {instance!.Status}; it is read-only. Revise it to start a new revision." : string.Empty;
 
@@ -234,6 +282,26 @@ public sealed class CalcSheetView : UserControl
         _carriedInputs.Clear();
         _carriedInputs.AddRange(entry.Template.Inputs.Where(s => s.Kind is CalcInputKind.Table or CalcInputKind.Vector).Select(s => seed.Find(s.Symbol)).OfType<CalcInputValue>());
         string? lastGroup = null;
+
+        foreach (var library in CalcReferenceFill.LibrariesOf(entry.Template))
+        {
+            var picker = new ComboBox { MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch, IsEnabled = false, PlaceholderText = "Loading released records…" };
+            var key = library;
+            picker.SelectionChanged += (_, _) =>
+            {
+                if (!_loadingForm && picker.SelectedIndex >= 0)
+                    ReferencePicked?.Invoke(key, picker.SelectedIndex);
+            };
+            AutomationProperties.SetName(picker, ReferencePickerName(library));
+            ToolTip.SetTip(picker, $"Fills {string.Join(", ", entry.Template.Inputs.Where(i => i.IsReferenceFillable && i.ReferenceLibrary == library).Select(i => i.Symbol))} from a released reference record, with the record's pin as the source.");
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("160,*"), Margin = DesignTokens.ControlMargin };
+            var label = new TextBlock { Text = CalcReferenceFill.PickerLabel(library), VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeBody };
+            Grid.SetColumn(picker, 1);
+            row.Children.Add(label);
+            row.Children.Add(picker);
+            _form.Children.Add(row);
+            _referencePickers[library] = picker;
+        }
 
         foreach (var spec in entry.Template.Inputs)
         {
@@ -492,12 +560,51 @@ public sealed class CalcSheetView : UserControl
         InputsChanged?.Invoke(ReadForm());
     }
 
+    /// <summary>Automation name of the read-only text an archived legacy record shows.</summary>
+    public const string ArchiveSheetName = "Archived legacy calculation";
+
+    /// <summary>
+    /// Shows a migrated legacy calculation record (ADR-0167) as its archive
+    /// sheet: read-only, no form, no lifecycle actions. Its inputs can be
+    /// re-entered in the matching worksheet template for a sheet with working.
+    /// </summary>
+    public void ShowArchive(CalcInstance instance, string sheetText)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(sheetText);
+
+        _loadingForm = true;
+        SelectedTemplate = null;
+        CurrentInstance = instance;
+        IsReadOnly = true;
+        LastRun = null;
+        _title.Text = instance.Name;
+        _reference.Text = instance.TemplateReference;
+        _scope.Text = LegacyArchiveSheet.MethodText;
+        _watermark.Text = "ARCHIVE";
+        _watermark.IsVisible = true;
+        _watermark.Foreground = Brushes.Gray;
+        _form.Children.Clear();
+        _fields.Clear();
+        _referencePickers.Clear();
+        _carriedInputs.Clear();
+        _problems.Text = string.Empty;
+        var text = new SelectableTextBlock { Text = sheetText, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap };
+        AutomationProperties.SetName(text, ArchiveSheetName);
+        _form.Children.Add(new ScrollViewer { Content = text, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
+        _status.Text = "A migrated legacy calculation record: read-only. Re-enter its inputs in the matching worksheet template for a sheet with working.";
+        _exportButton.IsEnabled = false;
+        _importButton.IsEnabled = false;
+        _loadingForm = false;
+        UpdateActions();
+    }
+
     private void UpdateActions()
     {
         var instance = CurrentInstance;
         _saveButton.Content = instance is null ? SaveCaption : "Save changes";
         _saveButton.IsEnabled = !IsReadOnly && SelectedTemplate is not null && LastRun is { IsBlocked: false };
-        _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft };
+        _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft, IsLegacyArchive: false };
         _issueButton.IsVisible = instance is { Status: CalcInstanceStatus.Checked };
         _reviseButton.IsVisible = instance is { Status: CalcInstanceStatus.Issued };
     }

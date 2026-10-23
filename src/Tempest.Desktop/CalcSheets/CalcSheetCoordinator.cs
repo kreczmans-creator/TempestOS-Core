@@ -23,7 +23,10 @@ public sealed class CalcSheetCoordinator
     private readonly Func<string?> _principalId;
     private CalcInputSet? _latest;
 
-    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId)
+    private readonly CalcReferenceFill? _references;
+    private readonly Dictionary<string, IReadOnlyList<CalcReferenceOption>> _referenceOptions = new(StringComparer.Ordinal);
+
+    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, CalcReferenceFill? references = null)
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(view);
@@ -42,6 +45,9 @@ public sealed class CalcSheetCoordinator
         _view.ReviseRequested += () => _ = GuardedAsync(ReviseAsync, "revise that calculation");
         _view.ExportRequested += () => _ = GuardedAsync(ExportAsync, "export the inputs");
         _view.ImportRequested += () => _ = GuardedAsync(ImportAsync, "import the inputs");
+        _references = references;
+        _view.TemplateSelected += entry => _ = GuardedAsync(() => LoadReferenceOptionsAsync(entry), "list the released reference records");
+        _view.ReferencePicked += (library, index) => _ = GuardedAsync(() => PickReferenceAsync(library, index), "fill from the reference record");
     }
 
     public Task RefreshAsync()
@@ -58,6 +64,13 @@ public sealed class CalcSheetCoordinator
         if (instance is null)
         {
             _view.ShowStatus("That calculation no longer exists.");
+            return;
+        }
+
+        if (instance.IsLegacyArchive)
+        {
+            var archive = await _service.RunAsync(instance).ConfigureAwait(true);
+            _view.ShowArchive(instance, archive.SheetText);
             return;
         }
 
@@ -156,6 +169,36 @@ public sealed class CalcSheetCoordinator
 
         await clipboard.SetTextAsync(csv).ConfigureAwait(true);
         _view.ShowStatus($"Copied {entry.Template.Inputs.Count} input row(s) as CSV to the clipboard.");
+    }
+
+    /// <summary>Lists the released records of every library the template draws on (empty lists when no catalogue is wired).</summary>
+    private async Task LoadReferenceOptionsAsync(CalcCatalogueEntry entry)
+    {
+        _referenceOptions.Clear();
+
+        foreach (var library in CalcReferenceFill.LibrariesOf(entry.Template))
+        {
+            var options = _references is null ? [] : await _references.ListReleasedAsync(library).ConfigureAwait(true);
+            _referenceOptions[library] = options;
+            _view.SetReferenceOptions(library, options.Select(o => o.Label).ToList());
+        }
+    }
+
+    private async Task PickReferenceAsync(string library, int index)
+    {
+        if (_references is null || _view.SelectedTemplate is not { } entry || !_referenceOptions.TryGetValue(library, out var options) || index < 0 || index >= options.Count)
+            return;
+
+        var option = options[index];
+        var fill = await _references.FillAsync(entry.Template, library, option.RecordId).ConfigureAwait(true);
+
+        if (fill.Values.Count > 0)
+            _view.ApplyReferenceFill(fill.Values);
+
+        var filled = string.Join(", ", fill.Values.Select(v => v.Symbol));
+        _view.ShowStatus(fill.Problems.Count == 0
+            ? $"Filled {filled} from {option.Label} ({option.Pin})."
+            : $"{(fill.Values.Count > 0 ? $"Filled {filled} from {option.Label}; " : string.Empty)}{string.Join(" ", fill.Problems.Select(p => p.Message))}");
     }
 
     /// <summary>Inputs come in from the clipboard as the CSV the form exports or as a worked example's <c>inputs.json</c>; the file formats' own caps and notices apply (§3.8).</summary>

@@ -7,11 +7,13 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 - [x] ADR-0167: the legacy calculation modules are superseded by Tempest.Calc templates; records migrate; tests carried as known-answer cases
 - [ ] Draft PR release/v0.27.0 → main (dashboard)
 ## Phase 1 — foundations (`v0.27.0/phase-1-foundations`)
-- [ ] Record migration: every stored `CalculationRecord` readable as a `CalcInstance` snapshot (Draft, provenance Manual, inputs/intermediates preserved); Grey upgrade test over a real v0.26 database with legacy records
-- [ ] Reference-library fill: `CalcProvenance.FromReference` with released-record pins for materials, fasteners, bearings in the worksheet form (descriptor `Library`/`SourceProperty` pattern carried over)
-- [ ] Spec raise: "In plain terms" paragraph + hand arithmetic of one worked example in all 16 v0.26.0 specs
-- [ ] Shipped-template additions: bolted-joint load factors n_0/n_L; beam-formula cases from the legacy deflection set; Euler/Johnson `struct.column-buckling`
-- [ ] Yellow pass
+- [x] Record migration: every stored `CalculationRecord` readable as a `CalcInstance` archive snapshot (`LegacyCalculationMigration`, `LegacyArchiveSheet`, `ICalculationEngine.FindRecordDocumentAsync`); lifecycle refusals on archives; Grey upgrade test over a real SQLite database with a legacy bolted-joint record
+- [x] Reference-library fill: `CalcReferenceFill` (released records only; `FromReference` pin per value; library slots such as `Materials:hub`); declared on struct.en1993-member, struct.beam-formulas, struct.frame-2d, mech.press-fit (hub/shaft), mech.bolted-joint (fastener + members); one picker per library in the worksheet form
+- [x] Spec raise: "In plain terms" paragraph (hand-written) + hand arithmetic of the first worked example (generated from its sheet, drift-guarded by `SpecHandArithmeticTests`) in all 16 specs
+- [x] Bolted-joint joint-diagram load factors (F_A_sep, n_0, n_L) with consistency tests; golden, worked examples, PDFs, pack and spec regenerated
+- [x] Beam formulas: legacy stress (M·c/I) and deflection-limit checks, deep-beam warning, four legacy hand calculations as known-answer cases (8/8)
+- [x] `struct.column-buckling` (Perry–Robertson, BS 5950-1 Annex C — the legacy method; three legacy hand calculations as known-answer cases, two worked examples, spec)
+- [x] Yellow pass (Y8-01…Y8-06; Y8-02 and Y8-06 carried to Phases 5 and 4)
 ## Phase 2 — mechanical ports (`v0.27.0/phase-2-mech`)
 - [ ] mech.lifting-lug (5 checks, governing)
 - [ ] mech.bearing-life (ISO 281 L10 with a_ISO as inputs; covers bearing-load-capacity)

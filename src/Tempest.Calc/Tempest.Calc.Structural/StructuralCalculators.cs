@@ -11,5 +11,6 @@ public static class StructuralCalculators
         new FrameCalculator(),
         new BeamFormulasCalculator(),
         new MemberChecksCalculator(),
+        new ColumnBucklingCalculator(),
     ];
 }

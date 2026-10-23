@@ -65,8 +65,15 @@ public sealed record CalcInstance(
     Guid? PackId = null,
     string? OutputsHash = null,
     IReadOnlyDictionary<string, string>? UpstreamHashes = null,
-    string? LastRejection = null)
+    string? LastRejection = null,
+    IReadOnlyList<string>? Notes = null)
 {
+    /// <summary>Template references of this form name an instance migrated from a legacy calculation record (ADR-0167); no calculator is registered for them.</summary>
+    public const string LegacyReferencePrefix = "legacy/";
+
+    [JsonIgnore]
+    public bool IsLegacyArchive => TemplateReference.StartsWith(LegacyReferencePrefix, StringComparison.Ordinal);
+
     [JsonIgnore]
     public bool IsImmutable => Status is CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded;
 

@@ -33,6 +33,71 @@ public sealed class CalcSheetViewTests
     }
 
     [AvaloniaFact]
+    public void ReferencePicker_IsShownPerLibrary_AndAFillSetsValuesWithThePinAsTheSource()
+    {
+        // ADR-0167 §3: a template that declares reference-fillable inputs gets one picker per library; a fill writes value, unit and a 'reference' source.
+        var catalogue = new CalcCatalogue([new Tempest.Calc.Structural.MemberChecksCalculator()]);
+        var view = new CalcSheetView();
+        string? picked = null;
+        view.ReferencePicked += (library, index) => picked = $"{library}#{index}";
+        view.ShowCatalogue(catalogue.Current());
+        view.SelectTemplate("struct.en1993-member");
+
+        Assert.Equal(["Materials"], view.ReferenceLibraries);
+        var picker = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == CalcSheetView.ReferencePickerName("Materials"));
+        Assert.False(picker.IsEnabled);
+
+        view.SetReferenceOptions("Materials", ["S355 — Structural steel"]);
+        Assert.True(picker.IsEnabled);
+        picker.SelectedIndex = 0;
+        Assert.Equal("Materials#0", picked);
+
+        view.ApplyReferenceFill(
+        [
+            CalcInputValue.Quantity("f_y", 345, "MPa", CalcProvenance.FromReference("Materials/mat-s355@3")),
+            CalcInputValue.Quantity("E", 210, "GPa", CalcProvenance.FromReference("Materials/mat-s355@3")),
+        ]);
+        var read = view.ReadForm();
+        Assert.Equal(345, read.Find("f_y")!.Number);
+        Assert.Equal(CalcProvenanceKind.Reference, read.Find("f_y")!.Provenance!.Kind);
+        Assert.Equal("Materials/mat-s355@3", read.Find("f_y")!.Provenance!.Reference);
+        Assert.Equal(210, read.Find("E")!.Number);
+    }
+
+    [AvaloniaFact]
+    public void ALegacyArchive_IsShownReadOnly_WithItsSheet_AndNoLifecycleActions()
+    {
+        // ADR-0167: a migrated legacy record opens as its archive sheet; it cannot be saved, checked, issued or revised.
+        var (view, _) = NewView();
+        var at = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
+        var archive = new CalcInstance(
+            Guid.NewGuid(), CalcInstance.LegacyReferencePrefix + "calc.bolted-joint-preload@1", "legacy", null, "calc.bolted-joint-preload 2026-03-01 09:00", "A",
+            [CalcInputValue.Quantity("Preload", 37935, "N", CalcProvenance.Manual)], [new CalcOutputSnapshot("Bolt load", "result", "42935 N", 42935, "N")], [], [], [],
+            CalcInstanceStatus.Draft, null, null, "steven", at, at, Notes: ["Migrated from calculation record."]);
+        var sheet = LegacyArchiveSheet.Build(archive, "—", "steven", "engine", null, at);
+
+        view.ShowArchive(archive, CalcSheetTextRenderer.Render(sheet));
+
+        Assert.True(view.IsReadOnly);
+        Assert.Null(view.SelectedTemplate);
+        var text = view.GetLogicalDescendants().OfType<SelectableTextBlock>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.ArchiveSheetName);
+        Assert.Contains("Bolt load = 42935 N", text.Text, StringComparison.Ordinal);
+        foreach (var caption in new[] { CalcSheetView.SaveCaption, CalcSheetView.CheckCaption, CalcSheetView.IssueCaption, CalcSheetView.ReviseCaption, CalcSheetView.ImportCaption })
+        {
+            var button = view.GetLogicalDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == caption);
+            Assert.False(button.IsVisible && button.IsEnabled, $"{caption} is available on an archive");
+        }
+    }
+
+    [AvaloniaFact]
+    public void ATemplateWithoutReferenceInputs_ShowsNoPicker()
+    {
+        var (view, _) = NewView();
+        view.SelectTemplate("test.desktop-stress");
+        Assert.Empty(view.ReferenceLibraries);
+    }
+
+    [AvaloniaFact]
     public void ImportedInputs_SeedTheForm_AndRoundTripThroughReadForm()
     {
         // §3.8 / Black B-24: a worked example's inputs.json (or the exported CSV) re-seeds the form; the form reads the same set back.

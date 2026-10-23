@@ -348,6 +348,21 @@ public sealed class WorkspaceHost : IAsyncDisposable
             CalcSheetRenderer = new Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer(),
             applicationVersion: $"TempestOS {typeof(WorkspaceHost).Assembly.GetName().Version?.ToString(3)}");
 
+        // ADR-0167: every stored legacy calculation record is copied once into an archive worksheet (same Id; the record
+        // itself is untouched), so it stays readable once the legacy modules are retired. Idempotent; a failure to read
+        // one record is reported, never fatal to start-up.
+        try
+        {
+            LegacyMigrationReport = await new Tempest.Calc.Library.LegacyCalculationMigration(
+                (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)),
+                new Tempest.Calc.Library.CalcInstanceStore(domainContext.PersistenceStore))
+                .MigrateAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            LegacyMigrationReport = new Tempest.Calc.Library.LegacyMigrationReport(0, 0, [(Guid.Empty, failure.Message)]);
+        }
+
         CalculationModules = new CalculationModuleWorkbench(
             CalculationModuleService,
             CalculationTemplates!,
@@ -555,6 +570,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>`v0.26.0` (ADR-0165): the worksheet instance service (create, run, check, issue, revise, packs).</summary>
     public Tempest.Calc.Library.CalcInstanceService? CalcInstances { get; private set; }
+
+    /// <summary>What the start-up migration of legacy calculation records did (ADR-0167); <see langword="null"/> before start.</summary>
+    public Tempest.Calc.Library.LegacyMigrationReport? LegacyMigrationReport { get; private set; }
 
     /// <summary>`v0.26.0`: the calc-sheet PDF renderer, so the composer can hand it the organisation identity.</summary>
     public Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer? CalcSheetRenderer { get; private set; }
