@@ -21,3 +21,19 @@ Two calculation surfaces exist after v0.26.0. The legacy one (`Tempest.Core.Calc
 - Phase 1 adds a migration step to the upgrade path; a database that holds legacy records opens with the same records as draft worksheets.
 - The lean-Markdown rule (D-04, CONTRIBUTING) is kept: the spec prose is counted against the examples' README lines already in the tree.
 - Until Phase 4, both surfaces ship; the release notes say which to use (Worksheets).
+
+## Amendment 1 (2026-10-23, v0.27.0 Phase 4): the Calculators surface is retired
+
+Preconditions met: every legacy module has a worksheet template (Phases 1–3); the record migration passes the Grey test on real v0.25.3 and v0.26.0-rc1 databases (`GreyLegacyDatabaseTests`, 46 records of all 19 calculations); Compare is reimplemented over calc instances (`CalcInstanceComparer`); and every template draws its reference diagram in the worksheet form (D-41, `CalcDiagrams`).
+
+Retired: the Desktop `CalculationModulesView` and its coordinator, the Engineering → Calculators node (Worksheets takes its place), `CalculationModuleWorkbench` and `CalculationModuleService`. Kept: the legacy engine, its persistence and read-back tests (the migration reads through them); the fourteen module definitions, their descriptors and vector tests until Phase 5 Green confirms each vector is carried; the form record and the diagram model (`CalculationModuleForm`, `Diagrams/*`), which the reference diagrams and `ModuleGuards` still use.
+
+Tests superseded, each by the test named:
+
+| Retired test(s) | Superseded by |
+|---|---|
+| `CalculationModulesViewTests` (10: catalogue, generated form, record pickers, calculate, re-run, compare, status) | `CalcSheetViewTests` (catalogue, form, reference pickers, live run, archives, compare), `CompareTests`, `ReferenceFillTests` |
+| `CalculationModuleServiceTests` (20: governed run on pinned records, refusals, fills) | `ReferenceFillTests` (released records only, pins, refusals) and each template's known-answer cases |
+| `CalculationModuleWorkbenchTests` (7: named runs, re-run, compare) | `CompareTests`, `CalcInstanceServiceTests` (create, revise, register entry) |
+| `CalculationDiagramViewTests` (11, on the legacy form) | The same 11 behaviours ported to the worksheet form in `CalculationDiagramViewTests`, plus `CalcDiagramsTests` |
+| `DayOneReferenceLibraryTests.TheBeamCalculation_RunsOnTheSeededS355J2…` | `…TheSeededS355J2_SuppliesEAndFy_ToAReferenceFill…` and `DayOneReleaseAtSeedJourneyTests` (beam worksheet on S355J2: 3.96825 mm, unchanged) |

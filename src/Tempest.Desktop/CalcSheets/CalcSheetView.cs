@@ -78,6 +78,10 @@ public sealed class CalcSheetView : UserControl
 
     // ADR-0158, D-41: the template's reference diagram beside the inputs, read against the form as it stands.
     private readonly Tempest.Desktop.Views.CalculationDiagramView _diagram = new() { Width = Tempest.Desktop.Views.CalculationDiagramView.PanelWidth, VerticalAlignment = VerticalAlignment.Top, IsVisible = false };
+    private string? _markedSymbol;
+
+    /// <summary>Below this width of the right column the diagram stacks above the inputs (a laptop window): label, value, unit, source and reference columns, plus the panel.</summary>
+    public const double DiagramBesideMinimumWidth = 200 + 160 + 90 + 120 + 150 + DesignTokens.SpaceLg + Tempest.Desktop.Views.CalculationDiagramView.PanelWidth;
     /// <summary>Inputs the form has no field for (tables, vectors): carried from the seed so an imported or saved set keeps them (§3.8).</summary>
     private readonly List<CalcInputValue> _carriedInputs = [];
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
@@ -126,6 +130,8 @@ public sealed class CalcSheetView : UserControl
         _showWorking.IsCheckedChanged += (_, _) => _working.IsVisible = _showWorking.IsChecked == true;
         _governingLink.Click += (_, _) => RevealGoverningStep();
         _diagram.InputActivated += FocusField;
+        _diagram.InputHovered += MarkRow;
+        ActualThemeVariantChanged += (_, _) => MarkRow(_markedSymbol);
 
         Content = BuildLayout();
     }
@@ -403,6 +409,43 @@ public sealed class CalcSheetView : UserControl
 
     /// <summary>The reference diagram beside the inputs (ADR-0158, D-41).</summary>
     public Tempest.Desktop.Views.CalculationDiagramView Diagram => _diagram;
+
+    /// <summary>The row of <paramref name="symbol"/>'s field, or <see langword="null"/>.</summary>
+    public Control? FieldRow(string symbol) => _fields.TryGetValue(symbol, out var f) ? f.Row : null;
+
+    /// <summary>Whether <paramref name="symbol"/>'s row is marked (the pointer is on one of its shapes).</summary>
+    public bool IsRowMarked(string symbol) => _fields.TryGetValue(symbol, out var f) && f.Row.Background is not null;
+
+    /// <summary>
+    /// Marks the row of the input whose shape the pointer is on: the accent wash behind it and its label bold in the
+    /// focus-ring colour (a wash alone is barely visible). Re-applied on a theme change.
+    /// </summary>
+    private void MarkRow(string? symbol)
+    {
+        _markedSymbol = symbol;
+        var wash = ThemeReactiveBrush.Resolve(this, ApplicationPalette.AccentPanelBackgroundBrushKey) ?? Brushes.LightBlue;
+        var ring = ThemeReactiveBrush.Resolve(this, ApplicationPalette.FocusRingBrushKey) ?? Brushes.RoyalBlue;
+
+        foreach (var (key, field) in _fields)
+        {
+            var marked = key == symbol;
+            field.Row.Background = marked ? wash : null;
+
+            if (field.Row.Children.OfType<TextBlock>().FirstOrDefault() is not { } label)
+                continue;
+
+            if (marked)
+            {
+                label.Foreground = ring;
+                label.FontWeight = FontWeight.Bold;
+            }
+            else
+            {
+                label.ClearValue(TextBlock.ForegroundProperty);
+                label.FontWeight = FontWeight.Normal;
+            }
+        }
+    }
 
     /// <summary>A shape on the diagram was clicked: its input's own control takes focus.</summary>
     private void FocusField(string symbol)
@@ -935,13 +978,11 @@ public sealed class CalcSheetView : UserControl
         right.Children.Add(_reference);
         right.Children.Add(_scope);
         right.Children.Add(LabelledRow("Calculation name", _nameBox));
-        var inputsRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
-        var inputs = Section("Inputs", _form);
-        Grid.SetColumn(_diagram, 1);
-        _diagram.Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0);
-        inputsRow.Children.Add(inputs);
-        inputsRow.Children.Add(_diagram);
-        right.Children.Add(inputsRow);
+        // The diagram sits beside the inputs, or above them on a laptop window; the inputs stay first in the tab order.
+        var inputsBeside = new Tempest.Desktop.Views.BesideOrAbovePanel(DiagramBesideMinimumWidth, DesignTokens.SpaceLg);
+        inputsBeside.Children.Add(_form);
+        inputsBeside.Children.Add(_diagram);
+        right.Children.Add(Section("Inputs", inputsBeside));
         right.Children.Add(_problems);
 
         var resultsHead = new StackPanel { Spacing = DesignTokens.SpaceXs };
