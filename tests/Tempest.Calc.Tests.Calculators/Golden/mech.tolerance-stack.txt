@@ -6,9 +6,9 @@ Title: Tolerance stack-up (1D) v2
 1. SCOPE AND METHOD
 A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.
 Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bender-style). Predicted σ: √Σ σ_i² with σ_i from each contributor's distribution. C_pk from the nearer limit. Monte Carlo: seeded sampling of every contributor, summed with its sign.
-  Ref: BS 8888 — — Technical product documentation and specification
-  Ref: ASME Y14.5 — — Dimensioning and tolerancing
-  Ref: ISO 2768-1 — — General tolerances (where a contributor's band is a general tolerance)
+  Ref: BS 8888 — Technical product documentation and specification
+  Ref: ASME Y14.5 — Dimensioning and tolerancing
+  Ref: ISO 2768-1 — General tolerances (where a contributor's band is a general tolerance)
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
