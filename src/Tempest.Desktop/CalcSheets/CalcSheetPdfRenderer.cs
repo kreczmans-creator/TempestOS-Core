@@ -112,7 +112,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             Line(state, measure, sheet.Method);
 
         foreach (var c in sheet.ClauseRefs)
-            Line(state, measure, $"Ref: {c.Standard} {c.Clause} — {c.Title}", DocumentTemplate.CaptionSize);
+            Line(state, measure, $"Ref: {c.Standard}{(c.Clause is { Length: > 0 } and not "—" ? " " + c.Clause : string.Empty)} — {c.Title}", DocumentTemplate.CaptionSize);
 
         DocumentTemplate.AddGap(state, 6f);
 

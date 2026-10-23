@@ -61,7 +61,7 @@ public static class CalcSheetTextRenderer
         sb.AppendLine(Clean(sheet.Method));
 
         foreach (var c in sheet.ClauseRefs)
-            sb.Append("  Ref: ").Append(Clean(c.Standard)).Append(' ').Append(Clean(c.Clause)).Append(" — ").AppendLine(Clean(c.Title));
+            sb.Append("  Ref: ").Append(Clean(c.Standard)).Append(c.Clause is { Length: > 0 } and not "—" ? " " + Clean(c.Clause) : string.Empty).Append(" — ").AppendLine(Clean(c.Title));
 
         sb.AppendLine();
         sb.AppendLine("2. INPUTS");
