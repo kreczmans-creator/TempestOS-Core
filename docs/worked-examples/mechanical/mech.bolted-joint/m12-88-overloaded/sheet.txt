@@ -209,7 +209,7 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
   PASS  Yield in the working state: 0.88819 vs 1  utilisation 0.888  « VDI 2230 R8
   PASS  Thread stripping: 0.62187 vs 1  utilisation 0.622  « VDI 2230 §5.5.5
   PASS  Fatigue amplitude: 0.51299 vs 1  utilisation 0.513  « VDI 2230 R9
-  PASS  Residual clamp against requirement: -0.15029 vs 1  utilisation -0.15  « VDI 2230 R7
+  FAIL  Residual clamp against requirement: -0.15029 vs 1  utilisation -0.15  « VDI 2230 R7
 
 7. APPLICABILITY
   WARNING preload-yield: M_A: the preload alone takes the bolt above 90 % of its proof strength.

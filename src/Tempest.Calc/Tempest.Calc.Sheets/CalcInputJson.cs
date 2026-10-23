@@ -37,15 +37,21 @@ public static class CalcInputJson
 
         try
         {
-            var values = JsonSerializer.Deserialize<List<CalcInputValue>>(json, Options) ?? [];
+            var values = JsonSerializer.Deserialize<List<CalcInputValue?>>(json, Options) ?? [];
 
             if (values.Count > 1_000)
                 return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, "The file holds more than 1000 inputs.")]);
 
-            if (values.Any(v => string.IsNullOrWhiteSpace(v.Symbol) || v.Symbol.Length > 64))
+            if (values.Any(v => v is null))
+                return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, "The file holds an empty (null) input entry.")]);
+
+            if (values.Any(v => string.IsNullOrWhiteSpace(v!.Symbol) || v.Symbol.Length > 64))
                 return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, "Every input needs a symbol of at most 64 characters.")]);
 
-            return (new CalcInputSet(values), []);
+            if (values.Any(v => v!.Rows is { } rows && rows.Any(r => r is null)))
+                return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, "A table holds an empty (null) row.")]);
+
+            return (new CalcInputSet(values.Select(v => v!).ToList()), []);
         }
         catch (JsonException e)
         {

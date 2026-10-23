@@ -12,6 +12,9 @@ namespace Tempest.Calc.Sheets;
 public static class CalcInputValidator
 {
     public const int MaxTextLength = 200;
+
+    /// <summary>Notices listed per table input before the rest are summarised (R-20).</summary>
+    public const int MaxNoticesPerInput = 20;
     public const int MaxVectorLength = 10_000;
 
     public static IReadOnlyList<CalcNotice> Validate(CalcTemplate template, CalcInputSet inputs)
@@ -24,6 +27,9 @@ public static class CalcInputValidator
         foreach (var spec in template.Inputs)
         {
             var value = inputs.Find(spec.Symbol);
+
+            if (value?.Provenance is { } provenance && !provenance.IsWithinLimits)
+                notices.Add(Block(spec.Symbol, $"{spec.Symbol}: the provenance reference is at most {CalcProvenance.MaxReferenceLength} characters and the revision at most {CalcProvenance.MaxRevisionLength}."));
 
             if (value is null || IsEmpty(value))
             {
@@ -209,9 +215,23 @@ public static class CalcInputValidator
 
         var columns = spec.Columns ?? [];
 
+        var before = notices.Count;
+
         for (var r = 0; r < rows.Count; r++)
         {
             var row = rows[r];
+
+            if (row is null)
+            {
+                notices.Add(Block(spec.Symbol, $"{spec.Symbol} row {r + 1} is empty."));
+                continue;
+            }
+
+            if (notices.Count - before >= MaxNoticesPerInput)
+            {
+                notices.Add(Block(spec.Symbol, $"{spec.Symbol}: more problems follow in later rows ({rows.Count - r} rows not listed)."));
+                break;
+            }
 
             foreach (var col in columns)
             {

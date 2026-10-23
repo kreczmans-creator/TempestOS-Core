@@ -20,7 +20,7 @@ public sealed class BoltGroupCalculator : ICalcCalculator
     public CalcTemplate Template { get; } = new(
         Id, "1.0.0", CalcDiscipline.Mechanical, "Bolt group (elastic method)",
         "A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.",
-        "Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar J = Σ A r². Shear per bolt: v = A (F/ΣA) + T·A·r/J (vector sum). Tension per bolt: t = A N/ΣA + M_x A y'/Σ A y'² + M_y A x'/Σ A x'². Prying: t_p = t (1 + b/a) when a and b are given. Utilisation: (v/V_R)² + (t_p/T_R)² ≤ 1 (interaction) and each alone.",
+        "Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar J = Σ A r². Shear per bolt: v = A (F/ΣA) + T·A·r/J (vector sum). Tension per bolt: t = A N/ΣA + M_x A y'/Σ A y'² + M_y A x'/Σ A x'². Prying: t_p = t (1 + b/a) when a and b are given. Utilisation: the circular interaction (v/V_R)² + (t_p/T_R)² ≤ 1 (elastic method, Shigley-style) and the EN 1993-1-8 linear form v/V_R + t_p/(1.4 T_R) ≤ 1, plus each alone; the governing check is the highest.",
         [
             new CalcInputSpec("bolts", "Bolt positions and areas", CalcInputKind.Table, Columns: Columns, MaxRows: 200),
             new CalcInputSpec("F_x", "In-plane force, x", CalcInputKind.Quantity, "kN", Default: 0, HardMin: -1e6, HardMax: 1e6, Group: "Loads"),
@@ -170,7 +170,10 @@ public sealed class BoltGroupCalculator : ICalcCalculator
         c.Output("t_max", "Maximum bolt tension");
         c.Output("u_max", "Governing interaction utilisation");
         c.Output("governing", "Governing bolt");
-        c.CheckUtilisation("Shear–tension interaction (governing bolt)", "u_max", "EN 1993-1-8 Table 3.4");
+        c.Record("u_lin", "v/V_R + t/(1.4 T_R)", $"{F(worst.V, 1e3)}/{F(vR, 1e3)} + {F(worst.T, 1e3)}/(1.4 × {F(tR, 1e3)})", new ScalarValue(worst.V / vR + worst.T / (1.4 * tR)), "Linear shear–tension interaction (governing bolt)");
+        c.Output("u_lin", "Linear interaction utilisation");
+        c.CheckUtilisation("Circular shear–tension interaction (governing bolt)", "u_max");
+        c.CheckUtilisation("Linear shear–tension interaction v/V_R + t/(1.4 T_R)", "u_lin", "EN 1993-1-8 Table 3.4");
         c.CheckUtilisation("Shear alone", "u_v");
         c.CheckUtilisation("Tension alone", "u_t");
         c.Series(new CalcSeries("Bolt pattern", "x", "mm", "y", "mm", bolts.Select(bb => (mm.FromSi(bb.X), mm.FromSi(bb.Y))).ToList()));

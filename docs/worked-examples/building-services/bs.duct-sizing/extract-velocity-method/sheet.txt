@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 Sizes each duct section by the equal-friction method (a target friction rate) or the velocity method (a target velocity), rounds to standard sizes, and reports velocity, friction rate, friction and fitting losses per section and the total pressure drop along the index run, with warnings against user velocity and pressure-drop limits.
-Round: D from the target (friction: Colebrook with the air properties at T; velocity: D = √(4Q/πv)), rounded up to the next standard size. Rectangular: equivalent diameter D_e = 1.30 (ab)^0.625/(a + b)^0.25 (equal friction and capacity); flat oval: D_e = 1.55 A^0.625/P^0.25 with A = πb²/4 + b(a − b), P = πb + 2(a − b). Friction rate Δp/L = f ρ v²/(2D); fitting loss ΣC ρ v²/2; totals summed over the index-run sections.
+Round: D from the target (friction: Colebrook with the air properties at T; velocity: D = √(4Q/πv)), rounded up to the next standard size. Rectangular: equivalent diameter D_e = 1.30 (ab)^0.625/(a + b)^0.25 (equal friction and capacity); flat oval: D_e = 1.55 A^0.625/P^0.25 with A = πb²/4 + b(a − b), P = πb + 2(a − b). Friction rate Δp/L = f ρ v_e²/(2D_e) with v_e the velocity in the equivalent round duct; fitting loss ΣC ρ v²/2 at the actual velocity; totals summed over the index-run sections.
   Ref: ASHRAE Handbook — Fundamentals Ch. 21 — Duct design (friction chart basis, equivalent diameters, loss coefficients)
   Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts
   Ref: BS EN 1505 — Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions
@@ -53,7 +53,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = 0.35 / 0.049087
       = 7.1301 m/s
         Velocity, hood branch
-  [14] Re_s1 = hood branch: ρ v D_e / μ
+  [14] Re_s1 = hood branch: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
       = 1.1743 × 7.1301 × 0.25 / 0.000018371
       = 113940
         Reynolds number, hood branch
@@ -61,7 +61,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = Colebrook–White
       = 0.02041
         Friction factor, hood branch
-  [16] dpL_s1 = hood branch: f ρ v² / (2 D_e)
+  [16] dpL_s1 = hood branch: f ρ v_e² / (2 D_e)
       = 0.02041 × 1.1743 × 7.1301² / (2 × 0.25)
       = 2.4369 Pa/m
         Friction rate, hood branch
@@ -85,7 +85,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = 1.05 / 0.12566
       = 8.3556 m/s
         Velocity, main
-  [22] Re_s2 = main: ρ v D_e / μ
+  [22] Re_s2 = main: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
       = 1.1743 × 8.3556 × 0.4 / 0.000018371
       = 213630
         Reynolds number, main
@@ -93,7 +93,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = Colebrook–White
       = 0.018028
         Friction factor, main
-  [24] dpL_s2 = main: f ρ v² / (2 D_e)
+  [24] dpL_s2 = main: f ρ v_e² / (2 D_e)
       = 0.018028 × 1.1743 × 8.3556² / (2 × 0.4)
       = 1.8475 Pa/m
         Friction rate, main
@@ -117,7 +117,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = 1.05 / 0.12566
       = 8.3556 m/s
         Velocity, stack
-  [30] Re_s3 = stack: ρ v D_e / μ
+  [30] Re_s3 = stack: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
       = 1.1743 × 8.3556 × 0.4 / 0.000018371
       = 213630
         Reynolds number, stack
@@ -125,7 +125,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = Colebrook–White
       = 0.018028
         Friction factor, stack
-  [32] dpL_s3 = stack: f ρ v² / (2 D_e)
+  [32] dpL_s3 = stack: f ρ v_e² / (2 D_e)
       = 0.018028 × 1.1743 × 8.3556² / (2 × 0.4)
       = 1.8475 Pa/m
         Friction rate, stack

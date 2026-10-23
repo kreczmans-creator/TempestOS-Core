@@ -151,7 +151,7 @@ public sealed record FrameResult(FrameCombination Combination, IReadOnlyDictiona
 /// </summary>
 public static class FrameSolver
 {
-    public static IReadOnlyList<FrameResult> Solve(FrameModel model)
+    public static IReadOnlyList<FrameResult> Solve(FrameModel model, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(model);
 
@@ -174,9 +174,12 @@ public static class FrameSolver
         var dof = new int[3 * n];
         var free = 0;
 
-        foreach (var node in model.Nodes)
+        // Number the free degrees of freedom in the reordered node sequence,
+        // so the half-bandwidth computed from node-index differences holds.
+        foreach (var nodeId in order)
         {
-            var i = nodeIndex[node.Id];
+            var node = model.NodeById[nodeId];
+            var i = nodeIndex[nodeId];
             dof[3 * i] = node.FixX ? -1 : free++;
             dof[3 * i + 1] = node.FixY ? -1 : free++;
             dof[3 * i + 2] = node.FixR ? -1 : free++;
@@ -195,7 +198,11 @@ public static class FrameSolver
         if ((long)free * (half + 1) > FrameLimits.MaxBandedEntries)
             throw new FrameModelException($"the stiffness matrix would need {(long)free * (half + 1):N0} entries; renumber the nodes so connected nodes are close, or reduce the model.");
 
-        var band = new BandedSymmetric(free, half);
+        // The factorisation costs about n·b² operations; a mesh whose reordered bandwidth stays wide is refused rather than run for minutes (R-13).
+        if ((long)free * half * half > FrameLimits.MaxFactorWork)
+            throw new FrameModelException($"the stiffness matrix is too wide to factor in time (half-bandwidth {half} over {free} freedoms); connect the nodes in a more regular pattern or reduce the model.");
+
+        var band = new BandedSymmetric(free, half, cancellationToken);
 
         foreach (var g in geometry)
         {
@@ -609,10 +616,13 @@ public static class FrameSolver
         private readonly double[] _a; // _a[i * (_half + 1) + (j - i)] for j ≥ i
         private bool _factored;
 
-        public BandedSymmetric(int n, int halfBandwidth)
+        private readonly CancellationToken _cancellation;
+
+        public BandedSymmetric(int n, int halfBandwidth, CancellationToken cancellation = default)
         {
             _n = n;
             _half = halfBandwidth;
+            _cancellation = cancellation;
             _a = new double[Math.Max(1, n * (halfBandwidth + 1))];
         }
 
@@ -621,6 +631,10 @@ public static class FrameSolver
         public void Add(int i, int j, double v)
         {
             if (j < i) (i, j) = (j, i);
+
+            if (j - i > _half)
+                throw new InvalidOperationException($"band overflow: ({i}, {j}) with half-bandwidth {_half}.");
+
             _a[Index(i, j)] += v;
         }
 
@@ -633,6 +647,9 @@ public static class FrameSolver
 
             for (var j = 0; j < _n; j++)
             {
+                if ((j & 63) == 0)
+                    _cancellation.ThrowIfCancellationRequested();
+
                 var lo = Math.Max(0, j - _half);
                 var djj = _a[Index(j, j)];
 
@@ -643,7 +660,7 @@ public static class FrameSolver
                 }
 
                 if (!(djj > 1e-10 * scale))
-                    throw new FrameModelException("the structure is a mechanism (a non-positive stiffness pivot): check the supports and the releases.");
+                    throw new FrameModelException($"the structure is a mechanism (non-positive stiffness pivot {j} of {_n}: {djj:G3} against {scale:G3}): check the supports and the releases.");
 
                 _a[Index(j, j)] = djj;
                 var hi = Math.Min(_n - 1, j + _half);

@@ -152,7 +152,7 @@ public static class CalcSheetTextRenderer
         if (f.ApplicationVersion is { Length: > 0 })
             sb.Append("  Application: ").AppendLine(Clean(f.ApplicationVersion));
 
-        return sb.ToString();
+        return sb.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
     }
 
     /// <summary>Strips the lines that legitimately change between runs (dates, hashes, engine and application versions) so a golden file compares content only.</summary>
@@ -193,8 +193,12 @@ public static class CalcSheetTextRenderer
         var sb = new StringBuilder(s.Length);
 
         foreach (var c in s)
-            sb.Append(char.IsControl(c) ? ' ' : c);
+        {
+            var category = char.GetUnicodeCategory(c);
+            // Controls, line/paragraph separators and format characters (bidi overrides, zero-width marks) never reach a sheet (R-08).
+            sb.Append(char.IsControl(c) || category is System.Globalization.UnicodeCategory.LineSeparator or System.Globalization.UnicodeCategory.ParagraphSeparator or System.Globalization.UnicodeCategory.Format ? ' ' : c);
+        }
 
-        return sb.ToString();
+        return sb.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
     }
 }

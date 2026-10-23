@@ -53,7 +53,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             new CalcInputSpec("k", "Standard deviations per half-band (normal contributors)", CalcInputKind.Number, Default: 3, Min: 1, Max: 6, HardMin: 0.1, HardMax: 100),
             new CalcInputSpec("f_rss", "Modified-RSS factor (Bender-style)", CalcInputKind.Number, Default: 1.5, Min: 1, Max: 2, HardMin: 0.1, HardMax: 10),
             new CalcInputSpec("cpk_target", "Required C_pk", CalcInputKind.Number, Default: 1.33, Min: 1, Max: 2, HardMin: 0.01, HardMax: 10),
-            new CalcInputSpec("n_mc", "Monte Carlo samples", CalcInputKind.Number, Default: 10_000, Min: 1_000, Max: 100_000, HardMin: 1, HardMax: MonteCarlo.MaxSamples),
+            new CalcInputSpec("n_mc", "Monte Carlo samples", CalcInputKind.Number, Default: 10_000, Min: 1_000, Max: 100_000, HardMin: 1, HardMax: CalcRunner.MaxCalculatorSamples),
             new CalcInputSpec("seed", "Monte Carlo seed", CalcInputKind.Number, Default: 1, HardMin: 0, HardMax: 4_294_967_295),
             new CalcInputSpec("notation", "Drawing notation", CalcInputKind.Choice, Choices: ["BS 8888", "ASME Y14.5"], DefaultChoice: "BS 8888"),
         ],
@@ -286,7 +286,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                 }
 
                 c.Record("dpmo", "10⁶ × P(outside)", $"10⁶ × Φ-tails at σ = {F(sigmaSi, unit)}", new ScalarValue(dpmo), "Predicted defects per million");
-                c.Record("yield", "1 − dpmo / 10⁶", $"1 − {CalcValue.FormatNumber(dpmo)} / 10⁶", new ScalarValue((1 - dpmo / 1e6) * 100, Dimension.None, UnitCatalog.Parse("%")), "Predicted yield");
+                c.Record("yield", "1 − dpmo / 10⁶", $"1 − {CalcValue.FormatNumber(dpmo)} / 10⁶", ScalarValue.Of((1 - dpmo / 1e6) * 100, "%"), "Predicted yield");
                 c.Output("cpk", "C_pk");
                 c.Output("dpmo", "DPMO (predicted)");
                 c.Output("yield", "Yield (predicted)");
@@ -355,7 +355,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
 
         if (mc.Yield is { } y)
         {
-            c.Record("mc_yield", "samples inside the requirement", $"{n - (int)Math.Round((mc.DefectsPerMillion ?? 0) / 1e6 * n)} of {n}", new ScalarValue(y * 100, Dimension.None, UnitCatalog.Parse("%")), "Monte Carlo yield");
+            c.Record("mc_yield", "samples inside the requirement", $"{n - (int)Math.Round((mc.DefectsPerMillion ?? 0) / 1e6 * n)} of {n}", ScalarValue.Of(y * 100, "%"), "Monte Carlo yield");
             c.Output("mc_yield", "Monte Carlo yield");
         }
 

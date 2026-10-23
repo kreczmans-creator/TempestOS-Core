@@ -145,7 +145,8 @@ public sealed class CalcRunContext
         if (!u.Dimension.IsDimensionless)
             throw new Engine.CalcDimensionException($"Check '{name}' needs a dimensionless utilisation.");
 
-        var check = new CalcCheck(name, u.Format(Session.SignificantFigures), CalcValue.FormatNumber(limit), u.Si / limit, u.Si <= limit + 1e-9, utilisationSymbol, clause);
+        // A negative utilisation means the capacity is negative or inverted (a negative NPSH available): never a pass (G-03).
+        var check = new CalcCheck(name, u.Format(Session.SignificantFigures), CalcValue.FormatNumber(limit), u.Si / limit, u.Si >= 0 && u.Si <= limit + 1e-9, utilisationSymbol, clause);
         _checks.Add(check);
         return check;
     }

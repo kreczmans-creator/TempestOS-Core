@@ -169,9 +169,6 @@ public static class DocumentFonts
 
         foreach (var run in runs)
         {
-            if (run.FontRole == DocumentFontRole.Body)
-                continue;
-
             if (!chars.TryGetValue((run.FontRole, run.Bold), out var set))
                 chars[(run.FontRole, run.Bold)] = set = [];
 
@@ -183,7 +180,10 @@ public static class DocumentFonts
 
         foreach (var ((role, bold), set) in chars)
         {
-            var raw = RawBytes(role, bold);
+            // Body draws with the platform default face; its bytes come from
+            // the typeface itself so that it, too, is embedded as a subset
+            // (Windows's default face alone is several hundred kilobytes).
+            var raw = RawBytes(role, bold) ?? DefaultFaceBytes();
 
             if (raw is null)
                 continue;
@@ -203,6 +203,39 @@ public static class DocumentFonts
         }
 
         return result;
+    }
+
+    private static byte[]? _defaultFaceBytes;
+    private static bool _defaultFaceRead;
+
+    /// <summary>The raw bytes of the Body typeface (the platform default), read once through <see cref="SKTypeface.OpenStream()"/>; <see langword="null"/> when the platform exposes no data.</summary>
+    private static byte[]? DefaultFaceBytes()
+    {
+        lock (RawCache)
+        {
+            if (_defaultFaceRead)
+                return _defaultFaceBytes;
+
+            _defaultFaceRead = true;
+
+            try
+            {
+                using var stream = BodyTypeface.Value.OpenStream();
+
+                if (stream is null || stream.Length <= 0 || stream.Length > 32 * 1024 * 1024)
+                    return null;
+
+                var bytes = new byte[stream.Length];
+                var read = stream.Read(bytes, bytes.Length);
+                _defaultFaceBytes = read == bytes.Length ? bytes : null;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidOperationException or NotSupportedException)
+            {
+                _defaultFaceBytes = null;
+            }
+
+            return _defaultFaceBytes;
+        }
     }
 
     private static SKTypeface Load(string fileName)

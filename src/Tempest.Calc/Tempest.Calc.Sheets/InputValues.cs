@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json.Serialization;
 
 namespace Tempest.Calc.Sheets;
 
@@ -28,8 +29,15 @@ public sealed record CalcProvenance(CalcProvenanceKind Kind, string? Reference =
 
     public static CalcProvenance FromReference(string pin) => new(CalcProvenanceKind.Reference, pin);
 
-    /// <summary>Whether this provenance is enough to issue with: anything but a bare manual entry.</summary>
-    public bool IsSufficientToIssue => Kind != CalcProvenanceKind.Manual;
+    public const int MaxReferenceLength = 200;
+    public const int MaxRevisionLength = 40;
+
+    /// <summary>Whether this provenance is enough to issue with: one of the defined kinds other than a bare manual entry (an undefined kind value is not).</summary>
+    public bool IsSufficientToIssue => Kind != CalcProvenanceKind.Manual && Enum.IsDefined(Kind);
+
+    /// <summary>Whether the reference and revision texts are within their caps.</summary>
+    [JsonIgnore]
+    public bool IsWithinLimits => (Reference?.Length ?? 0) <= MaxReferenceLength && (Revision?.Length ?? 0) <= MaxRevisionLength;
 
     public override string ToString()
     {
@@ -57,6 +65,9 @@ public sealed record CalcCell(double? Number = null, string? Unit = null, string
 /// <summary>One row of a table input, keyed by column.</summary>
 public sealed record CalcRow(IReadOnlyDictionary<string, CalcCell> Cells)
 {
+    /// <summary>A row read without a cell dictionary (JSON <c>{}</c>) is an empty row, never a null one (R-11).</summary>
+    public IReadOnlyDictionary<string, CalcCell> Cells { get; init; } = Cells ?? new Dictionary<string, CalcCell>(StringComparer.Ordinal);
+
     public static CalcRow Of(params (string Key, CalcCell Cell)[] cells) => new(cells.ToDictionary(c => c.Key, c => c.Cell, StringComparer.Ordinal));
 
     public CalcCell? Get(string key) => Cells.TryGetValue(key, out var c) ? c : null;

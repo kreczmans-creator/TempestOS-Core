@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 Sizes each duct section by the equal-friction method (a target friction rate) or the velocity method (a target velocity), rounds to standard sizes, and reports velocity, friction rate, friction and fitting losses per section and the total pressure drop along the index run, with warnings against user velocity and pressure-drop limits.
-Round: D from the target (friction: Colebrook with the air properties at T; velocity: D = √(4Q/πv)), rounded up to the next standard size. Rectangular: equivalent diameter D_e = 1.30 (ab)^0.625/(a + b)^0.25 (equal friction and capacity); flat oval: D_e = 1.55 A^0.625/P^0.25 with A = πb²/4 + b(a − b), P = πb + 2(a − b). Friction rate Δp/L = f ρ v²/(2D); fitting loss ΣC ρ v²/2; totals summed over the index-run sections.
+Round: D from the target (friction: Colebrook with the air properties at T; velocity: D = √(4Q/πv)), rounded up to the next standard size. Rectangular: equivalent diameter D_e = 1.30 (ab)^0.625/(a + b)^0.25 (equal friction and capacity); flat oval: D_e = 1.55 A^0.625/P^0.25 with A = πb²/4 + b(a − b), P = πb + 2(a − b). Friction rate Δp/L = f ρ v_e²/(2D_e) with v_e the velocity in the equivalent round duct; fitting loss ΣC ρ v²/2 at the actual velocity; totals summed over the index-run sections.
   Ref: ASHRAE Handbook — Fundamentals Ch. 21 — Duct design (friction chart basis, equivalent diameters, loss coefficients)
   Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts
   Ref: BS EN 1505 — Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions
@@ -60,29 +60,29 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = 2 / 0.32
       = 6.25 m/s
         Velocity, AHU to riser
-  [16] Re_s1 = AHU to riser: ρ v D_e / μ
-      = 1.2041 × 6.25 × 0.60935 / 0.000018133
-      = 252890
+  [16] Re_s1 = AHU to riser: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
+      = 1.2041 × 6.8581 × 0.60935 / 0.000018133
+      = 277500
         Reynolds number, AHU to riser
   [17] f_s1 = AHU to riser: friction factor
       = Colebrook–White
-      = 0.016199
+      = 0.015999
         Friction factor, AHU to riser
-  [18] dpL_s1 = AHU to riser: f ρ v² / (2 D_e)
-      = 0.016199 × 1.2041 × 6.25² / (2 × 0.60935)
-      = 0.62519 Pa/m
+  [18] dpL_s1 = AHU to riser: f ρ v_e² / (2 D_e)
+      = 0.015999 × 1.2041 × 6.8581² / (2 × 0.60935)
+      = 0.74347 Pa/m
         Friction rate, AHU to riser
   [19] dp_f_s1 = AHU to riser: (Δp/L) L
-      = 0.62519 × 15
-      = 9.3779 Pa
+      = 0.74347 × 15
+      = 11.152 Pa
         Friction loss, AHU to riser
   [20] dp_fit_s1 = AHU to riser: ΣC ρ v²/2
       = 0.8 × 23.518
       = 18.814 Pa
         Fitting loss, AHU to riser
   [21] dp_s1 = AHU to riser: friction + fittings + equipment
-      = 9.3779 + 18.814 + 0
-      = 28.192 Pa
+      = 11.152 + 18.814 + 0
+      = 29.966 Pa
         Section loss, AHU to riser (index run)
   [22] D_s2 = riser: diameter
       = target 573.91 mm rounded up to 50 mm
@@ -92,7 +92,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = 2 / 0.28274
       = 7.0736 m/s
         Velocity, riser
-  [24] Re_s2 = riser: ρ v D_e / μ
+  [24] Re_s2 = riser: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
       = 1.2041 × 7.0736 × 0.6 / 0.000018133
       = 281820
         Reynolds number, riser
@@ -100,7 +100,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = Colebrook–White
       = 0.015985
         Friction factor, riser
-  [26] dpL_s2 = riser: f ρ v² / (2 D_e)
+  [26] dpL_s2 = riser: f ρ v_e² / (2 D_e)
       = 0.015985 × 1.2041 × 7.0736² / (2 × 0.6)
       = 0.80253 Pa/m
         Friction rate, riser
@@ -132,29 +132,29 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = 1.2 / 0.2
       = 6 m/s
         Velocity, floor main
-  [34] Re_s3 = floor main: ρ v D_e / μ
-      = 1.2041 × 6 × 0.48812 / 0.000018133
-      = 194480
+  [34] Re_s3 = floor main: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
+      = 1.2041 × 6.4127 × 0.48812 / 0.000018133
+      = 207850
         Reynolds number, floor main
   [35] f_s3 = floor main: friction factor
       = Colebrook–White
-      = 0.017062
+      = 0.016905
         Friction factor, floor main
-  [36] dpL_s3 = floor main: f ρ v² / (2 D_e)
-      = 0.017062 × 1.2041 × 6² / (2 × 0.48812)
-      = 0.75759 Pa/m
+  [36] dpL_s3 = floor main: f ρ v_e² / (2 D_e)
+      = 0.016905 × 1.2041 × 6.4127² / (2 × 0.48812)
+      = 0.85744 Pa/m
         Friction rate, floor main
   [37] dp_f_s3 = floor main: (Δp/L) L
-      = 0.75759 × 25
-      = 18.94 Pa
+      = 0.85744 × 25
+      = 21.436 Pa
         Friction loss, floor main
   [38] dp_fit_s3 = floor main: ΣC ρ v²/2
       = 1.1 × 21.674
       = 23.841 Pa
         Fitting loss, floor main
   [39] dp_s3 = floor main: friction + fittings + equipment
-      = 18.94 + 23.841 + 0
-      = 42.781 Pa
+      = 21.436 + 23.841 + 0
+      = 45.277 Pa
         Section loss, floor main (index run)
   [40] D_s4 = branch to VAV: diameter
       = target 312.82 mm rounded up to 50 mm
@@ -164,7 +164,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = 0.4 / 0.096211
       = 4.1575 m/s
         Velocity, branch to VAV
-  [42] Re_s4 = branch to VAV: ρ v D_e / μ
+  [42] Re_s4 = branch to VAV: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
       = 1.2041 × 4.1575 × 0.35 / 0.000018133
       = 96625
         Reynolds number, branch to VAV
@@ -172,7 +172,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = Colebrook–White
       = 0.01938
         Friction factor, branch to VAV
-  [44] dpL_s4 = branch to VAV: f ρ v² / (2 D_e)
+  [44] dpL_s4 = branch to VAV: f ρ v_e² / (2 D_e)
       = 0.01938 × 1.2041 × 4.1575² / (2 × 0.35)
       = 0.57623 Pa/m
         Friction rate, branch to VAV
@@ -196,7 +196,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = 0.8 / 0.15904
       = 5.0301 m/s
         Velocity, other branch
-  [50] Re_s5 = other branch: ρ v D_e / μ
+  [50] Re_s5 = other branch: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
       = 1.2041 × 5.0301 × 0.45 / 0.000018133
       = 150310
         Reynolds number, other branch
@@ -204,7 +204,7 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
       = Colebrook–White
       = 0.017809
         Friction factor, other branch
-  [52] dpL_s5 = other branch: f ρ v² / (2 D_e)
+  [52] dpL_s5 = other branch: f ρ v_e² / (2 D_e)
       = 0.017809 × 1.2041 × 5.0301² / (2 × 0.45)
       = 0.60286 Pa/m
         Friction rate, other branch
@@ -222,19 +222,19 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
         Section loss, other branch
   [56] dp_index = Σ section losses on the index run
       = 4 section(s)
-      = 164.77 Pa
+      = 169.04 Pa
         Index-run pressure drop
   [57] dp_all = Σ section losses, all sections
       = 5 section(s)
-      = 250.85 Pa
+      = 255.12 Pa
         Sum over every section (not a path)
   [58] v_peak = highest section velocity
       = 
       = 7.0736 m/s
         Highest velocity
   [59] u_dp = dp_index / dp_limit
-      = 164.77 / 250
-      = 0.65907
+      = 169.04 / 250
+      = 0.67616
         Pressure-drop utilisation
   [60] u_v = v_peak / v_limit
       = 7.0736 / 8
@@ -246,12 +246,12 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
   b_s1 = 400 mm    b, AHU to riser
   De_s1 = 609.35 mm    D_e, AHU to riser
   v_s1 = 6.25 m/s    v, AHU to riser
-  Re_s1 = 252890    Re, AHU to riser
-  f_s1 = 0.016199    f, AHU to riser
-  dpL_s1 = 0.62519 Pa/m    Δp/L, AHU to riser
-  dp_f_s1 = 9.3779 Pa    Friction loss, AHU to riser
+  Re_s1 = 277500    Re, AHU to riser
+  f_s1 = 0.015999    f, AHU to riser
+  dpL_s1 = 0.74347 Pa/m    Δp/L, AHU to riser
+  dp_f_s1 = 11.152 Pa    Friction loss, AHU to riser
   dp_fit_s1 = 18.814 Pa    Fitting loss, AHU to riser
-  dp_s1 = 28.192 Pa    Section loss, AHU to riser
+  dp_s1 = 29.966 Pa    Section loss, AHU to riser
   D_s2 = 600 mm    D, riser
   v_s2 = 7.0736 m/s    v, riser
   Re_s2 = 281820    Re, riser
@@ -264,12 +264,12 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
   b_s3 = 400 mm    b, floor main
   De_s3 = 488.12 mm    D_e, floor main
   v_s3 = 6 m/s    v, floor main
-  Re_s3 = 194480    Re, floor main
-  f_s3 = 0.017062    f, floor main
-  dpL_s3 = 0.75759 Pa/m    Δp/L, floor main
-  dp_f_s3 = 18.94 Pa    Friction loss, floor main
+  Re_s3 = 207850    Re, floor main
+  f_s3 = 0.016905    f, floor main
+  dpL_s3 = 0.85744 Pa/m    Δp/L, floor main
+  dp_f_s3 = 21.436 Pa    Friction loss, floor main
   dp_fit_s3 = 23.841 Pa    Fitting loss, floor main
-  dp_s3 = 42.781 Pa    Section loss, floor main
+  dp_s3 = 45.277 Pa    Section loss, floor main
   D_s4 = 350 mm    D, branch to VAV
   v_s4 = 4.1575 m/s    v, branch to VAV
   Re_s4 = 96625    Re, branch to VAV
@@ -286,13 +286,13 @@ Round: D from the target (friction: Colebrook with the air properties at T; velo
   dp_f_s5 = 10.851 Pa    Friction loss, other branch
   dp_fit_s5 = 15.233 Pa    Fitting loss, other branch
   dp_s5 = 86.084 Pa    Section loss, other branch
-  dp_index = 164.77 Pa    Index-run Δp
-  dp_all = 250.85 Pa    Σ all sections
+  dp_index = 169.04 Pa    Index-run Δp
+  dp_all = 255.12 Pa    Σ all sections
   v_peak = 7.0736 m/s    Highest velocity
 
 6. CHECKS (governing first)
   PASS  Velocity ≤ limit: 0.88419 vs 1  utilisation 0.884
-  PASS  Index-run Δp ≤ limit: 0.65907 vs 1  utilisation 0.659
+  PASS  Index-run Δp ≤ limit: 0.67616 vs 1  utilisation 0.676
 
 7. APPLICABILITY
   No warnings.

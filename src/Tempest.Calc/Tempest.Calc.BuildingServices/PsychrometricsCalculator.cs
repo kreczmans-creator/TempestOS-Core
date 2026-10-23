@@ -72,7 +72,6 @@ public sealed class PsychrometricsCalculator : ICalcCalculator
             new CalcApplicabilityRule("supersaturated", "The state lies above saturation (RH > 100 %).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("process-input", "The process needs a leaving-state value that was not given, or it is not reachable.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("no-dehumidification", "The leaving state holds more moisture than the entering state: no condensate; use heating or humidification.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("range", "Temperature outside −60 … 100 °C.", CalcNoticeSeverity.Block),
         ],
         [
             new CalcTestCase("ka-saturation-20", "Saturated air at 20 °C, 101.325 kPa",

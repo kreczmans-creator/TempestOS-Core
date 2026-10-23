@@ -686,49 +686,68 @@ internal sealed class Evaluator(Func<string, CalcValue?> lookup, CalcLimits limi
         return new ScalarValue(s.DisplayUnit.ToSi(Math.Round(s.Displayed, decimals, MidpointRounding.AwayFromZero)), s.Dimension, s.DisplayUnit);
     }
 
-    private static IReadOnlyList<ScalarValue> Flatten(IReadOnlyList<CalcValue> args, string name)
+    /// <summary>The SI values of every argument (numbers and vectors) of one dimension, as a span — never one boxed value per element (R-10); the total is capped before anything is copied.</summary>
+    private (double[] Si, Dimension Dimension, Unit DisplayUnit) Flatten(IReadOnlyList<CalcValue> args, string name)
     {
-        var list = new List<ScalarValue>();
+        long total = 0;
+        Dimension? dim = null;
+        Unit? unit = null;
 
         foreach (var a in args)
         {
             switch (a)
             {
-                case ScalarValue s: list.Add(s); break;
+                case ScalarValue s:
+                    total += 1;
+                    dim ??= s.Dimension;
+                    unit ??= s.DisplayUnit;
+                    if (s.Dimension != dim) throw new CalcDimensionException($"{name} needs values of one dimension.");
+                    break;
                 case VectorValue v:
-                    for (var i = 0; i < v.Length; i++)
-                        list.Add(v[i]);
+                    total += v.Length;
+                    dim ??= v.Dimension;
+                    unit ??= v.DisplayUnit;
+                    if (v.Dimension != dim) throw new CalcDimensionException($"{name} needs values of one dimension.");
                     break;
                 default: throw new CalcEvaluationException($"{name} takes numbers or vectors.");
             }
+
+            if (total > _limits.MaxArrayElements)
+                throw new CalcLimitException(nameof(CalcLimits.MaxArrayElements), $"{name} takes at most {_limits.MaxArrayElements} values in all.");
         }
 
-        if (list.Count == 0)
+        if (total == 0)
             throw new CalcEvaluationException($"{name} needs at least one value.");
 
-        var dim = list[0].Dimension;
+        var si = new double[total];
+        var k = 0;
 
-        foreach (var s in list)
+        foreach (var a in args)
         {
-            if (s.Dimension != dim)
-                throw new CalcDimensionException($"{name} needs values of one dimension.");
+            switch (a)
+            {
+                case ScalarValue s: si[k++] = s.Si; break;
+                case VectorValue v:
+                    for (var i = 0; i < v.Length; i++) si[k++] = v.Si[i];
+                    break;
+            }
         }
 
-        return list;
+        return (si, dim!.Value, unit!);
     }
 
-    private static CalcValue Extremum(IReadOnlyList<CalcValue> args, bool max)
+    private CalcValue Extremum(IReadOnlyList<CalcValue> args, bool max)
     {
-        var values = Flatten(args, max ? "max" : "min");
-        var best = values[0];
+        var (si, dim, unit) = Flatten(args, max ? "max" : "min");
+        var best = si[0];
 
-        foreach (var v in values)
+        foreach (var v in si)
         {
-            if (max ? v.Si > best.Si : v.Si < best.Si)
+            if (max ? v > best : v < best)
                 best = v;
         }
 
-        return new ScalarValue(best.Si, best.Dimension, values[0].DisplayUnit);
+        return new ScalarValue(best, dim, unit);
     }
 
     private static CalcValue Clamp(IReadOnlyList<CalcValue> args)
@@ -745,16 +764,20 @@ internal sealed class Evaluator(Func<string, CalcValue?> lookup, CalcLimits limi
         return new ScalarValue(Math.Clamp(x.Si, lo.Si, hi.Si), x.Dimension, x.DisplayUnit);
     }
 
-    private static CalcValue Sum(IReadOnlyList<CalcValue> args)
+    private CalcValue Sum(IReadOnlyList<CalcValue> args)
     {
-        var values = Flatten(args, "sum");
-        return new ScalarValue(values.Sum(v => v.Si), values[0].Dimension, values[0].DisplayUnit);
+        var (si, dim, unit) = Flatten(args, "sum");
+        double sum = 0;
+        foreach (var v in si) sum += v;
+        return new ScalarValue(sum, dim, unit);
     }
 
-    private static CalcValue Average(IReadOnlyList<CalcValue> args)
+    private CalcValue Average(IReadOnlyList<CalcValue> args)
     {
-        var values = Flatten(args, "avg");
-        return new ScalarValue(values.Average(v => v.Si), values[0].Dimension, values[0].DisplayUnit);
+        var (si, dim, unit) = Flatten(args, "avg");
+        double sum = 0;
+        foreach (var v in si) sum += v;
+        return new ScalarValue(sum / si.Length, dim, unit);
     }
 
     private static CalcValue Length(IReadOnlyList<CalcValue> args)
@@ -783,10 +806,12 @@ internal sealed class Evaluator(Func<string, CalcValue?> lookup, CalcLimits limi
         return new ScalarValue(a.Si - b.Si * Math.Floor(a.Si / b.Si), a.Dimension, a.DisplayUnit);
     }
 
-    private static CalcValue Hypot(IReadOnlyList<CalcValue> args)
+    private CalcValue Hypot(IReadOnlyList<CalcValue> args)
     {
-        var values = Flatten(args, "hypot");
-        return new ScalarValue(Math.Sqrt(values.Sum(v => v.Si * v.Si)), values[0].Dimension, values[0].DisplayUnit);
+        var (si, dim, unit) = Flatten(args, "hypot");
+        double sum = 0;
+        foreach (var v in si) sum += v * v;
+        return new ScalarValue(Math.Sqrt(sum), dim, unit);
     }
 
     private static CalcValue Interp(IReadOnlyList<CalcValue> args)
@@ -861,12 +886,8 @@ internal sealed class Evaluator(Func<string, CalcValue?> lookup, CalcLimits limi
 
     private CalcValue VecCall(IReadOnlyList<CalcValue> args)
     {
-        var values = Flatten(args, "vec");
-
-        if (values.Count > _limits.MaxArrayElements)
-            throw new CalcLimitException(nameof(CalcLimits.MaxArrayElements), $"An array holds at most {_limits.MaxArrayElements} elements.");
-
-        return new VectorValue(values.Select(v => v.Si).ToArray(), values[0].Dimension, values[0].DisplayUnit);
+        var (si, dim, unit) = Flatten(args, "vec");
+        return new VectorValue(si, dim, unit);
     }
 
     /// <summary>Renders <paramref name="node"/> with every symbol replaced by its current formatted value: the substitution line of a step.</summary>

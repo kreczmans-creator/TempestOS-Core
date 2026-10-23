@@ -107,7 +107,7 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
 
             case SsMomentEnd:
                 c.Input("M_0");
-                c.Assign("R_A", "-M_0 / L", "kN", "Left reaction (downward positive)", "Roark 8.1 3a");
+                c.Assign("R_A", "-M_0 / L", "kN", "Left reaction (upward positive, so negative: the couple lifts the left support)", "Roark 8.1 3a");
                 c.Assign("R_B", "M_0 / L", "kN", "Right reaction");
                 c.Assign("M_max", "M_0", "kN*m", "Maximum moment, at the loaded end");
                 c.Assign("x_M", "0 m", "m", "Position of the maximum moment");

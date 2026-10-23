@@ -36,7 +36,7 @@ public static class CalcRunner
         {
             context.Block("cancelled", "The calculation was cancelled before it finished.");
         }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException or ArithmeticException or IndexOutOfRangeException or KeyNotFoundException)
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or ArithmeticException or IndexOutOfRangeException or KeyNotFoundException or NullReferenceException)
         {
             // A calculator's own guard or a numeric edge the engine did not
             // see: still a block on the sheet, never a crash in the form.
@@ -99,12 +99,20 @@ public static class CalcRunner
         return Sensitivity.Tornado(Model(calculator, inputs, outputSymbol), nominal, inputSymbols, relativeRange);
     }
 
+    /// <summary>Sample cap for a Monte Carlo that re-runs a whole calculator per sample.</summary>
+    public const int MaxCalculatorSamples = 100_000;
+
     public static MonteCarloResult MonteCarlo(
         ICalcCalculator calculator, CalcInputSet inputs, string outputSymbol, IReadOnlyDictionary<string, Distribution> distributions,
         int samples = Engine.Analysis.MonteCarlo.DefaultSamples, ulong seed = 1, double? lowerLimit = null, double? upperLimit = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(calculator);
         ArgumentNullException.ThrowIfNull(distributions);
+
+        // Each sample re-runs the whole calculator, so the sheet-level cap is a tenth of the engine's (R-09).
+        if (samples > MaxCalculatorSamples)
+            throw new CalcEvaluationException($"A calculator Monte Carlo runs at most {MaxCalculatorSamples} samples (each sample is a full run).");
+
         var nominal = NominalSi(calculator.Template, inputs, distributions.Keys);
         return Engine.Analysis.MonteCarlo.Run(Model(calculator, inputs, outputSymbol), nominal, distributions, samples, seed, lowerLimit, upperLimit, cancellationToken: cancellationToken);
     }

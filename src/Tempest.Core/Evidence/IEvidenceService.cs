@@ -43,6 +43,9 @@ public interface IEvidenceService
     /// </summary>
     Task<EvidenceActionResult> RecordCheckAsync(Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, CancellationToken cancellationToken = default);
 
+    /// <summary>`v0.26.0` Phase 6: as <see cref="RecordCheckAsync"/>, with <paramref name="alsoWrite"/> committed in the same transaction as the check record, after a transaction-time re-check of the status (a racing check is refused with <see cref="EvidenceRefusal.TransitionNotPermitted"/>).</summary>
+    Task<EvidenceActionResult> RecordCheckInOneTransactionAsync(Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Records an issue against <paramref name="evidenceId"/>'s own evidence
     /// and moves it to <see cref="EvidenceStatus.Issued"/>. Refused, as a

@@ -91,7 +91,16 @@ public static class CalcCsv
             return (set, notices);
 
         var header = rows[0];
-        var columns = header.Select((h, i) => (Name: h.Trim().ToLowerInvariant(), Index: i)).ToDictionary(x => x.Name, x => x.Index, StringComparer.Ordinal);
+        // First column of a name wins; empty names are ignored (R-01: a repeated or empty header never throws).
+        var columns = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        for (var i = 0; i < header.Count; i++)
+        {
+            var name = header[i].Trim().ToLowerInvariant();
+
+            if (name.Length > 0)
+                columns.TryAdd(name, i);
+        }
 
         if (!columns.ContainsKey("symbol") || !columns.ContainsKey("value"))
         {
@@ -196,7 +205,11 @@ public static class CalcCsv
             : null;
     }
 
-    internal static bool IsFormulaLike(string s) => s.Length > 0 && s[0] is '=' or '+' or '-' or '@' or '\t' or '\r' && !(s[0] is '-' or '+' && s.Length > 1 && (char.IsAsciiDigit(s[1]) || s[1] == '.'));
+    /// <summary>A cell a spreadsheet would evaluate: anything starting with =, +, −, @, tab or CR — except a plain signed number (R-03: "-1+cmd|…" is not a number).</summary>
+    internal static bool IsFormulaLike(string s) =>
+        s.Length > 0
+        && s[0] is '=' or '+' or '-' or '@' or '\t' or '\r'
+        && !(s[0] is '-' or '+' && double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _));
 
     private static void Row(StringBuilder sb, params string[] cells)
     {
@@ -251,9 +264,9 @@ public static class CalcCsv
                         inQuotes = false;
                     }
                 }
-                else
+                else if (field.Length < MaxFieldLength)
                 {
-                    field.Append(c);
+                    field.Append(c); // R-02: the field cap holds inside quotes too.
                 }
             }
             else if (c == '"')

@@ -53,7 +53,8 @@ public sealed class TrueTypeSubsetterTests
 
         try
         {
-            Assert.Equal(2, subsets.Count);
+            // Display and Mono always; Body too when the platform default face exposes its bytes (v0.26.0 Phase 6: Windows's default face is several hundred KB).
+            Assert.InRange(subsets.Count, 2, 3);
             Assert.True(subsets.ContainsKey((DocumentFontRole.Display, true)));
             Assert.True(subsets.ContainsKey((DocumentFontRole.Mono, false)));
         }

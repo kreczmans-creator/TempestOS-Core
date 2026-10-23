@@ -46,6 +46,8 @@ public static class FrameLimits
     public const int MaxCases = 50;
     public const int MaxCombinations = 50;
     public const int MaxLoads = 20_000;
+    public const int MaxLoadsPerMember = 200;
+    public const long MaxFactorWork = 1_500_000_000;
     public const int MaxStations = 100;
     public const int MaxBandedEntries = 20_000_000;
 }
@@ -110,6 +112,11 @@ public sealed class FrameModel
             if (!(e.E > 0) || !(e.A > 0) || !(e.Iz > 0))
                 throw new FrameModelException($"elements: element {e.Id} needs positive E, A and I.");
         }
+
+        var perMember = loads.Where(l => l.Kind != FrameLoadKind.Nodal).GroupBy(l => l.Target).FirstOrDefault(g => g.Count() > FrameLimits.MaxLoadsPerMember);
+
+        if (perMember is not null)
+            throw new FrameModelException($"loads: element {perMember.Key} carries {perMember.Count()} load rows; at most {FrameLimits.MaxLoadsPerMember} per member (combine them or split the member).");
 
         var cases = loads.Select(l => l.Case).Distinct().OrderBy(c => c).ToList();
 
