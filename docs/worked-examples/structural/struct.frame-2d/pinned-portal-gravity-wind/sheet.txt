@@ -1,0 +1,235 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: pinned-portal-gravity-wind    Revision: A
+Title: Beam and 2D frame analysis
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.
+Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ terms; end releases by static condensation; supports by removing freedoms or adding spring stiffness; equivalent nodal loads from exact fixed-end forces; K u = F solved by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism). Internal forces and deflections from the member end actions and Macaulay functions of the span loads; extremes at stations plus the zero-shear and zero-slope points found by bisection.
+  Ref: Hibbeler, Structural Analysis Ch. 16 — Plane frame analysis using the stiffness method
+  Ref: Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
+  Ref: BS EN 1990 6.4.3 — Combinations of actions (user-entered factors)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  E | Default modulus of elasticity | 210 | GPa | spec: BS EN 1993-1-1 3.2.6 | 1 … 500 GPa
+  nodes | Nodes | 4 row(s) |  | drawing: DRG-PF-010 rev B | any
+  elements | Elements | 3 row(s) |  | reference: UC 203×203×46 columns, UB 305×165×40 rafter (Blue Book) | any
+  loads | Loads | 2 row(s) |  | spec: Load schedule LS-02: roof 15 kN/m; wind 24 kN at eaves | any
+  combinations | Combinations (blank = each case alone) | 3 row(s) |  | assumption: Characteristic combinations for the worked example. | any
+  report | Combination to report in detail (blank = first) | G+W |  | assumption: Gravity plus wind reported. | any
+  n_div | Stations per member | 16 |  | assumption: 16 stations per member. | 4 … 100
+
+3. ASSUMPTIONS
+  A1. Linear elastic, small displacements, first order; no shear deformation, no P–Δ, no buckling. (Euler–Bernoulli direct stiffness.)
+  A2. Members are prismatic between nodes and connect rigidly unless a release is stated; a release transmits no moment at that end. (Static condensation of the released rotation.)
+  A3. Distributed loads act perpendicular to the member unless marked as gravity loads, which act in global −y per metre of member length. (Load table convention.)
+  A4. combinations (Combinations (blank = each case alone)) is taken as 3 row(s). (Characteristic combinations for the worked example.)
+  A5. report (Combination to report in detail (blank = first)) is taken as G+W. (Gravity plus wind reported.)
+  A6. n_div (Stations per member) is taken as 16. (16 stations per member.)
+
+4. WORKING
+  [4] n_nodes = nodes
+      = 4
+      = 4
+        Nodes in the model
+  [5] n_elements = elements
+      = 3
+      = 3
+        Members in the model
+  [6] n_comb = combinations
+      = G+W, G
+      = 2
+        Load combinations analysed
+  [7] comb = reported combination
+      = G+W
+      = "G+W"
+        The combination detailed below
+  [8] R1_x = reaction at node 1, x
+      = Σ member end forces − applied nodal loads
+      = -2.9968 kN
+        Horizontal reaction at node 1
+  [9] R1_y = reaction at node 1, y
+      = Σ member end forces − applied nodal loads
+      = 45 kN
+        Vertical reaction at node 1
+  [10] R1_m = reaction at node 1, moment
+      = Σ member end moments − applied nodal couple
+      = 2.9104e-14 kN·m
+        Moment reaction at node 1
+  [11] R4_x = reaction at node 4, x
+      = Σ member end forces − applied nodal loads
+      = -21.003 kN
+        Horizontal reaction at node 4
+  [12] R4_y = reaction at node 4, y
+      = Σ member end forces − applied nodal loads
+      = 75 kN
+        Vertical reaction at node 4
+  [13] R4_m = reaction at node 4, moment
+      = Σ member end moments − applied nodal couple
+      = 0 kN·m
+        Moment reaction at node 4
+  [14] sum_R_y = Σ R_y
+      = all supports
+      = 120 kN
+        Total vertical reaction (equilibrium check against the applied load)
+  [15] sum_R_x = Σ R_x
+      = all supports
+      = -24 kN
+        Total horizontal reaction
+  [16] M_max_e1 = member 1: max sagging M
+      = at x = 5 m from node 1
+      = 14.984 kN·m
+        Member 1 maximum moment
+  [17] M_min_e1 = member 1: min (hogging) M
+      = at x = 0 m
+      = 0 kN·m
+        Member 1 minimum moment
+  [18] V_e1 = member 1: max |V|
+      = 2.9968 kN
+      = 2.9968 kN
+        Member 1 maximum shear
+  [19] N_e1 = member 1: max |N| (tension +)
+      = -45 kN
+      = -45 kN
+        Member 1 axial force of greatest magnitude
+  [20] d_e1 = member 1: max |deflection|
+      = at x = 5 m
+      = 74.678 mm
+        Member 1 maximum transverse deflection
+  [21] M_max_e2 = member 2: max sagging M
+      = at x = 3 m from node 2
+      = 82.484 kN·m
+        Member 2 maximum moment
+  [22] M_min_e2 = member 2: min (hogging) M
+      = at x = 8 m
+      = -105.02 kN·m
+        Member 2 minimum moment
+  [23] V_e2 = member 2: max |V|
+      = 75 kN
+      = 75 kN
+        Member 2 maximum shear
+  [24] N_e2 = member 2: max |N| (tension +)
+      = -21.003 kN
+      = -21.003 kN
+        Member 2 axial force of greatest magnitude
+  [25] d_e2 = member 2: max |deflection|
+      = at x = 3.4916 m
+      = 25.45 mm
+        Member 2 maximum transverse deflection
+  [26] M_max_e3 = member 3: max sagging M
+      = at x = 5 m from node 3
+      = 0 kN·m
+        Member 3 maximum moment
+  [27] M_min_e3 = member 3: min (hogging) M
+      = at x = 0 m
+      = -105.02 kN·m
+        Member 3 minimum moment
+  [28] V_e3 = member 3: max |V|
+      = 21.003 kN
+      = 21.003 kN
+        Member 3 maximum shear
+  [29] N_e3 = member 3: max |N| (tension +)
+      = -75 kN
+      = -75 kN
+        Member 3 axial force of greatest magnitude
+  [30] d_e3 = member 3: max |deflection|
+      = at x = 0.31515 m
+      = 75.042 mm
+        Member 3 maximum transverse deflection
+  [31] M_max = max sagging moment
+      = member 2 at x = 3 m
+      = 82.484 kN·m
+        Maximum moment in the reported combination
+  [32] x_Mmax = position of M_max
+      = from node i of member 2
+      = 3 m
+        Position of the maximum moment
+  [33] M_min = min (hogging) moment
+      = member 3 at x = 0 m
+      = -105.02 kN·m
+        Minimum moment in the reported combination
+  [34] V_max = max |V|
+      = member 2
+      = 75 kN
+        Maximum shear in the reported combination
+  [35] N_max = max tension
+      = member 2
+      = -21.003 kN
+        Maximum axial tension
+  [36] N_min = max compression (negative)
+      = member 3
+      = -75 kN
+        Maximum axial compression
+  [37] d_max = max |deflection|
+      = member 3 at x = 0.31515 m
+      = 75.042 mm
+        Maximum transverse deflection
+  [38] M_max_env = envelope max M
+      = G+W, member 2
+      = 82.484 kN·m
+        Maximum moment over all combinations
+  [39] M_min_env = envelope min M
+      = G+W, member 3
+      = -105.02 kN·m
+        Minimum moment over all combinations
+  [40] V_max_env = envelope max |V|
+      = G+W, member 2
+      = 75 kN
+        Maximum shear over all combinations
+  [41] d_max_env = envelope max |δ|
+      = G+W, member 3
+      = 75.042 mm
+        Maximum deflection over all combinations
+
+5. RESULTS
+  R1_x = -2.9968 kN    R_x node 1
+  R1_y = 45 kN    R_y node 1
+  R1_m = 2.9104e-14 kN·m    M node 1
+  R4_x = -21.003 kN    R_x node 4
+  R4_y = 75 kN    R_y node 4
+  R4_m = 0 kN·m    M node 4
+  sum_R_y = 120 kN    Σ R_y
+  sum_R_x = -24 kN    Σ R_x
+  M_max_e1 = 14.984 kN·m    M max, member 1
+  M_min_e1 = 0 kN·m    M min, member 1
+  V_e1 = 2.9968 kN    |V| max, member 1
+  N_e1 = -45 kN    N, member 1
+  d_e1 = 74.678 mm    δ max, member 1
+  M_max_e2 = 82.484 kN·m    M max, member 2
+  M_min_e2 = -105.02 kN·m    M min, member 2
+  V_e2 = 75 kN    |V| max, member 2
+  N_e2 = -21.003 kN    N, member 2
+  d_e2 = 25.45 mm    δ max, member 2
+  M_max_e3 = 0 kN·m    M max, member 3
+  M_min_e3 = -105.02 kN·m    M min, member 3
+  V_e3 = 21.003 kN    |V| max, member 3
+  N_e3 = -75 kN    N, member 3
+  d_e3 = 75.042 mm    δ max, member 3
+  M_max = 82.484 kN·m    M max
+  x_Mmax = 3 m    x of M max
+  M_min = -105.02 kN·m    M min
+  V_max = 75 kN    |V| max
+  N_max = -21.003 kN    N max (tension)
+  N_min = -75 kN    N min (compression)
+  d_max = 75.042 mm    δ max
+  M_max_env = 82.484 kN·m    M max, envelope
+  M_min_env = -105.02 kN·m    M min, envelope
+  V_max_env = 75 kN    |V| max, envelope
+  d_max_env = 75.042 mm    δ max, envelope
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: struct.frame-2d@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 5/5
+  Test run: —

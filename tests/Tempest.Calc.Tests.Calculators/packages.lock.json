@@ -120,6 +120,12 @@
           "Tempest.Calc.Engine": "[0.26.0, )"
         }
       },
+      "tempest.calc.structural": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.calc.verification": {
         "type": "Project",
         "dependencies": {

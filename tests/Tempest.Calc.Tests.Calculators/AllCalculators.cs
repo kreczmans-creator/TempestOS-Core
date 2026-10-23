@@ -8,6 +8,7 @@ public static class AllCalculators
     public static IReadOnlyList<ICalcCalculator> All { get; } =
     [
         .. Tempest.Calc.Mechanical.MechanicalCalculators.All,
+        .. Tempest.Calc.Structural.StructuralCalculators.All,
     ];
 
     public static TheoryData<string> Ids => [.. All.Select(c => c.Template.Id)];

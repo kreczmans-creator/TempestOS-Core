@@ -12,6 +12,7 @@
   <Project Path="Tempest.Calc/Tempest.Calc.Verification/Tempest.Calc.Verification.csproj" />
   <Project Path="Tempest.Calc/Tempest.Calc.Library/Tempest.Calc.Library.csproj" />
   <Project Path="Tempest.Calc/Tempest.Calc.Mechanical/Tempest.Calc.Mechanical.csproj" />
+  <Project Path="Tempest.Calc/Tempest.Calc.Structural/Tempest.Calc.Structural.csproj" />
   <Project Path="Tempest.Core/Tempest.Core.csproj" />
   <Project Path="Tempest.Desktop/Tempest.Desktop.csproj" />
   <Project Path="Tempest.Harness/Tempest.Harness.csproj" />

@@ -13,5 +13,6 @@ public static class CalcCalculatorComposition
     public static IReadOnlyList<ICalcCalculator> All() =>
     [
         .. Tempest.Calc.Mechanical.MechanicalCalculators.All,
+        .. Tempest.Calc.Structural.StructuralCalculators.All,
     ];
 }
