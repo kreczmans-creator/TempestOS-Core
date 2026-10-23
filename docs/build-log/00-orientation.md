@@ -1,0 +1,26 @@
+# 00 — Orientation (2026-10-23)
+
+## Repo conventions
+- `src/TempestOS.slnx`: Tempest.Core, Tempest.Workspace, Tempest.Desktop (Avalonia 11.3.20, SkiaSharp PDF), Tempest.Harness, Tempest.Validation, Tempest.Samples; tests: Tempest.Core.Tests (xUnit 2.9.3, CsCheck, coverlet), Tempest.Desktop.Tests, Tempest.Desktop.RealShell. `net10.0`, SDK 10.0.302+ (`global.json` rollForward latestFeature). No `.editorconfig`.
+- Build: `dotnet build src/TempestOS.slnx -c Release -p:TreatWarningsAsErrors=true`; tests: `dotnet test tests/<proj> -c Release --no-build`. NuGet lock files are mandatory (ADR-0160): after any PackageReference change run `dotnet restore src/TempestOS.slnx -force-evaluate` and commit every `packages.lock.json`. CI (`ci.yml`) runs on push to `main`/`release/**` and on PRs; CI Gate requires Branch Name job, dependency-scan, governance health check (ADR Register vs `docs/adr/`, VERSION vs `docs/releases/v<ver>/`, Markdown lines added ≤ code lines added).
+- Version: root `VERSION` file, read by `Directory.Build.props`.
+- Persistence: SQLite WAL (`SqlitePersistenceStore`), `IPersistenceStore` key/value per collection, `IQueryablePersistenceStore.ExecuteInTransactionAsync` gives `IPersistenceTransaction` (read/write/bytes/FTS5 `IndexTextAsync`). ADR-0145: state, revisions, relationships commit in one transaction.
+- Event bus: `Tempest.Core.Events.IEventBus`. Plugins: manifest discovery + registry, no dynamic assembly load from user paths.
+
+## ADRs that matter
+- D-028 "Evidence is the product, calculation is where the engineer does it" (`docs/releases/v1.0.0/`), ADR-0148 (Evidence cites governed reference data), ADR-0149 (structured source citation, supersession keeps pins valid), ADR-0143 (a calculation carries the reference revision), ADR-0147 (units are a runtime dimension vector; `Quantity<T>`), ADR-0158 (calculator diagrams declared in Core, drawn by one Desktop control), ADR-0159 (seeded reference data released under a seed identity), ADR-0161 (second-person sign-off switch), ADR-0163 (Disciplines over Modules; Calculations module = Calculators + Calculation register + Packs and templates), ADR-0164 (CI tests once per commit).
+
+## Existing calculator pattern (19 calculators)
+`ICalculationDefinition<TInput,TResult>` (pure `Calculate(input, CalculationContext)`; context records intermediates, constraint checks, referenced materials; caps 200 intermediates / 1 MiB) → `ICalculationEngine` (register, execute, durable `CalculationRecord`, re-run, compare) → `CalculationModuleDescriptors.All` (id, title, category, method reference, spec path, input descriptors: Quantity/Number/Text/Choice/Boolean/List/Reference) → `CalculationModuleForm` (reflection-built input from form fields, `Present` result rows) → `CalculationModuleService` (released reference-record fills) → Desktop `CalculationModulesView` (generated form) + `CalculationDiagrams` → spec doc `docs/engineering/calculations/calc.<id>.md`. Calculators: bolt-shear, beam-bending (cantilever), bearing-load, thin-wall vessel, material margin, beam-deflection, bolted-joint-preload, bolt-group-eccentric-shear, fillet-weld, lifting-lug, column-buckling, shaft-combined, bearing-L10, thick-walled-cylinder, thermal-expansion, fatigue-miner, tolerance-stack, thermal-resistance-chain, plane-wall. Navigation: Engineering tree → Modules → Calculations → Calculators / Calculation register / Packs and templates (`EngineeringAreaView`). Disciplines: Mechanical, Structural, Electrical, Building Services, Manufacturing (`EngineeringDisciplines`).
+
+## Evidence model
+`Evidence : EngineeringObjectBase` with classification, subject, author, citations (`EvidenceCitation` → `ReferencePin`), declared figures, status Draft→Checked→Issued→Superseded (`EvidenceStatusTransitions`), `CheckRecord` (independent-check switch `Evidence:IndependentCheck`), `IssueRecord` (reference, revision, client, issuedAt, issueSheetAttachmentId). `EvidenceService.IssueAsync` renders/attaches the sheet first (one transaction: bytes + attachment metadata), then `RecordIssueAsync` writes the issue record + status in a second transaction: a fault between leaves it Checked with an orphan attachment. The Desktop `IssueSheetRenderer` draws via `DocumentTemplate.RenderPdf` (SkiaSharp, Chakra Petch / Inter / Space Mono loaded from `Documents/Assets/Fonts`; body still `SKTypeface.Default`). Reports module (`ReportsView`) exists but lists issue sheets only.
+
+## Reference libraries
+`ReferenceRecord<TDefinition>` with `ReferenceProvenance` (organisation, document, revision, date, location, extraction method, verification status, reviewer, date, notes), `SourceCitation` (publisher, work, edition, page, table/figure, row), `ReferenceValidationState` (Released is pin-able), `ReferencePin` (library, id, revision), supersession links.
+
+## Baseline
+Core tests: 7,202 pass / 0 fail / 15 skipped (51 s). Desktop: see LOG.md. Build: 0 warnings.
+
+## Gaps against §3
+No expression engine, no unit-aware worksheet, no sheet model with formula→substitution→result, no CalcTemplate/CalcInstance, no known-answer registry, no sensitivity/Monte Carlo/CSV, Issue is two transactions, no calc-register auto-link, no packs; only 3 of the 12 target calculators have precursors (tolerance stack, thick cylinder, bolted-joint preload, bolt group).
