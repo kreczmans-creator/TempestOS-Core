@@ -231,6 +231,44 @@ public sealed class Red_SolverAttacks
         }
     }
 
+    /// <summary>R-20: the validator writes one block per offending cell, so a 20,000-row load table with every cell out of range yields ~200,000 notices and a multi-megabyte draft sheet.</summary>
+    [Fact]
+    public void Validator_Notice_Count_Is_Bounded()
+    {
+        var frame = AllCalculators.Get(FrameCalculator.Id);
+        var rows = Enumerable.Range(0, FrameLimits.MaxLoads).Select(_ => CalcRow.Of(
+            ("case", new CalcCell(-1)), ("kind", new CalcCell(Text: "nope")), ("target", new CalcCell(-1)), ("a", new CalcCell(-1, "m")), ("b", new CalcCell(-1, "m")),
+            ("w1", new CalcCell(1e9, "kN/m")), ("w2", new CalcCell(1e9, "kN/m")), ("F_x", new CalcCell(1e9, "kN")), ("F_y", new CalcCell(1e9, "kN")), ("M", new CalcCell(1e9, "kN*m")))).ToList();
+        var set = WithOverride(frame.Template, CalcInputValue.Table("loads", rows));
+        var sw = Stopwatch.StartNew();
+        var result = CalcRunner.Run(frame, set);
+        var text = RenderText(frame, set, result);
+        Assert.True(sw.Elapsed < Budget, $"validation took {sw.Elapsed.TotalSeconds:F1} s");
+        Assert.True(result.Notices.Count <= 1_000, $"{result.Notices.Count} notices were raised for one table");
+        Assert.True(text.Length < 400_000, $"sheet is {text.Length} characters");
+    }
+
+    /// <summary>R-21: n_mc's hard maximum is the engine's sample cap (1,000,000); with 200 contributors the Monte Carlo of the tolerance stack runs for ~20 s on one sheet.</summary>
+    [Fact]
+    public void Tolerance_Stack_At_Its_Hard_Limits_Finishes_In_Budget()
+    {
+        var stack = AllCalculators.Get("mech.tolerance-stack");
+        var spec = stack.Template.FindInput("contributors")!;
+        var columns = spec.Columns!;
+        var rows = Enumerable.Range(0, spec.MaxRows).Select(_ => new CalcRow(columns.ToDictionary(c => c.Key, c => c.Kind switch
+        {
+            CalcInputKind.Quantity => new CalcCell(c.HardMax ?? 1, c.DefaultUnit),
+            CalcInputKind.Number => new CalcCell(c.HardMax ?? 1),
+            CalcInputKind.Choice => new CalcCell(Text: c.Choices?[0]),
+            CalcInputKind.Boolean => new CalcCell(Flag: true),
+            _ => new CalcCell(Text: "x"),
+        }, StringComparer.Ordinal))).ToList();
+        var nMc = stack.Template.FindInput("n_mc")!;
+        var set = WithOverride(stack.Template, CalcInputValue.Table("contributors", rows), CalcInputValue.Of("n_mc", nMc.HardMax!.Value));
+        var (finished, elapsed, _) = RunWithBudget(stack, set);
+        Assert.True(finished, $"the tolerance stack at its hard limits ran for {elapsed.TotalSeconds:F1} s (budget {Budget.TotalSeconds} s)");
+    }
+
     // ------------------------------------------------------------------
     // Every calculator: numeric table cells at the extremes
     // ------------------------------------------------------------------

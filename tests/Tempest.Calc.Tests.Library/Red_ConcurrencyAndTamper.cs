@@ -175,11 +175,12 @@ public sealed class Red_ConcurrencyAndTamper
         var first = service2.ReviseAsync(issued.Id);
         await gate.Blocked.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
-        var second = await host.Service.ReviseAsync(issued.Id);
-        Assert.True(second.Succeeded, second.Reason);
+        // The Evidence title's uniqueness refuses the second revision, but by throwing (DuplicateBusinessIdentifierException), not by a refusal.
+        var secondError = await Record.ExceptionAsync(() => host.Service.ReviseAsync(issued.Id));
 
         gate.Release.SetResult();
         _ = await Record.ExceptionAsync(() => first);
+        Assert.True(secondError is null, $"the concurrent revision escaped as {secondError?.GetType().Name} instead of a refusal");
 
         var revisions = (await host.Store.ListInstancesAsync(issued.ProjectId)).Where(i => i.PredecessorId == issued.Id).ToList();
         Assert.True(revisions.Count == 1, $"{revisions.Count} revisions of one issued calculation exist: {string.Join(", ", revisions.Select(r => r.Revision + "/" + r.Status))}");
@@ -198,10 +199,14 @@ public sealed class Red_ConcurrencyAndTamper
 
         var stored = (await host.Store.FindInstanceAsync(issued.Id))!;
         var drafts = (await host.Store.ListInstancesAsync(issued.ProjectId)).Where(i => i.PredecessorId == issued.Id).ToList();
-        Assert.True(stored.Status == CalcInstanceStatus.Superseded || drafts.Count == 0, $"the original is {stored.Status} and {drafts.Count} orphan draft(s) exist");
+
+        // A retry must recover: either it succeeds, or the state was consistent already.
+        var retryError = await Record.ExceptionAsync(() => host.Service.ReviseAsync(issued.Id));
+        Assert.True(stored.Status == CalcInstanceStatus.Superseded || drafts.Count == 0, $"the original is {stored.Status} and {drafts.Count} orphan draft(s) exist; a retry {(retryError is null ? "succeeded" : "threw " + retryError.GetType().Name)}");
+        Assert.True(retryError is null, $"after a crash mid-revise the issued calculation can never be revised again: {retryError?.GetType().Name}: {retryError?.Message}");
     }
 
-    /// <summary>Tried, no issue: two concurrent checks on one draft — exactly one lands, the other is a refusal, and the Evidence is checked once.</summary>
+    /// <summary>R-19: four concurrent checks on one draft all succeed; the Evidence records a check four times over (no optimistic concurrency in RecordCheckAsync either).</summary>
     [Fact]
     public async Task Two_Simultaneous_Checks_Leave_One_Check()
     {
@@ -218,9 +223,9 @@ public sealed class Red_ConcurrencyAndTamper
                 return false;
             }
         })));
-        Assert.Equal(1, results.Count(r => r));
         var stored = (await host.Store.FindInstanceAsync(instance.Id))!;
         Assert.Equal(CalcInstanceStatus.Checked, stored.Status);
+        Assert.True(results.Count(r => r) == 1, $"{results.Count(r => r)} of 4 concurrent checks were accepted on one draft");
         Assert.Equal(EvidenceStatus.Checked, await EvidenceStatusAsync(host, stored));
     }
 
@@ -323,13 +328,13 @@ public sealed class Red_ConcurrencyAndTamper
         var host = new LibraryTestHost();
         var (service2, gate) = Gated(host);
         var project = await host.ProjectAsync();
-        var before = (await host.Evidence.ListAsync(project)).Count;
+        var before = (await host.Context.Repository.ListAllAsync()).Count;
 
         gate.FailTransaction = 1;
         await Assert.ThrowsAnyAsync<Exception>(() => service2.CreateAsync("test.direct-stress", project, "ORPHAN", LibraryTestHost.ProvenancedInputs()));
 
         Assert.Empty(await host.Store.ListInstancesAsync(project));
-        var after = (await host.Evidence.ListAsync(project)).Count;
+        var after = (await host.Context.Repository.ListAllAsync()).Count;
         Assert.True(after == before, $"{after - before} orphan Evidence record(s) remain after a failed Create");
     }
 }
