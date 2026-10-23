@@ -1,9 +1,9 @@
-# STATUS — 2026-10-23 20:05 UTC
-Phase: 7/7 — Black review answered; final gate running; then merge, Windows CI, rc1
-Done since last: Phase 6 merged; Red (23 findings → 22 fixed, R-22 accepted); Black black-box review on a clean clone (4 High, 7 Medium → 4 High + 5 Medium fixed under ADR-0166, 2 justified, Lows deferred); Windows CI failures diagnosed and fixed (xUnit analysers, 285 KB system-font PDFs → subsetter keeps PDF tables only, tolerance-stack Monte Carlo keys, Red budgets × CI factor); goldens + 32 worked examples + pack regenerated; README/worked-example index/release notes/handover updated; graph refreshed
-Now: Linux gate green (Release build 0 warnings; Core 7,221 / Desktop 1,193 / Calc 849 pass, 0 fail, 1 skipped D-32) → phase-7 merged into release → Windows CI running
-Next: Grey Windows verdict; §10 checklist; tag v0.26.0-rc1 only if every gate passes
-Tests: Core 7,221 pass / 0 fail; Desktop 1,193 pass / 0 fail; Calc Engine 384, Sheets 93, Library 44 (+1 skipped D-32), Calculators 328 pass / 0 fail; 3 unconfirmed-reference known-answer cases (M1, S3, B2)
-Build: green (Linux, Debug + Release, warnings as errors)   Branch: v0.26.0/phase-7-reviews (PR #31 release/v0.26.0 → main, draft)
-Decisions taken: D-00…D-38; ADR-0165, ADR-0166; legacy-calculator replacement planned for v0.27.0 (D-38)
-Risks: Windows CI not yet green on release (two runs failed on the fixed issues); R-22 orphan Draft Evidence after a crash mid-Create (accepted)
+# STATUS — 2026-10-23 22:10 UTC
+Phase: 7/7 — every §10 gate passed; v0.26.0-rc1 ready at 6afead3 (tag push blocked for this session: owner step below)
+Done since last: Windows CI on release/v0.26.0 @ 6afead3 green (run 40014821084: all Build & Test legs Debug + Release, governance, dependency scan); earlier red runs were the xUnit analyser rules, system-font PDF size, a Monte Carlo budget and a missing ADR Register row, all fixed; Black review fixes (ADR-0166); legacy-calculator review (D-38) → v0.27.0
+§10 gates: [x] CI green on Windows (Grey) and Linux gate green  [x] 12 calculators to DoD  [x] 47 known-answer cases, 0 failing, 3 unconfirmed-reference (M1, S3, B2)  [x] security review + 9 colour-team reports, no open Critical/High  [x] issued sheets open from Reports, PDFs < 200 KB, Issue in one transaction  [x] ADR-0165/0166, DECISIONS, CHANGELOG, release notes, THIRD-PARTY-NOTICES, handover
+Owner step: tag the candidate — `git tag -a v0.26.0-rc1 6afead3 -m "v0.26.0-rc1" && git push origin v0.26.0-rc1` (or GitHub → Releases → new tag v0.26.0-rc1 on 6afead3). This session's Git access refuses tag pushes (HTTP 403).
+Tests: Core 7,221 / Desktop 1,193 / Calc 849 pass, 0 fail, 1 skipped (D-32); 32 worked examples (4 unconfirmed) + 1 pack
+Build: green (Linux + Windows CI)   Branch: release/v0.26.0 @ 6afead3 (PR #31 → main, draft)
+Next: v0.27.0 on release/v0.27.0 — legacy calculator replacement (D-38, ADR-0167); Phase 1 in progress
+Risks: R-22 orphan Draft Evidence after a crash mid-Create (accepted, D-32)
