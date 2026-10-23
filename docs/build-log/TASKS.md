@@ -20,10 +20,10 @@
 - [x] M3 bolted joint + bolt group
 - [x] Yellow pass (docs/reviews/yellow-team.md, Y2-01…Y2-04)
 ## Phase 3 — structural (`v0.26.0/phase-3-struct`)
-- [ ] S1 section properties
-- [ ] S2 beam + 2D frame solver
-- [ ] S3 EN 1993-1-1 member checks
-- [ ] Yellow pass
+- [x] S1 section properties
+- [x] S2 beam + 2D frame solver (+ beam formula library)
+- [x] S3 EN 1993-1-1 member checks
+- [x] Yellow pass (Y3-01…Y3-05)
 ## Phase 4 — building services (`v0.26.0/phase-4-bs`)
 - [ ] B1 pipe pressure drop / pump duty
 - [ ] B2 psychrometrics
