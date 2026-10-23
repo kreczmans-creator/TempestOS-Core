@@ -1,0 +1,206 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: extract-velocity-method    Revision: A
+Title: Duct sizing
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+Sizes each duct section by the equal-friction method (a target friction rate) or the velocity method (a target velocity), rounds to standard sizes, and reports velocity, friction rate, friction and fitting losses per section and the total pressure drop along the index run, with warnings against user velocity and pressure-drop limits.
+Round: D from the target (friction: Colebrook with the air properties at T; velocity: D = √(4Q/πv)), rounded up to the next standard size. Rectangular: equivalent diameter D_e = 1.30 (ab)^0.625/(a + b)^0.25 (equal friction and capacity); flat oval: D_e = 1.55 A^0.625/P^0.25 with A = πb²/4 + b(a − b), P = πb + 2(a − b). Friction rate Δp/L = f ρ v²/(2D); fitting loss ΣC ρ v²/2; totals summed over the index-run sections.
+  Ref: ASHRAE Handbook — Fundamentals Ch. 21 — Duct design (friction chart basis, equivalent diameters, loss coefficients)
+  Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts
+  Ref: BS EN 1505 — Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions
+  Ref: BS EN 1506 — Ventilation for buildings: sheet metal air ducts and fittings with circular cross-section, dimensions
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  method | Sizing method | velocity |  | assumption: Velocity method for an extract system. | any
+  dp_target | Target friction rate (equal friction) | 1 | Pa/m | default | 0.3 … 5 Pa/m
+  v_target | Target velocity (velocity method) | 10 | m/s | spec: Dust-carrying extract: 10 m/s minimum transport velocity, SPEC-M-09 | 2 … 20 m/s
+  T | Air temperature | 25 | degC | assumption: Workshop air 25 °C. | -20 … 60 degC
+  p_atm | Barometric pressure | 100.5 | kPa | assumption: Site 70 m AOD, ≈ 100.5 kPa. | 80 … 105 kPa
+  eps | Duct roughness | 0.15 | mm | assumption: Spiral-wound galvanised duct with joints. | 0.03 … 3 mm
+  sections | Duct sections | 3 row(s) |  | drawing: DRG-M-310 rev A | any
+  v_limit | Velocity limit (warning and check) | 15 | m/s | spec: SPEC-M-09 noise limit | 2 … 30 m/s
+  dp_limit | Total pressure-drop limit (check) | 600 | Pa | spec: Extract fan external static 600 Pa | 50 … 2000 Pa
+  round_to | Round sizes up to a multiple of | 50 | mm | spec: BS EN 1506 preferred sizes | 1 … 100 mm
+
+3. ASSUMPTIONS
+  A1. Air is dry at the stated temperature and pressure (ρ = p/(287.055 T)); viscosity by Sutherland's law. (Standard air properties.)
+  A2. Rectangular and flat-oval ducts are sized through the equivalent diameter for equal friction and capacity. (Huebscher / Heyt–Diaz relations as given in ASHRAE Fundamentals Ch. 21.)
+  A3. Fitting loss coefficients C are user-supplied (manufacturer or ASHRAE/CIBSE data, not embedded) and refer to the section's velocity pressure. (Non-negotiable: no standard tables embedded.)
+  A4. method (Sizing method) is taken as velocity. (Velocity method for an extract system.)
+  A5. T (Air temperature) is taken as 25 degC. (Workshop air 25 °C.)
+  A6. p_atm (Barometric pressure) is taken as 100.5 kPa. (Site 70 m AOD, ≈ 100.5 kPa.)
+  A7. eps (Duct roughness) is taken as 0.15 mm. (Spiral-wound galvanised duct with joints.)
+
+4. WORKING
+  [10] rho = p / (287.055 T)
+      = 100500 Pa / (287.055 × 298.15 K)
+      = 1.1743 kg/m³
+        Air density
+  [11] mu = Sutherland's law
+      = T = 298.15 K
+      = 18.371 uPa·s
+        Air dynamic viscosity
+  [12] D_s1 = hood branch: diameter
+      = target 211.1 mm rounded up to 50 mm
+      = 250 mm
+        Diameter, hood branch
+  [13] v_s1 = hood branch: Q / A
+      = 0.35 / 0.049087
+      = 7.1301 m/s
+        Velocity, hood branch
+  [14] Re_s1 = hood branch: ρ v D_e / μ
+      = 1.1743 × 7.1301 × 0.25 / 0.000018371
+      = 113940
+        Reynolds number, hood branch
+  [15] f_s1 = hood branch: friction factor
+      = Colebrook–White
+      = 0.02041
+        Friction factor, hood branch
+  [16] dpL_s1 = hood branch: f ρ v² / (2 D_e)
+      = 0.02041 × 1.1743 × 7.1301² / (2 × 0.25)
+      = 2.4369 Pa/m
+        Friction rate, hood branch
+  [17] dp_f_s1 = hood branch: (Δp/L) L
+      = 2.4369 × 6
+      = 14.622 Pa
+        Friction loss, hood branch
+  [18] dp_fit_s1 = hood branch: ΣC ρ v²/2
+      = 1.5 × 29.849
+      = 44.774 Pa
+        Fitting loss, hood branch
+  [19] dp_s1 = hood branch: friction + fittings + equipment
+      = 14.622 + 44.774 + 120
+      = 179.4 Pa
+        Section loss, hood branch (index run)
+  [20] D_s2 = main: diameter
+      = target 365.64 mm rounded up to 50 mm
+      = 400 mm
+        Diameter, main
+  [21] v_s2 = main: Q / A
+      = 1.05 / 0.12566
+      = 8.3556 m/s
+        Velocity, main
+  [22] Re_s2 = main: ρ v D_e / μ
+      = 1.1743 × 8.3556 × 0.4 / 0.000018371
+      = 213630
+        Reynolds number, main
+  [23] f_s2 = main: friction factor
+      = Colebrook–White
+      = 0.018028
+        Friction factor, main
+  [24] dpL_s2 = main: f ρ v² / (2 D_e)
+      = 0.018028 × 1.1743 × 8.3556² / (2 × 0.4)
+      = 1.8475 Pa/m
+        Friction rate, main
+  [25] dp_f_s2 = main: (Δp/L) L
+      = 1.8475 × 20
+      = 36.95 Pa
+        Friction loss, main
+  [26] dp_fit_s2 = main: ΣC ρ v²/2
+      = 0.6 × 40.992
+      = 24.595 Pa
+        Fitting loss, main
+  [27] dp_s2 = main: friction + fittings + equipment
+      = 36.95 + 24.595 + 0
+      = 61.545 Pa
+        Section loss, main (index run)
+  [28] D_s3 = stack: diameter
+      = target 365.64 mm rounded up to 50 mm
+      = 400 mm
+        Diameter, stack
+  [29] v_s3 = stack: Q / A
+      = 1.05 / 0.12566
+      = 8.3556 m/s
+        Velocity, stack
+  [30] Re_s3 = stack: ρ v D_e / μ
+      = 1.1743 × 8.3556 × 0.4 / 0.000018371
+      = 213630
+        Reynolds number, stack
+  [31] f_s3 = stack: friction factor
+      = Colebrook–White
+      = 0.018028
+        Friction factor, stack
+  [32] dpL_s3 = stack: f ρ v² / (2 D_e)
+      = 0.018028 × 1.1743 × 8.3556² / (2 × 0.4)
+      = 1.8475 Pa/m
+        Friction rate, stack
+  [33] dp_f_s3 = stack: (Δp/L) L
+      = 1.8475 × 8
+      = 14.78 Pa
+        Friction loss, stack
+  [34] dp_fit_s3 = stack: ΣC ρ v²/2
+      = 1 × 40.992
+      = 40.992 Pa
+        Fitting loss, stack
+  [35] dp_s3 = stack: friction + fittings + equipment
+      = 14.78 + 40.992 + 30
+      = 85.772 Pa
+        Section loss, stack (index run)
+  [36] dp_index = Σ section losses on the index run
+      = 3 section(s)
+      = 326.71 Pa
+        Index-run pressure drop
+  [37] dp_all = Σ section losses, all sections
+      = 3 section(s)
+      = 326.71 Pa
+        Sum over every section (not a path)
+  [38] v_peak = highest section velocity
+      = 
+      = 8.3556 m/s
+        Highest velocity
+  [39] u_dp = dp_index / dp_limit
+      = 326.71 / 600
+      = 0.54452
+        Pressure-drop utilisation
+  [40] u_v = v_peak / v_limit
+      = 8.3556 / 15
+      = 0.55704
+        Velocity utilisation
+
+5. RESULTS
+  D_s1 = 250 mm    D, hood branch
+  v_s1 = 7.1301 m/s    v, hood branch
+  Re_s1 = 113940    Re, hood branch
+  f_s1 = 0.02041    f, hood branch
+  dpL_s1 = 2.4369 Pa/m    Δp/L, hood branch
+  dp_f_s1 = 14.622 Pa    Friction loss, hood branch
+  dp_fit_s1 = 44.774 Pa    Fitting loss, hood branch
+  dp_s1 = 179.4 Pa    Section loss, hood branch
+  D_s2 = 400 mm    D, main
+  v_s2 = 8.3556 m/s    v, main
+  Re_s2 = 213630    Re, main
+  f_s2 = 0.018028    f, main
+  dpL_s2 = 1.8475 Pa/m    Δp/L, main
+  dp_f_s2 = 36.95 Pa    Friction loss, main
+  dp_fit_s2 = 24.595 Pa    Fitting loss, main
+  dp_s2 = 61.545 Pa    Section loss, main
+  D_s3 = 400 mm    D, stack
+  v_s3 = 8.3556 m/s    v, stack
+  Re_s3 = 213630    Re, stack
+  f_s3 = 0.018028    f, stack
+  dpL_s3 = 1.8475 Pa/m    Δp/L, stack
+  dp_f_s3 = 14.78 Pa    Friction loss, stack
+  dp_fit_s3 = 40.992 Pa    Fitting loss, stack
+  dp_s3 = 85.772 Pa    Section loss, stack
+  dp_index = 326.71 Pa    Index-run Δp
+  dp_all = 326.71 Pa    Σ all sections
+  v_peak = 8.3556 m/s    Highest velocity
+
+6. CHECKS (governing first)
+  PASS  Velocity ≤ limit: 0.55704 vs 1  utilisation 0.557
+  PASS  Index-run Δp ≤ limit: 0.54452 vs 1  utilisation 0.545
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: bs.duct-sizing@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 3/3
+  Test run: —

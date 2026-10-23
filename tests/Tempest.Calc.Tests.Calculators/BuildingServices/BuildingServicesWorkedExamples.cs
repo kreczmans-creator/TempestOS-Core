@@ -77,5 +77,39 @@ public static class BuildingServicesWorkedExamples
             ]),
             [new CalcExpectedValue("m_da_3", 4, "kg/s", 1e-9)],
             "Three parts return air at 22 °C / 40 % mixed with one part outdoor air at −3 °C / 90 % (over ice): the mixed state follows the mass-weighted W and h. A second run of the sheet with the steam process takes the mixed state to the supply humidity."),
+
+        new(DuctSizingCalculator.Id, "office-supply-equal-friction", "Office supply ductwork by equal friction at 1 Pa/m",
+            new CalcReferenceSource("ASHRAE Handbook — Fundamentals", "2017", "Ch. 21 equal-friction method; equivalent diameters by the Ch. 21 relations"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Choice("method", DuctSizingCalculator.MethodEqualFriction, CalcProvenance.Assumed("Equal friction for a low-pressure system.")),
+                CalcInputValue.Quantity("dp_target", 1.0, "Pa/m", CalcProvenance.Specification("SPEC-M-07 §5: 1 Pa/m design friction rate")),
+                CalcInputValue.Quantity("T", 20, "degC", CalcProvenance.Assumed("Supply air 20 °C.")),
+                CalcInputValue.Quantity("p_atm", 101.325, "kPa", CalcProvenance.Assumed("Sea level.")),
+                CalcInputValue.Quantity("eps", 0.09, "mm", CalcProvenance.Specification("Galvanised sheet, medium roughness (ASHRAE Ch. 21 category)")),
+                DuctSizingCalculator.Sections(("AHU to riser", 2.0, 15, DuctSizingCalculator.ShapeRectangular, 800, 0, 0.8, 0, true), ("riser", 2.0, 12, DuctSizingCalculator.ShapeRound, 0, 0, 0.3, 0, true), ("floor main", 1.2, 25, DuctSizingCalculator.ShapeRectangular, 500, 0, 1.1, 0, true), ("branch to VAV", 0.4, 10, DuctSizingCalculator.ShapeRound, 0, 0, 0.9, 60, true), ("other branch", 0.8, 18, DuctSizingCalculator.ShapeRound, 0, 0, 1.0, 60, false)) with { Provenance = CalcProvenance.Drawing("DRG-M-205", "B") },
+                CalcInputValue.Quantity("v_limit", 8, "m/s", CalcProvenance.Specification("SPEC-M-07 §5: 8 m/s in risers")),
+                CalcInputValue.Quantity("dp_limit", 250, "Pa", CalcProvenance.Specification("Fan external static allowance 250 Pa")),
+                CalcInputValue.Quantity("round_to", 50, "mm", CalcProvenance.Specification("BS EN 1505 / 1506 preferred sizes, 50 mm steps")),
+            ]),
+            [new CalcExpectedValue("dp_fit_s4", 0, "Pa", 1e9)],
+            "Five sections sized at 1 Pa/m with the AHU main and floor main rectangular on fixed depths. The index run (four sections) adds friction, fittings (ΣC from the manufacturer's data) and the 60 Pa VAV terminal; the total is checked against the fan's external static allowance and every section against the 8 m/s limit."),
+
+        new(DuctSizingCalculator.Id, "extract-velocity-method", "Workshop extract by the velocity method",
+            new CalcReferenceSource("Analytic", null, "D = √(4Q/πv) rounded up to the next 50 mm; Δp/L by Darcy–Weisbach / Colebrook"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Choice("method", DuctSizingCalculator.MethodVelocity, CalcProvenance.Assumed("Velocity method for an extract system.")),
+                CalcInputValue.Quantity("v_target", 10, "m/s", CalcProvenance.Specification("Dust-carrying extract: 10 m/s minimum transport velocity, SPEC-M-09")),
+                CalcInputValue.Quantity("T", 25, "degC", CalcProvenance.Assumed("Workshop air 25 °C.")),
+                CalcInputValue.Quantity("p_atm", 100.5, "kPa", CalcProvenance.Assumed("Site 70 m AOD, ≈ 100.5 kPa.")),
+                CalcInputValue.Quantity("eps", 0.15, "mm", CalcProvenance.Assumed("Spiral-wound galvanised duct with joints.")),
+                DuctSizingCalculator.Sections(("hood branch", 0.35, 6, DuctSizingCalculator.ShapeRound, 0, 0, 1.5, 120, true), ("main", 1.05, 20, DuctSizingCalculator.ShapeRound, 0, 0, 0.6, 0, true), ("stack", 1.05, 8, DuctSizingCalculator.ShapeRound, 0, 0, 1.0, 30, true)) with { Provenance = CalcProvenance.Drawing("DRG-M-310", "A") },
+                CalcInputValue.Quantity("v_limit", 15, "m/s", CalcProvenance.Specification("SPEC-M-09 noise limit")),
+                CalcInputValue.Quantity("dp_limit", 600, "Pa", CalcProvenance.Specification("Extract fan external static 600 Pa")),
+                CalcInputValue.Quantity("round_to", 50, "mm", CalcProvenance.Specification("BS EN 1506 preferred sizes")),
+            ]),
+            [new CalcExpectedValue("D_s1", 250, "mm", 1e-9), new CalcExpectedValue("D_s2", 400, "mm", 1e-9)],
+            "Sizing at 10 m/s transport velocity rounds the hood branch to 250 mm and the main and stack to 400 mm; the actual velocities, friction rates and the index-run total (with the 120 Pa hood entry and 30 Pa cowl) follow, against the fan's 600 Pa."),
     ];
 }
