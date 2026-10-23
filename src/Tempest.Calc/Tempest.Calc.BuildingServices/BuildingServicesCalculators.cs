@@ -8,5 +8,6 @@ public static class BuildingServicesCalculators
     public static IReadOnlyList<ICalcCalculator> All { get; } =
     [
         new PipeFlowCalculator(),
+        new PsychrometricsCalculator(),
     ];
 }

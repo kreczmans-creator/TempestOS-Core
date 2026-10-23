@@ -1,0 +1,97 @@
+[
+  {
+    "Symbol": "RH",
+    "Number": 40,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Return air 22 \u00B0C / 40 %",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "RH_b",
+    "Number": 90,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Winter design condition",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "90"
+  },
+  {
+    "Symbol": "altitude",
+    "Number": 120,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "Site survey SRV-01: 120 m AOD",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "120"
+  },
+  {
+    "Symbol": "known",
+    "Text": "relative humidity",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "RH given.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "relative humidity"
+  },
+  {
+    "Symbol": "m_da",
+    "Number": 3,
+    "Unit": "kg/s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "AHU-02 return 3 kg/s",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "m_da_b",
+    "Number": 1,
+    "Unit": "kg/s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "AHU-02 minimum outdoor air 1 kg/s",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "process",
+    "Text": "adiabatic mixing",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Mixing box.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "adiabatic mixing"
+  },
+  {
+    "Symbol": "t_db",
+    "Number": 22,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Return air 22 \u00B0C / 40 %",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "22"
+  },
+  {
+    "Symbol": "t_db_b",
+    "Number": -3,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "CIBSE Guide A winter design \u22123 \u00B0C / 90 %, assumed",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "-3"
+  }
+]

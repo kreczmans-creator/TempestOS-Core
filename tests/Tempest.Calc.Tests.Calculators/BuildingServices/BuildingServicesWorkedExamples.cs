@@ -44,5 +44,38 @@ public static class BuildingServicesWorkedExamples
             ]),
             [new CalcExpectedValue("Re_s1", 7.852, "", 1e-3), new CalcExpectedValue("dp_total", 57.946, "kPa", 1e-3)],
             "Viscous oil at Re ≈ 8: the sheet flags laminar flow, uses f = 64/Re and reproduces Hagen–Poiseuille (Δp = 32 μ L v / D² = 57.9 kPa) exactly. Roughness plays no part in laminar flow."),
+
+        new(PsychrometricsCalculator.Id, "cooling-coil-summer", "Summer cooling coil: 28 °C / 60 % to 12 °C / 95 %",
+            new CalcReferenceSource("ASHRAE Handbook — Fundamentals", "2017", "Ch. 1, cooling and dehumidification process (energy and mass balance form)"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Quantity("altitude", 0, "m", CalcProvenance.Assumed("Sea-level site.")),
+                CalcInputValue.Quantity("t_db", 28, "degC", CalcProvenance.Specification("CIBSE Guide A summer design condition for the site, assumed")),
+                CalcInputValue.Choice("known", PsychrometricsCalculator.KnownRh, CalcProvenance.Assumed("RH given.")),
+                CalcInputValue.Of("RH", 60, CalcProvenance.Specification("Design condition")),
+                CalcInputValue.Quantity("m_da", 2.4, "kg/s", CalcProvenance.Specification("AHU schedule AHU-01: 2.0 m³/s ≈ 2.4 kg/s dry air")),
+                CalcInputValue.Choice("process", PsychrometricsCalculator.ProcessCoolingDehum, CalcProvenance.Assumed("Chilled-water coil.")),
+                CalcInputValue.Quantity("t_2", 12, "degC", CalcProvenance.Specification("AHU schedule AHU-01 off-coil 12 °C")),
+                CalcInputValue.Of("RH_2", 95, CalcProvenance.Assumed("Off-coil 95 % RH (typical contact factor).")),
+            ]),
+            [new CalcExpectedValue("t_2_out", 12, "degC", 1e-9), new CalcExpectedValue("RH_2", 95, "", 1e-9)],
+            "Entering 28 °C / 60 % (W ≈ 14.3 g/kg) leaves the coil at 12 °C / 95 % (W ≈ 8.3 g/kg): the sheet gives the condensate rate, total, sensible and latent loads and the sensible heat ratio for the coil selection."),
+
+        new(PsychrometricsCalculator.Id, "winter-mixing-and-steam", "Winter: mix return and outdoor air, then steam-humidify",
+            new CalcReferenceSource("Analytic mass and energy balance (ASHRAE Ch. 1 mixing and humidification relations)", null, "W₃ and h₃ mass-weighted; steam adds (W₂ − W₁) h_steam"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Quantity("altitude", 120, "m", CalcProvenance.Drawing("Site survey SRV-01: 120 m AOD")),
+                CalcInputValue.Quantity("t_db", 22, "degC", CalcProvenance.Specification("Return air 22 °C / 40 %")),
+                CalcInputValue.Choice("known", PsychrometricsCalculator.KnownRh, CalcProvenance.Assumed("RH given.")),
+                CalcInputValue.Of("RH", 40, CalcProvenance.Specification("Return air 22 °C / 40 %")),
+                CalcInputValue.Quantity("m_da", 3, "kg/s", CalcProvenance.Specification("AHU-02 return 3 kg/s")),
+                CalcInputValue.Choice("process", PsychrometricsCalculator.ProcessMixing, CalcProvenance.Assumed("Mixing box.")),
+                CalcInputValue.Quantity("t_db_b", -3, "degC", CalcProvenance.Specification("CIBSE Guide A winter design −3 °C / 90 %, assumed")),
+                CalcInputValue.Of("RH_b", 90, CalcProvenance.Specification("Winter design condition")),
+                CalcInputValue.Quantity("m_da_b", 1, "kg/s", CalcProvenance.Specification("AHU-02 minimum outdoor air 1 kg/s")),
+            ]),
+            [new CalcExpectedValue("m_da_3", 4, "kg/s", 1e-9)],
+            "Three parts return air at 22 °C / 40 % mixed with one part outdoor air at −3 °C / 90 % (over ice): the mixed state follows the mass-weighted W and h. A second run of the sheet with the steam process takes the mixed state to the supply humidity."),
     ];
 }
