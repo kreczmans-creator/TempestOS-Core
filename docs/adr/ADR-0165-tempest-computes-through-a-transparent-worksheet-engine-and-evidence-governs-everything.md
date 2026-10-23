@@ -15,7 +15,7 @@ D-028 placed calculation outside the platform: an engineer computed in Mathcad, 
 3. **Evidence governs.** A calculation instance is issued only through the Evidence lifecycle (Draft → Checked → Issued → Superseded). Issue snapshots inputs, outputs, the rendered sheet, the template text, the engine version and the test results into the immutable Evidence revision in one transaction. Input provenance is mandatory to issue; "assumption" is a valid provenance and appears in the assumptions register. Every issued instance is linked into its project's Calculation register.
 4. **Standards are cited, never reproduced.** Clause numbers and titles only; tabulated standard data lives in user-editable reference records with provenance, seeded only with values derivable from published formulae or cited from public textbooks.
 5. **External calculations remain first-class Evidence.** Nothing here removes the Mathcad/Excel/FEA path.
-6. **Seams.** Only `Tempest.Calc.Library` depends on Core (Evidence, reference data, persistence, Disciplines). `Tempest.Calc.Sheets` depends on Engine only. Calculator assemblies depend on Engine and Sheets.
+6. **Seams.** Only `Tempest.Calc.Library` depends on Core (Evidence, reference data, persistence, Disciplines). `Tempest.Calc.Sheets` depends on Engine only. Calculator assemblies depend on Engine and Sheets. No `Tempest.Calc.*` assembly references Workspace, Harness or Desktop; the presentation layers reference the family directly and compose it (`Desktop → Workspace, Tempest.Calc.*`).
 
 ## Consequences
 
