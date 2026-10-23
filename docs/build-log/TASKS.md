@@ -12,13 +12,13 @@
 - [x] Reports: issued calc sheet opens from shell; page < 200 KB
 - [x] Generic: tornado sweep, Monte Carlo sampler, CSV import/export
 - [x] Desktop: shared CalcSheetView per §3.8a (live recalc, unit pickers, validation, provenance, governing bar, Show working, read-only issued); Ctrl+K entries per calculator → Phases 2–5
-- [ ] 1D stack + thick-cylinder migrated onto the engine; old tests pass
-- [ ] Yellow pass
+- [x] 1D stack + thick-cylinder migrated onto the engine; old tests pass (with M1/M2, D-08)
+- [x] Yellow pass (Y1-01…Y1-0x in docs/reviews/yellow-team.md)
 ## Phase 2 — mechanical (`v0.26.0/phase-2-mech`)
 - [x] M1 tolerance stack v2
 - [x] M2 ISO 286 fits + press fit
 - [x] M3 bolted joint + bolt group
-- [ ] Yellow pass
+- [x] Yellow pass (docs/reviews/yellow-team.md, Y2-01…Y2-04)
 ## Phase 3 — structural (`v0.26.0/phase-3-struct`)
 - [ ] S1 section properties
 - [ ] S2 beam + 2D frame solver
