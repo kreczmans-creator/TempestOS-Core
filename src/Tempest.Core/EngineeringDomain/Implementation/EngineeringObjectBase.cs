@@ -105,6 +105,12 @@ public abstract partial class EngineeringObjectBase :
     /// <summary>The shared collaborators and the transaction boundary.</summary>
     protected EngineeringDomainContext Context => _context;
 
+    /// <summary>A copy of the attachments as currently applied, for a derived class composing a one-transaction write that adds one.</summary>
+    private protected IReadOnlyList<IAttachment> AttachmentsSnapshot()
+    {
+        lock (_attachments) { return [.. _attachments]; }
+    }
+
     /// <summary>
     /// Called once by the factory or rehydrator that constructed this
     /// instance, so <see cref="ReviseAsync"/> can produce a correctly-typed
@@ -162,7 +168,7 @@ public abstract partial class EngineeringObjectBase :
     /// own change after awaiting this method would reintroduce it.
     /// </para>
     /// </remarks>
-    private async Task<EngineeringObjectState> MutateAndPersistAsync(
+    private protected async Task<EngineeringObjectState> MutateAndPersistAsync(
         Func<EngineeringObjectState, EngineeringObjectState> project,
         string auditAction,
         string? auditDetail,

@@ -1,0 +1,105 @@
+using Tempest.Calc.Engine;
+using Tempest.Calc.Engine.Analysis;
+
+namespace Tempest.Calc.Sheets;
+
+/// <summary>
+/// Runs a calculator safely: validates inputs, runs, and turns every
+/// engine failure into a block notice. Also the home of the generic
+/// capabilities (§3.8): a Monte Carlo and a tornado sweep over any
+/// calculator's scalar output.
+/// </summary>
+public static class CalcRunner
+{
+    public static CalcRunResult Run(ICalcCalculator calculator, CalcInputSet inputs, ICalcEngine? engine = null, CalcLimits? limits = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(calculator);
+        ArgumentNullException.ThrowIfNull(inputs);
+
+        var notices = CalcInputValidator.Validate(calculator.Template, inputs).ToList();
+
+        if (notices.Any(n => n.Severity == CalcNoticeSeverity.Block))
+            return CalcRunResult.Blocked(notices);
+
+        var session = (engine ?? CalcEngine.Instance).CreateSession(limits);
+        var context = new CalcRunContext(session, inputs, calculator.Template, cancellationToken);
+
+        try
+        {
+            calculator.Run(context);
+        }
+        catch (CalcException e)
+        {
+            context.Block("engine", e.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            context.Block("cancelled", "The calculation was cancelled before it finished.");
+        }
+
+        var result = context.ToResult();
+        return result with { Notices = [.. notices, .. result.Notices] };
+    }
+
+    /// <summary>A model over SI inputs for the analysis helpers: re-runs the calculator with the named numeric inputs replaced and returns one scalar output in SI.</summary>
+    public static Func<IReadOnlyDictionary<string, double>, double> Model(ICalcCalculator calculator, CalcInputSet baseline, string outputSymbol, ICalcEngine? engine = null)
+    {
+        ArgumentNullException.ThrowIfNull(calculator);
+        ArgumentNullException.ThrowIfNull(baseline);
+
+        return values =>
+        {
+            var inputs = baseline;
+
+            foreach (var (symbol, si) in values)
+                inputs = inputs.WithSi(symbol, si);
+
+            var result = Run(calculator, inputs, engine);
+
+            if (result.IsBlocked)
+                throw new CalcEvaluationException(result.Blocks[0].Message);
+
+            return result.OutputSi(outputSymbol);
+        };
+    }
+
+    /// <summary>The SI values of the named numeric inputs in <paramref name="inputs"/>.</summary>
+    public static IReadOnlyDictionary<string, double> NominalSi(CalcTemplate template, CalcInputSet inputs, IEnumerable<string> symbols)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        ArgumentNullException.ThrowIfNull(inputs);
+        ArgumentNullException.ThrowIfNull(symbols);
+
+        var result = new Dictionary<string, double>(StringComparer.Ordinal);
+
+        foreach (var s in symbols)
+        {
+            var spec = template.FindInput(s) ?? throw new CalcEvaluationException($"'{s}' is not an input of {template.Id}.");
+
+            if (spec.Kind is not (CalcInputKind.Quantity or CalcInputKind.Number))
+                throw new CalcEvaluationException($"'{s}' is not a numeric input.");
+
+            var v = CalcInputBinder.Bind(spec, inputs.Find(s)) as Engine.Values.ScalarValue ?? throw new CalcEvaluationException($"'{s}' is not a number.");
+            result[s] = v.Si;
+        }
+
+        return result;
+    }
+
+    public static IReadOnlyList<TornadoBar> Tornado(ICalcCalculator calculator, CalcInputSet inputs, string outputSymbol, IReadOnlyList<string> inputSymbols, double relativeRange = 0.10)
+    {
+        ArgumentNullException.ThrowIfNull(calculator);
+        var nominal = NominalSi(calculator.Template, inputs, inputSymbols);
+        return Sensitivity.Tornado(Model(calculator, inputs, outputSymbol), nominal, inputSymbols, relativeRange);
+    }
+
+    public static MonteCarloResult MonteCarlo(
+        ICalcCalculator calculator, CalcInputSet inputs, string outputSymbol, IReadOnlyDictionary<string, Distribution> distributions,
+        int samples = Engine.Analysis.MonteCarlo.DefaultSamples, ulong seed = 1, double? lowerLimit = null, double? upperLimit = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(calculator);
+        ArgumentNullException.ThrowIfNull(distributions);
+        var nominal = NominalSi(calculator.Template, inputs, distributions.Keys);
+        return Engine.Analysis.MonteCarlo.Run(Model(calculator, inputs, outputSymbol), nominal, distributions, samples, seed, lowerLimit, upperLimit, cancellationToken: cancellationToken);
+    }
+}

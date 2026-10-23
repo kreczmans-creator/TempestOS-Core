@@ -1,5 +1,8 @@
+using Tempest.Core.Audit;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Events;
+using Tempest.Core.Persistence;
 using Tempest.Core.ReferenceData;
 
 namespace Tempest.Core.Evidence;
@@ -227,6 +230,66 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
     }
 
     /// <summary>Records <paramref name="issue"/> and moves <see cref="Status"/> to <see cref="EvidenceStatus.Issued"/>, as one transaction.</summary>
+    /// <summary>
+    /// `v0.26.0` (ADR-0165): records the issue, attaches the rendered sheet
+    /// and runs <paramref name="alsoWrite"/> (a calculation instance
+    /// snapshot, a register link) in <b>one</b> transaction. A fault
+    /// anywhere leaves this evidence exactly as it was: Checked, with no
+    /// attachment, no issue record and no orphan.
+    /// </summary>
+    internal async Task<Guid?> RecordIssueAsync(
+        IssueRecord issue,
+        IssueSheetContent? sheet,
+        Func<IPersistenceTransaction, CancellationToken, Task>? alsoWrite,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(issue);
+
+        if (sheet is not null && sheet.Content.Length > AttachmentContentLimits.MaximumSizeInBytes)
+            throw new AttachmentContentTooLargeException(sheet.FileName, sheet.Content.Length);
+
+        var attachmentId = sheet is null ? (Guid?)null : sheet.AttachmentId ?? Guid.NewGuid();
+        var contentHash = sheet is null ? null : AttachmentContentStore.ComputeHash(sheet.Content.Span);
+        var attachment = sheet is null || attachmentId is null ? null : new Attachment(attachmentId.Value, sheet.FileName, sheet.ContentType, sheet.Content.Length, contentHash);
+        var recorded = issue with { IssueSheetAttachmentId = attachmentId };
+
+        await MutateAndPersistAsync(
+            current =>
+            {
+                var state = new Dictionary<string, string?>(current.TypeState, StringComparer.Ordinal);
+                WriteJson(state, nameof(Issue), recorded);
+                state[nameof(Status)] = EvidenceStatus.Issued.ToString();
+
+                return current with
+                {
+                    TypeState = state,
+                    Attachments = sheet is null || attachmentId is null
+                        ? current.Attachments
+                        : [.. current.Attachments, new EngineeringObjectAttachmentState(attachmentId.Value, sheet.FileName, sheet.ContentType, sheet.Content.Length, contentHash)],
+                };
+            },
+            EngineeringAuditActions.StateChanged,
+            $"Issued as '{issue.IssueReference}' revision '{issue.Revision}' to '{issue.Client}'.",
+            WorkspaceChangeType.Updated,
+            cancellationToken,
+            alsoWrite: async (transaction, _, token) =>
+            {
+                if (sheet is not null && attachmentId is not null)
+                    await Context.AttachmentWriter.SaveAsync(transaction, attachmentId.Value, sheet.Content, token).ConfigureAwait(false);
+
+                if (alsoWrite is not null)
+                    await alsoWrite(transaction, token).ConfigureAwait(false);
+            },
+            alsoApply: _ =>
+            {
+                _issue = recorded;
+                _status = EvidenceStatus.Issued;
+            },
+            applyAttachments: attachment is null ? null : () => [.. AttachmentsSnapshot(), attachment]).ConfigureAwait(false);
+
+        return attachmentId;
+    }
+
     internal Task RecordIssueAsync(IssueRecord issue, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(issue);

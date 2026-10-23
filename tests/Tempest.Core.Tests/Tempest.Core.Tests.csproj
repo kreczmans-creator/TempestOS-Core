@@ -36,4 +36,9 @@
     <None Include="EngineeringDomain/SchemaVersioning/GoldenCorpus/**/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- v0.26.0 (ADR-0165): the Calc Library tests reuse this assembly's in-memory domain and store helpers. -->
+    <InternalsVisibleTo Include="Tempest.Calc.Tests.Library" />
+  </ItemGroup>
+
 </Project>
