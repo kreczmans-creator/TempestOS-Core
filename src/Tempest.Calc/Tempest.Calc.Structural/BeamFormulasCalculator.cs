@@ -27,7 +27,7 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
         [
             new CalcInputSpec("case", "Case", CalcInputKind.Choice, Choices: [SsUdl, SsPoint, SsMomentEnd, CantUdl, CantPoint, FixedUdl, FixedPointCentre, ProppedUdl], DefaultChoice: SsUdl),
             new CalcInputSpec("L", "Span", CalcInputKind.Quantity, "m", Default: 6, Min: 0.1, Max: 100, HardMin: 1e-3, HardMax: 1e4),
-            new CalcInputSpec("E", "Modulus of elasticity", CalcInputKind.Quantity, "GPa", Default: 210, Min: 1, Max: 500, HardMin: 1e-3, HardMax: 1e4),
+            new CalcInputSpec("E", "Modulus of elasticity", CalcInputKind.Quantity, "GPa", ReferenceLibrary: "Materials", ReferenceProperty: "YoungsModulus", ReferenceDimension: "Pressure", Default: 210, Min: 1, Max: 500, HardMin: 1e-3, HardMax: 1e4),
             new CalcInputSpec("I", "Second moment of area", CalcInputKind.Quantity, "cm^4", Default: 8000, Min: 1, Max: 1e8, HardMin: 1e-6, HardMax: 1e12),
             new CalcInputSpec("w", "Distributed load (downward)", CalcInputKind.Quantity, "kN/m", Default: 10, Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e7, IsOptional: true),
             new CalcInputSpec("P", "Point load (downward)", CalcInputKind.Quantity, "kN", Default: 50, Min: 0, Max: 1e5, HardMin: 0, HardMax: 1e8, IsOptional: true),

@@ -33,6 +33,46 @@ public sealed class CalcSheetViewTests
     }
 
     [AvaloniaFact]
+    public void ReferencePicker_IsShownPerLibrary_AndAFillSetsValuesWithThePinAsTheSource()
+    {
+        // ADR-0167 §3: a template that declares reference-fillable inputs gets one picker per library; a fill writes value, unit and a 'reference' source.
+        var catalogue = new CalcCatalogue([new Tempest.Calc.Structural.MemberChecksCalculator()]);
+        var view = new CalcSheetView();
+        string? picked = null;
+        view.ReferencePicked += (library, index) => picked = $"{library}#{index}";
+        view.ShowCatalogue(catalogue.Current());
+        view.SelectTemplate("struct.en1993-member");
+
+        Assert.Equal(["Materials"], view.ReferenceLibraries);
+        var picker = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == CalcSheetView.ReferencePickerName("Materials"));
+        Assert.False(picker.IsEnabled);
+
+        view.SetReferenceOptions("Materials", ["S355 — Structural steel"]);
+        Assert.True(picker.IsEnabled);
+        picker.SelectedIndex = 0;
+        Assert.Equal("Materials#0", picked);
+
+        view.ApplyReferenceFill(
+        [
+            CalcInputValue.Quantity("f_y", 345, "MPa", CalcProvenance.FromReference("Materials/mat-s355@3")),
+            CalcInputValue.Quantity("E", 210, "GPa", CalcProvenance.FromReference("Materials/mat-s355@3")),
+        ]);
+        var read = view.ReadForm();
+        Assert.Equal(345, read.Find("f_y")!.Number);
+        Assert.Equal(CalcProvenanceKind.Reference, read.Find("f_y")!.Provenance!.Kind);
+        Assert.Equal("Materials/mat-s355@3", read.Find("f_y")!.Provenance!.Reference);
+        Assert.Equal(210, read.Find("E")!.Number);
+    }
+
+    [AvaloniaFact]
+    public void ATemplateWithoutReferenceInputs_ShowsNoPicker()
+    {
+        var (view, _) = NewView();
+        view.SelectTemplate("test.desktop-stress");
+        Assert.Empty(view.ReferenceLibraries);
+    }
+
+    [AvaloniaFact]
     public void ImportedInputs_SeedTheForm_AndRoundTripThroughReadForm()
     {
         // §3.8 / Black B-24: a worked example's inputs.json (or the exported CSV) re-seeds the form; the form reads the same set back.
