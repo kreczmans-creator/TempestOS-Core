@@ -15,13 +15,13 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 - [x] `struct.column-buckling` (Perry–Robertson, BS 5950-1 Annex C — the legacy method; three legacy hand calculations as known-answer cases, two worked examples, spec)
 - [x] Yellow pass (Y8-01…Y8-06; Y8-02 and Y8-06 carried to Phases 5 and 4)
 ## Phase 2 — mechanical ports (`v0.27.0/phase-2-mech`)
-- [ ] mech.lifting-lug (5 checks, governing)
-- [ ] mech.bearing-life (ISO 281 L10 with a_ISO as inputs; covers bearing-load-capacity)
-- [ ] mech.fatigue-miner
-- [ ] mech.shaft-stress
-- [ ] mech.thermal-expansion
-- [ ] mech.thin-vessel; mech.material-margin (referenced material record)
-- [ ] Legacy vectors carried as known-answer cases (same figures, 5 s.f.); two worked examples each; Yellow pass
+- [x] mech.lifting-lug (5 checks, governing)
+- [x] mech.bearing-life (ISO 281 L10 with a_ISO as inputs; covers bearing-load-capacity)
+- [x] mech.fatigue-miner
+- [x] mech.shaft-stress
+- [x] mech.thermal-expansion
+- [x] mech.thin-vessel; mech.material-margin (referenced material record)
+- [x] Legacy vectors carried as known-answer cases (same figures, 5 s.f.); two worked examples each; Yellow pass (Y9-01…Y9-05)
 ## Phase 3 — structural and thermal ports (`v0.27.0/phase-3-struct-thermal`)
 - [ ] struct.fillet-weld
 - [ ] bs.plane-wall; bs.thermal-chain

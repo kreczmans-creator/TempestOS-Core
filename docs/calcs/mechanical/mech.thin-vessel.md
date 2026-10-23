@@ -10,4 +10,18 @@
 
 **Limitations.** P > 0.385·S·E or t_c > R/2 blocks; no external pressure, heads, nozzles or supports.
 
-**Test cases.** A UG-27 hand calculation (`ka-ug27-hand`); the legacy module had property tests only.
+**Test cases.** Two UG-27 hand calculations (`ka-ug27-hand` passes, `ka-ug27-thin-plate` fails); the legacy module had property tests only.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Air receiver shell, 2 MPa ([sheet](../../worked-examples/mechanical/mech.thin-vessel/receiver-2MPa/sheet.txt)).
+
+```text
+t_c = 2 MPa × 500 mm / (138 MPa × 0.85 − 0.6 × 2 MPa) = 8.6133 mm
+t_l = 2 MPa × 500 mm / (2 × 138 MPa × 0.85 + 0.4 × 2 MPa) = 4.2481 mm
+t_req = 1 × max(8.6133 mm, 4.2481 mm) + 3 mm = 11.613 mm
+t_corr = 12 mm − 3 mm = 9 mm
+sigma_h = 2 MPa × (500 mm + 0.6 × 9 mm) / (0.85 × 9 mm) = 132.13 MPa
+u = 11.613 mm / 12 mm = 0.96777
+Governing: PASS  Provided thickness against required: u = 0.96777 vs u ≤ 1  utilisation 0.968  « ASME VIII-1 UG-27
+```
+<!-- hand-arithmetic:end -->

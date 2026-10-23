@@ -35,6 +35,10 @@ public sealed class MaterialMarginCalculator : ICalcCalculator
                 new CalcReferenceSource("Hand calculation", null, "n_y = 300/120 = 2.5; n_u = 450/120 = 3.75; n_u/k_u = 2.5; n_gov = 2.5; u = 1.5/2.5 = 0.6"),
                 [CalcInputValue.Quantity("sigma", 120, "MPa"), CalcInputValue.Quantity("f_y", 300, "MPa"), CalcInputValue.Quantity("f_u", 450, "MPa"), CalcInputValue.Of("k_u", 1.5), CalcInputValue.Of("n_req", 1.5)],
                 [new CalcExpectedValue("n_y", 2.5, "", 1e-12), new CalcExpectedValue("n_u", 3.75, "", 1e-12), new CalcExpectedValue("n_gov", 2.5, "", 1e-12), new CalcExpectedValue("u", 0.6, "", 1e-12)]),
+            new CalcTestCase("ka-margin-yield-only", "Hand calculation: S355 at 250 MPa, yield only, n_req 1.5 (fails)",
+                new CalcReferenceSource("Hand calculation", null, "n_y = 355/250 = 1.42; u = 1.5/1.42 = 1.0563"),
+                [CalcInputValue.Quantity("sigma", 250, "MPa"), CalcInputValue.Quantity("f_y", 355, "MPa"), CalcInputValue.Of("k_u", 1.5), CalcInputValue.Of("n_req", 1.5)],
+                [new CalcExpectedValue("n_y", 1.42, "", 1e-12), new CalcExpectedValue("n_gov", 1.42, "", 1e-12), new CalcExpectedValue("u", 1.0563, "", 5e-5)]),
         ],
         Category: "Materials");
 

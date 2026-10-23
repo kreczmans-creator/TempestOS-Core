@@ -11,3 +11,26 @@
 **Limitations.** No out-of-plane load, no dished or stiffened lugs, no design factor applied (allowables carry it); a pin looser than 0.9·d_h blocks.
 
 **Test cases.** The legacy module's two hand calculations (`ka-legacy-pass`, `ka-legacy-fail`) to five significant figures.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Lifting lug, 50 kN — passes, pin bending governs ([sheet](../../worked-examples/mechanical/mech.lifting-lug/lug-50kN-passes/sheet.txt)).
+
+```text
+k_fit = 30 mm / 32 mm = 0.9375
+A_net = (100 mm − 32 mm) × 20 mm = 1360 mm²
+sigma_t = 50 kN / 1360 mm² = 36.765 MPa
+A_br = 30 mm × 20 mm = 600 mm²
+sigma_br = 50 kN / 600 mm² = 83.333 MPa
+A_to = 2 × 40 mm × 20 mm = 1600 mm²
+tau_to = 50 kN / 1600 mm² = 31.25 MPa
+A_p = 2 × π × (30 mm)^2 / 4 = 1413.7 mm²
+tau_p = 50 kN / 1413.7 mm² = 35.368 MPa
+M_p = 50 kN / 2 × (20 mm / 4 + 2 mm + 12 mm / 2) = 325 N·m
+Z_p = π × (30 mm)^3 / 32 = 2650.7 mm³
+sigma_b = 325 N·m / 2650.7 mm³ = 122.61 MPa
+u_t = 36.765 MPa / 150 MPa = 0.2451
+u_br = 83.333 MPa / 200 MPa = 0.41667
+… 3 more step(s) on the sheet
+Governing: PASS  Pin bending: u_b = 0.49043 vs u_b ≤ 1  utilisation 0.49
+```
+<!-- hand-arithmetic:end -->

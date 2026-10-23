@@ -1,0 +1,134 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: lug-50kN-passes    Revision: A
+Title: Lifting lug and pin joint
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+A pinned lug between two cheek plates under a load along the lug: tension on the net section through the hole, bearing of the pin on the hole, shear tear-out beyond the hole, and the pin in double shear and in bending, each against an allowable stress; the largest utilisation governs.
+σ_t = P/((W − d_h)·t); σ_br = P/(d_p·t); τ_to = P/(2·a·t); τ_p = P/(2·π·d_p²/4); M = (P/2)·(t/4 + g + t_s/2), σ_b = 32·M/(π·d_p³). Each utilisation is the stress over its allowable. The allowables come from the material and the design category in force; the sheet applies no design factor of its own.
+  Ref: ASME BTH-1 Ch. 3 — Pinned connections
+  Ref: Shigley's Mechanical Engineering Design Ch. 3 — Shear, bearing and bending stresses
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  P | Load on the lug (along the lug) | 50 | kN | spec: LOAD-SCHEDULE-01 | 0.01 … 100000 kN
+  t | Lug thickness | 20 | mm | drawing: DRG-LL-101 rev A | 1 … 500 mm
+  W | Lug width at the hole | 100 | mm | drawing: DRG-LL-101 rev A | 5 … 2000 mm
+  d_h | Hole diameter | 32 | mm | drawing: DRG-LL-101 rev A | 2 … 1000 mm
+  a | Edge distance, hole edge to lug end (load direction) | 40 | mm | drawing: DRG-LL-101 rev A | 1 … 2000 mm
+  d_p | Pin diameter | 30 | mm | drawing: DRG-LL-101 rev A | 2 … 1000 mm
+  t_s | Cheek plate thickness (each) | 12 | mm | drawing: DRG-LL-101 rev A | 1 … 500 mm
+  g | Clearance, lug face to cheek plate (each side) | 2 | mm | drawing: DRG-LL-101 rev A | 0 … 100 mm
+  f_t | Allowable tensile stress, lug | 150 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 2000 MPa
+  f_br | Allowable bearing stress, lug | 200 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 3000 MPa
+  f_v | Allowable shear stress, lug | 90 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 2000 MPa
+  f_b_pin | Allowable bending stress, pin | 250 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 3000 MPa
+  f_v_pin | Allowable shear stress, pin | 150 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 2000 MPa
+
+3. ASSUMPTIONS
+  A1. The load acts along the lug's axis through the hole centre. (No out-of-plane or side load.)
+  A2. The pin bears uniformly over the lug thickness and over each cheek plate; each cheek plate reacts half the load. (Pin-bending idealisation for a lug between two cheek plates.)
+  A3. A close-fitting pin (d_p ≥ 0.9·d_h). (Uniform-bearing idealisation.)
+
+4. WORKING
+  [14] k_fit = d_p / d_h
+      = 30 mm / 32 mm
+      = 0.9375
+        Pin-to-hole ratio
+  [15] A_net = (W - d_h) * t
+      = (100 mm − 32 mm) × 20 mm
+      = 1360 mm²
+        Net section through the hole
+  [16] sigma_t = P / A_net    « ASME BTH-1 Ch. 3
+      = 50 kN / 1360 mm²
+      = 36.765 MPa
+        Net-section tension
+  [17] A_br = d_p * t
+      = 30 mm × 20 mm
+      = 600 mm²
+        Bearing area
+  [18] sigma_br = P / A_br
+      = 50 kN / 600 mm²
+      = 83.333 MPa
+        Bearing of the pin on the hole
+  [19] A_to = 2 * a * t
+      = 2 × 40 mm × 20 mm
+      = 1600 mm²
+        Tear-out area (two planes beyond the hole)
+  [20] tau_to = P / A_to
+      = 50 kN / 1600 mm²
+      = 31.25 MPa
+        Tear-out shear
+  [21] A_p = 2 * pi * d_p^2 / 4
+      = 2 × π × (30 mm)^2 / 4
+      = 1413.7 mm²
+        Pin area in double shear
+  [22] tau_p = P / A_p
+      = 50 kN / 1413.7 mm²
+      = 35.368 MPa
+        Pin shear
+  [23] M_p = P / 2 * (t / 4 + g + t_s / 2)
+      = 50 kN / 2 × (20 mm / 4 + 2 mm + 12 mm / 2)
+      = 325 N·m
+        Pin bending moment (uniform bearing on lug and cheek plates)
+  [24] Z_p = pi * d_p^3 / 32
+      = π × (30 mm)^3 / 32
+      = 2650.7 mm³
+        Pin section modulus
+  [25] sigma_b = M_p / Z_p
+      = 325 N·m / 2650.7 mm³
+      = 122.61 MPa
+        Pin bending stress
+  [26] u_t = sigma_t / f_t
+      = 36.765 MPa / 150 MPa
+      = 0.2451
+        Net-section utilisation
+  [27] u_br = sigma_br / f_br
+      = 83.333 MPa / 200 MPa
+      = 0.41667
+        Bearing utilisation
+  [28] u_to = tau_to / f_v
+      = 31.25 MPa / 90 MPa
+      = 0.34722
+        Tear-out utilisation
+  [29] u_p = tau_p / f_v_pin
+      = 35.368 MPa / 150 MPa
+      = 0.23579
+        Pin shear utilisation
+  [30] u_b = sigma_b / f_b_pin
+      = 122.61 MPa / 250 MPa
+      = 0.49043
+        Pin bending utilisation
+
+5. RESULTS
+  sigma_t = 36.765 MPa    Net-section tension
+  sigma_br = 83.333 MPa    Bearing stress
+  tau_to = 31.25 MPa    Tear-out shear
+  tau_p = 35.368 MPa    Pin shear
+  M_p = 325 N·m    Pin bending moment
+  sigma_b = 122.61 MPa    Pin bending stress
+  u_t = 0.2451    Net-section utilisation
+  u_br = 0.41667    Bearing utilisation
+  u_to = 0.34722    Tear-out utilisation
+  u_p = 0.23579    Pin shear utilisation
+  u_b = 0.49043    Pin bending utilisation
+
+6. CHECKS (governing first)
+  PASS  Pin bending: u_b = 0.49043 vs u_b ≤ 1  utilisation 0.49
+  PASS  Bearing: u_br = 0.41667 vs u_br ≤ 1  utilisation 0.417  « ASME BTH-1 Ch. 3
+  PASS  Tear-out: u_to = 0.34722 vs u_to ≤ 1  utilisation 0.347  « ASME BTH-1 Ch. 3
+  PASS  Net-section tension: u_t = 0.2451 vs u_t ≤ 1  utilisation 0.245  « ASME BTH-1 Ch. 3
+  PASS  Pin double shear: u_p = 0.23579 vs u_p ≤ 1  utilisation 0.236
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.lifting-lug@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 2/2
+  Test run: —

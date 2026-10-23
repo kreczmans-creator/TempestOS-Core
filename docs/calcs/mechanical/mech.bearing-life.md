@@ -11,3 +11,19 @@
 **Limitations.** Basic rating life only (no a_ISO lubrication or contamination factor beyond a₁); P > 0.5·C blocks.
 
 **Test cases.** The legacy module's three hand calculations (`ka-legacy-ball-radial`, `ka-legacy-roller`, `ka-legacy-combined-95`).
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Deep-groove ball bearing under radial load ([sheet](../../worked-examples/mechanical/mech.bearing-life/ball-bearing-radial/sheet.txt)).
+
+```text
+p = 3
+P = 1 × 4 kN + 0 × 0 kN = 4 kN
+k_P = 4 kN / 35.1 kN = 0.11396
+L_10 = (35.1 kN / 4 kN)^3 = 675.68
+L_10h = 675.68 × 1e6 × 2 × π / 1500 rpm = 7507.6 h
+L_nm = 1 × 675.68 = 675.68
+L_nmh = 1 × 7507.6 h = 7507.6 h
+u_life = 5000 h / 7507.6 h = 0.666
+Governing: PASS  Modified life against required life: u_life = 0.666 vs u_life ≤ 1  utilisation 0.666  « ISO 281 §6
+```
+<!-- hand-arithmetic:end -->

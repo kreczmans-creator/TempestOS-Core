@@ -10,4 +10,16 @@
 
 **Limitations.** Static only; the applied stress must already be the equivalent stress at the critical point.
 
-**Test cases.** A hand calculation (`ka-margin-hand`); the legacy module had property tests only.
+**Test cases.** Two hand calculations (`ka-margin-hand`, `ka-margin-yield-only`); the legacy module had property tests only.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Bracket steel margin on yield and ultimate ([sheet](../../worked-examples/mechanical/mech.material-margin/bracket-steel-margin/sheet.txt)).
+
+```text
+n_y = 300 MPa / 120 MPa = 2.5
+n_u = 450 MPa / 120 MPa = 3.75
+n_gov = min(2.5, 3.75 / 1.5) = 2.5
+u = 1.5 / 2.5 = 0.6
+Governing: PASS  Factor of safety against the required factor: u = 0.6 vs u ≤ 1  utilisation 0.6  « Shigley §1-10
+```
+<!-- hand-arithmetic:end -->

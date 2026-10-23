@@ -43,6 +43,7 @@ public sealed class BearingLifeCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("no-load", "The equivalent load must be positive.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("light-load", "P below a millionth of C: the life is effectively unlimited.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("heavy-load", "P above half the dynamic load rating is outside the basic rating life equation.", CalcNoticeSeverity.Block),
         ],
         [
@@ -75,6 +76,12 @@ public sealed class BearingLifeCalculator : ICalcCalculator
         }
 
         c.Assign("k_P", "P / C", null, "Load ratio P/C");
+
+        if (c.Si("k_P") < 1e-6)
+        {
+            c.Block("light-load", "k_P: the load is below a millionth of the rating; the life is effectively unlimited and outside the rating-life equation's use.");
+            return;
+        }
 
         if (c.Si("k_P") > 0.5)
         {

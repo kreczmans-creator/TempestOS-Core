@@ -44,6 +44,10 @@ public sealed class ThinVesselCalculator : ICalcCalculator
                 new CalcReferenceSource("Hand calculation, UG-27(c) forms", null, "t_c = 1000/(117.3 − 1.2) = 8.6133 mm; t_l = 1000/(234.6 + 0.8) = 4.2481 mm; t_req = 11.613 mm; σ_θ at 9 mm = 2·505.4/(0.85·9) = 132.13 MPa"),
                 [CalcInputValue.Quantity("P", 2, "MPa"), CalcInputValue.Quantity("R", 500, "mm"), CalcInputValue.Quantity("S", 138, "MPa"), CalcInputValue.Of("E_j", 0.85), CalcInputValue.Of("n", 1), CalcInputValue.Quantity("c", 3, "mm"), CalcInputValue.Quantity("t_p", 12, "mm")],
                 [new CalcExpectedValue("t_c", 8.6133, "mm", 5e-5), new CalcExpectedValue("t_l", 4.2481, "mm", 5e-5), new CalcExpectedValue("t_req", 11.613, "mm", 5e-5), new CalcExpectedValue("sigma_h", 132.13, "MPa", 5e-5), new CalcExpectedValue("u", 0.96777, "", 5e-5)]),
+            new CalcTestCase("ka-ug27-thin-plate", "UG-27 hand calculation: 3 MPa, R 750 mm, S 138 MPa, E 1.0, c 1.5 mm, t 15 mm (fails)",
+                new CalcReferenceSource("Hand calculation, UG-27(c) forms", null, "t_c = 2250/136.2 = 16.520 mm; t_l = 2250/277.2 = 8.1169 mm; t_req = 18.020 mm; σ_θ at 13.5 mm = 3·758.1/13.5 = 168.47 MPa"),
+                [CalcInputValue.Quantity("P", 3, "MPa"), CalcInputValue.Quantity("R", 750, "mm"), CalcInputValue.Quantity("S", 138, "MPa"), CalcInputValue.Of("E_j", 1.0), CalcInputValue.Of("n", 1), CalcInputValue.Quantity("c", 1.5, "mm"), CalcInputValue.Quantity("t_p", 15, "mm")],
+                [new CalcExpectedValue("t_c", 16.520, "mm", 5e-5), new CalcExpectedValue("t_l", 8.1169, "mm", 5e-5), new CalcExpectedValue("t_req", 18.020, "mm", 5e-5), new CalcExpectedValue("sigma_h", 168.47, "MPa", 5e-5), new CalcExpectedValue("u", 1.2013, "", 5e-5)]),
         ],
         Category: "Pressure Systems");
 
