@@ -1,0 +1,127 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: solid-steel-shaft    Revision: A
+Title: Press and shrink fit
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.
+Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²), σ_r = −p. Shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²), σ_r = −p. F = μ·p·2πR·L; T = μ·p·2πR²·L; ΔT = (δ + c_a)/(α·2R).
+  Ref: Shigley's Mechanical Engineering Design §3-16, §3-17 — Press and shrink fits; stresses in pressurised cylinders
+  Ref: Roark's Formulas for Stress and Strain Ch. 13, Table 13.5 — Thick-walled cylinders under pressure
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  d | Interface (nominal) diameter | 50 | mm | drawing: DRG-HUB-04 rev C | 1 … 1000 mm
+  delta | Diametral interference | 40 | µm | drawing: DRG-HUB-04 (H7/p6 mean) rev C | 1 … 500 µm
+  d_o | Hub outer diameter | 100 | mm | drawing: DRG-HUB-04 rev C | 1 … 2000 mm
+  d_i | Shaft bore diameter (0 for a solid shaft) | 0 | mm | drawing: DRG-SHAFT-12 rev A | 0 … 1000 mm
+  L | Engagement length | 60 | mm | drawing: DRG-HUB-04 rev C | 1 … 2000 mm
+  E_h | Hub Young's modulus | 207 | GPa | spec: EN 10025 S355, E per textbook | 10 … 450 GPa
+  nu_h | Hub Poisson's ratio | 0.292 |  | spec: steel | 0.1 … 0.45
+  E_s | Shaft Young's modulus | 207 | GPa | spec: steel | 10 … 450 GPa
+  nu_s | Shaft Poisson's ratio | 0.292 |  | spec: steel | 0.1 … 0.45
+  mu | Coefficient of friction at the interface | 0.15 |  | assumption: Dry steel on steel, pressed; Shigley Table 7-? range 0.1–0.3. | 0.05 … 0.4
+  S_y_h | Hub yield strength | 355 | MPa | spec: EN 10025 S355 | 50 … 2000 MPa
+  S_y_s | Shaft yield strength | 355 | MPa | spec: EN 10025 S355 | 50 … 2000 MPa
+  alpha_h | Hub thermal expansion coefficient | 0.000012 | 1/K | spec: steel | 0.000005 … 0.00003 1/K
+  c_a | Assembly clearance wanted for shrink fitting | 20 | µm | assumption: Assembly clearance for a shrink fit. | 0 … 500 µm
+
+3. ASSUMPTIONS
+  A1. Both parts are long cylinders in plane stress; the interface pressure is uniform along the engagement. (Lamé thick-cylinder relations; end effects neglected.)
+  A2. The friction coefficient is as entered and the same for assembly and for torque transmission. (Enter it with its source; it dominates the force and torque results.)
+  A3. Yield is checked by the von Mises equivalent stress at the hub bore and at the shaft surface. (Axial stress taken as zero.)
+  A4. mu (Coefficient of friction at the interface) is taken as 0.15. (Dry steel on steel, pressed; Shigley Table 7-? range 0.1–0.3.)
+  A5. c_a (Assembly clearance wanted for shrink fitting) is taken as 20 µm. (Assembly clearance for a shrink fit.)
+
+4. WORKING
+  [15] R = d / 2
+      = 50 mm / 2
+      = 25 mm
+        Interface radius
+  [16] r_o = d_o / 2
+      = 100 mm / 2
+      = 50 mm
+        Hub outer radius
+  [17] r_i = d_i / 2
+      = 0 mm / 2
+      = 0 mm
+        Shaft bore radius
+  [18] delta_r = delta / 2
+      = 40 µm / 2
+      = 20 µm
+        Radial interference
+  [19] C_h = (R / E_h) * ((r_o^2 + R^2) / (r_o^2 - R^2) + nu_h)    « Shigley §3-16
+      = 25 mm / 207 GPa × (((50 mm)^2 + (25 mm)^2) / ((50 mm)^2 − (25 mm)^2) + 0.292)
+      = 0.23655 mm/GPa
+        Hub compliance
+  [20] C_s = (R / E_s) * ((R^2 + r_i^2) / (R^2 - r_i^2) - nu_s)    « Shigley §3-16
+      = 25 mm / 207 GPa × (((25 mm)^2 + (0 mm)^2) / ((25 mm)^2 − (0 mm)^2) − 0.292)
+      = 0.085507 mm/GPa
+        Shaft compliance
+  [21] p = delta_r / (C_h + C_s)    « Shigley eq. 3-56
+      = 20 µm / (0.23655 mm/GPa + 0.085507 mm/GPa)
+      = 62.1 MPa
+        Interface pressure
+  [22] sigma_t_hub = p * (r_o^2 + R^2) / (r_o^2 - R^2)    « Shigley eq. 3-57
+      = 62.1 MPa × ((50 mm)^2 + (25 mm)^2) / ((50 mm)^2 − (25 mm)^2)
+      = 103.5 MPa
+        Hub hoop stress at the bore
+  [23] sigma_r_hub = -p
+      = −62.1 MPa
+      = -62.1 MPa
+        Hub radial stress at the bore
+  [24] sigma_t_shaft = -p * (R^2 + r_i^2) / (R^2 - r_i^2)    « Shigley eq. 3-58
+      = −62.1 MPa × ((25 mm)^2 + (0 mm)^2) / ((25 mm)^2 − (0 mm)^2)
+      = -62.1 MPa
+        Shaft hoop stress at the surface
+  [25] sigma_r_shaft = -p
+      = −62.1 MPa
+      = -62.1 MPa
+        Shaft radial stress at the surface
+  [26] sigma_vm_hub = sqrt(sigma_t_hub^2 - sigma_t_hub * sigma_r_hub + sigma_r_hub^2)
+      = sqrt((103.5 MPa)^2 − 103.5 MPa × (-62.1 MPa) + (-62.1 MPa)^2)
+      = 144.9 MPa
+        Hub von Mises stress at the bore
+  [27] sigma_vm_shaft = sqrt(sigma_t_shaft^2 - sigma_t_shaft * sigma_r_shaft + sigma_r_shaft^2)
+      = sqrt((-62.1 MPa)^2 − (-62.1 MPa) × (-62.1 MPa) + (-62.1 MPa)^2)
+      = 62.1 MPa
+        Shaft von Mises stress at the surface
+  [28] F_a = mu * p * 2 * pi * R * L
+      = 0.15 × 62.1 MPa × 2 × π × 25 mm × 60 mm
+      = 87.792 kN
+        Axial assembly (press) force
+  [29] T = mu * p * 2 * pi * R^2 * L
+      = 0.15 × 62.1 MPa × 2 × π × (25 mm)^2 × 60 mm
+      = 2194.8 N·m
+        Torque capacity by friction
+  [30] dT = (delta + c_a) / (alpha_h * d)
+      = (40 µm + 20 µm) / (0.000012 1/K × 50 mm)
+      = 100 K
+        Hub temperature rise for shrink fitting
+
+5. RESULTS
+  p = 62.1 MPa    Interface pressure
+  sigma_t_hub = 103.5 MPa    Hub hoop stress at bore
+  sigma_t_shaft = -62.1 MPa    Shaft hoop stress at surface
+  sigma_vm_hub = 144.9 MPa    Hub von Mises stress
+  sigma_vm_shaft = 62.1 MPa    Shaft von Mises stress
+  F_a = 87.792 kN    Assembly force
+  T = 2194.8 N·m    Torque capacity
+  dT = 100 K    Shrink-fit temperature rise
+
+6. CHECKS (governing first)
+  PASS  Hub yield: 144.9 MPa vs 355 MPa  utilisation 0.408
+  PASS  Shaft yield: 62.1 MPa vs 355 MPa  utilisation 0.175
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.press-fit@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 2/2
+  Test run: —
