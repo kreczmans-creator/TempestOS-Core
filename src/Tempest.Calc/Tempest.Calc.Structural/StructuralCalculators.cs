@@ -8,5 +8,7 @@ public static class StructuralCalculators
     public static IReadOnlyList<ICalcCalculator> All { get; } =
     [
         new SectionPropertiesCalculator(),
+        new FrameCalculator(),
+        new BeamFormulasCalculator(),
     ];
 }

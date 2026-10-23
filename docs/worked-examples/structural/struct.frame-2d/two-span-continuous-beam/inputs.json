@@ -1,0 +1,402 @@
+[
+  {
+    "Symbol": "E",
+    "Number": 210,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 3.2.6: E = 210 GPa",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "210"
+  },
+  {
+    "Symbol": "combinations",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "ULS"
+          },
+          "case": {
+            "Number": 1
+          },
+          "factor": {
+            "Number": 1.35
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "ULS"
+          },
+          "case": {
+            "Number": 2
+          },
+          "factor": {
+            "Number": 1.5
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "SLS"
+          },
+          "case": {
+            "Number": 1
+          },
+          "factor": {
+            "Number": 1
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "SLS"
+          },
+          "case": {
+            "Number": 2
+          },
+          "factor": {
+            "Number": 1
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1990 6.4.3.2 eq. 6.10 (\u03B3_G 1.35, \u03B3_Q 1.5); SLS characteristic",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4 row(s)"
+  },
+  {
+    "Symbol": "elements",
+    "Rows": [
+      {
+        "Cells": {
+          "id": {
+            "Number": 1
+          },
+          "i": {
+            "Number": 1
+          },
+          "j": {
+            "Number": 2
+          },
+          "A": {
+            "Number": 51.3,
+            "Unit": "cm^2"
+          },
+          "I": {
+            "Number": 8503,
+            "Unit": "cm^4"
+          },
+          "rel_i": {
+            "Flag": false
+          },
+          "rel_j": {
+            "Flag": false
+          }
+        }
+      },
+      {
+        "Cells": {
+          "id": {
+            "Number": 2
+          },
+          "i": {
+            "Number": 2
+          },
+          "j": {
+            "Number": 3
+          },
+          "A": {
+            "Number": 51.3,
+            "Unit": "cm^2"
+          },
+          "I": {
+            "Number": 8503,
+            "Unit": "cm^4"
+          },
+          "rel_i": {
+            "Flag": false
+          },
+          "rel_j": {
+            "Flag": false
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "UB 305\u00D7165\u00D740 (Blue Book)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2 row(s)"
+  },
+  {
+    "Symbol": "loads",
+    "Rows": [
+      {
+        "Cells": {
+          "case": {
+            "Number": 1
+          },
+          "kind": {
+            "Text": "udl"
+          },
+          "target": {
+            "Number": 1
+          },
+          "a": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "b": {
+            "Number": 6,
+            "Unit": "m"
+          },
+          "w1": {
+            "Number": -8,
+            "Unit": "kN/m"
+          },
+          "w2": {
+            "Number": 0,
+            "Unit": "kN/m"
+          },
+          "F_x": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "F_y": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "M": {
+            "Number": 0,
+            "Unit": "kN*m"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "case": {
+            "Number": 1
+          },
+          "kind": {
+            "Text": "udl"
+          },
+          "target": {
+            "Number": 2
+          },
+          "a": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "b": {
+            "Number": 6,
+            "Unit": "m"
+          },
+          "w1": {
+            "Number": -8,
+            "Unit": "kN/m"
+          },
+          "w2": {
+            "Number": 0,
+            "Unit": "kN/m"
+          },
+          "F_x": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "F_y": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "M": {
+            "Number": 0,
+            "Unit": "kN*m"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "case": {
+            "Number": 2
+          },
+          "kind": {
+            "Text": "udl"
+          },
+          "target": {
+            "Number": 1
+          },
+          "a": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "b": {
+            "Number": 6,
+            "Unit": "m"
+          },
+          "w1": {
+            "Number": -12,
+            "Unit": "kN/m"
+          },
+          "w2": {
+            "Number": 0,
+            "Unit": "kN/m"
+          },
+          "F_x": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "F_y": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "M": {
+            "Number": 0,
+            "Unit": "kN*m"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "case": {
+            "Number": 2
+          },
+          "kind": {
+            "Text": "udl"
+          },
+          "target": {
+            "Number": 2
+          },
+          "a": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "b": {
+            "Number": 6,
+            "Unit": "m"
+          },
+          "w1": {
+            "Number": -12,
+            "Unit": "kN/m"
+          },
+          "w2": {
+            "Number": 0,
+            "Unit": "kN/m"
+          },
+          "F_x": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "F_y": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "M": {
+            "Number": 0,
+            "Unit": "kN*m"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Load schedule LS-01: G = 8 kN/m, Q = 12 kN/m",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4 row(s)"
+  },
+  {
+    "Symbol": "n_div",
+    "Number": 24,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "24 stations per span.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "24"
+  },
+  {
+    "Symbol": "nodes",
+    "Rows": [
+      {
+        "Cells": {
+          "id": {
+            "Number": 1
+          },
+          "x": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "y": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "support": {
+            "Text": "pin"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "id": {
+            "Number": 2
+          },
+          "x": {
+            "Number": 6,
+            "Unit": "m"
+          },
+          "y": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "support": {
+            "Text": "roller (vertical)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "id": {
+            "Number": 3
+          },
+          "x": {
+            "Number": 12,
+            "Unit": "m"
+          },
+          "y": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "support": {
+            "Text": "roller (vertical)"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-FL-201",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3 row(s)"
+  },
+  {
+    "Symbol": "report",
+    "Text": "ULS",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "ULS reported in detail; SLS in the envelope.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "ULS"
+  }
+]

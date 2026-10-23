@@ -1,0 +1,57 @@
+[
+  {
+    "Symbol": "E",
+    "Number": 210,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 3.2.6",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "210"
+  },
+  {
+    "Symbol": "I",
+    "Number": 20000,
+    "Unit": "cm^4",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "Fabricated section, S1 sheet",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20000"
+  },
+  {
+    "Symbol": "L",
+    "Number": 8,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-CA-033",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8"
+  },
+  {
+    "Symbol": "case",
+    "Text": "propped cantilever (fixed left, pinned right), UDL",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Fixed at the wall, propped at the free end.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "propped cantilever (fixed left, pinned right), UDL"
+  },
+  {
+    "Symbol": "w",
+    "Number": 12,
+    "Unit": "kN/m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Load schedule LS-03",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "12"
+  }
+]
