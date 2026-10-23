@@ -82,6 +82,29 @@ public sealed class BoltTests
     }
 
     [Fact]
+    public void Once_The_Joint_Opens_The_Bolt_Carries_The_Whole_Load_And_The_Clamp_Is_Zero()
+    {
+        // Green G-05 (the legacy module's own branch): no negative clamp, no bolt load below the working load.
+        var r = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Quantity("F_A", 80, "kN")));
+        Assert.Equal(0, r.OutputSi("F_KR"), 9);
+        Assert.Equal(80e3, r.OutputSi("F_S_max"), 3);
+        Assert.Equal((80e3 - r.OutputSi("F_M")) / (2 * r.OutputSi("A_s")), r.OutputSi("sigma_a"), 0);
+        Assert.Contains(r.Checks, c => c.Name == "Residual clamp against requirement" && !c.Passed);
+    }
+
+    [Fact]
+    public void Given_Preload_Needs_F_V_And_Given_Properties_Replace_The_Derived_Ones()
+    {
+        var given = JointInputs().With(CalcInputValue.Choice("method", BoltedJointCalculator.GivenPreload));
+        Assert.Contains(CalcRunner.Run(Joint, new CalcInputSet(given.Values.Where(v => v.Symbol != "F_V"))).Blocks, b => b.RuleId == "no-preload");
+
+        var r = CalcRunner.Run(Joint, given.With(CalcInputValue.Quantity("F_V", 30, "kN")).With(CalcInputValue.Quantity("k_S_given", 300, "kN/mm")).With(CalcInputValue.Quantity("k_P_given", 900, "kN/mm")).With(CalcInputValue.Quantity("A_s_given", 84.3, "mm^2")));
+        Assert.Equal(30e3, r.OutputSi("F_M"), 6);
+        Assert.Equal(84.3e-6, r.OutputSi("A_s"), 12);
+        Assert.Equal(0.5 * 300.0 / (300 + 900), r.OutputSi("Phi"), 9);
+    }
+
+    [Fact]
     public void Hole_Geometry_Blocks_Plainly()
     {
         var r = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Quantity("d_h", 11, "mm")));
@@ -116,6 +139,24 @@ public sealed class BoltTests
     {
         Assert.Contains(CalcRunner.Run(Group, GroupInputs(Bolts((0, 0)))).Blocks, b => b.RuleId == "few-bolts");
         Assert.Contains(CalcRunner.Run(Group, GroupInputs(Bolts((0, 0), (0, 0)))).Blocks, b => b.RuleId == "coincident");
+    }
+
+    [Fact]
+    public void A_Single_Bolt_Takes_Direct_Shear_But_Not_A_Torque()
+    {
+        var through = GroupInputs(Bolts((0, 0))).With(CalcInputValue.Quantity("e_x", 0, "mm")).With(CalcInputValue.Quantity("e_y", 0, "mm"));
+        var r = CalcRunner.Run(Group, through);
+        Assert.False(r.IsBlocked);
+        Assert.Equal(50e3, r.OutputSi("v_max"), 3);
+        Assert.Contains(CalcRunner.Run(Group, through.With(CalcInputValue.Quantity("T_z", 1, "kN*m"))).Blocks, b => b.RuleId == "few-bolts");
+    }
+
+    [Fact]
+    public void A_Moment_About_The_Line_Of_The_Bolts_Is_Blocked_Not_Dropped()
+    {
+        // Green G-06: bolts all on y = 0 give M_x no lever; it used to be silently ignored.
+        var inLine = GroupInputs(Bolts((0, 0), (100, 0), (200, 0))).With(CalcInputValue.Quantity("M_x", 5, "kN*m"));
+        Assert.Contains(CalcRunner.Run(Group, inLine).Blocks, b => b.RuleId == "unresisted-moment");
     }
 
     [Fact]

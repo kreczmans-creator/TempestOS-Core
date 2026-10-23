@@ -195,6 +195,17 @@ public sealed class AnalysisAndNumericsTests
     [Fact]
     public void Ppm_Outside_Three_Sigma_Limits_Is_About_2700() => Assert.InRange(Statistics.PartsPerMillionOutside(0, 1, -3, 3), 2690, 2710);
 
+    [Theory]
+    [InlineData(7.0)]
+    [InlineData(-7.0)]
+    public void Deep_Tails_Keep_Their_Relative_Precision_On_Either_Side(double limit)
+    {
+        // Green G-07: 1 − Φ(7) cancelled to four digits; Φ(−7) = 1.279813e-12 to 1e-6 relative.
+        var ppm = Statistics.PartsPerMillionOutside(0, 1, limit < 0 ? limit : null, limit > 0 ? limit : null);
+        Assert.Equal(1.279812543885835e-6, ppm, 1e-12);
+        Assert.True(Math.Abs(ppm / 1.279812543885835e-6 - 1) < 1e-6, $"ppm = {ppm}");
+    }
+
     [Fact]
     public void Cpk_Is_The_Nearer_Limit() => Assert.Equal(1.0, Statistics.ProcessCapabilityIndex(5, 1, 2, 10)!.Value, 9);
 

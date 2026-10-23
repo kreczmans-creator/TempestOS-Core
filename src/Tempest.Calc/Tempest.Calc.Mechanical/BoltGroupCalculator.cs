@@ -10,6 +10,18 @@ public sealed class BoltGroupCalculator : ICalcCalculator
 {
     public const string Id = "mech.bolt-group";
 
+    private static CalcReferenceSource Legacy(int n) =>
+        new("TempestOS calc.bolt-group-eccentric-shear (v0.21.0) hand calculation", null, $"docs/engineering/calculations/calc.bolt-group-eccentric-shear.md, Example {n}");
+
+    /// <summary>A legacy in-plane shear case: unit bolt areas (forces do not depend on them, and J in mm⁴ then equals the legacy unit polar moment in mm²), no tension.</summary>
+    private static CalcInputValue[] Shear((double X, double Y)[] bolts, double fx, double fy, double ex, double ey, double vR) =>
+    [
+        CalcInputValue.Table("bolts", [.. bolts.Select(b => CalcRow.Of(("x", new CalcCell(b.X, "mm")), ("y", new CalcCell(b.Y, "mm")), ("A", new CalcCell(1, "mm^2"))))]),
+        CalcInputValue.Quantity("F_x", fx, "kN"), CalcInputValue.Quantity("F_y", fy, "kN"), CalcInputValue.Quantity("e_x", ex, "mm"), CalcInputValue.Quantity("e_y", ey, "mm"),
+        CalcInputValue.Quantity("T_z", 0, "kN*m"), CalcInputValue.Quantity("N", 0, "kN"), CalcInputValue.Quantity("M_x", 0, "kN*m"), CalcInputValue.Quantity("M_y", 0, "kN*m"),
+        CalcInputValue.Quantity("V_R", vR, "kN"), CalcInputValue.Quantity("T_R", 45, "kN"),
+    ];
+
     private static readonly IReadOnlyList<CalcColumnSpec> Columns =
     [
         new("x", "x", CalcInputKind.Quantity, "mm", HardMin: -1e5, HardMax: 1e5),
@@ -18,7 +30,7 @@ public sealed class BoltGroupCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Bolt group (elastic method)",
+        Id, "1.1.0", CalcDiscipline.Mechanical, "Bolt group (elastic method)",
         "A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.",
         "Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar J = Σ A r². Shear per bolt: v = A (F/ΣA) + T·A·r/J (vector sum). Tension per bolt: t = A N/ΣA + M_x A y'/Σ A y'² + M_y A x'/Σ A x'². Prying: t_p = t (1 + b/a) when a and b are given. Utilisation: the circular interaction (v/V_R)² + (t_p/T_R)² ≤ 1 (elastic method, Shigley-style) and the EN 1993-1-8 linear form v/V_R + t_p/(1.4 T_R) ≤ 1, plus each alone; the governing check is the highest.",
         [
@@ -46,7 +58,8 @@ public sealed class BoltGroupCalculator : ICalcCalculator
             new CalcClauseRef("AISC Steel Construction Manual", "Part 7", "Eccentrically loaded bolt groups — elastic method"),
         ],
         [
-            new CalcApplicabilityRule("few-bolts", "Fewer than two bolts: torsion cannot be resisted.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("few-bolts", "No bolts, or a single bolt under an in-plane torque it cannot resist.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("unresisted-moment", "An out-of-plane moment about an axis the bolts all lie on cannot be resisted.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("coincident", "Two bolts share a position.", CalcNoticeSeverity.Block),
         ],
         [
@@ -68,6 +81,16 @@ public sealed class BoltGroupCalculator : ICalcCalculator
                     CalcInputValue.Quantity("V_R", 40, "kN"), CalcInputValue.Quantity("T_R", 60, "kN"),
                 ],
                 [new CalcExpectedValue("t_max", 50, "kN", 1e-6), new CalcExpectedValue("u_max", 0.83333, "", 1e-4)]),
+            new CalcTestCase("ka-legacy-four-bolts", "Legacy example 1: four bolts, vertical load beside the group", Legacy(1), Shear([(75, 50), (75, -50), (-75, 50), (-75, -50)], 0, -20, 250, 0, 25),
+                [new CalcExpectedValue("T", -5.0000, "kN*m", 5e-5), new CalcExpectedValue("J", 32_500, "mm^4", 5e-5), new CalcExpectedValue("v_max", 18.240, "kN", 5e-5), new CalcExpectedValue("u_max", 0.72959, "", 5e-5)]),
+            new CalcTestCase("ka-legacy-line", "Legacy example 2: three bolts in a line, load beside the line", Legacy(2), Shear([(0, 0), (0, 80), (0, 160)], 0, -30, 120, 80, 20),
+                [new CalcExpectedValue("T", -3.6000, "kN*m", 5e-5), new CalcExpectedValue("J", 12_800, "mm^4", 5e-5), new CalcExpectedValue("v_max", 24.622, "kN", 5e-5), new CalcExpectedValue("u_max", 1.2311, "", 5e-5)]),
+            new CalcTestCase("ka-legacy-inclined", "Legacy example 3: the line of bolts under an inclined load", Legacy(3), Shear([(0, 0), (0, 80), (0, 160)], 15, -30, 120, 80, 40),
+                [new CalcExpectedValue("T", -3.6000, "kN*m", 5e-5), new CalcExpectedValue("J", 12_800, "mm^4", 5e-5), new CalcExpectedValue("v_max", 29.262, "kN", 5e-5), new CalcExpectedValue("u_max", 0.73154, "", 5e-5)]),
+            new CalcTestCase("ka-legacy-centroid", "Legacy example 4: load through the centroid, shared equally", Legacy(4), Shear([(75, 50), (75, -50), (-75, 50), (-75, -50)], 0, -20, 0, 0, 25),
+                [new CalcExpectedValue("T", 0, "kN*m", 1e-9), new CalcExpectedValue("v_max", 5.0000, "kN", 5e-5), new CalcExpectedValue("u_max", 0.20000, "", 5e-5)]),
+            new CalcTestCase("ka-legacy-single-bolt", "Legacy calc.bolt-shear-capacity case: one bolt in direct shear", new CalcReferenceSource("TempestOS calc.bolt-shear-capacity (v0.16.0) retired as covered (ADR-0167)", null, "v = 20 kN against V_R = 25 kN: u = 0.8"), Shear([(0, 0)], 0, -20, 0, 0, 25),
+                [new CalcExpectedValue("v_max", 20.000, "kN", 5e-5), new CalcExpectedValue("u_max", 0.80000, "", 5e-5)]),
         ],
         DiagramKey: "bolt-group-eccentric-shear",
         Category: "Fasteners");
@@ -82,9 +105,9 @@ public sealed class BoltGroupCalculator : ICalcCalculator
         foreach (var s in new[] { "F_x", "F_y", "e_x", "e_y", "T_z", "N", "M_x", "M_y", "V_R", "T_R" })
             c.Input(s);
 
-        if (rows.Count < 2)
+        if (rows.Count == 0)
         {
-            c.Block("few-bolts", "bolts: at least two bolts are needed.");
+            c.Block("few-bolts", "bolts: at least one bolt is needed.");
             return;
         }
 
@@ -119,6 +142,13 @@ public sealed class BoltGroupCalculator : ICalcCalculator
         var torque = fy * ex - fx * ey + c.Si("T_z");
         c.Record("T", "F_y (e_x − x_c) − F_x (e_y − y_c) + T_z", $"{F(fy, 1e3)} × {F(ex, 1e-3)} − {F(fx, 1e3)} × {F(ey, 1e-3)} + {F(c.Si("T_z"), 1e3)}", ScalarValue.Of(torque / 1e3, "kN*m"), "In-plane torque about the centroid");
 
+        // A single bolt takes direct shear only (the legacy calc.bolt-shear-capacity case): any torque about it is unresisted.
+        if (bolts.Count == 1 && Math.Abs(torque) > 1e-9 * Math.Max(1, Math.Sqrt(fx * fx + fy * fy)))
+        {
+            c.Block("few-bolts", "bolts: a single bolt cannot resist the in-plane torque; put the load through the bolt or add bolts.");
+            return;
+        }
+
         // J with areas in mm² and distances in mm → mm⁴ (A r²); SI m⁴.
         var polar = bolts.Sum(b => b.A * ((b.X - xc) * (b.X - xc) + (b.Y - yc) * (b.Y - yc)));
         var sumAy2 = bolts.Sum(b => b.A * (b.Y - yc) * (b.Y - yc));
@@ -128,6 +158,13 @@ public sealed class BoltGroupCalculator : ICalcCalculator
         var n = c.Si("N");
         var mx = c.Si("M_x");
         var my = c.Si("M_y");
+
+        // Bolts all on one line about which a moment acts give it no lever: block rather than drop it (Green G-06).
+        if ((sumAy2 <= 0 && Math.Abs(mx) > 0) || (sumAx2 <= 0 && Math.Abs(my) > 0))
+        {
+            c.Block("unresisted-moment", $"{(sumAy2 <= 0 && Math.Abs(mx) > 0 ? "M_x" : "M_y")}: the bolts all lie on the axis of this moment and cannot resist it.");
+            return;
+        }
         var a = c.Has("a") ? c.InputSi("a") : (double?)null;
         var b = c.Has("b") ? c.InputSi("b") : (double?)null;
         var prying = a is { } pa && b is { } pb && pa > 0 ? 1 + pb / pa : 1.0;

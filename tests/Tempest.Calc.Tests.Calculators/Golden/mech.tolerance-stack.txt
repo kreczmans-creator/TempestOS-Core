@@ -160,4 +160,4 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
 
 8. VERIFICATION
   Template: mech.tolerance-stack@2.0.0
-  Known-answer cases passed: 2/2
+  Known-answer cases passed: 6/6

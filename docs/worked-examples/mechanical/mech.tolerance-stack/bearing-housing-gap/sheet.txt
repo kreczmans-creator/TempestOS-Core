@@ -110,10 +110,10 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
         Process capability C_p
   [24] dpmo = 10⁶ × P(outside)
       = 10⁶ × Φ-tails at σ = 0.0268742
-      = 7.7759e-7
+      = 7.7755e-7
         Predicted defects per million
   [25] yield = 1 − dpmo / 10⁶
-      = 1 − 7.7759e-7 / 10⁶
+      = 1 − 7.7755e-7 / 10⁶
       = 100 %
         Predicted yield
   [26] u_cpk = cpk_target / cpk
@@ -158,7 +158,7 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
   m_max = 0.06 mm    Worst-case margin to the maximum
   cp = 2.4807    C_p
   cpk = 2.3567    C_pk
-  dpmo = 7.7759e-7    DPMO (predicted)
+  dpmo = 7.7755e-7    DPMO (predicted)
   yield = 100 %    Yield (predicted)
   mc_mean = 0.60987 mm    Monte Carlo mean
   mc_sigma = 0.027228 mm    Monte Carlo σ
@@ -177,5 +177,5 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
   Template: mech.tolerance-stack@2.0.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 2/2
+  Known-answer cases passed: 6/6
   Test run: —
