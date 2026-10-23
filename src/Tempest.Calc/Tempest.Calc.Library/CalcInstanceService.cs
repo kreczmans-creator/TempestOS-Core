@@ -461,6 +461,52 @@ public sealed class CalcInstanceService
     }
 
     // ------------------------------------------------------------------
+    // Compare (ADR-0167 §4)
+    // ------------------------------------------------------------------
+
+    /// <summary>The comparison of a revision with the one it superseded; a refusal when the calculation has no earlier revision.</summary>
+    public async Task<(CalcComparison? Comparison, string? Reason)> CompareWithPredecessorAsync(Guid instanceId, CancellationToken cancellationToken = default)
+    {
+        var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
+
+        if (instance is null)
+            return (null, $"No calculation '{instanceId}' exists.");
+
+        if (instance.IsLegacyArchive)
+            return (null, LegacyMessage(instance));
+
+        if (instance.PredecessorId is not { } predecessorId)
+            return (null, $"Calculation '{instance.Name}' rev {instance.Revision} has no earlier revision to compare with; compare it with another calculation of the same template instead.");
+
+        var predecessor = await _store.FindInstanceAsync(predecessorId, cancellationToken).ConfigureAwait(false);
+        return predecessor is null ? (null, $"The earlier revision of '{instance.Name}' no longer exists.") : Compared(predecessor, instance);
+    }
+
+    /// <summary>The comparison of two calculations of one template; a refusal names why they cannot be compared.</summary>
+    public async Task<(CalcComparison? Comparison, string? Reason)> CompareAsync(Guid beforeId, Guid afterId, CancellationToken cancellationToken = default)
+    {
+        var before = await _store.FindInstanceAsync(beforeId, cancellationToken).ConfigureAwait(false);
+        var after = await _store.FindInstanceAsync(afterId, cancellationToken).ConfigureAwait(false);
+
+        if (before is null || after is null)
+            return (null, $"No calculation '{(before is null ? beforeId : afterId)}' exists.");
+
+        return Compared(before, after);
+    }
+
+    private static (CalcComparison? Comparison, string? Reason) Compared(CalcInstance before, CalcInstance after)
+    {
+        try
+        {
+            return (CalcInstanceComparer.Compare(before, after), null);
+        }
+        catch (ArgumentException refused)
+        {
+            return (null, refused.Message);
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Staleness
     // ------------------------------------------------------------------
 

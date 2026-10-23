@@ -48,12 +48,36 @@ public sealed class CalcSheetCoordinator
         _references = references;
         _view.TemplateSelected += entry => _ = GuardedAsync(() => LoadReferenceOptionsAsync(entry), "list the released reference records");
         _view.ReferencePicked += (library, index) => _ = GuardedAsync(() => PickReferenceAsync(library, index), "fill from the reference record");
+        _view.CompareRequested += () => _ = GuardedAsync(CompareAsync, "compare with the previous revision");
+        _view.ArchiveSelected += id => _ = GuardedAsync(() => OpenAsync(id), "open that archived calculation");
     }
 
-    public Task RefreshAsync()
+    /// <summary>Lists the templates, then the migrated legacy records beneath them (Y8-06: an archive has no project or register entry, so the catalogue is where it is found).</summary>
+    public async Task RefreshAsync()
     {
         _view.ShowCatalogue(_service.Catalogue.Current());
-        return Task.CompletedTask;
+        var instances = await _service.Store.ListInstancesAsync().ConfigureAwait(true);
+        _view.ShowArchives([.. instances.Where(i => i.IsLegacyArchive)]);
+    }
+
+    /// <summary>ADR-0167 §4: the current revision against the one it superseded.</summary>
+    private async Task CompareAsync()
+    {
+        if (_view.CurrentInstance is not { } instance)
+            return;
+
+        var (comparison, reason) = await _service.CompareWithPredecessorAsync(instance.Id).ConfigureAwait(true);
+
+        if (comparison is null)
+        {
+            _view.ShowStatus(reason ?? "Nothing to compare.");
+            return;
+        }
+
+        _view.ShowComparison(comparison);
+        _view.ShowStatus(comparison.HasChanges
+            ? $"Compared rev {comparison.After.Revision} with rev {comparison.Before.Revision}: {comparison.Rows.Count + comparison.Omitted} value(s) differ."
+            : $"Compared rev {comparison.After.Revision} with rev {comparison.Before.Revision}: nothing differs.");
     }
 
     /// <summary>Opens an existing instance in the form (read-only when issued).</summary>
