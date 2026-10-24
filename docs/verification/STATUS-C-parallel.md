@@ -12,4 +12,4 @@ P6 risk triage: done — regenerate with tools/verification/triage.py
 P7 oracle map: done — 28 calculators
 Open defects (reviewed): 4 Critical (S1 composite holes, B2 SHR swap, drive-train torque x2), 47 High, 67 Medium
 Writes: docs/verification/ and tools/verification/ only
-Next: poll at 298ade36 — re-check of E2, B5, S2, S4; new cooling and steel-support packs; manual tests unblocked by A8-UI
+Next: PENDING (usage limit hit 2026-10-24 ~22:00 UTC): re-check E2, B5, S2, S4 at 298ade36; P1 for cooling and steel-support packs; unblock manual tests via A8-UI panels

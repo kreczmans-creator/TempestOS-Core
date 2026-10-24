@@ -52,3 +52,8 @@ The ranked list with evidence is in `risk-triage.md`.
 - A table record replaces the whole table input; this affects the B4 surface-resistance and conductivity records (P3 README).
 - The governance check limits Markdown lines to code lines added. This branch is mostly Markdown; Track S may need to merge it with a justification.
 - Addendum B calculators (S7, S8, F2 and others) are not yet on release. Track P polls every 2 hours and verifies each as it merges.
+
+## Pending at the last poll (298ade36)
+- The account usage limit stopped the agents. KATs (109) and all scripts still pass at 298ade36.
+- Not yet done: re-check of E2, B5, S2 and S4 after A7b; P1 reports for the new cooling and steel-support packs; rewriting manual-test BLOCK steps to use the new saved-calculation and pack panels.
+- Findings for E2, B5, S2 and S4 in `risk-triage.md` are still as of e283c07e. Treat them as unverified against 298ade36.
