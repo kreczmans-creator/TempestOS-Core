@@ -26,6 +26,7 @@ ORDER = [
     ("S1 section properties", ["struct.section-properties"], "struct.section-properties.md", "Critical; feeds S3, S4 and S6"),
     ("S4 EC3 connections", ["struct.connection-ec3"], "struct.connection-ec3.md", "Steel connections"),
     ("S6 base plate", ["struct.base-plate"], "struct.base-plate.md", "Liability list"),
+    ("Steel-support pack", ["chain.steel-support"], "chain.steel-support.md", "Links S2, S3, S4 and S6"),
     ("S3 member checks", ["struct.en1993-member"], "struct.en1993-member.md", "Steel members"),
     ("S2 frame and beam formulas", ["struct.frame-2d", "struct.beam-formulas"], "struct.frame-2d.md, struct.beam-formulas.md", "Analysis feeding S3"),
     ("M6 weld group", ["mech.weld-group"], "mech.weld-group.md", "Welds"),
@@ -37,6 +38,7 @@ ORDER = [
     ("B1 pipe and pump, B6 sealed system", ["bs.pipe-pump", "bs.sealed-system"], "bs.pipe-pump.md, bs.sealed-system.md", "B6 needs the owner's BS EN 12828"),
     ("B4 room heat loss", ["bs.room-heat-loss"], "bs.room-heat-loss.md", "Heating design"),
     ("Wet-heating pack (B4 → B6 → B1 → E1)", ["chain.wet-heating"], "chain.wet-heating.md", "Links the heating calculators"),
+    ("Enclosure-cooling pack", ["chain.cooling"], "chain.cooling.md", "Links E6, E2 and B5"),
     ("E2, B3, B5, S5, M1", ["elec.enclosure-heat", "bs.duct-sizing", "bs.heat-exchanger", "struct.load-combinations", "mech.tolerance-stack"], "remaining files", "Lower liability"),
     ("Desktop sheet import (any calculator)", ["desktop.calc-sheet-view"], "rederivation/desktop.calc-sheet-view.md", "Seeded unit not converted"),
 ]
@@ -148,9 +150,9 @@ Fix in C-1 when each takes under 2 hours; otherwise list for the owner.
 
 The G-02 fix added the linear EN 1993-1-8 bolt check, but P1-mech.bolt-group-01 shows it runs only at one bolt. Treat that as a partial regression of G-02.
 
-## App gaps that block parts of the owner test (from P4)
-- The Desktop app cannot reopen a saved worksheet calculation. Stale-upstream and revise steps are marked BLOCK as built.
-- There is no pack create, check or issue screen. The owner builds each chain by hand.
+## App gaps (from P4)
+- A8-UI added saved-calculation and pack panels. The manual tests now drive stale, revise and pack steps through them.
+- Any step still marked BLOCK in `manual-tests/` names the feature that is still missing.
 
 ## Consistency items that can mislead (from P5)
 Track S fixes these in C-2. The top five are:

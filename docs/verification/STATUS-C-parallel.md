@@ -1,6 +1,6 @@
 # STATUS — Addendum C Track P (parallel, read-only) — 2026-10-24
 Track: P (this session did not write docs/build-log/STATUS.md)
-Branch: claude/tempestos-v0260-test-readiness-s4jwh1, rebased on release/v0.26.0 @ e283c07e (A7a merged)
+Branch: claude/tempestos-v0260-test-readiness-s4jwh1, rebased on release/v0.26.0 @ 298ade36 (A7b, A8 merged)
 Branch note: the cloud session may push only to its claude/ branch, not v0.26.0/addC-parallel. Track S merges this branch instead.
 Scope on release: 28 calculators, 3 packs, 109 KATs (all pass), 14 Unconfirmed
 P1: 28/28 calculators + 3 packs + Desktop sheet, senior-reviewed; re-checked after A-4/A-5/A7a (7 fixed)
@@ -12,4 +12,4 @@ P6 risk triage: done — regenerate with tools/verification/triage.py
 P7 oracle map: done — 28 calculators
 Open defects (reviewed): 4 Critical (S1 composite holes, B2 SHR swap, drive-train torque x2), 47 High, 67 Medium
 Writes: docs/verification/ and tools/verification/ only
-Next: poll release/v0.26.0 every 2 h for new calculators until Track S starts C4; then final handover
+Next: poll at 298ade36 — re-check of E2, B5, S2, S4; new cooling and steel-support packs; manual tests unblocked by A8-UI
