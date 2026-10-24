@@ -264,13 +264,17 @@ def extras():
     fb_free = bearing_conservative("8.8", "M20", 10, 410, 60, 60)[0]
     cap = 1.5 * 410 * 20 * 10 / 1.25 / 1e3
     xrows.append(("M20 8.8, e1 = e2 = 60, single lap one row", "F_b_Rd (kN)", 149.0909, cap, 149.0909 / cap - 1.0, "FAIL", "P1-struct.connection-ec3-03 (cap not applied)"))
-    # F4 legacy picker (ADR-0169): gross area times the thread-plane strength
-    legacy = 500.0 * math.pi * 20 ** 2 / 4 / 1e3  # kN at safety factor 1 (the repo test pins 157.08 kN)
-    ec3 = 1000 * 0.5 * stress_area("M20") / 1e3
-    xrows.append(("legacy calc.bolt-shear-capacity, M20 class 10.9, SF 1", "capacity (kN)", legacy, ec3, legacy / ec3 - 1.0, "FAIL", "P1-struct.connection-ec3-04 (gross area with thread alpha_v)"))
+    # F4 legacy picker (ADR-0169, revised in 499bfb01): gross area times 0.6 f_ub, the shank-in-plane case.
+    # The picker now offers 600 MPa for class 10.9 and 480 MPa for 8.8. At safety factor 1 the legacy module gives
+    # 0.6 f_ub pi d^2/4 (188.50 and 150.80 kN for M20). The shank case of this sheet gives the same at gamma_M2 = 1.
+    legacy = 600.0 * math.pi * 20 ** 2 / 4 / 1e3
+    ec3 = fv_rd("10.9", "M20", 1, threads=False, gm2=1.0)
+    xrows.append(("legacy calc.bolt-shear-capacity, M20 class 10.9, SF 1 (shank case)", "capacity (kN)", legacy, ec3, legacy / ec3 - 1.0,
+                  "PASS" if abs(legacy / ec3 - 1.0) < 1e-9 else "FAIL", "P1-struct.connection-ec3-04 fixed in 499bfb01"))
     legacy88 = 480.0 * math.pi * 20 ** 2 / 4 / 1e3
-    ec388 = fv_rd("8.8", "M20", gm2=1.0)
-    xrows.append(("legacy calc.bolt-shear-capacity, M20 class 8.8, SF 1", "capacity (kN)", legacy88, ec388, legacy88 / ec388 - 1.0, "FAIL", "same cause"))
+    ec388 = fv_rd("8.8", "M20", 1, threads=False, gm2=1.0)
+    xrows.append(("legacy calc.bolt-shear-capacity, M20 class 8.8, SF 1 (shank case)", "capacity (kN)", legacy88, ec388, legacy88 / ec388 - 1.0,
+                  "PASS" if abs(legacy88 / ec388 - 1.0) < 1e-9 else "FAIL", "same"))
     # R1 (independent review): M12 in a 2 mm clearance hole (the product default d_0 = 14 mm).
     # EN 1993-1-8 cl. 3.6.1(5) asks 0.85 x F_v,Rd for classes 4.8, 5.8, 6.8, 8.8, 10.9 (owner to confirm).
     fv12 = fv_rd("8.8", "M12")

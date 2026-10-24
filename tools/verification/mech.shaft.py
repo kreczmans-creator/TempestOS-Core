@@ -2,7 +2,7 @@
 """Independent re-derivation of mech.shaft (Track P, P1).
 
 Method sources (cited by title, edition and section only):
-  Budynas and Nisbett, Shigley's Mechanical Engineering Design, 11th ed.:
+  Budynas and Nisbett, Shigley's Mechanical Engineering Design, 10th ed. (the edition the sheet cites since v0.26.0):
     Sec. 6-9 (endurance limit S_e', Marin factors k_a to k_f, reliability factors),
     Sec. 6-10 (K_f = 1 + q (K_t - 1)), Sec. 6-12 (Goodman, Gerber, ASME-elliptic, Soderberg),
     Sec. 7-4 (DE-Goodman for shafts, first-cycle yield), Sec. 7-6 (Rayleigh and Dunkerley),
@@ -475,6 +475,13 @@ def extras():
     o_def = analyze(CASES["E6 torque span trap: L 800, T 1 kN*m, default x_T2 = 400 (section at 600 and 300)"])
     extra_rows.append(("E6 vs E7 section at 600 mm", "n_f", 7.0753, o_def["nf_sections"][0], abs(o_def["nf_sections"][0] - 7.0753) / 7.0753, "PASS", "product value 7.0753 (T = 0 used at 600 mm)"))
     extra_rows.append(("E6 vs E7 section at 600 mm", "n_f with torque", 2.695, o_cov["nf_sections"][0], abs(o_cov["nf_sections"][0] - 2.695) / 2.695, "PASS", "x_T2 = 800 covers the section"))
+    # v0.26.0 surface-factor override k_a (record shaft.marin): S_e = k_a k_b k_e S_e' with k_a typed in.
+    se_ovr = 0.758 * k_b(28.0) * k_e(99.0) * se_prime(600.0)
+    extra_rows.append(("E11 k_a override 0.758 (S_ut 600, d 28, R 99 %)", "S_e (MPa)", 160.6693758, se_ovr, abs(se_ovr - 160.6693758) / 160.6693758,
+                       "PASS" if abs(se_ovr - 160.6693758) <= 1e-6 * 160.67 else "FAIL", "product value from the probe"))
+    se_def = endurance(600.0, "machined or cold-drawn", 28.0, 99.0)
+    extra_rows.append(("E11 default k_a (machined, S_ut 600)", "S_e (MPa)", 175.4811054, se_def, abs(se_def - 175.4811054) / 175.4811054,
+                       "PASS" if abs(se_def - 175.4811054) <= 1e-6 * 175.48 else "FAIL", "product value from the probe"))
     for name, c, prod_nc, prod_ncd in CRIT:
         o = analyze(c)
         ex = o["n_c_exact"]

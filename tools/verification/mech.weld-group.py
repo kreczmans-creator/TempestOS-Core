@@ -10,7 +10,7 @@ Units inside the model: mm, kN, kN*mm. Force per unit length is reported in N/mm
 Model (rigid parts, elastic):
 - Each weld is a straight line of unit throat. Line properties include the own-axis term l*d^2/12.
 - In-plane: direct F/L_w plus torsion (T/J_u) times the radius, perpendicular to it.
-- Out-of-plane: F_z/L_w plus a plane-section law. It uses I_ux, I_uy and the product I_uxy, so the
+- Out-of-plane: F_z/L_w plus a plane-section law. F_z at (e_x, e_y) adds F_z(e_y - y_c) to M_x and F_z(e_x - x_c) to M_y. It uses I_ux, I_uy and the product I_uxy, so the
   distribution is in moment equilibrium for any layout.
 - The resultant f_r is the 3D vector sum. Its magnitude is convex along a line, so the maximum is at an end.
 - Throat a = 0.707 s, tau = f_r,max / a, s_req = f_r,max / (0.707 f_w), u = tau / f_w.
@@ -43,10 +43,13 @@ def weld(welds, s=6.0, f_w=220.0, F_x=0.0, F_y=0.0, F_z=0.0, e_x=0.0, e_y=0.0,
     Ju = Iux + Iuy
     T = F_y * (e_x - xc) - F_x * (e_y - yc) + M_z * 1e3          # kN*mm
     # Out-of-plane coefficients: f_z = F_z/Lw + c1 x' + c2 y'  (kN/mm)
+    # F_z acts at (e_x, e_y): its eccentricity about the centroid adds to the out-of-plane moments (v0.26.0, DA-17).
+    Mx_tot = M_x * 1e3 + F_z * (e_y - yc)       # kN*mm
+    My_tot = M_y * 1e3 + F_z * (e_x - xc)
     mat = np.array([[Iuy, Iuxy], [Iuxy, Iux]])
-    rhs = np.array([M_y * 1e3, M_x * 1e3])
+    rhs = np.array([My_tot, Mx_tot])
     if outofplane == "decoupled":
-        c = np.array([M_y * 1e3 / Iuy if Iuy > 1e-12 else 0.0, M_x * 1e3 / Iux if Iux > 1e-12 else 0.0])
+        c = np.array([My_tot / Iuy if Iuy > 1e-12 else 0.0, Mx_tot / Iux if Iux > 1e-12 else 0.0])
     elif abs(np.linalg.det(mat)) < 1e-9 * max(Iux * Iuy, 1.0):
         c = np.linalg.lstsq(mat, rhs, rcond=None)[0]
     else:
@@ -108,13 +111,13 @@ EXTRAS = [
     ('L-shape-in-plane', L, {'F_x': 5, 'F_y': -30, 'e_x': 200, 'e_y': -40, 'M_z': 1},
      {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': -3.35, 'f_r_max': 536.027907, 'tau': 126.362071, 's_req': 3.44623831, 'u': 0.574373052}),
     ('L-shape-Mx-only', L, {'F_z': 10, 'M_x': 5, 'F_y': 0, 'e_x': 0, 'e_y': 0},
-     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': 0.0, 'f_r_max': 1754.28571, 'tau': 413.551559, 's_req': 11.2786789, 'u': 1.87977982}),
+     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': 0.0, 'f_r_max': 1718.441558, 'tau': 405.1017347, 's_req': 11.04822913, 'u': 1.841371521}),
     ('L-shape-Mx-My', L, {'F_z': 10, 'M_x': 3, 'M_y': 4, 'F_y': 0, 'e_x': 0, 'e_y': 0},
-     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': 0.0, 'f_r_max': 777.662338, 'tau': 183.324455, 's_req': 4.99975786, 'u': 0.833292977}),
+     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': 0.0, 'f_r_max': 741.8181818, 'tau': 174.8746303, 's_req': 4.7693081, 'u': 0.7948846833}),
     ('C-section', C, {'F_y': -25, 'e_x': 180, 'e_y': 50, 's': 5, 'f_w': 180},
      {'L_w': 220.0, 'x_c': 16.3636364, 'y_c': 50.0, 'I_ux': 383333.333, 'I_uy': 85090.9091, 'J_u': 468424.242, 'T': -4.09090909, 'f_r_max': 659.873928, 'tau': 186.668721, 's_req': 5.18524225, 'u': 1.03704845}),
     ('trapezoid-3D', TRAP, {'F_x': -12, 'F_y': -40, 'F_z': 15, 'e_x': 300, 'e_y': 60, 'M_x': 2, 'M_z': -1},
-     {'L_w': 560.0, 'x_c': 100.0, 'y_c': 49.2857143, 'I_ux': 1327714.29, 'I_uy': 2266666.67, 'J_u': 3594380.95, 'T': -8.87142857, 'f_r_max': 352.136346, 'tau': 83.0118684, 's_req': 2.26396005, 'u': 0.377326674}),
+     {'L_w': 560.0, 'x_c': 100.0, 'y_c': 49.2857143, 'I_ux': 1327714.29, 'I_uy': 2266666.67, 'J_u': 3594380.95, 'T': -8.87142857, 'f_r_max': 357.7402997, 'tau': 84.3329325, 's_req': 2.299989068, 'u': 0.3833315114}),
     ('ring-48-torsion', RING, {'F_y': 0, 'e_x': 0, 'e_y': 0, 'M_z': 10, 's': 6},
      {'L_w': 627.870041, 'x_c': 2.89707947e-15, 'y_c': -1.33537257e-15, 'I_ux': 3130397.68, 'I_uy': 3130397.68, 'J_u': 6260795.36, 'T': 10.0, 'f_r_max': 159.724115, 'tau': 37.6530211, 's_req': 1.02690057, 'u': 0.171150096}),
     ('rect-60x140-torsion', RECT, {'F_y': 0, 'e_x': 30, 'e_y': 70, 'M_z': 4},
@@ -124,7 +127,7 @@ EXTRAS = [
     ('tiny-load', H2, {'F_y': -1e-06, 'e_x': 0, 'e_y': 0},
      {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.667, 'J_u': 291666.667, 'T': 5e-08, 'f_r_max': 1.4232042e-05, 'tau': 3.35503112e-06, 's_req': 9.15008489e-08, 'u': 1.52501415e-08}),
     ('large-4000mm-box', BIG, {'F_y': -90000, 'F_z': 5000, 'e_x': 1500, 'e_y': 0, 'M_x': 800, 'M_y': 500, 's': 25, 'f_w': 600},
-     {'L_w': 16000.0, 'x_c': 0.0, 'y_c': 0.0, 'I_ux': 42666666700.0, 'I_uy': 42666666700.0, 'J_u': 85333333300.0, 'T': -135000.0, 'f_r_max': 9348.70936, 'tau': 528.922736, 's_req': 22.0384473, 'u': 0.881537894}),
+     {'L_w': 16000.0, 'x_c': 0.0, 'y_c': 0.0, 'I_ux': 42666666700.0, 'I_uy': 42666666700.0, 'J_u': 85333333300.0, 'T': -135000.0, 'f_r_max': 9369.340219, 'tau': 530.0899699, 's_req': 22.087082080000002, 'u': 0.8834832832}),
     ('zero-length-row', H2Z, {'F_y': -10, 'e_x': 50, 'e_y': 40, 'M_x': 1},
      {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.667, 'J_u': 291666.667, 'T': 0.0, 'f_r_max': 206.155281, 'tau': 48.5986047, 's_req': 1.32541649, 'u': 0.220902749}),
     ('leg-3mm', H2, {'F_y': -10, 'e_x': 50, 'e_y': 40, 's': 3},
