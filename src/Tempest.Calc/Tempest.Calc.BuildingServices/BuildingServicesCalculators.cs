@@ -11,6 +11,7 @@ public static class BuildingServicesCalculators
         new PsychrometricsCalculator(),
         new HeatExchangerCalculator(),
         new SealedSystemCalculator(),
+        new RoomHeatLossCalculator(),
         new DuctSizingCalculator(),
     ];
 }
