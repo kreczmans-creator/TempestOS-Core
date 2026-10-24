@@ -81,6 +81,10 @@ public sealed partial class CalcInstanceService
         if (ValidatePackTemplate(template) is { } invalid)
             return (null, invalid);
 
+        // Run the whole chain in memory first, so a refusal leaves no stray drafts behind.
+        if (DryRunRefusal(template, inputs, cancellationToken) is { } refused)
+            return (null, refused);
+
         var created = new Dictionary<string, CalcInstance>(StringComparer.Ordinal);
 
         foreach (var step in template.Steps)
@@ -123,6 +127,61 @@ public sealed partial class CalcInstanceService
             members[key] = await _store.FindInstanceAsync(instance.Id, cancellationToken).ConfigureAwait(false) ?? instance;
 
         return (new CalcPackInstantiation(pack, members), null);
+    }
+
+    /// <summary>
+    /// The refusal instantiating <paramref name="template"/> would meet, found by running every step in memory with its
+    /// linked values (nothing is stored); <see langword="null"/> when every link can be bound.
+    /// </summary>
+    private string? DryRunRefusal(CalcPackTemplate template, IReadOnlyDictionary<string, IReadOnlyList<CalcInputValue>>? inputs, CancellationToken cancellationToken)
+    {
+        var runs = new Dictionary<string, CalcInstance>(StringComparer.Ordinal);
+
+        foreach (var step in template.Steps)
+        {
+            var entry = _catalogue.Get(step.TemplateId);
+            var values = (inputs is not null && inputs.TryGetValue(step.Key, out var given) ? given : DefaultInputs(entry.Template)).ToList();
+
+            foreach (var b in template.Bindings.Where(b => string.Equals(b.ToStep, step.Key, StringComparison.Ordinal)))
+            {
+                var upstream = runs[b.FromStep];
+
+                if (upstream.Blocks is { Count: > 0 } blocks)
+                    return $"Step '{b.FromStep}' is blocked, so '{step.Key}' cannot take '{b.Output}' from it: {blocks[0].Message}";
+
+                if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, b.Output, StringComparison.Ordinal)) is not { Si: { } } output)
+                    return $"Step '{step.Key}': '{step.Name}' cannot take '{b.Output}': '{upstream.Name}' gives no numeric output '{b.Output}'.";
+
+                var spec = entry.Template.FindInput(b.Input)!;
+
+                if (b.Row is { } row && b.Column is { } column)
+                {
+                    var index = values.FindIndex(v => string.Equals(v.Symbol, b.Input, StringComparison.Ordinal));
+                    var columnSpec = spec.Columns!.First(c => string.Equals(c.Key, column, StringComparison.Ordinal));
+
+                    if (index < 0 || values[index].Rows is not { } rows || row >= rows.Count)
+                        return $"Step '{step.Key}': '{b.Input}' of '{step.Name}' has {(index < 0 ? 0 : values[index].Rows?.Count ?? 0)} row(s); there is no row {row + 1} to link (a link never creates rows).";
+
+                    if (ConvertFor(columnSpec.Kind, columnSpec.DefaultUnit, output) is not { } cell)
+                        return $"Step '{step.Key}': '{upstream.Name}'.{b.Output} cannot feed '{CellLabel(b.Input, row, column)}': the dimensions differ.";
+
+                    values[index] = WithCell(values[index], row, column, new CalcCell(cell.Number, cell.Unit));
+                    continue;
+                }
+
+                if (ValueFor(spec, output) is not { } value)
+                    return $"Step '{step.Key}': '{upstream.Name}'.{b.Output} cannot feed '{b.Input}': the dimensions differ.";
+
+                values.RemoveAll(v => string.Equals(v.Symbol, b.Input, StringComparison.Ordinal));
+                values.Add(value);
+            }
+
+            var stub = new CalcInstance(Guid.Empty, entry.Reference, entry.ContentHash, null, step.Name, "A", values, [], [], [], [],
+                CalcInstanceStatus.Draft, null, null, string.Empty, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch);
+            runs[step.Key] = Snapshot(stub, CalcRunner.Run(entry.Calculator, new CalcInputSet(values), _engine, cancellationToken: cancellationToken));
+        }
+
+        return null;
     }
 
     /// <summary>
