@@ -8,7 +8,7 @@ The formulas reproduce all five KATs. Two High findings concern what the model l
 ## Method re-derived
 - Loop impedance: Z_s = Z_e + ρ₂₀·L·(1/S_line + 1/S_cpc)·[1 + α(θ − 20)]. Units: ρ in Ω·mm, L in m, S in mm². Source: BS 7671:2018+A2:2022 reg. 411.4.4 and the usual hot-conductor multiplier.
 - Fault current: I_f = C_min·U₀/Z_s. Z_s,max = C_min·U₀/I_a, with C_min = 0.95 (BS 7671 reg. 411.4.4).
-- MCB trip current I_a = 5, 10, 20 × I_n for types B, C, D (BS EN 60898-1 upper limit of the instantaneous band).
+- MCB trip current I_a = 5, 10, 20 × I_n for types B, C, D. These are the upper limits of the instantaneous band in BS EN 60898-1.
 - Fuse or MCCB: I_a at t_req and t_d at I_f by log-log interpolation of user points, without extrapolation.
 - Adiabatic: S_min = √(I²t)/k (BS 7671 reg. 543.1.3 and 434.5.2). I²t = I_f²·t_d from the curve, or I_f²·0.1 s for an MCB.
 - k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))] (IEC 60364-5-54 Annex A). My values: 114.84 (PVC, 70 to 160 °C), 142.87 (XLPE, 90 to 250 °C), 76.09 (aluminium).
@@ -90,5 +90,5 @@ The product also blocks a curve that does not bracket t_req, and blocks θ_f not
 - Enter 20 m, 2.5/1.5 mm², Z_e 0.35 Ω, B32. Expect Z_s 0.790 Ω, I_f 276.6 A, Z_s,max 1.3656 Ω, S_min 0.762 mm². Compare Z_s with your own table of R₁+R₂ values in mΩ/m. Expect about 3.6 % difference (finding 01).
 - Select D32 on the same circuit. Expect Z_s,max 0.3414 Ω and the loop check to fail with u_Zs 2.31.
 - Enter 90 000 A²s as I2t_let, and add S_r 500 kVA, u_k 5 %. Expect S_min 2.612 mm² and both conductor checks to fail (findings 02, 03).
-- Use the fuse points (5 s, 120 A), (0.4 s, 220 A), (0.1 s, 320 A), (0.01 s, 700 A). Expect I_a 220 A, t_d 0.1716 s, S_min 0.9975 mm².
+- Use the fuse points (5 s, 120 A), (0.4 s, 220 A), (0.1 s, 320 A) and (0.01 s, 700 A). Expect I_a 220 A, t_d 0.1716 s and S_min 0.9975 mm².
 - Set 500 kVA, 5 %, I_cn 25 kA. Expect Z_T 0.01587 Ω, I_k3 15.942 kA, u_Icn 0.638.

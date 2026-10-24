@@ -125,7 +125,7 @@ R60228 = {1.5: 12.1, 2.5: 7.41, 6: 3.08, 16: 1.15, 35: 0.524, 50: 0.387, 95: 0.1
 txt = ", ".join(f"{a} mm2: {100 * (0.01724 * 1000 / a / r - 1):+.1f} %" for a, r in R60228.items())
 finding("P1-elec.voltage-drop-01", "Product R (rho 0.01724) against class 2 maximum R at 20 degC: " + txt)
 t = vdrop("3ph", 400, 1, 1000, 1.0, data="res", A_c=35, T_c=70, X_km=0)
-finding("P1-elec.voltage-drop-01", f"35 mm2 three-phase at 70 degC, cos phi 1, X 0: {t['dV'] * 1000:.4f} mV/A/m (product 1.0208) "
+finding("P1-elec.voltage-drop-01", f"35 mm2 three-phase at 70 degC, cos phi 1, X 0: {t['dV']:.4f} mV/A/m (product 1.0208) "
         "against about 1.1 mV/A/m in the BS 7671 Appendix 4 table for 35 mm2 copper (value from memory).")
 # F02: blank A_c and rho_20 are replaced by 35 mm2 and copper without a notice (probe: run without A_c).
 finding("P1-elec.voltage-drop-02", "Resistivity route with A_c and rho_20 left blank gives the KAT three-phase answer (R 0.04715 ohm) with no notice.")
