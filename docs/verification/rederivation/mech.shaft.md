@@ -6,7 +6,7 @@ Verdict: MATCH WITH FINDINGS
 The three known-answer cases agree with my own derivation. The weak points are the critical-speed quotient, the shoulder side, and two silent input traps.
 
 ## Method re-derived
-- Beam: Euler-Bernoulli finite elements with piecewise-constant EI, pin at A, roller at B, one solve per plane, vector sum of M, slope and deflection. Units mm, N, MPa.
+- Beam: Euler-Bernoulli finite elements with piecewise-constant EI. Pin at A, roller at B, one solve per plane. M, slope and deflection add as vectors. Units mm, N, MPa.
 - Stress: σ_a = K_f 32 M d/(π(d⁴ − d_i⁴)) and τ_m = K_fs 16 T d/(π(d⁴ − d_i⁴)), with K_f = 1 + q(K_t − 1). Source: Shigley 11th ed., §6-10 and §7-4.
 - Endurance: S_e′ = 0.5 S_ut up to 1400 MPa, else 700 MPa. Source: Shigley 11th ed., §6-9.
 - Marin factors: k_a = a S_ut^b with (a, b) = (1.58, −0.085) ground, (4.51, −0.265) machined, (57.7, −0.718) hot-rolled, (272, −0.995) forged. Source: Shigley 11th ed., Table 6-2, MPa form.
@@ -36,7 +36,7 @@ All 11 KAT values (3 of 3 cases) agree with physics and with the Shigley relatio
 For the same stresses, the other criteria give n_f = 1.892 (Gerber), 1.902 (ASME) and 1.581 (Soderberg). Goodman (1.650) lies between them.
 
 ## Extra probes (product vs independent)
-All rows use the Probe tool. "Product" values are hard-coded in the script. Rows E1 to E10 agree to 1e-9 or better unless a finding is named.
+All rows use the Probe tool. "Product" values are hard-coded in the script. Rows E1 to E10 agree to 1e-6 or better unless a finding is named.
 | Probe | Inputs (short) | Symbol | Product | Independent | Rel. diff | Result |
 |---|---|---|---|---|---|---|
 | E1 | stepped Ø25/30/40/30/25, two planes, ground, R 95 %, 3 sections | n_f_min / n_y_min | 1.23245 / 1.77198 | same | 3e-10 | PASS |
@@ -94,4 +94,4 @@ All rows use the Probe tool. "Product" values are hard-coded in the script. Rows
 - Enter the Shigley shoulder data (Ø28, 142.4 N·m, 124.3 N·m, 735/574, R 99 %, K_t 1.68, K_ts 1.42, q 0.85, q_s 0.92). Expect S_e 203.7 MPa, n_f 1.650, n_y 4.586. My Gerber, ASME and Soderberg values are 1.89, 1.90 and 1.58. Compare them with the book.
 - Try the overhang: Ø40 × 700 mm, bearings at 100 and 500 mm, 5 kg at 700 mm, ρ 7850. Expect the product at 7977 rpm and Dunkerley at 7004 rpm. An exact solution gives 7190 rpm.
 - Try L = 800 mm with T = 1 kN·m and a section at 600 mm. Check the torque shown in the section line.
-- Press a key test: Ø50, 14×9×40, T 1.2 kN·m. Expect 85.71 MPa shear and 266.67 MPa bearing.
+- Run a key test: Ø50, 14×9×40, T 1.2 kN·m. Expect 85.71 MPa shear and 266.67 MPa bearing.

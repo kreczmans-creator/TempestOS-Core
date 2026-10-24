@@ -82,7 +82,56 @@ for sym, exp, tol in [("L_10", 535.3873, 1e-6), ("L_10h", 5948.748, 1e-6), ("s_0
 n_kat = len(rows)
 
 # ---------------------------------------------------------------- extra checks
-EXTRAS = []   # filled after probing the product
+# Product values come from the Probe tool (C# calculator): (name, inputs, outputs). Hours are converted from seconds.
+EXTRAS = [
+    ('ball-R97-aiso1.5', {'type': 'ball', 'F_r': 2, 'R': 97, 'a_iso': 1.5},
+     {'P': 2.0, 'L_10': 1000.0, 'L_10h': 16666.6667, 'a_1': 0.465353059, 'L_nm': 698.029588, 'L_nmh': 11633.8265, 'P_0': 2.0, 's_0': 5.5, 'u_life': 1.71912483, 'u_s0': 0.181818182}),
+    ('roller-axial-above-e', {'type': 'roller', 'F_r': 10, 'F_a': 6, 'e_lim': 0.4, 'X': 0.4, 'Y': 1.5, 'C': 90, 'C_0': 100, 'n': 300, 'R': 95, 'a_iso': 2.2, 'L_req': 50000, 's_0_req': 2},
+     {'P': 13.0, 'L_10': 632.40776, 'L_10h': 35133.7644, 'a_1': 0.637911663, 'L_nm': 887.524629, 'L_nmh': 49306.9238, 'P_0': 10.0, 's_0': 10.0, 'u_life': 1.01405637, 'u_s0': 0.2}),
+    ('ratio-equals-e', {'F_r': 10, 'F_a': 3, 'e_lim': 0.3, 'X': 0.56, 'Y': 1.5, 'C': 40, 'C_0': 30},
+     {'P': 10.0, 'L_10': 64.0, 'L_10h': 1066.66667, 'a_1': 1.0, 'L_nm': 64.0, 'L_nmh': 1066.66667, 'P_0': 10.0, 's_0': 3.0, 'u_life': 18.75, 'u_s0': 0.333333333}),
+    ('ratio-just-above-e', {'F_r': 10, 'F_a': 3.0001, 'e_lim': 0.3, 'X': 0.56, 'Y': 1.5, 'C': 40, 'C_0': 30},
+     {'P': 10.10015, 'L_10': 62.1150019, 'L_10h': 1035.25003, 'a_1': 1.0, 'L_nm': 62.1150019, 'L_nmh': 1035.25003, 'P_0': 10.0, 's_0': 3.0, 'u_life': 19.3190045, 'u_s0': 0.333333333}),
+    ('duty-mixed-branches', {'duty': [(4, 0.5, 0.2), (2, 2, 0.5), (0, 3, 0.3)], 'e_lim': 0.3, 'X': 0.56, 'Y': 1.5, 'C': 40, 'C_0': 30, 'n': 750, 'R': 96, 'a_iso': 1.2},
+     {'P': 4.219126, 'L_10': 852.143015, 'L_10h': 18936.5114, 'a_1': 0.554895105, 'L_nm': 567.419985, 'L_nmh': 12609.333, 'P_0': 4.0, 's_0': 7.5, 'u_life': 1.58612672, 'u_s0': 0.133333333}),
+    ('P-equals-0.5C', {'F_r': 10, 'C': 20},
+     {'P': 10.0, 'L_10': 8.0, 'L_10h': 133.333333, 'a_1': 1.0, 'L_nm': 8.0, 'L_nmh': 133.333333, 'P_0': 10.0, 's_0': 1.1, 'u_life': 150.0, 'u_s0': 0.909090909}),
+    ('P-just-above-0.5C', {'F_r': 10.001, 'C': 20},
+     {'P': 10.001, 'L_10': 7.99760048, 'L_10h': 133.293341, 'a_1': 1.0, 'L_nm': 7.99760048, 'L_nmh': 133.293341, 'P_0': 10.001, 's_0': 1.09989001, 'u_life': 150.045005, 'u_s0': 0.909181818}),
+    ('light-load-limit', {'F_r': 0.002, 'C': 20},
+     {'P': 0.002, 'L_10': 1000000000000.0, 'L_10h': 16666666700000.0, 'a_1': 1.0, 'L_nm': 1000000000000.0, 'L_nmh': 16666666700000.0, 'P_0': 0.002, 's_0': 5500.0, 'u_life': 1.2e-09, 'u_s0': 0.000181818182}),
+    ('R-99.95-aiso-50', {'R': 99.95, 'a_iso': 50},
+     {'P': 2.0, 'L_10': 1000.0, 'L_10h': 16666.6667, 'a_1': 0.0768322699, 'L_nm': 3841.6135, 'L_nmh': 64026.8916, 'P_0': 2.0, 's_0': 5.5, 'u_life': 0.312368749, 'u_s0': 0.181818182}),
+    ('n-1-rpm', {'n': 1, 'F_r': 1, 'C': 20},
+     {'P': 1.0, 'L_10': 8000.0, 'L_10h': 133333333.0, 'a_1': 1.0, 'L_nm': 8000.0, 'L_nmh': 133333333.0, 'P_0': 1.0, 's_0': 11.0, 'u_life': 0.00015, 'u_s0': 0.0909090909}),
+    ('n-50000-rpm', {'n': 50000, 'F_r': 5, 'C': 20},
+     {'P': 5.0, 'L_10': 64.0, 'L_10h': 21.3333333, 'a_1': 1.0, 'L_nm': 64.0, 'L_nmh': 21.3333333, 'P_0': 5.0, 's_0': 2.2, 'u_life': 937.5, 'u_s0': 0.454545455}),
+    ('duty-U-not-normalised', {'duty': [(2, 0, 0.2), (4, 0, 0.2)], 'C': 25, 'C_0': 15},
+     {'P': 3.30192725, 'L_10': 434.027778, 'L_10h': 7233.7963, 'a_1': 1.0, 'L_nm': 434.027778, 'L_nmh': 7233.7963, 'P_0': 4.0, 's_0': 3.75, 'u_life': 2.7648, 'u_s0': 0.266666667}),
+    ('thrust-Fr-zero', {'F_r': 0, 'F_a': 5, 'e_lim': 0.3, 'X': 0.56, 'Y': 1.2, 'C': 30, 'C_0': 40},
+     {'P': 6.0, 'L_10': 125.0, 'L_10h': 2083.33333, 'a_1': 1.0, 'L_nm': 125.0, 'L_nmh': 2083.33333, 'P_0': 2.5, 's_0': 16.0, 'u_life': 9.6, 'u_s0': 0.0625}),
+    ('default-factors-Fa-4', {'F_r': 2, 'F_a': 4},
+     {'P': 2.0, 'L_10': 1000.0, 'L_10h': 16666.6667, 'a_1': 1.0, 'L_nm': 1000.0, 'L_nmh': 16666.6667, 'P_0': 3.2, 's_0': 3.4375, 'u_life': 1.2, 'u_s0': 0.290909091}),
+]
+
+for name, kw, prod in EXTRAS:
+    kw = dict(kw)
+    if "type" in kw:
+        kw["type_"] = kw.pop("type")
+    ind = bearing(**kw)
+    for sym, pv in prod.items():
+        check("EXTRA", name, sym, pv, ind[sym], 1e-6)
+
+# Behaviour notes from probes (no row, no effect on the exit code).
+# 1. Defaults X = 1, Y = 0, e_lim = 0.3 make F_a drop out of P. F_r 2 kN, F_a 4 kN gave P = 2 kN.
+#    With ball factors X 0.56, Y 1.5 the same load gives P = 7.12 kN and a life ratio of (7.12/2)^3 = 45.
+p_default = bearing(F_r=2, F_a=4)["P"]
+p_ball = bearing(F_r=2, F_a=4, e_lim=0.3, X=0.56, Y=1.5)["P"]
+print(f"note  default factors: P {p_default:.3f} kN; ball factors: P {p_ball:.3f} kN; life ratio {(p_ball / p_default) ** 3:.1f}")
+# 2. Double-row bearing, F_a/F_r <= e: ISO 281:2007 Table 3 uses P = F_r + Y_1 F_a. The product has no Y_1.
+fr, fa, y1 = 10.0, 1.9, 3.3
+print(f"note  double row, F_a/F_r = 0.19 <= e: P = F_r + Y_1 F_a = {fr + y1 * fa:.2f} kN; product gives {fr:.2f} kN; "
+      f"life overstated by {((fr + y1 * fa) / fr) ** 3:.2f}x")
 
 # ---------------------------------------------------------------- report
 print(f"{'kind':6} {'case':24} {'symbol':10} {'expected':>13} {'independent':>13} {'rel.diff':>10} {'tol':>7}  result")
