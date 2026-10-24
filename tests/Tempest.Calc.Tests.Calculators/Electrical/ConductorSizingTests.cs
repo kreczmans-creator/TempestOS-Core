@@ -4,12 +4,12 @@ using Tempest.Calc.Sheets;
 
 namespace Tempest.Calc.Tests.Calculators.Electrical;
 
-/// <summary>E4 behaviour. The tables used here are illustrative test values, not from any standard.</summary>
+/// <summary>E4 behaviour. The capacities and factors used here are synthetic values invented for these tests, not taken from any table; the ratings are the typical preferred series.</summary>
 public sealed class ConductorSizingTests
 {
     private static readonly ConductorSizingCalculator Sizing = new();
 
-    /// <summary>The first known-answer case: 7.5 kW three-phase, type C MCB, C_a 0.94, C_g 0.8, illustrative tables.</summary>
+    /// <summary>The first known-answer case: 7.5 kW three-phase, type C MCB, θ_a 35 °C with C_a 0.91, two circuits with C_g 0.77, synthetic tables.</summary>
     private static CalcInputSet Defaults() => CalcTemplateHasher.DefaultInputs(Sizing.Template);
 
     private static CalcRunResult Run(params CalcInputValue[] overrides) => CalcRunner.Run(Sizing, overrides.Aggregate(Defaults(), (set, v) => set.With(v)));
@@ -95,10 +95,10 @@ public sealed class ConductorSizingTests
     public void A_Linked_Design_Current_Replaces_The_Computed_One()
     {
         var computed = Run();
-        var linked = Run(Q("I_b_in", 30, "A"), Q("P", 1, "kW"));
-        Assert.Equal(30, linked.OutputSi("I_b"), 9);
+        var linked = Run(Q("I_b_in", 22, "A"), Q("P", 1, "kW"));
+        Assert.Equal(22, linked.OutputSi("I_b"), 9);
         Assert.NotEqual(computed.OutputSi("I_b"), linked.OutputSi("I_b"));
-        Assert.Equal(32, linked.OutputSi("I_n"), 9);
+        Assert.Equal(25, linked.OutputSi("I_n"), 9);
     }
 
     [Theory]
@@ -136,10 +136,40 @@ public sealed class ConductorSizingTests
         var withI2 = Run(Choice("device", ConductorSizingCalculator.Mccb), Q("I2", 24, "A"));
         Assert.DoesNotContain(withI2.Warnings, w => w.RuleId == "I2");
         Assert.Equal(3, withI2.Checks.Count);
-        Assert.Equal(24 / (1.45 * 21.056), withI2.OutputSi("u_I2"), 9);
+        Assert.Equal(24 / (1.45 * (24.1 * 0.91 * 0.77)), withI2.OutputSi("u_I2"), 9);
 
         var tooHigh = Run(Choice("device", ConductorSizingCalculator.Mpcb), Q("I2", 40, "A"));
         Assert.Contains(tooHigh.Checks, c => c.Name.Contains("1.45", StringComparison.Ordinal) && !c.Passed);
+    }
+
+    [Fact]
+    public void A_Gg_Fuse_Shows_No_I2_And_Is_A_Deemed_Condition()
+    {
+        var r = Run(Choice("device", ConductorSizingCalculator.GgFuse));
+        Assert.Null(r.FindOutput("I2"));
+        Assert.Null(r.FindOutput("u_I2"));
+        var check = Assert.Single(r.Checks, c => c.Name.Contains("deemed", StringComparison.Ordinal));
+        Assert.True(check.Passed);
+        Assert.Contains("433.1.201", check.Clause, StringComparison.Ordinal);
+        Assert.Equal(3, r.Checks.Count);
+    }
+
+    [Fact]
+    public void A_Semi_Enclosed_Fuse_Defaults_To_Twice_The_Rating_For_I2()
+    {
+        var r = Run(Choice("device", ConductorSizingCalculator.SemiEnclosed));
+        Assert.Equal(2 * r.OutputSi("I_n"), r.OutputSi("I2"), 9);
+        Assert.DoesNotContain(r.Warnings, w => w.RuleId == "I2");
+        Assert.Equal(3, r.Checks.Count);
+        Assert.Equal(24, Run(Choice("device", ConductorSizingCalculator.SemiEnclosed), Q("I2", 24, "A")).OutputSi("I2"), 9);
+    }
+
+    [Fact]
+    public void A_Fractional_Awg_Gauge_Blocks()
+    {
+        var r = Run(Q("I_b_in", 25, "A"), Choice("system", ConductorSizingCalculator.Awg), ConductorSizingCalculator.AwgAmpacity((10.5, 26.3)));
+        var block = Assert.Single(r.Blocks);
+        Assert.Equal("ampacity: AWG gauge must be a whole number.", block.Message);
     }
 
     [Fact]

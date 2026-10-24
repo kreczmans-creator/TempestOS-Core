@@ -1,30 +1,30 @@
 [
   {
     "Symbol": "C_a",
-    "Number": 0.9,
+    "Number": 0.91,
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "record: owner\u0027s licensed table (not shipped); 0.9 is an illustrative value, not from any standard",
+      "Reference": "record: owner\u0027s licensed table (not shipped); 0.91 is a synthetic value invented for this example",
       "IsSufficientToIssue": true
     },
-    "ValueText": "0.9"
+    "ValueText": "0.91"
   },
   {
     "Symbol": "C_g",
-    "Number": 0.8,
+    "Number": 0.77,
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "record: owner\u0027s licensed table (not shipped); 0.8 is an illustrative value, not from any standard",
+      "Reference": "record: owner\u0027s licensed table (not shipped); 0.77 is a synthetic value invented for this example",
       "IsSufficientToIssue": true
     },
-    "ValueText": "0.8"
+    "ValueText": "0.77"
   },
   {
     "Symbol": "C_i",
     "Number": 1,
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "record: owner\u0027s licensed table (not shipped); 1 is an illustrative value, not from any standard",
+      "Reference": "record: owner\u0027s licensed table (not shipped); 1 is a neutral value for this example",
       "IsSufficientToIssue": true
     },
     "ValueText": "1"
@@ -58,7 +58,7 @@
     "Unit": "kW",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "Motor schedule MS-04: conveyor drive 4 kW input",
+      "Reference": "Motor schedule MS-04: conveyor drive 4 kW rated output",
       "IsSufficientToIssue": true
     },
     "ValueText": "4"
@@ -84,7 +84,7 @@
             "Unit": "mm^2"
           },
           "I_t": {
-            "Number": 15,
+            "Number": 12.3,
             "Unit": "A"
           }
         }
@@ -96,7 +96,7 @@
             "Unit": "mm^2"
           },
           "I_t": {
-            "Number": 21,
+            "Number": 17.7,
             "Unit": "A"
           }
         }
@@ -108,7 +108,7 @@
             "Unit": "mm^2"
           },
           "I_t": {
-            "Number": 28,
+            "Number": 24.1,
             "Unit": "A"
           }
         }
@@ -120,7 +120,7 @@
             "Unit": "mm^2"
           },
           "I_t": {
-            "Number": 36,
+            "Number": 31.9,
             "Unit": "A"
           }
         }
@@ -132,7 +132,7 @@
             "Unit": "mm^2"
           },
           "I_t": {
-            "Number": 50,
+            "Number": 44.6,
             "Unit": "A"
           }
         }
@@ -140,7 +140,7 @@
     ],
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "record: owner\u0027s licensed table (not shipped); capacities are illustrative test values, not from any standard",
+      "Reference": "record: owner\u0027s licensed table (not shipped); capacities are synthetic values invented for this example",
       "IsSufficientToIssue": true
     },
     "ValueText": "5 row(s)"
@@ -295,7 +295,7 @@
     ],
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "record: owner\u0027s licensed table (not shipped); ratings are illustrative test values, not from any standard",
+      "Reference": "record: owner\u0027s licensed table (not shipped); ratings are the typical preferred series",
       "IsSufficientToIssue": true
     },
     "ValueText": "9 row(s)"

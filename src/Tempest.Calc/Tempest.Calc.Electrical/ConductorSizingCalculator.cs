@@ -61,11 +61,11 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         "Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table)\n" +
         "Conductor: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived)\n" +
         "Carrying capacity: I_z = I_t·C_a·C_g·C_i\n" +
-        "Coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D and gG fuses, otherwise the device's I₂ from its datasheet",
+        "Coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; for a gG fuse the I₂ condition is deemed satisfied when I_n ≤ I_z; I₂ = 2·I_n by default for a semi-enclosed fuse; otherwise the device's I₂ from its datasheet",
         [
             new CalcInputSpec("context", "Design context (changes clause citations and the scope note only)", CalcInputKind.Choice, Choices: [ContextMachine, ContextInstallation], DefaultChoice: ContextMachine, Group: "Context"),
             new CalcInputSpec("supply", "Supply", CalcInputKind.Choice, Choices: [ThreePhase, SinglePhase, Dc], DefaultChoice: ThreePhase, Group: "Load"),
-            new CalcInputSpec("P", "Electrical input power", CalcInputKind.Quantity, "kW", Default: 7.5, Min: 0.01, Max: 500, HardMin: 0.01, HardMax: 500, Group: "Load"),
+            new CalcInputSpec("P", "Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied)", CalcInputKind.Quantity, "kW", Default: 7.5, Min: 0.01, Max: 500, HardMin: 0.01, HardMax: 500, Group: "Load"),
             new CalcInputSpec("U", "Supply voltage (line voltage for three-phase)", CalcInputKind.Quantity, "V", Default: 400, Min: 12, Max: 1000, HardMin: 12, HardMax: 1000, Group: "Load"),
             new CalcInputSpec("cos_phi", "Power factor (not used for DC)", CalcInputKind.Number, Default: 0.85, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Load"),
             new CalcInputSpec("eta", "Efficiency (not used for DC)", CalcInputKind.Number, Default: 0.9, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Load"),
@@ -78,7 +78,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             new CalcInputSpec("N_g", "Grouped circuits", CalcInputKind.Number, Default: 1, Min: 1, Max: 20, HardMin: 1, HardMax: 20, Group: "Cable"),
             new CalcInputSpec("system", "Conductor system (AWG: geometry only, no AWG capacities are supplied)", CalcInputKind.Choice, Choices: [Metric, Awg], DefaultChoice: Metric, Group: "Cable"),
             new CalcInputSpec("device", "Protective device", CalcInputKind.Choice, Choices: [McbB, McbC, McbD, GgFuse, SemiEnclosed, Mccb, Mpcb], DefaultChoice: McbC, Group: "Device"),
-            new CalcInputSpec("I2", "Conventional operating current I₂ (devices other than MCB and gG)", CalcInputKind.Quantity, "A", Min: 0.1, Max: 100000, HardMin: 0.1, HardMax: 100000, IsOptional: true, Group: "Device"),
+            new CalcInputSpec("I2", "Conventional operating current I₂ (MCCB, MPCB; a semi-enclosed fuse defaults to 2 I_n)", CalcInputKind.Quantity, "A", Min: 0.1, Max: 100000, HardMin: 0.1, HardMax: 100000, IsOptional: true, Group: "Device"),
             new CalcInputSpec("C_a", "Ambient correction factor", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1.5, HardMin: 0.1, HardMax: 1.5, Group: "Correction factors"),
             new CalcInputSpec("C_g", "Grouping correction factor", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1.5, HardMin: 0.1, HardMax: 1.5, Group: "Correction factors"),
             new CalcInputSpec("C_i", "Thermal insulation correction factor", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1.5, HardMin: 0.1, HardMax: 1.5, Group: "Correction factors"),
@@ -101,40 +101,41 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             new CalcClauseRef("BS 7671:2018 (as amended)", "reg. 523.1", "Current-carrying capacity of a cable"),
             new CalcClauseRef("BS EN 60204-1:2018", "cl. 12.4", "Current-carrying capacity of conductors and cables in normal service"),
             new CalcClauseRef("BS EN 60204-1:2018", "cl. 7.2", "Overcurrent protection"),
-            new CalcClauseRef("BS EN 60898-1", "cl. 3", "Circuit-breakers for overcurrent protection: conventional operating current"),
+            new CalcClauseRef("BS EN 60898-1", "clause number to be checked", "Circuit-breakers for overcurrent protection: conventional tripping current"),
+            new CalcClauseRef("BS 7671:2018 (as amended)", "reg. 433.1.201, 433.1.202", "Overload protection by gG fuses and semi-enclosed fuses: deemed conditions"),
         ],
         [
             new CalcApplicabilityRule("ampacity", "The ampacity record must hold at least one usable row.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("I_n", "A preferred rating of at least I_b must be in the ratings record.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("CSA", "A conductor in the ampacity record must carry I_t,req.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("I2", "For a device other than an MCB or gG fuse, I₂ is needed for the I₂ ≤ 1.45 I_z check; without it the check is skipped.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("I2", "For an MCCB or MPCB, I₂ is needed for the I₂ ≤ 1.45 I_z check; without it the check is skipped.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("C_g", "More than one grouped circuit with C_g = 1 is probably a missing grouping factor.", CalcNoticeSeverity.Warning),
         ],
         [
-            new CalcTestCase("ka-three-phase-mcb-c", "Three-phase 7.5 kW load on a type C MCB, C_a 0.94, C_g 0.8",
-                new CalcReferenceSource("Analytic (illustrative test values, not from any standard)", null, "I_b = 7500/(√3·400·0.85·0.9) = 14.15074 A; I_n = 16 A; I_t,req = 16/(0.94·0.8) = 21.27660 A; the illustrative table (1.5→15, 2.5→21, 4→28, 6→36, 10→50 A) gives 4 mm² (28 A); I_z = 28·0.94·0.8 = 21.056 A"),
-                [Choice("supply", ThreePhase), Q("P", 7.5, "kW"), Q("U", 400, "V"), N("cos_phi", 0.85), N("eta", 0.9), Choice("device", McbC), N("C_a", 0.94), N("C_g", 0.8), N("C_i", 1), IllustrativeRatings(), IllustrativeAmpacity()],
-                [new CalcExpectedValue("I_b", 14.15074189, "A", 1e-6), new CalcExpectedValue("I_n", 16, "A", 1e-9), new CalcExpectedValue("I_t_req", 21.27659574, "A", 1e-6), new CalcExpectedValue("CSA", 4, "mm^2", 1e-9), new CalcExpectedValue("I_z", 21.056, "A", 1e-9), new CalcExpectedValue("u_Ib", 0.8844213682, "", 1e-6), new CalcExpectedValue("u_In", 0.7598784195, "", 1e-6)]),
-            new CalcTestCase("ka-single-phase", "Single-phase 3 kW load on a type B MCB",
-                new CalcReferenceSource("Analytic (illustrative test values, not from any standard)", null, "I_b = 3000/(230·0.95·0.9) = 15.25553 A; I_n = 16 A; factors 1 so I_t,req = 16 A; the illustrative table gives 2.5 mm² (21 A); I_z = 21 A"),
-                [Choice("supply", SinglePhase), Q("P", 3, "kW"), Q("U", 230, "V"), N("cos_phi", 0.95), N("eta", 0.9), Choice("device", McbB), IllustrativeRatings(), IllustrativeAmpacity()],
-                [new CalcExpectedValue("I_b", 15.25553013, "A", 1e-6), new CalcExpectedValue("I_n", 16, "A", 1e-9), new CalcExpectedValue("I_t_req", 16, "A", 1e-9), new CalcExpectedValue("CSA", 2.5, "mm^2", 1e-9), new CalcExpectedValue("I_z", 21, "A", 1e-9), new CalcExpectedValue("u_In", 0.7619047619, "", 1e-6)]),
-            new CalcTestCase("ka-dc", "DC 600 W load at 24 V on a gG fuse, C_a 0.9",
-                new CalcReferenceSource("Analytic (illustrative test values, not from any standard)", null, "I_b = 600/24 = 25 A; I_n = 25 A; I_t,req = 25/0.9 = 27.77778 A; the illustrative table gives 4 mm² (28 A); I_z = 28·0.9 = 25.2 A"),
-                [Choice("supply", Dc), Q("P", 0.6, "kW"), Q("U", 24, "V"), Choice("device", GgFuse), N("C_a", 0.9), IllustrativeRatings(), IllustrativeAmpacity()],
-                [new CalcExpectedValue("I_b", 25, "A", 1e-9), new CalcExpectedValue("I_n", 25, "A", 1e-9), new CalcExpectedValue("I_t_req", 27.77777778, "A", 1e-6), new CalcExpectedValue("CSA", 4, "mm^2", 1e-9), new CalcExpectedValue("I_z", 25.2, "A", 1e-9), new CalcExpectedValue("u_In", 0.9920634921, "", 1e-6)]),
+            new CalcTestCase("ka-three-phase-mcb-c", "Three-phase 7.5 kW (output) load on a type C MCB, θ_a 35 °C with C_a 0.91, two circuits with C_g 0.77",
+                new CalcReferenceSource("Analytic (synthetic test values invented for these tests, not taken from any table)", null, "I_b = 7500/(√3·400·0.85·0.9) = 14.15074 A; I_n = 16 A; I_t,req = 16/(0.91·0.77) = 22.83431 A; the synthetic table (1.5→12.3, 2.5→17.7, 4→24.1, 6→31.9, 10→44.6 A) gives 4 mm² (24.1 A); I_z = 24.1·0.91·0.77 = 16.88687 A"),
+                [Choice("supply", ThreePhase), Q("P", 7.5, "kW"), Q("U", 400, "V"), N("cos_phi", 0.85), N("eta", 0.9), Q("theta_a", 35, "degC"), N("N_g", 2), Choice("device", McbC), N("C_a", 0.91), N("C_g", 0.77), N("C_i", 1), TypicalRatings(), SyntheticAmpacity()],
+                [new CalcExpectedValue("I_b", 14.15074189, "A", 1e-6), new CalcExpectedValue("I_n", 16, "A", 1e-9), new CalcExpectedValue("I_t_req", 22.83430855, "A", 1e-6), new CalcExpectedValue("CSA", 4, "mm^2", 1e-9), new CalcExpectedValue("I_z", 16.88687, "A", 1e-6), new CalcExpectedValue("u_Ib", 0.8844213682, "", 1e-6), new CalcExpectedValue("u_In", 0.9474816825, "", 1e-6)]),
+            new CalcTestCase("ka-single-phase", "Single-phase 3 kW (output) load on a type B MCB",
+                new CalcReferenceSource("Analytic (synthetic test values invented for these tests, not taken from any table)", null, "I_b = 3000/(230·0.95·0.9) = 15.25553 A; I_n = 16 A; factors 1 so I_t,req = 16 A; the synthetic table gives 2.5 mm² (17.7 A); I_z = 17.7 A"),
+                [Choice("supply", SinglePhase), Q("P", 3, "kW"), Q("U", 230, "V"), N("cos_phi", 0.95), N("eta", 0.9), Choice("device", McbB), TypicalRatings(), SyntheticAmpacity()],
+                [new CalcExpectedValue("I_b", 15.25553013, "A", 1e-6), new CalcExpectedValue("I_n", 16, "A", 1e-9), new CalcExpectedValue("I_t_req", 16, "A", 1e-9), new CalcExpectedValue("CSA", 2.5, "mm^2", 1e-9), new CalcExpectedValue("I_z", 17.7, "A", 1e-9), new CalcExpectedValue("u_In", 0.9039548023, "", 1e-6)]),
+            new CalcTestCase("ka-dc", "DC 600 W load at 24 V on a gG fuse, C_a 0.91",
+                new CalcReferenceSource("Analytic (synthetic test values invented for these tests, not taken from any table)", null, "I_b = 600/24 = 25 A; I_n = 25 A; I_t,req = 25/0.91 = 27.47253 A; the synthetic table gives 6 mm² (31.9 A); I_z = 31.9·0.91 = 29.029 A"),
+                [Choice("supply", Dc), Q("P", 0.6, "kW"), Q("U", 24, "V"), Choice("device", GgFuse), N("C_a", 0.91), TypicalRatings(), SyntheticAmpacity()],
+                [new CalcExpectedValue("I_b", 25, "A", 1e-9), new CalcExpectedValue("I_n", 25, "A", 1e-9), new CalcExpectedValue("I_t_req", 27.47252747, "A", 1e-6), new CalcExpectedValue("CSA", 6, "mm^2", 1e-9), new CalcExpectedValue("I_z", 29.029, "A", 1e-9), new CalcExpectedValue("u_In", 0.8612077578, "", 1e-6)]),
             new CalcTestCase("ka-semi-enclosed", "Semi-enclosed fuse on a linked 18 A design current: C_c = 0.725",
-                new CalcReferenceSource("Analytic (illustrative test values, not from any standard)", null, "I_b = 18 A (linked, replaces P); I_n = 20 A; C_c = 0.725; I_t,req = 20/0.725 = 27.58621 A; the illustrative table gives 4 mm² (28 A); I_z = 28 A (a gG fuse of the same rating would need only 2.5 mm²)"),
-                [Q("I_b_in", 18, "A"), Choice("device", SemiEnclosed), IllustrativeRatings(), IllustrativeAmpacity()],
-                [new CalcExpectedValue("I_b", 18, "A", 1e-9), new CalcExpectedValue("I_n", 20, "A", 1e-9), new CalcExpectedValue("C_c", 0.725, "", 1e-9), new CalcExpectedValue("I_t_req", 27.5862069, "A", 1e-6), new CalcExpectedValue("CSA", 4, "mm^2", 1e-9), new CalcExpectedValue("I_z", 28, "A", 1e-9)]),
+                new CalcReferenceSource("Analytic (synthetic test values invented for these tests, not taken from any table)", null, "I_b = 18 A (linked, replaces P); I_n = 20 A; C_c = 0.725; I_t,req = 20/0.725 = 27.58621 A; the synthetic table gives 6 mm² (31.9 A); I_z = 31.9 A; I₂ = 2·I_n = 40 A, u_I2 = 40/(1.45·31.9) = 0.86477 (a gG fuse of the same rating would need only 4 mm²)"),
+                [Q("I_b_in", 18, "A"), Choice("device", SemiEnclosed), TypicalRatings(), SyntheticAmpacity()],
+                [new CalcExpectedValue("I_b", 18, "A", 1e-9), new CalcExpectedValue("I_n", 20, "A", 1e-9), new CalcExpectedValue("C_c", 0.725, "", 1e-9), new CalcExpectedValue("I_t_req", 27.5862069, "A", 1e-6), new CalcExpectedValue("CSA", 6, "mm^2", 1e-9), new CalcExpectedValue("I_z", 31.9, "A", 1e-9), new CalcExpectedValue("I2", 40, "A", 1e-9), new CalcExpectedValue("u_I2", 0.8647713761, "", 1e-6)]),
             new CalcTestCase("ka-derived-ca", "Derived ambient factor: PVC 70 °C, θ_ref 30 °C, θ_a 40 °C",
-                new CalcReferenceSource("Analytic (the derived-approximation formula)", null, "C_a = √[(70 − 40)/(70 − 30)] = 0.866025; with C_g 0.8 and the 7.5 kW load: I_t,req = 16/(0.866025·0.8) = 23.09401 A, 4 mm² (28 A), I_z = 28·0.866025·0.8 = 19.39897 A"),
-                [Choice("supply", ThreePhase), Q("P", 7.5, "kW"), Q("U", 400, "V"), N("cos_phi", 0.85), N("eta", 0.9), Choice("device", McbC), Choice("insulation", Pvc), Q("theta_a", 40, "degC"), CalcInputValue.Switch("derive_Ca", true), Q("theta_ref", 30, "degC"), N("C_g", 0.8), IllustrativeRatings(), IllustrativeAmpacity()],
-                [new CalcExpectedValue("C_a", 0.8660254038, "", 1e-9), new CalcExpectedValue("I_t_req", 23.09401077, "A", 1e-6), new CalcExpectedValue("CSA", 4, "mm^2", 1e-9), new CalcExpectedValue("I_z", 19.39896904, "A", 1e-6)]),
+                new CalcReferenceSource("Analytic (the derived-approximation formula)", null, "C_a = √[(70 − 40)/(70 − 30)] = 0.866025; with C_g 0.77 and the 7.5 kW load: I_t,req = 16/(0.866025·0.77) = 23.99378 A, 4 mm² (24.1 A synthetic), I_z = 24.1·0.866025·0.77 = 16.07083 A"),
+                [Choice("supply", ThreePhase), Q("P", 7.5, "kW"), Q("U", 400, "V"), N("cos_phi", 0.85), N("eta", 0.9), Choice("device", McbC), Choice("insulation", Pvc), Q("theta_a", 40, "degC"), CalcInputValue.Switch("derive_Ca", true), Q("theta_ref", 30, "degC"), N("N_g", 2), N("C_g", 0.77), TypicalRatings(), SyntheticAmpacity()],
+                [new CalcExpectedValue("C_a", 0.8660254038, "", 1e-9), new CalcExpectedValue("I_t_req", 23.99377742, "A", 1e-6), new CalcExpectedValue("CSA", 4, "mm^2", 1e-9), new CalcExpectedValue("I_z", 16.07083342, "A", 1e-6)]),
             new CalcTestCase("ka-awg-10", "AWG geometry: AWG 10 is 5.2612 mm²",
-                new CalcReferenceSource("Analytic (the AWG geometry formula)", null, "d = 0.127·92^((36 − 10)/39) = 2.588187 mm; area = π d²/4 = 5.261155 mm². Linked I_b 25 A, gG fuse, AWG rows 14, 12, 10, 8 with illustrative capacities 15, 20, 30, 40 A (not from any standard): I_n = 25 A, AWG 10 (30 A) is the smallest that carries it"),
-                [Q("I_b_in", 25, "A"), Choice("device", GgFuse), Choice("system", Awg), IllustrativeRatings(), AwgAmpacity((14, 15), (12, 20), (10, 30), (8, 40))],
-                [new CalcExpectedValue("CSA", 5.261154955, "mm^2", 1e-9), new CalcExpectedValue("I_n", 25, "A", 1e-9), new CalcExpectedValue("I_z", 30, "A", 1e-9)]),
+                new CalcReferenceSource("Analytic (the AWG geometry formula)", null, "d = 0.127·92^((36 − 10)/39) = 2.588187 mm; area = π d²/4 = 5.261155 mm². Linked I_b 25 A, gG fuse, AWG rows 14, 12, 10, 8 with synthetic capacities 11.2, 16.9, 26.3, 37.4 A (invented for these tests, not taken from any table): I_n = 25 A, AWG 10 (26.3 A) is the smallest that carries it"),
+                [Q("I_b_in", 25, "A"), Choice("device", GgFuse), Choice("system", Awg), TypicalRatings(), AwgAmpacity((14, 11.2), (12, 16.9), (10, 26.3), (8, 37.4))],
+                [new CalcExpectedValue("CSA", 5.261154955, "mm^2", 1e-9), new CalcExpectedValue("I_n", 25, "A", 1e-9), new CalcExpectedValue("I_z", 26.3, "A", 1e-9)]),
         ],
         Category: "Power",
         OutputPorts:
@@ -171,11 +172,11 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
     public static CalcInputValue AwgAmpacity(params (double Gauge, double It)[] rows) =>
         CalcInputValue.Table("ampacity", rows.Select(r => CalcRow.Of(("AWG", new CalcCell(r.Gauge)), ("I_t", new CalcCell(r.It, "A")))).ToList());
 
-    /// <summary>Preferred ratings 6 … 63 A, for the known-answer cases only (illustrative test values, not from any standard).</summary>
-    public static CalcInputValue IllustrativeRatings() => Ratings(6, 10, 16, 20, 25, 32, 40, 50, 63);
+    /// <summary>The typical preferred series 6 … 63 A, for the known-answer cases.</summary>
+    public static CalcInputValue TypicalRatings() => Ratings(6, 10, 16, 20, 25, 32, 40, 50, 63);
 
-    /// <summary>Capacities 1.5 → 15, 2.5 → 21, 4 → 28, 6 → 36, 10 → 50 A, for the known-answer cases only (illustrative test values, not from any standard).</summary>
-    public static CalcInputValue IllustrativeAmpacity() => Ampacity((1.5, 15), (2.5, 21), (4, 28), (6, 36), (10, 50));
+    /// <summary>Capacities 1.5 → 12.3, 2.5 → 17.7, 4 → 24.1, 6 → 31.9, 10 → 44.6 A: synthetic test values invented for these tests, not taken from any table.</summary>
+    public static CalcInputValue SyntheticAmpacity() => Ampacity((1.5, 12.3), (2.5, 17.7), (4, 24.1), (6, 31.9), (10, 44.6));
 
     /// <summary>The AWG area in mm²: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived).</summary>
     public static double AwgArea(double gauge)
@@ -237,7 +238,13 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         var amp = UnitCatalog.Parse("A");
         var mm2 = UnitCatalog.Parse("mm^2");
 
-        var table = ReadAmpacity(c, awgMode, amp, mm2, out var ignored);
+        var table = ReadAmpacity(c, awgMode, amp, mm2, out var ignored, out var fractional);
+
+        if (fractional)
+        {
+            c.Block("ampacity", "ampacity: AWG gauge must be a whole number.");
+            return;
+        }
 
         if (table.Count == 0)
         {
@@ -265,7 +272,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             return;
         }
 
-        c.Record("I_n", "smallest preferred rating with I_n ≥ I_b", $"I_b = {F(ib)} A", ScalarValue.Of(rated[0], amp), "Rated current of the protective device (ratings record)", protection);
+        c.Record("I_n", "smallest preferred rating with I_n ≥ I_b", $"smallest rating ≥ {F(ib)} A in the ratings record", ScalarValue.Of(rated[0], amp), "Rated current of the protective device (ratings record)", protection);
 
         var semi = device == SemiEnclosed;
         c.Record("C_c", semi ? "0.725 for a semi-enclosed fuse (1.45/2, derived)" : "1 (not a semi-enclosed fuse)", device, new ScalarValue(semi ? SemiEnclosedFactor : 1), "Semi-enclosed fuse factor", sizing);
@@ -344,19 +351,27 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
 
         var outputs = new List<(string, string)> { ("I_b", "Design current"), ("I_n", "Rated current of the device"), ("C_c", "Semi-enclosed fuse factor"), ("C_a", "Ambient factor"), ("I_t_req", "Required tabulated capacity"), ("CSA", "Selected cross-section"), ("I_z", "Current-carrying capacity"), ("L", "Circuit length"), ("u_Ib", "I_b / I_n"), ("u_In", "I_n / I_z") };
 
-        // I₂: inherent 1.45·I_n for MCBs and gG fuses, otherwise from the datasheet.
-        var inherent = device is McbB or McbC or McbD or GgFuse;
-        var haveI2 = inherent || c.Has("I2");
+        // I₂: inherent 1.45·I_n for MCBs; deemed satisfied for gG fuses; 2·I_n by default for a semi-enclosed fuse; otherwise from the datasheet.
+        var mcb = device is McbB or McbC or McbD;
+        var gg = device == GgFuse;
+        var haveI2 = false;
 
-        if (inherent)
+        if (mcb)
         {
             c.Assign("I2", "1.45 * I_n", "A", "Conventional operating current (inherent 1.45 I_n)", coordination);
+            haveI2 = true;
         }
         else if (c.Has("I2"))
         {
             c.Input("I2");
+            haveI2 = true;
         }
-        else
+        else if (device == SemiEnclosed)
+        {
+            c.Assign("I2", "2 * I_n", "A", "Conventional operating current of a semi-enclosed fuse (default 2 I_n)", "BS 7671 reg. 433.1.202");
+            haveI2 = true;
+        }
+        else if (!gg)
         {
             c.Warn("I2", $"I2: the conventional operating current of the {device} is not entered; the check I₂ ≤ 1.45·I_z is skipped.");
         }
@@ -377,13 +392,16 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         c.CheckUtilisation("Device rating within conductor capacity (I_n ≤ I_z)", "u_In", coordination);
 
         if (haveI2)
-            c.CheckUtilisation("Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z)", "u_I2", coordination);
+            c.CheckUtilisation("Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z)", "u_I2", device == SemiEnclosed ? "BS 7671 reg. 433.1.202" : coordination);
+        else if (gg)
+            c.CheckCondition("I₂ ≤ 1.45·I_z deemed satisfied for a gG fuse when I_n ≤ I_z", c.Si("I_n") <= c.Si("I_z") * (1 + 1e-9), $"I_n = {F(c.Si("I_n"))} A", $"I_z = {F(c.Si("I_z"))} A", "I_z", "BS 7671 reg. 433.1.201");
     }
 
-    private static List<(double Area, double It, double Gauge)> ReadAmpacity(CalcRunContext c, bool awgMode, Unit amp, Unit mm2, out int ignored)
+    private static List<(double Area, double It, double Gauge)> ReadAmpacity(CalcRunContext c, bool awgMode, Unit amp, Unit mm2, out int ignored, out bool fractional)
     {
         var list = new List<(double, double, double)>();
         ignored = 0;
+        fractional = false;
 
         foreach (var row in c.Rows("ampacity"))
         {
@@ -392,7 +410,10 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             if (awgMode)
             {
                 if (row.Get("AWG") is { Number: { } n } && it > 0)
+                {
+                    fractional |= n != Math.Round(n);
                     list.Add((AwgArea(n), it, n));
+                }
                 else
                     ignored++;
             }
