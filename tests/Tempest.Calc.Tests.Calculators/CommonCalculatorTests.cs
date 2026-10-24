@@ -52,6 +52,22 @@ public sealed class CommonCalculatorTests
 
     [Theory]
     [MemberData(nameof(AllCalculators.Ids), MemberType = typeof(AllCalculators))]
+    public void A_New_Sheet_That_Opens_Blocked_Says_What_To_Enter_Next(string id)
+    {
+        // Purple P-A-05: a table or required input with no value on a new sheet is not just "needs a value".
+        var calculator = AllCalculators.Get(id);
+        var result = CalcRunner.Run(calculator, CalcTemplateHasher.NewSheetInputs(calculator.Template));
+
+        foreach (var block in result.Blocks)
+        {
+            Assert.DoesNotContain("needs a value", block.Message, StringComparison.Ordinal);
+            Assert.Matches(@"^[A-Za-z_0-9]+(\[[^\]]*\])?(\.[A-Za-z_0-9]+)?: ", block.Message);
+            Assert.Contains("enter", block.Message, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllCalculators.Ids), MemberType = typeof(AllCalculators))]
     public void Hostile_Numbers_Never_Throw_And_Never_Reach_A_Sheet(string id)
     {
         var calculator = AllCalculators.Get(id);

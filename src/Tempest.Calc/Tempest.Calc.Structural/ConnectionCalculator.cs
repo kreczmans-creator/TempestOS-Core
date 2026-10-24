@@ -26,12 +26,12 @@ public sealed class ConnectionCalculator : ICalcCalculator
     public static IReadOnlyList<(string Grade, double BetaW)> Steels { get; } = [("S235", 0.8), ("S275", 0.85), ("S355", 0.9), ("S420", 1.0), ("S460", 1.0)];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
+        Id, "1.2.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
         "The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.",
         "Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P\n" +
         "Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane)\n" +
         "Bearing: F_b,Rd = k₁·α_b·f_u·d·t/γ_M2; α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)\n" +
-        "Tension: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2; combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1\n" +
+        "Tension: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1\n" +
         "Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0)\n" +
         "Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2",
         [
@@ -52,6 +52,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
             new CalcInputSpec("k_e2", "Minimum e₂/d₀", CalcInputKind.Number, Default: 1.2, Min: 1, Max: 3, HardMin: 1, HardMax: 3, Group: "Spacing limits"),
             new CalcInputSpec("k_p1", "Minimum p₁/d₀", CalcInputKind.Number, Default: 2.2, Min: 2, Max: 4, HardMin: 2, HardMax: 4, Group: "Spacing limits"),
             new CalcInputSpec("k_p2", "Minimum p₂/d₀", CalcInputKind.Number, Default: 2.4, Min: 2, Max: 4, HardMin: 2, HardMax: 4, Group: "Spacing limits"),
+            new CalcInputSpec("e_head", "Across-corners dimension of the smaller of bolt head and nut (blank: punching takes d_m = the across-flats s, conservative)", CalcInputKind.Quantity, "mm", Min: 13, Max: 70, HardMin: 13, HardMax: 70, IsOptional: true, Group: "Bolt"),
             new CalcInputSpec("gamma_M2", "γ_M2", CalcInputKind.Number, Default: 1.25, Min: 1.1, Max: 1.5, HardMin: 1.1, HardMax: 1.5, Group: "Factors"),
             new CalcInputSpec("gamma_M0", "γ_M0", CalcInputKind.Number, Default: 1.0, Min: 1, Max: 1.2, HardMin: 1, HardMax: 1.2, Group: "Factors"),
             new CalcInputSpec("F_v_Ed", "Shear per bolt", CalcInputKind.Quantity, "kN", Default: 50, Min: 0, Max: 2000, HardMin: 0, HardMax: 2000, Group: "Forces"),
@@ -68,8 +69,8 @@ public sealed class ConnectionCalculator : ICalcCalculator
         [
             new CalcAssumption("Static loading; category A (bearing type) shear and category D (non-preloaded) tension; no slip-resistant joints or moment end plates.", "Scope of S4."),
             new CalcAssumption("Bearing is taken at the worst of an end bolt and an inner bolt, and at an edge bolt across the load (k₁ with e₂ and p₂).", "Conservative for every bolt in the group."),
-            new CalcAssumption("Spacing minima (Table 3.3) and γ_M factors are entered from a National Annex record; the values shown default to EN 1993-1-8 recommended.", "§A5 small factor set."),
-            new CalcAssumption("Group forces come from M3 and weld forces per length from M6 by link.", "§A6 S4 links."),
+            new CalcAssumption("Spacing minima (Table 3.3) and γ_M factors are entered from a National Annex record; the values shown default to EN 1993-1-8 recommended.", "A small set of factors only; no table from a standard is shipped."),
+            new CalcAssumption("Group forces come from M3 and weld forces per length from M6 by link.", "Group forces and weld forces are linked from the bolt-group and weld-group calculations."),
         ],
         [
             new CalcClauseRef("EN 1993-1-8:2005", "cl. 3.5, Table 3.3", "Positioning of holes for bolts"),
@@ -80,14 +81,20 @@ public sealed class ConnectionCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("hole", "The hole must be larger than the bolt.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("spacing", "The edge distance e₂, the gauge p₂ and the pitch p₁ must leave a positive bearing factor (k₁ and α_b above 0).", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("e_head", "The across-corners dimension cannot be less than the across-flats dimension of the nut.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("block", "Block tearing needs the group force and both net areas.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("weld", "The weld check needs a throat and a force per length.", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-m20-88-shear-bearing", "M20 8.8, single shear through threads, 10 mm S275 plate",
-                new CalcReferenceSource("Analytic (EN 1993-1-8 Table 3.4 relations)", "EN 1993-1-8:2005", "A_s = 244.79 mm²; F_v,Rd = 0.6·800·244.79/1.25 = 94.00 kN; F_t,Rd = 0.9·800·244.79/1.25 = 141.00 kN; d₀ 22, e₁ = e₂ = 40, p₁ = p₂ = 70: α_d = 40/66 = 0.6061, k₁ = 2.5, F_b,Rd = 2.5·0.6061·410·20·10/1.25 = 99.39 kN; d_m = 32.32 mm, B_p,Rd = 199.83 kN"),
+                new CalcReferenceSource("Analytic (EN 1993-1-8 Table 3.4 relations)", "EN 1993-1-8:2005", "A_s = 244.79 mm²; F_v,Rd = 0.6·800·244.79/1.25 = 94.00 kN; F_t,Rd = 0.9·800·244.79/1.25 = 141.00 kN; d₀ 22, e₁ = e₂ = 40, p₁ = p₂ = 70: α_d = 40/66 = 0.6061, k₁ = 2.5, F_b,Rd = 2.5·0.6061·410·20·10/1.25 = 99.39 kN; punching with d_m = s = 30 mm (the across-corners e is not entered): B_p,Rd = 0.6π·30·10·410/1.25 = 185.48 kN"),
                 [Choice("grade", "8.8"), Choice("size", "M20"), Q("p_1", 70, "mm"), Q("p_2", 70, "mm"), Q("F_v_Ed", 50, "kN"), Q("F_t_Ed", 30, "kN")],
-                [new CalcExpectedValue("A_s", 244.794, "mm^2", 1e-5), new CalcExpectedValue("F_v_Rd", 94.00105, "kN", 1e-6), new CalcExpectedValue("F_t_Rd", 141.0016, "kN", 1e-6), new CalcExpectedValue("F_b_Rd", 99.39394, "kN", 1e-6), new CalcExpectedValue("B_p_Rd", 199.8265, "kN", 1e-6), new CalcExpectedValue("u_vt", 0.6838832, "", 1e-6)]),
+                [new CalcExpectedValue("A_s", 244.794, "mm^2", 1e-5), new CalcExpectedValue("F_v_Rd", 94.00105, "kN", 1e-6), new CalcExpectedValue("F_t_Rd", 141.0016, "kN", 1e-6), new CalcExpectedValue("F_b_Rd", 99.39394, "kN", 1e-6), new CalcExpectedValue("B_p_Rd", 185.4796, "kN", 1e-6), new CalcExpectedValue("u_vt", 0.6838832, "", 1e-6)]),
+            new CalcTestCase("ka-m20-punching-e-head", "M20 punching with the across-corners of the nut entered",
+                new CalcReferenceSource("Analytic (EN 1993-1-8 Table 3.4, d_m = (s + e)/2)", "EN 1993-1-8:2005", "s = 30 mm, e = 34 mm (illustrative): d_m = 32 mm, B_p,Rd = 0.6π·32·10·410/1.25 = 197.8449 kN" ),
+                [Choice("grade", "8.8"), Choice("size", "M20"), Q("e_head", 34, "mm")],
+                [new CalcExpectedValue("B_p_Rd", 197.8449, "kN", 1e-6)]),
             new CalcTestCase("ka-m20-109-threads", "M20 10.9 with threads in the shear plane: α_v = 0.5",
                 new CalcReferenceSource("Analytic (EN 1993-1-8 Table 3.4)", "EN 1993-1-8:2005", "F_v,Rd = 0.5·1000·244.79/1.25 = 97.918 kN (with the shank in the plane it would be 0.6·1000·314.16/1.25 = 150.80 kN)"),
                 [Choice("grade", "10.9"), Choice("size", "M20")],
@@ -196,13 +203,34 @@ public sealed class ConnectionCalculator : ICalcCalculator
         if (p2 is { } gauge)
             k1 = Math.Min(k1, 1.4 * gauge / d0 - 1.7);
 
+        if (!(k1 > 0) || !(alphaB > 0))
+        {
+            var (symbol, why) = 2.8 * e2 / d0 - 1.7 <= 0
+                ? ("e_2", $"e₂ = {F(e2)} mm is too small for any bearing resistance with d₀ = {F(d0)} mm (k₁ = 2.8e₂/d₀ − 1.7 ≤ 0); EN 1993-1-8 Table 3.3 needs e₂ ≥ {F(c.InputSi("k_e2") * d0)} mm")
+                : p2 is { } g2m && 1.4 * g2m / d0 - 1.7 <= 0
+                    ? ("p_2", $"p₂ = {F(g2m)} mm is too small for any bearing resistance with d₀ = {F(d0)} mm (k₁ = 1.4p₂/d₀ − 1.7 ≤ 0); EN 1993-1-8 Table 3.3 needs p₂ ≥ {F(c.InputSi("k_p2") * d0)} mm")
+                    : ("p_1", $"p₁ = {(p1 is { } pp ? F(pp) : "—")} mm is too small for any bearing resistance with d₀ = {F(d0)} mm (α_d = p₁/3d₀ − 1/4 ≤ 0); EN 1993-1-8 Table 3.3 needs p₁ ≥ {F(c.InputSi("k_p1") * d0)} mm");
+            c.Block("spacing", $"{symbol}: {why}.");
+            return;
+        }
+
         c.Record("alpha_b", "min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)", $"min({F(alphaEnd)}, {(double.IsInfinity(alphaInner) ? "—" : F(alphaInner))}, {F(fub / fu)}, 1)", new ScalarValue(alphaB), "Bearing factor α_b", "EN 1993-1-8 Table 3.4");
         c.Record("k_1", "min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)", $"e₂ = {F(e2)}, p₂ = {(p2 is { } g ? F(g) : "—")}, d₀ = {F(d0)}", new ScalarValue(k1), "Bearing factor k₁", "EN 1993-1-8 Table 3.4");
         var fb = Math.Max(k1, 0) * alphaB * fu * d * t / g2;
         c.Record("F_b_Rd", "k₁·α_b·f_u·d·t/γ_M2", $"{F(k1)} × {F(alphaB)} × {F(fu)} × {F(d)} × {F(t)} / {F(g2)}", ScalarValue.Of(fb / 1e3, kN), "Bearing resistance per bolt", "EN 1993-1-8 Table 3.4");
         c.Record("F_t_Rd", "k₂·f_ub·A_s/γ_M2, k₂ = 0.9", $"0.9 × {F(fub)} × {F(asArea)} / {F(g2)}", ScalarValue.Of(0.9 * fub * asArea / g2 / 1e3, kN), "Tension resistance per bolt", "EN 1993-1-8 Table 3.4");
-        var dm = (size.AcrossFlats + size.AcrossFlats / Math.Cos(Math.PI / 6)) / 2;
-        c.Record("B_p_Rd", "0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2", $"0.6π × {F(dm)} × {F(t)} × {F(fu)} / {F(g2)}", ScalarValue.Of(0.6 * Math.PI * dm * t * fu / g2 / 1e3, kN), "Punching shear resistance", "EN 1993-1-8 Table 3.4");
+        // d_m is the mean of the across-flats and the across-corners dimension of the smaller of head and nut (Table 3.4). The across-corners of a
+        // sharp hexagon (1.1547·s) is an upper bound the real nut does not reach, so without the entered e the across-flats s is used (Green G-A-09).
+        var acrossCorners = c.Has("e_head") ? c.InputSi("e_head") * 1e3 : (double?)null;
+
+        if (acrossCorners is { } ec && ec < size.AcrossFlats)
+        {
+            c.Block("e_head", $"e_head: the across-corners dimension ({F(ec)} mm) cannot be less than the across-flats dimension of the nut ({F(size.AcrossFlats)} mm).");
+            return;
+        }
+
+        var dm = acrossCorners is { } e ? (size.AcrossFlats + e) / 2 : size.AcrossFlats;
+        c.Record("B_p_Rd", acrossCorners is null ? "0.6π·d_m·t·f_u/γ_M2, d_m = s (e not entered)" : "0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2", $"0.6π × {F(dm)} × {F(t)} × {F(fu)} / {F(g2)}", ScalarValue.Of(0.6 * Math.PI * dm * t * fu / g2 / 1e3, kN), "Punching shear resistance", "EN 1993-1-8 Table 3.4");
 
         c.Assign("u_v", "F_v_Ed / F_v_Rd", null, "Shear utilisation");
         c.Assign("u_b", "F_v_Ed / F_b_Rd", null, "Bearing utilisation");

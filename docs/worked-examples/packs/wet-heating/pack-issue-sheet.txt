@@ -8,13 +8,13 @@ Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
 
 PACK INDEX
   1. Room A heat loss — U-values and room heat loss — rev A — ISSUED — U-value of Cavity wall against its target (0.3 W/m²K) PASS
-  2. Room B heat loss — U-values and room heat loss — rev A — ISSUED — U-value of Partition against its target (0.3 W/m²K) FAIL
+  2. Room B heat loss — U-values and room heat loss — rev A — ISSUED
   3. Sealed system — Sealed heating system: emitters and expansion vessel — rev A — ISSUED
   4. Primary pipework and pump — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
   5. Circulator motor — Motor and actuator sizing — rev A — ISSUED — Speed n_pk ≤ n_max PASS
 
 REVISIONS
-  A  2026-10-24  unknown  First issue
+  A  2026-10-24  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -39,8 +39,8 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 22/22
-  Test run: 2026-10-24 18:29 UTC
+  Known-answer cases passed: 24/24
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -53,7 +53,7 @@ Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.
-Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(θ_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation flow: q_v = n·V Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply, plus 0.34·n_inf·V·(θ_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor Check: U against the target U of each element
+Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(θ_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation flow: q_v = n·V Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply, plus 0.34·n_inf·V·(θ_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor Check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)
   Ref: BS EN ISO 6946 homogeneous layers and surface resistances (clause numbers to be checked against the owner's copy) — Building components — thermal resistance and thermal transmittance
   Ref: BS EN 12831-1 cl. 6.3.2 (clause number to be checked against the owner's copy) — Heating systems in buildings — design heat load: transmission heat loss
   Ref: BS EN 12831-1 cl. 6.3.3 (clause number to be checked against the owner's copy) — Heating systems in buildings — design heat load: ventilation heat loss
@@ -65,10 +65,10 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   theta_int | Internal design temperature | 21 | degC | spec: SPEC-HTG-01 §3 | 16 … 24 degC
   theta_e | External design temperature (location record) | -3 | degC | spec: SPEC-HTG-01 §3 | -15 … 5 degC
   layers | Construction layers (several elements share the table, keyed by element name) | 4 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.77 W/(m*K) |  |  | 
-  layers[2] |  | element = Cavity wall; name = PIR insulation; d = 100 mm; lambda = 0.022 W/(m*K) |  |  | 
-  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.15 W/(m*K) |  |  | 
-  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.57 W/(m*K) |  |  | 
+  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m*K) |  |  | 
+  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m*K) |  |  | 
+  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m*K) |  |  | 
+  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m*K) |  |  | 
   elements | Building elements bounding the room | 2 row(s) |  | spec: SPEC-HTG-01 §3 | any
   elements[1] |  | name = Cavity wall; area = 20 m^2 |  |  | 
   elements[2] |  | name = Window; area = 3 m^2; U_user = 1.4 W/(m^2*K) |  |  | 
@@ -81,27 +81,28 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
 3. ASSUMPTIONS
   A1. Steady state: every temperature is constant, with no solar or internal gains, no thermal mass and no dynamic simulation. (Design heat loss, not an annual energy estimate.)
   A2. Layers are homogeneous and in series (one-dimensional flow); no bridged layers (timber studs, mortar joints, fixings) are corrected for: a thermal-bridge allowance y_tb is added instead. (BS EN ISO 6946 homogeneous-layer calculation.)
-  A3. A blank Rsi is the conventional horizontal-flow 0.13 m²K/W and a blank Rse is 0.04 m²K/W for an element facing outside (no adjacent temperature, or one at or below θ_e), or 0.13 m²K/W where it faces another space; floors, roofs and other flow directions take the user's own values. (Small conventional BS EN ISO 6946 set, not a table of design data.)
-  A4. Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer. (Stated limit.)
-  A5. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table. (Derived.)
-  A6. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (§A5.)
-  A7. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Sheet default value; no project figure given.)
-  A8. y_tb (Thermal-bridge allowance on the area facing outside) is taken as 0 W/(m^2*K). (Sheet default value; no project figure given.)
-  A9. f_add (Additional allowance on the room load (CIBSE DHDG method only)) is taken as 0 %. (Sheet default value; no project figure given.)
-  A10. Conventional BS EN ISO 6946 horizontal-flow surface resistances (R_si 0.13, R_se 0.04 outside or 0.13 internal, m²K/W) are used where blank, for: Cavity wall. (Small conventional set; enter your own for floors, roofs and other flow directions.)
+  A3. A blank Rsi is the conventional BS EN ISO 6946 value for the element's heat-flow direction (0.13 m²K/W horizontal, 0.10 upward, 0.17 downward) and a blank Rse is 0.04 m²K/W for an element facing outside (no adjacent temperature, or one at or below θ_e), or the same as Rsi where it faces another space. (Small conventional BS EN ISO 6946 set (three values), not a table of design data.)
+  A4. The global target U applies to built-up elements facing outside only: an internal partition or floor has no outside target, so it is checked only against a target entered on its own row. (Scope of the target check.)
+  A5. Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer. (Stated limit.)
+  A6. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table. (Derived.)
+  A7. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (No table from a standard or a manufacturer is shipped.)
+  A8. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Sheet default value; no project figure given.)
+  A9. y_tb (Thermal-bridge allowance on the area facing outside) is taken as 0 W/(m^2*K). (Sheet default value; no project figure given.)
+  A10. f_add (Additional allowance on the room load (CIBSE DHDG method only)) is taken as 0 %. (Sheet default value; no project figure given.)
+  A11. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: Cavity wall. (Small conventional set; enter your own where the construction needs other values.)
 
 4. WORKING
   [8] R_1 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
-      = Cavity wall: 0.13 + (0.13312 + 4.5455 + 0.66667 + 0.022807) + 0 + 0.04
-      = 5.538 m²·K/W
+      = Cavity wall: 0.13 + (0.12202 + 3.3333 + 0.5 + 0.0325) + 0 + 0.04
+      = 4.1579 m²·K/W
         Cavity wall: total thermal resistance
   [9] U_1 = 1/R    « BS EN ISO 6946
-      = 1 / 5.538
-      = 0.18057 W/(m²·K)
+      = 1 / 4.1579
+      = 0.24051 W/(m²·K)
         Cavity wall: U-value
   [10] Phi_1 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
-      = 20 × 0.18057 × 1 × (21 − -3) °C
-      = 86.673 W
+      = 20 × 0.24051 × 1 × (21 − -3) °C
+      = 115.44 W
         Cavity wall: fabric loss to θ_e = -3 °C
   [11] U_2 = U override (user-entered)
       = Window: 1.4 W/m²K
@@ -124,24 +125,24 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 23 m²
         Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)
   [16] U_m = Σ A·U·f / Σ A
-      = 7.8114 / 23
-      = 0.33963 W/(m²·K)
+      = 9.0102 / 23
+      = 0.39175 W/(m²·K)
         Area-weighted mean U-value of the fabric
   [17] dT = theta_int - theta_e
       = 21 degC − (-3 degC)
       = 24 K
         Design temperature difference, inside to outside
   [18] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
-      = 187.47 W
-      = 187.47 W
+      = 216.24 W
+      = 216.24 W
         Fabric loss through the elements
   [19] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
       = 0 W/(m²·K) × 23 m² × 24 K
       = 0 W
         Thermal-bridge allowance
   [20] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
-      = 187.47 W + 0 W
-      = 187.47 W
+      = 216.24 W + 0 W
+      = 216.24 W
         Fabric heat loss
   [21] q_v = n * V
       = 0.5 1/h × 40 m³
@@ -156,53 +157,50 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 163.2 W
         Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
   [25] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
-      = 187.47 W + 163.2 W
-      = 350.67 W
+      = 216.24 W + 163.2 W
+      = 379.44 W
         Room design heat loss
   [26] HLC = Phi_HL / dT
-      = 350.67 W / 24 K
-      = 14.611 W/K
+      = 379.44 W / 24 K
+      = 15.81 W/K
         Heat loss coefficient
   [27] u_1 = U / U_target
-      = 0.18057 / 0.3
-      = 0.6019
+      = 0.24051 / 0.3
+      = 0.8017
         Cavity wall: utilisation of the target U-value
 
 5. RESULTS
-  R_1 = 5.538 m²·K/W    Cavity wall: thermal resistance
-  U_1 = 0.18057 W/(m²·K)    Cavity wall: U-value
-  Phi_1 = 86.673 W    Cavity wall: fabric loss
+  R_1 = 4.1579 m²·K/W    Cavity wall: thermal resistance
+  U_1 = 0.24051 W/(m²·K)    Cavity wall: U-value
+  Phi_1 = 115.44 W    Cavity wall: fabric loss
   U_2 = 1.4 W/(m²·K)    Window: U-value
   Phi_2 = 100.8 W    Window: fabric loss
   A_fab = 23 m²    Total fabric area
   A_ext = 23 m²    Fabric area facing outside
   A_tb = 23 m²    Fabric area facing outside weighted by f
-  U_m = 0.33963 W/(m²·K)    Mean fabric U-value
+  U_m = 0.39175 W/(m²·K)    Mean fabric U-value
   dT = 24 K    Design temperature difference
-  Phi_el = 187.47 W    Element fabric loss
+  Phi_el = 216.24 W    Element fabric loss
   Phi_tb = 0 W    Thermal-bridge allowance
-  Phi_T = 187.47 W    Fabric heat loss
+  Phi_T = 216.24 W    Fabric heat loss
   q_v = 20 m³/h    Ventilation air flow
   Phi_V = 163.2 W    Ventilation heat loss
-  Phi_HL = 350.67 W    Room design heat loss
-  HLC = 14.611 W/K    Heat loss coefficient
-  u_1 = 0.6019    Cavity wall: U against target
+  Phi_HL = 379.44 W    Room design heat loss
+  HLC = 15.81 W/K    Heat loss coefficient
+  u_1 = 0.8017    Cavity wall: U against target
 
 6. CHECKS (governing first)
-  PASS  U-value of Cavity wall against its target (0.3 W/m²K): u_1 = 0.6019 vs u_1 ≤ 1  utilisation 0.602
+  PASS  U-value of Cavity wall against its target (0.3 W/m²K): u_1 = 0.8017 vs u_1 ≤ 1  utilisation 0.802
 
 7. APPLICABILITY
-  WARNING record.theta_e: theta_e: a tabulated value not taken from a reference record (External design temperature); enter it as one so its source, edition and licence travel with it.
-  WARNING record.elements: elements: a tabulated value not taken from a reference record (Surface resistances and air-gap resistance); enter it as one so its source, edition and licence travel with it.
-  WARNING record.layers: layers: a tabulated value not taken from a reference record (Layer thermal conductivity); enter it as one so its source, edition and licence travel with it.
-  WARNING record.y_tb: y_tb: a tabulated value not taken from a reference record (Thermal-bridge allowance); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.0.0
-  Content hash: c3e6168e43239acd
+  Template: bs.room-heat-loss@1.1.0
+  Content hash: 4860d86fbd28e4cd
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 5/5
-  Test run: 2026-10-24 18:29 UTC
+  Known-answer cases passed: 6/6
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 
@@ -216,7 +214,7 @@ Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.
-Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(θ_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation flow: q_v = n·V Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply, plus 0.34·n_inf·V·(θ_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor Check: U against the target U of each element
+Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(θ_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation flow: q_v = n·V Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply, plus 0.34·n_inf·V·(θ_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor Check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)
   Ref: BS EN ISO 6946 homogeneous layers and surface resistances (clause numbers to be checked against the owner's copy) — Building components — thermal resistance and thermal transmittance
   Ref: BS EN 12831-1 cl. 6.3.2 (clause number to be checked against the owner's copy) — Heating systems in buildings — design heat load: transmission heat loss
   Ref: BS EN 12831-1 cl. 6.3.3 (clause number to be checked against the owner's copy) — Heating systems in buildings — design heat load: ventilation heat loss
@@ -228,18 +226,17 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   theta_int | Internal design temperature | 21 | degC | spec: SPEC-HTG-01 §3 | 16 … 24 degC
   theta_e | External design temperature (location record) | -3 | degC | spec: SPEC-HTG-01 §3 | -15 … 5 degC
   layers | Construction layers (several elements share the table, keyed by element name) | 6 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.77 W/(m*K) |  |  | 
-  layers[2] |  | element = Cavity wall; name = PIR insulation; d = 100 mm; lambda = 0.022 W/(m*K) |  |  | 
-  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.15 W/(m*K) |  |  | 
-  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.57 W/(m*K) |  |  | 
-  layers[5] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.25 W/(m*K) |  |  | 
-  layers[6] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.25 W/(m*K) |  |  | 
+  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m*K) |  |  | 
+  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m*K) |  |  | 
+  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m*K) |  |  | 
+  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m*K) |  |  | 
+  layers[5] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.22 W/(m*K) |  |  | 
+  layers[6] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.22 W/(m*K) |  |  | 
   elements | Building elements bounding the room | 3 row(s) |  | spec: SPEC-HTG-01 §3 | any
   elements[1] |  | name = Cavity wall; area = 15 m^2 |  |  | 
   elements[2] |  | name = Partition; area = 12 m^2; theta_adj = 18 degC; Rg = 0.18 m^2*K/W |  |  | 
   elements[3] |  | name = Ground floor; area = 10 m^2; f = 0.6; U_user = 0.25 W/(m^2*K) |  |  | 
   y_tb | Thermal-bridge allowance on the area facing outside | 0.05 | W/(m^2*K) | spec: SPEC-HTG-01 §3 | 0 … 0.3 W/(m^2*K)
-  U_target | Target U for built-up elements without their own target | 0.3 | W/(m^2*K) | assumption: Sheet default value; no project figure given. | 0.05 … 8 W/(m^2*K)
   n | Air change rate | 0.6 | 1/h | spec: SPEC-HTG-01 §3 | 0.1 … 3 1/h
   V | Room volume | 50 | m^3 | spec: SPEC-HTG-01 §3 | 5 … 1000 m^3
   theta_supply | MVHR supply air temperature after heat recovery (blank = natural ventilation, outside air) | 16 | degC | spec: SPEC-HTG-01 §3 | -15 … 24 degC
@@ -248,149 +245,135 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
 3. ASSUMPTIONS
   A1. Steady state: every temperature is constant, with no solar or internal gains, no thermal mass and no dynamic simulation. (Design heat loss, not an annual energy estimate.)
   A2. Layers are homogeneous and in series (one-dimensional flow); no bridged layers (timber studs, mortar joints, fixings) are corrected for: a thermal-bridge allowance y_tb is added instead. (BS EN ISO 6946 homogeneous-layer calculation.)
-  A3. A blank Rsi is the conventional horizontal-flow 0.13 m²K/W and a blank Rse is 0.04 m²K/W for an element facing outside (no adjacent temperature, or one at or below θ_e), or 0.13 m²K/W where it faces another space; floors, roofs and other flow directions take the user's own values. (Small conventional BS EN ISO 6946 set, not a table of design data.)
-  A4. Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer. (Stated limit.)
-  A5. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table. (Derived.)
-  A6. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (§A5.)
-  A7. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Sheet default value; no project figure given.)
-  A8. U_target (Target U for built-up elements without their own target) is taken as 0.3 W/(m^2*K). (Sheet default value; no project figure given.)
+  A3. A blank Rsi is the conventional BS EN ISO 6946 value for the element's heat-flow direction (0.13 m²K/W horizontal, 0.10 upward, 0.17 downward) and a blank Rse is 0.04 m²K/W for an element facing outside (no adjacent temperature, or one at or below θ_e), or the same as Rsi where it faces another space. (Small conventional BS EN ISO 6946 set (three values), not a table of design data.)
+  A4. The global target U applies to built-up elements facing outside only: an internal partition or floor has no outside target, so it is checked only against a target entered on its own row. (Scope of the target check.)
+  A5. Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer. (Stated limit.)
+  A6. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table. (Derived.)
+  A7. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (No table from a standard or a manufacturer is shipped.)
+  A8. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Sheet default value; no project figure given.)
   A9. f_add (Additional allowance on the room load (CIBSE DHDG method only)) is taken as 0 %. (Sheet default value; no project figure given.)
-  A10. Conventional BS EN ISO 6946 horizontal-flow surface resistances (R_si 0.13, R_se 0.04 outside or 0.13 internal, m²K/W) are used where blank, for: Cavity wall, Partition. (Small conventional set; enter your own for floors, roofs and other flow directions.)
+  A10. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: Cavity wall, Partition. (Small conventional set; enter your own where the construction needs other values.)
 
 4. WORKING
-  [9] R_1 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
-      = Cavity wall: 0.13 + (0.13312 + 4.5455 + 0.66667 + 0.022807) + 0 + 0.04
-      = 5.538 m²·K/W
+  [8] R_1 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
+      = Cavity wall: 0.13 + (0.12202 + 3.3333 + 0.5 + 0.0325) + 0 + 0.04
+      = 4.1579 m²·K/W
         Cavity wall: total thermal resistance
-  [10] U_1 = 1/R    « BS EN ISO 6946
-      = 1 / 5.538
-      = 0.18057 W/(m²·K)
+  [9] U_1 = 1/R    « BS EN ISO 6946
+      = 1 / 4.1579
+      = 0.24051 W/(m²·K)
         Cavity wall: U-value
-  [11] Phi_1 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
-      = 15 × 0.18057 × 1 × (21 − -3) °C
-      = 65.005 W
+  [10] Phi_1 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
+      = 15 × 0.24051 × 1 × (21 − -3) °C
+      = 86.583 W
         Cavity wall: fabric loss to θ_e = -3 °C
-  [12] R_2 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
-      = Partition: 0.13 + (0.05 + 0.05) + 0.18 + 0.13
-      = 0.54 m²·K/W
+  [11] R_2 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
+      = Partition: 0.13 + (0.056818 + 0.056818) + 0.18 + 0.13
+      = 0.55364 m²·K/W
         Partition: total thermal resistance
-  [13] U_2 = 1/R    « BS EN ISO 6946
-      = 1 / 0.54
-      = 1.8519 W/(m²·K)
+  [12] U_2 = 1/R    « BS EN ISO 6946
+      = 1 / 0.55364
+      = 1.8062 W/(m²·K)
         Partition: U-value
-  [14] Phi_2 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
-      = 12 × 1.8519 × 1 × (21 − 18) °C
-      = 66.667 W
+  [13] Phi_2 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
+      = 12 × 1.8062 × 1 × (21 − 18) °C
+      = 65.025 W
         Partition: fabric loss to θ_adj = 18 °C
-  [15] U_3 = U override (user-entered)
+  [14] U_3 = U override (user-entered)
       = Ground floor: 0.25 W/m²K
       = 0.25 W/(m²·K)
         Ground floor: U-value as entered (ground floor or glazing)
-  [16] Phi_3 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
+  [15] Phi_3 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
       = 10 × 0.25 × 0.6 × (21 − -3) °C
       = 36 W
         Ground floor: fabric loss to θ_e = -3 °C
-  [17] A_fab = Σ A
+  [16] A_fab = Σ A
       = 37 m²
       = 37 m²
         Total fabric area
-  [18] A_ext = Σ A facing outside
+  [17] A_ext = Σ A facing outside
       = 25 m²
       = 25 m²
         Fabric area facing outside
-  [19] A_tb = Σ A·f facing outside    « BS EN 12831-1 cl. 6.3.2
+  [18] A_tb = Σ A·f facing outside    « BS EN 12831-1 cl. 6.3.2
       = 21 m²
       = 21 m²
         Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)
-  [20] U_m = Σ A·U·f / Σ A
-      = 26.431 / 37
-      = 0.71434 W/(m²·K)
+  [19] U_m = Σ A·U·f / Σ A
+      = 26.783 / 37
+      = 0.72385 W/(m²·K)
         Area-weighted mean U-value of the fabric
-  [21] dT = theta_int - theta_e
+  [20] dT = theta_int - theta_e
       = 21 degC − (-3 degC)
       = 24 K
         Design temperature difference, inside to outside
-  [22] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
-      = 167.67 W
-      = 167.67 W
+  [21] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
+      = 187.61 W
+      = 187.61 W
         Fabric loss through the elements
-  [23] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
+  [22] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
       = 0.05 W/(m²·K) × 21 m² × 24 K
       = 25.2 W
         Thermal-bridge allowance
-  [24] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
-      = 167.67 W + 25.2 W
-      = 192.87 W
+  [23] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
+      = 187.61 W + 25.2 W
+      = 212.81 W
         Fabric heat loss
-  [25] q_v = n * V
+  [24] q_v = n * V
       = 0.6 1/h × 50 m³
       = 30 m³/h
         Ventilation air flow
-  [26] dT_v = theta_int - theta_supply    « BS EN 12831-1 cl. 6.3.3
+  [25] dT_v = theta_int - theta_supply    « BS EN 12831-1 cl. 6.3.3
       = 21 degC − 16 degC
       = 5 K
         Ventilation temperature difference, inside to MVHR supply
-  [27] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
+  [26] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
       = 0.34 Wh/(m^3*K) × 30 m³/h × 5 K
       = 51 W
         Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
-  [29] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
-      = 192.87 W + 51 W
-      = 243.87 W
+  [28] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
+      = 212.81 W + 51 W
+      = 263.81 W
         Room design heat loss
-  [30] HLC = Phi_HL / dT
-      = 243.87 W / 24 K
-      = 10.161 W/K
+  [29] HLC = Phi_HL / dT
+      = 263.81 W / 24 K
+      = 10.992 W/K
         Heat loss coefficient
-  [31] u_1 = U / U_target
-      = 0.18057 / 0.3
-      = 0.6019
-        Cavity wall: utilisation of the target U-value
-  [32] u_2 = U / U_target
-      = 1.8519 / 0.3
-      = 6.1728
-        Partition: utilisation of the target U-value
 
 5. RESULTS
-  R_1 = 5.538 m²·K/W    Cavity wall: thermal resistance
-  U_1 = 0.18057 W/(m²·K)    Cavity wall: U-value
-  Phi_1 = 65.005 W    Cavity wall: fabric loss
-  R_2 = 0.54 m²·K/W    Partition: thermal resistance
-  U_2 = 1.8519 W/(m²·K)    Partition: U-value
-  Phi_2 = 66.667 W    Partition: fabric loss
+  R_1 = 4.1579 m²·K/W    Cavity wall: thermal resistance
+  U_1 = 0.24051 W/(m²·K)    Cavity wall: U-value
+  Phi_1 = 86.583 W    Cavity wall: fabric loss
+  R_2 = 0.55364 m²·K/W    Partition: thermal resistance
+  U_2 = 1.8062 W/(m²·K)    Partition: U-value
+  Phi_2 = 65.025 W    Partition: fabric loss
   U_3 = 0.25 W/(m²·K)    Ground floor: U-value
   Phi_3 = 36 W    Ground floor: fabric loss
   A_fab = 37 m²    Total fabric area
   A_ext = 25 m²    Fabric area facing outside
   A_tb = 21 m²    Fabric area facing outside weighted by f
-  U_m = 0.71434 W/(m²·K)    Mean fabric U-value
+  U_m = 0.72385 W/(m²·K)    Mean fabric U-value
   dT = 24 K    Design temperature difference
-  Phi_el = 167.67 W    Element fabric loss
+  Phi_el = 187.61 W    Element fabric loss
   Phi_tb = 25.2 W    Thermal-bridge allowance
-  Phi_T = 192.87 W    Fabric heat loss
+  Phi_T = 212.81 W    Fabric heat loss
   q_v = 30 m³/h    Ventilation air flow
   Phi_V = 51 W    Ventilation heat loss
-  Phi_HL = 243.87 W    Room design heat loss
-  HLC = 10.161 W/K    Heat loss coefficient
-  u_1 = 0.6019    Cavity wall: U against target
-  u_2 = 6.1728    Partition: U against target
+  Phi_HL = 263.81 W    Room design heat loss
+  HLC = 10.992 W/K    Heat loss coefficient
 
 6. CHECKS (governing first)
-  FAIL  U-value of Partition against its target (0.3 W/m²K): u_2 = 6.1728 vs u_2 ≤ 1  utilisation 6.17
-  PASS  U-value of Cavity wall against its target (0.3 W/m²K): u_1 = 0.6019 vs u_1 ≤ 1  utilisation 0.602
+  No pass/fail checks in this calculation.
 
 7. APPLICABILITY
-  WARNING record.theta_e: theta_e: a tabulated value not taken from a reference record (External design temperature); enter it as one so its source, edition and licence travel with it.
-  WARNING record.elements: elements: a tabulated value not taken from a reference record (Surface resistances and air-gap resistance); enter it as one so its source, edition and licence travel with it.
-  WARNING record.layers: layers: a tabulated value not taken from a reference record (Layer thermal conductivity); enter it as one so its source, edition and licence travel with it.
-  WARNING record.y_tb: y_tb: a tabulated value not taken from a reference record (Thermal-bridge allowance); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.0.0
-  Content hash: c3e6168e43239acd
+  Template: bs.room-heat-loss@1.1.0
+  Content hash: 4860d86fbd28e4cd
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 5/5
-  Test run: 2026-10-24 18:29 UTC
+  Known-answer cases passed: 6/6
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 
@@ -404,22 +387,21 @@ Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A closed LTHW system below 100 °C: the catalogue output (at ΔT 50 K) each room's emitter needs at the design flow, return and room temperatures, checked against the selected emitters; and the minimum expansion vessel for the system volume, fill and maximum temperatures, static head and pressures.
-Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_f − t_r)/ln((t_f − t_i)/(t_r − t_i)) Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n System volume: V_s = Σ V_em + V_pipe + V_plant Expansion: e_x = ρ(t_fill)/ρ(t_max) − 1 (water density by Kell 1975), or a glycol record Pre-charge: p_i = ρ·g·h_static + margin (≥ static head) Vessel: V_e = e_x·V_s/[1 − (p_i + 1)/(p_f + 1)] (pressures in bar gauge, + 1 bar for absolute)
+Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_f − t_r)/ln((t_f − t_i)/(t_r − t_i)) Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n System volume: V_s = Σ V_em + V_pipe + V_plant Expansion: e_x = ρ(t_fill)/ρ(t_max) − 1 (water density by Kell 1975), or a glycol record Pre-charge: p_i = ρ·g·h_static + margin (≥ static head) Vessel: V_e = e_x·V_s/[1 − (p_i + 1)/(p_f + 1)] (pressures in bar gauge, + 1 bar for absolute); the expansion volume only, sized for the higher of t_max and t_f; a water reserve and a safety-valve margin are not included
   Ref: BS EN 442-2:2014 cl. 5 — Radiators and convectors — test methods and rating (characteristic equation)
   Ref: CIBSE Guide B1 2016, §1.4 — Heating — sealed systems and expansion
-  Ref: BS EN 12828:2012+A1:2014 cl. 4.6 — Heating systems in buildings — expansion vessels and pressure
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   rooms | Rooms and emitters | 2 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  rooms[1] |  | name = Room A; Phi = 350.67 W; V_em = 4 L |  | Phi: link: Room A heat loss rev A · Phi_HL | 
-  rooms[2] |  | name = Room B; Phi = 243.87 W; V_em = 4 L |  | Phi: link: Room B heat loss rev A · Phi_HL | 
+  rooms[1] |  | name = Room A; Phi = 379.44 W; V_em = 4 L |  | Phi: link: Room A heat loss rev A · Phi_HL | 
+  rooms[2] |  | name = Room B; Phi = 263.81 W; V_em = 4 L |  | Phi: link: Room B heat loss rev A · Phi_HL | 
   t_f | Flow temperature | 75 | degC | assumption: Sheet default value; no project figure given. | 30 … 90 degC
   t_r | Return temperature | 65 | degC | assumption: Sheet default value; no project figure given. | 30 … 90 degC
   t_i | Room temperature | 20 | degC | assumption: Sheet default value; no project figure given. | 16 … 24 degC
   n | Emitter exponent | 1.3 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.5
   dT_method | Mean temperature difference | arithmetic mean (catalogue rating) |  | assumption: Sheet default value; no project figure given. | any
-  V_pipe | Pipework water content | 20 | L | assumption: Sheet default value; no project figure given. | 0 … 10000 L
+  V_pipe | Pipework water content | 3.14 | L | spec: SPEC-HTG-01 §3 | 0 … 10000 L
   V_plant | Plant water content (boiler, cylinder coil, buffer) | 10 | L | assumption: Sheet default value; no project figure given. | 0 … 10000 L
   t_fill | Fill temperature | 10 | degC | assumption: Sheet default value; no project figure given. | 4 … 30 degC
   t_max | Maximum system temperature | 85 | degC | assumption: Sheet default value; no project figure given. | 30 … 99 degC
@@ -432,12 +414,12 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   A1. Closed LTHW system below 100 °C; emitter output follows Φ50·(ΔT/50)^n with the manufacturer's n. (Catalogue ratings at 75/65/20 °C.)
   A2. Water density from the Kell (1975) correlation, within about 0.01 % of IAPWS-95 at atmospheric pressure, 0–100 °C; glycol mixtures take e from a record. (Formula, not a table.)
   A3. Gauge pressures are made absolute by adding 1 bar, as the vessel relation is usually written. (Within 1.3 % of the standard atmosphere.)
-  A4. t_f (Flow temperature) is taken as 75 degC. (Sheet default value; no project figure given.)
-  A5. t_r (Return temperature) is taken as 65 degC. (Sheet default value; no project figure given.)
-  A6. t_i (Room temperature) is taken as 20 degC. (Sheet default value; no project figure given.)
-  A7. n (Emitter exponent) is taken as 1.3. (Sheet default value; no project figure given.)
-  A8. dT_method (Mean temperature difference) is taken as arithmetic mean (catalogue rating). (Sheet default value; no project figure given.)
-  A9. V_pipe (Pipework water content) is taken as 20 L. (Sheet default value; no project figure given.)
+  A4. V_e is the expansion volume by CIBSE Guide B1's relation only. It does not include a water reserve for system losses, nor a margin between the final pressure and the safety valve setting beyond p_f below p_prv; add both when the vessel is selected, from the heating-system standard in use. (Stated omission.)
+  A5. t_f (Flow temperature) is taken as 75 degC. (Sheet default value; no project figure given.)
+  A6. t_r (Return temperature) is taken as 65 degC. (Sheet default value; no project figure given.)
+  A7. t_i (Room temperature) is taken as 20 degC. (Sheet default value; no project figure given.)
+  A8. n (Emitter exponent) is taken as 1.3. (Sheet default value; no project figure given.)
+  A9. dT_method (Mean temperature difference) is taken as arithmetic mean (catalogue rating). (Sheet default value; no project figure given.)
   A10. V_plant (Plant water content (boiler, cylinder coil, buffer)) is taken as 10 L. (Sheet default value; no project figure given.)
   A11. t_fill (Fill temperature) is taken as 10 degC. (Sheet default value; no project figure given.)
   A12. t_max (Maximum system temperature) is taken as 85 degC. (Sheet default value; no project figure given.)
@@ -464,24 +446,24 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
       = 1
         Output correction from ΔT 50 K
   [18] R1 = Φ_req/f_dT
-      = 350.67 / 1
-      = 350.67 W
+      = 379.44 / 1
+      = 379.44 W
         Room A: catalogue output needed at ΔT 50 K
   [19] R2 = Φ_req/f_dT
-      = 243.87 / 1
-      = 243.87 W
+      = 263.81 / 1
+      = 263.81 W
         Room B: catalogue output needed at ΔT 50 K
   [20] Phi_tot = Σ Φ_req
-      = 594.54 W
-      = 594.54 W
+      = 643.25 W
+      = 643.25 W
         Total heat required by the rooms
   [21] V_em = Σ V_em
       = 8 L
       = 8 L
         Emitter water content
   [22] V_s = V_em + V_pipe + V_plant
-      = 8 L + 20 L + 10 L
-      = 38 L
+      = 8 L + 3.14 L + 10 L
+      = 21.14 L
         System water volume
   [23] rho_fill = ρ(t_fill), Kell 1975
       = t = 10 °C
@@ -504,8 +486,8 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
       = 0.79019 bar
         Pre-charge (initial) pressure, gauge
   [28] V_e = e_x * V_s / (1 - (p_i + 1 bar) / (p_f + 1 bar))    « CIBSE Guide B1 §1.4
-      = 0.032086 × 38 L / (1 − (0.79019 bar + 1 bar) / (2.5 bar + 1 bar))
-      = 2.4959 L
+      = 0.032086 × 21.14 L / (1 − (0.79019 bar + 1 bar) / (2.5 bar + 1 bar))
+      = 1.3885 L
         Minimum expansion vessel volume
 
 5. RESULTS
@@ -513,14 +495,14 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   dT_fr = 10 K    Flow-to-return temperature difference
   t_m = 70 degC    Mean water temperature
   f_dT = 1    Output correction factor
-  R1 = 350.67 W    Room A: Φ50 needed
-  R2 = 243.87 W    Room B: Φ50 needed
-  Phi_tot = 594.54 W    Total heat required
+  R1 = 379.44 W    Room A: Φ50 needed
+  R2 = 263.81 W    Room B: Φ50 needed
+  Phi_tot = 643.25 W    Total heat required
   V_em = 8 L    Emitter water content
-  V_s = 38 L    System water volume
+  V_s = 21.14 L    System water volume
   e_x = 0.032086    Expansion coefficient
   p_i = 0.79019 bar    Pre-charge pressure
-  V_e = 2.4959 L    Minimum vessel volume
+  V_e = 1.3885 L    Minimum vessel volume
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
@@ -529,11 +511,11 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   WARNING record.n: n: a tabulated value not taken from a reference record (Emitter exponent); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.sealed-system@1.1.0
-  Content hash: d3a2350bd0878328
+  Template: bs.sealed-system@1.2.0
+  Content hash: dad2559cb15ff370
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 5/5
-  Test run: 2026-10-24 18:29 UTC
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 
@@ -547,7 +529,7 @@ Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
-Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
   Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
   Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
   Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
@@ -557,12 +539,11 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | water |  | spec: SPEC-HTG-01 §3 | any
   T | Fluid temperature (mean; link B6 t_m for a heating loop) | 70 | degC | link: Sealed system rev A · t_m | 0 … 100 degC
-  rho_custom | Density (custom fluid) | 888 | kg/m^3 | assumption: Sheet default value; no project figure given. | 500 … 2000 kg/m^3
-  mu_custom | Dynamic viscosity (custom fluid) | 800 | mPa*s | assumption: Sheet default value; no project figure given. | 0.1 … 1000 mPa*s
-  Phi_load | Heat carried by the water (gives the design flow with ΔT; replaces Q) | 594.545 | W | link: Sealed system rev A · Phi_tot | 10 … 100000000 W
+  Phi_load | Heat carried by the water (gives the design flow with ΔT; replaces Q) | 643.252 | W | link: Sealed system rev A · Phi_tot | 10 … 100000000 W
   dT_load | Flow-to-return temperature difference across the load | 10 | K | link: Sealed system rev A · dT_fr | 1 … 100 K
   segments | Pipe segments in series | 1 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  segments[1] |  | name = primary flow and return; L = 40 m; D = 28 mm; eps = 0.045 mm; K = 12; L_eq = 0 m; dz = 3 m; side = discharge |  |  | 
+  segments[1] |  | name = primary flow and return; L = 40 m; D = 10 mm; eps = 0.045 mm; K = 12; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | closed (flow and return: the rises cancel, no static lift) |  | spec: SPEC-HTG-01 §3 | any
   h_out | Pressure head required at the outlet | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 1000 m
   v_max | Velocity limit (warning) | 3 | m/s | assumption: Sheet default value; no project figure given. | 0.5 … 10 m/s
   n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.2 … 2
@@ -577,16 +558,14 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
   A3. The system curve scales friction losses with Q² from the design flow (turbulent assumption); the static part is independent of flow. (H_sys = H_static + k Q².)
   A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
-  A5. rho_custom (Density (custom fluid)) is taken as 888 kg/m^3. (Sheet default value; no project figure given.)
-  A6. mu_custom (Dynamic viscosity (custom fluid)) is taken as 800 mPa*s. (Sheet default value; no project figure given.)
-  A7. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
-  A8. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
-  A9. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
-  A10. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
-  A11. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
-  A12. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
-  A13. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
-  A14. The specific heat of water is taken as 4186 J/(kg·K), a rounded constant for 10–90 °C. (Assumed constant; enter cp_load to use another value.)
+  A5. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
+  A6. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
+  A7. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A8. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A9. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
+  A10. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
+  A11. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
+  A12. The specific heat of water is taken as 4186 J/(kg·K), a rounded constant for 10–90 °C. (Assumed constant; enter cp_load to use another value.)
 
 4. WORKING
   [3] rho = Kell (1975) density of water at T    « Kell 1975
@@ -606,108 +585,118 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = 4186 J/(kg·K)
         Specific heat of water (assumed; enter cp_load to change it)
   [11] Q_design = Phi_load / (rho * c_p * dT_load)
-      = 594.54 W / (977.77 kg/m³ × 4186 J/(kg·K) × 10 K)
-      = 0.052294 m³/h
+      = 643.25 W / (977.77 kg/m³ × 4186 J/(kg·K) × 10 K)
+      = 0.056578 m³/h
         Design flow from the heat carried: Φ / (ρ c_p ΔT)
   [12] v_s1 = primary flow and return: Q / (π D²/4)
-      = 0.052294 m³/h / (π × 28² mm² / 4)
-      = 0.023591 m/s
+      = 0.056578 m³/h / (π × 10² mm² / 4)
+      = 0.2001 m/s
         Velocity, primary flow and return
   [13] Re_s1 = primary flow and return: ρ v D / μ
-      = 977.77 × 0.023591 × 0.028 / 0.00040368
-      = 1599.9
+      = 977.77 × 0.2001 × 0.01 / 0.00040368
+      = 4846.8
         Reynolds number, primary flow and return
   [14] f_s1 = primary flow and return: Darcy friction factor
-      = 64 / Re (laminar)
-      = 0.040002
+      = Colebrook–White, 13 iterations (Swamee–Jain start 0.043411)
+      = 0.042402
         Friction factor, primary flow and return
-  [15] h_f_s1 = primary flow and return: f (L + L_eq)/D · v²/2g + K v²/2g
-      = 0.040002 × (40 + 0) / 0.028 × 0.000028375 + 12 × 0.000028375
-      = 0.001962 m
+  [15] f_sj_s1 = primary flow and return: Swamee–Jain check
+      = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
+      = 0.043411
+        Explicit cross-check, primary flow and return
+  [16] h_f_s1 = primary flow and return: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.042402 × (40 + 0) / 0.01 × 0.0020416 + 12 × 0.0020416
+      = 0.37076 m
         Head loss, primary flow and return
-  [16] h_f_total = Σ h_f
+  [17] h_f_total = Σ h_f
       = 1 segment(s)
-      = 0.001962 m
+      = 0.37076 m
         Total friction and fitting loss at the design flow
-  [17] H_static = Σ dz + h_out
-      = 3 + 0
-      = 3 m
+  [19] V_pipe = Σ π/4·D²·L
+      = 1 segment(s)
+      = 3.1416 L
+        Water held in the pipe segments
+  [20] H_static = h_out (closed circuit: no static lift)
+      = 0
+      = 0 m
         Static head
-  [18] H_sys = H_static + h_f_total
-      = 3 m + 0.001962 m
-      = 3.002 m
+  [21] H_sys = H_static + h_f_total
+      = 0 m + 0.37076 m
+      = 0.37076 m
         System head at the design flow
-  [19] dp_total = rho * 9.80665 m/s^2 * h_f_total
-      = 977.77 kg/m³ × 9.80665 m/s^2 × 0.001962 m
-      = 0.018813 kPa
+  [22] dp_total = rho * 9.80665 m/s^2 * h_f_total
+      = 977.77 kg/m³ × 9.80665 m/s^2 × 0.37076 m
+      = 3.5551 kPa
         Friction pressure drop at the design flow
-  [20] dp_sys = rho * 9.80665 m/s^2 * H_sys
-      = 977.77 kg/m³ × 9.80665 m/s^2 × 3.002 m
-      = 28.785 kPa
+  [23] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 977.77 kg/m³ × 9.80665 m/s^2 × 0.37076 m
+      = 3.5551 kPa
         System pressure at the design flow
-  [21] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
-      = 977.77 kg/m³ × 9.80665 m/s^2 × 0.052294 m³/h × 3.002 m
-      = 0.00041813 kW
+  [24] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+      = 977.77 kg/m³ × 9.80665 m/s^2 × 0.056578 m³/h × 0.37076 m
+      = 0.000055872 kW
         Hydraulic power at the design point
-  [24] P_shaft_design = P_hyd / eta_pump
-      = 0.00041813 kW / 0.7
-      = 0.00059733 kW
+  [27] P_shaft_design = P_hyd / eta_pump
+      = 0.000055872 kW / 0.7
+      = 0.000079818 kW
         Pump shaft power at the design flow
-  [25] T_shaft = P_shaft_design / n_pump
-      = 0.00059733 kW / 2800 rpm
-      = 0.0020372 N·m
+  [28] T_shaft = P_shaft_design / n_pump
+      = 0.000079818 kW / 2800 rpm
+      = 0.00027222 N·m
         Pump shaft torque P / ω at the design flow
-  [26] n_shaft = n_pump
+  [29] n_shaft = n_pump
       = 2800 rpm
       = 2800 rpm
         Pump shaft speed
-  [29] h_f_suction = Σ h_f on the suction side
+  [32] h_f_suction = Σ h_f on the suction side
       = 0 suction segment(s)
       = 0 m
         Suction-side friction loss
-  [30] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
+  [33] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
       = 101.32 kPa / (977.77 kg/m³ × 9.80665 m/s^2) + 0 m − 0 m − 31.198 kPa / (977.77 kg/m³ × 9.80665 m/s^2)
       = 7.3136 m
         NPSH available
-  [31] v_peak = highest segment velocity
-      = 0.023591 m/s
-      = 0.023591 m/s
+  [34] v_peak = highest segment velocity
+      = 0.2001 m/s
+      = 0.2001 m/s
         Highest velocity
-  [32] u_v = v_peak / v_max
-      = 0.023591 / 3
-      = 0.0078636
+  [35] u_v = v_peak / v_max
+      = 0.2001 / 3
+      = 0.066701
         Velocity utilisation
 
 5. RESULTS
-  v_s1 = 0.023591 m/s    Velocity, primary flow and return
-  Re_s1 = 1599.9    Re, primary flow and return
-  f_s1 = 0.040002    f, primary flow and return
-  h_f_s1 = 0.001962 m    h_f, primary flow and return
-  h_f_total = 0.001962 m    Σ h_f
-  H_static = 3 m    Static head
-  H_sys = 3.002 m    System head at Q
-  dp_total = 0.018813 kPa    Friction Δp
-  dp_sys = 28.785 kPa    System Δp
-  Q_design = 0.052294 m³/h    Design flow
-  P_hyd = 0.00041813 kW    Hydraulic power
-  P_shaft_design = 0.00059733 kW    Shaft power at the design flow
-  T_shaft = 0.0020372 N·m    Shaft torque
+  v_s1 = 0.2001 m/s    Velocity, primary flow and return
+  Re_s1 = 4846.8    Re, primary flow and return
+  f_s1 = 0.042402    f, primary flow and return
+  f_sj_s1 = 0.043411    f (Swamee–Jain), primary flow and return
+  h_f_s1 = 0.37076 m    h_f, primary flow and return
+  h_f_total = 0.37076 m    Σ h_f
+  H_static = 0 m    Static head
+  V_pipe = 3.1416 L    Water held in the pipes
+  H_sys = 0.37076 m    System head at Q
+  dp_total = 3.5551 kPa    Friction Δp
+  dp_sys = 3.5551 kPa    System Δp
+  Q_design = 0.056578 m³/h    Design flow
+  P_hyd = 0.000055872 kW    Hydraulic power
+  P_shaft_design = 0.000079818 kW    Shaft power at the design flow
+  T_shaft = 0.00027222 N·m    Shaft torque
   n_shaft = 2800 rpm    Shaft speed
   NPSH_a = 7.3136 m    NPSH available
-  v_peak = 0.023591 m/s    Highest velocity
+  v_peak = 0.2001 m/s    Highest velocity
 
 6. CHECKS (governing first)
-  PASS  Velocity ≤ limit: u_v = 0.0078636 vs u_v ≤ 1  utilisation 0.00786
+  PASS  Velocity ≤ limit: u_v = 0.066701 vs u_v ≤ 1  utilisation 0.0667
 
 7. APPLICABILITY
-  WARNING laminar: segments: primary flow and return is laminar (Re = 1599.9); f = 64/Re.
+  No warnings.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.1.0
-  Content hash: 42db31f9bd988473
+  Template: bs.pipe-pump@1.2.0
+  Content hash: 4747971fae135dcd
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 4/4
-  Test run: 2026-10-24 18:29 UTC
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 
@@ -721,7 +710,7 @@ Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell. Continuous rotary duty: ω = 2π n_L i/60; T_load = T_L/(i η); T_rms = T_load; T_pk = J_total ω/t_start + T_load (full load during the run-up, conservative); n_pk = n_L i; P_cont = T_load ω.
+Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell. RMS mechanical power (the thermal-equivalent continuous power a supply sees; regeneration counts as power): P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle} (trapezoid), with t_acc·[(3/4) T_load² + (5/16) T_acc²] for the S-curve; the instantaneous peak P_pk is not a continuous demand. Continuous rotary duty: ω = 2π n_L i/60; T_load = T_L/(i η); T_rms = T_load; T_pk = J_total ω/t_start + T_load (full load during the run-up, conservative); n_pk = n_L i; P_cont = T_load ω; P_rms = P_cont.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -737,7 +726,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   theta | Incline from horizontal (+ moving uphill) | 0 | deg | assumption: Sheet default value; no project figure given. | -90 … 90 deg
   F_p | Process force opposing the move (linear) | 0 | N | assumption: Sheet default value; no project figure given. | 0 … 1000000 N
   J_L | Load inertia at the output (rotary mechanisms) | 0.002 | kg*m^2 | spec: SPEC-HTG-01 §3 | 0 … 10000 kg*m^2
-  T_L | Constant load torque at the output (rotary) | 0.00203717 | N*m | link: Primary pipework and pump rev A · T_shaft | 0 … 100000 N*m
+  T_L | Constant load torque at the output (rotary) | 0.000272215 | N*m | link: Primary pipework and pump rev A · T_shaft | 0 … 100000 N*m
   duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | continuous |  | spec: SPEC-HTG-01 §3 | any
   n_L | Load speed at the output (continuous duty) | 2800 | rpm | link: Primary pipework and pump rev A · n_shaft | 1 … 100000 rpm
   t_start | Run-up time to full speed (continuous duty) | 5 | s | spec: SPEC-HTG-01 §3 | 0.1 … 600 s
@@ -749,7 +738,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   J_motor | Candidate motor rotor inertia | 0.0002 | kg*m^2 | assumption: Sheet default value; no project figure given. | 1e-7 … 10 kg*m^2
   T_rated | Candidate motor continuous (rated) torque | 2 | N*m | assumption: Sheet default value; no project figure given. | 0.01 … 100000 N*m
   T_peak | Candidate motor peak torque | 6 | N*m | assumption: Sheet default value; no project figure given. | 0.01 … 100000 N*m
-  n_max | Candidate motor maximum speed | 10000 | rpm | assumption: Sheet default value; no project figure given. | 10 … 100000 rpm
+  n_max | Candidate motor maximum speed | 6000 | rpm | assumption: Sheet default value; no project figure given. | 10 … 100000 rpm
   SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
   J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
 
@@ -773,7 +762,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   A17. J_motor (Candidate motor rotor inertia) is taken as 0.0002 kg*m^2. (Sheet default value; no project figure given.)
   A18. T_rated (Candidate motor continuous (rated) torque) is taken as 2 N*m. (Sheet default value; no project figure given.)
   A19. T_peak (Candidate motor peak torque) is taken as 6 N*m. (Sheet default value; no project figure given.)
-  A20. n_max (Candidate motor maximum speed) is taken as 10000 rpm. (Sheet default value; no project figure given.)
+  A20. n_max (Candidate motor maximum speed) is taken as 6000 rpm. (Sheet default value; no project figure given.)
   A21. SF (Safety margin on torque) is taken as 1.25. (Sheet default value; no project figure given.)
   A22. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
 
@@ -783,8 +772,8 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
       = 1
         Output radians per motor radian
   [20] T_load = T_L / (i * eta)
-      = 0.0020372 N·m / (1 × 0.9)
-      = 0.0022635 N·m
+      = 0.00027222 N·m / (1 × 0.9)
+      = 0.00030246 N·m
         Load torque at the motor shaft (constant)
   [21] J_refl = J_L / (i^2 * eta)
       = 0.002 kg·m² / (1^2 × 0.9)
@@ -807,77 +796,83 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
       = 0.14205 N·m
         Run-up (acceleration) torque
   [26] T_pk = T_acc + T_load
-      = 0.14205 N·m + 0.0022635 N·m
-      = 0.14431 N·m
+      = 0.14205 N·m + 0.00030246 N·m
+      = 0.14235 N·m
         Peak torque: run-up carrying the full load (conservative)
   [27] T_rms = T_load
-      = 0.0022635 N·m
-      = 0.0022635 N·m
+      = 0.00030246 N·m
+      = 0.00030246 N·m
         RMS torque: continuous running at the load torque
   [28] n_pk = omega_pk
       = 293.22 rad/s
       = 2800 rpm
         Motor speed
   [29] P_cont = T_load * omega_pk
-      = 0.0022635 N·m × 293.22 rad/s
-      = 0.6637 W
+      = 0.00030246 N·m × 293.22 rad/s
+      = 0.088686 W
         Continuous shaft power at the motor
   [30] P_pk = T_pk * omega_pk
-      = 0.14431 N·m × 293.22 rad/s
-      = 0.042314 kW
+      = 0.14235 N·m × 293.22 rad/s
+      = 0.041739 kW
         Peak mechanical power (end of the run-up)
-  [31] J_ratio = (J_refl + J_mech) / J_motor
+  [31] P_rms = P_cont
+      = 0.088686 W
+      = 0.000088686 kW
+        RMS mechanical power: the steady running power (thermal-equivalent continuous power)
+  [32] J_ratio = (J_refl + J_mech) / J_motor
       = (0.0022222 kg·m² + 0 kg·m²) / 0.0002 kg·m²
       = 11.111
         Inertia ratio (load : motor)
-  [32] u_peak = SF * T_pk / T_peak
-      = 1.25 × 0.14431 N·m / 6 N·m
-      = 0.030065
+  [33] u_peak = SF * T_pk / T_peak
+      = 1.25 × 0.14235 N·m / 6 N·m
+      = 0.029656
         Peak torque utilisation with safety margin
-  [33] u_rms = SF * T_rms / T_rated
-      = 1.25 × 0.0022635 N·m / 2 N·m
-      = 0.0014147
+  [34] u_rms = SF * T_rms / T_rated
+      = 1.25 × 0.00030246 N·m / 2 N·m
+      = 0.00018904
         Continuous torque utilisation with safety margin
-  [34] u_speed = n_pk / n_max
-      = 2800 rpm / 10000 rpm
-      = 0.28
+  [35] u_speed = n_pk / n_max
+      = 2800 rpm / 6000 rpm
+      = 0.46667
         Speed utilisation
-  [35] duty = T_rms / T_rated
-      = 0.0022635 N·m / 2 N·m
-      = 0.0011318
+  [36] duty = T_rms / T_rated
+      = 0.00030246 N·m / 2 N·m
+      = 0.00015123
         Thermal duty (without margin)
 
 5. RESULTS
   k = 1    Transmission constant
-  T_load = 0.0022635 N·m    Load torque at motor
+  T_load = 0.00030246 N·m    Load torque at motor
   J_refl = 0.0022222 kg·m²    Reflected load inertia
   J_total = 0.0024222 kg·m²    Total inertia
   alpha_pk = 58.643 rad/s²    Run-up angular acceleration
   T_acc = 0.14205 N·m    Run-up torque
-  T_pk = 0.14431 N·m    Peak torque
-  T_rms = 0.0022635 N·m    RMS torque
+  T_pk = 0.14235 N·m    Peak torque
+  T_rms = 0.00030246 N·m    RMS torque
   n_pk = 2800 rpm    Motor speed
-  P_cont = 0.6637 W    Continuous power
-  P_pk = 0.042314 kW    Peak power
+  P_cont = 0.088686 W    Continuous power
+  P_pk = 0.041739 kW    Peak power
+  P_rms = 0.000088686 kW    RMS power (continuous equivalent)
   J_ratio = 11.111    Inertia ratio
-  duty = 0.0011318    Thermal duty
-  u_peak = 0.030065    Peak utilisation
-  u_rms = 0.0014147    Continuous utilisation
-  u_speed = 0.28    Speed utilisation
+  duty = 0.00015123    Thermal duty
+  u_peak = 0.029656    Peak utilisation
+  u_rms = 0.00018904    Continuous utilisation
+  u_speed = 0.46667    Speed utilisation
 
 6. CHECKS (governing first)
-  PASS  Speed n_pk ≤ n_max: u_speed = 0.28 vs u_speed ≤ 1  utilisation 0.28
-  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.030065 vs u_peak ≤ 1  utilisation 0.0301
-  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.0014147 vs u_rms ≤ 1  utilisation 0.00141
+  PASS  Speed n_pk ≤ n_max: u_speed = 0.46667 vs u_speed ≤ 1  utilisation 0.467
+  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.029656 vs u_peak ≤ 1  utilisation 0.0297
+  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.00018904 vs u_rms ≤ 1  utilisation 0.000189
 
 7. APPLICABILITY
+  WARNING eta: eta: a direct-coupled rotary load has no transmission, but the overall efficiency is 0.9; use 1 (or the coupling's efficiency) unless the loss is intended.
   WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
   WARNING inertia-ratio: J_motor: the inertia ratio 11.1 exceeds 10.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.1.0
-  Content hash: dc25f3e5a3e7b859
+  Template: elec.motor-sizing@1.2.0
+  Content hash: 07f83040d397a49f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

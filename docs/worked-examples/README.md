@@ -1,25 +1,32 @@
 # Worked examples — v0.26.0
 
-32 worked examples (two per worksheet template) and 6 calculation packs (the bracket assembly and the five linked chains). Each folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF).
+44 worked examples (two for sixteen of the 28 worksheet templates, one for each of the other twelve) and 6 calculation packs (the bracket assembly and the five linked chains). The 28 templates carry 116 known-answer cases between them. Each example folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF). A pack folder holds the pack's issue sheet, each step's issued sheet, a README and an `inputs.json` that records every step's inputs (one object keyed by step); that file is a record of what was issued, not one worksheet's import, so load a pack step by copying that step's list out of it.
 
-**How to use one.** In the Desktop open Modules → Calculations → Worksheets (or the discipline's own Calculations node) and pick the template named in the table; the form opens on the template's defaults. Enter the values from the example's README (every input lists its value, unit and source); the form recalculates at once, *Show working* is the `sheet.txt` text and the issued sheet is `sheet.pdf`. `inputs.json` is the same input set in the exchange form the Calc API reads: headless, `CalcInputJson.Read` → `CalcRunner.Run` → `CalcSheetBuilder.Build` → `CalcSheetTextRenderer.Render` reproduces the sheet (`tests/Tempest.Calc.Tests.Calculators/WorkedExamples.cs`). To load an example into the form, copy the text of its `inputs.json` to the clipboard and press *Import inputs (CSV/JSON)*; the form re-seeds from it (table inputs included) and recalculates. *Export inputs (CSV)* copies the current inputs back out in the CSV the same button reads.
+**How to use one.** In the Desktop open Modules → Calculations → Worksheets (or the discipline's own Calculations node) and pick the template named in the table; the form opens on the template's declared defaults only. A table or a required value with no default (a frame's nodes, a shaft's segments, a base plate's `m` and `l_eff`) starts empty, so a new sheet for many templates opens blocked with a message saying what to enter next. Enter the values from the example's README (every input lists its value, unit and source); the form recalculates at once, *Show working* is the `sheet.txt` text and the issued sheet is `sheet.pdf`. `inputs.json` is the same input set in the exchange form the Calc API reads: headless, `CalcInputJson.Read` → `CalcRunner.Run` → `CalcSheetBuilder.Build` → `CalcSheetTextRenderer.Render` reproduces the sheet (`tests/Tempest.Calc.Tests.Calculators/WorkedExamples.cs`). To load an example into the form, copy the text of its `inputs.json` to the clipboard and press *Import inputs (CSV/JSON)*; the form re-seeds from it (table inputs included) and recalculates. *Export inputs (CSV)* copies the current inputs back out in the CSV the same button reads.
 
-Seven examples end on a **FAIL** governing check on purpose: they show how an overloaded or undersized design reads on the sheet. The verification footers in the stored sheets carry fixed placeholder values (hash `0000…`, engine `engine`); a sheet rendered in the product carries the real hash, engine version and test-run time.
+Nine examples end on a **FAIL** governing check on purpose: they show how an overloaded or undersized design reads on the sheet. The verification footers in the stored sheets carry fixed placeholder values (hash `0000…`, engine `engine`); a sheet rendered in the product carries the real hash, engine version and test-run time.
 
 | Discipline | Template | Example | Governing check |
 |---|---|---|---|
 | building-services | `bs.duct-sizing` | [extract-velocity-method](building-services/bs.duct-sizing/extract-velocity-method/README.md) | PASS — Velocity ≤ limit |
 | building-services | `bs.duct-sizing` | [office-supply-equal-friction](building-services/bs.duct-sizing/office-supply-equal-friction/README.md) | PASS — Velocity ≤ limit |
+| building-services | `bs.heat-exchanger` | [lthw-plate-hx-sizing](building-services/bs.heat-exchanger/lthw-plate-hx-sizing/README.md) | PASS — Approach against minimum |
 | building-services | `bs.pipe-pump` | [chilled-water-riser-duty](building-services/bs.pipe-pump/chilled-water-riser-duty/README.md) | FAIL — Velocity ≤ limit |
 | building-services | `bs.pipe-pump` | [oil-transfer-laminar](building-services/bs.pipe-pump/oil-transfer-laminar/README.md) | PASS — Velocity ≤ limit |
 | building-services | `bs.psychrometrics` | [cooling-coil-summer](building-services/bs.psychrometrics/cooling-coil-summer/README.md) | no pass/fail checks |
 | building-services | `bs.psychrometrics` | [winter-mixing-and-steam](building-services/bs.psychrometrics/winter-mixing-and-steam/README.md) | no pass/fail checks |
+| building-services | `bs.room-heat-loss` | [semi-detached-living-room](building-services/bs.room-heat-loss/semi-detached-living-room/README.md) | PASS — U-value of Party wall against its target (1.2 W/m²K) |
+| building-services | `bs.sealed-system` | [heat-pump-retrofit-55-45](building-services/bs.sealed-system/heat-pump-retrofit-55-45/README.md) | FAIL — Selected emitters against room heat (governing room) |
+| electrical | `elec.conductor-sizing` | [conveyor-motor-circuit](electrical/elec.conductor-sizing/conveyor-motor-circuit/README.md) | PASS — Design current within device rating (I_b ≤ I_n) |
 | electrical | `elec.enclosure-heat` | [outdoor-kiosk-cooling-unit](electrical/elec.enclosure-heat/outdoor-kiosk-cooling-unit/README.md) | FAIL — Natural dissipation holds T_max |
 | electrical | `elec.enclosure-heat` | [wall-mounted-plc-panel](electrical/elec.enclosure-heat/wall-mounted-plc-panel/README.md) | FAIL — Natural dissipation holds T_max |
+| electrical | `elec.fault-protection` | [workshop-radial-c16](electrical/elec.fault-protection/workshop-radial-c16/README.md) | PASS — Loop impedance within maximum (disconnection in time) |
+| electrical | `elec.load-budget` | [pump-skid-panel](electrical/elec.load-budget/pump-skid-panel/README.md) | FAIL — Starting peak against transformer overload |
 | electrical | `elec.motor-sizing` | [ball-screw-pick-and-place](electrical/elec.motor-sizing/ball-screw-pick-and-place/README.md) | PASS — RMS torque SF·T_rms ≤ T_rated |
 | electrical | `elec.motor-sizing` | [geared-index-table](electrical/elec.motor-sizing/geared-index-table/README.md) | PASS — RMS torque SF·T_rms ≤ T_rated |
 | electrical | `elec.voltage-drop` | [dc-battery-feed](electrical/elec.voltage-drop/dc-battery-feed/README.md) | FAIL — Voltage drop ≤ limit |
 | electrical | `elec.voltage-drop` | [three-phase-motor-feeder](electrical/elec.voltage-drop/three-phase-motor-feeder/README.md) | PASS — I ≤ I_z |
+| mechanical | `mech.bearing-life` | [skf-6206-pump](mechanical/mech.bearing-life/skf-6206-pump/README.md) | PASS — Modified rating life against required life |
 | mechanical | `mech.bolt-group` | [end-plate-moment](mechanical/mech.bolt-group/end-plate-moment/README.md) | PASS — Circular shear–tension interaction (governing bolt) |
 | mechanical | `mech.bolt-group` | [four-bolt-bracket](mechanical/mech.bolt-group/four-bolt-bracket/README.md) | PASS — Circular shear–tension interaction (governing bolt) |
 | mechanical | `mech.bolted-joint` | [m12-88-flange](mechanical/mech.bolted-joint/m12-88-flange/README.md) | PASS — Yield in the working state |
@@ -28,16 +35,21 @@ Seven examples end on a **FAIL** governing check on purpose: they show how an ov
 | mechanical | `mech.iso286-fit` | [h7-p6-50mm](mechanical/mech.iso286-fit/h7-p6-50mm/README.md) | PASS — Fit classified |
 | mechanical | `mech.press-fit` | [hollow-shaft](mechanical/mech.press-fit/hollow-shaft/README.md) | PASS — Hub yield |
 | mechanical | `mech.press-fit` | [solid-steel-shaft](mechanical/mech.press-fit/solid-steel-shaft/README.md) | PASS — Hub yield |
+| mechanical | `mech.shaft` | [gearbox-input-shaft](mechanical/mech.shaft/gearbox-input-shaft/README.md) | PASS — Slope at the bearings against limit |
 | mechanical | `mech.thick-cylinder` | [external-pressure-closed](mechanical/mech.thick-cylinder/external-pressure-closed/README.md) | PASS — von Mises against allowable |
 | mechanical | `mech.thick-cylinder` | [internal-pressure-closed](mechanical/mech.thick-cylinder/internal-pressure-closed/README.md) | PASS — von Mises against allowable |
 | mechanical | `mech.tolerance-stack` | [bearing-housing-gap](mechanical/mech.tolerance-stack/bearing-housing-gap/README.md) | PASS — C_pk against target |
 | mechanical | `mech.tolerance-stack` | [shouldered-screw-gap](mechanical/mech.tolerance-stack/shouldered-screw-gap/README.md) | FAIL — Worst case within requirement |
+| mechanical | `mech.weld-group` | [bracket-c-weld](mechanical/mech.weld-group/bracket-c-weld/README.md) | PASS — Throat stress against design strength |
+| structural | `struct.base-plate` | [portal-column-base-uc254](structural/struct.base-plate/portal-column-base-uc254/README.md) | PASS — Base plate tension T-stub (bending at the bolts) |
 | structural | `struct.beam-formulas` | [propped-cantilever-udl](structural/struct.beam-formulas/propped-cantilever-udl/README.md) | no pass/fail checks |
 | structural | `struct.beam-formulas` | [ss-point-offcentre](structural/struct.beam-formulas/ss-point-offcentre/README.md) | no pass/fail checks |
+| structural | `struct.connection-ec3` | [beam-splice-m20](structural/struct.connection-ec3/beam-splice-m20/README.md) | PASS — Bolt bearing |
 | structural | `struct.en1993-member` | [ub-beam-bending-shear](structural/struct.en1993-member/ub-beam-bending-shear/README.md) | PASS — Bending y M_y,Ed ≤ M_y,c,Rd |
 | structural | `struct.en1993-member` | [uc-column-axial-moment](structural/struct.en1993-member/uc-column-axial-moment/README.md) | FAIL — Member interaction (simplified) |
 | structural | `struct.frame-2d` | [pinned-portal-gravity-wind](structural/struct.frame-2d/pinned-portal-gravity-wind/README.md) | no pass/fail checks |
 | structural | `struct.frame-2d` | [two-span-continuous-beam](structural/struct.frame-2d/two-span-continuous-beam/README.md) | no pass/fail checks |
+| structural | `struct.load-combinations` | [office-floor-beam-uk-na](structural/struct.load-combinations/office-floor-beam-uk-na/README.md) | no pass/fail checks |
 | structural | `struct.section-properties` | [fabricated-box-girder](structural/struct.section-properties/fabricated-box-girder/README.md) | no pass/fail checks |
 | structural | `struct.section-properties` | [ub-457x191x98](structural/struct.section-properties/ub-457x191x98/README.md) | no pass/fail checks |
 

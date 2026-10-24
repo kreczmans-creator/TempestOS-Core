@@ -80,6 +80,9 @@ public sealed class CalcRunContext
 
     public CancellationToken CancellationToken { get; }
 
+    /// <summary>The block message for a table that has no rows: its symbol, then what to enter (see <see cref="CalcInputSpec.NextStepText"/>).</summary>
+    public string EnterRows(string symbol) => $"{symbol}: " + (Template.FindInput(symbol)?.NextStepText() ?? "enter at least one row.");
+
     public IReadOnlyList<CalcOutput> Outputs => _outputs;
 
     public IReadOnlyList<CalcCheck> Checks => _checks;

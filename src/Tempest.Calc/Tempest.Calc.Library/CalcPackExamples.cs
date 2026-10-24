@@ -34,7 +34,11 @@ internal static class CalcPackExamples
         Q("J_motor", 0.12, "kg*m^2"), Q("T_rated", 200, "N*m"), Q("T_peak", 400, "N*m"), Q("n_max", 3000, "rpm"),
     ];
 
-    /// <summary>The gearbox input shaft: coupling at one end, a 60 mm pitch pinion at mid-span (T and n arrive by link).</summary>
+    /// <summary>
+    /// The gearbox input shaft: coupling at one end, a pinion of 60 mm pitch RADIUS (120 mm pitch diameter) at mid-span. T and n arrive by link, but the
+    /// mesh forces are entered, derived for T = 151.58 N·m: F_t = T/r_p = 2.53 kN (horizontal plane) and F_r = F_t·tan 20° = 0.92 kN (vertical plane).
+    /// They do not follow a change of E1 by themselves: re-derive them when T_rms changes.
+    /// </summary>
     public static IReadOnlyList<CalcInputValue> DriveM4 { get; } =
     [
         Table("segments",
@@ -44,17 +48,21 @@ internal static class CalcPackExamples
         Q("x_T1", 0, "mm"), Q("x_T2", 150, "mm"),
         Table("sections",
             CalcRow.Of(Mm("x", 50), Num("K_t", 1.7), Num("K_ts", 1.5), Num("q", 0.85), Num("q_s", 0.9)), CalcRow.Of(Mm("x", 150), Num("K_t", 1.7), Num("K_ts", 1.5), Num("q", 0.85), Num("q_s", 0.9))),
-        Q("S_ut", 850, "MPa"), Q("S_y", 650, "MPa"), Q("E", 207, "GPa"), C("finish", "ground"),
+        Q("S_ut", 850, "MPa"), Q("S_y", 650, "MPa"), Q("E", 207, "GPa"), Q("rho", 7850, "kg/m^3"), C("finish", "ground"),
     ];
 
     public static IReadOnlyList<CalcInputValue> DriveM5 { get; } =
     [
-        C("type", "ball (p = 3)"), Q("C", 25.5, "kN"), Q("C_0", 15.3, "kN"), Q("L_req", 20000, "h"),
+        C("type", "ball (p = 3)"), Q("C", 25.5, "kN"), Q("C_0", 15.3, "kN"), Q("R", 90, "%"), Q("L_req", 20000, "h"),
     ];
 
+    /// <summary>
+    /// The bearing seat: a k6 shaft in the bearing's bore. A rolling-bearing bore is not an ISO 286 H7 hole: it has its own tolerance (ISO 492), entered here from
+    /// the bearing record; 0 / −9 µm is an invented illustration, to be replaced by the bearing maker's figure.
+    /// </summary>
     public static IReadOnlyList<CalcInputValue> DriveM2 { get; } =
     [
-        C("hole_letter", "H"), N("hole_grade", 7), C("shaft_letter", "k"), N("shaft_grade", 6),
+        C("hole_kind", "rolling-bearing bore (deviations from the bearing record)"), Q("ES_override", 0, "µm"), Q("EI_override", -9, "µm"), C("shaft_letter", "k"), N("shaft_grade", 6),
     ];
 
     /// <summary>Four M8 8.8 bolts (stress area 36.6 mm², shear resistance 14.0 kN, tension 21.0 kN) on an 80 mm circle carry the torque by shear.</summary>
@@ -72,14 +80,19 @@ internal static class CalcPackExamples
     public static IReadOnlyList<CalcInputValue> MotorE1 { get; } =
     [
         C("mechanism", "lead / ball screw"), Q("p_screw", 10, "mm"), Q("m", 50, "kg"), N("mu", 0.1), N("s", 0.5), Q("t_move", 0.5, "s"),
+        Q("n_max", 10000, "rpm"),
     ];
 
+    /// <summary>
+    /// The panel's own loads: 24 V electronics and a fan inside the enclosure release all their input power as heat there (heat share 1); the
+    /// 24 V supply is fed from the single-phase bus. The axis motor arrives by link and is outside the enclosure (its heat share is 0).
+    /// </summary>
     public static IReadOnlyList<CalcInputValue> MotorE6 { get; } =
     [
         Table("loads",
-            CalcRow.Of(Txt("name", "24 V controls and I/O"), Txt("supply", "DC"), ("P", new CalcCell(0.18, "kW")), Num("cosphi", 1), Num("eta", 0.9), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false))),
-            CalcRow.Of(Txt("name", "Panel fan"), Txt("supply", "AC single-phase"), ("P", new CalcCell(0.04, "kW")), Num("cosphi", 0.9), Num("eta", 0.7), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)))),
-        N("cosphi_add", 0.85), N("eta_add", 0.97),
+            CalcRow.Of(Txt("name", "24 V controls and I/O"), Txt("supply", "DC"), ("P", new CalcCell(0.12, "kW")), Num("cosphi", 1), Num("eta", 0.9), Num("heat", 1), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false))),
+            CalcRow.Of(Txt("name", "Panel fan"), Txt("supply", "AC single-phase"), ("P", new CalcCell(0.02, "kW")), Num("cosphi", 0.9), Num("eta", 0.7), Num("heat", 1), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)))),
+        N("cosphi_add", 0.85), N("eta_add", 0.97), N("heat_add", 0), C("psu_bus", "AC single-phase"), N("eta_psu", 0.9),
     ];
 
     /// <summary>The cable (25 m, PVC, type C device, method C). The capacity and rating tables are NOT supplied: they are the user's own.</summary>
@@ -90,34 +103,38 @@ internal static class CalcPackExamples
 
     public static IReadOnlyList<CalcInputValue> MotorE3 { get; } =
     [
-        Q("V_n", 400, "V"), N("cos_phi", 0.85), Q("T_amb", 30, "degC"),
+        C("system", "AC three-phase"), Q("V_n", 400, "V"), N("cos_phi", 0.85), Q("T_amb", 30, "degC"),
     ];
 
+    /// <summary>
+    /// The device is the type C MCB the cable step sizes (the choice must agree with it or the step is blocked); the protective conductor is
+    /// the same size as the line conductor; the let-through energy is an invented figure for a small MCB, to be replaced from its datasheet.
+    /// </summary>
     public static IReadOnlyList<CalcInputValue> MotorE5 { get; } =
     [
-        Q("U_0", 230, "V"), Q("Z_e", 0.35, "ohm"), Q("S_cpc", 2.5, "mm^2"), Q("t_req", 0.4, "s"),
+        Q("U_0", 230, "V"), Q("Z_e", 0.35, "ohm"), Q("S_cpc", 1.5, "mm^2"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 1.5e4, "A^2*s"),
     ];
 
-    /// <summary>A 1000 × 1000 × 300 enclosure against a wall.</summary>
+    /// <summary>A 1000 × 1200 × 300 enclosure against a wall.</summary>
     public static IReadOnlyList<CalcInputValue> MotorE2 { get; } =
     [
         Table("loads",
             CalcRow.Of(Txt("name", "Servo drive"), ("P", new CalcCell(60, "W")), Num("qty", 1), Num("duty", 1)),
             CalcRow.Of(Txt("name", "Contactors, terminals and busbars"), ("P", new CalcCell(20, "W")), Num("qty", 1), Num("duty", 1))),
-        Q("W", 1.0, "m"), Q("H", 1.0, "m"), Q("D", 0.3, "m"), Q("T_amb", 35, "degC"), Q("T_max", 55, "degC"),
+        Q("W", 1.0, "m"), Q("H", 1.2, "m"), Q("D", 0.3, "m"), Q("T_amb", 35, "degC"), Q("T_max", 55, "degC"),
     ];
 
     // ---- Wet heating: two rooms to a circulator motor ------------------------------------------------------------------------
 
     private static readonly (string Element, string Layer, double D, double Lambda)[] CavityLayers =
     [
-        ("Cavity wall", "Outer brick leaf", 102.5, 0.77), ("Cavity wall", "PIR insulation", 100, 0.022), ("Cavity wall", "Inner block leaf", 100, 0.15), ("Cavity wall", "Plaster", 13, 0.57),
+        ("Cavity wall", "Outer brick leaf", 102.5, 0.84), ("Cavity wall", "Insulation", 100, 0.03), ("Cavity wall", "Inner block leaf", 100, 0.2), ("Cavity wall", "Plaster", 13, 0.4),
     ];
 
     private static CalcInputValue Layers(params (string Element, string Layer, double D, double Lambda)[] rows) =>
         Table("layers", [.. rows.Select(r => CalcRow.Of(Txt("element", r.Element), Txt("name", r.Layer), Mm("d", r.D), ("lambda", new CalcCell(r.Lambda, "W/(m*K)"))))]);
 
-    /// <summary>A room with an insulated cavity wall and a window, naturally ventilated (Φ about 351 W). The layer conductivities are illustrative.</summary>
+    /// <summary>A room with an insulated cavity wall and a window, naturally ventilated (Φ about 379 W). The layer conductivities are invented, illustrative values.</summary>
     public static IReadOnlyList<CalcInputValue> WetRoomA { get; } =
     [
         Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"), Layers(CavityLayers),
@@ -127,11 +144,11 @@ internal static class CalcPackExamples
         Q("U_target", 0.3, "W/(m^2*K)"), Q("n", 0.5, "1/h"), Q("V", 40, "m^3"),
     ];
 
-    /// <summary>A room with MVHR, a partition to an 18 °C space and a ground floor with a user U (Φ about 244 W).</summary>
+    /// <summary>A room with MVHR, a partition to an 18 °C space and a ground floor with a user U (Φ about 264 W). The partition is not held to the outside target U.</summary>
     public static IReadOnlyList<CalcInputValue> WetRoomB { get; } =
     [
         Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
-        Layers([.. CavityLayers, ("Partition", "Plasterboard", 12.5, 0.25), ("Partition", "Plasterboard", 12.5, 0.25)]),
+        Layers([.. CavityLayers, ("Partition", "Plasterboard", 12.5, 0.22), ("Partition", "Plasterboard", 12.5, 0.22)]),
         Table("elements",
             CalcRow.Of(Txt("name", "Cavity wall"), ("area", new CalcCell(15, "m^2"))),
             CalcRow.Of(Txt("name", "Partition"), ("area", new CalcCell(12, "m^2")), ("theta_adj", new CalcCell(18, "degC")), ("Rg", new CalcCell(0.18, "m^2*K/W"))),
@@ -139,18 +156,26 @@ internal static class CalcPackExamples
         Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("theta_supply", 16, "degC"),
     ];
 
-    /// <summary>The sealed system is given its two rooms (instantiating never creates rows); each room's Φ is a placeholder the cell links replace.</summary>
+    /// <summary>
+    /// The sealed system is given its two rooms (instantiating never creates rows); each room's Φ is a placeholder the cell links replace. The pipework
+    /// water content is B1's V_pipe (π/4 × 0.010² × 40 m = 3.14 L), entered by hand: B1 takes its heat load from B6, so a link back from B1 would be a cycle.
+    /// </summary>
     public static IReadOnlyList<CalcInputValue> WetB6 { get; } =
     [
+        Q("V_pipe", 3.14, "L"),
         Table("rooms",
             CalcRow.Of(Txt("name", "Room A"), ("Phi", new CalcCell(1, "W")), ("V_em", new CalcCell(4, "L"))),
             CalcRow.Of(Txt("name", "Room B"), ("Phi", new CalcCell(1, "W")), ("V_em", new CalcCell(4, "L")))),
     ];
 
+    /// <summary>
+    /// A closed flow-and-return loop in 10 mm microbore: no static lift. The load is small (about 0.64 kW), so the flow is about 57 L/h and the pump duty a
+    /// fraction of a watt hydraulic: a deliberately tiny illustration.
+    /// </summary>
     public static IReadOnlyList<CalcInputValue> WetB1 { get; } =
     [
-        C("fluid", "water"),
-        Table("segments", CalcRow.Of(Txt("name", "primary flow and return"), ("L", new CalcCell(40, "m")), Mm("D", 28), Mm("eps", 0.045), Num("K", 12), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(3, "m")), Txt("side", "discharge"))),
+        C("fluid", "water"), C("circuit", "closed (flow and return: the rises cancel, no static lift)"),
+        Table("segments", CalcRow.Of(Txt("name", "primary flow and return"), ("L", new CalcCell(40, "m")), Mm("D", 10), Mm("eps", 0.045), Num("K", 12), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
         Q("n_pump", 2800, "rpm"),
     ];
 
@@ -193,10 +218,11 @@ internal static class CalcPackExamples
         Q("U", 60, "W/(m^2*K)"), Q("R_f", 0.0001, "m^2*K/W"),
     ];
 
+    /// <summary>A closed supply-and-return loop: no static lift.</summary>
     public static IReadOnlyList<CalcInputValue> CoolB1 { get; } =
     [
-        C("fluid", "water"),
-        Table("segments", CalcRow.Of(Txt("name", "cooling water supply and return"), ("L", new CalcCell(30, "m")), Mm("D", 25), Mm("eps", 0.045), Num("K", 12), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(3, "m")), Txt("side", "discharge"))),
+        C("fluid", "water"), C("circuit", "closed (flow and return: the rises cancel, no static lift)"),
+        Table("segments", CalcRow.Of(Txt("name", "cooling water supply and return"), ("L", new CalcCell(30, "m")), Mm("D", 25), Mm("eps", 0.045), Num("K", 12), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
         Q("n_pump", 2800, "rpm"),
     ];
 
@@ -273,10 +299,14 @@ internal static class CalcPackExamples
         Q("F_v_Ed", 0, "kN"), Q("F_t_Ed", 0, "kN"),
     ];
 
-    /// <summary>The base plate: 350 × 300 × 25 on C25/30 concrete, two holding-down bolts each side 135 mm from the column axis, 40 mm to the plate edge.</summary>
+    /// <summary>
+    /// The base plate: 350 × 300 × 25 on C25/30 concrete, two holding-down bolts each side 135 mm from the column axis, 40 mm to the plate edge. The foundation
+    /// concentration factor is 1 (no pad geometry is claimed). The tension T-stub geometry is entered, not defaulted: m = 28 mm (bolt to weld toe) and
+    /// l_eff = 150 mm for the two bolts of a row (half the plate width governs, 0.5·b_p, from the cl. 6.2.6.5 patterns).
+    /// </summary>
     public static IReadOnlyList<CalcInputValue> SteelS6 { get; } =
     [
         C("column", "I/H"), Q("h", 203.2, "mm"), Q("b", 203.6, "mm"), Q("t_f", 11, "mm"), Q("t_w", 7.2, "mm"),
-        Q("B", 300, "mm"), Q("L", 350, "mm"), Q("t_p", 25, "mm"), Q("x_b", 135, "mm"), Q("e_min", 40, "mm"),
+        Q("B", 300, "mm"), Q("L", 350, "mm"), Q("t_p", 25, "mm"), N("alpha", 1), Q("x_b", 135, "mm"), Q("m", 28, "mm"), Q("l_eff", 150, "mm"), Q("e_min", 40, "mm"),
     ];
 }

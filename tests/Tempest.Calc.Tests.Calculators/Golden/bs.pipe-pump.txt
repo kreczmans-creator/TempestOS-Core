@@ -5,7 +5,7 @@ Title: Pipe pressure drop and pump duty
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
-Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
   Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
   Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
   Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
@@ -20,6 +20,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Q | Design flow rate (blank when a heat load gives it) | 1 | m^3/h | manual | 0.01 … 100000 m^3/h
   segments | Pipe segments in series | 1 row(s) |  | manual | any
   segments[1] |  | name = oil line; L = 40 m; D = 50 mm; eps = 0 mm; K = 0; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | manual | any
   h_out | Pressure head required at the outlet | 0 | m | manual | 0 … 1000 m
   v_max | Velocity limit (warning) | 3 | m/s | manual | 0.5 … 10 m/s
   n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | manual | 0.2 … 2
@@ -67,31 +68,35 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = 1 segment(s)
       = 6.6542 m
         Total friction and fitting loss at the design flow
-  [16] H_static = Σ dz + h_out
+  [17] V_pipe = Σ π/4·D²·L
+      = 1 segment(s)
+      = 78.54 L
+        Water held in the pipe segments
+  [18] H_static = Σ dz + h_out
       = 0 + 0
       = 0 m
         Static head
-  [17] H_sys = H_static + h_f_total
+  [19] H_sys = H_static + h_f_total
       = 0 m + 6.6542 m
       = 6.6542 m
         System head at the design flow
-  [18] dp_total = rho * 9.80665 m/s^2 * h_f_total
+  [20] dp_total = rho * 9.80665 m/s^2 * h_f_total
       = 888 kg/m³ × 9.80665 m/s^2 × 6.6542 m
       = 57.947 kPa
         Friction pressure drop at the design flow
-  [19] dp_sys = rho * 9.80665 m/s^2 * H_sys
+  [21] dp_sys = rho * 9.80665 m/s^2 * H_sys
       = 888 kg/m³ × 9.80665 m/s^2 × 6.6542 m
       = 57.947 kPa
         System pressure at the design flow
-  [20] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+  [22] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
       = 888 kg/m³ × 9.80665 m/s^2 × 1 m³/h × 6.6542 m
       = 0.016096 kW
         Hydraulic power at the design point
-  [23] v_peak = highest segment velocity
+  [25] v_peak = highest segment velocity
       = 0.14147 m/s
       = 0.14147 m/s
         Highest velocity
-  [24] u_v = v_peak / v_max
+  [26] u_v = v_peak / v_max
       = 0.14147 / 3
       = 0.047157
         Velocity utilisation
@@ -103,6 +108,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   h_f_s1 = 6.6542 m    h_f, oil line
   h_f_total = 6.6542 m    Σ h_f
   H_static = 0 m    Static head
+  V_pipe = 78.54 L    Water held in the pipes
   H_sys = 6.6542 m    System head at Q
   dp_total = 57.947 kPa    Friction Δp
   dp_sys = 57.947 kPa    System Δp
@@ -117,5 +123,5 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   WARNING laminar: segments: oil line is laminar (Re = 7.8516); f = 64/Re.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.1.0
-  Known-answer cases passed: 4/4
+  Template: bs.pipe-pump@1.2.0
+  Known-answer cases passed: 5/5

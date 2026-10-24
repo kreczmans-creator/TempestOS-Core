@@ -87,6 +87,24 @@ public sealed record CalcInputSpec(
     }
 
     private static string Format(double v) => Engine.Values.CalcValue.FormatNumber(v, 4);
+
+    /// <summary>
+    /// What to enter next when this input is empty, in plain words and without the symbol: for a table the rows and the columns it
+    /// needs ("enter at least one row of 'Shaft segments': x_end (End position, m), d (Diameter, mm)"), for anything else the value
+    /// and its unit. A new sheet that opens blocked on an empty input shows this.
+    /// </summary>
+    public string NextStepText()
+    {
+        if (Kind == CalcInputKind.Table)
+        {
+            var required = (Columns ?? []).Where(c => !c.IsOptional).Select(c => c.DefaultUnit.Length > 0 ? $"{c.Key} ({c.Label}, {c.DefaultUnit})" : $"{c.Key} ({c.Label})").ToList();
+            var columns = required.Count > 0 ? $": fill in {string.Join(", ", required)}" : string.Empty;
+            return $"enter at least one row of '{Description}' (the table takes up to {MaxRows} rows){columns}.";
+        }
+
+        var unit = DefaultUnit.Length > 0 && Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? $" in {DefaultUnit}" : string.Empty;
+        return $"enter '{Description}'{unit}; it has no default value.";
+    }
 }
 
 /// <summary>One column of a <see cref="CalcInputKind.Table"/> input.</summary>

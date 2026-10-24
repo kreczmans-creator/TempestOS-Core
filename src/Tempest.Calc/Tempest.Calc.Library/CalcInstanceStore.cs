@@ -51,18 +51,24 @@ public sealed class CalcInstanceStore
         return Deserialise<CalcInstance>(read.GetValueOrDefault(key));
     }
 
+    /// <summary>
+    /// The instances of one project, or — with no project — those saved without one (never every project's: Red R-A-12). Only that
+    /// project's keys are listed and read, not the whole collection (Red R-A-07).
+    /// </summary>
     public async Task<IReadOnlyList<CalcInstance>> ListInstancesAsync(Guid? projectId = null, CancellationToken cancellationToken = default)
     {
-        var all = await _store.ReadAllAsync(InstanceCollection, cancellationToken).ConfigureAwait(false);
-        var prefix = projectId is { } p ? p.ToString("N") + "/" : null;
+        var prefix = (projectId is { } p ? p.ToString("N") : "_") + "/";
+        var keys = await _store.ListKeysAsync(InstanceCollection, prefix, cancellationToken).ConfigureAwait(false);
+
+        if (keys.Count == 0)
+            return [];
+
+        var read = await _store.ReadManyAsync(InstanceCollection, keys, cancellationToken).ConfigureAwait(false);
         var list = new List<CalcInstance>();
 
-        foreach (var (key, json) in all)
+        foreach (var key in keys)
         {
-            if (prefix is not null && !key.StartsWith(prefix, StringComparison.Ordinal))
-                continue;
-
-            if (Deserialise<CalcInstance>(json) is { } instance)
+            if (Deserialise<CalcInstance>(read.GetValueOrDefault(key)) is { } instance)
                 list.Add(instance);
         }
 
@@ -201,6 +207,39 @@ public sealed class CalcInstanceStore
         await _store.ExecuteInTransactionAsync((tx, token) => WritePackAsync(tx, pack, token), cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Saves a pack that was read at <paramref name="expectedUpdatedAt"/>: refused, not overwritten, if it was changed since.</summary>
+    public async Task SavePackAsync(CalcPack pack, DateTimeOffset expectedUpdatedAt, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(pack);
+        await _store.ExecuteInTransactionAsync((tx, token) => WriteGuardedPackAsync(tx, pack, expectedUpdatedAt, token), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Re-reads the stored pack under the transaction, enforces that it is not issued and has not changed, then writes (the pack check commits with the Evidence check).</summary>
+    public static async Task WriteGuardedPackAsync(IPersistenceTransaction transaction, CalcPack pack, DateTimeOffset expectedUpdatedAt, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+        ArgumentNullException.ThrowIfNull(pack);
+        var existing = Deserialise<CalcPack>(await transaction.ReadAsync(PackCollection, Key(pack.ProjectId, pack.Id), cancellationToken).ConfigureAwait(false));
+
+        if (existing is { Status: CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded })
+            throw new CalcInstanceImmutableException(pack.Id, existing.Status);
+
+        if (existing is not null && existing.UpdatedAt != expectedUpdatedAt)
+            throw new CalcConcurrencyException($"Pack '{pack.Title}' was changed by someone else at {existing.UpdatedAt:O}; reload it and try again.");
+
+        await WritePackAsync(transaction, pack, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Under a transaction: the stored instance is still as it was when the caller read it (it is not deleted and its update time is unchanged).</summary>
+    public static async Task AssertUnchangedAsync(IPersistenceTransaction transaction, Guid? projectId, Guid id, string name, DateTimeOffset expectedUpdatedAt, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+        var stored = Deserialise<CalcInstance>(await transaction.ReadAsync(InstanceCollection, Key(projectId, id), cancellationToken).ConfigureAwait(false));
+
+        if (stored is null || stored.UpdatedAt != expectedUpdatedAt)
+            throw new CalcConcurrencyException($"Calculation '{name}' changed while the pack was being issued; check the pack again.");
+    }
+
     public static async Task WritePackAsync(IPersistenceTransaction transaction, CalcPack pack, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(transaction);
@@ -230,13 +269,17 @@ public sealed class CalcInstanceStore
     {
         ArgumentNullException.ThrowIfNull(record);
         var key = RecordKey(record.Id, record.Revision);
+        var json = Serialise(record);
+
+        if (json.Length > MaxDocumentBytes)
+            throw new InvalidOperationException($"Reference record '{record.Id:N}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not written.");
 
         await _store.ExecuteInTransactionAsync(async (tx, token) =>
         {
             if (await tx.ReadAsync(RecordCollection, key, token).ConfigureAwait(false) is not null)
                 throw new CalcInstanceImmutableException($"Reference record {record.Id:N} revision {record.Revision} exists already; a change is a new revision.");
 
-            await tx.WriteAsync(RecordCollection, key, Serialise(record), token).ConfigureAwait(false);
+            await tx.WriteAsync(RecordCollection, key, json, token).ConfigureAwait(false);
         }, cancellationToken).ConfigureAwait(false);
     }
 

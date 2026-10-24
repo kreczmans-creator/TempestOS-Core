@@ -27,7 +27,7 @@ public sealed class SheetsTests
     {
         var template = Calculator.Template with { Inputs = [new CalcInputSpec("x", "Something", CalcInputKind.Quantity, "mm")] };
         var notices = CalcInputValidator.Validate(template, new CalcInputSet());
-        Assert.Single(notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("x (Something) needs a value", StringComparison.Ordinal));
+        Assert.Single(notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message == "x: enter 'Something' in mm; it has no default value.");
     }
 
     [Fact]

@@ -3,12 +3,12 @@ Project: Plant room heating
 Calc ID: Circulator motor    Revision: A
 Title: Motor and actuator sizing
 Author: unknown    Authored: 2026-10-24
-Checker: —    Checked: —
-Issued: 2026-10-24    Issue: HTG-001
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell. Continuous rotary duty: ω = 2π n_L i/60; T_load = T_L/(i η); T_rms = T_load; T_pk = J_total ω/t_start + T_load (full load during the run-up, conservative); n_pk = n_L i; P_cont = T_load ω.
+Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell. RMS mechanical power (the thermal-equivalent continuous power a supply sees; regeneration counts as power): P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle} (trapezoid), with t_acc·[(3/4) T_load² + (5/16) T_acc²] for the S-curve; the instantaneous peak P_pk is not a continuous demand. Continuous rotary duty: ω = 2π n_L i/60; T_load = T_L/(i η); T_rms = T_load; T_pk = J_total ω/t_start + T_load (full load during the run-up, conservative); n_pk = n_L i; P_cont = T_load ω; P_rms = P_cont.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -24,7 +24,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   theta | Incline from horizontal (+ moving uphill) | 0 | deg | assumption: Sheet default value; no project figure given. | -90 … 90 deg
   F_p | Process force opposing the move (linear) | 0 | N | assumption: Sheet default value; no project figure given. | 0 … 1000000 N
   J_L | Load inertia at the output (rotary mechanisms) | 0.002 | kg*m^2 | spec: SPEC-HTG-01 §3 | 0 … 10000 kg*m^2
-  T_L | Constant load torque at the output (rotary) | 0.00203717 | N*m | link: Primary pipework and pump rev A · T_shaft | 0 … 100000 N*m
+  T_L | Constant load torque at the output (rotary) | 0.000272215 | N*m | link: Primary pipework and pump rev A · T_shaft | 0 … 100000 N*m
   duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | continuous |  | spec: SPEC-HTG-01 §3 | any
   n_L | Load speed at the output (continuous duty) | 2800 | rpm | link: Primary pipework and pump rev A · n_shaft | 1 … 100000 rpm
   t_start | Run-up time to full speed (continuous duty) | 5 | s | spec: SPEC-HTG-01 §3 | 0.1 … 600 s
@@ -36,7 +36,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   J_motor | Candidate motor rotor inertia | 0.0002 | kg*m^2 | assumption: Sheet default value; no project figure given. | 1e-7 … 10 kg*m^2
   T_rated | Candidate motor continuous (rated) torque | 2 | N*m | assumption: Sheet default value; no project figure given. | 0.01 … 100000 N*m
   T_peak | Candidate motor peak torque | 6 | N*m | assumption: Sheet default value; no project figure given. | 0.01 … 100000 N*m
-  n_max | Candidate motor maximum speed | 10000 | rpm | assumption: Sheet default value; no project figure given. | 10 … 100000 rpm
+  n_max | Candidate motor maximum speed | 6000 | rpm | assumption: Sheet default value; no project figure given. | 10 … 100000 rpm
   SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
   J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
 
@@ -60,7 +60,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   A17. J_motor (Candidate motor rotor inertia) is taken as 0.0002 kg*m^2. (Sheet default value; no project figure given.)
   A18. T_rated (Candidate motor continuous (rated) torque) is taken as 2 N*m. (Sheet default value; no project figure given.)
   A19. T_peak (Candidate motor peak torque) is taken as 6 N*m. (Sheet default value; no project figure given.)
-  A20. n_max (Candidate motor maximum speed) is taken as 10000 rpm. (Sheet default value; no project figure given.)
+  A20. n_max (Candidate motor maximum speed) is taken as 6000 rpm. (Sheet default value; no project figure given.)
   A21. SF (Safety margin on torque) is taken as 1.25. (Sheet default value; no project figure given.)
   A22. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
 
@@ -70,8 +70,8 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
       = 1
         Output radians per motor radian
   [20] T_load = T_L / (i * eta)
-      = 0.0020372 N·m / (1 × 0.9)
-      = 0.0022635 N·m
+      = 0.00027222 N·m / (1 × 0.9)
+      = 0.00030246 N·m
         Load torque at the motor shaft (constant)
   [21] J_refl = J_L / (i^2 * eta)
       = 0.002 kg·m² / (1^2 × 0.9)
@@ -94,77 +94,83 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
       = 0.14205 N·m
         Run-up (acceleration) torque
   [26] T_pk = T_acc + T_load
-      = 0.14205 N·m + 0.0022635 N·m
-      = 0.14431 N·m
+      = 0.14205 N·m + 0.00030246 N·m
+      = 0.14235 N·m
         Peak torque: run-up carrying the full load (conservative)
   [27] T_rms = T_load
-      = 0.0022635 N·m
-      = 0.0022635 N·m
+      = 0.00030246 N·m
+      = 0.00030246 N·m
         RMS torque: continuous running at the load torque
   [28] n_pk = omega_pk
       = 293.22 rad/s
       = 2800 rpm
         Motor speed
   [29] P_cont = T_load * omega_pk
-      = 0.0022635 N·m × 293.22 rad/s
-      = 0.6637 W
+      = 0.00030246 N·m × 293.22 rad/s
+      = 0.088686 W
         Continuous shaft power at the motor
   [30] P_pk = T_pk * omega_pk
-      = 0.14431 N·m × 293.22 rad/s
-      = 0.042314 kW
+      = 0.14235 N·m × 293.22 rad/s
+      = 0.041739 kW
         Peak mechanical power (end of the run-up)
-  [31] J_ratio = (J_refl + J_mech) / J_motor
+  [31] P_rms = P_cont
+      = 0.088686 W
+      = 0.000088686 kW
+        RMS mechanical power: the steady running power (thermal-equivalent continuous power)
+  [32] J_ratio = (J_refl + J_mech) / J_motor
       = (0.0022222 kg·m² + 0 kg·m²) / 0.0002 kg·m²
       = 11.111
         Inertia ratio (load : motor)
-  [32] u_peak = SF * T_pk / T_peak
-      = 1.25 × 0.14431 N·m / 6 N·m
-      = 0.030065
+  [33] u_peak = SF * T_pk / T_peak
+      = 1.25 × 0.14235 N·m / 6 N·m
+      = 0.029656
         Peak torque utilisation with safety margin
-  [33] u_rms = SF * T_rms / T_rated
-      = 1.25 × 0.0022635 N·m / 2 N·m
-      = 0.0014147
+  [34] u_rms = SF * T_rms / T_rated
+      = 1.25 × 0.00030246 N·m / 2 N·m
+      = 0.00018904
         Continuous torque utilisation with safety margin
-  [34] u_speed = n_pk / n_max
-      = 2800 rpm / 10000 rpm
-      = 0.28
+  [35] u_speed = n_pk / n_max
+      = 2800 rpm / 6000 rpm
+      = 0.46667
         Speed utilisation
-  [35] duty = T_rms / T_rated
-      = 0.0022635 N·m / 2 N·m
-      = 0.0011318
+  [36] duty = T_rms / T_rated
+      = 0.00030246 N·m / 2 N·m
+      = 0.00015123
         Thermal duty (without margin)
 
 5. RESULTS
   k = 1    Transmission constant
-  T_load = 0.0022635 N·m    Load torque at motor
+  T_load = 0.00030246 N·m    Load torque at motor
   J_refl = 0.0022222 kg·m²    Reflected load inertia
   J_total = 0.0024222 kg·m²    Total inertia
   alpha_pk = 58.643 rad/s²    Run-up angular acceleration
   T_acc = 0.14205 N·m    Run-up torque
-  T_pk = 0.14431 N·m    Peak torque
-  T_rms = 0.0022635 N·m    RMS torque
+  T_pk = 0.14235 N·m    Peak torque
+  T_rms = 0.00030246 N·m    RMS torque
   n_pk = 2800 rpm    Motor speed
-  P_cont = 0.6637 W    Continuous power
-  P_pk = 0.042314 kW    Peak power
+  P_cont = 0.088686 W    Continuous power
+  P_pk = 0.041739 kW    Peak power
+  P_rms = 0.000088686 kW    RMS power (continuous equivalent)
   J_ratio = 11.111    Inertia ratio
-  duty = 0.0011318    Thermal duty
-  u_peak = 0.030065    Peak utilisation
-  u_rms = 0.0014147    Continuous utilisation
-  u_speed = 0.28    Speed utilisation
+  duty = 0.00015123    Thermal duty
+  u_peak = 0.029656    Peak utilisation
+  u_rms = 0.00018904    Continuous utilisation
+  u_speed = 0.46667    Speed utilisation
 
 6. CHECKS (governing first)
-  PASS  Speed n_pk ≤ n_max: u_speed = 0.28 vs u_speed ≤ 1  utilisation 0.28
-  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.030065 vs u_peak ≤ 1  utilisation 0.0301
-  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.0014147 vs u_rms ≤ 1  utilisation 0.00141
+  PASS  Speed n_pk ≤ n_max: u_speed = 0.46667 vs u_speed ≤ 1  utilisation 0.467
+  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.029656 vs u_peak ≤ 1  utilisation 0.0297
+  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.00018904 vs u_rms ≤ 1  utilisation 0.000189
 
 7. APPLICABILITY
+  WARNING eta: eta: a direct-coupled rotary load has no transmission, but the overall efficiency is 0.9; use 1 (or the coupling's efficiency) unless the loss is intended.
   WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
   WARNING inertia-ratio: J_motor: the inertia ratio 11.1 exceeds 10.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.1.0
-  Content hash: dc25f3e5a3e7b859
+  Template: elec.motor-sizing@1.2.0
+  Content hash: 07f83040d397a49f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

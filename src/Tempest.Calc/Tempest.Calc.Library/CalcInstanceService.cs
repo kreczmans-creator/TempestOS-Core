@@ -72,6 +72,23 @@ public sealed partial class CalcInstanceService
 
     public CalcCatalogue Catalogue => _catalogue;
 
+    /// <summary>
+    /// Stands in for the signed-in principal when set. Internal, for the tests, which have no sign-in to switch between two people;
+    /// the product always resolves the principal from the domain context.
+    /// </summary>
+    internal Func<string?>? PrincipalOverride { get; set; }
+
+    private string CurrentPrincipal() => PrincipalOverride?.Invoke() ?? _domain.ResolveCurrentPrincipalId();
+
+    private static bool IsKnownPerson(string? principal) => !string.IsNullOrWhiteSpace(principal) && !string.Equals(principal, Tempest.Core.EngineeringData.EngineeringDocumentStore.UnknownAuthorPrincipalId, StringComparison.Ordinal);
+
+    /// <summary>The principals listed with <paramref name="more"/> added, without blanks, the "unknown" sentinel or repeats; <see langword="null"/> when none is left.</summary>
+    private static IReadOnlyList<string>? WithAuthors(IReadOnlyList<string>? list, params string?[] more)
+    {
+        var all = (list ?? []).Concat(more).Where(IsKnownPerson).Select(a => a!).Distinct(StringComparer.Ordinal).ToList();
+        return all.Count == 0 ? null : all;
+    }
+
     public CalcInstanceStore Store => _store;
 
     // ------------------------------------------------------------------
@@ -89,7 +106,7 @@ public sealed partial class CalcInstanceService
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         var entry = _catalogue.Get(templateReference);
         var now = _time.GetUtcNow();
-        var author = _domain.ResolveCurrentPrincipalId();
+        var author = CurrentPrincipal();
         var id = Guid.NewGuid();
         var cleanName = CalcSheetTextRenderer.Clean(name.Length > 200 ? name[..200] : name);
 
@@ -106,6 +123,10 @@ public sealed partial class CalcInstanceService
             if (await LinkProblemAsync(probe, entry.Template, list, cancellationToken).ConfigureAwait(false) is { } problem)
                 throw new CalcLinkRefusedException(problem);
 
+            // A new calculation has no Evidence yet, so nothing it cites can be an attachment of it.
+            if (await UnresolvedEvidenceAsync(null, null, list, cancellationToken).ConfigureAwait(false) is { } unresolved)
+                throw new CalcLinkRefusedException(unresolved);
+
             inputs = list;
         }
 
@@ -115,7 +136,7 @@ public sealed partial class CalcInstanceService
         var instance = new CalcInstance(
             id, entry.Reference, entry.ContentHash, projectId, cleanName, "A",
             inputs?.ToList() ?? DefaultInputs(entry.Template), [], [], [], [],
-            CalcInstanceStatus.Draft, evidence.Id, register?.Id, author, now, now);
+            CalcInstanceStatus.Draft, evidence.Id, register?.Id, author, now, now, EditedBy: WithAuthors(null, author));
 
         instance = await RunAndSnapshotAsync(entry, instance, cancellationToken).ConfigureAwait(false);
         await _store.SaveInstanceAsync(instance, cancellationToken).ConfigureAwait(false);
@@ -124,16 +145,20 @@ public sealed partial class CalcInstanceService
 
     /// <summary>Replaces the inputs of a draft instance and re-runs it. Refused once the instance is checked or issued.</summary>
     public Task<CalcActionResult> UpdateInputsAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, CancellationToken cancellationToken = default) =>
-        UpdateInputsCoreAsync(instanceId, inputs, null, cancellationToken);
+        UpdateInputsCoreAsync(instanceId, inputs, null, false, cancellationToken);
 
     /// <summary>
     /// As <see cref="UpdateInputsAsync(Guid, IEnumerable{CalcInputValue}, CancellationToken)"/>, for inputs built from a read made at
     /// <paramref name="expectedUpdatedAt"/>: refused, not overwritten, if the calculation was changed in between.
     /// </summary>
     public Task<CalcActionResult> UpdateInputsAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset expectedUpdatedAt, CancellationToken cancellationToken = default) =>
-        UpdateInputsCoreAsync(instanceId, inputs, expectedUpdatedAt, cancellationToken);
+        UpdateInputsCoreAsync(instanceId, inputs, expectedUpdatedAt, false, cancellationToken);
 
-    private async Task<CalcActionResult> UpdateInputsCoreAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset? expectedUpdatedAt, CancellationToken cancellationToken)
+    /// <param name="repin">
+    /// The change is only a link re-pinned to its upstream's current revision (Update to revision n): the person pressing it did not
+    /// design anything, so they are recorded in <see cref="CalcInstance.RepinnedBy"/> and not among the authors (Purple P-A-03).
+    /// </param>
+    private async Task<CalcActionResult> UpdateInputsCoreAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset? expectedUpdatedAt, bool repin, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inputs);
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
@@ -153,7 +178,7 @@ public sealed partial class CalcInstanceService
             return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
 
         if (instance.PackId is { } packId && await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false) is { Status: not CalcInstanceStatus.Draft } pack)
-            return CalcActionResult.Refused($"Calculation '{instance.Name}' belongs to pack '{pack.Title}', which is {pack.Status}; its inputs are frozen (R-17).", instance);
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' belongs to pack '{pack.Title}', which is {pack.Status}; its inputs are frozen.", instance);
 
         var newInputs = inputs.ToList();
 
@@ -165,7 +190,10 @@ public sealed partial class CalcInstanceService
         if (await LinkProblemAsync(instance, entry.Template, newInputs, cancellationToken).ConfigureAwait(false) is { } linkProblem)
             return CalcActionResult.Refused(linkProblem, instance);
 
-        var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow() };
+        if (await UnresolvedEvidenceAsync(instance.EvidenceId, instance.PredecessorId, newInputs, cancellationToken).ConfigureAwait(false) is { } unresolvedEvidence)
+            return CalcActionResult.Refused(unresolvedEvidence, instance);
+
+        var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow(), EditedBy = repin ? instance.EditedBy : WithAuthors(instance.EditedBy, CurrentPrincipal()), RepinnedBy = repin ? WithAuthors(instance.RepinnedBy, CurrentPrincipal()) : instance.RepinnedBy };
         updated = await RunAndSnapshotAsync(entry, updated, cancellationToken).ConfigureAwait(false);
 
         try
@@ -235,6 +263,10 @@ public sealed partial class CalcInstanceService
         if (await StalenessAsync(instance, cancellationToken).ConfigureAwait(false) is { IsStale: true } stale)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is stale: {stale.Reasons[0]} Update it before checking.", instance);
 
+        // Red R-A-02: a draft upstream is edited in place under the same revision letter, so what is pinned to it can still change.
+        if (await DraftUpstreamAsync(instance, null, cancellationToken).ConfigureAwait(false) is { } draftUpstream)
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' {draftUpstream}", instance);
+
         if (instance.Blocks.Count > 0)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is blocked: {instance.Blocks[0].Message}", instance);
 
@@ -243,10 +275,8 @@ public sealed partial class CalcInstanceService
 
         // Addendum A, §A3: E4, E5 and S6 demand an independent check whatever the Evidence setting — the signed-in checker
         // must not be the author (DA-12).
-        if (_catalogue.Find(instance.TemplateReference)?.Template.IndependentCheck == true
-            && _domain.ResolveCurrentPrincipalId() is var principal
-            && (string.IsNullOrWhiteSpace(principal) || string.Equals(principal, instance.CreatedBy, StringComparison.Ordinal)))
-            return CalcActionResult.Refused($"'{instance.Name}' needs an independent check: sign in as someone other than its author ({instance.CreatedBy}) to check it.", instance);
+        if (IndependenceRefusal(instance, $"'{instance.Name}'", "check it") is { } notIndependent)
+            return CalcActionResult.Refused(notIndependent, instance);
 
         // What Issue will demand is demanded here, so a checked calculation is never a dead end (Black B-13).
         var provenanceGate = ProvenanceGate(instance);
@@ -299,6 +329,48 @@ public sealed partial class CalcInstanceService
     }
 
     private static string? MissingText(string? value, string what) => string.IsNullOrWhiteSpace(value) ? $"{what} is needed." : null;
+
+    /// <summary>
+    /// Why the signed-in person may not check a calculation that demands an independent check (E4, E5, S6): nobody is signed in (the
+    /// "unknown" sentinel is not a person — Red R-A-11), or they created it or set or changed any of its inputs (Red R-A-05).
+    /// </summary>
+    private string? IndependenceRefusal(CalcInstance instance, string subject, string action)
+    {
+        if (_catalogue.Find(instance.TemplateReference)?.Template.IndependentCheck != true)
+            return null;
+
+        var principal = CurrentPrincipal();
+
+        if (!IsKnownPerson(principal))
+            return $"{subject} needs an independent check: nobody is signed in, so there is no one to {action}.";
+
+        var authors = instance.Authors;
+
+        if (!authors.Contains(principal, StringComparer.Ordinal))
+            return null;
+
+        var who = authors.Count == 1 ? $"its author ({authors[0]})" : $"anyone who set up or changed its inputs ({string.Join(", ", authors)})";
+        return $"{subject} needs an independent check: sign in as someone other than {who} to {action}.";
+    }
+
+    /// <summary>
+    /// What stops a calculation being checked or issued because it takes a value from a draft, or <see langword="null"/>. A draft is
+    /// edited in place under its revision letter, so a link pinned to it can still change; a draft that is issued in the same pack
+    /// (<paramref name="together"/>) is part of what is being issued and is allowed (Red R-A-02).
+    /// </summary>
+    private async Task<string?> DraftUpstreamAsync(CalcInstance instance, IReadOnlySet<Guid>? together, CancellationToken cancellationToken)
+    {
+        foreach (var id in instance.UpstreamIds)
+        {
+            if (together?.Contains(id) == true)
+                continue;
+
+            if (await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false) is { Status: CalcInstanceStatus.Draft } upstream)
+                return $"takes a value from '{upstream.Name}' rev {upstream.Revision}, which is still a draft and can change; check and issue '{upstream.Name}' first, or issue both in one pack.";
+        }
+
+        return null;
+    }
 
     /// <summary>The first provenance block Issue would raise for this instance's inputs, or <see langword="null"/>.</summary>
     private string? ProvenanceGate(CalcInstance instance)
@@ -356,6 +428,9 @@ public sealed partial class CalcInstanceService
         if (staleness.IsStale)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is stale: {staleness.Reasons[0]} Re-run it as a new revision first.", instance);
 
+        if (await DraftUpstreamAsync(instance, null, cancellationToken).ConfigureAwait(false) is { } draftUpstream)
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' {draftUpstream}", instance);
+
         var report = KnownAnswerRunner.Run(entry.Calculator, _time);
         CalcInstance? issued = null;
 
@@ -369,7 +444,7 @@ public sealed partial class CalcInstanceService
             {
                 var header = await HeaderAsync(entry, instance, evidence, CalcSheetStatus.Issued, issuedAtUtc, issueReference, client, token).ConfigureAwait(false);
                 var footer = Footer(entry, report);
-                var sheet = await DescribeLinksAsync(CalcSheetBuilder.Build(entry.Template, inputs, result, header, footer), inputs, token).ConfigureAwait(false);
+                var sheet = await FinishSheetAsync(entry, inputs, result, header, footer, token).ConfigureAwait(false);
                 var text = CalcSheetTextRenderer.Render(sheet);
                 var bytes = _renderer?.Render(sheet) ?? Encoding.UTF8.GetBytes(text);
                 var fileName = SheetFileName(instance, issueReference);
@@ -404,23 +479,29 @@ public sealed partial class CalcInstanceService
     /// <summary>Starts a new revision of an issued instance: the old one becomes Superseded, the new one a draft with the same inputs, under fresh Evidence.</summary>
     public Task<CalcActionResult> ReviseAsync(Guid instanceId, CancellationToken cancellationToken = default) => ReviseCoreAsync(instanceId, null, cancellationToken);
 
+    /// <summary>The same, for <see cref="UpdateLinksAsync"/>: only links were re-pinned, so the person pressing it is not an author.</summary>
+    private Task<CalcActionResult> ReviseRepinnedAsync(Guid instanceId, IReadOnlyList<CalcInputValue> inputs, CancellationToken cancellationToken) => ReviseCoreAsync(instanceId, inputs, cancellationToken, repin: true);
+
     /// <summary>
     /// The revise path; with <paramref name="inputsOverride"/> (updating links, Addendum A L1) a checked calculation may
     /// be revised too, so a checked calculation whose upstream moved on is never a dead end (ADR-0166).
     /// </summary>
-    private async Task<CalcActionResult> ReviseCoreAsync(Guid instanceId, IReadOnlyList<CalcInputValue>? inputsOverride, CancellationToken cancellationToken)
+    private async Task<CalcActionResult> ReviseCoreAsync(Guid instanceId, IReadOnlyList<CalcInputValue>? inputsOverride, CancellationToken cancellationToken, bool repin = false)
     {
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
 
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
 
-        if (instance.Status != CalcInstanceStatus.Issued && !(inputsOverride is not null && instance.Status == CalcInstanceStatus.Checked))
-            return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only an issued calculation can be revised.", instance);
+        // A checked calculation that has gone stale (a record was revised, a template changed, an upstream moved) is never a dead end:
+        // it can be revised, which starts a draft to correct and check again (Red R-A-04, ADR-0166).
+        if (instance.Status != CalcInstanceStatus.Issued
+            && !(instance.Status == CalcInstanceStatus.Checked && (inputsOverride is not null || (await StalenessAsync(instance, cancellationToken).ConfigureAwait(false)).IsStale)))
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only an issued calculation, or a checked one that has gone stale, can be revised.", instance);
 
         var entry = _catalogue.Get(instance.TemplateId);
         var now = _time.GetUtcNow();
-        var author = _domain.ResolveCurrentPrincipalId();
+        var author = CurrentPrincipal();
         var id = Guid.NewGuid();
         var nextRevision = NextRevision(instance.Revision);
 
@@ -478,7 +559,9 @@ public sealed partial class CalcInstanceService
 
         var next = new CalcInstance(
             id, entry.Reference, entry.ContentHash, instance.ProjectId, instance.Name, nextRevision,
-            inputsOverride ?? instance.Inputs, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, author, now, now, PredecessorId: instance.Id);
+            inputsOverride ?? instance.Inputs, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, repin ? instance.CreatedBy : author, now, now, PredecessorId: instance.Id,
+            EditedBy: repin ? WithAuthors(instance.EditedBy, instance.CreatedBy) : WithAuthors(instance.EditedBy, instance.CreatedBy, author),
+            RepinnedBy: repin ? WithAuthors(instance.RepinnedBy, author) : instance.RepinnedBy);
         next = await RunAndSnapshotAsync(entry, next, cancellationToken).ConfigureAwait(false);
 
         // The new draft and the superseded mark on the old instance commit together; the mark changes only status and time (the store checks the rest).
@@ -515,22 +598,52 @@ public sealed partial class CalcInstanceService
         if (instanceIds.Count == 0 || instanceIds.Count > CalcPack.MaxInstances)
             throw new ArgumentException($"A pack holds between 1 and {CalcPack.MaxInstances} calculations.", nameof(instanceIds));
 
+        // A pack holds calculations of its own project: one from another project (or none) would be issued under this project's Evidence (Red R-A-12).
+        var members = new List<CalcInstance>();
+
+        foreach (var id in instanceIds)
+        {
+            if (await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false) is not { } found)
+                continue;
+
+            if (found.ProjectId != projectId)
+                throw new ArgumentException($"Calculation '{found.Name}' belongs to another project; a pack holds the calculations of one project.", nameof(instanceIds));
+
+            members.Add(found);
+        }
+
         var now = _time.GetUtcNow();
-        var author = _domain.ResolveCurrentPrincipalId();
+        var author = CurrentPrincipal();
         var cleanTitle = CalcSheetTextRenderer.Clean(title.Length > 200 ? title[..200] : title);
         var evidence = await _evidence.CreateAsync(projectId, $"{cleanTitle} — calculation pack", EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
         var pack = new CalcPack(Guid.NewGuid(), projectId, cleanTitle, "A", instanceIds, [new CalcPackRevision("A", now, author, "First issue")], CalcInstanceStatus.Draft, evidence.Id, author, now, now);
         await _store.SavePackAsync(pack, cancellationToken).ConfigureAwait(false);
 
-        foreach (var id in instanceIds)
+        foreach (var member in members)
         {
-            var instance = await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false);
+            var instance = await _store.FindInstanceAsync(member.Id, cancellationToken).ConfigureAwait(false);
 
             if (instance is { Status: CalcInstanceStatus.Draft })
                 await _store.SaveInstanceAsync(instance with { PackId = pack.Id, UpdatedAt = now }, cancellationToken).ConfigureAwait(false);
         }
 
         return pack;
+    }
+
+    /// <summary>Loads a pack's members, or the refusal for the first that no longer exists.</summary>
+    private async Task<(List<CalcInstance> Members, string? Refusal)> PackMembersAsync(CalcPack pack, CancellationToken cancellationToken)
+    {
+        var members = new List<CalcInstance>();
+
+        foreach (var id in pack.InstanceIds)
+        {
+            if (await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false) is not { } member)
+                return (members, $"Pack member '{id}' no longer exists.");
+
+            members.Add(member);
+        }
+
+        return (members, null);
     }
 
     /// <summary>Checks a pack's Evidence; every member must be a block-free draft or already checked.</summary>
@@ -547,39 +660,106 @@ public sealed partial class CalcInstanceService
         if (pack.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Pack '{pack.Title}' is {pack.Status}.");
 
-        foreach (var id in pack.InstanceIds)
+        var (members, gone) = await PackMembersAsync(pack, cancellationToken).ConfigureAwait(false);
+
+        if (gone is not null)
+            return CalcActionResult.Refused(gone);
+
+        // One read of the project answers the staleness of every member (Red R-A-07).
+        var staleness = await StalenessForAsync(pack.ProjectId, members, cancellationToken).ConfigureAwait(false);
+        var together = pack.InstanceIds.ToHashSet();
+
+        foreach (var member in members)
         {
-            var member = await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false);
-
-            if (member is null)
-                return CalcActionResult.Refused($"Pack member '{id}' no longer exists.");
-
             if (member.Blocks.Count > 0)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is blocked: {member.Blocks[0].Message}");
 
             if (ProvenanceGate(member) is { } gate)
                 return CalcActionResult.Refused($"Pack member '{member.Name}': {gate.Replace("before the sheet can be issued", "before the pack can be checked", StringComparison.Ordinal)}");
 
-            if (await StalenessAsync(member, cancellationToken).ConfigureAwait(false) is { IsStale: true } stale)
+            if (staleness[member.Id] is { IsStale: true } stale)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is stale: {stale.Reasons[0]} Update it before checking the pack.");
 
-            if (_catalogue.Find(member.TemplateReference)?.Template.IndependentCheck == true
-                && _domain.ResolveCurrentPrincipalId() is var principal
-                && (string.IsNullOrWhiteSpace(principal) || string.Equals(principal, member.CreatedBy, StringComparison.Ordinal)))
-                return CalcActionResult.Refused($"Pack member '{member.Name}' needs an independent check: sign in as someone other than its author ({member.CreatedBy}) to check the pack.");
+            if (await DraftUpstreamAsync(member, together, cancellationToken).ConfigureAwait(false) is { } draftUpstream)
+                return CalcActionResult.Refused($"Pack member '{member.Name}' {draftUpstream}");
+
+            if (IndependenceRefusal(member, $"Pack member '{member.Name}'", "check the pack") is { } notIndependent)
+                return CalcActionResult.Refused(notIndependent);
         }
 
         // A rejection leaves the pack and its Evidence as drafts (Black B-12).
         if (outcome == CheckOutcome.Rejected)
             return CalcActionResult.Refused($"The checker rejected the pack; it stays a draft. {statement}".TrimEnd());
 
-        var result = await _evidence.RecordCheckAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome, cancellationToken).ConfigureAwait(false);
+        // The Evidence check and the pack's Checked mark commit together, after a re-read of the pack: a crash between them cannot
+        // leave a pack that can never be checked (Red R-A-14).
+        var now = _time.GetUtcNow();
+        var checkedPack = pack with { Status = CalcInstanceStatus.Checked, UpdatedAt = now };
+        EvidenceActionResult result;
+
+        try
+        {
+            result = await _evidence.RecordCheckInOneTransactionAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome,
+                alsoWrite: (transaction, token) => CalcInstanceStore.WriteGuardedPackAsync(transaction, checkedPack, pack.UpdatedAt, token),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        {
+            return CalcActionResult.Refused(ex.Message);
+        }
 
         if (!result.Succeeded)
             return CalcActionResult.Refused(result.Reason ?? "The check was refused.");
 
+        return new CalcActionResult(true, null, null);
+    }
+
+    /// <summary>
+    /// Takes a checked pack back to a draft under a new pack revision and new Evidence, so a pack whose members went stale after the
+    /// check (a record was revised, a template changed, an upstream moved) is never stranded: its members can be corrected, and the pack
+    /// is checked again (Red R-A-04). The earlier check stays on the earlier Evidence.
+    /// </summary>
+    public async Task<CalcActionResult> ReopenPackAsync(Guid packId, CancellationToken cancellationToken = default)
+    {
+        var pack = await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false);
+
+        if (pack is null || pack.EvidenceId is null)
+            return CalcActionResult.Refused($"No pack '{packId}' exists.");
+
+        if (pack.Status != CalcInstanceStatus.Checked)
+            return CalcActionResult.Refused($"Pack '{pack.Title}' is {pack.Status}; only a checked pack is reopened (a draft is already open, an issued pack is final).");
+
+        var next = NextRevision(pack.Revision);
         var now = _time.GetUtcNow();
-        await _store.SavePackAsync(pack with { Status = CalcInstanceStatus.Checked, UpdatedAt = now }, cancellationToken).ConfigureAwait(false);
+        Evidence evidence;
+
+        try
+        {
+            evidence = await _evidence.CreateAsync(pack.ProjectId, $"{pack.Title} — calculation pack (rev {next})", EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
+        }
+        catch (DuplicateBusinessIdentifierException ex)
+        {
+            return CalcActionResult.Refused($"Pack '{pack.Title}' revision {next} already exists: {ex.Message}");
+        }
+
+        var reopened = pack with
+        {
+            Revision = next,
+            Status = CalcInstanceStatus.Draft,
+            EvidenceId = evidence.Id,
+            UpdatedAt = now,
+            Revisions = [.. pack.Revisions, new CalcPackRevision(next, now, CurrentPrincipal(), "Reopened after its check")],
+        };
+
+        try
+        {
+            await _store.SavePackAsync(reopened, pack.UpdatedAt, cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        {
+            return CalcActionResult.Refused(ex.Message);
+        }
+
         return new CalcActionResult(true, null, null);
     }
 
@@ -597,23 +777,31 @@ public sealed partial class CalcInstanceService
         if (pack.Status != CalcInstanceStatus.Checked)
             return CalcActionResult.Refused($"Pack '{pack.Title}' is {pack.Status}; check it before issuing.");
 
+        var (stored, gone) = await PackMembersAsync(pack, cancellationToken).ConfigureAwait(false);
+
+        if (gone is not null)
+            return CalcActionResult.Refused(gone);
+
+        var staleness = await StalenessForAsync(pack.ProjectId, stored, cancellationToken).ConfigureAwait(false);
+        var together = pack.InstanceIds.ToHashSet();
         var members = new List<(CalcInstance Instance, CalcCatalogueEntry Entry, CalcInputSet Inputs, CalcRunResult Result, KnownAnswerReport Report)>();
 
-        foreach (var id in pack.InstanceIds)
+        // What the checks below were made against: the issue is refused if any of it changes before it commits (Red R-A-14).
+        var seen = new Dictionary<Guid, (Guid? ProjectId, string Name, DateTimeOffset UpdatedAt)>();
+
+        foreach (var member in stored)
         {
-            var member = await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false);
-
-            if (member is null)
-                return CalcActionResult.Refused($"Pack member '{id}' no longer exists.");
-
             if (member.Status is CalcInstanceStatus.Superseded)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is superseded.");
 
             if (member.UpdatedAt > pack.UpdatedAt)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' changed after the pack was checked; check the pack again.");
 
-            if (await StalenessAsync(member, cancellationToken).ConfigureAwait(false) is { IsStale: true } stale)
+            if (staleness[member.Id] is { IsStale: true } stale)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is stale: {stale.Reasons[0]}");
+
+            if (await DraftUpstreamAsync(member, together, cancellationToken).ConfigureAwait(false) is { } draftUpstream)
+                return CalcActionResult.Refused($"Pack member '{member.Name}' {draftUpstream}");
 
             var entry = _catalogue.Find(member.TemplateReference);
 
@@ -632,6 +820,13 @@ public sealed partial class CalcInstanceService
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is blocked: {result.Blocks[0].Message}");
 
             members.Add((member, entry, inputs, result, KnownAnswerRunner.Run(entry.Calculator, _time)));
+            seen[member.Id] = (member.ProjectId, member.Name, member.UpdatedAt);
+
+            foreach (var upstreamId in member.UpstreamIds)
+            {
+                if (!seen.ContainsKey(upstreamId) && await _store.FindInstanceAsync(upstreamId, cancellationToken).ConfigureAwait(false) is { } upstream)
+                    seen[upstreamId] = (upstream.ProjectId, upstream.Name, upstream.UpdatedAt);
+            }
         }
 
         var issuedMembers = new List<CalcInstance>();
@@ -653,7 +848,7 @@ public sealed partial class CalcInstanceService
                 {
                     n++;
                     var header = await HeaderAsync(entry, member, evidence, CalcSheetStatus.Issued, issuedAtUtc, issueReference, client, token).ConfigureAwait(false);
-                    var sheet = await DescribeLinksAsync(CalcSheetBuilder.Build(entry.Template, inputs, result, header, Footer(entry, report)), inputs, token).ConfigureAwait(false);
+                    var sheet = await FinishSheetAsync(entry, inputs, result, header, Footer(entry, report), token).ConfigureAwait(false);
                     sheets.Add(sheet);
                     index.Add(new CalcPackIndexRow(n, member.Name, entry.Template.Title, member.Revision, "ISSUED", sheet.Governing is { } g ? $"{g.Name} {(g.Passed ? "PASS" : "FAIL")}" : null));
 
@@ -684,6 +879,10 @@ public sealed partial class CalcInstanceService
             },
             alsoWrite: async (transaction, token) =>
             {
+                // Under the transaction: nothing the checks relied on (a member, or a calculation a member takes a value from) has been changed since.
+                foreach (var (id, (projectId, name, updatedAt)) in seen)
+                    await CalcInstanceStore.AssertUnchangedAsync(transaction, projectId, id, name, updatedAt, token).ConfigureAwait(false);
+
                 foreach (var m in issuedMembers)
                     await CalcInstanceStore.WriteIssuedInstanceAsync(transaction, m, token).ConfigureAwait(false);
 
@@ -706,6 +905,7 @@ public sealed partial class CalcInstanceService
         return new CalcActionResult(true, null, null);
     }
 
+
     // ------------------------------------------------------------------
     // Sheets
     // ------------------------------------------------------------------
@@ -723,6 +923,13 @@ public sealed partial class CalcInstanceService
     private async Task<CalcSheet> BuildSheetAsync(CalcCatalogueEntry entry, CalcInstance instance, CalcInputSet inputs, CalcRunResult result, CancellationToken cancellationToken)
     {
         var evidence = instance.EvidenceId is { } id ? await FindEvidenceAsync(id, cancellationToken).ConfigureAwait(false) : null;
+
+        // A pack member is checked and issued with its pack: its own sheet shows the pack's checker, check date and client (Black B-A-13).
+        Evidence? packEvidence = null;
+
+        if (instance.PackId is { } packId && await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false) is { EvidenceId: { } packEvidenceId })
+            packEvidence = await FindEvidenceAsync(packEvidenceId, cancellationToken).ConfigureAwait(false);
+
         var status = instance.Status switch
         {
             CalcInstanceStatus.Checked => CalcSheetStatus.Checked,
@@ -730,20 +937,40 @@ public sealed partial class CalcInstanceService
             CalcInstanceStatus.Superseded => CalcSheetStatus.Superseded,
             _ => CalcSheetStatus.Draft,
         };
-        var header = await HeaderAsync(entry, instance, evidence, status, instance.IssuedAt, instance.IssueReference, evidence?.Issue?.Client, cancellationToken).ConfigureAwait(false);
+        var header = await HeaderAsync(entry, instance, evidence, status, instance.IssuedAt, instance.IssueReference, packEvidence?.Issue?.Client ?? evidence?.Issue?.Client, cancellationToken, packEvidence).ConfigureAwait(false);
         var footer = instance.Issue is { } issue
             ? new CalcSheetFooter(entry.Reference, CalcTemplateHasher.Short(instance.TemplateHash), issue.EngineVersion, issue.KnownAnswerPassed, issue.KnownAnswerTotal, issue.TestRunAt, issue.ApplicationVersion)
             : Footer(entry, KnownAnswerRunner.Run(entry.Calculator, _time));
-        return await DescribeLinksAsync(CalcSheetBuilder.Build(entry.Template, inputs, result, header, footer), inputs, cancellationToken).ConfigureAwait(false);
+        return await FinishSheetAsync(entry, inputs, result, header, footer, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<CalcSheetHeader> HeaderAsync(CalcCatalogueEntry entry, CalcInstance instance, Evidence? evidence, CalcSheetStatus status, DateTimeOffset? issuedAt, string? issueReference, string? client, CancellationToken cancellationToken)
+    /// <summary>
+    /// The one place every sheet is finished (preview, issue, pack, PDF): the rows of a table pinned to a licensed record are
+    /// withheld, and linked and recorded inputs are named by their source (Red R-A-01).
+    /// </summary>
+    private async Task<CalcSheet> FinishSheetAsync(CalcCatalogueEntry entry, CalcInputSet inputs, CalcRunResult result, CalcSheetHeader header, CalcSheetFooter footer, CancellationToken cancellationToken)
+    {
+        var withheld = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var value in inputs.Values.Where(v => v.Rows is not null))
+        {
+            if (await LicensedRecordPinAsync(value.Provenance, cancellationToken).ConfigureAwait(false) is { } pin)
+                withheld[value.Symbol] = $"{CalcRecordPin.Prefix}{pin.Id:N}@{pin.Revision}";
+        }
+
+        var sheet = CalcSheetBuilder.Build(entry.Template, inputs, result, header, footer, null, withheld.Count == 0 ? null : withheld);
+        return await DescribeLinksAsync(sheet, inputs, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <param name="checkEvidence">The Evidence whose check the header shows when it is not the calculation's own (a pack member shows its pack's).</param>
+    private async Task<CalcSheetHeader> HeaderAsync(CalcCatalogueEntry entry, CalcInstance instance, Evidence? evidence, CalcSheetStatus status, DateTimeOffset? issuedAt, string? issueReference, string? client, CancellationToken cancellationToken, Evidence? checkEvidence = null)
     {
         var project = await ProjectLabelAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
+        var check = (checkEvidence ?? evidence)?.Check;
         return new CalcSheetHeader(
             project, instance.Name, entry.Template.Title, instance.Revision, status,
-            evidence?.AuthorIdentityId ?? instance.CreatedBy, evidence?.Check?.CheckerName ?? instance.CheckedBy,
-            instance.CreatedAt, evidence?.Check?.DateUtc ?? instance.CheckedAt, issuedAt, client, issueReference);
+            evidence?.AuthorIdentityId ?? instance.CreatedBy, check?.CheckerName ?? instance.CheckedBy,
+            instance.CreatedAt, check?.DateUtc ?? instance.CheckedAt, issuedAt, client, issueReference);
     }
 
     private CalcSheetFooter Footer(CalcCatalogueEntry entry, KnownAnswerReport report) =>

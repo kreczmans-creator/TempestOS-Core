@@ -107,7 +107,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
 
         if (rows.Count == 0 && !(c.Si("P_add") > 0))
         {
-            c.Block("loads", "loads: at least one heat load (or an additional linked load) is needed.");
+            c.Block("loads", c.EnterRows("loads").TrimEnd('.') + ", or link an additional load (P_add).");
             return;
         }
 

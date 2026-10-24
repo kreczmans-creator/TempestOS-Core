@@ -103,6 +103,7 @@ public sealed class SteelSupportChainTests
 
         // The anchorage is designed outside the chain: S6 says so until the report is filed.
         Assert.Contains(s6.Warnings, w => w.RuleId == "anchorage");
+        Assert.DoesNotContain(s6.Checks, c => c.Name.StartsWith("Anchorage", StringComparison.Ordinal));
         Assert.Equal(7, made.Pack.InstanceIds.Count);
     }
 
@@ -159,7 +160,9 @@ public sealed class SteelSupportChainTests
         var s6 = await Fresh(host, made, "s6");
         Assert.DoesNotContain(s6.Warnings, w => w.RuleId == "anchorage");
         Assert.Equal(CalcProvenanceKind.Evidence, s6.Inputs.Single(i => i.Symbol == "profis_ref").Provenance!.Kind);
-        Assert.Contains(s6.Checks, c => c.Name.StartsWith("Anchorage designed externally", StringComparison.Ordinal) && c.Passed);
+        var anchorage = Assert.Single(s6.Checks, c => c.Name.StartsWith("Anchorage designed externally", StringComparison.Ordinal));
+        Assert.True(anchorage.Passed);
+        Assert.Equal("external report attached: PROFIS-BP1-PLACEHOLDER.txt", anchorage.Demand);
 
         // The attachment sits on the base plate's own Evidence.
         var evidence = (Evidence)(await host.Context.Repository.FindAsync(s6.EvidenceId!.Value))!;
@@ -174,5 +177,6 @@ public sealed class SteelSupportChainTests
         Assert.Contains("link: Holding-down bolts rev A · F_t_Rd", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Holding-down bolts rev A · f_ub", sheet, StringComparison.Ordinal);
         Assert.Contains("PROFIS-BP1-PLACEHOLDER.txt", sheet, StringComparison.Ordinal);
+        Assert.Contains("external report attached: PROFIS-BP1-PLACEHOLDER.txt", sheet, StringComparison.Ordinal);
     }
 }

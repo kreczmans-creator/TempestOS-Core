@@ -3,12 +3,12 @@ Project: Plant room heating
 Calc ID: Room B heat loss    Revision: A
 Title: U-values and room heat loss
 Author: unknown    Authored: 2026-10-24
-Checker: —    Checked: —
-Issued: 2026-10-24    Issue: HTG-001
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.
-Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(θ_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation flow: q_v = n·V Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply, plus 0.34·n_inf·V·(θ_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor Check: U against the target U of each element
+Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(θ_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation flow: q_v = n·V Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply, plus 0.34·n_inf·V·(θ_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor Check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)
   Ref: BS EN ISO 6946 homogeneous layers and surface resistances (clause numbers to be checked against the owner's copy) — Building components — thermal resistance and thermal transmittance
   Ref: BS EN 12831-1 cl. 6.3.2 (clause number to be checked against the owner's copy) — Heating systems in buildings — design heat load: transmission heat loss
   Ref: BS EN 12831-1 cl. 6.3.3 (clause number to be checked against the owner's copy) — Heating systems in buildings — design heat load: ventilation heat loss
@@ -20,18 +20,17 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   theta_int | Internal design temperature | 21 | degC | spec: SPEC-HTG-01 §3 | 16 … 24 degC
   theta_e | External design temperature (location record) | -3 | degC | spec: SPEC-HTG-01 §3 | -15 … 5 degC
   layers | Construction layers (several elements share the table, keyed by element name) | 6 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.77 W/(m*K) |  |  | 
-  layers[2] |  | element = Cavity wall; name = PIR insulation; d = 100 mm; lambda = 0.022 W/(m*K) |  |  | 
-  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.15 W/(m*K) |  |  | 
-  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.57 W/(m*K) |  |  | 
-  layers[5] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.25 W/(m*K) |  |  | 
-  layers[6] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.25 W/(m*K) |  |  | 
+  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m*K) |  |  | 
+  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m*K) |  |  | 
+  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m*K) |  |  | 
+  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m*K) |  |  | 
+  layers[5] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.22 W/(m*K) |  |  | 
+  layers[6] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.22 W/(m*K) |  |  | 
   elements | Building elements bounding the room | 3 row(s) |  | spec: SPEC-HTG-01 §3 | any
   elements[1] |  | name = Cavity wall; area = 15 m^2 |  |  | 
   elements[2] |  | name = Partition; area = 12 m^2; theta_adj = 18 degC; Rg = 0.18 m^2*K/W |  |  | 
   elements[3] |  | name = Ground floor; area = 10 m^2; f = 0.6; U_user = 0.25 W/(m^2*K) |  |  | 
   y_tb | Thermal-bridge allowance on the area facing outside | 0.05 | W/(m^2*K) | spec: SPEC-HTG-01 §3 | 0 … 0.3 W/(m^2*K)
-  U_target | Target U for built-up elements without their own target | 0.3 | W/(m^2*K) | assumption: Sheet default value; no project figure given. | 0.05 … 8 W/(m^2*K)
   n | Air change rate | 0.6 | 1/h | spec: SPEC-HTG-01 §3 | 0.1 … 3 1/h
   V | Room volume | 50 | m^3 | spec: SPEC-HTG-01 §3 | 5 … 1000 m^3
   theta_supply | MVHR supply air temperature after heat recovery (blank = natural ventilation, outside air) | 16 | degC | spec: SPEC-HTG-01 §3 | -15 … 24 degC
@@ -40,147 +39,133 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
 3. ASSUMPTIONS
   A1. Steady state: every temperature is constant, with no solar or internal gains, no thermal mass and no dynamic simulation. (Design heat loss, not an annual energy estimate.)
   A2. Layers are homogeneous and in series (one-dimensional flow); no bridged layers (timber studs, mortar joints, fixings) are corrected for: a thermal-bridge allowance y_tb is added instead. (BS EN ISO 6946 homogeneous-layer calculation.)
-  A3. A blank Rsi is the conventional horizontal-flow 0.13 m²K/W and a blank Rse is 0.04 m²K/W for an element facing outside (no adjacent temperature, or one at or below θ_e), or 0.13 m²K/W where it faces another space; floors, roofs and other flow directions take the user's own values. (Small conventional BS EN ISO 6946 set, not a table of design data.)
-  A4. Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer. (Stated limit.)
-  A5. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table. (Derived.)
-  A6. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (§A5.)
-  A7. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Sheet default value; no project figure given.)
-  A8. U_target (Target U for built-up elements without their own target) is taken as 0.3 W/(m^2*K). (Sheet default value; no project figure given.)
+  A3. A blank Rsi is the conventional BS EN ISO 6946 value for the element's heat-flow direction (0.13 m²K/W horizontal, 0.10 upward, 0.17 downward) and a blank Rse is 0.04 m²K/W for an element facing outside (no adjacent temperature, or one at or below θ_e), or the same as Rsi where it faces another space. (Small conventional BS EN ISO 6946 set (three values), not a table of design data.)
+  A4. The global target U applies to built-up elements facing outside only: an internal partition or floor has no outside target, so it is checked only against a target entered on its own row. (Scope of the target check.)
+  A5. Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer. (Stated limit.)
+  A6. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table. (Derived.)
+  A7. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (No table from a standard or a manufacturer is shipped.)
+  A8. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Sheet default value; no project figure given.)
   A9. f_add (Additional allowance on the room load (CIBSE DHDG method only)) is taken as 0 %. (Sheet default value; no project figure given.)
-  A10. Conventional BS EN ISO 6946 horizontal-flow surface resistances (R_si 0.13, R_se 0.04 outside or 0.13 internal, m²K/W) are used where blank, for: Cavity wall, Partition. (Small conventional set; enter your own for floors, roofs and other flow directions.)
+  A10. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: Cavity wall, Partition. (Small conventional set; enter your own where the construction needs other values.)
 
 4. WORKING
-  [9] R_1 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
-      = Cavity wall: 0.13 + (0.13312 + 4.5455 + 0.66667 + 0.022807) + 0 + 0.04
-      = 5.538 m²·K/W
+  [8] R_1 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
+      = Cavity wall: 0.13 + (0.12202 + 3.3333 + 0.5 + 0.0325) + 0 + 0.04
+      = 4.1579 m²·K/W
         Cavity wall: total thermal resistance
-  [10] U_1 = 1/R    « BS EN ISO 6946
-      = 1 / 5.538
-      = 0.18057 W/(m²·K)
+  [9] U_1 = 1/R    « BS EN ISO 6946
+      = 1 / 4.1579
+      = 0.24051 W/(m²·K)
         Cavity wall: U-value
-  [11] Phi_1 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
-      = 15 × 0.18057 × 1 × (21 − -3) °C
-      = 65.005 W
+  [10] Phi_1 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
+      = 15 × 0.24051 × 1 × (21 − -3) °C
+      = 86.583 W
         Cavity wall: fabric loss to θ_e = -3 °C
-  [12] R_2 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
-      = Partition: 0.13 + (0.05 + 0.05) + 0.18 + 0.13
-      = 0.54 m²·K/W
+  [11] R_2 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
+      = Partition: 0.13 + (0.056818 + 0.056818) + 0.18 + 0.13
+      = 0.55364 m²·K/W
         Partition: total thermal resistance
-  [13] U_2 = 1/R    « BS EN ISO 6946
-      = 1 / 0.54
-      = 1.8519 W/(m²·K)
+  [12] U_2 = 1/R    « BS EN ISO 6946
+      = 1 / 0.55364
+      = 1.8062 W/(m²·K)
         Partition: U-value
-  [14] Phi_2 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
-      = 12 × 1.8519 × 1 × (21 − 18) °C
-      = 66.667 W
+  [13] Phi_2 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
+      = 12 × 1.8062 × 1 × (21 − 18) °C
+      = 65.025 W
         Partition: fabric loss to θ_adj = 18 °C
-  [15] U_3 = U override (user-entered)
+  [14] U_3 = U override (user-entered)
       = Ground floor: 0.25 W/m²K
       = 0.25 W/(m²·K)
         Ground floor: U-value as entered (ground floor or glazing)
-  [16] Phi_3 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
+  [15] Phi_3 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
       = 10 × 0.25 × 0.6 × (21 − -3) °C
       = 36 W
         Ground floor: fabric loss to θ_e = -3 °C
-  [17] A_fab = Σ A
+  [16] A_fab = Σ A
       = 37 m²
       = 37 m²
         Total fabric area
-  [18] A_ext = Σ A facing outside
+  [17] A_ext = Σ A facing outside
       = 25 m²
       = 25 m²
         Fabric area facing outside
-  [19] A_tb = Σ A·f facing outside    « BS EN 12831-1 cl. 6.3.2
+  [18] A_tb = Σ A·f facing outside    « BS EN 12831-1 cl. 6.3.2
       = 21 m²
       = 21 m²
         Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)
-  [20] U_m = Σ A·U·f / Σ A
-      = 26.431 / 37
-      = 0.71434 W/(m²·K)
+  [19] U_m = Σ A·U·f / Σ A
+      = 26.783 / 37
+      = 0.72385 W/(m²·K)
         Area-weighted mean U-value of the fabric
-  [21] dT = theta_int - theta_e
+  [20] dT = theta_int - theta_e
       = 21 degC − (-3 degC)
       = 24 K
         Design temperature difference, inside to outside
-  [22] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
-      = 167.67 W
-      = 167.67 W
+  [21] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
+      = 187.61 W
+      = 187.61 W
         Fabric loss through the elements
-  [23] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
+  [22] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
       = 0.05 W/(m²·K) × 21 m² × 24 K
       = 25.2 W
         Thermal-bridge allowance
-  [24] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
-      = 167.67 W + 25.2 W
-      = 192.87 W
+  [23] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
+      = 187.61 W + 25.2 W
+      = 212.81 W
         Fabric heat loss
-  [25] q_v = n * V
+  [24] q_v = n * V
       = 0.6 1/h × 50 m³
       = 30 m³/h
         Ventilation air flow
-  [26] dT_v = theta_int - theta_supply    « BS EN 12831-1 cl. 6.3.3
+  [25] dT_v = theta_int - theta_supply    « BS EN 12831-1 cl. 6.3.3
       = 21 degC − 16 degC
       = 5 K
         Ventilation temperature difference, inside to MVHR supply
-  [27] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
+  [26] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
       = 0.34 Wh/(m^3*K) × 30 m³/h × 5 K
       = 51 W
         Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
-  [29] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
-      = 192.87 W + 51 W
-      = 243.87 W
+  [28] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
+      = 212.81 W + 51 W
+      = 263.81 W
         Room design heat loss
-  [30] HLC = Phi_HL / dT
-      = 243.87 W / 24 K
-      = 10.161 W/K
+  [29] HLC = Phi_HL / dT
+      = 263.81 W / 24 K
+      = 10.992 W/K
         Heat loss coefficient
-  [31] u_1 = U / U_target
-      = 0.18057 / 0.3
-      = 0.6019
-        Cavity wall: utilisation of the target U-value
-  [32] u_2 = U / U_target
-      = 1.8519 / 0.3
-      = 6.1728
-        Partition: utilisation of the target U-value
 
 5. RESULTS
-  R_1 = 5.538 m²·K/W    Cavity wall: thermal resistance
-  U_1 = 0.18057 W/(m²·K)    Cavity wall: U-value
-  Phi_1 = 65.005 W    Cavity wall: fabric loss
-  R_2 = 0.54 m²·K/W    Partition: thermal resistance
-  U_2 = 1.8519 W/(m²·K)    Partition: U-value
-  Phi_2 = 66.667 W    Partition: fabric loss
+  R_1 = 4.1579 m²·K/W    Cavity wall: thermal resistance
+  U_1 = 0.24051 W/(m²·K)    Cavity wall: U-value
+  Phi_1 = 86.583 W    Cavity wall: fabric loss
+  R_2 = 0.55364 m²·K/W    Partition: thermal resistance
+  U_2 = 1.8062 W/(m²·K)    Partition: U-value
+  Phi_2 = 65.025 W    Partition: fabric loss
   U_3 = 0.25 W/(m²·K)    Ground floor: U-value
   Phi_3 = 36 W    Ground floor: fabric loss
   A_fab = 37 m²    Total fabric area
   A_ext = 25 m²    Fabric area facing outside
   A_tb = 21 m²    Fabric area facing outside weighted by f
-  U_m = 0.71434 W/(m²·K)    Mean fabric U-value
+  U_m = 0.72385 W/(m²·K)    Mean fabric U-value
   dT = 24 K    Design temperature difference
-  Phi_el = 167.67 W    Element fabric loss
+  Phi_el = 187.61 W    Element fabric loss
   Phi_tb = 25.2 W    Thermal-bridge allowance
-  Phi_T = 192.87 W    Fabric heat loss
+  Phi_T = 212.81 W    Fabric heat loss
   q_v = 30 m³/h    Ventilation air flow
   Phi_V = 51 W    Ventilation heat loss
-  Phi_HL = 243.87 W    Room design heat loss
-  HLC = 10.161 W/K    Heat loss coefficient
-  u_1 = 0.6019    Cavity wall: U against target
-  u_2 = 6.1728    Partition: U against target
+  Phi_HL = 263.81 W    Room design heat loss
+  HLC = 10.992 W/K    Heat loss coefficient
 
 6. CHECKS (governing first)
-  FAIL  U-value of Partition against its target (0.3 W/m²K): u_2 = 6.1728 vs u_2 ≤ 1  utilisation 6.17
-  PASS  U-value of Cavity wall against its target (0.3 W/m²K): u_1 = 0.6019 vs u_1 ≤ 1  utilisation 0.602
+  No pass/fail checks in this calculation.
 
 7. APPLICABILITY
-  WARNING record.theta_e: theta_e: a tabulated value not taken from a reference record (External design temperature); enter it as one so its source, edition and licence travel with it.
-  WARNING record.elements: elements: a tabulated value not taken from a reference record (Surface resistances and air-gap resistance); enter it as one so its source, edition and licence travel with it.
-  WARNING record.layers: layers: a tabulated value not taken from a reference record (Layer thermal conductivity); enter it as one so its source, edition and licence travel with it.
-  WARNING record.y_tb: y_tb: a tabulated value not taken from a reference record (Thermal-bridge allowance); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.0.0
-  Content hash: c3e6168e43239acd
+  Template: bs.room-heat-loss@1.1.0
+  Content hash: 4860d86fbd28e4cd
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 5/5
-  Test run: 2026-10-24 18:29 UTC
+  Known-answer cases passed: 6/6
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

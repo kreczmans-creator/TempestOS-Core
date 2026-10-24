@@ -272,10 +272,16 @@ public sealed class CalcInstanceServiceTests
         var host = new LibraryTestHost();
         var project = await host.ProjectAsync();
         var upstream = await host.Service.CreateAsync("test.direct-stress", project, "UP2", LibraryTestHost.ProvenancedInputs());
+        Assert.True((await host.Service.CheckAsync(upstream.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.IssueAsync(upstream.Id, "ISS-U2", "Client Co")).Succeeded);
         var inputs = LibraryTestHost.ProvenancedInputs().Select(i => i.Symbol == "F" ? i with { Provenance = CalcProvenance.FromReference(CalcInstance.UpstreamPrefix + upstream.Id.ToString("N")) } : i).ToList();
         var downstream = await host.Service.CreateAsync("test.direct-stress", project, "DOWN2", inputs);
         Assert.True((await host.Service.CheckAsync(downstream.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
-        Assert.True((await host.Service.UpdateInputsAsync(upstream.Id, LibraryTestHost.ProvenancedInputs(f: 50))).Succeeded);
+
+        // The issued upstream is fixed; it changes only as a new revision, whose outputs the downstream no longer matches.
+        var revised = await host.Service.ReviseAsync(upstream.Id);
+        Assert.True(revised.Succeeded, revised.Reason);
+        Assert.True((await host.Service.UpdateInputsAsync(revised.Instance!.Id, LibraryTestHost.ProvenancedInputs(f: 50))).Succeeded);
 
         var issued = await host.Service.IssueAsync(downstream.Id, "ISS-6", "Client Co");
         Assert.False(issued.Succeeded);

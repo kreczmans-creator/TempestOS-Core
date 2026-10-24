@@ -26,12 +26,13 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
+        Id, "1.1.0", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
         "Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.",
         "Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S\n" +
         "Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95\n" +
         "Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log)\n" +
-        "Adiabatic: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); below 0.1 s the device's let-through I²t\n" +
+        "Adiabatic: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault (the line conductor check, reg. 434.5.2, needs it and is not made without it; the protective conductor check then uses I_f²·0.1 s at the end-of-line fault only)\n" +
+        "Device: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked\n" +
         "Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0",
         [
             new CalcInputSpec("U_0", "Nominal voltage to earth", CalcInputKind.Quantity, "V", Default: 230, Min: 50, Max: 1000, HardMin: 50, HardMax: 1000, Group: "Supply"),
@@ -54,15 +55,17 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             new CalcInputSpec("I_n", "Rated current", CalcInputKind.Quantity, "A", Default: 32, Min: 1, Max: 1600, HardMin: 1, HardMax: 1600, Group: "Device"),
             new CalcInputSpec("curve", "Time–current points (fuse or MCCB)", CalcInputKind.Table, Columns: CurveColumns, MaxRows: 40, IsOptional: true, Group: "Device"),
             new CalcInputSpec("t_req", "Required disconnection time", CalcInputKind.Quantity, "s", Default: 0.4, Min: 0.1, Max: 5, HardMin: 0.1, HardMax: 5, Group: "Device"),
-            new CalcInputSpec("I2t_let", "Device let-through energy below 0.1 s", CalcInputKind.Quantity, "A^2*s", Min: 1, Max: 1e9, HardMin: 1, HardMax: 1e9, IsOptional: true, Group: "Device"),
+            new CalcInputSpec("device_code", "Device type code carried from the cable step (1 MCB type B, 2 type C, 3 type D, 4 fuse, MCCB or MPCB); the device chosen here must match it", CalcInputKind.Number, Min: 1, Max: 4, HardMin: 1, HardMax: 4, IsOptional: true, Group: "Device"),
+            new CalcInputSpec("I2t_let", "Device let-through energy I²t at the maximum prospective fault (disconnection below 0.1 s)", CalcInputKind.Quantity, "A^2*s", Min: 1, Max: 1e9, HardMin: 1, HardMax: 1e9, IsOptional: true, Group: "Device"),
             new CalcInputSpec("I_cn", "Rated breaking capacity", CalcInputKind.Quantity, "kA", Min: 1, Max: 150, HardMin: 1, HardMax: 150, IsOptional: true, Group: "Device"),
         ],
         [
             new CalcAssumption("TN system, a single earth fault of negligible impedance; no motor contribution, arc fault or IT system.", "Scope of the check."),
             new CalcAssumption("Line and protective conductors are the same material at the same temperature; R = ρ₂₀·L/S corrected by α.", "Conductor data from a material record."),
-            new CalcAssumption("k is derived from the material constants and labelled derived; it is not read from a licensed table.", "§A5."),
+            new CalcAssumption("k is derived from the material constants and labelled derived; it is not read from a licensed table.", "Derived constants, not read from a table."),
             new CalcAssumption("Fuse and MCCB characteristics are points the user reads off the manufacturer's curve (log-log interpolation; no extrapolation).", "No time–current table ships."),
             new CalcAssumption("Optional field-test value 0.8 × Z_s,max is a rule of thumb for measurements at ambient temperature.", "Labelled on the sheet."),
+            new CalcAssumption("The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more.", "Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum."),
         ],
         [
             new CalcClauseRef("BS 7671:2018 (as amended)", "reg. 411.3.2.2, 411.3.2.3, 411.4.4", "Automatic disconnection in TN systems: times and the loop impedance condition"),
@@ -72,7 +75,8 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("curve", "The time–current points must bracket the required time and the fault current.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("let-through", "Disconnection below 0.1 s without a let-through I²t: I_f²·0.1 s is used (conservative).", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("let-through", "Disconnection below 0.1 s without a let-through I²t: the protective conductor check uses I_f²·0.1 s at the end-of-line fault only and the line conductor check is not made.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("device", "The device chosen must be the one carried from the cable step (device_code).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("adiabatic", "No disconnection time: the adiabatic check is not made.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("temperatures", "The adiabatic final temperature must exceed the initial temperature.", CalcNoticeSeverity.Block),
         ],
@@ -127,6 +131,25 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             c.Input(s);
 
         var device = c.InputText("device");
+
+        if (c.Has("device_code"))
+        {
+            var code = c.InputSi("device_code");
+
+            if (code != Math.Round(code))
+            {
+                c.Block("device_code", "device_code: the device type code is a whole number 1 to 4.");
+                return;
+            }
+
+            var carried = (int)code switch { 1 => McbB, 2 => McbC, 3 => McbD, _ => Curve };
+
+            if (device != carried)
+            {
+                c.Block("device", $"device: the cable step sized the circuit for {carried}, but the device chosen here is {device}; choose {carried} (or change the cable step) so the fault check uses the device that was sized.");
+                return;
+            }
+        }
 
         if (!(c.Si("theta_f") > c.Si("theta_i")))
         {
@@ -207,6 +230,11 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             return;
         }
 
+        // The line conductor (reg. 434.5.2) is checked against the energy the device lets through at the maximum prospective fault: from the
+        // curve above 0.1 s, or the entered let-through. The end-of-line earth fault is the minimum fault, so I_f²·0.1 s is not a bound for the
+        // line conductor and that check is not made without a let-through value (Green G-B-03).
+        var lineChecked = true;
+
         if (td is { } time && time >= 0.1 && device == Curve)
         {
             i2t = c.Si("I_f") * c.Si("I_f") * time;
@@ -216,13 +244,14 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         {
             c.Input("I2t_let");
             i2t = c.Si("I2t_let");
-            c.Record("I2t", "device let-through I²t", $"{F(i2t)} A²s", ScalarValue.Of(i2t, "A^2*s"), "Fault energy (let-through below 0.1 s)");
+            c.Record("I2t", "device let-through I²t at the maximum prospective fault", $"{F(i2t)} A²s", ScalarValue.Of(i2t, "A^2*s"), "Fault energy (let-through below 0.1 s)");
         }
         else
         {
-            c.Warn("let-through", "I2t_let: disconnection is below 0.1 s and no let-through I²t is entered; I_f²·0.1 s is used, which is conservative.");
+            c.Warn("let-through", "I2t_let: disconnection is below 0.1 s and no let-through I²t is entered; the protective conductor check uses I_f²·0.1 s at the end-of-line fault only, and the line conductor check (reg. 434.5.2) is not made: it needs the device let-through I²t at the maximum prospective fault.");
             i2t = c.Si("I_f") * c.Si("I_f") * 0.1;
-            c.Record("I2t", "I_f²·0.1 s (no let-through entered)", $"{F(c.Si("I_f"))}² × 0.1", ScalarValue.Of(i2t, "A^2*s"), "Fault energy (conservative)");
+            c.Record("I2t", "I_f²·0.1 s (no let-through entered)", $"{F(c.Si("I_f"))}² × 0.1", ScalarValue.Of(i2t, "A^2*s"), "Fault energy at the end-of-line fault, clearing time taken as 0.1 s");
+            lineChecked = false;
         }
 
         var qc = c.Si("Q_c") * 1e-9;   // J/(K·mm³) from SI J/(K·m³)
@@ -235,9 +264,14 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         var smin = Math.Sqrt(i2t) / k;
         c.Record("S_min", "√(I²t)/k", $"√{F(i2t)} / {F(k)}", ScalarValue.Of(smin, "mm^2"), "Minimum conductor cross-section (adiabatic)", "BS 7671 reg. 543.1.3, 434.5.2");
         c.Assign("u_cpc", "S_min / S_cpc", null, "Protective conductor utilisation");
-        c.Assign("u_line", "S_min / S_line", null, "Line conductor utilisation (same fault energy)");
 
-        var outputs = new List<(string, string)> { ("R_12", "R₁ + R₂"), ("Z_s", "Loop impedance"), ("I_f", "Earth fault current"), ("I_a", "Disconnection current"), ("Z_s_max", "Maximum loop impedance"), ("u_Zs", "Loop impedance utilisation"), ("Z_test", "Field-test maximum (rule of thumb)"), ("k", "Adiabatic k (derived)"), ("S_min", "Minimum cross-section"), ("u_cpc", "Protective conductor utilisation"), ("u_line", "Line conductor utilisation") };
+        var outputs = new List<(string, string)> { ("R_12", "R₁ + R₂"), ("Z_s", "Loop impedance"), ("I_f", "Earth fault current"), ("I_a", "Disconnection current"), ("Z_s_max", "Maximum loop impedance"), ("u_Zs", "Loop impedance utilisation"), ("Z_test", "Field-test maximum (rule of thumb)"), ("k", "Adiabatic k (derived)"), ("S_min", "Minimum cross-section"), ("u_cpc", "Protective conductor utilisation") };
+
+        if (lineChecked)
+        {
+            c.Assign("u_line", "S_min / S_line", null, "Line conductor utilisation (same fault energy)");
+            outputs.Add(("u_line", "Line conductor utilisation"));
+        }
 
         if (td is not null)
             outputs.Insert(4, ("t_d", "Disconnection time"));
@@ -249,11 +283,13 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
 
         c.CheckUtilisation("Loop impedance within maximum (disconnection in time)", "u_Zs", "BS 7671 reg. 411.4.4");
 
-        if (td is { } disconnection)
-            c.CheckCondition("Disconnection time within required", disconnection <= c.Si("t_req") + 1e-12, $"t_d = {F(disconnection)} s", $"t_req = {F(c.Si("t_req"))} s", "t_d", "BS 7671 reg. 411.3.2.2");
+        if (td is not null)
+            c.Check("Disconnection time within required", "t_d", "t_req", "BS 7671 reg. 411.3.2.2");
 
         c.CheckUtilisation("Protective conductor against adiabatic minimum", "u_cpc", "BS 7671 reg. 543.1.3");
-        c.CheckUtilisation("Line conductor against adiabatic minimum", "u_line", "BS 7671 reg. 434.5.2");
+
+        if (lineChecked)
+            c.CheckUtilisation("Line conductor against adiabatic minimum", "u_line", "BS 7671 reg. 434.5.2");
 
         if (c.Has("I_cn") && c.Has("S_r") && c.Has("u_k"))
             c.CheckUtilisation("Breaking capacity against prospective fault", "u_Icn");

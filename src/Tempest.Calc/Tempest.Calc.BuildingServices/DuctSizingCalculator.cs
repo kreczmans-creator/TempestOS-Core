@@ -77,7 +77,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
                 [CalcInputValue.Choice("method", MethodEqualFriction), CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("eps", 0.09, "mm"), Sections(("main", 1.0, 10, ShapeRound, 0, 400, 0, 0, true))],
                 [new CalcExpectedValue("v_s1", 7.958, "m/s", 1e-3), new CalcExpectedValue("f_s1", 0.01714, "", 5e-3), new CalcExpectedValue("dpL_s1", 1.633, "Pa/m", 5e-3), new CalcExpectedValue("dp_index", 16.33, "Pa", 5e-3)]),
             new CalcTestCase("ka-rectangular-equivalent", "Rectangular 600 × 300 equivalent diameter (ASHRAE Ch. 21 relation)",
-                new CalcReferenceSource("ASHRAE Handbook — Fundamentals", "2017", "Ch. 21 equivalent round duct for a rectangular duct: D_e = 1.30 (ab)^0.625/(a + b)^0.25; 600 × 300 → 457 mm; friction rate through D_e at v_e = 4Q/πD_e² = 4.87 m/s ≈ 0.556 Pa/m (independent recomputation, Green G-01)"),
+                new CalcReferenceSource("ASHRAE Handbook — Fundamentals", "2017", "Ch. 21 equivalent round duct for a rectangular duct: D_e = 1.30 (ab)^0.625/(a + b)^0.25; 600 × 300 → 457 mm; friction rate through D_e at v_e = 4Q/πD_e² = 4.87 m/s ≈ 0.556 Pa/m (independent recomputation)"),
                 [CalcInputValue.Choice("method", MethodEqualFriction), CalcInputValue.Quantity("T", 20, "degC"), Sections(("branch", 0.8, 12, ShapeRectangular, 600, 300, 0.5, 0, true))],
                 [new CalcExpectedValue("De_s1", 457.3, "mm", 2e-3), new CalcExpectedValue("v_s1", 4.444, "m/s", 1e-3), new CalcExpectedValue("dpL_s1", 0.556, "Pa/m", 1e-2)]),
             new CalcTestCase("ka-velocity-method", "Velocity method sizes to the next standard round size (analytic)",
@@ -137,7 +137,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("sections", "sections: at least one duct section is needed.");
+            c.Block("sections", c.EnterRows("sections"));
             return;
         }
 

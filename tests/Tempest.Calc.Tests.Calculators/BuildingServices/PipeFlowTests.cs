@@ -249,4 +249,28 @@ public sealed class PipeFlowTests
             Assert.Single(r.Steps, st => st.Symbol == "eta_pump");
         }
     }
+
+    [Fact]
+    public void A_Closed_Circuit_Has_No_Static_Lift_And_Reports_The_Water_It_Holds()
+    {
+        // Black B-A-11 / Green G-B-10: the wet-heating and cooling loops entered a 3 m rise on a closed flow-and-return loop and the pump "lifted" it.
+        var segments = PipeFlowCalculator.Segments(("loop", 60, 80, 0.045, 8, 0, 10, "discharge"));
+        var open = Run(CalcInputValue.Quantity("Q", 30, "m^3/h"), segments);
+        var closed = Run(CalcInputValue.Quantity("Q", 30, "m^3/h"), segments, CalcInputValue.Choice("circuit", PipeFlowCalculator.ClosedCircuit));
+        Assert.Equal(10, open.OutputSi("H_static"), 12);
+        Assert.Equal(0, closed.OutputSi("H_static"), 12);
+        Assert.Equal(open.OutputSi("h_f_total"), closed.OutputSi("h_f_total"), 12);
+        Assert.Equal(closed.OutputSi("h_f_total"), closed.OutputSi("H_sys"), 12);
+        Assert.Contains(closed.RunAssumptions, a => a.Statement.Contains("closed", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_Water_Held_In_The_Pipes_Is_A_Port_For_The_Sealed_System()
+    {
+        // Green G-B-17: B6's pipework volume was a 20 L default against 24.6 L of pipe.
+        Assert.Contains(Calc.Template.OutputPorts!, p => p.Symbol == "V_pipe" && p.Unit == "L");
+        var r = Run(CalcInputValue.Quantity("Q", 1, "m^3/h"), PipeFlowCalculator.Segments(("a", 40, 28, 0.045, 0, 0, 0, "discharge"), ("b", 10, 20, 0.045, 0, 0, 0, "discharge")));
+        var expected = (Math.PI / 4 * 0.028 * 0.028 * 40 + Math.PI / 4 * 0.020 * 0.020 * 10) * 1e3;
+        Assert.Equal(expected, r.OutputSi("V_pipe") * 1e3, 9);
+    }
 }

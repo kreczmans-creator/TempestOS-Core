@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bearing bush press fit    Revision: A
 Title: Press and shrink fit
-Author: unknown    Authored: 2026-10-23
-Checker: —    Checked: —
-Issued: 2026-10-23    Issue: BRK-CALC-001
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.
@@ -122,5 +122,5 @@ Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² −
   Content hash: 45cae33eae60ff08
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-23 19:12 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

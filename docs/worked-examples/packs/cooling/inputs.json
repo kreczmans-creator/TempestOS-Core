@@ -106,6 +106,16 @@
       "ValueText": "1"
     },
     {
+      "Symbol": "eta_psu",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
       "Symbol": "f_derate",
       "Number": 1,
       "Provenance": {
@@ -114,6 +124,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "1"
+    },
+    {
+      "Symbol": "heat_add",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
     },
     {
       "Symbol": "inrush_add",
@@ -305,15 +325,25 @@
       "ValueText": "1.25"
     },
     {
+      "Symbol": "psu_bus",
+      "Text": "not counted on an AC bus",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "not counted on an AC bus"
+    },
+    {
       "Symbol": "t_auto",
-      "Number": 4,
+      "Number": 0,
       "Unit": "h",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "4"
+      "ValueText": "0"
     },
     {
       "Symbol": "theta",
@@ -380,7 +410,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7a6b3957a82245619beb40d379d8f426#Phi",
+        "Reference": "calc:fbaa5e7eccbd475983045980767e76d1#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -579,7 +609,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f49c60073b24a789b0df0d654c1967a#P_cool",
+        "Reference": "calc:192c93ed44d74825b54d18771868fd5f#P_cool",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -613,7 +643,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f49c60073b24a789b0df0d654c1967a#T_max",
+        "Reference": "calc:192c93ed44d74825b54d18771868fd5f#T_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -639,6 +669,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "counterflow"
+    },
+    {
+      "Symbol": "const_side",
+      "Text": "hot side at constant temperature (e.g. condensing vapour)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "hot side at constant temperature (e.g. condensing vapour)"
     },
     {
       "Symbol": "cp_c",
@@ -723,7 +763,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#Q",
+        "Reference": "calc:19c84b81117e4724b484910f7f4f9302#Q",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -735,11 +775,22 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#T_c_m",
+        "Reference": "calc:19c84b81117e4724b484910f7f4f9302#T_c_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "23.6375"
+    },
+    {
+      "Symbol": "circuit",
+      "Text": "closed (flow and return: the rises cancel, no static lift)",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-215",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "closed (flow and return: the rises cancel, no static lift)"
     },
     {
       "Symbol": "cp_load",
@@ -747,7 +798,7 @@
       "Unit": "J/(kg*K)",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#cp_c",
+        "Reference": "calc:19c84b81117e4724b484910f7f4f9302#cp_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -755,11 +806,11 @@
     },
     {
       "Symbol": "dT_load",
-      "Number": 3.2750239234449787,
+      "Number": 3.2750239234449623,
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#dT_c",
+        "Reference": "calc:19c84b81117e4724b484910f7f4f9302#dT_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -798,17 +849,6 @@
       "ValueText": "0"
     },
     {
-      "Symbol": "mu_custom",
-      "Number": 800,
-      "Unit": "mPa*s",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "800"
-    },
-    {
       "Symbol": "n_pump",
       "Number": 2800,
       "Unit": "rpm",
@@ -842,17 +882,6 @@
       "ValueText": "101.325"
     },
     {
-      "Symbol": "rho_custom",
-      "Number": 888,
-      "Unit": "kg/m^3",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "888"
-    },
-    {
       "Symbol": "segments",
       "Rows": [
         {
@@ -880,7 +909,7 @@
               "Unit": "m"
             },
             "dz": {
-              "Number": 3,
+              "Number": 0,
               "Unit": "m"
             },
             "side": {

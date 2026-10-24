@@ -3,12 +3,12 @@ Project: Conveyor 7 head drive
 Calc ID: Coupling flange bolts    Revision: A
 Title: Bolt group (elastic method)
 Author: unknown    Authored: 2026-10-24
-Checker: —    Checked: —
-Issued: 2026-10-24    Issue: CNV-DRV-001
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.
-Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar J = Σ A r². Shear per bolt: v = A (F/ΣA) + T·A·r/J (vector sum). Tension per bolt: t = A N/ΣA + M_x A y'/Σ A y'² + M_y A x'/Σ A x'². Prying: t_p = t (1 + b/a) when a and b are given. Utilisation: the circular interaction (v/V_R)² + (t_p/T_R)² ≤ 1 (elastic method, Shigley-style) and the EN 1993-1-8 linear form v/V_R + t_p/(1.4 T_R) ≤ 1, plus each alone; the governing check is the highest.
+Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar J = Σ A r². Shear per bolt: v = A (F/ΣA) + T·A·r/J (vector sum). Tension per bolt: t = A N/ΣA + A·[(M_x I_y − M_y I_xy) y' + (M_y I_x − M_x I_xy) x']/(I_x I_y − I_xy²), I_x = Σ A y'², I_y = Σ A x'², I_xy = Σ A x'y' (this is M_x A y'/Σ A y'² + M_y A x'/Σ A x'² only for a pattern symmetric about a centroidal axis). Prying: t_p = t (1 + b/a) when a and b are given. Utilisation: the circular interaction (v/V_R)² + (t_p/T_R)² ≤ 1 (elastic method, Shigley-style) and the EN 1993-1-8 linear form v/V_R + t_p/(1.4 T_R) ≤ 1, plus each alone; the governing check is the highest.
   Ref: EN 1993-1-8:2005 §3.6, §3.8 — Design resistance of individual fasteners; elastic distribution in a bolt group
   Ref: AISC Steel Construction Manual Part 7 — Eccentrically loaded bolt groups — elastic method
 
@@ -120,9 +120,9 @@ Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) �
   No warnings.
 
 8. VERIFICATION
-  Template: mech.bolt-group@1.0.0
-  Content hash: ef89d9cdd6ddb9eb
+  Template: mech.bolt-group@1.1.0
+  Content hash: fd686de20c6459e9
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 2/2
-  Test run: 2026-10-24 18:29 UTC
+  Known-answer cases passed: 3/3
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

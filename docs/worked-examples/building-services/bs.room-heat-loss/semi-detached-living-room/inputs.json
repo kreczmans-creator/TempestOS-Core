@@ -143,7 +143,7 @@
             "Unit": "mm"
           },
           "lambda": {
-            "Number": 0.77,
+            "Number": 0.84,
             "Unit": "W/(m*K)"
           }
         }
@@ -154,14 +154,14 @@
             "Text": "Cavity wall"
           },
           "name": {
-            "Text": "PIR insulation"
+            "Text": "Insulation"
           },
           "d": {
             "Number": 100,
             "Unit": "mm"
           },
           "lambda": {
-            "Number": 0.022,
+            "Number": 0.03,
             "Unit": "W/(m*K)"
           }
         }
@@ -179,7 +179,7 @@
             "Unit": "mm"
           },
           "lambda": {
-            "Number": 0.15,
+            "Number": 0.2,
             "Unit": "W/(m*K)"
           }
         }
@@ -197,7 +197,7 @@
             "Unit": "mm"
           },
           "lambda": {
-            "Number": 0.57,
+            "Number": 0.4,
             "Unit": "W/(m*K)"
           }
         }
@@ -215,7 +215,7 @@
             "Unit": "mm"
           },
           "lambda": {
-            "Number": 0.57,
+            "Number": 0.4,
             "Unit": "W/(m*K)"
           }
         }
@@ -233,7 +233,7 @@
             "Unit": "mm"
           },
           "lambda": {
-            "Number": 0.51,
+            "Number": 0.6,
             "Unit": "W/(m*K)"
           }
         }
@@ -251,7 +251,7 @@
             "Unit": "mm"
           },
           "lambda": {
-            "Number": 0.51,
+            "Number": 0.6,
             "Unit": "W/(m*K)"
           }
         }
@@ -269,7 +269,7 @@
             "Unit": "mm"
           },
           "lambda": {
-            "Number": 0.57,
+            "Number": 0.4,
             "Unit": "W/(m*K)"
           }
         }

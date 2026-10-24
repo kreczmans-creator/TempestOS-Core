@@ -106,4 +106,53 @@ public sealed class SealedSystemTests
         Assert.Contains(Sealed.Template.OutputPorts!, p => p is { Symbol: "dT_fr", Unit: "K" });
         Assert.Contains(Sealed.Template.OutputPorts!, p => p is { Symbol: "t_m", Unit: "degC" });
     }
+
+    [Theory]
+    [InlineData(40, 30)]
+    [InlineData(30, 30)]
+    public void A_Fill_Temperature_At_Or_Above_The_Maximum_Blocks_Instead_Of_A_Negative_Vessel(double fill, double max)
+    {
+        // Black B-A-08(a): t_fill 40, t_max 30 gave e_x = −0.0034, V_e = −0.27 L and a FAIL with a utilisation of −0.05.
+        var r = CalcRunner.Run(Sealed, Defaults().With(Q("t_fill", fill, "degC")).With(Q("t_max", max, "degC")).With(Q("V_vessel", 5, "L")));
+        Assert.True(r.IsBlocked);
+        Assert.Equal("t-fill", r.Blocks[0].RuleId);
+        Assert.StartsWith("t_fill:", r.Blocks[0].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Vessel_Is_Sized_For_The_Flow_Temperature_When_It_Is_Above_The_Maximum()
+    {
+        // Black B-A-08(b): t_max 30 with a 75 °C flow gave V_e = 0.32 L against 2.50 L at the actual flow temperature.
+        var low = CalcRunner.Run(Sealed, Defaults().With(Q("t_max", 30, "degC")));
+        var atFlow = CalcRunner.Run(Sealed, Defaults().With(Q("t_max", 75, "degC")));
+        Assert.Contains(low.Warnings, w => w.RuleId == "t-max");
+        Assert.Equal(atFlow.OutputSi("V_e"), low.OutputSi("V_e"), 12);
+        Assert.Equal(atFlow.OutputSi("e_x"), low.OutputSi("e_x"), 12);
+    }
+
+    [Fact]
+    public void A_Selected_Emitter_Of_Zero_Watts_Is_Refused_Not_Treated_As_None_Selected()
+    {
+        // Black B-A-21: Phi50 = 0 for a 1500 W room removed the emitter check ("No pass/fail checks in this calculation").
+        var zero = CalcInputValue.Table("rooms", [CalcRow.Of(("name", new CalcCell(Text: "Lounge")), ("Phi", new CalcCell(1500, "W")), ("Phi50", new CalcCell(0, "W")), ("V_em", new CalcCell(8, "L")))]);
+        var r = CalcRunner.Run(Sealed, Defaults().With(zero));
+        Assert.True(r.IsBlocked);
+        Assert.Equal("emitter", r.Blocks[0].RuleId);
+        Assert.Contains("Lounge", r.Blocks[0].Message, StringComparison.Ordinal);
+
+        var none = CalcRunner.Run(Sealed, Defaults().With(SealedSystemCalculator.Rooms(("Lounge", 1500, 0, 8))));
+        Assert.False(none.IsBlocked);
+    }
+
+    [Fact]
+    public void The_Vessel_States_That_It_Excludes_The_Water_Reserve_And_Cites_Only_What_It_Implements()
+    {
+        // Green G-B-08: the sheet cited BS EN 12828 for a vessel volume that omits that standard's water reserve and safety-valve margin.
+        Assert.DoesNotContain(Sealed.Template.ClauseRefs, c => c.Standard.Contains("12828", StringComparison.Ordinal));
+        Assert.Contains(Sealed.Template.Assumptions, a => a.Statement.Contains("water reserve", StringComparison.Ordinal));
+        var r = CalcRunner.Run(Sealed, Defaults().With(Q("V_vessel", 8, "L")));
+        Assert.All(r.Checks, c => Assert.DoesNotContain("12828", c.Clause ?? string.Empty, StringComparison.Ordinal));
+    }
+
+    private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
 }

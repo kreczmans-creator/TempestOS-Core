@@ -25,6 +25,14 @@ public sealed partial class CalcInstanceService
         if (instance.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; external evidence is filed while it is a draft.", instance);
 
+        // A member of a checked pack is frozen like its inputs: nothing is added to its Evidence after the pack was checked (Red R-A-10).
+        if (instance.PackId is { } packId && await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false) is { Status: not CalcInstanceStatus.Draft } pack)
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' belongs to pack '{pack.Title}', which is {pack.Status}; its Evidence is frozen with it.", instance);
+
+        // The citing input is checked before the file is attached, so a refusal leaves no orphan attachment.
+        if (inputSymbol is not null && _catalogue.Find(instance.TemplateReference)?.Template.FindInput(inputSymbol) is not { Kind: CalcInputKind.Text })
+            return CalcActionResult.Refused($"'{inputSymbol}' is not a text input of '{instance.Name}'; the report was not attached.", instance);
+
         // Windows paths arrive on every platform; keep the last segment either way so no directory part is stored.
         var name = CalcSheetTextRenderer.Clean(Path.GetFileName((fileName ?? string.Empty).Replace('\\', '/')));
 
@@ -42,14 +50,73 @@ public sealed partial class CalcInstanceService
         if (inputSymbol is null)
             return CalcActionResult.Ok(instance);
 
-        var spec = _catalogue.Find(instance.TemplateReference)?.Template.FindInput(inputSymbol);
-
-        if (spec is not { Kind: CalcInputKind.Text })
-            return CalcActionResult.Refused($"'{inputSymbol}' is not a text input of '{instance.Name}'; the report is attached but not cited.", instance);
-
         var inputs = instance.Inputs.Where(i => !string.Equals(i.Symbol, inputSymbol, StringComparison.Ordinal))
             .Append(new CalcInputValue(inputSymbol, Text: name, Provenance: CalcProvenance.FromEvidence($"{evidenceId:N}/{attachment.Id:N}")))
             .ToList();
-        return await UpdateInputsAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false);
+        return await UpdateInputsAsync(instanceId, inputs, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The first input (or table cell) whose "evidence" source does not point at a file attached to this calculation's Evidence, as one
+    /// plain sentence, or <see langword="null"/>. An evidence source is <c>&lt;evidence id&gt;/&lt;attachment id&gt;</c>; typed text, another
+    /// calculation's attachment or an attachment that is not there is not evidence (Purple P-A-02). A revision keeps citing the files its
+    /// earlier revisions filed, so the Evidence of every earlier revision of the same calculation counts as its own.
+    /// </summary>
+    private async Task<string?> UnresolvedEvidenceAsync(Guid? evidenceId, Guid? predecessorId, IEnumerable<CalcInputValue> inputs, CancellationToken cancellationToken)
+    {
+        var cited = new List<(string Where, CalcProvenance Provenance)>();
+
+        foreach (var input in inputs)
+        {
+            if (input.Provenance is { Kind: CalcProvenanceKind.Evidence } direct)
+                cited.Add((input.Symbol, direct));
+
+            for (var r = 0; r < (input.Rows?.Count ?? 0); r++)
+            {
+                foreach (var cell in input.Rows![r]?.Cells ?? new Dictionary<string, CalcCell>())
+                {
+                    if (cell.Value?.Provenance is { Kind: CalcProvenanceKind.Evidence } inCell)
+                        cited.Add(($"{input.Symbol}[{r + 1}].{cell.Key}", inCell));
+                }
+            }
+        }
+
+        if (cited.Count == 0)
+            return null;
+
+        // The Evidence records that belong to this calculation: its own and those of the revisions before it.
+        var own = new List<Guid>();
+
+        if (evidenceId is { } current)
+            own.Add(current);
+
+        var seen = new HashSet<Guid>();
+
+        for (var previous = predecessorId; previous is { } id && seen.Add(id) && seen.Count <= 64;)
+        {
+            var instance = await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false);
+
+            if (instance is null)
+                break;
+
+            if (instance.EvidenceId is { } earlier)
+                own.Add(earlier);
+
+            previous = instance.PredecessorId;
+        }
+
+        foreach (var (where, provenance) in cited)
+        {
+            var parts = (provenance.Reference ?? string.Empty).Split('/');
+
+            if (parts.Length == 2 && Guid.TryParse(parts[0], out var citedEvidence) && Guid.TryParse(parts[1], out var attachmentId) && own.Contains(citedEvidence)
+                && await FindEvidenceAsync(citedEvidence, cancellationToken).ConfigureAwait(false) is { } evidence
+                && (await evidence.GetAttachmentsAsync(cancellationToken).ConfigureAwait(false)).Any(a => a.Id == attachmentId))
+                continue;
+
+            return $"{where}: the source 'evidence' must point at a file attached to this calculation's Evidence; attach the report to the calculation (attach external report) or choose another source.";
+        }
+
+        return null;
     }
 }

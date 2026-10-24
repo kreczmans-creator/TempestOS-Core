@@ -98,4 +98,35 @@ public sealed class BoltTests
             return Math.Abs(b.OutputSi("v_max") - 2 * a.OutputSi("v_max")) < 1e-6 * b.OutputSi("v_max");
         }, iter: 40);
     }
+
+    private static CalcInputValue BoltTable(params (double X, double Y)[] points) =>
+        CalcInputValue.Table("bolts", points.Select(p => CalcRow.Of(("x", new CalcCell(p.X, "mm")), ("y", new CalcCell(p.Y, "mm")), ("A", new CalcCell(84.3, "mm^2")))).ToList());
+
+    private static CalcInputSet BendingOnly(params (double X, double Y)[] points) =>
+        CalcTemplateHasher.DefaultInputs(Group.Template).With(BoltTable(points)).With(CalcInputValue.Quantity("F_y", 0, "kN")).With(CalcInputValue.Quantity("e_x", 0, "mm")).With(CalcInputValue.Quantity("e_y", 0, "mm"))
+            .With(CalcInputValue.Quantity("V_R", 1000, "kN")).With(CalcInputValue.Quantity("T_R", 1000, "kN"));
+
+    [Fact]
+    public void An_Unsymmetric_Pattern_Uses_The_Product_Moment_In_Bending()
+    {
+        // Green G-A-01 (shared kernel): bolts at (0,0), (120,0), (60,80), (0,160), A = 84.3 mm², M_x = 12 kN·m. Moment equilibrium of
+        // t = A(a·x' + b·y') solved in python3 gives 62.5 kN at the top bolt; the symmetric-axes form gave 68.18 kN.
+        var r = CalcRunner.Run(Group, BendingOnly((0, 0), (120, 0), (60, 80), (0, 160)).With(CalcInputValue.Quantity("M_x", 12, "kN*m")));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(62.5, r.OutputSi("t_max") / 1e3, 6);
+    }
+
+    [Fact]
+    public void Bolts_On_One_Line_Cannot_Resist_A_Moment_About_That_Line()
+    {
+        // Bolts on the y axis: M_y (about y) has nothing to bear on. It used to be dropped silently.
+        var about = CalcRunner.Run(Group, BendingOnly((0, 0), (0, 100), (0, 200)).With(CalcInputValue.Quantity("M_y", 5, "kN*m")));
+        Assert.True(about.IsBlocked);
+        Assert.Equal("collinear", about.Blocks[0].RuleId);
+
+        // M_x bends the line: t = M y'/(A Σ y'²) × A, y' = 100 mm, Σ y'² = 20000: 10e6 × 100/20000 = 50 kN.
+        var across = CalcRunner.Run(Group, BendingOnly((0, 0), (0, 100), (0, 200)).With(CalcInputValue.Quantity("M_x", 10, "kN*m")));
+        Assert.False(across.IsBlocked, string.Join("; ", across.Blocks.Select(b => b.Message)));
+        Assert.Equal(50, across.OutputSi("t_max") / 1e3, 6);
+    }
 }

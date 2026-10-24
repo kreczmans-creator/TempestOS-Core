@@ -268,13 +268,62 @@ public sealed class BasePlateTests
     }
 
     [Fact]
-    public void A_Profis_Reference_Passes_The_Anchorage_Condition()
+    public void A_Typed_Profis_Reference_Is_Not_A_Passed_Check()
     {
-        var r = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Choice("profis_ref", "PROFIS-2026-014 rev A")).With(CalcInputValue.Choice("alpha_basis", "A_c1/A_c0 = 2.25")));
-        Assert.DoesNotContain(r.Warnings, w => w.RuleId is "anchorage" or "alpha_basis");
-        var check = Assert.Single(r.Checks, c => c.Name.StartsWith("Anchorage designed externally", StringComparison.Ordinal));
-        Assert.True(check.Passed);
-        Assert.Contains("PROFIS-2026-014", check.DemandText, StringComparison.Ordinal);
+        // Green G-A-03: any non-empty text used to pass "Anchorage designed externally" (the issued pack showed 6 of 6 PASS on a placeholder file name).
+        var r = CalcRunner.Run(Plate, Defaults().With(new CalcInputValue("profis_ref", Text: "PROFIS-2026-014 rev A")).With(CalcInputValue.Choice("alpha_basis", "A_c1/A_c0 = 2.25")));
+        Assert.DoesNotContain(r.Checks, c => c.Name.StartsWith("Anchorage", StringComparison.Ordinal));
+        var warning = Assert.Single(r.Warnings, w => w.RuleId == "anchorage");
+        Assert.Contains("typed text", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(r.Warnings, w => w.RuleId == "alpha_basis");
+
+        var manual = CalcRunner.Run(Plate, Defaults().With(new CalcInputValue("profis_ref", Text: "PROFIS-2026-014 rev A", Provenance: CalcProvenance.Specification("PROFIS"))));
+        Assert.DoesNotContain(manual.Checks, c => c.Name.StartsWith("Anchorage", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_Compression_Lever_Arm_Follows_The_Strip_When_The_Outstand_Is_Cut_At_The_Plate_Edge()
+    {
+        // Green G-A-10: h = 300, t_f = 17, L = 340 (only 20 mm of plate outside the flange), c = 50.87: z_C = 141.5 − (50.87 − 20)/2 = 126.063 mm and
+        // C_Ed = 513.64 kN; the uncut centroid 141.5 gave 487.77 kN, 5 % low (python3).
+        var r = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Quantity("h", 300, "mm")).With(CalcInputValue.Quantity("b", 300, "mm")).With(CalcInputValue.Quantity("L", 340, "mm")).With(CalcInputValue.Quantity("m", 12, "mm")).With(CalcInputValue.Quantity("N_Ed", 300, "kN")).With(CalcInputValue.Quantity("M_Ed", 100, "kN*m")));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(126.06264904654, r.OutputSi("z_C") * 1e3, 6);
+        Assert.Equal(513.63512456761, Kn(r, "C_Ed"), 6);
+
+        // Uncut (a long plate): the centroid is the plain (h − t_f)/2.
+        var uncut = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Quantity("h", 300, "mm")).With(CalcInputValue.Quantity("b", 300, "mm")).With(CalcInputValue.Quantity("L", 600, "mm")).With(CalcInputValue.Quantity("m", 12, "mm")));
+        Assert.Equal(141.5, uncut.OutputSi("z_C") * 1e3, 9);
+    }
+
+    [Fact]
+    public void The_Tension_T_Stub_Geometry_And_The_Concentration_Factor_Have_No_Silent_Unsafe_Defaults()
+    {
+        // Green G-A-11: l_eff = 200 mm, m = 28 mm and α = 1.5 were invented defaults (α alone raises f_jd by 50 %).
+        var spec = Plate.Template.Inputs;
+        Assert.Null(spec.Single(i => i.Symbol == "l_eff").Default);
+        Assert.Null(spec.Single(i => i.Symbol == "m").Default);
+        Assert.False(spec.Single(i => i.Symbol == "l_eff").IsOptional);
+        Assert.False(spec.Single(i => i.Symbol == "m").IsOptional);
+        Assert.Equal(1.0, spec.Single(i => i.Symbol == "alpha").Default);
+
+        var without = new CalcInputSet(Defaults().Values.Where(v => v.Symbol is not ("l_eff" or "m")));
+        var r = CalcRunner.Run(Plate, without);
+        Assert.True(r.IsBlocked);
+        Assert.Contains(r.Blocks, b => b.Message.StartsWith("l_eff", StringComparison.Ordinal) || b.Message.StartsWith("m", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_Axial_Force_Sign_Is_Stated_As_Opposite_To_The_Member_Check()
+    {
+        // Black B-A-22: S3 takes N_Ed tension positive, S6 compression positive; the same symbol must say so on both sheets.
+        var s6 = Plate.Template.Inputs.Single(i => i.Symbol == "N_Ed").Description;
+        var s3 = new MemberChecksCalculator().Template.Inputs.Single(i => i.Symbol == "N_Ed").Description;
+        Assert.Contains("COMPRESSION positive", s6, StringComparison.Ordinal);
+        Assert.Contains("opposite", s6, StringComparison.Ordinal);
+        Assert.Contains("TENSION positive", s3, StringComparison.Ordinal);
+        Assert.Contains("opposite", s3, StringComparison.Ordinal);
+        Assert.Contains(Plate.Template.Assumptions, a => a.Statement.Contains("R1_y", StringComparison.Ordinal) && a.Statement.Contains("N_e1", StringComparison.Ordinal));
     }
 
     [Fact]

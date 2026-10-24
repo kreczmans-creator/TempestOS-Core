@@ -25,6 +25,7 @@ public sealed partial class CalcSheetView
     public const string OpenPackMemberCaption = "Open pack member";
     public const string CheckPackCaption = "Check pack";
     public const string IssuePackCaption = "Issue pack";
+    public const string ReopenPackCaption = "Reopen pack";
     public const string StaleListMark = "STALE";
 
     /// <summary>One saved calculation as listed: its name, template title, revision, status and whether it is stale.</summary>
@@ -75,6 +76,7 @@ public sealed partial class CalcSheetView
 
     private readonly ComboBox _packOutcome = new() { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = Outcomes.Select(o => o.Text).ToList(), SelectedIndex = 0 };
     private readonly Button _checkPack = new() { Content = CheckPackCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
+    private readonly Button _reopenPack = new() { Content = ReopenPackCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly TextBox _packReference = PackInput("Issue reference");
     private readonly TextBox _packClient = PackInput("Client");
     private readonly Button _issuePack = new() { Content = IssuePackCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
@@ -97,6 +99,9 @@ public sealed partial class CalcSheetView
 
     /// <summary>Check the pack (id) with what was typed.</summary>
     public event Action<Guid, PackCheckDraft>? CheckPackRequested;
+
+    /// <summary>Take the checked pack (id) back to a draft under a new revision, so a member that went stale can be corrected and the pack checked again.</summary>
+    public event Action<Guid>? ReopenPackRequested;
 
     /// <summary>Issue the pack (id) with what was typed.</summary>
     public event Action<Guid, PackIssueDraft>? IssuePackRequested;
@@ -148,6 +153,8 @@ public sealed partial class CalcSheetView
 
     /// <summary>Whether Issue pack is available.</summary>
     public bool CanIssuePack => _issuePack.IsEnabled;
+
+    public bool CanReopenPack => _reopenPack.IsEnabled;
 
     /// <summary>Whether a project is open (Create pack needs one; the lists show the open project's calculations and packs).</summary>
     public void SetProjectOpen(bool open)
@@ -303,6 +310,7 @@ public sealed partial class CalcSheetView
         AutomationProperties.SetName(_packReference, "Pack issue reference");
         AutomationProperties.SetName(_packClient, "Pack client");
         AutomationProperties.SetName(_issuePack, IssuePackCaption);
+        AutomationProperties.SetName(_reopenPack, ReopenPackCaption);
 
         _savedList.SelectionChanged += (_, _) => UpdateSavedAndPackButtons();
         _packMemberList.SelectionChanged += (_, _) => UpdateSavedAndPackButtons();
@@ -363,6 +371,11 @@ public sealed partial class CalcSheetView
             if (SelectedPackId is { } id && _packOutcome.SelectedIndex is >= 0 and var o && o < Outcomes.Length)
                 CheckPackRequested?.Invoke(id, new PackCheckDraft(_packOrganisation.Text?.Trim() ?? string.Empty, _packStatement.Text?.Trim() ?? string.Empty, Outcomes[o].Outcome));
         };
+        _reopenPack.Click += (_, _) =>
+        {
+            if (SelectedPackId is { } id)
+                ReopenPackRequested?.Invoke(id);
+        };
         _issuePack.Click += (_, _) =>
         {
             if (SelectedPackId is { } id)
@@ -381,6 +394,7 @@ public sealed partial class CalcSheetView
         _createPack.IsEnabled = ready && _packTemplatePick.SelectedIndex >= 0 && !string.IsNullOrWhiteSpace(_packTitle.Text);
         _checkPack.IsEnabled = ready && pack is { Status: CalcInstanceStatus.Draft }
             && !string.IsNullOrWhiteSpace(_packChecker.Text) && !string.IsNullOrWhiteSpace(_packOrganisation.Text);
+        _reopenPack.IsEnabled = ready && pack is { Status: CalcInstanceStatus.Checked };
         _issuePack.IsEnabled = ready && !_issueRefillPending && pack is { Status: CalcInstanceStatus.Checked }
             && !string.IsNullOrWhiteSpace(_packReference.Text) && !string.IsNullOrWhiteSpace(_packClient.Text);
     }
@@ -416,6 +430,7 @@ public sealed partial class CalcSheetView
         panel.Children.Add(_packStatement);
         panel.Children.Add(_packOutcome);
         panel.Children.Add(_checkPack);
+        panel.Children.Add(_reopenPack);
         panel.Children.Add(new TextBlock { Text = "Issue the pack", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody, Margin = DesignTokens.SectionMargin });
         panel.Children.Add(_packReference);
         panel.Children.Add(_packClient);

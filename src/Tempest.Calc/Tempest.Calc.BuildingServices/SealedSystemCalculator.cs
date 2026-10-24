@@ -23,14 +23,14 @@ public sealed class SealedSystemCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.BuildingServices, "Sealed heating system: emitters and expansion vessel",
+        Id, "1.2.0", CalcDiscipline.BuildingServices, "Sealed heating system: emitters and expansion vessel",
         "A closed LTHW system below 100 °C: the catalogue output (at ΔT 50 K) each room's emitter needs at the design flow, return and room temperatures, checked against the selected emitters; and the minimum expansion vessel for the system volume, fill and maximum temperatures, static head and pressures.",
         "Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_f − t_r)/ln((t_f − t_i)/(t_r − t_i))\n" +
         "Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n\n" +
         "System volume: V_s = Σ V_em + V_pipe + V_plant\n" +
         "Expansion: e_x = ρ(t_fill)/ρ(t_max) − 1 (water density by Kell 1975), or a glycol record\n" +
         "Pre-charge: p_i = ρ·g·h_static + margin (≥ static head)\n" +
-        "Vessel: V_e = e_x·V_s/[1 − (p_i + 1)/(p_f + 1)] (pressures in bar gauge, + 1 bar for absolute)",
+        "Vessel: V_e = e_x·V_s/[1 − (p_i + 1)/(p_f + 1)] (pressures in bar gauge, + 1 bar for absolute); the expansion volume only, sized for the higher of t_max and t_f; a water reserve and a safety-valve margin are not included",
         [
             new CalcInputSpec("rooms", "Rooms and emitters", CalcInputKind.Table, Columns: RoomColumns, MaxRows: 200, IsOptional: true, Group: "Emitters"),
             new CalcInputSpec("t_f", "Flow temperature", CalcInputKind.Quantity, "degC", Default: 75, Min: 30, Max: 90, HardMin: 30, HardMax: 90, Group: "Emitters"),
@@ -53,17 +53,19 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             new CalcAssumption("Closed LTHW system below 100 °C; emitter output follows Φ50·(ΔT/50)^n with the manufacturer's n.", "Catalogue ratings at 75/65/20 °C."),
             new CalcAssumption("Water density from the Kell (1975) correlation, within about 0.01 % of IAPWS-95 at atmospheric pressure, 0–100 °C; glycol mixtures take e from a record.", "Formula, not a table."),
             new CalcAssumption("Gauge pressures are made absolute by adding 1 bar, as the vessel relation is usually written.", "Within 1.3 % of the standard atmosphere."),
+            new CalcAssumption("V_e is the expansion volume by CIBSE Guide B1's relation only. It does not include a water reserve for system losses, nor a margin between the final pressure and the safety valve setting beyond p_f below p_prv; add both when the vessel is selected, from the heating-system standard in use.", "Stated omission."),
         ],
         [
             new CalcClauseRef("BS EN 442-2:2014", "cl. 5", "Radiators and convectors — test methods and rating (characteristic equation)"),
             new CalcClauseRef("CIBSE Guide B1", "2016, §1.4", "Heating — sealed systems and expansion"),
-            new CalcClauseRef("BS EN 12828:2012+A1:2014", "cl. 4.6", "Heating systems in buildings — expansion vessels and pressure"),
         ],
         [
             new CalcApplicabilityRule("temperatures", "Flow above return above room temperature.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("pressures", "Pre-charge below final pressure below the safety valve setting.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("volume", "System volume between 10 and 10 000 L.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("t-max", "The maximum temperature is below the flow temperature.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("t-fill", "The fill temperature must be below the maximum system temperature.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("emitter", "A selected emitter output of 0 W is refused: leave the cell empty for none selected.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("t-max", "The maximum temperature is below the flow temperature: the vessel is sized for the flow temperature.", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-dt50", "Catalogue conditions 75/65/20: correction 1",
@@ -82,11 +84,6 @@ public sealed class SealedSystemCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (Kell 1975 density; vessel relation)", null, "ρ(10) = 999.700, ρ(85) = 968.620 kg/m³: e = 0.0320862; p_i = 999.70·9.80665·5/10⁵ + 0.3 = 0.790185 bar; V_e = 3.20862/(1 − 1.790185/3.5) = 6.56806 L"),
                 [Q("V_pipe", 90, "L"), Q("V_plant", 10, "L"), Q("V_vessel", 8, "L")],
                 [new CalcExpectedValue("e_x", 0.03208619, "", 1e-6), new CalcExpectedValue("p_i", 0.7901852, "bar", 1e-6), new CalcExpectedValue("V_e", 6.568060, "L", 1e-6), new CalcExpectedValue("u_vessel", 0.8210075, "", 1e-6)]),
-            new CalcTestCase("ka-manufacturer-dt30", "Radiator catalogue correction factor at ΔT 30 K",
-                new CalcReferenceSource("Radiator manufacturer ΔT correction table (e.g. Stelrad, Myson)", "current catalogue", "Factor for ΔT 30 K with n ≈ 1.3 quoted as about 0.51; to be checked against the owner's catalogue"),
-                [Q("t_f", 55, "degC"), Q("t_r", 45, "degC")],
-                [new CalcExpectedValue("f_dT", 0.51, "", 0.01)],
-                CalcReferenceStatus.Unconfirmed),
         ],
         Category: "Hydraulics",
         OutputPorts:
@@ -130,8 +127,17 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             return;
         }
 
+        if (!(c.Si("t_fill") < c.Si("t_max")))
+        {
+            c.Block("t-fill", $"t_fill: the fill temperature ({F(c.Si("t_fill") - 273.15)} °C) must be below the maximum system temperature ({F(c.Si("t_max") - 273.15)} °C); the water expands between them.");
+            return;
+        }
+
+        // The water reaches the flow temperature, so the vessel is sized for the higher of the two (Black B-A-08).
+        var tExpansion = Math.Max(c.Si("t_max"), c.Si("t_f"));
+
         if (c.Si("t_max") < c.Si("t_f"))
-            c.Warn("t-max", "t_max: the maximum system temperature is below the flow temperature; the vessel is sized for t_max.");
+            c.Warn("t-max", $"t_max: the maximum system temperature ({F(c.Si("t_max") - 273.15)} °C) is below the flow temperature ({F(c.Si("t_f") - 273.15)} °C); the vessel is sized for the flow temperature.");
 
         var log = c.InputText("dT_method") == Lmtd;
 
@@ -162,6 +168,12 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             total += phi;
             emitterVolume += Si(row, "V_em", litre);
             var symbol = $"R{i + 1}";
+
+            if (row.Get("Phi50") is { Number: <= 0 })
+            {
+                c.Block("emitter", $"rooms: {name}: the selected emitter output is 0 W, which cannot heat the room; leave Phi50 empty when no emitter is selected, or enter its catalogue output.");
+                return;
+            }
 
             if (Si(row, "Phi50", w) is var selected && selected > 0)
             {
@@ -205,8 +217,8 @@ public sealed class SealedSystemCalculator : ICalcCalculator
         }
         else
         {
-            var hot = Water.Density(c.Si("t_max") - 273.15);
-            c.Record("rho_max", "ρ(t_max), Kell 1975", $"t = {F(c.Si("t_max") - 273.15)} °C", ScalarValue.Of(hot, "kg/m^3"), "Water density at maximum temperature");
+            var hot = Water.Density(tExpansion - 273.15);
+            c.Record("rho_max", tExpansion > c.Si("t_max") + 1e-9 ? "ρ(t_f), Kell 1975 (t_f is above t_max)" : "ρ(t_max), Kell 1975", $"t = {F(tExpansion - 273.15)} °C", ScalarValue.Of(hot, "kg/m^3"), "Water density at maximum temperature");
             c.Assign("e_x", "rho_fill / rho_max - 1", null, "Expansion coefficient of water");
         }
 
@@ -242,7 +254,7 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             c.CheckUtilisation("Selected emitters against room heat (governing room)", "u_emit");
 
         if (c.Has("V_vessel"))
-            c.CheckUtilisation("Selected vessel against minimum volume", "u_vessel", "BS EN 12828 cl. 4.6");
+            c.CheckUtilisation("Selected vessel against minimum volume", "u_vessel", "CIBSE Guide B1 §1.4");
     }
 
     private static double Si(CalcRow row, string key, Unit unit) => row.Get(key) is { Number: { } n } cell ? (cell.Unit is { Length: > 0 } u ? UnitCatalog.Parse(u) : unit).ToSi(n) : 0;

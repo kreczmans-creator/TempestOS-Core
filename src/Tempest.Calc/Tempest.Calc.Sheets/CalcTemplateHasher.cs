@@ -43,22 +43,21 @@ public static class CalcTemplateHasher
     }
 
     /// <summary>
-    /// The inputs a new sheet opens with: <see cref="DefaultInputs"/> except tables that a record kind supplies (ampacity,
-    /// ratings, ψ factors…), which open empty so the user enters them from their own source rather than inheriting a
-    /// test case's illustrative values (Addendum A §A5/§A6, Opus review of E4).
+    /// The inputs a new sheet opens with: the defaults the template <b>declares</b>, and nothing else. A known-answer case's
+    /// values are test data, not defaults, and an input with no declared default opens blank for the user to enter (Green
+    /// G-A-02 / G-B-06: a test case's rho = 0 or R = 95 % must not open a new shaft or support sheet labelled as a default). Tables
+    /// have no declared default and open empty. <see cref="DefaultInputs"/> (test case first) remains for known-answer runs,
+    /// the template hash, derived output ports and tests.
     /// </summary>
     public static CalcInputSet NewSheetInputs(CalcTemplate template)
     {
         ArgumentNullException.ThrowIfNull(template);
-        var recordTables = (template.RecordKinds ?? []).SelectMany(k => k.Symbols)
-            .Where(s => template.FindInput(s) is { Kind: CalcInputKind.Table })
-            .ToHashSet(StringComparer.Ordinal);
-        return recordTables.Count == 0
-            ? DefaultInputs(template)
-            : new CalcInputSet(DefaultInputs(template).Values.Where(v => !recordTables.Contains(v.Symbol)));
+        var set = new CalcInputSet();
+        AddDeclaredDefaults(template, set);
+        return set;
     }
 
-    /// <summary>An input set built from every default the template declares (the first test case's inputs where defaults are not enough).</summary>
+    /// <summary>An input set built from every default the template declares, over the first test case's inputs (used where a runnable set is needed: hashing, known-answer runs, derived ports).</summary>
     public static CalcInputSet DefaultInputs(CalcTemplate template)
     {
         ArgumentNullException.ThrowIfNull(template);
@@ -71,6 +70,12 @@ public static class CalcTemplateHasher
                 set.Set(v);
         }
 
+        AddDeclaredDefaults(template, set);
+        return set;
+    }
+
+    private static void AddDeclaredDefaults(CalcTemplate template, CalcInputSet set)
+    {
         foreach (var spec in template.Inputs)
         {
             if (set.Find(spec.Symbol) is not null)
@@ -92,8 +97,6 @@ public static class CalcTemplateHasher
                     break;
             }
         }
-
-        return set;
     }
 
     public static string CanonicalText(CalcTemplate t, IReadOnlyList<string> formulas)

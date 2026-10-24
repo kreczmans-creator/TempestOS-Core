@@ -84,6 +84,9 @@ public sealed partial class CalcInstanceService
         if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, outputSymbol, StringComparison.Ordinal)) is not { Si: { } } output)
             return CalcActionResult.Refused($"'{upstream.Name}' has no numeric output '{outputSymbol}'.", instance);
 
+        if (PortProblem(upstream, outputSymbol) is { } notPort)
+            return CalcActionResult.Refused(notPort, instance);
+
         if (ValueFor(spec, output) is not { } value)
             return CalcActionResult.Refused($"'{upstream.Name}'.{outputSymbol} is in {Shown(output.Unit)} ({DimensionText(output.Unit)}); '{inputSymbol}' needs {Shown(spec.DefaultUnit)} ({DimensionText(spec.Kind == CalcInputKind.Number ? null : spec.DefaultUnit)}). The dimensions differ, so the link is refused.", instance);
 
@@ -152,6 +155,9 @@ public sealed partial class CalcInstanceService
         if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, outputSymbol, StringComparison.Ordinal)) is not { Si: { } } output)
             return CalcActionResult.Refused($"'{upstream.Name}' has no numeric output '{outputSymbol}'.", instance);
 
+        if (PortProblem(upstream, outputSymbol) is { } notPort)
+            return CalcActionResult.Refused(notPort, instance);
+
         if (ConvertFor(spec.Kind, spec.DefaultUnit, output) is not { } converted)
             return CalcActionResult.Refused($"'{upstream.Name}'.{outputSymbol} is in {Shown(output.Unit)} ({DimensionText(output.Unit)}); '{label}' needs {Shown(spec.DefaultUnit)} ({DimensionText(spec.Kind == CalcInputKind.Number ? null : spec.DefaultUnit)}). The dimensions differ, so the link is refused.", instance);
 
@@ -190,6 +196,7 @@ public sealed partial class CalcInstanceService
             return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
 
         var instances = await AllInstancesAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
+        var successors = SuccessorIndex(instances);
         var inputs = instance.Inputs.ToList();
         var problems = new Dictionary<Guid, string?>();
         string? Problem(CalcInstance upstream)
@@ -205,7 +212,7 @@ public sealed partial class CalcInstanceService
             if (!instances.TryGetValue(link.UpstreamId, out var pinned))
                 return CalcActionResult.Refused($"'{input.Symbol}' is linked to calculation {link.UpstreamId}, which no longer exists.", instance);
 
-            var current = Latest(pinned, instances);
+            var current = Latest(pinned, successors);
 
             if (current.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } } output
                 || entry.Template.FindInput(input.Symbol) is not { } spec || ValueFor(spec, output) is not { } value)
@@ -224,7 +231,7 @@ public sealed partial class CalcInstanceService
             if (!instances.TryGetValue(link.UpstreamId, out var pinned))
                 return CalcActionResult.Refused($"'{label}' is linked to calculation {link.UpstreamId}, which no longer exists.", instance);
 
-            var current = Latest(pinned, instances);
+            var current = Latest(pinned, successors);
             var spec = entry.Template.FindInput(symbol)?.Columns?.FirstOrDefault(c => string.Equals(c.Key, column, StringComparison.Ordinal));
 
             if (current.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } } output
@@ -239,23 +246,65 @@ public sealed partial class CalcInstanceService
         }
 
         return instance.Status == CalcInstanceStatus.Draft
-            ? await UpdateInputsAsync(instanceId, inputs, instance.UpdatedAt, cancellationToken).ConfigureAwait(false)
-            : await ReviseCoreAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false);
+            ? await UpdateInputsCoreAsync(instanceId, inputs, instance.UpdatedAt, true, cancellationToken).ConfigureAwait(false)
+            : await ReviseRepinnedAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// An instance is stale when its template changed, when a linked upstream calculation was superseded or now gives a
-    /// different value than the one pinned, or when anything it is linked to is itself stale — through any number of links.
+    /// An instance is stale when its template changed, when a value taken from a reference record has been revised (or no
+    /// longer matches the record it cites), when a linked upstream calculation was superseded or now gives a different value than
+    /// the one pinned, or when anything it is linked to is itself stale for any of those reasons — through any number of links.
     /// </summary>
     public async Task<CalcStaleness> StalenessAsync(CalcInstance instance, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(instance);
-        var instances = await AllInstancesAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
-        instances[instance.Id] = instance;
-        var reasons = new List<string>();
-        Stale(instance, instances, reasons, [], 0, []);
-        await RecordStalenessAsync(instance, reasons, cancellationToken).ConfigureAwait(false);
-        return reasons.Count == 0 ? CalcStaleness.Fresh : new CalcStaleness(true, reasons);
+        return (await StalenessForAsync(instance.ProjectId, [instance], cancellationToken).ConfigureAwait(false))[instance.Id];
+    }
+
+    /// <summary>
+    /// The staleness of every calculation in a project, worked out from one listing of the project and one lookup per record
+    /// (the list view asks once, not once per row — Red R-A-07).
+    /// </summary>
+    public async Task<IReadOnlyDictionary<Guid, CalcStaleness>> StalenessForProjectAsync(Guid? projectId, CancellationToken cancellationToken = default)
+    {
+        var instances = await _store.ListInstancesAsync(projectId, cancellationToken).ConfigureAwait(false);
+        return await StalenessForAsync(projectId, instances, cancellationToken, instances).ConfigureAwait(false);
+    }
+
+    /// <summary>The staleness of <paramref name="roots"/> (read from the store just now), sharing one read of the project and one lookup per record.</summary>
+    private async Task<Dictionary<Guid, CalcStaleness>> StalenessForAsync(Guid? projectId, IEnumerable<CalcInstance> roots, CancellationToken cancellationToken, IReadOnlyList<CalcInstance>? listed = null)
+    {
+        var list = roots.ToList();
+        var instances = listed is null ? await AllInstancesAsync(projectId, cancellationToken).ConfigureAwait(false) : listed.ToDictionary(i => i.Id);
+
+        foreach (var root in list)
+            instances[root.Id] = root;
+
+        var context = new StaleContext(instances);
+        var scope = new Dictionary<Guid, CalcInstance>();
+
+        foreach (var root in list)
+        {
+            scope[root.Id] = root;
+
+            foreach (var up in Upstream(root.Id, instances))
+            {
+                if (instances.TryGetValue(up, out var upstream))
+                    scope[up] = upstream;
+            }
+        }
+
+        await PrefetchRecordsAsync(context, scope.Values, cancellationToken).ConfigureAwait(false);
+        var result = new Dictionary<Guid, CalcStaleness>();
+
+        foreach (var root in list)
+        {
+            var reasons = new List<string>();
+            Stale(root, context, reasons, [], 0, []);
+            result[root.Id] = reasons.Count == 0 ? CalcStaleness.Fresh : new CalcStaleness(true, reasons);
+        }
+
+        return result;
     }
 
     /// <summary>Every calculation that takes a value from <paramref name="instanceId"/>, directly or through others.</summary>
@@ -267,19 +316,71 @@ public sealed partial class CalcInstanceService
 
     // ------------------------------------------------------------------
 
-    private void Stale(CalcInstance instance, Dictionary<Guid, CalcInstance> instances, List<string> reasons, HashSet<Guid> visiting, int depth, Dictionary<Guid, bool> memo)
+    /// <summary>What one staleness question works from: the project's instances, who superseded whom, and the records its inputs pin.</summary>
+    private sealed class StaleContext
     {
-        if (depth == 0)
+        public StaleContext(Dictionary<Guid, CalcInstance> instances)
         {
-            var current = _catalogue.Find(instance.TemplateId);
-
-            if (current is null)
-                reasons.Add($"Template '{instance.TemplateReference}' is no longer registered.");
-            else if (!string.Equals(current.Reference, instance.TemplateReference, StringComparison.Ordinal))
-                reasons.Add($"Template {instance.TemplateReference} has a newer version {current.Reference}.");
-            else if (!string.Equals(current.ContentHash, instance.TemplateHash, StringComparison.Ordinal))
-                reasons.Add($"Template {instance.TemplateReference} content changed (hash {CalcTemplateHasher.Short(instance.TemplateHash)} → {current.ShortHash}).");
+            Instances = instances;
+            Successors = SuccessorIndex(instances);
         }
+
+        public Dictionary<Guid, CalcInstance> Instances { get; }
+
+        public Dictionary<Guid, CalcInstance> Successors { get; }
+
+        public Dictionary<Guid, CalcDataRecord?> Heads { get; } = [];
+
+        public Dictionary<(Guid Id, int Revision), CalcDataRecord?> Pinned { get; } = [];
+    }
+
+    /// <summary>Each calculation's newest successor (the revision made from it), so the current revision is found by following one entry per hop.</summary>
+    private static Dictionary<Guid, CalcInstance> SuccessorIndex(Dictionary<Guid, CalcInstance> instances)
+    {
+        var index = new Dictionary<Guid, CalcInstance>();
+
+        foreach (var i in instances.Values)
+        {
+            if (i.PredecessorId is { } p && (!index.TryGetValue(p, out var known) || i.CreatedAt > known.CreatedAt))
+                index[p] = i;
+        }
+
+        return index;
+    }
+
+    private async Task PrefetchRecordsAsync(StaleContext context, IEnumerable<CalcInstance> scope, CancellationToken cancellationToken)
+    {
+        foreach (var instance in scope)
+        {
+            foreach (var input in instance.Inputs)
+            {
+                if (CalcDataRecord.PinOf(input.Provenance) is not { } pin)
+                    continue;
+
+                if (!context.Heads.ContainsKey(pin.Id))
+                    context.Heads[pin.Id] = await _store.FindRecordAsync(pin.Id, null, cancellationToken).ConfigureAwait(false);
+
+                if (!context.Pinned.ContainsKey(pin))
+                    context.Pinned[pin] = context.Heads[pin.Id] is { } head && head.Revision == pin.Revision
+                        ? head
+                        : await _store.FindRecordAsync(pin.Id, pin.Revision, cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private void Stale(CalcInstance instance, StaleContext context, List<string> reasons, HashSet<Guid> visiting, int depth, Dictionary<Guid, bool> memo)
+    {
+        var instances = context.Instances;
+
+        // Template and record staleness are judged at every depth: an upstream that is stale for them makes what takes a value from it stale (Red R-A-03).
+        var currentTemplate = _catalogue.Find(instance.TemplateId);
+
+        if (currentTemplate is null)
+            reasons.Add($"Template '{instance.TemplateReference}' is no longer registered.");
+        else if (!string.Equals(currentTemplate.Reference, instance.TemplateReference, StringComparison.Ordinal))
+            reasons.Add($"Template {instance.TemplateReference} has a newer version {currentTemplate.Reference}.");
+        else if (!string.Equals(currentTemplate.ContentHash, instance.TemplateHash, StringComparison.Ordinal))
+            reasons.Add($"Template {instance.TemplateReference} content changed (hash {CalcTemplateHasher.Short(instance.TemplateHash)} → {currentTemplate.ShortHash}).");
 
         if (depth > MaxChainDepth || !visiting.Add(instance.Id))
             return;
@@ -297,7 +398,9 @@ public sealed partial class CalcInstanceService
 
             var recorded = instance.UpstreamHashes is { } h && h.TryGetValue(upstreamId.ToString("N"), out var recordedHash) ? recordedHash : null;
 
-            if (recorded is null || !string.Equals(recorded, upstream.OutputsHash, StringComparison.Ordinal))
+            if (Latest(upstream, context.Successors) is { } newest && newest.Id != upstream.Id)
+                reasons.Add($"Upstream calculation '{upstream.Name}' rev {upstream.Revision} is superseded by rev {newest.Revision}.");
+            else if (recorded is null || !string.Equals(recorded, upstream.OutputsHash, StringComparison.Ordinal))
                 reasons.Add($"Upstream calculation '{upstream.Name}' has changed its outputs since this one took values from it.");
         }
 
@@ -314,7 +417,7 @@ public sealed partial class CalcInstanceService
                 continue;
             }
 
-            var latest = Latest(upstream, instances);
+            var latest = Latest(upstream, context.Successors);
 
             if (latest.Id != upstream.Id)
                 reasons.Add($"'{label}' is pinned to '{upstream.Name}' rev {upstream.Revision}, which is superseded by rev {latest.Revision}; update to revision {latest.Revision}.");
@@ -329,7 +432,7 @@ public sealed partial class CalcInstanceService
             if (!memo.TryGetValue(upstream.Id, out var innerStale))
             {
                 var inner = new List<string>();
-                Stale(upstream, instances, inner, visiting, depth + 1, memo);
+                Stale(upstream, context, inner, visiting, depth + 1, memo);
                 innerStale = inner.Count > 0;
                 memo[upstream.Id] = innerStale;
             }
@@ -338,7 +441,93 @@ public sealed partial class CalcInstanceService
                 reasons.Add($"'{upstream.Name}', which '{label}' is linked to, is itself stale.");
         }
 
+        RecordReasons(instance, context, reasons);
         visiting.Remove(instance.Id);
+    }
+
+    /// <summary>Stale reasons from records: a pinned revision has been revised since, does not exist, or no longer matches the value the input holds.</summary>
+    private void RecordReasons(CalcInstance instance, StaleContext context, List<string> reasons)
+    {
+        var template = _catalogue.Find(instance.TemplateReference)?.Template;
+
+        foreach (var input in instance.Inputs)
+        {
+            if (CalcDataRecord.PinOf(input.Provenance) is not { } pin || !context.Heads.TryGetValue(pin.Id, out var latest))
+                continue;
+
+            if (latest is null)
+            {
+                reasons.Add($"'{input.Symbol}' takes its value from reference record {pin.Id:N}, which no longer exists.");
+                continue;
+            }
+
+            if (!context.Pinned.TryGetValue(pin, out var pinned) || pinned is null)
+            {
+                reasons.Add($"'{input.Symbol}' cites revision {pin.Revision} of '{latest.Title}', which does not exist (the latest is revision {latest.Revision}). Apply the record again.");
+                continue;
+            }
+
+            if (latest.Revision > pin.Revision)
+                reasons.Add($"'{input.Symbol}' takes its value from '{latest.Title}' revision {pin.Revision}; revision {latest.Revision} has been entered since. Apply the record again.");
+            else if (!MatchesRecord(input, pinned, template?.FindInput(input.Symbol)))
+                reasons.Add($"'{input.Symbol}' no longer matches '{pinned.Title}' revision {pin.Revision}, which it cites: the value was changed after the record was applied. Apply the record again, or enter the value by hand.");
+        }
+    }
+
+    /// <summary>Whether an input still holds the value of the record it cites (a number or quantity in SI, a text, or a table cell by cell).</summary>
+    private static bool MatchesRecord(CalcInputValue input, CalcDataRecord record, CalcInputSpec? spec)
+    {
+        if (record.Values.FirstOrDefault(v => string.Equals(v.Symbol, input.Symbol, StringComparison.Ordinal)) is not { } value)
+            return false;
+
+        if (input.Rows is not null || value.Rows is not null)
+        {
+            if (input.Rows is not { } rows || value.Rows is not { } recorded || rows.Count != recorded.Count)
+                return false;
+
+            for (var r = 0; r < rows.Count; r++)
+            {
+                var a = rows[r]?.Cells ?? new Dictionary<string, CalcCell>();
+                var b = recorded[r]?.Cells ?? new Dictionary<string, CalcCell>();
+
+                foreach (var key in a.Keys.Union(b.Keys, StringComparer.Ordinal))
+                {
+                    var column = spec?.Columns?.FirstOrDefault(c => string.Equals(c.Key, key, StringComparison.Ordinal));
+                    a.TryGetValue(key, out var x);
+                    b.TryGetValue(key, out var y);
+
+                    if (!SameCell(x, y, column?.DefaultUnit))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        return SameNumber(input.Number, input.Unit, value.Number, value.Unit, spec?.DefaultUnit) && string.Equals(input.Text ?? string.Empty, value.Text ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    private static bool SameCell(CalcCell? a, CalcCell? b, string? defaultUnit)
+    {
+        var emptyA = a is null || (a.Number is null && a.Text is null && a.Flag is null);
+        var emptyB = b is null || (b.Number is null && b.Text is null && b.Flag is null);
+
+        if (emptyA || emptyB)
+            return emptyA && emptyB;
+
+        return SameNumber(a!.Number, a.Unit, b!.Number, b.Unit, defaultUnit)
+            && string.Equals(a.Text ?? string.Empty, b.Text ?? string.Empty, StringComparison.Ordinal)
+            && a.Flag == b.Flag;
+    }
+
+    private static bool SameNumber(double? a, string? unitA, double? b, string? unitB, string? defaultUnit)
+    {
+        if (a is null || b is null)
+            return a is null && b is null;
+
+        var x = InputSi(a, string.IsNullOrEmpty(unitA) ? defaultUnit : unitA);
+        var y = InputSi(b, string.IsNullOrEmpty(unitB) ? defaultUnit : unitB);
+        return Math.Abs(x - y) <= 1e-9 * Math.Max(1.0, Math.Max(Math.Abs(x), Math.Abs(y)));
     }
 
     private static bool SameValue(double? taken, double upstreamSi) =>
@@ -451,14 +640,18 @@ public sealed partial class CalcInstanceService
     {
         var current = instance.Links.ToDictionary(l => l.Input.Symbol, l => l.Link, StringComparer.Ordinal);
         var currentCells = instance.CellLinks.ToDictionary(l => CellLabel(l.Symbol, l.Row, l.Column), l => l.Link, StringComparer.Ordinal);
+        var currentLegacy = instance.Inputs.Select(i => CalcInstance.LegacyUpstreamOf(i.Provenance)).OfType<Guid>().ToHashSet();
 
         // Every new or changed link, input or cell: what it is called, what it points at, and the kind and unit it must take.
-        var changed = new List<(string Label, CalcLink Link, CalcInputKind? Kind, string DefaultUnit, string? Bad)>();
+        // A legacy "reference: calc:<id>" names an upstream without an output; it meets the same rules except those of an output (Red R-A-15).
+        var changed = new List<(string Label, CalcLink Link, CalcInputKind? Kind, string DefaultUnit, string? Bad, bool Legacy)>();
 
         foreach (var input in inputs)
         {
             if (CalcLink.From(input.Provenance) is { } link && !(current.TryGetValue(input.Symbol, out var was) && was == link))
-                changed.Add((input.Symbol, link, template.FindInput(input.Symbol)?.Kind, template.FindInput(input.Symbol)?.DefaultUnit ?? string.Empty, null));
+                changed.Add((input.Symbol, link, template.FindInput(input.Symbol)?.Kind, template.FindInput(input.Symbol)?.DefaultUnit ?? string.Empty, null, false));
+            else if (CalcInstance.LegacyUpstreamOf(input.Provenance) is { } legacyId && !currentLegacy.Contains(legacyId))
+                changed.Add((input.Symbol, new CalcLink(legacyId, string.Empty, string.Empty), null, string.Empty, null, true));
 
             for (var r = 0; r < (input.Rows?.Count ?? 0); r++)
             {
@@ -472,7 +665,7 @@ public sealed partial class CalcInstanceService
                     var spec = template.FindInput(input.Symbol)?.Columns?.FirstOrDefault(c => string.Equals(c.Key, column, StringComparison.Ordinal));
                     var bad = CalcInputValidator.IsRecordPin(input.Provenance) ? RecordPinnedTable(label, input.Symbol)
                         : spec is { Kind: CalcInputKind.Quantity or CalcInputKind.Number } ? null : $"'{label}' is linked, but only a number or quantity column of a table can take a link.";
-                    changed.Add((label, cellLink, spec?.Kind, spec?.DefaultUnit ?? string.Empty, bad));
+                    changed.Add((label, cellLink, spec?.Kind, spec?.DefaultUnit ?? string.Empty, bad, false));
                 }
             }
         }
@@ -480,7 +673,7 @@ public sealed partial class CalcInstanceService
         Dictionary<Guid, CalcInstance>? instances = null;
         var cycleProblems = new Dictionary<Guid, string?>();
 
-        foreach (var (label, link, kind, defaultUnit, bad) in changed)
+        foreach (var (label, link, kind, defaultUnit, bad, legacy) in changed)
         {
             if (bad is not null)
                 return bad;
@@ -501,10 +694,20 @@ public sealed partial class CalcInstanceService
             if (upstream.ProjectId != instance.ProjectId)
                 return $"'{label}' is linked to '{upstream.Name}' in another project; links stay within one project.";
 
-            if (kind is not { } k
-                || upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } } output
-                || ConvertFor(k, defaultUnit, output) is null)
-                return $"'{label}' is linked to '{upstream.Name}'.{link.OutputSymbol}, which it cannot take (missing, or a different dimension).";
+            if (!legacy)
+            {
+                // The label is a claim, not a fact: the sheet prints the upstream's own revision, and an import cannot name another (Red R-A-08).
+                if (!string.Equals(link.Revision, upstream.Revision, StringComparison.Ordinal))
+                    return $"'{label}' is linked to '{upstream.Name}' rev {link.Revision}, but that calculation is rev {upstream.Revision}; link to the revision that exists.";
+
+                if (kind is not { } k
+                    || upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } } output
+                    || ConvertFor(k, defaultUnit, output) is null)
+                    return $"'{label}' is linked to '{upstream.Name}'.{link.OutputSymbol}, which it cannot take (missing, or a different dimension).";
+
+                if (PortProblem(upstream, link.OutputSymbol) is { } notPort)
+                    return notPort;
+            }
 
             if (!cycleProblems.TryGetValue(upstream.Id, out var cycle))
                 cycleProblems[upstream.Id] = cycle = CycleOrDepthProblem(instance, upstream, instances);
@@ -521,22 +724,28 @@ public sealed partial class CalcInstanceService
     private static string DimensionText(string? unit) =>
         unit is { Length: > 0 } && UnitCatalog.TryParse(unit, out var u, out _) ? u.Dimension.ToString() : "dimensionless";
 
-    /// <summary>The current revision of a calculation: the end of its chain of successors.</summary>
-    private static CalcInstance Latest(CalcInstance instance, Dictionary<Guid, CalcInstance> instances)
+    /// <summary>The current revision of a calculation: the end of its chain of successors (one index lookup per hop).</summary>
+    private static CalcInstance Latest(CalcInstance instance, Dictionary<Guid, CalcInstance> successors)
     {
         var current = instance;
 
-        for (var hop = 0; hop < 1_000; hop++)
-        {
-            var next = instances.Values.Where(i => i.PredecessorId == current.Id).OrderByDescending(i => i.CreatedAt).FirstOrDefault();
-
-            if (next is null)
-                break;
-
+        for (var hop = 0; hop < 1_000 && successors.TryGetValue(current.Id, out var next); hop++)
             current = next;
-        }
 
         return current;
+    }
+
+    /// <summary>
+    /// Why an output cannot be linked to: when a template declares output ports, only those are offered for linking; an output it does
+    /// not declare (a factor it echoes from a record, say) is not (Red R-A-09). A template that declares none offers every output.
+    /// </summary>
+    private string? PortProblem(CalcInstance upstream, string outputSymbol)
+    {
+        if (_catalogue.Find(upstream.TemplateReference)?.Template is not { OutputPorts: { Count: > 0 } ports } template
+            || ports.Any(p => string.Equals(p.Symbol, outputSymbol, StringComparison.Ordinal)))
+            return null;
+
+        return $"'{upstream.Name}'.{outputSymbol} is not an output {template.Title} offers for linking; link to one of: {string.Join(", ", ports.Select(p => p.Symbol))}.";
     }
 
     private static HashSet<Guid> Upstream(Guid id, Dictionary<Guid, CalcInstance> instances)
@@ -638,12 +847,23 @@ public sealed partial class CalcInstanceService
     {
         var names = new Dictionary<string, string>(StringComparer.Ordinal);
 
+        // Many cells name one upstream: look each calculation up once per sheet, and print its own revision, not the label the link carries (Red R-A-07, R-A-08).
+        var upstreams = new Dictionary<Guid, CalcInstance?>();
+
+        async Task<CalcInstance?> UpstreamAsync(Guid id)
+        {
+            if (!upstreams.TryGetValue(id, out var found))
+                upstreams[id] = found = await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false);
+
+            return found;
+        }
+
         foreach (var value in inputs.Values)
         {
             if (CalcLink.From(value.Provenance) is { } link)
             {
-                var upstream = await _store.FindInstanceAsync(link.UpstreamId, cancellationToken).ConfigureAwait(false);
-                names[value.Symbol] = CalcSheetTextRenderer.Clean($"link: {upstream?.Name ?? link.UpstreamId.ToString("N")[..8]} rev {link.Revision} · {link.OutputSymbol}");
+                var upstream = await UpstreamAsync(link.UpstreamId).ConfigureAwait(false);
+                names[value.Symbol] = CalcSheetTextRenderer.Clean($"link: {upstream?.Name ?? link.UpstreamId.ToString("N")[..8]} rev {upstream?.Revision ?? link.Revision} · {link.OutputSymbol}");
             }
             else if (CalcDataRecord.PinOf(value.Provenance) is { } pin && await _store.FindRecordAsync(pin.Id, pin.Revision, cancellationToken).ConfigureAwait(false) is { } record)
             {
@@ -664,8 +884,8 @@ public sealed partial class CalcInstanceService
                     if (cell is null || CalcLink.From(cell.Provenance) is not { } cellLink)
                         continue;
 
-                    var upstream = await _store.FindInstanceAsync(cellLink.UpstreamId, cancellationToken).ConfigureAwait(false);
-                    parts.Add(CalcSheetTextRenderer.Clean($"{column}: link: {upstream?.Name ?? cellLink.UpstreamId.ToString("N")[..8]} rev {cellLink.Revision} · {cellLink.OutputSymbol}"));
+                    var upstream = await UpstreamAsync(cellLink.UpstreamId).ConfigureAwait(false);
+                    parts.Add(CalcSheetTextRenderer.Clean($"{column}: link: {upstream?.Name ?? cellLink.UpstreamId.ToString("N")[..8]} rev {upstream?.Revision ?? cellLink.Revision} · {cellLink.OutputSymbol}"));
                 }
 
                 if (parts.Count > 0)

@@ -249,9 +249,15 @@ public sealed class CellLinkTests
         var project = await host.ProjectAsync();
         var source = await Source(host, project, "Source");
         var sink = await BoundCell(host, await Sink(host, project), 1, "F", source, "F_out");
+
+        // While the source is a draft the sink is not checked on it; the source is checked and issued first.
+        Assert.False((await host.Service.CheckAsync(sink.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.CheckAsync(source.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.IssueAsync(source.Id, "ISS-S", "Client Co")).Succeeded);
         Assert.True((await host.Service.CheckAsync(sink.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
 
-        Assert.True((await host.Service.UpdateInputsAsync(source.Id, [CalcInputValue.Quantity("P", 3, "kN", CalcProvenance.Drawing("DRG-9", "B"))])).Succeeded);
+        var revisedSource = (await host.Service.ReviseAsync(source.Id)).Instance!;
+        Assert.True((await host.Service.UpdateInputsAsync(revisedSource.Id, [CalcInputValue.Quantity("P", 3, "kN", CalcProvenance.Drawing("DRG-9", "B"))])).Succeeded);
 
         var issue = await host.Service.IssueAsync(sink.Id, "ISS-1", "Client Co");
         Assert.False(issue.Succeeded);

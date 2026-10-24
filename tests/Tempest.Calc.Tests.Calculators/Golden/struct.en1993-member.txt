@@ -18,7 +18,7 @@ N_pl,Rd = A f_y/γ_M0; M_c,Rd = W f_y/γ_M0 with W = W_pl (class 1–2) or W_el 
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  N_Ed | Design axial force (tension +, compression −) | -900 | kN | manual | -100000 … 100000 kN
+  N_Ed | Design axial force, TENSION positive and compression negative (the opposite sign to S6's N_Ed, which is compression positive; S2's N_e1 is tension positive) | -900 | kN | manual | -100000 … 100000 kN
   M_y_Ed | Design moment about y-y (major) | 0 | kN*m | manual | 0 … 100000 kN*m
   M_z_Ed | Design moment about z-z (minor) | 0 | kN*m | manual | 0 … 100000 kN*m
   V_Ed | Design shear force | 0 | kN | manual | 0 … 100000 kN
@@ -215,5 +215,5 @@ N_pl,Rd = A f_y/γ_M0; M_c,Rd = W f_y/γ_M0 with W = W_pl (class 1–2) or W_el 
   WARNING no-ltb: M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.
 
 8. VERIFICATION
-  Template: struct.en1993-member@1.0.0
+  Template: struct.en1993-member@1.0.1
   Known-answer cases passed: 3/3

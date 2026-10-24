@@ -42,8 +42,8 @@ public sealed class WetHeatingChainTests
         // Each room's heat loss sits in its own row of B6's rooms table, as a cell link.
         Assert.Equal(Si(b4a, "Phi_HL"), CellSi(b6, "rooms", 0, "Phi"), 9);
         Assert.Equal(Si(b4b, "Phi_HL"), CellSi(b6, "rooms", 1, "Phi"), 9);
-        Assert.Equal(350.6732, Si(b4a, "Phi_HL"), 3);
-        Assert.Equal(243.8716, Si(b4b, "Phi_HL"), 3);
+        Assert.Equal(379.4441, Si(b4a, "Phi_HL"), 3);
+        Assert.Equal(263.8077, Si(b4b, "Phi_HL"), 3);
         Assert.Equal([(0, new CalcLink(b4a.Id, "Phi_HL", "A")), (1, new CalcLink(b4b.Id, "Phi_HL", "A"))], b6.CellLinks.Select(l => (l.Row, l.Link)));
         Assert.All(b6.CellLinks, l => Assert.Equal(("rooms", "Phi"), (l.Symbol, l.Column)));
         Assert.Empty(b6.Links);
@@ -80,7 +80,8 @@ public sealed class WetHeatingChainTests
         Assert.All(e1.Checks, check => Assert.True(check.Passed, check.Name));
         Assert.Equal(1.25 * Si(e1, "T_rms") / 2.0, Si(e1, "u_rms"), 12);
         Assert.Equal(1.25 * Si(e1, "T_pk") / 6.0, Si(e1, "u_peak"), 12);
-        Assert.Equal(2800.0 / 10000, Si(e1, "u_speed"), 9);
+        // n_max is not stated for the pump motor, so the sheet opens on the template's declared 6000 rpm (a known-answer case's 10000 rpm is test data, not a default; Green G-A-02).
+        Assert.Equal(2800.0 / 6000, Si(e1, "u_speed"), 9);
         Assert.Equal(Si(e1, "u_rms"), e1.Checks.Single(check => check.Name.StartsWith("RMS torque", StringComparison.Ordinal)).Utilisation, 12);
         Assert.Equal(Si(e1, "u_peak"), e1.Checks.Single(check => check.Name.StartsWith("Peak torque", StringComparison.Ordinal)).Utilisation, 12);
         Assert.Equal(Si(e1, "u_speed"), e1.Checks.Single(check => check.Name.StartsWith("Speed", StringComparison.Ordinal)).Utilisation, 12);

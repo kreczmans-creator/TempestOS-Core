@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
-Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC Heat dissipated: Φ = Σ(1 − η_i)·P_i·d_i·k_i PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer: S_T ≥ margin·S; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified) Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
   Ref: Linden's Handbook of Batteries 5th ed., Ch. 3–4 — Battery sizing and the Peukert relation
   Ref: BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance; cited by number only)
 
@@ -21,13 +21,16 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   loads[4] |  | name = Panel light; supply = AC single-phase; P = 0.02 kW; cosphi = 0.95; eta = 1; d = 0.1; k = 1; inrush = 1; backed = no |  |  | 
   loads[5] |  | name = PLC and I/O; supply = DC; P = 0.096 kW; cosphi = 1; eta = 0.9; d = 1; k = 1; inrush = 1; backed = yes |  |  | 
   loads[6] |  | name = Router; supply = DC; P = 0.024 kW; cosphi = 1; eta = 0.9; d = 1; k = 1; inrush = 1; backed = yes |  |  | 
-  P_add | Additional three-phase load (linked from E1's peak power) | 0 | kW | default | 0 … 200 kW
+  P_add | Additional three-phase load (linked from E1's RMS power) | 0 | kW | default | 0 … 200 kW
   cosphi_add | Power factor of the additional load | 0.85 |  | default | 0.5 … 1
   eta_add | Efficiency of the additional load | 0.9 |  | default | 0.5 … 1
   inrush_add | Starting multiple of the additional load | 1 |  | default | 1 … 20
+  heat_add | Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0) | 0 |  | default | 0 … 1
   U_3ph | Three-phase line voltage | 400 | V | spec: Site supply | 12 … 1000 V
   U_1ph | Single-phase voltage | 230 | V | spec: Site supply | 12 … 1000 V
   U_DC | DC bus voltage | 24 | V | drawing: E-SCH-010 rev A | 12 … 1000 V
+  psu_bus | AC bus that feeds the DC power supply (its input P_DC/η_PSU is added to that bus) | AC single-phase |  | drawing: E-SCH-010 rev A | any
+  eta_psu | DC power supply efficiency (power factor taken as 1) | 0.9 |  | assumption: 24 V supply efficiency 90 %, power factor taken as 1. | 0.5 … 1
   margin | Sizing margin | 1.25 |  | assumption: 25 % growth margin. | 1 … 1.5
   theta | Ambient temperature | 45 | degC | spec: Plant room design maximum | -20 … 70 degC
   f_derate | PSU derating factor at the ambient and altitude | 1 |  | assumption: PSU rated to 60 °C without derating (datasheet). | 0.1 … 1
@@ -44,112 +47,122 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   C_batt | Selected battery capacity | 17 | A*h | drawing: E-SCH-010 rev A | 0.1 … 100000 A*h
 
 3. ASSUMPTIONS
-  A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand (the PSU's own loss is a load row if wanted). (Load budget convention.)
-  A2. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
-  A3. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (§A3 reference records.)
-  A4. margin (Sizing margin) is taken as 1.25. (25 % growth margin.)
-  A5. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (PSU rated to 60 °C without derating (datasheet).)
-  A6. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Short-time overload allowed by the supply authority.)
-  A7. eta_conv (Conversion efficiency battery → loads) is taken as 1. (DC UPS module, loads on the battery bus.)
-  A8. DoD (Allowed depth of discharge) is taken as 0.8. (VRLA, 80 % depth of discharge.)
-  A9. eta_b (Battery discharge efficiency) is taken as 0.95. (Discharge efficiency.)
-  A10. k_temp (Temperature capacity factor) is taken as 1. (Battery kept at 20 °C.)
-  A11. k_age (Ageing (end-of-life) factor) is taken as 0.8. (End-of-life capacity 80 %.)
+  A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand; with a PSU bus chosen they count at P/η_PSU, the PSU's own loss being a load row if its heat is wanted. (Load budget convention.)
+  A2. The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Stated convention for the heat a load releases inside the panel; change h for a load that differs.)
+  A3. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
+  A4. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (Entered as reference records, which carry their source, edition and licence.)
+  A5. eta_psu (DC power supply efficiency (power factor taken as 1)) is taken as 0.9. (24 V supply efficiency 90 %, power factor taken as 1.)
+  A6. margin (Sizing margin) is taken as 1.25. (25 % growth margin.)
+  A7. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (PSU rated to 60 °C without derating (datasheet).)
+  A8. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Short-time overload allowed by the supply authority.)
+  A9. eta_conv (Conversion efficiency battery → loads) is taken as 1. (DC UPS module, loads on the battery bus.)
+  A10. DoD (Allowed depth of discharge) is taken as 0.8. (VRLA, 80 % depth of discharge.)
+  A11. eta_b (Battery discharge efficiency) is taken as 0.95. (Discharge efficiency.)
+  A12. k_temp (Temperature capacity factor) is taken as 1. (Battery kept at 20 °C.)
+  A13. k_age (Ageing (end-of-life) factor) is taken as 0.8. (End-of-life capacity 80 %.)
 
 4. WORKING
-  [19] L1 = P·d·k; P·d·k/cosφ
+  [22] L1 = P·d·k; P·d·k/cosφ
       = 11 × 1 × 1 = 11 kW; 12.791 kVA
       = 11 kW
         Duty pump (AC three-phase)
-  [20] L2 = P·d·k; P·d·k/cosφ
+  [23] L2 = P·d·k; P·d·k/cosφ
       = 11 × 1 × 0 = 0 kW; 0 kVA
       = 0 kW
         Standby pump (AC three-phase)
-  [21] L3 = P·d·k; P·d·k/cosφ
+  [24] L3 = P·d·k; P·d·k/cosφ
       = 0.06 × 1 × 1 = 0.06 kW; 0.066667 kVA
       = 0.06 kW
         Panel fan (AC single-phase)
-  [22] L4 = P·d·k; P·d·k/cosφ
+  [25] L4 = P·d·k; P·d·k/cosφ
       = 0.02 × 0.1 × 1 = 0.002 kW; 0.0021053 kVA
       = 0.002 kW
         Panel light (AC single-phase)
-  [23] L5 = P·d·k; P·d·k/cosφ
-      = 0.096 × 1 × 1 = 0.096 kW; 0.096 kVA
+  [26] L5 = P·d·k; P·d·k/cosφ
+      = 0.096 × 1 × 1 = 0.096 kW; 0.10667 kVA
       = 0.096 kW
         PLC and I/O (DC)
-  [24] L6 = P·d·k; P·d·k/cosφ
-      = 0.024 × 1 × 1 = 0.024 kW; 0.024 kVA
+  [27] L6 = P·d·k; P·d·k/cosφ
+      = 0.024 × 1 × 1 = 0.024 kW; 0.026667 kVA
       = 0.024 kW
         Router (DC)
-  [25] P_conn = Σ P_i
+  [28] P_conn = Σ P_i
       = 11 + 11 + 0.06 + 0.02 + 0.096 + 0.024
       = 22.2 kW
         Connected load
-  [26] P_dem = Σ P_i·d_i·k_i
+  [29] P_dem = Σ P_i·d_i·k_i
       = 11 + 0 + 0.06 + 0.002 + 0.096 + 0.024
       = 11.182 kW
         Demand active power
-  [27] S_dem = Σ P_i·d_i·k_i/cosφ_i
-      = 12.791 + 0 + 0.066667 + 0.0021053 + 0.096 + 0.024
-      = 12.979 kVA
+  [30] S_dem = Σ P_i·d_i·k_i/cosφ_i
+      = 12.791 + 0 + 0.066667 + 0.0021053 + 0.10667 + 0.026667
+      = 12.993 kVA
         Demand apparent power (arithmetic)
-  [28] I_3ph = S_3φ/(√3·U_3ph)
+  [31] I_3ph = S_3φ/(√3·U_3ph)
       = 12791 / (√3 × 400)
       = 18.462 A
         Three-phase bus current
-  [29] I_1ph = S_1φ/U_1ph
-      = 68.772 / 230
-      = 0.29901 A
+  [32] I_1ph = S_1φ/U_1ph
+      = 202.11 / 230
+      = 0.87872 A
         Single-phase bus current
-  [30] I_DC = P_DC/U_DC
+  [33] I_DC = P_DC/U_DC
       = 120 / 24
       = 5 A
         DC bus current
-  [31] Phi = Σ (1 − η_i)·P_i·d_i·k_i
+  [34] Phi = Σ h_i·P_i·d_i·k_i
       = 0.09×11 + 0.09×0 + 0.3×0.06 + 0×0.002 + 0.1×0.096 + 0.1×0.024
       = 1.02 kW
-        Heat dissipated (→ E2)
-  [32] P_DC = Σ DC P_i·d_i·k_i
+        Heat dissipated inside the enclosure (→ E2)
+  [35] P_DC = Σ DC P_i·d_i·k_i
       = 120 W
       = 120 W
         DC demand
-  [33] P_PSU_req = margin * P_DC / f_derate
+  [36] P_PSU_req = margin * P_DC / f_derate
       = 1.25 × 120 W / 1
       = 150 W
         Minimum PSU rating
-  [34] S_T_req = margin * S_dem
-      = 1.25 × 12.979 kVA
-      = 16.224 kVA
-        Minimum transformer rating
-  [35] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
-      = 12.979 + 70.349 (Duty pump starting)
-      = 83.328 kVA
+  [37] S_T_req = margin * S_dem
+      = 1.25 × 12.993 kVA
+      = 16.241 kVA
+        Minimum transformer rating for the running load
+  [38] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+      = 12.993 + 70.349 (Duty pump starting)
+      = 83.342 kVA
         Peak apparent power while the largest load starts
-  [36] I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv)
+  [39] S_T_req_start = S_peak / k_T
+      = 83.342 kVA / 3
+      = 27.781 kVA
+        Minimum transformer rating for the starting peak
+  [40] S_T_min = max(S_T_req, S_T_req_start)
+      = max(16.241 kVA, 27.781 kVA)
+      = 27.781 kVA
+        Minimum transformer rating (running load and starting peak)
+  [41] I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv)
       = 120 / (24 × 1)
       = 5 A
         Battery discharge current
-  [37] Ah = I_b * t_auto
+  [42] Ah = I_b * t_auto
       = 5 A × 2 h
       = 10 A·h
         Discharge capacity
-  [38] C_req = Ah / (DoD * eta_b * k_temp * k_age)
+  [43] C_req = Ah / (DoD * eta_b * k_temp * k_age)
       = 10 A·h / (0.8 × 0.95 × 1 × 0.8)
       = 16.447 A·h
         Minimum battery capacity
-  [40] u_PSU = P_PSU_req / P_PSU
+  [45] u_PSU = P_PSU_req / P_PSU
       = 150 W / 240 W
       = 0.625
         PSU utilisation
-  [42] u_T = S_T_req / S_T
-      = 16.224 kVA / 25 kVA
-      = 0.64897
+  [47] u_T = S_T_req / S_T
+      = 16.241 kVA / 25 kVA
+      = 0.64964
         Transformer utilisation
-  [43] u_inrush = S_peak / (k_T * S_T)
-      = 83.328 kVA / (3 × 25 kVA)
-      = 1.111
+  [48] u_inrush = S_peak / (k_T * S_T)
+      = 83.342 kVA / (3 × 25 kVA)
+      = 1.1112
         Inrush utilisation
-  [45] u_batt = C_req / C_batt
+  [50] u_batt = C_req / C_batt
       = 16.447 A·h / 17 A·h
       = 0.96749
         Battery utilisation
@@ -157,42 +170,41 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
 5. RESULTS
   P_conn = 22.2 kW    Connected load
   P_dem = 11.182 kW    Demand active power
-  S_dem = 12.979 kVA    Demand apparent power
+  S_dem = 12.993 kVA    Demand apparent power
   I_3ph = 18.462 A    Three-phase bus current
-  I_1ph = 0.29901 A    Single-phase bus current
+  I_1ph = 0.87872 A    Single-phase bus current
   I_DC = 5 A    DC bus current
-  Phi = 1.02 kW    Heat dissipated
+  Phi = 1.02 kW    Heat dissipated inside the enclosure
   P_PSU_req = 150 W    Minimum PSU rating
-  S_T_req = 16.224 kVA    Minimum transformer rating
-  S_peak = 83.328 kVA    Peak apparent power at start
+  S_T_req = 16.241 kVA    Minimum transformer rating, running load
+  S_peak = 83.342 kVA    Peak apparent power at start
+  S_T_req_start = 27.781 kVA    Minimum transformer rating, starting peak
+  S_T_min = 27.781 kVA    Minimum transformer rating, running and starting
   I_b = 5 A    Battery discharge current
   Ah = 10 A·h    Discharge capacity
   C_req = 16.447 A·h    Minimum battery capacity
   u_PSU = 0.625    PSU utilisation
-  u_T = 0.64897    Transformer utilisation
-  u_inrush = 1.111    Inrush utilisation
+  u_T = 0.64964    Transformer utilisation
+  u_inrush = 1.1112    Inrush utilisation
   u_batt = 0.96749    Battery utilisation
 
 6. CHECKS (governing first)
-  FAIL  Starting peak against transformer overload: u_inrush = 1.111 vs u_inrush ≤ 1  utilisation 1.11
+  FAIL  Starting peak against transformer overload: u_inrush = 1.1112 vs u_inrush ≤ 1  utilisation 1.11
   PASS  Battery capacity against required: u_batt = 0.96749 vs u_batt ≤ 1  utilisation 0.967
-  PASS  Transformer rating against required: u_T = 0.64897 vs u_T ≤ 1  utilisation 0.649
+  PASS  Transformer rating against required: u_T = 0.64964 vs u_T ≤ 1  utilisation 0.65
   PASS  PSU rating against required: u_PSU = 0.625 vs u_PSU ≤ 1  utilisation 0.625
 
 7. APPLICABILITY
-  WARNING record.f_derate: f_derate: a tabulated value not taken from a reference record (PSU derating); enter it as one so its source, edition and licence travel with it.
-  WARNING record.DoD: DoD: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.eta_b: eta_b: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_temp: k_temp: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_age: k_age: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING input.P_add: P_add (Additional three-phase load (linked from E1's peak power)) was not entered; the template default 0 kW is used.
+  WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
+  WARNING input.P_add: P_add (Additional three-phase load (linked from E1's RMS power)) was not entered; the template default 0 kW is used.
   WARNING input.cosphi_add: cosphi_add (Power factor of the additional load) was not entered; the template default 0.85 is used.
   WARNING input.eta_add: eta_add (Efficiency of the additional load) was not entered; the template default 0.9 is used.
   WARNING input.inrush_add: inrush_add (Starting multiple of the additional load) was not entered; the template default 1 is used.
+  WARNING input.heat_add: heat_add (Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0)) was not entered; the template default 0 is used.
   WARNING derate: f_derate: the ambient is above 40 °C but no PSU derating is entered; read the factor from the manufacturer's curve.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.1.0
+  Template: elec.load-budget@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4

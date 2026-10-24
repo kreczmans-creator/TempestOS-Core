@@ -65,6 +65,22 @@ public sealed class CalcSheetViewTests
     }
 
     [AvaloniaFact]
+    public void WithheldLicensedValue_IsRefusedOnImport_AndTheFormIsNotReseededOnDefaults()
+    {
+        // Purple P-A-01: a licensed value withheld on export must not come back as the template default.
+        var (view, catalogue) = NewView();
+        view.SelectTemplate("test.desktop-stress");
+        var template = catalogue.Get("test.desktop-stress").Template;
+        var withheld = new CalcInputSet([new CalcInputValue("F", Provenance: new CalcProvenance(CalcProvenanceKind.Reference, $"record:{Guid.NewGuid():N}@1 \u00b7 {CalcCsv.WithheldMarker}", "2018"))]);
+
+        foreach (var text in new[] { CalcCsv.ExportInputs(template, withheld), CalcInputJson.Write(withheld) })
+        {
+            var (_, notices) = CalcSheetCoordinator.ParseInputs(template, text);
+            Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("apply the record again", StringComparison.Ordinal));
+        }
+    }
+
+    [AvaloniaFact]
     public void MalformedImport_IsReported_AndTheFormIsUnchanged()
     {
         var (view, catalogue) = NewView();

@@ -18,8 +18,37 @@ public static class CalcInputJson
         WriteIndented = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         MaxDepth = 8,
-        Converters = { new JsonStringEnumConverter() },
+        Converters = { new JsonStringEnumConverter(), new LenientFlagConverter() },
     };
+
+    /// <summary>A yes/no may be written as a JSON true or false, or as the text yes, no, true, false, 1 or 0 in any case.</summary>
+    private sealed class LenientFlagConverter : JsonConverter<bool?>
+    {
+        public override bool? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.True:
+                    return true;
+                case JsonTokenType.False:
+                    return false;
+                case JsonTokenType.Null:
+                    return null;
+                case JsonTokenType.String when CalcCsv.ParseFlag(reader.GetString() ?? string.Empty) is { } flag:
+                    return flag;
+                default:
+                    throw new JsonException("a yes/no value must be true, false, yes or no");
+            }
+        }
+
+        public override void Write(Utf8JsonWriter writer, bool? value, JsonSerializerOptions options)
+        {
+            if (value is { } flag)
+                writer.WriteBooleanValue(flag);
+            else
+                writer.WriteNullValue();
+        }
+    }
 
     public static string Write(CalcInputSet inputs)
     {
@@ -28,7 +57,13 @@ public static class CalcInputJson
     }
 
     /// <summary>Reads an input set; a malformed or oversized document becomes a block notice, never an exception.</summary>
-    public static (CalcInputSet Inputs, IReadOnlyList<CalcNotice> Notices) Read(string json)
+    public static (CalcInputSet Inputs, IReadOnlyList<CalcNotice> Notices) Read(string json) => Read(json, null);
+
+    /// <summary>
+    /// Reads an input set for <paramref name="template"/>. A scalar the export withheld (a licensed record) is refused with a
+    /// message to apply the record again; it is never read as a missing value that a default would fill in.
+    /// </summary>
+    public static (CalcInputSet Inputs, IReadOnlyList<CalcNotice> Notices) Read(string json, CalcTemplate? template)
     {
         ArgumentNullException.ThrowIfNull(json);
 
@@ -56,7 +91,14 @@ public static class CalcInputJson
             if (duplicate is not null)
                 return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, $"'{duplicate.Key}' appears {duplicate.Count()} times ({string.Join(", ", duplicate.Select(v => v!.ValueText))}); keep one.")]);
 
-            var textOnly = values.FirstOrDefault(v => v!.Number is null && v.Text is null && v.Flag is null && v.Vector is null && v.Rows is null && !string.IsNullOrWhiteSpace(v.ValueText));
+            var withheld = template is null
+                ? []
+                : values.Where(v => v!.Number is null && v.Text is null && v.Flag is null && v.Vector is null && v.Rows is null && CalcCsv.IsWithheld(v.Provenance) && template.FindInput(v.Symbol) is { Kind: not CalcInputKind.Table }).ToList();
+
+            if (withheld.Count > 0)
+                return (new CalcInputSet(), withheld.Select(v => new CalcNotice("json", CalcNoticeSeverity.Block, CalcCsv.WithheldMessage(v!.Symbol))).ToList());
+
+            var textOnly = values.FirstOrDefault(v => v!.Number is null && v.Text is null && v.Flag is null && v.Vector is null && v.Rows is null && !CalcCsv.IsWithheld(v.Provenance) && !string.IsNullOrWhiteSpace(v.ValueText));
 
             if (textOnly is not null)
                 return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, $"'{textOnly.Symbol}' has only a ValueText ('{Truncate(textOnly.ValueText)}'); give the value as \"Number\" (with \"Unit\"), \"Text\", \"Flag\", \"Vector\" or \"Rows\".")]);

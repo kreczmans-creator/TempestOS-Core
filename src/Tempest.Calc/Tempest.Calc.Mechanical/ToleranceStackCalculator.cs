@@ -149,7 +149,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("input.contributors", "contributors: at least one contributor is needed.");
+            c.Block("input.contributors", c.EnterRows("contributors"));
             return;
         }
 

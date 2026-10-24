@@ -16,10 +16,10 @@ public sealed class RoomHeatLossAgreementTests
     public static TheoryData<string, double, double, double, double[][]> Walls => new()
     {
         // name, Rsi, Rse, Rg (0 = none), layers as [d mm, λ]
-        { "Insulated cavity wall", 0.13, 0.04, 0, [[102.5, 0.77], [100, 0.022], [100, 0.15], [13, 0.57]] },
+        { "Insulated cavity wall", 0.13, 0.04, 0, [[102.5, 0.84], [100, 0.03], [100, 0.2], [13, 0.4]] },
         { "Single slab", 0.13, 0.04, 0, [[100, 0.5]] },
-        { "Roof build-up with different films", 0.10, 0.04, 0, [[12.5, 0.21], [200, 0.038], [18, 0.14]] },
-        { "Partition with an air gap", 0.13, 0.13, 0.18, [[12.5, 0.25], [12.5, 0.25]] },
+        { "Roof build-up with different films", 0.10, 0.04, 0, [[12.5, 0.23], [200, 0.045], [18, 0.16]] },
+        { "Partition with an air gap", 0.13, 0.13, 0.18, [[12.5, 0.22], [12.5, 0.22]] },
         { "Thin film layers", 0.17, 0.04, 0, [[1, 5], [500, 0.01], [3.5, 0.9]] },
     };
 

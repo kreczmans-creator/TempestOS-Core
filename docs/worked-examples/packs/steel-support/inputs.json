@@ -264,7 +264,7 @@
               "Unit": "kN",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:686219882cc04793af1937050c9cbf4d#E_d_min",
+                "Reference": "calc:d4b996385af1411cb6239c421a07b5f5#E_d_min",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -486,7 +486,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:99e766e9fb09446abaa22e9953ce85e8#M_abs_e1",
+        "Reference": "calc:233797c3bb694e77b4cd2074e2ee4d8f#M_abs_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -509,7 +509,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:99e766e9fb09446abaa22e9953ce85e8#N_e1",
+        "Reference": "calc:233797c3bb694e77b4cd2074e2ee4d8f#N_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -521,7 +521,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:99e766e9fb09446abaa22e9953ce85e8#V_e1",
+        "Reference": "calc:233797c3bb694e77b4cd2074e2ee4d8f#V_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -737,7 +737,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:99e766e9fb09446abaa22e9953ce85e8#V_e2",
+        "Reference": "calc:233797c3bb694e77b4cd2074e2ee4d8f#V_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -749,7 +749,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:99e766e9fb09446abaa22e9953ce85e8#M_abs_e2",
+        "Reference": "calc:233797c3bb694e77b4cd2074e2ee4d8f#M_abs_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -979,7 +979,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:2a981f59a3e5464cb0c2874e7e35f248#t_max",
+        "Reference": "calc:9e49c9837c8542c193800ead4e0a46f6#t_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -991,7 +991,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:2a981f59a3e5464cb0c2874e7e35f248#v_max",
+        "Reference": "calc:9e49c9837c8542c193800ead4e0a46f6#v_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1003,7 +1003,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:99e766e9fb09446abaa22e9953ce85e8#V_e2",
+        "Reference": "calc:233797c3bb694e77b4cd2074e2ee4d8f#V_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1358,17 +1358,6 @@
       "ValueText": "1"
     },
     {
-      "Symbol": "p_1",
-      "Number": 70,
-      "Unit": "mm",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "70"
-    },
-    {
       "Symbol": "p_2",
       "Number": 150,
       "Unit": "mm",
@@ -1432,7 +1421,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a46785cbec824ef3ba051cd26721d357#A_s",
+        "Reference": "calc:50e2e640ce8c44a29a3baf01403727e0#A_s",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1477,7 +1466,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a46785cbec824ef3ba051cd26721d357#F_b_Rd",
+        "Reference": "calc:50e2e640ce8c44a29a3baf01403727e0#F_b_Rd",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1489,7 +1478,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a46785cbec824ef3ba051cd26721d357#F_t_Rd",
+        "Reference": "calc:50e2e640ce8c44a29a3baf01403727e0#F_t_Rd",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1513,7 +1502,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:99e766e9fb09446abaa22e9953ce85e8#R1_m_abs",
+        "Reference": "calc:233797c3bb694e77b4cd2074e2ee4d8f#R1_m_abs",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1525,7 +1514,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:99e766e9fb09446abaa22e9953ce85e8#R1_y",
+        "Reference": "calc:233797c3bb694e77b4cd2074e2ee4d8f#R1_y",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1537,7 +1526,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:99e766e9fb09446abaa22e9953ce85e8#R1_x_abs",
+        "Reference": "calc:233797c3bb694e77b4cd2074e2ee4d8f#R1_x_abs",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1545,13 +1534,14 @@
     },
     {
       "Symbol": "alpha",
-      "Number": 1.5,
+      "Number": 1,
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1.5"
+      "ValueText": "1"
     },
     {
       "Symbol": "alpha_cc",
@@ -1615,7 +1605,7 @@
       "Unit": "MPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a46785cbec824ef3ba051cd26721d357#f_ub",
+        "Reference": "calc:50e2e640ce8c44a29a3baf01403727e0#f_ub",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1638,7 +1628,7 @@
       "Unit": "MPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a46785cbec824ef3ba051cd26721d357#f_yb",
+        "Reference": "calc:50e2e640ce8c44a29a3baf01403727e0#f_yb",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1688,22 +1678,24 @@
     },
     {
       "Symbol": "l_eff",
-      "Number": 200,
+      "Number": 150,
       "Unit": "mm",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
         "IsSufficientToIssue": true
       },
-      "ValueText": "200"
+      "ValueText": "150"
     },
     {
       "Symbol": "m",
       "Number": 28,
       "Unit": "mm",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
         "IsSufficientToIssue": true
       },
       "ValueText": "28"
@@ -1733,7 +1725,7 @@
       "Text": "PROFIS-BP1-PLACEHOLDER.txt",
       "Provenance": {
         "Kind": "Evidence",
-        "Reference": "05a47e79bf7d4651ada6b58851a99eea/6099accfc1cf4afe8fee5cb748109430",
+        "Reference": "a38af89eacbd4dd9ac075bf1c2f4a1b3/ad97b249fac64e53aa86e595a35afd48",
         "IsSufficientToIssue": true
       },
       "ValueText": "PROFIS-BP1-PLACEHOLDER.txt"

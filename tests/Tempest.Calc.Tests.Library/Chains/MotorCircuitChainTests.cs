@@ -27,7 +27,8 @@ public sealed class MotorCircuitChainTests
         var e5 = made.Instances["e5"];
         var e2 = made.Instances["e2"];
 
-        Assert.Equal(Si(e1, "P_pk"), InputSi(e6, "P_add"), 9);
+        Assert.Equal(Si(e1, "P_rms"), InputSi(e6, "P_add"), 9);
+        Assert.True(Si(e1, "P_rms") < Si(e1, "P_pk") / 2, "the continuous demand is the cycle's RMS power, not the instantaneous peak");
         Assert.Equal(Si(e6, "I_3ph"), InputSi(e4, "I_b_in"), 9);
         Assert.Equal(Si(e6, "I_3ph"), Si(e4, "I_b"), 9);
         Assert.Equal(Si(e4, "I_b"), InputSi(e3, "I"), 9);
@@ -36,8 +37,55 @@ public sealed class MotorCircuitChainTests
         Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_line"), 9);
         Assert.Equal(Si(e4, "L"), InputSi(e5, "L"), 9);
         Assert.Equal(Si(e4, "I_n"), InputSi(e5, "I_n"), 9);
+        Assert.Equal(Si(e4, "device_code"), InputSi(e5, "device_code"), 9);
+        Assert.Equal(2, Si(e4, "device_code"), 9);
         Assert.Equal(Si(e6, "Phi"), InputSi(e2, "P_add"), 9);
         Assert.Equal(6, made.Pack.InstanceIds.Count);
+
+        // The motor is outside the panel: E6's heat (24 V electronics and the fan, all of their input) is what the enclosure receives.
+        Assert.Equal(0.12e3 + 0.02e3, Si(e6, "Phi"), 6);
+        Assert.Equal(0.7841424404208093e3, Si(e1, "P_rms"), 6);
+
+        // E3 is run as a three-phase circuit (it was DC), and the enclosure holds its limit.
+        Assert.Equal("AC three-phase", e3.Inputs.Single(i => i.Symbol == "system").Text);
+        Assert.All(e2.Checks, c => Assert.True(c.Passed, c.Name));
+    }
+
+    [Fact]
+    public async Task A_Fault_Check_On_A_Different_Device_Than_The_Cable_Step_Sized_Is_Blocked()
+    {
+        // Green G-B-01 / Black B-A-03: E4 selects a type C MCB; E5 used to keep its type B default and pass loop impedances up to twice the limit.
+        var host = Host();
+        var inputs = ChainInputs.MotorCircuit(host);
+        inputs["e5"] = [.. inputs["e5"].Select(v => v.Symbol == "device" ? CalcInputValue.Choice("device", "MCB type B (I_a = 5 I_n)") with { Provenance = v.Provenance } : v)];
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.MotorCircuit, await host.ProjectAsync(), "Conveyor motor circuit", inputs);
+        Assert.Null(refusal);
+        var e5 = made!.Instances["e5"];
+        var block = Assert.Single(e5.Blocks);
+        Assert.StartsWith("device:", block.Message, StringComparison.Ordinal);
+        Assert.Contains("MCB type C", block.Message, StringComparison.Ordinal);
+
+        // A pack with a blocked member is not checked.
+        await ChainKit.AuthoredByAnotherAsync(host, made);
+        var check = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
+        Assert.False(check.Succeeded);
+    }
+
+    [Fact]
+    public async Task Changing_The_Cable_Steps_Device_Re_Blocks_The_Fault_Check_Until_It_Follows()
+    {
+        var host = Host();
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", ChainInputs.MotorCircuit(host));
+        var e4 = await ChainKit.Fresh(host, made, "e4");
+        var changed = await host.Service.UpdateInputsAsync(e4.Id, [.. e4.Inputs.Select(v => v.Symbol == "device" ? CalcInputValue.Choice("device", "MCB type D") with { Provenance = v.Provenance } : v)]);
+        Assert.True(changed.Succeeded, changed.Reason);
+        var e4New = await ChainKit.Fresh(host, made, "e4");
+        Assert.Equal(3, Si(e4New, "device_code"), 9);
+        var update = await host.Service.UpdateLinksAsync((await ChainKit.Fresh(host, made, "e5")).Id);
+        Assert.True(update.Succeeded, update.Reason);
+        var e5 = await ChainKit.Fresh(host, made, "e5");
+        Assert.Equal(3, InputSi(e5, "device_code"), 9);
+        Assert.Contains(e5.Blocks, b => b.RuleId == "device");
     }
 
     [Fact]
@@ -50,11 +98,11 @@ public sealed class MotorCircuitChainTests
         await ChainKit.ReviseAndUpdateAsync(host, made, "e1", "m", 1.5, ["e6", "e4", "e3", "e5", "e2"]);
 
         var e1New = await Fresh(host, made, "e1");
-        Assert.NotEqual(Si(e1, "P_pk"), Si(e1New, "P_pk"));
+        Assert.NotEqual(Si(e1, "P_rms"), Si(e1New, "P_rms"));
         var e6 = await Fresh(host, made, "e6");
         var e4 = await Fresh(host, made, "e4");
         var e3 = await Fresh(host, made, "e3");
-        Assert.Equal(Si(e1New, "P_pk"), InputSi(e6, "P_add"), 9);
+        Assert.Equal(Si(e1New, "P_rms"), InputSi(e6, "P_add"), 9);
         Assert.Equal(Si(e6, "I_3ph"), Si(e4, "I_b"), 9);
         Assert.Equal(Si(e4, "I_b"), InputSi(e3, "I"), 9);
     }
@@ -91,9 +139,10 @@ public sealed class MotorCircuitChainTests
         var sheet = await CheckAndIssueAsync(host, made, CalcPackTemplates.MotorCircuit, "CONV-ELEC-001", "Client Co", "Checked against SPEC-LINE-12.");
 
         // The links are named on the issued sheet.
-        Assert.Contains("link: Motor sizing rev A · P_pk", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Motor sizing rev A · P_rms", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Load budget rev A · I_3ph", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Cable and device rev A · CSA", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Cable and device rev A · device_code", sheet, StringComparison.Ordinal);
 
         // The issued sheet may cite the licensed record it used (it is the user's own calculation) ...
         Assert.Contains("(licensed source)", sheet, StringComparison.Ordinal);

@@ -318,6 +318,28 @@ public sealed class WorksheetSavedAndPacksTests
     }
 
     [AvaloniaFact]
+    public async Task A_Checked_Pack_Is_Reopened_As_A_Draft_Under_The_Next_Revision()
+    {
+        await using var fx = await StartAsync("P-REOPEN");
+        var view = fx.View;
+        await CreateDriveTrainAsync(fx);
+        await SetSpecProvenanceAsync(fx);
+        Assert.False(view.CanReopenPack);
+
+        Click(view, CalcSheetView.CheckPackCaption);
+        await WaitFor(() => view.Packs.Single().Status == CalcInstanceStatus.Checked);
+        Assert.True(view.CanReopenPack);
+
+        Click(view, CalcSheetView.ReopenPackCaption);
+        await WaitFor(() => view.Packs.Single().Status == CalcInstanceStatus.Draft);
+
+        Assert.Equal("B", view.Packs.Single().Revision);
+        Assert.True(view.CanCheckPack);
+        Assert.False(view.CanReopenPack);
+        Assert.StartsWith("Pack reopened as a new revision", view.StatusText, StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
     public async Task Issuing_A_Pack_That_Changed_After_It_Was_Checked_Shows_The_Refusal_And_A_Reselected_Pack_Refills_Before_Issue_Is_Offered()
     {
         await using var fx = await StartAsync("P-REFUSE");

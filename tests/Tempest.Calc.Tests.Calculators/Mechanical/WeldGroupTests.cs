@@ -46,12 +46,61 @@ public sealed class WeldGroupTests
         Assert.Equal(2 * once, twice, 6);
     }
 
+    private static CalcInputSet NoInPlaneLoad() => Defaults().With(CalcInputValue.Quantity("F_y", 0, "kN"));
+
     [Fact]
-    public void A_Single_Straight_Weld_Blocks_As_Collinear()
+    public void An_Unsymmetric_L_Group_Uses_The_Product_Moment_In_Bending()
     {
-        var r = CalcRunner.Run(Weld, Defaults().With(WeldGroupCalculator.Welds((0, 0, 0, 100))));
-        Assert.True(r.IsBlocked);
-        Assert.Equal("collinear", r.Blocks[0].RuleId);
+        // Green G-A-01: two 100 mm welds meeting at the origin, M_x = 1 kN·m. Solving the moment equilibrium of f = a·x' + b·y' gives 450 N/mm
+        // (the symmetric-axes form gave 360); a 150 × 50 L gives 1500 (it gave 1292). python3, independent of the code.
+        var equal = CalcRunner.Run(Weld, NoInPlaneLoad().With(WeldGroupCalculator.Welds((0, 0, 100, 0), (0, 0, 0, 100))).With(CalcInputValue.Quantity("M_x", 1, "kN*m")));
+        Assert.False(equal.IsBlocked);
+        Assert.Equal(450, equal.OutputSi("f_r_max") / 1e3, 6);
+        Assert.Equal(-125000, equal.OutputSi("I_uxy") * 1e9, 3);
+        var unequal = CalcRunner.Run(Weld, NoInPlaneLoad().With(WeldGroupCalculator.Welds((0, 0, 150, 0), (0, 0, 0, 50))).With(CalcInputValue.Quantity("M_x", 1, "kN*m")));
+        Assert.Equal(1500, unequal.OutputSi("f_r_max") / 1e3, 6);
+    }
+
+    [Fact]
+    public void A_Symmetric_Group_Is_Unchanged_By_The_Product_Moment()
+    {
+        var r = CalcRunner.Run(Weld, NoInPlaneLoad().With(WeldGroupCalculator.Welds((0, -50, 100, -50), (0, 50, 100, 50))).With(CalcInputValue.Quantity("M_x", 5, "kN*m")));
+        Assert.Equal(0, r.OutputSi("I_uxy"), 9);
+        Assert.Equal(500, r.OutputSi("f_r_max") / 1e3, 6);
+    }
+
+    [Fact]
+    public void A_Single_Weld_Loaded_Along_Its_Axis_Through_Its_Centroid_Is_Direct_Shear()
+    {
+        // Black B-A-15: no bending and no torsion, so nothing is missing; 10 kN over 100 mm is 100 N/mm.
+        var r = CalcRunner.Run(Weld, NoInPlaneLoad().With(WeldGroupCalculator.Welds((0, 0, 0, 100))).With(CalcInputValue.Quantity("F_y", -10, "kN")).With(CalcInputValue.Quantity("e_x", 0, "mm")).With(CalcInputValue.Quantity("e_y", 50, "mm")));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(100, r.OutputSi("f_r_max") / 1e3, 6);
+    }
+
+    [Fact]
+    public void A_Single_Weld_Resists_Bending_Across_Its_Length_But_Not_About_Itself()
+    {
+        var across = CalcRunner.Run(Weld, NoInPlaneLoad().With(WeldGroupCalculator.Welds((0, 0, 0, 100))).With(CalcInputValue.Quantity("M_x", 1, "kN*m")));
+        Assert.False(across.IsBlocked);
+        Assert.Equal(600, across.OutputSi("f_r_max") / 1e3, 6);
+
+        var about = CalcRunner.Run(Weld, NoInPlaneLoad().With(WeldGroupCalculator.Welds((0, 0, 0, 100))).With(CalcInputValue.Quantity("M_y", 1, "kN*m")));
+        Assert.True(about.IsBlocked);
+        Assert.Equal("collinear", about.Blocks[0].RuleId);
+    }
+
+    [Fact]
+    public void An_Inclined_Single_Weld_Resists_Only_The_Moment_That_Bends_It()
+    {
+        // Line (0,0)-(60,80), l = 100: u = (0.6, 0.8), J_u = l³/12. The moment (0.8, 0.6) kN·m is the one it resists: 1e6 × 50/83 333.3 = 600 N/mm.
+        var resisted = CalcRunner.Run(Weld, NoInPlaneLoad().With(WeldGroupCalculator.Welds((0, 0, 60, 80))).With(CalcInputValue.Quantity("M_x", 0.8, "kN*m")).With(CalcInputValue.Quantity("M_y", 0.6, "kN*m")));
+        Assert.False(resisted.IsBlocked, string.Join("; ", resisted.Blocks.Select(b => b.Message)));
+        Assert.Equal(600, resisted.OutputSi("f_r_max") / 1e3, 6);
+
+        var unresisted = CalcRunner.Run(Weld, NoInPlaneLoad().With(WeldGroupCalculator.Welds((0, 0, 60, 80))).With(CalcInputValue.Quantity("M_x", 0.6, "kN*m")).With(CalcInputValue.Quantity("M_y", -0.8, "kN*m")));
+        Assert.True(unresisted.IsBlocked);
+        Assert.Equal("collinear", unresisted.Blocks[0].RuleId);
     }
 
     [Fact]

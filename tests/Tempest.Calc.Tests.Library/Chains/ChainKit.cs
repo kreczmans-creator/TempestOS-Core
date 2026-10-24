@@ -45,7 +45,7 @@ internal static class ChainKit
         foreach (var instance in made.Instances.Values)
         {
             var stored = (await host.Store.FindInstanceAsync(instance.Id))!;
-            await host.Store.SaveInstanceAsync(stored with { CreatedBy = "another.engineer" }, stored.UpdatedAt);
+            await host.Store.SaveInstanceAsync(stored with { CreatedBy = "another.engineer", EditedBy = ["another.engineer"] }, stored.UpdatedAt);
         }
     }
 
@@ -71,6 +71,8 @@ internal static class ChainKit
     public static async Task ReviseAndUpdateAsync(LibraryTestHost host, CalcPackInstantiation made, string changedKey, Func<IReadOnlyList<CalcInputValue>, IReadOnlyList<CalcInputValue>> revision, IReadOnlyList<string> downstreamInOrder)
     {
         await AuthoredByAnotherAsync(host, made);
+        var designer = host.Principal;
+        const string Reviewer = "j.reviewer";
         var before = await Fresh(host, made, changedKey);
         var changed = await host.Service.UpdateInputsAsync(before.Id, revision(before.Inputs));
         Assert.True(changed.Succeeded, changed.Reason);
@@ -81,6 +83,7 @@ internal static class ChainKit
 
         // A stale pack is not checked (the reason names the stale member), and an unchecked pack is not issued (that is the reason given: this
         // refusal is about the pack's status; the issue-time staleness gate is proved separately, where a member goes stale after the check).
+        host.Principal = Reviewer;
         var blocked = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
         Assert.False(blocked.Succeeded);
         Assert.Contains("is stale", blocked.Reason, StringComparison.Ordinal);
@@ -88,6 +91,7 @@ internal static class ChainKit
         var notIssued = await host.Service.IssuePackAsync(made.Pack.Id, "CHAIN-STALE", "Client Co");
         Assert.False(notIssued.Succeeded);
         Assert.Contains("check it before issuing", notIssued.Reason, StringComparison.Ordinal);
+        host.Principal = designer;
 
         // Updating in chain order clears the staleness one step at a time; the pack stays refused until the last is current.
         for (var i = 0; i < downstreamInOrder.Count; i++)
@@ -98,13 +102,19 @@ internal static class ChainKit
                 Assert.True((await host.Service.UpdateLinksAsync(current.Id)).Succeeded, downstreamInOrder[i]);
 
             if (i < downstreamInOrder.Count - 1 && (await host.Service.StalenessAsync(await Fresh(host, made, downstreamInOrder[^1]))).IsStale)
+            {
+                host.Principal = Reviewer;
                 Assert.False((await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+                host.Principal = designer;
+            }
         }
 
         foreach (var key in downstreamInOrder)
             Assert.False((await host.Service.StalenessAsync(await Fresh(host, made, key))).IsStale, $"{key} should be current");
 
+        host.Principal = Reviewer;
         var check = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "OK once re-pinned.", CheckOutcome.Accepted);
+        host.Principal = designer;
         Assert.True(check.Succeeded, check.Reason);
     }
 

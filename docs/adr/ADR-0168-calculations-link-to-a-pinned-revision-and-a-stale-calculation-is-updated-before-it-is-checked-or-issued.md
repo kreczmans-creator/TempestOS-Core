@@ -37,4 +37,12 @@ A calculation takes some of its heat, load or force from a table (B6's `rooms` t
 6. **No overwrite between read and write.** `BindAsync`, `BindCellAsync` and `UpdateLinksAsync` build the new inputs from their own read; they now hand that read's `UpdatedAt` to `UpdateInputsAsync(…, expectedUpdatedAt)`, which refuses ("was changed after these inputs were read") instead of overwriting an edit made in between.
 7. **Pack templates.** `CalcPackBinding` gains optional `Row` and `Column`; when both are set the binding targets a cell. The step must be given the rows as inputs, because instantiating never creates them; `PackTemplateFromChainAsync` saves cell links with their row and column.
 
-A CSV export of inputs does not carry cell provenance; a table re-imported from CSV is typed values until its cells are bound again. The export lock is unchanged: whole tables pinned to licensed records are withheld.
+(Superseded by amendment 3: the CSV export now carries tables and their cell provenance.) The export lock is unchanged: whole tables pinned to licensed records are withheld.
+
+## Amendment 3 (2026-10-24, blue round after the Opus review of Addendum A)
+
+1. **A pin is to a revision that cannot change.** A draft is edited in place under its revision letter, so `CheckAsync` and `IssueAsync` refuse while a linked upstream (input, cell or legacy reference) is a Draft; check and issue the upstream first, or put both in one pack (`CheckPackAsync` and `IssuePackAsync` allow a draft that is a member of the same pack). A link's revision label must equal the upstream's revision, and the sheet prints the upstream's own.
+2. **Staleness is transitive for every reason.** The template and record checks run at every depth of the walk, so an upstream that is stale because a record was revised, because its template changed, or because the value it holds no longer matches the record it cites makes everything downstream stale too. A pin to a revision that does not exist is stale. A legacy `reference: calc:<id>` follows its upstream's successors like a link.
+3. **Declared ports are enforced.** Where a template declares output ports only those can be linked (a factor it echoes from a licensed record cannot leave through a link); a template that declares none offers every numeric output as before.
+4. **No dead ends.** A checked calculation that has gone stale can be revised (ADR-0166); a checked pack can be reopened as a draft under the next pack revision and new Evidence.
+5. **The CSV export carries tables** (`name[r].column`, with each cell's unit and provenance, cell links included), and a value or table withheld as licensed is read back as withheld with a warning, never as a value. This replaces the last paragraph of amendment 2.

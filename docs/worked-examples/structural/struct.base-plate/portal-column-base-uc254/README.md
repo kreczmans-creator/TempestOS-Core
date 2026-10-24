@@ -2,7 +2,7 @@
 
 **Source.** Analytic (EN 1993-1-8 cl. 6.2.5, 6.2.6.11, 6.2.8.3, 6.2.2 simplified); section dimensions from BS EN 10365 / the manufacturer's datasheet, to be checked against the owner's copy, EN 1993-1-8:2005, f_jd = (2/3)·1.5·0.85·30/1.5 = 17 MPa; c = 25·√(265/(3·17)) = 56.987 mm; A_eff = 111 099.9 mm², N_j,Rd = 1888.7 kN; z_C = (260.3 − 17.3)/2 = 121.5 mm, x_b = 185 mm, z = 306.5 mm: C_Ed = 436.70 kN, T_Ed = 226.70 kN, 113.35 kN per bolt; no-prying plate mode 618.0 kN, bolts 406 kN → 406 kN; α_bc = 0.248, F_2,vb,Rd = 55.95 kN (below the 364.4 kN bearing), V_Rd = 0.2·210 + 4·55.95 = 265.8 kN, V_b,Ed = 4.5 kN — Unconfirmed.
 
-A rigid-base portal column: 210 kN compression, 95 kN·m and 60 kN shear from the S5 combination and the S2 frame. The tension row sits 185 mm from the axis and the compression resultant 121.5 mm on the other side (the flange centre), so the lever arm is 306.5 mm and each bolt takes 113 kN, the figure that goes to Hilti PROFIS together with 4.5 kN of shear per anchor (the PROFIS report is filed as Evidence under the placeholder reference EVD-PROFIS-PLACEHOLDER). The bolts (T-stub mode 3) govern at 0.56; bearing is light and the anchor shear (α_bc, not the Table 3.4 bolt shear) is 0.23. The plate would need 15.1 mm for bearing and both T-stubs together. The UC dimensions, the grout placeholder and the l_eff estimate are the engineer's to confirm.
+A rigid-base portal column: 210 kN compression, 95 kN·m and 60 kN shear from the S5 combination and the S2 frame. The tension row sits 185 mm from the axis and the compression resultant 121.5 mm on the other side (the flange centre), so the lever arm is 306.5 mm and each bolt takes 113 kN, the figure that goes to Hilti PROFIS together with 4.5 kN of shear per anchor (the PROFIS report is not attached in this example, so the sheet carries a warning and no anchorage check: attaching the report as Evidence is what turns that into a recorded reference). The bolts (T-stub mode 3) govern at 0.56; bearing is light and the anchor shear (α_bc, not the Table 3.4 bolt shear) is 0.23. The plate would need 15.1 mm for bearing and both T-stubs together. The UC dimensions, the grout placeholder and the l_eff estimate are the engineer's to confirm.
 
 | Input | Value | Source |
 |---|---|---|
@@ -33,7 +33,7 @@ A rigid-base portal column: 210 kN compression, 95 kN·m and 60 kN shear from th
 | `m` | 46.9 mm | assumption: Bolt at 185 mm from the axis, flange face at 130.15 mm: 54.85 mm, less 0.8·√2 × 7 mm (a 10 mm fillet leg has a 7 mm throat) = 7.9 mm. |
 | `n_b` | 4 | drawing: PF-BP-001 rev B |
 | `n_t` | 2 | drawing: PF-BP-001 rev B |
-| `profis_ref` | EVD-PROFIS-PLACEHOLDER | evidence: EVD-PROFIS-PLACEHOLDER |
+| `profis_ref` | PROFIS-BP1 (to be filed) | assumption: The PROFIS report is not attached in this example, so the sheet warns that the anchorage is not checked. |
 | `prying` | no | assumption: Cast-in holding-down bolts: prying not assumed (min(2·M_pl/m, ΣF_t) is the conservative case). |
 | `t_f` | 17.3 mm | spec: BS EN 10365 UC 254×254×89, to be checked against the owner's copy |
 | `t_g` | 30 mm | drawing: PF-BP-001 rev B |

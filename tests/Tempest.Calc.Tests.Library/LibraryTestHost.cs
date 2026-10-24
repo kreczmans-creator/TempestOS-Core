@@ -37,7 +37,11 @@ internal sealed class LibraryTestHost
         Store = new CalcInstanceStore(Failing);
         Service = new CalcInstanceService(Catalogue, Store, Evidence, Context, renderer: null, applicationVersion: "TempestOS test", events: events, packTemplates: packTemplates);
         WithProject = withProject;
+        Service.PrincipalOverride = () => Principal;
     }
+
+    /// <summary>The signed-in person the service sees; change it to be someone else (the test host has no sign-in to switch).</summary>
+    public string Principal { get; set; } = "test.engineer";
 
     public InMemoryQueryablePersistenceStore Backing { get; }
 

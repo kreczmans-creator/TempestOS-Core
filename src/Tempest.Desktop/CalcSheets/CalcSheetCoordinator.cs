@@ -59,6 +59,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.CreatePackRequested += (templateId, title) => _ = GuardedAsync(() => ExclusiveAsync(() => CreatePackAsync(templateId, title)), "create that pack");
         _view.PackSelected += id => _ = GuardedAsync(() => SelectPackAsync(id), "list that pack");
         _view.CheckPackRequested += (id, draft) => _ = GuardedAsync(() => ExclusiveAsync(() => CheckPackAsync(id, draft)), "check that pack");
+        _view.ReopenPackRequested += id => _ = GuardedAsync(() => ExclusiveAsync(() => ReopenPackAsync(id)), "reopen that pack");
         _view.IssuePackRequested += (id, draft) => _ = GuardedAsync(() => ExclusiveAsync(() => IssuePackAsync(id, draft)), "issue that pack");
         events?.Subscribe<CalcStalenessChanged>(this);
         events?.Subscribe<ProjectContextChangedEvent>(this);
@@ -178,7 +179,9 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
             if (candidate.Id == instance.Id || candidate.Status == CalcInstanceStatus.Superseded || candidate.Outputs.Count == 0 || targets.Count >= 200)
                 continue;
 
-            var ports = candidate.Outputs.Where(o => o.Si is not null).Select(o => new CalcOutputPort(o.Symbol, o.Unit ?? string.Empty, o.Description)).ToList();
+            // A template that declares output ports offers only those for linking; the others (a factor it echoes from a record) are not (Red R-A-09).
+            var declared = _service.Catalogue.Find(candidate.TemplateReference)?.Template.OutputPorts is { Count: > 0 } offered ? offered.Select(p => p.Symbol).ToHashSet(StringComparer.Ordinal) : null;
+            var ports = candidate.Outputs.Where(o => o.Si is not null && (declared is null || declared.Contains(o.Symbol))).Select(o => new CalcOutputPort(o.Symbol, o.Unit ?? string.Empty, o.Description)).ToList();
             targets.Add(new CalcSheetView.LinkTarget(candidate.Id, $"{candidate.Name} · rev {candidate.Revision} · {candidate.Status}", ports));
         }
 
@@ -347,24 +350,27 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         var saved = new List<CalcSheetView.SavedCalculation>();
         var current = (await _service.Store.ListInstancesAsync(projectId).ConfigureAwait(true)).Where(i => i.Status != CalcInstanceStatus.Superseded).ToList();
 
+        // One read of the project answers the staleness of every row (the list used to ask once per row, each reading every calculation).
+        var staleness = await _service.StalenessForProjectAsync(projectId).ConfigureAwait(true);
+
         foreach (var instance in current.Take(MaxListed))
-            saved.Add(await DescribeAsync(instance).ConfigureAwait(true));
+            saved.Add(await DescribeAsync(instance, staleness.GetValueOrDefault(instance.Id)).ConfigureAwait(true));
 
         _view.SetSavedCalculations(saved, current.Count > MaxListed);
 
         var packs = await _service.Store.ListPacksAsync(projectId).ConfigureAwait(true);
         _view.SetPacks([.. packs.Take(MaxListed).Select(p => new CalcSheetView.PackChoice(p.Id, p.Title, p.Revision, p.Status, p.InstanceIds.Count))], packs.Count > MaxListed);
-        await ShowPackMembersAsync(_view.SelectedPackId).ConfigureAwait(true);
+        await ShowPackMembersAsync(_view.SelectedPackId, staleness).ConfigureAwait(true);
     }
 
-    private async Task<CalcSheetView.SavedCalculation> DescribeAsync(CalcInstance instance)
+    private async Task<CalcSheetView.SavedCalculation> DescribeAsync(CalcInstance instance, CalcStaleness? known = null)
     {
-        var stale = await _service.StalenessAsync(instance).ConfigureAwait(true);
+        var stale = known ?? await _service.StalenessAsync(instance).ConfigureAwait(true);
         var title = _service.Catalogue.Find(instance.TemplateReference)?.Template.Title ?? instance.TemplateReference;
         return new CalcSheetView.SavedCalculation(instance.Id, instance.Name, title, instance.Revision, instance.Status.ToString(), stale.IsStale && instance.Status != CalcInstanceStatus.Superseded);
     }
 
-    private async Task ShowPackMembersAsync(Guid? packId)
+    private async Task ShowPackMembersAsync(Guid? packId, IReadOnlyDictionary<Guid, CalcStaleness>? staleness = null)
     {
         var members = new List<CalcSheetView.SavedCalculation>();
 
@@ -373,7 +379,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
             foreach (var memberId in pack.InstanceIds)
             {
                 if (await _service.Store.FindInstanceAsync(memberId).ConfigureAwait(true) is { } member)
-                    members.Add(await DescribeAsync(member).ConfigureAwait(true));
+                    members.Add(await DescribeAsync(member, staleness?.GetValueOrDefault(member.Id)).ConfigureAwait(true));
             }
         }
 
@@ -446,6 +452,13 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         var result = await _service.CheckPackAsync(packId, who, draft.Organisation, draft.Statement, draft.Outcome).ConfigureAwait(true);
         await RefreshListsAsync().ConfigureAwait(true);
         _view.ShowStatus(result.Succeeded ? $"Pack checked by {who}. Issue it when ready." : result.Reason ?? "Refused.");
+    }
+
+    private async Task ReopenPackAsync(Guid packId)
+    {
+        var result = await _service.ReopenPackAsync(packId).ConfigureAwait(true);
+        await RefreshListsAsync().ConfigureAwait(true);
+        _view.ShowStatus(result.Succeeded ? "Pack reopened as a new revision. Correct what went stale, then check it again." : result.Reason ?? "Refused.");
     }
 
     private async Task IssuePackAsync(Guid packId, CalcSheetView.PackIssueDraft draft)
@@ -619,7 +632,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         ArgumentNullException.ThrowIfNull(template);
         ArgumentNullException.ThrowIfNull(text);
         var trimmed = text.TrimStart('\uFEFF', ' ', '\t', '\r', '\n');
-        return trimmed.StartsWith('[') || trimmed.StartsWith('{') ? CalcInputJson.Read(trimmed) : CalcCsv.ImportInputs(template, text);
+        return trimmed.StartsWith('[') || trimmed.StartsWith('{') ? CalcInputJson.Read(trimmed, template) : CalcCsv.ImportInputs(template, text);
     }
 
     private void Report(CalcActionResult result, string success)

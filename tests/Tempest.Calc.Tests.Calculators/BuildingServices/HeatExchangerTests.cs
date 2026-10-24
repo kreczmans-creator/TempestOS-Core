@@ -121,4 +121,52 @@ public sealed class HeatExchangerTests
         Assert.False(air.IsBlocked);
         Assert.Equal(0.4 * 1006, air.Steps.Single(s => s.Symbol == "C_min").Result is Tempest.Calc.Engine.Values.ScalarValue c ? c.Si : double.NaN, 9);
     }
+
+    private static CalcInputSet Isothermal(string side) => Defaults().With(CalcInputValue.Choice("arrangement", HeatExchangerCalculator.Isothermal)).With(CalcInputValue.Choice("const_side", side));
+
+    [Fact]
+    public void A_Stream_At_Constant_Temperature_Never_Sets_C_Min_And_Leaves_At_Its_Inlet_Temperature()
+    {
+        // Black B-A-02 / Green G-B-07: with the hot side held at constant temperature (condensing vapour), the cold stream is C_min whatever the hot
+        // stream's own m·c_p. The old code took min(C_h, C_c) and changed the constant stream's temperature too.
+        var small = CalcRunner.Run(Hx, Isothermal(HeatExchangerCalculator.HotConstant).With(CalcInputValue.Quantity("m_h", 0.5, "kg/s")).With(CalcInputValue.Quantity("m_c", 2, "kg/s")));
+        var large = CalcRunner.Run(Hx, Isothermal(HeatExchangerCalculator.HotConstant).With(CalcInputValue.Quantity("m_h", 50, "kg/s")).With(CalcInputValue.Quantity("m_c", 2, "kg/s")));
+        Assert.Equal(small.OutputSi("Q"), large.OutputSi("Q"), 9);
+        Assert.Equal(0.5, small.OutputSi("NTU"), 9);                                   // UA 4180 W/K over C_c 8360 W/K
+        Assert.Equal(197.36422, small.OutputSi("Q") / 1e3, 4);                          // (1 − e^−0.5) × 8360 × 60 K (python3)
+        Assert.Equal(80, small.OutputSi("T_h_out") - 273.15, 9);
+        Assert.Equal(small.OutputSi("Q"), small.OutputSi("Q_lmtd"), 3);
+        Assert.DoesNotContain(small.Warnings, w => w.RuleId == "lmtd-mismatch");
+    }
+
+    [Fact]
+    public void A_Cold_Side_At_Constant_Temperature_Leaves_At_Its_Inlet_And_The_Hot_Stream_Falls()
+    {
+        var r = CalcRunner.Run(Hx, Isothermal(HeatExchangerCalculator.ColdConstant));
+        Assert.Equal(20, r.OutputSi("T_c_out") - 273.15, 9);
+        Assert.Equal(0, r.OutputSi("dT_c"), 12);
+        Assert.Equal(80 - 0.6321205588 * 60, r.OutputSi("T_h_out") - 273.15, 6);
+        Assert.Equal(r.OutputSi("Q"), r.OutputSi("Q_lmtd"), 3);
+    }
+
+    [Fact]
+    public void The_Epsilon_Ntu_And_Lmtd_Duties_Agree_For_Every_Arrangement_And_Constant_Side()
+    {
+        Gen.Select(Gen.Double[0.05, 3], Gen.Double[0.1, 5], Gen.Double[0.1, 5], Gen.Int[0, 5]).Sample((area, mh, mc, kind) =>
+        {
+            var set = Defaults().With(CalcInputValue.Quantity("A", area, "m^2")).With(CalcInputValue.Quantity("m_h", mh, "kg/s")).With(CalcInputValue.Quantity("m_c", mc, "kg/s"));
+            set = kind switch
+            {
+                0 => set.With(CalcInputValue.Choice("arrangement", HeatExchangerCalculator.Counterflow)),
+                1 => set.With(CalcInputValue.Choice("arrangement", HeatExchangerCalculator.Parallel)),
+                2 => set.With(CalcInputValue.Choice("arrangement", HeatExchangerCalculator.ShellTube)),
+                3 => set.With(CalcInputValue.Choice("arrangement", HeatExchangerCalculator.Isothermal)).With(CalcInputValue.Choice("const_side", HeatExchangerCalculator.HotConstant)),
+                4 => set.With(CalcInputValue.Choice("arrangement", HeatExchangerCalculator.Isothermal)).With(CalcInputValue.Choice("const_side", HeatExchangerCalculator.ColdConstant)),
+                _ => set.With(CalcInputValue.Choice("arrangement", HeatExchangerCalculator.Crossflow)),
+            };
+
+            var r = CalcRunner.Run(Hx, set);
+            return r.IsBlocked || r.FindOutput("Q_lmtd") is null || Math.Abs(r.OutputSi("Q_lmtd") - r.OutputSi("Q")) < 1e-6 * r.OutputSi("Q");
+        }, iter: 150);
+    }
 }

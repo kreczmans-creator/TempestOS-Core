@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bracket flange bolts    Revision: A
 Title: Bolted joint (simplified VDI 2230)
-Author: unknown    Authored: 2026-10-23
-Checker: —    Checked: —
-Issued: 2026-10-23    Issue: BRK-CALC-001
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 One bolt clamping members under an axial working load: the preload from the tightening torque with its scatter, the stiffness of bolt and members, how much of the working load the bolt sees, the residual clamp after embedding, separation, yield under preload plus working load, the thread engagement needed against stripping, and the fatigue amplitude.
@@ -210,5 +210,5 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
   Content hash: 171bd836528ea883
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-23 19:12 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
