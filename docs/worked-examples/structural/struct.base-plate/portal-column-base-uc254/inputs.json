@@ -1,5 +1,16 @@
 [
   {
+    "Symbol": "A_s",
+    "Number": 352.5,
+    "Unit": "mm^2",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S4 bolt sheet, M24 stress area (352.50 mm\u00B2)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "352.5"
+  },
+  {
     "Symbol": "B",
     "Number": 400,
     "Unit": "mm",
@@ -22,6 +33,17 @@
     "ValueText": "0.2"
   },
   {
+    "Symbol": "F_1_vb_Rd",
+    "Number": 364.4,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S4 bolt sheet, M24 bearing on 25 mm S275 plate, e\u2081 = 60 mm, d\u2080 = 27 mm (364.44 kN)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "364.4"
+  },
+  {
     "Symbol": "F_t_Rd",
     "Number": 203,
     "Unit": "kN",
@@ -31,17 +53,6 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "203"
-  },
-  {
-    "Symbol": "F_vb_Rd",
-    "Number": 135.4,
-    "Unit": "kN",
-    "Provenance": {
-      "Kind": "Reference",
-      "Reference": "S4 bolt sheet, M24 8.8 shear through the threads (135.36 kN), rounded",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "135.4"
   },
   {
     "Symbol": "L",
@@ -125,7 +136,7 @@
     "Unit": "mm",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789",
+      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789, to be checked against the owner\u0027s copy",
       "IsSufficientToIssue": true
     },
     "ValueText": "256.3"
@@ -142,18 +153,6 @@
     "ValueText": "I/H"
   },
   {
-    "Symbol": "e_min",
-    "Number": 40,
-    "Unit": "mm",
-    "Provenance": {
-      "Kind": "Drawing",
-      "Reference": "PF-BP-001",
-      "Revision": "B",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "40"
-  },
-  {
     "Symbol": "f_ck",
     "Number": 30,
     "Unit": "MPa",
@@ -163,6 +162,28 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "30"
+  },
+  {
+    "Symbol": "f_ck_g",
+    "Number": 60,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Non-shrink grout datasheet, 28-day strength (placeholder GR-DS-01)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "f_ub",
+    "Number": 800,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN ISO 898-1 class 8.8",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "800"
   },
   {
     "Symbol": "f_y",
@@ -176,6 +197,17 @@
     "ValueText": "265"
   },
   {
+    "Symbol": "f_yb",
+    "Number": 640,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN ISO 898-1 class 8.8",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "640"
+  },
+  {
     "Symbol": "gamma_M0",
     "Number": 1,
     "Provenance": {
@@ -184,6 +216,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "1"
+  },
+  {
+    "Symbol": "gamma_M2",
+    "Number": 1.25,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-8, NA.2.3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.25"
   },
   {
     "Symbol": "gamma_c",
@@ -201,7 +243,7 @@
     "Unit": "mm",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789",
+      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789, to be checked against the owner\u0027s copy",
       "IsSufficientToIssue": true
     },
     "ValueText": "260.3"
@@ -212,21 +254,21 @@
     "Unit": "mm",
     "Provenance": {
       "Kind": "Assumption",
-      "Reference": "Two bolts in the row, about 175 mm each from the cl. 6.2.6.5 patterns (engineer\u0027s estimate).",
+      "Reference": "Total for the two bolts of the row, about 175 mm each from the cl. 6.2.6.5 patterns (engineer\u0027s estimate).",
       "IsSufficientToIssue": true
     },
     "ValueText": "350"
   },
   {
     "Symbol": "m",
-    "Number": 43.5,
+    "Number": 46.9,
     "Unit": "mm",
     "Provenance": {
       "Kind": "Assumption",
-      "Reference": "Bolt at 185 mm from the axis, flange face at 130.15 mm, less 0.8\u00B7\u221A2 \u00D7 10 mm fillet leg.",
+      "Reference": "Bolt at 185 mm from the axis, flange face at 130.15 mm: 54.85 mm, less 0.8\u00B7\u221A2 \u00D7 7 mm (a 10 mm fillet leg has a 7 mm throat) = 7.9 mm.",
       "IsSufficientToIssue": true
     },
-    "ValueText": "43.5"
+    "ValueText": "46.9"
   },
   {
     "Symbol": "n_b",
@@ -262,13 +304,13 @@
   },
   {
     "Symbol": "prying",
-    "Flag": true,
+    "Flag": false,
     "Provenance": {
       "Kind": "Assumption",
-      "Reference": "Short holding-down bolts; prying forces assumed to develop.",
+      "Reference": "Cast-in holding-down bolts: prying not assumed (min(2\u00B7M_pl/m, \u03A3F_t) is the conservative case).",
       "IsSufficientToIssue": true
     },
-    "ValueText": "yes"
+    "ValueText": "no"
   },
   {
     "Symbol": "t_f",
@@ -276,10 +318,22 @@
     "Unit": "mm",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789",
+      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789, to be checked against the owner\u0027s copy",
       "IsSufficientToIssue": true
     },
     "ValueText": "17.3"
+  },
+  {
+    "Symbol": "t_g",
+    "Number": 30,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PF-BP-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
   },
   {
     "Symbol": "t_p",
@@ -299,14 +353,14 @@
     "Unit": "mm",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789",
+      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789, to be checked against the owner\u0027s copy",
       "IsSufficientToIssue": true
     },
     "ValueText": "10.3"
   },
   {
-    "Symbol": "z",
-    "Number": 306.5,
+    "Symbol": "x_b",
+    "Number": 185,
     "Unit": "mm",
     "Provenance": {
       "Kind": "Drawing",
@@ -314,17 +368,6 @@
       "Revision": "B",
       "IsSufficientToIssue": true
     },
-    "ValueText": "306.5"
-  },
-  {
-    "Symbol": "z_C",
-    "Number": 121.5,
-    "Unit": "mm",
-    "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "Compression resultant at the centre of the compression flange: (h \u2212 t_f)/2 = 121.5 mm.",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "121.5"
+    "ValueText": "185"
   }
 ]
