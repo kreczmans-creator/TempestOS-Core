@@ -4,7 +4,7 @@
 Sources, cited by title and number only:
 - AISC Steel Construction Manual, Part 7: elastic method for eccentrically loaded bolt groups.
 - EN 1993-1-8:2005, Table 3.4: shear plus tension interaction (linear form with 1.4).
-- Shigley's Mechanical Engineering Design, 9th ed., sect. 8-11: bolted joints under eccentric loading.
+- Shigley's Mechanical Engineering Design, 9th ed., Chapter 8: bolted joints loaded in shear.
 Units: mm, kN, kN*mm inside the model. Moments are given in kN*m and converted.
 
 Model: the connected parts are rigid.

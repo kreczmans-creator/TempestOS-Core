@@ -2,7 +2,7 @@
 """Independent re-derivation of mech.bearing-life (Track P, P1).
 
 Sources, cited by title and number only:
-- ISO 281:2007, clauses 6 to 9: dynamic equivalent load, basic rating life, modified rating life, a_1 (Table 1).
+- ISO 281:2007, clauses 6 to 9: dynamic equivalent load, basic rating life, modified rating life, a_1 table.
 - ISO 76:2006, clauses 6 and 7: static equivalent load and static safety factor.
 - Shigley's Mechanical Engineering Design, 11th ed., Chapter 11: rolling-contact bearings.
 
@@ -10,7 +10,7 @@ Model:
 - Step equivalent load: P_i = F_r when F_a/F_r <= e, else X F_r + Y F_a. A step with F_r = 0 uses the second form.
 - Duty cycle: P = (sum(P_i^p U_i) / sum(U_i))^(1/p), p = 3 (ball) or 10/3 (roller).
 - L_10 = (C/P)^p in million revolutions. L_10h = 1e6 L_10 / (60 n).
-- Reliability factor a_1 = 0.05 + 0.95 (ln(100/R) / ln(100/90))^(2/3), the Weibull form behind ISO 281:2007 Table 1.
+- Reliability factor a_1 = 0.05 + 0.95 (ln(100/R) / ln(100/90))^(2/3), the Weibull form behind the ISO 281:2007 a_1 table.
 - L_nm = a_1 a_ISO L_10. L_nmh = 1e6 L_nm / (60 n).
 - Static: P_0 = max(X_0 F_r + Y_0 F_a, F_r), s_0 = C_0 / P_0. For a duty cycle the peak step governs.
 
@@ -128,7 +128,7 @@ for name, kw, prod in EXTRAS:
 p_default = bearing(F_r=2, F_a=4)["P"]
 p_ball = bearing(F_r=2, F_a=4, e_lim=0.3, X=0.56, Y=1.5)["P"]
 print(f"note  default factors: P {p_default:.3f} kN; ball factors: P {p_ball:.3f} kN; life ratio {(p_ball / p_default) ** 3:.1f}")
-# 2. Double-row bearing, F_a/F_r <= e: ISO 281:2007 Table 3 uses P = F_r + Y_1 F_a. The product has no Y_1.
+# 2. Double-row bearing, F_a/F_r <= e: ISO 281:2007 cl. 6 factor tables use P = F_r + Y_1 F_a. The product has no Y_1.
 fr, fa, y1 = 10.0, 1.9, 3.3
 print(f"note  double row, F_a/F_r = 0.19 <= e: P = F_r + Y_1 F_a = {fr + y1 * fa:.2f} kN; product gives {fr:.2f} kN; "
       f"life overstated by {((fr + y1 * fa) / fr) ** 3:.2f}x")
