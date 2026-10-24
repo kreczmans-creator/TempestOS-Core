@@ -113,5 +113,6 @@ All rows use the Probe tool. "Product" values are hard-coded in the script. Rows
 - No change to the beam, critical-speed, shoulder, torque-span or key code. The probe at 614ddf89 confirms 01 to 06 and 08 to 09 are Open.
 - R1 is Fixed: the cited edition now matches the constants. Row 07 is Changed: the edition changed, the example number is not confirmed.
 - New: C1 (Low) k_a up to 1.5 is accepted. C2 (Info) the finish is silently ignored when k_a is entered.
-- Script updated: new E11 rows for the k_a override and the default k_a, and the docstring now names the 10th ed. It exits 0.
+- Script updated: new E11 rows for the k_a override and the default k_a. The docstring now names the 10th ed.
+- The script exits 0.
 - The method text above still says 11th ed. for the section numbers. Those section numbers are the same in the 10th ed.

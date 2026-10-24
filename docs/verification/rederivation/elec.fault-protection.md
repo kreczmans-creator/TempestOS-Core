@@ -106,8 +106,9 @@ The product also blocks a curve that does not bracket t_req, and blocks θ_f not
 - Residual doubt: typical MCB let-through values quoted in 03 are indicative only. Use the maker's energy-class data.
 
 ## Re-check after DA-17/DA-18 and A-4/A-5 (2026-10-24)
-- Source changed in 499bfb01 (DA-17): a fault current above the highest curve point now uses the fastest time as a bound; with no disconnection time the adiabatic check is skipped.
-- The code is now split: new `FaultLevel` helper, new rule `adiabatic` (Warning), and an early return that fails "Disconnection achieved".
+- Source changed in 499bfb01 (DA-17). A fault current above the highest curve point now uses the fastest time as a bound.
+- With no disconnection time the adiabatic check is now skipped.
+- The code now has a `FaultLevel` helper and a new rule `adiabatic` (Warning). An early return fails "Disconnection achieved".
 - Fixed: 04 and R1, re-run with the probe at 614ddf89. 09 is partly fixed. Ten rows are unchanged and Open. Row 11 stays Rejected.
 - Script updated: it models both new behaviours and adds probe groups x15 and x16 and two asserts. It now runs 63 checks and exits 0.
 - New defects: none found. The early return omits the S_min port, which is correct while the check is skipped.
