@@ -206,7 +206,7 @@ public static class CalcCsv
     }
 
     /// <summary>A cell a spreadsheet would evaluate: anything starting with =, +, −, @, tab or CR — except a plain signed number (R-03: "-1+cmd|…" is not a number).</summary>
-    internal static bool IsFormulaLike(string s) =>
+    public static bool IsFormulaLike(string s) =>
         s.Length > 0
         && s[0] is '=' or '+' or '-' or '@' or '\t' or '\r'
         && !(s[0] is '-' or '+' && double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _));

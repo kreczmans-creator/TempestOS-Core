@@ -117,6 +117,13 @@ public static class CalcTemplateHasher
                 sb.Append("  expect=").Append(e.Symbol).Append('|').Append(N(e.Value)).Append('|').Append(e.Unit).Append('|').Append(N(e.RelativeTolerance)).Append('\n');
         }
 
+        // Declared output ports are part of a template's contract; a template that declares none hashes as before.
+        foreach (var o in t.OutputPorts ?? [])
+            sb.Append("port=").Append(o.Symbol).Append('|').Append(o.Unit).Append('|').Append(o.Description).Append('\n');
+
+        foreach (var k in t.RecordKinds ?? [])
+            sb.Append("records=").Append(k.Kind).Append('|').Append(string.Join(",", k.Symbols)).Append('\n');
+
         foreach (var f in formulas)
             sb.Append("formula=").Append(f).Append('\n');
 

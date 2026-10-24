@@ -40,7 +40,28 @@ public sealed class CalcSheetView : UserControl
     public const string StaleMarker = "Recalculating…";
     public const string PickGuidance = "Choose a worksheet from the catalogue on the left. Its inputs, with their units, sources and limits, appear here.";
 
-    private static readonly string[] ProvenanceKinds = ["manual", "drawing", "spec", "assumption", "evidence", "reference"];
+    private static readonly string[] ProvenanceKinds = ["manual", "drawing", "spec", "assumption", "evidence", "reference", "link"];
+
+    public const string LinkCaption = "Link input";
+    public const string LinkPanelName = "Link an input to another calculation";
+    public const string StaleBannerName = "Stale marker";
+    public const string UpdateLinksName = "Update linked inputs";
+
+    /// <summary>A calculation an input can be linked to: its id, how it is listed, and the outputs it offers.</summary>
+    public sealed record LinkTarget(Guid Id, string Label, IReadOnlyList<CalcOutputPort> Outputs);
+
+    // Addendum A, L1: link an input to another calculation's output; a stale banner with "Update to revision n".
+    private readonly ComboBox _linkInput = new() { MinWidth = 140, PlaceholderText = "Input" };
+    private readonly ComboBox _linkTarget = new() { MinWidth = 260, PlaceholderText = "Calculation" };
+    private readonly ComboBox _linkOutput = new() { MinWidth = 160, PlaceholderText = "Output" };
+    private readonly Button _linkButton = new() { Content = LinkCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
+    private readonly StackPanel _linkPanel = new() { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, IsVisible = false };
+    private readonly TextBlock _staleBanner = new() { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody, IsVisible = false };
+    private readonly Button _updateLinksButton = new() { MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private IReadOnlyList<LinkTarget> _linkTargets = [];
+
+    /// <summary>The link provenance each linked input was shown with, so saving the form keeps the pinned revision.</summary>
+    private readonly Dictionary<string, CalcProvenance> _shownLinks = new(StringComparer.Ordinal);
 
     private readonly TreeView _catalogue = new() { MinHeight = 200 };
     private readonly TextBlock _title = new() { FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody + 4, TextWrapping = TextWrapping.Wrap };
@@ -108,6 +129,31 @@ public sealed class CalcSheetView : UserControl
         _showWorking.IsCheckedChanged += (_, _) => _working.IsVisible = _showWorking.IsChecked == true;
         _governingLink.Click += (_, _) => RevealGoverningStep();
 
+        AutomationProperties.SetName(_linkPanel, LinkPanelName);
+        AutomationProperties.SetName(_linkInput, "Input to link");
+        AutomationProperties.SetName(_linkTarget, "Calculation to link to");
+        AutomationProperties.SetName(_linkOutput, "Output to link to");
+        AutomationProperties.SetName(_linkButton, LinkCaption);
+        AutomationProperties.SetName(_staleBanner, StaleBannerName);
+        AutomationProperties.SetLiveSetting(_staleBanner, AutomationLiveSetting.Polite);
+        AutomationProperties.SetName(_updateLinksButton, UpdateLinksName);
+        _linkTarget.SelectionChanged += (_, _) =>
+        {
+            _linkOutput.ItemsSource = _linkTarget.SelectedIndex >= 0 ? _linkTargets[_linkTarget.SelectedIndex].Outputs.Select(o => $"{o.Symbol} ({(o.Unit.Length == 0 ? "–" : o.Unit)}) — {o.Description}").ToList() : [];
+            UpdateLinkButton();
+        };
+        _linkInput.SelectionChanged += (_, _) => UpdateLinkButton();
+        _linkOutput.SelectionChanged += (_, _) => UpdateLinkButton();
+        _linkButton.Click += (_, _) =>
+        {
+            if (_linkInput.SelectedItem is string input && _linkTarget.SelectedIndex >= 0 && _linkOutput.SelectedIndex >= 0)
+            {
+                var target = _linkTargets[_linkTarget.SelectedIndex];
+                LinkRequested?.Invoke(input, target.Id, target.Outputs[_linkOutput.SelectedIndex].Symbol);
+            }
+        };
+        _updateLinksButton.Click += (_, _) => UpdateLinksRequested?.Invoke();
+
         Content = BuildLayout();
     }
 
@@ -128,6 +174,51 @@ public sealed class CalcSheetView : UserControl
 
     /// <summary>The user asked to import inputs (CSV or JSON) from the clipboard.</summary>
     public event Action? ImportRequested;
+
+    /// <summary>Link an input (symbol) to another calculation's output (id, output symbol).</summary>
+    public event Action<string, Guid, string>? LinkRequested;
+
+    /// <summary>"Update to revision n": re-pin every link to the current upstream revision.</summary>
+    public event Action? UpdateLinksRequested;
+
+    /// <summary>The calculations the shown draft can link an input to (the coordinator lists them).</summary>
+    public void SetLinkTargets(IReadOnlyList<LinkTarget> targets)
+    {
+        ArgumentNullException.ThrowIfNull(targets);
+        _linkTargets = targets;
+        _linkTarget.ItemsSource = targets.Select(t => t.Label).ToList();
+        _linkOutput.ItemsSource = Array.Empty<string>();
+        _linkInput.ItemsSource = SelectedTemplate?.Template.Inputs.Where(i => i.Kind is CalcInputKind.Quantity or CalcInputKind.Number).Select(i => i.Symbol).ToList() ?? [];
+        _linkPanel.IsVisible = CurrentInstance is { Status: CalcInstanceStatus.Draft } && targets.Count > 0;
+        UpdateLinkButton();
+    }
+
+    /// <summary>Shows whether the calculation is stale and, when updating its links would cure it, the update action.</summary>
+    public void ShowStaleness(CalcStaleness staleness, string? updateCaption)
+    {
+        ArgumentNullException.ThrowIfNull(staleness);
+        _staleBanner.Text = staleness.IsStale ? "Stale — " + string.Join(" ", staleness.Reasons) : string.Empty;
+        _staleBanner.IsVisible = staleness.IsStale;
+        _updateLinksButton.Content = updateCaption;
+        _updateLinksButton.IsVisible = staleness.IsStale && updateCaption is not null && CurrentInstance is { Status: not CalcInstanceStatus.Superseded };
+    }
+
+    /// <summary>The stale text shown, or empty.</summary>
+    public string StaleText => _staleBanner.IsVisible ? _staleBanner.Text ?? string.Empty : string.Empty;
+
+    /// <summary>Whether the update action is offered, and its caption.</summary>
+    public string? UpdateLinksCaption => _updateLinksButton.IsVisible ? _updateLinksButton.Content as string : null;
+
+    /// <summary>Picks a link as the panel's three pickers would (input, calculation label, output symbol).</summary>
+    public void ChooseLink(string input, string targetLabel, string outputSymbol)
+    {
+        _linkInput.SelectedItem = input;
+        _linkTarget.SelectedIndex = _linkTargets.ToList().FindIndex(t => t.Label == targetLabel);
+        _linkOutput.SelectedIndex = _linkTarget.SelectedIndex < 0 ? -1 : _linkTargets[_linkTarget.SelectedIndex].Outputs.ToList().FindIndex(o => o.Symbol == outputSymbol);
+    }
+
+    private void UpdateLinkButton() =>
+        _linkButton.IsEnabled = _linkInput.SelectedItem is string && _linkTarget.SelectedIndex >= 0 && _linkOutput.SelectedIndex >= 0 && CurrentInstance is { Status: CalcInstanceStatus.Draft };
 
     public CalcCatalogueEntry? SelectedTemplate { get; private set; }
 
@@ -231,6 +322,14 @@ public sealed class CalcSheetView : UserControl
         _status.Text = IsReadOnly ? $"This calculation is {instance!.Status}; it is read-only. Revise it to start a new revision." : string.Empty;
 
         var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.DefaultInputs(entry.Template) : new CalcInputSet(instance.Inputs));
+        _shownLinks.Clear();
+
+        foreach (var value in seed.Values.Where(v => v.Provenance is { Kind: CalcProvenanceKind.Link }))
+            _shownLinks[value.Symbol] = value.Provenance!;
+
+        _staleBanner.IsVisible = false;
+        _updateLinksButton.IsVisible = false;
+        _linkPanel.IsVisible = false;
         _carriedInputs.Clear();
         _carriedInputs.AddRange(entry.Template.Inputs.Where(s => s.Kind is CalcInputKind.Table or CalcInputKind.Vector).Select(s => seed.Find(s.Symbol)).OfType<CalcInputValue>());
         string? lastGroup = null;
@@ -370,6 +469,10 @@ public sealed class CalcSheetView : UserControl
         foreach (var (symbol, f) in _fields)
         {
             var provenance = ReadProvenance(f);
+
+            // A linked input keeps its pin (upstream, output and revision) while its reference text is unchanged.
+            if (provenance.Kind == CalcProvenanceKind.Link && _shownLinks.TryGetValue(symbol, out var shown) && string.Equals(shown.Reference, provenance.Reference, StringComparison.Ordinal))
+                provenance = shown;
 
             switch (f.Spec.Kind)
             {
@@ -668,6 +771,7 @@ public sealed class CalcSheetView : UserControl
             "assumption" => CalcProvenanceKind.Assumption,
             "evidence" => CalcProvenanceKind.Evidence,
             "reference" => CalcProvenanceKind.Reference,
+            "link" => CalcProvenanceKind.Link,
             _ => CalcProvenanceKind.Manual,
         };
 
@@ -682,6 +786,7 @@ public sealed class CalcSheetView : UserControl
         CalcProvenanceKind.Assumption => "assumption",
         CalcProvenanceKind.Evidence => "evidence",
         CalcProvenanceKind.Reference => "reference",
+        CalcProvenanceKind.Link => "link",
         _ => "manual",
     };
 
@@ -721,7 +826,18 @@ public sealed class CalcSheetView : UserControl
         right.Children.Add(_reference);
         right.Children.Add(_scope);
         right.Children.Add(LabelledRow("Calculation name", _nameBox));
+        _linkPanel.Children.Add(new TextBlock { Text = "Link", VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeBody });
+        _linkPanel.Children.Add(_linkInput);
+        _linkPanel.Children.Add(new TextBlock { Text = "to", VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeBody });
+        _linkPanel.Children.Add(_linkTarget);
+        _linkPanel.Children.Add(_linkOutput);
+        _linkPanel.Children.Add(_linkButton);
+        var staleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        staleRow.Children.Add(_staleBanner);
+        staleRow.Children.Add(_updateLinksButton);
+        right.Children.Add(staleRow);
         right.Children.Add(Section("Inputs", _form));
+        right.Children.Add(_linkPanel);
         right.Children.Add(_problems);
 
         var resultsHead = new StackPanel { Spacing = DesignTokens.SpaceXs };

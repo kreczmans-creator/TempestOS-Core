@@ -86,7 +86,16 @@ public sealed record CalcInstance(
         .Where(p => p is { Kind: CalcProvenanceKind.Reference, Reference: { } r } && r.StartsWith(UpstreamPrefix, StringComparison.Ordinal))
         .Select(p => Guid.TryParse(p!.Reference![UpstreamPrefix.Length..], out var g) ? g : Guid.Empty)
         .Where(g => g != Guid.Empty)
+        .Concat(Links.Select(l => l.Link.UpstreamId))
         .Distinct()
+        .ToList();
+
+    /// <summary>The inputs bound to an output of another calculation (Addendum A, L1), with their pins.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<(CalcInputValue Input, CalcLink Link)> Links => Inputs
+        .Select(i => (Input: i, Link: CalcLink.From(i.Provenance)))
+        .Where(x => x.Link is not null)
+        .Select(x => (x.Input, x.Link!))
         .ToList();
 }
 

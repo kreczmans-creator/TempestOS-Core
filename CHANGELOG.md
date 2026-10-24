@@ -23,3 +23,7 @@
 - Engine and solvers: variadic reducers bounded before allocation; calculator Monte Carlo capped at 100,000 samples; frame solver bounded per member (200 loads) and by factor work.
 - Library and Core: optimistic concurrency on every instance write; Check and Issue commit with the instance in one transaction with a transaction-time status re-check; issued records compared in full before a Superseded mark is accepted; Revise atomic and recoverable; pack members frozen after the pack check.
 - PDF: every drawn string cleaned of control, separator and format characters and capped per field and paragraph.
+
+### Addendum A — twelve more calculators (no tag)
+- Reference records (§A3, DA-05): tabulated values carry source, edition and amendment, table or clause, licence holder, who entered them and a licensed-source flag; revisioned, pinned by the calculations that use them; a revised record makes them stale. Values from a licensed record are withheld from every export (DA-06).
+- L1 result linking (ADR-0168): an input links to another calculation's output, pinned to its revision; output ports; dimension, cycle and 20-link checks; staleness runs through the whole chain and blocks Check, Issue and pack issue; "Update to revision n" re-pins (a checked or issued calculation as a new revision); pack templates build a linked pack issued as one Evidence bundle; the worksheet form links an input and shows the stale marker.

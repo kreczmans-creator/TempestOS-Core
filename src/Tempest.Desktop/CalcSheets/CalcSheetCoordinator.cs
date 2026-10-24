@@ -15,7 +15,7 @@ namespace Tempest.Desktop.CalcSheets;
 /// <see cref="CalcInstanceService.Preview"/> on every input change; a
 /// save creates or updates the instance under the current project.
 /// </summary>
-public sealed class CalcSheetCoordinator
+public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<CalcStalenessChanged>
 {
     private readonly CalcInstanceService _service;
     private readonly CalcSheetView _view;
@@ -23,7 +23,7 @@ public sealed class CalcSheetCoordinator
     private readonly Func<string?> _principalId;
     private CalcInputSet? _latest;
 
-    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId)
+    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, Tempest.Core.Events.IEventBus? events = null)
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(view);
@@ -42,6 +42,87 @@ public sealed class CalcSheetCoordinator
         _view.ReviseRequested += () => _ = GuardedAsync(ReviseAsync, "revise that calculation");
         _view.ExportRequested += () => _ = GuardedAsync(ExportAsync, "export the inputs");
         _view.ImportRequested += () => _ = GuardedAsync(ImportAsync, "import the inputs");
+        _view.LinkRequested += (input, upstream, output) => _ = GuardedAsync(() => LinkAsync(input, upstream, output), "link that input");
+        _view.UpdateLinksRequested += () => _ = GuardedAsync(UpdateLinksAsync, "update the linked inputs");
+        events?.Subscribe(this);
+    }
+
+    /// <summary>Addendum A, L1: something upstream changed; refresh the stale marker if the shown calculation is affected.</summary>
+    public Task HandleAsync(CalcStalenessChanged @event, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(@event);
+
+        if (_view.CurrentInstance is { } shown && @event.AffectedIds.Contains(shown.Id))
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = GuardedAsync(() => RefreshLinkStateAsync(shown.Id), "refresh the stale marker"));
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Re-reads the shown calculation's staleness and the calculations its inputs can link to.</summary>
+    public async Task RefreshLinkStateAsync(Guid? instanceId = null)
+    {
+        var id = instanceId ?? _view.CurrentInstance?.Id;
+
+        if (id is null || await _service.Store.FindInstanceAsync(id.Value).ConfigureAwait(true) is not { } instance)
+        {
+            _view.SetLinkTargets([]);
+            return;
+        }
+
+        var staleness = await _service.StalenessAsync(instance).ConfigureAwait(true);
+        string? caption = null;
+
+        if (staleness.IsStale && instance.Links.Count > 0)
+            caption = instance.Status == CalcInstanceStatus.Draft ? "Update linked inputs" : $"Update to revision {CalcInstanceService.NextRevisionLabel(instance.Revision)}";
+
+        _view.ShowStaleness(staleness, caption);
+
+        var targets = new List<CalcSheetView.LinkTarget>();
+
+        foreach (var candidate in await _service.Store.ListInstancesAsync(instance.ProjectId).ConfigureAwait(true))
+        {
+            if (candidate.Id == instance.Id || candidate.Status == CalcInstanceStatus.Superseded || candidate.Outputs.Count == 0 || targets.Count >= 200)
+                continue;
+
+            var ports = candidate.Outputs.Where(o => o.Si is not null).Select(o => new CalcOutputPort(o.Symbol, o.Unit ?? string.Empty, o.Description)).ToList();
+            targets.Add(new CalcSheetView.LinkTarget(candidate.Id, $"{candidate.Name} · rev {candidate.Revision} · {candidate.Status}", ports));
+        }
+
+        _view.SetLinkTargets(targets);
+    }
+
+    private async Task LinkAsync(string input, Guid upstreamId, string output)
+    {
+        if (_view.CurrentInstance is not { } instance)
+            return;
+
+        var result = await _service.BindAsync(instance.Id, input, upstreamId, output).ConfigureAwait(true);
+
+        if (result.Succeeded && result.Instance is { } bound && _service.Catalogue.Find(bound.TemplateReference) is { } entry)
+            _view.ShowTemplate(entry, bound);
+
+        await ReportAsync(result, $"Linked {input} to {output}; it is pinned to that calculation's current revision.").ConfigureAwait(true);
+    }
+
+    private async Task UpdateLinksAsync()
+    {
+        if (_view.CurrentInstance is not { } instance)
+            return;
+
+        var result = await _service.UpdateLinksAsync(instance.Id).ConfigureAwait(true);
+
+        if (result.Succeeded && result.Instance is { } updated && _service.Catalogue.Find(updated.TemplateReference) is { } entry)
+            _view.ShowTemplate(entry, updated);
+
+        await ReportAsync(result, result.Instance is { } i && i.Id != instance.Id
+            ? $"Linked inputs updated as revision {i.Revision}; revision {instance.Revision} is superseded. Check and issue it again."
+            : "Linked inputs updated to the current revisions and recalculated.").ConfigureAwait(true);
+    }
+
+    private async Task ReportAsync(CalcActionResult result, string success)
+    {
+        Report(result, success);
+        await RefreshLinkStateAsync(result.Instance?.Id).ConfigureAwait(true);
     }
 
     public Task RefreshAsync()
@@ -71,6 +152,7 @@ public sealed class CalcSheetCoordinator
 
         _view.SelectTemplate(entry.Reference);
         _view.ShowTemplate(entry, instance);
+        await RefreshLinkStateAsync(instance.Id).ConfigureAwait(true);
     }
 
     private void Recalculate(CalcInputSet inputs)
@@ -90,7 +172,7 @@ public sealed class CalcSheetCoordinator
         if (_view.CurrentInstance is { } existing)
         {
             var updated = await _service.UpdateInputsAsync(existing.Id, _latest.Values).ConfigureAwait(true);
-            Report(updated, "Saved.");
+            await ReportAsync(updated, "Saved.").ConfigureAwait(true);
             return;
         }
 
@@ -100,6 +182,7 @@ public sealed class CalcSheetCoordinator
         _view.ShowStatus(_projects.HasProject
             ? $"Saved as '{created.Name}' in {_projects.Current!.DisplayName}; it is in the Calculation register and has its own Evidence."
             : $"Saved as '{created.Name}' with its own Evidence (open a project first to list it in a register).");
+        await RefreshLinkStateAsync(created.Id).ConfigureAwait(true);
     }
 
     private async Task CheckAsync()
@@ -109,7 +192,7 @@ public sealed class CalcSheetCoordinator
 
         var who = _principalId() ?? "engineer";
         var result = await _service.CheckAsync(instance.Id, who, "Tempest Engineering", "Checked in the worksheet form.", CheckOutcome.Accepted).ConfigureAwait(true);
-        Report(result, "Checked. Issue when ready.");
+        await ReportAsync(result, "Checked. Issue when ready.").ConfigureAwait(true);
     }
 
     private async Task IssueAsync()
@@ -120,7 +203,7 @@ public sealed class CalcSheetCoordinator
         var reference = $"{CalcInstanceService.Safe(instance.Name)}-{instance.Revision}";
         var client = _projects.Current?.DisplayName ?? "—";
         var result = await _service.IssueAsync(instance.Id, reference, client).ConfigureAwait(true);
-        Report(result, $"Issued as '{reference}'. The sheet is attached to its Evidence and listed under Reports.");
+        await ReportAsync(result, $"Issued as '{reference}'. The sheet is attached to its Evidence and listed under Reports.").ConfigureAwait(true);
     }
 
     private async Task ReviseAsync()
@@ -134,6 +217,7 @@ public sealed class CalcSheetCoordinator
         {
             _view.ShowTemplate(entry, next);
             _view.ShowStatus($"Revision {next.Revision} started as a draft; revision {instance.Revision} is superseded.");
+            await RefreshLinkStateAsync(next.Id).ConfigureAwait(true);
             return;
         }
 
@@ -145,7 +229,8 @@ public sealed class CalcSheetCoordinator
         if (_view.SelectedTemplate is not { } entry || _latest is null)
             return;
 
-        var csv = CalcCsv.ExportInputs(entry.Template, _latest);
+        // §A5: values taken from a licensed reference record are withheld from every export.
+        var csv = CalcCsv.ExportInputs(entry.Template, await _service.WithholdLicensedAsync(_latest).ConfigureAwait(true));
         var clipboard = TopLevel.GetTopLevel(_view)?.Clipboard;
 
         if (clipboard is null)
