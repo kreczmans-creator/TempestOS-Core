@@ -70,4 +70,13 @@ public sealed class LoadBudgetTests
     {
         Assert.True(CalcRunner.Run(Budget, Defaults().With(CalcInputValue.Table("loads", []))).IsBlocked);
     }
+
+    [Fact]
+    public void Starting_Peak_Uses_The_Undiversified_Motor()
+    {
+        // Opus review finding 6: a start draws m·P/cosφ whatever the duty; 7.5 kW, cosφ 0.85, d 0.5, m 6.
+        var r = CalcRunner.Run(Budget, Defaults().With(LoadBudgetCalculator.Loads(("Pump", LoadBudgetCalculator.Ac3, 7.5, 0.85, 1, 0.5, 1, 6, false))));
+        var s = 7.5 / 0.85;
+        Assert.Equal((0.5 * s + (6 * s - 0.5 * s)) * 1e3, r.OutputSi("S_peak"), 3);
+    }
 }

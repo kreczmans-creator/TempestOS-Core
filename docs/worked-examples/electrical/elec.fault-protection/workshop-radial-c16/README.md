@@ -1,6 +1,6 @@
 # Workshop radial: 16 A type C MCB, 40 m of 4/2.5 mm² copper (`elec.fault-protection`)
 
-**Source.** Analytic (C_min relation; derived k), TN-C-S supply with the declared Z_e of 0.8 Ω; let-through I²t from the MCB datasheet — Confirmed.
+**Source.** Analytic (C_min relation; derived k), TN-S supply with the declared Z_e of 0.8 Ω; let-through I²t from the MCB datasheet — Confirmed.
 
 A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.336 Ω against a maximum of 1.366 Ω (utilisation 0.98): it passes, narrowly, and a measured value above the 1.09 Ω field-test figure would need investigating. A type B device would leave a wide margin. The protective conductor easily passes the adiabatic check (0.34 mm² needed).
 
@@ -14,7 +14,7 @@ A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.336 Ω 
 | `S_cpc` | 2.5 mm^2 | drawing: E-SCH-002 rev B |
 | `S_line` | 4 mm^2 | drawing: E-SCH-002 rev B |
 | `U_0` | 230 V | spec: Supply characteristics |
-| `Z_e` | 0.8 ohm | spec: DNO declared maximum for TN-C-S |
+| `Z_e` | 0.8 ohm | spec: DNO declared maximum for TN-S |
 | `alpha` | 0.00393 1/K | assumption: Copper temperature coefficient. |
 | `beta` | 234.5 K | assumption: Copper reciprocal temperature coefficient. |
 | `c_max` | 1.1 | assumption: Maximum voltage factor. |

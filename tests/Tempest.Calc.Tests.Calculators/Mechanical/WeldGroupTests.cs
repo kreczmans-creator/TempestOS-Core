@@ -67,4 +67,14 @@ public sealed class WeldGroupTests
         var exact = CalcRunner.Run(Weld, Defaults().With(CalcInputValue.Quantity("s", r.OutputSi("s_req") * 1e3, "mm")));
         Assert.Equal(1.0, exact.OutputSi("u"), 9);
     }
+
+    [Fact]
+    public void An_Eccentric_Out_Of_Plane_Force_Adds_Its_Moment()
+    {
+        // Opus review finding 7: two horizontal welds at y = ±50 mm, F_z = 10 kN at e_y = 50 mm: 50 + 50 N/mm.
+        var r = CalcRunner.Run(Weld, Defaults().With(WeldGroupCalculator.Welds((0, -50, 100, -50), (0, 50, 100, 50)))
+            .With(CalcInputValue.Quantity("F_y", 0, "kN")).With(CalcInputValue.Quantity("F_z", 10, "kN"))
+            .With(CalcInputValue.Quantity("e_x", 50, "mm")).With(CalcInputValue.Quantity("e_y", 50, "mm")));
+        Assert.Equal(100e3, r.OutputSi("f_r_max"), 3);
+    }
 }

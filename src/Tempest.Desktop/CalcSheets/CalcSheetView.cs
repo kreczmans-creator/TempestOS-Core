@@ -37,6 +37,7 @@ public sealed class CalcSheetView : UserControl
     public const string ShowWorkingCaption = "Show working";
     public const string ExportCsvCaption = "Export inputs (CSV)";
     public const string ImportCaption = "Import inputs (CSV/JSON)";
+    public const string AttachEvidenceCaption = "Attach external report…";
     public const string StaleMarker = "Recalculating…";
     public const string PickGuidance = "Choose a worksheet from the catalogue on the left. Its inputs, with their units, sources and limits, appear here.";
 
@@ -111,6 +112,7 @@ public sealed class CalcSheetView : UserControl
     private readonly Button _reviseButton = new() { Content = ReviseCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly Button _exportButton = new() { Content = ExportCsvCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly Button _importButton = new() { Content = ImportCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
+    private readonly Button _attachButton = new() { Content = AttachEvidenceCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     /// <summary>Inputs the form has no field for (tables, vectors): carried from the seed so an imported or saved set keeps them (§3.8).</summary>
     private readonly List<CalcInputValue> _carriedInputs = [];
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
@@ -150,6 +152,8 @@ public sealed class CalcSheetView : UserControl
         _reviseButton.Click += (_, _) => ReviseRequested?.Invoke();
         _exportButton.Click += (_, _) => ExportRequested?.Invoke();
         _importButton.Click += (_, _) => ImportRequested?.Invoke();
+        AutomationProperties.SetName(_attachButton, AttachEvidenceCaption);
+        _attachButton.Click += (_, _) => AttachEvidenceRequested?.Invoke();
         _showWorking.IsCheckedChanged += (_, _) => _working.IsVisible = _showWorking.IsChecked == true;
         _governingLink.Click += (_, _) => RevealGoverningStep();
 
@@ -223,6 +227,12 @@ public sealed class CalcSheetView : UserControl
     public event Action? ReviseRequested;
 
     public event Action? ExportRequested;
+
+    /// <summary>The user asked to file an external report (a PROFIS PDF) on the calculation's Evidence.</summary>
+    public event Action? AttachEvidenceRequested;
+
+    /// <summary>The text input that cites an external report (a template's input whose symbol ends in "_ref"), or <see langword="null"/>.</summary>
+    public string? ExternalReportInput => SelectedTemplate?.Template.Inputs.FirstOrDefault(i => i.Kind == CalcInputKind.Text && i.Symbol.EndsWith("_ref", StringComparison.Ordinal))?.Symbol;
 
     /// <summary>The user asked to import inputs (CSV or JSON) from the clipboard.</summary>
     public event Action? ImportRequested;
@@ -548,6 +558,7 @@ public sealed class CalcSheetView : UserControl
         _saveButton.IsEnabled = !IsReadOnly && SelectedTemplate is not null && !result.IsBlocked;
         _exportButton.IsEnabled = SelectedTemplate is not null;
         _importButton.IsEnabled = SelectedTemplate is not null && !IsReadOnly;
+        _attachButton.IsVisible = ExternalReportInput is not null && CurrentInstance is { Status: CalcInstanceStatus.Draft };
         UpdateActions();
     }
 
@@ -987,6 +998,7 @@ public sealed class CalcSheetView : UserControl
         actions.Children.Add(_reviseButton);
         actions.Children.Add(_exportButton);
         actions.Children.Add(_importButton);
+        actions.Children.Add(_attachButton);
         right.Children.Add(actions);
         right.Children.Add(_status);
 

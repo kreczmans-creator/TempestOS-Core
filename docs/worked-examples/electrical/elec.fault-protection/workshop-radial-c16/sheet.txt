@@ -17,7 +17,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   U_0 | Nominal voltage to earth | 230 | V | spec: Supply characteristics | 50 … 1000 V
-  Z_e | External earth fault loop impedance | 0.8 | ohm | spec: DNO declared maximum for TN-C-S | 0.01 … 3 ohm
+  Z_e | External earth fault loop impedance | 0.8 | ohm | spec: DNO declared maximum for TN-S | 0.01 … 3 ohm
   C_min | Voltage factor C_min | 0.95 |  | assumption: Minimum voltage factor. | 0.9 … 1
   c_max | Voltage factor c for the maximum fault | 1.1 |  | assumption: Maximum voltage factor. | 1 … 1.1
   L | Circuit length | 40 | m | drawing: E-LAY-002 rev B | 0.1 … 1000 m

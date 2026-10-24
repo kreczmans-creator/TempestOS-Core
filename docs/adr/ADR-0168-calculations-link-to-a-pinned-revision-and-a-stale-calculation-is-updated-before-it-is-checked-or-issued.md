@@ -20,3 +20,7 @@ The addendum's twelve calculators feed one another (motor torque into a shaft, s
 ## Consequences
 
 Imported files may state links; a forged link that does not match its upstream is simply stale and cannot be checked. Staleness reads the project's instances, so it costs one listing per question; at the 20-link cap and today's project sizes that is well inside the form's budgets.
+
+## Amendment (2026-10-24, after the Opus review of Addendum A)
+
+Decision 3's checks now run on **every path that can set a link**, not only `BindAsync`. That covers `UpdateInputsAsync` (the form's provenance field and CSV/JSON imports) and `UpdateLinksAsync` (re-pinning to a newer revision). One validator applies them all: the upstream exists, gives the output in the input's dimension, closes no cycle through any revision of either calculation, and keeps the chain within 20 links. A temperature difference (K) and an absolute temperature (°C/°F) are also refused, instead of being converted with a 273.15 offset. A forged looping link in an import is therefore refused when it is entered, not merely left stale. The test `Forged_Links_From_An_Import_That_Form_A_Cycle_Finish_And_Cannot_Be_Checked` is replaced by `Forged_Links_That_Would_Loop_Are_Refused_On_Entry` to match.

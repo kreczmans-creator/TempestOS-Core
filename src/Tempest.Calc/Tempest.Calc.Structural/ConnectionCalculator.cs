@@ -89,7 +89,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
                 [Choice("grade", "8.8"), Choice("size", "M20"), Q("p_1", 70, "mm"), Q("p_2", 70, "mm"), Q("F_v_Ed", 50, "kN"), Q("F_t_Ed", 30, "kN")],
                 [new CalcExpectedValue("A_s", 244.794, "mm^2", 1e-5), new CalcExpectedValue("F_v_Rd", 94.00105, "kN", 1e-6), new CalcExpectedValue("F_t_Rd", 141.0016, "kN", 1e-6), new CalcExpectedValue("F_b_Rd", 99.39394, "kN", 1e-6), new CalcExpectedValue("B_p_Rd", 199.8265, "kN", 1e-6), new CalcExpectedValue("u_vt", 0.6838832, "", 1e-6)]),
             new CalcTestCase("ka-m20-109-threads", "M20 10.9 with threads in the shear plane: α_v = 0.5",
-                new CalcReferenceSource("Analytic (EN 1993-1-8 Table 3.4)", "EN 1993-1-8:2005", "F_v,Rd = 0.5·1000·244.79/1.25 = 97.918 kN (the v0.25.2 blanket 0.6 f_ub would give 117.5 kN)"),
+                new CalcReferenceSource("Analytic (EN 1993-1-8 Table 3.4)", "EN 1993-1-8:2005", "F_v,Rd = 0.5·1000·244.79/1.25 = 97.918 kN (with the shank in the plane it would be 0.6·1000·314.16/1.25 = 150.80 kN)"),
                 [Choice("grade", "10.9"), Choice("size", "M20")],
                 [new CalcExpectedValue("alpha_v", 0.5, "", 1e-12), new CalcExpectedValue("F_v_Rd", 97.91776, "kN", 1e-6)]),
             new CalcTestCase("ka-weld-s275", "6 mm fillet (a = 4.2 mm) in S275, simplified method",

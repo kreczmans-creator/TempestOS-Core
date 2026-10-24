@@ -96,7 +96,7 @@
     "Unit": "ohm",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "DNO declared maximum for TN-C-S",
+      "Reference": "DNO declared maximum for TN-S",
       "IsSufficientToIssue": true
     },
     "ValueText": "0.8"

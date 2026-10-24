@@ -52,10 +52,12 @@ public sealed class LoadCombinationsTests
     }
 
     [Fact]
-    public void K_FI_Scales_Only_The_Variable_Actions()
+    public void K_FI_Scales_Every_Unfavourable_Action_But_Not_The_Favourable_Ones()
     {
+        // EN 1990 Annex B, B3.3: K_FI multiplies the partial factors of unfavourable actions (Opus review, finding 3).
         var r = CalcRunner.Run(Combos, With(CalcInputValue.Of("K_FI", 1.1)));
-        Assert.Equal(1.35 * 10 + 1.1 * 1.5 * 5, r.OutputSi("E_d_max") / 1e3, 9);
+        Assert.Equal(1.1 * (1.35 * 10 + 1.5 * 5), r.OutputSi("E_d_max") / 1e3, 9);
+        Assert.Equal(1.0 * 10, r.OutputSi("E_d_min") / 1e3, 9);
     }
 
     [Fact]
@@ -83,5 +85,25 @@ public sealed class LoadCombinationsTests
     {
         var r = CalcRunner.Run(Combos, With(CalcInputValue.Table("actions", [])));
         Assert.True(r.IsBlocked);
+    }
+
+    [Fact]
+    public void Combinations_Push_To_The_S2_Frame_As_Load_Cases()
+    {
+        // Opus review finding 8: each action row n is S2 load case n; the frame's envelope then equals S5's.
+        var inputs = With(LoadCombinationsCalculator.Actions(("Dead", LoadCombinationsCalculator.Permanent, 10), ("Office", "B office", 5)));
+        var rows = LoadCombinationsCalculator.FrameCombinations(inputs).Rows!;
+        Assert.Contains(rows, r => r.Get("name")!.Text == "C1" && r.Get("case")!.Number == 1 && r.Get("factor")!.Number == 1.35);
+        Assert.Contains(rows, r => r.Get("name")!.Text == "C1" && r.Get("case")!.Number == 2 && r.Get("factor")!.Number == 1.5);
+
+        var frame = new FrameCalculator();
+        var model = CalcTemplateHasher.DefaultInputs(frame.Template)
+            .With(FrameCalculator.Nodes((1, 0, 0, FrameCalculator.SupportPin), (2, 4, 0, FrameCalculator.SupportRollerY)))
+            .With(FrameCalculator.Elements((1, 1, 2, 50, 5000)))
+            .With(FrameCalculator.Loads((1, "point", 1, 2, 0, 0, 0, 0, -10, 0), (2, "point", 1, 2, 0, 0, 0, 0, -5, 0)))
+            .With(LoadCombinationsCalculator.FrameCombinations(inputs));
+        var solved = CalcRunner.Run(frame, model);
+        Assert.False(solved.IsBlocked, string.Join("; ", solved.Blocks.Select(b => b.Message)));
+        Assert.Equal(21e3 * 4 / 4, Math.Max(Math.Abs(solved.OutputSi("M_max_env")), Math.Abs(solved.OutputSi("M_min_env"))), 3);
     }
 }

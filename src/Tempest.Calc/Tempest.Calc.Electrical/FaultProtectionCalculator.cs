@@ -73,6 +73,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("curve", "The time–current points must bracket the required time and the fault current.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("let-through", "Disconnection below 0.1 s without a let-through I²t: I_f²·0.1 s is used (conservative).", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("adiabatic", "No disconnection time: the adiabatic check is not made.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("temperatures", "The adiabatic final temperature must exceed the initial temperature.", CalcNoticeSeverity.Block),
         ],
         [
@@ -174,8 +175,17 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         if (td is { } t)
             c.Record("t_d", device == Curve ? "t(I_f), log-log between the bracketing points" : "instantaneous region (I_f ≥ I_a): t ≤ 0.1 s", $"I_f = {F(c.Si("I_f"))} A", ScalarValue.Of(t, second), "Disconnection time");
 
-        // Adiabatic: I²t from the let-through energy below 0.1 s, else I_f²·t.
+        // Adiabatic: I²t from the let-through energy below 0.1 s, else I_f²·t. With no disconnection time (an MCB below
+        // its instantaneous current, or a fault current off the curve) the energy is unknown and the check is not made
+        // (Opus review, finding 12): the loop-impedance check has already failed.
         double i2t;
+
+        if (td is null)
+        {
+            c.Warn("adiabatic", "I_f: the device does not disconnect within the data given, so the fault energy and the adiabatic check cannot be stated; correct the loop impedance first.");
+            FinishWithoutAdiabatic(c, device, td);
+            return;
+        }
 
         if (td is { } time && time >= 0.1 && device == Curve)
         {
@@ -242,6 +252,16 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
 
         if (c.Has("I_cn") && c.Has("S_r") && c.Has("u_k"))
             c.CheckUtilisation("Breaking capacity against prospective fault", "u_Icn");
+    }
+
+    /// <summary>Outputs and checks when no disconnection time exists: the loop-impedance check stands alone and fails.</summary>
+    private static void FinishWithoutAdiabatic(CalcRunContext c, string device, double? td)
+    {
+        foreach (var (symbol, text) in new[] { ("R_12", "R₁ + R₂"), ("Z_s", "Loop impedance"), ("I_f", "Earth fault current"), ("I_a", "Disconnection current"), ("Z_s_max", "Maximum loop impedance"), ("u_Zs", "Loop impedance utilisation"), ("Z_test", "Field-test maximum (rule of thumb)") })
+            c.Output(symbol, text);
+
+        c.CheckUtilisation("Loop impedance within maximum (disconnection in time)", "u_Zs", "BS 7671 reg. 411.4.4");
+        c.CheckCondition("Disconnection achieved", false, device == Curve ? "fault current outside the curve points" : "I_f below the instantaneous tripping current", "disconnection within t_req", null, "BS 7671 reg. 411.3.2.2");
     }
 
     /// <summary>Log-log interpolation on time–current points sorted by current: I at a time (<paramref name="byTime"/>) or t at a current; null outside the points.</summary>

@@ -63,6 +63,7 @@ public sealed class BoltShearCapacityCalculationDefinition : ICalculationDefinit
         [
             new CalculationAssumption("Load is distributed evenly across every shear plane.", "Standard single/double-shear joint assumption."),
             new CalculationAssumption("The bolt is loaded in pure shear, with no bending or prying action.", "Simplified hand-calculation scope."),
+            new CalculationAssumption("Each shear plane passes through the unthreaded shank, so the gross area π d²/4 carries the shear.", "EN 1993-1-8 Table 3.4 shank case (α_v = 0.6); with threads in the plane use the tensile stress area and the class's α_v — the S4 worksheet (ADR-0169)."),
         ],
         Constraints:
         [

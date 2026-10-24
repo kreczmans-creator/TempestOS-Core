@@ -2,7 +2,7 @@
 
 **Scope.** Demand of a set of loads per supply (AC three-phase, AC single-phase, DC); minimum DC PSU, transformer (with a starting check) and battery; heat dissipated for E2.
 
-**Method.** Per load `P·d·k` and `P·d·k/cosφ` (arithmetic sum, conservative). `I_3φ = S_3φ/(√3 U)`, `I_1φ = S_1φ/U`, `I_DC = P_DC/U_DC`. `Φ = Σ(1 − η)P d k`. `P_PSU ≥ margin·P_DC/f_derate`. `S_T ≥ margin·S`; `S_peak = S + max((m − 1)S_i) ≤ k_T·S_T`. Battery `C = I_b t/(DoD η_b k_temp k_age)`, `I_b = Σ backed P d k/(U_b η_conv)`; optional Peukert `I_b H (t/H)^(1/k_p)` (Linden 5th ed.).
+**Method.** Per load `P·d·k` and `P·d·k/cosφ` (arithmetic sum, conservative). `I_3φ = S_3φ/(√3 U)`, `I_1φ = S_1φ/U`, `I_DC = P_DC/U_DC`. `Φ = Σ(1 − η)P d k`. `P_PSU ≥ margin·P_DC/f_derate`. `S_T ≥ margin·S`; `S_peak = S + max(m P/cosφ − S_i) ≤ k_T·S_T` (the starting load undiversified; loads with no demand do not start). Battery `C = I_b t/(DoD η_b k_temp k_age)`, `I_b = Σ backed P d k/(U_b η_conv)`; optional Peukert `I_b H (t/H)^(1/k_p)` (Linden 5th ed.).
 
 **Inputs.** `loads` table (name, supply, P 0–200 kW, cosφ 0.5–1, η 0.5–1, d, k 0–1, inrush 1–20, backed; ≤ 100); `U_3ph`, `U_1ph`, `U_DC`; `margin` 1.0–1.5; `theta` −20 to 70 °C; `f_derate` (record `psu.derating`); optional `P_PSU`, `S_T`; `k_T`; `t_auto` 0–72 h; `U_b`, `eta_conv`; `DoD`, `eta_b`, `k_temp`, `k_age`, optional `k_p`, `H_rate` (record `battery.factors`); optional `C_batt`.
 

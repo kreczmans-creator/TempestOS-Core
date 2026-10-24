@@ -24,7 +24,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
         "Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w\n" +
         "Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, J_u = I_ux + I_uy\n" +
         "Torsion about the centroid: T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z\n" +
-        "At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + M_x·y′/I_ux + M_y·x′/I_uy; vector sum f_r\n" +
+        "At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + M_x·y′/I_ux + M_y·x′/I_uy with F_z's eccentricity added to M_x and M_y; vector sum f_r\n" +
         "Throat: a = 0.707·s, τ = f_r,max/a; required leg s_req = f_r,max/(0.707·f_w)",
         [
             new CalcInputSpec("welds", "Weld lines", CalcInputKind.Table, Columns: Columns, MaxRows: 50),
@@ -117,11 +117,15 @@ public sealed class WeldGroupCalculator : ICalcCalculator
         var fx = c.Si("F_x");
         var fy = c.Si("F_y");
         var fz = c.Si("F_z");
-        var mx = c.Si("M_x") * 1e3;
-        var my = c.Si("M_y") * 1e3;
         var ex = c.Si("e_x") * 1e3 - g.Xc;
         var ey = c.Si("e_y") * 1e3 - g.Yc;
+        // F_z acts at (e_x, e_y), so its eccentricity adds to the out-of-plane moments (Opus review, finding 7).
+        var mx = c.Si("M_x") * 1e3 + fz * ey;
+        var my = c.Si("M_y") * 1e3 + fz * ex;
         var torque = fy * ex - fx * ey + c.Si("M_z") * 1e3;
+        if (fz != 0)
+            c.Record("M_x_tot", "M_x + F_z(e_y − y_c); M_y + F_z(e_x − x_c)", $"{F(c.Si("M_x") / 1e3)} + {F(fz / 1e3)} × {F(ey / 1e3)}; {F(c.Si("M_y") / 1e3)} + {F(fz / 1e3)} × {F(ex / 1e3)}", ScalarValue.Of(mx / 1e6, "kN*m"), "Out-of-plane moment about x including F_z's eccentricity");
+
         c.Record("T", "F_y(e_x − x_c) − F_x(e_y − y_c) + M_z", $"{F(fy / 1e3)} × {F(ex)} − {F(fx / 1e3)} × {F(ey)} + {F(c.Si("M_z") / 1e3)}e3", ScalarValue.Of(torque / 1e6, "kN*m"), "In-plane torque about the centroid");
 
         var worst = (F: -1.0, X: 0.0, Y: 0.0, Vx: 0.0, Vy: 0.0, Vz: 0.0);

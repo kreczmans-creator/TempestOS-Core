@@ -131,6 +131,11 @@ public sealed partial class CalcInstanceService
         if (newInputs.Any(v => v.Provenance is { } p && !p.IsWithinLimits))
             return CalcActionResult.Refused($"A provenance reference is longer than {CalcProvenance.MaxReferenceLength} characters.", instance);
 
+        // Every new or changed link meets the same rules as BindAsync: upstream exists, gives the output in the input's
+        // dimension, closes no cycle (through any revision) and stays within the depth cap (Opus review, finding 4).
+        if (await LinkProblemAsync(instance, entry.Template, newInputs, cancellationToken).ConfigureAwait(false) is { } linkProblem)
+            return CalcActionResult.Refused(linkProblem, instance);
+
         var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow() };
         updated = await RunAndSnapshotAsync(entry, updated, cancellationToken).ConfigureAwait(false);
 

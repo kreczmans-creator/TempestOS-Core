@@ -87,13 +87,8 @@ public sealed partial class CalcInstanceService
         var instances = await AllInstancesAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
         instances[instance.Id] = instance;
 
-        if (Upstream(upstream.Id, instances).Contains(instance.Id))
-            return CalcActionResult.Refused($"Linking '{inputSymbol}' to '{upstream.Name}' would close a cycle: '{upstream.Name}' already takes a value, directly or through others, from '{instance.Name}'.", instance);
-
-        var depth = DepthAbove(upstream.Id, instances) + 1 + DepthBelow(instance.Id, instances);
-
-        if (depth > MaxChainDepth)
-            return CalcActionResult.Refused($"The chain would be {depth} links long; at most {MaxChainDepth} are allowed.", instance);
+        if (CycleOrDepthProblem(instance, upstream, instances) is { } problem)
+            return CalcActionResult.Refused(problem.Replace("{input}", inputSymbol, StringComparison.Ordinal), instance);
 
         var bound = value with { Provenance = CalcProvenance.Link(upstream.Id, outputSymbol, upstream.Revision) };
         var inputs = instance.Inputs.Where(i => !string.Equals(i.Symbol, inputSymbol, StringComparison.Ordinal)).Append(bound).ToList();
@@ -136,6 +131,9 @@ public sealed partial class CalcInstanceService
             if (current.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } } output
                 || entry.Template.FindInput(input.Symbol) is not { } spec || ValueFor(spec, output) is not { } value)
                 return CalcActionResult.Refused($"'{current.Name}' rev {current.Revision} no longer gives '{link.OutputSymbol}' in a unit '{input.Symbol}' takes; re-link it by hand.", instance);
+
+            if (CycleOrDepthProblem(instance, current, instances) is { } problem)
+                return CalcActionResult.Refused(problem.Replace("{input}", input.Symbol, StringComparison.Ordinal), instance);
 
             inputs[inputs.IndexOf(input)] = value with { Provenance = CalcProvenance.Link(current.Id, link.OutputSymbol, current.Revision) };
         }
@@ -246,7 +244,89 @@ public sealed partial class CalcInstanceService
         if (!UnitCatalog.TryParse(spec.DefaultUnit, out var target, out _) || target.Dimension != outputUnit.Dimension)
             return null;
 
+        // A temperature difference (K) and an absolute temperature (°C, °F) share a dimension but not a meaning: refused
+        // rather than shifted by 273.15 (Opus review, finding 14).
+        if (target.IsAffine != outputUnit.IsAffine)
+            return null;
+
         return CalcInputValue.Quantity(spec.Symbol, target.FromSi(output.Si!.Value), spec.DefaultUnit);
+    }
+
+    /// <summary>
+    /// Why linking <paramref name="instance"/> to <paramref name="upstream"/> is refused (a cycle through any revision of
+    /// either, or a chain deeper than the cap), or <see langword="null"/>. "{input}" stands for the input symbol.
+    /// </summary>
+    private static string? CycleOrDepthProblem(CalcInstance instance, CalcInstance upstream, Dictionary<Guid, CalcInstance> instances)
+    {
+        instances[instance.Id] = instance;
+        var lineage = Lineage(instance, instances);
+        var above = Upstream(upstream.Id, instances);
+        above.Add(upstream.Id);
+
+        if (above.Overlaps(lineage))
+            return $"Linking '{{input}}' to '{upstream.Name}' would close a cycle: '{upstream.Name}' already takes a value, directly or through others, from '{instance.Name}' (or another revision of it).";
+
+        var depth = DepthAbove(upstream.Id, instances) + 1 + DepthBelow(instance.Id, instances);
+        return depth > MaxChainDepth ? $"The chain would be {depth} links long; at most {MaxChainDepth} are allowed." : null;
+    }
+
+    /// <summary>Every revision of a calculation: its predecessors and successors.</summary>
+    private static HashSet<Guid> Lineage(CalcInstance instance, Dictionary<Guid, CalcInstance> instances)
+    {
+        var set = new HashSet<Guid> { instance.Id };
+        var changed = true;
+
+        while (changed)
+        {
+            changed = false;
+
+            foreach (var other in instances.Values)
+            {
+                if (set.Contains(other.Id))
+                    continue;
+
+                if ((other.PredecessorId is { } p && set.Contains(p)) || set.Any(id => instances.TryGetValue(id, out var x) && x.PredecessorId == other.Id))
+                {
+                    set.Add(other.Id);
+                    changed = true;
+                }
+            }
+        }
+
+        return set;
+    }
+
+    /// <summary>The first problem with the links in <paramref name="inputs"/> that differ from the instance's current ones, or <see langword="null"/>.</summary>
+    private async Task<string?> LinkProblemAsync(CalcInstance instance, CalcTemplate template, IReadOnlyList<CalcInputValue> inputs, CancellationToken cancellationToken)
+    {
+        var current = instance.Links.ToDictionary(l => l.Input.Symbol, l => l.Link, StringComparer.Ordinal);
+        Dictionary<Guid, CalcInstance>? instances = null;
+
+        foreach (var input in inputs)
+        {
+            if (CalcLink.From(input.Provenance) is not { } link || (current.TryGetValue(input.Symbol, out var was) && was == link))
+                continue;
+
+            instances ??= await AllInstancesAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
+
+            var upstream = instances.GetValueOrDefault(link.UpstreamId) ?? await _store.FindInstanceAsync(link.UpstreamId, cancellationToken).ConfigureAwait(false);
+
+            if (upstream is null)
+                return $"'{input.Symbol}' is linked to calculation {link.UpstreamId}, which does not exist.";
+
+            if (upstream.Id == instance.Id)
+                return $"'{input.Symbol}' cannot take a value from its own calculation.";
+
+            if (template.FindInput(input.Symbol) is not { } spec
+                || upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } } output
+                || ValueFor(spec, output) is null)
+                return $"'{input.Symbol}' is linked to '{upstream.Name}'.{link.OutputSymbol}, which it cannot take (missing, or a different dimension).";
+
+            if (CycleOrDepthProblem(instance, upstream, instances) is { } problem)
+                return problem.Replace("{input}", input.Symbol, StringComparison.Ordinal);
+        }
+
+        return null;
     }
 
     private static string Shown(string? unit) => string.IsNullOrEmpty(unit) ? "a plain number" : unit;

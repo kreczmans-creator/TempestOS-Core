@@ -259,20 +259,50 @@ public sealed class LinkingTests
     }
 
     [Fact]
-    public async Task Forged_Links_From_An_Import_That_Form_A_Cycle_Finish_And_Cannot_Be_Checked()
+    public async Task Forged_Links_That_Would_Loop_Are_Refused_On_Entry()
     {
-        // Red: an imported CSV can state any provenance, including links that loop; nothing hangs and the values do not match.
+        // ADR-0168 amendment: an imported CSV can state any provenance; a looping link is refused when entered, and a
+        // forged value that does not match its upstream leaves the calculation stale.
         var host = Host();
         var project = await host.ProjectAsync();
         var a = await Source(host, project, "A");
         var b = await Source(host, project, "B");
-        await host.Service.UpdateInputsAsync(a.Id, [CalcInputValue.Quantity("P", 3, "kN", CalcProvenance.Link(b.Id, "F_out", "A"))]);
-        await host.Service.UpdateInputsAsync(b.Id, [CalcInputValue.Quantity("P", 4, "kN", CalcProvenance.Link(a.Id, "F_out", "A"))]);
+        Assert.True((await host.Service.UpdateInputsAsync(a.Id, [CalcInputValue.Quantity("P", 3, "kN", CalcProvenance.Link(b.Id, "F_out", "A"))])).Succeeded);
+        var loop = await host.Service.UpdateInputsAsync(b.Id, [CalcInputValue.Quantity("P", 4, "kN", CalcProvenance.Link(a.Id, "F_out", "A"))]);
+        Assert.False(loop.Succeeded);
+        Assert.Contains("cycle", loop.Reason, StringComparison.Ordinal);
 
-        var stale = await host.Service.StalenessAsync((await host.Store.FindInstanceAsync(a.Id))!);
-        Assert.True(stale.IsStale);
+        Assert.True((await host.Service.StalenessAsync((await host.Store.FindInstanceAsync(a.Id))!)).IsStale);
         Assert.False((await host.Service.CheckAsync(a.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
-        Assert.False((await host.Service.BindAsync(a.Id, "P", b.Id, "F_out")).Succeeded);
+    }
+
+    [Fact]
+    public async Task A_Forged_Link_To_A_Missing_Calculation_Or_Output_Or_Another_Dimension_Is_Refused()
+    {
+        var host = Host();
+        var project = await host.ProjectAsync();
+        var a = await Source(host, project, "A");
+        var b = await Source(host, project, "B");
+        Assert.Contains("does not exist", (await host.Service.UpdateInputsAsync(b.Id, [CalcInputValue.Quantity("P", 10, "kN", CalcProvenance.Link(Guid.NewGuid(), "F_out", "A"))])).Reason, StringComparison.Ordinal);
+        Assert.Contains("cannot take", (await host.Service.UpdateInputsAsync(b.Id, [CalcInputValue.Quantity("P", 10, "kN", CalcProvenance.Link(a.Id, "L_out", "A"))])).Reason, StringComparison.Ordinal);
+        Assert.Contains("cannot take", (await host.Service.UpdateInputsAsync(b.Id, [CalcInputValue.Quantity("P", 10, "kN", CalcProvenance.Link(a.Id, "nothing", "A"))])).Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Updating_To_A_New_Revision_That_Would_Loop_Is_Refused()
+    {
+        // Opus review finding 4: A issued, B linked to A; A revised to A2 which links to B; "update to revision B" on B
+        // would re-pin it to A2 and close B ↔ A2.
+        var host = Host();
+        var project = await host.ProjectAsync();
+        var a = await Source(host, project, "A");
+        await CheckAndIssue(host, a, "CALC-A");
+        var b = await Source(host, project, "B");
+        await Bound(host, b, "P", a, "F_out");
+        var a2 = (await host.Service.ReviseAsync(a.Id)).Instance!;
+        var loop = await host.Service.BindAsync(a2.Id, "P", b.Id, "F_out");
+        Assert.False(loop.Succeeded);
+        Assert.Contains("cycle", loop.Reason, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -288,5 +318,18 @@ public sealed class LinkingTests
         Assert.Equal(["test.force-source", "test.direct-stress"], template!.Steps.Select(s => s.TemplateId));
         Assert.Equal(new CalcPackBinding("s1", "F_out", "s2", "F"), Assert.Single(template.Bindings));
         Assert.Contains(await host.Service.ListPackTemplatesAsync(), t => t.Id == template.Id);
+    }
+
+    [Fact]
+    public async Task A_Temperature_Difference_Never_Links_To_An_Absolute_Temperature()
+    {
+        // Opus review finding 14: B5's ΔT_lm (K) into B6's flow temperature (°C) shares a dimension but not a meaning.
+        var host = new LibraryTestHost(calculators: [.. Tempest.Calc.BuildingServices.BuildingServicesCalculators.All]);
+        var project = await host.ProjectAsync();
+        var hx = await host.Service.CreateAsync("bs.heat-exchanger", project, "HX");
+        var sealedSystem = await host.Service.CreateAsync("bs.sealed-system", project, "Sealed system");
+        var refused = await host.Service.BindAsync(sealedSystem.Id, "t_f", hx.Id, "dT_lm");
+        Assert.False(refused.Succeeded);
+        Assert.True((await host.Service.BindAsync(sealedSystem.Id, "t_f", hx.Id, "T_h_out")).Succeeded);
     }
 }

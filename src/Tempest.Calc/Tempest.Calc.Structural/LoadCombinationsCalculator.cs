@@ -60,7 +60,7 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
     public CalcTemplate Template { get; } = new(
         Id, "1.0.0", CalcDiscipline.Structural, "Load combinations (EN 1990)",
         "Design values of a single action effect (a force, a moment or a load intensity) under every EN 1990 Annex A1 combination for buildings: ULS persistent/transient, SLS characteristic, frequent and quasi-permanent, and accidental. Every variable action is tried as the leading one; the maximum and minimum envelopes and their governing combinations are reported.",
-        "ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i\n" +
+        "ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on γ_G,sup)\n" +
         "ULS 6.10a: Σ γ_G·G + Σ γ_Q·K_FI·ψ_0·Q_i; 6.10b: Σ ξ·γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i\n" +
         "Permanent factor: γ_G,sup when the action adds to the effect sought, γ_G,inf when it opposes it\n" +
         "Variable actions: included only when they add to the effect sought (otherwise zero)\n" +
@@ -196,36 +196,7 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
         foreach (var sign in new[] { 1, -1 })
         {
             var direction = sign > 0 ? "max" : "min";
-            var variables = actions.Where(a => a.IsVariable && Math.Sign(a.Fk) == sign).ToList();
-            var accidentals = actions.Where(a => a.IsAccidental && Math.Sign(a.Fk) == sign).Cast<Action?>().ToList();
-
-            if (accidentals.Count == 0 && actions.Any(a => a.IsAccidental))
-                accidentals.Add(null);
-
-            var leaders = variables.Count == 0 ? [null] : variables.Cast<Action?>().ToList();
-            var combos = new List<Combination>();
-
-            foreach (var lead in leaders)
-            {
-                var leadText = lead is null ? "no variable action" : $"{lead.Name} leading";
-                var others = variables.Where(v => v != lead).ToList();
-
-                if (method == Method610)
-                    combos.Add(new("ULS", $"ULS 6.10, {leadText}", [.. Permanents(actions, sign, gSup, "γ_G,sup", gInf), .. Lead(lead, gQ * kfi, "γ_Q·K_FI"), .. others.Select(o => new Term(o, gQ * kfi * o.Psi.Psi0, "γ_Q·K_FI·ψ₀"))]));
-                else
-                    combos.Add(new("ULS", $"ULS 6.10b, {leadText}", [.. Permanents(actions, sign, xi * gSup, "ξ·γ_G,sup", gInf), .. Lead(lead, gQ * kfi, "γ_Q·K_FI"), .. others.Select(o => new Term(o, gQ * kfi * o.Psi.Psi0, "γ_Q·K_FI·ψ₀"))]));
-
-                combos.Add(new("SLS characteristic", $"SLS characteristic 6.14b, {leadText}", [.. Permanents(actions, sign, 1, "1", 1), .. Lead(lead, 1, "1"), .. others.Select(o => new Term(o, o.Psi.Psi0, "ψ₀"))]));
-                combos.Add(new("SLS frequent", $"SLS frequent 6.15b, {leadText}", [.. Permanents(actions, sign, 1, "1", 1), .. Lead(lead, lead?.Psi.Psi1 ?? 0, "ψ₁"), .. others.Select(o => new Term(o, o.Psi.Psi2, "ψ₂"))]));
-
-                foreach (var accident in accidentals)
-                    combos.Add(new("Accidental", $"Accidental 6.11b, {accident?.Name ?? "no accidental action this way"}, {leadText}", [.. Permanents(actions, sign, 1, "1", 1), .. Lead(accident, 1, "1"), .. Lead(lead, lead?.Psi.Psi1 ?? 0, "ψ₁"), .. others.Select(o => new Term(o, o.Psi.Psi2, "ψ₂"))]));
-            }
-
-            if (method == Method610ab)
-                combos.Insert(0, new("ULS", "ULS 6.10a", [.. Permanents(actions, sign, gSup, "γ_G,sup", gInf), .. variables.Select(o => new Term(o, gQ * kfi * o.Psi.Psi0, "γ_Q·K_FI·ψ₀"))]));
-
-            combos.Add(new("SLS quasi-permanent", "SLS quasi-permanent 6.16b", [.. Permanents(actions, sign, 1, "1", 1), .. variables.Select(o => new Term(o, o.Psi.Psi2, "ψ₂"))]));
+            var combos = Generate(actions, sign, method, gSup, gInf, gQ, xi, kfi);
 
             var k = 1;
 
@@ -250,6 +221,76 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
 
         if (results.ContainsKey("Accidental"))
             Envelope(c, results, "Accidental", "E_acc", "Accidental effect", unit);
+    }
+
+    /// <summary>Every combination for one direction of the effect (sign +1 maximum, −1 minimum).</summary>
+    private static List<Combination> Generate(List<Action> actions, int sign, string method, double gSup, double gInf, double gQ, double xi, double kfi)
+    {
+        var variables = actions.Where(a => a.IsVariable && Math.Sign(a.Fk) == sign).ToList();
+        var accidentals = actions.Where(a => a.IsAccidental && Math.Sign(a.Fk) == sign).Cast<Action?>().ToList();
+
+        if (accidentals.Count == 0 && actions.Any(a => a.IsAccidental))
+            accidentals.Add(null);
+
+        var leaders = variables.Count == 0 ? [null] : variables.Cast<Action?>().ToList();
+        var combos = new List<Combination>();
+
+        foreach (var lead in leaders)
+        {
+            var leadText = lead is null ? "no variable action" : $"{lead.Name} leading";
+            var others = variables.Where(v => v != lead).ToList();
+
+            if (method == Method610)
+                combos.Add(new("ULS", $"ULS 6.10, {leadText}", [.. Permanents(actions, sign, gSup * kfi, "γ_G,sup·K_FI", gInf), .. Lead(lead, gQ * kfi, "γ_Q·K_FI"), .. others.Select(o => new Term(o, gQ * kfi * o.Psi.Psi0, "γ_Q·K_FI·ψ₀"))]));
+            else
+                combos.Add(new("ULS", $"ULS 6.10b, {leadText}", [.. Permanents(actions, sign, xi * gSup * kfi, "ξ·γ_G,sup·K_FI", gInf), .. Lead(lead, gQ * kfi, "γ_Q·K_FI"), .. others.Select(o => new Term(o, gQ * kfi * o.Psi.Psi0, "γ_Q·K_FI·ψ₀"))]));
+
+            combos.Add(new("SLS characteristic", $"SLS characteristic 6.14b, {leadText}", [.. Permanents(actions, sign, 1, "1", 1), .. Lead(lead, 1, "1"), .. others.Select(o => new Term(o, o.Psi.Psi0, "ψ₀"))]));
+            combos.Add(new("SLS frequent", $"SLS frequent 6.15b, {leadText}", [.. Permanents(actions, sign, 1, "1", 1), .. Lead(lead, lead?.Psi.Psi1 ?? 0, "ψ₁"), .. others.Select(o => new Term(o, o.Psi.Psi2, "ψ₂"))]));
+
+            foreach (var accident in accidentals)
+                combos.Add(new("Accidental", $"Accidental 6.11b, {accident?.Name ?? "no accidental action this way"}, {leadText}", [.. Permanents(actions, sign, 1, "1", 1), .. Lead(accident, 1, "1"), .. Lead(lead, lead?.Psi.Psi1 ?? 0, "ψ₁"), .. others.Select(o => new Term(o, o.Psi.Psi2, "ψ₂"))]));
+        }
+
+        if (method == Method610ab)
+            combos.Insert(0, new("ULS", "ULS 6.10a", [.. Permanents(actions, sign, gSup * kfi, "γ_G,sup·K_FI", gInf), .. variables.Select(o => new Term(o, gQ * kfi * o.Psi.Psi0, "γ_Q·K_FI·ψ₀"))]));
+
+        combos.Add(new("SLS quasi-permanent", "SLS quasi-permanent 6.16b", [.. Permanents(actions, sign, 1, "1", 1), .. variables.Select(o => new Term(o, o.Psi.Psi2, "ψ₂"))]));
+
+        return combos;
+    }
+
+    /// <summary>
+    /// S5 → S2 (Addendum A §A6 S5, Opus review finding 8): the ULS and SLS combinations as rows of the S2 frame's
+    /// combinations table, action row n entering as S2 load case n, named as on the S5 sheet (C1…, D1…).
+    /// </summary>
+    public static CalcInputValue FrameCombinations(CalcInputSet inputs)
+    {
+        ArgumentNullException.ThrowIfNull(inputs);
+        var template = new LoadCombinationsCalculator().Template;
+        double Factor(string symbol) => inputs.Find(symbol)?.Number ?? template.FindInput(symbol)!.Default!.Value;
+        var psi = ParsePsi(inputs.Find("psi")?.Rows ?? []);
+        var method = inputs.Find("method")?.Text ?? Method610;
+        var actions = (inputs.Find("actions")?.Rows ?? []).Select((row, i) =>
+        {
+            var category = row.Get("category")?.Text ?? Permanent;
+            var factors = category is Permanent or Accidental ? (0.0, 0.0, 0.0) : psi.GetValueOrDefault(category);
+            return new Action(i + 1, row.Get("name")?.Text ?? $"Action {i + 1}", category, row.Get("F_k")?.Number ?? 0, factors);
+        }).ToList();
+        var named = new List<(string Name, Combination Combo)>();
+
+        foreach (var sign in new[] { 1, -1 })
+        {
+            var k = 1;
+
+            foreach (var combo in Generate(actions, sign, method, Factor("gamma_G_sup"), Factor("gamma_G_inf"), Factor("gamma_Q"), Factor("xi"), Factor("K_FI")))
+                named.Add(($"{(sign > 0 ? "C" : "D")}{k++}", combo));
+        }
+
+        // ULS first, then SLS characteristic, within S2's limit on combinations.
+        var chosen = named.Where(n => n.Combo.Family == "ULS").Concat(named.Where(n => n.Combo.Family == "SLS characteristic"))
+            .Where(n => n.Combo.Terms.Any(t => t.Factor != 0)).Take(Frame.FrameLimits.MaxCombinations);
+        return FrameCalculator.Combinations([.. chosen.SelectMany(n => n.Combo.Terms.Where(t => t.Factor != 0).Select(t => (n.Name, t.Action.Index, t.Factor)))]);
     }
 
     private static IEnumerable<Term> Lead(Action? lead, double factor, string text) => lead is null ? [] : [new Term(lead, factor, text)];
@@ -288,14 +329,18 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
 
     private static Dictionary<string, (double Psi0, double Psi1, double Psi2)> PsiTable(CalcRunContext c)
     {
-        var table = Recommended.ToDictionary(r => r.Category, r => (r.Psi0, r.Psi1, r.Psi2), StringComparer.Ordinal);
         var rows = c.Rows("psi");
+        c.Assume(rows.Count == 0 ? "ψ factors: EN 1990 Annex A1 recommended values (Table A1.1)." : "ψ factors: from the ψ table entered (its record and edition are cited against the input).", rows.Count == 0 ? "No ψ record entered." : "User record.");
+        return ParsePsi(rows);
+    }
+
+    /// <summary>The ψ table entered, or the recommended set when none is.</summary>
+    private static Dictionary<string, (double Psi0, double Psi1, double Psi2)> ParsePsi(IReadOnlyList<CalcRow> rows)
+    {
+        var table = Recommended.ToDictionary(r => r.Category, r => (r.Psi0, r.Psi1, r.Psi2), StringComparer.Ordinal);
 
         if (rows.Count == 0)
-        {
-            c.Assume("ψ factors: EN 1990 Annex A1 recommended values (Table A1.1).", "No ψ record entered.");
             return table;
-        }
 
         table.Clear();
 
@@ -305,7 +350,6 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
                 table[category] = (row.Get("psi_0")?.Number ?? 0, row.Get("psi_1")?.Number ?? 0, row.Get("psi_2")?.Number ?? 0);
         }
 
-        c.Assume("ψ factors: from the ψ table entered (its record and edition are cited against the input).", "User record.");
         return table;
     }
 

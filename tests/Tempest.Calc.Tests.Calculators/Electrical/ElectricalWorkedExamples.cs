@@ -135,11 +135,11 @@ public static class ElectricalWorkedExamples
             "Duty and standby pumps (standby at diversity 0), a panel fan and light, and a 24 V PLC with its router on a 2 h battery. Demand is 11.18 kW and 12.98 kVA, well inside the 25 kVA allocation, but the duty pump start lifts the peak to 83.3 kVA, above three times the allocation (75 kVA): the starting check fails and calls for a soft starter or a larger allocation. The 240 W PSU and the 17 A·h battery are checked against the minimums.",
             CalcReferenceStatus.Confirmed),
         new(FaultProtectionCalculator.Id, "workshop-radial-c16", "Workshop radial: 16 A type C MCB, 40 m of 4/2.5 mm² copper",
-            new CalcReferenceSource("Analytic (C_min relation; derived k)", null, "TN-C-S supply with the declared Z_e of 0.8 Ω; let-through I²t from the MCB datasheet"),
+            new CalcReferenceSource("Analytic (C_min relation; derived k)", null, "TN-S supply with the declared Z_e of 0.8 Ω; let-through I²t from the MCB datasheet"),
             new CalcInputSet(
             [
                 CalcInputValue.Quantity("U_0", 230, "V", CalcProvenance.Specification("Supply characteristics")),
-                CalcInputValue.Quantity("Z_e", 0.8, "ohm", CalcProvenance.Specification("DNO declared maximum for TN-C-S")),
+                CalcInputValue.Quantity("Z_e", 0.8, "ohm", CalcProvenance.Specification("DNO declared maximum for TN-S")),
                 CalcInputValue.Of("C_min", 0.95, CalcProvenance.Assumed("Minimum voltage factor.")),
                 CalcInputValue.Of("c_max", 1.1, CalcProvenance.Assumed("Maximum voltage factor.")),
                 CalcInputValue.Quantity("L", 40, "m", CalcProvenance.Drawing("E-LAY-002", "B")),

@@ -74,4 +74,13 @@ public sealed class SealedSystemTests
         var r = CalcRunner.Run(Sealed, Defaults().With(SealedSystemCalculator.Rooms(("Bedroom", 900, 800, 4))));
         Assert.Contains(r.Checks, c => c.Name.StartsWith("Selected emitters", StringComparison.Ordinal) && !c.Passed);
     }
+
+    [Fact]
+    public void A_Selected_Output_In_Kilowatts_Is_Read_In_Its_Unit()
+    {
+        // Opus review finding 9.
+        var rooms = CalcInputValue.Table("rooms", [CalcRow.Of(("name", new CalcCell(Text: "Lounge")), ("Phi", new CalcCell(1500, "W")), ("Phi50", new CalcCell(1.6, "kW")))]);
+        var r = CalcRunner.Run(Sealed, Defaults().With(rooms));
+        Assert.Equal(0.9375, r.OutputSi("u_emit"), 9);
+    }
 }
