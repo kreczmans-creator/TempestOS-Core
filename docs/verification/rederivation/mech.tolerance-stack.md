@@ -1,7 +1,7 @@
 # mech.tolerance-stack — independent re-derivation (Track P, P1)
 Calculator: Tolerance stack-up (1D) v2, version 2.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Mechanical/ToleranceStackCalculator.cs. Spec: docs/calcs/mechanical/mech.tolerance-stack.md.
 Script: tools/verification/mech.tolerance-stack.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (reviewed: no Critical, High or Medium findings)
 
 The method is correct. Both KATs match. The only defects are a loss of precision in the far upper tail of DPMO and a silent skip when the spread is zero.
 
@@ -72,12 +72,14 @@ Guard probes also behave as specified. A lower deviation above the upper blocks.
 | Mean shift | enters m_i | Moves x_mean and the worst-case limits; t_wc is unchanged | Yes (note 04) |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-mech.tolerance-stack-01 | Low | The upper-tail DPMO is computed as 1 − Φ(z). This loses all precision beyond z of about 7. The result is only wrong when DPMO is below 1e-6. The KAT tolerance of 5 % hides it. | Four rows of 10 ± 0.01, 9, 0.5, 0 and σ = 0.0066667 mm. USL at z = 7: product 1.27987e-6, true 1.27981e-6. At z = 8: 6.66e-10 against 6.22e-10. At z = 8.6: 0 against 4.0e-12. KAT ka-rss-analytic gives 7.7759e-7 against 7.77547e-7. | Compute the upper tail as 0.5·erfc(z/√2). Use a higher-precision erfc. Tighten the KAT tolerance to 1e-4. |
-| P1-mech.tolerance-stack-02 | Low | When every band is zero, σ = 0. C_p, C_pk, DPMO, yield and the C_pk check are all skipped. No notice says so. | Rows 10 ± 0 and 9 ± 0, limits 0.5 to 2.0. Outputs hold only the worst-case results. | Add a notice such as "zero spread: capability not computed". |
-| P1-mech.tolerance-stack-03 | Info | A blank lower deviation on a size row counts as 0. Upper 0.1 with a blank lower gives +0.1/0, not ±0.1. This matches the column help, but a user may expect a symmetric band. | Probe p18: upper 0.1, lower blank gives h = 0.05 and mid +0.05. | Optional: show the resolved band in the row label. The worksheet already does this. |
-| P1-mech.tolerance-stack-04 | Info | A mean shift moves x_mean and so the worst-case limits. It does not widen t_wc. A shift of a drifting process is therefore not a worst-case allowance. | Probe p2. Spec describes this behaviour. | Say so in the help text for the shift column. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-mech.tolerance-stack-01 | Low | Low: confirmed. It only matters below 1e-6 DPMO, where no decision changes | The upper-tail DPMO is computed as 1 − Φ(z). This loses all precision beyond z of about 7. The result is only wrong when DPMO is below 1e-6. The KAT tolerance of 5 % hides it. | Four rows of 10 ± 0.01, 9, 0.5, 0 and σ = 0.0066667 mm. USL at z = 7: product 1.27987e-6, true 1.27981e-6. At z = 8: 6.66e-10 against 6.22e-10. At z = 8.6: 0 against 4.0e-12. KAT ka-rss-analytic gives 7.7759e-7 against 7.77547e-7. | Compute the upper tail as 0.5·erfc(z/√2). Use a higher-precision erfc. Tighten the KAT tolerance to 1e-4. |
+| P1-mech.tolerance-stack-02 | Low | Low: confirmed. The worst-case check still runs | When every band is zero, σ = 0. C_p, C_pk, DPMO, yield and the C_pk check are all skipped. No notice says so. | Rows 10 ± 0 and 9 ± 0, limits 0.5 to 2.0. Outputs hold only the worst-case results. | Add a notice such as "zero spread: capability not computed". |
+| P1-mech.tolerance-stack-03 | Info | Info: confirmed | A blank lower deviation on a size row counts as 0. Upper 0.1 with a blank lower gives +0.1/0, not ±0.1. This matches the column help, but a user may expect a symmetric band. | Probe p18: upper 0.1, lower blank gives h = 0.05 and mid +0.05. | Optional: show the resolved band in the row label. The worksheet already does this. |
+| P1-mech.tolerance-stack-04 | Info | Info: confirmed | A mean shift moves x_mean and so the worst-case limits. It does not widen t_wc. A shift of a drifting process is therefore not a worst-case allowance. | Probe p2. Spec describes this behaviour. | Say so in the help text for the shift column. |
+| P1-mech.tolerance-stack-R1 | — | Low | A size row with lower equal to upper gives a zero band with no notice. A user who types the lower deviation as a magnitude (0.1 for −0.1) loses that row's tolerance. The row label does show "+0.1/0.1". | Probe: row C, 0.5 mm, upper 0.1, lower 0.1: half-band 0, mid 0.6 mm, no notice. | Warn when a size row has a zero band, or when lower equals upper and is not zero. |
+| P1-mech.tolerance-stack-R2 | — | Low | The statistical Pareto uses h² for each row, not σ_i². With mixed distributions the shares and the named largest contributor are wrong. | Probe: A normal ±0.1 and B uniform ±0.1. Product: A 50 %, B 50 %, largest "A". By σ²: A 25 %, B 75 %. | Use σ_i² for the statistical share. |
 
 ## Notes for the owner's manual test
 - Enter the Shigley stack in inches: 1.750 ± 0.003 adds; 0.750, 0.120 (± 0.005) and 0.875 subtract. Expect gap 0.005, t_wc 0.010, RSS 0.006, σ 0.002.
@@ -85,3 +87,11 @@ Guard probes also behave as specified. A lower deviation above the upper blocks.
 - Add a position row with zone 0.2 and bonus 0.1. Expect a half-band of 0.15.
 - Set one contributor to uniform. Expect σ_i = h/√3, which is larger than the normal value for k = 3.
 - Set the maximum so that C_pk is above 2.7. The DPMO then reads zero or a rounded value. That is finding 01.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- I ran the script (exit 0). It computes the stack, σ, C_pk and DPMO on its own and does not translate the C#.
+- No finding was rated Medium or above, so there was nothing to reproduce at that level. I re-ran the DPMO rows in the script.
+- I read Run line by line. Mid-limits, half-bands, worst case, RSS, σ by distribution, C_p and C_pk are correct.
+- New: R1 (zero band from a magnitude-typed lower deviation) and R2 (Pareto ignores the distribution). Both Low, both reproduced with the probe.
+- Residual doubt: none on the arithmetic.

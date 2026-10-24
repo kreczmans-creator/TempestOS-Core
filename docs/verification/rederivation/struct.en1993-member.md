@@ -1,7 +1,7 @@
 # struct.en1993-member — independent re-derivation (Track P, P1)
 Calculator: EN 1993-1-1 member checks (basic), version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Structural/MemberChecksCalculator.cs. Spec: docs/calcs/structural/struct.en1993-member.md.
 Script: tools/verification/struct.en1993-member.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (two High after review: -02 upgraded, -R1 added)
 
 All 14 expected values of the 3 KATs match. The core formulae agree with my re-derivation in every probe. The findings concern the shear-bending reduction, the default k factors and some guards.
 The repository was on branch claude/tempestos-v0260-test-readiness-s4jwh1 (VERSION 0.26.0), not release/v0.26.0. The code under test is the same version.
@@ -49,7 +49,8 @@ Product values are from the probe tool. "Independent" is my EN-correct value. Un
 | P4 slender | UC, N -50, L 20 m | λ̄_z, χ_z, u_buckling | 5.097, 0.0351, 0.6830 | same | <1e-9 | PASS |
 | P5 stocky | UC, N -900, L 0.5 m | λ̄_z, χ_z, u_buckling | 0.1274, 1.0, 0.4319 | same | <1e-9 | PASS |
 | P6 α override | UC, α_y = α_z = 0.2 | χ_z, u_buckling | 0.6584, 0.6560 | same | <1e-9 | PASS |
-| P7 partial factors | γM0 1.05, γM1 1.1, N -900, M_y 40 | u_buckling, u_member | 0.8985, 1.1365 | same | <1e-9 | PASS |
+| P7 partial factors | γM0 1.05, γM1 1.1, N -900, M_y 40 | u_buckling | 0.8985 | same | <1e-9 | PASS |
+| P7 partial factors | same | u_member | 1.1365 | 1.1479 | 9.9e-3 | FINDING-R2 (review) |
 | P8 class 2 / 3 | UB, M_y 100 | u_M_y | 0.5837 / 0.6494 | same | <1e-9 | PASS |
 | P9 tension | UC, N +300, M_y 50, M_z 8 | u_section | 0.5249 | same | <1e-9 | PASS |
 | P10 compression | UC, N -500, M_y 100, M_z 10, k 1.1/1.2 | u_member | 1.2236 | same | <1e-9 | PASS |
@@ -77,15 +78,18 @@ Product values are from the probe tool. "Independent" is my EN-correct value. Un
 | Negative utilisation | Never a pass | Engine fails it (checked in P3) | Yes |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-struct.en1993-member-01 | Medium | High-shear reduction multiplies the full bending resistance by (1 − ρ), for both axes. EN 1993-1-1 6.2.8 reduces only the web part for an I section. The result is over-conservative and can fail a section that passes. | UB 305x165x40 S275, M_y 120 kN·m, V 250 kN (0.785 V_pl, ρ = 0.324). Product M_y,c,Rd = 115.8 kN·m, u = 1.036 FAIL. Eq. 6.30 gives 160.6 kN·m, u = 0.747. M_z,c,Rd is also cut by 32 % although the web carries almost no minor-axis moment. | Use (W_pl,y − ρ A_w²/(4 t_w)) f_y/γM0 for I sections about y. Leave M_z unreduced for load in the web plane. Otherwise state the (1 − ρ) simplification on the sheet and in the warning. |
-| P1-struct.en1993-member-02 | Medium | Default k_yy = k_zz = 1.0 is unconservative where Annex B gives k > 1, and no warning says so. | Hypothetical SHS 40 cm², W_pl 150 cm³, I 1200 cm⁴, S355, curve a, L 3 m, N -700 kN, uniform M_y 20 kN·m. Product u_member = 0.963 PASS. Annex B k_yy = 1.30 gives 1.077 FAIL (about 11 % higher). Product with k_yy = 1.3034 returns 1.0766. | Warn when k is left at 1.0 and N_Ed/N_b,Rd > 0.3. Or derive k from Annex A or B, or default to the upper bound C_m(1 + 0.8 n). |
-| P1-struct.en1993-member-03 | Low | When V_Ed ≥ V_pl,Rd, ρ ≥ 1 and the bending resistance prints as zero or negative. The overall result still fails through u_V. | V = 1.2 V_pl, M_y 50: M_y,c,Rd = -164.5 kN·m, u_M_y = -0.304, u_section = -0.304. | Clamp ρ at 1, and show a block or a warning when V_Ed > V_pl,Rd. |
-| P1-struct.en1993-member-04 | Low | In tension, output u_member (labelled "Simplified member interaction", cl. 6.3.3) equals u_M_y + u_M_z and leaves out N_Ed. It is not a listed check, but a reader may take it as one. | N_Ed +300 kN, M_y 50, M_z 8: u_member = 0.381 while u_section = 0.525. | Set u_member to blank or equal to u_section in tension. |
-| P1-struct.en1993-member-05 | Low | The sheet blocks completely when neither A_v nor the helper dimensions are given, even if V_Ed = 0. A pure compression check then needs shear data. | N_Ed -900, V_Ed 0, A_v and h, b, t_w, t_f blank: BLOCK shear-area, no outputs. | Skip the shear check and warn when V_Ed = 0 and no shear area is given. |
-| P1-struct.en1993-member-06 | Low | Tension checks gross-section yielding only. The net-section resistance N_u,Rd (cl. 6.2.3(2)(b)) is not computed and nothing warns about bolt holes. | Template text and Run method. | Add a warning that net-section fracture is not checked. |
-| P1-struct.en1993-member-07 | Info | KAT ka-tension-class3 states u_section = 1.03294. The exact value is 400/710 + 5/10.65 = 1.03286. The 1e-4 tolerance hides the 7.4e-5 difference. | Independent script, row 14. | Correct the KAT value to 1.03286 (the spec text says 1.0329). |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-struct.en1993-member-01 | Medium | Medium (confirmed: conservative 28 %; I checked Eq. 6.30 by hand, 160.6 kN·m) | High-shear reduction multiplies the full bending resistance by (1 − ρ), for both axes. EN 1993-1-1 6.2.8 reduces only the web part for an I section. The result is over-conservative and can fail a section that passes. | UB 305x165x40 S275, M_y 120 kN·m, V 250 kN (0.785 V_pl, ρ = 0.324). Product M_y,c,Rd = 115.8 kN·m, u = 1.036 FAIL. Eq. 6.30 gives 160.6 kN·m, u = 0.747. M_z,c,Rd is also cut by 32 % although the web carries almost no minor-axis moment. | Use (W_pl,y − ρ A_w²/(4 t_w)) f_y/γM0 for I sections about y. Leave M_z unreduced for load in the web plane. Otherwise state the (1 − ρ) simplification on the sheet and in the warning. |
+| P1-struct.en1993-member-02 | Medium | High (upgraded: unconservative pass in plausible use; hollow sections have no LTB caveat to hide behind, and nothing warns at run time) | Default k_yy = k_zz = 1.0 is unconservative where Annex B gives k > 1, and no warning says so. | Hypothetical SHS 40 cm², W_pl 150 cm³, I 1200 cm⁴, S355, curve a, L 3 m, N -700 kN, uniform M_y 20 kN·m. Product u_member = 0.963 PASS. Annex B k_yy = 1.30 gives 1.077 FAIL (about 11 % higher). Product with k_yy = 1.3034 returns 1.0766. | Warn when k is left at 1.0 and N_Ed/N_b,Rd > 0.3. Or derive k from Annex A or B, or default to the upper bound C_m(1 + 0.8 n). |
+| P1-struct.en1993-member-03 | Low | Low (confirmed: the shear check fails, so the verdict is right) | When V_Ed ≥ V_pl,Rd, ρ ≥ 1 and the bending resistance prints as zero or negative. The overall result still fails through u_V. | V = 1.2 V_pl, M_y 50: M_y,c,Rd = -164.5 kN·m, u_M_y = -0.304, u_section = -0.304. | Clamp ρ at 1, and show a block or a warning when V_Ed > V_pl,Rd. |
+| P1-struct.en1993-member-04 | Low | Low (confirmed) | In tension, output u_member (labelled "Simplified member interaction", cl. 6.3.3) equals u_M_y + u_M_z and leaves out N_Ed. It is not a listed check, but a reader may take it as one. | N_Ed +300 kN, M_y 50, M_z 8: u_member = 0.381 while u_section = 0.525. | Set u_member to blank or equal to u_section in tension. |
+| P1-struct.en1993-member-05 | Low | Low (confirmed) | The sheet blocks completely when neither A_v nor the helper dimensions are given, even if V_Ed = 0. A pure compression check then needs shear data. | N_Ed -900, V_Ed 0, A_v and h, b, t_w, t_f blank: BLOCK shear-area, no outputs. | Skip the shear check and warn when V_Ed = 0 and no shear area is given. |
+| P1-struct.en1993-member-06 | Low | Medium (upgraded: the sheet cites 6.2.3, and N_u,Rd governs many bolted ties; about 19 % for S355 with 15 % holes) | Tension checks gross-section yielding only. The net-section resistance N_u,Rd (cl. 6.2.3(2)(b)) is not computed and nothing warns about bolt holes. | Template text and Run method. | Add a warning that net-section fracture is not checked. |
+| P1-struct.en1993-member-07 | Info | Info (confirmed) | KAT ka-tension-class3 states u_section = 1.03294. The exact value is 400/710 + 5/10.65 = 1.03286. The 1e-4 tolerance hides the 7.4e-5 difference. | Independent script, row 14. | Correct the KAT value to 1.03286 (the spec text says 1.0329). |
+| P1-struct.en1993-member-R1 | — | High | The shear-area helper inputs h, b, t_w, t_f and r carry UC 203x203x46 defaults. A new sheet seeds them. Nothing checks them against A. A user who changes A, W and I but not the helper gets a wrong A_v. | UC 305x305x198 S355 (A 252 cm²), V_Ed 1500 kN, helper left at the UC 203 values: A_v 210.2 cm², V_pl,Rd 4309 kN, u_V 0.35 PASS. With the true dimensions: A_v 70.0 cm², u_V 1.045 FAIL. The shear resistance is 3 times too high. | Remove the helper defaults. Also warn when 2 b t_f + (h − 2 t_f) t_w differs from A by more than about 10 %. |
+| P1-struct.en1993-member-R2 | — | Medium | The member interaction divides the moments by M_c,Rd, which uses γ_M0. Eq. 6.61 and 6.62 use M_Rk/γ_M1. It is unconservative when γ_M1 > γ_M0. | UC 203x203x46, N −900, M_y 40, γ_M0 1.05, γ_M1 1.1: product u_member 1.1365, EN 1.1479. With γ_M0 1.0 and γ_M1 1.1 the bending term is 10 % low. UK NA defaults (1.0, 1.0) are not affected. | Use W f_y/γ_M1 in the member check, without the shear reduction. |
+| P1-struct.en1993-member-R3 | — | Low | Shear buckling of the web (6.2.6(6), h_w/t_w > 72 ε/η) is not checked or flagged. V_pl,Rd is then too high for slender webs. Rolled sections rarely reach the limit. | Template text and Run method. | Warn when h_w/t_w exceeds 72 ε/η, using the helper dimensions when given. |
 
 ## Notes for the owner's manual test
 - UC 203x203x46 S355, N -900 kN, L 4 m, curves b and c: expect N_b,z,Rd 1101.9 kN, χ_z 0.5288, u_buckling 0.817.
@@ -93,3 +97,15 @@ Product values are from the probe tool. "Independent" is my EN-correct value. Un
 - Set curve to d and L to 20 m: expect the slenderness warning (λ̄ above 2.0) and χ well below 0.1.
 - Try a square hollow section with equal moments at both ends and N/N_b near 0.6. Compare the sheet with Annex B by hand (finding -02).
 - Leave A_v and the helper dimensions blank with V = 0 and note the block (finding -05).
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- I re-ran the script after one fix: all KAT rows pass, TOTAL FAILS 0, exit 0.
+- Script fix: the member check now uses M_Rk/γ_M1, as Eq. 6.61 does. The first pass had copied the product's γ_M0 term.
+- I reproduced -01 by hand (Eq. 6.30 gives 160.6 kN·m) and -02 by hand (Annex B k_yy 1.3035).
+- -02 is upgraded to High. The default k = 1.0 lets an 8 % overstress pass with no runtime notice.
+- -06 is upgraded to Medium. The sheet cites 6.2.3 but leaves out N_u,Rd.
+- New -R1 (High): stale helper dimensions gave a shear resistance 3 times too high. I reproduced it with the probe.
+- The engine skips optional inputs with defaults, but the desktop sheet seeds them. So R1 bites in the app, not the probe.
+- New -R2 (Medium) and -R3 (Low) as listed.
+- Residual doubt: Annex B k-factor formulae are from memory. Owner to confirm against licensed copy.
