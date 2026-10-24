@@ -106,9 +106,11 @@ The product blocks an empty loads table. It warns when only one of k_p and H_rat
 - Residual doubt: whether k (diversity) should also leave the cable current depends on the owner's practice for a bus. I kept k in the fix.
 
 ## Re-check after DA-17/DA-18 and A-4/A-5 (2026-10-24)
-- Source changed: version 1.1.0. The starting peak is now S_dem + max(m·P/cosφ − S_i), and standby loads (no demand) are skipped (DA-17, finding 6 in the Opus review).
+- Source changed: version 1.1.0 (DA-17). The starting peak is now S_dem + max(m·P/cosφ − S_i).
+- Standby loads with no demand are skipped in that peak.
 - A-4 added a linked load (P_add, cosphi_add, eta_add, inrush_add) for the motor-circuit chain. An empty table is allowed when P_add is above 0.
 - Fixed: 01, re-run with the probe (S_peak 77.647 kVA). Open: 02 to 10 and R1. R1 still scales currents and the PSU by duty.
 - New: C1 (Low), a load with inrush 1 and duty below 1 is called "starting" in S_peak.
-- Script updated: the starting-peak model, a corrected x1 value, and new probe groups x14 to x16 for the linked load, standby and C1. It runs 73 checks and exits 0.
+- Script updated: new starting-peak model and a corrected x1 value. New groups x14 to x16 cover the linked load, standby and C1.
+- It runs 73 checks and exits 0.
 - The earlier script passed x1 only because it used the old convention. It now checks the product value 77.647 kVA.

@@ -114,7 +114,8 @@ The script holds 8 full probes, a 7-class by 2-state α_v table, 8 sizes and 5 s
 ## Re-check after DA-17/DA-18 and A-4/A-5 (2026-10-24)
 - Source change in ConnectionCalculator.cs: one KAT note was reworded. The calculator maths is unchanged.
 - The real change is in the legacy bolt-shear module (499bfb01, ADR-0169 revised). It now offers 0.6·f_ub for every class and says it covers the shank in the plane only.
-- Finding 04 is Fixed. The legacy M20 10.9 value is now 188.5 kN at SF 1, or 150.8 kN at SF 1.25, equal to this sheet's shank case.
+- Finding 04 is Fixed. The legacy M20 10.9 value is now 188.5 kN at SF 1, or 150.8 kN at SF 1.25.
+- That equals this sheet's shank case.
 - Probe at 614ddf89: findings 01 to 03, 05 to 09 and R1 to R3 are all still Open.
 - Script updated: the two legacy rows now compare the new picker with the shank case and pass. They use the picker strengths read from source, not a run of the legacy module. It exits 0.
 - New: C1 (Low), the picker labels for 4.6, 5.6 and 8.8 omit the shank scope.

@@ -105,7 +105,7 @@ The ka-manufacturer-dt30 case passes with 0.93 % against a 1 % tolerance. The co
 ## Re-check after DA-17/DA-18 and A-4/A-5 (2026-10-24)
 - Source changed: one edit in the room loop. The selected output Φ50 is now read with its cell unit, like Φ and V_em.
 - Before, a Φ50 typed in kW was taken as W, so u_emit came out about 1000 times too large. That defect was not in this report.
-- Probe check at 614ddf89: Φ 1.5 kW with Φ50 1.6 kW now gives R1 1500 W and u_emit 0.9375, the same as in W.
+- Probe check at 614ddf89: Φ 1.5 kW with Φ50 1.6 kW gives R1 1500 W. u_emit is 0.9375, as in W.
 - All eight findings are still Open. None of them touches the changed lines.
 - Script updated: new probe S15 for the kW case. It runs the whole set and exits 0.
 - New defects: none found.

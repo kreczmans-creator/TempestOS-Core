@@ -90,6 +90,6 @@ Unit input in kW for a load row (0.1 kW × 3) gave 300 W. The no-crossing case g
 - Source changed: version 1.1.0 adds the input P_add, a linked heat load (for E6's dissipated heat). P_total is now P_loads + P_add + P_solar.
 - An empty loads table is allowed when P_add is above 0. Nothing else changed.
 - Probe at 614ddf89: all seven findings are still Open. None of them touches P_add.
-- Probe check of P_add: 300 W with an empty table gives P_total 300 W, ΔT 47.85 K and P_cool 205.95 W. This matches the KAT.
+- Probe check of P_add: 300 W with an empty table gives P_total 300 W. ΔT is 47.85 K and P_cool 205.95 W.
 - Script updated: new case P14 for P_add. It runs 102 rows and exits 0.
 - New defects: none found.

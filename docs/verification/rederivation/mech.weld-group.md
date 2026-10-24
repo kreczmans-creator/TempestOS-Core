@@ -96,7 +96,8 @@ All other symbols (L_w, x_c, y_c, I_ux, I_uy, J_u, T, tau, s_req, u) agree to 1e
 - Residual doubt: the throat check uses the full vector f_r against f_w. That is the EN simplified method only; the directional method is not offered (-05).
 
 ## Re-check after DA-17/DA-18 and A-4/A-5 (2026-10-24)
-- Source changed (Opus review, finding 7): F_z acts at (e_x, e_y), so F_z(e_y − y_c) now adds to M_x and F_z(e_x − x_c) adds to M_y. New steps M_x_tot and M_y_tot appear when F_z is not zero.
+- Source changed (Opus review, finding 7). F_z acts at (e_x, e_y), so F_z(e_y − y_c) now adds to M_x.
+- Likewise F_z(e_x − x_c) now adds to M_y. New steps M_x_tot and M_y_tot appear when F_z is not zero.
 - The KATs have F_z = 0, so they are unchanged. Probe results with an F_z load changed: L-shape u 1.88 to 1.84 and 0.83 to 0.79; trapezoid 0.377 to 0.383.
 - No finding in this report was about F_z eccentricity. All five findings are still Open. Finding 01 now carries new numbers, shown in the Status column.
 - Script updated: the model adds the F_z eccentricity, and four probe rows carry the new product values. The decoupled-law rows pass again. It exits 0 with 10 of 10 KAT rows.

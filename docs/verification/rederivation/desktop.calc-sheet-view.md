@@ -11,10 +11,11 @@ Verdict: FINDING
 - The number is not converted, and no notice is raised.
 
 ## Findings
-| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|---|
-| P1-desktop.calc-sheet-view-01 | High | High (coordinator) | A seeded quantity whose unit is valid but not in the pick list keeps its number and takes the default unit. The value silently changes scale. | CalcSheetView.cs BuildField: `unit.SelectedItem = seed?.Unit is { } u && units.Contains(u) ? u : spec.DefaultUnit`, while the text keeps `seed.Number`. Example: `{"Symbol":"T","Number":50,"Unit":"N*mm"}` for a field with default `N*m` shows 50 N·m, 1000 times too large. `N*mm`, `kN*mm`, `MW` and `daN` are absent from CommonUnits. | Convert the seed number to the default unit with UnitCatalog when the unit is not listed, or add the seed's unit to the list. Raise a warning naming the input when conversion happens. Add a Desktop test. |
-| P1-desktop.calc-sheet-view-02 | Medium | Medium (coordinator) | A seed with an unknown unit text (for example `kn`) shows the default unit and runs. The engine path refuses it (Black team B-05), but the form path does not. | Same line as -01. | Refuse the seed with the engine's unknown-unit message, as the JSON import already does. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) | Status @ 614ddf89 |
+|---|---|---|---|---|---|---|
+| P1-desktop.calc-sheet-view-01 | High | High (coordinator) | A seeded quantity whose unit is valid but not in the pick list keeps its number and takes the default unit. The value silently changes scale. | CalcSheetView.cs BuildField: `unit.SelectedItem = seed?.Unit is { } u && units.Contains(u) ? u : spec.DefaultUnit`, while the text keeps `seed.Number`. Example: `{"Symbol":"T","Number":50,"Unit":"N*mm"}` for a field with default `N*m` shows 50 N·m, 1000 times too large. `N*mm`, `kN*mm`, `MW` and `daN` are absent from CommonUnits. | Convert the seed number to the default unit with UnitCatalog when the unit is not listed, or add the seed's unit to the list. Raise a warning naming the input when conversion happens. Add a Desktop test. | Open. Diff read: the line `unit.SelectedItem = seed?.Unit is { } u && units.Contains(u) ? u : spec.DefaultUnit` is unchanged (now line 773), and the text still takes seed.Number. |
+| P1-desktop.calc-sheet-view-02 | Medium | Medium (coordinator) | A seed with an unknown unit text (for example `kn`) shows the default unit and runs. The engine path refuses it (Black team B-05), but the form path does not. | Same line as -01. | Refuse the seed with the engine's unknown-unit message, as the JSON import already does. | Open. Same unchanged line and the same UnitChoices list; no refusal added. |
+| P1-desktop.calc-sheet-view-C1 | Low | New | The new Attach button files any chosen file as 'application/pdf'. The coordinator hard-codes the content type and the service checks only size and name, not that the bytes are a PDF. A non-PDF file from an unfiltered picker is stored and labelled as a PDF. Found by reading, not run. | CalcSheetCoordinator.PickAndAttachAsync passes "application/pdf"; CalcInstanceService.AttachExternalEvidenceAsync checks length and file name only. | Check the first bytes for the %PDF- header before filing, or take the type from the file. | Open (new) |
 
 ## Notes for the owner's manual test
 - Import a JSON input file with a torque in N·mm into a shaft or motor sheet. Expect the field to show the converted value or a warning. Today it shows the raw number in N·m.
@@ -22,3 +23,11 @@ Verdict: FINDING
 
 ## Independent review
 Coordinator review, 2026-10-24. The finding comes from reading BuildField and UnitChoices; no Desktop run was possible here. Track S should reproduce it in the app before fixing.
+
+## Re-check after DA-17/DA-18 and A-4/A-5 (2026-10-24)
+- There is no probe for the Desktop form. I read the diff of CalcSheetView.cs and CalcSheetCoordinator.cs.
+- The seeded-unit line in BuildField did not change. It is now line 773 and reads the same. Both findings are still Open.
+- What changed: a new "Attach external report…" button (A-5). It shows on a draft whose template has a `_ref` text input.
+- New sheets also start from `NewSheetInputs` now.
+- New: C1 (Low), the attached file is labelled a PDF without any check. I found it by reading only and did not run the Desktop app.
+- No script exists for this report, so there was none to run or update.
