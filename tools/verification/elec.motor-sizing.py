@@ -10,6 +10,10 @@ Method (written before reading the C# Calculate method):
   S-curve (sine acc.): a(t) = a_pk sin(pi t / t_acc), a_pk = (pi/2) a_trap, same v_pk.
   Torque             : T = J_total * alpha + T_load, J_total = J_refl + J_mech + J_motor.
   RMS                : sqrt(sum(T_i^2 t_i) / (t_move + t_dwell)), dwell at zero torque.
+Continuous duty (1.1.0, added at the A7a re-check): a rotary load at steady speed n_L through ratio i.
+  omega = 2 pi n_L i / 60; T_load = T_L / (i eta); T_rms = T_load; the whole inertia runs up linearly in
+  t_start while carrying the full load: T_pk = J_total omega / t_start + T_load; P_cont = T_load omega.
+  The formulas follow from the physics and the 1.1.0 spec paragraph; the known-answer case is the spec's own analytic one.
 Sources: Hughes & Drury, Electric Motors and Drives, 5th ed., chapter on drive selection
 (inertia referred through a gear ratio, equivalent RMS torque); manufacturer servo-sizing practice.
 """
@@ -76,6 +80,23 @@ def motor(mech, s, t_move, t_dwell, f_acc=1 / 3, profile="trap", i=1.0, eta=0.9,
     return o
 
 
+def cont(mech, T_L, n_L, t_start, i=1.0, eta=0.9, J_L=0.0, J_mech=0.0, J_motor=2e-4,
+         T_rated=1.0, T_peak=1.0, n_max=1000.0, SF=1.0):
+    """Continuous rotary duty: steady torque and speed, linear run-up carrying the full load."""
+    ratio = 1.0 if mech == "direct" else i
+    w = 2 * math.pi * n_L / 60.0 * ratio            # motor speed [rad/s]
+    T_load = T_L / (ratio * eta)
+    J_refl = J_L / (ratio ** 2 * eta)
+    J_total = J_refl + J_mech + J_motor
+    alpha = w / t_start
+    T_acc = J_total * alpha
+    T_pk = T_acc + T_load
+    return dict(T_load=T_load, J_refl=J_refl, J_total=J_total, alpha_pk=alpha, T_acc=T_acc, T_pk=T_pk,
+                T_rms=T_load, n_pk=w, n_pk_rpm=w * 60 / (2 * math.pi), P_cont=T_load * w, P_pk=T_pk * w,
+                J_ratio=(J_refl + J_mech) / J_motor, duty=T_load / T_rated, u_peak=SF * T_pk / T_peak,
+                u_rms=SF * T_load / T_rated, u_speed=(w * 60 / (2 * math.pi)) / n_max)
+
+
 # ---------------- Known-answer cases ----------------
 r = motor("screw", 0.5, 0.5, 0.5, 1 / 3, "trap", i=1, eta=0.9, p_mm=10, J_mech=1e-4, m=50, mu=0.1,
           theta_deg=0, F_p=0, J_motor=2e-4)
@@ -88,6 +109,14 @@ r = motor("geared", 0.25, 0.3, 0.7, 1 / 3, "trap", i=10, eta=0.85, J_mech=0, J_L
 for sym, e, t in [("n_pk", 750, 1e-6), ("J_refl", 5.882e-3, 1e-3), ("T_pk", 5.0126, 1e-3),
                   ("T_rms", 2.2417, 1e-3), ("J_ratio", 11.76, 2e-3)]:
     check("ka-geared-index-table", sym, e, r[sym], t)
+
+# ka-continuous-pump (spec 1.1.0, analytic): 700 rpm pump through 4:1, 2 s run-up
+r = cont("geared", 3.0, 700, 2.0, i=4, eta=0.9, J_L=0.01, J_mech=0.0, J_motor=5e-4, T_rated=2.0, T_peak=6.0, n_max=3500, SF=1.25)
+for sym, e, t in [("n_pk_rpm", 2800, 1e-9), ("T_load", 0.8333333, 1e-6), ("J_refl", 6.944444e-4, 1e-6),
+                  ("J_total", 1.194444e-3, 1e-6), ("T_acc", 0.1751147, 1e-6), ("T_pk", 1.008448, 1e-6),
+                  ("T_rms", 0.8333333, 1e-6), ("P_cont", 244.3461, 1e-6), ("u_peak", 0.2100933, 1e-6),
+                  ("u_rms", 0.5208333, 1e-6), ("u_speed", 0.8, 1e-9), ("J_ratio", 1.388889, 1e-6)]:
+    check("ka-continuous-pump", sym, e, r[sym], t)
 
 # ---------------- Extra checks ----------------
 # Product values below were read from `Probe run elec.motor-sizing` (10 significant figures).
@@ -132,6 +161,28 @@ for name, mk, prod in EXTRA_CASES:
     for sym, pv in prod.items():
         check("extra " + name.split()[0], sym, pv, r[sym], 1e-8, "product value hard-coded")
 
+# Continuous-duty extras (elec.motor-sizing 1.1.0). Product values were read from `Probe run elec.motor-sizing`
+# (10 significant figures, SI units). Motor data: J_motor 2e-4, T_rated 2, T_peak 6 N*m, n_max 10000 rpm, SF 1.25,
+# unless the case says otherwise. CE1 is the wet-heating circulator (pack.wet-heating), T_L from B1.
+CONT_CASES = [
+    ('CE1 circulator, direct rotary, 2800 rpm, 5 s run-up',
+     dict(mech="direct", T_L=0.002037166263, n_L=2800, t_start=5.0, i=1, eta=0.9, J_L=0.002, J_mech=0.0, J_motor=2e-4,
+          T_rated=2.0, T_peak=6.0, n_max=10000.0, SF=1.25),
+     {'T_load': 0.00226351807, 'J_refl': 0.002222222222, 'J_total': 0.002422222222, 'alpha_pk': 58.64306287, 'T_acc': 0.1420465301, 'T_pk': 0.1443100481, 'T_rms': 0.00226351807, 'n_pk': 293.2153143, 'P_cont': 0.6636981624, 'P_pk': 42.31391612, 'u_peak': 0.03006459336, 'u_rms': 0.001414698794, 'u_speed': 0.28, 'J_ratio': 11.11111111, 'duty': 0.001131759035}),
+    ('CE2 gearbox 10:1, eta 0.8, 150 rpm, 3 s run-up',
+     dict(mech="geared", T_L=12.0, n_L=150, t_start=3.0, i=10, eta=0.8, J_L=0.5, J_mech=1e-4, J_motor=5e-4,
+          T_rated=5.0, T_peak=15.0, n_max=3000.0, SF=1.5),
+     {'T_load': 1.5, 'J_refl': 0.00625, 'J_total': 0.00685, 'alpha_pk': 52.35987756, 'T_acc': 0.3586651613, 'T_pk': 1.858665161, 'T_rms': 1.5, 'n_pk': 157.0796327, 'P_cont': 235.619449, 'P_pk': 291.9584408, 'u_peak': 0.1858665161, 'u_rms': 0.45, 'u_speed': 0.5, 'J_ratio': 12.7, 'duty': 0.3}),
+    ('CE3 overhauling load, T_L -2 N*m, 2:1',
+     dict(mech="geared", T_L=-2.0, n_L=300, t_start=1.0, i=2, eta=0.9, J_L=0.05, J_mech=0.0, J_motor=2e-4,
+          T_rated=2.0, T_peak=6.0, n_max=10000.0, SF=1.25),
+     {'T_load': -1.111111111, 'J_refl': 0.01388888889, 'J_total': 0.01408888889, 'alpha_pk': 62.83185307, 'T_acc': 0.8852309966, 'T_pk': -0.2258801145, 'T_rms': -1.111111111, 'n_pk': 62.83185307, 'P_cont': -69.81317008, 'P_pk': -14.19246617, 'u_peak': -0.04705835719, 'u_rms': -0.6944444444, 'u_speed': 0.06, 'J_ratio': 69.44444444, 'duty': -0.5555555556}),
+]
+for name, kw, prod in CONT_CASES:
+    r = cont(**kw)
+    for sym, pv in prod.items():
+        check("extra " + name.split()[0], sym, pv, r[sym], 1e-8, "product value hard-coded")
+
 # ---------------- Findings evidence (informational, does not change the exit code) ----------------
 FIND = []
 
@@ -163,6 +214,28 @@ for n in range(N):
     pmax = max(pmax, T * w)
 finding("P1-elec.motor-sizing-03", f"E8 S-curve: true peak power {pmax:.1f} W; product P_pk {EXTRA_CASES[7][2]['P_pk']:.1f} W; "
         f"ratio {EXTRA_CASES[7][2]['P_pk'] / pmax:.3f}.")
+
+
+# C1: continuous duty, T_L left blank -> zero load torque, zero utilisation, all checks pass (product: warning "default used" only).
+rc = cont("direct", 0.0, 2800, 5.0, i=1, eta=0.9, J_L=0.002, J_mech=0.0, J_motor=2e-4, T_rated=2.0, T_peak=6.0, n_max=10000.0, SF=1.25)
+finding("P1-elec.motor-sizing-C1", f"continuous duty, T_L blank (default 0): T_load {rc['T_load']:.3f}, u_rms {rc['u_rms']:.3f}, "
+        f"u_peak {rc['u_peak']:.4f}. Product: all three checks pass, only a 'default used' warning.")
+# C2: a negative T_L gives a negative RMS torque and a negative utilisation (an RMS cannot be negative).
+rn = cont("geared", -10.0, 300, 1.0, i=2, eta=0.9, J_L=0.05, J_mech=0.0, J_motor=2e-4, T_rated=2.0, T_peak=6.0, n_max=10000.0, SF=1.25)
+finding("P1-elec.motor-sizing-C2", f"continuous duty, T_L -10 N*m, 2:1: T_rms {rn['T_rms']:.4f} N*m, u_rms {rn['u_rms']:.4f}, "
+        f"u_peak {rn['u_peak']:.4f}; |T_rms| would give u_rms {abs(rn['u_rms']):.4f}. Product: checks FAIL on the negative values.")
+# C3: direct coupling still carries the mechanism efficiency (default 0.9).
+r1 = cont("direct", 0.002037166263, 2800, 5.0, eta=1.0, J_L=0.002)
+r9 = cont("direct", 0.002037166263, 2800, 5.0, eta=0.9, J_L=0.002)
+finding("P1-elec.motor-sizing-C3", f"direct coupling: T_load {r9['T_load']:.6f} N*m at eta 0.9 against {r1['T_load']:.6f} at eta 1 "
+        f"({100 * (r9['T_load'] / r1['T_load'] - 1):+.1f} %).")
+# C4: continuous duty prints 'template default used' notices for inputs it ignores (probe, CE1 inputs).
+finding("P1-elec.motor-sizing-C4", "continuous duty ignores mu, theta, F_p, profile, s, t_move, f_acc and t_dwell, yet the probe lists "
+        "eight 'was not entered; the template default ... is used' warnings for them, plus the fixed 'continuous-ignored' warning.")
+# P1-chain.motor-circuit-C1 (pack.motor-circuit): P_pk of a continuous-duty E1 against P_cont, the quantity the supply sees.
+rk = cont("geared", 3.0, 700, 2.0, i=4, eta=0.9, J_L=0.01, J_motor=5e-4)
+finding("P1-chain.motor-circuit-C1", f"continuous duty (ka-continuous-pump): P_pk {rk['P_pk']:.1f} W against P_cont {rk['P_cont']:.1f} W; "
+        f"circulator CE1: P_pk {cont(**CONT_CASES[0][1])['P_pk']:.2f} W against P_cont {cont(**CONT_CASES[0][1])['P_cont']:.3f} W.")
 
 
 def main():

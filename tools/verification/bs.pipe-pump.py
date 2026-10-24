@@ -10,6 +10,8 @@ Written without reading the C# Calculate method. Method:
   - affinity: Q ~ n D^3, H ~ n^2 D^2
   - water properties: Kell (1975) density, tabulated IAPWS-2008 style viscosity
     (log-spline), Wagner-Pruss (2002) saturation pressure.
+  - heat-load flow (1.1.0, added at the A7a re-check): Q = Phi / (rho c_p dT), rho from Kell at the stated
+    temperature; pump shaft power P = rho g Q H / eta; shaft torque T = P / omega with omega = 2 pi n / 60.
 Run: python3 tools/verification/bs.pipe-pump.py   (exit 0 = all rows PASS)
 """
 import math
@@ -162,6 +164,11 @@ def kat():
     Q2, H2 = affinity(Qp, Hp, 0.9, 1.0)
     q2, h2 = duty(Q2, H2, Hs, k)
     row(c, "Q_duty2", 40.1, q2, 0.01)
+
+    # ka-heat-load-flow (1.1.0): 12 kW at 20 K, water at 70 C, c_p 4186 J/(kg K)
+    c = "ka-heat-load-flow"
+    qh = 12000.0 / (rho_water(70) * 4186.0 * 20.0)
+    row(c, "Q_design (m3/h)", 0.5277375, qh * 3600, 1e-6)
     return dict(k=k, hf=hf, res=res)
 
 
@@ -330,6 +337,64 @@ def extras():
     finding("KAT duty, f(Re) re-solved", "Q_duty (m3/h)", 46.331789, qx, "P1-bs.pipe-pump-03 (turbulent size)")
 
 
+def heat_case(T, phi, dT, cp, segs, h_out=0.0, eta=0.7, n_pump=None, pump=None):
+    """Heat-load flow, system head, hydraulic and shaft power, shaft torque (SI: m3/s, m, W, N m)."""
+    rho, mu = rho_water(T), mu_water(T)
+    q_si = phi / (rho * cp * dT)
+    res, hf, Hs = system(q_si * 3600, rho, mu, segs, h_out)
+    out = dict(Q=q_si, Hstat=Hs, hf=hf, Hsys=Hs + hf)
+    out["P_hyd"] = rho * G * q_si * out["Hsys"]
+    out["P_shaft_design"] = out["P_hyd"] / eta
+    if n_pump:
+        w = 2 * math.pi * n_pump / 60.0
+        P = out["P_shaft_design"]
+        if pump:
+            k = hf / (q_si * 3600) ** 2
+            qd, hd = duty(pump[0], pump[1], Hs, k)
+            out.update(Qd=qd / 3600, Hd=hd, Ps=rho * G * qd / 3600 * hd / eta)
+            P = max(P, out["Ps"])
+        out["P_sel"] = P
+        out["T_shaft"] = P / w
+        out["n_shaft"] = w
+    return out
+
+
+def extras_heat():
+    # Product values read with `Probe run bs.pipe-pump` (10 significant figures, SI units).
+    # H1: the pack.wet-heating reference case (B4 rooms 350.6732 + 243.8716 W, 10 K, 70 C, DN28 40 m, dz 3 m, 2800 rpm).
+    c = "probe H1 pack reference"
+    h = heat_case(70, 594.544716, 10, 4186.0, [(40, 28, 0.045, 12, 0, 3)], n_pump=2800)
+    row(c, "Q_design (m3/s)", 1.4526091e-05, h["Q"], 1e-8, "only rho(T) enters")
+    row(c, "H_static (m)", 3.0, h["Hstat"], 1e-9)
+    row(c, "h_f_total (m)", 0.001961991827, h["hf"], 1.5e-2, "laminar: follows the viscosity fit")
+    row(c, "P_hyd (W)", 0.4181298422, h["P_hyd"], 1e-3, "static head 3 m dominates")
+    row(c, "P_shaft_design (W)", 0.597328346, h["P_shaft_design"], 1e-3)
+    row(c, "T_shaft (N m)", 0.002037166263, h["T_shaft"], 1e-3)
+    row(c, "n_shaft (rad/s)", 293.2153143, h["n_shaft"], 1e-9)
+    # H3: closed loop (dz 0), 24 kW, 10 K, 45 C, c_p 4180, DN32 60 m, eta 0.55, 1450 rpm
+    c = "probe H3 closed loop 24 kW"
+    h = heat_case(45, 24000, 10, 4180.0, [(60, 32, 0.045, 15, 0, 0)], eta=0.55, n_pump=1450)
+    row(c, "Q_design (m3/s)", 0.0005798374177, h["Q"], 1e-8)
+    row(c, "h_f_total (m)", 1.686415274, h["hf"], 4e-3)
+    row(c, "P_hyd (W)", 9.495550821, h["P_hyd"], 4e-3)
+    row(c, "P_shaft_design (W)", 17.26463786, h["P_shaft_design"], 4e-3)
+    row(c, "T_shaft (N m)", 0.1137001016, h["T_shaft"], 4e-3)
+    # H4: the same loop with a pump curve; the torque covers the larger duty-point shaft power
+    c = "probe H4 with pump curve"
+    h = heat_case(45, 24000, 10, 4180.0, [(60, 32, 0.045, 15, 0, 0)], eta=0.55, n_pump=1450, pump=([0, 1, 2, 3], [6, 5, 3.5, 1]))
+    row(c, "Q_duty (m3/s)", 0.0006838274937, h["Qd"], 4e-3)
+    row(c, "H_duty (m)", 2.345552552, h["Hd"], 4e-3)
+    row(c, "P_shaft (W)", 28.31903394, h["Ps"], 4e-3)
+    row(c, "T_shaft (N m)", 0.1865012787, h["T_shaft"], 4e-3, "larger of design and duty-point power")
+    # ---- findings evidence (informational) ----
+    ref = heat_case(70, 594.544716, 10, 4186.0, [(40, 28, 0.045, 12, 0, 3)], n_pump=2800)
+    closed = heat_case(70, 594.544716, 10, 4186.0, [(40, 28, 0.045, 12, 0, 0)], n_pump=2800)
+    finding("pack reference, dz 3 m vs 0", "T_shaft (N m)", ref["T_shaft"], closed["T_shaft"], "P1-chain.wet-heating-02")
+    small = heat_case(70, 594.544716, 10, 4186.0, [(40, 28, 0.045, 12, 0, 3)], eta=0.2, n_pump=2800)
+    finding("pack reference, eta 0.7 vs 0.2", "T_shaft (N m)", ref["T_shaft"], small["T_shaft"], "P1-bs.pipe-pump-C2")
+    finding("no n_pump entered", "T_shaft offered (0 = no, 1 = yes)", 0.0, 1.0, "P1-bs.pipe-pump-C1")
+
+
 def duty_all(Qp, Hp, Hstat, k):
     xs = np.linspace(Qp[0], Qp[-1], 40001)
     d = lambda q: float(np.interp(q, Qp, Hp)) - (Hstat + k * q * q)
@@ -365,4 +430,5 @@ if __name__ == "__main__":
     if "--info" in sys.argv:
         print(info)
     extras()
+    extras_heat()
     sys.exit(1 if report() else 0)
