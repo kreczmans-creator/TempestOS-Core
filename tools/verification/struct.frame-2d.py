@@ -80,11 +80,12 @@ class Frame:
             k = ld["kind"]
             if k in ("udl", "trapezoid"):
                 a, b = ld["a"], ld["b"]
+                if b <= a:                       # a = b = 0 means the whole span
+                    a, b = 0.0, L
                 w1 = ld["w1"]
                 w2 = ld["w2"] if k == "trapezoid" else w1
                 if ld.get("gravity"):
                     # w positive downward per metre of member: global (0, -w) -> local components
-                    wx_l = -w1 * s if k == "udl" else None
                     fac = (lambda w: (-w * s, -w * c))   # (axial, transverse) per metre for global -y load w
                     ax1, tr1 = fac(w1)
                     ax2, tr2 = fac(w2)
@@ -177,12 +178,20 @@ class Frame:
                 K[b, b] += kx
                 K[b + 1, b + 1] += ky
                 K[b + 2, b + 2] += kr
+        for d in range(3 * nn):
+            if d not in fixed and K[d, d] == 0.0 and not F[d]:
+                fixed.append(d)                 # an unconnected or fully released freedom: hold it at zero
         free = [d for d in range(3 * nn) if d not in fixed]
         u = np.zeros(3 * nn)
         u[free] = np.linalg.solve(K[np.ix_(free, free)], F[free])
         self.u, self.fixed = u, fixed
         self.R = (K @ u - F)
-        self.Rn = {n: self.R[3 * self.idx[n]:3 * self.idx[n] + 3] for n in self.ids}
+        self.Rn = {n: self.R[3 * self.idx[n]:3 * self.idx[n] + 3].copy() for n in self.ids}
+        for n in self.ids:                      # a spring pushes back with -k u
+            x, y, sup, kx, ky, kr = self.nodes[n]
+            if sup == "spring":
+                b = 3 * self.idx[n]
+                self.Rn[n] = -np.array([kx * u[b], ky * u[b + 1], kr * u[b + 2]])
         # spring supports react with the spring force: R above already includes -F only for fixed dofs; keep fixed only
         self.members = {e[0]: self.member_results(e) for e in self.elems}
 
@@ -199,21 +208,21 @@ class Frame:
             ul[c["rdofs"]] = ur
         Q = c["k"] @ ul - c["feq"]          # end actions on the member, local axes
         Fx1, Fy1, M1 = Q[0], Q[1], Q[2]
-        x = np.linspace(0, L, NST)
-        V = np.full(NST, Fy1)
+        marks = [0.0, L] + [d_[0] for d_ in c["dist"]] + [d_[1] for d_ in c["dist"]] + [p_[0] for p_ in c["pts"]] + [q_[0] for q_ in c["cpl"]]
+        x = np.unique(np.concatenate([np.linspace(0, L, NST), np.array(marks), np.array(marks) + 1e-9 * L, np.array(marks) - 1e-9 * L]))
+        x = x[(x >= 0) & (x <= L)]
+        NS = len(x)
+        V = np.full(NS, Fy1)
         Mx = -M1 + Fy1 * x
-        Nx = np.full(NST, -Fx1)
+        Nx = np.full(NS, -Fx1)
         for (a, b, tr1, tr2, ax1, ax2) in c["dist"]:
             xe = np.clip(x, a, b)
             span = b - a
-            q = lambda s_: tr1 + (tr2 - tr1) * (s_ - a) / span
             # integral of q from a to xe
             Iq = tr1 * (xe - a) + (tr2 - tr1) * (xe - a) ** 2 / (2 * span)
             V += Iq
             # moment of q about x: integral q(s)(x - s) ds, s from a to xe
-            m0 = tr1 * ((xe - a) * x - (xe ** 2 - a ** 2) / 2)
-            m1 = (tr2 - tr1) / span * (((xe - a) ** 2 / 2) * x - ((xe - a) ** 2 * (2 * xe + a) / 6 + 0.0))
-            # exact: integral (s-a) (x-s) ds from a to xe = x (xe-a)^2/2 - [(xe-a)^2 (2xe + a... )]; recompute by quadrature below
+            # moment of the load about the section: Gauss quadrature in _moment_quad
             Mx += self._moment_quad(a, b, tr1, tr2, x)
             Nx -= (ax1 * (xe - a) + (ax2 - ax1) * (xe - a) ** 2 / (2 * span))
         for (a, fxl, fyl) in c["pts"]:
@@ -225,7 +234,7 @@ class Frame:
             Mx -= mc * (x >= a - 1e-12)
         # integrate EI y'' = M
         EI = c["EI"]
-        dx = x[1] - x[0]
+        dx = np.diff(x)
         th = np.concatenate([[0], np.cumsum((Mx[1:] + Mx[:-1]) / 2 * dx)]) / EI + ul[2]
         y = np.concatenate([[0], np.cumsum((th[1:] + th[:-1]) / 2 * dx)]) + ul[1]
         return dict(x=x, V=V, M=Mx, N=Nx, y=y, ul=ul, Q=Q, L=L, y_far_solved=ul[4])
