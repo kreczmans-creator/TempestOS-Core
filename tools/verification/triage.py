@@ -10,6 +10,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import findings  # noqa: E402
+import kat_inventory  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = ROOT / "docs" / "verification" / "risk-triage.md"
@@ -35,6 +36,7 @@ ORDER = [
     ("E6 load budget, E3 voltage drop", ["elec.load-budget", "elec.voltage-drop"], "elec.load-budget.md, elec.voltage-drop.md", "Motor-circuit pack"),
     ("B1 pipe and pump, B6 sealed system", ["bs.pipe-pump", "bs.sealed-system"], "bs.pipe-pump.md, bs.sealed-system.md", "B6 needs the owner's BS EN 12828"),
     ("B4 room heat loss", ["bs.room-heat-loss"], "bs.room-heat-loss.md", "Heating design"),
+    ("Wet-heating pack (B4 → B6 → B1 → E1)", ["chain.wet-heating"], "chain.wet-heating.md", "Links the heating calculators"),
     ("E2, B3, B5, S5, M1", ["elec.enclosure-heat", "bs.duct-sizing", "bs.heat-exchanger", "struct.load-combinations", "mech.tolerance-stack"], "remaining files", "Lower liability"),
     ("Desktop sheet import (any calculator)", ["desktop.calc-sheet-view"], "rederivation/desktop.calc-sheet-view.md", "Seeded unit not converted"),
 ]
@@ -78,6 +80,8 @@ def main(sha):
     med_table, n_med = table({"Medium"})
     fixed_lines = "\n".join(f'- {r["id"]} ({r["reviewed"]}): {first(r["finding"])}' for r in sorted(fixed, key=lambda r: (rank[r["reviewed"]], r["id"]))) or "- None."
     ncalc = len([c for c in calcs if not c.startswith(("chain.", "desktop."))])
+    npack = len([c for c in calcs if c.startswith("chain.")])
+    nkat = len(kat_inventory.inventory())
 
     doc = f"""# v0.26.0 risk-based test plan and defect triage (Track P, P6)
 
@@ -86,7 +90,7 @@ This file ranks every open known or suspected defect and sets the owner's test o
 Track S fixes Critical and High findings in phase C-1. Track P reports only and changed no product code.
 
 ## Sources
-- P1 re-derivation reports: `docs/verification/rederivation/<id>.md` ({ncalc} calculators, 2 packs, the Desktop sheet).
+- P1 re-derivation reports: `docs/verification/rederivation/<id>.md` ({ncalc} calculators, {npack} packs, the Desktop sheet).
 - Each P1 report had a first pass and a senior independent review. The "Reviewed" severity governs.
 - Reports carry a "Status @ <sha>" column where the product changed after the first pass.
 - P2 known-answer sources: `kat-sources.md`. P5 consistency audit: `consistency-audit.md`. Colour-team reports: `docs/reviews/`.
@@ -98,7 +102,7 @@ Track S fixes Critical and High findings in phase C-1. Track P reports only and 
 - **Low:** wording, display or small inconsistency; conservative error under 5 %.
 
 ## Summary
-All 107 known-answer cases (KATs) pass in the product and in the independent scripts.
+All {nkat} known-answer cases (KATs) pass in the product and in the independent scripts.
 The KATs are mostly analytic and narrow, so they miss the defects below.
 Every calculator Critical and High finding was reproduced with the probe tool. The Desktop finding comes from code reading only.
 
