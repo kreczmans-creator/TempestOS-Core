@@ -304,8 +304,12 @@ internal sealed partial class MainWindowComposer
         var engineeringCalculationCoordinator = new EngineeringCalculationCoordinator(host.BracketCalculations!, views.EngineeringCalculation);
 
         // `v0.26.0` (ADR-0165): the worksheet surface's own collaborator.
-        var calcSheets = new Tempest.Desktop.CalcSheets.CalcSheetCoordinator(host.CalcInstances!, views.Worksheets, host.ProjectContext!, () => host.SessionPrincipal?.IdentityId,
-            host.Materials is { } materials && host.Fasteners is { } fasteners && host.Bearings is { } bearings ? new Tempest.Calc.Library.CalcReferenceFill(materials, fasteners, bearings) : null);
+        // The checker is read where the author is (ICurrentPrincipalAccessor, the one source of truth), never from
+        // host.SessionPrincipal, so a sheet cannot name its author and checker from two different sessions.
+        var principals = (Tempest.Core.Identity.ICurrentPrincipalAccessor)host.Services!.GetService(typeof(Tempest.Core.Identity.ICurrentPrincipalAccessor));
+        var calcSheets = new Tempest.Desktop.CalcSheets.CalcSheetCoordinator(host.CalcInstances!, views.Worksheets, host.ProjectContext!, () => principals.Current?.Identity.Id,
+            host.Materials is { } materials && host.Fasteners is { } fasteners && host.Bearings is { } bearings ? new Tempest.Calc.Library.CalcReferenceFill(materials, fasteners, bearings) : null,
+            views.WorksheetRegister);
 
         return new ComposedCoordinators(
             undoRedo, viewCoordinator, cockpitView, homeDashboardView, dockingComposer, attachmentViewers, layoutPresets,

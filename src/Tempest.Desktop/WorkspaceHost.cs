@@ -405,7 +405,11 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
         _principalSession.Establish(principal);
         SessionPrincipal = principal;
+        PrincipalChanged?.Invoke(principal);
     }
+
+    /// <summary>Raised by <see cref="SwitchPrincipal"/> after the switch, so the shell header names the person every new record will.</summary>
+    public event Action<ISessionPrincipal>? PrincipalChanged;
 
     /// <summary>Gets what startup rehydration recovered (`TD-85`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public EngineeringRehydrationResult? RehydrationResult { get; private set; }
