@@ -1,0 +1,232 @@
+[
+  {
+    "Symbol": "D",
+    "Number": 24,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PLG-210-04",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "24"
+  },
+  {
+    "Symbol": "E",
+    "Number": 206,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Generic spring steel Young\u0027s modulus; take it from the W3 material of the wire certificate.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "206"
+  },
+  {
+    "Symbol": "F_1",
+    "Number": 60,
+    "Unit": "N",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Plunger assembly PLG-210 \u00A74",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "F_2",
+    "Number": 180,
+    "Unit": "N",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Plunger assembly PLG-210 \u00A74",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "180"
+  },
+  {
+    "Symbol": "G",
+    "Number": 79.3,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Generic spring steel shear modulus; take it from the W3 material of the wire certificate.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "79.3"
+  },
+  {
+    "Symbol": "L0",
+    "Number": 70,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PLG-210-04",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "N_c",
+    "Number": 10000000,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Plunger assembly PLG-210 \u00A74: duty life",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10000000"
+  },
+  {
+    "Symbol": "Rm",
+    "Number": 1650,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Example value for a 3 mm wire. Enter R_m(d) from your own copy of the wire standard or the wire certificate (record spring.wire-strength); the standard\u0027s table is not shipped.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1650"
+  },
+  {
+    "Symbol": "S_e",
+    "Number": 450,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Example alternating shear endurance strength at 10^7 cycles; take it from the wire maker or your fatigue reference (record spring.endurance).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "450"
+  },
+  {
+    "Symbol": "corr",
+    "Text": "Bergstr\u00E4sser",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Company spring standard SPR-01 (EN 13906-1 correction factor)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Bergstr\u00E4sser"
+  },
+  {
+    "Symbol": "d",
+    "Number": 3,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PLG-210-04",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "ends",
+    "Text": "Squared and ground",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PLG-210-04",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Squared and ground"
+  },
+  {
+    "Symbol": "f_op",
+    "Number": 8,
+    "Unit": "Hz",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Plunger assembly PLG-210 \u00A74: maximum cycle rate",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8"
+  },
+  {
+    "Symbol": "f_su",
+    "Number": 0.67,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Ultimate shear strength fraction of R_m used by the Goodman relation (textbook steel value); confirm in your reference.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.67"
+  },
+  {
+    "Symbol": "f_tau",
+    "Number": 0.45,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Static permissible shear stress fraction of R_m for the example; take it from your design reference (record spring.permissible).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.45"
+  },
+  {
+    "Symbol": "mode",
+    "Text": "Compression",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Plunger assembly PLG-210 \u00A74",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Compression"
+  },
+  {
+    "Symbol": "n",
+    "Number": 9,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PLG-210-04",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "9"
+  },
+  {
+    "Symbol": "n_f_req",
+    "Number": 1.2,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Company spring standard SPR-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.2"
+  },
+  {
+    "Symbol": "nu_seat",
+    "Number": 0.5,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Plunger assembly PLG-210 \u00A74: both end plates flat and parallel, no rotation",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.5"
+  },
+  {
+    "Symbol": "rho",
+    "Number": 7850,
+    "Unit": "kg/m^3",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Generic steel density.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "7850"
+  },
+  {
+    "Symbol": "work",
+    "Text": "Loads",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Plunger assembly PLG-210 \u00A74",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Loads"
+  }
+]
