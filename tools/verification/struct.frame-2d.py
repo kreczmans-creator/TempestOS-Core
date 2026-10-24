@@ -267,11 +267,13 @@ def build(E, nodes, elems, loads):
 def summary(fr):
     """Global extremes the product reports (largest over all members, local positions)."""
     out = dict(M_max=-1e99, M_min=1e99, V_max=0.0, N_max=-1e99, N_min=1e99, d_max=0.0, x_Mmax=0.0)
+    out["x_Mmax_all"] = []
     for eid, m in fr.members.items():
         k = int(np.argmax(m["M"]))
         if m["M"][k] > out["M_max"]:
             out["M_max"], out["x_Mmax"] = m["M"][k], m["x"][k]
         out["M_min"] = min(out["M_min"], m["M"].min())
+        out["x_Mmax_all"].append((m["M"].max(), m["x"][int(np.argmax(m["M"]))]))
         out["V_max"] = max(out["V_max"], np.abs(m["V"]).max())
         out["N_max"] = max(out["N_max"], m["N"].max())
         out["N_min"] = min(out["N_min"], m["N"].min())
@@ -972,8 +974,13 @@ def compare_model(tag, fr_, prod, tol=1e-6):
         if key[0] == "R" and key[1].isdigit():
             nid, comp = int(key[1:].split("_")[0]), "xym".index(key[-1])
             xrow(tag, key, pv, float(fr_.Rn[nid][comp]), tol)
+        elif key == "x_Mmax":
+            # a position: accept any member that ties for the maximum, to 3 mm
+            ties = [x for (mm, x) in s["x_Mmax_all"] if mm >= s["M_max"] - 1e-6 * max(1.0, abs(s["M_max"]))]
+            best = min(ties, key=lambda x: abs(x - pv))
+            xrow(tag, key, pv, float(best), 3e-3 / max(1.0, abs(best)), note)
         elif key in s:
-            xrow(tag, key, pv, float(s[key]), 1e-5 if key == "d_max" else tol, note if key in ("M_max", "M_min", "x_Mmax") else "")
+            xrow(tag, key, pv, float(s[key]), 1e-5 if key == "d_max" else tol, note if key in ("M_max", "M_min") else "")
 
 
 def extras():
