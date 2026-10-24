@@ -76,4 +76,21 @@ public sealed class ConnectionTests
         var full = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Quantity("V_Ed", 100, "kN")).With(CalcInputValue.Quantity("A_nt", 300, "mm^2")).With(CalcInputValue.Quantity("A_nv", 1200, "mm^2")));
         Assert.Equal(410 * 300 / 1.25 + 275 * 1200 / Math.Sqrt(3), full.OutputSi("V_eff_Rd"), 3);
     }
+
+    [Fact]
+    public void Bolt_Values_That_Feed_The_Base_Plate_Are_Ports()
+    {
+        var r = CalcRunner.Run(Ec3, Defaults());
+        var ports = Ec3.Template.OutputPorts!;
+
+        foreach (var (symbol, unit) in new[] { ("F_t_Rd", "kN"), ("A_s", "mm^2"), ("F_b_Rd", "kN") })
+        {
+            Assert.Contains(ports, p => p.Symbol == symbol && p.Unit == unit);
+            Assert.NotNull(r.FindOutput(symbol));
+        }
+
+        // M20: A_s = 244.79 mm², F_t,Rd = 0.9 f_ub A_s / γ_M2.
+        Assert.Equal(244.794, r.OutputSi("A_s") * 1e6, 3);
+        Assert.Equal(0.9 * 800 * ConnectionCalculator.StressArea(20, 2.5) / 1.25, r.OutputSi("F_t_Rd"), 1e-3);
+    }
 }

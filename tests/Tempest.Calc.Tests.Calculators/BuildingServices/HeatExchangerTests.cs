@@ -83,4 +83,29 @@ public sealed class HeatExchangerTests
         var r = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Choice("arrangement", HeatExchangerCalculator.Crossflow)));
         Assert.Contains(r.Warnings, w => w.RuleId == "crossflow-approx");
     }
+
+    [Fact]
+    public void Cold_Side_Rise_And_Mean_Temperature_Are_Ports_For_The_Cold_Circuit()
+    {
+        // Balanced counterflow, NTU = 1: Q = 125.4 kW into 4180 W/K, so the cold stream rises 30 K from 20 °C and averages 35 °C.
+        var rated = CalcRunner.Run(Hx, Defaults());
+        Assert.Equal(30, rated.OutputSi("dT_c"), 1e-9);
+        Assert.Equal(35 + 273.15, rated.OutputSi("T_c_m"), 1e-9);
+        Assert.Contains(Hx.Template.OutputPorts!, p => p is { Symbol: "dT_c", Unit: "K" });
+        Assert.Contains(Hx.Template.OutputPorts!, p => p is { Symbol: "T_c_m", Unit: "degC" });
+
+        // Sizing: the rise is Q_req / (m_c c_p,c) whatever the duty, and the mean is halfway between inlet and outlet.
+        Gen.Select(Gen.Double[0.5, 50], Gen.Double[0.05, 2], Gen.Double[-20, 40]).Sample((q, mc, tin) =>
+        {
+            var r = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Choice("mode", HeatExchangerCalculator.Sizing)).With(CalcInputValue.Quantity("Q_req", q, "kW"))
+                .With(CalcInputValue.Quantity("m_c", mc, "kg/s")).With(CalcInputValue.Quantity("T_c_in", tin, "degC")).With(CalcInputValue.Quantity("m_h", 2, "kg/s")));
+
+            if (r.IsBlocked)
+                return;
+
+            Assert.Equal(q * 1e3 / (mc * 4180), r.OutputSi("dT_c"), 1e-9);
+            Assert.Equal(tin + 273.15 + r.OutputSi("dT_c") / 2, r.OutputSi("T_c_m"), 1e-9);
+            Assert.Equal(r.OutputSi("T_c_out") - r.OutputSi("dT_c"), tin + 273.15, 1e-9);
+        }, iter: 60);
+    }
 }

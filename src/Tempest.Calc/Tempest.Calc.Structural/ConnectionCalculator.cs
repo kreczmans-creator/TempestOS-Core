@@ -26,7 +26,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
     public static IReadOnlyList<(string Grade, double BetaW)> Steels { get; } = [("S235", 0.8), ("S275", 0.85), ("S355", 0.9), ("S420", 1.0), ("S460", 1.0)];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
+        Id, "1.1.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
         "The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.",
         "Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P\n" +
         "Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane)\n" +
@@ -111,8 +111,9 @@ public sealed class ConnectionCalculator : ICalcCalculator
         OutputPorts:
         [
             new CalcOutputPort("F_v_Rd", "kN", "Shear resistance per bolt"),
-            new CalcOutputPort("F_b_Rd", "kN", "Bearing resistance per bolt"),
+            new CalcOutputPort("F_b_Rd", "kN", "Bearing resistance per bolt (→ S6 F_1_vb_Rd)"),
             new CalcOutputPort("F_t_Rd", "kN", "Tension resistance per bolt (→ S6 holding-down bolts)"),
+            new CalcOutputPort("A_s", "mm^2", "Bolt tensile stress area (→ S6 holding-down bolts)"),
             new CalcOutputPort("f_vw_d", "MPa", "Weld design shear strength (→ M6 f_w)"),
         ],
         RecordKinds:

@@ -88,23 +88,31 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
       = 40 °C + 120000 / 6270
       = 59.139 degC
         Cold-side outlet temperature
-  [25] dT_app = min(T_h,in − T_c,out, T_h,out − T_c,in)
+  [25] dT_c = T_c,out − T_c,in = Q/C_c
+      = 120000 / 6270
+      = 19.139 K
+        Cold-side temperature rise
+  [26] T_c_m = (T_c,in + T_c,out)/2
+      = (40 °C + 59.139 °C)/2
+      = 49.569 degC
+        Mean cold-side temperature
+  [27] dT_app = min(T_h,in − T_c,out, T_h,out − T_c,in)
       = 16.134 K
       = 16.134 K
         Approach temperature difference
-  [26] dT_lm = (ΔT_1 − ΔT_2)/ln(ΔT_1/ΔT_2), counterflow ends
+  [28] dT_lm = (ΔT_1 − ΔT_2)/ln(ΔT_1/ΔT_2), counterflow ends
       = ΔT_1 = 20.861 K, ΔT_2 = 16.134 K
       = 18.396 K
         Log-mean temperature difference
-  [27] F = 1 (pure counterflow, parallel flow or C_r = 0)    « Incropera 7th ed. §11.3
+  [29] F = 1 (pure counterflow, parallel flow or C_r = 0)    « Incropera 7th ed. §11.3
       = R = 1.247, P = 0.47847
       = 1
         LMTD correction factor
-  [28] Q_lmtd = U_f·A·F·ΔT_lm
+  [30] Q_lmtd = U_f·A·F·ΔT_lm
       = 2307.7 × 2.8267 × 1 × 18.396
       = 120 kW
         Duty by the LMTD method (cross-check)
-  [29] u_app = dT_min / dT_app
+  [31] u_app = dT_min / dT_app
       = 3 K / 16.134 K
       = 0.18595
         Approach utilisation (minimum / actual)
@@ -116,6 +124,8 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   Q = 120 kW    Heat duty
   T_h_out = 56.134 degC    Hot outlet
   T_c_out = 59.139 degC    Cold outlet
+  dT_c = 19.139 K    Cold-side rise
+  T_c_m = 49.569 degC    Cold-side mean
   dT_app = 16.134 K    Approach
   UA = 6523 W/K    UA
   A_req = 2.8267 m²    Required area
@@ -130,7 +140,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   WARNING record.cp_c: cp_c: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.heat-exchanger@1.0.0
+  Template: bs.heat-exchanger@1.1.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

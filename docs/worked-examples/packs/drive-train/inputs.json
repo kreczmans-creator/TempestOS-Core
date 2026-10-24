@@ -1,0 +1,1025 @@
+{
+  "e1": [
+    {
+      "Symbol": "F_p",
+      "Number": 0,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "J_L",
+      "Number": 4,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4"
+    },
+    {
+      "Symbol": "J_mech",
+      "Number": 0.002,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.002"
+    },
+    {
+      "Symbol": "J_motor",
+      "Number": 0.12,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.12"
+    },
+    {
+      "Symbol": "J_ratio_max",
+      "Number": 10,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "SF",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "T_L",
+      "Number": 1800,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1800"
+    },
+    {
+      "Symbol": "T_peak",
+      "Number": 400,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "T_rated",
+      "Number": 200,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "200"
+    },
+    {
+      "Symbol": "duty_mode",
+      "Text": "continuous",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "continuous"
+    },
+    {
+      "Symbol": "eta",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "f_acc",
+      "Number": 0.3333333333333333,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.333333"
+    },
+    {
+      "Symbol": "i",
+      "Number": 12.5,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "12.5"
+    },
+    {
+      "Symbol": "m",
+      "Number": 50,
+      "Unit": "kg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "mechanism",
+      "Text": "gearbox rotary",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "gearbox rotary"
+    },
+    {
+      "Symbol": "mu",
+      "Number": 0.1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.1"
+    },
+    {
+      "Symbol": "n_L",
+      "Number": 120,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "120"
+    },
+    {
+      "Symbol": "n_max",
+      "Number": 3000,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3000"
+    },
+    {
+      "Symbol": "p_screw",
+      "Number": 10,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "profile",
+      "Text": "trapezoidal",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "trapezoidal"
+    },
+    {
+      "Symbol": "s",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_dwell",
+      "Number": 0.5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_move",
+      "Number": 0.5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_start",
+      "Number": 3,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "theta",
+      "Number": 0,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "m4": [
+    {
+      "Symbol": "E",
+      "Number": 207,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "207"
+    },
+    {
+      "Symbol": "R",
+      "Number": 99,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "99"
+    },
+    {
+      "Symbol": "S_ut",
+      "Number": 850,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "850"
+    },
+    {
+      "Symbol": "S_y",
+      "Number": 650,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "650"
+    },
+    {
+      "Symbol": "T",
+      "Number": 0.15157894736842104,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:29a92e76077a4b35b8da23a3fc5531ea#T_rms",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.151579"
+    },
+    {
+      "Symbol": "finish",
+      "Text": "ground",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "ground"
+    },
+    {
+      "Symbol": "k_d",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "k_f",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "loads",
+      "Rows": [
+        {
+          "Cells": {
+            "x": {
+              "Number": 150,
+              "Unit": "mm"
+            },
+            "F_y": {
+              "Number": -0.92,
+              "Unit": "kN"
+            },
+            "F_z": {
+              "Number": 2.53,
+              "Unit": "kN"
+            },
+            "m": {
+              "Number": 3,
+              "Unit": "kg"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1 row(s)"
+    },
+    {
+      "Symbol": "n",
+      "Number": 1500.0000000000002,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:29a92e76077a4b35b8da23a3fc5531ea#n_pk",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1500"
+    },
+    {
+      "Symbol": "n_target",
+      "Number": 1.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "rho",
+      "Number": 0,
+      "Unit": "kg/m^3",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "sections",
+      "Rows": [
+        {
+          "Cells": {
+            "x": {
+              "Number": 50,
+              "Unit": "mm"
+            },
+            "K_t": {
+              "Number": 1.7
+            },
+            "K_ts": {
+              "Number": 1.5
+            },
+            "q": {
+              "Number": 0.85
+            },
+            "q_s": {
+              "Number": 0.9
+            }
+          }
+        },
+        {
+          "Cells": {
+            "x": {
+              "Number": 150,
+              "Unit": "mm"
+            },
+            "K_t": {
+              "Number": 1.7
+            },
+            "K_ts": {
+              "Number": 1.5
+            },
+            "q": {
+              "Number": 0.85
+            },
+            "q_s": {
+              "Number": 0.9
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "segments",
+      "Rows": [
+        {
+          "Cells": {
+            "x_end": {
+              "Number": 50,
+              "Unit": "mm"
+            },
+            "d": {
+              "Number": 35,
+              "Unit": "mm"
+            },
+            "d_i": {
+              "Number": 0,
+              "Unit": "mm"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "x_end": {
+              "Number": 250,
+              "Unit": "mm"
+            },
+            "d": {
+              "Number": 45,
+              "Unit": "mm"
+            },
+            "d_i": {
+              "Number": 0,
+              "Unit": "mm"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "x_end": {
+              "Number": 300,
+              "Unit": "mm"
+            },
+            "d": {
+              "Number": 35,
+              "Unit": "mm"
+            },
+            "d_i": {
+              "Number": 0,
+              "Unit": "mm"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3 row(s)"
+    },
+    {
+      "Symbol": "theta_max",
+      "Number": 0.001,
+      "Unit": "rad",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.001"
+    },
+    {
+      "Symbol": "x_A",
+      "Number": 25,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "x_B",
+      "Number": 275,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "275"
+    },
+    {
+      "Symbol": "x_T1",
+      "Number": 0,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "x_T2",
+      "Number": 150,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "150"
+    },
+    {
+      "Symbol": "y_max",
+      "Number": 0.13,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.13"
+    }
+  ],
+  "m5": [
+    {
+      "Symbol": "C",
+      "Number": 25.5,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A76 (bearing schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25.5"
+    },
+    {
+      "Symbol": "C_0",
+      "Number": 15.3,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A76 (bearing schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "15.3"
+    },
+    {
+      "Symbol": "F_a",
+      "Number": 0,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "F_r",
+      "Number": 1.346040489731623,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:54d15bb7799b424f81b3f8fb607e9dc6#R_A",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.34604"
+    },
+    {
+      "Symbol": "L_req",
+      "Number": 20000,
+      "Unit": "h",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A76 (bearing schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20000"
+    },
+    {
+      "Symbol": "R",
+      "Number": 95,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "95"
+    },
+    {
+      "Symbol": "X",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "X_0",
+      "Number": 0.6,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.6"
+    },
+    {
+      "Symbol": "Y",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "Y_0",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "a_iso",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "e_lim",
+      "Number": 0.3,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
+    {
+      "Symbol": "n",
+      "Number": 1500.0000000000002,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:29a92e76077a4b35b8da23a3fc5531ea#n_pk",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1500"
+    },
+    {
+      "Symbol": "s_0_req",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "type",
+      "Text": "ball (p = 3)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A76 (bearing schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "ball (p = 3)"
+    }
+  ],
+  "m2": [
+    {
+      "Symbol": "D",
+      "Number": 35,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:54d15bb7799b424f81b3f8fb607e9dc6#d_A",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "35"
+    },
+    {
+      "Symbol": "hole_grade",
+      "Number": 7,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-411",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "7"
+    },
+    {
+      "Symbol": "hole_letter",
+      "Text": "H",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-411",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "H"
+    },
+    {
+      "Symbol": "shaft_grade",
+      "Number": 6,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-411",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
+    },
+    {
+      "Symbol": "shaft_letter",
+      "Text": "k",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-411",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "k"
+    }
+  ],
+  "m3": [
+    {
+      "Symbol": "F_x",
+      "Number": 0,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "F_y",
+      "Number": 0,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "M_x",
+      "Number": 0,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "M_y",
+      "Number": 0,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "N",
+      "Number": 0,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "T_R",
+      "Number": 21,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    },
+    {
+      "Symbol": "T_z",
+      "Number": 0.15937781334180623,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:29a92e76077a4b35b8da23a3fc5531ea#T_pk",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.159378"
+    },
+    {
+      "Symbol": "V_R",
+      "Number": 14,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "14"
+    },
+    {
+      "Symbol": "bolts",
+      "Rows": [
+        {
+          "Cells": {
+            "x": {
+              "Number": 40,
+              "Unit": "mm"
+            },
+            "y": {
+              "Number": 0,
+              "Unit": "mm"
+            },
+            "A": {
+              "Number": 36.6,
+              "Unit": "mm^2"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "x": {
+              "Number": 0,
+              "Unit": "mm"
+            },
+            "y": {
+              "Number": 40,
+              "Unit": "mm"
+            },
+            "A": {
+              "Number": 36.6,
+              "Unit": "mm^2"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "x": {
+              "Number": -40,
+              "Unit": "mm"
+            },
+            "y": {
+              "Number": 0,
+              "Unit": "mm"
+            },
+            "A": {
+              "Number": 36.6,
+              "Unit": "mm^2"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "x": {
+              "Number": 0,
+              "Unit": "mm"
+            },
+            "y": {
+              "Number": -40,
+              "Unit": "mm"
+            },
+            "A": {
+              "Number": 36.6,
+              "Unit": "mm^2"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4 row(s)"
+    },
+    {
+      "Symbol": "e_x",
+      "Number": 0,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "e_y",
+      "Number": 0,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ]
+}

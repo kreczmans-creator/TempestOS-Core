@@ -72,127 +72,155 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
       = Σ member end moments − applied nodal couple
       = -1.4552e-14 kN·m
         Moment reaction at node 1
-  [11] R4_x = reaction at node 4, x
+  [11] R1_x_abs = |R_x| at node 1
+      = |-2.9968| kN
+      = 2.9968 kN
+        Magnitude of the horizontal reaction at node 1
+  [12] R1_m_abs = |M| at node 1
+      = |-1.4552e-14| kN·m
+      = 1.4552e-14 kN·m
+        Magnitude of the moment reaction at node 1
+  [13] R4_x = reaction at node 4, x
       = Σ member end forces − applied nodal loads
       = -21.003 kN
         Horizontal reaction at node 4
-  [12] R4_y = reaction at node 4, y
+  [14] R4_y = reaction at node 4, y
       = Σ member end forces − applied nodal loads
       = 75 kN
         Vertical reaction at node 4
-  [13] R4_m = reaction at node 4, moment
+  [15] R4_m = reaction at node 4, moment
       = Σ member end moments − applied nodal couple
       = -2.9104e-14 kN·m
         Moment reaction at node 4
-  [14] sum_R_y = Σ R_y
+  [16] R4_x_abs = |R_x| at node 4
+      = |-21.003| kN
+      = 21.003 kN
+        Magnitude of the horizontal reaction at node 4
+  [17] R4_m_abs = |M| at node 4
+      = |-2.9104e-14| kN·m
+      = 2.9104e-14 kN·m
+        Magnitude of the moment reaction at node 4
+  [18] sum_R_y = Σ R_y
       = all supports
       = 120 kN
         Total vertical reaction (equilibrium check against the applied load)
-  [15] sum_R_x = Σ R_x
+  [19] sum_R_x = Σ R_x
       = all supports
       = -24 kN
         Total horizontal reaction
-  [16] M_max_e1 = member 1: max sagging M
+  [20] M_max_e1 = member 1: max sagging M
       = at x = 5 m from node 1
       = 14.984 kN·m
         Member 1 maximum moment
-  [17] M_min_e1 = member 1: min (hogging) M
+  [21] M_min_e1 = member 1: min (hogging) M
       = at x = 0 m
       = 0 kN·m
         Member 1 minimum moment
-  [18] V_e1 = member 1: max |V|
+  [22] M_abs_e1 = member 1: max |M|
+      = max(|14.984|, |0|) kN·m
+      = 14.984 kN·m
+        Member 1 greatest moment magnitude (sagging or hogging)
+  [23] V_e1 = member 1: max |V|
       = 2.9968 kN
       = 2.9968 kN
         Member 1 maximum shear
-  [19] N_e1 = member 1: max |N| (tension +)
+  [24] N_e1 = member 1: max |N| (tension +)
       = -45 kN
       = -45 kN
         Member 1 axial force of greatest magnitude
-  [20] d_e1 = member 1: max |deflection|
+  [25] d_e1 = member 1: max |deflection|
       = at x = 5 m
       = 74.678 mm
         Member 1 maximum transverse deflection
-  [21] M_max_e2 = member 2: max sagging M
+  [26] M_max_e2 = member 2: max sagging M
       = at x = 3 m from node 2
       = 82.484 kN·m
         Member 2 maximum moment
-  [22] M_min_e2 = member 2: min (hogging) M
+  [27] M_min_e2 = member 2: min (hogging) M
       = at x = 8 m
       = -105.02 kN·m
         Member 2 minimum moment
-  [23] V_e2 = member 2: max |V|
+  [28] M_abs_e2 = member 2: max |M|
+      = max(|82.484|, |-105.02|) kN·m
+      = 105.02 kN·m
+        Member 2 greatest moment magnitude (sagging or hogging)
+  [29] V_e2 = member 2: max |V|
       = 75 kN
       = 75 kN
         Member 2 maximum shear
-  [24] N_e2 = member 2: max |N| (tension +)
+  [30] N_e2 = member 2: max |N| (tension +)
       = -21.003 kN
       = -21.003 kN
         Member 2 axial force of greatest magnitude
-  [25] d_e2 = member 2: max |deflection|
+  [31] d_e2 = member 2: max |deflection|
       = at x = 3.4916 m
       = 25.45 mm
         Member 2 maximum transverse deflection
-  [26] M_max_e3 = member 3: max sagging M
+  [32] M_max_e3 = member 3: max sagging M
       = at x = 5 m from node 3
       = 0 kN·m
         Member 3 maximum moment
-  [27] M_min_e3 = member 3: min (hogging) M
+  [33] M_min_e3 = member 3: min (hogging) M
       = at x = 0 m
       = -105.02 kN·m
         Member 3 minimum moment
-  [28] V_e3 = member 3: max |V|
+  [34] M_abs_e3 = member 3: max |M|
+      = max(|0|, |-105.02|) kN·m
+      = 105.02 kN·m
+        Member 3 greatest moment magnitude (sagging or hogging)
+  [35] V_e3 = member 3: max |V|
       = 21.003 kN
       = 21.003 kN
         Member 3 maximum shear
-  [29] N_e3 = member 3: max |N| (tension +)
+  [36] N_e3 = member 3: max |N| (tension +)
       = -75 kN
       = -75 kN
         Member 3 axial force of greatest magnitude
-  [30] d_e3 = member 3: max |deflection|
+  [37] d_e3 = member 3: max |deflection|
       = at x = 0.31515 m
       = 75.042 mm
         Member 3 maximum transverse deflection
-  [31] M_max = max sagging moment
+  [38] M_max = max sagging moment
       = member 2 at x = 3 m
       = 82.484 kN·m
         Maximum moment in the reported combination
-  [32] x_Mmax = position of M_max
+  [39] x_Mmax = position of M_max
       = from node i of member 2
       = 3 m
         Position of the maximum moment
-  [33] M_min = min (hogging) moment
+  [40] M_min = min (hogging) moment
       = member 3 at x = 0 m
       = -105.02 kN·m
         Minimum moment in the reported combination
-  [34] V_max = max |V|
+  [41] V_max = max |V|
       = member 2
       = 75 kN
         Maximum shear in the reported combination
-  [35] N_max = max tension
+  [42] N_max = max tension
       = member 2
       = -21.003 kN
         Maximum axial tension
-  [36] N_min = max compression (negative)
+  [43] N_min = max compression (negative)
       = member 3
       = -75 kN
         Maximum axial compression
-  [37] d_max = max |deflection|
+  [44] d_max = max |deflection|
       = member 3 at x = 0.31515 m
       = 75.042 mm
         Maximum transverse deflection
-  [38] M_max_env = envelope max M
+  [45] M_max_env = envelope max M
       = G+W, member 2
       = 82.484 kN·m
         Maximum moment over all combinations
-  [39] M_min_env = envelope min M
+  [46] M_min_env = envelope min M
       = G+W, member 3
       = -105.02 kN·m
         Minimum moment over all combinations
-  [40] V_max_env = envelope max |V|
+  [47] V_max_env = envelope max |V|
       = G+W, member 2
       = 75 kN
         Maximum shear over all combinations
-  [41] d_max_env = envelope max |δ|
+  [48] d_max_env = envelope max |δ|
       = G+W, member 3
       = 75.042 mm
         Maximum deflection over all combinations
@@ -201,23 +229,30 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
   R1_x = -2.9968 kN    R_x node 1
   R1_y = 45 kN    R_y node 1
   R1_m = -1.4552e-14 kN·m    M node 1
+  R1_x_abs = 2.9968 kN    |R_x| node 1
+  R1_m_abs = 1.4552e-14 kN·m    |M| node 1
   R4_x = -21.003 kN    R_x node 4
   R4_y = 75 kN    R_y node 4
   R4_m = -2.9104e-14 kN·m    M node 4
+  R4_x_abs = 21.003 kN    |R_x| node 4
+  R4_m_abs = 2.9104e-14 kN·m    |M| node 4
   sum_R_y = 120 kN    Σ R_y
   sum_R_x = -24 kN    Σ R_x
   M_max_e1 = 14.984 kN·m    M max, member 1
   M_min_e1 = 0 kN·m    M min, member 1
+  M_abs_e1 = 14.984 kN·m    |M| max, member 1
   V_e1 = 2.9968 kN    |V| max, member 1
   N_e1 = -45 kN    N, member 1
   d_e1 = 74.678 mm    δ max, member 1
   M_max_e2 = 82.484 kN·m    M max, member 2
   M_min_e2 = -105.02 kN·m    M min, member 2
+  M_abs_e2 = 105.02 kN·m    |M| max, member 2
   V_e2 = 75 kN    |V| max, member 2
   N_e2 = -21.003 kN    N, member 2
   d_e2 = 25.45 mm    δ max, member 2
   M_max_e3 = 0 kN·m    M max, member 3
   M_min_e3 = -105.02 kN·m    M min, member 3
+  M_abs_e3 = 105.02 kN·m    |M| max, member 3
   V_e3 = 21.003 kN    |V| max, member 3
   N_e3 = -75 kN    N, member 3
   d_e3 = 75.042 mm    δ max, member 3
@@ -240,7 +275,7 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
   No warnings.
 
 8. VERIFICATION
-  Template: struct.frame-2d@1.0.0
+  Template: struct.frame-2d@1.1.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

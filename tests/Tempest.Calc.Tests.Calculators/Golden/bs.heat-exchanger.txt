@@ -75,27 +75,35 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
       = 20 °C + 125400 / 4180
       = 50 degC
         Cold-side outlet temperature
-  [24] dT_app = min(T_h,in − T_c,out, T_h,out − T_c,in)
+  [24] dT_c = T_c,out − T_c,in = Q/C_c
+      = 125400 / 4180
+      = 30 K
+        Cold-side temperature rise
+  [25] T_c_m = (T_c,in + T_c,out)/2
+      = (20 °C + 50 °C)/2
+      = 35 degC
+        Mean cold-side temperature
+  [26] dT_app = min(T_h,in − T_c,out, T_h,out − T_c,in)
       = 30 K
       = 30 K
         Approach temperature difference
-  [25] dT_lm = (ΔT_1 − ΔT_2)/ln(ΔT_1/ΔT_2), counterflow ends
+  [27] dT_lm = (ΔT_1 − ΔT_2)/ln(ΔT_1/ΔT_2), counterflow ends
       = ΔT_1 = 30 K, ΔT_2 = 30 K
       = 30 K
         Log-mean temperature difference
-  [26] F = 1 (pure counterflow, parallel flow or C_r = 0)    « Incropera 7th ed. §11.3
+  [28] F = 1 (pure counterflow, parallel flow or C_r = 0)    « Incropera 7th ed. §11.3
       = R = 1, P = 0.5
       = 1
         LMTD correction factor
-  [27] Q_lmtd = U_f·A·F·ΔT_lm
+  [29] Q_lmtd = U_f·A·F·ΔT_lm
       = 1000 × 4.18 × 1 × 30
       = 125.4 kW
         Duty by the LMTD method (cross-check)
-  [28] u_app = dT_min / dT_app
+  [30] u_app = dT_min / dT_app
       = 2 K / 30 K
       = 0.066667
         Approach utilisation (minimum / actual)
-  [30] u_duty = Q_req / Q
+  [32] u_duty = Q_req / Q
       = 120 kW / 125.4 kW
       = 0.95694
         Duty utilisation (required / achieved)
@@ -107,6 +115,8 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   Q = 125.4 kW    Heat duty
   T_h_out = 50 degC    Hot outlet
   T_c_out = 50 degC    Cold outlet
+  dT_c = 30 K    Cold-side rise
+  T_c_m = 35 degC    Cold-side mean
   dT_app = 30 K    Approach
   UA = 4180 W/K    UA
   dT_lm = 30 K    Log-mean temperature difference
@@ -122,5 +132,5 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   WARNING record.cp_c: cp_c: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.heat-exchanger@1.0.0
+  Template: bs.heat-exchanger@1.1.0
   Known-answer cases passed: 5/5

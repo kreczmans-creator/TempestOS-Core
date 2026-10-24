@@ -1,0 +1,1465 @@
+{
+  "e1": [
+    {
+      "Symbol": "F_p",
+      "Number": 0,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "J_mech",
+      "Number": 0.0001,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.0001"
+    },
+    {
+      "Symbol": "J_motor",
+      "Number": 0.0002,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.0002"
+    },
+    {
+      "Symbol": "J_ratio_max",
+      "Number": 10,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "SF",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "T_L",
+      "Number": 0,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "T_peak",
+      "Number": 6,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
+    },
+    {
+      "Symbol": "T_rated",
+      "Number": 2,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "duty_mode",
+      "Text": "point-to-point",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "point-to-point"
+    },
+    {
+      "Symbol": "eta",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "f_acc",
+      "Number": 0.3333333333333333,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.333333"
+    },
+    {
+      "Symbol": "i",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "m",
+      "Number": 50,
+      "Unit": "kg",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A72 (axis duty cycle)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "mechanism",
+      "Text": "lead / ball screw",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A72 (axis duty cycle)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "lead / ball screw"
+    },
+    {
+      "Symbol": "mu",
+      "Number": 0.1,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A72 (axis duty cycle)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.1"
+    },
+    {
+      "Symbol": "n_max",
+      "Number": 10000,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10000"
+    },
+    {
+      "Symbol": "p_screw",
+      "Number": 10,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A72 (axis duty cycle)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "profile",
+      "Text": "trapezoidal",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "trapezoidal"
+    },
+    {
+      "Symbol": "s",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A72 (axis duty cycle)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_dwell",
+      "Number": 0.5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_move",
+      "Number": 0.5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A72 (axis duty cycle)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "theta",
+      "Number": 0,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "e6": [
+    {
+      "Symbol": "DoD",
+      "Number": 0.8,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.8"
+    },
+    {
+      "Symbol": "P_add",
+      "Number": 2.430597996309809,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:61ba39298d1d4e0594a1395abe683e52#P_pk",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2.4306"
+    },
+    {
+      "Symbol": "U_1ph",
+      "Number": 230,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "230"
+    },
+    {
+      "Symbol": "U_3ph",
+      "Number": 400,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "U_DC",
+      "Number": 24,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "24"
+    },
+    {
+      "Symbol": "U_b",
+      "Number": 24,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "24"
+    },
+    {
+      "Symbol": "cosphi_add",
+      "Number": 0.85,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A74 (panel schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.85"
+    },
+    {
+      "Symbol": "eta_add",
+      "Number": 0.97,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A74 (panel schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.97"
+    },
+    {
+      "Symbol": "eta_b",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "eta_conv",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "f_derate",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "inrush_add",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "k_T",
+      "Number": 3,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "k_age",
+      "Number": 0.8,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.8"
+    },
+    {
+      "Symbol": "k_temp",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "loads",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "24 V controls and I/O"
+            },
+            "supply": {
+              "Text": "DC"
+            },
+            "P": {
+              "Number": 0.18,
+              "Unit": "kW"
+            },
+            "cosphi": {
+              "Number": 1
+            },
+            "eta": {
+              "Number": 0.9
+            },
+            "d": {
+              "Number": 1
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Panel fan"
+            },
+            "supply": {
+              "Text": "AC single-phase"
+            },
+            "P": {
+              "Number": 0.04,
+              "Unit": "kW"
+            },
+            "cosphi": {
+              "Number": 0.9
+            },
+            "eta": {
+              "Number": 0.7
+            },
+            "d": {
+              "Number": 1
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A74 (panel schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "margin",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "t_auto",
+      "Number": 4,
+      "Unit": "h",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4"
+    },
+    {
+      "Symbol": "theta",
+      "Number": 40,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    }
+  ],
+  "e4": [
+    {
+      "Symbol": "C_a",
+      "Number": 0.91,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.91"
+    },
+    {
+      "Symbol": "C_g",
+      "Number": 0.77,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.77"
+    },
+    {
+      "Symbol": "C_i",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "I_b_in",
+      "Number": 4.255022460464625,
+      "Unit": "A",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:bcacc66ab38e47bb97607fa95731069e#I_3ph",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4.25502"
+    },
+    {
+      "Symbol": "L",
+      "Number": 25,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A75 (cabling)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "N_g",
+      "Number": 2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "P",
+      "Number": 7.5,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "7.5"
+    },
+    {
+      "Symbol": "U",
+      "Number": 400,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A75 (cabling)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "ampacity",
+      "Rows": [
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 1.5,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 12.3,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 2.5,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 17.7,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 4,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 24.1,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 6,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 31.9,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 10,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 44.6,
+              "Unit": "A"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Reference",
+        "Reference": "record:bd4d1b10f26248979c929e9968aa1e3a@1 \u00B7 invented values for the worked example",
+        "Revision": "n/a",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5 row(s)"
+    },
+    {
+      "Symbol": "context",
+      "Text": "BS EN 60204-1 machine wiring",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "BS EN 60204-1 machine wiring"
+    },
+    {
+      "Symbol": "cos_phi",
+      "Number": 0.85,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.85"
+    },
+    {
+      "Symbol": "derive_Ca",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "device",
+      "Text": "MCB type C",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A75 (cabling)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "MCB type C"
+    },
+    {
+      "Symbol": "eta",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "insulation",
+      "Text": "PVC 70 \u00B0C",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A75 (cabling)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "PVC 70 \u00B0C"
+    },
+    {
+      "Symbol": "method",
+      "Text": "C",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A75 (cabling)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "C"
+    },
+    {
+      "Symbol": "ratings",
+      "Rows": [
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 6,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 10,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 16,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 20,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 25,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 32,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 40,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 50,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 63,
+              "Unit": "A"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Reference",
+        "Reference": "record:6dec53f59954424b925cf3e2c8d86cb3@1 \u00B7 invented values for the worked example",
+        "Revision": "n/a",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "9 row(s)"
+    },
+    {
+      "Symbol": "supply",
+      "Text": "three-phase",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "three-phase"
+    },
+    {
+      "Symbol": "system",
+      "Text": "metric",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "metric"
+    },
+    {
+      "Symbol": "theta_a",
+      "Number": 35,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "35"
+    },
+    {
+      "Symbol": "theta_ref",
+      "Number": 30,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    }
+  ],
+  "e3": [
+    {
+      "Symbol": "A_c",
+      "Number": 1.5,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:9d7d534998c742f795d3a05895ab51a4#CSA",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "I",
+      "Number": 4.255022460464625,
+      "Unit": "A",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:9d7d534998c742f795d3a05895ab51a4#I_b",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4.25502"
+    },
+    {
+      "Symbol": "L",
+      "Number": 25,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:9d7d534998c742f795d3a05895ab51a4#L",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 30,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A75 (cabling)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "T_c",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "T_rated",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "V_n",
+      "Number": 400,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A75 (cabling)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "X_km",
+      "Number": 0,
+      "Unit": "ohm/km",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "alpha",
+      "Number": 0.00393,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.00393"
+    },
+    {
+      "Symbol": "cos_phi",
+      "Number": 0.85,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A75 (cabling)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.85"
+    },
+    {
+      "Symbol": "data",
+      "Text": "resistivity and area",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "resistivity and area"
+    },
+    {
+      "Symbol": "dv_limit",
+      "Number": 5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "n_par",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "rho_20",
+      "Number": 0.01724,
+      "Unit": "ohm*mm^2/m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.01724"
+    },
+    {
+      "Symbol": "system",
+      "Text": "DC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "DC"
+    }
+  ],
+  "e5": [
+    {
+      "Symbol": "C_min",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "I_n",
+      "Number": 6,
+      "Unit": "A",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:9d7d534998c742f795d3a05895ab51a4#I_n",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
+    },
+    {
+      "Symbol": "L",
+      "Number": 25,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:9d7d534998c742f795d3a05895ab51a4#L",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "Q_c",
+      "Number": 0.00345,
+      "Unit": "J/(K*mm^3)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.00345"
+    },
+    {
+      "Symbol": "S_cpc",
+      "Number": 2.5,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2.5"
+    },
+    {
+      "Symbol": "S_line",
+      "Number": 1.5,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:9d7d534998c742f795d3a05895ab51a4#CSA",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "U_0",
+      "Number": 230,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "230"
+    },
+    {
+      "Symbol": "Z_e",
+      "Number": 0.35,
+      "Unit": "ohm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.35"
+    },
+    {
+      "Symbol": "alpha",
+      "Number": 0.00393,
+      "Unit": "1/K",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.00393"
+    },
+    {
+      "Symbol": "beta",
+      "Number": 234.5,
+      "Unit": "K",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "234.5"
+    },
+    {
+      "Symbol": "c_max",
+      "Number": 1.1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.1"
+    },
+    {
+      "Symbol": "device",
+      "Text": "MCB type B (I_a = 5 I_n)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "MCB type B (I_a = 5 I_n)"
+    },
+    {
+      "Symbol": "rho_20",
+      "Number": 1.7241E-05,
+      "Unit": "ohm*mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.000017241"
+    },
+    {
+      "Symbol": "t_req",
+      "Number": 0.4,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.4"
+    },
+    {
+      "Symbol": "theta",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "theta_f",
+      "Number": 160,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "160"
+    },
+    {
+      "Symbol": "theta_i",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    }
+  ],
+  "e2": [
+    {
+      "Symbol": "A_sun",
+      "Number": 0,
+      "Unit": "m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "D",
+      "Number": 0.3,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-LINE-120",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
+    {
+      "Symbol": "H",
+      "Number": 1,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-LINE-120",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "I_sun",
+      "Number": 0,
+      "Unit": "W/m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "P_add",
+      "Number": 105.173133906489,
+      "Unit": "W",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:bcacc66ab38e47bb97607fa95731069e#Phi",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "105.173"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 35,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-LINE-120",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "35"
+    },
+    {
+      "Symbol": "T_max",
+      "Number": 55,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-LINE-120",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "55"
+    },
+    {
+      "Symbol": "V_ref",
+      "Number": 100,
+      "Unit": "m^3/h",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "W",
+      "Number": 1,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-LINE-120",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "alpha_sun",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "altitude",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "f_bottom",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "f_front",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "f_left",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "f_rear",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "f_right",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "f_top",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "h",
+      "Number": 5.5,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5.5"
+    },
+    {
+      "Symbol": "loads",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "Servo drive"
+            },
+            "P": {
+              "Number": 60,
+              "Unit": "W"
+            },
+            "qty": {
+              "Number": 1
+            },
+            "duty": {
+              "Number": 1
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Contactors, terminals and busbars"
+            },
+            "P": {
+              "Number": 20,
+              "Unit": "W"
+            },
+            "qty": {
+              "Number": 1
+            },
+            "duty": {
+              "Number": 1
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-LINE-120",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "p_sys",
+      "Number": 20,
+      "Unit": "Pa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    }
+  ]
+}
