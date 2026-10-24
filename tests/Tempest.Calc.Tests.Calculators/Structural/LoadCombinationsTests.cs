@@ -92,7 +92,9 @@ public sealed class LoadCombinationsTests
     {
         // Opus review finding 8: each action row n is S2 load case n; the frame's envelope then equals S5's.
         var inputs = With(LoadCombinationsCalculator.Actions(("Dead", LoadCombinationsCalculator.Permanent, 10), ("Office", "B office", 5)));
-        var rows = LoadCombinationsCalculator.FrameCombinations(inputs).Rows!;
+        var (combinations, notes) = LoadCombinationsCalculator.FrameCombinations(inputs);
+        var rows = combinations.Rows!;
+        Assert.Single(notes);
         Assert.Contains(rows, r => r.Get("name")!.Text == "C1" && r.Get("case")!.Number == 1 && r.Get("factor")!.Number == 1.35);
         Assert.Contains(rows, r => r.Get("name")!.Text == "C1" && r.Get("case")!.Number == 2 && r.Get("factor")!.Number == 1.5);
 
@@ -101,9 +103,21 @@ public sealed class LoadCombinationsTests
             .With(FrameCalculator.Nodes((1, 0, 0, FrameCalculator.SupportPin), (2, 4, 0, FrameCalculator.SupportRollerY)))
             .With(FrameCalculator.Elements((1, 1, 2, 50, 5000)))
             .With(FrameCalculator.Loads((1, "point", 1, 2, 0, 0, 0, 0, -10, 0), (2, "point", 1, 2, 0, 0, 0, 0, -5, 0)))
-            .With(LoadCombinationsCalculator.FrameCombinations(inputs));
+            .With(combinations);
         var solved = CalcRunner.Run(frame, model);
         Assert.False(solved.IsBlocked, string.Join("; ", solved.Blocks.Select(b => b.Message)));
         Assert.Equal(21e3 * 4 / 4, Math.Max(Math.Abs(solved.OutputSi("M_max_env")), Math.Abs(solved.OutputSi("M_min_env"))), 3);
+    }
+
+    [Fact]
+    public void Frame_Combinations_Report_What_They_Leave_Out()
+    {
+        var many = LoadCombinationsCalculator.Actions([("G", LoadCombinationsCalculator.Permanent, 10), .. Enumerable.Range(1, 30).Select(i => ($"Q{i}", "B office", i % 2 == 0 ? 1.0 : -1.0))]);
+        var (_, notes) = LoadCombinationsCalculator.FrameCombinations(With(many));
+        Assert.Contains(notes, n => n.Contains("left out", StringComparison.Ordinal));
+
+        var psi = CalcInputValue.Table("psi", [CalcRow.Of(("category", new CalcCell(Text: "B office")), ("psi_0", new CalcCell(0.7)), ("psi_1", new CalcCell(0.5)), ("psi_2", new CalcCell(0.3)))]);
+        var (_, missing) = LoadCombinationsCalculator.FrameCombinations(With(psi, LoadCombinationsCalculator.Actions(("G", LoadCombinationsCalculator.Permanent, 10), ("W", "wind", 4))));
+        Assert.Contains(missing, n => n.Contains("no ψ factors", StringComparison.Ordinal));
     }
 }

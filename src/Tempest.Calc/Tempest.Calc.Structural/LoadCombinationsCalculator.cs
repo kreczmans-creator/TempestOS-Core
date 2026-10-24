@@ -264,16 +264,25 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
     /// S5 → S2 (Addendum A §A6 S5, Opus review finding 8): the ULS and SLS combinations as rows of the S2 frame's
     /// combinations table, action row n entering as S2 load case n, named as on the S5 sheet (C1…, D1…).
     /// </summary>
-    public static CalcInputValue FrameCombinations(CalcInputSet inputs)
+    /// <remarks>
+    /// Notes say what the caller must know: categories without ψ factors (taken as 0), combinations left out to stay
+    /// within S2's limit, and that γ_G,sup/γ_G,inf were chosen for the sign of the effect as entered.
+    /// </remarks>
+    public static (CalcInputValue Combinations, IReadOnlyList<string> Notes) FrameCombinations(CalcInputSet inputs)
     {
         ArgumentNullException.ThrowIfNull(inputs);
         var template = new LoadCombinationsCalculator().Template;
         double Factor(string symbol) => inputs.Find(symbol)?.Number ?? template.FindInput(symbol)!.Default!.Value;
         var psi = ParsePsi(inputs.Find("psi")?.Rows ?? []);
         var method = inputs.Find("method")?.Text ?? Method610;
+        var notes = new List<string> { "γ_G,sup and γ_G,inf were chosen for the sign of the effect as entered; for an effect of the other sign run S5 with that effect's values." };
         var actions = (inputs.Find("actions")?.Rows ?? []).Select((row, i) =>
         {
             var category = row.Get("category")?.Text ?? Permanent;
+
+            if (category is not (Permanent or Accidental) && !psi.ContainsKey(category))
+                notes.Add($"Action row {i + 1}: no ψ factors for '{category}'; ψ taken as 0 — enter them, as the S5 sheet requires.");
+
             var factors = category is Permanent or Accidental ? (0.0, 0.0, 0.0) : psi.GetValueOrDefault(category);
             return new Action(i + 1, row.Get("name")?.Text ?? $"Action {i + 1}", category, row.Get("F_k")?.Number ?? 0, factors);
         }).ToList();
@@ -288,9 +297,14 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
         }
 
         // ULS first, then SLS characteristic, within S2's limit on combinations.
-        var chosen = named.Where(n => n.Combo.Family == "ULS").Concat(named.Where(n => n.Combo.Family == "SLS characteristic"))
-            .Where(n => n.Combo.Terms.Any(t => t.Factor != 0)).Take(Frame.FrameLimits.MaxCombinations);
-        return FrameCalculator.Combinations([.. chosen.SelectMany(n => n.Combo.Terms.Where(t => t.Factor != 0).Select(t => (n.Name, t.Action.Index, t.Factor)))]);
+        var candidates = named.Where(n => n.Combo.Family == "ULS").Concat(named.Where(n => n.Combo.Family == "SLS characteristic"))
+            .Where(n => n.Combo.Terms.Any(t => t.Factor != 0)).ToList();
+        var chosen = candidates.Take(Frame.FrameLimits.MaxCombinations).ToList();
+
+        if (candidates.Count > chosen.Count)
+            notes.Add($"{candidates.Count - chosen.Count} combination(s) left out to stay within S2's limit of {Frame.FrameLimits.MaxCombinations}: {string.Join(", ", candidates.Skip(chosen.Count).Select(n => n.Name))}.");
+
+        return (FrameCalculator.Combinations([.. chosen.SelectMany(n => n.Combo.Terms.Where(t => t.Factor != 0).Select(t => (n.Name, t.Action.Index, t.Factor)))]), notes);
     }
 
     private static IEnumerable<Term> Lead(Action? lead, double factor, string text) => lead is null ? [] : [new Term(lead, factor, text)];

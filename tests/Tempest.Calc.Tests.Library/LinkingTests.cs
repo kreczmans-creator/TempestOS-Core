@@ -332,4 +332,36 @@ public sealed class LinkingTests
         Assert.False(refused.Succeeded);
         Assert.True((await host.Service.BindAsync(sealedSystem.Id, "t_f", hx.Id, "T_h_out")).Succeeded);
     }
+
+    [Fact]
+    public async Task Update_Links_Refuses_A_Cycle_That_Reached_The_Store_By_Another_Route()
+    {
+        // Opus verification: the UpdateLinksAsync check is defence in depth — forge B ↔ A2 in the store and update.
+        var host = Host();
+        var project = await host.ProjectAsync();
+        var a = await Source(host, project, "A");
+        await CheckAndIssue(host, a, "CALC-A");
+        var b = await Source(host, project, "B");
+        await Bound(host, b, "P", a, "F_out");
+        var a2 = (await host.Service.ReviseAsync(a.Id)).Instance!;
+        var forged = a2 with { Inputs = [CalcInputValue.Quantity("P", 10, "kN", CalcProvenance.Link(b.Id, "F_out", "A"))] };
+        await host.Store.SaveInstanceAsync(forged, a2.UpdatedAt);
+        var update = await host.Service.UpdateLinksAsync(b.Id);
+        Assert.False(update.Succeeded);
+        Assert.Contains("cycle", update.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_New_Calculation_With_A_Broken_Link_Is_Refused_And_Pack_Steps_Say_Which()
+    {
+        var host = Host();
+        var project = await host.ProjectAsync();
+        var a = await Source(host, project, "A");
+        await Assert.ThrowsAsync<CalcLinkRefusedException>(() => host.Service.CreateAsync("test.force-source", project, "B", [CalcInputValue.Quantity("P", 1, "kN", CalcProvenance.Link(a.Id, "L_out", "A"))]));
+
+        var other = await host.Service.CreateAsync("test.force-source", null, "Elsewhere", SourceInputs);
+        var crossProject = await host.Service.BindAsync(a.Id, "P", other.Id, "F_out");
+        Assert.False(crossProject.Succeeded);
+        Assert.Contains("another project", crossProject.Reason, StringComparison.Ordinal);
+    }
 }

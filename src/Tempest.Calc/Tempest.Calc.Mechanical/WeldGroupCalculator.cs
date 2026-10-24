@@ -124,7 +124,10 @@ public sealed class WeldGroupCalculator : ICalcCalculator
         var my = c.Si("M_y") * 1e3 + fz * ex;
         var torque = fy * ex - fx * ey + c.Si("M_z") * 1e3;
         if (fz != 0)
-            c.Record("M_x_tot", "M_x + F_z(e_y − y_c); M_y + F_z(e_x − x_c)", $"{F(c.Si("M_x") / 1e3)} + {F(fz / 1e3)} × {F(ey / 1e3)}; {F(c.Si("M_y") / 1e3)} + {F(fz / 1e3)} × {F(ex / 1e3)}", ScalarValue.Of(mx / 1e6, "kN*m"), "Out-of-plane moment about x including F_z's eccentricity");
+            c.Record("M_x_tot", "M_x + F_z(e_y − y_c)", $"{F(c.Si("M_x") / 1e3)} + {F(fz / 1e3)} × {F(ey / 1e3)}", ScalarValue.Of(mx / 1e6, "kN*m"), "Out-of-plane moment about x including F_z's eccentricity");
+
+        if (fz != 0)
+            c.Record("M_y_tot", "M_y + F_z(e_x − x_c)", $"{F(c.Si("M_y") / 1e3)} + {F(fz / 1e3)} × {F(ex / 1e3)}", ScalarValue.Of(my / 1e6, "kN*m"), "Out-of-plane moment about y including F_z's eccentricity");
 
         c.Record("T", "F_y(e_x − x_c) − F_x(e_y − y_c) + M_z", $"{F(fy / 1e3)} × {F(ex)} − {F(fx / 1e3)} × {F(ey)} + {F(c.Si("M_z") / 1e3)}e3", ScalarValue.Of(torque / 1e6, "kN*m"), "In-plane torque about the centroid");
 

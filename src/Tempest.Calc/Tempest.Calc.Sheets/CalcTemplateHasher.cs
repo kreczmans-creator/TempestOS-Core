@@ -42,6 +42,22 @@ public static class CalcTemplateHasher
         return result.Steps.Where(s => s.Kind != CalcStepKind.Input).Select(s => $"{s.Symbol} = {s.Formula}").ToList();
     }
 
+    /// <summary>
+    /// The inputs a new sheet opens with: <see cref="DefaultInputs"/> except tables that a record kind supplies (ampacity,
+    /// ratings, ψ factors…), which open empty so the user enters them from their own source rather than inheriting a
+    /// test case's illustrative values (Addendum A §A5/§A6, Opus review of E4).
+    /// </summary>
+    public static CalcInputSet NewSheetInputs(CalcTemplate template)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        var recordTables = (template.RecordKinds ?? []).SelectMany(k => k.Symbols)
+            .Where(s => template.FindInput(s) is { Kind: CalcInputKind.Table })
+            .ToHashSet(StringComparer.Ordinal);
+        return recordTables.Count == 0
+            ? DefaultInputs(template)
+            : new CalcInputSet(DefaultInputs(template).Values.Where(v => !recordTables.Contains(v.Symbol)));
+    }
+
     /// <summary>An input set built from every default the template declares (the first test case's inputs where defaults are not enough).</summary>
     public static CalcInputSet DefaultInputs(CalcTemplate template)
     {

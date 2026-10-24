@@ -75,4 +75,14 @@ public sealed class ShaftTests
         Assert.True(stepped.OutputSi("n_f_min") > 0.9 * uniform.OutputSi("n_f_min"));
         Assert.Equal(40, stepped.OutputSi("d_B") * 1e3, 9);
     }
+
+    [Fact]
+    public void A_Surface_Factor_Record_Overrides_The_Table_Equation()
+    {
+        // Opus verification of finding 2: k_a from a shaft.marin record replaces a·S_ut^b.
+        var computed = CalcRunner.Run(Shaft, Defaults());
+        var overridden = CalcRunner.Run(Shaft, Defaults().With(CalcInputValue.Of("k_a", 0.7)));
+        Assert.Equal(0.7, overridden.Steps.Last(s => s.Symbol == "k_a").Result is Tempest.Calc.Engine.Values.ScalarValue v ? v.Si : double.NaN, 12);
+        Assert.NotEqual(computed.OutputSi("n_f_min"), overridden.OutputSi("n_f_min"));
+    }
 }
