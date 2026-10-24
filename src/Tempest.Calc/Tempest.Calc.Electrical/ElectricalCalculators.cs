@@ -10,5 +10,6 @@ public static class ElectricalCalculators
         new MotorSizingCalculator(),
         new EnclosureHeatCalculator(),
         new VoltageDropCalculator(),
+        new LoadBudgetCalculator(),
     ];
 }

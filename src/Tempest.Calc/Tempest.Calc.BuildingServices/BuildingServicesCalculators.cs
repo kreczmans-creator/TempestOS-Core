@@ -9,6 +9,8 @@ public static class BuildingServicesCalculators
     [
         new PipeFlowCalculator(),
         new PsychrometricsCalculator(),
+        new HeatExchangerCalculator(),
+        new SealedSystemCalculator(),
         new DuctSizingCalculator(),
     ];
 }

@@ -160,5 +160,21 @@ public static class StructuralWorkedExamples
             ]),
             [new CalcExpectedValue("M_y_c_Rd", 171.325, "kN*m", 1e-4), new CalcExpectedValue("V_pl_Rd", 318.62, "kN", 1e-3), new CalcExpectedValue("u_M_y", 0.70043, "", 1e-3)],
             "The two-span floor beam from the S2 worked example, checked in bending and shear with the rolled-I shear-area helper. Bending governs at 0.70; shear is low enough that no 6.2.8 reduction applies. Lateral-torsional buckling is flagged as not checked (deck restraint assumed)."),
+        new(LoadCombinationsCalculator.Id, "office-floor-beam-uk-na", "Office floor beam line load, UK National Annex 6.10a/6.10b",
+            new CalcReferenceSource("UK NA to BS EN 1990:2002+A1:2005", "incorporating Amendment No. 1", "NA.A1.2(B): γ_G,sup 1.35, γ_G,inf 1.0, γ_Q 1.5, ξ 0.925; ψ for category B from NA.A1.1"),
+            new CalcInputSet(
+            [
+                LoadCombinationsCalculator.Actions(("Slab, finishes and services", LoadCombinationsCalculator.Permanent, 18), ("Office imposed", "B office", 10)) with { Provenance = CalcProvenance.Drawing("GA-L2-001", "C") },
+                CalcInputValue.Choice("unit", "kN/m", CalcProvenance.Assumed("Line load on the beam.")),
+                CalcInputValue.Choice("method", LoadCombinationsCalculator.Method610ab, CalcProvenance.Specification("UK NA Table NA.A1.2(B): the less favourable of 6.10a and 6.10b")),
+                CalcInputValue.Of("gamma_G_sup", 1.35, CalcProvenance.Specification("UK NA Table NA.A1.2(B)")),
+                CalcInputValue.Of("gamma_G_inf", 1.0, CalcProvenance.Specification("UK NA Table NA.A1.2(B)")),
+                CalcInputValue.Of("gamma_Q", 1.5, CalcProvenance.Specification("UK NA Table NA.A1.2(B)")),
+                CalcInputValue.Of("xi", 0.925, CalcProvenance.Specification("UK NA Table NA.A1.2(B)")),
+                CalcInputValue.Of("K_FI", 1.0, CalcProvenance.Assumed("Consequence class CC2.")),
+            ]),
+            [new CalcExpectedValue("E_d_max", 37.4775, "kN/m", 1e-9), new CalcExpectedValue("E_k_max", 28, "kN/m", 1e-9), new CalcExpectedValue("E_qp_max", 21, "kN/m", 1e-9)],
+            "Permanent 18 kN/m and office imposed 10 kN/m. 6.10a gives 1.35×18 + 1.5×0.7×10 = 34.8 kN/m; 6.10b gives 0.925×1.35×18 + 1.5×10 = 37.48 kN/m, which governs. The ψ factors are the recommended set (the same as the UK NA for category B). SLS characteristic 28 kN/m, quasi-permanent 21 kN/m.",
+            CalcReferenceStatus.Unconfirmed),
     ];
 }

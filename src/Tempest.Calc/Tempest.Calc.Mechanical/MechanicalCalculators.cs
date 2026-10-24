@@ -13,5 +13,6 @@ public static class MechanicalCalculators
         new ThickCylinderCalculator(),
         new BoltedJointCalculator(),
         new BoltGroupCalculator(),
+        new BearingLifeCalculator(),
     ];
 }

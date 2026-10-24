@@ -1,0 +1,261 @@
+[
+  {
+    "Symbol": "V_pipe",
+    "Number": 40,
+    "Unit": "L",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "15 mm and 22 mm copper, about 120 m.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "V_plant",
+    "Number": 15,
+    "Unit": "L",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Heat pump and plate exchanger content, datasheet",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "15"
+  },
+  {
+    "Symbol": "V_vessel",
+    "Number": 12,
+    "Unit": "L",
+    "Provenance": {
+      "Kind": "Evidence",
+      "Reference": "Site survey: existing 12 L vessel",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "12"
+  },
+  {
+    "Symbol": "dT_method",
+    "Text": "arithmetic mean (catalogue rating)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Catalogue ratings use the arithmetic mean.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "arithmetic mean (catalogue rating)"
+  },
+  {
+    "Symbol": "h_static",
+    "Number": 7,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "M-SEC-001",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "7"
+  },
+  {
+    "Symbol": "n",
+    "Number": 1.3,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Panel radiators, manufacturer exponent about 1.3.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.3"
+  },
+  {
+    "Symbol": "p_f",
+    "Number": 2.5,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "0.5 bar below the safety valve.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2.5"
+  },
+  {
+    "Symbol": "p_margin",
+    "Number": 0.3,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Usual margin over static head.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.3"
+  },
+  {
+    "Symbol": "p_prv",
+    "Number": 3,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Heat pump safety valve",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "rooms",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "Lounge"
+          },
+          "Phi": {
+            "Number": 1800,
+            "Unit": "W"
+          },
+          "Phi50": {
+            "Number": 3600,
+            "Unit": "W"
+          },
+          "V_em": {
+            "Number": 12,
+            "Unit": "L"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Kitchen"
+          },
+          "Phi": {
+            "Number": 1100,
+            "Unit": "W"
+          },
+          "Phi50": {
+            "Number": 2200,
+            "Unit": "W"
+          },
+          "V_em": {
+            "Number": 8,
+            "Unit": "L"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Bed 1"
+          },
+          "Phi": {
+            "Number": 900,
+            "Unit": "W"
+          },
+          "Phi50": {
+            "Number": 1800,
+            "Unit": "W"
+          },
+          "V_em": {
+            "Number": 7,
+            "Unit": "L"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Bed 2"
+          },
+          "Phi": {
+            "Number": 700,
+            "Unit": "W"
+          },
+          "Phi50": {
+            "Number": 1400,
+            "Unit": "W"
+          },
+          "V_em": {
+            "Number": 5,
+            "Unit": "L"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Bathroom"
+          },
+          "Phi": {
+            "Number": 600,
+            "Unit": "W"
+          },
+          "Phi50": {
+            "Number": 1100,
+            "Unit": "W"
+          },
+          "V_em": {
+            "Number": 4,
+            "Unit": "L"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Evidence",
+      "Reference": "Room heat loss calculation (B4) and radiator survey",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5 row(s)"
+  },
+  {
+    "Symbol": "t_f",
+    "Number": 55,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Heat pump design flow temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "55"
+  },
+  {
+    "Symbol": "t_fill",
+    "Number": 10,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Mains water at fill.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "t_i",
+    "Number": 21,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Living-room design temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "21"
+  },
+  {
+    "Symbol": "t_max",
+    "Number": 60,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Heat pump maximum flow temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "t_r",
+    "Number": 45,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Heat pump design return temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "45"
+  }
+]

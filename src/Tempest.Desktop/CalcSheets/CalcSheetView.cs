@@ -47,6 +47,30 @@ public sealed class CalcSheetView : UserControl
     public const string StaleBannerName = "Stale marker";
     public const string UpdateLinksName = "Update linked inputs";
 
+    public const string RecordPanelName = "Reference records";
+    public const string ApplyRecordCaption = "Apply record";
+    public const string SaveRecordCaption = "Save inputs as record";
+
+    /// <summary>A reference record the shown draft can take values from: its id and how it is listed (citation and revision).</summary>
+    public sealed record RecordChoice(Guid Id, string Label);
+
+    /// <summary>What the user typed to save the form's tabulated inputs as a reference record (Addendum A, §A3).</summary>
+    public sealed record RecordDraft(string Kind, string Title, string SourceTitle, string Edition, string TableOrClause, string LicenceHolder, bool LicensedSource);
+
+    // Addendum A, §A3: apply a reference record to the draft, or save the form's tabulated values as one.
+    private readonly ComboBox _recordPick = new() { MinWidth = 320, PlaceholderText = "Record" };
+    private readonly Button _applyRecord = new() { Content = ApplyRecordCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
+    private readonly ComboBox _recordKind = new() { MinWidth = 200, PlaceholderText = "Record kind" };
+    private readonly TextBox _recordTitle = new() { MinWidth = 200, Watermark = "Title (e.g. 6206 ratings)", MaxLength = 200 };
+    private readonly TextBox _recordSource = new() { MinWidth = 200, Watermark = "Source title", MaxLength = 200 };
+    private readonly TextBox _recordEdition = new() { MinWidth = 140, Watermark = "Edition and amendment", MaxLength = 200 };
+    private readonly TextBox _recordTable = new() { MinWidth = 140, Watermark = "Table or clause", MaxLength = 200 };
+    private readonly TextBox _recordHolder = new() { MinWidth = 160, Watermark = "Licence holder", MaxLength = 200 };
+    private readonly CheckBox _recordLicensed = new() { Content = "Licensed source (never exported)" };
+    private readonly Button _saveRecord = new() { Content = SaveRecordCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
+    private readonly StackPanel _recordPanel = new() { Spacing = DesignTokens.SpaceXs, IsVisible = false };
+    private IReadOnlyList<RecordChoice> _records = [];
+
     /// <summary>A calculation an input can be linked to: its id, how it is listed, and the outputs it offers.</summary>
     public sealed record LinkTarget(Guid Id, string Label, IReadOnlyList<CalcOutputPort> Outputs);
 
@@ -154,6 +178,34 @@ public sealed class CalcSheetView : UserControl
         };
         _updateLinksButton.Click += (_, _) => UpdateLinksRequested?.Invoke();
 
+        AutomationProperties.SetName(_recordPanel, RecordPanelName);
+        AutomationProperties.SetName(_recordPick, "Record to apply");
+        AutomationProperties.SetName(_applyRecord, ApplyRecordCaption);
+        AutomationProperties.SetName(_recordKind, "Kind of record to save");
+        AutomationProperties.SetName(_recordTitle, "Record title");
+        AutomationProperties.SetName(_recordSource, "Record source title");
+        AutomationProperties.SetName(_recordEdition, "Record edition and amendment");
+        AutomationProperties.SetName(_recordTable, "Record table or clause");
+        AutomationProperties.SetName(_recordHolder, "Record licence holder");
+        AutomationProperties.SetName(_recordLicensed, "Record from a licensed source");
+        AutomationProperties.SetName(_saveRecord, SaveRecordCaption);
+        _recordPick.SelectionChanged += (_, _) => UpdateRecordButtons();
+        _recordKind.SelectionChanged += (_, _) => UpdateRecordButtons();
+
+        foreach (var box in new[] { _recordTitle, _recordSource, _recordEdition, _recordTable, _recordHolder })
+            box.TextChanged += (_, _) => UpdateRecordButtons();
+
+        _applyRecord.Click += (_, _) =>
+        {
+            if (_recordPick.SelectedIndex >= 0)
+                ApplyRecordRequested?.Invoke(_records[_recordPick.SelectedIndex].Id);
+        };
+        _saveRecord.Click += (_, _) =>
+        {
+            if (DraftRecord() is { } draft)
+                SaveRecordRequested?.Invoke(draft);
+        };
+
         Content = BuildLayout();
     }
 
@@ -180,6 +232,65 @@ public sealed class CalcSheetView : UserControl
 
     /// <summary>"Update to revision n": re-pin every link to the current upstream revision.</summary>
     public event Action? UpdateLinksRequested;
+
+    /// <summary>Apply the chosen reference record (its id) to the draft.</summary>
+    public event Action<Guid>? ApplyRecordRequested;
+
+    /// <summary>Save the form's tabulated inputs of one record kind as a new reference record.</summary>
+    public event Action<RecordDraft>? SaveRecordRequested;
+
+    /// <summary>The reference records the shown draft can draw on (the coordinator lists them); the panel shows only when the template declares record kinds.</summary>
+    public void SetRecords(IReadOnlyList<RecordChoice> records)
+    {
+        ArgumentNullException.ThrowIfNull(records);
+        _records = records;
+        _recordPick.ItemsSource = records.Select(r => r.Label).ToList();
+        _recordKind.ItemsSource = SelectedTemplate?.Template.RecordKinds?.Select(k => $"{k.Title} ({string.Join(", ", k.Symbols)})").ToList() ?? [];
+        _recordPanel.IsVisible = CurrentInstance is { Status: CalcInstanceStatus.Draft } && SelectedTemplate?.Template.RecordKinds is { Count: > 0 };
+        UpdateRecordButtons();
+    }
+
+    /// <summary>Whether the records panel is shown.</summary>
+    public bool IsRecordPanelShown => _recordPanel.IsVisible;
+
+    /// <summary>The records listed, as shown.</summary>
+    public IReadOnlyList<string> RecordLabels => _records.Select(r => r.Label).ToList();
+
+    /// <summary>Picks a record to apply, as the picker would.</summary>
+    public void ChooseRecord(string label) => _recordPick.SelectedIndex = _records.ToList().FindIndex(r => r.Label == label);
+
+    /// <summary>Fills the save-as-record fields, as typing would (the kind by its index in the template's record kinds).</summary>
+    public void FillRecordDraft(int kindIndex, string title, string sourceTitle, string edition, string tableOrClause, string licenceHolder, bool licensed)
+    {
+        _recordKind.SelectedIndex = kindIndex;
+        _recordTitle.Text = title;
+        _recordSource.Text = sourceTitle;
+        _recordEdition.Text = edition;
+        _recordTable.Text = tableOrClause;
+        _recordHolder.Text = licenceHolder;
+        _recordLicensed.IsChecked = licensed;
+        UpdateRecordButtons();
+    }
+
+    private RecordDraft? DraftRecord()
+    {
+        var kinds = SelectedTemplate?.Template.RecordKinds ?? [];
+
+        if (_recordKind.SelectedIndex < 0 || _recordKind.SelectedIndex >= kinds.Count)
+            return null;
+
+        var fields = new[] { _recordTitle.Text, _recordSource.Text, _recordEdition.Text, _recordTable.Text, _recordHolder.Text };
+        return fields.Any(string.IsNullOrWhiteSpace)
+            ? null
+            : new RecordDraft(kinds[_recordKind.SelectedIndex].Kind, fields[0]!.Trim(), fields[1]!.Trim(), fields[2]!.Trim(), fields[3]!.Trim(), fields[4]!.Trim(), _recordLicensed.IsChecked == true);
+    }
+
+    private void UpdateRecordButtons()
+    {
+        var draft = CurrentInstance is { Status: CalcInstanceStatus.Draft };
+        _applyRecord.IsEnabled = draft && _recordPick.SelectedIndex >= 0;
+        _saveRecord.IsEnabled = draft && DraftRecord() is not null;
+    }
 
     /// <summary>The calculations the shown draft can link an input to (the coordinator lists them).</summary>
     public void SetLinkTargets(IReadOnlyList<LinkTarget> targets)
@@ -838,6 +949,21 @@ public sealed class CalcSheetView : UserControl
         right.Children.Add(staleRow);
         right.Children.Add(Section("Inputs", _form));
         right.Children.Add(_linkPanel);
+        var applyRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        applyRow.Children.Add(new TextBlock { Text = "Take values from", VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeBody });
+        applyRow.Children.Add(_recordPick);
+        applyRow.Children.Add(_applyRecord);
+        var saveRow = new WrapPanel { Orientation = Orientation.Horizontal };
+
+        foreach (var control in new Control[] { _recordKind, _recordTitle, _recordSource, _recordEdition, _recordTable, _recordHolder, _recordLicensed, _saveRecord })
+        {
+            control.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceXs);
+            saveRow.Children.Add(control);
+        }
+
+        _recordPanel.Children.Add(applyRow);
+        _recordPanel.Children.Add(saveRow);
+        right.Children.Add(_recordPanel);
         right.Children.Add(_problems);
 
         var resultsHead = new StackPanel { Spacing = DesignTokens.SpaceXs };

@@ -1,0 +1,153 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: heat-pump-retrofit-55-45    Revision: A
+Title: Sealed heating system: emitters and expansion vessel
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+A closed LTHW system below 100 °C: the catalogue output (at ΔT 50 K) each room's emitter needs at the design flow, return and room temperatures, checked against the selected emitters; and the minimum expansion vessel for the system volume, fill and maximum temperatures, static head and pressures.
+Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_f − t_r)/ln((t_f − t_i)/(t_r − t_i)) Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n System volume: V_s = Σ V_em + V_pipe + V_plant Expansion: e_x = ρ(t_fill)/ρ(t_max) − 1 (water density by Kell 1975), or a glycol record Pre-charge: p_i = ρ·g·h_static + margin (≥ static head) Vessel: V_e = e_x·V_s/[1 − (p_i + 1)/(p_f + 1)] (pressures in bar gauge, + 1 bar for absolute)
+  Ref: BS EN 442-2:2014 cl. 5 — Radiators and convectors — test methods and rating (characteristic equation)
+  Ref: CIBSE Guide B1 2016, §1.4 — Heating — sealed systems and expansion
+  Ref: BS EN 12828:2012+A1:2014 cl. 4.6 — Heating systems in buildings — expansion vessels and pressure
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  rooms | Rooms and emitters | 5 row(s) |  | evidence: Room heat loss calculation (B4) and radiator survey | any
+  rooms[1] |  | name = Lounge; Phi = 1800 W; Phi50 = 3600 W; V_em = 12 L |  |  | 
+  rooms[2] |  | name = Kitchen; Phi = 1100 W; Phi50 = 2200 W; V_em = 8 L |  |  | 
+  rooms[3] |  | name = Bed 1; Phi = 900 W; Phi50 = 1800 W; V_em = 7 L |  |  | 
+  rooms[4] |  | name = Bed 2; Phi = 700 W; Phi50 = 1400 W; V_em = 5 L |  |  | 
+  rooms[5] |  | name = Bathroom; Phi = 600 W; Phi50 = 1100 W; V_em = 4 L |  |  | 
+  t_f | Flow temperature | 55 | degC | spec: Heat pump design flow temperature | 30 … 90 degC
+  t_r | Return temperature | 45 | degC | spec: Heat pump design return temperature | 30 … 90 degC
+  t_i | Room temperature | 21 | degC | spec: Living-room design temperature | 16 … 24 degC
+  n | Emitter exponent | 1.3 |  | assumption: Panel radiators, manufacturer exponent about 1.3. | 1.1 … 1.5
+  dT_method | Mean temperature difference | arithmetic mean (catalogue rating) |  | assumption: Catalogue ratings use the arithmetic mean. | any
+  V_pipe | Pipework water content | 40 | L | assumption: 15 mm and 22 mm copper, about 120 m. | 0 … 10000 L
+  V_plant | Plant water content (boiler, cylinder coil, buffer) | 15 | L | spec: Heat pump and plate exchanger content, datasheet | 0 … 10000 L
+  t_fill | Fill temperature | 10 | degC | assumption: Mains water at fill. | 4 … 30 degC
+  t_max | Maximum system temperature | 60 | degC | spec: Heat pump maximum flow temperature | 30 … 99 degC
+  h_static | Static height above the vessel | 7 | m | drawing: M-SEC-001 rev A | 0 … 50 m
+  p_margin | Pre-charge margin over static head | 0.3 | bar | assumption: Usual margin over static head. | 0 … 1 bar
+  p_f | Final (maximum working) pressure, gauge | 2.5 | bar | assumption: 0.5 bar below the safety valve. | 0.5 … 6 bar
+  p_prv | Safety valve setting, gauge | 3 | bar | spec: Heat pump safety valve | 1.5 … 6 bar
+  V_vessel | Selected vessel volume | 12 | L | evidence: Site survey: existing 12 L vessel | 1 … 5000 L
+
+3. ASSUMPTIONS
+  A1. Closed LTHW system below 100 °C; emitter output follows Φ50·(ΔT/50)^n with the manufacturer's n. (Catalogue ratings at 75/65/20 °C.)
+  A2. Water density from the Kell (1975) correlation, within about 0.01 % of IAPWS-95 at atmospheric pressure, 0–100 °C; glycol mixtures take e from a record. (Formula, not a table.)
+  A3. Gauge pressures are made absolute by adding 1 bar, as the vessel relation is usually written. (Within 1.3 % of the standard atmosphere.)
+  A4. n (Emitter exponent) is taken as 1.3. (Panel radiators, manufacturer exponent about 1.3.)
+  A5. dT_method (Mean temperature difference) is taken as arithmetic mean (catalogue rating). (Catalogue ratings use the arithmetic mean.)
+  A6. V_pipe (Pipework water content) is taken as 40 L. (15 mm and 22 mm copper, about 120 m.)
+  A7. t_fill (Fill temperature) is taken as 10 degC. (Mains water at fill.)
+  A8. p_margin (Pre-charge margin over static head) is taken as 0.3 bar. (Usual margin over static head.)
+  A9. p_f (Final (maximum working) pressure, gauge) is taken as 2.5 bar. (0.5 bar below the safety valve.)
+
+4. WORKING
+  [14] dT = (t_f + t_r) / 2 - t_i    « BS EN 442-2 cl. 5
+      = (55 degC + 45 degC) / 2 − 21 degC
+      = 29 K
+        Mean water-to-room temperature difference
+  [15] f_dT = (dT / 50 K)^n
+      = (29 K / 50 K)^1.3
+      = 0.49256
+        Output correction from ΔT 50 K
+  [16] R1 = Φ_req/f_dT
+      = 1800 / 0.49256
+      = 3654.4 W
+        Lounge: catalogue output needed; selected 3600 W gives 1773.2 W (utilisation 1.02)
+  [17] R2 = Φ_req/f_dT
+      = 1100 / 0.49256
+      = 2233.2 W
+        Kitchen: catalogue output needed; selected 2200 W gives 1083.6 W (utilisation 1.02)
+  [18] R3 = Φ_req/f_dT
+      = 900 / 0.49256
+      = 1827.2 W
+        Bed 1: catalogue output needed; selected 1800 W gives 886.6 W (utilisation 1.02)
+  [19] R4 = Φ_req/f_dT
+      = 700 / 0.49256
+      = 1421.2 W
+        Bed 2: catalogue output needed; selected 1400 W gives 689.58 W (utilisation 1.02)
+  [20] R5 = Φ_req/f_dT
+      = 600 / 0.49256
+      = 1218.1 W
+        Bathroom: catalogue output needed; selected 1100 W gives 541.81 W (utilisation 1.11)
+  [21] Phi_tot = Σ Φ_req
+      = 5100 W
+      = 5100 W
+        Total heat required by the rooms
+  [22] V_em = Σ V_em
+      = 36 L
+      = 36 L
+        Emitter water content
+  [23] V_s = V_em + V_pipe + V_plant
+      = 36 L + 40 L + 15 L
+      = 91 L
+        System water volume
+  [24] rho_fill = ρ(t_fill), Kell 1975
+      = t = 10 °C
+      = 999.7 kg/m³
+        Water density at fill
+  [25] rho_max = ρ(t_max), Kell 1975
+      = t = 60 °C
+      = 983.2 kg/m³
+        Water density at maximum temperature
+  [26] e_x = rho_fill / rho_max - 1
+      = 999.7 kg/m³ / 983.2 kg/m³ − 1
+      = 0.016783
+        Expansion coefficient of water
+  [27] p_st = rho_fill * 9.80665 m/s^2 * h_static
+      = 999.7 kg/m³ × 9.80665 m/s^2 × 7 m
+      = 0.68626 bar
+        Static head at the vessel
+  [28] p_i = p_st + p_margin
+      = 0.68626 bar + 0.3 bar
+      = 0.98626 bar
+        Pre-charge (initial) pressure, gauge
+  [29] V_e = e_x * V_s / (1 - (p_i + 1 bar) / (p_f + 1 bar))    « CIBSE Guide B1 §1.4
+      = 0.016783 × 91 L / (1 − (0.98626 bar + 1 bar) / (2.5 bar + 1 bar))
+      = 3.5312 L
+        Minimum expansion vessel volume
+  [30] u_emit = max over rooms Φ_req/(Φ50·f_dT)
+      = worst room
+      = 1.1074
+        Emitter utilisation (governing room)
+  [32] u_vessel = V_e / V_vessel
+      = 3.5312 L / 12 L
+      = 0.29427
+        Vessel utilisation
+
+5. RESULTS
+  dT = 29 K    Mean temperature difference
+  f_dT = 0.49256    Output correction factor
+  R1 = 3654.4 W    Lounge: Φ50 needed
+  R2 = 2233.2 W    Kitchen: Φ50 needed
+  R3 = 1827.2 W    Bed 1: Φ50 needed
+  R4 = 1421.2 W    Bed 2: Φ50 needed
+  R5 = 1218.1 W    Bathroom: Φ50 needed
+  Phi_tot = 5100 W    Total heat required
+  V_em = 36 L    Emitter water content
+  V_s = 91 L    System water volume
+  e_x = 0.016783    Expansion coefficient
+  p_i = 0.98626 bar    Pre-charge pressure
+  V_e = 3.5312 L    Minimum vessel volume
+  u_emit = 1.1074    Emitter utilisation
+  u_vessel = 0.29427    Vessel utilisation
+
+6. CHECKS (governing first)
+  FAIL  Selected emitters against room heat (governing room): u_emit = 1.1074 vs u_emit ≤ 1  utilisation 1.11
+  PASS  Selected vessel against minimum volume: u_vessel = 0.29427 vs u_vessel ≤ 1  utilisation 0.294  « BS EN 12828 cl. 4.6
+
+7. APPLICABILITY
+  WARNING record.n: n: a tabulated value not taken from a reference record (Emitter exponent); enter it as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: bs.sealed-system@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 5/5
+  Test run: —
