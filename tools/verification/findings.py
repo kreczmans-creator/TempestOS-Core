@@ -42,7 +42,9 @@ def collect():
                 c = dict(zip(header, cells(line)))
                 original = level(c.get("Severity", ""))
                 reviewed = level(c["Reviewed"]) if c.get("Reviewed") else original
-                status = next((v for k, v in c.items() if k.startswith("Status")), "Open")
+                # The last "Status @ <sha>" column is the latest re-check.
+                status = [v for k, v in c.items() if k.startswith("Status")]
+                status = status[-1] if status else "Open"
                 status = "Fixed" if status.lower().startswith("fixed") else ("Open" if not status else status)
                 rows.append({
                     "status": status,
