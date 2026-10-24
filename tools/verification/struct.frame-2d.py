@@ -8,6 +8,7 @@ A small direct-stiffness solver written from first principles in numpy (dense, n
     (this gives the exact fixed-end forces, so no Macaulay table is needed);
   * member diagrams by direct integration of the end state: V, M (sagging +), N (tension +),
     then EI y'' = M integrated twice on 4001 stations; the far-end deflection is checked against the solved value.
+Extra checks (F*, C*, X*, B120, COMB) compare hard-coded product values with this solver; a DIFF there is a finding, not a KAT failure, so the exit status follows the known-answer cases only.
 Units: kN, m, kN*m, GPa -> kN/m^2, cm^2 -> m^2, cm^4 -> m^4.  Deflection reported in mm.
 Exit 0 when every KAT row passes max(KAT tol, 1e-6).
 """

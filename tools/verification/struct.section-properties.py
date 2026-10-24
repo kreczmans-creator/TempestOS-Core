@@ -9,6 +9,7 @@ Method (own code, not a translation of the C#):
   * Torsion: exact series (solid rectangle), Bredt + t^3 term (closed thin wall),
     sum b t^3 / 3 plus El Darwish-Johnston fillet term (rolled I), pi d^4/32 (round).
   * Warping: I_w = I_minor (h - t_f)^2 / 4.
+Extra checks (E1..E12) compare hard-coded product values with this script; a DIFF there is a finding, not a KAT failure, so the exit status follows the known-answer cases only.
 Units inside: mm. Exit 0 when every row passes max(KAT tol, 1e-6).
 """
 import math
@@ -261,7 +262,8 @@ def j_bredt_rounded_box(h, b, t, ro):
 
 
 def j_I_rolled(h, b, tw, tf, r):
-    """Sum b t^3 / 3 plus the El Darwish-Johnston fillet term (AISC Design Guide 9 form)."""
+    """Sum b t^3 / 3 plus a fillet term with the first-guess alpha = (tw/tf)(0.15 + 0.1 r/tf).
+    Not used for the KAT: it overshoots the finite-element J of the UB 457x191x98 by 0.9 %. Kept for reference."""
     base = (2 * b * tf ** 3 + (h - 2 * tf) * tw ** 3) / 3
     if r <= 0:
         return base
