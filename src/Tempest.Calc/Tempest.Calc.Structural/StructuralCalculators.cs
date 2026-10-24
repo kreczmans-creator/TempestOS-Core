@@ -13,5 +13,6 @@ public static class StructuralCalculators
         new MemberChecksCalculator(),
         new LoadCombinationsCalculator(),
         new ConnectionCalculator(),
+        new BasePlateCalculator(),
     ];
 }
