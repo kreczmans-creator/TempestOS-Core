@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Tempest.Calc.Sheets\Tempest.Calc.Sheets.csproj" />
+    <ProjectReference Include="..\Tempest.Calc.Structural\Tempest.Calc.Structural.csproj" />
   </ItemGroup>
 
 </Project>

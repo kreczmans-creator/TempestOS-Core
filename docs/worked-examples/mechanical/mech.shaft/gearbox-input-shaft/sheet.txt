@@ -1,0 +1,224 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: gearbox-input-shaft    Revision: A
+Title: Shaft: static, fatigue, keys, critical speed
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a steady torque: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.
+Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²) Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1) Endurance: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′, S_e′ = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R Fatigue (DE-Goodman): 1/n_f = σ_a/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_m²) Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²); Dunkerley 1/ω² = Σ m_i·δ_ii Parallel key: τ = 2T/(d·w·L), σ = 4T/(d·h·L)
+  Ref: Shigley's Mechanical Engineering Design 11th ed., Ch. 6 (§6-9 Marin factors), Ch. 7 (§7-4 to §7-7) — Fatigue, shaft stresses, deflection, critical speeds, keys
+  Ref: Mott, Machine Elements in Mechanical Design 6th ed., Ch. 12 — Shaft design
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  segments | Shaft segments (left to right) | 5 row(s) |  | drawing: GBX-SH-01 rev C | any
+  segments[1] |  | x_end = 40 mm; d = 35 mm; d_i = 0 mm |  |  | 
+  segments[2] |  | x_end = 120 mm; d = 40 mm; d_i = 0 mm |  |  | 
+  segments[3] |  | x_end = 180 mm; d = 45 mm; d_i = 0 mm |  |  | 
+  segments[4] |  | x_end = 260 mm; d = 40 mm; d_i = 0 mm |  |  | 
+  segments[5] |  | x_end = 340 mm; d = 35 mm; d_i = 0 mm |  |  | 
+  x_A | Bearing A position | 20 | mm | drawing: GBX-SH-01 rev C | 0 … 3000 mm
+  x_B | Bearing B position | 280 | mm | drawing: GBX-SH-01 rev C | 1 … 3000 mm
+  loads | Radial loads and masses | 1 row(s) |  | spec: Gear mesh forces from the gear calculation | any
+  loads[1] |  | x = 150 mm; F_y = -2.2 kN; F_z = 6 kN; m = 4 kg |  |  | 
+  T | Torque transmitted | 0.3 | kN*m | spec: Motor rated torque × service factor (E1) | 0 … 50 kN*m
+  x_T1 | Torque enters at | 150 | mm | drawing: GBX-SH-01 rev C | 0 … 3000 mm
+  x_T2 | Torque leaves at | 330 | mm | drawing: GBX-SH-01 rev C | 0 … 3000 mm
+  n | Operating speed | 1450 | rpm | spec: Motor nameplate | 0 … 30000 rpm
+  sections | Sections to check | 4 row(s) |  | assumption: Shoulders r/d ≈ 0.05; keyseat at the pinion (K_t 2.14, K_ts 3.0); q from the Neuber fit. | any
+  sections[1] |  | x = 120 mm; K_t = 1.7; K_ts = 1.5; q = 0.8; q_s = 0.9 |  |  | 
+  sections[2] |  | x = 150 mm; K_t = 2.14; K_ts = 3; q = 0.8; q_s = 0.9 |  |  | 
+  sections[3] |  | x = 180 mm; K_t = 1.7; K_ts = 1.5; q = 0.8; q_s = 0.9 |  |  | 
+  sections[4] |  | x = 260 mm; K_t = 1.6; K_ts = 1.4; q = 0.8; q_s = 0.9 |  |  | 
+  S_ut | Ultimate tensile strength | 700 | MPa | spec: EN 10083-3 42CrMo4 +QT, certificate | 300 … 2000 MPa
+  S_y | Yield strength | 500 | MPa | spec: EN 10083-3 42CrMo4 +QT, certificate | 150 … 1900 MPa
+  E | Young's modulus | 207 | GPa | assumption: Steel. | 50 … 250 GPa
+  rho | Density (shaft self-mass in the critical speed) | 7850 | kg/m^3 | assumption: Steel. | 0 … 20000 kg/m^3
+  finish | Surface finish | machined or cold-drawn |  | drawing: GBX-SH-01 rev C | any
+  R | Reliability | 99 | % | assumption: Design reliability. | 50 … 99.9 %
+  k_d | Temperature factor k_d | 1 |  | assumption: Below 250 °C. | 0.5 … 1.1
+  k_f | Miscellaneous factor k_f | 1 |  | assumption: No other effects. | 0.3 … 1.5
+  n_target | Target safety factor | 1.5 |  | spec: Company design standard | 1.2 … 4
+  theta_max | Slope limit at the bearings | 0.001 | rad | assumption: Deep-groove ball bearing slope limit. | 0.00001 … 0.1 rad
+  y_max | Deflection limit at the loads | 0.13 | mm | assumption: Spur gear deflection limit. | 0.001 … 10 mm
+  x_key | Key position | 150 | mm | drawing: GBX-SH-01 rev C | 0 … 3000 mm
+  w | Key width | 14 | mm | drawing: GBX-SH-01 rev C | 1 … 100 mm
+  h | Key height | 9 | mm | drawing: GBX-SH-01 rev C | 1 … 100 mm
+  L_key | Key length | 40 | mm | drawing: GBX-SH-01 rev C | 1 … 500 mm
+  S_y_key | Key yield strength | 400 | MPa | spec: C45 key steel | 150 … 1500 MPa
+
+3. ASSUMPTIONS
+  A1. Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation, torque steady. (Shigley 11th ed. §7-4.)
+  A2. No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound. (Shigley 11th ed. §7-6.)
+  A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (§A5.)
+  A4. At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises. (Shigley 11th ed. §6-9, §7-4.)
+  A5. sections (Sections to check) is taken as 4 row(s). (Shoulders r/d ≈ 0.05; keyseat at the pinion (K_t 2.14, K_ts 3.0); q from the Neuber fit.)
+  A6. E (Young's modulus) is taken as 207 GPa. (Steel.)
+  A7. rho (Density (shaft self-mass in the critical speed)) is taken as 7850 kg/m^3. (Steel.)
+  A8. R (Reliability) is taken as 99 %. (Design reliability.)
+  A9. k_d (Temperature factor k_d) is taken as 1. (Below 250 °C.)
+  A10. k_f (Miscellaneous factor k_f) is taken as 1. (No other effects.)
+  A11. theta_max (Slope limit at the bearings) is taken as 0.001 rad. (Deep-groove ball bearing slope limit.)
+  A12. y_max (Deflection limit at the loads) is taken as 0.13 mm. (Spur gear deflection limit.)
+
+4. WORKING
+  [17] R_A = √(R_A,y² + R_A,z²)
+      = √(1.1² + -3²)
+      = 3.1953 kN
+        Radial reaction at bearing A
+  [18] R_B = √(R_B,y² + R_B,z²)
+      = √(1.1² + -3²)
+      = 3.1953 kN
+        Radial reaction at bearing B
+  [19] d_A = seat diameter at A
+      = x = 20 mm
+      = 35 mm
+        Shaft diameter at bearing A
+  [20] d_B = seat diameter at B
+      = x = 280 mm
+      = 35 mm
+        Shaft diameter at bearing B
+  [21] M_max = max √(M_y² + M_z²) along the shaft
+      = 37 stations
+      = 0.41539 kN·m
+        Largest bending moment
+  [22] theta_A = slope at A (two planes)
+      = x = 20 mm
+      = 0.0008961 rad
+        Slope at bearing A
+  [23] theta_B = slope at B (two planes)
+      = x = 280 mm
+      = 0.0008961 rad
+        Slope at bearing B
+  [24] y_load = largest deflection at a load
+      = 0.071775 mm at 150
+      = 0.071775 mm
+        Deflection at the loads
+  [26] k_a = a·S_ut^b    « Shigley 11th ed. §6-9
+      = 4.51 × 700^-0.265 (machined or cold-drawn)
+      = 0.79474
+        Surface factor
+  [27] k_e = 1 − 0.08·z_R    « Shigley 11th ed. §6-9
+      = 1 − 0.08 × 2.3263
+      = 0.81389
+        Reliability factor
+  [28] S_e1 = 0.5·S_ut
+      = 700 MPa
+      = 350 MPa
+        Rotating-beam endurance limit
+  [29] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 11th ed. §7-4
+      = x = 120 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 0 N·m, σ_a = 79.334 MPa, τ_m = 0 MPa, n_y = 6.3025
+      = 2.3845
+        Section at 120 mm: fatigue safety factor (DE-Goodman)
+  [30] X2 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 11th ed. §7-4
+      = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 186.8 MPa, K_f = 1.912, K_fs = 2.8, M = 415.39 N·m, T = 300 N·m, σ_a = 88.778 MPa, τ_m = 46.947 MPa, n_y = 4.1532
+      = 1.6909
+        Section at 150 mm: fatigue safety factor (DE-Goodman)
+  [31] X3 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 11th ed. §7-4
+      = x = 180 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 300 N·m, σ_a = 79.334 MPa, τ_m = 34.616 MPa, n_y = 5.0281
+      = 1.9801
+        Section at 180 mm: fatigue safety factor (DE-Goodman)
+  [32] X4 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 11th ed. §7-4
+      = x = 260 mm, d = 35 mm, k_b = 0.84763, S_e = 191.9 MPa, K_f = 1.48, K_fs = 1.36, M = 63.906 N·m, T = 300 N·m, σ_a = 22.47 MPa, τ_m = 48.465 MPa, n_y = 5.7538
+      = 4.2192
+        Section at 260 mm: fatigue safety factor (DE-Goodman)
+  [33] S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′ (governing section)
+      = k_c = 1
+      = 186.8 MPa
+        Endurance limit at the governing section
+  [34] n_f_min = min over sections
+      = 4 section(s)
+      = 1.6909
+        Lowest fatigue safety factor
+  [35] n_y_min = min over sections S_y/σ′_max
+      = 4 section(s)
+      = 4.1532
+        Lowest yield safety factor
+  [36] n_c = √(g·Σm·y/Σm·y²) (Rayleigh)    « Shigley 11th ed. §7-6
+      = Σm = 7.2337 kg over 37 nodes
+      = 39515 rpm
+        First lateral critical speed (Rayleigh)
+  [37] n_c_D = 1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)    « Shigley 11th ed. §7-6
+      = 37 masses
+      = 37295 rpm
+        First critical speed, Dunkerley lower bound
+  [38] r_c = n_c/n
+      = 39515 / 1450
+      = 27.251
+        Critical-speed ratio
+  [43] tau_key = 2T/(d·w·L)    « Shigley 11th ed. §7-7
+      = 2 × 300 / (45 × 14 × 40) mm³
+      = 23.81 MPa
+        Key shear stress
+  [44] sigma_key = 4T/(d·h·L)    « Shigley 11th ed. §7-7
+      = 4 × 300 / (45 × 9 × 40) mm³
+      = 74.074 MPa
+        Key bearing stress
+  [46] L_key_req = max(2T·n/(d·w·0.577S_y), 4T·n/(d·h·S_y))
+      = n = 1.5
+      = 11.111 mm
+        Key length required
+  [47] u_key = L_req/L
+      = 11.111 / 40
+      = 0.27778
+        Key utilisation
+  [48] u_f = n_target/n_f,min
+      = 1.5 / 1.6909
+      = 0.88712
+        Fatigue utilisation
+  [49] u_y = n_target/n_y,min
+      = 1.5 / 4.1532
+      = 0.36117
+        Yield utilisation
+  [50] u_slope = max(θ_A, θ_B)/θ_max
+      = 0.0008961 / 0.001
+      = 0.8961
+        Slope utilisation
+  [51] u_defl = y_load/y_max
+      = 0.071775 / 0.13 mm
+      = 0.55212
+        Deflection utilisation
+
+5. RESULTS
+  R_A = 3.1953 kN    Reaction at A
+  R_B = 3.1953 kN    Reaction at B
+  d_A = 35 mm    Seat diameter at A
+  d_B = 35 mm    Seat diameter at B
+  M_max = 0.41539 kN·m    Largest bending moment
+  theta_A = 0.0008961 rad    Slope at A
+  theta_B = 0.0008961 rad    Slope at B
+  y_load = 0.071775 mm    Deflection at the loads
+  S_e = 186.8 MPa    Endurance limit
+  n_f_min = 1.6909    Lowest fatigue safety factor
+  n_y_min = 4.1532    Lowest yield safety factor
+  n_c = 39515 rpm    First critical speed (Rayleigh)
+  n_c_D = 37295 rpm    Dunkerley lower bound
+  r_c = 27.251    Critical-speed ratio
+  tau_key = 23.81 MPa    Key shear
+  sigma_key = 74.074 MPa    Key bearing
+  L_key_req = 11.111 mm    Key length required
+  u_key = 0.27778    Key utilisation
+
+6. CHECKS (governing first)
+  PASS  Slope at the bearings against limit: u_slope = 0.8961 vs u_slope ≤ 1  utilisation 0.896
+  PASS  Fatigue safety factor against target (DE-Goodman): u_f = 0.88712 vs u_f ≤ 1  utilisation 0.887  « Shigley 11th ed. §7-4
+  PASS  Deflection at the loads against limit: u_defl = 0.55212 vs u_defl ≤ 1  utilisation 0.552
+  PASS  Yield safety factor against target: u_y = 0.36117 vs u_y ≤ 1  utilisation 0.361
+  PASS  Key length against required: u_key = 0.27778 vs u_key ≤ 1  utilisation 0.278
+
+7. APPLICABILITY
+  WARNING record.S_ut: S_ut: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
+  WARNING record.S_y: S_y: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
+  WARNING record.E: E: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
+  WARNING record.theta_max: theta_max: a tabulated value not taken from a reference record (Slope and deflection limits); enter it as one so its source, edition and licence travel with it.
+  WARNING record.y_max: y_max: a tabulated value not taken from a reference record (Slope and deflection limits); enter it as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: mech.shaft@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 3/3
+  Test run: —
