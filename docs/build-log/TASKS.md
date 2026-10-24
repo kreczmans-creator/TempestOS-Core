@@ -55,3 +55,16 @@
 4. Read the CI run for the new release head (GitHub Actions, workflow `ci.yml`, branch `release/v0.26.0`, event push). Three Windows-only causes are already fixed: xUnit analyser rules (CI builds with `-p:TreatWarningsAsErrors=true`; build locally the same way), PDFs over 200 KB from the Windows default face (subsetter keeps only PDF tables, D-36), Red budgets under the slower runners (`TEMPEST_TEST_TIMEOUT_FACTOR`). A new failure: fetch the failed job's log, find `FAILED:` lines, fix on `v0.26.0/phase-7-reviews`, re-gate, repeat step 3. If PDFs are still over 200 KB on Windows only, record RR-01 as open in STATUS and the handover and do not tag.
 5. If CI Gate is green: tick every §10 line in STATUS.md ("Tests: … Windows CI green on <sha>"), update PR #31's body (Phase 7 done, rc1 tagged), then `git tag -a v0.26.0-rc1 <release sha> -m "v0.26.0-rc1"` and `git push origin v0.26.0-rc1`. Never tag `v0.26.0`.
 6. Append one LOG.md line and push STATUS/TASKS/LOG on `release/v0.26.0` (a docs-only commit is fine there; it is the dashboard).
+
+## Addendum A — twelve more calculators (v0.26.0, no tag)
+- [x] A1 orientation (`docs/build-log/addendum-A-orientation.md`)
+- [ ] A-0 L1 result linking + calc packs (`v0.26.0/addA-0-linking`)
+- [ ] A-1 M5 bearing life, S5 EN 1990 combinations, B5 heat exchanger, E6 load budget, B6 sealed system (`v0.26.0/addA-1-quick`)
+- [ ] A-2 M4 shaft, E5 fault protection, M6 weld group; drive train E1 → M4 → M5 → M2 (`v0.26.0/addA-2-machine`)
+- [ ] A-3 S4 EN 1993-1-8 bolts and welds; v0.25.2 bolt shear reconciled (`v0.26.0/addA-3-connections`)
+- [ ] A-4 E4 conductor sizing, B4 U-value and room heat loss; motor-circuit pack; licensed records refuse export (`v0.26.0/addA-4-records`)
+- [ ] A-5 S6 base plate (`v0.26.0/addA-5-baseplate`)
+- [ ] A7 five linked chains: integration tests + issued pack worked examples
+- [ ] Security + every colour team re-run on the delta (Addendum A sections)
+- [ ] A8 owner test pack + handover Addendum A section
+- [ ] A9 gates; STATUS final line
