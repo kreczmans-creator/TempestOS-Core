@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.Calc.Library;
+using Tempest.Calc.Sheets;
 using Tempest.Core.Evidence;
 using Tempest.Desktop.Theming;
 
@@ -16,6 +17,7 @@ namespace Tempest.Desktop.CalcSheets;
 public sealed partial class CalcSheetView
 {
     public const string SavedPanelName = "Saved calculations";
+    public const string SavedListName = "Saved calculations list";
     public const string OpenSavedCaption = "Open";
     public const string PacksPanelName = "Calculation packs";
     public const string CreatePackCaption = "Create pack from template";
@@ -40,7 +42,8 @@ public sealed partial class CalcSheetView
     public sealed record PackTemplateChoice(string Id, string Title, string Description);
 
     /// <summary>What the user typed to check a pack.</summary>
-    public sealed record PackCheckDraft(string CheckerName, string Organisation, string Statement, CheckOutcome Outcome);
+    /// <summary>The checker is not typed: the coordinator uses the signed-in principal, so the issued sheet can only name who really checked.</summary>
+    public sealed record PackCheckDraft(string Organisation, string Statement, CheckOutcome Outcome);
 
     /// <summary>What the user typed to issue a pack.</summary>
     public sealed record PackIssueDraft(string IssueReference, string Client);
@@ -48,6 +51,8 @@ public sealed partial class CalcSheetView
     private readonly ListBox _savedList = new() { MinHeight = 60, MaxHeight = 240 };
     private readonly Button _openSaved = new() { Content = OpenSavedCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly TextBlock _savedEmpty = Caption("Open a project to list its saved calculations.");
+    private readonly TextBlock _savedCap = WithHidden(Caption(string.Empty));
+    private readonly TextBlock _packsCap = WithHidden(Caption(string.Empty));
     private IReadOnlyList<SavedCalculation> _saved = [];
 
     private readonly ComboBox _packTemplatePick = new() { HorizontalAlignment = HorizontalAlignment.Stretch, PlaceholderText = "Pack template" };
@@ -57,10 +62,17 @@ public sealed partial class CalcSheetView
     private readonly ListBox _packList = new() { MinHeight = 60, MaxHeight = 200 };
     private readonly ListBox _packMemberList = new() { MinHeight = 60, MaxHeight = 200 };
     private readonly Button _openPackMember = new() { Content = OpenPackMemberCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
-    private readonly TextBox _packChecker = PackInput("Checker name");
+    private readonly TextBox _packChecker = new() { IsReadOnly = true, Watermark = "Signed-in person", FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly TextBox _packOrganisation = PackInput("Checker's organisation");
     private readonly TextBox _packStatement = PackInput("Check statement");
-    private readonly ComboBox _packOutcome = new() { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = Enum.GetValues<CheckOutcome>(), SelectedIndex = 0 };
+    private static readonly (CheckOutcome Outcome, string Text)[] Outcomes =
+    [
+        (CheckOutcome.Accepted, "Accepted"),
+        (CheckOutcome.AcceptedWithComments, "Accepted with comments"),
+        (CheckOutcome.Rejected, "Rejected"),
+    ];
+
+    private readonly ComboBox _packOutcome = new() { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = Outcomes.Select(o => o.Text).ToList(), SelectedIndex = 0 };
     private readonly Button _checkPack = new() { Content = CheckPackCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly TextBox _packReference = PackInput("Issue reference");
     private readonly TextBox _packClient = PackInput("Client");
@@ -70,6 +82,8 @@ public sealed partial class CalcSheetView
     private IReadOnlyList<SavedCalculation> _packMembers = [];
     private bool _projectOpen;
     private bool _loadingPacks;
+    private bool _busy;
+    private bool _issueRefillPending;
 
     /// <summary>Open the chosen saved calculation or pack member in the form.</summary>
     public event Action<Guid>? OpenSavedRequested;
@@ -85,6 +99,21 @@ public sealed partial class CalcSheetView
 
     /// <summary>Issue the pack (id) with what was typed.</summary>
     public event Action<Guid, PackIssueDraft>? IssuePackRequested;
+
+    /// <summary>The note shown when the saved list stopped at its cap, or empty.</summary>
+    public string SavedCapNote => _savedCap.IsVisible ? _savedCap.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The note shown when the packs list stopped at its cap, or empty.</summary>
+    public string PacksCapNote => _packsCap.IsVisible ? _packsCap.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The signed-in person the pack check will be recorded under, as shown.</summary>
+    public string PackCheckerText => _packChecker.Text ?? string.Empty;
+
+    /// <summary>The issue reference and client as shown.</summary>
+    public (string IssueReference, string Client) PackIssueText => (_packReference.Text ?? string.Empty, _packClient.Text ?? string.Empty);
+
+    /// <summary>Whether an action is running (Open, Create, Check and Issue are off meanwhile, so a double click does nothing).</summary>
+    public bool IsBusy => _busy;
 
     /// <summary>The saved calculations listed, as shown.</summary>
     public IReadOnlyList<SavedCalculation> SavedCalculations => _saved;
@@ -129,9 +158,11 @@ public sealed partial class CalcSheetView
     }
 
     /// <summary>Lists the project's saved calculations (superseded revisions are left out by the coordinator); the selection is kept by id.</summary>
-    public void SetSavedCalculations(IReadOnlyList<SavedCalculation> saved)
+    public void SetSavedCalculations(IReadOnlyList<SavedCalculation> saved, bool truncated = false)
     {
         ArgumentNullException.ThrowIfNull(saved);
+        _savedCap.Text = truncated ? $"Only the {saved.Count} most recently updated calculations are listed." : string.Empty;
+        _savedCap.IsVisible = truncated;
         var keep = SelectedSavedId;
         _saved = saved;
         _savedList.ItemsSource = ListItems(saved);
@@ -154,9 +185,11 @@ public sealed partial class CalcSheetView
     }
 
     /// <summary>Lists the project's packs; the selection is kept by id and raises no <see cref="PackSelected"/>.</summary>
-    public void SetPacks(IReadOnlyList<PackChoice> packs)
+    public void SetPacks(IReadOnlyList<PackChoice> packs, bool truncated = false)
     {
         ArgumentNullException.ThrowIfNull(packs);
+        _packsCap.Text = truncated ? $"Only the {packs.Count} most recently updated packs are listed." : string.Empty;
+        _packsCap.IsVisible = truncated;
         var keep = SelectedPackId;
         _packs = packs;
         _loadingPacks = true;
@@ -181,20 +214,41 @@ public sealed partial class CalcSheetView
         UpdateSavedAndPackButtons();
     }
 
-    /// <summary>Fills the check fields that are still empty (the checker, the organisation and a statement), as the single Check does.</summary>
-    public void SuggestPackCheck(string checkerName, string organisation, string statement)
+    /// <summary>Shows who is signed in: the person the pack check is recorded under. Not editable.</summary>
+    public void SetPackChecker(string checkerName)
     {
-        FillIfBlank(_packChecker, checkerName);
+        _packChecker.Text = checkerName;
+        UpdateSavedAndPackButtons();
+    }
+
+    /// <summary>Turns the action buttons off while a pack or open action runs.</summary>
+    public void SetBusy(bool busy)
+    {
+        _busy = busy;
+        UpdateSavedAndPackButtons();
+    }
+
+    /// <summary>Fills the check fields that are still empty (the organisation and a statement), as the single Check does.</summary>
+    public void SuggestPackCheck(string organisation, string statement)
+    {
         FillIfBlank(_packOrganisation, organisation);
         FillIfBlank(_packStatement, statement);
         UpdateSavedAndPackButtons();
     }
 
-    /// <summary>Sets the issue reference and client suggested for the pack just chosen.</summary>
+    /// <summary>Sets the issue reference and client suggested for the pack just chosen, and lets Issue be offered again.</summary>
     public void SuggestPackIssue(string issueReference, string client)
     {
         _packReference.Text = issueReference;
         _packClient.Text = client;
+        _issueRefillPending = false;
+        UpdateSavedAndPackButtons();
+    }
+
+    /// <summary>The refill for the chosen pack is not coming (it could not be read): Issue is offered with what is typed.</summary>
+    public void CancelPackIssueRefill()
+    {
+        _issueRefillPending = false;
         UpdateSavedAndPackButtons();
     }
 
@@ -214,12 +268,11 @@ public sealed partial class CalcSheetView
     public void ChoosePackMember(Guid id) => _packMemberList.SelectedIndex = _packMembers.ToList().FindIndex(x => x.Id == id);
 
     /// <summary>Types the check fields.</summary>
-    public void FillPackCheck(string checkerName, string organisation, string statement, CheckOutcome outcome = CheckOutcome.Accepted)
+    public void FillPackCheck(string organisation, string statement, CheckOutcome outcome = CheckOutcome.Accepted)
     {
-        _packChecker.Text = checkerName;
         _packOrganisation.Text = organisation;
         _packStatement.Text = statement;
-        _packOutcome.SelectedItem = outcome;
+        _packOutcome.SelectedIndex = Array.FindIndex(Outcomes, o => o.Outcome == outcome);
         UpdateSavedAndPackButtons();
     }
 
@@ -233,7 +286,7 @@ public sealed partial class CalcSheetView
 
     private void WireSavedAndPacks()
     {
-        AutomationProperties.SetName(_savedList, SavedPanelName);
+        AutomationProperties.SetName(_savedList, SavedListName);
         AutomationProperties.SetName(_openSaved, OpenSavedCaption);
         AutomationProperties.SetName(_packTemplatePick, "Pack template");
         AutomationProperties.SetName(_packTitle, "Pack title");
@@ -241,7 +294,7 @@ public sealed partial class CalcSheetView
         AutomationProperties.SetName(_packList, "Packs in this project");
         AutomationProperties.SetName(_packMemberList, "Calculations in the selected pack");
         AutomationProperties.SetName(_openPackMember, OpenPackMemberCaption);
-        AutomationProperties.SetName(_packChecker, "Pack checker name");
+        AutomationProperties.SetName(_packChecker, "Pack checker (signed-in person)");
         AutomationProperties.SetName(_packOrganisation, "Pack checker organisation");
         AutomationProperties.SetName(_packStatement, "Pack check statement");
         AutomationProperties.SetName(_packOutcome, "Pack check outcome");
@@ -277,10 +330,16 @@ public sealed partial class CalcSheetView
 
         _packList.SelectionChanged += (_, _) =>
         {
-            UpdateSavedAndPackButtons();
-
             if (!_loadingPacks && SelectedPackId is { } id)
+            {
+                // Issue stays off until the coordinator has read the pack and refilled the reference and client for it.
+                _issueRefillPending = true;
+                UpdateSavedAndPackButtons();
                 PackSelected?.Invoke(id);
+                return;
+            }
+
+            UpdateSavedAndPackButtons();
         };
 
         _openSaved.Click += (_, _) =>
@@ -300,8 +359,8 @@ public sealed partial class CalcSheetView
         };
         _checkPack.Click += (_, _) =>
         {
-            if (SelectedPackId is { } id && _packOutcome.SelectedItem is CheckOutcome outcome)
-                CheckPackRequested?.Invoke(id, new PackCheckDraft(_packChecker.Text?.Trim() ?? string.Empty, _packOrganisation.Text?.Trim() ?? string.Empty, _packStatement.Text?.Trim() ?? string.Empty, outcome));
+            if (SelectedPackId is { } id && _packOutcome.SelectedIndex is >= 0 and var o && o < Outcomes.Length)
+                CheckPackRequested?.Invoke(id, new PackCheckDraft(_packOrganisation.Text?.Trim() ?? string.Empty, _packStatement.Text?.Trim() ?? string.Empty, Outcomes[o].Outcome));
         };
         _issuePack.Click += (_, _) =>
         {
@@ -315,12 +374,13 @@ public sealed partial class CalcSheetView
     private void UpdateSavedAndPackButtons()
     {
         var pack = SelectedPackId is { } id ? _packs.FirstOrDefault(p => p.Id == id) : null;
-        _openSaved.IsEnabled = _projectOpen && SelectedSavedId is not null;
-        _openPackMember.IsEnabled = _projectOpen && SelectedOf(_packMemberList, _packMembers) is not null;
-        _createPack.IsEnabled = _projectOpen && _packTemplatePick.SelectedIndex >= 0 && !string.IsNullOrWhiteSpace(_packTitle.Text);
-        _checkPack.IsEnabled = _projectOpen && pack is { Status: CalcInstanceStatus.Draft }
+        var ready = _projectOpen && !_busy;
+        _openSaved.IsEnabled = ready && SelectedSavedId is not null;
+        _openPackMember.IsEnabled = ready && SelectedOf(_packMemberList, _packMembers) is not null;
+        _createPack.IsEnabled = ready && _packTemplatePick.SelectedIndex >= 0 && !string.IsNullOrWhiteSpace(_packTitle.Text);
+        _checkPack.IsEnabled = ready && pack is { Status: CalcInstanceStatus.Draft }
             && !string.IsNullOrWhiteSpace(_packChecker.Text) && !string.IsNullOrWhiteSpace(_packOrganisation.Text);
-        _issuePack.IsEnabled = _projectOpen && pack is { Status: CalcInstanceStatus.Checked }
+        _issuePack.IsEnabled = ready && !_issueRefillPending && pack is { Status: CalcInstanceStatus.Checked }
             && !string.IsNullOrWhiteSpace(_packReference.Text) && !string.IsNullOrWhiteSpace(_packClient.Text);
     }
 
@@ -329,6 +389,7 @@ public sealed partial class CalcSheetView
         var panel = new StackPanel { Spacing = DesignTokens.SpaceSm };
         panel.Children.Add(_savedEmpty);
         panel.Children.Add(_savedList);
+        panel.Children.Add(_savedCap);
         panel.Children.Add(_openSaved);
         AutomationProperties.SetName(panel, SavedPanelName);
         return Section(SavedPanelName, panel);
@@ -344,6 +405,7 @@ public sealed partial class CalcSheetView
         panel.Children.Add(_createPack);
         panel.Children.Add(new TextBlock { Text = "Packs in this project", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody, Margin = DesignTokens.SectionMargin });
         panel.Children.Add(_packList);
+        panel.Children.Add(_packsCap);
         panel.Children.Add(Caption("Calculations in the selected pack"));
         panel.Children.Add(_packMemberList);
         panel.Children.Add(_openPackMember);
@@ -360,6 +422,63 @@ public sealed partial class CalcSheetView
         AutomationProperties.SetName(panel, PacksPanelName);
         return Section(PacksPanelName, panel);
     }
+
+    private static TextBlock WithHidden(TextBlock block)
+    {
+        block.IsVisible = false;
+        return block;
+    }
+
+    /// <summary>
+    /// Whether the form holds edits that are not saved: for a saved draft or checked calculation, a value, unit or source that
+    /// differs from the stored one; for a new sheet, one that differs from the template's starting values. An issued or
+    /// superseded calculation cannot be edited.
+    /// </summary>
+    public bool HasUnsavedEdits()
+    {
+        if (SelectedTemplate is not { } entry || IsReadOnly)
+            return false;
+
+        var baseline = CurrentInstance is { } instance ? new CalcInputSet(instance.Inputs) : CalcTemplateHasher.NewSheetInputs(entry.Template);
+
+        foreach (var value in ReadForm().Values)
+        {
+            if (value.Rows is not null || entry.Template.FindInput(value.Symbol) is not { } spec || spec.Kind is CalcInputKind.Table or CalcInputKind.Vector)
+                continue;
+
+            var stored = baseline.Find(value.Symbol);
+
+            if (stored is null)
+            {
+                if (CurrentInstance is not null && (value.Number is not null || !string.IsNullOrEmpty(value.Text)))
+                    return true;
+
+                continue;
+            }
+
+            if (!SameNumber(stored.Number, value.Number))
+                return true;
+
+            if (!string.Equals(stored.Text ?? string.Empty, value.Text ?? string.Empty, StringComparison.Ordinal))
+                return true;
+
+            if ((stored.Flag ?? false) != (value.Flag ?? false))
+                return true;
+
+            if (stored.Unit is not null && value.Unit is not null && !string.Equals(stored.Unit, value.Unit, StringComparison.Ordinal))
+                return true;
+
+            var storedKind = stored.Provenance?.Kind ?? CalcProvenanceKind.Manual;
+            var shownKind = value.Provenance?.Kind ?? CalcProvenanceKind.Manual;
+
+            if (storedKind != shownKind || !string.Equals(stored.Provenance?.Reference ?? string.Empty, value.Provenance?.Reference ?? string.Empty, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool SameNumber(double? a, double? b) => a is null || b is null ? a is null && b is null : a.Value.Equals(b.Value);
 
     private static TextBox PackInput(string watermark) => Input(string.Empty, watermark);
 
@@ -383,7 +502,7 @@ public sealed partial class CalcSheetView
             var text = new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody };
 
             if (stale)
-                text.Foreground = Brushes.DarkOrange;
+                text.Foreground = SeverityColors.Resolve(FeedbackSeverity.Warning);
 
             AutomationProperties.SetName(text, label);
             items.Add(text);
