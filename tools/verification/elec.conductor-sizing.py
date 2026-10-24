@@ -185,13 +185,18 @@ def extras():
     r_right = size(device="C", Ca=ca50)
     print(f"N1 theta_a 50 C PVC with C_a left at 1: product picks {r_forgot['CSA']} mm2 (I_z {r_forgot['I_z']:.3g} A) and warns nothing.")
     print(f"   With C_a = {ca50:.4f} (derived) the independent pick is {r_right['CSA']} mm2 (I_z {r_right['I_z']:.3g} A). Finding -01.")
+    print("   theta_a 70 C with PVC (conductor limit 70 C) and C_a = 1 is also accepted without a warning.")
     print("N2 Duplicate 4 mm2 rows (24.1 A and 30 A), 25 A needed: product uses 30 A and picks 4 mm2.")
     r_dup = size(Ib=25, device="gG", table=[(1.5, 12.3), (2.5, 17.7), (4, 24.1), (6, 31.9)])
-    print(f"   Using the lower row, the independent pick is {r_dup['CSA']} mm2. Finding -04.")
+    print(f"   Using the lower row, the independent pick is {r_dup['CSA']} mm2. Finding -05.")
     print("N3 MCCB with I2 = 1.6 I_n and a 16.5 A conductor: product keeps the conductor and FAILs the I2 check; it does not size up.")
     r_i2 = size(device="MCCB", I2_in=25.6, table=[(1.5, 12.3), (2.5, 16.5), (4, 24.1)])
-    print(f"   I2 check utilisation {r_i2['u_I2']:.3f} (>1 means FAIL). Smallest conductor that passes I2 needs I_z >= {25.6 / 1.45:.2f} A. Finding -05.")
+    print(f"   I2 check utilisation {r_i2['u_I2']:.3f} (>1 means FAIL). Smallest conductor that passes I2 needs I_z >= {25.6 / 1.45:.2f} A. Finding -06.")
     print("N4 CSA = 1000 mm2 in the ampacity table is rejected as above the hard limit 1000 mm2 (float conversion). Finding -07.")
+    r_cg = size(device="C", Cg=1.5, Ci=1.5)
+    print(f"N5 C_g = C_i = 1.5 is accepted: 16 A MCB gets {r_cg['CSA']} mm2 (I_z {r_cg['I_z']:.4g} A). Grouping and insulation factors are at most 1. Finding -02.")
+    print(f"N6 Derived C_a, PVC, theta_a 40 C: ref 30 C gives {derive_ca(70, 40, 30):.4f}; a 40 C-referenced table needs {derive_ca(70, 40, 40):.4f}. Finding -03 (conservative).")
+    print(f"N7 Derived C_a at 25 C: PVC {derive_ca(70, 25, 30):.4f}, XLPE {derive_ca(90, 25, 30):.4f}. Published BS 7671 values as I recall them are 1.03 and 1.02. Finding -04.")
     return fails
 
 
