@@ -26,7 +26,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
+        Id, "1.2.0", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
         "Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.",
         "P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive.",
         [
@@ -81,7 +81,17 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
                 [new CalcExpectedValue("V_duty", 113.75, "m^3/h", 1e-3), new CalcExpectedValue("p_duty", 25.88, "Pa", 2e-3), new CalcExpectedValue("u_fan", 0.5493, "", 2e-3)]),
         ],
         DiagramKey: "enclosure-heat",
-        Category: "Thermal");
+        Category: "Thermal",
+        OutputPorts:
+        [
+            new CalcOutputPort("P_total", "W", "Total heat to remove (loads, linked load and solar gain)"),
+            new CalcOutputPort("P_cool", "W", "Cooling-unit duty needed when natural dissipation cannot hold T_max (→ B5 Q_req)"),
+            new CalcOutputPort("P_nat_max", "W", "Heat the enclosure dissipates naturally at the limit"),
+            new CalcOutputPort("dT_nat", "K", "Temperature rise with natural dissipation"),
+            new CalcOutputPort("T_int", "degC", "Internal temperature with natural dissipation"),
+            new CalcOutputPort("V_req", "m^3/h", "Airflow for forced ventilation at the allowed rise"),
+            new CalcOutputPort("V_duty", "m^3/h", "Fan duty airflow (when a fan curve is given)"),
+        ]);
 
     public static CalcInputValue Loads(params (string Name, double P, double Qty, double Duty)[] rows) =>
         CalcInputValue.Table("loads", rows.Select(r => CalcRow.Of(("name", new CalcCell(Text: r.Name)), ("P", new CalcCell(r.P, "W")), ("qty", new CalcCell(r.Qty)), ("duty", new CalcCell(r.Duty)))).ToList());

@@ -154,4 +154,23 @@ public sealed class ElectricalTests
         Assert.Contains(CalcRunner.Run(Drop, new CalcInputSet([CalcInputValue.Choice("data", VoltageDropCalculator.DataPerKm)])).Blocks, b => b.Message.StartsWith("R_km:", StringComparison.Ordinal));
         Assert.Contains(CalcRunner.Run(Drop, new CalcInputSet([CalcInputValue.Choice("data", VoltageDropCalculator.DataMvAm)])).Blocks, b => b.Message.StartsWith("mVAm:", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void Enclosure_Declares_The_Heat_Ports_A_Cooling_Chain_Links_To()
+    {
+        // 300 W in a wall-mounted 600 × 800 × 300 enclosure (analytic KAT): the natural dissipation at the limit is 94.05 W.
+        var r = CalcRunner.Run(Enclosure, CalcTemplateHasher.DefaultInputs(Enclosure.Template));
+        Assert.False(r.IsBlocked);
+        Assert.Equal(300, r.OutputSi("P_total"), 1e-9);
+        Assert.Equal(300 - r.OutputSi("P_nat_max"), r.OutputSi("P_cool"), 1e-9);
+        Assert.Equal(205.95, r.OutputSi("P_cool"), 1e-3);
+
+        var ports = Enclosure.Template.OutputPorts!;
+        Assert.Contains(ports, p => p is { Symbol: "P_cool", Unit: "W" });
+        Assert.Contains(ports, p => p is { Symbol: "P_total", Unit: "W" });
+
+        // Every declared port is produced by a run (the fan duty only when a fan curve is given).
+        Assert.All(ports.Where(p => p.Symbol != "V_duty"), p => Assert.NotNull(r.FindOutput(p.Symbol)));
+        Assert.Equal("1.2.0", Enclosure.Template.Version);
+    }
 }

@@ -195,4 +195,35 @@ public sealed class FrameTests
         Assert.Equal(14 * 36 / 8.0, r.OutputSi("M_max") / 1e3, 6);
         Assert.Equal((13.5 + 6) * 36 / 8.0, r.OutputSi("M_max_env") / 1e3, 6);
     }
+
+    [Fact]
+    public void Reaction_And_Moment_Magnitudes_Are_Ports_Whatever_The_Sign()
+    {
+        // Cantilever, 20 kN down at the 3 m tip: R_y = +20, the base moment reaction is +60 kN·m, no horizontal reaction.
+        var cantilever = CalcRunner.Run(Calc, new CalcInputSet(Calc.Template.TestCases[1].Inputs));
+        Assert.Equal(60, cantilever.OutputSi("R1_m") / 1e3, 6);
+        Assert.Equal(60, cantilever.OutputSi("R1_m_abs") / 1e3, 6);
+        Assert.Equal(0, cantilever.OutputSi("R1_x_abs"), 6);
+        Assert.Equal(60, cantilever.OutputSi("M_abs_e1") / 1e3, 6);
+
+        // The same cantilever pushed the other way round (load up): the signed reaction flips, its magnitude does not.
+        var up = CalcRunner.Run(Calc, new CalcInputSet(Calc.Template.TestCases[1].Inputs.Select(v => v.Symbol == "loads" ? FrameCalculator.Loads((1, "nodal", 2, 0, 0, 0, 0, 0, 20, 0)) : v)));
+        Assert.Equal(-60, up.OutputSi("R1_m") / 1e3, 6);
+        Assert.Equal(60, up.OutputSi("R1_m_abs") / 1e3, 6);
+        Assert.Equal(-20, up.OutputSi("R1_y") / 1e3, 6);
+
+        // Pinned portal under a 30 kN lateral load: each base takes -15 kN horizontally; the magnitude port is positive.
+        var portal = CalcRunner.Run(Calc, new CalcInputSet(Calc.Template.TestCases[3].Inputs));
+        Assert.Equal(-15, portal.OutputSi("R1_x") / 1e3, 5);
+        Assert.Equal(15, portal.OutputSi("R1_x_abs") / 1e3, 5);
+        Assert.Equal(15, portal.OutputSi("R4_x_abs") / 1e3, 5);
+
+        // A simply supported beam hogs nowhere: |M| is the sagging moment wL²/8 = 45 kN·m.
+        var beam = CalcRunner.Run(Calc, new CalcInputSet(Calc.Template.TestCases[0].Inputs));
+        Assert.Equal(45, beam.OutputSi("M_abs_e1") / 1e3, 6);
+
+        // Every declared port of the frame template is produced for a model with four nodes and three members.
+        Assert.All(Calc.Template.OutputPorts!, p => Assert.NotNull(portal.FindOutput(p.Symbol)));
+        Assert.Contains(Calc.Template.OutputPorts!, p => p is { Symbol: "R1_m_abs", Unit: "kN*m" });
+    }
 }

@@ -1,6 +1,6 @@
 # Worked examples — v0.26.0
 
-32 worked examples (two per worksheet template) and 1 calculation pack. Each folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF).
+32 worked examples (two per worksheet template) and 6 calculation packs (the bracket assembly and the five linked chains). Each folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF).
 
 **How to use one.** In the Desktop open Modules → Calculations → Worksheets (or the discipline's own Calculations node) and pick the template named in the table; the form opens on the template's defaults. Enter the values from the example's README (every input lists its value, unit and source); the form recalculates at once, *Show working* is the `sheet.txt` text and the issued sheet is `sheet.pdf`. `inputs.json` is the same input set in the exchange form the Calc API reads: headless, `CalcInputJson.Read` → `CalcRunner.Run` → `CalcSheetBuilder.Build` → `CalcSheetTextRenderer.Render` reproduces the sheet (`tests/Tempest.Calc.Tests.Calculators/WorkedExamples.cs`). To load an example into the form, copy the text of its `inputs.json` to the clipboard and press *Import inputs (CSV/JSON)*; the form re-seeds from it (table inputs included) and recalculates. *Export inputs (CSV)* copies the current inputs back out in the CSV the same button reads.
 
@@ -43,6 +43,13 @@ Seven examples end on a **FAIL** governing check on purpose: they show how an ov
 
 ## Calculation packs
 
-- [bracket-assembly-m2-m3-s1](packs/bracket-assembly-m2-m3-s1/README.md)
+- [bracket-assembly-m2-m3-s1](packs/bracket-assembly-m2-m3-s1/README.md) — three independent calculations under one issue sheet.
+- [drive-train](packs/drive-train/README.md) — E1 → M4 → M5 → M2 → M3: motor, shaft, bearing, seat fit, coupling flange bolts.
+- [motor-circuit](packs/motor-circuit/README.md) — E1 → E6 → E4 → E3 / E5 → E2: motor, load budget, cable (synthetic tables), voltage drop, fault protection, enclosure heat.
+- [wet-heating](packs/wet-heating/README.md) — B4 (two rooms) → B6 → B1 → E1: room heat losses, sealed system, pipework and pump, circulator motor.
+- [cooling](packs/cooling/README.md) — E6 → E2 → B5 → B1: panel heat, enclosure, cooling-water exchanger, pipework and pump.
+- [steel-support](packs/steel-support/README.md) — S5 → S2 → S3, S4 → S6: load combinations, frame, column check, connection, base plate, and a placeholder for the PROFIS anchorage report.
+
+Each chain pack is one issued pack: every step is linked to the one above it (the README lists every link with the value it carries), the pack was checked once and issued under one reference, and the folder holds the pack's issue sheet, each step's issued sheet and `inputs.json`. Project, drawing and specification numbers in them are invented. Regenerate them with `TEMPEST_WRITE_WORKED_EXAMPLES=1 dotnet test tests/Tempest.Calc.Tests.Library --filter ChainPackWorkedExampleTests`.
 
 Regenerate every example with `TEMPEST_WRITE_WORKED_EXAMPLES=1 dotnet test tests/Tempest.Calc.Tests.Calculators` (inputs, README expectations, sheet text) and `TEMPEST_WRITE_WORKED_EXAMPLES=1 dotnet test tests/Tempest.Desktop.Tests --filter CalcSheets` (PDFs).

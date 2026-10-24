@@ -14,7 +14,7 @@ public sealed record CalcPackStep(string Key, string TemplateId, string Name);
 public sealed record CalcPackBinding(string FromStep, string Output, string ToStep, string Input, int? Row = null, string? Column = null);
 
 /// <summary>
-/// A saved chain of calculations (Addendum A, L1): "Drive train", "Motor circuit", "Wet heating", "Steel support".
+/// A saved chain of calculations (Addendum A, L1): "Drive train", "Motor circuit", "Wet heating", "Cooling", "Steel support".
 /// Instantiated under a project it creates every calculation, binds the links in order and gathers them in one pack,
 /// which is checked once and issued as one Evidence bundle.
 /// </summary>

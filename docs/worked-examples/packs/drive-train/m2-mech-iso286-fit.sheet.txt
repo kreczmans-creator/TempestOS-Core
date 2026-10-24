@@ -1,0 +1,131 @@
+CALCULATION SHEET — ISSUED
+Project: Conveyor 7 head drive
+Calc ID: Bearing A seat fit    Revision: A
+Title: ISO 286 limits and fits
+Author: unknown    Authored: 2026-10-24
+Checker: —    Checked: —
+Issued: 2026-10-24    Issue: CNV-DRV-001
+
+1. SCOPE AND METHOD
+Hole and shaft limits for a nominal size and tolerance classes, the resulting fit (clearance, transition or interference) and its extreme values, from the ISO 286-1 formulae.
+i = 0.45·D^(1/3) + 0.001·D (µm) at the geometric mean D of the size step; ITn = multiplier × i; fundamental deviations by letter from the published formulae; hole deviations by the general rule (EI = −es for A–H; ES = −ei + Δ for K–ZC). Limits = nominal + deviations; fit extremes from the limits.
+  Ref: ISO 286-1:2010 §4, §5 — Bases of tolerances, deviations and fits — tolerance grades and fundamental deviations
+  Ref: ISO 286-2:2010 — Tables of standard tolerance classes and limit deviations (not reproduced)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  D | Nominal size | 35 | mm | link: Shaft rev A · d_A | 1 … 500 mm
+  hole_letter | Hole fundamental deviation letter | H |  | drawing: DRG-CNV-411 rev B | any
+  hole_grade | Hole IT grade | 7 |  | drawing: DRG-CNV-411 rev B | 5 … 11
+  shaft_letter | Shaft fundamental deviation letter | k |  | drawing: DRG-CNV-411 rev B | any
+  shaft_grade | Shaft IT grade | 6 |  | drawing: DRG-CNV-411 rev B | 4 … 11
+
+3. ASSUMPTIONS
+  A1. IT values and fundamental deviations are the unrounded results of the ISO 286-1 formulae at the geometric mean of the size step. (The tabulated values apply the standard's own rounding and may differ by about 1 µm; enter overrides from a released reference record where the tabulated value governs.)
+  A2. Hole deviations follow the general rule from the shaft deviations, with Δ = ITn − IT(n−1) where the standard applies it. (Table-specific departures in the standard are not reproduced; use the overrides where they govern.)
+
+4. WORKING
+  [6] D_step = size step (lower, upper]    « ISO 286-1 §4
+      = (30, 50] mm
+      = 38.73 mm
+        Geometric mean of the size step
+  [7] i = 0.45·D^(1/3) + 0.001·D    « ISO 286-1 §5
+      = D = 38.73 mm
+      = 1.5612 µm
+        Standard tolerance unit
+  [8] IT_hole = IT7    « ISO 286-1 §5
+      = 16 × i
+      = 24.98 µm
+        Hole tolerance
+  [9] IT_shaft = IT6    « ISO 286-1 §5
+      = 10 × i
+      = 15.612 µm
+        Shaft tolerance
+  [10] es = ei + IT_shaft    « ISO 286-1 §5
+      = 2.03 + 15.612
+      = 17.642 µm
+        Shaft upper deviation
+  [11] ei = fundamental deviation 'k'    « ISO 286-1 §5
+      = +0.6·D^(1/3)
+      = 2.03 µm
+        Shaft lower deviation
+  [12] ES = EI + IT_hole    « ISO 286-1 §5
+      = 0 + 24.98
+      = 24.98 µm
+        Hole upper deviation
+  [13] EI = fundamental deviation 'H'    « ISO 286-1 §5
+      = −es of the same letter
+      = 0 µm
+        Hole lower deviation
+  [14] D_hole_max = D + ES
+      = 35 mm + 24.98 µm
+      = 35.025 mm
+        Hole maximum
+  [15] D_hole_min = D + EI
+      = 35 mm + 0 µm
+      = 35 mm
+        Hole minimum
+  [16] d_shaft_max = D + es
+      = 35 mm + 17.642 µm
+      = 35.018 mm
+        Shaft maximum
+  [17] d_shaft_min = D + ei
+      = 35 mm + 2.03 µm
+      = 35.002 mm
+        Shaft minimum
+  [18] c_max = ES - ei
+      = 24.98 µm − 2.03 µm
+      = 22.95 µm
+        Maximum clearance (negative: minimum interference)
+  [19] c_min = EI - es
+      = 0 µm − 17.642 µm
+      = -17.642 µm
+        Minimum clearance (negative: maximum interference)
+  [20] i_max = es - EI
+      = 17.642 µm − 0 µm
+      = 17.642 µm
+        Maximum interference
+  [21] i_min = ei - ES
+      = 2.03 µm − 24.98 µm
+      = -22.95 µm
+        Minimum interference (negative: maximum clearance)
+  [22] fit = fit class
+      = H7/k6
+      = "transition"
+        Fit kind: clearance, transition or interference
+  [23] c_mean = (c_max + c_min) / 2
+      = (22.95 µm + -17.642 µm) / 2
+      = 2.6537 µm
+        Mean clearance
+
+5. RESULTS
+  IT_hole = 24.98 µm    Hole tolerance
+  IT_shaft = 15.612 µm    Shaft tolerance
+  ES = 24.98 µm    Hole upper deviation
+  EI = 0 µm    Hole lower deviation
+  es = 17.642 µm    Shaft upper deviation
+  ei = 2.03 µm    Shaft lower deviation
+  D_hole_max = 35.025 mm    Hole maximum
+  D_hole_min = 35 mm    Hole minimum
+  d_shaft_max = 35.018 mm    Shaft maximum
+  d_shaft_min = 35.002 mm    Shaft minimum
+  fit = "transition"    Fit kind
+  c_max = 22.95 µm    Maximum clearance
+  c_min = -17.642 µm    Minimum clearance
+  i_max = 17.642 µm    Maximum interference
+  i_min = -22.95 µm    Minimum interference
+  c_mean = 2.6537 µm    Mean clearance
+
+6. CHECKS (governing first)
+  PASS  Fit classified: H7/k6 vs transition  utilisation 0
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.iso286-fit@1.0.0
+  Content hash: 546cca00925adbf3
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 2/2
+  Test run: 2026-10-24 18:04 UTC
+  Application: TempestOS test

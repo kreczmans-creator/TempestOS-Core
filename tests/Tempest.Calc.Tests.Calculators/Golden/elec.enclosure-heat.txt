@@ -118,5 +118,5 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   WARNING cooling-unit: T_max: natural dissipation holds 94.05 W of 300 W; ventilate or fit a 206 W cooling unit.
 
 8. VERIFICATION
-  Template: elec.enclosure-heat@1.1.0
+  Template: elec.enclosure-heat@1.2.0
   Known-answer cases passed: 2/2

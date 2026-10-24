@@ -1,0 +1,1356 @@
+{
+  "s5": [
+    {
+      "Symbol": "K_FI",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "actions",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "Equipment dead load"
+            },
+            "category": {
+              "Text": "G permanent"
+            },
+            "F_k": {
+              "Number": -12
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Maintenance load"
+            },
+            "category": {
+              "Text": "E storage"
+            },
+            "F_k": {
+              "Number": -8
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A72 (actions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "gamma_G_inf",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "gamma_G_sup",
+      "Number": 1.35,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.35"
+    },
+    {
+      "Symbol": "gamma_Q",
+      "Number": 1.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "method",
+      "Text": "6.10",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A72 (actions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6.10"
+    },
+    {
+      "Symbol": "unit",
+      "Text": "kN",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A72 (actions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "kN"
+    },
+    {
+      "Symbol": "xi",
+      "Number": 0.85,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.85"
+    }
+  ],
+  "s2": [
+    {
+      "Symbol": "E",
+      "Number": 210,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-310",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "210"
+    },
+    {
+      "Symbol": "combinations",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "ULS"
+            },
+            "case": {
+              "Number": 1
+            },
+            "factor": {
+              "Number": 1
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "ULS"
+            },
+            "case": {
+              "Number": 2
+            },
+            "factor": {
+              "Number": 1
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-310",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "elements",
+      "Rows": [
+        {
+          "Cells": {
+            "id": {
+              "Number": 1
+            },
+            "i": {
+              "Number": 1
+            },
+            "j": {
+              "Number": 2
+            },
+            "A": {
+              "Number": 58.7,
+              "Unit": "cm^2"
+            },
+            "I": {
+              "Number": 4568,
+              "Unit": "cm^4"
+            },
+            "rel_i": {
+              "Flag": false
+            },
+            "rel_j": {
+              "Flag": false
+            }
+          }
+        },
+        {
+          "Cells": {
+            "id": {
+              "Number": 2
+            },
+            "i": {
+              "Number": 2
+            },
+            "j": {
+              "Number": 3
+            },
+            "A": {
+              "Number": 58.7,
+              "Unit": "cm^2"
+            },
+            "I": {
+              "Number": 4568,
+              "Unit": "cm^4"
+            },
+            "rel_i": {
+              "Flag": false
+            },
+            "rel_j": {
+              "Flag": false
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-310",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "loads",
+      "Rows": [
+        {
+          "Cells": {
+            "case": {
+              "Number": 1
+            },
+            "kind": {
+              "Text": "nodal"
+            },
+            "target": {
+              "Number": 3
+            },
+            "a": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "b": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "w1": {
+              "Number": 0,
+              "Unit": "kN/m"
+            },
+            "w2": {
+              "Number": 0,
+              "Unit": "kN/m"
+            },
+            "F_x": {
+              "Number": 0,
+              "Unit": "kN"
+            },
+            "F_y": {
+              "Number": -28.2,
+              "Unit": "kN",
+              "Provenance": {
+                "Kind": "Link",
+                "Reference": "calc:50fb3ee871ad44f197e8a75348f4ef2b#E_d_min",
+                "Revision": "A",
+                "IsSufficientToIssue": true
+              }
+            },
+            "M": {
+              "Number": 0,
+              "Unit": "kN*m"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "case": {
+              "Number": 2
+            },
+            "kind": {
+              "Text": "nodal"
+            },
+            "target": {
+              "Number": 2
+            },
+            "a": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "b": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "w1": {
+              "Number": 0,
+              "Unit": "kN/m"
+            },
+            "w2": {
+              "Number": 0,
+              "Unit": "kN/m"
+            },
+            "F_x": {
+              "Number": 5,
+              "Unit": "kN"
+            },
+            "F_y": {
+              "Number": 0,
+              "Unit": "kN"
+            },
+            "M": {
+              "Number": 0,
+              "Unit": "kN*m"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-310",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "n_div",
+      "Number": 20,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    },
+    {
+      "Symbol": "nodes",
+      "Rows": [
+        {
+          "Cells": {
+            "id": {
+              "Number": 1
+            },
+            "x": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "y": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "support": {
+              "Text": "fixed"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "id": {
+              "Number": 2
+            },
+            "x": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "y": {
+              "Number": 3,
+              "Unit": "m"
+            },
+            "support": {
+              "Text": "free"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "id": {
+              "Number": 3
+            },
+            "x": {
+              "Number": 1,
+              "Unit": "m"
+            },
+            "y": {
+              "Number": 3,
+              "Unit": "m"
+            },
+            "support": {
+              "Text": "free"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-310",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3 row(s)"
+    },
+    {
+      "Symbol": "report",
+      "Text": "ULS",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-310",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "ULS"
+    }
+  ],
+  "s3": [
+    {
+      "Symbol": "A",
+      "Number": 58.7,
+      "Unit": "cm^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "58.7"
+    },
+    {
+      "Symbol": "E",
+      "Number": 210,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "210"
+    },
+    {
+      "Symbol": "I_y",
+      "Number": 4568,
+      "Unit": "cm^4",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4568"
+    },
+    {
+      "Symbol": "I_z",
+      "Number": 1548,
+      "Unit": "cm^4",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1548"
+    },
+    {
+      "Symbol": "L_cr_y",
+      "Number": 6,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A73 (members)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
+    },
+    {
+      "Symbol": "L_cr_z",
+      "Number": 6,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A73 (members)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
+    },
+    {
+      "Symbol": "M_y_Ed",
+      "Number": 43.19999999999572,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:07b83aa98d0948fd9d8cb1b684545776#M_abs_e1",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "43.2"
+    },
+    {
+      "Symbol": "M_z_Ed",
+      "Number": 0,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A73 (members)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "N_Ed",
+      "Number": -28.2,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:07b83aa98d0948fd9d8cb1b684545776#N_e1",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "-28.2"
+    },
+    {
+      "Symbol": "V_Ed",
+      "Number": 4.999999999998574,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:07b83aa98d0948fd9d8cb1b684545776#V_e1",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "W_el_y",
+      "Number": 450,
+      "Unit": "cm^3",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "450"
+    },
+    {
+      "Symbol": "W_el_z",
+      "Number": 152,
+      "Unit": "cm^3",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "152"
+    },
+    {
+      "Symbol": "W_pl_y",
+      "Number": 497,
+      "Unit": "cm^3",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "497"
+    },
+    {
+      "Symbol": "W_pl_z",
+      "Number": 231,
+      "Unit": "cm^3",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "231"
+    },
+    {
+      "Symbol": "b",
+      "Number": 203.6,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "203.6"
+    },
+    {
+      "Symbol": "curve_y",
+      "Text": "b",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "b"
+    },
+    {
+      "Symbol": "curve_z",
+      "Text": "c",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "c"
+    },
+    {
+      "Symbol": "eta",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "f_y",
+      "Number": 355,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A73 (members)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "355"
+    },
+    {
+      "Symbol": "gamma_M0",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "gamma_M1",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "h",
+      "Number": 203.2,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "203.2"
+    },
+    {
+      "Symbol": "k_yy",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "k_zz",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "r",
+      "Number": 10.2,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10.2"
+    },
+    {
+      "Symbol": "section_class",
+      "Text": "1",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "t_f",
+      "Number": 11,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "11"
+    },
+    {
+      "Symbol": "t_w",
+      "Number": 7.2,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "7.2"
+    }
+  ],
+  "s4": [
+    {
+      "Symbol": "A_nt",
+      "Number": 1200,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1200"
+    },
+    {
+      "Symbol": "A_nv",
+      "Number": 2400,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2400"
+    },
+    {
+      "Symbol": "F_t_Ed",
+      "Number": 0,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "F_v_Ed",
+      "Number": 8,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "8"
+    },
+    {
+      "Symbol": "V_Ed",
+      "Number": 28.199999999999882,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:07b83aa98d0948fd9d8cb1b684545776#V_e2",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "28.2"
+    },
+    {
+      "Symbol": "e_1",
+      "Number": 40,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "e_2",
+      "Number": 40,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "f_u",
+      "Number": 410,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "410"
+    },
+    {
+      "Symbol": "f_y",
+      "Number": 275,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "275"
+    },
+    {
+      "Symbol": "gamma_M0",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "gamma_M2",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "grade",
+      "Text": "8.8",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "8.8"
+    },
+    {
+      "Symbol": "k_e1",
+      "Number": 1.2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.2"
+    },
+    {
+      "Symbol": "k_e2",
+      "Number": 1.2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.2"
+    },
+    {
+      "Symbol": "k_p1",
+      "Number": 2.2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2.2"
+    },
+    {
+      "Symbol": "k_p2",
+      "Number": 2.4,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2.4"
+    },
+    {
+      "Symbol": "n_s",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "p_1",
+      "Number": 70,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "p_2",
+      "Number": 70,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "size",
+      "Text": "M20",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "M20"
+    },
+    {
+      "Symbol": "steel",
+      "Text": "S275",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "S275"
+    },
+    {
+      "Symbol": "t",
+      "Number": 20,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    },
+    {
+      "Symbol": "threads",
+      "Flag": true,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "yes"
+    }
+  ],
+  "s6": [
+    {
+      "Symbol": "A_s",
+      "Number": 244.79439173408318,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:cc48045e7ea14c6aa23dbca04caf2ee5#A_s",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "244.794"
+    },
+    {
+      "Symbol": "B",
+      "Number": 300,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "300"
+    },
+    {
+      "Symbol": "C_fd",
+      "Number": 0.2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.2"
+    },
+    {
+      "Symbol": "D",
+      "Number": 220,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "220"
+    },
+    {
+      "Symbol": "F_1_vb_Rd",
+      "Number": 198.78787878787878,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:cc48045e7ea14c6aa23dbca04caf2ee5#F_b_Rd",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "198.788"
+    },
+    {
+      "Symbol": "F_t_Rd",
+      "Number": 141.00156963883188,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:cc48045e7ea14c6aa23dbca04caf2ee5#F_t_Rd",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "141.002"
+    },
+    {
+      "Symbol": "L",
+      "Number": 350,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "350"
+    },
+    {
+      "Symbol": "M_Ed",
+      "Number": 43.19999999999572,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:07b83aa98d0948fd9d8cb1b684545776#R1_m_abs",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "43.2"
+    },
+    {
+      "Symbol": "N_Ed",
+      "Number": 28.2,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:07b83aa98d0948fd9d8cb1b684545776#R1_y",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "28.2"
+    },
+    {
+      "Symbol": "V_Ed",
+      "Number": 4.999999999998574,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:07b83aa98d0948fd9d8cb1b684545776#R1_x_abs",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "alpha",
+      "Number": 1.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "alpha_cc",
+      "Number": 0.85,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.85"
+    },
+    {
+      "Symbol": "b",
+      "Number": 203.6,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "203.6"
+    },
+    {
+      "Symbol": "column",
+      "Text": "I/H",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "I/H"
+    },
+    {
+      "Symbol": "e_min",
+      "Number": 35,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "35"
+    },
+    {
+      "Symbol": "f_ck",
+      "Number": 25,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "f_ub",
+      "Number": 800,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "800"
+    },
+    {
+      "Symbol": "f_y",
+      "Number": 275,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "275"
+    },
+    {
+      "Symbol": "f_yb",
+      "Number": 640,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "640"
+    },
+    {
+      "Symbol": "gamma_M0",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "gamma_M2",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "gamma_c",
+      "Number": 1.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "h",
+      "Number": 203.2,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "203.2"
+    },
+    {
+      "Symbol": "l_eff",
+      "Number": 200,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "200"
+    },
+    {
+      "Symbol": "m",
+      "Number": 28,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "28"
+    },
+    {
+      "Symbol": "n_b",
+      "Number": 4,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4"
+    },
+    {
+      "Symbol": "n_t",
+      "Number": 2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "profis_ref",
+      "Text": "PROFIS-BP1-PLACEHOLDER.txt",
+      "Provenance": {
+        "Kind": "Evidence",
+        "Reference": "5190bb9b20844ea18e853a968f5f861e/dcb29626c59346d2b99a68fecdbeb135",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "PROFIS-BP1-PLACEHOLDER.txt"
+    },
+    {
+      "Symbol": "prying",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "t",
+      "Number": 10,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "t_f",
+      "Number": 11,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "11"
+    },
+    {
+      "Symbol": "t_p",
+      "Number": 25,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "t_w",
+      "Number": 7.2,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "7.2"
+    },
+    {
+      "Symbol": "x_b",
+      "Number": 135,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-315",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "135"
+    }
+  ]
+}
