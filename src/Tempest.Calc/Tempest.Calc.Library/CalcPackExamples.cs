@@ -6,8 +6,9 @@ namespace Tempest.Calc.Library;
 /// Addendum A, §A7: the example inputs of the built-in chains (see <see cref="CalcPackStep.Example"/>). They are invented for illustration
 /// — a conveyor head drive, a servo axis, a two-room heating circuit, a drive panel's cooling and an equipment support — and every one is
 /// recorded as an assumption to replace. Choice values are the calculators' own texts (the Library does not reference the calculator
-/// assemblies); instantiating each template in the tests proves they are accepted. No tabulated regulation or catalogue data appears: the
-/// motor circuit's cable-capacity and device-rating tables are not here, so that chain stays refused until the user supplies them.
+/// assemblies); instantiating each template in the tests proves they are accepted. No tabulated regulation data appears, and catalogue data
+/// is limited to the single steel section the steel-support example uses as a user input (UC 203×203×46). The motor circuit's
+/// cable-capacity and device-rating tables are not here, so that chain stays refused until the user supplies them.
 /// </summary>
 internal static class CalcPackExamples
 {
