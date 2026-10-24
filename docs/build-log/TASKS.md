@@ -73,7 +73,7 @@
 - [x] A9 gates; STATUS final line (copyright audit DA-25)
 
 ## Addendum B — fifteen calculators, Fluid Power, three workflows (v0.26.0, no tag; queued after Addendum A §A9, B0.2)
-- [ ] B1 orientation (`docs/build-log/addendum-B-orientation.md`)
+- [x] B1 orientation (`docs/build-log/addendum-B-orientation.md`)
 - [ ] B-0 foundations: ADR Fluid Power discipline (next free ADR); W3 material library; B6 gas-law kernel; M1 stack engine API (`v0.26.0/addB-0-foundations`)
 - [ ] B-1 M7 springs, E7 PCB trace, B7 Glaser, S7 LTB + N+M, F2 accumulator (`v0.26.0/addB-1-core`)
 - [ ] B-2 F1 cylinder circuit, F3 O-ring gland; HPU chain F1 → F2 → B1 → E1 → E4 (`v0.26.0/addB-2-fluid`)
