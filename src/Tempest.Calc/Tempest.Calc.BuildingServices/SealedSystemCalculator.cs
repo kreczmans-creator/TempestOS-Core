@@ -159,12 +159,12 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             emitterVolume += Si(row, "V_em", litre);
             var symbol = $"R{i + 1}";
 
-            if (row.Get("Phi50")?.Number is { } selected && selected > 0)
+            if (Si(row, "Phi50", w) is var selected && selected > 0)
             {
-                var u = phi / (w.ToSi(selected) * f);
+                var u = phi / (selected * f);
                 worst = Math.Max(worst, u);
                 anySelected = true;
-                c.Record(symbol, "Φ_req/f_dT", $"{F(phi)} / {F(f)}", ScalarValue.Of(needed, w), $"{name}: catalogue output needed; selected {F(selected)} W gives {F(w.ToSi(selected) * f)} W (utilisation {CalcValue.FormatNumber(u, 3)})");
+                c.Record(symbol, "Φ_req/f_dT", $"{F(phi)} / {F(f)}", ScalarValue.Of(needed, w), $"{name}: catalogue output needed; selected {F(selected)} W gives {F(selected * f)} W (utilisation {CalcValue.FormatNumber(u, 3)})");
             }
             else
             {

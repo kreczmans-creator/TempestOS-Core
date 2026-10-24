@@ -127,7 +127,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
 
         var values = kind.Symbols.Select(form.Find).OfType<CalcInputValue>().Where(v => v.Number is not null || v.Text is not null || v.Rows is not null)
             .Select(v => new CalcDataValue(v.Symbol, v.Number, v.Unit, v.Text, v.Rows)).ToList();
-        var (record, refusal) = await _service.SaveRecordAsync(new CalcDataRecord(Guid.Empty, draft.Kind, draft.Title, 0, draft.SourceTitle, draft.Edition, draft.TableOrClause, draft.LicenceHolder, string.Empty, draft.LicensedSource, CalcDataOrigin.UserEntered, values, default)).ConfigureAwait(true);
+        var (record, refusal) = await _service.SaveRecordFromInputsAsync(new CalcDataRecord(Guid.Empty, draft.Kind, draft.Title, 0, draft.SourceTitle, draft.Edition, draft.TableOrClause, draft.LicenceHolder, string.Empty, draft.LicensedSource, CalcDataOrigin.UserEntered, values, default), kind.Symbols.Select(form.Find).OfType<CalcInputValue>()).ConfigureAwait(true);
 
         if (record is null)
         {

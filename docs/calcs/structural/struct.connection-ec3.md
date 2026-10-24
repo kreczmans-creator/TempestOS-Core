@@ -10,6 +10,6 @@
 
 **Limitations.** Static; categories A and D only; no slip-resistant joints, no moment end plates, no countersunk or long joints.
 
-**v0.25.2 reconciliation (ADR-0169).** The legacy bolt-shear picker gave 0.6 f_ub for every class; it now gives α_v f_ub per Table 3.4 (10.9: 500 MPa, not 600).
+**v0.25.2 reconciliation (ADR-0169).** The legacy bolt-shear module is the shank-in-plane case (gross area, α_v 0.6 for every class) and now says so; threads in the shear plane are handled here (A_s, α_v 0.5 for 4.8–6.8 and 10.9).
 
 **Test cases.** `ka-m20-88-shear-bearing` (F_v,Rd 94.00, F_t,Rd 141.00, F_b,Rd 99.39, B_p,Rd 199.83 kN), `ka-m20-109-threads` (97.92 kN), `ka-weld-s275` (f_vw,d 222.79 MPa) — analytic, Confirmed; `ka-p363-m20-88` (SCI P363 94.1 / 141 kN, 1 %) and `ka-p358-fin-plate` (bearing 99.4 kN pattern) — **Unconfirmed** until checked against the owner's SCI copies.

@@ -32,7 +32,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         "Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC\n" +
         "Heat dissipated: Φ = Σ(1 − η_i)·P_i·d_i·k_i\n" +
         "PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude)\n" +
-        "Transformer: S_T ≥ margin·S; inrush S_peak = S + max((m_i − 1)·S_i) ≤ k_T·S_T\n" +
+        "Transformer: S_T ≥ margin·S; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified)\n" +
         "Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t",
         [
             new CalcInputSpec("loads", "Loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 100),
@@ -170,9 +170,13 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         c.Record("P_DC", "Σ DC P_i·d_i·k_i", $"{F(pdc)} W", ScalarValue.Of(pdc, "W"), "DC demand");
         c.Assign("P_PSU_req", "margin * P_DC / f_derate", "W", "Minimum PSU rating");
         c.Assign("S_T_req", "margin * S_dem", "kVA", "Minimum transformer rating");
-        var surge = loads.Where(l => l.Supply != Dc).Select(l => (l.Inrush - 1) * l.Apparent).DefaultIfEmpty(0).Max();
-        var surgeLoad = loads.Where(l => l.Supply != Dc).OrderByDescending(l => (l.Inrush - 1) * l.Apparent).FirstOrDefault();
-        c.Record("S_peak", "S_dem + max((m_i − 1)·S_i)", $"{F(sDem / 1e3)} + {F(surge / 1e3)}{(surgeLoad is null ? string.Empty : $" ({surgeLoad.Name} starting)")}", ScalarValue.Of((sDem + surge) / 1e3, kVA), "Peak apparent power while the largest load starts");
+        // A start draws m·P/cosφ whatever the duty or diversity; it replaces that load's diversified share (Opus review,
+        // finding 6). Loads with no demand (standby at diversity 0) do not start with the rest running.
+        double Increment(Load l) => l.Inrush * l.P / (l.Supply == Dc ? 1 : l.CosPhi) - l.Apparent;
+        var starters = loads.Where(l => l.Supply != Dc && l.Demand > 0).ToList();
+        var surge = starters.Select(Increment).DefaultIfEmpty(0).Max();
+        var surgeLoad = starters.OrderByDescending(Increment).FirstOrDefault();
+        c.Record("S_peak", "S_dem + max(m_i·P_i/cosφ_i − S_i)", $"{F(sDem / 1e3)} + {F(surge / 1e3)}{(surgeLoad is null ? string.Empty : $" ({surgeLoad.Name} starting)")}", ScalarValue.Of((sDem + surge) / 1e3, kVA), "Peak apparent power while the largest load starts");
 
         var outputs = new List<(string, string)> { ("P_conn", "Connected load"), ("P_dem", "Demand active power"), ("S_dem", "Demand apparent power"), ("I_3ph", "Three-phase bus current"), ("I_1ph", "Single-phase bus current"), ("I_DC", "DC bus current"), ("Phi", "Heat dissipated"), ("P_PSU_req", "Minimum PSU rating"), ("S_T_req", "Minimum transformer rating"), ("S_peak", "Peak apparent power at start") };
 

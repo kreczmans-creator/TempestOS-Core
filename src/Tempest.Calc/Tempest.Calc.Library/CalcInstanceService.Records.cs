@@ -35,11 +35,46 @@ public sealed partial class CalcInstanceService
         if (latest is not null && !string.Equals(latest.Kind, record.Kind, StringComparison.Ordinal))
             return (null, $"Record '{latest.Title}' is a {latest.Kind} record; a revision keeps its kind.");
 
+        // §A5: once licensed, always licensed — a revision cannot release values from the export lock (Opus review, finding 5).
+        if (latest is { LicensedSource: true } && !record.LicensedSource)
+            return (null, $"Record '{latest.Title}' holds values from a licensed source; its revisions stay licensed and are never exported.");
+
         if (record.Problem() is { } problem)
             return (null, problem);
 
-        await _store.SaveRecordAsync(record, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _store.SaveRecordAsync(record, cancellationToken).ConfigureAwait(false);
+        }
+        catch (CalcInstanceImmutableException)
+        {
+            // Another save took this revision number first (Opus review, finding 15).
+            return (null, $"Revision {record.Revision} of '{record.Title}' was saved by someone else at the same moment; save again to make the next revision.");
+        }
+
         return (record, null);
+    }
+
+    /// <summary>
+    /// Saves a record made from a calculation's inputs. When any of those inputs takes its value from a licensed record,
+    /// the new record is licensed too, so licensed values cannot be laundered into an exportable record (§A5).
+    /// </summary>
+    public async Task<(CalcDataRecord? Record, string? Refusal)> SaveRecordFromInputsAsync(CalcDataRecord draft, IEnumerable<CalcInputValue> sourceInputs, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+        ArgumentNullException.ThrowIfNull(sourceInputs);
+
+        foreach (var input in sourceInputs)
+        {
+            if (CalcDataRecord.PinOf(input.Provenance) is { } pin
+                && await _store.FindRecordAsync(pin.Id, pin.Revision, cancellationToken).ConfigureAwait(false) is { LicensedSource: true })
+            {
+                draft = draft with { LicensedSource = true };
+                break;
+            }
+        }
+
+        return await SaveRecordAsync(draft, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The latest revision of every record a template can draw on (by its record kinds).</summary>

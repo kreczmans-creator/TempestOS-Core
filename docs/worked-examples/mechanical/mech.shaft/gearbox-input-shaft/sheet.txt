@@ -9,7 +9,7 @@ Issued: —
 1. SCOPE AND METHOD
 A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a steady torque: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.
 Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²) Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1) Endurance: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′, S_e′ = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R Fatigue (DE-Goodman): 1/n_f = σ_a/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_m²) Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²); Dunkerley 1/ω² = Σ m_i·δ_ii Parallel key: τ = 2T/(d·w·L), σ = 4T/(d·h·L)
-  Ref: Shigley's Mechanical Engineering Design 11th ed., Ch. 6 (§6-9 Marin factors), Ch. 7 (§7-4 to §7-7) — Fatigue, shaft stresses, deflection, critical speeds, keys
+  Ref: Shigley's Mechanical Engineering Design 10th ed., Ch. 6 (§6-9, Table 6-2 Marin surface factors), Ch. 7 (§7-4 to §7-7) — Fatigue, shaft stresses, deflection, critical speeds, keys
   Ref: Mott, Machine Elements in Mechanical Design 6th ed., Ch. 12 — Shaft design
 
 2. INPUTS
@@ -51,10 +51,10 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   S_y_key | Key yield strength | 400 | MPa | spec: C45 key steel | 150 … 1500 MPa
 
 3. ASSUMPTIONS
-  A1. Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation, torque steady. (Shigley 11th ed. §7-4.)
-  A2. No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound. (Shigley 11th ed. §7-6.)
+  A1. Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation, torque steady. (Shigley 10th ed. §7-4.)
+  A2. No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound. (Shigley 10th ed. §7-6.)
   A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (§A5.)
-  A4. At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises. (Shigley 11th ed. §6-9, §7-4.)
+  A4. At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises. (Shigley 10th ed. §6-9, §7-4.)
   A5. Loads, sections and steps closer together than 1/200 of the shaft length share one node. (Keeps the beam model well conditioned.)
   A6. sections (Sections to check) is taken as 4 row(s). (Shoulders r/d ≈ 0.05; keyseat at the pinion (K_t 2.14, K_ts 3.0); q from the Neuber fit.)
   A7. E (Young's modulus) is taken as 207 GPa. (Steel.)
@@ -98,11 +98,11 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
       = 0.071775 mm at 150
       = 0.071775 mm
         Deflection at the loads
-  [26] k_a = a·S_ut^b    « Shigley 11th ed. §6-9
+  [26] k_a = a·S_ut^b    « Shigley 10th ed. §6-9, Table 6-2
       = 4.51 × 700^-0.265 (machined or cold-drawn)
       = 0.79474
         Surface factor
-  [27] k_e = 1 − 0.08·z_R    « Shigley 11th ed. §6-9
+  [27] k_e = 1 − 0.08·z_R    « Shigley 10th ed. §6-9
       = 1 − 0.08 × 2.3263
       = 0.81389
         Reliability factor
@@ -110,19 +110,19 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
       = 700 MPa
       = 350 MPa
         Rotating-beam endurance limit
-  [29] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 11th ed. §7-4
+  [29] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
       = x = 120 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 0 N·m, σ_a = 79.334 MPa, τ_m = 0 MPa, n_y = 6.3025
       = 2.3845
         Section at 120 mm: fatigue safety factor (DE-Goodman)
-  [30] X2 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 11th ed. §7-4
+  [30] X2 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
       = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 186.8 MPa, K_f = 1.912, K_fs = 2.8, M = 415.39 N·m, T = 300 N·m, σ_a = 88.778 MPa, τ_m = 46.947 MPa, n_y = 4.1532
       = 1.6909
         Section at 150 mm: fatigue safety factor (DE-Goodman)
-  [31] X3 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 11th ed. §7-4
+  [31] X3 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
       = x = 180 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 300 N·m, σ_a = 79.334 MPa, τ_m = 34.616 MPa, n_y = 5.0281
       = 1.9801
         Section at 180 mm: fatigue safety factor (DE-Goodman)
-  [32] X4 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 11th ed. §7-4
+  [32] X4 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
       = x = 260 mm, d = 35 mm, k_b = 0.84763, S_e = 191.9 MPa, K_f = 1.48, K_fs = 1.36, M = 63.906 N·m, T = 300 N·m, σ_a = 22.47 MPa, τ_m = 48.465 MPa, n_y = 5.7538
       = 4.2192
         Section at 260 mm: fatigue safety factor (DE-Goodman)
@@ -138,11 +138,11 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
       = 4 section(s)
       = 4.1532
         Lowest yield safety factor
-  [36] n_c = √(g·Σm·y/Σm·y²) (Rayleigh)    « Shigley 11th ed. §7-6
+  [36] n_c = √(g·Σm·y/Σm·y²) (Rayleigh)    « Shigley 10th ed. §7-6
       = Σm = 7.2337 kg over 37 nodes
       = 39515 rpm
         First lateral critical speed (Rayleigh)
-  [37] n_c_D = 1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)    « Shigley 11th ed. §7-6
+  [37] n_c_D = 1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)    « Shigley 10th ed. §7-6
       = 37 masses
       = 37295 rpm
         First critical speed, Dunkerley lower bound
@@ -150,11 +150,11 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
       = 39515 / 1450
       = 27.251
         Critical-speed ratio
-  [43] tau_key = 2T/(d·w·L)    « Shigley 11th ed. §7-7
+  [43] tau_key = 2T/(d·w·L)    « Shigley 10th ed. §7-7
       = 2 × 300 / (45 × 14 × 40) mm³
       = 23.81 MPa
         Key shear stress
-  [44] sigma_key = 4T/(d·h·L)    « Shigley 11th ed. §7-7
+  [44] sigma_key = 4T/(d·h·L)    « Shigley 10th ed. §7-7
       = 4 × 300 / (45 × 9 × 40) mm³
       = 74.074 MPa
         Key bearing stress
@@ -205,7 +205,7 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
 
 6. CHECKS (governing first)
   PASS  Slope at the bearings against limit: u_slope = 0.8961 vs u_slope ≤ 1  utilisation 0.896
-  PASS  Fatigue safety factor against target (DE-Goodman): u_f = 0.88712 vs u_f ≤ 1  utilisation 0.887  « Shigley 11th ed. §7-4
+  PASS  Fatigue safety factor against target (DE-Goodman): u_f = 0.88712 vs u_f ≤ 1  utilisation 0.887  « Shigley 10th ed. §7-4
   PASS  Deflection at the loads against limit: u_defl = 0.55212 vs u_defl ≤ 1  utilisation 0.552
   PASS  Yield safety factor against target: u_y = 0.36117 vs u_y ≤ 1  utilisation 0.361
   PASS  Key length against required: u_key = 0.27778 vs u_key ≤ 1  utilisation 0.278

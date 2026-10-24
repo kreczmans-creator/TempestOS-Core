@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 A group of straight fillet welds in a plane under in-plane forces (with eccentricity, so torsion), an out-of-plane force and out-of-plane moments: the resultant force per unit length at every weld end, the critical point, the throat stress against the design strength and the leg size required.
-Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, J_u = I_ux + I_uy Torsion about the centroid: T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + M_x·y′/I_ux + M_y·x′/I_uy; vector sum f_r Throat: a = 0.707·s, τ = f_r,max/a; required leg s_req = f_r,max/(0.707·f_w)
+Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, J_u = I_ux + I_uy Torsion about the centroid: T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + M_x·y′/I_ux + M_y·x′/I_uy with F_z's eccentricity added to M_x and M_y; vector sum f_r Throat: a = 0.707·s, τ = f_r,max/a; required leg s_req = f_r,max/(0.707·f_w)
   Ref: Shigley's Mechanical Engineering Design 11th ed., Ch. 9, Tables 9-1 and 9-2 — Welds treated as lines: torsional and bending properties
   Ref: Blodgett, Design of Welded Structures 1966, §7.4 — Treating the weld as a line
   Ref: EN 1993-1-8:2005 cl. 4.5.3.3 — Simplified method for design resistance of fillet welds (resistance input)

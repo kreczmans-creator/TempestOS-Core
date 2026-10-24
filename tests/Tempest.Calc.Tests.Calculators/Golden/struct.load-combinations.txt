@@ -5,7 +5,7 @@ Title: Load combinations (EN 1990)
 
 1. SCOPE AND METHOD
 Design values of a single action effect (a force, a moment or a load intensity) under every EN 1990 Annex A1 combination for buildings: ULS persistent/transient, SLS characteristic, frequent and quasi-permanent, and accidental. Every variable action is tried as the leading one; the maximum and minimum envelopes and their governing combinations are reported.
-ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i ULS 6.10a: Σ γ_G·G + Σ γ_Q·K_FI·ψ_0·Q_i; 6.10b: Σ ξ·γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i Permanent factor: γ_G,sup when the action adds to the effect sought, γ_G,inf when it opposes it Variable actions: included only when they add to the effect sought (otherwise zero) SLS characteristic 6.14b: Σ G + Q_1 + Σ ψ_0·Q_i; frequent 6.15b: Σ G + ψ_1·Q_1 + Σ ψ_2·Q_i; quasi-permanent 6.16b: Σ G + Σ ψ_2·Q_i Accidental 6.11b: Σ G + A_d + ψ_1·Q_1 + Σ ψ_2·Q_i
+ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on γ_G,sup) ULS 6.10a: Σ γ_G·G + Σ γ_Q·K_FI·ψ_0·Q_i; 6.10b: Σ ξ·γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i Permanent factor: γ_G,sup when the action adds to the effect sought, γ_G,inf when it opposes it Variable actions: included only when they add to the effect sought (otherwise zero) SLS characteristic 6.14b: Σ G + Q_1 + Σ ψ_0·Q_i; frequent 6.15b: Σ G + ψ_1·Q_1 + Σ ψ_2·Q_i; quasi-permanent 6.16b: Σ G + Σ ψ_2·Q_i Accidental 6.11b: Σ G + A_d + ψ_1·Q_1 + Σ ψ_2·Q_i
   Ref: EN 1990:2002+A1:2005 cl. 6.4.3.2 — Combinations for persistent or transient design situations (6.10, 6.10a, 6.10b)
   Ref: EN 1990:2002+A1:2005 cl. 6.4.3.3 — Combinations for accidental design situations (6.11b)
   Ref: EN 1990:2002+A1:2005 cl. 6.5.3 — Serviceability combinations (6.14b, 6.15b, 6.16b)
@@ -33,7 +33,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i ULS 6.10a: Σ 
   A5. ψ factors: EN 1990 Annex A1 recommended values (Table A1.1). (No ψ record entered.)
 
 4. WORKING
-  [8] C1 = γ_G,sup·G1 + γ_Q·K_FI·Q2    « EN 1990 cl. 6.4.3.2
+  [8] C1 = γ_G,sup·K_FI·G1 + γ_Q·K_FI·Q2    « EN 1990 cl. 6.4.3.2
       = 1.35×10 + 1.5×5
       = 21 kN
         ULS 6.10, Office imposed leading (max)

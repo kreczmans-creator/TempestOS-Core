@@ -82,4 +82,14 @@ public sealed class FaultProtectionTests
         var hotter = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("theta_f", 250, "degC"))).OutputSi("k");
         Assert.True(hotter > pvc);
     }
+
+    [Fact]
+    public void No_Disconnection_Means_No_Adiabatic_Claim()
+    {
+        // Opus review finding 12: a 200 m circuit on a 32 A type B MCB never reaches 5 I_n.
+        var r = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("L", 200, "m")));
+        Assert.Null(r.FindOutput("S_min"));
+        Assert.Contains(r.Warnings, w => w.RuleId == "adiabatic");
+        Assert.Contains(r.Checks, c => c.Name == "Disconnection achieved" && !c.Passed);
+    }
 }

@@ -70,6 +70,7 @@ public sealed class ShaftCalculator : ICalcCalculator
             new CalcInputSpec("finish", "Surface finish", CalcInputKind.Choice, Choices: [Ground, Machined, HotRolled, Forged], DefaultChoice: Machined, Group: "Fatigue"),
             new CalcInputSpec("R", "Reliability", CalcInputKind.Quantity, "%", Default: 99, Min: 50, Max: 99.9, HardMin: 50, HardMax: 99.9, Group: "Fatigue"),
             new CalcInputSpec("k_d", "Temperature factor k_d", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 1.1, HardMin: 0.1, HardMax: 1.5, Group: "Fatigue"),
+            new CalcInputSpec("k_a", "Surface factor override (blank: k_a = a·S_ut^b, Shigley 10th ed. Table 6-2)", CalcInputKind.Number, Min: 0.1, Max: 1.5, HardMin: 0.05, HardMax: 2, IsOptional: true, Group: "Fatigue"),
             new CalcInputSpec("k_f", "Miscellaneous factor k_f", CalcInputKind.Number, Default: 1, Min: 0.3, Max: 1.5, HardMin: 0.1, HardMax: 2, Group: "Fatigue"),
             new CalcInputSpec("n_target", "Target safety factor", CalcInputKind.Number, Default: 1.5, Min: 1.2, Max: 4, HardMin: 1.2, HardMax: 4, Group: "Requirements"),
             new CalcInputSpec("theta_max", "Slope limit at the bearings", CalcInputKind.Quantity, "rad", Default: 0.001, Min: 1e-5, Max: 0.1, HardMin: 1e-6, HardMax: 0.5, Group: "Requirements"),
@@ -81,14 +82,14 @@ public sealed class ShaftCalculator : ICalcCalculator
             new CalcInputSpec("S_y_key", "Key yield strength", CalcInputKind.Quantity, "MPa", Min: 150, Max: 1500, HardMin: 50, HardMax: 2000, IsOptional: true, Group: "Key"),
         ],
         [
-            new CalcAssumption("Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation, torque steady.", "Shigley 11th ed. §7-4."),
-            new CalcAssumption("No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound.", "Shigley 11th ed. §7-6."),
+            new CalcAssumption("Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation, torque steady.", "Shigley 10th ed. §7-4."),
+            new CalcAssumption("No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound.", "Shigley 10th ed. §7-6."),
             new CalcAssumption("K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced.", "§A5."),
-            new CalcAssumption("At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises.", "Shigley 11th ed. §6-9, §7-4."),
+            new CalcAssumption("At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises.", "Shigley 10th ed. §6-9, §7-4."),
             new CalcAssumption("Loads, sections and steps closer together than 1/200 of the shaft length share one node.", "Keeps the beam model well conditioned."),
         ],
         [
-            new CalcClauseRef("Shigley's Mechanical Engineering Design", "11th ed., Ch. 6 (§6-9 Marin factors), Ch. 7 (§7-4 to §7-7)", "Fatigue, shaft stresses, deflection, critical speeds, keys"),
+            new CalcClauseRef("Shigley's Mechanical Engineering Design", "10th ed., Ch. 6 (§6-9, Table 6-2 Marin surface factors), Ch. 7 (§7-4 to §7-7)", "Fatigue, shaft stresses, deflection, critical speeds, keys"),
             new CalcClauseRef("Mott, Machine Elements in Mechanical Design", "6th ed., Ch. 12", "Shaft design"),
         ],
         [
@@ -107,7 +108,7 @@ public sealed class ShaftCalculator : ICalcCalculator
                 [Segments((400, 28, 0)), Loads((200, -1.424, 0, 0)), Q("T", 0.1243, "kN*m"), Sections((200, 1, 1, 0, 0)), Q("x_key", 100, "mm"), Q("w", 8, "mm"), Q("h", 7, "mm"), Q("L_key", 30, "mm"), Q("S_y_key", 400, "MPa")],
                 [new CalcExpectedValue("tau_key", 36.99405, "MPa", 1e-6), new CalcExpectedValue("sigma_key", 84.55782, "MPa", 1e-6)]),
             new CalcTestCase("ka-shigley-7-1", "Shoulder fatigue: 142.4 N·m reversed bending, 124.3 N·m steady torque, d = 28 mm (Shigley Ch. 7 example)",
-                new CalcReferenceSource("Budynas & Nisbett, Shigley's Mechanical Engineering Design", "11th ed., Ch. 7, Example 7-1", "Data as given there (S_ut 735, S_y 574 MPa, machined, R 0.99, K_t 1.68, K_ts 1.42, q 0.85, q_s 0.92); computed here: k_a 0.7845, k_b 0.8681, k_e 0.8139, S_e 203.71 MPa, σ_a 104.27 MPa, τ_m 39.98 MPa, n_f (DE-Goodman) 1.650, n_y 4.586. The book's printed answers are to be compared by the owner"),
+                new CalcReferenceSource("Budynas & Nisbett, Shigley's Mechanical Engineering Design", "10th ed., Ch. 7, Example 7-1", "Data adapted from the example (M 142.4 N·m, T 124.3 N·m, d 28 mm, machined, R 0.99, K_t 1.68, K_ts 1.42, q 0.85, q_s 0.92; strengths taken as S_ut 735, S_y 574 MPa — the example's kpsi values convert to about 724 and 565 MPa, so the book's answers will differ slightly); computed here: k_a 0.7845, k_b 0.8681, k_e 0.8139, S_e 203.71 MPa, σ_a 104.27 MPa, τ_m 39.98 MPa, n_f (DE-Goodman) 1.650, n_y 4.586. The book's printed answers are to be compared by the owner"),
                 [Segments((400, 28, 0)), Loads((200, -1.424, 0, 0)), Q("T", 0.1243, "kN*m"), Q("x_T1", 0, "mm"), Q("x_T2", 400, "mm"), Sections((200, 1.68, 1.42, 0.85, 0.92)), Q("S_ut", 735, "MPa"), Q("S_y", 574, "MPa"), CalcInputValue.Choice("finish", Machined), Q("R", 99, "%")],
                 [new CalcExpectedValue("S_e", 203.7091, "MPa", 1e-5), new CalcExpectedValue("n_f_min", 1.650015, "", 1e-5), new CalcExpectedValue("n_y_min", 4.585856, "", 1e-5)],
                 CalcReferenceStatus.Unconfirmed),
@@ -125,6 +126,7 @@ public sealed class ShaftCalculator : ICalcCalculator
         RecordKinds:
         [
             new CalcRecordKind("shaft.material", "Shaft material", ["S_ut", "S_y", "E"], "From the material standard or certificate."),
+            new CalcRecordKind("shaft.marin", "Marin surface factor", ["k_a"], "From the edition of the fatigue reference in use (Shigley 11th ed. Table 6-2 revised the coefficients), with its source."),
             new CalcRecordKind("shaft.limits", "Slope and deflection limits", ["theta_max", "y_max"], "From the bearing and gear manufacturers' data."),
         ]);
 
@@ -297,12 +299,12 @@ public sealed class ShaftCalculator : ICalcCalculator
         var sy = c.Si("S_y") / 1e6;
         var finish = c.InputText("finish");
         var (a, b) = finish switch { Ground => (1.58, -0.085), HotRolled => (57.7, -0.718), Forged => (272.0, -0.995), _ => (4.51, -0.265) };
-        var ka = a * Math.Pow(sut, b);
+        var ka = c.Has("k_a") ? c.InputSi("k_a") : a * Math.Pow(sut, b);
         var z = NormalQuantile(c.Si("R"));
         var ke = 1 - 0.08 * z;
         var sePrime = sut <= 1400 ? 0.5 * sut : 700;
-        c.Record("k_a", "a·S_ut^b", $"{F(a)} × {F(sut)}^{F(b)} ({finish})", new ScalarValue(ka), "Surface factor", "Shigley 11th ed. §6-9");
-        c.Record("k_e", "1 − 0.08·z_R", $"1 − 0.08 × {F(z)}", new ScalarValue(ke), "Reliability factor", "Shigley 11th ed. §6-9");
+        c.Record("k_a", c.Has("k_a") ? "k_a (entered, from a record)" : "a·S_ut^b", c.Has("k_a") ? F(ka) : $"{F(a)} × {F(sut)}^{F(b)} ({finish})", new ScalarValue(ka), "Surface factor", "Shigley 10th ed. §6-9, Table 6-2");
+        c.Record("k_e", "1 − 0.08·z_R", $"1 − 0.08 × {F(z)}", new ScalarValue(ke), "Reliability factor", "Shigley 10th ed. §6-9");
         c.Record("S_e1", sut <= 1400 ? "0.5·S_ut" : "700 MPa (S_ut > 1400 MPa)", $"{F(sut)} MPa", ScalarValue.Of(sePrime, "MPa"), "Rotating-beam endurance limit");
         var torque = c.Si("T");
         var tLo = Math.Min(c.Si("x_T1"), c.Si("x_T2"));
@@ -336,7 +338,7 @@ public sealed class ShaftCalculator : ICalcCalculator
             var ny = vm > 0 ? sy / vm : double.PositiveInfinity;
             c.Record($"X{index}", "σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut",
                 $"x = {F(s.X * 1e3)} mm, d = {F(dmm)} mm, k_b = {F(kb)}, S_e = {F(se)} MPa, K_f = {F(kf)}, K_fs = {F(kfs)}, M = {F(ma)} N·m, T = {F(tm)} N·m, σ_a = {F(sa)} MPa, τ_m = {F(taum)} MPa, n_y = {(double.IsInfinity(ny) ? "—" : F(ny))}",
-                new ScalarValue(double.IsInfinity(nf) ? 1e9 : nf), $"Section at {F(s.X * 1e3)} mm: fatigue safety factor (DE-Goodman)", "Shigley 11th ed. §7-4");
+                new ScalarValue(double.IsInfinity(nf) ? 1e9 : nf), $"Section at {F(s.X * 1e3)} mm: fatigue safety factor (DE-Goodman)", "Shigley 10th ed. §7-4");
 
             if (nf < worstF)
             {
@@ -380,7 +382,7 @@ public sealed class ShaftCalculator : ICalcCalculator
             var bottom = masses.Select((m, i) => m * y[i] * y[i]).Sum();
             var omega = bottom > 0 ? Math.Sqrt(Gravity * top / bottom) : double.PositiveInfinity;
             var rpm = UnitCatalog.Parse("rpm");
-            c.Record("n_c", "√(g·Σm·y/Σm·y²) (Rayleigh)", $"Σm = {F(masses.Sum())} kg over {nodes.Count} nodes", ScalarValue.Of(rpm.FromSi(omega), rpm), "First lateral critical speed (Rayleigh)", "Shigley 11th ed. §7-6");
+            c.Record("n_c", "√(g·Σm·y/Σm·y²) (Rayleigh)", $"Σm = {F(masses.Sum())} kg over {nodes.Count} nodes", ScalarValue.Of(rpm.FromSi(omega), rpm), "First lateral critical speed (Rayleigh)", "Shigley 10th ed. §7-6");
 
             // Dunkerley: δ_ii by a unit load at each loaded node, fifty cases per solve.
             var loaded = masses.Select((m, i) => (m, i)).Where(p => p.m > 0).ToList();
@@ -396,7 +398,7 @@ public sealed class ShaftCalculator : ICalcCalculator
             }
 
             var omegaD = sum > 0 ? 1 / Math.Sqrt(sum) : double.PositiveInfinity;
-            c.Record("n_c_D", "1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)", $"{loaded.Count} masses", ScalarValue.Of(rpm.FromSi(omegaD), rpm), "First critical speed, Dunkerley lower bound", "Shigley 11th ed. §7-6");
+            c.Record("n_c_D", "1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)", $"{loaded.Count} masses", ScalarValue.Of(rpm.FromSi(omegaD), rpm), "First critical speed, Dunkerley lower bound", "Shigley 10th ed. §7-6");
             outputs.AddRange([("n_c", "First critical speed (Rayleigh)"), ("n_c_D", "Dunkerley lower bound")]);
 
             if (opSpeed > 0)
@@ -419,8 +421,8 @@ public sealed class ShaftCalculator : ICalcCalculator
             var dk = Smallest(segments, c.Si("x_key")).D;
             var tauKey = 2 * torque / (dk * c.Si("w") * c.Si("L_key")) / 1e6;
             var sigmaKey = 4 * torque / (dk * c.Si("h") * c.Si("L_key")) / 1e6;
-            c.Record("tau_key", "2T/(d·w·L)", $"2 × {F(torque)} / ({F(dk * 1e3)} × {F(c.Si("w") * 1e3)} × {F(c.Si("L_key") * 1e3)}) mm³", ScalarValue.Of(tauKey, "MPa"), "Key shear stress", "Shigley 11th ed. §7-7");
-            c.Record("sigma_key", "4T/(d·h·L)", $"4 × {F(torque)} / ({F(dk * 1e3)} × {F(c.Si("h") * 1e3)} × {F(c.Si("L_key") * 1e3)}) mm³", ScalarValue.Of(sigmaKey, "MPa"), "Key bearing stress", "Shigley 11th ed. §7-7");
+            c.Record("tau_key", "2T/(d·w·L)", $"2 × {F(torque)} / ({F(dk * 1e3)} × {F(c.Si("w") * 1e3)} × {F(c.Si("L_key") * 1e3)}) mm³", ScalarValue.Of(tauKey, "MPa"), "Key shear stress", "Shigley 10th ed. §7-7");
+            c.Record("sigma_key", "4T/(d·h·L)", $"4 × {F(torque)} / ({F(dk * 1e3)} × {F(c.Si("h") * 1e3)} × {F(c.Si("L_key") * 1e3)}) mm³", ScalarValue.Of(sigmaKey, "MPa"), "Key bearing stress", "Shigley 10th ed. §7-7");
             outputs.AddRange([("tau_key", "Key shear"), ("sigma_key", "Key bearing")]);
 
             if (c.Has("S_y_key"))
@@ -444,7 +446,7 @@ public sealed class ShaftCalculator : ICalcCalculator
         {
             c.Record("u_f", "n_target/n_f,min", $"{F(nTarget)} / {Show(worstF)}", new ScalarValue(nTarget / worstF), "Fatigue utilisation");
             c.Record("u_y", "n_target/n_y,min", $"{F(nTarget)} / {Show(worstY)}", new ScalarValue(nTarget / worstY), "Yield utilisation");
-            c.CheckUtilisation("Fatigue safety factor against target (DE-Goodman)", "u_f", "Shigley 11th ed. §7-4");
+            c.CheckUtilisation("Fatigue safety factor against target (DE-Goodman)", "u_f", "Shigley 10th ed. §7-4");
             c.CheckUtilisation("Yield safety factor against target", "u_y");
         }
 

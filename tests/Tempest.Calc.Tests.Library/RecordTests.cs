@@ -125,4 +125,29 @@ public sealed class RecordTests
         Assert.DoesNotContain("0.8", fields);
         Assert.DoesNotContain(fields, f => f.StartsWith("27", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public async Task Licensed_Values_Cannot_Be_Laundered_Into_An_Exportable_Record()
+    {
+        // Opus review finding 5: a licensed record's revisions stay licensed, and a record saved from inputs that cite a
+        // licensed record is licensed too.
+        var host = Host();
+        var (licensed, _) = await host.Service.SaveRecordAsync(Draft(licensed: true));
+        var (unlocked, refusal) = await host.Service.SaveRecordAsync(licensed! with { LicensedSource = false });
+        Assert.Null(unlocked);
+        Assert.Contains("stay licensed", refusal, StringComparison.Ordinal);
+
+        var inputs = new[] { new CalcInputValue("k_1", Number: 0.8, Provenance: CalcInstanceService.RecordProvenance(licensed)) };
+        var (copy, _) = await host.Service.SaveRecordFromInputsAsync(Draft(licensed: false) with { Title = "My copy" }, inputs);
+        Assert.True(copy!.LicensedSource);
+        Assert.Null((await host.Service.ExportRecordAsync(copy.Id)).Csv);
+    }
+
+    [Fact]
+    public async Task A_Record_Saved_From_Unlicensed_Inputs_Stays_Unlicensed()
+    {
+        var host = Host();
+        var (copy, _) = await host.Service.SaveRecordFromInputsAsync(Draft(licensed: false), [new CalcInputValue("k_1", Number: 0.8, Provenance: CalcProvenance.Assumed("typed"))]);
+        Assert.False(copy!.LicensedSource);
+    }
 }
