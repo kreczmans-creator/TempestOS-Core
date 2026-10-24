@@ -1,7 +1,7 @@
 # struct.connection-ec3 — independent re-derivation (Track P, P1)
 Calculator: Bolts and fillet welds (EN 1993-1-8), version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Structural/ConnectionCalculator.cs. Spec: docs/calcs/structural/struct.connection-ec3.md.
 Script: tools/verification/struct.connection-ec3.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (reviewed: four High — -01, -03, -04, R1 — and one Medium)
 
 Every printed value I probed agrees with my own derivation. The findings are checks that EN 1993-1-8 asks for and the sheet does not make. One finding concerns the legacy picker in ADR-0169.
 
@@ -76,17 +76,20 @@ The script holds 8 full probes, a 7-class by 2-state α_v table, 8 sizes and 5 s
 | Governing mode | bolt modes | shear, bearing, tension, combined; no block, weld or spacing | Yes (label says bolt) |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-struct.connection-ec3-01 | Medium | Oversize or slotted holes are accepted with no reduction and no warning. EN 1993-1-8 cl. 3.6.1 and the Table 3.4 notes ask 0.8 (oversize) or 0.6 (slot across the load) on F_b,Rd. | M20 8.8, 10 mm S275, e₁ = e₂ = 40, d₀ 24: product 91.1 kN. Required at most 0.8 × 99.4 = 79.5 kN. | Warn when d₀ exceeds the normal clearance. Add a hole-type choice with the 0.8 and 0.6 factors. |
-| P1-struct.connection-ec3-02 | Medium | Block tearing offers V_eff,1 only. An eccentric group needs V_eff,2, which is lower. The output label says concentric but the spec limitations do not. | A_nt 300, A_nv 900, f_u 410, f_y 275: V_eff,1 241.3 kN, V_eff,2 192.1 kN. | Add a loading choice (concentric or eccentric). List the limit in the spec. |
-| P1-struct.connection-ec3-03 | Medium | The cap F_b,Rd ≤ 1.5 f_u d t/γ_M2 for single-lap joints with one bolt row (cl. 3.6.1) is absent. It binds when k₁α_b exceeds 1.5. | M20 8.8, 10 mm S275, e₁ = e₂ = 60: product 149.1 kN, cap 98.4 kN. | Add a joint-type input, or warn when n_s = 1 and k₁α_b > 1.5. |
-| P1-struct.connection-ec3-04 | High | ADR-0169 offers α_v f_ub for threads in the plane but multiplies by the gross shank area. The legacy module is 28 % above the S4 result for M20. | Pinned test: M20 class 10.9 gives π/4·400·500 N = 157.1 kN at SF 1. S4 gives 0.5·1000·244.8 = 122.4 kN. Class 8.8: 150.8 against 117.5 kN. | Use A_s with the thread-plane strengths, or label the picker as shank-in-plane and use 0.6. Better, retire the module as planned. |
-| P1-struct.connection-ec3-05 | Low | When k₁ is zero or negative (M20, e₂ below 13.4 mm) the run stops with "Division by zero". The spacing check never shows. | e₁ 40, e₂ 12: block "engine: Division by zero." | Return u_b = ∞ with the spacing failure shown. |
-| P1-struct.connection-ec3-06 | Low | Table 3.3 maxima (4t + 40 mm, 14t or 200 mm) are not checked. | e₁ = e₂ = 500 mm, M36: spacing "pass". | Add the maxima as a warning. |
-| P1-struct.connection-ec3-07 | Low | Plate f_y above f_u, or an f_u that does not suit the steel grade, is accepted. | f_y 460 with f_u 340 runs with no notice. | Block f_y > f_u. Warn when f_u is outside the grade range. |
-| P1-struct.connection-ec3-08 | Low | The worksheet shows d₂ = d − 0.6495P and d₃ = d − 1.2269P. The code uses 0.649519 and 1.226869. | A_s differs by 1.6e-6. The KAT value 244.794 is also rounded. | Show the exact constants. |
-| P1-struct.connection-ec3-09 | Info | Countersunk bolts (k₂ = 0.63) are out of scope and nothing blocks their use. Default M12 hole is 14 mm; EN 1090-2 gives 13 mm as I recall its table, so the default is conservative. | Limitations text; hole rule in the code. | Optional: add a countersunk choice. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-struct.connection-ec3-01 | Medium | High: unconservative 14.6 % and no guard; an oversize d₀ is a plausible entry | Oversize or slotted holes are accepted with no reduction and no warning. EN 1993-1-8 cl. 3.6.1 and the Table 3.4 notes ask 0.8 (oversize) or 0.6 (slot across the load) on F_b,Rd. | M20 8.8, 10 mm S275, e₁ = e₂ = 40, d₀ 24: product 91.1 kN. Required at most 0.8 × 99.4 = 79.5 kN. | Warn when d₀ exceeds the normal clearance. Add a hole-type choice with the 0.8 and 0.6 factors. |
+| P1-struct.connection-ec3-02 | Medium | Medium: confirmed; the output label says concentric, so the limit is disclosed | Block tearing offers V_eff,1 only. An eccentric group needs V_eff,2, which is lower. The output label says concentric but the spec limitations do not. | A_nt 300, A_nv 900, f_u 410, f_y 275: V_eff,1 241.3 kN, V_eff,2 192.1 kN. | Add a loading choice (concentric or eccentric). List the limit in the spec. |
+| P1-struct.connection-ec3-03 | Medium | High: unconservative up to 51 % in plausible use; the cap already binds by 1 % at the default inputs (99.39 > 98.40 kN) | The cap F_b,Rd ≤ 1.5 f_u d t/γ_M2 for single-lap joints with one bolt row (cl. 3.6.1) is absent. It binds when k₁α_b exceeds 1.5. | M20 8.8, 10 mm S275, e₁ = e₂ = 60: product 149.1 kN, cap 98.4 kN. | Add a joint-type input, or warn when n_s = 1 and k₁α_b > 1.5. |
+| P1-struct.connection-ec3-04 | High | High: confirmed on this branch. ADR-0169 fixed α_v per class only; its Decision 3 keeps the gross area | ADR-0169 offers α_v f_ub for threads in the plane but multiplies by the gross shank area. The legacy module is 28 % above the S4 result for M20. | Pinned test: M20 class 10.9 gives π/4·400·500 N = 157.1 kN at SF 1. S4 gives 0.5·1000·244.8 = 122.4 kN. Class 8.8: 150.8 against 117.5 kN. | Use A_s with the thread-plane strengths, or label the picker as shank-in-plane and use 0.6. Better, retire the module as planned. |
+| P1-struct.connection-ec3-05 | Low | Low: confirmed | When k₁ is zero or negative (M20, e₂ below 13.4 mm) the run stops with "Division by zero". The spacing check never shows. | e₁ 40, e₂ 12: block "engine: Division by zero." | Return u_b = ∞ with the spacing failure shown. |
+| P1-struct.connection-ec3-06 | Low | Low: confirmed | Table 3.3 maxima (4t + 40 mm, 14t or 200 mm) are not checked. | e₁ = e₂ = 500 mm, M36: spacing "pass". | Add the maxima as a warning. |
+| P1-struct.connection-ec3-07 | Low | Low: confirmed | Plate f_y above f_u, or an f_u that does not suit the steel grade, is accepted. | f_y 460 with f_u 340 runs with no notice. | Block f_y > f_u. Warn when f_u is outside the grade range. |
+| P1-struct.connection-ec3-08 | Low | Low: confirmed | The worksheet shows d₂ = d − 0.6495P and d₃ = d − 1.2269P. The code uses 0.649519 and 1.226869. | A_s differs by 1.6e-6. The KAT value 244.794 is also rounded. | Show the exact constants. |
+| P1-struct.connection-ec3-09 | Info | Info: confirmed, but the hole remark was wrong; see R1 | Countersunk bolts (k₂ = 0.63) are out of scope and nothing blocks their use. Default M12 hole is 14 mm. That is conservative for bearing but not for shear (see R1). | Limitations text; hole rule in the code. | Optional: add a countersunk choice. |
+| P1-struct.connection-ec3-R1 | — | High | The default M12 hole is d + 2 = 14 mm. EN 1993-1-8 cl. 3.6.1(5) allows 2 mm clearance for M12 and M14 only with F_v,Rd × 0.85 for classes 4.8, 5.8, 6.8, 8.8 and 10.9. The sheet applies no 0.85 factor. Owner to confirm clause number against licensed copy. | Probe: M12 8.8, defaults, F_v,Ed 30 kN. Product F_v,Rd 32.36 kN, u_v 0.93 pass. With 0.85: 27.50 kN, u_v 1.09 fail. Unconservative by 17.6 %. | Default the M12 hole to 13 mm (EN 1090-2 normal clearance). Apply 0.85 to F_v,Rd when d ≤ 14 and d₀ − d ≥ 2 for those classes. |
+| P1-struct.connection-ec3-R2 | — | Low | When p₁ < 0.75 d₀ the inner α_d is negative. The sheet prints a negative α_b, F_b,Rd and u_b. The bearing check still reports FAIL. | Probe: M36 8.8, p₁ 25 mm: α_b −0.0363, F_b,Rd −10.7 kN, u_b −46.6 (FAIL). The spacing check also fails. | Clamp α_b at zero, or block p₁ < d₀ as impossible geometry. |
+| P1-struct.connection-ec3-R3 | — | Low | d_m uses the theoretical across-corners s/cos 30°. Product standards give a smaller minimum across-corners e. Using e_min lowers B_p,Rd by about 2.6 %. Owner to confirm the intended e. | M20: code d_m 32.32 mm. With s 30 and e 32.95 mm (ISO 4032 e_min as recalled), d_m 31.48 mm. | Use e_min from ISO 4014/4032, or state the choice. |
 
 ## Notes for the owner's manual test
 - M20 8.8, 10 mm S275 (f_u 410), e₁ = e₂ = 40, p₁ = p₂ = 70, d₀ 22. Expect A_s 244.8 mm², F_v,Rd 94.00, F_t,Rd 141.00, F_b,Rd 99.39, B_p,Rd 199.83 kN.
@@ -94,3 +97,15 @@ The script holds 8 full probes, a 7-class by 2-state α_v table, 8 sizes and 5 s
 - Weld in S275 with a = 4.2 mm and f_u 410. Expect f_vw,d 222.79 MPa and F_w,Rd 935.7 N/mm. The β_w values are 0.80, 0.85, 0.90, 1.00 and 1.00 for S235 to S460.
 - Enter d₀ 24 and compare F_b,Rd with 0.8 × the d₀ 22 value. Enter e₁ = e₂ = 60 and compare F_b,Rd with 1.5 f_u d t/γ_M2.
 - Test the legacy picker with M20 class 10.9 and compare it with the 97.9 kN of this sheet.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- I ran the script (exit 0) and checked that it uses its own tables and formulae. It does not translate the C#.
+- I reproduced -01, -03 and the default-input case with the probe. I read the legacy code and ADR-0169 for -04.
+- -04 on this branch: the picker now offers α_v·f_ub (10.9 → 500 MPa). The module still multiplies by π d²/4.
+- ADR-0169 Decision 3 keeps that arithmetic on purpose. So the 28 % area error is not fixed; only the 20 % α_v error is.
+- The pinned test An_M20_10_9_Single_Shear_Capacity_Falls_By_A_Sixth locks in the gross-area value 157.1 kN.
+- I upgraded -01 and -03 to High. Both let an unconservative bearing value through with no notice in plausible use.
+- New: R1 (High, M12 2 mm clearance needs 0.85 on shear), R2 and R3 (Low).
+- I corrected the -09 remark that the 14 mm M12 hole is conservative.
+- Residual doubt: R1 and R3 rely on my memory of cl. 3.6.1(5) and ISO 4032 e_min. The owner should confirm both.

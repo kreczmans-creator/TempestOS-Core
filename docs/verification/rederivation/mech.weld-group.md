@@ -69,13 +69,13 @@ All other symbols (L_w, x_c, y_c, I_ux, I_uy, J_u, T, tau, s_req, u) agree to 1e
 | Input limits | s 3–25 mm, ±2000 mm, 50 rows | Enforced; 4000 mm box runs | Yes |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-mech.weld-group-01 | High | The out-of-plane law ignores the product I_uxy. For layouts without symmetry the force field breaks moment equilibrium. The result is unconservative. | L-shape (0,0)–(150,0) and (0,0)–(0,100), s 6, f_w 220, F_z 10, M_x 3, M_y 4: product f_r 777.7 N/mm, τ 183.3 MPa, u 0.833 pass. Equilibrium gives 1620 N/mm, u 1.74. M_x 5 alone: u 1.88 vs 2.29 (+22 %). | Add I_uxy to the kernel. Solve the 2x2 system for c₁ and c₂. Keep the current law only when I_uxy is near zero. |
-| P1-mech.weld-group-02 | Medium | The "collinear" block fires for any horizontal or vertical line, even with no bending. It refuses valid cases. The message is wrong for torsion about the centroid. | One vertical weld (0,0)–(0,100), F_y −10 at (100,50): blocked. Table 9-1 case 1 gives J_u = d³/12 = 83 333 mm³ and f_r 608 N/mm. | Block per axis, only when a load needs the missing stiffness (M_x with I_ux = 0, M_y with I_uy = 0, T with J_u = 0). |
-| P1-mech.weld-group-03 | Medium | A diagonal collinear group is not blocked. The moment about the line itself cannot be resisted, yet the product returns numbers. | One weld (0,0)–(100,100), M_x 5 kN·m: I_ux = I_uy = I_uxy = 117 851 mm³ (singular). Product shows f_r 2121 N/mm, u 2.27, no notice. | Test the determinant I_ux I_uy − I_uxy². Block or warn when it is near zero and a moment is applied. |
-| P1-mech.weld-group-04 | Low | Duplicate weld rows count twice without notice. Zero-length rows drop silently. | Two 100 mm welds plus a repeat of the first: L_w 300 mm, J_u 416 667 mm³, no notice. Bolt group blocks coincident bolts. | Warn on identical or overlapping rows and on dropped zero-length rows. |
-| P1-mech.weld-group-05 | Info | The sheet does not check weld length limits, end returns or the directional method of EN 1993-1-8. The design strength f_w is a user input. | Source and spec text. | State this in the spec limitations. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-mech.weld-group-01 | High | High (confirmed: reproduced 777.7 vs 1620 N/mm by hand; L-welds under bending are plausible use) | The out-of-plane law ignores the product I_uxy. For layouts without symmetry the force field breaks moment equilibrium. The result is unconservative. | L-shape (0,0)–(150,0) and (0,0)–(0,100), s 6, f_w 220, F_z 10, M_x 3, M_y 4: product f_r 777.7 N/mm, τ 183.3 MPa, u 0.833 pass. Equilibrium gives 1620 N/mm, u 1.74. F_z 10 with M_x 5: u 1.88 vs 2.29 (+22 %). M_x 5 alone: f_r 1714 vs 2100 N/mm, u 1.84 vs 2.25 (+22 %). | Add I_uxy to the kernel. Solve the 2x2 system for c₁ and c₂. Keep the current law only when I_uxy is near zero. |
+| P1-mech.weld-group-02 | Medium | Medium (confirmed: refusal, not a wrong number; it blocks Shigley Table 9-1 case 1 and the message is wrong) | The "collinear" block fires for any horizontal or vertical line, even with no bending. It refuses valid cases. The message is wrong for torsion about the centroid. | One vertical weld (0,0)–(0,100), F_y −10 at (100,50): blocked. Table 9-1 case 1 gives J_u = d³/12 = 83 333 mm³ and f_r 608 N/mm. | Block per axis, only when a load needs the missing stiffness (M_x with I_ux = 0, M_y with I_uy = 0, T with J_u = 0). |
+| P1-mech.weld-group-03 | Medium | Medium (confirmed: reproduced f_r 2121 N/mm, no notice) | A diagonal collinear group is not blocked. The moment about the line itself cannot be resisted, yet the product returns numbers. | One weld (0,0)–(100,100), M_x 5 kN·m: I_ux = I_uy = I_uxy = 117 851 mm³ (singular). Product shows f_r 2121 N/mm, u 2.27, no notice. | Test the determinant I_ux I_uy − I_uxy². Block or warn when it is near zero and a moment is applied. |
+| P1-mech.weld-group-04 | Low | Low (confirmed) | Duplicate weld rows count twice without notice. Zero-length rows drop silently. | Two 100 mm welds plus a repeat of the first: L_w 300 mm, J_u 416 667 mm³, no notice. Bolt group blocks coincident bolts. | Warn on identical or overlapping rows and on dropped zero-length rows. |
+| P1-mech.weld-group-05 | Info | Info (confirmed) | The sheet does not check weld length limits, end returns or the directional method of EN 1993-1-8. The design strength f_w is a user input. | Source and spec text. | State this in the spec limitations. |
 
 ## Notes for the owner's manual test
 - Two vertical welds, 50 mm apart, 100 mm long, F_y −20 kN at 175 mm from the centroid: expect J_u 291 667 mm³ and f_r 721.11 N/mm.
@@ -83,3 +83,14 @@ All other symbols (L_w, x_c, y_c, I_ux, I_uy, J_u, T, tau, s_req, u) agree to 1e
 - Enter one vertical weld. Expect J_u = d³/12. The product blocks it.
 - Enter a C-shape 60 x 100 x 60 mm. Expect J_u = 468 424 mm³ from the Table 9-1 closed form.
 - Enter a 48-segment ring of radius 100 mm with M_z 10 kN·m. Expect J_u close to 2π r³ = 6.28e6 mm³ (0.4 % lower).
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- The script is an independent line-property derivation with I_uxy and a 2x2 solve. It is not a port of the C#.
+- I re-ran the script: 10/10 KAT rows pass, exit 0.
+- I reproduced -01, -02 and -03 with the probe. I checked -01 by hand: c₁ 17.16, c₂ 29.40 N/mm², f_z 1620 N/mm at (0, 100).
+- -01 stays High. An L-weld under one moment is already 22 % unconservative.
+- The -01 evidence row named "M_x 5 alone" but the script case also had F_z 10. I added the true M_x-only figures.
+- -02 stays Medium. It refuses a valid textbook case but never prints a wrong number.
+- I read Run line by line. Units, torsion sign, end-point maximum and the 0.707 s throat are correct. I found no new defect.
+- Residual doubt: the throat check uses the full vector f_r against f_w. That is the EN simplified method only; the directional method is not offered (-05).

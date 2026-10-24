@@ -6,7 +6,7 @@ Method sources (cited by title and number only):
     reg. 411.4.4 (Zs * Ia <= Cmin * U0), reg. 543.1.3 and 434.5.2 (adiabatic S = sqrt(I2t)/k).
   IEC 60364-5-54 (2011), Annex A, equation for k from Q_c, beta, rho_20, theta_i, theta_f.
   IEC 60909-0 (2016), cl. 6.3.1 (transformer impedance Z_T = u_k * U_rT^2 / S_rT) and
-    cl. 4.3.1 (initial symmetrical short-circuit current I_k3 = c * U_n / (sqrt(3) * Z_k)).
+    cl. 5.3.1 and Table 1 (voltage factor c; I_k3 = c * U_n / (sqrt(3) * Z_k)), owner to confirm.
 Units: ohm, A, s, mm^2, rho in ohm*mm, Q_c in J/(K*mm^3).
 Exit 0 when every check matches within max(tolerance, 1e-6).
 """

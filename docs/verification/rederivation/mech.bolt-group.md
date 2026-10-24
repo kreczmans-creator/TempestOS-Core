@@ -78,18 +78,30 @@ Rows for T, J, v_max, t_max and u_linear also agree in every symmetric probe whe
 | Input limits | Spec | Up to 200 rows; coordinates ±1e5 mm | Yes |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-mech.bolt-group-01 | High | The EN 1993-1-8 linear check is evaluated only at the bolt with the highest circular utilisation. Another bolt can fail the linear form. | 3x2 grid (x 0, 80, 160; y 0, 100; A 84.3), F_x 25, F_y −75 at (300, 100), N 55, M_x −5, V_R 60, T_R 90. Bolt 6 governs: u_max 0.902, u_lin 0.902 pass. Bolt 5 has v 50.7, t 25.8 kN: u_lin 1.049. | Compute u_lin for every bolt and report the maximum. Name the governing bolt for each check. |
-| P1-mech.bolt-group-02 | High | Tension from M_x and M_y ignores ΣA x′y′. Moment equilibrium fails for patterns without symmetry. The result is unconservative. | Bolts (0,0), (100,0), (0,100), M_x = M_y = 10 kN·m, T_R 50: product t_max 50, u_max 1.0. Equilibrium gives 100 kN, u 2.0. The product resists only half of each moment. Unequal areas: t_max 34.03 vs 33.29 kN. | Solve the 2x2 plane-section system with ΣA x′², ΣA y′², ΣA x′y′. Or warn when \|ΣA x′y′\| is not near zero. |
-| P1-mech.bolt-group-03 | High | When ΣA y′² is zero, the M_x term is dropped silently. The same happens for M_y with ΣA x′². All checks pass with u = 0. | Bolts (0,0), (100,0), (200,0), M_x = 20 kN·m, V_R 40, T_R 50: t_max 0, u_max 0, no notice. | Block, or warn, when a moment is applied about an axis the pattern cannot resist (collinear bolts). |
-| P1-mech.bolt-group-04 | Medium | v_max and t_max are values at the governing bolt. The labels say "Maximum bolt shear" and "Maximum bolt tension". "Shear alone" and "Tension alone" use the same values. | Grid probe with all loads: v_max 19.23 kN, but another bolt carries 39.33 kN. Shear alone u 0.32 vs 0.66. Linear-mismatch probe: t_max 0 while bolts carry 25.8 kN. | Report group maxima, and name the bolt for each. Or relabel as "governing bolt". |
-| P1-mech.bolt-group-05 | Low | Prying is ignored without notice when only a or only b is entered. | a = 30 mm, b empty, N 60 kN: t_max 10.0 kN, the no-prying value. | Warn when exactly one of a and b is given. |
-| P1-mech.bolt-group-06 | Info | The spec lists only the circular check, but the product also reports the linear check. The tension law puts the neutral axis at the bolt centroid. Large eccentricities with plate contact can give higher bolt tension (AISC Part 7, second case). | Source and template text. | Add the linear form and the centroid assumption to the spec limitations. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-mech.bolt-group-01 | High | High (confirmed: reproduced, the bolt at (160, 0) gives u_lin 1.049 while the sheet passes 0.902) | The EN 1993-1-8 linear check is evaluated only at the bolt with the highest circular utilisation. Another bolt can fail the linear form. | 3x2 grid (x 0, 80, 160; y 0, 100; A 84.3), F_x 25, F_y −75 at (300, 100), N 55, M_x −5, V_R 60, T_R 90. Bolt 6 at (160, 100) governs: u_max 0.902, u_lin 0.902 pass. The bolt at (160, 0) has v 50.7, t 25.8 kN: u_lin 1.049. | Compute u_lin for every bolt and report the maximum. Name the governing bolt for each check. |
+| P1-mech.bolt-group-02 | High | High (confirmed: reproduced 50 vs 100 kN; any pattern with ΣA x′y′ ≠ 0, even under one moment) | Tension from M_x and M_y ignores ΣA x′y′. Moment equilibrium fails for patterns without symmetry. The result is unconservative. | Bolts (0,0), (100,0), (0,100), M_x = M_y = 10 kN·m, T_R 50: product t_max 50, u_max 1.0. Equilibrium gives 100 kN, u 2.0. The product resists only half of each moment. Unequal areas: t_max 34.03 vs 33.29 kN. | Solve the 2x2 plane-section system with ΣA x′², ΣA y′², ΣA x′y′. Or warn when \|ΣA x′y′\| is not near zero. |
+| P1-mech.bolt-group-03 | High | High (confirmed: reproduced; also see -R1) | When ΣA y′² is zero, the M_x term is dropped silently. The same happens for M_y with ΣA x′². All checks pass with u = 0. | Bolts (0,0), (100,0), (200,0), M_x = 20 kN·m, V_R 40, T_R 50: t_max 0, u_max 0, no notice. | Block, or warn, when a moment is applied about an axis the pattern cannot resist (collinear bolts). |
+| P1-mech.bolt-group-04 | Medium | Medium (confirmed: misleading, but any bolt with v > V_R also fails the circular check) | v_max and t_max are values at the governing bolt. The labels say "Maximum bolt shear" and "Maximum bolt tension". "Shear alone" and "Tension alone" use the same values. | Grid probe with all loads: v_max 19.23 kN, but another bolt carries 39.33 kN. Shear alone u 0.32 vs 0.66. Linear-mismatch probe: t_max 0 while bolts carry 25.8 kN. | Report group maxima, and name the bolt for each. Or relabel as "governing bolt". |
+| P1-mech.bolt-group-05 | Low | Low (confirmed) | Prying is ignored without notice when only a or only b is entered. | a = 30 mm, b empty, N 60 kN: t_max 10.0 kN, the no-prying value. | Warn when exactly one of a and b is given. |
+| P1-mech.bolt-group-06 | Info | Info (confirmed) | The spec lists only the circular check, but the product also reports the linear check. The tension law puts the neutral axis at the bolt centroid. Large eccentricities with plate contact can give higher bolt tension (AISC Part 7, second case). | Source and template text. | Add the linear form and the centroid assumption to the spec limitations. |
+| P1-mech.bolt-group-R1 | — | Medium | The -03 guard idea (Σ A y′² = 0) misses collinear bolts on a sloped line. The moment about that line cannot be resisted, yet the sheet prints a finite tension. | Bolts (0,0), (100,100), (200,200), M_x 20 kN·m, T_R 50: the sheet gives t_max 100 kN, u_max 2.0. The plane-section matrix is singular here. | Base the -03 guard on the determinant of the 2x2 matrix [ΣA x′², ΣA x′y′; ΣA x′y′, ΣA y′²], not on each term alone. |
 
 ## Notes for the owner's manual test
 - Square pattern, 100 mm, A 84.3 mm², F_y −50 kN at e_x 200, e_y 50: expect T −7.5 kN·m, J 1.686e6 mm⁴, v_max 36.44 kN.
 - Triangle (0,0), (100,0), (0,100), M_x = M_y = 10 kN·m: by hand t_max is 100 kN. The product shows 50 kN.
 - Put three bolts in a row and apply M_x. Expect a warning. The product shows no tension.
-- Use the 3x2 grid in -01. Check bolt 5 by hand: v 50.7 kN and t 25.8 kN give a linear utilisation of 1.05.
+- Use the 3x2 grid in -01. Check the bolt at (160, 0) by hand: v 50.7 kN and t 25.8 kN give a linear utilisation of 1.05.
 - Compare "Shear alone" with the largest shear you find by hand over all bolts.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- The script is an independent plane-section derivation in numpy. It is not a port of the C#.
+- I re-ran the script: 6/6 KAT rows pass, exit 0.
+- I reproduced -01, -02 and -03 with the probe. All three stay High.
+- -01: the probe numbers bolts in input order. The failing bolt is the one at (160, 0), not "bolt 5". I fixed the evidence text.
+- -02 is not limited to biaxial moments. A single M_x on any pattern with ΣA x′y′ ≠ 0 is also wrong.
+- -04 stays Medium. Any bolt with v > V_R fails the circular check too, so the overall verdict is not hidden.
+- New -R1 (Medium): sloped collinear patterns escape a term-by-term guard. One determinant guard fixes -03 and -R1.
+- Residual doubt: the neutral axis sits at the bolt centroid. With plate contact, real bolt tension can be higher (-06).
