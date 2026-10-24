@@ -6,47 +6,50 @@ You fill in the Result column. You sign off in the table at the end of this file
 
 ## Index
 
-Time is the estimate in each file. The listed total covers the files that exist now (965 min, 479 steps).
+Time is the estimate in each file. The listed total covers the files that exist now (1270 min, 584 steps).
 The electrical, building-services and chain files come from a parallel writer. Check each link before you start.
 
 | Order | Code | File | Liability | Time (min) | Steps |
 |---|---|---|---|---|---|
-| 1 | E5 | [elec.fault-protection](elec.fault-protection.md) — Fault protection: Zs, disconnection, adiabatic, fault level | High | 35 | 24 |
-| 2 | E4 | not built | – | – | – |
+| 1 | E4 | [elec.conductor-sizing](elec.conductor-sizing.md) — Conductor sizing and overload coordination | High | 60 | 30 |
+| 2 | E5 | [elec.fault-protection](elec.fault-protection.md) — Fault protection: Zs, disconnection, adiabatic, fault level | High | 35 | 24 |
 | 3 | S4 | [struct.connection-ec3](struct.connection-ec3.md) — Bolts and fillet welds (EN 1993-1-8) | High | 45 | 23 |
-| 4 | E1 | [elec.motor-sizing](elec.motor-sizing.md) — Motor and actuator sizing | High | 40 | 20 |
-| 5 | M4 | [mech.shaft](mech.shaft.md) — Shaft: static, fatigue, keys, critical speed | High | 50 | 18 |
-| 6 | M3a | [mech.bolted-joint](mech.bolted-joint.md) — Bolted joint (simplified VDI 2230) | High | 35 | 17 |
-| 7 | M3b | [mech.bolt-group](mech.bolt-group.md) — Bolt group (elastic method) | High | 35 | 16 |
-| 8 | M6 | [mech.weld-group](mech.weld-group.md) — Weld group (elastic line method) | High | 30 | 15 |
-| 9 | S3 | [struct.en1993-member](struct.en1993-member.md) — EN 1993-1-1 member checks (basic) | High | 45 | 23 |
-| 10 | S1 | [struct.section-properties](struct.section-properties.md) — Section properties | High | 45 | 19 |
-| 11 | M2a | [mech.iso286-fit](mech.iso286-fit.md) — ISO 286 limits and fits | High | 30 | 20 |
-| 12 | M2b | [mech.press-fit](mech.press-fit.md) — Press and shrink fit | High | 25 | 13 |
-| 13 | E6 | [elec.load-budget](elec.load-budget.md) — Load budget, PSU, transformer and battery | High | 40 | 21 |
-| 14 | B1 | [bs.pipe-pump](bs.pipe-pump.md) — Pipe pressure drop and pump duty | High | 45 | 20 |
-| 15 | B2 | [bs.psychrometrics](bs.psychrometrics.md) — Psychrometrics | High | 40 | 21 |
-| 16 | B6 | [bs.sealed-system](bs.sealed-system.md) — Sealed heating system: emitters and expansion vessel | High | 40 | 20 |
-| 17 | M5 | [mech.bearing-life](mech.bearing-life.md) — Rolling bearing life (ISO 281) | Medium | 25 | 16 |
-| 18 | S2 | [struct.frame-2d](struct.frame-2d.md) — Beam and 2D frame analysis | Medium | 45 | 18 |
-| 19 | S5 | [struct.load-combinations](struct.load-combinations.md) — Load combinations (EN 1990) | Medium | 25 | 17 |
-| 20 | M1 | [mech.tolerance-stack](mech.tolerance-stack.md) — Tolerance stack-up (1D) v2 | Medium | 25 | 13 |
-| 21 | M2c | [mech.thick-cylinder](mech.thick-cylinder.md) — Thick-walled cylinder stresses (Lamé) | Medium | 20 | 13 |
-| 22 | S2b | [struct.beam-formulas](struct.beam-formulas.md) — Beam formulas (single span) | Medium | 30 | 18 |
-| 23 | E2 | [elec.enclosure-heat](elec.enclosure-heat.md) — Enclosure heat dissipation and fan sizing | Medium | 35 | 18 |
-| 24 | E3 | [elec.voltage-drop](elec.voltage-drop.md) — Voltage drop and I²R loss | Medium | 30 | 18 |
-| 25 | B3 | [bs.duct-sizing](bs.duct-sizing.md) — Duct sizing | Medium | 40 | 19 |
-| 26 | B5 | [bs.heat-exchanger](bs.heat-exchanger.md) — Heat exchanger, LMTD and effectiveness-NTU | Medium | 35 | 18 |
-| 27 | chain | [chain.drive-train](chain.drive-train.md) — Drive train: motor, shaft, bearing life, seat fit | High | 75 | 21 |
+| 4 | S6 | [struct.base-plate](struct.base-plate.md) — Column base plate (EN 1993-1-8) | High | 75 | 28 |
+| 5 | E1 | [elec.motor-sizing](elec.motor-sizing.md) — Motor and actuator sizing | High | 40 | 20 |
+| 6 | M4 | [mech.shaft](mech.shaft.md) — Shaft: static, fatigue, keys, critical speed | High | 50 | 18 |
+| 7 | M3a | [mech.bolted-joint](mech.bolted-joint.md) — Bolted joint (simplified VDI 2230) | High | 35 | 17 |
+| 8 | M3b | [mech.bolt-group](mech.bolt-group.md) — Bolt group (elastic method) | High | 35 | 16 |
+| 9 | M6 | [mech.weld-group](mech.weld-group.md) — Weld group (elastic line method) | High | 30 | 15 |
+| 10 | S3 | [struct.en1993-member](struct.en1993-member.md) — EN 1993-1-1 member checks (basic) | High | 45 | 23 |
+| 11 | S1 | [struct.section-properties](struct.section-properties.md) — Section properties | High | 45 | 19 |
+| 12 | M2a | [mech.iso286-fit](mech.iso286-fit.md) — ISO 286 limits and fits | High | 30 | 20 |
+| 13 | M2b | [mech.press-fit](mech.press-fit.md) — Press and shrink fit | High | 25 | 13 |
+| 14 | E6 | [elec.load-budget](elec.load-budget.md) — Load budget, PSU, transformer and battery | High | 40 | 21 |
+| 15 | B1 | [bs.pipe-pump](bs.pipe-pump.md) — Pipe pressure drop and pump duty | High | 45 | 20 |
+| 16 | B2 | [bs.psychrometrics](bs.psychrometrics.md) — Psychrometrics | High | 40 | 21 |
+| 17 | B6 | [bs.sealed-system](bs.sealed-system.md) — Sealed heating system: emitters and expansion vessel | High | 40 | 20 |
+| 18 | M5 | [mech.bearing-life](mech.bearing-life.md) — Rolling bearing life (ISO 281) | Medium | 25 | 16 |
+| 19 | S2 | [struct.frame-2d](struct.frame-2d.md) — Beam and 2D frame analysis | Medium | 45 | 18 |
+| 20 | S5 | [struct.load-combinations](struct.load-combinations.md) — Load combinations (EN 1990) | Medium | 25 | 17 |
+| 21 | M1 | [mech.tolerance-stack](mech.tolerance-stack.md) — Tolerance stack-up (1D) v2 | Medium | 25 | 13 |
+| 22 | M2c | [mech.thick-cylinder](mech.thick-cylinder.md) — Thick-walled cylinder stresses (Lamé) | Medium | 20 | 13 |
+| 23 | S2b | [struct.beam-formulas](struct.beam-formulas.md) — Beam formulas (single span) | Medium | 30 | 18 |
+| 24 | E2 | [elec.enclosure-heat](elec.enclosure-heat.md) — Enclosure heat dissipation and fan sizing | Medium | 35 | 18 |
+| 25 | E3 | [elec.voltage-drop](elec.voltage-drop.md) — Voltage drop and I²R loss | Medium | 30 | 18 |
+| 26 | B3 | [bs.duct-sizing](bs.duct-sizing.md) — Duct sizing | Medium | 40 | 19 |
+| 27 | B4 | [bs.room-heat-loss](bs.room-heat-loss.md) — U-values and room heat loss | Medium | 60 | 24 |
+| 28 | B5 | [bs.heat-exchanger](bs.heat-exchanger.md) — Heat exchanger, LMTD and effectiveness-NTU | Medium | 35 | 18 |
+| 29 | chain | [chain.drive-train](chain.drive-train.md) — Drive train: motor, shaft, bearing life, seat fit | High | 75 | 21 |
+| 30 | chain | [chain.motor-circuit](chain.motor-circuit.md) — Motor circuit: motor, load budget, cable, voltage drop, fault protection, enclosure heat | High | 110 | 23 |
 
-E4 is not built yet. When it is built, test it second, straight after E5.
+E4 and E5 ship together. Test E4 first, then E5.
 
 ## Recommended order
 
-Test the highest liability first. The order is E5, E4 when built, S4, E1, M4, M3, M6 and S3.
+Test the highest liability first. The order is E4, E5, S4, S6, E1, M4, M3, M6 and S3.
 M3 means both M3a and M3b. After S3, take S1 first: its composite mode has a Critical defect.
-Then take the remaining High files, then the Medium files, then the chain file.
-Run the chain file last. It needs the single-calculator files to pass first.
+Then take the remaining High files, then the Medium files, then the chain files.
+Run the chain files last. They need the single-calculator files to pass first.
 
 ## How to open a calculator
 
@@ -145,32 +148,35 @@ Verdict is one of: accept, accept with conditions, reject. Conditions go in the 
 
 | Order | Code | File | Steps run | PASS | FAIL | SKIPPED | Known defects seen | Tester initials | Date | Verdict |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | E5 | elec.fault-protection |  |  |  |  |  |  |  |  |
-| 2 | E4 | not built | – | – | – | – | – | – | – | n/a |
+| 1 | E4 | elec.conductor-sizing |  |  |  |  |  |  |  |  |
+| 2 | E5 | elec.fault-protection |  |  |  |  |  |  |  |  |
 | 3 | S4 | struct.connection-ec3 |  |  |  |  |  |  |  |  |
-| 4 | E1 | elec.motor-sizing |  |  |  |  |  |  |  |  |
-| 5 | M4 | mech.shaft |  |  |  |  |  |  |  |  |
-| 6 | M3a | mech.bolted-joint |  |  |  |  |  |  |  |  |
-| 7 | M3b | mech.bolt-group |  |  |  |  |  |  |  |  |
-| 8 | M6 | mech.weld-group |  |  |  |  |  |  |  |  |
-| 9 | S3 | struct.en1993-member |  |  |  |  |  |  |  |  |
-| 10 | S1 | struct.section-properties |  |  |  |  |  |  |  |  |
-| 11 | M2a | mech.iso286-fit |  |  |  |  |  |  |  |  |
-| 12 | M2b | mech.press-fit |  |  |  |  |  |  |  |  |
-| 13 | E6 | elec.load-budget |  |  |  |  |  |  |  |  |
-| 14 | B1 | bs.pipe-pump |  |  |  |  |  |  |  |  |
-| 15 | B2 | bs.psychrometrics |  |  |  |  |  |  |  |  |
-| 16 | B6 | bs.sealed-system |  |  |  |  |  |  |  |  |
-| 17 | M5 | mech.bearing-life |  |  |  |  |  |  |  |  |
-| 18 | S2 | struct.frame-2d |  |  |  |  |  |  |  |  |
-| 19 | S5 | struct.load-combinations |  |  |  |  |  |  |  |  |
-| 20 | M1 | mech.tolerance-stack |  |  |  |  |  |  |  |  |
-| 21 | M2c | mech.thick-cylinder |  |  |  |  |  |  |  |  |
-| 22 | S2b | struct.beam-formulas |  |  |  |  |  |  |  |  |
-| 23 | E2 | elec.enclosure-heat |  |  |  |  |  |  |  |  |
-| 24 | E3 | elec.voltage-drop |  |  |  |  |  |  |  |  |
-| 25 | B3 | bs.duct-sizing |  |  |  |  |  |  |  |  |
-| 26 | B5 | bs.heat-exchanger |  |  |  |  |  |  |  |  |
-| 27 | chain | chain.drive-train |  |  |  |  |  |  |  |  |
+| 4 | S6 | struct.base-plate |  |  |  |  |  |  |  |  |
+| 5 | E1 | elec.motor-sizing |  |  |  |  |  |  |  |  |
+| 6 | M4 | mech.shaft |  |  |  |  |  |  |  |  |
+| 7 | M3a | mech.bolted-joint |  |  |  |  |  |  |  |  |
+| 8 | M3b | mech.bolt-group |  |  |  |  |  |  |  |  |
+| 9 | M6 | mech.weld-group |  |  |  |  |  |  |  |  |
+| 10 | S3 | struct.en1993-member |  |  |  |  |  |  |  |  |
+| 11 | S1 | struct.section-properties |  |  |  |  |  |  |  |  |
+| 12 | M2a | mech.iso286-fit |  |  |  |  |  |  |  |  |
+| 13 | M2b | mech.press-fit |  |  |  |  |  |  |  |  |
+| 14 | E6 | elec.load-budget |  |  |  |  |  |  |  |  |
+| 15 | B1 | bs.pipe-pump |  |  |  |  |  |  |  |  |
+| 16 | B2 | bs.psychrometrics |  |  |  |  |  |  |  |  |
+| 17 | B6 | bs.sealed-system |  |  |  |  |  |  |  |  |
+| 18 | M5 | mech.bearing-life |  |  |  |  |  |  |  |  |
+| 19 | S2 | struct.frame-2d |  |  |  |  |  |  |  |  |
+| 20 | S5 | struct.load-combinations |  |  |  |  |  |  |  |  |
+| 21 | M1 | mech.tolerance-stack |  |  |  |  |  |  |  |  |
+| 22 | M2c | mech.thick-cylinder |  |  |  |  |  |  |  |  |
+| 23 | S2b | struct.beam-formulas |  |  |  |  |  |  |  |  |
+| 24 | E2 | elec.enclosure-heat |  |  |  |  |  |  |  |  |
+| 25 | E3 | elec.voltage-drop |  |  |  |  |  |  |  |  |
+| 26 | B3 | bs.duct-sizing |  |  |  |  |  |  |  |  |
+| 27 | B4 | bs.room-heat-loss |  |  |  |  |  |  |  |  |
+| 28 | B5 | bs.heat-exchanger |  |  |  |  |  |  |  |  |
+| 29 | chain | chain.drive-train |  |  |  |  |  |  |  |  |
+| 30 | chain | chain.motor-circuit |  |  |  |  |  |  |  |  |
 
 Overall verdict: ______________   Signed: ______________   Date: ______________

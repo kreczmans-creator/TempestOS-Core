@@ -26,16 +26,16 @@ Every calculator Critical and High finding was reproduced with the probe tool. T
 | elec.conductor-sizing | 0 | 2 | 3 | 3 | 3 | 0 |
 | elec.fault-protection | 0 | 4 | 2 | 3 | 2 | 2 |
 | chain.motor-circuit | 0 | 3 | 5 | 3 | 1 | 0 |
-| mech.bolted-joint | 0 | 1 | 3 | 4 | 1 | 0 |
 | mech.bolt-group | 0 | 3 | 2 | 1 | 1 | 0 |
-| chain.drive-train | 2 | 1 | 4 | 3 | 1 | 0 |
+| mech.bolted-joint | 0 | 1 | 3 | 4 | 1 | 0 |
 | mech.shaft | 0 | 1 | 4 | 1 | 2 | 1 |
+| chain.drive-train | 2 | 1 | 4 | 3 | 1 | 0 |
 | struct.section-properties | 1 | 0 | 2 | 2 | 1 | 0 |
 | struct.connection-ec3 | 0 | 3 | 1 | 6 | 1 | 1 |
 | struct.base-plate | 0 | 1 | 3 | 1 | 3 | 0 |
 | struct.en1993-member | 0 | 2 | 3 | 4 | 1 | 0 |
-| struct.beam-formulas | 0 | 0 | 1 | 3 | 1 | 0 |
 | struct.frame-2d | 0 | 2 | 2 | 2 | 0 | 0 |
+| struct.beam-formulas | 0 | 0 | 1 | 3 | 1 | 0 |
 | mech.weld-group | 0 | 1 | 2 | 1 | 1 | 0 |
 | elec.motor-sizing | 0 | 2 | 4 | 3 | 1 | 0 |
 | bs.psychrometrics | 1 | 1 | 0 | 6 | 2 | 0 |
@@ -43,16 +43,16 @@ Every calculator Critical and High finding was reproduced with the probe tool. T
 | mech.press-fit | 0 | 1 | 1 | 1 | 2 | 0 |
 | mech.iso286-fit | 0 | 3 | 2 | 4 | 1 | 0 |
 | mech.bearing-life | 0 | 2 | 0 | 1 | 2 | 0 |
-| elec.voltage-drop | 0 | 1 | 2 | 3 | 1 | 0 |
 | elec.load-budget | 0 | 2 | 4 | 2 | 2 | 1 |
-| bs.pipe-pump | 0 | 3 | 3 | 3 | 2 | 0 |
+| elec.voltage-drop | 0 | 1 | 2 | 3 | 1 | 0 |
 | bs.sealed-system | 0 | 2 | 0 | 4 | 2 | 0 |
+| bs.pipe-pump | 0 | 3 | 3 | 3 | 2 | 0 |
 | bs.room-heat-loss | 0 | 1 | 2 | 2 | 2 | 0 |
 | mech.tolerance-stack | 0 | 0 | 0 | 4 | 2 | 0 |
 | struct.load-combinations | 0 | 0 | 2 | 0 | 1 | 1 |
-| bs.duct-sizing | 0 | 0 | 1 | 3 | 2 | 0 |
 | bs.heat-exchanger | 0 | 0 | 1 | 2 | 3 | 0 |
 | elec.enclosure-heat | 0 | 0 | 1 | 4 | 2 | 0 |
+| bs.duct-sizing | 0 | 0 | 1 | 3 | 2 | 0 |
 | desktop.calc-sheet-view | 0 | 1 | 1 | 0 | 0 | 0 |
 | **Open total** | **4** | **44** | **61** | **80** | **48** | **6** |
 
