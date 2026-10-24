@@ -69,8 +69,8 @@
   - [x] A7b cooling, steel support, drive train to M3; five pack worked examples; pack dry run (`v0.26.0/addA-7b2-chains`, `v0.26.0/addA-8b-pack-dryrun`)
 - [x] A8-UI Desktop: open saved calculations; packs panel (create from template, check, issue) (`v0.26.0/addA-8-ui`)
 - [x] Security + every colour team re-run on the delta (Addendum A sections): Security/Red/Green/Black found 9 High; Blue rounds 1 and 2 fixed them; Purple verified; no High open (`v0.26.0/addA-9-blue`)
-- [ ] A8 owner test pack + handover Addendum A section
-- [ ] A9 gates; STATUS final line
+- [x] A8 owner test pack + handover Addendum A section (`docs/testing/v0.26.0-owner-test-pack.md`)
+- [x] A9 gates; STATUS final line (copyright audit DA-25)
 
 ## Addendum B — fifteen calculators, Fluid Power, three workflows (v0.26.0, no tag; queued after Addendum A §A9, B0.2)
 - [ ] B1 orientation (`docs/build-log/addendum-B-orientation.md`)
