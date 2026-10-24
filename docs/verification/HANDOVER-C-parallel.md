@@ -20,11 +20,9 @@ Track P changed no product code, test project, migration, build-log file or CI w
 | P7 oracle map | `oracles.md` | Free external cross-checks per calculator, with inputs and tolerance. |
 
 ## Critical findings (fix before owner testing)
-P1-chain.drive-train-02 (item 4 below) is now High: the pack's example shaft is on the motor side.
 1. **S1 section properties:** a tube or hollow rectangle in a composite counts its hole as solid (568.6 cm² for a 59.7 cm² tube).
 2. **B2 psychrometrics:** cooling with dehumidification swaps sensible and latent load. SHR reads 0.35 instead of about 0.65.
 3. **Drive-train pack:** motor RMS torque reaches the shaft as steady torque. Peak and reversing torque are never checked.
-4. **Drive-train pack:** no gear ratio or efficiency on the torque link. It is unconservative by about i·η when i > 1.
 
 ## High findings by area
 - Electrical: E4 ambient temperature ignored unless C_a is typed; no C_c for buried cable; E5 resistivity, let-through and curve-end gaps; E1 holding and braking torque, blank load torque passes; E6 duty-weighted currents; motor-circuit device type, protective conductor and duty propagation.
@@ -53,4 +51,5 @@ The ranked list with evidence is in `risk-triage.md`.
 - A table record replaces the whole table input; this affects the B4 surface-resistance and conductivity records (P3 README).
 - The governance check limits Markdown lines to code lines added. This branch is mostly Markdown; Track S may need to merge it with a justification.
 - Addendum B calculators (S7, S8, F2 and others) are not yet on release. Track P polls every 2 hours and verifies each as it merges.
+- Drive-train pack: no gear ratio on the torque link, so an output-side shaft gets motor torque (was Critical; High since the example shaft is on the motor side).
 - Drive-train pack: coupling bolts are checked at the load's run-up torque, not the drive's peak (High, D1).
