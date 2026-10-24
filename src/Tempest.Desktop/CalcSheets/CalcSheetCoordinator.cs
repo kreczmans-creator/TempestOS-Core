@@ -44,6 +44,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.ImportRequested += () => _ = GuardedAsync(ImportAsync, "import the inputs");
         _view.LinkRequested += (input, upstream, output) => _ = GuardedAsync(() => LinkAsync(input, upstream, output), "link that input");
         _view.UpdateLinksRequested += () => _ = GuardedAsync(UpdateLinksAsync, "update the linked inputs");
+        _view.AttachEvidenceRequested += () => _ = GuardedAsync(PickAndAttachAsync, "attach that report");
         _view.ApplyRecordRequested += id => _ = GuardedAsync(() => ApplyRecordAsync(id), "apply that record");
         _view.SaveRecordRequested += draft => _ = GuardedAsync(() => SaveRecordAsync(draft), "save that record");
         events?.Subscribe(this);
@@ -95,6 +96,54 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
 
         var records = _service.Catalogue.Find(instance.TemplateReference) is null ? [] : await _service.RecordsForAsync(instance.TemplateReference).ConfigureAwait(true);
         _view.SetRecords([.. records.Take(200).Select(r => new CalcSheetView.RecordChoice(r.Id, $"{r.Citation} · rev {r.Revision}"))]);
+    }
+
+    /// <summary>Opens a file picker for the external report (PDF) and files it on the calculation's Evidence.</summary>
+    private async Task PickAndAttachAsync()
+    {
+        var storage = TopLevel.GetTopLevel(_view)?.StorageProvider;
+
+        if (storage is null || !storage.CanOpen)
+        {
+            _view.ShowStatus("No file picker is available here.");
+            return;
+        }
+
+        var files = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "Attach external report",
+            AllowMultiple = false,
+            FileTypeFilter = [new Avalonia.Platform.Storage.FilePickerFileType("PDF report") { Patterns = ["*.pdf"], MimeTypes = ["application/pdf"] }],
+        }).ConfigureAwait(true);
+
+        if (files.Count == 0)
+            return;
+
+        await using var stream = await files[0].OpenReadAsync().ConfigureAwait(true);
+
+        if (stream.CanSeek && stream.Length > CalcInstanceService.MaxExternalEvidenceBytes)
+        {
+            _view.ShowStatus($"That file is larger than {CalcInstanceService.MaxExternalEvidenceBytes / (1024 * 1024)} MB.");
+            return;
+        }
+
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer).ConfigureAwait(true);
+        await AttachExternalAsync(files[0].Name, buffer.ToArray()).ConfigureAwait(true);
+    }
+
+    /// <summary>Files <paramref name="content"/> as an external report on the shown draft and cites it from its "_ref" input.</summary>
+    public async Task AttachExternalAsync(string fileName, byte[] content)
+    {
+        if (_view.CurrentInstance is not { } instance)
+            return;
+
+        var result = await _service.AttachExternalEvidenceAsync(instance.Id, fileName, "application/pdf", content, _view.ExternalReportInput).ConfigureAwait(true);
+
+        if (result.Succeeded && result.Instance is { } updated && _service.Catalogue.Find(updated.TemplateReference) is { } entry)
+            _view.ShowTemplate(entry, updated);
+
+        await ReportAsync(result, $"'{fileName}' is filed on the calculation's Evidence and cited by its input.").ConfigureAwait(true);
     }
 
     private async Task ApplyRecordAsync(Guid recordId)
