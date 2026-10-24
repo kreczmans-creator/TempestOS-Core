@@ -3,6 +3,7 @@
   <Project Path="../tests/Tempest.Calc.Tests.Sheets/Tempest.Calc.Tests.Sheets.csproj" />
   <Project Path="../tests/Tempest.Calc.Tests.Library/Tempest.Calc.Tests.Library.csproj" />
   <Project Path="../tests/Tempest.Calc.Tests.Calculators/Tempest.Calc.Tests.Calculators.csproj" />
+  <Project Path="../tests/Tempest.Calc.Tests.FluidPower/Tempest.Calc.Tests.FluidPower.csproj" />
   <Project Path="../tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj" />
   <Project Path="../tests/Tempest.Desktop.RealShell/Tempest.Desktop.RealShell.csproj" />
   <Project Path="../tests/Tempest.Desktop.Tests/Tempest.Desktop.Tests.csproj" />
@@ -15,6 +16,7 @@
   <Project Path="Tempest.Calc/Tempest.Calc.Structural/Tempest.Calc.Structural.csproj" />
   <Project Path="Tempest.Calc/Tempest.Calc.BuildingServices/Tempest.Calc.BuildingServices.csproj" />
   <Project Path="Tempest.Calc/Tempest.Calc.Electrical/Tempest.Calc.Electrical.csproj" />
+  <Project Path="Tempest.Calc/Tempest.Calc.FluidPower/Tempest.Calc.FluidPower.csproj" />
   <Project Path="Tempest.Core/Tempest.Core.csproj" />
   <Project Path="Tempest.Desktop/Tempest.Desktop.csproj" />
   <Project Path="Tempest.Harness/Tempest.Harness.csproj" />

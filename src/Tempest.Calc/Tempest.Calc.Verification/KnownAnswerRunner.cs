@@ -22,6 +22,9 @@ public sealed record KnownAnswerReport(string TemplateReference, IReadOnlyList<K
 
     public int Unconfirmed => Outcomes.Count(o => o.Case.Status == CalcReferenceStatus.Unconfirmed);
 
+    /// <summary>Cases whose expected values come from a secondary source (Addendum B §B4).</summary>
+    public int Secondary => Outcomes.Count(o => o.Case.Source.Secondary);
+
     public bool AllPassed => Outcomes.All(o => o.Passed);
 }
 

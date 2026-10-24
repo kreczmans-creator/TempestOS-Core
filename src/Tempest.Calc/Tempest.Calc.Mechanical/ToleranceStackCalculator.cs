@@ -1,7 +1,6 @@
 using System.Globalization;
 using Tempest.Calc.Engine;
-using Tempest.Calc.Engine.Analysis;
-using Tempest.Calc.Engine.Numerics;
+using Tempest.Calc.Engine.Analysis.ToleranceStack;
 using Tempest.Calc.Engine.Units;
 using Tempest.Calc.Engine.Values;
 using Tempest.Calc.Sheets;
@@ -16,7 +15,9 @@ namespace Tempest.Calc.Mechanical;
 /// (position, profile) with an explicit MMC bonus, and a BS 8888 / ASME
 /// Y14.5 notation toggle for the sheet. Supersedes the `v0.16`
 /// <c>calc.tolerance-stack</c> definition on the worksheet engine; the
-/// old definition and its tests are untouched.
+/// old definition and its tests are untouched. The arithmetic lives in the
+/// public <see cref="ToleranceStackEngine"/>; this class reads the table,
+/// writes the steps and checks.
 /// </summary>
 public sealed class ToleranceStackCalculator : ICalcCalculator
 {
@@ -131,7 +132,19 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             ("upper", new CalcCell(r.Upper, unit)),
             ("lower", new CalcCell(r.Lower, unit)))).ToList());
 
-    private sealed record Contributor(string Name, double Sign, double NominalSi, double HalfSi, double MidSi, double ShiftSi, string Kind, string Distribution, double SigmaSi, string Label);
+    /// <summary>A table row as the sheet shows it: the engine contributor plus its label.</summary>
+    private sealed record Line(Contributor Source, string Label)
+    {
+        public double Sign => Source.Sign;
+
+        public double NominalSi => Source.Nominal;
+
+        public double HalfSi => Source.Half;
+
+        public double MidSi => Source.Mid;
+
+        public double SigmaSi => Source.Sigma;
+    }
 
     public void Run(CalcRunContext c)
     {
@@ -159,7 +172,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             return;
         }
 
-        var contributors = new List<Contributor>();
+        var contributors = new List<Line>();
 
         for (var i = 0; i < rows.Count; i++)
         {
@@ -167,13 +180,19 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             var name = row.Get("name")?.Text is { Length: > 0 } rowName ? CalcSheetTextRenderer.Clean(rowName) : $"Contributor {i + 1}";
             var sign = string.Equals(row.Get("direction")?.Text, "subtracts", StringComparison.Ordinal) ? -1.0 : 1.0;
             var kind = row.Get("kind")?.Text ?? KindSize;
-            var distribution = row.Get("distribution")?.Text ?? DistributionNormal;
+            var distribution = row.Get("distribution")?.Text switch
+            {
+                DistributionUniform => ContributorDistribution.Uniform,
+                DistributionTriangular => ContributorDistribution.Triangular,
+                _ => ContributorDistribution.Normal,
+            };
+            var distributionName = row.Get("distribution")?.Text ?? DistributionNormal;
             var nominal = Si(row, "nominal");
             var upper = Si(row, "upper");
             var lower = row.Get("lower")?.Number is null ? 0.0 : Si(row, "lower");
             var bonus = row.Get("bonus")?.Number is null ? 0.0 : Si(row, "bonus");
             var shift = row.Get("shift")?.Number is null ? 0.0 : Si(row, "shift");
-            double half, mid;
+            Contributor source;
             string label;
 
             if (kind == KindSize)
@@ -184,8 +203,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                     return;
                 }
 
-                half = (upper - lower) / 2.0;
-                mid = nominal + (upper + lower) / 2.0 + shift;
+                source = Contributor.Size(name, sign, nominal, upper, lower, shift, distribution, k);
                 label = notation == "ASME Y14.5"
                     ? $"{F(nominal, unit)} +{F(upper, unit)}/{F(lower, unit)}"
                     : $"{F(nominal, unit)} {(Math.Abs(upper + lower) < 1e-15 ? "±" + F(upper, unit) : "+" + F(upper, unit) + "/" + F(lower, unit))}";
@@ -198,46 +216,45 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                     return;
                 }
 
-                half = (upper + bonus) / 2.0;
-                mid = nominal + shift;
+                source = Contributor.Zone(name, sign, nominal, upper, bonus, shift, distribution, k);
                 var mmc = bonus > 0 ? (notation == "ASME Y14.5" ? " (M)" : " Ⓜ") : string.Empty;
                 label = $"{kind} zone {F(upper, unit)}{mmc}{(bonus > 0 ? $" + bonus {F(bonus, unit)}" : string.Empty)}";
             }
 
-            var sigma = distribution switch
-            {
-                DistributionUniform => half / Math.Sqrt(3.0),
-                DistributionTriangular => half / Math.Sqrt(6.0),
-                _ => half / k,
-            };
+            var mid = source.Mid;
+            var half = source.Half;
+            var sigma = source.Sigma;
 
-            contributors.Add(new Contributor(name, sign, nominal, half, mid, shift, kind, distribution, sigma, label));
+            contributors.Add(new Line(source, label));
             var symbol = $"c{i + 1}";
-            c.Record(symbol, $"{(sign > 0 ? "+" : "−")} {label}", $"mid {F(mid, unit)} {unitSymbol}, ± {F(half, unit)} {unitSymbol}, σ {F(sigma, unit)} {unitSymbol} ({distribution})", ScalarValue.Of(unit.FromSi(sign * mid), unit), name);
+            c.Record(symbol, $"{(sign > 0 ? "+" : "−")} {label}", $"mid {F(mid, unit)} {unitSymbol}, ± {F(half, unit)} {unitSymbol}, σ {F(sigma, unit)} {unitSymbol} ({distributionName})", ScalarValue.Of(unit.FromSi(sign * mid), unit), name);
         }
 
         if (contributors.Count < 4)
             c.Warn("few-contributors", "contributors: fewer than four contributors; RSS and modified RSS are optimistic for so few.");
 
+        var stack = ToleranceStackEngine.Analyse(
+            [.. contributors.Select(x => x.Source)],
+            hasMin || hasMax ? new StackRequirement(minSi, maxSi) : null,
+            fRss);
+        var meanSi = stack.Mean;
+        var wcSi = stack.WorstCase;
+        var sigmaSi = stack.Sigma;
+
         // Nominal, mean and worst case.
-        var nominalSi = contributors.Sum(x => x.Sign * x.NominalSi);
-        var meanSi = contributors.Sum(x => x.Sign * x.MidSi);
-        var wcSi = contributors.Sum(x => x.HalfSi);
-        c.Record("x_nom", "Σ (sign × nominal)", Join(contributors, x => $"{SignText(x)}{F(x.NominalSi, unit)}"), ScalarValue.Of(unit.FromSi(nominalSi), unit), "Nominal result");
+        c.Record("x_nom", "Σ (sign × nominal)", Join(contributors, x => $"{SignText(x)}{F(x.NominalSi, unit)}"), ScalarValue.Of(unit.FromSi(stack.Nominal), unit), "Nominal result");
         c.Record("x_mean", "Σ (sign × mid-limit)", Join(contributors, x => $"{SignText(x)}{F(x.MidSi, unit)}"), ScalarValue.Of(unit.FromSi(meanSi), unit), "Mean result");
         c.Record("t_wc", "Σ half-bands", Join(contributors, x => $"+ {F(x.HalfSi, unit)}"), ScalarValue.Of(unit.FromSi(wcSi), unit), "Worst-case tolerance (±)");
         c.Assign("x_wc_min", "x_mean - t_wc", unitSymbol, "Worst-case minimum");
         c.Assign("x_wc_max", "x_mean + t_wc", unitSymbol, "Worst-case maximum");
 
         // RSS and modified RSS.
-        var rssSi = Math.Sqrt(contributors.Sum(x => x.HalfSi * x.HalfSi));
-        c.Record("t_rss", "√Σ half²", "√(" + Join(contributors, x => $"+ {F(x.HalfSi, unit)}²") + ")", ScalarValue.Of(unit.FromSi(rssSi), unit), "Root-sum-square tolerance (±)");
+        c.Record("t_rss", "√Σ half²", "√(" + Join(contributors, x => $"+ {F(x.HalfSi, unit)}²") + ")", ScalarValue.Of(unit.FromSi(stack.Rss), unit), "Root-sum-square tolerance (±)");
         c.Assign("x_rss_min", "x_mean - t_rss", unitSymbol, "RSS minimum");
         c.Assign("x_rss_max", "x_mean + t_rss", unitSymbol, "RSS maximum");
         c.Assign("t_mrss", "f_rss * t_rss", unitSymbol, "Modified RSS tolerance (±)");
 
         // Predicted spread from each contributor's own distribution.
-        var sigmaSi = Math.Sqrt(contributors.Sum(x => x.SigmaSi * x.SigmaSi));
         c.Record("sigma", "√Σ σ_i²", "√(" + Join(contributors, x => $"+ {F(x.SigmaSi, unit)}²") + ")", ScalarValue.Of(unit.FromSi(sigmaSi), unit), "Predicted standard deviation of the result");
 
         c.Output("x_nom", "Nominal result");
@@ -252,41 +269,36 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
         // Requirement checks and capability.
         if (hasMin || hasMax)
         {
-            var slack = Math.Max(Math.Abs(meanSi), wcSi) * 1e-9;
-            var lowerOk = minSi is null || meanSi - wcSi >= minSi - slack;
-            var upperOk = maxSi is null || meanSi + wcSi <= maxSi + slack;
-
-            if (minSi is { } lo2)
+            if (stack.MarginToMinimum is { } marginMin && minSi is { } lo2)
             {
-                c.Record("m_min", "x_wc_min − minimum", $"{F(meanSi - wcSi, unit)} − {F(lo2, unit)}", ScalarValue.Of(unit.FromSi(meanSi - wcSi - lo2), unit), "Worst-case margin to the minimum");
+                c.Record("m_min", "x_wc_min − minimum", $"{F(meanSi - wcSi, unit)} − {F(lo2, unit)}", ScalarValue.Of(unit.FromSi(marginMin), unit), "Worst-case margin to the minimum");
                 c.Output("m_min", "Worst-case margin to the minimum");
             }
 
-            if (maxSi is { } hi2)
+            if (stack.MarginToMaximum is { } marginMax && maxSi is { } hi2)
             {
-                c.Record("m_max", "maximum − x_wc_max", $"{F(hi2, unit)} − {F(meanSi + wcSi, unit)}", ScalarValue.Of(unit.FromSi(hi2 - meanSi - wcSi), unit), "Worst-case margin to the maximum");
+                c.Record("m_max", "maximum − x_wc_max", $"{F(hi2, unit)} − {F(meanSi + wcSi, unit)}", ScalarValue.Of(unit.FromSi(marginMax), unit), "Worst-case margin to the maximum");
                 c.Output("m_max", "Worst-case margin to the maximum");
             }
 
-            c.CheckCondition("Worst case within requirement", lowerOk && upperOk,
+            c.CheckCondition("Worst case within requirement", stack.WorstCaseWithinRequirement,
                 $"{F(meanSi - wcSi, unit)} … {F(meanSi + wcSi, unit)} {unitSymbol}",
                 $"{(minSi is { } a ? F(a, unit) : "open")} … {(maxSi is { } b ? F(b, unit) : "open")} {unitSymbol}", "x_wc_min");
 
-            if (sigmaSi > 0)
+            if (stack.Capability is { } capability)
             {
-                var cpk = Statistics.ProcessCapabilityIndex(meanSi, sigmaSi, minSi, maxSi)!.Value;
-                var dpmo = Statistics.PartsPerMillionOutside(meanSi, sigmaSi, minSi, maxSi);
+                var cpk = capability.Cpk;
+                var dpmo = capability.DefectsPerMillion;
                 c.Record("cpk", "min(x_mean − LSL, USL − x_mean) / (3 σ)", $"min({(minSi is { } l3 ? F(meanSi - l3, unit) : "∞")}, {(maxSi is { } h3 ? F(h3 - meanSi, unit) : "∞")}) / (3 × {F(sigmaSi, unit)})", new ScalarValue(cpk), "Process capability index C_pk");
 
-                if (minSi is { } l4 && maxSi is { } h4)
+                if (capability.Cp is { } cp && minSi is { } l4 && maxSi is { } h4)
                 {
-                    var cp = (h4 - l4) / (6 * sigmaSi);
                     c.Record("cp", "(USL − LSL) / (6 σ)", $"({F(h4, unit)} − {F(l4, unit)}) / (6 × {F(sigmaSi, unit)})", new ScalarValue(cp), "Process capability C_p");
                     c.Output("cp", "C_p");
                 }
 
                 c.Record("dpmo", "10⁶ × P(outside)", $"10⁶ × Φ-tails at σ = {F(sigmaSi, unit)}", new ScalarValue(dpmo), "Predicted defects per million");
-                c.Record("yield", "1 − dpmo / 10⁶", $"1 − {CalcValue.FormatNumber(dpmo)} / 10⁶", ScalarValue.Of((1 - dpmo / 1e6) * 100, "%"), "Predicted yield");
+                c.Record("yield", "1 − dpmo / 10⁶", $"1 − {CalcValue.FormatNumber(dpmo)} / 10⁶", ScalarValue.Of(capability.Yield * 100, "%"), "Predicted yield");
                 c.Output("cpk", "C_pk");
                 c.Output("dpmo", "DPMO (predicted)");
                 c.Output("yield", "Yield (predicted)");
@@ -307,43 +319,16 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
         }
 
         // Contribution Pareto.
-        var wcTotal = wcSi > 0 ? wcSi : 1;
-        var ssTotal = contributors.Sum(x => x.HalfSi * x.HalfSi) is var ss && ss > 0 ? ss : 1;
-        var paretoWc = contributors.Select((x, i) => (X: (double)(i + 1), Y: 100 * x.HalfSi / wcTotal)).ToList();
-        var paretoSt = contributors.Select((x, i) => (X: (double)(i + 1), Y: 100 * x.HalfSi * x.HalfSi / ssTotal)).ToList();
+        var paretoWc = stack.WorstCaseShare.Select((y, i) => (X: (double)(i + 1), Y: y)).ToList();
+        var paretoSt = stack.StatisticalShare.Select((y, i) => (X: (double)(i + 1), Y: y)).ToList();
         c.Series(new CalcSeries("Contribution, worst case", "contributor", "", "share", "%", paretoWc));
         c.Series(new CalcSeries("Contribution, statistical", "contributor", "", "share", "%", paretoSt));
-        c.Record("pareto", "largest contributor (statistical)", string.Join("; ", contributors.Select((x, i) => $"{x.Name} {CalcValue.FormatNumber(paretoSt[i].Y, 3)} %")), new TextValue(contributors[paretoSt.IndexOf(paretoSt.MaxBy(p => p.Y))].Name), "Contribution Pareto");
+        c.Record("pareto", "largest contributor (statistical)", string.Join("; ", contributors.Select((x, i) => $"{x.Source.Name} {CalcValue.FormatNumber(paretoSt[i].Y, 3)} %")), new TextValue(contributors[stack.LargestStatisticalIndex].Source.Name), "Contribution Pareto");
 
         // Monte Carlo.
         var n = (int)Math.Round(c.InputSi("n_mc"));
         var seed = (ulong)Math.Max(0, Math.Round(c.InputSi("seed")));
-        var nominalMap = new Dictionary<string, double>(StringComparer.Ordinal);
-        var dists = new Dictionary<string, Distribution>(StringComparer.Ordinal);
-
-        for (var i = 0; i < contributors.Count; i++)
-        {
-            var x = contributors[i];
-            nominalMap[$"c{i + 1}"] = x.MidSi;
-            dists[$"c{i + 1}"] = x.Distribution switch
-            {
-                DistributionUniform => Distribution.Uniform(x.MidSi - x.HalfSi, x.MidSi + x.HalfSi),
-                DistributionTriangular => Distribution.Triangular(x.MidSi - x.HalfSi, x.MidSi, x.MidSi + x.HalfSi),
-                _ => Distribution.Normal(x.MidSi, x.SigmaSi),
-            };
-        }
-
-        var signs = contributors.Select(x => x.Sign).ToArray();
-        var keys = contributors.Select((_, i) => $"c{i + 1}").ToArray(); // built once: a string per sample per contributor dominated the run at the caps (R-21)
-        var mc = MonteCarlo.Run(v =>
-        {
-            var s = 0.0;
-
-            for (var i = 0; i < signs.Length; i++)
-                s += signs[i] * v[keys[i]];
-
-            return s;
-        }, nominalMap, dists, n, seed, minSi, maxSi, cancellationToken: c.CancellationToken);
+        var mc = ToleranceStackEngine.Simulate([.. contributors.Select(x => x.Source)], n, seed, new StackRequirement(minSi, maxSi), cancellationToken: c.CancellationToken);
 
         c.Record("mc_mean", $"mean of {n} samples (seed {seed})", "Monte Carlo", ScalarValue.Of(unit.FromSi(mc.Mean), unit), "Monte Carlo mean");
         c.Record("mc_sigma", "sample standard deviation", "Monte Carlo", ScalarValue.Of(unit.FromSi(mc.StandardDeviation), unit), "Monte Carlo σ");
@@ -371,7 +356,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
 
     private static string F(double si, Unit unit) => CalcValue.FormatNumber(unit.FromSi(si), 6);
 
-    private static string SignText(Contributor x) => x.Sign > 0 ? "+ " : "− ";
+    private static string SignText(Line x) => x.Sign > 0 ? "+ " : "− ";
 
-    private static string Join(IEnumerable<Contributor> xs, Func<Contributor, string> f) => string.Join(" ", xs.Select(f)).TrimStart('+', ' ');
+    private static string Join(IEnumerable<Line> xs, Func<Line, string> f) => string.Join(" ", xs.Select(f)).TrimStart('+', ' ');
 }

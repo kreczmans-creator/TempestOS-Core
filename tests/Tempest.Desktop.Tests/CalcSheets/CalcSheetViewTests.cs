@@ -221,10 +221,49 @@ public sealed class CalcSheetDisciplineFilterTests
     }
 
     [AvaloniaFact]
-    public void Discipline_Mapping_Covers_The_Four_Disciplines()
+    public void Discipline_Mapping_Covers_The_Five_Disciplines()
     {
         Assert.Equal(CalcDiscipline.Mechanical, CalcSheetView.DisciplineFor("Mechanical"));
         Assert.Equal(CalcDiscipline.BuildingServices, CalcSheetView.DisciplineFor("Building Services"));
+        Assert.Equal(CalcDiscipline.FluidPower, CalcSheetView.DisciplineFor("Fluid Power"));
         Assert.Null(CalcSheetView.DisciplineFor("Manufacturing"));
+    }
+
+    [AvaloniaFact]
+    public void Every_Discipline_Files_Under_A_Category_That_Maps_Back_To_It()
+    {
+        // The Ctrl+K "Open worksheet" entries file under CategoryFor; the Disciplines tree resolves the same word with DisciplineFor.
+        foreach (var discipline in Enum.GetValues<CalcDiscipline>())
+            Assert.Equal(discipline, CalcSheetView.DisciplineFor(CalcSheetView.CategoryFor(discipline)));
+
+        Assert.Equal("Fluid Power", CalcSheetView.CategoryFor(CalcDiscipline.FluidPower));
+        Assert.Equal("Building Services", CalcSheetView.CategoryFor(CalcDiscipline.BuildingServices));
+        Assert.Contains("Fluid Power", Tempest.Desktop.Views.EngineeringDisciplines.Disciplines);
+    }
+
+    [AvaloniaFact]
+    public void A_Fluid_Power_Worksheet_Lists_Under_Its_Own_Labelled_Discipline_Node()
+    {
+        var catalogue = new CalcCatalogue([new TestWorksheetCalculator(), new FluidPowerStub()]);
+        var view = new CalcSheetView();
+        view.ShowCatalogue(catalogue.Current());
+        var tree = view.GetLogicalDescendants().OfType<TreeView>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.CatalogueAutomationName);
+
+        Assert.Equal(["Structural", "Fluid Power"], tree.Items.OfType<TreeViewItem>().Select(AutomationProperties.GetName));
+
+        view.FilterDiscipline(CalcDiscipline.FluidPower);
+        var only = Assert.Single(tree.Items.OfType<TreeViewItem>());
+        Assert.Equal("Fluid Power", AutomationProperties.GetName(only));
+        Assert.Single(only.Items);
+    }
+
+    /// <summary>The desktop test worksheet filed under Fluid Power: no shipped Fluid Power calculator exists until B-2.</summary>
+    private sealed class FluidPowerStub : ICalcCalculator
+    {
+        private readonly TestWorksheetCalculator _inner = new();
+
+        public CalcTemplate Template => _inner.Template with { Id = "test.desktop-fluid-power", Discipline = CalcDiscipline.FluidPower, Title = "Desktop fluid power check" };
+
+        public void Run(CalcRunContext context) => _inner.Run(context);
     }
 }

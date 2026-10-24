@@ -120,6 +120,12 @@
       "tempest.calc.engine": {
         "type": "Project"
       },
+      "tempest.calc.fluidpower": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.calc.mechanical": {
         "type": "Project",
         "dependencies": {

@@ -2,13 +2,14 @@ using Tempest.Calc.Engine.Units;
 
 namespace Tempest.Calc.Sheets;
 
-/// <summary>The four disciplines of `v0.26.0` (ADR-0163 names them; Manufacturing has no calculator yet).</summary>
+/// <summary>The five calculation disciplines of `v0.26.0` (ADR-0163 names the first four; Manufacturing has no calculator yet; Fluid Power is ADR-0170). New members go at the end: the name, not the position, is in the template hash.</summary>
 public enum CalcDiscipline
 {
     Mechanical,
     Structural,
     Electrical,
     BuildingServices,
+    FluidPower,
 }
 
 /// <summary>How an input is entered.</summary>
@@ -39,7 +40,9 @@ public enum CalcInputKind
 /// <summary>
 /// One input of a template: what it is, what dimension it carries, its
 /// default and its soft and hard limits. Soft limits warn; hard limits
-/// block. Limits are in <see cref="DefaultUnit"/>.
+/// block. Limits are in <see cref="DefaultUnit"/>. <see cref="MaterialProperty"/> names the material property
+/// (<c>E</c>, <c>rho</c>, <c>f_y</c>, <c>E(T)</c>, …) this input takes from a <c>material.properties</c> record; the
+/// template also lists the input's symbol in a record kind of that name (Addendum B, W3).
 /// </summary>
 public sealed record CalcInputSpec(
     string Symbol,
@@ -56,7 +59,8 @@ public sealed record CalcInputSpec(
     bool IsOptional = false,
     string? Group = null,
     IReadOnlyList<CalcColumnSpec>? Columns = null,
-    int MaxRows = 500)
+    int MaxRows = 500,
+    string? MaterialProperty = null)
 {
     /// <summary>The dimension this input measures, from its default unit.</summary>
     public Dimension Dimension => Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? UnitCatalog.Parse(DefaultUnit).Dimension : Dimension.None;
@@ -133,8 +137,12 @@ public enum CalcReferenceStatus
     Unconfirmed,
 }
 
-/// <summary>Where a known-answer value comes from: title, edition and the page or example.</summary>
-public sealed record CalcReferenceSource(string Title, string? Edition, string Location);
+/// <summary>
+/// Where a known-answer value comes from: title, edition and the page or example. <paramref name="Secondary"/> marks a value
+/// taken from a secondary source (a solutions manual, website, forum, course notes or vendor verification) rather than the
+/// primary publication (Addendum B §B4); such a case is listed for the owner to confirm.
+/// </summary>
+public sealed record CalcReferenceSource(string Title, string? Edition, string Location, bool Secondary = false);
 
 /// <summary>One expected output of a known-answer case, in the given unit, within a relative tolerance.</summary>
 public sealed record CalcExpectedValue(string Symbol, double Value, string Unit, double RelativeTolerance = 0.01);

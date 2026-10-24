@@ -365,7 +365,16 @@ public sealed partial class CalcSheetView : UserControl
         "Structural" => CalcDiscipline.Structural,
         "Electrical" => CalcDiscipline.Electrical,
         "Building Services" => CalcDiscipline.BuildingServices,
+        "Fluid Power" => CalcDiscipline.FluidPower,
         _ => null,
+    };
+
+    /// <summary>The Disciplines-tree and command category a worksheet discipline files under: the inverse of <see cref="DisciplineFor"/>.</summary>
+    public static string CategoryFor(CalcDiscipline discipline) => discipline switch
+    {
+        CalcDiscipline.BuildingServices => "Building Services",
+        CalcDiscipline.FluidPower => "Fluid Power",
+        var d => d.ToString(),
     };
 
     private CalcDiscipline? _filter;
@@ -936,7 +945,12 @@ public sealed partial class CalcSheetView : UserControl
 
     private static string FormatUtilisation(double u) => double.IsInfinity(u) ? "—" : Tempest.Calc.Engine.Values.CalcValue.FormatNumber(u, 3);
 
-    private static string DisciplineLabel(CalcDiscipline d) => d == CalcDiscipline.BuildingServices ? "Building Services / HVAC" : d.ToString();
+    private static string DisciplineLabel(CalcDiscipline d) => d switch
+    {
+        CalcDiscipline.BuildingServices => "Building Services / HVAC",
+        CalcDiscipline.FluidPower => "Fluid Power",
+        _ => d.ToString(),
+    };
 
     private Control BuildLayout()
     {

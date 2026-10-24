@@ -104,8 +104,8 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
     /// integration contract document's §2.1 (v1), plus the additive
     /// Cockpit sections (<c>health</c>/<c>kpis</c>/<c>attention</c>/
     /// <c>blockedItems</c>/<c>overdueActions</c>) that make it v2. Every
-    /// v1 key is unchanged in name, shape and meaning. From v3, <c>disciplines</c> adds the Structural, Electrical and
-    /// Building Services disciplines (<see cref="DisciplineCatalogue"/>),
+    /// v1 key is unchanged in name, shape and meaning. From v3, <c>disciplines</c> adds the Structural, Electrical,
+    /// Building Services and (`ADR-0170`, one more entry, no schema change) Fluid Power disciplines (<see cref="DisciplineCatalogue"/>),
     /// which have no Cockpit health: their live object counts, by type and by
     /// lifecycle state, so the dashboard can show them beside the others
     /// without a health word Core never worked out.

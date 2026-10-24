@@ -73,7 +73,7 @@ internal sealed partial class MainWindowComposer
             foreach (var entry in host.CalcCatalogue?.Current() ?? [])
             {
                 var reference = entry.Reference;
-                var category = entry.Template.Discipline == Tempest.Calc.Sheets.CalcDiscipline.BuildingServices ? "Building Services" : entry.Template.Discipline.ToString();
+                var category = Tempest.Desktop.CalcSheets.CalcSheetView.CategoryFor(entry.Template.Discipline);
                 RegisterShellAction(
                     composition.CommandRegistry, $"calc.worksheet.{entry.Template.Id}", $"Open worksheet: {entry.Template.Title}", category,
                     async () =>

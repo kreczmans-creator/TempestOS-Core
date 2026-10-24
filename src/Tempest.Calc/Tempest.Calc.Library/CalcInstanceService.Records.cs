@@ -15,7 +15,15 @@ public sealed partial class CalcInstanceService
     /// Saves a reference record: a new record at revision 1, or — when <paramref name="draft"/> names an existing record
     /// — that record's next revision. Earlier revisions stay as they were (a calculation pins the one it used).
     /// </summary>
-    public async Task<(CalcDataRecord? Record, string? Refusal)> SaveRecordAsync(CalcDataRecord draft, CancellationToken cancellationToken = default)
+    public Task<(CalcDataRecord? Record, string? Refusal)> SaveRecordAsync(CalcDataRecord draft, CancellationToken cancellationToken = default) =>
+        SaveRecordCoreAsync(draft, false, cancellationToken);
+
+    /// <summary>
+    /// The save behind <see cref="SaveRecordAsync"/>. <paramref name="keepIndicativeOrigin"/> lets a material file read back by the
+    /// library keep the "indicative" flag it was exported with; any other save of a material may carry that flag only when the
+    /// material's earlier revision already had it.
+    /// </summary>
+    internal async Task<(CalcDataRecord? Record, string? Refusal)> SaveRecordCoreAsync(CalcDataRecord draft, bool keepIndicativeOrigin, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(draft);
         var latest = draft.Id == Guid.Empty ? null : await _store.FindRecordAsync(draft.Id, null, cancellationToken).ConfigureAwait(false);
@@ -34,6 +42,29 @@ public sealed partial class CalcInstanceService
 
         if (latest is not null && !string.Equals(latest.Kind, record.Kind, StringComparison.Ordinal))
             return (null, $"Record '{latest.Title}' is a {latest.Kind} record; a revision keeps its kind.");
+
+        // The shape comes first: a missing entry or symbol is refused here, before anything below reads one (Opus review B-0, M4).
+        if (record.Problem() is { } shape)
+            return (null, shape);
+
+        // Addendum B, W3: a material's values carry their own source, are stamped with who entered them and when, and one licensed
+        // value makes the whole material licensed (the lock below then keeps it so).
+        if (MaterialLibrary.IsMaterial(record.Kind))
+        {
+            // "Indicative" is the shipped seeds' flag; a user's own save keeps it only on a material that already had it (B-0 review, LOW 4).
+            if (record.Origin == CalcDataOrigin.Indicative && !keepIndicativeOrigin && latest?.Origin != CalcDataOrigin.Indicative)
+                record = record with { Origin = CalcDataOrigin.UserEntered };
+
+            record = MaterialLibrary.Prepare(record, latest, record.EnteredBy, record.CreatedAt);
+
+            if (MaterialProperties.Problem(record) is { } materialProblem)
+                return (null, materialProblem);
+        }
+
+        // §A5, every kind of record: a value taken from a licensed source makes the whole record licensed, so a draft that left the flag
+        // off cannot put such a value past the export lock (B-0 review, M5).
+        if (!record.LicensedSource && record.Values.Any(v => v.Source?.Licence == CalcLicenceClass.LicensedSource))
+            record = record with { LicensedSource = true };
 
         // §A5: once licensed, always licensed — a revision cannot release values from the export lock (Opus review, finding 5).
         if (latest is { LicensedSource: true } && !record.LicensedSource)
@@ -68,9 +99,11 @@ public sealed partial class CalcInstanceService
         ArgumentNullException.ThrowIfNull(draft);
         ArgumentNullException.ThrowIfNull(sourceInputs);
 
+        var traced = new Dictionary<Guid, bool>();
+
         foreach (var input in sourceInputs)
         {
-            if (await LicensedRecordPinAsync(input.Provenance, cancellationToken).ConfigureAwait(false) is not null)
+            if (await IsLicensedValueAsync(input, traced, cancellationToken).ConfigureAwait(false))
             {
                 draft = draft with { LicensedSource = true };
                 break;
@@ -86,6 +119,10 @@ public sealed partial class CalcInstanceService
         var kinds = _catalogue.Get(templateReference).Template.RecordKinds ?? [];
         var list = new List<CalcDataRecord>();
 
+        // The generic starting materials are in the store before a template that takes materials asks for them.
+        if (kinds.Any(k => MaterialLibrary.IsMaterial(k.Kind)))
+            await Materials.EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
+
         foreach (var kind in kinds)
             list.AddRange(await _store.ListRecordsAsync(kind.Kind, cancellationToken).ConfigureAwait(false));
 
@@ -96,7 +133,11 @@ public sealed partial class CalcInstanceService
     /// Fills a draft's inputs from a reference record (its latest revision, or <paramref name="revision"/>): every value
     /// whose symbol the template's record kind lists, each with the record's pin and table or clause as its source.
     /// </summary>
-    public async Task<CalcActionResult> ApplyRecordAsync(Guid instanceId, Guid recordId, int? revision = null, CancellationToken cancellationToken = default)
+    public Task<CalcActionResult> ApplyRecordAsync(Guid instanceId, Guid recordId, int? revision = null, CancellationToken cancellationToken = default) =>
+        ApplyRecordCoreAsync(instanceId, recordId, revision, null, false, cancellationToken);
+
+    /// <summary>Applies a record; a material record is applied by property (and, if given, at a temperature) rather than by input symbol.</summary>
+    internal async Task<CalcActionResult> ApplyRecordCoreAsync(Guid instanceId, Guid recordId, int? revision, MaterialTemperature? at, bool singleValueAtAnyTemperature, CancellationToken cancellationToken)
     {
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
 
@@ -115,6 +156,12 @@ public sealed partial class CalcInstanceService
 
         if ((template.RecordKinds ?? []).FirstOrDefault(k => string.Equals(k.Kind, record.Kind, StringComparison.Ordinal)) is not { } kind)
             return CalcActionResult.Refused($"'{template.Title}' does not draw on {record.Kind} records.", instance);
+
+        if (MaterialLibrary.IsMaterial(record.Kind))
+            return await ApplyMaterialAsync(instance, record, template, kind, at, singleValueAtAnyTemperature, cancellationToken).ConfigureAwait(false);
+
+        if (at is not null)
+            return CalcActionResult.Refused($"Record '{record.Title}' is not a material; it has no temperature to read it at.", instance);
 
         var provenance = RecordProvenance(record);
         var inputs = instance.Inputs.ToList();
@@ -147,12 +194,16 @@ public sealed partial class CalcInstanceService
 
     /// <summary>
     /// The inputs as they may leave the application: every value taken from a licensed record is withheld (the symbol
-    /// and the record's pin stay, so the receiver knows which record the user must supply). §A5.
+    /// and the record's pin stay, so the receiver knows which record the user must supply). A value that is a link to another
+    /// calculation (an input, or a cell of a table) is withheld in the same way when that calculation, at the revision pinned,
+    /// holds an input pinned to a licensed record, directly or through any depth of links (B-0 review, M6): the link stays so the
+    /// receiver knows where it came from. §A5.
     /// </summary>
     public async Task<CalcInputSet> WithholdLicensedAsync(CalcInputSet inputs, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(inputs);
         var result = new CalcInputSet();
+        var traced = new Dictionary<Guid, bool>();
 
         foreach (var value in inputs.Values)
         {
@@ -162,10 +213,129 @@ public sealed partial class CalcInstanceService
                 continue;
             }
 
+            if (await LicensedUpstreamAsync(value.Provenance, traced, cancellationToken).ConfigureAwait(false) is { } upstream)
+            {
+                result.Set(new CalcInputValue(value.Symbol, Provenance: WithheldLinkProvenance(upstream, value.Provenance!)));
+                continue;
+            }
+
+            if (value.Rows is not null)
+            {
+                result.Set(value with { Rows = await WithholdCellsAsync(value.Rows, traced, static (_, provenance) => new CalcCell(Provenance: provenance), cancellationToken).ConfigureAwait(false) });
+                continue;
+            }
+
             result.Set(value);
         }
 
         return result;
+    }
+
+    /// <summary>What a withheld linked value says about itself on the sheet, in place of the number.</summary>
+    internal const string LicensedDerivedText = "value derived from a licensed record — withheld";
+
+    /// <summary>The rows of a table with each linked cell that derives from a licensed record made by <paramref name="withhold"/>; the other cells are as they were.</summary>
+    private async Task<IReadOnlyList<CalcRow>> WithholdCellsAsync(IReadOnlyList<CalcRow> rows, Dictionary<Guid, bool> traced, Func<CalcCell, CalcProvenance, CalcCell> withhold, CancellationToken cancellationToken)
+    {
+        var changed = false;
+        var list = new List<CalcRow>(rows.Count);
+
+        foreach (var row in rows)
+        {
+            Dictionary<string, CalcCell>? cells = null;
+
+            foreach (var (key, cell) in row?.Cells ?? new Dictionary<string, CalcCell>())
+            {
+                if (cell is null || await LicensedUpstreamAsync(cell.Provenance, traced, cancellationToken).ConfigureAwait(false) is not { } upstream)
+                    continue;
+
+                cells ??= new Dictionary<string, CalcCell>(row!.Cells, StringComparer.Ordinal);
+                cells[key] = withhold(cell, WithheldLinkProvenance(upstream, cell.Provenance!));
+            }
+
+            changed |= cells is not null;
+            list.Add(cells is null ? row! : new CalcRow(cells));
+        }
+
+        return changed ? list : rows;
+    }
+
+    /// <summary>The provenance a withheld linked value carries: where it is linked to, and that it was withheld (the importer reads the marker).</summary>
+    private static CalcProvenance WithheldLinkProvenance(Guid upstreamId, CalcProvenance was)
+    {
+        var output = CalcLink.From(was)?.OutputSymbol;
+        return new CalcProvenance(CalcProvenanceKind.Reference, $"{CalcLink.Prefix}{upstreamId:N}{(string.IsNullOrEmpty(output) ? string.Empty : "#" + output)} · {CalcCsv.WithheldMarker}", was.Revision);
+    }
+
+    /// <summary>
+    /// The calculation a linked value comes from when that calculation (the revision pinned, an instance being one revision) holds an
+    /// input pinned to a licensed record, directly or through any depth of links; <see langword="null"/> for a value that is not a link or
+    /// whose upstream holds none. Conservative by design: it does not work out which inputs reach the output linked to (§A5).
+    /// </summary>
+    internal async Task<Guid?> LicensedUpstreamAsync(CalcProvenance? provenance, Dictionary<Guid, bool> traced, CancellationToken cancellationToken)
+    {
+        var upstreamId = CalcLink.From(provenance)?.UpstreamId ?? CalcInstance.LegacyUpstreamOf(provenance);
+
+        if (upstreamId is not { } id)
+            return null;
+
+        if (!traced.TryGetValue(id, out var licensed))
+            traced[id] = licensed = await HoldsLicensedInputAsync(id, cancellationToken).ConfigureAwait(false);
+
+        return licensed ? id : null;
+    }
+
+    /// <summary>Whether a value, as an input of a calculation, is under the export lock: pinned to a licensed record or linked to a calculation that holds one.</summary>
+    private async Task<bool> IsLicensedValueAsync(CalcInputValue input, Dictionary<Guid, bool> traced, CancellationToken cancellationToken)
+    {
+        if (await LicensedRecordPinAsync(input.Provenance, cancellationToken).ConfigureAwait(false) is not null
+            || await LicensedUpstreamAsync(input.Provenance, traced, cancellationToken).ConfigureAwait(false) is not null)
+            return true;
+
+        foreach (var row in input.Rows ?? [])
+        {
+            foreach (var cell in row?.Cells.Values ?? [])
+            {
+                if (cell is not null && await LicensedUpstreamAsync(cell.Provenance, traced, cancellationToken).ConfigureAwait(false) is not null)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Whether the calculation <paramref name="startId"/> or anything it takes a value from, through any number of links, has an input pinned to a licensed record.</summary>
+    private async Task<bool> HoldsLicensedInputAsync(Guid startId, CancellationToken cancellationToken)
+    {
+        var seen = new HashSet<Guid>();
+        var queue = new Queue<(Guid Id, int Depth)>();
+        queue.Enqueue((startId, 0));
+
+        while (queue.Count > 0)
+        {
+            var (id, depth) = queue.Dequeue();
+
+            if (!seen.Add(id))
+                continue;
+
+            // Links cannot be made deeper than the cap; a chain that is (a forged import) is not guessed at.
+            if (depth > MaxChainDepth + 2)
+                return true;
+
+            if (await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false) is not { } instance)
+                continue;
+
+            foreach (var input in instance.Inputs)
+            {
+                if (await LicensedRecordPinAsync(input.Provenance, cancellationToken).ConfigureAwait(false) is not null)
+                    return true;
+            }
+
+            foreach (var up in instance.UpstreamIds)
+                queue.Enqueue((up, depth + 1));
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -180,7 +350,7 @@ public sealed partial class CalcInstanceService
         var record = await _store.FindRecordAsync(pin.Id, pin.Revision, cancellationToken).ConfigureAwait(false)
             ?? await _store.FindRecordAsync(pin.Id, null, cancellationToken).ConfigureAwait(false);
 
-        return record is { LicensedSource: true } ? pin : null;
+        return record is not null && record.IsLicensed() ? pin : null;
     }
 
     /// <summary>A record as CSV (symbol, value, unit, then its rows), refused for a licensed record (§A5).</summary>
@@ -191,7 +361,7 @@ public sealed partial class CalcInstanceService
         if (record is null)
             return (null, $"No reference record '{recordId}' exists.");
 
-        if (record.LicensedSource)
+        if (record.IsLicensed())
             return (null, $"Record '{record.Title}' holds values from a licensed source ({record.SourceTitle}, {record.Edition}); its values are never exported.");
 
         var sb = new StringBuilder();
@@ -209,7 +379,7 @@ public sealed partial class CalcInstanceService
         return (sb.ToString(), null);
     }
 
-    private static string Csv(string text)
+    internal static string Csv(string text)
     {
         var clean = CalcCsv.IsFormulaLike(text) ? "'" + text : text;
         return clean.Contains(',', StringComparison.Ordinal) || clean.Contains('"', StringComparison.Ordinal) ? $"\"{clean.Replace("\"", "\"\"", StringComparison.Ordinal)}\"" : clean;

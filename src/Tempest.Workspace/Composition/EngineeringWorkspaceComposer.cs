@@ -283,7 +283,7 @@ public static class EngineeringWorkspaceComposer
         // wired (ManufacturingWorkspaceRegistration's own remarks).
         ManufacturingWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry);
 
-        // `ADR-0163`: Structural, Electrical and Building Services / HVAC.
+        // `ADR-0163`: Structural, Electrical and Building Services / HVAC; `ADR-0170`: Fluid Power.
         DisciplineWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry);
 
         // The User Command Macro foundation (`WP 10.6A`) — not a seventh

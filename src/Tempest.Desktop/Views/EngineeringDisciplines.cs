@@ -18,7 +18,7 @@ public static class EngineeringDisciplines
     /// <summary>The engineering disciplines, in the order the navigators list them.</summary>
     public static IReadOnlyList<string> Disciplines { get; } =
     [
-        "Mechanical", "Structural", "Electrical", "Building Services", "Manufacturing",
+        "Mechanical", "Structural", "Electrical", "Building Services", "Fluid Power", "Manufacturing",
     ];
 
     /// <summary>The shared modules shown on the engineering surface, in the order the navigators list them.</summary>

@@ -477,9 +477,15 @@ public sealed partial class CalcInstanceService
     /// <summary>Whether an input still holds the value of the record it cites (a number or quantity in SI, a text, or a table cell by cell).</summary>
     private static bool MatchesRecord(CalcInputValue input, CalcDataRecord record, CalcInputSpec? spec)
     {
-        if (record.Values.FirstOrDefault(v => string.Equals(v.Symbol, input.Symbol, StringComparison.Ordinal)) is not { } value)
-            return false;
+        // A material's values are under the property they give, not under the input that takes them (Addendum B, W3).
+        if (MaterialLibrary.IsMaterial(record.Kind))
+            return MatchesMaterial(input, record, spec);
 
+        return record.Values.FirstOrDefault(v => string.Equals(v.Symbol, input.Symbol, StringComparison.Ordinal)) is { } value && MatchesValue(input, value, spec);
+    }
+
+    private static bool MatchesValue(CalcInputValue input, CalcDataValue value, CalcInputSpec? spec)
+    {
         if (input.Rows is not null || value.Rows is not null)
         {
             if (input.Rows is not { } rows || value.Rows is not { } recorded || rows.Count != recorded.Count)
@@ -841,9 +847,11 @@ public sealed partial class CalcInstanceService
 
     /// <summary>
     /// Names each linked input's source on the sheet ("link: CALC-E01 Motor rev A · T_rms") and each value from a reference
-    /// record by its citation ("record: UK NA factors — BS EN 1990 NA, +A1:2005, NA.A1.2(B) (licensed source)").
+    /// record by its citation ("record: UK NA factors — BS EN 1990 NA, +A1:2005, NA.A1.2(B) (licensed source)"); a value from a material
+    /// also names the property and the value's own source, edition and page or table. A linked value in <paramref name="withheldValues"/>
+    /// (its upstream holds a licensed record's value) prints the link and says it is withheld in place of the number (§A5).
     /// </summary>
-    private async Task<CalcSheet> DescribeLinksAsync(CalcSheet sheet, CalcInputSet inputs, CancellationToken cancellationToken)
+    private async Task<CalcSheet> DescribeLinksAsync(CalcSheet sheet, CalcInputSet inputs, IReadOnlySet<string> withheldValues, CancellationToken cancellationToken)
     {
         var names = new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -867,8 +875,10 @@ public sealed partial class CalcInstanceService
             }
             else if (CalcDataRecord.PinOf(value.Provenance) is { } pin && await _store.FindRecordAsync(pin.Id, pin.Revision, cancellationToken).ConfigureAwait(false) is { } record)
             {
-                var text = CalcSheetTextRenderer.Clean($"record: {record.Citation} rev {record.Revision}");
-                names[value.Symbol] = text.Length > 200 ? text[..200] + "…" : text;
+                var own = MaterialLibrary.IsMaterial(record.Kind) ? MaterialLibrary.ValueSourceText(record, value.Provenance) : null;
+                var text = CalcSheetTextRenderer.Clean($"record: {record.Citation} rev {record.Revision}{(own is null ? string.Empty : " · " + own)}");
+                var cap = own is null ? 200 : 400;
+                names[value.Symbol] = text.Length > cap ? text[..cap] + "…" : text;
             }
         }
 
@@ -893,10 +903,18 @@ public sealed partial class CalcInstanceService
             }
         }
 
-        if (names.Count == 0)
+        if (names.Count == 0 && withheldValues.Count == 0)
             return sheet;
 
-        return sheet with { Inputs = [.. sheet.Inputs.Select(r => names.TryGetValue(r.Symbol, out var source) ? r with { Source = source } : r)] };
+        return sheet with
+        {
+            Inputs =
+            [
+                .. sheet.Inputs.Select(r => withheldValues.Contains(r.Symbol)
+                    ? r with { Value = LicensedDerivedText, Unit = string.Empty, Source = names.GetValueOrDefault(r.Symbol) ?? r.Source }
+                    : names.TryGetValue(r.Symbol, out var source) ? r with { Source = source } : r),
+            ],
+        };
     }
 }
 

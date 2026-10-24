@@ -751,15 +751,7 @@ public sealed class BlueRoundTests
     [Fact]
     public void G_A_02_A_New_Sheet_Opens_On_The_Declared_Defaults_Only()
     {
-        Tempest.Calc.Sheets.ICalcCalculator[] calculators =
-        [
-            .. Tempest.Calc.Electrical.ElectricalCalculators.All,
-            .. Tempest.Calc.Mechanical.MechanicalCalculators.All,
-            .. Tempest.Calc.Structural.StructuralCalculators.All,
-            .. Tempest.Calc.BuildingServices.BuildingServicesCalculators.All,
-        ];
-
-        foreach (var calculator in calculators)
+        foreach (var calculator in ShippedCalculators.All)
         {
             var template = calculator.Template;
             var opened = CalcTemplateHasher.NewSheetInputs(template);

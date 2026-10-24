@@ -92,8 +92,9 @@ public static class CalcCsv
             {
                 var cell = cells[key];
 
-                // A cell holding nothing (an optional column left blank) is the same as no cell: it is not written.
-                if (cell is null || (cell.Number is null && cell.Text is null && cell.Flag is null))
+                // A cell holding nothing (an optional column left blank) is the same as no cell: it is not written. A cell whose value was
+                // withheld (linked to a calculation that holds a licensed record's value) is written empty with its marker, so the importer knows.
+                if (cell is null || (cell.Number is null && cell.Text is null && cell.Flag is null && !IsWithheld(cell.Provenance)))
                     continue;
 
                 var value = cell switch
@@ -344,6 +345,12 @@ public static class CalcCsv
         if (column is null)
         {
             notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"Row {line}: {reference.Table} has no column '{key}' and the cell was skipped."));
+            return;
+        }
+
+        if (raw.Length == 0 && IsWithheld(provenance))
+        {
+            notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {line}: " + WithheldMessage($"{reference.Table}[{reference.Row}].{key}")));
             return;
         }
 

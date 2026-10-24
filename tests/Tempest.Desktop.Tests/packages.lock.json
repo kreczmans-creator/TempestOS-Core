@@ -552,6 +552,12 @@
       "tempest.calc.engine": {
         "type": "Project"
       },
+      "tempest.calc.fluidpower": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.calc.library": {
         "type": "Project",
         "dependencies": {
@@ -607,6 +613,7 @@
           "Svg.Skia": "[2.0.0.8, )",
           "Tempest.Calc.BuildingServices": "[0.26.0, )",
           "Tempest.Calc.Electrical": "[0.26.0, )",
+          "Tempest.Calc.FluidPower": "[0.26.0, )",
           "Tempest.Calc.Library": "[0.26.0, )",
           "Tempest.Calc.Mechanical": "[0.26.0, )",
           "Tempest.Calc.Structural": "[0.26.0, )",
