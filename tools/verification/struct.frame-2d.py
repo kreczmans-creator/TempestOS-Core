@@ -1,0 +1,344 @@
+#!/usr/bin/env python3
+"""Independent re-derivation of struct.frame-2d (Track P, P1).
+
+A small direct-stiffness solver written from first principles in numpy (dense, no banding):
+  * 3 freedoms per node (ux, uy, rotation anticlockwise), Euler-Bernoulli 6x6 member stiffness;
+  * end moment releases by static condensation, the released rotation is recovered afterwards;
+  * equivalent nodal loads by integrating the load against the cubic Hermite shape functions
+    (this gives the exact fixed-end forces, so no Macaulay table is needed);
+  * member diagrams by direct integration of the end state: V, M (sagging +), N (tension +),
+    then EI y'' = M integrated twice on 4001 stations; the far-end deflection is checked against the solved value.
+Units: kN, m, kN*m, GPa -> kN/m^2, cm^2 -> m^2, cm^4 -> m^4.  Deflection reported in mm.
+Exit 0 when every KAT row passes max(KAT tol, 1e-6).
+"""
+import math
+import sys
+
+import numpy as np
+
+GAUSS_X, GAUSS_W = np.polynomial.legendre.leggauss(10)
+NST = 4001
+
+
+class Frame:
+    def __init__(self, E_gpa, nodes, elems, loads):
+        """nodes: {id: (x, y, support, kx, ky, kr)}; elems: [(id,i,j,A_cm2,I_cm4,E_gpa|None,rel_i,rel_j)];
+        loads: list of dicts with kind, target, a, b, w1, w2, Fx, Fy, M, gravity."""
+        self.E = E_gpa * 1e6
+        self.nodes, self.elems, self.loads = nodes, elems, loads
+        self.ids = sorted(nodes)
+        self.idx = {n: k for k, n in enumerate(self.ids)}
+        self.solve()
+
+    # ---- geometry
+    def geom(self, e):
+        _, i, j, A, I, Eg, ri, rj = e
+        xi, yi = self.nodes[i][:2]
+        xj, yj = self.nodes[j][:2]
+        L = math.hypot(xj - xi, yj - yi)
+        return L, (xj - xi) / L, (yj - yi) / L
+
+    def klocal(self, e):
+        _, i, j, A, I, Eg, ri, rj = e
+        E = (Eg * 1e6) if Eg else self.E
+        A, I = A * 1e-4, I * 1e-8
+        L, c, s = self.geom(e)
+        a, b = E * A / L, E * I / L ** 3
+        k = np.array([[a, 0, 0, -a, 0, 0],
+                      [0, 12 * b, 6 * b * L, 0, -12 * b, 6 * b * L],
+                      [0, 6 * b * L, 4 * b * L * L, 0, -6 * b * L, 2 * b * L * L],
+                      [-a, 0, 0, a, 0, 0],
+                      [0, -12 * b, -6 * b * L, 0, 12 * b, -6 * b * L],
+                      [0, 6 * b * L, 2 * b * L * L, 0, -6 * b * L, 4 * b * L * L]])
+        return k, E * I
+
+    def rot(self, e):
+        L, c, s = self.geom(e)
+        R = np.array([[c, s, 0], [-s, c, 0], [0, 0, 1]])
+        T = np.zeros((6, 6))
+        T[:3, :3] = R
+        T[3:, 3:] = R
+        return T
+
+    # ---- loads on one member: equivalent nodal vector in local axes plus the load description
+    def member_loads(self, e):
+        L, c, s = self.geom(e)
+        feq = np.zeros(6)
+        dist, pts, cpl = [], [], []      # dist: (a,b,wy1,wy2, wx) local; pts: (a, Fx_l, Fy_l); cpl: (a, M)
+
+        def N(x):
+            r = x / L
+            return np.array([1 - 3 * r * r + 2 * r ** 3, L * (r - 2 * r * r + r ** 3), 3 * r * r - 2 * r ** 3, L * (-r * r + r ** 3)])
+
+        def dN(x):
+            r = x / L
+            return np.array([(-6 * r + 6 * r * r) / L, 1 - 4 * r + 3 * r * r, (6 * r - 6 * r * r) / L, -2 * r + 3 * r * r])
+
+        for ld in self.loads:
+            if ld["target"] != e[0] or ld["kind"] == "nodal":
+                continue
+            k = ld["kind"]
+            if k in ("udl", "trapezoid"):
+                a, b = ld["a"], ld["b"]
+                w1 = ld["w1"]
+                w2 = ld["w2"] if k == "trapezoid" else w1
+                if ld.get("gravity"):
+                    # w positive downward per metre of member: global (0, -w) -> local components
+                    wx_l = -w1 * s if k == "udl" else None
+                    fac = (lambda w: (-w * s, -w * c))   # (axial, transverse) per metre for global -y load w
+                    ax1, tr1 = fac(w1)
+                    ax2, tr2 = fac(w2)
+                else:
+                    ax1 = ax2 = 0.0
+                    tr1, tr2 = w1, w2
+                dist.append((a, b, tr1, tr2, ax1, ax2))
+                xs = 0.5 * (b - a) * GAUSS_X + 0.5 * (a + b)
+                for x, wt in zip(xs, GAUSS_W):
+                    t = (x - a) / (b - a)
+                    q = tr1 + (tr2 - tr1) * t
+                    p = ax1 + (ax2 - ax1) * t
+                    n = N(x)
+                    f = 0.5 * (b - a) * wt
+                    feq[1] += f * q * n[0]
+                    feq[2] += f * q * n[1]
+                    feq[4] += f * q * n[2]
+                    feq[5] += f * q * n[3]
+                    feq[0] += f * p * (1 - x / L)
+                    feq[3] += f * p * (x / L)
+            elif k == "point":
+                a = ld["a"]
+                fxl = c * ld["Fx"] + s * ld["Fy"]
+                fyl = -s * ld["Fx"] + c * ld["Fy"]
+                pts.append((a, fxl, fyl))
+                n = N(a)
+                feq[1] += fyl * n[0]
+                feq[2] += fyl * n[1]
+                feq[4] += fyl * n[2]
+                feq[5] += fyl * n[3]
+                feq[0] += fxl * (1 - a / L)
+                feq[3] += fxl * (a / L)
+            elif k == "moment":
+                a = ld["a"]
+                cpl.append((a, ld["M"]))
+                d = dN(a)
+                feq[1] += ld["M"] * d[0]
+                feq[2] += ld["M"] * d[1]
+                feq[4] += ld["M"] * d[2]
+                feq[5] += ld["M"] * d[3]
+        return feq, dist, pts, cpl
+
+    # ---- assembly and solution
+    def solve(self):
+        nn = len(self.ids)
+        K = np.zeros((3 * nn, 3 * nn))
+        F = np.zeros(3 * nn)
+        self.cache = {}
+        for e in self.elems:
+            k, EI = self.klocal(e)
+            feq, dist, pts, cpl = self.member_loads(e)
+            rel = [e[6], e[7]]
+            rdofs = [2] if rel[0] else []
+            rdofs += [5] if rel[1] else []
+            adofs = [d for d in range(6) if d not in rdofs]
+            kc, fc = k.copy(), feq.copy()
+            if rdofs:
+                krr = k[np.ix_(rdofs, rdofs)]
+                kar = k[np.ix_(adofs, rdofs)]
+                kc = np.zeros((6, 6))
+                kc[np.ix_(adofs, adofs)] = k[np.ix_(adofs, adofs)] - kar @ np.linalg.solve(krr, kar.T)
+                fc = np.zeros(6)
+                fc[adofs] = feq[adofs] - kar @ np.linalg.solve(krr, feq[rdofs])
+            T = self.rot(e)
+            kg, fg = T.T @ kc @ T, T.T @ fc
+            dofs = [3 * self.idx[e[1]] + d for d in range(3)] + [3 * self.idx[e[2]] + d for d in range(3)]
+            K[np.ix_(dofs, dofs)] += kg
+            F[dofs] += fg
+            self.cache[e[0]] = dict(k=k, feq=feq, T=T, rdofs=rdofs, adofs=adofs, dofs=dofs, EI=EI,
+                                    dist=dist, pts=pts, cpl=cpl)
+        for ld in self.loads:
+            if ld["kind"] == "nodal":
+                b = 3 * self.idx[ld["target"]]
+                F[b] += ld["Fx"]
+                F[b + 1] += ld["Fy"]
+                F[b + 2] += ld["M"]
+        fixed = []
+        for n in self.ids:
+            x, y, sup, kx, ky, kr = self.nodes[n]
+            b = 3 * self.idx[n]
+            if sup == "pin":
+                fixed += [b, b + 1]
+            elif sup == "roller (vertical)":
+                fixed += [b + 1]
+            elif sup == "roller (horizontal)":
+                fixed += [b]
+            elif sup == "fixed":
+                fixed += [b, b + 1, b + 2]
+            elif sup == "spring":
+                K[b, b] += kx
+                K[b + 1, b + 1] += ky
+                K[b + 2, b + 2] += kr
+        free = [d for d in range(3 * nn) if d not in fixed]
+        u = np.zeros(3 * nn)
+        u[free] = np.linalg.solve(K[np.ix_(free, free)], F[free])
+        self.u, self.fixed = u, fixed
+        self.R = (K @ u - F)
+        self.Rn = {n: self.R[3 * self.idx[n]:3 * self.idx[n] + 3] for n in self.ids}
+        # spring supports react with the spring force: R above already includes -F only for fixed dofs; keep fixed only
+        self.members = {e[0]: self.member_results(e) for e in self.elems}
+
+    def member_results(self, e):
+        c = self.cache[e[0]]
+        L, cs, sn = self.geom(e)
+        ug = self.u[c["dofs"]]
+        ul = c["T"] @ ug
+        if c["rdofs"]:
+            krr = c["k"][np.ix_(c["rdofs"], c["rdofs"])]
+            kra = c["k"][np.ix_(c["rdofs"], c["adofs"])]
+            ur = np.linalg.solve(krr, c["feq"][c["rdofs"]] - kra @ ul[c["adofs"]])
+            ul = ul.copy()
+            ul[c["rdofs"]] = ur
+        Q = c["k"] @ ul - c["feq"]          # end actions on the member, local axes
+        Fx1, Fy1, M1 = Q[0], Q[1], Q[2]
+        x = np.linspace(0, L, NST)
+        V = np.full(NST, Fy1)
+        Mx = -M1 + Fy1 * x
+        Nx = np.full(NST, -Fx1)
+        for (a, b, tr1, tr2, ax1, ax2) in c["dist"]:
+            xe = np.clip(x, a, b)
+            span = b - a
+            q = lambda s_: tr1 + (tr2 - tr1) * (s_ - a) / span
+            # integral of q from a to xe
+            Iq = tr1 * (xe - a) + (tr2 - tr1) * (xe - a) ** 2 / (2 * span)
+            V += Iq
+            # moment of q about x: integral q(s)(x - s) ds, s from a to xe
+            m0 = tr1 * ((xe - a) * x - (xe ** 2 - a ** 2) / 2)
+            m1 = (tr2 - tr1) / span * (((xe - a) ** 2 / 2) * x - ((xe - a) ** 2 * (2 * xe + a) / 6 + 0.0))
+            # exact: integral (s-a) (x-s) ds from a to xe = x (xe-a)^2/2 - [(xe-a)^2 (2xe + a... )]; recompute by quadrature below
+            Mx += self._moment_quad(a, b, tr1, tr2, x)
+            Nx -= (ax1 * (xe - a) + (ax2 - ax1) * (xe - a) ** 2 / (2 * span))
+        for (a, fxl, fyl) in c["pts"]:
+            h = (x >= a - 1e-12).astype(float)
+            V += fyl * h
+            Mx += fyl * (x - a) * h
+            Nx -= fxl * h
+        for (a, mc) in c["cpl"]:
+            Mx -= mc * (x >= a - 1e-12)
+        # integrate EI y'' = M
+        EI = c["EI"]
+        dx = x[1] - x[0]
+        th = np.concatenate([[0], np.cumsum((Mx[1:] + Mx[:-1]) / 2 * dx)]) / EI + ul[2]
+        y = np.concatenate([[0], np.cumsum((th[1:] + th[:-1]) / 2 * dx)]) + ul[1]
+        return dict(x=x, V=V, M=Mx, N=Nx, y=y, ul=ul, Q=Q, L=L, y_far_solved=ul[4])
+
+    def _moment_quad(self, a, b, tr1, tr2, x):
+        """integral over s in [a, min(x,b)] of q(s)(x-s) ds, vectorised by Gauss quadrature."""
+        out = np.zeros_like(x)
+        hi = np.minimum(x, b)
+        ok = hi > a
+        for g, w in zip(GAUSS_X, GAUSS_W):
+            s_ = 0.5 * (hi - a) * g + 0.5 * (hi + a)
+            q = tr1 + (tr2 - tr1) * (s_ - a) / (b - a)
+            out += np.where(ok, 0.5 * (hi - a) * w * q * (x - s_), 0.0)
+        return out
+
+
+# ------------------------------------------------------------ helpers for building models
+def node(id_, x, y, sup="free", kx=0.0, ky=0.0, kr=0.0):
+    return id_, (x, y, sup, kx, ky, kr)
+
+
+def load(case, kind, target, a=0, b=0, w1=0, w2=0, Fx=0, Fy=0, M=0, gravity=False):
+    return dict(case=case, kind=kind, target=target, a=a, b=b, w1=w1, w2=w2, Fx=Fx, Fy=Fy, M=M, gravity=gravity)
+
+
+def build(E, nodes, elems, loads):
+    return Frame(E, dict(nodes), elems, loads)
+
+
+def summary(fr):
+    """Global extremes the product reports (largest over all members, local positions)."""
+    out = dict(M_max=-1e99, M_min=1e99, V_max=0.0, N_max=-1e99, N_min=1e99, d_max=0.0, x_Mmax=0.0)
+    for eid, m in fr.members.items():
+        k = int(np.argmax(m["M"]))
+        if m["M"][k] > out["M_max"]:
+            out["M_max"], out["x_Mmax"] = m["M"][k], m["x"][k]
+        out["M_min"] = min(out["M_min"], m["M"].min())
+        out["V_max"] = max(out["V_max"], np.abs(m["V"]).max())
+        out["N_max"] = max(out["N_max"], m["N"].max())
+        out["N_min"] = min(out["N_min"], m["N"].min())
+        out["d_max"] = max(out["d_max"], np.abs(m["y"]).max() * 1000)
+    return out
+
+
+# ------------------------------------------------------------ reporting
+FAIL = [0]
+
+
+def row(case, sym, kat, ind, tol, note=""):
+    floor = max(tol, 1e-6)
+    scale = abs(kat) if kat != 0 else 1.0
+    rel = abs(ind - kat) / scale
+    ok = rel <= floor
+    FAIL[0] += 0 if ok else 1
+    print(f"{case:<26}{sym:<10}{kat:>14.6g}{ind:>14.6g}{rel:>11.2e}{tol:>10.1e}  {'PASS' if ok else 'FAIL'} {note}")
+
+
+def kats():
+    print(f"{'case':<26}{'symbol':<10}{'KAT':>14}{'indep':>14}{'rel.diff':>11}{'tol':>10}  result")
+    # 1. simply supported beam, UDL 10 kN/m down, L = 6, I = 8000 cm4
+    fr = build(210, [node(1, 0, 0, "pin"), node(2, 6, 0, "roller (vertical)")], [(1, 1, 2, 100, 8000, None, False, False)],
+               [load(1, "udl", 1, 0, 6, -10)])
+    s, c = summary(fr), "ka-ss-udl"
+    for sym, k, v, t in [("R1_y", 30, fr.Rn[1][1], 1e-9), ("R2_y", 30, fr.Rn[2][1], 1e-9), ("M_max", 45, s["M_max"], 1e-9),
+                         ("x_Mmax", 3, s["x_Mmax"], 1e-6), ("V_max", 30, s["V_max"], 1e-9), ("d_max", 10.0446, s["d_max"], 1e-4)]:
+        row(c, sym, k, v, t)
+    # 2. cantilever tip load
+    fr = build(200, [node(1, 0, 0, "fixed"), node(2, 3, 0, "free")], [(1, 1, 2, 50, 2000, None, False, False)],
+               [load(1, "nodal", 2, Fy=-20)])
+    s, c = summary(fr), "ka-cantilever-point"
+    for sym, k, v, t in [("R1_y", 20, fr.Rn[1][1], 1e-9), ("R1_m", 60, fr.Rn[1][2], 1e-9), ("M_min", -60, s["M_min"], 1e-9),
+                         ("d_max", 45, s["d_max"], 1e-9)]:
+        row(c, sym, k, v, t)
+    # 3. propped cantilever, UDL 12 kN/m, L = 8
+    fr = build(210, [node(1, 0, 0, "fixed"), node(2, 8, 0, "roller (vertical)")], [(1, 1, 2, 100, 20000, None, False, False)],
+               [load(1, "udl", 1, 0, 8, -12)])
+    s, c = summary(fr), "ka-propped-cantilever"
+    for sym, k, v, t in [("R2_y", 36, fr.Rn[2][1], 1e-9), ("R1_y", 60, fr.Rn[1][1], 1e-9), ("M_min", -96, s["M_min"], 1e-9),
+                         ("M_max", 54, s["M_max"], 1e-9), ("x_Mmax", 5, s["x_Mmax"], 1e-6)]:
+        row(c, sym, k, v, t)
+    # 4. pinned portal, 30 kN lateral at node 2
+    fr = build(210, [node(1, 0, 0, "pin"), node(2, 0, 4), node(3, 6, 4), node(4, 6, 0, "pin")],
+               [(1, 1, 2, 100, 10000, None, False, False), (2, 2, 3, 1e6, 10000, None, False, False), (3, 3, 4, 100, 10000, None, False, False)],
+               [load(1, "nodal", 2, Fx=30)])
+    s, c = summary(fr), "ka-portal-sway"
+    for sym, k, v, t in [("R1_x", -15, fr.Rn[1][0], 1e-5), ("R4_x", -15, fr.Rn[4][0], 1e-5), ("R1_y", -20, fr.Rn[1][1], 1e-9),
+                         ("R4_y", 20, fr.Rn[4][1], 1e-9), ("M_max", 60, s["M_max"], 1e-5),
+                         ("N_e1", 20, fr.members[1]["N"][0], 1e-9)]:
+        row(c, sym, k, v, t)
+    # 5. two-span beam, hinge at the left end of span 2, 40 kN at 2 m on span 2
+    fr = build(210, [node(1, 0, 0, "fixed"), node(2, 5, 0, "roller (vertical)"), node(3, 9, 0, "roller (vertical)")],
+               [(1, 1, 2, 80, 5000, None, False, False), (2, 2, 3, 80, 5000, None, True, False)],
+               [load(1, "point", 2, a=2, Fy=-40)])
+    s, c = summary(fr), "ka-two-span-release"
+    for sym, k, v, t in [("R3_y", 20, fr.Rn[3][1], 1e-9), ("R2_y", 20, fr.Rn[2][1], 1e-9), ("R1_y", 0, fr.Rn[1][1], 1e-9),
+                         ("R1_m", 0, fr.Rn[1][2], 1e-9), ("M_max", 40, s["M_max"], 1e-9)]:
+        row(c, sym, k, v, t)
+    # self-check: the integrated deflection must reach the solved far-end value
+    worst = 0.0
+    for fr_ in (fr,):
+        for m in fr_.members.values():
+            worst = max(worst, abs(m["y"][-1] - m["y_far_solved"]))
+    print(f"{'(self-check)':<26}{'y_end':<10} integrated minus solved far-end deflection, worst abs {worst:.2e} m  {'PASS' if worst < 1e-6 else 'FAIL'}")
+    FAIL[0] += 0 if worst < 1e-6 else 1
+
+
+# ------------------------------------------------------------ extra checks (filled after probing)
+def extras():
+    pass
+
+
+if __name__ == "__main__":
+    kats()
+    extras()
+    print("RESULT:", "ALL PASS" if FAIL[0] == 0 else f"{FAIL[0]} FAIL")
+    sys.exit(0 if FAIL[0] == 0 else 1)

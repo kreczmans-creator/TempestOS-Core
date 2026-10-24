@@ -16,12 +16,13 @@ import sys
 
 import numpy as np
 
-NARC = 4000  # chords per quarter circle
+NARC = 4000
 
 
 # ---------------------------------------------------------------- geometry
-def arc(cx, cy, r, a0, a1, n=NARC):
+def arc(cx, cy, r, a0, a1, n=None):
     """Points on a circular arc from angle a0 to a1 (degrees), inclusive."""
+    n = NARC if n is None else n
     if r <= 0:
         return [(cx, cy)]
     t = np.radians(np.linspace(a0, a1, n + 1))
@@ -163,47 +164,74 @@ def sec_hollow_rect(h, b, t, ro=None, ri=None):
     return section([(rounded_rect(b, h, ro), 1), (rounded_rect(b - 2 * t, h - 2 * t, ri), -1)])
 
 
-def sec_I(h, b, tw, tf, r):
-    """Doubly symmetric I with quarter-circle root fillets, x-x horizontal."""
-    pts = []
-    yw = h / 2 - tf
-    # right half going up, then mirror (counter-clockwise starting at the bottom centre-right)
-    pts += [(tw / 2, -yw + 0.0)]
-    # lower right fillet: web face up to lower flange top: centre (tw/2 + r, -yw - r)
-    seg_lr = arc(tw / 2 + r, -yw - r, r, 180, 90) if r > 0 else [(tw / 2, -yw)]
-    # build polygon explicitly, counter-clockwise
-    poly = []
-    poly += [(-b / 2, -h / 2), (b / 2, -h / 2), (b / 2, -yw)]
-    poly += (arc(tw / 2 + r, -yw - r, r, 90, 180)[::-1] if r > 0 else [(tw / 2, -yw)])  # flange top to web
-    # ^ arc from flange-top point (tw/2+r, -yw) at 90 deg to web face (tw/2, -yw-r)? corrected below
-    return None
-
-
 def sec_I_poly(h, b, tw, tf, r):
-    """Doubly symmetric I-section with root fillets. Counter-clockwise outline."""
-    yw = h / 2 - tf                     # inner face of flange (positive y)
+    """Doubly symmetric I-section with root fillets in the corners web/flange. Counter-clockwise outline."""
+    yw = h / 2 - tf                     # inner face of the flange (positive y)
     poly = [(-b / 2, -h / 2), (b / 2, -h / 2), (b / 2, -yw)]
-    # lower-right fillet, centre (tw/2 + r, -yw - r): runs from (tw/2 + r, -yw) to (tw/2, -yw - r)
     if r > 0:
-        poly += arc(tw / 2 + r, -yw - r, r, 90, 180)
+        poly += arc(tw / 2 + r, -yw + r, r, 270, 180)     # lower right fillet: flange top to web face
+        poly += arc(tw / 2 + r, yw - r, r, 180, 90)       # upper right fillet: web face to flange underside
     else:
-        poly += [(tw / 2, -yw)]
-    # web right face up to upper fillet; centre (tw/2 + r, yw + r): from (tw/2, yw + r) to (tw/2 + r, yw)
-    if r > 0:
-        poly += arc(tw / 2 + r, yw + r, r, 180, 270)
-    else:
-        poly += [(tw / 2, yw)]
+        poly += [(tw / 2, -yw), (tw / 2, yw)]
     poly += [(b / 2, yw), (b / 2, h / 2), (-b / 2, h / 2), (-b / 2, yw)]
     if r > 0:
-        poly += arc(-tw / 2 - r, yw + r, r, 270, 360)       # from (-tw/2 - r, yw) to (-tw/2, yw + r)
-        poly += arc(-tw / 2 - r, -yw - r, r, 0, 90)         # from (-tw/2, -yw - r) to (-tw/2 - r, -yw)
+        poly += arc(-tw / 2 - r, yw - r, r, 90, 0)        # upper left fillet
+        poly += arc(-tw / 2 - r, -yw + r, r, 0, -90)      # lower left fillet
     else:
         poly += [(-tw / 2, yw), (-tw / 2, -yw)]
+    poly += [(-b / 2, -yw)]
     return poly
+
+
+def sec_I_poly_coarse(h, b, tw, tf, r):
+    """Same outline with 16 chords per fillet, for the finite-element mesh."""
+    global NARC
+    keep, NARC = NARC, 16
+    try:
+        return sec_I_poly(h, b, tw, tf, r)
+    finally:
+        NARC = keep
 
 
 def sec_I(h, b, tw, tf, r):
     return section([(sec_I_poly(h, b, tw, tf, r), 1)])
+
+
+
+def channel_poly(h, b, tw, tf, r):
+    """Channel with the web on the left (x = 0 .. tw), heel at the origin, root fillets r."""
+    pts = [(0, 0), (b, 0), (b, tf)]
+    pts += arc(tw + r, tf + r, r, 270, 180) if r > 0 else [(tw, tf)]
+    pts += arc(tw + r, h - tf - r, r, 180, 90) if r > 0 else [(tw, h - tf)]
+    pts += [(b, h - tf), (b, h), (0, h)]
+    return pts
+
+
+def tee_poly(h, b, tw, tf, r):
+    """Tee with the flange on top (y = h - tf .. h), stem down to y = 0, centred on x = 0."""
+    pts = [(-tw / 2, 0), (tw / 2, 0)]
+    pts += arc(tw / 2 + r, h - tf - r, r, 180, 90) if r > 0 else [(tw / 2, h - tf)]
+    pts += [(b / 2, h - tf), (b / 2, h), (-b / 2, h), (-b / 2, h - tf)]
+    pts += arc(-tw / 2 - r, h - tf - r, r, 90, 0) if r > 0 else [(-tw / 2, h - tf)]
+    return pts
+
+
+def angle_poly(h, b, t, r):
+    """Angle: vertical leg h along x = 0 .. t, horizontal leg b along y = 0 .. t, heel at the origin, root fillet r."""
+    pts = [(0, 0), (b, 0), (b, t)]
+    pts += arc(t + r, t + r, r, 270, 180) if r > 0 else [(t, t)]
+    pts += [(t, h), (0, h)]
+    return pts
+
+
+def coarse(fn, *a):
+    """Build an outline with 16 chords per fillet quadrant, for the finite-element mesh."""
+    global NARC
+    keep, NARC = NARC, 16
+    try:
+        return fn(*a)
+    finally:
+        NARC = keep
 
 
 def sec_polygon(pts):
@@ -246,6 +274,72 @@ def iw_I(sec_Iy, h, tf):
     return sec_Iy * (h - tf) ** 2 / 4
 
 
+
+# ---------------------------------------------------------------- finite-element torsion (simply connected sections)
+def _inside(P, loops):
+    """Even-odd point test; holes (sign -1) subtract."""
+    res = np.zeros(len(P), int)
+    for pts, sign in loops:
+        v = np.asarray(pts, float)
+        x, y = P[:, 0], P[:, 1]
+        ins = np.zeros(len(P), bool)
+        for i in range(len(v)):
+            x1, y1 = v[i]
+            x2, y2 = v[(i + 1) % len(v)]
+            if y1 == y2:
+                continue
+            ins ^= ((y1 > y) != (y2 > y)) & (x < (x2 - x1) * (y - y1) / (y2 - y1) + x1)
+        res += sign * ins
+    return res > 0
+
+
+def torsion_fe_once(loops, h):
+    """Saint-Venant J = 2 * integral(phi) with the Prandtl stress function, linear triangles, phi = 0 on the boundary."""
+    from scipy.spatial import Delaunay, cKDTree
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.linalg import spsolve
+    bpts = []
+    for L, _ in loops:
+        L = np.asarray(L, float)
+        for i in range(len(L)):
+            a, b = L[i], L[(i + 1) % len(L)]
+            k = max(1, int(math.ceil(math.hypot(*(b - a)) / h)))
+            bpts += [a + (b - a) * j / k for j in range(k)]
+    bp = np.array(bpts)
+    allp = np.vstack([np.asarray(L, float) for L, _ in loops])
+    xs = np.arange(allp[:, 0].min() + h / 2, allp[:, 0].max(), h)
+    ys = np.arange(allp[:, 1].min() + h / 2, allp[:, 1].max(), h)
+    G = np.array([(x, y) for x in xs for y in ys])
+    d, _ = cKDTree(bp).query(G)
+    G = G[_inside(G, loops) & (d > 0.45 * h)]
+    P = np.vstack([bp, G])
+    tri = Delaunay(P).simplices
+    tri = tri[_inside(P[tri].mean(axis=1), loops)]
+    n, nb = len(P), len(bp)
+    x, y = P[tri, 0], P[tri, 1]
+    bq = np.stack([y[:, 1] - y[:, 2], y[:, 2] - y[:, 0], y[:, 0] - y[:, 1]], 1)
+    cq = np.stack([x[:, 2] - x[:, 1], x[:, 0] - x[:, 2], x[:, 1] - x[:, 0]], 1)
+    area = 0.5 * np.abs((bq * x).sum(1))
+    good = area > 1e-12
+    tri, bq, cq, area = tri[good], bq[good], cq[good], area[good]
+    Ke = (bq[:, :, None] * bq[:, None, :] + cq[:, :, None] * cq[:, None, :]) / (4 * area[:, None, None])
+    rows = np.repeat(tri, 3, axis=1).ravel()
+    cols = np.tile(tri, (1, 3)).ravel()
+    K = coo_matrix((Ke.ravel(), (rows, cols)), shape=(n, n)).tocsr()
+    f = np.zeros(n)
+    np.add.at(f, tri.ravel(), np.repeat(2 * area / 3, 3))
+    free = np.arange(nb, n)
+    phi = np.zeros(n)
+    phi[free] = spsolve(K[free][:, free].tocsc(), f[free])
+    return float(phi @ f)
+
+
+def torsion_fe(loops):
+    """Richardson extrapolation (error ~ h^2) of two meshes, h = 0.7 and 0.5 mm."""
+    j1, j2 = torsion_fe_once(loops, 0.7), torsion_fe_once(loops, 0.5)
+    return j2 + (j2 - j1) * 0.25 / (0.49 - 0.25)
+
+
 # ---------------------------------------------------------------- reporting
 ROWS = []
 FAIL = [0]
@@ -270,7 +364,9 @@ def kats():
     Wy = plastic_modulus(s, "y")
     Wx = plastic_modulus(s, "x")
     c = "ka-ub-457x191x98"
-    J = j_I_rolled(467.2, 192.8, 11.4, 19.6, 10.2)
+    J = torsion_fe([(sec_I_poly_coarse(467.2, 192.8, 11.4, 19.6, 10.2), 1)])
+    J_formula = j_I_rolled(467.2, 192.8, 11.4, 19.6, 10.2)
+    print(f"{'(info)':<26}{'J formula':<10}{'121':>14}{J_formula / CM4:>14.6g}  El Darwish-Johnston sum b t^3/3 + fillet term; FE J = {J / CM4:.4g} cm^4")
     Iw = iw_I(s["Iyy"], 467.2, 19.6) / 1e12
     for sym, kat, ind, tol in [("A", 125, s["A"] / CM2, 0.005), ("I_xx", 45730, s["Ixx"] / CM4, 0.005),
                                ("I_yy", 2347, s["Iyy"] / CM4, 0.005), ("i_x", 19.1, s["ix"] / CM, 0.005),

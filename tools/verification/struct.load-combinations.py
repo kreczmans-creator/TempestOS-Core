@@ -89,6 +89,86 @@ KATS = [
 ]
 
 
+
+# ---- Extra checks: product values observed with tools/verification/probe (Release build, v0.26.0) ----
+# Each entry: probe name, actions (name, category, F_k), factor overrides, product outputs (all in kN-type units).
+# L7 uses a user psi table (wind 0.5/0.2/0, office 0.7/0.5/0.3). L4 uses non-default factors and K_FI = 1.1.
+PRODUCT = [
+    ('L1_uk_office', [('Slab', 'G permanent', 18), ('Office', 'B office', 10)],
+     {'method': '6.10ab', 'xi': 0.925},
+     {'E_d_max': 37.4775, 'E_d_min': 18.0, 'E_k_max': 28.0, 'E_k_min': 18.0, 'E_fr_max': 23.0, 'E_fr_min': 18.0, 'E_qp_max': 21.0, 'E_qp_min': 18.0}),
+    ('L2_mixed', [('G1', 'G permanent', 12), ('G2 opposing', 'G permanent', -3), ('Imposed', 'B office', 6), ('Wind suction', 'wind', -8), ('Snow', 'snow <= 1000 m', 4)],
+     {},
+     {'E_d_max': 25.5, 'E_d_min': -4.05, 'E_k_max': 17.2, 'E_k_min': 1.0, 'E_fr_max': 12.0, 'E_fr_min': 7.4, 'E_qp_max': 10.8, 'E_qp_min': 9.0}),
+    ('L3_accidental', [('G', 'G permanent', 10), ('Imposed', 'B office', 5), ('Wind', 'wind', 4), ('Impact', 'accidental', 30)],
+     {},
+     {'E_d_max': 24.75, 'E_d_min': 10.0, 'E_k_max': 17.5, 'E_k_min': 10.0, 'E_fr_max': 12.5, 'E_fr_min': 10.0, 'E_qp_max': 11.5, 'E_qp_min': 10.0, 'E_acc_max': 42.5, 'E_acc_min': 10.0}),
+    ('L4_kfi_equ', [('Roof G', 'G permanent', 10), ('Wind uplift', 'wind', -20), ('Roof imposed', 'H roofs', 3)],
+     {'gsup': 1.1, 'ginf': 0.9, 'kfi': 1.1},
+     {'E_d_max': 15.95, 'E_d_min': -24.0, 'E_k_max': 13.0, 'E_k_min': -10.0, 'E_fr_max': 10.0, 'E_fr_min': 6.0, 'E_qp_max': 10.0, 'E_qp_min': 10.0}),
+    ('L5_no_perm', [('Wind', 'wind', 5), ('Thermal', 'thermal', -2)],
+     {},
+     {'E_d_max': 7.5, 'E_d_min': -3.0, 'E_k_max': 5.0, 'E_k_min': -2.0, 'E_fr_max': 1.0, 'E_fr_min': -1.0, 'E_qp_max': 0.0, 'E_qp_min': 0.0}),
+    ('L6_storage_ab', [('G', 'G permanent', 25), ('Storage', 'E storage', 40), ('Snow>1000', 'snow > 1000 m', 6), ('Wind', 'wind', 9)],
+     {'method': '6.10ab'},
+     {'E_d_max': 108.4875, 'E_d_min': 25.0, 'E_k_max': 78.2, 'E_k_min': 25.0, 'E_fr_max': 62.2, 'E_fr_min': 25.0, 'E_qp_max': 58.2, 'E_qp_min': 25.0}),
+    ('L7_psi_user', [('G', 'G permanent', 10), ('Wind', 'wind', 8), ('Imposed', 'B office', 6)],
+     {'psi_user': {'wind': (0.5, 0.2, 0.0), 'B office': (0.7, 0.5, 0.3)}},
+     {'E_d_max': 31.8, 'E_d_min': 10.0, 'E_k_max': 22.2, 'E_k_min': 10.0, 'E_fr_max': 13.4, 'E_fr_min': 10.0, 'E_qp_max': 11.8, 'E_qp_min': 10.0}),
+    ('L9_large', [('G', 'G permanent', 1000000.0), ('Q', 'A domestic', 4000000.0), ('Q2', 'D shopping', -3000000.0), ('Wind', 'wind', 2000000.0)],
+     {'method': '6.10ab'},
+     {'E_d_max': 8947500.0, 'E_d_min': -3500000.0, 'E_k_max': 6200000.0, 'E_k_min': -2000000.0, 'E_fr_max': 3000000.0, 'E_fr_min': -1100000.0, 'E_qp_max': 2200000.0, 'E_qp_min': -800000.0}),
+    ('L10_only_neg_perm', [('G', 'G permanent', -10), ('Imposed', 'B office', 5)],
+     {},
+     {'E_d_max': -2.5, 'E_d_min': -13.5, 'E_k_max': -5.0, 'E_k_min': -10.0, 'E_fr_max': -7.5, 'E_fr_min': -10.0, 'E_qp_max': -8.5, 'E_qp_min': -10.0}),
+    ('L11_acc_only', [('A', 'accidental', 20), ('G', 'G permanent', 10)],
+     {},
+     {'E_acc_max': 30.0, 'E_acc_min': 10.0}),
+    ('L12_acc_two', [('A', 'accidental', -20), ('A2', 'accidental', 15), ('G', 'G permanent', 10), ('Q', 'B office', 5)],
+     {},
+     {'E_acc_max': 27.5, 'E_acc_min': -10.0}),
+]
+
+
+def extra_checks():
+    fails = 0
+    print("\nEXTRA CHECKS (product observed vs independent)")
+    print("%-16s %-10s %12s %12s %10s  %s" % ("probe", "symbol", "product", "independent", "rel.diff", "result"))
+    for name, acts, kw, prod in PRODUCT:
+        kw = dict(kw)
+        user = kw.pop("psi_user", None)
+        if user:
+            kw["psi"] = user
+        ind = E(acts, **kw)
+        for sym, pv in prod.items():
+            iv = ind[sym]
+            rd = abs(pv - iv) / max(abs(iv), 1e-9)
+            ok = rd <= 1e-6
+            fails += not ok
+            print("%-16s %-10s %12.6g %12.6g %10.2e  %s" % (name, sym, pv, iv, rd, "PASS" if ok else "FAIL"))
+    return fails
+
+
+def uk_na_comparison():
+    """Information only: recommended defaults against the UK NA values (see findings 01 and 02).
+    UK NA to BS EN 1990 NA.A1.2(B): xi = 0.925 (recommended 0.85). Worked example: G 18, Q (office) 10 kN/m, 6.10b."""
+    acts = [("Slab", PERM, 18), ("Office", "B office", 10)]
+    rec = E(acts, method="6.10ab")["E_d_max"]
+    uk = E(acts, method="6.10ab", xi=0.925)["E_d_max"]
+    print("\nINFO default xi = 0.85 against UK NA xi = 0.925 (G 18, office 10 kN/m, 6.10a/b)")
+    print("  E_d_max with the template default xi: %.4f kN/m; with UK NA xi: %.4f kN/m; default is %.1f %% lower"
+          % (rec, uk, 100 * (uk - rec) / uk))
+    # Roof imposed (category H) as the accompanying action under a wind-leading case.
+    acts2 = [("Roof G", PERM, 10), ("Wind", "wind", 6), ("Roof imposed", "H roofs", 4)]
+    rec_h = E(acts2)["E_d_max"]
+    uk_psi = dict(PSI)
+    uk_psi["H roofs"] = (0.7, 0.0, 0.0)  # UK NA Table NA.A1.1 value for category H, as I recall it; owner to confirm
+    uk_psi["wind"] = (0.5, 0.2, 0.0)     # UK NA Table NA.A1.1 wind value, as I recall it; owner to confirm
+    uk_h = E(acts2, psi=uk_psi)["E_d_max"]
+    print("INFO recommended psi_0 (roof H 0, wind 0.6) against UK NA psi_0 (roof H 0.7, wind 0.5), as I recall the NA")
+    print("  G 10, wind 6, roof imposed 4 kN: recommended %.4f kN; UK NA %.4f kN" % (rec_h, uk_h))
+
+
 def main():
     fails = 0
     print("%-22s %-10s %10s %12s %10s %8s  %s" % ("case", "symbol", "KAT", "independent", "rel.diff", "KAT tol", "result"))
@@ -100,7 +180,8 @@ def main():
             ok = rd <= max(tol, 1e-6)
             fails += not ok
             print("%-22s %-10s %10.5g %12.6g %10.2e %8.0e  %s" % (name, sym, val, ind, rd, tol, "PASS" if ok else "FAIL"))
-    # EXTRA_CHECKS_BELOW
+    fails += extra_checks()
+    uk_na_comparison()
     print("\nTOTAL FAILS: %d" % fails)
     return 1 if fails else 0
 

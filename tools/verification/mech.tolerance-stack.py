@@ -99,6 +99,48 @@ KATS.append(("ka-rss-analytic", stack(hous, lsl=0.40, usl=0.80, k=3), [
 # Extra checks: (label, short inputs, symbol, product value, independent value, tolerance)
 EXTRAS = []
 
+# Extra checks: product values are SI metres (x1000 to mm) as printed by the probe tool.
+# Each entry: label, rows, lsl, usl, k, f, {symbol: product value}, finding flag.
+def R(d, nom, up, lo=0.0, **kw):
+    return dict(dir=d, nom=nom, up=up, lo=lo, **kw)
+
+
+BASE4 = [R("adds", 10, 0.01, -0.01), R("subtracts", 9, 0.01, -0.01), R("subtracts", 0.5, 0.01, -0.01), R("adds", 0.0, 0.01, -0.01)]
+LEN = {"x_nom", "x_mean", "t_wc", "x_wc_min", "x_wc_max", "t_rss", "t_mrss", "sigma"}
+PROBES = [
+    ("p1 typical 5 rows", [R("adds", 50, .05, -.05), R("subtracts", 10, .02, -.02), R("subtracts", 12, .03, -.01),
+                           R("subtracts", 15, 0, -.04), R("subtracts", 12.5, .02, -.02)], 0.1, 1.0, 3, 1.5,
+     dict(x_mean=0.00051, t_wc=0.00013, x_wc_min=0.00038, t_rss=6.403124237e-05, t_mrss=9.604686356e-05,
+          sigma=2.134374746e-05, cp=7.027819285, cpk=6.403124237, dpmo=1.544884063e-76), False),
+    ("p2 uniform/triang/shift", [R("adds", 30, .1, -.1, dist="uniform"), R("subtracts", 10, .06, -.06, dist="triangular", shift=.02),
+                                 R("subtracts", 9, .05, -.05), R("subtracts", 10.5, 0, -.09, shift=-.01)], 0.2, 1.2, 3, 1.5,
+     dict(x_mean=0.000535, t_wc=0.000255, t_rss=0.0001346291202, t_mrss=0.0002019436803, sigma=6.660413734e-05,
+          cp=2.502347051, cpk=1.676572524, dpmo=0.2456014115), False),
+    ("p3 position+bonus+profile", [R("adds", 25, .1, -.1), R("subtracts", 0, .2, kind="position", bonus=.1),
+                                   R("adds", 0, .1, kind="profile"), R("subtracts", 24, .05, -.05)], 0.5, 1.5, 3, 1.5,
+     dict(x_mean=0.001, t_wc=0.00035, t_rss=0.0001936491673, sigma=6.454972244e-05, cp=2.581988897,
+          cpk=2.581988897, dpmo=9.516827414e-09), True),  # dpmo: upper tail at z=7.75 (finding 02)
+    ("p4 min only, mean below", [R("adds", 10, .1, -.1), R("subtracts", 9.9, .1, -.1), R("subtracts", 0, 0, 0)], 0.3, None, 3, 1.5,
+     dict(x_mean=0.0001, x_wc_min=-0.0001, sigma=4.714045208e-05, cpk=-1.414213562, dpmo=999988.9548), False),
+    ("p5 zero tolerances", [R("adds", 10, 0, 0), R("subtracts", 9, 0, 0)], 0.5, 2.0, 3, 1.5,
+     dict(x_mean=0.001, t_wc=0.0, sigma=0.0), False),
+    ("p6 mixed in/mm", [R("adds", 50.8, .0508, -.0508), R("subtracts", 30, .05, -.05), R("subtracts", 25.4, .0254, -.0254),
+                        R("adds", 10, .02, -.02), R("subtracts", 5, .01, -.01)], 5, 20, 3, 1.5,
+     dict(x_mean=0.0004, t_wc=0.0001562, t_rss=7.890373882e-05, sigma=2.630124627e-05, cp=95.05252998,
+          cpk=-58.29888506, dpmo=1000000.0), False),
+    ("p8 nominal 9e5 mm", [R("adds", 900000, .5, -.5), R("subtracts", 899990, .5, -.5)], 5, 15, 3, 1.5,
+     dict(x_mean=0.01, t_wc=0.001, t_rss=0.0007071067812, sigma=0.0002357022604, cp=7.071067812, cpk=7.071067812), False),
+    ("p16 max only z=6", BASE4, None, 0.54, 3, 1.5, dict(cpk=2.0, dpmo=0.0009865875894), False),
+    ("p9 upper z=7 (finding)", BASE4, -5, 0.5 + 7 * 0.0066666667, 3, 1.5, dict(cpk=2.333333345, dpmo=1.279865103e-06), True),
+    ("p10 upper z=8 (finding)", BASE4, -5, 0.5 + 8 * 0.0066666667, 3, 1.5, dict(cpk=2.66666668, dpmo=6.661338148e-10), True),
+    ("p10b upper z=8.6 (finding)", BASE4, -5, 0.5 + 8.6 * 0.0066666667, 3, 1.5, dict(cpk=2.866666681, dpmo=0.0), True),
+]
+for label, rows, lsl, usl, k, f, prod, is_finding in PROBES:
+    res = stack(rows, lsl, usl, k, f)
+    for sym, pv in prod.items():
+        pv = pv * 1000.0 if sym in LEN else pv
+        EXTRAS.append((label, "", sym, pv, res[sym] if sym in res else 0.0, 1e-6, is_finding))
+
 
 def main():
     fails = 0
@@ -112,11 +154,15 @@ def main():
             fails += not ok
             print(f"{case:18} {sym:9} {e:14.8g} {v:14.8g} {rd:10.2e} {tol:8.0e} {'PASS' if ok else 'FAIL'}")
     print("== Extra checks (product values hard-coded from the probe tool) ==")
-    for label, ins, sym, prod, ind, tol in EXTRAS:
+    for label, ins, sym, prod, ind, tol, finding in EXTRAS:
         rd = abs(prod - ind) / abs(ind) if ind != 0 else abs(prod)
         ok = rd <= tol
-        fails += not ok
-        print(f"{label:22} {sym:9} product={prod:<14.8g} indep={ind:<14.8g} rd={rd:9.2e} {'PASS' if ok else 'FAIL'}")
+        if not ok and finding:
+            tag = "FINDING (does not change exit code)"
+        else:
+            tag = "PASS" if ok else "FAIL"
+            fails += not ok
+        print(f"{label:26} {sym:9} product={prod:<14.8g} indep={ind:<14.8g} rd={rd:9.2e} {tag}")
     return 1 if fails else 0
 
 
