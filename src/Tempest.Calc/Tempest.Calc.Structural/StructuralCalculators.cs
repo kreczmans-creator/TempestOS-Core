@@ -12,5 +12,6 @@ public static class StructuralCalculators
         new BeamFormulasCalculator(),
         new MemberChecksCalculator(),
         new LoadCombinationsCalculator(),
+        new ConnectionCalculator(),
     ];
 }

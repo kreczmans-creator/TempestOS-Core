@@ -75,14 +75,21 @@ public static class StandardParts
     public static IReadOnlyList<StandardValue> MetricBoltDiameters { get; } =
         [.. new[] { 3, 4, 5, 6, 8, 10, 12, 14, 16, 20, 22, 24, 27, 30, 36 }.Select(d => new StandardValue($"M{d}", d))];
 
-    /// <summary>ISO 898-1 property classes, as ultimate shear strength taken as 0.6 x the nominal tensile strength, MPa.</summary>
+    /// <summary>
+    /// ISO 898-1 property classes as a shear strength α_v·f_ub, MPa, with α_v from EN 1993-1-8 Table 3.4 for threads
+    /// in the shear plane: 0.6 for 4.6, 5.6 and 8.8; 0.5 for 4.8, 5.8, 6.8 and 10.9 (ADR-0169; v0.25.2 used 0.6 for
+    /// every class). Class 12.9 is outside EN 1993-1-8 and takes 0.5 as the conservative value.
+    /// </summary>
     public static IReadOnlyList<StandardValue> BoltShearStrengths { get; } =
     [
         new("Class 4.6 (fub 400)", 240),
+        new("Class 4.8 (fub 400, αv 0.5)", 200),
         new("Class 5.6 (fub 500)", 300),
+        new("Class 5.8 (fub 500, αv 0.5)", 250),
+        new("Class 6.8 (fub 600, αv 0.5)", 300),
         new("Class 8.8 (fub 800)", 480),
-        new("Class 10.9 (fub 1000)", 600),
-        new("Class 12.9 (fub 1200)", 720),
+        new("Class 10.9 (fub 1000, αv 0.5)", 500),
+        new("Class 12.9 (fub 1200, 0.5 assumed; outside EN 1993-1-8)", 600),
     ];
 
     /// <summary>ISO 273 medium-series clearance holes for the metric bolts above, mm.</summary>

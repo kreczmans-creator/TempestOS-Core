@@ -1,0 +1,208 @@
+[
+  {
+    "Symbol": "F_t_Ed",
+    "Number": 0,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No tension.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "F_v_Ed",
+    "Number": 55,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Governing bolt from the bolt-group calculation (M3).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "55"
+  },
+  {
+    "Symbol": "e_1",
+    "Number": 40,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "SPL-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "e_2",
+    "Number": 35,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "SPL-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "35"
+  },
+  {
+    "Symbol": "f_u",
+    "Number": 410,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 10025-2 S275, 3 \u2264 t \u2264 100 mm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "410"
+  },
+  {
+    "Symbol": "f_y",
+    "Number": 275,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 10025-2 S275, t \u2264 16 mm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "275"
+  },
+  {
+    "Symbol": "gamma_M0",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-1, NA.2.15",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "gamma_M2",
+    "Number": 1.25,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-8, NA.2.3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.25"
+  },
+  {
+    "Symbol": "grade",
+    "Text": "8.8",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "SPL-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8.8"
+  },
+  {
+    "Symbol": "k_e1",
+    "Number": 1.2,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-8 Table 3.3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.2"
+  },
+  {
+    "Symbol": "k_e2",
+    "Number": 1.2,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-8 Table 3.3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.2"
+  },
+  {
+    "Symbol": "k_p1",
+    "Number": 2.2,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-8 Table 3.3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2.2"
+  },
+  {
+    "Symbol": "k_p2",
+    "Number": 2.4,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-8 Table 3.3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2.4"
+  },
+  {
+    "Symbol": "n_s",
+    "Number": 2,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "SPL-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2"
+  },
+  {
+    "Symbol": "p_1",
+    "Number": 70,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "SPL-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "size",
+    "Text": "M20",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "SPL-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "M20"
+  },
+  {
+    "Symbol": "steel",
+    "Text": "S275",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "SPL-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "S275"
+  },
+  {
+    "Symbol": "t",
+    "Number": 10,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "SPL-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "threads",
+    "Flag": true,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Threads may lie in the shear planes (short bolts).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "yes"
+  }
+]

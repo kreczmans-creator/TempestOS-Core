@@ -38,3 +38,5 @@
 - M4 shaft `mech.shaft`: two-plane bending through the S2 solver, DE-Goodman and yield at marked sections (Marin factors by published equations), slopes and deflections against limits, Rayleigh and Dunkerley critical speeds, parallel keys (DA-13).
 - Drive-train pack template (E1 → M4 → M5 → M2) with linked values and transitive staleness (DA-14).
 - Templates can demand an independent check: Check and CheckPack refuse the calculation's author (DA-12).
+- S4 bolts and fillet welds `struct.connection-ec3` (EN 1993-1-8): shear, bearing, tension, punching, combined, block tearing, spacing minima, simplified and directional weld methods; stress areas by the ISO 898-1 formula; every input hard-limited.
+- **Behaviour change (ADR-0169):** the v0.25.2 bolt-shear picker now offers α_v·f_ub per EN 1993-1-8 Table 3.4: 0.5 for 4.8, 5.8, 6.8 and 10.9 with threads in the shear plane (10.9: 500 MPa, was 600); classes 4.8, 5.8 and 6.8 added; 12.9 kept at 0.5 as an assumption. Stored calculations keep the value they were given.
