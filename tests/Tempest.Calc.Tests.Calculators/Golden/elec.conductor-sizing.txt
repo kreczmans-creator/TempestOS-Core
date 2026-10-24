@@ -125,11 +125,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.88442 vs u_Ib ≤ 1  utilisation 0.884  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 
 7. APPLICABILITY
-  WARNING record.ampacity: ampacity: a tabulated value not taken from a reference record (Cable current-carrying capacities); enter it as one so its source, edition and licence travel with it.
-  WARNING record.C_a: C_a: a tabulated value not taken from a reference record (Cable correction factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.C_g: C_g: a tabulated value not taken from a reference record (Cable correction factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.C_i: C_i: a tabulated value not taken from a reference record (Cable correction factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.ratings: ratings: a tabulated value not taken from a reference record (Preferred device ratings); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: ampacity (Cable current-carrying capacities); C_a, C_g, C_i (Cable correction factors); ratings (Preferred device ratings). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: elec.conductor-sizing@1.0.0

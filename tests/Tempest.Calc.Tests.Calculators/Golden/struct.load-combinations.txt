@@ -116,10 +116,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   No pass/fail checks in this calculation.
 
 7. APPLICABILITY
-  WARNING record.gamma_G_sup: gamma_G_sup: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_G_inf: gamma_G_inf: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_Q: gamma_Q: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.xi: xi: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: gamma_G_sup, gamma_G_inf, gamma_Q, xi (EN 1990 partial and ψ factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: struct.load-combinations@1.0.0

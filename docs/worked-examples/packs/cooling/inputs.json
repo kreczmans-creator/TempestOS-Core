@@ -306,14 +306,14 @@
     },
     {
       "Symbol": "t_auto",
-      "Number": 4,
+      "Number": 0,
       "Unit": "h",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "4"
+      "ValueText": "0"
     },
     {
       "Symbol": "theta",
@@ -380,7 +380,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7a6b3957a82245619beb40d379d8f426#Phi",
+        "Reference": "calc:c5c54f76a19349c4a5c5c31cfe55279a#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -579,7 +579,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f49c60073b24a789b0df0d654c1967a#P_cool",
+        "Reference": "calc:d8921ca55af14a65a9e18cacae4dc4f3#P_cool",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -613,7 +613,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f49c60073b24a789b0df0d654c1967a#T_max",
+        "Reference": "calc:d8921ca55af14a65a9e18cacae4dc4f3#T_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -723,7 +723,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#Q",
+        "Reference": "calc:dc582386d8c341e59375086b80b26a3e#Q",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -735,7 +735,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#T_c_m",
+        "Reference": "calc:dc582386d8c341e59375086b80b26a3e#T_c_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -747,7 +747,7 @@
       "Unit": "J/(kg*K)",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#cp_c",
+        "Reference": "calc:dc582386d8c341e59375086b80b26a3e#cp_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -759,7 +759,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#dT_c",
+        "Reference": "calc:dc582386d8c341e59375086b80b26a3e#dT_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -798,17 +798,6 @@
       "ValueText": "0"
     },
     {
-      "Symbol": "mu_custom",
-      "Number": 800,
-      "Unit": "mPa*s",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "800"
-    },
-    {
       "Symbol": "n_pump",
       "Number": 2800,
       "Unit": "rpm",
@@ -840,17 +829,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "101.325"
-    },
-    {
-      "Symbol": "rho_custom",
-      "Number": 888,
-      "Unit": "kg/m^3",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "888"
     },
     {
       "Symbol": "segments",

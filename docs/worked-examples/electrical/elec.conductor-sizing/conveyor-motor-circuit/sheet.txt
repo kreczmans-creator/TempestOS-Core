@@ -131,7 +131,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.8063 vs u_I2 ≤ 1  utilisation 0.806  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 
 7. APPLICABILITY
-  No warnings.
+  WARNING record: Tabulated values not taken from a reference record: ampacity (Cable current-carrying capacities); C_a, C_g, C_i (Cable correction factors); ratings (Preferred device ratings). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: elec.conductor-sizing@1.0.0

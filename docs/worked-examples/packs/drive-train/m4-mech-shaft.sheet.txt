@@ -3,8 +3,8 @@ Project: Conveyor 7 head drive
 Calc ID: Shaft    Revision: A
 Title: Shaft: static, fatigue, keys, critical speed
 Author: unknown    Authored: 2026-10-24
-Checker: —    Checked: —
-Issued: 2026-10-24    Issue: CNV-DRV-001
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a steady torque: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.
@@ -32,7 +32,7 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   S_ut | Ultimate tensile strength | 850 | MPa | drawing: DRG-CNV-410 rev B | 300 … 2000 MPa
   S_y | Yield strength | 650 | MPa | drawing: DRG-CNV-410 rev B | 150 … 1900 MPa
   E | Young's modulus | 207 | GPa | drawing: DRG-CNV-410 rev B | 50 … 250 GPa
-  rho | Density (shaft self-mass in the critical speed) | 0 | kg/m^3 | assumption: Sheet default value; no project figure given. | 0 … 20000 kg/m^3
+  rho | Density (shaft self-mass in the critical speed) | 7850 | kg/m^3 | assumption: Sheet default value; no project figure given. | 0 … 20000 kg/m^3
   finish | Surface finish | ground |  | drawing: DRG-CNV-410 rev B | any
   R | Reliability | 99 | % | assumption: Sheet default value; no project figure given. | 50 … 99.9 %
   k_d | Temperature factor k_d | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1.1
@@ -47,7 +47,7 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (§A5.)
   A4. At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises. (Shigley 10th ed. §6-9, §7-4.)
   A5. Loads, sections and steps closer together than 1/200 of the shaft length share one node. (Keeps the beam model well conditioned.)
-  A6. rho (Density (shaft self-mass in the critical speed)) is taken as 0 kg/m^3. (Sheet default value; no project figure given.)
+  A6. rho (Density (shaft self-mass in the critical speed)) is taken as 7850 kg/m^3. (Sheet default value; no project figure given.)
   A7. R (Reliability) is taken as 99 %. (Sheet default value; no project figure given.)
   A8. k_d (Temperature factor k_d) is taken as 1. (Sheet default value; no project figure given.)
   A9. k_f (Miscellaneous factor k_f) is taken as 1. (Sheet default value; no project figure given.)
@@ -121,16 +121,16 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
       = 13.835
         Lowest yield safety factor
   [34] n_c = √(g·Σm·y/Σm·y²) (Rayleigh)    « Shigley 10th ed. §7-6
-      = Σm = 3 kg over 25 nodes
-      = 61948 rpm
+      = Σm = 6.2522 kg over 25 nodes
+      = 51038 rpm
         First lateral critical speed (Rayleigh)
   [35] n_c_D = 1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)    « Shigley 10th ed. §7-6
-      = 1 masses
-      = 61948 rpm
+      = 25 masses
+      = 49494 rpm
         First critical speed, Dunkerley lower bound
   [36] r_c = n_c/n
-      = 61948 / 1500
-      = 41.299
+      = 51038 / 1500
+      = 34.025
         Critical-speed ratio
   [37] u_f = n_target/n_f,min
       = 1.5 / 6.9906
@@ -161,9 +161,9 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   S_e = 254.18 MPa    Endurance limit
   n_f_min = 6.9906    Lowest fatigue safety factor
   n_y_min = 13.835    Lowest yield safety factor
-  n_c = 61948 rpm    First critical speed (Rayleigh)
-  n_c_D = 61948 rpm    Dunkerley lower bound
-  r_c = 41.299    Critical-speed ratio
+  n_c = 51038 rpm    First critical speed (Rayleigh)
+  n_c_D = 49494 rpm    Dunkerley lower bound
+  r_c = 34.025    Critical-speed ratio
 
 6. CHECKS (governing first)
   PASS  Slope at the bearings against limit: u_slope = 0.26987 vs u_slope ≤ 1  utilisation 0.27
@@ -172,16 +172,12 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   PASS  Yield safety factor against target: u_y = 0.10842 vs u_y ≤ 1  utilisation 0.108
 
 7. APPLICABILITY
-  WARNING record.S_ut: S_ut: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
-  WARNING record.S_y: S_y: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
-  WARNING record.E: E: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
-  WARNING record.theta_max: theta_max: a tabulated value not taken from a reference record (Slope and deflection limits); enter it as one so its source, edition and licence travel with it.
-  WARNING record.y_max: y_max: a tabulated value not taken from a reference record (Slope and deflection limits); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: mech.shaft@1.0.0
   Content hash: 10b8720ba56e0a58
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test

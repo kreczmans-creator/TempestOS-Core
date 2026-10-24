@@ -16,7 +16,15 @@ public static class CalcCsv
     public const int MaxRows = 10_000;
     public const int MaxFieldLength = 1_000;
 
-    /// <summary>Writes inputs as <c>symbol,value,unit,provenance,reference,revision</c>.</summary>
+    /// <summary>The text a withheld (licensed) value's provenance carries; an import leaves such a value out.</summary>
+    public const string WithheldMarker = "licensed value withheld";
+
+    /// <summary>
+    /// Writes inputs as <c>symbol,value,unit,provenance,reference,revision</c>. A table is written as its own row (the table's
+    /// provenance), then one row per table row (<c>name[1]</c>) and one per cell (<c>name[1].column</c>, with the cell's value,
+    /// unit and provenance), so <see cref="ImportInputs"/> rebuilds it (Black B-A-05). A table whose rows were withheld (a licensed
+    /// record) is written as its own row only and stays withheld.
+    /// </summary>
     public static string ExportInputs(CalcTemplate template, CalcInputSet inputs)
     {
         ArgumentNullException.ThrowIfNull(template);
@@ -32,6 +40,12 @@ public static class CalcCsv
             if (v is null)
                 continue;
 
+            if (spec.Kind == CalcInputKind.Table)
+            {
+                ExportTable(sb, spec, v);
+                continue;
+            }
+
             var value = v switch
             {
                 { Number: { } n } => n.ToString("R", CultureInfo.InvariantCulture),
@@ -45,6 +59,37 @@ public static class CalcCsv
         }
 
         return sb.ToString();
+    }
+
+    private static void ExportTable(StringBuilder sb, CalcInputSpec spec, CalcInputValue table)
+    {
+        Row(sb, spec.Symbol, string.Empty, string.Empty, table.Provenance?.Kind.ToString() ?? string.Empty, table.Provenance?.Reference ?? string.Empty, table.Provenance?.Revision ?? string.Empty);
+
+        for (var r = 0; r < (table.Rows?.Count ?? 0); r++)
+        {
+            Row(sb, $"{spec.Symbol}[{r + 1}]", string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+            var cells = table.Rows![r]?.Cells ?? new Dictionary<string, CalcCell>();
+            var declared = (spec.Columns ?? []).Select(c => c.Key).ToList();
+            var keys = declared.Where(cells.ContainsKey).Concat(cells.Keys.Except(declared, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal));
+
+            foreach (var key in keys)
+            {
+                var cell = cells[key];
+
+                // A cell holding nothing (an optional column left blank) is the same as no cell: it is not written.
+                if (cell is null || (cell.Number is null && cell.Text is null && cell.Flag is null))
+                    continue;
+
+                var value = cell switch
+                {
+                    { Number: { } n } => n.ToString("R", CultureInfo.InvariantCulture),
+                    { Text: { } t } => t,
+                    { Flag: { } f } => f ? "true" : "false",
+                    _ => string.Empty,
+                };
+                Row(sb, $"{spec.Symbol}[{r + 1}].{key}", value, cell.Unit ?? string.Empty, cell.Provenance?.Kind.ToString() ?? string.Empty, cell.Provenance?.Reference ?? string.Empty, cell.Provenance?.Revision ?? string.Empty);
+            }
+        }
     }
 
     /// <summary>Writes outputs as <c>symbol,description,value,unit</c>.</summary>
@@ -110,6 +155,8 @@ public static class CalcCsv
 
         string Cell(IReadOnlyList<string> row, string name) => columns.TryGetValue(name, out var i) && i < row.Count ? row[i].Trim() : string.Empty;
 
+        var tables = new Dictionary<string, ImportedTable>(StringComparer.Ordinal);
+
         for (var r = 1; r < rows.Count; r++)
         {
             var row = rows[r];
@@ -117,6 +164,13 @@ public static class CalcCsv
 
             if (symbol.Length == 0)
                 continue;
+
+            // A table's rows and cells: name[1] marks row 1, name[1].column is one cell of it (Black B-A-05).
+            if (TableRef.TryParse(symbol, out var tableRef) && template.FindInput(tableRef.Table) is { Kind: CalcInputKind.Table } tableSpec)
+            {
+                ReadTableRow(r + 1, tableRef, tableSpec, tables, Cell(row, "value"), Cell(row, "unit"), ReadProvenance(Cell(row, "provenance"), Cell(row, "reference"), Cell(row, "revision")), notices);
+                continue;
+            }
 
             var spec = template.FindInput(symbol);
 
@@ -136,6 +190,13 @@ public static class CalcCsv
 
             var unit = Cell(row, "unit");
             var provenance = ReadProvenance(Cell(row, "provenance"), Cell(row, "reference"), Cell(row, "revision"));
+
+            // A value withheld on export (a licensed record) comes back withheld: it is left out, not read as a missing number.
+            if (raw.Length == 0 && spec.Kind != CalcInputKind.Table && provenance?.Reference?.Contains(WithheldMarker, StringComparison.Ordinal) == true)
+            {
+                notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"Row {r + 1}: {symbol} was withheld on export (licensed record) and is not in the file; apply the record or enter it from your own copy."));
+                continue;
+            }
 
             switch (spec.Kind)
             {
@@ -187,12 +248,154 @@ public static class CalcCsv
                 }
 
                 case CalcInputKind.Table:
-                    notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"Row {r + 1}: {symbol} is a table and is not imported from CSV."));
+                    if (!tables.TryGetValue(symbol, out var own))
+                        tables[symbol] = own = new ImportedTable(spec);
+
+                    own.Provenance = provenance;
+                    own.Seen = true;
                     break;
             }
         }
 
+        foreach (var table in tables.Values)
+            FinishTable(table, set, notices);
+
         return (set, notices);
+    }
+
+    /// <summary>A table's rows and cells as they are read, before the table is built.</summary>
+    private sealed class ImportedTable(CalcInputSpec spec)
+    {
+        public CalcInputSpec Spec { get; } = spec;
+
+        public CalcProvenance? Provenance { get; set; }
+
+        public bool Seen { get; set; }
+
+        public SortedDictionary<int, Dictionary<string, CalcCell>> Rows { get; } = [];
+    }
+
+    private readonly record struct TableRef(string Table, int Row, string? Column)
+    {
+        public static bool TryParse(string symbol, out TableRef reference)
+        {
+            reference = default;
+            var open = symbol.IndexOf('[', StringComparison.Ordinal);
+            var close = symbol.IndexOf(']', StringComparison.Ordinal);
+
+            if (open <= 0 || close <= open + 1 || !int.TryParse(symbol[(open + 1)..close], NumberStyles.None, CultureInfo.InvariantCulture, out var row) || row < 1)
+                return false;
+
+            var rest = symbol[(close + 1)..];
+
+            if (rest.Length == 0)
+                reference = new TableRef(symbol[..open], row, null);
+            else if (rest.Length > 1 && rest[0] == '.')
+                reference = new TableRef(symbol[..open], row, rest[1..]);
+            else
+                return false;
+
+            return true;
+        }
+    }
+
+    private static void ReadTableRow(int line, TableRef reference, CalcInputSpec spec, Dictionary<string, ImportedTable> tables, string raw, string unit, CalcProvenance? provenance, List<CalcNotice> notices)
+    {
+        if (!tables.TryGetValue(reference.Table, out var table))
+            tables[reference.Table] = table = new ImportedTable(spec);
+
+        if (reference.Row > spec.MaxRows)
+        {
+            notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {line}: {reference.Table} holds at most {spec.MaxRows} rows; row {reference.Row} was refused."));
+            return;
+        }
+
+        if (!table.Rows.TryGetValue(reference.Row, out var cells))
+            table.Rows[reference.Row] = cells = new Dictionary<string, CalcCell>(StringComparer.Ordinal);
+
+        if (reference.Column is not { } key)
+            return;
+
+        var column = spec.Columns?.FirstOrDefault(c => string.Equals(c.Key, key, StringComparison.Ordinal));
+
+        if (column is null)
+        {
+            notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"Row {line}: {reference.Table} has no column '{key}' and the cell was skipped."));
+            return;
+        }
+
+        if (raw.Length == 0)
+            return;   // a blank cell is no cell; the sheet asks for it if its column needs a value
+
+        if (IsFormulaLike(raw))
+        {
+            notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {line}: {reference.Table}[{reference.Row}].{key} looks like a spreadsheet formula and was refused."));
+            return;
+        }
+
+        if (cells.ContainsKey(key))
+        {
+            notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {line}: {reference.Table}[{reference.Row}].{key} appears twice; keep one."));
+            return;
+        }
+
+        switch (column.Kind)
+        {
+            case CalcInputKind.Quantity:
+            case CalcInputKind.Number:
+                if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var n) || !double.IsFinite(n))
+                {
+                    notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {line}: {reference.Table}[{reference.Row}].{key} must be a finite number, not '{Truncate(raw)}'."));
+                    return;
+                }
+
+                cells[key] = new CalcCell(n, unit.Length > 0 ? unit : null, Provenance: provenance);
+                break;
+
+            case CalcInputKind.Boolean:
+                cells[key] = new CalcCell(Flag: raw.Equals("true", StringComparison.OrdinalIgnoreCase) || raw == "1" || raw.Equals("yes", StringComparison.OrdinalIgnoreCase));
+                break;
+
+            default:
+                cells[key] = new CalcCell(Text: raw);
+                break;
+        }
+    }
+
+    /// <summary>Builds the table from its rows. A gap in the row numbers is a block; a table written without rows because they were withheld stays withheld.</summary>
+    private static void FinishTable(ImportedTable table, CalcInputSet set, List<CalcNotice> notices)
+    {
+        var symbol = table.Spec.Symbol;
+
+        if (table.Rows.Count == 0)
+        {
+            if (!table.Seen)
+                return;
+
+            if (table.Provenance?.Reference?.Contains(WithheldMarker, StringComparison.Ordinal) == true)
+            {
+                notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"{symbol}: its rows were withheld on export (licensed record) and are not in the file; apply the record or enter them from your own copy."));
+                return;
+            }
+
+            set.Set(new CalcInputValue(symbol, Rows: [], Provenance: table.Provenance));
+            return;
+        }
+
+        var expected = 1;
+
+        foreach (var number in table.Rows.Keys)
+        {
+            if (number != expected)
+            {
+                notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"{symbol}: the rows must be numbered 1 to {table.Rows.Count} without gaps; row {expected} is missing."));
+                return;
+            }
+
+            expected++;
+        }
+
+        set.Set(new CalcInputValue(symbol, Rows: [.. table.Rows.Values.Select(c => new CalcRow(c))], Provenance: table.Provenance));
     }
 
     private static CalcProvenance? ReadProvenance(string kind, string reference, string revision)

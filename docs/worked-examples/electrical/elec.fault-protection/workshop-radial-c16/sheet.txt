@@ -127,13 +127,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   PASS  Disconnection time within required: t_d = 0.1 s vs t_req = 0.4 s  utilisation 0  « BS 7671 reg. 411.3.2.2
 
 7. APPLICABILITY
-  WARNING record.rho_20: rho_20: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
-  WARNING record.alpha: alpha: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
-  WARNING record.Q_c: Q_c: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
-  WARNING record.beta: beta: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
-  WARNING record.theta_i: theta_i: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
-  WARNING record.theta_f: theta_f: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
-  WARNING record.I2t_let: I2t_let: a tabulated value not taken from a reference record (Device time–current points); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: rho_20, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let (Device time–current points). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: elec.fault-protection@1.0.0

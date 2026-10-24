@@ -17,9 +17,11 @@ public static class CalcInputValidator
     public const int MaxNoticesPerInput = 20;
     public const int MaxVectorLength = 10_000;
 
-    /// <summary>Whether a provenance pins a reference record (<c>reference: record:&lt;id&gt;@&lt;revision&gt;</c>).</summary>
-    public static bool IsRecordPin(CalcProvenance? provenance) =>
-        provenance is { Kind: CalcProvenanceKind.Reference, Reference: { } reference } && reference.StartsWith("record:", StringComparison.Ordinal);
+    /// <summary>
+    /// Whether a provenance pins a reference record (<c>reference: record:&lt;id&gt;@&lt;revision&gt;</c>). The pin must parse: the
+    /// bare prefix ("record: owner's table") is not a pin and does not silence the tabulated-value warning (Red R-A-06).
+    /// </summary>
+    public static bool IsRecordPin(CalcProvenance? provenance) => CalcRecordPin.From(provenance) is not null;
 
     public static IReadOnlyList<CalcNotice> Validate(CalcTemplate template, CalcInputSet inputs)
     {

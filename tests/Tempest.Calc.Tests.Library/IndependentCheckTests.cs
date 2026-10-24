@@ -29,8 +29,8 @@ public sealed class IndependentCheckTests
         Assert.False(refused.Succeeded);
         Assert.Contains("needs an independent check", refused.Reason, StringComparison.Ordinal);
 
-        // The same calculation authored by someone else is checked as usual.
-        await host.Store.SaveInstanceAsync(instance with { CreatedBy = "another.engineer" }, instance.UpdatedAt);
+        // Checked by someone else, it is checked as usual.
+        host.Principal = "another.engineer";
         var check = await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
         Assert.True(check.Succeeded, check.Reason);
     }

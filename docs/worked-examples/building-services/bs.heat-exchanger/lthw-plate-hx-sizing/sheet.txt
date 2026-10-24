@@ -137,8 +137,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   PASS  Approach against minimum: u_app = 0.18595 vs u_app ≤ 1  utilisation 0.186
 
 7. APPLICABILITY
-  WARNING record.cp_h: cp_h: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
-  WARNING record.cp_c: cp_c: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: cp_h, cp_c (Fluid specific heats). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: bs.heat-exchanger@1.1.0

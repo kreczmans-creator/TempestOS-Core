@@ -80,7 +80,8 @@ public sealed class WetHeatingChainTests
         Assert.All(e1.Checks, check => Assert.True(check.Passed, check.Name));
         Assert.Equal(1.25 * Si(e1, "T_rms") / 2.0, Si(e1, "u_rms"), 12);
         Assert.Equal(1.25 * Si(e1, "T_pk") / 6.0, Si(e1, "u_peak"), 12);
-        Assert.Equal(2800.0 / 10000, Si(e1, "u_speed"), 9);
+        // n_max is not stated for the pump motor, so the sheet opens on the template's declared 6000 rpm (a known-answer case's 10000 rpm is test data, not a default; Green G-A-02).
+        Assert.Equal(2800.0 / 6000, Si(e1, "u_speed"), 9);
         Assert.Equal(Si(e1, "u_rms"), e1.Checks.Single(check => check.Name.StartsWith("RMS torque", StringComparison.Ordinal)).Utilisation, 12);
         Assert.Equal(Si(e1, "u_peak"), e1.Checks.Single(check => check.Name.StartsWith("Peak torque", StringComparison.Ordinal)).Utilisation, 12);
         Assert.Equal(Si(e1, "u_speed"), e1.Checks.Single(check => check.Name.StartsWith("Speed", StringComparison.Ordinal)).Utilisation, 12);

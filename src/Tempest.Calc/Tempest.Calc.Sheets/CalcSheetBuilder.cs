@@ -7,7 +7,12 @@ namespace Tempest.Calc.Sheets;
 /// <summary>Assembles a <see cref="CalcSheet"/> from a template, the inputs as entered, a run result and the governance header and footer.</summary>
 public static class CalcSheetBuilder
 {
-    public static CalcSheet Build(CalcTemplate template, CalcInputSet inputs, CalcRunResult result, CalcSheetHeader header, CalcSheetFooter footer, IReadOnlyList<CalcRevisionRow>? revisions = null)
+    /// <summary>
+    /// Builds the sheet. <paramref name="withheldTables"/> names the table inputs pinned to a licensed reference record (symbol
+    /// to the record's pin): their rows are not printed. The sheet states the pin and that the rows are withheld, and the values
+    /// the calculation used appear in its working (Red R-A-01: the sheet shows the value used, never the licensed table).
+    /// </summary>
+    public static CalcSheet Build(CalcTemplate template, CalcInputSet inputs, CalcRunResult result, CalcSheetHeader header, CalcSheetFooter footer, IReadOnlyList<CalcRevisionRow>? revisions = null, IReadOnlyDictionary<string, string>? withheldTables = null)
     {
         ArgumentNullException.ThrowIfNull(template);
         ArgumentNullException.ThrowIfNull(inputs);
@@ -32,7 +37,11 @@ public static class CalcSheetBuilder
 
             // A table's rows are reproduced under their summary row so the model (nodes, loads, vertices, contributors)
             // can be checked from the sheet alone (Black B-17); past the cap the count is stated.
-            if (spec.Kind == CalcInputKind.Table && shown.Rows is { Count: > 0 } rows && spec.Columns is { Count: > 0 } columns)
+            if (spec.Kind == CalcInputKind.Table && withheldTables is not null && withheldTables.TryGetValue(spec.Symbol, out var pin))
+            {
+                inputRows.Add(new CalcSheetInputRow($"{spec.Symbol}[…]", string.Empty, "rows withheld (licensed record); the values used appear in the working", string.Empty, Truncate(pin), string.Empty));
+            }
+            else if (spec.Kind == CalcInputKind.Table && shown.Rows is { Count: > 0 } rows && spec.Columns is { Count: > 0 } columns)
             {
                 for (var r = 0; r < Math.Min(rows.Count, MaxTableRowsOnSheet); r++)
                     inputRows.Add(new CalcSheetInputRow($"{spec.Symbol}[{r + 1}]", string.Empty, Truncate(RowText(rows[r], columns)), string.Empty, string.Empty, string.Empty));
@@ -53,7 +62,51 @@ public static class CalcSheetBuilder
         return new CalcSheet(
             header, template.Scope, template.Method, template.ClauseRefs, inputRows, assumptions,
             result.Steps.Where(s => s.Kind != CalcStepKind.Input).ToList(),
-            checks, result.Warnings, result.Blocks, result.Outputs, footer, revisions, null, template.DiagramKey);
+            checks, CollapseUnsourced(result.Warnings, template), result.Blocks, result.Outputs, footer, revisions, null, template.DiagramKey);
+    }
+
+    private const string UnsourcedPrefix = "record.";
+
+    /// <summary>
+    /// The "tabulated value not taken from a reference record" warnings, one per symbol, become one line listing the symbols, so
+    /// they do not bury the warnings that matter (Black B-A-18). The run's own warnings are unchanged.
+    /// </summary>
+    private static IReadOnlyList<CalcNotice> CollapseUnsourced(IReadOnlyList<CalcNotice> warnings, CalcTemplate template)
+    {
+        var unsourced = warnings.Where(w => w.RuleId.StartsWith(UnsourcedPrefix, StringComparison.Ordinal)).ToList();
+
+        if (unsourced.Count < 2)
+            return warnings;
+
+        // One line, symbols grouped under the record kind that supplies them: "rho_20, alpha (Conductor material constants); …".
+        var symbols = unsourced.Select(w => w.RuleId[UnsourcedPrefix.Length..]).ToList();
+        var groups = new List<string>();
+
+        foreach (var kind in template.RecordKinds ?? [])
+        {
+            var named = symbols.Where(s => kind.Symbols.Contains(s, StringComparer.Ordinal)).ToList();
+
+            if (named.Count > 0)
+                groups.Add($"{string.Join(", ", named)} ({kind.Title})");
+        }
+
+        var rest = symbols.Where(s => !(template.RecordKinds ?? []).Any(k => k.Symbols.Contains(s, StringComparer.Ordinal))).ToList();
+
+        if (rest.Count > 0)
+            groups.Add(string.Join(", ", rest));
+
+        var merged = new CalcNotice("record", CalcNoticeSeverity.Warning, $"Tabulated values not taken from a reference record: {string.Join("; ", groups)}. Enter each as one so its source, edition and licence travel with it.");
+        var list = new List<CalcNotice>();
+
+        foreach (var w in warnings)
+        {
+            if (!w.RuleId.StartsWith(UnsourcedPrefix, StringComparison.Ordinal))
+                list.Add(w);
+            else if (ReferenceEquals(w, unsourced[0]))
+                list.Add(merged);
+        }
+
+        return list;
     }
 
     private static CalcInputValue DefaultValue(CalcInputSpec spec) => spec.Kind switch

@@ -13,7 +13,7 @@ PACK INDEX
   4. Cooling-water pipework and pump — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
 
 REVISIONS
-  A  2026-10-24  unknown  First issue
+  A  2026-10-24  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -39,7 +39,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 15/15
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -74,7 +74,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   theta | Ambient temperature | 40 | degC | assumption: Sheet default value; no project figure given. | -20 … 70 degC
   f_derate | PSU derating factor at the ambient and altitude | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   k_T | Transformer short-time overload allowed for inrush | 3 |  | assumption: Sheet default value; no project figure given. | 1 … 20
-  t_auto | Battery autonomy | 4 | h | assumption: Sheet default value; no project figure given. | 0 … 72 h
+  t_auto | Battery autonomy | 0 | h | assumption: Sheet default value; no project figure given. | 0 … 72 h
   U_b | Battery nominal voltage | 24 | V | assumption: Sheet default value; no project figure given. | 2 … 1000 V
   eta_conv | Conversion efficiency battery → loads | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   DoD | Allowed depth of discharge | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
@@ -96,7 +96,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   A11. theta (Ambient temperature) is taken as 40 degC. (Sheet default value; no project figure given.)
   A12. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (Sheet default value; no project figure given.)
   A13. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Sheet default value; no project figure given.)
-  A14. t_auto (Battery autonomy) is taken as 4 h. (Sheet default value; no project figure given.)
+  A14. t_auto (Battery autonomy) is taken as 0 h. (Sheet default value; no project figure given.)
   A15. U_b (Battery nominal voltage) is taken as 24 V. (Sheet default value; no project figure given.)
   A16. eta_conv (Conversion efficiency battery → loads) is taken as 1. (Sheet default value; no project figure given.)
   A17. DoD (Allowed depth of discharge) is taken as 0.8. (Sheet default value; no project figure given.)
@@ -165,18 +165,6 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
       = 117.81 + 6.6667 (Servo drives (4) starting)
       = 124.47 kVA
         Peak apparent power while the largest load starts
-  [34] I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv)
-      = 0 / (24 × 1)
-      = 0 A
-        Battery discharge current
-  [35] Ah = I_b * t_auto
-      = 0 A × 4 h
-      = 0 A·h
-        Discharge capacity
-  [36] C_req = Ah / (DoD * eta_b * k_temp * k_age)
-      = 0 A·h / (0.8 × 0.95 × 1 × 0.8)
-      = 0 A·h
-        Minimum battery capacity
 
 5. RESULTS
   P_conn = 116.5 kW    Connected load
@@ -189,26 +177,19 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   P_PSU_req = 0 W    Minimum PSU rating
   S_T_req = 147.26 kVA    Minimum transformer rating
   S_peak = 124.47 kVA    Peak apparent power at start
-  I_b = 0 A    Battery discharge current
-  Ah = 0 A·h    Discharge capacity
-  C_req = 0 A·h    Minimum battery capacity
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
 
 7. APPLICABILITY
-  WARNING record.f_derate: f_derate: a tabulated value not taken from a reference record (PSU derating); enter it as one so its source, edition and licence travel with it.
-  WARNING record.DoD: DoD: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.eta_b: eta_b: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_temp: k_temp: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_age: k_age: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: elec.load-budget@1.1.0
   Content hash: 8aa7a2d98183c145
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test
 
 
@@ -346,7 +327,7 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   Content hash: 48cdd32546406349
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test
 
 
@@ -483,15 +464,14 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   PASS  Approach against minimum: u_app = 0.13798 vs u_app ≤ 1  utilisation 0.138
 
 7. APPLICABILITY
-  WARNING record.cp_h: cp_h: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
-  WARNING record.cp_c: cp_c: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: cp_h, cp_c (Fluid specific heats). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: bs.heat-exchanger@1.1.0
   Content hash: 9be2a4c694b4f0cd
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test
 
 
@@ -515,8 +495,6 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | water |  | drawing: DRG-MCC-215 rev B | any
   T | Fluid temperature (mean; link B6 t_m for a heating loop) | 23.6375 | degC | link: Cooling-water air coil rev A · T_c_m | 0 … 100 degC
-  rho_custom | Density (custom fluid) | 888 | kg/m^3 | assumption: Sheet default value; no project figure given. | 500 … 2000 kg/m^3
-  mu_custom | Dynamic viscosity (custom fluid) | 800 | mPa*s | assumption: Sheet default value; no project figure given. | 0.1 … 1000 mPa*s
   Phi_load | Heat carried by the water (gives the design flow with ΔT; replaces Q) | 3422.4 | W | link: Cooling-water air coil rev A · Q | 10 … 100000000 W
   dT_load | Flow-to-return temperature difference across the load | 3.27502 | K | link: Cooling-water air coil rev A · dT_c | 1 … 100 K
   cp_load | Specific heat of the fluid (heat-load flow; blank = 4186 J/(kg·K) assumed for water, required for a custom fluid) | 4180 | J/(kg*K) | link: Cooling-water air coil rev A · cp_c | 1000 … 6000 J/(kg*K)
@@ -536,15 +514,13 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
   A3. The system curve scales friction losses with Q² from the design flow (turbulent assumption); the static part is independent of flow. (H_sys = H_static + k Q².)
   A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
-  A5. rho_custom (Density (custom fluid)) is taken as 888 kg/m^3. (Sheet default value; no project figure given.)
-  A6. mu_custom (Dynamic viscosity (custom fluid)) is taken as 800 mPa*s. (Sheet default value; no project figure given.)
-  A7. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
-  A8. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
-  A9. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
-  A10. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
-  A11. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
-  A12. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
-  A13. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
+  A5. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
+  A6. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
+  A7. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A8. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A9. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
+  A10. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
+  A11. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
 
 4. WORKING
   [3] rho = Kell (1975) density of water at T    « Kell 1975
@@ -670,5 +646,5 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Content hash: 42db31f9bd988473
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test

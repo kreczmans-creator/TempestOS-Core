@@ -45,10 +45,11 @@ public sealed record CalcDataRecord(
     DateTimeOffset CreatedAt,
     string? Notes = null)
 {
-    public const string PinPrefix = "record:";
+    public const string PinPrefix = CalcRecordPin.Prefix;
     public const int MaxValues = 200;
     public const int MaxRows = 500;
     public const int MaxTextLength = 200;
+    public const int MaxCellsPerRow = 50;
 
     /// <summary>The pin an input's provenance carries: <c>record:&lt;id&gt;@&lt;revision&gt;</c>.</summary>
     public string Pin => $"{PinPrefix}{Id:N}@{Revision}";
@@ -78,19 +79,15 @@ public sealed record CalcDataRecord(
         if (Values.Any(v => v.Number is { } n && !double.IsFinite(n)))
             return "A reference record's numbers must be finite.";
 
+        if (Values.Any(v => v.Symbol is not { Length: > 0 and <= MaxTextLength } || v.Text?.Length > MaxTextLength || v.Unit?.Length > MaxTextLength))
+            return $"A reference record's symbols, texts and units are at most {MaxTextLength} characters.";
+
+        if (Values.Any(v => v.Rows?.Any(r => r is null || r.Cells.Count > MaxCellsPerRow || r.Cells.Values.Any(c => c is null || c.Text?.Length > MaxTextLength || c.Unit?.Length > MaxTextLength)) == true))
+            return $"A row of a reference record holds at most {MaxCellsPerRow} cells of at most {MaxTextLength} characters.";
+
         return Values.Select(v => v.Symbol).Distinct(StringComparer.Ordinal).Count() == Values.Count ? null : "A reference record names a symbol twice.";
     }
 
     /// <summary>The record a provenance pins (id and revision), or <see langword="null"/>.</summary>
-    public static (Guid Id, int Revision)? PinOf(CalcProvenance? provenance)
-    {
-        if (provenance is not { Kind: CalcProvenanceKind.Reference, Reference: { } reference } || !reference.StartsWith(PinPrefix, StringComparison.Ordinal))
-            return null;
-
-        var body = reference[PinPrefix.Length..].Split(' ', 2)[0];
-        var at = body.IndexOf('@', StringComparison.Ordinal);
-        return at > 0 && Guid.TryParse(body[..at], out var id) && int.TryParse(body[(at + 1)..], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var revision)
-            ? (id, revision)
-            : null;
-    }
+    public static (Guid Id, int Revision)? PinOf(CalcProvenance? provenance) => CalcRecordPin.From(provenance);
 }

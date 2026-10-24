@@ -320,7 +320,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:ba3bc965874b4c7593c1e473ed5eb10f#T_rms",
+        "Reference": "calc:a374c08285644e63b28febc1f23e278e#T_rms",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -395,7 +395,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:ba3bc965874b4c7593c1e473ed5eb10f#n_pk",
+        "Reference": "calc:a374c08285644e63b28febc1f23e278e#n_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -413,14 +413,14 @@
     },
     {
       "Symbol": "rho",
-      "Number": 0,
+      "Number": 7850,
       "Unit": "kg/m^3",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0"
+      "ValueText": "7850"
     },
     {
       "Symbol": "sections",
@@ -645,7 +645,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6a68682f451e4264972e5e2bec2ae4b3#R_A",
+        "Reference": "calc:550d4551a75f4c9ba11948798bcc5065#R_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -664,14 +664,14 @@
     },
     {
       "Symbol": "R",
-      "Number": 95,
+      "Number": 90,
       "Unit": "%",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "95"
+      "ValueText": "90"
     },
     {
       "Symbol": "X",
@@ -739,7 +739,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:ba3bc965874b4c7593c1e473ed5eb10f#n_pk",
+        "Reference": "calc:a374c08285644e63b28febc1f23e278e#n_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -773,7 +773,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6a68682f451e4264972e5e2bec2ae4b3#d_A",
+        "Reference": "calc:550d4551a75f4c9ba11948798bcc5065#d_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -903,7 +903,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:ba3bc965874b4c7593c1e473ed5eb10f#T_pk",
+        "Reference": "calc:a374c08285644e63b28febc1f23e278e#T_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

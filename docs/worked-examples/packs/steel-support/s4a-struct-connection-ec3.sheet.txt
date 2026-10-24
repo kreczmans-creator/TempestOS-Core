@@ -3,8 +3,8 @@ Project: Equipment support ES-4
 Calc ID: Arm connection bolts    Revision: A
 Title: Bolts and fillet welds (EN 1993-1-8)
 Author: unknown    Authored: 2026-10-24
-Checker: —    Checked: —
-Issued: 2026-10-24    Issue: STR-SUP-001
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.
@@ -155,19 +155,12 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   PASS  Spacing and edge distances (Table 3.3 minima): e₁ 40, e₂ 40, p₁ 150, p₂ 120 mm vs ≥ 26.4, 26.4, 48.4, 52.8 mm  utilisation 0  « EN 1993-1-8 Table 3.3
 
 7. APPLICABILITY
-  WARNING record.gamma_M2: gamma_M2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_M0: gamma_M0: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_e1: k_e1: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_e2: k_e2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_p1: k_p1: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_p2: k_p2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.f_y: f_y: a tabulated value not taken from a reference record (Plate strengths); enter it as one so its source, edition and licence travel with it.
-  WARNING record.f_u: f_u: a tabulated value not taken from a reference record (Plate strengths); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: gamma_M2, gamma_M0, k_e1, k_e2, k_p1, k_p2 (EN 1993-1-8 National Annex factors); f_y, f_u (Plate strengths). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: struct.connection-ec3@1.1.0
   Content hash: 21313e2f2f4ea719
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test

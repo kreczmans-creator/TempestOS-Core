@@ -1,4 +1,5 @@
 using Tempest.Calc.Sheets;
+using Tempest.Core.EngineeringDomain;
 
 namespace Tempest.Calc.Library;
 
@@ -126,6 +127,10 @@ public sealed partial class CalcInstanceService
         if (DryRunRefusal(template, inputs, cancellationToken) is { } refused)
             return (null, refused);
 
+        // The names are business identifiers, unique within the project: a clash is a refusal now, not an exception half way through (Red R-A-13).
+        if (NameClash(template, projectId, title) is { } clash)
+            return (null, clash);
+
         var created = new Dictionary<string, CalcInstance>(StringComparer.Ordinal);
 
         foreach (var step in template.Steps)
@@ -138,6 +143,10 @@ public sealed partial class CalcInstanceService
                 instance = await CreateAsync(step.TemplateId, projectId, step.Name, given, cancellationToken).ConfigureAwait(false);
             }
             catch (CalcLinkRefusedException ex)
+            {
+                return (null, $"Step '{step.Key}': {ex.Message}");
+            }
+            catch (DuplicateBusinessIdentifierException ex)
             {
                 return (null, $"Step '{step.Key}': {ex.Message}");
             }
@@ -168,6 +177,29 @@ public sealed partial class CalcInstanceService
             members[key] = await _store.FindInstanceAsync(instance.Id, cancellationToken).ConfigureAwait(false) ?? instance;
 
         return (new CalcPackInstantiation(pack, members), null);
+    }
+
+    /// <summary>Why <paramref name="template"/> cannot be instantiated under <paramref name="projectId"/>: a step, or the pack, would take a name the project already uses.</summary>
+    private string? NameClash(CalcPackTemplate template, Guid? projectId, string title)
+    {
+        if (projectId is not { } scope)
+            return null;
+
+        string? Taken(string kind, string identifier) =>
+            _domain.BusinessIdentifierIndex.FindConflict(kind, scope, identifier, Guid.Empty) is null ? null : identifier;
+
+        foreach (var step in template.Steps)
+        {
+            var name = CalcSheetTextRenderer.Clean(step.Name.Length > 200 ? step.Name[..200] : step.Name);
+
+            if (Taken(RegisterKind, name) is not null || Taken(Tempest.Core.Evidence.Evidence.CanonicalKind, EvidenceTitle(name, _catalogue.Get(step.TemplateId).Template.Title, "A")) is not null)
+                return $"The project already holds a calculation called '{name}' (step '{step.Key}'); {template.Title} cannot be instantiated here twice, or beside a calculation of that name. Rename the existing one first.";
+        }
+
+        var packTitle = CalcSheetTextRenderer.Clean(title.Length > 200 ? title[..200] : title);
+        return Taken(Tempest.Core.Evidence.Evidence.CanonicalKind, $"{packTitle} — calculation pack") is not null
+            ? $"The project already holds a calculation pack called '{packTitle}'; choose another title."
+            : null;
     }
 
     /// <summary>
@@ -245,6 +277,10 @@ public sealed partial class CalcInstanceService
 
             if (instance is null)
                 return (null, $"No calculation '{id}' exists.");
+
+            // A template names its steps; steps from several projects would copy other projects' calculation names into one stored template (Red R-A-12).
+            if (members.Count > 0 && instance.ProjectId != members[0].ProjectId)
+                return (null, $"'{instance.Name}' is in another project than '{members[0].Name}'; a pack template is made from the calculations of one project.");
 
             members.Add(instance);
         }

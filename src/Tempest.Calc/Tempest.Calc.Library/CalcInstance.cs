@@ -65,8 +65,16 @@ public sealed record CalcInstance(
     Guid? PackId = null,
     string? OutputsHash = null,
     IReadOnlyDictionary<string, string>? UpstreamHashes = null,
-    string? LastRejection = null)
+    string? LastRejection = null,
+    IReadOnlyList<string>? EditedBy = null)
 {
+    /// <summary>
+    /// Everyone who set up or changed this revision's inputs: its creator and every principal in <see cref="EditedBy"/> (kept
+    /// across revisions). The independent check refuses all of them, not only the creator (Red R-A-05).
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<string> Authors => [.. new[] { CreatedBy }.Concat(EditedBy ?? []).Where(a => !string.IsNullOrWhiteSpace(a)).Distinct(StringComparer.Ordinal)];
+
     [JsonIgnore]
     public bool IsImmutable => Status is CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded;
 
@@ -78,6 +86,11 @@ public sealed record CalcInstance(
 
     /// <summary>The input provenance reference prefix that names another instance as the source of a value.</summary>
     public const string UpstreamPrefix = "calc:";
+
+    /// <summary>The upstream a legacy <c>reference: calc:&lt;id&gt;</c> provenance names, or <see langword="null"/>.</summary>
+    public static Guid? LegacyUpstreamOf(CalcProvenance? provenance) =>
+        provenance is { Kind: CalcProvenanceKind.Reference, Reference: { } r } && r.StartsWith(UpstreamPrefix, StringComparison.Ordinal)
+        && Guid.TryParse(r[UpstreamPrefix.Length..], out var g) && g != Guid.Empty ? g : null;
 
     /// <summary>Instance ids this instance takes inputs from (provenance "reference: calc:&lt;id&gt;").</summary>
     [JsonIgnore]

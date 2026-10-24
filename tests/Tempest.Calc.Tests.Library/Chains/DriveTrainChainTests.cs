@@ -87,11 +87,21 @@ public sealed class DriveTrainChainTests
         Assert.True(rebound.Succeeded, rebound.Reason);
 
         await AuthoredByAnotherAsync(host, made);
+
+        // While the outside calculation is a draft it can still change under its revision letter, so the pack is not checked on it (Red R-A-02).
+        var early = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
+        Assert.False(early.Succeeded);
+        Assert.Contains("'Motor sizing from another job' rev A, which is still a draft", early.Reason, StringComparison.Ordinal);
+
+        // Checked and issued it is fixed, and the pack checks on it.
+        host.Principal = "j.reviewer";
+        Assert.True((await host.Service.CheckAsync(external.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.IssueAsync(external.Id, "EXT-1", "Client Co")).Succeeded);
         var check = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
         Assert.True(check.Succeeded, check.Reason);
 
-        // The outside calculation moves on after the check; no pack member is touched, yet the shaft is now stale.
-        var moved = await host.Service.UpdateInputsAsync(external.Id, [.. external.Inputs.Select(i => i.Symbol == "T_L" ? i with { Number = i.Number!.Value * 1.5 } : i)]);
+        // The outside calculation moves on after the check, as a new revision; no pack member is touched, yet the shaft is now stale.
+        var moved = await host.Service.ReviseAsync(external.Id);
         Assert.True(moved.Succeeded, moved.Reason);
         var shaft = await Fresh(host, made, "m4");
         Assert.True((await host.Service.StalenessAsync(shaft)).IsStale);

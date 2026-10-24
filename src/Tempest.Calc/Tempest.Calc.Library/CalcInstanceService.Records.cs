@@ -23,7 +23,7 @@ public sealed partial class CalcInstanceService
         {
             Id = draft.Id == Guid.Empty ? Guid.NewGuid() : draft.Id,
             Revision = (latest?.Revision ?? 0) + 1,
-            EnteredBy = string.IsNullOrWhiteSpace(draft.EnteredBy) ? _domain.ResolveCurrentPrincipalId() : draft.EnteredBy,
+            EnteredBy = CurrentPrincipal(),
             CreatedAt = _time.GetUtcNow(),
             Title = CalcSheetTextRenderer.Clean(draft.Title),
             SourceTitle = CalcSheetTextRenderer.Clean(draft.SourceTitle),
@@ -51,6 +51,10 @@ public sealed partial class CalcInstanceService
             // Another save took this revision number first (Opus review, finding 15).
             return (null, $"Revision {record.Revision} of '{record.Title}' was saved by someone else at the same moment; save again to make the next revision.");
         }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("larger than", StringComparison.Ordinal))
+        {
+            return (null, ex.Message);
+        }
 
         return (record, null);
     }
@@ -66,8 +70,7 @@ public sealed partial class CalcInstanceService
 
         foreach (var input in sourceInputs)
         {
-            if (CalcDataRecord.PinOf(input.Provenance) is { } pin
-                && await _store.FindRecordAsync(pin.Id, pin.Revision, cancellationToken).ConfigureAwait(false) is { LicensedSource: true })
+            if (await LicensedRecordPinAsync(input.Provenance, cancellationToken).ConfigureAwait(false) is not null)
             {
                 draft = draft with { LicensedSource = true };
                 break;
@@ -129,7 +132,7 @@ public sealed partial class CalcInstanceService
 
         return applied == 0
             ? CalcActionResult.Refused($"Record '{record.Title}' holds none of the inputs '{template.Title}' takes from {kind.Title}.", instance)
-            : await UpdateInputsAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false);
+            : await UpdateInputsAsync(instanceId, inputs, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The provenance an input takes from a record: its pin and table or clause, with the edition as revision.</summary>
@@ -153,10 +156,9 @@ public sealed partial class CalcInstanceService
 
         foreach (var value in inputs.Values)
         {
-            if (CalcDataRecord.PinOf(value.Provenance) is { } pin
-                && await _store.FindRecordAsync(pin.Id, pin.Revision, cancellationToken).ConfigureAwait(false) is { LicensedSource: true } record)
+            if (await LicensedRecordPinAsync(value.Provenance, cancellationToken).ConfigureAwait(false) is { } pin)
             {
-                result.Set(new CalcInputValue(value.Symbol, Provenance: new CalcProvenance(CalcProvenanceKind.Reference, $"{record.Pin} · licensed value withheld", value.Provenance!.Revision)));
+                result.Set(new CalcInputValue(value.Symbol, Provenance: new CalcProvenance(CalcProvenanceKind.Reference, $"{CalcRecordPin.Prefix}{pin.Id:N}@{pin.Revision} · {CalcCsv.WithheldMarker}", value.Provenance!.Revision)));
                 continue;
             }
 
@@ -164,6 +166,21 @@ public sealed partial class CalcInstanceService
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// The pin of a licensed record that <paramref name="provenance"/> cites, or <see langword="null"/>. A pin to a revision that does
+    /// not exist is judged by the record's latest revision, so a made-up revision number cannot slip a licensed record's value past the lock (Red R-A-06).
+    /// </summary>
+    internal async Task<(Guid Id, int Revision)?> LicensedRecordPinAsync(CalcProvenance? provenance, CancellationToken cancellationToken)
+    {
+        if (CalcDataRecord.PinOf(provenance) is not { } pin)
+            return null;
+
+        var record = await _store.FindRecordAsync(pin.Id, pin.Revision, cancellationToken).ConfigureAwait(false)
+            ?? await _store.FindRecordAsync(pin.Id, null, cancellationToken).ConfigureAwait(false);
+
+        return record is { LicensedSource: true } ? pin : null;
     }
 
     /// <summary>A record as CSV (symbol, value, unit, then its rows), refused for a licensed record (§A5).</summary>
@@ -178,7 +195,8 @@ public sealed partial class CalcInstanceService
             return (null, $"Record '{record.Title}' holds values from a licensed source ({record.SourceTitle}, {record.Edition}); its values are never exported.");
 
         var sb = new StringBuilder();
-        sb.Append("# ").Append(record.Citation).Append('\n').Append("symbol,value,unit,text\n");
+        // The citation is free text the user typed: it goes out as one quoted cell, never as fields a spreadsheet might evaluate (Red R-A-16).
+        sb.Append(Csv("# " + record.Citation)).Append('\n').Append("symbol,value,unit,text\n");
 
         foreach (var v in record.Values)
         {
@@ -195,22 +213,5 @@ public sealed partial class CalcInstanceService
     {
         var clean = CalcCsv.IsFormulaLike(text) ? "'" + text : text;
         return clean.Contains(',', StringComparison.Ordinal) || clean.Contains('"', StringComparison.Ordinal) ? $"\"{clean.Replace("\"", "\"\"", StringComparison.Ordinal)}\"" : clean;
-    }
-
-    /// <summary>Stale reasons from records: an input pins a revision of a record that has been revised since.</summary>
-    private async Task RecordStalenessAsync(CalcInstance instance, List<string> reasons, CancellationToken cancellationToken)
-    {
-        foreach (var input in instance.Inputs)
-        {
-            if (CalcDataRecord.PinOf(input.Provenance) is not { } pin)
-                continue;
-
-            var latest = await _store.FindRecordAsync(pin.Id, null, cancellationToken).ConfigureAwait(false);
-
-            if (latest is null)
-                reasons.Add($"'{input.Symbol}' takes its value from reference record {pin.Id:N}, which no longer exists.");
-            else if (latest.Revision > pin.Revision)
-                reasons.Add($"'{input.Symbol}' takes its value from '{latest.Title}' revision {pin.Revision}; revision {latest.Revision} has been entered since. Apply the record again.");
-        }
     }
 }

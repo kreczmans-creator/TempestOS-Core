@@ -255,12 +255,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   PASS  Anchorage designed externally (PROFIS report filed as Evidence): PROFIS report EVD-PROFIS-PLACEHOLDER vs bolt tension 113.35 kN and shear 4.5 kN per anchor designed in PROFIS  utilisation 0
 
 7. APPLICABILITY
-  WARNING record.alpha_cc: alpha_cc: a tabulated value not taken from a reference record (EN 1992-1-1 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_c: gamma_c: a tabulated value not taken from a reference record (EN 1992-1-1 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_M2: gamma_M2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factor); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_M0: gamma_M0: a tabulated value not taken from a reference record (EN 1993-1-1 National Annex factor); enter it as one so its source, edition and licence travel with it.
-  WARNING record.C_fd: C_fd: a tabulated value not taken from a reference record (Friction coefficient plate to grout); enter it as one so its source, edition and licence travel with it.
-  WARNING record.f_y: f_y: a tabulated value not taken from a reference record (Plate strength); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: struct.base-plate@1.0.0

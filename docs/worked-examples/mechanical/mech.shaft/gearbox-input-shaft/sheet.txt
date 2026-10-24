@@ -211,11 +211,7 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   PASS  Key length against required: u_key = 0.27778 vs u_key ≤ 1  utilisation 0.278
 
 7. APPLICABILITY
-  WARNING record.S_ut: S_ut: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
-  WARNING record.S_y: S_y: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
-  WARNING record.E: E: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
-  WARNING record.theta_max: theta_max: a tabulated value not taken from a reference record (Slope and deflection limits); enter it as one so its source, edition and licence travel with it.
-  WARNING record.y_max: y_max: a tabulated value not taken from a reference record (Slope and deflection limits); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: mech.shaft@1.0.0

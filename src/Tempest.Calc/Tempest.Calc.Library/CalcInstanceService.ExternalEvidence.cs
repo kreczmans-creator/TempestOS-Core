@@ -25,6 +25,14 @@ public sealed partial class CalcInstanceService
         if (instance.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; external evidence is filed while it is a draft.", instance);
 
+        // A member of a checked pack is frozen like its inputs: nothing is added to its Evidence after the pack was checked (Red R-A-10).
+        if (instance.PackId is { } packId && await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false) is { Status: not CalcInstanceStatus.Draft } pack)
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' belongs to pack '{pack.Title}', which is {pack.Status}; its Evidence is frozen with it.", instance);
+
+        // The citing input is checked before the file is attached, so a refusal leaves no orphan attachment.
+        if (inputSymbol is not null && _catalogue.Find(instance.TemplateReference)?.Template.FindInput(inputSymbol) is not { Kind: CalcInputKind.Text })
+            return CalcActionResult.Refused($"'{inputSymbol}' is not a text input of '{instance.Name}'; the report was not attached.", instance);
+
         // Windows paths arrive on every platform; keep the last segment either way so no directory part is stored.
         var name = CalcSheetTextRenderer.Clean(Path.GetFileName((fileName ?? string.Empty).Replace('\\', '/')));
 
@@ -42,14 +50,9 @@ public sealed partial class CalcInstanceService
         if (inputSymbol is null)
             return CalcActionResult.Ok(instance);
 
-        var spec = _catalogue.Find(instance.TemplateReference)?.Template.FindInput(inputSymbol);
-
-        if (spec is not { Kind: CalcInputKind.Text })
-            return CalcActionResult.Refused($"'{inputSymbol}' is not a text input of '{instance.Name}'; the report is attached but not cited.", instance);
-
         var inputs = instance.Inputs.Where(i => !string.Equals(i.Symbol, inputSymbol, StringComparison.Ordinal))
             .Append(new CalcInputValue(inputSymbol, Text: name, Provenance: CalcProvenance.FromEvidence($"{evidenceId:N}/{attachment.Id:N}")))
             .ToList();
-        return await UpdateInputsAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false);
+        return await UpdateInputsAsync(instanceId, inputs, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
     }
 }

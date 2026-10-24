@@ -3,8 +3,8 @@ Project: Equipment support ES-4
 Calc ID: Column base plate    Revision: A
 Title: Column base plate (EN 1993-1-8)
 Author: unknown    Authored: 2026-10-24
-Checker: —    Checked: —
-Issued: 2026-10-24    Issue: STR-SUP-001
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.
@@ -55,7 +55,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm^2 | link: Holding-down bolts rev A · A_s | 50 … 1500 mm^2
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 05a47e79bf7d4651ada6b58851a99eea/6099accfc1cf4afe8fee5cb748109430 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 3fcc0606b44d4e289c420353b4c3e27e/552e9f5652954d0b9efb4918c681d201 | any
 
 3. ASSUMPTIONS
   A1. Static loading; a major-axis moment only (uniaxial); an unstiffened rectangular plate on grout of adequate strength and thickness for β_j = 2/3 (checked when the grout strength and thickness are entered). (Scope of S6.)
@@ -268,12 +268,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   PASS  Anchorage designed externally (PROFIS report filed as Evidence): PROFIS report PROFIS-BP1-PLACEHOLDER.txt vs bolt tension 87.603 kN and shear 0 kN per anchor designed in PROFIS  utilisation 0
 
 7. APPLICABILITY
-  WARNING record.alpha_cc: alpha_cc: a tabulated value not taken from a reference record (EN 1992-1-1 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_c: gamma_c: a tabulated value not taken from a reference record (EN 1992-1-1 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_M2: gamma_M2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factor); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_M0: gamma_M0: a tabulated value not taken from a reference record (EN 1993-1-1 National Annex factor); enter it as one so its source, edition and licence travel with it.
-  WARNING record.C_fd: C_fd: a tabulated value not taken from a reference record (Friction coefficient plate to grout); enter it as one so its source, edition and licence travel with it.
-  WARNING record.f_y: f_y: a tabulated value not taken from a reference record (Plate strength); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength). Enter each as one so its source, edition and licence travel with it.
   WARNING alpha_basis: alpha_basis: α above 1 needs the foundation geometry it rests on (A_c1/A_c0, α ≤ 3, EN 1992-1-1 cl. 6.7) stated.
 
 8. VERIFICATION
@@ -281,5 +276,5 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: 5e6f7b62171087af
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test

@@ -14,7 +14,7 @@ PACK INDEX
   5. Coupling flange bolts — Bolt group (elastic method) — rev A — ISSUED — Circular shear–tension interaction (governing bolt) PASS
 
 REVISIONS
-  A  2026-10-24  unknown  First issue
+  A  2026-10-24  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -40,7 +40,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 15/15
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -204,7 +204,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: dc25f3e5a3e7b859
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test
 
 
@@ -242,7 +242,7 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   S_ut | Ultimate tensile strength | 850 | MPa | drawing: DRG-CNV-410 rev B | 300 … 2000 MPa
   S_y | Yield strength | 650 | MPa | drawing: DRG-CNV-410 rev B | 150 … 1900 MPa
   E | Young's modulus | 207 | GPa | drawing: DRG-CNV-410 rev B | 50 … 250 GPa
-  rho | Density (shaft self-mass in the critical speed) | 0 | kg/m^3 | assumption: Sheet default value; no project figure given. | 0 … 20000 kg/m^3
+  rho | Density (shaft self-mass in the critical speed) | 7850 | kg/m^3 | assumption: Sheet default value; no project figure given. | 0 … 20000 kg/m^3
   finish | Surface finish | ground |  | drawing: DRG-CNV-410 rev B | any
   R | Reliability | 99 | % | assumption: Sheet default value; no project figure given. | 50 … 99.9 %
   k_d | Temperature factor k_d | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1.1
@@ -257,7 +257,7 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (§A5.)
   A4. At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises. (Shigley 10th ed. §6-9, §7-4.)
   A5. Loads, sections and steps closer together than 1/200 of the shaft length share one node. (Keeps the beam model well conditioned.)
-  A6. rho (Density (shaft self-mass in the critical speed)) is taken as 0 kg/m^3. (Sheet default value; no project figure given.)
+  A6. rho (Density (shaft self-mass in the critical speed)) is taken as 7850 kg/m^3. (Sheet default value; no project figure given.)
   A7. R (Reliability) is taken as 99 %. (Sheet default value; no project figure given.)
   A8. k_d (Temperature factor k_d) is taken as 1. (Sheet default value; no project figure given.)
   A9. k_f (Miscellaneous factor k_f) is taken as 1. (Sheet default value; no project figure given.)
@@ -331,16 +331,16 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
       = 13.835
         Lowest yield safety factor
   [34] n_c = √(g·Σm·y/Σm·y²) (Rayleigh)    « Shigley 10th ed. §7-6
-      = Σm = 3 kg over 25 nodes
-      = 61948 rpm
+      = Σm = 6.2522 kg over 25 nodes
+      = 51038 rpm
         First lateral critical speed (Rayleigh)
   [35] n_c_D = 1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)    « Shigley 10th ed. §7-6
-      = 1 masses
-      = 61948 rpm
+      = 25 masses
+      = 49494 rpm
         First critical speed, Dunkerley lower bound
   [36] r_c = n_c/n
-      = 61948 / 1500
-      = 41.299
+      = 51038 / 1500
+      = 34.025
         Critical-speed ratio
   [37] u_f = n_target/n_f,min
       = 1.5 / 6.9906
@@ -371,9 +371,9 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   S_e = 254.18 MPa    Endurance limit
   n_f_min = 6.9906    Lowest fatigue safety factor
   n_y_min = 13.835    Lowest yield safety factor
-  n_c = 61948 rpm    First critical speed (Rayleigh)
-  n_c_D = 61948 rpm    Dunkerley lower bound
-  r_c = 41.299    Critical-speed ratio
+  n_c = 51038 rpm    First critical speed (Rayleigh)
+  n_c_D = 49494 rpm    Dunkerley lower bound
+  r_c = 34.025    Critical-speed ratio
 
 6. CHECKS (governing first)
   PASS  Slope at the bearings against limit: u_slope = 0.26987 vs u_slope ≤ 1  utilisation 0.27
@@ -382,18 +382,14 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   PASS  Yield safety factor against target: u_y = 0.10842 vs u_y ≤ 1  utilisation 0.108
 
 7. APPLICABILITY
-  WARNING record.S_ut: S_ut: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
-  WARNING record.S_y: S_y: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
-  WARNING record.E: E: a tabulated value not taken from a reference record (Shaft material); enter it as one so its source, edition and licence travel with it.
-  WARNING record.theta_max: theta_max: a tabulated value not taken from a reference record (Slope and deflection limits); enter it as one so its source, edition and licence travel with it.
-  WARNING record.y_max: y_max: a tabulated value not taken from a reference record (Slope and deflection limits); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: mech.shaft@1.0.0
   Content hash: 10b8720ba56e0a58
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test
 
 
@@ -426,7 +422,7 @@ Equivalent load: P = F_r when F_a/F_r ≤ e_lim, else P = X·F_r + Y·F_a Duty c
   Y | Axial factor Y | 0 |  | assumption: Sheet default value; no project figure given. | 0 … 10
   X_0 | Static radial factor X₀ | 0.6 |  | assumption: Sheet default value; no project figure given. | 0 … 5
   Y_0 | Static axial factor Y₀ | 0.5 |  | assumption: Sheet default value; no project figure given. | 0 … 10
-  R | Reliability | 95 | % | assumption: Sheet default value; no project figure given. | 90 … 99.95 %
+  R | Reliability | 90 | % | assumption: Sheet default value; no project figure given. | 90 … 99.95 %
   a_iso | Life modification factor a_ISO (from the manufacturer's tool) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 50
   L_req | Required life | 20000 | h | spec: SPEC-CNV-07 §6 (bearing schedule) | 1 … 1000000 h
   s_0_req | Required static safety factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 4
@@ -441,7 +437,7 @@ Equivalent load: P = F_r when F_a/F_r ≤ e_lim, else P = X·F_r + Y·F_a Duty c
   A7. Y (Axial factor Y) is taken as 0. (Sheet default value; no project figure given.)
   A8. X_0 (Static radial factor X₀) is taken as 0.6. (Sheet default value; no project figure given.)
   A9. Y_0 (Static axial factor Y₀) is taken as 0.5. (Sheet default value; no project figure given.)
-  A10. R (Reliability) is taken as 95 %. (Sheet default value; no project figure given.)
+  A10. R (Reliability) is taken as 90 %. (Sheet default value; no project figure given.)
   A11. a_iso (Life modification factor a_ISO (from the manufacturer's tool)) is taken as 1. (Sheet default value; no project figure given.)
   A12. s_0_req (Required static safety factor) is taken as 1. (Sheet default value; no project figure given.)
 
@@ -466,24 +462,24 @@ Equivalent load: P = F_r when F_a/F_r ≤ e_lim, else P = X·F_r + Y·F_a Duty c
       = 75545 h
         Basic rating life in hours
   [21] a_1 = 0.95 * (ln(1 / R) / ln(1 / 0.9))^(2 / 3) + 0.05    « ISO 281:2007 cl. 9
-      = 0.95 × (ln(1 / 95 %) / ln(1 / 0.9))^(2 / 3) + 0.05
-      = 0.63791
+      = 0.95 × (ln(1 / 90 %) / ln(1 / 0.9))^(2 / 3) + 0.05
+      = 1
         Reliability factor (derived, ISO 281:2007 Weibull form)
   [22] L_nm = a_1 * a_iso * L_10    « ISO 281:2007 cl. 9
-      = 0.63791 × 1 × 6799
-      = 4337.2
+      = 1 × 1 × 6799
+      = 6799
         Modified rating life, million revolutions
   [23] L_nmh = a_1 * a_iso * L_10h
-      = 0.63791 × 1 × 75545 h
-      = 48191 h
+      = 1 × 1 × 75545 h
+      = 75545 h
         Modified rating life in hours
   [24] s_0 = C_0 / P_0    « ISO 76:2006
       = 15.3 kN / 1.346 kN
       = 11.367
         Static safety factor
   [25] u_life = L_req / L_nmh
-      = 20000 h / 48191 h
-      = 0.41502
+      = 20000 h / 75545 h
+      = 0.26474
         Life utilisation (required / modified life)
   [26] u_s0 = s_0_req / s_0
       = 1 / 11.367
@@ -494,34 +490,27 @@ Equivalent load: P = F_r when F_a/F_r ≤ e_lim, else P = X·F_r + Y·F_a Duty c
   P = 1.346 kN    Equivalent dynamic load
   L_10 = 6799    Basic rating life (Mrev)
   L_10h = 75545 h    Basic rating life
-  a_1 = 0.63791    Reliability factor
-  L_nm = 4337.2    Modified rating life (Mrev)
-  L_nmh = 48191 h    Modified rating life
+  a_1 = 1    Reliability factor
+  L_nm = 6799    Modified rating life (Mrev)
+  L_nmh = 75545 h    Modified rating life
   P_0 = 1.346 kN    Equivalent static load
   s_0 = 11.367    Static safety factor
-  u_life = 0.41502    Life utilisation
+  u_life = 0.26474    Life utilisation
   u_s0 = 0.087977    Static utilisation
 
 6. CHECKS (governing first)
-  PASS  Modified rating life against required life: u_life = 0.41502 vs u_life ≤ 1  utilisation 0.415  « ISO 281:2007 cl. 9
+  PASS  Modified rating life against required life: u_life = 0.26474 vs u_life ≤ 1  utilisation 0.265  « ISO 281:2007 cl. 9
   PASS  Static safety factor against required: u_s0 = 0.087977 vs u_s0 ≤ 1  utilisation 0.088  « ISO 76:2006
 
 7. APPLICABILITY
-  WARNING record.C: C: a tabulated value not taken from a reference record (Bearing load ratings); enter it as one so its source, edition and licence travel with it.
-  WARNING record.C_0: C_0: a tabulated value not taken from a reference record (Bearing load ratings); enter it as one so its source, edition and licence travel with it.
-  WARNING record.e_lim: e_lim: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.X: X: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.Y: Y: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.X_0: X_0: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.Y_0: Y_0: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.a_iso: a_iso: a tabulated value not taken from a reference record (Bearing a_ISO); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: C, C_0 (Bearing load ratings); e_lim, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing a_ISO). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: mech.bearing-life@1.0.0
   Content hash: 81c5cdff2fc0e914
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test
 
 
@@ -654,7 +643,7 @@ i = 0.45·D^(1/3) + 0.001·D (µm) at the geometric mean D of the size step; ITn
   Content hash: 546cca00925adbf3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test
 
 
@@ -784,5 +773,5 @@ Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) �
   Content hash: ef89d9cdd6ddb9eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-24 18:29 UTC
+  Test run: 2026-10-24 19:26 UTC
   Application: TempestOS test
