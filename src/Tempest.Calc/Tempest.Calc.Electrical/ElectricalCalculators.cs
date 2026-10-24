@@ -12,5 +12,6 @@ public static class ElectricalCalculators
         new VoltageDropCalculator(),
         new LoadBudgetCalculator(),
         new FaultProtectionCalculator(),
+        new ConductorSizingCalculator(),
     ];
 }
