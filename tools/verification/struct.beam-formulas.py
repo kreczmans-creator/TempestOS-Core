@@ -6,6 +6,7 @@ Two independent routes per case:
   (b) a Hermite finite-element beam with 600 elements that needs no closed form.
 Both must agree before a value is used as the independent answer.
 Conventions: left end at x = 0, loads and deflection downward positive, sagging moment positive.
+Extra checks (B1..B12) compare hard-coded product values with the closed forms and the finite-element beam; a DIFF there is a finding, not a KAT failure, so the exit status follows the known-answer cases only.
 Units inside: kN, m, kN*m, mm for deflection.  Exit 0 when every row passes max(KAT tol, 1e-6).
 """
 import math
