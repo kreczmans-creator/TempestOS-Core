@@ -140,7 +140,7 @@ Paths: `Library/` is `src/Tempest.Calc/Tempest.Calc.Library/`; `Sheets/` is `src
 | G-A-11 Low — unsafe silent defaults | `m` and `l_eff` are required; α defaults to 1. S6 enters l_eff = 150 mm. | `Struct/BasePlateCalculator.cs` | `BasePlateTests.The_Tension_T_Stub_Geometry_And_The_Concentration_Factor_Have_No_Silent_Unsafe_Defaults` | Fixed |
 | G-A-12 Low — one ULS envelope in the steel-support chain | Stated as a limitation of the chain. | `Library/CalcPackTemplates.cs`, steel-support README | — | Accepted (DA-22, stated limit) |
 | G-A-13 Info — Shigley example data | The book's data, converted exactly: S_e 201.4997 MPa, n_f 1.620988. | `Mech/ShaftCalculator.cs` | Known answer `ka-shigley-7-1` | Fixed |
-| G-A-14 Info — §A5 data audit | The SCI P363 case, the SKF 6206 case and example, and the UC 203 section remain. Not in any Blue brief. | — | — | Open |
+| G-A-14 Info — §A5 data audit | Closed by the §A9 copyright audit (PASS with notes, DA-25): the SCI P363 row is a two-cell minimal citation equal to the EN 1993-1-8 formula output (Unconfirmed); the SKF 6206 ratings are the one attributed manufacturer set (owner to record the catalogue terms); the UC 203 section is a single user-input section and the example header now says so. | `CalcPackExamples.cs` header | — | Accepted (DA-25) |
 | G-A-15 Info — coverage notes | No defect in what is computed. | — | — | No action |
 
 ### Green findings — building services and electrical (G-B-01…G-B-18)
