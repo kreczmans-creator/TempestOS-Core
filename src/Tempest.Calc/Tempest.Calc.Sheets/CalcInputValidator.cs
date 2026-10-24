@@ -17,12 +17,27 @@ public static class CalcInputValidator
     public const int MaxNoticesPerInput = 20;
     public const int MaxVectorLength = 10_000;
 
+    /// <summary>Whether a provenance pins a reference record (<c>reference: record:&lt;id&gt;@&lt;revision&gt;</c>).</summary>
+    public static bool IsRecordPin(CalcProvenance? provenance) =>
+        provenance is { Kind: CalcProvenanceKind.Reference, Reference: { } reference } && reference.StartsWith("record:", StringComparison.Ordinal);
+
     public static IReadOnlyList<CalcNotice> Validate(CalcTemplate template, CalcInputSet inputs)
     {
         ArgumentNullException.ThrowIfNull(template);
         ArgumentNullException.ThrowIfNull(inputs);
 
         var notices = new List<CalcNotice>();
+
+        // §A3: a tabulated value (a symbol a record kind lists) should come from a reference record, which carries its
+        // source, edition and licence. Typed from elsewhere it still runs, with a warning naming the record kind.
+        foreach (var kind in template.RecordKinds ?? [])
+        {
+            foreach (var symbol in kind.Symbols)
+            {
+                if (inputs.Find(symbol) is { } tabulated && !IsEmpty(tabulated) && !IsRecordPin(tabulated.Provenance))
+                    notices.Add(new CalcNotice("record." + symbol, CalcNoticeSeverity.Warning, $"{symbol}: a tabulated value not taken from a {kind.Title} record; enter it as a reference record so its source, edition and licence travel with it."));
+            }
+        }
 
         foreach (var spec in template.Inputs)
         {

@@ -150,7 +150,9 @@ public sealed record CalcTemplate(
     IReadOnlyList<CalcApplicabilityRule> ApplicabilityRules,
     IReadOnlyList<CalcTestCase> TestCases,
     string? DiagramKey = null,
-    string? Category = null)
+    string? Category = null,
+    IReadOnlyList<CalcOutputPort>? OutputPorts = null,
+    IReadOnlyList<CalcRecordKind>? RecordKinds = null)
 {
     /// <summary>"id@version", the reference every instance carries.</summary>
     public string Reference => $"{Id}@{Version}";

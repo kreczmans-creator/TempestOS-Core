@@ -1,5 +1,5 @@
 # STATUS — 2026-10-24 (Addendum A)
-Addendum A: 1/13 — orientation written; next A-0 L1 result linking
+Addendum A: 2/13 — A-0 L1 result linking + reference records merged; next A-1 (M5, S5, B5, E6, B6)
 Phase: 7/7 — every §10 gate passed; v0.26.0-rc1 ready at 6afead3 (tag push blocked for this session: owner step below)
 Done since last: Windows CI on release/v0.26.0 @ 6afead3 green (run 40014821084: all Build & Test legs Debug + Release, governance, dependency scan); earlier red runs were the xUnit analyser rules, system-font PDF size, a Monte Carlo budget and a missing ADR Register row, all fixed; Black review fixes (ADR-0166); legacy-calculator review (D-38) → v0.27.0
 §10 gates: [x] CI green on Windows (Grey) and Linux gate green  [x] 12 calculators to DoD  [x] 47 known-answer cases, 0 failing, 3 unconfirmed-reference (M1, S3, B2)  [x] security review + 9 colour-team reports, no open Critical/High  [x] issued sheets open from Reports, PDFs < 200 KB, Issue in one transaction  [x] ADR-0165/0166, DECISIONS, CHANGELOG, release notes, THIRD-PARTY-NOTICES, handover

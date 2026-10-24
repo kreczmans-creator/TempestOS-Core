@@ -17,6 +17,8 @@ public sealed class CalcInstanceStore
 {
     public const string InstanceCollection = "Calc.Instances";
     public const string PackCollection = "Calc.Packs";
+    public const string PackTemplateCollection = "Calc.PackTemplates";
+    public const string RecordCollection = "Calc.DataRecords";
     public const string InstanceKind = "CalcInstance";
     public const string PackKind = "CalcPack";
     public const int MaxDocumentBytes = 4_000_000;
@@ -206,6 +208,59 @@ public sealed class CalcInstanceStore
 
         await transaction.WriteAsync(PackCollection, Key(pack.ProjectId, pack.Id), Serialise(pack), cancellationToken).ConfigureAwait(false);
         await transaction.IndexTextAsync(pack.Id, PackKind, pack.ProjectId, Sheets.CalcSheetTextRenderer.Clean(pack.Title), pack.Revision, null, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Saves a pack template the user built from a linked chain (Addendum A, L1).</summary>
+    public async Task SavePackTemplateAsync(CalcPackTemplate template, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        await _store.ExecuteInTransactionAsync((tx, token) => tx.WriteAsync(PackTemplateCollection, template.Id, Serialise(template), token), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<CalcPackTemplate>> ListPackTemplatesAsync(CancellationToken cancellationToken = default)
+    {
+        var all = await _store.ReadAllAsync(PackTemplateCollection, cancellationToken).ConfigureAwait(false);
+        return all.Select(kv => Deserialise<CalcPackTemplate>(kv.Value)).OfType<CalcPackTemplate>().OrderBy(t => t.Title, StringComparer.Ordinal).ToList();
+    }
+
+    public static string RecordKey(Guid id, int revision) => $"{id:N}@{revision:D4}";
+
+    /// <summary>Saves a new revision of a reference record (§A3). A revision is never overwritten.</summary>
+    public async Task SaveRecordAsync(CalcDataRecord record, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        var key = RecordKey(record.Id, record.Revision);
+
+        await _store.ExecuteInTransactionAsync(async (tx, token) =>
+        {
+            if (await tx.ReadAsync(RecordCollection, key, token).ConfigureAwait(false) is not null)
+                throw new CalcInstanceImmutableException($"Reference record {record.Id:N} revision {record.Revision} exists already; a change is a new revision.");
+
+            await tx.WriteAsync(RecordCollection, key, Serialise(record), token).ConfigureAwait(false);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>A record at a revision, or its latest revision.</summary>
+    public async Task<CalcDataRecord?> FindRecordAsync(Guid id, int? revision = null, CancellationToken cancellationToken = default)
+    {
+        var keys = (await _store.ListKeysAsync(RecordCollection, $"{id:N}@", cancellationToken).ConfigureAwait(false)).OrderBy(k => k, StringComparer.Ordinal).ToList();
+        var key = revision is { } r ? RecordKey(id, r) : keys.LastOrDefault();
+
+        if (key is null || !keys.Contains(key))
+            return null;
+
+        var read = await _store.ReadManyAsync(RecordCollection, [key], cancellationToken).ConfigureAwait(false);
+        return Deserialise<CalcDataRecord>(read.GetValueOrDefault(key));
+    }
+
+    /// <summary>The latest revision of every record (of one kind, if given).</summary>
+    public async Task<IReadOnlyList<CalcDataRecord>> ListRecordsAsync(string? kind = null, CancellationToken cancellationToken = default)
+    {
+        var all = await _store.ReadAllAsync(RecordCollection, cancellationToken).ConfigureAwait(false);
+        return all.Select(kv => Deserialise<CalcDataRecord>(kv.Value)).OfType<CalcDataRecord>()
+            .Where(r => kind is null || string.Equals(r.Kind, kind, StringComparison.Ordinal))
+            .GroupBy(r => r.Id).Select(g => g.OrderBy(r => r.Revision).Last())
+            .OrderBy(r => r.Kind, StringComparer.Ordinal).ThenBy(r => r.Title, StringComparer.Ordinal).ToList();
     }
 
     private async Task<string?> FindKeyAsync(string collection, Guid id, CancellationToken cancellationToken)

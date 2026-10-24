@@ -346,7 +346,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
             EvidenceService!,
             domainContext,
             CalcSheetRenderer = new Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer(),
-            applicationVersion: $"TempestOS {typeof(WorkspaceHost).Assembly.GetName().Version?.ToString(3)}");
+            applicationVersion: $"TempestOS {typeof(WorkspaceHost).Assembly.GetName().Version?.ToString(3)}",
+            events: eventBus,
+            packTemplates: Tempest.Desktop.CalcSheets.CalcPackTemplateComposition.All());
 
         CalculationModules = new CalculationModuleWorkbench(
             CalculationModuleService,

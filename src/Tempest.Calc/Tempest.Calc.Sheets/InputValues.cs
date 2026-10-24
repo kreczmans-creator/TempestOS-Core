@@ -12,6 +12,9 @@ public enum CalcProvenanceKind
     Assumption,
     Evidence,
     Reference,
+
+    /// <summary>Bound to an output of another calculation, pinned to that calculation's revision (Addendum A, L1).</summary>
+    Link,
 }
 
 /// <summary>The provenance of one input value: its kind, a reference (drawing number, spec clause, evidence id, record id) and a revision.</summary>
@@ -28,6 +31,10 @@ public sealed record CalcProvenance(CalcProvenanceKind Kind, string? Reference =
     public static CalcProvenance FromEvidence(string evidenceId) => new(CalcProvenanceKind.Evidence, evidenceId);
 
     public static CalcProvenance FromReference(string pin) => new(CalcProvenanceKind.Reference, pin);
+
+    /// <summary>A binding to <paramref name="outputSymbol"/> of calculation <paramref name="upstreamId"/> at revision <paramref name="revision"/>.</summary>
+    public static CalcProvenance Link(Guid upstreamId, string outputSymbol, string revision) =>
+        new(CalcProvenanceKind.Link, $"{CalcLink.Prefix}{upstreamId:N}#{outputSymbol}", revision);
 
     public const int MaxReferenceLength = 200;
     public const int MaxRevisionLength = 40;
@@ -49,6 +56,7 @@ public sealed record CalcProvenance(CalcProvenanceKind Kind, string? Reference =
             CalcProvenanceKind.Assumption => "assumption",
             CalcProvenanceKind.Evidence => "evidence",
             CalcProvenanceKind.Reference => "reference",
+            CalcProvenanceKind.Link => "link",
             _ => Kind.ToString().ToLowerInvariant(),
         };
 
