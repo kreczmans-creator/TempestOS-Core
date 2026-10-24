@@ -44,6 +44,22 @@ public sealed partial class CalcInstanceService
             if (!OutputPorts(source.TemplateId).Any(p => string.Equals(p.Symbol, b.Output, StringComparison.Ordinal)))
                 return $"Pack template '{template.Title}': '{source.TemplateId}' offers no output '{b.Output}'.";
 
+            if ((b.Row is null) != (b.Column is null))
+                return $"Pack template '{template.Title}': a link to a table cell needs both a row and a column ({b.FromStep} → {b.ToStep}.{b.Input}).";
+
+            if (b.Row is { } row && b.Column is { } column)
+            {
+                var table = _catalogue.Get(target.TemplateId).Template.FindInput(b.Input);
+
+                if (table is not { Kind: CalcInputKind.Table })
+                    return $"Pack template '{template.Title}': '{target.TemplateId}' has no table input '{b.Input}'.";
+
+                if (row < 0 || table.Columns?.FirstOrDefault(c => string.Equals(c.Key, column, StringComparison.Ordinal)) is not { Kind: CalcInputKind.Quantity or CalcInputKind.Number })
+                    return $"Pack template '{template.Title}': '{target.TemplateId}' table '{b.Input}' has no number or quantity column '{column}'.";
+
+                continue;
+            }
+
             if (_catalogue.Get(target.TemplateId).Template.FindInput(b.Input) is not { Kind: CalcInputKind.Quantity or CalcInputKind.Number })
                 return $"Pack template '{template.Title}': '{target.TemplateId}' has no number or quantity input '{b.Input}'.";
         }
@@ -87,7 +103,9 @@ public sealed partial class CalcInstanceService
                 if (created[b.FromStep].Blocks is { Count: > 0 } blocks)
                     return (null, $"Step '{b.FromStep}' is blocked, so '{step.Key}' cannot take '{b.Output}' from it: {blocks[0].Message}");
 
-                var bound = await BindAsync(instance.Id, b.Input, created[b.FromStep].Id, b.Output, cancellationToken).ConfigureAwait(false);
+                var bound = b.Row is { } row && b.Column is { } column
+                    ? await BindCellAsync(instance.Id, b.Input, row, column, created[b.FromStep].Id, b.Output, cancellationToken).ConfigureAwait(false)
+                    : await BindAsync(instance.Id, b.Input, created[b.FromStep].Id, b.Output, cancellationToken).ConfigureAwait(false);
 
                 if (!bound.Succeeded)
                     return (null, $"Step '{step.Key}': {bound.Reason}");
@@ -137,7 +155,7 @@ public sealed partial class CalcInstanceService
 
         while (remaining.Count > 0)
         {
-            var next = remaining.FirstOrDefault(m => m.Links.All(l => !remaining.Any(r => r.Id == l.Link.UpstreamId)));
+            var next = remaining.FirstOrDefault(m => m.Links.All(l => !remaining.Any(r => r.Id == l.Link.UpstreamId)) && m.CellLinks.All(l => !remaining.Any(r => r.Id == l.Link.UpstreamId)));
 
             if (next is null)
                 return (null, "The calculations link to each other in a cycle.");
@@ -150,7 +168,10 @@ public sealed partial class CalcInstanceService
         var steps = ordered.Select(m => new CalcPackStep(keys[m.Id], m.TemplateId, m.Name)).ToList();
         var bindings = ordered.SelectMany(m => m.Links
             .Where(l => keys.ContainsKey(l.Link.UpstreamId))
-            .Select(l => new CalcPackBinding(keys[l.Link.UpstreamId], l.Link.OutputSymbol, keys[m.Id], l.Input.Symbol))).ToList();
+            .Select(l => new CalcPackBinding(keys[l.Link.UpstreamId], l.Link.OutputSymbol, keys[m.Id], l.Input.Symbol))
+            .Concat(m.CellLinks
+                .Where(l => keys.ContainsKey(l.Link.UpstreamId))
+                .Select(l => new CalcPackBinding(keys[l.Link.UpstreamId], l.Link.OutputSymbol, keys[m.Id], l.Symbol, l.Row, l.Column)))).ToList();
 
         var template = new CalcPackTemplate($"saved-{Guid.NewGuid():N}", CalcSheetTextRenderer.Clean(title.Length > 200 ? title[..200] : title), "Saved from a linked chain.", steps, bindings);
 

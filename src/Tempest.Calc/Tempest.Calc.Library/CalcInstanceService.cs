@@ -140,7 +140,7 @@ public sealed partial class CalcInstanceService
 
         var newInputs = inputs.ToList();
 
-        if (newInputs.Any(v => v.Provenance is { } p && !p.IsWithinLimits))
+        if (newInputs.Any(v => (v.Provenance is { } p && !p.IsWithinLimits) || (v.Rows?.Any(r => r?.Cells.Values.Any(c => c?.Provenance is { IsWithinLimits: false }) == true) ?? false)))
             return CalcActionResult.Refused($"A provenance reference is longer than {CalcProvenance.MaxReferenceLength} characters.", instance);
 
         // Every new or changed link meets the same rules as BindAsync: upstream exists, gives the output in the input's

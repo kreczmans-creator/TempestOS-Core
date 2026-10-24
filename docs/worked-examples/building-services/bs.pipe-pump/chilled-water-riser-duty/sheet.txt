@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
-v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
   Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
   Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
   Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
@@ -18,7 +18,7 @@ v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/�
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | water |  | spec: SPEC-M-04 §3: chilled water, no glycol | any
   T | Fluid temperature | 6 | degC | spec: SPEC-M-04 §3: 6 °C flow | 0 … 100 degC
-  Q | Design flow rate | 30 | m^3/h | spec: Schedule CHW-01 design flow | 0.01 … 100000 m^3/h
+  Q | Design flow rate (blank when a heat load gives it) | 30 | m^3/h | spec: Schedule CHW-01 design flow | 0.01 … 100000 m^3/h
   segments | Pipe segments in series | 3 row(s) |  | drawing: DRG-M-110 rev C | any
   segments[1] |  | name = plantroom suction; L = 8 m; D = 100 mm; eps = 0.045 mm; K = 3; L_eq = 0 m; dz = 0 m; side = suction |  |  | 
   segments[2] |  | name = riser DN80; L = 60 m; D = 80 mm; eps = 0.045 mm; K = 8; L_eq = 0 m; dz = 10 m; side = discharge |  |  | 
@@ -56,135 +56,139 @@ v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/�
       = T = 6 °C
       = 0.93525 kPa
         Vapour pressure (NPSH)
-  [9] v_s1 = plantroom suction: Q / (π D²/4)
+  [9] Q_design = Q
+      = 30 m³/h
+      = 30 m³/h
+        Design flow (as entered)
+  [10] v_s1 = plantroom suction: Q / (π D²/4)
       = 30 m³/h / (π × 100² mm² / 4)
       = 1.061 m/s
         Velocity, plantroom suction
-  [10] Re_s1 = plantroom suction: ρ v D / μ
+  [11] Re_s1 = plantroom suction: ρ v D / μ
       = 999.94 × 1.061 × 0.1 / 0.0014684
       = 72253
         Reynolds number, plantroom suction
-  [11] f_s1 = plantroom suction: Darcy friction factor
+  [12] f_s1 = plantroom suction: Darcy friction factor
       = Colebrook–White, 10 iterations (Swamee–Jain start 0.021152)
       = 0.021093
         Friction factor, plantroom suction
-  [12] f_sj_s1 = plantroom suction: Swamee–Jain check
+  [13] f_sj_s1 = plantroom suction: Swamee–Jain check
       = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
       = 0.021152
         Explicit cross-check, plantroom suction
-  [13] h_f_s1 = plantroom suction: f (L + L_eq)/D · v²/2g + K v²/2g
+  [14] h_f_s1 = plantroom suction: f (L + L_eq)/D · v²/2g + K v²/2g
       = 0.021093 × (8 + 0) / 0.1 × 0.057399 + 3 × 0.057399
       = 0.26906 m
         Head loss, plantroom suction
-  [14] v_s2 = riser DN80: Q / (π D²/4)
+  [15] v_s2 = riser DN80: Q / (π D²/4)
       = 30 m³/h / (π × 80² mm² / 4)
       = 1.6579 m/s
         Velocity, riser DN80
-  [15] Re_s2 = riser DN80: ρ v D / μ
+  [16] Re_s2 = riser DN80: ρ v D / μ
       = 999.94 × 1.6579 × 0.08 / 0.0014684
       = 90316
         Reynolds number, riser DN80
-  [16] f_s2 = riser DN80: Darcy friction factor
+  [17] f_s2 = riser DN80: Darcy friction factor
       = Colebrook–White, 10 iterations (Swamee–Jain start 0.020946)
       = 0.020849
         Friction factor, riser DN80
-  [17] f_sj_s2 = riser DN80: Swamee–Jain check
+  [18] f_sj_s2 = riser DN80: Swamee–Jain check
       = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
       = 0.020946
         Explicit cross-check, riser DN80
-  [18] h_f_s2 = riser DN80: f (L + L_eq)/D · v²/2g + K v²/2g
+  [19] h_f_s2 = riser DN80: f (L + L_eq)/D · v²/2g + K v²/2g
       = 0.020849 × (60 + 0) / 0.08 × 0.14014 + 8 × 0.14014
       = 3.3123 m
         Head loss, riser DN80
-  [19] v_s3 = index run DN65: Q / (π D²/4)
+  [20] v_s3 = index run DN65: Q / (π D²/4)
       = 30 m³/h / (π × 65² mm² / 4)
       = 2.5113 m/s
         Velocity, index run DN65
-  [20] Re_s3 = index run DN65: ρ v D / μ
+  [21] Re_s3 = index run DN65: ρ v D / μ
       = 999.94 × 2.5113 × 0.065 / 0.0014684
       = 111160
         Reynolds number, index run DN65
-  [21] f_s3 = index run DN65: Darcy friction factor
+  [22] f_s3 = index run DN65: Darcy friction factor
       = Colebrook–White, 9 iterations (Swamee–Jain start 0.020964)
       = 0.020834
         Friction factor, index run DN65
-  [22] f_sj_s3 = index run DN65: Swamee–Jain check
+  [23] f_sj_s3 = index run DN65: Swamee–Jain check
       = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
       = 0.020964
         Explicit cross-check, index run DN65
-  [23] h_f_s3 = index run DN65: f (L + L_eq)/D · v²/2g + K v²/2g
+  [24] h_f_s3 = index run DN65: f (L + L_eq)/D · v²/2g + K v²/2g
       = 0.020834 × (45 + 6) / 0.065 × 0.32155 + 12 × 0.32155
       = 9.1151 m
         Head loss, index run DN65
-  [24] h_f_total = Σ h_f
+  [25] h_f_total = Σ h_f
       = 3 segment(s)
       = 12.696 m
         Total friction and fitting loss at the design flow
-  [25] H_static = Σ dz + h_out
+  [26] H_static = Σ dz + h_out
       = 12 + 3
       = 15 m
         Static head
-  [26] H_sys = H_static + h_f_total
+  [27] H_sys = H_static + h_f_total
       = 15 m + 12.696 m
       = 27.696 m
         System head at the design flow
-  [27] dp_total = rho * 9.80665 m/s^2 * h_f_total
+  [28] dp_total = rho * 9.80665 m/s^2 * h_f_total
       = 999.94 kg/m³ × 9.80665 m/s^2 × 12.696 m
       = 124.5 kPa
         Friction pressure drop at the design flow
-  [28] dp_sys = rho * 9.80665 m/s^2 * H_sys
+  [29] dp_sys = rho * 9.80665 m/s^2 * H_sys
       = 999.94 kg/m³ × 9.80665 m/s^2 × 27.696 m
       = 271.59 kPa
         System pressure at the design flow
-  [29] P_hyd = rho * 9.80665 m/s^2 * Q * H_sys
+  [30] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
       = 999.94 kg/m³ × 9.80665 m/s^2 × 30 m³/h × 27.696 m
       = 2.2633 kW
         Hydraulic power at the design point
-  [35] Q_duty = duty flow (as entered)
+  [36] Q_duty = duty flow (as entered)
       = H_pump(Q) = H_sys(Q), bisection
       = 31.569 m³/h
         Duty flow as entered
-  [36] H_duty = duty head (as entered)
+  [37] H_duty = duty head (as entered)
       = H_sys(31.569 m³/h)
       = 29.059 m
         Duty head as entered
-  [37] P_shaft = ρ g Q H / η
+  [38] P_shaft = ρ g Q H / η
       = 999.94 × 9.8066 × 0.008769 × 29.059 / 0.68
       = 3.6747 kW
         Shaft power at duty as entered
-  [38] affinity = Q₂ = Q₁ (n₂/n₁)(D₂/D₁)³, H₂ = H₁ (n₂/n₁)²(D₂/D₁)²
+  [39] affinity = Q₂ = Q₁ (n₂/n₁)(D₂/D₁)³, H₂ = H₁ (n₂/n₁)²(D₂/D₁)²
       = n₂/n₁ = 0.9, D₂/D₁ = 1
       = "curve scaled"
         Affinity laws applied to the pump curve
-  [39] Q_duty2 = duty flow (after the affinity shift)
+  [40] Q_duty2 = duty flow (after the affinity shift)
       = H_pump(Q) = H_sys(Q), bisection
       = 26.238 m³/h
         Duty flow after the affinity shift
-  [40] H_duty2 = duty head (after the affinity shift)
+  [41] H_duty2 = duty head (after the affinity shift)
       = H_sys(26.238 m³/h)
       = 24.712 m
         Duty head after the affinity shift
-  [41] P_shaft2 = ρ g Q H / η
+  [42] P_shaft2 = ρ g Q H / η
       = 999.94 × 9.8066 × 0.0072883 × 24.712 / 0.68
       = 2.5972 kW
         Shaft power at duty after the affinity shift
-  [44] h_f_suction = Σ h_f on the suction side
+  [45] h_f_suction = Σ h_f on the suction side
       = 1 suction segment(s)
       = 0.26906 m
         Suction-side friction loss
-  [45] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
+  [46] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
       = 101.32 kPa / (999.94 kg/m³ × 9.80665 m/s^2) + 2 m − 0.26906 m − 0.93525 kPa / (999.94 kg/m³ × 9.80665 m/s^2)
       = 11.968 m
         NPSH available
-  [47] u_npsh = NPSH_r / NPSH_a
+  [48] u_npsh = NPSH_r / NPSH_a
       = 3 m / 11.968 m
       = 0.25066
         NPSH utilisation (required / available)
-  [48] v_peak = highest segment velocity
+  [49] v_peak = highest segment velocity
       = 2.5113 m/s
       = 2.5113 m/s
         Highest velocity
-  [49] u_v = v_peak / v_max
+  [50] u_v = v_peak / v_max
       = 2.5113 / 2.5
       = 1.0045
         Velocity utilisation
@@ -210,6 +214,7 @@ v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/�
   H_sys = 27.696 m    System head at Q
   dp_total = 124.5 kPa    Friction Δp
   dp_sys = 271.59 kPa    System Δp
+  Q_design = 30 m³/h    Design flow
   P_hyd = 2.2633 kW    Hydraulic power
   Q_duty = 31.569 m³/h    Duty flow as entered
   H_duty = 29.059 m    Duty head as entered
@@ -230,8 +235,8 @@ v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/�
   WARNING velocity: segments: index run DN65 runs at 2.5113 m/s, above the 2.5 m/s limit.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.0.0
+  Template: bs.pipe-pump@1.1.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 3/3
+  Known-answer cases passed: 4/4
   Test run: —

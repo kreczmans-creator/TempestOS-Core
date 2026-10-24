@@ -37,15 +37,18 @@ public sealed class PipeFlowCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
+        Id, "1.1.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
         "Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.",
-        "v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.",
+        "Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.",
         [
             new CalcInputSpec("fluid", "Fluid", CalcInputKind.Choice, Choices: [FluidWater, FluidCustom], DefaultChoice: FluidWater, Group: "Fluid"),
             new CalcInputSpec("T", "Fluid temperature", CalcInputKind.Quantity, "degC", Default: 20, Min: 0, Max: 100, HardMin: -50, HardMax: 300, Group: "Fluid"),
             new CalcInputSpec("rho_custom", "Density (custom fluid)", CalcInputKind.Quantity, "kg/m^3", Min: 500, Max: 2000, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Fluid"),
             new CalcInputSpec("mu_custom", "Dynamic viscosity (custom fluid)", CalcInputKind.Quantity, "mPa*s", Min: 0.1, Max: 1000, HardMin: 1e-4, HardMax: 1e6, IsOptional: true, Group: "Fluid"),
-            new CalcInputSpec("Q", "Design flow rate", CalcInputKind.Quantity, "m^3/h", Default: 20, Min: 0.01, Max: 1e5, HardMin: 1e-9, HardMax: 1e7, Group: "System"),
+            new CalcInputSpec("Q", "Design flow rate (blank when a heat load gives it)", CalcInputKind.Quantity, "m^3/h", Default: 20, Min: 0.01, Max: 1e5, HardMin: 1e-9, HardMax: 1e7, IsOptional: true, Group: "System"),
+            new CalcInputSpec("Phi_load", "Heat carried by the water (gives the design flow with ΔT; replaces Q)", CalcInputKind.Quantity, "W", Min: 10, Max: 1e8, HardMin: 1e-3, HardMax: 1e10, IsOptional: true, Group: "System"),
+            new CalcInputSpec("dT_load", "Flow-to-return temperature difference across the load", CalcInputKind.Quantity, "K", Min: 1, Max: 100, HardMin: 0.01, HardMax: 500, IsOptional: true, Group: "System"),
+            new CalcInputSpec("cp_load", "Specific heat of the fluid (heat-load flow)", CalcInputKind.Quantity, "J/(kg*K)", Default: 4186, Min: 1000, Max: 6000, HardMin: 100, HardMax: 1e5, IsOptional: true, Group: "System"),
             new CalcInputSpec("segments", "Pipe segments in series", CalcInputKind.Table, Columns: SegmentColumns, MaxRows: 500, Group: "System"),
             new CalcInputSpec("h_out", "Pressure head required at the outlet", CalcInputKind.Quantity, "m", Default: 0, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5, Group: "System"),
             new CalcInputSpec("v_max", "Velocity limit (warning)", CalcInputKind.Quantity, "m/s", Default: 3, Min: 0.5, Max: 10, HardMin: 0.01, HardMax: 100, Group: "System"),
@@ -54,6 +57,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcInputSpec("n_ratio", "Speed ratio n₂/n₁ (affinity)", CalcInputKind.Number, Default: 1, Min: 0.2, Max: 2, HardMin: 0.01, HardMax: 10, Group: "Pump"),
             new CalcInputSpec("D_ratio", "Impeller diameter ratio D₂/D₁ (affinity)", CalcInputKind.Number, Default: 1, Min: 0.7, Max: 1.1, HardMin: 0.1, HardMax: 5, Group: "Pump"),
             new CalcInputSpec("eta_pump", "Pump efficiency at duty (for shaft power)", CalcInputKind.Number, Default: 0.7, Min: 0.2, Max: 0.95, HardMin: 0.01, HardMax: 1, Group: "Pump"),
+            new CalcInputSpec("n_pump", "Pump rated speed (gives the shaft torque at the design flow)", CalcInputKind.Quantity, "rpm", Min: 100, Max: 6000, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Pump"),
             new CalcInputSpec("p_atm", "Atmospheric pressure (NPSH)", CalcInputKind.Quantity, "kPa", Default: 101.325, Min: 50, Max: 110, HardMin: 1, HardMax: 1000, Group: "NPSH"),
             new CalcInputSpec("z_s", "Static head at the pump suction (+ flooded, − lift)", CalcInputKind.Quantity, "m", Default: 0, Min: -10, Max: 100, HardMin: -1e3, HardMax: 1e4, Group: "NPSH"),
             new CalcInputSpec("NPSH_r", "NPSH required by the pump (optional)", CalcInputKind.Quantity, "m", Min: 0, Max: 50, HardMin: 0, HardMax: 1e3, IsOptional: true, Group: "NPSH"),
@@ -71,6 +75,8 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcClauseRef("Kell, J. Chem. Eng. Data 20(1), 1975", "—", "Density of liquid water"),
         ],
         [
+            new CalcApplicabilityRule("heat-flow", "A heat load needs its temperature difference (and the reverse); without a heat load a design flow is needed.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("heat-flow-q", "A design flow is entered as well as a heat load: the flow from the heat load is used and Q ignored.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("custom-fluid", "A custom fluid needs its density and viscosity.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("water-range", "Water correlations hold for 0–100 °C.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("segments", "At least one segment is needed.", CalcNoticeSeverity.Block),
@@ -94,9 +100,30 @@ public sealed class PipeFlowCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic: pump H = 40 − 0.01 Q² (Q in m³/h), system H = 10 + k Q² ⇒ duty where 30 = (k + 0.01) Q²", null, "Water 20 °C, DN80 (D = 80 mm), L = 60 m, ε = 0.045 mm, ΣK = 8, rise 10 m: v = 1.658 m/s, Re ≈ 1.32e5, f ≈ 0.0198, h_f ≈ 3.2 m at 30 m³/h so k ≈ 0.00356 m/(m³/h)²; duty where 30 = (k + 0.01) Q² ⇒ Q ≈ 46.3 m³/h, H ≈ 17.7 m on the piecewise-linear curve through (0, 40), (20, 36), (40, 24), (60, 4); at 90 % speed Q ≈ 40.1 m³/h"),
                 [CalcInputValue.Choice("fluid", FluidWater), CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), Segments(("riser", 60, 80, 0.045, 8, 0, 10, "discharge")), CalcInputValue.Quantity("h_out", 0, "m"), CalcInputValue.VectorOf("Q_pump", [0, 20, 40, 60], "m^3/h"), CalcInputValue.VectorOf("H_pump", [40, 36, 24, 4], "m"), CalcInputValue.Of("n_ratio", 0.9), CalcInputValue.Of("D_ratio", 1)],
                 [new CalcExpectedValue("H_static", 10, "m", 1e-9), new CalcExpectedValue("H_duty", 17.67, "m", 0.01), new CalcExpectedValue("Q_duty", 46.3, "m^3/h", 0.01), new CalcExpectedValue("Q_duty2", 40.1, "m^3/h", 0.01)]),
+            new CalcTestCase("ka-heat-load-flow", "Design flow from a heat load: 12 kW at a 20 K difference, water at 70 °C (analytic)",
+                new CalcReferenceSource("Analytic: Q = Φ / (ρ c_p ΔT)", null, "ρ(70 °C) = 977.7696 kg/m³ (Kell 1975, evaluated from the correlation); c_p = 4186 J/(kg·K) as entered; Q = 12 000 / (977.7696 × 4186 × 20) = 1.465938e-4 m³/s = 0.5277375 m³/h"),
+                [CalcInputValue.Choice("fluid", FluidWater), CalcInputValue.Quantity("T", 70, "degC"), CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K"), CalcInputValue.Quantity("cp_load", 4186, "J/(kg*K)"), Segments(("loop", 40, 28, 0.045, 0, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 0, "m")],
+                [new CalcExpectedValue("Q_design", 0.5277375, "m^3/h", 1e-6)]),
         ],
         DiagramKey: "pipe-pump",
-        Category: "Hydraulics");
+        Category: "Hydraulics",
+        OutputPorts:
+        [
+            new CalcOutputPort("Q_design", "m^3/h", "Design flow (as entered, or from the heat load)"),
+            new CalcOutputPort("H_static", "m", "Static head"),
+            new CalcOutputPort("H_sys", "m", "System head at the design flow"),
+            new CalcOutputPort("h_f_total", "m", "Total friction and fitting loss at the design flow"),
+            new CalcOutputPort("dp_total", "kPa", "Friction pressure drop at the design flow"),
+            new CalcOutputPort("dp_sys", "kPa", "System pressure at the design flow"),
+            new CalcOutputPort("P_hyd", "kW", "Hydraulic power at the design point"),
+            new CalcOutputPort("P_shaft_design", "kW", "Pump shaft power at the design flow (needs the pump speed)"),
+            new CalcOutputPort("T_shaft", "N*m", "Pump shaft torque at the design flow (→ E1 load torque)"),
+            new CalcOutputPort("v_peak", "m/s", "Highest velocity"),
+            new CalcOutputPort("NPSH_a", "m", "NPSH available (water)"),
+            new CalcOutputPort("Q_duty", "m^3/h", "Duty flow against the pump curve"),
+            new CalcOutputPort("H_duty", "m", "Duty head against the pump curve"),
+            new CalcOutputPort("P_shaft", "kW", "Shaft power at the duty point"),
+        ]);
 
     /// <summary>Segments: (name, L m, D mm, ε mm, ΣK, L_eq m, dz m, side).</summary>
     public static CalcInputValue Segments(params (string Name, double L, double D, double Eps, double K, double Leq, double Dz, string Side)[] rows) =>
@@ -139,10 +166,39 @@ public sealed class PipeFlowCalculator : ICalcCalculator
 
         rho = c.Si("rho");
         mu = c.Si("mu");
-        c.Input("Q");
         c.Input("h_out");
         c.Input("v_max");
-        var q = c.Si("Q");
+
+        if (c.Has("Phi_load") || c.Has("dT_load"))
+        {
+            if (!c.Has("Phi_load") || !c.Has("dT_load"))
+            {
+                c.Block("heat-flow", "Phi_load: a heat load gives the flow only with the flow-to-return temperature difference dT_load, and the other way round.");
+                return;
+            }
+
+            c.Input("Phi_load");
+            c.Input("dT_load");
+            c.Input("cp_load");
+
+            if (c.Has("Q"))
+                c.Warn("heat-flow-q", "Q: ignored, the design flow comes from the heat load; clear Q to remove this notice.");
+
+            c.Assign("Q_design", "Phi_load / (rho * cp_load * dT_load)", "m^3/h", "Design flow from the heat carried: Φ / (ρ c_p ΔT)");
+        }
+        else
+        {
+            if (!c.Has("Q"))
+            {
+                c.Block("heat-flow", "Q: give the design flow, or a heat load with its temperature difference.");
+                return;
+            }
+
+            c.Input("Q");
+            c.Assign("Q_design", "Q", "m^3/h", "Design flow (as entered)");
+        }
+
+        var q = c.Si("Q_design");
         var vMax = c.Si("v_max");
 
         var rows = c.Rows("segments");
@@ -234,13 +290,25 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         c.Assign("H_sys", "H_static + h_f_total", "m", "System head at the design flow");
         c.Assign("dp_total", "rho * 9.80665 m/s^2 * h_f_total", "kPa", "Friction pressure drop at the design flow");
         c.Assign("dp_sys", "rho * 9.80665 m/s^2 * H_sys", "kPa", "System pressure at the design flow");
-        c.Assign("P_hyd", "rho * 9.80665 m/s^2 * Q * H_sys", "kW", "Hydraulic power at the design point");
+        c.Assign("P_hyd", "rho * 9.80665 m/s^2 * Q_design * H_sys", "kW", "Hydraulic power at the design point");
         c.Output("h_f_total", "Σ h_f");
         c.Output("H_static", "Static head");
         c.Output("H_sys", "System head at Q");
         c.Output("dp_total", "Friction Δp");
         c.Output("dp_sys", "System Δp");
+        c.Output("Q_design", "Design flow");
         c.Output("P_hyd", "Hydraulic power");
+
+        // The pump's shaft power and torque at the design flow, for the motor that drives it (a rated speed is needed).
+        if (c.Has("n_pump"))
+        {
+            c.Input("n_pump");
+            c.Input("eta_pump");
+            c.Assign("P_shaft_design", "P_hyd / eta_pump", "kW", "Pump shaft power at the design flow");
+            c.Assign("T_shaft", "P_shaft_design / n_pump", "N*m", "Pump shaft torque at the design flow: P / ω");
+            c.Output("P_shaft_design", "Shaft power at the design flow");
+            c.Output("T_shaft", "Shaft torque at the design flow");
+        }
 
         // System curve.
         var hStatic = dzTotal + c.Si("h_out");

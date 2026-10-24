@@ -67,8 +67,12 @@ public sealed record CalcProvenance(CalcProvenanceKind Kind, string? Reference =
     }
 }
 
-/// <summary>One cell of a table-input row: a number (with unit), a text, or a flag.</summary>
-public sealed record CalcCell(double? Number = null, string? Unit = null, string? Text = null, bool? Flag = null);
+/// <summary>
+/// One cell of a table-input row: a number (with unit), a text, or a flag. A number cell may carry a
+/// <see cref="CalcProvenanceKind.Link"/> provenance, binding it to an output of another calculation (a cell link,
+/// ADR-0168 amendment 2); a cell without provenance serialises exactly as before.
+/// </summary>
+public sealed record CalcCell(double? Number = null, string? Unit = null, string? Text = null, bool? Flag = null, CalcProvenance? Provenance = null);
 
 /// <summary>One row of a table input, keyed by column.</summary>
 public sealed record CalcRow(IReadOnlyDictionary<string, CalcCell> Cells)

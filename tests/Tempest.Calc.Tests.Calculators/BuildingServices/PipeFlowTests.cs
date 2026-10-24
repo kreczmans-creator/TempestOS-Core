@@ -107,4 +107,67 @@ public sealed class PipeFlowTests
         Assert.Contains(r.Notices, n => n.RuleId == "velocity");
         Assert.False(r.Passed);
     }
+
+    private static CalcInputValue[] Loop(params CalcInputValue[] extra) =>
+    [
+        CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidWater), CalcInputValue.Quantity("T", 70, "degC"),
+        PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 2, "discharge")), CalcInputValue.Quantity("h_out", 0, "m"), .. extra,
+    ];
+
+    [Fact]
+    public void A_Heat_Load_Gives_The_Design_Flow_Phi_Over_Rho_Cp_DeltaT()
+    {
+        Gen.Select(Gen.Double[100, 1e6], Gen.Double[2, 40], Gen.Double[30, 90]).Sample((phi, dt, temp) =>
+        {
+            var r = Run([.. Loop(CalcInputValue.Quantity("Phi_load", phi, "W"), CalcInputValue.Quantity("dT_load", dt, "K"), CalcInputValue.Quantity("cp_load", 4186, "J/(kg*K)")), CalcInputValue.Quantity("T", temp, "degC")]);
+            Assert.False(r.IsBlocked);
+            var expected = phi / (Water.Density(temp) * 4186 * dt);
+            Assert.Equal(expected, r.OutputSi("Q_design"), expected * 1e-9);
+
+            // The same flow typed in gives the same hydraulics.
+            var typed = Run([.. Loop(CalcInputValue.Quantity("Q", expected * 3600, "m^3/h")), CalcInputValue.Quantity("T", temp, "degC")]);
+            Assert.Equal(typed.OutputSi("P_hyd"), r.OutputSi("P_hyd"), Math.Abs(typed.OutputSi("P_hyd")) * 1e-9 + 1e-15);
+        }, iter: 60);
+    }
+
+    [Fact]
+    public void A_Heat_Load_Needs_Its_Temperature_Difference_And_A_Flow_Is_Needed_Without_One()
+    {
+        var phiOnly = Run(Loop(CalcInputValue.Quantity("Phi_load", 1000, "W")));
+        Assert.True(phiOnly.IsBlocked);
+        Assert.Contains(phiOnly.Blocks, b => b.RuleId == "heat-flow" && b.Message.StartsWith("Phi_load:", StringComparison.Ordinal));
+
+        var dtOnly = Run(Loop(CalcInputValue.Quantity("dT_load", 10, "K")));
+        Assert.True(dtOnly.IsBlocked);
+
+        var neither = Run(Loop());
+        Assert.True(neither.IsBlocked);
+        Assert.Contains(neither.Blocks, b => b.RuleId == "heat-flow" && b.Message.StartsWith("Q:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_Flow_Typed_Beside_A_Heat_Load_Is_Ignored_With_A_Notice()
+    {
+        var r = Run(Loop(CalcInputValue.Quantity("Q", 50, "m^3/h"), CalcInputValue.Quantity("Phi_load", 1000, "W"), CalcInputValue.Quantity("dT_load", 10, "K")));
+        Assert.False(r.IsBlocked);
+        Assert.Contains(r.Notices, n => n.RuleId == "heat-flow-q");
+        Assert.True(r.OutputSi("Q_design") < 1e-4);
+    }
+
+    [Fact]
+    public void Shaft_Torque_Is_Hydraulic_Power_Over_Efficiency_And_Angular_Speed_And_Needs_A_Pump_Speed()
+    {
+        Gen.Select(Gen.Double[0.5, 50], Gen.Double[300, 5000], Gen.Double[0.3, 0.9]).Sample((qh, rpm, eta) =>
+        {
+            var r = Run(Loop(CalcInputValue.Quantity("Q", qh, "m^3/h"), CalcInputValue.Quantity("n_pump", rpm, "rpm"), CalcInputValue.Of("eta_pump", eta)));
+            Assert.False(r.IsBlocked);
+            var shaft = r.OutputSi("P_hyd") / eta;
+            Assert.Equal(shaft, r.OutputSi("P_shaft_design"), shaft * 1e-9);
+            var torque = shaft / (rpm * 2 * Math.PI / 60);
+            Assert.Equal(torque, r.OutputSi("T_shaft"), torque * 1e-9);
+        }, iter: 60);
+
+        var without = Run(Loop(CalcInputValue.Quantity("Q", 5, "m^3/h")));
+        Assert.DoesNotContain(without.Outputs, o => o.Symbol == "T_shaft");
+    }
 }

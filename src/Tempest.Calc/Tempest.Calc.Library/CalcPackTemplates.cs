@@ -53,6 +53,30 @@ public static class CalcPackTemplates
             new CalcPackBinding("e6", "Phi", "e2", "P_add"),
         ]);
 
+    /// <summary>
+    /// Wet heating: two rooms (B4) → sealed system (B6) → primary pipework and pump (B1) → circulator motor (E1). Each room's
+    /// design heat loss enters a row of B6's rooms table (a table-cell link, ADR-0168 amendment 2); B6's total heat and
+    /// flow-to-return temperature difference give B1 its design flow; B1's pump shaft torque is E1's load torque. B6 must be
+    /// given its two rooms as inputs: instantiating never creates table rows.
+    /// </summary>
+    public static CalcPackTemplate WetHeating { get; } = new(
+        "pack.wet-heating", "Wet heating",
+        "Sizes a wet heating circuit from the rooms to the circulator: room heat losses, emitters and expansion vessel, the pipework and pump at the flow that heat needs, and the motor that drives the pump.",
+        [
+            new CalcPackStep("b4a", "bs.room-heat-loss", "Room A heat loss"),
+            new CalcPackStep("b4b", "bs.room-heat-loss", "Room B heat loss"),
+            new CalcPackStep("b6", "bs.sealed-system", "Sealed system"),
+            new CalcPackStep("b1", "bs.pipe-pump", "Primary pipework and pump"),
+            new CalcPackStep("e1", "elec.motor-sizing", "Circulator motor"),
+        ],
+        [
+            new CalcPackBinding("b4a", "Phi_HL", "b6", "rooms", Row: 0, Column: "Phi"),
+            new CalcPackBinding("b4b", "Phi_HL", "b6", "rooms", Row: 1, Column: "Phi"),
+            new CalcPackBinding("b6", "Phi_tot", "b1", "Phi_load"),
+            new CalcPackBinding("b6", "dT_fr", "b1", "dT_load"),
+            new CalcPackBinding("b1", "T_shaft", "e1", "T_L"),
+        ]);
+
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating];
 }

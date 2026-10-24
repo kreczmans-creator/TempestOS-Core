@@ -83,4 +83,26 @@ public sealed class SealedSystemTests
         var r = CalcRunner.Run(Sealed, Defaults().With(rooms));
         Assert.Equal(0.9375, r.OutputSi("u_emit"), 9);
     }
+
+    [Fact]
+    public void The_Flow_To_Return_Difference_Is_Offered_And_Is_Not_The_Emitter_Mean_Difference()
+    {
+        Gen.Select(Gen.Double[40, 90], Gen.Double[1, 30]).Sample((tf, drop) =>
+        {
+            var tr = Math.Max(tf - drop, 30.0);
+            var r = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("t_f", tf, "degC")).With(CalcInputValue.Quantity("t_r", tr, "degC")));
+
+            if (r.IsBlocked)
+                return;
+
+            Assert.Equal(tf - tr, r.OutputSi("dT_fr"), 1e-9);
+        }, iter: 60);
+
+        // At 75/65/20 the emitter mean difference is 50 K but the loop drops 10 K.
+        var catalogue = CalcRunner.Run(Sealed, Defaults());
+        Assert.Equal(50, catalogue.OutputSi("dT"), 1e-9);
+        Assert.Equal(10, catalogue.OutputSi("dT_fr"), 1e-9);
+
+        Assert.Contains(Sealed.Template.OutputPorts!, p => p is { Symbol: "dT_fr", Unit: "K" });
+    }
 }

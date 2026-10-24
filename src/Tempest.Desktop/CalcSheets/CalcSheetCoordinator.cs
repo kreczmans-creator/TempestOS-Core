@@ -76,7 +76,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         var staleness = await _service.StalenessAsync(instance).ConfigureAwait(true);
         string? caption = null;
 
-        if (staleness.IsStale && instance.Links.Count > 0)
+        if (staleness.IsStale && instance.HasLinks)
             caption = instance.Status == CalcInstanceStatus.Draft ? "Update linked inputs" : $"Update to revision {CalcInstanceService.NextRevisionLabel(instance.Revision)}";
 
         _view.ShowStaleness(staleness, caption);

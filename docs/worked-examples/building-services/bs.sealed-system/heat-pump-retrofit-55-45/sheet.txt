@@ -52,77 +52,82 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
       = (55 degC + 45 degC) / 2 − 21 degC
       = 29 K
         Mean water-to-room temperature difference
-  [15] f_dT = (dT / 50 K)^n
+  [15] dT_fr = t_f - t_r
+      = 55 degC − 45 degC
+      = 10 K
+        Flow-to-return temperature difference (what the water gives up across the emitters)
+  [16] f_dT = (dT / 50 K)^n
       = (29 K / 50 K)^1.3
       = 0.49256
         Output correction from ΔT 50 K
-  [16] R1 = Φ_req/f_dT
+  [17] R1 = Φ_req/f_dT
       = 1800 / 0.49256
       = 3654.4 W
         Lounge: catalogue output needed; selected 3600 W gives 1773.2 W (utilisation 1.02)
-  [17] R2 = Φ_req/f_dT
+  [18] R2 = Φ_req/f_dT
       = 1100 / 0.49256
       = 2233.2 W
         Kitchen: catalogue output needed; selected 2200 W gives 1083.6 W (utilisation 1.02)
-  [18] R3 = Φ_req/f_dT
+  [19] R3 = Φ_req/f_dT
       = 900 / 0.49256
       = 1827.2 W
         Bed 1: catalogue output needed; selected 1800 W gives 886.6 W (utilisation 1.02)
-  [19] R4 = Φ_req/f_dT
+  [20] R4 = Φ_req/f_dT
       = 700 / 0.49256
       = 1421.2 W
         Bed 2: catalogue output needed; selected 1400 W gives 689.58 W (utilisation 1.02)
-  [20] R5 = Φ_req/f_dT
+  [21] R5 = Φ_req/f_dT
       = 600 / 0.49256
       = 1218.1 W
         Bathroom: catalogue output needed; selected 1100 W gives 541.81 W (utilisation 1.11)
-  [21] Phi_tot = Σ Φ_req
+  [22] Phi_tot = Σ Φ_req
       = 5100 W
       = 5100 W
         Total heat required by the rooms
-  [22] V_em = Σ V_em
+  [23] V_em = Σ V_em
       = 36 L
       = 36 L
         Emitter water content
-  [23] V_s = V_em + V_pipe + V_plant
+  [24] V_s = V_em + V_pipe + V_plant
       = 36 L + 40 L + 15 L
       = 91 L
         System water volume
-  [24] rho_fill = ρ(t_fill), Kell 1975
+  [25] rho_fill = ρ(t_fill), Kell 1975
       = t = 10 °C
       = 999.7 kg/m³
         Water density at fill
-  [25] rho_max = ρ(t_max), Kell 1975
+  [26] rho_max = ρ(t_max), Kell 1975
       = t = 60 °C
       = 983.2 kg/m³
         Water density at maximum temperature
-  [26] e_x = rho_fill / rho_max - 1
+  [27] e_x = rho_fill / rho_max - 1
       = 999.7 kg/m³ / 983.2 kg/m³ − 1
       = 0.016783
         Expansion coefficient of water
-  [27] p_st = rho_fill * 9.80665 m/s^2 * h_static
+  [28] p_st = rho_fill * 9.80665 m/s^2 * h_static
       = 999.7 kg/m³ × 9.80665 m/s^2 × 7 m
       = 0.68626 bar
         Static head at the vessel
-  [28] p_i = p_st + p_margin
+  [29] p_i = p_st + p_margin
       = 0.68626 bar + 0.3 bar
       = 0.98626 bar
         Pre-charge (initial) pressure, gauge
-  [29] V_e = e_x * V_s / (1 - (p_i + 1 bar) / (p_f + 1 bar))    « CIBSE Guide B1 §1.4
+  [30] V_e = e_x * V_s / (1 - (p_i + 1 bar) / (p_f + 1 bar))    « CIBSE Guide B1 §1.4
       = 0.016783 × 91 L / (1 − (0.98626 bar + 1 bar) / (2.5 bar + 1 bar))
       = 3.5312 L
         Minimum expansion vessel volume
-  [30] u_emit = max over rooms Φ_req/(Φ50·f_dT)
+  [31] u_emit = max over rooms Φ_req/(Φ50·f_dT)
       = worst room
       = 1.1074
         Emitter utilisation (governing room)
-  [32] u_vessel = V_e / V_vessel
+  [33] u_vessel = V_e / V_vessel
       = 3.5312 L / 12 L
       = 0.29427
         Vessel utilisation
 
 5. RESULTS
   dT = 29 K    Mean temperature difference
+  dT_fr = 10 K    Flow-to-return temperature difference
   f_dT = 0.49256    Output correction factor
   R1 = 3654.4 W    Lounge: Φ50 needed
   R2 = 2233.2 W    Kitchen: Φ50 needed
@@ -146,7 +151,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   WARNING record.n: n: a tabulated value not taken from a reference record (Emitter exponent); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.sealed-system@1.0.0
+  Template: bs.sealed-system@1.1.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5
