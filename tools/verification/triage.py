@@ -110,11 +110,12 @@ Every calculator Critical and High finding was reproduced with the probe tool. T
 
 {chr(10).join(cnt)}
 
-## Four Critical findings (fix before any owner use)
+## Critical findings (fix before any owner use)
 1. **P1-struct.section-properties-01.** A tube or hollow rectangle inside a composite section counts its hole as solid. A 200 × 10 tube reads 568.6 cm²; the correct area is 59.7 cm². The coordinator reproduced it.
 2. **P1-bs.psychrometrics-01.** Cooling with dehumidification swaps sensible and latent load. At 28 °C 50 % to 12 °C, the sheet shows 8.9 kW sensible and 16.4 kW latent; physics gives about 16.3 kW and 8.9 kW. Total load is right; SHR and coil selection are wrong. The coordinator reproduced it.
-3. **P1-chain.drive-train-01.** The drive-train pack binds motor RMS torque to the shaft as steady torque. Shaft yield and key checks never see peak torque. Fatigue ignores the reversing torque.
-4. **P1-chain.drive-train-02.** The same binding applies no gear ratio or efficiency. A shaft after a gearbox sees T·i·η. It is Critical only when i > 1; a direct-drive shaft is unaffected.
+3. **P1-chain.drive-train-01.** The drive-train pack binds motor RMS torque to the shaft as steady torque. Shaft yield and key checks never see peak torque. Fatigue ignores the reversing torque. It still reproduces at 298ade36.
+
+P1-chain.drive-train-02 (no gear ratio on the torque link) was Critical and is now High. The pack's example shaft sits on the motor side, where motor torque is correct. An output-side shaft still receives motor torque with no warning.
 
 ## Recommended test order for the owner
 The addendum's liability order is E4/E5, S8, F2, S6, S7, M3, M4.
