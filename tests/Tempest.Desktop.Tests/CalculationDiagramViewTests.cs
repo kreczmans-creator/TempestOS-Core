@@ -518,7 +518,7 @@ public sealed class CalculationDiagramViewTests
     private static void AssertDrawn(Window window, CalculationDiagramView diagram, string text)
     {
         LayOut(window);
-        var block = diagram.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Text == text && t.IsEffectivelyVisible);
+        var block = diagram.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => Tempest.Desktop.CalcSheets.SymbolText.Raw(t) == text && t.IsEffectivelyVisible);
         Assert.True(block is not null, $"'{text}' is not drawn on the reference diagram.");
         Assert.True(block!.Bounds.Width > 0 && block.Bounds.Height > 0, $"'{text}' is drawn at {block.Bounds}.");
     }

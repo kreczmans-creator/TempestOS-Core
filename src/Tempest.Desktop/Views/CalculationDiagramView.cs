@@ -233,7 +233,7 @@ public sealed class CalculationDiagramView : UserControl
 
     /// <summary>The label drawn for <paramref name="inputName"/>, as the sheet shows it, or <see langword="null"/>.</summary>
     public string? LabelFor(string inputName) =>
-        _parts.Where(p => p.InputName == inputName && p.Role == Role.Text).Select(p => ((TextBlock)p.Visual).Text).FirstOrDefault();
+        _parts.Where(p => p.InputName == inputName && p.Role == Role.Text).Select(p => Tempest.Desktop.CalcSheets.SymbolText.Raw((TextBlock)p.Visual)).FirstOrDefault();
 
     /// <summary>Points at the shapes of <paramref name="inputName"/> (or away, with <see langword="null"/>), as the pointer would.</summary>
     public void Hover(string? inputName)
@@ -269,7 +269,7 @@ public sealed class CalculationDiagramView : UserControl
             return;
         }
 
-        _caption.Text = reading.Variant.Caption;
+        Tempest.Desktop.CalcSheets.SymbolText.Set(_caption, reading.Variant.Caption);
         AutomationProperties.SetHelpText(this, reading.Summary);
 
         foreach (var shape in reading.Shapes)
@@ -510,13 +510,14 @@ public sealed class CalculationDiagramView : UserControl
         var room = leftAligned ? CalculationDiagramSpec.Width - anchor.X : 2 * Math.Min(anchor.X, CalculationDiagramSpec.Width - anchor.X);
         var block = new TextBlock
         {
-            Text = text,
             FontSize = LabelFontSize,
             FontFamily = DesignTokens.BodyFont,
             Width = Math.Max(0, room),
             TextAlignment = leftAligned ? TextAlignment.Left : TextAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis, // a long text input ends in "…", never cut mid-glyph
         };
+        // F_A reads as F with a subscript A, as on the sheet.
+        Tempest.Desktop.CalcSheets.SymbolText.Set(block, text);
         Canvas.SetLeft(block, leftAligned ? anchor.X : anchor.X - block.Width / 2);
         Canvas.SetTop(block, anchor.Y - LabelFontSize * 0.75);
         AutomationProperties.SetAccessibilityView(block, AccessibilityView.Raw);

@@ -121,7 +121,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
                 state, measure, ["What it calculates", "Relation"],
                 [W(0.42f), W(0.58f)],
                 method,
-                [SKTextAlign.Left, SKTextAlign.Left]);
+                [SKTextAlign.Left, SKTextAlign.Left], [true, true]);
             DocumentTemplate.AddGap(state, 2f);
         }
 
@@ -138,7 +138,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
                 state, measure, ["Symbol", "Description", "Value", "Unit", "Source", "Valid range"],
                 [W(0.12f), W(0.30f), W(0.12f), W(0.08f), W(0.22f), W(0.16f)],
                 [.. sheet.Inputs.Where(i => !IsElementRow(i)).Select(i => new[] { T(i.Symbol), T(i.Description), T(i.Value), T(CalcDiagramReader.Pretty(i.Unit)), T(i.Source), T(CalcDiagramReader.Pretty(i.ValidRange)) })],
-                [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left]);
+                [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left], [true, true, false, false, false, false]);
 
             // A table input's rows get the full width beneath, one line each, instead of a word per line in the
             // narrow Value column (the showcase journey found it); their source is the table input's own, above.
@@ -149,7 +149,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
                     state, measure, ["Table row", "Values"],
                     [W(0.14f), W(0.86f)],
                     [.. elements.Select(i => new[] { T(i.Symbol), T(i.Value) })],
-                    [SKTextAlign.Left, SKTextAlign.Left]);
+                    [SKTextAlign.Left, SKTextAlign.Left], [true, false]);
             }
 
             DocumentTemplate.AddGap(state, 6f);
@@ -162,7 +162,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             for (var n = 0; n < sheet.Assumptions.Count; n++)
             {
                 var a = sheet.Assumptions[n];
-                Line(state, measure, $"A{n + 1}. {a.Statement}{(a.Basis is { Length: > 0 } ? $" ({a.Basis})" : string.Empty)}");
+                Line(state, measure, $"A{n + 1}. {a.Statement}{(a.Basis is { Length: > 0 } ? $" ({a.Basis})" : string.Empty)}", symbols: true);
             }
 
             DocumentTemplate.AddGap(state, 6f);
@@ -175,7 +175,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             foreach (var s in sheet.Working)
             {
                 DocumentTemplate.EnsureSpace(state, DocumentTemplate.BodySize * DocumentTemplate.LineLeading * 3);
-                Line(state, measure, $"[{s.Ordinal}] {s.Symbol} = {s.Formula}", fontRole: DocumentFontRole.Mono, color: DocumentTemplate.Ink900);
+                Line(state, measure, $"[{s.Ordinal}] {s.Symbol} = {s.Formula}", fontRole: DocumentFontRole.Mono, color: DocumentTemplate.Ink900, symbols: true);
 
                 if (s.Clause is { Length: > 0 })
                 {
@@ -185,12 +185,12 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
                 }
 
                 if (!string.Equals(s.Substitution, s.Formula, StringComparison.Ordinal))
-                    Line(state, measure, $"      = {s.Substitution}", fontRole: DocumentFontRole.Mono);
+                    Line(state, measure, $"      = {s.Substitution}", fontRole: DocumentFontRole.Mono, symbols: true);
 
-                Line(state, measure, $"      = {s.ResultText}", fontRole: DocumentFontRole.Mono, color: DocumentTemplate.Ink900);
+                Line(state, measure, $"      = {s.ResultText}", fontRole: DocumentFontRole.Mono, color: DocumentTemplate.Ink900, symbols: true);
 
                 if (s.Description is { Length: > 0 })
-                    Line(state, measure, $"        {s.Description}", DocumentTemplate.CaptionSize);
+                    Line(state, measure, $"        {s.Description}", DocumentTemplate.CaptionSize, symbols: true);
             }
 
             DocumentTemplate.AddGap(state, 6f);
@@ -203,7 +203,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
                 state, measure, ["Symbol", "Value", "Description"],
                 [W(0.18f), W(0.27f), W(0.55f)],
                 [.. sheet.Outputs.Select(o => new[] { T(o.Symbol), T(o.ValueText), T(o.Description) })],
-                [SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left]);
+                [SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left], [true, true, true]);
             DocumentTemplate.AddGap(state, 6f);
         }
 
@@ -224,7 +224,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
                     double.IsInfinity(c.Utilisation) ? "—" : Tempest.Calc.Engine.Values.CalcValue.FormatNumber(c.Utilisation, 3),
                     c.Clause is { Length: > 0 } clause ? T(CalcBibliography.Format(references.Cite(clause))) : string.Empty,
                 })],
-                [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Left]);
+                [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Left], [false, true, true, true, false, false]);
         }
 
         DocumentTemplate.AddGap(state, 6f);
@@ -234,10 +234,10 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             Line(state, measure, "No warnings.");
 
         foreach (var b in sheet.Blocks)
-            Line(state, measure, $"BLOCK — {b.RuleId}: {b.Message}", color: DocumentTemplate.Ink900);
+            Line(state, measure, $"BLOCK — {b.RuleId}: {b.Message}", color: DocumentTemplate.Ink900, symbols: true);
 
         foreach (var w in sheet.Warnings)
-            Line(state, measure, $"WARNING — {w.RuleId}: {w.Message}");
+            Line(state, measure, $"WARNING — {w.RuleId}: {w.Message}", symbols: true);
 
         DocumentTemplate.AddGap(state, 6f);
         DocumentTemplate.AddHeading(state, measure, "8. Verification");
@@ -288,10 +288,10 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         }));
 
         foreach (var label in CalcDiagramPainter.Labels(reading))
-            state.Page.Texts.Add(new DocumentTemplate.TextRun(x + label.X, y + label.Y + DiagramLabelSize * 0.35f, T(label.Text, 80), DiagramLabelSize, false, label.LeftAligned ? SKTextAlign.Left : SKTextAlign.Center, DocumentTemplate.Ink900, DocumentFontRole.Body));
+            state.Page.Texts.Add(new DocumentTemplate.TextRun(x + label.X, y + label.Y + DiagramLabelSize * 0.35f, T(label.Text, 80), DiagramLabelSize, false, label.LeftAligned ? SKTextAlign.Left : SKTextAlign.Center, DocumentTemplate.Ink900, DocumentFontRole.Body, Symbols: true));
 
         state.Y += height + 4f;
-        Line(state, measure, $"Figure 1 — {reading.Variant.Caption}. Not to scale; the labels are the inputs as entered.", DocumentTemplate.CaptionSize);
+        Line(state, measure, $"Figure 1 — {reading.Variant.Caption}. Not to scale; the labels are the inputs as entered.", DocumentTemplate.CaptionSize, symbols: true);
         DocumentTemplate.AddGap(state, 6f);
     }
 
@@ -327,8 +327,8 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
     /// <summary>A table input's element row (stages[1]): no description or unit of its own, its value the row's cells as text.</summary>
     private static bool IsElementRow(CalcSheetInputRow i) => i.Symbol.Contains('[', StringComparison.Ordinal) && i.Description.Length == 0 && i.Unit.Length == 0;
 
-    private static void Line(DocumentTemplate.LayoutState state, SKPaint measure, string text, float size = DocumentTemplate.BodySize, DocumentFontRole fontRole = DocumentFontRole.Body, SKColor? color = null) =>
-        DocumentTemplate.AddWrappedLine(state, measure, T(text, MaxLineChars), size, bold: false, color: color, fontRole: fontRole);
+    private static void Line(DocumentTemplate.LayoutState state, SKPaint measure, string text, float size = DocumentTemplate.BodySize, DocumentFontRole fontRole = DocumentFontRole.Body, SKColor? color = null, bool symbols = false) =>
+        DocumentTemplate.AddWrappedLine(state, measure, T(text, MaxLineChars), size, bold: false, color: color, fontRole: fontRole, symbols: symbols);
 
     /// <summary>A field of the sheet holds at most this many characters in the PDF; the sheet builder caps values and provenance, this caps everything else (R-05, R-24).</summary>
     private const int MaxFieldChars = 400;

@@ -38,7 +38,7 @@ public sealed class CalcSheetPdfRendererTests
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(bytes, 0, 4));
 
         var text = PdfTextExtractor.ExtractText(bytes);
-        foreach (var marker in new[] { "CALCULATION SHEET", "ISSUED", "Scope and method", "Inputs", "Assumptions", "Working", "Results", "Checks", "Applicability", "Verification", "sigma = F / A", "60 MPa", "PASS", "calc-engine/1.0.0", "DRG-001" })
+        foreach (var marker in new[] { "CALCULATION SHEET", "ISSUED", "Scope and method", "Inputs", "Assumptions", "Working", "Results", "Checks", "Applicability", "Verification", "σ = F / A", "60 MPa", "PASS", "calc-engine/1.0.0", "DRG-001" })
             Assert.Contains(marker, text, StringComparison.Ordinal);
     }
 
@@ -104,7 +104,7 @@ public sealed class CalcSheetPdfRendererTests
         Assert.True(bytes.Length < 400 * 1024, $"the pack is {bytes.Length / 1024} KB");
         Assert.Contains("Pack index", text, StringComparison.Ordinal);
         Assert.Contains("Revisions", text, StringComparison.Ordinal);
-        Assert.True(text.IndexOf("Pack index", StringComparison.Ordinal) < text.IndexOf("sigma = F / A", StringComparison.Ordinal));
+        Assert.True(text.IndexOf("Pack index", StringComparison.Ordinal) < text.IndexOf("σ = F / A", StringComparison.Ordinal));
     }
 
     [Fact]
