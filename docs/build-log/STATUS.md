@@ -1,6 +1,6 @@
 # STATUS — 2026-10-24 (Addendum A complete)
 Addendum A: 13/13 — 12 calculators (M4, M5, M6, S4, S5, S6, B4, B5, B6, E4, E5, E6), L1 result linking with table-cell links, reference records with the licensed-source export lock, five linked chains with issued pack worked examples, Desktop saved-calculations and packs panels, Security and every colour team, owner test pack and handover
-Addendum B: 1/19 — B1 orientation done; B-0 foundations (Fluid Power discipline ADR-0170, W3 material library, gas-law kernel, tolerance-stack engine) in review
+Addendum B: 2/19 — B1 orientation; B-0 foundations merged (Fluid Power discipline ADR-0170, W3 material library, gas-law kernel, tolerance-stack engine; Opus review 6 Medium + 9 Low fixed); B-1 (M7, S7, B7, E7, F2) in build
 Addendum C (Track S): 0/8 — queued after Addendum B (C0); Track P runs in a separate session
 Owner test pack: docs/testing/v0.26.0-owner-test-pack.md (handover: docs/handover/v0.26.0-handover.md, Addendum A section)
 Unconfirmed (13, DA-11): M5 `ka-skf-6206`; S5 `ka-designers-guide`, worked example `office-floor-beam-uk-na`; B5 `ka-incropera-11-1`; E6 `ka-peukert`, `ka-psu-derating`; E5 `ka-wiring-matters-b32`, `ka-schneider-k`; M4 `ka-shigley-7-1`; S4 `ka-p363-m20-88`, `ka-p358-fin-plate`; base M1, S3, B2 cases; S6 worked example `portal-column-base-uc254`. Not pinned (owner copies needed): see the test pack §4.
