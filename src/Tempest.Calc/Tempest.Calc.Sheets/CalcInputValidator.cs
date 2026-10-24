@@ -35,7 +35,7 @@ public static class CalcInputValidator
             foreach (var symbol in kind.Symbols)
             {
                 if (inputs.Find(symbol) is { } tabulated && !IsEmpty(tabulated) && !IsRecordPin(tabulated.Provenance))
-                    notices.Add(new CalcNotice("record." + symbol, CalcNoticeSeverity.Warning, $"{symbol}: a tabulated value not taken from a {kind.Title} record; enter it as a reference record so its source, edition and licence travel with it."));
+                    notices.Add(new CalcNotice("record." + symbol, CalcNoticeSeverity.Warning, $"{symbol}: a tabulated value not taken from a reference record ({kind.Title}); enter it as one so its source, edition and licence travel with it."));
             }
         }
 

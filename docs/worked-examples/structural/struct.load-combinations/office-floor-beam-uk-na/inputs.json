@@ -1,0 +1,110 @@
+[
+  {
+    "Symbol": "K_FI",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Consequence class CC2.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "actions",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "Slab, finishes and services"
+          },
+          "category": {
+            "Text": "G permanent"
+          },
+          "F_k": {
+            "Number": 18
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Office imposed"
+          },
+          "category": {
+            "Text": "B office"
+          },
+          "F_k": {
+            "Number": 10
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GA-L2-001",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2 row(s)"
+  },
+  {
+    "Symbol": "gamma_G_inf",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA Table NA.A1.2(B)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "gamma_G_sup",
+    "Number": 1.35,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA Table NA.A1.2(B)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.35"
+  },
+  {
+    "Symbol": "gamma_Q",
+    "Number": 1.5,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA Table NA.A1.2(B)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "method",
+    "Text": "6.10a and 6.10b",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA Table NA.A1.2(B): the less favourable of 6.10a and 6.10b",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6.10a and 6.10b"
+  },
+  {
+    "Symbol": "unit",
+    "Text": "kN/m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Line load on the beam.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "kN/m"
+  },
+  {
+    "Symbol": "xi",
+    "Number": 0.925,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA Table NA.A1.2(B)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.925"
+  }
+]

@@ -1,0 +1,126 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: struct.load-combinations    Revision: A
+Title: Load combinations (EN 1990)
+
+1. SCOPE AND METHOD
+Design values of a single action effect (a force, a moment or a load intensity) under every EN 1990 Annex A1 combination for buildings: ULS persistent/transient, SLS characteristic, frequent and quasi-permanent, and accidental. Every variable action is tried as the leading one; the maximum and minimum envelopes and their governing combinations are reported.
+ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i ULS 6.10a: Σ γ_G·G + Σ γ_Q·K_FI·ψ_0·Q_i; 6.10b: Σ ξ·γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i Permanent factor: γ_G,sup when the action adds to the effect sought, γ_G,inf when it opposes it Variable actions: included only when they add to the effect sought (otherwise zero) SLS characteristic 6.14b: Σ G + Q_1 + Σ ψ_0·Q_i; frequent 6.15b: Σ G + ψ_1·Q_1 + Σ ψ_2·Q_i; quasi-permanent 6.16b: Σ G + Σ ψ_2·Q_i Accidental 6.11b: Σ G + A_d + ψ_1·Q_1 + Σ ψ_2·Q_i
+  Ref: EN 1990:2002+A1:2005 cl. 6.4.3.2 — Combinations for persistent or transient design situations (6.10, 6.10a, 6.10b)
+  Ref: EN 1990:2002+A1:2005 cl. 6.4.3.3 — Combinations for accidental design situations (6.11b)
+  Ref: EN 1990:2002+A1:2005 cl. 6.5.3 — Serviceability combinations (6.14b, 6.15b, 6.16b)
+  Ref: EN 1990:2002+A1:2005 Annex A1, Tables A1.1, A1.2(B) — Application for buildings: ψ and γ factors
+  Ref: UK NA to BS EN 1990:2002+A1:2005 NA.A1.2(A)–(C) — UK values of partial factors
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  actions | Actions (one effect, signed) | 2 row(s) |  | manual | any
+  actions[1] |  | name = Dead load; category = G permanent; F_k = 10 |  |  | 
+  actions[2] |  | name = Office imposed; category = B office; F_k = 5 |  |  | 
+  unit | Unit of the effect | kN |  | manual | any
+  method | ULS expression | 6.10 |  | manual | any
+  gamma_G_sup | γ_G,sup (unfavourable permanent) | 1.35 |  | manual | 1 … 2
+  gamma_G_inf | γ_G,inf (favourable permanent) | 1 |  | manual | 0.8 … 1.2
+  gamma_Q | γ_Q (variable) | 1.5 |  | manual | 1 … 2
+  xi | ξ reduction for 6.10b | 0.85 |  | manual | 0.8 … 1
+  K_FI | K_FI consequence-class factor | 1 |  | manual | 0.9 … 1.1
+
+3. ASSUMPTIONS
+  A1. One scalar action effect; every action's characteristic value is its contribution to that effect, with sign. (Linear superposition (EN 1990 cl. 6.3.1 representative values).)
+  A2. Buildings only (Annex A1); no bridges, fatigue or seismic combinations. (EN 1990 Annex A1 scope.)
+  A3. Without a ψ record the EN 1990 Annex A1 recommended values are used, labelled on the sheet; the UK National Annex (NA.A1.2(A)–(C)) values come from a user record. (§A5: no NA table ships.)
+  A4. Each permanent action takes γ_G,sup or γ_G,inf by whether it adds to or opposes the effect sought; for EQU single-source checks, enter a source's permanent actions as one row. (EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.)
+  A5. ψ factors: EN 1990 Annex A1 recommended values (Table A1.1). (No ψ record entered.)
+
+4. WORKING
+  [8] C1 = γ_G,sup·G1 + γ_Q·K_FI·Q2    « EN 1990 cl. 6.4.3.2
+      = 1.35×10 + 1.5×5
+      = 21 kN
+        ULS 6.10, Office imposed leading (max)
+  [9] C2 = 1·G1 + 1·Q2    « EN 1990 cl. 6.5.3
+      = 1×10 + 1×5
+      = 15 kN
+        SLS characteristic 6.14b, Office imposed leading (max)
+  [10] C3 = 1·G1 + ψ₁·Q2    « EN 1990 cl. 6.5.3
+      = 1×10 + 0.5×5
+      = 12.5 kN
+        SLS frequent 6.15b, Office imposed leading (max)
+  [11] C4 = 1·G1 + ψ₂·Q2    « EN 1990 cl. 6.5.3
+      = 1×10 + 0.3×5
+      = 11.5 kN
+        SLS quasi-permanent 6.16b (max)
+  [12] D1 = γ_G,inf·G1    « EN 1990 cl. 6.4.3.2
+      = 1×10
+      = 10 kN
+        ULS 6.10, no variable action (min)
+  [13] D2 = 1·G1    « EN 1990 cl. 6.5.3
+      = 1×10
+      = 10 kN
+        SLS characteristic 6.14b, no variable action (min)
+  [14] D3 = 1·G1    « EN 1990 cl. 6.5.3
+      = 1×10
+      = 10 kN
+        SLS frequent 6.15b, no variable action (min)
+  [15] D4 = 1·G1    « EN 1990 cl. 6.5.3
+      = 1×10
+      = 10 kN
+        SLS quasi-permanent 6.16b (min)
+  [16] E_d_max = maximum over the combinations
+      = ULS 6.10, Office imposed leading
+      = 21 kN
+        ULS design effect, maximum
+  [17] E_d_min = minimum over the combinations
+      = ULS 6.10, no variable action
+      = 10 kN
+        ULS design effect, minimum
+  [18] E_k_max = maximum over the combinations
+      = SLS characteristic 6.14b, Office imposed leading
+      = 15 kN
+        SLS characteristic effect, maximum
+  [19] E_k_min = minimum over the combinations
+      = SLS characteristic 6.14b, no variable action
+      = 10 kN
+        SLS characteristic effect, minimum
+  [20] E_fr_max = maximum over the combinations
+      = SLS frequent 6.15b, Office imposed leading
+      = 12.5 kN
+        SLS frequent effect, maximum
+  [21] E_fr_min = minimum over the combinations
+      = SLS frequent 6.15b, no variable action
+      = 10 kN
+        SLS frequent effect, minimum
+  [22] E_qp_max = maximum over the combinations
+      = SLS quasi-permanent 6.16b
+      = 11.5 kN
+        SLS quasi-permanent effect, maximum
+  [23] E_qp_min = minimum over the combinations
+      = SLS quasi-permanent 6.16b
+      = 10 kN
+        SLS quasi-permanent effect, minimum
+
+5. RESULTS
+  E_d_max = 21 kN    ULS design effect, maximum
+  E_d_min = 10 kN    ULS design effect, minimum
+  E_d_gov = "ULS 6.10, Office imposed leading"    ULS design effect, governing (max)
+  E_k_max = 15 kN    SLS characteristic effect, maximum
+  E_k_min = 10 kN    SLS characteristic effect, minimum
+  E_k_gov = "SLS characteristic 6.14b, Office imposed leading"    SLS characteristic effect, governing (max)
+  E_fr_max = 12.5 kN    SLS frequent effect, maximum
+  E_fr_min = 10 kN    SLS frequent effect, minimum
+  E_fr_gov = "SLS frequent 6.15b, Office imposed leading"    SLS frequent effect, governing (max)
+  E_qp_max = 11.5 kN    SLS quasi-permanent effect, maximum
+  E_qp_min = 10 kN    SLS quasi-permanent effect, minimum
+  E_qp_gov = "SLS quasi-permanent 6.16b"    SLS quasi-permanent effect, governing (max)
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  WARNING record.gamma_G_sup: gamma_G_sup: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_G_inf: gamma_G_inf: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_Q: gamma_Q: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.xi: xi: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: struct.load-combinations@1.0.0
+  Known-answer cases passed: 5/5

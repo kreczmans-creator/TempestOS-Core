@@ -96,14 +96,14 @@ Equivalent load: P = F_r when F_a/F_r ≤ e_lim, else P = X·F_r + Y·F_a Duty c
   PASS  Static safety factor against required: u_s0 = 0.18182 vs u_s0 ≤ 1  utilisation 0.182  « ISO 76:2006
 
 7. APPLICABILITY
-  WARNING record.C: C: a tabulated value not taken from a Bearing load ratings record; enter it as a reference record so its source, edition and licence travel with it.
-  WARNING record.C_0: C_0: a tabulated value not taken from a Bearing load ratings record; enter it as a reference record so its source, edition and licence travel with it.
-  WARNING record.e_lim: e_lim: a tabulated value not taken from a Bearing X, Y, e factors record; enter it as a reference record so its source, edition and licence travel with it.
-  WARNING record.X: X: a tabulated value not taken from a Bearing X, Y, e factors record; enter it as a reference record so its source, edition and licence travel with it.
-  WARNING record.Y: Y: a tabulated value not taken from a Bearing X, Y, e factors record; enter it as a reference record so its source, edition and licence travel with it.
-  WARNING record.X_0: X_0: a tabulated value not taken from a Bearing X, Y, e factors record; enter it as a reference record so its source, edition and licence travel with it.
-  WARNING record.Y_0: Y_0: a tabulated value not taken from a Bearing X, Y, e factors record; enter it as a reference record so its source, edition and licence travel with it.
-  WARNING record.a_iso: a_iso: a tabulated value not taken from a Bearing a_ISO record; enter it as a reference record so its source, edition and licence travel with it.
+  WARNING record.C: C: a tabulated value not taken from a reference record (Bearing load ratings); enter it as one so its source, edition and licence travel with it.
+  WARNING record.C_0: C_0: a tabulated value not taken from a reference record (Bearing load ratings); enter it as one so its source, edition and licence travel with it.
+  WARNING record.e_lim: e_lim: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.X: X: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.Y: Y: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.X_0: X_0: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.Y_0: Y_0: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.a_iso: a_iso: a tabulated value not taken from a reference record (Bearing a_ISO); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: mech.bearing-life@1.0.0
