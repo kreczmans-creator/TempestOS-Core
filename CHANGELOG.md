@@ -33,3 +33,8 @@
 - E6 load budget `elec.load-budget`: demand per bus, heat to E2, PSU with derating, transformer with a starting-peak check, battery with derates and optional Peukert; the engine gains VA and var (DA-09).
 - B6 sealed system `bs.sealed-system`: emitter outputs by the characteristic equation and the expansion vessel (Kell density, DA-10).
 - The worksheet form applies a reference record to a draft and saves tabulated inputs as a new record (licensed flag included).
+- E5 fault protection `elec.fault-protection`: Z_s at conductor temperature, Z_s,max from C_min·U₀/I_a (MCB B/C/D or user-read time–current points), disconnection time, adiabatic CPC and line checks with derived k, simplified fault level; every input hard-limited; independent check demanded (DA-12).
+- M6 weld group `mech.weld-group` (elastic line method) on a group-geometry kernel now shared with the M3 bolt group.
+- M4 shaft `mech.shaft`: two-plane bending through the S2 solver, DE-Goodman and yield at marked sections (Marin factors by published equations), slopes and deflections against limits, Rayleigh and Dunkerley critical speeds, parallel keys (DA-13).
+- Drive-train pack template (E1 → M4 → M5 → M2) with linked values and transitive staleness (DA-14).
+- Templates can demand an independent check: Check and CheckPack refuse the calculation's author (DA-12).
