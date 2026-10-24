@@ -130,6 +130,29 @@ public sealed class CalcSheetViewTests
     }
 
     [AvaloniaFact]
+    public void An_Optional_Input_An_Import_Leaves_Out_Stays_Blank_So_The_Inputs_Remain_Sourced()
+    {
+        // Found by the screenshot journey: the beam's optional w came back at its default with no source, so Check refused.
+        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All());
+        var view = new CalcSheetView();
+        view.ShowCatalogue(catalogue.Current());
+        view.SelectTemplate(Tempest.Calc.Structural.BeamFormulasCalculator.Id);
+        Assert.NotEqual(string.Empty, ((TextBox)view.FieldControl("w")!).Text);
+
+        view.ApplyImportedInputs(new CalcInputSet(
+        [
+            CalcInputValue.Choice("case", Tempest.Calc.Structural.BeamFormulasCalculator.SsPoint, CalcProvenance.Drawing("D1")),
+            CalcInputValue.Quantity("L", 6, "m", CalcProvenance.Drawing("D1")),
+            CalcInputValue.Quantity("P", 50, "kN", CalcProvenance.Specification("S1")),
+        ]));
+
+        Assert.Equal(string.Empty, ((TextBox)view.FieldControl("w")!).Text);
+        var read = view.ReadForm();
+        Assert.Null(read.Find("w"));
+        Assert.Equal(CalcProvenanceKind.Specification, read.Find("P")!.Provenance?.Kind);
+    }
+
+    [AvaloniaFact]
     public void MalformedImport_IsReported_AndTheFormIsUnchanged()
     {
         var (view, catalogue) = NewView();
