@@ -25,6 +25,8 @@ def kell_rho(t):
 def delta_t(tf, tr, ti, method="am"):
     if method == "am":
         return (tf + tr) / 2.0 - ti
+    if abs(tf - tr) < 1e-12:
+        return tf - ti  # limit of the log mean when flow equals return
     return (tf - tr) / math.log((tf - ti) / (tr - ti))
 
 
@@ -74,7 +76,84 @@ KATS = [
     ("ka-manufacturer-dt30", dict(tf=55, tr=45), [("f_dT", 0.51, 0.01)]),
 ]
 
-EXTRAS = []
+# Extra checks. Product values were read from the C# calculator with the probe tool
+# (tools/verification/probe, command "run", Release build of release/v0.26.0).
+# Units: W, K, L, bar, degC.
+EXTRAS = [
+    ('S1 70/50/21 AMTD, 3 rooms, 12 L vessel', dict(rooms=[('Lounge',2200,2400,3.1),('Kitchen',1100,1000,1.5),('Bed',900,0,2.0)], tf=70, tr=50, ti=21, v_pipe=60, v_plant=15, v_vessel=12),
+     {'dT': 39.0, 'f_dT': 0.723974023, 'R1': 3038.783064, 'R2': 1519.391532, 'R3': 1243.138526, 'Phi_tot': 4200.0, 'V_em': 6.6, 'V_s': 81.6, 'e_x': 0.03208619, 'p_i': 0.790185221, 'V_e': 5.35953722, 'u_emit': 1.519391532, 'u_vessel': 0.446628102}),
+    ('S2 80/40/20 log mean', dict(rooms=[('A',1000,0,0)], tf=80, tr=40, ti=20, method="lm"),
+     {'dT': 36.40956907, 'f_dT': 0.662093302, 'R1': 1510.361147, 'Phi_tot': 1000.0, 'V_em': 0.0, 'V_s': 30.0, 'e_x': 0.03208619, 'p_i': 0.790185221, 'V_e': 1.970418095}),
+    ('S3 60/60/20 log mean (equal flow and return)', dict(rooms=[('A',1000,0,0)], tf=60, tr=60, ti=20, method="lm"),
+     {'dT': 40.0, 'f_dT': 0.748198758, 'R1': 1336.54325, 'Phi_tot': 1000.0, 'V_em': 0.0, 'V_s': 30.0, 'e_x': 0.03208619, 'p_i': 0.790185221, 'V_e': 1.970418095}),
+    ('S4 1100 L, fill 5, max 95, 30 m, 5/6 bar', dict(v_pipe=1000, v_plant=100, t_fill=5, t_max=95, h=30, p_margin=0.5, p_f=5),
+     {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 1100.0, 'e_x': 0.039571055, 'p_i': 3.441888562, 'V_e': 167.6189242}),
+    ('S5 glycol record e = 0.05', dict(v_pipe=90, v_plant=10, e_fluid=0.05),
+     {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.05, 'p_i': 0.790185221, 'V_e': 10.23502675}),
+    ('S6 fill 4, max 30', dict(v_pipe=90, v_plant=10, t_fill=4, t_max=30),
+     {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.004343642, 'p_i': 0.790318768, 'V_e': 0.889215298}),
+    ('S7 p_f 2.95 bar, PRV 3 bar', dict(v_pipe=90, v_plant=10, p_f=2.95),
+     {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.03208619, 'p_i': 0.790185221, 'V_e': 5.868116696}),
+    ('S8 10 000 L system', dict(v_pipe=9990, v_plant=10),
+     {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 10000.0, 'e_x': 0.03208619, 'p_i': 0.790185221, 'V_e': 656.8060318}),
+    ('S9 n 1.5, 90/90/16 (dT 74 K)', dict(rooms=[('A',1000,1500,0)], tf=90, tr=90, ti=16, n=1.5, t_max=99),
+     {'dT': 74.0, 'f_dT': 1.800497709, 'R1': 555.4019841, 'Phi_tot': 1000.0, 'V_em': 0.0, 'V_s': 30.0, 'e_x': 0.042352425, 'p_i': 0.790185221, 'V_e': 2.600869187, 'u_emit': 0.370267989}),
+    ('S10 fill 1, max 99', dict(v_pipe=90, v_plant=10, t_fill=1, t_max=99),
+     {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.042559802, 'p_i': 0.790282744, 'V_e': 8.712511121}),
+    ('S11 fill 30 = max 30 (e = 0)', dict(v_pipe=90, v_plant=10, t_fill=30, t_max=30, tf=30, tr=30, ti=16),
+     {'dT': 14.0, 'f_dT': 0.191119694, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.0, 'p_i': 0.78819821, 'V_e': 0.0}),
+]
+
+
+def run_extras():
+    fails = 0
+    print()
+    print("Extra checks (product values read with the probe tool)")
+    print(f"{'probe':46s} {'symbol':8s} {'product':>13s} {'independent':>13s} {'rel.diff':>9s} result")
+    for label, kw, prod in EXTRAS:
+        ind = sealed(**kw)
+        for sym, pv in prod.items():
+            if sym not in ind:
+                print(f"{label[:46]:46s} {sym:8s} not computed by the independent model FAIL")
+                fails += 1
+                continue
+            iv = ind[sym]
+            scale = max(abs(pv), abs(iv), 1e-12)
+            rd = abs(pv - iv) / scale
+            ok = rd <= 1e-6 or abs(pv - iv) < 1e-9
+            fails += (not ok)
+            print(f"{label[:46]:46s} {sym:8s} {pv:13.7g} {iv:13.7g} {rd:9.2e} {'PASS' if ok else 'FAIL'}")
+
+    # ---- Behaviour that matches the product but is questionable (see the report) ----
+    print()
+    print("Observations that explain the findings (independent figures)")
+    # 01: fill temperature above the maximum temperature gives a negative expansion.
+    o = sealed(v_pipe=90, v_plant=10, t_fill=40, t_max=30, tf=30, tr=30, ti=16)
+    print(f"P1-bs.sealed-system-01  fill 40, max 30 degC: e_x {o['e_x']:.7f}, V_e {o['V_e']:.5f} L"
+          f"  (product: -0.0034465, -0.70399 L, no block)")
+    # 02: final pressure 0.05 bar below the safety valve setting is accepted.
+    d = sealed(v_pipe=90, v_plant=10, p_f=2.5)["V_e"]
+    c = sealed(v_pipe=90, v_plant=10, p_f=2.95)["V_e"]
+    print(f"P1-bs.sealed-system-02  V_e at p_f 2.5 bar {d:.4f} L, at p_f 2.95 bar (PRV 3) {c:.4f} L: {100*(c/d-1):+.1f} %")
+    # 03: water reserve (seal) volume of 0.5 % of V_s, minimum 3 L, not in the product formula.
+    o = sealed(v_pipe=90, v_plant=10)
+    vwr = max(0.005 * o["V_s"], 3.0)
+    ve_res = (o["e_x"] * o["V_s"] + vwr) / (1.0 - (o["p_i"] + 1.0) / (2.5 + 1.0))
+    print(f"P1-bs.sealed-system-03  ka-vessel V_e {o['V_e']:.4f} L; with a {vwr:.1f} L reserve {ve_res:.4f} L (only if the standard requires it)")
+    # 04: 1 bar versus 1.01325 bar for atmospheric pressure.
+    pa = 1.01325
+    v1 = o["e_x"] * o["V_s"] / (1.0 - (o["p_i"] + pa) / (2.5 + pa))
+    print(f"P1-bs.sealed-system-04  ka-vessel V_e with 1.01325 bar atmosphere {v1:.4f} L ({100*(v1/o['V_e']-1):+.2f} %)")
+    # 05: no range guard on the mean temperature difference.
+    o = sealed(rooms=[("A", 1000, 0, 0)], tf=30, tr=30, ti=24)
+    print(f"P1-bs.sealed-system-05  30/30/24 degC: dT {o['dT']:.1f} K, f_dT {o['f_dT']:.4f}, 1000 W needs {o['R1']:.0f} W at dT 50 (product: no warning)")
+    # 06: with a glycol record the static head still uses the water density at fill.
+    #     Illustration: a mixture 4 % denser than water (value chosen for the example only).
+    o = sealed(v_pipe=90, v_plant=10, e_fluid=0.05)
+    p_gly = 1.04 * kell_rho(10) * G * 5 / 1e5 + 0.3
+    ve_gly = 0.05 * o["V_s"] / (1.0 - (p_gly + 1.0) / (2.5 + 1.0))
+    print(f"P1-bs.sealed-system-06  e = 0.05: V_e {o['V_e']:.4f} L (water density) vs {ve_gly:.4f} L (4 % denser fluid): {100*(ve_gly/o['V_e']-1):+.2f} %")
+    return fails
 
 
 def run():
