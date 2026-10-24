@@ -1,0 +1,86 @@
+[
+  {
+    "Symbol": "RH",
+    "Number": 60,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Design condition",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "RH_2",
+    "Number": 95,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Off-coil 95 % RH (typical contact factor).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "95"
+  },
+  {
+    "Symbol": "altitude",
+    "Number": 0,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sea-level site.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "known",
+    "Text": "relative humidity",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "RH given.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "relative humidity"
+  },
+  {
+    "Symbol": "m_da",
+    "Number": 2.4,
+    "Unit": "kg/s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "AHU schedule AHU-01: 2.0 m\u00B3/s \u2248 2.4 kg/s dry air",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2.4"
+  },
+  {
+    "Symbol": "process",
+    "Text": "cooling with dehumidification",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Chilled-water coil.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "cooling with dehumidification"
+  },
+  {
+    "Symbol": "t_2",
+    "Number": 12,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "AHU schedule AHU-01 off-coil 12 \u00B0C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "12"
+  },
+  {
+    "Symbol": "t_db",
+    "Number": 28,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "CIBSE Guide A summer design condition for the site, assumed",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "28"
+  }
+]

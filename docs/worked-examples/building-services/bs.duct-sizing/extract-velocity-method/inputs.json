@@ -1,0 +1,191 @@
+[
+  {
+    "Symbol": "T",
+    "Number": 25,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Workshop air 25 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
+    "Symbol": "dp_limit",
+    "Number": 600,
+    "Unit": "Pa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Extract fan external static 600 Pa",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "600"
+  },
+  {
+    "Symbol": "eps",
+    "Number": 0.15,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Spiral-wound galvanised duct with joints.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.15"
+  },
+  {
+    "Symbol": "method",
+    "Text": "velocity",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Velocity method for an extract system.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "velocity"
+  },
+  {
+    "Symbol": "p_atm",
+    "Number": 100.5,
+    "Unit": "kPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Site 70 m AOD, \u2248 100.5 kPa.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100.5"
+  },
+  {
+    "Symbol": "round_to",
+    "Number": 50,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1506 preferred sizes",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "sections",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "hood branch"
+          },
+          "Q": {
+            "Number": 0.35,
+            "Unit": "m^3/s"
+          },
+          "L": {
+            "Number": 6,
+            "Unit": "m"
+          },
+          "shape": {
+            "Text": "round"
+          },
+          "a": {},
+          "D": {},
+          "C": {
+            "Number": 1.5
+          },
+          "dp_eq": {
+            "Number": 120,
+            "Unit": "Pa"
+          },
+          "index": {
+            "Flag": true
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "main"
+          },
+          "Q": {
+            "Number": 1.05,
+            "Unit": "m^3/s"
+          },
+          "L": {
+            "Number": 20,
+            "Unit": "m"
+          },
+          "shape": {
+            "Text": "round"
+          },
+          "a": {},
+          "D": {},
+          "C": {
+            "Number": 0.6
+          },
+          "dp_eq": {
+            "Number": 0,
+            "Unit": "Pa"
+          },
+          "index": {
+            "Flag": true
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "stack"
+          },
+          "Q": {
+            "Number": 1.05,
+            "Unit": "m^3/s"
+          },
+          "L": {
+            "Number": 8,
+            "Unit": "m"
+          },
+          "shape": {
+            "Text": "round"
+          },
+          "a": {},
+          "D": {},
+          "C": {
+            "Number": 1
+          },
+          "dp_eq": {
+            "Number": 30,
+            "Unit": "Pa"
+          },
+          "index": {
+            "Flag": true
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-310",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3 row(s)"
+  },
+  {
+    "Symbol": "v_limit",
+    "Number": 15,
+    "Unit": "m/s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-09 noise limit",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "15"
+  },
+  {
+    "Symbol": "v_target",
+    "Number": 10,
+    "Unit": "m/s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Dust-carrying extract: 10 m/s minimum transport velocity, SPEC-M-09",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  }
+]

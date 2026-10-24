@@ -1,0 +1,123 @@
+[
+  {
+    "Symbol": "Q",
+    "Number": 1,
+    "Unit": "m^3/h",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Transfer pump duty",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "T",
+    "Number": 20,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Ambient 20 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "fluid",
+    "Text": "custom (\u03C1 and \u03BC given)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Oil datasheet ISO VG 680 at 20 \u00B0C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "custom (\u03C1 and \u03BC given)"
+  },
+  {
+    "Symbol": "h_out",
+    "Number": 0,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Open discharge.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "mu_custom",
+    "Number": 800,
+    "Unit": "mPa*s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Oil datasheet ISO VG 680 at 20 \u00B0C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "800"
+  },
+  {
+    "Symbol": "rho_custom",
+    "Number": 888,
+    "Unit": "kg/m^3",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Oil datasheet ISO VG 680",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "888"
+  },
+  {
+    "Symbol": "segments",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "transfer line"
+          },
+          "L": {
+            "Number": 40,
+            "Unit": "m"
+          },
+          "D": {
+            "Number": 50,
+            "Unit": "mm"
+          },
+          "eps": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "K": {
+            "Number": 0
+          },
+          "L_eq": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "dz": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "side": {
+            "Text": "discharge"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-L-020",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1 row(s)"
+  },
+  {
+    "Symbol": "v_max",
+    "Number": 3,
+    "Unit": "m/s",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Practice limit.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  }
+]

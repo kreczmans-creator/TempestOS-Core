@@ -1,0 +1,130 @@
+[
+  {
+    "Symbol": "A_c",
+    "Number": 6,
+    "Unit": "mm^2",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cable schedule CS-02: 6 mm\u00B2 Cu",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6"
+  },
+  {
+    "Symbol": "I",
+    "Number": 20,
+    "Unit": "A",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Load schedule DC-02: 20 A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "L",
+    "Number": 30,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-E-301",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
+  },
+  {
+    "Symbol": "T_c",
+    "Number": 70,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "V_n",
+    "Number": 48,
+    "Unit": "V",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "48"
+  },
+  {
+    "Symbol": "X_km",
+    "Number": 0,
+    "Unit": "ohm/km",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "alpha",
+    "Number": 0.00393,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "Reference record: annealed copper (Hughes)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.00393"
+  },
+  {
+    "Symbol": "data",
+    "Text": "resistivity and area",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "resistivity and area"
+  },
+  {
+    "Symbol": "dv_limit",
+    "Number": 5,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Battery system spec BS-1: 5 % at the load",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
+    "Symbol": "n_par",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "rho_20",
+    "Number": 0.01724,
+    "Unit": "ohm*mm^2/m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "Reference record: annealed copper (Hughes)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.01724"
+  },
+  {
+    "Symbol": "system",
+    "Text": "DC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "DC"
+  }
+]

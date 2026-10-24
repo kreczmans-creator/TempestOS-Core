@@ -1,0 +1,145 @@
+[
+  {
+    "Symbol": "shape",
+    "Text": "polygon",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-BG-100",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "polygon"
+  },
+  {
+    "Symbol": "vertices",
+    "Rows": [
+      {
+        "Cells": {
+          "x": {
+            "Number": -200,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": -300,
+            "Unit": "mm"
+          },
+          "loop": {
+            "Number": 1
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": 200,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": -300,
+            "Unit": "mm"
+          },
+          "loop": {
+            "Number": 1
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": 200,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": 300,
+            "Unit": "mm"
+          },
+          "loop": {
+            "Number": 1
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": -200,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": 300,
+            "Unit": "mm"
+          },
+          "loop": {
+            "Number": 1
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": -180,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": -280,
+            "Unit": "mm"
+          },
+          "loop": {
+            "Number": 2
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": 180,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": -280,
+            "Unit": "mm"
+          },
+          "loop": {
+            "Number": 2
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": 180,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": 280,
+            "Unit": "mm"
+          },
+          "loop": {
+            "Number": 2
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": -180,
+            "Unit": "mm"
+          },
+          "y": {
+            "Number": 280,
+            "Unit": "mm"
+          },
+          "loop": {
+            "Number": 2
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-BG-100",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8 row(s)"
+  }
+]

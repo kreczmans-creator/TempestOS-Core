@@ -1,0 +1,13 @@
+# B6 — Sealed system: emitters and expansion vessel (`bs.sealed-system@1.1.0`)
+
+**Scope.** Closed LTHW system below 100 °C: the catalogue output (ΔT 50 K) each room's emitter needs at the design temperatures, checked against the selected emitters; the minimum expansion vessel.
+
+**Method.** `ΔT = (t_f + t_r)/2 − t_i` or the log mean (BS EN 442-2 cl. 5). `Φ = Φ50 (ΔT/50)^n`; `Φ50,req = Φ_req/(ΔT/50)^n`. `V_s = ΣV_em + V_pipe + V_plant`. `e_x = ρ(t_fill)/ρ(t_max) − 1` (Kell 1975, within about 0.01 % of IAPWS-95 at 1 atm), or a glycol record. `p_i = ρ g h + margin`. `V_e = e_x V_s/[1 − (p_i + 1)/(p_f + 1)]` (bar g; + 1 bar as usually written).
+
+**Inputs.** optional `rooms` table (name, Φ, selected Φ50, V_em; ≤ 200); `t_f`, `t_r` 30–90 °C; `t_i` 16–24 °C; `n` 1.1–1.5 (record `emitter.rating`); `dT_method`; `V_pipe`, `V_plant` (V_s must be 10–10 000 L); `t_fill`, `t_max`; optional `e_fluid` (record `fluid.expansion`); `h_static` 0–50 m; `p_margin`; `p_f`; `p_prv` 1.5–6 bar; optional `V_vessel`. The symbol `e` is the engine's constant, so the coefficient is `e_x`.
+
+**Outputs.** `dT`, `dT_fr` (flow-to-return difference `t_f − t_r`, added in 1.1.0 because the emitter mean difference `dT` is not the temperature drop of the loop), `t_m` (mean water temperature `(t_f + t_r)/2`, °C), `f_dT`, `R1…` (Φ50 needed per room), `Phi_tot`, `V_em`, `V_s`, `e_x`, `p_i`, `V_e`, `u_emit`, `u_vessel`. **Ports.** `Phi_tot`, `dT_fr` and `t_m` → B1 (`Phi_load`, `dT_load`, `T`), `V_s`, `V_e`, `dT`. The `Phi` column of `rooms` takes a cell link from B4's `Phi_HL` (ADR-0168 amendment 2). **Checks.** governing room emitter; selected vessel.
+
+**Limitations.** Closed LTHW below 100 °C; no pipe-loss or emitter-position corrections; Kell density at atmospheric pressure.
+
+**Test cases.** `ka-dt50`, `ka-dt30`, `ka-lmtd`, `ka-vessel` (V_e 6.568 L) — analytic, Confirmed; `ka-manufacturer-dt30` (factor ≈ 0.51 at ΔT 30 K, n 1.3) — **Unconfirmed** until checked against the owner's radiator catalogue. CIBSE Guide B1 (2016) and vessel-manufacturer worked examples are not pinned: the owner's copies are needed.

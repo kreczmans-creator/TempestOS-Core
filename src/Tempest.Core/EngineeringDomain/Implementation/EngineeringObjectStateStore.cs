@@ -295,6 +295,31 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore, 
     /// <see langword="null"/> if none is found (a standalone object, or an
     /// ancestor whose own state is missing or unreadable).
     /// </summary>
+    /// <summary>
+    /// Reads one object's stored state under the caller's transaction (the
+    /// committed state as this transaction sees it), or <see langword="null"/>
+    /// when none is stored. Used by mutations whose precondition must hold
+    /// at write time, not only at the moment the caller looked (a second
+    /// Issue racing the first).
+    /// </summary>
+    public static async Task<EngineeringObjectState?> ReadInTransactionAsync(IPersistenceTransaction transaction, Guid id, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+        var json = await transaction.ReadAsync(StateCollectionName, id.ToString("N"), cancellationToken).ConfigureAwait(false);
+
+        if (json is null)
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<EngineeringObjectState>(json, StateJsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     private static async Task<Guid?> ResolveProjectIdAsync(IPersistenceTransaction transaction, EngineeringObjectState state, CancellationToken cancellationToken)
     {
         if (string.Equals(state.Kind, ProjectKind, StringComparison.Ordinal))

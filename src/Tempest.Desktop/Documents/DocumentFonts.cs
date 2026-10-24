@@ -114,6 +114,130 @@ public static class DocumentFonts
     /// (root namespace, folder separators as dots) is an implementation
     /// detail this class would rather not depend on verbatim.
     /// </summary>
+    private static readonly Dictionary<string, byte[]?> RawCache = new(StringComparer.Ordinal);
+
+    /// <summary>The raw bytes of a brand font resource, or <see langword="null"/> where the role draws with the platform default (Body).</summary>
+    public static byte[]? RawBytes(DocumentFontRole role, bool bold)
+    {
+        var fileName = role switch
+        {
+            DocumentFontRole.Display => bold ? "ChakraPetch-Bold.ttf" : "ChakraPetch-Regular.ttf",
+            DocumentFontRole.Mono => bold ? "SpaceMono-Bold.ttf" : "SpaceMono-Regular.ttf",
+            _ => null,
+        };
+
+        if (fileName is null)
+            return null;
+
+        lock (RawCache)
+        {
+            if (!RawCache.TryGetValue(fileName, out var bytes))
+            {
+                var assembly = typeof(DocumentFonts).Assembly;
+                var resourceName = Array.Find(assembly.GetManifestResourceNames(), n => n.EndsWith(fileName, StringComparison.Ordinal));
+                using var stream = resourceName is null ? null : assembly.GetManifestResourceStream(resourceName);
+
+                if (stream is null)
+                {
+                    bytes = null;
+                }
+                else
+                {
+                    using var copy = new MemoryStream();
+                    stream.CopyTo(copy);
+                    bytes = copy.ToArray();
+                }
+
+                RawCache[fileName] = bytes;
+            }
+
+            return bytes;
+        }
+    }
+
+    /// <summary>
+    /// `v0.26.0` (§3.6): one subset typeface per brand face used by
+    /// <paramref name="runs"/>, holding only the glyphs those runs draw
+    /// (<see cref="TrueTypeSubsetter"/>). A face that cannot be subset is
+    /// left out, so the caller draws it whole. The caller disposes them.
+    /// </summary>
+    public static Dictionary<(DocumentFontRole Role, bool Bold), SKTypeface> SubsetsFor(IEnumerable<DocumentTemplate.TextRun> runs)
+    {
+        ArgumentNullException.ThrowIfNull(runs);
+
+        var chars = new Dictionary<(DocumentFontRole, bool), HashSet<int>>();
+
+        foreach (var run in runs)
+        {
+            if (!chars.TryGetValue((run.FontRole, run.Bold), out var set))
+                chars[(run.FontRole, run.Bold)] = set = [];
+
+            foreach (var rune in run.Text.EnumerateRunes())
+                set.Add(rune.Value);
+        }
+
+        var result = new Dictionary<(DocumentFontRole, bool), SKTypeface>();
+
+        foreach (var ((role, bold), set) in chars)
+        {
+            // Body draws with the platform default face; its bytes come from
+            // the typeface itself so that it, too, is embedded as a subset
+            // (Windows's default face alone is several hundred kilobytes).
+            var raw = RawBytes(role, bold) ?? DefaultFaceBytes();
+
+            if (raw is null)
+                continue;
+
+            try
+            {
+                var subset = TrueTypeSubsetter.Subset(raw, set);
+                var typeface = SKTypeface.FromData(SKData.CreateCopy(subset));
+
+                if (typeface is not null)
+                    result[(role, bold)] = typeface;
+            }
+            catch (InvalidDataException)
+            {
+                // Draw that face whole; the subsetter never breaks a document.
+            }
+        }
+
+        return result;
+    }
+
+    private static byte[]? _defaultFaceBytes;
+    private static bool _defaultFaceRead;
+
+    /// <summary>The raw bytes of the Body typeface (the platform default), read once through <see cref="SKTypeface.OpenStream()"/>; <see langword="null"/> when the platform exposes no data.</summary>
+    private static byte[]? DefaultFaceBytes()
+    {
+        lock (RawCache)
+        {
+            if (_defaultFaceRead)
+                return _defaultFaceBytes;
+
+            _defaultFaceRead = true;
+
+            try
+            {
+                using var stream = BodyTypeface.Value.OpenStream();
+
+                if (stream is null || stream.Length <= 0 || stream.Length > 32 * 1024 * 1024)
+                    return null;
+
+                var bytes = new byte[stream.Length];
+                var read = stream.Read(bytes, bytes.Length);
+                _defaultFaceBytes = read == bytes.Length ? bytes : null;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidOperationException or NotSupportedException)
+            {
+                _defaultFaceBytes = null;
+            }
+
+            return _defaultFaceBytes;
+        }
+    }
+
     private static SKTypeface Load(string fileName)
     {
         var assembly = typeof(DocumentFonts).Assembly;

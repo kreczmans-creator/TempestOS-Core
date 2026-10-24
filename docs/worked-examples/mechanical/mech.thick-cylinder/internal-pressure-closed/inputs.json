@@ -1,0 +1,70 @@
+[
+  {
+    "Symbol": "a",
+    "Number": 50,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-CYL-01",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "b",
+    "Number": 100,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-CYL-01",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "closed",
+    "Flag": true,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-CYL-01 end caps",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "yes"
+  },
+  {
+    "Symbol": "p_i",
+    "Number": 50,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-PV-2 \u00A73 design pressure",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "p_o",
+    "Number": 0,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Atmospheric outside.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "sigma_allow",
+    "Number": 200,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-PV-2 \u00A75",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "200"
+  }
+]

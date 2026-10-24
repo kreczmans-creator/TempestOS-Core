@@ -1,0 +1,9 @@
+# B2 — Psychrometrics (`bs.psychrometrics@1.0.0`)
+
+**Scope.** Moist-air state from dry-bulb plus wet-bulb, RH, humidity ratio, dew point or enthalpy, at a pressure or a standard-atmosphere altitude; outputs p_ws, p_w, W, RH, dew point, wet-bulb, h, v, ρ. One process on a dry-air mass flow: sensible heating/cooling, cooling with dehumidification (condensate, total/sensible/latent, SHR), steam humidification, adiabatic humidification (target RH or saturation efficiency), adiabatic mixing of two streams. Chart series: saturation curve, RH 20–80 % lines, process line.
+
+**Method.** Hyland–Wexler (1983) saturation pressure over water (≥ 0 °C) and ice; ASHRAE Fundamentals Ch. 1 ideal-gas relations in own notation (`MoistAir`): W = 0.621945 p_w/(p − p_w), h = 1.006 t + W(2501 + 1.86 t), v = 0.287042 T(1 + 1.607858 W)/p; dew point and wet-bulb by capped bisection (wet-bulb from the adiabatic-saturation relation, ice form below 0 °C). Enhancement factor taken as 1 (assumption A1; ≈ 0.4 % at 20 °C).
+
+**Inputs.** `altitude`, `p`, `t_db`, `known`, one of `RH`/`t_wb`/`W`/`t_dp`/`h`, `m_da`, `process`, `t_2`, `RH_2`, `W_2`, `h_steam`, `eff`, `t_db_b`, `RH_b`, `m_da_b`. **Outputs.** per state `t_<k>_out`, `p_ws_<k>`, `p_w_<k>`, `W_<k>` (g/kg), `RH_<k>` (%), `t_dp_<k>`, `t_wb_<k>`, `h_<k>` (kJ/kg), `v_<k>`, `rho_<k>`; process `Q`, `Q_total`, `Q_sensible`, `Q_latent`, `SHR`, `m_w`, `m_s`, `m_w_add`, `eff_out`, `m_da_3`. **Checks.** none; blocks for supersaturated or unreachable states.
+
+**Test cases.** Saturated air at 20 °C against ASHRAE Table 3 (within 0.5 %, enhancement factor explained); ASHRAE Ch. 1 Example 1 style 40 °C / 20 °C wet-bulb (Unconfirmed against the printed example; values from the same relations); sensible heating (analytic); mixing (analytic).

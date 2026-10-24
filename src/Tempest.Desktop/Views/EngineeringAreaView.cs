@@ -53,6 +53,8 @@ public sealed class EngineeringAreaView : UserControl
     private readonly CalculationModulesView _calculators;
     private readonly Func<Task> _onEngineeringCalculationSelected;
     private readonly Func<Task> _onCalculatorsSelected;
+    private readonly Tempest.Desktop.CalcSheets.CalcSheetView _worksheets;
+    private readonly Func<Task> _onWorksheetsSelected;
     private readonly ICommandDispatcher _commandDispatcher;
     private readonly Action<Guid, string> _openObjectRightUp;
 
@@ -73,6 +75,8 @@ public sealed class EngineeringAreaView : UserControl
     private readonly Dictionary<string, TreeViewItem> _disciplineNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _calculationsNode = new() { Header = "Calculation register" };
     private readonly TreeViewItem _calculatorsNode = new() { Header = "Calculators" };
+    private readonly TreeViewItem _worksheetsNode = new() { Header = "Worksheets" };
+    private readonly Dictionary<string, TreeViewItem> _disciplineWorksheetNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _assetsNode = new() { Header = "Packs and templates" };
     private readonly TreeViewItem _referenceDataNode = new() { Header = "Reference data" };
 
@@ -105,7 +109,8 @@ public sealed class EngineeringAreaView : UserControl
         EngineeringCalculationView engineeringCalculation, LibrariesView referenceData,
         EngineeringDashboardView dashboard, Func<Task> onEngineeringCalculationSelected,
         ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp,
-        EngineeringAssetsView engineeringAssets, CalculationModulesView calculators, Func<Task> onCalculatorsSelected)
+        EngineeringAssetsView engineeringAssets, CalculationModulesView calculators, Func<Task> onCalculatorsSelected,
+        Tempest.Desktop.CalcSheets.CalcSheetView worksheets, Func<Task> onWorksheetsSelected)
     {
         ArgumentNullException.ThrowIfNull(navigator);
         ArgumentNullException.ThrowIfNull(tasksReadModel);
@@ -118,6 +123,8 @@ public sealed class EngineeringAreaView : UserControl
         ArgumentNullException.ThrowIfNull(engineeringAssets);
         ArgumentNullException.ThrowIfNull(calculators);
         ArgumentNullException.ThrowIfNull(onCalculatorsSelected);
+        ArgumentNullException.ThrowIfNull(worksheets);
+        ArgumentNullException.ThrowIfNull(onWorksheetsSelected);
 
         _navigator = navigator;
         _tasksReadModel = tasksReadModel;
@@ -126,6 +133,8 @@ public sealed class EngineeringAreaView : UserControl
         _engineeringAssets = engineeringAssets;
         _calculators = calculators;
         _onCalculatorsSelected = onCalculatorsSelected;
+        _worksheets = worksheets;
+        _onWorksheetsSelected = onWorksheetsSelected;
         _dashboard = dashboard;
         _onEngineeringCalculationSelected = onEngineeringCalculationSelected;
         _commandDispatcher = commandDispatcher;
@@ -154,6 +163,7 @@ public sealed class EngineeringAreaView : UserControl
             {
                 node.IsExpanded = true;
                 node.Items.Add(_calculatorsNode);
+                node.Items.Add(_worksheetsNode);
                 node.Items.Add(_calculationsNode);
                 node.Items.Add(_assetsNode);
             }
@@ -170,7 +180,7 @@ public sealed class EngineeringAreaView : UserControl
         foreach (var (node, name) in new[]
                  {
                      (_dashboardNode, "Dashboard"), (_tasksNode, "Tasks"), (_disciplinesNode, "Disciplines"), (_modulesNode, "Modules"),
-                     (_calculationsNode, "Calculation register"), (_calculatorsNode, "Calculators"),
+                     (_calculationsNode, "Calculation register"), (_calculatorsNode, "Calculators"), (_worksheetsNode, "Worksheets"),
                      (_assetsNode, "Packs and templates"), (_referenceDataNode, "Reference data"),
                  })
             AutomationProperties.SetName(node, name);
@@ -201,12 +211,39 @@ public sealed class EngineeringAreaView : UserControl
         Content = split;
     }
 
+    /// <summary>`v0.26.0` (ADR-0165, D-11): the tag of a discipline's own Worksheets child node.</summary>
+    private sealed record WorksheetsMarker(string Category);
+
     private TreeViewItem SurfaceNode(string category)
     {
         var node = new TreeViewItem { Header = EngineeringDisciplines.Label(category), Tag = category };
         AutomationProperties.SetName(node, EngineeringDisciplines.NavigatorName(category));
         _disciplineNodes[category] = node;
+
+        if (Tempest.Desktop.CalcSheets.CalcSheetView.DisciplineFor(category) is not null)
+        {
+            var worksheets = new TreeViewItem { Header = "Worksheets", Tag = new WorksheetsMarker(category) };
+            AutomationProperties.SetName(worksheets, $"{EngineeringDisciplines.Label(category)} worksheets");
+            node.Items.Add(worksheets);
+            _disciplineWorksheetNodes[category] = worksheets;
+        }
+
         return node;
+    }
+
+    /// <summary>`v0.26.0`: opens the Worksheets node and selects <paramref name="templateReference"/> in it (the Ctrl+K entry per calculator).</summary>
+    public async Task OpenWorksheetAsync(string templateReference)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(templateReference);
+
+        if (_navigator.Current.Area != ShellArea.EngineeringDepartment)
+            await _navigator.GoToModuleAsync(ShellArea.EngineeringDepartment).ConfigureAwait(true);
+
+        _worksheets.FilterDiscipline(null);
+        _tree.SelectedItem = _worksheetsNode;
+        await _onWorksheetsSelected().ConfigureAwait(true);
+        _detail.Content = _worksheets;
+        _worksheets.SelectTemplate(templateReference);
     }
 
     /// <summary>
@@ -225,6 +262,8 @@ public sealed class EngineeringAreaView : UserControl
                 _dashboardNode, _tasksNode, _disciplinesNode, _modulesNode, _calculationsNode, _calculatorsNode, _assetsNode, _referenceDataNode,
             }
             .Concat(_disciplineNodes.Values)
+            .Concat(_disciplineWorksheetNodes.Values)
+            .Append(_worksheetsNode)
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
     }
@@ -347,6 +386,14 @@ public sealed class EngineeringAreaView : UserControl
         if (_tree.SelectedItem is not TreeViewItem selected)
             return;
 
+        if (selected.Tag is WorksheetsMarker marker)
+        {
+            await _onWorksheetsSelected().ConfigureAwait(true);
+            _worksheets.FilterDiscipline(Tempest.Desktop.CalcSheets.CalcSheetView.DisciplineFor(marker.Category));
+            _detail.Content = _worksheets;
+            return;
+        }
+
         if (selected.Tag is string category)
         {
             // Into the engineering surface, beside this tree: navigate only
@@ -399,6 +446,14 @@ public sealed class EngineeringAreaView : UserControl
         {
             await _onCalculatorsSelected().ConfigureAwait(true);
             _detail.Content = _calculators;
+            return;
+        }
+
+        if (ReferenceEquals(selected, _worksheetsNode))
+        {
+            await _onWorksheetsSelected().ConfigureAwait(true);
+            _worksheets.FilterDiscipline(null);
+            _detail.Content = _worksheets;
             return;
         }
 

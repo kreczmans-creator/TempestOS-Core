@@ -1,0 +1,373 @@
+[
+  {
+    "Symbol": "A_s",
+    "Number": 352.5,
+    "Unit": "mm^2",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S4 bolt sheet, M24 stress area (352.50 mm\u00B2)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "352.5"
+  },
+  {
+    "Symbol": "B",
+    "Number": 400,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PF-BP-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "400"
+  },
+  {
+    "Symbol": "C_fd",
+    "Number": 0.2,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-8 cl. 6.2.2, sand-cement grout",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.2"
+  },
+  {
+    "Symbol": "F_1_vb_Rd",
+    "Number": 364.4,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S4 bolt sheet, M24 bearing on 25 mm S275 plate, e\u2081 = 60 mm, d\u2080 = 27 mm (364.44 kN)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "364.4"
+  },
+  {
+    "Symbol": "F_t_Rd",
+    "Number": 203,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S4 bolt sheet, M24 8.8 (203.04 kN), rounded down",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "203"
+  },
+  {
+    "Symbol": "L",
+    "Number": 450,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PF-BP-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "450"
+  },
+  {
+    "Symbol": "M_Ed",
+    "Number": 95,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S5 load combinations sheet / S2 frame sheet, column base A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "95"
+  },
+  {
+    "Symbol": "N_Ed",
+    "Number": 210,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S5 load combinations sheet, ULS 6.10b, wind leading, column base A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "210"
+  },
+  {
+    "Symbol": "V_Ed",
+    "Number": 60,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S5 load combinations sheet / S2 frame sheet, column base A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "alpha",
+    "Number": 1.5,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Conservative: a 1.2 m square pad under the 0.45 \u00D7 0.40 m plate gives A_c1/A_c0 well above 2.25; checked on drawing PF-FN-001.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "alpha_basis",
+    "Text": "Pad 1.2 \u00D7 1.2 m, 0.8 m deep (PF-FN-001): A_c1/A_c0 above 2.25, so \u03B1 = 1.5 is taken",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PF-FN-001",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Pad 1.2 \u00D7 1.2 m, 0.8 m deep (PF-FN-001): A_c1/A_c0 above 2.25, so \u03B1 = 1.5 is taken"
+  },
+  {
+    "Symbol": "alpha_cc",
+    "Number": 0.85,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1992-1-1, NA to cl. 3.1.6(1)P",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.85"
+  },
+  {
+    "Symbol": "b",
+    "Number": 256.3,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789, to be checked against the owner\u0027s copy",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "256.3"
+  },
+  {
+    "Symbol": "column",
+    "Text": "I/H",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PF-GA-001",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "I/H"
+  },
+  {
+    "Symbol": "f_ck",
+    "Number": 30,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 206 C30/37 pad foundation, drawing PF-FN-001",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
+  },
+  {
+    "Symbol": "f_ck_g",
+    "Number": 60,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Non-shrink grout datasheet, 28-day strength (placeholder GR-DS-01)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "f_ub",
+    "Number": 800,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN ISO 898-1 class 8.8",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "800"
+  },
+  {
+    "Symbol": "f_y",
+    "Number": 265,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10025-2 S275, 16 mm \u003C t \u2264 40 mm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "265"
+  },
+  {
+    "Symbol": "f_yb",
+    "Number": 640,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN ISO 898-1 class 8.8",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "640"
+  },
+  {
+    "Symbol": "gamma_M0",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-1, NA.2.15",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "gamma_M2",
+    "Number": 1.25,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-8, NA.2.3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.25"
+  },
+  {
+    "Symbol": "gamma_c",
+    "Number": 1.5,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1992-1-1, Table NA.1",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "h",
+    "Number": 260.3,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789, to be checked against the owner\u0027s copy",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "260.3"
+  },
+  {
+    "Symbol": "l_eff",
+    "Number": 350,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Total for the two bolts of the row, about 175 mm each from the cl. 6.2.6.5 patterns (engineer\u0027s estimate).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "350"
+  },
+  {
+    "Symbol": "m",
+    "Number": 46.9,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Bolt at 185 mm from the axis, flange face at 130.15 mm: 54.85 mm, less 0.8\u00B7\u221A2 \u00D7 7 mm (a 10 mm fillet leg has a 7 mm throat) = 7.9 mm.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "46.9"
+  },
+  {
+    "Symbol": "n_b",
+    "Number": 4,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PF-BP-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  },
+  {
+    "Symbol": "n_t",
+    "Number": 2,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PF-BP-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2"
+  },
+  {
+    "Symbol": "profis_ref",
+    "Text": "EVD-PROFIS-PLACEHOLDER",
+    "Provenance": {
+      "Kind": "Evidence",
+      "Reference": "EVD-PROFIS-PLACEHOLDER",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "EVD-PROFIS-PLACEHOLDER"
+  },
+  {
+    "Symbol": "prying",
+    "Flag": false,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Cast-in holding-down bolts: prying not assumed (min(2\u00B7M_pl/m, \u03A3F_t) is the conservative case).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "no"
+  },
+  {
+    "Symbol": "t_f",
+    "Number": 17.3,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789, to be checked against the owner\u0027s copy",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "17.3"
+  },
+  {
+    "Symbol": "t_g",
+    "Number": 30,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PF-BP-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
+  },
+  {
+    "Symbol": "t_p",
+    "Number": 25,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PF-BP-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
+    "Symbol": "t_w",
+    "Number": 10.3,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UC 254\u00D7254\u00D789, to be checked against the owner\u0027s copy",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10.3"
+  },
+  {
+    "Symbol": "x_b",
+    "Number": 185,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PF-BP-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "185"
+  }
+]

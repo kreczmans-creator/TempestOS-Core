@@ -1,0 +1,247 @@
+CALCULATION SHEET — ISSUED
+Project: Equipment support ES-4
+Calc ID: Column check    Revision: A
+Title: EN 1993-1-1 member checks (basic)
+Author: unknown    Authored: 2026-10-24
+Checker: —    Checked: —
+Issued: 2026-10-24    Issue: STR-SUP-001
+
+1. SCOPE AND METHOD
+Resistance checks of a steel member of class 1, 2 or 3 cross-section: tension (6.2.3), compression (6.2.4) and flexural buckling about y and z (6.3.1), bending about y and z (6.2.5), shear with the high-shear reduction (6.2.6, 6.2.8), the linear cross-section interaction (6.2.1(7)) and a simplified member interaction (6.3.3 with user-entered k factors). Lateral-torsional buckling and class 4 sections are outside this sheet.
+N_pl,Rd = A f_y/γ_M0; M_c,Rd = W f_y/γ_M0 with W = W_pl (class 1–2) or W_el (class 3); V_pl,Rd = A_v f_y/(√3 γ_M0); ρ = (2V_Ed/V_pl,Rd − 1)² when V_Ed > 0.5 V_pl,Rd reduces the bending resistance by (1 − ρ); N_cr = π²EI/L_cr², λ̄ = √(A f_y/N_cr), Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²], χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1, N_b,Rd = χ A f_y/γ_M1; cross-section: N_Ed/N_Rd + M_y,Ed/M_y,Rd + M_z,Ed/M_z,Rd ≤ 1; member: N_Ed/N_b,Rd,min + k_yy M_y,Ed/M_y,Rd + k_zz M_z,Ed/M_z,Rd ≤ 1.
+  Ref: BS EN 1993-1-1 6.2.3 — Tension
+  Ref: BS EN 1993-1-1 6.2.4 — Compression
+  Ref: BS EN 1993-1-1 6.2.5 — Bending moment
+  Ref: BS EN 1993-1-1 6.2.6 — Shear
+  Ref: BS EN 1993-1-1 6.2.8 — Bending and shear
+  Ref: BS EN 1993-1-1 6.2.1(7) — Linear summation of utilisations
+  Ref: BS EN 1993-1-1 6.3.1.1, 6.3.1.2 — Uniform members in compression: buckling resistance, buckling curves
+  Ref: BS EN 1993-1-1 6.3.3 — Uniform members in bending and axial compression
+  Ref: Gardner & Nethercot, Designers' Guide to Eurocode 3 §6.3.1 — Imperfection factors for the buckling curves
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  N_Ed | Design axial force (tension +, compression −) | -28.2 | kN | link: Support frame rev A · N_e1 | -100000 … 100000 kN
+  M_y_Ed | Design moment about y-y (major) | 43.2 | kN*m | link: Support frame rev A · M_abs_e1 | 0 … 100000 kN*m
+  M_z_Ed | Design moment about z-z (minor) | 0 | kN*m | spec: SPEC-STR-09 §3 (members) | 0 … 100000 kN*m
+  V_Ed | Design shear force | 5 | kN | link: Support frame rev A · V_e1 | 0 … 100000 kN
+  f_y | Yield strength (for the thickness) | 355 | MPa | spec: SPEC-STR-09 §3 (members) | 200 … 700 MPa
+  E | Modulus of elasticity | 210 | GPa | assumption: Sheet default value; no project figure given. | 190 … 220 GPa
+  gamma_M0 | Partial factor γ_M0 (cross-section resistance) | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.25
+  gamma_M1 | Partial factor γ_M1 (member buckling) | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.25
+  section_class | Cross-section class | 1 |  | assumption: Sheet default value; no project figure given. | any
+  A | Area A | 58.7 | cm^2 | assumption: Sheet default value; no project figure given. | 1 … 100000 cm^2
+  W_pl_y | W_pl,y | 497 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
+  W_el_y | W_el,y | 450 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
+  W_pl_z | W_pl,z | 231 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
+  W_el_z | W_el,z | 152 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
+  I_y | I_y | 4568 | cm^4 | assumption: Sheet default value; no project figure given. | 0.1 … 1000000000 cm^4
+  I_z | I_z | 1548 | cm^4 | assumption: Sheet default value; no project figure given. | 0.1 … 1000000000 cm^4
+  h | Depth h (shear-area helper) | 203.2 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
+  b | Width b (helper) | 203.6 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
+  t_w | Web thickness (helper) | 7.2 | mm | assumption: Sheet default value; no project figure given. | 0.1 … 500 mm
+  t_f | Flange thickness (helper) | 11 | mm | assumption: Sheet default value; no project figure given. | 0.1 … 500 mm
+  r | Root radius (helper) | 10.2 | mm | assumption: Sheet default value; no project figure given. | 0 … 500 mm
+  eta | Shear-area factor η | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.2
+  L_cr_y | Buckling length about y-y | 6 | m | spec: SPEC-STR-09 §3 (members) | 0.1 … 100 m
+  L_cr_z | Buckling length about z-z | 6 | m | spec: SPEC-STR-09 §3 (members) | 0.1 … 100 m
+  curve_y | Buckling curve about y-y | b |  | assumption: Sheet default value; no project figure given. | any
+  curve_z | Buckling curve about z-z | c |  | assumption: Sheet default value; no project figure given. | any
+  k_yy | Interaction factor k_yy (member check) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2
+  k_zz | Interaction factor k_zz (member check) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2
+
+3. ASSUMPTIONS
+  A1. The cross-section class is as stated by the user (1, 2 or 3); class 4 effective properties are not derived here. (6.2.2.5 effective widths are outside this sheet.)
+  A2. Lateral-torsional buckling is not checked: the compression flange is assumed restrained, or LTB is checked elsewhere. (6.3.2 not implemented.)
+  A3. The member interaction uses the user's k_yy and k_zz (default 1.0) with the smaller flexural-buckling reduction on the axial term; the Annex A/B interaction factors are not derived. (6.3.3 simplified.)
+  A4. Imperfection factors per curve are the textbook values and may be overridden; partial factors default to 1.0 (UK National Annex) and may be overridden. (User-editable with provenance.)
+  A5. E (Modulus of elasticity) is taken as 210 GPa. (Sheet default value; no project figure given.)
+  A6. gamma_M0 (Partial factor γ_M0 (cross-section resistance)) is taken as 1. (Sheet default value; no project figure given.)
+  A7. gamma_M1 (Partial factor γ_M1 (member buckling)) is taken as 1. (Sheet default value; no project figure given.)
+  A8. section_class (Cross-section class) is taken as 1. (Sheet default value; no project figure given.)
+  A9. A (Area A) is taken as 58.7 cm^2. (Sheet default value; no project figure given.)
+  A10. W_pl_y (W_pl,y) is taken as 497 cm^3. (Sheet default value; no project figure given.)
+  A11. W_el_y (W_el,y) is taken as 450 cm^3. (Sheet default value; no project figure given.)
+  A12. W_pl_z (W_pl,z) is taken as 231 cm^3. (Sheet default value; no project figure given.)
+  A13. W_el_z (W_el,z) is taken as 152 cm^3. (Sheet default value; no project figure given.)
+  A14. I_y (I_y) is taken as 4568 cm^4. (Sheet default value; no project figure given.)
+  A15. I_z (I_z) is taken as 1548 cm^4. (Sheet default value; no project figure given.)
+  A16. h (Depth h (shear-area helper)) is taken as 203.2 mm. (Sheet default value; no project figure given.)
+  A17. b (Width b (helper)) is taken as 203.6 mm. (Sheet default value; no project figure given.)
+  A18. t_w (Web thickness (helper)) is taken as 7.2 mm. (Sheet default value; no project figure given.)
+  A19. t_f (Flange thickness (helper)) is taken as 11 mm. (Sheet default value; no project figure given.)
+  A20. r (Root radius (helper)) is taken as 10.2 mm. (Sheet default value; no project figure given.)
+  A21. eta (Shear-area factor η) is taken as 1. (Sheet default value; no project figure given.)
+  A22. curve_y (Buckling curve about y-y) is taken as b. (Sheet default value; no project figure given.)
+  A23. curve_z (Buckling curve about z-z) is taken as c. (Sheet default value; no project figure given.)
+  A24. k_yy (Interaction factor k_yy (member check)) is taken as 1. (Sheet default value; no project figure given.)
+  A25. k_zz (Interaction factor k_zz (member check)) is taken as 1. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [27] r_h = r
+      = 10.2 mm
+      = 10.2 mm
+        Root radius used by the helper
+  [28] A_v_rolled = A - 2 * b * t_f + (t_w + 2 * r_h) * t_f    « 6.2.6(3)
+      = 58.7 cm² − 2 × 203.6 mm × 11 mm + (7.2 mm + 2 × 10.2 mm) × 11 mm
+      = 16.944 cm²
+        Rolled I shear area, load parallel to the web
+  [29] A_v_min = eta * (h - 2 * t_f) * t_w    « 6.2.6(3)
+      = 1 × (203.2 mm − 2 × 11 mm) × 7.2 mm
+      = 13.046 cm²
+        Lower bound η h_w t_w
+  [30] A_v = max(A_v_rolled, A_v_min)
+      = max(16.944 cm², 13.046 cm²)
+      = 16.944 cm²
+        Shear area
+  [31] N_pl_Rd = A * f_y / gamma_M0    « 6.2.3(2), 6.2.4(2)
+      = 58.7 cm² × 355 MPa / 1
+      = 2083.8 kN
+        Plastic axial resistance
+  [32] W_y = W_pl_y    « 6.2.5(2)
+      = 497 cm³
+      = 497 cm³
+        Section modulus about y (plastic, class 1–2)
+  [33] W_z = W_pl_z    « 6.2.5(2)
+      = 231 cm³
+      = 231 cm³
+        Section modulus about z (plastic)
+  [34] V_pl_Rd = A_v * f_y / (sqrt(3) * gamma_M0)    « 6.2.6(2)
+      = 16.944 cm² × 355 MPa / (sqrt(3) × 1)
+      = 347.28 kN
+        Plastic shear resistance
+  [35] u_V = V_Ed / V_pl_Rd
+      = 5 kN / 347.28 kN
+      = 0.014397
+        Shear utilisation
+  [36] rho = 0    « 6.2.8(2)
+      = 0
+        Shear reduction factor (V_Ed ≤ 0.5 V_pl,Rd)
+  [37] M_y_c_Rd = (1 - rho) * W_y * f_y / gamma_M0    « 6.2.5(2), 6.2.8
+      = (1 − 0) × 497 cm³ × 355 MPa / 1
+      = 176.44 kN·m
+        Bending resistance about y
+  [38] M_z_c_Rd = (1 - rho) * W_z * f_y / gamma_M0    « 6.2.5(2)
+      = (1 − 0) × 231 cm³ × 355 MPa / 1
+      = 82.005 kN·m
+        Bending resistance about z
+  [39] u_M_y = M_y_Ed / M_y_c_Rd
+      = 43.2 kN·m / 176.44 kN·m
+      = 0.24485
+        Bending utilisation, y
+  [40] u_M_z = M_z_Ed / M_z_c_Rd
+      = 0 kN·m / 82.005 kN·m
+      = 0
+        Bending utilisation, z
+  [41] u_N = abs(N_Ed) / N_pl_Rd
+      = abs(-28.2 kN) / 2083.8 kN
+      = 0.013533
+        Compression (cross-section) utilisation
+  [42] u_section = u_N + u_M_y + u_M_z    « 6.2.1(7)
+      = 0.013533 + 0.24485 + 0
+      = 0.25838
+        Linear cross-section interaction
+  [45] alpha_y = imperfection factor, curve b    « 6.3.1.2
+      = Designers' Guide §6.3.1
+      = 0.34
+        Imperfection factor about y
+  [46] alpha_z = imperfection factor, curve c    « 6.3.1.2
+      = Designers' Guide §6.3.1
+      = 0.49
+        Imperfection factor about z
+  [47] N_cr_y = pi^2 * E * I_y / L_cr_y^2    « 6.3.1.2(1)
+      = π^2 × 210 GPa × 4568 cm⁴ / (6 m)^2
+      = 2629.9 kN
+        Elastic critical force about y
+  [48] lambda_y = sqrt(A * f_y / N_cr_y)    « 6.3.1.2(1)
+      = sqrt(58.7 cm² × 355 MPa / 2629.9 kN)
+      = 0.89015
+        Non-dimensional slenderness about y
+  [49] Phi_y = 0.5 * (1 + alpha_y * (lambda_y - 0.2) + lambda_y^2)    « 6.3.1.2(1)
+      = 0.5 × (1 + 0.34 × (0.89015 − 0.2) + 0.89015^2)
+      = 1.0135
+        Φ about y
+  [50] chi_y = min(1, 1 / (Phi_y + sqrt(Phi_y^2 - lambda_y^2)))    « 6.3.1.2(1)
+      = min(1, 1 / (1.0135 + sqrt(1.0135^2 − 0.89015^2)))
+      = 0.66751
+        Reduction factor χ about y
+  [51] N_b_y_Rd = chi_y * A * f_y / gamma_M1    « 6.3.1.1(3)
+      = 0.66751 × 58.7 cm² × 355 MPa / 1
+      = 1391 kN
+        Buckling resistance about y
+  [52] N_cr_z = pi^2 * E * I_z / L_cr_z^2    « 6.3.1.2(1)
+      = π^2 × 210 GPa × 1548 cm⁴ / (6 m)^2
+      = 891.23 kN
+        Elastic critical force about z
+  [53] lambda_z = sqrt(A * f_y / N_cr_z)    « 6.3.1.2(1)
+      = sqrt(58.7 cm² × 355 MPa / 891.23 kN)
+      = 1.5291
+        Non-dimensional slenderness about z
+  [54] Phi_z = 0.5 * (1 + alpha_z * (lambda_z - 0.2) + lambda_z^2)    « 6.3.1.2(1)
+      = 0.5 × (1 + 0.49 × (1.5291 − 0.2) + 1.5291^2)
+      = 1.9947
+        Φ about z
+  [55] chi_z = min(1, 1 / (Phi_z + sqrt(Phi_z^2 - lambda_z^2)))    « 6.3.1.2(1)
+      = min(1, 1 / (1.9947 + sqrt(1.9947^2 − 1.5291^2)))
+      = 0.30528
+        Reduction factor χ about z
+  [56] N_b_z_Rd = chi_z * A * f_y / gamma_M1    « 6.3.1.1(3)
+      = 0.30528 × 58.7 cm² × 355 MPa / 1
+      = 636.17 kN
+        Buckling resistance about z
+  [57] N_b_Rd = min(N_b_y_Rd, N_b_z_Rd)
+      = min(1391 kN, 636.17 kN)
+      = 636.17 kN
+        Governing buckling resistance
+  [58] u_buckling = abs(N_Ed) / N_b_Rd    « 6.3.1.1(1)
+      = abs(-28.2 kN) / 636.17 kN
+      = 0.044328
+        Flexural buckling utilisation
+  [59] u_member = abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_c_Rd + k_zz * M_z_Ed / M_z_c_Rd    « 6.3.3(4)
+      = abs(-28.2 kN) / 636.17 kN + 1 × 43.2 kN·m / 176.44 kN·m + 1 × 0 kN·m / 82.005 kN·m
+      = 0.28918
+        Simplified member interaction
+
+5. RESULTS
+  A_v = 16.944 cm²    Shear area
+  N_pl_Rd = 2083.8 kN    N_pl,Rd
+  V_pl_Rd = 347.28 kN    V_pl,Rd
+  rho = 0    ρ
+  M_y_c_Rd = 176.44 kN·m    M_y,c,Rd
+  M_z_c_Rd = 82.005 kN·m    M_z,c,Rd
+  N_cr_y = 2629.9 kN    N_cr,y
+  N_cr_z = 891.23 kN    N_cr,z
+  lambda_y = 0.89015    λ̄_y
+  lambda_z = 1.5291    λ̄_z
+  chi_y = 0.66751    χ_y
+  chi_z = 0.30528    χ_z
+  N_b_y_Rd = 1391 kN    N_b,y,Rd
+  N_b_z_Rd = 636.17 kN    N_b,z,Rd
+  N_b_Rd = 636.17 kN    N_b,Rd
+  u_N = 0.013533    Axial utilisation
+  u_M_y = 0.24485    Bending y utilisation
+  u_M_z = 0    Bending z utilisation
+  u_V = 0.014397    Shear utilisation
+  u_section = 0.25838    Cross-section interaction
+  u_buckling = 0.044328    Buckling utilisation
+  u_member = 0.28918    Member interaction
+
+6. CHECKS (governing first)
+  PASS  Member interaction (simplified): u_member = 0.28918 vs u_member ≤ 1  utilisation 0.289  « 6.3.3
+  PASS  Cross-section interaction: u_section = 0.25838 vs u_section ≤ 1  utilisation 0.258  « 6.2.1(7)
+  PASS  Bending y M_y,Ed ≤ M_y,c,Rd: u_M_y = 0.24485 vs u_M_y ≤ 1  utilisation 0.245  « 6.2.5
+  PASS  Flexural buckling N_Ed ≤ N_b,Rd: u_buckling = 0.044328 vs u_buckling ≤ 1  utilisation 0.0443  « 6.3.1.1
+  PASS  Shear V_Ed ≤ V_pl,Rd: u_V = 0.014397 vs u_V ≤ 1  utilisation 0.0144  « 6.2.6
+  PASS  Compression N_Ed ≤ N_c,Rd: u_N = 0.013533 vs u_N ≤ 1  utilisation 0.0135  « 6.2.4
+  PASS  Bending z M_z,Ed ≤ M_z,c,Rd: u_M_z = 0 vs u_M_z ≤ 1  utilisation 0  « 6.2.5
+
+7. APPLICABILITY
+  WARNING no-ltb: M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.
+
+8. VERIFICATION
+  Template: struct.en1993-member@1.0.0
+  Content hash: 09daf37a17ffe260
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 3/3
+  Test run: 2026-10-24 18:29 UTC
+  Application: TempestOS test

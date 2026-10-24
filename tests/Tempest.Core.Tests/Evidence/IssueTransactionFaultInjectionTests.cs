@@ -209,3 +209,126 @@ public sealed class IssueTransactionFaultInjectionTests
         Assert.Equal(1, backing.CommitCount - commitsBeforeIssue);
     }
 }
+
+/// <summary>
+/// `v0.26.0` (ADR-0165): <see cref="IEvidenceService.IssueInOneTransactionAsync"/>
+/// commits the sheet bytes, the attachment metadata, the issue record, the
+/// Issued status and any extra write together. A fault at commit leaves
+/// nothing behind: no orphaned attachment, no half-issued evidence.
+/// </summary>
+public sealed class IssueInOneTransactionFaultInjectionTests
+{
+    private static readonly byte[] SheetBytes = [9, 8, 7, 6];
+
+    private static (EvidenceService Service, EngineeringDomainContext Context, CommitFailingPersistenceStore Failing, InMemoryQueryablePersistenceStore Backing) NewService()
+    {
+        var backing = new InMemoryQueryablePersistenceStore();
+        var failing = new CommitFailingPersistenceStore(backing);
+        var context = TestEngineeringDomain.NewContextOver(failing, backing);
+        var documentStore = new EngineeringDocumentStore(backing, new CurrentPrincipalAccessor());
+        var service = new EvidenceService(
+            context,
+            new MaterialCatalog(documentStore, backing),
+            new FastenerCatalog(documentStore, backing),
+            new BearingCatalog(documentStore, backing),
+            new StandardCatalog(documentStore, backing),
+            new ConstantCatalog(documentStore, backing),
+            new CurrentPrincipalAccessor(),
+            new ConfigurationBuilder().Build());
+        return (service, context, failing, backing);
+    }
+
+    private static async Task<Tempest.Core.Evidence.Evidence> NewCheckedEvidenceAsync(EvidenceService service)
+    {
+        var created = await service.CreateAsync(null, "Calc sheet", EvidenceClassification.Calculation);
+        var checkResult = await service.RecordCheckAsync(created.Id, "J. Reviewer", "Client Co", "Reviewed.", CheckOutcome.Accepted);
+        Assert.True(checkResult.Succeeded);
+        return checkResult.Evidence!;
+    }
+
+    [Fact]
+    public async Task AFaultAtCommit_LeavesNothing_NoAttachment_NoIssue_NoExtraWrite()
+    {
+        var (service, context, failing, backing) = NewService();
+        var evidence = await NewCheckedEvidenceAsync(service);
+        var rendered = false;
+
+        await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(() => service.IssueInOneTransactionAsync(
+            evidence.Id, "ISS-ONE-01", "A", "Client Co",
+            renderSheetAsync: (_, _, _) =>
+            {
+                rendered = true;
+                return Task.FromResult<IssueSheetContent?>(new IssueSheetContent("sheet.pdf", "application/pdf", SheetBytes));
+            },
+            alsoWrite: async (tx, token) =>
+            {
+                await tx.WriteAsync("Calc.Instances", "x/1", "{}", token);
+                failing.FailNextCommit = true;
+            }));
+
+        Assert.True(rendered);
+        Assert.Equal(EvidenceStatus.Checked, evidence.Status);
+        Assert.Null(evidence.Issue);
+        Assert.Empty(await evidence.GetAttachmentsAsync());
+
+        var state = await context.ObjectStateStore.FindAsync(evidence.Id);
+        Assert.NotNull(state);
+        Assert.Empty(state.Attachments);
+        Assert.Equal(EvidenceStatus.Checked.ToString(), state.Type(nameof(Tempest.Core.Evidence.Evidence.Status)));
+        Assert.Empty(backing.CommittedKeys(AttachmentContentStore.ContentCollectionName));
+        Assert.Empty(backing.CommittedKeys("Calc.Instances"));
+    }
+
+    [Fact]
+    public async Task Success_CommitsSheetRecordStatusAndExtraWrite_InOneCommit()
+    {
+        var (service, context, _, backing) = NewService();
+        var evidence = await NewCheckedEvidenceAsync(service);
+        var commitsBefore = backing.CommitCount;
+
+        var result = await service.IssueInOneTransactionAsync(
+            evidence.Id, "ISS-ONE-02", "A", "Client Co",
+            renderSheetAsync: (_, _, _) => Task.FromResult<IssueSheetContent?>(new IssueSheetContent("sheet.pdf", "application/pdf", SheetBytes)),
+            alsoWrite: (tx, token) => tx.WriteAsync("Calc.Instances", "x/2", "{\"issued\":true}", token));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(1, backing.CommitCount - commitsBefore);
+        Assert.Equal(EvidenceStatus.Issued, evidence.Status);
+        Assert.NotNull(evidence.Issue);
+        Assert.NotNull(evidence.Issue!.IssueSheetAttachmentId);
+        var attachment = Assert.Single(await evidence.GetAttachmentsAsync());
+        Assert.Equal(evidence.Issue.IssueSheetAttachmentId, attachment.Id);
+        Assert.Equal("sheet.pdf", attachment.FileName);
+
+        var content = await evidence.ReadAttachmentContentAsync(attachment.Id);
+        Assert.True(content.IsAvailable);
+        Assert.Equal(SheetBytes, content.Bytes);
+
+        var state = await context.ObjectStateStore.FindAsync(evidence.Id);
+        Assert.Equal(EvidenceStatus.Issued.ToString(), state!.Type(nameof(Tempest.Core.Evidence.Evidence.Status)));
+        Assert.Contains("x/2", backing.CommittedKeys("Calc.Instances"));
+    }
+
+    [Fact]
+    public async Task WithoutASheet_IssuesTheRecordAlone()
+    {
+        var (service, _, _, _) = NewService();
+        var evidence = await NewCheckedEvidenceAsync(service);
+        var result = await service.IssueInOneTransactionAsync(evidence.Id, "ISS-ONE-03", "A", "Client Co");
+        Assert.True(result.Succeeded);
+        Assert.Equal(EvidenceStatus.Issued, evidence.Status);
+        Assert.Null(evidence.Issue!.IssueSheetAttachmentId);
+        Assert.Empty(await evidence.GetAttachmentsAsync());
+    }
+
+    [Fact]
+    public async Task FromDraft_IsRefused_WithoutWriting()
+    {
+        var (service, _, _, backing) = NewService();
+        var created = await service.CreateAsync(null, "Draft", EvidenceClassification.Calculation);
+        var before = backing.CommitCount;
+        var result = await service.IssueInOneTransactionAsync(created.Id, "ISS-ONE-04", "A", "Client Co");
+        Assert.Equal(EvidenceRefusal.TransitionNotPermitted, result.Refusal);
+        Assert.Equal(before, backing.CommitCount);
+    }
+}

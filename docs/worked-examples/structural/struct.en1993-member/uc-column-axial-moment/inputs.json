@@ -1,0 +1,302 @@
+[
+  {
+    "Symbol": "A",
+    "Number": 58.7,
+    "Unit": "cm^2",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book UC 203\u00D7203\u00D746",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "58.7"
+  },
+  {
+    "Symbol": "E",
+    "Number": 210,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 3.2.6",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "210"
+  },
+  {
+    "Symbol": "I_y",
+    "Number": 4568,
+    "Unit": "cm^4",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4568"
+  },
+  {
+    "Symbol": "I_z",
+    "Number": 1548,
+    "Unit": "cm^4",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1548"
+  },
+  {
+    "Symbol": "L_cr_y",
+    "Number": 4,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Pinned both ends: L_cr = L = 4 m.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  },
+  {
+    "Symbol": "L_cr_z",
+    "Number": 4,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Pinned both ends: L_cr = L = 4 m.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  },
+  {
+    "Symbol": "M_y_Ed",
+    "Number": 40,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet, column 1, ULS",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "M_z_Ed",
+    "Number": 0,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "N_Ed",
+    "Number": -900,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet, column 1, ULS",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "-900"
+  },
+  {
+    "Symbol": "V_Ed",
+    "Number": 20,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "W_el_y",
+    "Number": 450,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "450"
+  },
+  {
+    "Symbol": "W_el_z",
+    "Number": 152,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "152"
+  },
+  {
+    "Symbol": "W_pl_y",
+    "Number": 497,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "497"
+  },
+  {
+    "Symbol": "W_pl_z",
+    "Number": 231,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "231"
+  },
+  {
+    "Symbol": "b",
+    "Number": 203.6,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UC 203\u00D7203\u00D746",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "203.6"
+  },
+  {
+    "Symbol": "curve_y",
+    "Text": "b",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 Table 6.2: rolled, h/b \u2264 1.2, t_f \u2264 100, S355, y-y",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "b"
+  },
+  {
+    "Symbol": "curve_z",
+    "Text": "c",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 Table 6.2: rolled, h/b \u2264 1.2, t_f \u2264 100, S355, z-z",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "c"
+  },
+  {
+    "Symbol": "eta",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-5 NA.2.4",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "f_y",
+    "Number": 355,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10025-2 S355, t \u2264 16 mm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "355"
+  },
+  {
+    "Symbol": "gamma_M0",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-1 NA.2.15",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "gamma_M1",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-1 NA.2.15",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "h",
+    "Number": 203.2,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UC 203\u00D7203\u00D746",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "203.2"
+  },
+  {
+    "Symbol": "k_yy",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Simplified interaction: k_yy = 1.0.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "k_zz",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Simplified interaction: k_zz = 1.0.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "r",
+    "Number": 10.2,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UC 203\u00D7203\u00D746",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10.2"
+  },
+  {
+    "Symbol": "section_class",
+    "Text": "1",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "UC 203\u00D7203\u00D746 S355 is class 1 in compression (Blue Book).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "t_f",
+    "Number": 11,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UC 203\u00D7203\u00D746",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "11"
+  },
+  {
+    "Symbol": "t_w",
+    "Number": 7.2,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UC 203\u00D7203\u00D746",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "7.2"
+  }
+]

@@ -1,0 +1,118 @@
+using System.Text;
+using Tempest.Calc.Electrical;
+using Tempest.Core.Evidence;
+using Tempest.Calc.Library;
+using Tempest.Calc.Sheets;
+using static Tempest.Calc.Tests.Library.Chains.ChainKit;
+
+namespace Tempest.Calc.Tests.Library.Chains;
+
+/// <summary>Addendum A, §A7 motor circuit: E1 → E6 → E4 → E3 / E5 → E2 instantiated from the built-in pack template.</summary>
+public sealed class MotorCircuitChainTests
+{
+    private static LibraryTestHost Host() => new(
+        calculators: [.. ElectricalCalculators.All],
+        packTemplates: CalcPackTemplates.All);
+
+    [Fact]
+    public async Task Motor_Demand_Reaches_The_Cable_Voltage_Drop_Fault_Check_And_Enclosure()
+    {
+        var host = Host();
+        Assert.Null(host.Service.ValidatePackTemplate(CalcPackTemplates.MotorCircuit));
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", ChainInputs.MotorCircuit(host));
+        var e1 = made.Instances["e1"];
+        var e6 = made.Instances["e6"];
+        var e4 = made.Instances["e4"];
+        var e3 = made.Instances["e3"];
+        var e5 = made.Instances["e5"];
+        var e2 = made.Instances["e2"];
+
+        Assert.Equal(Si(e1, "P_pk"), InputSi(e6, "P_add"), 9);
+        Assert.Equal(Si(e6, "I_3ph"), InputSi(e4, "I_b_in"), 9);
+        Assert.Equal(Si(e6, "I_3ph"), Si(e4, "I_b"), 9);
+        Assert.Equal(Si(e4, "I_b"), InputSi(e3, "I"), 9);
+        Assert.Equal(Si(e4, "L"), InputSi(e3, "L"), 9);
+        Assert.Equal(Si(e4, "CSA"), InputSi(e3, "A_c"), 9);
+        Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_line"), 9);
+        Assert.Equal(Si(e4, "L"), InputSi(e5, "L"), 9);
+        Assert.Equal(Si(e4, "I_n"), InputSi(e5, "I_n"), 9);
+        Assert.Equal(Si(e6, "Phi"), InputSi(e2, "P_add"), 9);
+        Assert.Equal(6, made.Pack.InstanceIds.Count);
+    }
+
+    [Fact]
+    public async Task A_Bigger_Motor_Makes_The_Chain_Stale_Blocks_The_Pack_And_Updating_Carries_The_Current_Through()
+    {
+        var host = Host();
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", ChainInputs.MotorCircuit(host));
+        var e1 = made.Instances["e1"];
+
+        await ChainKit.ReviseAndUpdateAsync(host, made, "e1", "m", 1.5, ["e6", "e4", "e3", "e5", "e2"]);
+
+        var e1New = await Fresh(host, made, "e1");
+        Assert.NotEqual(Si(e1, "P_pk"), Si(e1New, "P_pk"));
+        var e6 = await Fresh(host, made, "e6");
+        var e4 = await Fresh(host, made, "e4");
+        var e3 = await Fresh(host, made, "e3");
+        Assert.Equal(Si(e1New, "P_pk"), InputSi(e6, "P_add"), 9);
+        Assert.Equal(Si(e6, "I_3ph"), Si(e4, "I_b"), 9);
+        Assert.Equal(Si(e4, "I_b"), InputSi(e3, "I"), 9);
+    }
+
+    [Fact]
+    public async Task Without_The_Owners_Tables_The_Chain_Is_Refused_At_The_Cable_Step()
+    {
+        var host = Host();
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.MotorCircuit, await host.ProjectAsync(), "Conveyor motor circuit");
+        Assert.Null(made);
+        Assert.NotNull(refusal);
+        Assert.StartsWith("Step 'e4' is blocked", refusal);
+        Assert.Contains("ampacity:", refusal);
+    }
+
+    [Fact]
+    public async Task The_Chain_Issues_As_One_Bundle_And_Its_Licensed_Ampacity_Table_Never_Leaves_In_An_Export()
+    {
+        var host = Host();
+        var (ampacity, r1) = await host.Service.SaveRecordAsync(new CalcDataRecord(
+            Guid.Empty, "cable.ampacity", "Panel wiring capacities", 0, "Owner's wiring regulations", "2018+A2:2022", "capacity table (owner's copy)", "S. Kreczman (own copy)", "s.kreczman",
+            true, CalcDataOrigin.UserEntered, [new CalcDataValue("ampacity", Rows: ConductorSizingCalculator.SyntheticAmpacity().Rows)], DateTimeOffset.UnixEpoch));
+        var (ratings, r2) = await host.Service.SaveRecordAsync(new CalcDataRecord(
+            Guid.Empty, "device.ratings", "Preferred MCB ratings", 0, "Manufacturer catalogue", "2024", "MCB range", "—", "s.kreczman",
+            false, CalcDataOrigin.UserEntered, [new CalcDataValue("ratings", Rows: ConductorSizingCalculator.TypicalRatings().Rows)], DateTimeOffset.UnixEpoch));
+        Assert.Null(r1);
+        Assert.Null(r2);
+
+        var inputs = ChainInputs.MotorCircuit(host, CalcInstanceService.RecordProvenance(ampacity!), CalcInstanceService.RecordProvenance(ratings!));
+
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", inputs);
+
+        // E4 and E5 demand an independent check: the chain is drawn up by another engineer. Full provenance, one check, one issue.
+        var sheet = await CheckAndIssueAsync(host, made, CalcPackTemplates.MotorCircuit, "CONV-ELEC-001", "Client Co", "Checked against SPEC-LINE-12.");
+
+        // The links are named on the issued sheet.
+        Assert.Contains("link: Motor sizing rev A · P_pk", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Load budget rev A · I_3ph", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Cable and device rev A · CSA", sheet, StringComparison.Ordinal);
+
+        // The issued sheet may cite the licensed record it used (it is the user's own calculation) ...
+        Assert.Contains("(licensed source)", sheet, StringComparison.Ordinal);
+
+        // ... but the record never leaves, and an input export withholds its rows while keeping the pin.
+        var (csv, refused) = await host.Service.ExportRecordAsync(ampacity!.Id);
+        Assert.Null(csv);
+        Assert.Contains("never exported", refused, StringComparison.Ordinal);
+
+        var e4 = (await host.Store.FindInstanceAsync(made.Instances["e4"].Id))!;
+        var withheld = await host.Service.WithholdLicensedAsync(new CalcInputSet(e4.Inputs));
+        Assert.Null(withheld.Find("ampacity")!.Rows);
+        Assert.Contains("licensed value withheld", withheld.Find("ampacity")!.Provenance!.Reference, StringComparison.Ordinal);
+        Assert.NotNull(withheld.Find("ratings")!.Rows);
+
+        var fields = CalcCsv.ExportInputs(host.Catalogue.Get("elec.conductor-sizing").Template, withheld)
+            .Split('\n').SelectMany(line => line.Split(',')).Select(f => f.Trim().Trim('"')).ToList();
+
+        foreach (var capacity in new[] { "12.3", "17.7", "24.1", "31.9", "44.6" })
+            Assert.DoesNotContain(fields, f => f.Contains(capacity, StringComparison.Ordinal));
+    }
+}

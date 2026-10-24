@@ -1,0 +1,137 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: bs.heat-exchanger    Revision: A
+Title: Heat exchanger (LMTD and ε-NTU)
+
+1. SCOPE AND METHOD
+Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.
+Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overall coefficient with fouling: U_f = 1/(1/U + R_f) Transfer units: NTU = U_f·A/C_min; effectiveness ε(NTU, C_r) for the arrangement Duty: Q = ε·C_min·(T_h,in − T_c,in); outlets from the energy balance Sizing: ε = Q/(C_min·ΔT_max), NTU from the inverse relation, A = NTU·C_min/U_f Cross-check: Q = U_f·A·F·ΔT_lm, F from R and P (1 shell pass) or back-calculated
+  Ref: Incropera, Fundamentals of Heat and Mass Transfer 7th ed., §11.3–11.5, Tables 11.3–11.4 — LMTD and effectiveness-NTU methods
+  Ref: Çengel & Ghajar, Heat and Mass Transfer 5th ed., Ch. 11 — Heat exchangers
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  arrangement | Flow arrangement | counterflow |  | manual | any
+  mode | Mode | rating (given area) |  | manual | any
+  m_h | Hot-side mass flow | 1 | kg/s | manual | 0.001 … 100 kg/s
+  cp_h | Hot-side specific heat | 4180 | J/(kg*K) | manual | 500 … 10000 J/(kg*K)
+  T_h_in | Hot-side inlet temperature | 80 | degC | manual | -40 … 200 degC
+  m_c | Cold-side mass flow | 1 | kg/s | manual | 0.001 … 100 kg/s
+  cp_c | Cold-side specific heat | 4180 | J/(kg*K) | manual | 500 … 10000 J/(kg*K)
+  T_c_in | Cold-side inlet temperature | 20 | degC | manual | -40 … 200 degC
+  U | Overall heat transfer coefficient (clean) | 1000 | W/(m^2*K) | manual | 10 … 10000 W/(m^2*K)
+  R_f | Total fouling resistance | 0 | m^2*K/W | manual | 0 … 0.01 m^2*K/W
+  A | Heat transfer area (rating) | 4.18 | m^2 | manual | 0.01 … 1000 m^2
+  Q_req | Required duty | 120 | kW | manual | 0.001 … 100000 kW
+  dT_min | Minimum approach temperature difference | 2 | K | manual | 0 … 50 K
+
+3. ASSUMPTIONS
+  A1. Single phase on both sides (except the C_r = 0 arrangement), constant properties, no heat loss to surroundings. (Incropera 7th ed. §11.3–11.4.)
+  A2. The crossflow both-unmixed effectiveness is the published approximate correlation, flagged on the sheet. (Incropera 7th ed. Table 11.3.)
+  A3. Specific heats are user records (or B2 for air) at the mean temperature of each stream. (§A3 reference records.)
+
+4. WORKING
+  [12] C_h = m_h * cp_h
+      = 1 kg/s × 4180 J/(kg·K)
+      = 4180 W/K
+        Hot-side capacity rate
+  [13] C_c = m_c * cp_c
+      = 1 kg/s × 4180 J/(kg·K)
+      = 4180 W/K
+        Cold-side capacity rate
+  [14] C_min = min(C_h, C_c)
+      = min(4180 W/K, 4180 W/K)
+      = 4180 W/K
+        Minimum capacity rate
+  [15] C_r = min(C_h, C_c) / max(C_h, C_c)
+      = min(4180 W/K, 4180 W/K) / max(4180 W/K, 4180 W/K)
+      = 1
+        Capacity ratio
+  [16] U_f = 1 / (1 / U + R_f)
+      = 1 / (1 / 1000 W/(m²·K) + 0 m²·K/W)
+      = 1000 W/(m²·K)
+        Overall coefficient with fouling
+  [18] NTU = U_f·A / C_min
+      = 1000 × 4.18 / 4180
+      = 1
+        Number of transfer units
+  [19] eps = ε = (1 − exp(−NTU(1 − C_r)))/(1 − C_r·exp(−NTU(1 − C_r))); NTU/(1 + NTU) at C_r = 1    « Incropera 7th ed. Table 11.3
+      = NTU = 1, C_r = 1
+      = 0.5
+        Effectiveness
+  [20] UA = U_f·A
+      = 1000 × 4.18
+      = 4180 W/K
+        UA
+  [21] Q = ε·C_min·(T_h,in − T_c,in)
+      = 0.5 × 4180 × 60
+      = 125.4 kW
+        Heat duty
+  [22] T_h_out = T_h,in − Q/C_h
+      = 80 °C − 125400 / 4180
+      = 50 degC
+        Hot-side outlet temperature
+  [23] T_c_out = T_c,in + Q/C_c
+      = 20 °C + 125400 / 4180
+      = 50 degC
+        Cold-side outlet temperature
+  [24] dT_c = T_c,out − T_c,in = Q/C_c
+      = 125400 / 4180
+      = 30 K
+        Cold-side temperature rise
+  [25] T_c_m = (T_c,in + T_c,out)/2
+      = (20 °C + 50 °C)/2
+      = 35 degC
+        Mean cold-side temperature
+  [26] dT_app = min(T_h,in − T_c,out, T_h,out − T_c,in)
+      = 30 K
+      = 30 K
+        Approach temperature difference
+  [27] dT_lm = (ΔT_1 − ΔT_2)/ln(ΔT_1/ΔT_2), counterflow ends
+      = ΔT_1 = 30 K, ΔT_2 = 30 K
+      = 30 K
+        Log-mean temperature difference
+  [28] F = 1 (pure counterflow, parallel flow or C_r = 0)    « Incropera 7th ed. §11.3
+      = R = 1, P = 0.5
+      = 1
+        LMTD correction factor
+  [29] Q_lmtd = U_f·A·F·ΔT_lm
+      = 1000 × 4.18 × 1 × 30
+      = 125.4 kW
+        Duty by the LMTD method (cross-check)
+  [30] u_app = dT_min / dT_app
+      = 2 K / 30 K
+      = 0.066667
+        Approach utilisation (minimum / actual)
+  [32] u_duty = Q_req / Q
+      = 120 kW / 125.4 kW
+      = 0.95694
+        Duty utilisation (required / achieved)
+
+5. RESULTS
+  C_r = 1    Capacity ratio
+  NTU = 1    Transfer units
+  eps = 0.5    Effectiveness
+  Q = 125.4 kW    Heat duty
+  T_h_out = 50 degC    Hot outlet
+  T_c_out = 50 degC    Cold outlet
+  dT_c = 30 K    Cold-side rise
+  T_c_m = 35 degC    Cold-side mean
+  cp_c = 4180 J/(kg·K)    Cold-side specific heat
+  dT_app = 30 K    Approach
+  UA = 4180 W/K    UA
+  dT_lm = 30 K    Log-mean temperature difference
+  F = 1    LMTD correction factor
+  u_duty = 0.95694    Duty utilisation
+
+6. CHECKS (governing first)
+  PASS  Duty against required: u_duty = 0.95694 vs u_duty ≤ 1  utilisation 0.957
+  PASS  Approach against minimum: u_app = 0.066667 vs u_app ≤ 1  utilisation 0.0667
+
+7. APPLICABILITY
+  WARNING record.cp_h: cp_h: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
+  WARNING record.cp_c: cp_c: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: bs.heat-exchanger@1.1.0
+  Known-answer cases passed: 5/5

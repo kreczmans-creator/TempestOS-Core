@@ -1,0 +1,352 @@
+[
+  {
+    "Symbol": "E",
+    "Number": 210,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 3.2.6",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "210"
+  },
+  {
+    "Symbol": "combinations",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "G\u002BW"
+          },
+          "case": {
+            "Number": 1
+          },
+          "factor": {
+            "Number": 1
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "G\u002BW"
+          },
+          "case": {
+            "Number": 2
+          },
+          "factor": {
+            "Number": 1
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "G"
+          },
+          "case": {
+            "Number": 1
+          },
+          "factor": {
+            "Number": 1
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Characteristic combinations for the worked example.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3 row(s)"
+  },
+  {
+    "Symbol": "elements",
+    "Rows": [
+      {
+        "Cells": {
+          "id": {
+            "Number": 1
+          },
+          "i": {
+            "Number": 1
+          },
+          "j": {
+            "Number": 2
+          },
+          "A": {
+            "Number": 58.7,
+            "Unit": "cm^2"
+          },
+          "I": {
+            "Number": 4568,
+            "Unit": "cm^4"
+          },
+          "rel_i": {
+            "Flag": false
+          },
+          "rel_j": {
+            "Flag": false
+          }
+        }
+      },
+      {
+        "Cells": {
+          "id": {
+            "Number": 2
+          },
+          "i": {
+            "Number": 2
+          },
+          "j": {
+            "Number": 3
+          },
+          "A": {
+            "Number": 51.3,
+            "Unit": "cm^2"
+          },
+          "I": {
+            "Number": 8503,
+            "Unit": "cm^4"
+          },
+          "rel_i": {
+            "Flag": false
+          },
+          "rel_j": {
+            "Flag": false
+          }
+        }
+      },
+      {
+        "Cells": {
+          "id": {
+            "Number": 3
+          },
+          "i": {
+            "Number": 3
+          },
+          "j": {
+            "Number": 4
+          },
+          "A": {
+            "Number": 58.7,
+            "Unit": "cm^2"
+          },
+          "I": {
+            "Number": 4568,
+            "Unit": "cm^4"
+          },
+          "rel_i": {
+            "Flag": false
+          },
+          "rel_j": {
+            "Flag": false
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "UC 203\u00D7203\u00D746 columns, UB 305\u00D7165\u00D740 rafter (Blue Book)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3 row(s)"
+  },
+  {
+    "Symbol": "loads",
+    "Rows": [
+      {
+        "Cells": {
+          "case": {
+            "Number": 1
+          },
+          "kind": {
+            "Text": "udl"
+          },
+          "target": {
+            "Number": 2
+          },
+          "a": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "b": {
+            "Number": 8,
+            "Unit": "m"
+          },
+          "w1": {
+            "Number": -15,
+            "Unit": "kN/m"
+          },
+          "w2": {
+            "Number": 0,
+            "Unit": "kN/m"
+          },
+          "F_x": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "F_y": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "M": {
+            "Number": 0,
+            "Unit": "kN*m"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "case": {
+            "Number": 2
+          },
+          "kind": {
+            "Text": "nodal"
+          },
+          "target": {
+            "Number": 2
+          },
+          "a": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "b": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "w1": {
+            "Number": 0,
+            "Unit": "kN/m"
+          },
+          "w2": {
+            "Number": 0,
+            "Unit": "kN/m"
+          },
+          "F_x": {
+            "Number": 24,
+            "Unit": "kN"
+          },
+          "F_y": {
+            "Number": 0,
+            "Unit": "kN"
+          },
+          "M": {
+            "Number": 0,
+            "Unit": "kN*m"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Load schedule LS-02: roof 15 kN/m; wind 24 kN at eaves",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2 row(s)"
+  },
+  {
+    "Symbol": "n_div",
+    "Number": 16,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "16 stations per member.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "16"
+  },
+  {
+    "Symbol": "nodes",
+    "Rows": [
+      {
+        "Cells": {
+          "id": {
+            "Number": 1
+          },
+          "x": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "y": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "support": {
+            "Text": "pin"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "id": {
+            "Number": 2
+          },
+          "x": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "y": {
+            "Number": 5,
+            "Unit": "m"
+          },
+          "support": {
+            "Text": "free"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "id": {
+            "Number": 3
+          },
+          "x": {
+            "Number": 8,
+            "Unit": "m"
+          },
+          "y": {
+            "Number": 5,
+            "Unit": "m"
+          },
+          "support": {
+            "Text": "free"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "id": {
+            "Number": 4
+          },
+          "x": {
+            "Number": 8,
+            "Unit": "m"
+          },
+          "y": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "support": {
+            "Text": "pin"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-PF-010",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4 row(s)"
+  },
+  {
+    "Symbol": "report",
+    "Text": "G\u002BW",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Gravity plus wind reported.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "G\u002BW"
+  }
+]

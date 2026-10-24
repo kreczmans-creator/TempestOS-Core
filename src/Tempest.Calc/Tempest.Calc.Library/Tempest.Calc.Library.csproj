@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ADR-0165 / D-06: the only Tempest.Calc assembly that depends on
+       Core. The catalogue of calculators, the CalcInstance store, the
+       one-transaction Issue into Evidence, the Calculation-register link,
+       packs and the stale marker. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tempest.Calc.Library</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisModeSecurity>All</AnalysisModeSecurity>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tempest.Calc.Verification\Tempest.Calc.Verification.csproj" />
+    <ProjectReference Include="..\..\Tempest.Core\Tempest.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Tempest.Calc.Tests.Library" />
+  </ItemGroup>
+
+</Project>

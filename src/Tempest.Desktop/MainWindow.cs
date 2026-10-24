@@ -108,6 +108,7 @@ public sealed class MainWindow : Window
 
     // The Engineering Calculators (`WP 21.7B`).
     private readonly CalculationModulesCoordinator _calculationModulesCoordinator;
+    private readonly Tempest.Desktop.CalcSheets.CalcSheetCoordinator _calcSheetCoordinator;
 
     // The Settings area (`WP 19.2B`).
     private readonly SettingsView _settingsView;
@@ -187,7 +188,7 @@ public sealed class MainWindow : Window
         var callbacks = new MainWindowCallbacks(
             RecordHistory, RefreshOutputPanelExtras, RefreshStatusBar, SetCurrentArea,
             OpenObjectAsync, OpenProjectAttachmentAsync, OpenEvidenceRecordAsync, PromptForNewProjectAsync, RenderCurrentModuleAsync,
-            EnterEngineeringCalculationAsync, EnterCalculationModulesAsync);
+            EnterEngineeringCalculationAsync, EnterCalculationModulesAsync, EnterWorksheetsAsync);
 
         var views = composer.BuildViews(host, this, evidenceFilePickerOverride, callbacks);
         var coordinators = composer.BuildCoordinators(host, this, views, callbacks);
@@ -239,6 +240,7 @@ public sealed class MainWindow : Window
         _projectDirectory = views.ProjectDirectory;
         _engineeringCalculationCoordinator = coordinators.EngineeringCalculationCoordinator;
         _calculationModulesCoordinator = coordinators.CalculationModulesCoordinator;
+        _calcSheetCoordinator = coordinators.CalcSheets;
         _settingsView = views.SettingsView;
         _newProjectPrompt = views.NewProjectPrompt;
         _quotationService = (IQuotationService)host.Services!.GetService(typeof(IQuotationService));
@@ -627,6 +629,9 @@ public sealed class MainWindow : Window
     /// must be offered here at once.
     /// </summary>
     private Task EnterCalculationModulesAsync() => _calculationModulesCoordinator.RefreshAsync();
+
+    /// <summary>`v0.26.0` (ADR-0165): the worksheets' entry action re-reads the catalogue.</summary>
+    private Task EnterWorksheetsAsync() => _calcSheetCoordinator.RefreshAsync();
 
     /// <summary>
     /// Shows the current project in the Status Bar (`TD-84`) — the "see

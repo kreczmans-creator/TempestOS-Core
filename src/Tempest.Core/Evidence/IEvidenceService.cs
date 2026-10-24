@@ -43,6 +43,9 @@ public interface IEvidenceService
     /// </summary>
     Task<EvidenceActionResult> RecordCheckAsync(Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, CancellationToken cancellationToken = default);
 
+    /// <summary>`v0.26.0` Phase 6: as <see cref="RecordCheckAsync"/>, with <paramref name="alsoWrite"/> committed in the same transaction as the check record, after a transaction-time re-check of the status (a racing check is refused with <see cref="EvidenceRefusal.TransitionNotPermitted"/>).</summary>
+    Task<EvidenceActionResult> RecordCheckInOneTransactionAsync(Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Records an issue against <paramref name="evidenceId"/>'s own evidence
     /// and moves it to <see cref="EvidenceStatus.Issued"/>. Refused, as a
@@ -69,6 +72,19 @@ public interface IEvidenceService
         CancellationToken cancellationToken = default);
 
     /// <summary>Revises <paramref name="evidenceId"/>'s own Issued evidence: a new revision is created, and moved to <see cref="EvidenceStatus.Draft"/>, while the issued revision stays readable via its own revision history. Refused, as a result, unless the evidence is <see cref="EvidenceStatus.Issued"/>.</summary>
+    /// <summary>
+    /// `v0.26.0` (ADR-0165): issues in <b>one</b> transaction. The sheet is
+    /// rendered by <paramref name="renderSheetAsync"/> before the transaction opens; its bytes, its attachment
+    /// metadata, the issue record, the Issued status and whatever
+    /// <paramref name="alsoWrite"/> adds (a calculation instance snapshot,
+    /// a register link) commit together or not at all.
+    /// </summary>
+    Task<EvidenceActionResult> IssueInOneTransactionAsync(
+        Guid evidenceId, string issueReference, string revision, string client,
+        Func<Evidence, DateTimeOffset, CancellationToken, Task<IssueSheetContent?>>? renderSheetAsync = null,
+        Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite = null,
+        CancellationToken cancellationToken = default);
+
     Task<EvidenceActionResult> ReviseAsync(Guid evidenceId, CancellationToken cancellationToken = default);
 
     /// <summary>

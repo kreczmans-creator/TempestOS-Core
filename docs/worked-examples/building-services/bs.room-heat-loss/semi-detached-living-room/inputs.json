@@ -1,0 +1,340 @@
+[
+  {
+    "Symbol": "A_floor",
+    "Number": 16.2,
+    "Unit": "m^2",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "A-101",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "16.2"
+  },
+  {
+    "Symbol": "U_target",
+    "Number": 0.3,
+    "Unit": "W/(m^2*K)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-A-02 \u00A74.2: external wall U-value target",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.3"
+  },
+  {
+    "Symbol": "V",
+    "Number": 38.88,
+    "Unit": "m^3",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "A-101",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "38.88"
+  },
+  {
+    "Symbol": "elements",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "Front wall"
+          },
+          "area": {
+            "Number": 8.7,
+            "Unit": "m^2"
+          },
+          "construction": {
+            "Text": "Cavity wall"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Window"
+          },
+          "area": {
+            "Number": 2.1,
+            "Unit": "m^2"
+          },
+          "U_user": {
+            "Number": 1.4,
+            "Unit": "W/(m^2*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Gable wall"
+          },
+          "area": {
+            "Number": 8.64,
+            "Unit": "m^2"
+          },
+          "construction": {
+            "Text": "Cavity wall"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Party wall"
+          },
+          "area": {
+            "Number": 8.64,
+            "Unit": "m^2"
+          },
+          "theta_adj": {
+            "Number": 18,
+            "Unit": "degC"
+          },
+          "Rg": {
+            "Number": 0.18,
+            "Unit": "m^2*K/W"
+          },
+          "U_max": {
+            "Number": 1.2,
+            "Unit": "W/(m^2*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Ground floor"
+          },
+          "area": {
+            "Number": 16.2,
+            "Unit": "m^2"
+          },
+          "U_user": {
+            "Number": 0.25,
+            "Unit": "W/(m^2*K)"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "A-101",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5 row(s)"
+  },
+  {
+    "Symbol": "layers",
+    "Rows": [
+      {
+        "Cells": {
+          "element": {
+            "Text": "Cavity wall"
+          },
+          "name": {
+            "Text": "Outer brick leaf"
+          },
+          "d": {
+            "Number": 102.5,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.77,
+            "Unit": "W/(m*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "element": {
+            "Text": "Cavity wall"
+          },
+          "name": {
+            "Text": "PIR insulation"
+          },
+          "d": {
+            "Number": 100,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.022,
+            "Unit": "W/(m*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "element": {
+            "Text": "Cavity wall"
+          },
+          "name": {
+            "Text": "Inner block leaf"
+          },
+          "d": {
+            "Number": 100,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.15,
+            "Unit": "W/(m*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "element": {
+            "Text": "Cavity wall"
+          },
+          "name": {
+            "Text": "Plaster"
+          },
+          "d": {
+            "Number": 13,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.57,
+            "Unit": "W/(m*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "element": {
+            "Text": "Party wall"
+          },
+          "name": {
+            "Text": "Plaster"
+          },
+          "d": {
+            "Number": 13,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.57,
+            "Unit": "W/(m*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "element": {
+            "Text": "Party wall"
+          },
+          "name": {
+            "Text": "Block leaf 1"
+          },
+          "d": {
+            "Number": 100,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.51,
+            "Unit": "W/(m*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "element": {
+            "Text": "Party wall"
+          },
+          "name": {
+            "Text": "Block leaf 2"
+          },
+          "d": {
+            "Number": 100,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.51,
+            "Unit": "W/(m*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "element": {
+            "Text": "Party wall"
+          },
+          "name": {
+            "Text": "Plaster"
+          },
+          "d": {
+            "Number": 13,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.57,
+            "Unit": "W/(m*K)"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "A-210",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8 row(s)"
+  },
+  {
+    "Symbol": "method",
+    "Text": "BS EN 12831-1 elemental",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Elemental method; the design-team default.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "BS EN 12831-1 elemental"
+  },
+  {
+    "Symbol": "n",
+    "Number": 0.8,
+    "Unit": "1/h",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Natural ventilation allowance for a living room.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.8"
+  },
+  {
+    "Symbol": "theta_e",
+    "Number": -3,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Illustrative location design temperature; take the project\u0027s own from its design-temperature record.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "-3"
+  },
+  {
+    "Symbol": "theta_int",
+    "Number": 21,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-A-02 \u00A73.1: living-room design temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "21"
+  },
+  {
+    "Symbol": "y_tb",
+    "Number": 0.1,
+    "Unit": "W/(m^2*K)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Illustrative thermal-bridge allowance; replace with the project\u0027s bridging record.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.1"
+  }
+]

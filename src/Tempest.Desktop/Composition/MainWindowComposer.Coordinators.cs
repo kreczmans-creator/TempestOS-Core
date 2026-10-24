@@ -30,6 +30,7 @@ internal sealed record ComposedCoordinators(
     WorkspaceLayoutPresetCoordinator LayoutPresets,
     EngineeringCalculationCoordinator EngineeringCalculationCoordinator,
     CalculationModulesCoordinator CalculationModulesCoordinator,
+    Tempest.Desktop.CalcSheets.CalcSheetCoordinator CalcSheets,
     ProjectDeliveryCoordinator ProjectDelivery,
     ProjectGovernanceCoordinator ProjectGovernanceCoordinator);
 
@@ -306,8 +307,12 @@ internal sealed partial class MainWindowComposer
         // The Engineering Calculators' own collaborator (`WP 21.7B`).
         var calculationModulesCoordinator = new CalculationModulesCoordinator(host.CalculationModules!, views.CalculationModules);
 
+        // `v0.26.0` (ADR-0165): the worksheet surface's own collaborator.
+        var calcSheets = new Tempest.Desktop.CalcSheets.CalcSheetCoordinator(host.CalcInstances!, views.Worksheets, host.ProjectContext!, () => host.SessionPrincipal?.IdentityId,
+            (Tempest.Core.Events.IEventBus)host.Services!.GetService(typeof(Tempest.Core.Events.IEventBus)));
+
         return new ComposedCoordinators(
             undoRedo, viewCoordinator, cockpitView, homeDashboardView, dockingComposer, attachmentViewers, layoutPresets,
-            engineeringCalculationCoordinator, calculationModulesCoordinator, projectDelivery, projectGovernanceCoordinator);
+            engineeringCalculationCoordinator, calculationModulesCoordinator, calcSheets, projectDelivery, projectGovernanceCoordinator);
     }
 }
