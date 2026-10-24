@@ -23,8 +23,14 @@ public sealed class WorkedExamplePdfTests
 
             if (Directory.Exists(root))
             {
+                // Pack worked examples (packs/) hold every step's inputs and the issued pack sheets; they are not one sheet.
                 foreach (var file in Directory.EnumerateFiles(root, "inputs.json", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.Ordinal))
-                    data.Add(Path.GetRelativePath(root, Path.GetDirectoryName(file)!).Replace('\\', '/'));
+                {
+                    var relative = Path.GetRelativePath(root, Path.GetDirectoryName(file)!).Replace('\\', '/');
+
+                    if (!relative.StartsWith("packs/", StringComparison.Ordinal))
+                        data.Add(relative);
+                }
             }
 
             return data;
