@@ -6,7 +6,7 @@ You fill in the Result column. You sign off in the table at the end of this file
 
 ## Index
 
-Time is the estimate in each file. The listed total covers the files that exist now (1270 min, 584 steps).
+Time is the estimate in each file. The listed total covers the files that exist now (1370 min, 607 steps).
 The electrical, building-services and chain files come from a parallel writer. Check each link before you start.
 
 | Order | Code | File | Liability | Time (min) | Steps |
@@ -41,6 +41,7 @@ The electrical, building-services and chain files come from a parallel writer. C
 | 28 | B5 | [bs.heat-exchanger](bs.heat-exchanger.md) — Heat exchanger, LMTD and effectiveness-NTU | Medium | 35 | 18 |
 | 29 | chain | [chain.drive-train](chain.drive-train.md) — Drive train: motor, shaft, bearing life, seat fit | High | 75 | 21 |
 | 30 | chain | [chain.motor-circuit](chain.motor-circuit.md) — Motor circuit: motor, load budget, cable, voltage drop, fault protection, enclosure heat | High | 110 | 23 |
+| 31 | chain | [chain.wet-heating](chain.wet-heating.md) — Wet heating: room heat loss, sealed system, pipework and pump, circulator motor | High | 100 | 23 |
 
 E4 and E5 ship together. Test E4 first, then E5.
 
@@ -178,5 +179,6 @@ Verdict is one of: accept, accept with conditions, reject. Conditions go in the 
 | 28 | B5 | bs.heat-exchanger |  |  |  |  |  |  |  |  |
 | 29 | chain | chain.drive-train |  |  |  |  |  |  |  |  |
 | 30 | chain | chain.motor-circuit |  |  |  |  |  |  |  |  |
+| 31 | chain | chain.wet-heating |  |  |  |  |  |  |  |  |
 
 Overall verdict: ______________   Signed: ______________   Date: ______________

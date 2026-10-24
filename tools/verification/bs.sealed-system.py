@@ -36,6 +36,9 @@ def sealed(rooms=(), tf=75, tr=65, ti=20, n=1.3, method="am", v_pipe=20, v_plant
     dt = delta_t(tf, tr, ti, method)
     f = (dt / 50.0) ** n
     o["dT"], o["f_dT"] = dt, f
+    # 1.1.0 ports (A7a re-check): loop temperature drop and mean water temperature (kelvin, as the product stores it)
+    o["dT_fr"] = tf - tr
+    o["t_m_K"] = (tf + tr) / 2.0 + 273.15
     v_em = sum(r[3] for r in rooms)
     o["V_em"] = v_em
     o["Phi_tot"] = sum(r[1] for r in rooms)
@@ -102,6 +105,14 @@ EXTRAS = [
      {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.042559802, 'p_i': 0.790282744, 'V_e': 8.712511121}),
     ('S15 emitter output entered in kW (Phi 1.5 kW, Phi50 1.6 kW)', dict(rooms=[("Lounge", 1500, 1600, 8)]),
      {'dT': 50.0, 'f_dT': 1.0, 'R1': 1500.0, 'V_em': 8.0, 'V_s': 38.0, 'u_emit': 0.9375, 'V_e': 2.495862921}),
+    ('S16 new ports 75/65/20 (1.1.0)', dict(rooms=[('A',1000,0,0)], tf=75, tr=65, ti=20),
+     {'dT': 50.0, 'dT_fr': 10.0, 't_m_K': 343.15}),
+    ('S17 new ports 90/70/20', dict(rooms=[('A',1000,0,0)], tf=90, tr=70, ti=20),
+     {'dT': 60.0, 'dT_fr': 20.0, 't_m_K': 353.15}),
+    ('S18 new ports 60/60/20 log mean', dict(rooms=[('A',1000,0,0)], tf=60, tr=60, ti=20, method="lm"),
+     {'dT': 40.0, 'dT_fr': 0.0, 't_m_K': 333.15}),
+    ('S19 new ports from 167/149/68 degF', dict(rooms=[('A',1000,0,0)], tf=75, tr=65, ti=20),
+     {'dT': 50.0, 'dT_fr': 10.0, 't_m_K': 343.15}),
     ('S11 fill 30 = max 30 (e = 0)', dict(v_pipe=90, v_plant=10, t_fill=30, t_max=30, tf=30, tr=30, ti=16),
      {'dT': 14.0, 'f_dT': 0.191119694, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.0, 'p_i': 0.78819821, 'V_e': 0.0}),
 ]
@@ -155,6 +166,10 @@ def run_extras():
     p_gly = 1.04 * kell_rho(10) * G * 5 / 1e5 + 0.3
     ve_gly = 0.05 * o["V_s"] / (1.0 - (p_gly + 1.0) / (2.5 + 1.0))
     print(f"P1-bs.sealed-system-05  e = 0.05: V_e {o['V_e']:.4f} L (water density) vs {ve_gly:.4f} L (4 % denser fluid): {100*(ve_gly/o['V_e']-1):+.2f} %")
+    # C1 (A7a re-check): dT and dT_fr are both kelvin differences; linking dT to B1's dT_load is accepted.
+    o = sealed(rooms=[("A", 1000, 0, 0)], tf=75, tr=65, ti=20)
+    print(f"P1-bs.sealed-system-C1  75/65/20: dT {o['dT']:.0f} K, dT_fr {o['dT_fr']:.0f} K; flow Q = Phi/(rho c dT) is "
+          f"{o['dT'] / o['dT_fr']:.1f} times too small if dT is linked instead of dT_fr (product: no notice)")
     # ---- Independent review (2026-10-24): standard-based figures. Values recalled, owner to confirm.
     # BS EN 12828 Annex D (as recalled): p_e <= p_SV - 0.5 bar for p_SV <= 5 bar, else p_e <= 0.9 p_SV;
     # water reserve V_WR >= 0.5 % of V_s, at least 3 L; V_n >= (V_e + V_WR)(p_e + 1)/(p_e - p_0).

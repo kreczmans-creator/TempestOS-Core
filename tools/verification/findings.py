@@ -42,6 +42,8 @@ def collect():
                 c = dict(zip(header, cells(line)))
                 original = level(c.get("Severity", ""))
                 reviewed = level(c["Reviewed"]) if c.get("Reviewed") else original
+                if reviewed not in RANK:  # not yet reviewed ("—"): keep the first-pass severity
+                    reviewed = original
                 # The last "Status @ <sha>" column is the latest re-check.
                 status = [v for k, v in c.items() if k.startswith("Status")]
                 status = status[-1] if status else "Open"
