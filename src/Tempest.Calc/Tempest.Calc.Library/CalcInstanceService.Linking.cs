@@ -95,7 +95,7 @@ public sealed partial class CalcInstanceService
 
         var bound = value with { Provenance = CalcProvenance.Link(upstream.Id, outputSymbol, upstream.Revision) };
         var inputs = instance.Inputs.Where(i => !string.Equals(i.Symbol, inputSymbol, StringComparison.Ordinal)).Append(bound).ToList();
-        return await UpdateInputsAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false);
+        return await UpdateInputsAsync(instanceId, inputs, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -132,6 +132,9 @@ public sealed partial class CalcInstanceService
 
         var table = instance.Inputs.FirstOrDefault(i => string.Equals(i.Symbol, tableSymbol, StringComparison.Ordinal));
 
+        if (table is not null && CalcInputValidator.IsRecordPin(table.Provenance))
+            return CalcActionResult.Refused(RecordPinnedTable(label, tableSymbol), instance);
+
         if (table?.Rows is not { } rows || row < 0 || row >= rows.Count)
             return CalcActionResult.Refused($"'{tableSymbol}' of '{instance.Name}' has {table?.Rows?.Count ?? 0} row(s); there is no row {row + 1} to link (a link never creates rows).", instance);
 
@@ -160,7 +163,7 @@ public sealed partial class CalcInstanceService
 
         var cell = new CalcCell(converted.Number, converted.Unit, Provenance: CalcProvenance.Link(upstream.Id, outputSymbol, upstream.Revision));
         var inputs = instance.Inputs.Select(i => ReferenceEquals(i, table) ? WithCell(i, row, column, cell) : i).ToList();
-        return await UpdateInputsAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false);
+        return await UpdateInputsAsync(instanceId, inputs, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -188,6 +191,14 @@ public sealed partial class CalcInstanceService
 
         var instances = await AllInstancesAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
         var inputs = instance.Inputs.ToList();
+        var problems = new Dictionary<Guid, string?>();
+        string? Problem(CalcInstance upstream)
+        {
+            if (!problems.TryGetValue(upstream.Id, out var found))
+                problems[upstream.Id] = found = CycleOrDepthProblem(instance, upstream, instances);
+
+            return found;
+        }
 
         foreach (var (input, link) in instance.Links)
         {
@@ -200,7 +211,7 @@ public sealed partial class CalcInstanceService
                 || entry.Template.FindInput(input.Symbol) is not { } spec || ValueFor(spec, output) is not { } value)
                 return CalcActionResult.Refused($"'{current.Name}' rev {current.Revision} no longer gives '{link.OutputSymbol}' in a unit '{input.Symbol}' takes; re-link it by hand.", instance);
 
-            if (CycleOrDepthProblem(instance, current, instances) is { } problem)
+            if (Problem(current) is { } problem)
                 return CalcActionResult.Refused(problem.Replace("{input}", input.Symbol, StringComparison.Ordinal), instance);
 
             inputs[inputs.IndexOf(input)] = value with { Provenance = CalcProvenance.Link(current.Id, link.OutputSymbol, current.Revision) };
@@ -220,7 +231,7 @@ public sealed partial class CalcInstanceService
                 || spec is not { Kind: CalcInputKind.Quantity or CalcInputKind.Number } || ConvertFor(spec.Kind, spec.DefaultUnit, output) is not { } converted)
                 return CalcActionResult.Refused($"'{current.Name}' rev {current.Revision} no longer gives '{link.OutputSymbol}' in a unit '{label}' takes; re-link it by hand.", instance);
 
-            if (CycleOrDepthProblem(instance, current, instances) is { } problem)
+            if (Problem(current) is { } problem)
                 return CalcActionResult.Refused(problem.Replace("{input}", label, StringComparison.Ordinal), instance);
 
             var table = inputs.First(i => string.Equals(i.Symbol, symbol, StringComparison.Ordinal));
@@ -228,7 +239,7 @@ public sealed partial class CalcInstanceService
         }
 
         return instance.Status == CalcInstanceStatus.Draft
-            ? await UpdateInputsAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false)
+            ? await UpdateInputsAsync(instanceId, inputs, instance.UpdatedAt, cancellationToken).ConfigureAwait(false)
             : await ReviseCoreAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false);
     }
 
@@ -242,7 +253,7 @@ public sealed partial class CalcInstanceService
         var instances = await AllInstancesAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
         instances[instance.Id] = instance;
         var reasons = new List<string>();
-        Stale(instance, instances, reasons, [], 0);
+        Stale(instance, instances, reasons, [], 0, []);
         await RecordStalenessAsync(instance, reasons, cancellationToken).ConfigureAwait(false);
         return reasons.Count == 0 ? CalcStaleness.Fresh : new CalcStaleness(true, reasons);
     }
@@ -256,7 +267,7 @@ public sealed partial class CalcInstanceService
 
     // ------------------------------------------------------------------
 
-    private void Stale(CalcInstance instance, Dictionary<Guid, CalcInstance> instances, List<string> reasons, HashSet<Guid> visiting, int depth)
+    private void Stale(CalcInstance instance, Dictionary<Guid, CalcInstance> instances, List<string> reasons, HashSet<Guid> visiting, int depth, Dictionary<Guid, bool> memo)
     {
         if (depth == 0)
         {
@@ -312,11 +323,18 @@ public sealed partial class CalcInstanceService
             else if (!SameValue(takenSi, si))
                 reasons.Add($"'{upstream.Name}' rev {upstream.Revision} now gives a different '{link.OutputSymbol}' than the value '{label}' took.");
 
+            // Many links (200 cells of one table) often name one upstream: walk its own chain once per question.
             var before = reasons.Count;
-            var inner = new List<string>();
-            Stale(upstream, instances, inner, visiting, depth + 1);
 
-            if (inner.Count > 0 && reasons.Count == before)
+            if (!memo.TryGetValue(upstream.Id, out var innerStale))
+            {
+                var inner = new List<string>();
+                Stale(upstream, instances, inner, visiting, depth + 1, memo);
+                innerStale = inner.Count > 0;
+                memo[upstream.Id] = innerStale;
+            }
+
+            if (innerStale && reasons.Count == before)
                 reasons.Add($"'{upstream.Name}', which '{label}' is linked to, is itself stale.");
         }
 
@@ -340,6 +358,9 @@ public sealed partial class CalcInstanceService
         var unit = cell.Unit ?? _catalogue.Find(instance.TemplateReference)?.Template.FindInput(symbol)?.Columns?.FirstOrDefault(c => string.Equals(c.Key, column, StringComparison.Ordinal))?.DefaultUnit;
         return InputSi(number, unit);
     }
+
+    private static string RecordPinnedTable(string label, string tableSymbol) =>
+        $"'{label}' cannot be linked: '{tableSymbol}' is pinned to a reference record, whose values only the record can change. Enter the table by hand (which drops the pin) to link its cells.";
 
     private static string CellLabel(string symbol, int row, string column) => $"{symbol}[{row + 1}].{column}";
 
@@ -449,13 +470,15 @@ public sealed partial class CalcInstanceService
                         continue;
 
                     var spec = template.FindInput(input.Symbol)?.Columns?.FirstOrDefault(c => string.Equals(c.Key, column, StringComparison.Ordinal));
-                    var bad = spec is { Kind: CalcInputKind.Quantity or CalcInputKind.Number } ? null : $"'{label}' is linked, but only a number or quantity column of a table can take a link.";
+                    var bad = CalcInputValidator.IsRecordPin(input.Provenance) ? RecordPinnedTable(label, input.Symbol)
+                        : spec is { Kind: CalcInputKind.Quantity or CalcInputKind.Number } ? null : $"'{label}' is linked, but only a number or quantity column of a table can take a link.";
                     changed.Add((label, cellLink, spec?.Kind, spec?.DefaultUnit ?? string.Empty, bad));
                 }
             }
         }
 
         Dictionary<Guid, CalcInstance>? instances = null;
+        var cycleProblems = new Dictionary<Guid, string?>();
 
         foreach (var (label, link, kind, defaultUnit, bad) in changed)
         {
@@ -483,8 +506,11 @@ public sealed partial class CalcInstanceService
                 || ConvertFor(k, defaultUnit, output) is null)
                 return $"'{label}' is linked to '{upstream.Name}'.{link.OutputSymbol}, which it cannot take (missing, or a different dimension).";
 
-            if (CycleOrDepthProblem(instance, upstream, instances) is { } problem)
-                return problem.Replace("{input}", label, StringComparison.Ordinal);
+            if (!cycleProblems.TryGetValue(upstream.Id, out var cycle))
+                cycleProblems[upstream.Id] = cycle = CycleOrDepthProblem(instance, upstream, instances);
+
+            if (cycle is not null)
+                return cycle.Replace("{input}", label, StringComparison.Ordinal);
         }
 
         return null;
@@ -533,20 +559,20 @@ public sealed partial class CalcInstanceService
 
     private static List<Guid> Downstream(Guid id, Dictionary<Guid, CalcInstance> instances)
     {
+        // Who takes from whom, worked out once: each instance's upstream list is itself a walk over its inputs and cells.
+        var below = instances.Values.SelectMany(i => i.UpstreamIds.Select(u => (Up: u, Down: i.Id))).ToLookup(x => x.Up, x => x.Down);
         var seen = new HashSet<Guid>();
         var order = new List<Guid>();
         var queue = new Queue<Guid>([id]);
 
         while (queue.Count > 0 && seen.Count < 10_000)
         {
-            var current = queue.Dequeue();
-
-            foreach (var down in instances.Values.Where(i => i.UpstreamIds.Contains(current)))
+            foreach (var down in below[queue.Dequeue()])
             {
-                if (seen.Add(down.Id))
+                if (seen.Add(down))
                 {
-                    order.Add(down.Id);
-                    queue.Enqueue(down.Id);
+                    order.Add(down);
+                    queue.Enqueue(down);
                 }
             }
         }

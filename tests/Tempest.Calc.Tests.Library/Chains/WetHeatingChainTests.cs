@@ -61,22 +61,21 @@ public sealed class WetHeatingChainTests
             // B6 is given its two rooms: instantiating never creates rows. Φ is a placeholder the links replace.
             ["b6"] = From(b6, v => v.Symbol != "rooms", SealedSystemCalculator.Rooms(("Room A", 1, 0, 4), ("Room B", 1, 0, 4))),
 
-            // B1: heat load and ΔT come from B6, so no design flow is given; the pump runs at 2800 rpm.
-            ["b1"] = From(b1, v => v.Symbol is not ("Q" or "Phi_load" or "dT_load"),
+            // B1: heat load, ΔT and the mean water temperature come from B6, so no design flow or temperature is given and the
+            // specific heat of water is the sheet's assumed constant; the pump runs at 2800 rpm.
+            ["b1"] = From(b1, v => v.Symbol is not ("Q" or "T" or "Phi_load" or "dT_load" or "cp_load"),
                 CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidWater),
-                CalcInputValue.Quantity("T", 70, "degC"),
                 PipeFlowCalculator.Segments(("primary flow and return", 40, 28, 0.045, 12, 0, 3, "discharge")),
-                CalcInputValue.Quantity("n_pump", 2800, "rpm"),
-                CalcInputValue.Quantity("cp_load", 4186, "J/(kg*K)")),
+                CalcInputValue.Quantity("n_pump", 2800, "rpm")),
 
-            // E1: a circulator on a direct drive; B1's shaft torque is the constant load torque.
+            // E1: a circulator on a direct drive in continuous duty; B1's shaft torque is its load torque and B1's shaft speed its
+            // load speed, so only the run-up time and the inertia are given.
             ["e1"] = From(e1, null,
                 CalcInputValue.Choice("mechanism", MotorSizingCalculator.MechDirectRotary),
+                CalcInputValue.Choice("duty_mode", MotorSizingCalculator.DutyContinuous),
                 CalcInputValue.Quantity("J_L", 0.002, "kg*m^2"),
                 CalcInputValue.Quantity("J_mech", 0, "kg*m^2"),
-                CalcInputValue.Of("s", 20),
-                CalcInputValue.Quantity("t_move", 2, "s"),
-                CalcInputValue.Quantity("t_dwell", 10, "s")),
+                CalcInputValue.Quantity("t_start", 5, "s")),
         };
     }
 
@@ -115,11 +114,34 @@ public sealed class WetHeatingChainTests
         var flow = Si(b6, "Phi_tot") / (rho * 4186 * 10);
         Assert.Equal(flow, Si(b1, "Q_design"), 12);
 
-        // B1 → E1: the pump shaft torque is P_hyd / η / ω at 2800 rpm.
+        // B6 → B1: the mean water temperature is the fluid temperature the flow is worked out at.
+        Assert.Equal(70, Si(b6, "t_m") - 273.15, 9);
+        Assert.Equal(Si(b6, "t_m"), InputSi(b1, "T"), 9);
+        Assert.Contains(b1.Inputs, i => i.Symbol == "T" && CalcLink.From(i.Provenance) is { OutputSymbol: "t_m" });
+        Assert.DoesNotContain(b1.Warnings, w => w.RuleId == "heat-t");
+
+        // B1 → E1: the pump shaft torque is P_hyd / η / ω at 2800 rpm, and its speed is E1's load speed.
         var omega = 2800 * 2 * Math.PI / 60;
         Assert.Equal(Si(b1, "P_hyd") / 0.7 / omega, Si(b1, "T_shaft"), 12);
         Assert.Equal(Si(b1, "T_shaft"), InputSi(e1, "T_L"), 12);
+        Assert.Equal(Si(b1, "n_shaft"), InputSi(e1, "n_L"), 9);
         Assert.True(Si(b1, "T_shaft") > 0);
+
+        // E1 sizes the motor for continuous running: the load torque (through η = 0.9), the speed and the run-up, not a move cycle.
+        Assert.Equal(Si(b1, "T_shaft") / 0.9, Si(e1, "T_load"), 12);
+        Assert.Equal(Si(e1, "T_load"), Si(e1, "T_rms"), 12);
+        Assert.Equal(Si(e1, "T_load") * omega, Si(e1, "P_cont"), 9);
+        Assert.Equal(2800, Si(e1, "n_pk") * 60 / (2 * Math.PI), 6);
+        Assert.Equal(Si(e1, "T_acc") + Si(e1, "T_load"), Si(e1, "T_pk"), 12);
+        Assert.Equal(3, e1.Checks.Count);
+        Assert.All(e1.Checks, check => Assert.True(check.Passed, check.Name));
+        Assert.Equal(1.25 * Si(e1, "T_rms") / 2.0, Si(e1, "u_rms"), 12);
+        Assert.Equal(1.25 * Si(e1, "T_pk") / 6.0, Si(e1, "u_peak"), 12);
+        Assert.Equal(2800.0 / 10000, Si(e1, "u_speed"), 9);
+        Assert.Equal(Si(e1, "u_rms"), e1.Checks.Single(check => check.Name.StartsWith("RMS torque", StringComparison.Ordinal)).Utilisation, 12);
+        Assert.Equal(Si(e1, "u_peak"), e1.Checks.Single(check => check.Name.StartsWith("Peak torque", StringComparison.Ordinal)).Utilisation, 12);
+        Assert.Equal(Si(e1, "u_speed"), e1.Checks.Single(check => check.Name.StartsWith("Speed", StringComparison.Ordinal)).Utilisation, 12);
+        Assert.Contains(e1.Warnings, w => w.RuleId == "continuous-ignored");
 
         Assert.Equal(5, made.Pack.InstanceIds.Count);
         Assert.All(made.Instances.Values, i => Assert.False(i.Blocks.Count > 0, $"{i.Name}: {string.Join("; ", i.Blocks.Select(b => b.Message))}"));
@@ -152,6 +174,9 @@ public sealed class WetHeatingChainTests
         var blocked = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
         Assert.False(blocked.Succeeded);
         Assert.Contains("stale", blocked.Reason, StringComparison.Ordinal);
+        var notIssued = await host.Service.IssuePackAsync(made.Pack.Id, "HTG-STALE", "Client Co");
+        Assert.False(notIssued.Succeeded);
+        Assert.Contains("check it before issuing", notIssued.Reason, StringComparison.Ordinal);
 
         // Updating in chain order clears the staleness one step at a time; the pack stays blocked until the last.
         Assert.True((await host.Service.UpdateLinksAsync(made.Instances["b6"].Id)).Succeeded);
@@ -239,22 +264,32 @@ public sealed class WetHeatingChainTests
         var host = Host();
         var project = await host.ProjectAsync();
         var inputs = Steps()["b1"].Where(v => v.Symbol != "n_pump").ToList();
+        var temperature = CalcInputValue.Quantity("T", 70, "degC", Spec);
 
         // Φ alone: blocked with the reason.
         var alone = await host.Service.CreateAsync("bs.pipe-pump", project, "Pipework alone",
-            [.. inputs, CalcInputValue.Quantity("Phi_load", 600, "W", Spec)]);
+            [.. inputs, temperature, CalcInputValue.Quantity("Phi_load", 600, "W", Spec)]);
         Assert.Contains(alone.Blocks, b => b.Message.StartsWith("Phi_load:", StringComparison.Ordinal));
 
         // Neither a flow nor a heat load: blocked.
-        var neither = await host.Service.CreateAsync("bs.pipe-pump", project, "Pipework neither", inputs);
+        var neither = await host.Service.CreateAsync("bs.pipe-pump", project, "Pipework neither", [.. inputs, temperature]);
         Assert.Contains(neither.Blocks, b => b.Message.StartsWith("Q:", StringComparison.Ordinal));
 
-        // A flow as well as a heat load: the heat load wins and the sheet says so; 600 W at 10 K, 70 °C water.
+        // A flow as well as a heat load: the heat load wins and the sheet says so; 600 W at 10 K, 70 °C water, c_p assumed.
         var both = await host.Service.CreateAsync("bs.pipe-pump", project, "Pipework both",
-            [.. inputs, CalcInputValue.Quantity("Q", 20, "m^3/h", Spec), CalcInputValue.Quantity("Phi_load", 600, "W", Spec), CalcInputValue.Quantity("dT_load", 10, "K", Spec)]);
+            [.. inputs, temperature, CalcInputValue.Quantity("Q", 20, "m^3/h", Spec), CalcInputValue.Quantity("Phi_load", 600, "W", Spec), CalcInputValue.Quantity("dT_load", 10, "K", Spec)]);
         Assert.Empty(both.Blocks);
         Assert.Contains(both.Warnings, w => w.RuleId == "heat-flow-q");
+        Assert.DoesNotContain(both.Warnings, w => w.RuleId == "heat-t");
         Assert.Equal(600 / (Water.Density(70) * 4186 * 10), Si(both, "Q_design"), 12);
         Assert.DoesNotContain(both.Outputs, o => o.Symbol == "T_shaft");
+        var sheet = (await host.Service.RunAsync(both.Id))!.SheetText;
+        Assert.Contains("c_p of water 4186 J/(kg·K) (assumed)", sheet, StringComparison.Ordinal);
+
+        // No temperature with a heat load: a notice, because 20 °C is not a heating loop's temperature.
+        var noT = await host.Service.CreateAsync("bs.pipe-pump", project, "Pipework no T",
+            [.. inputs, CalcInputValue.Quantity("Phi_load", 600, "W", Spec), CalcInputValue.Quantity("dT_load", 10, "K", Spec)]);
+        Assert.Empty(noT.Blocks);
+        Assert.Contains(noT.Warnings, w => w.RuleId == "heat-t" && w.Message.StartsWith("T:", StringComparison.Ordinal));
     }
 }

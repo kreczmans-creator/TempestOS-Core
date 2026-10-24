@@ -6,7 +6,7 @@
 
 **Inputs.** optional `rooms` table (name, Φ, selected Φ50, V_em; ≤ 200); `t_f`, `t_r` 30–90 °C; `t_i` 16–24 °C; `n` 1.1–1.5 (record `emitter.rating`); `dT_method`; `V_pipe`, `V_plant` (V_s must be 10–10 000 L); `t_fill`, `t_max`; optional `e_fluid` (record `fluid.expansion`); `h_static` 0–50 m; `p_margin`; `p_f`; `p_prv` 1.5–6 bar; optional `V_vessel`. The symbol `e` is the engine's constant, so the coefficient is `e_x`.
 
-**Outputs.** `dT`, `dT_fr` (flow-to-return difference `t_f − t_r`, added in 1.1.0 because the emitter mean difference `dT` is not the temperature drop of the loop), `f_dT`, `R1…` (Φ50 needed per room), `Phi_tot`, `V_em`, `V_s`, `e_x`, `p_i`, `V_e`, `u_emit`, `u_vessel`. **Ports.** `Phi_tot` and `dT_fr` → B1 (`Phi_load`, `dT_load`), `V_s`, `V_e`, `dT`. The `Phi` column of `rooms` takes a cell link from B4's `Phi_HL` (ADR-0168 amendment 2). **Checks.** governing room emitter; selected vessel.
+**Outputs.** `dT`, `dT_fr` (flow-to-return difference `t_f − t_r`, added in 1.1.0 because the emitter mean difference `dT` is not the temperature drop of the loop), `t_m` (mean water temperature `(t_f + t_r)/2`, °C), `f_dT`, `R1…` (Φ50 needed per room), `Phi_tot`, `V_em`, `V_s`, `e_x`, `p_i`, `V_e`, `u_emit`, `u_vessel`. **Ports.** `Phi_tot`, `dT_fr` and `t_m` → B1 (`Phi_load`, `dT_load`, `T`), `V_s`, `V_e`, `dT`. The `Phi` column of `rooms` takes a cell link from B4's `Phi_HL` (ADR-0168 amendment 2). **Checks.** governing room emitter; selected vessel.
 
 **Limitations.** Closed LTHW below 100 °C; no pipe-loss or emitter-position corrections; Kell density at atmospheric pressure.
 

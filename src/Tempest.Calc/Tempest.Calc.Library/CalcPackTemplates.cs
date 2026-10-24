@@ -55,8 +55,9 @@ public static class CalcPackTemplates
 
     /// <summary>
     /// Wet heating: two rooms (B4) → sealed system (B6) → primary pipework and pump (B1) → circulator motor (E1). Each room's
-    /// design heat loss enters a row of B6's rooms table (a table-cell link, ADR-0168 amendment 2); B6's total heat and
-    /// flow-to-return temperature difference give B1 its design flow; B1's pump shaft torque is E1's load torque. B6 must be
+    /// design heat loss enters a row of B6's rooms table (a table-cell link, ADR-0168 amendment 2); B6's total heat,
+    /// flow-to-return difference and mean water temperature give B1 its design flow and fluid; B1's pump shaft torque and speed
+    /// are E1's load torque and speed (the E1 step is given continuous duty). B6 must be
     /// given its two rooms as inputs: instantiating never creates table rows.
     /// </summary>
     public static CalcPackTemplate WetHeating { get; } = new(
@@ -74,7 +75,9 @@ public static class CalcPackTemplates
             new CalcPackBinding("b4b", "Phi_HL", "b6", "rooms", Row: 1, Column: "Phi"),
             new CalcPackBinding("b6", "Phi_tot", "b1", "Phi_load"),
             new CalcPackBinding("b6", "dT_fr", "b1", "dT_load"),
+            new CalcPackBinding("b6", "t_m", "b1", "T"),
             new CalcPackBinding("b1", "T_shaft", "e1", "T_L"),
+            new CalcPackBinding("b1", "n_shaft", "e1", "n_L"),
         ]);
 
     /// <summary>Every built-in chain.</summary>

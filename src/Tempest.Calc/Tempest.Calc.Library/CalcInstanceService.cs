@@ -97,6 +97,10 @@ public sealed partial class CalcInstanceService
         if (inputs is not null)
         {
             var list = inputs.ToList();
+
+            if (ProvenanceTooLong(list))
+                throw new CalcLinkRefusedException($"A provenance reference is longer than {CalcProvenance.MaxReferenceLength} characters.");
+
             var probe = new CalcInstance(id, entry.Reference, entry.ContentHash, projectId, cleanName, "A", [], [], [], [], [], CalcInstanceStatus.Draft, null, null, author, now, now);
 
             if (await LinkProblemAsync(probe, entry.Template, list, cancellationToken).ConfigureAwait(false) is { } problem)
@@ -119,13 +123,26 @@ public sealed partial class CalcInstanceService
     }
 
     /// <summary>Replaces the inputs of a draft instance and re-runs it. Refused once the instance is checked or issued.</summary>
-    public async Task<CalcActionResult> UpdateInputsAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, CancellationToken cancellationToken = default)
+    public Task<CalcActionResult> UpdateInputsAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, CancellationToken cancellationToken = default) =>
+        UpdateInputsCoreAsync(instanceId, inputs, null, cancellationToken);
+
+    /// <summary>
+    /// As <see cref="UpdateInputsAsync(Guid, IEnumerable{CalcInputValue}, CancellationToken)"/>, for inputs built from a read made at
+    /// <paramref name="expectedUpdatedAt"/>: refused, not overwritten, if the calculation was changed in between.
+    /// </summary>
+    public Task<CalcActionResult> UpdateInputsAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset expectedUpdatedAt, CancellationToken cancellationToken = default) =>
+        UpdateInputsCoreAsync(instanceId, inputs, expectedUpdatedAt, cancellationToken);
+
+    private async Task<CalcActionResult> UpdateInputsCoreAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset? expectedUpdatedAt, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inputs);
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
 
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
+
+        if (expectedUpdatedAt is { } expected && instance.UpdatedAt != expected)
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' was changed after these inputs were read from it; reopen it and try again.", instance);
 
         if (instance.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only a draft takes new inputs.", instance);
@@ -140,7 +157,7 @@ public sealed partial class CalcInstanceService
 
         var newInputs = inputs.ToList();
 
-        if (newInputs.Any(v => (v.Provenance is { } p && !p.IsWithinLimits) || (v.Rows?.Any(r => r?.Cells.Values.Any(c => c?.Provenance is { IsWithinLimits: false }) == true) ?? false)))
+        if (ProvenanceTooLong(newInputs))
             return CalcActionResult.Refused($"A provenance reference is longer than {CalcProvenance.MaxReferenceLength} characters.", instance);
 
         // Every new or changed link meets the same rules as BindAsync: upstream exists, gives the output in the input's
@@ -165,6 +182,11 @@ public sealed partial class CalcInstanceService
 
         return CalcActionResult.Ok(updated);
     }
+
+    /// <summary>Whether any input, or any table cell, carries a provenance longer than the caps.</summary>
+    private static bool ProvenanceTooLong(IEnumerable<CalcInputValue> inputs) =>
+        inputs.Any(v => (v.Provenance is { } p && !p.IsWithinLimits)
+            || (v.Rows?.Any(r => r?.Cells.Values.Any(c => c?.Provenance is { IsWithinLimits: false }) == true) ?? false));
 
     /// <summary>Runs an instance's calculator on its stored inputs and builds its sheet. Pure apart from reading the instance.</summary>
     public async Task<CalcInstanceRun?> RunAsync(Guid instanceId, CancellationToken cancellationToken = default)

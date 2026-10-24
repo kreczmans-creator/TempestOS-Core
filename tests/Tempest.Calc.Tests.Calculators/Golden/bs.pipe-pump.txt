@@ -14,11 +14,10 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | custom (ρ and μ given) |  | manual | any
-  T | Fluid temperature | 20 | degC | manual | 0 … 100 degC
+  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 20 | degC | manual | 0 … 100 degC
   rho_custom | Density (custom fluid) | 888 | kg/m^3 | manual | 500 … 2000 kg/m^3
   mu_custom | Dynamic viscosity (custom fluid) | 800 | mPa*s | manual | 0.1 … 1000 mPa*s
   Q | Design flow rate (blank when a heat load gives it) | 1 | m^3/h | manual | 0.01 … 100000 m^3/h
-  cp_load | Specific heat of the fluid (heat-load flow) | 4186 | J/(kg*K) | manual | 1000 … 6000 J/(kg*K)
   segments | Pipe segments in series | 1 row(s) |  | manual | any
   segments[1] |  | name = oil line; L = 40 m; D = 50 mm; eps = 0 mm; K = 0; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
   h_out | Pressure head required at the outlet | 0 | m | manual | 0 … 1000 m

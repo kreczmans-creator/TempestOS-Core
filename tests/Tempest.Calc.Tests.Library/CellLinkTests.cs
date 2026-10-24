@@ -17,7 +17,7 @@ internal sealed class LoadTableCalculator : ICalcCalculator
         "Sums a table of loads; a test sink for table-cell links.",
         "Total: F_tot = Σ F + Σ F_n.",
         [
-            new CalcInputSpec("loads", "Loads", CalcInputKind.Table, MaxRows: 10, Columns:
+            new CalcInputSpec("loads", "Loads", CalcInputKind.Table, MaxRows: 300, Columns:
             [
                 new CalcColumnSpec("name", "Load", CalcInputKind.Text, IsOptional: true),
                 new CalcColumnSpec("F", "Force", CalcInputKind.Quantity, "kN", HardMin: 0, HardMax: 1e9, IsOptional: true),
@@ -431,5 +431,116 @@ public sealed class CellLinkTests
         Assert.Null(none);
         Assert.Contains("Step 'sink'", noRows, StringComparison.Ordinal);
         Assert.Contains("never creates rows", noRows, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_Over_Long_Cell_Provenance_Is_Refused_On_Create_Update_And_In_Pack_Steps()
+    {
+        var host = new LibraryTestHost(calculators: [new ForceSourceCalculator(), new LoadTableCalculator()],
+            packTemplates: [new CalcPackTemplate("test.long", "Long", "Long.", [new CalcPackStep("sink", LoadTableCalculator.Id, "Loads")], [])]);
+        var project = await host.ProjectAsync();
+        var tooLong = CalcProvenance.Specification(new string('x', CalcProvenance.MaxReferenceLength + 1));
+        var table = CalcInputValue.Table("loads", [CalcRow.Of(("name", new CalcCell(Text: "A")), ("F", new CalcCell(1, "kN", Provenance: tooLong)))], Spec);
+
+        var create = await Assert.ThrowsAsync<CalcLinkRefusedException>(() => host.Service.CreateAsync(LoadTableCalculator.Id, project, "Long cell", [table]));
+        Assert.Contains("longer than", create.Message, StringComparison.Ordinal);
+
+        var topLevel = await Assert.ThrowsAsync<CalcLinkRefusedException>(() => host.Service.CreateAsync("test.force-source", project, "Long input", [CalcInputValue.Quantity("P", 1, "kN", tooLong)]));
+        Assert.Contains("longer than", topLevel.Message, StringComparison.Ordinal);
+
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(host.Service.PackTemplates.Single(), await host.ProjectAsync(), "Long pack",
+            new Dictionary<string, IReadOnlyList<CalcInputValue>> { ["sink"] = [table] });
+        Assert.Null(made);
+        Assert.StartsWith("Step 'sink':", refusal);
+        Assert.Contains("longer than", refusal, StringComparison.Ordinal);
+
+        var sink = await Sink(host, project, "Fine");
+        Assert.Contains("longer than", (await host.Service.UpdateInputsAsync(sink.Id, [table])).Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Cell_Cannot_Be_Linked_Into_A_Table_Pinned_To_A_Reference_Record()
+    {
+        var host = Host();
+        var project = await host.ProjectAsync();
+        var source = await Source(host, project, "Source");
+        var pin = CalcProvenance.FromReference($"record:{Guid.NewGuid():N}@1");
+        var pinned = await host.Service.CreateAsync(LoadTableCalculator.Id, project, "Pinned", [LoadTableCalculator.Loads(("A", 1, 0)) with { Provenance = pin }]);
+
+        var bind = await host.Service.BindCellAsync(pinned.Id, "loads", 0, "F", source.Id, "F_out");
+        Assert.False(bind.Succeeded);
+        Assert.Contains("pinned to a reference record", bind.Reason, StringComparison.Ordinal);
+        Assert.Contains("'loads[1].F'", bind.Reason, StringComparison.Ordinal);
+
+        // The same by an import that states the cell link inside the pinned table.
+        var forged = LoadTableCalculator.Loads(("A", 1, 0)) with { Provenance = pin };
+        var cell = new CalcCell(10, "kN", Provenance: CalcProvenance.Link(source.Id, "F_out", "A"));
+        forged = forged with { Rows = [CalcRow.Of(("name", new CalcCell(Text: "A")), ("F", cell))] };
+        var update = await host.Service.UpdateInputsAsync(pinned.Id, [forged]);
+        Assert.False(update.Succeeded);
+        Assert.Contains("pinned to a reference record", update.Reason, StringComparison.Ordinal);
+        Assert.Empty((await host.Store.FindInstanceAsync(pinned.Id))!.CellLinks);
+    }
+
+    [Fact]
+    public async Task A_Bind_Built_From_An_Earlier_Read_Is_Refused_If_The_Calculation_Changed_In_Between()
+    {
+        var host = Host();
+        var project = await host.ProjectAsync();
+        var source = await Source(host, project, "Source");
+        var sink = await Sink(host, project);
+        var read = (await host.Store.FindInstanceAsync(sink.Id))!;
+
+        // Someone edits the second row after the read ...
+        var edited = await host.Service.UpdateInputsAsync(sink.Id, [LoadTableCalculator.Loads(("A", 1, 0), ("B", 99, 0)) with { Provenance = Spec }]);
+        Assert.True(edited.Succeeded, edited.Reason);
+
+        // ... so inputs built from the old read are refused rather than written over the edit.
+        var stale = await host.Service.UpdateInputsAsync(sink.Id, read.Inputs, read.UpdatedAt);
+        Assert.False(stale.Succeeded);
+        Assert.Contains("was changed after these inputs were read", stale.Reason, StringComparison.Ordinal);
+        Assert.Equal(99, Cell((await host.Store.FindInstanceAsync(sink.Id))!, 1, "F").Number!.Value, 9);
+
+        // With the current stamp the same call goes through, and the binds themselves still work.
+        var current = (await host.Store.FindInstanceAsync(sink.Id))!;
+        Assert.True((await host.Service.UpdateInputsAsync(sink.Id, current.Inputs, current.UpdatedAt)).Succeeded);
+        Assert.True((await host.Service.BindCellAsync(sink.Id, "loads", 1, "F", source.Id, "F_out")).Succeeded);
+        Assert.True((await host.Service.BindAsync((await Source(host, project, "Other")).Id, "P", source.Id, "F_out")).Succeeded);
+    }
+
+    [Fact]
+    public async Task Many_Cell_Links_To_One_Upstream_Are_Judged_Together_And_Stay_Fast()
+    {
+        var host = Host();
+        var project = await host.ProjectAsync();
+        var source = await Source(host, project, "Source");
+        var rows = Enumerable.Range(0, 200).Select(r => (Name: $"L{r}", F: 1.0, Fn: 0.0)).ToArray();
+        var sink = await host.Service.CreateAsync(LoadTableCalculator.Id, project, "Big", [LoadTableCalculator.Loads(rows) with { Provenance = Spec }]);
+
+        var inputs = sink.Inputs.ToList();
+
+        for (var r = 0; r < 200; r++)
+        {
+            var table = inputs.Single(i => i.Symbol == "loads");
+            var cells = new Dictionary<string, CalcCell>(table.Rows![r].Cells) { ["F"] = new CalcCell(10, "kN", Provenance: CalcProvenance.Link(source.Id, "F_out", "A")) };
+            inputs[inputs.IndexOf(table)] = table with { Rows = [.. table.Rows.Select((row, i) => i == r ? new CalcRow(cells) : row)] };
+        }
+
+        var linked = await host.Service.UpdateInputsAsync(sink.Id, inputs);
+        Assert.True(linked.Succeeded, linked.Reason);
+        Assert.Equal(200, linked.Instance!.CellLinks.Count);
+        Assert.False((await host.Service.StalenessAsync(linked.Instance)).IsStale);
+
+        Assert.True((await host.Service.UpdateInputsAsync(source.Id, [CalcInputValue.Quantity("P", 7, "kN", CalcProvenance.Drawing("DRG-9", "B"))])).Succeeded);
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        var stale = await host.Service.StalenessAsync((await host.Store.FindInstanceAsync(sink.Id))!);
+        Assert.True(stale.IsStale);
+        Assert.Equal(200, stale.Reasons.Count(r => r.Contains("now gives a different 'F_out'", StringComparison.Ordinal)));
+        Assert.True(started.Elapsed < TimeSpan.FromSeconds(5), $"staleness took {started.Elapsed}");
+
+        var updated = await host.Service.UpdateLinksAsync(sink.Id);
+        Assert.True(updated.Succeeded, updated.Reason);
+        Assert.False((await host.Service.StalenessAsync(updated.Instance!)).IsStale);
+        Assert.Equal(200 * 14_000.0, Total(updated.Instance!), 3);
     }
 }

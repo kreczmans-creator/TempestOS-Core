@@ -17,7 +17,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | water |  | spec: SPEC-M-04 §3: chilled water, no glycol | any
-  T | Fluid temperature | 6 | degC | spec: SPEC-M-04 §3: 6 °C flow | 0 … 100 degC
+  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 6 | degC | spec: SPEC-M-04 §3: 6 °C flow | 0 … 100 degC
   Q | Design flow rate (blank when a heat load gives it) | 30 | m^3/h | spec: Schedule CHW-01 design flow | 0.01 … 100000 m^3/h
   segments | Pipe segments in series | 3 row(s) |  | drawing: DRG-M-110 rev C | any
   segments[1] |  | name = plantroom suction; L = 8 m; D = 100 mm; eps = 0.045 mm; K = 3; L_eq = 0 m; dz = 0 m; side = suction |  |  | 

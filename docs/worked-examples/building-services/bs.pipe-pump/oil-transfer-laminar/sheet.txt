@@ -17,7 +17,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | custom (ρ and μ given) |  | spec: Oil datasheet ISO VG 680 at 20 °C | any
-  T | Fluid temperature | 20 | degC | assumption: Ambient 20 °C. | 0 … 100 degC
+  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 20 | degC | assumption: Ambient 20 °C. | 0 … 100 degC
   rho_custom | Density (custom fluid) | 888 | kg/m^3 | spec: Oil datasheet ISO VG 680 | 500 … 2000 kg/m^3
   mu_custom | Dynamic viscosity (custom fluid) | 800 | mPa*s | spec: Oil datasheet ISO VG 680 at 20 °C | 0.1 … 1000 mPa*s
   Q | Design flow rate (blank when a heat load gives it) | 1 | m^3/h | spec: Transfer pump duty | 0.01 … 100000 m^3/h
@@ -36,7 +36,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
   A3. The system curve scales friction losses with Q² from the design flow (turbulent assumption); the static part is independent of flow. (H_sys = H_static + k Q².)
   A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
-  A5. T (Fluid temperature) is taken as 20 degC. (Ambient 20 °C.)
+  A5. T (Fluid temperature (mean; link B6 t_m for a heating loop)) is taken as 20 degC. (Ambient 20 °C.)
   A6. h_out (Pressure head required at the outlet) is taken as 0 m. (Open discharge.)
   A7. v_max (Velocity limit (warning)) is taken as 3 m/s. (Practice limit.)
 

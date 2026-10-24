@@ -96,6 +96,7 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             new CalcOutputPort("V_e", "L", "Minimum expansion vessel volume"),
             new CalcOutputPort("dT", "K", "Emitter mean temperature difference"),
             new CalcOutputPort("dT_fr", "K", "Flow-to-return temperature difference of the loop (→ B1 heat-load flow)"),
+            new CalcOutputPort("t_m", "degC", "Mean water temperature of the loop, (t_f + t_r)/2 (→ B1 fluid temperature)"),
         ],
         RecordKinds:
         [
@@ -140,12 +141,13 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             c.Assign("dT", "(t_f + t_r) / 2 - t_i", "K", "Mean water-to-room temperature difference", "BS EN 442-2 cl. 5");
 
         c.Assign("dT_fr", "t_f - t_r", "K", "Flow-to-return temperature difference (what the water gives up across the emitters)");
+        c.Assign("t_m", "(t_f + t_r) / 2", "degC", "Mean water temperature, (flow + return)/2");
         c.Assign("f_dT", "(dT / 50 K)^n", null, "Output correction from ΔT 50 K");
         var f = c.Si("f_dT");
         var rows = c.Rows("rooms");
         var w = UnitCatalog.Parse("W");
         var litre = UnitCatalog.Parse("L");
-        var outputs = new List<(string, string)> { ("dT", "Mean temperature difference"), ("dT_fr", "Flow-to-return temperature difference"), ("f_dT", "Output correction factor") };
+        var outputs = new List<(string, string)> { ("dT", "Mean temperature difference"), ("dT_fr", "Flow-to-return temperature difference"), ("t_m", "Mean water temperature"), ("f_dT", "Output correction factor") };
         var worst = 0.0;
         var anySelected = false;
         var total = 0.0;
