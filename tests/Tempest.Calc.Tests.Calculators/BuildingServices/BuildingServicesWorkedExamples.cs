@@ -111,5 +111,25 @@ public static class BuildingServicesWorkedExamples
             ]),
             [new CalcExpectedValue("D_s1", 250, "mm", 1e-9), new CalcExpectedValue("D_s2", 400, "mm", 1e-9)],
             "Sizing at 10 m/s transport velocity rounds the hood branch to 250 mm and the main and stack to 400 mm; the actual velocities, friction rates and the index-run total (with the 120 Pa hood entry and 30 Pa cowl) follow, against the fan's 600 Pa."),
+        new(HeatExchangerCalculator.Id, "lthw-plate-hx-sizing", "District heating plate exchanger sizing, counterflow",
+            new CalcReferenceSource("Analytic (ε-NTU sizing; Incropera 7th ed. Table 11.4)", "7th ed.", "Primary 1.2 kg/s from 80 °C, secondary 1.5 kg/s from 40 °C, 120 kW, U 3000 W/m²K with 0.0001 m²K/W fouling"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Choice("arrangement", HeatExchangerCalculator.Counterflow, CalcProvenance.Assumed("Plate exchanger treated as pure counterflow.")),
+                CalcInputValue.Choice("mode", HeatExchangerCalculator.Sizing, CalcProvenance.Assumed("Sizing a new exchanger.")),
+                CalcInputValue.Quantity("m_h", 1.2, "kg/s", CalcProvenance.Specification("Network connection agreement, primary flow")),
+                CalcInputValue.Quantity("cp_h", 4190, "J/(kg*K)", CalcProvenance.Assumed("Water at about 70 °C.")),
+                CalcInputValue.Quantity("T_h_in", 80, "degC", CalcProvenance.Specification("Network supply temperature")),
+                CalcInputValue.Quantity("m_c", 1.5, "kg/s", CalcProvenance.Drawing("M-SCH-201", "B")),
+                CalcInputValue.Quantity("cp_c", 4180, "J/(kg*K)", CalcProvenance.Assumed("Water at about 50 °C.")),
+                CalcInputValue.Quantity("T_c_in", 40, "degC", CalcProvenance.Drawing("M-SCH-201", "B")),
+                CalcInputValue.Quantity("U", 3000, "W/(m^2*K)", CalcProvenance.Assumed("Typical clean plate exchanger, water/water.")),
+                CalcInputValue.Quantity("R_f", 0.0001, "m^2*K/W", CalcProvenance.Assumed("Treated closed circuits on both sides.")),
+                CalcInputValue.Quantity("Q_req", 120, "kW", CalcProvenance.Specification("Building peak heat load")),
+                CalcInputValue.Quantity("dT_min", 3, "K", CalcProvenance.Assumed("Practical approach for a plate exchanger.")),
+            ]),
+            [new CalcExpectedValue("eps", 0.5966587, "", 1e-6), new CalcExpectedValue("NTU", 1.297344, "", 1e-5), new CalcExpectedValue("A_req", 2.826653, "m^2", 1e-5), new CalcExpectedValue("T_h_out", 56.13365, "degC", 1e-6), new CalcExpectedValue("T_c_out", 59.13876, "degC", 1e-6), new CalcExpectedValue("dT_app", 16.13365, "K", 1e-5)],
+            "The secondary circuit takes 120 kW from a 1.2 kg/s primary at 80 °C. ε = 0.597 and NTU = 1.30 give 2.83 m² at U_f = 2307.7 W/m²K. The primary leaves at 56.1 °C and the secondary at 59.1 °C; the approach of 16.1 K clears the 3 K minimum.",
+            CalcReferenceStatus.Confirmed),
     ];
 }

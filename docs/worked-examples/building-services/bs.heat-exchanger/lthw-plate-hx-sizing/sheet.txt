@@ -1,0 +1,137 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: lthw-plate-hx-sizing    Revision: A
+Title: Heat exchanger (LMTD and ε-NTU)
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.
+Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overall coefficient with fouling: U_f = 1/(1/U + R_f) Transfer units: NTU = U_f·A/C_min; effectiveness ε(NTU, C_r) for the arrangement Duty: Q = ε·C_min·(T_h,in − T_c,in); outlets from the energy balance Sizing: ε = Q/(C_min·ΔT_max), NTU from the inverse relation, A = NTU·C_min/U_f Cross-check: Q = U_f·A·F·ΔT_lm, F from R and P (1 shell pass) or back-calculated
+  Ref: Incropera, Fundamentals of Heat and Mass Transfer 7th ed., §11.3–11.5, Tables 11.3–11.4 — LMTD and effectiveness-NTU methods
+  Ref: Çengel & Ghajar, Heat and Mass Transfer 5th ed., Ch. 11 — Heat exchangers
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  arrangement | Flow arrangement | counterflow |  | assumption: Plate exchanger treated as pure counterflow. | any
+  mode | Mode | sizing (given duty) |  | assumption: Sizing a new exchanger. | any
+  m_h | Hot-side mass flow | 1.2 | kg/s | spec: Network connection agreement, primary flow | 0.001 … 100 kg/s
+  cp_h | Hot-side specific heat | 4190 | J/(kg*K) | assumption: Water at about 70 °C. | 500 … 10000 J/(kg*K)
+  T_h_in | Hot-side inlet temperature | 80 | degC | spec: Network supply temperature | -40 … 200 degC
+  m_c | Cold-side mass flow | 1.5 | kg/s | drawing: M-SCH-201 rev B | 0.001 … 100 kg/s
+  cp_c | Cold-side specific heat | 4180 | J/(kg*K) | assumption: Water at about 50 °C. | 500 … 10000 J/(kg*K)
+  T_c_in | Cold-side inlet temperature | 40 | degC | drawing: M-SCH-201 rev B | -40 … 200 degC
+  U | Overall heat transfer coefficient (clean) | 3000 | W/(m^2*K) | assumption: Typical clean plate exchanger, water/water. | 10 … 10000 W/(m^2*K)
+  R_f | Total fouling resistance | 0.0001 | m^2*K/W | assumption: Treated closed circuits on both sides. | 0 … 0.01 m^2*K/W
+  Q_req | Required duty | 120 | kW | spec: Building peak heat load | 0.001 … 100000 kW
+  dT_min | Minimum approach temperature difference | 3 | K | assumption: Practical approach for a plate exchanger. | 0 … 50 K
+
+3. ASSUMPTIONS
+  A1. Single phase on both sides (except the C_r = 0 arrangement), constant properties, no heat loss to surroundings. (Incropera 7th ed. §11.3–11.4.)
+  A2. The crossflow both-unmixed effectiveness is the published approximate correlation, flagged on the sheet. (Incropera 7th ed. Table 11.3.)
+  A3. Specific heats are user records (or B2 for air) at the mean temperature of each stream. (§A3 reference records.)
+  A4. arrangement (Flow arrangement) is taken as counterflow. (Plate exchanger treated as pure counterflow.)
+  A5. mode (Mode) is taken as sizing (given duty). (Sizing a new exchanger.)
+  A6. cp_h (Hot-side specific heat) is taken as 4190 J/(kg*K). (Water at about 70 °C.)
+  A7. cp_c (Cold-side specific heat) is taken as 4180 J/(kg*K). (Water at about 50 °C.)
+  A8. U (Overall heat transfer coefficient (clean)) is taken as 3000 W/(m^2*K). (Typical clean plate exchanger, water/water.)
+  A9. R_f (Total fouling resistance) is taken as 0.0001 m^2*K/W. (Treated closed circuits on both sides.)
+  A10. dT_min (Minimum approach temperature difference) is taken as 3 K. (Practical approach for a plate exchanger.)
+
+4. WORKING
+  [12] C_h = m_h * cp_h
+      = 1.2 kg/s × 4190 J/(kg·K)
+      = 5028 W/K
+        Hot-side capacity rate
+  [13] C_c = m_c * cp_c
+      = 1.5 kg/s × 4180 J/(kg·K)
+      = 6270 W/K
+        Cold-side capacity rate
+  [14] C_min = min(C_h, C_c)
+      = min(5028 W/K, 6270 W/K)
+      = 5028 W/K
+        Minimum capacity rate
+  [15] C_r = min(C_h, C_c) / max(C_h, C_c)
+      = min(5028 W/K, 6270 W/K) / max(5028 W/K, 6270 W/K)
+      = 0.80191
+        Capacity ratio
+  [16] U_f = 1 / (1 / U + R_f)
+      = 1 / (1 / 3000 W/(m²·K) + 0.0001 m²·K/W)
+      = 2307.7 W/(m²·K)
+        Overall coefficient with fouling
+  [18] eps = Q_req / (C_min·ΔT_max)
+      = 120000 / (5028 × 40)
+      = 0.59666
+        Effectiveness required
+  [19] NTU = NTU(ε, C_r) inverse relation    « Incropera 7th ed. Table 11.4
+      = ε = 0.59666, C_r = 0.80191
+      = 1.2973
+        Transfer units required
+  [20] A_req = NTU·C_min / U_f
+      = 1.2973 × 5028 / 2307.7
+      = 2.8267 m²
+        Required heat transfer area
+  [21] UA = NTU·C_min
+      = 1.2973 × 5028
+      = 6523 W/K
+        Required UA
+  [22] Q = ε·C_min·(T_h,in − T_c,in)
+      = 0.59666 × 5028 × 40
+      = 120 kW
+        Heat duty
+  [23] T_h_out = T_h,in − Q/C_h
+      = 80 °C − 120000 / 5028
+      = 56.134 degC
+        Hot-side outlet temperature
+  [24] T_c_out = T_c,in + Q/C_c
+      = 40 °C + 120000 / 6270
+      = 59.139 degC
+        Cold-side outlet temperature
+  [25] dT_app = min(T_h,in − T_c,out, T_h,out − T_c,in)
+      = 16.134 K
+      = 16.134 K
+        Approach temperature difference
+  [26] dT_lm = (ΔT_1 − ΔT_2)/ln(ΔT_1/ΔT_2), counterflow ends
+      = ΔT_1 = 20.861 K, ΔT_2 = 16.134 K
+      = 18.396 K
+        Log-mean temperature difference
+  [27] F = 1 (pure counterflow, parallel flow or C_r = 0)    « Incropera 7th ed. §11.3
+      = R = 1.247, P = 0.47847
+      = 1
+        LMTD correction factor
+  [28] Q_lmtd = U_f·A·F·ΔT_lm
+      = 2307.7 × 2.8267 × 1 × 18.396
+      = 120 kW
+        Duty by the LMTD method (cross-check)
+  [29] u_app = dT_min / dT_app
+      = 3 K / 16.134 K
+      = 0.18595
+        Approach utilisation (minimum / actual)
+
+5. RESULTS
+  C_r = 0.80191    Capacity ratio
+  NTU = 1.2973    Transfer units
+  eps = 0.59666    Effectiveness
+  Q = 120 kW    Heat duty
+  T_h_out = 56.134 degC    Hot outlet
+  T_c_out = 59.139 degC    Cold outlet
+  dT_app = 16.134 K    Approach
+  UA = 6523 W/K    UA
+  A_req = 2.8267 m²    Required area
+  dT_lm = 18.396 K    Log-mean temperature difference
+  F = 1    LMTD correction factor
+
+6. CHECKS (governing first)
+  PASS  Approach against minimum: u_app = 0.18595 vs u_app ≤ 1  utilisation 0.186
+
+7. APPLICABILITY
+  WARNING record.cp_h: cp_h: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
+  WARNING record.cp_c: cp_c: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: bs.heat-exchanger@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 5/5
+  Test run: —
