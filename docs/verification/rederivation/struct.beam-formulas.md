@@ -81,13 +81,13 @@ Guard probes that behaved correctly: a > L blocks. A negative load blocks. L = 0
 | Citation labels | One numbering of Roark Table 8.1 | Case numbers differ between the families | See -04 |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-struct.beam-formulas-01 | Medium | The propped cantilever reports the position of maximum deflection from the wrong end. | L = 8 m: sheet gives x_δ = 3.372 m. Correct is 4.628 m from the fixed left end (3.372 m from the pinned end). My FE beam confirms it. | BeamFormulasCalculator.cs line 181: use `L * (15 - sqrt(33)) / 16`. Add a propped-cantilever KAT. |
-| P1-struct.beam-formulas-02 | Low | Maximum deflection of the propped cantilever uses the rounded coefficient 1/185. The exact value is 1/184.634. The result is 0.20 % low (unconservative). | L 8, w 12, EI 42,000: 6.3259 mm against 6.3384 mm. | Line 182: use the coefficient 184.634. The exact form is x²(1 − x)(3 − 2x)/48 at x = (15 − √33)/16. |
-| P1-struct.beam-formulas-03 | Low | For both cantilever cases the output "x_M", labelled "Position of M_max", shows 0 m. The sagging maximum is 0 and lies at the free end. The 0 m is the position of the hogging extreme. | B5 and B6. Lines 126, 142 and 190. | Rename the label to "Position of the extreme moment", or output both positions. |
-| P1-struct.beam-formulas-04 | Low | The Roark case numbers in the step labels do not follow one numbering. | Simply supported UDL is 2e. Fixed-ended UDL is 2d, but fixed central point is 1d. The end couple is 3a. Cantilever cases are 1a and 1e. | Check each label against the printed Table 8.1 of the cited edition. |
-| P1-struct.beam-formulas-05 | Info | The couple direction is not stated. Uplift loads and anticlockwise couples cannot be entered. An omitted load input silently takes its template default. | Couple case gives R_A = −M0/L, so the couple is clockwise. w = −10 blocks. Omitting w runs with 10 kN/m. | State "clockwise" in the input label. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-struct.beam-formulas-01 | Medium | Medium (confirmed). Reproduced 3.3723 m against 4.6277 m. Wrong in every propped run, but δ_max itself is right and nothing consumes x_δ. | The propped cantilever reports the position of maximum deflection from the wrong end. | L = 8 m: sheet gives x_δ = 3.372 m. Correct is 4.628 m from the fixed left end (3.372 m from the pinned end). My FE beam confirms it. | BeamFormulasCalculator.cs line 181: use `L * (15 - sqrt(33)) / 16`. Add a propped-cantilever KAT. |
+| P1-struct.beam-formulas-02 | Low | Low (confirmed). Exact coefficient 184.634; error 0.20 % unconservative. | Maximum deflection of the propped cantilever uses the rounded coefficient 1/185. The exact value is 1/184.634. The result is 0.20 % low (unconservative). | L 8, w 12, EI 42,000: 6.3259 mm against 6.3384 mm. | Line 182: use the coefficient 184.634. The exact form is x²(1 − x)(3 − 2x)/48 at x = (15 − √33)/16. |
+| P1-struct.beam-formulas-03 | Low | Low (confirmed) | For both cantilever cases the output "x_M", labelled "Position of M_max", shows 0 m. The sagging maximum is 0 and lies at the free end. The 0 m is the position of the hogging extreme. | B5 and B6. Lines 126, 142 and 190. | Rename the label to "Position of the extreme moment", or output both positions. |
+| P1-struct.beam-formulas-04 | Low | Low (confirmed, sharpened; owner to confirm against licensed copy). | The Roark case numbers in the step labels do not follow one numbering. | Simply supported UDL is 2e. Fixed-ended UDL is 2d, but fixed central point is 1d. The end couple is 3a. Cantilever cases are 1a and 1e. | Check each label against the printed Table 8.1 of the cited edition. Reviewer reading of the 8th ed. scheme (load type 1–3, end condition a–f): SS point is 1e, SS end couple is 3e and cantilever UDL is 2a. The labels 2a (also in the ka-ss-point source), 3a and 1e look wrong. |
+| P1-struct.beam-formulas-05 | Info | Info (confirmed) | The couple direction is not stated. Uplift loads and anticlockwise couples cannot be entered. An omitted load input silently takes its template default. | Couple case gives R_A = −M0/L, so the couple is clockwise. w = −10 blocks. Omitting w runs with 10 kN/m. | State "clockwise" in the input label. |
 
 ## Notes for the owner's manual test
 - Propped cantilever, L 8 m, w 12 kN/m, EI 42,000 kN·m²: expect R_A 60 kN, R_B 36 kN and M_A −96 kN·m.
@@ -98,3 +98,14 @@ Guard probes that behaved correctly: a > L blocks. A negative load blocks. L = 0
 - Expect δ_max 2.749 mm at 2.536 m.
 - Cantilever, load at a = 2.4 m on L = 6 m: the sheet reports the tip deflection.
 - The tip value is P a²(3L − a)/(6EI). It is not the deflection under the load.
+
+## Independent review
+- Reviewer: senior verification reviewer (Claude), 2026-10-24.
+- The script uses own closed forms and a 600-element Hermite beam. It is not a translation of the C#. It runs with exit 0.
+- I reproduced -01 with the probe: L 8, w 12, EI 42,000 gives x_δ 3.3723 m and δ_max 6.3259 mm.
+- From y ∝ ξ²(1 − ξ)(3 − 2ξ), dy/dξ = 0 gives ξ = (15 − √33)/16 = 0.5785 from the fixed end.
+- Line 181 uses (1 + √33)/16 = 0.4215, which is the distance from the pinned end.
+- I kept -01 at Medium. The deflection value is right; only its stated position is wrong.
+- I fixed a wrong comment in the script. It said 0.4215 L from the pinned end next to the 0.5785 L formula.
+- I read every case in Run line by line. Reactions, moments, shears and deflections are right in all eight cases.
+- No new findings. The Roark case labels in -04 rest on my reading of the table layout; the owner should confirm.

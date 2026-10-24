@@ -50,7 +50,7 @@ def closed(case, L, EI, w=0.0, P=0.0, M0=0.0, a=0.0):
         r = dict(R_A=P / 2, R_B=P / 2, M_max=P * L / 8, x_M=L / 2, M_min=-P * L / 8, V_max=P / 2,
                  delta_max=P * L ** 3 / (192 * EI), x_delta=L / 2)
     elif case == "propped_udl":
-        xd = L * (15 - math.sqrt(33)) / 16        # 0.4215 L from the pinned end
+        xd = L * (15 - math.sqrt(33)) / 16        # 0.5785 L from the fixed end (0.4215 L from the pin)
         y = lambda x: w * x * x * (L - x) * (3 * L - 2 * x) / (48 * EI)
         r = dict(R_A=5 * w * L / 8, R_B=3 * w * L / 8, M_max=9 * w * L ** 2 / 128, x_M=5 * L / 8,
                  M_min=-w * L ** 2 / 8, V_max=5 * w * L / 8, delta_max=y(xd), x_delta=xd)
