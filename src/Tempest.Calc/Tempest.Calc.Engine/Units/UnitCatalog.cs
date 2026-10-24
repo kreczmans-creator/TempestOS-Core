@@ -48,6 +48,8 @@ public static class UnitCatalog
         Add("t", Dimension.M, 1000);
         Add("bar", Dimension.Pressure, 1e5, prefixable: true);
         Add("Wh", Dimension.Energy, 3600, prefixable: true);
+        Add("VA", Dimension.Power, 1, prefixable: true);
+        Add("var", Dimension.Power, 1, prefixable: true);
 
         // Non-prefixed SI-accepted and engineering units.
         Add("kg", Dimension.M, 1);
