@@ -26,11 +26,12 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
+        Id, "1.1.0", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
         "Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.",
         "P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive.",
         [
             new CalcInputSpec("loads", "Heat loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 500, Group: "Heat load"),
+            new CalcInputSpec("P_add", "Additional heat load (linked from E6's dissipated heat or another calculation)", CalcInputKind.Quantity, "W", Default: 0, Min: 0, Max: 1e5, HardMin: 0, HardMax: 1e6, Group: "Heat load"),
             new CalcInputSpec("I_sun", "Solar irradiance on the enclosure (0 = indoors)", CalcInputKind.Quantity, "W/m^2", Default: 0, Min: 0, Max: 1200, HardMin: 0, HardMax: 2000, Group: "Heat load"),
             new CalcInputSpec("A_sun", "Sunlit area", CalcInputKind.Quantity, "m^2", Default: 0, Min: 0, Max: 100, HardMin: 0, HardMax: 1e4, Group: "Heat load"),
             new CalcInputSpec("alpha_sun", "Surface absorptivity", CalcInputKind.Number, Default: 0.5, Min: 0.1, Max: 1, HardMin: 0, HardMax: 1, Group: "Heat load"),
@@ -91,9 +92,11 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
     {
         var rows = c.Rows("loads");
 
-        if (rows.Count == 0)
+        c.Input("P_add");
+
+        if (rows.Count == 0 && !(c.Si("P_add") > 0))
         {
-            c.Block("loads", "loads: at least one heat load is needed.");
+            c.Block("loads", "loads: at least one heat load (or an additional linked load) is needed.");
             return;
         }
 
@@ -103,7 +106,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
         var pLoads = rows.Sum(r => (r.Get("P")?.Number is { } p ? Engine.Units.UnitCatalog.Parse(string.IsNullOrEmpty(r.Get("P")!.Unit) ? "W" : r.Get("P")!.Unit!).ToSi(p) : 0) * (r.Get("qty")?.Number ?? 1) * (r.Get("duty")?.Number ?? 1));
         c.Record("P_loads", "Σ P_i × n_i × d_i", $"{rows.Count} item(s)", ScalarValue.Of(pLoads, "W"), "Internal heat load");
         c.Assign("P_solar", "alpha_sun * I_sun * A_sun", "W", "Solar gain");
-        c.Assign("P_total", "P_loads + P_solar", "W", "Total heat to remove");
+        c.Assign("P_total", "P_loads + P_add + P_solar", "W", "Total heat to remove");
         c.Assign("A_eff", "f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D", "m^2", "Effective dissipating surface", "IEC TR 60890 approach");
         c.Assign("dT_nat", "P_total / (h * A_eff)", "K", "Temperature rise with natural dissipation");
         c.Assign("T_int", "T_amb + dT_nat", "degC", "Internal temperature with natural dissipation");

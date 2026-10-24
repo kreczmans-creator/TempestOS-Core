@@ -26,7 +26,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
+        Id, "1.1.0", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
         "The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.",
         "Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative)\n" +
         "Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC\n" +
@@ -36,6 +36,10 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         "Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t",
         [
             new CalcInputSpec("loads", "Loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 100),
+            new CalcInputSpec("P_add", "Additional three-phase load (linked from E1's peak power)", CalcInputKind.Quantity, "kW", Default: 0, Min: 0, Max: 200, HardMin: 0, HardMax: 200, Group: "Loads"),
+            new CalcInputSpec("cosphi_add", "Power factor of the additional load", CalcInputKind.Number, Default: 0.85, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Loads"),
+            new CalcInputSpec("eta_add", "Efficiency of the additional load", CalcInputKind.Number, Default: 0.9, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Loads"),
+            new CalcInputSpec("inrush_add", "Starting multiple of the additional load", CalcInputKind.Number, Default: 1, Min: 1, Max: 20, HardMin: 1, HardMax: 20, Group: "Loads"),
             new CalcInputSpec("U_3ph", "Three-phase line voltage", CalcInputKind.Quantity, "V", Default: 400, Min: 12, Max: 1000, HardMin: 12, HardMax: 1000, Group: "Supplies"),
             new CalcInputSpec("U_1ph", "Single-phase voltage", CalcInputKind.Quantity, "V", Default: 230, Min: 12, Max: 1000, HardMin: 12, HardMax: 1000, Group: "Supplies"),
             new CalcInputSpec("U_DC", "DC bus voltage", CalcInputKind.Quantity, "V", Default: 24, Min: 12, Max: 1000, HardMin: 12, HardMax: 1000, Group: "Supplies"),
@@ -127,12 +131,12 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
     {
         var rows = c.Rows("loads");
 
-        foreach (var s in new[] { "U_3ph", "U_1ph", "U_DC", "margin", "theta", "f_derate", "k_T", "t_auto", "U_b", "eta_conv", "DoD", "eta_b", "k_temp", "k_age" })
+        foreach (var s in new[] { "P_add", "cosphi_add", "eta_add", "inrush_add", "U_3ph", "U_1ph", "U_DC", "margin", "theta", "f_derate", "k_T", "t_auto", "U_b", "eta_conv", "DoD", "eta_b", "k_temp", "k_age" })
             c.Input(s);
 
-        if (rows.Count == 0)
+        if (rows.Count == 0 && !(c.Si("P_add") > 0))
         {
-            c.Block("no-loads", "loads: enter at least one load.");
+            c.Block("no-loads", "loads: enter at least one load (or an additional linked load).");
             return;
         }
 
@@ -142,6 +146,10 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             r.Get("supply")?.Text ?? Ac3,
             r.Get("P") is { Number: { } p } cell ? UnitCatalog.Parse(cell.Unit ?? "kW").ToSi(p) : 0,
             r.Get("cosphi")?.Number ?? 1, r.Get("eta")?.Number ?? 1, r.Get("d")?.Number ?? 1, r.Get("k")?.Number ?? 1, r.Get("inrush")?.Number ?? 1, r.Get("backed")?.Flag ?? false)).ToList();
+
+        // A linked machine (E1's peak shaft power) enters as a three-phase load drawing P_add/η_add (Addendum A §A7 motor circuit).
+        if (c.Si("P_add") > 0)
+            loads.Add(new Load(loads.Count + 1, "Linked load", Ac3, c.Si("P_add") / c.InputSi("eta_add"), c.InputSi("cosphi_add"), c.InputSi("eta_add"), 1, 1, c.InputSi("inrush_add"), false));
 
         var kW = UnitCatalog.Parse("kW");
         var kVA = UnitCatalog.Parse("kVA");

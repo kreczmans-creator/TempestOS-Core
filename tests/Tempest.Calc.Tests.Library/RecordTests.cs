@@ -150,4 +150,25 @@ public sealed class RecordTests
         var (copy, _) = await host.Service.SaveRecordFromInputsAsync(Draft(licensed: false), [new CalcInputValue("k_1", Number: 0.8, Provenance: CalcProvenance.Assumed("typed"))]);
         Assert.False(copy!.LicensedSource);
     }
+
+    [Fact]
+    public async Task Concurrent_Saves_Of_One_Record_Never_Throw_And_Never_Share_A_Revision()
+    {
+        // Opus review finding 15: two saves racing for the next revision; one may be refused, none may throw.
+        var host = Host();
+        var (first, _) = await host.Service.SaveRecordAsync(Draft(licensed: false));
+        var saves = await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Task.Run(() => host.Service.SaveRecordAsync(first! with { Title = $"Rev {i}" }))));
+        var revisions = saves.Where(s => s.Record is not null).Select(s => s.Record!.Revision).ToList();
+        Assert.Equal(revisions.Count, revisions.Distinct().Count());
+        Assert.All(saves.Where(s => s.Record is null), s => Assert.Contains("same moment", s.Refusal, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_New_Sheet_Opens_With_Its_Record_Tables_Empty()
+    {
+        // Opus review of E4: a record-kind table is never pre-filled from a test case's illustrative values.
+        var host = Host();
+        var fresh = await host.Service.CreateAsync("test.recorded", await host.ProjectAsync(), "Fresh");
+        Assert.DoesNotContain(fresh.Inputs, i => i.Symbol == "ratings");
+    }
 }

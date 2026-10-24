@@ -78,6 +78,9 @@ public sealed partial class CalcInstanceService
         if (upstream.Status == CalcInstanceStatus.Superseded)
             return CalcActionResult.Refused($"'{upstream.Name}' rev {upstream.Revision} is superseded; link to its current revision.", instance);
 
+        if (upstream.ProjectId != instance.ProjectId)
+            return CalcActionResult.Refused($"'{upstream.Name}' is in another project; links stay within one project, where cycles and staleness can be traced.", instance);
+
         if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, outputSymbol, StringComparison.Ordinal)) is not { Si: { } } output)
             return CalcActionResult.Refused($"'{upstream.Name}' has no numeric output '{outputSymbol}'.", instance);
 
@@ -261,7 +264,7 @@ public sealed partial class CalcInstanceService
         instances[instance.Id] = instance;
         var lineage = Lineage(instance, instances);
         var above = Upstream(upstream.Id, instances);
-        above.Add(upstream.Id);
+        above.UnionWith(Lineage(upstream, instances));
 
         if (above.Overlaps(lineage))
             return $"Linking '{{input}}' to '{upstream.Name}' would close a cycle: '{upstream.Name}' already takes a value, directly or through others, from '{instance.Name}' (or another revision of it).";
@@ -316,6 +319,12 @@ public sealed partial class CalcInstanceService
 
             if (upstream.Id == instance.Id)
                 return $"'{input.Symbol}' cannot take a value from its own calculation.";
+
+            if (upstream.Status == CalcInstanceStatus.Superseded)
+                return $"'{input.Symbol}' is linked to '{upstream.Name}' rev {upstream.Revision}, which is superseded; link to its current revision.";
+
+            if (upstream.ProjectId != instance.ProjectId)
+                return $"'{input.Symbol}' is linked to '{upstream.Name}' in another project; links stay within one project.";
 
             if (template.FindInput(input.Symbol) is not { } spec
                 || upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } } output
@@ -470,4 +479,14 @@ public sealed partial class CalcInstanceService
 
         return sheet with { Inputs = [.. sheet.Inputs.Select(r => names.TryGetValue(r.Symbol, out var source) ? r with { Source = source } : r)] };
     }
+}
+
+/// <summary>A new calculation's inputs carry a link that breaks the linking rules (ADR-0168 amendment).</summary>
+public sealed class CalcLinkRefusedException : InvalidOperationException
+{
+    public CalcLinkRefusedException(string message) : base(message) { }
+
+    public CalcLinkRefusedException() { }
+
+    public CalcLinkRefusedException(string message, Exception innerException) : base(message, innerException) { }
 }

@@ -92,4 +92,24 @@ public sealed class FaultProtectionTests
         Assert.Contains(r.Warnings, w => w.RuleId == "adiabatic");
         Assert.Contains(r.Checks, c => c.Name == "Disconnection achieved" && !c.Passed);
     }
+
+    [Fact]
+    public void A_Fault_Current_Above_The_Curve_Uses_The_Fastest_Point_As_An_Upper_Bound()
+    {
+        // Opus verification: a low-impedance circuit faster than the fastest point entered still disconnects.
+        var r = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Choice("device", FaultProtectionCalculator.Curve))
+            .With(FaultProtectionCalculator.Points((5, 60), (0.4, 120), (0.1, 180))).With(CalcInputValue.Quantity("L", 2, "m")));
+        Assert.Equal(0.1, r.OutputSi("t_d"), 12);
+        Assert.NotNull(r.FindOutput("S_min"));
+        Assert.Contains(r.Warnings, w => w.RuleId == "curve" && w.Message.Contains("upper bound", StringComparison.Ordinal));
+        Assert.DoesNotContain(r.Checks, c => c.Name == "Disconnection achieved");
+    }
+
+    [Fact]
+    public void The_Breaking_Capacity_Is_Checked_Even_When_Disconnection_Fails()
+    {
+        var r = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("L", 200, "m"))
+            .With(CalcInputValue.Quantity("S_r", 500, "kVA")).With(CalcInputValue.Quantity("u_k", 5, "%")).With(CalcInputValue.Quantity("I_cn", 10, "kA")));
+        Assert.Contains(r.Checks, c => c.Name == "Breaking capacity against prospective fault" && !c.Passed);
+    }
 }

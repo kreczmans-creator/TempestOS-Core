@@ -21,6 +21,10 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   loads[4] |  | name = Panel light; supply = AC single-phase; P = 0.02 kW; cosphi = 0.95; eta = 1; d = 0.1; k = 1; inrush = 1; backed = no |  |  | 
   loads[5] |  | name = PLC and I/O; supply = DC; P = 0.096 kW; cosphi = 1; eta = 0.9; d = 1; k = 1; inrush = 1; backed = yes |  |  | 
   loads[6] |  | name = Router; supply = DC; P = 0.024 kW; cosphi = 1; eta = 0.9; d = 1; k = 1; inrush = 1; backed = yes |  |  | 
+  P_add | Additional three-phase load (linked from E1's peak power) | 0 | kW | default | 0 … 200 kW
+  cosphi_add | Power factor of the additional load | 0.85 |  | default | 0.5 … 1
+  eta_add | Efficiency of the additional load | 0.9 |  | default | 0.5 … 1
+  inrush_add | Starting multiple of the additional load | 1 |  | default | 1 … 20
   U_3ph | Three-phase line voltage | 400 | V | spec: Site supply | 12 … 1000 V
   U_1ph | Single-phase voltage | 230 | V | spec: Site supply | 12 … 1000 V
   U_DC | DC bus voltage | 24 | V | drawing: E-SCH-010 rev A | 12 … 1000 V
@@ -53,99 +57,99 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   A11. k_age (Ageing (end-of-life) factor) is taken as 0.8. (End-of-life capacity 80 %.)
 
 4. WORKING
-  [15] L1 = P·d·k; P·d·k/cosφ
+  [19] L1 = P·d·k; P·d·k/cosφ
       = 11 × 1 × 1 = 11 kW; 12.791 kVA
       = 11 kW
         Duty pump (AC three-phase)
-  [16] L2 = P·d·k; P·d·k/cosφ
+  [20] L2 = P·d·k; P·d·k/cosφ
       = 11 × 1 × 0 = 0 kW; 0 kVA
       = 0 kW
         Standby pump (AC three-phase)
-  [17] L3 = P·d·k; P·d·k/cosφ
+  [21] L3 = P·d·k; P·d·k/cosφ
       = 0.06 × 1 × 1 = 0.06 kW; 0.066667 kVA
       = 0.06 kW
         Panel fan (AC single-phase)
-  [18] L4 = P·d·k; P·d·k/cosφ
+  [22] L4 = P·d·k; P·d·k/cosφ
       = 0.02 × 0.1 × 1 = 0.002 kW; 0.0021053 kVA
       = 0.002 kW
         Panel light (AC single-phase)
-  [19] L5 = P·d·k; P·d·k/cosφ
+  [23] L5 = P·d·k; P·d·k/cosφ
       = 0.096 × 1 × 1 = 0.096 kW; 0.096 kVA
       = 0.096 kW
         PLC and I/O (DC)
-  [20] L6 = P·d·k; P·d·k/cosφ
+  [24] L6 = P·d·k; P·d·k/cosφ
       = 0.024 × 1 × 1 = 0.024 kW; 0.024 kVA
       = 0.024 kW
         Router (DC)
-  [21] P_conn = Σ P_i
+  [25] P_conn = Σ P_i
       = 11 + 11 + 0.06 + 0.02 + 0.096 + 0.024
       = 22.2 kW
         Connected load
-  [22] P_dem = Σ P_i·d_i·k_i
+  [26] P_dem = Σ P_i·d_i·k_i
       = 11 + 0 + 0.06 + 0.002 + 0.096 + 0.024
       = 11.182 kW
         Demand active power
-  [23] S_dem = Σ P_i·d_i·k_i/cosφ_i
+  [27] S_dem = Σ P_i·d_i·k_i/cosφ_i
       = 12.791 + 0 + 0.066667 + 0.0021053 + 0.096 + 0.024
       = 12.979 kVA
         Demand apparent power (arithmetic)
-  [24] I_3ph = S_3φ/(√3·U_3ph)
+  [28] I_3ph = S_3φ/(√3·U_3ph)
       = 12791 / (√3 × 400)
       = 18.462 A
         Three-phase bus current
-  [25] I_1ph = S_1φ/U_1ph
+  [29] I_1ph = S_1φ/U_1ph
       = 68.772 / 230
       = 0.29901 A
         Single-phase bus current
-  [26] I_DC = P_DC/U_DC
+  [30] I_DC = P_DC/U_DC
       = 120 / 24
       = 5 A
         DC bus current
-  [27] Phi = Σ (1 − η_i)·P_i·d_i·k_i
+  [31] Phi = Σ (1 − η_i)·P_i·d_i·k_i
       = 0.09×11 + 0.09×0 + 0.3×0.06 + 0×0.002 + 0.1×0.096 + 0.1×0.024
       = 1.02 kW
         Heat dissipated (→ E2)
-  [28] P_DC = Σ DC P_i·d_i·k_i
+  [32] P_DC = Σ DC P_i·d_i·k_i
       = 120 W
       = 120 W
         DC demand
-  [29] P_PSU_req = margin * P_DC / f_derate
+  [33] P_PSU_req = margin * P_DC / f_derate
       = 1.25 × 120 W / 1
       = 150 W
         Minimum PSU rating
-  [30] S_T_req = margin * S_dem
+  [34] S_T_req = margin * S_dem
       = 1.25 × 12.979 kVA
       = 16.224 kVA
         Minimum transformer rating
-  [31] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+  [35] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
       = 12.979 + 70.349 (Duty pump starting)
       = 83.328 kVA
         Peak apparent power while the largest load starts
-  [32] I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv)
+  [36] I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv)
       = 120 / (24 × 1)
       = 5 A
         Battery discharge current
-  [33] Ah = I_b * t_auto
+  [37] Ah = I_b * t_auto
       = 5 A × 2 h
       = 10 A·h
         Discharge capacity
-  [34] C_req = Ah / (DoD * eta_b * k_temp * k_age)
+  [38] C_req = Ah / (DoD * eta_b * k_temp * k_age)
       = 10 A·h / (0.8 × 0.95 × 1 × 0.8)
       = 16.447 A·h
         Minimum battery capacity
-  [36] u_PSU = P_PSU_req / P_PSU
+  [40] u_PSU = P_PSU_req / P_PSU
       = 150 W / 240 W
       = 0.625
         PSU utilisation
-  [38] u_T = S_T_req / S_T
+  [42] u_T = S_T_req / S_T
       = 16.224 kVA / 25 kVA
       = 0.64897
         Transformer utilisation
-  [39] u_inrush = S_peak / (k_T * S_T)
+  [43] u_inrush = S_peak / (k_T * S_T)
       = 83.328 kVA / (3 × 25 kVA)
       = 1.111
         Inrush utilisation
-  [41] u_batt = C_req / C_batt
+  [45] u_batt = C_req / C_batt
       = 16.447 A·h / 17 A·h
       = 0.96749
         Battery utilisation
@@ -181,10 +185,14 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record.eta_b: eta_b: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
   WARNING record.k_temp: k_temp: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
   WARNING record.k_age: k_age: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
+  WARNING input.P_add: P_add (Additional three-phase load (linked from E1's peak power)) was not entered; the template default 0 kW is used.
+  WARNING input.cosphi_add: cosphi_add (Power factor of the additional load) was not entered; the template default 0.85 is used.
+  WARNING input.eta_add: eta_add (Efficiency of the additional load) was not entered; the template default 0.9 is used.
+  WARNING input.inrush_add: inrush_add (Starting multiple of the additional load) was not entered; the template default 1 is used.
   WARNING derate: f_derate: the ambient is above 40 °C but no PSU derating is entered; read the factor from the manufacturer's curve.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.0.0
+  Template: elec.load-budget@1.1.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4

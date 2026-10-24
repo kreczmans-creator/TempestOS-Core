@@ -93,6 +93,18 @@ public sealed partial class CalcInstanceService
         var id = Guid.NewGuid();
         var cleanName = CalcSheetTextRenderer.Clean(name.Length > 200 ? name[..200] : name);
 
+        // A new calculation's links (an import, a pack step's inputs) meet the same rules as any other (ADR-0168 amendment).
+        if (inputs is not null)
+        {
+            var list = inputs.ToList();
+            var probe = new CalcInstance(id, entry.Reference, entry.ContentHash, projectId, cleanName, "A", [], [], [], [], [], CalcInstanceStatus.Draft, null, null, author, now, now);
+
+            if (await LinkProblemAsync(probe, entry.Template, list, cancellationToken).ConfigureAwait(false) is { } problem)
+                throw new CalcLinkRefusedException(problem);
+
+            inputs = list;
+        }
+
         var evidence = await _evidence.CreateAsync(projectId, EvidenceTitle(cleanName, entry.Template.Title, "A"), EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
         var register = await CreateRegisterEntryAsync(projectId, cleanName, evidence.Id, cancellationToken).ConfigureAwait(false);
 
@@ -845,7 +857,7 @@ public sealed partial class CalcInstanceService
 
     private static string EvidenceTitle(string name, string title, string revision) => $"{name} — {title} (rev {revision})";
 
-    private static IReadOnlyList<CalcInputValue> DefaultInputs(CalcTemplate template) => CalcTemplateHasher.DefaultInputs(template).Values.ToList();
+    private static IReadOnlyList<CalcInputValue> DefaultInputs(CalcTemplate template) => CalcTemplateHasher.NewSheetInputs(template).Values.ToList();
 
     internal static string NextRevision(string revision)
     {

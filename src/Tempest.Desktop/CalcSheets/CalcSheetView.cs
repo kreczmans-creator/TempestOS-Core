@@ -442,7 +442,7 @@ public sealed class CalcSheetView : UserControl
         _problems.Text = string.Empty;
         _status.Text = IsReadOnly ? $"This calculation is {instance!.Status}; it is read-only. Revise it to start a new revision." : string.Empty;
 
-        var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.DefaultInputs(entry.Template) : new CalcInputSet(instance.Inputs));
+        var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.NewSheetInputs(entry.Template) : new CalcInputSet(instance.Inputs));
         _shownLinks.Clear();
 
         foreach (var value in seed.Values.Where(v => v.Provenance is { Kind: CalcProvenanceKind.Link }))

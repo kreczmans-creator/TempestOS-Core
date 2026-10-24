@@ -157,8 +157,17 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             c.Record("I_a", "I(t_req), log-log between the bracketing points", $"t_req = {F(c.Si("t_req"))} s", ScalarValue.Of(ia, amp), "Current for disconnection in the required time", "BS 7671 reg. 411.3.2.2");
             td = Interpolate(points, c.Si("I_f"), byTime: false);
 
-            if (td is null)
-                c.Warn("curve", $"curve: the fault current {F(c.Si("I_f"))} A is outside the points entered; the disconnection time is not read.");
+            // Above the highest current entered the device is faster than its fastest point: that point's time is a safe
+            // upper bound (Opus verification). Below the lowest current, no disconnection time can be stated.
+            if (td is null && c.Si("I_f") > points[^1].I)
+            {
+                td = points.MinBy(p => p.T).T;
+                c.Warn("curve", $"curve: the fault current {F(c.Si("I_f"))} A is above the highest point entered; the fastest time entered ({F(td.Value)} s) is used as an upper bound.");
+            }
+            else if (td is null)
+            {
+                c.Warn("curve", $"curve: the fault current {F(c.Si("I_f"))} A is below the lowest point entered; the disconnection time is not read.");
+            }
         }
         else
         {
@@ -176,14 +185,25 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             c.Record("t_d", device == Curve ? "t(I_f), log-log between the bracketing points" : "instantaneous region (I_f ≥ I_a): t ≤ 0.1 s", $"I_f = {F(c.Si("I_f"))} A", ScalarValue.Of(t, second), "Disconnection time");
 
         // Adiabatic: I²t from the let-through energy below 0.1 s, else I_f²·t. With no disconnection time (an MCB below
-        // its instantaneous current, or a fault current off the curve) the energy is unknown and the check is not made
-        // (Opus review, finding 12): the loop-impedance check has already failed.
+        // its instantaneous current, or a fault current below the curve) the energy is unknown and the check is not made
+        // (Opus review, finding 12); the fault level is still checked.
         double i2t;
 
         if (td is null)
         {
-            c.Warn("adiabatic", "I_f: the device does not disconnect within the data given, so the fault energy and the adiabatic check cannot be stated; correct the loop impedance first.");
-            FinishWithoutAdiabatic(c, device, td);
+            c.Warn("adiabatic", "I_f: the device does not disconnect within the data given, so the fault energy and the adiabatic check cannot be stated; reduce the loop impedance or choose a faster device.");
+            var outputsWithout = new List<(string, string)> { ("R_12", "R₁ + R₂"), ("Z_s", "Loop impedance"), ("I_f", "Earth fault current"), ("I_a", "Disconnection current"), ("Z_s_max", "Maximum loop impedance"), ("u_Zs", "Loop impedance utilisation"), ("Z_test", "Field-test maximum (rule of thumb)") };
+            FaultLevel(c, outputsWithout);
+
+            foreach (var (symbol, text) in outputsWithout)
+                c.Output(symbol, text);
+
+            c.CheckUtilisation("Loop impedance within maximum (disconnection in time)", "u_Zs", "BS 7671 reg. 411.4.4");
+            c.CheckCondition("Disconnection achieved", false, device == Curve ? "fault current below the curve points" : "I_f below the instantaneous tripping current", "disconnection within t_req", null, "BS 7671 reg. 411.3.2.2");
+
+            if (c.Has("I_cn") && c.Has("S_r") && c.Has("u_k"))
+                c.CheckUtilisation("Breaking capacity against prospective fault", "u_Icn");
+
             return;
         }
 
@@ -222,22 +242,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         if (td is not null)
             outputs.Insert(4, ("t_d", "Disconnection time"));
 
-        if (c.Has("S_r") && c.Has("u_k"))
-        {
-            c.Input("S_r");
-            c.Input("u_k");
-            c.Assign("U_n", "sqrt(3) * U_0", "V", "Line voltage");
-            c.Assign("Z_T", "u_k * U_n^2 / S_r", "ohm", "Transformer impedance");
-            c.Assign("I_k3", "c_max * U_n / (sqrt(3) * Z_T)", "kA", "Prospective three-phase fault at the origin (simplified)", "IEC 60909-0 cl. 5.3");
-            outputs.AddRange([("Z_T", "Transformer impedance"), ("I_k3", "Prospective fault current")]);
-
-            if (c.Has("I_cn"))
-            {
-                c.Input("I_cn");
-                c.Assign("u_Icn", "I_k3 / I_cn", null, "Breaking capacity utilisation");
-                outputs.Add(("u_Icn", "Breaking capacity utilisation"));
-            }
-        }
+        FaultLevel(c, outputs);
 
         foreach (var (symbol, text) in outputs)
             c.Output(symbol, text);
@@ -254,14 +259,25 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             c.CheckUtilisation("Breaking capacity against prospective fault", "u_Icn");
     }
 
-    /// <summary>Outputs and checks when no disconnection time exists: the loop-impedance check stands alone and fails.</summary>
-    private static void FinishWithoutAdiabatic(CalcRunContext c, string device, double? td)
+    /// <summary>The simplified prospective fault level and the breaking-capacity utilisation, when the transformer data are given.</summary>
+    private static void FaultLevel(CalcRunContext c, List<(string, string)> outputs)
     {
-        foreach (var (symbol, text) in new[] { ("R_12", "R₁ + R₂"), ("Z_s", "Loop impedance"), ("I_f", "Earth fault current"), ("I_a", "Disconnection current"), ("Z_s_max", "Maximum loop impedance"), ("u_Zs", "Loop impedance utilisation"), ("Z_test", "Field-test maximum (rule of thumb)") })
-            c.Output(symbol, text);
+        if (c.Has("S_r") && c.Has("u_k"))
+        {
+            c.Input("S_r");
+            c.Input("u_k");
+            c.Assign("U_n", "sqrt(3) * U_0", "V", "Line voltage");
+            c.Assign("Z_T", "u_k * U_n^2 / S_r", "ohm", "Transformer impedance");
+            c.Assign("I_k3", "c_max * U_n / (sqrt(3) * Z_T)", "kA", "Prospective three-phase fault at the origin (simplified)", "IEC 60909-0 cl. 5.3");
+            outputs.AddRange([("Z_T", "Transformer impedance"), ("I_k3", "Prospective fault current")]);
 
-        c.CheckUtilisation("Loop impedance within maximum (disconnection in time)", "u_Zs", "BS 7671 reg. 411.4.4");
-        c.CheckCondition("Disconnection achieved", false, device == Curve ? "fault current outside the curve points" : "I_f below the instantaneous tripping current", "disconnection within t_req", null, "BS 7671 reg. 411.3.2.2");
+            if (c.Has("I_cn"))
+            {
+                c.Input("I_cn");
+                c.Assign("u_Icn", "I_k3 / I_cn", null, "Breaking capacity utilisation");
+                outputs.Add(("u_Icn", "Breaking capacity utilisation"));
+            }
+        }
     }
 
     /// <summary>Log-log interpolation on time–current points sorted by current: I at a time (<paramref name="byTime"/>) or t at a current; null outside the points.</summary>

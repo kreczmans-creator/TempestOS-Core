@@ -16,6 +16,10 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   loads[2] |  | name = Supply fan; supply = AC three-phase; P = 2.2 kW; cosphi = 0.8; eta = 0.85; d = 0.5; k = 1; inrush = 6; backed = no |  |  | 
   loads[3] |  | name = Lighting; supply = AC single-phase; P = 0.5 kW; cosphi = 0.95; eta = 1; d = 1; k = 0.8; inrush = 1; backed = no |  |  | 
   loads[4] |  | name = Controls; supply = DC; P = 0.12 kW; cosphi = 1; eta = 0.9; d = 1; k = 1; inrush = 1; backed = yes |  |  | 
+  P_add | Additional three-phase load (linked from E1's peak power) | 0 | kW | manual | 0 … 200 kW
+  cosphi_add | Power factor of the additional load | 0.85 |  | manual | 0.5 … 1
+  eta_add | Efficiency of the additional load | 0.9 |  | manual | 0.5 … 1
+  inrush_add | Starting multiple of the additional load | 1 |  | manual | 1 … 20
   U_3ph | Three-phase line voltage | 400 | V | manual | 12 … 1000 V
   U_1ph | Single-phase voltage | 230 | V | manual | 12 … 1000 V
   U_DC | DC bus voltage | 24 | V | manual | 12 … 1000 V
@@ -37,75 +41,75 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   A3. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (§A3 reference records.)
 
 4. WORKING
-  [15] L1 = P·d·k; P·d·k/cosφ
+  [19] L1 = P·d·k; P·d·k/cosφ
       = 7.5 × 1 × 1 = 7.5 kW; 8.8235 kVA
       = 7.5 kW
         Pump motor (AC three-phase)
-  [16] L2 = P·d·k; P·d·k/cosφ
+  [20] L2 = P·d·k; P·d·k/cosφ
       = 2.2 × 0.5 × 1 = 1.1 kW; 1.375 kVA
       = 1.1 kW
         Supply fan (AC three-phase)
-  [17] L3 = P·d·k; P·d·k/cosφ
+  [21] L3 = P·d·k; P·d·k/cosφ
       = 0.5 × 1 × 0.8 = 0.4 kW; 0.42105 kVA
       = 0.4 kW
         Lighting (AC single-phase)
-  [18] L4 = P·d·k; P·d·k/cosφ
+  [22] L4 = P·d·k; P·d·k/cosφ
       = 0.12 × 1 × 1 = 0.12 kW; 0.12 kVA
       = 0.12 kW
         Controls (DC)
-  [19] P_conn = Σ P_i
+  [23] P_conn = Σ P_i
       = 7.5 + 2.2 + 0.5 + 0.12
       = 10.32 kW
         Connected load
-  [20] P_dem = Σ P_i·d_i·k_i
+  [24] P_dem = Σ P_i·d_i·k_i
       = 7.5 + 1.1 + 0.4 + 0.12
       = 9.12 kW
         Demand active power
-  [21] S_dem = Σ P_i·d_i·k_i/cosφ_i
+  [25] S_dem = Σ P_i·d_i·k_i/cosφ_i
       = 8.8235 + 1.375 + 0.42105 + 0.12
       = 10.74 kVA
         Demand apparent power (arithmetic)
-  [22] I_3ph = S_3φ/(√3·U_3ph)
+  [26] I_3ph = S_3φ/(√3·U_3ph)
       = 10199 / (√3 × 400)
       = 14.72 A
         Three-phase bus current
-  [23] I_1ph = S_1φ/U_1ph
+  [27] I_1ph = S_1φ/U_1ph
       = 421.05 / 230
       = 1.8307 A
         Single-phase bus current
-  [24] I_DC = P_DC/U_DC
+  [28] I_DC = P_DC/U_DC
       = 120 / 24
       = 5 A
         DC bus current
-  [25] Phi = Σ (1 − η_i)·P_i·d_i·k_i
+  [29] Phi = Σ (1 − η_i)·P_i·d_i·k_i
       = 0.1×7.5 + 0.15×1.1 + 0×0.4 + 0.1×0.12
       = 0.927 kW
         Heat dissipated (→ E2)
-  [26] P_DC = Σ DC P_i·d_i·k_i
+  [30] P_DC = Σ DC P_i·d_i·k_i
       = 120 W
       = 120 W
         DC demand
-  [27] P_PSU_req = margin * P_DC / f_derate
+  [31] P_PSU_req = margin * P_DC / f_derate
       = 1.25 × 120 W / 1
       = 150 W
         Minimum PSU rating
-  [28] S_T_req = margin * S_dem
+  [32] S_T_req = margin * S_dem
       = 1.25 × 10.74 kVA
       = 13.424 kVA
         Minimum transformer rating
-  [29] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+  [33] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
       = 10.74 + 44.118 (Pump motor starting)
       = 54.857 kVA
         Peak apparent power while the largest load starts
-  [30] I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv)
+  [34] I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv)
       = 120 / (24 × 1)
       = 5 A
         Battery discharge current
-  [31] Ah = I_b * t_auto
+  [35] Ah = I_b * t_auto
       = 5 A × 4 h
       = 20 A·h
         Discharge capacity
-  [32] C_req = Ah / (DoD * eta_b * k_temp * k_age)
+  [36] C_req = Ah / (DoD * eta_b * k_temp * k_age)
       = 20 A·h / (0.8 × 0.95 × 1 × 0.8)
       = 32.895 A·h
         Minimum battery capacity
@@ -136,5 +140,5 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record.k_age: k_age: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.0.0
+  Template: elec.load-budget@1.1.0
   Known-answer cases passed: 4/4
