@@ -1,10 +1,10 @@
 # 44 ground.u-values
 
 Kind: `ground.u-values` (Ground floor U-value inputs).
-Status: proposed — no CalcRecordKind yet; Track S confirms symbols when the calculator is built
+Status: proposed — B4 is built but lists no CalcRecordKind for this; Track S decides whether to add one
 
 ## Used by
-- B4 U-value and room heat loss (planned) reads the ground floor U-value for the floor and soil.
+- B4 U-value and room heat loss (built) takes this value as a typed input. It lists no record kind for it, so the importer cannot apply this file yet.
 
 ## Copy from
 - Type the values from CIBSE Guide A, the ground floor U-value tables, or from BS EN ISO 13370.

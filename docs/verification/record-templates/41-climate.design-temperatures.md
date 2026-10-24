@@ -1,10 +1,17 @@
 # 41 climate.design-temperatures
 
-Kind: `climate.design-temperatures` (External design temperatures).
-Status: proposed — no CalcRecordKind yet; Track S confirms symbols when the calculator is built
+Kind: `climate.design-temperature` (external design temperature, singular).
+Status: existing CalcRecordKind `climate.design-temperature`
+Planned name: `climate.design-temperatures`. The built calculator names the kind `climate.design-temperature`. The file name stays.
 
 ## Used by
-- B4 U-value and room heat loss (planned) reads the external design temperature for the site.
+- B4 U-value and room heat loss (built, `bs.room-heat-loss`) reads `theta_e` as the external design temperature.
+
+## Symbol mapping
+- `theta_e[degC]` fills the B4 input `theta_e`, a quantity in degC.
+- `location` identifies the row. The importer stores it but B4 never reads it.
+- The importer saves one record per row. Pick the row for your site.
+- The planned column `theta_m` is gone. B4 does not read it. Template 45 covers monthly data for B7.
 
 ## Copy from
 - Type the values from CIBSE Guide A, or from the MCS design guidance table for your location.
@@ -13,16 +20,15 @@ Status: proposed — no CalcRecordKind yet; Track S confirms symbols when the ca
 ## Columns
 - `location[text]`: location, as the table prints it.
 - `theta_e[degC]`: external design temperature.
-- `theta_m[degC]`: annual mean external temperature. Blank if not given.
 
 ## Edition to record
 Record the guide edition and amendment. Note the weather data period in notes.
 
 ## Importer checks
 - Reject a blank theta_e. Reject a duplicate location.
-- Warn when theta_e is outside -20 to 10 degC.
-- Warn when theta_m is above 20 degC.
+- B4 refuses theta_e outside -15 to 5 degC.
 
 ## Maps to CalcDataRecord
-Kind is `climate.design-temperatures`. The importer saves one CalcDataRecord for the file.
-One CalcDataValue with Symbol `design_temp_table` holds Rows. Each CalcRow has one cell per column, keyed by column symbol.
+Kind is `climate.design-temperature`. The importer saves one CalcDataRecord per CSV row.
+The `theta_e` column becomes one CalcDataValue with Symbol `theta_e`, a Number and the Unit `degC`.
+The `location` text joins the record title. Columns the kind does not list are stored but never applied.

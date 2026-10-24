@@ -1,10 +1,11 @@
 # 19 concrete.strengths
 
 Kind: `concrete.strengths` (Concrete strength classes).
-Status: proposed — no CalcRecordKind yet; Track S confirms symbols when the calculator is built
+Status: proposed — S6 is built but lists no CalcRecordKind for f_ck; Track S decides whether to add one
 
 ## Used by
-- S6 base plate (planned) reads f_ck for the foundation concrete.
+- S6 base plate (built) takes f_ck as a typed input. It lists no record kind for it, so the importer cannot apply this file yet.
+- Track S may add a kind to S6 later. Until then this template stays proposed.
 
 ## Copy from
 - Type the values from BS EN 1992-1-1, Table 3.1.

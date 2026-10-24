@@ -6,7 +6,7 @@ Method sources (cited by title and number only):
     three-phase current I = S/(sqrt(3)*U), single-phase I = S/U, DC current I = P/U.
   Heat dissipated per load (1 - eta) * P_in.
   PSU sizing: P_out >= margin * P_load / f_derate (manufacturer derating curve value).
-  Transformer: S >= margin * S_demand; starting check S_peak = S + max((m_i - 1) * S_i).
+  Transformer: S >= margin * S_demand; starting check S_peak = S + max(m_i * P_i / cos_i - S_i) (v1.1.0, full-rating start).
   Battery: C = I*t / (DoD * eta_b * k_temp * k_age).
   Peukert: Linden's Handbook of Batteries, 5th ed., Ch. 3-4 (Peukert relation t = H*(C/(I*H))^k),
     solved for the rated capacity: C = I*H*(t/H)^(1/k).
@@ -42,9 +42,11 @@ def budget(loads, U3=400.0, U1=230.0, UDC=24.0, margin=1.25, f_derate=1.0, P_PSU
         o["Phi"] += (1.0 - l["eta"]) * pdk
         if l["backed"]:
             ib_w += pdk * 1000.0
-        # starting kVA: apparent power of the load at its demand
-        extra = (l["inrush"] - 1.0) * s
-        s_i_max_extra = max(s_i_max_extra, extra)
+        # Starting kVA (v1.1.0): the starting load draws m * P / cos phi at full rating and replaces its own
+        # diversified share S_i. DC loads and loads with no demand (standby, d = 0) do not start.
+        if l["supply"] != DC and pdk > 0:
+            extra = l["inrush"] * l["P"] / cos - s
+            s_i_max_extra = max(s_i_max_extra, extra)
     o["I_3ph"] = sums[AC3][1] * 1000.0 / (math.sqrt(3.0) * U3)
     o["I_1ph"] = sums[AC1][1] * 1000.0 / U1
     o["I_DC"] = sums[DC][0] * 1000.0 / UDC
@@ -139,12 +141,23 @@ def extras():
     pump_half = [L("Pump", AC3, 11, 0.85, 0.9, 0.5, 1, 6, False)]
     o = budget(pump_half)
     for sym, v in [("P_conn", 11.0), ("P_dem", 5.5), ("S_dem", 6.470588235), ("I_3ph", 9.339489649),
-                   ("Phi", 0.55), ("S_T_req", 8.088235294), ("S_peak", 38.82352941)]:
+                   ("Phi", 0.55), ("S_T_req", 8.088235294), ("S_peak", 77.64705882)]:
         x("x1-standby-pump-d0.5", sym, v, o[sym])
     pump_full = [L("Pump", AC3, 11, 0.85, 0.9, 1, 1, 6, False)]
     o = budget(pump_full)
     for sym, v in [("I_3ph", 18.6789793), ("S_peak", 77.64705882)]:
         x("x2-pump-d1", sym, v, o[sym])
+    # Linked load (P_add 7.5 kW shaft, eta 0.9, cos phi 0.85, m 6) enters as an AC three-phase row of P_add/eta.
+    o = budget([L("Linked load", AC3, 7.5 / 0.9, 0.85, 0.9, 1, 1, 6, False)])
+    for sym, v in [("P_conn", 8.333333333), ("S_dem", 9.803921569), ("I_3ph", 14.15074189), ("Phi", 0.8333333333),
+                   ("S_T_req", 12.25490196), ("S_peak", 58.82352941)]:
+        x("x14-linked-load-P_add", sym, v, o[sym])
+    # Standby (d = 0) never starts with the rest running; the running load starts at m = 2.
+    o = budget([L("Run", AC3, 7.5, 0.85, 0.9, 1, 1, 2, False), L("Standby", AC3, 15, 0.85, 0.9, 0, 1, 6, False)])
+    for sym, v in [("S_dem", 8.823529412), ("S_peak", 17.64705882)]:
+        x("x15-standby-d0", sym, v, o[sym])
+    # A load with m = 1 and d < 1 is still counted at full rating (finding P1-elec.load-budget-C1).
+    x("x16-heater-d0.5-m1", "S_peak", 10.0, budget([L("Heater", AC3, 10, 1, 1, 0.5, 1, 1, False)])["S_peak"])
     o = budget([L("DC", DC, 4, 1, 0.9, 1, 1, 1, True)], t_auto=2)
     for sym, v in [("I_DC", 166.6666667), ("P_PSU_req", 5000.0), ("I_b", 166.6666667), ("Ah", 1200000 / 3600.0),
                    ("C_req", 1973684.211 / 3600.0), ("I_3ph", 0.0), ("I_1ph", 0.0)]:
@@ -186,7 +199,7 @@ def demonstrations():
     """Differences between the product convention and the physical case. They do not change the exit code."""
     print("\nDemonstrations for the findings (product value | independent value):")
     pump_half = [L("Pump", AC3, 11, 0.85, 0.9, 0.5, 1, 6, False)]
-    print(f"  Starting peak, 11 kW pump, d = 0.5, m = 6: product 38.824 kVA | full-rating start {s_peak_full(pump_half):.3f} kVA")
+    print(f"  Starting peak, 11 kW pump, d = 0.5, m = 6: product (v1.1.0) 77.647 kVA | full-rating start {s_peak_full(pump_half):.3f} kVA")
     print("  DC-only 4 kW budget: product I_3ph = I_1ph = 0 A | the AC input of the PSU is 4/(eta*pf) kW, not in either current")
     print("  Peukert credit at t = 72 h on a 20 h rating, k_p = 1.3: capacity is 0.744 of I*t")
 
