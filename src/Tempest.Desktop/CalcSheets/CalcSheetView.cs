@@ -396,7 +396,10 @@ public sealed class CalcSheetView : UserControl
                 lastGroup = g;
             }
 
-            _form.Children.Add(BuildField(spec, seed.Find(spec.Symbol)));
+            // A saved instance or an import states its inputs in full: an optional input it leaves out stays blank rather than
+            // taking the template default, which would arrive unsourced and refuse the check (the showcase journey found it).
+            var stated = seedOverride is not null || instance is not null;
+            _form.Children.Add(BuildField(spec, seed.Find(spec.Symbol), blankWhenAbsent: stated && spec.IsOptional));
         }
 
         _loadingForm = false;
@@ -763,7 +766,7 @@ public sealed class CalcSheetView : UserControl
         row.BringIntoView();
     }
 
-    private Control BuildField(CalcInputSpec spec, CalcInputValue? seed)
+    private Control BuildField(CalcInputSpec spec, CalcInputValue? seed, bool blankWhenAbsent = false)
     {
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("200,160,90,120,*") };
         var label = new TextBlock { Text = $"{spec.Symbol} — {spec.Description}", FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
@@ -783,7 +786,7 @@ public sealed class CalcSheetView : UserControl
             case CalcInputKind.Number:
             case CalcInputKind.Text:
             {
-                var initial = seed?.Number is { } n ? n.ToString("R", CultureInfo.InvariantCulture) : seed?.Text ?? (spec.Default is { } d ? d.ToString("R", CultureInfo.InvariantCulture) : string.Empty);
+                var initial = seed?.Number is { } n ? n.ToString("R", CultureInfo.InvariantCulture) : seed?.Text ?? (!blankWhenAbsent && spec.Default is { } d ? d.ToString("R", CultureInfo.InvariantCulture) : string.Empty);
                 text = Input(initial, spec.Kind == CalcInputKind.Text ? "text" : "number");
                 text.TextChanged += (_, _) => RaiseInputsChanged();
                 AutomationProperties.SetName(text, spec.Symbol);
