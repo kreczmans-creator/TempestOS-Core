@@ -33,4 +33,4 @@ The cavity wall has U = 0.181 W/m²K (R = 5.538 m²K/W) and passes the 0.30 targ
 | `HLC` | 25.4908 W/K | 25.4908 W/K | PASS |
 | `Phi_A` | 37.7642 W/m^2 | 37.7642 W/m^2 | PASS |
 
-Governing check: U-value of Party wall against its target (1.2 W/m²K) — PASS (utilisation 0.949). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text).
+Governing check: U-value of Party wall against its target (1.2 W/m²K) — PASS (utilisation 0.949). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

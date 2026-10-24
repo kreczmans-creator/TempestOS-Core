@@ -36,4 +36,4 @@ A 4 kW (rated output) conveyor motor, design current 8.28 A, behind a 10 A type 
 | `I_z` | 12.4024 A | 12.4024 A | PASS |
 | `u_In` | 0.806296  | 0.806296  | PASS |
 
-Governing check: Design current within device rating (I_b ≤ I_n) — PASS (utilisation 0.828). Files: `inputs.json` (loads into the worksheet) and `sheet.txt` (rendered text).
+Governing check: Design current within device rating (I_b ≤ I_n) — PASS (utilisation 0.828). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
