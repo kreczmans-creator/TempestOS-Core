@@ -68,3 +68,16 @@
 - [ ] Security + every colour team re-run on the delta (Addendum A sections)
 - [ ] A8 owner test pack + handover Addendum A section
 - [ ] A9 gates; STATUS final line
+
+## Addendum B — fifteen calculators, Fluid Power, three workflows (v0.26.0, no tag; queued after Addendum A §A9, B0.2)
+- [ ] B1 orientation (`docs/build-log/addendum-B-orientation.md`)
+- [ ] B-0 foundations: ADR Fluid Power discipline (next free ADR); W3 material library; B6 gas-law kernel; M1 stack engine API (`v0.26.0/addB-0-foundations`)
+- [ ] B-1 M7 springs, E7 PCB trace, B7 Glaser, S7 LTB + N+M, F2 accumulator (`v0.26.0/addB-1-core`)
+- [ ] B-2 F1 cylinder circuit, F3 O-ring gland; HPU chain F1 → F2 → B1 → E1 → E4 (`v0.26.0/addB-2-fluid`)
+- [ ] B-3 M8 snap-fits, B8 pipe expansion, S9 plate bending, E8 containment, B9 insulation (`v0.26.0/addB-3-reuse`)
+- [ ] B-4 W1 CAD import, W2 scan import, M9 kinematics, E9 motor start/PFC; scan-to-seal W2 → M1 → F3 (`v0.26.0/addB-4-workflows`)
+- [ ] B-5 S8 lifting lugs and spreader beams behind a feature flag (`v0.26.0/addB-5-gated`)
+- [ ] §B7 ten chains: integration tests + issued pack worked examples
+- [ ] Security + every colour team re-run on the Addendum B delta
+- [ ] §B10 owner test pack additions
+- [ ] §B9 gates; STATUS final line
