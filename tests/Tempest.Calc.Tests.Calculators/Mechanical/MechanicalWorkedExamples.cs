@@ -178,6 +178,25 @@ public static class MechanicalWorkedExamples
             [new CalcExpectedValue("L_10", 535.3873, "", 1e-6), new CalcExpectedValue("L_10h", 5948.748, "h", 1e-6), new CalcExpectedValue("a_1", 0.637912, "", 1e-5), new CalcExpectedValue("L_nmh", 7589.6, "h", 1e-4), new CalcExpectedValue("s_0", 4.48, "", 1e-6)],
             "A 6206 deep groove ball bearing carries 2.5 kN radial at 1500 rpm. The basic life is 5949 h; at 95 % reliability with a_ISO = 2 the modified life is 7590 h, above the 5000 h required (utilisation 0.659). The ratings and factors would normally come from reference records; here they cite the catalogue directly.",
             CalcReferenceStatus.Unconfirmed),
+        new(WeldGroupCalculator.Id, "bracket-c-weld", "Bracket welded to a column flange on three sides",
+            new CalcReferenceSource("Analytic (elastic line method; Shigley Table 9-1 pattern)", null, "Two 80 mm horizontal welds and one 200 mm vertical weld, 8 mm fillets, 30 kN down at 250 mm from the vertical weld"),
+            new CalcInputSet(
+            [
+                WeldGroupCalculator.Welds((0, 0, 80, 0), (0, 0, 0, 200), (0, 200, 80, 200)) with { Provenance = CalcProvenance.Drawing("BRK-010", "A") },
+                CalcInputValue.Quantity("s", 8, "mm", CalcProvenance.Drawing("BRK-010", "A")),
+                CalcInputValue.Quantity("f_w", 220, "MPa", CalcProvenance.Assumed("S275, EN 1993-1-8 simplified method: 410/√3/(0.85 × 1.25) ≈ 223 MPa, rounded down.")),
+                CalcInputValue.Quantity("F_x", 0, "kN", CalcProvenance.Assumed("No horizontal load.")),
+                CalcInputValue.Quantity("F_y", -30, "kN", CalcProvenance.Specification("Hoist rating with dynamic factor")),
+                CalcInputValue.Quantity("F_z", 0, "kN", CalcProvenance.Assumed("No out-of-plane load.")),
+                CalcInputValue.Quantity("e_x", 250, "mm", CalcProvenance.Drawing("BRK-010", "A")),
+                CalcInputValue.Quantity("e_y", 100, "mm", CalcProvenance.Drawing("BRK-010", "A")),
+                CalcInputValue.Quantity("M_x", 0, "kN*m", CalcProvenance.Assumed("None.")),
+                CalcInputValue.Quantity("M_y", 0, "kN*m", CalcProvenance.Assumed("None.")),
+                CalcInputValue.Quantity("M_z", 0, "kN*m", CalcProvenance.Assumed("None.")),
+            ]),
+            [new CalcExpectedValue("x_c", 17.77778, "mm", 1e-6), new CalcExpectedValue("J_u", 2494222, "mm^3", 1e-6), new CalcExpectedValue("T", -6.966667, "kN*m", 1e-6), new CalcExpectedValue("f_r_max", 379.6444, "N/mm", 1e-6), new CalcExpectedValue("tau", 67.12242, "MPa", 1e-6), new CalcExpectedValue("s_req", 2.440815, "mm", 1e-6)],
+            "A C-shaped fillet weld (80 + 200 + 80 mm) carries 30 kN at 250 mm. The centroid sits 17.8 mm from the vertical weld, so the torque is 6.97 kN·m. The worst corner carries 380 N/mm; on an 8 mm fillet the throat stress is 67 MPa (utilisation 0.31), and a 3 mm leg would do.",
+            CalcReferenceStatus.Confirmed),
     ];
 
     private static CalcInputSet JointInputs(double torque, string method, double workingLoad) => new(

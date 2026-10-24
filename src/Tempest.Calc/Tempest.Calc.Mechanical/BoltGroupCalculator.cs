@@ -105,9 +105,10 @@ public sealed class BoltGroupCalculator : ICalcCalculator
             }
         }
 
-        var sumA = bolts.Sum(b => b.A);
-        var xc = bolts.Sum(b => b.A * b.X) / sumA;
-        var yc = bolts.Sum(b => b.A * b.Y) / sumA;
+        var group = GroupGeometry.OfPoints([.. bolts.Select(b => (b.X, b.Y, b.A))]);
+        var sumA = group.Size;
+        var xc = group.Xc;
+        var yc = group.Yc;
         c.Record("n_b", "number of bolts", $"{bolts.Count}", new ScalarValue(bolts.Count), "Bolts in the group");
         c.Record("x_c", "Σ A x / Σ A", string.Join(" + ", bolts.Select(b => $"{F(b.A, 1e-6)}×{F(b.X, 1e-3)}")) + $" / {F(sumA, 1e-6)}", ScalarValue.Of(mm.FromSi(xc), mm), "Centroid x");
         c.Record("y_c", "Σ A y / Σ A", string.Join(" + ", bolts.Select(b => $"{F(b.A, 1e-6)}×{F(b.Y, 1e-3)}")) + $" / {F(sumA, 1e-6)}", ScalarValue.Of(mm.FromSi(yc), mm), "Centroid y");
@@ -120,9 +121,9 @@ public sealed class BoltGroupCalculator : ICalcCalculator
         c.Record("T", "F_y (e_x − x_c) − F_x (e_y − y_c) + T_z", $"{F(fy, 1e3)} × {F(ex, 1e-3)} − {F(fx, 1e3)} × {F(ey, 1e-3)} + {F(c.Si("T_z"), 1e3)}", ScalarValue.Of(torque / 1e3, "kN*m"), "In-plane torque about the centroid");
 
         // J with areas in mm² and distances in mm → mm⁴ (A r²); SI m⁴.
-        var polar = bolts.Sum(b => b.A * ((b.X - xc) * (b.X - xc) + (b.Y - yc) * (b.Y - yc)));
-        var sumAy2 = bolts.Sum(b => b.A * (b.Y - yc) * (b.Y - yc));
-        var sumAx2 = bolts.Sum(b => b.A * (b.X - xc) * (b.X - xc));
+        var polar = group.J;
+        var sumAy2 = group.Ix;
+        var sumAx2 = group.Iy;
         c.Record("J", "Σ A r²", "about the centroid", new ScalarValue(polar, Dimension.L.Pow(4), UnitCatalog.Parse("mm^4")), "Polar second moment of the bolt areas");
 
         var n = c.Si("N");
