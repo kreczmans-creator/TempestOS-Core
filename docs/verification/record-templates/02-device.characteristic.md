@@ -6,7 +6,7 @@ Status: existing CalcRecordKind
 ## Used by
 - E5 fault protection (built) reads the curve for fuses and moulded-case breakers.
 - E5 also reads the let-through energy and the breaking capacity.
-- E4 conductor sizing (planned) will reuse the same device record.
+- E4 conductor sizing (built) lists no device characteristic record. It reads template 47, `device.ratings`, instead.
 
 ## Copy from
 - Type the points from the manufacturer's datasheet for the exact device.

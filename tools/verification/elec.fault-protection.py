@@ -47,24 +47,35 @@ def fault(U0=230.0, Ze=0.35, Cmin=0.95, L=20.0, Sl=2.5, Sc=1.5, theta=70.0,
     mult = {"B": 5.0, "C": 10.0, "D": 20.0}
     if device in mult:
         o["I_a"] = mult[device] * In
-        o["t_d"] = None  # not derived from a curve
+        # An MCB trips within 0.1 s only when I_f reaches I_a. Below that no disconnection time is stated (DA-17/18).
+        o["t_d"] = 0.1 if o["I_f"] >= o["I_a"] else None
     else:
         ts = [p[0] for p in curve]
         Is = [p[1] for p in curve]
         o["I_a"] = loglog(t_req, ts[::-1], Is[::-1])  # I as a function of t (ascending t)
         o["t_d"] = loglog(o["I_f"], Is, ts)
+        if o["t_d"] is None and o["I_f"] > max(Is):
+            # Above the highest current entered: the fastest time entered is an upper bound (v0.26.0 behaviour).
+            o["t_d"] = min(ts)
     o["Z_s_max"] = Cmin * U0 / o["I_a"]
     o["u_Zs"] = o["Z_s"] / o["Z_s_max"]
     o["Z_test"] = 0.8 * o["Z_s_max"]
     k = k_adiabatic(theta_i, theta_f, rho20, Qc, beta)
     o["k"] = k
-    if device in mult:
-        t_eff = 0.1
+    if o["t_d"] is None:
+        # No disconnection time: the fault energy is unknown and the adiabatic check is not made.
+        o["S_min"] = None
+        o["u_cpc"] = None
     else:
-        t_eff = o["t_d"]
-    i2t = o["I_f"] ** 2 * t_eff
-    o["S_min"] = math.sqrt(i2t) / k
-    o["u_cpc"] = o["S_min"] / Sc
+        # I2t = I_f^2 * t for t >= 0.1 s on a curve, else the let-through energy, else I_f^2 * 0.1 s.
+        if device not in mult and o["t_d"] >= 0.1:
+            i2t = o["I_f"] ** 2 * o["t_d"]
+        elif I2t_let is not None:
+            i2t = I2t_let
+        else:
+            i2t = o["I_f"] ** 2 * 0.1
+        o["S_min"] = math.sqrt(i2t) / k
+        o["u_cpc"] = o["S_min"] / Sc
     if Sr is not None and uk is not None:
         Un = math.sqrt(3.0) * U0
         o["Z_T"] = (uk / 100.0) * Un ** 2 / (Sr * 1000.0)
@@ -165,6 +176,18 @@ def extras():
     o = fault(U0=400, device="curve", curve=[(5, 120), (0.4, 220), (0.2, 260), (0.1, 320), (0.01, 700)])
     for sym, v in [("I_a", 220), ("Z_s_max", 1.727272727), ("t_d", 0.030161)]:
         x("x13-U0-400-curve", sym, v, o[sym], 1e-4)
+    # Re-check after DA-17/DA-18: no disconnection time means no energy and no adiabatic check.
+    o = fault(**B16)
+    assert o["t_d"] is None and o["S_min"] is None, "C16 long run: no t_d and no S_min expected"
+    o = fault(device="curve", curve=CURVE, L=200, Sl=1.5, Sc=1.0)
+    assert o["I_f"] < 120.0 and o["t_d"] is None and o["S_min"] is None, "fault current below the curve: no t_d"
+    # Fault current above the highest curve point: the fastest time entered is the upper bound (finding R1).
+    o = fault(device="curve", curve=[(5, 120), (0.4, 220)])
+    for sym, v in [("I_a", 220), ("t_d", 0.4), ("S_min", 1.523107581), ("u_cpc", 1.015405054)]:
+        x("x15-R1-curve-ends-0.4s", sym, v, o[sym])
+    o = fault(device="curve", curve=CURVE, L=0.1, Ze=0.02)
+    for sym, v in [("I_f", 9842.15997), ("t_d", 0.01), ("S_min", 27.10265766)]:
+        x("x16-above-curve-0.01s", sym, v, o[sym])
     # Boundary: Z_e chosen so that Z_s equals Z_s_max for B32 (product gives u_Zs = 1, pass).
     ze = 1.365625 - fault()["R_12"]
     x("x14-boundary-Zs-eq-Zsmax", "u_Zs", 1.0, fault(Ze=ze)["u_Zs"])
@@ -188,7 +211,7 @@ def demonstrations():
     # Finding 02: adiabatic check when the device does not trip in the instantaneous region.
     o = fault(L=50, Sl=1.5, Sc=1.0, In=16, device="C")
     k = o["k"]
-    print(f"  C16 MCB, I_f = {o['I_f']:.1f} A < I_a = {o['I_a']:.0f} A: product S_min {o['S_min']:.4f} mm2 (uses 0.1 s) | "
+    print(f"  C16 MCB, I_f = {o['I_f']:.1f} A < I_a = {o['I_a']:.0f} A: product (v0.26.0) states no S_min and no pass (adiabatic check not made) | "
           f"with an assumed 5 s disconnection {o['I_f'] * math.sqrt(5.0) / k:.3f} mm2")
     # Finding 03: line conductor against the short-circuit let-through.
     print(f"  B32 MCB, 2.5 mm2 line: product S_min {fault()['S_min']:.4f} mm2 from I_f | "

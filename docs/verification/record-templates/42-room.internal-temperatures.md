@@ -1,10 +1,10 @@
 # 42 room.internal-temperatures
 
 Kind: `room.internal-temperatures` (Internal design temperatures).
-Status: proposed — no CalcRecordKind yet; Track S confirms symbols when the calculator is built
+Status: proposed — B4 is built but lists no CalcRecordKind for this; Track S decides whether to add one
 
 ## Used by
-- B4 U-value and room heat loss (planned) reads the internal design temperature for each room type.
+- B4 U-value and room heat loss (built) takes this value as a typed input. It lists no record kind for it, so the importer cannot apply this file yet.
 
 ## Copy from
 - Type the values from CIBSE Guide A, or from the MCS design guidance table.

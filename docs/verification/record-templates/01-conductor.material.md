@@ -4,7 +4,7 @@ Kind: `conductor.material` (Conductor material constants).
 Status: existing CalcRecordKind
 
 ## Used by
-- E5 fault protection (built) reads every column. E3 voltage drop (built) and E4 conductor sizing (planned) read rho_20 and alpha.
+- E5 fault protection (built) reads every column. E3 voltage drop (built) reads rho_20 and alpha. E4 conductor sizing (built) lists no conductor material record.
 
 ## Copy from
 - Type the material constants from your licensed copies of IEC 60228 and IEC 60949.

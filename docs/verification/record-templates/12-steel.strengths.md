@@ -1,11 +1,17 @@
 # 12 steel.strengths
 
 Kind: `steel.strengths` (Steel plate strengths by thickness band).
-Status: existing CalcRecordKind
+Status: existing CalcRecordKind `steel.strengths`
 
 ## Used by
-- S4 EN 1993-1-8 bolts and welds (built) reads f_y and f_u.
-- S8 lifting lugs (planned), S6 base plate (planned) and S7 LTB (planned) read the same values.
+- S4 EN 1993-1-8 bolts and welds (built, `struct.connection`) lists f_y and f_u for this kind.
+- S6 base plate (built, `struct.base-plate`) lists f_y only. It fills the plate yield strength input `f_y`.
+- S8 lifting lugs (planned) and S7 LTB (planned) will read the same values.
+
+## Symbol mapping
+- `f_y[MPa]` fills the input `f_y` in S4 and S6. `f_u[MPa]` fills the input `f_u` in S4 only.
+- S6 ignores `f_u`. The importer applies only the symbols the calculator lists.
+- Pick the row for the plate grade and the plate thickness t_p.
 
 ## Copy from
 - Type the values from your licensed copy of EN 10025-2, the tables for yield and tensile strength by thickness.
@@ -26,7 +32,7 @@ Record the EN 10025-2 edition and amendment, or the EN 1993-1-1 edition if you u
 - Reject a row where t_max does not exceed t_min. Reject overlapping bands within one grade.
 - Within one grade, f_y must not rise as thickness rises.
 - Reject a row where f_u does not exceed f_y.
-- Warn when f_y is outside 235 to 460 MPa or f_u is outside 340 to 720 MPa.
+- S6 refuses f_y outside 235 to 460 MPa. Warn when f_u is outside 340 to 720 MPa.
 
 ## Maps to CalcDataRecord
 Kind is `steel.strengths`. The importer saves one CalcDataRecord per CSV row.
