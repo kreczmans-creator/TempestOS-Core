@@ -95,7 +95,9 @@ def check(i):
         k_yy = i.get("k_yy", 1.0)
         k_zz = i.get("k_zz", 1.0)
         o["u_buckling"] = abs(N) / (o["N_b_Rd"] * 1e3)
-        o["u_member"] = o["u_buckling"] + k_yy * o["u_M_y"] + k_zz * o["u_M_z"]
+        # Eq. 6.61/6.62 divide the moments by M_Rk/gamma_M1 (chi_LT = 1 here; no shear reduction in 6.3.3).
+        # Review 2026-10-24: the first pass used M_c,Rd with gamma_M0, which copied the product. See finding R2.
+        o["u_member"] = o["u_buckling"] + k_yy * My / (Wy * fy / gM1) + k_zz * Mz / (Wz * fy / gM1)
     else:
         o["u_buckling"] = 0.0  # not applicable in tension or at zero axial force
         o["u_member"] = float("nan")  # EN 1993-1-1 has no member buckling check without compression
@@ -181,6 +183,9 @@ def extra_checks():
                 res = "PASS"
             elif sym in SHEAR_SENSITIVE and ind["rho"] > 0:
                 res = "FINDING-01"
+                findings += 1
+            elif sym == "u_member" and inp.get("gamma_M1", 1.0) != inp.get("gamma_M0", 1.0):
+                res = "FINDING-R2"  # product divides the member moments by M_c,Rd (gamma_M0), EN uses gamma_M1
                 findings += 1
             else:
                 res = "FAIL"
