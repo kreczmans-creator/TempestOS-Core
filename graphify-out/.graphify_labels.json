@@ -1,9 +1,7 @@
 {
   "4": "avalonia_controls",
   "8": "Length",
-  "12": "Quantity",
   "54": "WorkspaceManager",
-  "64": "CalculationException",
   "68": "RuntimeModuleManager",
   "82": "CalculationEngineTests",
   "100": "action-tracker/support.js",
@@ -47,7 +45,6 @@
   "331": "Icon",
   "336": "Substrate: Engineering domain object model with 31 Kinds and facet composition",
   "344": "KindEditorDeclaration",
-  "345": "WP 6.0 — Reporting Framework Implementation",
   "347": "RecordTimesheetCommand",
   "389": "ImageSlot",
   "392": "CalculationModuleServiceTests",
