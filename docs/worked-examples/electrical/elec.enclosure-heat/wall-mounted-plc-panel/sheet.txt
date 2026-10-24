@@ -125,6 +125,7 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   T_int = 82.847 degC    Internal temperature (natural)
   P_nat_max = 94.05 W    Natural dissipation at the limit
   P_cool = 205.95 W    Cooling unit needed
+  T_max = 50 degC    Internal temperature limit
   rho_air = 1.1455 kg/m³    Air density
   V_req = 62.481 m³/h    Required airflow
   V_req_net = 42.893 m³/h    Required airflow (net)
@@ -151,7 +152,7 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   WARNING cooling-unit: T_max: natural dissipation holds 94.05 W of 300 W; ventilate or fit a 206 W cooling unit.
 
 8. VERIFICATION
-  Template: elec.enclosure-heat@1.1.0
+  Template: elec.enclosure-heat@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 2/2

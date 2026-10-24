@@ -3,6 +3,7 @@ using Tempest.Calc.Electrical;
 using Tempest.Core.Evidence;
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
+using static Tempest.Calc.Tests.Library.Chains.ChainKit;
 
 namespace Tempest.Calc.Tests.Library.Chains;
 
@@ -13,28 +14,13 @@ public sealed class MotorCircuitChainTests
         calculators: [.. ElectricalCalculators.All],
         packTemplates: CalcPackTemplates.All);
 
-    private static double Si(CalcInstance instance, string symbol) => instance.Outputs.Single(o => o.Symbol == symbol).Si!.Value;
-
-    private static double InputSi(CalcInstance instance, string symbol)
-    {
-        var input = instance.Inputs.Single(i => i.Symbol == symbol);
-        return Tempest.Calc.Engine.Units.UnitCatalog.Parse(input.Unit ?? string.Empty).ToSi(input.Number!.Value);
-    }
-
-    // The ampacity and ratings records ship empty (§A5), so the chain is given the synthetic E4 test tables.
-    private static Dictionary<string, IReadOnlyList<CalcInputValue>> Tables() => new(StringComparer.Ordinal)
-    {
-        ["e4"] = [ConductorSizingCalculator.TypicalRatings(), ConductorSizingCalculator.SyntheticAmpacity()],
-    };
-
     [Fact]
     public async Task Motor_Demand_Reaches_The_Cable_Voltage_Drop_Fault_Check_And_Enclosure()
     {
         var host = Host();
         Assert.Null(host.Service.ValidatePackTemplate(CalcPackTemplates.MotorCircuit));
-        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.MotorCircuit, await host.ProjectAsync(), "Conveyor motor circuit", Tables());
-        Assert.Null(refusal);
-        var e1 = made!.Instances["e1"];
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", ChainInputs.MotorCircuit(host));
+        var e1 = made.Instances["e1"];
         var e6 = made.Instances["e6"];
         var e4 = made.Instances["e4"];
         var e3 = made.Instances["e3"];
@@ -52,38 +38,25 @@ public sealed class MotorCircuitChainTests
         Assert.Equal(Si(e4, "I_n"), InputSi(e5, "I_n"), 9);
         Assert.Equal(Si(e6, "Phi"), InputSi(e2, "P_add"), 9);
         Assert.Equal(6, made.Pack.InstanceIds.Count);
-        Assert.All(made.Instances.Values, i => Assert.False(i.Blocks.Count > 0, $"{i.Name}: {string.Join("; ", i.Blocks.Select(b => b.Message))}"));
     }
 
     [Fact]
-    public async Task A_Bigger_Motor_Makes_The_Chain_Stale_And_Updating_Carries_The_Current_Through()
+    public async Task A_Bigger_Motor_Makes_The_Chain_Stale_Blocks_The_Pack_And_Updating_Carries_The_Current_Through()
     {
         var host = Host();
-        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.MotorCircuit, await host.ProjectAsync(), "Conveyor motor circuit", Tables());
-        Assert.Null(refusal);
-        var e1 = made!.Instances["e1"];
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", ChainInputs.MotorCircuit(host));
+        var e1 = made.Instances["e1"];
 
-        var changed = await host.Service.UpdateInputsAsync(e1.Id, [.. e1.Inputs.Select(i => i.Number is { } n && i.Symbol == "m" ? i with { Number = n * 1.5 } : i)]);
-        Assert.True(changed.Succeeded, changed.Reason);
-        Assert.NotEqual(Si(e1, "P_pk"), Si(changed.Instance!, "P_pk"));
+        await ChainKit.ReviseAndUpdateAsync(host, made, "e1", "m", 1.5, ["e6", "e4", "e3", "e5", "e2"]);
 
-        foreach (var key in new[] { "e6", "e4", "e3", "e5", "e2" })
-        {
-            var current = (await host.Store.FindInstanceAsync(made.Instances[key].Id))!;
-
-            if ((await host.Service.StalenessAsync(current)).IsStale)
-                Assert.True((await host.Service.UpdateLinksAsync(current.Id)).Succeeded, key);
-        }
-
-        var e6 = (await host.Store.FindInstanceAsync(made.Instances["e6"].Id))!;
-        var e4 = (await host.Store.FindInstanceAsync(made.Instances["e4"].Id))!;
-        var e3 = (await host.Store.FindInstanceAsync(made.Instances["e3"].Id))!;
-        Assert.Equal(Si(changed.Instance!, "P_pk"), InputSi(e6, "P_add"), 9);
+        var e1New = await Fresh(host, made, "e1");
+        Assert.NotEqual(Si(e1, "P_pk"), Si(e1New, "P_pk"));
+        var e6 = await Fresh(host, made, "e6");
+        var e4 = await Fresh(host, made, "e4");
+        var e3 = await Fresh(host, made, "e3");
+        Assert.Equal(Si(e1New, "P_pk"), InputSi(e6, "P_add"), 9);
         Assert.Equal(Si(e6, "I_3ph"), Si(e4, "I_b"), 9);
         Assert.Equal(Si(e4, "I_b"), InputSi(e3, "I"), 9);
-
-        foreach (var key in new[] { "e6", "e4", "e3", "e5", "e2" })
-            Assert.False((await host.Service.StalenessAsync((await host.Store.FindInstanceAsync(made.Instances[key].Id))!)).IsStale, $"{key} should be current");
     }
 
     [Fact]
@@ -101,7 +74,6 @@ public sealed class MotorCircuitChainTests
     public async Task The_Chain_Issues_As_One_Bundle_And_Its_Licensed_Ampacity_Table_Never_Leaves_In_An_Export()
     {
         var host = Host();
-        var project = await host.ProjectAsync();
         var (ampacity, r1) = await host.Service.SaveRecordAsync(new CalcDataRecord(
             Guid.Empty, "cable.ampacity", "Panel wiring capacities", 0, "Owner's wiring regulations", "2018+A2:2022", "capacity table (owner's copy)", "S. Kreczman (own copy)", "s.kreczman",
             true, CalcDataOrigin.UserEntered, [new CalcDataValue("ampacity", Rows: ConductorSizingCalculator.SyntheticAmpacity().Rows)], DateTimeOffset.UnixEpoch));
@@ -111,50 +83,17 @@ public sealed class MotorCircuitChainTests
         Assert.Null(r1);
         Assert.Null(r2);
 
-        var spec = CalcProvenance.Specification("SPEC-CONV-01 §4");
-        var inputs = new Dictionary<string, IReadOnlyList<CalcInputValue>>(StringComparer.Ordinal);
+        var inputs = ChainInputs.MotorCircuit(host, CalcInstanceService.RecordProvenance(ampacity!), CalcInstanceService.RecordProvenance(ratings!));
 
-        foreach (var step in CalcPackTemplates.MotorCircuit.Steps)
-        {
-            var template = host.Catalogue.Get(step.TemplateId).Template;
-            List<CalcInputValue> values = [.. CalcTemplateHasher.NewSheetInputs(template).Values.Select(v => v with { Provenance = spec })];
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", inputs);
 
-            if (step.Key == "e4")
-            {
-                values.Add(ConductorSizingCalculator.SyntheticAmpacity() with { Provenance = CalcInstanceService.RecordProvenance(ampacity!) });
-                values.Add(ConductorSizingCalculator.TypicalRatings() with { Provenance = CalcInstanceService.RecordProvenance(ratings!) });
-            }
+        // E4 and E5 demand an independent check: the chain is drawn up by another engineer. Full provenance, one check, one issue.
+        var sheet = await CheckAndIssueAsync(host, made, CalcPackTemplates.MotorCircuit, "CONV-ELEC-001", "Client Co", "Checked against SPEC-LINE-12.");
 
-            inputs[step.Key] = values;
-        }
-
-        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.MotorCircuit, project, "Conveyor motor circuit", inputs);
-        Assert.Null(refusal);
-
-        // E4 and E5 demand an independent check: the chain was drawn up by another engineer.
-        foreach (var instance in made!.Instances.Values)
-        {
-            var stored = (await host.Store.FindInstanceAsync(instance.Id))!;
-            await host.Store.SaveInstanceAsync(stored with { CreatedBy = "another.engineer" }, stored.UpdatedAt);
-        }
-
-        var check = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "Checked against SPEC-CONV-01.", CheckOutcome.Accepted);
-        Assert.True(check.Succeeded, check.Reason);
-        var issued = await host.Service.IssuePackAsync(made.Pack.Id, "CONV-ELEC-001", "Client Co");
-        Assert.True(issued.Succeeded, issued.Reason);
-
-        var pack = (await host.Store.FindPackAsync(made.Pack.Id))!;
-        Assert.Equal(CalcInstanceStatus.Issued, pack.Status);
-        var evidence = (Evidence)(await host.Context.Repository.FindAsync(pack.EvidenceId!.Value))!;
-        var attachment = Assert.Single(await evidence.GetAttachmentsAsync());
-        var sheet = Encoding.UTF8.GetString((await evidence.ReadAttachmentContentAsync(attachment.Id)).Bytes);
-        Assert.Contains("PACK INDEX", sheet, StringComparison.Ordinal);
-
-        foreach (var step in CalcPackTemplates.MotorCircuit.Steps)
-        {
-            Assert.Contains(step.Name, sheet, StringComparison.Ordinal);
-            Assert.Equal(CalcInstanceStatus.Issued, (await host.Store.FindInstanceAsync(made.Instances[step.Key].Id))!.Status);
-        }
+        // The links are named on the issued sheet.
+        Assert.Contains("link: Motor sizing rev A · P_pk", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Load budget rev A · I_3ph", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Cable and device rev A · CSA", sheet, StringComparison.Ordinal);
 
         // The issued sheet may cite the licensed record it used (it is the user's own calculation) ...
         Assert.Contains("(licensed source)", sheet, StringComparison.Ordinal);
