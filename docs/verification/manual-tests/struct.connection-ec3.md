@@ -1,0 +1,85 @@
+# Manual test — struct.connection-ec3 (Bolts and fillet welds (EN 1993-1-8))
+Liability: High. Time: ~45 min. Pre-requisites: None. Have your copy of EN 1993-1-8 (Tables 3.3, 3.4, cl. 3.6.1) for steps 14 to 22. Step 23 needs two saved calculations in one project.
+
+| # | Step | Inputs (value + unit) | Expected output (symbol = value unit) | Tolerance | Expected PASS/FAIL/BLOCK/WARN | Basis | Result | Notes |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Press Ctrl+K. Type "Open worksheet: Bolts and fillet welds (EN 1993-1-8)". Press Enter. Or use Engineering tree, Modules, Calculations, Worksheets, then Structural. | None. Defaults: M20, class 8.8, S275, t 10 mm, f_y 275, f_u 410 MPa. e_1 = e_2 = 40 mm, n_s 1, threads in the plane, F_v,Ed 50 kN, F_t,Ed 0. | A_s = 244.79 mm². F_v_Rd = 94.001 kN. F_b_Rd = 99.394 kN. F_t_Rd = 141 kN. B_p_Rd = 199.83 kN. alpha_b = 0.60606. k_1 = 2.5. u_v = 0.53191. u_b = 0.50305. f_ub = 800 MPa. Checks: shear, bearing, tension, combined and spacing PASS. | KAT: 1e-6 on F_v_Rd, F_t_Rd, F_b_Rd; shown digits otherwise | PASS | KAT ka-m20-88-shear-bearing; independent script |  | Header shows struct.connection-ec3@1.0.0. Hand check: F_v,Rd = 0.6 x 800 x 244.79 / 1.25 = 94.00 kN. |
+| 2 | Enter p_1 = 70 mm, p_2 = 70 mm, F_t,Ed = 30 kN. | p_1 = 70 mm. p_2 = 70 mm. F_t,Ed = 30 kN | B_p_Rd = 199.83 kN. u_t = 0.21276. u_vt = 0.68388. Spacing check passes (minimum p_1 48.4 mm, p_2 52.8 mm). Bar: PASS (governing combined). | KAT: 1e-6 | PASS | KAT ka-m20-88-shear-bearing; independent script |  | Hand check: u_vt = 50/94.001 + 30/(1.4 x 141.0) = 0.6839. |
+| 3 | Set grade to 10.9. Then untick Threads in the shear plane. | grade = 10.9. Threads on, then off | Threads in the plane: alpha_v = 0.5. F_v_Rd = 97.918 kN. Shank in the plane: alpha_v = 0.6. F_v_Rd = 150.8 kN. | KAT: 1e-6 | PASS | KAT ka-m20-109-threads; independent script |  | Hand check: 0.5 x 1000 x 244.79 / 1.25 = 97.92 kN. 0.6 x 1000 x 314.16 / 1.25 = 150.80 kN. |
+| 4 | Reset to the defaults. Step the grade through 4.6, 4.8, 5.6, 5.8, 6.8 and 8.8, with threads on and then off. | grade = each class. Threads on and off | F_v_Rd in kN (threads / shank): 4.6: 47.001 / 60.319. 4.8: 39.167 / 60.319. 5.6: 58.751 / 75.398. 5.8: 48.959 / 75.398. 6.8: 58.751 / 90.478. 8.8: 94.001 / 120.64. | Shown digits | PASS | independent script (tools/verification/struct.connection-ec3.py) |  | Each choice of grade. alpha_v is 0.6 for 4.6, 5.6 and 8.8, and 0.5 for 4.8. 5.8, 6.8 and 10.9, with threads in the plane. |
+| 5 | Reset to the defaults. Enter the weld inputs. | a = 4.2 mm. F_w,Ed = 800 N/mm. Steel S275. f_u = 410 MPa | f_vw_d = 222.79 MPa. F_w_Rd = 935.71 N/mm. u_w = 0.85496. | KAT: 1e-6 | PASS | KAT ka-weld-s275; independent script |  | Hand check: f_vw,d = 410 / (sqrt(3) x 0.85 x 1.25) = 222.79 MPa. |
+| 6 | Import Block P1. | Block P1: M16. 4.6. Threads off. n_s = 2. S235. t = 8 mm. e_1 = 35 mm. e_2 = 30 mm. F_v,Ed = 40 kN | F_v_Rd = 77.208 kN. alpha_b = 0.64815. F_b_Rd = 59.733 kN. u_v = 0.51808. u_b = 0.66964. Bar: PASS (bearing 0.670). | Shown digits | PASS | independent script (tools/verification/struct.connection-ec3.py) |  | Typical case. Two shear planes double F_v,Rd. |
+| 7 | Import Block P2. | Block P2: M24. 10.9. S355. t = 16 mm. p_1 = 65 mm. F_v,Ed = 150 kN. F_t,Ed = 60 kN | F_v_Rd = 141 kN. alpha_b = 0.58333. F_b_Rd = 219.52 kN. F_t_Rd = 253.8 kN. u_v = 1.0638. u_t = 0.2364. u_vt = 1.2327. Bar: FAIL (combined). | Shown digits | FAIL | independent script (tools/verification/struct.connection-ec3.py) |  | The inner-bolt alpha_d (p_1 / 3 d_0 - 1/4) governs alpha_b. |
+| 8 | Import Block P3. | Block P3: M12. t = 3 mm. F_t,Ed = 30 kN | F_v_Rd = 32.358 kN. F_t_Rd = 48.538 kN. B_p_Rd = 35.969 kN. u_t = 0.83406. u_vt = 0.75052. Punching governs tension. | Shown digits | PASS | independent script (tools/verification/struct.connection-ec3.py) |  | Boundary: smallest size and the lower plate thickness. u_t uses the smaller of F_t,Rd and B_p,Rd. |
+| 9 | Import Block P5. Then Block P6. | Block P5: M20 4.6, S355. Block P6: M27 8.8, d_0 = 33 mm | P5: alpha_b = 0.78431. F_b_Rd = 320 kN. u_v = 0.85105 (f_ub/f_u limits alpha_b). P6: alpha_b = 0.50505. k_1 = 1.6939. F_b_Rd = 90.918 kN. u_b = 1.0999. Bar: FAIL (bearing 1.10). | Shown digits | FAIL | independent script (tools/verification/struct.connection-ec3.py) |  | k_1 comes from the e_2 and p_2 terms. Hole entered by hand. |
+| 10 | Import Block W. | Block W: a = 5 mm. F_w,Ed = 800 N/mm. sigma_perp = -150 MPa. tau_perp = 90 MPa. tau_par = 60 MPa | f_vw_d = 251.47 MPa. F_w_Rd = 1257.3 N/mm. u_w = 0.63626. u_dir = 0.55102. u_perp = 0.42517. | Shown digits | PASS | independent script (tools/verification/struct.connection-ec3.py) |  | Simplified and directional methods together. Directional utilisation is the larger of the two conditions. |
+| 11 | Reset to the defaults. Enter the block-tearing inputs. | V_Ed = 200 kN. A_nt = 300 mm². A_nv = 900 mm² | V_eff_Rd = 241.29 kN. u_block = 0.82886. | Shown digits | PASS | independent script (tools/verification/struct.connection-ec3.py); hand: 410 x 300 / 1.25 + 275 x 900 / (sqrt(3) x 1.0) |  | Concentric loading only. See step 15. |
+| 12 | Enter e_2 = 9 mm. Then e_2 = 501 mm. Then size M20 with d_0 = 19 mm (below the bolt). | e_2 = 9 mm. e_2 = 501 mm. d_0 = 19 mm | Each case blocks. e_2: must be at least 10 mm. e_2: must be at most 500 mm. d_0 = 19: the hole must not be smaller than the bolt. | Text match | BLOCK | product behaviour (no number) |  | Negative test: out of range. |
+| 13 | Look at the unit list of F_v,Ed. Then paste Block N. | Block N: F_v,Ed = 50 mm | The import is refused, or F_v,Ed flags a unit error. F_v,Ed must not quietly show 50 kN. | Text match | BLOCK | product behaviour (no number) |  | Negative test: unit mismatch. Suspected defect in the import path (CalcSheetView.BuildField falls back to the default unit). Not yet in a P1 report. Record FAIL if F_v,Ed shows 50 kN without a message. |
+| 14 | Import Block F1. Read F_b,Rd. | Block F1: d_0 = 24 mm (oversize) | F_b,Rd is at most 0.8 x 99.394 = 79.515 kN, or a warning appears. Today F_b,Rd = 91.1 kN with no warning. | ±0.5 % | FAIL | hand formula: 0.8 x 99.39 kN (EN 1993-1-8, hole clause) |  | Known defect P1-struct.connection-ec3-01 (Medium, High in review); expect FAIL until fixed. Check the factor against your copy. |
+| 15 | Import Block B. Look for a loading choice (concentric or eccentric). | Block B: V_Ed = 200 kN | For an eccentric group V_eff,2 = 192.09 kN. The sheet offers the choice or states the limit. Today V_eff,Rd = 241.29 kN only. | ±0.5 % | FAIL | independent script (block_tearing_2) and hand formula: 0.5 x 410 x 300 / 1.25 + 275 x 900 / sqrt(3) |  | Known defect P1-struct.connection-ec3-02 (Medium); expect FAIL until fixed. |
+| 16 | Import Block F3. Read F_b,Rd. | Block F3: e_1 = e_2 = 60 mm. n_s = 1. One row | F_b,Rd is capped at 1.5 f_u d t / gamma_M2 = 98.4 kN for a single-lap joint with one row. or a warning appears. Today F_b,Rd = 149.09 kN. | ±0.5 % | FAIL | hand formula: 1.5 x 410 x 20 x 10 / 1.25 |  | Known defect P1-struct.connection-ec3-03 (Medium, High in review); expect FAIL until fixed. The cap already binds by 1 % at the defaults (99.39 > 98.40 kN). |
+| 17 | Reset to the defaults. Set size M12, e_1 = e_2 = 25 mm, F_v,Ed = 30 kN. Leave d_0 blank. | size = M12. d_0 blank (default 14 mm). F_v,Ed = 30 kN | With the 0.85 factor for a 2 mm clearance on M12 (classes 4.8 to 10.9 except 5.6). F_v,Rd = 27.505 kN and u_v = 1.0907, FAIL. Or the default hole is 13 mm. Today F_v,Rd = 32.358 kN, u_v = 0.92712, PASS. | ±0.5 % | FAIL | hand formula: 0.85 x 0.6 x 800 x 84.27 / 1.25 |  | Known defect P1-struct.connection-ec3-R1 (High); expect FAIL until fixed. The reviewer asks you to confirm the clause number against your copy. |
+| 18 | Reset to the defaults. Set size M36, e_1 = 100, e_2 = 60, p_1 = 25 mm, F_v,Ed = 100 kN. | size = M36. p_1 = 25 mm | The sheet blocks p_1 below d_0 as impossible, or alpha_b is zero. Today alpha_b is negative (about -0.036), F_b,Rd is negative (about -10.7 kN) and u_b is negative. Spacing fails. | Text match | BLOCK | P1 report (no number); independent script |  | Known defect P1-struct.connection-ec3-R2 (Low); expect FAIL until fixed. |
+| 19 | Reset to the defaults. Set e_1 = 40 mm and e_2 = 12 mm. | e_2 = 12 mm | The spacing check shows its failure and u_b is shown as infinite. Today the run stops with Division by zero. | Text match | FAIL | P1 report (no number) |  | Known defect P1-struct.connection-ec3-05 (Low); expect FAIL until fixed. |
+| 20 | Reset to the defaults. Set size M36, e_1 = e_2 = 500 mm. | size = M36. e_1 = e_2 = 500 mm | A warning says the end and edge distances exceed the Table 3.3 maxima. Today spacing shows pass with no warning. | Text match | WARN | P1 report (no number) |  | Known defect P1-struct.connection-ec3-06 (Low); expect FAIL until fixed. |
+| 21 | Reset to the defaults. Set f_y = 460 MPa with f_u = 340 MPa. | f_y = 460 MPa. f_u = 340 MPa | The sheet blocks f_y above f_u. Today it runs with no notice. | Text match | BLOCK | P1 report (no number) |  | Known defect P1-struct.connection-ec3-07 (Low); expect FAIL until fixed. |
+| 22 | Open Modules, Calculators, Bolt shear capacity. Enter M20, Class 10.9 (fub 1000, αv 0.5), 1 shear plane, safety factor 1. | Bolt diameter M20. Strength class 10.9. Shear planes 1. Safety factor 1 | Capacity = 0.5 x 1000 x 244.79 / 1000 = 122.4 kN. The same as this worksheet at gamma_M2 = 1. Today the legacy module gives 157.08 kN (gross shank area). | ±0.5 % | FAIL | hand formula: alpha_v f_ub A_s / SF with A_s = 244.79 mm²; independent script |  | Known defect P1-struct.connection-ec3-04 (High); expect FAIL until fixed. This step uses the legacy calculator, not this worksheet. |
+| 23 | Stale upstream. Follow procedure L in README.md. Upstream: struct.beam-formulas, a simply supported beam with a uniform load, saved as UP. Downstream: this sheet on its defaults. Link F_v,Ed to R_A of UP. Change the load on UP and save it. | Link: F_v,Ed to R_A | Orange banner on this sheet: Stale — and a button Update linked inputs. Record check is refused with a message that the calculation is stale. | Text match | BLOCK | product behaviour (no number) |  | See README procedure L. |
+
+## Import blocks
+Copy the whole line of a block to the clipboard. Then press *Import inputs (CSV/JSON)*. The status line must read "Imported n input(s)".
+
+**Block P1** — M16 class 4.6, shank in the plane, 2 shear planes, S235, t 8 mm. f_y 235, f_u 360 MPa, e_1 35, e_2 30 mm, F_v,Ed 40 kN.
+```json
+[{"Symbol":"grade","Text":"4.6"},{"Symbol":"size","Text":"M16"},{"Symbol":"steel","Text":"S235"},{"Symbol":"t","Number":8,"Unit":"mm"},{"Symbol":"f_y","Number":235,"Unit":"MPa"},{"Symbol":"f_u","Number":360,"Unit":"MPa"},{"Symbol":"e_1","Number":35,"Unit":"mm"},{"Symbol":"e_2","Number":30,"Unit":"mm"},{"Symbol":"F_v_Ed","Number":40,"Unit":"kN"},{"Symbol":"F_t_Ed","Number":0,"Unit":"kN"},{"Symbol":"threads","Flag":false},{"Symbol":"n_s","Number":2}]
+```
+
+**Block P2** — M24 class 10.9, S355, t 16 mm, e_1 60, e_2 45. p_1 65, p_2 80 mm, F_v,Ed 150 kN, F_t,Ed 60 kN.
+```json
+[{"Symbol":"grade","Text":"10.9"},{"Symbol":"size","Text":"M24"},{"Symbol":"steel","Text":"S355"},{"Symbol":"t","Number":16,"Unit":"mm"},{"Symbol":"f_y","Number":355,"Unit":"MPa"},{"Symbol":"f_u","Number":490,"Unit":"MPa"},{"Symbol":"e_1","Number":60,"Unit":"mm"},{"Symbol":"e_2","Number":45,"Unit":"mm"},{"Symbol":"F_v_Ed","Number":150,"Unit":"kN"},{"Symbol":"F_t_Ed","Number":60,"Unit":"kN"},{"Symbol":"p_1","Number":65,"Unit":"mm"},{"Symbol":"p_2","Number":80,"Unit":"mm"}]
+```
+
+**Block P3** — M12 class 8.8 in a 3 mm plate. e_1 = e_2 = 25 mm. F_v,Ed 10 kN, F_t,Ed 30 kN.
+```json
+[{"Symbol":"grade","Text":"8.8"},{"Symbol":"size","Text":"M12"},{"Symbol":"steel","Text":"S275"},{"Symbol":"t","Number":3,"Unit":"mm"},{"Symbol":"f_y","Number":275,"Unit":"MPa"},{"Symbol":"f_u","Number":410,"Unit":"MPa"},{"Symbol":"e_1","Number":25,"Unit":"mm"},{"Symbol":"e_2","Number":25,"Unit":"mm"},{"Symbol":"F_v_Ed","Number":10,"Unit":"kN"},{"Symbol":"F_t_Ed","Number":30,"Unit":"kN"}]
+```
+
+**Block P5** — M20 class 4.6 in S355. t 20 mm. f_u 510 MPa. e_1 100 mm. e_2 60 mm. F_v,Ed 40 kN.
+```json
+[{"Symbol":"grade","Text":"4.6"},{"Symbol":"size","Text":"M20"},{"Symbol":"steel","Text":"S355"},{"Symbol":"t","Number":20,"Unit":"mm"},{"Symbol":"f_y","Number":355,"Unit":"MPa"},{"Symbol":"f_u","Number":510,"Unit":"MPa"},{"Symbol":"e_1","Number":100,"Unit":"mm"},{"Symbol":"e_2","Number":60,"Unit":"mm"},{"Symbol":"F_v_Ed","Number":40,"Unit":"kN"},{"Symbol":"F_t_Ed","Number":0,"Unit":"kN"}]
+```
+
+**Block P6** — M27 class 8.8, hole d_0 33 mm, t 12 mm, e_1 50. e_2 45, p_1 = p_2 = 80 mm, F_v,Ed 100 kN.
+```json
+[{"Symbol":"grade","Text":"8.8"},{"Symbol":"size","Text":"M27"},{"Symbol":"steel","Text":"S275"},{"Symbol":"t","Number":12,"Unit":"mm"},{"Symbol":"f_y","Number":275,"Unit":"MPa"},{"Symbol":"f_u","Number":410,"Unit":"MPa"},{"Symbol":"e_1","Number":50,"Unit":"mm"},{"Symbol":"e_2","Number":45,"Unit":"mm"},{"Symbol":"F_v_Ed","Number":100,"Unit":"kN"},{"Symbol":"F_t_Ed","Number":0,"Unit":"kN"},{"Symbol":"d_0","Number":33,"Unit":"mm"},{"Symbol":"p_1","Number":80,"Unit":"mm"},{"Symbol":"p_2","Number":80,"Unit":"mm"}]
+```
+
+**Block W** — Weld, S355, f_u 490 MPa, a 5 mm. F_w,Ed 800 N/mm. sigma_perp -150, tau_perp 90, tau_par 60 MPa.
+```json
+[{"Symbol":"grade","Text":"8.8"},{"Symbol":"size","Text":"M20"},{"Symbol":"steel","Text":"S355"},{"Symbol":"t","Number":10,"Unit":"mm"},{"Symbol":"f_y","Number":355,"Unit":"MPa"},{"Symbol":"f_u","Number":490,"Unit":"MPa"},{"Symbol":"e_1","Number":40,"Unit":"mm"},{"Symbol":"e_2","Number":40,"Unit":"mm"},{"Symbol":"F_v_Ed","Number":0,"Unit":"kN"},{"Symbol":"F_t_Ed","Number":0,"Unit":"kN"},{"Symbol":"a","Number":5,"Unit":"mm"},{"Symbol":"F_w_Ed","Number":800,"Unit":"N/mm"},{"Symbol":"sigma_perp","Number":-150,"Unit":"MPa"},{"Symbol":"tau_perp","Number":90,"Unit":"MPa"},{"Symbol":"tau_par","Number":60,"Unit":"MPa"}]
+```
+
+**Block N** — Shear per bolt entered in millimetres.
+```json
+[{"Symbol":"F_v_Ed","Number":50,"Unit":"mm"}]
+```
+
+**Block F1** — M20 class 8.8, S275, 10 mm plate. e_1 = e_2 = 40 mm. Oversize hole d_0 = 24 mm.
+```json
+[{"Symbol":"grade","Text":"8.8"},{"Symbol":"size","Text":"M20"},{"Symbol":"steel","Text":"S275"},{"Symbol":"t","Number":10,"Unit":"mm"},{"Symbol":"f_y","Number":275,"Unit":"MPa"},{"Symbol":"f_u","Number":410,"Unit":"MPa"},{"Symbol":"e_1","Number":40,"Unit":"mm"},{"Symbol":"e_2","Number":40,"Unit":"mm"},{"Symbol":"F_v_Ed","Number":50,"Unit":"kN"},{"Symbol":"F_t_Ed","Number":0,"Unit":"kN"},{"Symbol":"d_0","Number":24,"Unit":"mm"}]
+```
+
+**Block B** — Block-tearing inputs of step 11 (V_Ed 200 kN, A_nt 300, A_nv 900 mm²).
+```json
+[{"Symbol":"grade","Text":"8.8"},{"Symbol":"size","Text":"M20"},{"Symbol":"steel","Text":"S275"},{"Symbol":"t","Number":10,"Unit":"mm"},{"Symbol":"f_y","Number":275,"Unit":"MPa"},{"Symbol":"f_u","Number":410,"Unit":"MPa"},{"Symbol":"e_1","Number":40,"Unit":"mm"},{"Symbol":"e_2","Number":40,"Unit":"mm"},{"Symbol":"F_v_Ed","Number":50,"Unit":"kN"},{"Symbol":"F_t_Ed","Number":0,"Unit":"kN"},{"Symbol":"V_Ed","Number":200,"Unit":"kN"},{"Symbol":"A_nt","Number":300,"Unit":"mm^2"},{"Symbol":"A_nv","Number":900,"Unit":"mm^2"}]
+```
+
+**Block F3** — M20 class 8.8, S275, 10 mm plate. e_1 = e_2 = 60 mm. One shear plane, one bolt row.
+```json
+[{"Symbol":"grade","Text":"8.8"},{"Symbol":"size","Text":"M20"},{"Symbol":"steel","Text":"S275"},{"Symbol":"t","Number":10,"Unit":"mm"},{"Symbol":"f_y","Number":275,"Unit":"MPa"},{"Symbol":"f_u","Number":410,"Unit":"MPa"},{"Symbol":"e_1","Number":60,"Unit":"mm"},{"Symbol":"e_2","Number":60,"Unit":"mm"},{"Symbol":"F_v_Ed","Number":50,"Unit":"kN"},{"Symbol":"F_t_Ed","Number":0,"Unit":"kN"}]
+```
+
+## Notes for the tester
+- Steps 14 to 22 are finding steps. Step 13 is the unit test. Step 23 is the stale test.
+- Two minor findings are not tested. -08: d_2 and d_3 constants shown rounded. R3: d_m uses the theoretical across-corners. Check B_p,Rd by hand if you want to.
