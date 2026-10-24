@@ -1,0 +1,77 @@
+# elec.enclosure-heat — independent re-derivation (Track P, P1)
+Calculator: Enclosure heat dissipation and fan sizing, version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Electrical/EnclosureHeatCalculator.cs. Spec: docs/calcs/electrical/elec.enclosure-heat.md.
+Script: tools/verification/elec.enclosure-heat.py (exit 0 = all KATs match; 98 rows: 8 KAT rows and 90 extra rows).
+Verdict: MATCH WITH FINDINGS
+
+All 8 KAT values match. All 9 extra probes match. The arithmetic is sound. The findings concern the IEC TR 60890 label and weak guards, not wrong numbers.
+Disclosure: I wrote the script before reading the Calculate method. While viewing the helper `Loads` I also saw the public `PressureAtAltitude` line. My script already used the ISA relation.
+
+## Method re-derived
+- Heat load P = Σ P_i n_i d_i + α I_sun A_sun. Units W.
+- Effective surface A_eff = Σ f_face A_face. Faces: top and bottom W·D, front and rear W·H, sides D·H. Unit m².
+- Natural rise ΔT = P/(h A_eff). Natural capacity at the limit P_nat = h A_eff (T_max − T_amb). Cooling unit P_cool = max(0, P − P_nat).
+- Air density ρ = p(z)/(R T_amb), R = 287.055 J/(kg K), T_amb in kelvin. Pressure from the ISO 2533 standard atmosphere: 101325 (1 − 2.25577e-5 z)^5.25588 Pa.
+- Forced airflow V = P/(ρ c_p ΔT_allow), c_p = 1006 J/(kg K), converted to m³/h. Net airflow credits P_nat. This matches the common manufacturer rule V ≈ 3.1 P/ΔT at sea level.
+- Fan duty: root of p_fan(V) − p_sys (V/V_ref)² = 0 on the piecewise-linear fan curve. I scanned for the first sign change and refined it by bisection. Utilisation u_fan = V_req/V_duty.
+- IEC TR 60890 (temperature-rise verification by calculation) and IEC 61439-1 clause 10.10 are the cited frameworks. Neither method is implemented. See -01.
+
+## Known-answer cases
+| Case | Symbol | KAT expected | Independent | Rel. diff | KAT tol | Result |
+|---|---|---|---|---|---|---|
+| ka-wall-mounted | P_total (W) | 300 | 300 | 0 | 1e-9 | PASS |
+| ka-wall-mounted | A_eff (m²) | 1.14 | 1.14 | 0 | 1e-9 | PASS |
+| ka-wall-mounted | dT_nat (K) | 47.847 | 47.8469 | 2.3e-6 | 1e-4 | PASS |
+| ka-wall-mounted | V_req (m³/h) | 62.48 | 62.4806 | 9.6e-6 | 1e-3 | PASS |
+| ka-wall-mounted | P_cool (W) | 205.95 | 205.95 | 0 | 1e-4 | PASS |
+| ka-fan-duty | V_duty (m³/h) | 113.75 | 113.746 | 3.6e-5 | 1e-3 | PASS |
+| ka-fan-duty | p_duty (Pa) | 25.88 | 25.8762 | 1.5e-4 | 2e-3 | PASS |
+| ka-fan-duty | u_fan | 0.5493 | 0.5493 | 2.2e-8 | 2e-3 | PASS |
+
+No KAT value disagrees with physics. The KAT calls itself "IEC TR 60890 / manufacturer guides". It follows the plain-area manufacturer method, not the IEC table method.
+
+## Extra probes (product vs independent)
+The script compares 8 to 11 symbols per case (P_total, A_eff, dT_nat, T_int, P_nat_max, P_cool, rho_air, V_req, V_req_net, and the fan values where used). The tolerance is 1e-5 because the product pressure exponent is 5.2559 and mine is 5.25588.
+
+| Probe | Inputs (short) | Symbol | Product | Independent | Rel. diff | Result |
+|---|---|---|---|---|---|---|
+| P1 free-standing | 0.6 × 1.8 × 0.4 m, 800 W, 2000 m, T_max 55 °C | A_eff | 2.76 m² | 2.76 | 0 | PASS |
+| P1 | same | V_req | 159.276 m³/h | 159.276 | <1e-6 | PASS |
+| P2 sunlit | 200 W + α 0.6 × 1000 W/m² × 1.5 m² | P_total | 1100 W | 1100 | 0 | PASS |
+| P3 zero load | 0 W | dT_nat | 0 K | 0 | 0 | PASS |
+| P4 large | 5 m cube, 50 kW, −20 °C, 4000 m | rho_air | 0.848243 | 0.848244 | 1.9e-6 | PASS |
+| P9 qty and duty | 3 × 100 W × 0.5 + 2 × 20 W | P_total | 190 W | 190 | 0 | PASS |
+| P11 six-point curve | 450 W, 45 °C, 1500 m, p_sys 30 Pa at 120 m³/h | V_duty | 143.199 m³/h | 143.199 | <1e-8 | PASS |
+| P6 zero resistance | p_sys 0 | V_duty | 200 m³/h | 200 | 0 | PASS |
+| P13 curve from 50 m³/h | KAT load | V_duty | 113.746 m³/h | 113.746 | <1e-8 | PASS |
+| P12 below sea level | −500 m | rho_air | 1.215040 | 1.215040 | 2e-7 | PASS |
+
+Unit input in kW for a load row (0.1 kW × 3) gave 300 W. The no-crossing case gave the warning and a failed check, as designed.
+
+## Implementation comparison
+| Aspect | Spec / textbook | Implementation | Agrees? |
+|---|---|---|---|
+| A_eff | IEC TR 60890 uses surface factors b per face (about 1.4 top, 0.9 vertical, from memory) | Plain area × user factor 0 to 1; worksheet step cites "IEC TR 60890 approach" | Label only, see -01 |
+| Temperature rise | IEC TR 60890 uses its own correlation at mid-height and at the top | ΔT = P/(h A_eff), mean rise, h editable (5.5) | Documented simplification |
+| Density | p(z)/(287.055 T_amb) | Same; exponent 5.2559 | Yes (2e-6 at 4000 m) |
+| Airflow | P/(ρ c_p ΔT) | Same; also a net form | Yes |
+| Fan duty | Intersection of the curve and the V² resistance | Bisection inside the curve range | Yes for one crossing |
+| Limit guard | T_max > T_amb | Block "limit" | Yes |
+| All faces covered | Block with a clear message | Block "engine: Division by zero" | Weak, see -02 |
+| Large rise | Method validity limit | No guard | See -03 |
+| Two crossings (stall dip) | Choose the stable point | Warning "no crossing" | See -04 |
+
+## Findings
+| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|
+| P1-elec.enclosure-heat-01 | Medium | The A_eff step is labelled "IEC TR 60890 approach", but it uses plain face areas. It uses neither the surface factors b nor the IEC temperature-rise correlation. A user can read the result as an IEC TR 60890 verification. | Floor-standing 0.6 × 1.8 × 0.4 m, all vertical faces free: plain A_eff 3.840 m², with b factors 3.576 m². The plain-area rise is 6.9 % lower (unconservative) for the same h. The wall-mounted KAT goes the other way, because the product gives the rear zero area. The b values are from memory; check them against your copy. | Rename the label to "plain exposed-area method (manufacturer practice)". State that it is not an IEC TR 60890 or IEC 61439-1 10.10 verification. Optionally offer the b factors. |
+| P1-elec.enclosure-heat-02 | Low | With all four exposed faces set to 0 (rear and bottom default 0), A_eff is 0. The result is the Block "engine: Division by zero". | f_top = f_front = f_left = f_right = 0. | Add a block rule "A_eff must be above 0", with a clear message. |
+| P1-elec.enclosure-heat-03 | Low | T_int is the mean air rise from a constant h. For large rises there is no validity warning, and no allowance for the hotter top of tall enclosures. | P2: ΔT 123.5 K, T_int 158.5 °C. Only the cooling-unit warning appears. | Warn when the rise exceeds a stated limit (for example 50 K). Label T_int as a mean value. |
+| P1-elec.enclosure-heat-04 | Info | A fan curve with a stall dip can cross the system curve twice. The product tests the end points only and reports "no crossing". | V_pts 0, 100, 200 m³/h with p 50, 0, 50 Pa and p_sys 10 Pa at 100 m³/h. | Scan for all sign changes. Report the stable (right-hand) point. |
+| P1-elec.enclosure-heat-05 | Info | The pressure exponent is 5.2559. The ISA value is 5.25588. The effect is below 2e-6. | P4 at 4000 m. | None needed. |
+
+## Notes for the owner's manual test
+- KAT 1 by hand: A_eff = 0.18 + 0.48 + 2 × 0.24 = 1.14 m². Then ΔT = 300/(5.5 × 1.14) = 47.85 K and V_req = 62.48 m³/h.
+- Cooling unit: 300 − 5.5 × 1.14 × 15 = 205.95 W. The net airflow is 42.89 m³/h.
+- Raise the altitude to 2000 m with the same load. Expect ρ = 0.8987 kg/m³ and V_req about 79.6 m³/h. Check by hand with p = 101325 (1 − 2.25577e-5 z)^5.25588.
+- Fan duty: curve (0, 60), (100, 30), (200, 0) with p_sys 20 Pa at 100 m³/h. Expect 113.75 m³/h, 25.88 Pa, u_fan 0.549.
+- Compare the area with your own IEC TR 60890 surface-factor sum. Expect a different A_eff and a different rise (-01).

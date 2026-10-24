@@ -365,8 +365,6 @@ def kats():
     Wx = plastic_modulus(s, "x")
     c = "ka-ub-457x191x98"
     J = torsion_fe([(sec_I_poly_coarse(467.2, 192.8, 11.4, 19.6, 10.2), 1)])
-    J_formula = j_I_rolled(467.2, 192.8, 11.4, 19.6, 10.2)
-    print(f"{'(info)':<26}{'J formula':<10}{'121':>14}{J_formula / CM4:>14.6g}  El Darwish-Johnston sum b t^3/3 + fillet term; FE J = {J / CM4:.4g} cm^4")
     Iw = iw_I(s["Iyy"], 467.2, 19.6) / 1e12
     for sym, kat, ind, tol in [("A", 125, s["A"] / CM2, 0.005), ("I_xx", 45730, s["Ixx"] / CM4, 0.005),
                                ("I_yy", 2347, s["Iyy"] / CM4, 0.005), ("i_x", 19.1, s["ix"] / CM, 0.005),
@@ -391,12 +389,14 @@ def kats():
                                ("i_x", 5.7735, s["ix"] / CM, 1e-4), ("J", 4580, j_rect_exact(100, 200) / CM4, 0.002)]:
         row(c, sym, kat, ind, tol)
     # 4. tube 200 x 10
-    s = sec_tube(200, 10)
+    # closed forms for the circle (a polygon of 4000 chords per quarter would carry 4e-5 error)
+    D, d = 200.0, 180.0
     c = "ka-tube"
-    Jt = math.pi * (200 ** 4 - 180 ** 4) / 32
-    for sym, kat, ind, tol in [("A", 59.690, s["A"] / CM2, 1e-4), ("I_xx", 2701.1, s["Ixx"] / CM4, 1e-4),
-                               ("W_el_x", 270.11, s["Wel_x"] / CM3, 1e-4),
-                               ("W_pl_x", 361.33, plastic_modulus(s, "y") / CM3, 1e-4), ("J", 5402.2, Jt / CM4, 1e-4)]:
+    for sym, kat, ind, tol in [("A", 59.690, math.pi * (D ** 2 - d ** 2) / 4 / CM2, 1e-4),
+                               ("I_xx", 2701.1, math.pi * (D ** 4 - d ** 4) / 64 / CM4, 1e-4),
+                               ("W_el_x", 270.11, math.pi * (D ** 4 - d ** 4) / 64 / (D / 2) / CM3, 1e-4),
+                               ("W_pl_x", 361.33, (D ** 3 - d ** 3) / 6 / CM3, 1e-4),
+                               ("J", 5402.2, math.pi * (D ** 4 - d ** 4) / 32 / CM4, 1e-4)]:
         row(c, sym, kat, ind, tol)
     # 5. unequal angle polygon
     s = sec_polygon([(0, 0), (90, 0), (90, 12), (12, 12), (12, 150), (0, 150)])
