@@ -63,7 +63,7 @@
 - [x] A-2 M4 shaft, E5 fault protection, M6 weld group; drive train E1 → M4 → M5 → M2 (`v0.26.0/addA-2-machine`)
 - [x] A-3 S4 EN 1993-1-8 bolts and welds; v0.25.2 bolt shear reconciled, ADR-0169 (`v0.26.0/addA-3-connections`)
 - [x] A-4 E4 conductor sizing, B4 U-value and room heat loss; motor-circuit pack; licensed records refuse export (`v0.26.0/addA-4-records`)
-- [ ] A-5 S6 base plate (`v0.26.0/addA-5-baseplate`)
+- [x] A-5 S6 base plate (`v0.26.0/addA-5-baseplate`)
 - [ ] A7 five linked chains: integration tests + issued pack worked examples
 - [ ] Security + every colour team re-run on the delta (Addendum A sections)
 - [ ] A8 owner test pack + handover Addendum A section
