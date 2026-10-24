@@ -44,6 +44,8 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.ImportRequested += () => _ = GuardedAsync(ImportAsync, "import the inputs");
         _view.LinkRequested += (input, upstream, output) => _ = GuardedAsync(() => LinkAsync(input, upstream, output), "link that input");
         _view.UpdateLinksRequested += () => _ = GuardedAsync(UpdateLinksAsync, "update the linked inputs");
+        _view.ApplyRecordRequested += id => _ = GuardedAsync(() => ApplyRecordAsync(id), "apply that record");
+        _view.SaveRecordRequested += draft => _ = GuardedAsync(() => SaveRecordAsync(draft), "save that record");
         events?.Subscribe(this);
     }
 
@@ -66,6 +68,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         if (id is null || await _service.Store.FindInstanceAsync(id.Value).ConfigureAwait(true) is not { } instance)
         {
             _view.SetLinkTargets([]);
+            _view.SetRecords([]);
             return;
         }
 
@@ -89,6 +92,55 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         }
 
         _view.SetLinkTargets(targets);
+
+        var records = _service.Catalogue.Find(instance.TemplateReference) is null ? [] : await _service.RecordsForAsync(instance.TemplateReference).ConfigureAwait(true);
+        _view.SetRecords([.. records.Take(200).Select(r => new CalcSheetView.RecordChoice(r.Id, $"{r.Citation} · rev {r.Revision}"))]);
+    }
+
+    private async Task ApplyRecordAsync(Guid recordId)
+    {
+        if (_view.CurrentInstance is not { } instance)
+            return;
+
+        var result = await _service.ApplyRecordAsync(instance.Id, recordId).ConfigureAwait(true);
+
+        if (result.Succeeded && result.Instance is { } applied && _service.Catalogue.Find(applied.TemplateReference) is { } entry)
+            _view.ShowTemplate(entry, applied);
+
+        await ReportAsync(result, "Record applied: those inputs now cite it, its edition and its revision.").ConfigureAwait(true);
+    }
+
+    /// <summary>Saves the form, stores its values of one record kind as a new reference record, then applies it so the inputs cite it.</summary>
+    private async Task SaveRecordAsync(CalcSheetView.RecordDraft draft)
+    {
+        if (_view.CurrentInstance is not { } instance || _view.SelectedTemplate?.Template.RecordKinds?.FirstOrDefault(k => k.Kind == draft.Kind) is not { } kind)
+            return;
+
+        var form = _view.ReadForm();
+        var saved = await _service.UpdateInputsAsync(instance.Id, form.Values).ConfigureAwait(true);
+
+        if (!saved.Succeeded)
+        {
+            await ReportAsync(saved, string.Empty).ConfigureAwait(true);
+            return;
+        }
+
+        var values = kind.Symbols.Select(form.Find).OfType<CalcInputValue>().Where(v => v.Number is not null || v.Text is not null || v.Rows is not null)
+            .Select(v => new CalcDataValue(v.Symbol, v.Number, v.Unit, v.Text, v.Rows)).ToList();
+        var (record, refusal) = await _service.SaveRecordAsync(new CalcDataRecord(Guid.Empty, draft.Kind, draft.Title, 0, draft.SourceTitle, draft.Edition, draft.TableOrClause, draft.LicenceHolder, string.Empty, draft.LicensedSource, CalcDataOrigin.UserEntered, values, default)).ConfigureAwait(true);
+
+        if (record is null)
+        {
+            _view.ShowStatus("Record not saved: " + refusal);
+            return;
+        }
+
+        var result = await _service.ApplyRecordAsync(instance.Id, record.Id).ConfigureAwait(true);
+
+        if (result.Succeeded && result.Instance is { } applied && _service.Catalogue.Find(applied.TemplateReference) is { } entry)
+            _view.ShowTemplate(entry, applied);
+
+        await ReportAsync(result, $"Saved '{record.Title}' as a reference record (rev {record.Revision}{(record.LicensedSource ? ", licensed: its values never leave in an export" : string.Empty)}) and applied it.").ConfigureAwait(true);
     }
 
     private async Task LinkAsync(string input, Guid upstreamId, string output)

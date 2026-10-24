@@ -1,9 +1,10 @@
 # STATUS — 2026-10-24 (Addendum A)
-Addendum A: 2/13 — A-0 L1 result linking + reference records merged; next A-1 (M5, S5, B5, E6, B6)
-Phase: 7/7 — every §10 gate passed; v0.26.0-rc1 ready at 6afead3 (tag push blocked for this session: owner step below)
+Addendum A: 3/13 — A-0 L1 linking + records and A-1 M5, S5, B5, E6, B6 + records form merged; next A-2 (M4, E5, M6; drive train)
+Unconfirmed (Addendum A, DA-11): M5 `ka-skf-6206` (ratings via a distributor listing); S5 `ka-designers-guide`, worked example `office-floor-beam-uk-na` (UK NA values); B5 `ka-incropera-11-1`; E6 `ka-peukert` (Linden), `ka-psu-derating` (Phoenix Contact curve); B6 `ka-manufacturer-dt30`. Not pinned (owner copies needed): NTN Bearing Wizard, Shigley Ch. 11, IStructE EC3 manual, Çengel & Ghajar Ch. 11, CIBSE Guide B1, vessel-manufacturer example
+Phase: 7/7 — every §10 gate passed at 6afead3; Addendum A extends v0.26.0 (no tag, DA-01)
 Done since last: Windows CI on release/v0.26.0 @ 6afead3 green (run 40014821084: all Build & Test legs Debug + Release, governance, dependency scan); earlier red runs were the xUnit analyser rules, system-font PDF size, a Monte Carlo budget and a missing ADR Register row, all fixed; Black review fixes (ADR-0166); legacy-calculator review (D-38) → v0.27.0
 §10 gates: [x] CI green on Windows (Grey) and Linux gate green  [x] 12 calculators to DoD  [x] 47 known-answer cases, 0 failing, 3 unconfirmed-reference (M1, S3, B2)  [x] security review + 9 colour-team reports, no open Critical/High  [x] issued sheets open from Reports, PDFs < 200 KB, Issue in one transaction  [x] ADR-0165/0166, DECISIONS, CHANGELOG, release notes, THIRD-PARTY-NOTICES, handover
-Owner step: tag the candidate — `git tag -a v0.26.0-rc1 6afead3 -m "v0.26.0-rc1" && git push origin v0.26.0-rc1` (or GitHub → Releases → new tag v0.26.0-rc1 on 6afead3). This session's Git access refuses tag pushes (HTTP 403).
+No tag: Addendum A forbids tagging or releasing (DA-01); the local rc1 tag from an earlier session is left alone.
 Tests: Core 7,221 / Desktop 1,193 / Calc 849 pass, 0 fail, 1 skipped (D-32); 32 worked examples (4 unconfirmed) + 1 pack
 Build: green (Linux + Windows CI)   Branch: release/v0.26.0 @ 6afead3 (PR #31 → main, draft)
 Next: v0.27.0 on release/v0.27.0 — legacy calculator replacement (D-38, ADR-0167); Phase 1 in progress

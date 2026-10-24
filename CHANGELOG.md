@@ -27,3 +27,9 @@
 ### Addendum A — twelve more calculators (no tag)
 - Reference records (§A3, DA-05): tabulated values carry source, edition and amendment, table or clause, licence holder, who entered them and a licensed-source flag; revisioned, pinned by the calculations that use them; a revised record makes them stale. Values from a licensed record are withheld from every export (DA-06).
 - L1 result linking (ADR-0168): an input links to another calculation's output, pinned to its revision; output ports; dimension, cycle and 20-link checks; staleness runs through the whole chain and blocks Check, Issue and pack issue; "Update to revision n" re-pins (a checked or issued calculation as a new revision); pack templates build a linked pack issued as one Evidence bundle; the worksheet form links an input and shows the stale marker.
+- M5 rolling bearing life `mech.bearing-life` (ISO 281:2007, ISO 76:2006): duty cycle, a₁ by the 2007 Weibull form (1990 values stated), a_ISO capped at 50, κ < 0.1 hard FAIL, κ > 4 treated as 4; ratings, X/Y/e and a_ISO as records.
+- S5 EN 1990 load combinations `struct.load-combinations`: 6.10 or 6.10a/6.10b, SLS 6.14b/6.15b/6.16b, accidental 6.11b; every variable action leads in turn; max/min envelopes (DA-07).
+- B5 heat exchanger `bs.heat-exchanger`: ε-NTU rating and sizing for counterflow, parallel, 1-2 shell and tube, crossflow (approximate) and C_r = 0, with LMTD and F as a cross-check.
+- E6 load budget `elec.load-budget`: demand per bus, heat to E2, PSU with derating, transformer with a starting-peak check, battery with derates and optional Peukert; the engine gains VA and var (DA-09).
+- B6 sealed system `bs.sealed-system`: emitter outputs by the characteristic equation and the expansion vessel (Kell density, DA-10).
+- The worksheet form applies a reference record to a draft and saves tabulated inputs as a new record (licensed flag included).

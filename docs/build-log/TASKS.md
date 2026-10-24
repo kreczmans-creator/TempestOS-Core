@@ -59,7 +59,7 @@
 ## Addendum A — twelve more calculators (v0.26.0, no tag)
 - [x] A1 orientation (`docs/build-log/addendum-A-orientation.md`)
 - [x] A-0 L1 result linking + calc packs (`v0.26.0/addA-0-linking`); §A3 reference records and §A5 export lock (groundwork)
-- [ ] A-1 M5 bearing life, S5 EN 1990 combinations, B5 heat exchanger, E6 load budget, B6 sealed system (`v0.26.0/addA-1-quick`)
+- [x] A-1 M5 bearing life, S5 EN 1990 combinations, B5 heat exchanger, E6 load budget, B6 sealed system; records in the form (`v0.26.0/addA-1-quick`)
 - [ ] A-2 M4 shaft, E5 fault protection, M6 weld group; drive train E1 → M4 → M5 → M2 (`v0.26.0/addA-2-machine`)
 - [ ] A-3 S4 EN 1993-1-8 bolts and welds; v0.25.2 bolt shear reconciled (`v0.26.0/addA-3-connections`)
 - [ ] A-4 E4 conductor sizing, B4 U-value and room heat loss; motor-circuit pack; licensed records refuse export (`v0.26.0/addA-4-records`)
