@@ -1,6 +1,6 @@
 # Handover — Addendum C Track P (parallel, read-only verification)
 
-Date: 2026-10-24. Base: `release/v0.26.0` @ 614ddf89 (Addendum A-4 and A-5 merged).
+Date: 2026-10-24. Base: `release/v0.26.0` @ e283c07e (Addendum A-4, A-5 and A7a merged).
 Branch: `claude/tempestos-v0260-test-readiness-s4jwh1`, rebased on that release head.
 The cloud session could push only to its `claude/` branch, so it did not use `v0.26.0/addC-parallel`.
 Track S merges this branch with `--no-ff`. It touches only `docs/verification/` and `tools/verification/`.
@@ -9,14 +9,14 @@ Track P changed no product code, test project, migration, build-log file or CI w
 ## What was verified
 | Item | Output | Result |
 |---|---|---|
-| P1 independent re-derivation | `rederivation/<id>.md`, `tools/verification/<id>.py` | 28 calculators, 2 packs, the Desktop sheet. All 107 KATs match independently. Every script exits 0. |
+| P1 independent re-derivation | `rederivation/<id>.md`, `tools/verification/<id>.py` | 28 calculators, 3 packs, the Desktop sheet. All 109 KATs match independently. Every script exits 0. |
 | P1 senior review | "Reviewed" column and "Independent review" section in each report | Every Critical, High and Medium reproduced with the probe or rejected. |
-| P1 re-check | "Status @ 614ddf89" column | 10 reports re-checked after DA-17/DA-18 and A-4/A-5. 6 findings fixed on release. |
+| P1 re-check | "Status @ <sha>" columns | Reports re-checked after DA-17/DA-18, A-4/A-5 and A7a. 7 findings fixed on release. |
 | P2 KAT sources | `kat-sources.md` | 35 cases checked: 28 confirmed, 5 still unconfirmed, 2 contradicted. |
 | P3 record templates | `record-templates/` | 51 header-only CSV templates with READMEs, in priority order, matched to the record kinds in code. |
 | P4 manual tests | `manual-tests/` | One script per calculator and per pack, with negative tests and one step per finding. |
 | P5 consistency audit | `consistency-audit.md` | 60 findings, glossary seeds, port rename map. |
-| P6 risk triage | `risk-triage.md` (regenerate with `tools/verification/triage.py`) | Open: 4 Critical, 44 High, 61 Medium. Test order for the owner. |
+| P6 risk triage | `risk-triage.md` (regenerate with `tools/verification/triage.py`) | Open: 4 Critical, 47 High, 67 Medium. Test order for the owner. |
 | P7 oracle map | `oracles.md` | Free external cross-checks per calculator, with inputs and tolerance. |
 
 ## Critical findings (fix before owner testing)
@@ -25,11 +25,11 @@ Track P changed no product code, test project, migration, build-log file or CI w
 3. **Drive-train pack:** motor RMS torque reaches the shaft as steady torque. Peak and reversing torque are never checked.
 4. **Drive-train pack:** no gear ratio or efficiency on the torque link. It is unconservative by about i·η when i > 1.
 
-## High findings by area (44 open)
-- Electrical: E4 ambient temperature ignored unless C_a is typed; no C_c for buried cable; E5 resistivity, let-through and curve-end gaps; E1 holding and braking torque; E6 duty-weighted currents; motor-circuit device type, protective conductor and duty propagation.
+## High findings by area (47 open)
+- Electrical: E4 ambient temperature ignored unless C_a is typed; no C_c for buried cable; E5 resistivity, let-through and curve-end gaps; E1 holding and braking torque, blank load torque passes; E6 duty-weighted currents; motor-circuit device type, protective conductor and duty propagation.
 - Structural: S4 oversize holes, single-lap cap, M12 clearance; S3 k-factor default and stale shear-area dimensions; S2 couple on a member and blank load position; S6 CHS t_req.
 - Mechanical: M3 linear check at one bolt, ΣA x′y′, collinear moment, assembly stress; M6 I_uxy; M4 Rayleigh sign; M2 18 mm step, N9, p/r–u deviations, hollow-shaft bore, external collapse; M5 Y default and Y₁.
-- Building services: B1 NPSH gaps and trim law; B2 wet leaving state on a dry coil; B6 vessel margins (owner to confirm BS EN 12828); B4 MVHR infiltration dropped.
+- Building services: B1 NPSH gaps, trim law, speed change not passed to E1; B2 wet leaving state on a dry coil; B6 vessel margins (owner to confirm BS EN 12828); B4 MVHR infiltration dropped (also in the wet-heating pack).
 - Desktop: a seeded quantity whose unit is not in the pick list keeps its number and takes the default unit.
 The ranked list with evidence is in `risk-triage.md`.
 
