@@ -17,7 +17,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
     public const string Sizing = "sizing (given duty)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.BuildingServices, "Heat exchanger (LMTD and ε-NTU)",
+        Id, "1.1.0", CalcDiscipline.BuildingServices, "Heat exchanger (LMTD and ε-NTU)",
         "Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.",
         "Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max\n" +
         "Overall coefficient with fouling: U_f = 1/(1/U + R_f)\n" +
@@ -86,6 +86,9 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
             new CalcOutputPort("Q", "kW", "Heat duty"),
             new CalcOutputPort("T_h_out", "degC", "Hot-side outlet temperature"),
             new CalcOutputPort("T_c_out", "degC", "Cold-side outlet temperature"),
+            new CalcOutputPort("dT_c", "K", "Cold-side temperature rise, T_c,out − T_c,in (→ B1 dT_load)"),
+            new CalcOutputPort("T_c_m", "degC", "Mean cold-side temperature (→ B1 fluid temperature T)"),
+            new CalcOutputPort("cp_c", "J/(kg*K)", "Cold-side specific heat as entered (→ B1 cp_load, so a glycol mixture reaches the pump flow)"),
             new CalcOutputPort("A_req", "m^2", "Required area (sizing)"),
         ],
         RecordKinds:
@@ -174,6 +177,10 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
         c.Record("T_h_out", "T_h,in − Q/C_h", $"{F(thi - 273.15)} °C − {F(q)} / {F(c.Si("C_h"))}", ScalarValue.Of(tho - 273.15, "degC"), "Hot-side outlet temperature");
         c.Record("T_c_out", "T_c,in + Q/C_c", $"{F(tci - 273.15)} °C + {F(q)} / {F(c.Si("C_c"))}", ScalarValue.Of(tco - 273.15, "degC"), "Cold-side outlet temperature");
 
+        // The cold stream's rise and mean temperature: what a pump on the cold circuit (B1) is sized for.
+        c.Record("dT_c", "T_c,out − T_c,in = Q/C_c", $"{F(q)} / {F(c.Si("C_c"))}", ScalarValue.Of(q / c.Si("C_c"), kelvin), "Cold-side temperature rise");
+        c.Record("T_c_m", "(T_c,in + T_c,out)/2", $"({F(tci - 273.15)} °C + {F(tco - 273.15)} °C)/2", ScalarValue.Of((tci + tco) / 2 - 273.15, "degC"), "Mean cold-side temperature");
+
         var parallel = arrangement == Parallel;
         var dt1 = parallel ? thi - tci : thi - tco;
         var dt2 = parallel ? tho - tco : tho - tci;
@@ -222,7 +229,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
 
     private static void Outputs(CalcRunContext c, bool sizing)
     {
-        foreach (var (symbol, text) in new[] { ("C_r", "Capacity ratio"), ("NTU", "Transfer units"), ("eps", "Effectiveness"), ("Q", "Heat duty"), ("T_h_out", "Hot outlet"), ("T_c_out", "Cold outlet"), ("dT_app", "Approach"), ("UA", "UA") })
+        foreach (var (symbol, text) in new[] { ("C_r", "Capacity ratio"), ("NTU", "Transfer units"), ("eps", "Effectiveness"), ("Q", "Heat duty"), ("T_h_out", "Hot outlet"), ("T_c_out", "Cold outlet"), ("dT_c", "Cold-side rise"), ("T_c_m", "Cold-side mean"), ("cp_c", "Cold-side specific heat"), ("dT_app", "Approach"), ("UA", "UA") })
             c.Output(symbol, text);
 
         if (sizing)

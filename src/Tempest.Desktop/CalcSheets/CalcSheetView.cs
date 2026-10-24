@@ -26,7 +26,7 @@ namespace Tempest.Desktop.CalcSheets;
 /// watermark. The view raises events and renders what it is given; the
 /// coordinator talks to the service.
 /// </summary>
-public sealed class CalcSheetView : UserControl
+public sealed partial class CalcSheetView : UserControl
 {
     public const string Heading = "Calculation worksheets";
     public const string CatalogueAutomationName = "Worksheet catalogue";
@@ -210,6 +210,7 @@ public sealed class CalcSheetView : UserControl
                 SaveRecordRequested?.Invoke(draft);
         };
 
+        WireSavedAndPacks();
         Content = BuildLayout();
     }
 
@@ -581,6 +582,9 @@ public sealed class CalcSheetView : UserControl
 
     public void ShowStatus(string message) => _status.Text = message;
 
+    /// <summary>The status line as shown.</summary>
+    public string StatusText => _status.Text ?? string.Empty;
+
     public void ShowProblems(IEnumerable<string> problems) => _problems.Text = string.Join(Environment.NewLine, problems);
 
     /// <summary>Reads the form into an input set, every value as typed with its unit and provenance. Unparseable numbers become NaN so validation names them.</summary>
@@ -939,6 +943,8 @@ public sealed class CalcSheetView : UserControl
         var left = new StackPanel { Spacing = DesignTokens.SpaceSm, Margin = DesignTokens.PanelPadding };
         left.Children.Add(new TextBlock { Text = Heading, FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeHeading });
         left.Children.Add(_catalogue);
+        left.Children.Add(BuildSavedPanel());
+        left.Children.Add(BuildPacksPanel());
 
         var right = new StackPanel { Spacing = DesignTokens.SpaceSm, Margin = DesignTokens.PanelPadding };
         var head = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceLg };
@@ -1002,7 +1008,7 @@ public sealed class CalcSheetView : UserControl
         right.Children.Add(actions);
         right.Children.Add(_status);
 
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("300,*") };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("380,*") };
         var leftScroll = new ScrollViewer { Content = left };
         var rightScroll = new ScrollViewer { Content = right };
         AutomationProperties.SetName(leftScroll, "Worksheets left column");

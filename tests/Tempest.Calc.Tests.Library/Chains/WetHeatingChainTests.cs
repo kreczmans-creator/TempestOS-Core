@@ -5,6 +5,7 @@ using Tempest.Calc.Electrical;
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
 using Tempest.Core.Evidence;
+using static Tempest.Calc.Tests.Library.Chains.ChainKit;
 
 namespace Tempest.Calc.Tests.Library.Chains;
 
@@ -21,73 +22,15 @@ public sealed class WetHeatingChainTests
         calculators: [.. BuildingServicesCalculators.All, .. ElectricalCalculators.All],
         packTemplates: CalcPackTemplates.All);
 
-    private static double Si(CalcInstance instance, string symbol) => instance.Outputs.Single(o => o.Symbol == symbol).Si!.Value;
-
-    private static double InputSi(CalcInstance instance, string symbol)
-    {
-        var input = instance.Inputs.Single(i => i.Symbol == symbol);
-        return Tempest.Calc.Engine.Units.UnitCatalog.Parse(input.Unit ?? string.Empty).ToSi(input.Number!.Value);
-    }
-
-    private static double CellSi(CalcInstance instance, string table, int row, string column)
-    {
-        var cell = instance.Inputs.Single(i => i.Symbol == table).Rows![row].Get(column)!;
-        return Tempest.Calc.Engine.Units.UnitCatalog.Parse(cell.Unit ?? string.Empty).ToSi(cell.Number!.Value);
-    }
-
-    private static List<CalcInputValue> From(CalcTemplate template, Func<CalcInputValue, bool>? keep = null, params CalcInputValue[] overrides)
-    {
-        var set = new CalcInputSet(CalcTemplateHasher.NewSheetInputs(template).Values.Where(v => keep?.Invoke(v) ?? true));
-
-        foreach (var value in overrides)
-            set.Set(value);
-
-        return [.. set.Values.Select(v => v with { Provenance = v.Provenance ?? Spec })];
-    }
-
-    /// <summary>The inputs of every step: two rooms from the B4 worked cases, B6 given those two rows, a pipe run, a pump speed and a rotary load.</summary>
-    private static Dictionary<string, IReadOnlyList<CalcInputValue>> Steps()
-    {
-        var b4 = new RoomHeatLossCalculator().Template;
-        var b6 = new SealedSystemCalculator().Template;
-        var b1 = new PipeFlowCalculator().Template;
-        var e1 = new MotorSizingCalculator().Template;
-
-        return new(StringComparer.Ordinal)
-        {
-            ["b4a"] = [.. b4.TestCases[0].Inputs.Select(v => v with { Provenance = Spec })],
-            ["b4b"] = [.. b4.TestCases[1].Inputs.Select(v => v with { Provenance = Spec })],
-
-            // B6 is given its two rooms: instantiating never creates rows. Φ is a placeholder the links replace.
-            ["b6"] = From(b6, v => v.Symbol != "rooms", SealedSystemCalculator.Rooms(("Room A", 1, 0, 4), ("Room B", 1, 0, 4))),
-
-            // B1: heat load, ΔT and the mean water temperature come from B6, so no design flow or temperature is given and the
-            // specific heat of water is the sheet's assumed constant; the pump runs at 2800 rpm.
-            ["b1"] = From(b1, v => v.Symbol is not ("Q" or "T" or "Phi_load" or "dT_load" or "cp_load"),
-                CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidWater),
-                PipeFlowCalculator.Segments(("primary flow and return", 40, 28, 0.045, 12, 0, 3, "discharge")),
-                CalcInputValue.Quantity("n_pump", 2800, "rpm")),
-
-            // E1: a circulator on a direct drive in continuous duty; B1's shaft torque is its load torque and B1's shaft speed its
-            // load speed, so only the run-up time and the inertia are given.
-            ["e1"] = From(e1, null,
-                CalcInputValue.Choice("mechanism", MotorSizingCalculator.MechDirectRotary),
-                CalcInputValue.Choice("duty_mode", MotorSizingCalculator.DutyContinuous),
-                CalcInputValue.Quantity("J_L", 0.002, "kg*m^2"),
-                CalcInputValue.Quantity("J_mech", 0, "kg*m^2"),
-                CalcInputValue.Quantity("t_start", 5, "s")),
-        };
-    }
+    private static Dictionary<string, IReadOnlyList<CalcInputValue>> Steps(LibraryTestHost host) => ChainInputs.WetHeating(host);
 
     private static async Task<CalcPackInstantiation> InstantiateAsync(LibraryTestHost host)
     {
         Assert.Null(host.Service.ValidatePackTemplate(CalcPackTemplates.WetHeating));
-        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.WetHeating, await host.ProjectAsync(), "Plant room heating", Steps());
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.WetHeating, await host.ProjectAsync(), "Plant room heating", Steps(host));
         Assert.True(refusal is null, refusal);
         return made!;
     }
-
-    private static async Task<CalcInstance> Fresh(LibraryTestHost host, CalcPackInstantiation made, string key) => (await host.Store.FindInstanceAsync(made.Instances[key].Id))!;
 
     [Fact]
     public async Task Room_Heat_Reaches_The_Sealed_System_The_Pipework_Flow_And_The_Motor_Load()
@@ -251,8 +194,8 @@ public sealed class WetHeatingChainTests
     public async Task B6_Is_Refused_Rows_It_Was_Not_Given()
     {
         var host = Host();
-        var steps = Steps();
-        steps.Remove("b6");
+        var steps = Steps(host);
+        steps["b6"] = [.. steps["b6"].Where(v => v.Symbol != "rooms")];
         var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.WetHeating, await host.ProjectAsync(), "Plant room heating", steps);
         Assert.Null(made);
         Assert.StartsWith("Step 'b6'", refusal);
@@ -263,7 +206,7 @@ public sealed class WetHeatingChainTests
     {
         var host = Host();
         var project = await host.ProjectAsync();
-        var inputs = Steps()["b1"].Where(v => v.Symbol != "n_pump").ToList();
+        var inputs = Steps(host)["b1"].Where(v => v.Symbol != "n_pump").ToList();
         var temperature = CalcInputValue.Quantity("T", 70, "degC", Spec);
 
         // Φ alone: blocked with the reason.

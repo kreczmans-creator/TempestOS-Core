@@ -105,6 +105,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
 
 5. RESULTS
   f_ub = 800 MPa    Bolt ultimate strength
+  f_yb = 640 MPa    Bolt yield strength
   A_s = 244.79 mm²    Stress area
   alpha_v = 0.6    Shear factor
   F_v_Rd = 94.001 kN    Shear resistance
@@ -137,5 +138,5 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   WARNING record.f_u: f_u: a tabulated value not taken from a reference record (Plate strengths); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: struct.connection-ec3@1.0.0
+  Template: struct.connection-ec3@1.1.0
   Known-answer cases passed: 5/5

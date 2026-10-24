@@ -56,71 +56,91 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
       = Σ member end moments − applied nodal couple
       = 0 kN·m
         Moment reaction at node 1
-  [10] R2_x = reaction at node 2, x
+  [10] R1_x_abs = |R_x| at node 1
+      = |0| kN
+      = 0 kN
+        Magnitude of the horizontal reaction at node 1
+  [11] R1_m_abs = |M| at node 1
+      = |0| kN·m
+      = 0 kN·m
+        Magnitude of the moment reaction at node 1
+  [12] R2_x = reaction at node 2, x
       = Σ member end forces − applied nodal loads
       = 0 kN
         Horizontal reaction at node 2
-  [11] R2_y = reaction at node 2, y
+  [13] R2_y = reaction at node 2, y
       = Σ member end forces − applied nodal loads
       = 30 kN
         Vertical reaction at node 2
-  [12] R2_m = reaction at node 2, moment
+  [14] R2_m = reaction at node 2, moment
       = Σ member end moments − applied nodal couple
       = 0 kN·m
         Moment reaction at node 2
-  [13] sum_R_y = Σ R_y
+  [15] R2_x_abs = |R_x| at node 2
+      = |0| kN
+      = 0 kN
+        Magnitude of the horizontal reaction at node 2
+  [16] R2_m_abs = |M| at node 2
+      = |0| kN·m
+      = 0 kN·m
+        Magnitude of the moment reaction at node 2
+  [17] sum_R_y = Σ R_y
       = all supports
       = 60 kN
         Total vertical reaction (equilibrium check against the applied load)
-  [14] sum_R_x = Σ R_x
+  [18] sum_R_x = Σ R_x
       = all supports
       = 0 kN
         Total horizontal reaction
-  [15] M_max_e1 = member 1: max sagging M
+  [19] M_max_e1 = member 1: max sagging M
       = at x = 3 m from node 1
       = 45 kN·m
         Member 1 maximum moment
-  [16] M_min_e1 = member 1: min (hogging) M
+  [20] M_min_e1 = member 1: min (hogging) M
       = at x = 0 m
       = 0 kN·m
         Member 1 minimum moment
-  [17] V_e1 = member 1: max |V|
+  [21] M_abs_e1 = member 1: max |M|
+      = max(|45|, |0|) kN·m
+      = 45 kN·m
+        Member 1 greatest moment magnitude (sagging or hogging)
+  [22] V_e1 = member 1: max |V|
       = 30 kN
       = 30 kN
         Member 1 maximum shear
-  [18] N_e1 = member 1: max |N| (tension +)
+  [23] N_e1 = member 1: max |N| (tension +)
       = 0 kN
       = 0 kN
         Member 1 axial force of greatest magnitude
-  [19] d_e1 = member 1: max |deflection|
+  [24] d_e1 = member 1: max |deflection|
       = at x = 3 m
       = 10.045 mm
         Member 1 maximum transverse deflection
-  [20] M_max = max sagging moment
+  [25] M_max = max sagging moment
       = member 1 at x = 3 m
       = 45 kN·m
         Maximum moment in the reported combination
-  [21] x_Mmax = position of M_max
+  [26] x_Mmax = position of M_max
       = from node i of member 1
       = 3 m
         Position of the maximum moment
-  [22] M_min = min (hogging) moment
+  [27] M_min = min (hogging) moment
       = member 1 at x = 0 m
       = 0 kN·m
         Minimum moment in the reported combination
-  [23] V_max = max |V|
+  [28] V_max = max |V|
       = member 1
       = 30 kN
         Maximum shear in the reported combination
-  [24] N_max = max tension
+  [29] N_max = max tension
       = member 1
       = 0 kN
         Maximum axial tension
-  [25] N_min = max compression (negative)
+  [30] N_min = max compression (negative)
       = member 1
       = 0 kN
         Maximum axial compression
-  [26] d_max = max |deflection|
+  [31] d_max = max |deflection|
       = member 1 at x = 3 m
       = 10.045 mm
         Maximum transverse deflection
@@ -129,13 +149,18 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
   R1_x = 0 kN    R_x node 1
   R1_y = 30 kN    R_y node 1
   R1_m = 0 kN·m    M node 1
+  R1_x_abs = 0 kN    |R_x| node 1
+  R1_m_abs = 0 kN·m    |M| node 1
   R2_x = 0 kN    R_x node 2
   R2_y = 30 kN    R_y node 2
   R2_m = 0 kN·m    M node 2
+  R2_x_abs = 0 kN    |R_x| node 2
+  R2_m_abs = 0 kN·m    |M| node 2
   sum_R_y = 60 kN    Σ R_y
   sum_R_x = 0 kN    Σ R_x
   M_max_e1 = 45 kN·m    M max, member 1
   M_min_e1 = 0 kN·m    M min, member 1
+  M_abs_e1 = 45 kN·m    |M| max, member 1
   V_e1 = 30 kN    |V| max, member 1
   N_e1 = 0 kN    N, member 1
   d_e1 = 10.045 mm    δ max, member 1
@@ -154,5 +179,5 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
   No warnings.
 
 8. VERIFICATION
-  Template: struct.frame-2d@1.0.0
+  Template: struct.frame-2d@1.1.0
   Known-answer cases passed: 5/5

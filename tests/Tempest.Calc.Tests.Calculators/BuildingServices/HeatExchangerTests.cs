@@ -83,4 +83,42 @@ public sealed class HeatExchangerTests
         var r = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Choice("arrangement", HeatExchangerCalculator.Crossflow)));
         Assert.Contains(r.Warnings, w => w.RuleId == "crossflow-approx");
     }
+
+    [Fact]
+    public void Cold_Side_Rise_And_Mean_Temperature_Are_Ports_For_The_Cold_Circuit()
+    {
+        // Balanced counterflow, NTU = 1: Q = 125.4 kW into 4180 W/K, so the cold stream rises 30 K from 20 °C and averages 35 °C.
+        var rated = CalcRunner.Run(Hx, Defaults());
+        Assert.Equal(30, rated.OutputSi("dT_c"), 1e-9);
+        Assert.Equal(35 + 273.15, rated.OutputSi("T_c_m"), 1e-9);
+        Assert.Contains(Hx.Template.OutputPorts!, p => p is { Symbol: "dT_c", Unit: "K" });
+        Assert.Contains(Hx.Template.OutputPorts!, p => p is { Symbol: "T_c_m", Unit: "degC" });
+
+        // Sizing: the rise is Q_req / (m_c c_p,c) whatever the duty, and the mean is halfway between inlet and outlet.
+        Gen.Select(Gen.Double[0.5, 50], Gen.Double[0.05, 2], Gen.Double[-20, 40]).Sample((q, mc, tin) =>
+        {
+            var r = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Choice("mode", HeatExchangerCalculator.Sizing)).With(CalcInputValue.Quantity("Q_req", q, "kW"))
+                .With(CalcInputValue.Quantity("m_c", mc, "kg/s")).With(CalcInputValue.Quantity("T_c_in", tin, "degC")).With(CalcInputValue.Quantity("m_h", 2, "kg/s")));
+
+            if (r.IsBlocked)
+                return;
+
+            Assert.Equal(q * 1e3 / (mc * 4180), r.OutputSi("dT_c"), 1e-9);
+            Assert.Equal(tin + 273.15 + r.OutputSi("dT_c") / 2, r.OutputSi("T_c_m"), 1e-9);
+            Assert.Equal(r.OutputSi("T_c_out") - r.OutputSi("dT_c"), tin + 273.15, 1e-9);
+        }, iter: 60);
+    }
+
+    [Fact]
+    public void The_Cold_Side_Specific_Heat_Is_A_Port_So_A_Glycol_Mixture_Reaches_The_Pump_Flow()
+    {
+        var r = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("cp_c", 3700, "J/(kg*K)")));
+        Assert.Equal(3700, r.OutputSi("cp_c"), 1e-9);
+        Assert.Contains(Hx.Template.OutputPorts!, p => p is { Symbol: "cp_c", Unit: "J/(kg*K)" });
+
+        // Air on the hot side (c_p 1006 J/kg·K): the duty needs no table, only the stream's capacity rate.
+        var air = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("cp_h", 1006, "J/(kg*K)")).With(CalcInputValue.Quantity("m_h", 0.4, "kg/s")).With(CalcInputValue.Quantity("U", 60, "W/(m^2*K)")));
+        Assert.False(air.IsBlocked);
+        Assert.Equal(0.4 * 1006, air.Steps.Single(s => s.Symbol == "C_min").Result is Tempest.Calc.Engine.Values.ScalarValue c ? c.Si : double.NaN, 9);
+    }
 }

@@ -1,0 +1,1153 @@
+{
+  "b4a": [
+    {
+      "Symbol": "U_target",
+      "Number": 0.3,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
+    {
+      "Symbol": "V",
+      "Number": 40,
+      "Unit": "m^3",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "elements",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "Cavity wall"
+            },
+            "area": {
+              "Number": 20,
+              "Unit": "m^2"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Window"
+            },
+            "area": {
+              "Number": 3,
+              "Unit": "m^2"
+            },
+            "U_user": {
+              "Number": 1.4,
+              "Unit": "W/(m^2*K)"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "f_add",
+      "Number": 0,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "layers",
+      "Rows": [
+        {
+          "Cells": {
+            "element": {
+              "Text": "Cavity wall"
+            },
+            "name": {
+              "Text": "Outer brick leaf"
+            },
+            "d": {
+              "Number": 102.5,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.77,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "Cavity wall"
+            },
+            "name": {
+              "Text": "PIR insulation"
+            },
+            "d": {
+              "Number": 100,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.022,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "Cavity wall"
+            },
+            "name": {
+              "Text": "Inner block leaf"
+            },
+            "d": {
+              "Number": 100,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.15,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "Cavity wall"
+            },
+            "name": {
+              "Text": "Plaster"
+            },
+            "d": {
+              "Number": 13,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.57,
+              "Unit": "W/(m*K)"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4 row(s)"
+    },
+    {
+      "Symbol": "method",
+      "Text": "BS EN 12831-1 elemental",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "BS EN 12831-1 elemental"
+    },
+    {
+      "Symbol": "n",
+      "Number": 0.5,
+      "Unit": "1/h",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "theta_e",
+      "Number": -3,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "-3"
+    },
+    {
+      "Symbol": "theta_int",
+      "Number": 21,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    },
+    {
+      "Symbol": "y_tb",
+      "Number": 0,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "b4b": [
+    {
+      "Symbol": "U_target",
+      "Number": 0.3,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
+    {
+      "Symbol": "V",
+      "Number": 50,
+      "Unit": "m^3",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "elements",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "Cavity wall"
+            },
+            "area": {
+              "Number": 15,
+              "Unit": "m^2"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Partition"
+            },
+            "area": {
+              "Number": 12,
+              "Unit": "m^2"
+            },
+            "theta_adj": {
+              "Number": 18,
+              "Unit": "degC"
+            },
+            "Rg": {
+              "Number": 0.18,
+              "Unit": "m^2*K/W"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Ground floor"
+            },
+            "area": {
+              "Number": 10,
+              "Unit": "m^2"
+            },
+            "f": {
+              "Number": 0.6
+            },
+            "U_user": {
+              "Number": 0.25,
+              "Unit": "W/(m^2*K)"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3 row(s)"
+    },
+    {
+      "Symbol": "f_add",
+      "Number": 0,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "layers",
+      "Rows": [
+        {
+          "Cells": {
+            "element": {
+              "Text": "Cavity wall"
+            },
+            "name": {
+              "Text": "Outer brick leaf"
+            },
+            "d": {
+              "Number": 102.5,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.77,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "Cavity wall"
+            },
+            "name": {
+              "Text": "PIR insulation"
+            },
+            "d": {
+              "Number": 100,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.022,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "Cavity wall"
+            },
+            "name": {
+              "Text": "Inner block leaf"
+            },
+            "d": {
+              "Number": 100,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.15,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "Cavity wall"
+            },
+            "name": {
+              "Text": "Plaster"
+            },
+            "d": {
+              "Number": 13,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.57,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "Partition"
+            },
+            "name": {
+              "Text": "Plasterboard"
+            },
+            "d": {
+              "Number": 12.5,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.25,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "Partition"
+            },
+            "name": {
+              "Text": "Plasterboard"
+            },
+            "d": {
+              "Number": 12.5,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.25,
+              "Unit": "W/(m*K)"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6 row(s)"
+    },
+    {
+      "Symbol": "method",
+      "Text": "BS EN 12831-1 elemental",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "BS EN 12831-1 elemental"
+    },
+    {
+      "Symbol": "n",
+      "Number": 0.6,
+      "Unit": "1/h",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.6"
+    },
+    {
+      "Symbol": "theta_e",
+      "Number": -3,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "-3"
+    },
+    {
+      "Symbol": "theta_int",
+      "Number": 21,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    },
+    {
+      "Symbol": "theta_supply",
+      "Number": 16,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "16"
+    },
+    {
+      "Symbol": "y_tb",
+      "Number": 0.05,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.05"
+    }
+  ],
+  "b6": [
+    {
+      "Symbol": "V_pipe",
+      "Number": 20,
+      "Unit": "L",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    },
+    {
+      "Symbol": "V_plant",
+      "Number": 10,
+      "Unit": "L",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "dT_method",
+      "Text": "arithmetic mean (catalogue rating)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "arithmetic mean (catalogue rating)"
+    },
+    {
+      "Symbol": "h_static",
+      "Number": 5,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "n",
+      "Number": 1.3,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.3"
+    },
+    {
+      "Symbol": "p_f",
+      "Number": 2.5,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2.5"
+    },
+    {
+      "Symbol": "p_margin",
+      "Number": 0.3,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
+    {
+      "Symbol": "p_prv",
+      "Number": 3,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "rooms",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "Room A"
+            },
+            "Phi": {
+              "Number": 350.67318344737697,
+              "Unit": "W",
+              "Provenance": {
+                "Kind": "Link",
+                "Reference": "calc:4f7ac4e5d6604cc7a7f9281391f1ffbb#Phi_HL",
+                "Revision": "A",
+                "IsSufficientToIssue": true
+              }
+            },
+            "V_em": {
+              "Number": 4,
+              "Unit": "L"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Room B"
+            },
+            "Phi": {
+              "Number": 243.87155425219942,
+              "Unit": "W",
+              "Provenance": {
+                "Kind": "Link",
+                "Reference": "calc:c191ed22a0954d2d97290f3e15e907d1#Phi_HL",
+                "Revision": "A",
+                "IsSufficientToIssue": true
+              }
+            },
+            "V_em": {
+              "Number": 4,
+              "Unit": "L"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "t_f",
+      "Number": 75,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "75"
+    },
+    {
+      "Symbol": "t_fill",
+      "Number": 10,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "t_i",
+      "Number": 20,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    },
+    {
+      "Symbol": "t_max",
+      "Number": 85,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "85"
+    },
+    {
+      "Symbol": "t_r",
+      "Number": 65,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "65"
+    }
+  ],
+  "b1": [
+    {
+      "Symbol": "D_ratio",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "Phi_load",
+      "Number": 594.5447376995764,
+      "Unit": "W",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:2371df126b3b43bf9265b7a9a90f7609#Phi_tot",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "594.545"
+    },
+    {
+      "Symbol": "T",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:2371df126b3b43bf9265b7a9a90f7609#t_m",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "dT_load",
+      "Number": 10,
+      "Unit": "K",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:2371df126b3b43bf9265b7a9a90f7609#dT_fr",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "eta_pump",
+      "Number": 0.7,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.7"
+    },
+    {
+      "Symbol": "fluid",
+      "Text": "water",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "water"
+    },
+    {
+      "Symbol": "h_out",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "mu_custom",
+      "Number": 800,
+      "Unit": "mPa*s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "800"
+    },
+    {
+      "Symbol": "n_pump",
+      "Number": 2800,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2800"
+    },
+    {
+      "Symbol": "n_ratio",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "p_atm",
+      "Number": 101.325,
+      "Unit": "kPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "101.325"
+    },
+    {
+      "Symbol": "rho_custom",
+      "Number": 888,
+      "Unit": "kg/m^3",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "888"
+    },
+    {
+      "Symbol": "segments",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "primary flow and return"
+            },
+            "L": {
+              "Number": 40,
+              "Unit": "m"
+            },
+            "D": {
+              "Number": 28,
+              "Unit": "mm"
+            },
+            "eps": {
+              "Number": 0.045,
+              "Unit": "mm"
+            },
+            "K": {
+              "Number": 12
+            },
+            "L_eq": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "dz": {
+              "Number": 3,
+              "Unit": "m"
+            },
+            "side": {
+              "Text": "discharge"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1 row(s)"
+    },
+    {
+      "Symbol": "v_max",
+      "Number": 3,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "z_s",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "e1": [
+    {
+      "Symbol": "F_p",
+      "Number": 0,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "J_L",
+      "Number": 0.002,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.002"
+    },
+    {
+      "Symbol": "J_mech",
+      "Number": 0,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "J_motor",
+      "Number": 0.0002,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.0002"
+    },
+    {
+      "Symbol": "J_ratio_max",
+      "Number": 10,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "SF",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "T_L",
+      "Number": 0.002037166336930465,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:35a4a6f408da4a7389928158e1b2b581#T_shaft",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.00203717"
+    },
+    {
+      "Symbol": "T_peak",
+      "Number": 6,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
+    },
+    {
+      "Symbol": "T_rated",
+      "Number": 2,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "duty_mode",
+      "Text": "continuous",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "continuous"
+    },
+    {
+      "Symbol": "eta",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "f_acc",
+      "Number": 0.3333333333333333,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.333333"
+    },
+    {
+      "Symbol": "i",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "m",
+      "Number": 50,
+      "Unit": "kg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "mechanism",
+      "Text": "direct rotary",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "direct rotary"
+    },
+    {
+      "Symbol": "mu",
+      "Number": 0.1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.1"
+    },
+    {
+      "Symbol": "n_L",
+      "Number": 2800,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:35a4a6f408da4a7389928158e1b2b581#n_shaft",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2800"
+    },
+    {
+      "Symbol": "n_max",
+      "Number": 10000,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10000"
+    },
+    {
+      "Symbol": "p_screw",
+      "Number": 10,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "profile",
+      "Text": "trapezoidal",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "trapezoidal"
+    },
+    {
+      "Symbol": "s",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_dwell",
+      "Number": 0.5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_move",
+      "Number": 0.5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_start",
+      "Number": 5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "theta",
+      "Number": 0,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ]
+}

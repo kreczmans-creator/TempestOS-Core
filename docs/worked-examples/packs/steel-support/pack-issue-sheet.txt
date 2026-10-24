@@ -1,0 +1,1403 @@
+CALCULATION SHEET — ISSUED
+Project: Equipment support ES-4
+Calc ID: Equipment support steelwork calc pack    Revision: A
+Title: Calculation pack
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+
+PACK INDEX
+  1. Load combinations — Load combinations (EN 1990) — rev A — ISSUED
+  2. Support frame — Beam and 2D frame analysis — rev A — ISSUED
+  3. Column check — EN 1993-1-1 member checks (basic) — rev A — ISSUED — Member interaction (simplified) PASS
+  4. Arm joint bolt group — Bolt group (elastic method) — rev A — ISSUED — Circular shear–tension interaction (governing bolt) PASS
+  5. Arm connection bolts — Bolts and fillet welds (EN 1993-1-8) — rev A — ISSUED — Bolt tension and punching PASS
+  6. Holding-down bolts — Bolts and fillet welds (EN 1993-1-8) — rev A — ISSUED — Bolt shear PASS
+  7. Column base plate — Column base plate (EN 1993-1-8) — rev A — ISSUED — Base plate tension T-stub (bending at the bolts) PASS
+
+REVISIONS
+  A  2026-10-24  unknown  First issue
+
+1. SCOPE AND METHOD
+Calculation pack: the calculations listed in the index, issued together under one issue sheet.
+
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+
+3. ASSUMPTIONS
+
+4. WORKING
+
+5. RESULTS
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: pack
+  Content hash: —
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 34/34
+  Test run: 2026-10-24 18:29 UTC
+  Application: TempestOS test
+
+CALCULATION SHEET — ISSUED
+Project: Equipment support ES-4
+Calc ID: Load combinations    Revision: A
+Title: Load combinations (EN 1990)
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+
+1. SCOPE AND METHOD
+Design values of a single action effect (a force, a moment or a load intensity) under every EN 1990 Annex A1 combination for buildings: ULS persistent/transient, SLS characteristic, frequent and quasi-permanent, and accidental. Every variable action is tried as the leading one; the maximum and minimum envelopes and their governing combinations are reported.
+ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on γ_G,sup) ULS 6.10a: Σ γ_G·G + Σ γ_Q·K_FI·ψ_0·Q_i; 6.10b: Σ ξ·γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i Permanent factor: γ_G,sup when the action adds to the effect sought, γ_G,inf when it opposes it Variable actions: included only when they add to the effect sought (otherwise zero) SLS characteristic 6.14b: Σ G + Q_1 + Σ ψ_0·Q_i; frequent 6.15b: Σ G + ψ_1·Q_1 + Σ ψ_2·Q_i; quasi-permanent 6.16b: Σ G + Σ ψ_2·Q_i Accidental 6.11b: Σ G + A_d + ψ_1·Q_1 + Σ ψ_2·Q_i
+  Ref: EN 1990:2002+A1:2005 cl. 6.4.3.2 — Combinations for persistent or transient design situations (6.10, 6.10a, 6.10b)
+  Ref: EN 1990:2002+A1:2005 cl. 6.4.3.3 — Combinations for accidental design situations (6.11b)
+  Ref: EN 1990:2002+A1:2005 cl. 6.5.3 — Serviceability combinations (6.14b, 6.15b, 6.16b)
+  Ref: EN 1990:2002+A1:2005 Annex A1, Tables A1.1, A1.2(B) — Application for buildings: ψ and γ factors
+  Ref: UK NA to BS EN 1990:2002+A1:2005 NA.A1.2(A)–(C) — UK values of partial factors
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  actions | Actions (one effect, signed) | 2 row(s) |  | spec: SPEC-STR-09 §2 (actions) | any
+  actions[1] |  | name = Equipment dead load; category = G permanent; F_k = -12 |  |  | 
+  actions[2] |  | name = Maintenance load; category = E storage; F_k = -8 |  |  | 
+  unit | Unit of the effect | kN |  | spec: SPEC-STR-09 §2 (actions) | any
+  method | ULS expression | 6.10 |  | spec: SPEC-STR-09 §2 (actions) | any
+  gamma_G_sup | γ_G,sup (unfavourable permanent) | 1.35 |  | assumption: Sheet default value; no project figure given. | 1 … 2
+  gamma_G_inf | γ_G,inf (favourable permanent) | 1 |  | assumption: Sheet default value; no project figure given. | 0.8 … 1.2
+  gamma_Q | γ_Q (variable) | 1.5 |  | assumption: Sheet default value; no project figure given. | 1 … 2
+  xi | ξ reduction for 6.10b | 0.85 |  | assumption: Sheet default value; no project figure given. | 0.8 … 1
+  K_FI | K_FI consequence-class factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.9 … 1.1
+
+3. ASSUMPTIONS
+  A1. One scalar action effect; every action's characteristic value is its contribution to that effect, with sign. (Linear superposition (EN 1990 cl. 6.3.1 representative values).)
+  A2. Buildings only (Annex A1); no bridges, fatigue or seismic combinations. (EN 1990 Annex A1 scope.)
+  A3. Without a ψ record the EN 1990 Annex A1 recommended values are used, labelled on the sheet; the UK National Annex (NA.A1.2(A)–(C)) values come from a user record. (§A5: no NA table ships.)
+  A4. Each permanent action takes γ_G,sup or γ_G,inf by whether it adds to or opposes the effect sought; for EQU single-source checks, enter a source's permanent actions as one row. (EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.)
+  A5. gamma_G_sup (γ_G,sup (unfavourable permanent)) is taken as 1.35. (Sheet default value; no project figure given.)
+  A6. gamma_G_inf (γ_G,inf (favourable permanent)) is taken as 1. (Sheet default value; no project figure given.)
+  A7. gamma_Q (γ_Q (variable)) is taken as 1.5. (Sheet default value; no project figure given.)
+  A8. xi (ξ reduction for 6.10b) is taken as 0.85. (Sheet default value; no project figure given.)
+  A9. K_FI (K_FI consequence-class factor) is taken as 1. (Sheet default value; no project figure given.)
+  A10. ψ factors: EN 1990 Annex A1 recommended values (Table A1.1). (No ψ record entered.)
+
+4. WORKING
+  [8] C1 = γ_G,inf·G1    « EN 1990 cl. 6.4.3.2
+      = 1×-12
+      = -12 kN
+        ULS 6.10, no variable action (max)
+  [9] C2 = 1·G1    « EN 1990 cl. 6.5.3
+      = 1×-12
+      = -12 kN
+        SLS characteristic 6.14b, no variable action (max)
+  [10] C3 = 1·G1    « EN 1990 cl. 6.5.3
+      = 1×-12
+      = -12 kN
+        SLS frequent 6.15b, no variable action (max)
+  [11] C4 = 1·G1    « EN 1990 cl. 6.5.3
+      = 1×-12
+      = -12 kN
+        SLS quasi-permanent 6.16b (max)
+  [12] D1 = γ_G,sup·K_FI·G1 + γ_Q·K_FI·Q2    « EN 1990 cl. 6.4.3.2
+      = 1.35×-12 + 1.5×-8
+      = -28.2 kN
+        ULS 6.10, Maintenance load leading (min)
+  [13] D2 = 1·G1 + 1·Q2    « EN 1990 cl. 6.5.3
+      = 1×-12 + 1×-8
+      = -20 kN
+        SLS characteristic 6.14b, Maintenance load leading (min)
+  [14] D3 = 1·G1 + ψ₁·Q2    « EN 1990 cl. 6.5.3
+      = 1×-12 + 0.9×-8
+      = -19.2 kN
+        SLS frequent 6.15b, Maintenance load leading (min)
+  [15] D4 = 1·G1 + ψ₂·Q2    « EN 1990 cl. 6.5.3
+      = 1×-12 + 0.8×-8
+      = -18.4 kN
+        SLS quasi-permanent 6.16b (min)
+  [16] E_d_max = maximum over the combinations
+      = ULS 6.10, no variable action
+      = -12 kN
+        ULS design effect, maximum
+  [17] E_d_min = minimum over the combinations
+      = ULS 6.10, Maintenance load leading
+      = -28.2 kN
+        ULS design effect, minimum
+  [18] E_k_max = maximum over the combinations
+      = SLS characteristic 6.14b, no variable action
+      = -12 kN
+        SLS characteristic effect, maximum
+  [19] E_k_min = minimum over the combinations
+      = SLS characteristic 6.14b, Maintenance load leading
+      = -20 kN
+        SLS characteristic effect, minimum
+  [20] E_fr_max = maximum over the combinations
+      = SLS frequent 6.15b, no variable action
+      = -12 kN
+        SLS frequent effect, maximum
+  [21] E_fr_min = minimum over the combinations
+      = SLS frequent 6.15b, Maintenance load leading
+      = -19.2 kN
+        SLS frequent effect, minimum
+  [22] E_qp_max = maximum over the combinations
+      = SLS quasi-permanent 6.16b
+      = -12 kN
+        SLS quasi-permanent effect, maximum
+  [23] E_qp_min = minimum over the combinations
+      = SLS quasi-permanent 6.16b
+      = -18.4 kN
+        SLS quasi-permanent effect, minimum
+
+5. RESULTS
+  E_d_max = -12 kN    ULS design effect, maximum
+  E_d_min = -28.2 kN    ULS design effect, minimum
+  E_d_gov = "ULS 6.10, no variable action"    ULS design effect, governing (max)
+  E_k_max = -12 kN    SLS characteristic effect, maximum
+  E_k_min = -20 kN    SLS characteristic effect, minimum
+  E_k_gov = "SLS characteristic 6.14b, no variable action"    SLS characteristic effect, governing (max)
+  E_fr_max = -12 kN    SLS frequent effect, maximum
+  E_fr_min = -19.2 kN    SLS frequent effect, minimum
+  E_fr_gov = "SLS frequent 6.15b, no variable action"    SLS frequent effect, governing (max)
+  E_qp_max = -12 kN    SLS quasi-permanent effect, maximum
+  E_qp_min = -18.4 kN    SLS quasi-permanent effect, minimum
+  E_qp_gov = "SLS quasi-permanent 6.16b"    SLS quasi-permanent effect, governing (max)
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  WARNING record.gamma_G_sup: gamma_G_sup: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_G_inf: gamma_G_inf: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_Q: gamma_Q: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.xi: xi: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: struct.load-combinations@1.0.0
+  Content hash: cd8d66887b67a0ca
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-24 18:29 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Equipment support ES-4
+Calc ID: Support frame    Revision: A
+Title: Beam and 2D frame analysis
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+
+1. SCOPE AND METHOD
+Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.
+Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ terms; end releases by static condensation; supports by removing freedoms or adding spring stiffness; equivalent nodal loads from exact fixed-end forces; K u = F solved by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism). Internal forces and deflections from the member end actions and Macaulay functions of the span loads; extremes at stations plus the zero-shear and zero-slope points found by bisection.
+  Ref: Hibbeler, Structural Analysis Ch. 16 — Plane frame analysis using the stiffness method
+  Ref: Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
+  Ref: BS EN 1990 6.4.3 — Combinations of actions (user-entered factors)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  E | Default modulus of elasticity | 210 | GPa | drawing: DRG-STR-310 rev B | 1 … 500 GPa
+  nodes | Nodes | 3 row(s) |  | drawing: DRG-STR-310 rev B | any
+  nodes[1] |  | id = 1; x = 0 m; y = 0 m; support = fixed |  |  | 
+  nodes[2] |  | id = 2; x = 0 m; y = 3 m; support = free |  |  | 
+  nodes[3] |  | id = 3; x = 1 m; y = 3 m; support = free |  |  | 
+  elements | Elements | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
+  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm^2; I = 4568 cm^4; rel_i = no; rel_j = no |  |  | 
+  elements[2] |  | id = 2; i = 2; j = 3; A = 58.7 cm^2; I = 4568 cm^4; rel_i = no; rel_j = no |  |  | 
+  loads | Loads | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
+  loads[1] |  | case = 1; kind = nodal; target = 3; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -28.2 kN; M = 0 kN*m |  | F_y: link: Load combinations rev A · E_d_min | 
+  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 5 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
+  combinations | Combinations (blank = each case alone) | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
+  combinations[1] |  | name = ULS; case = 1; factor = 1 |  |  | 
+  combinations[2] |  | name = ULS; case = 2; factor = 1 |  |  | 
+  report | Combination to report in detail (blank = first) | ULS |  | drawing: DRG-STR-310 rev B | any
+  n_div | Stations per member | 20 |  | assumption: Sheet default value; no project figure given. | 4 … 100
+
+3. ASSUMPTIONS
+  A1. Linear elastic, small displacements, first order; no shear deformation, no P–Δ, no buckling. (Euler–Bernoulli direct stiffness.)
+  A2. Members are prismatic between nodes and connect rigidly unless a release is stated; a release transmits no moment at that end. (Static condensation of the released rotation.)
+  A3. Distributed loads act perpendicular to the member unless marked as gravity loads, which act in global −y per metre of member length. (Load table convention.)
+  A4. n_div (Stations per member) is taken as 20. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [4] n_nodes = nodes
+      = 3
+      = 3
+        Nodes in the model
+  [5] n_elements = elements
+      = 2
+      = 2
+        Members in the model
+  [6] n_comb = combinations
+      = ULS
+      = 1
+        Load combinations analysed
+  [7] comb = reported combination
+      = ULS
+      = "ULS"
+        The combination detailed below
+  [8] R1_x = reaction at node 1, x
+      = Σ member end forces − applied nodal loads
+      = -5 kN
+        Horizontal reaction at node 1
+  [9] R1_y = reaction at node 1, y
+      = Σ member end forces − applied nodal loads
+      = 28.2 kN
+        Vertical reaction at node 1
+  [10] R1_m = reaction at node 1, moment
+      = Σ member end moments − applied nodal couple
+      = 43.2 kN·m
+        Moment reaction at node 1
+  [11] R1_x_abs = |R_x| at node 1
+      = |-5| kN
+      = 5 kN
+        Magnitude of the horizontal reaction at node 1
+  [12] R1_m_abs = |M| at node 1
+      = |43.2| kN·m
+      = 43.2 kN·m
+        Magnitude of the moment reaction at node 1
+  [13] sum_R_y = Σ R_y
+      = all supports
+      = 28.2 kN
+        Total vertical reaction (equilibrium check against the applied load)
+  [14] sum_R_x = Σ R_x
+      = all supports
+      = -5 kN
+        Total horizontal reaction
+  [15] M_max_e1 = member 1: max sagging M
+      = at x = 3 m from node 1
+      = -28.2 kN·m
+        Member 1 maximum moment
+  [16] M_min_e1 = member 1: min (hogging) M
+      = at x = 0 m
+      = -43.2 kN·m
+        Member 1 minimum moment
+  [17] M_abs_e1 = member 1: max |M|
+      = max(|-28.2|, |-43.2|) kN·m
+      = 43.2 kN·m
+        Member 1 greatest moment magnitude (sagging or hogging)
+  [18] V_e1 = member 1: max |V|
+      = 5 kN
+      = 5 kN
+        Member 1 maximum shear
+  [19] N_e1 = member 1: max |N| (tension +)
+      = -28.2 kN
+      = -28.2 kN
+        Member 1 axial force of greatest magnitude
+  [20] d_e1 = member 1: max |deflection|
+      = at x = 3 m
+      = 17.92 mm
+        Member 1 maximum transverse deflection
+  [21] M_max_e2 = member 2: max sagging M
+      = at x = 1 m from node 2
+      = 0 kN·m
+        Member 2 maximum moment
+  [22] M_min_e2 = member 2: min (hogging) M
+      = at x = 0 m
+      = -28.2 kN·m
+        Member 2 minimum moment
+  [23] M_abs_e2 = member 2: max |M|
+      = max(|0|, |-28.2|) kN·m
+      = 28.2 kN·m
+        Member 2 greatest moment magnitude (sagging or hogging)
+  [24] V_e2 = member 2: max |V|
+      = 28.2 kN
+      = 28.2 kN
+        Member 2 maximum shear
+  [25] N_e2 = member 2: max |N| (tension +)
+      = 0 kN
+      = 0 kN
+        Member 2 axial force of greatest magnitude
+  [26] d_e2 = member 2: max |deflection|
+      = at x = 1 m
+      = 12.213 mm
+        Member 2 maximum transverse deflection
+  [27] M_max = max sagging moment
+      = member 2 at x = 1 m
+      = 0 kN·m
+        Maximum moment in the reported combination
+  [28] x_Mmax = position of M_max
+      = from node i of member 2
+      = 1 m
+        Position of the maximum moment
+  [29] M_min = min (hogging) moment
+      = member 1 at x = 0 m
+      = -43.2 kN·m
+        Minimum moment in the reported combination
+  [30] V_max = max |V|
+      = member 2
+      = 28.2 kN
+        Maximum shear in the reported combination
+  [31] N_max = max tension
+      = member 2
+      = 0 kN
+        Maximum axial tension
+  [32] N_min = max compression (negative)
+      = member 1
+      = -28.2 kN
+        Maximum axial compression
+  [33] d_max = max |deflection|
+      = member 1 at x = 3 m
+      = 17.92 mm
+        Maximum transverse deflection
+
+5. RESULTS
+  R1_x = -5 kN    R_x node 1
+  R1_y = 28.2 kN    R_y node 1
+  R1_m = 43.2 kN·m    M node 1
+  R1_x_abs = 5 kN    |R_x| node 1
+  R1_m_abs = 43.2 kN·m    |M| node 1
+  sum_R_y = 28.2 kN    Σ R_y
+  sum_R_x = -5 kN    Σ R_x
+  M_max_e1 = -28.2 kN·m    M max, member 1
+  M_min_e1 = -43.2 kN·m    M min, member 1
+  M_abs_e1 = 43.2 kN·m    |M| max, member 1
+  V_e1 = 5 kN    |V| max, member 1
+  N_e1 = -28.2 kN    N, member 1
+  d_e1 = 17.92 mm    δ max, member 1
+  M_max_e2 = 0 kN·m    M max, member 2
+  M_min_e2 = -28.2 kN·m    M min, member 2
+  M_abs_e2 = 28.2 kN·m    |M| max, member 2
+  V_e2 = 28.2 kN    |V| max, member 2
+  N_e2 = 0 kN    N, member 2
+  d_e2 = 12.213 mm    δ max, member 2
+  M_max = 0 kN·m    M max
+  x_Mmax = 1 m    x of M max
+  M_min = -43.2 kN·m    M min
+  V_max = 28.2 kN    |V| max
+  N_max = 0 kN    N max (tension)
+  N_min = -28.2 kN    N min (compression)
+  d_max = 17.92 mm    δ max
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: struct.frame-2d@1.1.0
+  Content hash: 605e99a9144f52a8
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-24 18:29 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Equipment support ES-4
+Calc ID: Column check    Revision: A
+Title: EN 1993-1-1 member checks (basic)
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+
+1. SCOPE AND METHOD
+Resistance checks of a steel member of class 1, 2 or 3 cross-section: tension (6.2.3), compression (6.2.4) and flexural buckling about y and z (6.3.1), bending about y and z (6.2.5), shear with the high-shear reduction (6.2.6, 6.2.8), the linear cross-section interaction (6.2.1(7)) and a simplified member interaction (6.3.3 with user-entered k factors). Lateral-torsional buckling and class 4 sections are outside this sheet.
+N_pl,Rd = A f_y/γ_M0; M_c,Rd = W f_y/γ_M0 with W = W_pl (class 1–2) or W_el (class 3); V_pl,Rd = A_v f_y/(√3 γ_M0); ρ = (2V_Ed/V_pl,Rd − 1)² when V_Ed > 0.5 V_pl,Rd reduces the bending resistance by (1 − ρ); N_cr = π²EI/L_cr², λ̄ = √(A f_y/N_cr), Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²], χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1, N_b,Rd = χ A f_y/γ_M1; cross-section: N_Ed/N_Rd + M_y,Ed/M_y,Rd + M_z,Ed/M_z,Rd ≤ 1; member: N_Ed/N_b,Rd,min + k_yy M_y,Ed/M_y,Rd + k_zz M_z,Ed/M_z,Rd ≤ 1.
+  Ref: BS EN 1993-1-1 6.2.3 — Tension
+  Ref: BS EN 1993-1-1 6.2.4 — Compression
+  Ref: BS EN 1993-1-1 6.2.5 — Bending moment
+  Ref: BS EN 1993-1-1 6.2.6 — Shear
+  Ref: BS EN 1993-1-1 6.2.8 — Bending and shear
+  Ref: BS EN 1993-1-1 6.2.1(7) — Linear summation of utilisations
+  Ref: BS EN 1993-1-1 6.3.1.1, 6.3.1.2 — Uniform members in compression: buckling resistance, buckling curves
+  Ref: BS EN 1993-1-1 6.3.3 — Uniform members in bending and axial compression
+  Ref: Gardner & Nethercot, Designers' Guide to Eurocode 3 §6.3.1 — Imperfection factors for the buckling curves
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  N_Ed | Design axial force (tension +, compression −) | -28.2 | kN | link: Support frame rev A · N_e1 | -100000 … 100000 kN
+  M_y_Ed | Design moment about y-y (major) | 43.2 | kN*m | link: Support frame rev A · M_abs_e1 | 0 … 100000 kN*m
+  M_z_Ed | Design moment about z-z (minor) | 0 | kN*m | spec: SPEC-STR-09 §3 (members) | 0 … 100000 kN*m
+  V_Ed | Design shear force | 5 | kN | link: Support frame rev A · V_e1 | 0 … 100000 kN
+  f_y | Yield strength (for the thickness) | 355 | MPa | spec: SPEC-STR-09 §3 (members) | 200 … 700 MPa
+  E | Modulus of elasticity | 210 | GPa | assumption: Sheet default value; no project figure given. | 190 … 220 GPa
+  gamma_M0 | Partial factor γ_M0 (cross-section resistance) | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.25
+  gamma_M1 | Partial factor γ_M1 (member buckling) | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.25
+  section_class | Cross-section class | 1 |  | assumption: Sheet default value; no project figure given. | any
+  A | Area A | 58.7 | cm^2 | assumption: Sheet default value; no project figure given. | 1 … 100000 cm^2
+  W_pl_y | W_pl,y | 497 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
+  W_el_y | W_el,y | 450 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
+  W_pl_z | W_pl,z | 231 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
+  W_el_z | W_el,z | 152 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
+  I_y | I_y | 4568 | cm^4 | assumption: Sheet default value; no project figure given. | 0.1 … 1000000000 cm^4
+  I_z | I_z | 1548 | cm^4 | assumption: Sheet default value; no project figure given. | 0.1 … 1000000000 cm^4
+  h | Depth h (shear-area helper) | 203.2 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
+  b | Width b (helper) | 203.6 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
+  t_w | Web thickness (helper) | 7.2 | mm | assumption: Sheet default value; no project figure given. | 0.1 … 500 mm
+  t_f | Flange thickness (helper) | 11 | mm | assumption: Sheet default value; no project figure given. | 0.1 … 500 mm
+  r | Root radius (helper) | 10.2 | mm | assumption: Sheet default value; no project figure given. | 0 … 500 mm
+  eta | Shear-area factor η | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.2
+  L_cr_y | Buckling length about y-y | 6 | m | spec: SPEC-STR-09 §3 (members) | 0.1 … 100 m
+  L_cr_z | Buckling length about z-z | 6 | m | spec: SPEC-STR-09 §3 (members) | 0.1 … 100 m
+  curve_y | Buckling curve about y-y | b |  | assumption: Sheet default value; no project figure given. | any
+  curve_z | Buckling curve about z-z | c |  | assumption: Sheet default value; no project figure given. | any
+  k_yy | Interaction factor k_yy (member check) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2
+  k_zz | Interaction factor k_zz (member check) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2
+
+3. ASSUMPTIONS
+  A1. The cross-section class is as stated by the user (1, 2 or 3); class 4 effective properties are not derived here. (6.2.2.5 effective widths are outside this sheet.)
+  A2. Lateral-torsional buckling is not checked: the compression flange is assumed restrained, or LTB is checked elsewhere. (6.3.2 not implemented.)
+  A3. The member interaction uses the user's k_yy and k_zz (default 1.0) with the smaller flexural-buckling reduction on the axial term; the Annex A/B interaction factors are not derived. (6.3.3 simplified.)
+  A4. Imperfection factors per curve are the textbook values and may be overridden; partial factors default to 1.0 (UK National Annex) and may be overridden. (User-editable with provenance.)
+  A5. E (Modulus of elasticity) is taken as 210 GPa. (Sheet default value; no project figure given.)
+  A6. gamma_M0 (Partial factor γ_M0 (cross-section resistance)) is taken as 1. (Sheet default value; no project figure given.)
+  A7. gamma_M1 (Partial factor γ_M1 (member buckling)) is taken as 1. (Sheet default value; no project figure given.)
+  A8. section_class (Cross-section class) is taken as 1. (Sheet default value; no project figure given.)
+  A9. A (Area A) is taken as 58.7 cm^2. (Sheet default value; no project figure given.)
+  A10. W_pl_y (W_pl,y) is taken as 497 cm^3. (Sheet default value; no project figure given.)
+  A11. W_el_y (W_el,y) is taken as 450 cm^3. (Sheet default value; no project figure given.)
+  A12. W_pl_z (W_pl,z) is taken as 231 cm^3. (Sheet default value; no project figure given.)
+  A13. W_el_z (W_el,z) is taken as 152 cm^3. (Sheet default value; no project figure given.)
+  A14. I_y (I_y) is taken as 4568 cm^4. (Sheet default value; no project figure given.)
+  A15. I_z (I_z) is taken as 1548 cm^4. (Sheet default value; no project figure given.)
+  A16. h (Depth h (shear-area helper)) is taken as 203.2 mm. (Sheet default value; no project figure given.)
+  A17. b (Width b (helper)) is taken as 203.6 mm. (Sheet default value; no project figure given.)
+  A18. t_w (Web thickness (helper)) is taken as 7.2 mm. (Sheet default value; no project figure given.)
+  A19. t_f (Flange thickness (helper)) is taken as 11 mm. (Sheet default value; no project figure given.)
+  A20. r (Root radius (helper)) is taken as 10.2 mm. (Sheet default value; no project figure given.)
+  A21. eta (Shear-area factor η) is taken as 1. (Sheet default value; no project figure given.)
+  A22. curve_y (Buckling curve about y-y) is taken as b. (Sheet default value; no project figure given.)
+  A23. curve_z (Buckling curve about z-z) is taken as c. (Sheet default value; no project figure given.)
+  A24. k_yy (Interaction factor k_yy (member check)) is taken as 1. (Sheet default value; no project figure given.)
+  A25. k_zz (Interaction factor k_zz (member check)) is taken as 1. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [27] r_h = r
+      = 10.2 mm
+      = 10.2 mm
+        Root radius used by the helper
+  [28] A_v_rolled = A - 2 * b * t_f + (t_w + 2 * r_h) * t_f    « 6.2.6(3)
+      = 58.7 cm² − 2 × 203.6 mm × 11 mm + (7.2 mm + 2 × 10.2 mm) × 11 mm
+      = 16.944 cm²
+        Rolled I shear area, load parallel to the web
+  [29] A_v_min = eta * (h - 2 * t_f) * t_w    « 6.2.6(3)
+      = 1 × (203.2 mm − 2 × 11 mm) × 7.2 mm
+      = 13.046 cm²
+        Lower bound η h_w t_w
+  [30] A_v = max(A_v_rolled, A_v_min)
+      = max(16.944 cm², 13.046 cm²)
+      = 16.944 cm²
+        Shear area
+  [31] N_pl_Rd = A * f_y / gamma_M0    « 6.2.3(2), 6.2.4(2)
+      = 58.7 cm² × 355 MPa / 1
+      = 2083.8 kN
+        Plastic axial resistance
+  [32] W_y = W_pl_y    « 6.2.5(2)
+      = 497 cm³
+      = 497 cm³
+        Section modulus about y (plastic, class 1–2)
+  [33] W_z = W_pl_z    « 6.2.5(2)
+      = 231 cm³
+      = 231 cm³
+        Section modulus about z (plastic)
+  [34] V_pl_Rd = A_v * f_y / (sqrt(3) * gamma_M0)    « 6.2.6(2)
+      = 16.944 cm² × 355 MPa / (sqrt(3) × 1)
+      = 347.28 kN
+        Plastic shear resistance
+  [35] u_V = V_Ed / V_pl_Rd
+      = 5 kN / 347.28 kN
+      = 0.014397
+        Shear utilisation
+  [36] rho = 0    « 6.2.8(2)
+      = 0
+        Shear reduction factor (V_Ed ≤ 0.5 V_pl,Rd)
+  [37] M_y_c_Rd = (1 - rho) * W_y * f_y / gamma_M0    « 6.2.5(2), 6.2.8
+      = (1 − 0) × 497 cm³ × 355 MPa / 1
+      = 176.44 kN·m
+        Bending resistance about y
+  [38] M_z_c_Rd = (1 - rho) * W_z * f_y / gamma_M0    « 6.2.5(2)
+      = (1 − 0) × 231 cm³ × 355 MPa / 1
+      = 82.005 kN·m
+        Bending resistance about z
+  [39] u_M_y = M_y_Ed / M_y_c_Rd
+      = 43.2 kN·m / 176.44 kN·m
+      = 0.24485
+        Bending utilisation, y
+  [40] u_M_z = M_z_Ed / M_z_c_Rd
+      = 0 kN·m / 82.005 kN·m
+      = 0
+        Bending utilisation, z
+  [41] u_N = abs(N_Ed) / N_pl_Rd
+      = abs(-28.2 kN) / 2083.8 kN
+      = 0.013533
+        Compression (cross-section) utilisation
+  [42] u_section = u_N + u_M_y + u_M_z    « 6.2.1(7)
+      = 0.013533 + 0.24485 + 0
+      = 0.25838
+        Linear cross-section interaction
+  [45] alpha_y = imperfection factor, curve b    « 6.3.1.2
+      = Designers' Guide §6.3.1
+      = 0.34
+        Imperfection factor about y
+  [46] alpha_z = imperfection factor, curve c    « 6.3.1.2
+      = Designers' Guide §6.3.1
+      = 0.49
+        Imperfection factor about z
+  [47] N_cr_y = pi^2 * E * I_y / L_cr_y^2    « 6.3.1.2(1)
+      = π^2 × 210 GPa × 4568 cm⁴ / (6 m)^2
+      = 2629.9 kN
+        Elastic critical force about y
+  [48] lambda_y = sqrt(A * f_y / N_cr_y)    « 6.3.1.2(1)
+      = sqrt(58.7 cm² × 355 MPa / 2629.9 kN)
+      = 0.89015
+        Non-dimensional slenderness about y
+  [49] Phi_y = 0.5 * (1 + alpha_y * (lambda_y - 0.2) + lambda_y^2)    « 6.3.1.2(1)
+      = 0.5 × (1 + 0.34 × (0.89015 − 0.2) + 0.89015^2)
+      = 1.0135
+        Φ about y
+  [50] chi_y = min(1, 1 / (Phi_y + sqrt(Phi_y^2 - lambda_y^2)))    « 6.3.1.2(1)
+      = min(1, 1 / (1.0135 + sqrt(1.0135^2 − 0.89015^2)))
+      = 0.66751
+        Reduction factor χ about y
+  [51] N_b_y_Rd = chi_y * A * f_y / gamma_M1    « 6.3.1.1(3)
+      = 0.66751 × 58.7 cm² × 355 MPa / 1
+      = 1391 kN
+        Buckling resistance about y
+  [52] N_cr_z = pi^2 * E * I_z / L_cr_z^2    « 6.3.1.2(1)
+      = π^2 × 210 GPa × 1548 cm⁴ / (6 m)^2
+      = 891.23 kN
+        Elastic critical force about z
+  [53] lambda_z = sqrt(A * f_y / N_cr_z)    « 6.3.1.2(1)
+      = sqrt(58.7 cm² × 355 MPa / 891.23 kN)
+      = 1.5291
+        Non-dimensional slenderness about z
+  [54] Phi_z = 0.5 * (1 + alpha_z * (lambda_z - 0.2) + lambda_z^2)    « 6.3.1.2(1)
+      = 0.5 × (1 + 0.49 × (1.5291 − 0.2) + 1.5291^2)
+      = 1.9947
+        Φ about z
+  [55] chi_z = min(1, 1 / (Phi_z + sqrt(Phi_z^2 - lambda_z^2)))    « 6.3.1.2(1)
+      = min(1, 1 / (1.9947 + sqrt(1.9947^2 − 1.5291^2)))
+      = 0.30528
+        Reduction factor χ about z
+  [56] N_b_z_Rd = chi_z * A * f_y / gamma_M1    « 6.3.1.1(3)
+      = 0.30528 × 58.7 cm² × 355 MPa / 1
+      = 636.17 kN
+        Buckling resistance about z
+  [57] N_b_Rd = min(N_b_y_Rd, N_b_z_Rd)
+      = min(1391 kN, 636.17 kN)
+      = 636.17 kN
+        Governing buckling resistance
+  [58] u_buckling = abs(N_Ed) / N_b_Rd    « 6.3.1.1(1)
+      = abs(-28.2 kN) / 636.17 kN
+      = 0.044328
+        Flexural buckling utilisation
+  [59] u_member = abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_c_Rd + k_zz * M_z_Ed / M_z_c_Rd    « 6.3.3(4)
+      = abs(-28.2 kN) / 636.17 kN + 1 × 43.2 kN·m / 176.44 kN·m + 1 × 0 kN·m / 82.005 kN·m
+      = 0.28918
+        Simplified member interaction
+
+5. RESULTS
+  A_v = 16.944 cm²    Shear area
+  N_pl_Rd = 2083.8 kN    N_pl,Rd
+  V_pl_Rd = 347.28 kN    V_pl,Rd
+  rho = 0    ρ
+  M_y_c_Rd = 176.44 kN·m    M_y,c,Rd
+  M_z_c_Rd = 82.005 kN·m    M_z,c,Rd
+  N_cr_y = 2629.9 kN    N_cr,y
+  N_cr_z = 891.23 kN    N_cr,z
+  lambda_y = 0.89015    λ̄_y
+  lambda_z = 1.5291    λ̄_z
+  chi_y = 0.66751    χ_y
+  chi_z = 0.30528    χ_z
+  N_b_y_Rd = 1391 kN    N_b,y,Rd
+  N_b_z_Rd = 636.17 kN    N_b,z,Rd
+  N_b_Rd = 636.17 kN    N_b,Rd
+  u_N = 0.013533    Axial utilisation
+  u_M_y = 0.24485    Bending y utilisation
+  u_M_z = 0    Bending z utilisation
+  u_V = 0.014397    Shear utilisation
+  u_section = 0.25838    Cross-section interaction
+  u_buckling = 0.044328    Buckling utilisation
+  u_member = 0.28918    Member interaction
+
+6. CHECKS (governing first)
+  PASS  Member interaction (simplified): u_member = 0.28918 vs u_member ≤ 1  utilisation 0.289  « 6.3.3
+  PASS  Cross-section interaction: u_section = 0.25838 vs u_section ≤ 1  utilisation 0.258  « 6.2.1(7)
+  PASS  Bending y M_y,Ed ≤ M_y,c,Rd: u_M_y = 0.24485 vs u_M_y ≤ 1  utilisation 0.245  « 6.2.5
+  PASS  Flexural buckling N_Ed ≤ N_b,Rd: u_buckling = 0.044328 vs u_buckling ≤ 1  utilisation 0.0443  « 6.3.1.1
+  PASS  Shear V_Ed ≤ V_pl,Rd: u_V = 0.014397 vs u_V ≤ 1  utilisation 0.0144  « 6.2.6
+  PASS  Compression N_Ed ≤ N_c,Rd: u_N = 0.013533 vs u_N ≤ 1  utilisation 0.0135  « 6.2.4
+  PASS  Bending z M_z,Ed ≤ M_z,c,Rd: u_M_z = 0 vs u_M_z ≤ 1  utilisation 0  « 6.2.5
+
+7. APPLICABILITY
+  WARNING no-ltb: M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.
+
+8. VERIFICATION
+  Template: struct.en1993-member@1.0.0
+  Content hash: 09daf37a17ffe260
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 3/3
+  Test run: 2026-10-24 18:29 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Equipment support ES-4
+Calc ID: Arm joint bolt group    Revision: A
+Title: Bolt group (elastic method)
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+
+1. SCOPE AND METHOD
+A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.
+Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar J = Σ A r². Shear per bolt: v = A (F/ΣA) + T·A·r/J (vector sum). Tension per bolt: t = A N/ΣA + M_x A y'/Σ A y'² + M_y A x'/Σ A x'². Prying: t_p = t (1 + b/a) when a and b are given. Utilisation: the circular interaction (v/V_R)² + (t_p/T_R)² ≤ 1 (elastic method, Shigley-style) and the EN 1993-1-8 linear form v/V_R + t_p/(1.4 T_R) ≤ 1, plus each alone; the governing check is the highest.
+  Ref: EN 1993-1-8:2005 §3.6, §3.8 — Design resistance of individual fasteners; elastic distribution in a bolt group
+  Ref: AISC Steel Construction Manual Part 7 — Eccentrically loaded bolt groups — elastic method
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  bolts | Bolt positions and areas | 6 row(s) |  | drawing: DRG-STR-312 rev B | any
+  bolts[1] |  | x = -60 mm; y = 150 mm; A = 245 mm^2 |  |  | 
+  bolts[2] |  | x = 60 mm; y = 150 mm; A = 245 mm^2 |  |  | 
+  bolts[3] |  | x = -60 mm; y = 0 mm; A = 245 mm^2 |  |  | 
+  bolts[4] |  | x = 60 mm; y = 0 mm; A = 245 mm^2 |  |  | 
+  bolts[5] |  | x = -60 mm; y = -150 mm; A = 245 mm^2 |  |  | 
+  bolts[6] |  | x = 60 mm; y = -150 mm; A = 245 mm^2 |  |  | 
+  F_x | In-plane force, x | 0 | kN | drawing: DRG-STR-312 rev B | -1000000 … 1000000 kN
+  F_y | In-plane force, y | 28.2 | kN | link: Support frame rev A · V_e2 | -1000000 … 1000000 kN
+  e_x | Point of application, x | 0 | mm | drawing: DRG-STR-312 rev B | -100000 … 100000 mm
+  e_y | Point of application, y | 0 | mm | drawing: DRG-STR-312 rev B | -100000 … 100000 mm
+  T_z | Additional in-plane torque about the centroid | 0 | kN*m | drawing: DRG-STR-312 rev B | -1000000 … 1000000 kN*m
+  N | Axial (out-of-plane) load, tension positive | 0 | kN | drawing: DRG-STR-312 rev B | -1000000 … 1000000 kN
+  M_x | Out-of-plane moment about x (tension on +y side) | 28.2 | kN*m | link: Support frame rev A · M_abs_e2 | -1000000 … 1000000 kN*m
+  M_y | Out-of-plane moment about y (tension on +x side) | 0 | kN*m | drawing: DRG-STR-312 rev B | -1000000 … 1000000 kN*m
+  V_R | Shear resistance per bolt | 94 | kN | drawing: DRG-STR-312 rev B | 0.1 … 10000 kN
+  T_R | Tension resistance per bolt | 141 | kN | drawing: DRG-STR-312 rev B | 0.1 … 10000 kN
+
+3. ASSUMPTIONS
+  A1. The connected parts are rigid; bolt forces vary linearly with distance from the centroid (elastic method). (Conservative compared with plastic / instantaneous-centre methods.)
+  A2. Resistances are per bolt as entered, with their source (a design-code capacity or a manufacturer value). (No code capacity is computed here.)
+  A3. Prying uses a simple lever: the bolt tension rises by the factor (1 + b/a). (An optional, conservative first estimate.)
+
+4. WORKING
+  [11] n_b = number of bolts
+      = 6
+      = 6
+        Bolts in the group
+  [12] x_c = Σ A x / Σ A
+      = 245×-60 + 245×60 + 245×-60 + 245×60 + 245×-60 + 245×60 / 1470
+      = 0 mm
+        Centroid x
+  [13] y_c = Σ A y / Σ A
+      = 245×150 + 245×150 + 245×0 + 245×0 + 245×-150 + 245×-150 / 1470
+      = 0 mm
+        Centroid y
+  [14] T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z
+      = 28.2 × 0 − 0 × 0 + 0
+      = 0 kN·m
+        In-plane torque about the centroid
+  [15] J = Σ A r²
+      = about the centroid
+      = 27342000 mm⁴
+        Polar second moment of the bolt areas
+  [16] b1 = bolt 1 at (-60, 150) mm
+      = v = (0, 4.7) kN, t = 47 kN
+      = 0.33706
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.337
+  [17] b2 = bolt 2 at (60, 150) mm
+      = v = (0, 4.7) kN, t = 47 kN
+      = 0.33706
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.337
+  [18] b3 = bolt 3 at (-60, 0) mm
+      = v = (0, 4.7) kN, t = 0 kN
+      = 0.05
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.05
+  [19] b4 = bolt 4 at (60, 0) mm
+      = v = (0, 4.7) kN, t = 0 kN
+      = 0.05
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.05
+  [20] b5 = bolt 5 at (-60, -150) mm
+      = v = (0, 4.7) kN, t = 0 kN
+      = 0.05
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.05
+  [21] b6 = bolt 6 at (60, -150) mm
+      = v = (0, 4.7) kN, t = 0 kN
+      = 0.05
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.05
+  [22] v_max = governing bolt shear
+      = bolt 1
+      = 4.7 kN
+        Maximum bolt shear
+  [23] t_max = governing bolt tension (with prying)
+      = bolt 1
+      = 47 kN
+        Maximum bolt tension
+  [24] u_max = √((v/V_R)² + (t/T_R)²)
+      = √((4.7/94)² + (47/141)²)
+      = 0.33706
+        Governing interaction utilisation
+  [25] governing = governing bolt
+      = bolt 1
+      = "bolt 1"
+        The bolt with the highest utilisation
+  [26] u_v = v_max / V_R
+      = 4.7 kN / 94 kN
+      = 0.05
+        Shear utilisation of the governing bolt
+  [27] u_t = t_max / T_R
+      = 47 kN / 141 kN
+      = 0.33333
+        Tension utilisation of the governing bolt
+  [28] u_lin = v/V_R + t/(1.4 T_R)
+      = 4.7/94 + 47/(1.4 × 141)
+      = 0.2881
+        Linear shear–tension interaction (governing bolt)
+
+5. RESULTS
+  T = 0 kN·m    Torque about the centroid
+  J = 27342000 mm⁴    Polar second moment of bolt areas
+  v_max = 4.7 kN    Maximum bolt shear
+  t_max = 47 kN    Maximum bolt tension
+  u_max = 0.33706    Governing interaction utilisation
+  governing = "bolt 1"    Governing bolt
+  u_lin = 0.2881    Linear interaction utilisation
+
+6. CHECKS (governing first)
+  PASS  Circular shear–tension interaction (governing bolt): u_max = 0.33706 vs u_max ≤ 1  utilisation 0.337
+  PASS  Tension alone: u_t = 0.33333 vs u_t ≤ 1  utilisation 0.333
+  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R): u_lin = 0.2881 vs u_lin ≤ 1  utilisation 0.288  « EN 1993-1-8 Table 3.4
+  PASS  Shear alone: u_v = 0.05 vs u_v ≤ 1  utilisation 0.05
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.bolt-group@1.0.0
+  Content hash: ef89d9cdd6ddb9eb
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 2/2
+  Test run: 2026-10-24 18:29 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Equipment support ES-4
+Calc ID: Arm connection bolts    Revision: A
+Title: Bolts and fillet welds (EN 1993-1-8)
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+
+1. SCOPE AND METHOD
+The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.
+Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bearing: F_b,Rd = k₁·α_b·f_u·d·t/γ_M2; α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5) Tension: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2; combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
+  Ref: EN 1993-1-8:2005 cl. 3.5, Table 3.3 — Positioning of holes for bolts
+  Ref: EN 1993-1-8:2005 cl. 3.6.1, Table 3.4 — Design resistance of individual fasteners
+  Ref: EN 1993-1-8:2005 cl. 3.10.2 — Block tearing
+  Ref: EN 1993-1-8:2005 cl. 4.5.3.2, 4.5.3.3, Table 4.1 — Fillet welds: directional and simplified methods; correlation factor
+  Ref: ISO 898-1:2013 cl. 9.1 — Nominal stress area (formula)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  grade | Bolt property class | 8.8 |  | drawing: DRG-STR-312 rev B | any
+  size | Bolt size | M20 |  | drawing: DRG-STR-312 rev B | any
+  n_s | Shear planes | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 4
+  threads | Threads in the shear plane | yes |  | assumption: Sheet default value; no project figure given. | any
+  steel | Plate steel grade (β_w) | S275 |  | drawing: DRG-STR-312 rev B | any
+  t | Plate thickness | 20 | mm | drawing: DRG-STR-312 rev B | 3 … 50 mm
+  f_y | Plate yield strength | 275 | MPa | assumption: Sheet default value; no project figure given. | 235 … 460 MPa
+  f_u | Plate ultimate strength | 410 | MPa | assumption: Sheet default value; no project figure given. | 340 … 720 MPa
+  e_1 | End distance (load direction) | 40 | mm | drawing: DRG-STR-312 rev B | 10 … 500 mm
+  e_2 | Edge distance (across the load) | 40 | mm | drawing: DRG-STR-312 rev B | 10 … 500 mm
+  p_1 | Pitch (load direction; blank: one row) | 150 | mm | drawing: DRG-STR-312 rev B | 20 … 1000 mm
+  p_2 | Gauge (across the load; blank: one line) | 120 | mm | drawing: DRG-STR-312 rev B | 20 … 1000 mm
+  k_e1 | Minimum e₁/d₀ | 1.2 |  | assumption: Sheet default value; no project figure given. | 1 … 3
+  k_e2 | Minimum e₂/d₀ | 1.2 |  | assumption: Sheet default value; no project figure given. | 1 … 3
+  k_p1 | Minimum p₁/d₀ | 2.2 |  | assumption: Sheet default value; no project figure given. | 2 … 4
+  k_p2 | Minimum p₂/d₀ | 2.4 |  | assumption: Sheet default value; no project figure given. | 2 … 4
+  gamma_M2 | γ_M2 | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.5
+  gamma_M0 | γ_M0 | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.2
+  F_v_Ed | Shear per bolt | 4.7 | kN | link: Arm joint bolt group rev A · v_max | 0 … 2000 kN
+  F_t_Ed | Tension per bolt | 47 | kN | link: Arm joint bolt group rev A · t_max | 0 … 2000 kN
+  V_Ed | Group force for block tearing | 28.2 | kN | link: Support frame rev A · V_e2 | 0 … 10000 kN
+  A_nt | Net area in tension | 1200 | mm^2 | drawing: DRG-STR-312 rev B | 1 … 100000 mm^2
+  A_nv | Net area in shear | 2400 | mm^2 | drawing: DRG-STR-312 rev B | 1 … 100000 mm^2
+
+3. ASSUMPTIONS
+  A1. Static loading; category A (bearing type) shear and category D (non-preloaded) tension; no slip-resistant joints or moment end plates. (Scope of S4.)
+  A2. Bearing is taken at the worst of an end bolt and an inner bolt, and at an edge bolt across the load (k₁ with e₂ and p₂). (Conservative for every bolt in the group.)
+  A3. Spacing minima (Table 3.3) and γ_M factors are entered from a National Annex record; the values shown default to EN 1993-1-8 recommended. (§A5 small factor set.)
+  A4. Group forces come from M3 and weld forces per length from M6 by link. (§A6 S4 links.)
+  A5. n_s (Shear planes) is taken as 1. (Sheet default value; no project figure given.)
+  A6. threads (Threads in the shear plane) is taken as yes. (Sheet default value; no project figure given.)
+  A7. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
+  A8. f_u (Plate ultimate strength) is taken as 410 MPa. (Sheet default value; no project figure given.)
+  A9. k_e1 (Minimum e₁/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
+  A10. k_e2 (Minimum e₂/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
+  A11. k_p1 (Minimum p₁/d₀) is taken as 2.2. (Sheet default value; no project figure given.)
+  A12. k_p2 (Minimum p₂/d₀) is taken as 2.4. (Sheet default value; no project figure given.)
+  A13. gamma_M2 (γ_M2) is taken as 1.25. (Sheet default value; no project figure given.)
+  A14. gamma_M0 (γ_M0) is taken as 1. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [20] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
+      = class 8.8
+      = 800 MPa
+        Bolt ultimate strength
+  [21] f_yb = f_ub × second figure / 10    « EN 1993-1-8 Table 3.1
+      = class 8.8
+      = 640 MPa
+        Bolt yield strength
+  [22] A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P    « ISO 898-1 cl. 9.1
+      = d = 20, P = 2.5 mm
+      = 244.79 mm²
+        Tensile stress area
+  [23] d_0 = d + 2 (≤ M24), d + 3 (≥ M27) unless entered
+      = 22 mm
+      = 22 mm
+        Hole diameter
+  [24] alpha_v = α_v (threads in the shear plane)    « EN 1993-1-8 Table 3.4
+      = class 8.8
+      = 0.6
+        Shear factor
+  [25] F_v_Rd = α_v·f_ub·A·n_s/γ_M2    « EN 1993-1-8 Table 3.4
+      = 0.6 × 800 × 244.79 × 1 / 1.25
+      = 94.001 kN
+        Shear resistance per bolt
+  [26] alpha_b = min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)    « EN 1993-1-8 Table 3.4
+      = min(0.60606, 2.0227, 1.9512, 1)
+      = 0.60606
+        Bearing factor α_b
+  [27] k_1 = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)    « EN 1993-1-8 Table 3.4
+      = e₂ = 40, p₂ = 120, d₀ = 22
+      = 2.5
+        Bearing factor k₁
+  [28] F_b_Rd = k₁·α_b·f_u·d·t/γ_M2    « EN 1993-1-8 Table 3.4
+      = 2.5 × 0.60606 × 410 × 20 × 20 / 1.25
+      = 198.79 kN
+        Bearing resistance per bolt
+  [29] F_t_Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9    « EN 1993-1-8 Table 3.4
+      = 0.9 × 800 × 244.79 / 1.25
+      = 141 kN
+        Tension resistance per bolt
+  [30] B_p_Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2    « EN 1993-1-8 Table 3.4
+      = 0.6π × 32.321 × 20 × 410 / 1.25
+      = 399.65 kN
+        Punching shear resistance
+  [31] u_v = F_v_Ed / F_v_Rd
+      = 4.7 kN / 94.001 kN
+      = 0.049999
+        Shear utilisation
+  [32] u_b = F_v_Ed / F_b_Rd
+      = 4.7 kN / 198.79 kN
+      = 0.023643
+        Bearing utilisation
+  [33] u_t = F_t_Ed / min(F_t_Rd, B_p_Rd)
+      = 47 kN / min(141 kN, 399.65 kN)
+      = 0.33333
+        Tension utilisation (tension or punching)
+  [34] u_vt = F_v_Ed / F_v_Rd + F_t_Ed / (1.4 * F_t_Rd)    « EN 1993-1-8 Table 3.4
+      = 4.7 kN / 94.001 kN + 47 kN / (1.4 × 141 kN)
+      = 0.28809
+        Combined shear and tension
+  [38] V_eff_Rd = f_u * A_nt / gamma_M2 + f_y * A_nv / (sqrt(3) * gamma_M0)    « EN 1993-1-8 cl. 3.10.2
+      = 410 MPa × 1200 mm² / 1.25 + 275 MPa × 2400 mm² / (sqrt(3) × 1)
+      = 774.65 kN
+        Block tearing resistance (concentric)
+  [39] u_block = V_Ed / V_eff_Rd
+      = 28.2 kN / 774.65 kN
+      = 0.036403
+        Block tearing utilisation
+
+5. RESULTS
+  f_ub = 800 MPa    Bolt ultimate strength
+  f_yb = 640 MPa    Bolt yield strength
+  A_s = 244.79 mm²    Stress area
+  alpha_v = 0.6    Shear factor
+  F_v_Rd = 94.001 kN    Shear resistance
+  alpha_b = 0.60606    Bearing factor
+  k_1 = 2.5    Bearing factor k₁
+  F_b_Rd = 198.79 kN    Bearing resistance
+  F_t_Rd = 141 kN    Tension resistance
+  B_p_Rd = 399.65 kN    Punching resistance
+  u_v = 0.049999    Shear utilisation
+  u_b = 0.023643    Bearing utilisation
+  u_t = 0.33333    Tension utilisation
+  u_vt = 0.28809    Combined utilisation
+  V_eff_Rd = 774.65 kN    Block tearing resistance
+  u_block = 0.036403    Block tearing utilisation
+  governing = "tension (0.333)"    Governing bolt mode
+
+6. CHECKS (governing first)
+  PASS  Bolt tension and punching: u_t = 0.33333 vs u_t ≤ 1  utilisation 0.333  « EN 1993-1-8 Table 3.4
+  PASS  Combined shear and tension: u_vt = 0.28809 vs u_vt ≤ 1  utilisation 0.288  « EN 1993-1-8 Table 3.4
+  PASS  Bolt shear: u_v = 0.049999 vs u_v ≤ 1  utilisation 0.05  « EN 1993-1-8 Table 3.4
+  PASS  Block tearing: u_block = 0.036403 vs u_block ≤ 1  utilisation 0.0364  « EN 1993-1-8 cl. 3.10.2
+  PASS  Bolt bearing: u_b = 0.023643 vs u_b ≤ 1  utilisation 0.0236  « EN 1993-1-8 Table 3.4
+  PASS  Spacing and edge distances (Table 3.3 minima): e₁ 40, e₂ 40, p₁ 150, p₂ 120 mm vs ≥ 26.4, 26.4, 48.4, 52.8 mm  utilisation 0  « EN 1993-1-8 Table 3.3
+
+7. APPLICABILITY
+  WARNING record.gamma_M2: gamma_M2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_M0: gamma_M0: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_e1: k_e1: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_e2: k_e2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_p1: k_p1: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_p2: k_p2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.f_y: f_y: a tabulated value not taken from a reference record (Plate strengths); enter it as one so its source, edition and licence travel with it.
+  WARNING record.f_u: f_u: a tabulated value not taken from a reference record (Plate strengths); enter it as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: struct.connection-ec3@1.1.0
+  Content hash: 21313e2f2f4ea719
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-24 18:29 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Equipment support ES-4
+Calc ID: Holding-down bolts    Revision: A
+Title: Bolts and fillet welds (EN 1993-1-8)
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+
+1. SCOPE AND METHOD
+The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.
+Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bearing: F_b,Rd = k₁·α_b·f_u·d·t/γ_M2; α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5) Tension: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2; combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
+  Ref: EN 1993-1-8:2005 cl. 3.5, Table 3.3 — Positioning of holes for bolts
+  Ref: EN 1993-1-8:2005 cl. 3.6.1, Table 3.4 — Design resistance of individual fasteners
+  Ref: EN 1993-1-8:2005 cl. 3.10.2 — Block tearing
+  Ref: EN 1993-1-8:2005 cl. 4.5.3.2, 4.5.3.3, Table 4.1 — Fillet welds: directional and simplified methods; correlation factor
+  Ref: ISO 898-1:2013 cl. 9.1 — Nominal stress area (formula)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  grade | Bolt property class | 8.8 |  | drawing: DRG-STR-315 rev B | any
+  size | Bolt size | M20 |  | drawing: DRG-STR-315 rev B | any
+  n_s | Shear planes | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 4
+  threads | Threads in the shear plane | yes |  | assumption: Sheet default value; no project figure given. | any
+  steel | Plate steel grade (β_w) | S275 |  | drawing: DRG-STR-315 rev B | any
+  t | Plate thickness | 25 | mm | drawing: DRG-STR-315 rev B | 3 … 50 mm
+  f_y | Plate yield strength | 275 | MPa | assumption: Sheet default value; no project figure given. | 235 … 460 MPa
+  f_u | Plate ultimate strength | 410 | MPa | assumption: Sheet default value; no project figure given. | 340 … 720 MPa
+  e_1 | End distance (load direction) | 40 | mm | drawing: DRG-STR-315 rev B | 10 … 500 mm
+  e_2 | Edge distance (across the load) | 75 | mm | drawing: DRG-STR-315 rev B | 10 … 500 mm
+  p_1 | Pitch (load direction; blank: one row) | 70 | mm | assumption: Sheet default value; no project figure given. | 20 … 1000 mm
+  p_2 | Gauge (across the load; blank: one line) | 150 | mm | drawing: DRG-STR-315 rev B | 20 … 1000 mm
+  k_e1 | Minimum e₁/d₀ | 1.2 |  | assumption: Sheet default value; no project figure given. | 1 … 3
+  k_e2 | Minimum e₂/d₀ | 1.2 |  | assumption: Sheet default value; no project figure given. | 1 … 3
+  k_p1 | Minimum p₁/d₀ | 2.2 |  | assumption: Sheet default value; no project figure given. | 2 … 4
+  k_p2 | Minimum p₂/d₀ | 2.4 |  | assumption: Sheet default value; no project figure given. | 2 … 4
+  gamma_M2 | γ_M2 | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.5
+  gamma_M0 | γ_M0 | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.2
+  F_v_Ed | Shear per bolt | 0 | kN | drawing: DRG-STR-315 rev B | 0 … 2000 kN
+  F_t_Ed | Tension per bolt | 0 | kN | drawing: DRG-STR-315 rev B | 0 … 2000 kN
+
+3. ASSUMPTIONS
+  A1. Static loading; category A (bearing type) shear and category D (non-preloaded) tension; no slip-resistant joints or moment end plates. (Scope of S4.)
+  A2. Bearing is taken at the worst of an end bolt and an inner bolt, and at an edge bolt across the load (k₁ with e₂ and p₂). (Conservative for every bolt in the group.)
+  A3. Spacing minima (Table 3.3) and γ_M factors are entered from a National Annex record; the values shown default to EN 1993-1-8 recommended. (§A5 small factor set.)
+  A4. Group forces come from M3 and weld forces per length from M6 by link. (§A6 S4 links.)
+  A5. n_s (Shear planes) is taken as 1. (Sheet default value; no project figure given.)
+  A6. threads (Threads in the shear plane) is taken as yes. (Sheet default value; no project figure given.)
+  A7. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
+  A8. f_u (Plate ultimate strength) is taken as 410 MPa. (Sheet default value; no project figure given.)
+  A9. p_1 (Pitch (load direction; blank: one row)) is taken as 70 mm. (Sheet default value; no project figure given.)
+  A10. k_e1 (Minimum e₁/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
+  A11. k_e2 (Minimum e₂/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
+  A12. k_p1 (Minimum p₁/d₀) is taken as 2.2. (Sheet default value; no project figure given.)
+  A13. k_p2 (Minimum p₂/d₀) is taken as 2.4. (Sheet default value; no project figure given.)
+  A14. gamma_M2 (γ_M2) is taken as 1.25. (Sheet default value; no project figure given.)
+  A15. gamma_M0 (γ_M0) is taken as 1. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [20] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
+      = class 8.8
+      = 800 MPa
+        Bolt ultimate strength
+  [21] f_yb = f_ub × second figure / 10    « EN 1993-1-8 Table 3.1
+      = class 8.8
+      = 640 MPa
+        Bolt yield strength
+  [22] A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P    « ISO 898-1 cl. 9.1
+      = d = 20, P = 2.5 mm
+      = 244.79 mm²
+        Tensile stress area
+  [23] d_0 = d + 2 (≤ M24), d + 3 (≥ M27) unless entered
+      = 22 mm
+      = 22 mm
+        Hole diameter
+  [24] alpha_v = α_v (threads in the shear plane)    « EN 1993-1-8 Table 3.4
+      = class 8.8
+      = 0.6
+        Shear factor
+  [25] F_v_Rd = α_v·f_ub·A·n_s/γ_M2    « EN 1993-1-8 Table 3.4
+      = 0.6 × 800 × 244.79 × 1 / 1.25
+      = 94.001 kN
+        Shear resistance per bolt
+  [26] alpha_b = min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)    « EN 1993-1-8 Table 3.4
+      = min(0.60606, 0.81061, 1.9512, 1)
+      = 0.60606
+        Bearing factor α_b
+  [27] k_1 = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)    « EN 1993-1-8 Table 3.4
+      = e₂ = 75, p₂ = 150, d₀ = 22
+      = 2.5
+        Bearing factor k₁
+  [28] F_b_Rd = k₁·α_b·f_u·d·t/γ_M2    « EN 1993-1-8 Table 3.4
+      = 2.5 × 0.60606 × 410 × 20 × 25 / 1.25
+      = 248.48 kN
+        Bearing resistance per bolt
+  [29] F_t_Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9    « EN 1993-1-8 Table 3.4
+      = 0.9 × 800 × 244.79 / 1.25
+      = 141 kN
+        Tension resistance per bolt
+  [30] B_p_Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2    « EN 1993-1-8 Table 3.4
+      = 0.6π × 32.321 × 25 × 410 / 1.25
+      = 499.57 kN
+        Punching shear resistance
+  [31] u_v = F_v_Ed / F_v_Rd
+      = 0 kN / 94.001 kN
+      = 0
+        Shear utilisation
+  [32] u_b = F_v_Ed / F_b_Rd
+      = 0 kN / 248.48 kN
+      = 0
+        Bearing utilisation
+  [33] u_t = F_t_Ed / min(F_t_Rd, B_p_Rd)
+      = 0 kN / min(141 kN, 499.57 kN)
+      = 0
+        Tension utilisation (tension or punching)
+  [34] u_vt = F_v_Ed / F_v_Rd + F_t_Ed / (1.4 * F_t_Rd)    « EN 1993-1-8 Table 3.4
+      = 0 kN / 94.001 kN + 0 kN / (1.4 × 141 kN)
+      = 0
+        Combined shear and tension
+
+5. RESULTS
+  f_ub = 800 MPa    Bolt ultimate strength
+  f_yb = 640 MPa    Bolt yield strength
+  A_s = 244.79 mm²    Stress area
+  alpha_v = 0.6    Shear factor
+  F_v_Rd = 94.001 kN    Shear resistance
+  alpha_b = 0.60606    Bearing factor
+  k_1 = 2.5    Bearing factor k₁
+  F_b_Rd = 248.48 kN    Bearing resistance
+  F_t_Rd = 141 kN    Tension resistance
+  B_p_Rd = 499.57 kN    Punching resistance
+  u_v = 0    Shear utilisation
+  u_b = 0    Bearing utilisation
+  u_t = 0    Tension utilisation
+  u_vt = 0    Combined utilisation
+  governing = "shear (0)"    Governing bolt mode
+
+6. CHECKS (governing first)
+  PASS  Bolt shear: u_v = 0 vs u_v ≤ 1  utilisation 0  « EN 1993-1-8 Table 3.4
+  PASS  Bolt bearing: u_b = 0 vs u_b ≤ 1  utilisation 0  « EN 1993-1-8 Table 3.4
+  PASS  Bolt tension and punching: u_t = 0 vs u_t ≤ 1  utilisation 0  « EN 1993-1-8 Table 3.4
+  PASS  Combined shear and tension: u_vt = 0 vs u_vt ≤ 1  utilisation 0  « EN 1993-1-8 Table 3.4
+  PASS  Spacing and edge distances (Table 3.3 minima): e₁ 40, e₂ 75, p₁ 70, p₂ 150 mm vs ≥ 26.4, 26.4, 48.4, 52.8 mm  utilisation 0  « EN 1993-1-8 Table 3.3
+
+7. APPLICABILITY
+  WARNING record.gamma_M2: gamma_M2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_M0: gamma_M0: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_e1: k_e1: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_e2: k_e2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_p1: k_p1: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_p2: k_p2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.f_y: f_y: a tabulated value not taken from a reference record (Plate strengths); enter it as one so its source, edition and licence travel with it.
+  WARNING record.f_u: f_u: a tabulated value not taken from a reference record (Plate strengths); enter it as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: struct.connection-ec3@1.1.0
+  Content hash: 21313e2f2f4ea719
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-24 18:29 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Equipment support ES-4
+Calc ID: Column base plate    Revision: A
+Title: Column base plate (EN 1993-1-8)
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+
+1. SCOPE AND METHOD
+An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.
+Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)] Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd Moment (cl. 6.2.8.3, Table 6.7): z_C from the section ((h − t_f)/2, (h − t)/2, half-annulus centroid) or entered, x_b the bolt row from the axis, z = z_C + x_b; C_Ed = (M_Ed + N_Ed·x_b)/z and T_Ed = C_Ed − N_Ed when both are ≥ 0; with N_Ed > 0 and T_Ed < 0 both sides are in compression, C = N_Ed/2 ± M_Ed/(2z_C); with N_Ed < 0 and C_Ed < 0 both rows are in tension, T = −N_Ed/2 ± M_Ed/(2x_b); F_t,Ed = T_Ed/n_t at the more loaded row Plate T-stub (cl. 6.2.6.11, 6.2.4, Table 6.2): M_pl,Rd = 0.25·l_eff·t_p²·f_y/γ_M0; without prying min(2·M_pl,Rd/m, n_t·F_t,Rd); with prying the modes 4·M_pl,Rd/m, (2·M_pl,Rd + n·ΣF_t,Rd)/(m + n) with n = min(e_min, 1.25m), and n_t·F_t,Rd; l_eff is the total for the n_t bolts Compression T-stub (cl. 6.2.6.9, 6.2.6.10): C_Rd = f_jd·A_flange, checked when M_Ed > 0 and the resultant is in compression Shear (cl. 6.2.2): F_2,vb,Rd = α_bc·f_ub·A_s/γ_M2, α_bc = 0.44 − 0.0003·f_yb; F_vb,Rd = min(F_1,vb,Rd, F_2,vb,Rd); V_Rd = C_f,d·N_c,Ed + n_b·F_vb,Rd; V_b,Ed = max(V_Ed − C_f,d·N_c,Ed, 0)/n_b Required thickness: the smallest t_p in 10–100 mm with u_N, u_C and u_T all ≤ 1 (each falls as t_p rises)
+  Ref: EN 1993-1-8:2005 cl. 6.2.2 — Design resistance of column bases in shear
+  Ref: EN 1993-1-8:2005 cl. 6.2.4, Table 6.2 — Equivalent T-stub in tension
+  Ref: EN 1993-1-8:2005 cl. 6.2.5 — Equivalent T-stub in compression
+  Ref: EN 1993-1-8:2005 cl. 6.2.6.9 — Concrete in compression including grout
+  Ref: EN 1993-1-8:2005 cl. 6.2.6.10 — Base plate in bending under compression
+  Ref: EN 1993-1-8:2005 cl. 6.2.6.11 — Base plate in bending under tension
+  Ref: EN 1993-1-8:2005 cl. 6.2.6.12 — Anchor bolts in tension
+  Ref: EN 1993-1-8:2005 cl. 6.2.8.2 — Column bases subject to axial forces
+  Ref: EN 1993-1-8:2005 cl. 6.2.8.3, Table 6.7 — Column bases subject to axial force and bending moment
+  Ref: EN 1992-1-1:2004 cl. 3.1.6, 6.7 — Design strength of concrete; partial area loading
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  column | Column section type | I/H |  | drawing: DRG-STR-315 rev B | any
+  h | Column depth, along the plate length L (I/H and RHS) | 203.2 | mm | drawing: DRG-STR-315 rev B | 50 … 1200 mm
+  b | Column width, along the plate width B (I/H and RHS) | 203.6 | mm | drawing: DRG-STR-315 rev B | 50 … 1200 mm
+  t_f | Flange thickness (I/H) | 11 | mm | drawing: DRG-STR-315 rev B | 3 … 100 mm
+  t_w | Web thickness (I/H) | 7.2 | mm | drawing: DRG-STR-315 rev B | 3 … 100 mm
+  t | Wall thickness (RHS and CHS) | 10 | mm | assumption: Sheet default value; no project figure given. | 3 … 100 mm
+  D | Outside diameter (CHS) | 220 | mm | assumption: Sheet default value; no project figure given. | 50 … 1200 mm
+  B | Plate width | 300 | mm | drawing: DRG-STR-315 rev B | 100 … 1500 mm
+  L | Plate length | 350 | mm | drawing: DRG-STR-315 rev B | 100 … 1500 mm
+  t_p | Plate thickness | 25 | mm | drawing: DRG-STR-315 rev B | 10 … 100 mm
+  f_y | Plate yield strength | 275 | MPa | assumption: Sheet default value; no project figure given. | 235 … 460 MPa
+  f_ck | Concrete characteristic cylinder strength | 25 | MPa | assumption: Sheet default value; no project figure given. | 20 … 50 MPa
+  alpha_cc | α_cc, long-term effects on the concrete strength | 0.85 |  | assumption: Sheet default value; no project figure given. | 0.8 … 1
+  gamma_c | γ_c, partial factor for concrete | 1.5 |  | assumption: Sheet default value; no project figure given. | 1.2 … 1.8
+  gamma_M0 | γ_M0, partial factor for the plate | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.25
+  gamma_M2 | γ_M2, partial factor for the anchor bolts | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.5
+  C_fd | C_f,d, friction coefficient plate to grout | 0.2 |  | assumption: Sheet default value; no project figure given. | 0 … 0.45
+  alpha | α, concentration factor √(A_c1/A_c0) of the foundation | 1.5 |  | assumption: Sheet default value; no project figure given. | 1 … 3
+  N_Ed | Axial force, compression positive | 28.2 | kN | link: Support frame rev A · R1_y | -5000 … 10000 kN
+  M_Ed | Major-axis moment (uniaxial) | 43.2 | kN*m | link: Support frame rev A · R1_m_abs | 0 … 2000 kN*m
+  V_Ed | Shear force | 5 | kN | link: Support frame rev A · R1_x_abs | 0 … 2000 kN
+  n_t | Holding-down bolts in each bolt row (one row each side) | 2 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+  n_b | Holding-down bolts in total (both sides) | 4 |  | assumption: Sheet default value; no project figure given. | 2 … 40
+  x_b | Bolt row distance from the column axis (outside the column face, inside the plate edge) | 135 | mm | drawing: DRG-STR-315 rev B | 50 … 1000 mm
+  m | Bolt to flange-weld toe distance, tension T-stub | 28 | mm | assumption: Sheet default value; no project figure given. | 5 … 300 mm
+  l_eff | Effective length of the tension T-stub, total for the n_t bolts (cl. 6.2.6.5 patterns) | 200 | mm | assumption: Sheet default value; no project figure given. | 10 … 2000 mm
+  prying | Prying forces develop (short bolts, L_b ≤ L_b*); off is conservative for the plate | no |  | assumption: Sheet default value; no project figure given. | any
+  e_min | Edge distance e_min of the bolt row (used only with prying) | 40 | mm | drawing: DRG-STR-315 rev B | 5 … 500 mm
+  F_t_Rd | Tension resistance per bolt (from S4) | 141.002 | kN | link: Holding-down bolts rev A · F_t_Rd | 1 … 2000 kN
+  f_ub | Anchor bolt ultimate strength | 800 | MPa | link: Holding-down bolts rev A · f_ub | 400 … 1000 MPa
+  f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
+  A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm^2 | link: Holding-down bolts rev A · A_s | 50 … 1500 mm^2
+  F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 05a47e79bf7d4651ada6b58851a99eea/6099accfc1cf4afe8fee5cb748109430 | any
+
+3. ASSUMPTIONS
+  A1. Static loading; a major-axis moment only (uniaxial); an unstiffened rectangular plate on grout of adequate strength and thickness for β_j = 2/3 (checked when the grout strength and thickness are entered). (Scope of S6.)
+  A2. The simplified T-stub model: one compression resultant at the centre of the compression T-stub (flange centre, or the half-annulus centroid of a CHS) and one tension resultant per bolt row; the force regime follows EN 1993-1-8 Table 6.7. The web is not given credit in the moment check. (EN 1993-1-8 cl. 6.2.8.3.)
+  A3. The effective length l_eff is the total for the n_t bolts of a row, read from the cl. 6.2.6.5 patterns; it is used for modes 1 and 2 alike (l_eff,1 ≤ l_eff,2, so this is conservative for mode 2). (One input.)
+  A4. Concrete, anchor tension, pull-out, breakout, edge and the tension–shear interaction of the anchors are designed in Hilti PROFIS from F_t,Ed and V_b,Ed per anchor; the report is filed as Evidence and referenced. With prying switched on the prying force Q is not in F_t,Ed and PROFIS must add it. (External anchorage design.)
+  A5. The friction resistance counts only the compression, C_f,d·max(N_Ed, 0); a column in net tension has none. Anchor bolts share shear equally, with their holes assumed no larger than the standard clearance (oversized or slotted holes are outside this sheet). (EN 1993-1-8 cl. 6.2.2.)
+  A6. The bearing outstand c is cut back where it would pass the plate edge; the web and the column interior keep the full c. The CHS compression side is half of the annular bearing area, with its centroid as lever arm (an approximation). (Conservative against an uncut c.)
+  A7. The compression T-stub is checked against the flange area alone as soon as M_Ed > 0, while at M_Ed = 0 the whole footprint (web included) resists, so the compression check jumps at M_Ed = 0⁺ (conservative). (Limitation.)
+  A8. Partial factors and the friction coefficient come from the records in use (γ_c, α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used); the values shown default to the EN recommended and UK values. (§A5 small factor set.)
+  A9. t (Wall thickness (RHS and CHS)) is taken as 10 mm. (Sheet default value; no project figure given.)
+  A10. D (Outside diameter (CHS)) is taken as 220 mm. (Sheet default value; no project figure given.)
+  A11. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
+  A12. f_ck (Concrete characteristic cylinder strength) is taken as 25 MPa. (Sheet default value; no project figure given.)
+  A13. alpha_cc (α_cc, long-term effects on the concrete strength) is taken as 0.85. (Sheet default value; no project figure given.)
+  A14. gamma_c (γ_c, partial factor for concrete) is taken as 1.5. (Sheet default value; no project figure given.)
+  A15. gamma_M0 (γ_M0, partial factor for the plate) is taken as 1. (Sheet default value; no project figure given.)
+  A16. gamma_M2 (γ_M2, partial factor for the anchor bolts) is taken as 1.25. (Sheet default value; no project figure given.)
+  A17. C_fd (C_f,d, friction coefficient plate to grout) is taken as 0.2. (Sheet default value; no project figure given.)
+  A18. alpha (α, concentration factor √(A_c1/A_c0) of the foundation) is taken as 1.5. (Sheet default value; no project figure given.)
+  A19. n_t (Holding-down bolts in each bolt row (one row each side)) is taken as 2. (Sheet default value; no project figure given.)
+  A20. n_b (Holding-down bolts in total (both sides)) is taken as 4. (Sheet default value; no project figure given.)
+  A21. m (Bolt to flange-weld toe distance, tension T-stub) is taken as 28 mm. (Sheet default value; no project figure given.)
+  A22. l_eff (Effective length of the tension T-stub, total for the n_t bolts (cl. 6.2.6.5 patterns)) is taken as 200 mm. (Sheet default value; no project figure given.)
+  A23. prying (Prying forces develop (short bolts, L_b ≤ L_b*); off is conservative for the plate) is taken as no. (Sheet default value; no project figure given.)
+  A24. The outstand c is cut back to the plate edge where it would pass it, so no area outside the plate is counted. (Conservative against an uncut c.)
+  A25. β_j = 2/3 assumes the grout is at least 0.2·f_ck and no thicker than 0.2 × the smaller plate dimension; enter the grout strength and thickness to check it. (EN 1993-1-8 cl. 6.2.5.)
+
+4. WORKING
+  [31] f_cd = alpha_cc * f_ck / gamma_c    « EN 1992-1-1 cl. 3.1.6
+      = 0.85 × 25 MPa / 1.5
+      = 14.167 MPa
+        Concrete design compressive strength
+  [32] beta_j = 2/3, fixed    « EN 1993-1-8 cl. 6.2.5
+      = grout conditions of cl. 6.2.5 assumed met
+      = 0.66667
+        Joint coefficient β_j
+  [33] f_jd = beta_j * alpha * f_cd    « EN 1993-1-8 cl. 6.2.5
+      = 0.66667 × 1.5 × 14.167 MPa
+      = 14.167 MPa
+        Design bearing strength of the joint
+  [34] c = t_p * sqrt(f_y / (3 * f_jd * gamma_M0))    « EN 1993-1-8 cl. 6.2.5
+      = 25 mm × sqrt(275 MPa / (3 × 14.167 MPa × 1))
+      = 63.593 mm
+        Additional bearing width round the column footprint
+  [35] A_eff = 2(b + 2c)(t_f + 2c) + (h − 2t_f − 2c)(t_w + 2c) (outstand cut back to the plate edge)    « EN 1993-1-8 cl. 6.2.5
+      = 2 × 300 × 138.19 + 54.013 × 134.39 mm²
+      = 90171 mm²
+        Effective bearing area
+  [36] N_j_Rd = f_jd * A_eff    « EN 1993-1-8 cl. 6.2.8.2, 6.2.5
+      = 14.167 MPa × 90171 mm²
+      = 1277.4 kN
+        Axial bearing resistance of the joint
+  [37] N_c_Ed = max(N_Ed, 0)
+      = N_Ed = 28.2 kN
+      = 28.2 kN
+        Design compression in the column
+  [38] u_N = N_c_Ed / N_j_Rd
+      = 28.2 kN / 1277.4 kN
+      = 0.022076
+        Axial bearing utilisation
+  [39] t_req_N = smallest t_p in 10–100 mm with f_jd·A_eff(c(t_p)) ≥ N_c,Ed (bisection)    « EN 1993-1-8 cl. 6.2.5
+      = N_c,Ed = 28.2 kN; carried at the 10 mm minimum
+      = 10 mm
+        Plate thickness required for axial bearing alone
+  [40] z_C = (h − t_f)/2    « EN 1993-1-8 cl. 6.2.8.3
+      = (203.2 − 11)/2 mm
+      = 96.1 mm
+        Compression resultant distance from the column axis
+  [41] z = z_C + x_b    « EN 1993-1-8 cl. 6.2.8.3
+      = 96.1 + 135
+      = 231.1 mm
+        Lever arm between the compression resultant and the bolt row
+  [42] C_Ed = (M_Ed + N_Ed·x_b)/z    « EN 1993-1-8 cl. 6.2.8.3, Table 6.7
+      = (43.2 kN·m + 28.2 kN × 135 mm)/231.1 mm
+      = 203.41 kN
+        Compression resultant under the compression flange
+  [43] T_Ed = C_Ed − N_Ed    « EN 1993-1-8 cl. 6.2.8.3, Table 6.7
+      = 203.41 − 28.2
+      = 175.21 kN
+        Tension resultant at the bolt row
+  [44] C_Ed_2 = none
+      = other side
+      = 0 kN
+        Compression resultant under the other flange
+  [45] T_Ed_2 = none
+      = other row
+      = 0 kN
+        Tension resultant at the other bolt row
+  [46] F_t_Ed = T_Ed / n_t    « EN 1993-1-8 cl. 6.2.6.12
+      = 175.21 kN / 2
+      = 87.603 kN
+        Holding-down bolt tension per bolt at the more loaded row (→ PROFIS)
+  [47] A_flange = (b + 2c)(t_f + 2c), at most A_eff/2    « EN 1993-1-8 cl. 6.2.6.9
+      = min(300 × 138.19, A_eff/2) mm²
+      = 41456 mm²
+        Bearing area of the compression flange
+  [48] C_Rd = f_jd * A_flange    « EN 1993-1-8 cl. 6.2.6.9, 6.2.6.10
+      = 14.167 MPa × 41456 mm²
+      = 587.29 kN
+        Bearing resistance of the compression flange
+  [49] u_C = C_Ed / C_Rd
+      = 203.41 kN / 587.29 kN
+      = 0.34634
+        Compression flange utilisation
+  [50] M_pl_Rd = 0.25 * l_eff * t_p^2 * f_y / gamma_M0    « EN 1993-1-8 Table 6.2
+      = 0.25 × 200 mm × (25 mm)^2 × 275 MPa / 1
+      = 8.5938 kN·m
+        Plastic moment resistance of the plate over l_eff
+  [51] T_Rd_1 = 2 * M_pl_Rd / m    « EN 1993-1-8 Table 6.2
+      = 2 × 8.5938 kN·m / 28 mm
+      = 613.84 kN
+        Mode 1-2 without prying forces
+  [52] T_Rd_3 = n_t * F_t_Rd    « EN 1993-1-8 Table 6.2
+      = 2 × 141 kN
+      = 282 kN
+        Mode 3: bolt failure
+  [53] T_Rd = min(T_Rd_1, T_Rd_3)    « EN 1993-1-8 cl. 6.2.4
+      = min(613.84 kN, 282 kN)
+      = 282 kN
+        Tension T-stub resistance (no prying)
+  [54] u_T = T_Ed / T_Rd
+      = 175.21 kN / 282 kN
+      = 0.62129
+        Plate bending and bolts in tension, T-stub utilisation
+  [55] u_bt = F_t_Ed / F_t_Rd
+      = 87.603 kN / 141 kN
+      = 0.62129
+        Holding-down bolt tension utilisation
+  [56] t_req = smallest t_p in 10–100 mm with u_N, u_C, u_T ≤ 1 (bisection)    « EN 1993-1-8 cl. 6.2.5, 6.2.6.9, 6.2.6.11
+      = N_c,Ed = 28.2 kN, C_Ed = 203.41 kN, T_Ed = 175.21 kN
+      = 13.356 mm
+        Plate thickness required
+  [57] alpha_bc = 0.44 − 0.0003·f_yb    « EN 1993-1-8 cl. 6.2.2
+      = 0.44 − 0.0003 × 640
+      = 0.248
+        Anchor bolt shear factor α_bc
+  [58] F_2_vb_Rd = alpha_bc * f_ub * A_s / gamma_M2    « EN 1993-1-8 cl. 6.2.2
+      = 0.248 × 800 MPa × 244.79 mm² / 1.25
+      = 38.854 kN
+        Anchor bolt shear resistance F_2,vb,Rd
+  [59] F_vb_Rd = min(F_1_vb_Rd, F_2_vb_Rd)    « EN 1993-1-8 cl. 6.2.2
+      = min(248.48 kN, 38.854 kN)
+      = 38.854 kN
+        Anchor bolt shear resistance per bolt (bearing or shear)
+  [60] F_f_Rd = C_fd * N_c_Ed    « EN 1993-1-8 cl. 6.2.2
+      = 0.2 × 28.2 kN
+      = 5.64 kN
+        Friction resistance, compression only
+  [61] V_Rd = F_f_Rd + n_b * F_vb_Rd    « EN 1993-1-8 cl. 6.2.2
+      = 5.64 kN + 4 × 38.854 kN
+      = 161.06 kN
+        Shear resistance of the base
+  [62] u_V = V_Ed / V_Rd
+      = 5 kN / 161.06 kN
+      = 0.031045
+        Shear utilisation
+  [63] V_b_Ed = max(V_Ed − F_f,Rd, 0)/n_b    « EN 1993-1-8 cl. 6.2.2
+      = max(5 − 5.64, 0)/4
+      = 0 kN
+        Shear per anchor bolt after friction (→ PROFIS)
+  [64] u_max = max(u_N, u_C, u_T, u_bt, u_V)
+      = u_N = 0.022076, u_C = 0.34634, u_T = 0.62129, u_bt = 0.62129, u_V = 0.031045
+      = 0.62129
+        Governing utilisation
+
+5. RESULTS
+  f_cd = 14.167 MPa    Concrete design strength
+  beta_j = 0.66667    Joint coefficient β_j
+  f_jd = 14.167 MPa    Bearing strength f_jd
+  c = 63.593 mm    Bearing outstand c
+  A_eff = 90171 mm²    Effective bearing area
+  N_j_Rd = 1277.4 kN    Axial bearing resistance
+  u_N = 0.022076    Axial bearing utilisation
+  t_req_N = 10 mm    Plate thickness required for axial bearing alone
+  t_req = 13.356 mm    Plate thickness required (bearing, compression and tension T-stubs)
+  z_C = 96.1 mm    Compression lever arm z_C
+  z = 231.1 mm    Lever arm z
+  C_Ed = 203.41 kN    Compression resultant
+  C_Ed_2 = 0 kN    Compression resultant, other side
+  T_Ed = 175.21 kN    Tension resultant, more loaded row
+  T_Ed_2 = 0 kN    Tension resultant, other row
+  F_t_Ed = 87.603 kN    Bolt tension per bolt (to PROFIS)
+  A_flange = 41456 mm²    Compression-side bearing area
+  C_Rd = 587.29 kN    Compression-side resistance
+  u_C = 0.34634    Compression-side utilisation
+  M_pl_Rd = 8.5938 kN·m    Plate plastic moment
+  T_Rd_1 = 613.84 kN    T-stub mode 1-2, no prying
+  T_Rd_3 = 282 kN    T-stub mode 3
+  T_Rd = 282 kN    Tension T-stub resistance
+  u_T = 0.62129    Tension T-stub utilisation
+  u_bt = 0.62129    Bolt tension utilisation
+  alpha_bc = 0.248    Anchor shear factor α_bc
+  F_2_vb_Rd = 38.854 kN    Anchor shear resistance F_2,vb,Rd
+  F_vb_Rd = 38.854 kN    Anchor shear resistance per bolt
+  F_f_Rd = 5.64 kN    Friction resistance
+  V_Rd = 161.06 kN    Shear resistance
+  u_V = 0.031045    Shear utilisation
+  V_b_Ed = 0 kN    Shear per anchor bolt (to PROFIS)
+  u_max = 0.62129    Governing utilisation
+  regime = "tension at one bolt row, compression under the other flange (Table 6.7, z = z_C + x_b)"    Force regime (Table 6.7)
+  T_mode = "mode 3 (bolt failure)"    Governing T-stub mode
+
+6. CHECKS (governing first)
+  PASS  Base plate tension T-stub (bending at the bolts): u_T = 0.62129 vs u_T ≤ 1  utilisation 0.621  « EN 1993-1-8 cl. 6.2.6.11
+  PASS  Holding-down bolt tension: u_bt = 0.62129 vs u_bt ≤ 1  utilisation 0.621  « EN 1993-1-8 cl. 6.2.6.12
+  PASS  Compression flange bearing: u_C = 0.34634 vs u_C ≤ 1  utilisation 0.346  « EN 1993-1-8 cl. 6.2.6.9, 6.2.6.10
+  PASS  Shear: friction plus anchor bolts: u_V = 0.031045 vs u_V ≤ 1  utilisation 0.031  « EN 1993-1-8 cl. 6.2.2
+  PASS  Concrete bearing under the axial force: u_N = 0.022076 vs u_N ≤ 1  utilisation 0.0221  « EN 1993-1-8 cl. 6.2.8.2, 6.2.5
+  PASS  Anchorage designed externally (PROFIS report filed as Evidence): PROFIS report PROFIS-BP1-PLACEHOLDER.txt vs bolt tension 87.603 kN and shear 0 kN per anchor designed in PROFIS  utilisation 0
+
+7. APPLICABILITY
+  WARNING record.alpha_cc: alpha_cc: a tabulated value not taken from a reference record (EN 1992-1-1 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_c: gamma_c: a tabulated value not taken from a reference record (EN 1992-1-1 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_M2: gamma_M2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factor); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_M0: gamma_M0: a tabulated value not taken from a reference record (EN 1993-1-1 National Annex factor); enter it as one so its source, edition and licence travel with it.
+  WARNING record.C_fd: C_fd: a tabulated value not taken from a reference record (Friction coefficient plate to grout); enter it as one so its source, edition and licence travel with it.
+  WARNING record.f_y: f_y: a tabulated value not taken from a reference record (Plate strength); enter it as one so its source, edition and licence travel with it.
+  WARNING alpha_basis: alpha_basis: α above 1 needs the foundation geometry it rests on (A_c1/A_c0, α ≤ 3, EN 1992-1-1 cl. 6.7) stated.
+
+8. VERIFICATION
+  Template: struct.base-plate@1.0.0
+  Content hash: 5e6f7b62171087af
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 9/9
+  Test run: 2026-10-24 18:29 UTC
+  Application: TempestOS test

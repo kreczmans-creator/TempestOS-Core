@@ -73,7 +73,7 @@ public sealed class FrameCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
+        Id, "1.1.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
         "Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.",
         "Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ terms; end releases by static condensation; supports by removing freedoms or adding spring stiffness; equivalent nodal loads from exact fixed-end forces; K u = F solved by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism). Internal forces and deflections from the member end actions and Macaulay functions of the span loads; extremes at stations plus the zero-shear and zero-slope points found by bisection.",
         [
@@ -125,7 +125,30 @@ public sealed class FrameCalculator : ICalcCalculator
                 [new CalcExpectedValue("R3_y", 20, "kN", 1e-9), new CalcExpectedValue("R2_y", 20, "kN", 1e-9), new CalcExpectedValue("R1_y", 0, "kN", 1e-9), new CalcExpectedValue("R1_m", 0, "kN*m", 1e-9), new CalcExpectedValue("M_max", 40, "kN*m", 1e-9)]),
         ],
         DiagramKey: "frame-2d",
-        Category: "Analysis");
+        Category: "Analysis",
+        OutputPorts:
+        [
+            new CalcOutputPort("R1_x", "kN", "Horizontal reaction at node 1 (signed; node n follows the same pattern, R<n>_x)"),
+            new CalcOutputPort("R1_y", "kN", "Vertical reaction at node 1, up positive (compression into a column base; → S6 N_Ed)"),
+            new CalcOutputPort("R1_m", "kN*m", "Moment reaction at node 1 (signed)"),
+            new CalcOutputPort("R1_x_abs", "kN", "Magnitude of the horizontal reaction at node 1 (→ S6 V_Ed)"),
+            new CalcOutputPort("R1_m_abs", "kN*m", "Magnitude of the moment reaction at node 1 (→ S6 M_Ed)"),
+            new CalcOutputPort("N_e1", "kN", "Axial force of greatest magnitude in member 1, tension positive (→ S3 N_Ed; member e follows the same pattern, N_e<e>)"),
+            new CalcOutputPort("V_e1", "kN", "Greatest shear magnitude in member 1 (→ S3 V_Ed, S4 V_Ed)"),
+            new CalcOutputPort("M_abs_e1", "kN*m", "Greatest bending-moment magnitude in member 1, sagging or hogging (→ S3 M_y_Ed)"),
+            new CalcOutputPort("M_max_e1", "kN*m", "Maximum sagging moment in member 1"),
+            new CalcOutputPort("M_min_e1", "kN*m", "Minimum (hogging) moment in member 1"),
+            new CalcOutputPort("V_e2", "kN", "Greatest shear magnitude in member 2 (V_e<e> for any member)"),
+            new CalcOutputPort("M_abs_e2", "kN*m", "Greatest bending-moment magnitude in member 2 (M_abs_e<e> for any member)"),
+            new CalcOutputPort("sum_R_y", "kN", "Total vertical reaction"),
+            new CalcOutputPort("sum_R_x", "kN", "Total horizontal reaction"),
+            new CalcOutputPort("M_max", "kN*m", "Maximum sagging moment, reported combination"),
+            new CalcOutputPort("M_min", "kN*m", "Minimum (hogging) moment, reported combination"),
+            new CalcOutputPort("V_max", "kN", "Greatest shear magnitude, reported combination"),
+            new CalcOutputPort("N_max", "kN", "Maximum axial tension, reported combination"),
+            new CalcOutputPort("N_min", "kN", "Maximum axial compression (negative), reported combination"),
+            new CalcOutputPort("d_max", "mm", "Maximum transverse deflection, reported combination"),
+        ]);
 
     public static CalcInputValue Nodes(params (int Id, double X, double Y, string Support)[] nodes) =>
         CalcInputValue.Table("nodes", nodes.Select(n => CalcRow.Of(("id", new CalcCell(n.Id)), ("x", new CalcCell(n.X, "m")), ("y", new CalcCell(n.Y, "m")), ("support", new CalcCell(Text: n.Support)))).ToList());
@@ -185,6 +208,10 @@ public sealed class FrameCalculator : ICalcCalculator
         c.Record("comb", "reported combination", report.Combination.Name, new TextValue(report.Combination.Name), "The combination detailed below");
 
         // Reactions.
+        // Solver noise (a 1e-14 moment on an unloaded support) is snapped to zero in the magnitude outputs, relative to the largest reaction.
+        var reactionScale = Math.Max(1, report.Reactions.Values.Select(r => Math.Max(Math.Abs(r.Rx), Math.Max(Math.Abs(r.Ry), Math.Abs(r.Mz)))).DefaultIfEmpty(0).Max());
+        double Snap(double v) => Math.Abs(v) < 1e-9 * reactionScale ? 0 : Math.Abs(v);
+
         foreach (var node in model.Nodes.Where(n => n.IsSupported))
         {
             var (rx, ry, mz) = report.Reactions[node.Id];
@@ -197,6 +224,12 @@ public sealed class FrameCalculator : ICalcCalculator
                 c.Output($"R{node.Id}_x", $"R_x node {node.Id}");
                 c.Output($"R{node.Id}_y", $"R_y node {node.Id}");
                 c.Output($"R{node.Id}_m", $"M node {node.Id}");
+
+                // Magnitudes, for a design check (a base plate, a connection) that takes shear and moment unsigned.
+                c.Record($"R{node.Id}_x_abs", $"|R_x| at node {node.Id}", $"|{Fmt(rx / 1e3)}| kN", ScalarValue.Of(Snap(rx) / 1e3, kN), $"Magnitude of the horizontal reaction at node {node.Id}");
+                c.Record($"R{node.Id}_m_abs", $"|M| at node {node.Id}", $"|{Fmt(mz / 1e3)}| kN·m", ScalarValue.Of(Snap(mz) / 1e3, kNm), $"Magnitude of the moment reaction at node {node.Id}");
+                c.Output($"R{node.Id}_x_abs", $"|R_x| node {node.Id}");
+                c.Output($"R{node.Id}_m_abs", $"|M| node {node.Id}");
             }
         }
 
@@ -217,11 +250,13 @@ public sealed class FrameCalculator : ICalcCalculator
                 var e = s.Member.Element.Id;
                 c.Record($"M_max_e{e}", $"member {e}: max sagging M", $"at x = {Fmt(s.XMmax)} m from node {s.Member.Element.I}", ScalarValue.Of(s.Mmax / 1e3, kNm), $"Member {e} maximum moment");
                 c.Record($"M_min_e{e}", $"member {e}: min (hogging) M", $"at x = {Fmt(s.XMmin)} m", ScalarValue.Of(s.Mmin / 1e3, kNm), $"Member {e} minimum moment");
+                c.Record($"M_abs_e{e}", $"member {e}: max |M|", $"max(|{Fmt(s.Mmax / 1e3)}|, |{Fmt(s.Mmin / 1e3)}|) kN·m", ScalarValue.Of(Math.Max(Math.Abs(s.Mmax), Math.Abs(s.Mmin)) / 1e3, kNm), $"Member {e} greatest moment magnitude (sagging or hogging)");
                 c.Record($"V_e{e}", $"member {e}: max |V|", $"{Fmt(s.Vabs / 1e3)} kN", ScalarValue.Of(s.Vabs / 1e3, kN), $"Member {e} maximum shear");
                 c.Record($"N_e{e}", $"member {e}: max |N| (tension +)", $"{Fmt(s.Nsigned / 1e3)} kN", ScalarValue.Of(s.Nsigned / 1e3, kN), $"Member {e} axial force of greatest magnitude");
                 c.Record($"d_e{e}", $"member {e}: max |deflection|", $"at x = {Fmt(s.Xd)} m", ScalarValue.Of(s.Dabs * 1e3, mm), $"Member {e} maximum transverse deflection");
                 c.Output($"M_max_e{e}", $"M max, member {e}");
                 c.Output($"M_min_e{e}", $"M min, member {e}");
+                c.Output($"M_abs_e{e}", $"|M| max, member {e}");
                 c.Output($"V_e{e}", $"|V| max, member {e}");
                 c.Output($"N_e{e}", $"N, member {e}");
                 c.Output($"d_e{e}", $"δ max, member {e}");

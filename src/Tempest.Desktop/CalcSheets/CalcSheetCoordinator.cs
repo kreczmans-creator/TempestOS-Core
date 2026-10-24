@@ -15,13 +15,17 @@ namespace Tempest.Desktop.CalcSheets;
 /// <see cref="CalcInstanceService.Preview"/> on every input change; a
 /// save creates or updates the instance under the current project.
 /// </summary>
-public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<CalcStalenessChanged>
+public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<CalcStalenessChanged>, Tempest.Core.Events.IEventHandler<ProjectContextChangedEvent>
 {
     private readonly CalcInstanceService _service;
     private readonly CalcSheetView _view;
     private readonly IProjectContext _projects;
     private readonly Func<string?> _principalId;
     private CalcInputSet? _latest;
+    private bool _busy;
+    private Guid? _pendingOpen;
+    private bool _relistQueued;
+    private Guid? _relistLinkState;
 
     public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, Tempest.Core.Events.IEventBus? events = null)
     {
@@ -35,7 +39,11 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _projects = projects;
         _principalId = principalId;
 
-        _view.InputsChanged += inputs => Guarded(() => Recalculate(inputs), "recalculate");
+        _view.InputsChanged += inputs =>
+        {
+            _pendingOpen = null;
+            Guarded(() => Recalculate(inputs), "recalculate");
+        };
         _view.SaveRequested += () => _ = GuardedAsync(SaveAsync, "save that calculation");
         _view.CheckRequested += () => _ = GuardedAsync(CheckAsync, "record the check");
         _view.IssueRequested += () => _ = GuardedAsync(IssueAsync, "issue that calculation");
@@ -47,7 +55,21 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.AttachEvidenceRequested += () => _ = GuardedAsync(PickAndAttachAsync, "attach that report");
         _view.ApplyRecordRequested += id => _ = GuardedAsync(() => ApplyRecordAsync(id), "apply that record");
         _view.SaveRecordRequested += draft => _ = GuardedAsync(() => SaveRecordAsync(draft), "save that record");
-        events?.Subscribe(this);
+        _view.OpenSavedRequested += id => _ = GuardedAsync(() => ExclusiveAsync(() => RequestOpenAsync(id)), "open that calculation");
+        _view.CreatePackRequested += (templateId, title) => _ = GuardedAsync(() => ExclusiveAsync(() => CreatePackAsync(templateId, title)), "create that pack");
+        _view.PackSelected += id => _ = GuardedAsync(() => SelectPackAsync(id), "list that pack");
+        _view.CheckPackRequested += (id, draft) => _ = GuardedAsync(() => ExclusiveAsync(() => CheckPackAsync(id, draft)), "check that pack");
+        _view.IssuePackRequested += (id, draft) => _ = GuardedAsync(() => ExclusiveAsync(() => IssuePackAsync(id, draft)), "issue that pack");
+        events?.Subscribe<CalcStalenessChanged>(this);
+        events?.Subscribe<ProjectContextChangedEvent>(this);
+    }
+
+    /// <summary>The open project changed: relist its calculations and packs.</summary>
+    public Task HandleAsync(ProjectContextChangedEvent @event, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(@event);
+        QueueRelist();
+        return Task.CompletedTask;
     }
 
     /// <summary>Addendum A, L1: something upstream changed; refresh the stale marker if the shown calculation is affected.</summary>
@@ -55,16 +77,84 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
     {
         ArgumentNullException.ThrowIfNull(@event);
 
-        if (_view.CurrentInstance is { } shown && @event.AffectedIds.Contains(shown.Id))
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = GuardedAsync(() => RefreshLinkStateAsync(shown.Id), "refresh the stale marker"));
+        // The lists carry a stale mark per row, so they refresh for any change; the open sheet's own banner only when it is affected.
+        QueueRelist(_view.CurrentInstance is { } shown && @event.AffectedIds.Contains(shown.Id) ? shown.Id : null);
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>How many times the lists have been re-read (a burst of staleness events costs one).</summary>
+    public int RelistCount { get; private set; }
+
+    /// <summary>
+    /// Re-reads the lists once on the next dispatcher tick however many events asked for it; when the open sheet is affected the
+    /// stale banner and link choices are re-read too.
+    /// </summary>
+    private void QueueRelist(Guid? linkStateFor = null)
+    {
+        if (linkStateFor is not null)
+            _relistLinkState = linkStateFor;
+
+        if (_relistQueued)
+            return;
+
+        _relistQueued = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = GuardedAsync(async () =>
+        {
+            _relistQueued = false;
+            var linkState = _relistLinkState;
+            _relistLinkState = null;
+
+            if (linkState is { } id)
+                await RefreshLinkStateAsync(id).ConfigureAwait(true);
+            else
+                await RefreshListsAsync().ConfigureAwait(true);
+        }, "refresh the stale marks"));
+    }
+
+    /// <summary>Runs one open or pack action at a time with the buttons off meanwhile, so a double click does nothing.</summary>
+    private async Task ExclusiveAsync(Func<Task> action)
+    {
+        if (_busy)
+            return;
+
+        _busy = true;
+        _view.SetBusy(true);
+
+        try
+        {
+            await action().ConfigureAwait(true);
+        }
+        finally
+        {
+            _busy = false;
+            _view.SetBusy(false);
+        }
+    }
+
+    /// <summary>
+    /// Open from a list: when the form holds edits that are not saved, the first press only says so; pressing Open for the same
+    /// calculation again discards them. (Any edit in the meantime asks again.)
+    /// </summary>
+    private async Task RequestOpenAsync(Guid id)
+    {
+        if (_view.HasUnsavedEdits() && _pendingOpen != id)
+        {
+            _pendingOpen = id;
+            var name = (await _service.Store.FindInstanceAsync(id).ConfigureAwait(true))?.Name ?? "that calculation";
+            _view.ShowStatus($"The form has unsaved changes. Save them first, or press Open again to discard them and open '{name}'.");
+            return;
+        }
+
+        _pendingOpen = null;
+        await OpenAsync(id).ConfigureAwait(true);
     }
 
     /// <summary>Re-reads the shown calculation's staleness and the calculations its inputs can link to.</summary>
     public async Task RefreshLinkStateAsync(Guid? instanceId = null)
     {
         var id = instanceId ?? _view.CurrentInstance?.Id;
+        await RefreshListsAsync().ConfigureAwait(true);
 
         if (id is null || await _service.Store.FindInstanceAsync(id.Value).ConfigureAwait(true) is not { } instance)
         {
@@ -226,10 +316,148 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         await RefreshLinkStateAsync(result.Instance?.Id).ConfigureAwait(true);
     }
 
-    public Task RefreshAsync()
+    public async Task RefreshAsync()
     {
         _view.ShowCatalogue(_service.Catalogue.Current());
-        return Task.CompletedTask;
+        _view.SetPackTemplates([.. (await _service.ListPackTemplatesAsync().ConfigureAwait(true)).Select(t => new CalcSheetView.PackTemplateChoice(t.Id, t.Title, t.Description))]);
+        await RefreshListsAsync().ConfigureAwait(true);
+    }
+
+    private const int MaxListed = 200;
+
+    /// <summary>
+    /// Re-reads the open project's saved calculations (superseded revisions left out, each with its stale mark), its packs,
+    /// and the shown pack's calculations. Nothing is listed when no project is open.
+    /// </summary>
+    public async Task RefreshListsAsync()
+    {
+        var project = _projects.Current?.Id;
+        _view.SetProjectOpen(project is not null);
+        _view.SetPackChecker(CheckerName());
+        _view.SuggestPackCheck("Tempest Engineering", "Checked in the worksheet form.");
+        RelistCount++;
+
+        if (project is not { } projectId)
+        {
+            _view.SetSavedCalculations([]);
+            _view.SetPacks([]);
+            return;
+        }
+
+        var saved = new List<CalcSheetView.SavedCalculation>();
+        var current = (await _service.Store.ListInstancesAsync(projectId).ConfigureAwait(true)).Where(i => i.Status != CalcInstanceStatus.Superseded).ToList();
+
+        foreach (var instance in current.Take(MaxListed))
+            saved.Add(await DescribeAsync(instance).ConfigureAwait(true));
+
+        _view.SetSavedCalculations(saved, current.Count > MaxListed);
+
+        var packs = await _service.Store.ListPacksAsync(projectId).ConfigureAwait(true);
+        _view.SetPacks([.. packs.Take(MaxListed).Select(p => new CalcSheetView.PackChoice(p.Id, p.Title, p.Revision, p.Status, p.InstanceIds.Count))], packs.Count > MaxListed);
+        await ShowPackMembersAsync(_view.SelectedPackId).ConfigureAwait(true);
+    }
+
+    private async Task<CalcSheetView.SavedCalculation> DescribeAsync(CalcInstance instance)
+    {
+        var stale = await _service.StalenessAsync(instance).ConfigureAwait(true);
+        var title = _service.Catalogue.Find(instance.TemplateReference)?.Template.Title ?? instance.TemplateReference;
+        return new CalcSheetView.SavedCalculation(instance.Id, instance.Name, title, instance.Revision, instance.Status.ToString(), stale.IsStale && instance.Status != CalcInstanceStatus.Superseded);
+    }
+
+    private async Task ShowPackMembersAsync(Guid? packId)
+    {
+        var members = new List<CalcSheetView.SavedCalculation>();
+
+        if (packId is { } id && await _service.Store.FindPackAsync(id).ConfigureAwait(true) is { } pack)
+        {
+            foreach (var memberId in pack.InstanceIds)
+            {
+                if (await _service.Store.FindInstanceAsync(memberId).ConfigureAwait(true) is { } member)
+                    members.Add(await DescribeAsync(member).ConfigureAwait(true));
+            }
+        }
+
+        _view.SetPackMembers(members);
+    }
+
+    /// <summary>A pack was chosen: list its calculations and suggest its issue reference and client.</summary>
+    private async Task SelectPackAsync(Guid packId)
+    {
+        // Issue is off until the reads below are done and the reference and client are refilled for this pack.
+        var refilled = false;
+
+        try
+        {
+            _view.SetPackChecker(CheckerName());
+            await ShowPackMembersAsync(packId).ConfigureAwait(true);
+
+            if (await _service.Store.FindPackAsync(packId).ConfigureAwait(true) is { } pack && _view.SelectedPackId == packId)
+            {
+                _view.SuggestPackIssue($"{CalcInstanceService.Safe(pack.Title)}-{pack.Revision}", _projects.Current?.DisplayName ?? "—");
+                refilled = true;
+            }
+        }
+        finally
+        {
+            if (!refilled)
+                _view.CancelPackIssueRefill();
+        }
+    }
+
+    /// <summary>Who is signed in now, as the single Check records them.</summary>
+    private string CheckerName() => _principalId() ?? "engineer";
+
+    private async Task CreatePackAsync(string templateId, string title)
+    {
+        if (_projects.Current?.Id is not { } projectId)
+        {
+            _view.ShowStatus("Open a project first: a pack belongs to a project.");
+            return;
+        }
+
+        var template = (await _service.ListPackTemplatesAsync().ConfigureAwait(true)).FirstOrDefault(t => t.Id == templateId);
+
+        if (template is null)
+        {
+            _view.ShowStatus("That pack template is no longer available.");
+            return;
+        }
+
+        var (made, refusal) = await _service.InstantiatePackTemplateAsync(template, projectId, title).ConfigureAwait(true);
+
+        // Whatever was made before a refusal is already saved; the lists show it.
+        await RefreshListsAsync().ConfigureAwait(true);
+
+        if (made is null)
+        {
+            _view.ShowStatus(refusal ?? "Refused.");
+            return;
+        }
+
+        _view.ChoosePack(made.Pack.Id);
+        _view.ShowStatus($"Pack '{made.Pack.Title}' created from '{template.Title}' with {made.Pack.InstanceIds.Count} linked calculation(s). Open any of them from the list, then check and issue the pack.");
+    }
+
+    private async Task CheckPackAsync(Guid packId, CalcSheetView.PackCheckDraft draft)
+    {
+        // The checker is the person signed in now (a "Switch person" since the panel was last drawn counts), never typed text.
+        var who = CheckerName();
+        _view.SetPackChecker(who);
+        var result = await _service.CheckPackAsync(packId, who, draft.Organisation, draft.Statement, draft.Outcome).ConfigureAwait(true);
+        await RefreshListsAsync().ConfigureAwait(true);
+        _view.ShowStatus(result.Succeeded ? $"Pack checked by {who}. Issue it when ready." : result.Reason ?? "Refused.");
+    }
+
+    private async Task IssuePackAsync(Guid packId, CalcSheetView.PackIssueDraft draft)
+    {
+        var result = await _service.IssuePackAsync(packId, draft.IssueReference, draft.Client).ConfigureAwait(true);
+        await RefreshListsAsync().ConfigureAwait(true);
+
+        // A member open in the form may have been issued with the pack: show it as it now is.
+        if (result.Succeeded && _view.CurrentInstance is { } shown && await _service.Store.FindInstanceAsync(shown.Id).ConfigureAwait(true) is { } now && now.Status != shown.Status)
+            await OpenAsync(now.Id).ConfigureAwait(true);
+
+        _view.ShowStatus(result.Succeeded ? $"Pack issued as '{draft.IssueReference}'. Its sheet and every calculation are attached to the pack's Evidence." : result.Reason ?? "Refused.");
     }
 
     /// <summary>Opens an existing instance in the form (read-only when issued).</summary>
@@ -253,6 +481,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
 
         _view.SelectTemplate(entry.Reference);
         _view.ShowTemplate(entry, instance);
+        _view.ShowStatus($"Opened '{instance.Name}' · rev {instance.Revision} · {instance.Status}.{(instance.IsImmutable ? " It is read-only; revise it to start a new revision." : string.Empty)}");
         await RefreshLinkStateAsync(instance.Id).ConfigureAwait(true);
     }
 
