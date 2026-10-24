@@ -5,7 +5,9 @@ Verdict: MATCH WITH FINDINGS
 
 All 26 expected values of the 5 known-answer cases (KATs) match.
 Eleven extra models agree with my own solver in reactions, N, V, M and deflection.
-One real defect: a concentrated couple on a member hides one side of the moment jump from M_max and M_min.
+Two High defects remain after independent review.
+A concentrated couple on a member hides one side of the moment jump from M_max and M_min.
+A point or couple load with a blank position silently moves to end i.
 
 ## Method re-derived
 - Own dense direct-stiffness solver in numpy. Three freedoms per node. Euler–Bernoulli member, 6×6 stiffness with EA/L and EI/L³ terms. Hibbeler, Structural Analysis, Ch. 16 (stiffness method for plane frames), gives the matrix.
@@ -97,13 +99,14 @@ Guard probes that behaved correctly: mechanism (single pin, vertical rollers onl
 | Large-deflection warning | Small-displacement check | L/50 of each element | Noisy (see -03) |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-struct.frame-2d-01 | High | A concentrated couple on a member makes the moment diagram jump. M_max or M_min takes only the value after the jump. The other side is missed. The error is unconservative and grows with station spacing. | Simply supported, L 6, 30 kN·m couple at 3 m: sheet M_max = 13.5, correct 15.0. At 3.3 m: 15.0 against 16.5. With 4 stations: 7.5 against 15.0. A couple at the member end gives 28.5 against 30. | FrameSolver.cs MomentExtremes (line 70): add candidates at each couple position minus and plus 1e-9 L, as Summarise does for V and N. Add a couple KAT. Output both values in the M series. |
-| P1-struct.frame-2d-02 | Medium | A point or couple load with a blank position "a" goes to the start of the member with no warning. The result looks plausible and is unconservative. | Simply supported 6 m, point load F_y −60, "a" blank. The sheet gives R1_y = 60 kN, R2_y = 0 and M_max = 0. | FrameCalculator.cs Si() returns 0 for a blank cell. Block a blank "a" for kinds "point" and "moment". |
-| P1-struct.frame-2d-03 | Medium | The large-deflection warning compares each element deflection with its own length. A beam cut into short elements gets false warnings. | 10 m continuous beam in 120 elements of 0.5 m: largest deflection 27.2 mm (span/370). The sheet shows 30 warnings "deflects 10 … 27 mm, more than L/50". | FrameCalculator.cs line 237: compare the deflection relative to the chord with the length of the chain of collinear elements, or lower the notice to Info. |
-| P1-struct.frame-2d-04 | Low | d_max and d_e<n> are the absolute transverse displacement in member axes. They are not relative to the chord between the displaced ends. The label does not say so. | Pinned portal KAT model: d_e1 = 26.7 mm (column sway). The deflection relative to the chord is 2.9 mm. | Rename the label to "transverse displacement" and add a chord-relative value for serviceability checks. |
-| P1-struct.frame-2d-05 | Low | The source note of KAT ka-two-span-release contradicts its own expected values. | The note says span 1 carries 20 kN as a cantilever with M_fixed −100 kN·m. The roller at node 2 takes the 20 kN, so R1_y = 0 and R1_m = 0 as expected. | Correct the note in FrameCalculator.cs (the CalcReferenceSource text). |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-struct.frame-2d-01 | High | High (confirmed). Reproduced C1 (13.5 vs 15.0) and C4 (28.5 vs 30.0). Unconservative; couples on members are plausible, not routine. | A concentrated couple on a member makes the moment diagram jump. M_max or M_min takes only the value after the jump. The other side is missed. The error is unconservative and grows with station spacing. | Simply supported, L 6, 30 kN·m couple at 3 m: sheet M_max = 13.5, correct 15.0. At 3.3 m: 15.0 against 16.5. With 4 stations: 7.5 against 15.0. A couple at the member end gives 28.5 against 30. | FrameSolver.cs MomentExtremes (line 70): add candidates at each couple position minus and plus 1e-9 L, as Summarise does for V and N. Add a couple KAT. Output both values in the M series. |
+| P1-struct.frame-2d-02 | Medium | High (upgraded). Reproduced: M_max 0, R2_y 0. A missing guard lets an unconservative result through. | A point or couple load with a blank position "a" goes to the start of the member with no warning. The result looks plausible and is unconservative. | Simply supported 6 m, point load F_y −60, "a" blank. The sheet gives R1_y = 60 kN, R2_y = 0 and M_max = 0. | FrameCalculator.cs Si() returns 0 for a blank cell. Block a blank "a" for kinds "point" and "moment". |
+| P1-struct.frame-2d-03 | Medium | Medium (confirmed). False warnings only; never unconservative. | The large-deflection warning compares each element deflection with its own length. A beam cut into short elements gets false warnings. | 10 m continuous beam in 120 elements of 0.5 m: largest deflection 27.2 mm (span/370). The sheet shows 30 warnings "deflects 10 … 27 mm, more than L/50". | FrameCalculator.cs line 237: compare the deflection relative to the chord with the length of the chain of collinear elements, or lower the notice to Info. |
+| P1-struct.frame-2d-04 | Low | Low (confirmed) | d_max and d_e<n> are the absolute transverse displacement in member axes. They are not relative to the chord between the displaced ends. The label does not say so. | Pinned portal KAT model: d_e1 = 26.7 mm (column sway). The deflection relative to the chord is 2.9 mm. | Rename the label to "transverse displacement" and add a chord-relative value for serviceability checks. |
+| P1-struct.frame-2d-05 | Low | Low (confirmed). The roller at node 2 takes the 20 kN; span 1 is unloaded. | The source note of KAT ka-two-span-release contradicts its own expected values. | The note says span 1 carries 20 kN as a cantilever with M_fixed −100 kN·m. The roller at node 2 takes the 20 kN, so R1_y = 0 and R1_m = 0 as expected. | Correct the note in FrameCalculator.cs (the CalcReferenceSource text). |
+| P1-struct.frame-2d-R1 | Medium | Medium (new) | A blank load magnitude runs as zero with no warning. A trapezoid with w2 blank silently becomes a triangle with half the load. A udl with w1 blank carries nothing. | Simply supported 6 m, trapezoid a 0, b 6, w1 −10, w2 blank: ΣR_y = 30 kN, M_max = 23.09 kN·m. The uniform intent gives 60 kN and 45 kN·m. A udl row with only F_y filled gives ΣR_y = 0. | FrameCalculator.cs Build() and Si(): block a blank w1 (udl, trapezoid), w2 (trapezoid), F_x and F_y both blank (point) and M (moment). Share the fix with -02. |
 
 ## Notes for the owner's manual test
 - Simply supported beam, L 6 m, 30 kN·m anticlockwise couple at 3 m: expect R1_y +5 kN and R2_y −5 kN.
@@ -114,3 +117,14 @@ Guard probes that behaved correctly: mechanism (single pin, vertical rollers onl
 - Expect M 60 kN·m. The column d_e1 of 26.7 mm is sway, not bending.
 - Release the left end of span 2 in a two-span beam and load span 2. Span 1 must then carry nothing.
 - Leave "a" blank on a point load to see finding -02. Cut one beam into 0.5 m elements to see finding -03.
+
+## Independent review
+- Reviewer: senior verification reviewer (Claude), 2026-10-24.
+- The script is an independent dense solver with Hermite load integration. It is not a translation of the C#. It runs with exit 0.
+- I reproduced -01 with the probe: C1 gives M_max 13.5 at x 2.7 m, and C4 gives 28.5. The correct values are 15 and 30.
+- Cause of -01: MemberLoads.Moment uses Step(x, a) with x ≥ a. A station at the couple therefore sees only the after-jump value.
+- -01 only bites when the before-jump side is the extreme. A UDL plus a couple whose jump rises to the peak reported correctly (67.2 kN·m).
+- I reproduced -02: a point load with "a" blank gives R1_y 60, R2_y 0 and M_max 0. I raised it to High under the "missing guard" rule.
+- New finding R1: blank magnitudes run as zero. A trapezoid with w2 blank silently halves the load.
+- I read Run, Summarise, Build, Apply, MemberLoads and the model checks line by line. I found no other defect in the stiffness, release or reaction code.
+- Residual doubt: the mechanism test is relative (pivot ≤ 1e-10 × largest diagonal). A very soft spring next to very stiff members was not probed.
