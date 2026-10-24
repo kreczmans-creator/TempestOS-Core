@@ -1,7 +1,7 @@
 # bs.duct-sizing — independent re-derivation (Track P, P1)
 Calculator: Duct sizing, version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.BuildingServices/DuctSizingCalculator.cs (friction helpers in Fluids/Water.cs). Spec: docs/calcs/building-services/bs.duct-sizing.md.
 Script: tools/verification/bs.duct-sizing.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (confirmed in review: no Critical or High)
 
 The checkout was on branch claude/tempestos-v0260-test-readiness-s4jwh1, not release/v0.26.0. I did not switch branches.
 
@@ -72,14 +72,14 @@ Units were also checked: L/s, m³/h, cfm, in, inH₂O and kPa inputs give the sa
 | Guards | positive sizes, shape check | present; velocity and Re warnings | Yes; no aspect-ratio note (03) |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-bs.duct-sizing-01 | Medium | The velocity method on a rectangular or flat-oval duct does not reach the target velocity. It sizes the equivalent round duct at the target velocity, then solves b from D_e. A rectangle of that D_e has more area than the round duct. The duct comes out about 5 to 12 % too large, with velocity below target. The error is conservative for pressure and noise, but not what the method states. | Q = 0.5 m³/s, a = 500 mm, 6 m/s, step 10 mm. Product b = 190 mm, v = 5.26 m/s. Area rule b = 170 mm, v = 5.88 m/s. Flat oval: 200 mm, 5.47 m/s against 190 mm, 5.73 m/s. | For rect and oval ducts, size b from the area Q/v. Keep D_e only for the friction calculation. |
-| P1-bs.duct-sizing-02 | Low | Three KAT expected values are loose and hidden by the tolerance. De 457.3 mm: the relation gives 457.01 mm. Δp/L 0.556: the relation gives 0.5588 (0.5 %). dp_fit 19.47: the value was built with ρ ≈ 1.2015; the tool uses 1.2041 and gives 19.51. The KAT text calls 350 mm a standard size. I recall EN 1506 sizes as 315 and 400 mm (not confirmed against the standard). | Script KAT rows. | Recompute the expected values from the relations. Reword "standard size" as "next 50 mm step". |
-| P1-bs.duct-sizing-03 | Low | When a is blank the tool chooses a = 1.5 D_e rounded up, with no note in the spec. When only b is given, a is still chosen by sizing. There is no warning for a high aspect ratio. A flat oval entered with a < b is swapped silently. | Probe P4: a blank gives 650 × 250. Probe P16: b = 300 given gives a = 650. Probe P18: 1000 × 100 (10:1) runs with no note. Probe P15. | Document the default aspect ratio. Warn above about 4:1 (or the limit you adopt). Note the swap. |
-| P1-bs.duct-sizing-04 | Low | Equal-friction sizing searches only 20 mm to 5000 mm. Valid inputs outside that range give the block "The bracket does not contain a sign change; no root was found." | Probe P12: 400 m³/s at 0.3 Pa/m (needs 5.5 m); 1e-4 m³/s at 5 Pa/m (needs 11 mm). Both are inside the hard input limits. | Widen the bracket, or return a clear message such as "the size is outside 20 mm to 5000 mm". |
-| P1-bs.duct-sizing-05 | Info | A blank "index" flag counts the section on the index run. A branch left unflagged is added to the index-run total and the pressure-drop check. This errs on the safe side. | Probe P11: dp_all differs from dp_index only when a section is unflagged. | Mention the default in the column description. |
-| P1-bs.duct-sizing-06 | Info | Sutherland's law gives 18.13 µPa·s at 20 °C. A typical reference value is about 18.2 µPa·s. The effect on f is below 0.1 %. | Script row for air viscosity. | None needed. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-bs.duct-sizing-01 | Medium | Medium (confirmed). Code sizes b from D_e at the target velocity. The error is conservative and over 5 %. | The velocity method on a rectangular or flat-oval duct does not reach the target velocity. It sizes the equivalent round duct at the target velocity, then solves b from D_e. A rectangle of that D_e has more area than the round duct. The duct comes out about 5 to 12 % too large, with velocity below target. The error is conservative for pressure and noise, but not what the method states. | Q = 0.5 m³/s, a = 500 mm, 6 m/s, step 10 mm. Product b = 190 mm, v = 5.26 m/s. Area rule b = 170 mm, v = 5.88 m/s. Flat oval: 200 mm, 5.47 m/s against 190 mm, 5.73 m/s. | For rect and oval ducts, size b from the area Q/v. Keep D_e only for the friction calculation. |
+| P1-bs.duct-sizing-02 | Low | Low (confirmed; EN 1506 size series is recalled, owner to confirm against licensed copy) | Three KAT expected values are loose and hidden by the tolerance. De 457.3 mm: the relation gives 457.01 mm. Δp/L 0.556: the relation gives 0.5588 (0.5 %). dp_fit 19.47: the value was built with ρ ≈ 1.2015; the tool uses 1.2041 and gives 19.51. The KAT text calls 350 mm a standard size. I recall EN 1506 sizes as 315 and 400 mm (not confirmed against the standard). | Script KAT rows. | Recompute the expected values from the relations. Reword "standard size" as "next 50 mm step". |
+| P1-bs.duct-sizing-03 | Low | Low (confirmed) | When a is blank the tool chooses a = 1.5 D_e rounded up, with no note in the spec. When only b is given, a is still chosen by sizing. There is no warning for a high aspect ratio. A flat oval entered with a < b is swapped silently. | Probe P4: a blank gives 650 × 250. Probe P16: b = 300 given gives a = 650. Probe P18: 1000 × 100 (10:1) runs with no note. Probe P15. | Document the default aspect ratio. Warn above about 4:1 (or the limit you adopt). Note the swap. |
+| P1-bs.duct-sizing-04 | Low | Low (confirmed) | Equal-friction sizing searches only 20 mm to 5000 mm. Valid inputs outside that range give the block "The bracket does not contain a sign change; no root was found." | Probe P12: 400 m³/s at 0.3 Pa/m (needs 5.5 m); 1e-4 m³/s at 5 Pa/m (needs 11 mm). Both are inside the hard input limits. | Widen the bracket, or return a clear message such as "the size is outside 20 mm to 5000 mm". |
+| P1-bs.duct-sizing-05 | Info | Info (confirmed) | A blank "index" flag counts the section on the index run. A branch left unflagged is added to the index-run total and the pressure-drop check. This errs on the safe side. | Probe P11: dp_all differs from dp_index only when a section is unflagged. | Mention the default in the column description. |
+| P1-bs.duct-sizing-06 | Info | Info (confirmed) | Sutherland's law gives 18.13 µPa·s at 20 °C. A typical reference value is about 18.2 µPa·s. The effect on f is below 0.1 %. | Script row for air viscosity. | None needed. |
 
 ## Notes for the owner's manual test
 - 1 m³/s in a 400 mm round duct, 10 m, ε 0.09 mm, 20 °C: expect 7.958 m/s, f 0.01714, 1.633 Pa/m, 16.33 Pa.
@@ -87,3 +87,11 @@ Units were also checked: L/s, m³/h, cfm, in, inH₂O and kPa inputs give the sa
 - Velocity method, 0.5 m³/s at 6 m/s, step 50 mm, round: expect 350 mm and 5.197 m/s.
 - Velocity method with a = 500 mm rectangular and step 10 mm: the tool gives b = 190 mm; area sizing gives 170 mm (finding 01).
 - Enter 400 m³/s at 0.3 Pa/m with equal friction: expect the unclear engine block (finding 04).
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- I re-ran the script (exit 0) and read it. It is independent: Colebrook by brentq and its own sizing rules.
+- I reproduced finding 01 with the probe (P6c: b 190 mm, 5.26 m/s). It follows from the code: b solves D_e = √(4Q/πv).
+- Friction through D_e at v_e = 4Q/(πD_e²) is right for the Huebscher and Heyt–Diaz relations. Fitting loss at Q/A is right.
+- No severity changed. I found no new Critical, High or Medium defect.
+- Residual doubt: the EN 1506 size series in finding 02 is from memory.

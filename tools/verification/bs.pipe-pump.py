@@ -302,6 +302,25 @@ def extras():
     row("probe R two crossings", "number of crossings", 2, len(cr), 1e-9, "product reports none (finding)")
     finding("probe R two crossings", "Q_duty (m3/h)", float("nan"), cr[-1][0], "P1-bs.pipe-pump-04")
 
+    # ---- review R1: NPSH_a ignores friction when no segment is marked "suction"
+    #      Probes pp_r1a (side blank) and pp_r1b (side = suction), reviewer, 60 C, 30 m3/h, lift 3 m.
+    segR1 = [(60, 65, 0.045, 6, 0, 0)]
+    r1a = water_case(60, 30, segR1, zs=-3)
+    r1b = water_case(60, 30, segR1, zs=-3, suction=(0,))
+    row("review R1 side blank", "NPSH_a (m)", 5.440384815, r1a["NPSHa"], 4e-3, "product: pass vs NPSH_r 3 m")
+    row("review R1 side=suction", "NPSH_a (m)", -2.15116189, r1b["NPSHa"], 2e-2, "product: FAIL vs NPSH_r 3 m")
+    finding("review R1 side blank", "NPSH_a with line friction (m)", 5.440384815, r1b["NPSHa"], "P1-bs.pipe-pump-R1")
+
+    # ---- review R2: NPSH_a is taken at the design flow, not at the duty flow
+    #      Probe pp_r2a (reviewer): design 30 m3/h, duty 38.539 m3/h, NPSH_a 3.2105 m (pass vs 3 m).
+    segR2 = [(10, 65, 0.045, 4, 0, 0), (100, 65, 0.045, 6, 0, 0)]
+    pumpR2 = ([0, 20, 40, 60], [30, 28, 22, 10])
+    r2 = water_case(60, 30, segR2, 0, pumpR2, zs=-3, suction=(0,))
+    row("review R2 design flow", "Q_duty (m3/h)", 38.539, r2["Qd"], 2e-3)
+    row("review R2 design flow", "NPSH_a at Q (m)", 3.210465629, r2["NPSHa"], 4e-3)
+    r2d = water_case(60, r2["Qd"], segR2, zs=-3, suction=(0,))
+    finding("review R2 duty flow", "NPSH_a at Q_duty (m)", 3.210465629, r2d["NPSHa"], "P1-bs.pipe-pump-R2")
+
     # ---- Q^2 system-curve assumption on the KAT duty case (turbulent), Info only
     rho20, mu20 = rho_water(20), mu_water(20)
     def hsys_exact(q):

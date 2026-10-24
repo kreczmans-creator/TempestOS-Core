@@ -1,7 +1,7 @@
 # mech.thick-cylinder — independent re-derivation (Track P, P1)
 Calculator: Thick-walled cylinder stresses (Lamé), version 2.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Mechanical/ThickCylinderCalculator.cs. Spec: docs/calcs/mechanical/mech.thick-cylinder.md.
 Script: tools/verification/mech.thick-cylinder.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (reviewed: one High, -01)
 
 All 17 KAT values and all 12 extra probes match my independent Lamé solution. The findings concern guards and display, not the stress formulas.
 
@@ -73,12 +73,12 @@ Guards behave as specified. b ≤ a blocks. Both pressures zero block. A negativ
 | Boundary stress values | exactly −p_i and −p_o | Round-off noise at times | Partly (finding 02) |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-mech.thick-cylinder-01 | Medium | Under external pressure on a moderately thin wall, the check passes although elastic collapse governs. The calculator checks stress only and gives no stability notice. | a 95 mm, b 100 mm, p_o 7.5 MPa, closed, allowable 200 MPa. Product: u = 0.666, pass. Long-tube collapse pressure E/(4(1 − ν²))·(t/r_m)³ with E 207 GPa and ν 0.3 is 7.67 MPa. The load is 98 % of it. | Add a warning when p_o > p_i and (b − a)/a is below about 0.1. State that stability is not checked. Optionally add the collapse pressure as a comparison output. |
-| P1-mech.thick-cylinder-02 | Low | A boundary stress that should be exactly zero shows round-off noise such as −1.49e-14 MPa. Such values appear in the sheet and outputs. | a 95, b 100, p_i 0, p_o 7.5: σ_r,a = −1.4901e-14 MPa. a 5000, b 6000: σ_r,b = −4.77e-13 MPa. a 50, b 100, p_i 50: σ_r,b = 1.86e-15 MPa. | Set σ_r(a) = −p_i and σ_r(b) = −p_o directly. The Lamé form then only supplies the interior values. |
-| P1-mech.thick-cylinder-03 | Info | The check uses von Mises only. Tresca is reported but not checked. Tresca is 15 % higher in the first KAT (133.3 against 115.5 MPa). | KAT ka-internal-closed. | Say in the check text which criterion the allowable stress assumes. |
-| P1-mech.thick-cylinder-04 | Info | At exactly 5 % wall, the thin-wall warning depends on floating-point rounding. | a 50 mm, b 52.5 mm warns; the spec threshold is "thinner than 5 %". | None needed. Optionally add a small tolerance. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-mech.thick-cylinder-01 | Medium | High: a missing guard lets an unsafe pass through in plausible use. With the default 200 MPa allowable, elastic collapse governs whenever t/r_m is below about 0.06. Real tubes collapse well below the elastic value because of out-of-roundness | Under external pressure on a moderately thin wall, the check passes although elastic collapse governs. The calculator checks stress only and gives no stability notice. | a 95 mm, b 100 mm, p_o 7.5 MPa, closed, allowable 200 MPa. Product: u = 0.666, pass. Long-tube collapse pressure E/(4(1 − ν²))·(t/r_m)³ with E 207 GPa and ν 0.3 is 7.67 MPa. The load is 98 % of it. | Add a warning when p_o > p_i and (b − a)/a is below about 0.1. State that stability is not checked. Optionally add the collapse pressure as a comparison output. |
+| P1-mech.thick-cylinder-02 | Low | Low: confirmed (σ_r,a −1.4901e-14 MPa in my probe) | A boundary stress that should be exactly zero shows round-off noise such as −1.49e-14 MPa. Such values appear in the sheet and outputs. | a 95, b 100, p_i 0, p_o 7.5: σ_r,a = −1.4901e-14 MPa. a 5000, b 6000: σ_r,b = −4.77e-13 MPa. a 50, b 100, p_i 50: σ_r,b = 1.86e-15 MPa. | Set σ_r(a) = −p_i and σ_r(b) = −p_o directly. The Lamé form then only supplies the interior values. |
+| P1-mech.thick-cylinder-03 | Info | Info: confirmed | The check uses von Mises only. Tresca is reported but not checked. Tresca is 15 % higher in the first KAT (133.3 against 115.5 MPa). | KAT ka-internal-closed. | Say in the check text which criterion the allowable stress assumes. |
+| P1-mech.thick-cylinder-04 | Info | Info: confirmed | At exactly 5 % wall, the thin-wall warning depends on floating-point rounding. | a 50 mm, b 52.5 mm warns; the spec threshold is "thinner than 5 %". | None needed. Optionally add a small tolerance. |
 
 ## Notes for the owner's manual test
 - Enter a 50, b 100, p_i 50 MPa, closed. Expect σ_θ,bore 83.33, σ_r,bore −50, σ_z 16.67, σ_vm 115.47, Tresca 133.33, thin-wall 75 MPa.
@@ -86,3 +86,12 @@ Guards behave as specified. b ≤ a blocks. Both pressures zero block. A negativ
 - Enter a 40, b 60, p_o 20 MPa. Expect σ_θ,bore −72, σ_θ,outer −52, σ_z −36, σ_vm,bore 62.35 MPa.
 - Set p_i = p_o. Expect all three principal stresses equal to −p and u = 0.
 - Try a 95, b 100, p_o 7.5 MPa. The sheet passes. Check collapse by hand with a stability formula (finding 01).
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- I ran the script (exit 0). It solves the Lamé problem on its own and does not translate the C#.
+- I reproduced -01 with the probe: a 95, b 100, p_o 7.5 MPa passes at u 0.666 with no notice.
+- I checked the long-tube collapse value by hand: 7.67 MPa, so the load is 98 % of it.
+- I read Run line by line. A, B, σ_z for closed ends, von Mises, Tresca and the thin-wall estimate are all correct.
+- Change: -01 up to High. Its trigger should cover p_o > p_i with b/a up to about 1.1, not only the 5 % thin-wall case.
+- No new findings. Residual doubt: none on the stress formulae.

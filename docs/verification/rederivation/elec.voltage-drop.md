@@ -1,7 +1,7 @@
 # elec.voltage-drop — independent re-derivation (Track P, P1)
 Calculator: Voltage drop and I²R loss, version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Electrical/VoltageDropCalculator.cs. Spec: docs/calcs/electrical/elec.voltage-drop.md.
 Script: tools/verification/elec.voltage-drop.py (exit 0 = all KATs match; 61 rows: 11 KAT rows and 50 extra rows).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (reviewed: one High, two Medium)
 
 All 11 KAT values match. All 10 extra probes match to better than 1e-9. The formulas are right. The default copper resistivity gives resistances 5 to 11 % below the BS EN 60228 class 2 maximum values that the BS 7671 tables use. Two silent-default and guard gaps remain.
 
@@ -61,13 +61,15 @@ The overload warning and the temperature warning both fired in V8. A missing R�
 | Temperature correction of mV/A/m | BS 7671 Appendix 4 correction factor | Not offered | See -04 |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-elec.voltage-drop-01 | Medium | The default ρ_20 = 0.01724 gives conductor resistances 5 to 11 % below the BS EN 60228 class 2 maximum values. BS 7671 mV/A/m tables are built on those values. The drop is unconservative against the tables. | 35 mm² at 70 °C, three-phase, cos φ 1, X 0: product 1.0208 mV/A/m. The table has about 1.1 (7 % higher). Differences at 20 °C: 1.5 mm² −5.0 %, 6 mm² −6.7 %, 35 mm² −6.0 %, 50 mm² −10.9 %. Table values are from memory; check them against your copy. | Add a size-based resistance table from BS EN 60228 as an option, or state the gap beside the ρ_20 input. |
-| P1-elec.voltage-drop-02 | Medium | A blank A_c or ρ_20 is replaced by 35 mm² and copper with no notice. The "conductor-data" block rule cannot fire on this route. | Resistivity route with only system, V_n, I, L and cos φ: R = 0.04715 Ω, the KAT answer, and no notice for A_c or ρ_20. | Remove the defaults for A_c, or add a notice when an optional default is used. |
-| P1-elec.voltage-drop-03 | Low | The mV/A/m route ignores I_z. There is no overload check and no T_c_est, even when I_z is entered. | V3 inputs with I = 60 A, I_z = 50 A: only the drop check is shown. | Run the I ≤ I_z check on all routes. Optionally apply the Appendix 4 temperature correction. |
-| P1-elec.voltage-drop-04 | Low | The per-km route and the mV/A/m route have no temperature correction. A 20 °C resistance entered there gives an unconservative drop. The label says "at its stated temperature" but gives no way to correct. | R_km 3.08 Ω/km (6 mm², 20 °C) is used as entered. At 70 °C it would be 3.69 Ω/km. | Add a "tabulated at" temperature input and correct to T_c. |
-| P1-elec.voltage-drop-05 | Info | The aluminium resistivity needs the user to change α as well. The label gives ρ only. | α_Al is about 0.0040 against the default 0.00393; the effect is below 0.5 % at 70 °C. | Mention α beside the ρ_20 hint. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-elec.voltage-drop-01 | Medium | High (upgraded). Unconservative by 5 to 11 % in every default run, against the basis of the BS 7671 tables. Same root and fix as elec.fault-protection-01. Table values: owner to confirm against licensed copy. | The default ρ_20 = 0.01724 gives conductor resistances 5 to 11 % below the BS EN 60228 class 2 maximum values. BS 7671 mV/A/m tables are built on those values. The drop is unconservative against the tables. | 35 mm² at 70 °C, three-phase, cos φ 1, X 0: product 1.0208 mV/A/m. The table has about 1.1 (7 % higher). Differences at 20 °C: 1.5 mm² −5.0 %, 6 mm² −6.7 %, 35 mm² −6.0 %, 50 mm² −10.9 %. Table values are from memory; check them against your copy. | Add a size-based resistance table from BS EN 60228 as an option, or state the gap beside the ρ_20 input. |
+| P1-elec.voltage-drop-02 | Medium | Medium (confirmed). Probe: blank A_c and ρ_20 give R 0.04715 Ω with no notice. Only X_km gets the generic default notice. | A blank A_c or ρ_20 is replaced by 35 mm² and copper with no notice. The "conductor-data" block rule cannot fire on this route. | Resistivity route with only system, V_n, I, L and cos φ: R = 0.04715 Ω, the KAT answer, and no notice for A_c or ρ_20. | Remove the defaults for A_c, or add a notice when an optional default is used. |
+| P1-elec.voltage-drop-03 | Low | Medium (upgraded). Probe: I 60 A against I_z 50 A on this route gives a pass and no notice. The user entered I_z and expects the check. | The mV/A/m route ignores I_z. There is no overload check and no T_c_est, even when I_z is entered. | V3 inputs with I = 60 A, I_z = 50 A: only the drop check is shown. | Run the I ≤ I_z check on all routes. Optionally apply the Appendix 4 temperature correction. |
+| P1-elec.voltage-drop-04 | Low | Low (confirmed). BS 7671 mV/A/m tables are already at the maximum operating temperature, so that route is normally conservative. | The per-km route and the mV/A/m route have no temperature correction. A 20 °C resistance entered there gives an unconservative drop. The label says "at its stated temperature" but gives no way to correct. | R_km 3.08 Ω/km (6 mm², 20 °C) is used as entered. At 70 °C it would be 3.69 Ω/km. | Add a "tabulated at" temperature input and correct to T_c. |
+| P1-elec.voltage-drop-05 | Info | Info (confirmed). | The aluminium resistivity needs the user to change α as well. The label gives ρ only. | α_Al is about 0.0040 against the default 0.00393; the effect is below 0.5 % at 70 °C. | Mention α beside the ρ_20 hint. |
+| P1-elec.voltage-drop-R1 | Low | Low (new) | The assumption says X is zero on the resistivity route unless X_km is given. The code applies the default X_km 0.08 Ω/km. The error is conservative. | Probe vd1: blank X_km gives the notice that 0.08 Ω/km is used. | Align the assumption text with the code. |
+| P1-elec.voltage-drop-R2 | Low | Low (new) | V_n defaults to 400 V for every system. A single-phase or DC circuit left at the default shows the per cent drop against 400 V. Only the generic default notice appears. | Single-phase 230 V circuit with V_n blank: dV_pct is 230/400 of the true value, 43 % low. | Make V_n required for single-phase and DC, or warn when V_n is 400 V on those systems. |
 
 ## Notes for the owner's manual test
 - DC KAT by hand: ρ_70 = 0.01724 (1 + 0.00393 × 50) = 0.020628. R = 0.020628 × 30/6 = 0.10314 Ω. ΔV = 2 × 20 × 0.10314 = 4.1256 V (8.595 % of 48 V).
@@ -75,3 +77,10 @@ The overload warning and the temperature warning both fired in V8. A missing R�
 - Compare 35 mm² copper, 70 °C, cos φ 1 with your BS 7671 Appendix 4 table. Expect the product at 1.021 mV/A/m three-phase and 1.179 mV/A/m single-phase (-01).
 - Use the mV/A/m route with 2.4 mV/A/m, 63 A, 50 m. Expect 7.56 V, 1.89 % of 400 V. Set n = 2 and expect 3.78 V.
 - Leave A_c empty on the resistivity route. Expect the 35 mm² answer with no warning (-02).
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- I re-ran the script: all rows pass. It is an independent Python derivation.
+- I reproduced 02 and 03 with the probe, and read Run line by line. The drop formulas, the √3 and 2 factors and the parallel division are right.
+- Changes: 01 raised to High, to match the same defect in elec.fault-protection. 03 raised to Medium. R1 and R2 added, both Low.
+- Residual doubt: the BS EN 60228 maxima in 01 are from memory. Owner to confirm against licensed copy.
