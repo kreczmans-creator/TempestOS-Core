@@ -43,4 +43,6 @@ v0.26.0's task list is in git history at `release/v0.26.0` (`docs/build-log/TASK
 - [x] Yellow final (Y12; Y11-04 open to the owner)
 - [x] CHANGELOG, release notes, handover
 - [x] rc1 gates (clean clone, Release, every suite)
+- [x] Showcase journey: one worked example per discipline, screenshot per stage; findings Y13-01…09 fixed (sheet diagram D-45, AMA references D-44)
+- [ ] Owner: confirm the book editions in D-44
 - [ ] Draft PR to main and tag `v0.27.0-rc1` (owner)
