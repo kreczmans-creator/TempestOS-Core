@@ -143,10 +143,16 @@ public static class MaterialProperties
         return (parsed, null);
     }
 
-    /// <summary>The temperature unit named, or the reason it is not a temperature unit.</summary>
+    /// <summary>
+    /// The temperature unit named, or the reason it is not a temperature unit. A temperature with no unit is refused, as a value with no
+    /// unit is: 20 could be kelvin or Celsius, and a table typed in Celsius must not be read as kelvin (B-0 review, M2).
+    /// </summary>
     internal static (Unit? Unit, string? Problem) ParseTemperatureUnit(string? unit, string what)
     {
-        var text = string.IsNullOrWhiteSpace(unit) ? "K" : unit.Trim();
+        if (string.IsNullOrWhiteSpace(unit))
+            return (null, $"{what}: give the temperature unit (K, degC or degF); a temperature without a unit is not read as kelvin or Celsius.");
+
+        var text = unit.Trim();
 
         if (!UnitCatalog.TryParse(text, out var parsed, out var error))
             return (null, $"{what}: unit '{text}' is not understood ({error}).");

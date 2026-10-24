@@ -1,7 +1,7 @@
 using CsCheck;
 using Tempest.Calc.Engine;
 using Tempest.Calc.Mechanical;
-using Tempest.Calc.Mechanical.ToleranceStack;
+using Tempest.Calc.Engine.Analysis.ToleranceStack;
 using Tempest.Calc.Sheets;
 
 namespace Tempest.Calc.Tests.Calculators.Mechanical;

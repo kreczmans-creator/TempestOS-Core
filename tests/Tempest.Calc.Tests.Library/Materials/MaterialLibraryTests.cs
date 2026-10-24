@@ -23,6 +23,7 @@ internal sealed class MaterialUsingCalculator : ICalcCalculator
             new CalcInputSpec("rho", "Density", CalcInputKind.Quantity, "kg/m^3", IsOptional: true, HardMin: 0, MaterialProperty: "rho"),
             new CalcInputSpec("alpha", "Thermal expansion", CalcInputKind.Quantity, "1/K", IsOptional: true, MaterialProperty: "alpha"),
             new CalcInputSpec("f_y", "Yield strength", CalcInputKind.Quantity, "MPa", IsOptional: true, HardMin: 0, MaterialProperty: "f_y"),
+            new CalcInputSpec("Rm_A", "R_m(d) curve coefficient", CalcInputKind.Quantity, "MPa", IsOptional: true, HardMin: 0, MaterialProperty: "Rm_A"),
             new CalcInputSpec("Es_pts", "Secant modulus points", CalcInputKind.Table, Columns: EsColumns, MaxRows: 50, IsOptional: true, MaterialProperty: MaterialProperties.SecantCurve),
         ],
         [new CalcAssumption("Test only.", "—")],
@@ -32,14 +33,14 @@ internal sealed class MaterialUsingCalculator : ICalcCalculator
             new CalcTestCase("ka-1", "Steel", new CalcReferenceSource("Hand", null, "210 / 2.6"), [CalcInputValue.Quantity("E", 210, "GPa"), CalcInputValue.Of("nu", 0.3)], [new CalcExpectedValue("G", 80.76923076923077, "GPa", 1e-9)]),
             new CalcTestCase("ka-2", "Aluminium", new CalcReferenceSource("Hand", null, "70 / 2.66"), [CalcInputValue.Quantity("E", 70, "GPa"), CalcInputValue.Of("nu", 0.33)], [new CalcExpectedValue("G", 26.31578947368421, "GPa", 1e-9)]),
         ],
-        RecordKinds: [MaterialLibrary.RecordKind(["E", "nu", "rho", "alpha", "f_y", "Es_pts"])]);
+        RecordKinds: [MaterialLibrary.RecordKind(["E", "nu", "rho", "alpha", "f_y", "Rm_A", "Es_pts"])]);
 
     public void Run(CalcRunContext c)
     {
         c.Input("E");
         c.Input("nu");
 
-        foreach (var optional in new[] { "rho", "alpha", "f_y" })
+        foreach (var optional in new[] { "rho", "alpha", "f_y", "Rm_A" })
         {
             if (c.Has(optional))
                 c.Input(optional);
@@ -57,7 +58,7 @@ internal sealed class MaterialUsingCalculator : ICalcCalculator
 }
 
 /// <summary>Addendum B, W3 — the material property library on the reference records.</summary>
-public sealed class MaterialLibraryTests
+public sealed partial class MaterialLibraryTests
 {
     private static LibraryTestHost Host() => new(calculators: [new MaterialUsingCalculator()]);
 
@@ -388,7 +389,7 @@ public sealed class MaterialLibraryTests
         var b = await NewCalculationAsync(host, project);
         var unrelated = await NewCalculationAsync(host, project);
         Assert.True((await host.Service.Materials.ApplyAsync(a.Id, steel.Id)).Succeeded);
-        Assert.True((await host.Service.Materials.ApplyAsync(b.Id, steel.Id, temperature: 60, singleValueAtAnyTemperature: true)).Succeeded);
+        Assert.True((await host.Service.Materials.ApplyAsync(b.Id, steel.Id, temperature: 60, temperatureUnit: "degC", singleValueAtAnyTemperature: true)).Succeeded);
 
         await SaveAsync(host, steel with { Values = [.. steel.Values.Select(v => v.Symbol == "rho" ? v with { Number = 7800 } : v)] });
 
@@ -433,7 +434,7 @@ public sealed class MaterialLibraryTests
         var calc = await NewCalculationAsync(host, project);
 
         // ν, ρ and f_y have no temperature table: applying at a temperature is refused unless their single values are said to stand for it.
-        var refused = await host.Service.Materials.ApplyAsync(calc.Id, steel.Id, temperature: 60);
+        var refused = await host.Service.Materials.ApplyAsync(calc.Id, steel.Id, temperature: 60, temperatureUnit: "degC");
         Assert.False(refused.Succeeded);
         Assert.Contains("single value with no temperature table", refused.Reason, StringComparison.Ordinal);
 
@@ -454,7 +455,7 @@ public sealed class MaterialLibraryTests
 
         // A record that is not a material has no temperature to be read at.
         var other = await host.Service.SaveRecordAsync(new CalcDataRecord(Guid.Empty, "test.other", "Other", 0, "s", "e", "t", "h", "p", false, CalcDataOrigin.UserEntered, [new CalcDataValue("k", 1)], default));
-        Assert.False((await host.Service.Materials.ApplyAsync(calc.Id, other.Record!.Id, temperature: 60)).Succeeded);
+        Assert.False((await host.Service.Materials.ApplyAsync(calc.Id, other.Record!.Id, temperature: 60, temperatureUnit: "degC")).Succeeded);
     }
 
     [Fact]

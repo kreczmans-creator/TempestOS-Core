@@ -53,6 +53,9 @@ public sealed partial class CalcInstanceService
                 if (spec.Kind != CalcInputKind.Table)
                     return CalcActionResult.Refused($"Input '{spec.Symbol}' takes {property}, which is a table, but is a {spec.Kind} input.", instance);
 
+                if (TableFitProblem(spec, property, resolved.Rows!) is { } fit)
+                    return CalcActionResult.Refused(fit, instance);
+
                 value = new CalcInputValue(spec.Symbol, Rows: resolved.Rows, Provenance: MaterialLibrary.ProvenanceFor(material, property, resolved.Source!, temperatureTable ? null : at, "stated"));
             }
 
@@ -71,6 +74,28 @@ public sealed partial class CalcInstanceService
         }
 
         return await UpdateInputsAsync(instance.Id, inputs, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Why a material's table cannot go into a table input, or <see langword="null"/>: more rows than the input holds, a column the input does not have, or a required column left out (B-0 review, LOW 7).</summary>
+    private static string? TableFitProblem(CalcInputSpec spec, string property, IReadOnlyList<CalcRow> rows)
+    {
+        if (rows.Count > spec.MaxRows)
+            return $"Input '{spec.Symbol}' holds at most {spec.MaxRows} rows, but {property} of the material has {rows.Count}.";
+
+        var columns = spec.Columns ?? [];
+
+        for (var r = 0; r < rows.Count; r++)
+        {
+            var cells = rows[r]?.Cells ?? new Dictionary<string, CalcCell>();
+
+            if (cells.Keys.FirstOrDefault(k => !columns.Any(c => string.Equals(c.Key, k, StringComparison.Ordinal))) is { } unknown)
+                return $"Input '{spec.Symbol}' has no column '{unknown}', which {property} of the material gives (row {r + 1}).";
+
+            if (columns.FirstOrDefault(c => !c.IsOptional && !cells.ContainsKey(c.Key)) is { } missing)
+                return $"Input '{spec.Symbol}' needs column '{missing.Key}', which {property} of the material does not give (row {r + 1}).";
+        }
+
+        return null;
     }
 
     /// <summary>A material value as an input's number: in the input's default unit (a quantity) or as a plain number (a dimensionless one).</summary>
@@ -106,7 +131,10 @@ public sealed partial class CalcInstanceService
                 return false;
 
             var x = InputSi(input.Number, string.IsNullOrEmpty(input.Unit) ? spec.DefaultUnit : input.Unit);
-            return Math.Abs(x - scalar.Si) <= 1e-9 * Math.Max(1.0, Math.Max(Math.Abs(x), Math.Abs(scalar.Si)));
+
+            // A property whose unit follows its coefficient (R_m's A) is kept as entered, in the unit it was entered in; compare it in SI too (B-0 review, M3).
+            var y = MaterialProperties.Find(property, out _) is { SiUnit: null } && MaterialLibrary.ToSi(scalar.Si, scalar.SiUnit) is { Value: { } siValue } ? siValue : scalar.Si;
+            return Math.Abs(x - y) <= 1e-9 * Math.Max(1.0, Math.Max(Math.Abs(x), Math.Abs(y)));
         }
 
         return resolved.Rows is { } rows && MatchesValue(input, new CalcDataValue(input.Symbol, Rows: rows), spec);

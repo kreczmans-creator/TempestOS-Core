@@ -86,6 +86,12 @@ public sealed record CalcDataRecord(
     public string Citation =>
         $"{Title} — {SourceTitle}, {Edition}, {TableOrClause}{Origin switch { CalcDataOrigin.Derived => " (derived)", CalcDataOrigin.ManufacturerExample => " (manufacturer example)", CalcDataOrigin.Indicative => " (indicative)", _ => string.Empty }}{(LicensedSource ? " (licensed source)" : string.Empty)}";
 
+    /// <summary>
+    /// Whether the record's values are under the export lock (§A5): it is flagged licensed, or any one of its values comes from a licensed
+    /// source (a flag that was left off cannot release a licensed value).
+    /// </summary>
+    public bool IsLicensed() => LicensedSource || (Values?.Any(v => v?.Source?.Licence == CalcLicenceClass.LicensedSource) ?? false);
+
     /// <summary>Why this record cannot be saved, or <see langword="null"/>.</summary>
     public string? Problem()
     {
@@ -98,8 +104,15 @@ public sealed record CalcDataRecord(
                 return $"The record's {field} is longer than {MaxTextLength} characters.";
         }
 
-        if (Values.Count == 0 || Values.Count > MaxValues)
+        if (Values is null || Values.Count == 0 || Values.Count > MaxValues)
             return $"A reference record holds between 1 and {MaxValues} values.";
+
+        // A file or a caller can hand over an empty entry or a value with no symbol; refused here, before anything reads a symbol.
+        if (Values.Any(v => v is null))
+            return "A reference record's values must each be present (an empty entry was given).";
+
+        if (Values.Any(v => string.IsNullOrWhiteSpace(v.Symbol)))
+            return "Every value of a reference record needs a symbol.";
 
         if (Values.Any(v => v.Rows is { Count: > MaxRows }))
             return $"A table in a reference record holds at most {MaxRows} rows.";

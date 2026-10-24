@@ -9,30 +9,66 @@ namespace Tempest.Calc.Tests.FluidPower;
 /// runs for the other disciplines): known answers, a well-formed template,
 /// a clean run on defaults, hostile numbers that never reach the sheet,
 /// empty tables that block cleanly, a golden sheet, a stable template hash
-/// and a sheet that renders in under a second. Written as one callable
-/// check per calculator so the test below can run it over
-/// <see cref="Tempest.Calc.FluidPower.FluidPowerCalculators.All"/> whether
-/// that list is empty (a theory with no data fails) or not.
+/// and a sheet that renders in under a second. Every check runs for every
+/// calculator and ALL failures are reported together (a calculator that
+/// breaks three checks says so, not just the first), so a run over
+/// <see cref="Tempest.Calc.FluidPower.FluidPowerCalculators.All"/> is as
+/// informative as the theory the other disciplines have, and passes
+/// vacuously while that list is empty (a theory with no data would fail).
 /// </summary>
 public static class CommonChecks
 {
-    public static void Run(ICalcCalculator calculator)
-    {
-        ArgumentNullException.ThrowIfNull(calculator);
-        var t = calculator.Template;
-        var id = t.Id;
+    /// <summary>The checks, by the name a failure is reported under.</summary>
+    private static readonly (string Name, Action<ICalcCalculator> Check)[] Checks =
+    [
+        ("discipline", calculator => Assert.Equal(CalcDiscipline.FluidPower, calculator.Template.Discipline)),
+        ("known answers", KnownAnswers),
+        ("template is well formed", TemplateIsWellFormed),
+        ("defaults run without a block", DefaultsRunWithoutABlock),
+        ("a new sheet says what to enter next", NewSheetSaysWhatToEnterNext),
+        ("hostile numbers never reach a sheet", HostileNumbersNeverReachASheet),
+        ("empty tables block cleanly", EmptyTablesBlockCleanly),
+        ("golden sheet", GoldenSheetMatches),
+        ("template hash is stable", calculator => Assert.Equal(CalcTemplateHasher.Hash(calculator), CalcTemplateHasher.Hash(calculator))),
+        ("renders under a second", RendersUnderASecond),
+        ("has an id", calculator => Assert.False(string.IsNullOrWhiteSpace(calculator.Template.Id))),
+    ];
 
-        Assert.Equal(CalcDiscipline.FluidPower, t.Discipline);
-        KnownAnswers(calculator);
-        TemplateIsWellFormed(calculator);
-        DefaultsRunWithoutABlock(calculator);
-        NewSheetSaysWhatToEnterNext(calculator);
-        HostileNumbersNeverReachASheet(calculator);
-        EmptyTablesBlockCleanly(calculator);
-        GoldenSheetMatches(calculator);
-        Assert.Equal(CalcTemplateHasher.Hash(calculator), CalcTemplateHasher.Hash(calculator));
-        RendersUnderASecond(calculator);
-        Assert.False(string.IsNullOrWhiteSpace(id));
+    /// <summary>Runs every check on one calculator and fails once, listing every check that failed.</summary>
+    public static void Run(ICalcCalculator calculator) => RunAll([calculator]);
+
+    /// <summary>Runs every check on every calculator and fails once, listing every check that failed for each.</summary>
+    public static void RunAll(IEnumerable<ICalcCalculator> calculators)
+    {
+        var failures = Collect(calculators);
+        Assert.True(failures.Count == 0, $"{failures.Count} common check(s) failed:{Environment.NewLine}{string.Join(Environment.NewLine, failures)}");
+    }
+
+    /// <summary>Every failure of every check on every calculator, as "id / check: what went wrong"; empty when all pass.</summary>
+    public static IReadOnlyList<string> Collect(IEnumerable<ICalcCalculator> calculators)
+    {
+        ArgumentNullException.ThrowIfNull(calculators);
+        var failures = new List<string>();
+
+        foreach (var calculator in calculators)
+        {
+            ArgumentNullException.ThrowIfNull(calculator);
+
+            foreach (var (name, check) in Checks)
+            {
+                try
+                {
+                    check(calculator);
+                }
+                catch (Exception ex)
+                {
+                    var firstLine = ex.Message.Split('\n', 2)[0].Trim();
+                    failures.Add($"{calculator.Template.Id} / {name}: {(ex is Xunit.Sdk.XunitException ? string.Empty : ex.GetType().Name + ": ")}{firstLine}");
+                }
+            }
+        }
+
+        return failures;
     }
 
     private static void KnownAnswers(ICalcCalculator calculator)

@@ -1,8 +1,8 @@
 using System.Globalization;
 using Tempest.Calc.Engine;
+using Tempest.Calc.Engine.Analysis.ToleranceStack;
 using Tempest.Calc.Engine.Units;
 using Tempest.Calc.Engine.Values;
-using Tempest.Calc.Mechanical.ToleranceStack;
 using Tempest.Calc.Sheets;
 
 namespace Tempest.Calc.Mechanical;

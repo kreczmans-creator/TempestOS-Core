@@ -128,7 +128,7 @@ public static class GasLaw
     /// <summary>
     /// The gas volume V₀ that, charged at <paramref name="chargePressure"/> and compressed from <paramref name="lowPressure"/> to
     /// <paramref name="highPressure"/>, displaces <paramref name="displaced"/> of liquid:
-    /// <c>V₀ = ΔV / [(p₀/p₁)^(1/n) − (p₀/p₂)^(1/n)]</c>. The accumulator form (F2) with a pre-charge at or below the working range; for
+    /// <c>V₀ = ΔV / [(p₀/p₁)^(1/n) − (p₀/p₂)^(1/n)]</c>. The accumulator form (F2) with a pre-charge at or below the low working pressure (above it is refused); for
     /// <paramref name="chargePressure"/> = <paramref name="lowPressure"/> it is the sealed-system vessel form
     /// (<see cref="GasVolumeForDisplacement"/>). All pressures are absolute; <paramref name="lowPressure"/> &lt; <paramref name="highPressure"/>.
     /// <paramref name="displaced"/> may be zero or negative (a contraction); the result then follows its sign.
@@ -142,6 +142,11 @@ public static class GasLaw
 
         if (!(lowPressure < highPressure))
             throw new CalcEvaluationException("The low pressure must be below the high pressure.");
+
+        // Above the low working pressure the gas is already compressed when the liquid starts to enter: (p₀/p₁)^(1/n) exceeds 1 and the
+        // formula would give a volume that is too small (an undersized accumulator), so it is not answered.
+        if (chargePressure > lowPressure)
+            throw new CalcEvaluationException($"The pre-charge pressure ({Show(chargePressure)}) must not be above the low working pressure ({Show(lowPressure)}).");
 
         var exponent = Polytropic(n);
         var denominator = Ratio(chargePressure / lowPressure, exponent) - Ratio(chargePressure / highPressure, exponent);

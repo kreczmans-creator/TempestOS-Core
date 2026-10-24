@@ -965,8 +965,31 @@ public sealed partial class CalcInstanceService
                 withheld[value.Symbol] = $"{CalcRecordPin.Prefix}{pin.Id:N}@{pin.Revision}";
         }
 
-        var sheet = CalcSheetBuilder.Build(entry.Template, inputs, result, header, footer, null, withheld.Count == 0 ? null : withheld);
-        return await DescribeLinksAsync(sheet, inputs, cancellationToken).ConfigureAwait(false);
+        // A value linked from a calculation that holds an input pinned to a licensed record is withheld like a licensed value itself: the
+        // inputs list names the link and says so in place of the number (the working may still show the value used — the user's own calculation, §A5).
+        var traced = new Dictionary<Guid, bool>();
+        var derived = new HashSet<string>(StringComparer.Ordinal);
+        var shown = new CalcInputSet();
+
+        foreach (var value in inputs.Values)
+        {
+            if (value.Rows is not null)
+            {
+                var rows = withheld.ContainsKey(value.Symbol)
+                    ? value.Rows
+                    : await WithholdCellsAsync(value.Rows, traced, static (cell, _) => cell with { Number = null, Unit = null, Text = LicensedDerivedText, Flag = null }, cancellationToken).ConfigureAwait(false);
+                shown.Set(ReferenceEquals(rows, value.Rows) ? value : value with { Rows = rows });
+                continue;
+            }
+
+            if (await LicensedUpstreamAsync(value.Provenance, traced, cancellationToken).ConfigureAwait(false) is not null)
+                derived.Add(value.Symbol);
+
+            shown.Set(value);
+        }
+
+        var sheet = CalcSheetBuilder.Build(entry.Template, shown, result, header, footer, null, withheld.Count == 0 ? null : withheld);
+        return await DescribeLinksAsync(sheet, shown, derived, cancellationToken).ConfigureAwait(false);
     }
 
     /// <param name="checkEvidence">The Evidence whose check the header shows when it is not the calculation's own (a pack member shows its pack's).</param>

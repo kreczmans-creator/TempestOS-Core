@@ -57,7 +57,9 @@ public class ModuleMetadataCoverageTests
         // `[ModuleMetadata]` exactly like its six siblings.
         // 33 -> 36 (`ADR-0163`): the Structural, Electrical and Building
         // Services Explorer area modules.
-        Assert.Equal(36, moduleTypes.Count);
+        // 36 -> 37 (`ADR-0170`): the Fluid Power Explorer area module, carrying
+        // `[ModuleMetadata]` like its three siblings.
+        Assert.Equal(37, moduleTypes.Count);
 
         var missingMetadata = moduleTypes
             .Where(type => type.GetCustomAttribute<ModuleMetadataAttribute>() is null)

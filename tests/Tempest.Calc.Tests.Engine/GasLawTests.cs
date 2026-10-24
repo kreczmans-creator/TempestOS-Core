@@ -120,6 +120,18 @@ public sealed class GasLawTests
         Assert.Throws<CalcEvaluationException>(() => GasLaw.ChargeVolume(double.PositiveInfinity, 90, 100, 200, 1));
     }
 
+    [Theory]
+    [InlineData(100.0000001)]
+    [InlineData(150)]
+    [InlineData(1e5)]
+    public void A_Pre_Charge_Above_The_Low_Working_Pressure_Is_Refused_Not_Answered_With_An_Undersized_Volume(double charge)
+    {
+        // B-0 review, LOW 1: with p0 > p1 the formula would return a volume that is too small.
+        var ex = Assert.Throws<CalcEvaluationException>(() => GasLaw.ChargeVolume(1.0, charge, 100, 200, GasLaw.Isothermal));
+        Assert.Contains("pre-charge", ex.Message, StringComparison.Ordinal);
+        Assert.Equal(1.0 / 0.5, GasLaw.ChargeVolume(1.0, 100, 100, 200, GasLaw.Isothermal), 12);   // at the low pressure itself it is the vessel form
+    }
+
     [Fact]
     public void A_Zero_Displacement_Needs_No_Vessel_And_A_Negative_One_Follows_Its_Sign()
     {

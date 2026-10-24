@@ -1,8 +1,6 @@
-using Tempest.Calc.Engine;
-using Tempest.Calc.Engine.Analysis;
 using Tempest.Calc.Engine.Numerics;
 
-namespace Tempest.Calc.Mechanical.ToleranceStack;
+namespace Tempest.Calc.Engine.Analysis.ToleranceStack;
 
 /// <summary>How a contributor varies inside its band.</summary>
 public enum ContributorDistribution
@@ -66,6 +64,25 @@ public sealed record Contributor(string Name, double Sign, double Nominal, doubl
 
         var half = (zone + bonus) / 2.0;
         return new Contributor(name, sign, nominal, half, nominal + shift, distribution, SigmaFor(half, distribution, k));
+    }
+
+    /// <summary>
+    /// Why this contributor cannot be analysed, or <see langword="null"/>: the sign is +1 or −1, every figure is finite, the half-band and σ
+    /// are not negative and the distribution is a defined one. The factories (<see cref="Size"/>, <see cref="Zone"/>) guarantee this; the
+    /// public positional constructor and <c>with</c> do not, so the engine checks every contributor it is given.
+    /// </summary>
+    public string? Problem()
+    {
+        if (Sign != 1.0 && Sign != -1.0)
+            return "A contributor's sign is +1 (adds) or −1 (subtracts).";
+
+        if (!double.IsFinite(Nominal) || !double.IsFinite(Half) || !double.IsFinite(Mid) || !double.IsFinite(Sigma))
+            return "A contributor's nominal, half-band, mean and standard deviation must be finite numbers.";
+
+        if (Half < 0.0 || Sigma < 0.0)
+            return "A contributor's half-band and standard deviation cannot be negative.";
+
+        return Enum.IsDefined(Distribution) ? null : "A contributor's distribution is normal, uniform or triangular.";
     }
 
     private static void Require(double sign, double k)
@@ -148,11 +165,8 @@ public static class ToleranceStackEngine
     /// <summary>The most contributors one loop may carry (the M1 table cap).</summary>
     public const int MaxContributors = 200;
 
-    /// <summary>Worst-case, RSS, modified-RSS and statistical analysis of a loop, judged against an optional requirement.</summary>
-    /// <param name="contributors">The loop; at least one contributor.</param>
-    /// <param name="requirement">The limits, or <see langword="null"/> for none.</param>
-    /// <param name="modifiedRssFactor">The Bender-style factor applied to the RSS.</param>
-    public static StackResult Analyse(IReadOnlyList<Contributor> contributors, StackRequirement? requirement = null, double modifiedRssFactor = 1.5)
+    /// <summary>The loop is there, within the cap, and every contributor is sound.</summary>
+    private static void Require(IReadOnlyList<Contributor> contributors)
     {
         ArgumentNullException.ThrowIfNull(contributors);
 
@@ -162,10 +176,41 @@ public static class ToleranceStackEngine
         if (contributors.Count > MaxContributors)
             throw new CalcLimitException(nameof(MaxContributors), $"A tolerance stack carries at most {MaxContributors} contributors.");
 
+        for (var i = 0; i < contributors.Count; i++)
+        {
+            var problem = contributors[i] is { } x ? x.Problem() : "is missing.";
+
+            if (problem is not null)
+                throw new CalcEvaluationException($"Contributor {i + 1}{(contributors[i] is { } named && !string.IsNullOrWhiteSpace(named.Name) ? $" ({named.Name})" : string.Empty)}: {problem}");
+        }
+    }
+
+    /// <summary>The requirement, or an open one; a stated limit is finite and the minimum is not above the maximum.</summary>
+    private static StackRequirement Require(StackRequirement? requirement)
+    {
         requirement ??= new StackRequirement(null, null);
+
+        if ((requirement.Minimum is { } a && !double.IsFinite(a)) || (requirement.Maximum is { } b && !double.IsFinite(b)))
+            throw new CalcEvaluationException("A stated minimum or maximum must be a finite number.");
 
         if (requirement.Minimum is { } lo && requirement.Maximum is { } hi && lo > hi)
             throw new CalcEvaluationException("The stated minimum is above the stated maximum.");
+
+        return requirement;
+    }
+
+    /// <summary>Worst-case, RSS, modified-RSS and statistical analysis of a loop, judged against an optional requirement.</summary>
+    /// <param name="contributors">The loop; at least one contributor.</param>
+    /// <param name="requirement">The limits, or <see langword="null"/> for none.</param>
+    /// <param name="modifiedRssFactor">The Bender-style factor applied to the RSS.</param>
+    public static StackResult Analyse(IReadOnlyList<Contributor> contributors, StackRequirement? requirement = null, double modifiedRssFactor = 1.5)
+    {
+        Require(contributors);
+
+        if (!double.IsFinite(modifiedRssFactor) || modifiedRssFactor <= 0.0)
+            throw new CalcEvaluationException("The modified-RSS factor must be a positive, finite number.");
+
+        requirement = Require(requirement);
 
         var nominal = contributors.Sum(x => x.Sign * x.Nominal);
         var mean = contributors.Sum(x => x.Sign * x.Mid);
@@ -228,11 +273,8 @@ public static class ToleranceStackEngine
     /// <param name="cancellationToken">Cancels a long run.</param>
     public static MonteCarloResult Simulate(IReadOnlyList<Contributor> contributors, int samples, ulong seed, StackRequirement? requirement = null, int bins = 30, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(contributors);
-
-        if (contributors.Count == 0)
-            throw new CalcEvaluationException("A tolerance stack needs at least one contributor.");
-
+        Require(contributors);
+        requirement = Require(requirement);
         var nominalMap = new Dictionary<string, double>(StringComparer.Ordinal);
         var dists = new Dictionary<string, Distribution>(StringComparer.Ordinal);
         var keys = new string[contributors.Count]; // built once: a string per sample per contributor dominated the run at the caps (R-21)

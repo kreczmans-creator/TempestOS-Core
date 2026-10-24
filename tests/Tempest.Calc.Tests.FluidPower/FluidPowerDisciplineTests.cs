@@ -9,9 +9,9 @@ public sealed class FluidPowerDisciplineTests
     [Fact]
     public void Every_Shipped_Fluid_Power_Calculator_Meets_The_Common_Definition_Of_Done()
     {
-        // A theory over an empty list fails ("no data"); a loop passes vacuously now and covers F1–F3 the moment they are added.
-        foreach (var calculator in FluidPowerCalculators.All)
-            CommonChecks.Run(calculator);
+        // A theory over an empty list fails ("no data"); this passes vacuously now and covers F1–F3 the moment they are added,
+        // reporting every failed check of every calculator together.
+        CommonChecks.RunAll(FluidPowerCalculators.All);
     }
 
     [Fact]
@@ -52,4 +52,42 @@ public sealed class FluidPowerDisciplineTests
         var elsewhere = new HarnessFixtureCalculator().Template with { Discipline = CalcDiscipline.Mechanical };
         Assert.NotEqual(CalcTemplateHasher.CanonicalText(fixture.Template, []), CalcTemplateHasher.CanonicalText(elsewhere, []));
     }
+
+    [Fact]
+    public void The_Common_Checks_Report_Every_Failure_Not_Just_The_First()
+    {
+        // B-0 review, LOW 8: a calculator that is in the wrong discipline AND gets its known answers wrong says both.
+        var broken = new BrokenFixtureCalculator();
+        var failures = CommonChecks.Collect([broken]);
+
+        Assert.Contains(failures, f => f.Contains("/ discipline:", StringComparison.Ordinal));
+        Assert.Contains(failures, f => f.Contains("/ known answers:", StringComparison.Ordinal));
+        Assert.True(failures.Count >= 2);
+        Assert.Empty(CommonChecks.Collect([new HarnessFixtureCalculator()]));
+
+        var thrown = Assert.ThrowsAny<Exception>(() => CommonChecks.RunAll([broken]));
+        Assert.Contains("/ discipline:", thrown.Message, StringComparison.Ordinal);
+        Assert.Contains("/ known answers:", thrown.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Common_Checks_Pass_Vacuously_On_An_Empty_List_And_Refuse_A_Null_One()
+    {
+        Assert.Empty(CommonChecks.Collect([]));
+        Assert.Throws<ArgumentNullException>(() => CommonChecks.Collect(null!));
+    }
+}
+
+/// <summary>The harness fixture filed under the wrong discipline with known answers that are wrong: two checks fail at once.</summary>
+internal sealed class BrokenFixtureCalculator : ICalcCalculator
+{
+    private readonly HarnessFixtureCalculator _inner = new();
+
+    public CalcTemplate Template => _inner.Template with
+    {
+        Discipline = CalcDiscipline.Mechanical,
+        TestCases = [.. _inner.Template.TestCases!.Select(c => c with { Expected = [new CalcExpectedValue("F", 1, "kN", 1e-9)] })],
+    };
+
+    public void Run(CalcRunContext c) => _inner.Run(c);
 }

@@ -150,9 +150,10 @@ public sealed class MaterialLibrary
     /// A property of a material in SI. With a <paramref name="temperature"/> the material's temperature table for it is
     /// read, linearly between its rows; outside the tabulated range the answer is a refusal that says the range (there is
     /// no extrapolation). A property given only as a table needs a temperature; one given only as a single value has no
-    /// temperature to be read at and is refused for one.
+    /// temperature to be read at and is refused for one. A temperature always comes with its unit (K, degC or degF): there is no
+    /// default, so the same number cannot mean kelvin in one call and Celsius in another.
     /// </summary>
-    public static (MaterialValue? Value, string? Refusal) GetProperty(CalcDataRecord material, string property, double? temperature = null, string temperatureUnit = "K")
+    public static (MaterialValue? Value, string? Refusal) GetProperty(CalcDataRecord material, string property, double? temperature = null, string? temperatureUnit = null)
     {
         ArgumentNullException.ThrowIfNull(material);
         MaterialTemperature? at = null;
@@ -167,7 +168,7 @@ public sealed class MaterialLibrary
             if (!double.IsFinite(t))
                 return (null, "temperature: give a finite number.");
 
-            at = new MaterialTemperature(t, string.IsNullOrWhiteSpace(temperatureUnit) ? "K" : temperatureUnit.Trim(), parsed!.ToSi(t));
+            at = new MaterialTemperature(t, temperatureUnit!.Trim(), parsed!.ToSi(t));
         }
 
         var resolved = Resolve(material, property, at, singleValue: false);
@@ -184,7 +185,7 @@ public sealed class MaterialLibrary
     }
 
     /// <summary>As <see cref="GetProperty"/>, for the material with this id (its latest revision, or <paramref name="revision"/>).</summary>
-    public async Task<(MaterialValue? Value, string? Refusal)> GetPropertyAsync(Guid materialId, string property, double? temperature = null, string temperatureUnit = "K", int? revision = null, CancellationToken cancellationToken = default) =>
+    public async Task<(MaterialValue? Value, string? Refusal)> GetPropertyAsync(Guid materialId, string property, double? temperature = null, string? temperatureUnit = null, int? revision = null, CancellationToken cancellationToken = default) =>
         await FindAsync(materialId, revision, cancellationToken).ConfigureAwait(false) is { } material
             ? GetProperty(material, property, temperature, temperatureUnit)
             : (null, $"No material '{materialId}' exists.");
@@ -230,9 +231,10 @@ public sealed class MaterialLibrary
     /// material's value, in the input's own unit, citing the material's pin. Properties the material does not state are
     /// left as they are. With a <paramref name="temperature"/>, temperature-dependent properties are read at it
     /// (a refusal outside a table's range); an input whose property has no temperature table is refused unless
-    /// <paramref name="singleValueAtAnyTemperature"/> says its single value stands for it.
+    /// <paramref name="singleValueAtAnyTemperature"/> says its single value stands for it. The temperature needs its
+    /// <paramref name="temperatureUnit"/> (K, degC or degF); there is no default.
     /// </summary>
-    public Task<CalcActionResult> ApplyAsync(Guid instanceId, Guid materialId, int? revision = null, double? temperature = null, string temperatureUnit = "degC", bool singleValueAtAnyTemperature = false, CancellationToken cancellationToken = default)
+    public Task<CalcActionResult> ApplyAsync(Guid instanceId, Guid materialId, int? revision = null, double? temperature = null, string? temperatureUnit = null, bool singleValueAtAnyTemperature = false, CancellationToken cancellationToken = default)
     {
         MaterialTemperature? at = null;
 
@@ -246,7 +248,7 @@ public sealed class MaterialLibrary
             if (!double.IsFinite(t))
                 return Task.FromResult(CalcActionResult.Refused("temperature: give a finite number."));
 
-            at = new MaterialTemperature(t, string.IsNullOrWhiteSpace(temperatureUnit) ? "K" : temperatureUnit.Trim(), parsed!.ToSi(t));
+            at = new MaterialTemperature(t, temperatureUnit!.Trim(), parsed!.ToSi(t));
         }
 
         return _service.ApplyRecordCoreAsync(instanceId, materialId, revision, at, singleValueAtAnyTemperature, cancellationToken);
@@ -336,12 +338,20 @@ public sealed class MaterialLibrary
         if (document is null || !string.Equals(document.Format, ExportFormat, StringComparison.Ordinal) || document.Values is null)
             return (null, $"That is not a material file ({ExportFormat}).");
 
-        if (document.Values.Any(v => v?.Source is null || v.Source.Licence == CalcLicenceClass.LicensedSource))
+        if (document.Values.Any(v => v is null || string.IsNullOrWhiteSpace(v.Symbol)))
+            return (null, "That file holds a value with no symbol (or an empty entry); every value names the property it gives.");
+
+        if (document.Values.Any(v => v.Source is null || v.Source.Licence == CalcLicenceClass.LicensedSource))
             return (null, "That file holds a value from a licensed source or a value with no source; licensed values are never exported, so it cannot be imported.");
 
-        return await SaveAsync(
+        // A file made from one of the shipped generic materials keeps its "indicative" flag; a file cannot claim any other origin
+        // (derived, manufacturer example): it is entered by whoever imports it.
+        var origin = document.Origin == CalcDataOrigin.Indicative ? CalcDataOrigin.Indicative : CalcDataOrigin.UserEntered;
+
+        return await _service.SaveRecordCoreAsync(
             new CalcDataRecord(Guid.Empty, Kind, document.Title ?? string.Empty, 0, document.SourceTitle ?? string.Empty, document.Edition ?? string.Empty, document.TableOrClause ?? string.Empty, document.LicenceHolder ?? string.Empty,
-                string.Empty, false, CalcDataOrigin.UserEntered, document.Values, default, document.Notes),
+                string.Empty, false, origin, document.Values, default, document.Notes),
+            keepIndicativeOrigin: true,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -352,7 +362,7 @@ public sealed class MaterialLibrary
         if (material is null)
             return (null, $"No material '{materialId}' exists.");
 
-        return material.LicensedSource || material.Values.Any(v => v.Source?.Licence == CalcLicenceClass.LicensedSource)
+        return material.IsLicensed()
             ? (null, $"Material '{material.Title}' holds values from a licensed source ({material.SourceTitle}, {material.Edition}); its values are never exported.")
             : (material, null);
     }
@@ -518,17 +528,35 @@ public sealed class MaterialLibrary
             new(new MaterialValue(def.Key, si, def.SiUnit ?? string.Empty, basis, source, at.Kelvin), null, source, false, null);
     }
 
-    /// <summary>The temperature (kelvin) a provenance reference says its value was read at, or <see langword="null"/>.</summary>
+    /// <summary>
+    /// The temperature (kelvin) a provenance reference says its value was read at, or <see langword="null"/>. The reference is
+    /// <c>pin · property · T=… K · single value · the value's own reference</c>: only the third part is the temperature, so a
+    /// "T=500 K" inside the value's own reference text is not mistaken for one (B-0 review, LOW 6).
+    /// </summary>
     internal static MaterialTemperature? TemperatureOf(CalcProvenance? provenance)
     {
-        foreach (var part in (provenance?.Reference ?? string.Empty).Split(" · "))
-        {
-            if (part.StartsWith("T=", StringComparison.Ordinal) && part.EndsWith(" K", StringComparison.Ordinal)
-                && double.TryParse(part[2..^2], NumberStyles.Float, CultureInfo.InvariantCulture, out var kelvin) && double.IsFinite(kelvin))
-                return MaterialTemperature.OfKelvin(kelvin);
-        }
+        var parts = (provenance?.Reference ?? string.Empty).Split(" · ");
+
+        if (parts.Length >= 3 && parts[2].StartsWith("T=", StringComparison.Ordinal) && parts[2].EndsWith(" K", StringComparison.Ordinal)
+            && double.TryParse(parts[2][2..^2], NumberStyles.Float, CultureInfo.InvariantCulture, out var kelvin) && double.IsFinite(kelvin))
+            return MaterialTemperature.OfKelvin(kelvin);
 
         return null;
+    }
+
+    /// <summary>
+    /// The value's own source for the issued sheet — "E: Mill certificate 4711, rev B, p. 5, Table 3" — read from the property an input's
+    /// provenance names (the second part of its reference) at the temperature it was applied at; <see langword="null"/> when that cannot be
+    /// worked out. The record's own citation is on the sheet already; this is the value's, which may differ (B-0 review, M1).
+    /// </summary>
+    internal static string? ValueSourceText(CalcDataRecord material, CalcProvenance? provenance)
+    {
+        var parts = (provenance?.Reference ?? string.Empty).Split(" · ");
+
+        if (parts.Length < 2 || Resolve(material, parts[1], TemperatureOf(provenance), singleValue: true).Source is not { } source)
+            return null;
+
+        return $"{parts[1]}: {source.Source}, {source.Edition}, {source.Reference}";
     }
 
     /// <summary>The provenance an input takes from a material: its pin, the property, any temperature and the value's own page or table, with the value's edition as revision.</summary>
