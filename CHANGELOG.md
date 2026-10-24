@@ -9,6 +9,7 @@
 - Compare with previous revision over calc instances (inputs row by row, outputs with relative change, checks).
 - Reference-library fill of worksheet inputs from released materials, fasteners and bearings, with the record's pin as the source.
 - Issued calculation sheets: the reference diagram as Figure 1 (vectors, labels as text), the method as a step table (what each step calculates beside its relation), AMA citations with one numbered reference list at the end (D-44, D-45, D-46).
+- Symbols read as an engineer writes them in the worksheet form, its diagram and the issued sheet: D_1 as D₁, F_M,min with "M,min" set low, sigma_A as σ_A (D-47). Data formats keep the symbols as entered.
 - Calculation register lists the project's worksheet calculations (status, revision, governing check) and opens them in the form.
 - Every spec gains an "In plain terms" paragraph and the hand arithmetic of its first worked example, generated from the sheet and drift-guarded.
 

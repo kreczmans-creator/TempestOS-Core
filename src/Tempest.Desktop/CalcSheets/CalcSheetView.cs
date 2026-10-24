@@ -536,10 +536,10 @@ public sealed class CalcSheetView : UserControl
             _checks.Children.Add(CheckRow(c));
 
         foreach (var n in result.Blocks)
-            _notices.Children.Add(new TextBlock { Text = $"Block — {n.Message}", Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody });
+            _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Block — {n.Message}"));
 
         foreach (var n in result.Warnings)
-            _notices.Children.Add(new TextBlock { Text = $"Warning — {n.Message}", Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody });
+            _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Warning — {n.Message}"));
 
         foreach (var s in result.Steps.Where(s => s.Kind != CalcStepKind.Input))
         {
@@ -552,7 +552,7 @@ public sealed class CalcSheetView : UserControl
             row.Children.Add(Mono($"      = {s.ResultText}"));
 
             if (s.Description is { Length: > 0 })
-                row.Children.Add(Caption("        " + s.Description));
+                row.Children.Add(Typeset(Caption(string.Empty), "        " + s.Description));
 
             AutomationProperties.SetName(row, $"Step {s.Symbol}");
             _working.Children.Add(row);
@@ -689,7 +689,7 @@ public sealed class CalcSheetView : UserControl
 
     public string GoverningText => _governing.Text ?? string.Empty;
 
-    public IReadOnlyList<string> WorkingLines => _working.Children.OfType<StackPanel>().SelectMany(p => p.Children.OfType<TextBlock>()).Select(t => t.Text ?? string.Empty).ToList();
+    public IReadOnlyList<string> WorkingLines => _working.Children.OfType<StackPanel>().SelectMany(p => p.Children.OfType<TextBlock>()).Select(SymbolText.Raw).ToList();
 
     public void ToggleWorking(bool shown) => _showWorking.IsChecked = shown;
 
@@ -787,7 +787,7 @@ public sealed class CalcSheetView : UserControl
     private Control BuildField(CalcInputSpec spec, CalcInputValue? seed, bool blankWhenAbsent = false)
     {
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("200,160,90,120,*") };
-        var label = new TextBlock { Text = $"{spec.Symbol} — {spec.Description}", FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
+        var label = Typeset(new TextBlock { FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap }, $"{spec.Symbol} — {spec.Description}");
         var tip = $"{spec.Symbol}: {spec.Description}\nValid range: {spec.RangeText}{(spec.IsOptional ? "\nOptional" : string.Empty)}";
         ToolTip.SetTip(label, tip);
         Grid.SetColumn(label, 0);
@@ -1050,7 +1050,14 @@ public sealed class CalcSheetView : UserControl
 
     private static TextBlock Caption(string text) => new() { Text = text, FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, MaxWidth = 760, Opacity = 0.8 };
 
-    private static TextBlock Mono(string text) => new() { Text = text, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap, MaxWidth = 760 };
+    private static TextBlock Mono(string text) => Typeset(new TextBlock { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap, MaxWidth = 760 }, text);
+
+    /// <summary>Shows <paramref name="text"/> with its symbols set as an engineer writes them (D_1 as D with a subscript 1).</summary>
+    private static TextBlock Typeset(TextBlock block, string text)
+    {
+        SymbolText.Set(block, text);
+        return block;
+    }
 
     private static Control LabelledRow(string label, Control control)
     {
@@ -1066,8 +1073,8 @@ public sealed class CalcSheetView : UserControl
     private static Control Readout(string label, string value, string? note)
     {
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("120,220,*") };
-        var name = new TextBlock { Text = label, Opacity = 0.8, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Top };
-        var read = new TextBlock { Text = value, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap };
+        var name = Typeset(new TextBlock { Opacity = 0.8, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Top }, label);
+        var read = Typeset(new TextBlock { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap }, value);
         var desc = Caption(note ?? string.Empty);
         AutomationProperties.SetName(read, $"Result {label}");
         Grid.SetColumn(name, 0);
@@ -1084,7 +1091,7 @@ public sealed class CalcSheetView : UserControl
     {
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("120,*,Auto"), Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXs) };
         var verdict = new TextBlock { Text = check.Passed ? "PASS" : "FAIL", FontWeight = DesignTokens.WeightHeading, Foreground = check.Passed ? Brushes.SeaGreen : Brushes.IndianRed, FontSize = DesignTokens.FontSizeBody };
-        var text = new TextBlock { Text = $"{check.Name}: {check.DemandText} vs {check.CapacityText} (u = {FormatUtilisation(check.Utilisation)})", FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap };
+        var text = Typeset(new TextBlock { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap }, $"{check.Name}: {check.DemandText} vs {check.CapacityText} (u = {FormatUtilisation(check.Utilisation)})");
         var clause = new TextBlock { Text = check.Clause ?? string.Empty, FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0) };
         AutomationProperties.SetName(text, $"Result {verdict.Text}");
         Grid.SetColumn(text, 1);

@@ -264,7 +264,7 @@ public static class DocumentTemplate
     // ------------------------------------------------------------
 
     /// <summary>One text run, at its own absolute page coordinates (the baseline), in its own colour and <see cref="DocumentFontRole"/> (`WP 21.2A`; <see cref="DocumentFontRole.Body"/> — the platform default before this Work Package — when a caller does not say otherwise, so every pre-existing positional construction of this record keeps compiling and rendering exactly as before).</summary>
-    public readonly record struct TextRun(float X, float Y, string Text, float Size, bool Bold, SKTextAlign Align, SKColor Color, DocumentFontRole FontRole = DocumentFontRole.Body);
+    public readonly record struct TextRun(float X, float Y, string Text, float Size, bool Bold, SKTextAlign Align, SKColor Color, DocumentFontRole FontRole = DocumentFontRole.Body, bool Symbols = false);
 
     /// <summary>One horizontal rule, spanning <paramref name="X1"/> to <paramref name="X2"/> at <paramref name="Y"/>, in its own colour.</summary>
     public readonly record struct RuleRun(float X1, float X2, float Y, float StrokeWidth, SKColor Color);
@@ -358,7 +358,7 @@ public static class DocumentTemplate
     /// <summary>A word-wrapped line of running text, <paramref name="color"/> defaulting to <see cref="Slate700"/> (body text on paper) and <paramref name="fontRole"/> (`WP 21.2A`) defaulting to <see cref="DocumentFontRole.Body"/> (Inter).</summary>
     public static void AddWrappedLine(
         LayoutState state, SKPaint measure, string text, float size, bool bold, SKTextAlign align = SKTextAlign.Left, SKColor? color = null,
-        DocumentFontRole fontRole = DocumentFontRole.Body)
+        DocumentFontRole fontRole = DocumentFontRole.Body, bool symbols = false)
     {
         measure.TextSize = size;
         var lineHeight = size * LineLeading;
@@ -373,7 +373,7 @@ public static class DocumentTemplate
                 SKTextAlign.Center => (ContentLeft + state.ContentRight) / 2f,
                 _ => ContentLeft,
             };
-            state.Page.Texts.Add(new TextRun(x, state.Y + size, line, size, bold, align, runColor, fontRole));
+            state.Page.Texts.Add(new TextRun(x, state.Y + size, line, size, bold, align, runColor, fontRole, symbols));
             state.Y += lineHeight;
         }
     }
@@ -394,7 +394,7 @@ public static class DocumentTemplate
     /// </summary>
     public static void AddTable(
         LayoutState state, SKPaint measure, string[] headers, float[] widths, IReadOnlyList<string[]> rows,
-        SKTextAlign[]? columnAligns = null)
+        SKTextAlign[]? columnAligns = null, bool[]? symbolColumns = null)
     {
         var aligns = columnAligns ?? new SKTextAlign[headers.Length];
 
@@ -463,7 +463,7 @@ public static class DocumentTemplate
                 for (var lineIndex = 0; lineIndex < wrapped[i].Count; lineIndex++)
                 {
                     var baseline = rowTop + BodySize + lineIndex * lineHeight;
-                    state.Page.Texts.Add(new TextRun(x, baseline, wrapped[i][lineIndex], BodySize, false, aligns[i], Slate700, cellFontRole));
+                    state.Page.Texts.Add(new TextRun(x, baseline, wrapped[i][lineIndex], BodySize, false, aligns[i], Slate700, cellFontRole, symbolColumns is { } sc && i < sc.Length && sc[i]));
                 }
             }
 
@@ -638,6 +638,56 @@ public static class DocumentTemplate
     /// out with.
     /// </summary>
     /// <summary>
+    /// Sets the symbols of every run that asks for it (<see cref="TextRun.Symbols"/>) as an engineer writes them: a
+    /// run is split into pieces on the line and pieces set low and smaller (a subscript), each placed after the last,
+    /// so <c>D_1</c> prints as D₁ (<see cref="Tempest.Desktop.CalcSheets.SymbolText"/>). A centred or right-aligned
+    /// run keeps its alignment as a whole.
+    /// </summary>
+    internal static void TypesetSymbols(List<TextRun> texts)
+    {
+        using var paint = new SKPaint();
+
+        for (var i = 0; i < texts.Count; i++)
+        {
+            var run = texts[i];
+
+            if (!run.Symbols || !Tempest.Desktop.CalcSheets.SymbolText.HasSymbols(run.Text))
+                continue;
+
+            paint.Typeface = DocumentFonts.For(run.FontRole, run.Bold);
+            paint.FakeBoldText = run.Bold && run.FontRole == DocumentFontRole.Body;
+            var segments = Tempest.Desktop.CalcSheets.SymbolText.Parse(run.Text);
+            var subSize = run.Size * (float)Tempest.Desktop.CalcSheets.SymbolText.SubscriptScale;
+            var widths = segments.Select(s => { paint.TextSize = s.Subscript ? subSize : run.Size; return paint.MeasureText(s.Text); }).ToList();
+            var total = widths.Sum();
+            var x = run.Align switch
+            {
+                SKTextAlign.Right => run.X - total,
+                SKTextAlign.Center => run.X - total / 2,
+                _ => run.X,
+            };
+
+            var pieces = new List<TextRun>(segments.Count);
+
+            for (var n = 0; n < segments.Count; n++)
+            {
+                if (segments[n].Text.Length > 0)
+                {
+                    pieces.Add(segments[n].Subscript
+                        ? run with { X = x, Y = run.Y + run.Size * 0.22f, Text = segments[n].Text, Size = subSize, Align = SKTextAlign.Left, Symbols = false }
+                        : run with { X = x, Text = segments[n].Text, Align = SKTextAlign.Left, Symbols = false });
+                }
+
+                x += widths[n];
+            }
+
+            texts.RemoveAt(i);
+            texts.InsertRange(i, pieces);
+            i += pieces.Count - 1;
+        }
+    }
+
+    /// <summary>
     /// A brand face (Space Mono, Chakra Petch) lacks some symbols a calculation prints — Σ in "R_tot = Σ R_i" drew as a
     /// box (the showcase journey found it). A left-aligned run is split so each such character is drawn in the body
     /// face, which has it, in place; any other run that has one is drawn wholly in the body face.
@@ -710,7 +760,10 @@ public static class DocumentTemplate
             var logo = DocumentLogo.HorizontalInk;
 
             foreach (var page in pages)
+            {
+                TypesetSymbols(page.Texts);
                 FallBackForMissingGlyphs(page.Texts);
+            }
 
             // `v0.26.0` (§3.6): each brand face is embedded as a subset of
             // the glyphs this document draws, not whole (`TrueTypeSubsetter`).
