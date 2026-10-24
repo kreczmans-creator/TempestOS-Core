@@ -25,6 +25,34 @@ public static class CalcPackTemplates
             new CalcPackBinding("m4", "d_A", "m2", "D"),
         ]);
 
+    /// <summary>
+    /// Motor circuit: motor (E1) → load budget (E6) → cable (E4) → voltage drop (E3) and fault protection (E5) →
+    /// enclosure heat (E2). E1's peak power enters E6 as a linked load; E6's bus current sizes the cable; the cable's
+    /// size, length and device feed E3 and E5; E6's dissipated heat enters E2.
+    /// </summary>
+    public static CalcPackTemplate MotorCircuit { get; } = new(
+        "pack.motor-circuit", "Motor circuit",
+        "Sizes a motor's supply from the motor duty to the enclosure: demand, cable and device, voltage drop, earth-fault disconnection and the heat the panel must lose.",
+        [
+            new CalcPackStep("e1", "elec.motor-sizing", "Motor sizing"),
+            new CalcPackStep("e6", "elec.load-budget", "Load budget"),
+            new CalcPackStep("e4", "elec.conductor-sizing", "Cable and device"),
+            new CalcPackStep("e3", "elec.voltage-drop", "Voltage drop"),
+            new CalcPackStep("e5", "elec.fault-protection", "Fault protection"),
+            new CalcPackStep("e2", "elec.enclosure-heat", "Enclosure heat"),
+        ],
+        [
+            new CalcPackBinding("e1", "P_pk", "e6", "P_add"),
+            new CalcPackBinding("e6", "I_3ph", "e4", "I_b_in"),
+            new CalcPackBinding("e4", "I_b", "e3", "I"),
+            new CalcPackBinding("e4", "L", "e3", "L"),
+            new CalcPackBinding("e4", "CSA", "e3", "A_c"),
+            new CalcPackBinding("e4", "CSA", "e5", "S_line"),
+            new CalcPackBinding("e4", "L", "e5", "L"),
+            new CalcPackBinding("e4", "I_n", "e5", "I_n"),
+            new CalcPackBinding("e6", "Phi", "e2", "P_add"),
+        ]);
+
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit];
 }
