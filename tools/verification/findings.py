@@ -1,6 +1,6 @@
 """Collect every P1 finding with its original and reviewed severity.
 
-Verification aid only. Usage: python3 tools/verification/findings.py [--min High] [--csv]
+Verification aid only. Usage: python3 tools/verification/findings.py [--min High] [--open] [--csv]
 """
 import csv
 import pathlib
@@ -42,7 +42,10 @@ def collect():
                 c = dict(zip(header, cells(line)))
                 original = level(c.get("Severity", ""))
                 reviewed = level(c["Reviewed"]) if c.get("Reviewed") else original
+                status = next((v for k, v in c.items() if k.startswith("Status")), "Open")
+                status = "Fixed" if status.lower().startswith("fixed") else ("Open" if not status else status)
                 rows.append({
+                    "status": status,
                     "calculator": path.stem,
                     "id": c["ID"],
                     "original": original,
@@ -58,6 +61,8 @@ if __name__ == "__main__":
     data = collect()
     floor = sys.argv[sys.argv.index("--min") + 1] if "--min" in sys.argv else "Info"
     data = [r for r in data if RANK.get(r["reviewed"], 5) <= RANK[floor]]
+    if "--open" in sys.argv:
+        data = [r for r in data if r["status"] != "Fixed"]
     data.sort(key=lambda r: (RANK.get(r["reviewed"], 5), r["calculator"], r["id"]))
     if "--csv" in sys.argv:
         w = csv.DictWriter(sys.stdout, fieldnames=list(data[0]))
@@ -65,7 +70,7 @@ if __name__ == "__main__":
         w.writerows(data)
     else:
         for r in data:
-            print(f'{r["reviewed"]:9} {r["original"]:9} {r["id"]:36} {r["finding"][:150]}')
+            print(f'{r["reviewed"]:9} {r["original"]:9} {r["status"][:12]:12} {r["id"]:36} {r["finding"][:120]}')
         counts = {}
         for r in data:
             counts[r["reviewed"]] = counts.get(r["reviewed"], 0) + 1
