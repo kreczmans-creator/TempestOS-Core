@@ -134,7 +134,7 @@ public static class CalcTemplateHasher
 
         foreach (var tc in t.TestCases)
         {
-            sb.Append("test=").Append(tc.Id).Append('|').Append(tc.Source.Title).Append('|').Append(tc.Source.Location).Append('|').Append(tc.Status).Append('\n');
+            sb.Append("test=").Append(tc.Id).Append('|').Append(tc.Source.Title).Append('|').Append(tc.Source.Location).Append('|').Append(tc.Status).Append(tc.Source.Secondary ? "|secondary" : string.Empty).Append('\n');
 
             foreach (var e in tc.Expected)
                 sb.Append("  expect=").Append(e.Symbol).Append('|').Append(N(e.Value)).Append('|').Append(e.Unit).Append('|').Append(N(e.RelativeTolerance)).Append('\n');

@@ -137,8 +137,12 @@ public enum CalcReferenceStatus
     Unconfirmed,
 }
 
-/// <summary>Where a known-answer value comes from: title, edition and the page or example.</summary>
-public sealed record CalcReferenceSource(string Title, string? Edition, string Location);
+/// <summary>
+/// Where a known-answer value comes from: title, edition and the page or example. <paramref name="Secondary"/> marks a value
+/// taken from a secondary source (a solutions manual, website, forum, course notes or vendor verification) rather than the
+/// primary publication (Addendum B §B4); such a case is listed for the owner to confirm.
+/// </summary>
+public sealed record CalcReferenceSource(string Title, string? Edition, string Location, bool Secondary = false);
 
 /// <summary>One expected output of a known-answer case, in the given unit, within a relative tolerance.</summary>
 public sealed record CalcExpectedValue(string Symbol, double Value, string Unit, double RelativeTolerance = 0.01);
