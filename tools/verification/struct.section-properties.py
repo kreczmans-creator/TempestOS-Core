@@ -407,9 +407,103 @@ def kats():
         row(c, sym, kat, ind, tol)
 
 
-# ---------------------------------------------------------------- extra checks (filled after probing)
+# ---------------------------------------------------------------- extra checks against the C# product
+# Product values below were read from the probe tool (`Probe run struct.section-properties`) on release/v0.26.0 code.
+# Units: mm, mm^2, mm^4, mm^3, mm^6.  A mismatch here is printed as DIFF and does not change the exit status;
+# the exit status depends on the known-answer cases only.  The finding number is shown next to each DIFF.
+PRODUCT = {"E1": {"A": 5381.7062, "xc": 0.0, "yc": 0.0, "Ixx": 83570141.8, "Iyy": 6037835.87, "Ixy": 0.0, "Wex": 557134.279, "Wey": 80504.4783, "Wpx": 628423.42, "Wpy": 125223.376, "J": 199186.918, "Iw": 126333398000.0, "theta_deg": 0.0}, "E2": {"A": 2779.96679, "xc": 23.6035802, "yc": 100.0, "Ixx": 18033413.6, "Iyy": 1562755.35, "Ixy": 0.0, "Wex": 180334.136, "Wey": 30405.9184, "Wpx": 208799.676, "Wpy": 55079.018, "J": 79366.0, "Iw": null, "theta_deg": 0.0}, "E3": {"A": 3600.0, "xc": 0.0, "yc": 114.375, "Ixx": 6838593.75, "Iyy": 4230000.0, "Ixy": 0.0, "Wex": 59790.9836, "Wey": 56400.0, "Wpx": 106650.0, "Wpy": 87750.0, "J": 213750.0, "Iw": null, "theta_deg": 0.0}, "E4": {"A": 1680.98339, "xc": 19.6420846, "yc": 31.9116883, "Ixx": 1648303.87, "Iyy": 792850.433, "Ixy": -660643.168, "Wex": 24208.3234, "Wey": 14322.2596, "Wpx": 43821.5044, "Wpy": 25953.7551, "J": 55000.0, "Iw": null, "theta_deg": 28.5396856}, "E5": {"A": 4433.83683, "xc": 0.0, "yc": 0.0, "Ixx": 22000129.7, "Iyy": 7323728.53, "Ixy": 0.0, "Wex": 220001.297, "Wey": 146474.571, "Wpx": 278217.932, "Wpy": 170126.091, "J": 17996719.7, "Iw": null, "theta_deg": 0.0}, "E6": {"A": 7853.98163, "xc": 0.0, "yc": 0.0, "Ixx": 4908738.52, "Iyy": 4908738.52, "Ixy": 0.0, "Wex": 98174.7704, "Wey": 98174.7704, "Wpx": 166666.667, "Wpy": 166666.667, "J": 9817477.04, "Iw": null, "theta_deg": 0.0}, "E7a": {"A": 6000.0, "xc": 0.0, "yc": 130.0, "Ixx": 24200000.0, "Iyy": 3000000.0, "Ixy": 0.0, "Wex": 186153.846, "Wey": 50000.0, "Wpx": 330000.0, "Wpy": 90000.0, "J": null, "Iw": null, "theta_deg": 0.0}, "E7b": {"A": 2000.0, "xc": 50.0, "yc": 40.0, "Ixx": 466666.667, "Iyy": 1266666.67, "Ixy": 692820.323, "Wex": 13864.0269, "Wey": 26224.2931, "Wpx": 26000.0, "Wpy": 43493.7203, "J": null, "Iw": null, "theta_deg": -60.0}, "E7c": {"A": 18000.0, "xc": -3.33333333, "yc": -1.11111111, "Ixx": 16177777.8, "Iyy": 64250000.0, "Ixy": -666666.667, "Wex": 316521.739, "Wey": 621774.194, "Wpx": 473333.333, "Wpy": 930000.0, "J": null, "Iw": null, "theta_deg": 89.2056245}, "E7d": {"A": 56859.9402, "xc": 0.0, "yc": 0.0, "Ixx": 130056583.0, "Iyy": 130056583.0, "Ixy": 0.0, "Wex": 1300565.83, "Wey": 1300565.83, "Wpx": 2305157.78, "Wpy": 2305157.78, "J": null, "Iw": null, "theta_deg": 0.0}, "E7e": {"A": 18030.0722, "xc": 0.0, "yc": 0.0, "Ixx": 13646245.2, "Iyy": 13646245.2, "Ixy": 0.0, "Wex": 272924.904, "Wey": 272924.904, "Wpx": 428966.495, "Wpy": 428966.495, "J": null, "Iw": null, "theta_deg": 0.0}, "E7f": {"A": 33140.0598, "xc": 0.0, "yc": 0.0, "Ixx": 544943417.0, "Iyy": 544943417.0, "Ixy": 0.0, "Wex": 3632956.11, "Wey": 3632956.11, "Wpx": 4054636.86, "Wpy": 4054636.86, "J": null, "Iw": null, "theta_deg": 0.0}, "E8": {"A": 9100.0, "xc": 51.4835165, "yc": 51.4835165, "Ixx": 8043305.86, "Iyy": 8043305.86, "Ixy": -222527.473, "Wex": 156230.701, "Wey": 156230.701, "Wpx": 234475.0, "Wpy": 234475.0, "J": null, "Iw": null, "theta_deg": 45.0}, "E9a": {"A": 2e-06, "xc": 0.0, "yc": 0.0, "Ixx": 6.66666667e-13, "Iyy": 1.66666667e-13, "Ixy": 0.0, "Wex": 6.66666667e-10, "Wey": 3.33333333e-10, "Wpx": 1e-09, "Wpy": 5e-10, "J": 4.57363358e-13, "Iw": null, "theta_deg": 0.0}, "E9b": {"A": 10000000000.0, "xc": 0.0, "yc": 0.0, "Ixx": 8.33333333e+18, "Iyy": 8.33333333e+18, "Ixy": 0.0, "Wex": 166666667000000.0, "Wey": 166666667000000.0, "Wpx": 250000000000000.0, "Wpy": 250000000000000.0, "J": 1.40577019e+19, "Iw": null, "theta_deg": 0.0}, "E10a": {"A": 10000.0, "xc": 0.0, "yc": 0.0, "Ixx": 833333333.0, "Iyy": 83333.3333, "Ixy": 0.0, "Wex": 1666666.67, "Wey": 16666.6667, "Wpx": 2500000.0, "Wpy": 25000.0, "J": 331232.504, "Iw": null, "theta_deg": 0.0}, "E10b": {"A": 10000.0, "xc": 0.0, "yc": 0.0, "Ixx": 8333333.33, "Iyy": 8333333.33, "Ixy": 0.0, "Wex": 166666.667, "Wey": 166666.667, "Wpx": 250000.0, "Wpy": 250000.0, "J": 14057701.9, "Iw": null, "theta_deg": 0.0}, "E11": {"A": 799.5, "xc": 0.0, "yc": 0.0, "Ixx": 116466817.0, "Iyy": 2250010.41, "Ixy": 0.0, "Wex": 232933.633, "Wey": 15000.0694, "Wpx": 274675.125, "Wpy": 22562.4375, "J": 66.625, "Iw": 561940240000.0, "theta_deg": 0.0}, "E12": {"A": 1650.0, "xc": 19.7727273, "yc": 32.2727273, "Ixx": 1636477.27, "Iyy": 791164.773, "Ixy": -664772.727, "Wex": 24162.7517, "Wey": 14325.6173, "Wpx": 43687.5, "Wpy": 25818.75, "J": 55000.0, "Iw": null, "theta_deg": 28.7760915}}
+
+EXTRA_DIFFS = []
+
+
+def xrow(probe, sym, prod, ind, tol, note=""):
+    rel = abs(prod - ind) / abs(ind) if ind else abs(prod - ind)
+    ok = rel <= max(tol, 1e-6)
+    if not ok:
+        EXTRA_DIFFS.append((probe, sym))
+    print(f"{probe:<26}{sym:<10}{prod:>14.6g}{ind:>14.6g}{rel:>11.2e}{tol:>10.1e}  {'PASS' if ok else 'DIFF'} {note}")
+
+
+def compare(probe, prod, s, tol=5e-4):
+    ind = dict(A=s["A"], xc=s["xc"], yc=s["yc"], Ixx=s["Ixx"], Iyy=s["Iyy"], Ixy=s["Ixy"], Wex=s["Wel_x"], Wey=s["Wel_y"],
+               Wpx=plastic_modulus(s, "y"), Wpy=plastic_modulus(s, "x"))
+    scale = s["A"] ** 0.5
+    for k, v in ind.items():
+        if abs(v) < 1e-6 * scale and abs(prod[k]) < 1e-6 * scale:
+            continue                                   # both zero to rounding (symmetry)
+        if k == "Ixy" and abs(v) < 1e-9 * s["Ixx"] and abs(prod[k]) < 1e-9 * s["Ixx"]:
+            continue
+        xrow(probe, k, prod[k], v, tol)
+
+
 def extras():
-    pass
+    P = PRODUCT
+    print("--- extra checks: product (hard-coded) against this script ---")
+    # E1 rolled I, 300 x 150, web 7.1, flange 10.7, r = 15
+    s = sec_I(300, 150, 7.1, 10.7, 15)
+    compare("E1 I 300x150x7.1x10.7", P["E1"], s)
+    xrow("E1 I 300x150x7.1x10.7", "I_w", P["E1"]["Iw"], iw_I(s["Iyy"], 300, 10.7), 1e-3)
+    Jfe = torsion_fe([(coarse(sec_I_poly, 300, 150, 7.1, 10.7, 15), 1)])
+    xrow("E1 I 300x150x7.1x10.7", "J vs FE", P["E1"]["J"], Jfe, 1.5e-2, "finite-element J; regression within 1.5 %")
+    # E2 channel 200 x 75, web 6, flange 11, r = 12 (web on the left, heel at the origin)
+    s = section([(channel_poly(200, 75, 6, 11, 12), 1)])
+    compare("E2 channel 200x75x6x11", P["E2"], s)
+    xrow("E2 channel 200x75x6x11", "J sum", P["E2"]["J"], (2 * 75 * 11 ** 3 + (200 - 22) * 6 ** 3) / 3, 1e-9, "documented sum b t^3/3")
+    Jfe = torsion_fe([(coarse(channel_poly, 200, 75, 6, 11, 12), 1)])
+    print(f"{'(info) E2 channel':<26}{'J vs FE':<10}{P['E2']['J']:>14.6g}{Jfe:>14.6g}{(P['E2']['J'] - Jfe) / Jfe:>+11.2e}  product low: fillet term neglected (P1-struct.section-properties-03)")
+    # E3 tee, sharp corners: exact by rectangles
+    s = section([(tee_poly(150, 150, 10, 15, 0), 1)])
+    compare("E3 tee 150x150x10x15", P["E3"], s, 1e-9)
+    # E4 angle with root fillet
+    s = section([(angle_poly(100, 75, 10, 12), 1)])
+    compare("E4 angle 100x75x10 r12", P["E4"], s)
+    Jfe = torsion_fe([(coarse(angle_poly, 100, 75, 10, 12), 1)])
+    print(f"{'(info) E4 angle':<26}{'J vs FE':<10}{P['E4']['J']:>14.6g}{Jfe:>14.6g}{(P['E4']['J'] - Jfe) / Jfe:>+11.2e}  product low: fillet term neglected (P1-struct.section-properties-03)")
+    s = section([(angle_poly(100, 75, 10, 0), 1)])
+    xrow("E12 angle sharp", "theta", P["E12"]["theta_deg"], math.degrees(s["theta"]), 1e-8)
+    # E5 hollow rectangle with explicit radii
+    s = sec_hollow_rect(200, 100, 8, 12, 4)
+    compare("E5 hollow 200x100x8", P["E5"], s, 5e-4)
+    rc = (12 + 4) / 2
+    Am = 92 * 192 - (4 - math.pi) * rc ** 2
+    pm = 2 * (92 + 192) - (8 - 2 * math.pi) * rc
+    xrow("E5 hollow 200x100x8", "J Bredt", P["E5"]["J"], 4 * Am ** 2 * 8 / pm + pm * 8 ** 3 / 3, 1e-6, "mid-line radius (r_o + r_i)/2")
+    # E6 circle, closed forms
+    d = 100.0
+    for sym, k, v in [("A", "A", math.pi * d * d / 4), ("I_xx", "Ixx", math.pi * d ** 4 / 64), ("W_pl_x", "Wpx", d ** 3 / 6),
+                      ("J", "J", math.pi * d ** 4 / 32)]:
+        xrow("E6 circle d=100", sym, P["E6"][k], v, 1e-9)
+    # E7 composites
+    s = section([(rect_loop(20, 180, 0, 90), 1), (rect_loop(120, 20, 0, 190), 1)])
+    compare("E7a composite T", P["E7a"], s, 1e-9)
+    th = math.radians(30)
+    pts = [(50 + math.cos(th) * x - math.sin(th) * y, 40 + math.sin(th) * x + math.cos(th) * y) for x, y in rect_loop(100, 20)]
+    s = section([(pts, 1)])
+    compare("E7b rotated 30 deg", P["E7b"], s, 1e-8)
+    xrow("E7b rotated 30 deg", "theta", P["E7b"]["theta_deg"], math.degrees(s["theta"]), 1e-8)
+    s = section([(rect_loop(200, 100), 1), (rect_loop(50, 40, 30, 10), -1)])
+    compare("E7c rect minus rect", P["E7c"], s, 1e-8)
+    # defect probes: hollow primitives used as composite parts
+    ring = math.pi * (200 ** 2 - 180 ** 2) / 4
+    xrow("E7d composite tube add", "A", P["E7d"]["A"], ring, 1e-3, "P1-struct.section-properties-01")
+    xrow("E7d composite tube add", "I_xx", P["E7d"]["Ixx"], math.pi * (200 ** 4 - 180 ** 4) / 64, 1e-3, "P1-struct.section-properties-01")
+    xrow("E7e composite SHS add", "A", P["E7e"]["A"], sec_hollow_rect(100, 100, 5)["A"], 1e-3, "P1-struct.section-properties-01")
+    xrow("E7f 300sq minus tube", "A", P["E7f"]["A"], 300 * 300 - ring, 1e-3, "P1-struct.section-properties-01")
+    # E8 polygon with a hole
+    s = section([([(0, 0), (100, 0), (100, 100), (0, 100)], 1), ([(20, 20), (20, 50), (50, 50), (50, 20)], -1)])
+    compare("E8 polygon with hole", P["E8"], s, 1e-8)
+    # E9 extreme sizes
+    for tag, b, h in [("E9a", 0.001, 0.002), ("E9b", 1e5, 1e5)]:
+        xrow(f"{tag} rect {b} x {h}", "I_xx", P[tag]["Ixx"], b * h ** 3 / 12, 1e-8)
+        xrow(f"{tag} rect {b} x {h}", "J", P[tag]["J"], j_rect_exact(b, h), 1e-6)
+    xrow("E9b rect 1e5 x 1e5", "W_pl_x", P["E9b"]["Wpx"], 1e5 ** 3 / 4, 1e-9)
+    # E10 slender and square rectangles: exact series
+    xrow("E10a rect 10 x 1000", "J", P["E10a"]["J"], j_rect_exact(10, 1000), 1e-6)
+    xrow("E10b rect 100 x 100", "J", P["E10b"]["J"], j_rect_exact(100, 100), 1e-6)
+    # E11 very thin I-section, sharp corners
+    xrow("E11 thin I 1000x300x0.5", "J", P["E11"]["J"], (2 * 300 * 0.5 ** 3 + 999 * 0.5 ** 3) / 3, 1e-9)
+    xrow("E11 thin I 1000x300x0.5", "A", P["E11"]["A"], 2 * 300 * 0.5 + 999 * 0.5, 1e-9)
+    print(f"extra checks with DIFF: {len(EXTRA_DIFFS)} {EXTRA_DIFFS}")
 
 
 if __name__ == "__main__":
