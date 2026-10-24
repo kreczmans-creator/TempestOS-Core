@@ -1,4 +1,4 @@
-# B4 — Plane wall heat transfer (`bs.plane-wall@1.0.0`)
+# B4 — Plane wall heat transfer (`bs.plane-wall@1.0.1`)
 
 **In plain terms.** Heat crossing a wall passes through a chain of resistances: the air film on the warm side, each layer of the wall, and the air film on the cold side. Adding the resistances gives the whole wall's resistance, and the temperature difference divided by it gives the heat flow. Each surface temperature then follows by stepping down the drops one at a time. A thin layer of still air is a good insulator, which is why a double-glazed window loses about a quarter of the heat a single pane does.
 

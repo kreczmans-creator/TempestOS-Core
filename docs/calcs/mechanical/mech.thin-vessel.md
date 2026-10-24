@@ -1,4 +1,4 @@
-# M11 — Thin cylindrical shell under internal pressure (`mech.thin-vessel@1.0.0`)
+# M11 — Thin cylindrical shell under internal pressure (`mech.thin-vessel@1.0.1`)
 
 **In plain terms.** Pressure inside a cylinder pulls its wall apart in two directions: around the circumference and along the length. The circumferential pull is twice the longitudinal one, so it usually sets the wall thickness. The code formula adds a small correction for the wall's own thickness and divides by the weld joint efficiency, because a welded seam may be weaker than the plate; a corrosion allowance is added on top so the shell is still thick enough at the end of its life.
 

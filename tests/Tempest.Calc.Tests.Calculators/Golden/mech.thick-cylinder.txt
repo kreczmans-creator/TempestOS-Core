@@ -5,7 +5,7 @@ Title: Thick-walled cylinder stresses (Lamé)
 
 1. SCOPE AND METHOD
 Radial, hoop and axial stresses at the bore and the outer surface of a thick-walled cylinder under internal and external pressure, the von Mises and Tresca equivalents, utilisation against an allowable, and the thin-wall estimate for comparison.
-A = (a² p_i − b² p_o)/(b² − a²), B = a² b² (p_i − p_o)/(b² − a²); σ_r = A − B/r², σ_θ = A + B/r²; σ_z = A for closed ends, 0 for open. von Mises from the three principal stresses; Tresca = max principal difference.
+Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(b² − a²); B = a² b² (p_i − p_o)/(b² − a²). Radial and hoop stress at radius r: σ_r = A − B/r²; σ_θ = A + B/r². Axial stress, closed or open ends: σ_z = A (closed); σ_z = 0 (open). Equivalent stresses from the three principal stresses: von Mises; Tresca = the largest principal difference.
   Ref: Roark's Formulas for Stress and Strain Ch. 13, Table 13.5 — Thick-walled cylinders
   Ref: Shigley's Mechanical Engineering Design §3-14 — Stresses in pressurised cylinders
 
@@ -106,5 +106,5 @@ A = (a² p_i − b² p_o)/(b² − a²), B = a² b² (p_i − p_o)/(b² − a²)
   No warnings.
 
 8. VERIFICATION
-  Template: mech.thick-cylinder@2.0.0
+  Template: mech.thick-cylinder@2.0.1
   Known-answer cases passed: 3/3

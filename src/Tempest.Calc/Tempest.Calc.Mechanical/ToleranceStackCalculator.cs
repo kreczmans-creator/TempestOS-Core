@@ -43,9 +43,9 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.0.0", CalcDiscipline.Mechanical, "Tolerance stack-up (1D) v2",
+        Id, "2.0.1", CalcDiscipline.Mechanical, "Tolerance stack-up (1D) v2",
         "A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.",
-        "Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bender-style). Predicted σ: √Σ σ_i² with σ_i from each contributor's distribution. C_pk from the nearer limit. Monte Carlo: seeded sampling of every contributor, summed with its sign.",
+        "Worst case, every contributor at its limit: T_wc = Σ|half-bands|.\nRoot sum of squares, the statistical stack: T_rss = √Σ half².\nModified RSS, a factor on the RSS (Bender-style): T_mrss = factor × RSS.\nPredicted standard deviation of the stack, from each contributor's distribution: σ = √Σ σ_i².\nProcess capability, taken from the nearer limit: C_pk = min(USL − μ, μ − LSL)/(3σ).\nMonte Carlo check, every contributor sampled from a fixed seed and summed with its sign: stack = Σ s_i x_i.",
         [
             new CalcInputSpec("contributors", "Contributors in the loop", CalcInputKind.Table, Columns: Columns, MaxRows: 200),
             new CalcInputSpec("minimum", "Minimum acceptable result", CalcInputKind.Quantity, "mm", IsOptional: true, HardMin: -1e6, HardMax: 1e6),

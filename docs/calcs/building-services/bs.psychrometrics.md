@@ -1,4 +1,4 @@
-# B2 — Psychrometrics (`bs.psychrometrics@1.0.0`)
+# B2 — Psychrometrics (`bs.psychrometrics@1.0.1`)
 
 **In plain terms.** Moist air is fixed by any two of its properties, such as temperature and relative humidity; from them follow how much water it holds, its enthalpy, its dew point and its wet-bulb temperature. Heating, cooling with dehumidification, mixing two airstreams and adding steam or spray are each a balance of dry air, water and energy, so the state after each process, and the heat or water it takes, comes straight from those balances.
 

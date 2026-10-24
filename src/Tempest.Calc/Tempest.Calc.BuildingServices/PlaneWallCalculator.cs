@@ -38,9 +38,9 @@ public sealed class PlaneWallCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.BuildingServices, "Plane wall heat transfer (layers and films)",
+        Id, "1.0.1", CalcDiscipline.BuildingServices, "Plane wall heat transfer (layers and films)",
         "Steady heat flow through a composite plane wall between two fluids, or between two known surface temperatures: each layer's conduction resistance, each film's convection resistance, the overall U-value, the heat flow and flux, and every surface and interface temperature.",
-        "Film R = 1/(h·A); layer R_i = t_i/(k_i·A). R_tot = Σ R, hot side first. Q = (T_1 − T_2)/R_tot; q = Q/A; U = 1/(R_tot·A). Each surface temperature steps down from T_1 by Q·R across each resistance in turn.",
+        "Resistance of each surface film: R = 1/(h·A).\nResistance of each conducting layer: R_i = t_i/(k_i·A).\nTotal resistance, hot side first: R_tot = Σ R.\nHeat flow through the wall: Q = (T_1 − T_2)/R_tot.\nHeat flux and overall U-value: q = Q/A; U = 1/(R_tot·A).\nSurface and interface temperatures, stepping down from T_1 across each resistance in turn: T_next = T_previous − Q·R.",
         [
             new CalcInputSpec("T_1", "Side 1 temperature (the fluid's, or the surface's when no film is given)", CalcInputKind.Quantity, "degC", Default: 20, Min: -60, Max: 400, HardMin: -273.15, HardMax: 5000, Group: "Side 1"),
             new CalcInputSpec("h_1", "Side 1 film coefficient (omit when T_1 is the surface temperature)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 7.7, Min: 2, Max: 1e4, HardMin: 1e-6, HardMax: 1e6, IsOptional: true, Group: "Side 1"),

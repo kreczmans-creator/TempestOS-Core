@@ -9,9 +9,9 @@ public sealed class PressFitCalculator : ICalcCalculator
     public const string Id = "mech.press-fit";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Press and shrink fit",
+        Id, "1.0.1", CalcDiscipline.Mechanical, "Press and shrink fit",
         "A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.",
-        "Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²), σ_r = −p. Shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²), σ_r = −p. F = μ·p·2πR·L; T = μ·p·2πR²·L; ΔT = (δ + c_a)/(α·2R).",
+        "Radial interference: δ_r = δ/2.\nInterface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ].\nStresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p.\nStresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p.\nAxial force and torque the fit holds by friction: F = μ·p·2πR·L; T = μ·p·2πR²·L.\nTemperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).",
         [
             new CalcInputSpec("d", "Interface (nominal) diameter", CalcInputKind.Quantity, "mm", Default: 50, Min: 1, Max: 1000, HardMin: 1e-3, HardMax: 1e5),
             new CalcInputSpec("delta", "Diametral interference", CalcInputKind.Quantity, "µm", Default: 40, Min: 1, Max: 500, HardMin: 0, HardMax: 1e5),

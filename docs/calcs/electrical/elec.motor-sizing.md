@@ -1,4 +1,4 @@
-# E1 — Motor and actuator sizing (`elec.motor-sizing@1.0.0`)
+# E1 — Motor and actuator sizing (`elec.motor-sizing@1.0.1`)
 
 **In plain terms.** A motor must give enough torque to accelerate the load and overcome friction and gravity, at the speed the move needs. The worksheet turns the motion profile and the mechanics (screw, belt, rack or gearbox) into the torque at the motor shaft for each part of the cycle. The peak torque must stay within the motor's short-term rating, the root-mean-square torque within its continuous rating so it does not overheat, and the load's inertia should not be too large compared with the motor's for stable control.
 

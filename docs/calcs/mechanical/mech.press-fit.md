@@ -1,4 +1,4 @@
-# M2b — Press and shrink fit (`mech.press-fit@1.0.0`)
+# M2b — Press and shrink fit (`mech.press-fit@1.0.1`)
 
 **In plain terms.** Pressing a shaft into a slightly smaller hole stretches the hub and squeezes the shaft until the two meet at a common radius. That interference sets up a contact pressure, found by treating hub and shaft as thick cylinders, and the pressure times friction over the contact area is the torque and axial force the joint can carry without slipping. The same pressure makes the hub's hoop stress highest at its bore, which is checked against yield, and heating or spinning the parts changes the interference.
 

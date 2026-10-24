@@ -25,9 +25,9 @@ public sealed class ThermalExpansionCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Thermal expansion of a restrained bar",
+        Id, "1.0.1", CalcDiscipline.Mechanical, "Thermal expansion of a restrained bar",
         "A bar heated or cooled between two restraints: its free movement, the part closed by a gap before the restraint engages, the restraint force for a rigid or an elastic restraint, the axial stress that results and the movement that actually occurs, with the stress against an allowable.",
-        "δ_free = α·L·ΔT. δ_e = sign(δ_free)·max(|δ_free| − g, 0). k_bar = E·A/L. F = δ_e·k_bar (rigid) or δ_e/(1/k_bar + 1/k_s) (elastic restraint). σ = −F/A (compressive on heating). δ = δ_free − F/k_bar.",
+        "Free expansion of the bar: δ_free = α·L·ΔT.\nExpansion actually restrained, once any gap g has closed: δ_e = sign(δ_free)·max(|δ_free| − g, 0).\nAxial stiffness of the bar: k_bar = E·A/L.\nRestraint force, from rigid supports or an elastic restraint k_s: F = δ_e·k_bar (rigid); F = δ_e/(1/k_bar + 1/k_s) (elastic).\nThermal stress in the bar, compressive on heating: σ = −F/A.\nNet movement of the bar end: δ = δ_free − F/k_bar.",
         [
             new CalcInputSpec("L", "Bar length", CalcInputKind.Quantity, "m", Default: 2, Min: 0.01, Max: 1000, HardMin: 1e-6, HardMax: 1e5),
             new CalcInputSpec("A", "Cross-section area", CalcInputKind.Quantity, "mm^2", Default: 500, Min: 1, Max: 1e6, HardMin: 1e-6, HardMax: 1e9),

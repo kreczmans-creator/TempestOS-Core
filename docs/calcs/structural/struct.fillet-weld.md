@@ -1,4 +1,4 @@
-# S5 — Fillet weld, simplified method (`struct.fillet-weld@1.0.0`)
+# S5 — Fillet weld, simplified method (`struct.fillet-weld@1.0.1`)
 
 **In plain terms.** A fillet weld fails by shearing through its throat, the shortest line from the root to the face. The simplified method adds every force on the weld into one resultant, spreads it along the weld length, and compares the stress on the throat area with one design shear strength. The weld is adequate when the throat carries the resultant; the sheet also gives the smallest throat that would do.
 

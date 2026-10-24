@@ -1,4 +1,4 @@
-# M3a — Bolted joint, simplified VDI 2230 (`mech.bolted-joint@1.1.0`)
+# M3a — Bolted joint, simplified VDI 2230 (`mech.bolted-joint@1.1.1`)
 
 **In plain terms.** Tightening a bolt stretches it and squeezes the parts it clamps, like a soft spring pulling against a stiffer one. When a working load then pulls the joint apart, most of it relaxes the squeeze on the parts and only a fraction, set by the two stiffnesses, adds to the bolt. The joint is checked five ways: the parts must not separate, enough clamp must remain, the bolt must not yield under tension plus thread torsion, the alternating stress must stay below the endurance limit, and the thread must not strip. Torque gives preload only roughly, which is why the scatter factor is applied.
 

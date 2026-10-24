@@ -1,4 +1,4 @@
-# M9 — Shaft under combined bending and torsion (`mech.shaft-stress@1.0.0`)
+# M9 — Shaft under combined bending and torsion (`mech.shaft-stress@1.0.1`)
 
 **In plain terms.** A rotating shaft is bent by the loads it carries and twisted by the torque it transmits. The bending stress and the twisting shear stress peak together at the surface, and the two failure theories in common use combine them differently: the maximum-shear-stress theory is the more conservative, the von Mises theory the closer to test. The factor of safety is the yield strength over the combined stress, raised at a shoulder or keyway by the stress-concentration factors.
 

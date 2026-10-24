@@ -23,9 +23,9 @@ public sealed class ShaftStressCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Shaft under combined bending and torsion",
+        Id, "1.0.1", CalcDiscipline.Mechanical, "Shaft under combined bending and torsion",
         "Bending and torsional stresses in a solid round shaft with stress-concentration factors, the maximum shear (Tresca) and von Mises equivalent stresses, and the factors of safety against yield, against a required factor.",
-        "σ = K_t·32M/(πd³); τ = K_ts·16T/(πd³); τ_max = √((σ/2)² + τ²); σ' = √(σ² + 3τ²); n_T = (S_y/2)/τ_max; n_VM = S_y/σ'. The lower factor governs.",
+        "Bending stress, with its stress concentration: σ = K_t·32M/(πd³).\nTorsional shear stress, with its stress concentration: τ = K_ts·16T/(πd³).\nMaximum shear stress (Tresca): τ_max = √((σ/2)² + τ²).\nvon Mises equivalent stress: σ' = √(σ² + 3τ²).\nFactors of safety against yield, the lower governing: n_T = (S_y/2)/τ_max; n_VM = S_y/σ'.",
         [
             new CalcInputSpec("d", "Shaft diameter", CalcInputKind.Quantity, "mm", Default: 40, Min: 1, Max: 2000, HardMin: 1e-6, HardMax: 1e5),
             new CalcInputSpec("M", "Bending moment (magnitude)", CalcInputKind.Quantity, "N*m", Default: 500, Min: 0, Max: 1e7, HardMin: 0, HardMax: 1e10),

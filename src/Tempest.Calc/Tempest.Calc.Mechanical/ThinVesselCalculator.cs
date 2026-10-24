@@ -15,9 +15,9 @@ public sealed class ThinVesselCalculator : ICalcCalculator
     public const string Id = "mech.thin-vessel";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Thin cylindrical shell under internal pressure",
+        Id, "1.0.1", CalcDiscipline.Mechanical, "Thin cylindrical shell under internal pressure",
         "Minimum shell thickness of a thin cylindrical pressure vessel under internal pressure for circumferential and longitudinal stress, the governing required thickness with corrosion allowance and design factor, the hoop stress at the corroded thickness provided, and the provided thickness against the requirement.",
-        "t_c = P·R/(S·E − 0.6·P) (circumferential); t_l = P·R/(2·S·E + 0.4·P) (longitudinal). t_req = n·max(t_c, t_l) + c. σ_θ = P·(R + 0.6·t)/(E·t) at t = t_p − c. Valid while t_c ≤ R/2 and P ≤ 0.385·S·E.",
+        "Thickness needed for the circumferential stress: t_c = P·R/(S·E − 0.6·P).\nThickness needed for the longitudinal stress: t_l = P·R/(2·S·E + 0.4·P).\nRequired thickness, with the design factor and corrosion allowance: t_req = n·max(t_c, t_l) + c.\nHoop stress in the plate provided, after corrosion: σ_θ = P·(R + 0.6·t)/(E·t), at t = t_p − c.\nRange of validity of the thin-wall formulae: t_c ≤ R/2 and P ≤ 0.385·S·E.",
         [
             new CalcInputSpec("P", "Internal design pressure", CalcInputKind.Quantity, "MPa", Default: 2, Min: 0.01, Max: 100, HardMin: 1e-6, HardMax: 1e4),
             new CalcInputSpec("R", "Inside radius (corroded)", CalcInputKind.Quantity, "mm", Default: 500, Min: 5, Max: 10_000, HardMin: 1e-3, HardMax: 1e6),

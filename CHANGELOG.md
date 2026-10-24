@@ -8,12 +8,16 @@
 - Legacy record migration: every stored legacy calculation record opens as a read-only archive worksheet (same Id), listed in the worksheet catalogue; verified on real v0.25.3 and v0.26.0-rc1 databases (Grey).
 - Compare with previous revision over calc instances (inputs row by row, outputs with relative change, checks).
 - Reference-library fill of worksheet inputs from released materials, fasteners and bearings, with the record's pin as the source.
+- Issued calculation sheets: the reference diagram as Figure 1 (vectors, labels as text), the method as a step table (what each step calculates beside its relation), AMA citations with one numbered reference list at the end (D-44, D-45, D-46).
+- Calculation register lists the project's worksheet calculations (status, revision, governing check) and opens them in the form.
 - Every spec gains an "In plain terms" paragraph and the hand arithmetic of its first worked example, generated from the sheet and drift-guarded.
 
 ### Changed
 - `mech.bolted-joint` 1.1.0: once the joint separates the clamp is zero and the bolt carries the whole working load (before, the bolt load was understated: the overloaded example showed yield at 89 % instead of 115 %); fatigue amplitude from the bolt-load range; separation-aware yield factor (D-42); a given-preload method with optional given stiffnesses and stress area; legacy joint-diagram load factors n_0, n_L.
 - `mech.bolt-group` 1.1.0: a single bolt takes direct shear; a moment the bolts cannot resist is refused instead of dropped.
 - `struct.beam-formulas`: the legacy stress and deflection-limit checks and cases.
+- All 27 worksheet templates move up one patch version (e.g. `mech.bolted-joint` 1.1.1): the method is restated one step per line, each saying what it calculates. No formula, input or result changes; a saved calculation shows "newer version" until it is re-run.
+- Worksheet form and sheets: record pickers keep their records after an import; the author, checker and header name the same person; Results uses the full width; units print as m², W/(m²·K); symbols the mono face lacks (Σ) print correctly.
 - Statistics: the upper tail of the normal distribution keeps its precision deep in the tail (DPMO at 7σ was right to four digits only).
 
 ### Removed

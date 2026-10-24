@@ -1,4 +1,4 @@
-# M6 — Lifting lug and pin joint (`mech.lifting-lug@1.0.0`)
+# M6 — Lifting lug and pin joint (`mech.lifting-lug@1.0.1`)
 
 **In plain terms.** A lifting lug is a plate with a hole and a pin through it, and it can fail five ways: the plate can tear across the narrowest section beside the hole, the pin can crush the hole, the plate can shear out from the hole to its end, the pin can shear through, and the pin can bend between the cheek plates that hold it. Each check is a load over an area, or a moment over a section modulus, compared with what the material allows; the largest ratio governs, and it is often the pin in bending.
 

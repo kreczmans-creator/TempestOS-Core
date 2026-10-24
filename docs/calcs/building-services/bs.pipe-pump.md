@@ -1,4 +1,4 @@
-# B1 — Pipe pressure drop and pump duty (`bs.pipe-pump@1.0.0`)
+# B1 — Pipe pressure drop and pump duty (`bs.pipe-pump@1.0.1`)
 
 **In plain terms.** Water loses pressure as it flows, by friction along the pipe and at every bend, valve and fitting. The friction factor depends on how rough the pipe is and how turbulent the flow is, which the Colebrook equation captures. Plotting the pressure needed against flow gives the system curve; where it crosses the pump's curve is the flow the pump will actually deliver. The suction side is checked so the pressure never falls far enough for the water to boil and cavitate.
 

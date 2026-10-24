@@ -27,9 +27,9 @@ public sealed class LiftingLugCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Lifting lug and pin joint",
+        Id, "1.0.1", CalcDiscipline.Mechanical, "Lifting lug and pin joint",
         "A pinned lug between two cheek plates under a load along the lug: tension on the net section through the hole, bearing of the pin on the hole, shear tear-out beyond the hole, and the pin in double shear and in bending, each against an allowable stress; the largest utilisation governs.",
-        "σ_t = P/((W − d_h)·t); σ_br = P/(d_p·t); τ_to = P/(2·a·t); τ_p = P/(2·π·d_p²/4); M = (P/2)·(t/4 + g + t_s/2), σ_b = 32·M/(π·d_p³). Each utilisation is the stress over its allowable. The allowables come from the material and the design category in force; the sheet applies no design factor of its own.",
+        "Tension across the net section beside the hole: σ_t = P/((W − d_h)·t).\nBearing of the pin on the lug: σ_br = P/(d_p·t).\nTear-out shear beyond the hole, on two planes: τ_to = P/(2·a·t).\nPin shear, in double shear: τ_p = P/(2·π·d_p²/4).\nPin bending, from the lever arm across the lug, the gap and the shackle: M = (P/2)·(t/4 + g + t_s/2); σ_b = 32·M/(π·d_p³).\nUtilisation of each mode, its stress over the allowable from the material and design category in force (the sheet adds no design factor of its own): u = σ/σ_allow.",
         [
             new CalcInputSpec("P", "Load on the lug (along the lug)", CalcInputKind.Quantity, "kN", Default: 50, Min: 0.01, Max: 1e5, HardMin: 1e-9, HardMax: 1e8, Group: "Load"),
             new CalcInputSpec("t", "Lug thickness", CalcInputKind.Quantity, "mm", Default: 20, Min: 1, Max: 500, HardMin: 1e-6, HardMax: 1e5, Group: "Lug"),

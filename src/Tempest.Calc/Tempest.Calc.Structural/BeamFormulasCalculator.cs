@@ -21,9 +21,9 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
     public const string ProppedUdl = "propped cantilever (fixed left, pinned right), UDL";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Structural, "Beam formulas (single span)",
+        Id, "1.0.1", CalcDiscipline.Structural, "Beam formulas (single span)",
         "Closed-form reactions, maximum moment and its position, maximum shear and maximum deflection for the standard single-span beam cases, as a quick check. Left end at x = 0; loads downward; sagging moments positive; deflection downward positive.",
-        "Roark Table 8.1 formulas in own notation. For the simply supported point load at a (b = L − a): R_A = Pb/L, M_max = Pab/L, δ_max = Pb(L² − b²)^(3/2)/(9√3 L EI) at x = √((L² − b²)/3) when a ≥ b. For the propped cantilever: R_B = 3wL/8, M_A = −wL²/8, sag M_max = 9wL²/128 at x = 5L/8.",
+        "Formulas from Roark Table 8.1, in this sheet's own notation, for the chosen support and load case.\nSimply supported beam, point load at a (b = L − a), reaction and largest moment: R_A = Pb/L; M_max = Pab/L.\nSimply supported beam, point load at a, largest deflection when a ≥ b: δ_max = Pb(L² − b²)^(3/2)/(9√3 L EI) at x = √((L² − b²)/3).\nPropped cantilever, uniform load, reaction and moments: R_B = 3wL/8; M_A = −wL²/8; sagging M_max = 9wL²/128 at x = 5L/8.",
         [
             new CalcInputSpec("case", "Case", CalcInputKind.Choice, Choices: [SsUdl, SsPoint, SsMomentEnd, CantUdl, CantPoint, FixedUdl, FixedPointCentre, ProppedUdl], DefaultChoice: SsUdl),
             new CalcInputSpec("L", "Span", CalcInputKind.Quantity, "m", Default: 6, Min: 0.1, Max: 100, HardMin: 1e-3, HardMax: 1e4),

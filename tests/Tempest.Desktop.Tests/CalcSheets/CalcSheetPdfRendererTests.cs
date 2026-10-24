@@ -57,6 +57,10 @@ public sealed class CalcSheetPdfRendererTests
 
         Assert.Contains("Figure 1 — Simply supported", text, StringComparison.Ordinal);
         Assert.Contains("L = 6 m", text, StringComparison.Ordinal);
+
+        // The method reads as steps, each saying what it calculates beside its relation.
+        Assert.Contains("WHAT IT CALCULATES", text, StringComparison.Ordinal);
+        Assert.Contains("Simply supported beam, point load at a", text, StringComparison.Ordinal);
         Assert.True(text.IndexOf("Figure 1", StringComparison.Ordinal) < text.IndexOf("2. Inputs", StringComparison.Ordinal));
 
         // AMA: the method's works are cited by superscript number and listed once, at the very end.

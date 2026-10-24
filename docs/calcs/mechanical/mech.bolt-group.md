@@ -1,4 +1,4 @@
-# M3b — Bolt group, elastic method (`mech.bolt-group@1.1.0`)
+# M3b — Bolt group, elastic method (`mech.bolt-group@1.1.1`)
 
 **In plain terms.** When a load acts away from the centre of a bolt group, each bolt carries an equal share of the load directly plus a share of the twisting moment that grows with its distance from the centre. Adding the two as vectors gives the most heavily loaded bolt, which is then checked in shear, in tension where the load also pulls, and for the two acting together.
 

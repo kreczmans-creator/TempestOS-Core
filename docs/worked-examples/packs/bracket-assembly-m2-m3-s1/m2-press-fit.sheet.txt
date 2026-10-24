@@ -2,13 +2,13 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bearing bush press fit    Revision: A
 Title: Press and shrink fit
-Author: unknown    Authored: 2026-10-23
+Author: unknown    Authored: 2026-10-24
 Checker: —    Checked: —
-Issued: 2026-10-23    Issue: BRK-CALC-001
+Issued: 2026-10-24    Issue: BRK-CALC-001
 
 1. SCOPE AND METHOD
 A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.
-Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²), σ_r = −p. Shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²), σ_r = −p. F = μ·p·2πR·L; T = μ·p·2πR²·L; ΔT = (δ + c_a)/(α·2R).
+Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Stresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p. Stresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p. Axial force and torque the fit holds by friction: F = μ·p·2πR·L; T = μ·p·2πR²·L. Temperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).
   Ref: Shigley's Mechanical Engineering Design §3-16, §3-17 — Press and shrink fits; stresses in pressurised cylinders
   Ref: Roark's Formulas for Stress and Strain Ch. 13, Table 13.5 — Thick-walled cylinders under pressure
 
@@ -118,9 +118,9 @@ Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² −
   No warnings.
 
 8. VERIFICATION
-  Template: mech.press-fit@1.0.0
-  Content hash: 45cae33eae60ff08
+  Template: mech.press-fit@1.0.1
+  Content hash: 5e8607713caa1fea
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-23 22:12 UTC
+  Test run: 2026-10-24 09:31 UTC
   Application: TempestOS test

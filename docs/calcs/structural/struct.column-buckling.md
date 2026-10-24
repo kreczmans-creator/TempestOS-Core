@@ -1,4 +1,4 @@
-# S4 — Column buckling, Perry–Robertson (`struct.column-buckling@1.0.0`)
+# S4 — Column buckling, Perry–Robertson (`struct.column-buckling@1.0.1`)
 
 **In plain terms.** A slender strut fails not by crushing but by bowing sideways at Euler's critical load, which falls with the square of its slenderness (length over radius of gyration). A real strut is never perfectly straight, so it bows a little from the start and reaches yield on its concave face before the Euler load. Perry's formula puts that initial bow into the yield condition and Robertson sized the bow to fit tests, giving the strut curves: a stocky strut reaches its design strength, a slender one tends to Euler's value, and the curve bridges the two. The strut curve, chosen by section shape, sets the Robertson constant.
 

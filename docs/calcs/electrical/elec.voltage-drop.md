@@ -1,4 +1,4 @@
-# E3 — Voltage drop and I²R loss (`elec.voltage-drop@1.0.0`)
+# E3 — Voltage drop and I²R loss (`elec.voltage-drop@1.0.1`)
 
 **In plain terms.** Current flowing through a cable's resistance and reactance loses some voltage before it reaches the load. How much depends on the current, the length, the conductor and, for alternating current, the power factor and whether the supply is single- or three-phase. The drop is compared with the allowed percentage of the supply voltage, and the same current gives the heat lost in the cable and an estimate of how warm the conductor runs.
 

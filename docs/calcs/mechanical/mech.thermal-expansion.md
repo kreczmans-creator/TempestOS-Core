@@ -1,4 +1,4 @@
-# M10 — Thermal expansion of a restrained bar (`mech.thermal-expansion@1.0.0`)
+# M10 — Thermal expansion of a restrained bar (`mech.thermal-expansion@1.0.1`)
 
 **In plain terms.** A bar that is heated wants to grow by its expansion coefficient times its length times the temperature rise. If walls stop it, the growth it is denied becomes a squeeze: the force is the denied movement times the bar's stiffness, and the stress is that force over the area. A gap lets the bar grow freely until it closes; a flexible restraint gives a little, so the force is shared by the bar and the restraint in series. Cooling does the same in reverse and puts the bar in tension.
 
