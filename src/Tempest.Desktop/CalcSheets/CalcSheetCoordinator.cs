@@ -26,7 +26,9 @@ public sealed class CalcSheetCoordinator
     private readonly CalcReferenceFill? _references;
     private readonly Dictionary<string, IReadOnlyList<CalcReferenceOption>> _referenceOptions = new(StringComparer.Ordinal);
 
-    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, CalcReferenceFill? references = null)
+    private readonly CalcRegisterView? _register;
+
+    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, CalcReferenceFill? references = null, CalcRegisterView? register = null)
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(view);
@@ -50,6 +52,18 @@ public sealed class CalcSheetCoordinator
         _view.ReferencePicked += (library, index) => _ = GuardedAsync(() => PickReferenceAsync(library, index), "fill from the reference record");
         _view.CompareRequested += () => _ = GuardedAsync(CompareAsync, "compare with the previous revision");
         _view.ArchiveSelected += id => _ = GuardedAsync(() => OpenAsync(id), "open that archived calculation");
+        _register = register;
+    }
+
+    /// <summary>Lists the open project's worksheet calculations in the register (every one when no project is open).</summary>
+    public async Task RefreshRegisterAsync()
+    {
+        if (_register is null)
+            return;
+
+        var project = _projects.Current;
+        var instances = await _service.Store.ListInstancesAsync().ConfigureAwait(true);
+        _register.ShowEntries([.. instances.Where(i => project is null || i.ProjectId == project.Id)], project?.DisplayName, reference => _service.Catalogue.Find(reference)?.Template.Title);
     }
 
     /// <summary>Lists the templates, then the migrated legacy records beneath them (Y8-06: an archive has no project or register entry, so the catalogue is where it is found).</summary>

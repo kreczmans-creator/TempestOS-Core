@@ -153,6 +153,53 @@ public sealed class CalcSheetViewTests
     }
 
     [AvaloniaFact]
+    public void Released_Record_Options_Survive_An_Import_And_Are_Dropped_For_Another_Template()
+    {
+        // Found by the screenshot journey: an import rebuilt the form and left the pickers on "Loading released records…".
+        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All());
+        var view = new CalcSheetView();
+        view.ShowCatalogue(catalogue.Current());
+        view.SelectTemplate("struct.en1993-member");
+        view.SetReferenceOptions("Materials", ["S275 — Structural steel", "S355 — Structural steel"]);
+
+        view.ApplyImportedInputs(view.ReadForm());
+
+        var picker = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == CalcSheetView.ReferencePickerName("Materials"));
+        Assert.True(picker.IsEnabled);
+        Assert.Equal(2, picker.ItemCount);
+        Assert.Equal("Pick a released record (2)", picker.PlaceholderText);
+
+        view.SelectTemplate(Tempest.Calc.Structural.BeamFormulasCalculator.Id);
+        picker = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == CalcSheetView.ReferencePickerName("Materials"));
+        Assert.Equal(0, picker.ItemCount);
+        Assert.False(picker.IsEnabled);
+    }
+
+    [AvaloniaFact]
+    public void Results_Fill_The_Column_And_A_Check_Reads_Across_It()
+    {
+        // Found by the screenshot journey: Results shrank to its values and each check wrapped in a 220 px column.
+        var (view, _) = NewView();
+        var window = new Window { Width = 1600, Height = 1000, Content = view };
+        window.Show();
+
+        try
+        {
+            view.SelectTemplate("test.desktop-stress");
+            window.UpdateLayout();
+            var sections = view.GetLogicalDescendants().OfType<Expander>().ToDictionary(e => (string)e.Header!);
+            Assert.Equal(sections["Inputs"].Bounds.Width, sections["Results"].Bounds.Width, 1);
+
+            var check = view.GetLogicalDescendants().OfType<TextBlock>().First(t => AutomationProperties.GetName(t) == "Result PASS");
+            Assert.True(check.Bounds.Width > 600, $"the check text is {check.Bounds.Width:0} px wide");
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void MalformedImport_IsReported_AndTheFormIsUnchanged()
     {
         var (view, catalogue) = NewView();

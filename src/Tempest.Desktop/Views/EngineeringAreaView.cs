@@ -51,6 +51,8 @@ public sealed class EngineeringAreaView : UserControl
     private readonly LibrariesView _referenceData;
     private readonly EngineeringAssetsView _engineeringAssets;
     private readonly Func<Task> _onEngineeringCalculationSelected;
+    private readonly Func<Task>? _onRegisterSelected;
+    private readonly DockPanel? _registerPanel;
     private readonly Tempest.Desktop.CalcSheets.CalcSheetView _worksheets;
     private readonly Func<Task> _onWorksheetsSelected;
     private readonly ICommandDispatcher _commandDispatcher;
@@ -105,7 +107,8 @@ public sealed class EngineeringAreaView : UserControl
         EngineeringDashboardView dashboard, Func<Task> onEngineeringCalculationSelected,
         ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp,
         EngineeringAssetsView engineeringAssets,
-        Tempest.Desktop.CalcSheets.CalcSheetView worksheets, Func<Task> onWorksheetsSelected)
+        Tempest.Desktop.CalcSheets.CalcSheetView worksheets, Func<Task> onWorksheetsSelected,
+        Tempest.Desktop.CalcSheets.CalcRegisterView? worksheetRegister = null, Func<Task>? onRegisterSelected = null, Func<Guid, Task>? openWorksheetInstance = null)
     {
         ArgumentNullException.ThrowIfNull(navigator);
         ArgumentNullException.ThrowIfNull(tasksReadModel);
@@ -128,6 +131,21 @@ public sealed class EngineeringAreaView : UserControl
         _onWorksheetsSelected = onWorksheetsSelected;
         _dashboard = dashboard;
         _onEngineeringCalculationSelected = onEngineeringCalculationSelected;
+        _onRegisterSelected = onRegisterSelected;
+
+        // The register node lists the worksheet calculations above the bracket-check surface (the showcase journey
+        // found it showed only the bracket records); a row opens in the worksheet form.
+        if (worksheetRegister is not null)
+        {
+            DockPanel.SetDock(worksheetRegister, Dock.Top);
+            _registerPanel = new DockPanel { LastChildFill = true };
+            _registerPanel.Children.Add(worksheetRegister);
+            _registerPanel.Children.Add(engineeringCalculation);
+
+            if (openWorksheetInstance is not null)
+                worksheetRegister.OpenRequested += id => _ = OpenWorksheetInstanceAsync(() => openWorksheetInstance(id));
+        }
+
         _commandDispatcher = commandDispatcher;
         _openObjectRightUp = openObjectRightUp;
 
@@ -235,6 +253,18 @@ public sealed class EngineeringAreaView : UserControl
         await _onWorksheetsSelected().ConfigureAwait(true);
         _detail.Content = _worksheets;
         _worksheets.SelectTemplate(templateReference);
+    }
+
+    /// <summary>Shows the Worksheets node and opens a calculation in it (a register row's Open).</summary>
+    private async Task OpenWorksheetInstanceAsync(Func<Task> open)
+    {
+        _suppressSelection = true;
+        _tree.SelectedItem = _worksheetsNode;
+        _suppressSelection = false;
+        await _onWorksheetsSelected().ConfigureAwait(true);
+        _worksheets.FilterDiscipline(null);
+        _detail.Content = _worksheets;
+        await open().ConfigureAwait(true);
     }
 
     /// <summary>
@@ -428,8 +458,8 @@ public sealed class EngineeringAreaView : UserControl
 
         if (ReferenceEquals(selected, _calculationsNode))
         {
-            await _onEngineeringCalculationSelected().ConfigureAwait(true);
-            _detail.Content = _engineeringCalculation;
+            await (_onRegisterSelected ?? _onEngineeringCalculationSelected)().ConfigureAwait(true);
+            _detail.Content = (Control?)_registerPanel ?? _engineeringCalculation;
             return;
         }
 

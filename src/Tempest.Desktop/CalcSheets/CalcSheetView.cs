@@ -87,6 +87,9 @@ public sealed class CalcSheetView : UserControl
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
     /// <summary>One picker per reference library (or slot) the template draws on; items are the released records' labels (ADR-0167 §3).</summary>
     private readonly Dictionary<string, ComboBox> _referencePickers = new(StringComparer.Ordinal);
+    /// <summary>The labels last listed per library for <see cref="_referenceLabelsFor"/>: a rebuilt form (an import, a save, a revision) shows them again instead of "Loading…".</summary>
+    private readonly Dictionary<string, IReadOnlyList<string>> _referenceLabels = new(StringComparer.Ordinal);
+    private string? _referenceLabelsFor;
     private readonly Dictionary<string, StackPanel> _stepRows = new(StringComparer.Ordinal);
     private bool _loadingForm;
     private string? _governingStep;
@@ -209,12 +212,20 @@ public sealed class CalcSheetView : UserControl
         if (!_referencePickers.TryGetValue(library, out var picker))
             return;
 
+        _referenceLabels[library] = labels;
+        _referenceLabelsFor = SelectedTemplate?.Reference;
+        ShowOptions(picker, labels);
+    }
+
+    private void ShowOptions(ComboBox picker, IReadOnlyList<string> labels)
+    {
+        var loading = _loadingForm;
         _loadingForm = true;
         picker.ItemsSource = labels;
         picker.SelectedIndex = -1;
         picker.IsEnabled = labels.Count > 0 && !IsReadOnly;
         picker.PlaceholderText = labels.Count == 0 ? "No released record" : $"Pick a released record ({labels.Count})";
-        _loadingForm = false;
+        _loadingForm = loading;
     }
 
     /// <summary>Writes the values a reference record supplied into their fields, with the record's pin as the source.</summary>
@@ -357,6 +368,10 @@ public sealed class CalcSheetView : UserControl
         _form.Children.Clear();
         _fields.Clear();
         _referencePickers.Clear();
+
+        if (_referenceLabelsFor != entry.Reference)
+            _referenceLabels.Clear();
+
         _problems.Text = string.Empty;
         _status.Text = IsReadOnly ? $"This calculation is {instance!.Status}; it is read-only. Revise it to start a new revision." : string.Empty;
 
@@ -383,6 +398,9 @@ public sealed class CalcSheetView : UserControl
             row.Children.Add(picker);
             _form.Children.Add(row);
             _referencePickers[library] = picker;
+
+            if (_referenceLabels.TryGetValue(library, out var known))
+                ShowOptions(picker, known);
         }
 
         foreach (var spec in entry.Template.Inputs)
@@ -515,7 +533,7 @@ public sealed class CalcSheetView : UserControl
             _results.Children.Add(Readout(o.Symbol, o.ValueText, o.Description));
 
         foreach (var c in result.Checks.OrderByDescending(c => c.Utilisation))
-            _checks.Children.Add(Readout(c.Passed ? "PASS" : "FAIL", $"{c.Name}: {c.DemandText} vs {c.CapacityText} (u = {FormatUtilisation(c.Utilisation)})", c.Clause));
+            _checks.Children.Add(CheckRow(c));
 
         foreach (var n in result.Blocks)
             _notices.Children.Add(new TextBlock { Text = $"Block — {n.Message}", Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody });
@@ -1027,7 +1045,8 @@ public sealed class CalcSheetView : UserControl
         return grid;
     }
 
-    private static Expander Section(string title, Control content) => new() { Header = title, IsExpanded = true, Margin = DesignTokens.SectionMargin, Content = content };
+    // Stretched, so a section is as wide as the column and not as wide as its widest line (the showcase journey found Results shrunk to its values).
+    private static Expander Section(string title, Control content) => new() { Header = title, IsExpanded = true, Margin = DesignTokens.SectionMargin, Content = content, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
 
     private static TextBlock Caption(string text) => new() { Text = text, FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, MaxWidth = 760, Opacity = 0.8 };
 
@@ -1057,6 +1076,22 @@ public sealed class CalcSheetView : UserControl
         row.Children.Add(name);
         row.Children.Add(read);
         row.Children.Add(desc);
+        return row;
+    }
+
+    /// <summary>A check: PASS/FAIL, then the check's text across the width, then its clause.</summary>
+    private static Control CheckRow(CalcCheck check)
+    {
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("120,*,Auto"), Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXs) };
+        var verdict = new TextBlock { Text = check.Passed ? "PASS" : "FAIL", FontWeight = DesignTokens.WeightHeading, Foreground = check.Passed ? Brushes.SeaGreen : Brushes.IndianRed, FontSize = DesignTokens.FontSizeBody };
+        var text = new TextBlock { Text = $"{check.Name}: {check.DemandText} vs {check.CapacityText} (u = {FormatUtilisation(check.Utilisation)})", FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap };
+        var clause = new TextBlock { Text = check.Clause ?? string.Empty, FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0) };
+        AutomationProperties.SetName(text, $"Result {verdict.Text}");
+        Grid.SetColumn(text, 1);
+        Grid.SetColumn(clause, 2);
+        row.Children.Add(verdict);
+        row.Children.Add(text);
+        row.Children.Add(clause);
         return row;
     }
 
