@@ -106,16 +106,6 @@
       "ValueText": "1"
     },
     {
-      "Symbol": "eta_psu",
-      "Number": 0.9,
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "0.9"
-    },
-    {
       "Symbol": "f_derate",
       "Number": 1,
       "Provenance": {
@@ -124,16 +114,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "1"
-    },
-    {
-      "Symbol": "heat_add",
-      "Number": 0,
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "0"
     },
     {
       "Symbol": "inrush_add",
@@ -325,16 +305,6 @@
       "ValueText": "1.25"
     },
     {
-      "Symbol": "psu_bus",
-      "Text": "not counted on an AC bus",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "not counted on an AC bus"
-    },
-    {
       "Symbol": "t_auto",
       "Number": 4,
       "Unit": "h",
@@ -410,7 +380,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:488dd55b136f4d1a9b76680b733cddf5#Phi",
+        "Reference": "calc:d18b99eb5d654009b834817b2ee55c15#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -609,7 +579,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:3718ba28054b4a82b188477c3d17f09a#P_cool",
+        "Reference": "calc:c5209ede779c447a8feccb87d86b6d35#P_cool",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -643,7 +613,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:3718ba28054b4a82b188477c3d17f09a#T_max",
+        "Reference": "calc:c5209ede779c447a8feccb87d86b6d35#T_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -669,6 +639,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "counterflow"
+    },
+    {
+      "Symbol": "const_side",
+      "Text": "hot side at constant temperature (e.g. condensing vapour)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "hot side at constant temperature (e.g. condensing vapour)"
     },
     {
       "Symbol": "cp_c",
@@ -753,7 +733,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c7a3c3cd075946c4b1a9106f385bc026#Q",
+        "Reference": "calc:f69eb2eda78946a9882053c0fc337c61#Q",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -765,11 +745,22 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c7a3c3cd075946c4b1a9106f385bc026#T_c_m",
+        "Reference": "calc:f69eb2eda78946a9882053c0fc337c61#T_c_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "23.6375"
+    },
+    {
+      "Symbol": "circuit",
+      "Text": "closed (flow and return: the rises cancel, no static lift)",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-215",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "closed (flow and return: the rises cancel, no static lift)"
     },
     {
       "Symbol": "cp_load",
@@ -777,7 +768,7 @@
       "Unit": "J/(kg*K)",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c7a3c3cd075946c4b1a9106f385bc026#cp_c",
+        "Reference": "calc:f69eb2eda78946a9882053c0fc337c61#cp_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -785,11 +776,11 @@
     },
     {
       "Symbol": "dT_load",
-      "Number": 3.2750239234449787,
+      "Number": 3.2750239234449623,
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c7a3c3cd075946c4b1a9106f385bc026#dT_c",
+        "Reference": "calc:f69eb2eda78946a9882053c0fc337c61#dT_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -910,7 +901,7 @@
               "Unit": "m"
             },
             "dz": {
-              "Number": 3,
+              "Number": 0,
               "Unit": "m"
             },
             "side": {

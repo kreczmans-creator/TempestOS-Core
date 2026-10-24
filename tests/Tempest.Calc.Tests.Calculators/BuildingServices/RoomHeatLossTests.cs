@@ -13,10 +13,10 @@ public sealed class RoomHeatLossTests
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
 
-    private static CalcInputSet Wall(double insulationMm, double lambda = 0.022) =>
+    private static CalcInputSet Wall(double insulationMm, double lambda = 0.03) =>
         new CalcInputSet()
             .With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
-            .With(RoomHeatLossCalculator.Layers(("Wall", "Brick", 102.5, 0.77), ("Wall", "Insulation", insulationMm, lambda), ("Wall", "Block", 100, 0.15)))
+            .With(RoomHeatLossCalculator.Layers(("Wall", "Brick", 102.5, 0.84), ("Wall", "Insulation", insulationMm, lambda), ("Wall", "Block", 100, 0.2)))
             .With(RoomHeatLossCalculator.Elements(("Wall", 20, null, null, null, null, null, null, null)));
 
     [Fact]
@@ -33,8 +33,8 @@ public sealed class RoomHeatLossTests
     [Fact]
     public void A_Better_Conductivity_Lowers_U()
     {
-        var poor = CalcRunner.Run(Room, Wall(100, 0.04)).OutputSi("U_1");
-        var good = CalcRunner.Run(Room, Wall(100, 0.022)).OutputSi("U_1");
+        var poor = CalcRunner.Run(Room, Wall(100, 0.05)).OutputSi("U_1");
+        var good = CalcRunner.Run(Room, Wall(100, 0.03)).OutputSi("U_1");
         Assert.True(good < poor);
     }
 
@@ -126,11 +126,11 @@ public sealed class RoomHeatLossTests
     [Fact]
     public void Layers_Are_Matched_By_Name_And_Unmatched_Layers_Warn()
     {
-        var inputs = Defaults().With(RoomHeatLossCalculator.Layers(("cavity wall ", "Brick", 102.5, 0.77), ("Cavity wall", "PIR", 100, 0.022), ("Cavity wall", "Block", 100, 0.15), ("Cavity wall", "Plaster", 13, 0.57), ("Shed", "Timber", 20, 0.13)));
+        var inputs = Defaults().With(RoomHeatLossCalculator.Layers(("cavity wall ", "Brick", 102.5, 0.84), ("Cavity wall", "Insulation", 100, 0.03), ("Cavity wall", "Block", 100, 0.2), ("Cavity wall", "Plaster", 13, 0.4), ("Shed", "Timber", 20, 0.12)));
         var r = CalcRunner.Run(Room, inputs);
         Assert.False(r.IsBlocked);
         Assert.Contains(r.Warnings, w => w.RuleId == "orphan-layers");
-        Assert.Equal(1 / (0.13 + 0.1025 / 0.77 + 0.1 / 0.022 + 0.1 / 0.15 + 0.013 / 0.57 + 0.04), r.OutputSi("U_1"), 9);
+        Assert.Equal(1 / (0.13 + 0.1025 / 0.84 + 0.1 / 0.03 + 0.1 / 0.2 + 0.013 / 0.4 + 0.04), r.OutputSi("U_1"), 9);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class RoomHeatLossTests
         Assert.False(fail.Passed);
         Assert.Contains(fail.Checks, c => !c.Passed && c.Name.Contains("Cavity wall", StringComparison.Ordinal));
 
-        var rowTarget = Defaults().With(Q("U_target", 0.15, "W/(m^2*K)")).With(RoomHeatLossCalculator.Elements(("Cavity wall", 20, null, null, null, null, null, null, 0.2), ("Window", 3, null, null, null, null, null, 1.4, 1.2)));
+        var rowTarget = Defaults().With(Q("U_target", 0.15, "W/(m^2*K)")).With(RoomHeatLossCalculator.Elements(("Cavity wall", 20, null, null, null, null, null, null, 0.3), ("Window", 3, null, null, null, null, null, 1.4, 1.2)));
         var mixed = CalcRunner.Run(Room, rowTarget);
         Assert.Equal(2, mixed.Checks.Count);
         Assert.Contains(mixed.Checks, c => c.Name.Contains("Window", StringComparison.Ordinal) && !c.Passed);
@@ -233,5 +233,72 @@ public sealed class RoomHeatLossTests
     {
         var r = CalcRunner.Run(Room, Defaults().With(Q("A_floor", 16, "m^2")));
         Assert.Equal(r.OutputSi("Phi_HL") / 16, r.OutputSi("Phi_A"), 9);
+    }
+
+    private static CalcInputValue Table(params (string Name, string? Flow, double Area, double? ThetaAdj)[] rows) =>
+        CalcInputValue.Table("elements", rows.Select(r =>
+        {
+            var cells = new List<(string, CalcCell)> { ("name", new CalcCell(Text: r.Name)), ("area", new CalcCell(r.Area, "m^2")) };
+
+            if (r.Flow is { } flow)
+                cells.Add(("flow", new CalcCell(Text: flow)));
+
+            if (r.ThetaAdj is { } t)
+                cells.Add(("theta_adj", new CalcCell(t, "degC")));
+
+            return CalcRow.Of([.. cells]);
+        }).ToList());
+
+    [Fact]
+    public void The_Global_Target_U_Is_Not_Applied_To_A_Partition_To_A_Heated_Neighbour()
+    {
+        // Black B-A-04 / Green G-B-09: an 18 °C partition (U about 1.8) carried an unexplained FAIL against the 0.30 outside target.
+        var inputs = Defaults().With(RoomHeatLossCalculator.Layers(("Cavity wall", "Brick", 102.5, 0.84), ("Cavity wall", "Insulation", 100, 0.03), ("Partition", "Board", 25, 0.22)))
+            .With(Table(("Cavity wall", null, 20, null), ("Partition", null, 12, 18)));
+        var r = CalcRunner.Run(Room, inputs);
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Contains(r.Checks, c => c.Name.Contains("Cavity wall", StringComparison.Ordinal));
+        Assert.DoesNotContain(r.Checks, c => c.Name.Contains("Partition", StringComparison.Ordinal));
+        Assert.Null(r.FindOutput("u_2"));
+        Assert.True(r.Passed);
+
+        // Its own target still applies wherever it faces.
+        var own = CalcRunner.Run(Room, inputs.With(RoomHeatLossCalculator.Elements(("Cavity wall", 20, null, null, null, null, null, null, null), ("Partition", 12, 18, null, null, null, null, null, 1.2))));
+        Assert.Contains(own.Checks, c => c.Name.Contains("Partition", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData(null, 0.13)]
+    [InlineData("horizontal", 0.13)]
+    [InlineData("upward", 0.10)]
+    [InlineData("downward", 0.17)]
+    public void The_Conventional_Internal_Surface_Resistance_Follows_The_Heat_Flow_Direction(string? flow, double rsi)
+    {
+        // Green G-B-14: a roof lost heat through R_si = 0.13 instead of the upward-flow 0.10.
+        var inputs = new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
+            .With(RoomHeatLossCalculator.Layers(("Roof", "Insulation", 100, 0.05)))
+            .With(Table(("Roof", flow, 10, null)));
+        var r = CalcRunner.Run(Room, inputs);
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(rsi + 0.1 / 0.05 + 0.04, r.OutputSi("R_1"), 12);
+    }
+
+    [Fact]
+    public void An_Internal_Floor_Takes_The_Same_Resistance_On_Both_Faces_For_Its_Direction()
+    {
+        var inputs = new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
+            .With(RoomHeatLossCalculator.Layers(("Ceiling", "Board", 25, 0.22)))
+            .With(Table(("Ceiling", "upward", 10, 18)));
+        var r = CalcRunner.Run(Room, inputs);
+        Assert.Equal(0.10 + 0.025 / 0.22 + 0.10, r.OutputSi("R_1"), 12);
+    }
+
+    [Fact]
+    public void A_New_Sheet_Keeps_Its_Elements_Table_Because_Only_The_Resistances_Are_Record_Values()
+    {
+        // Black B-A-10: the elements table (areas, adjacent temperatures) was stripped from a new sheet as if it were a licensed record.
+        var fresh = CalcTemplateHasher.NewSheetInputs(Room.Template);
+        Assert.NotEmpty(fresh.Find("elements")!.Rows!);
+        Assert.DoesNotContain(Room.Template.RecordKinds!, k => k.Symbols.Contains("elements"));
     }
 }

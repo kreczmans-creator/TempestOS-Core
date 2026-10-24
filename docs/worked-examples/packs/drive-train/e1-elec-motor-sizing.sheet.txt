@@ -3,8 +3,8 @@ Project: Conveyor 7 head drive
 Calc ID: Motor sizing    Revision: A
 Title: Motor and actuator sizing
 Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: CNV-DRV-001    Client: Client Co
+Checker: —    Checked: —
+Issued: 2026-10-24    Issue: CNV-DRV-001
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
@@ -159,5 +159,5 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: dc25f3e5a3e7b859
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 19:26 UTC
+  Test run: 2026-10-24 19:29 UTC
   Application: TempestOS test

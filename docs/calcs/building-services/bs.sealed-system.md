@@ -1,8 +1,8 @@
-# B6 — Sealed system: emitters and expansion vessel (`bs.sealed-system@1.1.0`)
+# B6 — Sealed system: emitters and expansion vessel (`bs.sealed-system@1.2.0`)
 
 **Scope.** Closed LTHW system below 100 °C: the catalogue output (ΔT 50 K) each room's emitter needs at the design temperatures, checked against the selected emitters; the minimum expansion vessel.
 
-**Method.** `ΔT = (t_f + t_r)/2 − t_i` or the log mean (BS EN 442-2 cl. 5). `Φ = Φ50 (ΔT/50)^n`; `Φ50,req = Φ_req/(ΔT/50)^n`. `V_s = ΣV_em + V_pipe + V_plant`. `e_x = ρ(t_fill)/ρ(t_max) − 1` (Kell 1975, within about 0.01 % of IAPWS-95 at 1 atm), or a glycol record. `p_i = ρ g h + margin`. `V_e = e_x V_s/[1 − (p_i + 1)/(p_f + 1)]` (bar g; + 1 bar as usually written).
+**Method.** `ΔT = (t_f + t_r)/2 − t_i` or the log mean (BS EN 442-2 cl. 5). `Φ = Φ50 (ΔT/50)^n`; `Φ50,req = Φ_req/(ΔT/50)^n`. `V_s = ΣV_em + V_pipe + V_plant`. `e_x = ρ(t_fill)/ρ(t_max) − 1` (Kell 1975, within about 0.01 % of IAPWS-95 at 1 atm), or a glycol record. `p_i = ρ g h + margin`. `V_e = e_x V_s/[1 − (p_i + 1)/(p_f + 1)]` (bar g; + 1 bar as usually written). The vessel is sized for the higher of `t_max` and `t_f` (a warning when `t_max < t_f`), and `t_fill` must be below `t_max` (blocked otherwise, instead of a negative vessel). **`V_e` is the expansion volume only:** it contains no water reserve for system losses and no margin between the final pressure and the safety valve setting beyond `p_f < p_prv`; the sheet states this as an assumption and cites CIBSE Guide B1 only (it no longer cites BS EN 12828 for what it does not implement). A selected emitter output of 0 W is refused (leave `Phi50` empty for none).
 
 **Inputs.** optional `rooms` table (name, Φ, selected Φ50, V_em; ≤ 200); `t_f`, `t_r` 30–90 °C; `t_i` 16–24 °C; `n` 1.1–1.5 (record `emitter.rating`); `dT_method`; `V_pipe`, `V_plant` (V_s must be 10–10 000 L); `t_fill`, `t_max`; optional `e_fluid` (record `fluid.expansion`); `h_static` 0–50 m; `p_margin`; `p_f`; `p_prv` 1.5–6 bar; optional `V_vessel`. The symbol `e` is the engine's constant, so the coefficient is `e_x`.
 
@@ -10,4 +10,4 @@
 
 **Limitations.** Closed LTHW below 100 °C; no pipe-loss or emitter-position corrections; Kell density at atmospheric pressure.
 
-**Test cases.** `ka-dt50`, `ka-dt30`, `ka-lmtd`, `ka-vessel` (V_e 6.568 L) — analytic, Confirmed; `ka-manufacturer-dt30` (factor ≈ 0.51 at ΔT 30 K, n 1.3) — **Unconfirmed** until checked against the owner's radiator catalogue. CIBSE Guide B1 (2016) and vessel-manufacturer worked examples are not pinned: the owner's copies are needed.
+**Test cases.** `ka-dt50`, `ka-dt30`, `ka-lmtd`, `ka-vessel` (V_e 6.568 L) — analytic, Confirmed. The unattributed manufacturer factor 0.51 (`ka-manufacturer-dt30`) was dropped: the analytic cases cover the characteristic equation. CIBSE Guide B1 (2016) and vessel-manufacturer worked examples are not pinned: the owner's copies are needed.

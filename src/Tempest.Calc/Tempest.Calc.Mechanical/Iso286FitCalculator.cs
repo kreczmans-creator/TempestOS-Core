@@ -8,13 +8,16 @@ namespace Tempest.Calc.Mechanical;
 public sealed class Iso286FitCalculator : ICalcCalculator
 {
     public const string Id = "mech.iso286-fit";
+    public const string IsoHole = "ISO 286 hole class";
+    public const string BearingBore = "rolling-bearing bore (deviations from the bearing record)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "ISO 286 limits and fits",
+        Id, "1.1.0", CalcDiscipline.Mechanical, "ISO 286 limits and fits",
         "Hole and shaft limits for a nominal size and tolerance classes, the resulting fit (clearance, transition or interference) and its extreme values, from the ISO 286-1 formulae.",
-        "i = 0.45·D^(1/3) + 0.001·D (µm) at the geometric mean D of the size step; ITn = multiplier × i; fundamental deviations by letter from the published formulae; hole deviations by the general rule (EI = −es for A–H; ES = −ei + Δ for K–ZC). Limits = nominal + deviations; fit extremes from the limits.",
+        "i = 0.45·D^(1/3) + 0.001·D (µm) at the geometric mean D of the size step; ITn = multiplier × i; fundamental deviations by letter from the published formulae; hole deviations by the general rule (EI = −es for A–H; ES = −ei + Δ for K–ZC). Limits = nominal + deviations; fit extremes from the limits. A rolling-bearing bore is not an ISO 286 hole: it has its own tolerance (ISO 492) lying below nominal, so in that mode ES and EI are entered from the bearing record.",
         [
             new CalcInputSpec("D", "Nominal size", CalcInputKind.Quantity, "mm", Default: 25, Min: 1, Max: 500, HardMin: 0.001, HardMax: Iso286.MaximumSizeMm),
+            new CalcInputSpec("hole_kind", "Hole: an ISO 286 class, or a rolling-bearing bore (ES and EI from the bearing record, ISO 492)", CalcInputKind.Choice, Choices: [IsoHole, BearingBore], DefaultChoice: IsoHole),
             new CalcInputSpec("hole_letter", "Hole fundamental deviation letter", CalcInputKind.Choice, Choices: ["H", "G", "F", "E", "D", "JS", "K", "M", "N", "P", "R", "S", "T", "U"], DefaultChoice: "H"),
             new CalcInputSpec("hole_grade", "Hole IT grade", CalcInputKind.Number, Default: 7, Min: 5, Max: 11, HardMin: 1, HardMax: 18),
             new CalcInputSpec("shaft_letter", "Shaft fundamental deviation letter", CalcInputKind.Choice, Choices: ["h", "g", "f", "e", "d", "js", "k", "m", "n", "p", "r", "s", "t", "u"], DefaultChoice: "g"),
@@ -33,6 +36,7 @@ public sealed class Iso286FitCalculator : ICalcCalculator
             new CalcClauseRef("ISO 286-2:2010", "—", "Tables of standard tolerance classes and limit deviations (not reproduced)"),
         ],
         [
+            new CalcApplicabilityRule("bearing-bore", "A rolling-bearing bore needs ES_override and EI_override from the bearing record; it is not an H7 hole.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("large-size", "Nominal size above 500 mm uses the I = 0.004 D + 2.1 tolerance unit.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("fine-grade", "IT grades below IT5 are evaluated by geometric interpolation; check against the standard.", CalcNoticeSeverity.Warning),
         ],
@@ -43,12 +47,17 @@ public sealed class Iso286FitCalculator : ICalcCalculator
             new CalcTestCase("ka-h7p6-50", "50 mm H7/p6 interference", new CalcReferenceSource("ISO 286-2:2010 (public excerpt)", null, "50 mm H7: +25/0 µm; p6: +42/+26 µm; interference 1…42 µm (formula gives p = IT7 exactly, 1 µm under the table's +26)"),
                 [CalcInputValue.Quantity("D", 50, "mm"), CalcInputValue.Choice("hole_letter", "H"), CalcInputValue.Of("hole_grade", 7), CalcInputValue.Choice("shaft_letter", "p"), CalcInputValue.Of("shaft_grade", 6)],
                 [new CalcExpectedValue("IT_hole", 25, "µm", 0.03), new CalcExpectedValue("ei", 26, "µm", 0.06), new CalcExpectedValue("i_max", 42, "µm", 0.05), new CalcExpectedValue("i_min", 0, "µm", 1.5)]),
+            new CalcTestCase("ka-bearing-bore-k6", "35 mm bearing bore (0 / −9 µm, illustrative) on a k6 seat: interference at every size combination",
+                new CalcReferenceSource("Analytic (ISO 286-1 formulae for the shaft; the bore deviations are invented for the test)", null, "35 mm lies in the 30–50 step, D = √(30·50) = 38.730 mm, i = 0.45·D^(1/3) + 0.001·D = 1.5612 µm, IT6 = 15.612 µm; k: ei = 0.6·D^(1/3) = +2.030 µm, es = 17.642 µm; bore ES = 0, EI = −9 µm: c_max = ES − ei = −2.030 µm, c_min = EI − es = −26.642 µm, so every combination is an interference"),
+                [CalcInputValue.Quantity("D", 35, "mm"), CalcInputValue.Choice("hole_kind", BearingBore), CalcInputValue.Choice("shaft_letter", "k"), CalcInputValue.Of("shaft_grade", 6), CalcInputValue.Quantity("ES_override", 0, "µm"), CalcInputValue.Quantity("EI_override", -9, "µm")],
+                [new CalcExpectedValue("ei", 2.030017, "µm", 1e-5), new CalcExpectedValue("es", 17.642448, "µm", 1e-5), new CalcExpectedValue("c_max", -2.030017, "µm", 1e-5), new CalcExpectedValue("c_min", -26.642448, "µm", 1e-5), new CalcExpectedValue("i_min", 2.030017, "µm", 1e-5)]),
         ],
         Category: "Fits");
 
     public void Run(CalcRunContext c)
     {
         var dMm = c.InputSi("D") * 1000;
+        var bore = c.InputText("hole_kind") == BearingBore;
         var holeLetter = c.InputText("hole_letter");
         var shaftLetter = c.InputText("shaft_letter");
         var holeGrade = (int)Math.Round(c.InputSi("hole_grade"));
@@ -120,6 +129,12 @@ public sealed class Iso286FitCalculator : ICalcCalculator
         // Hole deviations.
         double ES, EI;
 
+        if (bore && !(c.Has("ES_override") && c.Has("EI_override")))
+        {
+            c.Block("bearing-bore", "ES_override: a rolling-bearing bore has its own tolerance (ISO 492), not an ISO 286 class; enter its upper and lower deviation (ES_override, EI_override) from the bearing record.");
+            return;
+        }
+
         if (c.Has("ES_override") || c.Has("EI_override"))
         {
             if (!(c.Has("ES_override") && c.Has("EI_override")))
@@ -130,8 +145,8 @@ public sealed class Iso286FitCalculator : ICalcCalculator
 
             ES = c.InputSi("ES_override") * 1e6;
             EI = c.InputSi("EI_override") * 1e6;
-            c.Record("ES", "ES (reference record)", "override", ScalarValue.Of(ES, um), "Hole upper deviation");
-            c.Record("EI", "EI (reference record)", "override", ScalarValue.Of(EI, um), "Hole lower deviation");
+            c.Record("ES", bore ? "ES (bearing bore record, ISO 492)" : "ES (reference record)", "override", ScalarValue.Of(ES, um), "Hole upper deviation");
+            c.Record("EI", bore ? "EI (bearing bore record, ISO 492)" : "EI (reference record)", "override", ScalarValue.Of(EI, um), "Hole lower deviation");
         }
         else
         {
@@ -177,7 +192,8 @@ public sealed class Iso286FitCalculator : ICalcCalculator
         var cMax = c.Si("c_max");
         var cMin = c.Si("c_min");
         var kind = cMin >= 0 ? "clearance" : cMax <= 0 ? "interference" : "transition";
-        c.Record("fit", "fit class", $"{holeLetter}{holeGrade}/{shaftLetter}{shaftGrade}", new TextValue(kind), "Fit kind: clearance, transition or interference");
+        var holeName = bore ? "bearing bore" : $"{holeLetter}{holeGrade}";
+        c.Record("fit", "fit class", $"{holeName}/{shaftLetter}{shaftGrade}", new TextValue(kind), "Fit kind: clearance, transition or interference");
         c.Assign("c_mean", "(c_max + c_min) / 2", "µm", "Mean clearance");
 
         c.Output("IT_hole", "Hole tolerance");
@@ -196,7 +212,7 @@ public sealed class Iso286FitCalculator : ICalcCalculator
         c.Output("i_max", "Maximum interference");
         c.Output("i_min", "Minimum interference");
         c.Output("c_mean", "Mean clearance");
-        c.CheckCondition("Fit classified", true, $"{holeLetter}{holeGrade}/{shaftLetter}{shaftGrade}", kind, "fit");
+        c.CheckCondition("Fit classified", true, $"{holeName}/{shaftLetter}{shaftGrade}", kind, "fit");
     }
 
     private static string Multiplier(int grade) => grade switch

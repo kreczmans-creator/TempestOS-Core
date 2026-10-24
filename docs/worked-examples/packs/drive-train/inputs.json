@@ -320,11 +320,23 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a374c08285644e63b28febc1f23e278e#T_rms",
+        "Reference": "calc:2ec3786515164836aecb56e806ff453c#T_rms",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "0.151579"
+    },
+    {
+      "Symbol": "T_pk",
+      "Number": 0.15937781334180623,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:2ec3786515164836aecb56e806ff453c#T_pk",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.159378"
     },
     {
       "Symbol": "finish",
@@ -395,7 +407,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a374c08285644e63b28febc1f23e278e#n_pk",
+        "Reference": "calc:2ec3786515164836aecb56e806ff453c#n_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -416,8 +428,9 @@
       "Number": 7850,
       "Unit": "kg/m^3",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-410",
+        "Revision": "B",
         "IsSufficientToIssue": true
       },
       "ValueText": "7850"
@@ -645,7 +658,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:550d4551a75f4c9ba11948798bcc5065#R_A",
+        "Reference": "calc:68aa1e6cbbe34aeea8da3a76214fae92#R_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -667,8 +680,8 @@
       "Number": 90,
       "Unit": "%",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A76 (bearing schedule)",
         "IsSufficientToIssue": true
       },
       "ValueText": "90"
@@ -694,6 +707,16 @@
       "ValueText": "0.6"
     },
     {
+      "Symbol": "X_1",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
       "Symbol": "Y",
       "Number": 0,
       "Provenance": {
@@ -712,6 +735,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "0.5"
+    },
+    {
+      "Symbol": "Y_1",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
     },
     {
       "Symbol": "a_iso",
@@ -739,7 +772,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a374c08285644e63b28febc1f23e278e#n_pk",
+        "Reference": "calc:2ec3786515164836aecb56e806ff453c#n_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -773,30 +806,63 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:550d4551a75f4c9ba11948798bcc5065#d_A",
+        "Reference": "calc:68aa1e6cbbe34aeea8da3a76214fae92#d_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "35"
     },
     {
-      "Symbol": "hole_grade",
-      "Number": 7,
+      "Symbol": "EI_override",
+      "Number": -9,
+      "Unit": "\u00B5m",
       "Provenance": {
         "Kind": "Drawing",
         "Reference": "DRG-CNV-411",
         "Revision": "B",
         "IsSufficientToIssue": true
       },
+      "ValueText": "-9"
+    },
+    {
+      "Symbol": "ES_override",
+      "Number": 0,
+      "Unit": "\u00B5m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-411",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "hole_grade",
+      "Number": 7,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
       "ValueText": "7"
+    },
+    {
+      "Symbol": "hole_kind",
+      "Text": "rolling-bearing bore (deviations from the bearing record)",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-411",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "rolling-bearing bore (deviations from the bearing record)"
     },
     {
       "Symbol": "hole_letter",
       "Text": "H",
       "Provenance": {
-        "Kind": "Drawing",
-        "Reference": "DRG-CNV-411",
-        "Revision": "B",
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
       "ValueText": "H"
@@ -903,7 +969,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a374c08285644e63b28febc1f23e278e#T_pk",
+        "Reference": "calc:2ec3786515164836aecb56e806ff453c#T_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

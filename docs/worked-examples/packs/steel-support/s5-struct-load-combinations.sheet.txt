@@ -3,8 +3,8 @@ Project: Equipment support ES-4
 Calc ID: Load combinations    Revision: A
 Title: Load combinations (EN 1990)
 Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+Checker: —    Checked: —
+Issued: 2026-10-24    Issue: STR-SUP-001
 
 1. SCOPE AND METHOD
 Design values of a single action effect (a force, a moment or a load intensity) under every EN 1990 Annex A1 combination for buildings: ULS persistent/transient, SLS characteristic, frequent and quasi-permanent, and accidental. Every variable action is tried as the leading one; the maximum and minimum envelopes and their governing combinations are reported.
@@ -124,12 +124,15 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   No pass/fail checks in this calculation.
 
 7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: gamma_G_sup, gamma_G_inf, gamma_Q, xi (EN 1990 partial and ψ factors). Enter each as one so its source, edition and licence travel with it.
+  WARNING record.gamma_G_sup: gamma_G_sup: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_G_inf: gamma_G_inf: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_Q: gamma_Q: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.xi: xi: a tabulated value not taken from a reference record (EN 1990 partial and ψ factors); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: struct.load-combinations@1.0.0
   Content hash: cd8d66887b67a0ca
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 19:26 UTC
+  Test run: 2026-10-24 19:29 UTC
   Application: TempestOS test

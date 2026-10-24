@@ -103,6 +103,7 @@ public sealed class SteelSupportChainTests
 
         // The anchorage is designed outside the chain: S6 says so until the report is filed.
         Assert.Contains(s6.Warnings, w => w.RuleId == "anchorage");
+        Assert.DoesNotContain(s6.Checks, c => c.Name.StartsWith("Anchorage", StringComparison.Ordinal));
         Assert.Equal(7, made.Pack.InstanceIds.Count);
     }
 

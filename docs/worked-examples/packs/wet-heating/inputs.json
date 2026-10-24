@@ -86,7 +86,7 @@
               "Unit": "mm"
             },
             "lambda": {
-              "Number": 0.77,
+              "Number": 0.84,
               "Unit": "W/(m*K)"
             }
           }
@@ -97,14 +97,14 @@
               "Text": "Cavity wall"
             },
             "name": {
-              "Text": "PIR insulation"
+              "Text": "Insulation"
             },
             "d": {
               "Number": 100,
               "Unit": "mm"
             },
             "lambda": {
-              "Number": 0.022,
+              "Number": 0.03,
               "Unit": "W/(m*K)"
             }
           }
@@ -122,7 +122,7 @@
               "Unit": "mm"
             },
             "lambda": {
-              "Number": 0.15,
+              "Number": 0.2,
               "Unit": "W/(m*K)"
             }
           }
@@ -140,7 +140,7 @@
               "Unit": "mm"
             },
             "lambda": {
-              "Number": 0.57,
+              "Number": 0.4,
               "Unit": "W/(m*K)"
             }
           }
@@ -209,6 +209,17 @@
     }
   ],
   "b4b": [
+    {
+      "Symbol": "U_target",
+      "Number": 0.3,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
     {
       "Symbol": "V",
       "Number": 50,
@@ -306,7 +317,7 @@
               "Unit": "mm"
             },
             "lambda": {
-              "Number": 0.77,
+              "Number": 0.84,
               "Unit": "W/(m*K)"
             }
           }
@@ -317,14 +328,14 @@
               "Text": "Cavity wall"
             },
             "name": {
-              "Text": "PIR insulation"
+              "Text": "Insulation"
             },
             "d": {
               "Number": 100,
               "Unit": "mm"
             },
             "lambda": {
-              "Number": 0.022,
+              "Number": 0.03,
               "Unit": "W/(m*K)"
             }
           }
@@ -342,7 +353,7 @@
               "Unit": "mm"
             },
             "lambda": {
-              "Number": 0.15,
+              "Number": 0.2,
               "Unit": "W/(m*K)"
             }
           }
@@ -360,7 +371,7 @@
               "Unit": "mm"
             },
             "lambda": {
-              "Number": 0.57,
+              "Number": 0.4,
               "Unit": "W/(m*K)"
             }
           }
@@ -378,7 +389,7 @@
               "Unit": "mm"
             },
             "lambda": {
-              "Number": 0.25,
+              "Number": 0.22,
               "Unit": "W/(m*K)"
             }
           }
@@ -396,7 +407,7 @@
               "Unit": "mm"
             },
             "lambda": {
-              "Number": 0.25,
+              "Number": 0.22,
               "Unit": "W/(m*K)"
             }
           }
@@ -478,14 +489,14 @@
   "b6": [
     {
       "Symbol": "V_pipe",
-      "Number": 20,
+      "Number": 3.14,
       "Unit": "L",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
         "IsSufficientToIssue": true
       },
-      "ValueText": "20"
+      "ValueText": "3.14"
     },
     {
       "Symbol": "V_plant",
@@ -571,11 +582,11 @@
               "Text": "Room A"
             },
             "Phi": {
-              "Number": 350.67318344737697,
+              "Number": 379.4440817728912,
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:c1895a2553124ca3b16587d55e54bd63#Phi_HL",
+                "Reference": "calc:cb8a54da8104472da61a61d1cf33ff01#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -592,11 +603,11 @@
               "Text": "Room B"
             },
             "Phi": {
-              "Number": 243.87155425219942,
+              "Number": 263.8076918715403,
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:9bd93757e60045ec87da6148af9f432f#Phi_HL",
+                "Reference": "calc:011e81fdbeed44cca44f66658a44a547#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -684,15 +695,15 @@
     },
     {
       "Symbol": "Phi_load",
-      "Number": 594.5447376995764,
+      "Number": 643.2517736444315,
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:040fc6f2fa4e456faa53e7ebbae220a8#Phi_tot",
+        "Reference": "calc:fbba68c4c41441cfa5e04827d0dd1518#Phi_tot",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "594.545"
+      "ValueText": "643.252"
     },
     {
       "Symbol": "T",
@@ -700,11 +711,21 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:040fc6f2fa4e456faa53e7ebbae220a8#t_m",
+        "Reference": "calc:fbba68c4c41441cfa5e04827d0dd1518#t_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "70"
+    },
+    {
+      "Symbol": "circuit",
+      "Text": "closed (flow and return: the rises cancel, no static lift)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "closed (flow and return: the rises cancel, no static lift)"
     },
     {
       "Symbol": "dT_load",
@@ -712,7 +733,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:040fc6f2fa4e456faa53e7ebbae220a8#dT_fr",
+        "Reference": "calc:fbba68c4c41441cfa5e04827d0dd1518#dT_fr",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -750,6 +771,17 @@
       "ValueText": "0"
     },
     {
+      "Symbol": "mu_custom",
+      "Number": 800,
+      "Unit": "mPa*s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "800"
+    },
+    {
       "Symbol": "n_pump",
       "Number": 2800,
       "Unit": "rpm",
@@ -782,6 +814,17 @@
       "ValueText": "101.325"
     },
     {
+      "Symbol": "rho_custom",
+      "Number": 888,
+      "Unit": "kg/m^3",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "888"
+    },
+    {
       "Symbol": "segments",
       "Rows": [
         {
@@ -794,7 +837,7 @@
               "Unit": "m"
             },
             "D": {
-              "Number": 28,
+              "Number": 10,
               "Unit": "mm"
             },
             "eps": {
@@ -809,7 +852,7 @@
               "Unit": "m"
             },
             "dz": {
-              "Number": 3,
+              "Number": 0,
               "Unit": "m"
             },
             "side": {
@@ -915,15 +958,15 @@
     },
     {
       "Symbol": "T_L",
-      "Number": 0.002037166336930465,
+      "Number": 0.0002722151503217177,
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:0a8ffc0d1aff4d9684400d560d50952c#T_shaft",
+        "Reference": "calc:b48e0544a98f49faaae9f33458ba2a62#T_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.00203717"
+      "ValueText": "0.000272215"
     },
     {
       "Symbol": "T_peak",
@@ -1024,7 +1067,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:0a8ffc0d1aff4d9684400d560d50952c#n_shaft",
+        "Reference": "calc:b48e0544a98f49faaae9f33458ba2a62#n_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1032,14 +1075,14 @@
     },
     {
       "Symbol": "n_max",
-      "Number": 6000,
+      "Number": 10000,
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "6000"
+      "ValueText": "10000"
     },
     {
       "Symbol": "p_screw",

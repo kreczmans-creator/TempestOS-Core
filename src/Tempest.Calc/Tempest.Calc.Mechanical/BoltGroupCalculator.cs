@@ -18,9 +18,9 @@ public sealed class BoltGroupCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Bolt group (elastic method)",
+        Id, "1.1.0", CalcDiscipline.Mechanical, "Bolt group (elastic method)",
         "A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.",
-        "Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar J = Σ A r². Shear per bolt: v = A (F/ΣA) + T·A·r/J (vector sum). Tension per bolt: t = A N/ΣA + M_x A y'/Σ A y'² + M_y A x'/Σ A x'². Prying: t_p = t (1 + b/a) when a and b are given. Utilisation: the circular interaction (v/V_R)² + (t_p/T_R)² ≤ 1 (elastic method, Shigley-style) and the EN 1993-1-8 linear form v/V_R + t_p/(1.4 T_R) ≤ 1, plus each alone; the governing check is the highest.",
+        "Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar J = Σ A r². Shear per bolt: v = A (F/ΣA) + T·A·r/J (vector sum). Tension per bolt: t = A N/ΣA + A·[(M_x I_y − M_y I_xy) y' + (M_y I_x − M_x I_xy) x']/(I_x I_y − I_xy²), I_x = Σ A y'², I_y = Σ A x'², I_xy = Σ A x'y' (this is M_x A y'/Σ A y'² + M_y A x'/Σ A x'² only for a pattern symmetric about a centroidal axis). Prying: t_p = t (1 + b/a) when a and b are given. Utilisation: the circular interaction (v/V_R)² + (t_p/T_R)² ≤ 1 (elastic method, Shigley-style) and the EN 1993-1-8 linear form v/V_R + t_p/(1.4 T_R) ≤ 1, plus each alone; the governing check is the highest.",
         [
             new CalcInputSpec("bolts", "Bolt positions and areas", CalcInputKind.Table, Columns: Columns, MaxRows: 200),
             new CalcInputSpec("F_x", "In-plane force, x", CalcInputKind.Quantity, "kN", Default: 0, HardMin: -1e6, HardMax: 1e6, Group: "Loads"),
@@ -48,6 +48,7 @@ public sealed class BoltGroupCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("few-bolts", "Fewer than two bolts: torsion cannot be resisted.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("coincident", "Two bolts share a position.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("collinear", "All bolts on one line: an out-of-plane moment about that line cannot be resisted.", CalcNoticeSeverity.Block),
         ],
         [
             new CalcTestCase("ka-four-bolt-eccentric", "Four-bolt square pattern, 50 kN at 150 mm eccentricity",
@@ -68,6 +69,15 @@ public sealed class BoltGroupCalculator : ICalcCalculator
                     CalcInputValue.Quantity("V_R", 40, "kN"), CalcInputValue.Quantity("T_R", 60, "kN"),
                 ],
                 [new CalcExpectedValue("t_max", 50, "kN", 1e-6), new CalcExpectedValue("u_max", 0.83333, "", 1e-4)]),
+            new CalcTestCase("ka-unsymmetric-bending", "Four bolts in an unsymmetric pattern under an out-of-plane moment: the product moment matters",
+                new CalcReferenceSource("Analytic (unsymmetric bending; recomputed in python3 by solving the moment equilibrium of t = A(a·x′ + b·y′))", null, "bolts at (0,0), (120,0), (60,80), (0,160) mm, A = 84.3 mm², M_x = 12 kN·m: centroid (45, 60), I_x = 1 483 680, I_y = 834 570, I_xy = −505 800 mm⁴; bolt tensions −75, −12.5, 25 and 62.5 kN (the symmetric-axes form gives 68.18 kN at the top bolt)"),
+                [
+                    Bolts(("0", "0"), ("120", "0"), ("60", "80"), ("0", "160")),
+                    CalcInputValue.Quantity("F_x", 0, "kN"), CalcInputValue.Quantity("F_y", 0, "kN"), CalcInputValue.Quantity("e_x", 0, "mm"), CalcInputValue.Quantity("e_y", 0, "mm"),
+                    CalcInputValue.Quantity("T_z", 0, "kN*m"), CalcInputValue.Quantity("N", 0, "kN"), CalcInputValue.Quantity("M_x", 12, "kN*m"), CalcInputValue.Quantity("M_y", 0, "kN*m"),
+                    CalcInputValue.Quantity("V_R", 1000, "kN"), CalcInputValue.Quantity("T_R", 100, "kN"),
+                ],
+                [new CalcExpectedValue("t_max", 62.5, "kN", 1e-9), new CalcExpectedValue("u_max", 0.625, "", 1e-9)]),
         ],
         DiagramKey: "bolt-group-eccentric-shear",
         Category: "Fasteners");
@@ -122,8 +132,6 @@ public sealed class BoltGroupCalculator : ICalcCalculator
 
         // J with areas in mm² and distances in mm → mm⁴ (A r²); SI m⁴.
         var polar = group.J;
-        var sumAy2 = group.Ix;
-        var sumAx2 = group.Iy;
         c.Record("J", "Σ A r²", "about the centroid", new ScalarValue(polar, Dimension.L.Pow(4), UnitCatalog.Parse("mm^4")), "Polar second moment of the bolt areas");
 
         var n = c.Si("N");
@@ -135,6 +143,12 @@ public sealed class BoltGroupCalculator : ICalcCalculator
 
         if (prying != 1.0)
             c.Record("k_pry", "1 + b / a", $"1 + {F(b!.Value, 1e-3)} / {F(a!.Value, 1e-3)}", new ScalarValue(prying), "Prying factor on bolt tension");
+
+        if ((mx != 0 || my != 0) && group.Bending(mx, my, 1, 1) is null)
+        {
+            c.Block("collinear", "M_x: all bolts lie on one line and the out-of-plane moment has a component about that line, which no bolt resists; add a bolt off the line or remove that component.");
+            return;
+        }
 
         var vR = c.Si("V_R");
         var tR = c.Si("T_R");
@@ -148,7 +162,7 @@ public sealed class BoltGroupCalculator : ICalcCalculator
             var vx = bolt.A / sumA * fx + (polar > 0 ? -torque * bolt.A * ry / polar : 0);
             var vy = bolt.A / sumA * fy + (polar > 0 ? torque * bolt.A * rx / polar : 0);
             var v = Math.Sqrt(vx * vx + vy * vy);
-            var t = bolt.A / sumA * n + (sumAy2 > 0 ? mx * bolt.A * ry / sumAy2 : 0) + (sumAx2 > 0 ? my * bolt.A * rx / sumAx2 : 0);
+            var t = bolt.A / sumA * n + bolt.A * (group.Bending(mx, my, rx, ry) ?? 0);
             var tp = Math.Max(t, 0) * prying;
             var u = Math.Sqrt((v / vR) * (v / vR) + (tp / tR) * (tp / tR));
             shear.Add((rx, ry));

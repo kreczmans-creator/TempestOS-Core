@@ -3,12 +3,12 @@ Project: Conveyor 7 head drive
 Calc ID: Bearing A life    Revision: A
 Title: Rolling bearing life (ISO 281)
 Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: CNV-DRV-001    Client: Client Co
+Checker: —    Checked: —
+Issued: 2026-10-24    Issue: CNV-DRV-001
 
 1. SCOPE AND METHOD
 The basic and modified rating life of a rolling bearing under a steady load or a duty cycle, at a chosen reliability, against a required life; and the static safety factor against a required value.
-Equivalent load: P = F_r when F_a/F_r ≤ e_lim, else P = X·F_r + Y·F_a Duty cycle: P_eq = (Σ P_i^p·U_i / Σ U_i)^(1/p) Basic rating life: L_10 = (C/P)^p million revolutions, p = 3 ball, 10/3 roller Life in hours: L_10h = 10⁶·L_10 / (60·n) Reliability factor (ISO 281:2007, derived): a_1 = 0.95·[ln(100/R)/ln(100/90)]^(2/3) + 0.05 Modified life: L_nm = a_1·a_ISO·L_10 Static safety: P_0 = max(X_0·F_r + Y_0·F_a, F_r), s_0 = C_0/P_0
+Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 0 for a single-row radial ball bearing), else P = X·F_r + Y·F_a (Y = 0 is refused when an axial load acts above e_lim) Duty cycle: P_eq = (Σ P_i^p·U_i / Σ U_i)^(1/p) Basic rating life: L_10 = (C/P)^p million revolutions, p = 3 ball, 10/3 roller Life in hours: L_10h = 10⁶·L_10 / (60·n) Reliability factor (ISO 281:2007, derived): a_1 = 0.95·[ln(100/R)/ln(100/90)]^(2/3) + 0.05 Modified life: L_nm = a_1·a_ISO·L_10 Static safety: P_0 = max(X_0·F_r + Y_0·F_a, F_r), s_0 = C_0/P_0
   Ref: ISO 281:2007 cl. 6–7 — Dynamic equivalent load and basic rating life
   Ref: ISO 281:2007 cl. 9 — Modified rating life
   Ref: ISO 76:2006 cl. 6–7 — Static equivalent load and static safety factor
@@ -23,11 +23,13 @@ Equivalent load: P = F_r when F_a/F_r ≤ e_lim, else P = X·F_r + Y·F_a Duty c
   C | Basic dynamic load rating | 25.5 | kN | spec: SPEC-CNV-07 §6 (bearing schedule) | 0.1 … 10000 kN
   C_0 | Basic static load rating | 15.3 | kN | spec: SPEC-CNV-07 §6 (bearing schedule) | 0.1 … 10000 kN
   e_lim | Load ratio limit e | 0.3 |  | assumption: Sheet default value; no project figure given. | 0 … 5
-  X | Radial factor X | 1 |  | assumption: Sheet default value; no project figure given. | 0 … 5
-  Y | Axial factor Y | 0 |  | assumption: Sheet default value; no project figure given. | 0 … 10
+  X_1 | Radial factor X₁ for F_a/F_r ≤ e (1 for a single-row radial ball bearing) | 1 |  | assumption: Sheet default value; no project figure given. | 0 … 5
+  Y_1 | Axial factor Y₁ for F_a/F_r ≤ e (0 for a single-row radial ball bearing; above 0 for double-row and paired bearings) | 0 |  | assumption: Sheet default value; no project figure given. | 0 … 10
+  X | Radial factor X for F_a/F_r > e | 1 |  | assumption: Sheet default value; no project figure given. | 0 … 5
+  Y | Axial factor Y for F_a/F_r > e (from the manufacturer; Y = 0 makes the axial load count for nothing and is refused when one acts) | 0 |  | assumption: Sheet default value; no project figure given. | 0 … 10
   X_0 | Static radial factor X₀ | 0.6 |  | assumption: Sheet default value; no project figure given. | 0 … 5
   Y_0 | Static axial factor Y₀ | 0.5 |  | assumption: Sheet default value; no project figure given. | 0 … 10
-  R | Reliability | 90 | % | assumption: Sheet default value; no project figure given. | 90 … 99.95 %
+  R | Reliability | 90 | % | spec: SPEC-CNV-07 §6 (bearing schedule) | 90 … 99.95 %
   a_iso | Life modification factor a_ISO (from the manufacturer's tool) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 50
   L_req | Required life | 20000 | h | spec: SPEC-CNV-07 §6 (bearing schedule) | 1 … 1000000 h
   s_0_req | Required static safety factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 4
@@ -38,55 +40,56 @@ Equivalent load: P = F_r when F_a/F_r ≤ e_lim, else P = X·F_r + Y·F_a Duty c
   A3. Loads are steady within each duty step; speed is constant. (Duty steps weighted by share of revolutions.)
   A4. F_a (Axial load) is taken as 0 kN. (Sheet default value; no project figure given.)
   A5. e_lim (Load ratio limit e) is taken as 0.3. (Sheet default value; no project figure given.)
-  A6. X (Radial factor X) is taken as 1. (Sheet default value; no project figure given.)
-  A7. Y (Axial factor Y) is taken as 0. (Sheet default value; no project figure given.)
-  A8. X_0 (Static radial factor X₀) is taken as 0.6. (Sheet default value; no project figure given.)
-  A9. Y_0 (Static axial factor Y₀) is taken as 0.5. (Sheet default value; no project figure given.)
-  A10. R (Reliability) is taken as 90 %. (Sheet default value; no project figure given.)
-  A11. a_iso (Life modification factor a_ISO (from the manufacturer's tool)) is taken as 1. (Sheet default value; no project figure given.)
-  A12. s_0_req (Required static safety factor) is taken as 1. (Sheet default value; no project figure given.)
+  A6. X_1 (Radial factor X₁ for F_a/F_r ≤ e (1 for a single-row radial ball bearing)) is taken as 1. (Sheet default value; no project figure given.)
+  A7. Y_1 (Axial factor Y₁ for F_a/F_r ≤ e (0 for a single-row radial ball bearing; above 0 for double-row and paired bearings)) is taken as 0. (Sheet default value; no project figure given.)
+  A8. X (Radial factor X for F_a/F_r > e) is taken as 1. (Sheet default value; no project figure given.)
+  A9. Y (Axial factor Y for F_a/F_r > e (from the manufacturer; Y = 0 makes the axial load count for nothing and is refused when one acts)) is taken as 0. (Sheet default value; no project figure given.)
+  A10. X_0 (Static radial factor X₀) is taken as 0.6. (Sheet default value; no project figure given.)
+  A11. Y_0 (Static axial factor Y₀) is taken as 0.5. (Sheet default value; no project figure given.)
+  A12. a_iso (Life modification factor a_ISO (from the manufacturer's tool)) is taken as 1. (Sheet default value; no project figure given.)
+  A13. s_0_req (Required static safety factor) is taken as 1. (Sheet default value; no project figure given.)
 
 4. WORKING
-  [16] p = 3    « ISO 281:2007 cl. 6–7
+  [18] p = 3    « ISO 281:2007 cl. 6–7
       = 3
         Life exponent, ball bearing
-  [17] P = F_r    « ISO 281:2007 cl. 6–7
-      = 1.346 kN
+  [19] P = X_1 * F_r + Y_1 * F_a    « ISO 281:2007 cl. 6–7
+      = 1 × 1.346 kN + 0 × 0 kN
       = 1.346 kN
         Equivalent dynamic load (F_a/F_r ≤ e_lim)
-  [18] P_0 = max(X_0 * F_r + Y_0 * F_a, F_r)    « ISO 76:2006 cl. 6–7
+  [20] P_0 = max(X_0 * F_r + Y_0 * F_a, F_r)    « ISO 76:2006 cl. 6–7
       = max(0.6 × 1.346 kN + 0.5 × 0 kN, 1.346 kN)
       = 1.346 kN
         Equivalent static load
-  [19] L_10 = (C / P)^p    « ISO 281:2007 cl. 6–7
+  [21] L_10 = (C / P)^p    « ISO 281:2007 cl. 6–7
       = (25.5 kN / 1.346 kN)^3
       = 6799
         Basic rating life, million revolutions
-  [20] L_10h = L_10 * 1000000 * 2 * pi / n
+  [22] L_10h = L_10 * 1000000 * 2 * pi / n
       = 6799 × 1000000 × 2 × π / 1500 rpm
       = 75545 h
         Basic rating life in hours
-  [21] a_1 = 0.95 * (ln(1 / R) / ln(1 / 0.9))^(2 / 3) + 0.05    « ISO 281:2007 cl. 9
+  [23] a_1 = 0.95 * (ln(1 / R) / ln(1 / 0.9))^(2 / 3) + 0.05    « ISO 281:2007 cl. 9
       = 0.95 × (ln(1 / 90 %) / ln(1 / 0.9))^(2 / 3) + 0.05
       = 1
         Reliability factor (derived, ISO 281:2007 Weibull form)
-  [22] L_nm = a_1 * a_iso * L_10    « ISO 281:2007 cl. 9
+  [24] L_nm = a_1 * a_iso * L_10    « ISO 281:2007 cl. 9
       = 1 × 1 × 6799
       = 6799
         Modified rating life, million revolutions
-  [23] L_nmh = a_1 * a_iso * L_10h
+  [25] L_nmh = a_1 * a_iso * L_10h
       = 1 × 1 × 75545 h
       = 75545 h
         Modified rating life in hours
-  [24] s_0 = C_0 / P_0    « ISO 76:2006
+  [26] s_0 = C_0 / P_0    « ISO 76:2006
       = 15.3 kN / 1.346 kN
       = 11.367
         Static safety factor
-  [25] u_life = L_req / L_nmh
+  [27] u_life = L_req / L_nmh
       = 20000 h / 75545 h
       = 0.26474
         Life utilisation (required / modified life)
-  [26] u_s0 = s_0_req / s_0
+  [28] u_s0 = s_0_req / s_0
       = 1 / 11.367
       = 0.087977
         Static utilisation (required / actual safety factor)
@@ -108,12 +111,21 @@ Equivalent load: P = F_r when F_a/F_r ≤ e_lim, else P = X·F_r + Y·F_a Duty c
   PASS  Static safety factor against required: u_s0 = 0.087977 vs u_s0 ≤ 1  utilisation 0.088  « ISO 76:2006
 
 7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: C, C_0 (Bearing load ratings); e_lim, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing a_ISO). Enter each as one so its source, edition and licence travel with it.
+  WARNING record.C: C: a tabulated value not taken from a reference record (Bearing load ratings); enter it as one so its source, edition and licence travel with it.
+  WARNING record.C_0: C_0: a tabulated value not taken from a reference record (Bearing load ratings); enter it as one so its source, edition and licence travel with it.
+  WARNING record.e_lim: e_lim: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.X_1: X_1: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.Y_1: Y_1: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.X: X: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.Y: Y: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.X_0: X_0: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.Y_0: Y_0: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.a_iso: a_iso: a tabulated value not taken from a reference record (Bearing a_ISO); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: mech.bearing-life@1.0.0
-  Content hash: 81c5cdff2fc0e914
+  Template: mech.bearing-life@1.1.0
+  Content hash: da8d1cc8ed2333eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 19:26 UTC
+  Test run: 2026-10-24 19:29 UTC
   Application: TempestOS test

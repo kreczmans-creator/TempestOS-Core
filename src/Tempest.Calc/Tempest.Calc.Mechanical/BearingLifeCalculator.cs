@@ -19,9 +19,9 @@ public sealed class BearingLifeCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Rolling bearing life (ISO 281)",
+        Id, "1.1.0", CalcDiscipline.Mechanical, "Rolling bearing life (ISO 281)",
         "The basic and modified rating life of a rolling bearing under a steady load or a duty cycle, at a chosen reliability, against a required life; and the static safety factor against a required value.",
-        "Equivalent load: P = F_r when F_a/F_r ≤ e_lim, else P = X·F_r + Y·F_a\n" +
+        "Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 0 for a single-row radial ball bearing), else P = X·F_r + Y·F_a (Y = 0 is refused when an axial load acts above e_lim)\n" +
         "Duty cycle: P_eq = (Σ P_i^p·U_i / Σ U_i)^(1/p)\n" +
         "Basic rating life: L_10 = (C/P)^p million revolutions, p = 3 ball, 10/3 roller\n" +
         "Life in hours: L_10h = 10⁶·L_10 / (60·n)\n" +
@@ -37,13 +37,15 @@ public sealed class BearingLifeCalculator : ICalcCalculator
             new CalcInputSpec("C", "Basic dynamic load rating", CalcInputKind.Quantity, "kN", Default: 20, Min: 0.1, Max: 10000, HardMin: 1e-3, HardMax: 1e5, Group: "Bearing"),
             new CalcInputSpec("C_0", "Basic static load rating", CalcInputKind.Quantity, "kN", Default: 11, Min: 0.1, Max: 10000, HardMin: 1e-3, HardMax: 1e5, Group: "Bearing"),
             new CalcInputSpec("e_lim", "Load ratio limit e", CalcInputKind.Number, Default: 0.3, Min: 0, Max: 5, HardMin: 0, HardMax: 100, Group: "Factors"),
-            new CalcInputSpec("X", "Radial factor X", CalcInputKind.Number, Default: 1, Min: 0, Max: 5, HardMin: 0, HardMax: 100, Group: "Factors"),
-            new CalcInputSpec("Y", "Axial factor Y", CalcInputKind.Number, Default: 0, Min: 0, Max: 10, HardMin: 0, HardMax: 100, Group: "Factors"),
+            new CalcInputSpec("X_1", "Radial factor X₁ for F_a/F_r ≤ e (1 for a single-row radial ball bearing)", CalcInputKind.Number, Default: 1, Min: 0, Max: 5, HardMin: 0, HardMax: 100, Group: "Factors"),
+            new CalcInputSpec("Y_1", "Axial factor Y₁ for F_a/F_r ≤ e (0 for a single-row radial ball bearing; above 0 for double-row and paired bearings)", CalcInputKind.Number, Default: 0, Min: 0, Max: 10, HardMin: 0, HardMax: 100, Group: "Factors"),
+            new CalcInputSpec("X", "Radial factor X for F_a/F_r > e", CalcInputKind.Number, Default: 1, Min: 0, Max: 5, HardMin: 0, HardMax: 100, Group: "Factors"),
+            new CalcInputSpec("Y", "Axial factor Y for F_a/F_r > e (from the manufacturer; Y = 0 makes the axial load count for nothing and is refused when one acts)", CalcInputKind.Number, Default: 0, Min: 0, Max: 10, HardMin: 0, HardMax: 100, Group: "Factors"),
             new CalcInputSpec("X_0", "Static radial factor X₀", CalcInputKind.Number, Default: 0.6, Min: 0, Max: 5, HardMin: 0, HardMax: 100, Group: "Factors"),
             new CalcInputSpec("Y_0", "Static axial factor Y₀", CalcInputKind.Number, Default: 0.5, Min: 0, Max: 10, HardMin: 0, HardMax: 100, Group: "Factors"),
             new CalcInputSpec("R", "Reliability", CalcInputKind.Quantity, "%", Default: 90, Min: 90, Max: 99.95, HardMin: 90, HardMax: 99.95, Group: "Life"),
             new CalcInputSpec("a_iso", "Life modification factor a_ISO (from the manufacturer's tool)", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 50, HardMin: 0.1, HardMax: 50, Group: "Life"),
-            new CalcInputSpec("kappa", "Viscosity ratio κ used for a_ISO", CalcInputKind.Number, Min: 0.1, Max: 4, HardMin: 0, HardMax: 100, IsOptional: true, Group: "Life"),
+            new CalcInputSpec("kappa", "Viscosity ratio κ used for a_ISO (0.1 to 100; above 4 it is read at 4)", CalcInputKind.Number, Min: 0.1, Max: 4, HardMin: 0.1, HardMax: 100, IsOptional: true, Group: "Life"),
             new CalcInputSpec("L_req", "Required life", CalcInputKind.Quantity, "h", Default: 20000, Min: 1, Max: 1e6, HardMin: 1e-3, HardMax: 1e7, Group: "Requirements"),
             new CalcInputSpec("s_0_req", "Required static safety factor", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 4, HardMin: 0.5, HardMax: 4, Group: "Requirements"),
         ],
@@ -62,7 +64,8 @@ public sealed class BearingLifeCalculator : ICalcCalculator
             new CalcApplicabilityRule("no-load", "No load: nothing to compute.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("kappa-low", "κ below 0.1 is outside the range a_ISO is defined for.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("kappa-high", "κ above 4 is treated as 4 when a_ISO is read.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("light-load", "Load so small against C that L_10 exceeds 10¹² million revolutions.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("light-load", "Load so small against C that L_10 exceeds 10¹² million revolutions: the life is capped at that value.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("axial-factor", "An axial load acts above e_lim but Y is 0, so it would count for nothing: enter the bearing's Y.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("heavy-load", "P above 0.5·C: the rating-life equations lose accuracy.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("duty", "A duty cycle needs a positive total share of revolutions.", CalcNoticeSeverity.Block),
         ],
@@ -101,7 +104,7 @@ public sealed class BearingLifeCalculator : ICalcCalculator
         RecordKinds:
         [
             new CalcRecordKind("bearing.ratings", "Bearing load ratings", ["C", "C_0"], "From the manufacturer's catalogue or product page for the exact designation."),
-            new CalcRecordKind("bearing.factors", "Bearing X, Y, e factors", ["e_lim", "X", "Y", "X_0", "Y_0"], "From the manufacturer's catalogue for the bearing type and F_a/C_0."),
+            new CalcRecordKind("bearing.factors", "Bearing X, Y, e factors", ["e_lim", "X_1", "Y_1", "X", "Y", "X_0", "Y_0"], "From the manufacturer's catalogue for the bearing type and F_a/C_0."),
             new CalcRecordKind("bearing.aiso", "Bearing a_ISO", ["a_iso", "kappa"], "From the manufacturer's life tool for the lubricant, contamination and κ."),
         ]);
 
@@ -119,7 +122,7 @@ public sealed class BearingLifeCalculator : ICalcCalculator
     {
         var roller = c.InputText("type") == Roller;
 
-        foreach (var s in new[] { "F_r", "F_a", "n", "C", "C_0", "e_lim", "X", "Y", "X_0", "Y_0", "R", "a_iso", "L_req", "s_0_req" })
+        foreach (var s in new[] { "F_r", "F_a", "n", "C", "C_0", "e_lim", "X_1", "Y_1", "X", "Y", "X_0", "Y_0", "R", "a_iso", "L_req", "s_0_req" })
             c.Input(s);
 
         if (c.Has("kappa"))
@@ -137,6 +140,8 @@ public sealed class BearingLifeCalculator : ICalcCalculator
         }
 
         var e = c.InputSi("e_lim");
+        var x1 = c.InputSi("X_1");
+        var y1 = c.InputSi("Y_1");
         var x = c.InputSi("X");
         var y = c.InputSi("Y");
         var x0 = c.InputSi("X_0");
@@ -157,6 +162,11 @@ public sealed class BearingLifeCalculator : ICalcCalculator
                 return;
             }
 
+            var lost = steps.FindIndex(s => s.Fa > 0 && !Below(s.Fr, s.Fa));
+
+            if (y == 0 && lost >= 0 && AxialLost(c, steps[lost].Fr, steps[lost].Fa, e))
+                return;
+
             var loads = steps.Select(s => Dynamic(s.Fr, s.Fa)).ToList();
             var peq = Math.Pow(steps.Select((s, i) => Math.Pow(loads[i], p) * s.U).Sum() / sumU, 1 / p);
             c.Record("P", "(Σ P_i^p·U_i / Σ U_i)^(1/p)", "(" + string.Join(" + ", steps.Select((s, i) => $"{F(loads[i] / 1e3)}^p×{F(s.U)}")) + $") / {F(sumU)}", ScalarValue.Of(peq / 1e3, kN), "Equivalent dynamic load over the duty cycle", "ISO 281:2007 cl. 6–7");
@@ -174,8 +184,12 @@ public sealed class BearingLifeCalculator : ICalcCalculator
                 return;
             }
 
-            var radialOnly = fa == 0 || (fr > 0 && fa / fr <= e);
-            c.Assign("P", radialOnly ? "F_r" : "X * F_r + Y * F_a", "kN", radialOnly ? "Equivalent dynamic load (F_a/F_r ≤ e_lim)" : "Equivalent dynamic load (F_a/F_r > e_lim)", "ISO 281:2007 cl. 6–7");
+            var radialOnly = Below(fr, fa);
+
+            if (!radialOnly && y == 0 && AxialLost(c, fr, fa, e))
+                return;
+
+            c.Assign("P", radialOnly ? "X_1 * F_r + Y_1 * F_a" : "X * F_r + Y * F_a", "kN", radialOnly ? "Equivalent dynamic load (F_a/F_r ≤ e_lim)" : "Equivalent dynamic load (F_a/F_r > e_lim)", "ISO 281:2007 cl. 6–7");
             c.Assign("P_0", "max(X_0 * F_r + Y_0 * F_a, F_r)", "kN", "Equivalent static load", "ISO 76:2006 cl. 6–7");
         }
 
@@ -185,16 +199,15 @@ public sealed class BearingLifeCalculator : ICalcCalculator
             return;
         }
 
-        if (!(Math.Pow(c.Si("C") / c.Si("P"), p) is var ratio && double.IsFinite(ratio) && ratio <= 1e12))
-        {
-            c.Block("light-load", "F_r/F_a: the load is too small against C for a meaningful rating life (L_10 above 10¹² million revolutions).");
-            return;
-        }
+        var capped = !(Math.Pow(c.Si("C") / c.Si("P"), p) is var ratio && double.IsFinite(ratio) && ratio <= 1e12);
+
+        if (capped)
+            c.Warn("light-load", "F_r/F_a: the load is so small against C that L_10 would exceed 10¹² million revolutions; the life is held at that value.");
 
         if (c.Si("P") > 0.5 * c.Si("C"))
             c.Warn("heavy-load", "C: P is above 0.5·C; the rating-life equations lose accuracy under such heavy load.");
 
-        c.Assign("L_10", "(C / P)^p", null, "Basic rating life, million revolutions", "ISO 281:2007 cl. 6–7");
+        c.Assign("L_10", capped ? "1000000000000" : "(C / P)^p", null, capped ? "Basic rating life, million revolutions (held at 10¹²)" : "Basic rating life, million revolutions", "ISO 281:2007 cl. 6–7");
         c.Assign("L_10h", "L_10 * 1000000 * 2 * pi / n", "h", "Basic rating life in hours");
         c.Assign("a_1", "0.95 * (ln(1 / R) / ln(1 / 0.9))^(2 / 3) + 0.05", null, "Reliability factor (derived, ISO 281:2007 Weibull form)", "ISO 281:2007 cl. 9");
         c.Assign("L_nm", "a_1 * a_iso * L_10", null, "Modified rating life, million revolutions", "ISO 281:2007 cl. 9");
@@ -209,7 +222,16 @@ public sealed class BearingLifeCalculator : ICalcCalculator
         c.CheckUtilisation("Modified rating life against required life", "u_life", "ISO 281:2007 cl. 9");
         c.CheckUtilisation("Static safety factor against required", "u_s0", "ISO 76:2006");
 
-        double Dynamic(double fr, double fa) => fa == 0 || (fr > 0 && fa / fr <= e) ? fr : x * fr + y * fa;
+        bool Below(double fr, double fa) => fa == 0 || (fr > 0 && fa / fr <= e);
+        double Dynamic(double fr, double fa) => Below(fr, fa) ? x1 * fr + y1 * fa : x * fr + y * fa;
+    }
+
+    /// <summary>Blocks (and returns true) when an axial load acts above e_lim while Y = 0: P would ignore it (Black B-A-01).</summary>
+    private static bool AxialLost(CalcRunContext c, double fr, double fa, double e)
+    {
+        var ratio = fr > 0 ? $"F_a/F_r = {F(fa / fr)} exceeds e_lim = {F(e)}" : "F_r is 0 and the load is pure thrust";
+        c.Block("axial-factor", $"Y: {ratio}, but Y = 0, so the axial load {F(fa / 1e3)} kN would count for nothing in P. Enter the bearing's X and Y for F_a/F_r > e (from the manufacturer), or raise e_lim if the bearing takes no more axial load than it allows.");
+        return true;
     }
 
     private static double Cell(CalcRow row, string key, string unit)

@@ -5,13 +5,14 @@ Title: Heat exchanger (LMTD and ε-NTU)
 
 1. SCOPE AND METHOD
 Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.
-Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overall coefficient with fouling: U_f = 1/(1/U + R_f) Transfer units: NTU = U_f·A/C_min; effectiveness ε(NTU, C_r) for the arrangement Duty: Q = ε·C_min·(T_h,in − T_c,in); outlets from the energy balance Sizing: ε = Q/(C_min·ΔT_max), NTU from the inverse relation, A = NTU·C_min/U_f Cross-check: Q = U_f·A·F·ΔT_lm, F from R and P (1 shell pass) or back-calculated
+Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with one fluid at constant temperature (C_r = 0) that fluid's capacity rate is infinite, C_min is the other stream's and the constant stream leaves at its inlet temperature Overall coefficient with fouling: U_f = 1/(1/U + R_f) Transfer units: NTU = U_f·A/C_min; effectiveness ε(NTU, C_r) for the arrangement Duty: Q = ε·C_min·(T_h,in − T_c,in); outlets from the energy balance Sizing: ε = Q/(C_min·ΔT_max), NTU from the inverse relation, A = NTU·C_min/U_f Cross-check: Q = U_f·A·F·ΔT_lm, F from R and P (1 shell pass) or back-calculated
   Ref: Incropera, Fundamentals of Heat and Mass Transfer 7th ed., §11.3–11.5, Tables 11.3–11.4 — LMTD and effectiveness-NTU methods
   Ref: Çengel & Ghajar, Heat and Mass Transfer 5th ed., Ch. 11 — Heat exchangers
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   arrangement | Flow arrangement | counterflow |  | manual | any
+  const_side | Which side is at constant temperature (used only by the C_r = 0 arrangement) | hot side at constant temperature (e.g. condensing vapour) |  | manual | any
   mode | Mode | rating (given area) |  | manual | any
   m_h | Hot-side mass flow | 1 | kg/s | manual | 0.001 … 100 kg/s
   cp_h | Hot-side specific heat | 4180 | J/(kg*K) | manual | 500 … 10000 J/(kg*K)
@@ -75,8 +76,8 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
       = 20 °C + 125400 / 4180
       = 50 degC
         Cold-side outlet temperature
-  [24] dT_c = T_c,out − T_c,in = Q/C_c
-      = 125400 / 4180
+  [24] dT_c = T_c,out − T_c,in
+      = 50 °C − 20 °C
       = 30 K
         Cold-side temperature rise
   [25] T_c_m = (T_c,in + T_c,out)/2
@@ -121,6 +122,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   dT_app = 30 K    Approach
   UA = 4180 W/K    UA
   dT_lm = 30 K    Log-mean temperature difference
+  Q_lmtd = 125.4 kW    Duty by the LMTD method
   F = 1    LMTD correction factor
   u_duty = 0.95694    Duty utilisation
 
@@ -132,5 +134,5 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   WARNING record: Tabulated values not taken from a reference record: cp_h, cp_c (Fluid specific heats). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.heat-exchanger@1.1.0
-  Known-answer cases passed: 5/5
+  Template: bs.heat-exchanger@1.2.0
+  Known-answer cases passed: 7/7

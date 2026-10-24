@@ -49,7 +49,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
     public readonly record struct Required(double? Value, string? Text);
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
+        Id, "1.1.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
         "An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.",
         "Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)]\n" +
         "Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd\n" +
@@ -78,17 +78,17 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcInputSpec("gamma_M0", "γ_M0, partial factor for the plate", CalcInputKind.Number, Default: 1.0, Min: 1, Max: 1.25, HardMin: 1, HardMax: 1.25, Group: "Factors"),
             new CalcInputSpec("gamma_M2", "γ_M2, partial factor for the anchor bolts", CalcInputKind.Number, Default: 1.25, Min: 1.1, Max: 1.5, HardMin: 1.1, HardMax: 1.5, Group: "Factors"),
             new CalcInputSpec("C_fd", "C_f,d, friction coefficient plate to grout", CalcInputKind.Number, Default: 0.2, Min: 0, Max: 0.45, HardMin: 0, HardMax: 0.45, Group: "Factors"),
-            new CalcInputSpec("alpha", "α, concentration factor √(A_c1/A_c0) of the foundation", CalcInputKind.Number, Default: 1.5, Min: 1, Max: 3, HardMin: 1, HardMax: 3, Group: "Foundation"),
+            new CalcInputSpec("alpha", "α, concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known)", CalcInputKind.Number, Default: 1.0, Min: 1, Max: 3, HardMin: 1, HardMax: 3, Group: "Foundation"),
             new CalcInputSpec("alpha_basis", "Foundation geometry that α rests on (state it when α > 1)", CalcInputKind.Text, IsOptional: true, Group: "Foundation"),
-            new CalcInputSpec("N_Ed", "Axial force, compression positive", CalcInputKind.Quantity, "kN", Default: 300, Min: -5000, Max: 10000, HardMin: -5000, HardMax: 10000, Group: "Actions"),
+            new CalcInputSpec("N_Ed", "Axial force, COMPRESSION positive (the opposite sign to S3's N_Ed, which is tension positive; S2's R1_y, an upward reaction, is compression positive)", CalcInputKind.Quantity, "kN", Default: 300, Min: -5000, Max: 10000, HardMin: -5000, HardMax: 10000, Group: "Actions"),
             new CalcInputSpec("M_Ed", "Major-axis moment (uniaxial)", CalcInputKind.Quantity, "kN*m", Default: 100, Min: 0, Max: 2000, HardMin: 0, HardMax: 2000, Group: "Actions"),
             new CalcInputSpec("V_Ed", "Shear force", CalcInputKind.Quantity, "kN", Default: 80, Min: 0, Max: 2000, HardMin: 0, HardMax: 2000, Group: "Actions"),
             new CalcInputSpec("n_t", "Holding-down bolts in each bolt row (one row each side)", CalcInputKind.Number, Default: 2, Min: 1, Max: 20, HardMin: 1, HardMax: 20, Group: "Holding-down bolts"),
             new CalcInputSpec("n_b", "Holding-down bolts in total (both sides)", CalcInputKind.Number, Default: 4, Min: 2, Max: 40, HardMin: 2, HardMax: 40, Group: "Holding-down bolts"),
             new CalcInputSpec("x_b", "Bolt row distance from the column axis (outside the column face, inside the plate edge)", CalcInputKind.Quantity, "mm", Default: 165, Min: 50, Max: 1000, HardMin: 50, HardMax: 1000, Group: "Holding-down bolts"),
             new CalcInputSpec("z_C_in", "Compression resultant distance from the column axis (blank: from the section)", CalcInputKind.Quantity, "mm", Min: 10, Max: 1000, HardMin: 10, HardMax: 1000, IsOptional: true, Group: "Holding-down bolts"),
-            new CalcInputSpec("m", "Bolt to flange-weld toe distance, tension T-stub", CalcInputKind.Quantity, "mm", Default: 28, Min: 5, Max: 300, HardMin: 5, HardMax: 300, Group: "Holding-down bolts"),
-            new CalcInputSpec("l_eff", "Effective length of the tension T-stub, total for the n_t bolts (cl. 6.2.6.5 patterns)", CalcInputKind.Quantity, "mm", Default: 200, Min: 10, Max: 2000, HardMin: 10, HardMax: 2000, Group: "Holding-down bolts"),
+            new CalcInputSpec("m", "Bolt to flange-weld toe distance, tension T-stub (required: it follows from x_b, the column and the weld)", CalcInputKind.Quantity, "mm", Min: 5, Max: 300, HardMin: 5, HardMax: 300, Group: "Holding-down bolts"),
+            new CalcInputSpec("l_eff", "Effective length of the tension T-stub, total for the n_t bolts (required: from the cl. 6.2.6.5 patterns for the plate)", CalcInputKind.Quantity, "mm", Min: 10, Max: 2000, HardMin: 10, HardMax: 2000, Group: "Holding-down bolts"),
             new CalcInputSpec("prying", "Prying forces develop (short bolts, L_b ≤ L_b*); off is conservative for the plate", CalcInputKind.Boolean, Default: 0, Group: "Holding-down bolts"),
             new CalcInputSpec("e_min", "Edge distance e_min of the bolt row (used only with prying)", CalcInputKind.Quantity, "mm", Default: 35, Min: 5, Max: 500, HardMin: 5, HardMax: 500, IsOptional: true, Group: "Holding-down bolts"),
             new CalcInputSpec("F_t_Rd", "Tension resistance per bolt (from S4)", CalcInputKind.Quantity, "kN", Default: 141, Min: 1, Max: 2000, HardMin: 1, HardMax: 2000, Group: "Holding-down bolts"),
@@ -99,6 +99,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcInputSpec("profis_ref", "Hilti PROFIS report reference (the report is filed as Evidence)", CalcInputKind.Text, IsOptional: true, Group: "Anchorage"),
         ],
         [
+            new CalcAssumption("N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1.", "Sign convention."),
             new CalcAssumption("Static loading; a major-axis moment only (uniaxial); an unstiffened rectangular plate on grout of adequate strength and thickness for β_j = 2/3 (checked when the grout strength and thickness are entered).", "Scope of S6."),
             new CalcAssumption("The simplified T-stub model: one compression resultant at the centre of the compression T-stub (flange centre, or the half-annulus centroid of a CHS) and one tension resultant per bolt row; the force regime follows EN 1993-1-8 Table 6.7. The web is not given credit in the moment check.", "EN 1993-1-8 cl. 6.2.8.3."),
             new CalcAssumption("The effective length l_eff is the total for the n_t bolts of a row, read from the cl. 6.2.6.5 patterns; it is used for modes 1 and 2 alike (l_eff,1 ≤ l_eff,2, so this is conservative for mode 2).", "One input."),
@@ -128,7 +129,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcApplicabilityRule("alpha_basis", "A concentration factor above 1 needs its foundation geometry stated.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("grout", "β_j = 2/3 needs the grout at least 0.2·f_ck and no thicker than 0.2 of the smaller plate dimension.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("prying", "With prying the prying force is not in F_t,Ed.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("anchorage", "The PROFIS report reference is missing.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("anchorage", "The PROFIS report is not attached as Evidence (a typed reference is not enough).", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-ih-moment-bolts", "The 260×256 I-section with N = 300 kN, M = 100 kN·m, V = 80 kN; two bolts a row, bolt rows at 165 mm from the axis, no prying",
@@ -149,23 +150,23 @@ public sealed class BasePlateCalculator : ICalcCalculator
                 [new CalcExpectedValue("T_Ed", 210.6060606, "kN", 1e-6), new CalcExpectedValue("T_Ed_2", 89.39393939, "kN", 1e-6), new CalcExpectedValue("F_t_Ed", 105.3030303, "kN", 1e-6), new CalcExpectedValue("C_Ed", 0, "kN", 1e-9), new CalcExpectedValue("F_f_Rd", 0, "kN", 1e-9)]),
             new CalcTestCase("ka-ih-axial", "UC-like I-section 260×256, t_f 17, t_w 10, on a 400×400×20 S275 plate, C25/30, axial 1200 kN",
                 new CalcReferenceSource("Analytic (EN 1993-1-8 cl. 6.2.5 relations, recomputed independently)", "EN 1993-1-8:2005", "f_cd = 0.85·25/1.5 = 14.1667; f_jd = (2/3)·1.5·14.1667 = 14.1667 MPa; c = 20·√(275/(3·14.1667·1)) = 50.8747 mm; A_eff = 2·(256 + 101.749)(17 + 101.749) + (260 − 34 − 101.749)(10 + 101.749) = 98 849.99 mm²; N_j,Rd = 14.1667·98 849.99 = 1400.37 kN; t_req = 17.0754 mm"),
-                [Choice("column", "I/H"), Q("h", 260, "mm"), Q("b", 256, "mm"), Q("t_f", 17, "mm"), Q("t_w", 10, "mm"), Q("B", 400, "mm"), Q("L", 400, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), N("alpha_cc", 0.85), N("gamma_c", 1.5), N("gamma_M0", 1), N("alpha", 1.5), Q("N_Ed", 1200, "kN"), Q("M_Ed", 0, "kN*m"), Q("V_Ed", 0, "kN")],
+                [Choice("column", "I/H"), Q("h", 260, "mm"), Q("b", 256, "mm"), Q("t_f", 17, "mm"), Q("t_w", 10, "mm"), Q("B", 400, "mm"), Q("L", 400, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), N("alpha_cc", 0.85), N("gamma_c", 1.5), N("gamma_M0", 1), N("alpha", 1.5), Q("m", 28, "mm"), Q("l_eff", 200, "mm"), Q("N_Ed", 1200, "kN"), Q("M_Ed", 0, "kN*m"), Q("V_Ed", 0, "kN")],
                 [new CalcExpectedValue("f_cd", 14.16666667, "MPa", 1e-6), new CalcExpectedValue("f_jd", 14.16666667, "MPa", 1e-6), new CalcExpectedValue("c", 50.87470191, "mm", 1e-6), new CalcExpectedValue("A_eff", 98849.98688, "mm^2", 1e-6), new CalcExpectedValue("N_j_Rd", 1400.374814, "kN", 1e-6), new CalcExpectedValue("u_N", 0.8569134405, "", 1e-6), new CalcExpectedValue("t_req_N", 17.0753989, "mm", 1e-6), new CalcExpectedValue("t_req", 17.0753989, "mm", 1e-6), new CalcExpectedValue("F_t_Ed", 0, "kN", 1e-9)]),
             new CalcTestCase("ka-rhs-axial", "RHS 200×200×10 on a 350×350×20 S275 plate, C25/30, axial 900 kN",
                 new CalcReferenceSource("Analytic (EN 1993-1-8 cl. 6.2.5 relations)", "EN 1993-1-8:2005", "c = 50.8747 mm; A_eff = (200 + 101.749)² − (200 − 20 − 101.749)² = 91 052.70 − 6 123.16 = 84 929.55 mm²; N_j,Rd = 14.1667·84 929.55 = 1203.17 kN; t_req = 14.4652 mm"),
-                [Choice("column", ColumnRhs), Q("h", 200, "mm"), Q("b", 200, "mm"), Q("t", 10, "mm"), Q("B", 350, "mm"), Q("L", 350, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), Q("N_Ed", 900, "kN"), Q("M_Ed", 0, "kN*m"), Q("V_Ed", 0, "kN")],
+                [Choice("column", ColumnRhs), Q("h", 200, "mm"), Q("b", 200, "mm"), Q("t", 10, "mm"), Q("B", 350, "mm"), Q("L", 350, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), N("alpha", 1.5), Q("m", 28, "mm"), Q("l_eff", 200, "mm"), Q("N_Ed", 900, "kN"), Q("M_Ed", 0, "kN*m"), Q("V_Ed", 0, "kN")],
                 [new CalcExpectedValue("A_eff", 84929.5469, "mm^2", 1e-6), new CalcExpectedValue("N_j_Rd", 1203.168581, "kN", 1e-6), new CalcExpectedValue("u_N", 0.7480248522, "", 1e-6), new CalcExpectedValue("t_req", 14.4652113, "mm", 1e-6)]),
             new CalcTestCase("ka-chs-axial", "CHS 220×10 on a 350×350×20 S275 plate, C25/30, axial 800 kN",
                 new CalcReferenceSource("Analytic (EN 1993-1-8 cl. 6.2.5 relations)", "EN 1993-1-8:2005", "c = 50.8747 mm; A_eff = π[(110 + 50.8747)² − (110 − 10 − 50.8747)²] = 73 724.93 mm²; N_j,Rd = 14.1667·73 724.93 = 1044.44 kN; t_req = 14.8592 mm"),
-                [Choice("column", ColumnChs), Q("D", 220, "mm"), Q("t", 10, "mm"), Q("B", 350, "mm"), Q("L", 350, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), Q("N_Ed", 800, "kN"), Q("M_Ed", 0, "kN*m"), Q("V_Ed", 0, "kN")],
+                [Choice("column", ColumnChs), Q("D", 220, "mm"), Q("t", 10, "mm"), Q("B", 350, "mm"), Q("L", 350, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), N("alpha", 1.5), Q("m", 28, "mm"), Q("l_eff", 200, "mm"), Q("N_Ed", 800, "kN"), Q("M_Ed", 0, "kN*m"), Q("V_Ed", 0, "kN")],
                 [new CalcExpectedValue("A_eff", 73724.93227, "mm^2", 1e-6), new CalcExpectedValue("N_j_Rd", 1044.436541, "kN", 1e-6), new CalcExpectedValue("u_N", 0.7659632433, "", 1e-6), new CalcExpectedValue("t_req", 14.85923906, "mm", 1e-6)]),
             new CalcTestCase("ka-chs-moment", "CHS 220×10 on a 350×350×20 plate with N = 200 kN, M = 60 kN·m, bolt rows at 140 mm: lever arm from the half-annulus centroid",
                 new CalcReferenceSource("Analytic (EN 1993-1-8 Table 6.7 regime 1 with the half-annulus centroid as z_C)", "EN 1993-1-8:2005", "R = 110 + 50.8747, r = 110 − 10 − 50.8747: z_C = 4(R³ − r³)/(3π(R² − r²)) = 73.1546 mm, z = 213.1546 mm: C_Ed = (60 + 200·0.14)/0.21315 = 412.85 kN, T_Ed = 212.85 kN, 106.42 kN per bolt; C_Rd = 14.1667·36 862.47 = 522.22 kN"),
-                [Choice("column", ColumnChs), Q("D", 220, "mm"), Q("t", 10, "mm"), Q("B", 350, "mm"), Q("L", 350, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), Q("N_Ed", 200, "kN"), Q("M_Ed", 60, "kN*m"), Q("V_Ed", 0, "kN"), Q("x_b", 140, "mm"), Q("m", 25, "mm")],
+                [Choice("column", ColumnChs), Q("D", 220, "mm"), Q("t", 10, "mm"), Q("B", 350, "mm"), Q("L", 350, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), N("alpha", 1.5), Q("N_Ed", 200, "kN"), Q("M_Ed", 60, "kN*m"), Q("V_Ed", 0, "kN"), Q("x_b", 140, "mm"), Q("m", 25, "mm"), Q("l_eff", 200, "mm")],
                 [new CalcExpectedValue("z_C", 73.15464965, "mm", 1e-6), new CalcExpectedValue("z", 213.1546497, "mm", 1e-6), new CalcExpectedValue("C_Ed", 412.8457913, "kN", 1e-6), new CalcExpectedValue("T_Ed", 212.8457913, "kN", 1e-6), new CalcExpectedValue("F_t_Ed", 106.4228956, "kN", 1e-6), new CalcExpectedValue("C_Rd", 522.2182703, "kN", 1e-6), new CalcExpectedValue("u_C", 0.7905617532, "", 1e-6), new CalcExpectedValue("t_req", 15.39956042, "mm", 1e-6)]),
             new CalcTestCase("ka-ih-overlap-clip", "Small I-section 150×150 on a 300×400×40 plate: the strips overlap and the outstand across the width is cut back to the plate edge",
                 new CalcReferenceSource("Analytic (EN 1993-1-8 cl. 6.2.5 relations, outstand cut at the plate edge)", "EN 1993-1-8:2005", "c = 40·√(275/(3·14.1667)) = 101.749 mm; h − 2t_f − 2c < 0 so the full rectangle is used; the outstands are min(c, 75) = 75 mm across the width and min(c, 125) = 101.749 mm along the length: A_eff = (150 + 150)(150 + 203.499) = 106 049.64 mm² (the uncut rectangle clipped to B·L would be 120 000 mm²); N_j,Rd = 1502.37 kN"),
-                [Choice("column", "I/H"), Q("h", 150, "mm"), Q("b", 150, "mm"), Q("t_f", 10, "mm"), Q("t_w", 6, "mm"), Q("B", 300, "mm"), Q("L", 400, "mm"), Q("t_p", 40, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), Q("N_Ed", 1000, "kN"), Q("M_Ed", 0, "kN*m"), Q("V_Ed", 0, "kN")],
+                [Choice("column", "I/H"), Q("h", 150, "mm"), Q("b", 150, "mm"), Q("t_f", 10, "mm"), Q("t_w", 6, "mm"), Q("B", 300, "mm"), Q("L", 400, "mm"), Q("t_p", 40, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), N("alpha", 1.5), Q("m", 28, "mm"), Q("l_eff", 200, "mm"), Q("N_Ed", 1000, "kN"), Q("M_Ed", 0, "kN*m"), Q("V_Ed", 0, "kN")],
                 [new CalcExpectedValue("c", 101.7494038, "mm", 1e-6), new CalcExpectedValue("A_eff", 106049.6423, "mm^2", 1e-6), new CalcExpectedValue("N_j_Rd", 1502.369932, "kN", 1e-6)]),
         ],
         Category: "Connections",
@@ -190,7 +191,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
     private static readonly CalcInputValue[] IhBase =
     [
         CalcInputValue.Choice("column", ColumnIH), Q("h", 260, "mm"), Q("b", 256, "mm"), Q("t_f", 17, "mm"), Q("t_w", 10, "mm"), Q("B", 400, "mm"), Q("L", 400, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"),
-        N("n_t", 2), N("n_b", 4), Q("x_b", 165, "mm"), Q("m", 28, "mm"), Q("l_eff", 200, "mm"), Q("F_t_Rd", 141, "kN"), Q("f_ub", 800, "MPa"), Q("f_yb", 640, "MPa"), Q("A_s", 244.79, "mm^2"), Q("F_1_vb_Rd", 198.8, "kN"),
+        N("alpha", 1.5), N("n_t", 2), N("n_b", 4), Q("x_b", 165, "mm"), Q("m", 28, "mm"), Q("l_eff", 200, "mm"), Q("F_t_Rd", 141, "kN"), Q("f_ub", 800, "MPa"), Q("f_yb", 640, "MPa"), Q("A_s", 244.79, "mm^2"), Q("F_1_vb_Rd", 198.8, "kN"),
     ];
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
@@ -224,7 +225,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
                 var flange = Math.Min((s.B + 2 * cb) * (s.T + ch + c), area / 2);
                 return new BearingArea(area, flange, "(b + 2c)(h + 2c) − (b − 2t − 2c)(h − 2t − 2c), inner term ≥ 0" + Cut(cb < c || ch < c),
                     $"({F(s.B + 2 * cb)})({F(s.H + 2 * ch)}) − ({F(ib)})({F(ih)})", false, cb < c || ch < c,
-                    "(b + 2c)(t + 2c), at most A_eff/2", $"min({F(s.B + 2 * cb)} × {F(s.T + ch + c)}, A_eff/2)", (s.H - s.T) / 2, "(h − t)/2", $"({F(s.H)} − {F(s.T)})/2");
+                    "(b + 2c)(t + 2c), at most A_eff/2", $"min({F(s.B + 2 * cb)} × {F(s.T + ch + c)}, A_eff/2)", StripCentroid(s.H, s.T, c, ch), StripFormula(c, ch, "(h − t)/2"), StripSubstitution(s.H, s.T, c, ch));
             }
 
             case ColumnChs:
@@ -245,7 +246,9 @@ public sealed class BasePlateCalculator : ICalcCalculator
                 var ch = Math.Max(0, Math.Min(c, (plateL - s.H) / 2));
                 var clipped = cb < c || ch < c;
                 var web = s.H - 2 * s.Tf - 2 * c;
-                var centroid = (s.H - s.Tf) / 2;
+                var centroid = StripCentroid(s.H, s.Tf, c, ch);
+                var centroidFormula = StripFormula(c, ch, "(h − t_f)/2");
+                var centroidSubstitution = StripSubstitution(s.H, s.Tf, c, ch);
                 var flangeSubstitution = $"min({F(s.B + 2 * cb)} × {F(s.Tf + ch + c)}, A_eff/2)";
 
                 if (web < 0)
@@ -253,17 +256,28 @@ public sealed class BasePlateCalculator : ICalcCalculator
                     var rect = Math.Min((s.B + 2 * cb) * (s.H + 2 * ch), plate);
                     var flangeRect = Math.Min((s.B + 2 * cb) * (s.Tf + ch + c), rect / 2);
                     return new BearingArea(rect, flangeRect, "(b + 2c)(h + 2c): the strips overlap, so the full rectangle is used" + Cut(clipped), $"({F(s.B + 2 * cb)})({F(s.H + 2 * ch)})", true, clipped,
-                        "(b + 2c)(t_f + 2c), at most A_eff/2", flangeSubstitution, centroid, "(h − t_f)/2", $"({F(s.H)} − {F(s.Tf)})/2");
+                        "(b + 2c)(t_f + 2c), at most A_eff/2", flangeSubstitution, centroid, centroidFormula, centroidSubstitution);
                 }
 
                 var flangeStrip = (s.B + 2 * cb) * (s.Tf + ch + c);
                 var webStrip = Math.Min(s.Tw + 2 * c, s.B + 2 * cb) * web;
                 var total = Math.Min(2 * flangeStrip + webStrip, plate);
                 return new BearingArea(total, Math.Min(flangeStrip, total / 2), "2(b + 2c)(t_f + 2c) + (h − 2t_f − 2c)(t_w + 2c)" + Cut(clipped), $"2 × {F(s.B + 2 * cb)} × {F(s.Tf + ch + c)} + {F(web)} × {F(Math.Min(s.Tw + 2 * c, s.B + 2 * cb))}", false, clipped,
-                    "(b + 2c)(t_f + 2c), at most A_eff/2", flangeSubstitution, centroid, "(h − t_f)/2", $"({F(s.H)} − {F(s.Tf)})/2");
+                    "(b + 2c)(t_f + 2c), at most A_eff/2", flangeSubstitution, centroid, centroidFormula, centroidSubstitution);
             }
         }
     }
+
+    /// <summary>
+    /// The lever arm of the compression strip from the column axis, mm: the strip runs from c inside the flange (or wall) to the outstand
+    /// <paramref name="ch"/> outside it, so its centroid is (h − t)/2 − (c − ch)/2, which is (h − t)/2 only while the outstand is not cut
+    /// back to the plate edge (Green G-A-10).
+    /// </summary>
+    private static double StripCentroid(double h, double t, double c, double ch) => (h - t) / 2 - (c - ch) / 2;
+
+    private static string StripFormula(double c, double ch, string whole) => c - ch > 1e-9 ? whole + " − (c − c_cut)/2 (the outstand is cut back to the plate edge)" : whole;
+
+    private static string StripSubstitution(double h, double t, double c, double ch) => c - ch > 1e-9 ? $"({F(h)} − {F(t)})/2 − ({F(c)} − {F(ch)})/2" : $"({F(h)} − {F(t)})/2";
 
     /// <summary>
     /// The EN 1993-1-8 Table 6.7 forces (kN) for N (compression positive, kN), M (kN·m) about the major axis, the compression
@@ -675,10 +689,16 @@ public sealed class BasePlateCalculator : ICalcCalculator
         c.CheckUtilisation("Holding-down bolt tension", "u_bt", "EN 1993-1-8 cl. 6.2.6.12");
         c.CheckUtilisation("Shear: friction plus anchor bolts", "u_V", "EN 1993-1-8 cl. 6.2.2");
 
-        if (c.Has("profis_ref") && !string.IsNullOrWhiteSpace(c.InputText("profis_ref")))
-            c.CheckCondition("Anchorage designed externally (PROFIS report filed as Evidence)", true, $"PROFIS report {c.InputText("profis_ref").Trim()}", $"bolt tension {F(c.Si("F_t_Ed") / 1e3)} kN and shear {F(vb)} kN per anchor designed in PROFIS");
+        var profis = c.Has("profis_ref") ? c.InputText("profis_ref").Trim() : string.Empty;
+
+        // The anchorage is not designed on this sheet, so the sheet can only record where the design is filed: a check is made (and passes) only
+        // when the reference is an attached Evidence document, never on typed text (Green G-A-03).
+        if (profis.Length > 0 && c.Inputs.Find("profis_ref")?.Provenance is { Kind: CalcProvenanceKind.Evidence, Reference.Length: > 0 })
+            c.CheckCondition("Anchorage designed externally (PROFIS report attached as Evidence)", true, $"PROFIS report {profis} attached", $"bolt tension {F(c.Si("F_t_Ed") / 1e3)} kN and shear {F(vb)} kN per anchor designed in PROFIS");
+        else if (profis.Length > 0)
+            c.Warn("anchorage", $"profis_ref: '{profis}' is typed text, not an attached report; attach the Hilti PROFIS report as Evidence so the reference points at the filed document. The anchorage design is not checked on this sheet.");
         else
-            c.Warn("anchorage", "profis_ref: the anchorage is designed outside this sheet; attach the Hilti PROFIS report as Evidence and enter its reference.");
+            c.Warn("anchorage", "profis_ref: not attached. The anchorage is designed outside this sheet; attach the Hilti PROFIS report as Evidence and enter its reference.");
     }
 
     /// <summary>The grout conditions behind β_j = 2/3: checked when the grout is entered, otherwise recorded as assumed.</summary>

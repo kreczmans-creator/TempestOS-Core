@@ -3,12 +3,12 @@ Project: Motor control centre 3
 Calc ID: Cooling-water pipework and pump    Revision: A
 Title: Pipe pressure drop and pump duty
 Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Checker: —    Checked: —
+Issued: 2026-10-24    Issue: MCC-COOL-001
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
-Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
   Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
   Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
   Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
@@ -18,11 +18,14 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | water |  | drawing: DRG-MCC-215 rev B | any
   T | Fluid temperature (mean; link B6 t_m for a heating loop) | 23.6375 | degC | link: Cooling-water air coil rev A · T_c_m | 0 … 100 degC
+  rho_custom | Density (custom fluid) | 888 | kg/m^3 | assumption: Sheet default value; no project figure given. | 500 … 2000 kg/m^3
+  mu_custom | Dynamic viscosity (custom fluid) | 800 | mPa*s | assumption: Sheet default value; no project figure given. | 0.1 … 1000 mPa*s
   Phi_load | Heat carried by the water (gives the design flow with ΔT; replaces Q) | 3422.4 | W | link: Cooling-water air coil rev A · Q | 10 … 100000000 W
   dT_load | Flow-to-return temperature difference across the load | 3.27502 | K | link: Cooling-water air coil rev A · dT_c | 1 … 100 K
   cp_load | Specific heat of the fluid (heat-load flow; blank = 4186 J/(kg·K) assumed for water, required for a custom fluid) | 4180 | J/(kg*K) | link: Cooling-water air coil rev A · cp_c | 1000 … 6000 J/(kg*K)
   segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-MCC-215 rev B | any
-  segments[1] |  | name = cooling water supply and return; L = 30 m; D = 25 mm; eps = 0.045 mm; K = 12; L_eq = 0 m; dz = 3 m; side = discharge |  |  | 
+  segments[1] |  | name = cooling water supply and return; L = 30 m; D = 25 mm; eps = 0.045 mm; K = 12; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | closed (flow and return: the rises cancel, no static lift) |  | drawing: DRG-MCC-215 rev B | any
   h_out | Pressure head required at the outlet | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 1000 m
   v_max | Velocity limit (warning) | 3 | m/s | assumption: Sheet default value; no project figure given. | 0.5 … 10 m/s
   n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.2 … 2
@@ -37,13 +40,15 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
   A3. The system curve scales friction losses with Q² from the design flow (turbulent assumption); the static part is independent of flow. (H_sys = H_static + k Q².)
   A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
-  A5. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
-  A6. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
-  A7. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
-  A8. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
-  A9. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
-  A10. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
-  A11. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
+  A5. rho_custom (Density (custom fluid)) is taken as 888 kg/m^3. (Sheet default value; no project figure given.)
+  A6. mu_custom (Dynamic viscosity (custom fluid)) is taken as 800 mPa*s. (Sheet default value; no project figure given.)
+  A7. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
+  A8. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
+  A9. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A10. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A11. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
+  A12. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
+  A13. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
 
 4. WORKING
   [3] rho = Kell (1975) density of water at T    « Kell 1975
@@ -90,51 +95,55 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = 1 segment(s)
       = 0.66065 m
         Total friction and fitting loss at the design flow
-  [19] H_static = Σ dz + h_out
-      = 3 + 0
-      = 3 m
+  [20] V_pipe = Σ π/4·D²·L
+      = 1 segment(s)
+      = 14.726 L
+        Water held in the pipe segments
+  [21] H_static = h_out (closed circuit: no static lift)
+      = 0
+      = 0 m
         Static head
-  [20] H_sys = H_static + h_f_total
-      = 3 m + 0.66065 m
-      = 3.6606 m
+  [22] H_sys = H_static + h_f_total
+      = 0 m + 0.66065 m
+      = 0.66065 m
         System head at the design flow
-  [21] dp_total = rho * 9.80665 m/s^2 * h_f_total
+  [23] dp_total = rho * 9.80665 m/s^2 * h_f_total
       = 997.39 kg/m³ × 9.80665 m/s^2 × 0.66065 m
       = 6.4618 kPa
         Friction pressure drop at the design flow
-  [22] dp_sys = rho * 9.80665 m/s^2 * H_sys
-      = 997.39 kg/m³ × 9.80665 m/s^2 × 3.6606 m
-      = 35.805 kPa
+  [24] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 997.39 kg/m³ × 9.80665 m/s^2 × 0.66065 m
+      = 6.4618 kPa
         System pressure at the design flow
-  [23] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
-      = 997.39 kg/m³ × 9.80665 m/s^2 × 0.90236 m³/h × 3.6606 m
-      = 0.0089747 kW
+  [25] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+      = 997.39 kg/m³ × 9.80665 m/s^2 × 0.90236 m³/h × 0.66065 m
+      = 0.0016197 kW
         Hydraulic power at the design point
-  [26] P_shaft_design = P_hyd / eta_pump
-      = 0.0089747 kW / 0.7
-      = 0.012821 kW
+  [28] P_shaft_design = P_hyd / eta_pump
+      = 0.0016197 kW / 0.7
+      = 0.0023138 kW
         Pump shaft power at the design flow
-  [27] T_shaft = P_shaft_design / n_pump
-      = 0.012821 kW / 2800 rpm
-      = 0.043725 N·m
+  [29] T_shaft = P_shaft_design / n_pump
+      = 0.0023138 kW / 2800 rpm
+      = 0.0078912 N·m
         Pump shaft torque P / ω at the design flow
-  [28] n_shaft = n_pump
+  [30] n_shaft = n_pump
       = 2800 rpm
       = 2800 rpm
         Pump shaft speed
-  [31] h_f_suction = Σ h_f on the suction side
+  [33] h_f_suction = Σ h_f on the suction side
       = 0 suction segment(s)
       = 0 m
         Suction-side friction loss
-  [32] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
+  [34] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
       = 101.32 kPa / (997.39 kg/m³ × 9.80665 m/s^2) + 0 m − 0 m − 2.9207 kPa / (997.39 kg/m³ × 9.80665 m/s^2)
       = 10.061 m
         NPSH available
-  [33] v_peak = highest segment velocity
+  [35] v_peak = highest segment velocity
       = 0.51063 m/s
       = 0.51063 m/s
         Highest velocity
-  [34] u_v = v_peak / v_max
+  [36] u_v = v_peak / v_max
       = 0.51063 / 3
       = 0.17021
         Velocity utilisation
@@ -146,14 +155,15 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   f_sj_s1 = 0.031748    f (Swamee–Jain), cooling water supply and return
   h_f_s1 = 0.66065 m    h_f, cooling water supply and return
   h_f_total = 0.66065 m    Σ h_f
-  H_static = 3 m    Static head
-  H_sys = 3.6606 m    System head at Q
+  H_static = 0 m    Static head
+  V_pipe = 14.726 L    Water held in the pipes
+  H_sys = 0.66065 m    System head at Q
   dp_total = 6.4618 kPa    Friction Δp
-  dp_sys = 35.805 kPa    System Δp
+  dp_sys = 6.4618 kPa    System Δp
   Q_design = 0.90236 m³/h    Design flow
-  P_hyd = 0.0089747 kW    Hydraulic power
-  P_shaft_design = 0.012821 kW    Shaft power at the design flow
-  T_shaft = 0.043725 N·m    Shaft torque
+  P_hyd = 0.0016197 kW    Hydraulic power
+  P_shaft_design = 0.0023138 kW    Shaft power at the design flow
+  T_shaft = 0.0078912 N·m    Shaft torque
   n_shaft = 2800 rpm    Shaft speed
   NPSH_a = 10.061 m    NPSH available
   v_peak = 0.51063 m/s    Highest velocity
@@ -165,9 +175,9 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   No warnings.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.1.0
-  Content hash: 42db31f9bd988473
+  Template: bs.pipe-pump@1.2.0
+  Content hash: 4747971fae135dcd
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 4/4
-  Test run: 2026-10-24 19:26 UTC
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-24 19:29 UTC
   Application: TempestOS test

@@ -103,4 +103,47 @@ public sealed class ConnectionTests
         Assert.Contains(Ec3.Template.OutputPorts!, p => p is { Symbol: "f_ub", Unit: "MPa" });
         Assert.Contains(Ec3.Template.OutputPorts!, p => p is { Symbol: "f_yb", Unit: "MPa" });
     }
+
+    [Theory]
+    [InlineData("e_2", 13.3)]
+    [InlineData("e_2", 10)]
+    [InlineData("p_2", 26.7)]
+    [InlineData("p_2", 20)]
+    public void A_Spacing_That_Leaves_No_Bearing_Resistance_Blocks_In_The_Calculators_Own_Words(string symbol, double mm)
+    {
+        // Black B-A-06: M20 (d₀ = 22 mm) with e₂ ≤ 13.3 mm or p₂ ≤ 26.7 mm gave k₁ ≤ 0, and the sheet surfaced "BLOCK engine: Division by zero."
+        var r = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Quantity(symbol, mm, "mm")));
+        Assert.True(r.IsBlocked);
+        Assert.Equal("spacing", r.Blocks[0].RuleId);
+        Assert.StartsWith(symbol + ":", r.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Division by zero", r.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.Contains("Table 3.3", r.Blocks[0].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Tiny_But_Positive_Bearing_Factor_Still_Computes_And_Fails_Bearing()
+    {
+        var r = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Quantity("e_2", 13.4, "mm")));
+        Assert.False(r.IsBlocked);
+        Assert.Contains(r.Checks, c => c.Name == "Bolt bearing" && !c.Passed);
+    }
+
+    [Fact]
+    public void Punching_Takes_The_Across_Flats_As_d_m_Unless_The_Across_Corners_Is_Entered()
+    {
+        // Green G-A-09: the sharp-hexagon across-corners (34.64 mm for M20) overstated d_m by 8 %.
+        var plain = CalcRunner.Run(Ec3, Defaults());
+        Assert.Equal(0.6 * Math.PI * 30 * 10 * 410 / 1.25, plain.OutputSi("B_p_Rd"), 3);
+        var entered = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Quantity("e_head", 34, "mm")));
+        Assert.Equal(0.6 * Math.PI * 32 * 10 * 410 / 1.25, entered.OutputSi("B_p_Rd"), 3);
+        Assert.True(entered.OutputSi("B_p_Rd") > plain.OutputSi("B_p_Rd"));
+    }
+
+    [Fact]
+    public void An_Across_Corners_Below_The_Across_Flats_Is_Refused()
+    {
+        var r = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Quantity("e_head", 25, "mm")));
+        Assert.True(r.IsBlocked);
+        Assert.StartsWith("e_head:", r.Blocks[0].Message, StringComparison.Ordinal);
+    }
 }

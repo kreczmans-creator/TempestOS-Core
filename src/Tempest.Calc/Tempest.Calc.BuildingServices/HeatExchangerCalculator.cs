@@ -13,13 +13,15 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
     public const string ShellTube = "shell and tube, 1 shell pass, 2n tube passes";
     public const string Crossflow = "crossflow, both fluids unmixed (approximate)";
     public const string Isothermal = "one fluid at constant temperature (C_r = 0)";
+    public const string HotConstant = "hot side at constant temperature (e.g. condensing vapour)";
+    public const string ColdConstant = "cold side at constant temperature (e.g. boiling liquid)";
     public const string Rating = "rating (given area)";
     public const string Sizing = "sizing (given duty)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.BuildingServices, "Heat exchanger (LMTD and ε-NTU)",
+        Id, "1.2.0", CalcDiscipline.BuildingServices, "Heat exchanger (LMTD and ε-NTU)",
         "Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.",
-        "Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max\n" +
+        "Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with one fluid at constant temperature (C_r = 0) that fluid's capacity rate is infinite, C_min is the other stream's and the constant stream leaves at its inlet temperature\n" +
         "Overall coefficient with fouling: U_f = 1/(1/U + R_f)\n" +
         "Transfer units: NTU = U_f·A/C_min; effectiveness ε(NTU, C_r) for the arrangement\n" +
         "Duty: Q = ε·C_min·(T_h,in − T_c,in); outlets from the energy balance\n" +
@@ -27,6 +29,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
         "Cross-check: Q = U_f·A·F·ΔT_lm, F from R and P (1 shell pass) or back-calculated",
         [
             new CalcInputSpec("arrangement", "Flow arrangement", CalcInputKind.Choice, Choices: [Counterflow, Parallel, ShellTube, Crossflow, Isothermal], DefaultChoice: Counterflow),
+            new CalcInputSpec("const_side", "Which side is at constant temperature (used only by the C_r = 0 arrangement)", CalcInputKind.Choice, Choices: [HotConstant, ColdConstant], DefaultChoice: HotConstant),
             new CalcInputSpec("mode", "Mode", CalcInputKind.Choice, Choices: [Rating, Sizing], DefaultChoice: Rating),
             new CalcInputSpec("m_h", "Hot-side mass flow", CalcInputKind.Quantity, "kg/s", Default: 1, Min: 0.001, Max: 100, HardMin: 0.001, HardMax: 100, Group: "Hot side"),
             new CalcInputSpec("cp_h", "Hot-side specific heat", CalcInputKind.Quantity, "J/(kg*K)", Default: 4180, Min: 500, Max: 10000, HardMin: 1, HardMax: 1e5, Group: "Hot side"),
@@ -53,6 +56,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
             new CalcApplicabilityRule("temperatures", "The hot inlet must be hotter than the cold inlet.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("area-missing", "Rating needs an area; sizing needs a required duty.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("duty-unattainable", "The required duty exceeds what any area of this arrangement can transfer.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("lmtd-mismatch", "The ε-NTU duty and the LMTD duty differ by more than 2 %: the arrangement or the temperatures are inconsistent.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("crossflow-approx", "Crossflow both-unmixed effectiveness is an approximate correlation.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("pinch", "An end temperature difference is zero: the area is effectively infinite.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("low-F", "F below 0.75: the 1-shell-pass arrangement is used inefficiently; consider more shell passes.", CalcNoticeSeverity.Warning),
@@ -63,9 +67,9 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
                 [Choice("arrangement", Counterflow), Q("m_h", 1, "kg/s"), Q("m_c", 1, "kg/s"), Q("T_h_in", 80, "degC"), Q("T_c_in", 20, "degC"), Q("U", 1000, "W/(m^2*K)"), Q("A", 4.18, "m^2"), Q("Q_req", 120, "kW")],
                 [new CalcExpectedValue("NTU", 1, "", 1e-9), new CalcExpectedValue("eps", 0.5, "", 1e-9), new CalcExpectedValue("Q", 125.4, "kW", 1e-9), new CalcExpectedValue("T_h_out", 50, "degC", 1e-9), new CalcExpectedValue("dT_lm", 30, "K", 1e-9), new CalcExpectedValue("F", 1, "", 1e-9)]),
             new CalcTestCase("ka-parallel-balanced", "Balanced parallel flow, NTU = 1",
-                new CalcReferenceSource("Analytic (ε = (1 − e^(−2·NTU))/2 for C_r = 1)", null, "ε = 0.432332"),
+                new CalcReferenceSource("Analytic (ε = (1 − e^(−2·NTU))/2 for C_r = 1)", null, "ε = 0.4323324 (ε = (1 − e^(−2))/2); Q = 0.4323324·4180·60 = 108.42896 kW"),
                 [Choice("arrangement", Parallel), Q("m_h", 1, "kg/s"), Q("m_c", 1, "kg/s"), Q("T_h_in", 80, "degC"), Q("T_c_in", 20, "degC"), Q("U", 1000, "W/(m^2*K)"), Q("A", 4.18, "m^2")],
-                [new CalcExpectedValue("eps", 0.4323324, "", 1e-6), new CalcExpectedValue("Q", 108.4282, "kW", 1e-5)]),
+                [new CalcExpectedValue("eps", 0.4323324, "", 1e-6), new CalcExpectedValue("Q", 108.42896, "kW", 1e-6)]),
             new CalcTestCase("ka-shell-tube", "1-2 shell and tube, C_r = 0.5, NTU = 1: ε-NTU and F agree",
                 new CalcReferenceSource("Analytic (Incropera Table 11.3 shell-and-tube relation; F from R and P)", "7th ed.", "ε = 0.539940; Q = 135.417 kW; T_h,out = 47.604 °C; T_c,out = 36.198 °C; ΔT_lm,cf = 35.082 K; F = 0.923456 (R = 2, P = 0.270)"),
                 [Choice("arrangement", ShellTube), Q("m_h", 1, "kg/s"), Q("m_c", 2, "kg/s"), Q("T_h_in", 80, "degC"), Q("T_c_in", 20, "degC"), Q("U", 1000, "W/(m^2*K)"), Q("A", 4.18, "m^2")],
@@ -74,6 +78,14 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (inverse counterflow relation)", null, "C_min = 4180 W/K, C_r = 0.5, Q = 0.7746003·4180·60 = 194.27 kW requires NTU = 2, A = 8.36 m² at U = 1000"),
                 [Choice("arrangement", Counterflow), Choice("mode", Sizing), Q("m_h", 1, "kg/s"), Q("m_c", 2, "kg/s"), Q("T_h_in", 80, "degC"), Q("T_c_in", 20, "degC"), Q("U", 1000, "W/(m^2*K)"), Q("Q_req", 194.2697, "kW")],
                 [new CalcExpectedValue("NTU", 2, "", 1e-5), new CalcExpectedValue("A_req", 8.36, "m^2", 1e-5)]),
+            new CalcTestCase("ka-isothermal-hot", "Hot side at constant temperature (condensing vapour), cold water 2 kg/s, NTU = 0.5 on the finite stream",
+                new CalcReferenceSource("Analytic (ε = 1 − e^(−NTU), C_r = 0, C_min = the cold stream)", null, "C_c = 8360 W/K, UA = 4180 W/K: NTU = 0.5, ε = 0.393469, Q = 0.393469·8360·60 = 197.36 kW; the hot side leaves at 80 °C; the cold side rises 23.61 K to 43.61 °C (the hot stream's own m·c_p of 2090 W/K must not set C_min)"),
+                [Choice("arrangement", Isothermal), Choice("const_side", HotConstant), Q("m_h", 0.5, "kg/s"), Q("m_c", 2, "kg/s"), Q("T_h_in", 80, "degC"), Q("T_c_in", 20, "degC"), Q("U", 1000, "W/(m^2*K)"), Q("A", 4.18, "m^2")],
+                [new CalcExpectedValue("NTU", 0.5, "", 1e-9), new CalcExpectedValue("eps", 0.3934693, "", 1e-6), new CalcExpectedValue("Q", 197.36422, "kW", 1e-6), new CalcExpectedValue("T_h_out", 80, "degC", 1e-9), new CalcExpectedValue("T_c_out", 43.60816, "degC", 1e-6), new CalcExpectedValue("Q_lmtd", 197.36422, "kW", 1e-6)]),
+            new CalcTestCase("ka-isothermal-cold", "Cold side at constant temperature (boiling liquid), hot water 1 kg/s, NTU = 1 on the finite stream",
+                new CalcReferenceSource("Analytic (ε = 1 − e^(−NTU), C_r = 0, C_min = the hot stream)", null, "C_h = 4180 W/K, UA = 4180 W/K: NTU = 1, ε = 0.632121, Q = 0.632121·4180·60 = 158.54 kW; the cold side leaves at 20 °C; the hot side falls 37.93 K to 42.07 °C"),
+                [Choice("arrangement", Isothermal), Choice("const_side", ColdConstant), Q("m_h", 1, "kg/s"), Q("m_c", 1, "kg/s"), Q("T_h_in", 80, "degC"), Q("T_c_in", 20, "degC"), Q("U", 1000, "W/(m^2*K)"), Q("A", 4.18, "m^2")],
+                [new CalcExpectedValue("eps", 0.6321206, "", 1e-6), new CalcExpectedValue("Q", 158.53584, "kW", 1e-6), new CalcExpectedValue("T_c_out", 20, "degC", 1e-9), new CalcExpectedValue("T_h_out", 42.07277, "degC", 1e-6), new CalcExpectedValue("Q_lmtd", 158.53584, "kW", 1e-6)]),
             new CalcTestCase("ka-incropera-11-1", "Oil cooler, counterflow concentric tube (Incropera Example 11.1)",
                 new CalcReferenceSource("Incropera et al., Fundamentals of Heat and Mass Transfer", "7th ed.", "Example 11.1: oil 0.1 kg/s, 100 → 60 °C, c_p 2131; water 0.2 kg/s from 30 °C, c_p 4178: q = 8524 W, T_c,o = 40.2 °C, ΔT_lm = 43.2 °C. Numbers as recalled; check against the book"),
                 [Choice("arrangement", Counterflow), Choice("mode", Sizing), Q("m_h", 0.1, "kg/s"), Q("cp_h", 2131, "J/(kg*K)"), Q("T_h_in", 100, "degC"), Q("m_c", 0.2, "kg/s"), Q("cp_c", 4178, "J/(kg*K)"), Q("T_c_in", 30, "degC"), Q("U", 38.1, "W/(m^2*K)"), Q("Q_req", 8.524, "kW")],
@@ -126,9 +138,18 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
         if (arrangement == Crossflow)
             c.Warn("crossflow-approx", "arrangement: the crossflow both-unmixed effectiveness is an approximate correlation (within a few percent).");
 
-        c.Assign("C_h", "m_h * cp_h", "W/K", "Hot-side capacity rate");
-        c.Assign("C_c", "m_c * cp_c", "W/K", "Cold-side capacity rate");
-        c.Assign("C_min", "min(C_h, C_c)", "W/K", "Minimum capacity rate");
+        // With one fluid at constant temperature its capacity rate is infinite: the other stream is C_min and the constant stream leaves at its
+        // inlet temperature (Black B-A-02, Green G-B-07). Its flow and specific heat are not used.
+        var isothermal = arrangement == Isothermal;
+        var hotConstant = isothermal && c.InputText("const_side") == HotConstant;
+        var coldConstant = isothermal && !hotConstant;
+
+        if (isothermal)
+            c.Assume($"The {(hotConstant ? "hot" : "cold")} side is held at constant temperature (its capacity rate is infinite), so the {(hotConstant ? "cold" : "hot")} stream sets C_min and the constant stream leaves at its inlet temperature; the {(hotConstant ? "hot" : "cold")}-side flow and specific heat are not used.", "Incropera 7th ed. Table 11.3, C_r = 0.");
+
+        c.Assign("C_h", "m_h * cp_h", "W/K", coldConstant ? "Hot-side capacity rate" : hotConstant ? "Hot-side capacity rate (not used: the hot side is at constant temperature)" : "Hot-side capacity rate");
+        c.Assign("C_c", "m_c * cp_c", "W/K", hotConstant ? "Cold-side capacity rate" : coldConstant ? "Cold-side capacity rate (not used: the cold side is at constant temperature)" : "Cold-side capacity rate");
+        c.Assign("C_min", hotConstant ? "C_c" : coldConstant ? "C_h" : "min(C_h, C_c)", "W/K", isothermal ? "Capacity rate of the stream whose temperature changes" : "Minimum capacity rate");
         c.Assign("C_r", arrangement == Isothermal ? "0" : "min(C_h, C_c) / max(C_h, C_c)", null, arrangement == Isothermal ? "Capacity ratio (one fluid at constant temperature)" : "Capacity ratio");
         c.Assign("U_f", "1 / (1 / U + R_f)", "W/(m^2*K)", "Overall coefficient with fouling");
         var cmin = c.Si("C_min");
@@ -171,14 +192,14 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
         }
 
         var q = eps * cmin * dtMax;
-        var tho = thi - q / c.Si("C_h");
-        var tco = tci + q / c.Si("C_c");
+        var tho = hotConstant ? thi : thi - q / c.Si("C_h");
+        var tco = coldConstant ? tci : tci + q / c.Si("C_c");
         c.Record("Q", "ε·C_min·(T_h,in − T_c,in)", $"{F(eps)} × {F(cmin)} × {F(dtMax)}", ScalarValue.Of(q / 1e3, kW), "Heat duty");
-        c.Record("T_h_out", "T_h,in − Q/C_h", $"{F(thi - 273.15)} °C − {F(q)} / {F(c.Si("C_h"))}", ScalarValue.Of(tho - 273.15, "degC"), "Hot-side outlet temperature");
-        c.Record("T_c_out", "T_c,in + Q/C_c", $"{F(tci - 273.15)} °C + {F(q)} / {F(c.Si("C_c"))}", ScalarValue.Of(tco - 273.15, "degC"), "Cold-side outlet temperature");
+        c.Record("T_h_out", hotConstant ? "T_h,in (constant temperature)" : "T_h,in − Q/C_h", hotConstant ? $"{F(thi - 273.15)} °C" : $"{F(thi - 273.15)} °C − {F(q)} / {F(c.Si("C_h"))}", ScalarValue.Of(tho - 273.15, "degC"), "Hot-side outlet temperature");
+        c.Record("T_c_out", coldConstant ? "T_c,in (constant temperature)" : "T_c,in + Q/C_c", coldConstant ? $"{F(tci - 273.15)} °C" : $"{F(tci - 273.15)} °C + {F(q)} / {F(c.Si("C_c"))}", ScalarValue.Of(tco - 273.15, "degC"), "Cold-side outlet temperature");
 
         // The cold stream's rise and mean temperature: what a pump on the cold circuit (B1) is sized for.
-        c.Record("dT_c", "T_c,out − T_c,in = Q/C_c", $"{F(q)} / {F(c.Si("C_c"))}", ScalarValue.Of(q / c.Si("C_c"), kelvin), "Cold-side temperature rise");
+        c.Record("dT_c", "T_c,out − T_c,in", $"{F(tco - 273.15)} °C − {F(tci - 273.15)} °C", ScalarValue.Of(tco - tci, kelvin), "Cold-side temperature rise");
         c.Record("T_c_m", "(T_c,in + T_c,out)/2", $"({F(tci - 273.15)} °C + {F(tco - 273.15)} °C)/2", ScalarValue.Of((tci + tco) / 2 - 273.15, "degC"), "Mean cold-side temperature");
 
         var parallel = arrangement == Parallel;
@@ -205,16 +226,21 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
             _ => 1.0,
         };
 
-        c.Record("F", arrangement switch { ShellTube => "F(R, P), 1 shell pass", Crossflow => "Q / (U_f·A·ΔT_lm) (back-calculated)", _ => "1 (pure counterflow, parallel flow or C_r = 0)" }, $"R = {F((thi - tho) / (tco - tci))}, P = {F((tco - tci) / dtMax)}", new ScalarValue(f), "LMTD correction factor", "Incropera 7th ed. §11.3");
+        c.Record("F", arrangement switch { ShellTube => "F(R, P), 1 shell pass", Crossflow => "Q / (U_f·A·ΔT_lm) (back-calculated)", _ => "1 (pure counterflow, parallel flow or C_r = 0)" }, $"R = {(tco - tci > 1e-12 ? F((thi - tho) / (tco - tci)) : "—")}, P = {F((tco - tci) / dtMax)}", new ScalarValue(f), "LMTD correction factor", "Incropera 7th ed. §11.3");
 
         if (arrangement == ShellTube && f < 0.75)
             c.Warn("low-F", $"arrangement: F = {CalcValue.FormatNumber(f, 3)} is below 0.75; the single shell pass is used inefficiently.");
 
         c.Record("Q_lmtd", "U_f·A·F·ΔT_lm", $"{F(uf)} × {F(area)} × {F(f)} × {F(lm)}", ScalarValue.Of(uf * area * f * lm / 1e3, kW), "Duty by the LMTD method (cross-check)");
+
+        // The two methods describe one exchanger, so they must agree; a gap means the arrangement and the temperatures contradict each other.
+        if (Math.Abs(uf * area * f * lm - q) > 0.02 * q)
+            c.Warn("lmtd-mismatch", $"arrangement: the ε-NTU duty ({F(q / 1e3)} kW) and the LMTD duty ({F(uf * area * f * lm / 1e3)} kW) differ by more than 2 %; check the arrangement against the temperatures.");
         c.Assign("u_app", "dT_min / dT_app", null, "Approach utilisation (minimum / actual)");
 
         Outputs(c, sizing);
         c.Output("dT_lm", "Log-mean temperature difference");
+        c.Output("Q_lmtd", "Duty by the LMTD method");
         c.Output("F", "LMTD correction factor");
         c.CheckUtilisation("Approach against minimum", "u_app");
 

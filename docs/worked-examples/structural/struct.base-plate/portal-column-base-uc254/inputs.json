@@ -294,13 +294,13 @@
   },
   {
     "Symbol": "profis_ref",
-    "Text": "EVD-PROFIS-PLACEHOLDER",
+    "Text": "PROFIS-BP1 (to be filed)",
     "Provenance": {
-      "Kind": "Evidence",
-      "Reference": "EVD-PROFIS-PLACEHOLDER",
+      "Kind": "Assumption",
+      "Reference": "The PROFIS report is not attached in this example, so the sheet warns that the anchorage is not checked.",
       "IsSufficientToIssue": true
     },
-    "ValueText": "EVD-PROFIS-PLACEHOLDER"
+    "ValueText": "PROFIS-BP1 (to be filed)"
   },
   {
     "Symbol": "prying",

@@ -11,11 +11,65 @@ public sealed class BearingLifeTests
     private static CalcInputSet Defaults() => CalcTemplateHasher.DefaultInputs(Bearing.Template);
 
     [Fact]
-    public void Kappa_Below_0_1_Is_A_Hard_Fail()
+    public void Kappa_Below_0_1_Is_Refused_By_Its_Stated_Range()
     {
+        // The input states its real range (0.1 to 100), so the refusal comes from the range, not from a later, narrower rule (Black B-A-19).
+        var spec = Bearing.Template.FindInput("kappa")!;
+        Assert.Equal(0.1, spec.HardMin);
+        Assert.Contains("0.1", spec.Description, StringComparison.Ordinal);
         var r = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Of("kappa", 0.05)));
         Assert.True(r.IsBlocked);
-        Assert.Equal("kappa-low", r.Blocks[0].RuleId);
+        Assert.StartsWith("kappa", r.Blocks[0].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Very_Light_Load_Gives_A_Capped_Life_With_A_Warning_Not_A_Block()
+    {
+        // Black B-A-19: C = 100 000 kN (the hard maximum) against 2 kN used to block "for having too much life".
+        var r = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("C", 100000, "kN")));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Contains(r.Warnings, w => w.RuleId == "light-load");
+        Assert.Equal(1e12, r.OutputSi("L_10"), 3);
+    }
+
+    [Fact]
+    public void An_Axial_Load_Above_E_Cannot_Be_Discarded_By_A_Zero_Y()
+    {
+        // Black B-A-01: F_r 2 kN, F_a 1.5 kN (F_a/F_r = 0.75 > e_lim 0.3) with the default Y = 0 used to PASS on P = F_r.
+        var r = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("F_a", 1.5, "kN")));
+        Assert.True(r.IsBlocked);
+        Assert.Equal("axial-factor", r.Blocks[0].RuleId);
+        Assert.StartsWith("Y:", r.Blocks[0].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Pure_Thrust_With_A_Zero_Y_Names_Y_Not_An_Empty_Load()
+    {
+        var r = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("F_r", 0, "kN")).With(CalcInputValue.Quantity("F_a", 1.5, "kN")));
+        Assert.True(r.IsBlocked);
+        Assert.Equal("axial-factor", r.Blocks[0].RuleId);
+        Assert.Contains("pure thrust", r.Blocks[0].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Duty_Step_With_An_Axial_Load_Above_E_Needs_Y_Too()
+    {
+        var r = CalcRunner.Run(Bearing, Defaults().With(BearingLifeCalculator.Duty((2, 0, 0.5), (2, 1.5, 0.5))));
+        Assert.True(r.IsBlocked);
+        Assert.Equal("axial-factor", r.Blocks[0].RuleId);
+        var fixedUp = CalcRunner.Run(Bearing, Defaults().With(BearingLifeCalculator.Duty((2, 0, 0.5), (2, 1.5, 0.5))).With(CalcInputValue.Of("Y", 1.2)));
+        Assert.False(fixedUp.IsBlocked);
+    }
+
+    [Fact]
+    public void X1_And_Y1_Give_The_Equivalent_Load_At_Or_Below_E()
+    {
+        // F_a/F_r = 0.2 ≤ e_lim 0.3: P = X_1 F_r + Y_1 F_a = 1 × 2 + 0.55 × 0.4 = 2.22 kN (a double-row bearing; 0.55 is illustrative).
+        var r = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("F_a", 0.4, "kN")).With(CalcInputValue.Of("Y_1", 0.55)));
+        Assert.False(r.IsBlocked);
+        Assert.Equal(2.22, r.OutputSi("P") / 1e3, 9);
+        var singleRow = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("F_a", 0.4, "kN")));
+        Assert.Equal(2.0, singleRow.OutputSi("P") / 1e3, 9);
     }
 
     [Fact]

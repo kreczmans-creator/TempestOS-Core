@@ -19,12 +19,12 @@ public sealed class WeldGroupCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Weld group (elastic line method)",
+        Id, "1.1.0", CalcDiscipline.Mechanical, "Weld group (elastic line method)",
         "A group of straight fillet welds in a plane under in-plane forces (with eccentricity, so torsion), an out-of-plane force and out-of-plane moments: the resultant force per unit length at every weld end, the critical point, the throat stress against the design strength and the leg size required.",
         "Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w\n" +
-        "Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, J_u = I_ux + I_uy\n" +
+        "Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, product I_uxy = Σ [l(x_m − x_c)(y_m − y_c) + l·Δx·Δy/12], J_u = I_ux + I_uy\n" +
         "Torsion about the centroid: T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z\n" +
-        "At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + M_x·y′/I_ux + M_y·x′/I_uy with F_z's eccentricity added to M_x and M_y; vector sum f_r\n" +
+        "At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + [(M_x·I_uy − M_y·I_uxy)·y′ + (M_y·I_ux − M_x·I_uxy)·x′]/(I_ux·I_uy − I_uxy²) with F_z's eccentricity added to M_x and M_y (this reduces to M_x·y′/I_ux + M_y·x′/I_uy only for a group symmetric about a centroidal axis); vector sum f_r\n" +
         "Throat: a = 0.707·s, τ = f_r,max/a; required leg s_req = f_r,max/(0.707·f_w)",
         [
             new CalcInputSpec("welds", "Weld lines", CalcInputKind.Table, Columns: Columns, MaxRows: 50),
@@ -51,7 +51,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("few-welds", "No weld of non-zero length.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("collinear", "All welds on one line: the group has no stiffness about that line.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("collinear", "All welds on one line: an out-of-plane moment about that line cannot be resisted (direct shear and in-plane torsion still can).", CalcNoticeSeverity.Block),
         ],
         [
             new CalcTestCase("ka-two-vertical", "Two vertical welds under an eccentric vertical load (Shigley Table 9-1 case 2)",
@@ -66,6 +66,10 @@ public sealed class WeldGroupCalculator : ICalcCalculator
                 new CalcReferenceSource("Shigley's Mechanical Engineering Design", "11th ed., Table 9-2", "b = 100 at y = ±50 (d = 100): I_u = b·d²/2 = 5e5 mm³; M_x = 5 kN·m: 500 N/mm; with F_y = 10 kN direct 50 N/mm: f_r = √(500² + 50²) = 502.49 N/mm; s_req = 502.49/(0.707 × 220) = 3.2306 mm"),
                 [Welds((0, -50, 100, -50), (0, 50, 100, 50)), Q("F_y", 10, "kN"), Q("e_x", 50, "mm"), Q("e_y", 0, "mm"), Q("M_x", 5, "kN*m")],
                 [new CalcExpectedValue("I_ux", 500000, "mm^3", 1e-9), new CalcExpectedValue("f_r_max", 502.4938, "N/mm", 1e-6), new CalcExpectedValue("s_req", 3.230640, "mm", 1e-5)]),
+            new CalcTestCase("ka-l-group-bending", "150 × 50 L-shaped weld group in out-of-plane bending: the product moment matters",
+                new CalcReferenceSource("Analytic (unsymmetric bending of a line group; recomputed in python3 by solving the moment equilibrium of f = a·x′ + b·y′)", null, "welds (0,0)–(150,0) and (0,0)–(0,50): centroid (56.25, 6.25) mm; I_ux = 33 854.17, I_uy = 492 187.5, I_uxy = −70 312.5 mm³; M_x = 1 kN·m gives f = 1500 N/mm at the far end of the long weld (the symmetric-axes form M·y′/I_ux would give 1292 N/mm)"),
+                [Welds((0, 0, 150, 0), (0, 0, 0, 50)), Q("F_y", 0, "kN"), Q("M_x", 1, "kN*m")],
+                [new CalcExpectedValue("I_ux", 33854.16667, "mm^3", 1e-9), new CalcExpectedValue("I_uy", 492187.5, "mm^3", 1e-9), new CalcExpectedValue("I_uxy", -70312.5, "mm^3", 1e-9), new CalcExpectedValue("f_r_max", 1500, "N/mm", 1e-9)]),
         ],
         Category: "Fasteners",
         OutputPorts:
@@ -99,26 +103,22 @@ public sealed class WeldGroupCalculator : ICalcCalculator
         // Kernel in mm (lengths) so the unit second moments come out in mm³.
         var g = GroupGeometry.OfLines([.. lines.Select(l => (l.X1 * 1e3, l.Y1 * 1e3, l.X2 * 1e3, l.Y2 * 1e3))]);
 
-        if (g.Ix <= 1e-9 * g.Size * g.Size * g.Size || g.Iy <= 1e-9 * g.Size * g.Size * g.Size)
-        {
-            c.Block("collinear", "welds: all welds lie on one line; the group cannot resist bending or torsion about it.");
-            return;
-        }
-
         var mm3 = UnitCatalog.Parse("mm^3");
         c.Record("L_w", "Σ l", string.Join(" + ", lines.Select(l => F(Math.Sqrt((l.X2 - l.X1) * (l.X2 - l.X1) + (l.Y2 - l.Y1) * (l.Y2 - l.Y1)) * 1e3))), ScalarValue.Of(g.Size, mm), "Total weld length");
         c.Record("x_c", "Σ l·x_m / L_w", $"{F(g.Xc)} mm", ScalarValue.Of(g.Xc, mm), "Centroid x");
         c.Record("y_c", "Σ l·y_m / L_w", $"{F(g.Yc)} mm", ScalarValue.Of(g.Yc, mm), "Centroid y");
         c.Record("I_ux", "Σ [l(y_m − y_c)² + l·Δy²/12]", "about the centroid", ScalarValue.Of(g.Ix, mm3), "Unit second moment about x", "Shigley Table 9-2");
         c.Record("I_uy", "Σ [l(x_m − x_c)² + l·Δx²/12]", "about the centroid", ScalarValue.Of(g.Iy, mm3), "Unit second moment about y", "Shigley Table 9-2");
+        c.Record("I_uxy", "Σ [l(x_m − x_c)(y_m − y_c) + l·Δx·Δy/12]", "about the centroid", ScalarValue.Of(g.Ixy, mm3), "Unit product moment", "Shigley Table 9-2");
         c.Record("J_u", "I_ux + I_uy", $"{F(g.Ix)} + {F(g.Iy)}", ScalarValue.Of(g.J, mm3), "Unit polar moment", "Shigley Table 9-1");
 
         // Forces in N, moments in N·mm, lengths in mm → N/mm.
         var fx = c.Si("F_x");
         var fy = c.Si("F_y");
         var fz = c.Si("F_z");
-        var ex = c.Si("e_x") * 1e3 - g.Xc;
-        var ey = c.Si("e_y") * 1e3 - g.Yc;
+        // An eccentricity that is rounding noise (a load on the centroid) counts as zero, so it cannot read as a moment about a single weld line.
+        var ex = Snap(c.Si("e_x") * 1e3 - g.Xc, g.Size);
+        var ey = Snap(c.Si("e_y") * 1e3 - g.Yc, g.Size);
         // F_z acts at (e_x, e_y), so its eccentricity adds to the out-of-plane moments (Opus review, finding 7).
         var mx = c.Si("M_x") * 1e3 + fz * ey;
         var my = c.Si("M_y") * 1e3 + fz * ex;
@@ -131,6 +131,12 @@ public sealed class WeldGroupCalculator : ICalcCalculator
 
         c.Record("T", "F_y(e_x − x_c) − F_x(e_y − y_c) + M_z", $"{F(fy / 1e3)} × {F(ex)} − {F(fx / 1e3)} × {F(ey)} + {F(c.Si("M_z") / 1e3)}e3", ScalarValue.Of(torque / 1e6, "kN*m"), "In-plane torque about the centroid");
 
+        if ((mx != 0 || my != 0) && g.Bending(mx, my, 1, 1) is null)
+        {
+            c.Block("collinear", "M_x: all welds lie on one line and the out-of-plane moment has a component about that line, which no weld resists; add a weld off the line or remove that component.");
+            return;
+        }
+
         var worst = (F: -1.0, X: 0.0, Y: 0.0, Vx: 0.0, Vy: 0.0, Vz: 0.0);
 
         foreach (var (x, y) in lines.SelectMany(l => new[] { (l.X1 * 1e3, l.Y1 * 1e3), (l.X2 * 1e3, l.Y2 * 1e3) }).Distinct())
@@ -139,7 +145,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
             var ry = y - g.Yc;
             var vx = fx / g.Size - torque * ry / g.J;
             var vy = fy / g.Size + torque * rx / g.J;
-            var vz = fz / g.Size + mx * ry / g.Ix + my * rx / g.Iy;
+            var vz = fz / g.Size + (g.Bending(mx, my, rx, ry) ?? 0);
             var f = Math.Sqrt(vx * vx + vy * vy + vz * vz);
 
             if (f > worst.F + 1e-9)
@@ -154,7 +160,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
         c.Assign("s_req", "f_r_max / (0.707 * f_w)", "mm", "Leg size required");
         c.Assign("u", "tau / f_w", null, "Utilisation");
 
-        foreach (var (symbol, text) in new[] { ("L_w", "Weld length"), ("x_c", "Centroid x"), ("y_c", "Centroid y"), ("I_ux", "Unit second moment about x"), ("I_uy", "Unit second moment about y"), ("J_u", "Unit polar moment"), ("T", "Torque about the centroid"), ("f_r_max", "Maximum force per unit length"), ("critical", "Critical point"), ("a", "Throat"), ("tau", "Throat stress"), ("s_req", "Leg required"), ("u", "Utilisation") })
+        foreach (var (symbol, text) in new[] { ("L_w", "Weld length"), ("x_c", "Centroid x"), ("y_c", "Centroid y"), ("I_ux", "Unit second moment about x"), ("I_uy", "Unit second moment about y"), ("I_uxy", "Unit product moment"), ("J_u", "Unit polar moment"), ("T", "Torque about the centroid"), ("f_r_max", "Maximum force per unit length"), ("critical", "Critical point"), ("a", "Throat"), ("tau", "Throat stress"), ("s_req", "Leg required"), ("u", "Utilisation") })
             c.Output(symbol, text);
 
         c.CheckUtilisation("Throat stress against design strength", "u", "EN 1993-1-8 cl. 4.5.3.3");
@@ -162,6 +168,8 @@ public sealed class WeldGroupCalculator : ICalcCalculator
     }
 
     private static double Cell(CalcRow row, string key, Unit unit) => row.Get(key) is { Number: { } n } cell ? (cell.Unit is { Length: > 0 } u ? UnitCatalog.Parse(u) : unit).ToSi(n) : 0;
+
+    private static double Snap(double offset, double size) => Math.Abs(offset) < 1e-9 * Math.Max(1, size) ? 0 : offset;
 
     private static string F(double v) => CalcValue.FormatNumber(v, 5);
 }

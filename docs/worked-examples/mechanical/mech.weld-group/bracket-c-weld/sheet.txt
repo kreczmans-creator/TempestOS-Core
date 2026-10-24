@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 A group of straight fillet welds in a plane under in-plane forces (with eccentricity, so torsion), an out-of-plane force and out-of-plane moments: the resultant force per unit length at every weld end, the critical point, the throat stress against the design strength and the leg size required.
-Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, J_u = I_ux + I_uy Torsion about the centroid: T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + M_x·y′/I_ux + M_y·x′/I_uy with F_z's eccentricity added to M_x and M_y; vector sum f_r Throat: a = 0.707·s, τ = f_r,max/a; required leg s_req = f_r,max/(0.707·f_w)
+Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, product I_uxy = Σ [l(x_m − x_c)(y_m − y_c) + l·Δx·Δy/12], J_u = I_ux + I_uy Torsion about the centroid: T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + [(M_x·I_uy − M_y·I_uxy)·y′ + (M_y·I_ux − M_x·I_uxy)·x′]/(I_ux·I_uy − I_uxy²) with F_z's eccentricity added to M_x and M_y (this reduces to M_x·y′/I_ux + M_y·x′/I_uy only for a group symmetric about a centroidal axis); vector sum f_r Throat: a = 0.707·s, τ = f_r,max/a; required leg s_req = f_r,max/(0.707·f_w)
   Ref: Shigley's Mechanical Engineering Design 11th ed., Ch. 9, Tables 9-1 and 9-2 — Welds treated as lines: torsional and bending properties
   Ref: Blodgett, Design of Welded Structures 1966, §7.4 — Treating the weld as a line
   Ref: EN 1993-1-8:2005 cl. 4.5.3.3 — Simplified method for design resistance of fillet welds (resistance input)
@@ -62,35 +62,39 @@ Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w Unit sec
       = about the centroid
       = 227560 mm³
         Unit second moment about y
-  [16] J_u = I_ux + I_uy    « Shigley Table 9-1
+  [16] I_uxy = Σ [l(x_m − x_c)(y_m − y_c) + l·Δx·Δy/12]    « Shigley Table 9-2
+      = about the centroid
+      = 0 mm³
+        Unit product moment
+  [17] J_u = I_ux + I_uy    « Shigley Table 9-1
       = 2266700 + 227560
       = 2494200 mm³
         Unit polar moment
-  [17] T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z
+  [18] T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z
       = -30 × 232.22 − 0 × 0 + 0e3
       = -6.9667 kN·m
         In-plane torque about the centroid
-  [18] f_r_max = max over weld ends √(f_x² + f_y² + f_z²)
+  [19] f_r_max = max over weld ends √(f_x² + f_y² + f_z²)
       = at (80, 0) mm: (-279.31, -257.13, 0) N/mm
       = 379.64 N/mm
         Maximum resultant force per unit length
-  [19] critical = critical point
+  [20] critical = critical point
       = (80, 0) mm
       = "(80, 0) mm"
         Where f_r is greatest
-  [20] a = 0.707 * s
+  [21] a = 0.707 * s
       = 0.707 × 8 mm
       = 5.656 mm
         Throat
-  [21] tau = f_r_max / a
+  [22] tau = f_r_max / a
       = 379.64 N/mm / 5.656 mm
       = 67.122 MPa
         Maximum throat stress
-  [22] s_req = f_r_max / (0.707 * f_w)
+  [23] s_req = f_r_max / (0.707 * f_w)
       = 379.64 N/mm / (0.707 × 220 MPa)
       = 2.4408 mm
         Leg size required
-  [23] u = tau / f_w
+  [24] u = tau / f_w
       = 67.122 MPa / 220 MPa
       = 0.3051
         Utilisation
@@ -101,6 +105,7 @@ Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w Unit sec
   y_c = 100 mm    Centroid y
   I_ux = 2266700 mm³    Unit second moment about x
   I_uy = 227560 mm³    Unit second moment about y
+  I_uxy = 0 mm³    Unit product moment
   J_u = 2494200 mm³    Unit polar moment
   T = -6.9667 kN·m    Torque about the centroid
   f_r_max = 379.64 N/mm    Maximum force per unit length
@@ -117,8 +122,8 @@ Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w Unit sec
   No warnings.
 
 8. VERIFICATION
-  Template: mech.weld-group@1.0.0
+  Template: mech.weld-group@1.1.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 3/3
+  Known-answer cases passed: 4/4
   Test run: —
