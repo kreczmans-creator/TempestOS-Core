@@ -10,6 +10,6 @@ P4 manual tests: running (2 agents)
 P5 consistency audit: done — 60 findings
 P6 risk triage: done — docs/verification/risk-triage.md
 P7 oracle map: done — docs/verification/oracles.md
-Defects (reviewed): 4 Critical (S1 composite holes, B2 SHR swap, drive-train torque x2), 39 High, 49 Medium
+Defects (reviewed): 4 Critical (S1 composite holes, B2 SHR swap, drive-train torque x2), 40 High, 50 Medium
 Writes: docs/verification/ and tools/verification/ only
 Next: finish P4, handover note, then poll release/v0.26.0 every 2 h for new calculators

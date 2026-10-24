@@ -50,7 +50,8 @@ Every Critical and High finding was reproduced with the probe tool against the r
 | bs.heat-exchanger | 0 | 0 | 1 | 2 | 3 | 0 |
 | struct.load-combinations | 0 | 0 | 3 | 0 | 1 | 0 |
 | mech.tolerance-stack | 0 | 0 | 0 | 4 | 2 | 0 |
-| **Total** | **4** | **39** | **49** | **71** | **39** | **2** |
+| desktop.calc-sheet-view | 0 | 1 | 1 | 0 | 0 | 0 |
+| **Total** | **4** | **40** | **50** | **71** | **39** | **2** |
 
 ## Four Critical findings (fix before any owner use)
 1. **P1-struct.section-properties-01.** A tube or hollow rectangle inside a composite section counts its hole as solid. A 200 × 10 tube reads 568.6 cm²; the correct area is 59.7 cm². The coordinator reproduced it.
@@ -80,8 +81,9 @@ Track P will add them as they merge. For the calculators present, test in this o
 | 13 | E6 load budget, E3 voltage drop | 4 High (starting peak, blanks as 1, duty on currents, resistivity) | `elec.load-budget.md`, `elec.voltage-drop.md` |
 | 14 | B1 pipe and pump, B6 sealed system | 5 High (NPSH gaps, trim law, vessel margins; B6 needs the owner's BS EN 12828) | `bs.pipe-pump.md`, `bs.sealed-system.md` |
 | 15 | E2, B3, B5, S5, M1 | No Critical or High | remaining files |
+| any | Desktop sheet import | 1 High (seeded unit not converted); test with every JSON import | `docs/verification/rederivation/desktop.calc-sheet-view.md` |
 
-## Critical and High findings, ranked (43)
+## Critical and High findings, ranked (44)
 | Rank | ID | Calculator | Reviewed | First pass | Finding (first sentence; detail in the report) |
 |---|---|---|---|---|---|
 | 1 | P1-chain.drive-train-01 | chain.drive-train | Critical | Critical | E1 T_rms is bound to M4 T, which M4 treats as steady torque. |
@@ -127,8 +129,9 @@ Track P will add them as they merge. For the calculators present, test in this o
 | 41 | P1-bs.pipe-pump-R1 | bs.pipe-pump | High | High | NPSH_a includes only segments marked "suction". |
 | 42 | P1-bs.sealed-system-02 | bs.sealed-system | High | Medium | The final pressure may sit just under the safety valve setting. |
 | 43 | P1-bs.sealed-system-03 | bs.sealed-system | High | Medium | The vessel formula has no water reserve (seal) volume. |
+| 44 | P1-desktop.calc-sheet-view-01 | desktop.calc-sheet-view | High | High | A seeded quantity whose unit is not in the form's pick list keeps its number and takes the default unit, so the value silently changes scale. |
 
-## Medium findings (49)
+## Medium findings (50)
 Fix in C-1 when each takes under 2 hours; otherwise list for the owner.
 
 | Rank | ID | Calculator | Reviewed | First pass | Finding (first sentence; detail in the report) |
@@ -182,6 +185,7 @@ Fix in C-1 when each takes under 2 hours; otherwise list for the owner.
 | 47 | P1-struct.load-combinations-01 | struct.load-combinations | Medium | Low | The default ξ is 0.85 (EN recommended). |
 | 48 | P1-struct.load-combinations-02 | struct.load-combinations | Medium | Low | The recommended ψ_0 values differ from the UK NA for roofs (category H) and wind. |
 | 49 | P1-struct.load-combinations-03 | struct.load-combinations | Medium | Info | K_FI multiplies γ_Q only, as the spec says. |
+| 50 | P1-desktop.calc-sheet-view-02 | desktop.calc-sheet-view | Medium | Medium | A seed with an unknown unit text shows the default unit and runs; the engine path refuses it. |
 
 ## Known-answer source issues (P2)
 - **ka-shigley-stiffness (M3):** contradicted. Shigley's frustum relation uses the bolt diameter in both places; the sheet mixes bolt and hole diameter. The senior review upheld it. Owner to confirm the equation number in the 11th edition.
