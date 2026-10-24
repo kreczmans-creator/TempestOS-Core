@@ -8,11 +8,11 @@ Issued: —
 
 1. SCOPE AND METHOD
 U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.
-Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·ΣA_ext·(θ_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation flow: q_v = n·V Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor Check: U against the target U of each element
+Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(θ_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation flow: q_v = n·V Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply, plus 0.34·n_inf·V·(θ_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor Check: U against the target U of each element
   Ref: BS EN ISO 6946 homogeneous layers and surface resistances (clause numbers to be checked against the owner's copy) — Building components — thermal resistance and thermal transmittance
-  Ref: BS EN 12831-1 cl. 6.3 — Heating systems in buildings — design heat load: transmission heat loss
-  Ref: BS EN 12831-1 cl. 6.3.3 — Heating systems in buildings — design heat load: ventilation heat loss
-  Ref: CIBSE Domestic Heating Design Guide 2026 ed., reduced method — Room heat loss and the additional allowance
+  Ref: BS EN 12831-1 cl. 6.3.2 (clause number to be checked against the owner's copy) — Heating systems in buildings — design heat load: transmission heat loss
+  Ref: BS EN 12831-1 cl. 6.3.3 (clause number to be checked against the owner's copy) — Heating systems in buildings — design heat load: ventilation heat loss
+  Ref: CIBSE Domestic Heating Design Guide 2026 ed., reduced method (name and edition unverified; to be checked against the owner's copy) — Room heat loss and the additional allowance
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
@@ -44,7 +44,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
 3. ASSUMPTIONS
   A1. Steady state: every temperature is constant, with no solar or internal gains, no thermal mass and no dynamic simulation. (Design heat loss, not an annual energy estimate.)
   A2. Layers are homogeneous and in series (one-dimensional flow); no bridged layers (timber studs, mortar joints, fixings) are corrected for: a thermal-bridge allowance y_tb is added instead. (BS EN ISO 6946 homogeneous-layer calculation.)
-  A3. A blank Rsi is the conventional horizontal-flow 0.13 m²K/W and a blank Rse is 0.04 m²K/W outside, or 0.13 m²K/W where the element faces a heated space; floors, roofs and other flow directions take the user's own values. (Small conventional BS EN ISO 6946 set, not a table of design data.)
+  A3. A blank Rsi is the conventional horizontal-flow 0.13 m²K/W and a blank Rse is 0.04 m²K/W for an element facing outside (no adjacent temperature, or one at or below θ_e), or 0.13 m²K/W where it faces another space; floors, roofs and other flow directions take the user's own values. (Small conventional BS EN ISO 6946 set, not a table of design data.)
   A4. Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer. (Stated limit.)
   A5. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table. (Derived.)
   A6. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (§A5.)
@@ -63,7 +63,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 1 / 5.538
       = 0.18057 W/(m²·K)
         Front wall: U-value
-  [10] Phi_1 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3
+  [10] Phi_1 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
       = 8.7 × 0.18057 × 1 × (21 − -3) °C
       = 37.703 W
         Front wall: fabric loss to θ_e = -3 °C
@@ -71,7 +71,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = Window: 1.4 W/m²K
       = 1.4 W/(m²·K)
         Window: U-value as entered (ground floor or glazing)
-  [12] Phi_2 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3
+  [12] Phi_2 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
       = 2.1 × 1.4 × 1 × (21 − -3) °C
       = 70.56 W
         Window: fabric loss to θ_e = -3 °C
@@ -83,7 +83,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 1 / 5.538
       = 0.18057 W/(m²·K)
         Gable wall: U-value
-  [15] Phi_3 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3
+  [15] Phi_3 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
       = 8.64 × 0.18057 × 1 × (21 − -3) °C
       = 37.443 W
         Gable wall: fabric loss to θ_e = -3 °C
@@ -95,7 +95,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 1 / 0.87777
       = 1.1392 W/(m²·K)
         Party wall: U-value
-  [18] Phi_4 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3
+  [18] Phi_4 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
       = 8.64 × 1.1392 × 1 × (21 − 18) °C
       = 29.529 W
         Party wall: fabric loss to θ_adj = 18 °C
@@ -103,7 +103,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = Ground floor: 0.25 W/m²K
       = 0.25 W/(m²·K)
         Ground floor: U-value as entered (ground floor or glazing)
-  [20] Phi_5 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3
+  [20] Phi_5 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
       = 16.2 × 0.25 × 1 × (21 − -3) °C
       = 97.2 W
         Ground floor: fabric loss to θ_e = -3 °C
@@ -114,60 +114,64 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   [22] A_ext = Σ A facing outside
       = 35.64 m²
       = 35.64 m²
-        Fabric area facing outside (thermal-bridge allowance applies)
-  [23] U_m = Σ A·U·f / Σ A
+        Fabric area facing outside
+  [23] A_tb = Σ A·f facing outside    « BS EN 12831-1 cl. 6.3.2
+      = 35.64 m²
+      = 35.64 m²
+        Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)
+  [24] U_m = Σ A·U·f / Σ A
       = 19.964 / 44.28
       = 0.45086 W/(m²·K)
         Area-weighted mean U-value of the fabric
-  [24] dT = theta_int - theta_e
+  [25] dT = theta_int - theta_e
       = 21 degC − (-3 degC)
       = 24 K
         Design temperature difference, inside to outside
-  [25] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3
+  [26] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
       = 272.43 W
       = 272.43 W
         Fabric loss through the elements
-  [26] Phi_tb = y_tb * A_ext * dT    « BS EN 12831-1 cl. 6.3
+  [27] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
       = 0.1 W/(m²·K) × 35.64 m² × 24 K
       = 85.536 W
         Thermal-bridge allowance
-  [27] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3
+  [28] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
       = 272.43 W + 85.536 W
       = 357.97 W
         Fabric heat loss
-  [28] q_v = n * V
+  [29] q_v = n * V
       = 0.8 1/h × 38.88 m³
       = 31.104 m³/h
         Ventilation air flow
-  [29] dT_v = dT
+  [30] dT_v = dT
       = 24 K
       = 24 K
         Ventilation temperature difference, inside to outside
-  [30] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
+  [31] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
       = 0.34 Wh/(m^3*K) × 31.104 m³/h × 24 K
       = 253.81 W
         Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
-  [31] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3
+  [32] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
       = 357.97 W + 253.81 W
       = 611.78 W
         Room design heat loss
-  [32] HLC = Phi_HL / dT
+  [33] HLC = Phi_HL / dT
       = 611.78 W / 24 K
       = 25.491 W/K
         Heat loss coefficient
-  [34] Phi_A = Phi_HL / A_floor
+  [35] Phi_A = Phi_HL / A_floor
       = 611.78 W / 16.2 m²
       = 37.764 W/m²
         Room design heat loss per floor area
-  [35] u_1 = U / U_target
+  [36] u_1 = U / U_target
       = 0.18057 / 0.3
       = 0.6019
         Front wall: utilisation of the target U-value
-  [36] u_3 = U / U_target
+  [37] u_3 = U / U_target
       = 0.18057 / 0.3
       = 0.6019
         Gable wall: utilisation of the target U-value
-  [37] u_4 = U / U_target
+  [38] u_4 = U / U_target
       = 1.1392 / 1.2
       = 0.94937
         Party wall: utilisation of the target U-value
@@ -188,6 +192,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Phi_5 = 97.2 W    Ground floor: fabric loss
   A_fab = 44.28 m²    Total fabric area
   A_ext = 35.64 m²    Fabric area facing outside
+  A_tb = 35.64 m²    Fabric area facing outside weighted by f
   U_m = 0.45086 W/(m²·K)    Mean fabric U-value
   dT = 24 K    Design temperature difference
   Phi_el = 272.43 W    Element fabric loss
@@ -218,5 +223,5 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Template: bs.room-heat-loss@1.0.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 4/4
+  Known-answer cases passed: 5/5
   Test run: —

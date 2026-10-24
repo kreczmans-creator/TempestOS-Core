@@ -164,13 +164,55 @@ public sealed class RoomHeatLossTests
     }
 
     [Fact]
-    public void Thermal_Bridges_Apply_Only_To_Elements_Facing_Outside()
+    public void Thermal_Bridges_Apply_Only_To_Elements_Facing_Outside_Weighted_By_f()
     {
-        var inputs = Defaults().With(Q("y_tb", 0.1, "W/(m^2*K)")).With(RoomHeatLossCalculator.Elements(("Cavity wall", 20, null, null, null, null, null, null, null), ("Party wall", 10, 18, null, null, null, null, 0.5, null)));
+        var inputs = Defaults().With(Q("y_tb", 0.1, "W/(m^2*K)")).With(RoomHeatLossCalculator.Elements(("Cavity wall", 20, null, null, null, null, null, null, null), ("Floor", 10, null, 0.5, null, null, null, 0.25, null), ("Party wall", 10, 18, null, null, null, null, 0.5, null)));
         var r = CalcRunner.Run(Room, inputs);
-        Assert.Equal(20, r.OutputSi("A_ext"), 9);
-        Assert.Equal(0.1 * 20 * 24, r.OutputSi("Phi_tb"), 9);
-        Assert.Equal(10 * 0.5 * 3, r.OutputSi("Phi_2"), 9);
+        Assert.Equal(30, r.OutputSi("A_ext"), 9);
+        Assert.Equal(25, r.OutputSi("A_tb"), 9);
+        Assert.Equal(0.1 * 25 * 24, r.OutputSi("Phi_tb"), 9);
+        Assert.Equal(10 * 0.5 * 3, r.OutputSi("Phi_3"), 9);
+    }
+
+    [Fact]
+    public void An_Adjacent_Temperature_Equal_To_The_External_One_Is_Treated_As_External()
+    {
+        var blank = CalcRunner.Run(Room, Defaults().With(Q("y_tb", 0.1, "W/(m^2*K)")));
+        var typed = CalcRunner.Run(Room, Defaults().With(Q("y_tb", 0.1, "W/(m^2*K)")).With(RoomHeatLossCalculator.Elements(("Cavity wall", 20, -3, null, null, null, null, null, null), ("Window", 3, null, null, null, null, null, 1.4, null))));
+        Assert.Equal(blank.OutputSi("U_1"), typed.OutputSi("U_1"), 12);
+        Assert.Equal(blank.OutputSi("Phi_tb"), typed.OutputSi("Phi_tb"), 9);
+        Assert.Equal(23, typed.OutputSi("A_ext"), 9);
+        Assert.Equal(blank.OutputSi("Phi_HL"), typed.OutputSi("Phi_HL"), 9);
+    }
+
+    [Fact]
+    public void Infiltration_Is_Added_At_The_Outside_Temperature_With_Mvhr_Only()
+    {
+        var withInf = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 16, "degC")).With(Q("n_inf", 0.1, "1/h")));
+        Assert.Equal(0.34 * (20 * 5 + 0.1 * 40 * 24), withInf.OutputSi("Phi_V"), 9);
+        var without = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 16, "degC")));
+        Assert.True(withInf.OutputSi("Phi_V") > without.OutputSi("Phi_V"));
+
+        var natural = CalcRunner.Run(Room, Defaults().With(Q("n_inf", 0.1, "1/h")));
+        Assert.Contains(natural.Warnings, w => w.RuleId == "n-inf-ignored");
+        Assert.Equal(CalcRunner.Run(Room, Defaults()).OutputSi("Phi_V"), natural.OutputSi("Phi_V"), 9);
+        Assert.True(CalcRunner.Run(Room, Defaults().With(Q("n_inf", 3.5, "1/h"))).IsBlocked);
+    }
+
+    [Fact]
+    public void A_Room_That_Gains_Heat_Warns()
+    {
+        var gain = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 21, "degC")).With(RoomHeatLossCalculator.Elements(("Party wall", 10, 40, null, null, null, null, 0.5, null))));
+        Assert.True(gain.OutputSi("Phi_HL") <= 0);
+        Assert.Contains(gain.Warnings, w => w.RuleId == "gain");
+        Assert.DoesNotContain(CalcRunner.Run(Room, Defaults()).Warnings, w => w.RuleId == "gain");
+    }
+
+    [Fact]
+    public void The_Mvhr_Supply_Temperature_Is_Entered_Once_On_The_Sheet()
+    {
+        var r = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 16, "degC")));
+        Assert.Single(r.Steps, s => s.Symbol == "theta_supply");
     }
 
     [Fact]

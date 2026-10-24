@@ -155,7 +155,7 @@ public static class BuildingServicesWorkedExamples
             "At 55/45 °C with rooms at 21 °C the radiators give 49 % of their catalogue output. The lounge, kitchen and bedrooms fall 1.5 % short and the bathroom 11 % short (utilisation 1.107), so the check fails and those radiators need upsizing. The 91 L system needs a 3.5 L vessel, so the existing 12 L vessel is ample.",
             CalcReferenceStatus.Confirmed),
         new(RoomHeatLossCalculator.Id, "semi-detached-living-room", "Semi-detached living room: U-values and design heat loss for the emitter sizing",
-            new CalcReferenceSource("Analytic (series resistance; steady-state Φ = ΣA·U·f·Δθ + y_tb·A_ext·Δθ + 0.34·n·V·Δθ)", null, "End-of-terrace living room 4.5 × 3.6 × 2.4 m: front wall with a 2.1 m² window, gable wall, party wall to a neighbour at 18 °C, ground floor with a user-entered U; all material data are illustrative inputs, not design data"),
+            new CalcReferenceSource("Analytic (series resistance; steady-state Φ = ΣA·U·f·Δθ + y_tb·Σ(A·f)_ext·Δθ + 0.34·n·V·Δθ)", null, "Semi-detached living room 4.5 × 3.6 × 2.4 m: front wall with a 2.1 m² window, gable wall, party wall to a neighbour at 18 °C, ground floor with a user-entered U; all material data are illustrative inputs, not design data"),
             new CalcInputSet(
             [
                 CalcInputValue.Choice("method", RoomHeatLossCalculator.En12831, CalcProvenance.Assumed("Elemental method; the design-team default.")),
