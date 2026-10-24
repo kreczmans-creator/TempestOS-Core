@@ -740,8 +740,8 @@ def extras():
     compare("E8 polygon with hole", P["E8"], s, 1e-8)
     # E9 extreme sizes
     for tag, b, h in [("E9a", 0.001, 0.002), ("E9b", 1e5, 1e5)]:
-        xrow(f"{tag} rect {b} x {h}", "I_xx", P[tag]["Ixx"], b * h ** 3 / 12, 1e-8)
-        xrow(f"{tag} rect {b} x {h}", "J", P[tag]["J"], j_rect_exact(b, h), 1e-6)
+        xrow(f"{tag} rect {b:g} x {h:g}"[:25], "I_xx", P[tag]["Ixx"], b * h ** 3 / 12, 1e-8)
+        xrow(f"{tag} rect {b:g} x {h:g}"[:25], "J", P[tag]["J"], j_rect_exact(b, h), 1e-6)
     xrow("E9b rect 1e5 x 1e5", "W_pl_x", P["E9b"]["Wpx"], 1e5 ** 3 / 4, 1e-9)
     # E10 slender and square rectangles: exact series
     xrow("E10a rect 10 x 1000", "J", P["E10a"]["J"], j_rect_exact(10, 1000), 1e-6)

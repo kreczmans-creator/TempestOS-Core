@@ -64,7 +64,7 @@ def weld(welds, s=6.0, f_w=220.0, F_x=0.0, F_y=0.0, F_z=0.0, e_x=0.0, e_y=0.0,
     tau = frmax / a
     return dict(L_w=Lw, x_c=xc, y_c=yc, I_ux=Iux, I_uy=Iuy, I_uxy=Iuxy, J_u=Ju, T=T / 1e3,
                 f_r_max=frmax, a=a, tau=tau, s_req=frmax / (THROAT * f_w), u=tau / f_w,
-                crit=(px[k] + xc, py[k] + yc), fr=fr, res_Mx=float(1e3 * (fz * 0).sum()))
+                crit=(px[k] + xc, py[k] + yc), fr=fr)
 
 
 V2 = [(0, 0, 0, 100), (50, 0, 50, 100)]
@@ -93,7 +93,70 @@ for sym, exp, tol in [("I_ux", 500000, 1e-9), ("f_r_max", 502.4938, 1e-6), ("s_r
 n_kat = len(rows)
 
 # ---------------------------------------------------------------- extra checks
-EXTRAS = []   # filled after probing the product
+L = [(0, 0, 150, 0), (0, 0, 0, 100)]
+C = [(0, 0, 60, 0), (0, 0, 0, 100), (0, 100, 60, 100)]
+TRAP = [(0, 0, 200, 0), (0, 0, 50, 120), (200, 0, 150, 120), (50, 120, 150, 120)]
+BIG = [(-2000, -2000, 2000, -2000), (-2000, 2000, 2000, 2000), (2000, -2000, 2000, 2000), (-2000, -2000, -2000, 2000)]
+RING = [(100 * math.cos(2 * math.pi * i / 48), 100 * math.sin(2 * math.pi * i / 48),
+         100 * math.cos(2 * math.pi * (i + 1) / 48), 100 * math.sin(2 * math.pi * (i + 1) / 48)) for i in range(48)]
+RECT = [(0, 0, 60, 0), (60, 0, 60, 140), (60, 140, 0, 140), (0, 140, 0, 0)]
+H2 = [(0, 0, 100, 0), (0, 50, 100, 50)]
+H2Z = H2 + [(10, 10, 10, 10)]      # the zero-length row has no effect
+
+# Product values come from the Probe tool (C# calculator): (name, layout, inputs, outputs).
+EXTRAS = [
+    ('L-shape-in-plane', L, {'F_x': 5, 'F_y': -30, 'e_x': 200, 'e_y': -40, 'M_z': 1},
+     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': -3.35, 'f_r_max': 536.027907, 'tau': 126.362071, 's_req': 3.44623831, 'u': 0.574373052}),
+    ('L-shape-Mx-only', L, {'F_z': 10, 'M_x': 5, 'F_y': 0, 'e_x': 0, 'e_y': 0},
+     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': 0.0, 'f_r_max': 1754.28571, 'tau': 413.551559, 's_req': 11.2786789, 'u': 1.87977982}),
+    ('L-shape-Mx-My', L, {'F_z': 10, 'M_x': 3, 'M_y': 4, 'F_y': 0, 'e_x': 0, 'e_y': 0},
+     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': 0.0, 'f_r_max': 777.662338, 'tau': 183.324455, 's_req': 4.99975786, 'u': 0.833292977}),
+    ('C-section', C, {'F_y': -25, 'e_x': 180, 'e_y': 50, 's': 5, 'f_w': 180},
+     {'L_w': 220.0, 'x_c': 16.3636364, 'y_c': 50.0, 'I_ux': 383333.333, 'I_uy': 85090.9091, 'J_u': 468424.242, 'T': -4.09090909, 'f_r_max': 659.873928, 'tau': 186.668721, 's_req': 5.18524225, 'u': 1.03704845}),
+    ('trapezoid-3D', TRAP, {'F_x': -12, 'F_y': -40, 'F_z': 15, 'e_x': 300, 'e_y': 60, 'M_x': 2, 'M_z': -1},
+     {'L_w': 560.0, 'x_c': 100.0, 'y_c': 49.2857143, 'I_ux': 1327714.29, 'I_uy': 2266666.67, 'J_u': 3594380.95, 'T': -8.87142857, 'f_r_max': 352.136346, 'tau': 83.0118684, 's_req': 2.26396005, 'u': 0.377326674}),
+    ('ring-48-torsion', RING, {'F_y': 0, 'e_x': 0, 'e_y': 0, 'M_z': 10, 's': 6},
+     {'L_w': 627.870041, 'x_c': 2.89707947e-15, 'y_c': -1.33537257e-15, 'I_ux': 3130397.68, 'I_uy': 3130397.68, 'J_u': 6260795.36, 'T': 10.0, 'f_r_max': 159.724115, 'tau': 37.6530211, 's_req': 1.02690057, 'u': 0.171150096}),
+    ('rect-60x140-torsion', RECT, {'F_y': 0, 'e_x': 30, 'e_y': 70, 'M_z': 4},
+     {'L_w': 400.0, 'x_c': 30.0, 'y_c': 70.0, 'I_ux': 1045333.33, 'I_uy': 288000.0, 'J_u': 1333333.33, 'T': 4.0, 'f_r_max': 228.473193, 'tau': 53.8597815, 's_req': 1.46890313, 'u': 0.244817189}),
+    ('zero-loads', H2, {'F_y': 0},
+     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.667, 'J_u': 291666.667, 'T': 0.0, 'f_r_max': 0.0, 'tau': 0.0, 's_req': 0.0, 'u': 0.0}),
+    ('tiny-load', H2, {'F_y': -1e-06, 'e_x': 0, 'e_y': 0},
+     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.667, 'J_u': 291666.667, 'T': 5e-08, 'f_r_max': 1.4232042e-05, 'tau': 3.35503112e-06, 's_req': 9.15008489e-08, 'u': 1.52501415e-08}),
+    ('large-4000mm-box', BIG, {'F_y': -90000, 'F_z': 5000, 'e_x': 1500, 'e_y': 0, 'M_x': 800, 'M_y': 500, 's': 25, 'f_w': 600},
+     {'L_w': 16000.0, 'x_c': 0.0, 'y_c': 0.0, 'I_ux': 42666666700.0, 'I_uy': 42666666700.0, 'J_u': 85333333300.0, 'T': -135000.0, 'f_r_max': 9348.70936, 'tau': 528.922736, 's_req': 22.0384473, 'u': 0.881537894}),
+    ('zero-length-row', H2+Z, {'F_y': -10, 'e_x': 50, 'e_y': 40, 'M_x': 1},
+     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.667, 'J_u': 291666.667, 'T': 0.0, 'f_r_max': 206.155281, 'tau': 48.5986047, 's_req': 1.32541649, 'u': 0.220902749}),
+    ('leg-3mm', H2, {'F_y': -10, 'e_x': 50, 'e_y': 40, 's': 3},
+     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.667, 'J_u': 291666.667, 'T': 0.0, 'f_r_max': 50.0, 'tau': 23.5737859, 's_req': 0.321460717, 'u': 0.107153573}),
+]
+KEYS = ["L_w", "x_c", "y_c", "I_ux", "I_uy", "J_u", "T", "f_r_max", "tau", "s_req", "u"]
+for name, wl, kw, prod in EXTRAS:
+    p = weld([w for w in wl if (w[0], w[1]) != (w[2], w[3])], **kw)
+    d = weld([w for w in wl if (w[0], w[1]) != (w[2], w[3])], outofplane="decoupled", **kw)
+    for k in KEYS:
+        check("EXTRA", name, k, prod[k], p[k], 1e-6)
+    # Root cause of any out-of-plane difference: the decoupled law reproduces the product.
+    check("DECOUP", name, "f_r_max", prod["f_r_max"], d["f_r_max"], 1e-6)
+
+# Closed forms from Shigley, 11th ed., Table 9-1 (independent of the numeric kernel).
+b_, d_ = 60.0, 100.0
+Ju_c = (8 * b_ ** 3 + 6 * b_ * d_ ** 2 + d_ ** 3) / 12 - b_ ** 4 / (2 * b_ + d_)       # case 3, C-shape
+check("CLOSED", "C-section", "J_u", dict((e[0], e[3]) for e in EXTRAS)["C-section"]["J_u"], Ju_c, 1e-6)
+check("CLOSED", "rect-60x140-torsion", "J_u", dict((e[0], e[3]) for e in EXTRAS)["rect-60x140-torsion"]["J_u"], (60 + 140) ** 3 / 6, 1e-6)
+ring_J = dict((e[0], e[3]) for e in EXTRAS)["ring-48-torsion"]["J_u"]
+check("CLOSED", "ring-48-torsion", "J_u(2*pi*r^3)", 2 * math.pi * 100 ** 3, ring_J, 2e-3)   # 48-sided polygon
+
+# Guard checks. Product behaviour was read from the Probe tool.
+# 1. A single vertical weld is blocked ("collinear"). The closed form for one line gives J_u = d^3/12.
+one = weld([(0, 0, 0, 100)], F_y=-10, e_x=100, e_y=50)
+rows.append(("BLOCK", "single-vertical", "J_u(d^3/12)", 100 ** 3 / 12, one["J_u"], abs(one["J_u"] - 100 ** 3 / 12) / (100 ** 3 / 12), 1e-6, False))
+print(f"note  single vertical weld: product blocks it. Independent J_u {one['J_u']:.1f} mm^3, f_r,max {one['f_r_max']:.2f} N/mm, u {one['u']:.3f}.")
+# 2. A single diagonal weld under M_x: the moment about the line itself cannot be resisted.
+diag = weld([(0, 0, 100, 100)], M_x=5, F_y=0, e_x=50, e_y=50)
+Ix, Iy, Ixy = diag["I_ux"], diag["I_uy"], diag["I_uxy"]
+print(f"note  single diagonal weld, M_x 5 kN*m: I_ux {Ix:.0f}, I_uy {Iy:.0f}, I_uxy {Ixy:.0f} mm^3. The 2x2 system is singular.")
+print("      Product ran without a notice: f_r,max 2121.3 N/mm, u 2.273 (decoupled law).")
 
 # ---------------------------------------------------------------- report
 print(f"{'kind':6} {'case':26} {'symbol':14} {'expected':>13} {'independent':>13} {'rel.diff':>10} {'tol':>7}  result")
