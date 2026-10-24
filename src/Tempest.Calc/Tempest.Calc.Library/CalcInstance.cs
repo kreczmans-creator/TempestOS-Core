@@ -87,6 +87,7 @@ public sealed record CalcInstance(
         .Select(p => Guid.TryParse(p!.Reference![UpstreamPrefix.Length..], out var g) ? g : Guid.Empty)
         .Where(g => g != Guid.Empty)
         .Concat(Links.Select(l => l.Link.UpstreamId))
+        .Concat(CellLinks.Select(l => l.Link.UpstreamId))
         .Distinct()
         .ToList();
 
@@ -97,6 +98,27 @@ public sealed record CalcInstance(
         .Where(x => x.Link is not null)
         .Select(x => (x.Input, x.Link!))
         .ToList();
+
+    /// <summary>
+    /// The table cells bound to an output of another calculation (ADR-0168 amendment 2), by table symbol, zero-based row
+    /// and column key. <see cref="Links"/> is unchanged and holds top-level inputs only.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<(string Symbol, int Row, string Column, CalcLink Link)> CellLinks => Inputs
+        .Where(i => i.Rows is not null)
+        .SelectMany(i => i.Rows!.Select((row, r) => (i.Symbol, Row: r, row)))
+        .Where(x => x.row is not null)
+        .SelectMany(x => x.row.Cells
+            .Where(c => c.Value is not null)
+            .OrderBy(c => c.Key, StringComparer.Ordinal)
+            .Select(c => (x.Symbol, x.Row, Column: c.Key, Link: CalcLink.From(c.Value.Provenance))))
+        .Where(x => x.Link is not null)
+        .Select(x => (x.Symbol, x.Row, x.Column, x.Link!))
+        .ToList();
+
+    /// <summary>Whether any input or table cell is bound to another calculation's output.</summary>
+    [JsonIgnore]
+    public bool HasLinks => Links.Count > 0 || CellLinks.Count > 0;
 }
 
 /// <summary>Why an instance is stale, if it is.</summary>

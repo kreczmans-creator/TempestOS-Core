@@ -7,8 +7,8 @@ Checker: —    Checked: —
 Issued: —
 
 1. SCOPE AND METHOD
-Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin.
-Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell.
+Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
+Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell. Continuous rotary duty: ω = 2π n_L i/60; T_load = T_L/(i η); T_rms = T_load; T_pk = J_total ω/t_start + T_load (full load during the run-up, conservative); n_pk = n_L i; P_cont = T_load ω.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -23,6 +23,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   F_p | Process force opposing the move (linear) | 0 | N | default | 0 … 1000000 N
   J_L | Load inertia at the output (rotary mechanisms) | 0.5 | kg*m^2 | spec: S1-style inertia calc of the 600 mm table with fixtures: 0.5 kg·m² | 0 … 10000 kg*m^2
   T_L | Constant load torque at the output (rotary) | 0 | N*m | assumption: Sizing convention. | 0 … 100000 N*m
+  duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | point-to-point |  | default | any
   profile | Motion profile | trapezoidal |  | assumption: Sizing convention. | any
   s | Move distance (linear: m; rotary: output revolutions) | 0.25 |  | spec: Cycle specification CS-7: 90° index in 0.3 s, 0.7 s dwell | 0.0001 … 10000
   t_move | Move time | 0.3 | s | spec: Cycle specification CS-7: 90° index in 0.3 s, 0.7 s dwell | 0.01 … 3600 s
@@ -38,104 +39,105 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
 3. ASSUMPTIONS
   A1. Rigid transmission; the mechanism efficiency applies to the driving direction and is also used in the deceleration phase (conservative for peak, slightly pessimistic for RMS). (Servo-sizing practice.)
   A2. The friction force is Coulomb friction on the moved mass; viscous and breakaway friction are not modelled unless included in F_p. (Load model.)
-  A3. The S-curve profile has sine-shaped acceleration over the same acceleration time, so its peak acceleration is π/2 times the trapezoidal value. (Jerk-limited profile idealisation.)
-  A4. mechanism (Mechanism) is taken as gearbox rotary. (Sizing convention.)
-  A5. J_mech (Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling)) is taken as 0 kg*m^2. (Sizing convention.)
-  A6. T_L (Constant load torque at the output (rotary)) is taken as 0 N*m. (Sizing convention.)
-  A7. profile (Motion profile) is taken as trapezoidal. (Sizing convention.)
-  A8. SF (Safety margin on torque) is taken as 1.25. (Sizing convention.)
-  A9. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sizing convention.)
+  A3. Continuous duty: the load torque is constant at the stated speed and the motor accelerates the whole inertia linearly to speed in t_start while carrying the full load torque (conservative); the move distance, move time, acceleration fraction, dwell and profile are ignored. (Run-up idealisation for pumps and fans.)
+  A4. The S-curve profile has sine-shaped acceleration over the same acceleration time, so its peak acceleration is π/2 times the trapezoidal value. (Jerk-limited profile idealisation.)
+  A5. mechanism (Mechanism) is taken as gearbox rotary. (Sizing convention.)
+  A6. J_mech (Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling)) is taken as 0 kg*m^2. (Sizing convention.)
+  A7. T_L (Constant load torque at the output (rotary)) is taken as 0 N*m. (Sizing convention.)
+  A8. profile (Motion profile) is taken as trapezoidal. (Sizing convention.)
+  A9. SF (Safety margin on torque) is taken as 1.25. (Sizing convention.)
+  A10. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sizing convention.)
 
 4. WORKING
-  [20] k = 1 / i
+  [21] k = 1 / i
       = 1 / 10
       = 0.1
         Output radians per motor radian
-  [21] T_load = T_L / (i * eta)
+  [22] T_load = T_L / (i * eta)
       = 0 N·m / (10 × 0.85)
       = 0 N·m
         Load torque at the motor shaft
-  [22] J_refl = J_L / (i^2 * eta)
+  [23] J_refl = J_L / (i^2 * eta)
       = 0.5 kg·m² / (10^2 × 0.85)
       = 0.0058824 kg·m²
         Load inertia reflected to the motor shaft
-  [23] theta_m = s * 2 * pi * i
+  [24] theta_m = s * 2 * pi * i
       = 0.25 × 2 × π × 10
       = 15.708 rad
         Motor angle for the move
-  [24] omega_pk = theta_m / (t_move * (1 - f_acc))
+  [25] omega_pk = theta_m / (t_move * (1 - f_acc))
       = 15.708 rad / (0.3 s × (1 − 0.33333))
       = 78.54 rad/s
         Peak motor speed (trapezoid)
-  [25] a_trap = omega_pk / (f_acc * t_move)
+  [26] a_trap = omega_pk / (f_acc * t_move)
       = 78.54 rad/s / (0.33333 × 0.3 s)
       = 785.4 rad/s²
         Trapezoidal angular acceleration at the motor
-  [27] a_pk = a_trap
+  [28] a_pk = a_trap
       = 785.4 rad/s²
       = 785.4 rad/s²
         Peak acceleration
-  [28] alpha_pk = a_pk
+  [29] alpha_pk = a_pk
       = 785.4 rad/s²
       = 785.4 rad/s²
         Peak motor angular acceleration
-  [29] J_total = J_motor + J_mech + J_refl
+  [30] J_total = J_motor + J_mech + J_refl
       = 0.0005 kg·m² + 0 kg·m² + 0.0058824 kg·m²
       = 0.0063824 kg·m²
         Total inertia at the motor shaft
-  [30] T_acc = J_total * alpha_pk
+  [31] T_acc = J_total * alpha_pk
       = 0.0063824 kg·m² × 785.4 rad/s²
       = 5.0127 N·m
         Acceleration torque
-  [31] T_pk = T_acc + T_load
+  [32] T_pk = T_acc + T_load
       = 5.0127 N·m + 0 N·m
       = 5.0127 N·m
         Peak torque (accelerating against the load)
-  [32] T_dec = -T_acc + T_load
+  [33] T_dec = -T_acc + T_load
       = −5.0127 N·m + 0 N·m
       = -5.0127 N·m
         Torque during deceleration
-  [33] n_pk = omega_pk
+  [34] n_pk = omega_pk
       = 78.54 rad/s
       = 750 rpm
         Peak motor speed
-  [34] P_pk = T_pk * omega_pk
+  [35] P_pk = T_pk * omega_pk
       = 5.0127 N·m × 78.54 rad/s
       = 0.3937 kW
         Peak mechanical power
-  [35] t_acc = f_acc * t_move
+  [36] t_acc = f_acc * t_move
       = 0.33333 × 0.3 s
       = 0.1 s
         Acceleration time
-  [36] t_const = t_move - 2 * t_acc
+  [37] t_const = t_move - 2 * t_acc
       = 0.3 s − 2 × 0.1 s
       = 0.1 s
         Constant-velocity time
-  [37] t_cycle = t_move + t_dwell
+  [38] t_cycle = t_move + t_dwell
       = 0.3 s + 0.7 s
       = 1 s
         Cycle time
-  [38] T_rms = sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc) / t_cycle)
+  [39] T_rms = sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc) / t_cycle)
       = sqrt(((5.0127 N·m)^2 × 0.1 s + (0 N·m)^2 × 0.1 s + (-5.0127 N·m)^2 × 0.1 s) / 1 s)
       = 2.2417 N·m
         RMS torque over the cycle (thermal)
-  [39] J_ratio = (J_refl + J_mech) / J_motor
+  [40] J_ratio = (J_refl + J_mech) / J_motor
       = (0.0058824 kg·m² + 0 kg·m²) / 0.0005 kg·m²
       = 11.765
         Inertia ratio (load : motor)
-  [40] u_peak = SF * T_pk / T_peak
+  [41] u_peak = SF * T_pk / T_peak
       = 1.25 × 5.0127 N·m / 9 N·m
       = 0.69621
         Peak torque utilisation with safety margin
-  [41] u_rms = SF * T_rms / T_rated
+  [42] u_rms = SF * T_rms / T_rated
       = 1.25 × 2.2417 N·m / 3 N·m
       = 0.93406
         Continuous torque utilisation with safety margin
-  [42] u_speed = n_pk / n_max
+  [43] u_speed = n_pk / n_max
       = 750 rpm / 3000 rpm
       = 0.25
         Speed utilisation
-  [43] duty = T_rms / T_rated
+  [44] duty = T_rms / T_rated
       = 2.2417 N·m / 3 N·m
       = 0.74725
         Thermal duty (without margin)
@@ -169,12 +171,13 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   WARNING input.mu: mu (Friction coefficient (guide / bearing)) was not entered; the template default 0.1 is used.
   WARNING input.theta: theta (Incline from horizontal (+ moving uphill)) was not entered; the template default 0 deg is used.
   WARNING input.F_p: F_p (Process force opposing the move (linear)) was not entered; the template default 0 N is used.
+  WARNING input.duty_mode: duty_mode (Duty (point-to-point move cycle, or continuous rotary running with a run-up)) was not entered; the template default 'point-to-point' is used.
   WARNING inertia-ratio: J_motor: the inertia ratio 11.8 exceeds 10.
   WARNING overhauling: T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.0.0
+  Template: elec.motor-sizing@1.1.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 2/2
+  Known-answer cases passed: 3/3
   Test run: —

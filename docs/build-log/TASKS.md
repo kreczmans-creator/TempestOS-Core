@@ -65,6 +65,9 @@
 - [x] A-4 E4 conductor sizing, B4 U-value and room heat loss; motor-circuit pack; licensed records refuse export (`v0.26.0/addA-4-records`)
 - [x] A-5 S6 base plate (`v0.26.0/addA-5-baseplate`)
 - [ ] A7 five linked chains: integration tests + issued pack worked examples
+  - [x] A7a table-cell links; wet-heating chain; E1 continuous duty (`v0.26.0/addA-7a-cell-links`)
+  - [ ] A7b cooling, steel support, drive train to M3; five pack worked examples
+- [ ] A8-UI Desktop: open saved calculations; packs panel (create from template, check, issue)
 - [ ] Security + every colour team re-run on the delta (Addendum A sections)
 - [ ] A8 owner test pack + handover Addendum A section
 - [ ] A9 gates; STATUS final line

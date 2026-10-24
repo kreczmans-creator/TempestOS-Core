@@ -107,4 +107,146 @@ public sealed class PipeFlowTests
         Assert.Contains(r.Notices, n => n.RuleId == "velocity");
         Assert.False(r.Passed);
     }
+
+    private static CalcInputValue[] Loop(params CalcInputValue[] extra) =>
+    [
+        CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidWater), CalcInputValue.Quantity("T", 70, "degC"),
+        PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 2, "discharge")), CalcInputValue.Quantity("h_out", 0, "m"), .. extra,
+    ];
+
+    [Fact]
+    public void A_Heat_Load_Gives_The_Design_Flow_Phi_Over_Rho_Cp_DeltaT()
+    {
+        Gen.Select(Gen.Double[100, 1e6], Gen.Double[2, 40], Gen.Double[30, 90]).Sample((phi, dt, temp) =>
+        {
+            var r = Run([.. Loop(CalcInputValue.Quantity("Phi_load", phi, "W"), CalcInputValue.Quantity("dT_load", dt, "K"), CalcInputValue.Quantity("cp_load", 4186, "J/(kg*K)")), CalcInputValue.Quantity("T", temp, "degC")]);
+            Assert.False(r.IsBlocked);
+            var expected = phi / (Water.Density(temp) * 4186 * dt);
+            Assert.Equal(expected, r.OutputSi("Q_design"), expected * 1e-9);
+
+            // The same flow typed in gives the same hydraulics.
+            var typed = Run([.. Loop(CalcInputValue.Quantity("Q", expected * 3600, "m^3/h")), CalcInputValue.Quantity("T", temp, "degC")]);
+            Assert.Equal(typed.OutputSi("P_hyd"), r.OutputSi("P_hyd"), Math.Abs(typed.OutputSi("P_hyd")) * 1e-9 + 1e-15);
+        }, iter: 60);
+    }
+
+    [Fact]
+    public void A_Heat_Load_Needs_Its_Temperature_Difference_And_A_Flow_Is_Needed_Without_One()
+    {
+        var phiOnly = Run(Loop(CalcInputValue.Quantity("Phi_load", 1000, "W")));
+        Assert.True(phiOnly.IsBlocked);
+        Assert.Contains(phiOnly.Blocks, b => b.RuleId == "heat-flow" && b.Message.StartsWith("Phi_load:", StringComparison.Ordinal));
+
+        var dtOnly = Run(Loop(CalcInputValue.Quantity("dT_load", 10, "K")));
+        Assert.True(dtOnly.IsBlocked);
+
+        var neither = Run(Loop());
+        Assert.True(neither.IsBlocked);
+        Assert.Contains(neither.Blocks, b => b.RuleId == "heat-flow" && b.Message.StartsWith("Q:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_Flow_Typed_Beside_A_Heat_Load_Is_Ignored_With_A_Notice()
+    {
+        var r = Run(Loop(CalcInputValue.Quantity("Q", 50, "m^3/h"), CalcInputValue.Quantity("Phi_load", 1000, "W"), CalcInputValue.Quantity("dT_load", 10, "K")));
+        Assert.False(r.IsBlocked);
+        Assert.Contains(r.Notices, n => n.RuleId == "heat-flow-q");
+        Assert.True(r.OutputSi("Q_design") < 1e-4);
+    }
+
+    [Fact]
+    public void Shaft_Torque_Is_Hydraulic_Power_Over_Efficiency_And_Angular_Speed_And_Needs_A_Pump_Speed()
+    {
+        Gen.Select(Gen.Double[0.5, 50], Gen.Double[300, 5000], Gen.Double[0.3, 0.9]).Sample((qh, rpm, eta) =>
+        {
+            var r = Run(Loop(CalcInputValue.Quantity("Q", qh, "m^3/h"), CalcInputValue.Quantity("n_pump", rpm, "rpm"), CalcInputValue.Of("eta_pump", eta)));
+            Assert.False(r.IsBlocked);
+            var shaft = r.OutputSi("P_hyd") / eta;
+            Assert.Equal(shaft, r.OutputSi("P_shaft_design"), shaft * 1e-9);
+            var torque = shaft / (rpm * 2 * Math.PI / 60);
+            Assert.Equal(torque, r.OutputSi("T_shaft"), torque * 1e-9);
+        }, iter: 60);
+
+        var without = Run(Loop(CalcInputValue.Quantity("Q", 5, "m^3/h")));
+        Assert.DoesNotContain(without.Outputs, o => o.Symbol == "T_shaft");
+    }
+
+    [Fact]
+    public void Water_Without_A_Specific_Heat_Records_The_Assumed_Constant_And_A_Custom_Fluid_Needs_One()
+    {
+        var water = Run(Loop(CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K")));
+        Assert.False(water.IsBlocked);
+        Assert.Equal(12000 / (Water.Density(70) * 4186 * 20), water.OutputSi("Q_design"), 1e-12);
+        var step = Assert.Single(water.Steps, st => st.Symbol == "c_p");
+        Assert.Contains("c_p of water 4186 J/(kg·K) (assumed)", step.Formula, StringComparison.Ordinal);
+        Assert.Contains(water.RunAssumptions, a => a.Statement.Contains("4186", StringComparison.Ordinal));
+        Assert.DoesNotContain(water.Steps, st => st.Symbol == "cp_load");
+
+        var given = Run(Loop(CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K"), CalcInputValue.Quantity("cp_load", 4000, "J/(kg*K)")));
+        Assert.Equal(12000 / (Water.Density(70) * 4000 * 20), given.OutputSi("Q_design"), 1e-12);
+        Assert.DoesNotContain(given.RunAssumptions, a => a.Statement.Contains("4186", StringComparison.Ordinal));
+
+        var custom = Run(CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidCustom), CalcInputValue.Quantity("rho_custom", 1050, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 3, "mPa*s"),
+            CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K"), CalcInputValue.Quantity("T", 60, "degC"),
+            PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 0, 0, 0, "discharge")));
+        Assert.True(custom.IsBlocked);
+        Assert.Contains(custom.Blocks, b => b.RuleId == "cp_load" && b.Message.StartsWith("cp_load:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_Heat_Load_Without_A_Temperature_Warns()
+    {
+        CalcInputValue[] noTemperature = [CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidWater), PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 0, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 0, "m")];
+
+        var heat = Run([.. noTemperature, CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K")]);
+        Assert.False(heat.IsBlocked);
+        Assert.Contains(heat.Notices, n => n.RuleId == "heat-t" && n.Message.StartsWith("T:", StringComparison.Ordinal));
+
+        // Without a heat load the template default applies with the validator's usual notice, as before.
+        var flow = Run([.. noTemperature, CalcInputValue.Quantity("Q", 5, "m^3/h")]);
+        Assert.False(flow.IsBlocked);
+        Assert.DoesNotContain(flow.Notices, n => n.RuleId == "heat-t");
+        Assert.Contains(flow.Notices, n => n.RuleId == "input.T");
+
+        var entered = Run(Loop(CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K")));
+        Assert.DoesNotContain(entered.Notices, n => n.RuleId == "heat-t");
+    }
+
+    private static CalcInputValue[] PumpCurve() =>
+        [CalcInputValue.VectorOf("Q_pump", [0, 20, 40, 60], "m^3/h"), CalcInputValue.VectorOf("H_pump", [40, 36, 24, 4], "m")];
+
+    [Fact]
+    public void Shaft_Torque_Covers_The_Larger_Of_The_Design_Flow_And_Duty_Point_Shaft_Power()
+    {
+        Gen.Double[8, 58].Sample(qh =>
+        {
+            var r = Run(Loop([.. PumpCurve(), CalcInputValue.Quantity("Q", qh, "m^3/h"), CalcInputValue.Quantity("n_pump", 1450, "rpm"), CalcInputValue.Of("eta_pump", 0.65)]));
+            Assert.False(r.IsBlocked);
+            var design = r.OutputSi("P_shaft_design");
+            var duty = r.OutputSi("P_shaft");
+            var larger = Math.Max(design, duty);
+            Assert.Equal(larger, r.OutputSi("P_shaft_sel"), larger * 1e-9);
+            Assert.Equal(larger / (1450 * 2 * Math.PI / 60), r.OutputSi("T_shaft"), larger / (1450 * 2 * Math.PI / 60) * 1e-9);
+            Assert.Equal(1450, r.OutputSi("n_shaft") * 60 / (2 * Math.PI), 1e-6);
+        }, iter: 60);
+
+        // A small design flow against this curve runs far out on it: the duty point governs, and the sheet says so.
+        var small = Run(Loop([.. PumpCurve(), CalcInputValue.Quantity("Q", 2, "m^3/h"), CalcInputValue.Quantity("n_pump", 1450, "rpm")]));
+        Assert.True(small.OutputSi("P_shaft") > small.OutputSi("P_shaft_design"));
+        var large = Run(Loop([.. PumpCurve(), CalcInputValue.Quantity("Q", 40, "m^3/h"), CalcInputValue.Quantity("n_pump", 1450, "rpm")]));
+        Assert.True(large.OutputSi("P_shaft_design") > large.OutputSi("P_shaft"));
+        Assert.Equal(large.OutputSi("P_shaft_design"), large.OutputSi("P_shaft_sel"), 1e-9);
+        var step = Assert.Single(small.Steps, st => st.Symbol == "T_shaft");
+        Assert.Contains("larger of the design-flow and duty-point", step.Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Pump_Efficiency_Is_Entered_Once_Whether_Or_Not_There_Is_A_Pump_Curve()
+    {
+        foreach (var extra in new[] { PumpCurve(), [] })
+        {
+            var r = Run(Loop([.. extra, CalcInputValue.Quantity("Q", 20, "m^3/h"), CalcInputValue.Quantity("n_pump", 1450, "rpm")]));
+            Assert.Single(r.Steps, st => st.Symbol == "eta_pump");
+        }
+    }
 }

@@ -83,4 +83,27 @@ public sealed class SealedSystemTests
         var r = CalcRunner.Run(Sealed, Defaults().With(rooms));
         Assert.Equal(0.9375, r.OutputSi("u_emit"), 9);
     }
+
+    [Fact]
+    public void The_Flow_To_Return_Difference_And_Mean_Water_Temperature_Are_Offered()
+    {
+        // The generator keeps 30 °C ≤ return < flow ≤ 90 °C, so the run can never block: a block fails the test.
+        Gen.Select(Gen.Double[45, 90], Gen.Double[1, 15]).Sample((tf, drop) =>
+        {
+            var tr = tf - drop;
+            var r = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("t_f", tf, "degC")).With(CalcInputValue.Quantity("t_r", tr, "degC")));
+            Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+            Assert.Equal(tf - tr, r.OutputSi("dT_fr"), 1e-9);
+            Assert.Equal((tf + tr) / 2 + 273.15, r.OutputSi("t_m"), 1e-9);
+        }, iter: 60);
+
+        // At 75/65/20 the emitter mean difference is 50 K but the loop drops 10 K, and the mean water temperature is 70 °C.
+        var catalogue = CalcRunner.Run(Sealed, Defaults());
+        Assert.Equal(50, catalogue.OutputSi("dT"), 1e-9);
+        Assert.Equal(10, catalogue.OutputSi("dT_fr"), 1e-9);
+        Assert.Equal(343.15, catalogue.OutputSi("t_m"), 1e-9);
+
+        Assert.Contains(Sealed.Template.OutputPorts!, p => p is { Symbol: "dT_fr", Unit: "K" });
+        Assert.Contains(Sealed.Template.OutputPorts!, p => p is { Symbol: "t_m", Unit: "degC" });
+    }
 }

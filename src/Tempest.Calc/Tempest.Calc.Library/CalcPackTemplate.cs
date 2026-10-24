@@ -5,8 +5,13 @@ namespace Tempest.Calc.Library;
 /// <summary>One calculation of a pack template: a key the bindings use, the template id and the name it is given.</summary>
 public sealed record CalcPackStep(string Key, string TemplateId, string Name);
 
-/// <summary>One link of a pack template: output <paramref name="Output"/> of step <paramref name="FromStep"/> feeds input <paramref name="Input"/> of step <paramref name="ToStep"/>.</summary>
-public sealed record CalcPackBinding(string FromStep, string Output, string ToStep, string Input);
+/// <summary>
+/// One link of a pack template: output <paramref name="Output"/> of step <paramref name="FromStep"/> feeds input
+/// <paramref name="Input"/> of step <paramref name="ToStep"/>. When <paramref name="Row"/> (zero-based) and
+/// <paramref name="Column"/> are both set, <paramref name="Input"/> is a table and the link feeds that cell; the step must be
+/// given that row as an input, because instantiating never creates rows.
+/// </summary>
+public sealed record CalcPackBinding(string FromStep, string Output, string ToStep, string Input, int? Row = null, string? Column = null);
 
 /// <summary>
 /// A saved chain of calculations (Addendum A, L1): "Drive train", "Motor circuit", "Wet heating", "Steel support".
