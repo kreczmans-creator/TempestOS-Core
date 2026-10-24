@@ -965,7 +965,7 @@ def xrow(probe, sym, prod, ind, tol, note=""):
     ok = rel <= max(tol, 1e-6)
     if not ok:
         EXTRA_DIFFS.append((probe, sym))
-    print(f"{probe:<26}{sym:<10}{prod:>14.8g}{ind:>14.8g}{rel:>11.2e}{tol:>10.1e}  {'PASS' if ok else 'DIFF'} {note}")
+    print(f"{probe:<26}{sym:<10}{prod:>14.8g}{ind:>14.8g}{rel:>11.2e}{tol:>10.1e}  {'PASS' if ok else 'DIFF ' + note}")
 
 
 def compare_model(tag, fr_, prod, tol=1e-6):

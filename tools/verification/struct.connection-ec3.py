@@ -271,6 +271,10 @@ def extras():
     legacy88 = 480.0 * math.pi * 20 ** 2 / 4 / 1e3
     ec388 = fv_rd("8.8", "M20", gm2=1.0)
     xrows.append(("legacy calc.bolt-shear-capacity, M20 class 8.8, SF 1", "capacity (kN)", legacy88, ec388, legacy88 / ec388 - 1.0, "FAIL", "same cause"))
+    # R1 (independent review): M12 in a 2 mm clearance hole (the product default d_0 = 14 mm).
+    # EN 1993-1-8 cl. 3.6.1(5) asks 0.85 x F_v,Rd for classes 4.8, 5.8, 6.8, 8.8, 10.9 (owner to confirm).
+    fv12 = fv_rd("8.8", "M12")
+    xrows.append(("M12 8.8 default d_0 = 14 mm (2 mm clearance)", "F_v_Rd (kN)", 32.35835, 0.85 * fv12, 32.35835 / (0.85 * fv12) - 1.0, "FAIL", "P1-struct.connection-ec3-R1 (no 0.85 factor)"))
 
 
 xrows = []
