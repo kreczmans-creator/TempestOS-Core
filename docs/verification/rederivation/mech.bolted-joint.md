@@ -5,13 +5,13 @@ Verdict: MATCH WITH FINDINGS
 
 ## Method re-derived
 - Thread geometry: d_2 = d − 0.6495 P, d_3 = d − 1.2269 P, A_s = π/4 ((d_2 + d_3)/2)². Source: ISO 898-1 (2013) clause 9.1.6. Units mm, mm².
-- Preload from torque: F_M = M_A/(K d), or F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K) with D_Km = (d_w + d_h)/2. Source: Shigley 9th ed. §8-7; VDI 2230 Part 1 (2015) step R7.
-- Scatter: F_M,min = F_M/α_A. The product treats F_M as the maximum preload.
-- Bolt compliance: δ_S = 0.4d/(E A_N) + l_k/(E A_s) + 0.5d/(E A_d3) + 0.4d/(E A_N). Source: Shigley eq. 8-17; VDI 2230 step R3.
-- Member stiffness: two 30° frusta of height l_k/2, k_f from Shigley eq. 8-20, k_P = k_f/2. Units N/mm, equal to kN/m.
+- Preload from torque: F_M = M_A/(K d), or F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K) with D_Km = (d_w + d_h)/2. Source: Shigley 9th ed., preload and torque (§8-7 as cited in the spec); VDI 2230 Part 1 (2015) step R13 (tightening torque).
+- Scatter: F_M,min = F_M/α_A (steps R5 and R6). The product treats F_M as the maximum preload.
+- Bolt compliance: δ_S = 0.4d/(E A_N) + l_k/(E A_s) + 0.5d/(E A_d3) + 0.4d/(E A_N). Source: Shigley 9th ed. eq. 8-17 (number as cited in the spec); VDI 2230 step R3.
+- Member stiffness: two 30° frusta of height l_k/2, k_f from Shigley 9th ed. eq. 8-20 (as cited in the spec), k_P = k_f/2. Units N/mm, equal to kN/m.
 - Load factor and embedding: Φ = n k_S/(k_S + k_P); F_Z = f_Z k_S k_P/(k_S + k_P). Source: VDI 2230 steps R3 and R4.
-- Residual clamp F_KR = F_M,min − (1 − Φ)F_A − F_Z; maximum bolt load F_S,max = F_M + Φ F_A.
-- Equivalent stress: σ_red = √(σ_z² + 3(k_τ τ)²) with k_τ = 0.5 in service and 1.0 at assembly. τ = M_G/W_p, W_p = π/16 d_S³, d_S = (d_2 + d_3)/2.
+- Residual clamp F_KR = F_M,min − (1 − Φ)F_A − F_Z (steps R2 and R5); maximum bolt load F_S,max = F_M + Φ F_A.
+- Equivalent stress: σ_red = √(σ_z² + 3(k_τ τ)²) with k_τ = 1.0 at assembly (step R7) and 0.5 in service (step R8). τ = M_G/W_p, W_p = π/16 d_S³, d_S = (d_2 + d_3)/2.
 - Fatigue σ_a = Φ F_A/(2 A_s). Stripping m_min = S F_S,max/(0.5 π d τ_B).
 
 ## Known-answer cases
@@ -66,13 +66,13 @@ The nu_M and sigma_red_B rows fail only through the polar-modulus basis. The scr
 | Aspect | Spec / textbook | Implementation | Agrees? |
 |---|---|---|---|
 | Stress area, d_2, d_3 | ISO 898-1 §9.1.6 | Same, constants 0.6495 and 1.2269 | Yes |
-| Preload, both methods | Spec method; VDI 2230 R7 | Same; D_Km = (d_w + d_h)/2 | Yes |
+| Preload, both methods | Spec method; VDI 2230 R13 | Same; D_Km = (d_w + d_h)/2 | Yes |
 | Unit handling | mm, N·m, GPa, µm | Engine converts; outputs match script in kN, MPa | Yes |
 | Bolt stiffness | Shigley 8-17 style sum | Same four terms | Yes |
 | Frustum stiffness | Shigley 8-20 | Bolt d in numerator, d_h in the log | Partly (-03) |
-| Φ, F_Z, F_KR, F_S,max | VDI R3, R4, R7 | Same | Yes |
+| Φ, F_Z, F_KR, F_S,max | VDI R3, R4, R2 and R5 | Same | Yes |
 | Torsion modulus W_p | VDI uses d_S | Uses d_3 | No (-01) |
-| Assembly check | VDI R8, full torsion, 90 % | σ_red,M/R_p02 warns above 0.9 | Yes |
+| Assembly check | VDI R7, full torsion, 90 % | σ_red,M/R_p02 warns above 0.9 | Yes |
 | Working-state yield | 50 % torsion | Same | Yes |
 | Separated joint | Bolt carries all of F_A | Linear formula continues | No (-02) |
 | Stripping area | 0.5 π d per unit length | Same; text says "half the pitch" | Wording (-04) |
@@ -89,6 +89,7 @@ The nu_M and sigma_red_B rows fail only through the polar-modulus basis. The scr
 | P1-mech.bolted-joint-04 | Low | The assumption text says the shear area is "half the pitch per unit length". The formula uses 0.5 π d per unit length and has no pitch. | Source lines for m_min; spec limitation text repeats "half-pitch". | Reword both texts to "50 % of the circumference on the nominal diameter". |
 | P1-mech.bolted-joint-05 | Low | Residual-clamp utilisation is negative when F_KR < 0. With F_KR_req = 0 and F_KR < 0 that check passes with u = −0. | F_A = 100 kN: u_clamp −0.071 (FAIL). Same case with F_KR_req = 0: u −0, pass. F_A = 24.3 kN: u −35.2. | Report u_clamp as "not met" when F_KR ≤ 0. Do not show negative utilisation. |
 | P1-mech.bolted-joint-06 | Info | Default inputs raise the preload-yield warning (nu_M 0.969). In nut-factor mode the torsion stress still uses μ_G, which the user may not expect. | Default run output. | Optional: note both points in the worksheet. |
+| P1-mech.bolted-joint-07 | Low | Step labels in the worksheet differ from the VDI 2230:2015 numbering as I know it. F_M,min cites R2 (R5 and R6 hold the preloads). F_KR cites R7 (R2 and R5). Assembly equivalent stress cites R8 (R7). | Source strings in BoltedJointCalculator.cs, for example "VDI 2230 R7" on F_KR. | Check each R-number against the standard and correct the labels. |
 
 ## Notes for the owner's manual test
 - Hand-check the default case: F_M = 80 N·m / 1.966 mm = 40.69 kN, A_s = 84.27 mm², k_S about 3.21e5 kN/m.
