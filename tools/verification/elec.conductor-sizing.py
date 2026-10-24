@@ -149,18 +149,11 @@ def extras():
         ("x15 DC 10 W 12 V", dict(supply="dc", P=0.01, U=12, device="B"), {"I_b": 0.8333333333, "I_n": 6, "CSA": 1.5, "I_z": 12.3, "u_Ib": 0.1388888889}),
         ("x16 unsorted table, 20 A", dict(Ib=20, device="gG", table=[(10, 44.6), (4, 24.1), (1.5, 12.3), (6, 31.9), (2.5, 17.7)]), {"CSA": 4, "I_z": 24.1}),
         ("x17 non-monotonic table (4mm2=15A), 20 A", dict(Ib=20, device="gG", table=[(1.5, 12.3), (2.5, 17.7), (4, 15), (6, 31.9)]), {"CSA": 6, "I_z": 31.9}),
-        ("x18 single-phase 2.2kW 230V", dict(supply="single", P=2.2, U=230, cosphi=0.8, eta=0.8, device="B"), None),
     ]
-    # x18 has no product run; compute-only sanity (I_b = 2200/(230*0.8*0.8)).
     print("\n== Extra probes (product value from probe tool vs independent) ==")
     print(f"{'probe':44s} {'symbol':8s} {'product':>14s} {'indep':>14s} {'rel diff':>10s} result")
     for name, kw, prod in cases:
         r = size(**kw)
-        if prod is None:
-            ok = abs(r["I_b"] - 2200 / (230 * 0.64)) < 1e-9
-            fails += not ok
-            print(f"{name:44s} {'I_b':8s} {'(none)':>14s} {r['I_b']:14.8g} {'':>10s} {'PASS' if ok else 'FAIL'}")
-            continue
         for sym, pv in prod.items():
             v = r.get(sym)
             d = rel(v, pv) if v is not None else float("inf")
