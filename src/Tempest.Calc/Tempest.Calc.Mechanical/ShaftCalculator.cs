@@ -85,7 +85,7 @@ public sealed class ShaftCalculator : ICalcCalculator
         [
             new CalcAssumption("Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation, torque steady.", "Shigley 10th ed. §7-4."),
             new CalcAssumption("No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound.", "Shigley 10th ed. §7-6."),
-            new CalcAssumption("K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced.", "§A5."),
+            new CalcAssumption("K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced.", "No stress-concentration chart is shipped; the factors are entered or derived."),
             new CalcAssumption("At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises.", "Shigley 10th ed. §6-9, §7-4."),
             new CalcAssumption("Loads, sections and steps closer together than 1/200 of the shaft length share one node.", "Keeps the beam model well conditioned."),
         ],

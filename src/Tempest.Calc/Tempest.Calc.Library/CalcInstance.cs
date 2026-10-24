@@ -66,7 +66,8 @@ public sealed record CalcInstance(
     string? OutputsHash = null,
     IReadOnlyDictionary<string, string>? UpstreamHashes = null,
     string? LastRejection = null,
-    IReadOnlyList<string>? EditedBy = null)
+    IReadOnlyList<string>? EditedBy = null,
+    IReadOnlyList<string>? RepinnedBy = null)
 {
     /// <summary>
     /// Everyone who set up or changed this revision's inputs: its creator and every principal in <see cref="EditedBy"/> (kept

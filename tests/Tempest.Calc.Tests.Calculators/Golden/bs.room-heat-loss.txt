@@ -37,7 +37,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   A4. The global target U applies to built-up elements facing outside only: an internal partition or floor has no outside target, so it is checked only against a target entered on its own row. (Scope of the target check.)
   A5. Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer. (Stated limit.)
   A6. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table. (Derived.)
-  A7. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (§A5.)
+  A7. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (No table from a standard or a manufacturer is shipped.)
   A8. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: Cavity wall. (Small conventional set; enter your own where the construction needs other values.)
 
 4. WORKING

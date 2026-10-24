@@ -123,6 +123,10 @@ public sealed partial class CalcInstanceService
             if (await LinkProblemAsync(probe, entry.Template, list, cancellationToken).ConfigureAwait(false) is { } problem)
                 throw new CalcLinkRefusedException(problem);
 
+            // A new calculation has no Evidence yet, so nothing it cites can be an attachment of it.
+            if (await UnresolvedEvidenceAsync(null, null, list, cancellationToken).ConfigureAwait(false) is { } unresolved)
+                throw new CalcLinkRefusedException(unresolved);
+
             inputs = list;
         }
 
@@ -141,16 +145,20 @@ public sealed partial class CalcInstanceService
 
     /// <summary>Replaces the inputs of a draft instance and re-runs it. Refused once the instance is checked or issued.</summary>
     public Task<CalcActionResult> UpdateInputsAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, CancellationToken cancellationToken = default) =>
-        UpdateInputsCoreAsync(instanceId, inputs, null, cancellationToken);
+        UpdateInputsCoreAsync(instanceId, inputs, null, false, cancellationToken);
 
     /// <summary>
     /// As <see cref="UpdateInputsAsync(Guid, IEnumerable{CalcInputValue}, CancellationToken)"/>, for inputs built from a read made at
     /// <paramref name="expectedUpdatedAt"/>: refused, not overwritten, if the calculation was changed in between.
     /// </summary>
     public Task<CalcActionResult> UpdateInputsAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset expectedUpdatedAt, CancellationToken cancellationToken = default) =>
-        UpdateInputsCoreAsync(instanceId, inputs, expectedUpdatedAt, cancellationToken);
+        UpdateInputsCoreAsync(instanceId, inputs, expectedUpdatedAt, false, cancellationToken);
 
-    private async Task<CalcActionResult> UpdateInputsCoreAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset? expectedUpdatedAt, CancellationToken cancellationToken)
+    /// <param name="repin">
+    /// The change is only a link re-pinned to its upstream's current revision (Update to revision n): the person pressing it did not
+    /// design anything, so they are recorded in <see cref="CalcInstance.RepinnedBy"/> and not among the authors (Purple P-A-03).
+    /// </param>
+    private async Task<CalcActionResult> UpdateInputsCoreAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset? expectedUpdatedAt, bool repin, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inputs);
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
@@ -170,7 +178,7 @@ public sealed partial class CalcInstanceService
             return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
 
         if (instance.PackId is { } packId && await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false) is { Status: not CalcInstanceStatus.Draft } pack)
-            return CalcActionResult.Refused($"Calculation '{instance.Name}' belongs to pack '{pack.Title}', which is {pack.Status}; its inputs are frozen (R-17).", instance);
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' belongs to pack '{pack.Title}', which is {pack.Status}; its inputs are frozen.", instance);
 
         var newInputs = inputs.ToList();
 
@@ -182,7 +190,10 @@ public sealed partial class CalcInstanceService
         if (await LinkProblemAsync(instance, entry.Template, newInputs, cancellationToken).ConfigureAwait(false) is { } linkProblem)
             return CalcActionResult.Refused(linkProblem, instance);
 
-        var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow(), EditedBy = WithAuthors(instance.EditedBy, CurrentPrincipal()) };
+        if (await UnresolvedEvidenceAsync(instance.EvidenceId, instance.PredecessorId, newInputs, cancellationToken).ConfigureAwait(false) is { } unresolvedEvidence)
+            return CalcActionResult.Refused(unresolvedEvidence, instance);
+
+        var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow(), EditedBy = repin ? instance.EditedBy : WithAuthors(instance.EditedBy, CurrentPrincipal()), RepinnedBy = repin ? WithAuthors(instance.RepinnedBy, CurrentPrincipal()) : instance.RepinnedBy };
         updated = await RunAndSnapshotAsync(entry, updated, cancellationToken).ConfigureAwait(false);
 
         try
@@ -468,11 +479,14 @@ public sealed partial class CalcInstanceService
     /// <summary>Starts a new revision of an issued instance: the old one becomes Superseded, the new one a draft with the same inputs, under fresh Evidence.</summary>
     public Task<CalcActionResult> ReviseAsync(Guid instanceId, CancellationToken cancellationToken = default) => ReviseCoreAsync(instanceId, null, cancellationToken);
 
+    /// <summary>The same, for <see cref="UpdateLinksAsync"/>: only links were re-pinned, so the person pressing it is not an author.</summary>
+    private Task<CalcActionResult> ReviseRepinnedAsync(Guid instanceId, IReadOnlyList<CalcInputValue> inputs, CancellationToken cancellationToken) => ReviseCoreAsync(instanceId, inputs, cancellationToken, repin: true);
+
     /// <summary>
     /// The revise path; with <paramref name="inputsOverride"/> (updating links, Addendum A L1) a checked calculation may
     /// be revised too, so a checked calculation whose upstream moved on is never a dead end (ADR-0166).
     /// </summary>
-    private async Task<CalcActionResult> ReviseCoreAsync(Guid instanceId, IReadOnlyList<CalcInputValue>? inputsOverride, CancellationToken cancellationToken)
+    private async Task<CalcActionResult> ReviseCoreAsync(Guid instanceId, IReadOnlyList<CalcInputValue>? inputsOverride, CancellationToken cancellationToken, bool repin = false)
     {
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
 
@@ -545,8 +559,9 @@ public sealed partial class CalcInstanceService
 
         var next = new CalcInstance(
             id, entry.Reference, entry.ContentHash, instance.ProjectId, instance.Name, nextRevision,
-            inputsOverride ?? instance.Inputs, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, author, now, now, PredecessorId: instance.Id,
-            EditedBy: WithAuthors(instance.EditedBy, instance.CreatedBy, author));
+            inputsOverride ?? instance.Inputs, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, repin ? instance.CreatedBy : author, now, now, PredecessorId: instance.Id,
+            EditedBy: repin ? WithAuthors(instance.EditedBy, instance.CreatedBy) : WithAuthors(instance.EditedBy, instance.CreatedBy, author),
+            RepinnedBy: repin ? WithAuthors(instance.RepinnedBy, author) : instance.RepinnedBy);
         next = await RunAndSnapshotAsync(entry, next, cancellationToken).ConfigureAwait(false);
 
         // The new draft and the superseded mark on the old instance commit together; the mark changes only status and time (the store checks the rest).

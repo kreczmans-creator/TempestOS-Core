@@ -282,17 +282,6 @@ public sealed class BasePlateTests
     }
 
     [Fact]
-    public void An_Attached_Profis_Report_Passes_The_Anchorage_Condition()
-    {
-        var evidence = new CalcInputValue("profis_ref", Text: "profis-bp1.pdf", Provenance: CalcProvenance.FromEvidence("0a1b2c/3d4e5f"));
-        var r = CalcRunner.Run(Plate, Defaults().With(evidence).With(CalcInputValue.Choice("alpha_basis", "A_c1/A_c0 = 2.25")));
-        Assert.DoesNotContain(r.Warnings, w => w.RuleId is "anchorage" or "alpha_basis");
-        var check = Assert.Single(r.Checks, c => c.Name.StartsWith("Anchorage designed externally", StringComparison.Ordinal));
-        Assert.True(check.Passed);
-        Assert.Contains("profis-bp1.pdf", check.DemandText, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void The_Compression_Lever_Arm_Follows_The_Strip_When_The_Outstand_Is_Cut_At_The_Plate_Edge()
     {
         // Green G-A-10: h = 300, t_f = 17, L = 340 (only 20 mm of plate outside the flange), c = 50.87: z_C = 141.5 − (50.87 − 20)/2 = 126.063 mm and

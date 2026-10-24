@@ -38,10 +38,10 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
 3. ASSUMPTIONS
   A1. TN system, a single earth fault of negligible impedance; no motor contribution, arc fault or IT system. (Scope of the check.)
   A2. Line and protective conductors are the same material at the same temperature; R = ρ₂₀·L/S corrected by α. (Conductor data from a material record.)
-  A3. k is derived from the material constants and labelled derived; it is not read from a licensed table. (§A5.)
+  A3. k is derived from the material constants and labelled derived; it is not read from a licensed table. (Derived constants, not read from a table.)
   A4. Fuse and MCCB characteristics are points the user reads off the manufacturer's curve (log-log interpolation; no extrapolation). (No time–current table ships.)
   A5. Optional field-test value 0.8 × Z_s,max is a rule of thumb for measurements at ambient temperature. (Labelled on the sheet.)
-  A6. The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Green G-B-03.)
+  A6. The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
   A7. C_min (Voltage factor C_min) is taken as 0.95. (Minimum voltage factor.)
   A8. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Maximum voltage factor.)
   A9. theta (Conductor temperature for Z_s) is taken as 70 degC. (Thermoplastic insulation at full load.)

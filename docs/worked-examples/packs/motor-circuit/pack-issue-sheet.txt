@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 23/23
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -240,7 +240,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 07f83040d397a49f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 
@@ -287,9 +287,9 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
 
 3. ASSUMPTIONS
   A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand; with a PSU bus chosen they count at P/η_PSU, the PSU's own loss being a load row if its heat is wanted. (Load budget convention.)
-  A2. The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Green G-B-04.)
+  A2. The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Stated convention for the heat a load releases inside the panel; change h for a load that differs.)
   A3. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
-  A4. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (§A3 reference records.)
+  A4. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (Entered as reference records, which carry their source, edition and licence.)
   A5. inrush_add (Starting multiple of the additional load) is taken as 1. (Sheet default value; no project figure given.)
   A6. U_3ph (Three-phase line voltage) is taken as 400 V. (Sheet default value; no project figure given.)
   A7. U_1ph (Single-phase voltage) is taken as 230 V. (Sheet default value; no project figure given.)
@@ -394,10 +394,10 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
 
 8. VERIFICATION
   Template: elec.load-budget@1.2.0
-  Content hash: 82b6c9bbcbb22a37
+  Content hash: dc7b6b8e4454e8eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 
@@ -458,7 +458,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   ampacity[5] |  | CSA = 10 mm^2; I_t = 44.6 A |  |  | 
 
 3. ASSUMPTIONS
-  A1. Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator. (§A5.)
+  A1. Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator. (No table from a standard or a manufacturer is shipped.)
   A2. The capacities in the table are for the installation method stated; the method key is descriptive and is not interpreted. (Records carry their source and edition.)
   A3. A gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671 (installation context); an IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. (BS 7671 reg. 433.1.201; IEC 60269-1.)
   A4. The ambient, grouping and insulation factors are applied as a product; C_g is not looked up from the number of grouped circuits. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
@@ -556,10 +556,10 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
 
 8. VERIFICATION
   Template: elec.conductor-sizing@1.1.0
-  Content hash: 57d3764cd484b294
+  Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 
@@ -661,7 +661,7 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   Content hash: 3ed2f07610b34189
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 
@@ -706,10 +706,10 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
 3. ASSUMPTIONS
   A1. TN system, a single earth fault of negligible impedance; no motor contribution, arc fault or IT system. (Scope of the check.)
   A2. Line and protective conductors are the same material at the same temperature; R = ρ₂₀·L/S corrected by α. (Conductor data from a material record.)
-  A3. k is derived from the material constants and labelled derived; it is not read from a licensed table. (§A5.)
+  A3. k is derived from the material constants and labelled derived; it is not read from a licensed table. (Derived constants, not read from a table.)
   A4. Fuse and MCCB characteristics are points the user reads off the manufacturer's curve (log-log interpolation; no extrapolation). (No time–current table ships.)
   A5. Optional field-test value 0.8 × Z_s,max is a rule of thumb for measurements at ambient temperature. (Labelled on the sheet.)
-  A6. The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Green G-B-03.)
+  A6. The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
   A7. C_min (Voltage factor C_min) is taken as 0.95. (Sheet default value; no project figure given.)
   A8. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Sheet default value; no project figure given.)
   A9. theta (Conductor temperature for Z_s) is taken as 70 degC. (Sheet default value; no project figure given.)
@@ -799,10 +799,10 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
 
 8. VERIFICATION
   Template: elec.fault-protection@1.1.0
-  Content hash: 6b819300dd53bfaf
+  Content hash: d3ade76a1accaba7
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test
 
 
@@ -947,5 +947,5 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   Content hash: 48cdd32546406349
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

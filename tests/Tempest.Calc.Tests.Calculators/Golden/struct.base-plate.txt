@@ -62,7 +62,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   A6. The friction resistance counts only the compression, C_f,d·max(N_Ed, 0); a column in net tension has none. Anchor bolts share shear equally, with their holes assumed no larger than the standard clearance (oversized or slotted holes are outside this sheet). (EN 1993-1-8 cl. 6.2.2.)
   A7. The bearing outstand c is cut back where it would pass the plate edge; the web and the column interior keep the full c. The CHS compression side is half of the annular bearing area, with its centroid as lever arm (an approximation). (Conservative against an uncut c.)
   A8. The compression T-stub is checked against the flange area alone as soon as M_Ed > 0, while at M_Ed = 0 the whole footprint (web included) resists, so the compression check jumps at M_Ed = 0⁺ (conservative). (Limitation.)
-  A9. Partial factors and the friction coefficient come from the records in use (γ_c, α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used); the values shown default to the EN recommended and UK values. (§A5 small factor set.)
+  A9. Partial factors and the friction coefficient come from the records in use (γ_c, α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used); the values shown default to the EN recommended and UK values. (A small set of factors only; no table from a standard is shipped.)
   A10. β_j = 2/3 assumes the grout is at least 0.2·f_ck and no thicker than 0.2 × the smaller plate dimension; enter the grout strength and thickness to check it. (EN 1993-1-8 cl. 6.2.5.)
 
 4. WORKING
@@ -253,5 +253,5 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   WARNING anchorage: profis_ref: not attached. The anchorage is designed outside this sheet; attach the Hilti PROFIS report as Evidence and enter its reference.
 
 8. VERIFICATION
-  Template: struct.base-plate@1.1.0
+  Template: struct.base-plate@1.1.1
   Known-answer cases passed: 9/9

@@ -31,7 +31,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
 3. ASSUMPTIONS
   A1. Single phase on both sides (except the C_r = 0 arrangement), constant properties, no heat loss to surroundings. (Incropera 7th ed. §11.3–11.4.)
   A2. The crossflow both-unmixed effectiveness is the published approximate correlation, flagged on the sheet. (Incropera 7th ed. Table 11.3.)
-  A3. Specific heats are user records (or B2 for air) at the mean temperature of each stream. (§A3 reference records.)
+  A3. Specific heats are user records (or B2 for air) at the mean temperature of each stream. (Entered as reference records, which carry their source, edition and licence.)
   A4. arrangement (Flow arrangement) is taken as counterflow. (Plate exchanger treated as pure counterflow.)
   A5. mode (Mode) is taken as sizing (given duty). (Sizing a new exchanger.)
   A6. cp_h (Hot-side specific heat) is taken as 4190 J/(kg*K). (Water at about 70 °C.)

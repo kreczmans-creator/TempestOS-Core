@@ -32,7 +32,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   s_0_req | Required static safety factor | 1 |  | manual | 0.5 … 4
 
 3. ASSUMPTIONS
-  A1. Ratings C and C₀, factors X, Y, e, X₀, Y₀ and a_ISO are the manufacturer's values for the bearing, entered as reference records. (No catalogue table ships with TempestOS (§A5).)
+  A1. Ratings C and C₀, factors X, Y, e, X₀, Y₀ and a_ISO are the manufacturer's values for the bearing, entered as reference records. (No catalogue table ships with TempestOS.)
   A2. a₁ uses the ISO 281:2007 Weibull form (0.64 at 95 %, 0.25 at 99 %); ISO 281:1990 gave 0.62 and 0.21. (Edition stated on the sheet.)
   A3. Loads are steady within each duty step; speed is constant. (Duty steps weighted by share of revolutions.)
 

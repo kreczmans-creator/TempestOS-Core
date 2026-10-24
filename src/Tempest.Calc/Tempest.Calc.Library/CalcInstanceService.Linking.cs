@@ -246,8 +246,8 @@ public sealed partial class CalcInstanceService
         }
 
         return instance.Status == CalcInstanceStatus.Draft
-            ? await UpdateInputsAsync(instanceId, inputs, instance.UpdatedAt, cancellationToken).ConfigureAwait(false)
-            : await ReviseCoreAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false);
+            ? await UpdateInputsCoreAsync(instanceId, inputs, instance.UpdatedAt, true, cancellationToken).ConfigureAwait(false)
+            : await ReviseRepinnedAsync(instanceId, inputs, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

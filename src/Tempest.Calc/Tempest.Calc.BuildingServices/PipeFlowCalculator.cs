@@ -238,7 +238,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("segments", "segments: at least one pipe segment is needed.");
+            c.Block("segments", c.EnterRows("segments"));
             return;
         }
 

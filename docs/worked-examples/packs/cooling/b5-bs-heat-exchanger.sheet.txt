@@ -31,7 +31,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
 3. ASSUMPTIONS
   A1. Single phase on both sides (except the C_r = 0 arrangement), constant properties, no heat loss to surroundings. (Incropera 7th ed. §11.3–11.4.)
   A2. The crossflow both-unmixed effectiveness is the published approximate correlation, flagged on the sheet. (Incropera 7th ed. Table 11.3.)
-  A3. Specific heats are user records (or B2 for air) at the mean temperature of each stream. (§A3 reference records.)
+  A3. Specific heats are user records (or B2 for air) at the mean temperature of each stream. (Entered as reference records, which carry their source, edition and licence.)
   A4. const_side (Which side is at constant temperature (used only by the C_r = 0 arrangement)) is taken as hot side at constant temperature (e.g. condensing vapour). (Sheet default value; no project figure given.)
   A5. dT_min (Minimum approach temperature difference) is taken as 2 K. (Sheet default value; no project figure given.)
 
@@ -138,8 +138,8 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
 
 8. VERIFICATION
   Template: bs.heat-exchanger@1.2.0
-  Content hash: 42ff33e576c8f734
+  Content hash: d4c992a2cd44e8bc
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

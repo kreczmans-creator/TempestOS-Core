@@ -55,7 +55,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm^2 | link: Holding-down bolts rev A · A_s | 50 … 1500 mm^2
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: cf8df750f47945c5b6717aaf70a43cc2/2012062f192f423585278bb5425b6df5 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: a38af89eacbd4dd9ac075bf1c2f4a1b3/ad97b249fac64e53aa86e595a35afd48 | any
 
 3. ASSUMPTIONS
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -66,7 +66,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   A6. The friction resistance counts only the compression, C_f,d·max(N_Ed, 0); a column in net tension has none. Anchor bolts share shear equally, with their holes assumed no larger than the standard clearance (oversized or slotted holes are outside this sheet). (EN 1993-1-8 cl. 6.2.2.)
   A7. The bearing outstand c is cut back where it would pass the plate edge; the web and the column interior keep the full c. The CHS compression side is half of the annular bearing area, with its centroid as lever arm (an approximation). (Conservative against an uncut c.)
   A8. The compression T-stub is checked against the flange area alone as soon as M_Ed > 0, while at M_Ed = 0 the whole footprint (web included) resists, so the compression check jumps at M_Ed = 0⁺ (conservative). (Limitation.)
-  A9. Partial factors and the friction coefficient come from the records in use (γ_c, α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used); the values shown default to the EN recommended and UK values. (§A5 small factor set.)
+  A9. Partial factors and the friction coefficient come from the records in use (γ_c, α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used); the values shown default to the EN recommended and UK values. (A small set of factors only; no table from a standard is shipped.)
   A10. t (Wall thickness (RHS and CHS)) is taken as 10 mm. (Sheet default value; no project figure given.)
   A11. D (Outside diameter (CHS)) is taken as 220 mm. (Sheet default value; no project figure given.)
   A12. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
@@ -263,15 +263,15 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   PASS  Compression flange bearing: u_C = 0.4467 vs u_C ≤ 1  utilisation 0.447  « EN 1993-1-8 cl. 6.2.6.9, 6.2.6.10
   PASS  Shear: friction plus anchor bolts: u_V = 0.031045 vs u_V ≤ 1  utilisation 0.031  « EN 1993-1-8 cl. 6.2.2
   PASS  Concrete bearing under the axial force: u_N = 0.029413 vs u_N ≤ 1  utilisation 0.0294  « EN 1993-1-8 cl. 6.2.8.2, 6.2.5
-  PASS  Anchorage designed externally (PROFIS report attached as Evidence): PROFIS report PROFIS-BP1-PLACEHOLDER.txt attached vs bolt tension 88.599 kN and shear 0 kN per anchor designed in PROFIS  utilisation 0
+  PASS  Anchorage designed externally (PROFIS report attached as Evidence): external report attached: PROFIS-BP1-PLACEHOLDER.txt vs bolt tension 88.599 kN and shear 0 kN per anchor designed in PROFIS  utilisation 0
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: struct.base-plate@1.1.0
-  Content hash: ceb71fd8f23f78af
+  Template: struct.base-plate@1.1.1
+  Content hash: 6790007d3e618b27
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

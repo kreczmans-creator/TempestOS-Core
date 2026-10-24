@@ -69,8 +69,8 @@ public sealed class ConnectionCalculator : ICalcCalculator
         [
             new CalcAssumption("Static loading; category A (bearing type) shear and category D (non-preloaded) tension; no slip-resistant joints or moment end plates.", "Scope of S4."),
             new CalcAssumption("Bearing is taken at the worst of an end bolt and an inner bolt, and at an edge bolt across the load (k₁ with e₂ and p₂).", "Conservative for every bolt in the group."),
-            new CalcAssumption("Spacing minima (Table 3.3) and γ_M factors are entered from a National Annex record; the values shown default to EN 1993-1-8 recommended.", "§A5 small factor set."),
-            new CalcAssumption("Group forces come from M3 and weld forces per length from M6 by link.", "§A6 S4 links."),
+            new CalcAssumption("Spacing minima (Table 3.3) and γ_M factors are entered from a National Annex record; the values shown default to EN 1993-1-8 recommended.", "A small set of factors only; no table from a standard is shipped."),
+            new CalcAssumption("Group forces come from M3 and weld forces per length from M6 by link.", "Group forces and weld forces are linked from the bolt-group and weld-group calculations."),
         ],
         [
             new CalcClauseRef("EN 1993-1-8:2005", "cl. 3.5, Table 3.3", "Positioning of holes for bolts"),

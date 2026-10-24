@@ -53,7 +53,7 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
 3. ASSUMPTIONS
   A1. Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation, torque steady. (Shigley 10th ed. §7-4.)
   A2. No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound. (Shigley 10th ed. §7-6.)
-  A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (§A5.)
+  A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (No stress-concentration chart is shipped; the factors are entered or derived.)
   A4. At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises. (Shigley 10th ed. §6-9, §7-4.)
   A5. Loads, sections and steps closer together than 1/200 of the shaft length share one node. (Keeps the beam model well conditioned.)
   A6. sections (Sections to check) is taken as 4 row(s). (Shoulders r/d ≈ 0.05; keyseat at the pinion (K_t 2.14, K_ts 3.0); q from the Neuber fit.)

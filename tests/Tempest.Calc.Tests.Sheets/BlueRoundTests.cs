@@ -93,24 +93,86 @@ public sealed class BlueRoundTests
         Assert.Null(back.Find("segments"));
     }
 
-    [Fact]
-    public void B_A_05_A_Table_With_Withheld_Rows_Stays_Withheld_On_Import()
-    {
-        var withheld = new CalcInputSet([
-            new CalcInputValue("segments", Provenance: new CalcProvenance(CalcProvenanceKind.Reference, $"record:{Guid.NewGuid():N}@1 · {CalcCsv.WithheldMarker}", "2018")),
-            new CalcInputValue("gap", Provenance: new CalcProvenance(CalcProvenanceKind.Reference, $"record:{Guid.NewGuid():N}@1 · {CalcCsv.WithheldMarker}", "2018")),
-        ]);
+    private static CalcProvenance WithheldPin() => new(CalcProvenanceKind.Reference, $"record:{Guid.NewGuid():N}@1 · {CalcCsv.WithheldMarker}", "2018");
 
-        var csv = CalcCsv.ExportInputs(Template, withheld);
+    [Fact]
+    public void P_A_01_A_Withheld_Scalar_Is_Refused_On_Import_Not_Replaced_By_The_Default()
+    {
+        var csv = CalcCsv.ExportInputs(Template, new CalcInputSet([new CalcInputValue("gap", Provenance: WithheldPin())]));
         var (back, notices) = CalcCsv.ImportInputs(Template, csv);
 
-        Assert.Null(back.Find("segments"));
         Assert.Null(back.Find("gap"));
-        Assert.Equal(2, notices.Count(n => n.Severity == CalcNoticeSeverity.Warning && n.Message.Contains("withheld", StringComparison.Ordinal)));
+        var block = Assert.Single(notices, n => n.Severity == CalcNoticeSeverity.Block);
+        Assert.Contains("gap", block.Message, StringComparison.Ordinal);
+        Assert.Contains("apply the record again", block.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void P_A_01_A_Withheld_Table_Stays_Withheld_And_The_Calculation_Is_Blocked_Not_Run_On_Defaults()
+    {
+        var csv = CalcCsv.ExportInputs(Template, new CalcInputSet([new CalcInputValue("segments", Provenance: WithheldPin())]));
+        var (back, notices) = CalcCsv.ImportInputs(Template, csv);
+
+        // The table comes back as an empty value carrying its pin, so a run (or the form's carried table) cannot fall back on rows nobody entered.
+        Assert.Null(back.Find("segments")!.Rows);
+        Assert.True(CalcCsv.IsWithheld(back.Find("segments")!.Provenance));
+        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Warning && n.Message.Contains("withheld", StringComparison.Ordinal));
         Assert.DoesNotContain(notices, n => n.Severity == CalcNoticeSeverity.Block);
 
-        // Run on what came back, the calculation is blocked (the table is needed), not computed without it.
-        Assert.True(CalcRunner.Run(Calculator, back).IsBlocked);
+        var result = CalcRunner.Run(Calculator, back);
+        Assert.True(result.IsBlocked);
+        Assert.Contains(result.Blocks, b => b.Message.Contains("segments", StringComparison.Ordinal) && b.Message.Contains("apply the record again", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void P_A_01_A_Withheld_Scalar_In_A_Set_That_Is_Run_Directly_Is_Blocked_Not_Defaulted()
+    {
+        var inputs = new CalcInputSet([SegmentTableCalculator.Segments((10, "a")), new CalcInputValue("gap", Provenance: WithheldPin())]);
+        var result = CalcRunner.Run(Calculator, inputs);
+
+        Assert.True(result.IsBlocked);
+        Assert.Contains(result.Blocks, b => b.Message.StartsWith("gap:", StringComparison.Ordinal) && b.Message.Contains("apply the record again", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void P_A_01_A_Withheld_Scalar_In_A_JSON_Import_Is_Refused_Too()
+    {
+        var json = CalcInputJson.Write(new CalcInputSet([new CalcInputValue("gap", Provenance: WithheldPin())]));
+        var (back, notices) = CalcInputJson.Read(json, Template);
+
+        Assert.Empty(back.Values);
+        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith("gap:", StringComparison.Ordinal) && n.Message.Contains("apply the record again", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("yes", true)]
+    [InlineData("YES", true)]
+    [InlineData("No", false)]
+    [InlineData("TRUE", true)]
+    [InlineData("false", false)]
+    [InlineData("1", true)]
+    public void B_A_20_A_Yes_No_Given_As_Text_Is_Accepted_In_JSON_And_CSV(string text, bool expected)
+    {
+        var json = "[{\"Symbol\":\"slender\",\"Flag\":\"" + text + "\"},{\"Symbol\":\"rows\",\"Rows\":[{\"Cells\":{\"on\":{\"Flag\":\"" + text + "\"}}}]}]";
+        var (back, notices) = CalcInputJson.Read(json);
+        Assert.Empty(notices);
+        Assert.Equal(expected, back.Find("slender")!.Flag);
+        Assert.Equal(expected, back.Find("rows")!.Rows![0].Get("on")!.Flag);
+
+        var csv = $"symbol,value,unit,provenance,reference,revision\nsegments\nsegments[1]\nsegments[1].l,5,mm\nsegments[1].on,{text}\n";
+        var (fromCsv, csvNotices) = CalcCsv.ImportInputs(Template, csv);
+        Assert.Empty(csvNotices);
+        Assert.Equal(expected, fromCsv.Find("segments")!.Rows![0].Get("on")!.Flag);
+    }
+
+    [Fact]
+    public void B_A_20_Something_That_Is_Not_Yes_Or_No_Is_Refused_Rather_Than_Read_As_No()
+    {
+        var (_, notices) = CalcCsv.ImportInputs(Template, "symbol,value\nsegments[1].on,maybe\n");
+        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("yes or no", StringComparison.Ordinal));
+
+        var (_, jsonNotices) = CalcInputJson.Read("""[{"Symbol":"slender","Flag":"maybe"}]""");
+        Assert.Contains(jsonNotices, n => n.Severity == CalcNoticeSeverity.Block);
     }
 
     [Fact]

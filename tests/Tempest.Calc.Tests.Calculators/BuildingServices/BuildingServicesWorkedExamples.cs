@@ -135,7 +135,7 @@ public static class BuildingServicesWorkedExamples
             new CalcReferenceSource("Analytic (characteristic equation; Kell 1975 density; vessel relation)", null, "Five rooms with their existing radiators re-rated from ΔT 50 K to 55/45/21 °C; 12 L vessel at 7 m static"),
             new CalcInputSet(
             [
-                SealedSystemCalculator.Rooms(("Lounge", 1800, 3600, 12), ("Kitchen", 1100, 2200, 8), ("Bed 1", 900, 1800, 7), ("Bed 2", 700, 1400, 5), ("Bathroom", 600, 1100, 4)) with { Provenance = CalcProvenance.FromEvidence("Room heat loss calculation (B4) and radiator survey") },
+                SealedSystemCalculator.Rooms(("Lounge", 1800, 3600, 12), ("Kitchen", 1100, 2200, 8), ("Bed 1", 900, 1800, 7), ("Bed 2", 700, 1400, 5), ("Bathroom", 600, 1100, 4)) with { Provenance = CalcProvenance.Specification("Room heat loss calculation (B4) and radiator survey") },
                 CalcInputValue.Quantity("t_f", 55, "degC", CalcProvenance.Specification("Heat pump design flow temperature")),
                 CalcInputValue.Quantity("t_r", 45, "degC", CalcProvenance.Specification("Heat pump design return temperature")),
                 CalcInputValue.Quantity("t_i", 21, "degC", CalcProvenance.Specification("Living-room design temperature")),
@@ -149,7 +149,7 @@ public static class BuildingServicesWorkedExamples
                 CalcInputValue.Quantity("p_margin", 0.3, "bar", CalcProvenance.Assumed("Usual margin over static head.")),
                 CalcInputValue.Quantity("p_f", 2.5, "bar", CalcProvenance.Assumed("0.5 bar below the safety valve.")),
                 CalcInputValue.Quantity("p_prv", 3, "bar", CalcProvenance.Specification("Heat pump safety valve")),
-                CalcInputValue.Quantity("V_vessel", 12, "L", CalcProvenance.FromEvidence("Site survey: existing 12 L vessel")),
+                CalcInputValue.Quantity("V_vessel", 12, "L", CalcProvenance.Specification("Site survey: existing 12 L vessel")),
             ]),
             [new CalcExpectedValue("f_dT", 0.4925569, "", 1e-6), new CalcExpectedValue("R1", 3654.400, "W", 1e-6), new CalcExpectedValue("u_emit", 1.107394, "", 1e-6), new CalcExpectedValue("V_s", 91, "L", 1e-9), new CalcExpectedValue("V_e", 3.531184, "L", 1e-6)],
             "At 55/45 °C with rooms at 21 °C the radiators give 49 % of their catalogue output. The lounge, kitchen and bedrooms fall 1.5 % short and the bathroom 11 % short (utilisation 1.107), so the check fails and those radiators need upsizing. The 91 L system needs a 3.5 L vessel, so the existing 12 L vessel is ample.",

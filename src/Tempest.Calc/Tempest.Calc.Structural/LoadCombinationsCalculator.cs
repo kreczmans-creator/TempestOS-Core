@@ -80,7 +80,7 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
         [
             new CalcAssumption("One scalar action effect; every action's characteristic value is its contribution to that effect, with sign.", "Linear superposition (EN 1990 cl. 6.3.1 representative values)."),
             new CalcAssumption("Buildings only (Annex A1); no bridges, fatigue or seismic combinations.", "EN 1990 Annex A1 scope."),
-            new CalcAssumption("Without a ψ record the EN 1990 Annex A1 recommended values are used, labelled on the sheet; the UK National Annex (NA.A1.2(A)–(C)) values come from a user record.", "§A5: no NA table ships."),
+            new CalcAssumption("Without a ψ record the EN 1990 Annex A1 recommended values are used, labelled on the sheet; the UK National Annex (NA.A1.2(A)–(C)) values come from a user record.", "No National Annex table is shipped."),
             new CalcAssumption("Each permanent action takes γ_G,sup or γ_G,inf by whether it adds to or opposes the effect sought; for EQU single-source checks, enter a source's permanent actions as one row.", "EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions."),
         ],
         [
@@ -159,7 +159,7 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("no-actions", "actions: enter at least one action.");
+            c.Block("no-actions", c.EnterRows("actions"));
             return;
         }
 

@@ -41,9 +41,9 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
 
 3. ASSUMPTIONS
   A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand; with a PSU bus chosen they count at P/η_PSU, the PSU's own loss being a load row if its heat is wanted. (Load budget convention.)
-  A2. The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Green G-B-04.)
+  A2. The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Stated convention for the heat a load releases inside the panel; change h for a load that differs.)
   A3. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
-  A4. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (§A3 reference records.)
+  A4. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (Entered as reference records, which carry their source, edition and licence.)
   A5. inrush_add (Starting multiple of the additional load) is taken as 1. (Sheet default value; no project figure given.)
   A6. U_3ph (Three-phase line voltage) is taken as 400 V. (Sheet default value; no project figure given.)
   A7. U_1ph (Single-phase voltage) is taken as 230 V. (Sheet default value; no project figure given.)
@@ -148,8 +148,8 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
 
 8. VERIFICATION
   Template: elec.load-budget@1.2.0
-  Content hash: 82b6c9bbcbb22a37
+  Content hash: dc7b6b8e4454e8eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

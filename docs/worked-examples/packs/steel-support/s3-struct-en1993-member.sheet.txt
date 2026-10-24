@@ -243,5 +243,5 @@ N_pl,Rd = A f_y/γ_M0; M_c,Rd = W f_y/γ_M0 with W = W_pl (class 1–2) or W_el 
   Content hash: 7e45c53b9cd8fa25
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

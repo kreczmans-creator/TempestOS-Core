@@ -67,7 +67,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
                 [Welds((0, -50, 100, -50), (0, 50, 100, 50)), Q("F_y", 10, "kN"), Q("e_x", 50, "mm"), Q("e_y", 0, "mm"), Q("M_x", 5, "kN*m")],
                 [new CalcExpectedValue("I_ux", 500000, "mm^3", 1e-9), new CalcExpectedValue("f_r_max", 502.4938, "N/mm", 1e-6), new CalcExpectedValue("s_req", 3.230640, "mm", 1e-5)]),
             new CalcTestCase("ka-l-group-bending", "150 × 50 L-shaped weld group in out-of-plane bending: the product moment matters",
-                new CalcReferenceSource("Analytic (unsymmetric bending of a line group; recomputed in python3 by solving the moment equilibrium of f = a·x′ + b·y′)", null, "welds (0,0)–(150,0) and (0,0)–(0,50): centroid (56.25, 6.25) mm; I_ux = 33 854.17, I_uy = 492 187.5, I_uxy = −70 312.5 mm³; M_x = 1 kN·m gives f = 1500 N/mm at the far end of the long weld (the symmetric-axes form M·y′/I_ux would give 1292 N/mm)"),
+                new CalcReferenceSource("Analytic (unsymmetric bending of a line group; recomputed in python3 by solving the moment equilibrium of f = a·x′ + b·y′)", null, "welds (0,0)–(150,0) and (0,0)–(0,50): centroid (56.25, 6.25) mm; I_ux = 33 854.17, I_uy = 492 187.5, I_uxy = −70 312.5 mm³; M_x = 1 kN·m gives f = 1500 N/mm at (0, 50), the free end of the short weld (the long weld's far end carries 300 N/mm; the symmetric-axes form M·y′/I_ux would give 1292 N/mm)"),
                 [Welds((0, 0, 150, 0), (0, 0, 0, 50)), Q("F_y", 0, "kN"), Q("M_x", 1, "kN*m")],
                 [new CalcExpectedValue("I_ux", 33854.16667, "mm^3", 1e-9), new CalcExpectedValue("I_uy", 492187.5, "mm^3", 1e-9), new CalcExpectedValue("I_uxy", -70312.5, "mm^3", 1e-9), new CalcExpectedValue("f_r_max", 1500, "N/mm", 1e-9)]),
         ],
@@ -96,7 +96,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
 
         if (lines.Count == 0)
         {
-            c.Block("few-welds", "welds: enter at least one weld of non-zero length.");
+            c.Block("few-welds", c.EnterRows("welds").TrimEnd('.') + "; every weld needs a length above zero.");
             return;
         }
 

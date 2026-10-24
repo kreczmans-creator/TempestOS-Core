@@ -14,7 +14,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  rooms | Rooms and emitters | 5 row(s) |  | evidence: Room heat loss calculation (B4) and radiator survey | any
+  rooms | Rooms and emitters | 5 row(s) |  | spec: Room heat loss calculation (B4) and radiator survey | any
   rooms[1] |  | name = Lounge; Phi = 1800 W; Phi50 = 3600 W; V_em = 12 L |  |  | 
   rooms[2] |  | name = Kitchen; Phi = 1100 W; Phi50 = 2200 W; V_em = 8 L |  |  | 
   rooms[3] |  | name = Bed 1; Phi = 900 W; Phi50 = 1800 W; V_em = 7 L |  |  | 
@@ -33,7 +33,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   p_margin | Pre-charge margin over static head | 0.3 | bar | assumption: Usual margin over static head. | 0 … 1 bar
   p_f | Final (maximum working) pressure, gauge | 2.5 | bar | assumption: 0.5 bar below the safety valve. | 0.5 … 6 bar
   p_prv | Safety valve setting, gauge | 3 | bar | spec: Heat pump safety valve | 1.5 … 6 bar
-  V_vessel | Selected vessel volume | 12 | L | evidence: Site survey: existing 12 L vessel | 1 … 5000 L
+  V_vessel | Selected vessel volume | 12 | L | spec: Site survey: existing 12 L vessel | 1 … 5000 L
 
 3. ASSUMPTIONS
   A1. Closed LTHW system below 100 °C; emitter output follows Φ50·(ΔT/50)^n with the manufacturer's n. (Catalogue ratings at 75/65/20 °C.)

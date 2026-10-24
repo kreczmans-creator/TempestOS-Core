@@ -68,9 +68,9 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         ],
         [
             new CalcAssumption("Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand; with a PSU bus chosen they count at P/η_PSU, the PSU's own loss being a load row if its heat is wanted.", "Load budget convention."),
-            new CalcAssumption("The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0).", "Green G-B-04."),
+            new CalcAssumption("The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0).", "Stated convention for the heat a load releases inside the panel; change h for a load that differs."),
             new CalcAssumption("Apparent powers are added arithmetically, which is conservative when power factors differ.", "Upper bound on S."),
-            new CalcAssumption("PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records.", "§A3 reference records."),
+            new CalcAssumption("PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records.", "Entered as reference records, which carry their source, edition and licence."),
         ],
         [
             new CalcClauseRef("Linden's Handbook of Batteries", "5th ed., Ch. 3–4", "Battery sizing and the Peukert relation"),
@@ -144,7 +144,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
 
         if (rows.Count == 0 && !(c.Si("P_add") > 0))
         {
-            c.Block("no-loads", "loads: enter at least one load (or an additional linked load).");
+            c.Block("no-loads", c.EnterRows("loads").TrimEnd('.') + ", or link an additional load (P_add).");
             return;
         }
 

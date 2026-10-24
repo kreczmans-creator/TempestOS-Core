@@ -16,8 +16,24 @@ public static class CalcCsv
     public const int MaxRows = 10_000;
     public const int MaxFieldLength = 1_000;
 
-    /// <summary>The text a withheld (licensed) value's provenance carries; an import leaves such a value out.</summary>
+    /// <summary>The text a withheld (licensed) value's provenance carries; such a value is not in the file and cannot be run until the record is applied again.</summary>
     public const string WithheldMarker = "licensed value withheld";
+
+    /// <summary>Whether a provenance says the value it belongs to was withheld on export (a licensed record).</summary>
+    public static bool IsWithheld(CalcProvenance? provenance) =>
+        provenance?.Reference?.Contains(WithheldMarker, StringComparison.Ordinal) == true;
+
+    /// <summary>What to tell the user about a value that was withheld on export: where it came from and what to do.</summary>
+    public static string WithheldMessage(string symbol) =>
+        $"{symbol}: this value was withheld on export (licensed record) and is not in the file; apply the record again, or enter the value from your own copy.";
+
+    /// <summary>A yes/no given as text: yes, no, true, false, 1 or 0 in any case; <see langword="null"/> for anything else.</summary>
+    public static bool? ParseFlag(string text) => text.Trim().ToLowerInvariant() switch
+    {
+        "true" or "yes" or "1" => true,
+        "false" or "no" or "0" => false,
+        _ => null,
+    };
 
     /// <summary>
     /// Writes inputs as <c>symbol,value,unit,provenance,reference,revision</c>. A table is written as its own row (the table's
@@ -191,10 +207,11 @@ public static class CalcCsv
             var unit = Cell(row, "unit");
             var provenance = ReadProvenance(Cell(row, "provenance"), Cell(row, "reference"), Cell(row, "revision"));
 
-            // A value withheld on export (a licensed record) comes back withheld: it is left out, not read as a missing number.
-            if (raw.Length == 0 && spec.Kind != CalcInputKind.Table && provenance?.Reference?.Contains(WithheldMarker, StringComparison.Ordinal) == true)
+            // A value withheld on export (a licensed record) is not in the file. It must not come back as the template default
+            // (that would size on a value nobody entered), so the import of it is refused until the record is applied again.
+            if (raw.Length == 0 && spec.Kind != CalcInputKind.Table && IsWithheld(provenance))
             {
-                notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"Row {r + 1}: {symbol} was withheld on export (licensed record) and is not in the file; apply the record or enter it from your own copy."));
+                notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {r + 1}: " + WithheldMessage(symbol)));
                 continue;
             }
 
@@ -217,7 +234,13 @@ public static class CalcCsv
                     break;
 
                 case CalcInputKind.Boolean:
-                    set.Set(new CalcInputValue(symbol, Flag: raw.Equals("true", StringComparison.OrdinalIgnoreCase) || raw == "1" || raw.Equals("yes", StringComparison.OrdinalIgnoreCase), Provenance: provenance));
+                    if (raw.Length > 0 && ParseFlag(raw) is null)
+                    {
+                        notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {r + 1}: {symbol} must be yes or no (true or false), not '{Truncate(raw)}'."));
+                        continue;
+                    }
+
+                    set.Set(new CalcInputValue(symbol, Flag: ParseFlag(raw) ?? false, Provenance: provenance));
                     break;
 
                 case CalcInputKind.Vector:
@@ -353,7 +376,13 @@ public static class CalcCsv
                 break;
 
             case CalcInputKind.Boolean:
-                cells[key] = new CalcCell(Flag: raw.Equals("true", StringComparison.OrdinalIgnoreCase) || raw == "1" || raw.Equals("yes", StringComparison.OrdinalIgnoreCase));
+                if (ParseFlag(raw) is not { } cellFlag)
+                {
+                    notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {line}: {reference.Table}[{reference.Row}].{key} must be yes or no (true or false), not '{Truncate(raw)}'."));
+                    return;
+                }
+
+                cells[key] = new CalcCell(Flag: cellFlag);
                 break;
 
             default:
@@ -372,9 +401,12 @@ public static class CalcCsv
             if (!table.Seen)
                 return;
 
-            if (table.Provenance?.Reference?.Contains(WithheldMarker, StringComparison.Ordinal) == true)
+            // The table stays withheld: it comes back as an empty value carrying the pin, which the validator blocks, so the
+            // calculation does not run on the template's default rows.
+            if (IsWithheld(table.Provenance))
             {
-                notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"{symbol}: its rows were withheld on export (licensed record) and are not in the file; apply the record or enter them from your own copy."));
+                set.Set(new CalcInputValue(symbol, Provenance: table.Provenance));
+                notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"{symbol}: its rows were withheld on export (licensed record) and are not in the file; the calculation cannot run until you apply the record again or enter the rows from your own copy."));
                 return;
             }
 

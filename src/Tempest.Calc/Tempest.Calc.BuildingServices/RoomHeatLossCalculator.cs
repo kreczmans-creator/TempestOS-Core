@@ -87,7 +87,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcAssumption("The global target U applies to built-up elements facing outside only: an internal partition or floor has no outside target, so it is checked only against a target entered on its own row.", "Scope of the target check."),
             new CalcAssumption("Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer.", "Stated limit."),
             new CalcAssumption("The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table.", "Derived."),
-            new CalcAssumption("Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded.", "§A5."),
+            new CalcAssumption("Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded.", "No table from a standard or a manufacturer is shipped."),
         ],
         [
             new CalcClauseRef("BS EN ISO 6946", "homogeneous layers and surface resistances (clause numbers to be checked against the owner's copy)", "Building components — thermal resistance and thermal transmittance"),

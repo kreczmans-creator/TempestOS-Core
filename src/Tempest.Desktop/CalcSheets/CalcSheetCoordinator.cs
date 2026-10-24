@@ -632,7 +632,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         ArgumentNullException.ThrowIfNull(template);
         ArgumentNullException.ThrowIfNull(text);
         var trimmed = text.TrimStart('\uFEFF', ' ', '\t', '\r', '\n');
-        return trimmed.StartsWith('[') || trimmed.StartsWith('{') ? CalcInputJson.Read(trimmed) : CalcCsv.ImportInputs(template, text);
+        return trimmed.StartsWith('[') || trimmed.StartsWith('{') ? CalcInputJson.Read(trimmed, template) : CalcCsv.ImportInputs(template, text);
     }
 
     private void Report(CalcActionResult result, string success)

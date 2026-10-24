@@ -31,7 +31,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
 3. ASSUMPTIONS
   A1. One scalar action effect; every action's characteristic value is its contribution to that effect, with sign. (Linear superposition (EN 1990 cl. 6.3.1 representative values).)
   A2. Buildings only (Annex A1); no bridges, fatigue or seismic combinations. (EN 1990 Annex A1 scope.)
-  A3. Without a ψ record the EN 1990 Annex A1 recommended values are used, labelled on the sheet; the UK National Annex (NA.A1.2(A)–(C)) values come from a user record. (§A5: no NA table ships.)
+  A3. Without a ψ record the EN 1990 Annex A1 recommended values are used, labelled on the sheet; the UK National Annex (NA.A1.2(A)–(C)) values come from a user record. (No National Annex table is shipped.)
   A4. Each permanent action takes γ_G,sup or γ_G,inf by whether it adds to or opposes the effect sought; for EQU single-source checks, enter a source's permanent actions as one row. (EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.)
   A5. gamma_G_sup (γ_G,sup (unfavourable permanent)) is taken as 1.35. (Sheet default value; no project figure given.)
   A6. gamma_G_inf (γ_G,inf (favourable permanent)) is taken as 1. (Sheet default value; no project figure given.)
@@ -128,8 +128,8 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
 
 8. VERIFICATION
   Template: struct.load-combinations@1.0.0
-  Content hash: cd8d66887b67a0ca
+  Content hash: 60a0615ba7745102
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 19:35 UTC
+  Test run: 2026-10-24 20:02 UTC
   Application: TempestOS test

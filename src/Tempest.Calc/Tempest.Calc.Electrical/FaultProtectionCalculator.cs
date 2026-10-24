@@ -62,10 +62,10 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         [
             new CalcAssumption("TN system, a single earth fault of negligible impedance; no motor contribution, arc fault or IT system.", "Scope of the check."),
             new CalcAssumption("Line and protective conductors are the same material at the same temperature; R = ρ₂₀·L/S corrected by α.", "Conductor data from a material record."),
-            new CalcAssumption("k is derived from the material constants and labelled derived; it is not read from a licensed table.", "§A5."),
+            new CalcAssumption("k is derived from the material constants and labelled derived; it is not read from a licensed table.", "Derived constants, not read from a table."),
             new CalcAssumption("Fuse and MCCB characteristics are points the user reads off the manufacturer's curve (log-log interpolation; no extrapolation).", "No time–current table ships."),
             new CalcAssumption("Optional field-test value 0.8 × Z_s,max is a rule of thumb for measurements at ambient temperature.", "Labelled on the sheet."),
-            new CalcAssumption("The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more.", "Green G-B-03."),
+            new CalcAssumption("The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more.", "Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum."),
         ],
         [
             new CalcClauseRef("BS 7671:2018 (as amended)", "reg. 411.3.2.2, 411.3.2.3, 411.4.4", "Automatic disconnection in TN systems: times and the loop impedance condition"),

@@ -50,7 +50,7 @@ public sealed class BearingLifeCalculator : ICalcCalculator
             new CalcInputSpec("s_0_req", "Required static safety factor", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 4, HardMin: 0.5, HardMax: 4, Group: "Requirements"),
         ],
         [
-            new CalcAssumption("Ratings C and C₀, factors X, Y, e, X₀, Y₀ and a_ISO are the manufacturer's values for the bearing, entered as reference records.", "No catalogue table ships with TempestOS (§A5)."),
+            new CalcAssumption("Ratings C and C₀, factors X, Y, e, X₀, Y₀ and a_ISO are the manufacturer's values for the bearing, entered as reference records.", "No catalogue table ships with TempestOS."),
             new CalcAssumption("a₁ uses the ISO 281:2007 Weibull form (0.64 at 95 %, 0.25 at 99 %); ISO 281:1990 gave 0.62 and 0.21.", "Edition stated on the sheet."),
             new CalcAssumption("Loads are steady within each duty step; speed is constant.", "Duty steps weighted by share of revolutions."),
         ],

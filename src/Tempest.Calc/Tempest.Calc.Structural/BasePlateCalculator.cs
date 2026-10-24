@@ -49,7 +49,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
     public readonly record struct Required(double? Value, string? Text);
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
+        Id, "1.1.1", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
         "An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.",
         "Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)]\n" +
         "Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd\n" +
@@ -107,7 +107,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcAssumption("The friction resistance counts only the compression, C_f,d·max(N_Ed, 0); a column in net tension has none. Anchor bolts share shear equally, with their holes assumed no larger than the standard clearance (oversized or slotted holes are outside this sheet).", "EN 1993-1-8 cl. 6.2.2."),
             new CalcAssumption("The bearing outstand c is cut back where it would pass the plate edge; the web and the column interior keep the full c. The CHS compression side is half of the annular bearing area, with its centroid as lever arm (an approximation).", "Conservative against an uncut c."),
             new CalcAssumption("The compression T-stub is checked against the flange area alone as soon as M_Ed > 0, while at M_Ed = 0 the whole footprint (web included) resists, so the compression check jumps at M_Ed = 0⁺ (conservative).", "Limitation."),
-            new CalcAssumption("Partial factors and the friction coefficient come from the records in use (γ_c, α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used); the values shown default to the EN recommended and UK values.", "§A5 small factor set."),
+            new CalcAssumption("Partial factors and the friction coefficient come from the records in use (γ_c, α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used); the values shown default to the EN recommended and UK values.", "A small set of factors only; no table from a standard is shipped."),
         ],
         [
             new CalcClauseRef("EN 1993-1-8:2005", "cl. 6.2.2", "Design resistance of column bases in shear"),
@@ -694,7 +694,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
         // The anchorage is not designed on this sheet, so the sheet can only record where the design is filed: a check is made (and passes) only
         // when the reference is an attached Evidence document, never on typed text (Green G-A-03).
         if (profis.Length > 0 && c.Inputs.Find("profis_ref")?.Provenance is { Kind: CalcProvenanceKind.Evidence, Reference.Length: > 0 })
-            c.CheckCondition("Anchorage designed externally (PROFIS report attached as Evidence)", true, $"PROFIS report {profis} attached", $"bolt tension {F(c.Si("F_t_Ed") / 1e3)} kN and shear {F(vb)} kN per anchor designed in PROFIS");
+            c.CheckCondition("Anchorage designed externally (PROFIS report attached as Evidence)", true, $"external report attached: {profis}", $"bolt tension {F(c.Si("F_t_Ed") / 1e3)} kN and shear {F(vb)} kN per anchor designed in PROFIS");
         else if (profis.Length > 0)
             c.Warn("anchorage", $"profis_ref: '{profis}' is typed text, not an attached report; attach the Hilti PROFIS report as Evidence so the reference points at the filed document. The anchorage design is not checked on this sheet.");
         else

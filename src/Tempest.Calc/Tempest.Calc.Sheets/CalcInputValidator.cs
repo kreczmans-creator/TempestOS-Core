@@ -48,6 +48,14 @@ public static class CalcInputValidator
             if (value?.Provenance is { } provenance && !provenance.IsWithinLimits)
                 notices.Add(Block(spec.Symbol, $"{spec.Symbol}: the provenance reference is at most {CalcProvenance.MaxReferenceLength} characters and the revision at most {CalcProvenance.MaxRevisionLength}."));
 
+            // A value withheld on export (a licensed record) is not a missing value that a default may stand in for: the
+            // calculation does not run until the record is applied again.
+            if (value is not null && IsEmpty(value) && CalcCsv.IsWithheld(value.Provenance))
+            {
+                notices.Add(Block(spec.Symbol, CalcCsv.WithheldMessage(spec.Symbol)));
+                continue;
+            }
+
             if (value is null || IsEmpty(value))
             {
                 // A defaulted input is visible on the sheet ("default" source) and now in the notices too, so a sheet
@@ -58,7 +66,7 @@ public static class CalcInputValidator
                 if (spec.IsOptional || spec.Default is not null || spec.DefaultChoice is not null || spec.Kind is CalcInputKind.Boolean or CalcInputKind.Text)
                     continue;
 
-                notices.Add(Block(spec.Symbol, $"{spec.Symbol} ({spec.Description}) needs a value."));
+                notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {spec.NextStepText()}"));
                 continue;
             }
 
@@ -225,7 +233,7 @@ public static class CalcInputValidator
     {
         if (value.Rows is not { } rows)
         {
-            notices.Add(Block(spec.Symbol, $"{spec.Symbol} needs table rows."));
+            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {spec.NextStepText()}"));
             return;
         }
 

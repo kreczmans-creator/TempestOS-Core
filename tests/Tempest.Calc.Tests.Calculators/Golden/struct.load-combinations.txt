@@ -28,7 +28,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
 3. ASSUMPTIONS
   A1. One scalar action effect; every action's characteristic value is its contribution to that effect, with sign. (Linear superposition (EN 1990 cl. 6.3.1 representative values).)
   A2. Buildings only (Annex A1); no bridges, fatigue or seismic combinations. (EN 1990 Annex A1 scope.)
-  A3. Without a ψ record the EN 1990 Annex A1 recommended values are used, labelled on the sheet; the UK National Annex (NA.A1.2(A)–(C)) values come from a user record. (§A5: no NA table ships.)
+  A3. Without a ψ record the EN 1990 Annex A1 recommended values are used, labelled on the sheet; the UK National Annex (NA.A1.2(A)–(C)) values come from a user record. (No National Annex table is shipped.)
   A4. Each permanent action takes γ_G,sup or γ_G,inf by whether it adds to or opposes the effect sought; for EQU single-source checks, enter a source's permanent actions as one row. (EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.)
   A5. ψ factors: EN 1990 Annex A1 recommended values (Table A1.1). (No ψ record entered.)
 

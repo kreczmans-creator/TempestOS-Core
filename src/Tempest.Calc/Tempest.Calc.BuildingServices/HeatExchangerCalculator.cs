@@ -46,7 +46,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
         [
             new CalcAssumption("Single phase on both sides (except the C_r = 0 arrangement), constant properties, no heat loss to surroundings.", "Incropera 7th ed. §11.3–11.4."),
             new CalcAssumption("The crossflow both-unmixed effectiveness is the published approximate correlation, flagged on the sheet.", "Incropera 7th ed. Table 11.3."),
-            new CalcAssumption("Specific heats are user records (or B2 for air) at the mean temperature of each stream.", "§A3 reference records."),
+            new CalcAssumption("Specific heats are user records (or B2 for air) at the mean temperature of each stream.", "Entered as reference records, which carry their source, edition and licence."),
         ],
         [
             new CalcClauseRef("Incropera, Fundamentals of Heat and Mass Transfer", "7th ed., §11.3–11.5, Tables 11.3–11.4", "LMTD and effectiveness-NTU methods"),

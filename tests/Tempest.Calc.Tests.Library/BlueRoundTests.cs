@@ -182,9 +182,11 @@ public sealed class BlueRoundTests
         Assert.Contains("ratings,,,Reference,record:", csv, StringComparison.Ordinal);
 
         var (withheld, notices) = CalcCsv.ImportInputs(template, csv);
-        Assert.Null(withheld.Find("ratings"));
+        Assert.Null(withheld.Find("ratings")!.Rows);
+        Assert.True(CalcCsv.IsWithheld(withheld.Find("ratings")!.Provenance));
         Assert.Null(withheld.Find("k_1"));
         Assert.Equal(2, notices.Count(n => n.Message.Contains("withheld", StringComparison.Ordinal)));
+        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("k_1: this value was withheld", StringComparison.Ordinal));
     }
 
     // ------------------------------------------------------------------ R-A-02 / SEC-A-02
@@ -377,6 +379,70 @@ public sealed class BlueRoundTests
         Assert.False((await host.Service.CheckPackAsync(pack.Id, "Alice", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
         host.Principal = "carol";
         Assert.True((await host.Service.CheckPackAsync(pack.Id, "Carol", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+    }
+
+    [Fact]
+    public async Task P_A_03_The_Checker_Who_Re_Pins_A_Link_Is_Not_Thereby_An_Author()
+    {
+        var host = new LibraryTestHost(calculators: [new ForceSourceCalculator(), new IndependentStressCalculator()]);
+        var project = await host.ProjectAsync();
+
+        // Alice designs a motor and an independent-check bracket linked to it; the motor is checked and issued by Carol.
+        host.Principal = "alice";
+        var motor = await host.Service.CreateAsync("test.force-source", project, "Motor torque", [CalcInputValue.Quantity("P", 5, "kN", CalcProvenance.Drawing("DRG-9", "A"))]);
+        var bracket = await host.Service.CreateAsync("test.independent", project, "Bracket", LibraryTestHost.ProvenancedInputs());
+        Assert.True((await host.Service.BindAsync(bracket.Id, "F", motor.Id, "F_out")).Succeeded);
+        host.Principal = "carol";
+        Assert.True((await host.Service.CheckAsync(motor.Id, "Carol", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.IssueAsync(motor.Id, "ISS-M", "Client Co")).Succeeded);
+
+        // The motor moves on to revision B, so the bracket is stale.
+        host.Principal = "alice";
+        var motorB = (await host.Service.ReviseAsync(motor.Id)).Instance!;
+        Assert.True((await host.Service.UpdateInputsAsync(motorB.Id, [CalcInputValue.Quantity("P", 6, "kN", CalcProvenance.Drawing("DRG-9", "B"))])).Succeeded);
+        host.Principal = "carol";
+        Assert.True((await host.Service.CheckAsync(motorB.Id, "Carol", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.IssueAsync(motorB.Id, "ISS-M2", "Client Co")).Succeeded);
+        Assert.True((await host.Service.StalenessAsync((await host.Store.FindInstanceAsync(bracket.Id))!)).IsStale);
+
+        // Bob, the only other engineer, presses "Update to revision B" and then checks it: pressing the button did not make him its designer.
+        host.Principal = "bob";
+        var updated = await host.Service.UpdateLinksAsync(bracket.Id);
+        Assert.True(updated.Succeeded, updated.Reason);
+        Assert.DoesNotContain("bob", updated.Instance!.Authors);
+        Assert.Contains("bob", updated.Instance.RepinnedBy!);
+        var check = await host.Service.CheckAsync(bracket.Id, "Bob", "Client Co", "OK", CheckOutcome.Accepted);
+        Assert.True(check.Succeeded, check.Reason);
+    }
+
+    [Fact]
+    public async Task P_A_03_Re_Pinning_A_Checked_Calculation_Makes_A_Revision_Whose_Author_Is_Still_The_Original_Designer()
+    {
+        var host = new LibraryTestHost(calculators: [new ForceSourceCalculator(), new IndependentStressCalculator()]);
+        var project = await host.ProjectAsync();
+        host.Principal = "alice";
+        var motor = await host.Service.CreateAsync("test.force-source", project, "Motor torque", [CalcInputValue.Quantity("P", 5, "kN", CalcProvenance.Drawing("DRG-9", "A"))]);
+        var bracket = await host.Service.CreateAsync("test.independent", project, "Bracket", LibraryTestHost.ProvenancedInputs());
+        Assert.True((await host.Service.BindAsync(bracket.Id, "F", motor.Id, "F_out")).Succeeded);
+        host.Principal = "carol";
+        Assert.True((await host.Service.CheckAsync(motor.Id, "Carol", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.IssueAsync(motor.Id, "ISS-M", "Client Co")).Succeeded);
+        Assert.True((await host.Service.CheckAsync(bracket.Id, "Carol", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        host.Principal = "alice";
+        var motorB = (await host.Service.ReviseAsync(motor.Id)).Instance!;
+        Assert.True((await host.Service.UpdateInputsAsync(motorB.Id, [CalcInputValue.Quantity("P", 6, "kN", CalcProvenance.Drawing("DRG-9", "B"))])).Succeeded);
+        host.Principal = "carol";
+        Assert.True((await host.Service.CheckAsync(motorB.Id, "Carol", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.IssueAsync(motorB.Id, "ISS-M2", "Client Co")).Succeeded);
+
+        // Bob updates the checked, now stale, bracket: a new draft revision, which he can still check.
+        host.Principal = "bob";
+        var revised = (await host.Service.UpdateLinksAsync(bracket.Id)).Instance!;
+        Assert.Equal("B", revised.Revision);
+        Assert.Equal(["alice"], revised.Authors);
+        Assert.Contains("bob", revised.RepinnedBy!);
+        var check = await host.Service.CheckAsync(revised.Id, "Bob", "Client Co", "OK", CheckOutcome.Accepted);
+        Assert.True(check.Succeeded, check.Reason);
     }
 
     [Fact]

@@ -66,7 +66,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   A6. The friction resistance counts only the compression, C_f,d·max(N_Ed, 0); a column in net tension has none. Anchor bolts share shear equally, with their holes assumed no larger than the standard clearance (oversized or slotted holes are outside this sheet). (EN 1993-1-8 cl. 6.2.2.)
   A7. The bearing outstand c is cut back where it would pass the plate edge; the web and the column interior keep the full c. The CHS compression side is half of the annular bearing area, with its centroid as lever arm (an approximation). (Conservative against an uncut c.)
   A8. The compression T-stub is checked against the flange area alone as soon as M_Ed > 0, while at M_Ed = 0 the whole footprint (web included) resists, so the compression check jumps at M_Ed = 0⁺ (conservative). (Limitation.)
-  A9. Partial factors and the friction coefficient come from the records in use (γ_c, α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used); the values shown default to the EN recommended and UK values. (§A5 small factor set.)
+  A9. Partial factors and the friction coefficient come from the records in use (γ_c, α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used); the values shown default to the EN recommended and UK values. (A small set of factors only; no table from a standard is shipped.)
   A10. alpha (α, concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known)) is taken as 1.5. (Conservative: a 1.2 m square pad under the 0.45 × 0.40 m plate gives A_c1/A_c0 well above 2.25; checked on drawing PF-FN-001.)
   A11. m (Bolt to flange-weld toe distance, tension T-stub (required: it follows from x_b, the column and the weld)) is taken as 46.9 mm. (Bolt at 185 mm from the axis, flange face at 130.15 mm: 54.85 mm, less 0.8·√2 × 7 mm (a 10 mm fillet leg has a 7 mm throat) = 7.9 mm.)
   A12. l_eff (Effective length of the tension T-stub, total for the n_t bolts (required: from the cl. 6.2.6.5 patterns for the plate)) is taken as 350 mm. (Total for the two bolts of the row, about 175 mm each from the cl. 6.2.6.5 patterns (engineer's estimate).)
@@ -260,7 +260,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   WARNING anchorage: profis_ref: 'PROFIS-BP1 (to be filed)' is typed text, not an attached report; attach the Hilti PROFIS report as Evidence so the reference points at the filed document. The anchorage design is not checked on this sheet.
 
 8. VERIFICATION
-  Template: struct.base-plate@1.1.0
+  Template: struct.base-plate@1.1.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 9/9

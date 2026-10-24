@@ -89,7 +89,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             new CalcInputSpec("ampacity", "Current-carrying capacities for the installation method", CalcInputKind.Table, Columns: AmpacityColumns, MaxRows: 60, IsOptional: true, Group: "Records"),
         ],
         [
-            new CalcAssumption("Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator.", "§A5."),
+            new CalcAssumption("Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator.", "No table from a standard or a manufacturer is shipped."),
             new CalcAssumption("The capacities in the table are for the installation method stated; the method key is descriptive and is not interpreted.", "Records carry their source and edition."),
             new CalcAssumption("A gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671 (installation context); an IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet.", "BS 7671 reg. 433.1.201; IEC 60269-1."),
             new CalcAssumption("The ambient, grouping and insulation factors are applied as a product; C_g is not looked up from the number of grouped circuits.", "The count is carried to the sheet and warns when C_g = 1 with more than one circuit."),

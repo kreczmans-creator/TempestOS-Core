@@ -26,7 +26,7 @@
     "Number": 12,
     "Unit": "L",
     "Provenance": {
-      "Kind": "Evidence",
+      "Kind": "Specification",
       "Reference": "Site survey: existing 12 L vessel",
       "IsSufficientToIssue": true
     },
@@ -197,7 +197,7 @@
       }
     ],
     "Provenance": {
-      "Kind": "Evidence",
+      "Kind": "Specification",
       "Reference": "Room heat loss calculation (B4) and radiator survey",
       "IsSufficientToIssue": true
     },
