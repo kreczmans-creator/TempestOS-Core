@@ -1,7 +1,7 @@
 # mech.bearing-life — independent re-derivation (Track P, P1)
 Calculator: Rolling bearing life (ISO 281), version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Mechanical/BearingLifeCalculator.cs. Spec: docs/calcs/mechanical/mech.bearing-life.md.
 Script: tools/verification/mech.bearing-life.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (two findings upgraded to High in review)
 
 ## Method re-derived
 - Step equivalent load: P_i = F_r when F_a/F_r ≤ e, else X F_r + Y F_a. A step with F_r = 0 uses the second form. Source: ISO 281:2007 cl. 6 (factor tables). Units kN.
@@ -95,13 +95,13 @@ Guard probes: P = 0.5 C gives no warning and P = 0.50005 C warns. C/P = 10 000 r
 | Input limits | Spec ranges | Hard limits enforced as in the spec | Yes |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-mech.bearing-life-01 | Medium | The defaults X = 1, Y = 0 remove F_a from P without any notice. A user who enters F_a and keeps the defaults gets an unconservative life. | Ball bearing, F_r 2, F_a 4 kN, C 20 kN, defaults: P = 2 kN, L_nmh 16 667 h. With X 0.56, Y 1.5 the same load gives P = 7.12 kN and 45 times less life. Only "record" warnings appear. | Warn when F_a > 0 and the active branch has Y = 0. Or leave X and Y blank so the user must enter them. |
-| P1-mech.bearing-life-02 | Medium | The branch F_a/F_r ≤ e has no Y₁. ISO 281:2007 cl. 6 factor tables use P = F_r + Y₁ F_a for double-row bearings and bearing pairs. The sheet gives P = F_r. | F_r 10, F_a 1.9 kN, e 0.19, Y₁ 3.3: correct P = 16.27 kN, product 10 kN. Life is overstated 4.3 times. | Add X₁ and Y₁ inputs (defaults 1 and 0). Or state "single-row bearings only" in the spec and on the sheet. |
-| P1-mech.bearing-life-03 | Low | A duty table replaces F_r and F_a with no notice, even when both are entered. | F_r 9 kN with duty (2 kN, share 1): P = 2 kN, no notice. | Add an information notice when both are present. |
-| P1-mech.bearing-life-04 | Info | κ is only range-checked. No equation uses it. The warning "treated as 4" suggests a value is read. | κ = 4.5: same results as κ = 1, one warning. | Reword: "enter a_ISO for κ = 4". |
-| P1-mech.bearing-life-05 | Info | Every hand-entered rating or factor raises a "not taken from a reference record" warning. A plain run shows about eight such warnings. | Probe of the default case. | None. This is the intended provenance prompt. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-mech.bearing-life-01 | Medium | High (upgraded: reproduced; plausible use, life 45 times too long, only provenance warnings; a missing guard) | The defaults X = 1, Y = 0 remove F_a from P without any notice. A user who enters F_a and keeps the defaults gets an unconservative life. | Ball bearing, F_r 2, F_a 4 kN, C 20 kN, defaults: P = 2 kN, L_nmh 16 667 h. With X 0.56, Y 1.5 the same load gives P = 7.12 kN and 45 times less life. Only "record" warnings appear. | Warn when F_a > 0 and the active branch has Y = 0. Or leave X and Y blank so the user must enter them. |
+| P1-mech.bearing-life-02 | Medium | High (upgraded: reproduced; spherical roller and paired bearings are common and the sheet does not say single-row only) | The branch F_a/F_r ≤ e has no Y₁. ISO 281:2007 cl. 6 factor tables use P = F_r + Y₁ F_a for double-row bearings and bearing pairs. The sheet gives P = F_r. | F_r 10, F_a 1.9 kN, e 0.19, Y₁ 3.3: correct P = 16.27 kN, product 10 kN. Life is overstated 4.3 times for p = 3 and 5.1 times for p = 10/3. | Add X₁ and Y₁ inputs (defaults 1 and 0). Or state "single-row bearings only" in the spec and on the sheet. |
+| P1-mech.bearing-life-03 | Low | Low (confirmed) | A duty table replaces F_r and F_a with no notice, even when both are entered. | F_r 9 kN with duty (2 kN, share 1): P = 2 kN, no notice. | Add an information notice when both are present. |
+| P1-mech.bearing-life-04 | Info | Info (confirmed) | κ is only range-checked. No equation uses it. The warning "treated as 4" suggests a value is read. | κ = 4.5: same results as κ = 1, one warning. | Reword: "enter a_ISO for κ = 4". |
+| P1-mech.bearing-life-05 | Info | Info (confirmed) | Every hand-entered rating or factor raises a "not taken from a reference record" warning. A plain run shows about eight such warnings. | Probe of the default case. | None. This is the intended provenance prompt. |
 
 ## Notes for the owner's manual test
 - Ball, F_r 2 kN, C 20 kN, 1000 rpm, R 95 %: expect L_10 1000 Mrev, L_10h 16 667 h, a_1 0.6379, L_5h 10 632 h.
@@ -109,3 +109,14 @@ Guard probes: P = 0.5 C gives no warning and P = 0.50005 C warns. C/P = 10 000 r
 - Enter F_r 3, F_a 1.5 kN with e 0.22, X 0.56, Y 2: expect P 4.68 kN. Then set F_a to 0.66: ratio equals e, so P = 3 kN.
 - Keep the default factors and enter F_a 4 kN with F_r 2 kN. P stays 2 kN. That is finding -01.
 - Duty cycle 2 kN and 4 kN at 50 % each: expect P = 3.302 kN and P_0 = 4 kN.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- I re-ran the script: 21/21 KAT rows pass, exit 0.
+- The script is an independent Python model. It adopts the sheet's single-row load law, so it cannot see -02 by itself.
+- I reproduced -01 (P 2 kN with F_a 4 kN) and -02 (P 10 kN for a roller bearing with F_a/F_r = e) with the probe.
+- -01 is upgraded to High. The defaults X 1, Y 0 look like real values, and they drop F_a without a notice.
+- -02 is upgraded to High. Spherical roller and paired bearings use Y₁ below e, so the error hits common bearings.
+- -02 evidence: the 4.3 times figure holds for ball bearings. For roller bearings the life is 5.1 times too long.
+- I read Run line by line. The hours conversion, a_1, duty mean and static load are correct. I found no new defect.
+- Residual doubt: X₀ 0.6 and Y₀ 0.5 suit deep groove ball bearings only. They are user inputs, so I left this as is.

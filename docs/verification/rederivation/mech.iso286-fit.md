@@ -1,7 +1,7 @@
 # mech.iso286-fit — independent re-derivation (Track P, P1)
 Calculator: ISO 286 limits and fits, version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Mechanical/Iso286FitCalculator.cs (helper: Iso286.cs). Spec: docs/calcs/mechanical/mech.iso286-fit.md.
 Script: tools/verification/mech.iso286-fit.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (reviewed: three High — -01, -02, -05 — and two Medium)
 
 Both KATs match within their tolerances of 3 to 6 percent. Those tolerances are too loose to expose four real defects. Two of them (18 mm, N9) give errors above 3 µm in plausible use.
 
@@ -76,17 +76,18 @@ Product against tabulated ISO 286-2 values (values only, as I know them):
 | Guards | large-size and fine-grade warnings | Present; overrides not checked | Partly (finding 07) |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-mech.iso286-fit-01 | High | A nominal size of exactly 18 mm is placed in the 18 to 30 mm step instead of 10 to 18 mm. IT and all deviations are then wrong. IT7 reads 20.9 µm; the standard value is 18 µm. | D = 18 mm H7/h6 gives IT_hole 20.918. D = 18.001 gives the same. Cause: 18 mm × 0.001 × 1000 = 18.000000000000004. The other 20 step limits are correct. | In Iso286.Step, compare with a relative slack, for example `sizeMm <= upper * (1 + 1e-9)`. Add a KAT at 18 mm. |
-| P1-mech.iso286-fit-02 | High | Hole N above IT8 uses ES = −5D^0.34. The tabulated value is ES = 0. | 25 mm N9/h9: product ES −14.571, EI −66.866. Table: 0 and −52. Error 14.6 µm, 28 % of IT9. | Set ES = 0 for N when the grade is above 8. Add a KAT for N9. Check M above IT8 against the standard; I could not confirm it. |
-| P1-mech.iso286-fit-03 | Medium | Hole K at IT8 loses the k deviation, because the shaft k formula returns 0 for grade 8. Table K8 uses 0.6D^(1/3). The error grows to 4.8 µm at 500 mm. | 25 mm K8/h7: product ES 11.766. Independent 10.054. Table 18 to 30 mm: +10. | Use the grade-independent k deviation (0.6D^(1/3)) in the hole rule for K up to IT8. |
-| P1-mech.iso286-fit-04 | Medium | Letter t silently returns the s deviation when the step mean is 24 mm or less. The standard has no t below 24 mm. For 24 to 30 mm it has t but the product still returns s. | 10 mm H7/t6: ei 23.453 equals IT8 + 1, the s value. 28 mm: ei 33.684 against t formula 35.558. No notice. | Block t below 24 mm. Evaluate t at the 24 to 30 mm sub-step. |
-| P1-mech.iso286-fit-05 | Medium | The spec and code comment say the formula values differ from the tables by about 1 µm. For interference letters this is wrong. p uses IT7 and omits the 0 to 5 µm increment and the 0.072D + 37.8 rule above 500 mm. r to u ignore sub-steps. Maximum interference is understated by up to 8.5 µm (p6, 565 mm). | See the table above. p6 at 450 mm: 62.2 against 68. u6 at 28 mm: 44.2 against 48. s6 at 110 mm: 73.9 against 79. | Add a warning on any interference or transition fit that uses p to u: "tabulated values differ by up to X µm; use overrides". Or embed the sub-step rules. Correct the stated error in the spec. |
-| P1-mech.iso286-fit-06 | Low | Shaft k above 500 mm still uses 0.6D^(1/3). The standard formula covers up to 500 mm. I believe the tabulated k is 0 above 500 mm; I could not confirm this. | 565 mm H7/k6: ei 4.949 µm. | Confirm in ISO 286-1, then set k to 0 above 500 mm. |
-| P1-mech.iso286-fit-07 | Low | Overrides are not checked. ES below EI gives a negative tolerance and a clearance result. IT_hole still shows the formula value. | ES_override 10, EI_override 30: c_max 30.4, c_min 37.3, fit "clearance". | Block when ES < EI or es < ei. Show IT from the override. |
-| P1-mech.iso286-fit-08 | Low | A non-integer grade is rounded without notice. hole_grade 6.5 runs as IT6. | 25 mm H6.5/g6: IT_hole 13.074. | Require an integer, or warn on rounding. |
-| P1-mech.iso286-fit-09 | Info | The KAT tolerances (3 to 6 %) cannot catch findings 01 to 05. | KATs pass with findings 01 to 05 present. | Tighten the KATs and add cases at 18 mm, N9, K8, and p6 at 400 to 500 mm. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-mech.iso286-fit-01 | High | High: confirmed with the probe. 18 mm H7 gives IT 20.918 µm, the same as 30 mm. I checked all 21 limits: only 18 mm × 0.001 × 1000 rounds up. 18 mm is a common size | A nominal size of exactly 18 mm is placed in the 18 to 30 mm step instead of 10 to 18 mm. IT and all deviations are then wrong. IT7 reads 20.9 µm; the standard value is 18 µm. | D = 18 mm H7/h6 gives IT_hole 20.918. D = 18.001 gives the same. Cause: 18 mm × 0.001 × 1000 = 18.000000000000004. The other 20 step limits are correct. | In Iso286.Step, compare with a relative slack, for example `sizeMm <= upper * (1 + 1e-9)`. Add a KAT at 18 mm. |
+| P1-mech.iso286-fit-02 | High | High: confirmed. ISO 286-1 sets ES = 0 for N above IT8 (sizes over 3 mm). N9 keyway widths read 0/−IT9 in every keyway table. The product gives −14.6/−66.9 µm at 25 mm | Hole N above IT8 uses ES = −5D^0.34. The tabulated value is ES = 0. | 25 mm N9/h9: product ES −14.571, EI −66.866. Table: 0 and −52. Error 14.6 µm, 28 % of IT9. | Set ES = 0 for N when the grade is above 8. Add a KAT for N9. Check M above IT8 against the standard; I could not confirm it. |
+| P1-mech.iso286-fit-03 | Medium | Medium: confirmed. The hole rule should take ei from the shaft one grade finer (k7 for K8), as the Δ rule implies. K8 18–30 mm table value +10 µm: owner to confirm against licensed copy | Hole K at IT8 loses the k deviation, because the shaft k formula returns 0 for grade 8. Table K8 uses 0.6D^(1/3). The error grows to 4.8 µm at 500 mm. | 25 mm K8/h7: product ES 11.766. Independent 10.054. Table 18 to 30 mm: +10. | Use the grade-independent k deviation (0.6D^(1/3)) in the hole rule for K up to IT8. |
+| P1-mech.iso286-fit-04 | Medium | Medium: confirmed (10 mm H7/t6 returns the s value, ei 23.453). Iso286.cs has the same silent fallback for v and y, but those letters are not offered in the UI | Letter t silently returns the s deviation when the step mean is 24 mm or less. The standard has no t below 24 mm. For 24 to 30 mm it has t but the product still returns s. | 10 mm H7/t6: ei 23.453 equals IT8 + 1, the s value. 28 mm: ei 33.684 against t formula 35.558. No notice. | Block t below 24 mm. Evaluate t at the 24 to 30 mm sub-step. |
+| P1-mech.iso286-fit-05 | Medium | High: wrong in plausible use (H7/p6 at 100 mm, H7/s6 at 110 mm). The p increment of 0 to 5 µm and the r–zc sub-steps above 50 mm are in the ISO 286-1 formula table itself. The spec's "about 1 µm" claim is wrong. Tabulated values: owner to confirm against licensed copy | The spec and code comment say the formula values differ from the tables by about 1 µm. For interference letters this is wrong. p uses IT7 and omits the 0 to 5 µm increment and the 0.072D + 37.8 rule above 500 mm. r to u ignore sub-steps. Maximum interference is understated by up to 8.5 µm (p6, 565 mm). | See the table above. p6 at 450 mm: 62.2 against 68. u6 at 28 mm: 44.2 against 48. s6 at 110 mm: 73.9 against 79. | Add a warning on any interference or transition fit that uses p to u: "tabulated values differ by up to X µm; use overrides". Or embed the sub-step rules. Correct the stated error in the spec. |
+| P1-mech.iso286-fit-06 | Low | Low: confirmed. The ISO 286-1 formula table gives k = 0 above 500 mm. The m and n formulas above 500 mm (0.024D + 12.6, 0.04D + 21) agree with the code within 0.4 µm | Shaft k above 500 mm still uses 0.6D^(1/3). The standard formula covers up to 500 mm. I believe the tabulated k is 0 above 500 mm; I could not confirm this. | 565 mm H7/k6: ei 4.949 µm. | Confirm in ISO 286-1, then set k to 0 above 500 mm. |
+| P1-mech.iso286-fit-07 | Low | Low: confirmed | Overrides are not checked. ES below EI gives a negative tolerance and a clearance result. IT_hole still shows the formula value. | ES_override 10, EI_override 30: c_max 30.4, c_min 37.3, fit "clearance". | Block when ES < EI or es < ei. Show IT from the override. |
+| P1-mech.iso286-fit-08 | Low | Low: confirmed | A non-integer grade is rounded without notice. hole_grade 6.5 runs as IT6. | 25 mm H6.5/g6: IT_hole 13.074. | Require an integer, or warn on rounding. |
+| P1-mech.iso286-fit-09 | Info | Info: confirmed | The KAT tolerances (3 to 6 %) cannot catch findings 01 to 05. | KATs pass with findings 01 to 05 present. | Tighten the KATs and add cases at 18 mm, N9, K8, and p6 at 400 to 500 mm. |
+| P1-mech.iso286-fit-R1 | — | Low | Iso286.ShaftFundamentalDeviation("cd") returns 0, because c has no formula in the code. So cd acts as h and CD as H. ISO 286-1 gives c (−52D^0.2 up to 40 mm). The fit sheet does not offer cd or CD, so users cannot reach it today. | Code: the cd branch multiplies √0 by the d term. | Add the a, b and c formulae, or return null for cd. |
 
 ## Notes for the owner's manual test
 - Enter 18 mm H7/h6. Expect IT7 = 18 µm (ES +18). The product shows 20.9 µm.
@@ -94,3 +95,12 @@ Product against tabulated ISO 286-2 values (values only, as I know them):
 - Enter 25 mm H7/g6. Expect ES +21, es −7, clearance 7 to 41 µm. Product: 20.9, −7.3, 7.3 to 41.3.
 - Enter 450 mm H7/p6 and compare ei with the table (+68 µm). The product gives +62.2 µm.
 - Enter H7/t6 at 10 mm. No t exists there. The product returns an s value without a notice.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- I ran the script (exit 0). It evaluates the ISO 286-1 formulae on its own. A formula sheet leaves little room for a different method, so it is close to the code by nature.
+- I reproduced -01, -02, -03, -04 and the 100 mm p6 case with the probe.
+- I checked the code's formulae against the public ISO 286-1 formula table for d to u, the Δ rule, and the k, p, s rules. The d to n, s, t and u formulae agree.
+- Changes: -05 up to High. Its core is in the formula table (p increment, sub-steps), not only in table values.
+- New: R1 (Low, cd returns 0; not reachable from the sheet).
+- Residual doubt: table values in the comparison table and the K8 value come from the first reviewer's and my memory. The owner should confirm them against a licensed copy of ISO 286-2.

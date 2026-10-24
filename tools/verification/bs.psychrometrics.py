@@ -325,6 +325,20 @@ def extras():
     rh_for_5 = 100 * pw_from_W(0.005, p0) / pws(15)
     finding("ka-mixing input check", "RH_b giving W_b = 5 g/kg", 46.93, rh_for_5, "P1-bs.psychrometrics-05")
 
+    # --- review R1: cooling with t_2 above the entering dew point, RH_2 blank (product default 100 %)
+    #     Product (probe psy5, reviewer): W_2 14.695 g/kg > W_1, m_w 0, Q_total 0.94835 kW, warning only.
+    #     A dry coil removes sensible heat only: Q = m (h(t1, W1) - h(t2, W1)).
+    a = state(28, p0, rh=50)
+    b = state(20, p0, rh=100)
+    row("review R1 dry coil 28->20 C", "W_2 at RH_2 100 % (g/kg)", 14.69505165, b["W"] * 1000, 1e-6)
+    row("review R1 dry coil 28->20 C", "product Q_total = h1 - h2 (kW)", 0.9483452224, a["h"] - b["h"], 1e-6)
+    finding("review R1 dry coil 28->20 C", "Q_total (kW)", 0.9483452224, h_ma(28, a["W"]) - h_ma(20, a["W"]), "P1-bs.psychrometrics-R1")
+    # --- review R2: Q_sensible + Q_latent omits the condensate term that Q_total carries
+    a = state(28, p0, rh=50)
+    b = state(12, p0, rh=100)
+    qt = (a["h"] - b["h"]) - (a["W"] - b["W"]) * 4.186 * 12
+    finding("review R2 28C50%->12C", "Q_sens + Q_lat vs Q_total (kW)", a["h"] - b["h"], qt, "P1-bs.psychrometrics-R2")
+
     # --- saturation pressure cross-check against a different formulation
     for t in (0.01, 20, 40, 60, 90):
         row("pws vs Wagner-Pruss", f"p_ws({t} C)", pws_wagner_pruss(t), pws_water(t), 6e-4)

@@ -1,0 +1,65 @@
+# Manual test — mech.tolerance-stack (Tolerance stack-up (1D) v2)
+Liability: Medium. Time: ~25 min. Pre-requisites: None. A project need not be open. Step 13 needs two saved calculations in one project.
+
+| # | Step | Inputs (value + unit) | Expected output (symbol = value unit) | Tolerance | Expected PASS/FAIL/BLOCK/WARN | Basis | Result | Notes |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Press Ctrl+K. Type "Open worksheet: Tolerance stack-up (1D) v2". Press Enter. Or use Engineering tree, Modules, Calculations, Worksheets, then Mechanical. | None. The form opens on its defaults. | Header shows mech.tolerance-stack@2.0.0. Results bar reads: Blocked — contributors (Contributors in the loop) needs a value. Save as calculation is disabled. | Text match | BLOCK | product behaviour (no number) |  | The contributors table has no form field. Import blocks supply it. |
+| 2 | Import Block S. Read the results. | Block S: 4 rows in; minimum 0.003 in | x_nom = 0.005 in; t_wc = 0.01 in; x_wc_min = -0.005 in; t_rss = 0.006 in; sigma = 0.002 in; cpk = 0.33333. Bar: FAIL, Worst case within requirement. | Shown digits | FAIL | KAT ka-shigley-screw; independent script |  | Source page for the KAT is unconfirmed. The arithmetic is checked by hand: 1.750-0.750-0.120-0.875 = 0.005. |
+| 3 | Import Block A. Read the results. | Block A: 3 rows in mm; minimum 0.40 mm; maximum 0.80 mm | x_mean = 0.61 mm; t_wc = 0.13 mm; t_rss = 0.080623 mm; sigma = 0.026874 mm; cp = 2.4807; cpk = 2.3567; dpmo = 7.7755e-7. Bar: PASS. | Shown digits. dpmo within 1 % | PASS | KAT ka-rss-analytic; independent script |  | Warning shown: fewer than four contributors. The product shows dpmo 7.7759e-7. That is inside the tolerance. |
+| 4 | Import Block B. Check the uniform and triangular rows and the shifts. | Block B: uniform, triangular, mean shifts +0.02 mm and -0.01 mm | x_mean = 0.535 mm; t_wc = 0.255 mm; t_rss = 0.13463 mm; sigma = 0.066604 mm; cp = 2.5023; cpk = 1.6766; dpmo = 0.2456. Bar: PASS. | Shown digits | PASS | independent script (tools/verification/mech.tolerance-stack.py) |  | Uniform sigma is h/sqrt(3). Triangular sigma is h/sqrt(6). A shift moves x_mean but not t_wc. |
+| 5 | Import Block C. Check the position and profile rows. | Block C: position zone 0.2 mm plus bonus 0.1 mm; profile zone 0.1 mm | x_mean = 1 mm; t_wc = 0.35 mm; t_rss = 0.19365 mm; sigma = 0.06455 mm; cp = 2.582; cpk = 2.582. Bar: PASS. | Shown digits | PASS | independent script (tools/verification/mech.tolerance-stack.py); hand: position half-band = (0.2+0.1)/2 = 0.15 mm |  | Do not check dpmo here. See step 11. |
+| 6 | Import Block A. Set k to 1, then 7, then 0.05. | Block A; k = 1; k = 7; k = 0.05 | k=1: sigma = 0.080623 mm; cpk = 0.78555; dpmo = 13817; C_pk check FAIL. k=7: sigma = 0.011518 mm; cpk = 5.4989; warning that k is outside 1 to 6. k=0.05: blocked, k must be at least 0.1. | Shown digits | k=1 FAIL; k=7 WARN; k=0.05 BLOCK | independent script (tools/verification/mech.tolerance-stack.py) |  | Reset k to 3 afterwards. |
+| 7 | Import Block A. Change the minimum unit from mm to in. Do not retype the number. | Block A; minimum unit in | The minimum box converts to 0.015748. Every output stays the same as in step 3. The unit list offers length units only. | Shown digits | PASS | hand formula: 0.40 mm / 25.4 = 0.015748 in |  | A unit change must convert the number, not relabel it. |
+| 8 | Import Block A. Type minimum 0.9 and maximum 0.4 (mm). | Block A; minimum 0.9 mm; maximum 0.4 mm | Bar reads: Blocked — minimum: the stated minimum is above the stated maximum. Save is disabled. | Text match | BLOCK | product behaviour (no number) |  | Negative test: out of range. |
+| 9 | Import Block E. | Block E: lower deviation above upper deviation | Bar reads: Blocked. The message names contributors row 1 (a) and says the lower deviation is above the upper deviation. | Text match | BLOCK | product behaviour (no number) |  | Negative test: bad row. |
+| 10 | Import Block N. Then look at the minimum box and its unit list. | Block N: minimum 0.4 N on a length input | The import is refused, or the minimum box flags a unit error. The box must not quietly show 0.4 mm. | Text match | BLOCK | product behaviour (no number) |  | Negative test: unit mismatch. Suspected defect in the import path, not yet in any P1 report. The form falls back to mm when the unit is not in the list (CalcSheetView.BuildField). Record FAIL if it shows 0.4 mm without a message. |
+| 11 | Import Block D. Read dpmo. | Block D: 4 tight rows; minimum -5 mm; maximum 0.5573 mm | sigma = 0.0066667 mm; cpk = 2.865; dpmo = 4.163e-12 (z = 8.6, upper tail only). The product shows 0. | Relative 1 % | FAIL | independent script (tools/verification/mech.tolerance-stack.py) |  | Known defect P1-mech.tolerance-stack-01; expect FAIL until fixed. The upper tail loses precision beyond z of about 7. |
+| 12 | Import Block Z. | Block Z: all bands zero | A notice says the spread is zero and capability is not computed. Today only t_wc = 0 mm and the worst-case check show. | Text match | WARN | product behaviour (no number) |  | Known defect P1-mech.tolerance-stack-02; expect FAIL until fixed. The correct result has a visible notice. |
+| 13 | Stale upstream. Follow procedure L in README.md. Upstream: mech.iso286-fit, 25 mm H7/g6. Downstream: this sheet with Block A. Link minimum to the upstream output c_min. Change the upstream nominal to 30 mm and save it. | Link: minimum to c_min of the upstream calculation | Orange banner on this sheet: Stale — and a button Update linked inputs. Record check is refused with a message that the calculation is stale. Status stays DRAFT. | Text match | BLOCK | product behaviour (no number) |  | See README procedure L, and its note on reopening a saved calculation. |
+
+## Import blocks
+Copy the whole line of a block to the clipboard. Then press *Import inputs (CSV/JSON)*. The status line must read "Imported n input(s)".
+
+**Block S** — Shigley shouldered-screw stack, inches. Sets minimum to 0.003 in.
+```json
+[{"Symbol":"contributors","Rows":[{"Cells":{"name":{"Text":"a shoulder length"},"direction":{"Text":"adds"},"nominal":{"Number":1.75,"Unit":"in"},"upper":{"Number":0.003,"Unit":"in"},"lower":{"Number":-0.003,"Unit":"in"}}},{"Cells":{"name":{"Text":"b sleeve"},"direction":{"Text":"subtracts"},"nominal":{"Number":0.75,"Unit":"in"},"upper":{"Number":0.001,"Unit":"in"},"lower":{"Number":-0.001,"Unit":"in"}}},{"Cells":{"name":{"Text":"c washer"},"direction":{"Text":"subtracts"},"nominal":{"Number":0.12,"Unit":"in"},"upper":{"Number":0.005,"Unit":"in"},"lower":{"Number":-0.005,"Unit":"in"}}},{"Cells":{"name":{"Text":"d sleeve"},"direction":{"Text":"subtracts"},"nominal":{"Number":0.875,"Unit":"in"},"upper":{"Number":0.001,"Unit":"in"},"lower":{"Number":-0.001,"Unit":"in"}}}]},{"Symbol":"minimum","Number":0.003,"Unit":"in"}]
+```
+
+**Block A** — Housing stack, mm. Minimum 0.40 mm, maximum 0.80 mm.
+```json
+[{"Symbol":"contributors","Rows":[{"Cells":{"name":{"Text":"housing"},"direction":{"Text":"adds"},"nominal":{"Number":40,"Unit":"mm"},"upper":{"Number":0.1,"Unit":"mm"},"lower":{"Number":0,"Unit":"mm"}}},{"Cells":{"name":{"Text":"bearing A"},"direction":{"Text":"subtracts"},"nominal":{"Number":20,"Unit":"mm"},"upper":{"Number":0,"Unit":"mm"},"lower":{"Number":-0.12,"Unit":"mm"}}},{"Cells":{"name":{"Text":"spacer"},"direction":{"Text":"subtracts"},"nominal":{"Number":19.5,"Unit":"mm"},"upper":{"Number":0.02,"Unit":"mm"},"lower":{"Number":-0.02,"Unit":"mm"}}}]},{"Symbol":"minimum","Number":0.4,"Unit":"mm"},{"Symbol":"maximum","Number":0.8,"Unit":"mm"}]
+```
+
+**Block B** — Four rows with uniform, triangular and mean-shift entries. Minimum 0.2 mm, maximum 1.2 mm.
+```json
+[{"Symbol":"contributors","Rows":[{"Cells":{"name":{"Text":"plate"},"direction":{"Text":"adds"},"nominal":{"Number":30,"Unit":"mm"},"upper":{"Number":0.1,"Unit":"mm"},"lower":{"Number":-0.1,"Unit":"mm"},"distribution":{"Text":"uniform"}}},{"Cells":{"name":{"Text":"boss"},"direction":{"Text":"subtracts"},"nominal":{"Number":10,"Unit":"mm"},"upper":{"Number":0.06,"Unit":"mm"},"lower":{"Number":-0.06,"Unit":"mm"},"distribution":{"Text":"triangular"},"shift":{"Number":0.02,"Unit":"mm"}}},{"Cells":{"name":{"Text":"pin"},"direction":{"Text":"subtracts"},"nominal":{"Number":9,"Unit":"mm"},"upper":{"Number":0.05,"Unit":"mm"},"lower":{"Number":-0.05,"Unit":"mm"}}},{"Cells":{"name":{"Text":"cap"},"direction":{"Text":"subtracts"},"nominal":{"Number":10.5,"Unit":"mm"},"upper":{"Number":0,"Unit":"mm"},"lower":{"Number":-0.09,"Unit":"mm"},"shift":{"Number":-0.01,"Unit":"mm"}}}]},{"Symbol":"minimum","Number":0.2,"Unit":"mm"},{"Symbol":"maximum","Number":1.2,"Unit":"mm"}]
+```
+
+**Block C** — Position zone 0.2 mm with 0.1 mm bonus, and a profile zone 0.1 mm. Minimum 0.5 mm, maximum 1.5 mm.
+```json
+[{"Symbol":"contributors","Rows":[{"Cells":{"name":{"Text":"flange"},"direction":{"Text":"adds"},"nominal":{"Number":25,"Unit":"mm"},"upper":{"Number":0.1,"Unit":"mm"},"lower":{"Number":-0.1,"Unit":"mm"}}},{"Cells":{"name":{"Text":"hole position"},"direction":{"Text":"subtracts"},"nominal":{"Number":0,"Unit":"mm"},"upper":{"Number":0.2,"Unit":"mm"},"kind":{"Text":"position"},"bonus":{"Number":0.1,"Unit":"mm"}}},{"Cells":{"name":{"Text":"surface profile"},"direction":{"Text":"adds"},"nominal":{"Number":0,"Unit":"mm"},"upper":{"Number":0.1,"Unit":"mm"},"kind":{"Text":"profile"}}},{"Cells":{"name":{"Text":"spigot"},"direction":{"Text":"subtracts"},"nominal":{"Number":24,"Unit":"mm"},"upper":{"Number":0.05,"Unit":"mm"},"lower":{"Number":-0.05,"Unit":"mm"}}}]},{"Symbol":"minimum","Number":0.5,"Unit":"mm"},{"Symbol":"maximum","Number":1.5,"Unit":"mm"}]
+```
+
+**Block D** — Four tight rows, sigma 0.0066667 mm. Minimum -5 mm, maximum 0.5573 mm (z about 8.6).
+```json
+[{"Symbol":"contributors","Rows":[{"Cells":{"name":{"Text":"a"},"direction":{"Text":"adds"},"nominal":{"Number":10,"Unit":"mm"},"upper":{"Number":0.01,"Unit":"mm"},"lower":{"Number":-0.01,"Unit":"mm"}}},{"Cells":{"name":{"Text":"b"},"direction":{"Text":"subtracts"},"nominal":{"Number":9,"Unit":"mm"},"upper":{"Number":0.01,"Unit":"mm"},"lower":{"Number":-0.01,"Unit":"mm"}}},{"Cells":{"name":{"Text":"c"},"direction":{"Text":"subtracts"},"nominal":{"Number":0.5,"Unit":"mm"},"upper":{"Number":0.01,"Unit":"mm"},"lower":{"Number":-0.01,"Unit":"mm"}}},{"Cells":{"name":{"Text":"d"},"direction":{"Text":"adds"},"nominal":{"Number":0,"Unit":"mm"},"upper":{"Number":0.01,"Unit":"mm"},"lower":{"Number":-0.01,"Unit":"mm"}}}]},{"Symbol":"minimum","Number":-5,"Unit":"mm"},{"Symbol":"maximum","Number":0.5573,"Unit":"mm"}]
+```
+
+**Block Z** — Two rows with zero bands. Minimum 0.5 mm, maximum 2.0 mm.
+```json
+[{"Symbol":"contributors","Rows":[{"Cells":{"name":{"Text":"a"},"direction":{"Text":"adds"},"nominal":{"Number":10,"Unit":"mm"},"upper":{"Number":0,"Unit":"mm"},"lower":{"Number":0,"Unit":"mm"}}},{"Cells":{"name":{"Text":"b"},"direction":{"Text":"subtracts"},"nominal":{"Number":9,"Unit":"mm"},"upper":{"Number":0,"Unit":"mm"},"lower":{"Number":0,"Unit":"mm"}}}]},{"Symbol":"minimum","Number":0.5,"Unit":"mm"},{"Symbol":"maximum","Number":2.0,"Unit":"mm"}]
+```
+
+**Block E** — One row whose lower deviation (+0.01) is above its upper deviation (-0.01).
+```json
+[{"Symbol":"contributors","Rows":[{"Cells":{"name":{"Text":"a"},"direction":{"Text":"adds"},"nominal":{"Number":10,"Unit":"mm"},"upper":{"Number":-0.01,"Unit":"mm"},"lower":{"Number":0.01,"Unit":"mm"}}}]},{"Symbol":"minimum","Number":0.4,"Unit":"mm"}]
+```
+
+**Block N** — Block A with the minimum entered in newtons.
+```json
+[{"Symbol":"contributors","Rows":[{"Cells":{"name":{"Text":"housing"},"direction":{"Text":"adds"},"nominal":{"Number":40,"Unit":"mm"},"upper":{"Number":0.1,"Unit":"mm"},"lower":{"Number":0,"Unit":"mm"}}},{"Cells":{"name":{"Text":"bearing A"},"direction":{"Text":"subtracts"},"nominal":{"Number":20,"Unit":"mm"},"upper":{"Number":0,"Unit":"mm"},"lower":{"Number":-0.12,"Unit":"mm"}}},{"Cells":{"name":{"Text":"spacer"},"direction":{"Text":"subtracts"},"nominal":{"Number":19.5,"Unit":"mm"},"upper":{"Number":0.02,"Unit":"mm"},"lower":{"Number":-0.02,"Unit":"mm"}}}]},{"Symbol":"minimum","Number":0.4,"Unit":"N"},{"Symbol":"maximum","Number":0.8,"Unit":"mm"}]
+```
+
+## Notes for the tester
+- Output unit follows the first table row. Block S answers in inches. The other blocks answer in mm.
+- DPMO shows in scientific form below 1e-4. A value of 0 means the product lost the tail.

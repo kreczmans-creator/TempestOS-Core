@@ -1,14 +1,14 @@
 # mech.bolted-joint — independent re-derivation (Track P, P1)
 Calculator: Bolted joint (simplified VDI 2230), version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Mechanical/BoltedJointCalculator.cs. Spec: docs/calcs/mechanical/mech.bolted-joint.md.
 Script: tools/verification/mech.bolted-joint.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (one High added in review: -R1)
 
 ## Method re-derived
 - Thread geometry: d_2 = d − 0.6495 P, d_3 = d − 1.2269 P, A_s = π/4 ((d_2 + d_3)/2)². Source: ISO 898-1 (2013) clause 9.1.6. Units mm, mm².
 - Preload from torque: F_M = M_A/(K d), or F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K) with D_Km = (d_w + d_h)/2. Source: Shigley 9th ed., preload and torque (§8-7 as cited in the spec); VDI 2230 Part 1 (2015) step R13 (tightening torque).
 - Scatter: F_M,min = F_M/α_A (steps R5 and R6). The product treats F_M as the maximum preload.
 - Bolt compliance: δ_S = 0.4d/(E A_N) + l_k/(E A_s) + 0.5d/(E A_d3) + 0.4d/(E A_N). Source: Shigley 9th ed. eq. 8-17 (number as cited in the spec); VDI 2230 step R3.
-- Member stiffness: two 30° frusta of height l_k/2, k_f from Shigley 9th ed. eq. 8-20 (as cited in the spec), k_P = k_f/2. Units N/mm, equal to kN/m.
+- Member stiffness: two 30° frusta of height l_k/2, k_f from Shigley 9th ed. eq. 8-20 (as cited in the spec), k_P = k_f/2. Shigley's relation uses one diameter d in both the prefactor and the log; the sheet mixes d and d_h (-03). Units N/mm, equal to kN/m.
 - Load factor and embedding: Φ = n k_S/(k_S + k_P); F_Z = f_Z k_S k_P/(k_S + k_P). Source: VDI 2230 steps R3 and R4.
 - Residual clamp F_KR = F_M,min − (1 − Φ)F_A − F_Z (steps R2 and R5); maximum bolt load F_S,max = F_M + Φ F_A.
 - Equivalent stress: σ_red = √(σ_z² + 3(k_τ τ)²) with k_τ = 1.0 at assembly (step R7) and 0.5 in service (step R8). τ = M_G/W_p, W_p = π/16 d_S³, d_S = (d_2 + d_3)/2.
@@ -81,15 +81,17 @@ The nu_M and sigma_red_B rows fail only through the polar-modulus basis. The scr
 | Input limits | Spec | Hard limits are wide; d_w has no cap against l_k or member width | Info |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-mech.bolted-joint-01 | Low | Thread torsion uses W_p = π/16 d_3³. VDI 2230 uses the mean diameter d_S. This is conservative. | Default inputs: nu_M 0.9687, independent 0.9180 (+5.5 %). sigma_red_B 536.4 vs 527.2 MPa (+1.7 %) at n = 1. The yield check moves by under 2 %. | Use d_S = (d_2 + d_3)/2 in W_p, or state the d_3 choice in the spec. The spec does not define τ_M. |
-| P1-mech.bolted-joint-02 | Medium | After the joint separates, F_S,max, yield, fatigue and stripping use the pre-separation linear law. They understate the bolt load. The "No separation" check fails and a warning shows. | Default inputs, F_A = 100 kN: F_KR −70.4 kN; F_S,max 47.9 kN, but the bolt carries at least 100 kN. Yield u 0.94 and fatigue u 0.85 both pass. | When F_M − F_Z − (1 − Φ)F_A < 0, set F_S,max = max(F_M + Φ F_A, F_A), or mark the three checks "not valid after separation". |
-| P1-mech.bolted-joint-03 | Low | The k_f numerator uses the bolt diameter d. The log uses the hole diameter d_h. Integrating the frustum gives d_h in both places. | Default: k_P 1.908e6 vs 2.067e6 kN/m. F_KR 13.128 vs 13.046 kN (+0.6 %, unconservative). Hole 15 mm: F_KR 12.482 vs 12.223 kN (+2.1 %). | Use d_h in the numerator, or keep Shigley's form and restrict the hole to a small clearance over d. Update the KAT if changed. |
-| P1-mech.bolted-joint-04 | Low | The assumption text says the shear area is "half the pitch per unit length". The formula uses 0.5 π d per unit length and has no pitch. | Source lines for m_min; spec limitation text repeats "half-pitch". | Reword both texts to "50 % of the circumference on the nominal diameter". |
-| P1-mech.bolted-joint-05 | Low | Residual-clamp utilisation is negative when F_KR < 0. With F_KR_req = 0 and F_KR < 0 that check passes with u = −0. | F_A = 100 kN: u_clamp −0.071 (FAIL). Same case with F_KR_req = 0: u −0, pass. F_A = 24.3 kN: u −35.2. | Report u_clamp as "not met" when F_KR ≤ 0. Do not show negative utilisation. |
-| P1-mech.bolted-joint-06 | Info | Default inputs raise the preload-yield warning (nu_M 0.969). In nut-factor mode the torsion stress still uses μ_G, which the user may not expect. | Default run output. | Optional: note both points in the worksheet. |
-| P1-mech.bolted-joint-07 | Low | Step labels in the worksheet differ from the VDI 2230:2015 numbering as I know it. F_M,min cites R2 (R5 and R6 hold the preloads). F_KR cites R7 (R2 and R5). Assembly equivalent stress cites R8 (R7). | Source strings in BoltedJointCalculator.cs, for example "VDI 2230 R7" on F_KR. | Check each R-number against the standard and correct the labels. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-mech.bolted-joint-01 | Low | Medium (upgraded: conservative, but τ_M is 16 % high and nu_M 5.5 % high at default; it matters once -R1 makes nu_M a check) | Thread torsion uses W_p = π/16 d_3³. VDI 2230 uses the mean diameter d_S. This is conservative. | Default inputs: nu_M 0.9687, independent 0.9180 (+5.5 %). sigma_red_B 536.4 vs 527.2 MPa (+1.7 %) at n = 1. The yield check moves by under 2 %. | Use d_S = (d_2 + d_3)/2 in W_p, or state the d_3 choice in the spec. The spec does not define τ_M. |
+| P1-mech.bolted-joint-02 | Medium | Medium (confirmed: reproduced; the separation check fails, so the overall verdict is still FAIL) | After the joint separates, F_S,max, yield, fatigue and stripping use the pre-separation linear law. They understate the bolt load. The "No separation" check fails and a warning shows. | Default inputs, F_A = 100 kN: F_KR −70.4 kN; F_S,max 47.9 kN, but the bolt carries at least 100 kN. Yield u 0.94 and fatigue u 0.85 both pass. | When F_M − F_Z − (1 − Φ)F_A < 0, set F_S,max = max(F_M + Φ F_A, F_A), or mark the three checks "not valid after separation". |
+| P1-mech.bolted-joint-03 | Low | Low (confirmed: Shigley Eq. 8-20 uses one diameter in both places; see kat-sources C2) | The k_f numerator uses the bolt diameter d. The log uses the hole diameter d_h. Integrating the frustum gives d_h in both places. | Default: k_P 1.908e6 vs 2.067e6 kN/m. F_KR 13.128 vs 13.046 kN (+0.6 %, unconservative). Hole 15 mm: F_KR 12.482 vs 12.223 kN (+2.1 %). | Use d_h in the numerator, or keep Shigley's form and restrict the hole to a small clearance over d. Update the KAT if changed. |
+| P1-mech.bolted-joint-04 | Low | Low (confirmed) | The assumption text says the shear area is "half the pitch per unit length". The formula uses 0.5 π d per unit length and has no pitch. | Source lines for m_min; spec limitation text repeats "half-pitch". | Reword both texts to "50 % of the circumference on the nominal diameter". |
+| P1-mech.bolted-joint-05 | Low | Low (confirmed) | Residual-clamp utilisation is negative when F_KR < 0. With F_KR_req = 0 and F_KR < 0 that check passes with u = −0. | F_A = 100 kN: u_clamp −0.071 (FAIL). Same case with F_KR_req = 0: u −0, pass. F_A = 24.3 kN: u −35.2. | Report u_clamp as "not met" when F_KR ≤ 0. Do not show negative utilisation. |
+| P1-mech.bolted-joint-06 | Info | Info (confirmed) | Default inputs raise the preload-yield warning (nu_M 0.969). In nut-factor mode the torsion stress still uses μ_G, which the user may not expect. | Default run output. | Optional: note both points in the worksheet. |
+| P1-mech.bolted-joint-07 | Low | Low (confirmed; R-numbers from memory, owner to confirm against licensed copy) | Step labels in the worksheet differ from the VDI 2230:2015 numbering as I know it. F_M,min cites R2 (R5 and R6 hold the preloads). F_KR cites R7 (R2 and R5). Assembly equivalent stress cites R8 (R7). | Source strings in BoltedJointCalculator.cs, for example "VDI 2230 R7" on F_KR. | Check each R-number against the standard and correct the labels. |
+| P1-mech.bolted-joint-R1 | — | High | The assembly stress (VDI 2230 R7) is only a warning. With nu_M above 1 every check passes. The warning text still says "above 90 %". | Default inputs with M_A 95 N·m: nu_M 1.150 (σ_red,M 736 MPa against R_p02 640 MPa). All five checks pass; u_yield 0.978. | Add a utilisation check on the assembly state, nu_M against the permitted ν (0.9 by default). Keep the warning. |
+| P1-mech.bolted-joint-R2 | — | Medium | F_M is labelled the maximum preload, but μ_G, μ_K and K are not labelled as minimum values. A user who enters mean friction understates the maximum preload. | VDI 2230 R13 computes the torque with the minimum friction values. With α_A 1.6 and a mean μ, the true maximum preload is about 23 % above F_M. The yield and stripping checks then use too low a load. | Label the friction inputs and K as the minimum (lower-bound) values, or add a separate F_M,max from μ_min. |
 
 ## Notes for the owner's manual test
 - Hand-check the default case: F_M = 80 N·m / 1.966 mm = 40.69 kN, A_s = 84.27 mm², k_S about 3.21e5 kN/m.
@@ -97,3 +99,15 @@ The nu_M and sigma_red_B rows fail only through the polar-modulus basis. The scr
 - Raise F_A to 100 kN. The joint separates, but yield and fatigue still pass. That is finding -02.
 - Check the torsion term by hand with both W_p bases. The d_S basis gives nu_M 0.918 at default.
 - Try d_h = d. The sheet must block it.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- The script derives the joint independently. It holds switches for the W_p basis and the k_f numerator. It is not a port.
+- I re-ran the script: 7/7 KAT rows pass, exit 0.
+- I reproduced -02 with the probe (F_A 100 kN: F_S,max 47.9 kN, yield and fatigue pass, separation fails).
+- I checked the three k_f variants by hand: mixed 1.908e6, d in both 2.213e6, d_h in both 2.067e6 kN/m.
+- -01 is upgraded to Medium. The error is conservative but over 5 % on nu_M.
+- New -R1 (High): an over-torqued bolt passes. VDI 2230 R7 is a required check, not a note.
+- New -R2 (Medium): the friction inputs must be lower bounds for F_M to be a maximum.
+- Residual doubts: the bolt resilience uses 0.4d under the head (VDI gives 0.5d for hex heads) and A_s over the whole clamp length. Both effects on Φ are small.
+- Residual doubt: R-step numbers and the VDI cone form come from memory. The owner should confirm them against a licensed copy.

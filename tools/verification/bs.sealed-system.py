@@ -130,7 +130,7 @@ def run_extras():
     # 01: fill temperature above the maximum temperature gives a negative expansion.
     o = sealed(v_pipe=90, v_plant=10, t_fill=40, t_max=30, tf=30, tr=30, ti=16)
     print(f"P1-bs.sealed-system-01  fill 40, max 30 degC: e_x {o['e_x']:.7f}, V_e {o['V_e']:.5f} L"
-          f"  (product: -0.0034465, -0.70399 L, no block)")
+          f"  (product: -0.0034465, -0.70399 L, no block; vessel check shows FAIL with u = -0.088)")
     # 02: final pressure 0.05 bar below the safety valve setting is accepted.
     d = sealed(v_pipe=90, v_plant=10, p_f=2.5)["V_e"]
     c = sealed(v_pipe=90, v_plant=10, p_f=2.95)["V_e"]
@@ -140,19 +140,36 @@ def run_extras():
     vwr = max(0.005 * o["V_s"], 3.0)
     ve_res = (o["e_x"] * o["V_s"] + vwr) / (1.0 - (o["p_i"] + 1.0) / (2.5 + 1.0))
     print(f"P1-bs.sealed-system-03  ka-vessel V_e {o['V_e']:.4f} L; with a {vwr:.1f} L reserve {ve_res:.4f} L (only if the standard requires it)")
-    # 04: 1 bar versus 1.01325 bar for atmospheric pressure.
+    # 06: 1 bar versus 1.01325 bar for atmospheric pressure.
     pa = 1.01325
     v1 = o["e_x"] * o["V_s"] / (1.0 - (o["p_i"] + pa) / (2.5 + pa))
-    print(f"P1-bs.sealed-system-04  ka-vessel V_e with 1.01325 bar atmosphere {v1:.4f} L ({100*(v1/o['V_e']-1):+.2f} %)")
-    # 05: no range guard on the mean temperature difference.
+    print(f"P1-bs.sealed-system-06  ka-vessel V_e with 1.01325 bar atmosphere {v1:.4f} L ({100*(v1/o['V_e']-1):+.2f} %)")
+    # 04: no range guard on the mean temperature difference.
     o = sealed(rooms=[("A", 1000, 0, 0)], tf=30, tr=30, ti=24)
-    print(f"P1-bs.sealed-system-05  30/30/24 degC: dT {o['dT']:.1f} K, f_dT {o['f_dT']:.4f}, 1000 W needs {o['R1']:.0f} W at dT 50 (product: no warning)")
-    # 06: with a glycol record the static head still uses the water density at fill.
+    print(f"P1-bs.sealed-system-04  30/30/24 degC: dT {o['dT']:.1f} K, f_dT {o['f_dT']:.4f}, 1000 W needs {o['R1']:.0f} W at dT 50 (product: no warning)")
+    # 05: with a glycol record the static head still uses the water density at fill.
     #     Illustration: a mixture 4 % denser than water (value chosen for the example only).
     o = sealed(v_pipe=90, v_plant=10, e_fluid=0.05)
     p_gly = 1.04 * kell_rho(10) * G * 5 / 1e5 + 0.3
     ve_gly = 0.05 * o["V_s"] / (1.0 - (p_gly + 1.0) / (2.5 + 1.0))
-    print(f"P1-bs.sealed-system-06  e = 0.05: V_e {o['V_e']:.4f} L (water density) vs {ve_gly:.4f} L (4 % denser fluid): {100*(ve_gly/o['V_e']-1):+.2f} %")
+    print(f"P1-bs.sealed-system-05  e = 0.05: V_e {o['V_e']:.4f} L (water density) vs {ve_gly:.4f} L (4 % denser fluid): {100*(ve_gly/o['V_e']-1):+.2f} %")
+    # ---- Independent review (2026-10-24): standard-based figures. Values recalled, owner to confirm.
+    # BS EN 12828 Annex D (as recalled): p_e <= p_SV - 0.5 bar for p_SV <= 5 bar, else p_e <= 0.9 p_SV;
+    # water reserve V_WR >= 0.5 % of V_s, at least 3 L; V_n >= (V_e + V_WR)(p_e + 1)/(p_e - p_0).
+    print()
+    print("Review: figures against BS EN 12828 Annex D and BS 7074-1 as recalled (owner to confirm)")
+    for p_sv in (3.0, 6.0):
+        pe_max = p_sv - 0.5 if p_sv <= 5 else 0.9 * p_sv
+        print(f"  p_SV {p_sv:.1f} bar: highest final pressure p_e {pe_max:.2f} bar (product accepts any value below {p_sv:.2f} bar)")
+    # BS 7074-1 domestic factors as recalled (3 bar valve; charge = initial pressure 0.5, 1.0, 1.5 bar):
+    # 0.063, 0.084, 0.126. Back-solve the expansion and final pressure that reproduce all three.
+    for pe in (2.5, 2.65):
+        es = [fac * (1 - (pc + 1) / (pe + 1)) for fac, pc in ((0.063, 0.5), (0.084, 1.0), (0.126, 1.5))]
+        print(f"  BS 7074-1 factors with p_f {pe:.2f} bar imply e = " + ", ".join(f"{e:.4f}" for e in es))
+    o = sealed(v_pipe=90, v_plant=10, v_vessel=8)
+    vwr = max(0.005 * o["V_s"], 3.0)
+    vn = (o["e_x"] * o["V_s"] + vwr) * (2.5 + 1) / (2.5 - o["p_i"])
+    print(f"  ka-vessel: product V_e {o['V_e']:.3f} L (8 L vessel passes); with reserve {vn:.3f} L (8 L vessel fails)")
     return fails
 
 

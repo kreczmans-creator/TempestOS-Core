@@ -1,7 +1,7 @@
 # bs.heat-exchanger — independent re-derivation (Track P, P1)
 Calculator: Heat exchanger (LMTD and ε-NTU), version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.BuildingServices/HeatExchangerCalculator.cs. Spec: docs/calcs/building-services/bs.heat-exchanger.md.
 Script: tools/verification/bs.heat-exchanger.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (confirmed in review: no Critical or High)
 
 The product matches the independent script on all 18 KAT values and on all 15 extra probes (relative difference below 2e-9 apart from rounding of the printed probe values).
 The findings concern guards and labels, not the core formulas.
@@ -84,14 +84,14 @@ All rows use the probe tool "run" command. The script holds the full list of sym
 | Crossflow correlation | Approximate, flagged | Warning shown | Yes |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-bs.heat-exchanger-01 | Medium | The isothermal arrangement forces C_r = 0 but cannot name the constant-temperature stream. The other stream's C_min then drives ε = 1 − e^(−NTU). With comparable streams the duty is overstated. The "constant" stream's outlet also changes. | Inputs: isothermal, ṁ_h 1, ṁ_c 2 kg/s, c_p 4180, 80 and 20 °C, U 1000, A 4.18. Product Q = 158.54 kW and T_h,out = 42.07 °C. Counterflow with the same inputs gives 141.64 kW (+11.9 %). The sheet shows C_r = 0. | Add a choice for the isothermal stream and treat its C as infinite. Hold its outlet at its inlet. Or warn when C_min/C_max is above about 0.05. Say in the template that the constant-temperature stream needs a very large ṁ·c_p. |
-| P1-bs.heat-exchanger-02 | Low | Sizing blocks any ε above the value at NTU = 1000. For counterflow with C_r = 1 that is 0.999. The message says the exchanger "cannot exceed" it. Rating accepts NTU 2392. | Counterflow, 1 kg/s each, 4180 J/kgK, 80 and 20 °C, U 1000, sizing Q_req 250.7 kW: blocked at ε 0.9996. Rating with U 10000 and A 1000 m² gives ε 0.99958. | Use the analytic ε_max per arrangement, or reword the message to "above the supported NTU of 1000". |
-| P1-bs.heat-exchanger-03 | Low | The area from sizing is not checked against the rating limit of 0.01–1000 m². | Counterflow, equal 1 kg/s streams, 80 and 20 °C, U 1000, Q_req 250 kW: A_req = 1306 m² with no notice. Only the approach check fails. | Warn when A_req is outside 0.01–1000 m². |
-| P1-bs.heat-exchanger-04 | Info | KAT value slip. The ka-parallel-balanced Q is 108.4282 kW, but ε·C_min·ΔT = 108.4290 kW. The 1e-5 tolerance hides the 7e-6 difference. ka-counter-sizing shows the same effect: NTU 1.999998. | Script rows for both cases. | Correct the expected value to 108.4290 and use more digits in Q_req. Add an A_req = 5.18 m² check to ka-incropera-11-1. |
-| P1-bs.heat-exchanger-05 | Info | The shell-and-tube F at the ε limit is rounding noise. | Shell 1-2, C_r 1, NTU 2392: product F = 0.0558. The true limit is 0. The low-F warning still appears. | No action. |
-| P1-bs.heat-exchanger-06 | Info | The crossflow correlation differs from a numerical solution by −3.3 % to +1.1 %. | Script section "Crossflow correlation". At NTU 3, C_r 0.5 the correlation is high by 1.1 %. | No action. The warning already says "within a few percent". |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-bs.heat-exchanger-01 | Medium | Medium (confirmed). Reproduced: 158.54 kW against 141.64 kW counterflow. Only wrong if the arrangement is misapplied to two single-phase streams. Also misleading for real phase change: the condensing side's outlet is shown cooling. | The isothermal arrangement forces C_r = 0 but cannot name the constant-temperature stream. The other stream's C_min then drives ε = 1 − e^(−NTU). With comparable streams the duty is overstated. The "constant" stream's outlet also changes. | Inputs: isothermal, ṁ_h 1, ṁ_c 2 kg/s, c_p 4180, 80 and 20 °C, U 1000, A 4.18. Product Q = 158.54 kW and T_h,out = 42.07 °C. Counterflow with the same inputs gives 141.64 kW (+11.9 %). The sheet shows C_r = 0. | Add a choice for the isothermal stream and treat its C as infinite. Hold its outlet at its inlet. Or warn when C_min/C_max is above about 0.05. Say in the template that the constant-temperature stream needs a very large ṁ·c_p. |
+| P1-bs.heat-exchanger-02 | Low | Low (confirmed) | Sizing blocks any ε above the value at NTU = 1000. For counterflow with C_r = 1 that is 0.999. The message says the exchanger "cannot exceed" it. Rating accepts NTU 2392. | Counterflow, 1 kg/s each, 4180 J/kgK, 80 and 20 °C, U 1000, sizing Q_req 250.7 kW: blocked at ε 0.9996. Rating with U 10000 and A 1000 m² gives ε 0.99958. | Use the analytic ε_max per arrangement, or reword the message to "above the supported NTU of 1000". |
+| P1-bs.heat-exchanger-03 | Low | Low (confirmed) | The area from sizing is not checked against the rating limit of 0.01–1000 m². | Counterflow, equal 1 kg/s streams, 80 and 20 °C, U 1000, Q_req 250 kW: A_req = 1306 m² with no notice. Only the approach check fails. | Warn when A_req is outside 0.01–1000 m². |
+| P1-bs.heat-exchanger-04 | Info | Info (confirmed; 0.4323324 × 4180 × 60 = 108.4290 kW) | KAT value slip. The ka-parallel-balanced Q is 108.4282 kW, but ε·C_min·ΔT = 108.4290 kW. The 1e-5 tolerance hides the 7e-6 difference. ka-counter-sizing shows the same effect: NTU 1.999998. | Script rows for both cases. | Correct the expected value to 108.4290 and use more digits in Q_req. Add an A_req = 5.18 m² check to ka-incropera-11-1. |
+| P1-bs.heat-exchanger-05 | Info | Info (confirmed) | The shell-and-tube F at the ε limit is rounding noise. | Shell 1-2, C_r 1, NTU 2392: product F = 0.0558. The true limit is 0. The low-F warning still appears. | No action. |
+| P1-bs.heat-exchanger-06 | Info | Info (confirmed) | The crossflow correlation differs from a numerical solution by −3.3 % to +1.1 %. | Script section "Crossflow correlation". At NTU 3, C_r 0.5 the correlation is high by 1.1 %. | No action. The warning already says "within a few percent". |
 
 ## Notes for the owner's manual test
 - Counterflow, 1 kg/s and 4180 J/kgK on both sides, 80 and 20 °C, U 1000, A 4.18: expect ε 0.5, Q 125.4 kW, both outlets 50 °C.
@@ -99,3 +99,11 @@ All rows use the probe tool "run" command. The script holds the full list of sym
 - Check Incropera Example 11.1 in sizing mode with Q_req 8.524 kW: expect T_c,o 40.2 °C, ΔT_lm 43.2 K, A_req about 5.18 m².
 - Try the isothermal choice with comparable streams (finding 01) and compare with counterflow.
 - Enter a parallel-flow sizing duty above 50 % of C_min·ΔT_max with C_r = 1: expect the "duty-unattainable" block.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- I re-ran the script (exit 0) and read it. It is independent: the inverse NTU is found numerically, not from the product's closed forms.
+- I reproduced finding 01 with the probe (isothermal against counterflow, ṁ_c 2 kg/s).
+- I read Run, Effectiveness, InverseNtu and ShellTubeF line by line against Incropera Tables 11.3 and 11.4. All forms agree.
+- No severity changed. I found no new Critical, High or Medium defect.
+- Residual doubt: Example 11.1 values are recalled; the owner should compare them with the printed book.
