@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Addendum C Track P verification aid. Not in the solution, not in CI. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/Tempest.Calc/Tempest.Calc.Mechanical/Tempest.Calc.Mechanical.csproj" />
+    <ProjectReference Include="../../../src/Tempest.Calc/Tempest.Calc.Structural/Tempest.Calc.Structural.csproj" />
+    <ProjectReference Include="../../../src/Tempest.Calc/Tempest.Calc.Electrical/Tempest.Calc.Electrical.csproj" />
+    <ProjectReference Include="../../../src/Tempest.Calc/Tempest.Calc.BuildingServices/Tempest.Calc.BuildingServices.csproj" />
+    <ProjectReference Include="../../../src/Tempest.Calc/Tempest.Calc.Verification/Tempest.Calc.Verification.csproj" />
+  </ItemGroup>
+</Project>
