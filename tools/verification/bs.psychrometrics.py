@@ -93,9 +93,11 @@ def t_from_hW(h, W):
 
 def dew_point(pw):
     """Temperature at which saturated air has vapour pressure pw (frost point below 0 C)."""
+    if pw <= 0:
+        return float("-inf")
     if pw >= pws_water(0):
         return brentq(lambda t: pws_water(t) - pw, 0, 120, xtol=1e-13)
-    return brentq(lambda t: pws_ice(t) - pw, -100, 0, xtol=1e-13)
+    return brentq(lambda t: pws_ice(t) - pw, -140, 0, xtol=1e-13)
 
 
 def W_from_wb(t, tw, p):
@@ -173,11 +175,149 @@ def kat():
 
 
 # ============================================================== extras
-EXTRAS = []
+# Product values below were read from the Probe tool (C# calculator,
+# `Probe run bs.psychrometrics <json>`, SI column, K converted to degC) and
+# are hard-coded with the probe name. FINDING rows compare the product with
+# the textbook definition; they do not change the exit code.
+
+def chk_state(c, s, W, h=None, v=None, rho=None, RH=None, tdp=None, twb=None, tol=1e-6):
+    row(c, "W (g/kg)", W, s["W"] * 1000, tol)
+    if h is not None:
+        row(c, "h (kJ/kg)", h, s["h"], tol)
+    if v is not None:
+        row(c, "v (m3/kg)", v, s["v"], tol)
+    if rho is not None:
+        row(c, "rho (kg/m3)", rho, s["rho"], tol)
+    if RH is not None:
+        row(c, "RH (%)", RH, s["RH"], tol)
+    if tdp is not None:
+        row(c, "t_dp (C)", tdp, s["tdp"], tol)
+    if twb is not None:
+        row(c, "t_wb (C)", twb, s["twb"], tol)
 
 
 def extras():
-    pass
+    p0 = 101.325
+    # --- state probes
+    s = state(25, p0, rh=50)
+    chk_state("probe a 25C 50%", s, 9.881043691, 50.3219588, 0.8580432639, 1.176958186, None, 13.8639733, 17.8893423)
+    pb = p_std(1500)
+    row("probe b alt 1500 m", "p (kPa)", 84.556, pb, 1e-4, "standard atmosphere eq. 3")
+    s = state(30, pb, twb=22)
+    chk_state("probe b 30C wb22 1500m", s, 16.69486691, 72.86543573, 1.056727413, 0.9621164872, 52.05805463, 19.0916399)
+    s = state(-10, p0, rh=80)
+    chk_state("probe c -10C 80% (ice)", s, 1.278876257, -6.885317579, 0.7470063801, None, None, -12.4895572, -10.6480143)
+    row("probe c -10C 80% (ice)", "p_ws (kPa)", 0.259902865, s["pws"], 1e-6)
+    row("probe c -10C 80% (ice)", "p_ws vs ice-table 0.2599", 0.2599, s["pws"], 5e-4, "ASHRAE Ch.1 value over ice")
+    s = state(-10, p0, twb=-12)
+    chk_state("probe d -10C wb-12 (ice)", s, 0.6257657877, -8.506599009, None, None, 39.18579277, -20.1437333)
+    s = state(30, p0, tdp=15)
+    chk_state("probe e 30C dp15", s, 10.64745529, 57.4034137, 0.8734909891, None, 40.16570059, None, 20.0976847)
+    s = state(28, p0, h=60)
+    chk_state("probe f 28C h60", s, 12.46807777, None, 0.8702255742, None, 52.65003906, 17.4293133, 20.8227283)
+    s = state(60, p0, rh=100)
+    chk_state("probe g 60C 100%", s, 152.4174649, 458.5658689, 1.175062321, 0.9807288038)
+    s = state(0, p0, rh=100)
+    chk_state("probe q 0C 100%", s, 3.774466214, 9.439940002)
+    s = state(-0.5, p0, rh=100)
+    chk_state("probe r -0.5C 100%", s, 3.620697093, 8.548996181)
+    s = state(-30, p0, rh=100)
+    chk_state("probe x -30C 100%", s, 0.2334323654, -29.60921118)
+    s = state(20, p0, W=0.0)
+    row("probe u dry air", "t_wb (C)", 5.8363616, s["twb"], 1e-6)
+    row("probe u dry air", "h (kJ/kg)", 20.12, s["h"], 1e-9)
+    s = state(5, p0, twb=-3)
+    chk_state("probe v 5C wb-3 (ice)", s, 0.09231308794, 5.261733545, None, None, 1.723473705, -38.5993006)
+    s = state(5, p0, tdp=-10)
+    chk_state("probe w 5C dp-10 (frost)", s, 1.599417523, 9.045017809, None, None, 29.78874963, None, -0.59212)
+    s = state(25, 1000.0, rh=50)
+    chk_state("probe o 25C 50% 1000 kPa", s, 0.9871033408, 27.66464576, None, None, None, None, 23.1116338)
+
+    # --- cooling with dehumidification, textbook sensible / latent split
+    for nm, t1, rh1, t2, rh2, prod in (
+        ("probe i 28C50%->12C", 28, 50, 12, 100, dict(W2=8.730119447, h2=34.100885, mw=0.003098466152, Qt=24.11079817, Qs=7.818421611, Ql=16.44801871, shr=0.322190709)),
+        ("probe s 40C50%->14C95%", 40, 50, 14, 95, dict(W2=9.46403603, h2=37.99999761, mw=0.01405308081, Qt=61.98241834, Qs=35.51269732, Ql=27.29328777, shr=0.5654349226)),
+        ("probe t 35C60%->10C", 35, 60, 10, 100, dict(W2=7.630053703, h2=29.28468331, mw=0.01381101593, Qt=60.36711635, Qs=34.79823574, Ql=26.14700974, shr=0.5709753971)),
+    ):
+        a = state(t1, p0, rh=rh1)
+        b = state(t2, p0, rh=rh2)
+        mw = a["W"] - b["W"]
+        qt = (a["h"] - b["h"]) - mw * 4.186 * t2
+        qs = h_ma(t1, a["W"]) - h_ma(t2, a["W"])      # sensible: temperature change at constant W1
+        ql = h_ma(t2, a["W"]) - b["h"]                # latent: moisture removal at t2
+        row(nm, "W_2 (g/kg)", prod["W2"], b["W"] * 1000, 1e-6)
+        row(nm, "h_2 (kJ/kg)", prod["h2"], b["h"], 1e-6)
+        row(nm, "m_w (kg/s)", prod["mw"], mw, 1e-6)
+        row(nm, "Q_total (kW)", prod["Qt"], qt, 1e-6)
+        row(nm, "Q_sens+Q_lat (kW)", prod["Qs"] + prod["Ql"], qs + ql, 1e-6, "sum agrees; labels do not")
+        finding(nm, "Q_sensible (kW)", prod["Qs"], qs, "P1-bs.psychrometrics-01")
+        finding(nm, "Q_latent (kW)", prod["Ql"], ql, "P1-bs.psychrometrics-01")
+        finding(nm, "SHR", prod["shr"], qs / (qs + ql), "P1-bs.psychrometrics-01")
+
+    # --- steam humidification
+    for nm, t1, rh1, W2, prod in (
+        ("probe j steam 20C30%", 20, 30, 8.0, dict(t2=20.4944662, RH2=53.36216115, h2=40.93039061, ms=0.003663211952, Q=9.802755184)),
+        ("probe aa steam 10C40%", 10, 40, 6.0, dict(t2=10.4567145, RH2=76.46884715, h2=25.64215176, ms=0.002970279778, Q=7.948468686)),
+    ):
+        a = state(t1, p0, rh=rh1)
+        h2 = a["h"] + (W2 / 1000 - a["W"]) * 2676
+        t2 = t_from_hW(h2, W2 / 1000)
+        b = state(t2, p0, W=W2 / 1000)
+        row(nm, "t_2 (C)", prod["t2"], t2, 1e-6)
+        row(nm, "RH_2 (%)", prod["RH2"], b["RH"], 1e-6)
+        row(nm, "h_2 (kJ/kg)", prod["h2"], h2, 1e-6)
+        row(nm, "m_s (kg/s)", prod["ms"], W2 / 1000 - a["W"], 1e-6)
+        row(nm, "Q (kW)", prod["Q"], (W2 / 1000 - a["W"]) * 2676, 1e-6)
+
+    # --- evaporative, constant-h path
+    a = state(30, p0, rh=30)
+    t2 = 30 - 0.8 * (30 - a["twb"])
+    b = state(t2, p0, h=a["h"])
+    row("probe k eff=0.8", "t_2 (C)", 20.3773452, t2, 1e-6)
+    row("probe k eff=0.8", "W_2 (g/kg)", 11.78698504, b["W"] * 1000, 1e-6)
+    row("probe k eff=0.8", "RH_2 (%)", 78.71968877, b["RH"], 1e-6)
+    row("probe k eff=0.8", "m_w_add (kg/s)", 0.003868646674, b["W"] - a["W"], 1e-6)
+    t2 = brentq(lambda t: state(t, p0, h=a["h"])["RH"] - 90, a["twb"], 30, xtol=1e-13)
+    b = state(t2, p0, h=a["h"])
+    row("probe k2 RH_2=90", "t_2 (C)", 18.9682868, t2, 1e-6)
+    row("probe k2 RH_2=90", "eff_out", 0.9171450859, (30 - t2) / (30 - a["twb"]), 1e-6)
+    a = state(20, p0, rh=50)
+    b = state(a["twb"], p0, h=a["h"])
+    row("probe ab eff=1", "RH_2 (%)", 99.4128171, b["RH"], 1e-6, "constant-h path")
+    # true adiabatic saturation conserves h - W*4.186*t*, so eff = 1 gives RH 100 %
+    ws_star = W_from_pw(pws(a["twb"]), p0)
+    finding("probe ab eff=1", "RH_2 (%)", b["RH"], 100.0, "P1-bs.psychrometrics-03")
+    finding("probe ab eff=1", "W_2 (g/kg)", b["W"] * 1000, ws_star * 1000, "P1-bs.psychrometrics-03")
+    # the product cannot reach RH_2 = 100 % (probe k3 returns a Block): highest reachable RH on the h line
+    a30 = state(30, p0, rh=30)
+    top = state(a30["twb"], p0, h=a30["h"])["RH"]
+    finding("probe k3 RH_2=100", "max reachable RH_2 (%)", top, 100.0, "P1-bs.psychrometrics-03")
+
+    # --- sensible heating, 2.5 kg/s
+    a = state(20, p0, rh=50)
+    b = state(45, p0, W=a["W"])
+    row("probe ac heating 2.5 kg/s", "Q (kW)", 63.71917695, 2.5 * (b["h"] - a["h"]), 1e-6)
+    row("probe ac heating 2.5 kg/s", "RH_2 (%)", 12.18987846, b["RH"], 1e-6)
+
+    # --- mixing, supersaturated result (fog)
+    a = state(30, p0, rh=90)
+    bb = state(5, p0, rh=100)
+    m = mix(1, 30, a["W"], 1, 5, bb["W"])
+    row("probe l mixing fog", "W_b (g/kg)", 5.401942611, bb["W"] * 1000, 1e-6)
+    row("probe l mixing fog", "W_2 (g/kg)", 14.88881983, m["W"] * 1000, 1e-6)
+    row("probe l mixing fog", "h_2 (kJ/kg)", 55.54713938, m["h"], 1e-6)
+    row("probe l mixing fog", "t_2 (C)", 17.7133804, m["t"], 1e-6)
+    row("probe l mixing fog", "RH_2 nominal (%)", 116.8475261, state(m["t"], p0, W=m["W"])["RH"], 1e-6)
+
+    # --- KAT input consistency (finding 05): RH_b = 46.93 % gives W_b = 4.952 g/kg, not 5.000
+    sb = state(15, p0, rh=46.93)
+    finding("ka-mixing input check", "W_b (g/kg) KAT text vs RH_b=46.93 %", 5.0, sb["W"] * 1000, "P1-bs.psychrometrics-05")
+    rh_for_5 = 100 * pw_from_W(0.005, p0) / pws(15)
+    finding("ka-mixing input check", "RH_b giving W_b = 5 g/kg", 46.93, rh_for_5, "P1-bs.psychrometrics-05")
+
+    # --- saturation pressure cross-check against a different formulation
+    for t in (0.01, 20, 40, 60, 90):
+        row("pws vs Wagner-Pruss", f"p_ws({t} C)", pws_wagner_pruss(t), pws_water(t), 6e-4)
 
 
 def report():
