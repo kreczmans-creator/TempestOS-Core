@@ -131,5 +131,28 @@ public static class BuildingServicesWorkedExamples
             [new CalcExpectedValue("eps", 0.5966587, "", 1e-6), new CalcExpectedValue("NTU", 1.297344, "", 1e-5), new CalcExpectedValue("A_req", 2.826653, "m^2", 1e-5), new CalcExpectedValue("T_h_out", 56.13365, "degC", 1e-6), new CalcExpectedValue("T_c_out", 59.13876, "degC", 1e-6), new CalcExpectedValue("dT_app", 16.13365, "K", 1e-5)],
             "The secondary circuit takes 120 kW from a 1.2 kg/s primary at 80 °C. ε = 0.597 and NTU = 1.30 give 2.83 m² at U_f = 2307.7 W/m²K. The primary leaves at 56.1 °C and the secondary at 59.1 °C; the approach of 16.1 K clears the 3 K minimum.",
             CalcReferenceStatus.Confirmed),
+        new(SealedSystemCalculator.Id, "heat-pump-retrofit-55-45", "Heat pump retrofit at 55/45 °C: existing radiators and expansion vessel",
+            new CalcReferenceSource("Analytic (characteristic equation; Kell 1975 density; vessel relation)", null, "Five rooms with their existing radiators re-rated from ΔT 50 K to 55/45/21 °C; 12 L vessel at 7 m static"),
+            new CalcInputSet(
+            [
+                SealedSystemCalculator.Rooms(("Lounge", 1800, 3600, 12), ("Kitchen", 1100, 2200, 8), ("Bed 1", 900, 1800, 7), ("Bed 2", 700, 1400, 5), ("Bathroom", 600, 1100, 4)) with { Provenance = CalcProvenance.FromEvidence("Room heat loss calculation (B4) and radiator survey") },
+                CalcInputValue.Quantity("t_f", 55, "degC", CalcProvenance.Specification("Heat pump design flow temperature")),
+                CalcInputValue.Quantity("t_r", 45, "degC", CalcProvenance.Specification("Heat pump design return temperature")),
+                CalcInputValue.Quantity("t_i", 21, "degC", CalcProvenance.Specification("Living-room design temperature")),
+                CalcInputValue.Of("n", 1.3, CalcProvenance.Assumed("Panel radiators, manufacturer exponent about 1.3.")),
+                CalcInputValue.Choice("dT_method", SealedSystemCalculator.Amtd, CalcProvenance.Assumed("Catalogue ratings use the arithmetic mean.")),
+                CalcInputValue.Quantity("V_pipe", 40, "L", CalcProvenance.Assumed("15 mm and 22 mm copper, about 120 m.")),
+                CalcInputValue.Quantity("V_plant", 15, "L", CalcProvenance.Specification("Heat pump and plate exchanger content, datasheet")),
+                CalcInputValue.Quantity("t_fill", 10, "degC", CalcProvenance.Assumed("Mains water at fill.")),
+                CalcInputValue.Quantity("t_max", 60, "degC", CalcProvenance.Specification("Heat pump maximum flow temperature")),
+                CalcInputValue.Quantity("h_static", 7, "m", CalcProvenance.Drawing("M-SEC-001", "A")),
+                CalcInputValue.Quantity("p_margin", 0.3, "bar", CalcProvenance.Assumed("Usual margin over static head.")),
+                CalcInputValue.Quantity("p_f", 2.5, "bar", CalcProvenance.Assumed("0.5 bar below the safety valve.")),
+                CalcInputValue.Quantity("p_prv", 3, "bar", CalcProvenance.Specification("Heat pump safety valve")),
+                CalcInputValue.Quantity("V_vessel", 12, "L", CalcProvenance.FromEvidence("Site survey: existing 12 L vessel")),
+            ]),
+            [new CalcExpectedValue("f_dT", 0.4925569, "", 1e-6), new CalcExpectedValue("R1", 3654.400, "W", 1e-6), new CalcExpectedValue("u_emit", 1.107394, "", 1e-6), new CalcExpectedValue("V_s", 91, "L", 1e-9), new CalcExpectedValue("V_e", 3.531184, "L", 1e-6)],
+            "At 55/45 °C with rooms at 21 °C the radiators give 49 % of their catalogue output. The lounge, kitchen and bedrooms fall 1.5 % short and the bathroom 11 % short (utilisation 1.107), so the check fails and those radiators need upsizing. The 91 L system needs a 3.5 L vessel, so the existing 12 L vessel is ample.",
+            CalcReferenceStatus.Confirmed),
     ];
 }
