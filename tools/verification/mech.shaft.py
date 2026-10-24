@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Independent re-derivation of mech.shaft (Track P, P1).
 
-Method sources (cited by title, edition and number only):
-  Budynas and Nisbett, Shigley's Mechanical Engineering Design, 11th ed.
-    Eq. 6-8 (S_e'), Table 6-2 (k_a), Eq. 6-19 (k_b), Table 6-4 / Eq. 6-? (k_c),
-    Table 6-5 (k_e, z_a), Eq. 6-32 (K_f), Eq. 7-7 (DE-Goodman), Eq. 7-15 (yield),
-    Eq. 7-22 / 7-23 (Rayleigh, Dunkerley), Sec. 7-7 (keys).
-  Euler-Bernoulli beam theory solved here by an own finite-element model.
+Method sources (cited by title, edition and section only):
+  Budynas and Nisbett, Shigley's Mechanical Engineering Design, 11th ed.:
+    Sec. 6-9 (endurance limit S_e', Marin factors k_a to k_f, reliability factors),
+    Sec. 6-10 (K_f = 1 + q (K_t - 1)), Sec. 6-12 (Goodman, Gerber, ASME-elliptic, Soderberg),
+    Sec. 7-4 (DE-Goodman for shafts, first-cycle yield), Sec. 7-6 (Rayleigh and Dunkerley),
+    Sec. 7-7 (parallel keys).  Equation numbers are not quoted; check them in your copy.
+  Euler-Bernoulli beam theory, solved here with an own finite-element model (cubic Hermite
+  elements, consistent mass matrix for the exact first natural frequency).
 Run: python3 tools/verification/mech.shaft.py
 Exit code: 0 when every known-answer case matches within its tolerance, else 1.
 Extra checks print PASS, FAIL or INFO.  A FAIL there is a product finding (named in the last column),
@@ -114,16 +116,6 @@ class Shaft:
         ends = [s[0] for s in segs]
         self.L = ends[-1]
 
-    def seg_at(self, x, side="right"):
-        x0 = 0.0
-        for k, (xe, d, di) in enumerate(self.segs):
-            if x < xe or (side == "left" and x <= xe) or k == len(self.segs) - 1:
-                if side == "left" and x <= x0 and k > 0:
-                    return self.segs[k - 1]
-                return self.segs[k]
-            x0 = xe
-        return self.segs[-1]
-
     def build(self, pts_extra):
         pts = {0.0, self.L, self.xA, self.xB}
         pts.update(s[0] for s in self.segs)
@@ -140,7 +132,6 @@ class Shaft:
         for e in range(n - 1):
             x1, x2 = self.nodes[e], self.nodes[e + 1]
             xm = 0.5 * (x1 + x2)
-            xe0 = 0.0
             for (xe, d, di) in self.segs:
                 if xm < xe:
                     break
@@ -224,9 +215,6 @@ class Shaft:
     def rayleigh(self, masses):
         Mt = self.point_mass_matrix(masses)
         n2 = self.K.shape[0]
-        f = np.zeros(n2)
-        for i in range(0, n2, 2):  # gravity load on translational dofs, consistent
-            pass
         ones = np.zeros(n2)
         ones[0::2] = 1.0
         fg = Mt @ ones * G  # N (kg*m/s^2)
@@ -441,6 +429,16 @@ CASES = {
         segs=[(200, 50, 46), (400, 40, 0)], xA=0, xB=400, loads=[(200, -2, 0, 0)], T=0.0, xT1=0, xT2=400,
         secs=[(200, 1, 1, 0, 0)], Sut=600, Sy=450, finish="machined or cold-drawn", R=99,
         product=dict(n_f_min=5.306470136), finding="P1-mech.shaft-02 (shoulder side chosen by outer diameter)"),
+    "E9 lower bounds: d 5 mm, S_ut 300 MPa, S_y 150 MPa, R 99.9 %, 2-plane load, T 0.5 N*m": dict(
+        segs=[(100, 5, 0)], xA=0, xB=100, loads=[(50, -0.01, 0.0, 0)], T=0.0005, xT1=0, xT2=100,
+        secs=[(50, 3.0, 2.0, 0.5, 0.6)], Sut=300, Sy=150, finish="machined or cold-drawn", R=99.9,
+        product=dict(R_A=0.005, R_B=0.005, M_max=0.00025, theta_A=0.000984146508, theta_B=0.000984146508, y_load=0.0328048836,
+                     S_e=117.2550219, n_f_min=1.866834947, n_y_min=2.154466454)),
+    "E10 upper bounds: d 300 mm, L 3000 mm, S_ut 2000 MPa, T 50 kN*m, two planes, ground, R 99.9 %": dict(
+        segs=[(3000, 300, 0)], xA=0, xB=3000, loads=[(1500, -100, 50, 0)], T=50.0, xT1=0, xT2=3000,
+        secs=[(1500, 1.5, 1.2, 0.9, 0.95)], Sut=2000, Sy=1900, finish="ground", R=99.9,
+        product=dict(R_A=55.90169944, R_B=55.90169944, M_max=83.85254916, theta_A=0.000764103643, theta_B=0.000764103643,
+                     y_load=0.764103643, S_e=276.2196178, n_f_min=5.688925151, n_y_min=38.13853956)),
     "E7 torque span covers the shaft (x_T2 = 800), same data as E6": dict(
         segs=[(800, 40, 0)], xA=50, xB=750, loads=[(400, -2, 0, 0)], T=1.0, xT1=0, xT2=800,
         secs=[(600, 1, 1, 0, 0), (300, 1, 1, 0, 0)], Sut=600, Sy=450, finish="machined or cold-drawn", R=99,
@@ -467,6 +465,11 @@ def extras():
             extra_rows.append((name, sym, pv, iv, abs(iv - pv) / abs(pv) if pv else 0.0, tag, finding if (finding and not ok) else ""))
         if "nf_sections" in o and "product_sec1_nf" in c:
             pass
+    # Key bearing against the weaker member: shaft S_y 250 MPa, key S_y 400 MPa, T 1.2 kN*m, d 50, w 14, h 9, n 2
+    lr_key_only = key_length_required(1.2e6, 50, 14, 9, 400.0, 2.0)[0]
+    lr_weaker = key_length_required(1.2e6, 50, 14, 9, 250.0, 2.0)[0]
+    extra_rows.append(("E5 variant: shaft S_y 250 MPa, key S_y 400 MPa", "L_key_req (mm)", 53.333, lr_weaker, 53.333 / lr_weaker - 1.0,
+                       "FAIL", "P1-mech.shaft-05 (key bearing ignores the shaft S_y); key-only value " + f"{lr_key_only:.3f}"))
     # Torque-span trap: show what the answer would be with the span covering the section.
     o_cov = analyze(CASES["E7 torque span covers the shaft (x_T2 = 800), same data as E6"])
     o_def = analyze(CASES["E6 torque span trap: L 800, T 1 kN*m, default x_T2 = 400 (section at 600 and 300)"])

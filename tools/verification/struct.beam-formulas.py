@@ -194,9 +194,169 @@ def kats():
     crosscheck("ss_couple_left_cw", "ss_couple_left_cw", L=6, EI=ei, M0=20)
 
 
-# ------------------------------------------------------------ extra checks (filled after probing)
+# ------------------------------------------------------------ extra checks against the C# product
+# Product values were read from the probe tool (`Probe run struct.beam-formulas`) on release/v0.26.0 code.
+# kN, m, kN*m, mm.  A mismatch prints DIFF and does not change the exit status (KAT cases only).
+PRODUCT = {'B1': {'case': 'propped_udl',
+            'kw': {'L': 8, 'E': 210, 'I': 20000, 'w': 12},
+            'prod': {'R_A': 60.0,
+                     'R_B': 36.0,
+                     'M_max': 54.0,
+                     'x_M': 5.0,
+                     'M_min': -96.0,
+                     'V_max': 60.0,
+                     'delta_max': 6.325868726,
+                     'x_delta': 3.372281323}},
+     'B2': {'case': 'ss_point',
+            'kw': {'L': 6, 'E': 210, 'I': 8000, 'P': 50, 'a': 1.5},
+            'prod': {'R_A': 37.5,
+                     'R_B': 12.5,
+                     'M_max': 56.25,
+                     'x_M': 1.5,
+                     'M_min': 0.0,
+                     'V_max': 37.5,
+                     'delta_max': 9.358543433,
+                     'x_delta': 2.645898034}},
+     'B3': {'case': 'ss_point',
+            'kw': {'L': 6, 'E': 210, 'I': 8000, 'P': 50, 'a': 3},
+            'prod': {'R_A': 25.0,
+                     'R_B': 25.0,
+                     'M_max': 75.0,
+                     'x_M': 3.0,
+                     'M_min': 0.0,
+                     'V_max': 25.0,
+                     'delta_max': 13.39285714,
+                     'x_delta': 3.0}},
+     'B4': {'case': 'ss_couple_left_cw',
+            'kw': {'L': 6, 'E': 210, 'I': 8000, 'M_0': 20},
+            'prod': {'R_A': -3.333333333,
+                     'R_B': 3.333333333,
+                     'M_max': 20.0,
+                     'x_M': 0.0,
+                     'M_min': 0.0,
+                     'V_max': 3.333333333,
+                     'delta_max': 2.749286996,
+                     'x_delta': 2.535898385}},
+     'B5': {'case': 'cant_udl',
+            'kw': {'L': 4, 'E': 200, 'I': 5000, 'w': 12},
+            'prod': {'R_A': 48.0,
+                     'R_B': 0.0,
+                     'M_max': 0.0,
+                     'x_M': 0.0,
+                     'M_min': -96.0,
+                     'V_max': 48.0,
+                     'delta_max': 38.4,
+                     'x_delta': 4.0}},
+     'B6': {'case': 'cant_point',
+            'kw': {'L': 6, 'E': 200, 'I': 5000, 'P': 30, 'a': 2.4},
+            'prod': {'R_A': 30.0,
+                     'R_B': 0.0,
+                     'M_max': 0.0,
+                     'x_M': 0.0,
+                     'M_min': -72.0,
+                     'V_max': 30.0,
+                     'delta_max': 44.928,
+                     'x_delta': 6.0}},
+     'B7': {'case': 'fixed_point_centre',
+            'kw': {'L': 6, 'E': 210, 'I': 8000, 'P': 40},
+            'prod': {'R_A': 20.0,
+                     'R_B': 20.0,
+                     'M_max': 30.0,
+                     'x_M': 3.0,
+                     'M_min': -30.0,
+                     'V_max': 20.0,
+                     'delta_max': 2.678571429,
+                     'x_delta': 3.0}},
+     'B8': {'case': 'fixed_udl',
+            'kw': {'L': 100, 'E': 210, 'I': 100000000.0, 'w': 10000.0},
+            'prod': {'R_A': 500000.0,
+                     'R_B': 500000.0,
+                     'M_max': 4166666.667,
+                     'x_M': 50.0,
+                     'M_min': -8333333.333,
+                     'V_max': 500000.0,
+                     'delta_max': 12400.79365,
+                     'x_delta': 50.0}},
+     'B9': {'case': 'ss_point',
+            'kw': {'L': 9, 'E': 70, 'I': 3000, 'P': 70, 'a': 6.3},
+            'prod': {'R_A': 21.0,
+                     'R_B': 49.0,
+                     'M_max': 132.3,
+                     'x_M': 6.3,
+                     'M_min': 0.0,
+                     'V_max': 49.0,
+                     'delta_max': 405.963025,
+                     'x_delta': 4.956813493}},
+     'B10': {'case': 'ss_udl',
+             'kw': {'L': 0.1, 'E': 210, 'I': 1, 'w': 0.5},
+             'prod': {'R_A': 0.025,
+                      'R_B': 0.025,
+                      'M_max': 0.000625,
+                      'x_M': 0.05,
+                      'M_min': 0.0,
+                      'V_max': 0.025,
+                      'delta_max': 0.0003100198413,
+                      'x_delta': 0.05}},
+     'B11': {'case': 'ss_point',
+             'kw': {'L': 6, 'E': 210, 'I': 8000, 'P': 50, 'a': 6},
+             'prod': {'R_A': 0.0,
+                      'R_B': 50.0,
+                      'M_max': 0.0,
+                      'x_M': 6.0,
+                      'M_min': 0.0,
+                      'V_max': 50.0,
+                      'delta_max': 0.0,
+                      'x_delta': 3.464101615}},
+     'B12': {'case': 'cant_point',
+             'kw': {'L': 6, 'E': 210, 'I': 8000, 'P': 10, 'a': 0},
+             'prod': {'R_A': 10.0,
+                      'R_B': 0.0,
+                      'M_max': 0.0,
+                      'x_M': 0.0,
+                      'M_min': -0.0,
+                      'V_max': 10.0,
+                      'delta_max': 0.0,
+                      'x_delta': 6.0}}}
+
+EXTRA_DIFFS = []
+MAP = {"w": "w", "P": "P", "M_0": "M0", "a": "a"}
+
+
+def xrow(probe, sym, prod, ind, tol, note=""):
+    rel = abs(prod - ind) / abs(ind) if ind else abs(prod - ind)
+    ok = rel <= max(tol, 1e-6)
+    if not ok:
+        EXTRA_DIFFS.append((probe, sym))
+    print(f"{probe:<26}{sym:<10}{prod:>14.8g}{ind:>14.8g}{rel:>11.2e}{tol:>10.1e}  {'PASS' if ok else 'DIFF'} {note}")
+
+
 def extras():
-    pass
+    print("--- extra checks: product (hard-coded) against closed form and finite elements ---")
+    ei = lambda kw: kw["E"] * 1e6 * kw["I"] * 1e-8
+    for tag, d in PRODUCT.items():
+        kw, case, prod = d["kw"], d["case"], d["prod"]
+        args = {MAP[k]: v for k, v in kw.items() if k in MAP}
+        c = closed(case, L=kw["L"], EI=ei(kw), **args)
+        name = f"{tag} {case}"[:25]
+        # the fixed-end reaction and moment keys
+        for sym in ("R_A", "R_B", "M_max", "M_min", "V_max"):
+            xrow(name, sym, prod[sym], c[sym], 1e-6)
+        # position of the extreme moment; for cantilevers the product reports the hogging extreme at x = 0
+        want_xm = 0.0 if case.startswith("cant") else c["x_M"]
+        if abs(c["M_max"]) < 1e-12 and not case.startswith("cant"):
+            want_xm = prod["x_M"]
+        xrow(name, "x_M", prod["x_M"], want_xm, 1e-6, "cantilever: position of M_min" if case.startswith("cant") else "")
+        # deflection: closed form, with the finite-element beam as the independent referee
+        note = ""
+        if case == "propped_udl":
+            f = fe(case, L=kw["L"], EI=ei(kw), **args)
+            xrow(name, "delta_max", prod["delta_max"], f["delta_max"], 1e-4, "FE referee; product uses w L^4/(185 EI), exact is /184.634 (P1-beam-formulas-02)")
+            xrow(name, "x_delta", prod["x_delta"], f["x_delta"], 1e-3, "FE referee; product measures 0.4215 L from the FIXED end (P1-beam-formulas-01)")
+        else:
+            xrow(name, "delta_max", prod["delta_max"], c["delta_max"], 1e-6)
+            if c["delta_max"] > 0:
+                xrow(name, "x_delta", prod["x_delta"], c["x_delta"], 1e-6)
+    print(f"extra checks with DIFF: {len(EXTRA_DIFFS)} {EXTRA_DIFFS}")
 
 
 if __name__ == "__main__":

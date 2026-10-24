@@ -138,8 +138,132 @@ def kat():
 
 
 # ============================================================== extras
+# Product values below were read from the Probe tool (C# calculator,
+# `Probe run bs.duct-sizing <json>`, SI column converted to mm, m/s, Pa/m, Pa)
+# and are hard-coded with the probe name. FINDING rows compare the product
+# with the textbook definition; they do not change the exit code.
+
+def size_other_side(Q, shape, a_mm, De_target_mm, step):
+    """Solve b (mm) so the equivalent diameter equals the target, then round up."""
+    fn = De_rect if shape == "rect" else De_oval
+    b = brentq(lambda b: fn(a_mm / 1000, b / 1000) * 1000 - De_target_mm, 1.0, 20000.0 if shape == "rect" else a_mm, xtol=1e-12)
+    return b, ceil_to(b, step)
+
+
+def cmp_section(case, sec, prod, tol=2e-4):
+    # tol 2e-4: the product uses mu0 = 1.716e-5 at 273.15 K; this script uses C1 = 1.458e-6. The two differ by 5e-5.
+    for key, label in (("v", "v (m/s)"), ("Re", "Re"), ("f", "f"), ("dpL", "dp/L (Pa/m)"), ("dp", "dp (Pa)"), ("De", "De (mm)")):
+        if key in prod:
+            row(case, label, prod[key], sec[key], tol)
+
+
 def extras():
-    pass
+    rho, mu = air(20, 101.325)
+    eps = 0.09
+
+    # P1, P2: round, equal friction, step 50 and 10 mm
+    for nm, step, prod in (("P1 round 0.3 m3/s, step 50", 50, dict(v=4.244131816, Re=84546.71871, f=0.01999412297, dpL=0.7227538841, dp=14.45507768)),
+                           ("P2 round 0.3 m3/s, step 10", 10, dict(v=4.541877092, f=0.01992855636, dpL=0.8534541583, dp=17.06908317)),
+                           ("P17 round 0.3 m3/s, step 1", 1, dict(v=4.837474999, dpL=0.9963077172, dp=19.92615434))):
+        Dt = size_equal_friction_round(0.3, 1.0, eps, rho, mu)
+        D = ceil_to(Dt, step)
+        row("probe " + nm, "D (mm)", {50: 300, 10: 290, 1: 281}[step], D, 1e-9)
+        cmp_section("probe " + nm, section(0.3, 20, "round", 0, D, 0, 0, eps, rho, mu), prod)
+
+    # P3: rectangular a = 500 given, b solved; P4: a blank
+    Dt = size_equal_friction_De(0.8, 1.0, eps, rho, mu)
+    b_raw, b = size_other_side(0.8, "rect", 500, Dt, 50)
+    row("probe P3 rect a=500", "b (mm)", 300, b, 1e-9)
+    cmp_section("probe P3 rect a=500", section(0.8, 20, "rect", 500, b, 0, 0, eps, rho, mu),
+                dict(v=5.333333333, De=419.9793069, f=0.01771248559, dpL=0.8467824745, dp=16.93564949))
+    a = ceil_to(1.5 * Dt, 50)
+    b_raw, b = size_other_side(0.8, "rect", a, Dt, 50)
+    row("probe P4 rect a blank", "a, b (mm) = 650, 250", 650 + 250, a + b, 1e-9, "a = 1.5 De rounded up is a product choice")
+    cmp_section("probe P4 rect a blank", section(0.8, 20, "rect", a, b, 0, 0, eps, rho, mu),
+                dict(v=4.923076923, De=428.7124327, dpL=0.7651499906, dp=15.30299981))
+
+    # P5: flat oval 800 x 400 given; P5b: oval a = 600 solved; P15: given as 400 x 800 (swapped)
+    cmp_section("probe P5 oval 800x400", section(0.8, 20, "oval", 800, 400, 0, 0, eps, rho, mu),
+                dict(v=2.800495768, De=591.4958477, f=0.0183401102, dpL=0.1582250543, dp=3.164501087))
+    cmp_section("probe P15 oval 400x800", section(0.8, 20, "oval", 800, 400, 0, 0, eps, rho, mu),
+                dict(v=2.800495768, De=591.4958477, dpL=0.1582250543))
+    b_raw, b = size_other_side(0.8, "oval", 600, Dt, 50)
+    row("probe P5b oval a=600", "b (mm)", 300, b, 1e-9)
+    cmp_section("probe P5b oval a=600", section(0.8, 20, "oval", 600, b, 0, 0, eps, rho, mu),
+                dict(v=4.978659142, De=443.6218858, dpL=0.6466837928, dp=12.93367586))
+
+    # P6, P6c, P6d: velocity method, rectangular and oval with a = 500 given (target 6 m/s)
+    for nm, step, shape, bprod, vprod in (("P6 rect, step 50", 50, "rect", 200, 5.0), ("P6c rect, step 10", 10, "rect", 190, 5.263157895),
+                                          ("P6d oval, step 10", 10, "oval", 200, 5.469506452)):
+        # textbook velocity method: area = Q / v
+        if shape == "rect":
+            b_area = 0.5 / 6 / 0.5 * 1000
+            b_round = ceil_to(b_area, step)
+            v_ind = 0.5 / (0.5 * b_round / 1000)
+        else:
+            f_ = lambda b: area_oval(0.5, b / 1000) - 0.5 / 6
+            b_area = brentq(f_, 1.0, 499.0)
+            b_round = ceil_to(b_area, step)
+            v_ind = 0.5 / area_oval(0.5, b_round / 1000)
+        # product sizes b from the equivalent diameter of a round duct at 6 m/s
+        De_t = math.sqrt(4 * 0.5 / (math.pi * 6)) * 1000
+        _, b_prod_expected = size_other_side(0.5, shape, 500, De_t, step)
+        row("probe " + nm, "b by equivalent-D rule (mm)", bprod, b_prod_expected, 1e-9, "reproduces the product rule")
+        finding("probe " + nm, "b (mm) vs area rule", bprod, b_round, "P1-bs.duct-sizing-01")
+        finding("probe " + nm, "v (m/s) vs 6 m/s target", vprod, v_ind, "P1-bs.duct-sizing-01")
+
+    # P7: velocity method, D lands exactly on a step
+    Q7 = math.pi / 4 * 0.35**2 * 6
+    D7 = ceil_to(math.sqrt(4 * Q7 / (math.pi * 6)) * 1000, 50)
+    row("probe P7 exact step", "D (mm)", 350, D7, 1e-9)
+
+    # P8: laminar and transitional flow in a given 400 mm duct
+    cmp_section("probe P8 Q=0.001 laminar", section(0.001, 20, "round", 0, 400, 0, 0, eps, rho, mu),
+                dict(v=0.007957747155, Re=211.3667968, f=0.3027911714, dpL=2.885991789e-05))
+    cmp_section("probe P8b Q=0.05 transition", section(0.05, 20, "round", 0, 400, 0, 0, eps, rho, mu),
+                dict(v=0.3978873577, Re=10568.33984, f=0.03079048224, dpL=0.007336828753))
+
+    # P9: T = 40 C, p = 80 kPa;  P13: eps = 0 and 3 mm;  P14: T = -20 and 200 C
+    for nm, T, pk, ep, prod in (("P9 40C 80kPa", 40, 80, 0.09, dict(Re=148511.8749, f=0.01798316011, dpL=1.266860371)),
+                                ("P13 eps=0", 20, 101.325, 0.0, dict(f=0.01546917094, dpL=1.474412219)),
+                                ("P13b eps=3", 20, 101.325, 3.0, dict(f=0.03481472759, dpL=3.318294172)),
+                                ("P14 -20C", -20, 101.325, 0.09, dict(Re=274778.963, f=0.01660297501, dpL=1.832524391)),
+                                ("P14b 200C", 200, 101.325, 0.09, dict(Re=92351.74859, f=0.01937956288, dpL=1.144423887))):
+        r_, m_ = air(T, pk)
+        cmp_section("probe " + nm, section(1.0, 10, "round", 0, 400, 0, 0, ep, r_, m_), prod, 2e-3)
+
+    # P10: very large duct sized by equal friction
+    Dt = size_equal_friction_round(100, 0.3, eps, rho, mu)
+    D = ceil_to(Dt, 50)
+    row("probe P10 100 m3/s", "D (mm)", 3250, D, 1e-9)
+    cmp_section("probe P10 100 m3/s", section(100, 50, "round", 0, D, 0, 0, eps, rho, mu),
+                dict(v=12.05433889, f=0.01095448897, dpL=0.2948676693, dp=14.74338347), 2e-3)
+
+    # P11: three sections, index flags
+    Dt = size_equal_friction_round(1.2, 1.0, eps, rho, mu)
+    s1 = section(1.2, 15, "round", 0, ceil_to(Dt, 50), 0.3, 20, eps, rho, mu)
+    Dt2 = size_equal_friction_De(0.7, 1.0, eps, rho, mu)
+    a2 = 400
+    _, b2 = size_other_side(0.7, "rect", a2, Dt2, 50)
+    s2 = section(0.7, 10, "rect", a2, b2, 1.0, 0, eps, rho, mu)
+    Dt3 = size_equal_friction_round(0.5, 1.0, eps, rho, mu)
+    s3 = section(0.5, 8, "round", 0, ceil_to(Dt3, 50), 2.0, 30, eps, rho, mu)
+    row("probe P11 three sections", "dp_s1 (Pa)", 38.1687671, s1["dp"], 1e-5)
+    row("probe P11 three sections", "dp_s2 (Pa)", 22.60118668, s2["dp"], 1e-5)
+    row("probe P11 three sections", "dp_s3 (Pa)", 69.47578587, s3["dp"], 1e-5)
+    row("probe P11 three sections", "dp_index (Pa) = s1 + s2", 60.76995378, s1["dp"] + s2["dp"], 1e-5)
+    row("probe P11 three sections", "dp_all (Pa)", 130.2457396, s1["dp"] + s2["dp"] + s3["dp"], 1e-5)
+
+    # P18: aspect ratio 10:1 is accepted with no warning (product value, De from the relation)
+    cmp_section("probe P18 1000x100", section(0.8, 20, "rect", 1000, 100, 0, 0, eps, rho, mu),
+                dict(v=8.0, De=301.0198819, dpL=4.417872092))
+
+    # Size range of the product's equal-friction search: 20 mm to 5000 mm (probes P12 and the Q scan)
+    finding("equal-friction size range", "D (mm), 400 m3/s at 0.3 Pa/m (limit 5000)", 5000.0, size_equal_friction_round(400, 0.3, eps, rho, mu), "P1-bs.duct-sizing-04")
+    finding("equal-friction size range", "D (mm), 1e-4 m3/s at 5 Pa/m (limit 20)", 20.0, size_equal_friction_round(1e-4, 5.0, eps, rho, mu), "P1-bs.duct-sizing-04")
+
+    # Colebrook and viscosity cross-check at 20 C against a reference viscosity
+    finding("air viscosity at 20 C (uPa.s)", "Sutherland (product) vs about 18.2", 18.134, 18.2, "P1-bs.duct-sizing-06")
 
 
 def report():

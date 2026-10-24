@@ -75,7 +75,7 @@ rows = []   # (kind, case, symbol, expected, value, rel, tol, ok)
 
 
 def check(kind, name, sym, expected, value, tol):
-    rel = abs(value - expected) / abs(expected) if expected != 0 else abs(value - expected)
+    rel = abs(value - expected) / max(abs(expected), 1e-6)      # absolute below 1e-6
     rows.append((kind, name, sym, expected, value, rel, tol, rel <= max(tol, 1e-6)))
 
 
@@ -145,12 +145,12 @@ Ju_c = (8 * b_ ** 3 + 6 * b_ * d_ ** 2 + d_ ** 3) / 12 - b_ ** 4 / (2 * b_ + d_)
 check("CLOSED", "C-section", "J_u", dict((e[0], e[3]) for e in EXTRAS)["C-section"]["J_u"], Ju_c, 1e-6)
 check("CLOSED", "rect-60x140-torsion", "J_u", dict((e[0], e[3]) for e in EXTRAS)["rect-60x140-torsion"]["J_u"], (60 + 140) ** 3 / 6, 1e-6)
 ring_J = dict((e[0], e[3]) for e in EXTRAS)["ring-48-torsion"]["J_u"]
-check("CLOSED", "ring-48-torsion", "J_u(2*pi*r^3)", 2 * math.pi * 100 ** 3, ring_J, 2e-3)   # 48-sided polygon
+check("CLOSED", "ring-48-torsion", "J_u(2*pi*r^3)", 2 * math.pi * 100 ** 3, ring_J, 5e-3)   # 48-sided polygon, 0.4 % below the circle
 
 # Guard checks. Product behaviour was read from the Probe tool.
 # 1. A single vertical weld is blocked ("collinear"). The closed form for one line gives J_u = d^3/12.
 one = weld([(0, 0, 0, 100)], F_y=-10, e_x=100, e_y=50)
-rows.append(("BLOCK", "single-vertical", "J_u(d^3/12)", 100 ** 3 / 12, one["J_u"], abs(one["J_u"] - 100 ** 3 / 12) / (100 ** 3 / 12), 1e-6, False))
+check("BLOCK", "single-vertical", "runs(1=yes)", 0.0, 1.0, 0.0)   # product blocks it (0); the case is valid (1)
 print(f"note  single vertical weld: product blocks it. Independent J_u {one['J_u']:.1f} mm^3, f_r,max {one['f_r_max']:.2f} N/mm, u {one['u']:.3f}.")
 # 2. A single diagonal weld under M_x: the moment about the line itself cannot be resisted.
 diag = weld([(0, 0, 100, 100)], M_x=5, F_y=0, e_x=50, e_y=50)
