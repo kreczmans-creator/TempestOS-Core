@@ -26,7 +26,9 @@ PERM, ACC = "G permanent", "accidental"
 
 def combos(actions, sign, gsup=1.35, ginf=1.0, gq=1.5, xi=0.85, kfi=1.0, method="6.10", psi=PSI):
     """Return dict of extreme effects. sign=+1 for maximum, -1 for minimum.
-    actions: list of (name, category, Fk). Works on s = sign*Fk so 'adds' means s > 0."""
+    actions: list of (name, category, Fk). Works on s = sign*Fk so 'adds' means s > 0.
+    K_FI multiplies every unfavourable action in ULS: gamma_G,sup (v0.26.0, Opus review) and gamma_Q.
+    It does not multiply gamma_G,inf (favourable permanent actions) or any SLS or accidental factor."""
     G = [(n, sign * f) for n, c, f in actions if c == PERM]
     Q = [(n, c, sign * f) for n, c, f in actions if c not in (PERM, ACC)]
     A = [(n, sign * f) for n, c, f in actions if c == ACC]
@@ -46,11 +48,11 @@ def combos(actions, sign, gsup=1.35, ginf=1.0, gq=1.5, xi=0.85, kfi=1.0, method=
     r = {}
     # ULS
     if method == "6.10":
-        r["uls"] = best(lambda k: perm(gsup, ginf) + sum(
+        r["uls"] = best(lambda k: perm(gsup * kfi, ginf) + sum(
             gq * kfi * pos(s) * (1.0 if j == k else psi[c][0]) for j, (n, c, s) in enumerate(Q)))
     else:
-        a = perm(gsup, ginf) + sum(gq * kfi * psi[c][0] * pos(s) for n, c, s in Q)
-        b = best(lambda k: perm(xi * gsup, ginf) + sum(
+        a = perm(gsup * kfi, ginf) + sum(gq * kfi * psi[c][0] * pos(s) for n, c, s in Q)
+        b = best(lambda k: perm(xi * gsup * kfi, ginf) + sum(
             gq * kfi * pos(s) * (1.0 if j == k else psi[c][0]) for j, (n, c, s) in enumerate(Q)))
         r["uls"] = max(a, b)
         r["610a"], r["610b"] = a, b
@@ -105,7 +107,7 @@ PRODUCT = [
      {'E_d_max': 24.75, 'E_d_min': 10.0, 'E_k_max': 17.5, 'E_k_min': 10.0, 'E_fr_max': 12.5, 'E_fr_min': 10.0, 'E_qp_max': 11.5, 'E_qp_min': 10.0, 'E_acc_max': 42.5, 'E_acc_min': 10.0}),
     ('L4_kfi_equ', [('Roof G', 'G permanent', 10), ('Wind uplift', 'wind', -20), ('Roof imposed', 'H roofs', 3)],
      {'gsup': 1.1, 'ginf': 0.9, 'kfi': 1.1},
-     {'E_d_max': 15.95, 'E_d_min': -24.0, 'E_k_max': 13.0, 'E_k_min': -10.0, 'E_fr_max': 10.0, 'E_fr_min': 6.0, 'E_qp_max': 10.0, 'E_qp_min': 10.0}),
+     {'E_d_max': 17.05, 'E_d_min': -24.0, 'E_k_max': 13.0, 'E_k_min': -10.0, 'E_fr_max': 10.0, 'E_fr_min': 6.0, 'E_qp_max': 10.0, 'E_qp_min': 10.0}),
     ('L5_no_perm', [('Wind', 'wind', 5), ('Thermal', 'thermal', -2)],
      {},
      {'E_d_max': 7.5, 'E_d_min': -3.0, 'E_k_max': 5.0, 'E_k_min': -2.0, 'E_fr_max': 1.0, 'E_fr_min': -1.0, 'E_qp_max': 0.0, 'E_qp_min': 0.0}),
