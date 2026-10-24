@@ -1,0 +1,96 @@
+# elec.load-budget — independent re-derivation (Track P, P1)
+Calculator: Load budget, PSU, transformer and battery, version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Electrical/LoadBudgetCalculator.cs. Spec: docs/calcs/electrical/elec.load-budget.md.
+Script: tools/verification/elec.load-budget.py (exit 0 = all KATs match; 64 checks, 17 KAT rows and 47 extra rows).
+Verdict: MATCH WITH FINDINGS
+
+The arithmetic matches all four KATs. One High finding concerns the starting peak when diversity or duty is below 1. Four Medium findings concern missing terms and silent defaults.
+
+## Method re-derived
+- Demand per load P·d·k. Apparent power P·d·k/cosφ, with DC loads at power factor 1. Sums are arithmetic.
+- Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC. Units: kW, kVA, V, A.
+- Heat: Φ = Σ(1 − η)·P·d·k, with P the electrical input.
+- PSU: P_PSU,req = margin·P_DC/f_derate. Utilisation is required over selected.
+- Transformer: S_T,req = margin·S_dem. Starting peak S_peak = S_dem + max((m − 1)·S_i), compared with k_T·S_T.
+- Battery: I_b = Σ backed P·d·k/(U_b·η_conv). C = I_b·t/(DoD·η_b·k_temp·k_age).
+- Peukert: Linden's Handbook of Batteries, 5th ed., relation t = H·(C/(I·H))^k. Solved for rated capacity it gives C = I·H·(t/H)^(1/k). I did not check the chapter number.
+- In my blind script I took S_i as the demand-weighted apparent power, as the KAT does. The KAT cannot tell the two conventions apart, because the pump has d = k = 1. See P1-01.
+
+## Known-answer cases
+| Case | Symbol | KAT expected | Independent | Rel. diff | KAT tol | Result |
+|---|---|---|---|---|---|---|
+| ka-mixed-buses | P_dem (kW) | 9.12 | 9.12 | 0 | 1e-09 | PASS |
+| ka-mixed-buses | S_dem (kVA) | 10.73958 | 10.73958 | 1.9e-07 | 1e-06 | PASS |
+| ka-mixed-buses | I_3ph (A) | 14.72031 | 14.72031 | 5.1e-08 | 1e-06 | PASS |
+| ka-mixed-buses | I_1ph (A) | 1.830664 | 1.830664 | 2.1e-07 | 1e-06 | PASS |
+| ka-mixed-buses | I_DC (A) | 5 | 5 | 0 | 1e-09 | PASS |
+| ka-mixed-buses | Phi (kW) | 0.927 | 0.927 | 2.4e-16 | 1e-09 | PASS |
+| ka-mixed-buses | P_PSU_req (W) | 150 | 150 | 0 | 1e-09 | PASS |
+| ka-mixed-buses | S_T_req (kVA) | 13.42448 | 13.42448 | 1.8e-07 | 1e-06 | PASS |
+| ka-mixed-buses | S_peak (kVA) | 54.85723 | 54.85723 | 1.6e-08 | 1e-06 | PASS |
+| ka-mixed-buses | C_req (A·h) | 32.89474 | 32.89474 | 9.6e-08 | 1e-06 | PASS |
+| ka-battery | I_b (A) | 7 | 7 | 0 | 1e-09 | PASS |
+| ka-battery | C_req (A·h) | 51.16959 | 51.16959 | 1.3e-08 | 1e-06 | PASS |
+| ka-battery | u_batt | 0.9303562 | 0.9303562 | 7.0e-09 | 1e-06 | PASS |
+| ka-peukert | Ah (A·h) | 26.15321 | 26.15321 | 1.1e-08 | 1e-06 | PASS |
+| ka-peukert | C_req (A·h) | 43.01515 | 43.01515 | 5.7e-08 | 1e-06 | PASS |
+| ka-psu-derating | P_PSU_req (W) | 333.3333 | 333.3333 | 1.0e-07 | 1e-06 | PASS |
+| ka-psu-derating | u_PSU | 1.388889 | 1.388889 | 8.0e-08 | 1e-06 | PASS |
+
+All 17 rows match. Two cases are Unconfirmed: ka-peukert and ka-psu-derating. The Peukert form agrees with the relation as I know it. I could not check the Phoenix Contact datasheet, so the factor 0.75 at 70 °C stays unverified.
+
+## Extra probes (product vs independent)
+| Probe | Inputs (short) | Symbol | Product | Independent | Rel. diff | Result |
+|---|---|---|---|---|---|---|
+| x1 | 11 kW pump, cosφ 0.85, d 0.5, m 6 | S_dem / I_3ph | 6.4706 kVA / 9.3395 A | same | <1e-10 | PASS |
+| x1 | same | S_peak | 38.824 kVA | 38.824 (product convention) | <1e-10 | PASS, but see P1-01 |
+| x2 | same pump, d 1 | S_peak | 77.647 kVA | 77.647 | <1e-10 | PASS |
+| x3 | DC only, 4 kW, η 0.9, 2 h | I_DC / P_PSU_req | 166.67 A / 5000 W | same | <1e-9 | PASS |
+| x3 | same | C_req | 548.25 A·h | 548.25 A·h | 2e-10 | PASS |
+| x3 | same | I_3ph / I_1ph | 0 A / 0 A | 0 A / 0 A | 0 | PASS, but see P1-02 |
+| x4 | Peukert, 10 A, t 72 h, H 20 h, k 1.3 | Ah | 535.74 A·h | 535.74 A·h | 2e-10 | PASS |
+| x5 | Peukert, 10 A, t 1 h, H 20 h, k 1.3 | Ah | 19.964 A·h | 19.964 A·h | 5e-11 | PASS |
+| x6 | AC3 5 kW, other cells blank | S_dem / I_3ph | 5 kVA / 7.2169 A | same (cosφ = 1) | <1e-10 | PASS, but see P1-03 |
+| x7 | DC 200 W, 55 °C, f = 1 | P_PSU_req | 250 W | 250 W | 0 | PASS |
+| x8 | Pump and fan, S_T 15 kVA, k_T 3, margin 1.5 | u_T / u_inrush | 1.0199 / 1.2070 | same | <1e-9 | PASS |
+| x9 | η_conv 0.5, U_b 2 V, DoD 0.05, 10 h | C_req | 31 579 A·h | 31 579 A·h | 2e-10 | PASS |
+| x10 | 200 kW, cosφ 0.5, η 0.5, m 20, 12 V | I_3ph / Phi | 19 245 A / 100 kW | same | <1e-9 | PASS |
+| x11 | 500 W in W, cosφ 0.9 | I_1ph | 2.4155 A | 2.4155 A | 8e-11 | PASS |
+| x12 | k_p given, H_rate blank | Ah | 20 A·h (Peukert off, warning) | 20 A·h | 0 | PASS |
+| x13 | 168 W DC backed, 4 h, PSU 240 W, 55 A·h | u_PSU / u_batt | 0.875 / 0.8373 | same | <1e-9 | PASS |
+
+The product blocks an empty loads table. It warns when only one of k_p and H_rate is given. It warns when the ambient exceeds 40 °C and f_derate is 1.
+
+## Implementation comparison
+| Aspect | Spec / textbook | Implementation | Agrees? |
+|---|---|---|---|
+| Demand and apparent power | P·d·k, P·d·k/cosφ | Same; DC at power factor 1 | Yes |
+| Bus currents | Per supply | AC loads only in I_3ph and I_1ph; DC in I_DC | Partly; see P1-02 |
+| Heat | Σ(1 − η)·P·d·k | Same, all rows | Yes; see P1-05 |
+| PSU | margin·P_DC/f | Same, DC loads only | Partly; see P1-04 |
+| Transformer | margin·S | Same | Yes |
+| Starting peak | S + max((m − 1)·S_i) | S_i is P·d·k/cosφ | Formula yes; physics no, see P1-01 |
+| Battery | I_b·t/(DoD·η_b·k_temp·k_age) | Same | Yes |
+| Peukert | I_b·H·(t/H)^(1/k_p) | Same, no limit on t against H | Yes; see P1-06 |
+| Blank optional cells | Not stated | Taken as 1 (cosφ, η, d, k, inrush) | Silent; see P1-03 |
+| Ranges | Spec lists them | Hard limits match the spec | Yes |
+
+## Findings
+| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|
+| P1-elec.load-budget-01 | High | The starting peak uses the demand-weighted apparent power of the starting load. A load starts at its full rating. When d·k is below 1, S_peak is too low and the transformer inrush check is unconservative. | 11 kW pump, cosφ 0.85, m 6, d 0.5, alone: product S_peak = 38.82 kVA. With d 1 it is 77.65 kVA. The load starts at full rating in both cases. The fully loaded start is S_dem − S_i,demand + m·S_i,full = 77.65 kVA, so the product is 50 % low. | Use S_peak = S_dem − P_i·d_i·k_i/cosφ_i + m_i·P_i/cosφ_i, and take the largest over non-DC rows. Add a KAT with d·k below 1 for the largest starter. |
+| P1-elec.load-budget-02 | Medium | DC loads count in S_dem and S_T,req but their AC-side input is missing from I_3ph and I_1ph. I_3ph feeds the cable calculation E4. The convention note says the PSU loss is a load row, but that row would double count in S_dem. | Only a 4 kW DC load: S_dem 4 kVA, S_T,req 5 kVA, I_3ph 0 A, I_1ph 0 A. | Add PSU efficiency and power factor inputs. Add the AC input of the PSU to I_1ph or I_3ph, and state which supply feeds the PSU. |
+| P1-elec.load-budget-03 | Medium | Blank optional cells (cosφ, η, d, k, inrush) become 1 with no notice. S_dem, currents and heat come out low for an AC row with only P. | AC3 5 kW, other cells blank: S_dem 5 kVA, I_3ph 7.22 A, Phi 0 kW. With cosφ 0.85 the current is 8.49 A, 18 % higher. | Warn per row for each defaulted cell. Make cosφ required for AC rows. |
+| P1-elec.load-budget-04 | Medium | The PSU rating covers DC loads only. It leaves out battery charging power for battery-backed loads. The check can pass a PSU that cannot also charge the battery. | 168 W DC backed load, 4 h, battery 55 A·h, PSU 240 W: u_PSU 0.875, pass. A 0.1C charge at 24 V needs about 132 W extra. | Add an optional charge-current input, or warn when backed loads and t_auto are both set. |
+| P1-elec.load-budget-05 | Medium | Phi (→ E2 enclosure) includes the heat of every row, including motors in the field. It also leaves out the PSU's own loss. The label "Heat dissipated (→ E2)" is misleading. | KAT mixed buses: Phi 0.927 kW, of which pump and fan give 0.915 kW. Only the controls row (0.012 kW) is a panel load, before PSU loss. | Add an "inside enclosure" flag per row. Add PSU loss to Phi. Reword the port label. |
+| P1-elec.load-budget-06 | Low | Peukert gives a capacity credit when t_auto exceeds H_rate, with no notice. This is unconservative and needs data outside the rated range. | 10 A, t 72 h, H 20 h, k_p 1.3: Ah = 535.7 A·h against I·t = 720 A·h (26 % less). | Warn when t_auto > H_rate. Or limit Ah to at least I_b·t. |
+| P1-elec.load-budget-07 | Low | Autonomy above 0 with no backed load gives C_req = 0 and no notice. | One unbacked DC load, t_auto 4 h: I_b 0 A, C_req 0 A·h. | Warn that no row is battery-backed. |
+| P1-elec.load-budget-08 | Low | The inrush check treats the start as a thermal overload with default k_T = 3 and no source. It has no voltage-dip check. | Template default k_T 3. u_inrush = S_peak/(3·S_T). | Cite a source for k_T, or leave it empty. Add a note that voltage dip is not assessed. |
+| P1-elec.load-budget-09 | Info | η_b, DoD and Peukert all apply together. This may double count rate loss. It is conservative. | ka-peukert: 43.0 A·h against 26.2 A·h before derates. | Document it. |
+| P1-elec.load-budget-10 | Info | The PSU derating is a user-entered factor. The warning needs both ambient above 40 °C and f_derate = 1. A factor typed for another ambient raises no warning. | θ 55 °C, f = 1: warning appears. θ 55 °C, f = 0.9: no warning. | None, or add the datasheet curve as a record. |
+
+## Notes for the owner's manual test
+- Load the KAT mixed-buses rows. Expect P_dem 9.12 kW, S_dem 10.740 kVA, I_3ph 14.72 A, Phi 0.927 kW, S_peak 54.86 kVA, C_req 32.89 A·h.
+- Change the pump to d = 0.5 and remove the fan. Expect S_peak 38.8 kVA from the product. Your hand value for a full-rating start is 77.6 kVA (finding 01).
+- Enter one DC load of 4 kW. Expect I_DC 166.7 A, P_PSU,req 5000 W, and I_3ph and I_1ph both 0 A (finding 02).
+- Set k_p 1.2, H_rate 20 h, 4 h, 5 A. Expect Ah 26.15 A·h and C_req 43.02 A·h with the default derates.
+- Set 70 °C, f_derate 0.75, 200 W DC, PSU 240 W. Expect P_PSU,req 333.3 W and u_PSU 1.389. Check 0.75 against the datasheet curve.

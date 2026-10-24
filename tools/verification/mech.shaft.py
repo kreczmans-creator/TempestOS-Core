@@ -7,7 +7,10 @@ Method sources (cited by title, edition and number only):
     Table 6-5 (k_e, z_a), Eq. 6-32 (K_f), Eq. 7-7 (DE-Goodman), Eq. 7-15 (yield),
     Eq. 7-22 / 7-23 (Rayleigh, Dunkerley), Sec. 7-7 (keys).
   Euler-Bernoulli beam theory solved here by an own finite-element model.
-Run: python3 tools/verification/mech.shaft.py   (exit 0 = all KATs and extra checks match)
+Run: python3 tools/verification/mech.shaft.py
+Exit code: 0 when every known-answer case matches within its tolerance, else 1.
+Extra checks print PASS, FAIL or INFO.  A FAIL there is a product finding (named in the last column),
+not a script error, and it does not change the exit code.
 """
 import math
 import sys
@@ -295,6 +298,17 @@ def kat3():
     check("ka-shigley-7-1", "n_y_min", 4.585856, n_yield(sa, tm, sy), 1e-5)
 
 
+def other_criteria():
+    """Same stresses as ka-shigley-7-1 under the other fatigue criteria (information, no KAT)."""
+    sut, sy, d = 735.0, 574.0, 28.0
+    se = endurance(sut, "machined or cold-drawn", d, 99.0)
+    sa, tm = stresses(d, 0.0, 142400.0, 124300.0, 1.68, 1.42, 0.85, 0.92)
+    print()
+    print("Other fatigue criteria for the ka-shigley-7-1 stresses (information only):")
+    print(f"  DE-Goodman  {n_goodman(sa, tm, se, sut):.4f}   DE-Gerber {n_gerber(sa, tm, se, sut):.4f}   "
+          f"DE-ASME {n_asme(sa, tm, se, sy):.4f}   DE-Soderberg {n_soderberg(sa, tm, se, sy):.4f}")
+
+
 def report():
     print(f"{'case':26s} {'symbol':20s} {'KAT':>13s} {'independent':>13s} {'rel.diff':>10s} {'tol':>8s}  result")
     allok = True
@@ -351,11 +365,14 @@ def analyze(c):
     lo, hi = min(c["xT1"], c["xT2"]), max(c["xT1"], c["xT2"])
     for (x, kt, kts, q, qs) in c.get("secs", []):
         touching = [s for k, s in enumerate(sh_segs) if (sh_segs[k - 1][0] if k else 0.0) - 1e-9 <= x <= s[0] + 1e-9]
-        _, d, di = min(touching, key=lambda s: s[1])
-        se = endurance(sut, c["finish"], d, c["R"], c.get("kd", 1.0), c.get("kf", 1.0))
         tm = T if lo - 1e-9 <= x <= hi + 1e-9 else 0.0
-        sa, tau = stresses(d, di, mom(x), tm, kt, kts, q, qs)
-        inv = sa / se + math.sqrt(3) * tau / sut
+        inv, se, sa, tau = -1.0, 0.0, 0.0, 0.0
+        for _, d, di in touching:  # a shoulder is checked on both sides; the worse side governs
+            se_i = endurance(sut, c.get("finish", "machined or cold-drawn"), d, c.get("R", 99.0), c.get("kd", 1.0), c.get("kf", 1.0))
+            sa_i, tau_i = stresses(d, di, mom(x), tm, kt, kts, q, qs)
+            inv_i = sa_i / se_i + math.sqrt(3) * tau_i / sut
+            if inv_i > inv:
+                inv, se, sa, tau = inv_i, se_i, sa_i, tau_i
         nf_list.append(1 / inv if inv > 0 else 1e9)
         ny_list.append(n_yield(sa, tau, sy) if (sa or tau) else 1e9)
         se_list.append(se)
@@ -420,6 +437,10 @@ CASES = {
         segs=[(800, 40, 0)], xA=50, xB=750, loads=[(400, -2, 0, 0)], T=1.0, xT1=0, xT2=400,
         secs=[(600, 1, 1, 0, 0), (300, 1, 1, 0, 0)], Sut=600, Sy=450, finish="machined or cold-drawn", R=99,
         product=dict(n_f_min=2.149234871, n_y_min=3.136755711), finding="P1-mech.shaft-03 (default torque span)"),
+    "E8 shoulder hollow 50/46 mm to solid 40 mm: both sides must be checked": dict(
+        segs=[(200, 50, 46), (400, 40, 0)], xA=0, xB=400, loads=[(200, -2, 0, 0)], T=0.0, xT1=0, xT2=400,
+        secs=[(200, 1, 1, 0, 0)], Sut=600, Sy=450, finish="machined or cold-drawn", R=99,
+        product=dict(n_f_min=5.306470136), finding="P1-mech.shaft-02 (shoulder side chosen by outer diameter)"),
     "E7 torque span covers the shaft (x_T2 = 800), same data as E6": dict(
         segs=[(800, 40, 0)], xA=50, xB=750, loads=[(400, -2, 0, 0)], T=1.0, xT1=0, xT2=800,
         secs=[(600, 1, 1, 0, 0), (300, 1, 1, 0, 0)], Sut=600, Sy=450, finish="machined or cold-drawn", R=99,
@@ -493,5 +514,6 @@ if __name__ == "__main__":
     extras()
     ok = report()
     report_extras()
+    other_criteria()
     print("KATs: ALL PASS" if ok else "KATs: FAILURES PRESENT")
     sys.exit(0 if ok else 1)

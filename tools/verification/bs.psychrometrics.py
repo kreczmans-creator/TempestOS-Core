@@ -123,7 +123,10 @@ def state(t, p, rh=None, W=None, tdp=None, twb=None, h=None):
              tdp=dew_point(pw), h=h_ma(t, W), v=v_ma(t, W, p))
     s["rho"] = (1 + W) / s["v"]
     # thermodynamic wet-bulb: root of the adiabatic-saturation relation
-    s["twb"] = brentq(lambda tw: W_from_wb(t, tw, p) - W, -60, t + 1e-9, xtol=1e-13) if W > 0 else None
+    try:
+        s["twb"] = brentq(lambda tw: W_from_wb(t, tw, p) - W, -60, t + 1e-9, xtol=1e-13)
+    except ValueError:      # supersaturated: no wet-bulb exists
+        s["twb"] = float("nan")
     return s
 
 
