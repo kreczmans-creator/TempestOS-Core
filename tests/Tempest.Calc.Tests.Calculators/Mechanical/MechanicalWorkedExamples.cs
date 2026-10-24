@@ -155,6 +155,29 @@ public static class MechanicalWorkedExamples
             GroupInputs([(0, -100), (100, -100), (0, 100), (100, 100)], fy: 0, ex: 0, ey: 0, mx: 20, vr: 40, tr: 60),
             [new CalcExpectedValue("t_max", 50, "kN", 1e-6), new CalcExpectedValue("u_max", 0.83333, "", 1e-4)],
             "Four bolts in two rows 200 mm apart under a 20 kN·m moment: the tension row sees 50 kN per bolt, 83 % of a 60 kN tension resistance; no shear."),
+        new(BearingLifeCalculator.Id, "skf-6206-pump", "Pump shaft bearing, SKF 6206 at 1500 rpm, 95 % reliability",
+            new CalcReferenceSource("SKF Rolling bearings catalogue (PUB BU/P1 17000)", "2018", "6206 ratings C = 20.3 kN, C_0 = 11.2 kN (distributor listing; check against SKF's own product page)"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Choice("type", BearingLifeCalculator.Ball, CalcProvenance.Assumed("Deep groove ball bearing.")),
+                CalcInputValue.Quantity("F_r", 2.5, "kN", CalcProvenance.Assumed("Radial reaction from the shaft calculation.")),
+                CalcInputValue.Quantity("F_a", 0, "kN", CalcProvenance.Assumed("Locating bearing elsewhere; no axial load here.")),
+                CalcInputValue.Quantity("n", 1500, "rpm", CalcProvenance.Specification("Pump datasheet, rated speed")),
+                CalcInputValue.Quantity("C", 20.3, "kN", Book("SKF catalogue, 6206")),
+                CalcInputValue.Quantity("C_0", 11.2, "kN", Book("SKF catalogue, 6206")),
+                CalcInputValue.Of("e_lim", 0.22, Book("Manufacturer factor for single-row deep groove bearings")),
+                CalcInputValue.Of("X", 0.56, Book("Manufacturer factor for single-row deep groove bearings")),
+                CalcInputValue.Of("Y", 2, Book("Manufacturer factor for single-row deep groove bearings")),
+                CalcInputValue.Of("X_0", 0.6, Book("Manufacturer static factor")),
+                CalcInputValue.Of("Y_0", 0.5, Book("Manufacturer static factor")),
+                CalcInputValue.Quantity("R", 95, "%", CalcProvenance.Assumed("Client reliability target.")),
+                CalcInputValue.Of("a_iso", 2, CalcProvenance.Assumed("Read from the manufacturer's life tool for clean ISO VG 68 oil.")),
+                CalcInputValue.Quantity("L_req", 5000, "h", CalcProvenance.Specification("Pump specification, minimum bearing life")),
+                CalcInputValue.Of("s_0_req", 1, CalcProvenance.Assumed("Normal running, smooth loads.")),
+            ]),
+            [new CalcExpectedValue("L_10", 535.3873, "", 1e-6), new CalcExpectedValue("L_10h", 5948.748, "h", 1e-6), new CalcExpectedValue("a_1", 0.637912, "", 1e-5), new CalcExpectedValue("L_nmh", 7589.6, "h", 1e-4), new CalcExpectedValue("s_0", 4.48, "", 1e-6)],
+            "A 6206 deep groove ball bearing carries 2.5 kN radial at 1500 rpm. The basic life is 5949 h; at 95 % reliability with a_ISO = 2 the modified life is 7590 h, above the 5000 h required (utilisation 0.659). The ratings and factors would normally come from reference records; here they cite the catalogue directly.",
+            CalcReferenceStatus.Unconfirmed),
     ];
 
     private static CalcInputSet JointInputs(double torque, string method, double workingLoad) => new(
