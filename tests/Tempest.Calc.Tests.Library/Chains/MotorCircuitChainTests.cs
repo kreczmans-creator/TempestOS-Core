@@ -1,4 +1,6 @@
+using System.Text;
 using Tempest.Calc.Electrical;
+using Tempest.Core.Evidence;
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
 
@@ -93,5 +95,85 @@ public sealed class MotorCircuitChainTests
         Assert.NotNull(refusal);
         Assert.StartsWith("Step 'e4' is blocked", refusal);
         Assert.Contains("ampacity:", refusal);
+    }
+
+    [Fact]
+    public async Task The_Chain_Issues_As_One_Bundle_And_Its_Licensed_Ampacity_Table_Never_Leaves_In_An_Export()
+    {
+        var host = Host();
+        var project = await host.ProjectAsync();
+        var (ampacity, r1) = await host.Service.SaveRecordAsync(new CalcDataRecord(
+            Guid.Empty, "cable.ampacity", "Panel wiring capacities", 0, "Owner's wiring regulations", "2018+A2:2022", "capacity table (owner's copy)", "S. Kreczman (own copy)", "s.kreczman",
+            true, CalcDataOrigin.UserEntered, [new CalcDataValue("ampacity", Rows: ConductorSizingCalculator.SyntheticAmpacity().Rows)], DateTimeOffset.UnixEpoch));
+        var (ratings, r2) = await host.Service.SaveRecordAsync(new CalcDataRecord(
+            Guid.Empty, "device.ratings", "Preferred MCB ratings", 0, "Manufacturer catalogue", "2024", "MCB range", "—", "s.kreczman",
+            false, CalcDataOrigin.UserEntered, [new CalcDataValue("ratings", Rows: ConductorSizingCalculator.TypicalRatings().Rows)], DateTimeOffset.UnixEpoch));
+        Assert.Null(r1);
+        Assert.Null(r2);
+
+        var spec = CalcProvenance.Specification("SPEC-CONV-01 §4");
+        var inputs = new Dictionary<string, IReadOnlyList<CalcInputValue>>(StringComparer.Ordinal);
+
+        foreach (var step in CalcPackTemplates.MotorCircuit.Steps)
+        {
+            var template = host.Catalogue.Get(step.TemplateId).Template;
+            List<CalcInputValue> values = [.. CalcTemplateHasher.NewSheetInputs(template).Values.Select(v => v with { Provenance = spec })];
+
+            if (step.Key == "e4")
+            {
+                values.Add(ConductorSizingCalculator.SyntheticAmpacity() with { Provenance = CalcInstanceService.RecordProvenance(ampacity!) });
+                values.Add(ConductorSizingCalculator.TypicalRatings() with { Provenance = CalcInstanceService.RecordProvenance(ratings!) });
+            }
+
+            inputs[step.Key] = values;
+        }
+
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.MotorCircuit, project, "Conveyor motor circuit", inputs);
+        Assert.Null(refusal);
+
+        // E4 and E5 demand an independent check: the chain was drawn up by another engineer.
+        foreach (var instance in made!.Instances.Values)
+        {
+            var stored = (await host.Store.FindInstanceAsync(instance.Id))!;
+            await host.Store.SaveInstanceAsync(stored with { CreatedBy = "another.engineer" }, stored.UpdatedAt);
+        }
+
+        var check = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "Checked against SPEC-CONV-01.", CheckOutcome.Accepted);
+        Assert.True(check.Succeeded, check.Reason);
+        var issued = await host.Service.IssuePackAsync(made.Pack.Id, "CONV-ELEC-001", "Client Co");
+        Assert.True(issued.Succeeded, issued.Reason);
+
+        var pack = (await host.Store.FindPackAsync(made.Pack.Id))!;
+        Assert.Equal(CalcInstanceStatus.Issued, pack.Status);
+        var evidence = (Evidence)(await host.Context.Repository.FindAsync(pack.EvidenceId!.Value))!;
+        var attachment = Assert.Single(await evidence.GetAttachmentsAsync());
+        var sheet = Encoding.UTF8.GetString((await evidence.ReadAttachmentContentAsync(attachment.Id)).Bytes);
+        Assert.Contains("PACK INDEX", sheet, StringComparison.Ordinal);
+
+        foreach (var step in CalcPackTemplates.MotorCircuit.Steps)
+        {
+            Assert.Contains(step.Name, sheet, StringComparison.Ordinal);
+            Assert.Equal(CalcInstanceStatus.Issued, (await host.Store.FindInstanceAsync(made.Instances[step.Key].Id))!.Status);
+        }
+
+        // The issued sheet may cite the licensed record it used (it is the user's own calculation) ...
+        Assert.Contains("(licensed source)", sheet, StringComparison.Ordinal);
+
+        // ... but the record never leaves, and an input export withholds its rows while keeping the pin.
+        var (csv, refused) = await host.Service.ExportRecordAsync(ampacity!.Id);
+        Assert.Null(csv);
+        Assert.Contains("never exported", refused, StringComparison.Ordinal);
+
+        var e4 = (await host.Store.FindInstanceAsync(made.Instances["e4"].Id))!;
+        var withheld = await host.Service.WithholdLicensedAsync(new CalcInputSet(e4.Inputs));
+        Assert.Null(withheld.Find("ampacity")!.Rows);
+        Assert.Contains("licensed value withheld", withheld.Find("ampacity")!.Provenance!.Reference, StringComparison.Ordinal);
+        Assert.NotNull(withheld.Find("ratings")!.Rows);
+
+        var fields = CalcCsv.ExportInputs(host.Catalogue.Get("elec.conductor-sizing").Template, withheld)
+            .Split('\n').SelectMany(line => line.Split(',')).Select(f => f.Trim().Trim('"')).ToList();
+
+        foreach (var capacity in new[] { "12.3", "17.7", "24.1", "31.9", "44.6" })
+            Assert.DoesNotContain(fields, f => f.Contains(capacity, StringComparison.Ordinal));
     }
 }
