@@ -13,5 +13,6 @@ public static class ElectricalCalculators
         new LoadBudgetCalculator(),
         new FaultProtectionCalculator(),
         new ConductorSizingCalculator(),
+        new PcbTraceCalculator(),
     ];
 }

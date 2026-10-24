@@ -1,0 +1,105 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: elec.pcb-trace    Revision: A
+Title: PCB trace width (IPC-2221 legacy)
+
+1. SCOPE AND METHOD
+The minimum width of a printed-circuit trace for a current and an allowed temperature rise, from the legacy IPC-2221 curve-fit, and the resistance, voltage drop and I²R loss of the trace as drawn: legacy IPC-2221 curve-fit, conservative for multilayer boards. External or internal layer; copper weight in oz/ft²; resistance at the trace's operating temperature (ambient plus rise). The IPC-2152 method (charts, plane and board-thickness factors) is not implemented.
+Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with A in mil², k = 0.048 external, 0.024 internal Copper thickness: t = w_Cu·t_oz, t_oz = 1.378 mil per oz/ft² (35 µm, derived) Minimum width: w_min = A/t; utilisation u_w = w_min/w_act Resistivity at the operating temperature: ρ_T = ρ_20·[1 + α·(T_amb + ΔT − 20)] Trace resistance: R = ρ_T·L/(w_act·t); voltage drop ΔV = I·R; loss P = I²·R
+  Ref: IPC-2221 6 — Electrical properties: current-carrying capacity of printed-board conductors (legacy curve-fit)
+  Ref: Hughes, Electrical and Electronic Technology Ch. on DC circuits — Resistivity and temperature coefficient of resistance
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  I | Trace current | 3 | A | manual | 0.01 … 35 A
+  dT | Allowed temperature rise above ambient | 10 | K | manual | 1 … 100 K
+  T_amb | Ambient temperature at the board | 25 | degC | manual | -40 … 125 degC
+  layer | Layer | External layer |  | manual | any
+  Cu_oz | Finished copper weight (oz/ft²) | 1 |  | manual | 0.5 … 6
+  w_act | Trace width as drawn | 2 | mm | manual | 0.05 … 10 mm
+  L | Trace length | 50 | mm | manual | 1 … 1000 mm
+  k_ext | Curve-fit constant k, external layer | 0.048 |  | manual | 0.01 … 0.1
+  k_int | Curve-fit constant k, internal layer | 0.024 |  | manual | 0.005 … 0.05
+  n_dT | Exponent of the temperature rise | 0.44 |  | manual | 0.3 … 0.6
+  n_A | Exponent of the cross-section | 0.725 |  | manual | 0.5 … 1
+  t_oz | Copper thickness per oz/ft² (35 µm = 1.378 mil, derived) | 1.378 | mil | manual | 1.2 … 1.5 mil
+  rho_20 | Copper resistivity at 20 °C (annealed copper, 1.724e-8 Ω·m) | 0.01724 | ohm*mm^2/m | manual | 0.0165 … 0.0185 ohm*mm^2/m
+  alpha | Temperature coefficient of resistance of copper | 0.00393 | 1/K | manual | 0.0035 … 0.0042 1/K
+
+3. ASSUMPTIONS
+  A1. The curve-fit is the legacy IPC-2221 relation, drawn for a trace on an outer or inner layer with no plane or convective help, 1 to 3 oz copper, up to 35 A, rises of 10 to 100 K and widths to 10 mm; it is conservative for multilayer boards and is a screening of width, not a thermal analysis of the board. (IPC-2221 curve-fit (legacy); IPC-2152 is not implemented.)
+  A2. Copper thickness is the nominal 1.378 mil (35 µm) per oz/ft² of finished copper; plating build-up on outer layers and etch-back are not modelled. (Derived: 35 µm / 25.4 µm per mil.)
+  A3. Resistance uses the trace as drawn at the temperature ambient + rise, from the resistivity at 20 °C and a linear temperature coefficient; vias, pads, bends and skin effect are ignored. (Derived constants for annealed copper.)
+  A4. Steady direct current (or RMS current at low frequency); the rise is the allowed rise in the worst case. (Scope of the curve-fit.)
+
+4. WORKING
+  [14] k = k_ext    « IPC-2221 §6 (legacy)
+      = 0.048
+      = 0.048
+        Curve-fit constant k (external layer)
+  [15] I_n = I / (1 A)
+      = 3 A / 1 A
+      = 3
+        Current as a number of amperes
+  [16] dT_n = dT / (1 K)
+      = 10 K / 1 K
+      = 10
+        Temperature rise as a number of kelvin
+  [17] A_req = (I_n / (k * dT_n^n_dT))^(1 / n_A) * (1 mil^2)    « IPC-2221 §6 (legacy)
+      = (3 / (0.048 × 10^0.44))^(1 / 0.725) × 1 mil^2
+      = 74.162 mil²
+        Minimum conductor cross-section
+  [18] t_Cu = Cu_oz * t_oz
+      = 1 × 1.378 mil
+      = 35.001 um
+        Copper thickness
+  [19] w_min = A_req / t_Cu
+      = 74.162 mil² / 35.001 um
+      = 1.367 mm
+        Minimum trace width
+  [20] u_w = w_min / w_act
+      = 1.367 mm / 2 mm
+      = 0.68349
+        Width utilisation (minimum / as drawn)
+  [21] T_trace = T_amb + dT
+      = 25 degC + 10 K
+      = 35 degC
+        Trace operating temperature
+  [22] rho_T = rho_20 * (1 + alpha * (T_trace - 20 degC))
+      = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (35 degC − 20 degC))
+      = 0.018256 ohm·mm²/m
+        Copper resistivity at the operating temperature
+  [23] A_act = w_act * t_Cu
+      = 2 mm × 35.001 um
+      = 0.070002 mm²
+        Cross-section of the trace as drawn
+  [24] trace_R = rho_T * L / A_act
+      = 0.018256 ohm·mm²/m × 50 mm / 0.070002 mm²
+      = 13.04 mohm
+        Trace resistance at the operating temperature
+  [25] vdrop = I * trace_R
+      = 3 A × 13.04 mohm
+      = 39.119 mV
+        Voltage drop along the trace
+  [26] trace_Ploss = I^2 * trace_R
+      = (3 A)^2 × 13.04 mohm
+      = 117.36 mW
+        Power loss in the trace (I²R)
+
+5. RESULTS
+  A_req = 74.162 mil²    Minimum cross-section
+  w_min = 1.367 mm    Minimum trace width
+  u_w = 0.68349    Width utilisation
+  trace_R = 13.04 mohm    Trace resistance
+  vdrop = 39.119 mV    Voltage drop
+  trace_Ploss = 117.36 mW    Power loss
+
+6. CHECKS (governing first)
+  PASS  Trace width as drawn against the minimum for the rise: u_w = 0.68349 vs u_w ≤ 1  utilisation 0.683  « IPC-2221 §6 (legacy)
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: k_ext, k_int, n_dT, n_A, t_oz (IPC-2221 legacy curve-fit constants); rho_20, alpha (Copper resistivity constants). Enter each as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: elec.pcb-trace@1.0.0
+  Known-answer cases passed: 6/6

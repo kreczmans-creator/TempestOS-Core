@@ -190,5 +190,28 @@ public static class ElectricalWorkedExamples
             [new CalcExpectedValue("I_b", 8.283361107, "A", 1e-6), new CalcExpectedValue("I_n", 10, "A", 1e-9), new CalcExpectedValue("I_t_req", 14.27144284, "A", 1e-6), new CalcExpectedValue("CSA", 2.5, "mm^2", 1e-9), new CalcExpectedValue("I_z", 12.40239, "A", 1e-6), new CalcExpectedValue("u_In", 0.8062962058, "", 1e-6)],
             "A 4 kW (rated output) conveyor motor, design current 8.28 A, behind a 10 A type C MCB, three circuits sharing trunking at 40 °C. With the synthetic factors 0.91 (ambient) and 0.77 (grouping) the required tabulated capacity is 14.3 A, met by 2.5 mm² at a synthetic 17.7 A, leaving I_z = 12.40 A against I_n = 10 A (81 %): all three coordination checks pass. The capacities and factors here are synthetic values invented for this example and entered as if from the owner's licensed table; the ratings are the typical preferred series. Replace them with the owner's own records before relying on the sheet.",
             CalcReferenceStatus.Confirmed),
+
+        new(PcbTraceCalculator.Id, "motor-driver-supply-rail", "Motor-driver supply rail on a 2 oz outer layer, 5 A at 20 K rise",
+            new CalcReferenceSource("Analytic (IPC-2221 legacy curve-fit I = k·ΔT^0.44·A^0.725, recomputed; copper resistivity with temperature coefficient; test values invented for this example)", null, "A = [5/(0.048·20^0.44)]^(1/0.725) = 98.5107 mil², t = 2.756 mil, w_min = 0.907900 mm; T = 45 °C, ρ = 0.01893383 Ω·mm²/m; R = 10.81896 mΩ over 100 mm at 2.5 mm; ΔV = 54.0948 mV; P = 270.474 mW"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Quantity("I", 5, "A", CalcProvenance.Specification("Driver datasheet DD-12: 5 A continuous motor supply")),
+                CalcInputValue.Quantity("dT", 20, "K", CalcProvenance.Specification("Board design rule BDR-3: 20 K allowed rise on power rails")),
+                CalcInputValue.Quantity("T_amb", 25, "degC", CalcProvenance.Specification("Environmental specification ES-2: 25 °C at the board")),
+                CalcInputValue.Choice("layer", PcbTraceCalculator.External, CalcProvenance.Drawing("PCB-LAY-014", "B")),
+                CalcInputValue.Of("Cu_oz", 2, CalcProvenance.Specification("Fabrication note FN-7: 2 oz/ft² finished copper on the outer layers")),
+                CalcInputValue.Quantity("w_act", 2.5, "mm", CalcProvenance.Drawing("PCB-LAY-014", "B")),
+                CalcInputValue.Quantity("L", 100, "mm", CalcProvenance.Drawing("PCB-LAY-014", "B")),
+                CalcInputValue.Of("k_ext", 0.048, CalcProvenance.FromReference("record: IPC-2221 legacy curve-fit constants (published closed form; the issuer enters the edition)")),
+                CalcInputValue.Of("k_int", 0.024, CalcProvenance.FromReference("record: IPC-2221 legacy curve-fit constants (published closed form; the issuer enters the edition)")),
+                CalcInputValue.Of("n_dT", 0.44, CalcProvenance.FromReference("record: IPC-2221 legacy curve-fit constants (published closed form; the issuer enters the edition)")),
+                CalcInputValue.Of("n_A", 0.725, CalcProvenance.FromReference("record: IPC-2221 legacy curve-fit constants (published closed form; the issuer enters the edition)")),
+                CalcInputValue.Quantity("t_oz", 1.378, "mil", CalcProvenance.FromReference("record: IPC-2221 legacy curve-fit constants; 1.378 mil = 35 µm per oz/ft², derived")),
+                CalcInputValue.Quantity("rho_20", 0.01724, "ohm*mm^2/m", CalcProvenance.FromReference("record: annealed copper 1.724e-8 Ω·m at 20 °C, derived physical constant")),
+                CalcInputValue.Quantity("alpha", 0.00393, "1/K", CalcProvenance.FromReference("record: annealed copper, 0.00393 per K at 20 °C, derived physical constant")),
+            ]),
+            [new CalcExpectedValue("A_req", 98.51073134, "mil^2", 1e-9), new CalcExpectedValue("w_min", 0.9079000638, "mm", 1e-9), new CalcExpectedValue("u_w", 0.3631600255, "", 1e-9), new CalcExpectedValue("trace_R", 10.81896049, "mohm", 1e-9), new CalcExpectedValue("vdrop", 54.09480246, "mV", 1e-9), new CalcExpectedValue("trace_Ploss", 270.4740123, "mW", 1e-9)],
+            "A 5 A motor supply rail on a 2 oz outer layer with 20 K allowed above 25 °C ambient needs only 0.91 mm by the legacy IPC-2221 curve-fit (conservative for a multilayer board); the 2.5 mm trace drawn over 100 mm is 36 % utilised, drops 54 mV and dissipates 0.27 W at its 45 °C operating temperature. The constants are published closed-form curve-fit values and copper physical constants; the IPC-2152 charts are not used.",
+            CalcReferenceStatus.Confirmed),
     ];
 }

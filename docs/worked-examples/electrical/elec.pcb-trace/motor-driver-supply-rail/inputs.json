@@ -1,0 +1,153 @@
+[
+  {
+    "Symbol": "Cu_oz",
+    "Number": 2,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Fabrication note FN-7: 2 oz/ft\u00B2 finished copper on the outer layers",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2"
+  },
+  {
+    "Symbol": "I",
+    "Number": 5,
+    "Unit": "A",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Driver datasheet DD-12: 5 A continuous motor supply",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
+    "Symbol": "L",
+    "Number": 100,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PCB-LAY-014",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "T_amb",
+    "Number": 25,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Environmental specification ES-2: 25 \u00B0C at the board",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
+    "Symbol": "alpha",
+    "Number": 0.00393,
+    "Unit": "1/K",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: annealed copper, 0.00393 per K at 20 \u00B0C, derived physical constant",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.00393"
+  },
+  {
+    "Symbol": "dT",
+    "Number": 20,
+    "Unit": "K",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Board design rule BDR-3: 20 K allowed rise on power rails",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "k_ext",
+    "Number": 0.048,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: IPC-2221 legacy curve-fit constants (published closed form; the issuer enters the edition)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.048"
+  },
+  {
+    "Symbol": "k_int",
+    "Number": 0.024,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: IPC-2221 legacy curve-fit constants (published closed form; the issuer enters the edition)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.024"
+  },
+  {
+    "Symbol": "layer",
+    "Text": "External layer",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PCB-LAY-014",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "External layer"
+  },
+  {
+    "Symbol": "n_A",
+    "Number": 0.725,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: IPC-2221 legacy curve-fit constants (published closed form; the issuer enters the edition)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.725"
+  },
+  {
+    "Symbol": "n_dT",
+    "Number": 0.44,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: IPC-2221 legacy curve-fit constants (published closed form; the issuer enters the edition)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.44"
+  },
+  {
+    "Symbol": "rho_20",
+    "Number": 0.01724,
+    "Unit": "ohm*mm^2/m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: annealed copper 1.724e-8 \u03A9\u00B7m at 20 \u00B0C, derived physical constant",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.01724"
+  },
+  {
+    "Symbol": "t_oz",
+    "Number": 1.378,
+    "Unit": "mil",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: IPC-2221 legacy curve-fit constants; 1.378 mil = 35 \u00B5m per oz/ft\u00B2, derived",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.378"
+  },
+  {
+    "Symbol": "w_act",
+    "Number": 2.5,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PCB-LAY-014",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2.5"
+  }
+]
