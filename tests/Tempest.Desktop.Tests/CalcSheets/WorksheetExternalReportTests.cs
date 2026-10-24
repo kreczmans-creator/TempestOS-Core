@@ -24,7 +24,7 @@ public sealed class WorksheetExternalReportTests
             var project = await host.ProjectDirectory!.CreateAsync("P-S6", "Base plate project");
             await host.ProjectContext!.OpenAsync(project.Id);
             var service = host.CalcInstances!;
-            var plate = await service.CreateAsync("struct.base-plate", project.Id, "Portal column base");
+            var plate = await service.CreateAsync("struct.base-plate", project.Id, "Portal column base", service.Catalogue.Get("struct.base-plate").Template.TestCases[0].Inputs);
             var bearing = await service.CreateAsync("mech.bearing-life", project.Id, "Pump DE bearing");
 
             var view = new CalcSheetView();
