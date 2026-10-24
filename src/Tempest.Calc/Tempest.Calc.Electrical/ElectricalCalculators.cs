@@ -11,5 +11,6 @@ public static class ElectricalCalculators
         new EnclosureHeatCalculator(),
         new VoltageDropCalculator(),
         new LoadBudgetCalculator(),
+        new FaultProtectionCalculator(),
     ];
 }

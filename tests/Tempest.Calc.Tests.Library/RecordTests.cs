@@ -120,7 +120,9 @@ public sealed class RecordTests
         Assert.Contains("licensed value withheld", withheld.Find("k_1")!.Provenance!.Reference, StringComparison.Ordinal);
 
         var csvOut = CalcCsv.ExportInputs(new RecordedCalculator().Template, withheld);
-        Assert.DoesNotContain("0.8", csvOut, StringComparison.Ordinal);
-        Assert.DoesNotContain("27", csvOut, StringComparison.Ordinal);
+        // Whole fields only: the record's pin is a random GUID and may itself contain "27".
+        var fields = csvOut.Split('\n').SelectMany(line => line.Split(',')).Select(f => f.Trim().Trim('"')).ToList();
+        Assert.DoesNotContain("0.8", fields);
+        Assert.DoesNotContain(fields, f => f.StartsWith("27", StringComparison.Ordinal));
     }
 }
