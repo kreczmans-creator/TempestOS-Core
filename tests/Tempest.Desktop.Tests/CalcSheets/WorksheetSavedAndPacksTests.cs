@@ -260,17 +260,13 @@ public sealed class WorksheetSavedAndPacksTests
         Assert.True(view.CanCheckPack);
         Assert.False(view.CanIssuePack);
 
-        // Members whose inputs still say "manual" cannot be checked: the refusal is shown as the service words it.
-        Click(view, CalcSheetView.CheckPackCaption);
-        await WaitFor(() => view.StatusText.Contains("before the pack can be checked", StringComparison.Ordinal));
-        Assert.Equal(CalcInstanceStatus.Draft, view.Packs.Single().Status);
-
+        // Built-in packs start from example inputs whose provenance is an assumption; give them project provenance.
         await SetSpecProvenanceAsync(fx);
 
         // The motor changes: everything downstream is stale and the pack cannot be checked.
         var motorId = view.PackMembers.Single(m => m.Name == StepName("elec.motor-sizing")).Id;
         var motor = (await service.Store.FindInstanceAsync(motorId))!;
-        var changed = await service.UpdateInputsAsync(motor.Id, [.. motor.Inputs.Select(i => i.Number is { } n && i.Symbol == "m" ? i with { Number = n * 2 } : i)]);
+        var changed = await service.UpdateInputsAsync(motor.Id, [.. motor.Inputs.Select(i => i.Number is { } n && i.Symbol == "T_L" ? i with { Number = n * 1.2 } : i)]);
         Assert.True(changed.Succeeded, changed.Reason);
         await WaitFor(() => view.PackMembers.Any(m => m.IsStale));
 

@@ -1,5 +1,6 @@
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.Calc.Library;
@@ -48,7 +49,7 @@ public sealed partial class CalcSheetView
     /// <summary>What the user typed to issue a pack.</summary>
     public sealed record PackIssueDraft(string IssueReference, string Client);
 
-    private readonly ListBox _savedList = new() { MinHeight = 60, MaxHeight = 240 };
+    private readonly ListBox _savedList = new() { ItemTemplate = RowTemplate, MinHeight = 60, MaxHeight = 240 };
     private readonly Button _openSaved = new() { Content = OpenSavedCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly TextBlock _savedEmpty = Caption("Open a project to list its saved calculations.");
     private readonly TextBlock _savedCap = WithHidden(Caption(string.Empty));
@@ -59,8 +60,8 @@ public sealed partial class CalcSheetView
     private readonly TextBlock _packTemplateNote = Caption(string.Empty);
     private readonly TextBox _packTitle = new() { Watermark = "Pack title", MaxLength = 200, FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly Button _createPack = new() { Content = CreatePackCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
-    private readonly ListBox _packList = new() { MinHeight = 60, MaxHeight = 200 };
-    private readonly ListBox _packMemberList = new() { MinHeight = 60, MaxHeight = 200 };
+    private readonly ListBox _packList = new() { ItemTemplate = RowTemplate, MinHeight = 60, MaxHeight = 200 };
+    private readonly ListBox _packMemberList = new() { ItemTemplate = RowTemplate, MinHeight = 60, MaxHeight = 200 };
     private readonly Button _openPackMember = new() { Content = OpenPackMemberCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly TextBox _packChecker = new() { IsReadOnly = true, Watermark = "Signed-in person", FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly TextBox _packOrganisation = PackInput("Checker's organisation");
@@ -491,23 +492,30 @@ public sealed partial class CalcSheetView
     private static SavedCalculation? SelectedOf(ListBox list, IReadOnlyList<SavedCalculation> items) =>
         list.SelectedIndex >= 0 && list.SelectedIndex < items.Count ? items[list.SelectedIndex] : null;
 
-    private static List<Control> ListItems(IReadOnlyList<SavedCalculation> items) => ListItems(items.Select(x => (x.Label, x.IsStale)));
+    private static List<ListRow> ListItems(IReadOnlyList<SavedCalculation> items) => ListItems(items.Select(x => (x.Label, x.IsStale)));
 
-    private static List<Control> ListItems(IEnumerable<(string Label, bool Stale)> rows)
+    // Rows are data with a template, never controls: a control as an item cannot be re-hosted when the list recycles
+    // its containers ("already has a visual parent").
+    private static List<ListRow> ListItems(IEnumerable<(string Label, bool Stale)> rows) => [.. rows.Select(r => new ListRow(r.Label, r.Stale))];
+
+    private static readonly IDataTemplate RowTemplate = new FuncDataTemplate<ListRow>((row, _) =>
     {
-        var items = new List<Control>();
+        var text = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody };
 
-        foreach (var (label, stale) in rows)
-        {
-            var text = new TextBlock { Text = label, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody };
+        if (row is null)
+            return text;
 
-            if (stale)
-                text.Foreground = SeverityColors.Resolve(FeedbackSeverity.Warning);
+        text.Text = row.Label;
 
-            AutomationProperties.SetName(text, label);
-            items.Add(text);
-        }
+        if (row.Stale)
+            text.Foreground = SeverityColors.Resolve(FeedbackSeverity.Warning);
 
-        return items;
+        AutomationProperties.SetName(text, row.Label);
+        return text;
+    });
+
+    private sealed record ListRow(string Label, bool Stale)
+    {
+        public override string ToString() => Label;
     }
 }
