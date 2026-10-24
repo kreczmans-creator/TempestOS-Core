@@ -249,8 +249,9 @@ public class EngineeringStatusExportAdapterTests
         var json = await ExportAsync(host);
         var disciplines = json["disciplines"]!.AsArray();
 
-        Assert.Equal(["structural", "electrical", "building-services"], disciplines.Select(d => d!["key"]!.GetValue<string>()));
+        Assert.Equal(["structural", "electrical", "building-services", "fluid-power"], disciplines.Select(d => d!["key"]!.GetValue<string>()));
         Assert.Equal("Building Services", disciplines[2]!["label"]!.GetValue<string>());
+        Assert.Equal("Fluid Power", disciplines[3]!["label"]!.GetValue<string>());
 
         var structural = disciplines[0]!;
         Assert.Equal(3, structural["objects"]!.GetValue<int>());
@@ -260,6 +261,7 @@ public class EngineeringStatusExportAdapterTests
         Assert.Equal(3, structural["byLifecycle"]!["draft"]!.GetValue<int>());
         Assert.Equal(1, disciplines[1]!["objects"]!.GetValue<int>());
         Assert.Equal(0, disciplines[2]!["objects"]!.GetValue<int>());
+        Assert.Equal(0, disciplines[3]!["objects"]!.GetValue<int>());
 
         // Counts only: these disciplines have no Cockpit health to export.
         Assert.Null(structural["health"]);

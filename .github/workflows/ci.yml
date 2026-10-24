@@ -306,7 +306,7 @@ jobs:
         timeout-minutes: 25
         shell: pwsh
         run: |
-          foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators")) {
+          foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators", "tests/Tempest.Calc.Tests.FluidPower")) {
             if (-not (Test-Path $project)) { continue }
             dotnet test $project `
               --configuration Release `
@@ -328,7 +328,7 @@ jobs:
         timeout-minutes: 25
         shell: pwsh
         run: |
-          foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators")) {
+          foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators", "tests/Tempest.Calc.Tests.FluidPower")) {
             if (-not (Test-Path $project)) { continue }
             dotnet test $project `
               --configuration Debug `

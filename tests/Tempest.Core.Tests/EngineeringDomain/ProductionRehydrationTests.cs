@@ -127,13 +127,14 @@ public sealed class ProductionRehydrationTests
         data.Add(CanonicalObjectKinds.Test, typeof(Test));
         data.Add(CanonicalObjectKinds.Verification, typeof(Tempest.Core.EngineeringDomain.Verification));
 
-        // `ADR-0163` — every Structural, Electrical and Building Services
-        // Kind comes back as the one shared DisciplineObject.
+        // `ADR-0163`, `ADR-0170` — every Structural, Electrical, Building
+        // Services and Fluid Power Kind comes back as the one shared DisciplineObject.
         foreach (var kind in new[]
                  {
                      "StructuralMember", "StructuralConnection", "StructuralFoundation", "StructuralLoadCase",
                      "ElectricalDistributionBoard", "ElectricalCircuit", "ElectricalLoad", "ElectricalCable",
                      "BuildingServicesSystem", "BuildingServicesZone", "BuildingServicesEquipment", "BuildingServicesDistribution",
+                     "FluidPowerCircuit", "FluidPowerActuator", "FluidPowerPowerUnit",
                  })
             data.Add(kind, typeof(DisciplineObject));
 

@@ -2,13 +2,14 @@ using Tempest.Calc.Engine.Units;
 
 namespace Tempest.Calc.Sheets;
 
-/// <summary>The four disciplines of `v0.26.0` (ADR-0163 names them; Manufacturing has no calculator yet).</summary>
+/// <summary>The five calculation disciplines of `v0.26.0` (ADR-0163 names the first four; Manufacturing has no calculator yet; Fluid Power is ADR-0170). New members go at the end: the name, not the position, is in the template hash.</summary>
 public enum CalcDiscipline
 {
     Mechanical,
     Structural,
     Electrical,
     BuildingServices,
+    FluidPower,
 }
 
 /// <summary>How an input is entered.</summary>

@@ -73,9 +73,11 @@ public sealed class KindEligibilityInvariantTests
             ["structural.rename"] = Verb.Rename,
             ["electrical.rename"] = Verb.Rename,
             ["building-services.rename"] = Verb.Rename,
+            ["fluid-power.rename"] = Verb.Rename,
             ["structural.edit"] = Verb.Revise,
             ["electrical.edit"] = Verb.Revise,
             ["building-services.edit"] = Verb.Revise,
+            ["fluid-power.edit"] = Verb.Revise,
         };
 
     private static readonly IReadOnlyList<string> DeleteRouted =
@@ -83,7 +85,7 @@ public sealed class KindEligibilityInvariantTests
         CalculationsCommandIds.Delete, DocumentsCommandIds.Delete, EvidenceCommandIds.Delete, ManufacturingCommandIds.Delete, MechanicalCommandIds.Delete,
         VerificationCommandIds.Delete, RequirementsCommandIds.Delete, RequirementsCommandIds.DeleteGroup,
         RequirementsCommandIds.DeleteCollection, TimesheetCommandIds.Delete, ExpenseCommandIds.Delete,
-        "structural.delete", "electrical.delete", "building-services.delete",
+        "structural.delete", "electrical.delete", "building-services.delete", "fluid-power.delete",
     ];
 
     /// <summary>Every Kind this platform declares, from the disciplines' own public constants.</summary>

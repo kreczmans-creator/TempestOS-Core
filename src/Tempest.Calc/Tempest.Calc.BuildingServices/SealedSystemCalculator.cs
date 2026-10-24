@@ -1,4 +1,5 @@
 using Tempest.Calc.BuildingServices.Fluids;
+using Tempest.Calc.Engine.Physics;
 using Tempest.Calc.Engine.Units;
 using Tempest.Calc.Engine.Values;
 using Tempest.Calc.Sheets;
@@ -231,7 +232,7 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             return;
         }
 
-        c.Assign("V_e", "e_x * V_s / (1 - (p_i + 1 bar) / (p_f + 1 bar))", "L", "Minimum expansion vessel volume", "CIBSE Guide B1 §1.4");
+        RecordVesselVolume(c, litre);
         outputs.AddRange([("V_em", "Emitter water content"), ("V_s", "System water volume"), ("e_x", "Expansion coefficient"), ("p_i", "Pre-charge pressure"), ("V_e", "Minimum vessel volume")]);
 
         if (anySelected)
@@ -255,6 +256,31 @@ public sealed class SealedSystemCalculator : ICalcCalculator
 
         if (c.Has("V_vessel"))
             c.CheckUtilisation("Selected vessel against minimum volume", "u_vessel", "CIBSE Guide B1 §1.4");
+    }
+
+    /// <summary>
+    /// V_e through the shared gas-law kernel (<see cref="GasLaw"/>): isothermal (n = 1) on the gas side, absolute pressures as gauge + 1 bar,
+    /// the water expansion e_x·V_s as the volume the vessel must accept. Recorded with the formula and substitution the engine would have
+    /// written for the inline expression, so the sheet reads exactly as before.
+    /// </summary>
+    private static void RecordVesselVolume(CalcRunContext c, Unit litre)
+    {
+        var sf = c.Session.SignificantFigures;
+        var expansion = c.Scalar("e_x");
+        var system = c.Scalar("V_s");
+        var preCharge = c.Scalar("p_i");
+        var final = c.Scalar("p_f");
+        var low = GasLaw.ToAbsolute(preCharge.Si, GasLaw.OneBar);
+        var high = GasLaw.ToAbsolute(final.Si, GasLaw.OneBar);
+        var volume = GasLaw.GasVolumeForDisplacement(expansion.Si * system.Si, low, high, GasLaw.Isothermal);
+
+        c.Record(
+            "V_e",
+            "e_x * V_s / (1 - (p_i + 1 bar) / (p_f + 1 bar))",
+            $"{expansion.Format(sf)} × {system.Format(sf)} / (1 − ({preCharge.Format(sf)} + 1 bar) / ({final.Format(sf)} + 1 bar))",
+            new ScalarValue(volume, system.Dimension, litre),
+            "Minimum expansion vessel volume",
+            "CIBSE Guide B1 §1.4");
     }
 
     private static double Si(CalcRow row, string key, Unit unit) => row.Get(key) is { Number: { } n } cell ? (cell.Unit is { Length: > 0 } u ? UnitCatalog.Parse(u) : unit).ToSi(n) : 0;

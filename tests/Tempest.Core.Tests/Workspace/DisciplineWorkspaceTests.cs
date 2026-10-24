@@ -11,8 +11,8 @@ using Tempest.Workspace.Disciplines;
 namespace Tempest.Core.Tests.Workspace;
 
 /// <summary>
-/// `ADR-0163`: Structural, Electrical and Building Services / HVAC, built
-/// on the shared <see cref="DisciplineObject"/> shape — their Explorer
+/// `ADR-0163`: Structural, Electrical and Building Services / HVAC, and
+/// `ADR-0170`: Fluid Power, built on the shared <see cref="DisciplineObject"/> shape — their Explorer
 /// folders, the full create → attribute → status round trip through the
 /// real Command Framework, and survival across a restart.
 /// </summary>
@@ -26,6 +26,7 @@ public class DisciplineWorkspaceTests
             typeof(StructuralWorkspaceExplorerModule),
             typeof(ElectricalWorkspaceExplorerModule),
             typeof(BuildingServicesWorkspaceExplorerModule),
+            typeof(FluidPowerWorkspaceExplorerModule),
         ])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
@@ -57,7 +58,7 @@ public class DisciplineWorkspaceTests
         return (workspace, manager, dispatcher, registry, domain);
     }
 
-    public static TheoryData<string> Disciplines() => ["Structural", "Electrical", "Building Services"];
+    public static TheoryData<string> Disciplines() => ["Structural", "Electrical", "Building Services", "Fluid Power"];
 
     [Theory]
     [MemberData(nameof(Disciplines))]
@@ -150,6 +151,71 @@ public class DisciplineWorkspaceTests
         Assert.False(refused.Succeeded);
 
         await manager.ShutdownAsync();
+    }
+
+    /// <summary>`ADR-0170`: Fluid Power attributes are recorded as typed — no rating or design-code check, however implausible the value.</summary>
+    [Fact]
+    public async Task FluidPower_RecordsAttributesExactlyAsTyped_WithNoRatingCheck()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, dispatcher, registry, _) = await StartAsync(temp.Path);
+
+        Assert.Contains(registry.Items, d => d.Id == "fluid-power.set-power-unit-attributes");
+
+        var created = await dispatcher.DispatchAsync(new CreateDisciplineObjectCommand("FluidPowerCircuit", "Press circuit"), CancellationToken.None);
+        Assert.True(created.Succeeded, created.Message);
+        var id = created.SubjectId!.Value;
+
+        var set = await dispatcher.DispatchAsync(new SetDisciplineAttributesCommand(id, "FluidPowerCircuit", new Dictionary<string, string>
+        {
+            ["Circuit type"] = "Open-centre, load sensing",
+            ["Working pressure (bar)"] = "9999",
+            ["Fluid"] = "ISO VG 46 mineral oil",
+        }), CancellationToken.None);
+        Assert.True(set.Succeeded, set.Message);
+
+        await workspace.Navigation.SwitchAreaAsync(DisciplineCatalogue.FluidPower.NavigationItemId);
+        var circuits = await workspace.ProjectExplorer.GetChildrenAsync(DisciplineCatalogue.FluidPower.Kinds[0].FolderNodeId);
+        Assert.Equal("Press circuit", Assert.Single(circuits).Title);
+
+        await workspace.Selection.SelectAsync(id, "FluidPowerCircuit");
+        Assert.Contains(workspace.PropertyInspector.CurrentFacets, f => f is { Name: "Working pressure (bar)", Value: "9999" });
+        Assert.Contains(workspace.PropertyInspector.CurrentFacets, f => f is { Name: "Fluid", Value: "ISO VG 46 mineral oil" });
+        Assert.Contains(workspace.PropertyInspector.CurrentFacets, f => f is { Name: "Flow rate (L/min)", Value: "(not recorded)" });
+
+        var refused = await dispatcher.DispatchAsync(new SetDisciplineAttributeCommand(id, "FluidPowerCircuit", "Bore (mm)", "63"), CancellationToken.None);
+        Assert.False(refused.Succeeded);
+        Assert.Contains("Working pressure (bar)", refused.Message);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task FluidPower_ActuatorAttributesAndStatus_SurviveARestart()
+    {
+        using var temp = new TempDirectory();
+        Guid id;
+        {
+            var (_, manager, dispatcher, _, _) = await StartAsync(temp.Path, production: true);
+            var created = await dispatcher.DispatchAsync(new CreateDisciplineObjectCommand("FluidPowerActuator", "Clamp cylinder"), CancellationToken.None);
+            id = created.SubjectId!.Value;
+            await dispatcher.DispatchAsync(new SetDisciplineAttributeCommand(id, "FluidPowerActuator", "Bore (mm)", "63"), CancellationToken.None);
+            await dispatcher.DispatchAsync(new SetDisciplineAttributeCommand(id, "FluidPowerActuator", "Stroke (mm)", "200"), CancellationToken.None);
+            var transitioned = await dispatcher.DispatchAsync(new SetDisciplineObjectStatusCommand(id, "FluidPowerActuator", LifecycleState.InReview), CancellationToken.None);
+            Assert.True(transitioned.Succeeded, transitioned.Message);
+            await manager.ShutdownAsync();
+        }
+
+        {
+            var (_, manager, _, _, domain) = await StartAsync(temp.Path, production: true);
+            var actuator = Assert.IsAssignableFrom<IDisciplineObject>(await domain.Repository.FindAsync(id));
+
+            Assert.Equal("FluidPowerActuator", actuator.Kind);
+            Assert.Equal("63", actuator.Attributes["Bore (mm)"]);
+            Assert.Equal("200", actuator.Attributes["Stroke (mm)"]);
+            Assert.Equal(LifecycleState.InReview, actuator.Status);
+            await manager.ShutdownAsync();
+        }
     }
 
     [Theory]

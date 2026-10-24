@@ -65,3 +65,12 @@ public sealed class BuildingServicesWorkspaceExplorerModule(INavigationProvider 
     /// <summary>This module's id.</summary>
     public const string ModuleId = "tempest.building-services.workspace-explorer";
 }
+
+/// <summary>Registers the Fluid Power Explorer area (`ADR-0170`).</summary>
+[ModuleMetadata(ModuleId, "Fluid Power Workspace Explorer", "1.0.0")]
+public sealed class FluidPowerWorkspaceExplorerModule(INavigationProvider navigationProvider)
+    : DisciplineWorkspaceExplorerModule(navigationProvider, DisciplineCatalogue.FluidPower, ModuleId)
+{
+    /// <summary>This module's id.</summary>
+    public const string ModuleId = "tempest.fluid-power.workspace-explorer";
+}

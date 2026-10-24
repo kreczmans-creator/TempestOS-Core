@@ -2,8 +2,8 @@ namespace Tempest.Core.EngineeringDomain;
 
 /// <summary>
 /// An object of one of the engineering disciplines that share a single,
-/// attribute-carrying shape (`ADR-0163`): Structural, Electrical and
-/// Building Services / HVAC. Each Kind (a member, a circuit, a zone…)
+/// attribute-carrying shape (`ADR-0163`, `ADR-0170`): Structural,
+/// Electrical, Building Services / HVAC and Fluid Power. Each Kind (a member, a circuit, a zone…)
 /// declares the attributes it carries; the values are free text, recorded
 /// exactly as the engineer typed them, with no design-code logic applied.
 /// </summary>
