@@ -12,7 +12,7 @@ A ball-screw servo axis (50 kg, 0.5 m in 0.5 s) is sized, its panel demand and h
 
 | Step | Calculator | Revision | Checks |
 |---|---|---|---|
-| Motor sizing | `elec.motor-sizing` | A | 2 of 3 PASS |
+| Motor sizing | `elec.motor-sizing` | A | 3 of 3 PASS |
 | Load budget | `elec.load-budget` | A | none |
 | Cable and device | `elec.conductor-sizing` | A | 3 of 3 PASS |
 | Voltage drop | `elec.voltage-drop` | A | 1 of 1 PASS |

@@ -3,8 +3,8 @@ Project: Motor control centre 3
 Calc ID: Cooling-water air coil    Revision: A
 Title: Heat exchanger (LMTD and ε-NTU)
 Author: unknown    Authored: 2026-10-24
-Checker: —    Checked: —
-Issued: 2026-10-24    Issue: MCC-COOL-001
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.
@@ -134,13 +134,12 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   PASS  Approach against minimum: u_app = 0.13798 vs u_app ≤ 1  utilisation 0.138
 
 7. APPLICABILITY
-  WARNING record.cp_h: cp_h: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
-  WARNING record.cp_c: cp_c: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: cp_h, cp_c (Fluid specific heats). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: bs.heat-exchanger@1.2.0
   Content hash: 42ff33e576c8f734
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-24 19:29 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test

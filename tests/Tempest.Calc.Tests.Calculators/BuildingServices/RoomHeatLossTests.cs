@@ -294,11 +294,13 @@ public sealed class RoomHeatLossTests
     }
 
     [Fact]
-    public void A_New_Sheet_Keeps_Its_Elements_Table_Because_Only_The_Resistances_Are_Record_Values()
+    public void The_Elements_Table_Is_Not_Record_Data_And_A_New_Sheet_Asks_For_It()
     {
-        // Black B-A-10: the elements table (areas, adjacent temperatures) was stripped from a new sheet as if it were a licensed record.
-        var fresh = CalcTemplateHasher.NewSheetInputs(Room.Template);
-        Assert.NotEmpty(fresh.Find("elements")!.Rows!);
+        // Black B-A-10: the elements table (areas, adjacent temperatures) was stripped from a new sheet as if it were a licensed
+        // record. It is not record data; a new sheet opens every table blank (DA-23) and says what to enter.
         Assert.DoesNotContain(Room.Template.RecordKinds!, k => k.Symbols.Contains("elements"));
+        var run = CalcRunner.Run(Room, CalcTemplateHasher.NewSheetInputs(Room.Template));
+        Assert.True(run.IsBlocked);
+        Assert.Contains(run.Blocks, b => b.Message.StartsWith("elements", StringComparison.Ordinal));
     }
 }

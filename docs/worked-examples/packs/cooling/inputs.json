@@ -106,6 +106,16 @@
       "ValueText": "1"
     },
     {
+      "Symbol": "eta_psu",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
       "Symbol": "f_derate",
       "Number": 1,
       "Provenance": {
@@ -114,6 +124,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "1"
+    },
+    {
+      "Symbol": "heat_add",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
     },
     {
       "Symbol": "inrush_add",
@@ -305,15 +325,25 @@
       "ValueText": "1.25"
     },
     {
+      "Symbol": "psu_bus",
+      "Text": "not counted on an AC bus",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "not counted on an AC bus"
+    },
+    {
       "Symbol": "t_auto",
-      "Number": 4,
+      "Number": 0,
       "Unit": "h",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "4"
+      "ValueText": "0"
     },
     {
       "Symbol": "theta",
@@ -380,7 +410,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d18b99eb5d654009b834817b2ee55c15#Phi",
+        "Reference": "calc:8caa5e32a7ff4efea12daa94f3bd9824#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -579,7 +609,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c5209ede779c447a8feccb87d86b6d35#P_cool",
+        "Reference": "calc:4d76dd23f43946a8b36592121d232068#P_cool",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -613,7 +643,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c5209ede779c447a8feccb87d86b6d35#T_max",
+        "Reference": "calc:4d76dd23f43946a8b36592121d232068#T_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -733,7 +763,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:f69eb2eda78946a9882053c0fc337c61#Q",
+        "Reference": "calc:b96a1484e11b47ed976ef4bd902b9fd2#Q",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -745,7 +775,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:f69eb2eda78946a9882053c0fc337c61#T_c_m",
+        "Reference": "calc:b96a1484e11b47ed976ef4bd902b9fd2#T_c_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -768,7 +798,7 @@
       "Unit": "J/(kg*K)",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:f69eb2eda78946a9882053c0fc337c61#cp_c",
+        "Reference": "calc:b96a1484e11b47ed976ef4bd902b9fd2#cp_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -780,7 +810,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:f69eb2eda78946a9882053c0fc337c61#dT_c",
+        "Reference": "calc:b96a1484e11b47ed976ef4bd902b9fd2#dT_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -819,17 +849,6 @@
       "ValueText": "0"
     },
     {
-      "Symbol": "mu_custom",
-      "Number": 800,
-      "Unit": "mPa*s",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "800"
-    },
-    {
       "Symbol": "n_pump",
       "Number": 2800,
       "Unit": "rpm",
@@ -861,17 +880,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "101.325"
-    },
-    {
-      "Symbol": "rho_custom",
-      "Number": 888,
-      "Unit": "kg/m^3",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "888"
     },
     {
       "Symbol": "segments",

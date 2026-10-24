@@ -3,8 +3,8 @@ Project: Equipment support ES-4
 Calc ID: Arm joint bolt group    Revision: A
 Title: Bolt group (elastic method)
 Author: unknown    Authored: 2026-10-24
-Checker: —    Checked: —
-Issued: 2026-10-24    Issue: STR-SUP-001
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.
@@ -134,5 +134,5 @@ Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) �
   Content hash: fd686de20c6459e9
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 19:29 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test

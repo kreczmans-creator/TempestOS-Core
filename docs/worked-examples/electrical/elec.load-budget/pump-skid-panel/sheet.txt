@@ -195,11 +195,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   PASS  PSU rating against required: u_PSU = 0.625 vs u_PSU ≤ 1  utilisation 0.625
 
 7. APPLICABILITY
-  WARNING record.f_derate: f_derate: a tabulated value not taken from a reference record (PSU derating); enter it as one so its source, edition and licence travel with it.
-  WARNING record.DoD: DoD: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.eta_b: eta_b: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_temp: k_temp: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_age: k_age: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
   WARNING input.P_add: P_add (Additional three-phase load (linked from E1's RMS power)) was not entered; the template default 0 kW is used.
   WARNING input.cosphi_add: cosphi_add (Power factor of the additional load) was not entered; the template default 0.85 is used.
   WARNING input.eta_add: eta_add (Efficiency of the additional load) was not entered; the template default 0.9 is used.

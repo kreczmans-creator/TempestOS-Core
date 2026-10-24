@@ -142,9 +142,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   PASS  U-value of Cavity wall against its target (0.3 W/m²K): u_1 = 0.8017 vs u_1 ≤ 1  utilisation 0.802
 
 7. APPLICABILITY
-  WARNING record.theta_e: theta_e: a tabulated value not taken from a reference record (External design temperature); enter it as one so its source, edition and licence travel with it.
-  WARNING record.layers: layers: a tabulated value not taken from a reference record (Layer thermal conductivity); enter it as one so its source, edition and licence travel with it.
-  WARNING record.y_tb: y_tb: a tabulated value not taken from a reference record (Thermal-bridge allowance); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: bs.room-heat-loss@1.1.0

@@ -210,17 +210,6 @@
   ],
   "b4b": [
     {
-      "Symbol": "U_target",
-      "Number": 0.3,
-      "Unit": "W/(m^2*K)",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "0.3"
-    },
-    {
       "Symbol": "V",
       "Number": 50,
       "Unit": "m^3",
@@ -586,7 +575,7 @@
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:cb8a54da8104472da61a61d1cf33ff01#Phi_HL",
+                "Reference": "calc:eafeba284a1c4eb5a34c1837609a12ae#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -607,7 +596,7 @@
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:011e81fdbeed44cca44f66658a44a547#Phi_HL",
+                "Reference": "calc:60993c0169ab4977add779d1bd7b5237#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -699,7 +688,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:fbba68c4c41441cfa5e04827d0dd1518#Phi_tot",
+        "Reference": "calc:0331f46f2bb245909a61a1e797a68dff#Phi_tot",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -711,7 +700,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:fbba68c4c41441cfa5e04827d0dd1518#t_m",
+        "Reference": "calc:0331f46f2bb245909a61a1e797a68dff#t_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -733,7 +722,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:fbba68c4c41441cfa5e04827d0dd1518#dT_fr",
+        "Reference": "calc:0331f46f2bb245909a61a1e797a68dff#dT_fr",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -771,17 +760,6 @@
       "ValueText": "0"
     },
     {
-      "Symbol": "mu_custom",
-      "Number": 800,
-      "Unit": "mPa*s",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "800"
-    },
-    {
       "Symbol": "n_pump",
       "Number": 2800,
       "Unit": "rpm",
@@ -812,17 +790,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "101.325"
-    },
-    {
-      "Symbol": "rho_custom",
-      "Number": 888,
-      "Unit": "kg/m^3",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "888"
     },
     {
       "Symbol": "segments",
@@ -962,7 +929,7 @@
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:b48e0544a98f49faaae9f33458ba2a62#T_shaft",
+        "Reference": "calc:0ec403ab43f946a299e5222c7f5fb811#T_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1067,7 +1034,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:b48e0544a98f49faaae9f33458ba2a62#n_shaft",
+        "Reference": "calc:0ec403ab43f946a299e5222c7f5fb811#n_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1075,14 +1042,14 @@
     },
     {
       "Symbol": "n_max",
-      "Number": 10000,
+      "Number": 6000,
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "10000"
+      "ValueText": "6000"
     },
     {
       "Symbol": "p_screw",

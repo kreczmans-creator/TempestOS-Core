@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bracket arm section    Revision: A
 Title: Section properties
-Author: unknown    Authored: 2026-10-23
-Checker: —    Checked: —
-Issued: 2026-10-23    Issue: BRK-CALC-001
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Area, centroid, second moments of area (Ixx, Iyy, Ixy), principal axes and values, elastic and plastic section moduli, radii of gyration, torsion constant and (I-sections) warping constant for a parametric shape, an arbitrary polygon with holes, or a composite of placed parts. The x axis is horizontal (major axis of an I-section), y vertical.
@@ -137,5 +137,5 @@ Outline loops are integrated by Green's theorem: A = ½∮(x dy − y dx), Ixx =
   Content hash: 7f7a93ac64011ba4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-23 19:12 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test

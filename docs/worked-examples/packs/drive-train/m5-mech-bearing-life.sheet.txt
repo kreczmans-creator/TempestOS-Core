@@ -3,8 +3,8 @@ Project: Conveyor 7 head drive
 Calc ID: Bearing A life    Revision: A
 Title: Rolling bearing life (ISO 281)
 Author: unknown    Authored: 2026-10-24
-Checker: —    Checked: —
-Issued: 2026-10-24    Issue: CNV-DRV-001
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The basic and modified rating life of a rolling bearing under a steady load or a duty cycle, at a chosen reliability, against a required life; and the static safety factor against a required value.
@@ -111,21 +111,12 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   PASS  Static safety factor against required: u_s0 = 0.087977 vs u_s0 ≤ 1  utilisation 0.088  « ISO 76:2006
 
 7. APPLICABILITY
-  WARNING record.C: C: a tabulated value not taken from a reference record (Bearing load ratings); enter it as one so its source, edition and licence travel with it.
-  WARNING record.C_0: C_0: a tabulated value not taken from a reference record (Bearing load ratings); enter it as one so its source, edition and licence travel with it.
-  WARNING record.e_lim: e_lim: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.X_1: X_1: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.Y_1: Y_1: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.X: X: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.Y: Y: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.X_0: X_0: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.Y_0: Y_0: a tabulated value not taken from a reference record (Bearing X, Y, e factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.a_iso: a_iso: a tabulated value not taken from a reference record (Bearing a_ISO); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: C, C_0 (Bearing load ratings); e_lim, X_1, Y_1, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing a_ISO). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: mech.bearing-life@1.1.0
   Content hash: da8d1cc8ed2333eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 19:29 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test

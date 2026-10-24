@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bracket assembly calc pack (M2 + M3 + S1)    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-23
-Checker: J. Reviewer    Checked: 2026-10-23
-Issued: 2026-10-23    Issue: BRK-CALC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
 
 PACK INDEX
   1. Bearing bush press fit — Press and shrink fit — rev A — ISSUED — Hub yield PASS
@@ -12,7 +12,7 @@ PACK INDEX
   3. Bracket arm section — Section properties — rev A — ISSUED
 
 REVISIONS
-  A  2026-10-23  unknown  First issue
+  A  2026-10-24  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -38,16 +38,16 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-23 19:12 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bearing bush press fit    Revision: A
 Title: Press and shrink fit
-Author: unknown    Authored: 2026-10-23
-Checker: J. Reviewer    Checked: 2026-10-23
-Issued: 2026-10-23    Issue: BRK-CALC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.
@@ -165,7 +165,7 @@ Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² −
   Content hash: 45cae33eae60ff08
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-23 19:12 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test
 
 
@@ -173,9 +173,9 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bracket flange bolts    Revision: A
 Title: Bolted joint (simplified VDI 2230)
-Author: unknown    Authored: 2026-10-23
-Checker: J. Reviewer    Checked: 2026-10-23
-Issued: 2026-10-23    Issue: BRK-CALC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 One bolt clamping members under an axial working load: the preload from the tightening torque with its scatter, the stiffness of bolt and members, how much of the working load the bolt sees, the residual clamp after embedding, separation, yield under preload plus working load, the thread engagement needed against stripping, and the fatigue amplitude.
@@ -381,7 +381,7 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
   Content hash: 171bd836528ea883
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-23 19:12 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test
 
 
@@ -389,9 +389,9 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bracket arm section    Revision: A
 Title: Section properties
-Author: unknown    Authored: 2026-10-23
-Checker: J. Reviewer    Checked: 2026-10-23
-Issued: 2026-10-23    Issue: BRK-CALC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-24
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Area, centroid, second moments of area (Ixx, Iyy, Ixy), principal axes and values, elastic and plastic section moduli, radii of gyration, torsion constant and (I-sections) warping constant for a parametric shape, an arbitrary polygon with holes, or a composite of placed parts. The x axis is horizontal (major axis of an I-section), y vertical.
@@ -524,5 +524,5 @@ Outline loops are integrated by Green's theorem: A = ½∮(x dy − y dx), Ixx =
   Content hash: 7f7a93ac64011ba4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-23 19:12 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test

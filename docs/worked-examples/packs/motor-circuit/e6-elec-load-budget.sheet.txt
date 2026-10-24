@@ -3,8 +3,8 @@ Project: Line 12 axis 3
 Calc ID: Load budget    Revision: A
 Title: Load budget, PSU, transformer and battery
 Author: unknown    Authored: 2026-10-24
-Checker: —    Checked: —
-Issued: 2026-10-24    Issue: LINE-ELEC-001
+Checker: J. Reviewer    Checked: 2026-10-24
+Issued: 2026-10-24    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
@@ -31,7 +31,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   theta | Ambient temperature | 40 | degC | assumption: Sheet default value; no project figure given. | -20 … 70 degC
   f_derate | PSU derating factor at the ambient and altitude | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   k_T | Transformer short-time overload allowed for inrush | 3 |  | assumption: Sheet default value; no project figure given. | 1 … 20
-  t_auto | Battery autonomy | 4 | h | assumption: Sheet default value; no project figure given. | 0 … 72 h
+  t_auto | Battery autonomy | 0 | h | assumption: Sheet default value; no project figure given. | 0 … 72 h
   U_b | Battery nominal voltage | 24 | V | assumption: Sheet default value; no project figure given. | 2 … 1000 V
   eta_conv | Conversion efficiency battery → loads | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   DoD | Allowed depth of discharge | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
@@ -52,7 +52,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   A10. theta (Ambient temperature) is taken as 40 degC. (Sheet default value; no project figure given.)
   A11. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (Sheet default value; no project figure given.)
   A12. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Sheet default value; no project figure given.)
-  A13. t_auto (Battery autonomy) is taken as 4 h. (Sheet default value; no project figure given.)
+  A13. t_auto (Battery autonomy) is taken as 0 h. (Sheet default value; no project figure given.)
   A14. U_b (Battery nominal voltage) is taken as 24 V. (Sheet default value; no project figure given.)
   A15. eta_conv (Conversion efficiency battery → loads) is taken as 1. (Sheet default value; no project figure given.)
   A16. DoD (Allowed depth of discharge) is taken as 0.8. (Sheet default value; no project figure given.)
@@ -125,18 +125,6 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
       = max(1.3833 kVA, 0.36887 kVA)
       = 1.3833 kVA
         Minimum transformer rating (running load and starting peak)
-  [38] I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv)
-      = 0 / (24 × 1)
-      = 0 A
-        Battery discharge current
-  [39] Ah = I_b * t_auto
-      = 0 A × 4 h
-      = 0 A·h
-        Discharge capacity
-  [40] C_req = Ah / (DoD * eta_b * k_temp * k_age)
-      = 0 A·h / (0.8 × 0.95 × 1 × 0.8)
-      = 0 A·h
-        Minimum battery capacity
 
 5. RESULTS
   P_conn = 0.94839 kW    Connected load
@@ -151,24 +139,17 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   S_peak = 1.1066 kVA    Peak apparent power at start
   S_T_req_start = 0.36887 kVA    Minimum transformer rating, starting peak
   S_T_min = 1.3833 kVA    Minimum transformer rating, running and starting
-  I_b = 0 A    Battery discharge current
-  Ah = 0 A·h    Discharge capacity
-  C_req = 0 A·h    Minimum battery capacity
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
 
 7. APPLICABILITY
-  WARNING record.f_derate: f_derate: a tabulated value not taken from a reference record (PSU derating); enter it as one so its source, edition and licence travel with it.
-  WARNING record.DoD: DoD: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.eta_b: eta_b: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_temp: k_temp: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_age: k_age: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: elec.load-budget@1.2.0
   Content hash: 82b6c9bbcbb22a37
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 19:15 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test

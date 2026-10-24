@@ -256,12 +256,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   PASS  Concrete bearing under the axial force: u_N = 0.11119 vs u_N ≤ 1  utilisation 0.111  « EN 1993-1-8 cl. 6.2.8.2, 6.2.5
 
 7. APPLICABILITY
-  WARNING record.alpha_cc: alpha_cc: a tabulated value not taken from a reference record (EN 1992-1-1 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_c: gamma_c: a tabulated value not taken from a reference record (EN 1992-1-1 National Annex factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_M2: gamma_M2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factor); enter it as one so its source, edition and licence travel with it.
-  WARNING record.gamma_M0: gamma_M0: a tabulated value not taken from a reference record (EN 1993-1-1 National Annex factor); enter it as one so its source, edition and licence travel with it.
-  WARNING record.C_fd: C_fd: a tabulated value not taken from a reference record (Friction coefficient plate to grout); enter it as one so its source, edition and licence travel with it.
-  WARNING record.f_y: f_y: a tabulated value not taken from a reference record (Plate strength); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength). Enter each as one so its source, edition and licence travel with it.
   WARNING anchorage: profis_ref: 'PROFIS-BP1 (to be filed)' is typed text, not an attached report; attach the Hilti PROFIS report as Evidence so the reference points at the filed document. The anchorage design is not checked on this sheet.
 
 8. VERIFICATION

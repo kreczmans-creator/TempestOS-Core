@@ -13,7 +13,7 @@ PACK INDEX
   4. Cooling-water pipework and pump — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
 
 REVISIONS
-  A  2026-10-24  unknown  First issue
+  A  2026-10-24  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -39,7 +39,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 18/18
-  Test run: 2026-10-24 19:29 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -52,7 +52,7 @@ Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
-Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC Heat dissipated: Φ = Σ(1 − η_i)·P_i·d_i·k_i PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer: S_T ≥ margin·S; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified) Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
   Ref: Linden's Handbook of Batteries 5th ed., Ch. 3–4 — Battery sizing and the Peukert relation
   Ref: BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance; cited by number only)
 
@@ -63,18 +63,21 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   loads[2] |  | name = Pump drive; supply = AC three-phase; P = 30 kW; cosphi = 0.95; eta = 0.975; d = 1; k = 1; inrush = 1; backed = no |  |  | 
   loads[3] |  | name = Servo drives (4); supply = AC three-phase; P = 30 kW; cosphi = 0.9; eta = 0.96; d = 0.8; k = 1; inrush = 1; backed = no |  |  | 
   loads[4] |  | name = 24 V supplies; supply = AC three-phase; P = 1.5 kW; cosphi = 0.9; eta = 0.9; d = 1; k = 1; inrush = 1; backed = no |  |  | 
-  P_add | Additional three-phase load (linked from E1's peak power) | 0 | kW | assumption: Sheet default value; no project figure given. | 0 … 200 kW
+  P_add | Additional three-phase load (linked from E1's RMS power) | 0 | kW | assumption: Sheet default value; no project figure given. | 0 … 200 kW
   cosphi_add | Power factor of the additional load | 0.85 |  | spec: SPEC-MCC-03 §4 (panel schedule) | 0.5 … 1
   eta_add | Efficiency of the additional load | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   inrush_add | Starting multiple of the additional load | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+  heat_add | Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0) | 0 |  | assumption: Sheet default value; no project figure given. | 0 … 1
   U_3ph | Three-phase line voltage | 400 | V | assumption: Sheet default value; no project figure given. | 12 … 1000 V
   U_1ph | Single-phase voltage | 230 | V | assumption: Sheet default value; no project figure given. | 12 … 1000 V
   U_DC | DC bus voltage | 24 | V | assumption: Sheet default value; no project figure given. | 12 … 1000 V
+  psu_bus | AC bus that feeds the DC power supply (its input P_DC/η_PSU is added to that bus) | not counted on an AC bus |  | assumption: Sheet default value; no project figure given. | any
+  eta_psu | DC power supply efficiency (power factor taken as 1) | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   margin | Sizing margin | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
   theta | Ambient temperature | 40 | degC | assumption: Sheet default value; no project figure given. | -20 … 70 degC
   f_derate | PSU derating factor at the ambient and altitude | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   k_T | Transformer short-time overload allowed for inrush | 3 |  | assumption: Sheet default value; no project figure given. | 1 … 20
-  t_auto | Battery autonomy | 4 | h | assumption: Sheet default value; no project figure given. | 0 … 72 h
+  t_auto | Battery autonomy | 0 | h | assumption: Sheet default value; no project figure given. | 0 … 72 h
   U_b | Battery nominal voltage | 24 | V | assumption: Sheet default value; no project figure given. | 2 … 1000 V
   eta_conv | Conversion efficiency battery → loads | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   DoD | Allowed depth of discharge | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
@@ -83,100 +86,100 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   k_age | Ageing (end-of-life) factor | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
 
 3. ASSUMPTIONS
-  A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand (the PSU's own loss is a load row if wanted). (Load budget convention.)
-  A2. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
-  A3. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (§A3 reference records.)
-  A4. P_add (Additional three-phase load (linked from E1's peak power)) is taken as 0 kW. (Sheet default value; no project figure given.)
-  A5. eta_add (Efficiency of the additional load) is taken as 0.9. (Sheet default value; no project figure given.)
-  A6. inrush_add (Starting multiple of the additional load) is taken as 1. (Sheet default value; no project figure given.)
-  A7. U_3ph (Three-phase line voltage) is taken as 400 V. (Sheet default value; no project figure given.)
-  A8. U_1ph (Single-phase voltage) is taken as 230 V. (Sheet default value; no project figure given.)
-  A9. U_DC (DC bus voltage) is taken as 24 V. (Sheet default value; no project figure given.)
-  A10. margin (Sizing margin) is taken as 1.25. (Sheet default value; no project figure given.)
-  A11. theta (Ambient temperature) is taken as 40 degC. (Sheet default value; no project figure given.)
-  A12. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (Sheet default value; no project figure given.)
-  A13. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Sheet default value; no project figure given.)
-  A14. t_auto (Battery autonomy) is taken as 4 h. (Sheet default value; no project figure given.)
-  A15. U_b (Battery nominal voltage) is taken as 24 V. (Sheet default value; no project figure given.)
-  A16. eta_conv (Conversion efficiency battery → loads) is taken as 1. (Sheet default value; no project figure given.)
-  A17. DoD (Allowed depth of discharge) is taken as 0.8. (Sheet default value; no project figure given.)
-  A18. eta_b (Battery discharge efficiency) is taken as 0.95. (Sheet default value; no project figure given.)
-  A19. k_temp (Temperature capacity factor) is taken as 1. (Sheet default value; no project figure given.)
-  A20. k_age (Ageing (end-of-life) factor) is taken as 0.8. (Sheet default value; no project figure given.)
+  A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand; with a PSU bus chosen they count at P/η_PSU, the PSU's own loss being a load row if its heat is wanted. (Load budget convention.)
+  A2. The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Green G-B-04.)
+  A3. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
+  A4. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (§A3 reference records.)
+  A5. P_add (Additional three-phase load (linked from E1's RMS power)) is taken as 0 kW. (Sheet default value; no project figure given.)
+  A6. eta_add (Efficiency of the additional load) is taken as 0.9. (Sheet default value; no project figure given.)
+  A7. inrush_add (Starting multiple of the additional load) is taken as 1. (Sheet default value; no project figure given.)
+  A8. heat_add (Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0)) is taken as 0. (Sheet default value; no project figure given.)
+  A9. U_3ph (Three-phase line voltage) is taken as 400 V. (Sheet default value; no project figure given.)
+  A10. U_1ph (Single-phase voltage) is taken as 230 V. (Sheet default value; no project figure given.)
+  A11. U_DC (DC bus voltage) is taken as 24 V. (Sheet default value; no project figure given.)
+  A12. psu_bus (AC bus that feeds the DC power supply (its input P_DC/η_PSU is added to that bus)) is taken as not counted on an AC bus. (Sheet default value; no project figure given.)
+  A13. eta_psu (DC power supply efficiency (power factor taken as 1)) is taken as 0.9. (Sheet default value; no project figure given.)
+  A14. margin (Sizing margin) is taken as 1.25. (Sheet default value; no project figure given.)
+  A15. theta (Ambient temperature) is taken as 40 degC. (Sheet default value; no project figure given.)
+  A16. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (Sheet default value; no project figure given.)
+  A17. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Sheet default value; no project figure given.)
+  A18. t_auto (Battery autonomy) is taken as 0 h. (Sheet default value; no project figure given.)
+  A19. U_b (Battery nominal voltage) is taken as 24 V. (Sheet default value; no project figure given.)
+  A20. eta_conv (Conversion efficiency battery → loads) is taken as 1. (Sheet default value; no project figure given.)
+  A21. DoD (Allowed depth of discharge) is taken as 0.8. (Sheet default value; no project figure given.)
+  A22. eta_b (Battery discharge efficiency) is taken as 0.95. (Sheet default value; no project figure given.)
+  A23. k_temp (Temperature capacity factor) is taken as 1. (Sheet default value; no project figure given.)
+  A24. k_age (Ageing (end-of-life) factor) is taken as 0.8. (Sheet default value; no project figure given.)
 
 4. WORKING
-  [19] L1 = P·d·k; P·d·k/cosφ
+  [21] L1 = P·d·k; P·d·k/cosφ
       = 55 × 1 × 1 = 55 kW; 57.895 kVA
       = 55 kW
         Extruder drive (AC three-phase)
-  [20] L2 = P·d·k; P·d·k/cosφ
+  [22] L2 = P·d·k; P·d·k/cosφ
       = 30 × 1 × 1 = 30 kW; 31.579 kVA
       = 30 kW
         Pump drive (AC three-phase)
-  [21] L3 = P·d·k; P·d·k/cosφ
+  [23] L3 = P·d·k; P·d·k/cosφ
       = 30 × 0.8 × 1 = 24 kW; 26.667 kVA
       = 24 kW
         Servo drives (4) (AC three-phase)
-  [22] L4 = P·d·k; P·d·k/cosφ
+  [24] L4 = P·d·k; P·d·k/cosφ
       = 1.5 × 1 × 1 = 1.5 kW; 1.6667 kVA
       = 1.5 kW
         24 V supplies (AC three-phase)
-  [23] P_conn = Σ P_i
+  [25] P_conn = Σ P_i
       = 55 + 30 + 30 + 1.5
       = 116.5 kW
         Connected load
-  [24] P_dem = Σ P_i·d_i·k_i
+  [26] P_dem = Σ P_i·d_i·k_i
       = 55 + 30 + 24 + 1.5
       = 110.5 kW
         Demand active power
-  [25] S_dem = Σ P_i·d_i·k_i/cosφ_i
+  [27] S_dem = Σ P_i·d_i·k_i/cosφ_i
       = 57.895 + 31.579 + 26.667 + 1.6667
       = 117.81 kVA
         Demand apparent power (arithmetic)
-  [26] I_3ph = S_3φ/(√3·U_3ph)
+  [28] I_3ph = S_3φ/(√3·U_3ph)
       = 117810 / (√3 × 400)
       = 170.04 A
         Three-phase bus current
-  [27] I_1ph = S_1φ/U_1ph
+  [29] I_1ph = S_1φ/U_1ph
       = 0 / 230
       = 0 A
         Single-phase bus current
-  [28] I_DC = P_DC/U_DC
+  [30] I_DC = P_DC/U_DC
       = 0 / 24
       = 0 A
         DC bus current
-  [29] Phi = Σ (1 − η_i)·P_i·d_i·k_i
+  [31] Phi = Σ h_i·P_i·d_i·k_i
       = 0.03×55 + 0.025×30 + 0.04×24 + 0.1×1.5
       = 3.51 kW
-        Heat dissipated (→ E2)
-  [30] P_DC = Σ DC P_i·d_i·k_i
+        Heat dissipated inside the enclosure (→ E2)
+  [32] P_DC = Σ DC P_i·d_i·k_i
       = 0 W
       = 0 W
         DC demand
-  [31] P_PSU_req = margin * P_DC / f_derate
+  [33] P_PSU_req = margin * P_DC / f_derate
       = 1.25 × 0 W / 1
       = 0 W
         Minimum PSU rating
-  [32] S_T_req = margin * S_dem
+  [34] S_T_req = margin * S_dem
       = 1.25 × 117.81 kVA
       = 147.26 kVA
-        Minimum transformer rating
-  [33] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+        Minimum transformer rating for the running load
+  [35] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
       = 117.81 + 6.6667 (Servo drives (4) starting)
       = 124.47 kVA
         Peak apparent power while the largest load starts
-  [34] I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv)
-      = 0 / (24 × 1)
-      = 0 A
-        Battery discharge current
-  [35] Ah = I_b * t_auto
-      = 0 A × 4 h
-      = 0 A·h
-        Discharge capacity
-  [36] C_req = Ah / (DoD * eta_b * k_temp * k_age)
-      = 0 A·h / (0.8 × 0.95 × 1 × 0.8)
-      = 0 A·h
-        Minimum battery capacity
+  [36] S_T_req_start = S_peak / k_T
+      = 124.47 kVA / 3
+      = 41.491 kVA
+        Minimum transformer rating for the starting peak
+  [37] S_T_min = max(S_T_req, S_T_req_start)
+      = max(147.26 kVA, 41.491 kVA)
+      = 147.26 kVA
+        Minimum transformer rating (running load and starting peak)
 
 5. RESULTS
   P_conn = 116.5 kW    Connected load
@@ -185,30 +188,25 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   I_3ph = 170.04 A    Three-phase bus current
   I_1ph = 0 A    Single-phase bus current
   I_DC = 0 A    DC bus current
-  Phi = 3.51 kW    Heat dissipated
+  Phi = 3.51 kW    Heat dissipated inside the enclosure
   P_PSU_req = 0 W    Minimum PSU rating
-  S_T_req = 147.26 kVA    Minimum transformer rating
+  S_T_req = 147.26 kVA    Minimum transformer rating, running load
   S_peak = 124.47 kVA    Peak apparent power at start
-  I_b = 0 A    Battery discharge current
-  Ah = 0 A·h    Discharge capacity
-  C_req = 0 A·h    Minimum battery capacity
+  S_T_req_start = 41.491 kVA    Minimum transformer rating, starting peak
+  S_T_min = 147.26 kVA    Minimum transformer rating, running and starting
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
 
 7. APPLICABILITY
-  WARNING record.f_derate: f_derate: a tabulated value not taken from a reference record (PSU derating); enter it as one so its source, edition and licence travel with it.
-  WARNING record.DoD: DoD: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.eta_b: eta_b: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_temp: k_temp: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING record.k_age: k_age: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.1.0
-  Content hash: 8aa7a2d98183c145
+  Template: elec.load-budget@1.2.0
+  Content hash: 82b6c9bbcbb22a37
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 19:29 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test
 
 
@@ -346,7 +344,7 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   Content hash: 48cdd32546406349
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-24 19:29 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test
 
 
@@ -486,15 +484,14 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   PASS  Approach against minimum: u_app = 0.13798 vs u_app ≤ 1  utilisation 0.138
 
 7. APPLICABILITY
-  WARNING record.cp_h: cp_h: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
-  WARNING record.cp_c: cp_c: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: cp_h, cp_c (Fluid specific heats). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: bs.heat-exchanger@1.2.0
   Content hash: 42ff33e576c8f734
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-24 19:29 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test
 
 
@@ -518,8 +515,6 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | water |  | drawing: DRG-MCC-215 rev B | any
   T | Fluid temperature (mean; link B6 t_m for a heating loop) | 23.6375 | degC | link: Cooling-water air coil rev A · T_c_m | 0 … 100 degC
-  rho_custom | Density (custom fluid) | 888 | kg/m^3 | assumption: Sheet default value; no project figure given. | 500 … 2000 kg/m^3
-  mu_custom | Dynamic viscosity (custom fluid) | 800 | mPa*s | assumption: Sheet default value; no project figure given. | 0.1 … 1000 mPa*s
   Phi_load | Heat carried by the water (gives the design flow with ΔT; replaces Q) | 3422.4 | W | link: Cooling-water air coil rev A · Q | 10 … 100000000 W
   dT_load | Flow-to-return temperature difference across the load | 3.27502 | K | link: Cooling-water air coil rev A · dT_c | 1 … 100 K
   cp_load | Specific heat of the fluid (heat-load flow; blank = 4186 J/(kg·K) assumed for water, required for a custom fluid) | 4180 | J/(kg*K) | link: Cooling-water air coil rev A · cp_c | 1000 … 6000 J/(kg*K)
@@ -540,15 +535,13 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
   A3. The system curve scales friction losses with Q² from the design flow (turbulent assumption); the static part is independent of flow. (H_sys = H_static + k Q².)
   A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
-  A5. rho_custom (Density (custom fluid)) is taken as 888 kg/m^3. (Sheet default value; no project figure given.)
-  A6. mu_custom (Dynamic viscosity (custom fluid)) is taken as 800 mPa*s. (Sheet default value; no project figure given.)
-  A7. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
-  A8. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
-  A9. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
-  A10. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
-  A11. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
-  A12. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
-  A13. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
+  A5. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
+  A6. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
+  A7. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A8. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A9. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
+  A10. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
+  A11. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
 
 4. WORKING
   [3] rho = Kell (1975) density of water at T    « Kell 1975
@@ -679,5 +672,5 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Content hash: 4747971fae135dcd
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 19:29 UTC
+  Test run: 2026-10-24 19:35 UTC
   Application: TempestOS test

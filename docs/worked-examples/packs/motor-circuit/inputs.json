@@ -162,8 +162,8 @@
       "Number": 10000,
       "Unit": "rpm",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A72 (axis duty cycle)",
         "IsSufficientToIssue": true
       },
       "ValueText": "10000"
@@ -250,7 +250,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:9e28bd41920e46d69cbc81711ea119d4#P_rms",
+        "Reference": "calc:c9b54e8542a242ad9184581adcd27692#P_rms",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -513,14 +513,14 @@
     },
     {
       "Symbol": "t_auto",
-      "Number": 4,
+      "Number": 0,
       "Unit": "h",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "4"
+      "ValueText": "0"
     },
     {
       "Symbol": "theta",
@@ -537,23 +537,23 @@
   "e4": [
     {
       "Symbol": "C_a",
-      "Number": 0.91,
+      "Number": 1,
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.91"
+      "ValueText": "1"
     },
     {
       "Symbol": "C_g",
-      "Number": 0.77,
+      "Number": 1,
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.77"
+      "ValueText": "1"
     },
     {
       "Symbol": "C_i",
@@ -571,7 +571,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e862932b9ddb4460bab9038a16326aa6#I_3ph",
+        "Reference": "calc:a69f992523b74d5180fee1f34092d6a8#I_3ph",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -590,13 +590,13 @@
     },
     {
       "Symbol": "N_g",
-      "Number": 2,
+      "Number": 1,
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "2"
+      "ValueText": "1"
     },
     {
       "Symbol": "P",
@@ -686,7 +686,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:743cb5867fc84b30a7a7de51b318d1ea@1 \u00B7 invented values for the worked example",
+        "Reference": "record:a9ac298eb5974fe2869ef137173f2079@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -840,7 +840,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:7e9d166ee4ad482080ea217d4c2b17f5@1 \u00B7 invented values for the worked example",
+        "Reference": "record:b1c6c488ca8b49dd8078529c9896c110@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -868,14 +868,14 @@
     },
     {
       "Symbol": "theta_a",
-      "Number": 35,
+      "Number": 30,
       "Unit": "degC",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "35"
+      "ValueText": "30"
     },
     {
       "Symbol": "theta_ref",
@@ -896,7 +896,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:70598f3433924f46ac6113b6fed19854#CSA",
+        "Reference": "calc:0c9d887162574a5ca0b5ecb2b3b20e26#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -908,7 +908,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:70598f3433924f46ac6113b6fed19854#I_b",
+        "Reference": "calc:0c9d887162574a5ca0b5ecb2b3b20e26#I_b",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -920,7 +920,7 @@
       "Unit": "m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:70598f3433924f46ac6113b6fed19854#L",
+        "Reference": "calc:0c9d887162574a5ca0b5ecb2b3b20e26#L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -972,14 +972,14 @@
     },
     {
       "Symbol": "X_km",
-      "Number": 0,
+      "Number": 0.08,
       "Unit": "ohm/km",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0"
+      "ValueText": "0.08"
     },
     {
       "Symbol": "alpha",
@@ -1081,7 +1081,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:70598f3433924f46ac6113b6fed19854#I_n",
+        "Reference": "calc:0c9d887162574a5ca0b5ecb2b3b20e26#I_n",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1093,7 +1093,7 @@
       "Unit": "m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:70598f3433924f46ac6113b6fed19854#L",
+        "Reference": "calc:0c9d887162574a5ca0b5ecb2b3b20e26#L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1127,7 +1127,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:70598f3433924f46ac6113b6fed19854#CSA",
+        "Reference": "calc:0c9d887162574a5ca0b5ecb2b3b20e26#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1202,7 +1202,7 @@
       "Number": 2,
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:70598f3433924f46ac6113b6fed19854#device_code",
+        "Reference": "calc:0c9d887162574a5ca0b5ecb2b3b20e26#device_code",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1317,7 +1317,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e862932b9ddb4460bab9038a16326aa6#Phi",
+        "Reference": "calc:a69f992523b74d5180fee1f34092d6a8#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
