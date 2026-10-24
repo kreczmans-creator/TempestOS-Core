@@ -6,8 +6,8 @@ You fill in the Result column. You sign off in the table at the end of this file
 
 ## Index
 
-Time is the estimate in each file. The listed total covers the files that exist now (1370 min, 607 steps).
-The electrical, building-services and chain files come from a parallel writer. Check each link before you start.
+Time is the estimate in each file. The listed total covers the files that exist now (1565 min, 648 steps).
+The chain files use the Calculation packs panel and the Saved calculations panel. Every other file reopens its saved calculations from the Saved calculations panel. See Procedure L and the app gaps below.
 
 | Order | Code | File | Liability | Time (min) | Steps |
 |---|---|---|---|---|---|
@@ -39,9 +39,11 @@ The electrical, building-services and chain files come from a parallel writer. C
 | 26 | B3 | [bs.duct-sizing](bs.duct-sizing.md) — Duct sizing | Medium | 40 | 19 |
 | 27 | B4 | [bs.room-heat-loss](bs.room-heat-loss.md) — U-values and room heat loss | Medium | 60 | 24 |
 | 28 | B5 | [bs.heat-exchanger](bs.heat-exchanger.md) — Heat exchanger, LMTD and effectiveness-NTU | Medium | 35 | 18 |
-| 29 | chain | [chain.drive-train](chain.drive-train.md) — Drive train: motor, shaft, bearing life, seat fit | High | 75 | 21 |
-| 30 | chain | [chain.motor-circuit](chain.motor-circuit.md) — Motor circuit: motor, load budget, cable, voltage drop, fault protection, enclosure heat | High | 110 | 23 |
-| 31 | chain | [chain.wet-heating](chain.wet-heating.md) — Wet heating: room heat loss, sealed system, pipework and pump, circulator motor | High | 100 | 23 |
+| 29 | chain | [chain.drive-train](chain.drive-train.md) — Drive train: motor, shaft, bearing life, seat fit, coupling flange bolts | High | 110 | 31 |
+| 30 | chain | [chain.motor-circuit](chain.motor-circuit.md) — Motor circuit: motor, load budget, cable, voltage drop, fault protection, enclosure heat | High | 110 | 22 |
+| 31 | chain | [chain.wet-heating](chain.wet-heating.md) — Wet heating: room heat loss, sealed system, pipework and pump, circulator motor | High | 100 | 26 |
+| 32 | chain | [chain.cooling](chain.cooling.md) — Enclosure cooling: panel load budget, enclosure heat, cooling-water air coil, pipework and pump | High | 70 | 12 |
+| 33 | chain | [chain.steel-support](chain.steel-support.md) — Steel support: load combinations, frame, column, arm joint, base plate | High | 90 | 17 |
 
 E4 and E5 ship together. Test E4 first, then E5.
 
@@ -51,6 +53,7 @@ Test the highest liability first. The order is E4, E5, S4, S6, E1, M4, M3, M6 an
 M3 means both M3a and M3b. After S3, take S1 first: its composite mode has a Critical defect.
 Then take the remaining High files, then the Medium files, then the chain files.
 Run the chain files last. They need the single-calculator files to pass first.
+The chain files test the pack panel, the stale marks, the pack check and the pack issue. Take the drive train first. It explains the panels.
 
 ## How to open a calculator
 
@@ -76,7 +79,11 @@ Values show five significant digits. *Show working* prints each formula with its
 
 **Save, check and issue.** *Save as calculation* is disabled while the bar reads Blocked. *Record check* needs every input to carry a source.
 Pick the source in the list beside each box (drawing, specification, assumption, evidence or reference) and type a reference.
-*Issue* needs a checked calculation. The fault-protection file needs a second signed-in user for the check.
+*Issue* needs a checked calculation. The fault-protection file needs a second signed-in user for the check. Sign in as another person under Settings, *Switch person…*.
+
+**Reopen a saved calculation.** Open the Calculation worksheets view with Ctrl+K. In the left column, under the catalogue, find the panel *Saved calculations*. It lists the open project's calculations as name · template · rev · status. A row ends with STALE when an upstream moved. Superseded revisions are not listed. Select a row and press *Open*. The form shows the calculation. The status line reads Opened 'name' · rev A · Draft. An issued calculation is read-only; press *Revise* to start a new revision. If the form holds edits you did not save, the first press of *Open* only says so: The form has unsaved changes. Save them first, or press Open again to discard them. Press *Open* again to discard them. The panel needs a project open.
+
+**Work a calc pack.** Under *Saved calculations* find the panel *Calculation packs*. Pick a template in *Pack template*, type a title and press *Create pack from template*. The new pack is selected. *Calculations in the selected pack* lists its members; select one and press *Open pack member*. *Check pack* is available for a Draft pack. The checker is the person signed in; the box cannot be edited. *Issue pack* is available for a Checked pack, with a reference and a client. The issued sheet, with its PACK INDEX, is attached to the pack's Evidence record, named like the pack with calculation pack after it. Every example input of a built-in pack carries the source assumption: example input — replace with your own. That source is enough to check and issue.
 
 ## Reading the columns
 
@@ -113,18 +120,28 @@ Use one project for every calculation in the test. Open the project first.
 1. Open the upstream worksheet named in the step. Enter its inputs. Type the name UP in *Calculation name*. Press *Save as calculation*. The watermark reads DRAFT.
 2. Open the downstream worksheet. Enter its inputs. Type the name DOWN. Press *Save as calculation*.
 3. In the Link row under the inputs, pick the input named in the step. Pick the calculation UP · rev A · Draft. Pick the output named in the step. Press *Link input*.
-   The input shows a link as its source. The results recalculate from the upstream value.
-4. Go back to UP. Change one input as the step says. Press *Save changes*.
-5. Open DOWN again. Expect an orange banner that starts with Stale — and a button *Update linked inputs*.
-6. Press *Record check* on DOWN. Expect a refusal in the status line. It says the calculation is stale and must be updated before checking. The status stays DRAFT.
-7. Press *Update linked inputs*. The banner clears. The results use the new upstream value.
+   The status line reads Linked ... it is pinned to that calculation's current revision. The input shows a link as its source. The results recalculate from the upstream value.
+4. In the *Saved calculations* panel select UP. Press *Open*. If the status line says the form has unsaved changes, press *Open* again. Change the input as the step says. Press *Save changes*.
+5. Within a second the DOWN row in the panel ends with STALE. Select DOWN. Press *Open*.
+   Expect an orange banner: Stale — 'UP' rev A now gives a different 'output' than the value 'input' took. Expect the button *Update linked inputs*.
+6. Press *Record check* on DOWN. Expect a refusal in the status line: Calculation 'DOWN' is stale: followed by the reason and Update it before checking. The watermark stays DRAFT.
+7. Press *Update linked inputs*. The banner clears. The row loses STALE. The results use the new upstream value. The status line reads Linked inputs updated to the current revisions and recalculated.
 
-Open point for the builder. The code has no screen that reopens a saved calculation in the Worksheets view.
-The method that does this (CalcSheetCoordinator.OpenAsync) has no caller in the desktop code.
-If you cannot reopen UP or DOWN in step 4 or 5, record SKIPPED and say so in Notes. Look first in the Calculation register and the project tree for an Open action.
-The chain file says to reopen from the Calculation register. My reading is that this register opens the older workbench records, not worksheet instances. Try it and report what happens.
-An issued upstream works the same way: use *Revise* on UP, and DOWN goes stale. *Issue* on a checked but stale DOWN is also refused.
-The load-combinations and frame-2d files have no stale step. No calculation outputs a load factor or a modulus for them to take.
+An issued upstream works the same way. Check and issue UP first. Open UP and press *Revise*. DOWN goes stale with the banner 'input' is pinned to 'UP' rev A, which is superseded by rev B; update to revision B. For a draft DOWN the button still reads *Update linked inputs*. For a checked or issued DOWN it reads *Update to revision B*, and the press makes a new revision of DOWN. *Issue* on a checked but stale DOWN is refused: Calculation 'DOWN' is stale ... Re-run it as a new revision first.
+The load-combinations and frame-2d files have no stale step of their own. Their stale behaviour is tested in chain.steel-support.md, where the load combinations feed a cell of the frame's load table.
+
+## App gaps
+
+These are the gaps left after the Saved calculations and Calculation packs panels. Each is a step that stays BLOCK as built.
+
+| Gap | Where it shows | What is missing |
+|---|---|---|
+| Pack from the motor circuit template | chain.motor-circuit.md step 1 | The panel cannot give a template step its own inputs. The cable step needs the owner's cable-capacity and device-rating tables, so the panel refuses the template. A Create pack from selected calculations action would also cure it. The pack check and issue of that chain are not testable. |
+| Table-cell link by hand | chain.wet-heating.md step 5 | The Link panel lists number and quantity inputs only. Only a pack template can bind a table cell. |
+| Pack stuck in Checked | chain.drive-train.md step 15 | After a member changes following the pack check, Issue pack is refused and says to check the pack again. Check pack is offered for a Draft pack only. No screen returns the pack to Draft. |
+| Pack sheet view | every chain file | No pack screen shows the issued pack sheet or its PACK INDEX. You open it through the pack's Evidence record. Report where you found it. |
+
+Earlier gaps are closed: reopening a saved calculation (P4-01) and creating, checking and issuing a pack from a template (P4-02). If a step in a file does not work as written, record FAIL with what you saw. Do not record SKIPPED for a feature that is now built.
 
 ## Source questions for you
 
@@ -180,5 +197,7 @@ Verdict is one of: accept, accept with conditions, reject. Conditions go in the 
 | 29 | chain | chain.drive-train |  |  |  |  |  |  |  |  |
 | 30 | chain | chain.motor-circuit |  |  |  |  |  |  |  |  |
 | 31 | chain | chain.wet-heating |  |  |  |  |  |  |  |  |
+| 32 | chain | chain.cooling |  |  |  |  |  |  |  |  |
+| 33 | chain | chain.steel-support |  |  |  |  |  |  |  |  |
 
 Overall verdict: ______________   Signed: ______________   Date: ______________

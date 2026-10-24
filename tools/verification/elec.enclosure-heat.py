@@ -48,7 +48,7 @@ def encl(loads, W=0.6, H=0.8, D=0.3, f=(1, 1, 0, 1, 1, 0), h=5.5, T_amb=35.0, T_
     V_req_net = max(0.0, P - P_nat_max) / (rho * 1006.0 * dT_allow) * 3600.0
     o.update(P_loads=P_loads, P_solar=P_solar, P_total=P, A_eff=A_eff, dT_nat=dT_nat,
              T_int=T_amb + dT_nat, P_nat_max=P_nat_max, P_cool=P_cool, rho_air=rho,
-             V_req=V_req, V_req_net=V_req_net)
+             V_req=V_req, V_req_net=V_req_net, T_max=T_max)
     if Vp is not None:
         # duty point: scan segments of the piecewise-linear curve for a root of g(V)=p_fan-p_sys(V/Vref)^2
         def pfan(V):
@@ -123,6 +123,12 @@ EXTRA_CASES = [
     ('P14 P_add 300 W with an empty loads table (v1.1.0 linked heat load)',
      {'loads': [(300, 1, 1)]},
      {'P_total': 300.0, 'A_eff': 1.14, 'dT_nat': 47.84688995, 'P_cool': 205.95}),
+    ('P15 cooling pack E2: 150 W + linked 3510 W, 1.2x2.0x0.6 m, T_max 45 (v1.2.0 T_max port)',
+     {'loads': [(150, 1, 1), (3510, 1, 1)], 'W': 1.2, 'H': 2.0, 'D': 0.6, 'f': (1, 1, 0, 1, 0, 0), 'T_amb': 35, 'T_max': 45},
+     {'P_total': 3660.0, 'A_eff': 4.32, 'dT_nat': 154.040404, 'P_nat_max': 237.6, 'P_cool': 3422.4, 'T_max': 45.0, 'rho_air': 1.145484783, 'T_int_C': 189.040404, 'V_req': 1143.395, 'V_req_net': 1069.168}),
+    ('P16 T_max port echoes the limit as entered (55 degC)',
+     {'loads': [(800, 1, 1)], 'W': 0.6, 'H': 1.8, 'D': 0.4, 'f': (1, 1, 0, 1, 1, 0), 'T_amb': 35, 'T_max': 55, 'z': 2000},
+     {'T_max': 55.0, 'P_cool': 496.4}),
     ('P12 altitude -500 m',
      {'loads': [(300, 1, 1)], 'z': -500},
      {'P_total': 300.0, 'A_eff': 1.14, 'dT_nat': 47.84688995, 'P_nat_max': 94.05, 'P_cool': 205.95, 'rho_air': 1.215039555, 'T_int_C': 82.84689, 'V_req': 58.90390668, 'V_req_net': 40.43753194}),

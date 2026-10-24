@@ -1017,8 +1017,33 @@ def extras():
     print(f"extra checks with DIFF: {len(EXTRA_DIFFS)} {EXTRA_DIFFS}")
 
 
+def a8_ports():
+    """Ports added in product 1.1.0 (steel-support chain): |reaction| and greatest |M| of a member, checked on the pack's support frame.
+    Product values read with the probe from the pack.steel-support example (S5 E_d_min -28.2 kN at node 3, 5 kN at node 2)."""
+    print("--- A8 ports (v1.1.0): steel-support frame, nodes 1 fixed / 2 / 3, member 1 column, member 2 arm ---")
+    nodes = dict([node(1, 0, 0, "fixed"), node(2, 0, 3), node(3, 1, 3)])
+    elems = [(1, 1, 2, 58.7, 4568, None, False, False), (2, 2, 3, 58.7, 4568, None, False, False)]
+    loads = [load(1, "nodal", 3, Fy=-28.2), load(1, "nodal", 2, Fx=5.0)]
+    f = build(210, nodes, elems, loads)
+    prod = {"R1_y": 28.2, "R1_x_abs": 5.0, "R1_m_abs": 43.2, "N_e1": -28.2, "V_e1": 5.0, "M_abs_e1": 43.2, "V_e2": 28.2, "M_abs_e2": 28.2}
+    rx, ry, rm = f.Rn[1]
+    m1, m2 = f.members[1], f.members[2]
+    ind = {"R1_y": float(ry), "R1_x_abs": abs(float(rx)), "R1_m_abs": abs(float(rm)),
+           "N_e1": float(m1["N"][np.argmax(np.abs(m1["N"]))]), "V_e1": float(np.abs(m1["V"]).max()),
+           "M_abs_e1": float(np.abs(m1["M"]).max()), "V_e2": float(np.abs(m2["V"]).max()), "M_abs_e2": float(np.abs(m2["M"]).max())}
+    for k, pv in prod.items():
+        xrow("A8 steel-support frame", k, pv, ind[k], 1e-6)
+    # D1 (re-check): M_abs_e<n> inherits -01. SS beam L 6 m, 30 kN.m couple at the member end (x = 6): true greatest |M| is 30; product port 28.5.
+    nodes = dict([node(1, 0, 0, "pin"), node(2, 6, 0, "roller (vertical)")])
+    f = build(210, nodes, [(1, 1, 2, 100, 20000, None, False, False)], [load(1, "moment", 1, a=6.0, M=30.0)])
+    m = f.members[1]
+    true_abs = float(np.abs(m["M"]).max())
+    xrow("A8 couple at end (D1)", "M_abs_e1", 28.5, true_abs, 1e-6, "P1-struct.frame-2d-D1 (port inherits -01)")
+
+
 if __name__ == "__main__":
     kats()
     extras()
+    a8_ports()
     print("RESULT:", "ALL PASS" if FAIL[0] == 0 else f"{FAIL[0]} FAIL")
     sys.exit(0 if FAIL[0] == 0 else 1)

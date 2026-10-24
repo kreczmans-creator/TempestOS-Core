@@ -105,6 +105,8 @@ def solve(arr, mode, mh, cph, thi, mc, cpc, tci, U, A=None, Rf=0.0, qreq=None):
     tco = tci + q / cc
     # Outlets by energy balance on both streams, also for ISO (as a finite-C stream).
     out.update(NTU=ntu, eps=eps, Q=q / 1000.0, T_h_out=tho, T_c_out=tco)
+    # Cold-stream ports added in product 1.1.0 (A8 cooling chain): rise, mean temperature, c_p as entered.
+    out.update(dT_c=q / cc, T_c_m=(tci + tco) / 2.0, cp_c=cpc)
     ua = ntu * cmin
     out["UA"] = ua
     # LMTD (counterflow end differences) and F
@@ -187,6 +189,18 @@ EXTRAS = [
      {'NTU': 0.23923445, 'eps': 0.193050193, 'Q': 48.41698842, 'T_h_out': 68.4169884, 'T_c_out': 31.5830116, 'dT_app': 48.41698842, 'UA': 1000.0, 'dT_lm': 48.41698842, 'F': 1.0}),
     ('E15 parallel pinch NTU 2392', dict(arr=PARALLEL, mode='rating', mh=1, cph=4180, thi=80, mc=1, cpc=4180, tci=20, U=10000, A=1000),
      {'NTU': 2392.344498, 'eps': 0.5, 'Q': 125.4, 'T_h_out': 50.0, 'T_c_out': 50.0, 'dT_app': 0.0, 'UA': 10000000.0}),
+    ('P1 ports 1.1.0: counter Cr=0.5 rating, Rf=2e-4', dict(arr=COUNTER, mode='rating', mh=1, cph=4180, thi=80, mc=2, cpc=4180, tci=20, U=1000, A=5, Rf=0.0002),
+     {'dT_c': 16.91206632, 'T_c_m': 28.4560332, 'cp_c': 4180.0}),
+    ('P2 ports 1.1.0: parallel sizing 100 kW', dict(arr=PARALLEL, mode='sizing', mh=1, cph=4180, thi=80, mc=4, cpc=4180, tci=20, U=1000, qreq=100),
+     {'dT_c': 5.980861244, 'T_c_m': 22.9904306, 'cp_c': 4180.0}),
+    ('P3 ports 1.1.0: shell 1-2 sizing 150 kW', dict(arr=SHELL, mode='sizing', mh=1, cph=4180, thi=80, mc=2, cpc=4180, tci=20, U=1000, qreq=150),
+     {'dT_c': 17.94258373, 'T_c_m': 28.9712919, 'cp_c': 4180.0}),
+    ('P4 ports 1.1.0: crossflow Cr=0.6 rating', dict(arr=CROSS, mode='rating', mh=1, cph=4180, thi=80, mc=1.667, cpc=4180, tci=20, U=1000, A=3),
+     {'dT_c': 15.72833565, 'T_c_m': 27.8641678, 'cp_c': 4180.0}),
+    ('P5 ports 1.1.0: sub-zero streams', dict(arr=COUNTER, mode='rating', mh=1, cph=4180, thi=-30, mc=1, cpc=4180, tci=-40, U=1000, A=2),
+     {'dT_c': 3.236245955, 'T_c_m': -38.381877, 'cp_c': 4180.0}),
+    ('P6 ports 1.1.0: isothermal choice, mc=2', dict(arr=ISO, mode='rating', mh=1, cph=4180, thi=80, mc=2, cpc=4180, tci=20, U=1000, A=4.18),
+     {'dT_c': 18.96361676, 'T_c_m': 29.4818084, 'cp_c': 4180.0}),
 ]
 
 

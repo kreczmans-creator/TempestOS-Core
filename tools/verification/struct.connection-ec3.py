@@ -279,6 +279,17 @@ def extras():
     # EN 1993-1-8 cl. 3.6.1(5) asks 0.85 x F_v,Rd for classes 4.8, 5.8, 6.8, 8.8, 10.9 (owner to confirm).
     fv12 = fv_rd("8.8", "M12")
     xrows.append(("M12 8.8 default d_0 = 14 mm (2 mm clearance)", "F_v_Rd (kN)", 32.35835, 0.85 * fv12, 32.35835 / (0.85 * fv12) - 1.0, "FAIL", "P1-struct.connection-ec3-R1 (no 0.85 factor)"))
+    # ---- ports added in product 1.1.0 (steel-support chain, -> S6): A_s, f_ub, f_yb ----
+    # Product values read with the probe (A_s in mm2 from the SI port, strengths in MPa). Table 3.1: f_yb = f_ub x second figure / 10.
+    for g, (fyb_p, fub_p) in {"4.6": (240.0, 400.0), "8.8": (640.0, 800.0), "10.9": (900.0, 1000.0)}.items():
+        fyb, fub = GRADES[g]
+        for sym, pv, iv in (("f_ub (port)", fub_p, fub), ("f_yb (port)", fyb_p, fyb)):
+            xrows.append((f"ports 1.1.0: M20 class {g}", sym, pv, float(iv), abs(iv - pv) / pv, "PASS" if abs(iv - pv) / pv < 1e-9 else "FAIL", ""))
+    for sz, pv in {"M20": 244.7943917, "M16": 156.6684107}.items():
+        iv = stress_area(sz)
+        xrows.append((f"ports 1.1.0: {sz} A_s (mm2)", "A_s (port)", pv, iv, abs(iv - pv) / pv, "PASS" if abs(iv - pv) / pv < 1e-6 else "FAIL", ""))
+    # D1 (re-check): the 10.9 f_yb port (900 MPa) is above the S6 input limit (640 MPa, base-plate-03), so a 10.9 holding-down bolt blocks S6.
+    xrows.append(("ports 1.1.0: class 10.9 f_yb against S6 limit 640 MPa", "f_yb (MPa)", 900.0, 640.0, 900.0 / 640.0 - 1.0, "FAIL", "P1-struct.connection-ec3-D1 (S6 blocks)"))
 
 
 xrows = []
