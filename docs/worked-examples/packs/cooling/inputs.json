@@ -11,6 +11,17 @@
       "ValueText": "0.8"
     },
     {
+      "Symbol": "P_add",
+      "Number": 0,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
       "Symbol": "U_1ph",
       "Number": 230,
       "Unit": "V",
@@ -369,7 +380,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:80be6489168c4fa5af5bd43d9108e195#Phi",
+        "Reference": "calc:7a6b3957a82245619beb40d379d8f426#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -568,7 +579,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6d42a26ebf3a43edb3d54d792db4bec9#P_cool",
+        "Reference": "calc:6f49c60073b24a789b0df0d654c1967a#P_cool",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -598,25 +609,26 @@
     },
     {
       "Symbol": "T_h_in",
-      "Number": 38,
+      "Number": 45,
       "Unit": "degC",
       "Provenance": {
-        "Kind": "Specification",
-        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
+        "Kind": "Link",
+        "Reference": "calc:6f49c60073b24a789b0df0d654c1967a#T_max",
+        "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "38"
+      "ValueText": "45"
     },
     {
       "Symbol": "U",
-      "Number": 1000,
+      "Number": 60,
       "Unit": "W/(m^2*K)",
       "Provenance": {
         "Kind": "Specification",
         "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1000"
+      "ValueText": "60"
     },
     {
       "Symbol": "arrangement",
@@ -633,22 +645,22 @@
       "Number": 4180,
       "Unit": "J/(kg*K)",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
         "IsSufficientToIssue": true
       },
       "ValueText": "4180"
     },
     {
       "Symbol": "cp_h",
-      "Number": 4180,
+      "Number": 1006,
       "Unit": "J/(kg*K)",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "4180"
+      "ValueText": "1006"
     },
     {
       "Symbol": "dT_min",
@@ -674,14 +686,14 @@
     },
     {
       "Symbol": "m_h",
-      "Number": 0.3,
+      "Number": 0.4,
       "Unit": "kg/s",
       "Provenance": {
         "Kind": "Specification",
         "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.3"
+      "ValueText": "0.4"
     },
     {
       "Symbol": "mode",
@@ -711,7 +723,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c307469c1814125a2576e829160f141#Q",
+        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#Q",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -723,7 +735,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c307469c1814125a2576e829160f141#T_c_m",
+        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#T_c_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -734,9 +746,9 @@
       "Number": 4180,
       "Unit": "J/(kg*K)",
       "Provenance": {
-        "Kind": "Drawing",
-        "Reference": "DRG-MCC-215",
-        "Revision": "B",
+        "Kind": "Link",
+        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#cp_c",
+        "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "4180"
@@ -747,7 +759,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c307469c1814125a2576e829160f141#dT_c",
+        "Reference": "calc:8eb900bd37b34410a364e16c655b4fd8#dT_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

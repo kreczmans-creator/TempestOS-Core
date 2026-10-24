@@ -123,6 +123,7 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   T_int = 52.72 degC    Internal temperature (natural)
   P_nat_max = 209 W    Natural dissipation at the limit
   P_cool = 0 W    Cooling unit needed
+  T_max = 55 degC    Internal temperature limit
   rho_air = 1.1455 kg/m³    Air density
   V_req = 28.924 m³/h    Required airflow
   V_req_net = 0 m³/h    Required airflow (net)
@@ -135,8 +136,8 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
 
 8. VERIFICATION
   Template: elec.enclosure-heat@1.2.0
-  Content hash: af1b4c9a3aaaa3cb
+  Content hash: 48cdd32546406349
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-24 18:04 UTC
+  Test run: 2026-10-24 18:29 UTC
   Application: TempestOS test

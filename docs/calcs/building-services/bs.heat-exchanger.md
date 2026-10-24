@@ -6,7 +6,7 @@
 
 **Inputs.** `arrangement`, `mode`; `m_h`, `m_c` 0.001–100 kg/s; `cp_h`, `cp_c` (record kind `fluid.properties`, or B2 for air); `T_h_in`, `T_c_in` −40 to 200 °C; `U` 10–10 000 W/m²K; `R_f`; `A` 0.01–1000 m² (rating); `Q_req` kW (sizing, optional in rating); `dT_min`.
 
-**Outputs.** `C_r`, `NTU`, `eps`, `Q`, `T_h_out`, `T_c_out`, `dT_lm`, `F`, `dT_app`, `UA`, `A_req` (sizing), and from 1.1.0 `dT_c` (cold-side rise, K) and `T_c_m` (mean cold-side temperature, °C). **Ports.** `Q`, `T_h_out`, `T_c_out`, `A_req`, `dT_c`, `T_c_m` → B1: `Q` is its `Phi_load`, `dT_c` its `dT_load` and `T_c_m` its fluid temperature `T` (the cooling chain, `pack.cooling`); `Q_req` takes E2's `P_cool`. **Checks.** approach against the minimum; duty against required (rating).
+**Outputs.** `C_r`, `NTU`, `eps`, `Q`, `T_h_out`, `T_c_out`, `dT_lm`, `F`, `dT_app`, `UA`, `A_req` (sizing), and from 1.1.0 `dT_c` (cold-side rise, K) and `T_c_m` (mean cold-side temperature, °C). **Ports.** `Q`, `T_h_out`, `T_c_out`, `A_req`, `dT_c`, `T_c_m`, `cp_c` → B1: `Q` is its `Phi_load`, `dT_c` its `dT_load`, `T_c_m` its fluid temperature `T` and `cp_c` its `cp_load` (the cooling chain, `pack.cooling`); `Q_req` takes E2's `P_cool` and `T_h_in` E2's `T_max` (the enclosure air enters the coil at its limit; hot-side c_p 1006 J/(kg·K) is the conventional dry-air value E2 uses). **Checks.** approach against the minimum; duty against required (rating).
 
 **Limitations.** Single phase; constant properties; no pressure drop.
 

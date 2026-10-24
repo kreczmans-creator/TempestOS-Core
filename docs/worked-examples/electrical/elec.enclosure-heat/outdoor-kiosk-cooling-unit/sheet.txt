@@ -119,6 +119,7 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   T_int = 95.219 degC    Internal temperature (natural)
   P_nat_max = 44.55 W    Natural dissipation at the limit
   P_cool = 447.45 W    Cooling unit needed
+  T_max = 45 degC    Internal temperature limit
   rho_air = 1.1272 kg/m³    Air density
   V_req = 312.39 m³/h    Required airflow
   V_req_net = 284.11 m³/h    Required airflow (net)

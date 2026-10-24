@@ -93,4 +93,14 @@ public sealed class ConnectionTests
         Assert.Equal(244.794, r.OutputSi("A_s") * 1e6, 3);
         Assert.Equal(0.9 * 800 * ConnectionCalculator.StressArea(20, 2.5) / 1.25, r.OutputSi("F_t_Rd"), 1e-3);
     }
+
+    [Fact]
+    public void Bolt_Strengths_Are_Ports_For_The_Anchor_Bolt_Data_Of_The_Base_Plate()
+    {
+        var r = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Choice("grade", "10.9")));
+        Assert.Equal(1000e6, r.OutputSi("f_ub"), 1);
+        Assert.Equal(900e6, r.OutputSi("f_yb"), 1);
+        Assert.Contains(Ec3.Template.OutputPorts!, p => p is { Symbol: "f_ub", Unit: "MPa" });
+        Assert.Contains(Ec3.Template.OutputPorts!, p => p is { Symbol: "f_yb", Unit: "MPa" });
+    }
 }

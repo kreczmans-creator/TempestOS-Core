@@ -1,10 +1,10 @@
 # Calc pack — Steel support (`pack.steel-support`)
 
-**Chain.** Load combinations (`struct.load-combinations`) → Support frame (`struct.frame-2d`) → Column check (`struct.en1993-member`) → Arm connection and bolts (`struct.connection-ec3`) → Column base plate (`struct.base-plate`).
+**Chain.** Load combinations (`struct.load-combinations`) → Support frame (`struct.frame-2d`) → Column check (`struct.en1993-member`) → Arm joint bolt group (`mech.bolt-group`) → Arm connection bolts (`struct.connection-ec3`) → Holding-down bolts (`struct.connection-ec3`) → Column base plate (`struct.base-plate`).
 
-**Purpose.** Combines the actions on an equipment support, analyses the steel frame, checks the column, designs the bolted connection and the column base plate, and files the anchorage design done elsewhere as Evidence.
+**Purpose.** Combines the actions on an equipment support, analyses the steel frame, checks the column, designs the bracket's bolted joint and the column base plate, and files the anchorage design done elsewhere as Evidence. The links assume the frame's numbering: nodes 1 (column base, fixed), 2 (column top), 3 (arm tip); member 1 the column, member 2 the arm; the first load row the vertical load at node 3 (filled from the load combinations), the second the horizontal design action at node 2.
 
-The equipment's dead and maintenance loads are combined (EN 1990); the ULS vertical effect is a cell of the frame's load table; the frame's column forces check the column, its arm shear loads the bolted connection and its base reactions are the base plate's actions; the connection's bolt values are the holding-down bolt data. **The anchorage (concrete and anchor design) is done in Hilti PROFIS: the file attached to the base-plate step is a PLACEHOLDER, not a PROFIS report, to be replaced by the engineer's own report before the pack is used.**
+The equipment's dead (12 kN) and maintenance (8 kN) loads, both downward, are combined (EN 1990 6.10: 28.2 kN); that ULS effect is a cell of the frame's load table; the frame's column forces check the column; the arm's end shear and moment load a six-bolt group whose governing-bolt shear and tension are the arm connection's design forces (S4); the frame's base reactions are the base plate's actions; and a second S4 run for the 25 mm base plate gives S6 its holding-down bolt data. The 5 kN horizontal action at the column top is an ULS design value (combined at factor 1). **The links depend on the frame's numbering: nodes 1 (column base, fixed), 2 (column top) and 3 (arm tip); member 1 the column (1 → 2) and member 2 the arm (2 → 3); the first load row the vertical load at node 3 (filled from the load combinations) and the second the horizontal action at node 2.** The bolt group's bolt resistances (94.0 kN shear, 141.0 kN tension) are typed values equal to what the arm connection step computes for M20 8.8; a test guards the match. The holding-down bolts' own demand fields are zero: S6 checks the anchor bolts against the base reactions. **The anchorage (concrete and anchor design) is done in Hilti PROFIS: the file attached to the base-plate step is a PLACEHOLDER, not a PROFIS report, to be replaced by the engineer's own report before the pack is used.**
 
 **Issue.** Project “Equipment support ES-4”, pack “Equipment support steelwork calc pack”, checked once as a bundle and issued under issue reference **`STR-SUP-001`** to Client Co in one transaction. After issue every step is read-only and carries that reference. Checked against SPEC-STR-09 and DRG-STR-310 to 315 rev B.
 
@@ -15,7 +15,9 @@ The equipment's dead and maintenance loads are combined (EN 1990); the ULS verti
 | Load combinations | `struct.load-combinations` | A | none |
 | Support frame | `struct.frame-2d` | A | none |
 | Column check | `struct.en1993-member` | A | 7 of 7 PASS |
-| Arm connection and bolts | `struct.connection-ec3` | A | 6 of 6 PASS |
+| Arm joint bolt group | `mech.bolt-group` | A | 4 of 4 PASS |
+| Arm connection bolts | `struct.connection-ec3` | A | 6 of 6 PASS |
+| Holding-down bolts | `struct.connection-ec3` | A | 5 of 5 PASS |
 | Column base plate | `struct.base-plate` | A | 6 of 6 PASS |
 
 ## Links
@@ -28,13 +30,19 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | Support frame | `N_e1` | Column check | `N_Ed` | -28.2 kN |
 | Support frame | `M_abs_e1` | Column check | `M_y_Ed` | 43.2 kN*m |
 | Support frame | `V_e1` | Column check | `V_Ed` | 5 kN |
-| Support frame | `V_e2` | Arm connection and bolts | `V_Ed` | 28.2 kN |
+| Support frame | `V_e2` | Arm joint bolt group | `F_y` | 28.2 kN |
+| Support frame | `M_abs_e2` | Arm joint bolt group | `M_x` | 28.2 kN*m |
+| Arm joint bolt group | `v_max` | Arm connection bolts | `F_v_Ed` | 4.7 kN |
+| Arm joint bolt group | `t_max` | Arm connection bolts | `F_t_Ed` | 47 kN |
+| Support frame | `V_e2` | Arm connection bolts | `V_Ed` | 28.2 kN |
 | Support frame | `R1_y` | Column base plate | `N_Ed` | 28.2 kN |
 | Support frame | `R1_m_abs` | Column base plate | `M_Ed` | 43.2 kN*m |
 | Support frame | `R1_x_abs` | Column base plate | `V_Ed` | 5 kN |
-| Arm connection and bolts | `F_t_Rd` | Column base plate | `F_t_Rd` | 141.002 kN |
-| Arm connection and bolts | `A_s` | Column base plate | `A_s` | 244.794 mm^2 |
-| Arm connection and bolts | `F_b_Rd` | Column base plate | `F_1_vb_Rd` | 198.788 kN |
+| Holding-down bolts | `F_t_Rd` | Column base plate | `F_t_Rd` | 141.002 kN |
+| Holding-down bolts | `A_s` | Column base plate | `A_s` | 244.794 mm^2 |
+| Holding-down bolts | `F_b_Rd` | Column base plate | `F_1_vb_Rd` | 248.485 kN |
+| Holding-down bolts | `f_ub` | Column base plate | `f_ub` | 800 MPa |
+| Holding-down bolts | `f_yb` | Column base plate | `f_yb` | 640 MPa |
 
 ## Inputs and provenance
 
@@ -48,7 +56,9 @@ The base-plate step cites `PROFIS-BP1-PLACEHOLDER.txt`, filed against its Eviden
 - `s5-struct-load-combinations.sheet.txt` — Load combinations, the issued sheet.
 - `s2-struct-frame-2d.sheet.txt` — Support frame, the issued sheet.
 - `s3-struct-en1993-member.sheet.txt` — Column check, the issued sheet.
-- `s4-struct-connection-ec3.sheet.txt` — Arm connection and bolts, the issued sheet.
+- `m3-mech-bolt-group.sheet.txt` — Arm joint bolt group, the issued sheet.
+- `s4a-struct-connection-ec3.sheet.txt` — Arm connection bolts, the issued sheet.
+- `s4b-struct-connection-ec3.sheet.txt` — Holding-down bolts, the issued sheet.
 - `s6-struct-base-plate.sheet.txt` — Column base plate, the issued sheet.
 - `inputs.json` — every step's inputs as issued (links included), in the exchange form the Calc API reads.
 

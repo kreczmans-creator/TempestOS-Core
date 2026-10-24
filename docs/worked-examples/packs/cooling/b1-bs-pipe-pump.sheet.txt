@@ -17,12 +17,12 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | water |  | drawing: DRG-MCC-215 rev B | any
-  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 23.6375 | degC | link: Cooling-water exchanger rev A · T_c_m | 0 … 100 degC
+  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 23.6375 | degC | link: Cooling-water air coil rev A · T_c_m | 0 … 100 degC
   rho_custom | Density (custom fluid) | 888 | kg/m^3 | assumption: Sheet default value; no project figure given. | 500 … 2000 kg/m^3
   mu_custom | Dynamic viscosity (custom fluid) | 800 | mPa*s | assumption: Sheet default value; no project figure given. | 0.1 … 1000 mPa*s
-  Phi_load | Heat carried by the water (gives the design flow with ΔT; replaces Q) | 3422.4 | W | link: Cooling-water exchanger rev A · Q | 10 … 100000000 W
-  dT_load | Flow-to-return temperature difference across the load | 3.27502 | K | link: Cooling-water exchanger rev A · dT_c | 1 … 100 K
-  cp_load | Specific heat of the fluid (heat-load flow; blank = 4186 J/(kg·K) assumed for water, required for a custom fluid) | 4180 | J/(kg*K) | drawing: DRG-MCC-215 rev B | 1000 … 6000 J/(kg*K)
+  Phi_load | Heat carried by the water (gives the design flow with ΔT; replaces Q) | 3422.4 | W | link: Cooling-water air coil rev A · Q | 10 … 100000000 W
+  dT_load | Flow-to-return temperature difference across the load | 3.27502 | K | link: Cooling-water air coil rev A · dT_c | 1 … 100 K
+  cp_load | Specific heat of the fluid (heat-load flow; blank = 4186 J/(kg·K) assumed for water, required for a custom fluid) | 4180 | J/(kg*K) | link: Cooling-water air coil rev A · cp_c | 1000 … 6000 J/(kg*K)
   segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-MCC-215 rev B | any
   segments[1] |  | name = cooling water supply and return; L = 30 m; D = 25 mm; eps = 0.045 mm; K = 12; L_eq = 0 m; dz = 3 m; side = discharge |  |  | 
   h_out | Pressure head required at the outlet | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 1000 m
@@ -173,5 +173,5 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Content hash: 42db31f9bd988473
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 18:04 UTC
+  Test run: 2026-10-24 18:29 UTC
   Application: TempestOS test

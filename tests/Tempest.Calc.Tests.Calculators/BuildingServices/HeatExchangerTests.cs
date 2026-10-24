@@ -108,4 +108,17 @@ public sealed class HeatExchangerTests
             Assert.Equal(r.OutputSi("T_c_out") - r.OutputSi("dT_c"), tin + 273.15, 1e-9);
         }, iter: 60);
     }
+
+    [Fact]
+    public void The_Cold_Side_Specific_Heat_Is_A_Port_So_A_Glycol_Mixture_Reaches_The_Pump_Flow()
+    {
+        var r = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("cp_c", 3700, "J/(kg*K)")));
+        Assert.Equal(3700, r.OutputSi("cp_c"), 1e-9);
+        Assert.Contains(Hx.Template.OutputPorts!, p => p is { Symbol: "cp_c", Unit: "J/(kg*K)" });
+
+        // Air on the hot side (c_p 1006 J/kg·K): the duty needs no table, only the stream's capacity rate.
+        var air = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("cp_h", 1006, "J/(kg*K)")).With(CalcInputValue.Quantity("m_h", 0.4, "kg/s")).With(CalcInputValue.Quantity("U", 60, "W/(m^2*K)")));
+        Assert.False(air.IsBlocked);
+        Assert.Equal(0.4 * 1006, air.Steps.Single(s => s.Symbol == "C_min").Result is Tempest.Calc.Engine.Values.ScalarValue c ? c.Si : double.NaN, 9);
+    }
 }

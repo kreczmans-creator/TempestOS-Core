@@ -208,6 +208,10 @@ public sealed class FrameCalculator : ICalcCalculator
         c.Record("comb", "reported combination", report.Combination.Name, new TextValue(report.Combination.Name), "The combination detailed below");
 
         // Reactions.
+        // Solver noise (a 1e-14 moment on an unloaded support) is snapped to zero in the magnitude outputs, relative to the largest reaction.
+        var reactionScale = Math.Max(1, report.Reactions.Values.Select(r => Math.Max(Math.Abs(r.Rx), Math.Max(Math.Abs(r.Ry), Math.Abs(r.Mz)))).DefaultIfEmpty(0).Max());
+        double Snap(double v) => Math.Abs(v) < 1e-9 * reactionScale ? 0 : Math.Abs(v);
+
         foreach (var node in model.Nodes.Where(n => n.IsSupported))
         {
             var (rx, ry, mz) = report.Reactions[node.Id];
@@ -222,8 +226,8 @@ public sealed class FrameCalculator : ICalcCalculator
                 c.Output($"R{node.Id}_m", $"M node {node.Id}");
 
                 // Magnitudes, for a design check (a base plate, a connection) that takes shear and moment unsigned.
-                c.Record($"R{node.Id}_x_abs", $"|R_x| at node {node.Id}", $"|{Fmt(rx / 1e3)}| kN", ScalarValue.Of(Math.Abs(rx) / 1e3, kN), $"Magnitude of the horizontal reaction at node {node.Id}");
-                c.Record($"R{node.Id}_m_abs", $"|M| at node {node.Id}", $"|{Fmt(mz / 1e3)}| kN·m", ScalarValue.Of(Math.Abs(mz) / 1e3, kNm), $"Magnitude of the moment reaction at node {node.Id}");
+                c.Record($"R{node.Id}_x_abs", $"|R_x| at node {node.Id}", $"|{Fmt(rx / 1e3)}| kN", ScalarValue.Of(Snap(rx) / 1e3, kN), $"Magnitude of the horizontal reaction at node {node.Id}");
+                c.Record($"R{node.Id}_m_abs", $"|M| at node {node.Id}", $"|{Fmt(mz / 1e3)}| kN·m", ScalarValue.Of(Snap(mz) / 1e3, kNm), $"Magnitude of the moment reaction at node {node.Id}");
                 c.Output($"R{node.Id}_x_abs", $"|R_x| node {node.Id}");
                 c.Output($"R{node.Id}_m_abs", $"|M| node {node.Id}");
             }

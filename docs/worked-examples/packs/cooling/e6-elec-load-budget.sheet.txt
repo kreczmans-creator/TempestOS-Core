@@ -19,7 +19,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   loads[2] |  | name = Pump drive; supply = AC three-phase; P = 30 kW; cosphi = 0.95; eta = 0.975; d = 1; k = 1; inrush = 1; backed = no |  |  | 
   loads[3] |  | name = Servo drives (4); supply = AC three-phase; P = 30 kW; cosphi = 0.9; eta = 0.96; d = 0.8; k = 1; inrush = 1; backed = no |  |  | 
   loads[4] |  | name = 24 V supplies; supply = AC three-phase; P = 1.5 kW; cosphi = 0.9; eta = 0.9; d = 1; k = 1; inrush = 1; backed = no |  |  | 
-  P_add | Additional three-phase load (linked from E1's peak power) | 0 | kW | default | 0 … 200 kW
+  P_add | Additional three-phase load (linked from E1's peak power) | 0 | kW | assumption: Sheet default value; no project figure given. | 0 … 200 kW
   cosphi_add | Power factor of the additional load | 0.85 |  | spec: SPEC-MCC-03 §4 (panel schedule) | 0.5 … 1
   eta_add | Efficiency of the additional load | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   inrush_add | Starting multiple of the additional load | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 20
@@ -42,22 +42,23 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand (the PSU's own loss is a load row if wanted). (Load budget convention.)
   A2. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
   A3. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (§A3 reference records.)
-  A4. eta_add (Efficiency of the additional load) is taken as 0.9. (Sheet default value; no project figure given.)
-  A5. inrush_add (Starting multiple of the additional load) is taken as 1. (Sheet default value; no project figure given.)
-  A6. U_3ph (Three-phase line voltage) is taken as 400 V. (Sheet default value; no project figure given.)
-  A7. U_1ph (Single-phase voltage) is taken as 230 V. (Sheet default value; no project figure given.)
-  A8. U_DC (DC bus voltage) is taken as 24 V. (Sheet default value; no project figure given.)
-  A9. margin (Sizing margin) is taken as 1.25. (Sheet default value; no project figure given.)
-  A10. theta (Ambient temperature) is taken as 40 degC. (Sheet default value; no project figure given.)
-  A11. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (Sheet default value; no project figure given.)
-  A12. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Sheet default value; no project figure given.)
-  A13. t_auto (Battery autonomy) is taken as 4 h. (Sheet default value; no project figure given.)
-  A14. U_b (Battery nominal voltage) is taken as 24 V. (Sheet default value; no project figure given.)
-  A15. eta_conv (Conversion efficiency battery → loads) is taken as 1. (Sheet default value; no project figure given.)
-  A16. DoD (Allowed depth of discharge) is taken as 0.8. (Sheet default value; no project figure given.)
-  A17. eta_b (Battery discharge efficiency) is taken as 0.95. (Sheet default value; no project figure given.)
-  A18. k_temp (Temperature capacity factor) is taken as 1. (Sheet default value; no project figure given.)
-  A19. k_age (Ageing (end-of-life) factor) is taken as 0.8. (Sheet default value; no project figure given.)
+  A4. P_add (Additional three-phase load (linked from E1's peak power)) is taken as 0 kW. (Sheet default value; no project figure given.)
+  A5. eta_add (Efficiency of the additional load) is taken as 0.9. (Sheet default value; no project figure given.)
+  A6. inrush_add (Starting multiple of the additional load) is taken as 1. (Sheet default value; no project figure given.)
+  A7. U_3ph (Three-phase line voltage) is taken as 400 V. (Sheet default value; no project figure given.)
+  A8. U_1ph (Single-phase voltage) is taken as 230 V. (Sheet default value; no project figure given.)
+  A9. U_DC (DC bus voltage) is taken as 24 V. (Sheet default value; no project figure given.)
+  A10. margin (Sizing margin) is taken as 1.25. (Sheet default value; no project figure given.)
+  A11. theta (Ambient temperature) is taken as 40 degC. (Sheet default value; no project figure given.)
+  A12. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (Sheet default value; no project figure given.)
+  A13. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Sheet default value; no project figure given.)
+  A14. t_auto (Battery autonomy) is taken as 4 h. (Sheet default value; no project figure given.)
+  A15. U_b (Battery nominal voltage) is taken as 24 V. (Sheet default value; no project figure given.)
+  A16. eta_conv (Conversion efficiency battery → loads) is taken as 1. (Sheet default value; no project figure given.)
+  A17. DoD (Allowed depth of discharge) is taken as 0.8. (Sheet default value; no project figure given.)
+  A18. eta_b (Battery discharge efficiency) is taken as 0.95. (Sheet default value; no project figure given.)
+  A19. k_temp (Temperature capacity factor) is taken as 1. (Sheet default value; no project figure given.)
+  A20. k_age (Ageing (end-of-life) factor) is taken as 0.8. (Sheet default value; no project figure given.)
 
 4. WORKING
   [19] L1 = P·d·k; P·d·k/cosφ
@@ -157,12 +158,11 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record.eta_b: eta_b: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
   WARNING record.k_temp: k_temp: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
   WARNING record.k_age: k_age: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
-  WARNING input.P_add: P_add (Additional three-phase load (linked from E1's peak power)) was not entered; the template default 0 kW is used.
 
 8. VERIFICATION
   Template: elec.load-budget@1.1.0
   Content hash: 8aa7a2d98183c145
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 18:04 UTC
+  Test run: 2026-10-24 18:29 UTC
   Application: TempestOS test

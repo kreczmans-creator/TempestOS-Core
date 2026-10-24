@@ -26,20 +26,20 @@ public sealed class ChainPackWorkedExampleTests
     private static readonly Example[] Examples =
     [
         new(CalcPackTemplates.DriveTrain, "drive-train", "Conveyor head drive calc pack", "CNV-DRV-001", "Client Co", "Conveyor 7 head drive", "Checked against SPEC-CNV-07 and DRG-CNV-410 to 412 rev B.",
-            _ => Task.FromResult(Plain(ChainInputs.DriveTrain())),
+            host => Task.FromResult(Plain(ChainInputs.DriveTrain(host))),
             "A 4-pole motor (about 24 kW at 1500 rpm) turns a conveyor drum at 120 rpm through a 12.5:1 gearbox against a steady 1.8 kN·m. The motor's torque and speed are the gearbox input shaft's; the shaft's reaction and speed give bearing A its load and speed; the shaft's seat diameter is the fit's nominal size; and the motor's peak torque is the torque the four-bolt coupling flange carries."),
         new(CalcPackTemplates.MotorCircuit, "motor-circuit", "Servo axis motor circuit calc pack", "LINE-ELEC-001", "Client Co", "Line 12 axis 3", "Checked against SPEC-LINE-12 and DRG-LINE-120 rev B.",
             async host => Plain(await MotorCircuitInputsAsync(host)),
             "A ball-screw servo axis (50 kg, 0.5 m in 0.5 s) is sized, its panel demand and heat found, its cable and device chosen, and the voltage drop, earth-fault disconnection and enclosure temperature checked. **The cable-capacity and device-rating tables of the cable step are SYNTHETIC test values, invented for this example and labelled as such on the sheet; they are not from any regulation or manufacturer table, and the example must not be used to size a real cable.**"),
         new(CalcPackTemplates.WetHeating, "wet-heating", "Plant room heating calc pack", "HTG-001", "Client Co", "Plant room heating", "Checked against SPEC-HTG-01 §3.",
-            _ => Task.FromResult(Plain(ChainInputs.WetHeating())),
+            host => Task.FromResult(Plain(ChainInputs.WetHeating(host))),
             "Two rooms' design heat losses are the two rows of the sealed system's room table (table-cell links); the sealed system's total heat, flow-to-return difference and mean water temperature give the primary pipework its flow and fluid; the pump's shaft torque and speed are the circulator motor's load."),
         new(CalcPackTemplates.Cooling, "cooling", "Drive panel cooling calc pack", "MCC-COOL-001", "Client Co", "Motor control centre 3", "Checked against SPEC-MCC-03 and DRG-MCC-210/215 rev B.",
-            _ => Task.FromResult(Plain(ChainInputs.Cooling())),
-            "The heat a drive panel dissipates is a linked load of its enclosure; the heat the enclosure cannot lose naturally is the required duty of a water-cooled exchanger; the exchanger's duty, cold-side temperature rise and mean cold-side temperature give the cooling-water pipework and pump their flow and fluid temperature. The enclosure step's own check, natural dissipation holding the limit, FAILS by design: that is the reason the exchanger is needed, and the duty it hands over is exactly the shortfall."),
+            host => Task.FromResult(Plain(ChainInputs.Cooling(host))),
+            "The heat a drive panel dissipates is a linked load of its enclosure; the heat the enclosure cannot lose naturally is the required duty of a water-cooled air coil. The coil's hot side is the enclosure air, entering at the enclosure's temperature limit (E2 `T_max`, linked) with c_p 1006 J/(kg·K), the conventional dry-air value E2 itself uses; the air flow through the coil (0.4 kg/s) and U = 60 W/(m²·K) are the coil's own figures, and no intermediate water loop inside the enclosure is modelled. The coil's duty, cold-side temperature rise, mean cold-side temperature and cold-side specific heat (linked, so a glycol mixture changes the flow) give the cooling-water pipework and pump their flow and fluid. The enclosure step's own check, natural dissipation holding the limit, FAILS by design: that is the reason the coil is needed, and the duty it hands over is exactly the shortfall."),
         new(CalcPackTemplates.SteelSupport, "steel-support", "Equipment support steelwork calc pack", "STR-SUP-001", "Client Co", "Equipment support ES-4", "Checked against SPEC-STR-09 and DRG-STR-310 to 315 rev B.",
-            _ => Task.FromResult(Plain(ChainInputs.SteelSupport())),
-            "The equipment's dead and maintenance loads are combined (EN 1990); the ULS vertical effect is a cell of the frame's load table; the frame's column forces check the column, its arm shear loads the bolted connection and its base reactions are the base plate's actions; the connection's bolt values are the holding-down bolt data. **The anchorage (concrete and anchor design) is done in Hilti PROFIS: the file attached to the base-plate step is a PLACEHOLDER, not a PROFIS report, to be replaced by the engineer's own report before the pack is used.**"),
+            host => Task.FromResult(Plain(ChainInputs.SteelSupport(host))),
+            "The equipment's dead (12 kN) and maintenance (8 kN) loads, both downward, are combined (EN 1990 6.10: 28.2 kN); that ULS effect is a cell of the frame's load table; the frame's column forces check the column; the arm's end shear and moment load a six-bolt group whose governing-bolt shear and tension are the arm connection's design forces (S4); the frame's base reactions are the base plate's actions; and a second S4 run for the 25 mm base plate gives S6 its holding-down bolt data. The 5 kN horizontal action at the column top is an ULS design value (combined at factor 1). **The links depend on the frame's numbering: nodes 1 (column base, fixed), 2 (column top) and 3 (arm tip); member 1 the column (1 → 2) and member 2 the arm (2 → 3); the first load row the vertical load at node 3 (filled from the load combinations) and the second the horizontal action at node 2.** The bolt group's bolt resistances (94.0 kN shear, 141.0 kN tension) are typed values equal to what the arm connection step computes for M20 8.8; a test guards the match. The holding-down bolts' own demand fields are zero: S6 checks the anchor bolts against the base reactions. **The anchorage (concrete and anchor design) is done in Hilti PROFIS: the file attached to the base-plate step is a PLACEHOLDER, not a PROFIS report, to be replaced by the engineer's own report before the pack is used.**"),
     ];
 
     /// <summary>The motor circuit's inputs with the synthetic E4 tables saved as (unlicensed, synthetic) records and pinned.</summary>
@@ -53,7 +53,7 @@ public sealed class ChainPackWorkedExampleTests
             false, CalcDataOrigin.UserEntered, [new CalcDataValue("ratings", Rows: ConductorSizingCalculator.TypicalRatings().Rows)], DateTimeOffset.UnixEpoch));
         Assert.Null(r1);
         Assert.Null(r2);
-        return ChainInputs.MotorCircuit(CalcInstanceService.RecordProvenance(ampacity!), CalcInstanceService.RecordProvenance(ratings!));
+        return ChainInputs.MotorCircuit(host, CalcInstanceService.RecordProvenance(ampacity!), CalcInstanceService.RecordProvenance(ratings!));
     }
 
     private static async Task<Guid?> ProjectAsync(LibraryTestHost host, string name)

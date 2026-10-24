@@ -1,6 +1,6 @@
 CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
-Calc ID: Cooling-water exchanger    Revision: A
+Calc ID: Cooling-water air coil    Revision: A
 Title: Heat exchanger (LMTD and ε-NTU)
 Author: unknown    Authored: 2026-10-24
 Checker: —    Checked: —
@@ -16,13 +16,13 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   Symbol | Description | Value | Unit | Source | Valid range
   arrangement | Flow arrangement | counterflow |  | spec: SPEC-MCC-03 §7 (cooling water) | any
   mode | Mode | sizing (given duty) |  | spec: SPEC-MCC-03 §7 (cooling water) | any
-  m_h | Hot-side mass flow | 0.3 | kg/s | spec: SPEC-MCC-03 §7 (cooling water) | 0.001 … 100 kg/s
-  cp_h | Hot-side specific heat | 4180 | J/(kg*K) | assumption: Sheet default value; no project figure given. | 500 … 10000 J/(kg*K)
-  T_h_in | Hot-side inlet temperature | 38 | degC | spec: SPEC-MCC-03 §7 (cooling water) | -40 … 200 degC
+  m_h | Hot-side mass flow | 0.4 | kg/s | spec: SPEC-MCC-03 §7 (cooling water) | 0.001 … 100 kg/s
+  cp_h | Hot-side specific heat | 1006 | J/(kg*K) | spec: SPEC-MCC-03 §7 (cooling water) | 500 … 10000 J/(kg*K)
+  T_h_in | Hot-side inlet temperature | 45 | degC | link: Enclosure heat rev A · T_max | -40 … 200 degC
   m_c | Cold-side mass flow | 0.25 | kg/s | spec: SPEC-MCC-03 §7 (cooling water) | 0.001 … 100 kg/s
-  cp_c | Cold-side specific heat | 4180 | J/(kg*K) | assumption: Sheet default value; no project figure given. | 500 … 10000 J/(kg*K)
+  cp_c | Cold-side specific heat | 4180 | J/(kg*K) | spec: SPEC-MCC-03 §7 (cooling water) | 500 … 10000 J/(kg*K)
   T_c_in | Cold-side inlet temperature | 22 | degC | spec: SPEC-MCC-03 §7 (cooling water) | -40 … 200 degC
-  U | Overall heat transfer coefficient (clean) | 1000 | W/(m^2*K) | spec: SPEC-MCC-03 §7 (cooling water) | 10 … 10000 W/(m^2*K)
+  U | Overall heat transfer coefficient (clean) | 60 | W/(m^2*K) | spec: SPEC-MCC-03 §7 (cooling water) | 10 … 10000 W/(m^2*K)
   R_f | Total fouling resistance | 0.0001 | m^2*K/W | spec: SPEC-MCC-03 §7 (cooling water) | 0 … 0.01 m^2*K/W
   Q_req | Required duty | 3.4224 | kW | link: Enclosure heat rev A · P_cool | 0.001 … 100000 kW
   dT_min | Minimum approach temperature difference | 2 | K | assumption: Sheet default value; no project figure given. | 0 … 50 K
@@ -31,54 +31,52 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   A1. Single phase on both sides (except the C_r = 0 arrangement), constant properties, no heat loss to surroundings. (Incropera 7th ed. §11.3–11.4.)
   A2. The crossflow both-unmixed effectiveness is the published approximate correlation, flagged on the sheet. (Incropera 7th ed. Table 11.3.)
   A3. Specific heats are user records (or B2 for air) at the mean temperature of each stream. (§A3 reference records.)
-  A4. cp_h (Hot-side specific heat) is taken as 4180 J/(kg*K). (Sheet default value; no project figure given.)
-  A5. cp_c (Cold-side specific heat) is taken as 4180 J/(kg*K). (Sheet default value; no project figure given.)
-  A6. dT_min (Minimum approach temperature difference) is taken as 2 K. (Sheet default value; no project figure given.)
+  A4. dT_min (Minimum approach temperature difference) is taken as 2 K. (Sheet default value; no project figure given.)
 
 4. WORKING
   [12] C_h = m_h * cp_h
-      = 0.3 kg/s × 4180 J/(kg·K)
-      = 1254 W/K
+      = 0.4 kg/s × 1006 J/(kg·K)
+      = 402.4 W/K
         Hot-side capacity rate
   [13] C_c = m_c * cp_c
       = 0.25 kg/s × 4180 J/(kg·K)
       = 1045 W/K
         Cold-side capacity rate
   [14] C_min = min(C_h, C_c)
-      = min(1254 W/K, 1045 W/K)
-      = 1045 W/K
+      = min(402.4 W/K, 1045 W/K)
+      = 402.4 W/K
         Minimum capacity rate
   [15] C_r = min(C_h, C_c) / max(C_h, C_c)
-      = min(1254 W/K, 1045 W/K) / max(1254 W/K, 1045 W/K)
-      = 0.83333
+      = min(402.4 W/K, 1045 W/K) / max(402.4 W/K, 1045 W/K)
+      = 0.38507
         Capacity ratio
   [16] U_f = 1 / (1 / U + R_f)
-      = 1 / (1 / 1000 W/(m²·K) + 0.0001 m²·K/W)
-      = 909.09 W/(m²·K)
+      = 1 / (1 / 60 W/(m²·K) + 0.0001 m²·K/W)
+      = 59.642 W/(m²·K)
         Overall coefficient with fouling
   [18] eps = Q_req / (C_min·ΔT_max)
-      = 3422.4 / (1045 × 16)
-      = 0.20469
+      = 3422.4 / (402.4 × 23)
+      = 0.36978
         Effectiveness required
   [19] NTU = NTU(ε, C_r) inverse relation    « Incropera 7th ed. Table 11.4
-      = ε = 0.20469, C_r = 0.83333
-      = 0.252
+      = ε = 0.36978, C_r = 0.38507
+      = 0.501
         Transfer units required
   [20] A_req = NTU·C_min / U_f
-      = 0.252 × 1045 / 909.09
-      = 0.28968 m²
+      = 0.501 × 402.4 / 59.642
+      = 3.3802 m²
         Required heat transfer area
   [21] UA = NTU·C_min
-      = 0.252 × 1045
-      = 263.34 W/K
+      = 0.501 × 402.4
+      = 201.6 W/K
         Required UA
   [22] Q = ε·C_min·(T_h,in − T_c,in)
-      = 0.20469 × 1045 × 16
+      = 0.36978 × 402.4 × 23
       = 3.4224 kW
         Heat duty
   [23] T_h_out = T_h,in − Q/C_h
-      = 38 °C − 3422.4 / 1254
-      = 35.271 degC
+      = 45 °C − 3422.4 / 402.4
+      = 36.495 degC
         Hot-side outlet temperature
   [24] T_c_out = T_c,in + Q/C_c
       = 22 °C + 3422.4 / 1045
@@ -93,43 +91,44 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
       = 23.638 degC
         Mean cold-side temperature
   [27] dT_app = min(T_h,in − T_c,out, T_h,out − T_c,in)
-      = 12.725 K
-      = 12.725 K
+      = 14.495 K
+      = 14.495 K
         Approach temperature difference
   [28] dT_lm = (ΔT_1 − ΔT_2)/ln(ΔT_1/ΔT_2), counterflow ends
-      = ΔT_1 = 12.725 K, ΔT_2 = 13.271 K
-      = 12.996 K
+      = ΔT_1 = 19.725 K, ΔT_2 = 14.495 K
+      = 16.976 K
         Log-mean temperature difference
   [29] F = 1 (pure counterflow, parallel flow or C_r = 0)    « Incropera 7th ed. §11.3
-      = R = 0.83333, P = 0.20469
+      = R = 2.5969, P = 0.14239
       = 1
         LMTD correction factor
   [30] Q_lmtd = U_f·A·F·ΔT_lm
-      = 909.09 × 0.28968 × 1 × 12.996
+      = 59.642 × 3.3802 × 1 × 16.976
       = 3.4224 kW
         Duty by the LMTD method (cross-check)
   [31] u_app = dT_min / dT_app
-      = 2 K / 12.725 K
-      = 0.15717
+      = 2 K / 14.495 K
+      = 0.13798
         Approach utilisation (minimum / actual)
 
 5. RESULTS
-  C_r = 0.83333    Capacity ratio
-  NTU = 0.252    Transfer units
-  eps = 0.20469    Effectiveness
+  C_r = 0.38507    Capacity ratio
+  NTU = 0.501    Transfer units
+  eps = 0.36978    Effectiveness
   Q = 3.4224 kW    Heat duty
-  T_h_out = 35.271 degC    Hot outlet
+  T_h_out = 36.495 degC    Hot outlet
   T_c_out = 25.275 degC    Cold outlet
   dT_c = 3.275 K    Cold-side rise
   T_c_m = 23.638 degC    Cold-side mean
-  dT_app = 12.725 K    Approach
-  UA = 263.34 W/K    UA
-  A_req = 0.28968 m²    Required area
-  dT_lm = 12.996 K    Log-mean temperature difference
+  cp_c = 4180 J/(kg·K)    Cold-side specific heat
+  dT_app = 14.495 K    Approach
+  UA = 201.6 W/K    UA
+  A_req = 3.3802 m²    Required area
+  dT_lm = 16.976 K    Log-mean temperature difference
   F = 1    LMTD correction factor
 
 6. CHECKS (governing first)
-  PASS  Approach against minimum: u_app = 0.15717 vs u_app ≤ 1  utilisation 0.157
+  PASS  Approach against minimum: u_app = 0.13798 vs u_app ≤ 1  utilisation 0.138
 
 7. APPLICABILITY
   WARNING record.cp_h: cp_h: a tabulated value not taken from a reference record (Fluid specific heats); enter it as one so its source, edition and licence travel with it.
@@ -137,8 +136,8 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
 
 8. VERIFICATION
   Template: bs.heat-exchanger@1.1.0
-  Content hash: 716de477240a43d5
+  Content hash: 9be2a4c694b4f0cd
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 18:04 UTC
+  Test run: 2026-10-24 18:29 UTC
   Application: TempestOS test

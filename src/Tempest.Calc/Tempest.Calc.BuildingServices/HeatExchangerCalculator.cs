@@ -88,6 +88,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
             new CalcOutputPort("T_c_out", "degC", "Cold-side outlet temperature"),
             new CalcOutputPort("dT_c", "K", "Cold-side temperature rise, T_c,out − T_c,in (→ B1 dT_load)"),
             new CalcOutputPort("T_c_m", "degC", "Mean cold-side temperature (→ B1 fluid temperature T)"),
+            new CalcOutputPort("cp_c", "J/(kg*K)", "Cold-side specific heat as entered (→ B1 cp_load, so a glycol mixture reaches the pump flow)"),
             new CalcOutputPort("A_req", "m^2", "Required area (sizing)"),
         ],
         RecordKinds:
@@ -228,7 +229,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
 
     private static void Outputs(CalcRunContext c, bool sizing)
     {
-        foreach (var (symbol, text) in new[] { ("C_r", "Capacity ratio"), ("NTU", "Transfer units"), ("eps", "Effectiveness"), ("Q", "Heat duty"), ("T_h_out", "Hot outlet"), ("T_c_out", "Cold outlet"), ("dT_c", "Cold-side rise"), ("T_c_m", "Cold-side mean"), ("dT_app", "Approach"), ("UA", "UA") })
+        foreach (var (symbol, text) in new[] { ("C_r", "Capacity ratio"), ("NTU", "Transfer units"), ("eps", "Effectiveness"), ("Q", "Heat duty"), ("T_h_out", "Hot outlet"), ("T_c_out", "Cold outlet"), ("dT_c", "Cold-side rise"), ("T_c_m", "Cold-side mean"), ("cp_c", "Cold-side specific heat"), ("dT_app", "Approach"), ("UA", "UA") })
             c.Output(symbol, text);
 
         if (sizing)

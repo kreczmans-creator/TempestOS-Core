@@ -79,12 +79,15 @@ internal static class ChainKit
         foreach (var key in downstreamInOrder)
             Assert.True((await host.Service.StalenessAsync(await Fresh(host, made, key))).IsStale, $"{key} should be stale");
 
-        // A stale pack is not checked, and a stale step is not issued.
+        // A stale pack is not checked (the reason names the stale member), and an unchecked pack is not issued (that is the reason given: this
+        // refusal is about the pack's status; the issue-time staleness gate is proved separately, where a member goes stale after the check).
         var blocked = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
         Assert.False(blocked.Succeeded);
-        Assert.Contains("stale", blocked.Reason, StringComparison.Ordinal);
+        Assert.Contains("is stale", blocked.Reason, StringComparison.Ordinal);
+        Assert.Contains("Update it before checking the pack", blocked.Reason, StringComparison.Ordinal);
         var notIssued = await host.Service.IssuePackAsync(made.Pack.Id, "CHAIN-STALE", "Client Co");
         Assert.False(notIssued.Succeeded);
+        Assert.Contains("check it before issuing", notIssued.Reason, StringComparison.Ordinal);
 
         // Updating in chain order clears the staleness one step at a time; the pack stays refused until the last is current.
         for (var i = 0; i < downstreamInOrder.Count; i++)

@@ -173,4 +173,12 @@ public sealed class ElectricalTests
         Assert.All(ports.Where(p => p.Symbol != "V_duty"), p => Assert.NotNull(r.FindOutput(p.Symbol)));
         Assert.Equal("1.2.0", Enclosure.Template.Version);
     }
+
+    [Fact]
+    public void Enclosure_Offers_Its_Temperature_Limit_For_A_Cooler_Inlet()
+    {
+        var r = CalcRunner.Run(Enclosure, CalcTemplateHasher.DefaultInputs(Enclosure.Template));
+        Assert.Equal(50 + 273.15, r.OutputSi("T_max"), 1e-9);
+        Assert.Contains(Enclosure.Template.OutputPorts!, p => p is { Symbol: "T_max", Unit: "degC" });
+    }
 }

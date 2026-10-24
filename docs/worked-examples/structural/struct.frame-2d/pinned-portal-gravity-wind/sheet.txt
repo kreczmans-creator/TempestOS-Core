@@ -78,7 +78,7 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
         Magnitude of the horizontal reaction at node 1
   [12] R1_m_abs = |M| at node 1
       = |-1.4552e-14| kN·m
-      = 1.4552e-14 kN·m
+      = 0 kN·m
         Magnitude of the moment reaction at node 1
   [13] R4_x = reaction at node 4, x
       = Σ member end forces − applied nodal loads
@@ -98,7 +98,7 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
         Magnitude of the horizontal reaction at node 4
   [17] R4_m_abs = |M| at node 4
       = |-2.9104e-14| kN·m
-      = 2.9104e-14 kN·m
+      = 0 kN·m
         Magnitude of the moment reaction at node 4
   [18] sum_R_y = Σ R_y
       = all supports
@@ -230,12 +230,12 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
   R1_y = 45 kN    R_y node 1
   R1_m = -1.4552e-14 kN·m    M node 1
   R1_x_abs = 2.9968 kN    |R_x| node 1
-  R1_m_abs = 1.4552e-14 kN·m    |M| node 1
+  R1_m_abs = 0 kN·m    |M| node 1
   R4_x = -21.003 kN    R_x node 4
   R4_y = 75 kN    R_y node 4
   R4_m = -2.9104e-14 kN·m    M node 4
   R4_x_abs = 21.003 kN    |R_x| node 4
-  R4_m_abs = 2.9104e-14 kN·m    |M| node 4
+  R4_m_abs = 0 kN·m    |M| node 4
   sum_R_y = 120 kN    Σ R_y
   sum_R_x = -24 kN    Σ R_x
   M_max_e1 = 14.984 kN·m    M max, member 1

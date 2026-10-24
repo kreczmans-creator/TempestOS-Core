@@ -26,8 +26,14 @@ public sealed partial class CalcInstanceService
             return $"Pack template '{template.Title}' repeats a step key.";
 
         foreach (var step in template.Steps)
-            if (_catalogue.Find(step.TemplateId) is null)
+        {
+            if (_catalogue.Find(step.TemplateId) is not { } entry)
                 return $"Pack template '{template.Title}': step '{step.Key}' names template '{step.TemplateId}', which is not registered.";
+
+            foreach (var symbol in (step.Example ?? []).Select(v => v.Symbol).Concat(step.Omit ?? []))
+                if (entry.Template.FindInput(symbol) is null)
+                    return $"Pack template '{template.Title}': step '{step.Key}' gives an example for '{symbol}', which '{step.TemplateId}' does not have.";
+        }
 
         foreach (var b in template.Bindings)
         {
@@ -67,9 +73,44 @@ public sealed partial class CalcInstanceService
         return null;
     }
 
+    /// <summary>The provenance basis of every example input a pack template supplies.</summary>
+    public const string ExampleBasis = "example input — replace with your own";
+
+    /// <summary>
+    /// The inputs <paramref name="step"/> opens on when the caller gives none: its example inputs over the sheet's opening inputs (less the
+    /// inputs a link supplies and the step's omissions), or <see langword="null"/> when the step has no example. Each example input
+    /// cites <paramref name="chosen"/> and each opening input left in place cites <paramref name="rest"/>; both default to the
+    /// assumption "<see cref="ExampleBasis"/>".
+    /// </summary>
+    public IReadOnlyList<CalcInputValue>? ExampleInputs(CalcPackTemplate template, CalcPackStep step, CalcProvenance? chosen = null, CalcProvenance? rest = null)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        ArgumentNullException.ThrowIfNull(step);
+
+        if (step.Example is not { Count: > 0 } example)
+            return null;
+
+        var linked = template.Bindings.Where(b => string.Equals(b.ToStep, step.Key, StringComparison.Ordinal) && b.Row is null).Select(b => b.Input)
+            .Concat(step.Omit ?? []).ToHashSet(StringComparer.Ordinal);
+        var set = new CalcInputSet(DefaultInputs(_catalogue.Get(step.TemplateId).Template).Where(v => !linked.Contains(v.Symbol)));
+        var named = example.Select(v => v.Symbol).ToHashSet(StringComparer.Ordinal);
+
+        foreach (var value in example)
+            set.Set(value);
+
+        var assumed = CalcProvenance.Assumed(ExampleBasis);
+        return [.. set.Values.Select(v => v.Provenance is not null ? v : v with { Provenance = named.Contains(v.Symbol) ? chosen ?? assumed : rest ?? assumed })];
+    }
+
+    private static string BlockedReason(CalcPackTemplate template, CalcPackBinding binding, CalcPackStep target, string reason)
+    {
+        var hint = template.Steps.First(s => string.Equals(s.Key, binding.FromStep, StringComparison.Ordinal)).Hint;
+        return $"Step '{binding.FromStep}' is blocked, so '{target.Key}' cannot take '{binding.Output}' from it: {reason}{(string.IsNullOrWhiteSpace(hint) ? string.Empty : " " + hint)}";
+    }
+
     /// <summary>
     /// Creates every calculation of <paramref name="template"/> under the project (with <paramref name="inputs"/> per step
-    /// key, else the template defaults), binds the links in step order and gathers them in one draft pack.
+    /// key, else the step's example inputs, else the template defaults), binds the links in step order and gathers them in one draft pack.
     /// </summary>
     public async Task<(CalcPackInstantiation? Result, string? Refusal)> InstantiatePackTemplateAsync(
         CalcPackTemplate template, Guid? projectId, string title,
@@ -89,7 +130,7 @@ public sealed partial class CalcInstanceService
 
         foreach (var step in template.Steps)
         {
-            var given = inputs is not null && inputs.TryGetValue(step.Key, out var list) ? list : null;
+            var given = inputs is not null && inputs.TryGetValue(step.Key, out var list) ? list : ExampleInputs(template, step);
             CalcInstance instance;
 
             try
@@ -105,7 +146,7 @@ public sealed partial class CalcInstanceService
             {
                 // A blocked upstream has no outputs to give; say why rather than that an output is missing.
                 if (created[b.FromStep].Blocks is { Count: > 0 } blocks)
-                    return (null, $"Step '{b.FromStep}' is blocked, so '{step.Key}' cannot take '{b.Output}' from it: {blocks[0].Message}");
+                    return (null, BlockedReason(template, b, step, blocks[0].Message));
 
                 var bound = b.Row is { } row && b.Column is { } column
                     ? await BindCellAsync(instance.Id, b.Input, row, column, created[b.FromStep].Id, b.Output, cancellationToken).ConfigureAwait(false)
@@ -140,14 +181,14 @@ public sealed partial class CalcInstanceService
         foreach (var step in template.Steps)
         {
             var entry = _catalogue.Get(step.TemplateId);
-            var values = (inputs is not null && inputs.TryGetValue(step.Key, out var given) ? given : DefaultInputs(entry.Template)).ToList();
+            var values = (inputs is not null && inputs.TryGetValue(step.Key, out var given) ? given : ExampleInputs(template, step) ?? DefaultInputs(entry.Template)).ToList();
 
             foreach (var b in template.Bindings.Where(b => string.Equals(b.ToStep, step.Key, StringComparison.Ordinal)))
             {
                 var upstream = runs[b.FromStep];
 
                 if (upstream.Blocks is { Count: > 0 } blocks)
-                    return $"Step '{b.FromStep}' is blocked, so '{step.Key}' cannot take '{b.Output}' from it: {blocks[0].Message}";
+                    return BlockedReason(template, b, step, blocks[0].Message);
 
                 if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, b.Output, StringComparison.Ordinal)) is not { Si: { } } output)
                     return $"Step '{step.Key}': '{step.Name}' cannot take '{b.Output}': '{upstream.Name}' gives no numeric output '{b.Output}'.";

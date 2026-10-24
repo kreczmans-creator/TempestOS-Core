@@ -6,7 +6,7 @@
 
 **Inputs.** `grade`, `size`, optional `d_0`, `n_s`, `threads`; `steel`, `t`, `f_y`, `f_u` (record `steel.strengths`); `e_1`, `e_2`, optional `p_1`, `p_2`; Table 3.3 minima `k_e1`, `k_e2`, `k_p1`, `k_p2` and `gamma_M2`, `gamma_M0` (record `ec3.national-annex`); `F_v_Ed`, `F_t_Ed`; optional block tearing `V_Ed`, `A_nt`, `A_nv`; optional weld `a`, `F_w_Ed`, `sigma_perp`, `tau_perp`, `tau_par`.
 
-**Outputs.** `f_ub`, `A_s`, `alpha_v`, `F_v_Rd`, `alpha_b`, `k_1`, `F_b_Rd`, `F_t_Rd`, `B_p_Rd`, utilisations, `governing`, `V_eff_Rd`, `f_vw_d`, `F_w_Rd`. **Ports.** `F_v_Rd`, `F_b_Rd` (→ S6 `F_1_vb_Rd`), `F_t_Rd` (→ S6 `F_t_Rd`), `A_s` (→ S6 `A_s`; port added in 1.1.0), `f_vw_d` (→ M6). Links in: M3 bolt forces, M6 weld force per length, S3, S5.
+**Outputs.** `f_ub`, `A_s`, `alpha_v`, `F_v_Rd`, `alpha_b`, `k_1`, `F_b_Rd`, `F_t_Rd`, `B_p_Rd`, utilisations, `governing`, `V_eff_Rd`, `f_vw_d`, `F_w_Rd`. **Ports.** `F_v_Rd`, `F_b_Rd` (→ S6 `F_1_vb_Rd`), `F_t_Rd` (→ S6 `F_t_Rd`), `A_s` (→ S6 `A_s`), `f_ub`, `f_yb` (→ S6 `f_ub`, `f_yb`; ports added in 1.1.0; in the steel-support chain a second S4 run for the base plate's thickness and edge distances feeds S6), `f_vw_d` (→ M6). Links in: M3 bolt forces, M6 weld force per length, S3, S5.
 
 **Limitations.** Static; categories A and D only; no slip-resistant joints, no moment end plates, no countersunk or long joints.
 

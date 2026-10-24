@@ -48,7 +48,7 @@ Seven examples end on a **FAIL** governing check on purpose: they show how an ov
 - [motor-circuit](packs/motor-circuit/README.md) — E1 → E6 → E4 → E3 / E5 → E2: motor, load budget, cable (synthetic tables), voltage drop, fault protection, enclosure heat.
 - [wet-heating](packs/wet-heating/README.md) — B4 (two rooms) → B6 → B1 → E1: room heat losses, sealed system, pipework and pump, circulator motor.
 - [cooling](packs/cooling/README.md) — E6 → E2 → B5 → B1: panel heat, enclosure, cooling-water exchanger, pipework and pump.
-- [steel-support](packs/steel-support/README.md) — S5 → S2 → S3, S4 → S6: load combinations, frame, column check, connection, base plate, and a placeholder for the PROFIS anchorage report.
+- [steel-support](packs/steel-support/README.md) — S5 → S2 → S3; M3 bolt group → S4 (arm joint); S4 (holding-down bolts) → S6: load combinations, frame, column check, arm joint, base plate, and a placeholder for the PROFIS anchorage report.
 
 Each chain pack is one issued pack: every step is linked to the one above it (the README lists every link with the value it carries), the pack was checked once and issued under one reference, and the folder holds the pack's issue sheet, each step's issued sheet and `inputs.json`. Project, drawing and specification numbers in them are invented. Regenerate them with `TEMPEST_WRITE_WORKED_EXAMPLES=1 dotnet test tests/Tempest.Calc.Tests.Library --filter ChainPackWorkedExampleTests`.
 

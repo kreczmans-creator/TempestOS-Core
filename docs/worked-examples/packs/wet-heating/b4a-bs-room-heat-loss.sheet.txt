@@ -16,7 +16,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  method | Calculation method (changes the citations; the DHDG option adds the allowance below) | BS EN 12831-1 elemental |  | default | any
+  method | Calculation method (changes the citations; the DHDG option adds the allowance below) | BS EN 12831-1 elemental |  | assumption: Sheet default value; no project figure given. | any
   theta_int | Internal design temperature | 21 | degC | spec: SPEC-HTG-01 §3 | 16 … 24 degC
   theta_e | External design temperature (location record) | -3 | degC | spec: SPEC-HTG-01 §3 | -15 … 5 degC
   layers | Construction layers (several elements share the table, keyed by element name) | 4 row(s) |  | spec: SPEC-HTG-01 §3 | any
@@ -27,11 +27,11 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   elements | Building elements bounding the room | 2 row(s) |  | spec: SPEC-HTG-01 §3 | any
   elements[1] |  | name = Cavity wall; area = 20 m^2 |  |  | 
   elements[2] |  | name = Window; area = 3 m^2; U_user = 1.4 W/(m^2*K) |  |  | 
-  y_tb | Thermal-bridge allowance on the area facing outside | 0 | W/(m^2*K) | default | 0 … 0.3 W/(m^2*K)
+  y_tb | Thermal-bridge allowance on the area facing outside | 0 | W/(m^2*K) | assumption: Sheet default value; no project figure given. | 0 … 0.3 W/(m^2*K)
   U_target | Target U for built-up elements without their own target | 0.3 | W/(m^2*K) | spec: SPEC-HTG-01 §3 | 0.05 … 8 W/(m^2*K)
   n | Air change rate | 0.5 | 1/h | spec: SPEC-HTG-01 §3 | 0.1 … 3 1/h
   V | Room volume | 40 | m^3 | spec: SPEC-HTG-01 §3 | 5 … 1000 m^3
-  f_add | Additional allowance on the room load (CIBSE DHDG method only) | 0 | % | default | 0 … 20 %
+  f_add | Additional allowance on the room load (CIBSE DHDG method only) | 0 | % | assumption: Sheet default value; no project figure given. | 0 … 20 %
 
 3. ASSUMPTIONS
   A1. Steady state: every temperature is constant, with no solar or internal gains, no thermal mass and no dynamic simulation. (Design heat loss, not an annual energy estimate.)
@@ -40,7 +40,10 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   A4. Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer. (Stated limit.)
   A5. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table. (Derived.)
   A6. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (§A5.)
-  A7. Conventional BS EN ISO 6946 horizontal-flow surface resistances (R_si 0.13, R_se 0.04 outside or 0.13 internal, m²K/W) are used where blank, for: Cavity wall. (Small conventional set; enter your own for floors, roofs and other flow directions.)
+  A7. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Sheet default value; no project figure given.)
+  A8. y_tb (Thermal-bridge allowance on the area facing outside) is taken as 0 W/(m^2*K). (Sheet default value; no project figure given.)
+  A9. f_add (Additional allowance on the room load (CIBSE DHDG method only)) is taken as 0 %. (Sheet default value; no project figure given.)
+  A10. Conventional BS EN ISO 6946 horizontal-flow surface resistances (R_si 0.13, R_se 0.04 outside or 0.13 internal, m²K/W) are used where blank, for: Cavity wall. (Small conventional set; enter your own for floors, roofs and other flow directions.)
 
 4. WORKING
   [8] R_1 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
@@ -107,15 +110,15 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 0.34 Wh/(m^3*K) × 20 m³/h × 24 K
       = 163.2 W
         Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
-  [24] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
+  [25] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
       = 187.47 W + 163.2 W
       = 350.67 W
         Room design heat loss
-  [25] HLC = Phi_HL / dT
+  [26] HLC = Phi_HL / dT
       = 350.67 W / 24 K
       = 14.611 W/K
         Heat loss coefficient
-  [26] u_1 = U / U_target
+  [27] u_1 = U / U_target
       = 0.18057 / 0.3
       = 0.6019
         Cavity wall: utilisation of the target U-value
@@ -147,14 +150,12 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   WARNING record.theta_e: theta_e: a tabulated value not taken from a reference record (External design temperature); enter it as one so its source, edition and licence travel with it.
   WARNING record.elements: elements: a tabulated value not taken from a reference record (Surface resistances and air-gap resistance); enter it as one so its source, edition and licence travel with it.
   WARNING record.layers: layers: a tabulated value not taken from a reference record (Layer thermal conductivity); enter it as one so its source, edition and licence travel with it.
-  WARNING input.method: method (Calculation method (changes the citations; the DHDG option adds the allowance below)) was not entered; the template default 'BS EN 12831-1 elemental' is used.
-  WARNING input.y_tb: y_tb (Thermal-bridge allowance on the area facing outside) was not entered; the template default 0 W/(m^2*K) is used.
-  WARNING input.f_add: f_add (Additional allowance on the room load (CIBSE DHDG method only)) was not entered; the template default 0 % is used.
+  WARNING record.y_tb: y_tb: a tabulated value not taken from a reference record (Thermal-bridge allowance); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
   Template: bs.room-heat-loss@1.0.0
   Content hash: c3e6168e43239acd
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 18:04 UTC
+  Test run: 2026-10-24 18:29 UTC
   Application: TempestOS test

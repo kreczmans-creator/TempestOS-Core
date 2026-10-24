@@ -22,12 +22,12 @@ public sealed class WetHeatingChainTests
         calculators: [.. BuildingServicesCalculators.All, .. ElectricalCalculators.All],
         packTemplates: CalcPackTemplates.All);
 
-    private static Dictionary<string, IReadOnlyList<CalcInputValue>> Steps() => ChainInputs.WetHeating();
+    private static Dictionary<string, IReadOnlyList<CalcInputValue>> Steps(LibraryTestHost host) => ChainInputs.WetHeating(host);
 
     private static async Task<CalcPackInstantiation> InstantiateAsync(LibraryTestHost host)
     {
         Assert.Null(host.Service.ValidatePackTemplate(CalcPackTemplates.WetHeating));
-        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.WetHeating, await host.ProjectAsync(), "Plant room heating", Steps());
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.WetHeating, await host.ProjectAsync(), "Plant room heating", Steps(host));
         Assert.True(refusal is null, refusal);
         return made!;
     }
@@ -194,8 +194,8 @@ public sealed class WetHeatingChainTests
     public async Task B6_Is_Refused_Rows_It_Was_Not_Given()
     {
         var host = Host();
-        var steps = Steps();
-        steps.Remove("b6");
+        var steps = Steps(host);
+        steps["b6"] = [.. steps["b6"].Where(v => v.Symbol != "rooms")];
         var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.WetHeating, await host.ProjectAsync(), "Plant room heating", steps);
         Assert.Null(made);
         Assert.StartsWith("Step 'b6'", refusal);
@@ -206,7 +206,7 @@ public sealed class WetHeatingChainTests
     {
         var host = Host();
         var project = await host.ProjectAsync();
-        var inputs = Steps()["b1"].Where(v => v.Symbol != "n_pump").ToList();
+        var inputs = Steps(host)["b1"].Where(v => v.Symbol != "n_pump").ToList();
         var temperature = CalcInputValue.Quantity("T", 70, "degC", Spec);
 
         // Φ alone: blocked with the reason.

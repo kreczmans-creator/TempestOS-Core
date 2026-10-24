@@ -114,6 +114,8 @@ public sealed class ConnectionCalculator : ICalcCalculator
             new CalcOutputPort("F_b_Rd", "kN", "Bearing resistance per bolt (→ S6 F_1_vb_Rd)"),
             new CalcOutputPort("F_t_Rd", "kN", "Tension resistance per bolt (→ S6 holding-down bolts)"),
             new CalcOutputPort("A_s", "mm^2", "Bolt tensile stress area (→ S6 holding-down bolts)"),
+            new CalcOutputPort("f_ub", "MPa", "Bolt ultimate strength (→ S6 f_ub)"),
+            new CalcOutputPort("f_yb", "MPa", "Bolt yield strength (→ S6 f_yb)"),
             new CalcOutputPort("f_vw_d", "MPa", "Weld design shear strength (→ M6 f_w)"),
         ],
         RecordKinds:
@@ -208,7 +210,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
         c.Assign("u_vt", "F_v_Ed / F_v_Rd + F_t_Ed / (1.4 * F_t_Rd)", null, "Combined shear and tension", "EN 1993-1-8 Table 3.4");
 
         var spacingOk = e1 >= c.InputSi("k_e1") * d0 && e2 >= c.InputSi("k_e2") * d0 && (p1 is not { } a1 || a1 >= c.InputSi("k_p1") * d0) && (p2 is not { } a2 || a2 >= c.InputSi("k_p2") * d0);
-        var outputs = new List<(string, string)> { ("f_ub", "Bolt ultimate strength"), ("A_s", "Stress area"), ("alpha_v", "Shear factor"), ("F_v_Rd", "Shear resistance"), ("alpha_b", "Bearing factor"), ("k_1", "Bearing factor k₁"), ("F_b_Rd", "Bearing resistance"), ("F_t_Rd", "Tension resistance"), ("B_p_Rd", "Punching resistance"), ("u_v", "Shear utilisation"), ("u_b", "Bearing utilisation"), ("u_t", "Tension utilisation"), ("u_vt", "Combined utilisation") };
+        var outputs = new List<(string, string)> { ("f_ub", "Bolt ultimate strength"), ("f_yb", "Bolt yield strength"), ("A_s", "Stress area"), ("alpha_v", "Shear factor"), ("F_v_Rd", "Shear resistance"), ("alpha_b", "Bearing factor"), ("k_1", "Bearing factor k₁"), ("F_b_Rd", "Bearing resistance"), ("F_t_Rd", "Tension resistance"), ("B_p_Rd", "Punching resistance"), ("u_v", "Shear utilisation"), ("u_b", "Bearing utilisation"), ("u_t", "Tension utilisation"), ("u_vt", "Combined utilisation") };
 
         if (c.Has("V_Ed") || c.Has("A_nt") || c.Has("A_nv"))
         {

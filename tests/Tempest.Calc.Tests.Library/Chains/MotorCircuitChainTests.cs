@@ -19,7 +19,7 @@ public sealed class MotorCircuitChainTests
     {
         var host = Host();
         Assert.Null(host.Service.ValidatePackTemplate(CalcPackTemplates.MotorCircuit));
-        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", ChainInputs.MotorCircuit());
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", ChainInputs.MotorCircuit(host));
         var e1 = made.Instances["e1"];
         var e6 = made.Instances["e6"];
         var e4 = made.Instances["e4"];
@@ -44,7 +44,7 @@ public sealed class MotorCircuitChainTests
     public async Task A_Bigger_Motor_Makes_The_Chain_Stale_Blocks_The_Pack_And_Updating_Carries_The_Current_Through()
     {
         var host = Host();
-        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", ChainInputs.MotorCircuit());
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", ChainInputs.MotorCircuit(host));
         var e1 = made.Instances["e1"];
 
         await ChainKit.ReviseAndUpdateAsync(host, made, "e1", "m", 1.5, ["e6", "e4", "e3", "e5", "e2"]);
@@ -83,7 +83,7 @@ public sealed class MotorCircuitChainTests
         Assert.Null(r1);
         Assert.Null(r2);
 
-        var inputs = ChainInputs.MotorCircuit(CalcInstanceService.RecordProvenance(ampacity!), CalcInstanceService.RecordProvenance(ratings!));
+        var inputs = ChainInputs.MotorCircuit(host, CalcInstanceService.RecordProvenance(ampacity!), CalcInstanceService.RecordProvenance(ratings!));
 
         var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", inputs);
 

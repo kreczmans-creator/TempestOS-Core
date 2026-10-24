@@ -49,13 +49,13 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   m | Bolt to flange-weld toe distance, tension T-stub | 28 | mm | assumption: Sheet default value; no project figure given. | 5 … 300 mm
   l_eff | Effective length of the tension T-stub, total for the n_t bolts (cl. 6.2.6.5 patterns) | 200 | mm | assumption: Sheet default value; no project figure given. | 10 … 2000 mm
   prying | Prying forces develop (short bolts, L_b ≤ L_b*); off is conservative for the plate | no |  | assumption: Sheet default value; no project figure given. | any
-  e_min | Edge distance e_min of the bolt row (used only with prying) | 35 | mm | assumption: Sheet default value; no project figure given. | 5 … 500 mm
-  F_t_Rd | Tension resistance per bolt (from S4) | 141.002 | kN | link: Arm connection and bolts rev A · F_t_Rd | 1 … 2000 kN
-  f_ub | Anchor bolt ultimate strength | 800 | MPa | assumption: Sheet default value; no project figure given. | 400 … 1000 MPa
-  f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | assumption: Sheet default value; no project figure given. | 235 … 640 MPa
-  A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm^2 | link: Arm connection and bolts rev A · A_s | 50 … 1500 mm^2
-  F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 198.788 | kN | link: Arm connection and bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 5190bb9b20844ea18e853a968f5f861e/dcb29626c59346d2b99a68fecdbeb135 | any
+  e_min | Edge distance e_min of the bolt row (used only with prying) | 40 | mm | drawing: DRG-STR-315 rev B | 5 … 500 mm
+  F_t_Rd | Tension resistance per bolt (from S4) | 141.002 | kN | link: Holding-down bolts rev A · F_t_Rd | 1 … 2000 kN
+  f_ub | Anchor bolt ultimate strength | 800 | MPa | link: Holding-down bolts rev A · f_ub | 400 … 1000 MPa
+  f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
+  A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm^2 | link: Holding-down bolts rev A · A_s | 50 … 1500 mm^2
+  F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 05a47e79bf7d4651ada6b58851a99eea/6099accfc1cf4afe8fee5cb748109430 | any
 
 3. ASSUMPTIONS
   A1. Static loading; a major-axis moment only (uniaxial); an unstiffened rectangular plate on grout of adequate strength and thickness for β_j = 2/3 (checked when the grout strength and thickness are entered). (Scope of S6.)
@@ -81,11 +81,8 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   A21. m (Bolt to flange-weld toe distance, tension T-stub) is taken as 28 mm. (Sheet default value; no project figure given.)
   A22. l_eff (Effective length of the tension T-stub, total for the n_t bolts (cl. 6.2.6.5 patterns)) is taken as 200 mm. (Sheet default value; no project figure given.)
   A23. prying (Prying forces develop (short bolts, L_b ≤ L_b*); off is conservative for the plate) is taken as no. (Sheet default value; no project figure given.)
-  A24. e_min (Edge distance e_min of the bolt row (used only with prying)) is taken as 35 mm. (Sheet default value; no project figure given.)
-  A25. f_ub (Anchor bolt ultimate strength) is taken as 800 MPa. (Sheet default value; no project figure given.)
-  A26. f_yb (Anchor bolt yield strength (α_bc is valid for 235–640 MPa)) is taken as 640 MPa. (Sheet default value; no project figure given.)
-  A27. The outstand c is cut back to the plate edge where it would pass it, so no area outside the plate is counted. (Conservative against an uncut c.)
-  A28. β_j = 2/3 assumes the grout is at least 0.2·f_ck and no thicker than 0.2 × the smaller plate dimension; enter the grout strength and thickness to check it. (EN 1993-1-8 cl. 6.2.5.)
+  A24. The outstand c is cut back to the plate edge where it would pass it, so no area outside the plate is counted. (Conservative against an uncut c.)
+  A25. β_j = 2/3 assumes the grout is at least 0.2·f_ck and no thicker than 0.2 × the smaller plate dimension; enter the grout strength and thickness to check it. (EN 1993-1-8 cl. 6.2.5.)
 
 4. WORKING
   [31] f_cd = alpha_cc * f_ck / gamma_c    « EN 1992-1-1 cl. 3.1.6
@@ -201,7 +198,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
       = 38.854 kN
         Anchor bolt shear resistance F_2,vb,Rd
   [59] F_vb_Rd = min(F_1_vb_Rd, F_2_vb_Rd)    « EN 1993-1-8 cl. 6.2.2
-      = min(198.79 kN, 38.854 kN)
+      = min(248.48 kN, 38.854 kN)
       = 38.854 kN
         Anchor bolt shear resistance per bolt (bearing or shear)
   [60] F_f_Rd = C_fd * N_c_Ed    « EN 1993-1-8 cl. 6.2.2
@@ -284,5 +281,5 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: 5e6f7b62171087af
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-24 18:04 UTC
+  Test run: 2026-10-24 18:29 UTC
   Application: TempestOS test

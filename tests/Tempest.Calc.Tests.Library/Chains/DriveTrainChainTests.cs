@@ -1,5 +1,6 @@
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
+using Tempest.Core.Evidence;
 using static Tempest.Calc.Tests.Library.Chains.ChainKit;
 
 namespace Tempest.Calc.Tests.Library.Chains;
@@ -12,7 +13,7 @@ public sealed class DriveTrainChainTests
         packTemplates: CalcPackTemplates.All);
 
     private static Task<CalcPackInstantiation> InstantiateAsync(LibraryTestHost host) =>
-        ChainKit.InstantiateAsync(host, CalcPackTemplates.DriveTrain, "Conveyor drive", ChainInputs.DriveTrain());
+        ChainKit.InstantiateAsync(host, CalcPackTemplates.DriveTrain, "Conveyor drive", ChainInputs.DriveTrain(host));
 
     [Fact]
     public async Task Motor_Torque_And_Speed_Reach_The_Shaft_Bearing_Seat_And_Coupling_Flange()
@@ -72,5 +73,34 @@ public sealed class DriveTrainChainTests
         Assert.Contains("link: Motor sizing rev A · T_pk", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Shaft rev A · R_A", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Shaft rev A · d_A", sheet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Member_Made_Stale_After_The_Pack_Was_Checked_By_A_Calculation_Outside_It_Cannot_Be_Issued()
+    {
+        var host = Host();
+        var made = await InstantiateAsync(host);
+
+        // A motor sizing outside the pack feeds the shaft's torque instead of the pack's own; re-pinned while the shaft is still a draft.
+        var external = await host.Service.CreateAsync("elec.motor-sizing", made.Pack.ProjectId, "Motor sizing from another job", ChainInputs.DriveTrain(host)["e1"]);
+        var rebound = await host.Service.BindAsync(made.Instances["m4"].Id, "T", external.Id, "T_rms");
+        Assert.True(rebound.Succeeded, rebound.Reason);
+
+        await AuthoredByAnotherAsync(host, made);
+        var check = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
+        Assert.True(check.Succeeded, check.Reason);
+
+        // The outside calculation moves on after the check; no pack member is touched, yet the shaft is now stale.
+        var moved = await host.Service.UpdateInputsAsync(external.Id, [.. external.Inputs.Select(i => i.Symbol == "T_L" ? i with { Number = i.Number!.Value * 1.5 } : i)]);
+        Assert.True(moved.Succeeded, moved.Reason);
+        var shaft = await Fresh(host, made, "m4");
+        Assert.True((await host.Service.StalenessAsync(shaft)).IsStale);
+
+        // Issue is refused at the staleness gate: not for the pack's status, and not for a member edited after the check.
+        var refused = await host.Service.IssuePackAsync(made.Pack.Id, "CNV-DRV-STALE", "Client Co");
+        Assert.False(refused.Succeeded);
+        Assert.Contains("Pack member 'Shaft' is stale", refused.Reason, StringComparison.Ordinal);
+        Assert.DoesNotContain("changed after the pack was checked", refused.Reason, StringComparison.Ordinal);
+        Assert.Equal(CalcInstanceStatus.Checked, (await host.Store.FindPackAsync(made.Pack.Id))!.Status);
     }
 }

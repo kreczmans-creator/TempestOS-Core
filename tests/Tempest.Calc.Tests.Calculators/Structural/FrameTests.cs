@@ -226,4 +226,13 @@ public sealed class FrameTests
         Assert.All(Calc.Template.OutputPorts!, p => Assert.NotNull(portal.FindOutput(p.Symbol)));
         Assert.Contains(Calc.Template.OutputPorts!, p => p is { Symbol: "R1_m_abs", Unit: "kN*m" });
     }
+
+    [Fact]
+    public void Solver_Noise_On_An_Unloaded_Support_Is_Snapped_To_Zero_In_The_Magnitude_Outputs()
+    {
+        // The pinned portal's pinned bases carry no moment; the magnitude outputs print exactly zero, not 1e-14.
+        var portal = CalcRunner.Run(Calc, new CalcInputSet(Calc.Template.TestCases[3].Inputs));
+        Assert.Equal(0, portal.OutputSi("R1_m_abs"));
+        Assert.Equal(0, portal.OutputSi("R4_m_abs"));
+    }
 }

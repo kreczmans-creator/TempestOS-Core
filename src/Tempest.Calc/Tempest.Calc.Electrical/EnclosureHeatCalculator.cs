@@ -87,6 +87,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
             new CalcOutputPort("P_total", "W", "Total heat to remove (loads, linked load and solar gain)"),
             new CalcOutputPort("P_cool", "W", "Cooling-unit duty needed when natural dissipation cannot hold T_max (→ B5 Q_req)"),
             new CalcOutputPort("P_nat_max", "W", "Heat the enclosure dissipates naturally at the limit"),
+            new CalcOutputPort("T_max", "degC", "Internal temperature limit the cooling must hold, as entered (→ B5 T_h_in: the air enters the cooler at the limit)"),
             new CalcOutputPort("dT_nat", "K", "Temperature rise with natural dissipation"),
             new CalcOutputPort("T_int", "degC", "Internal temperature with natural dissipation"),
             new CalcOutputPort("V_req", "m^3/h", "Airflow for forced ventilation at the allowed rise"),
@@ -141,7 +142,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
         c.Assign("V_req", "P_total / (rho_air * 1006 J/(kg*K) * dT_allow)", "m^3/h", "Airflow for forced ventilation at the allowed rise (natural dissipation neglected)");
         c.Assign("V_req_net", "max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))", "m^3/h", "Airflow crediting natural dissipation");
 
-        foreach (var (symbol, text) in new[] { ("P_loads", "Internal heat load"), ("P_solar", "Solar gain"), ("P_total", "Total heat"), ("A_eff", "Effective surface"), ("dT_nat", "Natural temperature rise"), ("T_int", "Internal temperature (natural)"), ("P_nat_max", "Natural dissipation at the limit"), ("P_cool", "Cooling unit needed"), ("rho_air", "Air density"), ("V_req", "Required airflow"), ("V_req_net", "Required airflow (net)") })
+        foreach (var (symbol, text) in new[] { ("P_loads", "Internal heat load"), ("P_solar", "Solar gain"), ("P_total", "Total heat"), ("A_eff", "Effective surface"), ("dT_nat", "Natural temperature rise"), ("T_int", "Internal temperature (natural)"), ("P_nat_max", "Natural dissipation at the limit"), ("P_cool", "Cooling unit needed"), ("T_max", "Internal temperature limit"), ("rho_air", "Air density"), ("V_req", "Required airflow"), ("V_req_net", "Required airflow (net)") })
             c.Output(symbol, text);
 
         c.CheckUtilisation("Natural dissipation holds T_max", "u_nat");

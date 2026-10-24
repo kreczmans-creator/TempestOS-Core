@@ -60,6 +60,17 @@
       "ValueText": "2 row(s)"
     },
     {
+      "Symbol": "f_add",
+      "Number": 0,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
       "Symbol": "layers",
       "Rows": [
         {
@@ -143,6 +154,16 @@
       "ValueText": "4 row(s)"
     },
     {
+      "Symbol": "method",
+      "Text": "BS EN 12831-1 elemental",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "BS EN 12831-1 elemental"
+    },
+    {
       "Symbol": "n",
       "Number": 0.5,
       "Unit": "1/h",
@@ -174,9 +195,31 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "21"
+    },
+    {
+      "Symbol": "y_tb",
+      "Number": 0,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
     }
   ],
   "b4b": [
+    {
+      "Symbol": "U_target",
+      "Number": 0.3,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
     {
       "Symbol": "V",
       "Number": 50,
@@ -246,6 +289,17 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "3 row(s)"
+    },
+    {
+      "Symbol": "f_add",
+      "Number": 0,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
     },
     {
       "Symbol": "layers",
@@ -365,6 +419,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "6 row(s)"
+    },
+    {
+      "Symbol": "method",
+      "Text": "BS EN 12831-1 elemental",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "BS EN 12831-1 elemental"
     },
     {
       "Symbol": "n",
@@ -522,7 +586,7 @@
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:5cf0a20e89da454c895a0b7a0eb956a1#Phi_HL",
+                "Reference": "calc:4f7ac4e5d6604cc7a7f9281391f1ffbb#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -543,7 +607,7 @@
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:cb523c350d87498586faebd51b89f6d9#Phi_HL",
+                "Reference": "calc:c191ed22a0954d2d97290f3e15e907d1#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -635,7 +699,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:97124d1775244fa892f6f94181dc360e#Phi_tot",
+        "Reference": "calc:2371df126b3b43bf9265b7a9a90f7609#Phi_tot",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -647,7 +711,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:97124d1775244fa892f6f94181dc360e#t_m",
+        "Reference": "calc:2371df126b3b43bf9265b7a9a90f7609#t_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -659,7 +723,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:97124d1775244fa892f6f94181dc360e#dT_fr",
+        "Reference": "calc:2371df126b3b43bf9265b7a9a90f7609#dT_fr",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -888,7 +952,7 @@
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:594a97491f194c59860d14530f3de6eb#T_shaft",
+        "Reference": "calc:35a4a6f408da4a7389928158e1b2b581#T_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -993,7 +1057,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:594a97491f194c59860d14530f3de6eb#n_shaft",
+        "Reference": "calc:35a4a6f408da4a7389928158e1b2b581#n_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

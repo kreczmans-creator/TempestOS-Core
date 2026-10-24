@@ -117,6 +117,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max Overal
   T_c_out = 50 degC    Cold outlet
   dT_c = 30 K    Cold-side rise
   T_c_m = 35 degC    Cold-side mean
+  cp_c = 4180 J/(kg·K)    Cold-side specific heat
   dT_app = 30 K    Approach
   UA = 4180 W/K    UA
   dT_lm = 30 K    Log-mean temperature difference
