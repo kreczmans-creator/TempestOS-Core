@@ -5,7 +5,7 @@ Title: Tolerance stack-up (1D) v2
 
 1. SCOPE AND METHOD
 A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.
-Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bender-style). Predicted σ: √Σ σ_i² with σ_i from each contributor's distribution. C_pk from the nearer limit. Monte Carlo: seeded sampling of every contributor, summed with its sign.
+Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of squares, the statistical stack: T_rss = √Σ half². Modified RSS, a factor on the RSS (Bender-style): T_mrss = factor × RSS. Predicted standard deviation of the stack, from each contributor's distribution: σ = √Σ σ_i². Process capability, taken from the nearer limit: C_pk = min(USL − μ, μ − LSL)/(3σ). Monte Carlo check, every contributor sampled from a fixed seed and summed with its sign: stack = Σ s_i x_i.
   Ref: BS 8888 — Technical product documentation and specification
   Ref: ASME Y14.5 — Dimensioning and tolerancing
   Ref: ISO 2768-1 — General tolerances (where a contributor's band is a general tolerance)
@@ -159,5 +159,5 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
   No warnings.
 
 8. VERIFICATION
-  Template: mech.tolerance-stack@2.0.0
+  Template: mech.tolerance-stack@2.0.1
   Known-answer cases passed: 6/6

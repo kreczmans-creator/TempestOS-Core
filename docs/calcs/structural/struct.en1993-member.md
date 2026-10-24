@@ -1,4 +1,4 @@
-# S3 — EN 1993-1-1 member checks, basic (`struct.en1993-member@1.0.0`)
+# S3 — EN 1993-1-1 member checks, basic (`struct.en1993-member@1.0.1`)
 
 **In plain terms.** EN 1993-1-1 checks a steel member in two stages. First the cross-section: can it carry the tension, compression, bending and shear without yielding. Then the member: a strut buckles sideways before it crushes, so its compression resistance is reduced by a factor that depends on how slender it is and on the buckling curve for its shape. Combined compression and bending use a simplified interaction, and the governing ratio is the highest of all the checks.
 

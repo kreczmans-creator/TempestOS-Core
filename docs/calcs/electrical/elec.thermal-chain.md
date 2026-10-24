@@ -1,4 +1,4 @@
-# E4 — Heat sink thermal resistance chain (`elec.thermal-chain@1.0.0`)
+# E4 — Heat sink thermal resistance chain (`elec.thermal-chain@1.0.1`)
 
 **In plain terms.** The heat a component makes has to flow out to the air through a chain of resistances: from the chip to its case, from the case through the interface pad to the heat sink, and from the sink to the air. Each resistance in kelvin per watt times the power gives that stage's temperature rise. Adding the rises to the ambient gives the junction temperature. Turned round, the permitted rise divided by the power gives the largest total resistance the chain may have: the budget a heat sink is chosen against.
 

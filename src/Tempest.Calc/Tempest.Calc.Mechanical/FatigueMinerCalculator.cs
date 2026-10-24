@@ -33,9 +33,9 @@ public sealed class FatigueMinerCalculator : ICalcCalculator
         new("TempestOS calc.fatigue-miner (v0.21.0) hand calculation", null, $"docs/engineering/calculations/calc.fatigue-miner.md, Example {n}");
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Fatigue damage (Palmgren–Miner)",
+        Id, "1.0.1", CalcDiscipline.Mechanical, "Fatigue damage (Palmgren–Miner)",
         "Cumulative fatigue damage of a stress-range spectrum against an S–N curve of one slope through a reference point, with an optional endurance limit below which a range does no damage; the spectrum repetitions to failure.",
-        "N_i = N_ref·(S_ref/S_i)^m, unbounded when S_i ≤ S_e. d_i = n_i/N_i. D = Σ d_i; repetitions to failure = 1/D. The damage passes when D ≤ 1.",
+        "Cycles to failure at each stress range, from the S–N curve (unbounded at or below the endurance limit S_e): N_i = N_ref·(S_ref/S_i)^m.\nDamage done by each block of cycles: d_i = n_i/N_i.\nTotal damage, and how many repetitions of the spectrum the part survives: D = Σ d_i; repetitions = 1/D.\nAcceptance by the Palmgren–Miner rule: D ≤ 1.",
         [
             new CalcInputSpec("S_ref", "Reference stress range (detail category or material fatigue strength)", CalcInputKind.Quantity, "MPa", ReferenceLibrary: "Materials", ReferenceProperty: "FatigueStrength", ReferenceDimension: "Pressure", Default: 71, Min: 1, Max: 2000, HardMin: 1e-6, HardMax: 1e5),
             new CalcInputSpec("N_ref", "Cycles at the reference stress range", CalcInputKind.Number, Default: 2e6, Min: 1e4, Max: 1e9, HardMin: 1, HardMax: 1e15),

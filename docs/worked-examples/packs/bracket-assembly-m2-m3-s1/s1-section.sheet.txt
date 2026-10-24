@@ -2,13 +2,13 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bracket arm section    Revision: A
 Title: Section properties
-Author: unknown    Authored: 2026-10-23
+Author: unknown    Authored: 2026-10-24
 Checker: —    Checked: —
-Issued: 2026-10-23    Issue: BRK-CALC-001
+Issued: 2026-10-24    Issue: BRK-CALC-001
 
 1. SCOPE AND METHOD
 Area, centroid, second moments of area (Ixx, Iyy, Ixy), principal axes and values, elastic and plastic section moduli, radii of gyration, torsion constant and (I-sections) warping constant for a parametric shape, an arbitrary polygon with holes, or a composite of placed parts. The x axis is horizontal (major axis of an I-section), y vertical.
-Outline loops are integrated by Green's theorem: A = ½∮(x dy − y dx), Ixx = ∫y² dA, Iyy = ∫x² dA, Ixy = ∫xy dA, transferred to the centroid by the parallel-axis theorem. Principal: tan 2θ = −2Ixy/(Ixx − Iyy). Elastic modulus Ixx/y_max; plastic modulus from the equal-area axis found by bisection, Wpl = |Q_above| + |Q_below|. Torsion: Saint-Venant series for a solid rectangle, πd⁴/32 for circles, Bredt for closed thin-walled, Σbt³/3 (+ fillet term for rolled I) for open sections. Warping (I): Iw = Iyy (h − t_f)²/4.
+Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − y dx); Ixx = ∫y² dA; Iyy = ∫x² dA; Ixy = ∫xy dA. Second moments moved to the centroid by the parallel-axis theorem: I_c = I − A d². Principal axes: tan 2θ = −2Ixy/(Ixx − Iyy). Elastic section modulus: W_el = Ixx/y_max. Plastic section modulus, about the equal-area axis found by bisection: W_pl = |Q_above| + |Q_below|. Torsion constant by shape, a Saint-Venant series for a solid rectangle, πd⁴/32 for a circle, Bredt for a closed thin-walled section, Σbt³/3 (plus a fillet term for rolled I) for an open section. Warping constant of an I-section: I_w = Iyy (h − t_f)²/4.
   Ref: Roark's Formulas for Stress and Strain Appendix A, Table A.1; Ch. 10, Table 10.1 — Properties of sections; torsion of solid and thin-walled sections
   Ref: AISC Design Guide 9 (Seaburg & Carter) Appendix — Torsional properties of rolled I-shapes
   Ref: BS EN 10365 — Hot rolled steel channels, I and H sections: dimensions and masses
@@ -133,9 +133,9 @@ Outline loops are integrated by Green's theorem: A = ½∮(x dy − y dx), Ixx =
   No warnings.
 
 8. VERIFICATION
-  Template: struct.section-properties@1.0.0
-  Content hash: 7f7a93ac64011ba4
+  Template: struct.section-properties@1.0.1
+  Content hash: b7d59144d05267d4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-23 22:12 UTC
+  Test run: 2026-10-24 09:31 UTC
   Application: TempestOS test

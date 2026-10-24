@@ -5,7 +5,7 @@ Title: Fillet weld (EN 1993-1-8 simplified method)
 
 1. SCOPE AND METHOD
 A fillet weld carrying forces parallel to, transverse to and normal to its axis, by the simplified method: the resultant over the throat area against the design shear strength of the weld, with the required throat and leg.
-F = √(F_∥² + F_⊥² + F_n²); f_vw,d = f_u/(√3·β_w·γ_M2); τ_w = F/(a·L); F_w,Rd = f_vw,d·a·L; u = F/F_w,Rd; a_req = max(F/(f_vw,d·L), 3 mm); leg = √2·a.
+Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear strength of the weld, simplified method: f_vw,d = f_u/(√3·β_w·γ_M2). Shear stress on the throat: τ_w = F/(a·L). Weld resistance and utilisation: F_w,Rd = f_vw,d·a·L; u = F/F_w,Rd. Throat needed (not less than 3 mm) and the matching leg: a_req = max(F/(f_vw,d·L), 3 mm); leg = √2·a.
   Ref: BS EN 1993-1-8 4.5.3.3 — Simplified method for design resistance of fillet weld
   Ref: BS EN 1993-1-8 4.5.2(2) — Effective throat thickness: minimum 3 mm
   Ref: BS EN 1993-1-8 4.5.1(2) — Effective length: welds shorter than 30 mm or 6 throats not to carry load
@@ -77,5 +77,5 @@ F = √(F_∥² + F_⊥² + F_n²); f_vw,d = f_u/(√3·β_w·γ_M2); τ_w = F/(
   No warnings.
 
 8. VERIFICATION
-  Template: struct.fillet-weld@1.0.0
+  Template: struct.fillet-weld@1.0.1
   Known-answer cases passed: 3/3

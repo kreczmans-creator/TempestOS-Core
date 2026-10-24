@@ -30,9 +30,9 @@ public sealed class BoltGroupCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Mechanical, "Bolt group (elastic method)",
+        Id, "1.1.1", CalcDiscipline.Mechanical, "Bolt group (elastic method)",
         "A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.",
-        "Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar J = Σ A r². Shear per bolt: v = A (F/ΣA) + T·A·r/J (vector sum). Tension per bolt: t = A N/ΣA + M_x A y'/Σ A y'² + M_y A x'/Σ A x'². Prying: t_p = t (1 + b/a) when a and b are given. Utilisation: the circular interaction (v/V_R)² + (t_p/T_R)² ≤ 1 (elastic method, Shigley-style) and the EN 1993-1-8 linear form v/V_R + t_p/(1.4 T_R) ≤ 1, plus each alone; the governing check is the highest.",
+        "Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A (y_c likewise).\nTorsion about the centroid from the eccentric load: T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z.\nPolar moment of the bolt areas about the centroid: J = Σ A r².\nShear on each bolt, its direct share plus the torsion (vector sum): v = A (F/ΣA) + T·A·r/J.\nTension on each bolt, its direct share plus the moments: t = A N/ΣA + M_x A y'/Σ A y'² + M_y A x'/Σ A x'².\nTension with prying, when the distances a and b are given: t_p = t (1 + b/a).\nCombined shear and tension, circular interaction (elastic method, Shigley-style): (v/V_R)² + (t_p/T_R)² ≤ 1.\nCombined shear and tension, EN 1993-1-8 linear form (each is also checked alone; the highest governs): v/V_R + t_p/(1.4 T_R) ≤ 1.",
         [
             new CalcInputSpec("bolts", "Bolt positions and areas", CalcInputKind.Table, Columns: Columns, MaxRows: 200),
             new CalcInputSpec("F_x", "In-plane force, x", CalcInputKind.Quantity, "kN", Default: 0, HardMin: -1e6, HardMax: 1e6, Group: "Loads"),

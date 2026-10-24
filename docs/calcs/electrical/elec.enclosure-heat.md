@@ -1,4 +1,4 @@
-# E2 — Enclosure heat dissipation and fan sizing (`elec.enclosure-heat@1.0.0`)
+# E2 — Enclosure heat dissipation and fan sizing (`elec.enclosure-heat@1.0.1`)
 
 **In plain terms.** Equipment inside a closed enclosure gives off heat, and the enclosure can only lose it through its surfaces, so the air inside warms until the heat out matches the heat in. The worksheet estimates that temperature rise from the effective surface area and a heat-transfer coefficient. If the inside would get too hot, it sizes the airflow a fan must move, corrected for the thinner air at altitude, or the capacity a cooling unit needs.
 

@@ -23,9 +23,9 @@ public sealed class ColumnBucklingCalculator : ICalcCalculator
         new("TempestOS calc.column-buckling (v0.21.0) hand calculation", null, $"docs/engineering/calculations/calc.column-buckling.md, Example {n}");
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Structural, "Column buckling (Perry–Robertson)",
+        Id, "1.0.1", CalcDiscipline.Structural, "Column buckling (Perry–Robertson)",
         "Compressive strength and resistance of a pin-ended strut of a given effective length, from Euler's critical stress reduced for initial imperfection by the Perry–Robertson formula, with the Robertson constant chosen by strut curve; utilisation against an applied axial load.",
-        "r = √(I/A); λ = L_E/r. p_E = π²E/λ²; P_E = p_E·A. λ_0 = 0.2·√(π²E/p_y). η = max(0.001·a·(λ − λ_0), 0). φ = (p_y + (η + 1)·p_E)/2. p_c = p_E·p_y/(φ + √(φ² − p_E·p_y)); P_c = p_c·A; u = P/P_c. Robertson constant a = 2.0, 3.5, 5.5, 8.0 for curves a–d.",
+        "Radius of gyration and slenderness: r = √(I/A); λ = L_E/r.\nEuler buckling stress and load: p_E = π²E/λ²; P_E = p_E·A.\nLimiting slenderness, below which the strut is not reduced for buckling: λ_0 = 0.2·√(π²E/p_y).\nPerry factor (Robertson constant a = 2.0, 3.5, 5.5, 8.0 for curves a–d): η = max(0.001·a·(λ − λ_0), 0).\nCompressive strength by the Perry–Robertson formula: φ = (p_y + (η + 1)·p_E)/2; p_c = p_E·p_y/(φ + √(φ² − p_E·p_y)).\nCompression resistance and utilisation: P_c = p_c·A; u = P/P_c.",
         [
             new CalcInputSpec("L_E", "Effective length", CalcInputKind.Quantity, "m", Default: 3, Min: 0.1, Max: 50, HardMin: 1e-4, HardMax: 1e3),
             new CalcInputSpec("A", "Cross-section area", CalcInputKind.Quantity, "mm^2", Default: 2000, Min: 10, Max: 1e6, HardMin: 1e-6, HardMax: 1e9),

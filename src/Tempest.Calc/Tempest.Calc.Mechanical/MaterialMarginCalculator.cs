@@ -13,9 +13,9 @@ public sealed class MaterialMarginCalculator : ICalcCalculator
     public const string Id = "mech.material-margin";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Material strength margin",
+        Id, "1.0.1", CalcDiscipline.Mechanical, "Material strength margin",
         "The factors of safety of a material against an applied (equivalent) stress on its yield and, when given, its ultimate strength, against a required factor; the strengths can be filled from a released material record so the margin cites its source.",
-        "n_y = f_y/σ; n_u = f_u/σ. The governing factor is the lower of n_y and n_u/k_u, where k_u (≥ 1) scales the ultimate margin to the yield basis; u = n_req/n_gov.",
+        "Factor of safety against yield and against ultimate: n_y = f_y/σ; n_u = f_u/σ.\nGoverning factor, the ultimate margin scaled to the yield basis by k_u ≥ 1: n_gov = min(n_y, n_u/k_u).\nUtilisation against the required factor: u = n_req/n_gov.",
         [
             new CalcInputSpec("sigma", "Applied (equivalent) stress", CalcInputKind.Quantity, "MPa", Default: 120, Min: 0.01, Max: 5000, HardMin: 1e-6, HardMax: 1e5),
             new CalcInputSpec("f_y", "Yield strength", CalcInputKind.Quantity, "MPa", ReferenceLibrary: "Materials", ReferenceProperty: "YieldStrength", ReferenceDimension: "Pressure", Default: 300, Min: 1, Max: 5000, HardMin: 1e-6, HardMax: 1e5),

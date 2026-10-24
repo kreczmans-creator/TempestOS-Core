@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 Cumulative fatigue damage of a stress-range spectrum against an S–N curve of one slope through a reference point, with an optional endurance limit below which a range does no damage; the spectrum repetitions to failure.
-N_i = N_ref·(S_ref/S_i)^m, unbounded when S_i ≤ S_e. d_i = n_i/N_i. D = Σ d_i; repetitions to failure = 1/D. The damage passes when D ≤ 1.
+Cycles to failure at each stress range, from the S–N curve (unbounded at or below the endurance limit S_e): N_i = N_ref·(S_ref/S_i)^m. Damage done by each block of cycles: d_i = n_i/N_i. Total damage, and how many repetitions of the spectrum the part survives: D = Σ d_i; repetitions = 1/D. Acceptance by the Palmgren–Miner rule: D ≤ 1.
   Ref: BS EN 1993-1-9 §8 — Fatigue resistance (S–N curves by detail category)
   Ref: Shigley's Mechanical Engineering Design §6-15 — Cumulative fatigue damage
 
@@ -77,7 +77,7 @@ N_i = N_ref·(S_ref/S_i)^m, unbounded when S_i ≤ S_e. d_i = n_i/N_i. D = Σ d_
   No warnings.
 
 8. VERIFICATION
-  Template: mech.fatigue-miner@1.0.0
+  Template: mech.fatigue-miner@1.0.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 2/2

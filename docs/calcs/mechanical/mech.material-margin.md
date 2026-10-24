@@ -1,4 +1,4 @@
-# M12 — Material strength margin (`mech.material-margin@1.0.0`)
+# M12 — Material strength margin (`mech.material-margin@1.0.1`)
 
 **In plain terms.** A part is safe in static loading while the stress in it stays below what the material can take, with a margin for what is not known. The factor of safety on yield is the yield strength over the working stress; on ultimate strength it is the tensile strength over the stress, which is usually required to be larger because fracture is worse than yielding. Filling the strengths from a released material record makes the margin cite where the strengths came from.
 

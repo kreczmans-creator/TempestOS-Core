@@ -5,7 +5,7 @@ Title: Rolling bearing rating life
 
 1. SCOPE AND METHOD
 Equivalent dynamic load of a rolling bearing under radial and axial load, its basic rating life L₁₀ in millions of revolutions and in hours at the running speed, and the life modified for reliability, against a required life.
-P = X·F_r + Y·F_a. L₁₀ = (C/P)^p million revolutions, p = 3 for ball and 10/3 for roller bearings. L₁₀h = L₁₀·10⁶ revolutions at speed n. L_nm = a₁·L₁₀, L_nmh = a₁·L₁₀h. The equation is used for P ≤ 0.5·C.
+Equivalent dynamic load from the radial and axial loads: P = X·F_r + Y·F_a. Basic rating life in millions of revolutions (p = 3 for ball and 10/3 for roller bearings): L₁₀ = (C/P)^p. Rating life in hours, at speed n: L₁₀h = L₁₀·10⁶ revolutions at speed n. Life adjusted for the required reliability: L_nm = a₁·L₁₀; L_nmh = a₁·L₁₀h. Range of validity of the life equation: P ≤ 0.5·C.
   Ref: ISO 281 §6 — Basic dynamic load rating and basic rating life
   Ref: Shigley's Mechanical Engineering Design Ch. 11 — Rolling-contact bearings
 
@@ -73,5 +73,5 @@ P = X·F_r + Y·F_a. L₁₀ = (C/P)^p million revolutions, p = 3 for ball and 1
   No warnings.
 
 8. VERIFICATION
-  Template: mech.bearing-life@1.0.0
+  Template: mech.bearing-life@1.0.1
   Known-answer cases passed: 3/3

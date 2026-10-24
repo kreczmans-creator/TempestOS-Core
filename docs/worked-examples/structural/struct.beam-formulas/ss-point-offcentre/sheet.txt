@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 Closed-form reactions, maximum moment and its position, maximum shear and maximum deflection for the standard single-span beam cases, as a quick check. Left end at x = 0; loads downward; sagging moments positive; deflection downward positive.
-Roark Table 8.1 formulas in own notation. For the simply supported point load at a (b = L − a): R_A = Pb/L, M_max = Pab/L, δ_max = Pb(L² − b²)^(3/2)/(9√3 L EI) at x = √((L² − b²)/3) when a ≥ b. For the propped cantilever: R_B = 3wL/8, M_A = −wL²/8, sag M_max = 9wL²/128 at x = 5L/8.
+Formulas from Roark Table 8.1, in this sheet's own notation, for the chosen support and load case. Simply supported beam, point load at a (b = L − a), reaction and largest moment: R_A = Pb/L; M_max = Pab/L. Simply supported beam, point load at a, largest deflection when a ≥ b: δ_max = Pb(L² − b²)^(3/2)/(9√3 L EI) at x = √((L² − b²)/3). Propped cantilever, uniform load, reaction and moments: R_B = 3wL/8; M_A = −wL²/8; sagging M_max = 9wL²/128 at x = 5L/8.
   Ref: Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
 
 2. INPUTS
@@ -87,7 +87,7 @@ Roark Table 8.1 formulas in own notation. For the simply supported point load at
   No warnings.
 
 8. VERIFICATION
-  Template: struct.beam-formulas@1.0.0
+  Template: struct.beam-formulas@1.0.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 8/8

@@ -5,7 +5,7 @@ Title: Column buckling (Perry–Robertson)
 
 1. SCOPE AND METHOD
 Compressive strength and resistance of a pin-ended strut of a given effective length, from Euler's critical stress reduced for initial imperfection by the Perry–Robertson formula, with the Robertson constant chosen by strut curve; utilisation against an applied axial load.
-r = √(I/A); λ = L_E/r. p_E = π²E/λ²; P_E = p_E·A. λ_0 = 0.2·√(π²E/p_y). η = max(0.001·a·(λ − λ_0), 0). φ = (p_y + (η + 1)·p_E)/2. p_c = p_E·p_y/(φ + √(φ² − p_E·p_y)); P_c = p_c·A; u = P/P_c. Robertson constant a = 2.0, 3.5, 5.5, 8.0 for curves a–d.
+Radius of gyration and slenderness: r = √(I/A); λ = L_E/r. Euler buckling stress and load: p_E = π²E/λ²; P_E = p_E·A. Limiting slenderness, below which the strut is not reduced for buckling: λ_0 = 0.2·√(π²E/p_y). Perry factor (Robertson constant a = 2.0, 3.5, 5.5, 8.0 for curves a–d): η = max(0.001·a·(λ − λ_0), 0). Compressive strength by the Perry–Robertson formula: φ = (p_y + (η + 1)·p_E)/2; p_c = p_E·p_y/(φ + √(φ² − p_E·p_y)). Compression resistance and utilisation: P_c = p_c·A; u = P/P_c.
   Ref: BS 5950-1:2000 Annex C — Compressive strength (Perry strut formula)
   Ref: BS 5950-1:2000 4.7.3.2 — Maximum slenderness
   Ref: BS 5950-1:2000 Table 23 — Allocation of strut curve
@@ -87,5 +87,5 @@ r = √(I/A); λ = L_E/r. p_E = π²E/λ²; P_E = p_E·A. λ_0 = 0.2·√(π²E/
   No warnings.
 
 8. VERIFICATION
-  Template: struct.column-buckling@1.0.0
+  Template: struct.column-buckling@1.0.1
   Known-answer cases passed: 3/3

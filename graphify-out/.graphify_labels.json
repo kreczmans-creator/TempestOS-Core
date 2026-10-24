@@ -1,8 +1,6 @@
 {
   "4": "avalonia_controls",
-  "12": "Quantity",
   "54": "WorkspaceManager",
-  "64": "CalculationException",
   "68": "RuntimeModuleManager",
   "82": "CalculationEngineTests",
   "100": "action-tracker/support.js",
@@ -38,7 +36,6 @@
   "139": "DeckStage",
   "178": ".BuildCatalog",
   "219": ".BuildCatalog",
-  "224": "GovernedBracketCheckService",
   "251": ".CreateAsync",
   "256": "MonitorRelativePlacementTests",
   "323": "_ds_bundle.js",

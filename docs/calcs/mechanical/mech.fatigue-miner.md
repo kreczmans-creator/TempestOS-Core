@@ -1,4 +1,4 @@
-# M8 — Fatigue damage, Palmgren–Miner (`mech.fatigue-miner@1.0.0`)
+# M8 — Fatigue damage, Palmgren–Miner (`mech.fatigue-miner@1.0.1`)
 
 **In plain terms.** Every stress cycle uses up a little of a part's fatigue life, and a bigger cycle uses up much more: on a slope-3 curve, doubling the stress range divides the life by eight. Miner's rule adds the fraction of life each block of cycles consumes; when the fractions reach one, the part is expected to crack. Stress ranges below an endurance limit, when the curve has one, are taken to do no damage at all.
 

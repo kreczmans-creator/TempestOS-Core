@@ -1,4 +1,4 @@
-# M7 — Rolling bearing rating life (`mech.bearing-life@1.0.0`)
+# M7 — Rolling bearing rating life (`mech.bearing-life@1.0.1`)
 
 **In plain terms.** A rolling bearing wears out by fatigue of its rolling surfaces, and the load it carries sets how many revolutions that takes: halving the load multiplies the life by eight for a ball bearing. The catalogue's dynamic load rating is the load the bearing survives for a million revolutions with 90 % reliability; dividing it by the actual equivalent load and raising the ratio to the life exponent gives the rated life, which the running speed turns into hours. A reliability factor shortens the life when fewer than one in ten bearings may fail.
 

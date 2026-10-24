@@ -112,8 +112,18 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         if (sheet.Scope.Length > 0)
             Line(state, measure, sheet.Scope);
 
-        if (sheet.Method.Length > 0)
-            Line(state, measure, sheet.Method);
+        if (MethodRows(sheet.Method) is { Count: > 0 } method)
+        {
+            // One row per step, what it calculates beside the relation, so the method reads as a sequence and not as a
+            // wall of formulas (the owner's ask, 2026-10-24).
+            DocumentTemplate.AddGap(state, 2f);
+            DocumentTemplate.AddTable(
+                state, measure, ["What it calculates", "Relation"],
+                [W(0.42f), W(0.58f)],
+                method,
+                [SKTextAlign.Left, SKTextAlign.Left]);
+            DocumentTemplate.AddGap(state, 2f);
+        }
 
         if (sheet.ClauseRefs.Count > 0)
             Line(state, measure, $"Basis: {string.Join("; ", sheet.ClauseRefs.Select(c => T(c.Title, 200) + CalcBibliography.Format(references.Cite(c))))}.", DocumentTemplate.CaptionSize);
@@ -292,6 +302,26 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
     {
         var id = reference.Split('@')[0];
         return Templates.Value.FirstOrDefault(t => t.Reference == reference) ?? Templates.Value.FirstOrDefault(t => t.Id == id);
+    }
+
+    /// <summary>At most this many method lines are printed; past it the rest are counted (a template states a handful).</summary>
+    private const int MaxMethodRows = 60;
+
+    /// <summary>
+    /// The template's method, one row per line: the words before the first ": " say what the step calculates, the rest
+    /// is its relation. A line with no ": " is narrative across the row.
+    /// </summary>
+    private static List<string[]> MethodRows(string method)
+    {
+        var lines = method.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var rows = lines.Take(MaxMethodRows).Select(line => line.IndexOf(": ", StringComparison.Ordinal) is var at and > 0
+            ? new[] { T(line[..at]), T(line[(at + 2)..].TrimEnd('.')) }
+            : [T(line), string.Empty]).ToList();
+
+        if (lines.Length > MaxMethodRows)
+            rows.Add([$"… and {lines.Length - MaxMethodRows} more line(s)", string.Empty]);
+
+        return rows;
     }
 
     /// <summary>A table input's element row (stages[1]): no description or unit of its own, its value the row's cells as text.</summary>

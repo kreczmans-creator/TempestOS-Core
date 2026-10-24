@@ -10,9 +10,9 @@ public sealed class Iso286FitCalculator : ICalcCalculator
     public const string Id = "mech.iso286-fit";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "ISO 286 limits and fits",
+        Id, "1.0.1", CalcDiscipline.Mechanical, "ISO 286 limits and fits",
         "Hole and shaft limits for a nominal size and tolerance classes, the resulting fit (clearance, transition or interference) and its extreme values, from the ISO 286-1 formulae.",
-        "i = 0.45·D^(1/3) + 0.001·D (µm) at the geometric mean D of the size step; ITn = multiplier × i; fundamental deviations by letter from the published formulae; hole deviations by the general rule (EI = −es for A–H; ES = −ei + Δ for K–ZC). Limits = nominal + deviations; fit extremes from the limits.",
+        "Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^(1/3) + 0.001·D (µm).\nWidth of the tolerance band for the grade: ITn = multiplier × i.\nFundamental deviations by letter from the published formulae, and hole deviations by the general rule: EI = −es (A–H); ES = −ei + Δ (K–ZC).\nLimits of size of the hole and the shaft: limit = nominal + deviation.\nFit extremes, the largest and smallest clearance (negative is interference): c_max = ES − ei; c_min = EI − es.",
         [
             new CalcInputSpec("D", "Nominal size", CalcInputKind.Quantity, "mm", Default: 25, Min: 1, Max: 500, HardMin: 0.001, HardMax: Iso286.MaximumSizeMm),
             new CalcInputSpec("hole_letter", "Hole fundamental deviation letter", CalcInputKind.Choice, Choices: ["H", "G", "F", "E", "D", "JS", "K", "M", "N", "P", "R", "S", "T", "U"], DefaultChoice: "H"),

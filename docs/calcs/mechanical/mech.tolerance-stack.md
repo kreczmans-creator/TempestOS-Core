@@ -1,4 +1,4 @@
-# M1 — Tolerance stack-up (1D) v2 (`mech.tolerance-stack@2.0.0`)
+# M1 — Tolerance stack-up (1D) v2 (`mech.tolerance-stack@2.0.1`)
 
 **In plain terms.** A tolerance stack adds up the dimensions along a chain of parts to find a gap or overall size, where every part varies within its own tolerance. The worst-case method adds every tolerance at its limit, so the gap is guaranteed but the tolerances must be tight. The statistical methods assume the variations are independent and rarely all at their extremes together, so they predict a narrower spread; the Monte Carlo run samples the real distributions to show the same thing directly. The capability figures say how centred and how wide that spread is against the requirement.
 

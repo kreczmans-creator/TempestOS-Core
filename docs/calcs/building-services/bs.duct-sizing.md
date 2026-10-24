@@ -1,4 +1,4 @@
-# B3 — Duct sizing (`bs.duct-sizing@1.0.0`)
+# B3 — Duct sizing (`bs.duct-sizing@1.0.1`)
 
 **In plain terms.** Ducts are sized so that air does not lose too much pressure per metre or move fast enough to be noisy. The equal-friction method picks each size to give the same pressure loss per metre; the velocity method picks it to give a target speed. A rectangular duct is compared with the round duct that has the same friction, and the losses along the longest run, straight ducts plus fittings, give the pressure the fan must supply.
 

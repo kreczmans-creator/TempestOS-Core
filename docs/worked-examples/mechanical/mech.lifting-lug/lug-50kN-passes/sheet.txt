@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 A pinned lug between two cheek plates under a load along the lug: tension on the net section through the hole, bearing of the pin on the hole, shear tear-out beyond the hole, and the pin in double shear and in bending, each against an allowable stress; the largest utilisation governs.
-σ_t = P/((W − d_h)·t); σ_br = P/(d_p·t); τ_to = P/(2·a·t); τ_p = P/(2·π·d_p²/4); M = (P/2)·(t/4 + g + t_s/2), σ_b = 32·M/(π·d_p³). Each utilisation is the stress over its allowable. The allowables come from the material and the design category in force; the sheet applies no design factor of its own.
+Tension across the net section beside the hole: σ_t = P/((W − d_h)·t). Bearing of the pin on the lug: σ_br = P/(d_p·t). Tear-out shear beyond the hole, on two planes: τ_to = P/(2·a·t). Pin shear, in double shear: τ_p = P/(2·π·d_p²/4). Pin bending, from the lever arm across the lug, the gap and the shackle: M = (P/2)·(t/4 + g + t_s/2); σ_b = 32·M/(π·d_p³). Utilisation of each mode, its stress over the allowable from the material and design category in force (the sheet adds no design factor of its own): u = σ/σ_allow.
   Ref: ASME BTH-1 Ch. 3 — Pinned connections
   Ref: Shigley's Mechanical Engineering Design Ch. 3 — Shear, bearing and bending stresses
 
@@ -127,7 +127,7 @@ A pinned lug between two cheek plates under a load along the lug: tension on the
   No warnings.
 
 8. VERIFICATION
-  Template: mech.lifting-lug@1.0.0
+  Template: mech.lifting-lug@1.0.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 2/2

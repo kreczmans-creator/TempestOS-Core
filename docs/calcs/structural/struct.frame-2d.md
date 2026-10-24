@@ -1,4 +1,4 @@
-# S2 — Beam and 2D frame analysis (`struct.frame-2d@1.0.0`)
+# S2 — Beam and 2D frame analysis (`struct.frame-2d@1.0.1`)
 
 **In plain terms.** A frame is treated as members joined at nodes, each member a spring that resists stretching and bending. The stiffness method assembles those springs into one set of equations relating the forces at the nodes to how far they move, solves for the movements under each load case, and works back to the forces and moments along every member. Load combinations add the cases with their factors, and the envelope keeps the worst value at each point.
 

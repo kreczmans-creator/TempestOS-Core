@@ -19,9 +19,9 @@ public sealed class BearingLifeCalculator : ICalcCalculator
         new("TempestOS calc.bearing-rating-life (v0.21.0) hand calculation", null, $"docs/engineering/calculations/calc.bearing-rating-life.md, Example {n}");
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Rolling bearing rating life",
+        Id, "1.0.1", CalcDiscipline.Mechanical, "Rolling bearing rating life",
         "Equivalent dynamic load of a rolling bearing under radial and axial load, its basic rating life L₁₀ in millions of revolutions and in hours at the running speed, and the life modified for reliability, against a required life.",
-        "P = X·F_r + Y·F_a. L₁₀ = (C/P)^p million revolutions, p = 3 for ball and 10/3 for roller bearings. L₁₀h = L₁₀·10⁶ revolutions at speed n. L_nm = a₁·L₁₀, L_nmh = a₁·L₁₀h. The equation is used for P ≤ 0.5·C.",
+        "Equivalent dynamic load from the radial and axial loads: P = X·F_r + Y·F_a.\nBasic rating life in millions of revolutions (p = 3 for ball and 10/3 for roller bearings): L₁₀ = (C/P)^p.\nRating life in hours, at speed n: L₁₀h = L₁₀·10⁶ revolutions at speed n.\nLife adjusted for the required reliability: L_nm = a₁·L₁₀; L_nmh = a₁·L₁₀h.\nRange of validity of the life equation: P ≤ 0.5·C.",
         [
             new CalcInputSpec("type", "Bearing type (selects the life exponent)", CalcInputKind.Choice, Choices: [Ball, Roller], DefaultChoice: Ball),
             new CalcInputSpec("C", "Basic dynamic load rating", CalcInputKind.Quantity, "kN", ReferenceLibrary: "Bearings", ReferenceProperty: "BasicDynamicRadial", ReferenceDimension: "Force", Default: 35.1, Min: 0.1, Max: 1e5, HardMin: 1e-9, HardMax: 1e8),

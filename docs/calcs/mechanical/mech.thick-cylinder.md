@@ -1,4 +1,4 @@
-# M2c — Thick-walled cylinder (`mech.thick-cylinder@2.0.0`)
+# M2c — Thick-walled cylinder (`mech.thick-cylinder@2.0.1`)
 
 **In plain terms.** In a thin pipe the wall stress is nearly uniform, but in a thick wall it is not: the hoop stress is highest at the bore and falls towards the outside. Lamé's solution gives the radial and hoop stresses at every radius for any inner and outer pressure, and the axial stress for closed ends. The largest equivalent stress, at the bore for internal pressure, is compared with the allowable.
 

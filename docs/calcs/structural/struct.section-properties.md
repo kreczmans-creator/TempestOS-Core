@@ -1,4 +1,4 @@
-# S1 — Section properties (`struct.section-properties@1.0.0`)
+# S1 — Section properties (`struct.section-properties@1.0.1`)
 
 **In plain terms.** Every bending, stress and buckling check needs the shape's geometric properties: its area, where its centroid is, how its area is spread about each axis (second moments), and the section moduli that turn a bending moment into a stress. This worksheet computes them from the outline itself, adding up the contribution of each edge of the polygon, so any shape, with holes or built from plates, gives the same properties a handbook table would for a standard section.
 

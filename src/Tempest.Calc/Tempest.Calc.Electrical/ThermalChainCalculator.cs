@@ -36,9 +36,9 @@ public sealed class ThermalChainCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Electrical, "Heat sink thermal resistance chain",
+        Id, "1.0.1", CalcDiscipline.Electrical, "Heat sink thermal resistance chain",
         "Steady-state source (junction) temperature from a series chain of thermal resistances to ambient (junction to case, case to heat sink, heat sink to ambient), with each stage's temperature rise, the margin against the permitted maximum and the largest total resistance the limit allows: the heat sink budget.",
-        "ΔT_i = P·R_i; R_tot = Σ R_i; ΔT_tot = P·R_tot; T_1 = T_a + ΔT_tot and each node below it is the one above less that stage's rise. Margin = T_max − T_1; R_max = (T_max − T_a)/P; u = ΔT_tot/(T_max − T_a).",
+        "Temperature rise across each stage: ΔT_i = P·R_i.\nTotal resistance of the chain and the total rise: R_tot = Σ R_i; ΔT_tot = P·R_tot.\nSource (hottest node) temperature, each node below it being the one above less that stage's rise: T_1 = T_a + ΔT_tot.\nMargin against the permitted maximum: margin = T_max − T_1.\nLargest total resistance the limit allows, the heat sink budget: R_max = (T_max − T_a)/P.\nUtilisation of the permitted rise: u = ΔT_tot/(T_max − T_a).",
         [
             new CalcInputSpec("P", "Steady power dissipated (the heat flow through every stage)", CalcInputKind.Quantity, "W", Default: 25, Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e7, Group: "Source"),
             new CalcInputSpec("T_a", "Ambient the last stage rejects to", CalcInputKind.Quantity, "degC", Default: 40, Min: -40, Max: 85, HardMin: -273.15, HardMax: 1000, Group: "Conditions"),
