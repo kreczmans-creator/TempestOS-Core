@@ -20,7 +20,7 @@ Track S fixes Critical and High findings in phase C-1. Track P reports only and 
 ## Summary
 All 87 known-answer cases (KATs) pass in the product and in the independent scripts.
 The KATs are mostly analytic and narrow, so they miss the defects below.
-Every Critical and High finding was reproduced with the probe tool against the real calculator.
+Every calculator Critical and High finding was reproduced with the probe tool. The Desktop finding comes from code reading only.
 
 | Calculator | Critical | High | Medium | Low | Info | Rejected |
 |---|---|---|---|---|---|---|
