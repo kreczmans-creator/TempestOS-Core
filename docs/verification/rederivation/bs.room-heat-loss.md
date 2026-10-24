@@ -1,9 +1,9 @@
 # bs.room-heat-loss — independent re-derivation (Track P, P1)
 Calculator: U-values and room heat loss, version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.BuildingServices/RoomHeatLossCalculator.cs. Spec: docs/calcs/building-services/bs.room-heat-loss.md.
 Script: tools/verification/bs.room-heat-loss.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (after review: one High, two Medium)
 
-All 5 known-answer cases (32 expected values) and 38 extra probe values agree with the independent script. The arithmetic is correct. The findings concern one misleading output, one spec mismatch and two documented limits.
+All 5 known-answer cases (32 expected values) and 38 extra probe values agree with the independent script. The arithmetic is correct. The first-pass findings concern one misleading output, one spec mismatch and two documented limits. The review adds a High: MVHR with a blank infiltration rate drops infiltration (R1).
 
 ## Method re-derived
 - Total resistance R = R_si + sum(d/lambda) + R_g + R_se, in m2K/W, d in m. Source: BS EN ISO 6946, homogeneous layers in series. U = 1/R in W/(m2K).
@@ -105,7 +105,7 @@ Probes that blocked or warned as designed: theta_supply above theta_int (block),
 | U from layers | R = R_si + sum d/lambda + R_g + R_se | Same; d converted from mm to m by the unit layer | Yes |
 | Units | d in mm, lambda in W/(mK), theta in degC, K or degF, V in m3 or L | Converted to SI; probe u1 (degF, K, m, L) gives the same result | Yes |
 | Ventilation constant | 0.34 Wh/(m3K), flow in m3/h | 0.34 × q_v (m3/h) × dT, result in W | Yes (1.5 % above 0.335) |
-| MVHR | Supply temperature replaces theta_e; infiltration at theta_e | As specified; no efficiency input, only supply temperature | Yes, see P1-bs.room-heat-loss-04 |
+| MVHR | Supply temperature replaces theta_e; infiltration at theta_e | As specified; no efficiency input; blank n_inf silently means no infiltration | No, see R1 and -04 |
 | Adjacent temperature at or below theta_e | Spec: theta_adj = theta_e | Code uses the entered (colder) temperature; bridge term still uses theta_e | No, see -02 |
 | Thermal bridges | On outside-facing area times f | A_tb = sum(A·f) outside only; adjacent above theta_e gets none | Yes (documented) |
 | Default surface resistances | 0.13 / 0.04 / 0.13 | Same for every element; no flow-direction choice | Yes (documented), see -03 |
@@ -116,13 +116,15 @@ Probes that blocked or warned as designed: theta_supply above theta_int (block),
 | Division by zero | Area at least 0.1 m2, dT above 0 | A_fab, dT and A_floor are guarded by limits | Yes |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-bs.room-heat-loss-01 | Medium | Output U_m is labelled "Mean fabric U-value" and "area-weighted", but it includes the temperature factor f. It understates the true mean U. | Probe p1: wall 18 m2 U 0.1967, roof 20 m2 U 0.1776, floor 20 m2 U 0.22 f 0.7, window 4 m2 U 1.4. Product U_m = 0.2544. Area-weighted U without f = 0.2757 (8 % higher). | Divide by sum(A) using sum(A·U) only. Or relabel the output "Σ A·U·f / Σ A (heat-loss weighted)" and add a true mean U. |
-| P1-bs.room-heat-loss-02 | Low | Spec says an element at or below theta_e uses theta_e as its adjacent temperature. The code uses the entered colder temperature for the element loss. The bridge term still uses theta_e. | Probe p5: wall 10 m2, U 2.7027, adjacent −8 degC, theta_e −3, y 0.1. Phi_1 = 783.78 W, not 648.65 W from the spec. | Update the spec to say the entered colder temperature is used (conservative). Or clamp to theta_e. Decide and align text and code. |
-| P1-bs.room-heat-loss-03 | Low | A blank Rsi gives 0.13 for roofs, ceilings and floors. Upward flow uses a smaller value in BS EN ISO 6946, so a blank roof U is slightly low. The probe shows no notice for the default. | Probe l5: an element named "Roof" with blank Rsi gets R = 0.37, same as a wall. With the upward-flow R_si of 0.10, R falls from 0.37 to 0.34 and U rises 8 %. For a well-insulated roof the error is under 1 %. | Add a per-element flow direction (up, horizontal, down) that sets R_si and R_se. Or show the defaulted-resistance notice as a warning for each defaulted element. |
-| P1-bs.room-heat-loss-04 | Info | The product takes an MVHR supply temperature, not an efficiency, and gives no reheat or intermittent-heating allowance under the BS EN 12831-1 option. The DHDG option has one user percentage. | Template inputs: theta_supply, f_add (DHDG only). | Optional: add an efficiency input with theta_supply = theta_e + eta·(theta_extract − theta_e). State the missing reheat allowance on the sheet. |
-| P1-bs.room-heat-loss-05 | Info | The 0.34 constant is 1.5 % above the derived 0.335. This is conservative. Check the BS EN 12831-1 value against the owner's copy. | Script line "Air constant". | None, unless the owner's copy gives a different value. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-bs.room-heat-loss-01 | Medium | Medium (confirmed). Misleading label; no check uses U_m. | Output U_m is labelled "Mean fabric U-value" and "area-weighted", but it includes the temperature factor f. It understates the true mean U. | Probe p1: wall 18 m2 U 0.1967, roof 20 m2 U 0.1776, floor 20 m2 U 0.22 f 0.7, window 4 m2 U 1.4. Product U_m = 0.2544. Area-weighted U without f = 0.2757 (8 % higher). | Divide by sum(A) using sum(A·U) only. Or relabel the output "Σ A·U·f / Σ A (heat-loss weighted)" and add a true mean U. |
+| P1-bs.room-heat-loss-02 | Low | Low (confirmed). Conservative; the spec text and the code disagree. | Spec says an element at or below theta_e uses theta_e as its adjacent temperature. The code uses the entered colder temperature for the element loss. The bridge term still uses theta_e. | Probe p5: wall 10 m2, U 2.7027, adjacent −8 degC, theta_e −3, y 0.1. Phi_1 = 783.78 W, not 648.65 W from the spec. | Update the spec to say the entered colder temperature is used (conservative). Or clamp to theta_e. Decide and align text and code. |
+| P1-bs.room-heat-loss-03 | Low | Low (confirmed). Corrected the evidence: the sheet records an assumption naming the defaulted elements, but no warning. | A blank Rsi gives 0.13 for roofs, ceilings and floors. Upward flow uses a smaller value in BS EN ISO 6946, so a blank roof U is slightly low. The sheet records an assumption naming the defaulted elements, but raises no warning. | Probe l5: an element named "Roof" with blank Rsi gets R = 0.37, same as a wall. With the upward-flow R_si of 0.10, R falls from 0.37 to 0.34 and U rises 8 %. For a well-insulated roof the error is under 1 %. | Add a per-element flow direction (up, horizontal, down) that sets R_si and R_se. Or show the defaulted-resistance notice as a warning for each defaulted element. |
+| P1-bs.room-heat-loss-04 | Info | Info (confirmed). The missing infiltration with MVHR is a separate, larger defect: see R1. | The product takes an MVHR supply temperature, not an efficiency, and gives no reheat or intermittent-heating allowance under the BS EN 12831-1 option. The DHDG option has one user percentage. | Template inputs: theta_supply, f_add (DHDG only). | Optional: add an efficiency input with theta_supply = theta_e + eta·(theta_extract − theta_e). State the missing reheat allowance on the sheet. |
+| P1-bs.room-heat-loss-05 | Info | Info (confirmed). | The 0.34 constant is 1.5 % above the derived 0.335. This is conservative. Check the BS EN 12831-1 value against the owner's copy. | Script line "Air constant". | None, unless the owner's copy gives a different value. |
+| P1-bs.room-heat-loss-R1 | High | High (new) | With an MVHR supply temperature and n_inf blank, the room has no infiltration loss and no notice. n is then the MVHR rate only. A room with MVHR still leaks air at θ_e. The spec has the same gap (n_inf optional). | Probe: wall 20 m² U 0.18, window 3 m² U 1.4, V 50 m³, n 0.5, supply 16 °C. Blank n_inf: Phi_V 42.5 W, Phi_HL 229.7 W. With n_inf 0.2: Phi_V 124.1 W, Phi_HL 311.3 W. The blank case is 26 % low. | Warn when theta_supply is entered and n_inf is blank. Or make n_inf required with MVHR. Update the spec. |
+| P1-bs.room-heat-loss-R2 | Medium | Medium (new) | An element can take both a temperature factor f below 1 and an adjacent temperature. Both reduce the loss, so the reduction counts twice, with no notice. | Probe: 10 m², U 0.3, θ_adj 10 °C, f 0.5, θ_int 21 °C: Phi_1 16.5 W. Either reduction alone gives 33 W. | Warn when f differs from 1 and θ_adj is above θ_e. State in the column help that f is for elements to θ_e only. |
 
 ## Notes for the owner's manual test
 - Enter the cavity-wall case: brick 102.5/0.77, PIR 100/0.022, block 100/0.15, plaster 13/0.57, wall 20 m2, window 3 m2 U 1.4, 21 and −3 degC, n 0.5, V 40. Expect U 0.18057, Phi_HL 350.67 W, HLC 14.611 W/K.
@@ -130,3 +132,12 @@ Probes that blocked or warned as designed: theta_supply above theta_int (block),
 - Type an adjacent temperature of −8 degC for a wall with theta_e −3 degC. The loss uses −8 degC (finding 02).
 - Enter MVHR with supply 16 degC, n 0.6, V 50. Expect Phi_V = 0.34 × 30 × 5 = 51 W. Add n_inf 0.1 and expect 91.8 W.
 - Switch to the DHDG method with f_add 10 %. Expect Phi_HL × 1.10. Under the BS EN method the same entry only warns.
+
+## Independent review
+- Reviewer: senior review (Claude), 2026-10-24.
+- I ran the script (exit 0). It is written from the formulas, not translated from the C#.
+- There was no Critical or High finding to reproduce. I re-ran the MVHR and temperature-factor cases with the probe. Inputs are in /tmp/claude-0/review-inputs/rhl/.
+- I read Run line by line. U, the element losses, the bridge term and the ventilation terms are right.
+- Changes: original severities stand. I corrected the -03 evidence: an assumption note does appear.
+- New: R1 (High), MVHR without n_inf drops infiltration. R2 (Medium), f and θ_adj can both reduce one element.
+- Residual doubt: the 0.34 constant and the BS EN 12831-1 infiltration term need the owner's licensed copy.

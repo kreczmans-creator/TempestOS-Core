@@ -1,9 +1,9 @@
 # struct.base-plate — independent re-derivation (Track P, P1)
 Calculator: Column base plate (EN 1993-1-8), version 1.0.0. Source file: src/Tempest.Calc/Tempest.Calc.Structural/BasePlateCalculator.cs. Spec: docs/calcs/structural/struct.base-plate.md.
 Script: tools/verification/struct.base-plate.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (after review: one High, three Medium)
 
-All 65 KAT values match. The script also reproduces 351 extra probe values from the C# product to 1e-6. One defect is real: the required thickness of a CHS column base is wrong (P1-struct.base-plate-01).
+All 65 KAT values match. The script also reproduces 351 extra probe values from the C# product to 1e-6. One defect is real: the required thickness of a CHS column base is wrong (P1-struct.base-plate-01). The review raised -03 to Medium and added R1 (f_y does not follow the plate thickness).
 
 ## Method re-derived
 - Bearing strength: f_cd = α_cc f_ck/γ_c (EN 1992-1-1 cl. 3.1.6); f_jd = (2/3) α f_cd with α ≤ 3 (EN 1992-1-1 cl. 6.7; EN 1993-1-8 cl. 6.2.5). Units MPa.
@@ -76,18 +76,20 @@ All product values come from the C# probe. Full list: `EXTRAS` in the script (27
 | t_req search | u_N, u_C, u_T ≤ 1 at each t | z_C and forces fixed at entered t_p | NO for CHS (finding 01) |
 | Guards: plate, section, bolts, x_b, m, e_min, grout | Spec | All fire at the stated thresholds (equal values block) | Yes |
 | Guard: z_C_in | Spec lists none | None above the plate half-length | Gap (finding 02) |
+| f_y with plate thickness | EN 10025-2 bands (16, 40, 63 mm) | One f_y for every t, also in the t_req search | No, see R1 |
 | Hard limits | Equal to stated ranges | α 3.5, f_y 500, M < 0, t_p 9, N 10001 all blocked | Yes |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-struct.base-plate-01 | High | For a CHS column, t_req and the "bolts govern" text depend on the entered t_p. z_C is the half-annulus centroid, which depends on c and so on t_p. The search holds z_C, C_Ed and T_Ed at the entered t_p. The reported t_req can fail its own checks. | CHS 219.1×8, plate 500×500, N 100, M 150, x_b 200, m 25, l_eff 400, F_t,Rd 250. At t_p 60 the product gives t_req 21.67 mm. At t_p 21.67 u_C is 1.116 and u_T is 1.040. At t_p 25 it says "bolts govern". At t_p 33.7 it gives 23.5. The true minimum is 33.65 mm. KAT ka-chs-moment gives 15.3996; the consistent value is 15.5873. | Recompute the centroid and the forces inside `RequiredThicknessAll` at every trial t. Test "bolts govern" at t = 100 mm. Change the KAT t_req to 15.58735 and the spec value 15.39956. I/H, RHS and entered z_C are not affected. |
-| P1-struct.base-plate-02 | Medium | `z_C_in` has no upper guard. A value beyond the plate half-length puts the compression resultant outside the plate. A smaller T_Ed results, which is unconservative. | Default I/H, N −50, M 100. With z_C blank, T_Ed is 370.2 kN and u_T is 1.31 (FAIL). With z_C_in 1000, T_Ed is 128.8 kN and u_T is 0.46 (pass). A user who enters z (286.5 mm) instead of z_C (121.5 mm) triggers the same effect. | Block `z_C_in` ≥ L/2. Better, warn when it differs from the section value by more than c. State that z_C is not z. |
-| P1-struct.base-plate-03 | Low | The anchor shear factor α_bc is valid for f_yb of 235–640 MPa, so f_yb is capped at 640. The f_ub range reaches 1000 MPa. A class 10.9 bolt (f_yb about 900 MPa) cannot be entered truthfully. Entering 640 gives α_bc 0.248, where the formula extrapolates to 0.17. | f_ub 1000, f_yb 640 returns F_2,vb,Rd = 0.248·1000·A_s/γ_M2. | Warn when f_ub > 800 MPa that α_bc is not defined above f_yb 640 MPa. |
-| P1-struct.base-plate-04 | Low | The plate block message names `h` even when `b > B` fails. | B 250, h 260, b 256 gives "h: the column (260 × 256 mm) must stand inside the plate (L = 400, B = 250 mm)". | Name the failing symbol (b or h). |
-| P1-struct.base-plate-05 | Info | Friction uses C_f,d·N_Ed. The contact force under a moment is C_Ed, which is larger. This is conservative and follows the wording of cl. 6.2.2. | Default KAT: friction 60 kN. C_f,d·C_Ed would be 104 kN. | None. Consider noting it on the sheet. |
-| P1-struct.base-plate-06 | Info | A missing required input takes the template default with a Warning only. Omitting N_Ed silently uses 300 kN. | Probe with only the column inputs runs with N 300, M 100. | Platform behaviour. Consider a block for load inputs. |
-| P1-struct.base-plate-07 | Info | The spec gives A_flange as (b + 2c)(t_f + 2c) for all cases. The code uses (b + 2c_x)(t_f + c_y + c) when the outer outstand is cut. The code is the more exact one. | I/H 300, plate 340×480: A_flange agrees with the script. | Update the spec wording. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-struct.base-plate-01 | High | High (confirmed). Reproduced: t_p 60 gives t_req 21.666 mm. A re-run at t_p 21.666 gives u_C 1.116, u_T 1.040 and "bolts govern". t_req is unconservative guidance for a CHS with moment. The checks at the entered t_p are right. | For a CHS column, t_req and the "bolts govern" text depend on the entered t_p. z_C is the half-annulus centroid, which depends on c and so on t_p. The search holds z_C, C_Ed and T_Ed at the entered t_p. The reported t_req can fail its own checks. | CHS 219.1×8, plate 500×500, N 100, M 150, x_b 200, m 25, l_eff 400, F_t,Rd 250. At t_p 60 the product gives t_req 21.67 mm. At t_p 21.67 u_C is 1.116 and u_T is 1.040. At t_p 25 it says "bolts govern". At t_p 33.7 it gives 23.5. The true minimum is 33.65 mm. KAT ka-chs-moment gives 15.3996; the consistent value is 15.5873. | Recompute the centroid and the forces inside `RequiredThicknessAll` at every trial t. Test "bolts govern" at t = 100 mm. Change the KAT t_req to 15.58735 and the spec value 15.39956. I/H, RHS and entered z_C are not affected. |
+| P1-struct.base-plate-02 | Medium | Medium (confirmed). Reproduced: z_C_in 1000 gives T_Ed 128.76 kN, u_T 0.457; blank gives 370.24 kN, u_T 1.313. | `z_C_in` has no upper guard. A value beyond the plate half-length puts the compression resultant outside the plate. A smaller T_Ed results, which is unconservative. | Default I/H, N −50, M 100. With z_C blank, T_Ed is 370.2 kN and u_T is 1.31 (FAIL). With z_C_in 1000, T_Ed is 128.8 kN and u_T is 0.46 (pass). A user who enters z (286.5 mm) instead of z_C (121.5 mm) triggers the same effect. | Block `z_C_in` ≥ L/2. Better, warn when it differs from the section value by more than c. State that z_C is not z. |
+| P1-struct.base-plate-03 | Low | Medium (upgraded). The effect is unconservative, not cosmetic. Probe: f_ub 1000, f_yb 640, V_Ed 250 kN: α_bc 0.248, F_2,vb,Rd 48.57 kN, u_V 0.983 pass. With α_bc 0.17 (f_yb 900): F_2,vb,Rd 33.29 kN, V_Rd 193.2 kN, u_V 1.29 FAIL. Block f_ub above 800 MPa, or warn that cl. 6.2.2 does not cover it. | The anchor shear factor α_bc is valid for f_yb of 235–640 MPa, so f_yb is capped at 640. The f_ub range reaches 1000 MPa. A class 10.9 bolt (f_yb about 900 MPa) cannot be entered truthfully. Entering 640 gives α_bc 0.248, where the formula extrapolates to 0.17. | f_ub 1000, f_yb 640 returns F_2,vb,Rd = 0.248·1000·A_s/γ_M2. | Warn when f_ub > 800 MPa that α_bc is not defined above f_yb 640 MPa. |
+| P1-struct.base-plate-04 | Low | Low (confirmed). | The plate block message names `h` even when `b > B` fails. | B 250, h 260, b 256 gives "h: the column (260 × 256 mm) must stand inside the plate (L = 400, B = 250 mm)". | Name the failing symbol (b or h). |
+| P1-struct.base-plate-05 | Info | Info (confirmed). | Friction uses C_f,d·N_Ed. The contact force under a moment is C_Ed, which is larger. This is conservative and follows the wording of cl. 6.2.2. | Default KAT: friction 60 kN. C_f,d·C_Ed would be 104 kN. | None. Consider noting it on the sheet. |
+| P1-struct.base-plate-06 | Info | Info (confirmed). | A missing required input takes the template default with a Warning only. Omitting N_Ed silently uses 300 kN. | Probe with only the column inputs runs with N 300, M 100. | Platform behaviour. Consider a block for load inputs. |
+| P1-struct.base-plate-07 | Info | Info (confirmed). | The spec gives A_flange as (b + 2c)(t_f + 2c) for all cases. The code uses (b + 2c_x)(t_f + c_y + c) when the outer outstand is cut. The code is the more exact one. | I/H 300, plate 340×480: A_flange agrees with the script. | Update the spec wording. |
+| P1-struct.base-plate-R1 | Medium | Medium (new) | One f_y is used at every plate thickness. EN 10025-2 lowers f_y of S275 to 265 MPa above 16 mm and 255 MPa above 40 mm. The record kind steel.strengths points to EN 10025-2, yet the default is 275 MPa at t_p 20 mm. The t_req search over 10–100 mm also keeps the entered f_y. | Probe: t_p 50 mm, l_eff 40 mm: M_pl,Rd 6.875 kN·m at 275 MPa, 6.375 kN·m at 255 MPa (7.8 % high). At 20 mm the default is 3.8 % high. EN 1993-1-1 Table 3.1 allows 275 MPa up to 40 mm, so only the UK NA route errs there. | Warn when t_p or t_req passes a thickness band of the entered f_y. Or take f_y(t) from the steel.strengths record inside the search. |
 
 ## Notes for the owner's manual test
 - Default I/H base (260×256×17×10, 400×400×20 S275, C25/30, α 1.5, N 300, M 100): expect z_C 121.5 mm, C_Ed 521.82 kN, T_Ed 221.82 kN, u_C 0.867, T_Rd 282 kN.
@@ -95,3 +97,13 @@ All product values come from the C# probe. Full list: `EXTRAS` in the script (27
 - Net tension N −1000, M 0, three bolts a row: expect 500 kN a row and 166.67 kN a bolt.
 - Test a CHS base with moment at two plate thicknesses. Compare t_req with a re-run at t_p = t_req. Expect u > 1 until finding 01 is fixed.
 - Enter z_C_in 1000 with N −50, M 100 and see the guard gap (finding 02). Overlap check: 150×150×10×6 on 300×400×40 gives A_eff 106 049.64 mm².
+
+## Independent review
+- Reviewer: senior review (Claude), 2026-10-24.
+- I ran the script (exit 0, 416/416). It derives the method from the clauses, not from the C#. It mirrors the product's edge-cut rule on purpose.
+- I reproduced -01, -02 and -03 with the probe. Inputs are in /tmp/claude-0/review-inputs/bp/.
+- I read Run, Effective, Statics, TensionTStub and RequiredThicknessAll line by line. The Table 6.7 regimes, units and T-stub modes are right.
+- I checked the CHS half-annulus model. A smaller z_C with the full half area is conservative, so it is not a defect.
+- Changes: -03 raised to Medium. New: R1 (Medium), f_y does not follow the plate thickness.
+- Residual doubt: z_C at the flange mid-thickness ignores a cut outstand. That is the EN simplification, so I did not raise it.
+- Residual doubt: the -01 fix also changes KAT ka-chs-moment t_req. Track S must update the KAT and the spec together.
