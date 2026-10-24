@@ -17,7 +17,7 @@ Both contradictions below are provisional. They rest on open secondary sources, 
 | All | 28 | 5 | 2 | 35 |
 
 Of the 28 confirmed, 3 rest on a manufacturer or IET page: B32 Z_s, ΔT 30 factor and SKF 6206.
-The rest rest on open course notes, open secondary pages or recomputation. Each row says which.
+The other 25 use open course notes, open secondary pages or recomputation. Each row says which.
 Not covered: `ka-rectangle`, `ka-tube` and `ka-two-span-release`. They are analytic or statics-only and cite no book example.
 
 ## Main table
