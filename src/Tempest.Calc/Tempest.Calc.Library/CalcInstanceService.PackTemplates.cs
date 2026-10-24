@@ -83,6 +83,10 @@ public sealed partial class CalcInstanceService
 
             foreach (var b in template.Bindings.Where(b => string.Equals(b.ToStep, step.Key, StringComparison.Ordinal)))
             {
+                // A blocked upstream has no outputs to give; say why rather than that an output is missing.
+                if (created[b.FromStep].Blocks is { Count: > 0 } blocks)
+                    return (null, $"Step '{b.FromStep}' is blocked, so '{step.Key}' cannot take '{b.Output}' from it: {blocks[0].Message}");
+
                 var bound = await BindAsync(instance.Id, b.Input, created[b.FromStep].Id, b.Output, cancellationToken).ConfigureAwait(false);
 
                 if (!bound.Succeeded)
