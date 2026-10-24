@@ -111,6 +111,16 @@
     "ValueText": "1"
   },
   {
+    "Symbol": "eta_psu",
+    "Number": 0.9,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "24 V supply efficiency 90 %, power factor taken as 1.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.9"
+  },
+  {
     "Symbol": "f_derate",
     "Number": 1,
     "Provenance": {
@@ -363,6 +373,17 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "1.25"
+  },
+  {
+    "Symbol": "psu_bus",
+    "Text": "AC single-phase",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "AC single-phase"
   },
   {
     "Symbol": "t_auto",

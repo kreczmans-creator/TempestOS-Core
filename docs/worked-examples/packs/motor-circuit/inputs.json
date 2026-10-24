@@ -159,14 +159,14 @@
     },
     {
       "Symbol": "n_max",
-      "Number": 6000,
+      "Number": 10000,
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "6000"
+      "ValueText": "10000"
     },
     {
       "Symbol": "p_screw",
@@ -246,15 +246,15 @@
     },
     {
       "Symbol": "P_add",
-      "Number": 2.430597996309809,
+      "Number": 0.7841424404208093,
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:105ec93f9c424efca1f071053957d0eb#P_pk",
+        "Reference": "calc:9e28bd41920e46d69cbc81711ea119d4#P_rms",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "2.4306"
+      "ValueText": "0.784142"
     },
     {
       "Symbol": "U_1ph",
@@ -341,6 +341,16 @@
       "ValueText": "1"
     },
     {
+      "Symbol": "eta_psu",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A74 (panel schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
       "Symbol": "f_derate",
       "Number": 1,
       "Provenance": {
@@ -349,6 +359,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "1"
+    },
+    {
+      "Symbol": "heat_add",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A74 (panel schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
     },
     {
       "Symbol": "inrush_add",
@@ -402,7 +422,7 @@
               "Text": "DC"
             },
             "P": {
-              "Number": 0.18,
+              "Number": 0.12,
               "Unit": "kW"
             },
             "cosphi": {
@@ -410,6 +430,9 @@
             },
             "eta": {
               "Number": 0.9
+            },
+            "heat": {
+              "Number": 1
             },
             "d": {
               "Number": 1
@@ -434,7 +457,7 @@
               "Text": "AC single-phase"
             },
             "P": {
-              "Number": 0.04,
+              "Number": 0.02,
               "Unit": "kW"
             },
             "cosphi": {
@@ -442,6 +465,9 @@
             },
             "eta": {
               "Number": 0.7
+            },
+            "heat": {
+              "Number": 1
             },
             "d": {
               "Number": 1
@@ -476,15 +502,25 @@
       "ValueText": "1.25"
     },
     {
+      "Symbol": "psu_bus",
+      "Text": "AC single-phase",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A74 (panel schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "AC single-phase"
+    },
+    {
       "Symbol": "t_auto",
-      "Number": 0,
+      "Number": 4,
       "Unit": "h",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0"
+      "ValueText": "4"
     },
     {
       "Symbol": "theta",
@@ -501,23 +537,23 @@
   "e4": [
     {
       "Symbol": "C_a",
-      "Number": 1,
+      "Number": 0.91,
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1"
+      "ValueText": "0.91"
     },
     {
       "Symbol": "C_g",
-      "Number": 1,
+      "Number": 0.77,
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1"
+      "ValueText": "0.77"
     },
     {
       "Symbol": "C_i",
@@ -531,15 +567,15 @@
     },
     {
       "Symbol": "I_b_in",
-      "Number": 4.255022460464625,
+      "Number": 1.3727254368100799,
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:2c0a8ed6e1c54f329075076386b26181#I_3ph",
+        "Reference": "calc:e862932b9ddb4460bab9038a16326aa6#I_3ph",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "4.25502"
+      "ValueText": "1.37273"
     },
     {
       "Symbol": "L",
@@ -554,13 +590,13 @@
     },
     {
       "Symbol": "N_g",
-      "Number": 1,
+      "Number": 2,
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1"
+      "ValueText": "2"
     },
     {
       "Symbol": "P",
@@ -650,7 +686,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:610c3f56bef944ccbe6aec2a21be8478@1 \u00B7 invented values for the worked example",
+        "Reference": "record:743cb5867fc84b30a7a7de51b318d1ea@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -804,7 +840,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:79f9be3fcc064bcca772203aebf8bb96@1 \u00B7 invented values for the worked example",
+        "Reference": "record:7e9d166ee4ad482080ea217d4c2b17f5@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -832,14 +868,14 @@
     },
     {
       "Symbol": "theta_a",
-      "Number": 30,
+      "Number": 35,
       "Unit": "degC",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "30"
+      "ValueText": "35"
     },
     {
       "Symbol": "theta_ref",
@@ -860,7 +896,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1102abdb7cb44669910b88abd4b623db#CSA",
+        "Reference": "calc:70598f3433924f46ac6113b6fed19854#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -868,15 +904,15 @@
     },
     {
       "Symbol": "I",
-      "Number": 4.255022460464625,
+      "Number": 1.3727254368100799,
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1102abdb7cb44669910b88abd4b623db#I_b",
+        "Reference": "calc:70598f3433924f46ac6113b6fed19854#I_b",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "4.25502"
+      "ValueText": "1.37273"
     },
     {
       "Symbol": "L",
@@ -884,7 +920,7 @@
       "Unit": "m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1102abdb7cb44669910b88abd4b623db#L",
+        "Reference": "calc:70598f3433924f46ac6113b6fed19854#L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -936,14 +972,14 @@
     },
     {
       "Symbol": "X_km",
-      "Number": 0.08,
+      "Number": 0,
       "Unit": "ohm/km",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.08"
+      "ValueText": "0"
     },
     {
       "Symbol": "alpha",
@@ -1010,8 +1046,8 @@
       "Symbol": "system",
       "Text": "AC three-phase",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A75 (cabling)",
         "IsSufficientToIssue": true
       },
       "ValueText": "AC three-phase"
@@ -1029,12 +1065,23 @@
       "ValueText": "0.95"
     },
     {
+      "Symbol": "I2t_let",
+      "Number": 15000,
+      "Unit": "A^2*s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "15000"
+    },
+    {
       "Symbol": "I_n",
       "Number": 6,
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1102abdb7cb44669910b88abd4b623db#I_n",
+        "Reference": "calc:70598f3433924f46ac6113b6fed19854#I_n",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1046,7 +1093,7 @@
       "Unit": "m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1102abdb7cb44669910b88abd4b623db#L",
+        "Reference": "calc:70598f3433924f46ac6113b6fed19854#L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1065,14 +1112,14 @@
     },
     {
       "Symbol": "S_cpc",
-      "Number": 2.5,
+      "Number": 1.5,
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Specification",
         "Reference": "SPEC-LINE-12 \u00A76 (earthing and protection)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "2.5"
+      "ValueText": "1.5"
     },
     {
       "Symbol": "S_line",
@@ -1080,7 +1127,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1102abdb7cb44669910b88abd4b623db#CSA",
+        "Reference": "calc:70598f3433924f46ac6113b6fed19854#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1142,13 +1189,24 @@
     },
     {
       "Symbol": "device",
-      "Text": "MCB type B (I_a = 5 I_n)",
+      "Text": "MCB type C (I_a = 10 I_n)",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-LINE-12 \u00A76 (earthing and protection)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "MCB type B (I_a = 5 I_n)"
+      "ValueText": "MCB type C (I_a = 10 I_n)"
+    },
+    {
+      "Symbol": "device_code",
+      "Number": 2,
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:70598f3433924f46ac6113b6fed19854#device_code",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
     },
     {
       "Symbol": "rho_20",
@@ -1232,7 +1290,7 @@
     },
     {
       "Symbol": "H",
-      "Number": 1,
+      "Number": 1.2,
       "Unit": "m",
       "Provenance": {
         "Kind": "Drawing",
@@ -1240,7 +1298,7 @@
         "Revision": "B",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1"
+      "ValueText": "1.2"
     },
     {
       "Symbol": "I_sun",
@@ -1255,15 +1313,15 @@
     },
     {
       "Symbol": "P_add",
-      "Number": 105.173133906489,
+      "Number": 140,
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:2c0a8ed6e1c54f329075076386b26181#Phi",
+        "Reference": "calc:e862932b9ddb4460bab9038a16326aa6#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "105.173"
+      "ValueText": "140"
     },
     {
       "Symbol": "T_amb",

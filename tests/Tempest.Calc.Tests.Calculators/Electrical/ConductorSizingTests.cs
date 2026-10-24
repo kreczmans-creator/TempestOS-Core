@@ -18,13 +18,15 @@ public sealed class ConductorSizingTests
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
 
+    private static CalcInputValue Installation => Choice("context", ConductorSizingCalculator.ContextInstallation);
+
     [Fact]
     public void Demands_An_Independent_Check() => Assert.True(Sizing.Template.IndependentCheck);
 
     [Fact]
     public void Declares_Its_Ports_And_Record_Kinds()
     {
-        Assert.Equal(["I_b", "I_n", "CSA", "I_z", "L"], Sizing.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal(["I_b", "I_n", "CSA", "I_z", "L", "device_code"], Sizing.Template.OutputPorts!.Select(p => p.Symbol));
         Assert.Equal(["cable.ampacity", "cable.correction-factors", "device.ratings"], Sizing.Template.RecordKinds!.Select(k => k.Kind).Order(StringComparer.Ordinal));
         Assert.All(Sizing.Template.Inputs.Where(i => i.Kind is CalcInputKind.Quantity or CalcInputKind.Number), i =>
         {
@@ -113,7 +115,7 @@ public sealed class ConductorSizingTests
     [Fact]
     public void A_Semi_Enclosed_Fuse_Applies_C_c()
     {
-        var gg = Run(Choice("device", ConductorSizingCalculator.GgFuse));
+        var gg = Run(Installation, Choice("device", ConductorSizingCalculator.GgFuse));
         var semi = Run(Choice("device", ConductorSizingCalculator.SemiEnclosed));
         Assert.Equal(1, gg.OutputSi("C_c"), 12);
         Assert.Equal(0.725, semi.OutputSi("C_c"), 12);
@@ -122,18 +124,21 @@ public sealed class ConductorSizingTests
     }
 
     [Fact]
-    public void An_Mcb_Has_The_Inherent_I2_And_An_Mccb_Needs_One()
+    public void An_Mcb_Has_The_Inherent_I2_And_An_Mccb_Needs_One_Outside_The_Installation_Context()
     {
         var mcb = Run(Q("I2", 1, "A"));
         Assert.Equal(1.45 * 16, mcb.OutputSi("I2"), 9);
         Assert.Equal(3, mcb.Checks.Count);
 
+        // Machine wiring: an MCCB without I2 cannot be deemed to meet I2 <= 1.45 Iz (Green G-B-13).
         var withoutI2 = Run(Choice("device", ConductorSizingCalculator.Mccb));
-        Assert.Contains(withoutI2.Warnings, w => w.RuleId == "I2");
-        Assert.Equal(2, withoutI2.Checks.Count);
+        var block = Assert.Single(withoutI2.Blocks);
+        Assert.Equal("I2", block.RuleId);
+        Assert.StartsWith("I2:", block.Message, StringComparison.Ordinal);
         Assert.Null(withoutI2.FindOutput("u_I2"));
 
         var withI2 = Run(Choice("device", ConductorSizingCalculator.Mccb), Q("I2", 24, "A"));
+        Assert.False(withI2.IsBlocked);
         Assert.DoesNotContain(withI2.Warnings, w => w.RuleId == "I2");
         Assert.Equal(3, withI2.Checks.Count);
         Assert.Equal(24 / (1.45 * (24.1 * 0.91 * 0.77)), withI2.OutputSi("u_I2"), 9);
@@ -143,15 +148,78 @@ public sealed class ConductorSizingTests
     }
 
     [Fact]
-    public void A_Gg_Fuse_Shows_No_I2_And_Is_A_Deemed_Condition()
+    public void An_Mccb_Without_I2_Is_A_Stated_Deemed_Condition_In_The_Installation_Context()
     {
-        var r = Run(Choice("device", ConductorSizingCalculator.GgFuse));
+        var r = Run(Installation, Choice("device", ConductorSizingCalculator.Mccb));
+        Assert.False(r.IsBlocked);
+        Assert.Contains(r.Warnings, w => w.RuleId == "I2" && w.Message.Contains("1.45·I_n", StringComparison.Ordinal));
+        Assert.Null(r.FindOutput("u_I2"));
+        var check = Assert.Single(r.Checks, c => c.Name.Contains("deemed", StringComparison.Ordinal));
+        Assert.True(check.Passed);
+        Assert.Contains("I_n", check.Name, StringComparison.Ordinal);
+        Assert.Equal(3, r.Checks.Count);
+    }
+
+    [Fact]
+    public void A_Gg_Fuse_Is_Deemed_Only_Under_BS_7671_And_Needs_Its_I2_In_The_Machine_Context()
+    {
+        // Green G-B-02: an IEC 60269-1 gG fuse has I2 = 1.6 In, so the BS 88 'deemed' rule must not be applied to machine wiring.
+        var machine = Run(Choice("device", ConductorSizingCalculator.GgFuse));
+        var block = Assert.Single(machine.Blocks);
+        Assert.Equal("I2", block.RuleId);
+        Assert.Contains("1.6", block.Message, StringComparison.Ordinal);
+
+        // With its datasheet I2 = 1.6 * 16 A = 25.6 A the check is made and fails: 25.6 / (1.45 * 16.88687) = 1.04546.
+        var checkedRun = Run(Choice("device", ConductorSizingCalculator.GgFuse), Q("I2", 25.6, "A"));
+        Assert.False(checkedRun.IsBlocked);
+        Assert.Equal(25.6 / (1.45 * 24.1 * 0.91 * 0.77), checkedRun.OutputSi("u_I2"), 9);
+        Assert.Contains(checkedRun.Checks, c => c.Name.Contains("1.45", StringComparison.Ordinal) && !c.Passed);
+
+        // The BS 7671 installation context keeps the deemed condition for a BS 88 gG fuse.
+        var installation = Run(Installation, Choice("device", ConductorSizingCalculator.GgFuse));
+        Assert.False(installation.IsBlocked);
+        Assert.Contains(installation.Checks, c => c.Name.Contains("deemed", StringComparison.Ordinal) && c.Name.Contains("BS 88", StringComparison.Ordinal) && c.Passed);
+    }
+
+    [Fact]
+    public void A_Gg_Fuse_Shows_No_I2_And_Is_A_Deemed_Condition_Under_BS_7671()
+    {
+        var r = Run(Installation, Choice("device", ConductorSizingCalculator.GgFuse));
         Assert.Null(r.FindOutput("I2"));
         Assert.Null(r.FindOutput("u_I2"));
         var check = Assert.Single(r.Checks, c => c.Name.Contains("deemed", StringComparison.Ordinal));
         Assert.True(check.Passed);
         Assert.Contains("433.1.201", check.Clause, StringComparison.Ordinal);
         Assert.Equal(3, r.Checks.Count);
+    }
+
+    [Theory]
+    [InlineData(ConductorSizingCalculator.McbB, 1)]
+    [InlineData(ConductorSizingCalculator.McbC, 2)]
+    [InlineData(ConductorSizingCalculator.McbD, 3)]
+    [InlineData(ConductorSizingCalculator.GgFuse, 4)]
+    [InlineData(ConductorSizingCalculator.SemiEnclosed, 4)]
+    [InlineData(ConductorSizingCalculator.Mccb, 4)]
+    [InlineData(ConductorSizingCalculator.Mpcb, 4)]
+    public void The_Device_Type_Code_Is_An_Output_For_The_Fault_Check(string device, int code)
+    {
+        var r = Run(Installation, Choice("device", device));
+        Assert.Equal(code, r.OutputSi("device_code"), 12);
+        Assert.Equal("device_code", Sizing.Template.OutputPorts!.Single(p => p.Symbol == "device_code").Symbol);
+    }
+
+    [Fact]
+    public void Ampacity_Rows_In_The_Other_Conductor_System_Say_So()
+    {
+        // Black B-A-20: AWG selected with metric rows (and the reverse) used to read as an empty table.
+        var awgWithMetric = Run(Choice("system", ConductorSizingCalculator.Awg));
+        var block = Assert.Single(awgWithMetric.Blocks);
+        Assert.Equal("ampacity: the rows give cross-sections (metric) but the conductor system is AWG; enter AWG gauge numbers or switch the system to metric.", block.Message);
+
+        var metricWithAwg = Run(ConductorSizingCalculator.AwgAmpacity((12, 19.4), (10, 27.8)));
+        Assert.Equal("ampacity: the rows give AWG gauge numbers but the conductor system is metric; enter cross-sections or switch the system to AWG.", Assert.Single(metricWithAwg.Blocks).Message);
+
+        Assert.Equal("ampacity: enter the current-carrying capacities for the installation method from your own licensed table (record kind cable.ampacity).", Assert.Single(Run(CalcInputValue.Table("ampacity", [])).Blocks).Message);
     }
 
     [Fact]
@@ -211,7 +279,7 @@ public sealed class ConductorSizingTests
     public void Grouped_Circuits_With_No_Grouping_Factor_Warn()
     {
         Assert.Contains(Run(CalcInputValue.Of("N_g", 4), CalcInputValue.Of("C_g", 1)).Warnings, w => w.RuleId == "C_g");
-        Assert.DoesNotContain(Run(CalcInputValue.Of("N_g", 4), CalcInputValue.Of("C_g", 0.65)).Warnings, w => w.RuleId == "C_g");
+        Assert.DoesNotContain(Run(CalcInputValue.Of("N_g", 4), CalcInputValue.Of("C_g", 0.58)).Warnings, w => w.RuleId == "C_g");
     }
 
     [Fact]
@@ -221,7 +289,7 @@ public sealed class ConductorSizingTests
         Assert.Equal("4/0", ConductorSizingCalculator.AwgName(-3));
         Assert.Equal("1/0", ConductorSizingCalculator.AwgName(0));
 
-        var r = Run(Q("I_b_in", 25, "A"), Choice("system", ConductorSizingCalculator.Awg), CalcInputValue.Of("C_a", 1), CalcInputValue.Of("C_g", 1), ConductorSizingCalculator.AwgAmpacity((12, 20), (10, 30)));
+        var r = Run(Q("I_b_in", 25, "A"), Choice("system", ConductorSizingCalculator.Awg), CalcInputValue.Of("C_a", 1), CalcInputValue.Of("C_g", 1), ConductorSizingCalculator.AwgAmpacity((12, 18.4), (10, 27.3)));
         Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
         Assert.Equal(5.261154954510373, r.OutputSi("CSA") * 1e6, 9);
         Assert.Equal("AWG 10", ((Tempest.Calc.Engine.Values.TextValue)r.FindOutput("gauge")!.Value).Value);
@@ -230,7 +298,7 @@ public sealed class ConductorSizingTests
     [Fact]
     public void The_Smallest_Carrying_Row_Is_Chosen_Whatever_The_Row_Order()
     {
-        var shuffled = ConductorSizingCalculator.Ampacity((10, 50), (2.5, 21), (6, 36), (1.5, 15), (4, 28));
+        var shuffled = ConductorSizingCalculator.Ampacity((10, 43.1), (2.5, 16.2), (6, 30.8), (1.5, 11.4), (4, 23.7));
         Assert.Equal(Run().OutputSi("CSA"), Run(shuffled).OutputSi("CSA"));
     }
 

@@ -2,7 +2,7 @@
 
 **Source.** Analytic servo-sizing relations (Hughes & Drury; manufacturer sizing guides), Reflected inertia, trapezoidal 1/3 profile, RMS torque with dwell — Confirmed.
 
-A 50 kg carriage on a 10 mm-lead ball screw moving 0.5 m in 0.5 s. The candidate motor's peak (6 N·m) and continuous (2 N·m) torques are checked with a 1.25 margin; the 9000 rpm peak speed is the sizing driver, suggesting a coarser lead or a gearbox.
+A 50 kg carriage on a 10 mm-lead ball screw moving 0.5 m in 0.5 s. The candidate motor's peak (6 N·m) and continuous (2 N·m) torques are checked with a 1.25 margin; the 9000 rpm peak speed is the sizing driver, suggesting a coarser lead or a gearbox. The RMS mechanical power over the cycle is 0.784 kW against a 2.43 kW instantaneous peak: the RMS figure is the one to carry to a supply calculation.
 
 | Input | Value | Source |
 |---|---|---|
@@ -32,5 +32,6 @@ A 50 kg carriage on a 10 mm-lead ball screw moving 0.5 m in 0.5 s. The candidate
 | `T_pk` | 2.579 N*m | 2.57894 N*m | PASS |
 | `T_rms` | 1.4402 N*m | 1.4402 N*m | PASS |
 | `n_pk` | 9000 rpm | 9000 rpm | PASS |
+| `P_rms` | 0.784142 kW | 0.784142 kW | PASS |
 
 Governing check: RMS torque SF·T_rms ≤ T_rated — PASS (utilisation 0.900). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

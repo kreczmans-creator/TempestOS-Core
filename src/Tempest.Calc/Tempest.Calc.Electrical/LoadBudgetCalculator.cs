@@ -12,6 +12,8 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
     public const string Ac1 = "AC single-phase";
     public const string Dc = "DC";
 
+    public const string PsuNone = "not counted on an AC bus";
+
     private static readonly IReadOnlyList<CalcColumnSpec> LoadColumns =
     [
         new("name", "Load", CalcInputKind.Text),
@@ -19,6 +21,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         new("P", "Electrical input power", CalcInputKind.Quantity, "kW", HardMin: 0, HardMax: 200),
         new("cosphi", "Power factor", CalcInputKind.Number, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, IsOptional: true),
         new("eta", "Efficiency", CalcInputKind.Number, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, IsOptional: true),
+        new("heat", "Share of the input power released as heat inside the enclosure (blank: the loss 1 − η; electronics 1; a machine outside the enclosure 0)", CalcInputKind.Number, Min: 0, Max: 1, HardMin: 0, HardMax: 1, IsOptional: true),
         new("d", "Duty (share of time on)", CalcInputKind.Number, HardMin: 0, HardMax: 1, IsOptional: true),
         new("k", "Diversity", CalcInputKind.Number, HardMin: 0, HardMax: 1, IsOptional: true),
         new("inrush", "Inrush multiple", CalcInputKind.Number, HardMin: 1, HardMax: 20, IsOptional: true),
@@ -26,23 +29,26 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
+        Id, "1.2.0", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
         "The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.",
         "Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative)\n" +
-        "Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC\n" +
-        "Heat dissipated: Φ = Σ(1 − η_i)·P_i·d_i·k_i\n" +
+        "Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus\n" +
+        "Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0)\n" +
         "PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude)\n" +
-        "Transformer: S_T ≥ margin·S; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified)\n" +
+        "Transformer: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two\n" +
         "Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t",
         [
             new CalcInputSpec("loads", "Loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 100),
-            new CalcInputSpec("P_add", "Additional three-phase load (linked from E1's peak power)", CalcInputKind.Quantity, "kW", Default: 0, Min: 0, Max: 200, HardMin: 0, HardMax: 200, Group: "Loads"),
+            new CalcInputSpec("P_add", "Additional three-phase load (linked from E1's RMS power)", CalcInputKind.Quantity, "kW", Default: 0, Min: 0, Max: 200, HardMin: 0, HardMax: 200, Group: "Loads"),
             new CalcInputSpec("cosphi_add", "Power factor of the additional load", CalcInputKind.Number, Default: 0.85, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Loads"),
             new CalcInputSpec("eta_add", "Efficiency of the additional load", CalcInputKind.Number, Default: 0.9, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Loads"),
             new CalcInputSpec("inrush_add", "Starting multiple of the additional load", CalcInputKind.Number, Default: 1, Min: 1, Max: 20, HardMin: 1, HardMax: 20, Group: "Loads"),
+            new CalcInputSpec("heat_add", "Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0)", CalcInputKind.Number, Default: 0, Min: 0, Max: 1, HardMin: 0, HardMax: 1, Group: "Loads"),
             new CalcInputSpec("U_3ph", "Three-phase line voltage", CalcInputKind.Quantity, "V", Default: 400, Min: 12, Max: 1000, HardMin: 12, HardMax: 1000, Group: "Supplies"),
             new CalcInputSpec("U_1ph", "Single-phase voltage", CalcInputKind.Quantity, "V", Default: 230, Min: 12, Max: 1000, HardMin: 12, HardMax: 1000, Group: "Supplies"),
             new CalcInputSpec("U_DC", "DC bus voltage", CalcInputKind.Quantity, "V", Default: 24, Min: 12, Max: 1000, HardMin: 12, HardMax: 1000, Group: "Supplies"),
+            new CalcInputSpec("psu_bus", "AC bus that feeds the DC power supply (its input P_DC/η_PSU is added to that bus)", CalcInputKind.Choice, Choices: [PsuNone, Ac1, Ac3], DefaultChoice: PsuNone, Group: "Supplies"),
+            new CalcInputSpec("eta_psu", "DC power supply efficiency (power factor taken as 1)", CalcInputKind.Number, Default: 0.9, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Supplies"),
             new CalcInputSpec("margin", "Sizing margin", CalcInputKind.Number, Default: 1.25, Min: 1, Max: 1.5, HardMin: 1, HardMax: 1.5, Group: "Supplies"),
             new CalcInputSpec("theta", "Ambient temperature", CalcInputKind.Quantity, "degC", Default: 40, Min: -20, Max: 70, HardMin: -20, HardMax: 70, Group: "PSU"),
             new CalcInputSpec("f_derate", "PSU derating factor at the ambient and altitude", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1, HardMin: 0.05, HardMax: 1, Group: "PSU"),
@@ -61,7 +67,8 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             new CalcInputSpec("C_batt", "Selected battery capacity", CalcInputKind.Quantity, "A*h", Min: 0.1, Max: 1e5, HardMin: 1e-3, HardMax: 1e6, IsOptional: true, Group: "Battery"),
         ],
         [
-            new CalcAssumption("Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand (the PSU's own loss is a load row if wanted).", "Load budget convention."),
+            new CalcAssumption("Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand; with a PSU bus chosen they count at P/η_PSU, the PSU's own loss being a load row if its heat is wanted.", "Load budget convention."),
+            new CalcAssumption("The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0).", "Green G-B-04."),
             new CalcAssumption("Apparent powers are added arithmetically, which is conservative when power factors differ.", "Upper bound on S."),
             new CalcAssumption("PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records.", "§A3 reference records."),
         ],
@@ -71,6 +78,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("no-loads", "No loads: nothing to budget.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("psu_bus", "DC loads with no AC bus chosen for their power supply: the AC bus currents and the transformer demand omit its input.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("derate", "Ambient above 40 °C with no PSU derating entered.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("peukert", "Peukert needs both the exponent and the hour rate.", CalcNoticeSeverity.Warning),
         ],
@@ -105,7 +113,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             new CalcOutputPort("I_3ph", "A", "Three-phase bus current (→ E4 I_b)"),
             new CalcOutputPort("I_1ph", "A", "Single-phase bus current"),
             new CalcOutputPort("I_DC", "A", "DC bus current"),
-            new CalcOutputPort("Phi", "kW", "Heat dissipated (→ E2)"),
+            new CalcOutputPort("Phi", "kW", "Heat dissipated inside the enclosure (→ E2)"),
             new CalcOutputPort("C_req", "A*h", "Minimum battery capacity"),
         ],
         RecordKinds:
@@ -120,18 +128,18 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             ("name", new CalcCell(Text: r.Name)), ("supply", new CalcCell(Text: r.Supply)), ("P", new CalcCell(r.P, "kW")), ("cosphi", new CalcCell(r.CosPhi)), ("eta", new CalcCell(r.Eta)),
             ("d", new CalcCell(r.D)), ("k", new CalcCell(r.K)), ("inrush", new CalcCell(r.Inrush)), ("backed", new CalcCell(Flag: r.Backed)))).ToList());
 
-    private sealed record Load(int Index, string Name, string Supply, double P, double CosPhi, double Eta, double D, double K, double Inrush, bool Backed)
+    private sealed record Load(int Index, string Name, string Supply, double P, double CosPhi, double Eta, double D, double K, double Inrush, bool Backed, double Heat, double PsuEta)
     {
         public double Demand => P * D * K;
 
-        public double Apparent => Supply == Dc ? Demand : Demand / CosPhi;
+        public double Apparent => Supply == Dc ? Demand / PsuEta : Demand / CosPhi;
     }
 
     public void Run(CalcRunContext c)
     {
         var rows = c.Rows("loads");
 
-        foreach (var s in new[] { "P_add", "cosphi_add", "eta_add", "inrush_add", "U_3ph", "U_1ph", "U_DC", "margin", "theta", "f_derate", "k_T", "t_auto", "U_b", "eta_conv", "DoD", "eta_b", "k_temp", "k_age" })
+        foreach (var s in new[] { "P_add", "cosphi_add", "eta_add", "inrush_add", "heat_add", "U_3ph", "U_1ph", "U_DC", "margin", "theta", "f_derate", "k_T", "t_auto", "U_b", "eta_conv", "DoD", "eta_b", "k_temp", "k_age" })
             c.Input(s);
 
         if (rows.Count == 0 && !(c.Si("P_add") > 0))
@@ -140,16 +148,21 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             return;
         }
 
+        var psuBus = c.InputText("psu_bus");
+        var psuEta = psuBus == PsuNone ? 1 : c.InputSi("eta_psu");
+
         var loads = rows.Select((r, i) => new Load(
             i + 1,
             r.Get("name")?.Text is { Length: > 0 } n ? CalcSheetTextRenderer.Clean(n) : $"Load {i + 1}",
             r.Get("supply")?.Text ?? Ac3,
             r.Get("P") is { Number: { } p } cell ? UnitCatalog.Parse(cell.Unit ?? "kW").ToSi(p) : 0,
-            r.Get("cosphi")?.Number ?? 1, r.Get("eta")?.Number ?? 1, r.Get("d")?.Number ?? 1, r.Get("k")?.Number ?? 1, r.Get("inrush")?.Number ?? 1, r.Get("backed")?.Flag ?? false)).ToList();
+            r.Get("cosphi")?.Number ?? 1, r.Get("eta")?.Number ?? 1, r.Get("d")?.Number ?? 1, r.Get("k")?.Number ?? 1, r.Get("inrush")?.Number ?? 1, r.Get("backed")?.Flag ?? false,
+            r.Get("heat")?.Number ?? 1 - (r.Get("eta")?.Number ?? 1), psuEta)).ToList();
 
-        // A linked machine (E1's peak shaft power) enters as a three-phase load drawing P_add/η_add (Addendum A §A7 motor circuit).
+        // A linked machine (E1's continuous power) enters as a three-phase load drawing P_add/η_add (Addendum A §A7 motor circuit). The machine is outside the
+        // enclosure, so by default none of its loss is panel heat (heat_add = 0).
         if (c.Si("P_add") > 0)
-            loads.Add(new Load(loads.Count + 1, "Linked load", Ac3, c.Si("P_add") / c.InputSi("eta_add"), c.InputSi("cosphi_add"), c.InputSi("eta_add"), 1, 1, c.InputSi("inrush_add"), false));
+            loads.Add(new Load(loads.Count + 1, "Linked load", Ac3, c.Si("P_add") / c.InputSi("eta_add"), c.InputSi("cosphi_add"), c.InputSi("eta_add"), 1, 1, c.InputSi("inrush_add"), false, c.InputSi("heat_add"), psuEta));
 
         var kW = UnitCatalog.Parse("kW");
         var kVA = UnitCatalog.Parse("kVA");
@@ -164,20 +177,24 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         var sDem = loads.Sum(l => l.Apparent);
         c.Record("S_dem", "Σ P_i·d_i·k_i/cosφ_i", string.Join(" + ", loads.Select(l => F(l.Apparent / 1e3))), ScalarValue.Of(sDem / 1e3, kVA), "Demand apparent power (arithmetic)");
 
-        var s3 = loads.Where(l => l.Supply == Ac3).Sum(l => l.Apparent);
-        var s1 = loads.Where(l => l.Supply == Ac1).Sum(l => l.Apparent);
         var pdc = loads.Where(l => l.Supply == Dc).Sum(l => l.Demand);
+        var psuInput = pdc / psuEta;
+        var s3 = loads.Where(l => l.Supply == Ac3).Sum(l => l.Apparent) + (psuBus == Ac3 ? psuInput : 0);
+        var s1 = loads.Where(l => l.Supply == Ac1).Sum(l => l.Apparent) + (psuBus == Ac1 ? psuInput : 0);
         c.Record("I_3ph", "S_3φ/(√3·U_3ph)", $"{F(s3)} / (√3 × {F(c.Si("U_3ph"))})", ScalarValue.Of(s3 / (Math.Sqrt(3) * c.Si("U_3ph")), amp), "Three-phase bus current");
         c.Record("I_1ph", "S_1φ/U_1ph", $"{F(s1)} / {F(c.Si("U_1ph"))}", ScalarValue.Of(s1 / c.Si("U_1ph"), amp), "Single-phase bus current");
         c.Record("I_DC", "P_DC/U_DC", $"{F(pdc)} / {F(c.Si("U_DC"))}", ScalarValue.Of(pdc / c.Si("U_DC"), amp), "DC bus current");
-        c.Record("Phi", "Σ (1 − η_i)·P_i·d_i·k_i", string.Join(" + ", loads.Select(l => $"{F(1 - l.Eta)}×{F(l.Demand / 1e3)}")), ScalarValue.Of(loads.Sum(l => (1 - l.Eta) * l.Demand) / 1e3, kW), "Heat dissipated (→ E2)");
+        c.Record("Phi", "Σ h_i·P_i·d_i·k_i", string.Join(" + ", loads.Select(l => $"{F(l.Heat)}×{F(l.Demand / 1e3)}")), ScalarValue.Of(loads.Sum(l => l.Heat * l.Demand) / 1e3, kW), "Heat dissipated inside the enclosure (→ E2)");
 
         if (c.Si("theta") > 273.15 + 40 && c.InputSi("f_derate") >= 1)
             c.Warn("derate", "f_derate: the ambient is above 40 °C but no PSU derating is entered; read the factor from the manufacturer's curve.");
 
+        if (pdc > 0 && psuBus == PsuNone)
+            c.Warn("psu_bus", "psu_bus: DC loads are present but no AC bus is chosen for the power supply that feeds them, so the AC bus currents and the transformer demand omit its input (P_DC/η_PSU); choose the bus.");
+
         c.Record("P_DC", "Σ DC P_i·d_i·k_i", $"{F(pdc)} W", ScalarValue.Of(pdc, "W"), "DC demand");
         c.Assign("P_PSU_req", "margin * P_DC / f_derate", "W", "Minimum PSU rating");
-        c.Assign("S_T_req", "margin * S_dem", "kVA", "Minimum transformer rating");
+        c.Assign("S_T_req", "margin * S_dem", "kVA", "Minimum transformer rating for the running load");
         // A start draws m·P/cosφ whatever the duty or diversity; it replaces that load's diversified share (Opus review,
         // finding 6). Loads with no demand (standby at diversity 0) do not start with the rest running.
         double Increment(Load l) => l.Inrush * l.P / (l.Supply == Dc ? 1 : l.CosPhi) - l.Apparent;
@@ -185,8 +202,10 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         var surge = starters.Select(Increment).DefaultIfEmpty(0).Max();
         var surgeLoad = starters.OrderByDescending(Increment).FirstOrDefault();
         c.Record("S_peak", "S_dem + max(m_i·P_i/cosφ_i − S_i)", $"{F(sDem / 1e3)} + {F(surge / 1e3)}{(surgeLoad is null ? string.Empty : $" ({surgeLoad.Name} starting)")}", ScalarValue.Of((sDem + surge) / 1e3, kVA), "Peak apparent power while the largest load starts");
+        c.Assign("S_T_req_start", "S_peak / k_T", "kVA", "Minimum transformer rating for the starting peak");
+        c.Assign("S_T_min", "max(S_T_req, S_T_req_start)", "kVA", "Minimum transformer rating (running load and starting peak)");
 
-        var outputs = new List<(string, string)> { ("P_conn", "Connected load"), ("P_dem", "Demand active power"), ("S_dem", "Demand apparent power"), ("I_3ph", "Three-phase bus current"), ("I_1ph", "Single-phase bus current"), ("I_DC", "DC bus current"), ("Phi", "Heat dissipated"), ("P_PSU_req", "Minimum PSU rating"), ("S_T_req", "Minimum transformer rating"), ("S_peak", "Peak apparent power at start") };
+        var outputs = new List<(string, string)> { ("P_conn", "Connected load"), ("P_dem", "Demand active power"), ("S_dem", "Demand apparent power"), ("I_3ph", "Three-phase bus current"), ("I_1ph", "Single-phase bus current"), ("I_DC", "DC bus current"), ("Phi", "Heat dissipated inside the enclosure"), ("P_PSU_req", "Minimum PSU rating"), ("S_T_req", "Minimum transformer rating, running load"), ("S_peak", "Peak apparent power at start"), ("S_T_req_start", "Minimum transformer rating, starting peak"), ("S_T_min", "Minimum transformer rating, running and starting") };
 
         if (c.Si("t_auto") > 0)
         {

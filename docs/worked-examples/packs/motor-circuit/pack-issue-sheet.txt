@@ -7,15 +7,15 @@ Checker: J. Reviewer    Checked: 2026-10-24
 Issued: 2026-10-24    Issue: LINE-ELEC-001    Client: Client Co
 
 PACK INDEX
-  1. Motor sizing — Motor and actuator sizing — rev A — ISSUED — Speed n_pk ≤ n_max FAIL
+  1. Motor sizing — Motor and actuator sizing — rev A — ISSUED — RMS torque SF·T_rms ≤ T_rated PASS
   2. Load budget — Load budget, PSU, transformer and battery — rev A — ISSUED
-  3. Cable and device — Conductor sizing and overload coordination — rev A — ISSUED — Design current within device rating (I_b ≤ I_n) PASS
+  3. Cable and device — Conductor sizing and overload coordination — rev A — ISSUED — Device rating within conductor capacity (I_n ≤ I_z) PASS
   4. Voltage drop — Voltage drop and I²R loss — rev A — ISSUED — Voltage drop ≤ limit PASS
-  5. Fault protection — Fault protection: Zs, disconnection, adiabatic, fault level — rev A — ISSUED — Line conductor against adiabatic minimum PASS
+  5. Fault protection — Fault protection: Zs, disconnection, adiabatic, fault level — rev A — ISSUED — Protective conductor against adiabatic minimum PASS
   6. Enclosure heat — Enclosure heat dissipation and fan sizing — rev A — ISSUED — Natural dissipation holds T_max PASS
 
 REVISIONS
-  A  2026-10-24  test.engineer  First issue
+  A  2026-10-24  unknown  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 23/23
-  Test run: 2026-10-24 19:26 UTC
+  Test run: 2026-10-24 19:15 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -54,7 +54,7 @@ Issued: 2026-10-24    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell. Continuous rotary duty: ω = 2π n_L i/60; T_load = T_L/(i η); T_rms = T_load; T_pk = J_total ω/t_start + T_load (full load during the run-up, conservative); n_pk = n_L i; P_cont = T_load ω.
+Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell. RMS mechanical power (the thermal-equivalent continuous power a supply sees; regeneration counts as power): P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle} (trapezoid), with t_acc·[(3/4) T_load² + (5/16) T_acc²] for the S-curve; the instantaneous peak P_pk is not a continuous demand. Continuous rotary duty: ω = 2π n_L i/60; T_load = T_L/(i η); T_rms = T_load; T_pk = J_total ω/t_start + T_load (full load during the run-up, conservative); n_pk = n_L i; P_cont = T_load ω; P_rms = P_cont.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -79,7 +79,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   J_motor | Candidate motor rotor inertia | 0.0002 | kg*m^2 | assumption: Sheet default value; no project figure given. | 1e-7 … 10 kg*m^2
   T_rated | Candidate motor continuous (rated) torque | 2 | N*m | assumption: Sheet default value; no project figure given. | 0.01 … 100000 N*m
   T_peak | Candidate motor peak torque | 6 | N*m | assumption: Sheet default value; no project figure given. | 0.01 … 100000 N*m
-  n_max | Candidate motor maximum speed | 6000 | rpm | assumption: Sheet default value; no project figure given. | 10 … 100000 rpm
+  n_max | Candidate motor maximum speed | 10000 | rpm | assumption: Sheet default value; no project figure given. | 10 … 100000 rpm
   SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
   J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
 
@@ -101,7 +101,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   A15. J_motor (Candidate motor rotor inertia) is taken as 0.0002 kg*m^2. (Sheet default value; no project figure given.)
   A16. T_rated (Candidate motor continuous (rated) torque) is taken as 2 N*m. (Sheet default value; no project figure given.)
   A17. T_peak (Candidate motor peak torque) is taken as 6 N*m. (Sheet default value; no project figure given.)
-  A18. n_max (Candidate motor maximum speed) is taken as 6000 rpm. (Sheet default value; no project figure given.)
+  A18. n_max (Candidate motor maximum speed) is taken as 10000 rpm. (Sheet default value; no project figure given.)
   A19. SF (Safety margin on torque) is taken as 1.25. (Sheet default value; no project figure given.)
   A20. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
 
@@ -178,27 +178,31 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
       = 0.5 s + 0.5 s
       = 1 s
         Cycle time
-  [41] T_rms = sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc) / t_cycle)
+  [41] P_rms = omega_pk * sqrt((t_acc * (2 / 3) * (T_load^2 + T_acc^2) + T_load^2 * t_const) / t_cycle)
+      = 942.48 rad/s × sqrt((0.16667 s × 2 / 3 × ((0.08671 N·m)^2 + (2.4922 N·m)^2) + (0.08671 N·m)^2 × 0.16667 s) / 1 s)
+      = 0.78414 kW
+        RMS mechanical power over the cycle (thermal-equivalent continuous power)
+  [42] T_rms = sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc) / t_cycle)
       = sqrt(((2.5789 N·m)^2 × 0.16667 s + (0.08671 N·m)^2 × 0.16667 s + (-2.4055 N·m)^2 × 0.16667 s) / 1 s)
       = 1.4402 N·m
         RMS torque over the cycle (thermal)
-  [42] J_ratio = (J_refl + J_mech) / J_motor
+  [43] J_ratio = (J_refl + J_mech) / J_motor
       = (0.00014072 kg·m² + 0.0001 kg·m²) / 0.0002 kg·m²
       = 1.2036
         Inertia ratio (load : motor)
-  [43] u_peak = SF * T_pk / T_peak
+  [44] u_peak = SF * T_pk / T_peak
       = 1.25 × 2.5789 N·m / 6 N·m
       = 0.53728
         Peak torque utilisation with safety margin
-  [44] u_rms = SF * T_rms / T_rated
+  [45] u_rms = SF * T_rms / T_rated
       = 1.25 × 1.4402 N·m / 2 N·m
       = 0.90012
         Continuous torque utilisation with safety margin
-  [45] u_speed = n_pk / n_max
-      = 9000 rpm / 6000 rpm
-      = 1.5
+  [46] u_speed = n_pk / n_max
+      = 9000 rpm / 10000 rpm
+      = 0.9
         Speed utilisation
-  [46] duty = T_rms / T_rated
+  [47] duty = T_rms / T_rated
       = 1.4402 N·m / 2 N·m
       = 0.7201
         Thermal duty (without margin)
@@ -217,26 +221,27 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   T_rms = 1.4402 N·m    RMS torque
   n_pk = 9000 rpm    Peak speed
   P_pk = 2.4306 kW    Peak power
+  P_rms = 0.78414 kW    RMS power (continuous equivalent)
   J_ratio = 1.2036    Inertia ratio
   duty = 0.7201    Thermal duty
   u_peak = 0.53728    Peak utilisation
   u_rms = 0.90012    Continuous utilisation
-  u_speed = 1.5    Speed utilisation
+  u_speed = 0.9    Speed utilisation
 
 6. CHECKS (governing first)
-  FAIL  Speed n_pk ≤ n_max: u_speed = 1.5 vs u_speed ≤ 1  utilisation 1.5
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.90012 vs u_rms ≤ 1  utilisation 0.9
+  PASS  Speed n_pk ≤ n_max: u_speed = 0.9 vs u_speed ≤ 1  utilisation 0.9
   PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.53728 vs u_peak ≤ 1  utilisation 0.537
 
 7. APPLICABILITY
   WARNING overhauling: T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.1.0
-  Content hash: dc25f3e5a3e7b859
+  Template: elec.motor-sizing@1.2.0
+  Content hash: 07f83040d397a49f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 19:26 UTC
+  Test run: 2026-10-24 19:15 UTC
   Application: TempestOS test
 
 
@@ -250,27 +255,30 @@ Issued: 2026-10-24    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
-Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC Heat dissipated: Φ = Σ(1 − η_i)·P_i·d_i·k_i PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer: S_T ≥ margin·S; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified) Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
   Ref: Linden's Handbook of Batteries 5th ed., Ch. 3–4 — Battery sizing and the Peukert relation
   Ref: BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance; cited by number only)
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   loads | Loads | 2 row(s) |  | spec: SPEC-LINE-12 §4 (panel schedule) | any
-  loads[1] |  | name = 24 V controls and I/O; supply = DC; P = 0.18 kW; cosphi = 1; eta = 0.9; d = 1; k = 1; inrush = 1; backed = no |  |  | 
-  loads[2] |  | name = Panel fan; supply = AC single-phase; P = 0.04 kW; cosphi = 0.9; eta = 0.7; d = 1; k = 1; inrush = 1; backed = no |  |  | 
-  P_add | Additional three-phase load (linked from E1's peak power) | 2.4306 | kW | link: Motor sizing rev A · P_pk | 0 … 200 kW
+  loads[1] |  | name = 24 V controls and I/O; supply = DC; P = 0.12 kW; cosphi = 1; eta = 0.9; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
+  loads[2] |  | name = Panel fan; supply = AC single-phase; P = 0.02 kW; cosphi = 0.9; eta = 0.7; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
+  P_add | Additional three-phase load (linked from E1's RMS power) | 0.784142 | kW | link: Motor sizing rev A · P_rms | 0 … 200 kW
   cosphi_add | Power factor of the additional load | 0.85 |  | spec: SPEC-LINE-12 §4 (panel schedule) | 0.5 … 1
   eta_add | Efficiency of the additional load | 0.97 |  | spec: SPEC-LINE-12 §4 (panel schedule) | 0.5 … 1
   inrush_add | Starting multiple of the additional load | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+  heat_add | Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0) | 0 |  | spec: SPEC-LINE-12 §4 (panel schedule) | 0 … 1
   U_3ph | Three-phase line voltage | 400 | V | assumption: Sheet default value; no project figure given. | 12 … 1000 V
   U_1ph | Single-phase voltage | 230 | V | assumption: Sheet default value; no project figure given. | 12 … 1000 V
   U_DC | DC bus voltage | 24 | V | assumption: Sheet default value; no project figure given. | 12 … 1000 V
+  psu_bus | AC bus that feeds the DC power supply (its input P_DC/η_PSU is added to that bus) | AC single-phase |  | spec: SPEC-LINE-12 §4 (panel schedule) | any
+  eta_psu | DC power supply efficiency (power factor taken as 1) | 0.9 |  | spec: SPEC-LINE-12 §4 (panel schedule) | 0.5 … 1
   margin | Sizing margin | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
   theta | Ambient temperature | 40 | degC | assumption: Sheet default value; no project figure given. | -20 … 70 degC
   f_derate | PSU derating factor at the ambient and altitude | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   k_T | Transformer short-time overload allowed for inrush | 3 |  | assumption: Sheet default value; no project figure given. | 1 … 20
-  t_auto | Battery autonomy | 0 | h | assumption: Sheet default value; no project figure given. | 0 … 72 h
+  t_auto | Battery autonomy | 4 | h | assumption: Sheet default value; no project figure given. | 0 … 72 h
   U_b | Battery nominal voltage | 24 | V | assumption: Sheet default value; no project figure given. | 2 … 1000 V
   eta_conv | Conversion efficiency battery → loads | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   DoD | Allowed depth of discharge | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
@@ -279,107 +287,137 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   k_age | Ageing (end-of-life) factor | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
 
 3. ASSUMPTIONS
-  A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand (the PSU's own loss is a load row if wanted). (Load budget convention.)
-  A2. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
-  A3. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (§A3 reference records.)
-  A4. inrush_add (Starting multiple of the additional load) is taken as 1. (Sheet default value; no project figure given.)
-  A5. U_3ph (Three-phase line voltage) is taken as 400 V. (Sheet default value; no project figure given.)
-  A6. U_1ph (Single-phase voltage) is taken as 230 V. (Sheet default value; no project figure given.)
-  A7. U_DC (DC bus voltage) is taken as 24 V. (Sheet default value; no project figure given.)
-  A8. margin (Sizing margin) is taken as 1.25. (Sheet default value; no project figure given.)
-  A9. theta (Ambient temperature) is taken as 40 degC. (Sheet default value; no project figure given.)
-  A10. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (Sheet default value; no project figure given.)
-  A11. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Sheet default value; no project figure given.)
-  A12. t_auto (Battery autonomy) is taken as 0 h. (Sheet default value; no project figure given.)
-  A13. U_b (Battery nominal voltage) is taken as 24 V. (Sheet default value; no project figure given.)
-  A14. eta_conv (Conversion efficiency battery → loads) is taken as 1. (Sheet default value; no project figure given.)
-  A15. DoD (Allowed depth of discharge) is taken as 0.8. (Sheet default value; no project figure given.)
-  A16. eta_b (Battery discharge efficiency) is taken as 0.95. (Sheet default value; no project figure given.)
-  A17. k_temp (Temperature capacity factor) is taken as 1. (Sheet default value; no project figure given.)
-  A18. k_age (Ageing (end-of-life) factor) is taken as 0.8. (Sheet default value; no project figure given.)
+  A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand; with a PSU bus chosen they count at P/η_PSU, the PSU's own loss being a load row if its heat is wanted. (Load budget convention.)
+  A2. The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Green G-B-04.)
+  A3. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
+  A4. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (§A3 reference records.)
+  A5. inrush_add (Starting multiple of the additional load) is taken as 1. (Sheet default value; no project figure given.)
+  A6. U_3ph (Three-phase line voltage) is taken as 400 V. (Sheet default value; no project figure given.)
+  A7. U_1ph (Single-phase voltage) is taken as 230 V. (Sheet default value; no project figure given.)
+  A8. U_DC (DC bus voltage) is taken as 24 V. (Sheet default value; no project figure given.)
+  A9. margin (Sizing margin) is taken as 1.25. (Sheet default value; no project figure given.)
+  A10. theta (Ambient temperature) is taken as 40 degC. (Sheet default value; no project figure given.)
+  A11. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (Sheet default value; no project figure given.)
+  A12. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Sheet default value; no project figure given.)
+  A13. t_auto (Battery autonomy) is taken as 4 h. (Sheet default value; no project figure given.)
+  A14. U_b (Battery nominal voltage) is taken as 24 V. (Sheet default value; no project figure given.)
+  A15. eta_conv (Conversion efficiency battery → loads) is taken as 1. (Sheet default value; no project figure given.)
+  A16. DoD (Allowed depth of discharge) is taken as 0.8. (Sheet default value; no project figure given.)
+  A17. eta_b (Battery discharge efficiency) is taken as 0.95. (Sheet default value; no project figure given.)
+  A18. k_temp (Temperature capacity factor) is taken as 1. (Sheet default value; no project figure given.)
+  A19. k_age (Ageing (end-of-life) factor) is taken as 0.8. (Sheet default value; no project figure given.)
 
 4. WORKING
-  [19] L1 = P·d·k; P·d·k/cosφ
-      = 0.18 × 1 × 1 = 0.18 kW; 0.18 kVA
-      = 0.18 kW
+  [22] L1 = P·d·k; P·d·k/cosφ
+      = 0.12 × 1 × 1 = 0.12 kW; 0.13333 kVA
+      = 0.12 kW
         24 V controls and I/O (DC)
-  [20] L2 = P·d·k; P·d·k/cosφ
-      = 0.04 × 1 × 1 = 0.04 kW; 0.044444 kVA
-      = 0.04 kW
+  [23] L2 = P·d·k; P·d·k/cosφ
+      = 0.02 × 1 × 1 = 0.02 kW; 0.022222 kVA
+      = 0.02 kW
         Panel fan (AC single-phase)
-  [21] L3 = P·d·k; P·d·k/cosφ
-      = 2.5058 × 1 × 1 = 2.5058 kW; 2.948 kVA
-      = 2.5058 kW
+  [24] L3 = P·d·k; P·d·k/cosφ
+      = 0.80839 × 1 × 1 = 0.80839 kW; 0.95105 kVA
+      = 0.80839 kW
         Linked load (AC three-phase)
-  [22] P_conn = Σ P_i
-      = 0.18 + 0.04 + 2.5058
-      = 2.7258 kW
+  [25] P_conn = Σ P_i
+      = 0.12 + 0.02 + 0.80839
+      = 0.94839 kW
         Connected load
-  [23] P_dem = Σ P_i·d_i·k_i
-      = 0.18 + 0.04 + 2.5058
-      = 2.7258 kW
+  [26] P_dem = Σ P_i·d_i·k_i
+      = 0.12 + 0.02 + 0.80839
+      = 0.94839 kW
         Demand active power
-  [24] S_dem = Σ P_i·d_i·k_i/cosφ_i
-      = 0.18 + 0.044444 + 2.948
-      = 3.1724 kVA
+  [27] S_dem = Σ P_i·d_i·k_i/cosφ_i
+      = 0.13333 + 0.022222 + 0.95105
+      = 1.1066 kVA
         Demand apparent power (arithmetic)
-  [25] I_3ph = S_3φ/(√3·U_3ph)
-      = 2948 / (√3 × 400)
-      = 4.255 A
+  [28] I_3ph = S_3φ/(√3·U_3ph)
+      = 951.05 / (√3 × 400)
+      = 1.3727 A
         Three-phase bus current
-  [26] I_1ph = S_1φ/U_1ph
-      = 44.444 / 230
-      = 0.19324 A
+  [29] I_1ph = S_1φ/U_1ph
+      = 155.56 / 230
+      = 0.67633 A
         Single-phase bus current
-  [27] I_DC = P_DC/U_DC
-      = 180 / 24
-      = 7.5 A
+  [30] I_DC = P_DC/U_DC
+      = 120 / 24
+      = 5 A
         DC bus current
-  [28] Phi = Σ (1 − η_i)·P_i·d_i·k_i
-      = 0.1×0.18 + 0.3×0.04 + 0.03×2.5058
-      = 0.10517 kW
-        Heat dissipated (→ E2)
-  [29] P_DC = Σ DC P_i·d_i·k_i
-      = 180 W
-      = 180 W
+  [31] Phi = Σ h_i·P_i·d_i·k_i
+      = 1×0.12 + 1×0.02 + 0×0.80839
+      = 0.14 kW
+        Heat dissipated inside the enclosure (→ E2)
+  [32] P_DC = Σ DC P_i·d_i·k_i
+      = 120 W
+      = 120 W
         DC demand
-  [30] P_PSU_req = margin * P_DC / f_derate
-      = 1.25 × 180 W / 1
-      = 225 W
+  [33] P_PSU_req = margin * P_DC / f_derate
+      = 1.25 × 120 W / 1
+      = 150 W
         Minimum PSU rating
-  [31] S_T_req = margin * S_dem
-      = 1.25 × 3.1724 kVA
-      = 3.9655 kVA
-        Minimum transformer rating
-  [32] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
-      = 3.1724 + 0 (Panel fan starting)
-      = 3.1724 kVA
+  [34] S_T_req = margin * S_dem
+      = 1.25 × 1.1066 kVA
+      = 1.3833 kVA
+        Minimum transformer rating for the running load
+  [35] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+      = 1.1066 + 0 (Panel fan starting)
+      = 1.1066 kVA
         Peak apparent power while the largest load starts
+  [36] S_T_req_start = S_peak / k_T
+      = 1.1066 kVA / 3
+      = 0.36887 kVA
+        Minimum transformer rating for the starting peak
+  [37] S_T_min = max(S_T_req, S_T_req_start)
+      = max(1.3833 kVA, 0.36887 kVA)
+      = 1.3833 kVA
+        Minimum transformer rating (running load and starting peak)
+  [38] I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv)
+      = 0 / (24 × 1)
+      = 0 A
+        Battery discharge current
+  [39] Ah = I_b * t_auto
+      = 0 A × 4 h
+      = 0 A·h
+        Discharge capacity
+  [40] C_req = Ah / (DoD * eta_b * k_temp * k_age)
+      = 0 A·h / (0.8 × 0.95 × 1 × 0.8)
+      = 0 A·h
+        Minimum battery capacity
 
 5. RESULTS
-  P_conn = 2.7258 kW    Connected load
-  P_dem = 2.7258 kW    Demand active power
-  S_dem = 3.1724 kVA    Demand apparent power
-  I_3ph = 4.255 A    Three-phase bus current
-  I_1ph = 0.19324 A    Single-phase bus current
-  I_DC = 7.5 A    DC bus current
-  Phi = 0.10517 kW    Heat dissipated
-  P_PSU_req = 225 W    Minimum PSU rating
-  S_T_req = 3.9655 kVA    Minimum transformer rating
-  S_peak = 3.1724 kVA    Peak apparent power at start
+  P_conn = 0.94839 kW    Connected load
+  P_dem = 0.94839 kW    Demand active power
+  S_dem = 1.1066 kVA    Demand apparent power
+  I_3ph = 1.3727 A    Three-phase bus current
+  I_1ph = 0.67633 A    Single-phase bus current
+  I_DC = 5 A    DC bus current
+  Phi = 0.14 kW    Heat dissipated inside the enclosure
+  P_PSU_req = 150 W    Minimum PSU rating
+  S_T_req = 1.3833 kVA    Minimum transformer rating, running load
+  S_peak = 1.1066 kVA    Peak apparent power at start
+  S_T_req_start = 0.36887 kVA    Minimum transformer rating, starting peak
+  S_T_min = 1.3833 kVA    Minimum transformer rating, running and starting
+  I_b = 0 A    Battery discharge current
+  Ah = 0 A·h    Discharge capacity
+  C_req = 0 A·h    Minimum battery capacity
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
 
 7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
+  WARNING record.f_derate: f_derate: a tabulated value not taken from a reference record (PSU derating); enter it as one so its source, edition and licence travel with it.
+  WARNING record.DoD: DoD: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.eta_b: eta_b: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_temp: k_temp: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_age: k_age: a tabulated value not taken from a reference record (Battery factors); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.1.0
-  Content hash: 8aa7a2d98183c145
+  Template: elec.load-budget@1.2.0
+  Content hash: 82b6c9bbcbb22a37
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 19:26 UTC
+  Test run: 2026-10-24 19:15 UTC
   Application: TempestOS test
 
 
@@ -392,8 +430,8 @@ Checker: J. Reviewer    Checked: 2026-10-24
 Issued: 2026-10-24    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
-One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and the scope note only, never a number.
-Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Device: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; for a gG fuse the I₂ condition is deemed satisfied when I_n ≤ I_z; I₂ = 2·I_n by default for a semi-enclosed fuse; otherwise the device's I₂ from its datasheet
+One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without I₂, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or I₂ must be entered (machine wiring); every other number is the same in both contexts.
+Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Device: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to E5 so the fault check uses the device chosen here)
   Ref: BS 7671:2018 (as amended) reg. 433.1.1 — Co-ordination of conductors and overload protective devices
   Ref: BS 7671:2018 (as amended) reg. 523.1 — Current-carrying capacity of a cable
   Ref: BS EN 60204-1:2018 cl. 12.4 — Current-carrying capacity of conductors and cables in normal service
@@ -409,16 +447,16 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   U | Supply voltage (line voltage for three-phase) | 400 | V | spec: SPEC-LINE-12 §5 (cabling) | 12 … 1000 V
   cos_phi | Power factor (not used for DC) | 0.85 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   eta | Efficiency (not used for DC) | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
-  I_b_in | Design current from another calculation (replaces the computed I_b when given) | 4.25502 | A | link: Load budget rev A · I_3ph | 0.01 … 50000 A
+  I_b_in | Design current from another calculation (replaces the computed I_b when given) | 1.37273 | A | link: Load budget rev A · I_3ph | 0.01 … 50000 A
   L | Circuit length (carried to the voltage-drop calculation) | 25 | m | spec: SPEC-LINE-12 §5 (cabling) | 0.1 … 500 m
-  theta_a | Ambient temperature | 30 | degC | assumption: Sheet default value; no project figure given. | -10 … 70 degC
+  theta_a | Ambient temperature | 35 | degC | assumption: Sheet default value; no project figure given. | -10 … 70 degC
   insulation | Insulation | PVC 70 °C |  | spec: SPEC-LINE-12 §5 (cabling) | any
   method | Installation method key (descriptive only, e.g. B2, C, E) | C |  | spec: SPEC-LINE-12 §5 (cabling) | any
-  N_g | Grouped circuits | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+  N_g | Grouped circuits | 2 |  | assumption: Sheet default value; no project figure given. | 1 … 20
   system | Conductor system (AWG: geometry only, no AWG capacities are supplied) | metric |  | assumption: Sheet default value; no project figure given. | any
   device | Protective device | MCB type C |  | spec: SPEC-LINE-12 §5 (cabling) | any
-  C_a | Ambient correction factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
-  C_g | Grouping correction factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
+  C_a | Ambient correction factor | 0.91 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
+  C_g | Grouping correction factor | 0.77 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
   C_i | Thermal insulation correction factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
   derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
   theta_ref | Reference ambient temperature for the derived C_a | 30 | degC | assumption: Sheet default value; no project figure given. | 0 … 60 degC
@@ -442,100 +480,108 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
 3. ASSUMPTIONS
   A1. Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator. (§A5.)
   A2. The capacities in the table are for the installation method stated; the method key is descriptive and is not interpreted. (Records carry their source and edition.)
-  A3. The ambient, grouping and insulation factors are applied as a product; C_g is not looked up from the number of grouped circuits. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
-  A4. The optional derived C_a is an approximation for the temperature difference only and is labelled as such; compare it with the licensed table. (Derived, not tabulated.)
-  A5. C_c = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. (Derived.)
-  A6. AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm; no AWG capacity is supplied. (Derived.)
-  A7. DC circuits use I_b = P/U; the power factor and efficiency are not applied. (Method.)
-  A8. context (Design context (changes clause citations and the scope note only)) is taken as BS EN 60204-1 machine wiring. (Sheet default value; no project figure given.)
-  A9. supply (Supply) is taken as three-phase. (Sheet default value; no project figure given.)
-  A10. P (Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied)) is taken as 7.5 kW. (Sheet default value; no project figure given.)
-  A11. cos_phi (Power factor (not used for DC)) is taken as 0.85. (Sheet default value; no project figure given.)
-  A12. eta (Efficiency (not used for DC)) is taken as 0.9. (Sheet default value; no project figure given.)
-  A13. theta_a (Ambient temperature) is taken as 30 degC. (Sheet default value; no project figure given.)
-  A14. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
-  A15. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
-  A16. C_a (Ambient correction factor) is taken as 1. (Sheet default value; no project figure given.)
-  A17. C_g (Grouping correction factor) is taken as 1. (Sheet default value; no project figure given.)
-  A18. C_i (Thermal insulation correction factor) is taken as 1. (Sheet default value; no project figure given.)
-  A19. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
-  A20. theta_ref (Reference ambient temperature for the derived C_a) is taken as 30 degC. (Sheet default value; no project figure given.)
-  A21. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations only; the numbers are the same in both contexts.)
+  A3. A gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671 (installation context); an IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. (BS 7671 reg. 433.1.201; IEC 60269-1.)
+  A4. The ambient, grouping and insulation factors are applied as a product; C_g is not looked up from the number of grouped circuits. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
+  A5. The optional derived C_a is an approximation for the temperature difference only and is labelled as such; compare it with the licensed table. (Derived, not tabulated.)
+  A6. C_c = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. (Derived.)
+  A7. AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm; no AWG capacity is supplied. (Derived.)
+  A8. DC circuits use I_b = P/U; the power factor and efficiency are not applied. (Method.)
+  A9. context (Design context (changes clause citations and the scope note only)) is taken as BS EN 60204-1 machine wiring. (Sheet default value; no project figure given.)
+  A10. supply (Supply) is taken as three-phase. (Sheet default value; no project figure given.)
+  A11. P (Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied)) is taken as 7.5 kW. (Sheet default value; no project figure given.)
+  A12. cos_phi (Power factor (not used for DC)) is taken as 0.85. (Sheet default value; no project figure given.)
+  A13. eta (Efficiency (not used for DC)) is taken as 0.9. (Sheet default value; no project figure given.)
+  A14. theta_a (Ambient temperature) is taken as 35 degC. (Sheet default value; no project figure given.)
+  A15. N_g (Grouped circuits) is taken as 2. (Sheet default value; no project figure given.)
+  A16. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
+  A17. C_a (Ambient correction factor) is taken as 0.91. (Sheet default value; no project figure given.)
+  A18. C_g (Grouping correction factor) is taken as 0.77. (Sheet default value; no project figure given.)
+  A19. C_i (Thermal insulation correction factor) is taken as 1. (Sheet default value; no project figure given.)
+  A20. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
+  A21. theta_ref (Reference ambient temperature for the derived C_a) is taken as 30 degC. (Sheet default value; no project figure given.)
+  A22. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
 
 4. WORKING
   [11] I_b = I_b_in
-      = 4.255 A
-      = 4.255 A
+      = 1.3727 A
+      = 1.3727 A
         Design current (linked, replaces the computed value)
   [12] I_n = smallest preferred rating with I_n ≥ I_b    « BS EN 60204-1 cl. 7.2
-      = smallest rating ≥ 4.255 A in the ratings record
+      = smallest rating ≥ 1.3727 A in the ratings record
       = 6 A
         Rated current of the protective device (ratings record)
-  [13] C_c = 1 (not a semi-enclosed fuse)    « BS EN 60204-1 cl. 12.4
+  [13] device_code = 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB    « BS EN 60204-1 cl. 7.2
+      = MCB type C
+      = 2
+        Protective device type code (carried to E5 so the fault check uses this device)
+  [14] C_c = 1 (not a semi-enclosed fuse)    « BS EN 60204-1 cl. 12.4
       = MCB type C
       = 1
         Semi-enclosed fuse factor
-  [18] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
-      = 6 A / (1 × 1 × 1 × 1)
-      = 6 A
+  [19] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
+      = 6 A / (0.91 × 0.77 × 1 × 1)
+      = 8.5629 A
         Required tabulated capacity
-  [19] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
-      = I_t,req = 6 A
+  [20] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
+      = I_t,req = 8.5629 A
       = 12.3 A
         Tabulated current-carrying capacity of the selected conductor
-  [20] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
-      = I_t,req = 6 A
+  [21] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
+      = I_t,req = 8.5629 A
       = 1.5 mm²
         Selected conductor cross-section
-  [21] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
-      = 12.3 A × 1 × 1 × 1
-      = 12.3 A
+  [22] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
+      = 12.3 A × 0.91 × 0.77 × 1
+      = 8.6186 A
         Current-carrying capacity in the installed conditions
-  [22] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 4.255 A / 6 A
-      = 0.70917
+  [23] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 1.3727 A / 6 A
+      = 0.22879
         Design current utilisation of the device
-  [23] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 6 A / 12.3 A
-      = 0.4878
+  [24] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 6 A / 8.6186 A
+      = 0.69617
         Device rating utilisation of the conductor
-  [24] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [25] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 1.45 × 6 A
       = 8.7 A
         Conventional operating current (inherent 1.45 I_n)
-  [25] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 8.7 A / (1.45 × 12.3 A)
-      = 0.4878
+  [26] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 8.7 A / (1.45 × 8.6186 A)
+      = 0.69617
         I₂ utilisation of 1.45 I_z
 
 5. RESULTS
-  I_b = 4.255 A    Design current
+  I_b = 1.3727 A    Design current
   I_n = 6 A    Rated current of the device
   C_c = 1    Semi-enclosed fuse factor
-  C_a = 1    Ambient factor
-  I_t_req = 6 A    Required tabulated capacity
+  C_a = 0.91    Ambient factor
+  I_t_req = 8.5629 A    Required tabulated capacity
   CSA = 1.5 mm²    Selected cross-section
-  I_z = 12.3 A    Current-carrying capacity
+  I_z = 8.6186 A    Current-carrying capacity
   L = 25 m    Circuit length
-  u_Ib = 0.70917    I_b / I_n
-  u_In = 0.4878    I_n / I_z
+  u_Ib = 0.22879    I_b / I_n
+  u_In = 0.69617    I_n / I_z
   I2 = 8.7 A    Conventional operating current
-  u_I2 = 0.4878    I₂ / (1.45 I_z)
+  u_I2 = 0.69617    I₂ / (1.45 I_z)
+  device_code = 2    Protective device type code
 
 6. CHECKS (governing first)
-  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.70917 vs u_Ib ≤ 1  utilisation 0.709  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.4878 vs u_In ≤ 1  utilisation 0.488  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.4878 vs u_I2 ≤ 1  utilisation 0.488  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.69617 vs u_In ≤ 1  utilisation 0.696  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.69617 vs u_I2 ≤ 1  utilisation 0.696  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.22879 vs u_Ib ≤ 1  utilisation 0.229  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 
 7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.
+  WARNING record.C_a: C_a: a tabulated value not taken from a reference record (Cable correction factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.C_g: C_g: a tabulated value not taken from a reference record (Cable correction factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.C_i: C_i: a tabulated value not taken from a reference record (Cable correction factors); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.conductor-sizing@1.0.0
-  Content hash: c40160bd4ebf1da8
+  Template: elec.conductor-sizing@1.1.0
+  Content hash: 57d3764cd484b294
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-24 19:26 UTC
+  Test run: 2026-10-24 19:15 UTC
   Application: TempestOS test
 
 
@@ -556,9 +602,9 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  system | System | AC three-phase |  | assumption: Sheet default value; no project figure given. | any
+  system | System | AC three-phase |  | spec: SPEC-LINE-12 §5 (cabling) | any
   V_n | Nominal voltage (line-to-line for three-phase) | 400 | V | spec: SPEC-LINE-12 §5 (cabling) | 12 … 1000 V
-  I | Design current | 4.25502 | A | link: Cable and device rev A · I_b | 0.1 … 5000 A
+  I | Design current | 1.37273 | A | link: Cable and device rev A · I_b | 0.1 … 5000 A
   L | Route length (one way) | 25 | m | link: Cable and device rev A · L | 0.1 … 5000 m
   cos_phi | Power factor (AC) | 0.85 |  | spec: SPEC-LINE-12 §5 (cabling) | 0.5 … 1
   n_par | Parallel conductors per phase | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 6
@@ -567,7 +613,7 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   alpha | Temperature coefficient of resistance | 0.00393 |  | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045
   A_c | Conductor cross-section | 1.5 | mm^2 | link: Cable and device rev A · CSA | 1 … 1000 mm^2
   T_c | Conductor operating temperature for the resistance | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
-  X_km | Reactance per km per conductor | 0.08 | ohm/km | assumption: Sheet default value; no project figure given. | 0 … 1 ohm/km
+  X_km | Reactance per km per conductor | 0 | ohm/km | assumption: Sheet default value; no project figure given. | 0 … 1 ohm/km
   dv_limit | Voltage-drop limit | 5 |  | assumption: Sheet default value; no project figure given. | 1 … 10
   T_rated | Conductor rated temperature | 70 | degC | assumption: Sheet default value; no project figure given. | 60 … 90 degC
   T_amb | Ambient temperature | 30 | degC | spec: SPEC-LINE-12 §5 (cabling) | 0 … 60 degC
@@ -576,15 +622,14 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   A1. Balanced load; conductor reactance from the stated X′ (zero when using resistivity alone unless X_km is given); the drop is the arithmetic (R cos φ + X sin φ) form. (Standard engineering approximation.)
   A2. A mV/A/m figure is used as tabulated, with its own temperature and system convention. (Cable table convention.)
   A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. (BS 7671 Appendix 4 approach, formula only.)
-  A4. system (System) is taken as AC three-phase. (Sheet default value; no project figure given.)
-  A5. n_par (Parallel conductors per phase) is taken as 1. (Sheet default value; no project figure given.)
-  A6. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
-  A7. rho_20 (Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.01724 ohm*mm^2/m. (Sheet default value; no project figure given.)
-  A8. alpha (Temperature coefficient of resistance) is taken as 0.00393. (Sheet default value; no project figure given.)
-  A9. T_c (Conductor operating temperature for the resistance) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A10. X_km (Reactance per km per conductor) is taken as 0.08 ohm/km. (Sheet default value; no project figure given.)
-  A11. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
-  A12. T_rated (Conductor rated temperature) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A4. n_par (Parallel conductors per phase) is taken as 1. (Sheet default value; no project figure given.)
+  A5. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
+  A6. rho_20 (Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.01724 ohm*mm^2/m. (Sheet default value; no project figure given.)
+  A7. alpha (Temperature coefficient of resistance) is taken as 0.00393. (Sheet default value; no project figure given.)
+  A8. T_c (Conductor operating temperature for the resistance) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A9. X_km (Reactance per km per conductor) is taken as 0 ohm/km. (Sheet default value; no project figure given.)
+  A10. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
+  A11. T_rated (Conductor rated temperature) is taken as 70 degC. (Sheet default value; no project figure given.)
 
 4. WORKING
   [9] sin_phi = sqrt(1 - cos_phi^2)
@@ -600,35 +645,35 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
       = 0.34379 ohm
         Conductor resistance (one conductor, parallel paths combined)
   [17] X = X_km * L / n_par
-      = 0.08 ohm/km × 25 m / 1
-      = 0.002 ohm
+      = 0 ohm/km × 25 m / 1
+      = 0 ohm
         Conductor reactance
   [18] dV = sqrt(3) * I * (R * cos_phi + X * sin_phi)
-      = sqrt(3) × 4.255 A × (0.34379 ohm × 0.85 + 0.002 ohm × 0.52678)
-      = 2.1614 V
+      = sqrt(3) × 1.3727 A × (0.34379 ohm × 0.85 + 0 ohm × 0.52678)
+      = 0.6948 V
         Voltage drop
   [19] dV_pct = 100 * dV / V_n
-      = 100 × 2.1614 V / 400 V
-      = 0.54036
+      = 100 × 0.6948 V / 400 V
+      = 0.1737
         Voltage drop, per cent
   [20] P_loss = 3 * I^2 * R
-      = 3 × (4.255 A)^2 × 0.34379 ohm
-      = 18.673 W
+      = 3 × (1.3727 A)^2 × 0.34379 ohm
+      = 1.9435 W
         Conductor power loss
   [21] u_dv = dV_pct / dv_limit
-      = 0.54036 / 5
-      = 0.10807
+      = 0.1737 / 5
+      = 0.03474
         Drop utilisation against the limit
 
 5. RESULTS
   R = 0.34379 ohm    Resistance
-  X = 0.002 ohm    Reactance
-  dV = 2.1614 V    Voltage drop
-  dV_pct = 0.54036    Voltage drop (%)
-  P_loss = 18.673 W    Power loss
+  X = 0 ohm    Reactance
+  dV = 0.6948 V    Voltage drop
+  dV_pct = 0.1737    Voltage drop (%)
+  P_loss = 1.9435 W    Power loss
 
 6. CHECKS (governing first)
-  PASS  Voltage drop ≤ limit: u_dv = 0.10807 vs u_dv ≤ 1  utilisation 0.108  « BS 7671 525
+  PASS  Voltage drop ≤ limit: u_dv = 0.03474 vs u_dv ≤ 1  utilisation 0.0347  « BS 7671 525
 
 7. APPLICABILITY
   No warnings.
@@ -638,7 +683,7 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   Content hash: 3ed2f07610b34189
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 19:26 UTC
+  Test run: 2026-10-24 19:15 UTC
   Application: TempestOS test
 
 
@@ -652,7 +697,7 @@ Issued: 2026-10-24    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.
-Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); below 0.1 s the device's let-through I²t Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
+Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault (the line conductor check, reg. 434.5.2, needs it and is not made without it; the protective conductor check then uses I_f²·0.1 s at the end-of-line fault only) Device: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
   Ref: BS 7671:2018 (as amended) reg. 411.3.2.2, 411.3.2.3, 411.4.4 — Automatic disconnection in TN systems: times and the loop impedance condition
   Ref: BS 7671:2018 (as amended) reg. 543.1.3, 434.5.2 — Protective conductor and fault current adiabatic checks
   Ref: BS EN 60204-1:2018 cl. 6.3.3 — Protection by automatic disconnection of supply
@@ -666,7 +711,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   c_max | Voltage factor c for the maximum fault | 1.1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.1
   L | Circuit length | 25 | m | link: Cable and device rev A · L | 0.1 … 1000 m
   S_line | Line conductor cross-section | 1.5 | mm^2 | link: Cable and device rev A · CSA | 0.5 … 630 mm^2
-  S_cpc | Protective conductor cross-section | 2.5 | mm^2 | spec: SPEC-LINE-12 §6 (earthing and protection) | 0.5 … 630 mm^2
+  S_cpc | Protective conductor cross-section | 1.5 | mm^2 | spec: SPEC-LINE-12 §6 (earthing and protection) | 0.5 … 630 mm^2
   theta | Conductor temperature for Z_s | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
   rho_20 | Resistivity at 20 °C | 0.000017241 | ohm*mm | assumption: Sheet default value; no project figure given. | 0.000001 … 0.0001 ohm*mm
   alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 1/K
@@ -674,9 +719,11 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   beta | Reciprocal temperature coefficient β | 234.5 | K | assumption: Sheet default value; no project figure given. | 100 … 400 K
   theta_i | Initial temperature for the adiabatic check | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 250 degC
   theta_f | Final temperature for the adiabatic check | 160 | degC | assumption: Sheet default value; no project figure given. | 100 … 400 degC
-  device | Protective device | MCB type B (I_a = 5 I_n) |  | assumption: Sheet default value; no project figure given. | any
+  device | Protective device | MCB type C (I_a = 10 I_n) |  | spec: SPEC-LINE-12 §6 (earthing and protection) | any
   I_n | Rated current | 6 | A | link: Cable and device rev A · I_n | 1 … 1600 A
   t_req | Required disconnection time | 0.4 | s | spec: SPEC-LINE-12 §6 (earthing and protection) | 0.1 … 5 s
+  device_code | Device type code carried from the cable step (1 MCB type B, 2 type C, 3 type D, 4 fuse, MCCB or MPCB); the device chosen here must match it | 2 |  | link: Cable and device rev A · device_code | 1 … 4
+  I2t_let | Device let-through energy I²t at the maximum prospective fault (disconnection below 0.1 s) | 15000 | A^2*s | spec: SPEC-LINE-12 §6 (earthing and protection) | 1 … 1000000000 A^2*s
 
 3. ASSUMPTIONS
   A1. TN system, a single earth fault of negligible impedance; no motor contribution, arc fault or IT system. (Scope of the check.)
@@ -684,101 +731,106 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   A3. k is derived from the material constants and labelled derived; it is not read from a licensed table. (§A5.)
   A4. Fuse and MCCB characteristics are points the user reads off the manufacturer's curve (log-log interpolation; no extrapolation). (No time–current table ships.)
   A5. Optional field-test value 0.8 × Z_s,max is a rule of thumb for measurements at ambient temperature. (Labelled on the sheet.)
-  A6. C_min (Voltage factor C_min) is taken as 0.95. (Sheet default value; no project figure given.)
-  A7. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Sheet default value; no project figure given.)
-  A8. theta (Conductor temperature for Z_s) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A9. rho_20 (Resistivity at 20 °C) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
-  A10. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
-  A11. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
-  A12. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
-  A13. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A14. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
-  A15. device (Protective device) is taken as MCB type B (I_a = 5 I_n). (Sheet default value; no project figure given.)
+  A6. The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Green G-B-03.)
+  A7. C_min (Voltage factor C_min) is taken as 0.95. (Sheet default value; no project figure given.)
+  A8. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Sheet default value; no project figure given.)
+  A9. theta (Conductor temperature for Z_s) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A10. rho_20 (Resistivity at 20 °C) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
+  A11. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
+  A12. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
+  A13. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
+  A14. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A15. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
 
 4. WORKING
-  [18] R_12 = rho_20 * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))
-      = 0.000017241 ohm·mm × 25 m × (1 / 1.5 mm² + 1 / 2.5 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC))
-      = 0.5501 ohm
+  [19] R_12 = rho_20 * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))
+      = 0.000017241 ohm·mm × 25 m × (1 / 1.5 mm² + 1 / 1.5 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC))
+      = 0.68763 ohm
         R₁ + R₂ at the conductor temperature
-  [19] Z_s = Z_e + R_12    « BS 7671 reg. 411.4.4
-      = 0.35 ohm + 0.5501 ohm
-      = 0.9001 ohm
+  [20] Z_s = Z_e + R_12    « BS 7671 reg. 411.4.4
+      = 0.35 ohm + 0.68763 ohm
+      = 1.0376 ohm
         Earth fault loop impedance
-  [20] I_f = C_min * U_0 / Z_s
-      = 0.95 × 230 V / 0.9001 ohm
-      = 242.75 A
+  [21] I_f = C_min * U_0 / Z_s
+      = 0.95 × 230 V / 1.0376 ohm
+      = 210.58 A
         Earth fault current
-  [21] I_a = 5 * I_n    « BS EN 60898-1
-      = 5 × 6 A
-      = 30 A
-        Instantaneous tripping current (5 I_n)
-  [22] Z_s_max = C_min * U_0 / I_a    « BS 7671 reg. 411.4.4
-      = 0.95 × 230 V / 30 A
-      = 7.2833 ohm
+  [22] I_a = 10 * I_n    « BS EN 60898-1
+      = 10 × 6 A
+      = 60 A
+        Instantaneous tripping current (10 I_n)
+  [23] Z_s_max = C_min * U_0 / I_a    « BS 7671 reg. 411.4.4
+      = 0.95 × 230 V / 60 A
+      = 3.6417 ohm
         Maximum earth fault loop impedance
-  [23] u_Zs = Z_s / Z_s_max
-      = 0.9001 ohm / 7.2833 ohm
-      = 0.12358
+  [24] u_Zs = Z_s / Z_s_max
+      = 1.0376 ohm / 3.6417 ohm
+      = 0.28493
         Loop impedance utilisation
-  [24] Z_test = 0.8 * Z_s_max
-      = 0.8 × 7.2833 ohm
-      = 5.8267 ohm
+  [25] Z_test = 0.8 * Z_s_max
+      = 0.8 × 3.6417 ohm
+      = 2.9133 ohm
         Field-test maximum at ambient (0.8 × Z_s,max, rule of thumb)
-  [25] t_d = instantaneous region (I_f ≥ I_a): t ≤ 0.1 s
-      = I_f = 242.75 A
+  [26] t_d = instantaneous region (I_f ≥ I_a): t ≤ 0.1 s
+      = I_f = 210.58 A
       = 0.1 s
         Disconnection time
-  [26] I2t = I_f²·0.1 s (no let-through entered)
-      = 242.75² × 0.1
-      = 5892.8 A²·s
-        Fault energy (conservative)
-  [27] k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived)    « BS 7671 reg. 543.1.3
+  [28] I2t = device let-through I²t at the maximum prospective fault
+      = 15000 A²s
+      = 15000 A²·s
+        Fault energy (let-through below 0.1 s)
+  [29] k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived)    « BS 7671 reg. 543.1.3
       = √[0.00345 × 254.5 / 0.000017241 × ln(1 + 90/304.5)]
       = 114.84
         Adiabatic factor k, A·√s/mm² (derived, compare with the licensed table)
-  [28] S_min = √(I²t)/k    « BS 7671 reg. 543.1.3, 434.5.2
-      = √5892.8 / 114.84
-      = 0.66847 mm²
+  [30] S_min = √(I²t)/k    « BS 7671 reg. 543.1.3, 434.5.2
+      = √15000 / 114.84
+      = 1.0665 mm²
         Minimum conductor cross-section (adiabatic)
-  [29] u_cpc = S_min / S_cpc
-      = 0.66847 mm² / 2.5 mm²
-      = 0.26739
+  [31] u_cpc = S_min / S_cpc
+      = 1.0665 mm² / 1.5 mm²
+      = 0.71101
         Protective conductor utilisation
-  [30] u_line = S_min / S_line
-      = 0.66847 mm² / 1.5 mm²
-      = 0.44565
+  [32] u_line = S_min / S_line
+      = 1.0665 mm² / 1.5 mm²
+      = 0.71101
         Line conductor utilisation (same fault energy)
 
 5. RESULTS
-  R_12 = 0.5501 ohm    R₁ + R₂
-  Z_s = 0.9001 ohm    Loop impedance
-  I_f = 242.75 A    Earth fault current
-  I_a = 30 A    Disconnection current
+  R_12 = 0.68763 ohm    R₁ + R₂
+  Z_s = 1.0376 ohm    Loop impedance
+  I_f = 210.58 A    Earth fault current
+  I_a = 60 A    Disconnection current
   t_d = 0.1 s    Disconnection time
-  Z_s_max = 7.2833 ohm    Maximum loop impedance
-  u_Zs = 0.12358    Loop impedance utilisation
-  Z_test = 5.8267 ohm    Field-test maximum (rule of thumb)
+  Z_s_max = 3.6417 ohm    Maximum loop impedance
+  u_Zs = 0.28493    Loop impedance utilisation
+  Z_test = 2.9133 ohm    Field-test maximum (rule of thumb)
   k = 114.84    Adiabatic k (derived)
-  S_min = 0.66847 mm²    Minimum cross-section
-  u_cpc = 0.26739    Protective conductor utilisation
-  u_line = 0.44565    Line conductor utilisation
+  S_min = 1.0665 mm²    Minimum cross-section
+  u_cpc = 0.71101    Protective conductor utilisation
+  u_line = 0.71101    Line conductor utilisation
 
 6. CHECKS (governing first)
-  PASS  Line conductor against adiabatic minimum: u_line = 0.44565 vs u_line ≤ 1  utilisation 0.446  « BS 7671 reg. 434.5.2
-  PASS  Protective conductor against adiabatic minimum: u_cpc = 0.26739 vs u_cpc ≤ 1  utilisation 0.267  « BS 7671 reg. 543.1.3
-  PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.12358 vs u_Zs ≤ 1  utilisation 0.124  « BS 7671 reg. 411.4.4
-  PASS  Disconnection time within required: t_d = 0.1 s vs t_req = 0.4 s  utilisation 0  « BS 7671 reg. 411.3.2.2
+  PASS  Protective conductor against adiabatic minimum: u_cpc = 0.71101 vs u_cpc ≤ 1  utilisation 0.711  « BS 7671 reg. 543.1.3
+  PASS  Line conductor against adiabatic minimum: u_line = 0.71101 vs u_line ≤ 1  utilisation 0.711  « BS 7671 reg. 434.5.2
+  PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.28493 vs u_Zs ≤ 1  utilisation 0.285  « BS 7671 reg. 411.4.4
+  PASS  Disconnection time within required: 0.1 s vs 0.4 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
 
 7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: rho_20, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants). Enter each as one so its source, edition and licence travel with it.
-  WARNING let-through: I2t_let: disconnection is below 0.1 s and no let-through I²t is entered; I_f²·0.1 s is used, which is conservative.
+  WARNING record.rho_20: rho_20: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
+  WARNING record.alpha: alpha: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
+  WARNING record.Q_c: Q_c: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
+  WARNING record.beta: beta: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
+  WARNING record.theta_i: theta_i: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
+  WARNING record.theta_f: theta_f: a tabulated value not taken from a reference record (Conductor material constants); enter it as one so its source, edition and licence travel with it.
+  WARNING record.I2t_let: I2t_let: a tabulated value not taken from a reference record (Device time–current points); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.fault-protection@1.0.0
-  Content hash: a30e13d041ca175c
+  Template: elec.fault-protection@1.1.0
+  Content hash: 6b819300dd53bfaf
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 19:26 UTC
+  Test run: 2026-10-24 19:15 UTC
   Application: TempestOS test
 
 
@@ -802,12 +854,12 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   loads | Heat loads | 2 row(s) |  | drawing: DRG-LINE-120 rev B | any
   loads[1] |  | name = Servo drive; P = 60 W; qty = 1; duty = 1 |  |  | 
   loads[2] |  | name = Contactors, terminals and busbars; P = 20 W; qty = 1; duty = 1 |  |  | 
-  P_add | Additional heat load (linked from E6's dissipated heat or another calculation) | 105.173 | W | link: Load budget rev A · Phi | 0 … 100000 W
+  P_add | Additional heat load (linked from E6's dissipated heat or another calculation) | 140 | W | link: Load budget rev A · Phi | 0 … 100000 W
   I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m^2 | assumption: Sheet default value; no project figure given. | 0 … 1200 W/m^2
   A_sun | Sunlit area | 0 | m^2 | assumption: Sheet default value; no project figure given. | 0 … 100 m^2
   alpha_sun | Surface absorptivity | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   W | Enclosure width | 1 | m | drawing: DRG-LINE-120 rev B | 0.1 … 5 m
-  H | Enclosure height | 1 | m | drawing: DRG-LINE-120 rev B | 0.1 … 5 m
+  H | Enclosure height | 1.2 | m | drawing: DRG-LINE-120 rev B | 0.1 … 5 m
   D | Enclosure depth | 0.3 | m | drawing: DRG-LINE-120 rev B | 0.1 … 5 m
   f_top | Top exposure (1 free, 0 covered) | 1 |  | assumption: Sheet default value; no project figure given. | 0 … 1
   f_front | Front exposure | 1 |  | assumption: Sheet default value; no project figure given. | 0 … 1
@@ -850,35 +902,35 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
       = 0 W
         Solar gain
   [20] P_total = P_loads + P_add + P_solar
-      = 80 W + 105.17 W + 0 W
-      = 185.17 W
+      = 80 W + 140 W + 0 W
+      = 220 W
         Total heat to remove
   [21] A_eff = f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D    « IEC TR 60890 approach
-      = 1 × 1 m × 0.3 m + 0 × 1 m × 0.3 m + 1 × 1 m × 1 m + 0 × 1 m × 1 m + 1 × 1 m × 0.3 m + 1 × 1 m × 0.3 m
-      = 1.9 m²
+      = 1 × 1 m × 0.3 m + 0 × 1 m × 0.3 m + 1 × 1 m × 1.2 m + 0 × 1 m × 1.2 m + 1 × 1.2 m × 0.3 m + 1 × 1.2 m × 0.3 m
+      = 2.22 m²
         Effective dissipating surface
   [22] dT_nat = P_total / (h * A_eff)
-      = 185.17 W / (5.5 W/(m²·K) × 1.9 m²)
-      = 17.72 K
+      = 220 W / (5.5 W/(m²·K) × 2.22 m²)
+      = 18.018 K
         Temperature rise with natural dissipation
   [23] T_int = T_amb + dT_nat
-      = 35 degC + 17.72 K
-      = 52.72 degC
+      = 35 degC + 18.018 K
+      = 53.018 degC
         Internal temperature with natural dissipation
   [24] dT_allow = T_max - T_amb
       = 55 degC − 35 degC
       = 20 K
         Allowed rise
   [25] u_nat = dT_nat / dT_allow
-      = 17.72 K / 20 K
-      = 0.886
+      = 18.018 K / 20 K
+      = 0.9009
         Natural dissipation utilisation
   [26] P_nat_max = h * A_eff * dT_allow
-      = 5.5 W/(m²·K) × 1.9 m² × 20 K
-      = 209 W
+      = 5.5 W/(m²·K) × 2.22 m² × 20 K
+      = 244.2 W
         Heat the enclosure dissipates naturally at the limit
   [27] P_cool = max(0 W, P_total - P_nat_max)
-      = max(0 W, 185.17 W − 209 W)
+      = max(0 W, 220 W − 244.2 W)
       = 0 W
         Cooling-unit capacity needed if ventilation is not used
   [28] p_site = 101325 (1 − 2.25577e-5 z)^5.2559
@@ -890,30 +942,30 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
       = 1.1455 kg/m³
         Air density at ambient and altitude
   [30] V_req = P_total / (rho_air * 1006 J/(kg*K) * dT_allow)
-      = 185.17 W / (1.1455 kg/m³ × 1006 J/(kg*K) × 20 K)
-      = 28.924 m³/h
+      = 220 W / (1.1455 kg/m³ × 1006 J/(kg*K) × 20 K)
+      = 34.364 m³/h
         Airflow for forced ventilation at the allowed rise (natural dissipation neglected)
   [31] V_req_net = max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))
-      = max(0 m^3/h, (185.17 W − 209 W) / (1.1455 kg/m³ × 1006 J/(kg*K) × 20 K))
+      = max(0 m^3/h, (220 W − 244.2 W) / (1.1455 kg/m³ × 1006 J/(kg*K) × 20 K))
       = 0 m³/h
         Airflow crediting natural dissipation
 
 5. RESULTS
   P_loads = 80 W    Internal heat load
   P_solar = 0 W    Solar gain
-  P_total = 185.17 W    Total heat
-  A_eff = 1.9 m²    Effective surface
-  dT_nat = 17.72 K    Natural temperature rise
-  T_int = 52.72 degC    Internal temperature (natural)
-  P_nat_max = 209 W    Natural dissipation at the limit
+  P_total = 220 W    Total heat
+  A_eff = 2.22 m²    Effective surface
+  dT_nat = 18.018 K    Natural temperature rise
+  T_int = 53.018 degC    Internal temperature (natural)
+  P_nat_max = 244.2 W    Natural dissipation at the limit
   P_cool = 0 W    Cooling unit needed
   T_max = 55 degC    Internal temperature limit
   rho_air = 1.1455 kg/m³    Air density
-  V_req = 28.924 m³/h    Required airflow
+  V_req = 34.364 m³/h    Required airflow
   V_req_net = 0 m³/h    Required airflow (net)
 
 6. CHECKS (governing first)
-  PASS  Natural dissipation holds T_max: u_nat = 0.886 vs u_nat ≤ 1  utilisation 0.886
+  PASS  Natural dissipation holds T_max: u_nat = 0.9009 vs u_nat ≤ 1  utilisation 0.901
 
 7. APPLICABILITY
   No warnings.
@@ -923,5 +975,5 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   Content hash: 48cdd32546406349
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-24 19:26 UTC
+  Test run: 2026-10-24 19:15 UTC
   Application: TempestOS test

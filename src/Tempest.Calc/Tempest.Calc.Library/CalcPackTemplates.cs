@@ -34,9 +34,11 @@ public static class CalcPackTemplates
 
     /// <summary>
     /// Motor circuit: motor (E1) → load budget (E6) → cable (E4) → voltage drop (E3) and fault protection (E5) →
-    /// enclosure heat (E2). E1's peak power enters E6 as a linked load; E6's bus current sizes the cable; the cable's
-    /// size, length and device feed E3 and E5; E6's dissipated heat enters E2. The steps carry example inputs except E4's two record
-    /// tables, which no build ships: the chain is refused at E4 until the user supplies his own.
+    /// enclosure heat (E2). E1's RMS power (the thermal-equivalent continuous power, not the instantaneous peak) enters E6 as a linked
+    /// load; E6's bus current sizes the cable; the cable's size, length, rated current and device type code feed E3 and E5 (E5 is blocked
+    /// if the device chosen on it is not the one the cable step sized); E6's heat released inside the enclosure enters E2 (the linked
+    /// motor is outside it). The steps carry example inputs except E4's two record tables, which no build ships: the chain is refused at
+    /// E4 until the user supplies his own.
     /// </summary>
     public static CalcPackTemplate MotorCircuit { get; } = new(
         "pack.motor-circuit", "Motor circuit",
@@ -51,7 +53,7 @@ public static class CalcPackTemplates
             new CalcPackStep("e2", "elec.enclosure-heat", "Enclosure heat", CalcPackExamples.MotorE2),
         ],
         [
-            new CalcPackBinding("e1", "P_pk", "e6", "P_add"),
+            new CalcPackBinding("e1", "P_rms", "e6", "P_add"),
             new CalcPackBinding("e6", "I_3ph", "e4", "I_b_in"),
             new CalcPackBinding("e4", "I_b", "e3", "I"),
             new CalcPackBinding("e4", "L", "e3", "L"),
@@ -59,6 +61,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
+            new CalcPackBinding("e4", "device_code", "e5", "device_code"),
             new CalcPackBinding("e6", "Phi", "e2", "P_add"),
         ]);
 

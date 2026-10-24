@@ -66,13 +66,90 @@ public sealed class FaultProtectionTests
     }
 
     [Fact]
-    public void A_Let_Through_Energy_Replaces_The_Conservative_Estimate()
+    public void A_Let_Through_Energy_Replaces_The_End_Of_Line_Estimate()
     {
-        var conservative = CalcRunner.Run(Fault, Defaults());
-        Assert.Contains(conservative.Warnings, w => w.RuleId == "let-through");
+        var estimate = CalcRunner.Run(Fault, Defaults());
+        Assert.Contains(estimate.Warnings, w => w.RuleId == "let-through");
         var let = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("I2t_let", 2000, "A^2*s")));
-        Assert.True(let.OutputSi("S_min") < conservative.OutputSi("S_min"));
+        Assert.True(let.OutputSi("S_min") < estimate.OutputSi("S_min"));
         Assert.DoesNotContain(let.Warnings, w => w.RuleId == "let-through");
+    }
+
+    [Fact]
+    public void The_Line_Conductor_Is_Not_Checked_Against_The_End_Of_Line_Fault_Energy()
+    {
+        // Green G-B-03: with 1.5 mm2 line and CPC and no let-through value, I_f^2 * 0.1 s at the end-of-line (minimum) fault gave a
+        // line check of 0.45-0.5 "PASS". The line conductor (reg. 434.5.2) needs the let-through at the maximum prospective fault.
+        var withoutLet = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("S_line", 1.5, "mm^2")));
+        Assert.Null(withoutLet.FindOutput("u_line"));
+        Assert.DoesNotContain(withoutLet.Checks, c => c.Name.StartsWith("Line conductor", StringComparison.Ordinal));
+        Assert.Contains(withoutLet.Checks, c => c.Name.StartsWith("Protective conductor", StringComparison.Ordinal));
+        var warning = Assert.Single(withoutLet.Warnings, w => w.RuleId == "let-through");
+        Assert.Contains("line conductor check", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("conservative", warning.Message, StringComparison.OrdinalIgnoreCase);
+
+        // A let-through of 3e4 A2s at the maximum fault needs sqrt(3e4)/k = 1.5083 mm2: 1.5 mm2 fails, 2.5 mm2 passes.
+        var k = 114.83611;
+        var thin = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("S_line", 1.5, "mm^2")).With(CalcInputValue.Quantity("I2t_let", 3e4, "A^2*s")));
+        Assert.Equal(Math.Sqrt(3e4) / k / 1.5, thin.OutputSi("u_line"), 4);
+        Assert.Contains(thin.Checks, c => c.Name.StartsWith("Line conductor", StringComparison.Ordinal) && !c.Passed);
+        var thick = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("S_line", 2.5, "mm^2")).With(CalcInputValue.Quantity("I2t_let", 3e4, "A^2*s")));
+        Assert.Contains(thick.Checks, c => c.Name.StartsWith("Line conductor", StringComparison.Ordinal) && c.Passed);
+    }
+
+    [Fact]
+    public void The_Disconnection_Time_Check_Carries_A_Real_Ratio()
+    {
+        // Black B-A-14: the time check printed utilisation 0 whenever it passed. t_d = 0.1 s against t_req = 0.4 s is 0.25.
+        var r = CalcRunner.Run(Fault, Defaults());
+        var check = Assert.Single(r.Checks, c => c.Name == "Disconnection time within required");
+        Assert.Equal(0.25, check.Utilisation, 9);
+        Assert.True(check.Passed);
+        Assert.Equal("0.1 s", check.DemandText);
+        Assert.Equal("0.4 s", check.CapacityText);
+    }
+
+    [Theory]
+    [InlineData(1, FaultProtectionCalculator.McbB)]
+    [InlineData(2, FaultProtectionCalculator.McbC)]
+    [InlineData(3, FaultProtectionCalculator.McbD)]
+    [InlineData(4, FaultProtectionCalculator.Curve)]
+    public void A_Device_Carried_From_The_Cable_Step_Must_Be_The_Device_Chosen(int code, string device)
+    {
+        // Green G-B-01 / Black B-A-03: E4 sized a type C circuit, E5 silently checked type B and passed loop impedances up to twice the limit.
+        var inputs = Defaults().With(CalcInputValue.Of("device_code", code)).With(FaultProtectionCalculator.Points((5, 120), (0.4, 220), (0.1, 320), (0.01, 700)));
+        Assert.False(CalcRunner.Run(Fault, inputs.With(CalcInputValue.Choice("device", device))).IsBlocked);
+
+        foreach (var other in new[] { FaultProtectionCalculator.McbB, FaultProtectionCalculator.McbC, FaultProtectionCalculator.McbD, FaultProtectionCalculator.Curve }.Where(d => d != device))
+        {
+            var r = CalcRunner.Run(Fault, inputs.With(CalcInputValue.Choice("device", other)));
+            var block = Assert.Single(r.Blocks);
+            Assert.Equal("device", block.RuleId);
+            Assert.StartsWith("device:", block.Message, StringComparison.Ordinal);
+            Assert.Contains(device, block.Message, StringComparison.Ordinal);
+            Assert.Empty(r.Outputs);
+        }
+    }
+
+    [Fact]
+    public void A_Type_C_Device_Halves_The_Allowed_Loop_Impedance_Of_The_Type_B_Default()
+    {
+        // Same circuit, 150 m: the type B default passes with u_Zs 0.6145, the type C device E4 chose fails with 1.2290.
+        var circuit = Defaults().With(CalcInputValue.Quantity("L", 150, "m")).With(CalcInputValue.Quantity("I_n", 6, "A")).With(CalcInputValue.Quantity("S_line", 1.5, "mm^2")).With(CalcInputValue.Quantity("S_cpc", 1.5, "mm^2"));
+        var typeB = CalcRunner.Run(Fault, circuit.With(CalcInputValue.Choice("device", FaultProtectionCalculator.McbB)));
+        var typeC = CalcRunner.Run(Fault, circuit.With(CalcInputValue.Choice("device", FaultProtectionCalculator.McbC)));
+        Assert.Equal(2 * typeB.OutputSi("u_Zs"), typeC.OutputSi("u_Zs"), 9);
+        Assert.Contains(typeC.Checks, c => c.Name.StartsWith("Loop impedance", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(typeB.Checks, c => c.Name.StartsWith("Loop impedance", StringComparison.Ordinal) && c.Passed);
+    }
+
+    [Fact]
+    public void A_Fractional_Or_Out_Of_Range_Device_Code_Is_Refused()
+    {
+        Assert.Contains(CalcInputValidator.Validate(Fault.Template, Defaults().With(CalcInputValue.Of("device_code", 5))), n => n.Severity == CalcNoticeSeverity.Block);
+        Assert.Contains(CalcInputValidator.Validate(Fault.Template, Defaults().With(CalcInputValue.Of("device_code", 0))), n => n.Severity == CalcNoticeSeverity.Block);
+        var r = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Of("device_code", 1.5)));
+        Assert.Equal("device_code", Assert.Single(r.Blocks).RuleId);
     }
 
     [Fact]

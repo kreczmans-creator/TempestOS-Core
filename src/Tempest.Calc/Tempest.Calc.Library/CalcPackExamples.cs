@@ -74,12 +74,16 @@ internal static class CalcPackExamples
         C("mechanism", "lead / ball screw"), Q("p_screw", 10, "mm"), Q("m", 50, "kg"), N("mu", 0.1), N("s", 0.5), Q("t_move", 0.5, "s"),
     ];
 
+    /// <summary>
+    /// The panel's own loads: 24 V electronics and a fan inside the enclosure release all their input power as heat there (heat share 1); the
+    /// 24 V supply is fed from the single-phase bus. The axis motor arrives by link and is outside the enclosure (its heat share is 0).
+    /// </summary>
     public static IReadOnlyList<CalcInputValue> MotorE6 { get; } =
     [
         Table("loads",
-            CalcRow.Of(Txt("name", "24 V controls and I/O"), Txt("supply", "DC"), ("P", new CalcCell(0.18, "kW")), Num("cosphi", 1), Num("eta", 0.9), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false))),
-            CalcRow.Of(Txt("name", "Panel fan"), Txt("supply", "AC single-phase"), ("P", new CalcCell(0.04, "kW")), Num("cosphi", 0.9), Num("eta", 0.7), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)))),
-        N("cosphi_add", 0.85), N("eta_add", 0.97),
+            CalcRow.Of(Txt("name", "24 V controls and I/O"), Txt("supply", "DC"), ("P", new CalcCell(0.12, "kW")), Num("cosphi", 1), Num("eta", 0.9), Num("heat", 1), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false))),
+            CalcRow.Of(Txt("name", "Panel fan"), Txt("supply", "AC single-phase"), ("P", new CalcCell(0.02, "kW")), Num("cosphi", 0.9), Num("eta", 0.7), Num("heat", 1), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)))),
+        N("cosphi_add", 0.85), N("eta_add", 0.97), N("heat_add", 0), C("psu_bus", "AC single-phase"), N("eta_psu", 0.9),
     ];
 
     /// <summary>The cable (25 m, PVC, type C device, method C). The capacity and rating tables are NOT supplied: they are the user's own.</summary>
@@ -90,21 +94,25 @@ internal static class CalcPackExamples
 
     public static IReadOnlyList<CalcInputValue> MotorE3 { get; } =
     [
-        Q("V_n", 400, "V"), N("cos_phi", 0.85), Q("T_amb", 30, "degC"),
+        C("system", "AC three-phase"), Q("V_n", 400, "V"), N("cos_phi", 0.85), Q("T_amb", 30, "degC"),
     ];
 
+    /// <summary>
+    /// The device is the type C MCB the cable step sizes (the choice must agree with it or the step is blocked); the protective conductor is
+    /// the same size as the line conductor; the let-through energy is an invented figure for a small MCB, to be replaced from its datasheet.
+    /// </summary>
     public static IReadOnlyList<CalcInputValue> MotorE5 { get; } =
     [
-        Q("U_0", 230, "V"), Q("Z_e", 0.35, "ohm"), Q("S_cpc", 2.5, "mm^2"), Q("t_req", 0.4, "s"),
+        Q("U_0", 230, "V"), Q("Z_e", 0.35, "ohm"), Q("S_cpc", 1.5, "mm^2"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 1.5e4, "A^2*s"),
     ];
 
-    /// <summary>A 1000 × 1000 × 300 enclosure against a wall.</summary>
+    /// <summary>A 1000 × 1200 × 300 enclosure against a wall.</summary>
     public static IReadOnlyList<CalcInputValue> MotorE2 { get; } =
     [
         Table("loads",
             CalcRow.Of(Txt("name", "Servo drive"), ("P", new CalcCell(60, "W")), Num("qty", 1), Num("duty", 1)),
             CalcRow.Of(Txt("name", "Contactors, terminals and busbars"), ("P", new CalcCell(20, "W")), Num("qty", 1), Num("duty", 1))),
-        Q("W", 1.0, "m"), Q("H", 1.0, "m"), Q("D", 0.3, "m"), Q("T_amb", 35, "degC"), Q("T_max", 55, "degC"),
+        Q("W", 1.0, "m"), Q("H", 1.2, "m"), Q("D", 0.3, "m"), Q("T_amb", 35, "degC"), Q("T_max", 55, "degC"),
     ];
 
     // ---- Wet heating: two rooms to a circulator motor ------------------------------------------------------------------------
