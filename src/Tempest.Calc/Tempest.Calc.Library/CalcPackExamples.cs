@@ -72,6 +72,7 @@ internal static class CalcPackExamples
     public static IReadOnlyList<CalcInputValue> MotorE1 { get; } =
     [
         C("mechanism", "lead / ball screw"), Q("p_screw", 10, "mm"), Q("m", 50, "kg"), N("mu", 0.1), N("s", 0.5), Q("t_move", 0.5, "s"),
+        Q("n_max", 10000, "rpm"),
     ];
 
     /// <summary>
