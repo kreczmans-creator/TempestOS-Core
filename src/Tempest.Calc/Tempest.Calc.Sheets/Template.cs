@@ -40,7 +40,9 @@ public enum CalcInputKind
 /// <summary>
 /// One input of a template: what it is, what dimension it carries, its
 /// default and its soft and hard limits. Soft limits warn; hard limits
-/// block. Limits are in <see cref="DefaultUnit"/>.
+/// block. Limits are in <see cref="DefaultUnit"/>. <see cref="MaterialProperty"/> names the material property
+/// (<c>E</c>, <c>rho</c>, <c>f_y</c>, <c>E(T)</c>, …) this input takes from a <c>material.properties</c> record; the
+/// template also lists the input's symbol in a record kind of that name (Addendum B, W3).
 /// </summary>
 public sealed record CalcInputSpec(
     string Symbol,
@@ -57,7 +59,8 @@ public sealed record CalcInputSpec(
     bool IsOptional = false,
     string? Group = null,
     IReadOnlyList<CalcColumnSpec>? Columns = null,
-    int MaxRows = 500)
+    int MaxRows = 500,
+    string? MaterialProperty = null)
 {
     /// <summary>The dimension this input measures, from its default unit.</summary>
     public Dimension Dimension => Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? UnitCatalog.Parse(DefaultUnit).Dimension : Dimension.None;

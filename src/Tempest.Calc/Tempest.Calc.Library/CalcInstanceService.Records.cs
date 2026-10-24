@@ -35,6 +35,16 @@ public sealed partial class CalcInstanceService
         if (latest is not null && !string.Equals(latest.Kind, record.Kind, StringComparison.Ordinal))
             return (null, $"Record '{latest.Title}' is a {latest.Kind} record; a revision keeps its kind.");
 
+        // Addendum B, W3: a material's values carry their own source, are stamped with who entered them and when, and one licensed
+        // value makes the whole material licensed (the lock below then keeps it so).
+        if (MaterialLibrary.IsMaterial(record.Kind))
+        {
+            record = MaterialLibrary.Prepare(record, latest, record.EnteredBy, record.CreatedAt);
+
+            if ((record.Problem() ?? MaterialProperties.Problem(record)) is { } materialProblem)
+                return (null, materialProblem);
+        }
+
         // §A5: once licensed, always licensed — a revision cannot release values from the export lock (Opus review, finding 5).
         if (latest is { LicensedSource: true } && !record.LicensedSource)
             return (null, $"Record '{latest.Title}' holds values from a licensed source; its revisions stay licensed and are never exported.");
@@ -86,6 +96,10 @@ public sealed partial class CalcInstanceService
         var kinds = _catalogue.Get(templateReference).Template.RecordKinds ?? [];
         var list = new List<CalcDataRecord>();
 
+        // The generic starting materials are in the store before a template that takes materials asks for them.
+        if (kinds.Any(k => MaterialLibrary.IsMaterial(k.Kind)))
+            await Materials.EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
+
         foreach (var kind in kinds)
             list.AddRange(await _store.ListRecordsAsync(kind.Kind, cancellationToken).ConfigureAwait(false));
 
@@ -96,7 +110,11 @@ public sealed partial class CalcInstanceService
     /// Fills a draft's inputs from a reference record (its latest revision, or <paramref name="revision"/>): every value
     /// whose symbol the template's record kind lists, each with the record's pin and table or clause as its source.
     /// </summary>
-    public async Task<CalcActionResult> ApplyRecordAsync(Guid instanceId, Guid recordId, int? revision = null, CancellationToken cancellationToken = default)
+    public Task<CalcActionResult> ApplyRecordAsync(Guid instanceId, Guid recordId, int? revision = null, CancellationToken cancellationToken = default) =>
+        ApplyRecordCoreAsync(instanceId, recordId, revision, null, false, cancellationToken);
+
+    /// <summary>Applies a record; a material record is applied by property (and, if given, at a temperature) rather than by input symbol.</summary>
+    internal async Task<CalcActionResult> ApplyRecordCoreAsync(Guid instanceId, Guid recordId, int? revision, MaterialTemperature? at, bool singleValueAtAnyTemperature, CancellationToken cancellationToken)
     {
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
 
@@ -115,6 +133,12 @@ public sealed partial class CalcInstanceService
 
         if ((template.RecordKinds ?? []).FirstOrDefault(k => string.Equals(k.Kind, record.Kind, StringComparison.Ordinal)) is not { } kind)
             return CalcActionResult.Refused($"'{template.Title}' does not draw on {record.Kind} records.", instance);
+
+        if (MaterialLibrary.IsMaterial(record.Kind))
+            return await ApplyMaterialAsync(instance, record, template, kind, at, singleValueAtAnyTemperature, cancellationToken).ConfigureAwait(false);
+
+        if (at is not null)
+            return CalcActionResult.Refused($"Record '{record.Title}' is not a material; it has no temperature to read it at.", instance);
 
         var provenance = RecordProvenance(record);
         var inputs = instance.Inputs.ToList();
@@ -209,7 +233,7 @@ public sealed partial class CalcInstanceService
         return (sb.ToString(), null);
     }
 
-    private static string Csv(string text)
+    internal static string Csv(string text)
     {
         var clean = CalcCsv.IsFormulaLike(text) ? "'" + text : text;
         return clean.Contains(',', StringComparison.Ordinal) || clean.Contains('"', StringComparison.Ordinal) ? $"\"{clean.Replace("\"", "\"\"", StringComparison.Ordinal)}\"" : clean;

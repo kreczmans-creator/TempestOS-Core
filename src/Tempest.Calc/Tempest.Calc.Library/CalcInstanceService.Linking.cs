@@ -477,9 +477,15 @@ public sealed partial class CalcInstanceService
     /// <summary>Whether an input still holds the value of the record it cites (a number or quantity in SI, a text, or a table cell by cell).</summary>
     private static bool MatchesRecord(CalcInputValue input, CalcDataRecord record, CalcInputSpec? spec)
     {
-        if (record.Values.FirstOrDefault(v => string.Equals(v.Symbol, input.Symbol, StringComparison.Ordinal)) is not { } value)
-            return false;
+        // A material's values are under the property they give, not under the input that takes them (Addendum B, W3).
+        if (MaterialLibrary.IsMaterial(record.Kind))
+            return MatchesMaterial(input, record, spec);
 
+        return record.Values.FirstOrDefault(v => string.Equals(v.Symbol, input.Symbol, StringComparison.Ordinal)) is { } value && MatchesValue(input, value, spec);
+    }
+
+    private static bool MatchesValue(CalcInputValue input, CalcDataValue value, CalcInputSpec? spec)
+    {
         if (input.Rows is not null || value.Rows is not null)
         {
             if (input.Rows is not { } rows || value.Rows is not { } recorded || rows.Count != recorded.Count)

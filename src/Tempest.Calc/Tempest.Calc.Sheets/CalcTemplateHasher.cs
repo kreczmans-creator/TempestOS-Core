@@ -115,6 +115,10 @@ public static class CalcTemplateHasher
               .Append(N(i.Default)).Append('|').Append(N(i.Min)).Append('|').Append(N(i.Max)).Append('|').Append(N(i.HardMin)).Append('|').Append(N(i.HardMax)).Append('|')
               .Append(string.Join(",", i.Choices ?? [])).Append('|').Append(i.DefaultChoice).Append('|').Append(i.IsOptional).Append('\n');
 
+            // Addendum B, W3: only a template that maps an input to a material property changes its hash, so every earlier template keeps its hash.
+            if (i.MaterialProperty is { Length: > 0 } material)
+                sb.Append("  material=").Append(material).Append('\n');
+
             foreach (var c in i.Columns ?? [])
                 sb.Append("  column=").Append(c.Key).Append('|').Append(c.Label).Append('|').Append(c.Kind).Append('|').Append(c.DefaultUnit).Append('|').Append(string.Join(",", c.Choices ?? [])).Append('\n');
         }

@@ -91,6 +91,13 @@ public sealed partial class CalcInstanceService
 
     public CalcInstanceStore Store => _store;
 
+    private MaterialLibrary? _materials;
+
+    /// <summary>The material property library (Addendum B, W3), built on the reference records of this service.</summary>
+    public MaterialLibrary Materials => _materials ??= new MaterialLibrary(this);
+
+    internal TimeProvider Time => _time;
+
     // ------------------------------------------------------------------
     // Create, update, run
     // ------------------------------------------------------------------

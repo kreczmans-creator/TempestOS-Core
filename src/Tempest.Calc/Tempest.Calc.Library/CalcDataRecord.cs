@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Tempest.Calc.Sheets;
 
 namespace Tempest.Calc.Library;
@@ -13,10 +14,37 @@ public enum CalcDataOrigin
 
     /// <summary>One attributed manufacturer example set, shipped where the manufacturer's terms allow.</summary>
     ManufacturerExample,
+
+    /// <summary>A generic textbook value shipped as a starting point and flagged "indicative": never a standard's or a catalogue's table (Addendum B, §B5).</summary>
+    Indicative,
 }
 
-/// <summary>One value of a record: a number with its unit, a text or choice, or table rows, under the symbol of the calculator input it fills.</summary>
-public sealed record CalcDataValue(string Symbol, double? Number = null, string? Unit = null, string? Text = null, IReadOnlyList<CalcRow>? Rows = null);
+/// <summary>The licence class of one value (Addendum B, W3): freely shareable physics, or taken from a licensed source and so never exported.</summary>
+public enum CalcLicenceClass
+{
+    [JsonStringEnumMemberName("public")]
+    Public,
+
+    [JsonStringEnumMemberName("licensed_source")]
+    LicensedSource,
+}
+
+/// <summary>
+/// Where one value of a record comes from: the source, its edition, the page or table, the licence class, who entered it and
+/// when, and the SHA-256 (64 hex digits) of any evidence file attached to it. A value without a source cannot be saved in a
+/// material record.
+/// </summary>
+public sealed record CalcValueSource(
+    string Source,
+    string Edition,
+    string Reference,
+    CalcLicenceClass Licence,
+    string EnteredBy,
+    DateTimeOffset? Date = null,
+    string? EvidenceSha256 = null);
+
+/// <summary>One value of a record: a number with its unit, a text or choice, or table rows, under the symbol of the calculator input it fills (a material record's values are under the property they give). <paramref name="Source"/> is the value's own provenance, where the record's is not fine enough.</summary>
+public sealed record CalcDataValue(string Symbol, double? Number = null, string? Unit = null, string? Text = null, IReadOnlyList<CalcRow>? Rows = null, CalcValueSource? Source = null);
 
 /// <summary>
 /// A reference record (Addendum A, §A3): the tabulated values a calculation uses — ampacities, correction factors,
@@ -56,7 +84,7 @@ public sealed record CalcDataRecord(
 
     /// <summary>How the sheet cites it: title, edition, table or clause, and "derived" or "licensed" where it applies.</summary>
     public string Citation =>
-        $"{Title} — {SourceTitle}, {Edition}, {TableOrClause}{Origin switch { CalcDataOrigin.Derived => " (derived)", CalcDataOrigin.ManufacturerExample => " (manufacturer example)", _ => string.Empty }}{(LicensedSource ? " (licensed source)" : string.Empty)}";
+        $"{Title} — {SourceTitle}, {Edition}, {TableOrClause}{Origin switch { CalcDataOrigin.Derived => " (derived)", CalcDataOrigin.ManufacturerExample => " (manufacturer example)", CalcDataOrigin.Indicative => " (indicative)", _ => string.Empty }}{(LicensedSource ? " (licensed source)" : string.Empty)}";
 
     /// <summary>Why this record cannot be saved, or <see langword="null"/>.</summary>
     public string? Problem()
@@ -85,8 +113,15 @@ public sealed record CalcDataRecord(
         if (Values.Any(v => v.Rows?.Any(r => r is null || r.Cells.Count > MaxCellsPerRow || r.Cells.Values.Any(c => c is null || c.Text?.Length > MaxTextLength || c.Unit?.Length > MaxTextLength)) == true))
             return $"A row of a reference record holds at most {MaxCellsPerRow} cells of at most {MaxTextLength} characters.";
 
+        if (Values.Any(v => v.Source is { } s && (s.Source?.Length > MaxTextLength || s.Edition?.Length > MaxTextLength || s.Reference?.Length > MaxTextLength || s.EnteredBy?.Length > MaxTextLength
+                || (s.EvidenceSha256 is { } sha && !IsSha256(sha)))))
+            return $"A value's source texts are at most {MaxTextLength} characters, and its evidence hash is 64 hexadecimal digits (SHA-256).";
+
         return Values.Select(v => v.Symbol).Distinct(StringComparer.Ordinal).Count() == Values.Count ? null : "A reference record names a symbol twice.";
     }
+
+    /// <summary>Whether <paramref name="text"/> is a SHA-256 digest: 64 hexadecimal digits.</summary>
+    public static bool IsSha256(string text) => text is { Length: 64 } && text.All(Uri.IsHexDigit);
 
     /// <summary>The record a provenance pins (id and revision), or <see langword="null"/>.</summary>
     public static (Guid Id, int Revision)? PinOf(CalcProvenance? provenance) => CalcRecordPin.From(provenance);
