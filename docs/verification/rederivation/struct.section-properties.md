@@ -5,7 +5,8 @@ Verdict: MATCH WITH FINDINGS
 
 All 34 expected values of the 5 known-answer cases (KATs) match.
 The parametric shapes and the polygon mode agree with the independent script.
-One real defect sits in the composite mode: tube and hollow-rectangle parts give the wrong area and inertia.
+One Critical defect sits in the composite mode: tube and hollow-rectangle parts give the wrong area and inertia.
+The error is grossly unconservative and carries no warning.
 
 ## Method re-derived
 - Area and first and second moments of each closed loop by the shoelace form of Green's theorem. Holes carry a negative sign. Units: mm, mm², mm³, mm⁴.
@@ -119,18 +120,33 @@ Guard probes that behaved correctly: thickness at or above half the size (tube, 
 | Polygon validity | Simple outline, holes inside | Not checked; only a cryptic block appears | Partly, see -04 |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-struct.section-properties-01 | High | A tube or hollow-rectangle part in a composite gives a wrong section with no warning. Area is about 9.5 times too large for "add". | Composite, one tube d 200, t 10, add: A = 568.6 cm² (correct 59.69), I_xx = 13006 cm⁴ (correct 2701). SHS 100×100×5 as part: 180.3 cm² (correct 18.73). Rectangle 300 minus that tube: 331.4 cm² (correct 840.3). | SectionPropertiesCalculator.cs line 479: `subtract == l.IsHole ? ... : ...` flips hole loops of an added part. Use `new SectionLoop(moved.Vertices, subtract ? !l.IsHole : l.IsHole)`. Add a composite-tube KAT. |
-| P1-struct.section-properties-02 | Low | A channel whose root radius does not fit the flange gives a self-intersecting outline with no block. | Channel h 100, b 20, t 10, t_f 5, r 15. Here tw + r = 25 mm exceeds b = 20 mm. The sheet returns A = 11.97 cm². | Line 337: add `d.T + r > d.B` for the channel, as for the I-section and tee. |
-| P1-struct.section-properties-03 | Medium | J of channel, angle and tee ignores the root fillet. Channel is 4.3 % low and angle 8.9 % low against a finite-element value. The error is conservative and a warning appears. The sharp tee is 2.8 % high. | E2, E3, E4 above. FE reference uses the same outline as the sheet. | Add a fillet term for channel, tee and angle, or state the error size in the warning text. |
-| P1-struct.section-properties-04 | Low | A self-crossing polygon, or a hole outside the outline, ends in a cryptic engine block. The text is "sqrt of a negative number is undefined". | Vertices (0,0), (100,100), (100,0), (0,60) as one loop. Square outline 100 with a second loop at x 200–300. | Test the loops for crossing and containment. Report a geometry block with a clear message. |
-| P1-struct.section-properties-05 | Info | Circle and tube parts in a composite use a 360-chord polygon. Area is 5e-05 low and I is 1e-04 low. | E7f area differs by 5e-06 of the total. | No action needed. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-struct.section-properties-01 | High | Critical (upgraded). Every hollow part in a composite is wrong. A is about 9 times too large for common walls. An SHS with a cover plate is a routine built-up section. No warning appears. | A tube or hollow-rectangle part in a composite gives a wrong section with no warning. Area is about 9.5 times too large for "add". | Composite, one tube d 200, t 10, add: A = 568.6 cm² (correct 59.69), I_xx = 13006 cm⁴ (correct 2701). SHS 100×100×5 as part: 180.3 cm² (correct 18.73). Rectangle 300 minus that tube: 331.4 cm² (correct 840.3). | SectionPropertiesCalculator.cs line 479: `subtract == l.IsHole ? ... : ...` flips hole loops of an added part. Use `new SectionLoop(moved.Vertices, subtract ? !l.IsHole : l.IsHole)`. Add a composite-tube KAT. |
+| P1-struct.section-properties-R1 | Low | Low (new) | Overlapping "add" parts are counted twice with no check or warning. The assumptions state non-overlap only for polygon holes. | CompositeLoops sums every loop. A plate placed over a flange adds the shared area twice. | Add an assumption that added parts must not overlap. Warn when part bounding boxes overlap. |
+| P1-struct.section-properties-02 | Low | Low (confirmed). Only for a root radius larger than the flange outstand, which no rolled channel has. | A channel whose root radius does not fit the flange gives a self-intersecting outline with no block. | Channel h 100, b 20, t 10, t_f 5, r 15. Here tw + r = 25 mm exceeds b = 20 mm. The sheet returns A = 11.97 cm². | Line 337: add `d.T + r > d.B` for the channel, as for the I-section and tee. |
+| P1-struct.section-properties-03 | Medium | Medium (confirmed). Channel and angle errors are conservative and over 5 %. The tee error is 2.8 % unconservative. | J of channel, angle and tee ignores the root fillet. Channel is 4.3 % low and angle 8.9 % low against a finite-element value. The error is conservative and a warning appears. The sharp tee is 2.8 % high. | E2, E3, E4 above. FE reference uses the same outline as the sheet. | Add a fillet term for channel, tee and angle, or state the error size in the warning text. |
+| P1-struct.section-properties-04 | Low | Medium (upgraded). A hole outside the outline can also give a silent wrong result, not only a block. | A self-crossing polygon, or a hole outside the outline, ends in a cryptic engine block. The text is "sqrt of a negative number is undefined". | Vertices (0,0), (100,100), (100,0), (0,60) as one loop. Square outline 100 with a second loop at x 200–300. | Test the loops for crossing and containment. Report a geometry block with a clear message. Reviewer probe: square 100 outline with a 10 × 10 "hole" at x 200–210 runs with no notice and gives A = 99 cm². |
+| P1-struct.section-properties-05 | Info | Info (confirmed) | Circle and tube parts in a composite use a 360-chord polygon. Area is 5e-05 low and I is 1e-04 low. | E7f area differs by 5e-06 of the total. | No action needed. |
 
 ## Notes for the owner's manual test
 - UB 457×191×98 with h 467.2, b 192.8, t 11.4, t_f 19.6 and r 10.2 mm: expect A 125.3 cm² and I_xx 45,728 cm⁴.
 - The same UB gives W_pl_x 2,232 cm³, J 121.3 cm⁴ and I_w 1.176 dm⁶.
 - Composite with one tube (d 200, t 10): the sheet should show A 59.69 cm². The current build shows 568.6 cm². Use this to confirm finding -01.
+- Composite of SHS 150×150×8 (default corners) alone: expect A 44.75 cm². The current build shows 402.8 cm².
 - Rectangle 100×200: J should be 4,573.6 cm⁴. Roark's table coefficient 0.229 gives 4,580 cm⁴.
 - Angle 100×75×10, r 12: compare J with the Blue Book table value. Expect the sheet to be about 9 % below an exact torsion value.
 - The template lists r = 10.2 mm as the default. If the form fills it in, clear r for a hollow rectangle. Otherwise the corner radius is not 1.5 t.
+
+## Independent review
+- Reviewer: senior verification reviewer (Claude), 2026-10-24.
+- The script builds its own loops and integrals. It runs with exit 0 in about 16 s.
+- The script's rolled-I torsion uses the same El Darwish–Johnston regression as the C#. Only its finite-element route is independent for that J.
+- I reproduced -01 with the probe. One tube d 200, t 10 gives A 568.6 cm² and I_xx 13,006 cm⁴. A 300 square minus that tube gives 331.4 cm².
+- Cause of -01: line 479 turns a hole into a solid for "add" and keeps it a hole for "subtract". Both are backwards.
+- A realistic case also fails. SHS 150×150×8 plus a 200×10 plate gives A 422.8 cm² instead of 64.75 cm².
+- I raised -01 to Critical because the error is large, unconservative and silent in normal composite use.
+- I raised -04 to Medium after a hole outside the outline ran silently.
+- New finding R1 (Low): overlapping added parts double count with no warning.
+- I read Run, TryPrimitive, PrimitiveTorsion, CompositeLoops, Shapes and PolygonSection line by line. The principal angle sign and the plastic clipping are correct.
+- Residual doubt: the composite fix needs a KAT with a tube part and a subtracted tube. Track S should add both.

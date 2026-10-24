@@ -66,12 +66,12 @@ The script compares all eight envelope values (E_d, E_k, E_fr, E_qp, max and min
 | Default ψ | Recommended; UK NA differs | Recommended, stated in assumption A7 | See -02 |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-struct.load-combinations-01 | Low | The default ξ is 0.85 (EN recommended). The UK NA value is 0.925. A UK user who leaves ξ at the default gets a lower 6.10b result. The warning says "template default"; it does not say "EN recommended, not UK NA". | G 18, B office 10 kN/m, 6.10a/b: default gives 35.655 kN/m. The UK NA ξ gives 37.478 kN/m. The default is 4.9 % lower. | Add a factor-set choice (UK NA or EN recommended). It should fill γ_G, γ_Q, ξ and ψ, and print the set name on the sheet. |
-| P1-struct.load-combinations-02 | Low | The recommended ψ_0 values differ from the UK NA for roofs (category H) and wind. As I recall the NA, roofs are 0.7 and wind is 0.5. Please check Table NA.A1.1. A UK user who relies on the default set gets different results. | G 10, wind 6, roof imposed 4 kN, 6.10: recommended set gives 24.9 kN. The recalled UK values give 26.7 kN. | Label the default ψ set on the sheet as "EN 1990 recommended, not UK NA". Ship the UK set as a selectable record. |
-| P1-struct.load-combinations-03 | Info | K_FI multiplies γ_Q only, as the spec says. I could not confirm from memory whether EN 1990 Annex B Table B3 or the UK NA also applies K_FI to unfavourable permanent actions. | Source line: gQ * kfi in all ULS terms; permanent terms use γ_G only. | Owner to confirm against Annex B and the NA. Change the spec text if K_FI also applies to γ_G. |
-| P1-struct.load-combinations-04 | Info | The worked example office-floor-beam-uk-na says the ψ set equals the UK NA for category B. That is true. It is not true for categories H and wind (see -02). | Example text in StructuralWorkedExamples.cs. | Narrow the wording to "category B". |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-struct.load-combinations-01 | Low | Medium (upgraded: correct for the declared EN set, but up to 5.6 % unconservative for a UK user; the member sheet defaults to UK NA, this one does not) | The default ξ is 0.85 (EN recommended). The UK NA value is 0.925. A UK user who leaves ξ at the default gets a lower 6.10b result. The warning says "template default"; it does not say "EN recommended, not UK NA". | G 18, B office 10 kN/m, 6.10a/b: default gives 35.655 kN/m. The UK NA ξ gives 37.478 kN/m. The default is 4.9 % lower. | Add a factor-set choice (UK NA or EN recommended). It should fill γ_G, γ_Q, ξ and ψ, and print the set name on the sheet. |
+| P1-struct.load-combinations-02 | Low | Medium (upgraded: 7 % unconservative in the example; the sheet does label the set as recommended; UK NA values from memory, owner to confirm against licensed copy) | The recommended ψ_0 values differ from the UK NA for roofs (category H) and wind. As I recall the NA, roofs are 0.7 and wind is 0.5. Please check Table NA.A1.1. A UK user who relies on the default set gets different results. | G 10, wind 6, roof imposed 4 kN, 6.10: recommended set gives 24.9 kN. The recalled UK values give 26.7 kN. | Label the default ψ set on the sheet as "EN 1990 recommended, not UK NA". Ship the UK set as a selectable record. |
+| P1-struct.load-combinations-03 | Info | Medium (upgraded: my reading of Annex B is that K_FI multiplies γ_F of all unfavourable actions, permanent included; then ULS is about 6 % low at K_FI 1.1; owner to confirm against licensed copy) | K_FI multiplies γ_Q only, as the spec says. I could not confirm from memory whether EN 1990 Annex B Table B3 or the UK NA also applies K_FI to unfavourable permanent actions. | Source line: gQ * kfi in all ULS terms; permanent terms use γ_G only. | Owner to confirm against Annex B and the NA. Change the spec text if K_FI also applies to γ_G. |
+| P1-struct.load-combinations-04 | Info | Info (confirmed) | The worked example office-floor-beam-uk-na says the ψ set equals the UK NA for category B. That is true. It is not true for categories H and wind (see -02). | Example text in StructuralWorkedExamples.cs. | Narrow the wording to "category B". |
 
 ## Notes for the owner's manual test
 - Enter G 10 kN and B office 5 kN, 6.10: expect E_d_max 21, E_k 15, E_fr 12.5, E_qp 11.5 kN.
@@ -79,3 +79,14 @@ The script compares all eight envelope values (E_d, E_k, E_fr, E_qp, max and min
 - Enter G 10 kN down and wind -20 kN: expect E_d_min -20 kN and E_d_max 13.5 kN.
 - Add a second permanent row of opposite sign (G -3 kN) and check that it takes γ_G,inf in the maximum and γ_G,sup in the minimum.
 - Add an accidental row (+30 kN) and check E_acc_max uses ψ_1 for the leading variable and ψ_2 for the others.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- The script is an independent Python enumeration of the combinations. It is not a port. I re-ran it: TOTAL FAILS 0, exit 0.
+- I read Run line by line. The combination logic, ξ placement, sign tests and accidental loop are correct.
+- I checked the recommended ψ table row by row. It matches Table A1.1.
+- A blank category cell is blocked by the validator, so the `?? Permanent` fallback cannot be reached from the sheet.
+- No finding is Critical or High. Three move from Low or Info to Medium.
+- -01 and -02: the defaults are right for the EN set but unconservative for UK users. A named factor-set choice fixes both.
+- -03: with K_FI 1.1, G 20 and Q 9 (6.10a/b), the sheet gives 37.8. K_FI on γ_G too gives 40.1.
+- Residual doubt: UK NA ψ values and the K_FI scope come from memory. The owner should confirm them.
