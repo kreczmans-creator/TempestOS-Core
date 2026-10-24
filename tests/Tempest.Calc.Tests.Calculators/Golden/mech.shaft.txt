@@ -40,6 +40,7 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   A2. No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound. (Shigley 11th ed. §7-6.)
   A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (§A5.)
   A4. At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises. (Shigley 11th ed. §6-9, §7-4.)
+  A5. Loads, sections and steps closer together than 1/200 of the shaft length share one node. (Keeps the beam model well conditioned.)
 
 4. WORKING
   [17] R_A = √(R_A,y² + R_A,z²)

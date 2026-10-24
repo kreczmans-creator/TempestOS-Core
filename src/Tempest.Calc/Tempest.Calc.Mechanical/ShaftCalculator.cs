@@ -85,6 +85,7 @@ public sealed class ShaftCalculator : ICalcCalculator
             new CalcAssumption("No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound.", "Shigley 11th ed. §7-6."),
             new CalcAssumption("K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced.", "§A5."),
             new CalcAssumption("At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises.", "Shigley 11th ed. §6-9, §7-4."),
+            new CalcAssumption("Loads, sections and steps closer together than 1/200 of the shaft length share one node.", "Keeps the beam model well conditioned."),
         ],
         [
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "11th ed., Ch. 6 (§6-9 Marin factors), Ch. 7 (§7-4 to §7-7)", "Fatigue, shaft stresses, deflection, critical speeds, keys"),
@@ -152,6 +153,18 @@ public sealed class ShaftCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        try
+        {
+            RunCore(c);
+        }
+        catch (FrameModelException ex)
+        {
+            c.Block("geometry", "segments: the shaft model could not be solved: " + ex.Message);
+        }
+    }
+
+    private void RunCore(CalcRunContext c)
+    {
         foreach (var s in new[] { "x_A", "x_B", "T", "x_T1", "x_T2", "n", "S_ut", "S_y", "E", "rho", "R", "k_d", "k_f", "n_target", "theta_max", "y_max" })
             c.Input(s);
 
@@ -199,13 +212,25 @@ public sealed class ShaftCalculator : ICalcCalculator
         foreach (var x in segments.Select(s => s.X1).Concat(loads.Select(l => l.X)).Concat(sections.Select(s => s.X)).Where(x => x <= length))
             features.Add(x);
 
+        // Features closer than L/200 share a node (the ends and bearings first), so no element is vanishingly short.
         var xs = new List<double>();
-        var featureList = features.Where(x => x >= 0 && x <= length).ToList();
+        var featureList = new List<double>();
+
+        foreach (var x in new[] { 0, length, xa, xb }.Concat(features).Where(x => x >= 0 && x <= length))
+        {
+            if (featureList.All(f => Math.Abs(f - x) >= length / 200))
+                featureList.Add(x);
+        }
+
+        featureList.Sort();
 
         for (var i = 0; i < featureList.Count - 1; i++)
         {
-            for (var k = 0; k < Divisions; k++)
-                xs.Add(featureList[i] + (featureList[i + 1] - featureList[i]) * k / Divisions);
+            // Short intervals are not subdivided, so no element is needlessly tiny beside a long one.
+            var parts = featureList[i + 1] - featureList[i] < length / 100 ? 1 : Divisions;
+
+            for (var k = 0; k < parts; k++)
+                xs.Add(featureList[i] + (featureList[i + 1] - featureList[i]) * k / parts);
         }
 
         xs.Add(length);
@@ -215,11 +240,14 @@ public sealed class ShaftCalculator : ICalcCalculator
 
         for (var i = 0; i < xs.Count - 1; i++)
         {
+            // Axial stiffness plays no part (no axial load, pinned at A): the area is scaled so EA/ℓ matches 12EI/ℓ³,
+            // which keeps the stiffness matrix well conditioned when a short element sits beside long ones.
             var seg = SegmentAt(segments, (xs[i] + xs[i + 1]) / 2);
-            elements.Add(new FrameElement(i + 1, i + 1, i + 2, e, seg.Area, seg.I, false, false));
+            var span = xs[i + 1] - xs[i];
+            elements.Add(new FrameElement(i + 1, i + 1, i + 2, e, 12 * seg.I / (span * span), seg.I, false, false));
         }
 
-        int NodeAt(double x) => xs.FindIndex(v => Math.Abs(v - x) < 1e-9) + 1;
+        int NodeAt(double x) => xs.Select((v, i) => (D: Math.Abs(v - x), I: i)).MinBy(p => p.D).I + 1;
         var nodeA = NodeAt(xa);
         var nodeB = NodeAt(xb);
         var nodes = xs.Select((x, i) => new FrameNode(i + 1, x, 0, i + 1 == nodeA, i + 1 == nodeA || i + 1 == nodeB, false)).ToList();

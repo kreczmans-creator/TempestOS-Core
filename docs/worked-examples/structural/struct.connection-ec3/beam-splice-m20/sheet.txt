@@ -1,0 +1,149 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: beam-splice-m20    Revision: A
+Title: Bolts and fillet welds (EN 1993-1-8)
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.
+Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bearing: F_b,Rd = k₁·α_b·f_u·d·t/γ_M2; α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5) Tension: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2; combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
+  Ref: EN 1993-1-8:2005 cl. 3.5, Table 3.3 — Positioning of holes for bolts
+  Ref: EN 1993-1-8:2005 cl. 3.6.1, Table 3.4 — Design resistance of individual fasteners
+  Ref: EN 1993-1-8:2005 cl. 3.10.2 — Block tearing
+  Ref: EN 1993-1-8:2005 cl. 4.5.3.2, 4.5.3.3, Table 4.1 — Fillet welds: directional and simplified methods; correlation factor
+  Ref: ISO 898-1:2013 cl. 9.1 — Nominal stress area (formula)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  grade | Bolt property class | 8.8 |  | drawing: SPL-001 rev B | any
+  size | Bolt size | M20 |  | drawing: SPL-001 rev B | any
+  n_s | Shear planes | 2 |  | drawing: SPL-001 rev B | 1 … 4
+  threads | Threads in the shear plane | yes |  | assumption: Threads may lie in the shear planes (short bolts). | any
+  steel | Plate steel grade (β_w) | S275 |  | drawing: SPL-001 rev B | any
+  t | Plate thickness | 10 | mm | drawing: SPL-001 rev B | 3 … 50 mm
+  f_y | Plate yield strength | 275 | MPa | spec: EN 10025-2 S275, t ≤ 16 mm | 235 … 460 MPa
+  f_u | Plate ultimate strength | 410 | MPa | spec: EN 10025-2 S275, 3 ≤ t ≤ 100 mm | 340 … 720 MPa
+  e_1 | End distance (load direction) | 40 | mm | drawing: SPL-001 rev B | 10 … 500 mm
+  e_2 | Edge distance (across the load) | 35 | mm | drawing: SPL-001 rev B | 10 … 500 mm
+  p_1 | Pitch (load direction; blank: one row) | 70 | mm | drawing: SPL-001 rev B | 20 … 1000 mm
+  k_e1 | Minimum e₁/d₀ | 1.2 |  | spec: EN 1993-1-8 Table 3.3 | 1 … 3
+  k_e2 | Minimum e₂/d₀ | 1.2 |  | spec: EN 1993-1-8 Table 3.3 | 1 … 3
+  k_p1 | Minimum p₁/d₀ | 2.2 |  | spec: EN 1993-1-8 Table 3.3 | 2 … 4
+  k_p2 | Minimum p₂/d₀ | 2.4 |  | spec: EN 1993-1-8 Table 3.3 | 2 … 4
+  gamma_M2 | γ_M2 | 1.25 |  | spec: UK NA to BS EN 1993-1-8, NA.2.3 | 1.1 … 1.5
+  gamma_M0 | γ_M0 | 1 |  | spec: UK NA to BS EN 1993-1-1, NA.2.15 | 1 … 1.2
+  F_v_Ed | Shear per bolt | 55 | kN | assumption: Governing bolt from the bolt-group calculation (M3). | 0 … 2000 kN
+  F_t_Ed | Tension per bolt | 0 | kN | assumption: No tension. | 0 … 2000 kN
+
+3. ASSUMPTIONS
+  A1. Static loading; category A (bearing type) shear and category D (non-preloaded) tension; no slip-resistant joints or moment end plates. (Scope of S4.)
+  A2. Bearing is taken at the worst of an end bolt and an inner bolt, and at an edge bolt across the load (k₁ with e₂ and p₂). (Conservative for every bolt in the group.)
+  A3. Spacing minima (Table 3.3) and γ_M factors are entered from a National Annex record; the values shown default to EN 1993-1-8 recommended. (§A5 small factor set.)
+  A4. Group forces come from M3 and weld forces per length from M6 by link. (§A6 S4 links.)
+  A5. threads (Threads in the shear plane) is taken as yes. (Threads may lie in the shear planes (short bolts).)
+  A6. F_v_Ed (Shear per bolt) is taken as 55 kN. (Governing bolt from the bolt-group calculation (M3).)
+  A7. F_t_Ed (Tension per bolt) is taken as 0 kN. (No tension.)
+
+4. WORKING
+  [19] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
+      = class 8.8
+      = 800 MPa
+        Bolt ultimate strength
+  [20] f_yb = f_ub × second figure / 10    « EN 1993-1-8 Table 3.1
+      = class 8.8
+      = 640 MPa
+        Bolt yield strength
+  [21] A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P    « ISO 898-1 cl. 9.1
+      = d = 20, P = 2.5 mm
+      = 244.79 mm²
+        Tensile stress area
+  [22] d_0 = d + 2 (≤ M24), d + 3 (≥ M27) unless entered
+      = 22 mm
+      = 22 mm
+        Hole diameter
+  [23] alpha_v = α_v (threads in the shear plane)    « EN 1993-1-8 Table 3.4
+      = class 8.8
+      = 0.6
+        Shear factor
+  [24] F_v_Rd = α_v·f_ub·A·n_s/γ_M2    « EN 1993-1-8 Table 3.4
+      = 0.6 × 800 × 244.79 × 2 / 1.25
+      = 188 kN
+        Shear resistance per bolt
+  [25] alpha_b = min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)    « EN 1993-1-8 Table 3.4
+      = min(0.60606, 0.81061, 1.9512, 1)
+      = 0.60606
+        Bearing factor α_b
+  [26] k_1 = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)    « EN 1993-1-8 Table 3.4
+      = e₂ = 35, p₂ = —, d₀ = 22
+      = 2.5
+        Bearing factor k₁
+  [27] F_b_Rd = k₁·α_b·f_u·d·t/γ_M2    « EN 1993-1-8 Table 3.4
+      = 2.5 × 0.60606 × 410 × 20 × 10 / 1.25
+      = 99.394 kN
+        Bearing resistance per bolt
+  [28] F_t_Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9    « EN 1993-1-8 Table 3.4
+      = 0.9 × 800 × 244.79 / 1.25
+      = 141 kN
+        Tension resistance per bolt
+  [29] B_p_Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2    « EN 1993-1-8 Table 3.4
+      = 0.6π × 32.321 × 10 × 410 / 1.25
+      = 199.83 kN
+        Punching shear resistance
+  [30] u_v = F_v_Ed / F_v_Rd
+      = 55 kN / 188 kN
+      = 0.29255
+        Shear utilisation
+  [31] u_b = F_v_Ed / F_b_Rd
+      = 55 kN / 99.394 kN
+      = 0.55335
+        Bearing utilisation
+  [32] u_t = F_t_Ed / min(F_t_Rd, B_p_Rd)
+      = 0 kN / min(141 kN, 199.83 kN)
+      = 0
+        Tension utilisation (tension or punching)
+  [33] u_vt = F_v_Ed / F_v_Rd + F_t_Ed / (1.4 * F_t_Rd)    « EN 1993-1-8 Table 3.4
+      = 55 kN / 188 kN + 0 kN / (1.4 × 141 kN)
+      = 0.29255
+        Combined shear and tension
+
+5. RESULTS
+  f_ub = 800 MPa    Bolt ultimate strength
+  A_s = 244.79 mm²    Stress area
+  alpha_v = 0.6    Shear factor
+  F_v_Rd = 188 kN    Shear resistance
+  alpha_b = 0.60606    Bearing factor
+  k_1 = 2.5    Bearing factor k₁
+  F_b_Rd = 99.394 kN    Bearing resistance
+  F_t_Rd = 141 kN    Tension resistance
+  B_p_Rd = 199.83 kN    Punching resistance
+  u_v = 0.29255    Shear utilisation
+  u_b = 0.55335    Bearing utilisation
+  u_t = 0    Tension utilisation
+  u_vt = 0.29255    Combined utilisation
+  governing = "bearing (0.553)"    Governing bolt mode
+
+6. CHECKS (governing first)
+  PASS  Bolt bearing: u_b = 0.55335 vs u_b ≤ 1  utilisation 0.553  « EN 1993-1-8 Table 3.4
+  PASS  Bolt shear: u_v = 0.29255 vs u_v ≤ 1  utilisation 0.293  « EN 1993-1-8 Table 3.4
+  PASS  Combined shear and tension: u_vt = 0.29255 vs u_vt ≤ 1  utilisation 0.293  « EN 1993-1-8 Table 3.4
+  PASS  Bolt tension and punching: u_t = 0 vs u_t ≤ 1  utilisation 0  « EN 1993-1-8 Table 3.4
+  PASS  Spacing and edge distances (Table 3.3 minima): e₁ 40, e₂ 35, p₁ 70, p₂ — mm vs ≥ 26.4, 26.4, 48.4, 52.8 mm  utilisation 0  « EN 1993-1-8 Table 3.3
+
+7. APPLICABILITY
+  WARNING record.gamma_M2: gamma_M2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.gamma_M0: gamma_M0: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_e1: k_e1: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_e2: k_e2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_p1: k_p1: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.k_p2: k_p2: a tabulated value not taken from a reference record (EN 1993-1-8 National Annex factors); enter it as one so its source, edition and licence travel with it.
+  WARNING record.f_y: f_y: a tabulated value not taken from a reference record (Plate strengths); enter it as one so its source, edition and licence travel with it.
+  WARNING record.f_u: f_u: a tabulated value not taken from a reference record (Plate strengths); enter it as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: struct.connection-ec3@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 5/5
+  Test run: —
