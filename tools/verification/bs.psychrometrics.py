@@ -312,6 +312,13 @@ def extras():
     row("probe l mixing fog", "t_2 (C)", 17.7133804, m["t"], 1e-6)
     row("probe l mixing fog", "RH_2 nominal (%)", 116.8475261, state(m["t"], p0, W=m["W"])["RH"], 1e-6)
 
+    # --- dry-air limit: the product blocks when the dew point is below -60 C (probes h, h2)
+    w_thr = W_from_pw(pws_ice(-60), p0) * 1000
+    row("probe h2 dry-air limit", "W at t_dp = -60 C (g/kg)", 0.0066, w_thr, 0.02, "product: W = 0.01 ok, W = 0.0066 blocked")
+    finding("probe h2 dry-air limit", "dew point of dry air W = 0 (C)", -60.0, float("-inf"), "P1-bs.psychrometrics-02")
+    # --- evaporative RH_2 reach: product accepts 98.8 %, blocks 99.0 % (30 C, 30 % entering)
+    row("probe k3 RH_2 reach", "max RH_2 on constant-h line (%)", 98.875, top, 1e-3, "product: 98.8 ok, 99.0 blocked")
+
     # --- KAT input consistency (finding 05): RH_b = 46.93 % gives W_b = 4.952 g/kg, not 5.000
     sb = state(15, p0, rh=46.93)
     finding("ka-mixing input check", "W_b (g/kg) KAT text vs RH_b=46.93 %", 5.0, sb["W"] * 1000, "P1-bs.psychrometrics-05")
