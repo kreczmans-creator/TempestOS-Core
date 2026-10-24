@@ -253,6 +253,18 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
+      "tempest.calc.buildingservices": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
+      "tempest.calc.electrical": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.calc.engine": {
         "type": "Project"
       },
@@ -266,7 +278,8 @@
       "tempest.calc.mechanical": {
         "type": "Project",
         "dependencies": {
-          "Tempest.Calc.Sheets": "[0.26.0, )"
+          "Tempest.Calc.Sheets": "[0.26.0, )",
+          "Tempest.Calc.Structural": "[0.26.0, )"
         }
       },
       "tempest.calc.sheets": {

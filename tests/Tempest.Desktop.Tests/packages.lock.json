@@ -562,7 +562,8 @@
       "tempest.calc.mechanical": {
         "type": "Project",
         "dependencies": {
-          "Tempest.Calc.Sheets": "[0.26.0, )"
+          "Tempest.Calc.Sheets": "[0.26.0, )",
+          "Tempest.Calc.Structural": "[0.26.0, )"
         }
       },
       "tempest.calc.sheets": {

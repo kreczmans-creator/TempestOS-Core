@@ -1,0 +1,124 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: bracket-c-weld    Revision: A
+Title: Weld group (elastic line method)
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+A group of straight fillet welds in a plane under in-plane forces (with eccentricity, so torsion), an out-of-plane force and out-of-plane moments: the resultant force per unit length at every weld end, the critical point, the throat stress against the design strength and the leg size required.
+Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, J_u = I_ux + I_uy Torsion about the centroid: T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + M_x·y′/I_ux + M_y·x′/I_uy; vector sum f_r Throat: a = 0.707·s, τ = f_r,max/a; required leg s_req = f_r,max/(0.707·f_w)
+  Ref: Shigley's Mechanical Engineering Design 11th ed., Ch. 9, Tables 9-1 and 9-2 — Welds treated as lines: torsional and bending properties
+  Ref: Blodgett, Design of Welded Structures 1966, §7.4 — Treating the weld as a line
+  Ref: EN 1993-1-8:2005 cl. 4.5.3.3 — Simplified method for design resistance of fillet welds (resistance input)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  welds | Weld lines | 3 row(s) |  | drawing: BRK-010 rev A | any
+  welds[1] |  | x1 = 0 mm; y1 = 0 mm; x2 = 80 mm; y2 = 0 mm |  |  | 
+  welds[2] |  | x1 = 0 mm; y1 = 0 mm; x2 = 0 mm; y2 = 200 mm |  |  | 
+  welds[3] |  | x1 = 0 mm; y1 = 200 mm; x2 = 80 mm; y2 = 200 mm |  |  | 
+  s | Fillet leg | 8 | mm | drawing: BRK-010 rev A | 3 … 25 mm
+  f_w | Design strength of the throat | 220 | MPa | assumption: S275, EN 1993-1-8 simplified method: 410/√3/(0.85 × 1.25) ≈ 223 MPa, rounded down. | 50 … 600 MPa
+  F_x | In-plane force, x | 0 | kN | assumption: No horizontal load. | -100000 … 100000 kN
+  F_y | In-plane force, y | -30 | kN | spec: Hoist rating with dynamic factor | -100000 … 100000 kN
+  F_z | Out-of-plane force (tension positive) | 0 | kN | assumption: No out-of-plane load. | -100000 … 100000 kN
+  e_x | Point of application, x | 250 | mm | drawing: BRK-010 rev A | -100000 … 100000 mm
+  e_y | Point of application, y | 100 | mm | drawing: BRK-010 rev A | -100000 … 100000 mm
+  M_x | Out-of-plane moment about x (tension on +y side) | 0 | kN*m | assumption: None. | -100000 … 100000 kN*m
+  M_y | Out-of-plane moment about y (tension on +x side) | 0 | kN*m | assumption: None. | -100000 … 100000 kN*m
+  M_z | Additional in-plane torque | 0 | kN*m | assumption: None. | -100000 … 100000 kN*m
+
+3. ASSUMPTIONS
+  A1. Elastic, static; the connected parts are rigid and the weld stress varies linearly with distance from the centroid. (Conservative against the instantaneous-centre method.)
+  A2. Fillet welds only, all of one leg size; the throat is 0.707·s. (Equal-leg fillet.)
+  A3. The design strength of the throat comes from S4 (EN 1993-1-8 simplified method) or a user allowable with its source. (No resistance table ships.)
+  A4. f_w (Design strength of the throat) is taken as 220 MPa. (S275, EN 1993-1-8 simplified method: 410/√3/(0.85 × 1.25) ≈ 223 MPa, rounded down.)
+  A5. F_x (In-plane force, x) is taken as 0 kN. (No horizontal load.)
+  A6. F_z (Out-of-plane force (tension positive)) is taken as 0 kN. (No out-of-plane load.)
+  A7. M_x (Out-of-plane moment about x (tension on +y side)) is taken as 0 kN*m. (None.)
+  A8. M_y (Out-of-plane moment about y (tension on +x side)) is taken as 0 kN*m. (None.)
+  A9. M_z (Additional in-plane torque) is taken as 0 kN*m. (None.)
+
+4. WORKING
+  [11] L_w = Σ l
+      = 80 + 200 + 80
+      = 360 mm
+        Total weld length
+  [12] x_c = Σ l·x_m / L_w
+      = 17.778 mm
+      = 17.778 mm
+        Centroid x
+  [13] y_c = Σ l·y_m / L_w
+      = 100 mm
+      = 100 mm
+        Centroid y
+  [14] I_ux = Σ [l(y_m − y_c)² + l·Δy²/12]    « Shigley Table 9-2
+      = about the centroid
+      = 2266700 mm³
+        Unit second moment about x
+  [15] I_uy = Σ [l(x_m − x_c)² + l·Δx²/12]    « Shigley Table 9-2
+      = about the centroid
+      = 227560 mm³
+        Unit second moment about y
+  [16] J_u = I_ux + I_uy    « Shigley Table 9-1
+      = 2266700 + 227560
+      = 2494200 mm³
+        Unit polar moment
+  [17] T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z
+      = -30 × 232.22 − 0 × 0 + 0e3
+      = -6.9667 kN·m
+        In-plane torque about the centroid
+  [18] f_r_max = max over weld ends √(f_x² + f_y² + f_z²)
+      = at (80, 0) mm: (-279.31, -257.13, 0) N/mm
+      = 379.64 N/mm
+        Maximum resultant force per unit length
+  [19] critical = critical point
+      = (80, 0) mm
+      = "(80, 0) mm"
+        Where f_r is greatest
+  [20] a = 0.707 * s
+      = 0.707 × 8 mm
+      = 5.656 mm
+        Throat
+  [21] tau = f_r_max / a
+      = 379.64 N/mm / 5.656 mm
+      = 67.122 MPa
+        Maximum throat stress
+  [22] s_req = f_r_max / (0.707 * f_w)
+      = 379.64 N/mm / (0.707 × 220 MPa)
+      = 2.4408 mm
+        Leg size required
+  [23] u = tau / f_w
+      = 67.122 MPa / 220 MPa
+      = 0.3051
+        Utilisation
+
+5. RESULTS
+  L_w = 360 mm    Weld length
+  x_c = 17.778 mm    Centroid x
+  y_c = 100 mm    Centroid y
+  I_ux = 2266700 mm³    Unit second moment about x
+  I_uy = 227560 mm³    Unit second moment about y
+  J_u = 2494200 mm³    Unit polar moment
+  T = -6.9667 kN·m    Torque about the centroid
+  f_r_max = 379.64 N/mm    Maximum force per unit length
+  critical = "(80, 0) mm"    Critical point
+  a = 5.656 mm    Throat
+  tau = 67.122 MPa    Throat stress
+  s_req = 2.4408 mm    Leg required
+  u = 0.3051    Utilisation
+
+6. CHECKS (governing first)
+  PASS  Throat stress against design strength: u = 0.3051 vs u ≤ 1  utilisation 0.305  « EN 1993-1-8 cl. 4.5.3.3
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.weld-group@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 3/3
+  Test run: —

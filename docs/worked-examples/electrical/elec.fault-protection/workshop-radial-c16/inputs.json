@@ -1,0 +1,202 @@
+[
+  {
+    "Symbol": "C_min",
+    "Number": 0.95,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Minimum voltage factor.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.95"
+  },
+  {
+    "Symbol": "I2t_let",
+    "Number": 1500,
+    "Unit": "A^2*s",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Read from the MCB let-through chart at the fault current.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1500"
+  },
+  {
+    "Symbol": "I_n",
+    "Number": 16,
+    "Unit": "A",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-002",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "16"
+  },
+  {
+    "Symbol": "L",
+    "Number": 40,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-LAY-002",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "Q_c",
+    "Number": 0.00345,
+    "Unit": "J/(K*mm^3)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Copper volumetric heat capacity.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.00345"
+  },
+  {
+    "Symbol": "S_cpc",
+    "Number": 2.5,
+    "Unit": "mm^2",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-002",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2.5"
+  },
+  {
+    "Symbol": "S_line",
+    "Number": 4,
+    "Unit": "mm^2",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-002",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  },
+  {
+    "Symbol": "U_0",
+    "Number": 230,
+    "Unit": "V",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Supply characteristics",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "230"
+  },
+  {
+    "Symbol": "Z_e",
+    "Number": 0.8,
+    "Unit": "ohm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DNO declared maximum for TN-C-S",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.8"
+  },
+  {
+    "Symbol": "alpha",
+    "Number": 0.00393,
+    "Unit": "1/K",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Copper temperature coefficient.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.00393"
+  },
+  {
+    "Symbol": "beta",
+    "Number": 234.5,
+    "Unit": "K",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Copper reciprocal temperature coefficient.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "234.5"
+  },
+  {
+    "Symbol": "c_max",
+    "Number": 1.1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Maximum voltage factor.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.1"
+  },
+  {
+    "Symbol": "device",
+    "Text": "MCB type C (I_a = 10 I_n)",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-002",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "MCB type C (I_a = 10 I_n)"
+  },
+  {
+    "Symbol": "rho_20",
+    "Number": 1.7241E-05,
+    "Unit": "ohm*mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Annealed copper resistivity.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.000017241"
+  },
+  {
+    "Symbol": "t_req",
+    "Number": 0.4,
+    "Unit": "s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Final circuit up to 32 A, TN system",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.4"
+  },
+  {
+    "Symbol": "theta",
+    "Number": 70,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Thermoplastic insulation at full load.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "theta_f",
+    "Number": 160,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Thermoplastic limiting temperature.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "160"
+  },
+  {
+    "Symbol": "theta_i",
+    "Number": 70,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Thermoplastic operating temperature.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  }
+]

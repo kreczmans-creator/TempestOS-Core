@@ -8,5 +8,5 @@ namespace Tempest.Desktop.CalcSheets;
 /// </summary>
 public static class CalcPackTemplateComposition
 {
-    public static IReadOnlyList<CalcPackTemplate> All() => [];
+    public static IReadOnlyList<CalcPackTemplate> All() => CalcPackTemplates.All;
 }

@@ -202,6 +202,13 @@ public sealed partial class CalcInstanceService
         if (instance.EvidenceId is not { } evidenceId)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' has no Evidence to check.", instance);
 
+        // Addendum A, §A3: E4, E5 and S6 demand an independent check whatever the Evidence setting — the signed-in checker
+        // must not be the author (DA-12).
+        if (_catalogue.Find(instance.TemplateReference)?.Template.IndependentCheck == true
+            && _domain.ResolveCurrentPrincipalId() is var principal
+            && (string.IsNullOrWhiteSpace(principal) || string.Equals(principal, instance.CreatedBy, StringComparison.Ordinal)))
+            return CalcActionResult.Refused($"'{instance.Name}' needs an independent check: sign in as someone other than its author ({instance.CreatedBy}) to check it.", instance);
+
         // What Issue will demand is demanded here, so a checked calculation is never a dead end (Black B-13).
         var provenanceGate = ProvenanceGate(instance);
 
@@ -516,6 +523,11 @@ public sealed partial class CalcInstanceService
 
             if (await StalenessAsync(member, cancellationToken).ConfigureAwait(false) is { IsStale: true } stale)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is stale: {stale.Reasons[0]} Update it before checking the pack.");
+
+            if (_catalogue.Find(member.TemplateReference)?.Template.IndependentCheck == true
+                && _domain.ResolveCurrentPrincipalId() is var principal
+                && (string.IsNullOrWhiteSpace(principal) || string.Equals(principal, member.CreatedBy, StringComparison.Ordinal)))
+                return CalcActionResult.Refused($"Pack member '{member.Name}' needs an independent check: sign in as someone other than its author ({member.CreatedBy}) to check the pack.");
         }
 
         // A rejection leaves the pack and its Evidence as drafts (Black B-12).

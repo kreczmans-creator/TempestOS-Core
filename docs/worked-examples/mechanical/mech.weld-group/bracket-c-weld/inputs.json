@@ -1,0 +1,187 @@
+[
+  {
+    "Symbol": "F_x",
+    "Number": 0,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No horizontal load.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "F_y",
+    "Number": -30,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hoist rating with dynamic factor",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "-30"
+  },
+  {
+    "Symbol": "F_z",
+    "Number": 0,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No out-of-plane load.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "M_x",
+    "Number": 0,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "None.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "M_y",
+    "Number": 0,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "None.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "M_z",
+    "Number": 0,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "None.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "e_x",
+    "Number": 250,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "BRK-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "250"
+  },
+  {
+    "Symbol": "e_y",
+    "Number": 100,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "BRK-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "f_w",
+    "Number": 220,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "S275, EN 1993-1-8 simplified method: 410/\u221A3/(0.85 \u00D7 1.25) \u2248 223 MPa, rounded down.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "220"
+  },
+  {
+    "Symbol": "s",
+    "Number": 8,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "BRK-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8"
+  },
+  {
+    "Symbol": "welds",
+    "Rows": [
+      {
+        "Cells": {
+          "x1": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "y1": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "x2": {
+            "Number": 80,
+            "Unit": "mm"
+          },
+          "y2": {
+            "Number": 0,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x1": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "y1": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "x2": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "y2": {
+            "Number": 200,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x1": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "y1": {
+            "Number": 200,
+            "Unit": "mm"
+          },
+          "x2": {
+            "Number": 80,
+            "Unit": "mm"
+          },
+          "y2": {
+            "Number": 200,
+            "Unit": "mm"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "BRK-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3 row(s)"
+  }
+]

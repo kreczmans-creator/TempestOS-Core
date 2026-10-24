@@ -124,6 +124,9 @@ public static class CalcTemplateHasher
         foreach (var k in t.RecordKinds ?? [])
             sb.Append("records=").Append(k.Kind).Append('|').Append(string.Join(",", k.Symbols)).Append('\n');
 
+        if (t.IndependentCheck)
+            sb.Append("independent-check\n");
+
         foreach (var f in formulas)
             sb.Append("formula=").Append(f).Append('\n');
 

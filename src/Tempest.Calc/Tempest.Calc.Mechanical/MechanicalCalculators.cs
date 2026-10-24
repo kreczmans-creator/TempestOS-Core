@@ -14,5 +14,7 @@ public static class MechanicalCalculators
         new BoltedJointCalculator(),
         new BoltGroupCalculator(),
         new BearingLifeCalculator(),
+        new WeldGroupCalculator(),
+        new ShaftCalculator(),
     ];
 }

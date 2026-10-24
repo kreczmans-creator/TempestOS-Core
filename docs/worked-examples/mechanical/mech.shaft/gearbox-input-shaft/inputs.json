@@ -1,0 +1,463 @@
+[
+  {
+    "Symbol": "E",
+    "Number": 207,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Steel.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "207"
+  },
+  {
+    "Symbol": "L_key",
+    "Number": 40,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GBX-SH-01",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "R",
+    "Number": 99,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design reliability.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "99"
+  },
+  {
+    "Symbol": "S_ut",
+    "Number": 700,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 10083-3 42CrMo4 \u002BQT, certificate",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "700"
+  },
+  {
+    "Symbol": "S_y",
+    "Number": 500,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 10083-3 42CrMo4 \u002BQT, certificate",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "500"
+  },
+  {
+    "Symbol": "S_y_key",
+    "Number": 400,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "C45 key steel",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "400"
+  },
+  {
+    "Symbol": "T",
+    "Number": 0.3,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Motor rated torque \u00D7 service factor (E1)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.3"
+  },
+  {
+    "Symbol": "finish",
+    "Text": "machined or cold-drawn",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GBX-SH-01",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "machined or cold-drawn"
+  },
+  {
+    "Symbol": "h",
+    "Number": 9,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GBX-SH-01",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "9"
+  },
+  {
+    "Symbol": "k_d",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Below 250 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "k_f",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No other effects.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "loads",
+    "Rows": [
+      {
+        "Cells": {
+          "x": {
+            "Number": 150,
+            "Unit": "mm"
+          },
+          "F_y": {
+            "Number": -2.2,
+            "Unit": "kN"
+          },
+          "F_z": {
+            "Number": 6,
+            "Unit": "kN"
+          },
+          "m": {
+            "Number": 4,
+            "Unit": "kg"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Gear mesh forces from the gear calculation",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1 row(s)"
+  },
+  {
+    "Symbol": "n",
+    "Number": 1450,
+    "Unit": "rpm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Motor nameplate",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1450"
+  },
+  {
+    "Symbol": "n_target",
+    "Number": 1.5,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Company design standard",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "rho",
+    "Number": 7850,
+    "Unit": "kg/m^3",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Steel.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "7850"
+  },
+  {
+    "Symbol": "sections",
+    "Rows": [
+      {
+        "Cells": {
+          "x": {
+            "Number": 120,
+            "Unit": "mm"
+          },
+          "K_t": {
+            "Number": 1.7
+          },
+          "K_ts": {
+            "Number": 1.5
+          },
+          "q": {
+            "Number": 0.8
+          },
+          "q_s": {
+            "Number": 0.9
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": 150,
+            "Unit": "mm"
+          },
+          "K_t": {
+            "Number": 2.14
+          },
+          "K_ts": {
+            "Number": 3
+          },
+          "q": {
+            "Number": 0.8
+          },
+          "q_s": {
+            "Number": 0.9
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": 180,
+            "Unit": "mm"
+          },
+          "K_t": {
+            "Number": 1.7
+          },
+          "K_ts": {
+            "Number": 1.5
+          },
+          "q": {
+            "Number": 0.8
+          },
+          "q_s": {
+            "Number": 0.9
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x": {
+            "Number": 260,
+            "Unit": "mm"
+          },
+          "K_t": {
+            "Number": 1.6
+          },
+          "K_ts": {
+            "Number": 1.4
+          },
+          "q": {
+            "Number": 0.8
+          },
+          "q_s": {
+            "Number": 0.9
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Shoulders r/d \u2248 0.05; keyseat at the pinion (K_t 2.14, K_ts 3.0); q from the Neuber fit.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4 row(s)"
+  },
+  {
+    "Symbol": "segments",
+    "Rows": [
+      {
+        "Cells": {
+          "x_end": {
+            "Number": 40,
+            "Unit": "mm"
+          },
+          "d": {
+            "Number": 35,
+            "Unit": "mm"
+          },
+          "d_i": {
+            "Number": 0,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x_end": {
+            "Number": 120,
+            "Unit": "mm"
+          },
+          "d": {
+            "Number": 40,
+            "Unit": "mm"
+          },
+          "d_i": {
+            "Number": 0,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x_end": {
+            "Number": 180,
+            "Unit": "mm"
+          },
+          "d": {
+            "Number": 45,
+            "Unit": "mm"
+          },
+          "d_i": {
+            "Number": 0,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x_end": {
+            "Number": 260,
+            "Unit": "mm"
+          },
+          "d": {
+            "Number": 40,
+            "Unit": "mm"
+          },
+          "d_i": {
+            "Number": 0,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "x_end": {
+            "Number": 340,
+            "Unit": "mm"
+          },
+          "d": {
+            "Number": 35,
+            "Unit": "mm"
+          },
+          "d_i": {
+            "Number": 0,
+            "Unit": "mm"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GBX-SH-01",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5 row(s)"
+  },
+  {
+    "Symbol": "theta_max",
+    "Number": 0.001,
+    "Unit": "rad",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Deep-groove ball bearing slope limit.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.001"
+  },
+  {
+    "Symbol": "w",
+    "Number": 14,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GBX-SH-01",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "14"
+  },
+  {
+    "Symbol": "x_A",
+    "Number": 20,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GBX-SH-01",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "x_B",
+    "Number": 280,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GBX-SH-01",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "280"
+  },
+  {
+    "Symbol": "x_T1",
+    "Number": 150,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GBX-SH-01",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "150"
+  },
+  {
+    "Symbol": "x_T2",
+    "Number": 330,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GBX-SH-01",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "330"
+  },
+  {
+    "Symbol": "x_key",
+    "Number": 150,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "GBX-SH-01",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "150"
+  },
+  {
+    "Symbol": "y_max",
+    "Number": 0.13,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Spur gear deflection limit.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.13"
+  }
+]

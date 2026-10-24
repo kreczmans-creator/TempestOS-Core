@@ -1,0 +1,13 @@
+# E5 — Fault protection: Zs, disconnection, adiabatic, fault level (`elec.fault-protection@1.0.0`)
+
+**Scope.** One circuit in a TN system: earth fault loop impedance against the device maximum, disconnection time, protective and line conductors against the adiabatic minimum, and a simplified prospective fault level against breaking capacity. **Independent check demanded** (the author cannot check it, DA-12); every input outside its range is a hard FAIL.
+
+**Method.** `Z_s = Z_e + ρ₂₀ L (1/S_line + 1/S_cpc)[1 + α(θ − 20)]`; `I_f = C_min U₀/Z_s`, C_min = 0.95. MCB B/C/D: `I_a = 5/10/20 I_n`; fuse or MCCB: `I_a` at t_req by log-log interpolation of the user's time–current points (no extrapolation). `Z_s,max = C_min U₀/I_a` (BS 7671 reg. 411.4.4; times reg. 411.3.2.2/411.3.2.3; BS EN 60204-1 cl. 6.3.3). `S_min = √(I²t)/k` (reg. 543.1.3, 434.5.2), I²t from the curve time, the let-through record below 0.1 s, else I_f²·0.1 s with a warning. `k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))]`, labelled derived. `Z_T = u_k U_n²/S_r`, `I_k3 = c U_n/(√3 Z_T)` (IEC 60909-0 cl. 5.3). Optional 0.8 × Z_s,max field-test value, labelled rule of thumb.
+
+**Inputs.** `U_0`, `Z_e` 0.01–3 Ω, `C_min`, optional `S_r`, `u_k`, `c_max`; `L`, `S_line`, `S_cpc`, `theta` 20–90 °C; material record `conductor.material` (`rho_20`, `alpha`, `Q_c`, `beta`, `theta_i`, `theta_f`); `device`, `I_n`, optional `curve`, `t_req` 0.1–5 s, optional `I2t_let`, `I_cn` (record `device.characteristic`).
+
+**Outputs.** `R_12`, `Z_s`, `I_f`, `I_a`, `t_d`, `Z_s_max`, `u_Zs`, `Z_test`, `k`, `S_min`, `u_cpc`, `u_line`, `Z_T`, `I_k3`, `u_Icn`. **Ports.** `Z_s`, `I_f`, `S_min`, `I_k3`. **Checks.** loop impedance; disconnection time; CPC and line adiabatic; breaking capacity.
+
+**Limitations.** TN only; single earth fault; no motor contribution, arc fault or IT systems; no BS 7671 table embedded.
+
+**Test cases.** `ka-mcb-b32` (Z_s 0.7901 Ω, Z_s,max 1.3656 Ω, S_min 0.7616 mm²), `ka-fuse-curve` (t_d 0.1716 s), `ka-fault-level` (I_k3 15.942 kA) — analytic, Confirmed; `ka-wiring-matters-b32` (1.37 Ω, IET Wiring Matters March 2023) and `ka-schneider-k` (k ≈ 143, Schneider guide) — **Unconfirmed** until checked against the articles (values as the addendum quotes them). Eaton Memshield 3 non-trip data (1.13 I_n) is not used by this calculation.
