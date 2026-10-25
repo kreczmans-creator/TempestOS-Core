@@ -239,9 +239,9 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   WARNING no-ltb: M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.
 
 8. VERIFICATION
-  Template: struct.en1993-member@1.0.1
-  Content hash: 395cc54f21f61fba
+  Template: struct.en1993-member@1.1.0
+  Content hash: 2cf9aafbdb831be1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-25 22:51 UTC
   Application: TempestOS test

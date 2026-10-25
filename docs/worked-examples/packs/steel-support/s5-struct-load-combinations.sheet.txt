@@ -131,5 +131,5 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 60a0615ba7745102
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-25 22:51 UTC
   Application: TempestOS test

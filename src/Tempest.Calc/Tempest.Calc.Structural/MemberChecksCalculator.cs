@@ -29,7 +29,7 @@ public sealed class MemberChecksCalculator : ICalcCalculator
     };
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Structural, "EN 1993-1-1 member checks (basic)",
+        Id, "1.1.0", CalcDiscipline.Structural, "EN 1993-1-1 member checks (basic)",
         "Resistance checks of a steel member of class 1, 2 or 3 cross-section: tension (6.2.3), compression (6.2.4) and flexural buckling about y and z (6.3.1), bending about y and z (6.2.5), shear with the high-shear reduction (6.2.6, 6.2.8), the linear cross-section interaction (6.2.1(7)) and a simplified member interaction (6.3.3 with user-entered k factors). Lateral-torsional buckling and class 4 sections are outside this sheet.",
         "Axial plastic resistance: N_pl,Rd = A f_y/γ_M0.\nBending resistance, plastic modulus for class 1–2 and elastic for class 3: M_c,Rd = W f_y/γ_M0.\nShear resistance: V_pl,Rd = A_v f_y/(√3 γ_M0).\nBending resistance reduced by high shear, when V_Ed > 0.5 V_pl,Rd: ρ = (2V_Ed/V_pl,Rd − 1)², resistance × (1 − ρ).\nElastic critical load and non-dimensional slenderness: N_cr = π²EI/L_cr²; λ̄ = √(A f_y/N_cr).\nBuckling reduction factor and buckling resistance: Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²]; χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1; N_b,Rd = χ A f_y/γ_M1.\nCross-section check, linear interaction: N_Ed/N_Rd + M_y,Ed/M_y,Rd + M_z,Ed/M_z,Rd ≤ 1.\nMember check, axial force and bending with buckling: N_Ed/N_b,Rd,min + k_yy M_y,Ed/M_y,Rd + k_zz M_z,Ed/M_z,Rd ≤ 1.",
         [
