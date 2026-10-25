@@ -350,8 +350,15 @@ public sealed partial class CalcInstanceService
         var record = await _store.FindRecordAsync(pin.Id, pin.Revision, cancellationToken).ConfigureAwait(false)
             ?? await _store.FindRecordAsync(pin.Id, null, cancellationToken).ConfigureAwait(false);
 
-        return record is not null && record.IsLicensed() ? pin : null;
+        return record is not null && await IsLicensedRecordAsync(record, cancellationToken).ConfigureAwait(false) ? pin : null;
     }
+
+    /// <summary>
+    /// Whether <paramref name="record"/> is licensed: it is when it is, or when any other revision of the same record is (earlier or later). A record
+    /// flagged licensed from revision 2 on is licensed in revision 1 too, so no revision releases the values (Addendum B review, SEC-B-02).
+    /// </summary>
+    internal async Task<bool> IsLicensedRecordAsync(CalcDataRecord record, CancellationToken cancellationToken) =>
+        record.IsLicensed() || await _store.IsLicensedInAnyRevisionAsync(record.Id, cancellationToken).ConfigureAwait(false);
 
     /// <summary>A record as CSV (symbol, value, unit, then its rows), refused for a licensed record (§A5).</summary>
     public async Task<(string? Csv, string? Refusal)> ExportRecordAsync(Guid recordId, int? revision = null, CancellationToken cancellationToken = default)
@@ -361,7 +368,7 @@ public sealed partial class CalcInstanceService
         if (record is null)
             return (null, $"No reference record '{recordId}' exists.");
 
-        if (record.IsLicensed())
+        if (await IsLicensedRecordAsync(record, cancellationToken).ConfigureAwait(false))
             return (null, $"Record '{record.Title}' holds values from a licensed source ({record.SourceTitle}, {record.Edition}); its values are never exported.");
 
         var sb = new StringBuilder();

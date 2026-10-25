@@ -362,7 +362,7 @@ public sealed class MaterialLibrary
         if (material is null)
             return (null, $"No material '{materialId}' exists.");
 
-        return material.IsLicensed()
+        return await _service.IsLicensedRecordAsync(material, cancellationToken).ConfigureAwait(false)
             ? (null, $"Material '{material.Title}' holds values from a licensed source ({material.SourceTitle}, {material.Edition}); its values are never exported.")
             : (material, null);
     }

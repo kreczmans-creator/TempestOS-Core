@@ -302,6 +302,21 @@ public sealed class CalcInstanceStore
         return Deserialise<CalcDataRecord>(read.GetValueOrDefault(key));
     }
 
+    /// <summary>
+    /// Whether any revision of the record is licensed (§A5). The lock belongs to the record, not to a revision: a record flagged licensed in revision 2
+    /// to correct a slip must not leave revision 1's values exportable (Addendum B review, SEC-B-02).
+    /// </summary>
+    public async Task<bool> IsLicensedInAnyRevisionAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var keys = await _store.ListKeysAsync(RecordCollection, $"{id:N}@", cancellationToken).ConfigureAwait(false);
+
+        if (keys.Count == 0)
+            return false;
+
+        var read = await _store.ReadManyAsync(RecordCollection, keys, cancellationToken).ConfigureAwait(false);
+        return read.Values.Any(json => Deserialise<CalcDataRecord>(json)?.IsLicensed() == true);
+    }
+
     /// <summary>The latest revision of every record (of one kind, if given).</summary>
     public async Task<IReadOnlyList<CalcDataRecord>> ListRecordsAsync(string? kind = null, CancellationToken cancellationToken = default)
     {
