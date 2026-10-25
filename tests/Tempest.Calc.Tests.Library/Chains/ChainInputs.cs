@@ -5,7 +5,7 @@ using Tempest.Calc.Sheets;
 namespace Tempest.Calc.Tests.Library.Chains;
 
 /// <summary>
-/// The inputs of every step of the six built-in chains for the chain tests and the pack worked examples. The values are the pack templates'
+/// The inputs of every step of the built-in chains for the chain tests and the pack worked examples. The values are the pack templates'
 /// own example inputs (<see cref="CalcPackStep.Example"/>); here the figures a step chooses cite that step's (invented) specification or
 /// drawing, and an input left at the sheet's default is recorded as an assumption.
 /// </summary>
@@ -60,6 +60,7 @@ internal static class ChainInputs
         var inputs = For(host, CalcPackTemplates.HydraulicPowerUnit, new Dictionary<string, CalcProvenance>
         {
             ["f1"] = duty, ["f2"] = Spec("SPEC-HPU-05 §3 (accumulator)"), ["b1"] = Drg("DRG-HPU-510"), ["e1"] = Spec("SPEC-HPU-05 §5 (pump drive)"), ["e4"] = cable,
+            ["e3"] = cable, ["e5"] = Spec("SPEC-HPU-05 §6 (earthing and protection)"), ["e9"] = Spec("SPEC-HPU-05 §5 (pump drive starting)"),
         });
         inputs["e4"] =
         [

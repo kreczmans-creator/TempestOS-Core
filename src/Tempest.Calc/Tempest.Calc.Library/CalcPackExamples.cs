@@ -370,4 +370,36 @@ internal static class CalcPackExamples
     [
         Q("L", 30, "m"), Q("U", 400, "V"), N("cos_phi", 0.86), N("eta", 0.92), C("insulation", "PVC 70 °C"), C("method", "C"), C("device", "MCB type C"),
     ];
+
+    /// <summary>
+    /// The voltage drop of the motor supply (400 V three-phase). The design current, the length and the conductor area come from the cable step by link; the power factor is the motor's
+    /// (0.86, typed equal to the cable step's, which a chain test guards). The resistivity and temperature are the sheet's defaults.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> HpuE3 { get; } =
+    [
+        C("system", "AC three-phase"), Q("V_n", 400, "V"), N("cos_phi", 0.86), Q("T_amb", 30, "degC"),
+    ];
+
+    /// <summary>
+    /// Earth-fault disconnection of the motor supply: a 230 V to earth system (the 398 V line voltage the fault-level route uses is √3 × 230), a 0.35 Ω external loop, a 10 mm² protective conductor (the cable step's size
+    /// by hand), the type C MCB the cable step sizes (the choice must agree with it or the step is blocked) and a 0.4 s disconnection time. The supply transformer (400 kVA, 4 %: INVENTED) is entered here, once: its three-phase
+    /// fault current <c>I_k3</c> is the source of the motor-start step. The 25 kA breaking capacity and the 8·10⁴ A²s let-through are invented illustrations, to be replaced from the device datasheet.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> HpuE5 { get; } =
+    [
+        Q("U_0", 230, "V"), Q("Z_e", 0.35, "ohm"), Q("S_cpc", 10, "mm^2"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 8e4, "A^2*s"),
+        Q("S_r", 400, "kVA"), Q("u_k", 4, "%"), Q("I_cn", 25, "kA"),
+    ];
+
+    /// <summary>
+    /// The pump motor's starting: star-delta (a pump starts against the open relief valve, unloaded, so a third of the direct-on-line current is enough). The rated power arrives from the drive step (the nameplate
+    /// <c>P_rated</c>), the cable's length and conductor area from the cable step, and the supply from the fault current of the fault-protection step (<c>I_k3</c>, computed with c = 1.1, which a fault current basis uses by default).
+    /// The motor's efficiency and power factor are typed equal to the cable step's (a chain test guards that, and that this step's rated current equals the cable step's design current). The 7 × locked-rotor ratio and 0.3
+    /// starting power factor are INVENTED motor data, to be replaced from the datasheet. The 400 V here is the motor's; the fault current was computed at √3 × 230 = 398.4 V, 0.4 % lower, which makes this step's source impedance 0.4 % high (conservative).
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> HpuE9 { get; } =
+    [
+        Q("U", 400, "V"), C("source", "Fault level at the supply"), C("fault_basis", "Fault current I_k (kA)"), N("eta", 0.92), N("cos_phi", 0.86),
+        N("I_LR_r", 7), N("cos_phi_st", 0.3), C("starter", "Star-delta"), N("n_par", 1),
+    ];
 }

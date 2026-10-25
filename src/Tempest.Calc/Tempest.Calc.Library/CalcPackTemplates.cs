@@ -2,7 +2,7 @@ namespace Tempest.Calc.Library;
 
 /// <summary>
 /// Addendum A, §A7: the linked chains every build ships as pack templates. Each carries example step inputs (<see cref="CalcPackStep.Example"/>)
-/// so it can be created as it stands, except the motor circuit, which stays refused until its cable tables are supplied (the hydraulic power unit's cable step opens blocked until then). Steps name calculators by template id
+/// so it can be created as it stands, except the motor circuit and the hydraulic power unit, which stay refused at the cable step until its cable tables are supplied. Steps name calculators by template id
 /// (the Library does not reference the calculator assemblies); <see cref="CalcInstanceService.ValidatePackTemplate"/>
 /// refuses a template whose calculators are not composed in.
 /// </summary>
@@ -177,7 +177,7 @@ public static class CalcPackTemplates
         ]);
 
     /// <summary>
-    /// Hydraulic power unit: cylinder and pump circuit (F1) → accumulator (F2), pressure line (B1), pump motor (E1) → motor supply cable (E4).
+    /// Hydraulic power unit: cylinder and pump circuit (F1) → accumulator (F2), pressure line (B1), pump motor (E1) → motor supply cable (E4) → voltage drop (E3) and fault protection (E5) → motor start (E9).
     /// <para>
     /// F1 → F2: the swept volume of the larger stroke (<c>dV</c>, L) is the liquid the accumulator must deliver for an emergency stroke (or store), and the supply
     /// pressure (<c>p</c>, bar gauge) is its highest working pressure <c>p_2</c>: the accumulator charges to the pressure the pump holds. The lowest working pressure
@@ -189,16 +189,23 @@ public static class CalcPackTemplates
     /// torque and speed (<c>T_L</c>, <c>n_L</c>) of the motor, which is given continuous duty. E1 → E4: E4 takes a shaft power directly (<c>P</c>, which its <c>η</c>
     /// and cos φ convert to the design current), so E1's nameplate rated shaft power (<c>P_rated</c> = T_rated·ω_rated from the motor's rated speed <c>n_rated</c>, W to kW) is linked to it without a load-budget step (E6); a design
     /// current from another calculation would enter <c>I_b_in</c> instead. The cable is sized for the candidate motor's rated power, not for the
-    /// pump's demand: a larger motor fitted means a new E1 candidate. E4 does not check the protective device against the motor's starting current: the motor-start calculation (E9)
-    /// takes that in the full §B7 chain. B1 judges the cap-port line at the retract discharge, where its drop is the back pressure of the retract stroke; neither that drop nor the
-    /// supply-side drop is fed back into F1. The steps carry example inputs except E4's two record tables, which no build
-    /// ships: the cable step opens blocked (naming them) until the user supplies his own, and the pack cannot be checked or issued while it is. Nothing takes
-    /// from E4 yet (the voltage-drop and fault-protection steps follow in a later phase), so the pack is created with E4 blocked, not refused.
+    /// pump's demand: a larger motor fitted means a new E1 candidate.
+    /// </para>
+    /// <para>
+    /// The electrical tail follows the motor circuit: E4's design current, length and conductor area are E3's (voltage drop), E4's conductor area, length, device rating and device type code are E5's (fault protection, with the
+    /// supply transformer entered once, there). The motor-start step (E9) is placed last because it takes from both: the cable's length and conductor area from E4, the motor's rated power from E1 and the supply's
+    /// three-phase fault current from E5 (<c>I_k3</c> into <c>I_k</c>; E5 computes it with c = 1.1, the factor E9's fault-current basis defaults to), so the dip is judged on the cable the pack sized and the supply the pack
+    /// protects. E9's rated current is therefore NOT fed back to E4 (<c>I_b_in</c>): E4 → E5 → E9 → E4 would be a cycle, and E4 sizes on E1's rated power already. E9 and E4 each carry the motor's efficiency and power factor (typed equal;
+    /// a chain test guards them, and that E9's <c>I_rated</c> equals E4's design current). E9's <c>I_start</c> is for starting-current coordination only (it is not a design current): the pack's star-delta start
+    /// draws a third of the direct-on-line current, which stays below the type C device's instantaneous band; a direct-on-line start of the same motor would not (the chain test records it). E9's 400 V is the motor's; E5 computes its
+    /// fault current at √3 × 230 V, 0.4 % lower, so E9's source impedance is 0.4 % high (conservative). B1 judges the cap-port line at the retract discharge, where its drop is the back pressure of the retract stroke; neither that drop nor the
+    /// supply-side drop is fed back into F1. The steps carry example inputs except E4's two record tables, which no build ships: as in the motor circuit, the pack is refused at the cable step (naming the tables) until the user supplies his own,
+    /// because E3, E5 and E9 take from it.
     /// </para>
     /// </summary>
     public static CalcPackTemplate HydraulicPowerUnit { get; } = new(
         "pack.hydraulic-power-unit", "Hydraulic power unit",
-        "Takes a cylinder circuit and its pump through to the electric supply: the cylinder, pump and line velocities; the accumulator that carries the emergency stroke between the supply pressure and the lowest pressure the stroke can finish at; the pressure drop in the line to the cylinder; the motor that drives the pump continuously; and the cable that supplies the motor. The motor's cable tables are entered by the user: no build ships them. The pressure line takes its flow, oil density and tube bore from the cylinder step, and the cable is sized for the rated power of the candidate motor.",
+        "Takes a cylinder circuit and its pump through to the electric supply: the cylinder, pump and line velocities; the accumulator that carries the emergency stroke between the supply pressure and the lowest pressure the stroke can finish at; the pressure drop in the line to the cylinder; the motor that drives the pump continuously; the cable that supplies the motor, its voltage drop and its earth-fault disconnection; and the voltage dip when the motor starts on that cable and supply. The motor's cable tables are entered by the user: no build ships them. The pressure line takes its flow, oil density and tube bore from the cylinder step, the cable is sized for the rated power of the candidate motor, and the start is judged on the cable and the supply fault level the pack found.",
         [
             new CalcPackStep("f1", "fp.cylinder", "Cylinder and pump circuit", CalcPackExamples.HpuF1),
             new CalcPackStep("f2", "fp.accumulator", "Emergency stroke accumulator", CalcPackExamples.HpuF2),
@@ -206,6 +213,9 @@ public static class CalcPackTemplates
             new CalcPackStep("e1", "elec.motor-sizing", "Pump drive motor", CalcPackExamples.HpuE1),
             new CalcPackStep("e4", "elec.conductor-sizing", "Motor supply cable", CalcPackExamples.HpuE4,
                 Hint: "The cable step needs your own cable-capacity (ampacity) and preferred device-rating (ratings) tables: none ship with the program. Enter them from your copy of the wiring regulations and the device manufacturer's data, then create the pack again."),
+            new CalcPackStep("e3", "elec.voltage-drop", "Motor supply voltage drop", CalcPackExamples.HpuE3),
+            new CalcPackStep("e5", "elec.fault-protection", "Motor supply fault protection", CalcPackExamples.HpuE5),
+            new CalcPackStep("e9", "elec.motor-start", "Pump motor start", CalcPackExamples.HpuE9),
         ],
         [
             new CalcPackBinding("f1", "dV", "f2", "dV"),
@@ -216,6 +226,17 @@ public static class CalcPackTemplates
             new CalcPackBinding("f1", "T_shaft", "e1", "T_L"),
             new CalcPackBinding("f1", "n_shaft", "e1", "n_L"),
             new CalcPackBinding("e1", "P_rated", "e4", "P"),
+            new CalcPackBinding("e4", "I_b", "e3", "I"),
+            new CalcPackBinding("e4", "L", "e3", "L"),
+            new CalcPackBinding("e4", "CSA", "e3", "A_c"),
+            new CalcPackBinding("e4", "CSA", "e5", "S_line"),
+            new CalcPackBinding("e4", "L", "e5", "L"),
+            new CalcPackBinding("e4", "I_n", "e5", "I_n"),
+            new CalcPackBinding("e4", "device_code", "e5", "device_code"),
+            new CalcPackBinding("e1", "P_rated", "e9", "P"),
+            new CalcPackBinding("e4", "CSA", "e9", "A_c"),
+            new CalcPackBinding("e4", "L", "e9", "L_cab"),
+            new CalcPackBinding("e5", "I_k3", "e9", "I_k"),
         ]);
 
     /// <summary>Every built-in chain.</summary>
