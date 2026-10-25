@@ -48,16 +48,18 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(160e5 * 28e-6 * 0.95 / (2 * Math.PI * 0.88), Si(f1, "T_shaft"), 9);
         Assert.Equal(1450, Si(f1, "n_shaft") * 60 / (2 * Math.PI), 9);
 
-        // F1 1.1.0 moved these (independent hand recompute): the rod is judged at the cylinder's thrust (119.38 kN, above the 80 kN push), and the 16 mm
-        // cap-port line at the retract flow Q·A_b/A_a = 75.63 L/min, 6.27 m/s against the 5 m/s placeholder limit, so that one F1 check now fails.
+        // F1 1.1.0 moved these (independent hand recompute): the rod is judged at the cylinder's thrust (119.38 kN, above the 80 kN push), and the 20 mm
+        // cap-port line at the retract flow Q·A_b/A_a = 75.63 L/min, 4.01 m/s against the 5 m/s placeholder limit (a 16 mm line read 6.27 m/s and failed, so the pack uses 20 mm).
         var thrust = 160e5 * areaBore * 0.95;
         Assert.Equal(thrust * 3.5 / 1787806.9776735522, Si(f1, "u_buck"), 9);
         var areaRod = Math.PI * 0.07 * 0.07 / 4;
         var capFlow = 28e-6 * 1450 / 60 * 0.95 * areaBore / (areaBore - areaRod);
-        Assert.Equal(capFlow / (Math.PI * 0.016 * 0.016 / 4), Si(f1, "v_prs"), 9);
-        Assert.Equal(6.269001383838239, Si(f1, "v_prs"), 9);
+        Assert.Equal(capFlow / (Math.PI * 0.02 * 0.02 / 4), Si(f1, "v_prs"), 9);
+        Assert.Equal(4.012160885656473, Si(f1, "v_prs"), 9);
+        Assert.Equal(0.8024321771312947, Si(f1, "u_prs"), 9);
         Assert.Equal(28e-6 * 1450 / 60 / (Math.PI * 0.04 * 0.04 / 4), Si(f1, "v_suc"), 9);
-        Assert.Equal(["Pressure line velocity within its limit, cap-port line at the larger stroke flow"], f1.Checks.Where(c => !c.Passed).Select(c => c.Name));
+        Assert.Equal(7, f1.Checks.Count);
+        Assert.All(f1.Checks, c => Assert.True(c.Passed, c.Name));
 
         // F1 → F2, swept volume ΔV (L): the emergency stroke is the whole larger stroke, 3.927 L.
         Assert.Equal(Si(f1, "dV"), InputSi(f2, "dV"), 15);
@@ -85,18 +87,18 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(InputSi(f1, "rho"), InputSi(b1, "rho_custom"), 12);
         Assert.Equal(870, InputSi(b1, "rho_custom"), 12);
         Assert.Equal(InputSi(f1, "d_prs"), CellSi(b1, "segments", 0, "D"), 12);
-        Assert.Equal(16e-3, CellSi(b1, "segments", 0, "D"), 15);
+        Assert.Equal(20e-3, CellSi(b1, "segments", 0, "D"), 15);
 
-        // B1: laminar (Re 1385), so f = 64/Re and Δp = 32 μ L v/D² + K ρ v²/2 = 134.287 + 23.243 = 157.530 kPa; the line takes about 1 % of the supply pressure.
-        var velocity = 36e-3 / 60 / (Math.PI * 0.016 * 0.016 / 4);
-        var reynolds = 870 * velocity * 0.016 / 0.03;
+        // B1: laminar (Re 1108), so f = 64/Re and Δp = 32 μ L v/D² + K ρ v²/2 = 55.004 + 9.520 = 64.524 kPa; the line takes about 0.4 % of the supply pressure.
+        var velocity = 36e-3 / 60 / (Math.PI * 0.02 * 0.02 / 4);
+        var reynolds = 870 * velocity * 0.02 / 0.03;
         Assert.Equal(velocity, Si(b1, "v_s1"), 9);
-        Assert.Equal(1384.6480048994895, reynolds, 6);
+        Assert.Equal(1107.7184039195913, reynolds, 6);
         Assert.Equal(reynolds, Si(b1, "Re_s1"), 6);
         Assert.Equal(64 / reynolds, Si(b1, "f_s1"), 9);
-        var laminar = 32 * 0.03 * 12 * velocity / (0.016 * 0.016);
+        var laminar = 32 * 0.03 * 12 * velocity / (0.02 * 0.02);
         var fittings = 6 * 870 * velocity * velocity / 2;
-        Assert.Equal(157529.5086611159, laminar + fittings, 3);
+        Assert.Equal(64524.086747593065, laminar + fittings, 3);
         Assert.Equal(laminar + fittings, Si(b1, "dp_total"), 3);
         Assert.Equal(Si(b1, "dp_total"), Si(b1, "dp_sys"), 6);
         Assert.True(Si(b1, "dp_total") < 0.02 * Si(f1, "p"));

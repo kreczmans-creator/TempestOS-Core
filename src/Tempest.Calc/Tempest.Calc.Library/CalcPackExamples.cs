@@ -317,12 +317,12 @@ internal static class CalcPackExamples
     /// <summary>
     /// A double-acting 100/70 × 500 mm cylinder at 160 bar fed by a 28 cm³/rev pump at 1450 rpm (38.6 L/min delivered against the circuit's 36 L/min), mineral
     /// oil of 870 kg/m³. The 80 kN push and 40 kN pull are the press loads; the rest of the sheet (mounting factor, line velocity limits, rod material) is left at the
-    /// sheet's own defaults, which the chain tests record as assumptions. The pressure line is 16 mm: that figure is also entered in the pressure-line step.
+    /// sheet's own defaults, which the chain tests record as assumptions. The pressure line is 20 mm: that figure is also entered in the pressure-line step (the line to the cap port carries the 75.6 L/min retract discharge at 4.0 m/s, inside the 5 m/s placeholder limit).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuF1 { get; } =
     [
         C("mode", "Standard"), Q("p", 160, "bar"), Q("Q", 36, "L/min"), Q("rho", 870, "kg/m^3"), Q("F_push", 80, "kN"), Q("F_pull", 40, "kN"),
-        Q("D", 100, "mm"), Q("d_r", 70, "mm"), Q("stroke", 500, "mm"), Q("V_g", 28, "cm^3/rev"), Q("n_p", 1450, "rpm"), Q("d_prs", 16, "mm"),
+        Q("D", 100, "mm"), Q("d_r", 70, "mm"), Q("stroke", 500, "mm"), Q("V_g", 28, "cm^3/rev"), Q("n_p", 1450, "rpm"), Q("d_prs", 20, "mm"),
     ];
 
     /// <summary>
@@ -336,14 +336,14 @@ internal static class CalcPackExamples
     ];
 
     /// <summary>
-    /// The pressure line from the unit to the cylinder: 12 m of 16 mm tube with 6 velocity heads of fittings, carrying the circuit flow (linked). The oil (870 kg/m³ and
+    /// The pressure line from the unit to the cylinder: 12 m of 20 mm tube with 6 velocity heads of fittings, carrying the circuit flow (linked). The oil (870 kg/m³ and
     /// 30 mPa·s at the working temperature, 50 °C) is a custom fluid: the density is entered equal to the cylinder step's, and a test guards the match. The flow is laminar
-    /// (Re about 1400), so the friction factor is 64/Re and the sheet says so. The tube diameter is also entered equal to the cylinder step's pressure-line bore.
+    /// (Re about 1100), so the friction factor is 64/Re and the sheet says so. The tube diameter is also entered equal to the cylinder step's pressure-line bore.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuB1 { get; } =
     [
         C("fluid", "custom (ρ and μ given)"), Q("T", 50, "degC"), Q("rho_custom", 870, "kg/m^3"), Q("mu_custom", 30, "mPa*s"), Q("v_max", 5, "m/s"),
-        Table("segments", CalcRow.Of(Txt("name", "pressure line to cylinder"), ("L", new CalcCell(12, "m")), Mm("D", 16), Mm("eps", 0.045), Num("K", 6), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
+        Table("segments", CalcRow.Of(Txt("name", "pressure line to cylinder"), ("L", new CalcCell(12, "m")), Mm("D", 20), Mm("eps", 0.045), Num("K", 6), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
     ];
 
     /// <summary>

@@ -38,7 +38,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   eta_tp | Total efficiency of the pump (volumetric × hydromechanical) | 0.88 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   eta_hm | Hydromechanical efficiency of the motor | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   d_suc | Suction line inside diameter | 40 | mm | assumption: Sheet default value; no project figure given. | 3 … 200 mm
-  d_prs | Pressure line inside diameter (to the cylinder cap port; judged at the larger flow of the two strokes) | 16 | mm | spec: SPEC-HPU-05 §2 (press duty) | 3 … 200 mm
+  d_prs | Pressure line inside diameter (to the cylinder cap port; judged at the larger flow of the two strokes) | 20 | mm | spec: SPEC-HPU-05 §2 (press duty) | 3 … 200 mm
   d_ret | Return line inside diameter | 25 | mm | assumption: Sheet default value; no project figure given. | 3 … 200 mm
   v_suc_max | Suction line velocity limit (your record; the default is a placeholder, not a code value) | 1.2 | m/s | assumption: Sheet default value; no project figure given. | 0.1 … 20 m/s
   v_prs_max | Pressure line velocity limit (your record; the default is a placeholder, not a code value) | 5 | m/s | assumption: Sheet default value; no project figure given. | 0.1 … 20 m/s
@@ -190,12 +190,12 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 26.795 mm
         Smallest suction line bore for the velocity limit
   [58] v_prs = Q_prs / (pi * d_prs^2 / 4)
-      = 75.627 L/min / (π × (16 mm)^2 / 4)
-      = 6.269 m/s
+      = 75.627 L/min / (π × (20 mm)^2 / 4)
+      = 4.0122 m/s
         Velocity in the pressure line
   [59] u_prs = v_prs / v_prs_max
-      = 6.269 m/s / 5 m/s
-      = 1.2538
+      = 4.0122 m/s / 5 m/s
+      = 0.80243
         Velocity in the pressure line over its limit
   [60] d_min_prs = sqrt(4 * Q_prs / (pi * v_prs_max))
       = sqrt(4 × 75.627 L/min / (π × 5 m/s))
@@ -292,10 +292,10 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   Q_prs = 75.627 L/min    Flow in the line to the cap port (worst stroke)
   Q_rtn = 75.627 L/min    Flow in the return line
   v_suc = 0.53847 m/s    Suction line velocity
-  v_prs = 6.269 m/s    Pressure line velocity (cap-port line, worst stroke)
+  v_prs = 4.0122 m/s    Pressure line velocity (cap-port line, worst stroke)
   v_rtn = 2.5678 m/s    Return line velocity
   u_suc = 0.44873    Suction line velocity over its limit
-  u_prs = 1.2538    Pressure line velocity over its limit
+  u_prs = 0.80243    Pressure line velocity over its limit
   u_rtn = 0.85593    Return line velocity over its limit
   d_min_suc = 26.795 mm    Smallest suction line bore
   d_min_prs = 17.916 mm    Smallest pressure line bore
@@ -310,9 +310,9 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   buckling_note = "screening only; ISO/TS 13725 method not implemented; stocky rod, Johnson parabola"    Rod buckling check
 
 6. CHECKS (governing first)
-  FAIL  Pressure line velocity within its limit, cap-port line at the larger stroke flow: u_prs = 1.2538 vs u_prs ≤ 1  utilisation 1.25  « cylinder.line-limits record
   PASS  Pump delivery covers the circuit flow: u_pump = 0.93337 vs u_pump ≤ 1  utilisation 0.933
   PASS  Return line velocity within its limit: u_rtn = 0.85593 vs u_rtn ≤ 1  utilisation 0.856  « cylinder.line-limits record
+  PASS  Pressure line velocity within its limit, cap-port line at the larger stroke flow: u_prs = 0.80243 vs u_prs ≤ 1  utilisation 0.802  « cylinder.line-limits record
   PASS  Extend force covers the push load: u_push = 0.67013 vs u_push ≤ 1  utilisation 0.67
   PASS  Retract force covers the pull load: u_pull = 0.65699 vs u_pull ≤ 1  utilisation 0.657
   PASS  Suction line velocity within its limit: u_suc = 0.44873 vs u_suc ≤ 1  utilisation 0.449  « cylinder.line-limits record
@@ -326,5 +326,5 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   Content hash: ce58a264393d850d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 03:29 UTC
+  Test run: 2026-10-25 03:34 UTC
   Application: TempestOS test
