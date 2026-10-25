@@ -189,4 +189,17 @@ public sealed class FaultProtectionTests
             .With(CalcInputValue.Quantity("S_r", 500, "kVA")).With(CalcInputValue.Quantity("u_k", 5, "%")).With(CalcInputValue.Quantity("I_cn", 10, "kA")));
         Assert.Contains(r.Checks, c => c.Name == "Breaking capacity against prospective fault" && !c.Passed);
     }
+
+    [Fact]
+    public void The_Voltage_Factor_The_Fault_Current_Was_Computed_With_Is_A_Port()
+    {
+        var withTransformer = new[] { CalcInputValue.Quantity("S_r", 500, "kVA"), CalcInputValue.Quantity("u_k", 5, "%") };
+        var standard = CalcRunner.Run(Fault, withTransformer.Aggregate(Defaults(), (set, v) => set.With(v)));
+        Assert.Equal(1.1, standard.OutputSi("c_k3"), 12);
+
+        var lower = CalcRunner.Run(Fault, withTransformer.Aggregate(Defaults(), (set, v) => set.With(v)).With(CalcInputValue.Of("c_max", 1.05)));
+        Assert.Equal(1.05, lower.OutputSi("c_k3"), 12);
+        Assert.Equal(standard.OutputSi("I_k3") * 1.05 / 1.1, lower.OutputSi("I_k3"), 6);
+        Assert.Contains(Fault.Template.OutputPorts!, p => p.Symbol == "c_k3");
+    }
 }

@@ -1,6 +1,6 @@
 # Calc pack — Electronics enclosure (`pack.electronics-enclosure`)
 
-**Chain.** Power trace (`elec.pcb-trace`) → Board load budget (`elec.load-budget`); Board load budget (`elec.load-budget`) → Enclosure temperature (`elec.enclosure-heat`); Enclosure temperature (`elec.enclosure-heat`) → Cover latches (`mech.snap-fit`) and Cover plate (`struct.plate-bending`).
+**Chain.** Power trace (`elec.pcb-trace`) → Board load budget; Board load budget (`elec.load-budget`) → Enclosure temperature; Enclosure temperature (`elec.enclosure-heat`) → Cover latches, Cover plate.
 
 **Purpose.** Follows the loss of a board's power trace into the heat of its load budget, the temperature a sealed enclosure with a pressure-compensation breather settles at, the pressure difference that temperature puts across it (limited by the breather) and the force of that pressure on the front cover, the cover latches that must hold it, and the cover plate under that pressure. The trace loss is a row of the load table (a table cell); the enclosure's internal temperature is the latches' temperature of use; the pressure difference is the cover's pressure and, times the cover area, the force on the latches. The latches' and cover's material values are typed for 60 °C, the enclosure's limit, and do not follow the links; the trace's board ambient, the supply's loss row and the latch count are typed.
 
@@ -20,7 +20,7 @@ An 8 A supply trace (2 oz external copper, 2 mm wide, 150 mm long, 30 K allowed 
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes the steps that take from it, and every step that takes from those, stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an input of a step makes every step that takes from it, directly or through other steps, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|

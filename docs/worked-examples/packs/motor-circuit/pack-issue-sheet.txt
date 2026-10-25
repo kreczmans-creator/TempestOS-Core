@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 25/25
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -241,7 +241,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 64020d560b0ee248
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -398,7 +398,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: dc7b6b8e4454e8eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -560,7 +560,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -662,7 +662,7 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   Content hash: 3ed2f07610b34189
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -799,11 +799,11 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   WARNING record: Tabulated values not taken from a reference record: rho_20, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let (Device time–current points). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.fault-protection@1.1.0
-  Content hash: d3ade76a1accaba7
+  Template: elec.fault-protection@1.2.0
+  Content hash: 28c5e83cec7eb404
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -949,5 +949,5 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   Content hash: 3add357ba3b44d85
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test

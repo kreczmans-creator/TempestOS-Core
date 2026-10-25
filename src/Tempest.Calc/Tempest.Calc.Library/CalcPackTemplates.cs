@@ -2,7 +2,7 @@ namespace Tempest.Calc.Library;
 
 /// <summary>
 /// Addendum A, §A7: the linked chains every build ships as pack templates. Each carries example step inputs (<see cref="CalcPackStep.Example"/>)
-/// so it can be created as it stands, except the motor circuit, which stays refused until its cable tables are supplied (the hydraulic power unit's cable step opens blocked until then). Steps name calculators by template id
+/// so it can be created as it stands, except the motor circuit and the hydraulic power unit, which stay refused at the cable step until its cable tables are supplied. Steps name calculators by template id
 /// (the Library does not reference the calculator assemblies); <see cref="CalcInstanceService.ValidatePackTemplate"/>
 /// refuses a template whose calculators are not composed in.
 /// </summary>
@@ -177,7 +177,7 @@ public static class CalcPackTemplates
         ]);
 
     /// <summary>
-    /// Hydraulic power unit: cylinder and pump circuit (F1) → accumulator (F2), pressure line (B1), pump motor (E1) → motor supply cable (E4).
+    /// Hydraulic power unit: cylinder and pump circuit (F1) → accumulator (F2), pressure line (B1), pump motor (E1) → motor supply cable (E4) → voltage drop (E3) and fault protection (E5) → motor start (E9).
     /// <para>
     /// F1 → F2: the swept volume of the larger stroke (<c>dV</c>, L) is the liquid the accumulator must deliver for an emergency stroke (or store), and the supply
     /// pressure (<c>p</c>, bar gauge) is its highest working pressure <c>p_2</c>: the accumulator charges to the pressure the pump holds. The lowest working pressure
@@ -189,16 +189,26 @@ public static class CalcPackTemplates
     /// torque and speed (<c>T_L</c>, <c>n_L</c>) of the motor, which is given continuous duty. E1 → E4: E4 takes a shaft power directly (<c>P</c>, which its <c>η</c>
     /// and cos φ convert to the design current), so E1's nameplate rated shaft power (<c>P_rated</c> = T_rated·ω_rated from the motor's rated speed <c>n_rated</c>, W to kW) is linked to it without a load-budget step (E6); a design
     /// current from another calculation would enter <c>I_b_in</c> instead. The cable is sized for the candidate motor's rated power, not for the
-    /// pump's demand: a larger motor fitted means a new E1 candidate. E4 does not check the protective device against the motor's starting current: the motor-start calculation (E9)
-    /// takes that in the full §B7 chain. B1 judges the cap-port line at the retract discharge, where its drop is the back pressure of the retract stroke; neither that drop nor the
-    /// supply-side drop is fed back into F1. The steps carry example inputs except E4's two record tables, which no build
-    /// ships: the cable step opens blocked (naming them) until the user supplies his own, and the pack cannot be checked or issued while it is. Nothing takes
-    /// from E4 yet (the voltage-drop and fault-protection steps follow in a later phase), so the pack is created with E4 blocked, not refused.
+    /// pump's demand: a larger motor fitted means a new E1 candidate.
+    /// </para>
+    /// <para>
+    /// The electrical tail follows the motor circuit: E4's design current, length and conductor area are E3's (voltage drop), E4's conductor area, length, device rating and device type code are E5's (fault protection, with the
+    /// supply transformer entered once, there). The motor-start step (E9) is placed last because it takes from both: the cable's length and conductor area from E4, the motor's rated power from E1 and the supply's
+    /// three-phase fault current from E5 (<c>I_k3</c> into <c>I_k</c> and the factor it was computed with, <c>c_k3</c>, into <c>c_src</c>, so a change of E5's <c>c_max</c> reaches the source impedance), so the dip is judged on the cable the pack sized and the supply the pack
+    /// protects. <b>That supply is the transformer-terminal fault level: the dip is a lower bound.</b> The supply cabling and the upstream network are not in it (E9's <c>S_kQ</c> adds an upstream network; a remote board needs a lower fault level), and E5's
+    /// example loop impedance (0.05 Ω) is chosen to be coherent with a close-coupled 400 kVA transformer. E9's rated current is therefore NOT fed back to E4 (<c>I_b_in</c>): E4 → E5 → E9 → E4 would be a cycle, and E4 sizes on E1's rated power already. E9 and E4 each carry the motor's efficiency and power factor (typed equal;
+    /// a chain test guards them, and that E9's <c>I_rated</c> equals E4's design current). E9's <c>I_start</c> is for starting-current coordination only (it is not a design current): the pack's star-delta start
+    /// draws a third of the direct-on-line current, which stays below the type C device's instantaneous band; a direct-on-line start of the same motor would not (the chain test records it). The pump is started UNLOADED (through a vent or unloading valve
+    /// to tank): a pump at relief pressure is at full load, and in star the motor gives about a third of its direct-on-line torque, so E1's run-up check, made at the direct-on-line peak torque, does not cover a loaded star start (a chain test guards that
+    /// T_peak/3 covers the safety factor times the run-up and a typed, invented unloaded torque). The open-transition changeover from star to delta is not modelled: it can briefly approach the direct-on-line current and so reach the instantaneous band. E9's 400 V is the motor's; E5 computes its
+    /// fault current at √3 × 230 V, 0.4 % lower, so E9's source impedance is 0.4 % high (conservative). B1 judges the cap-port line at the retract discharge, where its drop is the back pressure of the retract stroke; neither that drop nor the
+    /// supply-side drop is fed back into F1. The steps carry example inputs except E4's two record tables, which no build ships: as in the motor circuit, the pack is refused at the cable step (naming the tables) until the user supplies his own,
+    /// because E3, E5 and E9 take from it.
     /// </para>
     /// </summary>
     public static CalcPackTemplate HydraulicPowerUnit { get; } = new(
         "pack.hydraulic-power-unit", "Hydraulic power unit",
-        "Takes a cylinder circuit and its pump through to the electric supply: the cylinder, pump and line velocities; the accumulator that carries the emergency stroke between the supply pressure and the lowest pressure the stroke can finish at; the pressure drop in the line to the cylinder; the motor that drives the pump continuously; and the cable that supplies the motor. The motor's cable tables are entered by the user: no build ships them. The pressure line takes its flow, oil density and tube bore from the cylinder step, and the cable is sized for the rated power of the candidate motor.",
+        "Takes a cylinder circuit and its pump through to the electric supply: the cylinder, pump and line velocities; the accumulator that carries the emergency stroke between the supply pressure and the lowest pressure the stroke can finish at; the pressure drop in the line to the cylinder; the motor that drives the pump continuously; the cable that supplies the motor, its voltage drop and its earth-fault disconnection; and the voltage dip when the motor starts on that cable and supply. The motor's cable tables are entered by the user: no build ships them. The pressure line takes its flow, oil density and tube bore from the cylinder step, the cable is sized for the rated power of the candidate motor, and the start is judged on the cable and the supply fault level the pack found.",
         [
             new CalcPackStep("f1", "fp.cylinder", "Cylinder and pump circuit", CalcPackExamples.HpuF1),
             new CalcPackStep("f2", "fp.accumulator", "Emergency stroke accumulator", CalcPackExamples.HpuF2),
@@ -206,6 +216,9 @@ public static class CalcPackTemplates
             new CalcPackStep("e1", "elec.motor-sizing", "Pump drive motor", CalcPackExamples.HpuE1),
             new CalcPackStep("e4", "elec.conductor-sizing", "Motor supply cable", CalcPackExamples.HpuE4,
                 Hint: "The cable step needs your own cable-capacity (ampacity) and preferred device-rating (ratings) tables: none ship with the program. Enter them from your copy of the wiring regulations and the device manufacturer's data, then create the pack again."),
+            new CalcPackStep("e3", "elec.voltage-drop", "Motor supply voltage drop", CalcPackExamples.HpuE3),
+            new CalcPackStep("e5", "elec.fault-protection", "Motor supply fault protection", CalcPackExamples.HpuE5),
+            new CalcPackStep("e9", "elec.motor-start", "Pump motor start", CalcPackExamples.HpuE9),
         ],
         [
             new CalcPackBinding("f1", "dV", "f2", "dV"),
@@ -216,6 +229,88 @@ public static class CalcPackTemplates
             new CalcPackBinding("f1", "T_shaft", "e1", "T_L"),
             new CalcPackBinding("f1", "n_shaft", "e1", "n_L"),
             new CalcPackBinding("e1", "P_rated", "e4", "P"),
+            new CalcPackBinding("e4", "I_b", "e3", "I"),
+            new CalcPackBinding("e4", "L", "e3", "L"),
+            new CalcPackBinding("e4", "CSA", "e3", "A_c"),
+            new CalcPackBinding("e4", "CSA", "e5", "S_line"),
+            new CalcPackBinding("e4", "L", "e5", "L"),
+            new CalcPackBinding("e4", "I_n", "e5", "I_n"),
+            new CalcPackBinding("e4", "device_code", "e5", "device_code"),
+            new CalcPackBinding("e1", "P_rated", "e9", "P"),
+            new CalcPackBinding("e4", "CSA", "e9", "A_c"),
+            new CalcPackBinding("e4", "L", "e9", "L_cab"),
+            new CalcPackBinding("e5", "I_k3", "e9", "I_k"),
+            new CalcPackBinding("e5", "c_k3", "e9", "c_src"),
+        ]);
+
+    /// <summary>
+    /// Mechanism review: cam (M9) → return spring (M7), cam shaft (M4) → bearing (M5), geared motor (E1) → supply cable (E4). The cam step is the source of everything: its spring force at full lift (<c>F_spring_max</c>, N) is the spring's working force at full
+    /// lift; its roller contact force (<c>F_pin_pk</c>, N) is the radial load at the cam on the shaft (a table-cell link into the load row, N to kN), its RMS and peak input torque (<c>T_rms_in</c>, <c>input_torque</c>, N·m to kN·m) the torque and the peak
+    /// torque of the shaft, and its speed (<c>n_in</c>) the shaft's, the bearing's and the motor's load speed; the shaft's reaction at bearing A (<c>R_A</c>, kN) is the bearing's radial load; the cam's RMS torque is the motor's continuous load torque (the motor runs at its 1440 rpm nameplate speed through the 9.6:1 gearbox); and the
+    /// motor's nameplate rated power (<c>P_rated</c>, from <c>n_rated</c>) sizes the supply cable.
+    /// <para>
+    /// Run-time links that replace what would otherwise be test guards: the cam's lift (<c>lift</c>, mm) is the spring's expected working travel (<c>s_work</c>), and M7 warns (<c>travel-mismatch</c>) when its own s₂ − s₁ is more than 1 % away;
+    /// the cam's frequency in Hz (<c>f_in</c>, since rpm is an angular velocity and <c>n_in</c> cannot be linked to a frequency) is the spring's operating frequency (<c>f_op</c>).
+    /// </para>
+    /// <para>
+    /// Not linked, deliberately. M7's rate cannot go back to M9 (<c>k_sp</c> and <c>F_pre</c> are typed in M9, M7's own rate would make a cycle); M9 and M7 carry the same 9.874 N/mm and 50 N (chain test guard), and a revised cam whose
+    /// rate no longer matches the spring's makes M7 warn <c>travel-mismatch</c> instead of silently still checking.
+    /// </para>
+    /// <para>
+    /// The cam's RMS torque enters the shaft's steady-torque input <c>T</c> as a stand-in: M4 models the bending as fully reversed and the torque as steady, whereas the cam's torque (a frictionless spring system) is fully alternating, mean zero,
+    /// ranging −9.61 to +10.11 N·m. In this example bending dominates and a chain test recomputes M4's fatigue factor with the torque taken as fully alternating (σ′ₐ = √(σₐ² + 3τₐ²)) and shows the margin; on a torque-dominated or keyed section the
+    /// RMS-as-steady mapping would understate the alternating stress. M4 is unchanged. The peak input torque is checked against the motor's peak torque by a test (E1 is judged on the RMS torque, as the motor's thermal duty). The motor runs at
+    /// its 1440 rpm nameplate through a 9.6:1 gearbox. The cable step opens blocked until the user supplies his own cable-capacity and device-rating tables, which no build ships: the pack cannot be checked or issued until then (nothing takes from
+    /// the cable step, so the pack is created, not refused).
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate MechanismReview { get; } = new(
+        "pack.mechanism-review", "Mechanism review",
+        "Takes a cam mechanism through to its supply: the cam's motion, pressure angle, undercut and follower force; the return spring that holds the follower on the cam; the cam shaft that carries the contact force and the torque; the bearing on that shaft; the geared motor that drives the cam; and the cable that supplies the motor. The cam's spring force, contact force, torques and speed reach each step by link; the cable tables are entered by the user, as no build ships them.",
+        [
+            new CalcPackStep("m9", "mech.mechanism", "Tamper cam", CalcPackExamples.CamM9),
+            new CalcPackStep("m7", "mech.spring", "Follower return spring", CalcPackExamples.CamM7),
+            new CalcPackStep("m4", "mech.shaft", "Cam shaft", CalcPackExamples.CamM4),
+            new CalcPackStep("m5", "mech.bearing-life", "Cam shaft bearing A", CalcPackExamples.CamM5),
+            new CalcPackStep("e1", "elec.motor-sizing", "Cam drive motor", CalcPackExamples.CamE1),
+            new CalcPackStep("e4", "elec.conductor-sizing", "Cam drive supply cable", CalcPackExamples.CamE4,
+                Hint: "The cable step needs your own cable-capacity (ampacity) and preferred device-rating (ratings) tables: none ship with the program. Enter them from your copy of the wiring regulations and the device manufacturer's data, then create the pack again."),
+        ],
+        [
+            new CalcPackBinding("m9", "F_spring_max", "m7", "F_2"),
+            new CalcPackBinding("m9", "lift", "m7", "s_work"),
+            new CalcPackBinding("m9", "f_in", "m7", "f_op"),
+            new CalcPackBinding("m9", "F_pin_pk", "m4", "loads", Row: 0, Column: "F_y"),
+            new CalcPackBinding("m9", "T_rms_in", "m4", "T"),
+            new CalcPackBinding("m9", "input_torque", "m4", "T_pk"),
+            new CalcPackBinding("m9", "n_in", "m4", "n"),
+            new CalcPackBinding("m4", "R_A", "m5", "F_r"),
+            new CalcPackBinding("m9", "n_in", "m5", "n"),
+            new CalcPackBinding("m9", "T_rms_in", "e1", "T_L"),
+            new CalcPackBinding("m9", "n_in", "e1", "n_L"),
+            new CalcPackBinding("e1", "P_rated", "e4", "P"),
+        ]);
+
+    /// <summary>
+    /// Actuated linkage: slider-crank (M9) → hydraulic cylinder (F1) → accumulator (F2). A slider-crank ejector is to be replaced by a cylinder. The linkage's peak slide speed (<c>output_motion</c>, m/s to mm/s) is the extend speed the cylinder must
+    /// reach (<c>v_req</c>, which gives the flow and replaces the entered one) and its peak slide-direction force (<c>follower_force</c>, N to kN) is the load to push and, conservatively, to pull. <b>This is a kinematic proxy</b> (DB-04): a cylinder-actuated
+    /// linkage runs at about constant cylinder speed, not at constant crank speed, so the crank's peak speed and force are what the cylinder must match, not what it would reproduce through the whole stroke. The cylinder's stroke is the slider's
+    /// (twice the crank radius), typed and guarded, as the linkage has no stroke port. F1 → F2 as in the hydraulic power unit: the swept volume of the larger stroke and the supply pressure (a gauge pressure; the accumulator's basis stays Gauge) size an emergency-stroke accumulator.
+    /// </summary>
+    public static CalcPackTemplate ActuatedLinkage { get; } = new(
+        "pack.actuated-linkage", "Actuated linkage",
+        "Replaces a slider-crank drive by a hydraulic cylinder: the linkage's peak slide speed and force are the speed the cylinder must reach and the load it must carry (a kinematic proxy, not the cylinder's own stroke profile), and the cylinder's swept volume and supply pressure size the accumulator for an emergency stroke.",
+        [
+            new CalcPackStep("m9", "mech.mechanism", "Ejector slider-crank", CalcPackExamples.LinkM9),
+            new CalcPackStep("f1", "fp.cylinder", "Replacement cylinder", CalcPackExamples.LinkF1, Omit: ["Q"]),
+            new CalcPackStep("f2", "fp.accumulator", "Emergency stroke accumulator", CalcPackExamples.LinkF2),
+        ],
+        [
+            new CalcPackBinding("m9", "output_motion", "f1", "v_req"),
+            new CalcPackBinding("m9", "follower_force", "f1", "F_push"),
+            new CalcPackBinding("m9", "follower_force", "f1", "F_pull"),
+            new CalcPackBinding("f1", "dV", "f2", "dV"),
+            new CalcPackBinding("f1", "p", "f2", "p_2"),
         ]);
 
     /// <summary>
@@ -336,5 +431,5 @@ public static class CalcPackTemplates
         ]);
 
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, EnvelopeMoisture, ColdPipe, PipeworkSupports, ElectronicsEnclosure];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, MechanismReview, ActuatedLinkage, EnvelopeMoisture, ColdPipe, PipeworkSupports, ElectronicsEnclosure];
 }

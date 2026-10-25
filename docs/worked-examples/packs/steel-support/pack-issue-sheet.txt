@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Equipment support steelwork calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
 
 PACK INDEX
   1. Load combinations — Load combinations (EN 1990) — rev A — ISSUED
@@ -16,7 +16,7 @@ PACK INDEX
   7. Column base plate — Column base plate (EN 1993-1-8) — rev A — ISSUED — Base plate tension T-stub (bending at the bolts) PASS
 
 REVISIONS
-  A  2026-10-24  test.engineer  First issue
+  A  2026-10-25  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -42,16 +42,16 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 37/37
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Load combinations    Revision: A
 Title: Load combinations (EN 1990)
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Design values of a single action effect (a force, a moment or a load intensity) under every EN 1990 Annex A1 combination for buildings: ULS persistent/transient, SLS characteristic, frequent and quasi-permanent, and accidental. Every variable action is tried as the leading one; the maximum and minimum envelopes and their governing combinations are reported.
@@ -178,7 +178,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 60a0615ba7745102
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -186,9 +186,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Support frame    Revision: A
 Title: Beam and 2D frame analysis
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.
@@ -383,7 +383,7 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
   Content hash: 605e99a9144f52a8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -391,9 +391,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Column check    Revision: A
 Title: EN 1993-1-1 member checks (basic)
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Resistance checks of a steel member of class 1, 2 or 3 cross-section: tension (6.2.3), compression (6.2.4) and flexural buckling about y and z (6.3.1), bending about y and z (6.2.5), shear with the high-shear reduction (6.2.6, 6.2.8), the linear cross-section interaction (6.2.1(7)) and a simplified member interaction (6.3.3 with user-entered k factors). Lateral-torsional buckling and class 4 sections are outside this sheet.
@@ -632,7 +632,7 @@ N_pl,Rd = A f_y/γ_M0; M_c,Rd = W f_y/γ_M0 with W = W_pl (class 1–2) or W_el 
   Content hash: 7e45c53b9cd8fa25
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -640,9 +640,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Arm joint bolt group    Revision: A
 Title: Bolt group (elastic method)
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.
@@ -772,7 +772,7 @@ Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) �
   Content hash: fd686de20c6459e9
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -780,9 +780,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Arm connection bolts    Revision: A
 Title: Bolts and fillet welds (EN 1993-1-8)
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.
@@ -940,7 +940,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 2c8eb136ac136c52
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -948,9 +948,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Holding-down bolts    Revision: A
 Title: Bolts and fillet welds (EN 1993-1-8)
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.
@@ -1093,7 +1093,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 2c8eb136ac136c52
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -1101,9 +1101,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Column base plate    Revision: A
 Title: Column base plate (EN 1993-1-8)
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.
@@ -1154,7 +1154,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm^2 | link: Holding-down bolts rev A · A_s | 50 … 1500 mm^2
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: a38af89eacbd4dd9ac075bf1c2f4a1b3/ad97b249fac64e53aa86e595a35afd48 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 0c4c2532d0c14fda8baf1c10c7f885de/b7d9109fd6484b70a2f7b15a2747e09e | any
 
 3. ASSUMPTIONS
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -1372,5 +1372,5 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: 6790007d3e618b27
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test

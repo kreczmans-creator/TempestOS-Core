@@ -53,7 +53,7 @@ public sealed class SpringCalculator : ICalcCalculator
     private const string Part3 = "EN 13906-3";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Mechanical, "Helical springs: compression, extension, torsion",
+        Id, "1.2.0", CalcDiscipline.Mechanical, "Helical springs: compression, extension, torsion",
         "A cylindrical helical spring of round wire, cold-coiled, with a linear characteristic: compression (rate, working points, solid length by end type, stress at the working points and at solid, buckling, Goodman fatigue, surge frequency), extension (the same with the initial tension and the hook stresses) or torsion (rate with the legs, curvature-corrected bending stress, wound diameter and body length).",
         "Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n + (l₁ + l₂)/(3π·D) (torsion)\n" +
         "Stress: τ_k = k_c·8·F·D/(π·d³), k_c = (C + 0.5)/(C − 0.75) (Bergsträsser) or (4C − 1)/(4C − 4) + 0.615/C (Wahl); torsion σ = q·32·M/(π·d³) with q = (C + 0.07)/(C − 0.75) (EN 13906-3, the default) or K_i = (4C² − C − 1)/(4C·(C − 1)) (Shigley)\n" +
@@ -88,6 +88,7 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcInputSpec("M_2", "Torque at working point 2 (torsion, loads)", CalcInputKind.Quantity, "N*m", Default: 0.15, Min: 0, Max: 100, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
             new CalcInputSpec("phi_1", "Angle at working point 1 (torsion, deflections)", CalcInputKind.Quantity, "deg", Default: 5, Min: 0, Max: 1080, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
             new CalcInputSpec("phi_2", "Angle at working point 2 (torsion, deflections)", CalcInputKind.Quantity, "deg", Default: 15, Min: 0, Max: 1080, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
+            new CalcInputSpec("s_work", "Expected working travel s₂ − s₁ (optional; M9 lift links here): the sheet warns when the spring's own travel differs by more than 1 %", CalcInputKind.Quantity, "mm", Min: 0.1, Max: 1000, HardMin: 0.001, HardMax: 1e5, IsOptional: true, Group: "Working points"),
             new CalcInputSpec("G", "Shear modulus", CalcInputKind.Quantity, "GPa", Default: 80, Min: 20, Max: 100, HardMin: 1, HardMax: 200, Group: "Material", MaterialProperty: "G"),
             new CalcInputSpec("E", "Young's modulus", CalcInputKind.Quantity, "GPa", Default: 206, Min: 50, Max: 250, HardMin: 5, HardMax: 500, Group: "Material", MaterialProperty: "E"),
             new CalcInputSpec("rho", "Density", CalcInputKind.Quantity, "kg/m^3", Default: 7850, Min: 1000, Max: 20000, HardMin: 100, HardMax: 25000, Group: "Material", MaterialProperty: "rho"),
@@ -131,6 +132,7 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcApplicabilityRule("index", "The spring index C = D/d is outside 4 … 20.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("buckling", "The deflection at working point 2 reaches the buckling deflection of the spring.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("surge", "The surge frequency is less than 13 times the operating frequency.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("travel-mismatch", "The spring's working travel s₂ − s₁ differs from the expected working travel by more than 1 %.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("fatigue-cycles", "The required life is below 10⁴ cycles: the Goodman relation is for high-cycle fatigue.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -612,6 +614,7 @@ public sealed class SpringCalculator : ICalcCalculator
 
             c.Assign("F_1", $"{lead}k * s_1", "N", "Force at working point 1");
             c.Assign("F_2", $"{lead}k * s_2", "N", "Force at working point 2");
+            TravelCheck(c);
             return true;
         }
 
@@ -632,7 +635,24 @@ public sealed class SpringCalculator : ICalcCalculator
 
         c.Assign("s_1", initialTension ? "(F_1 - F_0) / k" : "F_1 / k", "mm", "Deflection at working point 1");
         c.Assign("s_2", initialTension ? "(F_2 - F_0) / k" : "F_2 / k", "mm", "Deflection at working point 2");
+        TravelCheck(c);
         return true;
+    }
+
+    /// <summary>The expected working travel (M9 lift) against the spring's own s₂ − s₁: a spring whose rate is not the one the mechanism assumed travels differently, and the sheet says so.</summary>
+    private static void TravelCheck(CalcRunContext c)
+    {
+        if (!c.Has("s_work"))
+            return;
+
+        c.Input("s_work");
+        c.Assign("s_trav", "s_2 - s_1", "mm", "Working travel of the spring, s₂ − s₁");
+        c.Output("s_trav", "Working travel s₂ − s₁");
+        var expected = c.Si("s_work");
+        var deviation = expected > 0 ? Math.Abs(c.Si("s_trav") - expected) / expected : 0;
+
+        if (deviation > 0.01)
+            c.Warn("travel-mismatch", $"s_work: the spring's working travel s₂ − s₁ is {F(c.Si("s_trav") * 1e3)} mm, {F(deviation * 100)} % away from the expected {F(expected * 1e3)} mm; the rate the mechanism assumed is not this spring's rate, so re-type it there.");
     }
 
     private static void Surge(CalcRunContext c)

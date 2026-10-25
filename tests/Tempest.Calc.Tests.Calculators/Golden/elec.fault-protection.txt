@@ -112,5 +112,5 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   WARNING let-through: I2t_let: disconnection is below 0.1 s and no let-through I²t is entered; the protective conductor check uses I_f²·0.1 s at the end-of-line fault only, and the line conductor check (reg. 434.5.2) is not made: it needs the device let-through I²t at the maximum prospective fault.
 
 8. VERIFICATION
-  Template: elec.fault-protection@1.1.0
+  Template: elec.fault-protection@1.2.0
   Known-answer cases passed: 5/5

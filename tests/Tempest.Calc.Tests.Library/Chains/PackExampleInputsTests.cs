@@ -7,14 +7,14 @@ using Tempest.Calc.Structural;
 
 namespace Tempest.Calc.Tests.Library.Chains;
 
-/// <summary>Pack templates carry example step inputs, so a chain can be created as it stands (except the motor circuit, whose cable tables no build ships).</summary>
+/// <summary>Pack templates carry example step inputs, so a chain can be created as it stands (except the motor circuit, the hydraulic power unit and the mechanism review, whose cable tables no build ships).</summary>
 public sealed class PackExampleInputsTests
 {
     private static LibraryTestHost Host() => new(
-        calculators: [.. ElectricalCalculators.All, .. MechanicalCalculators.All, .. BuildingServicesCalculators.All, .. StructuralCalculators.All],
+        calculators: [.. ElectricalCalculators.All, .. MechanicalCalculators.All, .. BuildingServicesCalculators.All, .. StructuralCalculators.All, .. Tempest.Calc.FluidPower.FluidPowerCalculators.All],
         packTemplates: CalcPackTemplates.All);
 
-    public static TheoryData<string> Templates => ["pack.drive-train", "pack.wet-heating", "pack.cooling", "pack.steel-support", "pack.envelope-moisture", "pack.cold-pipe", "pack.pipework-supports", "pack.electronics-enclosure"];
+    public static TheoryData<string> Templates => ["pack.drive-train", "pack.wet-heating", "pack.cooling", "pack.steel-support", "pack.actuated-linkage", "pack.envelope-moisture", "pack.cold-pipe", "pack.pipework-supports", "pack.electronics-enclosure"];
 
     private static CalcPackTemplate Template(string id) => CalcPackTemplates.All.Single(t => t.Id == id);
 

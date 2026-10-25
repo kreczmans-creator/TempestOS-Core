@@ -8,8 +8,8 @@ namespace Tempest.Calc.Library;
 /// recorded as an assumption to replace. Choice values are the calculators' own texts (the Library does not reference the calculator
 /// assemblies); instantiating each template in the tests proves they are accepted. No tabulated regulation data appears, and catalogue data
 /// is limited to the single steel section the steel-support example uses as a user input (UC 203×203×46). The motor circuit's
-/// cable-capacity and device-rating tables are not here, so that chain stays refused until the user supplies them (the hydraulic power unit's cable step is
-/// in the same position: it opens blocked, naming the tables, until they are supplied).
+/// cable-capacity and device-rating tables are not here, so that chain stays refused until the user supplies them (the hydraulic power unit is in the same position: it is refused
+/// at the cable step, naming the tables, until they are supplied; the mechanism review's cable step, which nothing takes from, is created blocked instead).
 /// </summary>
 internal static class CalcPackExamples
 {
@@ -563,5 +563,140 @@ internal static class CalcPackExamples
         C("shape", "rectangular"), C("support", "simply supported"), Q("a", 600, "mm"), Q("b", 500, "mm"), Q("t", 4, "mm"),
         C("load_type", "uniform"), C("load_basis", "pressure q"), Q("q", 1, "kPa"),
         Q("E", 69, "GPa"), N("nu", 0.33), Q("rho", 2700, "kg/m^3"), Q("f_y", 120, "MPa"), N("gamma_M0", 1),
+    ];
+
+    /// <summary>
+    /// The voltage drop of the motor supply (400 V three-phase). The design current, the length and the conductor area come from the cable step by link; the power factor is the motor's
+    /// (0.86, typed equal to the cable step's, which a chain test guards). The resistivity and temperature are the sheet's defaults.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> HpuE3 { get; } =
+    [
+        C("system", "AC three-phase"), Q("V_n", 400, "V"), N("cos_phi", 0.86), Q("T_amb", 30, "degC"),
+    ];
+
+    /// <summary>
+    /// Earth-fault disconnection of the motor supply: a 230 V to earth system (the 398 V line voltage the fault-level route uses is √3 × 230), a 0.05 Ω external loop impedance (INVENTED: a close-coupled 400 kVA transformer, whose own
+    /// impedance is 0.0159 Ω; the figure is coherent with the transformer data below, which a 0.35 Ω loop was not), a 10 mm² protective conductor (the cable step's size by hand), the type C MCB the cable step sizes (the choice must agree with it or
+    /// the step is blocked) and a 0.4 s disconnection time. The supply transformer (400 kVA, 4 %: INVENTED) is entered here, once: its three-phase fault current <c>I_k3</c> (with the factor <c>c_k3</c> it was computed with) is the source of the
+    /// motor-start step. <b>That source is the fault level at the transformer terminals, a lower bound on the dip:</b> the supply cabling and the upstream network are not in it (E9's <c>S_kQ</c> is where an upstream network is added; for a remote
+    /// board enter a lower fault level). The 25 kA breaking capacity and the 8·10⁴ A²s let-through are invented illustrations, to be replaced from the device datasheet.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> HpuE5 { get; } =
+    [
+        Q("U_0", 230, "V"), Q("Z_e", 0.05, "ohm"), Q("S_cpc", 10, "mm^2"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 8e4, "A^2*s"),
+        Q("S_r", 400, "kVA"), Q("u_k", 4, "%"), Q("I_cn", 25, "kA"),
+    ];
+
+    /// <summary>
+    /// The pump motor's starting: star-delta, with the pump started UNLOADED (through a vent or unloading valve to tank, not against its relief valve: a pump held at relief pressure is at full load, and in star the motor gives about a third of its
+    /// direct-on-line torque; a chain test guards that T_peak/3 covers the safety factor times the run-up and the unloaded torque, a typed INVENTED 20 N·m). A star start draws a third of the direct-on-line current, which stays below the type C
+    /// device's instantaneous band; the open-transition changeover from star to delta is NOT modelled and can briefly approach the direct-on-line current, which would reach that band. The rated power arrives from the drive step (the nameplate
+    /// <c>P_rated</c>), the cable's length and conductor area from the cable step, and the supply from the fault-protection step (<c>I_k3</c> with the factor <c>c_k3</c> it was computed with). The motor's efficiency and power factor are typed equal to
+    /// the cable step's (a chain test guards that, and that this step's rated current equals the cable step's design current). The 7 × locked-rotor ratio and 0.3 starting power factor are INVENTED motor data, to be replaced from the datasheet.
+    /// The 400 V here is the motor's; the fault current was computed at √3 × 230 = 398.4 V, 0.4 % lower, which makes this step's source impedance 0.4 % high (conservative).
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> HpuE9 { get; } =
+    [
+        Q("U", 400, "V"), C("source", "Fault level at the supply"), C("fault_basis", "Fault current I_k (kA)"), N("eta", 0.92), N("cos_phi", 0.86),
+        N("I_LR_r", 7), N("cos_phi_st", 0.3), C("starter", "Star-delta"), N("n_par", 1),
+    ];
+
+    // ---- Mechanism review: a cam-driven carton tamper, its return spring, cam shaft, bearing, geared motor and supply cable ----------------
+
+    private static CalcRow Seg(string kind, string? law, double betaDeg, double liftMm) =>
+        CalcRow.Of(("kind", new CalcCell(Text: kind)), ("law", law is null ? new CalcCell() : new CalcCell(Text: law)), ("beta", new CalcCell(betaDeg, "deg")), ("h", new CalcCell(liftMm, "mm")));
+
+    /// <summary>
+    /// A carton tamper: a 4 kg follower on a Ø30 roller (60 mm base circle, in line) rises 40 mm in 120° (cycloidal), dwells 60°, returns in 120° (modified trapezoid) and dwells 60°, at 150 cam revolutions per minute,
+    /// against a return spring of rate 9.874 N/mm and 50 N preload. All INVENTED for this illustration. The spring rate and preload are the ones the spring step (M7) is designed for: M7 takes the spring force at full lift
+    /// from this step, so M7's rate cannot be linked back (a cycle); the two are typed equal. M7 is told the cam's lift (<c>s_work</c>) and warns (<c>travel-mismatch</c>) when its own working travel differs from it by more than 1 %,
+    /// which is what a rate that no longer matches does; a chain test also checks the rate (to 0.01 %) and the preload.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> CamM9 { get; } =
+    [
+        C("mode", "Cam"), Q("n_in", 150, "rpm"), C("follower", "Roller"), Q("Rb", 60, "mm"), Q("R_r", 15, "mm"), Q("phi_max", 30, "deg"), Q("e_off", 0, "mm"),
+        Table("segs", Seg("Rise", "Cycloidal", 120, 40), Seg("Dwell", null, 60, 0), Seg("Return", "Modified trapezoid", 120, 40), Seg("Dwell", null, 60, 0)),
+        N("steps", 72), Q("m_f", 4, "kg"), Q("k_sp", 9.874, "N/mm"), Q("F_pre", 50, "N"), Q("F_ext", 0, "N"),
+    ];
+
+    /// <summary>
+    /// The follower's return spring: a compression spring of 6 mm wire on a 50 mm mean coil with 10.5 active coils (rate 9.874 N/mm with G = 80 GPa), squared and ground, 145 mm free. Its working points are loads: the force at
+    /// the base circle is the 50 N preload (typed equal to the cam step's, guarded) and the force at full lift arrives from the cam step (<c>F_spring_max</c> = k·lift + F_pre there). The cam's lift arrives as the expected working
+    /// travel (<c>s_work</c>, which warns on a mismatch above 1 %) and the cam frequency as the operating frequency (<c>f_op</c>, from <c>f_in</c> in Hz). The wire strength (1500 MPa) and the endurance strength (400 MPa) are
+    /// INVENTED illustrations, not wire-standard figures.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> CamM7 { get; } =
+    [
+        C("mode", "Compression"), Q("d", 6, "mm"), Q("D", 50, "mm"), N("n", 10.5), C("ends", "Squared and ground"), Q("L0", 145, "mm"), C("work", "Loads"), Q("F_1", 50, "N"),
+        C("rm_source", "Typed R_m(d)"), Q("Rm", 1500, "MPa"), Q("S_e", 400, "MPa"),
+    ];
+
+    /// <summary>
+    /// The cam shaft: Ø20 at the ends and Ø25 between, bearings at 25 and 275 mm, the cam (3 kg) at 150 mm where the follower force acts, the torque entering at the coupling (0) and leaving at the cam. The force at the cam is
+    /// the cam step's contact force (a placeholder here, replaced by the cell link); the torque, the peak torque and the speed are the cam step's too. The notch factors are invented illustrations.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> CamM4 { get; } =
+    [
+        Table("segments",
+            CalcRow.Of(Mm("x_end", 50), Mm("d", 20), Mm("d_i", 0)), CalcRow.Of(Mm("x_end", 250), Mm("d", 25), Mm("d_i", 0)), CalcRow.Of(Mm("x_end", 300), Mm("d", 20), Mm("d_i", 0))),
+        Q("x_A", 25, "mm"), Q("x_B", 275, "mm"),
+        Table("loads", CalcRow.Of(Mm("x", 150), ("F_y", new CalcCell(0.1, "kN")), ("F_z", new CalcCell(0, "kN")), ("m", new CalcCell(3, "kg")))),
+        Q("x_T1", 0, "mm"), Q("x_T2", 150, "mm"),
+        Table("sections",
+            CalcRow.Of(Mm("x", 50), Num("K_t", 1.7), Num("K_ts", 1.5), Num("q", 0.85), Num("q_s", 0.9)), CalcRow.Of(Mm("x", 150), Num("K_t", 1.7), Num("K_ts", 1.5), Num("q", 0.85), Num("q_s", 0.9))),
+        Q("S_ut", 850, "MPa"), Q("S_y", 650, "MPa"), Q("E", 207, "GPa"), Q("rho", 7850, "kg/m^3"), C("finish", "ground"),
+    ];
+
+    /// <summary>Cam-shaft bearing A: a ball bearing with INVENTED ratings (C 3.5 kN, C₀ 1.8 kN), 90 % reliability and a 20 000 h life; its radial load and speed arrive by link.</summary>
+    public static IReadOnlyList<CalcInputValue> CamM5 { get; } =
+    [
+        C("type", "ball (p = 3)"), Q("C", 3.5, "kN"), Q("C_0", 1.8, "kN"), Q("R", 90, "%"), Q("L_req", 20000, "h"),
+    ];
+
+    /// <summary>
+    /// The cam drive: a geared motor (9.6:1, 0.9 efficient) running continuously on the cam's RMS torque at the cam's speed, so that the motor runs at its 1440 rpm nameplate speed (4-pole, 50 Hz) when the cam turns at 150 rpm; the load inertia is
+    /// the cam, follower and shaft (invented). The candidate motor's rated speed and torque are INVENTED nameplate figures; the rated power <c>P_rated</c> = T_rated·ω_rated sizes the supply cable. The RMS torque is a stand-in for a steady
+    /// load: the cam's torque is fully alternating (mean zero), which the motor's thermal duty sees as its RMS.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> CamE1 { get; } =
+    [
+        C("mechanism", "gearbox rotary"), C("duty_mode", "continuous"), N("i", 9.6), N("eta", 0.9), Q("J_mech", 0.0002, "kg*m^2"), Q("J_L", 0.05, "kg*m^2"), Q("t_start", 2, "s"),
+        Q("J_motor", 0.0005, "kg*m^2"), Q("T_rated", 1.0, "N*m"), Q("T_peak", 3.0, "N*m"), Q("n_rated", 1440, "rpm"), Q("n_max", 3000, "rpm"),
+    ];
+
+    /// <summary>The motor's supply cable (15 m, PVC, type C device, method C; 400 V, motor efficiency 0.8 and power factor 0.8). The capacity and rating tables are NOT supplied: they are the user's own.</summary>
+    public static IReadOnlyList<CalcInputValue> CamE4 { get; } =
+    [
+        Q("L", 15, "m"), Q("U", 400, "V"), N("cos_phi", 0.8), N("eta", 0.8), C("insulation", "PVC 70 °C"), C("method", "C"), C("device", "MCB type C"),
+    ];
+
+    // ---- Actuated linkage: a slider-crank ejector replaced by a hydraulic cylinder, and its accumulator ------------------------------------
+
+    /// <summary>
+    /// A slider-crank ejector: a 40 kg slide on a 100 mm crank and 300 mm rod, in line, at 30 rpm against a 3 kN load that always opposes the motion (an invented duty). The peak slide speed and the peak slide-direction force are
+    /// what a cylinder replacing the crank must reach and carry; this is a kinematic proxy (a cylinder runs at about constant speed, not constant crank speed), which the sheet says.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> LinkM9 { get; } =
+    [
+        C("mode", "Slider-crank"), C("circuit", "Open"), Q("L2", 100, "mm"), Q("L3", 300, "mm"), Q("e_off", 0, "mm"), Q("theta_start", 0, "deg"), Q("theta_range", 360, "deg"), N("steps", 72),
+        Q("n_in", 30, "rpm"), Q("mu_req", 40, "deg"), C("load_dir", "Opposes motion"), Q("m_slider", 40, "kg"), Q("F_load", 3000, "N"),
+    ];
+
+    /// <summary>
+    /// The replacement cylinder: 40/22 at 100 bar, mineral oil of 870 kg/m³, the stroke of the slide (twice the crank radius, 200 mm: typed equal to the slider's stroke, guarded). The extend speed comes from the linkage's peak slide
+    /// speed (the flow is blank) and both loads from its peak slide-direction force, conservatively for both strokes. No pump is entered, so the circuit flow is the cylinder's.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> LinkF1 { get; } =
+    [
+        C("mode", "Standard"), Q("p", 100, "bar"), Q("rho", 870, "kg/m^3"), Q("D", 40, "mm"), Q("d_r", 22, "mm"), Q("stroke", 200, "mm"),
+    ];
+
+    /// <summary>
+    /// An emergency stroke: the accumulator carries the whole stroke volume (linked) from the system pressure (linked) down to 60 bar gauge, above the 26 bar the peak slide force needs on the 40 mm bore. Fast discharge, so n = 1.4;
+    /// 50 bar gauge pre-charge (at 50 °C), a cold shed at 10 °C. These are invented illustrations.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> LinkF2 { get; } =
+    [
+        C("mode", "Emergency stroke"), Q("p_0", 50, "bar"), Q("p_1", 60, "bar"), N("n", 1.4), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
     ];
 }

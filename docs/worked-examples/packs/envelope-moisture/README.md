@@ -1,6 +1,6 @@
 # Calc pack — Envelope moisture (`pack.envelope-moisture`)
 
-**Chain.** Room heat loss (`bs.room-heat-loss`) → Wall condensation (`bs.glaser`); Room air state (`bs.psychrometrics`) → Wall condensation (`bs.glaser`).
+**Chain.** Room heat loss (`bs.room-heat-loss`) → Wall condensation; Room air state (`bs.psychrometrics`) → Wall condensation.
 
 **Purpose.** Takes the U-value of a wall from the room heat-loss step and the temperature and humidity of the room air from the psychrometrics step to the Glaser condensation check of the wall: the condensate on each interface month by month, the annual balance, the peak against the owner's limit, and the surface temperature factor. The wall's layers are typed in both the heat-loss and the Glaser steps (no per-layer link exists) and the Glaser step warns if its U-value departs from the heat-loss step's by more than 2 %. The monthly climate is the user's own record: the example's is invented.
 
@@ -18,7 +18,7 @@ A solid brick wall (215 mm) lined inside with 80 mm of mineral wool and 12.5 mm 
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes the steps that take from it, and every step that takes from those, stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an input of a step makes every step that takes from it, directly or through other steps, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|

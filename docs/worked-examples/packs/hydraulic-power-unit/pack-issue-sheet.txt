@@ -12,6 +12,9 @@ PACK INDEX
   3. Pressure line — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
   4. Pump drive motor — Motor and actuator sizing — rev A — ISSUED — RMS torque SF·T_rms ≤ T_rated PASS
   5. Motor supply cable — Conductor sizing and overload coordination — rev A — ISSUED — Device rating within conductor capacity (I_n ≤ I_z) PASS
+  6. Motor supply voltage drop — Voltage drop and I²R loss — rev A — ISSUED — Voltage drop ≤ limit PASS
+  7. Motor supply fault protection — Fault protection: Zs, disconnection, adiabatic, fault level — rev A — ISSUED — Breaking capacity against prospective fault PASS
+  8. Pump motor start — Motor start voltage dip and PF correction — rev A — ISSUED — Motor-terminal dip within the limit PASS
 
 REVISIONS
   A  2026-10-25  test.engineer  First issue
@@ -39,8 +42,8 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 29/29
-  Test run: 2026-10-25 09:27 UTC
+  Known-answer cases passed: 46/46
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -53,7 +56,7 @@ Issued: 2026-10-25    Issue: HPU-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A double-acting hydraulic cylinder in its circuit: the bore, rod and annulus areas; the force and speed on the extend and the retract stroke with mechanical and volumetric efficiency and an optional back pressure, or with the regenerative extend connection; the swept volume and the cycle time; the pump delivery, shaft power, torque and speed; a hydraulic motor's torque; the velocity in the suction, pressure and return lines against your own limits and the smallest listed hose or pipe bore that meets them; a sharp orifice's flow for flow-control screening; and a screening check of the rod against buckling (Euler above the transition slenderness, Johnson parabola below it). screening only; ISO/TS 13725 method not implemented. Not a cylinder design to a standard: the limits, the hose sizes, the mounting factor and the material properties are your records.
-Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a Force: F_ext = (p·A_b − p_back·A_a)·η_m, F_ret = (p·A_a − p_back·A_b)·η_m; regenerative extend F_ext = p·A_r·η_m Speed and time: v_ext = Q·η_vc/A_b (regenerative: A_r), v_ret = Q·η_vc/A_a; t = stroke/v; t_cycle = t_ext + t_ret + t_dwell Swept volume: ΔV_ext = A_b·stroke (regenerative: A_r·stroke), ΔV_ret = A_a·stroke; ΔV = the larger Pump: Q_p = V_g·n·η_vp; P = p·Q_p/η_tp; T = P/ω; displacement needed V_g,req = Q/(n·η_vp) Hydraulic motor: T = Δp·V_g/(2π)·η_hm (V_g per revolution) Lines: v = Q_line/A_line; suction Q_suc = max(Q, V_g·n) (the geometric delivery), pressure/cap-port line Q_prs = Q_line·A_b/A_a on the retract stroke (regenerative extend: Q_line·A_b/A_r if larger), return Q_rtn = Q_line·A_b/A_a, with Q_line = max(Q, Q_p); smallest bore d = √(4Q/(π·v_max)), recommended = the smallest listed size not below it Orifice: Q = C_d·A_o·√(2Δp/ρ); bore for the circuit flow d_o = √(4Q/(π·C_d·√(2Δp/ρ))) Rod buckling (screening): L_eff = K·(stroke + L_add), r = d_r/4, λ = L_eff/r, λ_c = π·√(2E/f_y); Euler F_cr = π²·E·I/L_eff² for λ > λ_c, Johnson F_cr = A_r·f_y·[1 − f_y·λ²/(4π²E)] for λ ≤ λ_c; load F_b = max(F_push, F_stall) with F_stall = p·A_b (the stalled cylinder at the supply pressure: no flow, so no back pressure and no friction loss; in the regenerative extend too, since the standard connection can always be selected); utilisation u = F_b·S_f/F_cr
+Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a Force: F_ext = (p·A_b − p_back·A_a)·η_m, F_ret = (p·A_a − p_back·A_b)·η_m; regenerative extend F_ext = p·A_r·η_m Speed and time: v_ext = Q·η_vc/A_b (regenerative: A_r), v_ret = Q·η_vc/A_a; t = stroke/v; t_cycle = t_ext + t_ret + t_dwell Required speed (optional): when v_req is given it gives the flow, Q = v_req·A_b/η_vc (regenerative: A_r), and replaces the entered Q; the flow must lie within 0.1 to 2000 L/min Swept volume: ΔV_ext = A_b·stroke (regenerative: A_r·stroke), ΔV_ret = A_a·stroke; ΔV = the larger Pump: Q_p = V_g·n·η_vp; P = p·Q_p/η_tp; T = P/ω; displacement needed V_g,req = Q/(n·η_vp) Hydraulic motor: T = Δp·V_g/(2π)·η_hm (V_g per revolution) Lines: v = Q_line/A_line; suction Q_suc = max(Q, V_g·n) (the geometric delivery), pressure/cap-port line Q_prs = Q_line·A_b/A_a on the retract stroke (regenerative extend: Q_line·A_b/A_r if larger), return Q_rtn = Q_line·A_b/A_a, with Q_line = max(Q, Q_p); smallest bore d = √(4Q/(π·v_max)), recommended = the smallest listed size not below it Orifice: Q = C_d·A_o·√(2Δp/ρ); bore for the circuit flow d_o = √(4Q/(π·C_d·√(2Δp/ρ))) Rod buckling (screening): L_eff = K·(stroke + L_add), r = d_r/4, λ = L_eff/r, λ_c = π·√(2E/f_y); Euler F_cr = π²·E·I/L_eff² for λ > λ_c, Johnson F_cr = A_r·f_y·[1 − f_y·λ²/(4π²E)] for λ ≤ λ_c; load F_b = max(F_push, F_stall) with F_stall = p·A_b (the stalled cylinder at the supply pressure: no flow, so no back pressure and no friction loss; in the regenerative extend too, since the standard connection can always be selected); utilisation u = F_b·S_f/F_cr
   Ref: ISO/TS 13725 — Cylinder buckling load: method not implemented, screening only
   Ref: Esposito, Fluid Power with Applications Cylinder and pump chapters — Force, speed, flow and power relations, closed form
 
@@ -62,7 +65,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   mode | Extend connection | Standard |  | spec: SPEC-HPU-05 §2 (press duty) | any
   p | Supply pressure at the cylinder and the pump (gauge) | 160 | bar | spec: SPEC-HPU-05 §2 (press duty) | 1 … 700 bar
   p_back | Back pressure on the discharge side (standard connection) | 0 | bar | assumption: Sheet default value; no project figure given. | 0 … 700 bar
-  Q | Flow into the cylinder | 36 | L/min | spec: SPEC-HPU-05 §2 (press duty) | 0.1 … 2000 L/min
+  Q | Flow into the cylinder (blank when a required extend speed gives it) | 36 | L/min | spec: SPEC-HPU-05 §2 (press duty) | 0.1 … 2000 L/min
   rho | Fluid density | 870 | kg/m^3 | spec: SPEC-HPU-05 §2 (press duty) | 700 … 1300 kg/m^3
   F_push | Load to push on the extend stroke (compresses the rod) | 80 | kN | spec: SPEC-HPU-05 §2 (press duty) | 0 … 15000 kN
   F_pull | Load to pull on the retract stroke | 40 | kN | spec: SPEC-HPU-05 §2 (press duty) | 0 … 15000 kN
@@ -118,19 +121,19 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   A25. Standard connection: the extend force is the pressure on the bore area less the back pressure on the annulus area; the retract force the pressure on the annulus less the back pressure on the bore. (Continuity and force balance.)
 
 4. WORKING
-  [29] A_b = pi * D^2 / 4
+  [28] A_b = pi * D^2 / 4
       = π × (100 mm)^2 / 4
       = 78.54 cm²
         Bore (cap-side) area
-  [30] A_r = pi * d_r^2 / 4
+  [29] A_r = pi * d_r^2 / 4
       = π × (70 mm)^2 / 4
       = 38.485 cm²
         Rod area
-  [31] A_a = A_b - A_r
+  [30] A_a = A_b - A_r
       = 78.54 cm² − 38.485 cm²
       = 40.055 cm²
         Annulus (rod-side) area
-  [32] phi = A_b / A_a
+  [31] phi = A_b / A_a
       = 78.54 cm² / 40.055 cm²
       = 1.9608
         Area ratio A_b/A_a
@@ -374,11 +377,11 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   WARNING record: Tabulated values not taken from a reference record: E, f_y (Rod material); K_m (Mounting effective-length factor); S_f (Rod buckling safety factor); v_suc_max, v_prs_max, v_ret_max (Line velocity limits). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: fp.cylinder@1.2.0
-  Content hash: 29090df0de4e6fb3
+  Template: fp.cylinder@1.3.0
+  Content hash: f94c2e869fa10d18
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 6/6
-  Test run: 2026-10-25 09:27 UTC
+  Known-answer cases passed: 7/7
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -505,7 +508,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   Content hash: 13736352fb1985ad
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-25 09:27 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -659,7 +662,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Content hash: fa61fbf098961063
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 09:27 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -837,7 +840,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 64020d560b0ee248
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 09:27 UTC
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test
 
 
@@ -995,5 +998,542 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 09:27 UTC
+  Test run: 2026-10-25 15:45 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Press 5 hydraulic power unit
+Calc ID: Motor supply voltage drop    Revision: A
+Title: Voltage drop and I²R loss
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HPU-001    Client: Client Co
+
+1. SCOPE AND METHOD
+Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).
+R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X′ L/n. DC: ΔV = 2 I R; single-phase: ΔV = 2 I (R cos φ + X sin φ); three-phase: ΔV = √3 I (R cos φ + X sin φ); mV/A/m: ΔV = (mV/A/m) I L / 1000 (the figure already carries the 2 or √3 by convention). Loss: 2 I² R (DC, 1φ), 3 I² R (3φ). Conductor temperature: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².
+  Ref: BS 7671 525 — Voltage drop in consumers' installations
+  Ref: BS 7671 Appendix 4, section 6 — Voltage drop (mV/A/m tables and the temperature-correction method)
+  Ref: Hughes, Electrical and Electronic Technology Ch. on DC and AC circuits — Resistance, resistivity and temperature coefficient
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  system | System | AC three-phase |  | spec: SPEC-HPU-05 §6 (power supply) | any
+  V_n | Nominal voltage (line-to-line for three-phase) | 400 | V | spec: SPEC-HPU-05 §6 (power supply) | 12 … 1000 V
+  I | Design current | 33.47 | A | link: Motor supply cable rev A · I_b | 0.1 … 5000 A
+  L | Route length (one way) | 30 | m | link: Motor supply cable rev A · L | 0.1 … 5000 m
+  cos_phi | Power factor (AC) | 0.86 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
+  n_par | Parallel conductors per phase | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 6
+  data | Conductor data from | resistivity and area |  | assumption: Sheet default value; no project figure given. | any
+  rho_20 | Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | ohm*mm^2/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 ohm*mm^2/m
+  alpha | Temperature coefficient of resistance | 0.00393 |  | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045
+  A_c | Conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 1 … 1000 mm^2
+  T_c | Conductor operating temperature for the resistance | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
+  X_km | Reactance per km per conductor | 0.08 | ohm/km | assumption: Sheet default value; no project figure given. | 0 … 1 ohm/km
+  dv_limit | Voltage-drop limit | 5 |  | assumption: Sheet default value; no project figure given. | 1 … 10
+  T_rated | Conductor rated temperature | 70 | degC | assumption: Sheet default value; no project figure given. | 60 … 90 degC
+  T_amb | Ambient temperature | 30 | degC | spec: SPEC-HPU-05 §6 (power supply) | 0 … 60 degC
+
+3. ASSUMPTIONS
+  A1. Balanced load; conductor reactance from the stated X′ (zero when using resistivity alone unless X_km is given); the drop is the arithmetic (R cos φ + X sin φ) form. (Standard engineering approximation.)
+  A2. A mV/A/m figure is used as tabulated, with its own temperature and system convention. (Cable table convention.)
+  A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. (BS 7671 Appendix 4 approach, formula only.)
+  A4. n_par (Parallel conductors per phase) is taken as 1. (Sheet default value; no project figure given.)
+  A5. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
+  A6. rho_20 (Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.01724 ohm*mm^2/m. (Sheet default value; no project figure given.)
+  A7. alpha (Temperature coefficient of resistance) is taken as 0.00393. (Sheet default value; no project figure given.)
+  A8. T_c (Conductor operating temperature for the resistance) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A9. X_km (Reactance per km per conductor) is taken as 0.08 ohm/km. (Sheet default value; no project figure given.)
+  A10. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
+  A11. T_rated (Conductor rated temperature) is taken as 70 degC. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [9] sin_phi = sqrt(1 - cos_phi^2)
+      = sqrt(1 − 0.86^2)
+      = 0.51029
+        sin φ
+  [15] rho_T = rho_20 * (1 + alpha * (T_c - 20 degC) / (1 K))
+      = 0.01724 ohm·mm²/m × (1 + 0.00393 × (70 degC − 20 degC) / 1 K)
+      = 0.020628 ohm·mm²/m
+        Resistivity at the operating temperature
+  [16] R = rho_T * L / (A_c * n_par)
+      = 0.020628 ohm·mm²/m × 30 m / (10 mm² × 1)
+      = 0.061883 ohm
+        Conductor resistance (one conductor, parallel paths combined)
+  [17] X = X_km * L / n_par
+      = 0.08 ohm/km × 30 m / 1
+      = 0.0024 ohm
+        Conductor reactance
+  [18] dV = sqrt(3) * I * (R * cos_phi + X * sin_phi)
+      = sqrt(3) × 33.47 A × (0.061883 ohm × 0.86 + 0.0024 ohm × 0.51029)
+      = 3.1562 V
+        Voltage drop
+  [19] dV_pct = 100 * dV / V_n
+      = 100 × 3.1562 V / 400 V
+      = 0.78905
+        Voltage drop, per cent
+  [20] P_loss = 3 * I^2 * R
+      = 3 × (33.47 A)^2 × 0.061883 ohm
+      = 207.97 W
+        Conductor power loss
+  [21] u_dv = dV_pct / dv_limit
+      = 0.78905 / 5
+      = 0.15781
+        Drop utilisation against the limit
+
+5. RESULTS
+  R = 0.061883 ohm    Resistance
+  X = 0.0024 ohm    Reactance
+  dV = 3.1562 V    Voltage drop
+  dV_pct = 0.78905    Voltage drop (%)
+  P_loss = 207.97 W    Power loss
+
+6. CHECKS (governing first)
+  PASS  Voltage drop ≤ limit: u_dv = 0.15781 vs u_dv ≤ 1  utilisation 0.158  « BS 7671 525
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: elec.voltage-drop@1.0.0
+  Content hash: 3ed2f07610b34189
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 3/3
+  Test run: 2026-10-25 15:45 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Press 5 hydraulic power unit
+Calc ID: Motor supply fault protection    Revision: A
+Title: Fault protection: Zs, disconnection, adiabatic, fault level
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HPU-001    Client: Client Co
+
+1. SCOPE AND METHOD
+Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.
+Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault (the line conductor check, reg. 434.5.2, needs it and is not made without it; the protective conductor check then uses I_f²·0.1 s at the end-of-line fault only) Device: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
+  Ref: BS 7671:2018 (as amended) reg. 411.3.2.2, 411.3.2.3, 411.4.4 — Automatic disconnection in TN systems: times and the loop impedance condition
+  Ref: BS 7671:2018 (as amended) reg. 543.1.3, 434.5.2 — Protective conductor and fault current adiabatic checks
+  Ref: BS EN 60204-1:2018 cl. 6.3.3 — Protection by automatic disconnection of supply
+  Ref: IEC 60909-0:2016 cl. 5.3 — Voltage factor c
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  U_0 | Nominal voltage to earth | 230 | V | spec: SPEC-HPU-05 §6 (earthing and protection) | 50 … 1000 V
+  Z_e | External earth fault loop impedance | 0.05 | ohm | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.01 … 3 ohm
+  C_min | Voltage factor C_min | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.9 … 1
+  S_r | Supply transformer rating (for the fault level) | 400 | kVA | spec: SPEC-HPU-05 §6 (earthing and protection) | 1 … 5000 kVA
+  u_k | Transformer impedance voltage | 4 | % | spec: SPEC-HPU-05 §6 (earthing and protection) | 1 … 20 %
+  c_max | Voltage factor c for the maximum fault | 1.1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.1
+  L | Circuit length | 30 | m | link: Motor supply cable rev A · L | 0.1 … 1000 m
+  S_line | Line conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 0.5 … 630 mm^2
+  S_cpc | Protective conductor cross-section | 10 | mm^2 | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.5 … 630 mm^2
+  theta | Conductor temperature for Z_s | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
+  rho_20 | Resistivity at 20 °C | 0.000017241 | ohm*mm | assumption: Sheet default value; no project figure given. | 0.000001 … 0.0001 ohm*mm
+  alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 1/K
+  Q_c | Volumetric heat capacity | 0.00345 | J/(K*mm^3) | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 J/(K*mm^3)
+  beta | Reciprocal temperature coefficient β | 234.5 | K | assumption: Sheet default value; no project figure given. | 100 … 400 K
+  theta_i | Initial temperature for the adiabatic check | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 250 degC
+  theta_f | Final temperature for the adiabatic check | 160 | degC | assumption: Sheet default value; no project figure given. | 100 … 400 degC
+  device | Protective device | MCB type C (I_a = 10 I_n) |  | spec: SPEC-HPU-05 §6 (earthing and protection) | any
+  I_n | Rated current | 40 | A | link: Motor supply cable rev A · I_n | 1 … 1600 A
+  t_req | Required disconnection time | 0.4 | s | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.1 … 5 s
+  device_code | Device type code carried from the cable step (1 MCB type B, 2 type C, 3 type D, 4 fuse, MCCB or MPCB); the device chosen here must match it | 2 |  | link: Motor supply cable rev A · device_code | 1 … 4
+  I2t_let | Device let-through energy I²t at the maximum prospective fault (disconnection below 0.1 s) | 80000 | A^2*s | spec: SPEC-HPU-05 §6 (earthing and protection) | 1 … 1000000000 A^2*s
+  I_cn | Rated breaking capacity | 25 | kA | spec: SPEC-HPU-05 §6 (earthing and protection) | 1 … 150 kA
+
+3. ASSUMPTIONS
+  A1. TN system, a single earth fault of negligible impedance; no motor contribution, arc fault or IT system. (Scope of the check.)
+  A2. Line and protective conductors are the same material at the same temperature; R = ρ₂₀·L/S corrected by α. (Conductor data from a material record.)
+  A3. k is derived from the material constants and labelled derived; it is not read from a licensed table. (Derived constants, not read from a table.)
+  A4. Fuse and MCCB characteristics are points the user reads off the manufacturer's curve (log-log interpolation; no extrapolation). (No time–current table ships.)
+  A5. Optional field-test value 0.8 × Z_s,max is a rule of thumb for measurements at ambient temperature. (Labelled on the sheet.)
+  A6. The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
+  A7. C_min (Voltage factor C_min) is taken as 0.95. (Sheet default value; no project figure given.)
+  A8. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Sheet default value; no project figure given.)
+  A9. theta (Conductor temperature for Z_s) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A10. rho_20 (Resistivity at 20 °C) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
+  A11. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
+  A12. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
+  A13. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
+  A14. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A15. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [19] R_12 = rho_20 * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))
+      = 0.000017241 ohm·mm × 30 m × (1 / 10 mm² + 1 / 10 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC))
+      = 0.12377 ohm
+        R₁ + R₂ at the conductor temperature
+  [20] Z_s = Z_e + R_12    « BS 7671 reg. 411.4.4
+      = 0.05 ohm + 0.12377 ohm
+      = 0.17377 ohm
+        Earth fault loop impedance
+  [21] I_f = C_min * U_0 / Z_s
+      = 0.95 × 230 V / 0.17377 ohm
+      = 1257.4 A
+        Earth fault current
+  [22] I_a = 10 * I_n    « BS EN 60898-1
+      = 10 × 40 A
+      = 400 A
+        Instantaneous tripping current (10 I_n)
+  [23] Z_s_max = C_min * U_0 / I_a    « BS 7671 reg. 411.4.4
+      = 0.95 × 230 V / 400 A
+      = 0.54625 ohm
+        Maximum earth fault loop impedance
+  [24] u_Zs = Z_s / Z_s_max
+      = 0.17377 ohm / 0.54625 ohm
+      = 0.31812
+        Loop impedance utilisation
+  [25] Z_test = 0.8 * Z_s_max
+      = 0.8 × 0.54625 ohm
+      = 0.437 ohm
+        Field-test maximum at ambient (0.8 × Z_s,max, rule of thumb)
+  [26] t_d = instantaneous region (I_f ≥ I_a): t ≤ 0.1 s
+      = I_f = 1257.4 A
+      = 0.1 s
+        Disconnection time
+  [28] I2t = device let-through I²t at the maximum prospective fault
+      = 80000 A²s
+      = 80000 A²·s
+        Fault energy (let-through below 0.1 s)
+  [29] k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived)    « BS 7671 reg. 543.1.3
+      = √[0.00345 × 254.5 / 0.000017241 × ln(1 + 90/304.5)]
+      = 114.84
+        Adiabatic factor k, A·√s/mm² (derived, compare with the licensed table)
+  [30] S_min = √(I²t)/k    « BS 7671 reg. 543.1.3, 434.5.2
+      = √80000 / 114.84
+      = 2.463 mm²
+        Minimum conductor cross-section (adiabatic)
+  [31] u_cpc = S_min / S_cpc
+      = 2.463 mm² / 10 mm²
+      = 0.2463
+        Protective conductor utilisation
+  [32] u_line = S_min / S_line
+      = 2.463 mm² / 10 mm²
+      = 0.2463
+        Line conductor utilisation (same fault energy)
+  [35] U_n = sqrt(3) * U_0
+      = sqrt(3) × 230 V
+      = 398.37 V
+        Line voltage
+  [36] Z_T = u_k * U_n^2 / S_r
+      = 4 % × (398.37 V)^2 / 400 kVA
+      = 0.01587 ohm
+        Transformer impedance
+  [37] I_k3 = c_max * U_n / (sqrt(3) * Z_T)    « IEC 60909-0 cl. 5.3
+      = 1.1 × 398.37 V / (sqrt(3) × 0.01587 ohm)
+      = 15.942 kA
+        Prospective three-phase fault at the origin (simplified)
+  [38] c_k3 = c_max    « IEC 60909-0 cl. 5.3
+      = 1.1
+      = 1.1
+        Voltage factor c of the prospective fault current
+  [40] u_Icn = I_k3 / I_cn
+      = 15.942 kA / 25 kA
+      = 0.63768
+        Breaking capacity utilisation
+
+5. RESULTS
+  R_12 = 0.12377 ohm    R₁ + R₂
+  Z_s = 0.17377 ohm    Loop impedance
+  I_f = 1257.4 A    Earth fault current
+  I_a = 400 A    Disconnection current
+  t_d = 0.1 s    Disconnection time
+  Z_s_max = 0.54625 ohm    Maximum loop impedance
+  u_Zs = 0.31812    Loop impedance utilisation
+  Z_test = 0.437 ohm    Field-test maximum (rule of thumb)
+  k = 114.84    Adiabatic k (derived)
+  S_min = 2.463 mm²    Minimum cross-section
+  u_cpc = 0.2463    Protective conductor utilisation
+  u_line = 0.2463    Line conductor utilisation
+  Z_T = 0.01587 ohm    Transformer impedance
+  I_k3 = 15.942 kA    Prospective fault current
+  c_k3 = 1.1    Voltage factor of I_k3
+  u_Icn = 0.63768    Breaking capacity utilisation
+
+6. CHECKS (governing first)
+  PASS  Breaking capacity against prospective fault: u_Icn = 0.63768 vs u_Icn ≤ 1  utilisation 0.638
+  PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.31812 vs u_Zs ≤ 1  utilisation 0.318  « BS 7671 reg. 411.4.4
+  PASS  Disconnection time within required: 0.1 s vs 0.4 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
+  PASS  Protective conductor against adiabatic minimum: u_cpc = 0.2463 vs u_cpc ≤ 1  utilisation 0.246  « BS 7671 reg. 543.1.3
+  PASS  Line conductor against adiabatic minimum: u_line = 0.2463 vs u_line ≤ 1  utilisation 0.246  « BS 7671 reg. 434.5.2
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: rho_20, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let, I_cn (Device time–current points). Enter each as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: elec.fault-protection@1.2.0
+  Content hash: 28c5e83cec7eb404
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-25 15:45 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Press 5 hydraulic power unit
+Calc ID: Pump motor start    Revision: A
+Title: Motor start voltage dip and PF correction
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HPU-001    Client: Client Co
+
+1. SCOPE AND METHOD
+The voltage dip when a three-phase induction motor starts, at the motor terminals and at the point of common coupling, from the supply impedance (a fault level or a transformer), the cable and the motor's locked-rotor impedance for a direct-on-line or star-delta start (a passive motor impedance) or a soft-start or drive start (a regulated current), by the complex potential divider; the dip is checked against a user limit (default 10 %). Also the capacitor kvar to raise the running power factor to a target, the capacitor current and the parallel-resonance order, with a warning when harmonic loads are present. Steady-state phasor model: no motor run-up dynamics, no flicker assessment, no starting-torque adequacy check.
+Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rated voltage: DOL I_LR·I_n; star-delta I_LR·I_n/3; soft starter min(k_soft·I_n, I_LR·I_n); drive k_vfd·I_n Motor starting impedance (DOL, star-delta, and a soft starter that does not reach its limit): |Z_m| = (U/√3)/I_start, for a soft starter (U/√3)/(I_LR·I_n), at the starting power factor, Z_m = |Z_m|·(cos φ_st + j sin φ_st) Regulated current (a drive; a soft starter when its fully conducting current E/|Z_s + Z_c + Z_LR| exceeds k_soft·I_n): |I| = I_start held, lagging V_m by φ; with R + jX = Z_s + Z_c, a = |I|(R cos φ + X sin φ), b = |I|(X cos φ − R sin φ): |V_m| = √(E² − b²) − a, V_pcc = V_m + I·Z_c, and Z_m = V_m/I is the equivalent impedance Source impedance: transformer |Z_T| = u_k·U²/S_n, plus an optional upstream network |Z_Q| = U²/S_kQ in series; fault level |Z_s| = c·U²/S_k or c·U/(√3·I_k); each element Z = |Z|·(1 + j·X/R)/√(1 + (X/R)²) Cable: R = ρ_T·L/(A·n) with ρ_T = ρ_20·[1 + α(T_c − 20)], or R′·L/n; X = X′·L/n (as E3) Phasor divider for a passive motor (phase voltage E = U/√3 at 0°): I = E/(Z_s + Z_c + Z_m); V_pcc = E·(Z_c + Z_m)/(Z_s + Z_c + Z_m); V_m = E·Z_m/(Z_s + Z_c + Z_m) Dip: 100·(1 − |V|/E) at the motor terminals and at the point of common coupling; checked against the limits Cable drop along V_m: dV_cab = √3·Re[I·Z_c·V̄_m/|V_m|] = √3·I·(R cos φ_st + X sin φ_st), the E3 three-phase form at the dipped current Power-factor correction: P_in = P/η (or √3·U·I_n·cos φ when I_n is entered), Q_c = P_in·(tan φ₁ − tan φ₂) with φ₁ the motor's (a drive's displacement factor with a drive), I_c = Q_c/(√3·U), I after = P_in/(√3·U·cos φ₂) Resonance: S_sc = U²/|Z_s|, parallel resonance order h ≈ √(S_sc/Q_c) (|Z_s| used for X_s, so h reads 1 to 1.4 % low)
+  Ref: IEC 60909-0 cl. 5.3 — Voltage factor c and the equivalent voltage source
+  Ref: IEC 61000-3-11 scope — Limitation of voltage changes and flicker in public low-voltage systems (limits are user inputs)
+  Ref: Hughes, Electrical and Electronic Technology Ch. on AC circuits — Complex impedance and the potential divider
+  Ref: Hughes, Electrical and Electronic Technology Ch. on power factor — Power-factor correction: Q = P (tan φ₁ − tan φ₂)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  U | Supply and motor rated voltage (line-to-line) | 400 | V | spec: SPEC-HPU-05 §5 (pump drive starting) | 50 … 1000 V
+  source | Source impedance from | Fault level at the supply |  | spec: SPEC-HPU-05 §5 (pump drive starting) | any
+  fault_basis | Fault level given as | Fault current I_k (kA) |  | spec: SPEC-HPU-05 §5 (pump drive starting) | any
+  S_k | Three-phase fault level at the point of supply (use the minimum fault level, which gives the deepest dip) | 10 | MVA | assumption: Sheet default value; no project figure given. | 0.5 … 500 MVA
+  I_k | Three-phase fault current at the point of supply (links E5 I_k3) | 15.942 | kA | link: Motor supply fault protection rev A · I_k3 | 1 … 150 kA
+  c_src | Voltage factor c for the fault-level route (blank: 1.1 for the I_k basis, as E5 I_k3 is computed with; 1.0 for a declared S_k; links E5 c_k3, which follows E5's c_max) | 1.1 |  | link: Motor supply fault protection rev A · c_k3 | 0.95 … 1.1
+  S_n | Transformer rating | 500 | kVA | assumption: Sheet default value; no project figure given. | 25 … 5000 kVA
+  u_k | Transformer impedance voltage | 4 | % | assumption: Sheet default value; no project figure given. | 1 … 12 %
+  XR_Q | Upstream network X/R ratio | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 50
+  XR | Source X/R ratio (of the transformer, or of the fault level) | 4.2 |  | assumption: Sheet default value; no project figure given. | 0.5 … 40
+  P | Motor rated output (shaft) power, from the nameplate (E1 P_cont is only a lower bound) | 18.3469 | kW | link: Pump drive motor rev A · P_rated | 0.1 … 2000 kW
+  eta | Motor efficiency at rated load | 0.92 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 0.5 … 0.99
+  cos_phi | Motor power factor at rated load | 0.86 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 0.5 … 1
+  I_LR_r | Locked-rotor current ratio I_LR/I_n | 7 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 3 … 10
+  cos_phi_st | Power factor at locked rotor (starting) | 0.3 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 0.1 … 0.8
+  starter | Starter type | Star-delta |  | spec: SPEC-HPU-05 §5 (pump drive starting) | any
+  k_soft | Soft-starter current limit as a multiple of the rated current | 3.5 |  | assumption: Sheet default value; no project figure given. | 1 … 6
+  k_vfd | Drive line-current limit as a multiple of the rated current | 1.5 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2.5
+  cos_phi_vfd | Drive line displacement power factor while starting | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  cable_data | Cable resistance from | resistivity and area |  | assumption: Sheet default value; no project figure given. | any
+  L_cab | Cable length, source to motor (links E4 L) | 30 | m | link: Motor supply cable rev A · L | 0 … 1000 m
+  n_par | Parallel conductors per phase | 1 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 1 … 6
+  A_c | Conductor cross-section (links E4 CSA) | 10 | mm^2 | link: Motor supply cable rev A · CSA | 1 … 1000 mm^2
+  rho_20 | Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | ohm*mm^2/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 ohm*mm^2/m
+  alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045 1/K
+  T_c | Conductor temperature for the resistance | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
+  X_km | Reactance per km per conductor | 0.08 | ohm/km | assumption: Sheet default value; no project figure given. | 0 … 1 ohm/km
+  dip_limit | Dip limit at the motor terminals | 10 | % | assumption: Sheet default value; no project figure given. | 1 … 30 %
+  cos_phi2 | Target power factor after correction | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.8 … 1
+  harmonics | Harmonic loads present on the supply | no |  | assumption: Sheet default value; no project figure given. | any
+
+3. ASSUMPTIONS
+  A1. The supply is a stiff source behind the stated impedance (voltage E = U/√3 before the start). A direct-on-line or star-delta start, and a soft starter that does not reach its current limit at the dipped voltage (full conduction), draw current through a passive winding: a constant impedance equal to the locked-rotor impedance at rated voltage and the starting power factor, so the current falls with the dipped voltage. A soft starter that reaches its limit and a drive regulate the current: they hold |I| = I_start whatever the voltage, so the dip is deeper than the passive model gives; the current phasor lags the voltage at the starter or drive input by the stated power factor. (Standard steady-state starting-dip screening model; the regulated case is solved in closed form.)
+  A2. The dip is the steady-state phasor value at the instant of locked rotor; the current falls as the motor accelerates, so the dip is the worst case. No other load is running on the supply and no run-up dynamics, flicker (Pst) or tap-changer action is assessed. (Stated limitation.)
+  A3. A star-delta start draws one third of the direct-on-line current at rated voltage (and one third of the starting torque, which is not checked here); the current spike at the star-to-delta changeover is not modelled. (Star-delta connection ratio.)
+  A4. The cable resistance follows E3: from the resistivity, area and temperature, or from R′ per kilometre; X′ per kilometre is a user or record value. No cable table is embedded. (User or record values.)
+  A5. The capacitor kvar corrects the running power factor of the motor input power P/η at rated load; the capacitor sits at the point of common coupling, and the resonance order uses the short-circuit apparent power U²/|Z_s| there (|Z_s| stands in for X_s, so h reads 1 to 1.4 % low). Capacitor switching, detuning and self-excitation on disconnection are not assessed. (Standard power-factor-correction relation.)
+  A6. Source: E5 'Z_s' and 'I_f' are earth-fault-loop quantities (line to earth through the protective conductor), not the positive-sequence source impedance a motor start sees, so they are not linked; the fault level links E5 I_k3. E5 computes I_k3 with c = 1.1 and U_n = √3·U_0 (398.4 V at 230 V), so the I_k basis defaults c to 1.1 and U should be √3·U_0 for an exact match with E5's Z_T. E6 declares no impedance port, so the transformer rating and impedance are entered. (Linking decision.)
+  A7. The source impedance should be taken at the minimum fault level (the deepest dip); a transformer alone is an infinite bus behind it, which understates the dip by a few per cent and overstates the resonance order unless the upstream network fault level S_kQ is entered. (Stated limitation.)
+  A8. With a drive, the power-factor correction starts from the drive's displacement factor, not the motor's, the drive is itself a harmonic load, and the 'torque factor' and the voltage at the starter or drive input (not the motor terminals) are reported only for what they are. (Regulated-current starters.)
+  A9. S_k (Three-phase fault level at the point of supply (use the minimum fault level, which gives the deepest dip)) is taken as 10 MVA. (Sheet default value; no project figure given.)
+  A10. S_n (Transformer rating) is taken as 500 kVA. (Sheet default value; no project figure given.)
+  A11. u_k (Transformer impedance voltage) is taken as 4 %. (Sheet default value; no project figure given.)
+  A12. XR_Q (Upstream network X/R ratio) is taken as 10. (Sheet default value; no project figure given.)
+  A13. XR (Source X/R ratio (of the transformer, or of the fault level)) is taken as 4.2. (Sheet default value; no project figure given.)
+  A14. k_soft (Soft-starter current limit as a multiple of the rated current) is taken as 3.5. (Sheet default value; no project figure given.)
+  A15. k_vfd (Drive line-current limit as a multiple of the rated current) is taken as 1.5. (Sheet default value; no project figure given.)
+  A16. cos_phi_vfd (Drive line displacement power factor while starting) is taken as 0.95. (Sheet default value; no project figure given.)
+  A17. cable_data (Cable resistance from) is taken as resistivity and area. (Sheet default value; no project figure given.)
+  A18. rho_20 (Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.01724 ohm*mm^2/m. (Sheet default value; no project figure given.)
+  A19. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
+  A20. T_c (Conductor temperature for the resistance) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A21. X_km (Reactance per km per conductor) is taken as 0.08 ohm/km. (Sheet default value; no project figure given.)
+  A22. dip_limit (Dip limit at the motor terminals) is taken as 10 %. (Sheet default value; no project figure given.)
+  A23. cos_phi2 (Target power factor after correction) is taken as 0.95. (Sheet default value; no project figure given.)
+  A24. harmonics (Harmonic loads present on the supply) is taken as no. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [10] I_rated = P / (sqrt(3) * U * cos_phi * eta)
+      = 18.347 kW / (sqrt(3) × 400 V × 0.86 × 0.92)
+      = 33.47 A
+        Motor rated current from the rated output
+  [13] I_start = I_LR_r * I_rated / 3
+      = 7 × 33.47 A / 3
+      = 78.097 A
+        Starting current at rated voltage (star connection: one third of direct on line)
+  [14] S_start = sqrt(3) * U * I_start
+      = sqrt(3) × 400 V × 78.097 A
+      = 54.107 kVA
+        Starting apparent power
+  [19] Z_fl = c_src * U / (sqrt(3) * I_k)    « IEC 60909-0 cl. 5.3
+      = 1.1 × 400 V / (sqrt(3) × 15.942 kA)
+      = 0.015935 ohm
+        Source impedance magnitude from the fault current
+  [20] R_src = Z_fl / sqrt(1 + XR^2)
+      = 0.015935 ohm / sqrt(1 + 4.2^2)
+      = 0.0036908 ohm
+        Source resistance
+  [21] X_src = R_src * XR
+      = 0.0036908 ohm × 4.2
+      = 0.015502 ohm
+        Source reactance
+  [22] Z_src = hypot(R_src, X_src)
+      = hypot(0.0036908 ohm, 0.015502 ohm)
+      = 0.015935 ohm
+        Source impedance magnitude
+  [30] rho_T = rho_20 * (1 + alpha * (T_c - 20 degC))
+      = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (70 degC − 20 degC))
+      = 0.020628 ohm·mm²/m
+        Resistivity at the operating temperature
+  [31] R_cab = rho_T * L_cab / (A_c * n_par)
+      = 0.020628 ohm·mm²/m × 30 m / (10 mm² × 1)
+      = 0.061883 ohm
+        Cable resistance (parallel paths combined)
+  [32] X_cab = X_km * L_cab / n_par
+      = 0.08 ohm/km × 30 m / 1
+      = 0.0024 ohm
+        Cable reactance
+  [33] Z_m = U / (sqrt(3) * I_start)
+      = 400 V / (sqrt(3) × 78.097 A)
+      = 2.9571 ohm
+        Motor starting impedance magnitude
+  [34] R_m = Z_m * cos_phi_st
+      = 2.9571 ohm × 0.3
+      = 0.88713 ohm
+        Motor starting resistance
+  [35] X_m = Z_m * sqrt(1 - cos_phi_st^2)
+      = 2.9571 ohm × sqrt(1 − 0.3^2)
+      = 2.8209 ohm
+        Motor starting reactance
+  [36] E_ph = E = U/√3 (reference phasor, angle 0°)
+      = 400 V / √3
+      = 230.94 V
+        Source phase voltage before the start
+  [37] Z_s_ph = Z_s = R_s + jX_s
+      = R_s = 0.0036908 Ω, X_s = 0.015502 Ω
+      = "0.0036908 + j0.015502 Ω  [0.015935 Ω ∠ 76.608°]"
+        Source impedance phasor
+  [38] Z_c_ph = Z_c = R_c + jX_c
+      = R_c = 0.061883 Ω, X_c = 0.0024 Ω
+      = "0.061883 + j0.0024 Ω  [0.06193 Ω ∠ 2.221°]"
+        Cable impedance phasor
+  [39] Z_m_ph = Z_m = |Z_m|·(cos φ_st + j sin φ_st)
+      = 2.9571 Ω · (0.3 + j0.95394)
+      = "0.88713 + j2.8209 Ω  [2.9571 Ω ∠ 72.542°]"
+        Motor starting impedance phasor
+  [40] Z_t_ph = Z_t = Z_s + Z_c + Z_m
+      = (0.0036908 + j0.015502) + (0.061883 + j0.0024) + (0.88713 + j2.8209)
+      = "0.95271 + j2.8388 Ω  [2.9944 Ω ∠ 71.448°]"
+        Total series impedance phasor
+  [41] I_ph = I = E/Z_t
+      = 230.94 V / (2.9944 Ω ∠ 71.448°)
+      = "24.538 − j73.116 A  [77.124 A ∠ −71.448°]"
+        Starting current phasor at the dipped voltage
+  [42] V_m_ph = V_m = E·Z_m/Z_t
+      = 230.94 V · (2.9571 Ω ∠ 72.542°) / (2.9944 Ω ∠ 71.448°)
+      = "228.02 + j4.3553 V  [228.06 V ∠ 1.0942°]"
+        Motor terminal voltage phasor (phase)
+  [43] V_pcc_ph = V_pcc = E·(Z_c + Z_m)/Z_t
+      = 230.94 V · (2.9785 Ω ∠ 71.421°) / (2.9944 Ω ∠ 71.448°)
+      = "229.72 − j0.11052 V  [229.72 V ∠ −0.027565°]"
+        Point of common coupling voltage phasor (phase)
+  [44] I_dip = |I|
+      = 230.94 V / 2.9944 Ω
+      = 77.124 A
+        Starting current at the dipped voltage
+  [45] V_m = |V_m|·√3
+      = 228.06 V · √3
+      = 395.02 V
+        Voltage at the motor terminals while starting (line)
+  [46] V_pcc = |V_pcc|·√3
+      = 229.72 V · √3
+      = 397.88 V
+        Point of common coupling voltage while starting (line)
+  [47] start_dip = 100·(1 − |V_m|/E)
+      = 100 · (1 − 228.06 / 230.94)
+      = 1.2455 %
+        Voltage dip at the motor terminals
+  [48] dip_pcc = 100·(1 − |V_pcc|/E)
+      = 100 · (1 − 229.72 / 230.94)
+      = 0.52999 %
+        Voltage dip at the point of common coupling
+  [49] dV_cab = √3·Re[I·Z_c·V̄_m/|V_m|]
+      = √3 · Re[(77.124 A ∠ −71.448°) · (0.06193 Ω ∠ 2.221°) · e^(−j1.0942°)]
+      = 2.7858 V
+        Cable drop along the starting voltage: √3·I·(R cos φ + X sin φ), the E3 three-phase form at this current
+  [50] k_T = (|V_m|/E)²
+      = (228.06 / 230.94)²
+      = 0.97525
+        Torque factor at the dipped voltage relative to rated voltage (torque varies as V²)
+  [51] u_dip = start_dip / dip_limit
+      = 1.2455 % / 10 %
+      = 0.12455
+        Dip at the motor terminals against the limit
+  [52] P_in = P / eta
+      = 18.347 kW / 0.92
+      = 19.942 kW
+        Motor input power at rated load
+  [53] tan_1 = sqrt(1 - cos_phi^2) / cos_phi
+      = sqrt(1 − 0.86^2) / 0.86
+      = 0.59337
+        tan φ₁ at the running power factor
+  [54] tan_2 = sqrt(1 - cos_phi2^2) / cos_phi2
+      = sqrt(1 − 0.95^2) / 0.95
+      = 0.32868
+        tan φ₂ at the target power factor
+  [55] Q_c = max(0 kW, P_in * (tan_1 - tan_2))
+      = max(0 kW, 19.942 kW × (0.59337 − 0.32868))
+      = 5.2783 kvar
+        Capacitor kvar to reach the target power factor
+  [56] I_cap = Q_c / (sqrt(3) * U)
+      = 5.2783 kvar / (sqrt(3) × 400 V)
+      = 7.6186 A
+        Capacitor line current at rated voltage
+  [57] I_run1 = P_in / (sqrt(3) * U * cos_phi)
+      = 19.942 kW / (sqrt(3) × 400 V × 0.86)
+      = 33.47 A
+        Running line current before correction
+  [58] I_run2 = P_in / (sqrt(3) * U * cos_phi2)
+      = 19.942 kW / (sqrt(3) × 400 V × 0.95)
+      = 30.299 A
+        Running line current after correction (when the target is reached)
+  [59] S_sc = U^2 / Z_src
+      = (400 V)^2 / 0.015935 ohm
+      = 10.041 MVA
+        Short-circuit apparent power at the point of supply
+  [60] h_res = sqrt(S_sc / Q_c)
+      = sqrt(10.041 MVA / 5.2783 kvar)
+      = 43.615
+        Parallel resonance order of the capacitor bank with the supply
+
+5. RESULTS
+  Z_src = 0.015935 ohm    Source impedance (magnitude)
+  Z_m = 2.9571 ohm    Motor starting impedance (magnitude)
+  I_rated = 33.47 A    Motor rated current
+  I_start = 78.097 A    Starting current at rated voltage
+  S_start = 54.107 kVA    Starting apparent power
+  I_dip = 77.124 A    Starting current at the dipped voltage
+  V_m = 395.02 V    Voltage at the motor terminals while starting
+  V_pcc = 397.88 V    Point of common coupling voltage while starting
+  start_dip = 1.2455 %    Voltage dip at the motor terminals
+  dip_pcc = 0.52999 %    Voltage dip at the point of common coupling
+  dV_cab = 2.7858 V    Cable drop along the starting voltage
+  k_T = 0.97525    Torque factor at the dipped voltage
+  u_dip = 0.12455    Dip utilisation at the motor terminals
+  P_in = 19.942 kW    Motor input power at rated load
+  kvar = 5.2783 kvar    Capacitor kvar to the target power factor
+  I_cap = 7.6186 A    Capacitor current
+  I_run1 = 33.47 A    Running current before correction
+  I_run2 = 30.299 A    Running current after correction
+  S_sc = 10.041 MVA    Short-circuit apparent power at the bank
+  h_res = 43.615    Parallel resonance order
+
+6. CHECKS (governing first)
+  PASS  Motor-terminal dip within the limit: u_dip = 0.12455 vs u_dip ≤ 1  utilisation 0.125
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: X_km (Cable resistance and reactance per kilometre); rho_20, alpha (Conductor material constants); I_LR_r, cos_phi_st (Motor starting data); k_soft, k_vfd (Soft-starter and drive limits); u_k, XR (Transformer impedance data). Enter each as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: elec.motor-start@1.2.0
+  Content hash: 15bfc7e08b76ce1f
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 8/8
+  Test run: 2026-10-25 15:45 UTC
   Application: TempestOS test

@@ -316,7 +316,52 @@ public sealed class CylinderTests
     [Fact]
     public void The_Template_Version_Is_Bumped_For_The_Changed_Model()
     {
-        Assert.Equal("1.2.0", Cylinder.Template.Version);
+        Assert.Equal("1.3.0", Cylinder.Template.Version);
+    }
+
+    [Fact]
+    public void A_Required_Extend_Speed_Gives_The_Flow_And_The_Entered_Flow_Is_Blank_Or_Ignored_With_A_Notice()
+    {
+        // 150 mm/s on the 100 mm bore at η_vc 0.98: Q = v·A_b/η_vc = 0.15 · 7.854e-3 / 0.98 = 1.2021e-3 m³/s = 72.13 L/min.
+        double ab = Area(100), expected = 0.15 * ab / 0.98;
+        var blank = CalcRunner.Run(Cylinder, With(Q("v_req", 150, "mm/s"), new CalcInputValue("Q")));
+        Assert.False(blank.IsBlocked);
+        Assert.Equal(expected, blank.OutputSi("Q"), 12);
+        Assert.Equal(0.15, blank.OutputSi("v_ext"), 12);
+        Assert.Equal(0.5 / 0.15, blank.OutputSi("t_ext"), 9);
+        Assert.DoesNotContain(blank.Warnings, w => w.RuleId == "v-req-q");
+
+        // The retract speed and the line flows follow the derived flow, not a flow that is also entered.
+        var both = Run(Q("v_req", 150, "mm/s"), Q("Q", 50, "L/min"));
+        Assert.Equal(expected, both.OutputSi("Q"), 12);
+        Assert.Contains(both.Warnings, w => w.RuleId == "v-req-q");
+
+        // A flow still at the sheet's opening 36 L/min is not an entry to warn about (a new sheet given only the speed), and the speed still wins.
+        var atDefault = Run(Q("v_req", 150, "mm/s"));
+        Assert.Equal(expected, atDefault.OutputSi("Q"), 12);
+        Assert.DoesNotContain(atDefault.Warnings, w => w.RuleId == "v-req-q");
+        Assert.Equal(blank.OutputSi("Q_prs"), both.OutputSi("Q_prs"), 12);
+
+        // The regenerative extend runs on the rod area: Q = v·A_r/η_vc.
+        var regen = CalcRunner.Run(Cylinder, With(Q("v_req", 150, "mm/s"), new CalcInputValue("Q"), CalcInputValue.Choice("mode", CylinderCalculator.Regenerative), Q("d_prs", 25, "mm")));
+        Assert.Equal(0.15 * Area(70) / 0.98, regen.OutputSi("Q"), 12);
+        Assert.Equal(0.15, regen.OutputSi("v_ext"), 12);
+    }
+
+    [Fact]
+    public void Neither_A_Flow_Nor_A_Required_Speed_Blocks_And_A_Speed_Needing_A_Flow_Outside_The_Range_Blocks()
+    {
+        var none = CalcRunner.Run(Cylinder, With(new CalcInputValue("Q")));
+        Assert.True(none.IsBlocked);
+        Assert.StartsWith("Q:", none.Blocks[0].Message, StringComparison.Ordinal);
+
+        // 5000 mm/s on the 100 mm bore needs about 2400 L/min, above the 2000 L/min this sheet covers; 0.1 mm/s needs 0.05 L/min, below 0.1.
+        var fast = CalcRunner.Run(Cylinder, With(Q("v_req", 5000, "mm/s"), new CalcInputValue("Q")));
+        Assert.True(fast.IsBlocked);
+        Assert.StartsWith("v_req:", fast.Blocks[0].Message, StringComparison.Ordinal);
+        var slow = CalcRunner.Run(Cylinder, With(Q("v_req", 0.1, "mm/s"), new CalcInputValue("Q")));
+        Assert.True(slow.IsBlocked);
+        Assert.StartsWith("v_req:", slow.Blocks[0].Message, StringComparison.Ordinal);
     }
 
     [Fact]

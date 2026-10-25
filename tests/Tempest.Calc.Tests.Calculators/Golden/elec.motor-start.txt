@@ -236,5 +236,5 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   WARNING record: Tabulated values not taken from a reference record: X_km (Cable resistance and reactance per kilometre); rho_20, alpha (Conductor material constants); I_LR_r, cos_phi_st (Motor starting data); k_soft, k_vfd (Soft-starter and drive limits); u_k, XR (Transformer impedance data). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.motor-start@1.1.0
+  Template: elec.motor-start@1.2.0
   Known-answer cases passed: 8/8

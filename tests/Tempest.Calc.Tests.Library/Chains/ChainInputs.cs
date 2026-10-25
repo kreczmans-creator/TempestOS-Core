@@ -5,7 +5,7 @@ using Tempest.Calc.Sheets;
 namespace Tempest.Calc.Tests.Library.Chains;
 
 /// <summary>
-/// The inputs of every step of the six built-in chains for the chain tests and the pack worked examples. The values are the pack templates'
+/// The inputs of every step of the built-in chains for the chain tests and the pack worked examples. The values are the pack templates'
 /// own example inputs (<see cref="CalcPackStep.Example"/>); here the figures a step chooses cite that step's (invented) specification or
 /// drawing, and an input left at the sheet's default is recorded as an assumption.
 /// </summary>
@@ -60,6 +60,7 @@ internal static class ChainInputs
         var inputs = For(host, CalcPackTemplates.HydraulicPowerUnit, new Dictionary<string, CalcProvenance>
         {
             ["f1"] = duty, ["f2"] = Spec("SPEC-HPU-05 §3 (accumulator)"), ["b1"] = Drg("DRG-HPU-510"), ["e1"] = Spec("SPEC-HPU-05 §5 (pump drive)"), ["e4"] = cable,
+            ["e3"] = cable, ["e5"] = Spec("SPEC-HPU-05 §6 (earthing and protection)"), ["e9"] = Spec("SPEC-HPU-05 §5 (pump drive starting)"),
         });
         inputs["e4"] =
         [
@@ -69,6 +70,31 @@ internal static class ChainInputs
         ];
         return inputs;
     }
+
+    /// <summary>
+    /// The mechanism review's inputs: the example inputs, and E4's two tables given as pins to the records it is passed (null: the tables as plain synthetic inputs, labelled SYNTHETIC, never table values from a regulation or
+    /// a manufacturer). The shipped example omits both tables.
+    /// </summary>
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> MechanismReview(LibraryTestHost host, CalcProvenance? ampacityPin = null, CalcProvenance? ratingsPin = null)
+    {
+        var inputs = For(host, CalcPackTemplates.MechanismReview, new Dictionary<string, CalcProvenance>
+        {
+            ["m9"] = Drg("DRG-TMP-410"), ["m7"] = Drg("DRG-TMP-415"), ["m4"] = Drg("DRG-TMP-420"), ["m5"] = Spec("SPEC-TMP-04 §5 (bearing schedule)"),
+            ["e1"] = Spec("SPEC-TMP-04 §6 (cam drive)"), ["e4"] = Spec("SPEC-TMP-04 §7 (power supply)"),
+        });
+        inputs["e4"] =
+        [
+            .. inputs["e4"],
+            ConductorSizingCalculator.SyntheticAmpacity() with { Provenance = ampacityPin ?? Spec("SYNTHETIC test capacities (not a regulation table)") },
+            ConductorSizingCalculator.TypicalRatings() with { Provenance = ratingsPin ?? Spec("SYNTHETIC test device ratings (not a manufacturer table)") },
+        ];
+        return inputs;
+    }
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> ActuatedLinkage(LibraryTestHost host) => For(host, CalcPackTemplates.ActuatedLinkage, new Dictionary<string, CalcProvenance>
+    {
+        ["m9"] = Spec("SPEC-EJT-02 §2 (ejector duty)"), ["f1"] = Drg("DRG-EJT-210"), ["f2"] = Spec("SPEC-EJT-02 §4 (accumulator)"),
+    });
 
     public static Dictionary<string, IReadOnlyList<CalcInputValue>> WetHeating(LibraryTestHost host)
     {

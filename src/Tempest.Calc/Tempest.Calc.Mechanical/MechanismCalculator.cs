@@ -31,7 +31,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     private const string Source = "Vector-loop closed form (Freudenstein / law of cosines)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Mechanical, "Mechanism kinematics: four-bar, slider-crank, cam",
+        Id, "1.2.0", CalcDiscipline.Mechanical, "Mechanism kinematics: four-bar, slider-crank, cam",
         "A single-degree-of-freedom planar mechanism driven at constant speed: a four-bar linkage or an offset slider-crank (both circuits, position, velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against a minimum, toggle and dead-centre positions, loop-closure residual, input torque by virtual work), or a cam with a translating follower. Rigid links, no clearance, no friction.",
         "Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A\n" +
         "Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂\n" +
@@ -73,6 +73,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
             new CalcOutputPort("F_pin_pk", "N", "Peak force at the crank or cam-shaft pin: the force in the coupler (four-bar), in the connecting rod (slider), or the contact normal force F/cos φ (cam roller) (mech.F_pin_pk → M4 bearing load, M5)"),
             new CalcOutputPort("T_rms_in", "N*m", "RMS input torque over the swept range or the cam revolution (mech.T_rms_in → E1 thermal sizing)"),
             new CalcOutputPort("n_in", "rpm", "Input (crank or cam-shaft) speed passed through (mech.n_in → E1 load speed)"),
+            new CalcOutputPort("f_in", "Hz", "Input (crank or cam-shaft) frequency n_in/60 in Hz (mech.f_in → M7 f_op; rpm is an angular velocity, so n_in cannot be linked to a frequency)"),
             new CalcOutputPort("P_mean", "W", "Mean input power over the swept range or the cam revolution (mech.P_mean)"),
             new CalcOutputPort("lift", "mm", "Greatest follower displacement (cam) (mech.lift → M7 spring travel)"),
             new CalcOutputPort("F_spring_max", "N", "Spring force at full lift, k·lift + F_pre (cam) (mech.F_spring_max → M7 working force; the follower force includes inertia and is not the spring force)"),
@@ -154,6 +155,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
         var omega = c.InputSi("n_in");
         c.Output("n_in", "Input (crank) speed, passed through for E1's load speed (mech.n_in)");
+        Scalar(c, "f_in", "n_in / 60", "rpm to Hz", omega / (2 * Math.PI), "Hz", "Input (crank) frequency, for the spring surge check of M7 (mech.f_in)");
         var steps = (int)Math.Round(c.InputSi("steps"));
         var start = c.InputSi("theta_start");
         var range = c.InputSi("theta_range");

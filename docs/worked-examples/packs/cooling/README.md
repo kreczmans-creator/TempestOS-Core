@@ -1,6 +1,6 @@
 # Calc pack — Enclosure cooling (`pack.cooling`)
 
-**Chain.** Panel load budget (`elec.load-budget`) → Enclosure heat (`elec.enclosure-heat`) → Cooling-water air coil (`bs.heat-exchanger`) → Cooling-water pipework and pump (`bs.pipe-pump`).
+**Chain.** Panel load budget (`elec.load-budget`) → Enclosure heat; Enclosure heat (`elec.enclosure-heat`) → Cooling-water air coil; Cooling-water air coil (`bs.heat-exchanger`) → Cooling-water pipework and pump.
 
 **Purpose.** Takes the heat a control panel dissipates, finds what the enclosure cannot lose naturally, sizes the water-cooled air coil that removes it at the enclosure's temperature limit and the pipework and pump that carry the cooling water.
 
@@ -19,7 +19,7 @@ The heat a drive panel dissipates is a linked load of its enclosure; the heat th
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes every step below it stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an input of a step makes every step that takes from it, directly or through other steps, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|

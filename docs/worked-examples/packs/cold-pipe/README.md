@@ -1,6 +1,6 @@
 # Calc pack — Cold pipe (`pack.cold-pipe`)
 
-**Chain.** Chilled water pipe (`bs.pipe-pump`) → Pipe insulation (`bs.insulation`); Plant room air (`bs.psychrometrics`) → Pipe insulation (`bs.insulation`).
+**Chain.** Chilled water pipe (`bs.pipe-pump`) → Pipe insulation; Plant room air (`bs.psychrometrics`) → Pipe insulation.
 
 **Purpose.** Takes the design temperature (the coldest fluid temperature in the line, not its mean) and the outside diameter of a chilled-water pipe from the pipe step, and the ambient temperature, dew point and humidity of the surrounding air from the psychrometrics step, to the insulation thickness that keeps the pipe's outer surface above the dew point by the chosen margin, and the heat gain and surface temperature at the chosen thickness. The pipe step also checks the flow velocity in the pipe's inner diameter; the insulation's conductivity and surface coefficient are the user's.
 
@@ -18,7 +18,7 @@ A chilled-water flow-and-return line, 6 °C flow and 12 °C return (60 m of 54 �
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes the steps that take from it, and every step that takes from those, stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an input of a step makes every step that takes from it, directly or through other steps, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|

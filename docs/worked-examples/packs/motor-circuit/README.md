@@ -1,6 +1,6 @@
 # Calc pack — Motor circuit (`pack.motor-circuit`)
 
-**Chain.** Motor sizing (`elec.motor-sizing`) → Load budget (`elec.load-budget`); Load budget (`elec.load-budget`) → Cable and device (`elec.conductor-sizing`) and Enclosure heat (`elec.enclosure-heat`); Cable and device (`elec.conductor-sizing`) → Voltage drop (`elec.voltage-drop`) and Fault protection (`elec.fault-protection`).
+**Chain.** Motor sizing (`elec.motor-sizing`) → Load budget; Load budget (`elec.load-budget`) → Cable and device, Enclosure heat; Cable and device (`elec.conductor-sizing`) → Voltage drop, Fault protection.
 
 **Purpose.** Sizes a motor's supply from the motor duty to the enclosure: demand, cable and device, voltage drop, earth-fault disconnection and the heat the panel must lose.
 
@@ -21,7 +21,7 @@ A ball-screw servo axis (50 kg, 0.5 m in 0.5 s) is sized, its panel demand and h
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes the steps that take from it, and every step that takes from those, stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an input of a step makes every step that takes from it, directly or through other steps, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|

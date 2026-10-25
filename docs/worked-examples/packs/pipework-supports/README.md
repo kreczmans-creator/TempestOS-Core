@@ -1,6 +1,6 @@
 # Calc pack — Pipework supports (`pack.pipework-supports`)
 
-**Chain.** Pipe expansion and anchor force (`bs.pipe-expansion`) → Anchor post frame (`struct.frame-2d`) → Anchor post base plate (`struct.base-plate`).
+**Chain.** Pipe expansion and anchor force (`bs.pipe-expansion`) → Anchor post frame; Anchor post frame (`struct.frame-2d`) → Anchor post base plate.
 
 **Purpose.** Takes the force a heated pipe puts on its anchor from the pipe-expansion step to the steel post that holds the anchor and the post's base plate, and files the anchorage design done elsewhere as Evidence. The links assume the post frame's numbering: node 1 the column base (fixed), node 2 the anchor, member 1 the post, the first load row the thermal force along the pipe; the weight in the second row and the load factors are the user's. The pipe step is a screening: a line that fails it needs a formal stress analysis, and its moment is not carried to the post. The holding-down bolt data are typed (no bolt-check step).
 
@@ -18,7 +18,7 @@ A 219.1 × 6.3 mm steel line anchored 60 m apart, 10 to 150 °C, absorbed by a 9
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes every step below it stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an input of a step makes every step that takes from it, directly or through other steps, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
