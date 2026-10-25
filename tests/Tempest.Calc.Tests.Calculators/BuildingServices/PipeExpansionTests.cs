@@ -89,9 +89,9 @@ public sealed class PipeExpansionTests
     {
         var r = Run();
         var i = Math.PI / 64 * (Math.Pow(0.0889, 4) - Math.Pow(0.0825, 4));
-        Assert.Equal(12 * 210e9 * i * 0.042 / 216, r.OutputSi("anchor_force"), 9);
+        Assert.Equal(12 * 210e9 * i * 0.042 / 216, r.OutputSi("F_leg"), 9);
         Assert.Equal(6 * 210e9 * i * 0.042 / 36, r.OutputSi("anchor_moment"), 9);
-        Assert.Equal(r.OutputSi("anchor_force") * 6 / 2, r.OutputSi("anchor_moment"), 9);
+        Assert.Equal(r.OutputSi("F_leg") * 6 / 2, r.OutputSi("anchor_moment"), 9);
         Assert.Equal(r.OutputSi("u_leg") * r.OutputSi("u_leg"), r.OutputSi("u_sigma"), 12);
     }
 
@@ -102,7 +102,7 @@ public sealed class PipeExpansionTests
         var loop = Run(Loop());
         Assert.Equal(0.021, loop.OutputSi("Delta"), 12);
         Assert.Equal(offset.OutputSi("L_req") / Math.Sqrt(2), loop.OutputSi("L_req"), 9);
-        Assert.Equal(offset.OutputSi("anchor_force") / 2, loop.OutputSi("anchor_force"), 9);
+        Assert.Equal(offset.OutputSi("F_leg") / 2, loop.OutputSi("anchor_force"), 9);
         Assert.Equal(offset.OutputSi("anchor_moment") / 2, loop.OutputSi("anchor_moment"), 9);
         Assert.Contains(Run(Loop(), Q("H", 3, "m")).Checks, c => c.Name.StartsWith("Available leg", StringComparison.Ordinal) && !c.Passed);
     }
@@ -225,7 +225,9 @@ public sealed class PipeExpansionTests
         Assert.Equal(3.0674380189337165, r.OutputSi("L_req_run"), 9);
         Assert.Equal(0.7668595047334291, r.OutputSi("u_run"), 9);
         Assert.Equal(523.9468918797689, r.OutputSi("F_run"), 6);
-        Assert.Equal(523.9468918797689, r.OutputSi("anchor_force"), 6);
+        Assert.Equal(0.8383150270076302, r.OutputSi("F_along_run"), 9);
+        Assert.Equal(523.9468918797689, r.OutputSi("F_along_leg"), 6);
+        Assert.Equal(523.9475625313613, r.OutputSi("anchor_force"), 6);
         Assert.Equal(1047.8937837595379, r.OutputSi("anchor_moment"), 6);
         Assert.True(r.OutputSi("F_run") > r.OutputSi("F_leg"));
         Assert.Contains(r.Checks, c => c.Name.StartsWith("Run against", StringComparison.Ordinal) && c.Passed);
@@ -238,7 +240,8 @@ public sealed class PipeExpansionTests
 
         // The ordinary case (long run, short leg) is governed by the leg, and a U-loop has no run check.
         var ordinary = Run();
-        Assert.Equal(ordinary.OutputSi("F_leg"), ordinary.OutputSi("anchor_force"), 9);
+        Assert.Equal(388.1088171438129, ordinary.OutputSi("anchor_force"), 6);
+        Assert.Equal(Math.Sqrt(Math.Pow(ordinary.OutputSi("F_leg"), 2) + Math.Pow(ordinary.OutputSi("F_run"), 2)), ordinary.OutputSi("anchor_force"), 9);
         Assert.Null(Run(Loop()).FindOutput("u_run"));
     }
 
@@ -280,16 +283,19 @@ public sealed class PipeExpansionTests
         var over = Run(Bellows(), Q("P_b", 6, "bar"), Q("A_eff", 80, "cm^2"), Q("dL_rated", 30, "mm"));
         Assert.Equal(1.4, over.OutputSi("u_bellows"), 12);
         Assert.Equal(0, over.OutputSi("pass"));
-        Assert.Contains(over.Warnings, w => w.RuleId == "bellows-unused");
+        var k1 = Assert.Single(over.Warnings, w => w.RuleId == "k1-unused");
+        Assert.StartsWith("K_scr: ", k1.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(over.Warnings, w => w.RuleId == "bellows-unused");
     }
 
     [Fact]
     public void M2_Bellows_Inputs_With_A_Leg_Or_Loop_Layout_Are_Not_Used_And_Say_So()
     {
         var r = Run(Q("P_b", 6, "bar"), Q("A_eff", 80, "cm^2"));
-        Assert.Contains(r.Warnings, w => w.RuleId == "bellows-unused");
+        Assert.StartsWith("P_b: ", Assert.Single(r.Warnings, w => w.RuleId == "bellows-unused").Message, StringComparison.Ordinal);
+        Assert.StartsWith("A_eff: ", Assert.Single(Run(Q("A_eff", 80, "cm^2")).Warnings, w => w.RuleId == "bellows-unused").Message, StringComparison.Ordinal);
         Assert.Null(r.FindOutput("F_thrust"));
-        Assert.Equal(r.OutputSi("F_leg"), r.OutputSi("anchor_force"), 9);
+        Assert.Equal(r.OutputSi("F_leg"), r.OutputSi("F_along_run"), 9);
         Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "bellows-unused");
     }
 
@@ -302,7 +308,8 @@ public sealed class PipeExpansionTests
         Assert.Equal(cold.OutputSi("sigma_leg"), hot.OutputSi("sigma_leg"), 6);
         Assert.Equal(cold.OutputSi("sigma_res"), hot.OutputSi("sigma_res"), 6);
         Assert.Equal(cold.OutputSi("u_leg"), hot.OutputSi("u_leg"), 12);
-        Assert.Equal(351.14606510460703, hot.OutputSi("anchor_force"), 6);
+        Assert.Equal(351.14606510460703, hot.OutputSi("F_leg"), 6);
+        Assert.Equal(351.14607265392596, hot.OutputSi("anchor_force"), 6);
         Assert.Equal(1053.438195313821, hot.OutputSi("anchor_moment"), 6);
         Assert.Equal(137503.4389435462, hot.OutputSi("F_res"), 3);
         Assert.Equal(cold.OutputSi("anchor_force") * 190 / 210, hot.OutputSi("anchor_force"), 9);
@@ -347,6 +354,95 @@ public sealed class PipeExpansionTests
         var bellows = CalcRunner.Run(Pipe, new CalcInputSet(Sheet(Bellows(), Q("P_b", 6, "bar"), Q("A_eff", 80, "cm^2")).Values.Where(v => v.Symbol != "H")));
         Assert.False(bellows.IsBlocked);
         Assert.DoesNotContain(bellows.Warnings, w => w.Message.Contains("not entered", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void N1_The_Anchor_Force_Is_The_Resultant_Of_The_Force_Along_The_Run_And_The_Force_Along_The_Leg()
+    {
+        // A square 10 m x 10 m L-bend: the leg and the run are equal cantilevers, the two components are equal and perpendicular.
+        var r = Run(Q("L", 10, "m"), Q("H", 10, "m"));
+        Assert.Equal(r.OutputSi("F_leg"), r.OutputSi("F_run"), 9);
+        Assert.Equal(r.OutputSi("F_along_run"), r.OutputSi("F_along_leg"), 9);
+        Assert.Equal(Math.Sqrt(2) * r.OutputSi("F_leg"), r.OutputSi("anchor_force"), 9);
+        Assert.Equal(23.71112961470716, r.OutputSi("anchor_force"), 9);
+        Assert.Equal(r.OutputSi("M_leg"), r.OutputSi("anchor_moment"), 9);
+
+        // A U-loop has only the component along the run.
+        var loop = Run(Loop(), Q("H", 3, "m"));
+        Assert.Equal(loop.OutputSi("F_leg"), loop.OutputSi("anchor_force"), 9);
+        Assert.Equal(0, loop.OutputSi("F_along_leg"), 12);
+    }
+
+    [Fact]
+    public void N2_A_Z_Bend_Has_Two_Runs_In_Series_Each_Checked_As_Its_Own_Cantilever()
+    {
+        var z = Run(Q("L", 30, "m"), Q("L2", 20, "m"));
+        Assert.False(z.IsBlocked);
+        Assert.Equal(50, z.OutputSi("L_tot"), 12);
+        Assert.Equal(0.042, z.OutputSi("dL"), 12);
+        Assert.Equal(35000, z.OutputSi("S_run"), 9);
+        Assert.Equal(0.28742229497404465, z.OutputSi("F_run"), 9);
+        Assert.Equal(241950.24000000008, z.OutputSi("sigma_run"), 3);
+        Assert.Equal(161300.16000000003, z.OutputSi("sigma_run2"), 3);
+        Assert.Equal(0.049188437665776706, z.OutputSi("u_run"), 12);
+        Assert.Equal(0.04016219117528326, z.OutputSi("u_run2"), 12);
+        Assert.Equal(4.31133442461067, z.OutputSi("M_run"), 9);
+        Assert.Equal(2.8742229497404463, z.OutputSi("M_run2"), 9);
+        Assert.Equal(388.108915228184, z.OutputSi("anchor_force"), 6);
+        Assert.Equal(1164.3264263994865, z.OutputSi("anchor_moment"), 6);
+
+        // Each run is its own check; the stiffer (shorter) run carries the lower stress, and the stresses scale with the run lengths.
+        Assert.Contains(z.Checks, c => c.Name.StartsWith("First run", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(z.Checks, c => c.Name.StartsWith("Second run", StringComparison.Ordinal) && c.Passed);
+        Assert.Equal(30.0 / 20.0, z.OutputSi("sigma_run") / z.OutputSi("sigma_run2"), 12);
+
+        // A Z-bend whose total is the same L-bend's spacing has the same leg, growth and screening.
+        var l = Run();
+        Assert.Equal(l.OutputSi("L_req"), z.OutputSi("L_req"), 12);
+        Assert.Equal(l.OutputSi("scr"), z.OutputSi("scr"), 12);
+        Assert.Equal(l.OutputSi("F_leg"), z.OutputSi("F_leg"), 12);
+
+        // A stiff short second run takes almost nothing; a run that is too short for the leg's growth fails its own check.
+        var shortSecond = Run(Q("L", 30, "m"), Q("L2", 3, "m"), Q("H", 20, "m"));
+        Assert.Equal(0.1021968483085257, shortSecond.OutputSi("u_run"), 9);
+        Assert.Equal(0.032317481034566733, shortSecond.OutputSi("u_run2"), 9);
+        var tooShort = Run(Q("L", 3, "m"), Q("L2", 2, "m"), Q("H", 40, "m"));
+        Assert.Contains(tooShort.Checks, c => c.Name.StartsWith("First run", StringComparison.Ordinal) && !c.Passed);
+        Assert.Equal(0, tooShort.OutputSi("pass"));
+    }
+
+    [Fact]
+    public void N2_L2_Is_Only_For_The_Offset_Leg_And_The_Anchor_Moment_Is_Stated_As_A_Simplification()
+    {
+        var loop = Run(Loop(), Q("H", 3, "m"), Q("L2", 20, "m"));
+        Assert.StartsWith("L2: ", Assert.Single(loop.Warnings, w => w.RuleId == "l2-unused").Message, StringComparison.Ordinal);
+        Assert.Equal(Run(Loop(), Q("H", 3, "m")).OutputSi("dL"), loop.OutputSi("dL"), 12);
+        Assert.Null(loop.FindOutput("sigma_run2"));
+        Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "l2-unused");
+        Assert.Contains(Pipe.Template.Assumptions, a => a.Statement.StartsWith("anchor_moment is", StringComparison.Ordinal) && a.Statement.Contains("not the moment on a frame anchor", StringComparison.Ordinal));
+        Assert.Contains("not a frame anchor moment", Pipe.Template.OutputPorts!.Single(p => p.Symbol == "anchor_moment").Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void N4_Short_Leg_Warnings_Are_Prefixed_With_The_Input_They_Are_About()
+    {
+        var shortLeg = Assert.Single(Run(Q("H", 0.8, "m")).Warnings, w => w.RuleId == "short-leg");
+        Assert.StartsWith("H: ", shortLeg.Message, StringComparison.Ordinal);
+
+        var shortRun = Run(Q("L", 0.8, "m"));
+        Assert.StartsWith("L: ", Assert.Single(shortRun.Warnings, w => w.RuleId == "short-leg").Message, StringComparison.Ordinal);
+
+        var shortSecond = Run(Q("L", 30, "m"), Q("L2", 0.8, "m"));
+        Assert.StartsWith("L2: ", Assert.Single(shortSecond.Warnings, w => w.RuleId == "short-leg").Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void N5_The_Bellows_Pressure_Is_The_Governing_Pressure_And_The_Ratings_Note_Is_On_The_Sheet()
+    {
+        var spec = Pipe.Template.FindInput("P_b")!;
+        Assert.Contains("governing", spec.Description, StringComparison.Ordinal);
+        Assert.Contains("compression and extension ratings can differ", spec.Description, StringComparison.Ordinal);
+        Assert.Contains(Pipe.Template.Assumptions, a => a.Statement.Contains("compression and extension ratings can differ", StringComparison.Ordinal));
     }
 
     [Fact]

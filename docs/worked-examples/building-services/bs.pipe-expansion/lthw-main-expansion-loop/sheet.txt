@@ -7,8 +7,8 @@ Checker: —    Checked: —
 Issued: —
 
 1. SCOPE AND METHOD
-Screening only — not a piping stress analysis. Thermal growth of a straight run between anchors, the fully restrained stress and force, the leg an offset leg or a U-loop (two guided cantilevers) needs to absorb the growth within the owner's allowable displacement-stress range Sa and whether the available leg is long enough (an offset leg also loads the run with the leg's own growth), the force and moment on the anchors, the screening ratio D·Y/(L − U)² against the owner's K1 (PASS, or the line needs a formal stress analysis), and, for an axial bellows, the anchor force P·A_eff plus its spring force. No allowable stress, K1 or code table ships.
-Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴ − d_i⁴); Z = I/(OD/2) Temperature change: ΔT = T_operate − T_install, or as entered; the movement is taken for |ΔT|, the sign gives the direction Thermal growth between anchors: ΔL = α·L·|ΔT| Fully restrained pipe: σ_r = E·α·|ΔT| (E at the installation temperature); F_r = E_r·α·|ΔT|·A_m (E_r = E_hot, else E) Movement one leg must absorb: Δ = ΔL for an offset leg; Δ = ΔL/2 for a U-loop (two identical legs in series, the cross leg a rigid guide) Guided cantilever, required leg: L_req = √(3·E·OD·Δ/Sa), the leg at which the bending stress M/Z reaches Sa; PASS when L_req ≤ the available leg H Force and moment of the available leg: F = 12·E_r·I·Δ/H³; M = 6·E_r·I·Δ/H² (= F·H/2); σ_leg = M/Z = 3·E·OD·Δ/H² = Sa·(L_req/H)² Offset leg only, the run bends for the leg's growth: Δ_run = α·|ΔT|·H; L_req,run = √(3·E·OD·Δ_run/Sa), PASS when L_req,run ≤ L; F_run = 12·E_r·I·Δ_run/L³; M_run = 6·E_r·I·Δ_run/L²; the anchor force and moment are the larger of the leg's and the run's Screening: OD·Y/(L_dev − U)² ≤ K1 with Y = α·|ΔT|·U, the free growth between the anchors; offset leg L_dev = L + H, U = √(L² + H²); U-loop L_dev = L + 2·H, U = L (so Y = ΔL); PASS, or the line needs a formal stress analysis Axial bellows (no leg or loop, no leg check, no screening): anchor force = P·A_eff + k·ΔL; the movement is checked against the bellows' rated axial movement when given
+Screening only — not a piping stress analysis. Thermal growth of a straight run between anchors, the fully restrained stress and force, the leg an offset leg or a U-loop (two guided cantilevers) needs to absorb the growth within the owner's allowable displacement-stress range Sa and whether the available leg is long enough (an offset leg or Z-bend also loads its run or runs with the leg's own growth), the force on the anchors and the largest root moment of the guided-cantilever model, the screening ratio D·Y/(L − U)² against the owner's K1 (PASS, or the line needs a formal stress analysis), and, for an axial bellows, the anchor force P·A_eff plus its spring force. No allowable stress, K1 or code table ships.
+Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴ − d_i⁴); Z = I/(OD/2) Temperature change: ΔT = T_operate − T_install, or as entered; the movement uses |ΔT| and its sign gives the direction Run that grows: L_tot = L, or L + L2 for a Z-bend; thermal growth ΔL = α·L_tot·|ΔT| Fully restrained pipe: σ_r = E·α·|ΔT| (E at the installation temperature); F_r = E_r·α·|ΔT|·A_m (E_r = E_hot, else E) Movement one leg must absorb: Δ = ΔL for an offset leg or Z-bend; Δ = ΔL/2 for a U-loop (two identical legs in series, the cross leg a rigid guide) Guided cantilever, required leg: L_req = √(3·E·OD·Δ/Sa), the leg at which the bending stress M/Z reaches Sa; PASS when L_req ≤ the available leg H Force and moment of the available leg: F_leg = 12·E_r·I·Δ/H³ (acts along the run); M_leg = 6·E_r·I·Δ/H² (= F_leg·H/2); σ_leg = 3·E·OD·Δ/H² = Sa·(L_req/H)² Offset leg or Z-bend, the runs bend for the leg's growth Δ_leg = α·|ΔT|·H: the runs act in series under one force F_run = 12·E_r·I·Δ_leg/(L³ + L2³) (L2 = 0 for an L-bend) acting along the leg; run i takes the share L_i³/(L³ + L2³) of Δ_leg, with root stress σ_i = 3·E·OD·Δ_i/L_i² and moment M_i = F_run·L_i/2; each run is checked as its own cantilever, PASS when √(σ_i/Sa) ≤ 1 (for an L-bend the run needed is L_req,run = √(3·E·OD·Δ_leg/Sa)) Force on the anchors: the two components are perpendicular, F_leg along the run and F_run along the leg, so the force is √(F_leg² + F_run²); the moment reported is the largest root moment of the legs and runs in the guided-cantilever model Screening: OD·Y/(L_dev − U)² ≤ K1 with Y = α·|ΔT|·U, the free growth between the anchors; offset leg or Z-bend L_dev = L_tot + H, U = √(L_tot² + H²); U-loop L_dev = L + 2·H, U = L (so Y = ΔL); PASS, or the line needs a formal stress analysis Axial bellows (no leg or loop, no leg check, no screening): anchor force = P·A_eff + k·ΔL; the movement is checked against the bellows' rated axial movement when given
   Ref: ASME B31.3 para. 319.4.1 (screening relation; number to be checked against the owner's copy) — Process piping — flexibility analysis, exemption from formal analysis
   Ref: ASME B31.3 para. 319.3.2 and 319.5 (reference and hot moduli; numbers to be checked against the owner's copy) — Process piping — displacement stress range and reactions
   Ref: EN 13480-3 cl. 12 (number to be checked against the owner's copy) — Metallic industrial piping — flexibility analysis
@@ -19,13 +19,13 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   alpha | Mean coefficient of thermal expansion between the install and operating temperatures | 12 | um/(m*K) | assumption: W3 seed 'Carbon steel (generic)' (12e-6 1/K), indicative; replace with the project's material record. | 1 … 250 um/(m*K)
   OD | Pipe outside diameter | 88.9 | mm | drawing: DRG-M-210 rev B | 10 … 1500 mm
   t_wall | Pipe wall thickness | 3.2 | mm | drawing: DRG-M-210 rev B | 0.5 … 60 mm
-  L | Anchor spacing: the straight length that grows (an offset leg: the run, which also bends for the leg's growth) | 50 | m | drawing: DRG-M-210 rev B | 1 … 500 m
+  L | Anchor spacing: the straight length that grows (an offset leg or Z-bend: the first run, which also bends for the leg's growth) | 50 | m | drawing: DRG-M-210 rev B | 1 … 500 m
   temp_mode | Temperature change from | install and operating temperatures |  | assumption: Install and operating temperatures are both known. | any
   T_install | Temperature at installation (when the run is anchored) | 10 | degC | assumption: Mean site temperature when the main is anchored. | -50 … 50 degC
   T_operate | Operating temperature (hot or cold) | 80 | degC | spec: SPEC-M-04 §3: LTHW flow temperature | -50 … 500 degC
   layout | What absorbs the movement | U-loop (two legs, each takes half the movement) |  | drawing: DRG-M-210 rev B | any
   H | Available leg length (each leg of a U-loop; an offset leg: the leg off the run, which may be the longer of the two); no default, not needed for an axial bellows | 4 | m | drawing: DRG-M-210 rev B | 0.5 … 50 m
-  Sa | Allowable displacement-stress range Sa for the leg (your piping code and its formula; no default; not needed for an axial bellows) | 100 | MPa | assumption: Invented illustrative allowable range; take Sa from the project's piping code and its formula. | 5 … 500 MPa
+  Sa | Allowable displacement-stress range Sa for the legs and runs (your piping code and its formula; no default; not needed for an axial bellows) | 100 | MPa | assumption: Invented illustrative allowable range; take Sa from the project's piping code and its formula. | 5 … 500 MPa
   K_scr | Screening limit K1 for OD·Y/(L − U)², in mm²/m² (or in²/ft², …) from your piping code (no default; blank = screening not evaluated and the sheet does not pass) | 120 | mm^2/m^2 | assumption: Invented illustrative screening limit; take K1 from the project's piping code. | 1 … 1000 mm^2/m^2
 
 3. ASSUMPTIONS
@@ -33,17 +33,18 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   A2. A guided cantilever: the available leg is straight, uniform, fixed against rotation at both ends and loaded only by the movement it absorbs (stiffness 12·E·I/H³, end moment F·H/2). Elbows are taken as rigid and the leg as slender: the beam model is not valid for legs shorter than about ten diameters. (Beam theory.)
   A3. No stress-intensification factor and no elbow flexibility are applied: the stress at the elbow root of a real bend is higher than the beam stress M/Z, by the intensification factor of the code, so a leg that passes here can still exceed Sa at the elbow. This is the main reason the result is a screen and not a stress analysis. (Stated limit.)
   A4. A U-loop is two identical legs in series, each a guided cantilever taking half the growth, the cross leg a rigid guide; the force along the line is the same F in both legs. The moment M is the moment at the leg roots (the corners of the loop); it reaches an anchor only where the leg ends at the anchor (an offset leg). The growth of the loop's own legs, which the cross leg has to absorb, is not checked. (Loop model.)
-  A5. An offset leg is anchored at both ends: the run L bends for the growth of the leg (α·|ΔT|·H) as a second guided cantilever and is checked against the same Sa; the anchor force and moment reported are the larger of the leg's and the run's. (Offset-leg model.)
-  A6. The material properties are single values: α the mean coefficient between the install and operating temperatures; E the modulus at the installation (reference) temperature, used for the stress check, as the piping codes do (ASME B31.3 para. 319.3.2 and 319.5, numbers to be checked against the owner's copy); E_hot, when given, is used only for the reactions on the anchors. Take them from a W3 material applied at the right temperature. (Material library; code convention to be checked.)
-  A7. Sa and K1 are the owner's records from the owner's own copy of the piping code (or the design basis), with their provenance; no allowable stress, K1 or code constant ships. The sheet applies the relation to the numbers entered and does not know which code, material or load case they belong to. (No table from a standard is shipped.)
-  A8. No friction, weight, spring-hanger or cold-spring effect is included in the leg force. The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL: guide friction and any other bellows load come from the manufacturer's data. (Stated limit.)
-  A9. E (Young's modulus of the pipe material at the installation (reference) temperature, for the stress check) is taken as 210 GPa. (W3 seed 'Carbon steel (generic)', indicative; replace with the project's material record.)
-  A10. alpha (Mean coefficient of thermal expansion between the install and operating temperatures) is taken as 12 um/(m*K). (W3 seed 'Carbon steel (generic)' (12e-6 1/K), indicative; replace with the project's material record.)
-  A11. temp_mode (Temperature change from) is taken as install and operating temperatures. (Install and operating temperatures are both known.)
-  A12. T_install (Temperature at installation (when the run is anchored)) is taken as 10 degC. (Mean site temperature when the main is anchored.)
-  A13. Sa (Allowable displacement-stress range Sa for the leg (your piping code and its formula; no default; not needed for an axial bellows)) is taken as 100 MPa. (Invented illustrative allowable range; take Sa from the project's piping code and its formula.)
-  A14. K_scr (Screening limit K1 for OD·Y/(L − U)², in mm²/m² (or in²/ft², …) from your piping code (no default; blank = screening not evaluated and the sheet does not pass)) is taken as 120 mm^2/m^2. (Invented illustrative screening limit; take K1 from the project's piping code.)
-  A15. Layout: the U-loop is two legs of 4 m in series, each a guided cantilever taking half the movement (21 mm); the cross leg is a rigid guide and its width does not enter. Screening only — not a piping stress analysis. (Guided-cantilever model.)
+  A5. An offset leg is anchored at both ends: the run L bends for the growth of the leg (α·|ΔT|·H) as a second guided cantilever and is checked against the same Sa. A Z-bend (second run L2) has the two runs in series under one force, each taking its share of the leg's growth by its stiffness (L³) and each checked as its own cantilever; the leg takes the growth of both runs. The force on the anchors is the resultant of the force along the run (the leg's) and the force along the leg (the runs'), which are perpendicular. (Offset-leg and Z-bend model.)
+  A6. anchor_moment is the largest root moment of the legs and runs in the guided-cantilever simplification (M = F·L/2 with each end fixed against rotation). It is not the moment on a frame anchor, which depends on the whole frame (the stiffness of the other legs, the elbow rotations, the anchor's own fixity); a formal analysis is needed before an anchor is sized for moment. (Stated limit.)
+  A7. The material properties are single values: α the mean coefficient between the install and operating temperatures; E the modulus at the installation (reference) temperature, used for the stress check, as the piping codes do (ASME B31.3 para. 319.3.2 and 319.5, numbers to be checked against the owner's copy); E_hot, when given, is used only for the reactions on the anchors. Take them from a W3 material applied at the right temperature. (Material library; code convention to be checked.)
+  A8. Sa and K1 are the owner's records from the owner's own copy of the piping code (or the design basis), with their provenance; no allowable stress, K1 or code constant ships. The sheet applies the relation to the numbers entered and does not know which code, material or load case they belong to. (No table from a standard is shipped.)
+  A9. No friction, weight, spring-hanger or cold-spring effect is included in the leg force. The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL at the governing pressure entered (the design or the test pressure, whichever governs; a bellows' compression and extension ratings can differ): guide friction and any other bellows load come from the manufacturer's data. (Stated limit.)
+  A10. E (Young's modulus of the pipe material at the installation (reference) temperature, for the stress check) is taken as 210 GPa. (W3 seed 'Carbon steel (generic)', indicative; replace with the project's material record.)
+  A11. alpha (Mean coefficient of thermal expansion between the install and operating temperatures) is taken as 12 um/(m*K). (W3 seed 'Carbon steel (generic)' (12e-6 1/K), indicative; replace with the project's material record.)
+  A12. temp_mode (Temperature change from) is taken as install and operating temperatures. (Install and operating temperatures are both known.)
+  A13. T_install (Temperature at installation (when the run is anchored)) is taken as 10 degC. (Mean site temperature when the main is anchored.)
+  A14. Sa (Allowable displacement-stress range Sa for the legs and runs (your piping code and its formula; no default; not needed for an axial bellows)) is taken as 100 MPa. (Invented illustrative allowable range; take Sa from the project's piping code and its formula.)
+  A15. K_scr (Screening limit K1 for OD·Y/(L − U)², in mm²/m² (or in²/ft², …) from your piping code (no default; blank = screening not evaluated and the sheet does not pass)) is taken as 120 mm^2/m^2. (Invented illustrative screening limit; take K1 from the project's piping code.)
+  A16. Layout: the U-loop is two legs of 4 m in series, each a guided cantilever taking half the movement (21 mm); the cross leg is a rigid guide and its width does not enter. Screening only — not a piping stress analysis. (Guided-cantilever model.)
 
 4. WORKING
   [9] dT = T_operate - T_install
@@ -70,83 +71,95 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
       = 79.206 cm⁴ / (88.9 mm / 2)
       = 17.819 cm³
         Section modulus
-  [16] dL = alpha * L * abs(dT)
+  [16] L_tot = L
+      = 50 m
+      = 50 m
+        Length that grows between the anchors
+  [17] dL = alpha * L_tot * abs(dT)
       = 12 um/(m·K) × 50 m × abs(70 K)
       = 42 mm
         Thermal growth between the anchors, as a magnitude
-  [17] dL_signed = alpha * L * dT
+  [18] dL_signed = alpha * L_tot * dT
       = 12 um/(m·K) × 50 m × 70 K
       = 42 mm
         Thermal movement with its sign: positive lengthens, negative shortens
-  [18] sigma_res = E * alpha * abs(dT)
+  [19] sigma_res = E * alpha * abs(dT)
       = 210 GPa × 12 um/(m·K) × abs(70 K)
       = 176.4 MPa
         Stress in the fully restrained pipe (E at the installation temperature)
-  [19] F_res = E_r * alpha * abs(dT) * A_m
+  [20] F_res = E_r * alpha * abs(dT) * A_m
       = 210 GPa × 12 um/(m·K) × abs(70 K) × 861.55 mm²
       = 151.98 kN
         Force on the anchors of the fully restrained pipe
-  [22] u_res = sigma_res / Sa
+  [23] u_res = sigma_res / Sa
       = 176.4 MPa / 100 MPa
       = 1.764
         Fully restrained stress as a fraction of Sa (above 1: the movement has to be absorbed)
-  [23] Delta = dL / 2
+  [24] Delta = dL / 2
       = 42 mm / 2
       = 21 mm
         Movement each leg of the U-loop absorbs (half of it)
-  [24] L_req = sqrt(3 * E * OD * Delta / Sa)
+  [25] L_req = sqrt(3 * E * OD * Delta / Sa)
       = sqrt(3 × 210 GPa × 88.9 mm × 21 mm / 100 MPa)
       = 3.4295 m
         Leg length at which the guided-cantilever bending stress reaches Sa
-  [25] u_leg = L_req / H
+  [26] u_leg = L_req / H
       = 3.4295 m / 4 m
       = 0.85737
         Required leg over available leg
-  [26] F_leg = 12 * E_r * I_x * Delta / H^3
+  [27] F_leg = 12 * E_r * I_x * Delta / H^3
       = 12 × 210 GPa × 79.206 cm⁴ × 21 mm / (4 m)^3
       = 654.93 N
         Force of the available leg on its anchors or guides
-  [27] M_leg = 6 * E_r * I_x * Delta / H^2
+  [28] M_leg = 6 * E_r * I_x * Delta / H^2
       = 6 × 210 GPa × 79.206 cm⁴ × 21 mm / (4 m)^2
       = 1309.9 N·m
         Moment at the root of the available leg
-  [28] sigma_leg = 3 * E * OD * Delta / H^2
+  [29] sigma_leg = 3 * E * OD * Delta / H^2
       = 3 × 210 GPa × 88.9 mm × 21 mm / (4 m)^2
       = 73.509 MPa
         Bending stress at the root of the available leg (E at the installation temperature)
-  [29] u_sigma = sigma_leg / Sa
+  [30] u_sigma = sigma_leg / Sa
       = 73.509 MPa / 100 MPa
       = 0.73509
         Bending stress over Sa (= u_leg²)
-  [30] anchor_force = F_leg
+  [31] F_along_run = F_leg
+      = 654.93 N
+      = 654.93 N
+        Component of the anchor force along the run: the loop's force
+  [32] F_along_leg = no component along the leg
+      = a U-loop is in line
+      = 0 N
+        Component of the anchor force along the leg: none for a U-loop
+  [33] anchor_force = F_leg
       = 654.93 N
       = 654.93 N
         Force on the anchors (the force along the loop)
-  [31] anchor_moment = M_leg
+  [34] anchor_moment = M_leg
       = 1309.9 N·m
       = 1309.9 N·m
         Moment at the root of the loop's legs
-  [32] L_dev = L + 2 * H
+  [35] L_dev = L + 2 * H
       = 50 m + 2 × 4 m
       = 58 m
         Developed length between the anchors, run plus two legs
-  [33] U_a = L
+  [36] U_a = L
       = 50 m
       = 50 m
         Straight distance between the anchors (the loop is in line)
-  [34] Y_scr = alpha * abs(dT) * U_a
+  [37] Y_scr = alpha * abs(dT) * U_a
       = 12 um/(m·K) × abs(70 K) × 50 m
       = 42 mm
         Resultant displacement Y: the free growth between the anchors
-  [35] scr = OD * Y_scr / (L_dev - U_a)^2
+  [38] scr = OD * Y_scr / (L_dev - U_a)^2
       = 88.9 mm × 42 mm / (58 m − 50 m)^2
       = 58.341 mm²/m²
         Screening ratio OD·Y/(L − U)²
-  [37] u_scr = scr / K_scr
+  [40] u_scr = scr / K_scr
       = 58.341 mm²/m² / 120 mm²/m²
       = 0.48617
         Screening ratio over the K1 record
-  [38] pass = K1 given and every check passes
+  [41] pass = K1 given and every check passes
       = 2 check(s)
       = 1
         1 when the leg, the run (offset leg) and the screening checks all pass; 0 when one fails or when no K1 was entered
@@ -157,6 +170,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   I_x = 79.206 cm⁴    Second moment of area
   Z_x = 17.819 cm³    Section modulus
   dT = 70 K    Temperature change
+  L_tot = 50 m    Length that grows
   dL = 42 mm    Thermal movement between the anchors (magnitude)
   dL_signed = 42 mm    Thermal movement, signed
   sigma_res = 176.4 MPa    Fully restrained stress
@@ -170,8 +184,10 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   M_leg = 1309.9 N·m    Moment at the leg root
   sigma_leg = 73.509 MPa    Bending stress at the leg root
   u_sigma = 0.73509    Bending stress over Sa
-  anchor_force = 654.93 N    Force on the anchors
-  anchor_moment = 1309.9 N·m    Moment at the leg or run root
+  F_along_run = 654.93 N    Anchor force component along the run
+  F_along_leg = 0 N    Anchor force component along the leg
+  anchor_force = 654.93 N    Force on the anchors (resultant)
+  anchor_moment = 1309.9 N·m    Largest root moment (guided-cantilever model)
   L_dev = 58 m    Developed length
   U_a = 50 m    Anchor distance
   Y_scr = 42 mm    Resultant displacement Y
@@ -188,8 +204,8 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   WARNING record: Tabulated values not taken from a reference record: E, alpha (Material properties); OD, t_wall (Pipe outside diameter and wall); Sa (Allowable displacement-stress range); K_scr (Screening limit K1). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.pipe-expansion@1.1.0
+  Template: bs.pipe-expansion@1.2.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 4/4
+  Known-answer cases passed: 5/5
   Test run: —

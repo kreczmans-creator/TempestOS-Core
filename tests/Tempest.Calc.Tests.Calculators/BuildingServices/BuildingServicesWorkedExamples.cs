@@ -265,7 +265,7 @@ public static class BuildingServicesWorkedExamples
                 CalcInputValue.Quantity("H", 2.5, "m", CalcProvenance.Drawing("DRG-M-212", "A")),
                 CalcInputValue.Quantity("Sa", 60, "MPa", CalcProvenance.Assumed("Invented illustrative allowable range; take Sa from the project's piping code and its formula.")),
                 CalcInputValue.Quantity("K_scr", 100, "mm^2/m^2", CalcProvenance.Assumed("Invented illustrative screening limit; take K1 from the project's piping code."))),
-            [new CalcExpectedValue("dL", 24.48, "mm", 1e-9), new CalcExpectedValue("sigma_res", 122.4, "MPa", 1e-9), new CalcExpectedValue("F_res", 30.281811587952034, "kN", 1e-9), new CalcExpectedValue("L_req", 2.816295439047544, "m", 1e-9), new CalcExpectedValue("u_leg", 1.1265181756190175, "", 1e-9), new CalcExpectedValue("u_run", 0.037873143518857795, "", 1e-9), new CalcExpectedValue("anchor_force", 192.45859721940252, "N", 1e-9), new CalcExpectedValue("anchor_moment", 240.57324652425316, "N*m", 1e-9), new CalcExpectedValue("Y_scr", 24.612454164507858, "mm", 1e-9), new CalcExpectedValue("scr", 236.5917464036641, "mm^2/m^2", 1e-9), new CalcExpectedValue("u_scr", 2.365917464036641, "", 1e-9), new CalcExpectedValue("pass", 0, "", 1e-9)],
+            [new CalcExpectedValue("dL", 24.48, "mm", 1e-9), new CalcExpectedValue("sigma_res", 122.4, "MPa", 1e-9), new CalcExpectedValue("F_res", 30.281811587952034, "kN", 1e-9), new CalcExpectedValue("L_req", 2.816295439047544, "m", 1e-9), new CalcExpectedValue("u_leg", 1.1265181756190175, "", 1e-9), new CalcExpectedValue("u_run", 0.037873143518857795, "", 1e-9), new CalcExpectedValue("anchor_force", 192.4585985533461, "N", 1e-9), new CalcExpectedValue("anchor_moment", 240.57324652425316, "N*m", 1e-9), new CalcExpectedValue("Y_scr", 24.612454164507858, "mm", 1e-9), new CalcExpectedValue("scr", 236.5917464036641, "mm^2/m^2", 1e-9), new CalcExpectedValue("u_scr", 2.365917464036641, "", 1e-9), new CalcExpectedValue("pass", 0, "", 1e-9)],
             "The 24 m riser grows 24.5 mm. The 2.5 m offset leg would have to be 2.82 m to keep the root stress within Sa (utilisation 1.127, FAIL); the run is not the problem (it needs 0.91 m of its 24 m for the leg's 2.55 mm growth). The screening ratio 237 mm²/m² is more than twice the K1 record: the line needs a formal stress analysis or a longer leg. The next example replaces the leg with a bellows.",
             CalcReferenceStatus.Confirmed),
 
@@ -289,7 +289,7 @@ public static class BuildingServicesWorkedExamples
             CalcReferenceStatus.Confirmed),
     ];
 
-    /// <summary>The inputs shared by the two pipe-expansion examples: the caller's values over the unit-free choices.</summary>
+    /// <summary>The inputs of a pipe-expansion example: the install-and-operating-temperatures mode they all use, then the caller's values.</summary>
     private static CalcInputSet PipeExpansionInputs(params CalcInputValue[] values) =>
         new([CalcInputValue.Choice("temp_mode", PipeExpansionCalculator.TwoTemperatures, CalcProvenance.Assumed("Install and operating temperatures are both known.")), .. values]);
 
