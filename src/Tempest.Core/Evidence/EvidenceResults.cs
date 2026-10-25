@@ -38,6 +38,28 @@ public enum EvidenceRefusal
 
     /// <summary>The evidence's own project is Archive — closed 90 days or more ago — and read-only (`WP 19.10H`, `TD-179`).</summary>
     ProjectArchived,
+
+    /// <summary>The evidence is managed by another surface (a calculation worksheet) and is checked, issued and revised there, not through the generic Evidence acts (`ADR-0173`).</summary>
+    ManagedElsewhere,
+}
+
+/// <summary>
+/// The owner of managed evidence, presented to <see cref="IEvidenceService"/> to check or issue what it manages (`ADR-0173`). The calculation
+/// worksheet service presents <see cref="Evidence.CalcWorksheetOwner"/>; the generic Evidence commands present none, so they are refused.
+/// This keeps the generic surfaces honest about which record they may move; it is a routing rule inside one trusted process, not a security
+/// boundary against code that can construct one.
+/// </summary>
+public sealed class EvidenceOwner
+{
+    /// <summary>Initialises a new instance of the <see cref="EvidenceOwner"/> class.</summary>
+    public EvidenceOwner(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        Name = name;
+    }
+
+    /// <summary>The surface this owner stands for; equal to the evidence's <see cref="Evidence.ManagedBy"/>.</summary>
+    public string Name { get; }
 }
 
 /// <summary>The outcome of <see cref="IEvidenceService.CiteAsync"/>: either a recorded citation, or a refusal that says exactly what was missing.</summary>

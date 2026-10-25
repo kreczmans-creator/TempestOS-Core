@@ -330,15 +330,6 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // the record's own Re-run and Compare commands through the
         // dispatcher and the Template registry — every module registered
         // there so the commands reach all nineteen.
-        CalculationModuleService = new CalculationModuleService(
-            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
-            (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
-            (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
-            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
-        // `v0.26.0` (ADR-0165): the worksheet calculation surface. The
-        // catalogue is composed statically (`CalcCalculatorComposition`),
-        // instances live in the one store, and Issue goes through the
-        // Evidence service in one transaction with the rendered PDF.
         // Optional calculators (S8 lifting, `ADR-0173`) are composed in but withheld from the catalogue unless the installation's own
         // appsettings.json beside the executable switches their feature on (`Calc.Features.Lifting = true`). The current directory, the
         // environment and the command line are not read for it, and nothing at run time changes it. Enabling is logged with its source.
@@ -350,6 +341,16 @@ public sealed class WorkspaceHost : IAsyncDisposable
         foreach (var feature in calcFeatures.Enabled)
             hostLogger?.Warning($"Optional calculator feature '{feature}' is ENABLED by {calcFeatures.SourceOf(feature)}. It has not been through the owner's review checklist unless the owner has recorded it.");
 
+        CalculationModuleService = new CalculationModuleService(
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
+            (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
+            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)),
+            featureEnabled: calcFeatures.IsEnabled);
+        // `v0.26.0` (ADR-0165): the worksheet calculation surface. The
+        // catalogue is composed statically (`CalcCalculatorComposition`),
+        // instances live in the one store, and Issue goes through the
+        // Evidence service in one transaction with the rendered PDF.
         CalcCatalogue = new Tempest.Calc.Library.CalcCatalogue(
             Tempest.Desktop.CalcSheets.CalcCalculatorComposition.All(),
             calcFeatures);
@@ -361,7 +362,8 @@ public sealed class WorkspaceHost : IAsyncDisposable
             CalcSheetRenderer = new Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer(),
             applicationVersion: $"TempestOS {typeof(WorkspaceHost).Assembly.GetName().Version?.ToString(3)}",
             events: eventBus,
-            packTemplates: Tempest.Desktop.CalcSheets.CalcPackTemplateComposition.All());
+            packTemplates: Tempest.Desktop.CalcSheets.CalcPackTemplateComposition.All(),
+            principals: (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory)));
 
         CalculationModules = new CalculationModuleWorkbench(
             CalculationModuleService,

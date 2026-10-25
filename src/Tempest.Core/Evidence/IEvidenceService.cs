@@ -23,6 +23,21 @@ public interface IEvidenceService
     Task<Evidence> CreateAsync(Guid? parentId, string title, EvidenceClassification classification, Guid? subjectId = null, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As <see cref="CreateAsync"/>, for evidence a surface owns (`ADR-0173`): <paramref name="managedBy"/> (for a calculation worksheet,
+    /// <see cref="Evidence.CalcWorksheetOwner"/>) is recorded on it, and from then on <see cref="RecordCheckAsync"/>, <see cref="IssueAsync"/> and
+    /// <see cref="ReviseAsync"/> refuse it with <see cref="EvidenceRefusal.ManagedElsewhere"/>; only the owner's own calls, which present an
+    /// <see cref="EvidenceOwner"/> to the one-transaction overloads, move it.
+    /// </summary>
+    Task<Evidence> CreateManagedAsync(Guid? parentId, string title, EvidenceClassification classification, string managedBy, Guid? subjectId = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Marks ordinary evidence as managed by <paramref name="owner"/> so the generic acts refuse it from now on: the worksheet service does this
+    /// for the evidence of a calculation made before evidence could be managed. Does nothing when it is managed already; refused for evidence
+    /// that is managed by another owner.
+    /// </summary>
+    Task<EvidenceActionResult> ManageAsync(Guid evidenceId, EvidenceOwner owner, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Cites <paramref name="recordId"/> from <paramref name="library"/> against <paramref name="evidenceId"/>'s own evidence, pinned to the revision actually read.
     /// Refused, as a result rather than an exception, when the record is not registered or has not reached <see cref="ReferenceValidationState.Released"/>.
     /// </summary>
@@ -44,7 +59,8 @@ public interface IEvidenceService
     Task<EvidenceActionResult> RecordCheckAsync(Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, CancellationToken cancellationToken = default);
 
     /// <summary>`v0.26.0` Phase 6: as <see cref="RecordCheckAsync"/>, with <paramref name="alsoWrite"/> committed in the same transaction as the check record, after a transaction-time re-check of the status (a racing check is refused with <see cref="EvidenceRefusal.TransitionNotPermitted"/>).</summary>
-    Task<EvidenceActionResult> RecordCheckInOneTransactionAsync(Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite, CancellationToken cancellationToken = default);
+    /// <param name="owner">The owner of the evidence when it is managed (`ADR-0173`); managed evidence is refused without it.</param>
+    Task<EvidenceActionResult> RecordCheckInOneTransactionAsync(Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite, CancellationToken cancellationToken = default, EvidenceOwner? owner = null);
 
     /// <summary>
     /// Records an issue against <paramref name="evidenceId"/>'s own evidence
@@ -83,8 +99,10 @@ public interface IEvidenceService
         Guid evidenceId, string issueReference, string revision, string client,
         Func<Evidence, DateTimeOffset, CancellationToken, Task<IssueSheetContent?>>? renderSheetAsync = null,
         Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        EvidenceOwner? owner = null);
 
+    /// <summary>Revises (see above). Managed evidence (`ADR-0173`) is refused: it is revised from its own surface.</summary>
     Task<EvidenceActionResult> ReviseAsync(Guid evidenceId, CancellationToken cancellationToken = default);
 
     /// <summary>

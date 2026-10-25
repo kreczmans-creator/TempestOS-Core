@@ -206,6 +206,55 @@ public sealed class LiftingGovernanceTests
         Assert.DoesNotContain(typeof(CalcFeatureFlags).GetMethods().Select(m => m.Name), n => n is "Enable" or "Set" or "Add" or "Toggle");
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task The_Generic_Evidence_Acts_Cannot_Check_Issue_Or_Revise_The_Evidence_Of_A_Lifting_Calculation(bool flagOn)
+    {
+        // The Evidence workspace commands call IEvidenceService directly; the evidence of a calculation is managed by its worksheet and they are refused.
+        var on = Host(on: true);
+        on.Principal = Designer;
+        var instance = await on.Service.CreateAsync("struct.lifting", await on.ProjectAsync(), "Lug", Inputs());
+        var evidenceId = instance.EvidenceId!.Value;
+        var evidence = (Evidence)(await on.Context.Repository.FindAsync(evidenceId))!;
+        Assert.Equal(Evidence.CalcWorksheetOwner, evidence.ManagedBy);
+
+        on.Principal = FirstChecker;
+        var check = await on.Evidence.RecordCheckAsync(evidenceId, "Chris Checker", "Check Co", "Checked.", CheckOutcome.Accepted);
+        Assert.Equal(EvidenceRefusal.ManagedElsewhere, check.Refusal);
+        Assert.Equal(EvidenceRefusal.ManagedElsewhere, (await on.Evidence.IssueAsync(evidenceId, "REF-1", "A", "Client")).Refusal);
+        Assert.Equal(EvidenceRefusal.ManagedElsewhere, (await on.Evidence.IssueInOneTransactionAsync(evidenceId, "REF-1", "A", "Client")).Refusal);
+        Assert.Equal(EvidenceRefusal.ManagedElsewhere, (await on.Evidence.ReviseAsync(evidenceId)).Refusal);
+        Assert.Equal(EvidenceStatus.Draft, evidence.Status);
+
+        // With the flag off or on the worksheet's own governance still decides.
+        var service = flagOn ? on.Service : new CalcInstanceService(new CalcCatalogue([new LiftingLugCalculator()]), on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => FirstChecker };
+        var worksheet = await service.CheckAsync(instance.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted);
+        Assert.False(worksheet.Succeeded);
+        Assert.Contains(flagOn ? "competent-person attestation" : "switched off", worksheet.Reason, StringComparison.Ordinal);
+        Assert.Equal(EvidenceStatus.Draft, evidence.Status);
+    }
+
+    [Fact]
+    public async Task Calculation_Evidence_Made_Before_Evidence_Could_Be_Managed_Is_Adopted_At_The_Next_Check()
+    {
+        var host = Host(on: true);
+        host.Principal = Designer;
+        var project = await host.ProjectAsync();
+        var instance = await host.Service.CreateAsync("test.direct-stress", project, "Old calc", LibraryTestHost.ProvenancedInputs());
+
+        // Evidence created the way it was before: unmanaged, then pointed at by the instance.
+        var legacy = await host.Evidence.CreateAsync(project, "Old calc evidence", EvidenceClassification.Calculation);
+        await host.Store.SaveInstanceAsync(instance with { EvidenceId = legacy.Id, UpdatedAt = instance.UpdatedAt.AddSeconds(1) });
+        Assert.Null(legacy.ManagedBy);
+
+        host.Principal = FirstChecker;
+        var checkedOne = await host.Service.CheckAsync(instance.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted);
+        Assert.True(checkedOne.Succeeded, checkedOne.Reason);
+        Assert.Equal(Evidence.CalcWorksheetOwner, legacy.ManagedBy);
+        Assert.Equal(EvidenceRefusal.ManagedElsewhere, (await host.Evidence.IssueAsync(legacy.Id, "REF-1", "A", "Client")).Refusal);
+    }
+
     // ------------------------------------------------------------------
     // Governance, flag on (the test host only)
     // ------------------------------------------------------------------

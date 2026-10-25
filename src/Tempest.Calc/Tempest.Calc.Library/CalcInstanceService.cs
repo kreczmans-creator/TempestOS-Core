@@ -75,6 +75,19 @@ public sealed partial class CalcInstanceService
 
     public CalcCatalogue Catalogue => _catalogue;
 
+    /// <summary>The owner this service presents to <see cref="IEvidenceService"/>: the evidence of a calculation is checked, issued and revised here and nowhere else (`ADR-0173`).</summary>
+    private static readonly EvidenceOwner CalcOwner = new(Evidence.CalcWorksheetOwner);
+
+    /// <summary>
+    /// Marks the Evidence of a calculation made before Evidence could be managed as managed by the worksheet, so the generic Evidence acts
+    /// refuse it from now on. Evidence created now is managed from the start.
+    /// </summary>
+    private async Task AdoptEvidenceAsync(Guid? evidenceId, CancellationToken cancellationToken)
+    {
+        if (evidenceId is { } id)
+            await _evidence.ManageAsync(id, CalcOwner, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Stands in for the signed-in principal when set. Internal, for the tests, which have no sign-in to switch between two people;
     /// the product always resolves the principal from the domain context.
@@ -140,7 +153,7 @@ public sealed partial class CalcInstanceService
             inputs = list;
         }
 
-        var evidence = await _evidence.CreateAsync(projectId, EvidenceTitle(cleanName, entry.Template.Title, "A"), EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
+        var evidence = await _evidence.CreateManagedAsync(projectId, EvidenceTitle(cleanName, entry.Template.Title, "A"), EvidenceClassification.Calculation, Evidence.CalcWorksheetOwner, null, cancellationToken).ConfigureAwait(false);
         var register = await CreateRegisterEntryAsync(projectId, cleanName, evidence.Id, cancellationToken).ConfigureAwait(false);
 
         var instance = new CalcInstance(
@@ -294,6 +307,8 @@ public sealed partial class CalcInstanceService
         if (instance.EvidenceId is not { } evidenceId)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' has no Evidence to check.", instance);
 
+        await AdoptEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
+
         // Addendum A, §A3: E4, E5 and S6 demand an independent check whatever the Evidence setting — the signed-in checker
         // must not be the author (DA-12).
         if (IndependenceRefusal(instance, $"'{instance.Name}'", "check it") is { } notIndependent)
@@ -352,7 +367,7 @@ public sealed partial class CalcInstanceService
         {
             result = await _evidence.RecordCheckInOneTransactionAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome,
                 alsoWrite: (transaction, token) => CalcInstanceStore.WriteGuardedAsync(transaction, updated, instance.UpdatedAt, token),
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken, owner: CalcOwner).ConfigureAwait(false);
         }
         catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
         {
@@ -449,6 +464,8 @@ public sealed partial class CalcInstanceService
         if (instance.EvidenceId is not { } evidenceId)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' has no Evidence to issue.", instance);
 
+        await AdoptEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
+
         var entry = _catalogue.Find(instance.TemplateReference);
 
         if (entry is null)
@@ -508,7 +525,8 @@ public sealed partial class CalcInstanceService
                 return new IssueSheetContent(fileName, _renderer is null ? "text/plain" : "application/pdf", bytes, attachmentId);
             },
             alsoWrite: (transaction, token) => CalcInstanceStore.WriteIssuedInstanceAsync(transaction, issued!, token),
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+            cancellationToken: cancellationToken,
+            owner: CalcOwner).ConfigureAwait(false);
         }
         catch (InvalidOperationException ex) when (ex is CalcConcurrentIssueException || ex.Message.Contains("larger than", StringComparison.Ordinal))
         {
@@ -576,7 +594,7 @@ public sealed partial class CalcInstanceService
         {
             try
             {
-                evidence = await _evidence.CreateAsync(instance.ProjectId, EvidenceTitle(instance.Name, entry.Template.Title, nextRevision), EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
+                evidence = await _evidence.CreateManagedAsync(instance.ProjectId, EvidenceTitle(instance.Name, entry.Template.Title, nextRevision), EvidenceClassification.Calculation, Evidence.CalcWorksheetOwner, null, cancellationToken).ConfigureAwait(false);
             }
             catch (DuplicateBusinessIdentifierException ex)
             {
@@ -667,7 +685,7 @@ public sealed partial class CalcInstanceService
         var now = _time.GetUtcNow();
         var author = CurrentPrincipal();
         var cleanTitle = CalcSheetTextRenderer.Clean(title.Length > 200 ? title[..200] : title);
-        var evidence = await _evidence.CreateAsync(projectId, $"{cleanTitle} — calculation pack", EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
+        var evidence = await _evidence.CreateManagedAsync(projectId, $"{cleanTitle} — calculation pack", EvidenceClassification.Calculation, Evidence.CalcWorksheetOwner, null, cancellationToken).ConfigureAwait(false);
         var pack = new CalcPack(Guid.NewGuid(), projectId, cleanTitle, "A", instanceIds, [new CalcPackRevision("A", now, author, "First issue")], CalcInstanceStatus.Draft, evidence.Id, author, now, now);
         await _store.SavePackAsync(pack, cancellationToken).ConfigureAwait(false);
 
@@ -711,6 +729,8 @@ public sealed partial class CalcInstanceService
 
         if (pack.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Pack '{pack.Title}' is {pack.Status}.");
+
+        await AdoptEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
 
         var (members, gone) = await PackMembersAsync(pack, cancellationToken).ConfigureAwait(false);
 
@@ -768,7 +788,7 @@ public sealed partial class CalcInstanceService
         {
             result = await _evidence.RecordCheckInOneTransactionAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome,
                 alsoWrite: (transaction, token) => CalcInstanceStore.WriteGuardedPackAsync(transaction, checkedPack, pack.UpdatedAt, token),
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken, owner: CalcOwner).ConfigureAwait(false);
         }
         catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
         {
@@ -802,7 +822,7 @@ public sealed partial class CalcInstanceService
 
         try
         {
-            evidence = await _evidence.CreateAsync(pack.ProjectId, $"{pack.Title} — calculation pack (rev {next})", EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
+            evidence = await _evidence.CreateManagedAsync(pack.ProjectId, $"{pack.Title} — calculation pack (rev {next})", EvidenceClassification.Calculation, Evidence.CalcWorksheetOwner, null, cancellationToken).ConfigureAwait(false);
         }
         catch (DuplicateBusinessIdentifierException ex)
         {
@@ -846,6 +866,8 @@ public sealed partial class CalcInstanceService
 
         if (pack.Status != CalcInstanceStatus.Checked)
             return CalcActionResult.Refused($"Pack '{pack.Title}' is {pack.Status}; check it before issuing.");
+
+        await AdoptEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
 
         var (stored, gone) = await PackMembersAsync(pack, cancellationToken).ConfigureAwait(false);
 
@@ -976,7 +998,8 @@ public sealed partial class CalcInstanceService
 
                 await CalcInstanceStore.WritePackAsync(transaction, issuedPack!, token).ConfigureAwait(false);
             },
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+            cancellationToken: cancellationToken,
+            owner: CalcOwner).ConfigureAwait(false);
 
         }
         catch (InvalidOperationException ex) when (ex is CalcConcurrentIssueException or CalcConcurrencyException or CalcInstanceImmutableException || ex.Message.Contains("larger than", StringComparison.Ordinal))

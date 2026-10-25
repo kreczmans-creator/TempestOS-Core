@@ -17,6 +17,9 @@ public enum CalculationModuleRefusal
     /// <summary>No product calculation has the requested id.</summary>
     ModuleNotFound,
 
+    /// <summary>The calculation exists but its feature is switched off in this installation (`ADR-0173`).</summary>
+    ModuleSwitchedOff,
+
     /// <summary>A picked reference record does not exist.</summary>
     RecordNotFound,
 
@@ -94,9 +97,15 @@ public sealed class CalculationModuleService
     private readonly IFastenerCatalog _fasteners;
     private readonly IBearingCatalog _bearings;
     private readonly ICalculationEngine _engine;
+    private readonly Func<string, bool>? _featureEnabled;
 
     /// <summary>Initialises a new instance of the <see cref="CalculationModuleService"/> class.</summary>
-    public CalculationModuleService(IMaterialCatalog materials, IFastenerCatalog fasteners, IBearingCatalog bearings, ICalculationEngine engine)
+    /// <param name="featureEnabled">
+    /// Whether a named feature (`ADR-0173`, for example <see cref="CalculationModuleDescriptors.LiftingFeature"/>) is switched on in this installation;
+    /// a module gated behind a feature that is off is not offered and is refused. <see langword="null"/> (the default, for a tool or a test that
+    /// composes no installation) gates nothing; the application passes its feature flags.
+    /// </param>
+    public CalculationModuleService(IMaterialCatalog materials, IFastenerCatalog fasteners, IBearingCatalog bearings, ICalculationEngine engine, Func<string, bool>? featureEnabled = null)
     {
         ArgumentNullException.ThrowIfNull(materials);
         ArgumentNullException.ThrowIfNull(fasteners);
@@ -107,6 +116,7 @@ public sealed class CalculationModuleService
         _fasteners = fasteners;
         _bearings = bearings;
         _engine = engine;
+        _featureEnabled = featureEnabled;
 
         try
         {
@@ -117,6 +127,13 @@ public sealed class CalculationModuleService
             // Already registered, by the host or an earlier instance: the
             // engine holds the same immutable types this would have added.
         }
+    }
+
+    /// <summary>Whether <paramref name="module"/> is offered here: it is, unless it is gated behind a feature that is switched off (`ADR-0173`).</summary>
+    public bool IsAvailable(CalculationModuleDescriptor module)
+    {
+        ArgumentNullException.ThrowIfNull(module);
+        return _featureEnabled is null || CalculationModuleDescriptors.FeatureOf(module.Id) is not { } feature || _featureEnabled(feature);
     }
 
     /// <summary>The released records of <paramref name="library"/>, by designation, as a picker offers them.</summary>
@@ -267,6 +284,9 @@ public sealed class CalculationModuleService
         var module = CalculationModuleDescriptors.For(request.CalculationId);
         if (module is null)
             return new CalculationModulePreparation(CalculationModuleRefusal.ModuleNotFound, $"No product calculation has the id '{request.CalculationId}'.", [], [], null, null);
+
+        if (!IsAvailable(module))
+            return new CalculationModulePreparation(CalculationModuleRefusal.ModuleSwitchedOff, $"'{module.Title}' is switched off: its '{CalculationModuleDescriptors.FeatureOf(module.Id)}' feature is not enabled in this installation (it stays off until the owner has completed its review checklist).", [], [], module, null);
 
         var fields = request.Fields.ToDictionary(f => f.Name, StringComparer.Ordinal);
         var pins = new Dictionary<string, ReferencePin>(StringComparer.Ordinal);

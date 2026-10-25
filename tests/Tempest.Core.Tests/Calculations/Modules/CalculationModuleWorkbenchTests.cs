@@ -244,6 +244,29 @@ public class CalculationModuleWorkbenchTests
         Assert.Contains(comparison.Rows, r => r.Section == "Result" && r.Field == "Deflection utilisation" && r.Before == "0.496032" && r.After == "1.32275");
     }
 
+    // ---- The lifting feature (`ADR-0173`) ----
+
+    [Fact]
+    public async Task TheLiftingModule_IsOfferedOnlyWhileTheLiftingFeatureIsOn()
+    {
+        using var temp = new TempDirectory();
+        var off = await StartAsync(temp.Path, feature => false);
+        var offModules = off.Workbench.AvailableCatalogue().SelectMany(g => g.Modules).ToList();
+        Assert.DoesNotContain(offModules, m => m.Id == LiftingLugPinJointCalculationDefinition.Id);
+        Assert.Equal(CalculationModuleDescriptors.All.Count - 1, offModules.Count);
+
+        // Re-run and Compare still reach every other module, and the static catalogue is unchanged for tools.
+        Assert.Contains(CalculationModuleWorkbench.Catalogue().SelectMany(g => g.Modules), m => m.Id == LiftingLugPinJointCalculationDefinition.Id);
+
+        using var onTemp = new TempDirectory();
+        var on = await StartAsync(onTemp.Path, feature => feature == CalculationModuleDescriptors.LiftingFeature);
+        Assert.Contains(on.Workbench.AvailableCatalogue().SelectMany(g => g.Modules), m => m.Id == LiftingLugPinJointCalculationDefinition.Id);
+
+        using var bareTemp = new TempDirectory();
+        var bare = await StartAsync(bareTemp.Path);
+        Assert.Equal(CalculationModuleDescriptors.All.Count, bare.Workbench.AvailableCatalogue().SelectMany(g => g.Modules).Count());
+    }
+
     // ---- The host ----
 
     private sealed record Session(
@@ -254,7 +277,7 @@ public class CalculationModuleWorkbenchTests
         IMaterialCatalog Materials,
         CurrentPrincipalAccessor Principals);
 
-    private static async Task<Session> StartAsync(string rootPath)
+    private static async Task<Session> StartAsync(string rootPath, Func<string, bool>? featureEnabled = null)
     {
         var host = new TempestHostBuilder([])
             .AddConfigurationSource(new MemoryConfigurationSource(
@@ -281,7 +304,8 @@ public class CalculationModuleWorkbenchTests
             materials,
             (IFastenerCatalog)services.GetService(typeof(IFastenerCatalog)),
             (IBearingCatalog)services.GetService(typeof(IBearingCatalog)),
-            engine);
+            engine,
+            featureEnabled);
         var register = new EngineeringCalculationRegister(domain, dispatcher);
         var workbench = new CalculationModuleWorkbench(service, templates, register, dispatcher, domain);
 
