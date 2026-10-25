@@ -128,6 +128,45 @@ public sealed class InsulationTests
     }
 
     [Fact]
+    public void Black_B_B_04_A_Fixed_H_Se_On_A_Cold_Pipe_Warns_That_The_Correlation_Needs_More_Insulation_Against_Condensation()
+    {
+        // The chilled-water slip: the generic 10 W/(m²K) holds the surface nearest the air temperature, the most favourable
+        // case for condensation, so a layer that passes at h_se 10 can fail with the real (low-emissivity) surface.
+        CalcInputSet Cold(params CalcInputValue[] more) => Sheet([Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Q("RH_a", 70, "%"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Clear("t_chosen"), .. more]);
+
+        var given = Run(Cold());
+        Assert.False(given.IsBlocked, string.Join("; ", given.Blocks.Select(b => b.Message)));
+        var tGiven = given.OutputSi("thickness") * 1000;
+        Assert.Equal(11.290660460665531, tGiven, 6);
+
+        double Correlation(double eps) => Run(Cold(CalcInputValue.Choice("h_mode", InsulationCalculator.HCorrelation), CalcInputValue.Of("eps", eps))).OutputSi("thickness") * 1000;
+        var ordinary = Correlation(0.9);
+        var bright = Correlation(0.1);
+        Assert.True(bright > ordinary && ordinary > tGiven, $"{tGiven} {ordinary} {bright}");
+
+        var warning = Assert.Single(given.Warnings, w => w.RuleId == "h-se-condensation");
+        Assert.StartsWith("h_se:", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("under-sizes", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("correlation", warning.Message, StringComparison.Ordinal);
+        Assert.Contains($"{Tempest.Calc.Engine.Values.CalcValue.FormatNumber(tGiven, 5)} mm", warning.Message, StringComparison.Ordinal);
+        Assert.Contains($"{Tempest.Calc.Engine.Values.CalcValue.FormatNumber(ordinary, 5)} mm", warning.Message, StringComparison.Ordinal);
+        Assert.Contains($"{Tempest.Calc.Engine.Values.CalcValue.FormatNumber(bright, 5)} mm", warning.Message, StringComparison.Ordinal);
+
+        // With a chosen thickness (the 13 mm layer of the finding) the warning still shows, next to the PASS it qualifies.
+        var chosen = Run(Sheet(Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Q("RH_a", 70, "%"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Q("t_chosen", 13, "mm")));
+        Assert.True(chosen.Passed);
+        Assert.True(Warned(chosen, "h-se-condensation"));
+
+        // The correlation, a hot pipe, no dew margin and a fixed h_se that is already low raise no such warning.
+        Assert.False(Warned(Run(Cold(CalcInputValue.Choice("h_mode", InsulationCalculator.HCorrelation))), "h-se-condensation"));
+        Assert.False(Warned(Run(Sheet()), "h-se-condensation"));
+        Assert.False(Warned(Run(Sheet(Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Clear("q_max_m"), Q("t_chosen", 20, "mm"))), "h-se-condensation"));
+        Assert.False(Warned(Run(Cold(Q("h_se", 3, "W/(m^2*K)"))), "h-se-condensation"));
+        Assert.Contains(Insulation.Template.ApplicabilityRules, r => r.Id == "h-se-condensation" && r.Severity == CalcNoticeSeverity.Warning);
+        Assert.Contains("condensation", Insulation.Template.FindInput("h_se")!.Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_Criterion_For_The_Wrong_Sign_Is_Ignored_With_A_Warning_And_No_Criterion_At_All_Blocks()
     {
         // A hot-surface limit on a cold pipe is ignored; the heat-flow limit still applies.

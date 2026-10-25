@@ -18,7 +18,7 @@ Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with
   dT | Allowed temperature rise above ambient | 30 | K | spec: SPEC-ELX-02 §3 (supply rail) | 1 … 100 K
   T_amb | Ambient temperature at the board | 60 | degC | spec: SPEC-ELX-02 §3 (supply rail) | -40 … 125 degC
   layer | Layer | External layer |  | spec: SPEC-ELX-02 §3 (supply rail) | any
-  Cu_oz | Finished copper weight (oz/ft²) | 2 |  | spec: SPEC-ELX-02 §3 (supply rail) | 0.5 … 6
+  Cu_oz | Finished copper weight in oz/ft² (0.5 to 6), not a thickness in µm: 17.5 µm is ½ oz, 35 µm is 1 oz, 70 µm is 2 oz, 105 µm is 3 oz | 2 |  | spec: SPEC-ELX-02 §3 (supply rail) | 0.5 … 6
   w_act | Trace width as drawn | 2 | mm | spec: SPEC-ELX-02 §3 (supply rail) | 0.05 … 10 mm
   L | Trace length | 150 | mm | spec: SPEC-ELX-02 §3 (supply rail) | 1 … 1000 mm
   k_ext | Curve-fit constant k, external layer | 0.048 |  | assumption: Sheet default value; no project figure given. | 0.01 … 0.1
@@ -111,8 +111,8 @@ Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with
   WARNING record: Tabulated values not taken from a reference record: k_ext, k_int, n_dT, n_A, t_oz (IPC-2221 legacy curve-fit constants); rho_20, alpha (Copper resistivity constants). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.pcb-trace@1.0.1
-  Content hash: 9ca8abd73b338300
+  Template: elec.pcb-trace@1.0.2
+  Content hash: d6f60ee9a4c2afa3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
   Test run: 2026-10-25 09:40 UTC

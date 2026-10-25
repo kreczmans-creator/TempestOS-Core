@@ -18,7 +18,7 @@ Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with
   dT | Allowed temperature rise above ambient | 20 | K | spec: Board design rule BDR-3: 20 K allowed rise on power rails | 1 … 100 K
   T_amb | Ambient temperature at the board | 25 | degC | spec: Environmental specification ES-2: 25 °C at the board | -40 … 125 degC
   layer | Layer | External layer |  | drawing: PCB-LAY-014 rev B | any
-  Cu_oz | Finished copper weight (oz/ft²) | 2 |  | spec: Fabrication note FN-7: 2 oz/ft² finished copper on the outer layers | 0.5 … 6
+  Cu_oz | Finished copper weight in oz/ft² (0.5 to 6), not a thickness in µm: 17.5 µm is ½ oz, 35 µm is 1 oz, 70 µm is 2 oz, 105 µm is 3 oz | 2 |  | spec: Fabrication note FN-7: 2 oz/ft² finished copper on the outer layers | 0.5 … 6
   w_act | Trace width as drawn | 2.5 | mm | drawing: PCB-LAY-014 rev B | 0.05 … 10 mm
   L | Trace length | 100 | mm | drawing: PCB-LAY-014 rev B | 1 … 1000 mm
   k_ext | Curve-fit constant k, external layer | 0.048 |  | reference: record: IPC-2221 legacy curve-fit constants (published closed form; the issuer enters the edition) | 0.01 … 0.1
@@ -104,7 +104,7 @@ Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with
   WARNING record: Tabulated values not taken from a reference record: k_ext, k_int, n_dT, n_A, t_oz (IPC-2221 legacy curve-fit constants); rho_20, alpha (Copper resistivity constants). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.pcb-trace@1.0.1
+  Template: elec.pcb-trace@1.0.2
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 6/6

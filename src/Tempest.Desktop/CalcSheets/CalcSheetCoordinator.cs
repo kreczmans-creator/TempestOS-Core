@@ -522,6 +522,18 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
 
         if (entry is null)
         {
+            // A draft made on an older version of a template that has since been revised (Grey GR-B-01): it cannot run on the
+            // current formulas, so its inputs open as a new, unsaved sheet on the current version and the draft stays as it was.
+            if (_service.PlanDraftUpgrade(instance) is { } upgrade)
+            {
+                _view.SelectTemplate(upgrade.Current.Reference);
+                _view.ShowTemplate(upgrade.Current, null, upgrade.Inputs);
+                _view.SuggestName($"{instance.Name} ({upgrade.Current.Template.Version})");
+                _latest = upgrade.Inputs;
+                _view.ShowStatus(upgrade.Message);
+                return;
+            }
+
             _view.ShowStatus($"Template '{instance.TemplateReference}' is not registered in this build.");
             return;
         }

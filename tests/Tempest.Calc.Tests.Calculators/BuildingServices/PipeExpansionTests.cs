@@ -319,6 +319,37 @@ public sealed class PipeExpansionTests
     }
 
     [Fact]
+    public void Black_B_B_03_A_Pipe_Modulus_Typed_In_MPa_Is_Warned_Or_Refused_And_A_Plastic_Pipe_Stays_Valid()
+    {
+        // Copper 120 GPa typed with the unit MPa is 0.12 GPa: the leg looked 1000 times more flexible, a failing leg
+        // passed and the anchor force fell 1000-fold, silently.
+        var good = Run(Q("E", 120, "GPa"), Q("H", 2.5, "m"));
+        var slip = Run(Q("E", 120, "MPa"), Q("H", 2.5, "m"));
+        Assert.False(slip.IsBlocked);
+        var warning = Assert.Single(slip.Warnings, w => w.RuleId == "modulus-low");
+        Assert.StartsWith("E:", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("is E in GPa?", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("MPa", warning.Message, StringComparison.Ordinal);
+        Assert.True(slip.OutputSi("anchor_force") < good.OutputSi("anchor_force") / 100);
+        Assert.Equal(0.5, Pipe.Template.FindInput("E")!.Min);
+
+        // The same slip of the hot modulus, which sets the anchor reactions.
+        var hot = Run(Q("E_hot", 120, "MPa"));
+        Assert.Contains(hot.Warnings, w => w.RuleId == "modulus-low" && w.Message.StartsWith("E_hot:", StringComparison.Ordinal));
+
+        // Below the plausible floor the input is refused (a ×1000 slip of aluminium, copper or steel in MPa to GPa is above it,
+        // so the warning above carries those; 10 MPa is no pipe).
+        var absurd = CalcInputValidator.Validate(Pipe.Template, Sheet(Q("E", 10, "MPa")));
+        Assert.Contains(absurd, n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith("E ", StringComparison.Ordinal));
+
+        // Plastic pipe (PE 100, PP-R, PVC-U and the soft end of PEX) and every metal run without the warning.
+        foreach (var gpa in new[] { 0.6, 0.8, 1.0, 1.5, 3.0, 70, 120, 210 })
+            Assert.DoesNotContain(Run(Q("E", gpa, "GPa"), Q("H", 6, "m")).Warnings, w => w.RuleId == "modulus-low");
+
+        Assert.Contains(Pipe.Template.ApplicabilityRules, r => r.Id == "modulus-low" && r.Severity == CalcNoticeSeverity.Warning);
+    }
+
+    [Fact]
     public void M4_Without_A_K1_The_Sheet_Does_Not_Pass_Even_When_Every_Check_Made_Is_Met()
     {
         var r = CalcRunner.Run(Pipe, new CalcInputSet(Sheet(Q("H", 8, "m")).Values.Where(v => v.Symbol != "K_scr")));

@@ -18,7 +18,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   theta_a | Ambient air temperature (also the radiation sink) | 20 | degC | manual | -20 … 50 degC
   lambda | Thermal conductivity of the insulation | 0.04 | W/(m*K) | manual | 0.015 … 0.2 W/(m*K)
   h_mode | Where the outer surface coefficient comes from | h_se as given |  | manual | any
-  h_se | Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface) | 10 | W/(m^2*K) | manual | 3 … 40 W/(m^2*K)
+  h_se | Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there) | 10 | W/(m^2*K) | manual | 3 … 40 W/(m^2*K)
   eps | Emissivity of the outer surface (correlation) | 0.9 |  | manual | 0.05 … 1
   v_wind | Air speed over the surface (correlation; 0 = still air) | 0 | m/s | manual | 0 … 20 m/s
   L_surf | Height or flow length of the flat surface (correlation, flat) | 1 | m | manual | 0.1 … 10 m

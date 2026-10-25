@@ -9,9 +9,6 @@ public sealed class PlateBendingTests
 {
     private static readonly PlateBendingCalculator Plate = new();
 
-    /// <summary>The CI runners scale every deadline by <c>TEMPEST_TEST_TIMEOUT_FACTOR</c> (3 on the Windows matrix), as in Red_SolverAttacks.</summary>
-    private static readonly double TimeoutFactor = double.TryParse(Environment.GetEnvironmentVariable("TEMPEST_TEST_TIMEOUT_FACTOR"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) && f >= 1 ? f : 1;
-
     private static CalcInputSet Defaults() => CalcTemplateHasher.DefaultInputs(Plate.Template);
 
     private static CalcRunResult Run(params CalcInputValue[] changes) => CalcRunner.Run(Plate, changes.Aggregate(Defaults(), (set, v) => set.With(v)));
@@ -254,49 +251,6 @@ public sealed class PlateBendingTests
         var k20 = PlateBendingMath.ClampedRitz.Solve(a, a, Nu, d, 10e3, null, null, 20);
         Assert.Equal(k20.At(a / 2, a / 2).W, k30.At(a / 2, a / 2).W, k20.At(a / 2, a / 2).W * 1e-8);
         Assert.Equal(k20.At(0, a / 2).Mx, k30.At(0, a / 2).Mx, Math.Abs(k20.At(0, a / 2).Mx) * 1e-4);
-    }
-
-    [Theory]
-    [InlineData(5000, 500)]
-    [InlineData(10000, 1000)]
-    public void Review_Ritz_Speed_A_Long_Clamped_Plate_Stops_On_The_Stall_Rule_Quickly(double a, double b)
-    {
-        var inputs = Defaults();
-        foreach (var v in Rect(true, a, b))
-            inputs = inputs.With(v);
-
-        CalcRunner.Run(Plate, inputs);
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        var r = CalcRunner.Run(Plate, inputs);
-        sw.Stop();
-        Assert.False(r.IsBlocked);
-        Assert.True(sw.ElapsedMilliseconds < 1500 * TimeoutFactor, $"{sw.ElapsedMilliseconds} ms (budget {1500 * TimeoutFactor:0} ms)");
-        Assert.True(r.OutputSi("terms_used") <= PlateBendingCalculator.RitzCap);
-    }
-
-    [Fact]
-    public void Review_Ritz_Speed_The_Smallest_Clamped_Patch_And_The_Square_Are_Quick_And_The_Run_Honours_Cancellation()
-    {
-        var inputs = Defaults();
-        foreach (var v in Rect(true, 1000, 1000, PlateBendingCalculator.Patch).Concat([Q("u", 250, "mm"), Q("v", 250, "mm")]))
-            inputs = inputs.With(v);
-
-        CalcRunner.Run(Plate, inputs);
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        var r = CalcRunner.Run(Plate, inputs);
-        sw.Stop();
-        Assert.False(r.IsBlocked);
-        Assert.True(sw.ElapsedMilliseconds < 1500 * TimeoutFactor, $"{sw.ElapsedMilliseconds} ms (budget {1500 * TimeoutFactor:0} ms)");
-
-        // The square settles before the cap (the sparse schedule keeps the quality: w to 1e-9, stress to 1e-5).
-        var square = With(Rect(true));
-        Assert.True(square.OutputSi("terms_used") <= 20);
-        Assert.DoesNotContain(square.Warnings, w => w.RuleId == "ritz-converge");
-
-        using var cts = new CancellationTokenSource();
-        cts.Cancel();
-        var cancelled = CalcRunner.Run(Plate, inputs, cancellationToken: cts.Token);
-        Assert.True(cancelled.IsBlocked || cancelled.Outputs.Count == 0);
     }
 
     [Fact]

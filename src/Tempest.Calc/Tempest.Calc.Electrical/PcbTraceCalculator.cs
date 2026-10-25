@@ -33,7 +33,7 @@ public sealed class PcbTraceCalculator : ICalcCalculator
     public const double FitMinRiseK = 10.0;
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Electrical, "PCB trace width (IPC-2221 legacy)",
+        Id, "1.0.2", CalcDiscipline.Electrical, "PCB trace width (IPC-2221 legacy)",
         "The minimum width of a printed-circuit trace for a current and an allowed temperature rise, from the legacy IPC-2221 curve-fit, and the resistance, voltage drop and I²R loss of the trace as drawn: " + SheetLabel + ". External or internal layer; copper weight in oz/ft²; resistance at the trace's operating temperature (ambient plus rise). The IPC-2152 method (charts, plane and board-thickness factors) is not implemented.",
         "Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with A in mil², k = 0.048 external, 0.024 internal\n" +
         "Copper thickness: t = w_Cu·t_oz, t_oz = 1.378 mil per oz/ft² (35 µm, derived)\n" +
@@ -45,7 +45,7 @@ public sealed class PcbTraceCalculator : ICalcCalculator
             new CalcInputSpec("dT", "Allowed temperature rise above ambient", CalcInputKind.Quantity, "K", Default: 10, Min: 1, Max: 100, HardMin: 0.1, HardMax: 300, Group: "Load"),
             new CalcInputSpec("T_amb", "Ambient temperature at the board", CalcInputKind.Quantity, "degC", Default: 25, Min: -40, Max: 125, HardMin: -100, HardMax: 500, Group: "Load"),
             new CalcInputSpec("layer", "Layer", CalcInputKind.Choice, Choices: [External, Internal], DefaultChoice: External, Group: "Trace"),
-            new CalcInputSpec("Cu_oz", "Finished copper weight (oz/ft²)", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 6, HardMin: 0.1, HardMax: 20, Group: "Trace"),
+            new CalcInputSpec("Cu_oz", "Finished copper weight in oz/ft² (0.5 to 6), not a thickness in µm: 17.5 µm is ½ oz, 35 µm is 1 oz, 70 µm is 2 oz, 105 µm is 3 oz", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 6, HardMin: 0.1, HardMax: 6, Group: "Trace"),
             new CalcInputSpec("w_act", "Trace width as drawn", CalcInputKind.Quantity, "mm", Default: 2, Min: 0.05, Max: 10, HardMin: 0.01, HardMax: 1000, Group: "Trace"),
             new CalcInputSpec("L", "Trace length", CalcInputKind.Quantity, "mm", Default: 50, Min: 1, Max: 1000, HardMin: 1e-3, HardMax: 1e5, Group: "Trace"),
             new CalcInputSpec("k_ext", "Curve-fit constant k, external layer", CalcInputKind.Number, Default: 0.048, Min: 0.01, Max: 0.1, HardMin: 0.001, HardMax: 1, Group: "Method (IPC-2221 legacy)"),

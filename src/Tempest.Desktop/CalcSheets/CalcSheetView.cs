@@ -404,6 +404,9 @@ public sealed partial class CalcSheetView : UserControl
 
     public string? CalculationName => string.IsNullOrWhiteSpace(_nameBox.Text) ? null : _nameBox.Text;
 
+    /// <summary>Fills the name of a new, unsaved sheet (a draft carried onto a revised template is offered under a name of its own, since the old draft keeps its name).</summary>
+    public void SuggestName(string name) => _nameBox.Text = name;
+
     public bool IsReadOnly { get; private set; }
 
     public bool IsWorkingShown => _working.IsVisible;

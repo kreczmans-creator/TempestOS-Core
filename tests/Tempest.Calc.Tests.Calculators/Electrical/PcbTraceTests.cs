@@ -125,6 +125,30 @@ public sealed class PcbTraceTests
         Assert.Contains(Pcb.Template.ApplicabilityRules, r => r.Id == "rise" && r.Severity == CalcNoticeSeverity.Warning);
     }
 
+    [Theory]
+    [InlineData(17.5)]
+    [InlineData(18)]
+    [InlineData(35)]
+    [InlineData(70)]
+    [InlineData(105)]
+    public void Black_B_B_02_A_Copper_Thickness_In_Micrometres_Typed_Into_The_Ounce_Field_Is_Blocked(double micrometres)
+    {
+        // 18 µm typed as "18 oz" gave w_min 0.10 mm and a PASS where the real half ounce needs 3.6 mm and fails.
+        var result = Run(CalcInputValue.Of("Cu_oz", micrometres));
+        var block = Assert.Single(result.Blocks, b => b.Message.StartsWith("Cu_oz", StringComparison.Ordinal));
+        Assert.Contains("must be at most 6", block.Message, StringComparison.Ordinal);
+        Assert.Contains("not a thickness in µm", block.Message, StringComparison.Ordinal);
+        Assert.True(result.IsBlocked);
+
+        // The ends of the valid range (Addendum B 0.5 to 6 oz/ft²) still run.
+        foreach (var oz in new[] { 0.5, 6.0 })
+            Assert.False(Run(CalcInputValue.Of("Cu_oz", oz), CalcInputValue.Quantity("w_act", 20, "mm")).IsBlocked);
+
+        // What 18 µm really is: a half ounce, which this trace fails.
+        var half = Run(CalcInputValue.Of("Cu_oz", 0.5), CalcInputValue.Quantity("w_act", 0.1, "mm"));
+        Assert.True(half.OutputSi("u_w") > 1);
+    }
+
     [Fact]
     public void Inputs_Outside_Their_Hard_Limits_Block_And_The_Method_Constants_Stay_Editable()
     {
