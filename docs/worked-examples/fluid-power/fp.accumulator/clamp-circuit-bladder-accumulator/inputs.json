@@ -1,5 +1,16 @@
 [
   {
+    "Symbol": "PS",
+    "Number": 230,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-12: accumulator relief setting 230 bar gauge (vessel PS; illustrative, to be replaced by the nameplate)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "230"
+  },
+  {
     "Symbol": "T_c",
     "Number": 20,
     "Unit": "degC",
@@ -20,6 +31,17 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "50"
+  },
+  {
+    "Symbol": "T_min",
+    "Number": 30,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Oil temperature range assumed 30 to 50 \u00B0C in service (invented for this example); the gas is coldest at 30 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
   },
   {
     "Symbol": "dV",

@@ -1,5 +1,6 @@
 using CsCheck;
 using Tempest.Calc.BuildingServices;
+using Tempest.Calc.Engine.Values;
 using Tempest.Calc.Sheets;
 
 namespace Tempest.Calc.Tests.Calculators.BuildingServices;
@@ -14,7 +15,8 @@ public sealed class GlaserTests
 
     private static readonly (double, double)[] Seasonal = [(2, 90), (3, 88), (6, 84), (9, 80), (13, 76), (16, 74), (18, 74), (18, 76), (15, 82), (11, 87), (6, 90), (3, 91)];
 
-    private static CalcInputValue SeasonalRotated(int k) => GlaserCalculator.Climate([.. Seasonal.Skip(k).Concat(Seasonal.Take(k))]);
+    /// <summary>The seasonal year starting at row k, with each row's calendar days given (so the physics do not depend on the starting month).</summary>
+    private static CalcInputValue SeasonalRotated(int k) => GlaserCalculator.Climate([.. Enumerable.Range(0, 12).Select(i => (Seasonal[(i + k) % 12].Item1, Seasonal[(i + k) % 12].Item2, (double)GlaserModel.CalendarDays[(i + k) % 12]))]);
 
     private static CalcInputValue InsulatedBrick(double brickMu = 10) => GlaserCalculator.Layers(("", "Insulation", 100, 0.04, 2), ("", "Brick", 200, 0.8, brickMu));
 
@@ -115,7 +117,10 @@ public sealed class GlaserTests
         Assert.Contains(result.Checks, c => c.Name.StartsWith("Annual moisture balance", StringComparison.Ordinal) && !c.Passed);
         Assert.Equal(0, result.OutputSi("pass"));
         Assert.Equal(result.OutputSi("Mc_max"), result.OutputSi("Mc_end"), 9);
-        Assert.Equal(12 * result.OutputSi("Mc_1"), result.OutputSi("Mc_12"), 9);
+
+        // Month lengths are the calendar days (blank rows): the same daily rate gives 31/365 of the year's condensate in January and 59/365 by the end of February.
+        Assert.Equal(result.OutputSi("Mc_12") * 31 / 365, result.OutputSi("Mc_1"), 9);
+        Assert.Equal(result.OutputSi("Mc_12") * 59 / 365, result.OutputSi("Mc_2"), 9);
     }
 
     [Fact]
@@ -127,7 +132,7 @@ public sealed class GlaserTests
 
         var limited = Run(Sheet(InsulatedBrick(), GlaserCalculator.Climate(Seasonal)).With(Q("Mc_limit", 1000, "g/m^2")));
         Assert.Contains(limited.Checks, c => c.Name.StartsWith("Peak condensate", StringComparison.Ordinal) && !c.Passed);
-        Assert.Equal(3110.811466156645e-3, limited.OutputSi("Mc_max"), 9);
+        Assert.Equal(3083.081081674129e-3, limited.OutputSi("Mc_max"), 9);
         Assert.Equal(0, limited.OutputSi("pass"));
     }
 
@@ -159,18 +164,47 @@ public sealed class GlaserTests
     }
 
     [Fact]
-    public void The_Surface_Factor_Follows_R_Si_Over_R_T_And_Rises_With_Insulation()
+    public void The_Surface_Factor_Follows_R_Si_f_Over_R_T_f_And_Rises_With_Insulation()
     {
         var thin = Run(Sheet(GlaserCalculator.Layers(("", "Brick", 215, 0.8, 8)), GlaserCalculator.Climate(Seasonal)));
         var thick = Run(Sheet(GlaserCalculator.Layers(("", "Brick", 215, 0.8, 8), ("", "Insulation", 100, 0.04, 1)), GlaserCalculator.Climate(Seasonal)));
-        Assert.Equal(1 - 0.13 / (0.13 + 215 / 800.0 + 0.04), thin.OutputSi("fRsi"), 12);
+        Assert.Equal(1 - 0.25 / (0.25 + 215 / 800.0 + 0.04), thin.OutputSi("fRsi"), 12);
         Assert.True(thick.OutputSi("fRsi") > thin.OutputSi("fRsi"));
         Assert.Equal(thin.OutputSi("fRsi_min"), thick.OutputSi("fRsi_min"), 12);
 
-        // A larger internal surface resistance for the surface check (behind furniture) gives a colder surface: a lower f_Rsi, from its own input.
-        var withRsiF = Run(Sheet(GlaserCalculator.Layers(("", "Brick", 215, 0.8, 8)), GlaserCalculator.Climate(Seasonal)).With(Q("Rsi_f", 0.25, "m^2*K/W")));
-        Assert.Equal(1 - 0.25 / (0.25 + 215 / 800.0 + 0.04), withRsiF.OutputSi("fRsi"), 12);
-        Assert.True(withRsiF.OutputSi("fRsi") < thin.OutputSi("fRsi"));
+        // The ordinary R_si (0.13) is not what the surface check uses: R_si,f is its own input, so a different R_si,f moves f_Rsi and R_si does not.
+        var otherRsi = Run(Sheet(GlaserCalculator.Layers(("", "Brick", 215, 0.8, 8)), GlaserCalculator.Climate(Seasonal)).With(Q("Rsi", 0.2, "m^2*K/W")));
+        Assert.Equal(thin.OutputSi("fRsi"), otherRsi.OutputSi("fRsi"), 12);
+        var glazing = Run(Sheet(GlaserCalculator.Layers(("", "Brick", 215, 0.8, 8)), GlaserCalculator.Climate(Seasonal)).With(Q("Rsi_f", 0.13, "m^2*K/W")));
+        Assert.Equal(1 - 0.13 / (0.13 + 215 / 800.0 + 0.04), glazing.OutputSi("fRsi"), 12);
+        Assert.True(glazing.OutputSi("fRsi") > thin.OutputSi("fRsi"));
+    }
+
+    [Fact]
+    public void The_Surface_Check_Defaults_To_The_Conventional_0_25_And_Warns_Below_It()
+    {
+        var spec = Glaser.Template.Inputs.Single(i => i.Symbol == "Rsi_f");
+        Assert.Equal(0.25, spec.Default);
+        Assert.False(spec.IsOptional);
+
+        // The plaster and brick wall of the surface-factor case: blank R_si,f used to fall back to R_si = 0.13 and PASS (f_Rsi 0.7227); the conventional 0.25 FAILS.
+        var wall = GlaserCalculator.Layers(("", "Plaster", 15, 0.5, 10), ("", "Brick", 215, 0.8, 8));
+        var plain = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)));
+        Assert.Equal(0.5753715498938429, plain.OutputSi("fRsi"), 12);
+        Assert.Equal(1.0258693133507482, plain.OutputSi("u_f"), 12);
+        Assert.Equal(0, plain.OutputSi("pass"));
+        Assert.DoesNotContain(plain.Warnings, w => w.RuleId == "rsi-f-low");
+        Assert.DoesNotContain(Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("Rsi_f", 0.3, "m^2*K/W"))).Warnings, w => w.RuleId == "rsi-f-low");
+
+        var glazing = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("Rsi_f", 0.13, "m^2*K/W")));
+        Assert.Equal(0.7227, glazing.OutputSi("fRsi"), 3);
+        var warning = Assert.Single(glazing.Warnings, w => w.RuleId == "rsi-f-low");
+        Assert.StartsWith("Rsi_f:", warning.Message, StringComparison.Ordinal);
+        Assert.Equal(1, glazing.OutputSi("pass"));
+
+        // A surface resistance of zero would make f_Rsi = 1 and always pass: refused for both.
+        foreach (var symbol in new[] { "Rsi", "Rsi_f", "Rse" })
+            Assert.Contains(CalcInputValidator.Validate(Glaser.Template, Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q(symbol, 0, "m^2*K/W"))), n => n.Severity == CalcNoticeSeverity.Block);
     }
 
     [Fact]
@@ -198,6 +232,80 @@ public sealed class GlaserTests
                 && year.ResidualMc >= 0 && year.PeakInterfaceMc + 1e-15 >= year.ResidualMc / (layers.Count - 1)
                 && (year.StartIndex >= 0 || year.PeakInterfaceMc == 0);
         }, iter: 300);
+    }
+
+    [Fact]
+    public void The_Moisture_Excess_Uses_The_Mean_Of_The_Inside_And_Outside_Temperature_And_A_Margin_On_The_Difference()
+    {
+        var mode = CalcInputValue.Choice("humidity_mode", GlaserCalculator.MoistureExcess);
+        var points = new[] { Q("dv_a", 5, "g/m^3"), Q("theta_a", 0, "degC"), Q("dv_b", 0, "g/m^3"), Q("theta_b", 20, "degC") };
+        var inputs = points.Aggregate(Sheet(InsulatedBrick(), GlaserCalculator.Climate(Seasonal)).With(mode), (set, v) => set.With(v));
+
+        Assert.Equal(1.10, Glaser.Template.Inputs.Single(i => i.Symbol == "dp_f").Default);
+        Assert.Contains(Glaser.Template.RecordKinds!, k => k.Kind == "climate.humidity-class" && k.Symbols.Contains("dp_f"));
+
+        double Pi(CalcRunResult r, int m) => Assert.IsType<VectorValue>(r.FindOutput("p_int_m")!.Value).Si[m];
+
+        // January (2 °C, 90 %): Δv = 4.5 g/m³, T_i = 293.15 K, T_e = 275.15 K.
+        var pe = 0.90 * GlaserModel.SaturationPressure(2);
+        var withMargin = Run(inputs);
+        Assert.Equal(pe + 1.10 * 4.5e-3 * 461.5 * (293.15 + 275.15) / 2, Pi(withMargin, 0), 9);
+        Assert.Equal(649.1, Pi(withMargin, 0) - pe, 1);
+
+        var noMargin = Run(inputs.With(CalcInputValue.Of("dp_f", 1.0)));
+        Assert.Equal(pe + 4.5e-3 * 461.5 * (293.15 + 275.15) / 2, Pi(noMargin, 0), 9);
+
+        // The margin reaches both checks: the interstitial peak and the surface factor.
+        Assert.True(withMargin.OutputSi("fRsi_min") > noMargin.OutputSi("fRsi_min"));
+        Assert.True(withMargin.OutputSi("Mc_max") > noMargin.OutputSi("Mc_max"));
+        Assert.Equal(0.6704737425044534, withMargin.OutputSi("fRsi_min"), 12);
+
+        // The sheet says the clause wording is to be checked against the owner's copy.
+        Assert.Contains(withMargin.RunAssumptions, a => a.Statement.Contains("against the owner's copy", StringComparison.Ordinal) && a.Statement.Contains("f_Δp", StringComparison.Ordinal));
+        Assert.DoesNotContain(Run(Sheet(InsulatedBrick(), GlaserCalculator.Climate(Seasonal))).RunAssumptions, a => a.Statement.Contains("f_Δp", StringComparison.Ordinal));
+
+        // The margin cannot be below 1.
+        Assert.Contains(CalcInputValidator.Validate(Glaser.Template, inputs.With(CalcInputValue.Of("dp_f", 0.9))), n => n.Severity == CalcNoticeSeverity.Block);
+    }
+
+    [Fact]
+    public void A_Blank_Month_Length_Is_The_Calendar_Days_January_To_December()
+    {
+        var blank = Run(Sheet(InsulatedBrick(), Constant(0, 90)));
+        var daily = blank.OutputSi("Mc_12") / 365;
+        Assert.Equal(daily * 31, blank.OutputSi("Mc_1"), 9);
+        Assert.Equal(daily * 28, blank.OutputSi("Mc_2") - blank.OutputSi("Mc_1"), 9);
+        Assert.Contains(blank.RunAssumptions, a => a.Statement.Contains("calendar days", StringComparison.Ordinal) && a.Statement.Contains("12 row(s)", StringComparison.Ordinal));
+
+        // The same as giving the days: nothing hidden in the blank.
+        var explicitDays = Run(Sheet(InsulatedBrick(), GlaserCalculator.Climate([.. GlaserModel.CalendarDays.Select(d => (0.0, 90.0, (double)d))])));
+        Assert.Equal(blank.OutputSi("Mc_2"), explicitDays.OutputSi("Mc_2"), 12);
+        Assert.DoesNotContain(explicitDays.RunAssumptions, a => a.Statement.Contains("calendar days", StringComparison.Ordinal));
+
+        // February is 28 days, not 365/12 = 30.4: the monthly condensate is 8 % off against the old average-month default.
+        var average = Run(Sheet(InsulatedBrick(), GlaserCalculator.Climate([.. Enumerable.Repeat((0.0, 90.0, 365.0 / 12.0), 12)])));
+        Assert.Equal(1 - 28 / (365.0 / 12.0), 1 - (blank.OutputSi("Mc_2") - blank.OutputSi("Mc_1")) / (average.OutputSi("Mc_2") - average.OutputSi("Mc_1")), 9);
+        Assert.Equal(average.OutputSi("Mc_12"), blank.OutputSi("Mc_12"), 9);
+    }
+
+    [Fact]
+    public void A_Layer_Flagged_Timber_Or_Breathable_Raises_The_En_15026_Warning_Without_The_Build_Up_Flag()
+    {
+        var flagged = GlaserCalculator.Layers(("", "Insulation", 100, 0.04, 2), ("", "Brick", 200, 0.8, 10));
+        var rows = flagged.Rows!.ToList();
+        var withTimber = CalcInputValue.Table("layers", [rows[0], CalcRow.Of([.. rows[1].Cells.Select(c => (c.Key, c.Value)), ("timber", new CalcCell(Flag: true))])]);
+
+        var warned = Run(Sheet(withTimber, GlaserCalculator.Climate(Seasonal)));
+        var warning = Assert.Single(warned.Warnings, w => w.RuleId == "en15026");
+        Assert.Contains("EN 15026", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("Brick", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Insulation", warning.Message, StringComparison.Ordinal);
+
+        // An unflagged table, or a flag set to false, does not warn; the build-up flag still does.
+        var off = CalcInputValue.Table("layers", [rows[0], CalcRow.Of([.. rows[1].Cells.Select(c => (c.Key, c.Value)), ("timber", new CalcCell(Flag: false))])]);
+        Assert.DoesNotContain(Run(Sheet(off, GlaserCalculator.Climate(Seasonal))).Warnings, w => w.RuleId == "en15026");
+        Assert.DoesNotContain(Run(Sheet(flagged, GlaserCalculator.Climate(Seasonal))).Warnings, w => w.RuleId == "en15026");
+        Assert.Single(Run(Sheet(flagged, GlaserCalculator.Climate(Seasonal)).With(CalcInputValue.Switch("breathable", true))).Warnings, w => w.RuleId == "en15026");
     }
 
     // ------------------------------------------------------------------ inputs, blocks, warnings

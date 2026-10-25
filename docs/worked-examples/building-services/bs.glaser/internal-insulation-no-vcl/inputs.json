@@ -60,7 +60,7 @@
     "Unit": "m^2*K/W",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "Project practice: larger R_si for the surface-condensation check, assumed",
+      "Reference": "Conventional R_si,f = 0.25 m\u00B2K/W for the surface-condensation check of an opaque element (a record, to be checked against the owner\u0027s copy of ISO 13788), assumed",
       "IsSufficientToIssue": true
     },
     "ValueText": "0.25"

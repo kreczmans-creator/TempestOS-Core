@@ -11,7 +11,7 @@ The 6 m diffusion-equivalent layer holds the vapour pressure at the cold interfa
 | `RH_int` | 50 % | spec: SPEC-A-02 §3.1: internal design humidity |
 | `Rse` | 0.04 m^2*K/W | spec: Project surface-resistance record (external), assumed |
 | `Rsi` | 0.13 m^2*K/W | spec: Project surface-resistance record (internal, horizontal flow), assumed |
-| `Rsi_f` | 0.25 m^2*K/W | spec: Project practice: larger R_si for the surface-condensation check, assumed |
+| `Rsi_f` | 0.25 m^2*K/W | spec: Conventional R_si,f = 0.25 m²K/W for the surface-condensation check of an opaque element (a record, to be checked against the owner's copy of ISO 13788), assumed |
 | `breathable` | no | assumption: Mineral wool and brick: no timber or hygroscopic layers. |
 | `climate` | 12 row(s) | assumption: Invented illustrative maritime year; replace with the project's own monthly climate record (take it from your licensed source). |
 | `humidity_mode` | constant internal relative humidity | assumption: Constant internal humidity; no humidity-class record is held for this project. |

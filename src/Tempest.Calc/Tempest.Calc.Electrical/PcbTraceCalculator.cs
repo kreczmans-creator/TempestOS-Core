@@ -23,8 +23,17 @@ public sealed class PcbTraceCalculator : ICalcCalculator
     /// <summary>The widest trace (10 mm) the source curve-fit was drawn for; beyond it the sheet warns.</summary>
     public const double WidthWarnMm = 10.0;
 
+    /// <summary>The copper weights (oz/ft²) the source curve-fit was drawn for; outside them the sheet warns.</summary>
+    public const double FitMinOz = 1.0;
+
+    /// <inheritdoc cref="FitMinOz"/>
+    public const double FitMaxOz = 3.0;
+
+    /// <summary>The smallest temperature rise (K) the source curve-fit was drawn for; below it the sheet warns.</summary>
+    public const double FitMinRiseK = 10.0;
+
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Electrical, "PCB trace width (IPC-2221 legacy)",
+        Id, "1.0.1", CalcDiscipline.Electrical, "PCB trace width (IPC-2221 legacy)",
         "The minimum width of a printed-circuit trace for a current and an allowed temperature rise, from the legacy IPC-2221 curve-fit, and the resistance, voltage drop and I²R loss of the trace as drawn: " + SheetLabel + ". External or internal layer; copper weight in oz/ft²; resistance at the trace's operating temperature (ambient plus rise). The IPC-2152 method (charts, plane and board-thickness factors) is not implemented.",
         "Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with A in mil², k = 0.048 external, 0.024 internal\n" +
         "Copper thickness: t = w_Cu·t_oz, t_oz = 1.378 mil per oz/ft² (35 µm, derived)\n" +
@@ -60,6 +69,8 @@ public sealed class PcbTraceCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("width", "The minimum width exceeds 10 mm, beyond the range of the source curve-fit.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("input.I", "The current exceeds 35 A (the usual-range notice on I), beyond the range of the source curve-fit.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("copper", "The copper weight is outside 1 to 3 oz/ft², the range the source curve-fit was drawn for.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("rise", "The allowed temperature rise is below 10 K, the smallest rise the source curve-fit was drawn for.", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-3a-10k-1oz-external", "3 A, 10 K rise, 1 oz copper, external layer (analytic)",
@@ -130,6 +141,14 @@ public sealed class PcbTraceCalculator : ICalcCalculator
             c.Output(symbol, text);
 
         c.CheckUtilisation("Trace width as drawn against the minimum for the rise", "u_w", "IPC-2221 §6 (legacy)");
+
+        var oz = c.Si("Cu_oz");
+
+        if (oz < FitMinOz || oz > FitMaxOz)
+            c.Warn("copper", $"Cu_oz: {CalcValue.FormatNumber(oz)} oz/ft² is outside the 1 to 3 oz/ft² the source curve-fit was drawn for; the width is an extrapolation, check by test or a thermal analysis.");
+
+        if (c.Si("dT") < FitMinRiseK)
+            c.Warn("rise", $"dT: a rise of {CalcValue.FormatNumber(c.Si("dT"))} K is below the 10 K the source curve-fit was drawn for; the width is an extrapolation, check by test or a thermal analysis.");
 
         if (c.Si("w_min") > WidthWarnMm / 1000.0)
             c.Warn("width", $"w_min: the minimum width {CalcValue.FormatNumber(c.Si("w_min") * 1000, 4)} mm is above {CalcValue.FormatNumber(WidthWarnMm)} mm, beyond the range of the source curve-fit; use a plane, a pour or parallel layers and check by test.");

@@ -53,8 +53,14 @@ public static class GlaserModel
     /// <summary>Specific gas constant of water vapour, J/(kg·K): R/M_w = 8.3145/0.018015, rounded (derived).</summary>
     public const double VapourGasConstant = 461.5;
 
-    /// <summary>The month length used where the climate gives none: 365/12 days in seconds.</summary>
+    /// <summary>The average month, 365/12 days in seconds (for callers that have no calendar; the sheet uses <see cref="CalendarMonthSeconds"/>).</summary>
     public const double AverageMonthSeconds = 365.0 / 12.0 * 86_400.0;
+
+    /// <summary>Days in January … December of a common year (February 28).</summary>
+    public static readonly IReadOnlyList<int> CalendarDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+    /// <summary>The length in seconds of calendar month <paramref name="monthIndex"/> (0 = January … 11 = December) of a common year.</summary>
+    public static double CalendarMonthSeconds(int monthIndex) => CalendarDays[monthIndex] * 86_400.0;
 
     /// <summary>The most layers a wall may have.</summary>
     public const int MaxLayers = 30;

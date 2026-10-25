@@ -8,9 +8,10 @@ Issued: —
 
 1. SCOPE AND METHOD
 Interstitial condensation in a layered wall by the Glaser method over twelve monthly climate steps: the temperature and saturation pressure at every layer interface, the vapour-pressure line with its tangent construction at the condensation planes, the condensate on each interface month by month carried forward from the first month of condensation (drying when the weather turns), the annual balance, the peak accumulation against the owner's limit, and the surface temperature factor f_Rsi against its minimum at the critical surface humidity.
-Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Total resistance and interface temperature: R_T = R_si + Σ R_j + R_se; θ_k = θ_i − (θ_i − θ_e)·(R_si + Σ_(j≤k) R_j)/R_T Saturation pressure (Magnus): p_sat = 610.5·exp(17.269·θ/(237.3 + θ)) over water (θ ≥ 0 °C); p_sat = 610.5·exp(21.875·θ/(265.5 + θ)) over ice (θ < 0 °C) Outside vapour pressure: p_e = RH_e·p_sat(θ_e) Inside vapour pressure: p_i = RH_i·p_sat(θ_i), or p_e + Δv(θ_e)·R_v·T_i with the moisture excess Δv linear between two user points and constant beyond them (R_v = 461.5 J/(kg·K)) Vapour flux through a layer: g = δ0·Δp/Δs_d with δ0 = 2×10⁻¹⁰ kg/(m·s·Pa) Tangent construction: the line from p_i to p_e is bent onto the saturation line at the interfaces it would rise above (and at wet interfaces), by the smallest-slope rule from each contact point Condensation at an interface: g_c = g_in − g_out; Mc accumulates g_c·t over 12 months from the first month of condensation, a wet interface (held at saturation) drying at g_c < 0 until nothing is left Annual balance and peak: PASS when no condensate remains after the 12 months; Mc_max = the most held on any interface, checked against the user's limit Surface factor: f_Rsi = 1 − R_si/R_T; f_Rsi,min = the largest monthly (θ_si,min − θ_e)/(θ_i − θ_e) with p_sat(θ_si,min) = p_i/φ_crit; PASS when f_Rsi ≥ f_Rsi,min
+Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Total resistance and interface temperature: R_T = R_si + Σ R_j + R_se; θ_k = θ_i − (θ_i − θ_e)·(R_si + Σ_(j≤k) R_j)/R_T Saturation pressure (Magnus): p_sat = 610.5·exp(17.269·θ/(237.3 + θ)) over water (θ ≥ 0 °C); p_sat = 610.5·exp(21.875·θ/(265.5 + θ)) over ice (θ < 0 °C) Outside vapour pressure: p_e = RH_e·p_sat(θ_e) Inside vapour pressure: p_i = RH_i·p_sat(θ_i), or p_e + f_Δp·Δv(θ_e)·R_v·(T_i + T_e)/2 with the moisture excess Δv linear between two user points and constant beyond them (R_v = 461.5 J/(kg·K)) and the safety factor f_Δp on the pressure difference (a record, default 1.10; clause wording to be checked against the owner's copy of ISO 13788) Vapour flux through a layer: g = δ0·Δp/Δs_d with δ0 = 2×10⁻¹⁰ kg/(m·s·Pa) Tangent construction: the line from p_i to p_e is bent onto the saturation line at the interfaces it would rise above (and at wet interfaces), by the smallest-slope rule from each contact point Condensation at an interface: g_c = g_in − g_out; Mc accumulates g_c·t over 12 months from the first month of condensation (t = the row's days, else the calendar days of the month, January to December order), a wet interface (held at saturation) drying at g_c < 0 until nothing is left Annual balance and peak: PASS when no condensate remains after the 12 months; Mc_max = the most held on any interface, checked against the user's limit Surface factor: f_Rsi = 1 − R_si,f/R_T,f with R_si,f = 0.25 m²K/W by default for an opaque element (conventional, a record; 0.13 for glazing); f_Rsi,min = the largest monthly (θ_si,min − θ_e)/(θ_i − θ_e) with p_sat(θ_si,min) = p_i/φ_crit; PASS when f_Rsi ≥ f_Rsi,min
   Ref: ISO 13788 cl. 5 (clause number to be checked against the owner's copy) — Hygrothermal performance of building components and elements — internal surface temperature and surface condensation
   Ref: ISO 13788 cl. 6 (clause number to be checked against the owner's copy) — Hygrothermal performance of building components and elements — interstitial condensation (Glaser method)
+  Ref: ISO 13788 moisture excess and its design margin on Δp (clause number and wording to be checked against the owner's copy) — Hygrothermal performance of building components and elements — internal humidity from the humidity class
   Ref: EN 15026 whole standard (named as the recommended method for timber and breathable builds) — Hygrothermal performance of building components — assessment of moisture transfer by numerical simulation
 
 2. INPUTS
@@ -22,10 +23,11 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   layers[4] |  | name = Existing brick; d = 215 mm; lambda = 0.8 W/(m*K); mu = 10 |  |  | 
   Rsi | Internal surface resistance R_si | 0.13 | m^2*K/W | spec: Project surface-resistance record (internal, horizontal flow), assumed | 0.04 … 0.25 m^2*K/W
   Rse | External surface resistance R_se | 0.04 | m^2*K/W | spec: Project surface-resistance record (external), assumed | 0.02 … 0.25 m^2*K/W
-  Rsi_f | Internal surface resistance for the f_Rsi check (blank = R_si) | 0.25 | m^2*K/W | spec: Project practice: larger R_si for the surface-condensation check, assumed | 0.04 … 0.5 m^2*K/W
+  Rsi_f | Internal surface resistance R_si,f for the f_Rsi check (0.25 m²K/W is the conventional value for an opaque element, a record to check against the owner's copy of ISO 13788; 0.13 for glazing) | 0.25 | m^2*K/W | spec: Conventional R_si,f = 0.25 m²K/W for the surface-condensation check of an opaque element (a record, to be checked against the owner's copy of ISO 13788), assumed | 0.04 … 0.5 m^2*K/W
   theta_int | Internal air temperature | 20 | degC | spec: SPEC-A-02 §3.1: living-room design temperature | 10 … 30 degC
   humidity_mode | Internal humidity from | constant internal relative humidity |  | assumption: Constant internal humidity; no humidity-class record is held for this project. | any
   RH_int | Internal relative humidity (constant-humidity mode) | 50 | % | spec: SPEC-A-02 §3.1: internal design humidity | 20 … 90 %
+  dp_f | Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (design margin, 1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788) | 1.1 |  | default | 1 … 1.5
   climate | Twelve monthly outside conditions (the user's climate record, in the order the year is run) | 12 row(s) |  | assumption: Invented illustrative maritime year; replace with the project's own monthly climate record (take it from your licensed source). | any
   climate[1] |  | month = M1; theta_e = 2 degC; RH_e = 90 % |  |  | 
   climate[2] |  | month = M2; theta_e = 3 degC; RH_e = 88 % |  |  | 
@@ -48,11 +50,12 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   A2. Material properties (λ, μ) are constants of the layer, not functions of its moisture or temperature; condensate does not change them. (The Glaser method.)
   A3. Condensation is checked at the interfaces between layers only; a thick layer where the plane would lie inside it should be split into thinner layers. The saturation line is joined straight between the interface values. (Stated limit.)
   A4. The Magnus saturation pressure is used over water at and above 0 °C and over ice below, and the water-vapour permeability of air is δ0 = 2×10⁻¹⁰ kg/(m·s·Pa); both are closed-form physics, not data of a standard. (Derived.)
-  A5. Where a month's length is blank it is 365/12 days. A wet interface that dries within a month is taken as dry from the next month; the month's rates are those of the wet state at its start. (Monthly steps.)
+  A5. Where a month's length is blank it is the calendar days of the month, taking the climate rows as January to December (February 28 days); enter the days where the record starts in another month. A wet interface that dries within a month is taken as dry from the next month; the month's rates are those of the wet state at its start. (Monthly steps.)
   A6. The monthly climate, the humidity-class points, the surface resistances, the critical humidity and the limit on the condensate are the user's records from the user's own licensed copies; no climate data, humidity-class table, material table or limit of any standard is shipped. (No table from a standard is shipped.)
   A7. humidity_mode (Internal humidity from) is taken as constant internal relative humidity. (Constant internal humidity; no humidity-class record is held for this project.)
   A8. climate (Twelve monthly outside conditions (the user's climate record, in the order the year is run)) is taken as 12 row(s). (Invented illustrative maritime year; replace with the project's own monthly climate record (take it from your licensed source).)
   A9. breathable (The build-up is timber or breathable (hygroscopic layers, capillary transport)) is taken as no. (Mineral wool and brick: no timber or hygroscopic layers.)
+  A10. Month length: 12 row(s) of the climate gave no days, so the calendar days of the month are used with the rows taken as January to December (February 28 days). If the record starts in another month, enter the days of each row. (Calendar months.)
 
 4. WORKING
   [8] R_1 = d / λ    « ISO 13788 cl. 6
@@ -283,10 +286,11 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: layers (Layer conductivity and vapour resistance); Rsi, Rse, Rsi_f (Surface resistances); climate (Monthly outside climate); RH_crit, Mc_limit (Condensation criteria). Enter each as one so its source, edition and licence travel with it.
   WARNING input.layers[2].d: layers[2].d (Thickness) is outside its usual range 1 … 500 mm; 0.3 mm was given.
+  WARNING input.dp_f: dp_f (Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (design margin, 1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788)) was not entered; the template default 1.1 is used.
 
 8. VERIFICATION
-  Template: bs.glaser@1.0.0
+  Template: bs.glaser@1.1.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 6/6
+  Known-answer cases passed: 7/7
   Test run: —

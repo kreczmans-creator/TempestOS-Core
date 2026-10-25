@@ -109,6 +109,23 @@ public sealed class PcbTraceTests
     }
 
     [Fact]
+    public void Copper_Outside_1_To_3_Ounces_And_A_Rise_Below_10_Kelvin_Warn_That_The_Fit_Is_Extrapolated()
+    {
+        // Inside the range the fit was drawn for (the ends included): no warning.
+        foreach (var inside in new[] { Run(), Run(CalcInputValue.Of("Cu_oz", 3)), Run(CalcInputValue.Of("Cu_oz", 2), CalcInputValue.Quantity("dT", 100, "K")) })
+            Assert.DoesNotContain(inside.Warnings, w => w.RuleId is "copper" or "rise");
+
+        foreach (var oz in new[] { 0.5, 3.5, 6.0 })
+            Assert.Contains(Run(CalcInputValue.Of("Cu_oz", oz), CalcInputValue.Quantity("w_act", 5, "mm")).Warnings, w => w.RuleId == "copper" && w.Message.StartsWith("Cu_oz:", StringComparison.Ordinal));
+
+        foreach (var rise in new[] { 1.0, 5.0, 9.9 })
+            Assert.Contains(Run(CalcInputValue.Quantity("dT", rise, "K"), CalcInputValue.Quantity("w_act", 20, "mm")).Warnings, w => w.RuleId == "rise" && w.Message.StartsWith("dT:", StringComparison.Ordinal));
+
+        Assert.Contains(Pcb.Template.ApplicabilityRules, r => r.Id == "copper" && r.Severity == CalcNoticeSeverity.Warning);
+        Assert.Contains(Pcb.Template.ApplicabilityRules, r => r.Id == "rise" && r.Severity == CalcNoticeSeverity.Warning);
+    }
+
+    [Fact]
     public void Inputs_Outside_Their_Hard_Limits_Block_And_The_Method_Constants_Stay_Editable()
     {
         foreach (var (symbol, value, unit) in new[] { ("I", 0.0, "A"), ("dT", 0.0, "K"), ("dT", -5.0, "K"), ("w_act", 0.0, "mm"), ("L", -1.0, "mm") })
