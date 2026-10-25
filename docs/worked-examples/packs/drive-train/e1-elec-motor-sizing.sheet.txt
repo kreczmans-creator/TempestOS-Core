@@ -36,6 +36,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   J_motor | Candidate motor rotor inertia | 0.12 | kg*m^2 | spec: SPEC-CNV-07 §3 (conveyor duty) | 1e-7 … 10 kg*m^2
   T_rated | Candidate motor continuous (rated) torque | 200 | N*m | spec: SPEC-CNV-07 §3 (conveyor duty) | 0.01 … 100000 N*m
   T_peak | Candidate motor peak torque | 400 | N*m | spec: SPEC-CNV-07 §3 (conveyor duty) | 0.01 … 100000 N*m
+  n_rated | Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (continuous duty; leave blank if not known: there is then no P_rated) | 1480 | rpm | spec: SPEC-CNV-07 §3 (conveyor duty) | 10 … 100000 rpm
   n_max | Candidate motor maximum speed | 3000 | rpm | spec: SPEC-CNV-07 §3 (conveyor duty) | 10 … 100000 rpm
   SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
   J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
@@ -103,31 +104,35 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
       = 151.58 N·m × 157.08 rad/s
       = 23810 W
         Continuous shaft power at the motor
-  [30] P_pk = T_pk * omega_pk
+  [31] P_rated = T_rated * n_rated
+      = 200 N·m × 1480 rpm
+      = 30997 W
+        Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed
+  [32] P_pk = T_pk * omega_pk
       = 159.38 N·m × 157.08 rad/s
       = 25.035 kW
         Peak mechanical power (end of the run-up)
-  [31] P_rms = P_cont
+  [33] P_rms = P_cont
       = 23810 W
       = 23.81 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
-  [32] J_ratio = (J_refl + J_mech) / J_motor
+  [34] J_ratio = (J_refl + J_mech) / J_motor
       = (0.026947 kg·m² + 0.002 kg·m²) / 0.12 kg·m²
       = 0.24123
         Inertia ratio (load : motor)
-  [33] u_peak = SF * T_pk / T_peak
+  [35] u_peak = SF * T_pk / T_peak
       = 1.25 × 159.38 N·m / 400 N·m
       = 0.49806
         Peak torque utilisation with safety margin
-  [34] u_rms = SF * T_rms / T_rated
+  [36] u_rms = SF * T_rms / T_rated
       = 1.25 × 151.58 N·m / 200 N·m
       = 0.94737
         Continuous torque utilisation with safety margin
-  [35] u_speed = n_pk / n_max
+  [37] u_speed = n_pk / n_max
       = 1500 rpm / 3000 rpm
       = 0.5
         Speed utilisation
-  [36] duty = T_rms / T_rated
+  [38] duty = T_rms / T_rated
       = 151.58 N·m / 200 N·m
       = 0.75789
         Thermal duty (without margin)
@@ -150,6 +155,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   u_peak = 0.49806    Peak utilisation
   u_rms = 0.94737    Continuous utilisation
   u_speed = 0.5    Speed utilisation
+  P_rated = 30997 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
 
 6. CHECKS (governing first)
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.94737 vs u_rms ≤ 1  utilisation 0.947
@@ -157,13 +163,12 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.49806 vs u_peak ≤ 1  utilisation 0.498
 
 7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: J_motor, T_rated, T_peak, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.
   WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
-  WARNING rated-speed: n_rated: the candidate motor's rated speed is not entered, so its rated power P_rated (T_rated·ω_rated, which a supply or cable for the motor is sized on) is not given; enter the nameplate speed.
 
 8. VERIFICATION
   Template: elec.motor-sizing@1.4.0
-  Content hash: 3e79dc9a27213fe1
+  Content hash: 64020d560b0ee248
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
   Test run: 2026-10-24 20:02 UTC

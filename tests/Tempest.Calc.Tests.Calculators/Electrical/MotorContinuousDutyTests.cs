@@ -69,6 +69,13 @@ public sealed class MotorContinuousDutyTests
         var warning = Assert.Single(without.Notices, n => n.RuleId == "rated-speed");
         Assert.StartsWith("n_rated:", warning.Message, StringComparison.Ordinal);
 
+        // A rated speed on a point-to-point sheet is ignored, and the sheet says so; it is silent on a continuous sheet.
+        var pointToPoint = CalcTemplateHasher.DefaultInputs(Motor.Template).With(CalcInputValue.Choice("duty_mode", MotorSizingCalculator.DutyPointToPoint)).With(CalcInputValue.Quantity("n_rated", 1450, "rpm"));
+        var ignored = Assert.Single(CalcRunner.Run(Motor, pointToPoint).Notices, n => n.RuleId == "rated-speed-ignored");
+        Assert.StartsWith("n_rated:", ignored.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(CalcRunner.Run(Motor, Continuous()).Notices, n => n.RuleId == "rated-speed-ignored");
+        Assert.DoesNotContain(CalcRunner.Run(Motor, CalcTemplateHasher.DefaultInputs(Motor.Template).With(CalcInputValue.Choice("duty_mode", MotorSizingCalculator.DutyPointToPoint)).With(new CalcInputValue("n_rated"))).Notices, n => n.RuleId == "rated-speed-ignored");
+
         // Point-to-point duty has no rated power.
         Assert.Null(CalcRunner.Run(Motor, CalcTemplateHasher.DefaultInputs(Motor.Template).With(CalcInputValue.Choice("duty_mode", MotorSizingCalculator.DutyPointToPoint))).FindOutput("P_rated"));
     }

@@ -191,6 +191,17 @@
       "ValueText": "3000"
     },
     {
+      "Symbol": "n_rated",
+      "Number": 1480,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1480"
+    },
+    {
       "Symbol": "p_screw",
       "Number": 10,
       "Unit": "mm",

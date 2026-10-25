@@ -386,6 +386,29 @@ public sealed class HydraulicPowerUnitChainTests
     }
 
     [Fact]
+    public async Task Without_The_Motors_Rated_Speed_The_Pack_Is_Refused_Naming_It_Because_The_Cable_Is_Sized_On_The_Rated_Power()
+    {
+        var host = Host();
+        var inputs = ChainInputs.HydraulicPowerUnit(host);
+        inputs["e1"] = [.. inputs["e1"].Where(v => v.Symbol != "n_rated")];
+        Assert.DoesNotContain(inputs["e1"], v => v.Symbol == "n_rated");
+
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.HydraulicPowerUnit, await host.ProjectAsync(), "Press 5 hydraulic power unit", inputs);
+
+        // E1 gives no P_rated without n_rated (it warns, and does not fall back to the running speed), so the cable step cannot take it: the refusal says which input to enter.
+        Assert.Null(made);
+        Assert.NotNull(refusal);
+        Assert.Contains("P_rated", refusal, StringComparison.Ordinal);
+        Assert.Contains("n_rated", refusal, StringComparison.Ordinal);
+        Assert.Contains("e4", refusal, StringComparison.Ordinal);
+
+        // With it back the pack is created.
+        var (ok, none) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.HydraulicPowerUnit, await host.ProjectAsync(), "Press 6 hydraulic power unit", ChainInputs.HydraulicPowerUnit(host));
+        Assert.True(none is null, none);
+        Assert.NotNull(ok);
+    }
+
+    [Fact]
     public async Task The_Cable_Step_Given_Only_Its_Tables_Completes_The_Example_Chain()
     {
         var host = Host();

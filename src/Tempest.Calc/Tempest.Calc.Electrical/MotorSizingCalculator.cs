@@ -78,6 +78,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
             new CalcApplicabilityRule("continuous-ignored", "In continuous duty the move distance, move time, acceleration fraction, dwell and profile are ignored.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("eta", "A direct-coupled rotary load has no transmission: an overall efficiency below 0.95 is probably a leftover default; use 1 or the coupling's efficiency.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("rated-speed", "Continuous duty without the candidate motor's rated speed n_rated: the rated power P_rated is not given.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("rated-speed-ignored", "The rated speed n_rated is entered on a point-to-point sheet: it is used in continuous duty only and is ignored here.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("overhauling", "The load drives the motor during deceleration or on the decline (negative load torque); check the drive can regenerate or brake.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -143,6 +144,9 @@ public sealed class MotorSizingCalculator : ICalcCalculator
             RunContinuous(c, mech);
             return;
         }
+
+        if (c.Has("n_rated"))
+            c.Warn("rated-speed-ignored", "n_rated: the rated speed gives the rated power P_rated in continuous duty only; on a point-to-point sheet it is ignored.");
 
         var linear = mech is MechScrew or MechBelt or MechRack;
 

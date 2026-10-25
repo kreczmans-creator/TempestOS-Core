@@ -29,11 +29,12 @@ internal static class CalcPackExamples
 
     // ---- Drive train: a 4-pole motor through a 12.5:1 gearbox turns a conveyor drum at 120 rpm against 1.8 kN·m -------------
 
+    /// <summary>The 4-pole motor's rated speed (1480 rpm) is an INVENTED nameplate figure for this example, to be replaced from the real motor's nameplate.</summary>
     public static IReadOnlyList<CalcInputValue> DriveE1 { get; } =
     [
         C("mechanism", "gearbox rotary"), C("duty_mode", "continuous"), N("i", 12.5), N("eta", 0.95),
         Q("J_mech", 0.002, "kg*m^2"), Q("J_L", 4, "kg*m^2"), Q("T_L", 1800, "N*m"), Q("n_L", 120, "rpm"), Q("t_start", 3, "s"),
-        Q("J_motor", 0.12, "kg*m^2"), Q("T_rated", 200, "N*m"), Q("T_peak", 400, "N*m"), Q("n_max", 3000, "rpm"),
+        Q("J_motor", 0.12, "kg*m^2"), Q("T_rated", 200, "N*m"), Q("T_peak", 400, "N*m"), Q("n_rated", 1480, "rpm"), Q("n_max", 3000, "rpm"),
     ];
 
     /// <summary>
@@ -181,9 +182,10 @@ internal static class CalcPackExamples
         Q("n_pump", 2800, "rpm"),
     ];
 
+    /// <summary>The circulator motor's rated speed (2850 rpm) is an INVENTED nameplate figure for this example, to be replaced from the real motor's nameplate.</summary>
     public static IReadOnlyList<CalcInputValue> WetE1 { get; } =
     [
-        C("mechanism", "direct rotary"), C("duty_mode", "continuous"), Q("J_L", 0.002, "kg*m^2"), Q("J_mech", 0, "kg*m^2"), Q("t_start", 5, "s"),
+        C("mechanism", "direct rotary"), C("duty_mode", "continuous"), Q("J_L", 0.002, "kg*m^2"), Q("J_mech", 0, "kg*m^2"), Q("t_start", 5, "s"), Q("n_rated", 2850, "rpm"),
     ];
 
     // ---- Cooling: a drive panel's heat to a water-cooled exchanger -----------------------------------------------------------

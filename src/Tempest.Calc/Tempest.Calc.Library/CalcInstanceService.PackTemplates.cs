@@ -223,7 +223,12 @@ public sealed partial class CalcInstanceService
                     return BlockedReason(template, b, step, blocks[0].Message);
 
                 if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, b.Output, StringComparison.Ordinal)) is not { Si: { } } output)
-                    return $"Step '{step.Key}': '{step.Name}' cannot take '{b.Output}': '{upstream.Name}' gives no numeric output '{b.Output}'.";
+                {
+                    // Say why: the upstream sheet's own warnings usually name the missing input (E1 gives no P_rated without its rated speed n_rated).
+                    var reason = upstream.Warnings.FirstOrDefault(w => w.Message.Contains(b.Output, StringComparison.Ordinal)) ?? upstream.Warnings.FirstOrDefault();
+                    var why = reason is null ? string.Empty : " " + reason.Message;
+                    return $"Step '{step.Key}': '{step.Name}' cannot take '{b.Output}': '{upstream.Name}' gives no numeric output '{b.Output}'.{why}";
+                }
 
                 var spec = entry.Template.FindInput(b.Input)!;
 
