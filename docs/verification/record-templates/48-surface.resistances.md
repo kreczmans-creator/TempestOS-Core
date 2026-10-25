@@ -1,7 +1,8 @@
 # 48 surface.resistances
 
 Kind: `surface.resistances` (surface resistances and air-gap resistance).
-Status: existing CalcRecordKind `surface.resistances`
+Status: proposed. B4 (release 90d15f11) no longer lists `surface.resistances`, so no CalcRecordKind carries it.
+B7 lists the singular kind `surface.resistance` instead. See template 57. Track S decides whether B4 gets its kind back.
 
 ## Used by
 - B4 U-value and room heat loss (built, `bs.room-heat-loss`) reads the `Rsi`, `Rse` and `Rg` columns of its `elements` table.

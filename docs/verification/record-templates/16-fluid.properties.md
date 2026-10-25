@@ -5,7 +5,8 @@ Status: existing CalcRecordKind
 
 ## Used by
 - B5 heat exchanger (built) reads cp_h and cp_c.
-- F2 accumulator (planned) and the HPU chain (planned) use hydraulic fluid data.
+- F2 accumulator (built, `fp.accumulator`) lists no fluid record. It takes gas-law inputs only.
+- The HPU chain (planned) will use hydraulic fluid data.
 
 ## Copy from
 - Type the values from the fluid supplier's data sheet or a property table you hold a licence for.
@@ -20,7 +21,7 @@ Status: existing CalcRecordKind
 - `cp_c[J/(kg*K)]`: cold-side specific heat capacity.
 
 ## Edition to record
-Record the data sheet edition or date. F2 also needs density and bulk modulus. The kind has no symbols for them yet.
+Record the data sheet edition or date. The HPU chain also needs density and bulk modulus. The kind has no symbols for them yet.
 
 ## Importer checks
 - Reject a blank or non-positive cp_h or cp_c. Reject a blank mean temperature.

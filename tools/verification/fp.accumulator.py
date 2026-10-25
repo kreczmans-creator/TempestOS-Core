@@ -183,26 +183,50 @@ for n_, tmax, tmin in [(1.4, 50, 20), (1.4, 60, -20), (1.4, 150, -40), (1.2, 50,
     exact = fT ** (1 / n_)
     print(f"n {n_}, {tmin} to {tmax} C: product f_T {fT:.4f}, exact {exact:.4f}, product over exact {100 * (fT / exact - 1):.1f} %")
 
-print("\n=== Model note 2: real-gas factor for nitrogen (Peng-Robinson, 20 C; illustrative) ===")
-print("PR is only a rough guide; it is thought to under-predict Z for nitrogen at high pressure, so true factors may be larger.")
-import numpy as np
-R_ = 8.314462; Tc_, Pc_, w_ = 126.19, 33.958e5, 0.0372
-def Zpr(T, P):
-    k = 0.37464 + 1.54226 * w_ - 0.26992 * w_ ** 2
-    a = 0.45724 * R_ ** 2 * Tc_ ** 2 / Pc_ * (1 + k * (1 - math.sqrt(T / Tc_))) ** 2
-    b = 0.07780 * R_ * Tc_ / Pc_
-    A = a * P / (R_ * T) ** 2; B = b * P / (R_ * T)
-    r = np.roots([1, -(1 - B), A - 3 * B ** 2 - 2 * B, -(A * B - B ** 2 - B ** 3)])
-    return max(r[abs(r.imag) < 1e-9].real)
-def real_factor(T, p0, p1, p2):
-    z0, z1, z2 = (Zpr(T, p * 1e5) for p in (p0, p1, p2))
+print("\n=== Model note 2: real-gas factor for nitrogen, 20 C (reference equation of state) ===")
+# Reviewer 2026-10-24: the first pass used Peng-Robinson, which under-predicts Z for N2 by about 3 % at 200 bar
+# and 9 % at 700 bar. Z below is from the Span et al. (2000) reference equation for nitrogen, evaluated with
+# CoolProp 8.0.0 at 293.15 K (hard-coded so the script runs without CoolProp). Spot values: Z(200) 1.052,
+# Z(300) 1.140, Z(500) 1.368, Z(700) 1.615.
+Z_N2_293 = {90: 0.9984, 100: 1.0008, 135: 1.0129, 150: 1.0205, 170: 1.0318, 180: 1.0380, 190: 1.0447,
+            200: 1.0518, 250: 1.0924, 270: 1.1107, 300: 1.1401, 350: 1.1927, 450: 1.3074, 500: 1.3676,
+            600: 1.4905, 650: 1.5527, 700: 1.6150}
+def real_factor(p0, p1, p2):
+    z0, z1, z2 = (Z_N2_293[p] for p in (p0, p1, p2))
     ideal = p0 / p1 - p0 / p2
     real = (z1 / z0) * (p0 / p1) - (z2 / z0) * (p0 / p2)
     return z0, z1, z2, ideal / real
-print("p0/p1/p2 bar abs     Z0    Z1    Z2   V0_real/V0_ideal   (f_rg = Z2 would give)")
-for c in [(90, 100, 200), (170, 190, 200), (180, 200, 250), (270, 300, 350), (450, 500, 700), (600, 650, 700)]:
-    z0, z1, z2, f = real_factor(293.15, *c)
-    print(f"{str(c):18s} {z0:5.3f} {z1:5.3f} {z2:5.3f}   {f:6.3f}            {z2:5.3f}   input cap 1.5 {'< needed' if f > 1.5 else 'ok'}")
+print("p0/p1/p2 bar abs     Z0    Z1    Z2   isothermal V0_real/V0_ideal   (f_rg = Z2 would give)")
+for c in [(90, 100, 200), (135, 150, 200), (170, 190, 200), (180, 200, 250), (270, 300, 350), (450, 500, 700), (600, 650, 700)]:
+    z0, z1, z2, f = real_factor(*c)
+    warn = "warns" if c[2] > 200 else "NO warning"
+    print(f"{str(c):18s} {z0:5.3f} {z1:5.3f} {z2:5.3f}   {f:6.3f}   {z2:5.3f}   {warn:10s} cap 1.5 {'< needed' if f > 1.5 else 'ok'}")
+
+print("\n=== Model note 3: adiabatic real gas (isentropic, reference EOS via CoolProp 8.0.0, hard-coded) ===")
+# Effective exponent n_eff = ln(p2/p1)/ln(V1/V2) along an isentrope from 20 C. The ideal-gas 1.4 holds only near 1 bar.
+for (pp, neff) in [((1, 2, 4), 1.401), ((50, 60, 100), 1.534), ((90, 100, 200), 1.679), ((200, 250, 350), 2.132)]:
+    print(f"isentrope from {pp[0]} bar abs, {pp[1]} -> {pp[2]} bar: n_eff {neff}  (product caps n at 1.4)")
+# V0_real/V0_ideal(n = 1.4), both processes adiabatic from the pre-charge state at 20 C:
+for (pp, f) in [((90, 100, 200), 1.144), ((135, 150, 200), 1.238), ((170, 190, 200), 1.320), ((270, 300, 350), 1.580)]:
+    print(f"{str(pp):18s} adiabatic factor needed {f:5.3f}   {'NO warning' if pp[2] <= 200 else 'warns'}")
+
+print("\n=== Model note 4: emergency stroke after a long hold at p2 (finding R1) ===")
+# Gas held at p2 reaches ambient temperature, so the charge from p0 to p2 is isothermal: V2 = V0 p0/p2.
+# The stroke is then a fast (adiabatic) expansion from p2 to p1: V1 = V2 (p2/p1)^(1/n).
+# dV = V0 (p0/p2) [(p2/p1)^(1/n) - 1].  The product uses V0 = dV/[(p0/p1)^(1/n) - (p0/p2)^(1/n)] for every mode,
+# which assumes the gas is still hot from an adiabatic charge.
+def v0_product(dV, p0, p1, p2, n):
+    return dV / ((p0 / p1) ** (1 / n) - (p0 / p2) ** (1 / n))
+def v0_hold(dV, p0, p1, p2, n):
+    return dV / ((p0 / p2) * ((p2 / p1) ** (1 / n) - 1))
+for c in [(45, 50, 100), (90, 100, 150), (90, 100, 200), (90, 100, 300), (135, 150, 330)]:
+    a, b = v0_product(10, *c, 1.4), v0_hold(10, *c, 1.4)
+    print(f"{str(c):16s} dV 10 L, n 1.4: product {a:7.3f} L, hold-then-stroke {b:7.3f} L, product/true {a / b:5.3f}")
+# Probe 2026-10-25, Emergency stroke, 14 L, 90/100/200 bar abs, n 1.4, T 20/20 C: product V0 = 38.654 L.
+pv, iv = 38.65436223, v0_product(14, 90, 100, 200, 1.4)
+if abs(pv - iv) / iv > 1e-6:
+    fails += 1
+print(f"probe check: product {pv} L, independent product-form {iv:.8f} L, hold-then-stroke {v0_hold(14, 90, 100, 200, 1.4):.3f} L")
 
 print(f"\nRESULT: {'ALL PASS' if fails == 0 else str(fails) + ' FAIL'}")
 sys.exit(0 if fails == 0 else 1)

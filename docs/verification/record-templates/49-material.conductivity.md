@@ -6,6 +6,9 @@ Status: existing CalcRecordKind `material.conductivity`
 ## Used by
 - B4 U-value and room heat loss (built, `bs.room-heat-loss`) reads the `lambda` column of its `layers` table.
 
+## Related
+- B7 Glaser condensation (built) lists the same kind with a wider `layers` table. See template 56.
+
 ## Symbol mapping
 - The whole file becomes one value with Symbol `layers`. Its rows fill the `layers` table input.
 - `lambda[W/(m*K)]` is the column the kind describes. `name` is the optional layer name column of that table.

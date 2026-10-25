@@ -1,1 +1,1 @@
-month[-],theta_e[degC],phi_e[%]
+month[text],theta_e[degC],RH_e[%],days[d]

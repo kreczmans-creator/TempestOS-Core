@@ -2,11 +2,13 @@
 
 Kind: `steel.strengths` (Steel plate strengths by thickness band).
 Status: existing CalcRecordKind `steel.strengths`
+S7 is covered by the W3 material library: it takes f_y, E and G from a material (template 62).
 
 ## Used by
 - S4 EN 1993-1-8 bolts and welds (built, `struct.connection-ec3`) lists f_y and f_u for this kind.
 - S6 base plate (built, `struct.base-plate`) lists f_y only. It fills the plate yield strength input `f_y`.
-- S8 lifting lugs (planned) and S7 LTB (planned) will read the same values.
+- S8 lifting lugs (planned) will read the same values.
+- S7 LTB (built, `struct.ltb-interaction`) does not list this kind. It takes `f_y`, `E` and `G` from a W3 material. See template 62.
 
 ## Symbol mapping
 - `f_y[MPa]` fills the input `f_y` in S4 and S6. `f_u[MPa]` fills the input `f_u` in S4 only.

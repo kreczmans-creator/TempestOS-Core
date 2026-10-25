@@ -69,17 +69,18 @@ Guard probes (product behaviour is as the spec states): D ≤ d, E ≤ G, d_max 
 | Units | N, mm, MPa | SI inside; outputs in SI, shown in mm, MPa | Yes |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-mech.spring-01 | Medium | Choosing "None (uncorrected)" also removes the curvature factor from the fatigue stresses. Fatigue then reads unconservative. | ka-compression inputs with corr = None: u_f 0.2966 against 0.3477 with Bergsträsser (14.7 % lower, n_f 3.37 against 2.88). No warning is issued. | Always use Bergsträsser or Wahl in the Goodman stresses. Apply "None" to the static stress only, or warn when None is chosen. |
-| P1-mech.spring-02 | Low | A buckling failure is a warning, not a check row. | Probe P4: u_b = 4.61 (working deflection 60 mm, y_cr 13.0 mm). Rule "buckling" warns and the check list omits it. | Add `CheckUtilisation` on u_b, or state in the report that WARN is not part of the pass/fail summary. |
-| P1-mech.spring-03 | Low | The surge limit f_n/f_op ≥ 13 is less strict than the 15 to 20 I recall from Shigley 10th ed., Sec. 10-9. | P6: ratio 1.99 warns, but a ratio of 14 passes silently. | Confirm the figure in the owner's copy. Cite its source in the rule text. Consider a higher limit. |
-| P1-mech.spring-04 | Low | Solid-length stress uses L_c from d_max. A wire at nominal d reaches a shorter length, so the solid force is higher. | ka-squared-en: F_c 105.18 N, but 107.42 N with L_c from nominal d (+2.1 %). | Document that u_c is taken at the maximum solid length, or also report the value at nominal d. |
-| P1-mech.spring-05 | Low | D_w and L_w use the full angle φ, which includes the leg deflection. Body winding is overstated by n_a/n. | ka-torsion: n_a/n = 1.066. The wound-diameter change is 6.6 % too large. The error is conservative. | Use the body rate E d⁴/(64 D n) for the winding angle, or note the conservatism. |
-| P1-mech.spring-06 | Info | Torsion rate uses the theoretical constant 64 (EN 13906-3). Shigley adds a friction-based constant of 10.8 per turn, about 6 % stiffer. | Spec and KAT use 64. | None needed. Mention the Shigley value in the assumptions if wanted. |
-| P1-mech.spring-07 | Info | Extension rate uses n as entered. Hook flexibility (Shigley adds G/E coils, about 0.39) is not in the rate. The spec says so. | ka-extension: n = 20 gives k = 1.953 N/mm; with n + 0.39 the rate is 1.9 % lower. | None needed. Consider a note beside the input. |
-| P1-mech.spring-08 | Info | S_a and the d_max rows are one formula for all loadings. I recall that EN 13906-1 distinguishes static and dynamic loading. This is unconfirmed. | Spec marks both Unconfirmed. | The owner should check clause and constants in the standard. |
-| P1-mech.spring-09 | Info | Material curve coefficient A has the unit MPa·mm^m but is entered as "MPa". A user who converts A to another length unit gets a wrong R_m. | Record kind has unit null with the note "the unit follows m". | Label Rm_A as MPa·mm^m, or accept only that form. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-mech.spring-01 | Medium | High (upgraded: the assumptions tell the user to pick None for the static stress, so plausible use; up to 28 % unconservative at C = 4) | Choosing "None (uncorrected)" also removes the curvature factor from the fatigue stresses. Fatigue then reads unconservative. | ka-compression inputs with corr = None: u_f 0.2966 against 0.3477 with Bergsträsser (14.7 % lower, n_f 3.37 against 2.88). Reviewer probe, C = 4 (d 4, D 16, F 100/400 N, R_m 1700, S_e 300 MPa): u_f 0.458 against 0.634 (28 % lower). No warning is issued. | Always use Bergsträsser or Wahl in the Goodman stresses. Apply "None" to the static stress only, or warn when None is chosen. |
+| P1-mech.spring-02 | Low | Low (confirmed) | A buckling failure is a warning, not a check row. | Probe P4: u_b = 4.61 (working deflection 60 mm, y_cr 13.0 mm). Rule "buckling" warns and the check list omits it. | Add `CheckUtilisation` on u_b, or state in the report that WARN is not part of the pass/fail summary. |
+| P1-mech.spring-03 | Low | Low (confirmed; Shigley 10th ed. Sec. 10-9 gives 15 to 20; 13 matches other spring-maker guidance, so cite the source) | The surge limit f_n/f_op ≥ 13 is less strict than the 15 to 20 I recall from Shigley 10th ed., Sec. 10-9. | P6: ratio 1.99 warns, but a ratio of 14 passes silently. | Confirm the figure in the owner's copy. Cite its source in the rule text. Consider a higher limit. |
+| P1-mech.spring-04 | Low | Low (confirmed) | Solid-length stress uses L_c from d_max. A wire at nominal d reaches a shorter length, so the solid force is higher. | ka-squared-en: F_c 105.18 N, but 107.42 N with L_c from nominal d (+2.1 %). | Document that u_c is taken at the maximum solid length, or also report the value at nominal d. |
+| P1-mech.spring-05 | Low | Low (confirmed) | D_w and L_w use the full angle φ, which includes the leg deflection. Body winding is overstated by n_a/n. | ka-torsion: n_a/n = 1.066. The wound-diameter change is 6.6 % too large. The error is conservative. | Use the body rate E d⁴/(64 D n) for the winding angle, or note the conservatism. |
+| P1-mech.spring-06 | Info | Info (confirmed) | Torsion rate uses the theoretical constant 64 (EN 13906-3). Shigley adds a friction-based constant of 10.8 per turn, about 6 % stiffer. | Spec and KAT use 64. | None needed. Mention the Shigley value in the assumptions if wanted. |
+| P1-mech.spring-07 | Info | Info (confirmed) | Extension rate uses n as entered. Hook flexibility (Shigley adds G/E coils, about 0.39) is not in the rate. The spec says so. | ka-extension: n = 20 gives k = 1.953 N/mm; with n + 0.39 the rate is 1.9 % lower. | None needed. Consider a note beside the input. |
+| P1-mech.spring-08 | Info | Info (confirmed; owner to confirm against licensed copy) | S_a and the d_max rows are one formula for all loadings. I recall that EN 13906-1 distinguishes static and dynamic loading. This is unconfirmed. | Spec marks both Unconfirmed. | The owner should check clause and constants in the standard. |
+| P1-mech.spring-09 | Info | Info (confirmed) | Material curve coefficient A has the unit MPa·mm^m but is entered as "MPa". A user who converts A to another length unit gets a wrong R_m. | Record kind has unit null with the note "the unit follows m". | Label Rm_A as MPa·mm^m, or accept only that form. |
+| P1-mech.spring-R1 | — | Medium (new) | Extension mode runs Goodman on the body stresses only, but the check row reads "Goodman fatigue against the required safety factor". Hook bending usually governs extension-spring fatigue (Shigley 10th ed. Ch. 10). The limitation sits only in the assumptions, so a PASS reads as the whole spring. | ka-extension: body τ₂ 358.3 MPa, hook σ_A 693.0 MPa at the same force. Only the hook static checks u_A and u_B exist. | Label the check "body only" in extension mode and warn that hook fatigue is not assessed. Better, add Goodman rows for hook bending (σ_A, bending) and side bend (τ_B, shear). |
 
 ## Notes for the owner's manual test
 - Compression, d 2, D 16, n 8, G 80 GPa, L₀ 45 mm: expect k = 4.8828 N/mm, k_c = 1.1724, L_s = 20 mm for squared and ground ends.
@@ -87,3 +88,14 @@ Guard probes (product behaviour is as the spec states): D ≤ d, E ≤ G, d_max 
 - Slender case d 3, D 30, n 12, plain ground, L₀ 200, ν 1, s₂ 60 mm: expect y_cr = 13.017 mm and a buckling WARN.
 - Torsion d 2, D 16, n 6, legs 30 + 30 mm, M₂ 0.15 N·m, K_i: expect k_φ = 0.50310 N·m/rad, σ₂ = 210.6 MPa. With q the stress is 212.6 MPa.
 - Squared unground ends with d_max 2.04: L_s = 23.46 mm, S_a = 3.136 mm. Check the 1.5 d and S_a constants in EN 13906-1.
+
+## Independent review
+Reviewer: Claude (senior review of the P1 pass), 2026-10-24.
+I re-ran the script (all KATs pass) and read Run(), Compress, Extend, Twist, WorkingPoints, Surge and Fatigue line by line.
+The script is an independent derivation in mm and N, not a translation of the C#.
+Rate, Bergsträsser, Wahl, end factors, buckling, surge, hook factors, K_i, q and Goodman all check against Shigley 10th ed. Ch. 10.
+I reproduced P1-01 with the probe and added a C = 4 case: the fatigue utilisation drops 28 % with None.
+P1-01 is upgraded to High because the sheet's own assumption steers users to None for the static stress.
+New R1 (Medium): the extension fatigue check covers the body only, while the label reads as the whole spring.
+No other finding changed severity. I found no arithmetic defect.
+Residual doubts: the S_a constants, the dynamic-loading variant and the q factor need the owner's EN 13906 copies.
