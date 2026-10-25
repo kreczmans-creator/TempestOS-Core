@@ -276,6 +276,28 @@ public static class CalcPackTemplates
             new CalcPackBinding("e1", "P_rated", "e4", "P"),
         ]);
 
+    /// <summary>
+    /// Actuated linkage: slider-crank (M9) → hydraulic cylinder (F1) → accumulator (F2). A slider-crank ejector is to be replaced by a cylinder. The linkage's peak slide speed (<c>output_motion</c>, m/s to mm/s) is the extend speed the cylinder must
+    /// reach (<c>v_req</c>, which gives the flow and replaces the entered one) and its peak slide-direction force (<c>follower_force</c>, N to kN) is the load to push and, conservatively, to pull. <b>This is a kinematic proxy</b> (DB-04): a cylinder-actuated
+    /// linkage runs at about constant cylinder speed, not at constant crank speed, so the crank's peak speed and force are what the cylinder must match, not what it would reproduce through the whole stroke. The cylinder's stroke is the slider's
+    /// (twice the crank radius), typed and guarded, as the linkage has no stroke port. F1 → F2 as in the hydraulic power unit: the swept volume of the larger stroke and the supply pressure (a gauge pressure; the accumulator's basis stays Gauge) size an emergency-stroke accumulator.
+    /// </summary>
+    public static CalcPackTemplate ActuatedLinkage { get; } = new(
+        "pack.actuated-linkage", "Actuated linkage",
+        "Replaces a slider-crank drive by a hydraulic cylinder: the linkage's peak slide speed and force are the speed the cylinder must reach and the load it must carry (a kinematic proxy, not the cylinder's own stroke profile), and the cylinder's swept volume and supply pressure size the accumulator for an emergency stroke.",
+        [
+            new CalcPackStep("m9", "mech.mechanism", "Ejector slider-crank", CalcPackExamples.LinkM9),
+            new CalcPackStep("f1", "fp.cylinder", "Replacement cylinder", CalcPackExamples.LinkF1, Omit: ["Q"]),
+            new CalcPackStep("f2", "fp.accumulator", "Emergency stroke accumulator", CalcPackExamples.LinkF2),
+        ],
+        [
+            new CalcPackBinding("m9", "output_motion", "f1", "v_req"),
+            new CalcPackBinding("m9", "follower_force", "f1", "F_push"),
+            new CalcPackBinding("m9", "follower_force", "f1", "F_pull"),
+            new CalcPackBinding("f1", "dV", "f2", "dV"),
+            new CalcPackBinding("f1", "p", "f2", "p_2"),
+        ]);
+
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, MechanismReview];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, MechanismReview, ActuatedLinkage];
 }

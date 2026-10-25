@@ -1,0 +1,748 @@
+CALCULATION SHEET — ISSUED
+Project: Ejector station 2
+Calc ID: Ejector cylinder calc pack    Revision: A
+Title: Calculation pack
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: EJT-001    Client: Client Co
+
+PACK INDEX
+  1. Ejector slider-crank — Mechanism kinematics: four-bar, slider-crank, cam — rev A — ISSUED — Transmission angle μ_min at or above the required minimum PASS
+  2. Replacement cylinder — Cylinder and actuator circuit — rev A — ISSUED — Pressure line velocity within its limit, cap-port line at the larger stroke flow PASS
+  3. Emergency stroke accumulator — Accumulator sizing (gas law) — rev A — ISSUED — Pre-charge within the p0/p1 rule PASS
+
+REVISIONS
+  A  2026-10-25  test.engineer  First issue
+
+1. SCOPE AND METHOD
+Calculation pack: the calculations listed in the index, issued together under one issue sheet.
+
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+
+3. ASSUMPTIONS
+
+4. WORKING
+
+5. RESULTS
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: pack
+  Content hash: —
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 32/32
+  Test run: 2026-10-25 09:44 UTC
+  Application: TempestOS test
+
+CALCULATION SHEET — ISSUED
+Project: Ejector station 2
+Calc ID: Ejector slider-crank    Revision: A
+Title: Mechanism kinematics: four-bar, slider-crank, cam
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: EJT-001    Client: Client Co
+
+1. SCOPE AND METHOD
+A single-degree-of-freedom planar mechanism driven at constant speed: a four-bar linkage or an offset slider-crank (both circuits, position, velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against a minimum, toggle and dead-centre positions, loop-closure residual, input torque by virtual work), or a cam with a translating follower. Rigid links, no clearance, no friction.
+Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂ Grashof: s + l < p + q (crank-rocker, double-crank or double-rocker by the shortest link), = at the change point, > non-Grashof; transmission angle cos μ = (b² + c² − ℓ²)/(2bc) folded to 0 … 90°; toggle where ℓ = b + c or |b − c| Slider-crank: x = r·cosθ + σ·√(l² − (r·sinθ − e)²) (σ = +1 open, −1 crossed); dx/dθ = −r·sinθ − r·cosθ·(r·sinθ − e)/(x − r·cosθ); dead centres where crank and rod are collinear; μ = 90° − |rod angle to the slide line| Input torque by virtual work: T_in·ω_in = Σ F·v; four-bar T_in = (T_L + J·α₄)·ω₄/ω₂; slider T_in = (m·a + F_L)·dx/dθ; RMS torque and mean power over the sweep by Simpson's rule Forces: four-bar tangential pin force P = (T_L + J·α₄)/c, coupler (and crank-pin) force P/sin μ; slider slide-direction force F_x = m·a + F_L, rod force F_x/cos θ₃, guide reaction F_x·tan θ₃; cam contact normal F/cos φ Assembly limits: four-bar toggles at cos θ₂ = (d² + a² − ℓ²)/(2ad), ℓ = b + c or |b − c|; slider sin θ = (e ± l)/r. The sweep is cut at them and, driven at constant speed into one, the unbounded peaks are not reported Loop closure: |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) asserted below 1e-9 mm at every step Cam, per segment with x = (θ − θ₀)/β: rise s = s₀ + h·f(x), return s = s₀ − h·f(x); cycloidal f = x − sin(2πx)/(2π); 3-4-5 f = 10x³ − 15x⁴ + 6x⁵; 4-5-6-7 f = 35x⁴ − 84x⁵ + 70x⁶ − 20x⁷; modified trapezoid from its acceleration pieces (C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2)) Cam SVAJ at constant ω: v = ω·s′, a = ω²·s″, j = ω³·s‴ (′ = d/dθ); peak coefficients C_v = max f′, C_a = max |f″|, C_j = max |f‴|, so v_pk = C_v·h·ω/β Pressure angle (roller, offset e, R_p = R_b + R_r): φ = arctan[(s′ − e)/(√(R_p² − e²) + s)], which for e = 0 is arctan[s′/(R_p + s)]; the base circle that holds φ ≤ φ_max has R_p,req = √(s₀,req² + e²) with s₀,req = max(|s′ − e|/tan φ_max − s) Radius of curvature of the pitch curve P(θ) = Rot(−θ)·(e, √(R_p² − e²) + s): ρ = |P′|³/(P′ × P″), convex where positive; undercut where ρ_min ≤ R_r (FAIL), none where the curve is nowhere convex; flat-faced follower: signed profile radius ρ = R_b + s + s″, the minimum of which must stay above zero (FAIL at or below) and the face must reach |s′|; the cam turns counter-clockwise with the follower axis at +x offset e Cam follower force F = m·a + k·s + F_pre + F_ext (the follower leaves the cam where F < 0); input torque by virtual work T = F·s′ (T·ω = F·v)
+  Ref: Norton, Design of Machinery Ch. 4, 6, 7 — Position, velocity and acceleration analysis; transmission angle; Grashof condition
+  Ref: Uicker, Pennock and Shigley, Theory of Machines and Mechanisms Ch. 4–6 — Loop-closure position analysis; velocity and acceleration of planar linkages
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  mode | Kind of mechanism | Slider-crank |  | spec: SPEC-EJT-02 §2 (ejector duty) | any
+  circuit | Assembly circuit (four-bar, slider-crank): open is θ₄ = φ − γ (slider on the +x side of the crank pin), crossed the mirror branch | Open |  | spec: SPEC-EJT-02 §2 (ejector duty) | any
+  L1 | Ground link d, O₂ to O₄ (four-bar) | 100 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
+  L2 | Crank length a (four-bar) or r (slider-crank) | 100 | mm | spec: SPEC-EJT-02 §2 (ejector duty) | 1 … 10000 mm
+  L3 | Coupler length b (four-bar) or connecting-rod length l (slider-crank) | 300 | mm | spec: SPEC-EJT-02 §2 (ejector duty) | 1 … 10000 mm
+  L4 | Rocker length c (four-bar) | 70 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
+  e_off | Offset e: slide line above the crank centre (slider-crank; blank: 0); cam follower axis offset, with the cam turning counter-clockwise and the follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (the rise), negative raises it | 0 | mm | spec: SPEC-EJT-02 §2 (ejector duty) | -1000 … 1000 mm
+  theta_start | Input angle at the first row of the table | 0 | deg | spec: SPEC-EJT-02 §2 (ejector duty) | -720 … 720 deg
+  theta_range | Swept range of the input angle (360° for a full turn) | 360 | deg | spec: SPEC-EJT-02 §2 (ejector duty) | 1 … 720 deg
+  steps | Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it) | 72 |  | spec: SPEC-EJT-02 §2 (ejector duty) | 4 … 720
+  n_in | Input speed (constant) | 30 | rpm | spec: SPEC-EJT-02 §2 (ejector duty) | 0.1 … 30000 rpm
+  mu_req | Minimum transmission angle required (linkages) | 40 | deg | spec: SPEC-EJT-02 §2 (ejector duty) | 0 … 90 deg
+  load_dir | External load: constant direction, or always opposing the output motion | Opposes motion |  | spec: SPEC-EJT-02 §2 (ejector duty) | any
+  T_load | External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists) | 1.5 | N*m | assumption: Sheet default value; no project figure given. | -10000 … 10000 N*m
+  J_out | Moment of inertia of the output link about its pivot (four-bar) | 0.002 | kg*m^2 | assumption: Sheet default value; no project figure given. | 0 … 1000 kg*m^2
+  m_slider | Slider mass (slider-crank) | 40 | kg | spec: SPEC-EJT-02 §2 (ejector duty) | 0 … 10000 kg
+  F_load | External load on the slider (slider-crank). Positive acts in the −x direction, resisting +x motion; with 'Opposes motion' it is applied against the actual direction of motion | 3000 | N | spec: SPEC-EJT-02 §2 (ejector duty) | -1000000 … 1000000 N
+  follower | Follower type: roller (translating, pressure angle and undercut checked) or flat-faced (in-line) | Roller |  | assumption: Sheet default value; no project figure given. | any
+  Rb | Base-circle radius of the cam profile R_b | 40 | mm | assumption: Sheet default value; no project figure given. | 1 … 1000 mm
+  R_r | Roller radius R_r (roller follower) | 8 | mm | assumption: Sheet default value; no project figure given. | 1 … 200 mm
+  phi_max | Maximum pressure angle allowed (roller follower) | 30 | deg | assumption: Sheet default value; no project figure given. | 5 … 45 deg
+  m_f | Follower mass (all moving parts that follow the cam) | 0.2 | kg | assumption: Sheet default value; no project figure given. | 0 … 1000 kg
+  k_sp | Return spring rate (link M7 rate k) | 5 | N/mm | assumption: Sheet default value; no project figure given. | 0 … 1000 N/mm
+  F_pre | Spring preload at the base circle (link an M7 force) | 20 | N | assumption: Sheet default value; no project figure given. | 0 … 100000 N
+  F_ext | External load on the follower, positive against the rise | 0 | N | assumption: Sheet default value; no project figure given. | -100000 … 100000 N
+
+3. ASSUMPTIONS
+  A1. Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed. (Addendum B §B6 M9 limits.)
+  A2. The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch; for a change-point linkage (parallelogram, deltoid) the circuit is named at a reference angle that does not depend on the sweep (the middle of the first interval between change points in 0 … 2π, π/2 when there are none), so the label at a crank angle means the same motion on every turn; only the true change points (all four links collinear, θ₂ = 0 or π) flip the branch, and it is followed by continuity through them inside the sweep. A linkage with one change point per turn (a kite) repeats every 720° and a sweep of more than one turn warns. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted. (Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank.)
+  A3. Input torque is by virtual work from the output load and the inertia of the output element only (four-bar: the output link's moment of inertia about its pivot; slider: the slider mass); the crank and the coupler or connecting rod are massless. (No link-inertia or gravity terms: add the link masses to the output element for a first allowance.)
+  A4. The peaks (speeds, accelerations, torque, transmission angle, swing) are those of the continuous motion over the swept range, found by a dense scan refined by golden section; the printed table (steps N, up to 3600) only samples it. (Peaks do not depend on the table's step count.)
+  A5. Cam: a translating follower on a cam turning at constant speed; the follower mass, a linear return spring (rate and preload at the base circle, for example linked from M7) and a constant external load make the force the cam must apply, F = m·a + k·s + F_pre + F_ext; contact is lost where it falls below zero. The segment table must add to 360° and close; pressure angle and undercut are checked for the roller follower (R_p = R_b + R_r), the positive profile radius for the flat-faced one. (Norton, Design of Machinery, cam design: the four classical laws, pressure angle and radius of curvature.)
+  A6. Follower force (four-bar: the tangential force at the output pin, (T_L + J·α₄)/c; slider: the slide-direction force m·a + F_L; cam: the axial force) is the force the mechanism must apply to the output element. The force in the coupler (F_pin_pk) is the tangential force over sin μ; in the connecting rod it is the slide-direction force over cos θ₃, and the guide reaction is that force times tan θ₃; the roller contact normal force is F/cos φ. Crank, coupler and rod are massless two-force members. (Rigid body, frictionless.)
+  A7. When the sweep meets an assembly limit (a toggle of a four-bar, the rod perpendicular to the slide line of a slider-crank) the sweep is cut there and, because the speed, acceleration, torque and forces at constant input speed are unbounded at the limit, they are not reported; the limit angles are listed. A change-point four-bar (parallelogram, deltoid) is continued through its singular position on the same branch by continuity (γ changes sign there), but its speeds and torques next to the singular position are not reported. (Closed-form limit angles: ℓ = b + c or |b − c| (four-bar), |r·sinθ − e| = l (slider).)
+  A8. Into F1 and E1: output_motion is a kinematic proxy at constant crank speed, not the cylinder speed of an actuated linkage. For E1 use the peak input_torque for the peak check and T_rms_in with n_in for the thermal sizing; the mean power is P_mean. (Chains 4 and 5, Addendum B §B7.)
+  A9. L1 (Ground link d, O₂ to O₄ (four-bar)) is taken as 100 mm. (Sheet default value; no project figure given.)
+  A10. L4 (Rocker length c (four-bar)) is taken as 70 mm. (Sheet default value; no project figure given.)
+  A11. T_load (External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists)) is taken as 1.5 N*m. (Sheet default value; no project figure given.)
+  A12. J_out (Moment of inertia of the output link about its pivot (four-bar)) is taken as 0.002 kg*m^2. (Sheet default value; no project figure given.)
+  A13. follower (Follower type: roller (translating, pressure angle and undercut checked) or flat-faced (in-line)) is taken as Roller. (Sheet default value; no project figure given.)
+  A14. Rb (Base-circle radius of the cam profile R_b) is taken as 40 mm. (Sheet default value; no project figure given.)
+  A15. R_r (Roller radius R_r (roller follower)) is taken as 8 mm. (Sheet default value; no project figure given.)
+  A16. phi_max (Maximum pressure angle allowed (roller follower)) is taken as 30 deg. (Sheet default value; no project figure given.)
+  A17. m_f (Follower mass (all moving parts that follow the cam)) is taken as 0.2 kg. (Sheet default value; no project figure given.)
+  A18. k_sp (Return spring rate (link M7 rate k)) is taken as 5 N/mm. (Sheet default value; no project figure given.)
+  A19. F_pre (Spring preload at the base circle (link an M7 force)) is taken as 20 N. (Sheet default value; no project figure given.)
+  A20. F_ext (External load on the follower, positive against the rise) is taken as 0 N. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [14] theta_sw = θ    « Vector-loop closed form (Freudenstein / law of cosines)
+      = 73 rows, θ from 0° to 360°
+      = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg
+        Table: crank angle
+  [15] x_sw = x = r·cosθ + σ·√(l² − (r·sinθ − e)²)    « Vector-loop closed form (Freudenstein / law of cosines)
+      = 73 rows, θ from 0° to 360°
+      = [400, 399.49, 397.98, 395.47, 392.01, 387.64, 382.41, 376.38, 369.64, 362.26, 354.33, 345.96, … (73 items)] mm
+        Table: slider position
+  [16] v_sw = v = ω·dx/dθ    « Vector-loop closed form (Freudenstein / law of cosines)
+      = 73 rows, θ from 0° to 360°
+      = [0, -0.036477, -0.072491, -0.10759, -0.14133, -0.17328, -0.20307, -0.23032, -0.25473, -0.27602, -0.29399, -0.30849, … (73 items)] m/s
+        Table: slider velocity
+  [17] a_sw = a = ω²·d²x/dθ²    « Vector-loop closed form (Freudenstein / law of cosines)
+      = 73 rows, θ from 0° to 360°
+      = [-1.3159, -1.3076, -1.2827, -1.2416, -1.185, -1.1136, -1.0287, -0.93164, -0.82405, -0.70784, -0.58513, -0.4582, … (73 items)] m/s²
+        Table: slider acceleration
+  [18] theta3_sw = θ₃ = atan2(e − r·sinθ, x − r·cosθ)    « Vector-loop closed form (Freudenstein / law of cosines)
+      = 73 rows, θ from 0° to 360°
+      = [0, -1.6648, -3.3183, -4.9492, -6.5463, -8.0984, -9.5941, -11.022, -12.372, -13.633, -14.794, -15.846, … (73 items)] deg
+        Table: connecting-rod angle
+  [19] omega3_sw = ω₃ = −ω·r·cosθ/(x − r·cosθ)    « Vector-loop closed form (Freudenstein / law of cosines)
+      = 73 rows, θ from 0° to 360°
+      = [-1.0472, -1.0437, -1.033, -1.0153, -0.9905, -0.95864, -0.91976, -0.87394, -0.82127, -0.76195, -0.69621, -0.62437, … (73 items)] rad/s
+        Table: connecting-rod angular velocity
+  [20] mu_sw = μ = 90° − |rod angle to the slide line|    « Vector-loop closed form (Freudenstein / law of cosines)
+      = 73 rows, θ from 0° to 360°
+      = [90, 88.335, 86.682, 85.051, 83.454, 81.902, 80.406, 78.978, 77.628, 76.367, 75.206, 74.154, … (73 items)] deg
+        Table: transmission angle
+  [21] T_in_sw = (m·a + F_L)·dx/dθ    « Virtual work
+      = 73 rows, θ from 0° to 360°
+      = [0, 35.44, 70.408, 104.44, 137.09, 167.93, 196.58, 222.67, 245.92, 266.07, 282.93, 296.39, … (73 items)] N·m
+        Table: input torque by virtual work
+  [22] x_0 = x    « Vector-loop closed form (Freudenstein / law of cosines)
+      = at the first input angle
+      = 400 mm
+        Slider position at the first input angle
+  [23] v_0 = ω·dx/dθ    « Vector-loop closed form (Freudenstein / law of cosines)
+      = at the first input angle
+      = 0 m/s
+        Slider velocity at the first input angle
+  [24] a_0 = ω²·d²x/dθ²    « Vector-loop closed form (Freudenstein / law of cosines)
+      = at the first input angle
+      = -1.3159 m/s²
+        Slider acceleration at the first input angle
+  [25] theta3_0 = θ₃    « Vector-loop closed form (Freudenstein / law of cosines)
+      = at the first input angle
+      = 0 deg
+        Connecting-rod angle at the first input angle
+  [26] omega3_0 = ω₃    « Vector-loop closed form (Freudenstein / law of cosines)
+      = at the first input angle
+      = -1.0472 rad/s
+        Connecting-rod angular velocity at the first input angle
+  [27] alpha3_0 = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
+      = at the first input angle
+      = 0 rad/s²
+        Connecting-rod angular acceleration at the first input angle
+  [28] mu_0 = μ    « Vector-loop closed form (Freudenstein / law of cosines)
+      = at the first input angle
+      = 90 deg
+        Transmission angle at the first input angle
+  [29] T_in_0 = (m·a + F_L)·dx/dθ    « Virtual work
+      = at the first input angle
+      = 0 N·m
+        Input torque at the first input angle
+  [30] x_alt = x on the other circuit    « Vector-loop closed form (Freudenstein / law of cosines)
+      = mirror branch, at the first input angle
+      = -200 mm
+        Slider position on the other circuit at the first input angle
+  [31] x_max = max x    « Vector-loop closed form (Freudenstein / law of cosines)
+      = over the sweep
+      = 400 mm
+        Largest slider position over the sweep
+  [32] x_min = min x    « Vector-loop closed form (Freudenstein / law of cosines)
+      = over the sweep
+      = 200 mm
+        Smallest slider position over the sweep
+  [33] stroke = max x − min x    « Vector-loop closed form (Freudenstein / law of cosines)
+      = over the sweep
+      = 200 mm
+        Slider stroke over the sweep (the full stroke when the sweep covers 360°)
+  [34] mu_min = min μ    « Vector-loop closed form (Freudenstein / law of cosines)
+      = dense scan, refined
+      = 70.529 deg
+        Smallest transmission angle over the sweep
+  [35] res_max = max |loop residual|    « Vector-loop closed form (Freudenstein / law of cosines)
+      = 73 table rows and 1441 scan angles
+      = 1.1444e-13 mm
+        Largest loop-closure residual
+  [36] res_vel_max = max |velocity loop| / its terms    « Vector-loop closed form (Freudenstein / law of cosines)
+      = 73 table rows
+      = 1.3508e-16
+        Largest velocity-loop residual, relative to the size of its terms
+  [37] stroke_closed = √((l + r)² − e²) − √((l − r)² − e²)    « Vector-loop closed form (Freudenstein / law of cosines)
+      = between the dead centres
+      = 200 mm
+        Full slider stroke between the dead centres (closed form)
+  [38] omega3_pk = max |ω₃|    « Vector-loop closed form (Freudenstein / law of cosines)
+      = dense scan, refined
+      = 1.0472 rad/s
+        Peak connecting-rod angular velocity
+  [39] alpha3_pk = max |α₃|    « Vector-loop closed form (Freudenstein / law of cosines)
+      = dense scan, refined
+      = 3.4894 rad/s²
+        Peak connecting-rod angular acceleration
+  [40] input_torque = max |T_in|    « Virtual work
+      = dense scan, refined
+      = 316.43 N·m
+        Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)
+  [41] output_motion = max |v|    « Vector-loop closed form (Freudenstein / law of cosines)
+      = dense scan, refined
+      = 0.33132 m/s
+        Peak slider velocity (mech.output_motion; the cylinder speed of F1 for a slider driven at constant crank speed, a kinematic proxy)
+  [42] peak_accel = max |a|    « Vector-loop closed form (Freudenstein / law of cosines)
+      = dense scan, refined
+      = 1.3159 m/s²
+        Peak slider acceleration (mech.peak_accel)
+  [43] follower_force = max |m·a + F_L|    « Virtual work
+      = slide-direction force on the slider
+      = 3052.6 N
+        Peak force on the slider in the slide direction, the rod's component along the slide line (mech.follower_force)
+  [44] F_pin_pk = max |m·a + F_L|/cosθ₃    « Virtual work
+      = force along the connecting rod
+      = 3198.7 N
+        Peak force in the connecting rod, also the crank-pin load (mech.F_pin_pk → M4, M5)
+  [45] F_guide_pk = max |m·a + F_L|·tanθ₃    « Virtual work
+      = reaction of the slide on the slider
+      = 1065.7 N
+        Peak side reaction of the guide on the slider (frictionless)
+  [46] T_rms_in = √(mean T_in²)    « Virtual work
+      = Simpson over the scan
+      = 215.24 N·m
+        RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)
+  [47] P_mean = ω·mean(T_in)    « Virtual work
+      = Simpson over the scan
+      = 600 W
+        Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
+  [48] u_mu = μ_req / μ_min    « Transmission angle
+      = 40° / 70.529°
+      = 0.56714
+        Transmission angle: required minimum against the smallest over the sweep
+
+5. RESULTS
+  n_in = 30 rpm    Input (crank) speed, passed through for E1's load speed (mech.n_in)
+  slider_class = "Crank-slider: the crank can turn through 360° (l ≥ r + |e|)"    Class of the slider-crank
+  theta_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: crank angle
+  x_sw = [400, 399.49, 397.98, 395.47, 392.01, 387.64, 382.41, 376.38, 369.64, 362.26, 354.33, 345.96, … (73 items)] mm    Table: slider position
+  v_sw = [0, -0.036477, -0.072491, -0.10759, -0.14133, -0.17328, -0.20307, -0.23032, -0.25473, -0.27602, -0.29399, -0.30849, … (73 items)] m/s    Table: slider velocity
+  a_sw = [-1.3159, -1.3076, -1.2827, -1.2416, -1.185, -1.1136, -1.0287, -0.93164, -0.82405, -0.70784, -0.58513, -0.4582, … (73 items)] m/s²    Table: slider acceleration
+  theta3_sw = [0, -1.6648, -3.3183, -4.9492, -6.5463, -8.0984, -9.5941, -11.022, -12.372, -13.633, -14.794, -15.846, … (73 items)] deg    Table: connecting-rod angle
+  omega3_sw = [-1.0472, -1.0437, -1.033, -1.0153, -0.9905, -0.95864, -0.91976, -0.87394, -0.82127, -0.76195, -0.69621, -0.62437, … (73 items)] rad/s    Table: connecting-rod angular velocity
+  mu_sw = [90, 88.335, 86.682, 85.051, 83.454, 81.902, 80.406, 78.978, 77.628, 76.367, 75.206, 74.154, … (73 items)] deg    Table: transmission angle
+  T_in_sw = [0, 35.44, 70.408, 104.44, 137.09, 167.93, 196.58, 222.67, 245.92, 266.07, 282.93, 296.39, … (73 items)] N·m    Table: input torque by virtual work
+  x_0 = 400 mm    Slider position at the first input angle
+  v_0 = 0 m/s    Slider velocity at the first input angle
+  a_0 = -1.3159 m/s²    Slider acceleration at the first input angle
+  theta3_0 = 0 deg    Connecting-rod angle at the first input angle
+  omega3_0 = -1.0472 rad/s    Connecting-rod angular velocity at the first input angle
+  alpha3_0 = 0 rad/s²    Connecting-rod angular acceleration at the first input angle
+  mu_0 = 90 deg    Transmission angle at the first input angle
+  T_in_0 = 0 N·m    Input torque at the first input angle
+  x_alt = -200 mm    Slider position on the other circuit at the first input angle
+  x_max = 400 mm    Largest slider position over the sweep
+  x_min = 200 mm    Smallest slider position over the sweep
+  stroke = 200 mm    Slider stroke over the sweep (the full stroke when the sweep covers 360°)
+  mu_min = 70.529 deg    Smallest transmission angle over the sweep
+  res_max = 1.1444e-13 mm    Largest loop-closure residual
+  res_vel_max = 1.3508e-16    Largest velocity-loop residual, relative to the size of its terms
+  dead_centres = "outer at θ = 0°; inner at θ = 180°"    Dead centres (crank and rod collinear, slider velocity zero)
+  limit_angles = "none: the crank turns fully"    Limit angles (rod perpendicular to the slide line): the bounds of the crank's assemblable range
+  stroke_closed = 200 mm    Full slider stroke between the dead centres (closed form)
+  omega3_pk = 1.0472 rad/s    Peak connecting-rod angular velocity
+  alpha3_pk = 3.4894 rad/s²    Peak connecting-rod angular acceleration
+  input_torque = 316.43 N·m    Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)
+  output_motion = 0.33132 m/s    Peak slider velocity (mech.output_motion; the cylinder speed of F1 for a slider driven at constant crank speed, a kinematic proxy)
+  peak_accel = 1.3159 m/s²    Peak slider acceleration (mech.peak_accel)
+  follower_force = 3052.6 N    Peak force on the slider in the slide direction, the rod's component along the slide line (mech.follower_force)
+  F_pin_pk = 3198.7 N    Peak force in the connecting rod, also the crank-pin load (mech.F_pin_pk → M4, M5)
+  F_guide_pk = 1065.7 N    Peak side reaction of the guide on the slider (frictionless)
+  T_rms_in = 215.24 N·m    RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)
+  P_mean = 600 W    Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
+  u_mu = 0.56714    Required against smallest transmission angle
+
+6. CHECKS (governing first)
+  PASS  Transmission angle μ_min at or above the required minimum: u_mu = 0.56714 vs u_mu ≤ 1  utilisation 0.567  « Transmission angle
+  PASS  Loop-closure residual below 1e-9 mm at every step: max residual = 1.1444e-13 mm vs < 1e-9 mm  utilisation 0  « Self-consistency
+  PASS  Velocity-loop residual below 1e-8 of the size of its terms: max residual = 1.3508e-16 vs < 1e-8  utilisation 0  « Self-consistency
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.mechanism@1.1.0
+  Content hash: c7eba69789649452
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 16/16
+  Test run: 2026-10-25 09:44 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Ejector station 2
+Calc ID: Replacement cylinder    Revision: A
+Title: Cylinder and actuator circuit
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: EJT-001    Client: Client Co
+
+1. SCOPE AND METHOD
+A double-acting hydraulic cylinder in its circuit: the bore, rod and annulus areas; the force and speed on the extend and the retract stroke with mechanical and volumetric efficiency and an optional back pressure, or with the regenerative extend connection; the swept volume and the cycle time; the pump delivery, shaft power, torque and speed; a hydraulic motor's torque; the velocity in the suction, pressure and return lines against your own limits and the smallest listed hose or pipe bore that meets them; a sharp orifice's flow for flow-control screening; and a screening check of the rod against buckling (Euler above the transition slenderness, Johnson parabola below it). screening only; ISO/TS 13725 method not implemented. Not a cylinder design to a standard: the limits, the hose sizes, the mounting factor and the material properties are your records.
+Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a Force: F_ext = (p·A_b − p_back·A_a)·η_m, F_ret = (p·A_a − p_back·A_b)·η_m; regenerative extend F_ext = p·A_r·η_m Speed and time: v_ext = Q·η_vc/A_b (regenerative: A_r), v_ret = Q·η_vc/A_a; t = stroke/v; t_cycle = t_ext + t_ret + t_dwell Required speed (optional): when v_req is given it gives the flow, Q = v_req·A_b/η_vc (regenerative: A_r), and replaces the entered Q; the flow must lie within 0.1 to 2000 L/min Swept volume: ΔV_ext = A_b·stroke (regenerative: A_r·stroke), ΔV_ret = A_a·stroke; ΔV = the larger Pump: Q_p = V_g·n·η_vp; P = p·Q_p/η_tp; T = P/ω; displacement needed V_g,req = Q/(n·η_vp) Hydraulic motor: T = Δp·V_g/(2π)·η_hm (V_g per revolution) Lines: v = Q_line/A_line; suction Q_suc = max(Q, V_g·n) (the geometric delivery), pressure/cap-port line Q_prs = Q_line·A_b/A_a on the retract stroke (regenerative extend: Q_line·A_b/A_r if larger), return Q_rtn = Q_line·A_b/A_a, with Q_line = max(Q, Q_p); smallest bore d = √(4Q/(π·v_max)), recommended = the smallest listed size not below it Orifice: Q = C_d·A_o·√(2Δp/ρ); bore for the circuit flow d_o = √(4Q/(π·C_d·√(2Δp/ρ))) Rod buckling (screening): L_eff = K·(stroke + L_add), r = d_r/4, λ = L_eff/r, λ_c = π·√(2E/f_y); Euler F_cr = π²·E·I/L_eff² for λ > λ_c, Johnson F_cr = A_r·f_y·[1 − f_y·λ²/(4π²E)] for λ ≤ λ_c; load F_b = max(F_push, F_stall) with F_stall = p·A_b (the stalled cylinder at the supply pressure: no flow, so no back pressure and no friction loss; in the regenerative extend too, since the standard connection can always be selected); utilisation u = F_b·S_f/F_cr
+  Ref: ISO/TS 13725 — Cylinder buckling load: method not implemented, screening only
+  Ref: Esposito, Fluid Power with Applications Cylinder and pump chapters — Force, speed, flow and power relations, closed form
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  mode | Extend connection | Standard |  | drawing: DRG-EJT-210 rev B | any
+  p | Supply pressure at the cylinder and the pump (gauge) | 100 | bar | drawing: DRG-EJT-210 rev B | 1 … 700 bar
+  p_back | Back pressure on the discharge side (standard connection) | 0 | bar | assumption: Sheet default value; no project figure given. | 0 … 700 bar
+  v_req | Required extend speed (gives the flow Q = v·A/η_vc and replaces Q; links M9 output_motion as a kinematic proxy: a cylinder-actuated linkage runs at about constant cylinder speed) | 331.325 | mm/s | link: Ejector slider-crank rev A · output_motion | 0.1 … 10000 mm/s
+  rho | Fluid density | 870 | kg/m^3 | drawing: DRG-EJT-210 rev B | 700 … 1300 kg/m^3
+  F_push | Load to push on the extend stroke (compresses the rod) | 3.05264 | kN | link: Ejector slider-crank rev A · follower_force | 0 … 15000 kN
+  F_pull | Load to pull on the retract stroke | 3.05264 | kN | link: Ejector slider-crank rev A · follower_force | 0 … 15000 kN
+  D | Bore | 40 | mm | drawing: DRG-EJT-210 rev B | 10 … 500 mm
+  d_r | Rod diameter | 22 | mm | drawing: DRG-EJT-210 rev B | 4 … 450 mm
+  stroke | Stroke | 200 | mm | drawing: DRG-EJT-210 rev B | 1 … 5000 mm
+  eta_m | Mechanical efficiency of the cylinder (seal and guide friction) | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  eta_vc | Volumetric efficiency of the cylinder (leakage past the piston) | 0.98 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  t_dwell | Dwell time added to each cycle | 0 | s | assumption: Sheet default value; no project figure given. | 0 … 3600 s
+  K_m | Effective-length factor K of the mounting (L_eff = K·L) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2.5
+  L_add | Length added to the stroke for the buckling length (mounting and rod end beyond the stroke) | 100 | mm | assumption: Sheet default value; no project figure given. | 0 … 5000 mm
+  E | Young's modulus of the rod | 210 | GPa | assumption: Sheet default value; no project figure given. | 50 … 250 GPa
+  f_y | Yield strength of the rod | 500 | MPa | assumption: Sheet default value; no project figure given. | 100 … 1500 MPa
+  S_f | Safety factor on the critical load | 3.5 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+  eta_vp | Volumetric efficiency of the pump | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  eta_tp | Total efficiency of the pump (volumetric × hydromechanical) | 0.88 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  eta_hm | Hydromechanical efficiency of the motor | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  d_suc | Suction line inside diameter | 40 | mm | assumption: Sheet default value; no project figure given. | 3 … 200 mm
+  d_prs | Pressure line inside diameter (to the cylinder cap port; judged at the larger flow of the two strokes) | 16 | mm | assumption: Sheet default value; no project figure given. | 3 … 200 mm
+  d_ret | Return line inside diameter | 25 | mm | assumption: Sheet default value; no project figure given. | 3 … 200 mm
+  v_suc_max | Suction line velocity limit (your record; the default is a placeholder, not a code value) | 1.2 | m/s | assumption: Sheet default value; no project figure given. | 0.1 … 20 m/s
+  v_prs_max | Pressure line velocity limit (your record; the default is a placeholder, not a code value) | 5 | m/s | assumption: Sheet default value; no project figure given. | 0.1 … 20 m/s
+  v_ret_max | Return line velocity limit (your record; the default is a placeholder, not a code value) | 3 | m/s | assumption: Sheet default value; no project figure given. | 0.1 … 20 m/s
+  C_d | Orifice discharge coefficient | 0.62 |  | assumption: Sheet default value; no project figure given. | 0.2 … 1
+
+3. ASSUMPTIONS
+  A1. The supply pressure p is the gauge pressure at the cylinder port and, for the pump, at the pump outlet; line losses are not subtracted (the line losses of a pipe run come from the pipe calculation). The force is the pressure on the area less the back pressure on the other side, times the mechanical efficiency. (F = p·A·η_m, closed form.)
+  A2. The speed is the flow into the cylinder times the volumetric efficiency over the area, in steady motion: no acceleration, cushioning or compressibility. The cycle time is the two strokes plus the dwell. (v = Q·η_vc/A.)
+  A3. The pump power is the supply pressure times the pump's delivery over the total efficiency: when the pump delivers more than the circuit takes, the excess is taken to go over the relief valve at the supply pressure, which is the conservative case for the drive. The shaft torque is the power over the angular speed. (P = p·Q_p/η_tp.)
+  A4. The line flows use the pump delivery when it is larger than the circuit flow: the suction line the geometric delivery V_g·n, the pressure line and the return line Q_line = max(Q, Q_p), which carries no volumetric efficiency while the speeds use Q·η_vc (the flows are the conservative side of the speeds). The line to the cylinder cap port is judged at the larger flow of the two strokes: on the retract stroke it carries the cap-side discharge Q_line·A_b/A_a (the same flow as the return line), and in the regenerative extend Q_line·A_b/A_r if that is larger. The velocity limits are your records; the sheet's defaults are placeholders, not values from a standard. (Continuity.)
+  A5. The orifice relation is the sharp-edged turbulent one, Q = C_d·A·√(2Δp/ρ), with your discharge coefficient; it ignores viscosity and cavitation and is a screening of a flow-control orifice, not a valve selection. (Orifice equation, closed form.)
+  A6. The rod is treated as a solid round column of its own diameter with the effective-length factor of the mounting; the tube, the piston and the rod-end stiffness are not modelled. The rod is judged at the larger of the push load you enter and the stall thrust p·A_b (a stalled, obstructed or relief-limited cylinder loads the rod with the full pressure force on the bore: no flow, so no back pressure, and the seal friction does not relieve it); no pressure-limiting device is credited, and the regenerative extend is judged at the same stall thrust because the standard connection can always be selected. The mounting factor K_m defaults to 1 (pinned at both ends): a fixed-free mounting is K_m = 2, and the factor and the safety factor S_f are your records. screening only; ISO/TS 13725 method not implemented. (Euler and Johnson column relations, closed form.)
+  A7. p_back (Back pressure on the discharge side (standard connection)) is taken as 0 bar. (Sheet default value; no project figure given.)
+  A8. eta_m (Mechanical efficiency of the cylinder (seal and guide friction)) is taken as 0.95. (Sheet default value; no project figure given.)
+  A9. eta_vc (Volumetric efficiency of the cylinder (leakage past the piston)) is taken as 0.98. (Sheet default value; no project figure given.)
+  A10. t_dwell (Dwell time added to each cycle) is taken as 0 s. (Sheet default value; no project figure given.)
+  A11. K_m (Effective-length factor K of the mounting (L_eff = K·L)) is taken as 1. (Sheet default value; no project figure given.)
+  A12. L_add (Length added to the stroke for the buckling length (mounting and rod end beyond the stroke)) is taken as 100 mm. (Sheet default value; no project figure given.)
+  A13. E (Young's modulus of the rod) is taken as 210 GPa. (Sheet default value; no project figure given.)
+  A14. f_y (Yield strength of the rod) is taken as 500 MPa. (Sheet default value; no project figure given.)
+  A15. S_f (Safety factor on the critical load) is taken as 3.5. (Sheet default value; no project figure given.)
+  A16. eta_vp (Volumetric efficiency of the pump) is taken as 0.95. (Sheet default value; no project figure given.)
+  A17. eta_tp (Total efficiency of the pump (volumetric × hydromechanical)) is taken as 0.88. (Sheet default value; no project figure given.)
+  A18. eta_hm (Hydromechanical efficiency of the motor) is taken as 0.9. (Sheet default value; no project figure given.)
+  A19. d_suc (Suction line inside diameter) is taken as 40 mm. (Sheet default value; no project figure given.)
+  A20. d_prs (Pressure line inside diameter (to the cylinder cap port; judged at the larger flow of the two strokes)) is taken as 16 mm. (Sheet default value; no project figure given.)
+  A21. d_ret (Return line inside diameter) is taken as 25 mm. (Sheet default value; no project figure given.)
+  A22. v_suc_max (Suction line velocity limit (your record; the default is a placeholder, not a code value)) is taken as 1.2 m/s. (Sheet default value; no project figure given.)
+  A23. v_prs_max (Pressure line velocity limit (your record; the default is a placeholder, not a code value)) is taken as 5 m/s. (Sheet default value; no project figure given.)
+  A24. v_ret_max (Return line velocity limit (your record; the default is a placeholder, not a code value)) is taken as 3 m/s. (Sheet default value; no project figure given.)
+  A25. C_d (Orifice discharge coefficient) is taken as 0.62. (Sheet default value; no project figure given.)
+  A26. Standard connection: the extend force is the pressure on the bore area less the back pressure on the annulus area; the retract force the pressure on the annulus less the back pressure on the bore. (Continuity and force balance.)
+
+4. WORKING
+  [25] A_b = pi * D^2 / 4
+      = π × (40 mm)^2 / 4
+      = 12.566 cm²
+        Bore (cap-side) area
+  [26] A_r = pi * d_r^2 / 4
+      = π × (22 mm)^2 / 4
+      = 3.8013 cm²
+        Rod area
+  [27] A_a = A_b - A_r
+      = 12.566 cm² − 3.8013 cm²
+      = 8.765 cm²
+        Annulus (rod-side) area
+  [28] phi = A_b / A_a
+      = 12.566 cm² / 8.765 cm²
+      = 1.4337
+        Area ratio A_b/A_a
+  [30] Q = v_req * A_b / eta_vc
+      = 331.32 mm/s × 12.566 cm² / 0.98
+      = 25.491 L/min
+        Flow the required extend speed needs: v·A_b/η_vc
+  [31] F_ext = (p * A_b - p_back * A_a) * eta_m
+      = (100 bar × 12.566 cm² − 0 bar × 8.765 cm²) × 0.95
+      = 11.938 kN
+        Extend force
+  [32] v_ext = Q * eta_vc / A_b
+      = 25.491 L/min × 0.98 / 12.566 cm²
+      = 331.32 mm/s
+        Extend speed
+  [33] dV_ext = A_b * stroke
+      = 12.566 cm² × 200 mm
+      = 0.25133 L
+        Liquid taken from the supply for the extend stroke
+  [34] F_ret = (p * A_a - p_back * A_b) * eta_m
+      = (100 bar × 8.765 cm² − 0 bar × 12.566 cm²) × 0.95
+      = 8.3268 kN
+        Retract force
+  [35] v_ret = Q * eta_vc / A_a
+      = 25.491 L/min × 0.98 / 8.765 cm²
+      = 475.02 mm/s
+        Retract speed
+  [36] t_ext = stroke / v_ext
+      = 200 mm / 331.32 mm/s
+      = 0.60364 s
+        Extend stroke time
+  [37] t_ret = stroke / v_ret
+      = 200 mm / 475.02 mm/s
+      = 0.42104 s
+        Retract stroke time
+  [38] t_cycle = t_ext + t_ret + t_dwell
+      = 0.60364 s + 0.42104 s + 0 s
+      = 1.0247 s
+        Cycle time
+  [39] dV_ret = A_a * stroke
+      = 8.765 cm² × 200 mm
+      = 0.1753 L
+        Liquid taken from the supply for the retract stroke
+  [40] dV = max(dV_ext, dV_ret)
+      = max(0.25133 L, 0.1753 L)
+      = 0.25133 L
+        Swept volume of the larger stroke
+  [41] Q_pump = Q
+      = 25.491 L/min
+      = 25.491 L/min
+        Flow the pump delivers at the supply pressure (the circuit flow; no pump entered)
+  [42] P_hyd = p * Q_pump
+      = 100 bar × 25.491 L/min
+      = 4.2485 kW
+        Hydraulic power at the pump outlet
+  [43] P_pump = P_hyd / eta_tp
+      = 4.2485 kW / 0.88
+      = 4.8279 kW
+        Pump shaft power
+  [44] Q_line = Q
+      = 25.491 L/min
+      = 25.491 L/min
+        Flow in the pressure and return lines before the area ratio (the circuit flow)
+  [45] Q_suc = Q
+      = 25.491 L/min
+      = 25.491 L/min
+        Flow in the suction line (the circuit flow)
+  [46] Q_prs = Q_line * A_b / A_a
+      = 25.491 L/min × 12.566 cm² / 8.765 cm²
+      = 36.546 L/min
+        Flow in the line to the cap port, worst stroke (retract: the cap-side discharge Q·A_b/A_a)
+  [47] Q_rtn = Q_line * A_b / A_a
+      = 25.491 L/min × 12.566 cm² / 8.765 cm²
+      = 36.546 L/min
+        Flow in the return line on the retract stroke (cap-side discharge)
+  [48] v_suc = Q_suc / (pi * d_suc^2 / 4)
+      = 25.491 L/min / (π × (40 mm)^2 / 4)
+      = 0.33809 m/s
+        Velocity in the suction line
+  [49] u_suc = v_suc / v_suc_max
+      = 0.33809 m/s / 1.2 m/s
+      = 0.28174
+        Velocity in the suction line over its limit
+  [50] d_min_suc = sqrt(4 * Q_suc / (pi * v_suc_max))
+      = sqrt(4 × 25.491 L/min / (π × 1.2 m/s))
+      = 21.232 mm
+        Smallest suction line bore for the velocity limit
+  [51] v_prs = Q_prs / (pi * d_prs^2 / 4)
+      = 36.546 L/min / (π × (16 mm)^2 / 4)
+      = 3.0294 m/s
+        Velocity in the pressure line
+  [52] u_prs = v_prs / v_prs_max
+      = 3.0294 m/s / 5 m/s
+      = 0.60589
+        Velocity in the pressure line over its limit
+  [53] d_min_prs = sqrt(4 * Q_prs / (pi * v_prs_max))
+      = sqrt(4 × 36.546 L/min / (π × 5 m/s))
+      = 12.454 mm
+        Smallest pressure line bore for the velocity limit
+  [54] v_rtn = Q_rtn / (pi * d_ret^2 / 4)
+      = 36.546 L/min / (π × (25 mm)^2 / 4)
+      = 1.2409 m/s
+        Velocity in the return line
+  [55] u_rtn = v_rtn / v_ret_max
+      = 1.2409 m/s / 3 m/s
+      = 0.41362
+        Velocity in the return line over its limit
+  [56] d_min_rtn = sqrt(4 * Q_rtn / (pi * v_ret_max))
+      = sqrt(4 × 36.546 L/min / (π × 3 m/s))
+      = 16.078 mm
+        Smallest return line bore for the velocity limit
+  [57] L_b = stroke + L_add
+      = 200 mm + 100 mm
+      = 300 mm
+        Buckling length: stroke plus the length beyond it
+  [58] L_eff = K_m * L_b
+      = 1 × 300 mm
+      = 300 mm
+        Effective length K·L
+  [59] I_r = pi * d_r^4 / 64
+      = π × (22 mm)^4 / 64
+      = 11499 mm⁴
+        Second moment of area of the rod
+  [60] r_g = d_r / 4
+      = 22 mm / 4
+      = 5.5 mm
+        Radius of gyration of the solid rod
+  [61] lam = L_eff / r_g
+      = 300 mm / 5.5 mm
+      = 54.545
+        Slenderness ratio
+  [62] lam_c = pi * sqrt(2 * E / f_y)
+      = π × sqrt(2 × 210 GPa / 500 MPa)
+      = 91.052
+        Transition slenderness between Johnson and Euler
+  [63] F_cr = A_r * f_y * (1 - f_y * lam^2 / (4 * pi^2 * E))
+      = 3.8013 cm² × 500 MPa × (1 − 500 MPa × 54.545^2 / (4 × π^2 × 210 GPa))
+      = 155.96 kN
+        Critical load, Johnson parabola (stocky rod)
+  [64] F_allow = F_cr / S_f
+      = 155.96 kN / 3.5
+      = 44.56 kN
+        Allowable push load: critical load over the safety factor
+  [65] F_stall = p * A_b
+      = 100 bar × 12.566 cm²
+      = 12.566 kN
+        Stall thrust: the supply pressure on the bore area (no flow, so no back pressure; the friction of the seals does not relieve the rod of a stalled cylinder)
+  [66] F_buck = max(F_push, F_stall)
+      = max(3.0526 kN, 12.566 kN)
+      = 12.566 kN
+        Rod load for the buckling check: the larger of the push load entered and the stall thrust p·A_b
+  [67] u_buck = F_buck / F_allow
+      = 12.566 kN / 44.56 kN
+      = 0.28201
+        Buckling utilisation
+  [68] u_push = F_push / F_ext
+      = 3.0526 kN / 11.938 kN
+      = 0.25571
+        Push load over the extend force
+  [69] u_pull = F_pull / F_ret
+      = 3.0526 kN / 8.3268 kN
+      = 0.3666
+        Pull load over the retract force
+
+5. RESULTS
+  A_b = 12.566 cm²    Bore area
+  A_r = 3.8013 cm²    Rod area
+  A_a = 8.765 cm²    Annulus area
+  phi = 1.4337    Area ratio A_b/A_a
+  F_ext = 11.938 kN    Extend force
+  F_ret = 8.3268 kN    Retract force
+  v_ext = 331.32 mm/s    Extend speed
+  v_ret = 475.02 mm/s    Retract speed
+  t_ext = 0.60364 s    Extend time
+  t_ret = 0.42104 s    Retract time
+  t_cycle = 1.0247 s    Cycle time
+  dV_ext = 0.25133 L    Extend swept volume
+  dV_ret = 0.1753 L    Retract swept volume
+  dV = 0.25133 L    Swept volume per stroke (the larger)
+  u_push = 0.25571    Push load over the extend force
+  u_pull = 0.3666    Pull load over the retract force
+  Q = 25.491 L/min    Flow into the cylinder
+  p = 100 bar    Supply pressure
+  rho = 870 kg/m³    Fluid density
+  d_prs = 16 mm    Pressure line inside diameter
+  P_pump = 4.8279 kW    Pump shaft power
+  Q_line = 25.491 L/min    Flow in the pressure and return lines before the area ratio
+  Q_suc = 25.491 L/min    Flow in the suction line
+  Q_prs = 36.546 L/min    Flow in the line to the cap port (worst stroke)
+  Q_rtn = 36.546 L/min    Flow in the return line
+  v_suc = 0.33809 m/s    Suction line velocity
+  v_prs = 3.0294 m/s    Pressure line velocity (cap-port line, worst stroke)
+  v_rtn = 1.2409 m/s    Return line velocity
+  u_suc = 0.28174    Suction line velocity over its limit
+  u_prs = 0.60589    Pressure line velocity over its limit
+  u_rtn = 0.41362    Return line velocity over its limit
+  d_min_suc = 21.232 mm    Smallest suction line bore
+  d_min_prs = 12.454 mm    Smallest pressure line bore
+  d_min_rtn = 16.078 mm    Smallest return line bore
+  L_eff = 300 mm    Effective length
+  lam = 54.545    Slenderness
+  lam_c = 91.052    Transition slenderness
+  F_cr = 155.96 kN    Critical load (screening)
+  F_allow = 44.56 kN    Allowable push load (screening)
+  F_stall = 12.566 kN    Stall thrust p·A_b
+  F_buck = 12.566 kN    Rod load judged for buckling: the larger of the push load and the stall thrust
+  u_buck = 0.28201    Rod buckling utilisation (screening)
+  buckling_note = "screening only; ISO/TS 13725 method not implemented; stocky rod, Johnson parabola"    Rod buckling check
+
+6. CHECKS (governing first)
+  PASS  Pressure line velocity within its limit, cap-port line at the larger stroke flow: u_prs = 0.60589 vs u_prs ≤ 1  utilisation 0.606  « cylinder.line-limits record
+  PASS  Return line velocity within its limit: u_rtn = 0.41362 vs u_rtn ≤ 1  utilisation 0.414  « cylinder.line-limits record
+  PASS  Retract force covers the pull load: u_pull = 0.3666 vs u_pull ≤ 1  utilisation 0.367
+  PASS  Rod buckling at the larger of the push load and the stall thrust, screening only; ISO/TS 13725 method not implemented: u_buck = 0.28201 vs u_buck ≤ 1  utilisation 0.282  « Euler / Johnson column relations
+  PASS  Suction line velocity within its limit: u_suc = 0.28174 vs u_suc ≤ 1  utilisation 0.282  « cylinder.line-limits record
+  PASS  Extend force covers the push load: u_push = 0.25571 vs u_push ≤ 1  utilisation 0.256
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: E, f_y (Rod material); K_m (Mounting effective-length factor); S_f (Rod buckling safety factor); v_suc_max, v_prs_max, v_ret_max (Line velocity limits). Enter each as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: fp.cylinder@1.3.0
+  Content hash: c71c19afc508f61e
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 7/7
+  Test run: 2026-10-25 09:44 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Ejector station 2
+Calc ID: Emergency stroke accumulator    Revision: A
+Title: Accumulator sizing (gas law)
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: EJT-001    Client: Client Co
+
+1. SCOPE AND METHOD
+The pre-charge gas volume V0 of a hydraulic accumulator that delivers, or absorbs, a liquid volume ΔV between the lowest working pressure p1 and the highest p2, from p·Vⁿ = const with absolute pressures and an exponent n between 1 (isothermal) and 1.4 (adiabatic); the volume scaled to the lowest operating temperature (T_max/T_min) and the pre-charge pressure at the charging temperature; the next size from your own size list; and the bar·litre product PS·V of the vessel's own maximum allowable pressure and volume against the PSSR Schedule 1 250 bar·L exception. Three modes: energy storage, shock and pulsation (screening only) and emergency stroke (ΔV is the stroke volume, linkable from the cylinder circuit). Not a pressure-vessel code check.
+Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas volume: V0 = ΔV / [(p0/p1)^(1/n) − (p0/p2)^(1/n)], n = 1 isothermal … 1.4 adiabatic, then × the real-gas factor f_rg (user input, at least 1) and × (T_max + 273.15)/(T_min + 273.15), because p0 is defined at T_max and the gas delivers less when cold Pre-charge rules (records, applied to absolute pressures): p0 ≤ r_0·p1 at T_max (default 0.9, bladder type) and p2/p0(T_min) ≤ r_p (default 4), p0(T_min) = p0·(T_min + 273.15)/(T_max + 273.15) Pre-charge at the charging temperature: p0(T_c) = p0(T_max)·(T_c + 273.15)/(T_max + 273.15) Next size: the smallest listed size not below V0 Bar·litres: PS·V, PS = the vessel's maximum allowable pressure (bar gauge, entered, not below p2 gauge), V = the vessel volume entered (default the selected size); compared with 250 bar·L (PSSR Schedule 1, indication only; not available without PS and a volume)
+  Ref: Pressure Systems Safety Regulations 2000 (SI 2000/128) Schedule 1 — 250 bar·litre exception, indication only
+  Ref: Pressure Equipment Directive 2014/68/EU and UK PER 2016 — Pressure equipment; not checked here
+  Ref: Esposito, Fluid Power with Applications Ch. on accumulators — Gas-charged accumulator sizing, p·Vⁿ = const
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  mode | Duty | Emergency stroke |  | spec: SPEC-EJT-02 §4 (accumulator) | any
+  dV | Liquid volume ΔV delivered, absorbed or (emergency stroke) needed for the stroke | 0.251327 | L | link: Replacement cylinder rev A · dV | 0.001 … 1000 L
+  p_basis | Pressures entered as | Gauge |  | assumption: Sheet default value; no project figure given. | any
+  p_0 | Gas pre-charge pressure p0, at the maximum operating temperature | 50 | bar | spec: SPEC-EJT-02 §4 (accumulator) | 0 … 700 bar
+  p_1 | Lowest working pressure p1 | 60 | bar | spec: SPEC-EJT-02 §4 (accumulator) | 0 … 700 bar
+  p_2 | Highest working pressure p2 | 100 | bar | link: Replacement cylinder rev A · p | 0 … 700 bar
+  p_atm | Atmospheric pressure (gauge to absolute) | 1.01325 | bar | assumption: Sheet default value; no project figure given. | 0.5 … 1.1 bar
+  n | Gas exponent n (1 isothermal, slow; 1.4 adiabatic, fast) | 1.4 |  | spec: SPEC-EJT-02 §4 (accumulator) | 1 … 1.4
+  f_rg | Real-gas factor on V0 (1 = ideal gas; at least 1, as nitrogen's compressibility factor exceeds 1 at high pressure; from a gas-property source above 200 bar) | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
+  T_max | Maximum operating temperature (p0 applies here) | 50 | degC | spec: SPEC-EJT-02 §4 (accumulator) | -40 … 150 degC
+  T_min | Minimum operating temperature (the gas is coldest and delivers least here; V0 is scaled by T_max/T_min) | 10 | degC | spec: SPEC-EJT-02 §4 (accumulator) | -40 … 150 degC
+  T_c | Charging temperature | 20 | degC | assumption: Sheet default value; no project figure given. | -40 … 100 degC
+  r_0 | Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures (state whether the manufacturer's ratio is on gauge or absolute pressures) | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  r_p | Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute pressures | 4 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+
+3. ASSUMPTIONS
+  A1. All gas-law pressures are absolute. A gauge entry is converted with the atmospheric pressure entered here, so the same numbers read as gauge or as absolute give different volumes. (p·Vⁿ = const on a fixed mass of gas.)
+  A2. The exponent n is the user's: 1 for a slow discharge with heat exchange (isothermal), towards 1.4 for a fast one (adiabatic). The larger n gives the larger volume for a given ΔV. (Gas-law exponents, closed form.)
+  A3. The gas is ideal unless a real-gas factor is entered (at least 1: nitrogen's compressibility factor exceeds 1 at high pressure, so the real gas needs more volume, never less); above 200 bar the sheet warns that nitrogen departs from the ideal-gas law and a factor from a gas-property source should be entered. (Real-gas correction as a user factor.)
+  A4. The pre-charge p0 is defined at the maximum operating temperature T_max and V0 is sized there; at the lowest operating temperature T_min the same gas delivers only the fraction T_min/T_max (absolute) of ΔV, so V0 is multiplied by T_max/T_min, and the p2/p0 rule is checked with p0 at T_min. The temperature range is the user's; with T_min = T_max the correction is 1. (Manufacturer sizing practice; the gas law at constant mass.)
+  A5. The pre-charge rules (p0 ≤ 0.9·p1 and p2/p0 ≤ 4 by default) are records for the accumulator type and make and are checked as PASS/FAIL on ABSOLUTE pressures, whichever basis the pressures are entered on; the right values, and whether the manufacturer states the ratio on gauge or absolute pressures, come from the manufacturer (the same numbers read as gauge pressures give a different ratio). (Rules are records, not built-in limits.)
+  A6. The bar·litre product is PS times V of the vessel itself: PS is the vessel's maximum allowable pressure in bar gauge (the nameplate or relief setting, never below the highest working pressure p2) and V its internal volume (the selected size unless entered). Without PS and a volume the indication is not available. It indicates whether the 250 bar·L exception of PSSR Schedule 1 can apply; it is not a compliance statement, and PED / UK PER, PSSR examination and the vessel's own design code stay with the manufacturer and the competent person. (Addendum B §B5 regulatory gating: no pressure-vessel code check.)
+  A7. p_basis (Pressures entered as) is taken as Gauge. (Sheet default value; no project figure given.)
+  A8. p_atm (Atmospheric pressure (gauge to absolute)) is taken as 1.01325 bar. (Sheet default value; no project figure given.)
+  A9. f_rg (Real-gas factor on V0 (1 = ideal gas; at least 1, as nitrogen's compressibility factor exceeds 1 at high pressure; from a gas-property source above 200 bar)) is taken as 1. (Sheet default value; no project figure given.)
+  A10. T_c (Charging temperature) is taken as 20 degC. (Sheet default value; no project figure given.)
+  A11. r_0 (Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures (state whether the manufacturer's ratio is on gauge or absolute pressures)) is taken as 0.9. (Sheet default value; no project figure given.)
+  A12. r_p (Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute pressures) is taken as 4. (Sheet default value; no project figure given.)
+  A13. Emergency stroke duty: ΔV is the volume the emergency stroke needs (swept volume plus line compression; linkable from the cylinder circuit); p_1 is the lowest pressure at which the stroke still has the force it needs; p_2 is the pressure the accumulator is held at. (Gas-law sizing for a stored-energy stroke.)
+
+4. WORKING
+  [15] pa_0 = p_0 + p_atm
+      = 50 bar + 1.0132 bar
+      = 51.013 bar
+        Pre-charge pressure, absolute
+  [16] pa_1 = p_1 + p_atm
+      = 60 bar + 1.0132 bar
+      = 61.013 bar
+        Lowest working pressure, absolute
+  [17] pa_2 = p_2 + p_atm
+      = 100 bar + 1.0132 bar
+      = 101.01 bar
+        Highest working pressure, absolute
+  [18] p2_g = max(pa_2 - p_atm, 0 bar)
+      = max(101.01 bar − 1.0132 bar, 0 bar)
+      = 100 bar
+        Highest working pressure, gauge
+  [19] V0_ideal = dV / [(pa_0/pa_1)^(1/n) − (pa_0/pa_2)^(1/n)]    « p·Vⁿ = const
+      = 0.25133 L / [(0.8361)^(1/1.4) − (0.50502)^(1/1.4)]
+      = 0.94446 L
+        Gas volume for the displacement, ideal gas
+  [20] f_T = (T_max / 1 K) / (T_min / 1 K)
+      = 50 degC / 1 K / (10 degC / 1 K)
+      = 1.1413
+        Temperature scaling of the gas volume: maximum over minimum absolute temperature
+  [21] V0 = V0_ideal * f_rg * f_T
+      = 0.94446 L × 1 × 1.1413
+      = 1.0779 L
+        Pre-charge gas volume V0 (accumulator size required)
+  [22] T_ratio = (T_c / 1 K) / (T_max / 1 K)
+      = 20 degC / 1 K / (50 degC / 1 K)
+      = 0.90716
+        Charging over maximum absolute temperature
+  [23] p0 = pa_0 * T_ratio
+      = 51.013 bar × 0.90716
+      = 46.277 bar
+        Absolute pre-charge pressure at the charging temperature
+  [24] p0_min = pa_0 / f_T
+      = 51.013 bar / 1.1413
+      = 44.699 bar
+        Absolute pre-charge pressure at the minimum operating temperature
+  [25] p0_set = p0 - p_atm
+      = 46.277 bar − 1.0132 bar
+      = 45.264 bar
+        Pre-charge to set at the charging temperature (gauge)
+  [26] u_r0 = pa_0 / (r_0 * pa_1)
+      = 51.013 bar / (0.9 × 61.013 bar)
+      = 0.929
+        Pre-charge against the p0/p1 rule
+  [27] u_rp = (pa_2 / p0_min) / r_p
+      = 101.01 bar / 44.699 bar / 4
+      = 0.56497
+        Pressure ratio p2/p0 (p0 at the minimum temperature) against the rule
+
+5. RESULTS
+  V0 = 1.0779 L    Accumulator gas volume required
+  p0 = 46.277 bar    Pre-charge, absolute, at the charging temperature
+  p0_set = 45.264 bar    Pre-charge to set at the charging temperature
+  p0_min = 44.699 bar    Pre-charge, absolute, at the minimum operating temperature
+  f_T = 1.1413    Gas volume scaling T_max/T_min
+  u_r0 = 0.929    Pre-charge rule utilisation (p0/p1)
+  u_rp = 0.56497    Pressure ratio utilisation (p2/p0 at the minimum temperature)
+  pssr = "indication not available — enter the vessel's PS and volume (or a size list)."    PSSR Schedule 1 250 bar·L exception (indication only)
+
+6. CHECKS (governing first)
+  PASS  Pre-charge within the p0/p1 rule: u_r0 = 0.929 vs u_r0 ≤ 1  utilisation 0.929  « accumulator.rules record
+  PASS  Pressure ratio within the p2/p0 rule: u_rp = 0.56497 vs u_rp ≤ 1  utilisation 0.565  « accumulator.rules record
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: r_0, r_p (Pre-charge rules). Enter each as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: fp.accumulator@1.2.0
+  Content hash: 13736352fb1985ad
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 9/9
+  Test run: 2026-10-25 09:44 UTC
+  Application: TempestOS test

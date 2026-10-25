@@ -468,4 +468,34 @@ internal static class CalcPackExamples
     [
         Q("L", 15, "m"), Q("U", 400, "V"), N("cos_phi", 0.8), N("eta", 0.8), C("insulation", "PVC 70 °C"), C("method", "C"), C("device", "MCB type C"),
     ];
+
+    // ---- Actuated linkage: a slider-crank ejector replaced by a hydraulic cylinder, and its accumulator ------------------------------------
+
+    /// <summary>
+    /// A slider-crank ejector: a 40 kg slide on a 100 mm crank and 300 mm rod, in line, at 30 rpm against a 3 kN load that always opposes the motion (an invented duty). The peak slide speed and the peak slide-direction force are
+    /// what a cylinder replacing the crank must reach and carry; this is a kinematic proxy (a cylinder runs at about constant speed, not constant crank speed), which the sheet says.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> LinkM9 { get; } =
+    [
+        C("mode", "Slider-crank"), C("circuit", "Open"), Q("L2", 100, "mm"), Q("L3", 300, "mm"), Q("e_off", 0, "mm"), Q("theta_start", 0, "deg"), Q("theta_range", 360, "deg"), N("steps", 72),
+        Q("n_in", 30, "rpm"), Q("mu_req", 40, "deg"), C("load_dir", "Opposes motion"), Q("m_slider", 40, "kg"), Q("F_load", 3000, "N"),
+    ];
+
+    /// <summary>
+    /// The replacement cylinder: 40/22 at 100 bar, mineral oil of 870 kg/m³, the stroke of the slide (twice the crank radius, 200 mm: typed equal to the slider's stroke, guarded). The extend speed comes from the linkage's peak slide
+    /// speed (the flow is blank) and both loads from its peak slide-direction force, conservatively for both strokes. No pump is entered, so the circuit flow is the cylinder's.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> LinkF1 { get; } =
+    [
+        C("mode", "Standard"), Q("p", 100, "bar"), Q("rho", 870, "kg/m^3"), Q("D", 40, "mm"), Q("d_r", 22, "mm"), Q("stroke", 200, "mm"),
+    ];
+
+    /// <summary>
+    /// An emergency stroke: the accumulator carries the whole stroke volume (linked) from the system pressure (linked) down to 60 bar gauge, above the 26 bar the peak slide force needs on the 40 mm bore. Fast discharge, so n = 1.4;
+    /// 50 bar gauge pre-charge (at 50 °C), a cold shed at 10 °C. These are invented illustrations.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> LinkF2 { get; } =
+    [
+        C("mode", "Emergency stroke"), Q("p_0", 50, "bar"), Q("p_1", 60, "bar"), N("n", 1.4), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
+    ];
 }

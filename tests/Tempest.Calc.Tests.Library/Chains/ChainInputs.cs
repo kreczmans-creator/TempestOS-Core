@@ -91,6 +91,11 @@ internal static class ChainInputs
         return inputs;
     }
 
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> ActuatedLinkage(LibraryTestHost host) => For(host, CalcPackTemplates.ActuatedLinkage, new Dictionary<string, CalcProvenance>
+    {
+        ["m9"] = Spec("SPEC-EJT-02 §2 (ejector duty)"), ["f1"] = Drg("DRG-EJT-210"), ["f2"] = Spec("SPEC-EJT-02 §4 (accumulator)"),
+    });
+
     public static Dictionary<string, IReadOnlyList<CalcInputValue>> WetHeating(LibraryTestHost host)
     {
         var spec = Spec("SPEC-HTG-01 §3");

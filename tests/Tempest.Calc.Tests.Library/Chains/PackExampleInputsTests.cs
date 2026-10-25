@@ -11,10 +11,10 @@ namespace Tempest.Calc.Tests.Library.Chains;
 public sealed class PackExampleInputsTests
 {
     private static LibraryTestHost Host() => new(
-        calculators: [.. ElectricalCalculators.All, .. MechanicalCalculators.All, .. BuildingServicesCalculators.All, .. StructuralCalculators.All],
+        calculators: [.. ElectricalCalculators.All, .. MechanicalCalculators.All, .. BuildingServicesCalculators.All, .. StructuralCalculators.All, .. Tempest.Calc.FluidPower.FluidPowerCalculators.All],
         packTemplates: CalcPackTemplates.All);
 
-    public static TheoryData<string> Templates => ["pack.drive-train", "pack.wet-heating", "pack.cooling", "pack.steel-support"];
+    public static TheoryData<string> Templates => ["pack.drive-train", "pack.wet-heating", "pack.cooling", "pack.steel-support", "pack.actuated-linkage"];
 
     private static CalcPackTemplate Template(string id) => CalcPackTemplates.All.Single(t => t.Id == id);
 
