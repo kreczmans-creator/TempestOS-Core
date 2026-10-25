@@ -307,7 +307,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
         c.Assign("eps_inner", "dD / (D_ring - h)", "%", "Nominal strain at the inner (contact) surface ΔD/(D − h)", DerivedRing);
         c.Assign("eps", "max(K_ann * eps_nom, eps_inner)", "%", "Hoop strain checked: the larger of the nominal strain times the user's strain factor K_ann and the inner-surface strain", DerivedRing);
 
-        if (c.Si("h") / c.Si("D_ring") > 0.1)
+        if (c.Si("h") / c.Si("D_ring") > 0.1 + 1e-12) // tolerance: a ring exactly at 10 % does not warn
             c.Warn("thick-ring", $"h: the wall is {F(c.Si("h") / c.Si("D_ring") * 100)} % of the mean diameter (h/D > 10 %); the thin-ring model of the hoop strain and force is no longer good, so check the ring with a finite-element model or a test.");
         return true;
     }
