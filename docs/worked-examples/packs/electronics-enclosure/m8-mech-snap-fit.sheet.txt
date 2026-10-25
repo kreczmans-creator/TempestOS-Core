@@ -1,6 +1,6 @@
 CALCULATION SHEET — ISSUED
 Project: Controller box 7
-Calc ID: Lid latch    Revision: A
+Calc ID: Cover latches    Revision: A
 Title: Snap-fits: cantilever, annular, torsion
 Author: unknown    Authored: 2026-10-25
 Checker: J. Reviewer    Checked: 2026-10-25
@@ -33,6 +33,8 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   Es | Secant modulus Es at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data) | 1400 | MPa | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 10 … 20000 MPa
   loading | How often the joint is made: selects the one-time or the repeated permissible strain | One-time (assembled once or rarely) |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
   eps_perm_once | Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data) | 0.03 |  | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 0.001 … 0.3
+  n_latch | Number of identical latches that share a holding load (a whole number; blank = the holding force is not worked out) | 6 |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | 1 … 100
+  F_req | Force the latches must hold against, for example the pressure on a cover (blank = no check; needs n_latch; may be linked from E2 F_seal) | 300 | N | link: Enclosure temperature rev A · F_seal | 0 … 100000 N
   T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 56.8771 | degC | link: Enclosure temperature rev A · T_int | -40 … 120 degC
 
 3. ASSUMPTIONS
@@ -107,6 +109,14 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = 4.1481 N × (0.3 + 2.7475) / (1 − 0.3 × 2.7475)
       = 71.925 N
         Separation force W′ = P·(μ + tan α′)/(1 − μ·tan α′)
+  [29] F_hold = n_latch * retention_force    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 6 × 71.925 N
+      = 431.55 N
+        Force the latches hold together: n × the separation force W′ of one (equal sharing assumed)
+  [31] u_hold = F_req / F_hold
+      = 300 N / 431.55 N
+      = 0.69516
+        Utilisation of the latches' holding force
 
 5. RESULTS
   eps = 1.6667 %    Maximum strain
@@ -122,9 +132,12 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   alpha_lock = 73.301 deg    Self-locking return angle
   retention_force = 71.925 N    Separation force
   self_locking = "No"    Self-locking
+  F_hold = 431.55 N    Holding force of the latches
+  u_hold = 0.69516    Holding utilisation
   fillet_advisory = "The strain above is the nominal strain, with no local concentration. A sharp internal corner at the root (or at the end of the bar or ring) concentrates the strain and is the usual place for a snap-fit to break: give the root a generous fillet radius, of the order of the thickness, taper the section away from it, and apply a concentration factor from your own reference if the radius is small."    Root-fillet advisory
 
 6. CHECKS (governing first)
+  PASS  Latches hold the load: F_req ≤ n·W′: u_hold = 0.69516 vs u_hold ≤ 1  utilisation 0.695  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
   PASS  Strain at the critical section against the permissible strain: strain_util = 0.55556 vs strain_util ≤ 1  utilisation 0.556  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
   PASS  Assembly: the entry face does not jam (μ·tan α < 1): μ·tan α = 0.17321 vs < 1  utilisation 0  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
 
@@ -132,9 +145,9 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   WARNING record: Tabulated values not taken from a reference record: eps_perm_once (Material properties); mu (Coefficient of friction); Es (Secant modulus at the design strain). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: mech.snap-fit@1.2.0
-  Content hash: 978d3be9638ee882
+  Template: mech.snap-fit@1.3.0
+  Content hash: e03b7ff55887b4d7
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 10/10
-  Test run: 2026-10-25 09:27 UTC
+  Known-answer cases passed: 11/11
+  Test run: 2026-10-25 09:40 UTC
   Application: TempestOS test

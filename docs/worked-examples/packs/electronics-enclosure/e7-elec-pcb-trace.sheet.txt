@@ -115,5 +115,5 @@ Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with
   Content hash: 9ca8abd73b338300
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 09:27 UTC
+  Test run: 2026-10-25 09:40 UTC
   Application: TempestOS test

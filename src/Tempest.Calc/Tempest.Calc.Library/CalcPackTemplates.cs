@@ -301,33 +301,37 @@ public static class CalcPackTemplates
         ]);
 
     /// <summary>
-    /// Electronics enclosure: PCB power trace (E7) → load budget (E6) → enclosure heat (E2) → snap-fit latch (M8) and lid plate (S9).
+    /// Electronics enclosure: PCB power trace (E7) → load budget (E6) → enclosure heat (E2) → cover latches (M8) and cover plate (S9).
     /// <para>
     /// E7 → E6: the trace's I²R loss (<c>trace_Ploss</c>, W) is the input power of a row of the board's load table (<c>loads</c> row 0, column <c>P</c>, kW), a table-cell link; all of it is released as heat inside the enclosure
-    /// (the row's heat share is 1). E6 → E2: the heat the loads release inside (<c>Phi</c>, kW) is the enclosure's additional load (<c>P_add</c>, W), as in the cooling chain. The supply's own loss is a typed row of the load table (E6 counts it
-    /// only if it is a row); a test guards it against the loads. E2 → M8: the enclosure's internal temperature (<c>T_int</c>) is the snap-fit's temperature of use (<c>T_use</c>). E2 → S9: the enclosure is sealed (<c>T_seal</c>, no breather), so the air warming from the
-    /// sealing temperature to <c>T_int</c> at constant volume puts the pressure difference <c>dp_seal</c> = p0·(T_int/T_seal − 1) (kPa, an upper bound: a breather or a leak reduces it) across the walls, which is the uniform pressure <c>q</c> on the lid plate.
+    /// (the row's heat share is 1). E6 → E2: the heat the loads release inside (<c>Phi</c>, kW) is the enclosure's additional load (<c>P_add</c>, W), as in the cooling chain. The supply's own loss is a TYPED row of the load table (E6 counts it
+    /// only if it is a row); a test guards it against the loads. E2 → M8: the enclosure's internal temperature (<c>T_int</c>) is the latches' temperature of use (<c>T_use</c>). The enclosure is sealed (<c>T_seal</c>) with a
+    /// pressure-compensation breather (<c>dp_relief</c>), so the air warming from the sealing temperature to <c>T_int</c> at constant volume would put p0·(T_int/T_seal − 1) across the walls (an upper bound) and the breather
+    /// limits it: <c>dp_seal</c> = min of the two. E2 → S9: <c>dp_seal</c> is the uniform pressure <c>q</c> on the cover plate. E2 → M8: the force <c>F_seal</c> = <c>dp_seal</c>·<c>A_cover</c> on the cover is the force <c>F_req</c> the
+    /// <c>n_latch</c> latches (typed: six) must hold, each by its separation force W′; M8 checks <c>F_req</c> ≤ n·W′. The cover area is typed in E2 and in the plate's dimensions (a test guards the match).
     /// </para>
     /// <para>
-    /// The snap-fit records the temperature but its secant modulus and permissible strain, and the lid's modulus and limit stress, are TYPED for 60 °C, the enclosure's limit <c>T_max</c>: they do not follow the links, and are valid only while the enclosure stays
+    /// With the breather governing, the linked pressure and force do not change when the trace is revised, so the cover plate and the force on the latches stay current; they go stale when E2 itself, or the breather rating, is revised.
+    /// The snap-fit records the temperature but its secant modulus and permissible strain, and the cover's modulus and limit stress, are TYPED for 60 °C, the enclosure's limit <c>T_max</c>: they do not follow the links, and are valid only while the enclosure stays
     /// at or below that limit, which the enclosure step's own check (natural dissipation holds <c>T_max</c>) guards at run time; if the limit or the temperature moves they must be re-entered from the material's data. The trace step's board ambient is typed (60 °C, also <c>T_max</c>):
     /// the real ambient is the enclosure's internal temperature, downstream of the trace, so linking it back would be a cycle; the same check guards it. The plate step has no temperature input.
     /// </para>
     /// </summary>
     public static CalcPackTemplate ElectronicsEnclosure { get; } = new(
         "pack.electronics-enclosure", "Electronics enclosure",
-        "Follows the loss of a board's power trace into the heat of its load budget, the temperature a sealed enclosure settles at and the pressure difference that temperature puts across it, the temperature the lid latch works at, and the lid plate under that pressure. The trace loss is a row of the load table (a table cell); the enclosure's internal temperature is the latch's temperature of use; the enclosure's sealed-air pressure difference is the lid's pressure. The latch's and lid's material values are typed for 60 °C, the enclosure's limit, and do not follow the links; the trace's board ambient is typed (a link back would be a cycle).",
+        "Follows the loss of a board's power trace into the heat of its load budget, the temperature a sealed enclosure with a pressure-compensation breather settles at, the pressure difference that temperature puts across it (limited by the breather) and the force of that pressure on the front cover, the cover latches that must hold it, and the cover plate under that pressure. The trace loss is a row of the load table (a table cell); the enclosure's internal temperature is the latches' temperature of use; the pressure difference is the cover's pressure and, times the cover area, the force on the latches. The latches' and cover's material values are typed for 60 °C, the enclosure's limit, and do not follow the links; the trace's board ambient, the supply's loss row and the latch count are typed.",
         [
             new CalcPackStep("e7", "elec.pcb-trace", "Power trace", CalcPackExamples.ElxE7),
             new CalcPackStep("e6", "elec.load-budget", "Board load budget", CalcPackExamples.ElxE6),
             new CalcPackStep("e2", "elec.enclosure-heat", "Enclosure temperature", CalcPackExamples.ElxE2),
-            new CalcPackStep("m8", "mech.snap-fit", "Lid latch", CalcPackExamples.ElxM8),
-            new CalcPackStep("s9", "struct.plate-bending", "Lid plate", CalcPackExamples.ElxS9),
+            new CalcPackStep("m8", "mech.snap-fit", "Cover latches", CalcPackExamples.ElxM8),
+            new CalcPackStep("s9", "struct.plate-bending", "Cover plate", CalcPackExamples.ElxS9),
         ],
         [
             new CalcPackBinding("e7", "trace_Ploss", "e6", "loads", Row: 0, Column: "P"),
             new CalcPackBinding("e6", "Phi", "e2", "P_add"),
             new CalcPackBinding("e2", "T_int", "m8", "T_use"),
+            new CalcPackBinding("e2", "F_seal", "m8", "F_req"),
             new CalcPackBinding("e2", "dp_seal", "s9", "q"),
         ]);
 

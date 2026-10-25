@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
-P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive. Sealed enclosure (T_seal entered, no breather): the pressure difference across the walls when the air warms from the sealing temperature to T_int at constant volume, Δp = p_site·|T_int/T_seal − 1| (absolute temperatures), a rise when T_int > T_seal, a suction when below.
+P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive. Sealed enclosure (T_seal entered, no breather): the pressure difference across the walls when the air warms from the sealing temperature to T_int at constant volume, Δp = p_site·|T_int/T_seal − 1| (absolute temperatures), a rise when T_int > T_seal, a suction when below. A pressure-compensation element (breather or relief) limits it: dp_seal = min(that difference, dp_relief), the cracking pressure. The force of dp_seal on a cover of area A_cover is F_seal = dp_seal·A_cover.
   Ref: IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
   Ref: Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
   Ref: BS EN 61439-1 10.10 — Verification of temperature rise
@@ -41,7 +41,7 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
 3. ASSUMPTIONS
   A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing. (IEC TR 60890-style effective-surface approach; h is a reference value the user may edit.)
   A2. Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise; natural dissipation is neglected for the airflow (conservative). (Manufacturer fan-sizing practice.)
-  A3. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed: the pressure difference follows from the ideal-gas relation at constant volume, from the sealing temperature to the internal temperature with natural dissipation T_int (the temperature without a cooling unit); a breather, a seal that leaks or a flexing wall reduces it, so it is an upper bound; the site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
+  A3. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed: the pressure difference follows from the ideal-gas relation at constant volume, from the sealing temperature to the internal temperature with natural dissipation T_int (the temperature without a cooling unit); a breather, a seal that leaks or a flexing wall reduces it, so it is an upper bound (a pressure-compensation element is modelled only as a cap at its cracking pressure, with no flow resistance); the site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
   A4. The fan curve is linear between the entered points; the system resistance scales with airflow squared. (Duty-point idealisation.)
   A5. A_sun (Sunlit area) is taken as 0.48 m^2. (One 600 × 800 face in the sun.)
   A6. alpha_sun (Surface absorptivity) is taken as 0.5. (Light-grey paint.)
@@ -135,8 +135,8 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   WARNING cooling-unit: T_max: natural dissipation holds 44.55 W of 492 W; ventilate or fit a 447.4 W cooling unit.
 
 8. VERIFICATION
-  Template: elec.enclosure-heat@1.3.0
+  Template: elec.enclosure-heat@1.4.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 3/3
+  Known-answer cases passed: 4/4
   Test run: —

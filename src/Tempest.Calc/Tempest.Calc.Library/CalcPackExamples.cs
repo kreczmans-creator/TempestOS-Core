@@ -526,19 +526,21 @@ internal static class CalcPackExamples
         CalcRow.Of(Txt("name", name), Txt("supply", "DC"), ("P", new CalcCell(kw, "kW")), Num("cosphi", 1), Num("eta", eta), Num("heat", heat), Num("d", duty), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)));
 
     /// <summary>
-    /// A 500 × 600 × 200 mm wall-mounted enclosure (back against the wall) in a 35 °C room, limit 60 °C, SEALED with no breather when it was closed at 25 °C (so it sees a pressure difference as it warms: its lid
-    /// takes it). The board's heat arrives by link as the additional load; the 4 W of terminals and wiring is the enclosure's own. It dissipates by itself (no fan, no cooling unit).
+    /// A 500 × 600 × 200 mm wall-mounted enclosure (back against the wall) in a 35 °C room, limit 60 °C, SEALED when it was closed at 25 °C but fitted with a pressure-compensation breather that cracks at 1 kPa
+    /// (an INVENTED breather rating, not a maker's data): the air warming would put 10.83 kPa across the walls, the breather limits it to 1 kPa, and that acts on the 500 × 600 front cover (0.3 m², typed; a test guards it
+    /// against the cover plate's dimensions). The board's heat arrives by link as the additional load; the 4 W of terminals and wiring is the enclosure's own. It dissipates by itself (no fan, no cooling unit).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxE2 { get; } =
     [
         Table("loads", CalcRow.Of(Txt("name", "Terminals and wiring"), ("P", new CalcCell(4, "W")), Num("qty", 1), Num("duty", 1))),
         Q("W", 0.5, "m"), Q("H", 0.6, "m"), Q("D", 0.2, "m"),
         N("f_top", 1), N("f_front", 1), N("f_rear", 0), N("f_left", 1), N("f_right", 1), N("f_bottom", 0),
-        Q("T_amb", 35, "degC"), Q("T_max", 60, "degC"), Q("T_seal", 25, "degC"),
+        Q("T_amb", 35, "degC"), Q("T_max", 60, "degC"), Q("T_seal", 25, "degC"), Q("dp_relief", 1, "kPa"), Q("A_cover", 0.3, "m^2"),
     ];
 
     /// <summary>
-    /// The lid latch: a cantilever snap hook 12 mm long, 1.6 mm thick and 5 mm wide, deflected 1 mm. The secant modulus (1400 MPa) and the permissible strain (3 %) of the plastic are TYPED values
+    /// The cover latch: a cantilever snap hook 12 mm long, 1.6 mm thick and 5 mm wide, deflected 1 mm; SIX identical latches around the cover (a typed count, an invented illustration) share the load on it, which arrives by link
+    /// (a 1 N placeholder here). The secant modulus (1400 MPa) and the permissible strain (3 %) of the plastic are TYPED values
     /// for 60 °C, the enclosure's limit (<c>T_max</c>), an INVENTED illustration and not a maker's data: the temperature of use arrives by link, but the modulus and the permissible strain do not follow
     /// it, so they stay valid only while the enclosure stays at or below 60 °C, which the enclosure step's own check (natural dissipation holds <c>T_max</c>) guards at run time. The friction coefficient is a record, typed.
     /// </summary>
@@ -546,16 +548,17 @@ internal static class CalcPackExamples
     [
         C("mode", "Cantilever, constant section"), Q("l", 12, "mm"), Q("h", 1.6, "mm"), Q("b", 5, "mm"), Q("y", 1, "mm"),
         Q("alpha", 30, "deg"), Q("alpha_r", 70, "deg"), N("mu", 0.3), C("Es_source", "Typed secant modulus"), Q("Es", 1400, "MPa"),
-        C("loading", "One-time (assembled once or rarely)"), N("eps_perm_once", 0.03),
+        C("loading", "One-time (assembled once or rarely)"), N("eps_perm_once", 0.03), N("n_latch", 6),
     ];
 
     /// <summary>
-    /// The lid: a 500 × 200 × 4 mm aluminium plate (the enclosure's top face), simply supported all round. Its pressure is the sealed enclosure's pressure difference, which arrives by link (a 1 kPa placeholder here).
-    /// The modulus (69 GPa), Poisson's ratio, density and limit stress (120 MPa) are generic aluminium-alloy values, TYPED for 60 °C, the enclosure's limit, and indicative only (not a maker's data).
+    /// The front cover, the enclosure's largest face and so the panel that governs: a 600 × 500 × 4 mm aluminium plate (600 high, 500 wide), simply supported all round. Its pressure is the sealed enclosure's pressure difference limited by the
+    /// breather (1 kPa), which arrives by link (a 1 kPa placeholder here). 4 mm passes; 3 mm would deflect (4/3)³ times as much, 2.03 mm against the 2 mm limit. The modulus (69 GPa), Poisson's ratio, density and limit stress (120 MPa) are
+    /// generic aluminium-alloy values, TYPED for 60 °C, the enclosure's limit, and indicative only (not a maker's data).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxS9 { get; } =
     [
-        C("shape", "rectangular"), C("support", "simply supported"), Q("a", 500, "mm"), Q("b", 200, "mm"), Q("t", 4, "mm"),
+        C("shape", "rectangular"), C("support", "simply supported"), Q("a", 600, "mm"), Q("b", 500, "mm"), Q("t", 4, "mm"),
         C("load_type", "uniform"), C("load_basis", "pressure q"), Q("q", 1, "kPa"),
         Q("E", 69, "GPa"), N("nu", 0.33), Q("rho", 2700, "kg/m^3"), Q("f_y", 120, "MPa"), N("gamma_M0", 1),
     ];

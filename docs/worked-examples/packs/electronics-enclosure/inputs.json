@@ -341,7 +341,7 @@
               "Unit": "kW",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:337f3c00476f429588ff2e7b0ab6f97a#trace_Ploss",
+                "Reference": "calc:9b586c9cf2354a40a624d50df932e7e6#trace_Ploss",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -559,6 +559,18 @@
   ],
   "e2": [
     {
+      "Symbol": "A_cover",
+      "Number": 0.3,
+      "Unit": "m^2",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
+    {
       "Symbol": "A_sun",
       "Number": 0,
       "Unit": "m^2",
@@ -610,7 +622,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:385a9a39452049cf88773fb7caf559b9#Phi",
+        "Reference": "calc:8200190c230a4bf1bcb91cb511141519#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -695,6 +707,18 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "0"
+    },
+    {
+      "Symbol": "dp_relief",
+      "Number": 1,
+      "Unit": "kPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
     },
     {
       "Symbol": "f_bottom",
@@ -848,12 +872,24 @@
       "ValueText": "Typed secant modulus"
     },
     {
+      "Symbol": "F_req",
+      "Number": 300,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a2a2c0db293049f8bc9a66a7001315d2#F_seal",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "300"
+    },
+    {
       "Symbol": "T_use",
       "Number": 56.877083837645046,
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:0e599c2e98c34e57ae0d64036099e8a9#T_int",
+        "Reference": "calc:a2a2c0db293049f8bc9a66a7001315d2#T_int",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1007,6 +1043,16 @@
       "ValueText": "0.3"
     },
     {
+      "Symbol": "n_latch",
+      "Number": 6,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
+    },
+    {
       "Symbol": "r_bar",
       "Number": 1.5,
       "Unit": "mm",
@@ -1054,6 +1100,17 @@
     },
     {
       "Symbol": "a",
+      "Number": 600,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid plate geometry)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "600"
+    },
+    {
+      "Symbol": "b",
       "Number": 500,
       "Unit": "mm",
       "Provenance": {
@@ -1062,17 +1119,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "500"
-    },
-    {
-      "Symbol": "b",
-      "Number": 200,
-      "Unit": "mm",
-      "Provenance": {
-        "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A77 (lid plate geometry)",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "200"
     },
     {
       "Symbol": "defl_ratio",
@@ -1137,15 +1183,15 @@
     },
     {
       "Symbol": "q",
-      "Number": 10.833290356697589,
+      "Number": 1,
       "Unit": "kPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:0e599c2e98c34e57ae0d64036099e8a9#dp_seal",
+        "Reference": "calc:a2a2c0db293049f8bc9a66a7001315d2#dp_seal",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "10.8333"
+      "ValueText": "1"
     },
     {
       "Symbol": "r0",

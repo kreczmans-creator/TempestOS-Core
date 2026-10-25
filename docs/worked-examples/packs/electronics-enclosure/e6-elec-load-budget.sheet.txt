@@ -167,5 +167,5 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: dc7b6b8e4454e8eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 09:27 UTC
+  Test run: 2026-10-25 09:40 UTC
   Application: TempestOS test
