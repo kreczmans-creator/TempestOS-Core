@@ -543,6 +543,7 @@ internal static class CalcPackExamples
     /// (a 1 N placeholder here). The secant modulus (1400 MPa) and the permissible strain (3 %) of the plastic are TYPED values
     /// for 60 °C, the enclosure's limit (<c>T_max</c>), an INVENTED illustration and not a maker's data: the temperature of use arrives by link, but the modulus and the permissible strain do not follow
     /// it, so they stay valid only while the enclosure stays at or below 60 °C, which the enclosure step's own check (natural dissipation holds <c>T_max</c>) guards at run time. The friction coefficient is a record, typed.
+    /// IDEALISATION: the load is shared equally (F_req/n each). The cover's edge reactions peak mid-edge, so the latches nearest mid-edge carry more than that; equal sharing is an idealisation, so place the latches at the mid-edges or apply a load-share factor to F_req.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxM8 { get; } =
     [
@@ -555,6 +556,7 @@ internal static class CalcPackExamples
     /// The front cover, the enclosure's largest face and so the panel that governs: a 600 × 500 × 4 mm aluminium plate (600 high, 500 wide), simply supported all round. Its pressure is the sealed enclosure's pressure difference limited by the
     /// breather (1 kPa), which arrives by link (a 1 kPa placeholder here). 4 mm passes; 3 mm would deflect (4/3)³ times as much, 2.03 mm against the 2 mm limit. The modulus (69 GPa), Poisson's ratio, density and limit stress (120 MPa) are
     /// generic aluminium-alloy values, TYPED for 60 °C, the enclosure's limit, and indicative only (not a maker's data).
+    /// IDEALISATION: the plate is simply supported all round, whereas the real cover is held at six latches and a gasket; its edge reactions peak at mid-edge, so the latches nearest mid-edge carry more than F_req/n (see the latch step).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxS9 { get; } =
     [
