@@ -639,9 +639,15 @@ public sealed partial class CalcInstanceService
             }
         }
 
+        // A revision starts unattested (review N6): the earlier attestation's inputs, with their "Attested by X on date" source, are not carried, so
+        // the draft's sheet does not read as attested. A fresh AttestAsync writes them again.
+        var carried = entry.Template.RequiresAttestation
+            ? (inputsOverride ?? instance.Inputs).Where(i => !CalcAttestation.Symbols.Contains(i.Symbol, StringComparer.Ordinal)).ToList()
+            : inputsOverride ?? instance.Inputs;
+
         var next = new CalcInstance(
             id, entry.Reference, entry.ContentHash, instance.ProjectId, instance.Name, nextRevision,
-            inputsOverride ?? instance.Inputs, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, repin ? instance.CreatedBy : author, now, now, PredecessorId: instance.Id,
+            carried, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, repin ? instance.CreatedBy : author, now, now, PredecessorId: instance.Id,
             EditedBy: repin ? WithAuthors(instance.EditedBy, instance.CreatedBy) : WithAuthors(instance.EditedBy, instance.CreatedBy, author),
             RepinnedBy: repin ? WithAuthors(instance.RepinnedBy, author) : instance.RepinnedBy);
         next = await RunAndSnapshotAsync(entry, next, cancellationToken).ConfigureAwait(false);

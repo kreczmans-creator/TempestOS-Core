@@ -822,6 +822,17 @@ public sealed class GovernanceTests
         Assert.Null(revised.Instance!.SecondCheck);
         Assert.Null(revised.Instance.CheckerPrincipal);
         Assert.Null(revised.Instance.Attestation);
+
+        // Nor does the new draft carry the earlier attestation's text, so its sheet does not read as attested (review N6).
+        Assert.DoesNotContain(revised.Instance.Inputs, i => CalcAttestation.Symbols.Contains(i.Symbol));
+        Assert.DoesNotContain("Attested by", (await host.Service.RunAsync(revised.Instance.Id))!.SheetText, StringComparison.Ordinal);
+        Assert.Contains(instance.Inputs, i => i.Symbol == CalcAttestation.NameSymbol); // the issued revision keeps its own
+
+        // A fresh attestation writes them again, and the revision is attested only then.
+        host.Principal = Competent;
+        var again = await host.Service.AttestAsync(revised.Instance.Id, CompetentName, Qualification, Statement);
+        Assert.True(again.Succeeded, again.Reason);
+        Assert.Contains("Attested by", (await host.Service.RunAsync(revised.Instance.Id))!.SheetText, StringComparison.Ordinal);
     }
 
     // ------------------------------------------------------------------
