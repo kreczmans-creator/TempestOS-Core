@@ -170,14 +170,14 @@
     },
     {
       "Symbol": "n_L",
-      "Number": 120,
+      "Number": 118,
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Specification",
         "Reference": "SPEC-CNV-07 \u00A73 (conveyor duty)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "120"
+      "ValueText": "118"
     },
     {
       "Symbol": "n_max",
@@ -339,7 +339,7 @@
     },
     {
       "Symbol": "T_pk",
-      "Number": 0.15937781334180623,
+      "Number": 0.1592478322422498,
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
@@ -347,7 +347,7 @@
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.159378"
+      "ValueText": "0.159248"
     },
     {
       "Symbol": "finish",
@@ -414,7 +414,7 @@
     },
     {
       "Symbol": "n",
-      "Number": 1500.0000000000002,
+      "Number": 1474.9999999999998,
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
@@ -422,7 +422,7 @@
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1500"
+      "ValueText": "1475"
     },
     {
       "Symbol": "n_target",
@@ -779,7 +779,7 @@
     },
     {
       "Symbol": "n",
-      "Number": 1500.0000000000002,
+      "Number": 1474.9999999999998,
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
@@ -787,7 +787,7 @@
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1500"
+      "ValueText": "1475"
     },
     {
       "Symbol": "s_0_req",
@@ -976,7 +976,7 @@
     },
     {
       "Symbol": "T_z",
-      "Number": 0.15937781334180623,
+      "Number": 0.1592478322422498,
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
@@ -984,7 +984,7 @@
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.159378"
+      "ValueText": "0.159248"
     },
     {
       "Symbol": "V_R",

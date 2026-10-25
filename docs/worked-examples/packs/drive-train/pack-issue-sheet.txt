@@ -71,7 +71,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   J_L | Load inertia at the output (rotary mechanisms) | 4 | kg*m^2 | spec: SPEC-CNV-07 §3 (conveyor duty) | 0 … 10000 kg*m^2
   T_L | Constant load torque at the output (rotary) | 1800 | N*m | spec: SPEC-CNV-07 §3 (conveyor duty) | 0 … 100000 N*m
   duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | continuous |  | spec: SPEC-CNV-07 §3 (conveyor duty) | any
-  n_L | Load speed at the output (continuous duty) | 120 | rpm | spec: SPEC-CNV-07 §3 (conveyor duty) | 1 … 100000 rpm
+  n_L | Load speed at the output (continuous duty) | 118 | rpm | spec: SPEC-CNV-07 §3 (conveyor duty) | 1 … 100000 rpm
   t_start | Run-up time to full speed (continuous duty) | 3 | s | spec: SPEC-CNV-07 §3 (conveyor duty) | 0.1 … 600 s
   profile | Motion profile | trapezoidal |  | assumption: Sheet default value; no project figure given. | any
   s | Move distance (linear: m; rotary: output revolutions) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.0001 … 10000
@@ -118,64 +118,64 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
       = 0.026947 kg·m²
         Load inertia reflected to the motor shaft
   [22] omega_pk = n_L * i
-      = 120 rpm × 12.5
-      = 157.08 rad/s
+      = 118 rpm × 12.5
+      = 154.46 rad/s
         Motor speed, n_L · i
   [23] J_total = J_motor + J_mech + J_refl
       = 0.12 kg·m² + 0.002 kg·m² + 0.026947 kg·m²
       = 0.14895 kg·m²
         Total inertia at the motor shaft
   [24] alpha_pk = omega_pk / t_start
-      = 157.08 rad/s / 3 s
-      = 52.36 rad/s²
+      = 154.46 rad/s / 3 s
+      = 51.487 rad/s²
         Run-up angular acceleration (to speed in t_start)
   [25] T_acc = J_total * alpha_pk
-      = 0.14895 kg·m² × 52.36 rad/s²
-      = 7.7989 N·m
+      = 0.14895 kg·m² × 51.487 rad/s²
+      = 7.6689 N·m
         Run-up (acceleration) torque
   [26] T_pk = T_acc + T_load
-      = 7.7989 N·m + 151.58 N·m
-      = 159.38 N·m
+      = 7.6689 N·m + 151.58 N·m
+      = 159.25 N·m
         Peak torque: run-up carrying the full load (conservative)
   [27] T_rms = T_load
       = 151.58 N·m
       = 151.58 N·m
         RMS torque: continuous running at the load torque
   [28] n_pk = omega_pk
-      = 157.08 rad/s
-      = 1500 rpm
+      = 154.46 rad/s
+      = 1475 rpm
         Motor speed
   [29] P_cont = T_load * omega_pk
-      = 151.58 N·m × 157.08 rad/s
-      = 23810 W
+      = 151.58 N·m × 154.46 rad/s
+      = 23413 W
         Continuous shaft power at the motor
   [31] P_rated = T_rated * n_rated
       = 200 N·m × 1480 rpm
       = 30997 W
         Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed
   [32] P_pk = T_pk * omega_pk
-      = 159.38 N·m × 157.08 rad/s
-      = 25.035 kW
+      = 159.25 N·m × 154.46 rad/s
+      = 24.598 kW
         Peak mechanical power (end of the run-up)
   [33] P_rms = P_cont
-      = 23810 W
-      = 23.81 kW
+      = 23413 W
+      = 23.413 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
   [34] J_ratio = (J_refl + J_mech) / J_motor
       = (0.026947 kg·m² + 0.002 kg·m²) / 0.12 kg·m²
       = 0.24123
         Inertia ratio (load : motor)
   [35] u_peak = SF * T_pk / T_peak
-      = 1.25 × 159.38 N·m / 400 N·m
-      = 0.49806
+      = 1.25 × 159.25 N·m / 400 N·m
+      = 0.49765
         Peak torque utilisation with safety margin
   [36] u_rms = SF * T_rms / T_rated
       = 1.25 × 151.58 N·m / 200 N·m
       = 0.94737
         Continuous torque utilisation with safety margin
   [37] u_speed = n_pk / n_max
-      = 1500 rpm / 3000 rpm
-      = 0.5
+      = 1475 rpm / 3000 rpm
+      = 0.49167
         Speed utilisation
   [38] duty = T_rms / T_rated
       = 151.58 N·m / 200 N·m
@@ -187,30 +187,29 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   T_load = 151.58 N·m    Load torque at motor
   J_refl = 0.026947 kg·m²    Reflected load inertia
   J_total = 0.14895 kg·m²    Total inertia
-  alpha_pk = 52.36 rad/s²    Run-up angular acceleration
-  T_acc = 7.7989 N·m    Run-up torque
-  T_pk = 159.38 N·m    Peak torque
+  alpha_pk = 51.487 rad/s²    Run-up angular acceleration
+  T_acc = 7.6689 N·m    Run-up torque
+  T_pk = 159.25 N·m    Peak torque
   T_rms = 151.58 N·m    RMS torque
-  n_pk = 1500 rpm    Motor speed
-  P_cont = 23810 W    Continuous power
-  P_pk = 25.035 kW    Peak power
-  P_rms = 23.81 kW    RMS power (continuous equivalent)
+  n_pk = 1475 rpm    Motor speed
+  P_cont = 23413 W    Continuous power
+  P_pk = 24.598 kW    Peak power
+  P_rms = 23.413 kW    RMS power (continuous equivalent)
   J_ratio = 0.24123    Inertia ratio
   duty = 0.75789    Thermal duty
-  u_peak = 0.49806    Peak utilisation
+  u_peak = 0.49765    Peak utilisation
   u_rms = 0.94737    Continuous utilisation
-  u_speed = 0.5    Speed utilisation
+  u_speed = 0.49167    Speed utilisation
   P_rated = 30997 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
 
 6. CHECKS (governing first)
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.94737 vs u_rms ≤ 1  utilisation 0.947
-  PASS  Speed n_pk ≤ n_max: u_speed = 0.5 vs u_speed ≤ 1  utilisation 0.5
-  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.49806 vs u_peak ≤ 1  utilisation 0.498
+  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.49765 vs u_peak ≤ 1  utilisation 0.498
+  PASS  Speed n_pk ≤ n_max: u_speed = 0.49167 vs u_speed ≤ 1  utilisation 0.492
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.
   WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
-  WARNING speed-above-rated: n_L: the motor speed n_pk = 1500 rpm is above the candidate motor's rated speed 1480 rpm; its rated torque and power hold at the nameplate speed, so check the motor's torque and power at this speed (field weakening or a different ratio i).
 
 8. VERIFICATION
   Template: elec.motor-sizing@1.4.0
@@ -246,10 +245,10 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   loads | Radial loads and masses | 1 row(s) |  | drawing: DRG-CNV-410 rev B | any
   loads[1] |  | x = 150 mm; F_y = -0.92 kN; F_z = 2.53 kN; m = 3 kg |  |  | 
   T | Torque transmitted | 0.151579 | kN*m | link: Motor sizing rev A · T_rms | 0 … 50 kN*m
-  T_pk | Peak torque for the yield check (blank: the torque T) | 0.159378 | kN*m | link: Motor sizing rev A · T_pk | 0 … 50 kN*m
+  T_pk | Peak torque for the yield check (blank: the torque T) | 0.159248 | kN*m | link: Motor sizing rev A · T_pk | 0 … 50 kN*m
   x_T1 | Torque enters at | 0 | mm | drawing: DRG-CNV-410 rev B | 0 … 3000 mm
   x_T2 | Torque leaves at | 150 | mm | drawing: DRG-CNV-410 rev B | 0 … 3000 mm
-  n | Operating speed | 1500 | rpm | link: Motor sizing rev A · n_pk | 0 … 30000 rpm
+  n | Operating speed | 1475 | rpm | link: Motor sizing rev A · n_pk | 0 … 30000 rpm
   sections | Sections to check | 2 row(s) |  | drawing: DRG-CNV-410 rev B | any
   sections[1] |  | x = 50 mm; K_t = 1.7; K_ts = 1.5; q = 0.85; q_s = 0.9 |  |  | 
   sections[2] |  | x = 150 mm; K_t = 1.7; K_ts = 1.5; q = 0.85; q_s = 0.9 |  |  | 
@@ -324,11 +323,11 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
       = 425 MPa
         Rotating-beam endurance limit
   [30] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
-      = x = 50 mm, d = 35 mm, k_b = 0.84763, S_e = 261.11 MPa, K_f = 1.595, K_fs = 1.45, M = 33.651 N·m, T = 151.58 N·m, σ_a = 12.751 MPa, τ_m = 26.108 MPa, T_pk = 159.38 N·m, τ_pk = 27.451 MPa, n_y = 13.204
+      = x = 50 mm, d = 35 mm, k_b = 0.84763, S_e = 261.11 MPa, K_f = 1.595, K_fs = 1.45, M = 33.651 N·m, T = 151.58 N·m, σ_a = 12.751 MPa, τ_m = 26.108 MPa, T_pk = 159.25 N·m, τ_pk = 27.429 MPa, n_y = 13.214
       = 9.8005
         Section at 50 mm: fatigue safety factor (DE-Goodman)
   [31] X2 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
-      = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 254.18 MPa, K_f = 1.595, K_fs = 1.45, M = 168.26 N·m, T = 151.58 N·m, σ_a = 29.998 MPa, τ_m = 12.284 MPa, T_pk = 159.38 N·m, τ_pk = 12.916 MPa, n_y = 17.37
+      = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 254.18 MPa, K_f = 1.595, K_fs = 1.45, M = 168.26 N·m, T = 151.58 N·m, σ_a = 29.998 MPa, τ_m = 12.284 MPa, T_pk = 159.25 N·m, τ_pk = 12.905 MPa, n_y = 17.375
       = 6.9906
         Section at 150 mm: fatigue safety factor (DE-Goodman)
   [32] S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′ (governing section)
@@ -341,7 +340,7 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
         Lowest fatigue safety factor
   [34] n_y_min = min over sections S_y/σ′_max
       = 2 section(s)
-      = 13.204
+      = 13.214
         Lowest yield safety factor
   [35] n_c = √(g·Σm·y/Σm·y²) (Rayleigh)    « Shigley 10th ed. §7-6
       = Σm = 6.2522 kg over 25 nodes
@@ -352,16 +351,16 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
       = 49494 rpm
         First critical speed, Dunkerley lower bound
   [37] r_c = n_c,D/n
-      = 49494 / 1500
-      = 32.996
+      = 49494 / 1475
+      = 33.555
         Critical-speed ratio (Dunkerley lower bound over operating speed)
   [38] u_f = n_target/n_f,min
       = 1.5 / 6.9906
       = 0.21457
         Fatigue utilisation
   [39] u_y = n_target/n_y,min
-      = 1.5 / 13.204
-      = 0.1136
+      = 1.5 / 13.214
+      = 0.11351
         Yield utilisation
   [40] u_slope = max(θ_A, θ_B)/θ_max
       = 0.00026987 / 0.001
@@ -383,16 +382,16 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   y_load = 0.021323 mm    Deflection at the loads
   S_e = 254.18 MPa    Endurance limit
   n_f_min = 6.9906    Lowest fatigue safety factor
-  n_y_min = 13.204    Lowest yield safety factor
+  n_y_min = 13.214    Lowest yield safety factor
   n_c = 51038 rpm    First critical speed (Rayleigh)
   n_c_D = 49494 rpm    Dunkerley lower bound
-  r_c = 32.996    Critical-speed ratio
+  r_c = 33.555    Critical-speed ratio
 
 6. CHECKS (governing first)
   PASS  Slope at the bearings against limit: u_slope = 0.26987 vs u_slope ≤ 1  utilisation 0.27
   PASS  Fatigue safety factor against target (DE-Goodman): u_f = 0.21457 vs u_f ≤ 1  utilisation 0.215  « Shigley 10th ed. §7-4
   PASS  Deflection at the loads against limit: u_defl = 0.16403 vs u_defl ≤ 1  utilisation 0.164
-  PASS  Yield safety factor against target: u_y = 0.1136 vs u_y ≤ 1  utilisation 0.114
+  PASS  Yield safety factor against target: u_y = 0.11351 vs u_y ≤ 1  utilisation 0.114
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.
@@ -427,7 +426,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   type | Bearing type | ball (p = 3) |  | spec: SPEC-CNV-07 §6 (bearing schedule) | any
   F_r | Radial load | 1.34604 | kN | link: Shaft rev A · R_A | 0 … 2000 kN
   F_a | Axial load | 0 | kN | assumption: Sheet default value; no project figure given. | 0 … 2000 kN
-  n | Speed | 1500 | rpm | link: Motor sizing rev A · n_pk | 1 … 50000 rpm
+  n | Speed | 1475 | rpm | link: Motor sizing rev A · n_pk | 1 … 50000 rpm
   C | Basic dynamic load rating | 25.5 | kN | spec: SPEC-CNV-07 §6 (bearing schedule) | 0.1 … 10000 kN
   C_0 | Basic static load rating | 15.3 | kN | spec: SPEC-CNV-07 §6 (bearing schedule) | 0.1 … 10000 kN
   e_lim | Load ratio limit e | 0.3 |  | assumption: Sheet default value; no project figure given. | 0 … 5
@@ -474,8 +473,8 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
       = 6799
         Basic rating life, million revolutions
   [22] L_10h = L_10 * 1000000 * 2 * pi / n
-      = 6799 × 1000000 × 2 × π / 1500 rpm
-      = 75545 h
+      = 6799 × 1000000 × 2 × π / 1475 rpm
+      = 76825 h
         Basic rating life in hours
   [23] a_1 = 0.95 * (ln(1 / R) / ln(1 / 0.9))^(2 / 3) + 0.05    « ISO 281:2007 cl. 9
       = 0.95 × (ln(1 / 90 %) / ln(1 / 0.9))^(2 / 3) + 0.05
@@ -486,16 +485,16 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
       = 6799
         Modified rating life, million revolutions
   [25] L_nmh = a_1 * a_iso * L_10h
-      = 1 × 1 × 75545 h
-      = 75545 h
+      = 1 × 1 × 76825 h
+      = 76825 h
         Modified rating life in hours
   [26] s_0 = C_0 / P_0    « ISO 76:2006
       = 15.3 kN / 1.346 kN
       = 11.367
         Static safety factor
   [27] u_life = L_req / L_nmh
-      = 20000 h / 75545 h
-      = 0.26474
+      = 20000 h / 76825 h
+      = 0.26033
         Life utilisation (required / modified life)
   [28] u_s0 = s_0_req / s_0
       = 1 / 11.367
@@ -505,17 +504,17 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
 5. RESULTS
   P = 1.346 kN    Equivalent dynamic load
   L_10 = 6799    Basic rating life (Mrev)
-  L_10h = 75545 h    Basic rating life
+  L_10h = 76825 h    Basic rating life
   a_1 = 1    Reliability factor
   L_nm = 6799    Modified rating life (Mrev)
-  L_nmh = 75545 h    Modified rating life
+  L_nmh = 76825 h    Modified rating life
   P_0 = 1.346 kN    Equivalent static load
   s_0 = 11.367    Static safety factor
-  u_life = 0.26474    Life utilisation
+  u_life = 0.26033    Life utilisation
   u_s0 = 0.087977    Static utilisation
 
 6. CHECKS (governing first)
-  PASS  Modified rating life against required life: u_life = 0.26474 vs u_life ≤ 1  utilisation 0.265  « ISO 281:2007 cl. 9
+  PASS  Modified rating life against required life: u_life = 0.26033 vs u_life ≤ 1  utilisation 0.26  « ISO 281:2007 cl. 9
   PASS  Static safety factor against required: u_s0 = 0.087977 vs u_s0 ≤ 1  utilisation 0.088  « ISO 76:2006
 
 7. APPLICABILITY
@@ -693,7 +692,7 @@ Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) �
   F_y | In-plane force, y | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
   e_x | Point of application, x | 0 | mm | drawing: DRG-CNV-412 rev B | -100000 … 100000 mm
   e_y | Point of application, y | 0 | mm | drawing: DRG-CNV-412 rev B | -100000 … 100000 mm
-  T_z | Additional in-plane torque about the centroid | 0.159378 | kN*m | link: Motor sizing rev A · T_pk | -1000000 … 1000000 kN*m
+  T_z | Additional in-plane torque about the centroid | 0.159248 | kN*m | link: Motor sizing rev A · T_pk | -1000000 … 1000000 kN*m
   N | Axial (out-of-plane) load, tension positive | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
   M_x | Out-of-plane moment about x (tension on +y side) | 0 | kN*m | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN*m
   M_y | Out-of-plane moment about y (tension on +x side) | 0 | kN*m | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN*m
@@ -719,71 +718,71 @@ Centroid x_c = Σ A x / Σ A. Torsion about the centroid T = F_y (e_x − x_c) �
       = 0 mm
         Centroid y
   [14] T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z
-      = 0 × 0 − 0 × 0 + 0.15938
-      = 0.15938 kN·m
+      = 0 × 0 − 0 × 0 + 0.15925
+      = 0.15925 kN·m
         In-plane torque about the centroid
   [15] J = Σ A r²
       = about the centroid
       = 234240 mm⁴
         Polar second moment of the bolt areas
   [16] b1 = bolt 1 at (40, 0) mm
-      = v = (0, 0.99611) kN, t = 0 kN
-      = 0.071151
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0712
+      = v = (0, 0.9953) kN, t = 0 kN
+      = 0.071093
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0711
   [17] b2 = bolt 2 at (0, 40) mm
-      = v = (-0.99611, 0) kN, t = 0 kN
-      = 0.071151
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0712
+      = v = (-0.9953, 0) kN, t = 0 kN
+      = 0.071093
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0711
   [18] b3 = bolt 3 at (-40, 0) mm
-      = v = (0, -0.99611) kN, t = 0 kN
-      = 0.071151
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0712
+      = v = (0, -0.9953) kN, t = 0 kN
+      = 0.071093
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0711
   [19] b4 = bolt 4 at (0, -40) mm
-      = v = (0.99611, 0) kN, t = 0 kN
-      = 0.071151
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0712
+      = v = (0.9953, 0) kN, t = 0 kN
+      = 0.071093
+        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0711
   [20] v_max = governing bolt shear
       = bolt 1
-      = 0.99611 kN
+      = 0.9953 kN
         Maximum bolt shear
   [21] t_max = governing bolt tension (with prying)
       = bolt 1
       = 0 kN
         Maximum bolt tension
   [22] u_max = √((v/V_R)² + (t/T_R)²)
-      = √((0.99611/14)² + (0/21)²)
-      = 0.071151
+      = √((0.9953/14)² + (0/21)²)
+      = 0.071093
         Governing interaction utilisation
   [23] governing = governing bolt
       = bolt 1
       = "bolt 1"
         The bolt with the highest utilisation
   [24] u_v = v_max / V_R
-      = 0.99611 kN / 14 kN
-      = 0.071151
+      = 0.9953 kN / 14 kN
+      = 0.071093
         Shear utilisation of the governing bolt
   [25] u_t = t_max / T_R
       = 0 kN / 21 kN
       = 0
         Tension utilisation of the governing bolt
   [26] u_lin = v/V_R + t/(1.4 T_R)
-      = 0.99611/14 + 0/(1.4 × 21)
-      = 0.071151
+      = 0.9953/14 + 0/(1.4 × 21)
+      = 0.071093
         Linear shear–tension interaction (governing bolt)
 
 5. RESULTS
-  T = 0.15938 kN·m    Torque about the centroid
+  T = 0.15925 kN·m    Torque about the centroid
   J = 234240 mm⁴    Polar second moment of bolt areas
-  v_max = 0.99611 kN    Maximum bolt shear
+  v_max = 0.9953 kN    Maximum bolt shear
   t_max = 0 kN    Maximum bolt tension
-  u_max = 0.071151    Governing interaction utilisation
+  u_max = 0.071093    Governing interaction utilisation
   governing = "bolt 1"    Governing bolt
-  u_lin = 0.071151    Linear interaction utilisation
+  u_lin = 0.071093    Linear interaction utilisation
 
 6. CHECKS (governing first)
-  PASS  Circular shear–tension interaction (governing bolt): u_max = 0.071151 vs u_max ≤ 1  utilisation 0.0712
-  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R): u_lin = 0.071151 vs u_lin ≤ 1  utilisation 0.0712  « EN 1993-1-8 Table 3.4
-  PASS  Shear alone: u_v = 0.071151 vs u_v ≤ 1  utilisation 0.0712
+  PASS  Circular shear–tension interaction (governing bolt): u_max = 0.071093 vs u_max ≤ 1  utilisation 0.0711
+  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R): u_lin = 0.071093 vs u_lin ≤ 1  utilisation 0.0711  « EN 1993-1-8 Table 3.4
+  PASS  Shear alone: u_v = 0.071093 vs u_v ≤ 1  utilisation 0.0711
   PASS  Tension alone: u_t = 0 vs u_t ≤ 1  utilisation 0
 
 7. APPLICABILITY
