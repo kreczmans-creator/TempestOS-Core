@@ -18,6 +18,9 @@ public enum CalcProvenanceKind
 
     /// <summary>Imported from a CAD parameter file through a mapping profile (Addendum B, W1): the reference names the system, part, file hash, time and CAD parameter; the revision names the profile.</summary>
     CadImport,
+
+    /// <summary>Fitted from a scan deviation table through a scan profile (Addendum B, W2): the reference names the software and version, the stage, the serials, the alignment, the file hash, the time and the feature; the revision names the profile.</summary>
+    ScanImport,
 }
 
 /// <summary>The provenance of one input value: its kind, a reference (drawing number, spec clause, evidence id, record id) and a revision.</summary>
@@ -61,6 +64,7 @@ public sealed record CalcProvenance(CalcProvenanceKind Kind, string? Reference =
             CalcProvenanceKind.Reference => "reference",
             CalcProvenanceKind.Link => "link",
             CalcProvenanceKind.CadImport => "cad import",
+            CalcProvenanceKind.ScanImport => "scan import",
             _ => Kind.ToString().ToLowerInvariant(),
         };
 
