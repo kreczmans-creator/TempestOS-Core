@@ -21,23 +21,28 @@ ORDER = [
     ("E4 conductor sizing", ["elec.conductor-sizing"], "elec.conductor-sizing.md", "Liability list; electrical safety"),
     ("E5 fault protection", ["elec.fault-protection"], "elec.fault-protection.md", "Liability list; electrical safety"),
     ("Motor-circuit pack (E1 → E6 → E4 → E3, E5, E2)", ["chain.motor-circuit"], "chain.motor-circuit.md", "Links E4 and E5 to their inputs"),
-    ("M3 bolt group, bolted joint", ["mech.bolt-group", "mech.bolted-joint"], "mech.bolt-group.md, mech.bolted-joint.md", "Liability list"),
-    ("M4 shaft and the drive-train pack", ["mech.shaft", "chain.drive-train"], "mech.shaft.md, chain.drive-train.md", "Liability list; two Critical in the chain"),
-    ("S1 section properties", ["struct.section-properties"], "struct.section-properties.md", "Critical; feeds S3, S4 and S6"),
-    ("S4 EC3 connections", ["struct.connection-ec3"], "struct.connection-ec3.md", "Steel connections"),
+    ("F2 accumulator", ["fp.accumulator"], "fp.accumulator.md", "Liability list; stored pressure energy"),
     ("S6 base plate", ["struct.base-plate"], "struct.base-plate.md", "Liability list"),
+    ("S7 LTB and N+M interaction", ["struct.ltb-interaction"], "struct.ltb-interaction.md", "Liability list"),
+    ("M3 bolt group, bolted joint", ["mech.bolt-group", "mech.bolted-joint"], "mech.bolt-group.md, mech.bolted-joint.md", "Liability list"),
+    ("M4 shaft and the drive-train pack", ["mech.shaft", "chain.drive-train"], "mech.shaft.md, chain.drive-train.md", "Liability list; Critical in the chain"),
+    ("S1 section properties", ["struct.section-properties"], "struct.section-properties.md", "Critical; feeds S3, S4, S6 and S7"),
+    ("S4 EC3 connections", ["struct.connection-ec3"], "struct.connection-ec3.md", "Steel connections"),
     ("Steel-support pack", ["chain.steel-support"], "chain.steel-support.md", "Links S2, S3, S4 and S6"),
     ("S3 member checks", ["struct.en1993-member"], "struct.en1993-member.md", "Steel members"),
-    ("S2 frame and beam formulas", ["struct.frame-2d", "struct.beam-formulas"], "struct.frame-2d.md, struct.beam-formulas.md", "Analysis feeding S3"),
+    ("S2 frame and beam formulas", ["struct.frame-2d", "struct.beam-formulas"], "struct.frame-2d.md, struct.beam-formulas.md", "Analysis feeding S3 and S7"),
     ("M6 weld group", ["mech.weld-group"], "mech.weld-group.md", "Welds"),
+    ("M7 springs", ["mech.spring"], "mech.spring.md", "Stored mechanical energy"),
     ("E1 motor sizing", ["elec.motor-sizing"], "elec.motor-sizing.md", "Feeds both packs"),
     ("B2 psychrometrics", ["bs.psychrometrics"], "bs.psychrometrics.md", "Critical; lower physical liability"),
     ("M2 fits, press fit, thick cylinder", ["mech.iso286-fit", "mech.press-fit", "mech.thick-cylinder"], "mech.iso286-fit.md, mech.press-fit.md, mech.thick-cylinder.md", "Mechanical fits and vessels"),
     ("M5 bearing life", ["mech.bearing-life"], "mech.bearing-life.md", "Drive-train pack"),
     ("E6 load budget, E3 voltage drop", ["elec.load-budget", "elec.voltage-drop"], "elec.load-budget.md, elec.voltage-drop.md", "Motor-circuit pack"),
+    ("E7 PCB trace", ["elec.pcb-trace"], "elec.pcb-trace.md", "Board-level heating"),
     ("B1 pipe and pump, B6 sealed system", ["bs.pipe-pump", "bs.sealed-system"], "bs.pipe-pump.md, bs.sealed-system.md", "B6 needs the owner's BS EN 12828"),
     ("B4 room heat loss", ["bs.room-heat-loss"], "bs.room-heat-loss.md", "Heating design"),
     ("Wet-heating pack (B4 → B6 → B1 → E1)", ["chain.wet-heating"], "chain.wet-heating.md", "Links the heating calculators"),
+    ("B7 Glaser condensation", ["bs.glaser"], "bs.glaser.md", "Building fabric moisture"),
     ("Enclosure-cooling pack", ["chain.cooling"], "chain.cooling.md", "Links E6, E2 and B5"),
     ("E2, B3, B5, S5, M1", ["elec.enclosure-heat", "bs.duct-sizing", "bs.heat-exchanger", "struct.load-combinations", "mech.tolerance-stack"], "remaining files", "Lower liability"),
     ("Desktop sheet import (any calculator)", ["desktop.calc-sheet-view"], "rederivation/desktop.calc-sheet-view.md", "Seeded unit not converted"),
@@ -119,7 +124,7 @@ P1-chain.drive-train-02 (no gear ratio on the torque link) was Critical and is n
 
 ## Recommended test order for the owner
 The addendum's liability order is E4/E5, S8, F2, S6, S7, M3, M4.
-S7, S8 and F2 belong to Addendum B and are not yet on `release/v0.26.0`. Track P adds them as they merge.
+S8 belongs to a later Addendum B phase and is not yet on `release/v0.26.0`. Track P adds items as they merge.
 
 {chr(10).join(order)}
 
