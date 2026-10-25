@@ -351,6 +351,18 @@ internal static class TabularParametersParser
         // these catch what it cannot: a header that ends in a delimiter (a blank column that takes the split-off digits) and a column that is not read as a number
         // (a description, a unit, an unnamed one) sitting right of a whole number. The same rules guard the scan importer (ADR-0172).
         var commaSplit = delimiter == ',';
+        var known = new[] { nameCol, valueCol, unitCol, exprCol, commentCol, textCol };
+
+        string Describe(int col)
+        {
+            var title = col < table.Rows[0].Count ? table.Rows[0][col].Trim() : string.Empty;
+
+            if (title.Length == 0)
+                return $"unnamed column {col + 1}";
+
+            return known.Contains(col) ? $"'{CadValueParser.Clip(title)}' column" : $"'{CadValueParser.Clip(title)}' column (which is not read)";
+        }
+
         var blankHeaders = Enumerable.Range(0, header.Count).Where(i => header[i].Length == 0).ToList();
         var splitSuspect = default(string);
         var sawPoint = false;
@@ -374,31 +386,40 @@ internal static class TabularParametersParser
                         throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Line {table.Lines[r]}: column {h + 1} has no header but holds a value. A number written with a decimal comma or a thousands separator, but not in quotes, is split by the comma delimiter and spills its digits into an unnamed column; put such numbers in quotes or use the other delimiter. Nothing was imported.");
                 }
 
-                if (valueCol >= 0 && valueCol < row.Count)
+                foreach (var col in new[] { valueCol, exprCol }.Where(i => i >= 0 && i < row.Count).Distinct())
                 {
-                    var valueField = row[valueCol];
+                    var field = row[col];
+                    var shownField = CadValueParser.Clip(field.Trim());
 
-                    if (valueField.Contains('.', StringComparison.Ordinal))
+                    // A declared decimal comma with a comma delimiter makes every unquoted number in these columns ambiguous: "12,5" is the two fields 12 and 5, and
+                    // so is "12" when its fraction was dropped or moved. No shape of the neighbouring field is trusted; the number has to be quoted (ADR-0171).
+                    if (np.Decimal == DecimalMark.Comma && !table.WasQuoted(r, col) && (IsWholeNumberText(field) || LocaleNumber.TryParse(field, np, out _, out _)))
+                        throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Line {table.Lines[r]}: the {Describe(col)} holds the unquoted number '{shownField}', and the number format is a decimal comma with a comma delimiter. A decimal comma ('12,5') is split by the comma delimiter into 12 and 5, so no unquoted number can be read reliably. Put the numbers in quotes (\"12,5\") or save the file with a semicolon delimiter. Nothing was imported.");
+
+                    if (field.Contains('.', StringComparison.Ordinal))
                         sawPoint = true;
 
-                    if (IsWholeNumberText(valueField))
+                    var whole = IsWholeNumberText(field);
+
+                    if (whole)
                     {
                         values++;
                         wholeValues++;
                     }
-                    else if (LocaleNumber.TryParse(valueField, np, out _, out _))
+                    else if (LocaleNumber.TryParse(field, np, out _, out _))
                     {
                         values++;
                     }
 
-                    var next = valueCol + 1;
+                    var next = col + 1;
 
-                    if (next < row.Count && next != nameCol && next != exprCol && next != textCol && IsWholeNumberText(valueField) && IsBareDigits(row[next]))
+                    // The split-off fraction (or the next group of a thousands separator) lands in the next field, whatever column that is, and may carry the unit.
+                    if (whole && next < row.Count && StartsWithDigits(row[next]))
                     {
-                        var shown = $"'{CadValueParser.Clip(valueField.Trim())}' is followed by '{CadValueParser.Clip(row[next].Trim())}' in the {(next == unitCol ? "unit" : next == commentCol ? "description" : "unnamed")} column";
+                        var shown = $"'{shownField}' is followed by '{CadValueParser.Clip(row[next].Trim())}' in the {Describe(next)}";
 
                         if (np.Decimal == DecimalMark.Comma || IsLeadingZeroDigits(row[next]))
-                            throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Line {table.Lines[r]}: {shown}. That is a number written with a decimal comma or a thousands separator ('{CadValueParser.Clip(valueField.Trim())},{CadValueParser.Clip(row[next].Trim())}') split by the comma delimiter and would be read as the wrong value; put such numbers in quotes or use the other delimiter. Nothing was imported.");
+                            throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Line {table.Lines[r]}: {shown}. That is a number written with a decimal comma or a thousands separator ('{shownField},{CadValueParser.Clip(row[next].Trim())}') split by the comma delimiter and would be read as the wrong value; put such numbers in quotes or use the other delimiter. Nothing was imported.");
 
                         splitSuspect ??= $"line {table.Lines[r]}: {shown}";
                     }
@@ -576,6 +597,9 @@ internal static class TabularParametersParser
                 if (!v.TryGetDouble(out var number) || !double.IsFinite(number))
                     throw new ImportRefusedException(ImportRefusalCode.NumberFormat, $"'{CadValueParser.Clip(name)}' holds a number outside the range of a number.");
 
+                if (LocaleNumber.UnderflowedToZero(v.GetRawText(), number))
+                    throw new ImportRefusedException(ImportRefusalCode.NumberFormat, $"'{CadValueParser.Clip(name)}' holds the number {CadValueParser.Clip(v.GetRawText())}, which is too small to represent and would be read as 0.");
+
                 if (unitText is { Length: > 0 })
                     return CadValueParser.WithUnit(number, unitText);
 
@@ -666,10 +690,20 @@ internal static class TabularParametersParser
         return t.Length > 0 && t.Length <= 15 && !t.ContainsAnyExceptInRange('0', '9');
     }
 
-    private static bool IsBareDigits(string text)
+    /// <summary>Digits (up to 15), optionally followed by a unit-like word: what the right-hand part of a split decimal looks like ("5", "250", "5 mm", "5mm").</summary>
+    private static bool StartsWithDigits(string text)
     {
         var t = text.AsSpan().Trim();
-        return t.Length > 0 && t.Length <= 15 && !t.ContainsAnyExceptInRange('0', '9');
+        var digits = 0;
+
+        while (digits < t.Length && t[digits] is >= '0' and <= '9')
+            digits++;
+
+        if (digits == 0 || digits > 15)
+            return false;
+
+        var rest = t[digits..].Trim();
+        return rest.Length == 0 || char.IsLetter(rest[0]) || rest[0] is '°' or '%';
     }
 
     private static bool IsLeadingZeroDigits(string text)
