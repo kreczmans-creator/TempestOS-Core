@@ -163,21 +163,22 @@ public sealed class CylinderTests
     public void Line_Velocities_Are_Checked_Against_The_Limit_Records_And_The_Bore_Comes_From_The_List()
     {
         var r = Run();
-        double qLine = 28e-6 * 1450 / 60 * 0.95;
-        Assert.Equal(qLine / Area(40), r.OutputSi("v_suc"), 9);
-        Assert.Equal(qLine / Area(16), r.OutputSi("v_prs"), 9);
-        Assert.Equal(qLine * Area(100) / (Area(100) - Area(70)) / Area(25), r.OutputSi("v_rtn"), 9);
+        double qLine = 28e-6 * 1450 / 60 * 0.95, qSuc = 28e-6 * 1450 / 60, phi = Area(100) / (Area(100) - Area(70));
+        Assert.Equal(qSuc / Area(40), r.OutputSi("v_suc"), 9);
+        Assert.Equal(qLine * phi / Area(16), r.OutputSi("v_prs"), 9);
+        Assert.Equal(qLine * phi / Area(25), r.OutputSi("v_rtn"), 9);
 
         // The smallest listed size not below the bore the limit needs; the order of the list does not matter.
         Assert.Equal(32 * Mm, Run(Hoses(50, 8, 32, 12.5, 16, 40, 20, 25, 10)).OutputSi("d_rec_suc"), 12);
-        Assert.Equal(Math.Sqrt(4 * qLine / (Math.PI * 1.2)), r.OutputSi("d_min_suc"), 9);
+        Assert.Equal(Math.Sqrt(4 * qSuc / (Math.PI * 1.2)), r.OutputSi("d_min_suc"), 9);
 
         // A bore at exactly the minimum is accepted (a hair of rounding allowed).
-        var exact = Run(Hoses(8, Math.Sqrt(4 * qLine / (Math.PI * 1.2)) / Mm, 50));
-        Assert.Equal(Math.Sqrt(4 * qLine / (Math.PI * 1.2)), exact.OutputSi("d_rec_suc"), 9);
+        var exact = Run(Hoses(8, Math.Sqrt(4 * qSuc / (Math.PI * 1.2)) / Mm, 50));
+        Assert.Equal(Math.Sqrt(4 * qSuc / (Math.PI * 1.2)), exact.OutputSi("d_rec_suc"), 9);
 
         // A limit that is too tight fails the check and names the line; no list gives no recommendation.
         var tight = Run(Q("v_prs_max", 2, "m/s"));
+        Assert.Contains(Run(Q("v_prs_max", 8, "m/s"), Q("v_ret_max", 2, "m/s")).Checks, c => c.Name.StartsWith("Return line velocity", StringComparison.Ordinal) && !c.Passed);
         Assert.Contains(tight.Checks, c => c.Name.StartsWith("Pressure line velocity", StringComparison.Ordinal) && !c.Passed);
         Assert.False(tight.Passed);
         Assert.Null(CalcRunner.Run(Cylinder, With(CalcInputValue.Table("hoses", []))).FindOutput("d_rec_suc"));
@@ -189,7 +190,7 @@ public sealed class CylinderTests
         var r = Run(Hoses(8, 10, 12.5, 16, 20));
         Assert.Contains(r.Warnings, w => w.RuleId == "size" && w.Message.Contains("suction", StringComparison.Ordinal));
         Assert.Null(r.FindOutput("d_rec_suc"));
-        Assert.Equal(16 * Mm, r.OutputSi("d_rec_prs"), 12);
+        Assert.Equal(20 * Mm, r.OutputSi("d_rec_prs"), 12);
     }
 
     [Fact]
@@ -197,8 +198,110 @@ public sealed class CylinderTests
     {
         var standard = Run();
         var regen = Run(CalcInputValue.Choice("mode", CylinderCalculator.Regenerative));
-        Assert.Equal(standard.OutputSi("v_prs") * Area(100) / Area(70), regen.OutputSi("v_prs"), 9);
+        double ab = Area(100), ar = Area(70), aa = ab - ar;
+        Assert.Equal(standard.OutputSi("v_prs") * aa / ar, regen.OutputSi("v_prs"), 9);
         Assert.True(regen.OutputSi("u_prs") > standard.OutputSi("u_prs"));
+    }
+
+    [Fact]
+    public void The_Cap_Port_Line_Is_Judged_At_The_Larger_Flow_Of_The_Two_Strokes()
+    {
+        // M1: on the retract stroke the line to the cap port carries the cap-side discharge Q·A_b/A_a, not the supply flow.
+        double ab = Area(100), ar = Area(70), aa = ab - ar, qLine = 28e-6 * 1450 / 60 * 0.95;
+        var standard = Run();
+        Assert.Equal(qLine * ab / aa, standard.OutputSi("Q_prs"), 12);
+        Assert.Equal(standard.OutputSi("Q_rtn"), standard.OutputSi("Q_prs"), 12);
+        Assert.Equal(qLine * ab / aa / Area(16), standard.OutputSi("v_prs"), 9);
+        Assert.Equal(qLine * ab / aa / Area(16) / 5, standard.OutputSi("u_prs"), 9);
+
+        // The review's example: the 16 mm line that read 3.20 m/s and passed carries 6.27 m/s, over its 5 m/s limit.
+        Assert.InRange(standard.OutputSi("v_prs"), 6.26, 6.28);
+        Assert.Contains(standard.Checks, c => c.Name.StartsWith("Pressure line velocity", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(Run(Q("d_prs", 20, "mm")).Checks, c => c.Name.StartsWith("Pressure line velocity", StringComparison.Ordinal) && c.Passed);
+
+        // A rod larger than the annulus: the retract discharge Q·A_b/A_a governs a regenerative cap-port line, not Q·A_b/A_r.
+        var big = Run(CalcInputValue.Choice("mode", CylinderCalculator.Regenerative), Q("d_r", 90, "mm"), Q("d_prs", 25, "mm"));
+        double arBig = Area(90), aaBig = ab - arBig;
+        Assert.True(aaBig < arBig);
+        Assert.Equal(qLine * ab / aaBig, big.OutputSi("Q_prs"), 12);
+        Assert.Equal(qLine * ab / aaBig / Area(25), big.OutputSi("v_prs"), 9);
+
+        // Property: the cap-port flow is Q_line times the larger of the two area ratios, in both connections.
+        Gen.Select(Gen.Double[20, 500], Gen.Double[0.2, 0.9], Gen.Double[1, 2000], Gen.Bool).Sample((bore, rodRatio, q, regen) =>
+        {
+            var r = Run(Q("D", bore, "mm"), Q("d_r", bore * rodRatio, "mm"), Q("Q", q, "L/min"), CalcInputValue.Choice("mode", regen ? CylinderCalculator.Regenerative : CylinderCalculator.Standard));
+            double a1 = Area(bore), a2 = Area(bore * rodRatio), a3 = a1 - a2, line = r.OutputSi("Q_line");
+            var expected = line * a1 / (regen ? Math.Min(a2, a3) : a3);
+            return !r.IsBlocked && Math.Abs(r.OutputSi("Q_prs") - expected) <= 1e-9 * expected;
+        }, iter: 100);
+    }
+
+    [Fact]
+    public void The_Suction_Line_Carries_The_Geometric_Pump_Delivery()
+    {
+        // L7: the suction line carries about V_g·n, not the delivered flow V_g·n·eta_vp.
+        var r = Run();
+        double geometric = 28e-6 * 1450 / 60, delivered = geometric * 0.95;
+        Assert.Equal(geometric, r.OutputSi("Q_suc"), 12);
+        Assert.Equal(delivered, r.OutputSi("Q_line"), 12);
+        Assert.Equal(geometric / Area(40), r.OutputSi("v_suc"), 9);
+        Assert.True(r.OutputSi("v_suc") > delivered / Area(40));
+
+        // With no pump entered the suction line carries the circuit flow; a small pump never lowers it below the circuit flow.
+        var none = CalcRunner.Run(Cylinder, With(new CalcInputValue("V_g"), new CalcInputValue("n_p")));
+        Assert.Equal(36 * Litre / 60, none.OutputSi("Q_suc"), 12);
+        Assert.Equal(36 * Litre / 60, Run(Q("V_g", 20, "cm^3/rev")).OutputSi("Q_suc"), 12);
+    }
+
+    [Fact]
+    public void A_Stalled_Cylinder_Loads_The_Rod_With_Its_Thrust_So_A_Slender_Rod_Fails_Whatever_The_Push_Load_Entered()
+    {
+        // H1: 40 mm rod over 2100 mm, Euler F_cr = 59.06 kN. The cylinder's thrust at 160 bar is 76.40 kN, above F_cr even with a safety factor of 1.
+        var slender = Run(Q("D", 80, "mm"), Q("d_r", 40, "mm"), Q("stroke", 2000, "mm"), Q("F_push", 15, "kN"));
+        double thrust = 160 * Bar * Area(80) * 0.95, fcr = Math.PI * Math.PI * 210e9 * (Math.PI * Math.Pow(0.04, 4) / 64) / (2.1 * 2.1);
+        Assert.Equal(thrust, slender.OutputSi("F_ext"), 6);
+        Assert.Equal(thrust, slender.OutputSi("F_buck"), 6);
+        Assert.Equal(thrust * 3.5 / fcr, slender.OutputSi("u_buck"), 9);
+        Assert.InRange(slender.OutputSi("u_buck"), 4.52, 4.54);
+        Assert.Contains(slender.Checks, c => c.Name.StartsWith("Rod buckling", StringComparison.Ordinal) && !c.Passed);
+        Assert.False(slender.Passed);
+
+        // Even with a safety factor of 1 the rod buckles at the thrust.
+        Assert.True(Run(Q("D", 80, "mm"), Q("d_r", 40, "mm"), Q("stroke", 2000, "mm"), Q("F_push", 15, "kN"), CalcInputValue.Of("S_f", 1)).OutputSi("u_buck") > 1);
+
+        // Property: the load judged is the larger of the push load entered and the thrust, in both connections, and the utilisation follows from it.
+        Gen.Select(Gen.Double[0, 400], Gen.Double[20, 200], Gen.Double[0.3, 0.8], Gen.Double[50, 3000], Gen.Bool).Sample((push, bore, rodRatio, stroke, regen) =>
+        {
+            var r = Run(Q("F_push", push, "kN"), Q("D", bore, "mm"), Q("d_r", bore * rodRatio, "mm"), Q("stroke", stroke, "mm"), CalcInputValue.Choice("mode", regen ? CylinderCalculator.Regenerative : CylinderCalculator.Standard));
+            var expected = Math.Max(push * 1e3, r.OutputSi("F_ext"));
+            return !r.IsBlocked && Math.Abs(r.OutputSi("F_buck") - expected) <= 1e-9 * expected && Math.Abs(r.OutputSi("u_buck") - expected * 3.5 / r.OutputSi("F_cr")) <= 1e-9 * Math.Max(1, r.OutputSi("u_buck"));
+        }, iter: 100);
+
+        // A push load above the thrust is the load judged.
+        var heavy = Run(Q("F_push", 200, "kN"));
+        Assert.Equal(200e3, heavy.OutputSi("F_buck"), 6);
+    }
+
+    [Fact]
+    public void The_Mounting_Factor_And_The_Safety_Factor_Are_Records_And_The_Defaults_Are_Said_To_Be_Placeholders()
+    {
+        var kinds = Cylinder.Template.RecordKinds!;
+        Assert.Contains(kinds, k => k.Kind == "cylinder.mounting" && k.Symbols.SequenceEqual(["K_m"]) && k.Guidance.Contains("fixed-free", StringComparison.Ordinal) && k.Guidance.Contains("K = 2", StringComparison.Ordinal));
+        Assert.Contains(kinds, k => k.Kind == "cylinder.buckling-safety" && k.Symbols.SequenceEqual(["S_f"]));
+        Assert.Contains(Cylinder.Template.Assumptions, a => a.Statement.Contains("K_m = 2", StringComparison.Ordinal) && a.Statement.Contains("pressure-limiting", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_Template_Version_Is_Bumped_For_The_Changed_Model()
+    {
+        Assert.Equal("1.1.0", Cylinder.Template.Version);
+    }
+
+    [Fact]
+    public void The_Line_Flows_Are_Said_To_Mix_The_Delivered_Flow_With_The_Circuit_Flow()
+    {
+        // L9: Q_line carries no volumetric efficiency while the speeds use Q·eta_vc; the assumption says so.
+        Assert.Contains(Cylinder.Template.Assumptions, a => a.Statement.Contains("no volumetric efficiency", StringComparison.Ordinal) && a.Statement.Contains("conservative", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -272,8 +375,10 @@ public sealed class CylinderTests
         Assert.Equal(1.6, pinned.OutputSi("L_eff"), 9);
         Assert.Equal(3.2, cantilever.OutputSi("L_eff"), 9);
         Assert.True(cantilever.OutputSi("F_cr") < pinned.OutputSi("F_cr"));
-        Assert.Equal(80e3 * 3.5 / pinned.OutputSi("F_cr"), pinned.OutputSi("u_buck"), 9);
-        Assert.Equal(0, Run(Q("F_push", 0, "kN")).OutputSi("u_buck"), 12);
+        // The rod is judged at the larger of the push load and the cylinder's thrust (here the thrust, 119.4 kN).
+        Assert.Equal(pinned.OutputSi("F_ext") * 3.5 / pinned.OutputSi("F_cr"), pinned.OutputSi("u_buck"), 9);
+        Assert.Equal(pinned.OutputSi("F_ext"), pinned.OutputSi("F_buck"), 9);
+        Assert.Equal(pinned.OutputSi("u_buck"), Run(Q("F_push", 0, "kN"), Q("stroke", 1500, "mm")).OutputSi("u_buck"), 12);
 
         var over = Run(Q("stroke", 3500, "mm"), Q("F_push", 100, "kN"));
         Assert.Contains(over.Checks, c => c.Name.StartsWith("Rod buckling", StringComparison.Ordinal) && !c.Passed);
@@ -283,7 +388,7 @@ public sealed class CylinderTests
     [Fact]
     public void A_Load_Above_The_Force_Of_Either_Stroke_Fails_The_Check()
     {
-        Assert.True(Run().Passed);
+        Assert.True(Run(Q("d_prs", 20, "mm")).Passed);
         Assert.Contains(Run(Q("F_push", 130, "kN")).Checks, c => c.Name.StartsWith("Extend force covers", StringComparison.Ordinal) && !c.Passed);
         Assert.Contains(Run(Q("F_pull", 70, "kN")).Checks, c => c.Name.StartsWith("Retract force covers", StringComparison.Ordinal) && !c.Passed);
     }
@@ -298,6 +403,7 @@ public sealed class CylinderTests
         Assert.Null(t.FindInput("K_m")!.MaterialProperty);
         Assert.Equal(["E", "f_y"], t.RecordKinds!.Single(k => k.Kind == CylinderCalculator.MaterialKind).Symbols);
         Assert.Contains(t.RecordKinds!, k => k.Kind == "cylinder.mounting" && k.Symbols.SequenceEqual(["K_m"]));
+        Assert.Contains(t.RecordKinds!, k => k.Kind == "cylinder.buckling-safety" && k.Symbols.SequenceEqual(["S_f"]));
         Assert.Contains(t.RecordKinds!, k => k.Kind == "cylinder.line-limits" && k.Symbols.SequenceEqual(["v_suc_max", "v_prs_max", "v_ret_max"]));
         Assert.Contains(t.RecordKinds!, k => k.Kind == "cylinder.hose-sizes" && k.Symbols.SequenceEqual(["hoses"]));
         Assert.Equal(CalcInputKind.Table, t.FindInput("hoses")!.Kind);

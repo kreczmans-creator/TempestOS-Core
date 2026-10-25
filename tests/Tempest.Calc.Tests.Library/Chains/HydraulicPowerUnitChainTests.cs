@@ -48,6 +48,17 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(160e5 * 28e-6 * 0.95 / (2 * Math.PI * 0.88), Si(f1, "T_shaft"), 9);
         Assert.Equal(1450, Si(f1, "n_shaft") * 60 / (2 * Math.PI), 9);
 
+        // F1 1.1.0 moved these (independent hand recompute): the rod is judged at the cylinder's thrust (119.38 kN, above the 80 kN push), and the 16 mm
+        // cap-port line at the retract flow Q·A_b/A_a = 75.63 L/min, 6.27 m/s against the 5 m/s placeholder limit, so that one F1 check now fails.
+        var thrust = 160e5 * areaBore * 0.95;
+        Assert.Equal(thrust * 3.5 / 1787806.9776735522, Si(f1, "u_buck"), 9);
+        var areaRod = Math.PI * 0.07 * 0.07 / 4;
+        var capFlow = 28e-6 * 1450 / 60 * 0.95 * areaBore / (areaBore - areaRod);
+        Assert.Equal(capFlow / (Math.PI * 0.016 * 0.016 / 4), Si(f1, "v_prs"), 9);
+        Assert.Equal(6.269001383838239, Si(f1, "v_prs"), 9);
+        Assert.Equal(28e-6 * 1450 / 60 / (Math.PI * 0.04 * 0.04 / 4), Si(f1, "v_suc"), 9);
+        Assert.Equal(["Pressure line velocity within its limit, cap-port line at the larger stroke flow"], f1.Checks.Where(c => !c.Passed).Select(c => c.Name));
+
         // F1 → F2, swept volume ΔV (L): the emergency stroke is the whole larger stroke, 3.927 L.
         Assert.Equal(Si(f1, "dV"), InputSi(f2, "dV"), 15);
         Assert.Equal("Emergency stroke", f2.Inputs.Single(i => i.Symbol == "mode").Text);

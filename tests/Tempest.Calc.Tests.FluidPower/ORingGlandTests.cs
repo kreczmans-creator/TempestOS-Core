@@ -41,7 +41,7 @@ public sealed class ORingGlandTests
         Assert.All(Gland.Template.OutputPorts!, p => Assert.NotNull(r.FindOutput(p.Symbol)));
         Assert.Equal(16.9560030299, Pct(r, "squeeze_min"), 7);
         Assert.Equal(26.9574115556, Pct(r, "squeeze_max"), 7);
-        Assert.Equal(82.5940850678, Pct(r, "fill_max"), 7);
+        Assert.Equal(84.6429192000, Pct(r, "fill_max"), 7);
         Assert.Equal(3.8306451613, Pct(r, "stretch"), 7);
     }
 
@@ -112,8 +112,8 @@ public sealed class ORingGlandTests
         Assert.True(Min(ORingGlandCalculator.RelationNone) > Min(ORingGlandCalculator.RelationIncompressible));
         Assert.True(Min(ORingGlandCalculator.RelationIncompressible) > Min(ORingGlandCalculator.RelationParker));
 
-        // The Parker quadratic is held at its vertex, reads zero without stretch and is cited, not confirmed.
-        Assert.Equal(ORingGlandModel.Parker(64) / 100, ORingGlandModel.Reduction(ReductionRelation.Parker, 3.0, 0.49), 12);
+        // The Parker quadratic is used for about 3 to 25 % stretch, held at its 25 % value above that, reads zero without stretch and is cited, not confirmed.
+        Assert.Equal(ORingGlandModel.Parker(25) / 100, ORingGlandModel.Reduction(ReductionRelation.Parker, 3.0, 0.49), 12);
         Assert.Equal(0, ORingGlandModel.Reduction(ReductionRelation.Parker, -0.02, 0.49));
         Assert.Contains(Gland.Template.ClauseRefs, c => c.Standard.Contains("ORD 5700", StringComparison.Ordinal) && c.Clause == "Section 3.5");
         Assert.Contains(Run(CalcInputValue.Choice("red", ORingGlandCalculator.RelationParker)).RunAssumptions, a => a.Statement.Contains("not been confirmed", StringComparison.Ordinal));
@@ -295,43 +295,63 @@ public sealed class ORingGlandTests
         Assert.True(a.OutputSi("cpk_stretch") > 0);
     }
 
-    [Fact]
-    public void The_Linearised_Monte_Carlo_Agrees_With_A_Full_Non_Linear_Monte_Carlo()
+    private static (GlandEnvironment Env, GlandVar[] Vars) PistonGland(ReductionRelation relation = ReductionRelation.Parker)
     {
-        var env = new GlandEnvironment(SealKind.Piston, ReductionRelation.Incompressible, 0.49, 1.5e-4, 1.2e-5, 20, -20, 80, 0, 0.05, 0.2);
+        var env = new GlandEnvironment(SealKind.Piston, relation, 0.49, 1.5e-4, 1.2e-5, 20, -20, 80, 0, 0.05, 0.2);
         GlandVar Var(GlandDim dim, double nominal, double upper, double lower) =>
             new(dim, dim.ToString(), nominal, nominal + (upper + lower) / 2, (upper - lower) / 2, (upper - lower) / 6, ContributorDistribution.Normal);
 
-        GlandVar[] vars =
+        return (env,
         [
             Var(GlandDim.Section, 3.5, 0.1, -0.1), Var(GlandDim.RingId, 50, 0.4, -0.4), Var(GlandDim.Surface, 56.9, 0.046, 0), Var(GlandDim.Groove, 51.5, 0, -0.05),
             Var(GlandDim.Clearance, 56.9, -0.03, -0.06), Var(GlandDim.Width, 4.8, 0.1, 0),
-        ];
+        ]);
+    }
+
+    [Fact]
+    public void The_Monte_Carlo_Runs_The_Exact_Model_And_Sees_The_Tail_The_Linearised_Model_Misses()
+    {
+        // L1: the engine's Monte Carlo is run on ORingGlandModel.Evaluate itself; the linearised stack stays for C_pk. The review found the
+        // linear model under-predicts the minimum-squeeze tail by about 9 % (1.78 % against 1.95 to 2.01 %).
+        var (env, vars) = PistonGland();
+        var analysis = ORingGlandModel.Analyse(env, GlandCriterion.SqueezeMin, vars, 0.18, null, 200_000, 7);
+        var exact = analysis.Simulation!.FractionBelowLower!.Value;
+        var linear = ToleranceStackEngine.Simulate(analysis.Linear.Contributors(), 200_000, 7, new StackRequirement(0.18, null)).FractionBelowLower!.Value;
+
+        Assert.InRange(exact, 0.0185, 0.0235);
+        Assert.True(exact > linear + 0.0015, $"exact {exact:P3} against linearised {linear:P3}");
+
+        // The same seed and the same sampling order reproduce the count exactly with an independent call of the engine on the model.
+        var nominal = vars.ToDictionary(v => v.Dim.ToString(), v => v.Mid);
+        var distributions = vars.ToDictionary(v => v.Dim.ToString(), v => Distribution.Normal(v.Mid, v.Sigma));
+        var independent = MonteCarlo.Run(m =>
+        {
+            var x = new double[8];
+
+            foreach (var v in vars)
+                x[(int)v.Dim] = m[v.Dim.ToString()];
+
+            return ORingGlandModel.Evaluate(env, GlandCriterion.SqueezeMin, x);
+        }, nominal, distributions, 200_000, 7, 0.18, null);
+        Assert.Equal(independent.FractionBelowLower, exact);
 
         foreach (var (criterion, lower, upper) in new (GlandCriterion, double?, double?)[]
         {
-            (GlandCriterion.SqueezeMin, 0.195, null), (GlandCriterion.Stretch, null, 0.032), (GlandCriterion.FillMax, null, 0.785), (GlandCriterion.Gap, null, 0.075),
+            (GlandCriterion.Stretch, null, 0.032), (GlandCriterion.FillMax, null, 0.80), (GlandCriterion.Gap, null, 0.075), (GlandCriterion.FillMin, 0.65, null),
         })
         {
-            var analysis = ORingGlandModel.Analyse(env, criterion, vars, lower, upper, 100_000, 3);
-            var linear = (analysis.Simulation!.FractionBelowLower ?? 0) + (analysis.Simulation.FractionAboveUpper ?? 0);
+            var a = ORingGlandModel.Analyse(env, criterion, vars, lower, upper, 100_000, 3);
+            var sim = (a.Simulation!.FractionBelowLower ?? 0) + (a.Simulation.FractionAboveUpper ?? 0);
+            var lin = ToleranceStackEngine.Simulate(a.Linear.Contributors(), 100_000, 3, new StackRequirement(lower, upper));
+            var linFraction = (lin.FractionBelowLower ?? 0) + (lin.FractionAboveUpper ?? 0);
 
-            var nominal = vars.ToDictionary(v => v.Dim.ToString(), v => v.Mid);
-            var distributions = vars.ToDictionary(v => v.Dim.ToString(), v => Distribution.Normal(v.Mid, v.Sigma));
-            var full = MonteCarlo.Run(m =>
-            {
-                var x = new double[8];
-
-                foreach (var v in vars)
-                    x[(int)v.Dim] = m[v.Dim.ToString()];
-
-                return ORingGlandModel.Evaluate(env, criterion, x);
-            }, nominal, distributions, 100_000, 99, lower, upper);
-            var nonLinear = (full.FractionBelowLower ?? 0) + (full.FractionAboveUpper ?? 0);
-
-            Assert.True(linear is > 0.02 and < 0.9, $"{criterion}: linearised fraction {linear:P3} is not in the testable range");
-            Assert.True(Math.Abs(linear - nonLinear) < 0.01, $"{criterion}: linearised {linear:P2} against non-linear {nonLinear:P2}");
+            Assert.True(sim is > 0.001 and < 0.9, $"{criterion}: fraction {sim:P3} is not in the testable range");
+            Assert.True(Math.Abs(sim - linFraction) < 0.2 * Math.Max(sim, linFraction) + 0.003, $"{criterion}: exact {sim:P2} against linearised {linFraction:P2}");
         }
+
+        // C_pk is the linearised one, and a run with no limit skips the simulation.
+        Assert.NotNull(analysis.Stack.Capability);
+        Assert.Null(ORingGlandModel.Analyse(env, GlandCriterion.SqueezeMin, vars, null, null, 1_000, 1).Simulation);
     }
 
     [Fact]
@@ -362,7 +382,10 @@ public sealed class ORingGlandTests
         Assert.All(material.Symbols, s => Assert.NotNull(Gland.Template.FindInput(s)!.MaterialProperty));
         Assert.Equal("alpha", Gland.Template.FindInput("alpha")!.MaterialProperty);
         Assert.Equal("nu", Gland.Template.FindInput("nu")!.MaterialProperty);
+
+        // L5: the library applies one material record to a sheet, so the groove metal's alpha_m (a second material) stays an input the user enters from the metal's data sheet; the input says so.
         Assert.Null(Gland.Template.FindInput("alpha_m")!.MaterialProperty);
+        Assert.Contains("one material record per sheet", Gland.Template.FindInput("alpha_m")!.Description, StringComparison.Ordinal);
         Assert.Contains(kinds, k => k.Kind == "oring.ring" && k.Symbols.Contains("W") && k.Symbols.Contains("d_r"));
 
         // Only the two optional tables exist, and both are the user's data (measured scan results, the extrusion record).
@@ -386,6 +409,253 @@ public sealed class ORingGlandTests
         }
 
         Assert.All(Gland.Template.ClauseRefs, c => Assert.True(c.Title.Length < 120));
+    }
+
+    private static readonly CalcInputValue[] RodGland =
+    [
+        CalcInputValue.Choice("type", ORingGlandCalculator.TypeRod),
+        Mm("d_r", 39.5), Mm("d_r_tol", 0.35), Mm("W", 3.0), Mm("W_tol", 0.1),
+        Mm("D_s", 40), Mm("D_s_u", -0.025), Mm("D_s_l", -0.05), Mm("D_g", 44.8), Mm("D_g_u", 0.062), Mm("D_g_l", 0),
+        Mm("D_c", 40), Mm("D_c_u", 0.039), Mm("D_c_l", 0), Mm("b", 4.1),
+    ];
+
+    private static readonly CalcInputValue[] InternalFace =
+    [
+        CalcInputValue.Choice("type", ORingGlandCalculator.TypeFace), CalcInputValue.Choice("face_p", ORingGlandCalculator.PressureInternal),
+        Mm("d_r", 60), Mm("d_r_tol", 0.5), Mm("W", 3.5), Mm("W_tol", 0.1),
+        Mm("D_g", 66.7), Mm("D_g_u", 0.05), Mm("D_g_l", 0), Mm("h_f", 2.75), Mm("h_f_u", 0.05), Mm("h_f_l", 0),
+        Mm("e_f", 0.05), Mm("e_f_u", 0.05), Mm("e_f_l", 0), Mm("b", 4.9), Mm("b_u", 0.1), Mm("b_l", 0),
+    ];
+
+    private static double Step(CalcRunResult r, string symbol) => ((Tempest.Calc.Engine.Values.ScalarValue)r.Steps.Single(x => x.Symbol == symbol).Result).Si;
+
+    [Fact]
+    public void The_Hot_Fill_Is_On_A_Volume_Basis_Not_An_Isotropic_Section_Area()
+    {
+        // M2: fill_max = (pi/4)·W_max²·(1 + alpha·dT)³(1 + s)/(A_g,min·g³) with the unscaled groove area; checked by hand, independent of the model.
+        double Hand(double swell, double alphaRing = 1.5e-4, double tMax = 80)
+        {
+            double g = 1 + 1.2e-5 * (tMax - 20), unscaledGroove = 4.8 * 2.700 - 2 * (1 - Math.PI / 4) * 0.2 * 0.2;
+            return Math.PI / 4 * 3.6 * 3.6 * Math.Pow(1 + alphaRing * (tMax - 20), 3) * (1 + swell) / (unscaledGroove * Math.Pow(g, 3)) * 100;
+        }
+
+        Assert.Equal(Hand(0.05), Pct(Run(), "fill_max"), 8);
+        Assert.Equal(84.64, Pct(Run(), "fill_max"), 2);
+        Assert.Equal(Hand(0.15), Pct(Run(Percent("s_max", 15)), "fill_max"), 8);
+        Assert.InRange(Pct(Run(Percent("s_max", 15)), "fill_max"), 92.6, 92.8);
+        Assert.Equal(Hand(0.0, 3e-4, 100), Pct(Run(CalcInputValue.Quantity("T_max", 100, "degC"), Percent("s_max", 0), CalcInputValue.Quantity("alpha", 3e-4, "1/K")), "fill_max"), 8);
+
+        // The isotropic scaling it replaces would read lower (82.59 % on the defaults): the model's ring area carries f³/g, not f².
+        var (env, vars) = PistonGland(ReductionRelation.Incompressible);
+        var mid = new double[8];
+
+        foreach (var v in vars)
+            mid[(int)v.Dim] = v.Mid;
+
+        var (f, g) = ORingGlandModel.Factors(env, GlandCase.Hot);
+        Assert.Equal(Math.PI / 4 * Math.Pow(f * 3.5, 2) * f / g, ORingGlandModel.HotRingArea(env, mid), 9);
+    }
+
+    [Fact]
+    public void The_Parker_Quadratic_Is_Used_For_About_3_To_25_Percent_And_The_Sheet_Warns_Outside_That()
+    {
+        // M3: no jump from nothing to 0.56 % at the first trace of stretch; held at the 25 % value above the range.
+        double Y(double x) => ORingGlandModel.Reduction(ReductionRelation.Parker, x, 0.49);
+        Assert.Equal(0, Y(0));
+        Assert.Equal(ORingGlandModel.Parker(3) / 100 / 3, Y(0.01), 12);
+        Assert.True(Y(1e-9) < 1e-8);
+        Assert.Equal(ORingGlandModel.Parker(3) / 100, Y(0.03), 12);
+        Assert.Equal(0.56 / 100 + 0.59 * 0.04 - 0.0046 * 16 / 100, Y(0.04), 12);
+        Assert.Equal(ORingGlandModel.Parker(25) / 100, Y(0.25), 12);
+        Assert.Equal(Y(0.25), Y(0.30), 12);
+        Assert.Equal(Y(0.25), Y(0.64), 12);
+        Assert.Equal(0.12435, Y(0.40), 12);
+
+        // Continuous at 3 % and increasing through the range.
+        Assert.Equal(Y(0.03), Y(0.0300001), 6);
+        Assert.True(Enumerable.Range(1, 60).Select(i => Y(i * 0.005)).Zip(Enumerable.Range(2, 59).Select(i => Y(i * 0.005)), (a, b) => b >= a - 1e-12).All(ok => ok));
+
+        // Sheet: the defaults (stretch 2.1 to 4.4 %) reach below 3 %, so the Parker relation warns; a ring at 4 % throughout does not.
+        Assert.Contains(Run(CalcInputValue.Choice("red", ORingGlandCalculator.RelationParker)).Warnings, w => w.RuleId == "stretch" && w.Message.Contains("Parker", StringComparison.Ordinal));
+        Assert.DoesNotContain(Run(Plain(Mm("d_r_tol", 0), Mm("D_s", 57), Mm("D_g", 52), Mm("D_g_u", 0), Mm("D_g_l", 0), CalcInputValue.Choice("red", ORingGlandCalculator.RelationParker))).Warnings, w => w.RuleId == "stretch");
+        Assert.Contains(Run(Plain(Mm("d_r_tol", 0), Mm("D_s", 70), Mm("D_g", 65), Mm("D_g_u", 0), Mm("D_g_l", 0), CalcInputValue.Choice("red", ORingGlandCalculator.RelationParker))).Warnings, w => w.RuleId == "stretch" && w.Message.Contains("25", StringComparison.Ordinal));
+        Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "stretch");
+    }
+
+    [Fact]
+    public void A_Rod_Seal_Outside_Diameter_Has_Its_Own_Limit_And_Thickens_The_Section()
+    {
+        // M4: od_hi is a record limit of its own (it used to borrow x_hi, the 6 % ID-stretch rule).
+        Assert.Contains(Gland.Template.RecordKinds!, k => k.Kind == "oring.criteria" && k.Symbols.Contains("od_hi"));
+        var rod = Run(RodGland);
+        Assert.Equal(2.7144408252, Pct(rod, "od_comp"), 9);
+
+        bool Od(CalcRunResult r) => r.Checks.Single(c => c.Name.StartsWith("Ring OD compression", StringComparison.Ordinal)).Passed;
+        bool StretchOk(CalcRunResult r) => r.Checks.Single(c => c.Name == "Installed stretch not above the limit").Passed;
+        Assert.True(Od(rod));
+        Assert.False(Od(Run([.. RodGland, Percent("od_hi", 2.5)])));
+        Assert.True(Od(Run([.. RodGland, Percent("od_hi", 3)])));
+
+        // x_hi no longer governs the OD compression, and od_hi no longer governs the stretch.
+        Assert.True(Od(Run([.. RodGland, Percent("x_hi", 2)])));
+        Assert.False(StretchOk(Run([.. RodGland, Percent("x_hi", 2)])));
+        Assert.True(StretchOk(Run([.. RodGland, Percent("od_hi", 2.5)])));
+
+        // Constant-volume thickening: W_eff = f·W·(1 − r)/sqrt(1 − c). In ka-rod-seal the hot end compresses the OD by 5.069 % and the section by 2.6 %.
+        Assert.Equal(0.0506929787, Step(rod, "c_h"), 9);
+        Assert.Equal(26.8202916965, Pct(rod, "squeeze_max"), 7);
+        Assert.Equal(84.5655009226, Pct(rod, "fill_max"), 7);
+        Assert.True(Pct(rod, "squeeze_max") > 24.9 + 1.5);
+
+        // A piston seal has no outside-diameter compression to add: the same section reads as before.
+        Assert.DoesNotContain(Run().Steps, x => x.Symbol is "c_h" or "c_c");
+        Assert.Equal(0.0, ORingGlandModel.OdCompression(PistonGland().Env, GlandCase.Hot, new double[8]));
+        Assert.Equal(1.0, ORingGlandModel.Thickening(0.0));
+        Assert.Equal(1 / Math.Sqrt(1 - 0.05), ORingGlandModel.Thickening(0.05), 12);
+    }
+
+    [Fact]
+    public void A_Face_Seal_With_Internal_Pressure_Seats_Its_Outside_Diameter_And_Is_Judged_On_Its_Compression()
+    {
+        // M5: with the pressure inside, the ring OD seats on the groove outer wall; the ID is free, so no stretch lower limit applies and the OD compression is checked.
+        var external = Run(Plain(CalcInputValue.Choice("type", ORingGlandCalculator.TypeFace)));
+        var internalFace = Run([.. InternalFace, CalcInputValue.Of("n_mc", 2_000)]);
+        Assert.False(internalFace.IsBlocked, string.Join("; ", internalFace.Blocks.Select(b => b.Message)));
+
+        // Hand: ring OD 66.3 to 67.7 mm on a 66.70 to 66.75 mm outer wall.
+        Assert.Equal((66.75 / 66.3 - 1) * 100, Pct(internalFace, "stretch"), 9);
+        Assert.Equal((66.70 / 67.7 - 1) * 100, Pct(internalFace, "stretch_min"), 9);
+        Assert.Equal((67.7 - 66.70) / 67.7 * 100, Pct(internalFace, "od_comp"), 9);
+        Assert.Equal((67.0 - 66.725) / 67.0 * 100, Pct(internalFace, "od_comp_nom"), 9);
+        Assert.NotNull(internalFace.FindOutput("od_comp"));
+        Assert.Contains(internalFace.Checks, c => c.Name.StartsWith("Ring OD compression", StringComparison.Ordinal) && c.Passed);
+        Assert.DoesNotContain(internalFace.Checks, c => c.Name.StartsWith("Installed stretch not below", StringComparison.Ordinal));
+
+        // The external-pressure face seal keeps its ID stretch and its lower stretch limit, and has no OD output.
+        Assert.Null(external.FindOutput("od_comp"));
+        Assert.Contains(external.Checks, c => c.Name.StartsWith("Installed stretch not below", StringComparison.Ordinal));
+        Assert.Equal(ORingGlandCalculator.PressureExternal, Gland.Template.FindInput("face_p")!.DefaultChoice);
+
+        // The old external-only model gave this ring a negative "stretch" that failed x_lo = 0; here the compression is judged against od_hi, a limit of its own.
+        Assert.True(Pct(internalFace, "stretch_min") < 0);
+        Assert.Contains(Run([.. InternalFace, Percent("od_hi", 1)]).Checks, c => c.Name.StartsWith("Ring OD compression", StringComparison.Ordinal) && !c.Passed);
+
+        // The direction is ignored by the radial seals.
+        Assert.Equal(Pct(Run(), "squeeze_min"), Pct(Run(CalcInputValue.Choice("face_p", ORingGlandCalculator.PressureInternal)), "squeeze_min"), 12);
+        Assert.Null(Run(CalcInputValue.Choice("face_p", ORingGlandCalculator.PressureInternal)).FindOutput("od_comp"));
+
+        // The compressed ring thickens (at the hot end the OD compression is 3.86 %): squeeze_max and fill_max exceed those of the same ring without the correction.
+        Assert.Equal(26.9136545944, Pct(internalFace, "squeeze_max"), 7);
+        Assert.Equal(82.6242783141, Pct(internalFace, "fill_max"), 7);
+        Assert.Equal(0.0386191240, Step(internalFace, "c_h"), 9);
+    }
+
+    [Fact]
+    public void A_Missing_Extrusion_Limit_Fails_The_Sheet_Until_It_Is_Entered()
+    {
+        // L2: with 160 bar and no permitted gap the sheet used to pass with a warning.
+        var none = CalcRunner.Run(Gland, CalcTemplateHasher.DefaultInputs(Gland.Template).With(new CalcInputValue("gap_allow")));
+        Assert.Contains(none.Warnings, w => w.RuleId == "extrusion");
+        Assert.Contains(none.Checks, c => c.Name.StartsWith("Extrusion verified", StringComparison.Ordinal) && !c.Passed);
+        Assert.False(none.Passed);
+
+        // The same sheet at no pressure has nothing to extrude, and passes; the limit entered passes it at 160 bar.
+        Assert.True(CalcRunner.Run(Gland, CalcTemplateHasher.DefaultInputs(Gland.Template).With(new CalcInputValue("gap_allow")).With(CalcInputValue.Quantity("p_op", 0, "bar"))).Passed);
+        Assert.True(Run().Passed);
+
+        // A new sheet opens with no permitted gap: it runs, and fails until the limit is entered.
+        var fresh = CalcRunner.Run(Gland, CalcTemplateHasher.NewSheetInputs(Gland.Template));
+        Assert.False(fresh.IsBlocked);
+        Assert.False(fresh.Passed);
+    }
+
+    [Fact]
+    public void The_Gap_Is_The_Largest_Over_The_Temperature_Range_With_Each_Part_Expanding_By_Its_Own_Metal_And_The_Bore_Dilation()
+    {
+        // L3: gap = g_s·D_s − g_m·D_c over the installed, cold and hot temperatures (+ dilation under pressure).
+        var same = Run();
+        Assert.Equal(0.10607632e-3, same.OutputSi("gap_max"), 12);
+        Assert.Equal(0.106e-3 * (1 + 1.2e-5 * 60), same.OutputSi("gap_max"), 12);
+        Assert.Equal(0.0299856e-3, same.OutputSi("gap_min"), 12);
+
+        // An aluminium bore round a steel piston opens up when hot: (1 + 2.3e-5·60)·56.946 − (1 + 1.2e-5·60)·56.84 mm.
+        var al = Run(CalcInputValue.Quantity("alpha_s", 2.3e-5, "1/K"));
+        Assert.Equal(1.00138 * 56.946 - 1.00072 * 56.84, al.OutputSi("gap_max") * 1e3, 9);
+        Assert.True(al.OutputSi("gap_max") > same.OutputSi("gap_max"));
+
+        // Bore dilation under pressure adds to the gap and to nothing else.
+        var dilated = Run(CalcInputValue.Quantity("alpha_s", 2.3e-5, "1/K"), Mm("dD_p", 0.02));
+        Assert.Equal(al.OutputSi("gap_max") + 0.02e-3, dilated.OutputSi("gap_max"), 12);
+        Assert.Equal(al.OutputSi("gap_min"), dilated.OutputSi("gap_min"), 12);
+        Assert.Equal(Pct(al, "squeeze_min"), Pct(dilated, "squeeze_min"), 12);
+        Assert.Equal(0.16366068e-3, Run(CalcInputValue.Quantity("alpha_s", 2.3e-5, "1/K"), Mm("dD_p", 0.02)).OutputSi("gap_max"), 11);
+
+        // Against a permitted gap the dilation can fail the extrusion check.
+        Assert.Contains(Run(Mm("gap_allow", 0.12), Mm("dD_p", 0.02)).Checks, c => c.Name.StartsWith("Extrusion gap", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(Run(Mm("gap_allow", 0.12)).Checks, c => c.Name.StartsWith("Extrusion gap", StringComparison.Ordinal) && c.Passed);
+
+        // A rod seal: the rod (sealing surface) expands with alpha_s, the housing with alpha_m.
+        var rod = Run([.. RodGland, CalcInputValue.Quantity("alpha_s", 2.3e-5, "1/K")]);
+        Assert.True(rod.OutputSi("gap_max") > Run(RodGland).OutputSi("gap_max"));
+        Assert.Equal(0.99952 * 40.039 - 0.99908 * 39.95, rod.OutputSi("gap_max") * 1e3, 9);
+
+        // A face seal's axial gap is as dimensioned.
+        Assert.Equal(0.1e-3, Run(Plain(CalcInputValue.Choice("type", ORingGlandCalculator.TypeFace), Mm("dD_p", 0.3))).OutputSi("gap_max"), 12);
+
+        // The model agrees: the exact Gap criterion is the same maximum.
+        var (env, vars) = PistonGland();
+        var withMetals = env with { AlphaSurface = 2.3e-5, BoreDilation = 0.02 };
+        var x = new double[8];
+
+        foreach (var v in vars)
+            x[(int)v.Dim] = v.Mid;
+
+        Assert.Equal(Math.Max(Math.Max(ORingGlandModel.GapAt(withMetals, GlandCase.Installed, x), ORingGlandModel.GapAt(withMetals, GlandCase.Cold, x)), ORingGlandModel.GapAt(withMetals, GlandCase.Hot, x)) + 0.02, ORingGlandModel.Evaluate(withMetals, GlandCriterion.Gap, x), 12);
+    }
+
+    [Fact]
+    public void The_Stretch_Is_Also_Checked_At_The_Cold_End()
+    {
+        // L4: the cold ring is shorter against the same groove, so the stretch is larger there (4.41 % against 3.83 % installed on the defaults).
+        var r = Run();
+        Assert.Equal(4.4072499513, Pct(r, "X_c"), 8);
+        Assert.True(Pct(r, "X_c") > Pct(r, "stretch"));
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Installed stretch not above the limit at the cold end", StringComparison.Ordinal) && c.Passed);
+
+        // A limit between the two: the installed stretch passes, the cold-end stretch fails.
+        var between = Run(Percent("x_hi", 4.2));
+        Assert.Contains(between.Checks, c => c.Name == "Installed stretch not above the limit" && c.Passed);
+        Assert.Contains(between.Checks, c => c.Name.StartsWith("Installed stretch not above the limit at the cold end", StringComparison.Ordinal) && !c.Passed);
+        Assert.False(between.Passed);
+    }
+
+    [Fact]
+    public void A_Measured_Row_That_Is_Not_A_Dimension_Blocks_And_A_Face_Gap_Row_Replaces_The_Gap()
+    {
+        // L6: an unknown key used to fall through to the face gap and silently replace e_f.
+        CalcInputValue Measured(string dim, double mean, double sigma) =>
+            CalcInputValue.Table("measured", [CalcRow.Of(("dim", new CalcCell(Text: dim)), ("mean", new CalcCell(mean, "mm")), ("sigma", new CalcCell(sigma, "mm")), ("dist", new CalcCell(Text: ORingGlandCalculator.DistributionNormal)))]);
+
+        var face = CalcInputValue.Choice("type", ORingGlandCalculator.TypeFace);
+        var unknown = CalcRunner.Run(Gland, With(face, Measured("zz", 0.5, 0.01)));
+        Assert.True(unknown.IsBlocked);
+        Assert.True(CalcRunner.Run(Gland, With(face, Measured("", 0.5, 0.01))).IsBlocked);
+
+        // e_f is a dimension of a face seal: the measured mean 0.04 mm, no spread, is its gap.
+        var gap = Run(face, Measured("e_f", 0.04, 0));
+        Assert.False(gap.IsBlocked, string.Join("; ", gap.Blocks.Select(b => b.Message)));
+        Assert.Equal(0.04e-3, gap.OutputSi("gap_max"), 12);
+
+        // On a radial seal e_f is not used: the row is ignored with a warning, not applied.
+        var radial = Run(Measured("e_f", 0.5, 0));
+        Assert.Contains(radial.Warnings, w => w.RuleId == "measured");
+        Assert.Equal(Run().OutputSi("gap_max"), radial.OutputSi("gap_max"), 12);
+    }
+
+    [Fact]
+    public void The_Template_Version_Is_Bumped_For_The_Changed_Model()
+    {
+        Assert.Equal("1.1.0", Gland.Template.Version);
     }
 
     [Fact]

@@ -12,7 +12,7 @@ A 100/70 × 500 mm cylinder at 160 bar and 36 L/min, fed by a 28 cm³/rev pump a
 
 | Step | Calculator | Revision | Checks |
 |---|---|---|---|
-| Cylinder and pump circuit | `fp.cylinder` | A | 7 of 7 PASS |
+| Cylinder and pump circuit | `fp.cylinder` | A | 6 of 7 PASS |
 | Emergency stroke accumulator | `fp.accumulator` | A | 2 of 2 PASS |
 | Pressure line | `bs.pipe-pump` | A | 1 of 1 PASS |
 | Pump drive motor | `elec.motor-sizing` | A | 3 of 3 PASS |

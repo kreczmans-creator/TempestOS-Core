@@ -53,7 +53,7 @@ public enum ReductionRelation
     /// <summary>Constant-volume rubber: the circumference grows by (1 + X), so the cross-section diameter falls by 1/√(1 + X). Derived.</summary>
     Incompressible,
 
-    /// <summary>The quadratic Y = 0.56 + 0.59·X − 0.0046·X² (X, Y in per cent), cited as Parker ORD 5700 §3.5 in Addendum B §B6 F3; not confirmed against the handbook.</summary>
+    /// <summary>The quadratic Y = 0.56 + 0.59·X − 0.0046·X² (X, Y in per cent), cited as Parker ORD 5700 §3.5 in Addendum B §B6 F3; not confirmed against the handbook. Used for about 3 to 25 % stretch only: below it the value is blended linearly to zero, above it the 25 % value is held.</summary>
     Parker,
 
     /// <summary>Linear in the stretch: a reduction of ν·X for the user's Poisson ratio ν. Derived.</summary>
@@ -82,7 +82,7 @@ public enum GlandCriterion
     /// <summary>Squeeze at the hot end.</summary>
     SqueezeMax,
 
-    /// <summary>Gland fill at the hot end, on the unstretched cross-section.</summary>
+    /// <summary>Gland fill at the hot end, on the unstretched cross-section and a volume basis.</summary>
     FillMax,
 
     /// <summary>Gland fill at the cold end, on the stretch-reduced cross-section.</summary>
@@ -91,10 +91,10 @@ public enum GlandCriterion
     /// <summary>The installed stretch of the ring inside diameter.</summary>
     Stretch,
 
-    /// <summary>The installed compression of the ring outside diameter in a rod-seal groove.</summary>
+    /// <summary>The installed compression of the ring outside diameter in a rod-seal groove, or against the groove outer wall of an internal-pressure face seal.</summary>
     OdCompression,
 
-    /// <summary>The extrusion gap (diametral for radial seals, axial for face seals).</summary>
+    /// <summary>The largest extrusion gap over the temperature range, with the bore dilation (diametral for radial seals, axial for face seals).</summary>
     Gap,
 }
 
@@ -124,7 +124,14 @@ public sealed record GlandVar(GlandDim Dim, string Name, double Nominal, double 
 /// <param name="SwellMin">The smallest volume change of the ring in service (negative: shrinkage), as a fraction.</param>
 /// <param name="SwellMax">The largest volume swell, as a fraction.</param>
 /// <param name="CornerRadius">The groove bottom corner radius, mm.</param>
-public sealed record GlandEnvironment(SealKind Kind, ReductionRelation Relation, double Nu, double Alpha, double AlphaMetal, double TRef, double TMin, double TMax, double SwellMin, double SwellMax, double CornerRadius);
+/// <param name="AlphaSurface">The linear thermal expansion coefficient of the part that carries the sealing surface (the bore of a piston seal, the rod of a rod seal), 1/K; <see langword="null"/> takes <paramref name="AlphaMetal"/>.</param>
+/// <param name="BoreDilation">The diametral growth of the bore (piston seal) or of the housing bore round the rod (rod seal) under the operating pressure, mm, added to the extrusion gap; 0 if not entered.</param>
+/// <param name="InternalPressure">A face seal with the pressure on the inside: the ring outside diameter seats on the groove outer wall (<see cref="GlandDim.Groove"/>) instead of the inside diameter on the groove inner wall. Ignored for radial seals.</param>
+public sealed record GlandEnvironment(SealKind Kind, ReductionRelation Relation, double Nu, double Alpha, double AlphaMetal, double TRef, double TMin, double TMax, double SwellMin, double SwellMax, double CornerRadius, double? AlphaSurface = null, double BoreDilation = 0.0, bool InternalPressure = false)
+{
+    /// <summary>The ring outside diameter seats on the reference diameter (an internal-pressure face seal).</summary>
+    public bool HeldByOutsideDiameter => Kind == SealKind.Face && InternalPressure;
+}
 
 /// <summary>A criterion linearised about the mean dimensions: its value there and one sensitivity per varying dimension (secant across the band).</summary>
 /// <param name="Value">The criterion at the mean dimensions.</param>
@@ -168,8 +175,14 @@ public static class ORingGlandModel
     /// <summary>The fixed reference temperature of the installed state, °C.</summary>
     public const double ReferenceTemperature = 20.0;
 
-    /// <summary>The Parker quadratic is held at its vertex (64 % stretch): beyond it the fit turns downward and means nothing.</summary>
-    public const double ParkerStretchCap = 64.0;
+    /// <summary>The lowest stretch (per cent) the Parker quadratic is used for. Below it the reduction is blended linearly to zero at no stretch, so that it does not jump from nothing to 0.56 % at the first trace of stretch (the handbook's range is an owner check).</summary>
+    public const double ParkerStretchMin = 3.0;
+
+    /// <summary>The highest stretch (per cent) the Parker quadratic is used for: above it the value at this stretch is held.</summary>
+    public const double ParkerStretchCap = 25.0;
+
+    /// <summary>A compressed outside diameter never thickens the section beyond this fraction of compression.</summary>
+    public const double MaxCompression = 0.9;
 
     /// <summary>The linear relation never leaves less than a tenth of the cross-section.</summary>
     public const double MaxReduction = 0.9;
@@ -184,10 +197,19 @@ public static class ORingGlandModel
         {
             ReductionRelation.None => 0.0,
             ReductionRelation.Incompressible => x > -0.99 ? 1.0 - 1.0 / Math.Sqrt(1.0 + x) : 0.0,
-            ReductionRelation.Parker => x > 0.0 ? Math.Max(Parker(Math.Min(x * 100.0, ParkerStretchCap)), 0.0) / 100.0 : 0.0,
+            ReductionRelation.Parker => x > 0.0 ? ParkerBranch(x * 100.0) / 100.0 : 0.0,
             ReductionRelation.Linear => Math.Min(nu * x, MaxReduction),
             _ => 0.0,
         };
+    }
+
+    /// <summary>The quadratic inside its range (about 3 to 25 % stretch, held at the top), blended linearly to zero below it.</summary>
+    private static double ParkerBranch(double stretchPercent)
+    {
+        if (stretchPercent >= ParkerStretchMin)
+            return Math.Max(Parker(Math.Min(stretchPercent, ParkerStretchCap)), 0.0);
+
+        return Parker(ParkerStretchMin) * stretchPercent / ParkerStretchMin;
     }
 
     /// <summary>Y = 0.56 + 0.59·X − 0.0046·X² with X the stretch and Y the cross-section reduction, both in per cent (the form Addendum B §B6 F3 quotes from Parker ORD 5700 §3.5).</summary>
@@ -238,18 +260,98 @@ public static class ORingGlandModel
         };
     }
 
-    /// <summary>The ring stretch in a case: (g·D_ref)/(f·d) − 1, a fraction.</summary>
+    /// <summary>The ring diameter that sits on the reference diameter: the inside diameter, or the outside diameter d + 2W of an internal-pressure face seal.</summary>
+    public static double RingSeatDiameter(GlandEnvironment env, double[] x)
+    {
+        ArgumentNullException.ThrowIfNull(env);
+        ArgumentNullException.ThrowIfNull(x);
+        return env.HeldByOutsideDiameter ? RingOd(x) : x[(int)GlandDim.RingId];
+    }
+
+    /// <summary>The ring stretch in a case: (g·D_ref)/(f·d) − 1, a fraction (d is the outside diameter d + 2W for an internal-pressure face seal, where a negative value is the outside-diameter compression).</summary>
     public static double Stretch(GlandEnvironment env, GlandCase c, double[] x)
     {
         var (f, g) = Factors(env, c);
-        return g * ReferenceDiameter(env.Kind, x) / (f * x[(int)GlandDim.RingId]) - 1.0;
+        return g * ReferenceDiameter(env.Kind, x) / (f * RingSeatDiameter(env, x)) - 1.0;
     }
 
-    /// <summary>The effective cross-section in a case: f·W·(1 − reduction(stretch)), mm.</summary>
+    /// <summary>
+    /// The compression of the ring outside diameter in a case, a fraction, where the outside diameter is held in the groove: a rod
+    /// seal (against the housing groove root) and an internal-pressure face seal (against the groove outer wall),
+    /// 1 − g·D_g/(f·(d + 2W)) and not below zero. Zero for every other seal.
+    /// </summary>
+    public static double OdCompression(GlandEnvironment env, GlandCase c, double[] x)
+    {
+        ArgumentNullException.ThrowIfNull(env);
+        ArgumentNullException.ThrowIfNull(x);
+
+        if (env.Kind != SealKind.Rod && !env.HeldByOutsideDiameter)
+            return 0.0;
+
+        var (f, g) = Factors(env, c);
+        return Math.Clamp(1.0 - g * x[(int)GlandDim.Groove] / (f * RingOd(x)), 0.0, MaxCompression);
+    }
+
+    /// <summary>The thickening of the section by a compressed outside diameter, 1/√(1 − c) (constant volume); 1 without compression.</summary>
+    public static double Thickening(double compression) => 1.0 / Math.Sqrt(1.0 - Math.Clamp(compression, 0.0, MaxCompression));
+
+    /// <summary>The effective cross-section in a case: f·W·(1 − reduction(stretch))/√(1 − c), mm (c the outside-diameter compression, zero unless the outside diameter is held).</summary>
     public static double EffectiveSection(GlandEnvironment env, GlandCase c, double[] x)
     {
         var (f, _) = Factors(env, c);
-        return f * x[(int)GlandDim.Section] * (1.0 - Reduction(env.Relation, Stretch(env, c, x), env.Nu));
+        var stretch = Stretch(env, c, x);
+
+        // An internal-pressure face seal is stretched only when its outside diameter is smaller than the seat; a compressed one thickens instead.
+        var reduction = Reduction(env.Relation, env.HeldByOutsideDiameter ? Math.Max(stretch, 0.0) : stretch, env.Nu);
+        return f * x[(int)GlandDim.Section] * (1.0 - reduction) * Thickening(OdCompression(env, c, x));
+    }
+
+    /// <summary>The size factors of the sealing-surface part and of the groove metal in a case, for the gap: 1 + α(T − 20 °C) each.</summary>
+    public static (double Surface, double Metal) GapFactors(GlandEnvironment env, GlandCase c)
+    {
+        ArgumentNullException.ThrowIfNull(env);
+
+        if (c == GlandCase.Installed)
+            return (1.0, 1.0);
+
+        var t = c == GlandCase.Cold ? env.TMin : env.TMax;
+        return (1.0 + (env.AlphaSurface ?? env.AlphaMetal) * (t - env.TRef), 1.0 + env.AlphaMetal * (t - env.TRef));
+    }
+
+    /// <summary>The diametral gap of a radial seal in a case, mm: the sealing-surface part (bore or rod) scaled by its own expansion, the groove-metal part by the groove metal's. A face seal's axial gap is as dimensioned.</summary>
+    public static double GapAt(GlandEnvironment env, GlandCase c, double[] x)
+    {
+        ArgumentNullException.ThrowIfNull(env);
+        ArgumentNullException.ThrowIfNull(x);
+        var (gs, gm) = GapFactors(env, c);
+
+        return env.Kind switch
+        {
+            SealKind.Piston => gs * x[(int)GlandDim.Surface] - gm * x[(int)GlandDim.Clearance],
+            SealKind.Rod => gm * x[(int)GlandDim.Clearance] - gs * x[(int)GlandDim.Surface],
+            _ => x[(int)GlandDim.FaceGap],
+        };
+    }
+
+    /// <summary>The largest gap over the reference, cold and hot temperatures, plus the bore dilation under pressure (radial seals), mm.</summary>
+    public static double GapWorst(GlandEnvironment env, double[] x)
+    {
+        ArgumentNullException.ThrowIfNull(env);
+        var worst = Math.Max(GapAt(env, GlandCase.Installed, x), Math.Max(GapAt(env, GlandCase.Cold, x), GapAt(env, GlandCase.Hot, x)));
+        return env.Kind == SealKind.Face ? worst : worst + env.BoreDilation;
+    }
+
+    /// <summary>
+    /// The ring area of the hot-end gland fill, mm², on a volume basis. A ring held circumferentially by the groove takes the whole
+    /// volume change in its section: (π/4)·W²·f³/g with f³ = (1 + αΔT)³(1 + s) and the held circumference growing by g. Where the
+    /// outside diameter is held (rod seal, internal-pressure face seal) the compression c = 1 − g·D_g/(f·OD), thermal growth
+    /// included, is that same volume change: (π/4)·(f·W)²/(1 − c).
+    /// </summary>
+    public static double HotRingArea(GlandEnvironment env, double[] x)
+    {
+        var (f, g) = Factors(env, GlandCase.Hot);
+        var isotropic = Math.PI / 4.0 * Math.Pow(f * x[(int)GlandDim.Section], 2);
+        return env.Kind == SealKind.Rod || env.HeldByOutsideDiameter ? isotropic * Math.Pow(Thickening(OdCompression(env, GlandCase.Hot, x)), 2) : isotropic * (f / g);
     }
 
     /// <summary>The groove area in a case, mm²: (g·width)(g·depth) less the two bottom corner fillets.</summary>
@@ -288,10 +390,7 @@ public static class ORingGlandModel
                 return Squeeze(env, GlandCase.Hot, x);
 
             case GlandCriterion.FillMax:
-            {
-                var (f, _) = Factors(env, GlandCase.Hot);
-                return Math.PI / 4.0 * Math.Pow(f * x[(int)GlandDim.Section], 2) / GrooveArea(env, GlandCase.Hot, x);
-            }
+                return HotRingArea(env, x) / GrooveArea(env, GlandCase.Hot, x);
 
             case GlandCriterion.FillMin:
                 return Math.PI / 4.0 * Math.Pow(EffectiveSection(env, GlandCase.Cold, x), 2) / GrooveArea(env, GlandCase.Cold, x);
@@ -306,7 +405,7 @@ public static class ORingGlandModel
             }
 
             case GlandCriterion.Gap:
-                return Gap(env.Kind, x);
+                return GapWorst(env, x);
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(criterion));
@@ -364,8 +463,10 @@ public static class ORingGlandModel
     }
 
     /// <summary>
-    /// Runs the engine on the linearised criterion: worst case, RSS and capability against the limits, and a seeded Monte
-    /// Carlo counting the fraction below the lower and above the upper limit. With no limit the simulation is skipped.
+    /// Runs the engine on the criterion: worst case, RSS and capability index on the criterion linearised about the mean dimensions
+    /// (the engine's tolerance-stack analysis), and a seeded Monte Carlo of the exact non-linear criterion counting the fraction
+    /// below the lower and above the upper limit (the engine's Monte Carlo, with the model as the function). With no limit the
+    /// simulation is skipped.
     /// </summary>
     public static GlandAnalysis Analyse(GlandEnvironment env, GlandCriterion criterion, IReadOnlyList<GlandVar> vars, double? lower, double? upper, int samples, ulong seed, CancellationToken cancellationToken = default)
     {
@@ -373,7 +474,50 @@ public static class ORingGlandModel
         var contributors = linear.Contributors();
         var requirement = lower is null && upper is null ? null : new StackRequirement(lower, upper);
         var stack = ToleranceStackEngine.Analyse(contributors, requirement);
-        var simulation = requirement is null ? null : ToleranceStackEngine.Simulate(contributors, samples, seed, requirement, cancellationToken: cancellationToken);
+        var simulation = requirement is null ? null : Simulate(env, criterion, vars, lower, upper, samples, seed, cancellationToken);
         return new GlandAnalysis(criterion, linear, stack, simulation);
+    }
+
+    /// <summary>
+    /// The seeded Monte Carlo of the exact criterion: each dimension that varies is sampled in <see cref="GlandDim"/> order from its
+    /// own distribution about its mean (normal about its σ, uniform or triangular over its half-band), and the engine's
+    /// <see cref="MonteCarlo"/> evaluates <see cref="Evaluate"/> on every sample.
+    /// </summary>
+    public static MonteCarloResult Simulate(GlandEnvironment env, GlandCriterion criterion, IReadOnlyList<GlandVar> vars, double? lower, double? upper, int samples, ulong seed, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(env);
+        ArgumentNullException.ThrowIfNull(vars);
+        var mid = new double[Enum.GetValues<GlandDim>().Length];
+
+        foreach (var v in vars)
+            mid[(int)v.Dim] = v.Mid;
+
+        var nominal = new Dictionary<string, double>(StringComparer.Ordinal);
+        var distributions = new Dictionary<string, Distribution>(StringComparer.Ordinal);
+        var keys = new List<(string Key, int Index)>();
+
+        foreach (var v in vars.Where(v => v.Half > 0.0 && v.Sigma > 0.0).OrderBy(v => (int)v.Dim))
+        {
+            var key = $"x{(int)v.Dim}";
+            keys.Add((key, (int)v.Dim));
+            nominal[key] = v.Mid;
+            distributions[key] = v.Distribution switch
+            {
+                ContributorDistribution.Uniform => Distribution.Uniform(v.Mid - v.Half, v.Mid + v.Half),
+                ContributorDistribution.Triangular => Distribution.Triangular(v.Mid - v.Half, v.Mid, v.Mid + v.Half),
+                _ => Distribution.Normal(v.Mid, v.Sigma),
+            };
+        }
+
+        var x = (double[])mid.Clone();
+
+        return MonteCarlo.Run(sample =>
+        {
+            foreach (var (key, index) in keys)
+                x[index] = sample[key];
+
+            var y = Evaluate(env, criterion, x);
+            return double.IsFinite(y) ? y : (y < 0.0 ? -1e9 : 1e9);
+        }, nominal, distributions, samples, seed, lower, upper, cancellationToken: cancellationToken);
     }
 }
