@@ -340,6 +340,11 @@ public sealed class CylinderTests
         var atDefault = Run(Q("v_req", 150, "mm/s"));
         Assert.Equal(expected, atDefault.OutputSi("Q"), 12);
         Assert.DoesNotContain(atDefault.Warnings, w => w.RuleId == "v-req-q");
+
+        // The comparison is tied to the Q input's own default through the shared constant, so the two cannot drift apart; any other flow, however close, warns.
+        Assert.Equal(CylinderCalculator.DefaultFlowLpm, Cylinder.Template.Inputs.Single(i => i.Symbol == "Q").Default);
+        Assert.Contains(Run(Q("v_req", 150, "mm/s"), Q("Q", CylinderCalculator.DefaultFlowLpm + 0.5, "L/min")).Warnings, w => w.RuleId == "v-req-q");
+        Assert.DoesNotContain(Run(Q("v_req", 150, "mm/s"), Q("Q", CylinderCalculator.DefaultFlowLpm, "L/min")).Warnings, w => w.RuleId == "v-req-q");
         Assert.Equal(blank.OutputSi("Q_prs"), both.OutputSi("Q_prs"), 12);
 
         // The regenerative extend runs on the rod area: Q = v·A_r/η_vc.

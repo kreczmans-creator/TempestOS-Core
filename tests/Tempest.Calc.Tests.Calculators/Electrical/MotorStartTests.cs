@@ -388,6 +388,12 @@ public sealed class MotorStartTests
         var linked = new[] { Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisIk), Q("I_k", 12, "kA") with { Provenance = link } };
         var wrong = Assert.Single(Run([.. linked, N("c_src", 1)]).Warnings, w => w.RuleId == "c_src");
         Assert.StartsWith("c_src:", wrong.Message, StringComparison.Ordinal);
+
+        // The text does not assume 1.1 is right for every E5 setting: the fault level's voltage factor must match c_src, and linking c_src from c_k3 removes the mismatch.
+        Assert.DoesNotContain("computed with c = 1.1", wrong.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Set c_src to 1.1", wrong.Message, StringComparison.Ordinal);
+        Assert.Contains("must match c_src", wrong.Message, StringComparison.Ordinal);
+        Assert.Contains("Link c_src from the fault-protection step's c_k3", wrong.Message, StringComparison.Ordinal);
         Assert.DoesNotContain(Run([.. linked, N("c_src", 1.1)]).Warnings, w => w.RuleId == "c_src");
         Assert.DoesNotContain(Run(linked).Warnings, w => w.RuleId == "c_src");
     }

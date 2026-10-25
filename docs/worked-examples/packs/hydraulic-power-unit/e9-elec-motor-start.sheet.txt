@@ -257,7 +257,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
 
 8. VERIFICATION
   Template: elec.motor-start@1.2.0
-  Content hash: 15bfc7e08b76ce1f
+  Content hash: 619b634f509eb509
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
   Test run: 2026-10-25 15:36 UTC

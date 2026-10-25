@@ -530,4 +530,49 @@ public sealed class SpringTests
         Assert.Contains(byDeflection.Warnings, w => w.RuleId == "travel-mismatch");
         Assert.DoesNotContain(Run(CalcInputValue.Choice("work", SpringCalculator.Deflections), Q("s_1", 2, "mm"), Q("s_2", 8, "mm"), Q("s_work", 6, "mm")).Warnings, w => w.RuleId == "travel-mismatch");
     }
+
+    [Fact]
+    public void An_Expected_Working_Travel_Is_Not_Used_In_Torsion_Mode_And_The_Sheet_Says_So()
+    {
+        // The travel check is a deflection in mm and runs for compression and extension only; a torsion spring works through an angle, so s_work (typed or linked) has nothing to be compared with.
+        var typed = Run([.. Torsion(), Q("s_work", 6, "mm")]);
+        Assert.False(typed.IsBlocked);
+        var unused = Assert.Single(typed.Warnings, w => w.RuleId == "s-work-unused");
+        Assert.StartsWith("s_work:", unused.Message, StringComparison.Ordinal);
+        Assert.Contains("not used in torsion mode", unused.Message, StringComparison.Ordinal);
+        Assert.Null(typed.FindOutput("s_trav"));
+        Assert.DoesNotContain(typed.Warnings, w => w.RuleId == "travel-mismatch");
+
+        // A linked s_work (the M9 lift) is the same: the provenance does not matter, the mode does.
+        var link = CalcProvenance.Link(Guid.NewGuid(), "lift", "1");
+        var linked = Run([.. Torsion(), Q("s_work", 6, "mm") with { Provenance = link }]);
+        Assert.Single(linked.Warnings, w => w.RuleId == "s-work-unused");
+
+        // Blank s_work is silent in torsion mode, and the warning is for torsion only: compression and extension use s_work (travel check).
+        Assert.DoesNotContain(Run(Torsion()).Warnings, w => w.RuleId == "s-work-unused");
+        Assert.DoesNotContain(Run(Q("s_work", 6.144, "mm")).Warnings, w => w.RuleId == "s-work-unused");
+        Assert.DoesNotContain(Run(Mode(SpringCalculator.Extension), Q("F_0", 10, "N"), Q("F_1", 30, "N"), Q("F_2", 60, "N"), Q("r_h1", 8, "mm"), Q("r_h2", 4, "mm"), Q("s_work", 15, "mm")).Warnings, w => w.RuleId == "s-work-unused");
+        Assert.Contains("s-work-unused", DeclaredRules());
+    }
+
+    [Fact]
+    public void The_Permissible_Stress_Fractions_Default_To_Generic_Textbook_Values_The_User_Replaces_With_The_Licensed_Standard_Value()
+    {
+        // The defaults stay; the wording no longer says the fractions have no default.
+        var defaults = new[] { ("f_tau", 0.45), ("f_sigma", 0.75), ("f_su", 0.67) };
+
+        foreach (var (symbol, value) in defaults)
+        {
+            var spec = Spring.Template.Inputs.Single(i => i.Symbol == symbol);
+            Assert.Equal(value, spec.Default);
+            Assert.Contains("generic textbook default", spec.Description, StringComparison.Ordinal);
+            Assert.Contains("EN 13906", spec.Description, StringComparison.Ordinal);
+        }
+
+        var assumption = Spring.Template.Assumptions.Single(a => a.Statement.Contains("permissible stress fractions", StringComparison.Ordinal));
+        Assert.DoesNotContain("the permissible stress fractions and the endurance strength are the user's inputs", assumption.Statement, StringComparison.Ordinal);
+        Assert.Contains("generic textbook fractions", assumption.Statement, StringComparison.Ordinal);
+        Assert.Contains("licensed EN 13906 value", assumption.Statement, StringComparison.Ordinal);
+        Assert.Contains("generic textbook fractions", Spring.Template.RecordKinds!.Single(k => k.Kind == "spring.permissible").Guidance, StringComparison.Ordinal);
+    }
 }

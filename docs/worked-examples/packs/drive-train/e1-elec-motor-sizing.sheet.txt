@@ -165,10 +165,11 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.
   WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
+  WARNING speed-above-rated: n_L: the motor speed n_pk = 1500 rpm is above the candidate motor's rated speed 1480 rpm; its rated torque and power hold at the nameplate speed, so check the motor's torque and power at this speed (field weakening or a different ratio i).
 
 8. VERIFICATION
   Template: elec.motor-sizing@1.4.0
-  Content hash: 64020d560b0ee248
+  Content hash: 0f221113aba05f54
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
   Test run: 2026-10-24 20:02 UTC

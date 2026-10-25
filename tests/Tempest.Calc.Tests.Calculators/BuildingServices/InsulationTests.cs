@@ -391,4 +391,20 @@ public sealed class InsulationTests
         var r = Run(Sheet());
         Assert.All(t.OutputPorts!.Where(p => p.Symbol != "q_area"), p => Assert.NotNull(r.FindOutput(p.Symbol)));
     }
+
+    [Fact]
+    public void The_Surface_Coefficient_And_Heat_Loss_Limit_Defaults_Are_Labelled_Generic_And_No_Text_Says_No_Value_Ships()
+    {
+        // h_se opens on 10 W/(m²K) and q_max_m on 25 W/m: the defaults stay, and their wording says they are generic values the user replaces.
+        var h = Insulation.Template.Inputs.Single(i => i.Symbol == "h_se");
+        var q = Insulation.Template.Inputs.Single(i => i.Symbol == "q_max_m");
+        Assert.Equal(10, h.Default);
+        Assert.Equal(25, q.Default);
+        Assert.Contains("generic default", h.Description, StringComparison.Ordinal);
+        Assert.Contains("replace", h.Description, StringComparison.Ordinal);
+        Assert.Contains("generic default", q.Description, StringComparison.Ordinal);
+        Assert.Contains("replace", q.Description, StringComparison.Ordinal);
+        Assert.DoesNotContain(Insulation.Template.RecordKinds!, k => k.Guidance.Contains("No value is shipped", StringComparison.Ordinal));
+        Assert.Contains("generic 10 W/(m²K)", Insulation.Template.RecordKinds!.Single(k => k.Kind == "surface.coefficient").Guidance, StringComparison.Ordinal);
+    }
 }

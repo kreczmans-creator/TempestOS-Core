@@ -257,7 +257,9 @@ public sealed class CylinderCalculator : ICalcCalculator
         {
             c.Input("v_req");
 
-            // Q keeps its sheet default (36 L/min) so every other use of the sheet is unchanged: a Q still at that default is not an entry to warn about; any other Q is.
+            // Q is optional but carries a sheet default (DefaultFlowLpm, 36 L/min) so every other use of the sheet is unchanged; c.Has("Q") is therefore true on every new sheet,
+            // and a sheet given only v_req would warn about a Q nobody entered. The run cannot tell that default from a typed 36 L/min, so Q at the default value is treated as not entered
+            // and any other Q warns. Compare with the shared constant (the same one the Q spec defaults from), never a literal, so the two cannot drift apart.
             if (c.Has("Q") && Math.Abs(c.InputSi("Q") - DefaultFlowLpm / 60000.0) > 1e-12)
                 c.Warn("v-req-q", "Q: ignored, the flow comes from the required extend speed; clear Q to remove this notice.");
 
