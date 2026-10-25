@@ -239,6 +239,43 @@ public static class CalcPackTemplates
             new CalcPackBinding("e5", "I_k3", "e9", "I_k"),
         ]);
 
+    /// <summary>
+    /// Mechanism review: cam (M9) → return spring (M7), cam shaft (M4) → bearing (M5), geared motor (E1) → supply cable (E4). The cam step is the source of everything: its spring force at full lift (<c>F_spring_max</c>, N) is the spring's working force at full
+    /// lift; its roller contact force (<c>F_pin_pk</c>, N) is the radial load at the cam on the shaft (a table-cell link into the load row, N to kN), its RMS and peak input torque (<c>T_rms_in</c>, <c>input_torque</c>, N·m to kN·m) the torque and the peak
+    /// torque of the shaft, and its speed (<c>n_in</c>) the shaft's, the bearing's and the motor's load speed; the shaft's reaction at bearing A (<c>R_A</c>, kN) is the bearing's radial load; the cam's RMS torque is the motor's continuous load torque; and the
+    /// motor's nameplate rated power (<c>P_rated</c>, from <c>n_rated</c>) sizes the supply cable.
+    /// <para>
+    /// Not linked, deliberately. M7's rate cannot go back to M9 (<c>k_sp</c> and <c>F_pre</c> are typed in M9, M7's own rate would make a cycle); M9 and M7 carry the same 9.874 N/mm and 50 N (chain test guard), and the cam's lift is not a
+    /// port into M7 (it has no travel input in the Loads mode): the spring's working travel s₂ − s₁ equals the lift only while the two rates agree (guarded). M7's operating frequency is the cam frequency in Hz, typed (<c>n_in</c> is an angular
+    /// speed; guarded). The peak input torque is also checked against the motor's peak torque by a test (E1 is judged on the RMS torque, as the motor's thermal duty). The cable step opens blocked until the user supplies his own cable-capacity and
+    /// device-rating tables, which no build ships: the pack cannot be checked or issued until then (nothing takes from the cable step, so the pack is created, not refused).
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate MechanismReview { get; } = new(
+        "pack.mechanism-review", "Mechanism review",
+        "Takes a cam mechanism through to its supply: the cam's motion, pressure angle, undercut and follower force; the return spring that holds the follower on the cam; the cam shaft that carries the contact force and the torque; the bearing on that shaft; the geared motor that drives the cam; and the cable that supplies the motor. The cam's spring force, contact force, torques and speed reach each step by link; the cable tables are entered by the user, as no build ships them.",
+        [
+            new CalcPackStep("m9", "mech.mechanism", "Tamper cam", CalcPackExamples.CamM9),
+            new CalcPackStep("m7", "mech.spring", "Follower return spring", CalcPackExamples.CamM7),
+            new CalcPackStep("m4", "mech.shaft", "Cam shaft", CalcPackExamples.CamM4),
+            new CalcPackStep("m5", "mech.bearing-life", "Cam shaft bearing A", CalcPackExamples.CamM5),
+            new CalcPackStep("e1", "elec.motor-sizing", "Cam drive motor", CalcPackExamples.CamE1),
+            new CalcPackStep("e4", "elec.conductor-sizing", "Cam drive supply cable", CalcPackExamples.CamE4,
+                Hint: "The cable step needs your own cable-capacity (ampacity) and preferred device-rating (ratings) tables: none ship with the program. Enter them from your copy of the wiring regulations and the device manufacturer's data, then create the pack again."),
+        ],
+        [
+            new CalcPackBinding("m9", "F_spring_max", "m7", "F_2"),
+            new CalcPackBinding("m9", "F_pin_pk", "m4", "loads", Row: 0, Column: "F_y"),
+            new CalcPackBinding("m9", "T_rms_in", "m4", "T"),
+            new CalcPackBinding("m9", "input_torque", "m4", "T_pk"),
+            new CalcPackBinding("m9", "n_in", "m4", "n"),
+            new CalcPackBinding("m4", "R_A", "m5", "F_r"),
+            new CalcPackBinding("m9", "n_in", "m5", "n"),
+            new CalcPackBinding("m9", "T_rms_in", "e1", "T_L"),
+            new CalcPackBinding("m9", "n_in", "e1", "n_L"),
+            new CalcPackBinding("e1", "P_rated", "e4", "P"),
+        ]);
+
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, MechanismReview];
 }

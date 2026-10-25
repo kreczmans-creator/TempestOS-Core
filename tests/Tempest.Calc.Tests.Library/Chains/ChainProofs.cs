@@ -26,6 +26,12 @@ internal static class ChainProofs
         var external = await host.Service.CreateAsync(externalTemplateId, made.Pack.ProjectId, "From another job", externalInputs);
         var rebound = await host.Service.BindAsync(first.Id, input, external.Id, externalOutput);
         Assert.True(rebound.Succeeded, rebound.Reason);
+
+        // Taking the value from outside may move the first step's outputs: bring the steps downstream of it up to date, in order, so the pack is checked on current members.
+        foreach (var key in downstream)
+            if ((await host.Service.StalenessAsync(await Fresh(host, made, key))).IsStale)
+                Assert.True((await host.Service.UpdateLinksAsync(made.Instances[key].Id)).Succeeded, key);
+
         await AuthoredByAnotherAsync(host, made);
 
         // While the outside calculation is current and issued, the pack checks on it.

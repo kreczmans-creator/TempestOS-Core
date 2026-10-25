@@ -7,7 +7,7 @@ using Tempest.Calc.Structural;
 
 namespace Tempest.Calc.Tests.Library.Chains;
 
-/// <summary>Pack templates carry example step inputs, so a chain can be created as it stands (except the motor circuit, whose cable tables no build ships).</summary>
+/// <summary>Pack templates carry example step inputs, so a chain can be created as it stands (except the motor circuit, the hydraulic power unit and the mechanism review, whose cable tables no build ships).</summary>
 public sealed class PackExampleInputsTests
 {
     private static LibraryTestHost Host() => new(

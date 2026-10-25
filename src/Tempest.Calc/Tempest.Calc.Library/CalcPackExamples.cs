@@ -402,4 +402,70 @@ internal static class CalcPackExamples
         Q("U", 400, "V"), C("source", "Fault level at the supply"), C("fault_basis", "Fault current I_k (kA)"), N("eta", 0.92), N("cos_phi", 0.86),
         N("I_LR_r", 7), N("cos_phi_st", 0.3), C("starter", "Star-delta"), N("n_par", 1),
     ];
+
+    // ---- Mechanism review: a cam-driven carton tamper, its return spring, cam shaft, bearing, geared motor and supply cable ----------------
+
+    private static CalcRow Seg(string kind, string? law, double betaDeg, double liftMm) =>
+        CalcRow.Of(("kind", new CalcCell(Text: kind)), ("law", law is null ? new CalcCell() : new CalcCell(Text: law)), ("beta", new CalcCell(betaDeg, "deg")), ("h", new CalcCell(liftMm, "mm")));
+
+    /// <summary>
+    /// A carton tamper: a 4 kg follower on a Ø30 roller (60 mm base circle, in line) rises 40 mm in 120° (cycloidal), dwells 60°, returns in 120° (modified trapezoid) and dwells 60°, at 150 cam revolutions per minute,
+    /// against a return spring of rate 9.874 N/mm and 50 N preload. All INVENTED for this illustration. The spring rate and preload are the ones the spring step (M7) is designed for: M7 takes the spring force at full lift
+    /// from this step, so M7's rate cannot be linked back (a cycle); the two are typed equal (the rate to 0.01 %) and a chain test guards both.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> CamM9 { get; } =
+    [
+        C("mode", "Cam"), Q("n_in", 150, "rpm"), C("follower", "Roller"), Q("Rb", 60, "mm"), Q("R_r", 15, "mm"), Q("phi_max", 30, "deg"), Q("e_off", 0, "mm"),
+        Table("segs", Seg("Rise", "Cycloidal", 120, 40), Seg("Dwell", null, 60, 0), Seg("Return", "Modified trapezoid", 120, 40), Seg("Dwell", null, 60, 0)),
+        N("steps", 72), Q("m_f", 4, "kg"), Q("k_sp", 9.874, "N/mm"), Q("F_pre", 50, "N"), Q("F_ext", 0, "N"),
+    ];
+
+    /// <summary>
+    /// The follower's return spring: a compression spring of 6 mm wire on a 50 mm mean coil with 10.5 active coils (rate 9.874 N/mm with G = 80 GPa), squared and ground, 145 mm free. Its working points are loads: the force at
+    /// the base circle is the 50 N preload (typed equal to the cam step's, guarded) and the force at full lift arrives from the cam step (<c>F_spring_max</c> = k·lift + F_pre there). The cam's 40 mm lift and the spring's own working
+    /// travel agree only because the two rates agree (guarded). The wire strength (1500 MPa) and the endurance strength (400 MPa) are INVENTED illustrations, not wire-standard figures; 2.5 Hz is the cam frequency (150 rpm).
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> CamM7 { get; } =
+    [
+        C("mode", "Compression"), Q("d", 6, "mm"), Q("D", 50, "mm"), N("n", 10.5), C("ends", "Squared and ground"), Q("L0", 145, "mm"), C("work", "Loads"), Q("F_1", 50, "N"),
+        C("rm_source", "Typed R_m(d)"), Q("Rm", 1500, "MPa"), Q("S_e", 400, "MPa"), Q("f_op", 2.5, "Hz"),
+    ];
+
+    /// <summary>
+    /// The cam shaft: Ø20 at the ends and Ø25 between, bearings at 25 and 275 mm, the cam (3 kg) at 150 mm where the follower force acts, the torque entering at the coupling (0) and leaving at the cam. The force at the cam is
+    /// the cam step's contact force (a placeholder here, replaced by the cell link); the torque, the peak torque and the speed are the cam step's too. The notch factors are invented illustrations.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> CamM4 { get; } =
+    [
+        Table("segments",
+            CalcRow.Of(Mm("x_end", 50), Mm("d", 20), Mm("d_i", 0)), CalcRow.Of(Mm("x_end", 250), Mm("d", 25), Mm("d_i", 0)), CalcRow.Of(Mm("x_end", 300), Mm("d", 20), Mm("d_i", 0))),
+        Q("x_A", 25, "mm"), Q("x_B", 275, "mm"),
+        Table("loads", CalcRow.Of(Mm("x", 150), ("F_y", new CalcCell(0.1, "kN")), ("F_z", new CalcCell(0, "kN")), ("m", new CalcCell(3, "kg")))),
+        Q("x_T1", 0, "mm"), Q("x_T2", 150, "mm"),
+        Table("sections",
+            CalcRow.Of(Mm("x", 50), Num("K_t", 1.7), Num("K_ts", 1.5), Num("q", 0.85), Num("q_s", 0.9)), CalcRow.Of(Mm("x", 150), Num("K_t", 1.7), Num("K_ts", 1.5), Num("q", 0.85), Num("q_s", 0.9))),
+        Q("S_ut", 850, "MPa"), Q("S_y", 650, "MPa"), Q("E", 207, "GPa"), Q("rho", 7850, "kg/m^3"), C("finish", "ground"),
+    ];
+
+    /// <summary>Cam-shaft bearing A: a ball bearing with INVENTED ratings (C 3.5 kN, C₀ 1.8 kN), 90 % reliability and a 20 000 h life; its radial load and speed arrive by link.</summary>
+    public static IReadOnlyList<CalcInputValue> CamM5 { get; } =
+    [
+        C("type", "ball (p = 3)"), Q("C", 3.5, "kN"), Q("C_0", 1.8, "kN"), Q("R", 90, "%"), Q("L_req", 20000, "h"),
+    ];
+
+    /// <summary>
+    /// The cam drive: a geared motor (10:1, 0.9 efficient) running continuously on the cam's RMS torque at the cam's speed; the load inertia is the cam, follower and shaft (invented). The candidate motor's rated speed (1440 rpm) and torque
+    /// are INVENTED nameplate figures; the rated power <c>P_rated</c> = T_rated·ω_rated sizes the supply cable.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> CamE1 { get; } =
+    [
+        C("mechanism", "gearbox rotary"), C("duty_mode", "continuous"), N("i", 10), N("eta", 0.9), Q("J_mech", 0.0002, "kg*m^2"), Q("J_L", 0.05, "kg*m^2"), Q("t_start", 2, "s"),
+        Q("J_motor", 0.0005, "kg*m^2"), Q("T_rated", 1.0, "N*m"), Q("T_peak", 3.0, "N*m"), Q("n_rated", 1440, "rpm"), Q("n_max", 3000, "rpm"),
+    ];
+
+    /// <summary>The motor's supply cable (15 m, PVC, type C device, method C; 400 V, motor efficiency 0.8 and power factor 0.8). The capacity and rating tables are NOT supplied: they are the user's own.</summary>
+    public static IReadOnlyList<CalcInputValue> CamE4 { get; } =
+    [
+        Q("L", 15, "m"), Q("U", 400, "V"), N("cos_phi", 0.8), N("eta", 0.8), C("insulation", "PVC 70 °C"), C("method", "C"), C("device", "MCB type C"),
+    ];
 }
