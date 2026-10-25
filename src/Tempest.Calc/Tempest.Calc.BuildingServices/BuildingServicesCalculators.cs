@@ -13,5 +13,6 @@ public static class BuildingServicesCalculators
         new SealedSystemCalculator(),
         new RoomHeatLossCalculator(),
         new DuctSizingCalculator(),
+        new GlaserCalculator(),
     ];
 }

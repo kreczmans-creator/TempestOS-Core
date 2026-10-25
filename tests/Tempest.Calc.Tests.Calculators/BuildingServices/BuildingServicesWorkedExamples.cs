@@ -172,5 +172,36 @@ public static class BuildingServicesWorkedExamples
             [new CalcExpectedValue("U_1", 0.2405085, "W/(m^2*K)", 1e-6), new CalcExpectedValue("Phi_1", 50.21818, "W", 1e-6), new CalcExpectedValue("Phi_2", 70.56, "W", 1e-9), new CalcExpectedValue("Phi_3", 49.87184, "W", 1e-6), new CalcExpectedValue("U_4", 1.192843, "W/(m^2*K)", 1e-6), new CalcExpectedValue("Phi_4", 30.91849, "W", 1e-6), new CalcExpectedValue("Phi_5", 97.2, "W", 1e-9), new CalcExpectedValue("Phi_tb", 85.536, "W", 1e-9), new CalcExpectedValue("Phi_T", 384.3045, "W", 1e-6), new CalcExpectedValue("Phi_V", 253.8086, "W", 1e-6), new CalcExpectedValue("Phi_HL", 638.1131, "W", 1e-6), new CalcExpectedValue("HLC", 26.58805, "W/K", 1e-6), new CalcExpectedValue("Phi_A", 39.38970, "W/m^2", 1e-6)],
             "The cavity wall has U = 0.241 W/m²K (R = 4.158 m²K/W) and passes the 0.30 target with utilisation 0.80; the party wall (U = 1.193) loses only to the 18 °C neighbour through a 3 K difference and is held to its own 1.2 target (utilisation 0.99). Fabric loss 384 W includes 85.5 W of thermal-bridge allowance on the 35.64 m² facing outside; ventilation at 0.8 h⁻¹ adds 253.8 W. The room load Φ_HL = 638.1 W (HLC 26.59 W/K, 39.4 W/m²) is the figure to carry to the emitter selection in the sealed-system calculation.",
             CalcReferenceStatus.Confirmed),
+
+        new(GlaserCalculator.Id, "internal-insulation-no-vcl", "Solid brick wall with internal mineral wool and no vapour control layer: interstitial condensation over a year",
+            new CalcReferenceSource("Analytic (Glaser method: series resistance, Magnus saturation pressure, tangent construction, g = δ0·Δp/Δs_d; recomputed in python3 with an independent obstacle-problem solve)", null, "Plasterboard 12.5 mm (λ 0.25, μ 8), mineral wool 50 mm (λ 0.035, μ 1) and existing solid brick 215 mm (λ 0.8, μ 10) at 20 °C / 50 % inside; the monthly climate is invented (a maritime year, not ISO 13788 data) and every material value is an invented illustrative input, not design data"),
+            GlaserInputs(GlaserCalculator.Layers(("", "Plasterboard", 12.5, 0.25, 8), ("", "Mineral wool", 50, 0.035, 1), ("", "Existing brick", 215, 0.8, 10)) with { Provenance = CalcProvenance.Drawing("A-310", "B") }),
+            [new CalcExpectedValue("R_T", 1.9173214285714288, "m^2*K/W", 1e-9), new CalcExpectedValue("S_d", 2.3, "m", 1e-9), new CalcExpectedValue("n_start", 11, "", 1e-9), new CalcExpectedValue("Mc_3", 3051.607381046686, "g/m^2", 1e-9), new CalcExpectedValue("Mc_6", 0, "g/m^2", 1e-9), new CalcExpectedValue("Mc_if_2", 3051.607381046686, "g/m^2", 1e-9), new CalcExpectedValue("Mc_max", 3051.607381046686, "g/m^2", 1e-9), new CalcExpectedValue("Mc_end", 0, "g/m^2", 1e-9), new CalcExpectedValue("u_Mc", 6.103214762093372, "", 1e-9), new CalcExpectedValue("fRsi", 0.8772898588833378, "", 1e-9), new CalcExpectedValue("fRsi_min", 0.5902560168111524, "", 1e-9), new CalcExpectedValue("pass", 0, "", 1e-9)],
+            "Condensation starts at the insulation–brick interface in November, builds to 3052 g/m² in March and has dried out by June, so the annual balance passes, but the peak is six times the 500 g/m² project limit and the sheet fails. The surface check passes (f_Rsi 0.877 against f_Rsi,min 0.590, governed by January). The cure is the vapour control layer of the next example.",
+            CalcReferenceStatus.Confirmed),
+
+        new(GlaserCalculator.Id, "internal-insulation-with-vcl", "The same wall with a polyethylene vapour control layer behind the plasterboard: no condensation",
+            new CalcReferenceSource("Analytic (Glaser method; recomputed in python3)", null, "As the previous example with a 0.3 mm layer (λ 0.2, μ 20000: s_d 6 m) between the plasterboard and the mineral wool; all material values and the climate are invented illustrative inputs, not design data"),
+            GlaserInputs(GlaserCalculator.Layers(("", "Plasterboard", 12.5, 0.25, 8), ("", "Vapour control layer", 0.3, 0.2, 20000), ("", "Mineral wool", 50, 0.035, 1), ("", "Existing brick", 215, 0.8, 10)) with { Provenance = CalcProvenance.Drawing("A-310", "C") }),
+            [new CalcExpectedValue("R_T", 1.9188214285714285, "m^2*K/W", 1e-9), new CalcExpectedValue("S_d", 8.3, "m", 1e-9), new CalcExpectedValue("n_start", 0, "", 1e-9), new CalcExpectedValue("Mc_max", 0, "g/m^2", 1e-9), new CalcExpectedValue("Mc_end", 0, "g/m^2", 1e-9), new CalcExpectedValue("u_Mc", 0, "", 1e-9), new CalcExpectedValue("R_Tf", 2.0388214285714286, "m^2*K/W", 1e-9), new CalcExpectedValue("fRsi", 0.8773801390859566, "", 1e-9), new CalcExpectedValue("fRsi_min", 0.5902560168111524, "", 1e-9), new CalcExpectedValue("pass", 1, "", 1e-9)],
+            "The 6 m diffusion-equivalent layer holds the vapour pressure at the cold interfaces below saturation in every month, so no interface condenses and the sheet passes all three checks. The vapour control layer must be continuous and sealed at laps and penetrations: this calculation does not model air leakage or holes in it.",
+            CalcReferenceStatus.Confirmed),
     ];
+
+    /// <summary>The inputs shared by the two Glaser examples, with a layers table supplied by the caller.</summary>
+    private static CalcInputSet GlaserInputs(CalcInputValue layers) =>
+        new(
+        [
+            layers,
+            CalcInputValue.Quantity("Rsi", 0.13, "m^2*K/W", CalcProvenance.Specification("Project surface-resistance record (internal, horizontal flow), assumed")),
+            CalcInputValue.Quantity("Rse", 0.04, "m^2*K/W", CalcProvenance.Specification("Project surface-resistance record (external), assumed")),
+            CalcInputValue.Quantity("Rsi_f", 0.25, "m^2*K/W", CalcProvenance.Specification("Project practice: larger R_si for the surface-condensation check, assumed")),
+            CalcInputValue.Quantity("theta_int", 20, "degC", CalcProvenance.Specification("SPEC-A-02 §3.1: living-room design temperature")),
+            CalcInputValue.Choice("humidity_mode", GlaserCalculator.ConstantRh, CalcProvenance.Assumed("Constant internal humidity; no humidity-class record is held for this project.")),
+            CalcInputValue.Quantity("RH_int", 50, "%", CalcProvenance.Specification("SPEC-A-02 §3.1: internal design humidity")),
+            GlaserCalculator.Climate((2, 90), (3, 88), (6, 84), (9, 80), (13, 76), (16, 74), (18, 74), (18, 76), (15, 82), (11, 87), (6, 90), (3, 91)) with { Provenance = CalcProvenance.Assumed("Invented illustrative maritime year; replace with the project's own monthly climate record (take it from your licensed source).") },
+            CalcInputValue.Quantity("RH_crit", 80, "%", CalcProvenance.Specification("SPEC-A-02 §4.4: critical surface humidity")),
+            CalcInputValue.Quantity("Mc_limit", 500, "g/m^2", CalcProvenance.Specification("SPEC-A-02 §4.4: limit on the condensate per interface")),
+            CalcInputValue.Switch("breathable", false, CalcProvenance.Assumed("Mineral wool and brick: no timber or hygroscopic layers.")),
+        ]);
 }
