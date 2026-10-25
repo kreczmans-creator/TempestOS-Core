@@ -339,7 +339,11 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // catalogue is composed statically (`CalcCalculatorComposition`),
         // instances live in the one store, and Issue goes through the
         // Evidence service in one transaction with the rendered PDF.
-        CalcCatalogue = new Tempest.Calc.Library.CalcCatalogue(Tempest.Desktop.CalcSheets.CalcCalculatorComposition.All());
+        // Optional calculators (S8 lifting, `ADR-0173`) are composed in but withheld from the catalogue unless the installation's own
+        // configuration switches their feature on (`Calc:Features:Lifting = true`); the default is off and nothing at run time changes it.
+        CalcCatalogue = new Tempest.Calc.Library.CalcCatalogue(
+            Tempest.Desktop.CalcSheets.CalcCalculatorComposition.All(),
+            Tempest.Calc.Library.CalcFeatureFlags.FromConfiguration(configuration));
         CalcInstances = new Tempest.Calc.Library.CalcInstanceService(
             CalcCatalogue,
             new Tempest.Calc.Library.CalcInstanceStore(domainContext.PersistenceStore),

@@ -33,6 +33,13 @@ public sealed record CalcIssueSnapshot(
     string? ApplicationVersion);
 
 /// <summary>
+/// The second, independent signature a template that <see cref="Tempest.Calc.Sheets.CalcTemplate.RequiresSecondCheck"/> demands (ADR-0173):
+/// who signed, for whom, what they said, and whether they accepted or rejected the calculation. Held on the instance (or pack) beside
+/// the Evidence's own single check record and frozen into the issued snapshot.
+/// </summary>
+public sealed record CalcCountersignature(string Name, string Organisation, string Statement, string Principal, DateTimeOffset At, bool Accepted = true);
+
+/// <summary>
 /// §3.5: one calculation instance — a template reference, a project, the
 /// inputs with provenance, the latest outputs, warnings and blocks, its
 /// status, and the Evidence that governs it. Serialised as JSON into the
@@ -67,7 +74,9 @@ public sealed record CalcInstance(
     IReadOnlyDictionary<string, string>? UpstreamHashes = null,
     string? LastRejection = null,
     IReadOnlyList<string>? EditedBy = null,
-    IReadOnlyList<string>? RepinnedBy = null)
+    IReadOnlyList<string>? RepinnedBy = null,
+    string? CheckerPrincipal = null,
+    CalcCountersignature? SecondCheck = null)
 {
     /// <summary>
     /// Everyone who set up or changed this revision's inputs: its creator and every principal in <see cref="EditedBy"/> (kept

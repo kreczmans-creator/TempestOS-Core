@@ -62,6 +62,9 @@ public sealed partial class CalcInstanceService
         if (instance.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only a draft takes new links.", instance);
 
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
+
         if (upstreamId == instanceId)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' cannot take an input from its own output.", instance);
 
@@ -120,6 +123,9 @@ public sealed partial class CalcInstanceService
 
         if (instance.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only a draft takes new links.", instance);
+
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
 
         if (upstreamId == instanceId)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' cannot take an input from its own output.", instance);

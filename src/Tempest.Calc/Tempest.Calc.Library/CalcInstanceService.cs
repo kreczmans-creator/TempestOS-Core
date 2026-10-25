@@ -173,6 +173,9 @@ public sealed partial class CalcInstanceService
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
 
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
+
         if (expectedUpdatedAt is { } expected && instance.UpdatedAt != expected)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' was changed after these inputs were read from it; reopen it and try again.", instance);
 
@@ -266,6 +269,10 @@ public sealed partial class CalcInstanceService
         if (instance.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only a draft can be checked.", instance);
 
+        // ADR-0173: a calculator that is switched off cannot be checked, however the instance came to exist.
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
+
         // Addendum A, L1: a stale calculation cannot be checked; it is updated to the current upstream revisions first.
         if (await StalenessAsync(instance, cancellationToken).ConfigureAwait(false) is { IsStale: true } stale)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is stale: {stale.Reasons[0]} Update it before checking.", instance);
@@ -291,6 +298,12 @@ public sealed partial class CalcInstanceService
         if (provenanceGate is not null)
             return CalcActionResult.Refused(provenanceGate.Replace("before the sheet can be issued", "before it can be checked", StringComparison.Ordinal), instance);
 
+        // ADR-0173: a template that demands a competent-person attestation is not checked without one (Issue would refuse it).
+        var checkedTemplate = _catalogue.Find(instance.TemplateReference)?.Template;
+
+        if (checkedTemplate is not null && CheckGovernanceRefusal(instance, checkedTemplate) is { } attestationRefusal)
+            return CalcActionResult.Refused(attestationRefusal, instance);
+
         if (outcome == CheckOutcome.Rejected)
         {
             // A rejection is kept on the instance only: the Evidence stays Draft so the calculation can be corrected,
@@ -315,6 +328,11 @@ public sealed partial class CalcInstanceService
         // transaction-time re-read of both (R-15: an Update racing this check is refused; R-19: a second check is refused).
         var checkedAt = _time.GetUtcNow();
         var updated = instance with { Status = CalcInstanceStatus.Checked, CheckedBy = checkerName, CheckedAt = checkedAt, UpdatedAt = checkedAt };
+
+        // ADR-0173: the second check must be by a different person, so the first checker's sign-in is kept (only where a second check is asked for).
+        if (checkedTemplate?.RequiresSecondCheck == true)
+            updated = updated with { CheckerPrincipal = CurrentPrincipal() };
+
         EvidenceActionResult result;
 
         try
@@ -408,6 +426,10 @@ public sealed partial class CalcInstanceService
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
 
+        // ADR-0173: first, whatever else is true of it, a calculation of a switched-off calculator is never issued.
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
+
         if (instance.Status != CalcInstanceStatus.Checked)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; check it before issuing.", instance);
 
@@ -418,6 +440,10 @@ public sealed partial class CalcInstanceService
 
         if (entry is null)
             return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
+
+        // ADR-0173: the competent-person attestation and the second independent check a template can demand.
+        if (IssueGovernanceRefusal(instance, entry.Template) is { } governance)
+            return CalcActionResult.Refused(governance, instance);
 
         var inputs = new CalcInputSet(instance.Inputs);
         var provenance = CalcInputValidator.ValidateProvenanceForIssue(entry.Template, inputs);
@@ -500,10 +526,13 @@ public sealed partial class CalcInstanceService
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
 
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
+
         // A checked calculation that has gone stale (a record was revised, a template changed, an upstream moved) is never a dead end:
         // it can be revised, which starts a draft to correct and check again (Red R-A-04, ADR-0166).
         if (instance.Status != CalcInstanceStatus.Issued
-            && !(instance.Status == CalcInstanceStatus.Checked && (inputsOverride is not null || (await StalenessAsync(instance, cancellationToken).ConfigureAwait(false)).IsStale)))
+            && !(instance.Status == CalcInstanceStatus.Checked && (inputsOverride is not null || instance.SecondCheck is { Accepted: false } || (await StalenessAsync(instance, cancellationToken).ConfigureAwait(false)).IsStale)))
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only an issued calculation, or a checked one that has gone stale, can be revised.", instance);
 
         var entry = _catalogue.Get(instance.TemplateId);
@@ -616,6 +645,9 @@ public sealed partial class CalcInstanceService
             if (found.ProjectId != projectId)
                 throw new ArgumentException($"Calculation '{found.Name}' belongs to another project; a pack holds the calculations of one project.", nameof(instanceIds));
 
+            if (FeatureRefusal(found.TemplateReference) is { } switchedOff)
+                throw new CalcFeatureDisabledException(switchedOff);
+
             members.Add(found);
         }
 
@@ -678,6 +710,10 @@ public sealed partial class CalcInstanceService
 
         foreach (var member in members)
         {
+            // ADR-0173: a member of a switched-off calculator holds the whole pack back, whatever else is true of it.
+            if (FeatureRefusal(member.TemplateReference) is { } switchedOff)
+                return CalcActionResult.Refused($"Pack member '{member.Name}': {switchedOff}");
+
             if (member.Blocks.Count > 0)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is blocked: {member.Blocks[0].Message}");
 
@@ -692,6 +728,10 @@ public sealed partial class CalcInstanceService
 
             if (IndependenceRefusal(member, $"Pack member '{member.Name}'", "check the pack") is { } notIndependent)
                 return CalcActionResult.Refused(notIndependent);
+
+            // ADR-0173: a member that lacks the attestation its template demands holds the whole pack back.
+            if (_catalogue.Find(member.TemplateReference)?.Template is { } memberTemplate && AttestationRefusal(member, memberTemplate, $"Pack member '{member.Name}'") is { } attestationRefusal)
+                return CalcActionResult.Refused(attestationRefusal);
         }
 
         // A rejection leaves the pack and its Evidence as drafts (Black B-12).
@@ -701,7 +741,7 @@ public sealed partial class CalcInstanceService
         // The Evidence check and the pack's Checked mark commit together, after a re-read of the pack: a crash between them cannot
         // leave a pack that can never be checked (Red R-A-14).
         var now = _time.GetUtcNow();
-        var checkedPack = pack with { Status = CalcInstanceStatus.Checked, UpdatedAt = now };
+        var checkedPack = pack with { Status = CalcInstanceStatus.Checked, UpdatedAt = now, CheckerPrincipal = CurrentPrincipal(), CheckerName = checkerName };
         EvidenceActionResult result;
 
         try
@@ -756,6 +796,9 @@ public sealed partial class CalcInstanceService
             EvidenceId = evidence.Id,
             UpdatedAt = now,
             Revisions = [.. pack.Revisions, new CalcPackRevision(next, now, CurrentPrincipal(), "Reopened after its check")],
+            CheckerPrincipal = null,
+            CheckerName = null,
+            SecondCheck = null,
         };
 
         try
@@ -798,6 +841,9 @@ public sealed partial class CalcInstanceService
 
         foreach (var member in stored)
         {
+            if (FeatureRefusal(member.TemplateReference) is { } switchedOff)
+                return CalcActionResult.Refused($"Pack member '{member.Name}': {switchedOff}");
+
             if (member.Status is CalcInstanceStatus.Superseded)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is superseded.");
 
@@ -814,6 +860,18 @@ public sealed partial class CalcInstanceService
 
             if (entry is null)
                 return CalcActionResult.Refused($"Template '{member.TemplateReference}' is no longer registered.");
+
+            // ADR-0173: the attestation per member; the second check once for the pack, below.
+            if (AttestationRefusal(member, entry.Template, $"Pack member '{member.Name}'") is { } attestationRefusal)
+                return CalcActionResult.Refused(attestationRefusal);
+
+            if (entry.Template.RequiresSecondCheck)
+            {
+                var packRefusal = CountersignatureRefusal(pack.SecondCheck, pack.CheckerName, pack.CheckerPrincipal, members.Select(m => m.Instance).Append(member).SelectMany(m => m.Authors).Distinct(StringComparer.Ordinal), $"Pack '{pack.Title}'");
+
+                if (packRefusal is not null)
+                    return CalcActionResult.Refused(packRefusal);
+            }
 
             var inputs = new CalcInputSet(member.Inputs);
             var provenance = CalcInputValidator.ValidateProvenanceForIssue(entry.Template, inputs);
@@ -854,7 +912,7 @@ public sealed partial class CalcInstanceService
                 foreach (var (member, entry, inputs, result, report) in members)
                 {
                     n++;
-                    var header = await HeaderAsync(entry, member, evidence, CalcSheetStatus.Issued, issuedAtUtc, issueReference, client, token).ConfigureAwait(false);
+                    var header = await HeaderAsync(entry, member, evidence, CalcSheetStatus.Issued, issuedAtUtc, issueReference, client, token, second: pack.SecondCheck).ConfigureAwait(false);
                     var sheet = await FinishSheetAsync(entry, inputs, result, header, Footer(entry, report), token).ConfigureAwait(false);
                     sheets.Add(sheet);
                     index.Add(new CalcPackIndexRow(n, member.Name, entry.Template.Title, member.Revision, "ISSUED", sheet.Governing is { } g ? $"{g.Name} {(g.Passed ? "PASS" : "FAIL")}" : null));
@@ -873,7 +931,7 @@ public sealed partial class CalcInstanceService
 
                 var project = await ProjectLabelAsync(pack.ProjectId, token).ConfigureAwait(false);
                 var cover = new CalcSheet(
-                    new CalcSheetHeader(project, pack.Title, "Calculation pack", pack.Revision, CalcSheetStatus.Issued, evidence.AuthorIdentityId, evidence.Check?.CheckerName, evidence.CreatedAt, evidence.Check?.DateUtc, issuedAtUtc, client, issueReference),
+                    new CalcSheetHeader(project, pack.Title, "Calculation pack", pack.Revision, CalcSheetStatus.Issued, evidence.AuthorIdentityId, CheckerLabel(evidence.Check?.CheckerName, pack.SecondCheck), evidence.CreatedAt, evidence.Check?.DateUtc, issuedAtUtc, client, issueReference),
                     "Calculation pack: the calculations listed in the index, issued together under one issue sheet.", string.Empty, [], [], [], [], [], [], [], [],
                     new CalcSheetFooter("pack", "—", _engine.EngineVersion, members.Sum(m => m.Report.Passed), members.Sum(m => m.Report.Total), issuedAtUtc, _applicationVersion),
                     pack.Revisions.Select(r => new CalcRevisionRow(r.Revision, r.Date, r.Author, r.Description)).ToList(), index);
@@ -944,7 +1002,12 @@ public sealed partial class CalcInstanceService
             CalcInstanceStatus.Superseded => CalcSheetStatus.Superseded,
             _ => CalcSheetStatus.Draft,
         };
-        var header = await HeaderAsync(entry, instance, evidence, status, instance.IssuedAt, instance.IssueReference, packEvidence?.Issue?.Client ?? evidence?.Issue?.Client, cancellationToken, packEvidence).ConfigureAwait(false);
+        CalcCountersignature? packSecond = null;
+
+        if (instance.PackId is { } secondPackId && instance.SecondCheck is null && await _store.FindPackAsync(secondPackId, cancellationToken).ConfigureAwait(false) is { } secondPack)
+            packSecond = secondPack.SecondCheck;
+
+        var header = await HeaderAsync(entry, instance, evidence, status, instance.IssuedAt, instance.IssueReference, packEvidence?.Issue?.Client ?? evidence?.Issue?.Client, cancellationToken, packEvidence, packSecond).ConfigureAwait(false);
         var footer = instance.Issue is { } issue
             ? new CalcSheetFooter(entry.Reference, CalcTemplateHasher.Short(instance.TemplateHash), issue.EngineVersion, issue.KnownAnswerPassed, issue.KnownAnswerTotal, issue.TestRunAt, issue.ApplicationVersion)
             : Footer(entry, KnownAnswerRunner.Run(entry.Calculator, _time));
@@ -993,13 +1056,14 @@ public sealed partial class CalcInstanceService
     }
 
     /// <param name="checkEvidence">The Evidence whose check the header shows when it is not the calculation's own (a pack member shows its pack's).</param>
-    private async Task<CalcSheetHeader> HeaderAsync(CalcCatalogueEntry entry, CalcInstance instance, Evidence? evidence, CalcSheetStatus status, DateTimeOffset? issuedAt, string? issueReference, string? client, CancellationToken cancellationToken, Evidence? checkEvidence = null)
+    /// <param name="second">The second check a pack gives its members (ADR-0173); an instance's own second check takes precedence.</param>
+    private async Task<CalcSheetHeader> HeaderAsync(CalcCatalogueEntry entry, CalcInstance instance, Evidence? evidence, CalcSheetStatus status, DateTimeOffset? issuedAt, string? issueReference, string? client, CancellationToken cancellationToken, Evidence? checkEvidence = null, CalcCountersignature? second = null)
     {
         var project = await ProjectLabelAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
         var check = (checkEvidence ?? evidence)?.Check;
         return new CalcSheetHeader(
             project, instance.Name, entry.Template.Title, instance.Revision, status,
-            evidence?.AuthorIdentityId ?? instance.CreatedBy, check?.CheckerName ?? instance.CheckedBy,
+            evidence?.AuthorIdentityId ?? instance.CreatedBy, CheckerLabel(check?.CheckerName ?? instance.CheckedBy, instance.SecondCheck ?? second),
             instance.CreatedAt, check?.DateUtc ?? instance.CheckedAt, issuedAt, client, issueReference);
     }
 

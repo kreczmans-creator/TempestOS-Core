@@ -18,7 +18,7 @@ namespace Tempest.Calc.Tests.Library;
 /// <summary>An in-memory host for the Library: the real EvidenceService over the Core test domain, a commit-failing store wrapper, and the catalogue with the Sheets test calculator.</summary>
 internal sealed class LibraryTestHost
 {
-    public LibraryTestHost(bool withProject = true, IReadOnlyList<Tempest.Calc.Sheets.ICalcCalculator>? calculators = null, Tempest.Core.Events.IEventBus? events = null, IReadOnlyList<CalcPackTemplate>? packTemplates = null)
+    public LibraryTestHost(bool withProject = true, IReadOnlyList<Tempest.Calc.Sheets.ICalcCalculator>? calculators = null, Tempest.Core.Events.IEventBus? events = null, IReadOnlyList<CalcPackTemplate>? packTemplates = null, CalcFeatureFlags? features = null)
     {
         Backing = new InMemoryQueryablePersistenceStore();
         Failing = new CommitFailingPersistenceStore(Backing);
@@ -33,7 +33,7 @@ internal sealed class LibraryTestHost
             new ConstantCatalog(documentStore, Backing),
             new CurrentPrincipalAccessor(),
             new ConfigurationBuilder().Build());
-        Catalogue = new CalcCatalogue([new DirectStressCalculator(), .. calculators ?? []]);
+        Catalogue = new CalcCatalogue([new DirectStressCalculator(), .. calculators ?? []], features);
         Store = new CalcInstanceStore(Failing);
         Service = new CalcInstanceService(Catalogue, Store, Evidence, Context, renderer: null, applicationVersion: "TempestOS test", events: events, packTemplates: packTemplates);
         WithProject = withProject;
