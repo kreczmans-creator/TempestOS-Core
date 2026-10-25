@@ -60,6 +60,7 @@ public sealed class MotorStartTests
         {
             [],
             [Choice("starter", MotorStartCalculator.StarterStarDelta), Q("L_cab", 90, "m"), Q("A_c", 25, "mm^2"), N("cos_phi_st", 0.4)],
+            [Choice("starter", MotorStartCalculator.StarterSoft), N("k_soft", 3), Q("L_cab", 120, "m"), Q("A_c", 50, "mm^2"), N("cos_phi_st", 0.35)],
             [Choice("source", MotorStartCalculator.SourceFault), Q("S_k", 6, "MVA"), N("XR", 6), Q("L_cab", 150, "m"), Q("A_c", 70, "mm^2"), Q("X_km", 0.1, "ohm/km"), N("n_par", 2), N("cos_phi_st", 0.25)],
         })
         {
@@ -208,7 +209,7 @@ public sealed class MotorStartTests
     [Fact]
     public void Capacitors_Are_Flagged_On_A_Drive_Or_A_Soft_Starter_But_Not_Direct_On_Line()
     {
-        Assert.Contains(Run(Choice("starter", MotorStartCalculator.StarterVfd)).Warnings, w => w.RuleId == "pfc-starter");
+        Assert.Contains(Run(Choice("starter", MotorStartCalculator.StarterVfd), N("cos_phi_vfd", 0.85)).Warnings, w => w.RuleId == "pfc-starter");
         Assert.Contains(Run(Choice("starter", MotorStartCalculator.StarterSoft)).Warnings, w => w.RuleId == "pfc-starter");
         Assert.DoesNotContain(Run(Choice("starter", MotorStartCalculator.StarterDol)).Warnings, w => w.RuleId == "pfc-starter");
         Assert.DoesNotContain(Run(Choice("starter", MotorStartCalculator.StarterStarDelta)).Warnings, w => w.RuleId == "pfc-starter");
@@ -241,8 +242,171 @@ public sealed class MotorStartTests
             Assert.Contains(phasor, sheet, StringComparison.Ordinal);
 
         Assert.Contains("∠", sheet, StringComparison.Ordinal);
-        Assert.Equal(["start_dip", "kvar", "I_start"], Start.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal(["start_dip", "kvar", "I_start", "I_rated"], Start.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.DoesNotContain("∠ -", sheet, StringComparison.Ordinal);
+        Assert.Contains("∠ −", sheet, StringComparison.Ordinal);
         Assert.All(Start.Template.OutputPorts!, p => Assert.NotNull(result.FindOutput(p.Symbol)));
         Assert.Contains(Start.Template.RecordKinds!, k => k.Kind == "cable.impedance" && k.Symbols.Contains("R_km") && k.Symbols.Contains("X_km"));
+    }
+
+    /// <summary>The held-current solution by fixed-point iteration of the phasors, independent of the closed form the calculator uses.</summary>
+    private static (System.Numerics.Complex V, System.Numerics.Complex I) HeldCurrent(double e, System.Numerics.Complex zl, double held, double cos)
+    {
+        var phi = Math.Acos(cos);
+        var v = new System.Numerics.Complex(e, 0);
+
+        for (var i = 0; i < 20000; i++)
+        {
+            var current = System.Numerics.Complex.FromPolarCoordinates(held, v.Phase - phi);
+            var next = e - current * zl;
+
+            if ((next - v).Magnitude < 1e-13)
+            {
+                v = next;
+                break;
+            }
+
+            v = next;
+        }
+
+        return (v, System.Numerics.Complex.FromPolarCoordinates(held, v.Phase - phi));
+    }
+
+    [Fact]
+    public void A_Soft_Starter_In_Current_Limit_And_A_Drive_Hold_The_Current_And_Match_An_Independent_Phasor_Solution()
+    {
+        // S_k 8 MVA, X/R 6, 80 m of 95 mm² at 70 °C (R_km explicit so the test owns the numbers), cos φ_st 0.3.
+        var zQ = 400.0 * 400 / 8e6;
+        var r = zQ / Math.Sqrt(1 + 36);
+        var zl = new System.Numerics.Complex(r, 6 * r) + new System.Numerics.Complex(0.01724 * (1 + 0.00393 * 50) * 80 / 95, 0.08 * 80 / 1000);
+        var e = 400 / Math.Sqrt(3);
+
+        var soft = Run(Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", 8, "MVA"), N("c_src", 1), N("XR", 6), Q("P", 132, "kW"), N("eta", 0.955), N("cos_phi", 0.89), N("I_LR_r", 6.5),
+            Choice("starter", MotorStartCalculator.StarterSoft), N("k_soft", 3), Q("L_cab", 80, "m"), Q("A_c", 95, "mm^2"), N("cos_phi_st", 0.3));
+        var held = 3 * soft.OutputSi("I_rated");
+        var (v, i) = HeldCurrent(e, zl, held, 0.3);
+
+        Assert.Equal(held, soft.OutputSi("I_dip"), 9);
+        Assert.Equal(v.Magnitude * Math.Sqrt(3), soft.OutputSi("V_m"), 6);
+        Assert.Equal(100 * (1 - v.Magnitude / e), soft.OutputSi("start_dip") * 100, 8);
+
+        var vfd = Run(Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", 8, "MVA"), N("c_src", 1), N("XR", 6), Q("P", 132, "kW"), N("eta", 0.955), N("cos_phi", 0.89),
+            Choice("starter", MotorStartCalculator.StarterVfd), N("k_vfd", 1.2), N("cos_phi_vfd", 0.9), Q("L_cab", 80, "m"), Q("A_c", 95, "mm^2"));
+        var (vv, _) = HeldCurrent(e, zl, 1.2 * vfd.OutputSi("I_rated"), 0.9);
+        Assert.Equal(1.2 * vfd.OutputSi("I_rated"), vfd.OutputSi("I_dip"), 9);
+        Assert.Equal(100 * (1 - vv.Magnitude / e), vfd.OutputSi("start_dip") * 100, 8);
+        Assert.Equal(vfd.OutputSi("V_m") / Math.Sqrt(3) / vfd.OutputSi("I_dip"), vfd.OutputSi("Z_m"), 9);
+    }
+
+    [Fact]
+    public void A_Held_Current_Dips_More_Than_A_Passive_Impedance_Drawing_The_Same_Nominal_Current()
+    {
+        // The regression behind the review: a fixed impedance lets the current fall with the voltage, so it understates the dip of a current-limited start.
+        var passive = Run(N("I_LR_r", 3), Choice("starter", MotorStartCalculator.StarterDol));
+        var held = Run(N("I_LR_r", 7), Choice("starter", MotorStartCalculator.StarterSoft), N("k_soft", 3));
+        Assert.Equal(passive.OutputSi("I_start"), held.OutputSi("I_start"), 9);
+        Assert.True(held.OutputSi("start_dip") > passive.OutputSi("start_dip"));
+        Assert.True(held.OutputSi("dip_pcc") > passive.OutputSi("dip_pcc"));
+        Assert.True(held.OutputSi("I_dip") > passive.OutputSi("I_dip"));
+        Assert.Contains("starter or drive input", held.FindOutput("V_m")!.Description, StringComparison.Ordinal);
+        Assert.NotNull(passive.FindOutput("k_T"));
+        Assert.Null(held.FindOutput("k_T"));
+        Assert.Null(Run(Choice("starter", MotorStartCalculator.StarterVfd)).FindOutput("k_T"));
+    }
+
+    [Fact]
+    public void A_Supply_That_Cannot_Hold_The_Regulated_Current_Blocks_Naming_The_Limit_To_Lower()
+    {
+        var weak = Run(Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", 0.01, "MVA"), Choice("starter", MotorStartCalculator.StarterVfd), N("k_vfd", 5));
+        var block = Assert.Single(weak.Blocks, b => b.RuleId == "current-limit");
+        Assert.StartsWith("k_vfd:", block.Message, StringComparison.Ordinal);
+        var soft = Run(Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", 0.01, "MVA"), Choice("starter", MotorStartCalculator.StarterSoft), N("k_soft", 5));
+        Assert.StartsWith("k_soft:", Assert.Single(soft.Blocks, b => b.RuleId == "current-limit").Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Regulated_Dips_Deepen_With_A_Weaker_Source_A_Longer_Cable_Or_A_Higher_Current_Limit()
+    {
+        Gen.Select(Gen.Double[2, 40], Gen.Double[1, 12], Gen.Double[0, 300], Gen.Double[0.2, 0.95]).Sample((sk, xr, length, cos) =>
+        {
+            CalcRunResult Go(double skMva, double l, double k) => Run(Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", skMva, "MVA"), N("XR", xr), Q("L_cab", l, "m"), Choice("starter", MotorStartCalculator.StarterSoft), N("k_soft", k), N("cos_phi_st", cos));
+            var baseline = Go(sk, length, 3);
+            var dip = baseline.OutputSi("start_dip");
+            return dip >= 0 && dip < 1 && baseline.OutputSi("dip_pcc") <= dip + 1e-12
+                && Go(sk * 0.8, length, 3).OutputSi("start_dip") > dip && Go(sk, length + 20, 3).OutputSi("start_dip") > dip && Go(sk, length, 3.5).OutputSi("start_dip") > dip;
+        }, iter: 60);
+    }
+
+    [Fact]
+    public void The_I_k_Basis_Defaults_C_To_1_1_And_A_Linked_I_k_With_Another_C_Warns()
+    {
+        var common = new[] { Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisIk), Q("I_k", 12, "kA") };
+        var blank = Run(common);
+        Assert.Equal(1.1 * 400 / (Math.Sqrt(3) * 12e3), blank.OutputSi("Z_src") * 1.0, 9);
+        var explicitOne = Run([.. common, N("c_src", 1)]);
+        Assert.Equal(400 / (Math.Sqrt(3) * 12e3), explicitOne.OutputSi("Z_src"), 9);
+        Assert.DoesNotContain(blank.Warnings, w => w.RuleId == "c_src");
+        Assert.DoesNotContain(explicitOne.Warnings, w => w.RuleId == "c_src");
+
+        // The S_k basis still defaults to 1.
+        var level = Run(Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", 10, "MVA"));
+        Assert.Equal(400.0 * 400 / 10e6, level.OutputSi("Z_src"), 9);
+
+        // A linked I_k: c other than 1.1 warns, 1.1 and the blank default do not.
+        var link = CalcProvenance.Link(Guid.NewGuid(), "I_k3", "1");
+        var linked = new[] { Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisIk), Q("I_k", 12, "kA") with { Provenance = link } };
+        var wrong = Assert.Single(Run([.. linked, N("c_src", 1)]).Warnings, w => w.RuleId == "c_src");
+        Assert.StartsWith("c_src:", wrong.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Run([.. linked, N("c_src", 1.1)]).Warnings, w => w.RuleId == "c_src");
+        Assert.DoesNotContain(Run(linked).Warnings, w => w.RuleId == "c_src");
+    }
+
+    [Fact]
+    public void A_Drive_Corrects_From_Its_Own_Displacement_Factor_Not_The_Motors()
+    {
+        var motor = Run(Choice("starter", MotorStartCalculator.StarterVfd), N("cos_phi", 0.8), N("cos_phi_vfd", 0.95), N("cos_phi2", 0.95));
+        Assert.Equal(0, motor.OutputSi("kvar"));
+        Assert.Contains(motor.Warnings, w => w.RuleId == "pfc" && w.Message.Contains("drive's displacement", StringComparison.Ordinal));
+
+        var lower = Run(Choice("starter", MotorStartCalculator.StarterVfd), N("cos_phi", 0.8), N("cos_phi_vfd", 0.85), N("cos_phi2", 0.95), Q("P", 40, "kW"), N("eta", 0.92));
+        var expected = 40 / 0.92 * (Math.Tan(Math.Acos(0.85)) - Math.Tan(Math.Acos(0.95)));
+        Assert.Equal(expected, lower.OutputSi("kvar") / 1000, 9);
+        Assert.Equal(40 / 0.92 * 1000 / (Math.Sqrt(3) * 400 * 0.85), lower.OutputSi("I_run1"), 9);
+        Assert.Contains(lower.Warnings, w => w.RuleId == "harmonics" && w.Message.Contains("drive is itself a harmonic load", StringComparison.Ordinal));
+        Assert.DoesNotContain(Run(Choice("starter", MotorStartCalculator.StarterVfd), CalcInputValue.Switch("harmonics", true), N("cos_phi_vfd", 0.85)).Warnings, w => w.Message.Contains("drive is itself", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void An_Entered_Rated_Current_Sets_The_Correction_Power_And_A_Mismatch_Warns()
+    {
+        var fromCurrent = Run(Q("I_n", 100, "A"), Q("P", 55, "kW"), N("eta", 0.93), N("cos_phi", 0.88), N("cos_phi2", 0.95));
+        var pIn = Math.Sqrt(3) * 400 * 100 * 0.88;
+        Assert.Equal(pIn, fromCurrent.OutputSi("P_in"), 6);
+        Assert.Equal(pIn / 1000 * (Math.Tan(Math.Acos(0.88)) - Math.Tan(Math.Acos(0.95))), fromCurrent.OutputSi("kvar") / 1000, 9);
+        Assert.Equal(100, fromCurrent.OutputSi("I_run1"), 9);
+        Assert.DoesNotContain(fromCurrent.Warnings, w => w.RuleId == "rated");
+
+        var mismatch = Run(Q("I_n", 160, "A"));
+        var warning = Assert.Single(mismatch.Warnings, w => w.RuleId == "rated");
+        Assert.StartsWith("I_n:", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "rated");
+    }
+
+    [Fact]
+    public void An_Upstream_Network_Adds_In_Series_To_The_Transformer_And_Blank_Means_An_Infinite_Bus()
+    {
+        var bare = Run(Choice("source", MotorStartCalculator.SourceTransformer), Q("S_n", 315, "kVA"), Q("u_k", 4, "%"), N("XR", 4.2));
+        var with = Run(Choice("source", MotorStartCalculator.SourceTransformer), Q("S_n", 315, "kVA"), Q("u_k", 4, "%"), N("XR", 4.2), Q("S_kQ", 20, "MVA"), N("XR_Q", 10));
+        var zt = 0.04 * 400 * 400 / 315e3;
+        var rt = zt / Math.Sqrt(1 + 4.2 * 4.2);
+        var zq = 400.0 * 400 / 20e6;
+        var rq = zq / Math.Sqrt(1 + 100);
+        var sum = new System.Numerics.Complex(rt, 4.2 * rt) + new System.Numerics.Complex(rq, 10 * rq);
+
+        Assert.Equal(zt, bare.OutputSi("Z_src"), 12);
+        Assert.Equal(sum.Magnitude, with.OutputSi("Z_src"), 12);
+        Assert.True(with.OutputSi("start_dip") > bare.OutputSi("start_dip"));
+        Assert.True(with.OutputSi("h_res") < bare.OutputSi("h_res"));
+        Assert.Equal(400.0 * 400 / sum.Magnitude, with.OutputSi("S_sc"), 3);
     }
 }

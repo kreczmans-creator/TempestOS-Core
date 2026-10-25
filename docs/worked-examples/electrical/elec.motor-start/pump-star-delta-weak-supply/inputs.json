@@ -1,28 +1,28 @@
 [
   {
     "Symbol": "A_c",
-    "Number": 50,
+    "Number": 95,
     "Unit": "mm^2",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "Cable schedule CS-31: 50 mm\u00B2 copper",
+      "Reference": "Cable schedule CS-31: 95 mm\u00B2 copper",
       "IsSufficientToIssue": true
     },
-    "ValueText": "50"
+    "ValueText": "95"
   },
   {
     "Symbol": "I_LR_r",
     "Number": 7,
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "record: motor MD-12 locked-rotor current ratio 7.0 (datasheet; test value invented for this example)",
+      "Reference": "record: motor MD-21 locked-rotor current ratio 7.0 (datasheet; test value invented for this example)",
       "IsSufficientToIssue": true
     },
     "ValueText": "7"
   },
   {
     "Symbol": "L_cab",
-    "Number": 40,
+    "Number": 60,
     "Unit": "m",
     "Provenance": {
       "Kind": "Drawing",
@@ -30,18 +30,29 @@
       "Revision": "B",
       "IsSufficientToIssue": true
     },
-    "ValueText": "40"
+    "ValueText": "60"
   },
   {
     "Symbol": "P",
-    "Number": 75,
+    "Number": 160,
     "Unit": "kW",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "Pump schedule PS-03: 75 kW motor rated output",
+      "Reference": "Pump schedule PS-05: 160 kW motor rated output (test value invented for this example)",
       "IsSufficientToIssue": true
     },
-    "ValueText": "75"
+    "ValueText": "160"
+  },
+  {
+    "Symbol": "S_kQ",
+    "Number": 15,
+    "Unit": "MVA",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Network operator letter NO-7: minimum fault level 15 MVA at the transformer primary (test value invented for this example)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "15"
   },
   {
     "Symbol": "S_n",
@@ -87,6 +98,16 @@
     "ValueText": "4.2"
   },
   {
+    "Symbol": "XR_Q",
+    "Number": 10,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Network X/R taken as 10, mostly reactive.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
     "Symbol": "X_km",
     "Number": 0.08,
     "Unit": "ohm/km",
@@ -120,13 +141,13 @@
   },
   {
     "Symbol": "cos_phi",
-    "Number": 0.87,
+    "Number": 0.88,
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "Motor datasheet MD-12: 0.87 at full load",
+      "Reference": "Motor datasheet MD-21: 0.88 at full load (test value invented for this example)",
       "IsSufficientToIssue": true
     },
-    "ValueText": "0.87"
+    "ValueText": "0.88"
   },
   {
     "Symbol": "cos_phi2",
@@ -143,7 +164,7 @@
     "Number": 0.3,
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "record: motor MD-12 locked-rotor power factor 0.3 (datasheet; test value invented for this example)",
+      "Reference": "record: motor MD-21 locked-rotor power factor 0.3 (datasheet; test value invented for this example)",
       "IsSufficientToIssue": true
     },
     "ValueText": "0.3"
@@ -161,24 +182,24 @@
   },
   {
     "Symbol": "dip_limit_pcc",
-    "Number": 5,
+    "Number": 7,
     "Unit": "%",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "Connection agreement CA-2: 5 % at the point of common coupling (test value invented for this example)",
+      "Reference": "Connection agreement CA-2: 7 % at the point of common coupling (test value invented for this example)",
       "IsSufficientToIssue": true
     },
-    "ValueText": "5"
+    "ValueText": "7"
   },
   {
     "Symbol": "eta",
-    "Number": 0.945,
+    "Number": 0.95,
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "Motor datasheet MD-12: 94.5 % at full load",
+      "Reference": "Motor datasheet MD-21: 95 % at full load (test value invented for this example)",
       "IsSufficientToIssue": true
     },
-    "ValueText": "0.945"
+    "ValueText": "0.95"
   },
   {
     "Symbol": "harmonics",
@@ -225,14 +246,14 @@
   },
   {
     "Symbol": "starter",
-    "Text": "Direct on line (DOL)",
+    "Text": "Star-delta",
     "Provenance": {
       "Kind": "Drawing",
       "Reference": "E-SCH-031",
       "Revision": "A",
       "IsSufficientToIssue": true
     },
-    "ValueText": "Direct on line (DOL)"
+    "ValueText": "Star-delta"
   },
   {
     "Symbol": "u_k",
