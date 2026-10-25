@@ -19,7 +19,7 @@ Both contradictions below are provisional. They rest on open secondary sources, 
 
 The first three rows cover the earlier 35 cases, checked on 2026-10-24. The addendum row is new and is detailed in the last section.
 
-Of the 28 confirmed, 3 rest on a manufacturer or IET page: B32 Z_s, ΔT 30 factor and SKF 6206.
+Of the earlier 28 confirmed, 3 rest on a manufacturer or IET page: B32 Z_s, ΔT 30 factor and SKF 6206.
 The other 25 use open course notes, open secondary pages or recomputation. Each row says which.
 Not covered: `ka-rectangle`, `ka-tube` and `ka-two-span-release`. They are analytic or statics-only and cite no book example.
 
@@ -123,3 +123,87 @@ Open the books below. Each item names what to read.
 10. Roark's Formulas for Stress and Strain, 8th ed., Table 8.1: confirm case labels 1a, 2a, 2c, 2d, 2e. Hibbeler, Structural Analysis, 9th ed.: the pinned portal frame section. Çengel and Cimbala, 4th ed., Ch. 8: laminar pipe flow. Shigley 11th ed. Tables 9-1 and 9-2: confirm case numbers 2 and 5. All optional; the values recompute.
 11. ASHRAE Handbook—Fundamentals 2017: Ch. 1 Example 1, Ch. 1 Table 3 (20 °C row), and Ch. 21 friction chart point. Optional; confirms the edition.
 12. Schneider Electric, Electrical Installation Guide, "Sizing of protective earthing conductor", Fig. G60 in a normal browser. The site blocked my fetch (`ka-schneider-k`).
+
+## Addendum B-0/B-1 cases (90d15f11)
+
+Date: 2026-10-25. Release commit: 90d15f11. Rules and outcome words are the same as above.
+I ran `python3 tools/verification/kat_inventory.py`. It lists 154 cases, 23 tagged Unconfirmed and 4 tagged Secondary.
+Thirteen of the 23 Unconfirmed cases are the earlier ones in the main table. Ten cases are new and covered here.
+The new cases are two PCB trace cases, one Parker accumulator case, three spring cases and four LTB cases.
+I recorded values, locations and URLs only. I copied no source text.
+
+### Summary of the new cases
+
+| Outcome | Cases |
+|---|---|
+| Confirmed (7) | `ka-published-3a-10k-1oz`, `ka-published-3a-10k-1oz-internal`, `ka-parker-hy10-4004`, `ka-torsion-en`, `ka-squared-en`, `ka-annex-b-class2`, `ka-annex-b-class3-b1` |
+| Still unconfirmed (2) | `ka-annex-a-class2`, `ka-annex-a-class3` |
+| Contradicted (1) | `ka-shigley-10-3` |
+
+Six of the seven confirmations rest on one or more open pages. `ka-parker-hy10-4004` needs a citation fix (see its row).
+The Annex A cases stay open because I found no open page that prints the Annex A expressions.
+
+### Changes to earlier cases
+
+- The earlier `ka-manufacturer-dt30` no longer exists. The case is now `ka-dt30` in `SealedSystemCalculator.cs`, tagged Analytic and Confirmed.
+- Its expected factor is 0.5147503, from (30/50)^1.3. This agrees with the 0.515 that the Stelrad table prints. The earlier row stands.
+- None of the earlier 21 cases carries the Secondary tag now. I did not re-open their sources or values.
+- The tag now reads Secondary only on `ka-published-3a-10k-1oz`, `ka-published-3a-10k-1oz-internal`, `ka-parker-hy10-4004` and `ka-shigley-10-3`.
+- `ka-shigley-stiffness` (C2 above) is now described as "Shigley-style" and no longer tagged. I did not re-check its numbers.
+
+### Table
+
+| Calculator | Case | Tag | Value(s) checked | Source checked (title, edition, URL, page/table) | Outcome | Notes |
+|---|---|---|---|---|---|---|
+| elec.pcb-trace | ka-published-3a-10k-1oz | Unconfirmed/Secondary | w_min 1.37 mm external, 3 A, 10 K, 1 oz | NextPCB, "PCB trace width calculator, IPC-2221 guide", quick-reference table: https://www.nextpcb.com/blog/pcb-trace-width-calculator-ipc-2221-guide. Flux trace-width tool: https://unified.flux.ai/p/tools/trace-width-calculator | Confirmed | NextPCB prints 53.8 mil (1.37 mm) for 3 A external. Flux prints 1.37 mm (54 mil). I recomputed A = 74.162 mil², w = 1.36699 mm. KAT 1.37 ± 0.005 holds. Caveat in the paragraph below the table. |
+| elec.pcb-trace | ka-published-3a-10k-1oz-internal | Unconfirmed/Secondary | w_min 3.56 mm internal, 3 A, 10 K, 1 oz | NextPCB page above, same table. Constants also on LCSC (https://www.lcsc.com/tools/conversion-calculator-pcb-trace-width) and Advanced PCB (https://advancedpcb.com/en-us/tools/trace-width-calculator) | Confirmed | NextPCB prints 140.0 mil (3.56 mm). Flux gives only "about 3.6 mm". I recomputed A = 192.927 mil², w = 3.55613 mm. KAT 3.56 ± 0.005 holds. |
+| fp.accumulator | ka-parker-hy10-4004 | Unconfirmed/Secondary | P2 210, P1 100, P0 90 bar; ΔV 14 L; isothermal; V0 about 29.7 L; selection 32 L | Parker Olaer, Catalogue HY10-4001/UK, Bladder Accumulators (EHV), 06/2013, "How to size?" page, via distributor copy: https://cdn.kovaz.cz/data/user-content/katalogy/Akumulátory a chladiče/Vakové akumulátory EHV 250-690 bar/Vakové akumulátory EHV 250-690 bar.pdf | Confirmed | The example is in HY10-4001/UK, not HY10-4004/UK. Fix the citation. The page prints ratio 2.1 and a chart-read size of 32 L. It prints no V0 and no pressure basis. See the notes below. |
+| mech.spring | ka-torsion-en | Unconfirmed | q = (C + 0.07)/(C − 0.75) = 1.1131034 at C = 8; σ₂ 212.587 MPa; u₂ 0.157472 | Gutekunst Federn, Federnshop blog, "Design of metal springs, part 2: calculation": https://blog.federnshop.com/en/design-of-metal-springs-part-2-calculation/ | Confirmed | The page prints q = (D/d + 0.07)/(D/d − 0.75) and cites EN 13906-3:2001. I recomputed q, σ₂ = q·32·M/(π d³) and u₂: match. The 2014 edition is unseen. |
+| mech.spring | ka-squared-en | Unconfirmed | L_s = (n_t + 1.5)·d_max = 23.46 mm; S_a = 3.136 mm; L_n 26.596 mm; F_c 105.176 N | Same Gutekunst Federn page; it names DIN EN 13906-1 for its compression formulas | Confirmed | Printed: n_t = n + 2, L_c = (n_t + 1.5)·d_max for unground ends, S_a = (0.0015·D²/d + 0.1·d)·n. I recomputed all 12 expected values from these: match. |
+| mech.spring | ka-shigley-10-3 | Unconfirmed/Secondary | k 1.3142; K_B 1.1174; L_s 35; F_c 167.86; L₀ 162.72 mm entered | Shigley's MED, 10th and 11th ed., problem 10-3 solutions (instructor copies, Oakland University): https://www.secs.oakland.edu/~latcha/me486/BN10/Chap10_10e.pdf and https://www.secs.oakland.edu/~latcha/ME4300/SM_PDF/CH10.pdf | Contradicted | See C3. Every value matches except L₀. Both editions print L₀ = 162.8 mm, not 162.72. |
+| struct.ltb-interaction | ka-annex-b-class2 | Unconfirmed | M_cr 521.515 kN·m; χ_LT 0.457851; k_yy 0.848513; k_yz 0.960284; k_zy 0.917840; k_zz 1.600473; 6.61 0.94775; 6.62 1.24809 | SCI NCCI SN048b (steelconstruction.info): https://www.SteelConstruction.info/images/d/d8/SN048b.pdf. JRC Eurocodes workshop, Simões, Example 3: https://eurocodes.jrc.ec.europa.eu/sites/default/files/2022-06/05_Eurocodes_Steel_Workshop_SIMOES.pdf. SOFiSTiK DCE-EN29: https://docs.sofistik.com/2024/en/verification/_static/verification/pdf/dce-en29.pdf | Confirmed | SN048b prints the class 1 and 2 forms of k_yy, k_yz = 0.6 k_zz, k_zz, k_zy and C_m = 0.6 + 0.4ψ. The other two pages show k_yy and k_zy worked. I recomputed all nine values: match. A typo in the case text is noted below. |
+| struct.ltb-interaction | ka-annex-b-class3-b1 | Unconfirmed | λ̄_LT 1.119598; χ_LT 0.494537; k_yy 0.860536; k_yz = k_zz 1.271128; k_zy 0.688429; 6.61 1.11105; 6.62 1.18268 | SN048b (above) for k_yy, k_zz and k_yz = k_zz, class 3. SCI Advisory Desk AD 552, New Steel Construction, Feb 2026, corrected P362 table: https://steelconstruction.info/images/d/d1/AD-552.pdf | Confirmed | AD 552 prints k_zy = 0.8 k_yy for class 3 members not susceptible to torsion. I recomputed all eight values with W_el: match. |
+| struct.ltb-interaction | ka-annex-a-class2 | Unconfirmed | N_cr,T 2962.46 kN; a_LT 0.998475; C_my 0.948882; C_mz 1.058807; C_mLT 1.340335; k_yy 1.348996; k_yz 2.166104; k_zy 0.749357; k_zz 1.926807 | No open page found that prints the Annex A expressions. SN048b names Annex A but gives no formulas. SCIA Benchmark 21 (ECCS 119 Example 5) blocked my fetch (403) | Still unconfirmed | My own transcription of Annex A, written from memory of the standard, reproduces every value to six digits. That is not an open source, so I do not count it as confirmation. |
+| struct.ltb-interaction | ka-annex-a-class3 | Unconfirmed | λ̄_0 1.281438; k_yy 1.327845; k_yz 1.395680; k_zy 1.181153; k_zz 1.241494; 6.61 1.42477; 6.62 1.48164 | Same as above | Still unconfirmed | The same transcription reproduces all values, including the elastic column without the 0.6√(w_i/w_j) factors. The open source for those factors is still missing. |
+
+### Notes by case
+
+**PCB trace cases.** All open calculators use the sheet's IPC-2221 curve-fit: k 0.048 and 0.024, exponents 0.44 and 0.725, 1.378 mil per oz.
+So these checks confirm the arithmetic and the quoted widths. They do not test the curve-fit against the printed IPC-2221 chart. The Secondary tag stays correct.
+The NextPCB worked example gives 39 mil for the external width, which conflicts with its own table. I ignored that line.
+
+**ka-parker-hy10-4004.**
+- The catalogue gives no V0 and does not say if its pressures are gauge or absolute. Its chart assumes P0 = 0.9·P1 at 20 °C.
+- I recomputed V0 = 14/(90/100 − 90/210) = 29.697 L on absolute pressures. KAT 29.7 ± 0.005 holds.
+- On gauge pressures plus 1.01325 bar, V0 would be 29.807 L, outside the KAT tolerance. The catalogue does not decide the basis.
+- The 2016 price-book catalogue HY10-4004-PL/UK rev. 6 (Wilson Company copy) has a "How to size" page with no worked example.
+- Change the case citation to HY10-4001/UK, 06/2013, and say that V0 is recomputed.
+
+**ka-annex-b-class2 text error.** The case text says n_y = 0.1. The correct value is n_y = 1200/(0.931891 × 3933.4) = 0.32738. The expected k_yy uses 0.32738, so only the text is wrong.
+
+**ka-annex-b-class3-b1 and the other table.** SN048b prints k_zy for class 3 members susceptible to torsion with 0.05 in place of 0.1. No case tests that entry.
+
+**Annex A recomputation inputs.** I took N_cr,T with L_T = 6 m and i₀² = i_y² + i_z². That gives 2962.46 kN, as in the case. ε_y = 1.00283 and ψ_z = 1 for C_mz,0.
+
+### C3. mech.spring / ka-shigley-10-3
+
+- The KAT quotes the manual as k = 1.3142 N/mm, K_B = 1.1174, F_s = 167.86 N and L₀ = 162.72 mm.
+- It enters L₀ = 162.72.
+- Both solution copies print d 2.5 mm, OD 31 mm, N_t 14, N_a 13 and D 28.5 mm.
+- They also print C 11.4 and G 81.0 GPa. All of these match the KAT inputs.
+- They print S_ut = 1936 MPa (A 2211, m 0.145), S_sy 871.2 MPa, K_B 1.117 and F_s 167.9 N. The KAT's R_m 1935.9 and K_B 1.1174 agree after rounding.
+- They print k = 1.314 N/mm and L_s = 35 mm. These agree.
+- They print L₀ = 162.8 mm. The KAT's 162.72 mm is the sheet's own value, 35 + 167.8546/1.3142474 = 162.7191 mm.
+- With the printed 162.8 mm the sheet gives F_c = 167.96 N and u_c = 1.0006. The KAT expects 167.86 N and 1.0000.
+- The differences in k, K_B and F_s are print rounding. The L₀ difference is real, and the sheet value is mislabelled as published.
+- Action: say that L₀ comes from the sheet. Or enter 162.8 and widen the F_c and u_c tolerances.
+- Caution: these are instructor copies of a solutions manual. The book itself is unseen.
+
+### Owner action for the addendum
+
+1. Shigley's Mechanical Engineering Design, 10th ed., problem 10-3 and its solution. Read L₀ and k to confirm 162.8 mm and 1.314 N/mm (`ka-shigley-10-3`).
+2. EN 1993-1-1:2005+A1:2014, Annex A, Tables A.1 and A.2. Check a_LT, C_my,0, C_my, C_mLT, C_ij, b_LT to e_LT and the class 3 column (`ka-annex-a-class2`, `ka-annex-a-class3`). Alternatively, open SCIA Benchmark 21 (ECCS 119 Example 5) in a normal browser.
+3. EN 13906-3:2014, the stress correction factor q. Confirm the 2001 expression is unchanged (`ka-torsion-en`).
+4. EN 13906-1:2013, the solid length of unground ends and the minimum coil clearance S_a. The Gutekunst page is a manufacturer source only (`ka-squared-en`).
+5. IPC-2221 chart for 1 oz copper. Optional, since all calculators share the sheet's curve-fit (`ka-published-3a-10k-1oz` and `-internal`).
+6. Parker catalogue HY10-4001/UK, the sizing page. Check whether its ratio is on absolute or gauge pressures, and update the citation (`ka-parker-hy10-4004`).
