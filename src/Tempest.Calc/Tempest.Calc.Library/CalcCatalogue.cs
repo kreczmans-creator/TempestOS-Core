@@ -84,8 +84,7 @@ public sealed class CalcCatalogue
                 return null;
 
             var flag = withheld.Template.FeatureFlag ?? string.Empty;
-            return $"Calculator '{withheld.Template.Title}' ({withheld.Template.Id}) is switched off: its '{flag}' feature is not enabled in this installation " +
-                   $"(configuration key {CalcFeatureFlags.ConfigurationKey(flag)}). It stays off until the owner has completed its review checklist; nothing can be created, checked or issued with it while it is.";
+            return Tempest.Core.Calculations.CalculationFeatureGate.Refusal(withheld.Template.Title, withheld.Template.Id, flag);
         }
     }
 

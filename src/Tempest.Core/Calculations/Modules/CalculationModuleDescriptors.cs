@@ -170,14 +170,14 @@ public sealed record CalculationModuleDescriptor(
 public static class CalculationModuleDescriptors
 {
     /// <summary>The name of the feature (`ADR-0173`) that withholds the lifting modules until the installation switches it on; the same name the worksheet calculators' feature flag carries.</summary>
-    public const string LiftingFeature = "lifting";
+    public const string LiftingFeature = CalculationFeatureGate.LiftingFeature;
 
     /// <summary>
     /// The feature a module is gated behind, or <see langword="null"/> for a module that is always available. The older lifting-lug and pin-joint
     /// module is a lifting calculation like S8 and is withheld with it (`ADR-0173`).
     /// </summary>
     public static string? FeatureOf(string moduleId) =>
-        string.Equals(moduleId, LiftingLugPinJointCalculationDefinition.Id, StringComparison.Ordinal) ? LiftingFeature : null;
+        CalculationFeatureGate.FeatureOf(moduleId);
 
     private const string Docs = "docs/engineering/calculations/";
     private const string Material = "MaterialPin";

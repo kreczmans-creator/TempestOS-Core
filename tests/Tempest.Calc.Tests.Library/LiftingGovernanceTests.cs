@@ -255,6 +255,16 @@ public sealed class LiftingGovernanceTests
         Assert.Equal(EvidenceRefusal.ManagedElsewhere, (await host.Evidence.IssueAsync(legacy.Id, "REF-1", "A", "Client")).Refusal);
     }
 
+    [Fact]
+    public void The_Engine_And_The_Catalogue_Refuse_The_Lifting_Worksheet_In_The_Same_Words()
+    {
+        var catalogue = new CalcCatalogue([new LiftingLugCalculator()]);
+
+        Assert.Equal(catalogue.FeatureRefusal("struct.lifting"), Tempest.Core.Calculations.CalculationFeatureGate.RefusalFor("struct.lifting", null));
+        Assert.Equal(catalogue.FeatureRefusal("struct.lifting@1.1.0"), Tempest.Core.Calculations.CalculationFeatureGate.RefusalFor("struct.lifting", _ => false));
+        Assert.Null(Tempest.Core.Calculations.CalculationFeatureGate.RefusalFor("struct.lifting", feature => feature == CalcFeatures.Lifting));
+    }
+
     // ------------------------------------------------------------------
     // Governance, flag on (the test host only)
     // ------------------------------------------------------------------

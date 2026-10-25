@@ -341,6 +341,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
         foreach (var feature in calcFeatures.Enabled)
             hostLogger?.Warning($"Optional calculator feature '{feature}' is ENABLED by {calcFeatures.SourceOf(feature)}. It has not been through the owner's review checklist unless the owner has recorded it.");
 
+        // The engine refuses a gated calculation run by id until told its feature is on: the one choke point for every caller (`ADR-0173`).
+        ((Tempest.Core.Calculations.CalculationEngine)host.Services!.GetService(typeof(ICalculationEngine))).ConfigureFeatures(calcFeatures.IsEnabled);
+
         CalculationModuleService = new CalculationModuleService(
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
             (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),

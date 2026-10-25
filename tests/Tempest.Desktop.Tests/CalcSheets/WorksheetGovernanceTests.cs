@@ -229,6 +229,33 @@ public sealed class WorksheetGovernanceTests
         }
     }
 
+    [AvaloniaFact]
+    public async Task The_Shipped_Host_Engine_Refuses_The_Lifting_Definitions_Run_By_Id_While_The_Flag_Is_Off()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var engine = (Tempest.Core.Calculations.ICalculationEngine)host.Services!.GetService(typeof(Tempest.Core.Calculations.ICalculationEngine));
+
+            // The refusal comes before the lookup and before the input is read, so the input type is immaterial.
+            foreach (var id in new[] { "calc.lifting-lug-pin-joint", "struct.lifting" })
+            {
+                var refused = await Assert.ThrowsAsync<Tempest.Core.Calculations.CalculationFeatureDisabledException>(() => engine.ExecuteAsync<int, int>(id, 1));
+                Assert.Contains("switched off", refused.Message, StringComparison.Ordinal);
+            }
+
+            // The catalogue of the same host withholds the worksheet in the same words.
+            var viaEngine = await Assert.ThrowsAsync<Tempest.Core.Calculations.CalculationFeatureDisabledException>(() => engine.ExecuteAsync<int, int>("struct.lifting", 1));
+            Assert.Equal(host.CalcCatalogue!.FeatureRefusal("struct.lifting"), viaEngine.Message);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
     // ---------------------------------------------------------------
 
     private static CalcInstanceService BuildService(WorkspaceHost host, bool liftingOn)

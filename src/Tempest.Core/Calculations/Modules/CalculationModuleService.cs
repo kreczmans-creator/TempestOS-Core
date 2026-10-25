@@ -286,7 +286,7 @@ public sealed class CalculationModuleService
             return new CalculationModulePreparation(CalculationModuleRefusal.ModuleNotFound, $"No product calculation has the id '{request.CalculationId}'.", [], [], null, null);
 
         if (!IsAvailable(module))
-            return new CalculationModulePreparation(CalculationModuleRefusal.ModuleSwitchedOff, $"'{module.Title}' is switched off: its '{CalculationModuleDescriptors.FeatureOf(module.Id)}' feature is not enabled in this installation (it stays off until the owner has completed its review checklist).", [], [], module, null);
+            return new CalculationModulePreparation(CalculationModuleRefusal.ModuleSwitchedOff, CalculationFeatureGate.RefusalFor(module.Id, _featureEnabled) ?? "switched off", [], [], module, null);
 
         var fields = request.Fields.ToDictionary(f => f.Name, StringComparer.Ordinal);
         var pins = new Dictionary<string, ReferencePin>(StringComparer.Ordinal);
