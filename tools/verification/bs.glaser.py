@@ -281,7 +281,7 @@ EXTRA = [  # (name, layers, climate, kwargs, product values read from the probe;
      [(4.3, 86), (4.4, 84), (6.5, 80), (8.9, 76), (12.3, 74), (15.1, 74), (17.0, 75), (16.8, 77), (14.3, 80), (11.0, 84), (7.2, 87), (4.9, 88)],
      {'Mc_limit': 500},
      {'n_start': 12.0, 'Mc_1': 129.2768365, 'Mc_2': 183.6030497, 'Mc_3': 160.4056473, 'Mc_4': 32.47580393, 'Mc_5': 0.0, 'Mc_6': 0.0, 'Mc_7': 0.0, 'Mc_8': 0.0, 'Mc_9': 0.0, 'Mc_10': 0.0, 'Mc_11': 0.0, 'Mc_12': 59.2269478, 'Mc_if_1': 0.0, 'Mc_if_2': 0.0, 'Mc_if_3': 0.0, 'Mc_if_4': 183.6030497, 'Mc_if_5': 0.0, 'Mc_max': 183.6030497, 'Mc_tot': 183.6030497, 'Mc_end': 0.0, 'R_T': 5.487216117, 'S_d': 2.48, 'psat_i': 2336.951144, 'R_Tf': 5.607216117, 'fRsi': 0.9554145953, 'fRsi_min': 0.5302298282, 'n_fcrit': 1.0, 'u_f': 0.5549735485, 'pass': 1.0, 'u_Mc': 0.3672060993}),
-    ('X2 humidity class capped at saturation, f_dp 1.3',
+    ('X2 humidity class, f_dp 1.3, not capped',
      [(12.5, 0.21, 8), (100, 0.035, 1), (100, 0.8, 12)],
      [(-8, 85), (-6, 84), (-1, 82), (5, 78), (11, 72), (15, 70), (18, 72), (17, 74), (12, 80), (6, 84), (0, 87), (-5, 86)],
      {'hum': (9, -10, 2, 20), 'dp_f': 1.3},
@@ -351,6 +351,21 @@ EXTRA = [  # (name, layers, climate, kwargs, product values read from the probe;
      [(-8, 85), (-6, 84), (-1, 82), (5, 78), (11, 72), (15, 70), (18, 72), (17, 74), (12, 80), (6, 84), (0, 87), (-5, 86)],
      {'RH_i': 50, 'Mc_limit': 500},
      {'n_start': 12.0, 'Mc_1': 1403.22904, 'Mc_2': 1917.766982, 'Mc_3': 1020.70184, 'Mc_4': 0.0, 'Mc_5': 0.0, 'Mc_6': 0.0, 'Mc_7': 0.0, 'Mc_8': 0.0, 'Mc_9': 0.0, 'Mc_10': 0.0, 'Mc_11': 0.0, 'Mc_12': 297.9163617, 'Mc_max': 1917.766982, 'Mc_tot': 1917.766982, 'Mc_end': 0.0, 'R_T': 0.287, 'S_d': 0.846, 'psat_i': 2336.951144, 'R_Tf': 0.407, 'fRsi': 0.3857493857, 'fRsi_min': 0.7365931537, 'n_fcrit': 1.0, 'u_f': 1.909512188, 'pass': 0.0, 'u_Mc': 3.835533965}),
+    ('X16 three layers, as given, Mc_limit 1000',
+     [(25, 0.035, 8), (50, 0.5, 10), (215, 0.5, 40)],
+     [(-8, 85), (-6, 84), (-1, 82), (5, 78), (11, 72), (15, 70), (18, 72), (17, 74), (12, 80), (6, 84), (0, 87), (-5, 86)],
+     {'RH_i': 40, 'Mc_limit': 1000},
+     {'n_start': 12.0, 'Mc_1': 537.759028, 'Mc_2': 741.3435463, 'Mc_3': 447.0671847, 'Mc_4': 380.0676676, 'Mc_5': 0.0, 'Mc_6': 0.0, 'Mc_7': 0.0, 'Mc_8': 0.0, 'Mc_9': 0.0, 'Mc_10': 0.0, 'Mc_11': 0.0, 'Mc_12': 129.4096174, 'Mc_if_1': 499.738774, 'Mc_if_2': 380.0676676, 'Mc_max': 499.738774, 'Mc_tot': 741.3435463, 'Mc_end': 0.0, 'R_T': 1.414285714, 'S_d': 9.3, 'psat_i': 2336.951144, 'R_Tf': 1.534285714, 'fRsi': 0.8370577281, 'fRsi_min': 0.6167511852, 'n_fcrit': 1.0, 'u_f': 0.7368084237, 'pass': 1.0, 'u_Mc': 0.499738774}),
+    ('X17 same wall, each layer in 9 slices (27 layers)',
+     [(2.7777777777777777, 0.035, 8), (2.7777777777777777, 0.035, 8), (2.7777777777777777, 0.035, 8), (2.7777777777777777, 0.035, 8), (2.7777777777777777, 0.035, 8), (2.7777777777777777, 0.035, 8), (2.7777777777777777, 0.035, 8), (2.7777777777777777, 0.035, 8), (2.7777777777777777, 0.035, 8), (5.555555555555555, 0.5, 10), (5.555555555555555, 0.5, 10), (5.555555555555555, 0.5, 10), (5.555555555555555, 0.5, 10), (5.555555555555555, 0.5, 10), (5.555555555555555, 0.5, 10), (5.555555555555555, 0.5, 10), (5.555555555555555, 0.5, 10), (5.555555555555555, 0.5, 10), (23.88888888888889, 0.5, 40), (23.88888888888889, 0.5, 40), (23.88888888888889, 0.5, 40), (23.88888888888889, 0.5, 40), (23.88888888888889, 0.5, 40), (23.88888888888889, 0.5, 40), (23.88888888888889, 0.5, 40), (23.88888888888889, 0.5, 40), (23.88888888888889, 0.5, 40)],
+     [(-8, 85), (-6, 84), (-1, 82), (5, 78), (11, 72), (15, 70), (18, 72), (17, 74), (12, 80), (6, 84), (0, 87), (-5, 86)],
+     {'RH_i': 40, 'Mc_limit': 1000},
+     {'n_start': 12.0, 'Mc_1': 537.759028, 'Mc_2': 741.3435463, 'Mc_3': 447.0671847, 'Mc_4': 403.6591943, 'Mc_5': 429.810427, 'Mc_6': 425.9775437, 'Mc_7': 398.7033275, 'Mc_8': 382.8843994, 'Mc_9': 407.6508793, 'Mc_10': 462.3855509, 'Mc_11': 528.643586, 'Mc_12': 129.4096174, 'Mc_max': 520.8194344, 'Mc_tot': 741.3435463, 'Mc_end': 528.643586, 'R_T': 1.414285714, 'S_d': 9.3, 'psat_i': 2336.951144, 'R_Tf': 1.534285714, 'fRsi': 0.8370577281, 'fRsi_min': 0.6167511852, 'n_fcrit': 1.0, 'u_f': 0.7368084237, 'pass': 0.0, 'u_Mc': 0.5208194344}),
+    ('X18 humidity class above saturation, capped, f_dp 1.5',
+     [(12.5, 0.21, 8), (100, 0.035, 1), (100, 0.8, 12)],
+     [(-8, 85), (-6, 84), (-1, 82), (5, 78), (11, 72), (15, 70), (18, 72), (17, 74), (12, 80), (6, 84), (0, 87), (-5, 86)],
+     {'hum': (12, -10, 6, 20), 'dp_f': 1.5},
+     {'n_start': 1.0, 'Mc_1': 5280.78642, 'Mc_2': 9893.768371, 'Mc_3': 14440.12349, 'Mc_4': 18009.53814, 'Mc_5': 20463.03249, 'Mc_6': 21795.84118, 'Mc_7': 22230.44996, 'Mc_8': 23018.48854, 'Mc_9': 25205.01096, 'Mc_10': 28745.59066, 'Mc_11': 33043.5705, 'Mc_12': 38058.35917, 'Mc_if_1': 0.0, 'Mc_if_2': 38058.35917, 'Mc_max': 38058.35917, 'Mc_tot': 38058.35917, 'Mc_end': 38058.35917, 'R_T': 3.211666667, 'S_d': 1.4, 'psat_i': 2336.951144, 'R_Tf': 3.331666667, 'fRsi': 0.9249624812, 'fRsi_min': 2.828086656, 'n_fcrit': 7.0, 'u_f': 3.057514995, 'pass': 0.0}),
 ]
 
 UK_NOTE = "Product values were read from `Probe run bs.glaser` (10 significant figures); Mc in g/m2."
@@ -391,11 +406,25 @@ for N in (1, 2, 4, 8, 12):
     r = glaser(L, COLD_, RH_i=50, Mc_limit=500)
     finding("mesh", f"102 mm + 15 mm uninsulated wall, 50 % inside, each layer in {N} slice(s): n_start {r['n_start']}, "
             f"Mc_max {r['Mc_max']:.1f} g/m2, Mc_tot {r['Mc_tot']:.1f} g/m2.")
+# F4: the same verdict flips with layer resolution (probe X16 against X17).
+for label, L in (("as given", [(25, 0.035, 8), (50, 0.5, 10), (215, 0.5, 40)]),
+                 ("each layer in 5 slices", [(25 / 5, 0.035, 8)] * 5 + [(50 / 5, 0.5, 10)] * 5 + [(215 / 5, 0.5, 40)] * 5),
+                 ("each layer in 9 slices", [(25 / 9, 0.035, 8)] * 9 + [(50 / 9, 0.5, 10)] * 9 + [(215 / 9, 0.5, 40)] * 9)):
+    r = glaser(L, COLD_, RH_i=40, Mc_limit=1000)
+    finding("mesh-flip", f"25+50+215 mm wall, 40 % inside, {label}: Mc_max {r['Mc_max']:.1f} g/m2, Mc_end {r['Mc_end']:.1f} g/m2, "
+            f"balance {'PASS' if r['balance'] else 'FAIL'}, pass {r['pass']}.")
+# F5: inside surface below the dew point of the inside air: the interstitial flux into the first interface scales with 1/s_d of the first slice.
+for N in (12, 24, 48, 96, 200):
+    L = []
+    for d, l, m in W:
+        L += [(d / N, l, m)] * N
+    r = glaser(L, COLD_, RH_i=50)
+    finding("surface-saturated", f"102+15 mm wall, N={N} slices per layer: all condensate sits on interface 1; Mc_max {r['Mc_max']:.0f} g/m2 (grows with N).")
 # F2: physical cross-checks of the saturation relation against commonly tabulated values (values only).
 finding("psat", f"Magnus (ISO 13788 Annex E form): p_sat(20 degC) {psat(20):.1f} Pa (tables 2339 Pa), p_sat(30) {psat(30):.0f} Pa (tables 4246 Pa), "
         f"p_sat(-10) {psat(-10):.1f} Pa over ice (tables 259.9 Pa); dew point at 20 degC / 50 % = {theta_of_psat(0.5 * psat(20)):.2f} degC (tables 9.3 degC).")
 # F3: balance check display when condensate remains.
-finding("display", "Annual-balance check prints u = Infinity when Mc_end > 0 (probe X2, X10, X12).")
+finding("display", "Annual-balance check prints u = Infinity when Mc_end > 0 (probe X10, X12, X18).")
 
 
 def main():

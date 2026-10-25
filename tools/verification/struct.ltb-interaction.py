@@ -331,7 +331,281 @@ UB = dict(section_type="rolled", h=467.2, b=192.8, t_f=19.6, A=125.27, I_y=45728
           I_w=1.1755, W_pl_y=2232.5, W_el_y=1957.5, W_pl_z=378.9, W_el_z=243.47)
 
 # (label, inputs, {symbol: product value observed with the probe tool})
-EXTRAS = []  # filled below from probe runs
+# --- generated from probe runs (product values hard-coded; the input dicts are what was sent to the probe) ---
+def _plate(h_, b_, tf, tw):
+    """Welded doubly symmetric I from plates (no fillet welds); I_w = I_z,flanges * h_s^2 / 4."""
+    hw = h_ - 2 * tf; hs = h_ - tf
+    A = 2 * b_ * tf + hw * tw
+    Iy = (b_ * h_ ** 3 - (b_ - tw) * hw ** 3) / 12
+    Iz = 2 * tf * b_ ** 3 / 12 + hw * tw ** 3 / 12
+    It = (2 * b_ * tf ** 3 + hw * tw ** 3) / 3
+    Iw = 2 * (tf * b_ ** 3 / 12) * hs ** 2 / 4
+    return dict(section_type='welded', h=h_, b=b_, t_f=tf, A=A / 1e2, I_y=Iy / 1e4, I_z=Iz / 1e4, I_t=It / 1e4, I_w=Iw / 1e12,
+                W_pl_y=(b_ * tf * hs + tw * hw ** 2 / 4) / 1e3, W_el_y=Iy / (h_ / 2) / 1e3,
+                W_pl_z=(tf * b_ ** 2 / 2 + hw * tw ** 2 / 4) / 1e3, W_el_z=2 * Iz / b_ / 1e3)
+
+UC = {'section_type': 'rolled', 'h': 254.1, 'b': 254.6, 't_f': 14.2, 'A': 93.1, 'I_y': 11407, 'I_z': 3908, 'I_t': 57.3, 'I_w': 0.389, 'W_pl_y': 992, 'W_el_y': 898, 'W_pl_z': 462, 'W_el_z': 307}
+WG = _plate(400, 300, 20, 10)  # welded 400 x 300 x 20 / 10, h/b = 1.33
+
+EXTRAS = [
+    ('rolled h/b>2, 6.3.2.2 (curve b)',
+     dict(UB, ltb_method='general', L=5, psi_y=0, M_y_Ed=300, N_Ed=-800, torsion='not susceptible', L_cr_y=5, L_cr_z=5),
+     {'C_1': 1.88, 'Mcr': 1160.108473, 'lambda_LT': 0.8265337861, 'alpha_LT': 0.34, 'chi_LT': 0.7079433871, 'Mb_Rd': 561.0716821, 'u_LTB': 0.5346910378, 'lambda_y': 0.3424972557, 'lambda_z': 1.511790649, 'chi_y': 0.9673474683, 'chi_z': 0.3379324209, 'N_b_Rd': 1502.8142, 'k_yy': 0.6158997321, 'k_yz': 1.047161066, 'k_zy': 0.3695398393, 'k_zz': 1.745268444, 'u_61': 0.5152814278, 'u_62': 0.7299242428, 'u_buckling': 0.5323346026}),
+    ('rolled h/b<=2, 6.3.2.2 (curve a)',
+     dict(UC, ltb_method='general', L=4, psi_y=0.5, M_y_Ed=150, N_Ed=-900, torsion='not susceptible', L_cr_y=4, L_cr_z=4),
+     {'C_1': 1.31, 'Mcr': 917.0512972, 'lambda_LT': 0.6196881592, 'alpha_LT': 0.21, 'chi_LT': 0.88237601, 'Mb_Rd': 310.7375357, 'u_LTB': 0.4827224998, 'lambda_y': 0.4729375176, 'lambda_z': 0.8080015814, 'chi_y': 0.8960107673, 'chi_z': 0.6571298637, 'N_b_Rd': 2171.847056, 'k_yy': 0.8663597087, 'k_yz': 0.8526152596, 'k_zy': 0.5198158252, 'k_zz': 1.421025433, 'u_61': 0.7221257023, 'u_62': 0.6653206155, 'u_buckling': 0.4143938209}),
+    ('rolled h/b<=2, 6.3.2.3 (curve b)',
+     dict(UC, ltb_method='rolled', L=4, psi_y=0.5, M_y_Ed=150, N_Ed=-900, L_cr_y=4, L_cr_z=4),
+     {'C_1': 1.31, 'Mcr': 917.0512972, 'lambda_LT': 0.6196881592, 'alpha_LT': 0.34, 'chi_LT': 0.9081413266, 'Mb_Rd': 319.8110496, 'u_LTB': 0.4690269464, 'lambda_y': 0.4729375176, 'lambda_z': 0.8080015814, 'chi_y': 0.8960107673, 'chi_z': 0.6571298637, 'N_b_Rd': 2171.847056, 'k_yy': 0.8663597087, 'k_yz': 0.8526152596, 'k_zy': 0.9391216613, 'k_zz': 1.421025433, 'u_61': 0.7102604267, 'u_62': 0.854867186, 'u_buckling': 0.4143938209}),
+    ('welded h/b<=2, 6.3.2.2 (curve c)',
+     dict(WG, ltb_method='general', L=6, psi_y=0.2, M_y_Ed=250, N_Ed=-600, L_cr_y=6, L_cr_z=3),
+     {'C_1': 1.6208, 'Mcr': 2108.088724, 'lambda_LT': 0.6622015971, 'alpha_LT': 0.49, 'chi_LT': 0.747936878, 'Mb_Rd': 691.4078088, 'u_LTB': 0.3615811057, 'lambda_y': 0.4512076884, 'lambda_z': 0.5168262757, 'chi_y': 0.9052171561, 'chi_z': 0.833535366, 'N_b_Rd': 4616.118857, 'k_yy': 0.7004450117, 'k_yz': 0.6338195188, 'k_zy': 0.9843775049, 'k_zz': 1.056365865, 'u_61': 0.3729542798, 'u_62': 0.4859116288, 'u_buckling': 0.1299793222}),
+    ('welded h/b<=2, 6.3.2.3 (curve c)',
+     dict(WG, ltb_method='rolled', L=6, psi_y=0.2, M_y_Ed=250, N_Ed=-600, L_cr_y=6, L_cr_z=3),
+     {'C_1': 1.6208, 'Mcr': 2108.088724, 'lambda_LT': 0.6622015971, 'alpha_LT': 0.49, 'chi_LT': 0.848731942, 'Mb_Rd': 784.5847818, 'u_LTB': 0.3186398791, 'lambda_y': 0.4512076884, 'lambda_z': 0.5168262757, 'chi_y': 0.9052171561, 'chi_z': 0.833535366, 'N_b_Rd': 4616.118857, 'k_yy': 0.7004450117, 'k_yz': 0.6338195188, 'k_zy': 0.9843775049, 'k_zz': 1.056365865, 'u_61': 0.3428763118, 'u_62': 0.4436412513, 'u_buckling': 0.1299793222}),
+    ('chosen LTB curve a, 6.3.2.3',
+     dict(UB, ltb_method='rolled', ltb_curve='a', L=7, psi_y=1, M_y_Ed=200, N_Ed=0),
+     {'C_1': 1.0, 'Mcr': 383.2655719, 'lambda_LT': 1.438003707, 'alpha_LT': 0.21, 'chi_LT': 0.4835929807, 'Mb_Rd': 383.2655719, 'u_LTB': 0.521831374}),
+    ('chosen LTB curve b, 6.3.2.3',
+     dict(UB, ltb_method='rolled', ltb_curve='b', L=7, psi_y=1, M_y_Ed=200, N_Ed=0),
+     {'C_1': 1.0, 'Mcr': 383.2655719, 'lambda_LT': 1.438003707, 'alpha_LT': 0.34, 'chi_LT': 0.4548918926, 'Mb_Rd': 360.5188833, 'u_LTB': 0.5547559621}),
+    ('chosen LTB curve c, 6.3.2.3',
+     dict(UB, ltb_method='rolled', ltb_curve='c', L=7, psi_y=1, M_y_Ed=200, N_Ed=0),
+     {'C_1': 1.0, 'Mcr': 383.2655719, 'lambda_LT': 1.438003707, 'alpha_LT': 0.49, 'chi_LT': 0.4135373037, 'Mb_Rd': 327.7438208, 'u_LTB': 0.6102327101}),
+    ('chosen LTB curve d, 6.3.2.3',
+     dict(UB, ltb_method='rolled', ltb_curve='d', L=7, psi_y=1, M_y_Ed=200, N_Ed=0),
+     {'C_1': 1.0, 'Mcr': 383.2655719, 'lambda_LT': 1.438003707, 'alpha_LT': 0.76, 'chi_LT': 0.3594050956, 'Mb_Rd': 284.8420159, 'u_LTB': 0.7021436053}),
+    ('chosen LTB curve a, 6.3.2.2',
+     dict(UB, ltb_method='general', ltb_curve='a', L=7, psi_y=1, M_y_Ed=200, N_Ed=0),
+     {'C_1': 1.0, 'Mcr': 383.2655719, 'lambda_LT': 1.438003707, 'alpha_LT': 0.21, 'chi_LT': 0.3998342605, 'Mb_Rd': 316.8836452, 'u_LTB': 0.6311464887}),
+    ('chosen LTB curve b, 6.3.2.2',
+     dict(UB, ltb_method='general', ltb_curve='b', L=7, psi_y=1, M_y_Ed=200, N_Ed=0),
+     {'C_1': 1.0, 'Mcr': 383.2655719, 'lambda_LT': 1.438003707, 'alpha_LT': 0.34, 'chi_LT': 0.3660554692, 'Mb_Rd': 290.1126864, 'u_LTB': 0.6893872945}),
+    ('chosen LTB curve c, 6.3.2.2',
+     dict(UB, ltb_method='general', ltb_curve='c', L=7, psi_y=1, M_y_Ed=200, N_Ed=0),
+     {'C_1': 1.0, 'Mcr': 383.2655719, 'lambda_LT': 1.438003707, 'alpha_LT': 0.49, 'chi_LT': 0.3354874852, 'Mb_Rd': 265.8864128, 'u_LTB': 0.7522009038}),
+    ('chosen LTB curve d, 6.3.2.2',
+     dict(UB, ltb_method='general', ltb_curve='d', L=7, psi_y=1, M_y_Ed=200, N_Ed=0),
+     {'C_1': 1.0, 'Mcr': 383.2655719, 'lambda_LT': 1.438003707, 'alpha_LT': 0.76, 'chi_LT': 0.2940602519, 'Mb_Rd': 233.0537769, 'u_LTB': 0.858171031}),
+    ('6.3.2.2 near 0.2 (target 0.199)',
+     dict(UB, ltb_method='general', psi_y=1, M_y_Ed=100, N_Ed=0, L=0.741597),
+     {'lambda_LT': 0.1989999144, 'chi_LT': 1.0, 'Mb_Rd': 792.5375}),
+    ('6.3.2.2 near 0.2 (target 0.201)',
+     dict(UB, ltb_method='general', psi_y=1, M_y_Ed=100, N_Ed=0, L=0.749134),
+     {'lambda_LT': 0.2010001215, 'chi_LT': 0.9996457731, 'Mb_Rd': 792.2567619}),
+    ('6.3.2.3 near 0.4 (target 0.399)',
+     dict(UB, ltb_method='rolled', psi_y=1, M_y_Ed=100, N_Ed=0, L=1.511742),
+     {'lambda_LT': 0.3990000662, 'chi_LT': 1.0, 'Mb_Rd': 792.5375}),
+    ('6.3.2.3 near 0.4 (target 0.401)',
+     dict(UB, ltb_method='rolled', psi_y=1, M_y_Ed=100, N_Ed=0, L=1.519656),
+     {'lambda_LT': 0.4010000703, 'chi_LT': 0.9994431151, 'Mb_Rd': 792.0961478}),
+    ('6.3.2.3 near 0.4 (target 0.45)',
+     dict(UB, ltb_method='rolled', psi_y=1, M_y_Ed=100, N_Ed=0, L=1.715212),
+     {'lambda_LT': 0.4499998826, 'chi_LT': 0.9720597285, 'Mb_Rd': 770.3937871}),
+    ('f mod psi=-1, lam~1.2 (cap 1/lam^2)',
+     dict(UB, ltb_method='rolled', use_f=True, psi_y=-1, M_y_Ed=100, N_Ed=0, L=11.66144, ltb_curve='a'),
+     {'C_1': 2.7, 'lambda_LT': 1.199999981, 'chi_LT_0': 0.6442368267, 'k_c': 0.6024096386, 'f': 0.8648192711, 'chi_LT': 0.6944444664, 'Mb_Rd': 550.3732813}),
+    ('UDL C1=1.127 C2=0.454 zg=+h/2',
+     dict(UB, ltb_method='rolled', C_1=1.127, C_2=0.454, z_g=233.6, C_m_y=0.95, psi_y=1, M_y_Ed=150, N_Ed=0, L=6),
+     {'C_1': 1.127, 'Mcr': 396.0305465, 'lambda_LT': 1.414638807, 'alpha_LT': 0.49, 'chi_LT': 0.4232136061, 'Mb_Rd': 335.4126534, 'u_LTB': 0.4472103199}),
+    ('UDL C1=1.127 C2=0.454 zg=-h/2',
+     dict(UB, ltb_method='rolled', C_1=1.127, C_2=0.454, z_g=-233.6, C_m_y=0.95, psi_y=1, M_y_Ed=150, N_Ed=0, L=6),
+     {'C_1': 1.127, 'Mcr': 719.037768, 'lambda_LT': 1.049866454, 'alpha_LT': 0.49, 'chi_LT': 0.6092010315, 'Mb_Rd': 482.8146625, 'u_LTB': 0.3106782201}),
+    ('point C1=1.348 C2=0.630 zg=+h/2 L=3',
+     dict(UB, ltb_method='general', C_1=1.348, C_2=0.63, z_g=233.6, C_m_y=0.9, psi_y=1, M_y_Ed=150, N_Ed=0, L=3),
+     {'C_1': 1.348, 'Mcr': 1112.544335, 'lambda_LT': 0.8440171027, 'alpha_LT': 0.34, 'chi_LT': 0.6969315578, 'Mb_Rd': 552.3443945, 'u_LTB': 0.2715696973}),
+    ('extreme zg=+1000 C2=1.5 L=0.5',
+     dict(UB, ltb_method='rolled', C_1=1.0, C_2=1.5, z_g=1000, C_m_y=1.0, psi_y=1, M_y_Ed=100, N_Ed=0, L=0.5),
+     {'Mcr': 3262.990173, 'lambda_LT': 0.4928355499, 'chi_LT': 0.947882144}),
+    ('extreme zg=-1000 C2=1.5 L=0.5',
+     dict(UB, ltb_method='rolled', C_1=1.0, C_2=1.5, z_g=-1000, C_m_y=1.0, psi_y=1, M_y_Ed=100, N_Ed=0, L=0.5),
+     {'Mcr': 586994.8207, 'lambda_LT': 0.03674453668, 'chi_LT': 1.0}),
+    ('k=0.5 kw=0.5 L=8',
+     dict(UB, ltb_method='rolled', k=0.5, k_w=0.5, C_1=1.0, C_m_y=1.0, psi_y=1, M_y_Ed=100, N_Ed=0, L=8),
+     {'Mcr': 872.7203162, 'lambda_LT': 0.9529549434, 'chi_LT': 0.6679585967}),
+    ('k=0.7 kw=1.0 L=8',
+     dict(UB, ltb_method='rolled', k=0.7, k_w=1.0, C_1=1.0, C_m_y=1.0, psi_y=1, M_y_Ed=100, N_Ed=0, L=8),
+     {'Mcr': 459.8294108, 'lambda_LT': 1.312839205, 'chi_LT': 0.4685403543}),
+    ('end moments A=300 B=-150',
+     dict(UB, moment_mode='ends', M_y_A=300, M_y_B=-150, N_Ed=-500, L=5, L_cr_y=5, L_cr_z=5),
+     {'C_1': 2.7, 'Mcr': 1666.113233, 'chi_LT': 0.8320334083, 'k_yy': 0.4066248884, 'k_zy': 0.7781939156, 'u_LTB': 0.4549468574, 'u_61': 0.3012210656, 'u_62': 0.686746003}),
+    ('end moments A=0 B=100',
+     dict(UB, moment_mode='ends', M_y_A=0, M_y_B=100, N_Ed=-500, L=5, L_cr_y=5, L_cr_z=5),
+     {'C_1': 1.88, 'Mcr': 1160.108473, 'chi_LT': 0.7470447645, 'k_yy': 0.6099373326, 'k_zy': 0.9049402495, 'u_LTB': 0.1689015181, 'u_61': 0.2192476919, 'u_62': 0.4855549085}),
+    ('end moments A=200 B=200',
+     dict(UB, moment_mode='ends', M_y_A=200, M_y_B=200, N_Ed=-500, L=5, L_cr_y=5, L_cr_z=5),
+     {'C_1': 1.0, 'Mcr': 617.0789753, 'chi_LT': 0.5611594964, 'k_yy': 1.016562221, 'k_zy': 0.9556387831, 'u_LTB': 0.4497010051, 'u_61': 0.573377403, 'u_62': 0.7624608479}),
+    ('end moments A=100 B=300',
+     dict(UB, moment_mode='ends', M_y_A=100, M_y_B=300, N_Ed=-500, L=5, L_cr_y=5, L_cr_z=5),
+     {'C_1': 1.471111111, 'Mcr': 907.7917369, 'chi_LT': 0.6794831391, 'k_yy': 0.7454789621, 'k_zy': 0.931163629, 'u_LTB': 0.557086648, 'u_61': 0.5315247266, 'u_62': 0.8514479515}),
+    ('end moments A=-250 B=100',
+     dict(UB, moment_mode='ends', M_y_A=-250, M_y_B=100, N_Ed=-500, L=5, L_cr_y=5, L_cr_z=5),
+     {'C_1': 2.5232, 'Mcr': 1557.01367, 'chi_LT': 0.8174820995, 'k_yy': 0.4472873772, 'k_zy': 0.8248899333, 'u_LTB': 0.3858708186, 'u_61': 0.2888234969, 'u_62': 0.6510100805}),
+    ('end moments A=300 B=0',
+     dict(UB, moment_mode='ends', M_y_A=300, M_y_B=0, N_Ed=-500, L=5, L_cr_y=5, L_cr_z=5),
+     {'C_1': 1.88, 'Mcr': 1160.108473, 'chi_LT': 0.7470447645, 'k_yy': 0.6099373326, 'k_zy': 0.9049402495, 'u_LTB': 0.5067045542, 'u_61': 0.4252863747, 'u_62': 0.7912464723}),
+    ('AnnexB class1 B.1',
+     dict(UB, torsion='not susceptible', psi_y=0.3, M_y_Ed=250, M_z_Ed=20, N_Ed=-1000, L=5, L_cr_y=5, L_cr_z=5),
+     {'C_1': 1.5068, 'Mcr': 929.8145999, 'lambda_LT': 0.9232338721, 'alpha_LT': 0.49, 'chi_LT': 0.6864111945, 'Mb_Rd': 544.0066121, 'u_LTB': 0.4595532379, 'lambda_y': 0.3424972557, 'lambda_z': 1.511790649, 'chi_y': 0.9673474683, 'chi_z': 0.3379324209, 'N_b_Rd': 1502.8142, 'k_yy': 0.7438495982, 'k_yz': 1.158951333, 'k_zy': 0.4463097589, 'k_zz': 1.931585555, 'u_61': 0.7466177916, 'u_62': 1.15772568, 'u_buckling': 0.6654182533}),
+    ('AnnexB class2 B.2 lam_z<0.4',
+     dict(UB, section_class=2, psi_y=0, M_y_Ed=250, M_z_Ed=20, N_Ed=-1500, L=2, L_cr_y=2, L_cr_z=1.0),
+     {'lambda_y': 0.1369989023, 'lambda_z': 0.3023581298, 'chi_y': 1.0, 'chi_z': 0.9632404943, 'N_b_Rd': 4283.612354, 'k_yy': 0.5872498529, 'k_yz': 0.6009909005, 'k_zy': 0.9023581298, 'k_zz': 1.001651501, 'u_61': 0.6119035209, 'u_62': 0.7837477762, 'u_buckling': 0.350171742, 'C_mLT': 0.6}),
+    ('AnnexB class3 B.2 (elastic kzy)',
+     dict(UB, section_class=3, psi_y=0.5, M_y_Ed=200, M_z_Ed=15, N_Ed=-1000, L=5, L_cr_y=5, L_cr_z=3),
+     {'lambda_y': 0.3424972557, 'lambda_z': 0.9070743894, 'chi_y': 0.9673474683, 'chi_z': 0.6566320445, 'N_b_Rd': 2920.098516, 'k_yy': 0.8382155754, 'k_yz': 1.18637886, 'k_zy': 0.9717607787, 'k_zz': 1.18637886, 'u_61': 0.7910652428, 'u_62': 0.9572577304, 'u_buckling': 0.3424541996}),
+    ('AnnexB class3 B.2 lam_z<0.4',
+     dict(UB, section_class=3, psi_y=0.5, M_y_Ed=200, M_z_Ed=15, N_Ed=-1500, L=2, L_cr_y=2, L_cr_z=1.0),
+     {'lambda_y': 0.1369989023, 'lambda_z': 0.3023581298, 'chi_y': 1.0, 'chi_z': 0.9632404943, 'N_b_Rd': 4283.612354, 'k_yy': 0.8221806441, 'k_yz': 1.063526364, 'k_zy': 0.9903747934, 'k_zz': 1.063526364, 'u_61': 0.7618844551, 'u_62': 0.8238562251, 'u_buckling': 0.350171742}),
+    ('AnnexB entered Cm values',
+     dict(UB, psi_y=0.5, M_y_Ed=200, M_z_Ed=15, N_Ed=-1000, C_m_y=0.9, C_m_z=0.7, C_m_LT=0.6, L=5, L_cr_y=5, L_cr_z=3),
+     {'lambda_y': 0.3424972557, 'lambda_z': 0.9070743894, 'chi_y': 0.9673474683, 'chi_z': 0.6566320445, 'N_b_Rd': 2920.098516, 'k_yy': 0.9298119978, 'k_yz': 0.5946319463, 'k_zy': 0.9112481617, 'k_zz': 0.9910532438, 'u_61': 0.6624938037, 'u_62': 0.8094368902, 'u_buckling': 0.3424541996, 'C_my': 0.9, 'C_mz': 0.7, 'C_mLT': 0.6}),
+    ('AnnexA class1 UB',
+     dict(UB, annex='A', psi_y=0.3, M_y_Ed=250, M_z_Ed=20, N_Ed=-1000, L=5, L_cr_y=5, L_cr_z=3),
+     {'k_yy': 1.043536095, 'k_yz': 1.820016484, 'k_zy': 0.5770229779, 'k_zz': 1.850513006, 'u_61': 0.9826323995, 'u_62': 0.8827767634, 'C_my': 0.9348730871, 'C_mz': 1.044625971, 'C_mLT': 1.076904173, 'N_cr_T': 5099.377493, 'lambda_0': 1.133286031}),
+    ('AnnexA class2 UB, Mz=0',
+     dict(UB, annex='A', section_class=2, psi_y=0, M_y_Ed=250, M_z_Ed=0, N_Ed=-1000, L=5, L_cr_y=5, L_cr_z=5),
+     {'k_yy': 1.315108498, 'k_yz': 3.595437108, 'k_zy': 0.5916348298, 'k_zz': 2.116798905, 'u_61': 0.7877662555, 'u_62': 0.9152383055, 'C_my': 0.9057558466, 'C_mz': 1.123961032, 'C_mLT': 1.308944137, 'N_cr_T': 5099.377493, 'lambda_0': 1.133286031}),
+    ('AnnexA class2 UC',
+     dict(UC, annex='A', section_class=2, psi_y=-0.5, M_y_Ed=100, M_z_Ed=10, N_Ed=-1500, L=4, L_cr_y=4, L_cr_z=4),
+     {'k_yy': 0.8674789624, 'k_yz': 1.077224917, 'k_zy': 0.443502474, 'k_zz': 2.002307916, 'u_61': 0.8216100524, 'u_62': 0.9402506157, 'C_my': 0.8110035155, 'C_mz': 1.071468547, 'C_mLT': 1.0, 'N_cr_T': 5884.691971, 'lambda_0': 0.7092655167}),
+    ('AnnexA class3 UB',
+     dict(UB, annex='A', section_class=3, psi_y=0.5, M_y_Ed=200, M_z_Ed=15, N_Ed=-1000, L=5, L_cr_y=5, L_cr_z=3),
+     {'k_yy': 1.088978887, 'k_yz': 1.28064265, 'k_zy': 1.011124168, 'k_zz': 1.189085251, 'u_61': 0.9129440916, 'u_62': 0.9742912854, 'C_my': 0.9514239222, 'C_mz': 1.044625971, 'C_mLT': 1.115372362, 'N_cr_T': 5099.377493, 'lambda_0': 1.061193759}),
+    ('AnnexA threshold (lam0 small)',
+     dict(UC, annex='A', section_class=2, psi_y=1, M_y_Ed=100, M_z_Ed=10, N_Ed=-1500, L=0.8, L_cr_y=3, L_cr_z=2),
+     {'k_yy': 1.015743521, 'k_yz': 0.5538102835, 'k_zy': 0.5344657562, 'k_zz': 0.8311648627, 'u_61': 0.8031384516, 'u_62': 0.7094265512, 'C_my': 1.013772748, 'C_mz': 1.017867137, 'C_mLT': 1.0, 'N_cr_T': 79402.50516, 'lambda_0': 0.1654993247, 'lambda_LT': 0.1654993247}),
+    ('AnnexA k=0.8 kw=0.8',
+     dict(UB, annex='A', section_class=2, k=0.8, k_w=0.8, psi_y=0.5, M_y_Ed=200, M_z_Ed=15, N_Ed=-1000, L=6, L_cr_y=6, L_cr_z=3),
+     {'k_yy': 1.107562528, 'k_yz': 1.431650464, 'k_zy': 0.6091884643, 'k_zz': 1.850513006, 'u_61': 0.817620893, 'u_62': 0.7805064452, 'C_my': 0.9517576596, 'C_mz': 1.044625971, 'C_mLT': 1.110663013, 'N_cr_T': 5315.402011, 'lambda_0': 1.098930972}),
+    ('AnnexA tiny N=-1 kN',
+     dict(UB, annex='A', section_class=2, psi_y=0.5, M_y_Ed=200, M_z_Ed=15, N_Ed=-1, L=5, L_cr_y=5, L_cr_z=3),
+     {'k_yy': 1.001105391, 'k_yz': 1.234625741, 'k_zy': 0.531226962, 'k_zz': 1.556507776, 'u_61': 0.5295280012, 'u_62': 0.3817249839, 'C_my': 0.9971375085, 'C_mz': 1.000044626, 'C_mLT': 1.0, 'N_cr_T': 5099.377493, 'lambda_0': 1.133286031}),
+    ('AnnexA N=0',
+     dict(UB, annex='A', section_class=2, psi_y=0.5, M_y_Ed=200, M_z_Ed=15, N_Ed=0, L=5, L_cr_y=5, L_cr_z=3),
+     {'k_yy': 1.003940506, 'k_yz': 1.231664136, 'k_zy': 0.532676982, 'k_zz': 1.55624923, 'u_61': 0.5300743241, 'u_62': 0.3819209198, 'C_my': 1.0, 'C_mz': 1.0, 'C_mLT': 1.0, 'N_cr_T': 5099.377493, 'lambda_0': 1.133286031}),
+    ('AnnexB N=0',
+     dict(UB, section_class=2, psi_y=0.5, M_y_Ed=200, M_z_Ed=15, N_Ed=0, L=5, L_cr_y=5, L_cr_z=3),
+     {'k_yy': 0.8, 'k_yz': 0.6, 'k_zy': 1.0, 'k_zz': 1.0, 'u_61': 0.3798555778, 'u_62': 0.502698544, 'u_LTB': 0.391182257}),
+    ('S460 flexural manual b/c',
+     dict(UB, f_y=460, curve_y='b', curve_z='c', N_Ed=-1500, M_y_Ed=100, L_cr_y=5, L_cr_z=3),
+     {'lambda_y': 0.3898718109, 'lambda_z': 1.032541806, 'chi_y': 0.9300721029, 'chi_z': 0.5212897779, 'N_b_Rd': 3003.890642, 'u_buckling': 0.4993523996}),
+    ('rolled h/b<=1.2 tf>100 (d,d)',
+     dict(UC, t_f=110, N_Ed=-1500, M_y_Ed=50, L_cr_y=4, L_cr_z=4),
+     {'chi_y': 0.7983856115, 'chi_z': 0.5748233809, 'N_b_Rd': 1899.820015}),
+    ('rolled h/b>1.2 tf=60 (b,c)',
+     dict(UB, t_f=60, N_Ed=-1500, M_y_Ed=50),
+     {'chi_y': 0.9216866467, 'chi_z': 0.2314664088, 'N_b_Rd': 1029.350795}),
+    ('rolled tf=40 boundary (a,b)',
+     dict(UB, t_f=40, N_Ed=-1500, M_y_Ed=50),
+     {'chi_y': 0.9498683613, 'chi_z': 0.2486586793, 'N_b_Rd': 1105.806283}),
+    ('welded tf=45 (c,d)',
+     dict(WG, t_f=45, N_Ed=-1500, M_y_Ed=50),
+     {'chi_y': 0.8698810408, 'chi_z': 0.450260049, 'N_b_Rd': 2493.540151}),
+    ('very short member L_cr=0.1 m',
+     dict(UB, L_cr_y=0.1, L_cr_z=0.1, N_Ed=-3000, M_y_Ed=10, L=0.1),
+     {'lambda_y': 0.006849945113, 'lambda_z': 0.03023581298, 'chi_y': 1.0, 'chi_z': 1.0, 'N_b_Rd': 4447.085, 'Mcr': 1088866.026, 'chi_LT': 1.0}),
+    ('very long member 100 m',
+     dict(UB, L=100, L_cr_y=100, L_cr_z=100, N_Ed=-10, M_y_Ed=1, psi_y=1),
+     {'Mcr': 21.88814243, 'lambda_LT': 6.017352553, 'chi_LT': 0.02761780033, 'lambda_z': 30.23581298, 'chi_z': 0.001081750454, 'N_b_Rd': 4.810636219}),
+    ('gamma_M1=1.1, E=200, G=77',
+     dict(UB, gamma_M1=1.1, E=200, G=77, psi_y=0.5, M_y_Ed=200, M_z_Ed=15, N_Ed=-1000, L=5, L_cr_y=5, L_cr_z=3),
+     {'C_1': 1.31, 'Mcr': 769.5215349, 'lambda_LT': 1.014844544, 'alpha_LT': 0.49, 'chi_LT': 0.6301304776, 'Mb_Rd': 454.0018485, 'u_LTB': 0.4405268407, 'lambda_y': 0.3509552516, 'lambda_z': 0.9294746609, 'chi_y': 0.9652713555, 'chi_z': 0.6422091111, 'N_b_Rd': 2596.325913, 'k_yy': 0.8309461089, 'k_yz': 0.8909378939, 'k_zy': 0.9349097923, 'k_zz': 1.48489649, 'u_61': 0.7315958963, 'u_62': 0.9791616722, 'u_buckling': 0.3851596577}),
+    ('custom alphas (c .5, d .8) welded',
+     dict(WG, alphas={'c': 0.5, 'd': 0.8, 'b': 0.35}, ltb_method='rolled', psi_y=0.5, M_y_Ed=200, N_Ed=-800, L=6, L_cr_y=6, L_cr_z=3),
+     {'C_1': 1.31, 'Mcr': 1703.847624, 'lambda_LT': 0.7365789273, 'alpha_LT': 0.5, 'chi_LT': 0.8002841985, 'Mb_Rd': 739.7987188, 'u_LTB': 0.2703438042, 'lambda_y': 0.4512076884, 'lambda_z': 0.5168262757, 'chi_y': 0.9027546224, 'chi_z': 0.8308432254, 'N_b_Rd': 4601.209782, 'k_yy': 0.8321580887, 'k_yz': 0.6452388034, 'k_zy': 0.983661964, 'k_zz': 1.075398006, 'u_61': 0.3849862221, 'u_62': 0.4397942345, 'u_buckling': 0.1738673171}),
+    ('custom lam0=.3 beta=.9',
+     dict(UB, lambda_LT0=0.3, beta_LT=0.9, ltb_method='rolled', psi_y=1, M_y_Ed=200, N_Ed=0, L=7),
+     {'C_1': 1.0, 'Mcr': 383.2655719, 'lambda_LT': 1.438003707, 'alpha_LT': 0.49, 'chi_LT': 0.3650576329, 'Mb_Rd': 289.3218637, 'u_LTB': 0.6912716427}),
+    ('fy=235 class3',
+     dict(UB, f_y=235, section_class=3, psi_y=0.5, M_y_Ed=200, M_z_Ed=15, N_Ed=-1000, L=5, L_cr_y=5, L_cr_z=3),
+     {'C_1': 1.31, 'Mcr': 808.3734576, 'lambda_LT': 0.7543602467, 'alpha_LT': 0.49, 'chi_LT': 0.7921854906, 'Mb_Rd': 364.415228, 'u_LTB': 0.5488244854, 'lambda_y': 0.278661423, 'lambda_z': 0.7380107021, 'chi_y': 0.9824310205, 'chi_z': 0.7618160309, 'N_b_Rd': 2242.668313, 'k_yy': 0.8462488652, 'k_yz': 1.197446238, 'k_zy': 0.9700839034, 'k_zz': 1.197446238, 'u_61': 1.124139489, 'u_62': 1.29223404, 'u_buckling': 0.4458974134}),
+    ('near zero: My=0 Mz=10 N=-1000 (B)',
+     dict(UB, psi_y=0.5, M_y_Ed=0, M_z_Ed=10, N_Ed=-1000, L=5, L_cr_y=5, L_cr_z=3),
+     {'lambda_y': 0.3424972557, 'lambda_z': 0.9070743894, 'chi_y': 0.9673474683, 'chi_z': 0.6566320445, 'N_b_Rd': 2920.098516, 'k_yy': 0.8264995536, 'k_yz': 0.8494742089, 'k_zy': 0.9435215575, 'k_zz': 1.415790348, 'u_61': 0.2956101741, 'u_62': 0.4477099881, 'u_buckling': 0.3424541996, 'u_LTB': 0.0}),
+    ('near zero: My=0 Mz=10 N=-1000 (A)',
+     dict(UB, annex='A', section_class=2, psi_y=0.5, M_y_Ed=0, M_z_Ed=10, N_Ed=-1000, L=5, L_cr_y=5, L_cr_z=3),
+     {'k_yy': 0.918669153, 'k_yz': 0.848334259, 'k_zy': 0.4903170317, 'k_zz': 1.190898607, 'u_61': 0.2955254255, 'u_62': 0.4309905935, 'C_my': 0.8966143221, 'C_mz': 1.044625971, 'C_mLT': 1.0, 'N_cr_T': 5099.377493, 'lambda_0': 1.133286031}),
+    ('near zero: N=-0.01 kN (A)',
+     dict(UB, annex='A', section_class=2, psi_y=0.5, M_y_Ed=100, M_z_Ed=5, N_Ed=-0.01, L=5, L_cr_y=5, L_cr_z=3),
+     {'k_yy': 1.000240193, 'k_yz': 0.8830350997, 'k_zy': 0.5245221666, 'k_zz': 1.319178435, 'u_61': 0.2284646979, 'u_62': 0.151631934, 'C_my': 0.9995854737, 'C_mz': 1.000000446, 'C_mLT': 1.0, 'N_cr_T': 5099.377493, 'lambda_0': 1.133286031}),
+    ('near zero: Iw=1e-5 dm6, It=0.1 cm4',
+     dict(UB, I_t=0.1, I_w=1e-05, psi_y=1, M_y_Ed=10, N_Ed=0, L=3),
+     {'Mcr': 21.21899891, 'lambda_LT': 6.11149506, 'chi_LT': 0.02677349515}),
+    ('large: M_y=1e4 kNm, N=-1e4 kN',
+     dict(UB, psi_y=1, M_y_Ed=10000, M_z_Ed=500, N_Ed=-10000, L=5, L_cr_y=5, L_cr_z=5),
+     {'lambda_y': 0.3424972557, 'lambda_z': 1.511790649, 'chi_y': 0.9673474683, 'chi_z': 0.3379324209, 'N_b_Rd': 1502.8142, 'k_yy': 1.33124442, 'k_yz': 6.189513328, 'k_zy': 0.1127756623, 'k_zz': 10.31585555, 'u_61': 55.26538283, 'u_62': 47.53614588, 'u_buckling': 6.654182533, 'u_LTB': 22.48505025}),
+]
+
+
+# ---------------------------------------------------------------- numerical cross-check of M_cr and C1
+def _lt_eigen(E, G, Iz, It, Iw, L, m, zload=None, N=30):
+    """Smallest load factor lambda of the lateral-torsional eigenproblem for a doubly symmetric beam on fork supports.
+
+    Rayleigh-Ritz with sine series for v and phi on the energy
+    0.5*int[E Iz v''^2 + E Iw phi''^2 + G It phi'^2 - 2 lambda m v'' phi] dx  - 0.5 lambda zload * (phi^2 term).
+    m(x): moment shape (per unit lambda). zload: matrix of the load-height term per unit lambda, or None.
+    This is independent of the C1, C2 closed form and of any table.
+    """
+    import numpy as np
+    from numpy.polynomial.legendre import leggauss
+    n = np.arange(1, N + 1)
+    kk = n * PI / L
+    Kv = np.diag(E * Iz * kk ** 4 * L / 2)
+    Kp = np.diag((E * Iw * kk ** 4 + G * It * kk ** 2) * L / 2)
+    x, w = leggauss(600)
+    x = (x + 1) * L / 2
+    w = w * L / 2
+    S = np.sin(np.outer(kk, x))
+    C = (-(kk[:, None] ** 2) * S * m(x) * w) @ S.T
+    B = C.T @ np.linalg.solve(Kv, C)
+    Z = zload(kk, L) if zload else np.zeros_like(Kp)
+
+    def f(lam):
+        return np.linalg.eigvalsh(Kp - lam * Z - lam * lam * B)[0]
+
+    lo, hi = 0.0, 1.0
+    while f(hi) > 0:
+        lo, hi = hi, hi * 2
+    for _ in range(100):
+        mid = (lo + hi) / 2
+        if f(mid) > 0:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2
+
+
+def numeric_section():
+    """Prints C1 (end moments) and UDL / point-load M_cr from the eigenproblem. Returns the number of failed assertions."""
+    import numpy as np
+    bad = 0
+    E, G = 210e3, 81e3
+    Iz, It, Iw = UB["I_z"] * 1e4, UB["I_t"] * 1e4, UB["I_w"] * 1e12
+    L = 6000.0
+    Mu = mcr_general(E, G, Iz, It, Iw, L, 1, 1, 1.0, 0.0, 0.0)
+    lam = _lt_eigen(E, G, Iz, It, Iw, L, lambda x: np.ones_like(x))
+    ok = abs(lam - Mu) / Mu < 1e-6
+    bad += 0 if ok else 1
+    print(f"uniform moment: eigen {lam / 1e6:.4f} kNm, closed form {Mu / 1e6:.4f} kNm  {'PASS' if ok else 'FAIL'}")
+    print("\nC1 for end moments, UB 457x191x98 on fork supports (info only; the product uses 1.88 - 1.40 psi + 0.52 psi^2 <= 2.70):")
+    print(f"{'L (m)':>6} {'psi':>6} {'C1 eigen':>9} {'C1 formula':>11} {'formula/eigen':>14}")
+    for Lm in (6.0, 12.0, 20.0):
+        Ls = Lm * 1e3
+        Mus = mcr_general(E, G, Iz, It, Iw, Ls, 1, 1, 1.0, 0.0, 0.0)
+        for psi in (0.5, 0.0, -0.5, -1.0):
+            c1n = _lt_eigen(E, G, Iz, It, Iw, Ls, lambda x, psi=psi, Ls=Ls: 1 - (1 - psi) * x / Ls) / Mus
+            c1f = c1_from_psi(psi)
+            print(f"{Lm:>6.1f} {psi:>6.2f} {c1n:>9.4f} {c1f:>11.4f} {c1f / c1n:>14.4f}")
+    print("\nTransverse load at height z_g (UDL, table C1 = 1.127, C2 = 0.454; load on the compression flange side is z_g > 0):")
+    for zg in (0.0, 233.6, -233.6, 500.0):
+        lam = _lt_eigen(E, G, Iz, It, Iw, L, lambda x: x * (L - x) / 2,
+                        zload=lambda kk, L, zg=zg: zg * (L / 2) * np.eye(len(kk)))
+        Mn = lam * L * L / 8
+        Mf = mcr_general(E, G, Iz, It, Iw, L, 1, 1, 1.127, 0.454, zg)
+        ok = abs(Mf - Mn) / Mn < 0.01
+        bad += 0 if ok else 1
+        print(f"  z_g {zg:7.1f} mm: eigen {Mn / 1e6:8.3f} kNm  formula {Mf / 1e6:8.3f} kNm  ratio {Mf / Mn:6.4f}  {'PASS' if ok else 'FAIL (>1 %)'}")
+    return bad
 
 
 def table_row(case, sym, exp, ind, tol, ok):
@@ -364,6 +638,10 @@ def main():
             ok = rel <= 1e-5
             bad += 0 if ok else 1
             table_row(label, sym, val, ind, 1e-5, ok)
+    print("\n== Numerical cross-check of M_cr (eigenproblem, no tables) ==")
+    nbad = numeric_section()
+    bad += nbad
+    total += 1 + 4
     print(f"\n{total - bad}/{total} values match; {bad} differ")
     return 1 if bad else 0
 

@@ -84,6 +84,11 @@ for name, kw, prod in EXTRA:
     for sym, pv in prod.items():
         check("extra " + name, sym, pv, r[sym], 1e-6, "product value hard-coded")
 
+# Unit entry: 3000 mA, 77 degF (= 25 degC), width 78.74 mil, length 0.05 m. Product values from the probe.
+r = trace(3, 10, "ext", 1, 78.74 * MIL_MM, 50, 25)
+for sym, pv in [("w_min", 1.366985265), ("u_w", 0.6834939996), ("trace_R", 13.03979186), ("vdrop", 39.11937558), ("trace_Ploss", 117.3581267)]:
+    check("extra units", sym, pv, r[sym], 1e-6, "product value hard-coded")
+
 # ---------------- Evidence for findings (informational) ----------------
 # Operating state of a trace narrower than the minimum. The product evaluates R at T_amb + dT (the allowed rise).
 # Inverting the curve-fit for the drawn cross-section gives the rise the drawn trace would really reach.
