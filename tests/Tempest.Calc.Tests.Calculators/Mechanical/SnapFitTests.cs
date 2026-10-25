@@ -188,14 +188,14 @@ public sealed class SnapFitTests
         var limit = Math.Atan(1 / 0.5) * 180 / Math.PI;
         var below = Run(CalcInputValue.Of("mu", 0.5), Q("alpha_r", limit - 0.01, "deg"));
         Assert.IsType<ScalarValue>(below.FindOutput("retention_force")!.Value);
-        Assert.Equal("no", Text(below, "self_locking"));
+        Assert.Equal("No", Text(below, "self_locking"));
         Assert.DoesNotContain(below.Warnings, w => w.RuleId == "self-locking");
 
         foreach (var angle in new[] { limit, limit + 0.01, 90 })
         {
             var locked = Run(CalcInputValue.Of("mu", 0.5), Q("alpha_r", angle, "deg"));
             Assert.Equal("self-locking (infinite)", Text(locked, "retention_force"));
-            Assert.StartsWith("YES", Text(locked, "self_locking"), StringComparison.Ordinal);
+            Assert.StartsWith("Yes", Text(locked, "self_locking"), StringComparison.Ordinal);
             Assert.Contains(locked.Warnings, w => w.RuleId == "self-locking" && w.Message.StartsWith("alpha_r:", StringComparison.Ordinal));
             Assert.DoesNotContain("Infinity", Text(locked, "retention_force"), StringComparison.Ordinal);
         }
@@ -203,7 +203,7 @@ public sealed class SnapFitTests
         // Without friction nothing locks short of a face square to the joining direction.
         var smooth = Run(CalcInputValue.Of("mu", 0), Q("alpha_r", 89, "deg"));
         Assert.IsType<ScalarValue>(smooth.FindOutput("retention_force")!.Value);
-        Assert.StartsWith("YES", Text(Run(CalcInputValue.Of("mu", 0), Q("alpha_r", 90, "deg")), "self_locking"), StringComparison.Ordinal);
+        Assert.StartsWith("Yes", Text(Run(CalcInputValue.Of("mu", 0), Q("alpha_r", 90, "deg")), "self_locking"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -222,15 +222,50 @@ public sealed class SnapFitTests
     // ------------------------------------------------------------------ annular and torsion
 
     [Fact]
-    public void The_Annular_Strain_Is_The_Interference_Over_The_Diameter_Times_The_Factor_And_The_Force_Is_The_Hoop_Force_Round_The_Ring()
+    public void The_Annular_Force_Comes_From_The_Nominal_Strain_Only_And_Agrees_With_The_Strain_Energy_Of_The_Ring()
     {
-        Gen.Select(Gen.Double[10, 100], Gen.Double[0.05, 1], Gen.Double[0.5, 2], Gen.Double[0.8, 4], Gen.Double[2, 20], Gen.Double[800, 4000]).Sample((d, dd, k, h, b, es) =>
+        Gen.Select(Gen.Double[10, 100], Gen.Double[0.05, 1], Gen.Double[0.5, 2], Gen.Double[0.8, 4], Gen.Double[2, 20], Gen.Double[800, 4000], Gen.Double[0.5, 3]).Sample((d, dd, k, h, b, es, kf) =>
         {
-            var r = Run(Mode(SnapFitCalculator.Annular), Q("D_ring", d, "mm"), Q("dD", dd, "mm"), CalcInputValue.Of("K_ann", k), Q("h", h, "mm"), Q("b", b, "mm"), Q("Es", es, "MPa"));
-            var eps = k * dd / d;
-            var p = 2 * Math.PI * es * eps * h * b;
-            return !r.IsBlocked && Math.Abs(r.OutputSi("eps") - eps) <= 1e-9 * eps && Math.Abs(r.OutputSi("P") - p) <= 1e-9 * p && Math.Abs(r.OutputSi("y_perm") * 1e3 - 0.04 * d / k) <= 1e-9 * d;
+            var r = Run(Mode(SnapFitCalculator.Annular), Q("D_ring", d, "mm"), Q("dD", dd, "mm"), CalcInputValue.Of("K_ann", k), CalcInputValue.Of("K_F", kf), Q("h", h, "mm"), Q("b", b, "mm"), Q("Es", es, "MPa"));
+            var epsNom = dd / d;
+
+            // Independent route: the work of the radial contact force F over the radial growth dD/2 is the hoop strain energy of the ring.
+            // U = ½·Es·ε²·(π·D·h·b);  U = F·(dD/2)/2  =>  F = 4U/dD (times the user's force factor).
+            var energy = 0.5 * es * epsNom * epsNom * Math.PI * d * h * b;
+            var force = kf * 4 * energy / dd;
+            return !r.IsBlocked && Math.Abs(r.OutputSi("eps") * 1e0 - k * epsNom) <= 1e-9 * epsNom * k && Math.Abs(r.OutputSi("eps_nom") - epsNom) <= 1e-9 * epsNom
+                && Math.Abs(r.OutputSi("P") - force) <= 1e-9 * force && Math.Abs(r.OutputSi("y_perm") * 1e3 - 0.04 * d / k) <= 1e-9 * d
+                && Math.Abs(r.OutputSi("eps_inner") - dd / (d - h)) <= 1e-9 * epsNom;
         }, iter: 60);
+    }
+
+    [Fact]
+    public void The_Annular_Strain_Factor_Scales_The_Strain_Not_The_Force_And_The_Force_Factor_The_Force_Not_The_Strain()
+    {
+        var ring = new[] { Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1) };
+        var plain = Run(ring);
+        var strained = Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1.5));
+        Assert.Equal(1.5 * plain.OutputSi("strain_util"), strained.OutputSi("strain_util"), 12);
+        Assert.Equal(plain.OutputSi("P"), strained.OutputSi("P"), plain.OutputSi("P") * 1e-12);
+        Assert.Equal(plain.OutputSi("assembly_force"), strained.OutputSi("assembly_force"), plain.OutputSi("assembly_force") * 1e-12);
+
+        var stiff = Run([.. ring, CalcInputValue.Of("K_F", 1.4)]);
+        Assert.Equal(plain.OutputSi("strain_util"), stiff.OutputSi("strain_util"), 12);
+        Assert.Equal(1.4 * plain.OutputSi("P"), stiff.OutputSi("P"), plain.OutputSi("P") * 1e-12);
+        Assert.Equal(1.4 * plain.OutputSi("retention_force"), stiff.OutputSi("retention_force"), plain.OutputSi("retention_force") * 1e-12);
+
+        // No default for either factor: K_ann is required in the annular mode only, K_F is optional (blank is 1).
+        Assert.Null(Snap.Template.FindInput("K_ann")!.Default);
+        Assert.Null(Snap.Template.FindInput("K_F")!.Default);
+        Assert.Equal(1.0, plain.OutputSi("K_F"));
+        var blank = Run(Mode(SnapFitCalculator.Annular));
+        Assert.Contains(blank.Blocks, b => b.RuleId == "missing" && b.Message.StartsWith("K_ann: enter", StringComparison.Ordinal));
+        Assert.False(Run().IsBlocked);
+        Assert.DoesNotContain(Run().Notices, n => n.Message.Contains("K_ann", StringComparison.Ordinal));
+        Assert.Contains(Snap.Template.RecordKinds!, k => k.Kind == "snapfit.annular-force-factor" && k.Symbols.SequenceEqual(["K_F"]));
+
+        // The ring must be wider than its wall.
+        Assert.Contains(Run([.. ring, Q("D_ring", 1, "mm"), Q("h", 1.5, "mm")]).Blocks, b => b.RuleId == "geometry" && b.Message.StartsWith("D_ring:", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -251,12 +286,71 @@ public sealed class SnapFitTests
         Assert.Contains(Run(Mode(SnapFitCalculator.Torsion), Q("y", 5, "mm"), Q("a_arm", 10, "mm"), CalcInputValue.Of("nu", 0.38)).Warnings, w => w.RuleId == "small-angle");
     }
 
+    [Fact]
+    public void The_Torsion_Force_Agrees_With_The_Strain_Energy_Of_The_Bar_Held_At_One_End_Or_At_Both()
+    {
+        Gen.Select(Gen.Double[10, 60], Gen.Double[1, 4], Gen.Double[5, 30], Gen.Double[0.05, 1.5], Gen.Double[0.3, 0.45], Gen.Double[800, 4000], Gen.Bool).Sample((l, rad, arm, y, nu, es, both) =>
+        {
+            var r = Run(Mode(SnapFitCalculator.Torsion), Q("l", l, "mm"), Q("r_bar", rad, "mm"), Q("a_arm", arm, "mm"), Q("y", y, "mm"), CalcInputValue.Of("nu", nu), Q("Es", es, "MPa"),
+                CalcInputValue.Choice("bar_support", both ? SnapFitCalculator.BarBoth : SnapFitCalculator.BarOne));
+            var free = both ? l / 2 : l;
+            var gamma = y / arm * rad / free;
+
+            // Independent route: strain energy of the twisted solid bar, U = G·γ²·(π r² L_total)/4 with G = Es/(2(1+ν)), the work of the lever force P·y/2.
+            // One end: the twisting length is l; both ends: two halves, l in total.
+            var g = es / (2 * (1 + nu));
+            var energy = g * gamma * gamma * Math.PI * rad * rad * l / 4;
+            var force = 2 * energy / y;
+            return !r.IsBlocked && Math.Abs(r.OutputSi("gamma") - gamma) <= 1e-9 * gamma && Math.Abs(r.OutputSi("P") - force) <= 1e-9 * force && Math.Abs(r.OutputSi("l_eff") * 1e3 - free) <= 1e-9 * free;
+        }, iter: 60);
+    }
+
+    [Fact]
+    public void A_Bar_Held_At_Both_Ends_Has_Twice_The_Strain_And_Four_Times_The_Force_Of_The_Same_Bar_Held_At_One_End()
+    {
+        var bar = new[] { Mode(SnapFitCalculator.Torsion), Q("l", 20, "mm"), Q("r_bar", 2, "mm"), Q("a_arm", 10, "mm"), Q("y", 1.5, "mm"), CalcInputValue.Of("nu", 0.38) };
+        var one = Run(bar);
+        var both = Run([.. bar, CalcInputValue.Choice("bar_support", SnapFitCalculator.BarBoth)]);
+        Assert.Equal("Held at one end", Snap.Template.FindInput("bar_support")!.DefaultChoice);
+        Assert.Equal(2 * one.OutputSi("gamma"), both.OutputSi("gamma"), 12);
+        Assert.Equal(2 * one.OutputSi("strain_util"), both.OutputSi("strain_util"), 12);
+        Assert.Equal(4 * one.OutputSi("P"), both.OutputSi("P"), one.OutputSi("P") * 1e-12);
+        Assert.Equal(4 * one.OutputSi("T_bar"), both.OutputSi("T_bar"), one.OutputSi("T_bar") * 1e-12);
+
+        // P = 4·G·J·φ/(L·a) for the whole length L.
+        var g = 2400e6 / (2 * 1.38);
+        var j = Math.PI * Math.Pow(2e-3, 4) / 2;
+        Assert.Equal(4 * g * j * 0.15 / (20e-3 * 10e-3), both.OutputSi("P"), both.OutputSi("P") * 1e-12);
+
+        // A cleared choice reads as the one-end bar.
+        var cleared = Run([.. bar, new CalcInputValue("bar_support")]);
+        Assert.Equal(one.OutputSi("P"), cleared.OutputSi("P"), 12);
+    }
+
+    [Fact]
+    public void The_Inside_Strain_Peak_Force_Agrees_With_The_Force_From_The_Deflection_Integral_And_The_Fillet_Advisory_Names_The_Peak()
+    {
+        Gen.Select(Gen.Double[0.05, 0.49], Gen.Double[8, 40], Gen.Double[1, 4], Gen.Double[2, 15], Gen.Double[0.05, 1.5], Gen.Double[800, 4000]).Sample((ratio, l, h, b, y, es) =>
+        {
+            var r = Run(Mode(SnapFitCalculator.TaperedThickness), CalcInputValue.Of("h_ratio", ratio), Q("l", l, "mm"), Q("h", h, "mm"), Q("b", b, "mm"), Q("y", y, "mm"), Q("Es", es, "MPa"));
+
+            // P from the tip deflection alone: y = 12·P·l³·J/(E·b·h³), no strain shape involved.
+            var force = es * b * Math.Pow(h, 3) * y / (12 * Math.Pow(l, 3) * SnapFitGeometry.ThicknessJ(ratio));
+            return !r.IsBlocked && Math.Abs(r.OutputSi("P") - force) <= 1e-9 * force;
+        }, iter: 60);
+
+        var deep = Run(Mode(SnapFitCalculator.TaperedThickness), CalcInputValue.Of("h_ratio", 0.3));
+        Assert.Contains("peaks inside the beam", Text(deep, "fillet_advisory"), StringComparison.Ordinal);
+        Assert.Contains("mm from the root", Text(deep, "fillet_advisory"), StringComparison.Ordinal);
+        Assert.DoesNotContain("peaks inside", Text(Run(), "fillet_advisory"), StringComparison.Ordinal);
+    }
+
     // ------------------------------------------------------------------ material: nothing invented
 
     [Fact]
     public void No_Plastics_Data_Is_Shipped_And_A_New_Sheet_Says_What_To_Enter()
     {
-        foreach (var symbol in new[] { "mu", "Es", "eps_perm_once", "eps_perm_repeated", "nu" })
+        foreach (var symbol in new[] { "mu", "Es", "eps_perm_once", "eps_perm_repeated", "nu", "K_ann", "K_F" })
             Assert.Null(Snap.Template.FindInput(symbol)!.Default);
 
         var table = Snap.Template.FindInput("Es_pts")!;
@@ -315,11 +409,16 @@ public sealed class SnapFitTests
         Assert.Equal(2600e6, below.OutputSi("Es"), 1e-3);
         Assert.Contains(below.Warnings, w => w.RuleId == "es-range");
 
+        // A point at zero strain is a point (W3 accepts it): the curve runs from it, with no hold and no warning.
+        var fromZero = Run(curve, SnapFitCalculator.SecantPoints((0, 3000), (0.02, 2000)), Q("y", 0.005 * 75, "mm"));
+        Assert.Equal(2750e6, fromZero.OutputSi("Es"), 1e-3);
+        Assert.DoesNotContain(fromZero.Warnings, w => w.RuleId == "es-range");
+
         var empty = Run(curve, CalcInputValue.Table("Es_pts", []));
         Assert.True(empty.IsBlocked);
         Assert.Contains(empty.Blocks, b => b.RuleId == "es-curve" && b.Message.StartsWith("Es_pts: enter", StringComparison.Ordinal));
-        var useless = Run(curve, SnapFitCalculator.SecantPoints((0, 2400)));
-        Assert.Contains(useless.Blocks, b => b.RuleId == "es-curve");
+        var useless = Run(curve, SnapFitCalculator.SecantPoints((0.01, 0)));
+        Assert.True(useless.IsBlocked);
     }
 
     // ------------------------------------------------------------------ sheet content
@@ -328,7 +427,7 @@ public sealed class SnapFitTests
     public void The_Root_Fillet_Advisory_And_The_Temperature_Note_Are_Always_On_The_Sheet()
     {
         var torsion = new[] { Mode(SnapFitCalculator.Torsion), Q("l", 20, "mm"), Q("r_bar", 2, "mm"), Q("a_arm", 10, "mm"), CalcInputValue.Of("nu", 0.38) };
-        var ring = new[] { Mode(SnapFitCalculator.Annular) };
+        var ring = new[] { Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1) };
 
         foreach (var changes in new[] { Array.Empty<CalcInputValue>(), [Mode(SnapFitCalculator.TaperedThickness)], [Mode(SnapFitCalculator.TaperedWidth)], ring, torsion })
         {
@@ -382,9 +481,39 @@ public sealed class SnapFitTests
             Run(CalcInputValue.Choice("Es_source", SnapFitCalculator.EsCurve), SnapFitCalculator.SecantPoints((0.1, 1000))),
             Run(CalcInputValue.Choice("Es_source", SnapFitCalculator.EsCurve), CalcInputValue.Table("Es_pts", [])),
             Run(new CalcInputValue("Es")), Run(Mode(SnapFitCalculator.TaperedWidth), new CalcInputValue("b_ratio")),
+            Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1), Q("D_ring", 1, "mm"), Q("h", 1.5, "mm")),
         };
 
         foreach (var notice in runs.SelectMany(r => r.Notices))
             Assert.True(declared.Contains(notice.RuleId) || notice.RuleId.StartsWith("input.", StringComparison.Ordinal) || notice.RuleId.StartsWith("record.", StringComparison.Ordinal), $"rule '{notice.RuleId}' is not declared");
+    }
+
+    [Fact]
+    public void Derived_Relations_Are_Not_Credited_To_The_Design_Guide()
+    {
+        var guide = "Covestro";
+
+        // Tapered beams, the annular force and the torsion torque and force are derived here, so their steps cite the derivation.
+        foreach (var run in new[] { Run(Mode(SnapFitCalculator.TaperedThickness)), Run(Mode(SnapFitCalculator.TaperedWidth)) })
+        {
+            foreach (var symbol in new[] { "K_y", "eps", "P", "y_perm" })
+                Assert.DoesNotContain(guide, run.Steps.Single(st => st.Symbol == symbol).Clause, StringComparison.Ordinal);
+        }
+
+        var ring = Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1));
+
+        foreach (var symbol in new[] { "eps_nom", "eps", "P", "y_perm" })
+            Assert.DoesNotContain(guide, ring.Steps.Single(st => st.Symbol == symbol).Clause, StringComparison.Ordinal);
+
+        var bar = Run(Mode(SnapFitCalculator.Torsion), Q("r_bar", 2, "mm"), Q("a_arm", 10, "mm"), CalcInputValue.Of("nu", 0.38));
+
+        foreach (var symbol in new[] { "eps", "T_bar", "P", "y_perm" })
+            Assert.DoesNotContain(guide, bar.Steps.Single(st => st.Symbol == symbol).Clause, StringComparison.Ordinal);
+
+        // What the guide states stays attributed to it: the constant-section strain and force, γ_perm, the joining forces.
+        var constant = Run();
+        Assert.Contains(guide, constant.Steps.Single(st => st.Symbol == "P").Clause, StringComparison.Ordinal);
+        Assert.Contains(guide, constant.Steps.Single(st => st.Symbol == "assembly_force").Clause, StringComparison.Ordinal);
+        Assert.Contains(guide, bar.Steps.Single(st => st.Symbol == "gamma_perm").Clause, StringComparison.Ordinal);
     }
 }

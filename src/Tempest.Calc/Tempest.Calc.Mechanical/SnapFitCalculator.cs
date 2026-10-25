@@ -22,6 +22,9 @@ public sealed class SnapFitCalculator : ICalcCalculator
     public const string Annular = "Annular (closed ring)";
     public const string Torsion = "Torsion bar";
 
+    public const string BarOne = "Held at one end";
+    public const string BarBoth = "Held at both ends, lever in the middle";
+
     public const string EsTyped = "Typed secant modulus";
     public const string EsCurve = "W3 secant curve Es(ε)";
 
@@ -41,6 +44,9 @@ public sealed class SnapFitCalculator : ICalcCalculator
     public const double SmallAngleLimit = 0.35;
 
     private const string Ref = "Covestro, Snap-Fit Joints for Plastics: A Design Guide";
+    private const string Derived = "Euler–Bernoulli beam theory (derived)";
+    private const string DerivedRing = "Derived: thin-ring hoop force";
+    private const string DerivedBar = "Derived: torsion of a round bar";
 
     private static readonly IReadOnlyList<CalcColumnSpec> SecantColumns =
     [
@@ -49,25 +55,27 @@ public sealed class SnapFitCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Snap-fits: cantilever, annular, torsion",
+        Id, "1.1.0", CalcDiscipline.Mechanical, "Snap-fits: cantilever, annular, torsion",
         "A plastic snap-fit joint of one of five forms: a cantilever lug of constant section, of tapered thickness or of tapered width, an annular (closed ring) snap, or a torsion bar. The strain at the critical section against the permissible strain of the plastic (one-time or repeated joining), the deflection force with the secant modulus, the assembly force (inclined entry face) and the separation force (return face) with Coulomb friction, and whether the joint is self-locking.",
         "Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (constant section; the design guides print the rounded 0.67); a linear taper of the thickness to r_h = h_tip/h gives K_y = 2·J/φ_max with J = [2r_h − r_h²/2 − ln r_h − 3/2]/(1 − r_h)³ and φ_max = 1 for r_h ≥ 1/2 (otherwise the strain peaks inside the beam at t = (2a − 1)/a, a = 1 − r_h, with φ_max = (1 − t)/(1 − a·t)²); a linear taper of the width to r_b gives K_y = 2·J with J = [1/2 − 2r_b + 3r_b²/2 − r_b²·ln r_b]/(1 − r_b)³\n" +
         "Strain and force of the cantilever: ε = y·h/(K_y·l²); P = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε))\n" +
-        "Annular: ε = K_ann·ΔD/D (the ring's mean diameter D widened by the diametral interference ΔD, K_ann the user's geometry factor); the radial contact force summed round the ring is P = 2π·Es·ε·h·b (hoop force Es·ε·h·b over the radius)\n" +
-        "Torsion bar of radius r and length l with a lever of length a deflected y: φ = y/a, γ = φ·r/l, equivalent tensile strain ε = γ/(1 + ν), γ_perm = ε_perm·(1 + ν); G = Es/(2(1 + ν)), T = G·(π r⁴/2)·φ/l, P = T/a\n" +
+        "Annular (derived, free thin ring): nominal hoop strain ε_nom = ΔD/D (the mean diameter D widened by the diametral interference ΔD); the strain checked is ε = K_ann·ε_nom (K_ann the user's strain factor); the radial contact force summed round the ring is P = K_F·2π·Es·ε_nom·h·b (hoop force Es·ε_nom·h·b over the radius, K_F the user's optional force factor, 1 if none), b being the effective length of a free ring; the strain on the inner surface is ΔD/(D − h)\n" +
+        "Torsion bar of radius r with a lever of length a deflected y: φ = y/a; the bar is held at one end (free length l_eff = l) or at both ends with the lever in the middle (l_eff = l/2, two halves in parallel); γ = φ·r/l_eff, equivalent tensile strain ε = γ/(1 + ν), γ_perm = ε_perm·(1 + ν); G = Es/(2(1 + ν)), T = n·G·(π r⁴/2)·φ/l_eff with n = 1 or 2, P = T/a (both ends: P = 4·G·J·φ/(l·a))\n" +
         "Joining forces: W = P·(μ + tan α)/(1 − μ·tan α) on the entry face (angle α to the joining direction) and W′ = P·(μ + tan α′)/(1 − μ·tan α′) on the return face (α′); the joint is self-locking, with an infinite separation force, when α′ ≥ arctan(1/μ); assembly jams when μ·tan α ≥ 1\n" +
-        "Utilisation u = ε/ε_perm (FAIL above 1); permissible deflection y_perm = K_y·ε_perm·l²/h (annular ΔD_perm = ε_perm·D/K_ann; torsion y_perm = γ_perm·l·a/r)",
+        "Utilisation u = ε/ε_perm (FAIL above 1); permissible deflection y_perm = K_y·ε_perm·l²/h (annular ΔD_perm = ε_perm·D/K_ann; torsion y_perm = γ_perm·l_eff·a/r)",
         [
             new CalcInputSpec("mode", "Form of snap-fit", CalcInputKind.Choice, Choices: [Constant, TaperedThickness, TaperedWidth, Annular, Torsion], DefaultChoice: Constant, Group: "Joint"),
-            new CalcInputSpec("l", "Length of the beam (cantilever) or of the torsion bar", CalcInputKind.Quantity, "mm", Default: 15, Min: 2, Max: 100, HardMin: 0.1, HardMax: 1000, Group: "Geometry"),
+            new CalcInputSpec("l", "Length of the beam (cantilever); of the torsion bar: its free length when held at one end, or its whole length between the two supports when held at both ends with the lever in the middle", CalcInputKind.Quantity, "mm", Default: 15, Min: 2, Max: 100, HardMin: 0.1, HardMax: 1000, Group: "Geometry"),
             new CalcInputSpec("h", "Thickness at the root (cantilever); wall thickness of the ring (annular)", CalcInputKind.Quantity, "mm", Default: 2, Min: 0.3, Max: 10, HardMin: 0.01, HardMax: 100, Group: "Geometry"),
-            new CalcInputSpec("b", "Width at the root (cantilever); axial length of the ring (annular)", CalcInputKind.Quantity, "mm", Default: 6, Min: 1, Max: 50, HardMin: 0.01, HardMax: 1000, Group: "Geometry"),
+            new CalcInputSpec("b", "Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube)", CalcInputKind.Quantity, "mm", Default: 6, Min: 1, Max: 50, HardMin: 0.01, HardMax: 1000, Group: "Geometry"),
             new CalcInputSpec("h_ratio", "Tip thickness / root thickness (tapered thickness)", CalcInputKind.Number, Default: 0.5, Min: 0.25, Max: 1, HardMin: 0.05, HardMax: 1, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("b_ratio", "Tip width / root width (tapered width)", CalcInputKind.Number, Default: 0.5, Min: 0.1, Max: 1, HardMin: 0.02, HardMax: 1, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("y", "Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared", CalcInputKind.Quantity, "mm", Default: 1, Min: 0.05, Max: 20, HardMin: 0, HardMax: 1000, Group: "Geometry"),
             new CalcInputSpec("D_ring", "Mean diameter of the ring (annular)", CalcInputKind.Quantity, "mm", Default: 30, Min: 5, Max: 500, HardMin: 0.5, HardMax: 5000, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("dD", "Interference on the diameter: how much the ring is widened to pass the undercut (annular)", CalcInputKind.Quantity, "mm", Default: 0.4, Min: 0, Max: 5, HardMin: 0, HardMax: 100, IsOptional: true, Group: "Geometry"),
-            new CalcInputSpec("K_ann", "Geometry factor of the annular snap on the hoop strain (record snapfit.annular-factor; 1 for the thin closed ring)", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 3, HardMin: 0.1, HardMax: 10, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("K_ann", "Strain factor of the annular snap on the nominal hoop strain ΔD/D (record snapfit.annular-factor; 1 for a plain free ring; no default: from your design reference)", CalcInputKind.Number, Min: 0.5, Max: 3, HardMin: 0.1, HardMax: 10, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("K_F", "Force factor of the annular snap on the hoop force (record snapfit.annular-force-factor; e.g. the stiffening of a tube behind the ring; blank: 1, the free ring; no default)", CalcInputKind.Number, Min: 0.5, Max: 5, HardMin: 0.01, HardMax: 20, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("bar_support", "How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length)", CalcInputKind.Choice, Choices: [BarOne, BarBoth], DefaultChoice: BarOne, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("r_bar", "Radius of the torsion bar", CalcInputKind.Quantity, "mm", Default: 1.5, Min: 0.3, Max: 10, HardMin: 0.01, HardMax: 100, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("a_arm", "Length of the lever on the torsion bar", CalcInputKind.Quantity, "mm", Default: 8, Min: 2, Max: 100, HardMin: 0.1, HardMax: 1000, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("alpha", "Entry (assembly) angle α of the inclined face to the joining direction", CalcInputKind.Quantity, "deg", Default: 30, Min: 5, Max: 60, HardMin: 0, HardMax: 89, Group: "Joining"),
@@ -83,10 +91,10 @@ public sealed class SnapFitCalculator : ICalcCalculator
             new CalcInputSpec("T_use", "Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature", CalcInputKind.Quantity, "degC", Default: 23, Min: -40, Max: 120, HardMin: -150, HardMax: 400, Group: "Material"),
         ],
         [
-            new CalcAssumption("Beam theory (Euler–Bernoulli) for the cantilever: a rigid root, a linear taper, a constant secant modulus Es at the design strain over the whole beam, small deflection. The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet; the geometry factors are derived by integration (the 0.67 of the design guides is the constant-section 2/3 rounded).", "Euler–Bernoulli beam theory; the guide's closed forms to be checked against the owner's copy."),
+            new CalcAssumption("Beam theory (Euler–Bernoulli) for the cantilever: a rigid root, a linear taper, a constant secant modulus Es at the design strain over the whole beam, small deflection. The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet; the geometry factors are derived by integration (the 0.67 of the design guides is the constant-section 2/3 rounded).", "Euler–Bernoulli beam theory (derived); the guide's closed forms for the constant section are to be checked against the owner's copy."),
             new CalcAssumption("Es and the permissible strain are properties of the plastic at the temperature of use, with the loading (one-time or repeated) and the moisture state of the part. No values are supplied: they come from the plastic maker's data or a W3 material, and the temperature entered records what they were taken at.", "Addendum B §B5: no plastics data are shipped."),
-            new CalcAssumption("Annular snap: a thin closed ring whose mean-diameter strain is the diametral interference over the diameter, times the user's geometry factor (record snapfit.annular-factor; 1 for the plain thin ring); the contact force is the hoop force Es·ε·h·b taken round the ring. The factor, if the ring is stiffened or slotted, is the user's.", "Derived from ring geometry; to be checked against the owner's copy of the design guide."),
-            new CalcAssumption("Torsion bar: a round bar of radius r loaded at the end of a lever, the angle small (φ = y/a); the permissible shear strain is ε_perm·(1 + ν) and the equivalent tensile strain γ/(1 + ν); G = Es/(2(1 + ν)) with the secant modulus at that strain.", "Design-guide relation γ_perm ≈ ε_perm·(1 + ν); to be checked against the owner's copy."),
+            new CalcAssumption("Annular snap: a free, thin, closed ring of effective axial length b. The nominal hoop strain is the diametral interference over the mean diameter, ΔD/D; the strain checked is that times the user's strain factor K_ann (record snapfit.annular-factor, no default). The contact force is the hoop force Es·ε_nom·h·b taken round the ring, from the nominal strain only, times the user's optional force factor K_F (record snapfit.annular-force-factor; blank is 1); a tube behind the ring stiffens the joint and raises the force, which only K_F can represent. The strain on the inner (contact) surface is ΔD/(D − h), slightly above the mean-diameter value, and is shown for information.", "Derived from ring geometry (not a relation of the design guide); compare with the owner's copy of the guide."),
+            new CalcAssumption("Torsion bar: a solid round bar of radius r loaded at the end of a lever, the angle small (φ = y/a), held at one end or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length). The permissible shear strain is ε_perm·(1 + ν) and the equivalent tensile strain γ/(1 + ν); G = Es/(2(1 + ν)) with the secant modulus at that strain.", "γ = φ·r/l and γ_perm ≈ ε_perm·(1 + ν) are the brief's design-guide relations, to be checked against the owner's copy; the torque, the force and the two-ended case are derived."),
             new CalcAssumption("Assembly and separation: a rigid mating part, Coulomb friction μ on the inclined face (α for assembly, α′ for separation), the deflection force P taken at the design deflection; no creep or stress relaxation of the joint in service, no impact (speed) effect.", "Friction on an inclined plane; the friction coefficient is the user's record."),
         ],
         [
@@ -95,7 +103,8 @@ public sealed class SnapFitCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("missing", "An input the chosen form, or the chosen source of the secant modulus or the permissible strain, needs is blank.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("es-curve", "The W3 secant-modulus points hold no usable row (a strain above zero with a positive modulus).", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("geometry", "The mean diameter of the ring does not exceed its wall thickness.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("es-curve", "The W3 secant-modulus points hold no usable row (a strain of zero or more with a positive modulus).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("slender", "The beam is shorter than 5 times its thickness (l/h < 5): beam theory underestimates the stiffness and the strain is not reliable.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("es-range", "The design strain is outside the strains of the secant-modulus points: the end value is held, with no extrapolation.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("assembly-jam", "μ·tan α is 1 or more: the entry face jams and the part cannot be pushed on.", CalcNoticeSeverity.Warning),
@@ -119,14 +128,22 @@ public sealed class SnapFitCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (Euler–Bernoulli integration; recomputed in python3 by closed form and by numerical double integration of the curvature)", null, "l 12 mm, h 1.5 mm, b 8 mm, tip width b/4, y 0.8 mm, Es 3000 MPa, ε_perm 0.03, μ 0.35, α 35°, α′ 45°: J = [1/2 − 2r + 3r²/2 − r²·ln r]/(1 − r)³ = 0.427599 at r = 0.25, K_y = 2J = 0.8551983; ε = 0.974433 %; P = b·h²·Es·ε/(6·l) = 7.308246 N; u = 0.324811; y_perm = 2.462971 mm; W = 10.166773 N; W′ = 15.178665 N"),
                 [Q("l", 12, "mm"), Q("h", 1.5, "mm"), Q("b", 8, "mm"), CalcInputValue.Choice("mode", TaperedWidth), CalcInputValue.Of("b_ratio", 0.25), Q("y", 0.8, "mm"), Q("Es", 3000, "MPa"), CalcInputValue.Of("eps_perm_once", 0.03), CalcInputValue.Of("mu", 0.35), Q("alpha", 35, "deg"), Q("alpha_r", 45, "deg")],
                 [new CalcExpectedValue("K_y", 0.855198329221, "", 1e-9), new CalcExpectedValue("eps", 0.974432836057, "%", 1e-9), new CalcExpectedValue("P", 7.30824627042, "N", 1e-9), new CalcExpectedValue("strain_util", 0.324810945350, "", 1e-9), new CalcExpectedValue("y_perm", 2.46297118816, "mm", 1e-9), new CalcExpectedValue("assembly_force", 10.1667732745, "N", 1e-9), new CalcExpectedValue("retention_force", 15.1786653309, "N", 1e-9)]),
-            new CalcTestCase("ka-annular", "Annular snap: hoop strain from the interference, radial force round the ring",
-                new CalcReferenceSource("Analytic (thin-ring geometry; recomputed in python3)", null, "D 30 mm, ΔD 0.4 mm, K_ann 1.2, h 1.5 mm, b 5 mm, Es 2400 MPa, ε_perm 0.04, μ 0.3, α 30°, α′ 60°: ε = K_ann·ΔD/D = 1.6 %; P = 2π·Es·ε·h·b = 1809.557 N; u = 0.4; ΔD_perm = ε_perm·D/K_ann = 1 mm; W = 1920.205 N; W′ = 7654.515 N"),
+            new CalcTestCase("ka-annular", "Annular snap: hoop strain from the interference, radial force round the ring from the nominal strain",
+                new CalcReferenceSource("Analytic (thin-ring geometry; recomputed in python3, the force also by strain energy)", null, "D 30 mm, ΔD 0.4 mm, K_ann 1.2, h 1.5 mm, b 5 mm, Es 2400 MPa, ε_perm 0.04, μ 0.3, α 30°, α′ 60°: ε_nom = ΔD/D = 1.33333 %; ε = K_ann·ε_nom = 1.6 %; inner surface ΔD/(D − h) = 1.403509 %; P = 2π·Es·ε_nom·h·b = 1507.964 N (K_ann does not enter); u = 0.4; ΔD_perm = ε_perm·D/K_ann = 1 mm; W = 1600.171 N; W′ = 6378.763 N"),
                 [CalcInputValue.Choice("mode", Annular), Q("h", 1.5, "mm"), Q("b", 5, "mm"), Q("D_ring", 30, "mm"), Q("dD", 0.4, "mm"), CalcInputValue.Of("K_ann", 1.2), Q("Es", 2400, "MPa"), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
-                [new CalcExpectedValue("eps", 1.6, "%", 1e-9), new CalcExpectedValue("P", 1809.55736847, "N", 1e-9), new CalcExpectedValue("strain_util", 0.4, "", 1e-9), new CalcExpectedValue("y_perm", 1, "mm", 1e-9), new CalcExpectedValue("assembly_force", 1920.20488683, "N", 1e-9), new CalcExpectedValue("retention_force", 7654.51537080, "N", 1e-9)]),
+                [new CalcExpectedValue("eps_nom", 1.33333333333, "%", 1e-9), new CalcExpectedValue("eps", 1.6, "%", 1e-9), new CalcExpectedValue("eps_inner", 1.40350877193, "%", 1e-9), new CalcExpectedValue("K_F", 1, "", 1e-12), new CalcExpectedValue("P", 1507.96447372, "N", 1e-9), new CalcExpectedValue("strain_util", 0.4, "", 1e-9), new CalcExpectedValue("y_perm", 1, "mm", 1e-9), new CalcExpectedValue("assembly_force", 1600.17073903, "N", 1e-9), new CalcExpectedValue("retention_force", 6378.76280900, "N", 1e-9)]),
+            new CalcTestCase("ka-annular-force-factor", "Annular snap with a force factor K_F = 1.25 (a tube behind the ring): the force scales, the strain does not",
+                new CalcReferenceSource("Analytic (thin-ring geometry; recomputed in python3, the force also by strain energy)", null, "The ring of ka-annular with K_F = 1.25: ε and the utilisation are unchanged (1.6 %, 0.4); P = K_F·2π·Es·ε_nom·h·b = 1884.956 N; W = 2000.213 N; W′ = 7973.454 N"),
+                [CalcInputValue.Choice("mode", Annular), Q("h", 1.5, "mm"), Q("b", 5, "mm"), Q("D_ring", 30, "mm"), Q("dD", 0.4, "mm"), CalcInputValue.Of("K_ann", 1.2), CalcInputValue.Of("K_F", 1.25), Q("Es", 2400, "MPa"), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
+                [new CalcExpectedValue("eps", 1.6, "%", 1e-9), new CalcExpectedValue("K_F", 1.25, "", 1e-12), new CalcExpectedValue("P", 1884.95559215, "N", 1e-9), new CalcExpectedValue("strain_util", 0.4, "", 1e-9), new CalcExpectedValue("assembly_force", 2000.21342378, "N", 1e-9), new CalcExpectedValue("retention_force", 7973.45351125, "N", 1e-9)]),
             new CalcTestCase("ka-torsion", "Torsion bar: shear strain, permissible shear strain, torque and lever force",
                 new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "l 20 mm, r 2 mm, lever a 10 mm, y 1.5 mm, ν 0.38, Es 2000 MPa, ε_perm 0.03, μ 0.3, α 30°, α′ 60°: φ = y/a = 0.15 rad = 8.594367°; γ = φ·r/l = 0.015; ε = γ/(1 + ν) = 1.086957 %; γ_perm = ε_perm·(1 + ν) = 0.0414; u = 0.362319; G = Es/(2(1 + ν)) = 724.6377 MPa; T = G·(π r⁴/2)·φ/l = 0.136591 N·m; P = T/a = 13.659098 N; y_perm = γ_perm·l·a/r = 4.14 mm; W = 14.494300 N; W′ = 57.778649 N"),
                 [CalcInputValue.Choice("mode", Torsion), Q("l", 20, "mm"), Q("r_bar", 2, "mm"), Q("a_arm", 10, "mm"), Q("y", 1.5, "mm"), CalcInputValue.Of("nu", 0.38), Q("Es", 2000, "MPa"), CalcInputValue.Of("eps_perm_once", 0.03), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
                 [new CalcExpectedValue("phi", 8.59436692696, "deg", 1e-9), new CalcExpectedValue("gamma", 0.015, "", 1e-9), new CalcExpectedValue("eps", 1.08695652174, "%", 1e-9), new CalcExpectedValue("gamma_perm", 0.0414, "", 1e-9), new CalcExpectedValue("strain_util", 0.362318840580, "", 1e-9), new CalcExpectedValue("G_sec", 724.637681159, "MPa", 1e-9), new CalcExpectedValue("T_bar", 0.136590984939, "N*m", 1e-9), new CalcExpectedValue("P", 13.6590984939, "N", 1e-9), new CalcExpectedValue("y_perm", 4.14, "mm", 1e-9), new CalcExpectedValue("assembly_force", 14.4943001723, "N", 1e-9), new CalcExpectedValue("retention_force", 57.7786486322, "N", 1e-9)]),
+            new CalcTestCase("ka-torsion-both-ends", "Torsion bar held at both ends with the lever in the middle: twice the strain, four times the stiffness",
+                new CalcReferenceSource("Analytic (closed-form; recomputed in python3, the force also by strain energy U = G·γ²·π·r²·L/4, P = 2U/y)", null, "The bar of ka-torsion (whole length L = 20 mm between the supports, r 2 mm, lever 10 mm, y 1.5 mm, ν 0.38, Es 2000 MPa, ε_perm 0.03, μ 0.3, α 30°, α′ 60°) held at both ends: l_eff = L/2 = 10 mm; γ = φ·r/l_eff = 0.03; ε = 2.173913 %; u = 0.724638; T = 2·G·(π r⁴/2)·φ/l_eff = 4·G·J·φ/L = 0.546364 N·m; P = T/a = 54.636394 N; y_perm = γ_perm·l_eff·a/r = 2.07 mm; W = 57.977201 N; W′ = 231.114595 N"),
+                [CalcInputValue.Choice("mode", Torsion), CalcInputValue.Choice("bar_support", BarBoth), Q("l", 20, "mm"), Q("r_bar", 2, "mm"), Q("a_arm", 10, "mm"), Q("y", 1.5, "mm"), CalcInputValue.Of("nu", 0.38), Q("Es", 2000, "MPa"), CalcInputValue.Of("eps_perm_once", 0.03), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
+                [new CalcExpectedValue("l_eff", 10, "mm", 1e-9), new CalcExpectedValue("gamma", 0.03, "", 1e-9), new CalcExpectedValue("eps", 2.17391304348, "%", 1e-9), new CalcExpectedValue("strain_util", 0.724637681159, "", 1e-9), new CalcExpectedValue("T_bar", 0.546363939755, "N*m", 1e-9), new CalcExpectedValue("P", 54.6363939755, "N", 1e-9), new CalcExpectedValue("y_perm", 2.07, "mm", 1e-9), new CalcExpectedValue("assembly_force", 57.9772006894, "N", 1e-9), new CalcExpectedValue("retention_force", 231.114594529, "N", 1e-9)]),
             new CalcTestCase("ka-curve", "Cantilever with the secant modulus interpolated from W3 points Es(ε)",
                 new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "l 15 mm, h 2 mm, b 6 mm, y 1.5 mm: ε = 2 %; points (0.5 %, 2600 MPa), (1 %, 2400 MPa), (3 %, 1800 MPa) give Es(2 %) = 2400 − 600·(0.01/0.02) = 2100 MPa; P = b·h²·Es·ε/(6·l) = 11.2 N; ε_perm 0.04: u = 0.5"),
                 [Q("l", 15, "mm"), Q("h", 2, "mm"), Q("b", 6, "mm"), Q("y", 1.5, "mm"), CalcInputValue.Choice("Es_source", EsCurve), SecantPoints((0.005, 2600), (0.01, 2400), (0.03, 1800)), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
@@ -143,7 +160,8 @@ public sealed class SnapFitCalculator : ICalcCalculator
         [
             new CalcRecordKind(MaterialKind, "Material properties", ["Es_pts", "eps_perm_once", "eps_perm_repeated", "nu"], "A plastic from the library: its permissible strains, its Poisson ratio and its secant-modulus points Es(ε) fill these inputs, each citing the material, its revision and the page or table of the value. Use the values for the temperature of use."),
             new CalcRecordKind("snapfit.friction", "Coefficient of friction", ["mu"], "μ for the pair of materials and surfaces of this joint (static or kinetic as the use needs), from your reference, the plastic maker or a test, with its source. A W3 material can hold friction coefficients by pair; read μ from there and enter it here."),
-            new CalcRecordKind("snapfit.annular-factor", "Annular snap geometry factor", ["K_ann"], "The factor on the hoop strain ΔD/D of the annular snap-fit (1 for a plain thin closed ring), from your design reference for the ring shape, with its source."),
+            new CalcRecordKind("snapfit.annular-factor", "Annular snap strain factor", ["K_ann"], "The factor on the nominal hoop strain ΔD/D of the annular snap-fit (1 for a plain free ring) that gives the strain to check, from your design reference for the ring shape, with its source."),
+            new CalcRecordKind("snapfit.annular-force-factor", "Annular snap force factor", ["K_F"], "The factor on the hoop force of the free ring (for example the stiffening of a tube behind the ring), from your design reference, with its source. Blank: 1."),
             new CalcRecordKind("snapfit.secant-modulus", "Secant modulus at the design strain", ["Es"], "Es read from the plastic's stress–strain curve at the design strain and the temperature of use (the temperature of use is the input T_use), with the source of the curve."),
         ]);
 
@@ -165,14 +183,18 @@ public sealed class SnapFitCalculator : ICalcCalculator
         if (!Strain(c, mode))
             return;
 
-        if (!Material(c))
+        if (!Material(c, mode))
             return;
 
         Force(c, mode);
         Joining(c);
 
+        var peak = c.Session.Find("t_crit") is not null
+            ? $" The taper is steep enough that the strain peaks inside the beam, {F(c.Si("t_crit") * c.Si("l") * 1e3)} mm from the root, so a section change or notch near that point matters as much as the root."
+            : string.Empty;
+
         c.Output("fillet_advisory", "Root-fillet advisory", new TextValue(
-            "The strain above is the nominal strain, with no local concentration. A sharp internal corner at the root (or at the end of the bar or ring) concentrates the strain and is the usual place for a snap-fit to break: give the root a generous fillet radius, of the order of the thickness, taper the section away from it, and apply a concentration factor from your own reference if the radius is small."));
+            "The strain above is the nominal strain, with no local concentration. A sharp internal corner at the root (or at the end of the bar or ring) concentrates the strain and is the usual place for a snap-fit to break: give the root a generous fillet radius, of the order of the thickness, taper the section away from it, and apply a concentration factor from your own reference if the radius is small." + peak));
     }
 
     // ------------------------------------------------------------------
@@ -233,13 +255,13 @@ public sealed class SnapFitCalculator : ICalcCalculator
             var j = SnapFitGeometry.ThicknessJ(r);
             (phiMax, tCrit) = SnapFitGeometry.ThicknessPhiMax(r);
             ky = 2 * j / phiMax;
-            c.Record("J", "[2r − r²/2 − ln r − 3/2]/(1 − r)³", $"r = {F(r)}", new ScalarValue(j), "Deflection integral J of the thickness taper (derived: Euler–Bernoulli integration)", "Euler–Bernoulli beam theory");
-            c.Record("phi_max", "(1 − t*)/(1 − a·t*)², t* = (2a − 1)/a for a > 1/2, else 1", $"a = {F(1 - r)}", new ScalarValue(phiMax), "Largest value of the strain shape along the beam (1 at the root)", "Euler–Bernoulli beam theory");
+            c.Record("J", "[2r − r²/2 − ln r − 3/2]/(1 − r)³", $"r = {F(r)}", new ScalarValue(j), "Deflection integral J of the thickness taper (derived: Euler–Bernoulli integration)", Derived);
+            c.Record("phi_max", "(1 − t*)/(1 − a·t*)², t* = (2a − 1)/a for a > 1/2, else 1", $"a = {F(1 - r)}", new ScalarValue(phiMax), "Largest value of the strain shape along the beam (1 at the root)", Derived);
 
             if (tCrit > 0)
-                c.Record("t_crit", "(2a − 1)/a", $"a = {F(1 - r)}", new ScalarValue(tCrit), "Where the strain peaks, as a fraction of the length from the root (the taper is steep enough for the maximum to lie inside the beam)", "Euler–Bernoulli beam theory");
+                c.Record("t_crit", "(2a − 1)/a", $"a = {F(1 - r)}", new ScalarValue(tCrit), "Where the strain peaks, as a fraction of the length from the root (the taper is steep enough for the maximum to lie inside the beam)", Derived);
 
-            c.Record("K_y", "2·J/φ_max", $"2 × {F(j)} / {F(phiMax)}", new ScalarValue(ky), "Deflection factor: y = K_y·ε·l²/h", Ref);
+            c.Record("K_y", "2·J/φ_max", $"2 × {F(j)} / {F(phiMax)}", new ScalarValue(ky), "Deflection factor: y = K_y·ε·l²/h", Derived);
         }
         else if (mode == TaperedWidth)
         {
@@ -247,18 +269,18 @@ public sealed class SnapFitCalculator : ICalcCalculator
             var r = c.InputSi("b_ratio");
             var j = SnapFitGeometry.WidthJ(r);
             ky = 2 * j;
-            c.Record("J", "[1/2 − 2r + 3r²/2 − r²·ln r]/(1 − r)³", $"r = {F(r)}", new ScalarValue(j), "Deflection integral J of the width taper (derived: Euler–Bernoulli integration)", "Euler–Bernoulli beam theory");
-            c.Record("phi_max", "1 (the strain is largest at the root for a width taper)", "—", new ScalarValue(1), "Largest value of the strain shape along the beam", "Euler–Bernoulli beam theory");
-            c.Record("K_y", "2·J", $"2 × {F(j)}", new ScalarValue(ky), "Deflection factor: y = K_y·ε·l²/h", Ref);
+            c.Record("J", "[1/2 − 2r + 3r²/2 − r²·ln r]/(1 − r)³", $"r = {F(r)}", new ScalarValue(j), "Deflection integral J of the width taper (derived: Euler–Bernoulli integration)", Derived);
+            c.Record("phi_max", "1 (the strain is largest at the root for a width taper)", "—", new ScalarValue(1), "Largest value of the strain shape along the beam", Derived);
+            c.Record("K_y", "2·J", $"2 × {F(j)}", new ScalarValue(ky), "Deflection factor: y = K_y·ε·l²/h", Derived);
         }
         else
         {
             ky = SnapFitGeometry.ConstantKy;
-            c.Record("phi_max", "1", "—", new ScalarValue(1), "Largest value of the strain shape along the beam (the root)", "Euler–Bernoulli beam theory");
-            c.Record("K_y", "2/3", "constant section", new ScalarValue(ky), "Deflection factor: y = K_y·ε·l²/h (the design guides print the rounded 0.67)", Ref);
+            c.Record("phi_max", "1", "—", new ScalarValue(1), "Largest value of the strain shape along the beam (the root)", Derived);
+            c.Record("K_y", "2/3", "constant section", new ScalarValue(ky), "Deflection factor: y = K_y·ε·l²/h (derived; the design guides print the rounded 0.67)", Derived);
         }
 
-        c.Assign("eps", "y * h / (K_y * l^2)", "%", "Maximum surface strain at the critical section (nominal)", Ref);
+        c.Assign("eps", "y * h / (K_y * l^2)", "%", "Maximum surface strain at the critical section (nominal)", mode == Constant ? Ref : Derived);
         return true;
     }
 
@@ -270,7 +292,15 @@ public sealed class SnapFitCalculator : ICalcCalculator
         foreach (var s in new[] { "h", "b", "D_ring", "dD", "K_ann" })
             c.Input(s);
 
-        c.Assign("eps", "K_ann * dD / D_ring", "%", "Hoop strain of the ring (nominal)", Ref);
+        if (!(c.Si("D_ring") > c.Si("h")))
+        {
+            c.Block("geometry", "D_ring: the mean diameter of the ring must exceed its wall thickness h.");
+            return false;
+        }
+
+        c.Assign("eps_nom", "dD / D_ring", "%", "Nominal hoop strain ΔD/D of the mean diameter (drives the force)", DerivedRing);
+        c.Assign("eps", "K_ann * eps_nom", "%", "Hoop strain checked: the nominal strain times the user's strain factor K_ann", DerivedRing);
+        c.Assign("eps_inner", "dD / (D_ring - h)", "%", "Nominal strain at the inner (contact) surface ΔD/(D − h), for information", DerivedRing);
         return true;
     }
 
@@ -282,13 +312,24 @@ public sealed class SnapFitCalculator : ICalcCalculator
         foreach (var s in new[] { "l", "y", "r_bar", "a_arm", "nu" })
             c.Input(s);
 
+        var both = c.Has("bar_support") && c.InputText("bar_support") == BarBoth;
+
+        if (c.Has("bar_support"))
+            c.Input("bar_support");
+
+        if (both)
+            c.Assign("l_eff", "l / 2", "mm", "Free length of each half of the bar (held at both ends, lever in the middle)", DerivedBar);
+        else
+            c.Assign("l_eff", "l", "mm", "Free length of the bar (held at one end)", DerivedBar);
+
+        c.Record("n_bar", both ? "2 (two halves in parallel)" : "1", both ? "held at both ends" : "held at one end", new ScalarValue(both ? 2 : 1), "Number of bar lengths twisting", DerivedBar);
         c.Assign("phi", "y / a_arm", "deg", "Twist of the bar (small angle: lever deflection / lever length)", Ref);
 
         if (c.Si("phi") > SmallAngleLimit)
             c.Warn("small-angle", $"y: the bar twists {F(c.Si("phi") * 180 / Math.PI)}°; the small-angle relation φ = y/a is no longer good above about 20°.");
 
-        c.Assign("gamma", "phi * r_bar / l", null, "Shear strain at the surface of the bar", Ref);
-        c.Assign("eps", "gamma / (1 + nu)", "%", "Equivalent tensile strain γ/(1 + ν)", Ref);
+        c.Assign("gamma", "phi * r_bar / l_eff", null, "Shear strain at the surface of the bar", both ? DerivedBar : Ref);
+        c.Assign("eps", "gamma / (1 + nu)", "%", "Equivalent tensile strain γ/(1 + ν)", DerivedBar);
         return true;
     }
 
@@ -296,7 +337,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
     // Material: permissible strain and secant modulus
     // ------------------------------------------------------------------
 
-    private static bool Material(CalcRunContext c)
+    private static bool Material(CalcRunContext c, string mode)
     {
         var repeated = c.InputText("loading") == Repeated;
         var epsSymbol = repeated ? "eps_perm_repeated" : "eps_perm_once";
@@ -308,7 +349,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
         c.Assign("eps_perm", epsSymbol, "%", $"Permissible strain ({(repeated ? "repeated" : "one-time")} joining, as entered)", Ref);
 
         if (c.InputText("Es_source") == EsCurve)
-            return SecantFromCurve(c);
+            return SecantFromCurve(c, mode == Annular ? "eps_nom" : "eps");
 
         if (!Require(c, "Es"))
             return false;
@@ -317,7 +358,8 @@ public sealed class SnapFitCalculator : ICalcCalculator
         return true;
     }
 
-    private static bool SecantFromCurve(CalcRunContext c)
+    /// <summary>The secant modulus at the strain that drives the force (<paramref name="strainSymbol"/>), from the W3 points.</summary>
+    private static bool SecantFromCurve(CalcRunContext c, string strainSymbol)
     {
         var points = new List<(double Strain, double Es)>();
 
@@ -328,18 +370,18 @@ public sealed class SnapFitCalculator : ICalcCalculator
 
             var si = (cell.Unit is { Length: > 0 } unit ? UnitCatalog.Parse(unit) : UnitCatalog.Parse("MPa")).ToSi(modulus);
 
-            if (double.IsFinite(strain) && double.IsFinite(si) && strain > 0 && si > 0)
+            if (double.IsFinite(strain) && double.IsFinite(si) && strain >= 0 && si > 0)
                 points.Add((strain, si));
         }
 
         if (points.Count == 0)
         {
-            c.Block("es-curve", c.EnterRows("Es_pts").TrimEnd('.') + "; a row needs a strain above zero and a positive secant modulus.");
+            c.Block("es-curve", c.EnterRows("Es_pts").TrimEnd('.') + "; a row needs a strain of zero or more and a positive secant modulus.");
             return false;
         }
 
         points.Sort((a, b) => a.Strain.CompareTo(b.Strain));
-        var eps = c.Si("eps");
+        var eps = c.Si(strainSymbol);
         var es = Interpolate(points, eps, out var outside);
 
         if (outside)
@@ -350,22 +392,10 @@ public sealed class SnapFitCalculator : ICalcCalculator
     }
 
     /// <summary>Es at <paramref name="strain"/> by linear interpolation of ascending points; the end value is held outside the points.</summary>
-    public static double Interpolate(IReadOnlyList<(double Strain, double Es)> points, double strain, out bool outside)
+    private static double Interpolate(IReadOnlyList<(double Strain, double Es)> points, double strain, out bool outside)
     {
-        outside = false;
         const double slack = 1e-9;
-
-        if (strain < points[0].Strain * (1 - slack))
-        {
-            outside = true;
-            return points[0].Es;
-        }
-
-        if (strain > points[^1].Strain * (1 + slack))
-        {
-            outside = true;
-            return points[^1].Es;
-        }
+        outside = strain < points[0].Strain * (1 - slack) || strain > points[^1].Strain * (1 + slack);
 
         if (strain <= points[0].Strain)
             return points[0].Es;
@@ -394,20 +424,25 @@ public sealed class SnapFitCalculator : ICalcCalculator
         switch (mode)
         {
             case Annular:
-                c.Assign("P", "2 * pi * Es * eps * h * b", "N", "Radial contact force summed round the ring (hoop force Es·ε·h·b over the radius)", Ref);
-                c.Assign("y_perm", "eps_perm * D_ring / K_ann", "mm", "Permissible interference on the diameter ΔD_perm", Ref);
+                if (c.Has("K_F"))
+                    c.Input("K_F");
+                else
+                    c.Record("K_F", "1 (no force factor entered)", "free ring", new ScalarValue(1), "Force factor K_F on the hoop force (none entered: the free ring)", DerivedRing);
+
+                c.Assign("P", "K_F * 2 * pi * Es * eps_nom * h * b", "N", "Radial contact force summed round the ring, from the nominal strain (hoop force Es·ε_nom·h·b over the radius)", DerivedRing);
+                c.Assign("y_perm", "eps_perm * D_ring / K_ann", "mm", "Permissible interference on the diameter ΔD_perm", DerivedRing);
                 break;
             case Torsion:
                 c.Assign("gamma_perm", "eps_perm * (1 + nu)", null, "Permissible shear strain γ_perm ≈ ε_perm·(1 + ν)", Ref);
                 c.Assign("G_sec", "Es / (2 * (1 + nu))", "MPa", "Secant shear modulus Es/(2(1 + ν))");
                 c.Assign("J_bar", "pi * r_bar^4 / 2", "mm^4", "Polar second moment of the bar");
-                c.Assign("T_bar", "G_sec * J_bar * phi / l", "N*m", "Torque in the bar", Ref);
-                c.Assign("P", "T_bar / a_arm", "N", "Force at the end of the lever", Ref);
-                c.Assign("y_perm", "gamma_perm * l * a_arm / r_bar", "mm", "Permissible deflection at the end of the lever", Ref);
+                c.Assign("T_bar", "n_bar * G_sec * J_bar * phi / l_eff", "N*m", "Torque in the bar", DerivedBar);
+                c.Assign("P", "T_bar / a_arm", "N", "Force at the end of the lever", DerivedBar);
+                c.Assign("y_perm", "gamma_perm * l_eff * a_arm / r_bar", "mm", "Permissible deflection at the end of the lever", DerivedBar);
                 break;
             default:
-                c.Assign("P", "b * h^2 * Es * eps / (6 * l * phi_max)", "N", "Deflection force at the tip: P = (b·h²/6)·(Es·ε/l) at the root of a constant section", Ref);
-                c.Assign("y_perm", "K_y * eps_perm * l^2 / h", "mm", "Permissible tip deflection", Ref);
+                c.Assign("P", "b * h^2 * Es * eps / (6 * l * phi_max)", "N", "Deflection force at the tip: P = (b·h²/6)·(Es·ε/l) at the root of a constant section", mode == Constant ? Ref : Derived);
+                c.Assign("y_perm", "K_y * eps_perm * l^2 / h", "mm", "Permissible tip deflection", mode == Constant ? Ref : Derived);
                 break;
         }
 
@@ -428,8 +463,15 @@ public sealed class SnapFitCalculator : ICalcCalculator
             if (c.Session.Find("t_crit") is not null)
                 c.Output("t_crit", "Strain peaks at (fraction of the length)");
         }
+        else if (mode == Annular)
+        {
+            c.Output("eps_nom", "Nominal hoop strain ΔD/D");
+            c.Output("eps_inner", "Nominal strain at the inner surface");
+            c.Output("K_F", "Force factor used");
+        }
         else if (mode == Torsion)
         {
+            c.Output("l_eff", "Free length twisting");
             c.Output("phi", "Twist of the bar");
             c.Output("gamma", "Shear strain");
             c.Output("gamma_perm", "Permissible shear strain");
@@ -447,7 +489,6 @@ public sealed class SnapFitCalculator : ICalcCalculator
     private static void Joining(CalcRunContext c)
     {
         var mu = c.Si("mu");
-        var alpha = c.Si("alpha");
         var alphaR = c.Si("alpha_r");
 
         c.Assign("tan_a", "tan(alpha)", null, "tan α of the entry face");
@@ -474,7 +515,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
         if (locks)
         {
             c.Output("retention_force", "Separation force", new TextValue("self-locking (infinite)"));
-            c.Output("self_locking", "Self-locking", new TextValue("YES: α′ ≥ arctan(1/μ); the parts cannot be separated by pulling"));
+            c.Output("self_locking", "Self-locking", new TextValue("Yes: α′ ≥ arctan(1/μ); the parts cannot be separated by pulling"));
             c.Warn("self-locking", $"alpha_r: the return angle {F(alphaR * 180 / Math.PI)}° is at or above arctan(1/μ) = {F(limit * 180 / Math.PI)}°; the separation force is infinite and the joint cannot be undone by pulling. That is right for a permanent joint and wrong for a serviceable one.");
         }
         else
@@ -482,7 +523,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
             c.Assign("tan_ar", "tan(alpha_r)", null, "tan α′ of the return face");
             c.Assign("retention_force", "P * (mu + tan_ar) / (1 - mu * tan_ar)", "N", "Separation force W′ = P·(μ + tan α′)/(1 − μ·tan α′)", Ref);
             c.Output("retention_force", "Separation force");
-            c.Output("self_locking", "Self-locking", new TextValue("no"));
+            c.Output("self_locking", "Self-locking", new TextValue("No"));
         }
     }
 
