@@ -98,6 +98,9 @@ public sealed record ScanProfile(
         else if (unit.IsAffine || unit.Dimension.IsDimensionless && !CadUnits.IsAngle(unitSymbol))
             problems.Add($"The unit '{Clip(Unit ?? string.Empty)}' is not a plain scale unit (a length, an angle, a force …); a temperature scale or a bare number cannot carry a deviation.");
 
+        if (new[] { Id, Title, Notes?.Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' '), FixedStage, FixedSerial, TemplateId, Unit }.Concat(Columns?.Set().Select(c => c.Reference) ?? []).Concat((Features ?? []).SelectMany(f => new[] { f?.Feature, f?.Target, f?.Stage })).Any(HasInvisible))
+            problems.Add("The profile holds a control, formatting or invisible character (such as a zero-width space or a right-to-left override) in a text; remove it.");
+
         if (Columns is null)
         {
             problems.Add("The profile maps no columns.");
@@ -168,6 +171,25 @@ public sealed record ScanProfile(
         return problems;
     }
 
+    private static bool HasInvisible(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return false;
+
+        foreach (var c in text)
+        {
+            if (char.IsControl(c))
+                return true;
+
+            var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+
+            if (category is System.Globalization.UnicodeCategory.Format or System.Globalization.UnicodeCategory.LineSeparator or System.Globalization.UnicodeCategory.ParagraphSeparator or System.Globalization.UnicodeCategory.PrivateUse or System.Globalization.UnicodeCategory.OtherNotAssigned)
+                return true;
+        }
+
+        return false;
+    }
+
     /// <summary>The name in the form profiles and files are compared in: Unicode-normalised, trimmed.</summary>
     public static string Normalise(string name)
     {
@@ -192,7 +214,7 @@ public sealed record ScanProfile(
     public static bool IsPosition(string reference, out int position)
     {
         position = 0;
-        return reference.Length is >= 2 and <= 4 && reference[0] == '#' && int.TryParse(reference.AsSpan(1), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out position);
+        return reference.Length is >= 2 and <= 4 && reference[0] == '#' && reference[1] != '0' && int.TryParse(reference.AsSpan(1), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out position);
     }
 
     private static string Clip(string s) => s.Length > 40 ? s[..40] + "…" : s;
@@ -243,12 +265,20 @@ public readonly record struct ScanTarget(string Symbol, ScanTargetKind Kind, int
         {
             case ':':
             {
-                var name = text[(i + 1)..];
+                ScanStat? stat = text[(i + 1)..].ToLowerInvariant() switch
+                {
+                    "mean" => ScanStat.Mean,
+                    "sigma" => ScanStat.Sigma,
+                    "nominal" => ScanStat.Nominal,
+                    "min" => ScanStat.Min,
+                    "max" => ScanStat.Max,
+                    _ => null,
+                };
 
-                if (!Enum.TryParse<ScanStat>(name, ignoreCase: true, out var stat) || !Enum.IsDefined(stat) || name.Length == 0 || char.IsDigit(name[0]))
+                if (stat is null)
                     return false;
 
-                target = new ScanTarget(symbol, ScanTargetKind.Scalar, Stat: stat);
+                target = new ScanTarget(symbol, ScanTargetKind.Scalar, Stat: stat.Value);
                 return true;
             }
 
@@ -319,6 +349,7 @@ public static class ScanProfileJson
         WriteIndented = true,
         MaxDepth = 8,
         AllowDuplicateProperties = false,
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
     };
@@ -333,6 +364,9 @@ public static class ScanProfileJson
     public static ScanProfile Read(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
+
+        if (json.Length > 0 && json[0] == '\uFEFF')
+            json = json[1..];
 
         if (System.Text.Encoding.UTF8.GetByteCount(json) > MaxBytes)
             throw new ImportRefusedException(ImportRefusalCode.TooLarge, $"A scan profile is at most {MaxBytes / 1000} KB.");

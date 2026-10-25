@@ -21,15 +21,31 @@ public static class CsvReader
     /// <summary>Reads <paramref name="text"/> (already decoded and control-checked) with <paramref name="delimiter"/>.</summary>
     public static CsvTable Read(string text, char delimiter = ',', ImportBudget? budget = null)
     {
+        var rows = new List<IReadOnlyList<string>>();
+        var lines = new List<int>();
+        ReadRows(text, delimiter, budget, (row, line) =>
+        {
+            rows.Add(row);
+            lines.Add(line);
+        });
+        return new CsvTable(rows, lines);
+    }
+
+    /// <summary>
+    /// As <see cref="Read"/>, but each record is handed to <paramref name="onRow"/> (with the 1-based line it starts on) as soon as it is parsed and
+    /// is not kept, so a caller that processes rows as they arrive holds one row at a time. The row, column and field caps hold exactly as in <see cref="Read"/>.
+    /// </summary>
+    public static void ReadRows(string text, char delimiter, ImportBudget? budget, Action<IReadOnlyList<string>, int> onRow)
+    {
         ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(onRow);
         budget ??= new ImportBudget();
         var limits = budget.Limits;
 
         if (delimiter is '"' or '\r' or '\n')
             throw new ArgumentException("A CSV delimiter cannot be a quote or a line break.", nameof(delimiter));
 
-        var rows = new List<IReadOnlyList<string>>();
-        var lines = new List<int>();
+        var count = 0;
         var row = new List<string>();
         var field = new StringBuilder();
         var line = 1;
@@ -104,7 +120,7 @@ public static class CsvReader
                 if (!blank)
                 {
                     EndField(row, field, limits, recordLine);
-                    AddRow(rows, lines, row, limits, recordLine);
+                    Emit(onRow, row, limits, recordLine, ref count);
                 }
 
                 row = [];
@@ -125,10 +141,9 @@ public static class CsvReader
         if (row.Count > 0 || field.Length > 0 || fieldStarted)
         {
             EndField(row, field, limits, recordLine);
-            AddRow(rows, lines, row, limits, recordLine);
+            Emit(onRow, row, limits, recordLine, ref count);
         }
 
-        return new CsvTable(rows, lines);
     }
 
     /// <summary>The delimiter the first record suggests among comma, semicolon and tab, counting outside quotes; comma when none stands out.</summary>
@@ -186,13 +201,13 @@ public static class CsvReader
         field.Clear();
     }
 
-    private static void AddRow(List<IReadOnlyList<string>> rows, List<int> lines, List<string> row, ImportLimits limits, int line)
+    private static void Emit(Action<IReadOnlyList<string>, int> onRow, List<string> row, ImportLimits limits, int line, ref int count)
     {
-        if (rows.Count >= limits.MaxRows)
+        if (count >= limits.MaxRows)
             throw new ImportRefusedException(ImportRefusalCode.TooManyRows, $"The file has more than {limits.MaxRows} rows.");
 
-        rows.Add(row);
-        lines.Add(line);
+        count++;
+        onRow(row, line);
     }
 
     private static ImportRefusedException Malformed(string message) => new(ImportRefusalCode.MalformedStructure, "The CSV is malformed: " + message);

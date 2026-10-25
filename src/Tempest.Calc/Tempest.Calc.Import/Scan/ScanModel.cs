@@ -69,6 +69,9 @@ public enum ScanProblemKind
 
     /// <summary>A row shorter than the columns the profile maps.</summary>
     ShortRow,
+
+    /// <summary>A number was read with the profile's grouping mark removed (<c>1.500</c> as 1500 under a decimal-comma profile that groups with a point).</summary>
+    Grouping,
 }
 
 /// <summary>
@@ -122,6 +125,9 @@ public sealed record ScanSettings
 {
     /// <summary>The scan limits: 5 MB, 1e6 rows, with a longer time budget than W1 because a table is large.</summary>
     public ImportLimits Limits { get; init; } = ImportLimits.Scan with { Timeout = TimeSpan.FromSeconds(30) };
+
+    /// <summary>The most bytes all the files of one import may hold together (each file is also held to 5 MB).</summary>
+    public long MaxTotalBytes { get; init; } = 20L * 1024 * 1024;
 
     /// <summary>The software version (ZEISS Inspect 2024, PolyWorks 2023 IR8 …), as entered; goes into provenance.</summary>
     public string? SoftwareVersion { get; init; }

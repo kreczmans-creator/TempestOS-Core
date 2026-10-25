@@ -202,7 +202,7 @@ public sealed class ScanMapperTests
         Assert.Equal(stat.Sigma, ds.Get("sigma")!.Number!.Value, 12);
         Assert.Equal("Normal", ds.Get("dist")!.Text);
         Assert.NotNull(ScanImportProvenance.TryParse(ds.Get("mean")!.Provenance));
-        Assert.NotNull(table.Provenance);
+        Assert.Null(table.Provenance); // an import never gives a whole table a scan provenance
 
         // A second push for D_s replaces its row and leaves the other alone.
         var again = ScanMapper.Map(Zeiss(E("D_s bore", "measured{D_s}")), Template, first.Inputs, At);

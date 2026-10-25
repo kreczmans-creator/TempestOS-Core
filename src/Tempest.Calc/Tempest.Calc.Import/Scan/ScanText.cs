@@ -11,9 +11,10 @@ namespace Tempest.Calc.Import.Scan;
 /// </summary>
 internal static class ScanText
 {
-    private static readonly string[] LinkMarkers = ["http://", "https://", "ftp://", "ftps://", "file:", "javascript:", "vbscript:", "data:", "mailto:", "tel:", "www.", "=hyperlink(", "=image(", "=importxml(", "=webservice("];
+    private static readonly string[] LinkMarkers = ["http://", "https://", "ftp://", "ftps://", "file:", "javascript:", "vbscript:", "data:", "mailto:", "tel:", "www."];
+    private static readonly string[] FormulaNames = ["hyperlink", "image", "importxml", "importdata", "importhtml", "importrange", "webservice", "cmd", "dde"];
 
-    /// <summary>Plain text for <paramref name="raw"/>, and whether anything was removed.</summary>
+    /// <summary>Plain text for <paramref name="raw"/>, held to <paramref name="maxChars"/>, and whether anything was removed or cut.</summary>
     public static string Clean(string? raw, int maxChars, out bool changed)
     {
         changed = false;
@@ -21,67 +22,115 @@ internal static class ScanText
         if (string.IsNullOrEmpty(raw))
             return string.Empty;
 
-        var withoutTags = StripTags(raw, ref changed);
-        var sb = new StringBuilder(Math.Min(withoutTags.Length, maxChars + 16));
+        // 1. Invisible, formatting and control characters first, so a marker cannot be hidden by one (a zero-width space inside a URL scheme, a soft hyphen inside "javascript:").
+        var sb = new StringBuilder(Math.Min(raw.Length, maxChars + 16));
+
+        foreach (var c in raw)
+        {
+            var category = CharUnicodeInfo.GetUnicodeCategory(c);
+
+            if (c is '\t' or '\r' or '\n')
+                sb.Append(' ');
+            else if (char.IsControl(c) || category is UnicodeCategory.Format or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator or UnicodeCategory.PrivateUse or UnicodeCategory.OtherNotAssigned)
+                changed = true;
+            else
+                sb.Append(c);
+        }
+
+        // 2. Markup tags, repeatedly: removing one tag can expose another ("<<b>script>").
+        var text = sb.ToString();
+
+        for (var pass = 0; pass < 8; pass++)
+        {
+            var stripped = StripTags(text);
+
+            if (string.Equals(stripped, text, StringComparison.Ordinal))
+                break;
+
+            changed = true;
+            text = stripped;
+
+            if (pass == 7)
+                text = text.Replace("<", string.Empty, StringComparison.Ordinal).Replace(">", string.Empty, StringComparison.Ordinal);
+        }
+
+        // 3. Links and spreadsheet link formulas.
+        var result = new StringBuilder(text.Length);
         var i = 0;
 
-        while (i < withoutTags.Length)
+        while (i < text.Length)
         {
-            var marker = LinkAt(withoutTags, i);
+            var marker = LinkAt(text, i);
 
             if (marker > 0)
             {
-                // Skip the whole link word.
                 var end = i + marker;
 
-                while (end < withoutTags.Length && !char.IsWhiteSpace(withoutTags[end]))
+                while (end < text.Length && !char.IsWhiteSpace(text[end]))
                     end++;
 
-                sb.Append("[link removed]");
+                result.Append("[link removed]");
                 changed = true;
                 i = end;
                 continue;
             }
 
-            var c = withoutTags[i];
-            var category = CharUnicodeInfo.GetUnicodeCategory(c);
-
-            if (c is '\t' or '\r' or '\n')
-            {
-                sb.Append(' ');
-            }
-            else if (char.IsControl(c) || category is UnicodeCategory.Format or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator or UnicodeCategory.PrivateUse or UnicodeCategory.OtherNotAssigned)
-            {
-                changed = true;
-            }
-            else
-            {
-                sb.Append(c);
-            }
-
+            result.Append(text[i]);
             i++;
         }
 
-        var text = sb.ToString().Trim();
+        var clean = result.ToString().Trim();
 
         try
         {
-            text = text.Normalize(NormalizationForm.FormC);
+            clean = clean.Normalize(NormalizationForm.FormC);
         }
         catch (ArgumentException)
         {
-            // A lone surrogate: keep only what is well formed.
             changed = true;
-            text = new string(text.Where(static ch => !char.IsSurrogate(ch)).ToArray());
+            clean = new string(clean.Where(static ch => !char.IsSurrogate(ch)).ToArray());
         }
 
-        // A spreadsheet-significant first character is neutralised on export (CsvSafeWriter), not changed here.
-        return text;
+        // 4. The cap holds.
+        if (clean.Length > maxChars)
+        {
+            changed = true;
+            clean = clean[..maxChars];
+
+            if (clean.Length > 0 && char.IsHighSurrogate(clean[^1]))
+                clean = clean[..^1];
+        }
+
+        return clean;
     }
 
     /// <summary>The length of the link marker that starts at <paramref name="i"/> (case-insensitive), or 0.</summary>
     private static int LinkAt(string s, int i)
     {
+        if (s[i] == '=')
+        {
+            var j = i + 1;
+
+            while (j < s.Length && s[j] == ' ')
+                j++;
+
+            foreach (var name in FormulaNames)
+            {
+                if (j + name.Length <= s.Length && string.Compare(s, j, name, 0, name.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    var k = j + name.Length;
+
+                    while (k < s.Length && s[k] == ' ')
+                        k++;
+
+                    if (k < s.Length && s[k] is '(' or '|')
+                        return k - i + 1;
+                }
+            }
+
+            return 0;
+        }
+
         foreach (var marker in LinkMarkers)
         {
             if (i + marker.Length <= s.Length && string.Compare(s, i, marker, 0, marker.Length, StringComparison.OrdinalIgnoreCase) == 0)
@@ -98,7 +147,7 @@ internal static class ScanText
     }
 
     /// <summary>Drops markup tags: a '&lt;' followed by a letter, '/', '!' or '?' up to the next '&gt;' within 200 characters. A bare '&lt;' (as in "&lt; 0.1") stays.</summary>
-    private static string StripTags(string s, ref bool changed)
+    private static string StripTags(string s)
     {
         if (s.IndexOf('<', StringComparison.Ordinal) < 0)
             return s;
@@ -116,7 +165,6 @@ internal static class ScanText
 
                 if (close > 0)
                 {
-                    changed = true;
                     i = close + 1;
                     continue;
                 }

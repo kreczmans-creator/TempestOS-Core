@@ -126,12 +126,22 @@ public static class CalcInputValidator
             if (value is null || IsEmpty(value))
                 continue;
 
-            if (value.Provenance is null || !value.Provenance.IsSufficientToIssue)
+            if ((value.Provenance is null || !value.Provenance.IsSufficientToIssue) && !TableStandsOnScanCells(value))
                 notices.Add(Block(spec.Symbol, $"{spec.Symbol} needs a source (drawing, specification, assumption, evidence or reference) before the sheet can be issued."));
         }
 
         return notices;
     }
+
+    /// <summary>
+    /// A table that came from a scan import has no provenance of its own (an import never gives one to a whole table): it can be issued only if it holds
+    /// scan-import cells and every number in every row has a source that is enough to issue with. A row typed by hand, or a value edited after the import
+    /// (which loses its scan provenance), leaves a cell without one, and the table is then blocked like any input without a source.
+    /// </summary>
+    private static bool TableStandsOnScanCells(CalcInputValue v) =>
+        v.Rows is { Count: > 0 } rows
+        && rows.Any(r => r?.Cells.Values.Any(c => c?.Provenance is { Kind: CalcProvenanceKind.ScanImport }) == true)
+        && rows.All(r => r is not null && r.Cells.Values.Where(c => c?.Number is not null).All(c => c.Provenance is { IsSufficientToIssue: true }));
 
     private static bool IsEmpty(CalcInputValue v) => v.Number is null && v.Text is null && v.Flag is null && v.Vector is null && v.Rows is null;
 

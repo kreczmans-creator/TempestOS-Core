@@ -87,22 +87,32 @@ public static class ScanMapper
         var matched = new HashSet<int>();
         var context = new Context(analysis, template, working, order, scanUnit, unitSymbol, at);
 
+        string NameKey(string name) => profile.IgnoreCase ? ScanProfile.Normalise(name).ToUpperInvariant() : ScanProfile.Normalise(name);
+        var byName = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+
+        for (var i = 0; i < analysis.Stats.Count; i++)
+        {
+            var key = NameKey(analysis.Stats[i].Feature);
+
+            if (!byName.TryGetValue(key, out var list))
+                byName[key] = list = [];
+
+            list.Add(i);
+        }
+
         foreach (var entry in profile.Features)
         {
-            var feature = ScanProfile.Normalise(entry.Feature);
             var candidates = new List<int>();
 
-            for (var i = 0; i < analysis.Stats.Count; i++)
+            if (byName.TryGetValue(NameKey(entry.Feature), out var named))
             {
-                var s = analysis.Stats[i];
+                foreach (var i in named)
+                {
+                    if (entry.Stage is not null && !string.Equals(ScanProfile.Normalise(analysis.Stats[i].Stage), ScanProfile.Normalise(entry.Stage), comparer))
+                        continue;
 
-                if (!string.Equals(ScanProfile.Normalise(s.Feature), feature, comparer))
-                    continue;
-
-                if (entry.Stage is not null && !string.Equals(ScanProfile.Normalise(s.Stage), ScanProfile.Normalise(entry.Stage), comparer))
-                    continue;
-
-                candidates.Add(i);
+                    candidates.Add(i);
+                }
             }
 
             if (candidates.Count == 0)
@@ -170,15 +180,38 @@ public static class ScanMapper
 
     // ------------------------------------------------------------------
 
+    /// <summary>What a template's input may be given. M2's nominal size is a basic size, not a measured mean: its deviations are applied round it, so a measured mean there would count the deviation twice.</summary>
+    private sealed record ScalarPolicy(IReadOnlySet<ScanStat> Allowed, bool Deviation, string Why);
+
+    private static readonly Dictionary<(string Template, string Symbol), ScalarPolicy> Policies = BuildPolicies();
+
+    private static Dictionary<(string, string), ScalarPolicy> BuildPolicies()
+    {
+        var policies = new Dictionary<(string, string), ScalarPolicy>
+        {
+            [("mech.iso286-fit", "D")] = new(new HashSet<ScanStat> { ScanStat.Nominal }, false, "is the basic size the ISO 286 deviations are applied round, not a measured value; a measured mean there would count the deviation twice."),
+        };
+
+        foreach (var symbol in new[] { "ES_override", "EI_override", "es_override", "ei_override" })
+            policies[("mech.iso286-fit", symbol)] = new(new HashSet<ScanStat> { ScanStat.Mean, ScanStat.Min, ScanStat.Max }, true, "takes a deviation from the basic size, so a spread is not one.");
+
+        return policies;
+    }
+
     private sealed record Context(ScanAnalysis Analysis, CalcTemplate Template, Dictionary<string, CalcInputValue> Working, List<string> Order, Unit Scan, string ScanSymbol, DateTimeOffset At)
     {
         public List<ScanPushedValue> Pushed { get; } = [];
+
+        public ScanFeatureStats? Current { get; set; }
     }
 
     private static (string? Problem, string? Shown) Apply(Context c, ScanFeatureStats stat, ScanFeatureEntry entry)
     {
         if (!stat.Computable)
             return ($"cannot be fitted: {(stat.Warnings.Count > 0 ? stat.Warnings[^1] : "too few usable parts")}", null);
+
+        if (!(stat.Sigma > 0))
+            return ("has a standard deviation of zero (every value is the same), so there is no distribution to fit. A zero spread usually means the numbers were read without their decimals or the measurement resolution is too coarse; check the number format and the delimiter, and the table.", null);
 
         if (!ScanTarget.TryParse(entry.Target, out var target))
             return ($"the target '{Clip(entry.Target)}' is not valid.", null);
@@ -209,6 +242,11 @@ public static class ScanMapper
         if (spec.Kind is not (CalcInputKind.Quantity or CalcInputKind.Number))
             return ($"'{target.Symbol}' is a {spec.Kind.ToString().ToLowerInvariant()} and takes a statistic only when it is a number or a quantity; map a row of a table as {target.Symbol}[0] or {target.Symbol}{{key}}.", null);
 
+        var policy = Policies.GetValueOrDefault((c.Template.Id, target.Symbol));
+
+        if (policy is not null && !policy.Allowed.Contains(target.Stat))
+            return ($"'{target.Symbol}' of {c.Template.Id} {policy.Why} Allowed here: {string.Join(", ", policy.Allowed.Select(a => target.Symbol + ":" + a.ToString().ToLowerInvariant()))}.", null);
+
         c.Working.TryGetValue(target.Symbol, out var existing);
         var dimensioned = spec.Kind == CalcInputKind.Quantity && spec.DefaultUnit.Length > 0;
         string? targetText = null;
@@ -236,6 +274,17 @@ public static class ScanMapper
 
         double value;
 
+        if (policy is { Deviation: true })
+        {
+            // A deviation from the basic size: the statistic less the nominal (the statistic itself when the table states only deviations), as a difference, so no offset.
+            if (stat.Nominal is not { } basic)
+                return ("the table states no nominal, so a deviation from the basic size cannot be formed.", null);
+
+            var statistic = target.Stat switch { ScanStat.Min => stat.Min, ScanStat.Max => stat.Max, _ => stat.Mean };
+            value = Scale(c.Scan, targetUnit, statistic - basic);
+        }
+        else
+        {
         switch (target.Stat)
         {
             case ScanStat.Mean:
@@ -257,6 +306,7 @@ public static class ScanMapper
                 value = Convert(c.Scan, targetUnit, nominal);
                 break;
         }
+        }
 
         if (!double.IsFinite(value))
             return ($"does not convert to a finite number for '{target.Symbol}'.", null);
@@ -265,7 +315,7 @@ public static class ScanMapper
             c.Order.Add(target.Symbol);
 
         c.Working[target.Symbol] = new CalcInputValue(target.Symbol, value, dimensioned ? targetText : null, Provenance: provenance);
-        c.Pushed.Add(new ScanPushedValue(target.Symbol, value, dimensioned ? targetText : null, null));
+        c.Pushed.Add(new ScanPushedValue(target.Symbol, value, dimensioned ? targetText : null, null, provenance));
         return (null, $"{Format(value)}{(dimensioned ? " " + targetText : string.Empty)} ({target.Stat.ToString().ToLowerInvariant()} of {shown})");
     }
 
@@ -365,10 +415,24 @@ public static class ScanMapper
             cells["distribution"] = new CalcCell(Text: normal, Provenance: provenance);
         }
 
-        foreach (var key in new[] { "nominal", "upper", "lower", "shift", "distribution" })
+        // The measured σ itself, where the stack takes one: it then does not depend on k. Where it does not, the band is ±kσ for the k in force now, and
+        // the record keeps that k so that the claim lapses if k is changed afterwards.
+        if (Col("sigma") is { } sigmaCol)
+        {
+            if (!ColumnUnit(sigmaCol, row, out var sigmaUnit, out var sigmaText))
+                return ("the sigma column has no unit the engine knows.", null);
+
+            cells["sigma"] = new CalcCell(Scale(c.Scan, sigmaUnit, stat.Sigma), sigmaText, Provenance: provenance);
+        }
+        else
+        {
+            c.Pushed.Add(new ScanPushedValue("@k", k, null, null, provenance));
+        }
+
+        foreach (var key in new[] { "nominal", "upper", "lower", "shift", "distribution", "sigma" })
         {
             if (cells.TryGetValue(key, out var written) && ReferenceEquals(written.Provenance, provenance))
-                c.Pushed.Add(new ScanPushedValue($"{target.Symbol}[{target.Row.Value}].{key}", written.Number, written.Number is null ? null : written.Unit, written.Text));
+                c.Pushed.Add(new ScanPushedValue($"{target.Symbol}[{target.Row.Value}].{key}", written.Number, written.Number is null ? null : written.Unit, written.Text, provenance));
         }
 
         var newRows = table.Rows.ToList();
@@ -435,7 +499,7 @@ public static class ScanMapper
         foreach (var column in new[] { "mean", "sigma", "dist" })
         {
             if (cells.TryGetValue(column, out var written) && ReferenceEquals(written.Provenance, provenance))
-                c.Pushed.Add(new ScanPushedValue($"{target.Symbol}{{{key}}}.{column}", written.Number, written.Number is null ? null : written.Unit, written.Text));
+                c.Pushed.Add(new ScanPushedValue($"{target.Symbol}{{{key}}}.{column}", written.Number, written.Number is null ? null : written.Unit, written.Text, provenance));
         }
 
         if (index >= 0)
@@ -447,7 +511,7 @@ public static class ScanMapper
             c.Order.Add(target.Symbol);
 
         c.Working[target.Symbol] = table is null
-            ? new CalcInputValue(target.Symbol, Rows: rows, Provenance: provenance)
+            ? new CalcInputValue(target.Symbol, Rows: rows)
             : table with { Rows = rows };
 
         return (null, $"{key}: mean {Format(cells["mean"].Number!.Value)} {tuText}, σ {Format(cells["sigma"].Number!.Value)} {sigmaText} ({shown})");

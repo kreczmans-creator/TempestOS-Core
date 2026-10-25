@@ -4,6 +4,7 @@ using System.Text;
 using Tempest.Calc.Engine;
 using Tempest.Calc.Engine.Values;
 using Tempest.Calc.Import.Mapping;
+using Tempest.Calc.Import.Scan;
 using Tempest.Calc.Sheets;
 using Tempest.Calc.Verification;
 using Tempest.Core.EngineeringDomain;
@@ -128,10 +129,6 @@ public sealed partial class CalcInstanceService
 
             var probe = new CalcInstance(id, entry.Reference, entry.ContentHash, projectId, cleanName, "A", [], [], [], [], [], CalcInstanceStatus.Draft, null, null, author, now, now);
 
-            // A new calculation has no scan import record, so it cannot cite one.
-            if (ScanProvenanceProblem(null, probe with { Inputs = list }) is { } scanProblem)
-                throw new CalcLinkRefusedException(scanProblem);
-
             if (await LinkProblemAsync(probe, entry.Template, list, cancellationToken).ConfigureAwait(false) is { } problem)
                 throw new CalcLinkRefusedException(problem);
 
@@ -140,7 +137,7 @@ public sealed partial class CalcInstanceService
                 throw new CalcLinkRefusedException(unresolved);
 
             // A new calculation has no import record, so no CAD-import provenance can stand on it.
-            inputs = CadImportVerifier.Verify(list, null).Inputs;
+            inputs = ScanImportVerifier.Verify(CadImportVerifier.Verify(list, null).Inputs, null).Inputs;
         }
 
         var evidence = await _evidence.CreateAsync(projectId, EvidenceTitle(cleanName, entry.Template.Title, "A"), EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
@@ -210,15 +207,18 @@ public sealed partial class CalcInstanceService
         var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow(), EditedBy = repin ? instance.EditedBy : WithAuthors(instance.EditedBy, CurrentPrincipal()), RepinnedBy = repin ? WithAuthors(instance.RepinnedBy, CurrentPrincipal()) : instance.RepinnedBy };
         updated = amend is null ? updated : amend(updated);
 
-        if (ScanProvenanceProblem(instance, updated) is { } scanProblem)
-            return CalcActionResult.Refused(scanProblem, instance);
-
         // A CAD-import provenance is a claim about a file; it stands only while the calculation's own import record backs it and the value is
         // still the imported one. Anything else (an edited value, a forged or pasted provenance) is recorded as a manual entry, and the person is told.
         var verification = CadImportVerifier.Verify(updated.Inputs, updated.CadImports);
 
         if (verification.Downgraded.Count > 0)
             updated = updated with { Inputs = verification.Inputs };
+
+        // The same for a scan-import provenance: it stands only while an import record backs this very value, and a claim on a whole table never stands.
+        var scanVerification = ScanImportVerifier.Verify(updated.Inputs, updated.ScanImports);
+
+        if (scanVerification.Downgraded.Count > 0)
+            updated = updated with { Inputs = scanVerification.Inputs };
 
         updated = await RunAndSnapshotAsync(entry, updated, cancellationToken).ConfigureAwait(false);
 
@@ -234,8 +234,8 @@ public sealed partial class CalcInstanceService
         if (!string.Equals(updated.OutputsHash, instance.OutputsHash, StringComparison.Ordinal))
             await PublishStalenessAsync(updated, $"'{updated.Name}' rev {updated.Revision} has new outputs.", cancellationToken).ConfigureAwait(false);
 
-        return verification.Downgraded.Count > 0
-            ? new CalcActionResult(true, CadImportVerifier.Describe(verification.Downgraded), updated)
+        return verification.Downgraded.Count + scanVerification.Downgraded.Count > 0
+            ? new CalcActionResult(true, string.Join(" ", new[] { CadImportVerifier.Describe(verification.Downgraded), ScanImportVerifier.Describe(scanVerification.Downgraded) }.Where(d => d.Length > 0)), updated)
             : CalcActionResult.Ok(updated);
     }
 

@@ -5,7 +5,10 @@ using Tempest.Calc.Sheets;
 namespace Tempest.Calc.Library;
 
 /// <summary>One scan import to preview or apply: the untrusted files as read (each with the stage and serial the person entered), the scan profile and the person's settings.</summary>
-public sealed record ScanImportRequest(IReadOnlyList<ScanFileInput> Files, ScanProfile Profile, ScanSettings? Settings = null);
+/// <param name="ExpectedUpdatedAt">
+/// The draft's update time when the preview was taken. Apply is refused when the draft changed since, so what is applied is what was previewed.
+/// </param>
+public sealed record ScanImportRequest(IReadOnlyList<ScanFileInput> Files, ScanProfile Profile, ScanSettings? Settings = null, DateTimeOffset? ExpectedUpdatedAt = null);
 
 /// <summary>
 /// What a scan import would do to a draft, without doing it: the analysis (or why the files were refused) with every feature's statistics, every feature
@@ -17,7 +20,8 @@ public sealed record ScanImportPreview(
     ScanImportDiff? Diff,
     IReadOnlyList<string> BlocksAfter,
     IReadOnlyList<string> WarningsAfter,
-    string? Refusal)
+    string? Refusal,
+    DateTimeOffset? InstanceUpdatedAt = null)
 {
     /// <summary>Whether Apply would proceed.</summary>
     public bool CanApply => Refusal is null && Mapping is { CanApply: true };
@@ -71,6 +75,9 @@ public sealed partial class CalcInstanceService
         if (instance.Status != CalcInstanceStatus.Draft)
             return new ScanImportOutcome(CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only a draft takes new inputs. Revise it first, then import.", instance), null, null);
 
+        if (request.ExpectedUpdatedAt is { } expected && expected != instance.UpdatedAt)
+            return new ScanImportOutcome(CalcActionResult.Refused($"Calculation '{instance.Name}' was changed after this import was previewed; preview it again before applying.", instance), null, null);
+
         var now = _time.GetUtcNow();
         var preview = BuildScanImportPreview(instance, request, now, cancellationToken);
 
@@ -86,7 +93,7 @@ public sealed partial class CalcInstanceService
 
         var result = await UpdateInputsCoreAsync(
             instanceId, mapping.Inputs, instance.UpdatedAt, repin: false, cancellationToken,
-            amend: updated => updated with { ScanImports = ReplaceScanRecord(updated.ScanImports, record) }).ConfigureAwait(false);
+            amend: updated => updated with { ScanImports = ScanImportVerifier.Merge(updated.ScanImports, record, updated.Inputs) }).ConfigureAwait(false);
 
         return new ScanImportOutcome(result, preview, preview.Diff);
     }
@@ -145,7 +152,7 @@ public sealed partial class CalcInstanceService
 
         var mapping = ScanMapper.Map(analysis, entry.Template, instance.Inputs, at);
         var key = ScanImportRecord.KeyFor(request.Profile.Id);
-        var previous = instance.ScanImports?.FirstOrDefault(r => string.Equals(r.Key, key, StringComparison.Ordinal));
+        var previous = instance.ScanImports?.LastOrDefault(r => string.Equals(r.Key, key, StringComparison.Ordinal));
         var diff = ScanImportDiff.Compute(previous, mapping.Snapshot);
 
         IReadOnlyList<string> blocks = [];
@@ -158,99 +165,7 @@ public sealed partial class CalcInstanceService
             warnings = run.Warnings.Select(w => w.Message).ToList();
         }
 
-        return new ScanImportPreview(analysis, mapping, diff, blocks, warnings, null);
+        return new ScanImportPreview(analysis, mapping, diff, blocks, warnings, null, instance.UpdatedAt);
     }
 
-    private static IReadOnlyList<ScanImportRecord> ReplaceScanRecord(IReadOnlyList<ScanImportRecord>? existing, ScanImportRecord record)
-    {
-        const int MaxRecords = 20;
-        var list = (existing ?? []).Where(r => !string.Equals(r.Key, record.Key, StringComparison.Ordinal)).ToList();
-        list.Add(record);
-        return list.Count > MaxRecords ? list.Skip(list.Count - MaxRecords).ToList() : list;
-    }
-
-    // ------------------------------------------------------------------
-    // Scan provenance is a claim; it is checked (Security review of W1, M2)
-    // ------------------------------------------------------------------
-
-    private sealed record ScanClaim(double? Number, string? Unit, string? Text, CalcProvenance Provenance);
-
-    /// <summary>
-    /// A value that claims <see cref="CalcProvenanceKind.ScanImport"/> provenance is accepted only if it is unchanged from the instance it
-    /// came from, or it matches what one of the instance's scan import records says that import wrote (same profile and version, same file hash,
-    /// same place, same number and unit). A value edited after import, a provenance chosen by hand, or one typed into an imported file or CSV
-    /// is refused with the reason; to override a fitted value, give it another source (manual, assumption ...).
-    /// </summary>
-    private static string? ScanProvenanceProblem(CalcInstance? before, CalcInstance after)
-    {
-        var claims = ScanClaims(after.Inputs);
-
-        if (claims.Count == 0)
-            return null;
-
-        var earlier = before is null ? new Dictionary<string, ScanClaim>() : ScanClaims(before.Inputs);
-
-        foreach (var (path, claim) in claims)
-        {
-            if (earlier.TryGetValue(path, out var old) && SameClaim(old, claim))
-                continue;
-
-            var info = ScanImportProvenance.TryParse(claim.Provenance);
-
-            if (info is null)
-                return $"'{path}' claims a scan import as its source, but the claim is not well formed. Choose another source, or import the scan again.";
-
-            var matched = (after.ScanImports ?? []).Any(r =>
-                string.Equals(r.ProfileId, info.ProfileId, StringComparison.Ordinal) && r.ProfileVersion == info.ProfileVersion
-                && r.Features.Any(f => string.Equals(f.SetSha256, info.Sha256, StringComparison.Ordinal)
-                    && (path.EndsWith("#table", StringComparison.Ordinal) || (f.Pushed ?? []).Any(v => string.Equals(v.Path, path, StringComparison.Ordinal) && SameValue(v, claim)))));
-
-            if (!matched)
-                return $"'{path}' claims to be fitted from a scan (file {info.Sha256[..12]}..., profile {info.ProfileId}@{info.ProfileVersion}), but its value is not what that import wrote. Import the scan again, or give the value another source such as manual or assumption.";
-        }
-
-        return null;
-    }
-
-    private static Dictionary<string, ScanClaim> ScanClaims(IEnumerable<CalcInputValue> inputs)
-    {
-        var claims = new Dictionary<string, ScanClaim>(StringComparer.Ordinal);
-
-        foreach (var input in inputs)
-        {
-            if (input.Provenance is { Kind: CalcProvenanceKind.ScanImport } p)
-                claims[input.Rows is null ? input.Symbol : input.Symbol + "#table"] = new ScanClaim(input.Number, input.Unit, input.Text, p);
-
-            if (input.Rows is null)
-                continue;
-
-            for (var i = 0; i < input.Rows.Count; i++)
-            {
-                var row = input.Rows[i];
-                var key = row?.Get("dim")?.Text is { Length: > 0 } dim ? $"{input.Symbol}{{{dim}}}" : $"{input.Symbol}[{i}]";
-
-                foreach (var (column, cell) in row?.Cells ?? new Dictionary<string, CalcCell>())
-                {
-                    if (cell?.Provenance is { Kind: CalcProvenanceKind.ScanImport } cp)
-                        claims[$"{key}.{column}"] = new ScanClaim(cell.Number, cell.Unit, cell.Text, cp);
-                }
-            }
-        }
-
-        return claims;
-    }
-
-    private static bool SameClaim(ScanClaim a, ScanClaim b) =>
-        a.Provenance == b.Provenance && string.Equals(a.Unit, b.Unit, StringComparison.Ordinal) && string.Equals(a.Text, b.Text, StringComparison.Ordinal) && SameNumber(a.Number, b.Number);
-
-    private static bool SameValue(ScanPushedValue pushed, ScanClaim claim) =>
-        string.Equals(pushed.Unit, claim.Unit, StringComparison.Ordinal) && string.Equals(pushed.Text, claim.Text, StringComparison.Ordinal) && SameNumber(pushed.Number, claim.Number);
-
-    private static bool SameNumber(double? x, double? y)
-    {
-        if (x is null || y is null)
-            return x is null && y is null;
-
-        return x == y || Math.Abs(x.Value - y.Value) <= 1e-12 * Math.Max(Math.Abs(x.Value), Math.Abs(y.Value));
-    }
 }

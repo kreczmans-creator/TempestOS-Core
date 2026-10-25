@@ -28,7 +28,7 @@ public static class ScanStatistics
     public const int MinPartsForNormality = 8;
 
     /// <summary>Statistics of one feature at one stage.</summary>
-    public static ScanFeatureStats Compute(string feature, string stage, IReadOnlyList<ScanObservation> observations, IReadOnlyList<ScanFileInfo> files, ScanSettings settings)
+    public static ScanFeatureStats Compute(string feature, string stage, IReadOnlyList<ScanObservation> observations, IReadOnlyList<ScanFileInfo> files, ScanSettings settings, ImportBudget? budget = null)
     {
         ArgumentNullException.ThrowIfNull(observations);
         ArgumentNullException.ThrowIfNull(files);
@@ -43,12 +43,22 @@ public static class ScanStatistics
         var deviationOnly = total > 0 && observations.All(o => o.DeviationOnly);
 
         // Outliers are found on every value and reported; whether they stay in the statistics is the person's choice.
-        var outliers = FindOutliers(observations);
+        var outliers = FindOutliers(observations, budget);
         var excluded = settings.ExcludeOutliers && outliers.Count > 0;
         var flagged = outliers.Select(o => (o.File, o.Line)).ToHashSet();
-        var used = excluded
-            ? observations.Where(o => !flagged.Contains((o.File, o.Line))).ToList()
-            : observations.ToList();
+
+        // Subgroups are cut by position in the table before anything is left out, so leaving an outlier out does not move every later part into another subgroup.
+        var usedIndex = new List<int>(total);
+
+        for (var i = 0; i < total; i++)
+        {
+            budget?.Tick();
+
+            if (!excluded || !flagged.Contains((observations[i].File, observations[i].Line)))
+                usedIndex.Add(i);
+        }
+
+        var used = usedIndex.Select(i => observations[i]).ToList();
 
         if (outliers.Count > 0)
         {
@@ -64,9 +74,9 @@ public static class ScanStatistics
             warnings.Add($"{duplicates} serial(s) appear more than once; each row is counted as a measurement, so the parts are fewer than the rows.");
 
         var serialSummary = SerialSummary(used, n);
-        var nominal = Common(used.Select(o => o.Nominal), "nominal", warnings);
-        var lsl = Common(used.Select(o => o.Lsl), "lower limit", warnings);
-        var usl = Common(used.Select(o => o.Usl), "upper limit", warnings);
+        var nominal = Common(used.Select(o => o.Nominal), "nominal", warnings, budget);
+        var lsl = Common(used.Select(o => o.Lsl), "lower limit", warnings, budget);
+        var usl = Common(used.Select(o => o.Usl), "upper limit", warnings, budget);
 
         if (mixed)
         {
@@ -89,14 +99,14 @@ public static class ScanStatistics
 
         if (settings.SubgroupSize >= 2)
         {
-            var pooled = PooledSigma(values, settings.SubgroupSize, out var dropped);
+            var pooled = PooledSigma(values, usedIndex.Select(i => i / settings.SubgroupSize).ToArray(), out var dropped);
 
             if (pooled is { } p)
             {
                 within = p;
 
                 if (dropped > 0)
-                    warnings.Add($"{dropped} observation(s) in an incomplete final subgroup of one were not used for the within-subgroup σ.");
+                    warnings.Add($"{dropped} observation(s) alone in their subgroup (an incomplete final subgroup, or the only one left after outliers were left out) were not used for the within-subgroup σ.");
             }
             else
             {
@@ -116,22 +126,25 @@ public static class ScanStatistics
         {
             warnings.Add("The upper limit is not above the lower limit; no capability index is formed.");
         }
-        else if (s == 0 || within == 0)
-        {
-            warnings.Add("The standard deviation is zero (every value is the same), so the capability indices are undefined and are not reported.");
-        }
         else
         {
-            (cp, cpk) = Capability(mean, within, lsl, usl);
-            (pp, ppk) = Capability(mean, s, lsl, usl);
+            if (s > 0)
+                (pp, ppk) = Capability(mean, s, lsl, usl);
+            else
+                warnings.Add("The standard deviation is zero (every value is the same), so the capability indices are undefined and are not reported.");
+
+            if (within > 0)
+                (cp, cpk) = Capability(mean, within, lsl, usl);
+            else if (s > 0)
+                warnings.Add("The within-subgroup standard deviation is zero (the values inside every subgroup are the same), so Cp and Cpk are undefined and are not reported; Pp and Ppk use the overall standard deviation.");
 
             if (lsl is null && usl is null)
                 warnings.Add("No tolerance is mapped, so no capability index is formed.");
-            else if (lsl is null || usl is null)
+            else if ((lsl is null || usl is null) && s > 0)
                 warnings.Add("Only one limit is given; Cpk and Ppk are formed for that side and Cp and Pp are not defined.");
         }
 
-        var normality = AndersonDarling(values, settings.Alpha);
+        var normality = AndersonDarling(values, settings.Alpha, budget);
 
         if (n < settings.MinParts)
             warnings.Add($"Only {n} part(s): capability indices from fewer than {settings.MinParts} parts are uncertain, and a fitted distribution is only as good as its sample.");
@@ -213,6 +226,56 @@ public static class ScanStatistics
         return Math.Sqrt(Math.Max(0, variance));
     }
 
+    /// <summary>
+    /// The pooled standard deviation of subgroups given by <paramref name="groupIds"/> (one id per value, non-decreasing: the subgroup each value belonged to
+    /// when the table was cut, whether or not every value of it is still in use). A subgroup left with one value has no degree of freedom and is dropped.
+    /// </summary>
+    public static double? PooledSigma(IReadOnlyList<double> values, IReadOnlyList<int> groupIds, out int dropped)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        ArgumentNullException.ThrowIfNull(groupIds);
+        dropped = 0;
+        double sumSquares = 0;
+        var dof = 0;
+        var start = 0;
+
+        while (start < values.Count)
+        {
+            var end = start + 1;
+
+            while (end < values.Count && groupIds[end] == groupIds[start])
+                end++;
+
+            var count = end - start;
+
+            if (count < 2)
+            {
+                dropped += count;
+            }
+            else
+            {
+                double mean = 0;
+
+                for (var i = start; i < end; i++)
+                    mean += values[i];
+
+                mean /= count;
+
+                for (var i = start; i < end; i++)
+                {
+                    var d = values[i] - mean;
+                    sumSquares += d * d;
+                }
+
+                dof += count - 1;
+            }
+
+            start = end;
+        }
+
+        return dof == 0 ? null : Math.Sqrt(sumSquares / dof);
+    }
+
     /// <summary>The pooled standard deviation of consecutive subgroups of <paramref name="size"/>; the last subgroup is used if it holds at least two. <see langword="null"/> when no subgroup has a degree of freedom.</summary>
     public static double? PooledSigma(IReadOnlyList<double> values, int size, out int dropped)
     {
@@ -255,7 +318,7 @@ public static class ScanStatistics
     }
 
     /// <summary>The Anderson–Darling normality test with estimated mean and variance.</summary>
-    public static ScanNormality AndersonDarling(IReadOnlyList<double> values, double alpha = 0.05)
+    public static ScanNormality AndersonDarling(IReadOnlyList<double> values, double alpha = 0.05, ImportBudget? budget = null)
     {
         ArgumentNullException.ThrowIfNull(values);
         var n = values.Count;
@@ -279,7 +342,10 @@ public static class ScanStatistics
         double sum = 0;
 
         for (var i = 0; i < n; i++)
+        {
+            budget?.Tick();
             sum += (2 * (i + 1) - 1) * (NormalMath.LogCdf(z[i]) + NormalMath.LogCdf(-z[n - 1 - i]));
+        }
 
         var a2 = -n - sum / n;
         var aStar = a2 * (1 + 0.75 / n + 2.25 / ((double)n * n));
@@ -326,7 +392,7 @@ public static class ScanStatistics
 
     // ------------------------------------------------------------------
 
-    private static List<ScanOutlier> FindOutliers(IReadOnlyList<ScanObservation> observations)
+    private static List<ScanOutlier> FindOutliers(IReadOnlyList<ScanObservation> observations, ImportBudget? budget)
     {
         var result = new List<ScanOutlier>();
 
@@ -348,6 +414,8 @@ public static class ScanStatistics
 
         foreach (var o in observations)
         {
+            budget?.Tick();
+
             if (o.Value < lo)
                 result.Add(new ScanOutlier(o.File, o.Line, o.Serial, o.Value, $"below Q1 − 1.5·IQR = {Format(lo)}", o.Value < farLo));
             else if (o.Value > hi)
@@ -361,32 +429,52 @@ public static class ScanStatistics
         new(feature, stage, n, total, parts, Computable: false, nominal, lsl, usl, mean, 0, 0, mean, mean, null, null, null, null,
             new ScanNormality(NormalityVerdict.NotAssessed, null, null, null, "not computed."), outliers, excluded, deviationOnly, files, setHash, serialSummary, warnings);
 
-    /// <summary>The value most rows agree on; a warning when rows disagree beyond rounding.</summary>
-    private static double? Common(IEnumerable<double?> values, string what, List<string> warnings)
+    /// <summary>
+    /// The value most rows agree on (values are told apart at nine decimals, by a dictionary, so the cost is linear in the rows); a warning when rows
+    /// disagree beyond rounding. The first value to reach the highest count wins a tie.
+    /// </summary>
+    private static double? Common(IEnumerable<double?> values, string what, List<string> warnings, ImportBudget? budget)
     {
-        var present = values.Where(v => v.HasValue).Select(v => v!.Value).ToList();
+        var counts = new Dictionary<double, int>();
+        var order = new List<double>();
+        var present = 0;
 
-        if (present.Count == 0)
-            return null;
-
-        var groups = new List<(double Value, int Count)>();
-
-        foreach (var v in present)
+        foreach (var v in values)
         {
-            var index = groups.FindIndex(g => Math.Abs(g.Value - v) <= 1e-9 * Math.Max(1, Math.Abs(v)));
+            budget?.Tick();
 
-            if (index >= 0)
-                groups[index] = (groups[index].Value, groups[index].Count + 1);
+            if (v is not { } x)
+                continue;
+
+            present++;
+            var key = Math.Round(x, 9);
+
+            if (counts.TryGetValue(key, out var seen))
+            {
+                counts[key] = seen + 1;
+            }
             else
-                groups.Add((v, 1));
+            {
+                counts[key] = 1;
+                order.Add(key);
+            }
         }
 
-        var best = groups.OrderByDescending(g => g.Count).First();
+        if (present == 0)
+            return null;
 
-        if (groups.Count > 1)
-            warnings.Add(string.Create(CultureInfo.InvariantCulture, $"The {what} differs between rows ({groups.Count} different values); the most common ({Format(best.Value)}, in {best.Count} of {present.Count} rows) is used."));
+        var best = order[0];
 
-        return best.Value;
+        foreach (var key in order)
+        {
+            if (counts[key] > counts[best])
+                best = key;
+        }
+
+        if (order.Count > 1)
+            warnings.Add(string.Create(CultureInfo.InvariantCulture, $"The {what} differs between rows ({order.Count} different values); the most common ({Format(best)}, in {counts[best]} of {present} rows) is used."));
+
+        return best;
     }
 
     private static string SerialSummary(IReadOnlyList<ScanObservation> used, int n)

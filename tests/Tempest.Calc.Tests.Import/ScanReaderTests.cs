@@ -374,10 +374,11 @@ public sealed class ScanReaderTests
         var point = new ScanProfile("p", 1, "P", new ScanColumns("Feature", Actual: "Actual"), [], Delimiter: ScanDelimiter.Comma);
         Assert.Throws<ImportRefusedException>(() => ScanImporter.Analyse(Samples.Text("Feature,Actual\nA,1,250\n"), point));
 
-        // Quoting keeps a field whole; trailing empty fields are harmless.
-        var ok = ScanImporter.Analyse(Samples.Text("Feature,Actual\nA,\"12,5\",,\nA,\"13,0\"\n"), profile);
+        // Quoting keeps a field whole; extra fields are refused even when blank (a header that ends in a delimiter hid the split before).
+        var ok = ScanImporter.Analyse(Samples.Text("Feature,Actual\nA,\"12,5\"\nA,\"13,0\"\n"), profile);
         Assert.Equal(2, ok.Data.Observations.Count);
         Assert.Equal(12.5, ok.Data.Observations[0].Value);
+        Assert.Throws<ImportRefusedException>(() => ScanImporter.Analyse(Samples.Text("Feature,Actual\nA,\"12,5\",\nA,\"13,0\"\n"), profile));
     }
 
     [Fact]
@@ -581,12 +582,12 @@ public sealed class ScanReaderTests
     [Fact]
     public void The_Report_Csvs_Defuse_Anything_A_Spreadsheet_Would_Run()
     {
-        var a = Read("\"=cmd|' /C calc'!A0\",10,10.01,,0.05,-0.05,S1\n\"=cmd|' /C calc'!A0\",10,10.03,,0.05,-0.05,S2\n");
+        var a = Read("\"=SUM(A1:A9)\",10,10.01,,0.05,-0.05,S1\n\"=SUM(A1:A9)\",10,10.03,,0.05,-0.05,S2\n");
         var stats = ScanImportReport.StatisticsCsv(a.Stats, "mm");
         var problems = ScanImportReport.ProblemsCsv(a.Data);
 
-        Assert.Contains("'=cmd|", stats, StringComparison.Ordinal);
-        Assert.DoesNotContain("\n=cmd", stats, StringComparison.Ordinal);
+        Assert.Contains("'=SUM(", stats, StringComparison.Ordinal);
+        Assert.DoesNotContain("\n=SUM", stats, StringComparison.Ordinal);
         Assert.StartsWith("kind,column,count,examples", problems, StringComparison.Ordinal);
     }
 
