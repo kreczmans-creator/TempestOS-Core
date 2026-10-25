@@ -19,7 +19,7 @@
       "id": "Svg.Custom",
       "licence": "MS-PL",
       "ships": true,
-      "reason": "Transitive of Svg.Skia, referenced by Tempest.Desktop, so it SHIPS (it is not build-only). MS-PL is outside the allowed set (white-team finding W-B-01). Recorded here, visibly, so the check can run; this is NOT an approved waiver. Product Owner decision needed: replace the SVG renderer, obtain approval to ship MS-PL, or remove this entry."
+      "reason": "Transitive of Svg.Skia, referenced by Tempest.Desktop, so it SHIPS (it is not build-only). MS-PL is outside the allowed set (white-team finding W-B-01). Pre-existing since v0.23.0 (WP 21.4A), not added by v0.26.0. Recorded here, visibly, so the check can run; this is NOT an approved waiver (DB-08). Owner decision needed: approve shipping MS-PL with its notice, or replace the SVG renderer."
     }
   ],
   "notes": {
