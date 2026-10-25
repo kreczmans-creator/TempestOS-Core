@@ -753,6 +753,10 @@ public sealed partial class CalcInstanceService
     /// </summary>
     private string? PortProblem(CalcInstance upstream, string outputSymbol)
     {
+        // ADR-0173: nothing takes a value from a calculation of a switched-off calculator, declared port or not.
+        if (FeatureRefusal(upstream.TemplateReference) is { } switchedOff)
+            return $"'{upstream.Name}' cannot be linked to: {switchedOff}";
+
         if (_catalogue.Find(upstream.TemplateReference)?.Template is not { OutputPorts: { Count: > 0 } ports } template
             || ports.Any(p => string.Equals(p.Symbol, outputSymbol, StringComparison.Ordinal)))
             return null;

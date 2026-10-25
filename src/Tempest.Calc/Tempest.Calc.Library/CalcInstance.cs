@@ -30,7 +30,8 @@ public sealed record CalcIssueSnapshot(
     int KnownAnswerTotal,
     DateTimeOffset TestRunAt,
     string? SheetAttachmentId,
-    string? ApplicationVersion);
+    string? ApplicationVersion,
+    string? FeatureNote = null);
 
 /// <summary>
 /// The second, independent signature a template that <see cref="Tempest.Calc.Sheets.CalcTemplate.RequiresSecondCheck"/> demands (ADR-0173):
@@ -38,6 +39,13 @@ public sealed record CalcIssueSnapshot(
 /// the Evidence's own single check record and frozen into the issued snapshot.
 /// </summary>
 public sealed record CalcCountersignature(string Name, string Organisation, string Statement, string Principal, DateTimeOffset At, bool Accepted = true);
+
+/// <summary>
+/// The competent person's attestation of a calculation whose template requires one (ADR-0173): made by the signed-in principal, who is none
+/// of its authors or checkers, with the name, qualification and statement they gave (printed in the sheet's inputs), and a hash of the inputs it
+/// was made on, so any later change to the inputs voids it.
+/// </summary>
+public sealed record CalcAttestationRecord(string Principal, string Name, string Qualification, string Statement, DateTimeOffset At, string InputsHash);
 
 /// <summary>
 /// §3.5: one calculation instance — a template reference, a project, the
@@ -76,7 +84,8 @@ public sealed record CalcInstance(
     IReadOnlyList<string>? EditedBy = null,
     IReadOnlyList<string>? RepinnedBy = null,
     string? CheckerPrincipal = null,
-    CalcCountersignature? SecondCheck = null)
+    CalcCountersignature? SecondCheck = null,
+    CalcAttestationRecord? Attestation = null)
 {
     /// <summary>
     /// Everyone who set up or changed this revision's inputs: its creator and every principal in <see cref="EditedBy"/> (kept

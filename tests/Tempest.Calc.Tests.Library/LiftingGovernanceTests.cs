@@ -1,7 +1,6 @@
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
 using Tempest.Calc.Structural;
-using Tempest.Core.Configuration;
 using Tempest.Core.Evidence;
 
 namespace Tempest.Calc.Tests.Library;
@@ -22,22 +21,20 @@ public sealed class LiftingGovernanceTests
     private static LibraryTestHost Host(bool on, IReadOnlyList<CalcPackTemplate>? packTemplates = null) =>
         new(calculators: [new LiftingLugCalculator()], features: on ? LiftingOn : null, packTemplates: packTemplates);
 
-    /// <summary>The first known-answer case of S8 with a source on every input (Issue demands one), and an attestation.</summary>
-    private static IReadOnlyList<CalcInputValue> Inputs(string? attestor = "Dr Pat Competent", string? statement = "Reviewed the lug geometry, the material certificate and this calculation.")
+    /// <summary>The first known-answer case of S8 with a source on every input (Issue demands one).</summary>
+    private static IReadOnlyList<CalcInputValue> Inputs()
     {
         var basis = CalcProvenance.Assumed("Worked inputs of the S8 test case.");
-        var list = new LiftingLugCalculator().Template.TestCases[0].Inputs.Select(v => v with { Provenance = basis }).ToList();
+        return [.. new LiftingLugCalculator().Template.TestCases[0].Inputs.Select(v => v with { Provenance = basis })];
+    }
 
-        if (attestor is not null)
-        {
-            list.Add(CalcInputValue.Choice(CalcAttestation.NameSymbol, attestor, basis));
-            list.Add(CalcInputValue.Choice(CalcAttestation.QualificationSymbol, "CEng MIMechE, LEEA Advanced Inspector", basis));
-        }
-
-        if (statement is not null)
-            list.Add(CalcInputValue.Choice(CalcAttestation.StatementSymbol, statement, basis));
-
-        return list;
+    private static async Task<CalcActionResult> AttestAsync(LibraryTestHost host, Guid id, string principal = "competent.person", string name = "Pat Competent")
+    {
+        var before = host.Principal;
+        host.Principal = principal;
+        var result = await host.Service.AttestAsync(id, name, "CEng MIMechE, LEEA Advanced Inspector", "Reviewed the lug geometry, the material certificate and this calculation.");
+        host.Principal = before;
+        return result;
     }
 
     // ------------------------------------------------------------------
@@ -159,6 +156,7 @@ public sealed class LiftingGovernanceTests
         var on = Host(on: true);
         on.Principal = Designer;
         var instance = await on.Service.CreateAsync("struct.lifting", await on.ProjectAsync(), "Lug", Inputs());
+        Assert.True((await AttestAsync(on, instance.Id)).Succeeded);
         on.Principal = FirstChecker;
         Assert.True((await on.Service.CheckAsync(instance.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Succeeded);
         on.Principal = SecondChecker;
@@ -183,14 +181,23 @@ public sealed class LiftingGovernanceTests
     }
 
     [Fact]
-    public void The_Installation_Configuration_Is_The_Only_Switch()
+    public void The_Install_Folder_File_Is_The_Only_Switch()
     {
-        IConfigurationProvider Config(string? value) => new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(value is null ? [] : [new KeyValuePair<string, string>("Calc:Features:Lifting", value)])).Build();
+        var dir = Path.Combine(Path.GetTempPath(), "tempest-s8-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
 
-        Assert.DoesNotContain(new CalcCatalogue(ShippedCalculators.All, CalcFeatureFlags.FromConfiguration(Config(null))).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-        Assert.DoesNotContain(new CalcCatalogue(ShippedCalculators.All, CalcFeatureFlags.FromConfiguration(Config("false"))).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-        Assert.DoesNotContain(new CalcCatalogue(ShippedCalculators.All, CalcFeatureFlags.FromConfiguration(Config("1"))).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-        Assert.Contains(new CalcCatalogue(ShippedCalculators.All, CalcFeatureFlags.FromConfiguration(Config("true"))).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "appsettings.json"), "{ \"Calc\": { \"Features\": { \"Lifting\": true } } }");
+            Assert.Contains(new CalcCatalogue(ShippedCalculators.All, CalcFeatureFlags.FromInstallFile(dir, out _)).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
+            Assert.DoesNotContain(new CalcCatalogue(ShippedCalculators.All, CalcFeatureFlags.FromInstallFile(Path.Combine(dir, "other"), out _)).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
+            File.WriteAllText(Path.Combine(dir, "appsettings.json"), "{ \"Calc\": { \"Features\": { \"Lifting\": \"1\" } } }");
+            Assert.DoesNotContain(new CalcCatalogue(ShippedCalculators.All, CalcFeatureFlags.FromInstallFile(dir, out _)).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
 
         // A catalogue has no way to be turned on later.
         var catalogue = new CalcCatalogue(ShippedCalculators.All);
@@ -204,27 +211,29 @@ public sealed class LiftingGovernanceTests
     // ------------------------------------------------------------------
 
     [Fact]
-    public async Task Check_Is_Refused_Without_The_Attestation_And_When_The_Author_Attests()
+    public async Task Check_Is_Refused_Without_The_Attestation_And_The_Author_Cannot_Attest()
     {
         var host = Host(on: true);
         host.Principal = Designer;
         var project = await host.ProjectAsync();
-        var missing = await host.Service.CreateAsync("struct.lifting", project, "No attestation", Inputs(attestor: null, statement: null));
-        var byAuthor = await host.Service.CreateAsync("struct.lifting", project, "Author attests", Inputs(attestor: "Designer"));
-        var weak = await host.Service.CreateAsync("struct.lifting", project, "Weak statement", Inputs(statement: "fine"));
+        var missing = await host.Service.CreateAsync("struct.lifting", project, "No attestation", Inputs());
         host.Principal = FirstChecker;
 
         var noAttestation = await host.Service.CheckAsync(missing.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted);
         Assert.False(noAttestation.Succeeded);
         Assert.Contains("competent-person attestation", noAttestation.Reason, StringComparison.Ordinal);
 
-        var author = await host.Service.CheckAsync(byAuthor.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted);
+        var author = await AttestAsync(host, missing.Id, Designer, "Someone Competent");
         Assert.False(author.Succeeded);
-        Assert.Contains("created or edited", author.Reason, StringComparison.Ordinal);
+        Assert.Contains("independent competent-person attestation", author.Reason, StringComparison.Ordinal);
 
-        var statement = await host.Service.CheckAsync(weak.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted);
-        Assert.False(statement.Succeeded);
-        Assert.Contains("attest_statement", statement.Reason, StringComparison.Ordinal);
+        var byName = await AttestAsync(host, missing.Id, "competent.person", "Designer");
+        Assert.False(byName.Succeeded);
+
+        // The checker can reject it without an attestation, and a competent person can attest it.
+        var rejected = await host.Service.CheckAsync(missing.Id, "Chris Checker", "Check Co", "No.", CheckOutcome.Rejected);
+        Assert.Contains("rejected the calculation", rejected.Reason, StringComparison.Ordinal);
+        Assert.True((await AttestAsync(host, missing.Id)).Succeeded);
     }
 
     [Fact]
@@ -233,26 +242,23 @@ public sealed class LiftingGovernanceTests
         var host = Host(on: true);
         host.Principal = Designer;
         var instance = await host.Service.CreateAsync("struct.lifting", await host.ProjectAsync(), "Lug", Inputs());
+        Assert.True((await AttestAsync(host, instance.Id)).Succeeded);
 
-        // The first check must be independent of the author.
         Assert.Contains("needs an independent check", (await host.Service.CheckAsync(instance.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
 
         host.Principal = FirstChecker;
         Assert.True((await host.Service.CheckAsync(instance.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Succeeded);
 
-        // One checked signature is not enough.
         host.Principal = "issuer";
         var one = await host.Service.IssueAsync(instance.Id, "ISS-1", "Client");
         Assert.False(one.Succeeded);
         Assert.Contains("second, independent check", one.Reason, StringComparison.Ordinal);
 
-        // Not the first checker again, not the author.
         host.Principal = FirstChecker;
         Assert.Contains("two different checkers", (await host.Service.CountersignAsync(instance.Id, "Chris Checker", "Check Co", "again", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
         host.Principal = Designer;
         Assert.Contains("independent", (await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "mine", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
 
-        // A different, independent second checker releases it.
         host.Principal = SecondChecker;
         Assert.True((await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "Second check made.", CheckOutcome.Accepted)).Succeeded);
 
@@ -264,10 +270,12 @@ public sealed class LiftingGovernanceTests
         Assert.Contains("design calculation, not a thorough examination", text, StringComparison.Ordinal);
         Assert.Contains("LOLER", text, StringComparison.Ordinal);
         Assert.Contains("PUWER", text, StringComparison.Ordinal);
+        Assert.Contains("Signatures are not authenticated by TempestOS", text, StringComparison.Ordinal);
         Assert.Contains("Chris Checker; second check: Dana Second", text, StringComparison.Ordinal);
-        Assert.Contains("Dr Pat Competent", text, StringComparison.Ordinal);
+        Assert.Contains("Pat Competent", text, StringComparison.Ordinal);
         Assert.Contains("competent person", text, StringComparison.Ordinal);
         Assert.Contains("checklist", text, StringComparison.Ordinal);
+        Assert.StartsWith("lifting feature enabled", issued.Instance.Issue.FeatureNote, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -276,7 +284,7 @@ public sealed class LiftingGovernanceTests
         var host = Host(on: true);
         var project = await host.ProjectAsync();
         host.Principal = Designer;
-        var unattested = await host.Service.CreateAsync("struct.lifting", project, "Lug unattested", Inputs(attestor: null, statement: null));
+        var unattested = await host.Service.CreateAsync("struct.lifting", project, "Lug unattested", Inputs());
         var pack = await host.Service.CreatePackAsync(project, "Lifting beam", [unattested.Id]);
 
         host.Principal = FirstChecker;
@@ -287,6 +295,8 @@ public sealed class LiftingGovernanceTests
         // Fix it: a new calculation with the attestation, in its own pack.
         host.Principal = Designer;
         var lug = await host.Service.CreateAsync("struct.lifting", project, "Lug", Inputs());
+        Assert.True((await AttestAsync(host, lug.Id)).Succeeded);
+        host.Principal = Designer;
         var good = await host.Service.CreatePackAsync(project, "Lifting beam 2", [lug.Id]);
         host.Principal = FirstChecker;
         Assert.True((await host.Service.CheckPackAsync(good.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Succeeded);

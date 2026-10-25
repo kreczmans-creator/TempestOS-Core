@@ -22,6 +22,9 @@ public sealed partial class CalcInstanceService
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
 
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
+
         if (instance.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; external evidence is filed while it is a draft.", instance);
 

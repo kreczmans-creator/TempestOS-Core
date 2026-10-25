@@ -45,6 +45,7 @@ public sealed partial class CalcInstanceService
     private readonly string? _applicationVersion;
     private readonly Tempest.Core.Events.IEventBus? _events;
     private readonly IReadOnlyList<CalcPackTemplate> _packTemplates;
+    private readonly Tempest.Core.Identity.IPrincipalDirectory? _principals;
 
     public CalcInstanceService(
         CalcCatalogue catalogue,
@@ -56,7 +57,8 @@ public sealed partial class CalcInstanceService
         ICalcEngine? engine = null,
         string? applicationVersion = null,
         Tempest.Core.Events.IEventBus? events = null,
-        IReadOnlyList<CalcPackTemplate>? packTemplates = null)
+        IReadOnlyList<CalcPackTemplate>? packTemplates = null,
+        Tempest.Core.Identity.IPrincipalDirectory? principals = null)
     {
         _catalogue = catalogue ?? throw new ArgumentNullException(nameof(catalogue));
         _store = store ?? throw new ArgumentNullException(nameof(store));
@@ -68,6 +70,7 @@ public sealed partial class CalcInstanceService
         _applicationVersion = applicationVersion;
         _events = events;
         _packTemplates = packTemplates ?? [];
+        _principals = principals;
     }
 
     public CalcCatalogue Catalogue => _catalogue;
@@ -206,6 +209,10 @@ public sealed partial class CalcInstanceService
         var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow(), EditedBy = repin ? instance.EditedBy : WithAuthors(instance.EditedBy, CurrentPrincipal()), RepinnedBy = repin ? WithAuthors(instance.RepinnedBy, CurrentPrincipal()) : instance.RepinnedBy };
         updated = await RunAndSnapshotAsync(entry, updated, cancellationToken).ConfigureAwait(false);
 
+        // ADR-0173: an attestation is of the inputs as they were; any change to them voids it.
+        if (updated.Attestation is { } attested && !string.Equals(attested.InputsHash, HashInputs(updated.Inputs), StringComparison.Ordinal))
+            updated = updated with { Attestation = null };
+
         try
         {
             await _store.SaveInstanceAsync(updated, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
@@ -301,8 +308,14 @@ public sealed partial class CalcInstanceService
         // ADR-0173: a template that demands a competent-person attestation is not checked without one (Issue would refuse it).
         var checkedTemplate = _catalogue.Find(instance.TemplateReference)?.Template;
 
-        if (checkedTemplate is not null && CheckGovernanceRefusal(instance, checkedTemplate) is { } attestationRefusal)
-            return CalcActionResult.Refused(attestationRefusal, instance);
+        if (outcome != CheckOutcome.Rejected && checkedTemplate is not null)
+        {
+            if (CheckGovernanceRefusal(instance, checkedTemplate) is { } attestationRefusal)
+                return CalcActionResult.Refused(attestationRefusal, instance);
+
+            if (AttesterIsSigningRefusal(instance, checkedTemplate, checkerName, $"Calculation '{instance.Name}'") is { } attesterChecks)
+                return CalcActionResult.Refused(attesterChecks, instance);
+        }
 
         if (outcome == CheckOutcome.Rejected)
         {
@@ -489,7 +502,7 @@ public sealed partial class CalcInstanceService
                     IssuedAt = issuedAtUtc,
                     UpdatedAt = issuedAtUtc,
                     IssueReference = issueReference,
-                    Issue = new CalcIssueSnapshot(text, CalcTemplateHasher.CanonicalText(entry.Template, CalcTemplateHasher.Formulas(entry.Calculator)), _engine.EngineVersion, report.Passed, report.Total, report.RunAt, attachmentId.ToString("N"), _applicationVersion),
+                    Issue = new CalcIssueSnapshot(text, CalcTemplateHasher.CanonicalText(entry.Template, CalcTemplateHasher.Formulas(entry.Calculator)), _engine.EngineVersion, report.Passed, report.Total, report.RunAt, attachmentId.ToString("N"), _applicationVersion, FeatureNoteFor(entry.Template)),
                 };
 
                 return new IssueSheetContent(fileName, _renderer is null ? "text/plain" : "application/pdf", bytes, attachmentId);
@@ -729,9 +742,16 @@ public sealed partial class CalcInstanceService
             if (IndependenceRefusal(member, $"Pack member '{member.Name}'", "check the pack") is { } notIndependent)
                 return CalcActionResult.Refused(notIndependent);
 
-            // ADR-0173: a member that lacks the attestation its template demands holds the whole pack back.
-            if (_catalogue.Find(member.TemplateReference)?.Template is { } memberTemplate && AttestationRefusal(member, memberTemplate, $"Pack member '{member.Name}'") is { } attestationRefusal)
-                return CalcActionResult.Refused(attestationRefusal);
+            // ADR-0173: a member that lacks the attestation its template demands holds an accepting check of the pack back (a rejection needs none), and
+            // the attester of a member cannot be the one checking the pack.
+            if (outcome != CheckOutcome.Rejected && _catalogue.Find(member.TemplateReference)?.Template is { } memberTemplate)
+            {
+                if (AttestationRefusal(member, memberTemplate, $"Pack member '{member.Name}'") is { } attestationRefusal)
+                    return CalcActionResult.Refused(attestationRefusal);
+
+                if (AttesterIsSigningRefusal(member, memberTemplate, checkerName, $"Pack member '{member.Name}'") is { } attesterChecks)
+                    return CalcActionResult.Refused(attesterChecks);
+            }
         }
 
         // A rejection leaves the pack and its Evidence as drafts (Black B-12).
@@ -836,6 +856,9 @@ public sealed partial class CalcInstanceService
         var together = pack.InstanceIds.ToHashSet();
         var members = new List<(CalcInstance Instance, CalcCatalogueEntry Entry, CalcInputSet Inputs, CalcRunResult Result, KnownAnswerReport Report)>();
 
+        // The authors of every member, not only those looked at so far (the second check is held to all of them).
+        var allAuthors = stored.SelectMany(m => m.Authors).Distinct(StringComparer.Ordinal).ToList();
+
         // What the checks below were made against: the issue is refused if any of it changes before it commits (Red R-A-14).
         var seen = new Dictionary<Guid, (Guid? ProjectId, string Name, DateTimeOffset UpdatedAt)>();
 
@@ -862,12 +885,12 @@ public sealed partial class CalcInstanceService
                 return CalcActionResult.Refused($"Template '{member.TemplateReference}' is no longer registered.");
 
             // ADR-0173: the attestation per member; the second check once for the pack, below.
-            if (AttestationRefusal(member, entry.Template, $"Pack member '{member.Name}'") is { } attestationRefusal)
+            if (AttestationRefusal(member, entry.Template, $"Pack member '{member.Name}'", pack) is { } attestationRefusal)
                 return CalcActionResult.Refused(attestationRefusal);
 
             if (entry.Template.RequiresSecondCheck)
             {
-                var packRefusal = CountersignatureRefusal(pack.SecondCheck, pack.CheckerName, pack.CheckerPrincipal, members.Select(m => m.Instance).Append(member).SelectMany(m => m.Authors).Distinct(StringComparer.Ordinal), $"Pack '{pack.Title}'");
+                var packRefusal = CountersignatureRefusal(pack.SecondCheck, pack.CheckerName, pack.CheckerPrincipal, allAuthors, $"Pack '{pack.Title}'");
 
                 if (packRefusal is not null)
                     return CalcActionResult.Refused(packRefusal);
@@ -925,7 +948,7 @@ public sealed partial class CalcInstanceService
                         UpdatedAt = issuedAtUtc,
                         IssueReference = issueReference,
                         PackId = pack.Id,
-                        Issue = new CalcIssueSnapshot(text, CalcTemplateHasher.CanonicalText(entry.Template, CalcTemplateHasher.Formulas(entry.Calculator)), _engine.EngineVersion, report.Passed, report.Total, report.RunAt, null, _applicationVersion),
+                        Issue = new CalcIssueSnapshot(text, CalcTemplateHasher.CanonicalText(entry.Template, CalcTemplateHasher.Formulas(entry.Calculator)), _engine.EngineVersion, report.Passed, report.Total, report.RunAt, null, _applicationVersion, FeatureNoteFor(entry.Template)),
                     });
                 }
 

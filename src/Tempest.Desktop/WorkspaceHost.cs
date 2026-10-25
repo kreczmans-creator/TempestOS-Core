@@ -340,10 +340,19 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // instances live in the one store, and Issue goes through the
         // Evidence service in one transaction with the rendered PDF.
         // Optional calculators (S8 lifting, `ADR-0173`) are composed in but withheld from the catalogue unless the installation's own
-        // configuration switches their feature on (`Calc:Features:Lifting = true`); the default is off and nothing at run time changes it.
+        // appsettings.json beside the executable switches their feature on (`Calc.Features.Lifting = true`). The current directory, the
+        // environment and the command line are not read for it, and nothing at run time changes it. Enabling is logged with its source.
+        var calcFeatures = Tempest.Calc.Library.CalcFeatureFlags.FromInstallFile(AppContext.BaseDirectory, out var calcFeatureProblem);
+
+        if (calcFeatureProblem is not null)
+            hostLogger?.Warning(calcFeatureProblem);
+
+        foreach (var feature in calcFeatures.Enabled)
+            hostLogger?.Warning($"Optional calculator feature '{feature}' is ENABLED by {calcFeatures.SourceOf(feature)}. It has not been through the owner's review checklist unless the owner has recorded it.");
+
         CalcCatalogue = new Tempest.Calc.Library.CalcCatalogue(
             Tempest.Desktop.CalcSheets.CalcCalculatorComposition.All(),
-            Tempest.Calc.Library.CalcFeatureFlags.FromConfiguration(configuration));
+            calcFeatures);
         CalcInstances = new Tempest.Calc.Library.CalcInstanceService(
             CalcCatalogue,
             new Tempest.Calc.Library.CalcInstanceStore(domainContext.PersistenceStore),
