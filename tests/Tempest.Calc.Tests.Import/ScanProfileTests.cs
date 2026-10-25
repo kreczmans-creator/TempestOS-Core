@@ -137,4 +137,37 @@ public sealed class ScanProfileTests
         Assert.False(ScanProfile.IsPosition("3", out _));
         Assert.False(ScanProfile.IsPosition("#-1", out _));
     }
+
+    [Fact]
+    public void The_Profile_Json_Shown_In_The_Spec_Reads_And_Validates()
+    {
+        const string Json = """
+            {
+              "id": "zeiss-groove", "version": 1, "title": "ZEISS Inspect groove table",
+              "software": "zeissInspect", "unit": "mm", "delimiter": "auto", "headerRow": 1,
+              "toleranceMode": "deviationsFromNominal", "templateId": "mech.tolerance-stack",
+              "number": { "decimal": "point" },
+              "columns": { "feature": "Element", "nominal": "Nominal", "actual": "Actual", "deviation": "Deviation",
+                           "upperTolerance": "Upper tol.", "lowerTolerance": "Lower tol.", "serial": "Serial", "stage": "Stage" },
+              "features": [ { "feature": "D_g groove root", "target": "contributors[0]", "required": true },
+                            { "feature": "D_s bore", "target": "measured{D_s}", "stage": "OP20 finish" } ]
+            }
+            """;
+
+        var profile = ScanProfileJson.Read(Json);
+
+        Assert.Equal(ScanSoftware.ZeissInspect, profile.Software);
+        Assert.Equal("Stage", profile.Columns.Stage);
+        Assert.Equal(2, profile.Features.Count);
+        Assert.True(profile.Features[0].Required);
+        Assert.Equal("OP20 finish", profile.Features[1].Stage);
+    }
+
+    [Fact]
+    public void Duplicate_Keys_In_Profile_Json_Are_Refused_Not_Last_One_Wins()
+    {
+        const string Json = "{\"id\":\"p\",\"id\":\"q\",\"version\":1,\"title\":\"t\",\"columns\":{\"feature\":\"F\",\"actual\":\"A\"},\"features\":[]}";
+
+        Assert.Throws<ImportRefusedException>(() => ScanProfileJson.Read(Json));
+    }
 }
