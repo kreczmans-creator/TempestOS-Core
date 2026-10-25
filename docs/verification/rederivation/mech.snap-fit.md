@@ -74,13 +74,13 @@ Guards behave as the spec says: slender at l/h < 5, thick-ring at h/D > 0.1, sma
 | Allowable strain by material | Brief asks for it | Not shipped, user input (Addendum B §B5) | By design |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-mech.snap-fit-01 | Medium | No guard for large tip deflection. Beam theory is linear. The strain and the force are both under-predicted when y/l is large. | l 20, h 1.2, b 6, y 8.2, Es 1800, ε_perm 4 %: product ε = 3.69 %, u = 0.92, P = 4.78 N, no warning. Exact elastica (fixed-direction tip load) gives ε about 4.00 % (+8.5 %), u about 1.0, P about 5.8 N (+22 %). At y/l = 0.3: strain +4 %, force +10 %. At y/l = 0.2: +1.8 %, +4.3 %. | Warn when y/l > 0.3 and state the error. Or apply an elastica correction. Name the limit in the sheet text. |
-| P1-mech.snap-fit-02 | Low | In torsion mode the output "eps" is labelled "Maximum strain". It is the equivalent tensile strain γ/(1+ν), not the surface strain. | ka-torsion: eps = 1.087 % while γ = 1.5 %. | Relabel to "Equivalent tensile strain" for the torsion mode. |
-| P1-mech.snap-fit-03 | Low | The separation force grows without limit as α′ approaches arctan(1/μ). There is no warning before the lock angle. | P = 8.53 N, α′ = 63.43°. W′ = 102 N at μ 0.40, 209 N at μ 0.45, 526 N at μ 0.48, 98 796 N at μ 0.50 (0.005° below the lock). | Warn when 1 − μ·tan α′ < 0.1: the separation force is very sensitive to μ. |
-| P1-mech.snap-fit-04 | Info | γ_perm = ε_perm·(1+ν) is the maximum shear strain basis. A von Mises basis gives 1.155 times more. The sheet is conservative by 15 % for the torsion bar. | Pure shear: equivalent strain 0.866·γ/(1+ν). | None needed. State the basis in the step text. |
-| P1-mech.snap-fit-05 | Info | The annular strain uses the mean diameter. The guide may use another diameter. The inner-surface check covers the difference on the safe side. | ka-annular-inner-surface. | Owner to compare with the printed guide. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+| --- | --- | --- | --- | --- | --- |
+| P1-mech.snap-fit-01 | Medium | Medium (confirmed). Reproduced with my own elastica (fixed-direction tip load) at y/l 0.41: root strain +8.5 %, force +22 %. Snap-fits rarely exceed y/l 0.3, so this is an edge case. | No guard for large tip deflection. Beam theory is linear. The strain and the force are both under-predicted when y/l is large. | l 20, h 1.2, b 6, y 8.2, Es 1800, ε_perm 4 %: product ε = 3.69 %, u = 0.92, P = 4.78 N, no warning. Exact elastica (fixed-direction tip load) gives ε about 4.00 % (+8.5 %), u about 1.0, P about 5.8 N (+22 %). At y/l = 0.3: strain +4 %, force +10 %. At y/l = 0.2: +1.8 %, +4.3 %. | Warn when y/l > 0.3 and state the error. Or apply an elastica correction. Name the limit in the sheet text. |
+| P1-mech.snap-fit-02 | Low | Low (confirmed). | In torsion mode the output "eps" is labelled "Maximum strain". It is the equivalent tensile strain γ/(1+ν), not the surface strain. | ka-torsion: eps = 1.087 % while γ = 1.5 %. | Relabel to "Equivalent tensile strain" for the torsion mode. |
+| P1-mech.snap-fit-03 | Low | Low (confirmed). | The separation force grows without limit as α′ approaches arctan(1/μ). There is no warning before the lock angle. | P = 8.53 N, α′ = 63.43°. W′ = 102 N at μ 0.40, 209 N at μ 0.45, 526 N at μ 0.48, 98 796 N at μ 0.50 (0.005° below the lock). | Warn when 1 − μ·tan α′ < 0.1: the separation force is very sensitive to μ. |
+| P1-mech.snap-fit-04 | Info | Info (confirmed). | γ_perm = ε_perm·(1+ν) is the maximum shear strain basis. A von Mises basis gives 1.155 times more. The sheet is conservative by 15 % for the torsion bar. | Pure shear: equivalent strain 0.866·γ/(1+ν). | None needed. State the basis in the step text. |
+| P1-mech.snap-fit-05 | Info | Info (confirmed). | The annular strain uses the mean diameter. The guide may use another diameter. The inner-surface check covers the difference on the safe side. | ka-annular-inner-surface. | Owner to compare with the printed guide. |
 
 ## Notes for the owner's manual test
 - Constant section: l 15, h 2, b 6, y 1, Es 2400, ε_perm 4 %, μ 0.3, α 30°, α′ 60°. Expect ε = 1.3333 %, P = 8.5333 N, W = 9.0551 N, W′ = 36.096 N, arctan(1/μ) = 73.30°.
@@ -88,3 +88,9 @@ Guards behave as the spec says: slender at l/h < 5, thick-ring at h/D > 0.1, sma
 - Set α′ = 75° with μ = 0.3. Expect "self-locking (infinite)" and a warning. Set μ = 1 and α = 45°. Expect "jams".
 - Try y/l above 0.3 and compare with a hand estimate or a finite-element run. The sheet will be low (finding -01).
 - Annular, K_ann 1.2, D 30, ΔD 0.4, h 1.5, b 5, Es 2400: expect ε = 1.6 %, P = 1507.96 N. Torsion bar, one end versus both ends: the ends-held bar has twice the strain and four times the force.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24, release 2f53791c.
+- Script re-run: exit 0. It integrates the beams numerically, so it is independent.
+- Reproduced -01 with my own elastica shooting solve. Strain +8.5 % and force +22 % at y/l 0.41. Medium stands.
+- Skimmed the Low and Info rows and the checks. No new finding. Verdict unchanged.

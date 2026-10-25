@@ -73,15 +73,15 @@ Product values are hard-coded in the script (133 values, 24 cases). Rows marked 
 | Edge-moment output | M_edge | Circular signed, rectangle absolute | Partly, see -04 |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-struct.plate-bending-01 | Low | The `ritz-frequency` warning fires on a converged frequency. The text says the frequency is approximate. | Clamped 5000 × 500 × 8, 10 kPa: warning with last change 3.06e-11 (limit 1e-11). Product f1 = 178.8168006 Hz. Mine = 178.81680 Hz (orders 40×5 to 48×8 agree to 1e-8). | Use a limit of 1e-9 on the Rayleigh quotient, or a relative limit on ω. |
-| P1-struct.plate-bending-02 | Low | The `navier-converge` warning is driven by a corner moment that is negligible. The governing value had converged. | Simply supported 5000 × 500 × 8, patch 100 × 500, 100 kPa: corner M_xy = 0.0017 N·m/m against M_y_c = 565 N·m/m. Warning with last change 0.017. Also M_x_c for ν = 0, 8:1 is 0.5 % off (3e-5 of M_y_c). | Weigh the corner change by the corner share of the governing von Mises moment. |
-| P1-struct.plate-bending-03 | Low | The spec says the stalled 5000 × 500 stress at K = 16 is within 3e-5 of K = 30. The true error is larger. It is conservative. | Product M_edge = 208.386. The exact strip limit q·b²/12 = 208.333 (end effects below 1e-6 at 10:1). Error +2.5e-4, eight times the claim. The warning estimate (3 × last change, 1.9e-3) covers it. | Reword the spec claim: "within 3e-5 of K = 30; about 2.5e-4 above the exact value". |
-| P1-struct.plate-bending-04 | Low | `M_edge` has different sign conventions. Circular plates give the signed moment. Clamped rectangles give the larger absolute value. | Circular clamped, q 20 kPa, a 250: M_edge = −156.25 N·m/m. Rectangle clamped 2:1: M_edge = +207.16. | Use one convention, or name the sign in the label. |
-| P1-struct.plate-bending-05 | Info | A ring load with a radius below the plate thickness gives no warning. A patch gets `patch-thin`. The Kirchhoff stress is conservative there. | Circular clamped, a 200, t 20, ring r 2 mm, 10 kN: no notice. | Optional: add a `ring-thin` warning. |
-| P1-struct.plate-bending-06 | Info | Below span/t = 10 the thin-plate result is unconservative. The sheet warns only. My Mindlin estimate (not run in the product): simply supported circular plate, shear adds about 4.5 % to deflection at span/t = 10 and about 18 % at 5. | Probe: span/t = 9.9 and 2 give the warning and a result. | None needed. Optionally quote the size of the error in the warning. |
-| P1-struct.plate-bending-07 | Info | The Unconfirmed clamped KATs are supported by two independent bases. The clamped square agrees with the Roark coefficients I recall. | Beam-function Ritz: w 0.080318 mm, M_x_c 57.263, M_edge 128.334. Frequency λ² 35.985. | Track S may mark ka-rect-clamped-square and ka-rect-clamped-natural as confirmed after the owner checks the book. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+| --- | --- | --- | --- | --- | --- |
+| P1-struct.plate-bending-01 | Low | Low (confirmed). | The `ritz-frequency` warning fires on a converged frequency. The text says the frequency is approximate. | Clamped 5000 × 500 × 8, 10 kPa: warning with last change 3.06e-11 (limit 1e-11). Product f1 = 178.8168006 Hz. Mine = 178.81680 Hz (orders 40×5 to 48×8 agree to 1e-8). | Use a limit of 1e-9 on the Rayleigh quotient, or a relative limit on ω. |
+| P1-struct.plate-bending-02 | Low | Low (confirmed). | The `navier-converge` warning is driven by a corner moment that is negligible. The governing value had converged. | Simply supported 5000 × 500 × 8, patch 100 × 500, 100 kPa: corner M_xy = 0.0017 N·m/m against M_y_c = 565 N·m/m. Warning with last change 0.017. Also M_x_c for ν = 0, 8:1 is 0.5 % off (3e-5 of M_y_c). | Weigh the corner change by the corner share of the governing von Mises moment. |
+| P1-struct.plate-bending-03 | Low | Low (confirmed). | The spec says the stalled 5000 × 500 stress at K = 16 is within 3e-5 of K = 30. The true error is larger. It is conservative. | Product M_edge = 208.386. The exact strip limit q·b²/12 = 208.333 (end effects below 1e-6 at 10:1). Error +2.5e-4, eight times the claim. The warning estimate (3 × last change, 1.9e-3) covers it. | Reword the spec claim: "within 3e-5 of K = 30; about 2.5e-4 above the exact value". |
+| P1-struct.plate-bending-04 | Low | Low (confirmed). | `M_edge` has different sign conventions. Circular plates give the signed moment. Clamped rectangles give the larger absolute value. | Circular clamped, q 20 kPa, a 250: M_edge = −156.25 N·m/m. Rectangle clamped 2:1: M_edge = +207.16. | Use one convention, or name the sign in the label. |
+| P1-struct.plate-bending-05 | Info | Info (confirmed). | A ring load with a radius below the plate thickness gives no warning. A patch gets `patch-thin`. The Kirchhoff stress is conservative there. | Circular clamped, a 200, t 20, ring r 2 mm, 10 kN: no notice. | Optional: add a `ring-thin` warning. |
+| P1-struct.plate-bending-06 | Info | Info (confirmed). The Mindlin figures are the author's estimate. | Below span/t = 10 the thin-plate result is unconservative. The sheet warns only. My Mindlin estimate (not run in the product): simply supported circular plate, shear adds about 4.5 % to deflection at span/t = 10 and about 18 % at 5. | Probe: span/t = 9.9 and 2 give the warning and a result. | None needed. Optionally quote the size of the error in the warning. |
+| P1-struct.plate-bending-07 | Info | Info (confirmed). The recalled book coefficients need the owner's copy. | The Unconfirmed clamped KATs are supported by two independent bases. The clamped square agrees with the Roark coefficients I recall. | Beam-function Ritz: w 0.080318 mm, M_x_c 57.263, M_edge 128.334. Frequency λ² 35.985. | Track S may mark ka-rect-clamped-square and ka-rect-clamped-natural as confirmed after the owner checks the book. |
 
 ## Notes for the owner's manual test
 - Circular clamped plate, a 250, t 5, q 20 kPa, steel E 200 GPa, ν 0.3: expect w = 0.5332 mm, σ = 37.5 MPa at the edge, f1 = 198.68 Hz.
@@ -89,3 +89,10 @@ Product values are hard-coded in the script (133 values, 24 cases). Rows marked 
 - Clamped square, same data: expect w = 0.08032 mm and edge moment 128.33 N·m/m (0.0513·q·a²). Expect the `ritz-approx` warning.
 - Clamped 5000 × 500 × 8 at 10 kPa: edge moment should be close to q·b²/12 = 208.3 N·m/m. The sheet gives 208.4.
 - Raise the load until w/t passes 0.5 and check the warning. Try a patch of 24 % on a clamped plate and expect a block.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24, release 2f53791c.
+- Script re-run: exit 0. It is independent (Navier, Ritz and Bessel solutions of its own).
+- No finding was Medium or higher. I skimmed all seven and agree.
+- I looked for missed defects in the checks and warnings. Corner hold-down is a stated limit and `R_corner` is reported.
+- No new finding. Verdict unchanged.

@@ -1,7 +1,7 @@
 # bs.pipe-expansion — independent re-derivation (Track P, P1)
 Calculator: Pipe expansion, loops and anchor forces (screening), version 1.2.0. Source file: src/Tempest.Calc/Tempest.Calc.BuildingServices/PipeExpansionCalculator.cs. Spec: docs/calcs/building-services/bs.pipe-expansion.md.
 Script: tools/verification/bs.pipe-expansion.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (reviewed: one Medium, R1; the rest Low or Info)
 
 The product matches the independent script on all 75 KAT values and on 12 extra probes (200 values, relative difference below 1e-9).
 It also behaves as specified on 14 guard probes. The findings are one silent-input inconsistency and one documented modelling limit.
@@ -81,12 +81,13 @@ Guard probes (product only, not in the script): wall = OD/2 blocks "wall"; wall 
 | Allowable S_A | owner input | not computed | By design (P1-bs.pipe-expansion-03) |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-bs.pipe-expansion-01 | Low | The unused temperature inputs are ignored without a notice. With `temp_mode` = install and operating temperatures, an entered `dT_in` is dropped. With `temp_mode` = temperature change entered, `T_install` and `T_operate` are dropped. A user who types −40 K and forgets the mode gets a hot-line result. | Probe g10: T 10→80 °C and dT_in = −40 K. Product used dT = +70 K and dL = 42 mm. No warning. Other unused inputs (L2, bellows, K1) do warn. | Add a warning such as `dT-unused` when the input of the other mode is present. Reuse the wording of `l2-unused`. |
-| P1-bs.pipe-expansion-02 | Low | No stress-intensification factor. A leg that passes on beam stress M/Z can exceed Sa at a real elbow. The `pass` output and the check label carry no caveat. The caveat sits only in the assumptions. | For 88.9 × 3.2 mm with a 1.5 D elbow, the B31.3 flexibility factor from the usual h = tR/r² relation gives i near 2. A leg at u_leg = 0.8 has beam stress 0.64 Sa and then reaches about 1.3 Sa at the elbow root. In ka-offset-leg-steel-50m the root stress is 65.3 MPa against Sa 100 MPa. The product states this limit in its spec and its third assumption. | Add the words "beam stress, no intensification" to the leg check label. Optionally add an input `i_SIF` (default 1) that multiplies σ_leg and σ_run. |
-| P1-bs.pipe-expansion-03 | Info | The sheet does not compute S_A = f(1.25 S_c + 0.25 S_h) or the range factor f. The owner enters Sa. This is the stated no-table rule (spec §B5). | Template: Sa is an optional record with no default. | None. Tell the owner to compute Sa by hand and enter it with its source. |
-| P1-bs.pipe-expansion-04 | Info | `pass` is 0 for ka-offset-leg-steel-50m although the leg (u 0.81) and run (u 0.03) both pass. The screening check fails and is part of `pass`. This follows the spec. | KAT `pass` = 0. Probe X1: no K1, so `pass` = 0. | None. A user may read `pass` = 0 as a leg failure. The `screen` text explains it. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+| --- | --- | --- | --- | --- | --- |
+| P1-bs.pipe-expansion-01 | Low | Low (confirmed). | The unused temperature inputs are ignored without a notice. With `temp_mode` = install and operating temperatures, an entered `dT_in` is dropped. With `temp_mode` = temperature change entered, `T_install` and `T_operate` are dropped. A user who types −40 K and forgets the mode gets a hot-line result. | Probe g10: T 10→80 °C and dT_in = −40 K. Product used dT = +70 K and dL = 42 mm. No warning. Other unused inputs (L2, bellows, K1) do warn. | Add a warning such as `dT-unused` when the input of the other mode is present. Reuse the wording of `l2-unused`. |
+| P1-bs.pipe-expansion-02 | Low | Low (confirmed). Stated in the spec and an assumption. | No stress-intensification factor. A leg that passes on beam stress M/Z can exceed Sa at a real elbow. The `pass` output and the check label carry no caveat. The caveat sits only in the assumptions. | For 88.9 × 3.2 mm with a 1.5 D elbow, the B31.3 flexibility factor from the usual h = tR/r² relation gives i near 2. A leg at u_leg = 0.8 has beam stress 0.64 Sa and then reaches about 1.3 Sa at the elbow root. In ka-offset-leg-steel-50m the root stress is 65.3 MPa against Sa 100 MPa. The product states this limit in its spec and its third assumption. | Add the words "beam stress, no intensification" to the leg check label. Optionally add an input `i_SIF` (default 1) that multiplies σ_leg and σ_run. |
+| P1-bs.pipe-expansion-03 | Info | Info (confirmed). | The sheet does not compute S_A = f(1.25 S_c + 0.25 S_h) or the range factor f. The owner enters Sa. This is the stated no-table rule (spec §B5). | Template: Sa is an optional record with no default. | None. Tell the owner to compute Sa by hand and enter it with its source. |
+| P1-bs.pipe-expansion-04 | Info | Info (confirmed). | `pass` is 0 for ka-offset-leg-steel-50m although the leg (u 0.81) and run (u 0.03) both pass. The screening check fails and is part of `pass`. This follows the spec. | KAT `pass` = 0. Probe X1: no K1, so `pass` = 0. | None. A user may read `pass` = 0 as a leg failure. The `screen` text explains it. |
+| P1-bs.pipe-expansion-R1 | Medium | Medium (new) | The output `anchor_force` holds no support friction. Every guide and slide between the anchor and the loop adds μ·w·L. On a long run this exceeds the leg force several times. The omission is in an assumption only, so the output label misleads. | 88.9 × 3.2 steel, water-filled, 12.1 kg/m: 50 m on slides at μ 0.3 gives about 1.78 kN. The KAT anchor force is 388 N. Hand calculation; μ 0.3 is a typical figure, owner to confirm. | Add an optional friction input (μ and weight per metre) to the anchor force. Or rename the output "anchor force from the leg only, no friction". |
 
 ## Notes for the owner's manual test
 - Steel 88.9 × 3.2, E 210 GPa, α 12, 50 m, 10→80 °C, offset leg 6 m, Sa 100 MPa: expect ΔL = 42.000 mm, L_req = 4.850 m, F = 388.1 N, M = 1164.3 N·m. Check L_req = √(3·210e9·0.0889·0.042/100e6) by hand.
@@ -94,3 +95,10 @@ Guard probes (product only, not in the script): wall = OD/2 blocks "wall"; wall 
 - Enter ΔT = −40 K for 30 m of copper (E 120, α 16.6): expect dL = 19.92 mm and dL_signed = −19.92 mm.
 - Bellows at 6 bar on 80 cm² with 120 N/mm over 42 mm: expect 4.8 kN + 5040 N = 9840 N and no moment.
 - Try wall = 44.45 mm on an 88.9 mm pipe: the sheet must block. Enter dT_in together with two temperatures and note that it is silently ignored (finding 01).
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24, release 2f53791c.
+- Script re-run: exit 0, 275 values. It is independent.
+- No finding was Medium or higher. I skimmed all four and agree.
+- New -R1 (Medium): the anchor force leaves out support friction.
+- Verdict unchanged in kind; one Medium added.

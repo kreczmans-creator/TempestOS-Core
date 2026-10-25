@@ -1,7 +1,7 @@
 # elec.containment — independent re-derivation (Track P, P1)
 Calculator: Containment fill, bend radius and cable pulling, version 1.1.0. Source file: src/Tempest.Calc/Tempest.Calc.Electrical/ContainmentCalculator.cs. Spec: docs/calcs/electrical/elec.containment.md.
 Script: tools/verification/elec.containment.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (reviewed: one High, -01)
 
 The product matches the independent script on all 44 KAT values and on 10 extra probes (144 values, below 1e-7).
 The brief asked about the IET On-Site Guide cable-factor method. The product does not offer it, by design (spec scope). Finding 03 records this.
@@ -79,12 +79,12 @@ Guard probes (product only): a cable count of 2.5 blocks. A cable larger than th
 | Cable weight on tray | w per metre | `w` in kg/m; `wg` in N/m only as a working step with a route | Yes (04) |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-elec.containment-01 | Medium | Bends use the capstan equation with no cable-weight term. For a heavy cable on a large radius, in a horizontal-plane bend, the cable also rubs on the duct floor. The tension after the bend is then too low, and a first bend at T₁ = 0 adds nothing. The limitation text names the omission. The error is unconservative. | Z14: 10 kg/m, 90° bend, R 3 m, T₁ 100 N, μ 0.3. Product 160.2 N. T_out = T₁cosh(μθ) + √(T₁² + (w·g·R)²)·sinh(μθ) gives 263.2 N (+64 %). SWP T/R rises from 53.4 to 87.7 N/m. Z15: T₁ 0 N gives 0 N; the formula gives 143.8 N. A light bundle on a small radius differs by 0.1 % (Z16). | Add the weight term to the bend (Rifenburg form) or warn when w·g·R is not small against T₁. Keep capstan as the option for vertical bends. At minimum, warn when a bend follows a start tension below w·g·R. |
-| P1-elec.containment-02 | Low | One cable without `T_max` removes the whole cable limit. The sheet warns, but `T_cab`, `u_T` and the check are dropped even when other cables have limits. | Z3: power cables 1000 N each and one control cable without limit. No `T_cab`, no check; warning `T_cab` only. | Keep the warning. Optionally show the limit from the cables that have one, labelled "partial". |
-| P1-elec.containment-03 | Info | The IET On-Site Guide factor method is not implemented: no cable factor sum against a conduit or trunking factor, no run-length and bend limits, no 45 % trunking or 40 % conduit rule. The user enters `f_max` from their own copy. Fill is the true area ratio. The two methods give different answers. | Spec scope: "the factor method is not offered". `f_max` has no default. | None needed. Make the sheet say so, so a user does not read the geometric fill as a factor-method pass. |
-| P1-elec.containment-04 | Info | The weight per metre in N/m (`wg`) is a working step shown only when a route is entered. `w` in kg/m is always an output. There is no tray-support load check. | Probe Z1 (no route): `w` = 0.44 kg/m, no `wg`. | None, or add `wg` as an output if tray loading is wanted. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+| --- | --- | --- | --- | --- | --- |
+| P1-elec.containment-01 | Medium | High (upgraded). Reproduced Z14: product 160.2 N, horizontal-bend form 263.2 N (+64 %). Heavy cables round large duct sweeps are ordinary pulls. A pull that starts at a bend reads zero tension. The limitation text does not make the output safe. | Bends use the capstan equation with no cable-weight term. For a heavy cable on a large radius, in a horizontal-plane bend, the cable also rubs on the duct floor. The tension after the bend is then too low, and a first bend at T₁ = 0 adds nothing. The limitation text names the omission. The error is unconservative. | Z14: 10 kg/m, 90° bend, R 3 m, T₁ 100 N, μ 0.3. Product 160.2 N. T_out = T₁cosh(μθ) + √(T₁² + (w·g·R)²)·sinh(μθ) gives 263.2 N (+64 %). SWP T/R rises from 53.4 to 87.7 N/m. Z15: T₁ 0 N gives 0 N; the formula gives 143.8 N. A light bundle on a small radius differs by 0.1 % (Z16). | Add the weight term to the bend (Rifenburg form) or warn when w·g·R is not small against T₁. Keep capstan as the option for vertical bends. At minimum, warn when a bend follows a start tension below w·g·R. |
+| P1-elec.containment-02 | Low | Low (confirmed). | One cable without `T_max` removes the whole cable limit. The sheet warns, but `T_cab`, `u_T` and the check are dropped even when other cables have limits. | Z3: power cables 1000 N each and one control cable without limit. No `T_cab`, no check; warning `T_cab` only. | Keep the warning. Optionally show the limit from the cables that have one, labelled "partial". |
+| P1-elec.containment-03 | Info | Info (confirmed). | The IET On-Site Guide factor method is not implemented: no cable factor sum against a conduit or trunking factor, no run-length and bend limits, no 45 % trunking or 40 % conduit rule. The user enters `f_max` from their own copy. Fill is the true area ratio. The two methods give different answers. | Spec scope: "the factor method is not offered". `f_max` has no default. | None needed. Make the sheet say so, so a user does not read the geometric fill as a factor-method pass. |
+| P1-elec.containment-04 | Info | Info (confirmed). | The weight per metre in N/m (`wg`) is a working step shown only when a route is entered. `w` in kg/m is always an output. There is no tray-support load check. | Probe Z1 (no route): `w` = 0.44 kg/m, no `wg`. | None, or add `wg` as an output if tray loading is wanted. |
 
 ## Notes for the owner's manual test
 - Three 10 mm cables in a 25 mm conduit: expect 48.000 % fill, A_cab 235.62 mm², A_int 490.87 mm². With f_max 0.5, u_fill = 0.96.
@@ -92,3 +92,10 @@ Guard probes (product only): a cable count of 2.5 blocks. A cable larger than th
 - Same route listed both ways (ka-direction-passes-every-check): expect 1166.94 N as listed, 1281.14 N reversed, and the reverse recommended when P_lim is 1500 N/m.
 - Try a heavy cable (10 kg/m) on a 3 m radius with T₁ 100 N. The sheet shows 160.2 N. Compare with the weight-term value of 263.2 N (finding 01).
 - Enter three equal 10 mm cables in a 30 mm conduit. Expect the jam warning with 1.05·D/d = 3.15.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24, release 2f53791c.
+- Script re-run: exit 0, 188 values. It is independent.
+- Reproduced -01 (Z14) with the probe and the horizontal-bend relation by hand. Raised it to High.
+- Checked the sidewall pressure T/R: for cradled cables it is conservative. No new finding.
+- Verdict changed: one High finding.

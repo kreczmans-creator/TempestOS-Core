@@ -5,7 +5,7 @@ This file ranks every open known or suspected defect and sets the owner's test o
 Track S fixes Critical and High findings in phase C-1. Track P reports only and changed no product code.
 
 ## Sources
-- P1 re-derivation reports: `docs/verification/rederivation/<id>.md` (33 calculators, 5 packs, the Desktop sheet).
+- P1 re-derivation reports: `docs/verification/rederivation/<id>.md` (40 calculators, 6 packs, the Desktop sheet).
 - Each P1 report had a first pass and a senior independent review. The "Reviewed" severity governs.
 - Reports carry a "Status @ <sha>" column where the product changed after the first pass.
 - P2 known-answer sources: `kat-sources.md`. P5 consistency audit: `consistency-audit.md`. Colour-team reports: `docs/reviews/`.
@@ -27,8 +27,12 @@ Every calculator Critical and High finding was reproduced with the probe tool. T
 | elec.fault-protection | 0 | 3 | 2 | 4 | 3 | 3 |
 | chain.motor-circuit | 0 | 2 | 4 | 3 | 1 | 4 |
 | fp.accumulator | 1 | 3 | 1 | 2 | 1 | 0 |
+| fp.oring-gland | 0 | 1 | 3 | 7 | 2 | 0 |
+| fp.cylinder | 0 | 1 | 0 | 5 | 3 | 0 |
+| chain.hydraulic-power-unit | 0 | 2 | 1 | 5 | 1 | 0 |
 | struct.base-plate | 0 | 1 | 4 | 1 | 3 | 0 |
 | struct.ltb-interaction | 0 | 2 | 2 | 3 | 3 | 0 |
+| struct.plate-bending | 0 | 0 | 0 | 4 | 3 | 0 |
 | mech.bolted-joint | 0 | 1 | 3 | 4 | 1 | 0 |
 | mech.bolt-group | 0 | 1 | 1 | 1 | 2 | 3 |
 | mech.shaft | 0 | 0 | 5 | 3 | 3 | 1 |
@@ -37,32 +41,36 @@ Every calculator Critical and High finding was reproduced with the probe tool. T
 | struct.connection-ec3 | 0 | 3 | 1 | 6 | 1 | 4 |
 | chain.steel-support | 0 | 0 | 7 | 7 | 4 | 0 |
 | struct.en1993-member | 0 | 2 | 3 | 4 | 1 | 0 |
-| struct.frame-2d | 0 | 2 | 3 | 2 | 0 | 0 |
 | struct.beam-formulas | 0 | 0 | 1 | 3 | 1 | 0 |
+| struct.frame-2d | 0 | 2 | 3 | 2 | 0 | 0 |
 | mech.weld-group | 0 | 0 | 0 | 1 | 1 | 3 |
 | mech.spring | 0 | 1 | 1 | 4 | 4 | 0 |
-| elec.motor-sizing | 0 | 3 | 4 | 7 | 1 | 0 |
+| mech.snap-fit | 0 | 0 | 1 | 2 | 2 | 0 |
+| elec.motor-sizing | 0 | 4 | 4 | 7 | 1 | 0 |
 | bs.psychrometrics | 1 | 1 | 0 | 6 | 2 | 0 |
-| mech.thick-cylinder | 0 | 1 | 0 | 1 | 2 | 0 |
 | mech.press-fit | 0 | 1 | 1 | 1 | 2 | 0 |
+| mech.thick-cylinder | 0 | 1 | 0 | 1 | 2 | 0 |
 | mech.iso286-fit | 0 | 3 | 2 | 5 | 1 | 0 |
 | mech.bearing-life | 0 | 0 | 0 | 1 | 3 | 2 |
-| elec.voltage-drop | 0 | 1 | 2 | 3 | 1 | 0 |
 | elec.load-budget | 0 | 2 | 4 | 3 | 2 | 1 |
+| elec.voltage-drop | 0 | 1 | 2 | 3 | 1 | 0 |
 | elec.pcb-trace | 0 | 0 | 1 | 3 | 1 | 0 |
+| elec.containment | 0 | 1 | 0 | 1 | 2 | 0 |
 | bs.pipe-pump | 0 | 3 | 4 | 4 | 2 | 0 |
 | bs.sealed-system | 0 | 2 | 0 | 4 | 2 | 1 |
 | bs.room-heat-loss | 0 | 1 | 2 | 1 | 2 | 1 |
 | chain.wet-heating | 0 | 2 | 4 | 6 | 2 | 2 |
 | bs.glaser | 0 | 1 | 0 | 2 | 2 | 0 |
+| bs.insulation | 0 | 1 | 0 | 1 | 2 | 0 |
+| bs.pipe-expansion | 0 | 0 | 1 | 2 | 2 | 0 |
 | chain.cooling | 0 | 0 | 4 | 4 | 3 | 2 |
 | mech.tolerance-stack | 0 | 0 | 0 | 4 | 2 | 0 |
-| elec.enclosure-heat | 0 | 0 | 1 | 4 | 2 | 0 |
 | bs.duct-sizing | 0 | 0 | 1 | 3 | 2 | 0 |
 | bs.heat-exchanger | 0 | 0 | 0 | 2 | 2 | 2 |
+| elec.enclosure-heat | 0 | 0 | 1 | 4 | 2 | 0 |
 | struct.load-combinations | 0 | 0 | 2 | 0 | 1 | 1 |
 | desktop.calc-sheet-view | 0 | 1 | 1 | 3 | 1 | 0 |
-| **Open total** | **4** | **48** | **80** | **126** | **72** | **31** |
+| **Open total** | **4** | **55** | **86** | **153** | **89** | **31** |
 
 ## Critical findings (fix before any owner use)
 1. **P1-struct.section-properties-01.** A tube or hollow rectangle inside a composite section counts its hole as solid. A 200 × 10 tube reads 568.6 cm²; the correct area is 59.7 cm². The coordinator reproduced it.
@@ -82,8 +90,8 @@ S8 belongs to a later Addendum B phase and is not yet on `release/v0.26.0`. Trac
 | 2 | E5 fault protection | 0 / 3 | Liability list; electrical safety | elec.fault-protection.md |
 | 3 | Motor-circuit pack (E1 → E6 → E4 → E3, E5, E2) | 0 / 2 | Links E4 and E5 to their inputs | chain.motor-circuit.md |
 | 4 | F2 accumulator | 1 / 3 | Liability list; stored pressure energy | fp.accumulator.md |
-| 5 | F1 cylinder, F3 O-ring gland | 0 / 0 | Fluid power; F3 leaks or extrusion under pressure | fp.cylinder.md, fp.oring-gland.md |
-| 6 | Hydraulic power unit pack (F1 → F2 → B1 → E1 → E4) | 0 / 0 | Links fluid power to the motor circuit | chain.hydraulic-power-unit.md |
+| 5 | F1 cylinder, F3 O-ring gland | 0 / 2 | Fluid power; F3 leaks or extrusion under pressure | fp.cylinder.md, fp.oring-gland.md |
+| 6 | Hydraulic power unit pack (F1 → F2 → B1 → E1 → E4) | 0 / 2 | Links fluid power to the motor circuit | chain.hydraulic-power-unit.md |
 | 7 | S6 base plate | 0 / 1 | Liability list | struct.base-plate.md |
 | 8 | S7 LTB and N+M interaction | 0 / 2 | Liability list | struct.ltb-interaction.md |
 | 9 | S9 plate bending | 0 / 0 | Plates | struct.plate-bending.md |
@@ -97,23 +105,23 @@ S8 belongs to a later Addendum B phase and is not yet on `release/v0.26.0`. Trac
 | 17 | M6 weld group | 0 / 0 | Welds | mech.weld-group.md |
 | 18 | M7 springs | 0 / 1 | Stored mechanical energy | mech.spring.md |
 | 19 | M8 snap-fits | 0 / 0 | Plastic parts | mech.snap-fit.md |
-| 20 | E1 motor sizing | 0 / 3 | Feeds both packs | elec.motor-sizing.md |
+| 20 | E1 motor sizing | 0 / 4 | Feeds both packs | elec.motor-sizing.md |
 | 21 | B2 psychrometrics | 1 / 1 | Critical; lower physical liability | bs.psychrometrics.md |
 | 22 | M2 fits, press fit, thick cylinder | 0 / 5 | Mechanical fits and vessels | mech.iso286-fit.md, mech.press-fit.md, mech.thick-cylinder.md |
 | 23 | M5 bearing life | 0 / 0 | Drive-train pack | mech.bearing-life.md |
 | 24 | E6 load budget, E3 voltage drop | 0 / 3 | Motor-circuit pack | elec.load-budget.md, elec.voltage-drop.md |
 | 25 | E7 PCB trace | 0 / 0 | Board-level heating | elec.pcb-trace.md |
-| 26 | E8 containment | 0 / 0 | Cable containment fill | elec.containment.md |
+| 26 | E8 containment | 0 / 1 | Cable containment fill | elec.containment.md |
 | 27 | B1 pipe and pump, B6 sealed system | 0 / 5 | B6 needs the owner's BS EN 12828 | bs.pipe-pump.md, bs.sealed-system.md |
 | 28 | B4 room heat loss | 0 / 1 | Heating design | bs.room-heat-loss.md |
 | 29 | Wet-heating pack (B4 → B6 → B1 → E1) | 0 / 2 | Links the heating calculators | chain.wet-heating.md |
 | 30 | B7 Glaser condensation | 0 / 1 | Building fabric moisture | bs.glaser.md |
-| 31 | B8 pipe expansion, B9 insulation | 0 / 0 | Pipework | bs.pipe-expansion.md, bs.insulation.md |
+| 31 | B8 pipe expansion, B9 insulation | 0 / 1 | Pipework | bs.pipe-expansion.md, bs.insulation.md |
 | 32 | Enclosure-cooling pack | 0 / 0 | Links E6, E2 and B5 | chain.cooling.md |
 | 33 | E2, B3, B5, S5, M1 | 0 / 0 | Lower liability | remaining files |
 | 34 | Desktop sheet import (any calculator) | 0 / 1 | Seeded unit not converted | rederivation/desktop.calc-sheet-view.md |
 
-## Open Critical and High findings, ranked (52)
+## Open Critical and High findings, ranked (59)
 | Rank | ID | Calculator | Reviewed | First pass | Finding (first sentence; detail in the report) |
 |---|---|---|---|---|---|
 | 1 | P1-fp.accumulator-R1 | fp.accumulator | Critical | — | Every mode uses V0 = dV/[(p0/p1)^(1/n) − (p0/p2)^(1/n)]. |
@@ -130,46 +138,53 @@ S8 belongs to a later Addendum B phase and is not yet on `release/v0.26.0`. Trac
 | 12 | P1-fp.accumulator-01 | fp.accumulator | High | High | The real-gas factor is capped at 1.5, the default is 1, and p2 may reach 700 bar. |
 | 13 | P1-fp.accumulator-02 | fp.accumulator | High | Medium | f_rg is one number, but the true factor depends on Z at p0, p1 and p2. |
 | 14 | P1-fp.accumulator-R2 | fp.accumulator | High | — | The ideal-gas exponent 1.4 is far below nitrogen's real isentropic exponent at working pressure. |
-| 15 | P1-struct.base-plate-01 | struct.base-plate | High | High | For a CHS column, t_req and the "bolts govern" text depend on the entered t_p. |
-| 16 | P1-struct.ltb-interaction-01 | struct.ltb-interaction | High | Medium | The ψ formula for C1 is unconservative against the exact elastic solution for long members and double curvature. |
-| 17 | P1-struct.ltb-interaction-R1 | struct.ltb-interaction | High | High | The UK NA (reviewer recollection, owner to confirm against licensed copy) sets λ̄_LT,0 = 0.2 and β = 1.0 for welded sections in 6.3.2.3. |
-| 18 | P1-mech.bolt-group-01 | mech.bolt-group | High | High | The EN 1993-1-8 linear check is evaluated only at the bolt with the highest circular utilisation. |
-| 19 | P1-mech.bolted-joint-R1 | mech.bolted-joint | High | — | The assembly stress (VDI 2230 R7) is only a warning. |
-| 20 | P1-chain.drive-train-02 | chain.drive-train | High | Critical | E1 torques are at the motor shaft. |
-| 21 | P1-chain.drive-train-05 | chain.drive-train | High | High | A screw or rack drive puts axial thrust on the bearings. |
-| 22 | P1-chain.drive-train-D1 | chain.drive-train | High | Medium | The coupling bolts (M3) carry E1's T_pk, the torque of the load run-up. |
-| 23 | P1-struct.connection-ec3-01 | struct.connection-ec3 | High | Medium | Oversize or slotted holes are accepted with no reduction and no warning. |
-| 24 | P1-struct.connection-ec3-03 | struct.connection-ec3 | High | Medium | The cap F_b,Rd ≤ 1.5 f_u d t/γ_M2 for single-lap joints with one bolt row (cl. |
-| 25 | P1-struct.connection-ec3-R1 | struct.connection-ec3 | High | — | The default M12 hole is d + 2 = 14 mm. |
-| 26 | P1-struct.en1993-member-02 | struct.en1993-member | High | Medium | Default k_yy = k_zz = 1.0 is unconservative where Annex B gives k > 1, and no warning says so. |
-| 27 | P1-struct.en1993-member-R1 | struct.en1993-member | High | — | The shear-area helper inputs h, b, t_w, t_f and r carry UC 203x203x46 defaults. |
-| 28 | P1-struct.frame-2d-01 | struct.frame-2d | High | High | A concentrated couple on a member makes the moment diagram jump. |
-| 29 | P1-struct.frame-2d-02 | struct.frame-2d | High | Medium | A point or couple load with a blank position "a" goes to the start of the member with no warning. |
-| 30 | P1-mech.spring-01 | mech.spring | High | Medium | Choosing "None (uncorrected)" also removes the curvature factor from the fatigue stresses. |
-| 31 | P1-elec.motor-sizing-01 | elec.motor-sizing | High | High | The dwell runs at zero torque. |
-| 32 | P1-elec.motor-sizing-02 | elec.motor-sizing | High | High | The peak-torque check uses T_pk only. |
-| 33 | P1-elec.motor-sizing-C1 | elec.motor-sizing | High | Medium | Continuous duty with T_L left blank takes zero load torque. |
-| 34 | P1-bs.psychrometrics-R1 | bs.psychrometrics | High | High | Cooling with dehumidification accepts a leaving state wetter than the entering state. |
-| 35 | P1-mech.iso286-fit-01 | mech.iso286-fit | High | High | A nominal size of exactly 18 mm is placed in the 18 to 30 mm step instead of 10 to 18 mm. |
-| 36 | P1-mech.iso286-fit-02 | mech.iso286-fit | High | High | Hole N above IT8 uses ES = −5D^0.34. |
-| 37 | P1-mech.iso286-fit-05 | mech.iso286-fit | High | Medium | The spec and code comment say the formula values differ from the tables by about 1 µm. |
-| 38 | P1-mech.press-fit-01 | mech.press-fit | High | High | The shaft yield check uses the von Mises stress at the shaft outer surface. |
-| 39 | P1-mech.thick-cylinder-01 | mech.thick-cylinder | High | Medium | Under external pressure on a moderately thin wall, the check passes although elastic collapse governs. |
-| 40 | P1-elec.load-budget-03 | elec.load-budget | High | Medium | Blank optional cells (cosφ, η, d, k, inrush) become 1 with no notice. |
-| 41 | P1-elec.load-budget-R1 | elec.load-budget | High | High | The duty d (share of time on) scales the bus currents and the PSU rating. |
-| 42 | P1-elec.voltage-drop-01 | elec.voltage-drop | High | Medium | The default ρ_20 = 0.01724 gives conductor resistances 5 to 11 % below the BS EN 60228 class 2 maximum values. |
-| 43 | P1-bs.pipe-pump-01 | bs.pipe-pump | High | Medium | A custom fluid with NPSH_r entered gives no NPSH_a, no NPSH check and no notice. |
-| 44 | P1-bs.pipe-pump-02 | bs.pipe-pump | High | Medium | D_ratio applies Q ∝ D³ and H ∝ D². |
-| 45 | P1-bs.pipe-pump-R1 | bs.pipe-pump | High | High | NPSH_a includes only segments marked "suction". |
-| 46 | P1-bs.sealed-system-02 | bs.sealed-system | High | Medium | The final pressure may sit just under the safety valve setting. |
-| 47 | P1-bs.sealed-system-03 | bs.sealed-system | High | Medium | The vessel formula has no water reserve (seal) volume. |
-| 48 | P1-bs.room-heat-loss-R1 | bs.room-heat-loss | High | High | With an MVHR supply temperature and n_inf blank, the room has no infiltration loss and no notice. |
-| 49 | P1-chain.wet-heating-01 | chain.wet-heating | High | High | The pack's own reference room B is an MVHR room with a blank infiltration rate. |
-| 50 | P1-chain.wet-heating-R1 | chain.wet-heating | High | High | B1 hands E1 the torque and speed at the rated speed n_pump. |
-| 51 | P1-bs.glaser-01 | bs.glaser | High | Medium | The verdict changes with layer subdivision, with no warning. |
-| 52 | P1-desktop.calc-sheet-view-01 | desktop.calc-sheet-view | High | High | A seeded quantity whose unit is valid but not in the pick list keeps its number and takes the default unit. |
+| 15 | P1-fp.cylinder-R1 | fp.cylinder | High | High | The buckling length is the stroke plus L_add on the rod alone. |
+| 16 | P1-fp.oring-gland-01 | fp.oring-gland | High | Medium | Face seal squeeze and fill ignore the flange gap e_f. |
+| 17 | P1-chain.hydraulic-power-unit-01 | chain.hydraulic-power-unit | High | High | The accumulator in the pack inherits fp.accumulator-R1 (Critical) and -R2 (High). |
+| 18 | P1-chain.hydraulic-power-unit-02 | chain.hydraulic-power-unit | High | Medium | Nothing links the accumulator's lowest pressure p_1 to the push load. |
+| 19 | P1-struct.base-plate-01 | struct.base-plate | High | High | For a CHS column, t_req and the "bolts govern" text depend on the entered t_p. |
+| 20 | P1-struct.ltb-interaction-01 | struct.ltb-interaction | High | Medium | The ψ formula for C1 is unconservative against the exact elastic solution for long members and double curvature. |
+| 21 | P1-struct.ltb-interaction-R1 | struct.ltb-interaction | High | High | The UK NA (reviewer recollection, owner to confirm against licensed copy) sets λ̄_LT,0 = 0.2 and β = 1.0 for welded sections in 6.3.2.3. |
+| 22 | P1-mech.bolt-group-01 | mech.bolt-group | High | High | The EN 1993-1-8 linear check is evaluated only at the bolt with the highest circular utilisation. |
+| 23 | P1-mech.bolted-joint-R1 | mech.bolted-joint | High | — | The assembly stress (VDI 2230 R7) is only a warning. |
+| 24 | P1-chain.drive-train-02 | chain.drive-train | High | Critical | E1 torques are at the motor shaft. |
+| 25 | P1-chain.drive-train-05 | chain.drive-train | High | High | A screw or rack drive puts axial thrust on the bearings. |
+| 26 | P1-chain.drive-train-D1 | chain.drive-train | High | Medium | The coupling bolts (M3) carry E1's T_pk, the torque of the load run-up. |
+| 27 | P1-struct.connection-ec3-01 | struct.connection-ec3 | High | Medium | Oversize or slotted holes are accepted with no reduction and no warning. |
+| 28 | P1-struct.connection-ec3-03 | struct.connection-ec3 | High | Medium | The cap F_b,Rd ≤ 1.5 f_u d t/γ_M2 for single-lap joints with one bolt row (cl. |
+| 29 | P1-struct.connection-ec3-R1 | struct.connection-ec3 | High | — | The default M12 hole is d + 2 = 14 mm. |
+| 30 | P1-struct.en1993-member-02 | struct.en1993-member | High | Medium | Default k_yy = k_zz = 1.0 is unconservative where Annex B gives k > 1, and no warning says so. |
+| 31 | P1-struct.en1993-member-R1 | struct.en1993-member | High | — | The shear-area helper inputs h, b, t_w, t_f and r carry UC 203x203x46 defaults. |
+| 32 | P1-struct.frame-2d-01 | struct.frame-2d | High | High | A concentrated couple on a member makes the moment diagram jump. |
+| 33 | P1-struct.frame-2d-02 | struct.frame-2d | High | Medium | A point or couple load with a blank position "a" goes to the start of the member with no warning. |
+| 34 | P1-mech.spring-01 | mech.spring | High | Medium | Choosing "None (uncorrected)" also removes the curvature factor from the fatigue stresses. |
+| 35 | P1-elec.motor-sizing-01 | elec.motor-sizing | High | High | The dwell runs at zero torque. |
+| 36 | P1-elec.motor-sizing-02 | elec.motor-sizing | High | High | The peak-torque check uses T_pk only. |
+| 37 | P1-elec.motor-sizing-C1 | elec.motor-sizing | High | Medium | Continuous duty with T_L left blank takes zero load torque. |
+| 38 | P1-elec.motor-sizing-G1 | elec.motor-sizing | High | Medium | The new rated power P_rated = T_rated·ω_rated has no consistency check. |
+| 39 | P1-bs.psychrometrics-R1 | bs.psychrometrics | High | High | Cooling with dehumidification accepts a leaving state wetter than the entering state. |
+| 40 | P1-mech.iso286-fit-01 | mech.iso286-fit | High | High | A nominal size of exactly 18 mm is placed in the 18 to 30 mm step instead of 10 to 18 mm. |
+| 41 | P1-mech.iso286-fit-02 | mech.iso286-fit | High | High | Hole N above IT8 uses ES = −5D^0.34. |
+| 42 | P1-mech.iso286-fit-05 | mech.iso286-fit | High | Medium | The spec and code comment say the formula values differ from the tables by about 1 µm. |
+| 43 | P1-mech.press-fit-01 | mech.press-fit | High | High | The shaft yield check uses the von Mises stress at the shaft outer surface. |
+| 44 | P1-mech.thick-cylinder-01 | mech.thick-cylinder | High | Medium | Under external pressure on a moderately thin wall, the check passes although elastic collapse governs. |
+| 45 | P1-elec.load-budget-03 | elec.load-budget | High | Medium | Blank optional cells (cosφ, η, d, k, inrush) become 1 with no notice. |
+| 46 | P1-elec.load-budget-R1 | elec.load-budget | High | High | The duty d (share of time on) scales the bus currents and the PSU rating. |
+| 47 | P1-elec.voltage-drop-01 | elec.voltage-drop | High | Medium | The default ρ_20 = 0.01724 gives conductor resistances 5 to 11 % below the BS EN 60228 class 2 maximum values. |
+| 48 | P1-elec.containment-01 | elec.containment | High | Medium | Bends use the capstan equation with no cable-weight term. |
+| 49 | P1-bs.pipe-pump-01 | bs.pipe-pump | High | Medium | A custom fluid with NPSH_r entered gives no NPSH_a, no NPSH check and no notice. |
+| 50 | P1-bs.pipe-pump-02 | bs.pipe-pump | High | Medium | D_ratio applies Q ∝ D³ and H ∝ D². |
+| 51 | P1-bs.pipe-pump-R1 | bs.pipe-pump | High | High | NPSH_a includes only segments marked "suction". |
+| 52 | P1-bs.sealed-system-02 | bs.sealed-system | High | Medium | The final pressure may sit just under the safety valve setting. |
+| 53 | P1-bs.sealed-system-03 | bs.sealed-system | High | Medium | The vessel formula has no water reserve (seal) volume. |
+| 54 | P1-bs.room-heat-loss-R1 | bs.room-heat-loss | High | High | With an MVHR supply temperature and n_inf blank, the room has no infiltration loss and no notice. |
+| 55 | P1-chain.wet-heating-01 | chain.wet-heating | High | High | The pack's own reference room B is an MVHR room with a blank infiltration rate. |
+| 56 | P1-chain.wet-heating-R1 | chain.wet-heating | High | High | B1 hands E1 the torque and speed at the rated speed n_pump. |
+| 57 | P1-bs.glaser-01 | bs.glaser | High | Medium | The verdict changes with layer subdivision, with no warning. |
+| 58 | P1-bs.insulation-01 | bs.insulation | High | Medium | For ambient air below 0 °C the sheet reads `RH_a` as relative to ice. |
+| 59 | P1-desktop.calc-sheet-view-01 | desktop.calc-sheet-view | High | High | A seeded quantity whose unit is valid but not in the pick list keeps its number and takes the default unit. |
 
-## Open Medium findings (80)
+## Open Medium findings (86)
 Fix in C-1 when each takes under 2 hours; otherwise list for the owner.
 
 | Rank | ID | Calculator | Reviewed | First pass | Finding (first sentence; detail in the report) |
@@ -184,76 +199,82 @@ Fix in C-1 when each takes under 2 hours; otherwise list for the owner.
 | 8 | P1-chain.motor-circuit-07 | chain.motor-circuit | Medium | Medium | E3's V_n, cos φ and system, and E5's U_0, are not linked to E6's U_3ph and cosphi_add or to E4. |
 | 9 | P1-chain.motor-circuit-R1 | chain.motor-circuit | Medium | Medium | E4's insulation choice does not reach E5 or E3. |
 | 10 | P1-fp.accumulator-03 | fp.accumulator | Medium | Medium | The cold-gas scale uses Tmax/Tmin for every n. |
-| 11 | P1-struct.base-plate-02 | struct.base-plate | Medium | Medium | `z_C_in` has no upper guard. |
-| 12 | P1-struct.base-plate-03 | struct.base-plate | Medium | Low | The anchor shear factor α_bc is valid for f_yb of 235–640 MPa, so f_yb is capped at 640. |
-| 13 | P1-struct.base-plate-E1 | struct.base-plate | Medium | Medium | The Blue-round fix of the lever arm (G-A-10, 3c637a3d) is right. |
-| 14 | P1-struct.base-plate-R1 | struct.base-plate | Medium | Medium | One f_y is used at every plate thickness. |
-| 15 | P1-struct.ltb-interaction-R2 | struct.ltb-interaction | Medium | Medium | Table B.1 (not susceptible) can be chosen for an open I-section whose own χ_LT is below 1. |
-| 16 | P1-struct.ltb-interaction-R3 | struct.ltb-interaction | Medium | Medium | Annex A C_zz: the reviewer reads Table A.1 with e_LT inside the bracket that n_pl multiplies. |
-| 17 | P1-mech.bolt-group-04 | mech.bolt-group | Medium | Medium | v_max and t_max are values at the governing bolt. |
-| 18 | P1-mech.bolted-joint-01 | mech.bolted-joint | Medium | Low | Thread torsion uses W_p = π/16 d_3³. |
-| 19 | P1-mech.bolted-joint-02 | mech.bolted-joint | Medium | Medium | After the joint separates, F_S,max, yield, fatigue and stripping use the pre-separation linear law. |
-| 20 | P1-mech.bolted-joint-R2 | mech.bolted-joint | Medium | — | F_M is labelled the maximum preload, but μ_G, μ_K and K are not labelled as minimum values. |
-| 21 | P1-chain.drive-train-03 | chain.drive-train | Medium | Medium | E1 n_pk feeds M5 n. |
-| 22 | P1-chain.drive-train-06 | chain.drive-train | Medium | Medium | M4's radial loads are user rows, not linked to the torque. |
-| 23 | P1-chain.drive-train-07 | chain.drive-train | Medium | Medium | The seat-fit step uses M2 defaults H7/g6, a clearance fit. |
-| 24 | P1-chain.drive-train-C1 | chain.drive-train | Medium | Medium | The new pack.motor-circuit in the same file binds the load budget I_3ph to the cable design current (e6 I_3ph → e4 I_b_in). |
-| 25 | P1-mech.shaft-01 | mech.shaft | Medium | High | The Rayleigh sum uses \|y\| for the weights. |
-| 26 | P1-mech.shaft-02 | mech.shaft | Medium | Medium | A shoulder is checked on the side with the smaller outer diameter. |
-| 27 | P1-mech.shaft-03 | mech.shaft | Medium | Medium | Defaults x_T1 = 0 and x_T2 = 400 mm suit the 400 mm example only. |
-| 28 | P1-mech.shaft-04 | mech.shaft | Medium | Medium | The "mass carried" column adds no weight to reactions, moment or deflection. |
-| 29 | P1-mech.shaft-05 | mech.shaft | Medium | Low | Key bearing uses the key yield strength only. |
-| 30 | P1-struct.section-properties-03 | struct.section-properties | Medium | Medium | J of channel, angle and tee ignores the root fillet. |
-| 31 | P1-struct.section-properties-04 | struct.section-properties | Medium | Low | A self-crossing polygon, or a hole outside the outline, ends in a cryptic engine block. |
-| 32 | P1-struct.connection-ec3-02 | struct.connection-ec3 | Medium | Medium | Block tearing offers V_eff,1 only. |
-| 33 | P1-chain.steel-support-01 | chain.steel-support | Medium | Medium | The links depend on S2's numbering, and nothing checks it. |
-| 34 | P1-chain.steel-support-02 | chain.steel-support | Medium | Medium | M3 holds typed copies of the bolt resistances V_R (94.0 kN) and T_R (141.0 kN). |
-| 35 | P1-chain.steel-support-03 | chain.steel-support | Medium | Medium | The arm joint is checked at the bolts only. |
-| 36 | P1-chain.steel-support-04 | chain.steel-support | Medium | Medium | The anchorage check cannot fail. |
-| 37 | P1-chain.steel-support-05 | chain.steel-support | Medium | Medium | Three bolt-group defects reach the chain when the pattern is not symmetric or the load is eccentric. |
-| 38 | P1-chain.steel-support-13 | chain.steel-support | Medium | Low | The column check leaves out lateral-torsional buckling, and the minor-axis moment is typed 0. |
-| 39 | P1-chain.steel-support-R1 | chain.steel-support | Medium | Medium | S4a takes bearing on the 20 mm end plate only. |
-| 40 | P1-struct.en1993-member-01 | struct.en1993-member | Medium | Medium | High-shear reduction multiplies the full bending resistance by (1 − ρ), for both axes. |
-| 41 | P1-struct.en1993-member-06 | struct.en1993-member | Medium | Low | Tension checks gross-section yielding only. |
-| 42 | P1-struct.en1993-member-R2 | struct.en1993-member | Medium | — | The member interaction divides the moments by M_c,Rd, which uses γ_M0. |
-| 43 | P1-struct.beam-formulas-01 | struct.beam-formulas | Medium | Medium | The propped cantilever reports the position of maximum deflection from the wrong end. |
-| 44 | P1-struct.frame-2d-03 | struct.frame-2d | Medium | Medium | The large-deflection warning compares each element deflection with its own length. |
-| 45 | P1-struct.frame-2d-D1 | struct.frame-2d | Medium | Medium | The new port M_abs_e<n> (1.1.0) is the larger magnitude of M_max and M_min of a member. |
-| 46 | P1-struct.frame-2d-R1 | struct.frame-2d | Medium | Medium | A blank load magnitude runs as zero with no warning. |
-| 47 | P1-mech.spring-R1 | mech.spring | Medium | — | Extension mode runs Goodman on the body stresses only, but the check row reads "Goodman fatigue against the required safety factor". |
-| 48 | P1-elec.motor-sizing-03 | elec.motor-sizing | Medium | Medium | For the S-curve, P_pk = T_pk·ω_pk pairs the peak torque (mid-acceleration) with the peak speed (end of acceleration). |
-| 49 | P1-elec.motor-sizing-04 | elec.motor-sizing | Medium | Medium | A blank screw lead is replaced by the default 10 mm with no notice. |
-| 50 | P1-elec.motor-sizing-R1 | elec.motor-sizing | Medium | Medium | The cycle holds one move and one dwell. |
-| 51 | P1-elec.motor-sizing-R2 | elec.motor-sizing | Medium | Medium | Peak and rated torque are single numbers. |
-| 52 | P1-mech.iso286-fit-03 | mech.iso286-fit | Medium | Medium | Hole K at IT8 loses the k deviation, because the shaft k formula returns 0 for grade 8. |
-| 53 | P1-mech.iso286-fit-04 | mech.iso286-fit | Medium | Medium | Letter t silently returns the s deviation when the step mean is 24 mm or less. |
-| 54 | P1-mech.press-fit-R1 | mech.press-fit | Medium | — | Torque capacity and force use the nominal interference as entered. |
-| 55 | P1-elec.load-budget-02 | elec.load-budget | Medium | Medium | DC loads count in S_dem and S_T,req but their AC-side input is missing from I_3ph and I_1ph. |
-| 56 | P1-elec.load-budget-04 | elec.load-budget | Medium | Medium | The PSU rating covers DC loads only. |
-| 57 | P1-elec.load-budget-05 | elec.load-budget | Medium | Medium | Phi (→ E2 enclosure) includes the heat of every row, including motors in the field. |
-| 58 | P1-elec.load-budget-06 | elec.load-budget | Medium | Low | Peukert gives a capacity credit when t_auto exceeds H_rate, with no notice. |
-| 59 | P1-elec.voltage-drop-02 | elec.voltage-drop | Medium | Medium | A blank A_c or ρ_20 is replaced by 35 mm² and copper with no notice. |
-| 60 | P1-elec.voltage-drop-03 | elec.voltage-drop | Medium | Low | The mV/A/m route ignores I_z. |
-| 61 | P1-elec.pcb-trace-02 | elec.pcb-trace | Medium | Medium | When u_w > 1, R, ΔV and P are evaluated at the allowed rise. |
-| 62 | P1-bs.pipe-pump-03 | bs.pipe-pump | Medium | Medium | The system curve scales friction with Q². |
-| 63 | P1-bs.pipe-pump-04 | bs.pipe-pump | Medium | Medium | The duty point test looks only at the sign at the two curve ends. |
-| 64 | P1-bs.pipe-pump-C2 | bs.pipe-pump | Medium | Medium | Shaft power and torque use eta_pump, default 0.7, for any pump size. |
-| 65 | P1-bs.pipe-pump-R2 | bs.pipe-pump | Medium | Medium | NPSH_a uses suction friction at the design flow Q. |
-| 66 | P1-bs.room-heat-loss-01 | bs.room-heat-loss | Medium | Medium | Output U_m is labelled "Mean fabric U-value" and "area-weighted", but it includes the temperature factor f. |
-| 67 | P1-bs.room-heat-loss-R2 | bs.room-heat-loss | Medium | Medium | An element can take both a temperature factor f below 1 and an adjacent temperature. |
-| 68 | P1-chain.wet-heating-03 | chain.wet-heating | Medium | Medium | The pump head of a heating circuit also covers the boiler or heat exchanger, valves and emitters. |
-| 69 | P1-chain.wet-heating-04 | chain.wet-heating | Medium | Medium | B6's pipe water volume V_pipe is typed. |
-| 70 | P1-chain.wet-heating-05 | chain.wet-heating | Medium | Medium | B4 takes a design temperature per room (θ_int, default 21 °C). |
-| 71 | P1-chain.wet-heating-06 | chain.wet-heating | Medium | Low | The fluid is not carried from B6 to B1. |
-| 72 | P1-chain.cooling-01 | chain.cooling | Medium | Medium | The coil is sensible-only. |
-| 73 | P1-chain.cooling-02 | chain.cooling | Medium | Medium | The pump head has no coil water-side loss, valve loss or plant loss. |
-| 74 | P1-chain.cooling-03 | chain.cooling | Medium | Medium | A glycol cold side reaches B1 as c_p only. |
-| 75 | P1-chain.cooling-04 | chain.cooling | Medium | Medium | A hot ambient stops the chain at E2. |
-| 76 | P1-bs.duct-sizing-01 | bs.duct-sizing | Medium | Medium | The velocity method on a rectangular or flat-oval duct does not reach the target velocity. |
-| 77 | P1-elec.enclosure-heat-01 | elec.enclosure-heat | Medium | Medium | The A_eff step is labelled "IEC TR 60890 approach", but it uses plain face areas. |
-| 78 | P1-struct.load-combinations-01 | struct.load-combinations | Medium | Low | The default ξ is 0.85 (EN recommended). |
-| 79 | P1-struct.load-combinations-02 | struct.load-combinations | Medium | Low | The recommended ψ_0 values differ from the UK NA for roofs (category H) and wind. |
-| 80 | P1-desktop.calc-sheet-view-02 | desktop.calc-sheet-view | Medium | Medium | A seed with an unknown unit text (for example `kn`) shows the default unit and runs. |
+| 11 | P1-fp.oring-gland-02 | fp.oring-gland | Medium | Medium | No input for gland eccentricity or run-out. |
+| 12 | P1-fp.oring-gland-03 | fp.oring-gland | Medium | Medium | The permitted gap (`gap_allow`, `ext` column `gap`) does not say diametral or radial. |
+| 13 | P1-fp.oring-gland-R1 | fp.oring-gland | Medium | Medium | The squeeze and fill extremes use the cold and hot ends only. |
+| 14 | P1-chain.hydraulic-power-unit-03 | chain.hydraulic-power-unit | Medium | Medium | No pressure allowance reaches the pump. |
+| 15 | P1-struct.base-plate-02 | struct.base-plate | Medium | Medium | `z_C_in` has no upper guard. |
+| 16 | P1-struct.base-plate-03 | struct.base-plate | Medium | Low | The anchor shear factor α_bc is valid for f_yb of 235–640 MPa, so f_yb is capped at 640. |
+| 17 | P1-struct.base-plate-E1 | struct.base-plate | Medium | Medium | The Blue-round fix of the lever arm (G-A-10, 3c637a3d) is right. |
+| 18 | P1-struct.base-plate-R1 | struct.base-plate | Medium | Medium | One f_y is used at every plate thickness. |
+| 19 | P1-struct.ltb-interaction-R2 | struct.ltb-interaction | Medium | Medium | Table B.1 (not susceptible) can be chosen for an open I-section whose own χ_LT is below 1. |
+| 20 | P1-struct.ltb-interaction-R3 | struct.ltb-interaction | Medium | Medium | Annex A C_zz: the reviewer reads Table A.1 with e_LT inside the bracket that n_pl multiplies. |
+| 21 | P1-mech.bolt-group-04 | mech.bolt-group | Medium | Medium | v_max and t_max are values at the governing bolt. |
+| 22 | P1-mech.bolted-joint-01 | mech.bolted-joint | Medium | Low | Thread torsion uses W_p = π/16 d_3³. |
+| 23 | P1-mech.bolted-joint-02 | mech.bolted-joint | Medium | Medium | After the joint separates, F_S,max, yield, fatigue and stripping use the pre-separation linear law. |
+| 24 | P1-mech.bolted-joint-R2 | mech.bolted-joint | Medium | — | F_M is labelled the maximum preload, but μ_G, μ_K and K are not labelled as minimum values. |
+| 25 | P1-chain.drive-train-03 | chain.drive-train | Medium | Medium | E1 n_pk feeds M5 n. |
+| 26 | P1-chain.drive-train-06 | chain.drive-train | Medium | Medium | M4's radial loads are user rows, not linked to the torque. |
+| 27 | P1-chain.drive-train-07 | chain.drive-train | Medium | Medium | The seat-fit step uses M2 defaults H7/g6, a clearance fit. |
+| 28 | P1-chain.drive-train-C1 | chain.drive-train | Medium | Medium | The new pack.motor-circuit in the same file binds the load budget I_3ph to the cable design current (e6 I_3ph → e4 I_b_in). |
+| 29 | P1-mech.shaft-01 | mech.shaft | Medium | High | The Rayleigh sum uses \|y\| for the weights. |
+| 30 | P1-mech.shaft-02 | mech.shaft | Medium | Medium | A shoulder is checked on the side with the smaller outer diameter. |
+| 31 | P1-mech.shaft-03 | mech.shaft | Medium | Medium | Defaults x_T1 = 0 and x_T2 = 400 mm suit the 400 mm example only. |
+| 32 | P1-mech.shaft-04 | mech.shaft | Medium | Medium | The "mass carried" column adds no weight to reactions, moment or deflection. |
+| 33 | P1-mech.shaft-05 | mech.shaft | Medium | Low | Key bearing uses the key yield strength only. |
+| 34 | P1-struct.section-properties-03 | struct.section-properties | Medium | Medium | J of channel, angle and tee ignores the root fillet. |
+| 35 | P1-struct.section-properties-04 | struct.section-properties | Medium | Low | A self-crossing polygon, or a hole outside the outline, ends in a cryptic engine block. |
+| 36 | P1-struct.connection-ec3-02 | struct.connection-ec3 | Medium | Medium | Block tearing offers V_eff,1 only. |
+| 37 | P1-chain.steel-support-01 | chain.steel-support | Medium | Medium | The links depend on S2's numbering, and nothing checks it. |
+| 38 | P1-chain.steel-support-02 | chain.steel-support | Medium | Medium | M3 holds typed copies of the bolt resistances V_R (94.0 kN) and T_R (141.0 kN). |
+| 39 | P1-chain.steel-support-03 | chain.steel-support | Medium | Medium | The arm joint is checked at the bolts only. |
+| 40 | P1-chain.steel-support-04 | chain.steel-support | Medium | Medium | The anchorage check cannot fail. |
+| 41 | P1-chain.steel-support-05 | chain.steel-support | Medium | Medium | Three bolt-group defects reach the chain when the pattern is not symmetric or the load is eccentric. |
+| 42 | P1-chain.steel-support-13 | chain.steel-support | Medium | Low | The column check leaves out lateral-torsional buckling, and the minor-axis moment is typed 0. |
+| 43 | P1-chain.steel-support-R1 | chain.steel-support | Medium | Medium | S4a takes bearing on the 20 mm end plate only. |
+| 44 | P1-struct.en1993-member-01 | struct.en1993-member | Medium | Medium | High-shear reduction multiplies the full bending resistance by (1 − ρ), for both axes. |
+| 45 | P1-struct.en1993-member-06 | struct.en1993-member | Medium | Low | Tension checks gross-section yielding only. |
+| 46 | P1-struct.en1993-member-R2 | struct.en1993-member | Medium | — | The member interaction divides the moments by M_c,Rd, which uses γ_M0. |
+| 47 | P1-struct.beam-formulas-01 | struct.beam-formulas | Medium | Medium | The propped cantilever reports the position of maximum deflection from the wrong end. |
+| 48 | P1-struct.frame-2d-03 | struct.frame-2d | Medium | Medium | The large-deflection warning compares each element deflection with its own length. |
+| 49 | P1-struct.frame-2d-D1 | struct.frame-2d | Medium | Medium | The new port M_abs_e<n> (1.1.0) is the larger magnitude of M_max and M_min of a member. |
+| 50 | P1-struct.frame-2d-R1 | struct.frame-2d | Medium | Medium | A blank load magnitude runs as zero with no warning. |
+| 51 | P1-mech.spring-R1 | mech.spring | Medium | — | Extension mode runs Goodman on the body stresses only, but the check row reads "Goodman fatigue against the required safety factor". |
+| 52 | P1-mech.snap-fit-01 | mech.snap-fit | Medium | Medium | No guard for large tip deflection. |
+| 53 | P1-elec.motor-sizing-03 | elec.motor-sizing | Medium | Medium | For the S-curve, P_pk = T_pk·ω_pk pairs the peak torque (mid-acceleration) with the peak speed (end of acceleration). |
+| 54 | P1-elec.motor-sizing-04 | elec.motor-sizing | Medium | Medium | A blank screw lead is replaced by the default 10 mm with no notice. |
+| 55 | P1-elec.motor-sizing-R1 | elec.motor-sizing | Medium | Medium | The cycle holds one move and one dwell. |
+| 56 | P1-elec.motor-sizing-R2 | elec.motor-sizing | Medium | Medium | Peak and rated torque are single numbers. |
+| 57 | P1-mech.iso286-fit-03 | mech.iso286-fit | Medium | Medium | Hole K at IT8 loses the k deviation, because the shaft k formula returns 0 for grade 8. |
+| 58 | P1-mech.iso286-fit-04 | mech.iso286-fit | Medium | Medium | Letter t silently returns the s deviation when the step mean is 24 mm or less. |
+| 59 | P1-mech.press-fit-R1 | mech.press-fit | Medium | — | Torque capacity and force use the nominal interference as entered. |
+| 60 | P1-elec.load-budget-02 | elec.load-budget | Medium | Medium | DC loads count in S_dem and S_T,req but their AC-side input is missing from I_3ph and I_1ph. |
+| 61 | P1-elec.load-budget-04 | elec.load-budget | Medium | Medium | The PSU rating covers DC loads only. |
+| 62 | P1-elec.load-budget-05 | elec.load-budget | Medium | Medium | Phi (→ E2 enclosure) includes the heat of every row, including motors in the field. |
+| 63 | P1-elec.load-budget-06 | elec.load-budget | Medium | Low | Peukert gives a capacity credit when t_auto exceeds H_rate, with no notice. |
+| 64 | P1-elec.voltage-drop-02 | elec.voltage-drop | Medium | Medium | A blank A_c or ρ_20 is replaced by 35 mm² and copper with no notice. |
+| 65 | P1-elec.voltage-drop-03 | elec.voltage-drop | Medium | Low | The mV/A/m route ignores I_z. |
+| 66 | P1-elec.pcb-trace-02 | elec.pcb-trace | Medium | Medium | When u_w > 1, R, ΔV and P are evaluated at the allowed rise. |
+| 67 | P1-bs.pipe-pump-03 | bs.pipe-pump | Medium | Medium | The system curve scales friction with Q². |
+| 68 | P1-bs.pipe-pump-04 | bs.pipe-pump | Medium | Medium | The duty point test looks only at the sign at the two curve ends. |
+| 69 | P1-bs.pipe-pump-C2 | bs.pipe-pump | Medium | Medium | Shaft power and torque use eta_pump, default 0.7, for any pump size. |
+| 70 | P1-bs.pipe-pump-R2 | bs.pipe-pump | Medium | Medium | NPSH_a uses suction friction at the design flow Q. |
+| 71 | P1-bs.room-heat-loss-01 | bs.room-heat-loss | Medium | Medium | Output U_m is labelled "Mean fabric U-value" and "area-weighted", but it includes the temperature factor f. |
+| 72 | P1-bs.room-heat-loss-R2 | bs.room-heat-loss | Medium | Medium | An element can take both a temperature factor f below 1 and an adjacent temperature. |
+| 73 | P1-chain.wet-heating-03 | chain.wet-heating | Medium | Medium | The pump head of a heating circuit also covers the boiler or heat exchanger, valves and emitters. |
+| 74 | P1-chain.wet-heating-04 | chain.wet-heating | Medium | Medium | B6's pipe water volume V_pipe is typed. |
+| 75 | P1-chain.wet-heating-05 | chain.wet-heating | Medium | Medium | B4 takes a design temperature per room (θ_int, default 21 °C). |
+| 76 | P1-chain.wet-heating-06 | chain.wet-heating | Medium | Low | The fluid is not carried from B6 to B1. |
+| 77 | P1-bs.pipe-expansion-R1 | bs.pipe-expansion | Medium | Medium | The output `anchor_force` holds no support friction. |
+| 78 | P1-chain.cooling-01 | chain.cooling | Medium | Medium | The coil is sensible-only. |
+| 79 | P1-chain.cooling-02 | chain.cooling | Medium | Medium | The pump head has no coil water-side loss, valve loss or plant loss. |
+| 80 | P1-chain.cooling-03 | chain.cooling | Medium | Medium | A glycol cold side reaches B1 as c_p only. |
+| 81 | P1-chain.cooling-04 | chain.cooling | Medium | Medium | A hot ambient stops the chain at E2. |
+| 82 | P1-bs.duct-sizing-01 | bs.duct-sizing | Medium | Medium | The velocity method on a rectangular or flat-oval duct does not reach the target velocity. |
+| 83 | P1-elec.enclosure-heat-01 | elec.enclosure-heat | Medium | Medium | The A_eff step is labelled "IEC TR 60890 approach", but it uses plain face areas. |
+| 84 | P1-struct.load-combinations-01 | struct.load-combinations | Medium | Low | The default ξ is 0.85 (EN recommended). |
+| 85 | P1-struct.load-combinations-02 | struct.load-combinations | Medium | Low | The recommended ψ_0 values differ from the UK NA for roofs (category H) and wind. |
+| 86 | P1-desktop.calc-sheet-view-02 | desktop.calc-sheet-view | Medium | Medium | A seed with an unknown unit text (for example `kn`) shows the default unit and runs. |
 
 ## Fixed on release since the first pass (31)
 - P1-chain.motor-circuit-01 (High): E5's device type is not linked to E4's.

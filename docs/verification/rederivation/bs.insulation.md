@@ -1,7 +1,7 @@
 # bs.insulation — independent re-derivation (Track P, P1)
 Calculator: Insulation thickness (ISO 12241 formula route), version 1.1.0. Source files: src/Tempest.Calc/Tempest.Calc.BuildingServices/InsulationCalculator.cs and InsulationModel.cs (dew point from GlaserModel.cs). Spec: docs/calcs/building-services/bs.insulation.md.
 Script: tools/verification/bs.insulation.py (exit 0 = all KATs match).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (reviewed: one High, -01)
 
 The product matches the independent script on all 51 KAT values (worst relative difference 5.8e-15).
 It also matches on 13 extra probes (114 values, below 1e-8) and behaves as specified on 16 guard probes.
@@ -86,12 +86,12 @@ Guard probes (product only): Δθ 0.005 K blocks. Dew point plus margin at or ab
 | Sub-zero RH | stated in assumptions | no runtime warning | Partly (01) |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-bs.insulation-01 | Medium | For ambient air below 0 °C the sheet reads `RH_a` as relative to ice. Weather and instrument RH is relative to water. A user who enters it gets a dew point about 1 K too low and a thickness far too small. No runtime warning appears. The assumption text mentions it. | Flat, −30/−10 °C, margin 0, RH 90 %: product 63.9 mm (θ_dew −11.179 °C). With the frost point for 90 % relative to water (−10.100 °C) entered: 792.4 mm. Probes Y13 and Y14, no notice raised. | Add a warning, for example `rh-over-ice`, when θ_a < 0 and the dew point comes from RH_a. Or convert water-based RH to a vapour pressure first. |
-| P1-bs.insulation-02 | Low | Taking the larger of the laminar and turbulent free-convection forms gives h_c above a Rayleigh-based correlation for small pipes. That lowers the predicted surface temperature, which is unconservative for the surface-temperature and dew-point criteria. | Churchill and Chu: D 0.1 m, ΔT 25 K gives 4.80 W/(m²K), the sheet's laminar form gives 5.25 (+9 %). D 0.03 m, ΔT 4 K: 3.82 against 4.49 (+17 %). With h_c lowered by 15 % in ka-correlation-still, t_se rises from 7.84 to 9.01 mm. | Keep the "indicative" label. Optionally switch the regime on Rayleigh number, or use Churchill and Chu for the cylinder. Prefer a recorded h_se. |
-| P1-bs.insulation-03 | Info | λ is a fixed input. The sheet shows the mean insulation temperature but does not iterate on it. A `lambda-temperature` warning needs `theta_lambda` to be entered. | h12 probe: warns only because `theta_lambda` was given. | None. The owner repeats the run with λ at the reported mean temperature. |
-| P1-bs.insulation-04 | Info | Neither BS 5422 tables nor the ISO 12241 surface-coefficient formulas are used. The default `h_se` of 10 W/(m²K) is a plain default, not a standard value. | Template and spec §B5. | None. Say so on the sheet if the owner compares with a BS 5422 table. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+| --- | --- | --- | --- | --- | --- |
+| P1-bs.insulation-01 | Medium | High (upgraded). Reproduced Y13: θ_dew −11.179 °C, 63.9 mm, no notice. Cold stores and freezer rooms are plausible use, and their hygrometers read RH over water. Probe: −35 °C surface in −20 °C air at RH 85 % (water) gives 47.1 mm and passes. That air is 103 % RH over ice, so no thickness prevents frost. | For ambient air below 0 °C the sheet reads `RH_a` as relative to ice. Weather and instrument RH is relative to water. A user who enters it gets a dew point about 1 K too low and a thickness far too small. No runtime warning appears. The assumption text mentions it. | Flat, −30/−10 °C, margin 0, RH 90 %: product 63.9 mm (θ_dew −11.179 °C). With the frost point for 90 % relative to water (−10.100 °C) entered: 792.4 mm. Probes Y13 and Y14, no notice raised. | Add a warning, for example `rh-over-ice`, when θ_a < 0 and the dew point comes from RH_a. Or convert water-based RH to a vapour pressure first. |
+| P1-bs.insulation-02 | Low | Low (confirmed). The Churchill and Chu values are the author's; I did not recompute them. | Taking the larger of the laminar and turbulent free-convection forms gives h_c above a Rayleigh-based correlation for small pipes. That lowers the predicted surface temperature, which is unconservative for the surface-temperature and dew-point criteria. | Churchill and Chu: D 0.1 m, ΔT 25 K gives 4.80 W/(m²K), the sheet's laminar form gives 5.25 (+9 %). D 0.03 m, ΔT 4 K: 3.82 against 4.49 (+17 %). With h_c lowered by 15 % in ka-correlation-still, t_se rises from 7.84 to 9.01 mm. | Keep the "indicative" label. Optionally switch the regime on Rayleigh number, or use Churchill and Chu for the cylinder. Prefer a recorded h_se. |
+| P1-bs.insulation-03 | Info | Info (confirmed). | λ is a fixed input. The sheet shows the mean insulation temperature but does not iterate on it. A `lambda-temperature` warning needs `theta_lambda` to be entered. | h12 probe: warns only because `theta_lambda` was given. | None. The owner repeats the run with λ at the reported mean temperature. |
+| P1-bs.insulation-04 | Info | Info (confirmed). | Neither BS 5422 tables nor the ISO 12241 surface-coefficient formulas are used. The default `h_se` of 10 W/(m²K) is a plain default, not a standard value. | Template and spec §B5. | None. Say so on the sheet if the owner compares with a BS 5422 table. |
 
 ## Notes for the owner's manual test
 - Hot pipe D_i 100 mm, λ 0.04, h_se 10, 80/20 °C, 30 mm chosen: expect R = 2.0690 K·m/W, q = 28.999 W/m, θ_se = 25.769 °C. Check R by hand: 1.8701 + 0.1989.
@@ -100,3 +100,10 @@ Guard probes (product only): Δθ 0.005 K blocks. Dew point plus margin at or ab
 - Cold flat 5 °C in 25 °C air, RH 70 %, margin 1 K: expect θ_dew 19.145 °C and 12.479 mm.
 - Try ambient −10 °C, RH 90 %, margin 0, surface −30 °C. The sheet gives 63.9 mm. Compare with the frost-point reading in finding 01.
 - Try a 10 mm pipe with λ 0.2, q 25 W/m: expect the bare-complies and critical-radius warnings, and 74.29 mm.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24, release 2f53791c.
+- Script re-run: exit 0, 165 values. It is independent.
+- Reproduced -01 (Y13) and a cold-store probe. Raised it to High: the sheet passes a thickness where frost cannot be prevented.
+- Skimmed the other rows. No new finding.
+- Verdict changed: one High finding.
