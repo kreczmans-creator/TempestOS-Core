@@ -40,7 +40,7 @@ public sealed class InsulationCalculator : ICalcCalculator
             new CalcInputSpec("theta_lambda", "Temperature the conductivity applies at (a note: compared with the mean insulation temperature)", CalcInputKind.Quantity, "degC", Min: -50, Max: 400, HardMin: -200, HardMax: 650, IsOptional: true, Group: "Insulation"),
             new CalcInputSpec("h_mode", "Where the outer surface coefficient comes from", CalcInputKind.Choice, Choices: [HGiven, HCorrelation], DefaultChoice: HGiven, Group: "Outer surface"),
             new CalcInputSpec("h_se", "Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 10, Min: 3, Max: 40, HardMin: 0.5, HardMax: 200, Group: "Outer surface"),
-            new CalcInputSpec("eps", "Emissivity of the outer surface (correlation)", CalcInputKind.Number, Default: 0.9, Min: 0.05, Max: 1, HardMin: 0.01, HardMax: 1, Group: "Outer surface"),
+            new CalcInputSpec("eps", "Emissivity of the outer surface (for the correlation; with h_se as given it only judges that value against condensation on a cold surface)", CalcInputKind.Number, Default: 0.9, Min: 0.05, Max: 1, HardMin: 0.01, HardMax: 1, Group: "Outer surface"),
             new CalcInputSpec("v_wind", "Air speed over the surface (correlation; 0 = still air)", CalcInputKind.Quantity, "m/s", Default: 0, Min: 0, Max: 20, HardMin: 0, HardMax: 60, Group: "Outer surface"),
             new CalcInputSpec("L_surf", "Height or flow length of the flat surface (correlation, flat)", CalcInputKind.Quantity, "m", Default: 1, Min: 0.1, Max: 10, HardMin: 0.01, HardMax: 100, Group: "Outer surface"),
             new CalcInputSpec("h_i", "Inner film coefficient (blank = the pipe wall is at the process temperature)", CalcInputKind.Quantity, "W/(m^2*K)", Min: 50, Max: 20000, HardMin: 0.5, HardMax: 1e5, IsOptional: true, Group: "Pipe wall and film"),
@@ -528,25 +528,28 @@ public sealed class InsulationCalculator : ICalcCalculator
     private static void WarnFixedCoefficientAgainstCondensation(CalcRunContext c, InsulationModel.Setup given, Criterion dew, double tGiven, bool pipe)
     {
         // Still air and, for a flat surface, the template's 1 m height: the unfavourable end of the correlation, which is also what
-        // the sheet's correlation mode opens on.
+        // the sheet's correlation mode opens on. The emissivity is the one on the sheet (the template's 0.9 when none is entered):
+        // the given h_se is judged against the surface it was entered for, and bright cladding is a note, not the test (Black B-B-08).
         var length = pipe ? 1 : c.Template.FindInput("L_surf")?.Default ?? 1;
+        var eps = Math.Clamp(c.Inputs.Find("eps")?.Number ?? c.Template.FindInput("eps")?.Default ?? CondensationEmissivityOrdinary, 0.01, 1);
 
-        double Required(double eps)
+        double Required(double e)
         {
-            var setup = given with { Surface = new InsulationModel.Surface(null, eps, 0, length) };
+            var setup = given with { Surface = new InsulationModel.Surface(null, e, 0, length) };
             var (outcome, t, _) = InsulationModel.RequiredThickness(setup, InsulationModel.Scan(setup), dew.Violation);
             return outcome == InsulationModel.SearchOutcome.Found ? t : double.PositiveInfinity;
         }
 
-        var ordinary = Required(CondensationEmissivityOrdinary);
-        var bright = Required(CondensationEmissivityBright);
+        var atEntered = Required(eps);
 
-        if (!(Math.Max(ordinary, bright) > tGiven * 1.02 + 1e-4))
+        if (!(atEntered > tGiven * 1.02 + 1e-4))
             return;
 
         string Mm(double t) => double.IsFinite(t) ? $"{F(t * 1000)} mm" : $"more than {F(InsulationModel.MaxThickness * 1000)} mm";
 
-        c.Warn("h-se-condensation", $"h_se: the anti-condensation thickness is {F(tGiven * 1000)} mm with h_se = {F(given.Surface.Fixed ?? 0)} W/(m²·K) as given, but {Mm(ordinary)} with the convection and radiation correlation at ε = {F(CondensationEmissivityOrdinary)} and {Mm(bright)} at ε = {F(CondensationEmissivityBright)} (bright cladding), still air. A fixed h_se above the real surface coefficient holds the surface too near the air temperature and under-sizes the insulation against condensation (the generic 10 W/(m²·K) is not conservative here). Choose 'convection + radiation (correlation)' and enter the emissivity of the cladding, or enter a measured h_se.");
+        var bright = eps > CondensationEmissivityBright + 1e-9 ? $" (bright cladding, ε = {F(CondensationEmissivityBright)}, would need {Mm(Required(CondensationEmissivityBright))})" : string.Empty;
+
+        c.Warn("h-se-condensation", $"h_se: the anti-condensation thickness is {F(tGiven * 1000)} mm with h_se = {F(given.Surface.Fixed ?? 0)} W/(m²·K) as given, but {Mm(atEntered)} with the convection and radiation correlation at the emissivity on this sheet, ε = {F(eps)}{bright}, still air. A fixed h_se above the real surface coefficient holds the surface too near the air temperature and under-sizes the insulation against condensation (the generic 10 W/(m²·K) is not conservative here). Choose 'convection + radiation (correlation)', or enter a measured h_se, and enter the emissivity of the real cladding.");
     }
 
     private static string F(double v) => double.IsFinite(v) ? CalcValue.FormatNumber(v, 5) : "—";

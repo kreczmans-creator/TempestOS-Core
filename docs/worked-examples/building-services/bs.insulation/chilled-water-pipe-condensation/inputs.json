@@ -49,7 +49,7 @@
     "Number": 0.9,
     "Provenance": {
       "Kind": "Assumption",
-      "Reference": "Not used: h_se is given.",
+      "Reference": "Painted or plastic jacket (invented for this example); with h_se given it only judges that value against condensation.",
       "IsSufficientToIssue": true
     },
     "ValueText": "0.9"
