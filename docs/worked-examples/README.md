@@ -1,15 +1,17 @@
 # Worked examples — v0.26.0
 
-44 worked examples (two for sixteen of the 28 worksheet templates, one for each of the other twelve) and 6 calculation packs (the bracket assembly and the five linked chains). The 28 templates carry 116 known-answer cases between them. Each example folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF). A pack folder holds the pack's issue sheet, each step's issued sheet, a README and an `inputs.json` that records every step's inputs (one object keyed by step); that file is a record of what was issued, not one worksheet's import, so load a pack step by copying that step's list out of it.
+50 worked examples (two for seventeen of the 33 worksheet templates, one for each of the other sixteen) and 6 calculation packs (the bracket assembly and the five linked chains). The 33 templates carry 146 known-answer cases between them. Each example folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF). A pack folder holds the pack's issue sheet, each step's issued sheet, a README and an `inputs.json` that records every step's inputs (one object keyed by step); that file is a record of what was issued, not one worksheet's import, so load a pack step by copying that step's list out of it.
 
 **How to use one.** In the Desktop open Modules → Calculations → Worksheets (or the discipline's own Calculations node) and pick the template named in the table; the form opens on the template's declared defaults only. A table or a required value with no default (a frame's nodes, a shaft's segments, a base plate's `m` and `l_eff`) starts empty, so a new sheet for many templates opens blocked with a message saying what to enter next. Enter the values from the example's README (every input lists its value, unit and source); the form recalculates at once, *Show working* is the `sheet.txt` text and the issued sheet is `sheet.pdf`. `inputs.json` is the same input set in the exchange form the Calc API reads: headless, `CalcInputJson.Read` → `CalcRunner.Run` → `CalcSheetBuilder.Build` → `CalcSheetTextRenderer.Render` reproduces the sheet (`tests/Tempest.Calc.Tests.Calculators/WorkedExamples.cs`). To load an example into the form, copy the text of its `inputs.json` to the clipboard and press *Import inputs (CSV/JSON)*; the form re-seeds from it (table inputs included) and recalculates. *Export inputs (CSV)* copies the current inputs back out in the CSV the same button reads.
 
-Nine examples end on a **FAIL** governing check on purpose: they show how an overloaded or undersized design reads on the sheet. The verification footers in the stored sheets carry fixed placeholder values (hash `0000…`, engine `engine`); a sheet rendered in the product carries the real hash, engine version and test-run time.
+Ten examples end on a **FAIL** governing check on purpose: they show how an overloaded or undersized design reads on the sheet. The verification footers in the stored sheets carry fixed placeholder values (hash `0000…`, engine `engine`); a sheet rendered in the product carries the real hash, engine version and test-run time.
 
 | Discipline | Template | Example | Governing check |
 |---|---|---|---|
 | building-services | `bs.duct-sizing` | [extract-velocity-method](building-services/bs.duct-sizing/extract-velocity-method/README.md) | PASS — Velocity ≤ limit |
 | building-services | `bs.duct-sizing` | [office-supply-equal-friction](building-services/bs.duct-sizing/office-supply-equal-friction/README.md) | PASS — Velocity ≤ limit |
+| building-services | `bs.glaser` | [internal-insulation-no-vcl](building-services/bs.glaser/internal-insulation-no-vcl/README.md) | FAIL — Peak condensate on an interface against its limit |
+| building-services | `bs.glaser` | [internal-insulation-with-vcl](building-services/bs.glaser/internal-insulation-with-vcl/README.md) | PASS — Surface condensation (f_Rsi against f_Rsi,min) |
 | building-services | `bs.heat-exchanger` | [lthw-plate-hx-sizing](building-services/bs.heat-exchanger/lthw-plate-hx-sizing/README.md) | PASS — Approach against minimum |
 | building-services | `bs.pipe-pump` | [chilled-water-riser-duty](building-services/bs.pipe-pump/chilled-water-riser-duty/README.md) | FAIL — Velocity ≤ limit |
 | building-services | `bs.pipe-pump` | [oil-transfer-laminar](building-services/bs.pipe-pump/oil-transfer-laminar/README.md) | PASS — Velocity ≤ limit |
@@ -24,8 +26,10 @@ Nine examples end on a **FAIL** governing check on purpose: they show how an ove
 | electrical | `elec.load-budget` | [pump-skid-panel](electrical/elec.load-budget/pump-skid-panel/README.md) | FAIL — Starting peak against transformer overload |
 | electrical | `elec.motor-sizing` | [ball-screw-pick-and-place](electrical/elec.motor-sizing/ball-screw-pick-and-place/README.md) | PASS — RMS torque SF·T_rms ≤ T_rated |
 | electrical | `elec.motor-sizing` | [geared-index-table](electrical/elec.motor-sizing/geared-index-table/README.md) | PASS — RMS torque SF·T_rms ≤ T_rated |
+| electrical | `elec.pcb-trace` | [motor-driver-supply-rail](electrical/elec.pcb-trace/motor-driver-supply-rail/README.md) | PASS — Trace width as drawn against the minimum |
 | electrical | `elec.voltage-drop` | [dc-battery-feed](electrical/elec.voltage-drop/dc-battery-feed/README.md) | FAIL — Voltage drop ≤ limit |
 | electrical | `elec.voltage-drop` | [three-phase-motor-feeder](electrical/elec.voltage-drop/three-phase-motor-feeder/README.md) | PASS — I ≤ I_z |
+| fluid-power | `fp.accumulator` | [clamp-circuit-bladder-accumulator](fluid-power/fp.accumulator/clamp-circuit-bladder-accumulator/README.md) | PASS — Pre-charge within the p0/p1 rule |
 | mechanical | `mech.bearing-life` | [skf-6206-pump](mechanical/mech.bearing-life/skf-6206-pump/README.md) | PASS — Modified rating life against required life |
 | mechanical | `mech.bolt-group` | [end-plate-moment](mechanical/mech.bolt-group/end-plate-moment/README.md) | PASS — Circular shear–tension interaction (governing bolt) |
 | mechanical | `mech.bolt-group` | [four-bolt-bracket](mechanical/mech.bolt-group/four-bolt-bracket/README.md) | PASS — Circular shear–tension interaction (governing bolt) |
@@ -36,6 +40,7 @@ Nine examples end on a **FAIL** governing check on purpose: they show how an ove
 | mechanical | `mech.press-fit` | [hollow-shaft](mechanical/mech.press-fit/hollow-shaft/README.md) | PASS — Hub yield |
 | mechanical | `mech.press-fit` | [solid-steel-shaft](mechanical/mech.press-fit/solid-steel-shaft/README.md) | PASS — Hub yield |
 | mechanical | `mech.shaft` | [gearbox-input-shaft](mechanical/mech.shaft/gearbox-input-shaft/README.md) | PASS — Slope at the bearings against limit |
+| mechanical | `mech.spring` | [plunger-return-spring](mechanical/mech.spring/plunger-return-spring/README.md) | PASS — Static shear stress at solid length |
 | mechanical | `mech.thick-cylinder` | [external-pressure-closed](mechanical/mech.thick-cylinder/external-pressure-closed/README.md) | PASS — von Mises against allowable |
 | mechanical | `mech.thick-cylinder` | [internal-pressure-closed](mechanical/mech.thick-cylinder/internal-pressure-closed/README.md) | PASS — von Mises against allowable |
 | mechanical | `mech.tolerance-stack` | [bearing-housing-gap](mechanical/mech.tolerance-stack/bearing-housing-gap/README.md) | PASS — C_pk against target |
@@ -50,6 +55,7 @@ Nine examples end on a **FAIL** governing check on purpose: they show how an ove
 | structural | `struct.frame-2d` | [pinned-portal-gravity-wind](structural/struct.frame-2d/pinned-portal-gravity-wind/README.md) | no pass/fail checks |
 | structural | `struct.frame-2d` | [two-span-continuous-beam](structural/struct.frame-2d/two-span-continuous-beam/README.md) | no pass/fail checks |
 | structural | `struct.load-combinations` | [office-floor-beam-uk-na](structural/struct.load-combinations/office-floor-beam-uk-na/README.md) | no pass/fail checks |
+| structural | `struct.ltb-interaction` | [ub-457x191x98-beam-column](structural/struct.ltb-interaction/ub-457x191x98-beam-column/README.md) | PASS — Interaction, equation 6.62 |
 | structural | `struct.section-properties` | [fabricated-box-girder](structural/struct.section-properties/fabricated-box-girder/README.md) | no pass/fail checks |
 | structural | `struct.section-properties` | [ub-457x191x98](structural/struct.section-properties/ub-457x191x98/README.md) | no pass/fail checks |
 
