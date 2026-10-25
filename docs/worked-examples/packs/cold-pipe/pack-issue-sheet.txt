@@ -344,7 +344,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   theta_a | Ambient air temperature (also the radiation sink) | 28 | degC | link: Plant room air rev A · t_1_out | -20 … 50 degC
   lambda | Thermal conductivity of the insulation | 0.035 | W/(m*K) | drawing: DRG-CHW-410 rev B | 0.015 … 0.2 W/(m*K)
   h_mode | Where the outer surface coefficient comes from | h_se as given |  | drawing: DRG-CHW-410 rev B | any
-  h_se | Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface) | 8 | W/(m^2*K) | drawing: DRG-CHW-410 rev B | 3 … 40 W/(m^2*K)
+  h_se | Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there) | 8 | W/(m^2*K) | drawing: DRG-CHW-410 rev B | 3 … 40 W/(m^2*K)
   eps | Emissivity of the outer surface (correlation) | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.05 … 1
   v_wind | Air speed over the surface (correlation; 0 = still air) | 0 | m/s | assumption: Sheet default value; no project figure given. | 0 … 20 m/s
   L_surf | Height or flow length of the flat surface (correlation, flat) | 1 | m | assumption: Sheet default value; no project figure given. | 0.1 … 10 m
@@ -427,10 +427,11 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: lambda (Material properties); h_se (Outer surface coefficient); eps (Surface emissivity); dew_margin (Insulation criteria). Enter each as one so its source, edition and licence travel with it.
+  WARNING h-se-condensation: h_se: the anti-condensation thickness is 7.5207 mm with h_se = 8 W/(m²·K) as given, but 6.3293 mm with the convection and radiation correlation at ε = 0.9 and 12.008 mm at ε = 0.1 (bright cladding), still air. A fixed h_se above the real surface coefficient holds the surface too near the air temperature and under-sizes the insulation against condensation (the generic 10 W/(m²·K) is not conservative here). Choose 'convection + radiation (correlation)' and enter the emissivity of the cladding, or enter a measured h_se.
 
 8. VERIFICATION
   Template: bs.insulation@1.1.0
-  Content hash: 95960c18f73723e4
+  Content hash: afc7072350b39256
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 14/14
   Test run: 2026-10-25 09:27 UTC
