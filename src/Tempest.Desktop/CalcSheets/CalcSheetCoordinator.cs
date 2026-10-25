@@ -26,6 +26,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
     private Guid? _pendingOpen;
     private bool _relistQueued;
     private Guid? _relistLinkState;
+    private readonly CadImportViewModel _cad;
 
     public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, Tempest.Core.Events.IEventBus? events = null)
     {
@@ -38,6 +39,22 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view = view;
         _projects = projects;
         _principalId = principalId;
+
+        // Addendum B, W1: the CAD import panel lives under the records panel; its view model does the work.
+        _cad = new CadImportViewModel(service);
+        var cadPanel = new CadImportPanel(_cad);
+        _cad.Applied += instance =>
+        {
+            _view.ShowInstance(instance);
+            _ = GuardedAsync(async () =>
+            {
+                var message = _cad.Status;
+                await OpenAsync(instance.Id).ConfigureAwait(true);
+                _view.ShowStatus(message);
+            }, "show the imported values");
+        };
+        _view.InstallCadImportPanel(cadPanel);
+        _view.ImportCadRequested += () => _ = GuardedAsync(ImportCadAsync, "start the CAD import");
 
         _view.InputsChanged += inputs =>
         {
@@ -602,6 +619,31 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         }
 
         ImportInputsText(text);
+    }
+
+    /// <summary>The CAD import view model, for the panel and the tests.</summary>
+    public CadImportViewModel CadImport => _cad;
+
+    /// <summary>
+    /// "Import CAD parameters…": opens the preview panel on the shown draft. The import applies to the saved draft (it keeps the
+    /// import record that a re-import is compared with), so an unsaved form, or one holding unsaved edits, is asked to be saved first.
+    /// </summary>
+    public async Task ImportCadAsync()
+    {
+        if (_view.CurrentInstance is not { Status: CalcInstanceStatus.Draft } draft)
+        {
+            _view.ShowStatus("Save the calculation as a draft first; CAD parameters are imported into a saved draft.");
+            return;
+        }
+
+        if (_view.HasUnsavedEdits())
+        {
+            _view.ShowStatus("Save or discard your edits first; the import starts from the saved draft.");
+            return;
+        }
+
+        await _cad.BeginAsync(draft).ConfigureAwait(true);
+        _view.ShowStatus("Choose a CAD file, then a mapping profile; the preview shows what will change before anything is applied.");
     }
 
     /// <summary>Parses <paramref name="text"/> as JSON (a list) or CSV, reports every notice, and re-seeds the form when nothing blocks.</summary>
