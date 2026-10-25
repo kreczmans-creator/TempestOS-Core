@@ -13,6 +13,7 @@ var all = Tempest.Calc.Mechanical.MechanicalCalculators.All
     .Concat(Tempest.Calc.Structural.StructuralCalculators.All)
     .Concat(Tempest.Calc.Electrical.ElectricalCalculators.All)
     .Concat(Tempest.Calc.BuildingServices.BuildingServicesCalculators.All)
+    .Concat(Tempest.Calc.FluidPower.FluidPowerCalculators.All)
     .ToDictionary(c => c.Template.Id, StringComparer.Ordinal);
 
 if (args.Length == 0 || args[0] == "list")

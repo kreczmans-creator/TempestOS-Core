@@ -13,7 +13,7 @@ CALC = ROOT / "src" / "Tempest.Calc"
 ID_RE = re.compile(r'public const string Id = "([^"]+)"')
 CASE_RE = re.compile(
     r'new CalcTestCase\(\s*"([^"]+)",\s*"([^"]*)",\s*'
-    r'new CalcReferenceSource\(\s*"((?:[^"\\]|\\.)*)",\s*(null|"(?:[^"\\]|\\.)*"),\s*"((?:[^"\\]|\\.)*)"\)',
+    r'new CalcReferenceSource\(\s*"((?:[^"\\]|\\.)*)",\s*(null|"(?:[^"\\]|\\.)*"),\s*"((?:[^"\\]|\\.)*)"(\s*,\s*Secondary:\s*true)?\s*\)',
     re.S,
 )
 
@@ -48,6 +48,7 @@ def inventory():
                 "edition": None if m.group(4) == "null" else m.group(4).strip('"'),
                 "location": m.group(5),
                 "status": status,
+                "secondary": bool(m.group(6)),
                 "kind": kind,
             })
     return rows
@@ -59,5 +60,6 @@ if __name__ == "__main__":
         print(json.dumps(data, indent=1, ensure_ascii=False))
     else:
         for r in data:
-            print(f'{r["calculator"]:28} {r["case"]:34} {r["status"]:11} {r["kind"]:9} {r["source"][:60]}')
-        print(f"{len(data)} cases, {sum(r['status'] == 'Unconfirmed' for r in data)} unconfirmed")
+            tag = r["status"] + ("/Secondary" if r["secondary"] else "")
+            print(f'{r["calculator"]:28} {r["case"]:34} {tag:21} {r["kind"]:9} {r["source"][:60]}')
+        print(f"{len(data)} cases, {sum(r['status'] == 'Unconfirmed' for r in data)} unconfirmed, {sum(r['secondary'] for r in data)} secondary")
