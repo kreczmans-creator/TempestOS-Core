@@ -26,6 +26,8 @@ A 3 mm wire coiled to 24 mm mean diameter (C = 8) with nine active coils has a r
 | `n_f_req` | 1.2 | spec: Company spring standard SPR-01 |
 | `nu_seat` | 0.5 | spec: Plunger assembly PLG-210 §4: both end plates flat and parallel, no rotation |
 | `rho` | 7850 kg/m^3 | assumption: Generic steel density. |
+| `rm_source` | Typed R_m(d) | assumption: R_m(d) typed for this example; a W3 material with the curve R_m = A/d^m can be applied instead. |
+| `solid_method` | EN 13906-1 (d_max, coil clearance) | spec: Company spring standard SPR-01 (EN 13906-1 solid length and minimum coil clearance); no wire tolerance entered, so d_max is the nominal 3 mm |
 | `work` | Loads | spec: Plunger assembly PLG-210 §4 rev B |
 
 | Output | Expected | Computed | Result |
@@ -41,4 +43,4 @@ A 3 mm wire coiled to 24 mm mean diameter (C = 8) with nine active coils has a r
 | `r_f` | 25.8746  | 25.8746  | PASS |
 | `n_f` | 1.55786  | 1.55786  | PASS |
 
-Governing check: Static shear stress at solid length — PASS (utilisation 0.853). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a — PASS (utilisation 0.880). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

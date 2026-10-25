@@ -43,16 +43,19 @@ public sealed class SpringTests
     }
 
     [Theory]
-    [InlineData(SpringCalculator.Plain, 8, 18)]
-    [InlineData(SpringCalculator.PlainGround, 9, 18)]
-    [InlineData(SpringCalculator.Squared, 10, 22)]
-    [InlineData(SpringCalculator.SquaredGround, 10, 20)]
-    public void Solid_Length_And_Pitch_Follow_The_End_Type(string ends, double coils, double solid)
+    [InlineData(SpringCalculator.Plain, 8, 18, 18)]
+    [InlineData(SpringCalculator.PlainGround, 9, 18, 18)]
+    [InlineData(SpringCalculator.Squared, 10, 22, 23)]
+    [InlineData(SpringCalculator.SquaredGround, 10, 20, 20)]
+    public void Solid_Length_And_Pitch_Follow_The_End_Type(string ends, double coils, double shigley, double en)
     {
         // d = 2 mm, n = 8, L0 = 45 mm: coils and solid length from the end-type relations, the pitch from the free-length relation of the same end.
+        // The EN 13906-1 form (the default) differs from Shigley's only for squared unground ends, by 0.5 d.
         var r = Run(CalcInputValue.Choice("ends", ends), Q("L0", 45, "mm"));
         Assert.Equal(coils, r.OutputSi("n_t"), 9);
-        Assert.Equal(solid * 1e-3, r.OutputSi("L_s"), 9);
+        Assert.Equal(en * 1e-3, r.OutputSi("L_s"), 9);
+        var shigleyRun = Run(CalcInputValue.Choice("ends", ends), Q("L0", 45, "mm"), CalcInputValue.Choice("solid_method", SpringCalculator.SolidShigley));
+        Assert.Equal(shigley * 1e-3, shigleyRun.OutputSi("L_s"), 9);
         var (a, b) = ends switch
         {
             SpringCalculator.Plain => (1.0, 0.0),
@@ -148,7 +151,7 @@ public sealed class SpringTests
     }
 
     [Fact]
-    public void Goodman_Is_The_Shared_Relation_And_Is_Skipped_Without_An_Endurance_Strength()
+    public void Goodman_Is_The_Shared_Relation_And_The_Endurance_Strength_Has_No_Default()
     {
         var r = Run();
         var expected = FatigueRelations.GoodmanUtilisation((r.OutputSi("tau_2") - r.OutputSi("tau_1")) / 2, (r.OutputSi("tau_2") + r.OutputSi("tau_1")) / 2, 400e6, 0.67 * 1800e6);
@@ -156,10 +159,14 @@ public sealed class SpringTests
         Assert.Equal(1 / expected, r.OutputSi("n_f"), 6);
         Assert.Contains(r.Checks, c => c.Name.StartsWith("Goodman", StringComparison.Ordinal));
 
-        var skipped = CalcRunner.Run(Spring, Defaults().With(new CalcInputValue("S_e")));
-        Assert.Contains(skipped.Warnings, w => w.RuleId == "fatigue-skipped");
-        Assert.Null(skipped.FindOutput("n_f"));
-        Assert.DoesNotContain(skipped.Checks, c => c.Name.StartsWith("Goodman", StringComparison.Ordinal));
+        // Review M-8: no invented endurance strength; a blank S_e blocks and says what to enter.
+        Assert.Null(Spring.Template.FindInput("S_e")!.Default);
+        Assert.False(Spring.Template.FindInput("S_e")!.IsOptional);
+        var blank = CalcRunner.Run(Spring, Defaults().With(new CalcInputValue("S_e")));
+        Assert.True(blank.IsBlocked);
+        Assert.Contains(blank.Blocks, b => b.RuleId == "input.S_e" && b.Message.StartsWith("S_e: enter", StringComparison.Ordinal) && b.Message.Contains("no default", StringComparison.Ordinal));
+        Assert.Null(blank.FindOutput("n_f"));
+        Assert.DoesNotContain(Spring.Template.ApplicabilityRules, rule => rule.Id == "fatigue-skipped");
     }
 
     [Fact]
@@ -207,7 +214,7 @@ public sealed class SpringTests
     [Fact]
     public void Inputs_Outside_Their_Hard_Range_Are_Refused()
     {
-        foreach (var (symbol, value, unit) in new[] { ("d", 0.01, "mm"), ("d", 80.0, "mm"), ("D", 0.01, "mm"), ("G", 0.1, "GPa"), ("Rm", 10.0, "MPa"), ("f_tau", 1.5, "") })
+        foreach (var (symbol, value, unit) in new[] { ("d", 0.01, "mm"), ("d", 80.0, "mm"), ("D", 0.01, "mm"), ("G", 0.1, "GPa"), ("Rm", 10.0, "MPa"), ("f_tau", 1.5, ""), ("Rm_A", 0.1, "MPa"), ("Rm_m", 6.0, ""), ("d_max", 0.01, "mm"), ("S_e", 0.1, "MPa") })
         {
             var change = unit.Length > 0 ? Q(symbol, value, unit) : CalcInputValue.Of(symbol, value);
             Assert.Contains(CalcInputValidator.Validate(Spring.Template, Defaults().With(change)), n => n.Severity == CalcNoticeSeverity.Block);
@@ -320,8 +327,10 @@ public sealed class SpringTests
         Assert.Equal("E", t.FindInput("E")!.MaterialProperty);
         Assert.Equal("rho", t.FindInput("rho")!.MaterialProperty);
         Assert.Null(t.FindInput("Rm")!.MaterialProperty);
+        Assert.Equal("Rm_A", t.FindInput("Rm_A")!.MaterialProperty);
+        Assert.Equal("Rm_m", t.FindInput("Rm_m")!.MaterialProperty);
         var material = t.RecordKinds!.Single(k => k.Kind == SpringCalculator.MaterialKind);
-        Assert.Equal(["G", "E", "rho"], material.Symbols);
+        Assert.Equal(["G", "E", "rho", "Rm_A", "Rm_m"], material.Symbols);
         Assert.Contains(t.RecordKinds!, k => k.Kind == "spring.wire-strength" && k.Symbols.SequenceEqual(["Rm"]));
         Assert.Contains(t.RecordKinds!, k => k.Kind == "spring.seating" && k.Symbols.SequenceEqual(["nu_seat"]));
     }
@@ -346,5 +355,158 @@ public sealed class SpringTests
         // §B5: R_m(d) and the permissible stresses are the user's inputs; the template carries no table input and no curve.
         Assert.DoesNotContain(Spring.Template.Inputs, i => i.Kind == CalcInputKind.Table);
         Assert.All(new[] { "Rm", "f_tau", "f_sigma", "f_su", "S_e", "nu_seat" }, symbol => Assert.NotNull(Spring.Template.FindInput(symbol)));
+    }
+
+    // ------------------------------------------------------------------ B-1 review fixes
+
+    private static string[] DeclaredRules() => [.. Spring.Template.ApplicabilityRules.Select(r => r.Id)];
+
+    [Fact]
+    public void Review_M8_The_Wire_Strength_Has_No_Default_And_A_Blank_One_Blocks_With_What_To_Enter()
+    {
+        var spec = Spring.Template.FindInput("Rm")!;
+        Assert.Null(spec.Default);
+        var blank = CalcRunner.Run(Spring, Defaults().With(new CalcInputValue("Rm")));
+        Assert.True(blank.IsBlocked);
+        var block = Assert.Single(blank.Blocks);
+        Assert.Equal("wire-strength", block.RuleId);
+        Assert.StartsWith("Rm: enter", block.Message, StringComparison.Ordinal);
+        Assert.Contains("no default", block.Message, StringComparison.Ordinal);
+        Assert.Null(blank.FindOutput("tau_2"));
+
+        // A new sheet: nothing invented, and what is missing is named (S_e first, from the input check; then R_m).
+        var fresh = CalcRunner.Run(Spring, CalcTemplateHasher.NewSheetInputs(Spring.Template));
+        Assert.True(fresh.IsBlocked);
+        Assert.All(fresh.Blocks, b => Assert.Contains("enter", b.Message, StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(fresh.Blocks, b => b.RuleId == "input.S_e");
+    }
+
+    [Fact]
+    public void Review_M6_The_Wire_Strength_Can_Come_From_The_W3_Curve_R_m_Equals_A_Over_d_To_The_m()
+    {
+        var curve = new[] { CalcInputValue.Choice("rm_source", SpringCalculator.RmCurve), Q("Rm_A", 1800, "MPa"), CalcInputValue.Of("Rm_m", 0.1) };
+        var r = CalcRunner.Run(Spring, Defaults().With(new CalcInputValue("Rm")).With(curve[0]).With(curve[1]).With(curve[2]));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        var expected = 1800e6 / Math.Pow(2, 0.1);
+        Assert.Equal(expected, r.OutputSi("Rm"), 1e-9 * expected);
+
+        // The same R_m typed gives the same stresses and utilisations: the curve only supplies the number.
+        var typed = Run(Q("Rm", expected / 1e6, "MPa"));
+        foreach (var symbol in new[] { "tau_2", "u_2", "u_c", "u_f", "n_f" })
+            Assert.Equal(typed.OutputSi(symbol), r.OutputSi(symbol), Math.Abs(typed.OutputSi(symbol)) * 1e-9);
+
+        // The curve ignores a typed R_m, and a missing A or m is named; an absurd curve is refused.
+        var both = CalcRunner.Run(Spring, Defaults().With(curve[0]).With(curve[1]).With(curve[2]).With(Q("Rm", 3000, "MPa")));
+        Assert.Equal(expected, both.OutputSi("Rm"), 1e-9 * expected);
+        var noM = CalcRunner.Run(Spring, Defaults().With(curve[0]).With(curve[1]).With(new CalcInputValue("Rm_m")));
+        Assert.Contains(noM.Blocks, b => b.RuleId == "missing" && b.Message.StartsWith("Rm_m:", StringComparison.Ordinal));
+        var tiny = CalcRunner.Run(Spring, Defaults().With(curve[0]).With(Q("Rm_A", 100, "MPa")).With(CalcInputValue.Of("Rm_m", 5)).With(Q("d", 20, "mm")).With(Q("D", 160, "mm")));
+        Assert.Contains(tiny.Blocks, b => b.RuleId == "wire-strength" && b.Message.StartsWith("Rm_A:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Review_M6_Rm_A_Follows_The_Diameter_Through_The_Exponent()
+    {
+        Gen.Select(Gen.Double[0.5, 10], Gen.Double[0, 0.3], Gen.Double[1200, 2400]).Sample((d, m, a) =>
+        {
+            var r = CalcRunner.Run(Spring, Defaults().With(new CalcInputValue("Rm")).With(CalcInputValue.Choice("rm_source", SpringCalculator.RmCurve)).With(Q("Rm_A", a, "MPa")).With(CalcInputValue.Of("Rm_m", m)).With(Q("d", d, "mm")).With(Q("D", d * 8, "mm")).With(Q("L0", 5000, "mm")));
+            var rm = a / Math.Pow(d, m);
+            return rm is < 50 or > 5000 ? r.IsBlocked : !r.IsBlocked && Math.Abs(r.OutputSi("Rm") - rm * 1e6) <= 1e-9 * rm * 1e6;
+        }, iter: 60);
+    }
+
+    [Fact]
+    public void Review_Low_The_En_Solid_Length_Uses_The_Maximum_Wire_Diameter_And_Adds_Half_A_Wire_For_Unground_Squared_Ends()
+    {
+        var squared = new[] { CalcInputValue.Choice("ends", SpringCalculator.Squared), Q("L0", 45, "mm") };
+        var nominal = Run(squared);
+        Assert.Equal(23e-3, nominal.OutputSi("L_s"), 12);
+        var tolerance = Run([.. squared, Q("d_max", 2.04, "mm")]);
+        Assert.Equal(2.04e-3 * 11.5, tolerance.OutputSi("L_s"), 12);
+        var shigley = Run([.. squared, Q("d_max", 2.04, "mm"), CalcInputValue.Choice("solid_method", SpringCalculator.SolidShigley)]);
+        Assert.Equal(22e-3, shigley.OutputSi("L_s"), 12);
+        Assert.Contains(Run([.. squared, Q("d_max", 1.9, "mm")]).Blocks, b => b.RuleId == "d-max" && b.Message.StartsWith("d_max:", StringComparison.Ordinal));
+        Assert.Equal(SpringCalculator.SolidEn, Spring.Template.FindInput("solid_method")!.DefaultChoice);
+    }
+
+    [Fact]
+    public void Review_Low_The_En_Minimum_Coil_Clearance_Is_Checked_At_The_Working_Length()
+    {
+        // d 2, D 16, n 8: S_a = (0.0015·16²/2 + 0.1·2)·8 = 3.136 mm; squared and ground, L_s = 20, L_n = 23.136; L0 45.
+        var ok = Run();
+        Assert.Equal(3.136e-3, ok.OutputSi("S_a"), 12);
+        Assert.Equal(23.136e-3, ok.OutputSi("L_n"), 12);
+        Assert.Contains(ok.Checks, c => c.Name.StartsWith("Minimum coil clearance", StringComparison.Ordinal) && c.Passed);
+
+        // F₂ = 112.3 N: s₂ = 23 mm, so L₂ = 22 mm is above solid (20 mm) but inside the clearance (23.136 mm).
+        var tight = Run(Q("F_2", 112.3, "N"));
+        Assert.Contains(tight.Checks, c => c.Name.StartsWith("Minimum coil clearance", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(tight.Checks, c => c.Name == "Working deflection within the travel to solid" && c.Passed);
+
+        // Shigley's form has no clearance: no S_a, no check, and a free length between L_s and L_n is accepted.
+        var shigley = Run(Q("F_2", 112.3, "N"), CalcInputValue.Choice("solid_method", SpringCalculator.SolidShigley));
+        Assert.Null(shigley.FindOutput("S_a"));
+        Assert.DoesNotContain(shigley.Checks, c => c.Name.StartsWith("Minimum coil clearance", StringComparison.Ordinal));
+        var between = Run(Q("L0", 22, "mm"), Q("F_1", 0, "N"), Q("F_2", 1, "N"));
+        Assert.Contains(between.Blocks, b => b.RuleId == "solid" && b.Message.StartsWith("L0:", StringComparison.Ordinal) && b.Message.Contains("L_n", StringComparison.Ordinal));
+        Assert.False(Run(Q("L0", 22, "mm"), Q("F_1", 0, "N"), Q("F_2", 1, "N"), CalcInputValue.Choice("solid_method", SpringCalculator.SolidShigley)).IsBlocked);
+    }
+
+    [Fact]
+    public void Review_Low_The_Torsion_Curvature_Factor_Is_The_En_Q_By_Default_And_Shigley_K_i_On_Request()
+    {
+        var en = Run(Torsion());
+        var shigley = Run([.. Torsion(), CalcInputValue.Choice("tors_factor", SpringCalculator.TorsionShigley)]);
+        Assert.Equal(SpringCalculator.TorsionEn, Spring.Template.FindInput("tors_factor")!.DefaultChoice);
+        Assert.Equal(8.07 / 7.25, en.OutputSi("q"), 12);
+        Assert.Null(en.FindOutput("K_i"));
+        Assert.Equal(247.0 / 224, shigley.OutputSi("K_i"), 12);
+        Assert.Null(shigley.FindOutput("q"));
+        Assert.Equal((8.07 / 7.25) / (247.0 / 224), en.OutputSi("sigma_2") / shigley.OutputSi("sigma_2"), 12);
+        Assert.Equal(en.OutputSi("phi_2"), shigley.OutputSi("phi_2"), 12);
+    }
+
+    [Fact]
+    public void Review_Low_The_Travel_Check_Is_A_Utilisation_Not_A_Zero()
+    {
+        var r = Run();
+        var check = r.Checks.Single(c => c.Name == "Working deflection within the travel to solid");
+        Assert.Equal(r.OutputSi("s_2") / r.OutputSi("s_c"), check.Utilisation, 12);
+        Assert.True(check.Utilisation > 0 && check.Utilisation < 1);
+        Assert.Contains("u_s = ", check.DemandText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Review_Low_The_Force_Ports_Say_They_Are_The_Fixed_Working_Points()
+    {
+        Assert.All(new[] { "F_1", "F_2" }, symbol => Assert.Contains("not a force at an arbitrary deflection", Spring.Template.OutputPorts!.Single(p => p.Symbol == symbol).Description, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Review_Low_Every_Rule_A_Run_Raises_Is_Declared()
+    {
+        var declared = DeclaredRules();
+        var runs = new[]
+        {
+            Run(), Run(Q("D", 1.5, "mm")), Run(Q("D", 6, "mm")), Run(Q("L0", 20, "mm")), Run(Q("F_1", 50, "N"), Q("F_2", 40, "N")), Run(Q("F_2", 600, "N")), Run(CalcInputValue.Of("N_c", 5000)),
+            Run(Q("f_op", 200, "Hz")), Run(Mode(SpringCalculator.Extension), Q("r_h2", 0.9, "mm")), Run(Mode(SpringCalculator.Torsion), Q("l_1", 30, "mm"), Q("l_2", 30, "mm"), Q("M_1", 0.05, "N*m"), Q("M_2", 0.15, "N*m")),
+            CalcRunner.Run(Spring, Defaults().With(Mode(SpringCalculator.Extension)).With(new CalcInputValue("F_0"))), CalcRunner.Run(Spring, Defaults().With(new CalcInputValue("Rm"))),
+            Run(Q("L0", 22, "mm")), Run(Q("d_max", 1.5, "mm")),
+            Run(Q("D", 20, "mm"), CalcInputValue.Of("n", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 80, "mm"), CalcInputValue.Of("nu_seat", 1), Q("F_1", 8, "N"), Q("F_2", 60, "N")),
+            CalcRunner.Run(Spring, Defaults().With(CalcInputValue.Choice("rm_source", SpringCalculator.RmCurve))),
+        };
+
+        foreach (var notice in runs.SelectMany(r => r.Notices))
+        {
+            if (notice.RuleId.StartsWith("input.", StringComparison.Ordinal) || notice.RuleId.StartsWith("record.", StringComparison.Ordinal))
+                continue;
+
+            if (Spring.Template.Inputs.Any(i => i.Symbol == notice.RuleId))
+                continue;
+
+            Assert.Contains(notice.RuleId, declared);
+        }
+
+        Assert.All(new[] { "missing", "wire-strength", "d-max" }, id => Assert.Contains(id, declared));
     }
 }

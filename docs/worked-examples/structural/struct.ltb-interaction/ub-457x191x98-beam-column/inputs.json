@@ -293,23 +293,23 @@
   },
   {
     "Symbol": "curve_y",
-    "Text": "a",
+    "Text": "auto (Table 6.2)",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "EN 1993-1-1 Table 6.2: rolled I, h/b \u003E 1.2, t_f \u2264 40 mm, buckling about y-y",
+      "Reference": "EN 1993-1-1 Table 6.2: rolled I, h/b \u003E 1.2, t_f \u2264 40 mm, buckling about y-y gives curve a",
       "IsSufficientToIssue": true
     },
-    "ValueText": "a"
+    "ValueText": "auto (Table 6.2)"
   },
   {
     "Symbol": "curve_z",
-    "Text": "b",
+    "Text": "auto (Table 6.2)",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "EN 1993-1-1 Table 6.2: rolled I, h/b \u003E 1.2, t_f \u2264 40 mm, buckling about z-z",
+      "Reference": "EN 1993-1-1 Table 6.2: rolled I, h/b \u003E 1.2, t_f \u2264 40 mm, buckling about z-z gives curve b",
       "IsSufficientToIssue": true
     },
-    "ValueText": "b"
+    "ValueText": "auto (Table 6.2)"
   },
   {
     "Symbol": "edition",
@@ -442,6 +442,17 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "rolled I"
+  },
+  {
+    "Symbol": "t_f",
+    "Number": 19.6,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UB 457\u00D7191\u00D798",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "19.6"
   },
   {
     "Symbol": "torsion",

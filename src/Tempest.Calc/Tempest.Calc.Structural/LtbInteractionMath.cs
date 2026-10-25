@@ -62,6 +62,9 @@ public static class LtbInteractionMath
     /// <summary>The modification factor f = 1 − 0.5(1 − k_c)[1 − 2(λ̄_LT − 0.8)²], not above 1 (6.3.2.3(2)).</summary>
     public static double FModification(double kc, double lambda) => Math.Min(1.0, 1 - 0.5 * (1 - kc) * (1 - 2.0 * (lambda - 0.8) * (lambda - 0.8)));
 
+    /// <summary>χ_LT,mod = χ_LT/f (6.3.2.3(2)), not above 1 and, as for χ_LT itself (eq. 6.58), not above 1/λ̄_LT².</summary>
+    public static double ChiLtModified(double chiLt, double f, double lambda) => Math.Min(Math.Min(1.0, chiLt / f), lambda > 0 ? 1 / (lambda * lambda) : 1.0);
+
     /// <summary>χ for flexural buckling (6.3.1.2): 1/(Φ + √(Φ² − λ̄²)) ≤ 1.</summary>
     public static double ChiFlexural(double lambda, double alpha)
     {
@@ -141,9 +144,10 @@ public static class LtbInteractionMath
     /// <param name="WplOverWelY">W_pl,y/W_el,y (1 for class 3).</param>
     /// <param name="WplOverWelZ">W_pl,z/W_el,z (1 for class 3).</param>
     /// <param name="ALt">a_LT = 1 − I_t/I_y, not below 0.</param>
+    /// <param name="Plastic">Class 1 or 2 (Table A.1, plastic column, with the 0.6√(w_i/w_j) factors of k_yz and k_zy); false for class 3 (elastic column, without them).</param>
     public readonly record struct AnnexAInput(
         double N, double NcrY, double NcrZ, double NcrT, double ChiY, double ChiZ, double ChiLt, double LambdaY, double LambdaZ, double Lambda0, double C1,
-        double PsiY, double PsiZ, double My, double Mz, double MplY, double MplZ, double NRkOverGamma, double Area, double WelY, double WplOverWelY, double WplOverWelZ, double ALt);
+        double PsiY, double PsiZ, double My, double Mz, double MplY, double MplZ, double NRkOverGamma, double Area, double WelY, double WplOverWelY, double WplOverWelZ, double ALt, bool Plastic = true);
 
     /// <summary>Annex A (method 1) interaction factors, Tables A.1 and A.2.</summary>
     public static Factors AnnexA(AnnexAInput a)
@@ -192,8 +196,10 @@ public static class LtbInteractionMath
         var czy = Math.Max(0.6 * Math.Sqrt(wy / wz) * elOverPlY, 1 + (wy - 1) * ((2 - 14 * cmy * cmy * lambdaMax * lambdaMax / Math.Pow(wy, 5)) * nPl - dLt));
 
         var kyy = cmy * cmLt * muY / nY / cyy;
-        var kyz = cmz * muY / nZ / cyz * 0.6 * Math.Sqrt(wz / wy);
-        var kzy = cmy * cmLt * muZ / nY / czy * 0.6 * Math.Sqrt(wy / wz);
+
+        // Table A.1: the plastic column carries 0.6√(w_z/w_y) and 0.6√(w_y/w_z); the elastic column (class 3, and 4) does not.
+        var kyz = cmz * muY / nZ / cyz * (a.Plastic ? 0.6 * Math.Sqrt(wz / wy) : 1.0);
+        var kzy = cmy * cmLt * muZ / nY / czy * (a.Plastic ? 0.6 * Math.Sqrt(wy / wz) : 1.0);
         var kzz = cmz * muZ / nZ / czz;
         return new Factors(kyy, kyz, kzy, kzz, cmy, cmz, cmLt);
     }

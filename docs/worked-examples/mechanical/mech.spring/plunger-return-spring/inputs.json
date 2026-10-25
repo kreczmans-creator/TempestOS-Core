@@ -219,6 +219,26 @@
     "ValueText": "7850"
   },
   {
+    "Symbol": "rm_source",
+    "Text": "Typed R_m(d)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "R_m(d) typed for this example; a W3 material with the curve R_m = A/d^m can be applied instead.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Typed R_m(d)"
+  },
+  {
+    "Symbol": "solid_method",
+    "Text": "EN 13906-1 (d_max, coil clearance)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Company spring standard SPR-01 (EN 13906-1 solid length and minimum coil clearance); no wire tolerance entered, so d_max is the nominal 3 mm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "EN 13906-1 (d_max, coil clearance)"
+  },
+  {
     "Symbol": "work",
     "Text": "Loads",
     "Provenance": {

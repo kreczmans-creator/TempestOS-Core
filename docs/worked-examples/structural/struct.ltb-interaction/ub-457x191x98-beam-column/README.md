@@ -33,8 +33,8 @@ A beam-column between lateral restraints 5 m apart, carrying 400 kN compression 
 | `annex` | Annex B (method 2) | assumption: Annex B (method 2) chosen; Annex A can be selected for comparison. |
 | `b` | 192.8 mm | spec: BS EN 10365 UB 457×191×98 |
 | `beta_LT` | 0.75 | spec: EN 1993-1-1 cl. 6.3.2.3(1), recommended value |
-| `curve_y` | a | spec: EN 1993-1-1 Table 6.2: rolled I, h/b > 1.2, t_f ≤ 40 mm, buckling about y-y |
-| `curve_z` | b | spec: EN 1993-1-1 Table 6.2: rolled I, h/b > 1.2, t_f ≤ 40 mm, buckling about z-z |
+| `curve_y` | auto (Table 6.2) | spec: EN 1993-1-1 Table 6.2: rolled I, h/b > 1.2, t_f ≤ 40 mm, buckling about y-y gives curve a |
+| `curve_z` | auto (Table 6.2) | spec: EN 1993-1-1 Table 6.2: rolled I, h/b > 1.2, t_f ≤ 40 mm, buckling about z-z gives curve b |
 | `edition` | 2005+A1:2014 | spec: BS EN 1993-1-1:2005+A1:2014 with the UK National Annex |
 | `f_y` | 345 MPa | spec: BS EN 10025-2 S355, 16 mm < t ≤ 40 mm (flange 19.6 mm) |
 | `gamma_M1` | 1 | spec: UK NA to BS EN 1993-1-1, NA.2.15 |
@@ -48,6 +48,7 @@ A beam-column between lateral restraints 5 m apart, carrying 400 kN compression 
 | `psi_z` | 1 | assumption: Uniform minor-axis moment (conservative). |
 | `section_class` | 1 | assumption: Class 1 assumed for S355 UB 457×191×98 under N + M; the engineer confirms the classification (EN 1993-1-1 Table 5.2). |
 | `section_type` | rolled I | spec: BS EN 10365 UB 457×191×98, hot-rolled |
+| `t_f` | 19.6 mm | spec: BS EN 10365 UB 457×191×98 |
 | `torsion` | susceptible to torsional deformation (Table B.2) | assumption: An open I-section with no torsional restraint along its length is susceptible to torsional deformation (Table B.2). |
 | `use_f` | yes | assumption: The f modification of 6.3.2.3(2) is permitted; k_c from the ψ formula. |
 | `z_g` | 0 mm | assumption: End-moment loading: no transverse load, so the load height does not enter. |
