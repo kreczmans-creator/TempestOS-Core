@@ -22,8 +22,11 @@ ORDER = [
     ("E5 fault protection", ["elec.fault-protection"], "elec.fault-protection.md", "Liability list; electrical safety"),
     ("Motor-circuit pack (E1 → E6 → E4 → E3, E5, E2)", ["chain.motor-circuit"], "chain.motor-circuit.md", "Links E4 and E5 to their inputs"),
     ("F2 accumulator", ["fp.accumulator"], "fp.accumulator.md", "Liability list; stored pressure energy"),
+    ("F1 cylinder, F3 O-ring gland", ["fp.cylinder", "fp.oring-gland"], "fp.cylinder.md, fp.oring-gland.md", "Fluid power; F3 leaks or extrusion under pressure"),
+    ("Hydraulic power unit pack (F1 → F2 → B1 → E1 → E4)", ["chain.hydraulic-power-unit"], "chain.hydraulic-power-unit.md", "Links fluid power to the motor circuit"),
     ("S6 base plate", ["struct.base-plate"], "struct.base-plate.md", "Liability list"),
     ("S7 LTB and N+M interaction", ["struct.ltb-interaction"], "struct.ltb-interaction.md", "Liability list"),
+    ("S9 plate bending", ["struct.plate-bending"], "struct.plate-bending.md", "Plates"),
     ("M3 bolt group, bolted joint", ["mech.bolt-group", "mech.bolted-joint"], "mech.bolt-group.md, mech.bolted-joint.md", "Liability list"),
     ("M4 shaft and the drive-train pack", ["mech.shaft", "chain.drive-train"], "mech.shaft.md, chain.drive-train.md", "Liability list; Critical in the chain"),
     ("S1 section properties", ["struct.section-properties"], "struct.section-properties.md", "Critical; feeds S3, S4, S6 and S7"),
@@ -33,16 +36,19 @@ ORDER = [
     ("S2 frame and beam formulas", ["struct.frame-2d", "struct.beam-formulas"], "struct.frame-2d.md, struct.beam-formulas.md", "Analysis feeding S3 and S7"),
     ("M6 weld group", ["mech.weld-group"], "mech.weld-group.md", "Welds"),
     ("M7 springs", ["mech.spring"], "mech.spring.md", "Stored mechanical energy"),
+    ("M8 snap-fits", ["mech.snap-fit"], "mech.snap-fit.md", "Plastic parts"),
     ("E1 motor sizing", ["elec.motor-sizing"], "elec.motor-sizing.md", "Feeds both packs"),
     ("B2 psychrometrics", ["bs.psychrometrics"], "bs.psychrometrics.md", "Critical; lower physical liability"),
     ("M2 fits, press fit, thick cylinder", ["mech.iso286-fit", "mech.press-fit", "mech.thick-cylinder"], "mech.iso286-fit.md, mech.press-fit.md, mech.thick-cylinder.md", "Mechanical fits and vessels"),
     ("M5 bearing life", ["mech.bearing-life"], "mech.bearing-life.md", "Drive-train pack"),
     ("E6 load budget, E3 voltage drop", ["elec.load-budget", "elec.voltage-drop"], "elec.load-budget.md, elec.voltage-drop.md", "Motor-circuit pack"),
     ("E7 PCB trace", ["elec.pcb-trace"], "elec.pcb-trace.md", "Board-level heating"),
+    ("E8 containment", ["elec.containment"], "elec.containment.md", "Cable containment fill"),
     ("B1 pipe and pump, B6 sealed system", ["bs.pipe-pump", "bs.sealed-system"], "bs.pipe-pump.md, bs.sealed-system.md", "B6 needs the owner's BS EN 12828"),
     ("B4 room heat loss", ["bs.room-heat-loss"], "bs.room-heat-loss.md", "Heating design"),
     ("Wet-heating pack (B4 → B6 → B1 → E1)", ["chain.wet-heating"], "chain.wet-heating.md", "Links the heating calculators"),
     ("B7 Glaser condensation", ["bs.glaser"], "bs.glaser.md", "Building fabric moisture"),
+    ("B8 pipe expansion, B9 insulation", ["bs.pipe-expansion", "bs.insulation"], "bs.pipe-expansion.md, bs.insulation.md", "Pipework"),
     ("Enclosure-cooling pack", ["chain.cooling"], "chain.cooling.md", "Links E6, E2 and B5"),
     ("E2, B3, B5, S5, M1", ["elec.enclosure-heat", "bs.duct-sizing", "bs.heat-exchanger", "struct.load-combinations", "mech.tolerance-stack"], "remaining files", "Lower liability"),
     ("Desktop sheet import (any calculator)", ["desktop.calc-sheet-view"], "rederivation/desktop.calc-sheet-view.md", "Seeded unit not converted"),
@@ -119,6 +125,7 @@ Every calculator Critical and High finding was reproduced with the probe tool. T
 1. **P1-struct.section-properties-01.** A tube or hollow rectangle inside a composite section counts its hole as solid. A 200 × 10 tube reads 568.6 cm²; the correct area is 59.7 cm². The coordinator reproduced it.
 2. **P1-bs.psychrometrics-01.** Cooling with dehumidification swaps sensible and latent load. At 28 °C 50 % to 12 °C, the sheet shows 8.9 kW sensible and 16.4 kW latent; physics gives about 16.3 kW and 8.9 kW. Total load is right; SHR and coil selection are wrong. The coordinator reproduced it.
 3. **P1-chain.drive-train-01.** The drive-train pack binds motor RMS torque to the shaft as steady torque. Since the Addendum A Blue round the yield check sees peak torque. Fatigue and key checks still use RMS torque (chain n_f 2.01 against about 1.39).
+4. **P1-fp.accumulator-R1.** Emergency-stroke sizing treats the charge as adiabatic from pre-charge. A charge held at full pressure cools to ambient, so the stroke needs about 1.26 times the volume (p0 90, p1 100, p2 200 bar, n 1.4). The coordinator checked the relation by hand.
 
 P1-chain.drive-train-02 (no gear ratio on the torque link) was Critical and is now High. The pack's example shaft sits on the motor side, where motor torque is correct. An output-side shaft still receives motor torque with no warning.
 
