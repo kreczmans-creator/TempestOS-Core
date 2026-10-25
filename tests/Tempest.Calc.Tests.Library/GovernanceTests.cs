@@ -168,7 +168,7 @@ public sealed class GovernanceTests
         {
             var ex = await Assert.ThrowsAsync<CalcFeatureDisabledException>(() => host.Service.CreateAsync(reference, null, "Lug", LibraryTestHost.ProvenancedInputs()));
             Assert.Contains("switched off", ex.Message, StringComparison.Ordinal);
-            Assert.Contains("Calc:Features:Lifting", ex.Message, StringComparison.Ordinal);
+            Assert.Contains("HKLM\\SOFTWARE\\Policies\\TempestOS\\Features", ex.Message, StringComparison.Ordinal);
             Assert.Contains("review checklist", ex.Message, StringComparison.Ordinal);
         }
 
@@ -302,111 +302,15 @@ public sealed class GovernanceTests
     // Where the flag is read from
     // ------------------------------------------------------------------
 
-    private sealed class TempDirectory : IDisposable
-    {
-        public TempDirectory() => Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "tempest-flags-" + Guid.NewGuid().ToString("N"));
-
-        public string Path { get; }
-
-        public string Write(string json)
-        {
-            Directory.CreateDirectory(Path);
-            File.WriteAllText(System.IO.Path.Combine(Path, CalcFeatureFlags.InstallFileName), json);
-            return Path;
-        }
-
-        public void Dispose()
-        {
-            try { Directory.Delete(Path, true); } catch (IOException) { }
-        }
-    }
-
-    [Theory]
-    [InlineData("{ \"Calc\": { \"Features\": { \"Lifting\": true } } }", true)]
-    [InlineData("{ \"Calc\": { \"Features\": { \"Lifting\": \"true\" } } }", true)]
-    [InlineData("{ \"Calc\": { \"Features\": { \"Lifting\": \" TRUE \" } } }", true)]
-    [InlineData("{ // comment\n \"Calc\": { \"Features\": { \"Lifting\": true, }, }, }", true)]
-    [InlineData("{ \"Calc\": { \"Features\": { \"Lifting\": false } } }", false)]
-    [InlineData("{ \"Calc\": { \"Features\": { \"Lifting\": 1 } } }", false)]
-    [InlineData("{ \"Calc\": { \"Features\": { \"Lifting\": \"yes\" } } }", false)]
-    [InlineData("{ \"Calc\": { \"Features\": { \"lifting\": true } } }", false)]
-    [InlineData("{ \"Calc\": { \"Features\": { \"Liftin\": true } } }", false)]
-    [InlineData("{ \"Calc\": { \"Lifting\": true } }", false)]
-    [InlineData("{ \"Calc\": [ true ] }", false)]
-    [InlineData("[ true ]", false)]
-    [InlineData("{ not json", false)]
-    [InlineData("", false)]
-    public void The_Flag_Is_On_Only_For_An_Exact_True_In_The_Install_Folder_File(string json, bool expected)
-    {
-        using var dir = new TempDirectory();
-        var flags = CalcFeatureFlags.FromInstallFile(dir.Write(json), out _);
-        Assert.Equal(expected, flags.IsEnabled(CalcFeatures.Lifting));
-
-        if (expected)
-        {
-            Assert.Contains(CalcFeatureFlags.InstallFileName, flags.SourceOf(CalcFeatures.Lifting), StringComparison.Ordinal);
-            Assert.Contains("beside the executable", flags.SourceOf(CalcFeatures.Lifting), StringComparison.Ordinal);
-        }
-    }
-
-    [Fact]
-    public void An_Unreadable_File_Leaves_Every_Feature_Off_And_Says_Why()
-    {
-        using var dir = new TempDirectory();
-        var flags = CalcFeatureFlags.FromInstallFile(dir.Write("{ nonsense"), out var problem);
-        Assert.False(flags.IsEnabled(CalcFeatures.Lifting));
-        Assert.Contains("every feature stays off", problem, StringComparison.Ordinal);
-
-        using var big = new TempDirectory();
-        var path = big.Write("{}");
-        File.WriteAllText(Path.Combine(path, CalcFeatureFlags.InstallFileName), "{ \"x\": \"" + new string('a', CalcFeatureFlags.MaxFileBytes) + "\" }");
-        Assert.False(CalcFeatureFlags.FromInstallFile(path, out var bigProblem).IsEnabled(CalcFeatures.Lifting));
-        Assert.Contains("larger than", bigProblem, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void The_Environment_The_Current_Directory_And_The_Command_Line_Are_Never_Read_For_A_Flag()
-    {
-        using var install = new TempDirectory();
-        var installPath = install.Write("{ \"Calc\": { \"Features\": { \"Lifting\": false } } }");
-        using var elsewhere = new TempDirectory();
-        elsewhere.Write("{ \"Calc\": { \"Features\": { \"Lifting\": true } } }");
-
-        var oldCwd = Directory.GetCurrentDirectory();
-        const string variable = "TEMPEST_Calc__Features__Lifting";
-        var oldValue = Environment.GetEnvironmentVariable(variable);
-
-        try
-        {
-            // An appsettings.json in the current directory, the environment variable the generic configuration would honour, and the command-line form.
-            Directory.SetCurrentDirectory(elsewhere.Path);
-            Environment.SetEnvironmentVariable(variable, "true");
-            Environment.SetEnvironmentVariable("Calc__Features__Lifting", "true");
-            Environment.SetEnvironmentVariable("Calc:Features:Lifting", "true");
-
-            Assert.False(CalcFeatureFlags.FromInstallFile(installPath, out _).IsEnabled(CalcFeatures.Lifting));
-            Assert.False(CalcFeatureFlags.FromInstallFile(null, out _).IsEnabled(CalcFeatures.Lifting));
-            Assert.False(CalcFeatureFlags.FromInstallFile(Path.Combine(installPath, "nowhere"), out _).IsEnabled(CalcFeatures.Lifting));
-        }
-        finally
-        {
-            Directory.SetCurrentDirectory(oldCwd);
-            Environment.SetEnvironmentVariable(variable, oldValue);
-            Environment.SetEnvironmentVariable("Calc__Features__Lifting", null);
-            Environment.SetEnvironmentVariable("Calc:Features:Lifting", null);
-        }
-    }
-
     [Fact]
     public void The_Flag_Is_Off_By_Default_And_Without_A_File()
     {
         Assert.False(CalcFeatureFlags.None.IsEnabled(CalcFeatures.Lifting));
-        Assert.False(CalcFeatureFlags.FromInstallFile(null, out _).IsEnabled(CalcFeatures.Lifting));
+        Assert.False(CalcFeatureFlags.FromSource(CalcFeatureSources.None, out _).IsEnabled(CalcFeatures.Lifting));
         Assert.False(new CalcCatalogue([new GovernedCalculator()]).Features.IsEnabled(CalcFeatures.Lifting));
         Assert.Empty(new CalcCatalogue([new GovernedCalculator()]).Current());
         Assert.True(CalcFeatureFlags.None.IsEnabled(null));
         Assert.True(CalcFeatureFlags.None.IsEnabled(string.Empty));
-        Assert.Equal("Calc:Features:Lifting", CalcFeatureFlags.ConfigurationKey(CalcFeatures.Lifting));
         Assert.Null(CalcFeatureFlags.None.SourceOf(CalcFeatures.Lifting));
     }
 

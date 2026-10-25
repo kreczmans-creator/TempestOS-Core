@@ -51,7 +51,7 @@ public class GatedEngineExecutionTests
         Assert.Equal(LiftingId, refused.CalculationId);
         Assert.Equal(CalculationFeatureGate.Refusal("Lifting lug and pin joint", LiftingId, "lifting"), refused.Message);
         Assert.Contains("switched off", refused.Message, StringComparison.Ordinal);
-        Assert.Contains("Calc:Features:Lifting", refused.Message, StringComparison.Ordinal);
+        Assert.Contains("HKLM\\SOFTWARE\\Policies\\TempestOS\\Features", refused.Message, StringComparison.Ordinal);
         Assert.Empty(await engine.ListRecordsAsync());
     }
 

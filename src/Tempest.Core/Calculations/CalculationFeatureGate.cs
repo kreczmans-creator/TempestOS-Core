@@ -39,17 +39,21 @@ public static class CalculationFeatureGate
         return featureEnabled is not null && featureEnabled(gate.Feature) ? null : Refusal(gate.Title, calculationId, gate.Feature);
     }
 
-    /// <summary>The configuration key that switches a feature on (<c>Calc:Features:Lifting</c>).</summary>
-    public static string ConfigurationKey(string feature)
+    /// <summary>
+    /// Where a feature is switched on: only the machine's administrator can write it (the application installs per user, so nothing in the user's
+    /// profile, the install folder, the environment or the command line counts).
+    /// </summary>
+    public static string EnablementSource(string feature)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(feature);
-        return "Calc:Features:" + char.ToUpperInvariant(feature[0]) + feature[1..];
+        var name = char.ToUpperInvariant(feature[0]) + feature[1..];
+        return $"machine policy value {name}: DWORD 1 under HKLM\\SOFTWARE\\Policies\\TempestOS\\Features on Windows, or \"{name}\": true in the root-owned /etc/tempestos/features.json elsewhere";
     }
 
     /// <summary>The one refusal sentence for a calculation that is composed in but switched off.</summary>
     public static string Refusal(string title, string id, string feature) =>
         $"Calculator '{title}' ({id}) is switched off: its '{feature}' feature is not enabled in this installation " +
-        $"(configuration key {ConfigurationKey(feature)}). It stays off until the owner has completed its review checklist; nothing can be created, checked or issued with it while it is.";
+        $"({EnablementSource(feature)}). It stays off until the owner has completed its review checklist; nothing can be created, checked or issued with it while it is.";
 }
 
 /// <summary>Thrown when the engine is asked to run a calculation whose feature is switched off (`ADR-0173`); the message is <see cref="CalculationFeatureGate.Refusal"/>.</summary>

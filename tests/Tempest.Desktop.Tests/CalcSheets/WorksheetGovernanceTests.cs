@@ -256,6 +256,84 @@ public sealed class WorksheetGovernanceTests
         }
     }
 
+    [AvaloniaFact]
+    public async Task The_Shipped_Host_Ignores_The_Environment_The_Command_Line_The_Current_Directory_And_Every_Appsettings_File()
+    {
+        // Only the machine's administrator source counts; if this machine has one that switches lifting on, the test has nothing to say.
+        if (CalcFeatureFlags.FromSource(CalcFeatureSources.ForThisMachine(), out _).IsEnabled(CalcFeatures.Lifting))
+            return;
+
+        var elsewhere = Path.Combine(Path.GetTempPath(), "tempest-host-cwd-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(elsewhere);
+        const string on = "{ \"Calc\": { \"Features\": { \"Lifting\": true } }, \"Lifting\": true }";
+        File.WriteAllText(Path.Combine(elsewhere, "appsettings.json"), on);
+        var beside = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+        var hadBeside = File.Exists(beside);
+        var besideBefore = hadBeside ? File.ReadAllText(beside) : null;
+        var oldCwd = Directory.GetCurrentDirectory();
+        var variables = new[] { "TEMPEST_Calc__Features__Lifting", "Calc__Features__Lifting", "Calc:Features:Lifting" };
+        var oldValues = variables.Select(Environment.GetEnvironmentVariable).ToArray();
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: ["--Calc:Features:Lifting=true", "Calc:Features:Lifting=true"]);
+
+        try
+        {
+            Directory.SetCurrentDirectory(elsewhere);
+
+            foreach (var variable in variables)
+                Environment.SetEnvironmentVariable(variable, "true");
+
+            File.WriteAllText(beside, on);
+            await host.StartAsync();
+
+            Assert.Null(host.CalcCatalogue!.Find("struct.lifting"));
+            Assert.False(host.CalcCatalogue.Features.IsEnabled(CalcFeatures.Lifting));
+            Assert.True(host.CalcCatalogue.IsWithheld("struct.lifting"));
+            var engine = (Tempest.Core.Calculations.ICalculationEngine)host.Services!.GetService(typeof(Tempest.Core.Calculations.ICalculationEngine));
+            await Assert.ThrowsAsync<Tempest.Core.Calculations.CalculationFeatureDisabledException>(() => engine.ExecuteAsync<int, int>("calc.lifting-lug-pin-joint", 1));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(oldCwd);
+
+            for (var i = 0; i < variables.Length; i++)
+                Environment.SetEnvironmentVariable(variables[i], oldValues[i]);
+
+            if (hadBeside)
+                File.WriteAllText(beside, besideBefore!);
+            else
+                File.Delete(beside);
+
+            try { Directory.Delete(elsewhere, true); } catch (IOException) { }
+
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task A_Host_Given_An_Administrator_Source_That_Switches_Lifting_On_Offers_It_And_Names_The_Source()
+    {
+        var source = new WindowsPolicyFeatureSource((_, name) => name == "Lifting" ? new PolicyValue(true, true, 1) : default);
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), calcFeatureSource: source);
+
+        try
+        {
+            await host.StartAsync();
+
+            Assert.NotNull(host.CalcCatalogue!.Find("struct.lifting"));
+            Assert.Contains("machine policy", host.CalcCatalogue.Features.SourceOf(CalcFeatures.Lifting), StringComparison.Ordinal);
+            var engine = (Tempest.Core.Calculations.ICalculationEngine)host.Services!.GetService(typeof(Tempest.Core.Calculations.ICalculationEngine));
+
+            // Not refused as switched off: the registered definition simply is not an int -> int one.
+            await Assert.ThrowsAsync<Tempest.Core.Calculations.CalculationDefinitionNotFoundException>(() => engine.ExecuteAsync<int, int>("calc.lifting-lug-pin-joint", 1));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
     // ---------------------------------------------------------------
 
     private static CalcInstanceService BuildService(WorkspaceHost host, bool liftingOn)

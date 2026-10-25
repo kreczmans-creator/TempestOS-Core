@@ -97,7 +97,7 @@ public sealed class LiftingGovernanceTests
 
         var ex = await Assert.ThrowsAsync<CalcFeatureDisabledException>(() => host.Service.CreateAsync(reference, project, "Lug", Inputs()));
         Assert.Contains("switched off", ex.Message, StringComparison.Ordinal);
-        Assert.Contains("Calc:Features:Lifting", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("HKLM\\SOFTWARE\\Policies\\TempestOS\\Features", ex.Message, StringComparison.Ordinal);
         Assert.Contains("Lifting lugs and spreader beams", ex.Message, StringComparison.Ordinal);
         Assert.Empty(await host.Store.ListInstancesAsync(project));
     }
@@ -181,23 +181,15 @@ public sealed class LiftingGovernanceTests
     }
 
     [Fact]
-    public void The_Install_Folder_File_Is_The_Only_Switch()
+    public void The_Administrator_Source_Is_The_Only_Switch()
     {
-        var dir = Path.Combine(Path.GetTempPath(), "tempest-s8-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(dir);
+        // A DWORD of 1 under the machine policy key switches the calculator into the catalogue; anything else leaves it withheld.
+        static CalcCatalogue Catalogue(PolicyValue value) =>
+            new(ShippedCalculators.All, CalcFeatureFlags.FromSource(new WindowsPolicyFeatureSource((_, name) => name == "Lifting" ? value : default), out _));
 
-        try
-        {
-            File.WriteAllText(Path.Combine(dir, "appsettings.json"), "{ \"Calc\": { \"Features\": { \"Lifting\": true } } }");
-            Assert.Contains(new CalcCatalogue(ShippedCalculators.All, CalcFeatureFlags.FromInstallFile(dir, out _)).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-            Assert.DoesNotContain(new CalcCatalogue(ShippedCalculators.All, CalcFeatureFlags.FromInstallFile(Path.Combine(dir, "other"), out _)).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-            File.WriteAllText(Path.Combine(dir, "appsettings.json"), "{ \"Calc\": { \"Features\": { \"Lifting\": \"1\" } } }");
-            Assert.DoesNotContain(new CalcCatalogue(ShippedCalculators.All, CalcFeatureFlags.FromInstallFile(dir, out _)).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-        }
-        finally
-        {
-            Directory.Delete(dir, true);
-        }
+        Assert.Contains(Catalogue(new PolicyValue(true, true, 1)).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
+        Assert.DoesNotContain(Catalogue(default).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
+        Assert.DoesNotContain(Catalogue(new PolicyValue(true, false, 1)).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
 
         // A catalogue has no way to be turned on later.
         var catalogue = new CalcCatalogue(ShippedCalculators.All);

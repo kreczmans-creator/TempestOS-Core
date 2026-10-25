@@ -48,6 +48,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     private readonly string? _persistenceRootPathOverride;
     private readonly ISessionPrincipalSource? _sessionPrincipalsOverride;
     private readonly IReadOnlyList<string>? _commandLineArgs;
+    private readonly Tempest.Calc.Library.ICalcFeatureSource? _calcFeatureSource;
 
     private ITempestHost? _host;
     private WorkspaceManager? _manager;
@@ -106,14 +107,20 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <see langword="null"/> (the default) to contribute none — reaches
     /// the Host's default configuration source (`WP 17.2A`, ADR-0146).
     /// </param>
+    /// <param name="calcFeatureSource">
+    /// Where the optional calculator features (`ADR-0173`) are switched on, or <see langword="null"/> (the default) for the machine's own
+    /// administrator-only source (the HKLM policy key on Windows, the root-owned file elsewhere). A test supplies its own.
+    /// </param>
     public WorkspaceHost(
         string? persistenceRootPathOverride = null,
         ISessionPrincipalSource? sessionPrincipals = null,
-        IReadOnlyList<string>? commandLineArgs = null)
+        IReadOnlyList<string>? commandLineArgs = null,
+        Tempest.Calc.Library.ICalcFeatureSource? calcFeatureSource = null)
     {
         _persistenceRootPathOverride = persistenceRootPathOverride;
         _sessionPrincipalsOverride = sessionPrincipals;
         _commandLineArgs = commandLineArgs;
+        _calcFeatureSource = calcFeatureSource;
     }
 
     /// <summary>
@@ -330,10 +337,10 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // the record's own Re-run and Compare commands through the
         // dispatcher and the Template registry — every module registered
         // there so the commands reach all nineteen.
-        // Optional calculators (S8 lifting, `ADR-0173`) are composed in but withheld from the catalogue unless the installation's own
-        // appsettings.json beside the executable switches their feature on (`Calc.Features.Lifting = true`). The current directory, the
-        // environment and the command line are not read for it, and nothing at run time changes it. Enabling is logged with its source.
-        var calcFeatures = Tempest.Calc.Library.CalcFeatureFlags.FromInstallFile(AppContext.BaseDirectory, out var calcFeatureProblem);
+        // Optional calculators (S8 lifting, `ADR-0173`) are composed in but withheld from the catalogue unless the machine's administrator switches
+        // their feature on (the HKLM policy key on Windows, a root-owned file elsewhere). The application installs per user, so the install folder, the
+        // current directory, the environment and the command line are not read for it, and nothing at run time changes it. Enabling is logged with its source.
+        var calcFeatures = Tempest.Calc.Library.CalcFeatureFlags.FromSource(_calcFeatureSource ?? Tempest.Calc.Library.CalcFeatureSources.ForThisMachine(), out var calcFeatureProblem);
 
         if (calcFeatureProblem is not null)
             hostLogger?.Warning(calcFeatureProblem);
