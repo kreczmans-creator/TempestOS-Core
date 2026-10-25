@@ -108,6 +108,34 @@ public sealed class LegacyMigrationTests
     }
 
     [Fact]
+    public async Task An_Archive_Cannot_Be_A_Pack_Member_And_Is_Not_Written_To()
+    {
+        // Merge review finding 4: a pack writes its id onto each draft member, and an archive is never changed; it could not be checked in the pack either.
+        var (host, engine) = NewHost();
+        var record = await engine.ExecuteAsync<BoltedJointPreloadInput, BoltedJointPreloadResult>(BoltedJointPreloadCalculationDefinition.Id, Example1());
+        await new LegacyCalculationMigration(engine, host.Store).MigrateAsync();
+        var archive = (await host.Store.FindInstanceAsync(record.Id))!;
+        Assert.True(archive.IsLegacyArchive);
+        var project = await host.ProjectAsync();
+        var live = await host.Service.CreateAsync("test.direct-stress", project, "Live", LibraryTestHost.ProvenancedInputs());
+        var packsBefore = (await host.Store.ListPacksAsync(null)).Count + (await host.Store.ListPacksAsync(project)).Count;
+
+        var alone = await Assert.ThrowsAsync<ArgumentException>(() => host.Service.CreatePackAsync(archive.ProjectId, "Archive pack", [archive.Id]));
+        Assert.Contains("migrated legacy record", alone.Message, StringComparison.Ordinal);
+
+        // Nor in company: the pack is refused whole, and the live member is not given a pack id.
+        var company = await Assert.ThrowsAsync<ArgumentException>(() => host.Service.CreatePackAsync(project, "Mixed pack", [live.Id, archive.Id]));
+        Assert.Contains("migrated legacy record", company.Message, StringComparison.Ordinal);
+
+        var after = (await host.Store.FindInstanceAsync(archive.Id))!;
+        Assert.Equal(archive.UpdatedAt, after.UpdatedAt);
+        Assert.Equal(archive.Status, after.Status);
+        Assert.Null(after.PackId);
+        Assert.Null((await host.Store.FindInstanceAsync(live.Id))!.PackId);
+        Assert.Equal(packsBefore, (await host.Store.ListPacksAsync(null)).Count + (await host.Store.ListPacksAsync(project)).Count);
+    }
+
+    [Fact]
     public void Mapping_Reads_Quantities_Numbers_Flags_And_Text_And_Keeps_Unknown_Shapes_As_Text()
     {
         var input = JsonSerializer.SerializeToElement(new

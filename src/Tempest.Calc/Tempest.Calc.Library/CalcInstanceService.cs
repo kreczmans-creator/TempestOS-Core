@@ -794,6 +794,10 @@ public sealed partial class CalcInstanceService
             if (await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false) is not { } found)
                 continue;
 
+            // A migrated legacy record is an archive that is never changed (ADR-0167); a pack would write its PackId and could never be checked.
+            if (found.IsLegacyArchive)
+                throw new ArgumentException(LegacyMessage(found), nameof(instanceIds));
+
             if (found.ProjectId != projectId)
                 throw new ArgumentException($"Calculation '{found.Name}' belongs to another project; a pack holds the calculations of one project.", nameof(instanceIds));
 
