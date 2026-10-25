@@ -79,15 +79,15 @@
 - [x] B-2 F1 cylinder circuit, F3 O-ring gland; HPU chain F1 → F2 → B1 → E1 → E4 (`v0.26.0/addB-2-fluid`)
 - [x] B-3 M8 snap-fits, B8 pipe expansion, S9 plate bending, E8 containment, B9 insulation (`v0.26.0/addB-3-reuse`)
 - [x] B-4 W1 CAD import, W2 scan import, M9 kinematics, E9 motor start/PFC; scan-to-seal W2 → M1 → F3 (`v0.26.0/addB-4-workflows`)
-- [ ] B-5 S8 lifting lugs and spreader beams behind a feature flag (`v0.26.0/addB-5-gated`)
-- [ ] §B7 ten chains: integration tests + issued pack worked examples
-- [ ] Security + every colour team re-run on the Addendum B delta
-- [ ] §B10 owner test pack additions
-- [ ] §B9 gates; STATUS final line
+- [x] B-5 S8 lifting lugs and spreader beams behind a feature flag (`v0.26.0/addB-5-gated`)
+- [x] §B7 ten chains: integration tests + issued pack worked examples
+- [x] Security + every colour team re-run on the Addendum B delta
+- [x] §B10 owner test pack additions
+- [x] §B9 gates; STATUS final line
 
 ## Addendum C — test readiness, Track S (v0.26.0, no tag; queued after Addendum B §B9, C0)
 Track P (parallel verification on `v0.26.0/addC-parallel`) is a separate session; this session never starts or edits it.
-- [ ] C4 start: Addendum B gates met; record the Track S start in DECISIONS; merge `v0.26.0/addC-parallel` (`--no-ff`); STATUS "Addendum C: n/8"
+- [ ] C4 start (on hold at the owner's request; Track P already merged into release/v0.26.0 by the integration, DI-01): Addendum B gates met; record the Track S start in DECISIONS; merge `v0.26.0/addC-parallel` (`--no-ff`); STATUS "Addendum C: n/8"
 - [ ] C-1 fix every Track P Critical/High with regression tests (`v0.26.0/addC-1-fixes`)
 - [ ] C-2 consistency audit applied; `docs/calcs/glossary.md` (`v0.26.0/addC-2-consistency`)
 - [ ] C-3 record entry tooling: records screen, CSV import from Track P templates, missing-record prompts (`v0.26.0/addC-3-records`)
