@@ -38,20 +38,25 @@ public sealed class PlateBendingCalculator : ICalcCalculator
     /// <summary>The relative change between Ritz orders K and K − 2 below which the Ritz solution counts as converged.</summary>
     public const double RitzTolerance = 1e-5;
 
-    public const int RitzStart = 4;
+    /// <summary>The Ritz orders tried, in turn; the highest is the cap.</summary>
+    public static readonly int[] RitzOrders = [8, 12, 16, 20, 25, 30];
+
     public const int RitzCap = 30;
+
+    /// <summary>The Ritz iteration stops as stalled when a change is not below this fraction of the one before it (the stress is no longer converging usefully).</summary>
+    public const double RitzStallRatio = 0.7;
 
     /// <summary>The thin-plate theory is not used for a span/thickness ratio below this (shear deformation).</summary>
     public const double ThinPlateRatio = 10;
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Structural, "Plate bending",
+        Id, "1.2.0", CalcDiscipline.Structural, "Plate bending",
         "Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.",
         "Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²)\n" +
         "Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²)\n" +
         "Circular, central patch (radius c, pressure q) or ring (radius b, force F): w = A + B·r² (+ q·r⁴/64D) inside, A′ + B′·r² + C′·ln(r/a) + k·r²·ln(r/a) outside, k = q·c²/8D or F/8πD; constants from continuity of w, w′, M_r at the load radius and the edge conditions; M_r = −D(w″ + ν·w′/r), M_θ = −D(w′/r + ν·w″)\n" +
         "Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared)\n" +
-        "Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K raised from 4 to 30 until w and the stress change by < 10⁻⁵\n" +
+        "Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K taken as 8, 12, 16, 20, 25, 30 until w and the stress change by < 10⁻⁵ (or the change stops falling)\n" +
         "Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρt)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρt)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis\n" +
         "Checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t > 0.5",
         [
@@ -434,12 +439,12 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             c.Record("terms_used", "odd terms per direction N (m, n = 1, 3, … 2N − 1)", sums, new ScalarValue(nav.TermsPerDirection), "Terms of the Navier series used", "T&WK Ch. 5");
 
             if (!nav.Converged)
-                c.Warn("navier-converge", $"a: the Navier series reached its cap of {NavierTermCap} odd terms per direction with a last change of {F(nav.LastChange)} (tolerance {NavierTolerance:0e0}); the result is accurate to about that change.");
+                c.Warn("navier-converge", $"a: the Navier series reached its cap of {NavierTermCap} odd terms per direction with a last change of {F(nav.LastChange)} (tolerance {NavierTolerance:0e0}); the change is measured on the deflection, the centre von Mises moment and the corner twisting moment, the last of which is Richardson-extrapolated (1/N² tail removed).");
 
             c.Record("w_max", load == Uniform ? "16q/(π⁶D)·Σ (−1)^((m+n)/2−1)/(m·n·(m²/a² + n²/b²)²), m, n odd" : "16q/(π⁶D)·Σ sin(mπu/2a)·sin(nπv/2b)/(m·n·(m²/a² + n²/b²)²), m, n odd", sums, ScalarValue.Of(nav.Deflection * 1e3, "mm"), "Maximum deflection (centre)", "T&WK Ch. 5");
             c.Record("M_x_c", "D·π²·Σ W_mn(m²/a² + ν·n²/b²)·sin·sin at the centre", sums, ScalarValue.Of(nav.Mx, "N*m/m"), "M_x at the centre", "T&WK Ch. 5");
             c.Record("M_y_c", "D·π²·Σ W_mn(n²/b² + ν·m²/a²)·sin·sin at the centre", sums, ScalarValue.Of(nav.My, "N*m/m"), "M_y at the centre", "T&WK Ch. 5");
-            c.Record("M_xy_k", "|D(1 − ν)·π²·Σ W_mn·(mn/ab)| at a corner", sums, ScalarValue.Of(nav.MxyCorner, "N*m/m"), "Twisting moment at a corner", "T&WK Ch. 5");
+            c.Record("M_xy_k", "|D(1 − ν)·π²·Σ W_mn·(mn/ab)| at a corner, with the 1/N² tail of the sum removed by Richardson extrapolation (s_N + (s_N − s_N/2)/3)", sums, ScalarValue.Of(nav.MxyCorner, "N*m/m"), "Twisting moment at a corner", "T&WK Ch. 5");
             c.Record("R_corner", "2·M_xy at a corner", $"2 × {F(nav.MxyCorner)} N·m/m", ScalarValue.Of(2 * nav.MxyCorner / 1e3, "kN"), "Corner reaction holding the corner down", "T&WK Ch. 5");
             c.Record("M_vm_c", "√(M_x² − M_x·M_y + M_y²) at the centre", $"M_x = {F(nav.Mx)}, M_y = {F(nav.My)} N·m/m", ScalarValue.Of(nav.CentreVonMises, "N*m/m"), "Von Mises moment at the centre", "von Mises");
             c.Record("M_vm_k", "√3·|M_xy| at a corner", $"M_xy = {F(nav.MxyCorner)} N·m/m", ScalarValue.Of(nav.CornerVonMises, "N*m/m"), "Von Mises moment at a corner (pure twist)", "von Mises");
@@ -465,13 +470,16 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             var prevW = double.NaN;
             var prevS = double.NaN;
             var change = double.PositiveInfinity;
+            var previousChange = double.PositiveInfinity;
             var converged = false;
+            var stalled = false;
             (double VonMises, double X, double Y, double Principal) scan = default;
 
             try
             {
-                for (var k = RitzStart; k <= RitzCap; k += 2)
+                foreach (var k in RitzOrders)
                 {
+                    c.CancellationToken.ThrowIfCancellationRequested();
                     ritz = PlateBendingMath.ClampedRitz.Solve(a, b, nu, d, q, pu, pv, k);
                     var wc = ritz.At(a / 2, b / 2).W;
                     scan = ritz.Scan();
@@ -480,12 +488,14 @@ public sealed class PlateBendingCalculator : ICalcCalculator
                     {
                         change = Math.Max(Math.Abs(wc - prevW) / Math.Abs(wc), Math.Abs(scan.VonMises - prevS) / Math.Max(scan.VonMises, 1e-300));
                         converged = change < RitzTolerance;
+                        stalled = !converged && change > RitzStallRatio * previousChange;
+                        previousChange = change;
                     }
 
                     prevW = wc;
                     prevS = scan.VonMises;
 
-                    if (converged)
+                    if (converged || stalled)
                         break;
                 }
             }
@@ -499,7 +509,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             c.Record("terms_used", "Ritz order K (terms per direction)", sums, new ScalarValue(ritz.Terms), "Order of the Ritz solution used", "T&WK Ch. 6");
 
             if (!converged)
-                c.Warn("ritz-converge", $"a: the Ritz solution reached its highest order K = {RitzCap} with a last change of {F(change)} (tolerance {RitzTolerance:0e0}); the stress error can be several times that change (about {F(3 * change)}; an estimate, not a bound) because the plate is long or the patch small for this basis. Compare with finite elements.");
+                c.Warn("ritz-converge", $"a: the Ritz solution stopped at K = {ritz.Terms} ({(stalled ? "the change stopped falling" : "the highest order")}) with a last change of {F(change)} (tolerance {RitzTolerance:0e0}); the stress error can be several times that change (about {F(3 * change)}; an estimate, not a bound) because the plate is long or the patch small for this basis. Compare with finite elements.");
 
             var centre = ritz.At(a / 2, b / 2);
             wMax = centre.W;

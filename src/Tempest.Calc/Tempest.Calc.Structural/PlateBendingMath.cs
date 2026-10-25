@@ -312,8 +312,9 @@ public static class PlateBendingMath
     /// <paramref name="patchU"/> × <paramref name="patchV"/> of pressure q: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n with
     /// W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²). Terms are added in shells while N doubles from 8 odd terms per direction to
     /// <paramref name="maxTerms"/>, stopping when the deflection, the centre moments and the corner twisting moment each change by
-    /// less than <paramref name="tolerance"/> over a doubling. For a uniform load the corner twisting moment (whose sum converges like
-    /// 1/N²) is Richardson-extrapolated from the last two doublings before it is compared and returned.
+    /// less than <paramref name="tolerance"/> over a doubling. The corner twisting moment (whose sum converges like 1/N² for a
+    /// uniform load, and a patch that covers the plate is one) is Richardson-extrapolated from the last two doublings before it is compared
+    /// and returned; for a smaller patch the extrapolated value is used only when it changes less than the raw sum.
     /// </summary>
     public static NavierResult NavierSimplySupported(double a, double b, double nu, double d, double q, double? patchU, double? patchV, int maxTerms = 1024, double tolerance = 1e-6)
     {
@@ -324,7 +325,9 @@ public static class PlateBendingMath
         var gcy = new double[nTotal];
         var gkx = new double[nTotal];
         var gky = new double[nTotal];
-        var patch = patchU is not null && patchV is not null;
+
+        // A patch that covers the whole plate is the uniform load (and gets the same treatment of the corner sum).
+        var patch = patchU is not null && patchV is not null && !(patchU.Value >= a * (1 - 1e-12) && patchV.Value >= b * (1 - 1e-12));
 
         for (var i = 0; i < nTotal; i++)
         {
@@ -362,8 +365,8 @@ public static class PlateBendingMath
         var done = 0;
         var prevW = double.NaN;
         var prevC = double.NaN;
-        var prevK = double.NaN;
         var prevRawK = double.NaN;
+        var prevExtK = double.NaN;
         var change = double.PositiveInfinity;
         var converged = false;
         NavierResult? last = null;
@@ -396,20 +399,36 @@ public static class PlateBendingMath
             var mxyRaw = Math.Abs((1 - nu) * c4 * sk / (a * b));
 
             // The corner sum of a uniform load has a tail that falls like 1/N²; remove it by Richardson extrapolation of the
-            // last two doublings (limit ≈ s_N + (s_N − s_N/2)/3). A patch load's tail oscillates and is already smaller: no extrapolation.
-            var mxy = patch || double.IsNaN(prevRawK) ? mxyRaw : mxyRaw + (mxyRaw - prevRawK) / 3;
+            // last two doublings (limit ≈ s_N + (s_N − s_N/2)/3). The tail of a patch load oscillates and falls faster once N is
+            // well above the plate/patch ratio, so the extrapolated value is used for a patch only when it changes less than the raw one.
+            var mxyExt = double.IsNaN(prevRawK) ? double.NaN : mxyRaw + (mxyRaw - prevRawK) / 3;
+            var rawChange = double.IsNaN(prevRawK) ? double.PositiveInfinity : Rel(mxyRaw, prevRawK);
+            var extChange = double.IsNaN(prevExtK) || double.IsNaN(mxyExt) ? double.PositiveInfinity : Rel(mxyExt, prevExtK);
+            double mxy, cornerChange;
+
+            if (!double.IsNaN(mxyExt) && (!patch || extChange < rawChange))
+            {
+                mxy = mxyExt;
+                cornerChange = double.IsNaN(prevExtK) ? rawChange : extChange;
+            }
+            else
+            {
+                mxy = mxyRaw;
+                cornerChange = rawChange;
+            }
+
             prevRawK = mxyRaw;
+            prevExtK = mxyExt;
             var vc = VonMises(mx, my);
 
             if (!double.IsNaN(prevW))
             {
-                change = Math.Max(Rel(w, prevW), Math.Max(Rel(vc, prevC), Rel(mxy, prevK)));
+                change = Math.Max(Rel(w, prevW), Math.Max(Rel(vc, prevC), cornerChange));
                 converged = change < tolerance;
             }
 
             prevW = w;
             prevC = vc;
-            prevK = mxy;
             last = new NavierResult(w, mx, my, mxy, stage, converged, change);
 
             if (converged)
@@ -480,9 +499,10 @@ public static class PlateBendingMath
         private readonly double[] _c;
         private readonly double[] _massB;
         private readonly double[] _chol;
+        private readonly double[] _cholT;
         private readonly double[] _scale;
 
-        private ClampedRitz(double a, double b, double nu, double d, int k, double[] c, double[] massB, double[] chol, double[] scale)
+        private ClampedRitz(double a, double b, double nu, double d, int k, double[] c, double[] massB, double[] chol, double[] cholT, double[] scale)
         {
             _a = a;
             _b = b;
@@ -492,17 +512,18 @@ public static class PlateBendingMath
             _c = c;
             _massB = massB;
             _chol = chol;
+            _cholT = cholT;
             _scale = scale;
         }
 
         /// <summary>Terms per direction K.</summary>
         public int Terms => _k;
 
-        /// <summary>Solves the Ritz system with <paramref name="k"/> terms per direction (1 … 32).</summary>
+        /// <summary>Solves the Ritz system with <paramref name="k"/> terms per direction (1 … 30).</summary>
         public static ClampedRitz Solve(double a, double b, double nu, double d, double q, double? patchU, double? patchV, int k)
         {
-            if (k < 1 || k > 32)
-                throw new CalcEvaluationException("The Ritz solution takes 1 to 32 terms per direction.");
+            if (k < 1 || k > 30)
+                throw new CalcEvaluationException("The Ritz solution takes 1 to 30 terms per direction.");
 
             var (xs, ws) = GaussLegendre01(Nodes);
             var amat = new double[k * k];
@@ -577,8 +598,7 @@ public static class PlateBendingMath
                 {
                     var sum = kmat[i * n + j] * scale[i] * scale[j];
 
-                    for (var p = 0; p < j; p++)
-                        sum -= chol[i * n + p] * chol[j * n + p];
+                    sum -= Dot(chol, i * n, chol, j * n, j);
 
                     if (i == j)
                     {
@@ -594,7 +614,16 @@ public static class PlateBendingMath
                 }
             }
 
-            var solver = new ClampedRitz(a, b, nu, d, k, new double[n], bmat, chol, scale);
+            // Lᵀ stored by rows (row j holds L[i][j] for i ≥ j), so the back substitution reads contiguous memory too.
+            var cholT = new double[n * n];
+
+            for (var i = 0; i < n; i++)
+            {
+                for (var j = 0; j <= i; j++)
+                    cholT[j * n + i] = chol[i * n + j];
+            }
+
+            var solver = new ClampedRitz(a, b, nu, d, k, new double[n], bmat, chol, cholT, scale);
             solver.CholeskySolve(f, solver._c);
             return solver;
         }
@@ -607,21 +636,13 @@ public static class PlateBendingMath
 
             for (var i = 0; i < n; i++)
             {
-                var s = rhs[i] * _scale[i];
-
-                for (var p = 0; p < i; p++)
-                    s -= _chol[i * n + p] * y[p];
-
+                var s = rhs[i] * _scale[i] - Dot(_chol, i * n, y, 0, i);
                 y[i] = s / _chol[i * n + i];
             }
 
             for (var i = n - 1; i >= 0; i--)
             {
-                var s = y[i];
-
-                for (var p = i + 1; p < n; p++)
-                    s -= _chol[p * n + i] * result[p];
-
+                var s = y[i] - Dot(_cholT, i * n + i + 1, result, i + 1, n - i - 1);
                 result[i] = s / _chol[i * n + i];
             }
 
@@ -776,7 +797,7 @@ public static class PlateBendingMath
             var y = new double[n];
             var rq = 0.0;
 
-            for (var it = 0; it < 400; it++)
+            for (var it = 0; it < 150; it++)
             {
                 ApplyMass(x, rhs, massPerArea);
                 CholeskySolve(rhs, y);
@@ -789,7 +810,7 @@ public static class PlateBendingMath
                 for (var i = 0; i < n; i++)
                     x[i] = y[i] / norm;
 
-                if (it > 0 && Math.Abs(next - rq) <= 1e-13 * Math.Abs(next))
+                if (it > 0 && Math.Abs(next - rq) <= 1e-11 * Math.Abs(next))
                 {
                     rq = next;
                     break;
@@ -832,6 +853,29 @@ public static class PlateBendingMath
                     result[i * k + j] = s * massPerArea * _a * _b;
                 }
             }
+        }
+
+        /// <summary>Σ a[ao + i]·b[bo + i] for i &lt; length, with SIMD.</summary>
+        private static double Dot(double[] a, int ao, double[] b, int bo, int length)
+        {
+            var sum = 0.0;
+            var i = 0;
+            var width = System.Numerics.Vector<double>.Count;
+
+            if (length >= 2 * width)
+            {
+                var acc = System.Numerics.Vector<double>.Zero;
+
+                for (; i <= length - width; i += width)
+                    acc += new System.Numerics.Vector<double>(a, ao + i) * new System.Numerics.Vector<double>(b, bo + i);
+
+                sum = System.Numerics.Vector.Sum(acc);
+            }
+
+            for (; i < length; i++)
+                sum += a[ao + i] * b[bo + i];
+
+            return sum;
         }
 
         private static double Dot(double[] a, double[] b)

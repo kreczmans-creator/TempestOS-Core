@@ -233,6 +233,7 @@ public sealed class PlateBendingTests
     public void Review_M2_The_Ritz_Order_Cap_Is_Thirty_The_Clamped_Patch_Minimum_Is_A_Quarter_And_The_Warning_Makes_No_Accuracy_Claim()
     {
         Assert.Equal(30, PlateBendingCalculator.RitzCap);
+        Assert.Equal([8, 12, 16, 20, 25, 30], PlateBendingCalculator.RitzOrders);
         Assert.Contains(With(Rect(true, 1000, 1000, PlateBendingCalculator.Patch), Q("u", 240, "mm"), Q("v", 240, "mm")).Blocks, b => b.RuleId == "patch-min");
         var ok = With(Rect(true, 1000, 1000, PlateBendingCalculator.Patch), Q("u", 250, "mm"), Q("v", 250, "mm"));
         Assert.False(ok.IsBlocked, string.Join("; ", ok.Blocks.Select(b => b.Message)));
@@ -252,6 +253,49 @@ public sealed class PlateBendingTests
         Assert.Equal(k20.At(0, a / 2).Mx, k30.At(0, a / 2).Mx, Math.Abs(k20.At(0, a / 2).Mx) * 1e-4);
     }
 
+    [Theory]
+    [InlineData(5000, 500)]
+    [InlineData(10000, 1000)]
+    public void Review_Ritz_Speed_A_Long_Clamped_Plate_Stops_On_The_Stall_Rule_Quickly(double a, double b)
+    {
+        var inputs = Defaults();
+        foreach (var v in Rect(true, a, b))
+            inputs = inputs.With(v);
+
+        CalcRunner.Run(Plate, inputs);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var r = CalcRunner.Run(Plate, inputs);
+        sw.Stop();
+        Assert.False(r.IsBlocked);
+        Assert.True(sw.ElapsedMilliseconds < 1500, $"{sw.ElapsedMilliseconds} ms");
+        Assert.True(r.OutputSi("terms_used") <= PlateBendingCalculator.RitzCap);
+    }
+
+    [Fact]
+    public void Review_Ritz_Speed_The_Smallest_Clamped_Patch_And_The_Square_Are_Quick_And_The_Run_Honours_Cancellation()
+    {
+        var inputs = Defaults();
+        foreach (var v in Rect(true, 1000, 1000, PlateBendingCalculator.Patch).Concat([Q("u", 250, "mm"), Q("v", 250, "mm")]))
+            inputs = inputs.With(v);
+
+        CalcRunner.Run(Plate, inputs);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var r = CalcRunner.Run(Plate, inputs);
+        sw.Stop();
+        Assert.False(r.IsBlocked);
+        Assert.True(sw.ElapsedMilliseconds < 1500, $"{sw.ElapsedMilliseconds} ms");
+
+        // The square settles before the cap (the sparse schedule keeps the quality: w to 1e-9, stress to 1e-5).
+        var square = With(Rect(true));
+        Assert.True(square.OutputSi("terms_used") <= 20);
+        Assert.DoesNotContain(square.Warnings, w => w.RuleId == "ritz-converge");
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        var cancelled = CalcRunner.Run(Plate, inputs, cancellationToken: cts.Token);
+        Assert.True(cancelled.IsBlocked || cancelled.Outputs.Count == 0);
+    }
+
     [Fact]
     public void Review_L5_L9_The_Stress_Check_Cites_The_Yield_Criterion_And_A_Simply_Supported_Edge_Moment_Is_Exactly_Zero()
     {
@@ -260,7 +304,7 @@ public sealed class PlateBendingTests
         Assert.Equal(0, r.OutputSi("M_edge"));
         Assert.Contains(Plate.Template.ClauseRefs, c => c.Clause == "6.2.1(5)");
         Assert.DoesNotContain(Plate.Template.ApplicabilityRules, x => x.Id == "ring-basis");
-        Assert.Equal("1.1.0", Plate.Template.Version);
+        Assert.Equal("1.2.0", Plate.Template.Version);
     }
 
     [Fact]
@@ -271,9 +315,17 @@ public sealed class PlateBendingTests
         var d = PlateBendingMath.Rigidity(210e9, 0.006, Nu);
         var uniform = PlateBendingMath.NavierSimplySupported(a, b, Nu, d, 5e3, null, null);
         var patch = PlateBendingMath.NavierSimplySupported(a, b, Nu, d, 5e3, a, b);
-        Assert.Equal(uniform.Deflection, patch.Deflection, uniform.Deflection * 1e-6);
-        Assert.Equal(uniform.Mx, patch.Mx, Math.Abs(uniform.Mx) * 1e-6);
-        Assert.Equal(uniform.MxyCorner, patch.MxyCorner, uniform.MxyCorner * 1e-6);
+
+        // A patch that covers the plate is the uniform load and takes the same path: identical terms, extrapolation and results.
+        Assert.Equal(uniform.TermsPerDirection, patch.TermsPerDirection);
+        Assert.Equal(uniform.Deflection, patch.Deflection, uniform.Deflection * 1e-12);
+        Assert.Equal(uniform.Mx, patch.Mx, Math.Abs(uniform.Mx) * 1e-12);
+        Assert.Equal(uniform.MxyCorner, patch.MxyCorner, uniform.MxyCorner * 1e-12);
+
+        // A patch just under the plate size is not the uniform path but is within the convergence tolerance of it.
+        var nearly = PlateBendingMath.NavierSimplySupported(a, b, Nu, d, 5e3, a * 0.999, b * 0.999);
+        Assert.True(nearly.Converged);
+        Assert.Equal(uniform.Deflection, nearly.Deflection, uniform.Deflection * 5e-3);
 
         var ru = PlateBendingMath.ClampedRitz.Solve(a, b, Nu, d, 5e3, null, null, 8);
         var rp = PlateBendingMath.ClampedRitz.Solve(a, b, Nu, d, 5e3, a, b, 8);
