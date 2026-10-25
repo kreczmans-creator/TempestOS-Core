@@ -72,37 +72,104 @@ public sealed class ScanReviewTests
     }
 
     [Fact]
-    public void Whole_Numbers_Only_In_A_Comma_Delimited_Table_Declared_Decimal_Point_Raise_A_Warning()
+    public void Whole_Numbers_Only_In_A_Comma_Delimited_Table_With_No_Declared_Number_Format_Block_The_Import_Until_The_Format_Is_Stated()
     {
         var profile = Comma();
         var whole = Read("Feature,Actual\nA,12\nA,13\nA,12\n", profile);
-        Assert.Contains(whole.Data.Notices, n => n.Severity == CalcNoticeSeverity.Warning && n.Message.Contains("every one of the 3 values is a whole number", StringComparison.Ordinal));
+        var block = Assert.Single(whole.Data.Notices, n => n.Severity == CalcNoticeSeverity.Block);
+        Assert.Contains("every one of the 3 values is a whole number", block.Message, StringComparison.Ordinal);
+        Assert.Contains("State the number format in the profile", block.Message, StringComparison.Ordinal);
 
-        Assert.DoesNotContain(Read("Feature,Actual\nA,12\nA,13.5\n", profile).Data.Notices, n => n.Message.Contains("whole number", StringComparison.Ordinal));
+        // The mapper refuses on that block: nothing is applied.
+        var mapped = ScanMapper.Map(Read("Feature,Actual\nA,12\nA,13\nA,12\n", Comma(new ScanFeatureEntry("A", "D"))), MapperTemplate, MapperCurrent, At);
+        Assert.False(mapped.CanApply);
+        Assert.Contains("whole number", mapped.Refusals[0], StringComparison.Ordinal);
+
+        // Lifted only by declaring the format (either one: the person has said what the file uses).
+        foreach (var declared in new[] { NumberProfile.Point, NumberProfile.Comma })
+            Assert.DoesNotContain(Read("Feature,Actual\nA,12\nA,13\n", profile with { Number = declared }).Data.Notices, n => n.Message.Contains("whole number", StringComparison.Ordinal));
+
+        // Or by the person's setting at import time.
+        Assert.DoesNotContain(Read("Feature,Actual\nA,12\nA,13\n", profile, new ScanSettings { Number = NumberProfile.Point }).Data.Notices, n => n.Message.Contains("whole number", StringComparison.Ordinal));
+
+        // A value written with a decimal point shows the file uses one (50.0 is not a whole number as written); other delimiters are not the pattern.
+        Assert.DoesNotContain(Read("Feature,Actual\nA,12\nA,13.5\n", profile).Data.Notices, n => n.Severity == CalcNoticeSeverity.Block);
+        Assert.DoesNotContain(Read("Feature,Actual\nA,50.0\nA,50.0\n", profile).Data.Notices, n => n.Severity == CalcNoticeSeverity.Block);
         Assert.DoesNotContain(Read("Feature;Actual\nA;12\nA;13\n", profile with { Delimiter = ScanDelimiter.Semicolon }).Data.Notices, n => n.Message.Contains("whole number", StringComparison.Ordinal));
-        Assert.DoesNotContain(Read("Feature,Actual\nA,12\nA,13\n", profile with { Number = NumberProfile.Comma }).Data.Notices, n => n.Message.Contains("whole number", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_Split_Decimal_Comma_In_A_Named_Unmapped_Column_Is_Refused_Row_By_Row_And_A_Decimal_Point_Elsewhere_Does_Not_Clear_It()
+    {
+        var profile = new ScanProfile("p", 1, "P", new ScanColumns("Point", Deviation: "Dev"), [], Delimiter: ScanDelimiter.Comma);
+
+        // "1,012" is "1" and "012": the 012 lands under Status, a column nothing is mapped to.
+        var ex = Assert.Throws<ImportRefusedException>(() => Read("Point,Dev,Status\nGroove,1,012\nGroove,-0,020\n", profile));
+        Assert.Equal(ImportRefusalCode.MalformedStructure, ex.Code);
+        Assert.Contains("'1' is followed by '012'", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("line 2", ex.Message, StringComparison.Ordinal);
+
+        // One row that really does carry a decimal point does not make the table safe: the pattern is checked in every row.
+        var mixed = Assert.Throws<ImportRefusedException>(() => Read("Point,Dev,Status\nGroove,0.5,ok\nGroove,1,012\nGroove,0.25,ok\n", profile));
+        Assert.Contains("line 3", mixed.Message, StringComparison.Ordinal);
+
+        // The same table with the format stated is read as it says; the pattern needs a whole number and a leading-zero neighbour that nothing is mapped to.
+        Assert.Equal(2, Read("Point,Dev,Status\nGroove,1,012\nGroove,-0,020\n", profile with { Number = NumberProfile.Point }).Data.Observations.Count);
+        Assert.Equal(2, Read("Point,Dev,Status\nGroove,1,12\nGroove,2,5\n", profile).Data.Observations.Count);
+        Assert.Equal(2, Read("Point,Dev,Status\nGroove,1.5,012\nGroove,2.5,020\n", profile).Data.Observations.Count);
+
+        // A mapped neighbour (a serial such as 007) is a serial, not a fraction.
+        var withSerial = new ScanProfile("p", 1, "P", new ScanColumns("Point", Deviation: "Dev", Serial: "Serial"), [], Delimiter: ScanDelimiter.Comma);
+        Assert.Equal(2, Read("Point,Dev,Serial\nGroove,1,007\nGroove,2,008\n", withSerial).Data.Observations.Count);
     }
 
     // ---- H2 -------------------------------------------------------------------
 
-    [Fact]
-    public void Statistics_Time_Is_Linear_In_The_Rows_Whatever_Their_Nominals_Are()
+    private static TimeSpan TimeAnalysis(int rows)
     {
-        // The quadratic version took 6.9 s at 40,000 distinct nominals; this holds a flat bound at any size up to the cap of a 5 MB file.
+        var sb = new StringBuilder("F,N,A\n", rows * 14);
+
+        for (var i = 0; i < rows; i++)
+            sb.Append("a,").Append(i).Append(',').Append(i).Append('\n');
+
+        var file = Samples.Text(sb.ToString());
+        var profile = new ScanProfile("p", 1, "P", new ScanColumns("F", Nominal: "N", Actual: "A"), [], Delimiter: ScanDelimiter.Comma, Number: NumberProfile.Point);
+        var best = TimeSpan.MaxValue;
+
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var clock = Stopwatch.StartNew();
+            var a = ScanImporter.Analyse(file, profile);
+            clock.Stop();
+            Assert.Equal(rows, a.Stats[0].Count);
+            best = clock.Elapsed < best ? clock.Elapsed : best;
+        }
+
+        return best;
+    }
+
+    [Fact]
+    public void Statistics_Time_Grows_Linearly_With_The_Rows_Whatever_Their_Nominals_Are()
+    {
+        // A ratio, so a slow or loaded machine does not fail it: ten times the rows costs about ten times the time. The quadratic version cost about a hundred
+        // times (6.9 s at 40,000 distinct nominals).
+        _ = TimeAnalysis(2_000); // warm-up: JIT and first-use costs
+        var small = TimeAnalysis(6_000);
+        var large = TimeAnalysis(60_000);
+        var ratio = large.TotalSeconds / Math.Max(small.TotalSeconds, 0.005);
+
+        Assert.True(ratio < 30, $"60,000 rows took {large.TotalSeconds:0.00} s against {small.TotalSeconds:0.000} s for 6,000: a ratio of {ratio:0.0} (linear is about 10, quadratic about 100)");
+    }
+
+    [Fact]
+    public void The_Time_Of_Any_Size_Stays_Within_A_Bound_Scaled_By_The_Test_Timeout_Factor()
+    {
+        var factor = double.TryParse(Environment.GetEnvironmentVariable("TEMPEST_TEST_TIMEOUT_FACTOR"), NumberStyles.Float, CultureInfo.InvariantCulture, out var f) && f > 0 ? f : 1;
+
         Gen.Int[2_000, 60_000].Sample(rows =>
         {
-            var sb = new StringBuilder("F,N,A\n", rows * 14);
-
-            for (var i = 0; i < rows; i++)
-                sb.Append("a,").Append(i).Append(',').Append(i).Append('\n');
-
-            var profile = new ScanProfile("p", 1, "P", new ScanColumns("F", Nominal: "N", Actual: "A"), [], Delimiter: ScanDelimiter.Comma);
-            var clock = Stopwatch.StartNew();
-            var a = ScanImporter.Analyse(Samples.Text(sb.ToString()), profile);
-
-            Assert.Equal(rows, a.Stats[0].Count);
-            Assert.True(clock.Elapsed < TimeSpan.FromSeconds(3), $"{rows} rows took {clock.Elapsed.TotalSeconds:0.0} s");
-        }, iter: 6);
+            Assert.True(TimeAnalysis(rows) < TimeSpan.FromSeconds(3 * factor), $"{rows} rows");
+        }, iter: 3);
     }
 
     [Fact]
@@ -545,5 +612,88 @@ public sealed class ScanReviewTests
         // The cap drops the oldest.
         var many = Enumerable.Range(0, 30).Select(n => first with { ImportedAt = At.AddMinutes(n) }).ToList();
         Assert.Equal(5, ScanImportVerifier.Merge(many, other, mapping.Inputs, maxRecords: 5).Count);
+    }
+
+    // ---- N4: a profile version that drops a feature does not strip its values ----------------------------------------
+
+    [Fact]
+    public void A_New_Profile_Version_That_Drops_A_Feature_Keeps_The_Record_That_Still_Backs_That_Features_Values()
+    {
+        var table = "Feature,Nominal,Actual\nG,51.5,51.480\nG,51.5,51.490\nG,51.5,51.485\nH,10,10.01\nH,10,10.02\nH,10,10.00\n";
+        ScanProfile Version(int version, params ScanFeatureEntry[] entries) => new("g", version, "G", new ScanColumns("Feature", Nominal: "Nominal", Actual: "Actual"), entries, Delimiter: ScanDelimiter.Comma, Number: NumberProfile.Point);
+        var template = TwoRowStack();
+        IReadOnlyList<CalcInputValue> current =
+        [
+            CalcInputValue.Table("contributors",
+            [
+                CalcRow.Of(("nominal", new CalcCell(51.5, "mm")), ("upper", new CalcCell(0.05, "mm")), ("lower", new CalcCell(-0.05, "mm"))),
+                CalcRow.Of(("nominal", new CalcCell(10, "mm")), ("upper", new CalcCell(0.05, "mm")), ("lower", new CalcCell(-0.05, "mm"))),
+            ]),
+            CalcInputValue.Of("k", 3),
+        ];
+
+        var one = ScanMapper.Map(Read(table, Version(1, new ScanFeatureEntry("G", "contributors[0]"), new ScanFeatureEntry("H", "contributors[1]"))), template, current, At);
+        Assert.True(one.CanApply, string.Join(" ", one.Refusals));
+        var first = RecordOf(one) with { ProfileVersion = 1 };
+
+        // Version 2 maps G only: the same file, but H's values are not rewritten and still stand on version 1's record.
+        var two = ScanMapper.Map(Read(table, Version(2, new ScanFeatureEntry("G", "contributors[0]"))), template, one.Inputs, At.AddMinutes(5));
+        Assert.True(two.CanApply, string.Join(" ", two.Refusals));
+        var second = RecordOf(two) with { ProfileVersion = 2, ImportedAt = At.AddMinutes(5) };
+
+        var merged = ScanImportVerifier.Merge([first], second, two.Inputs);
+        Assert.Equal(2, merged.Count);
+        Assert.Empty(ScanImportVerifier.Verify(two.Inputs, merged).Downgraded);
+
+        // Without the earlier record H's values would lose their provenance - what the hash rule alone got wrong, since both records name the same file.
+        Assert.Contains("'contributors[1].upper'", ScanImportVerifier.Verify(two.Inputs, [second]).Downgraded);
+
+        // Once nothing cites the old provenance any more, the old record goes.
+        var rewritten = ScanMapper.Map(Read(table, Version(3, new ScanFeatureEntry("G", "contributors[0]"), new ScanFeatureEntry("H", "contributors[1]"))), template, two.Inputs, At.AddMinutes(10));
+        var third = RecordOf(rewritten) with { ProfileVersion = 3, ImportedAt = At.AddMinutes(10) };
+        Assert.Single(ScanImportVerifier.Merge(merged, third, rewritten.Inputs));
+    }
+
+    private static CalcTemplate TwoRowStack() => new(
+        "test.stack2", "1.0.0", CalcDiscipline.Mechanical, "S", "s", "m",
+        [
+            new CalcInputSpec("contributors", "C", CalcInputKind.Table, Columns:
+            [
+                new CalcColumnSpec("nominal", "N", CalcInputKind.Quantity, "mm"),
+                new CalcColumnSpec("upper", "U", CalcInputKind.Quantity, "mm"),
+                new CalcColumnSpec("lower", "L", CalcInputKind.Quantity, "mm", IsOptional: true),
+                new CalcColumnSpec("shift", "S", CalcInputKind.Quantity, "mm", IsOptional: true),
+                new CalcColumnSpec("sigma", "σ", CalcInputKind.Quantity, "mm", IsOptional: true),
+            ]),
+            new CalcInputSpec("k", "k", CalcInputKind.Number, Default: 3),
+        ],
+        [], [], [], []);
+
+    // ---- N5: full-width forms ---------------------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("＝HYPERLINK(\"http://evil\")")]
+    [InlineData("＝ＨＹＰＥＲＬＩＮＫ（\"x\"）")]
+    [InlineData("=ＨＹＰＥＲＬＩＮＫ(\"x\")")]
+    [InlineData("\u3000＝IMAGE (\"x\")")]
+    [InlineData("ｈｔｔｐ：／／evil.example/x")]
+    [InlineData("ｈｔｔｐｓ://evil")]
+    [InlineData("ｗｗｗ．evil．example")]
+    [InlineData("ｊａｖａｓｃｒｉｐｔ：alert(1)")]
+    public void Full_Width_Forms_Of_Link_Formulas_And_Schemes_Are_Removed_Like_The_ASCII_Ones(string raw)
+    {
+        var clean = ScanText.Clean(raw, 200, out var changed);
+
+        Assert.True(changed);
+        Assert.Contains("[link removed]", clean, StringComparison.Ordinal);
+        Assert.DoesNotContain("evil", clean, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("＝", clean, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Full_Width_Letters_In_An_Ordinary_Name_Are_Left_Alone()
+    {
+        Assert.Equal("穴Ａ１ Ｄ", ScanText.Clean("穴Ａ１ Ｄ", 50, out var changed));
+        Assert.False(changed);
     }
 }

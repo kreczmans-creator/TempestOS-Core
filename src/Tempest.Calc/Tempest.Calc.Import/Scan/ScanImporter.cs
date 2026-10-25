@@ -248,6 +248,11 @@ public static class ScanImporter
 
         public bool CommaSeparated { get; set; }
 
+        /// <summary>The number format was stated (by the profile or the person), so the guesses about a split decimal comma are off.</summary>
+        public bool Declared { get; init; }
+
+        public HashSet<int> Mapped { get; } = [];
+
         public long Values { get; set; }
 
         public long WholeValues { get; set; }
@@ -261,6 +266,7 @@ public static class ScanImporter
             Index = fileIndex,
             Input = input,
             Number = np,
+            Declared = settings.Number is not null || profile.Number is not null,
             Stage0 = Clean(input.Stage, MaxStageChars) ?? Clean(profile.FixedStage, MaxStageChars) ?? string.Empty,
             Serial0 = Clean(input.Serial, MaxSerialChars) ?? Clean(profile.FixedSerial, MaxSerialChars) ?? string.Empty,
         };
@@ -289,6 +295,12 @@ public static class ScanImporter
                 run.Roles = ResolveColumns(profile, header, file.FileName);
                 var r = run.Roles;
                 run.Width = new[] { r.Feature, r.Nominal, r.Actual, r.Deviation, r.Upper, r.Lower, r.Serial, r.Stage }.Max() + 1;
+
+                foreach (var index in new[] { r.Feature, r.Nominal, r.Actual, r.Deviation, r.Upper, r.Lower, r.Serial, r.Stage })
+                {
+                    if (index >= 0)
+                        run.Mapped.Add(index);
+                }
                 return;
             }
 
@@ -299,7 +311,7 @@ public static class ScanImporter
         {
             // A workbook stores numbers with a decimal point whatever the profile says; text cells are read the declared way by the same rule, so a
             // comma-decimal text cell in a workbook is reported, not guessed.
-            var wb = new FileRun { Index = run.Index, Input = run.Input, Number = NumberProfile.Point, Stage0 = run.Stage0, Serial0 = run.Serial0 };
+            var wb = new FileRun { Index = run.Index, Input = run.Input, Number = NumberProfile.Point, Declared = true, Stage0 = run.Stage0, Serial0 = run.Serial0 };
             run = wb;
             ReadWorkbook(file, budget, sink, OnRow);
         }
@@ -328,8 +340,9 @@ public static class ScanImporter
 
         // A comma-separated table whose numbers are declared with a decimal point and are all whole numbers is what a decimal-comma export looks like once its
         // commas have been taken as delimiters; the column-count check catches most of these, this catches the rest.
-        if (run.CommaSeparated && np.Decimal == DecimalMark.Point && run.Values >= 2 && run.Values == run.WholeValues)
-            sink.Notices.Add(new CalcNotice("scan-import", CalcNoticeSeverity.Warning, $"{file.FileName}: every one of the {run.Values} values is a whole number, the delimiter is a comma and the numbers are declared with a decimal point. A decimal-comma export read this way loses its decimals; check the number format in the profile."));
+        // Unless the number format was stated this is a block, not a hint: a person lifts it by declaring the decimal format in the profile.
+        if (run.CommaSeparated && !run.Declared && np.Decimal == DecimalMark.Point && run.Values >= 2 && run.Values == run.WholeValues)
+            sink.Notices.Add(new CalcNotice("scan-import", CalcNoticeSeverity.Block, $"{file.FileName}: every one of the {run.Values} values is a whole number, the delimiter is a comma and the number format was not declared (a decimal point is assumed). A decimal-comma export read this way loses its decimals. State the number format in the profile (number: decimal point, or decimal comma) to confirm what the file uses; nothing is imported until you do."));
 
         return run.RowIndex - profile.HeaderRow;
     }
@@ -353,6 +366,18 @@ public static class ScanImporter
         {
             if (h < row.Count && !string.IsNullOrWhiteSpace(row[h]))
                 throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"{file.FileName} line {line}: column {h + 1} has no header but holds a value. A number written with the other decimal mark, or a delimiter inside a value, splits a field and spills the rest into an unnamed column; check the delimiter and the number format. Nothing was imported.");
+        }
+
+        // "1,012" in a decimal-comma export is "1" and "012" once the comma has been taken as the delimiter. With the number format undeclared, a whole number whose
+        // right-hand neighbour is a column nothing is mapped to and that holds digits with a leading zero is that pattern, row by row: one row with a decimal point
+        // elsewhere does not clear it.
+        if (run.CommaSeparated && !run.Declared)
+        {
+            foreach (var index in new[] { roles.Nominal, roles.Actual, roles.Deviation, roles.Upper, roles.Lower })
+            {
+                if (index >= 0 && index + 1 < row.Count && !run.Mapped.Contains(index + 1) && IsWholeNumberText(row[index]) && IsLeadingZeroDigits(row[index + 1]))
+                    throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"{file.FileName} line {line}: '{row[index].Trim()}' is followed by '{row[index + 1].Trim()}' in a column nothing is mapped to. That looks like a decimal comma ('{row[index].Trim()},{row[index + 1].Trim()}') split by the comma delimiter. State the number format in the profile (decimal comma with a semicolon or tab delimiter, or decimal point to confirm) to import this table. Nothing was imported.");
+            }
         }
 
         if (row.All(static f => f.Length == 0 || string.IsNullOrWhiteSpace(f)))
@@ -457,7 +482,8 @@ public static class ScanImporter
 
         run.Values++;
 
-        if (value == Math.Floor(value))
+        // "Whole" is how the value is written (no decimal mark at all), not what it equals: 50.0 shows the file does use a decimal point.
+        if (IsWholeNumberText(Cell(row, actual is not null ? roles.Actual : roles.Deviation)))
             run.WholeValues++;
 
         var deviationMode = profile.ToleranceMode == ScanToleranceMode.DeviationsFromNominal;
@@ -512,6 +538,22 @@ public static class ScanImporter
         }
 
         sink.Observations.Add(new ScanObservation(fileIndex, line, name, sink.Intern(stage), sink.Intern(serial), nominalEff, value, lsl, usl, deviationOnly));
+    }
+
+    private static bool IsWholeNumberText(string text)
+    {
+        var t = text.AsSpan().Trim();
+
+        if (t.Length > 0 && t[0] is '+' or '-')
+            t = t[1..];
+
+        return t.Length > 0 && t.Length <= 15 && !t.ContainsAnyExceptInRange('0', '9');
+    }
+
+    private static bool IsLeadingZeroDigits(string text)
+    {
+        var t = text.AsSpan().Trim();
+        return t.Length >= 2 && t.Length <= 15 && t[0] == '0' && !t.ContainsAnyExceptInRange('0', '9');
     }
 
     private static double? Number(IReadOnlyList<string> row, int index, string column, NumberProfile np, int file, int line, string feature, Sink sink)

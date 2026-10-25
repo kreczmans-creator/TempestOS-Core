@@ -239,4 +239,25 @@ public sealed class ToleranceStackTests
     {
         Assert.True(CalcRunner.Run(Calculator, Measured(-0.01)).IsBlocked);
     }
+
+    [Fact]
+    public void The_Statistical_Pareto_Weighs_A_Stated_Sigma_By_K_Sigma_And_Is_Unchanged_Without_One()
+    {
+        // A: half 0.03 (weight 0.0009). B stated sigma 0.015 at k = 3: weight (3 x 0.015)^2 = 0.002025, not its band 0.06^2 = 0.0036.
+        // Python3: shares 0.0009/0.002925 = 30.769 % and 0.002025/0.002925 = 69.231 %; by the band alone they would be 20 % and 80 %.
+        var stated = CalcRunner.Run(Calculator, Measured(0.015));
+        var pareto = stated.Steps.Single(x => x.Symbol == "pareto").Substitution;
+        Assert.Contains("A 30.8 %", pareto, StringComparison.Ordinal);
+        Assert.Contains("B 69.2 %", pareto, StringComparison.Ordinal);
+
+        var plain = CalcRunner.Run(Calculator, Measured(null));
+        var plainPareto = plain.Steps.Single(x => x.Symbol == "pareto").Substitution;
+        Assert.Contains("A 20 %", plainPareto, StringComparison.Ordinal);
+        Assert.Contains("B 80 %", plainPareto, StringComparison.Ordinal);
+
+        // A smaller stated sigma than band/k moves the largest contributor.
+        var small = CalcRunner.Run(Calculator, Measured(0.005));
+        Assert.Contains("A", small.Steps.Single(x => x.Symbol == "pareto").ResultText, StringComparison.Ordinal);
+        Assert.DoesNotContain("B", small.Steps.Single(x => x.Symbol == "pareto").ResultText, StringComparison.Ordinal);
+    }
 }

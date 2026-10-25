@@ -14,7 +14,7 @@
 | `n_mc`, `seed` | — | Monte Carlo samples (1 000–100 000 soft) and seed |
 | `notation` | — | BS 8888 or ASME Y14.5 (labels only) |
 
-**Stated σ (2.1.0).** An optional `sigma` per contributor (a measured population, as the scan import writes) replaces `half/k` for a *normal* contributor in the predicted σ, C_p/C_pk/DPMO and the Monte Carlo; the worst case and RSS (and the contribution Pareto) keep using the band. Blank means band/k, exactly as before; on a uniform or triangular contributor it is ignored with the warning `sigma-ignored`.
+**Stated σ (2.1.0).** An optional `sigma` per contributor (a measured population, as the scan import writes) replaces `half/k` for a *normal* contributor in the predicted σ, C_p/C_pk/DPMO and the Monte Carlo; the worst case and RSS keep using the band, and the statistical contribution Pareto weighs a contributor with a stated σ by (kσ)² (the band-equivalent of that σ) and every other contributor as before. **Version bump:** 2.1.0 changes the template hash, so existing M1 calculations show "newer version available" until revised (ADR-0168); their inputs and results do not change. Blank means band/k, exactly as before; on a uniform or triangular contributor it is ignored with the warning `sigma-ignored`.
 
 **Outputs.** `x_nom`, `x_mean`, `t_wc`, `x_wc_min/max`, `m_min/m_max`, `t_rss`, `t_mrss`, `sigma`, `cp`, `cpk`, `dpmo`, `yield`, `mc_*`; series: contribution Pareto (worst case and statistical), Monte Carlo histogram.
 

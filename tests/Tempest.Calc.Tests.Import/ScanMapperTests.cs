@@ -268,7 +268,7 @@ public sealed class ScanMapperTests
     [Fact]
     public void Values_Are_Converted_Between_Units_By_Dimension_And_A_Spread_Is_Scaled_Without_An_Offset()
     {
-        var profile = new ScanProfile("micron", 1, "Micron table", new ScanColumns("Feature", Actual: "Actual"), [E("A", "contributors[0]"), E("B", "D:sigma")], Unit: "µm");
+        var profile = new ScanProfile("micron", 1, "Micron table", new ScanColumns("Feature", Actual: "Actual"), [E("A", "contributors[0]"), E("B", "D:sigma")], Unit: "µm", Number: Tempest.Calc.Import.NumberProfile.Point);
         var text = "Feature,Actual\nA,51012\nA,51020\nA,50996\nA,51004\nB,10\nB,12\nB,14\n";
 
         var a = ScanImporter.Analyse(Samples.Text(text), profile);

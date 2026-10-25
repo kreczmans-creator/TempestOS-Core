@@ -110,16 +110,18 @@ public static class ScanImportVerifier
     }
 
     /// <summary>
-    /// The import records after <paramref name="latest"/> is added, by the same rule as the CAD import's. A record of the same source (profile) that this import
-    /// supersedes is kept while an input still cites one of its files by hash — a value the new tables no longer hold stays at its last imported value and is
-    /// still backed by the import it came from, and a second stage or file imported later does not strip the first — and dropped once nothing cites it.
-    /// Records of other sources are kept. The list is capped; unreferenced superseded records go first, and the record just added is never the victim.
+    /// The import records after <paramref name="latest"/> is added, by the same rule as the CAD import's with the test made on the provenance itself. A record of
+    /// the same source (profile) that this import supersedes is kept while any input still carries, exactly, a provenance that record wrote and the new record did
+    /// not write again — so a later stage or file imported through the same profile, or a new profile version that drops a feature (the same file, a different
+    /// version), does not strip the values it did not rewrite — and dropped once nothing does. Records of other sources are kept. The list is capped; uncited
+    /// superseded records go first, and the record just added is never the victim.
     /// </summary>
     public static IReadOnlyList<ScanImportRecord> Merge(IReadOnlyList<ScanImportRecord>? existing, ScanImportRecord latest, IReadOnlyList<CalcInputValue> inputs, int maxRecords = 20)
     {
         ArgumentNullException.ThrowIfNull(latest);
         ArgumentNullException.ThrowIfNull(inputs);
-        var referenced = ReferencedHashes(inputs);
+        var cited = CitedProvenances(inputs);
+        var rewritten = Provenances(latest);
         var list = new List<ScanImportRecord>();
 
         foreach (var old in existing ?? [])
@@ -127,9 +129,7 @@ public static class ScanImportVerifier
             if (ReferenceEquals(old, latest))
                 continue;
 
-            if (!string.Equals(old.Key, latest.Key, StringComparison.Ordinal))
-                list.Add(old);
-            else if (Hashes(old).Overlaps(referenced) && !Hashes(old).SetEquals(Hashes(latest)))
+            if (!string.Equals(old.Key, latest.Key, StringComparison.Ordinal) || Provenances(old).Any(p => cited.Contains(p) && !rewritten.Contains(p)))
                 list.Add(old);
         }
 
@@ -139,8 +139,8 @@ public static class ScanImportVerifier
         {
             var newest = list.GroupBy(r => r.Key, StringComparer.Ordinal).Select(g => g.MaxBy(r => r.ImportedAt)!).ToHashSet();
             var others = list.Where(r => !ReferenceEquals(r, latest)).OrderBy(r => r.ImportedAt).ToList();
-            var victim = others.FirstOrDefault(r => !newest.Contains(r) && !Hashes(r).Overlaps(referenced))
-                ?? others.FirstOrDefault(r => !Hashes(r).Overlaps(referenced))
+            var victim = others.FirstOrDefault(r => !newest.Contains(r) && !Provenances(r).Overlaps(cited))
+                ?? others.FirstOrDefault(r => !Provenances(r).Overlaps(cited))
                 ?? others.FirstOrDefault(r => !newest.Contains(r))
                 ?? others[0];
             list.Remove(victim);
@@ -153,25 +153,26 @@ public static class ScanImportVerifier
     public static ScanImportRecord? Latest(IReadOnlyList<ScanImportRecord>? records, string key) =>
         records?.Where(r => string.Equals(r.Key, key, StringComparison.Ordinal)).MaxBy(r => r.ImportedAt);
 
-    private static HashSet<string> Hashes(ScanImportRecord record) => record.Features.Select(f => f.SetSha256).ToHashSet(StringComparer.Ordinal);
+    private static HashSet<CalcProvenance> Provenances(ScanImportRecord record) =>
+        record.Features.SelectMany(f => f.Pushed ?? []).Select(v => v.Provenance).OfType<CalcProvenance>().ToHashSet();
 
-    private static HashSet<string> ReferencedHashes(IEnumerable<CalcInputValue> inputs)
+    private static HashSet<CalcProvenance> CitedProvenances(IEnumerable<CalcInputValue> inputs)
     {
-        var hashes = new HashSet<string>(StringComparer.Ordinal);
+        var cited = new HashSet<CalcProvenance>();
 
         foreach (var input in inputs)
         {
-            if (ScanImportProvenance.TryParse(input.Provenance) is { } info)
-                hashes.Add(info.Sha256);
+            if (input.Provenance is { Kind: CalcProvenanceKind.ScanImport } p)
+                cited.Add(p);
 
             foreach (var cell in (input.Rows ?? []).SelectMany(r => r?.Cells.Values ?? []))
             {
-                if (ScanImportProvenance.TryParse(cell?.Provenance) is { } cellInfo)
-                    hashes.Add(cellInfo.Sha256);
+                if (cell?.Provenance is { Kind: CalcProvenanceKind.ScanImport } cp)
+                    cited.Add(cp);
             }
         }
 
-        return hashes;
+        return cited;
     }
 
     private static bool Holds(CalcProvenance provenance, string path, IReadOnlyList<ScanImportRecord>? records, double? number, string? unit, string? text, double? currentK)

@@ -212,8 +212,11 @@ public sealed class WorksheetScanImportReviewTests
             model.Cancel();
             await refresh.WaitAsync(TimeSpan.FromSeconds(10));
 
+            // Cancellation is proved by what the model says and holds: the preview did not complete, so there is none and nothing can be applied.
             Assert.False(model.IsBusy);
-            Assert.True(model.Status is "Cancelled." or "Ready to apply.", model.Status);
+            Assert.Equal("Cancelled.", model.Status);
+            Assert.Null(model.Preview);
+            Assert.False(model.CanApply);
             Assert.True(started.Elapsed < TimeSpan.FromSeconds(8));
         }
         finally

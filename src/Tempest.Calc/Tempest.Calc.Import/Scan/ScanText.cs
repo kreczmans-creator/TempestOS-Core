@@ -122,26 +122,29 @@ internal static class ScanText
         return s.IndexOf("www.", StringComparison.OrdinalIgnoreCase) < 0;
     }
 
-    /// <summary>The length of the link marker that starts at <paramref name="i"/> (case-insensitive), or 0.</summary>
+    /// <summary>
+    /// The length of the link marker that starts at <paramref name="i"/> (case-insensitive, and with the full-width forms of ASCII letters, digits and
+    /// punctuation read as the ASCII they stand for: a spreadsheet reads ＝ and ｈｔｔｐ：／／ as =, http://), or 0.
+    /// </summary>
     private static int LinkAt(string s, int i)
     {
-        if (s[i] == '=')
+        if (Fold(s[i]) == '=')
         {
             var j = i + 1;
 
-            while (j < s.Length && s[j] == ' ')
+            while (j < s.Length && Fold(s[j]) == ' ')
                 j++;
 
             foreach (var name in FormulaNames)
             {
-                if (j + name.Length <= s.Length && string.Compare(s, j, name, 0, name.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                if (MatchesAt(s, j, name))
                 {
                     var k = j + name.Length;
 
-                    while (k < s.Length && s[k] == ' ')
+                    while (k < s.Length && Fold(s[k]) == ' ')
                         k++;
 
-                    if (k < s.Length && s[k] is '(' or '|')
+                    if (k < s.Length && Fold(s[k]) is '(' or '|')
                         return k - i + 1;
                 }
             }
@@ -151,7 +154,7 @@ internal static class ScanText
 
         foreach (var marker in LinkMarkers)
         {
-            if (i + marker.Length <= s.Length && string.Compare(s, i, marker, 0, marker.Length, StringComparison.OrdinalIgnoreCase) == 0)
+            if (MatchesAt(s, i, marker))
             {
                 // "www." and "data:" and "file:" inside a longer word are not links.
                 if (i > 0 && char.IsLetterOrDigit(s[i - 1]) && marker is "www." or "data:" or "file:" or "tel:")
@@ -163,6 +166,29 @@ internal static class ScanText
 
         return 0;
     }
+
+    private static bool MatchesAt(string s, int i, string marker)
+    {
+        if (i + marker.Length > s.Length)
+            return false;
+
+        for (var m = 0; m < marker.Length; m++)
+        {
+            if (char.ToLowerInvariant(Fold(s[i + m])) != marker[m])
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>The ASCII a full-width form (U+FF01 to U+FF5E) or the ideographic space stands for; any other character as it is.</summary>
+    private static char Fold(char c) => c switch
+    {
+        >= '\uFF01' and <= '\uFF5E' => (char)(c - 0xFEE0),
+        '\u3000' => ' ',
+        _ => c,
+    };
+
 
     /// <summary>Drops markup tags: a '&lt;' followed by a letter, '/', '!' or '?' up to the next '&gt;' within 200 characters. A bare '&lt;' (as in "&lt; 0.1") stays.</summary>
     private static string StripTags(string s)

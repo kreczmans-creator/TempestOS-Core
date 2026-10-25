@@ -160,7 +160,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
         ]);
 
     /// <summary>A table row as the sheet shows it: the engine contributor plus its label.</summary>
-    private sealed record Line(Contributor Source, string Label)
+    private sealed record Line(Contributor Source, string Label, bool SigmaStated = false)
     {
         public double Sign => Source.Sign;
 
@@ -263,7 +263,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             var half = source.Half;
             var sigma = source.Sigma;
 
-            contributors.Add(new Line(source, label));
+            contributors.Add(new Line(source, label, sigmaStated is not null && distribution == ContributorDistribution.Normal));
             var symbol = $"c{i + 1}";
             c.Record(symbol, $"{(sign > 0 ? "+" : "−")} {label}", $"mid {F(mid, unit)} {unitSymbol}, ± {F(half, unit)} {unitSymbol}, σ {F(sigma, unit)} {unitSymbol} ({distributionName}{(sigmaStated is not null && distribution == ContributorDistribution.Normal ? ", σ stated" : string.Empty)})", ScalarValue.Of(unit.FromSi(sign * mid), unit), name);
         }
@@ -358,10 +358,29 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
 
         // Contribution Pareto.
         var paretoWc = stack.WorstCaseShare.Select((y, i) => (X: (double)(i + 1), Y: y)).ToList();
-        var paretoSt = stack.StatisticalShare.Select((y, i) => (X: (double)(i + 1), Y: y)).ToList();
+        var statShare = stack.StatisticalShare;
+        var largest = stack.LargestStatisticalIndex;
+
+        // A contributor with a stated σ weighs by that σ: its band-equivalent half-width is k·σ (what band/k would have to be to give that σ), the same weight a normal
+        // contributor with no stated σ already has, so the shares stay comparable. With no stated σ the engine's shares are used unchanged.
+        if (contributors.Any(x => x.SigmaStated))
+        {
+            var weights = contributors.Select(x => x.SigmaStated ? k * x.SigmaSi * (k * x.SigmaSi) : x.HalfSi * x.HalfSi).ToArray();
+            var total = weights.Sum() is var sum && sum > 0 ? sum : 1;
+            statShare = weights.Select(w => 100 * w / total).ToArray();
+            largest = 0;
+
+            for (var i = 1; i < statShare.Count; i++)
+            {
+                if (statShare[i] > statShare[largest])
+                    largest = i;
+            }
+        }
+
+        var paretoSt = statShare.Select((y, i) => (X: (double)(i + 1), Y: y)).ToList();
         c.Series(new CalcSeries("Contribution, worst case", "contributor", "", "share", "%", paretoWc));
         c.Series(new CalcSeries("Contribution, statistical", "contributor", "", "share", "%", paretoSt));
-        c.Record("pareto", "largest contributor (statistical)", string.Join("; ", contributors.Select((x, i) => $"{x.Source.Name} {CalcValue.FormatNumber(paretoSt[i].Y, 3)} %")), new TextValue(contributors[stack.LargestStatisticalIndex].Source.Name), "Contribution Pareto");
+        c.Record("pareto", "largest contributor (statistical)", string.Join("; ", contributors.Select((x, i) => $"{x.Source.Name} {CalcValue.FormatNumber(paretoSt[i].Y, 3)} %")), new TextValue(contributors[largest].Source.Name), "Contribution Pareto");
 
         // Monte Carlo.
         var n = (int)Math.Round(c.InputSi("n_mc"));
