@@ -283,6 +283,29 @@ public static class MechanicalWorkedExamples
             [new CalcExpectedValue("K_y", 1.09035488896, "", 1e-9), new CalcExpectedValue("eps", 0.747293218993, "%", 1e-9), new CalcExpectedValue("P", 4.68857301101, "N", 1e-9), new CalcExpectedValue("strain_util", 0.186823304748, "", 1e-9), new CalcExpectedValue("y_perm", 6.42318152769, "mm", 1e-9), new CalcExpectedValue("assembly_force", 5.44905390185, "N", 1e-9), new CalcExpectedValue("alpha_lock", 70.7099537808, "deg", 1e-9), new CalcExpectedValue("retention_force", 46.8910149411, "N", 1e-9)],
             "The 2.2 mm thick lug is 18 mm long (l/h = 8.2) and tapers to half its thickness at the tip, which puts the largest strain at the root and gives the deflection factor K_y = 1.090. Bent 1.2 mm over the undercut it strains 0.75 % against the 4 % example limit (utilisation 0.19); it could be bent 6.4 mm. The tip force is 4.7 N. With a friction coefficient of 0.35 the 30° entry face needs 5.4 N to push the lid on, and the 65° return face needs 46.9 N to pull it off. The return face would lock for good at 70.7° and above (arctan(1/μ)); the sheet reports that as self-locking, not as a number. Es, the permissible strain and μ are example values marked as assumptions: replace them from the plastic's data and your own tests. The root of the lug needs a generous fillet; the strain above is nominal.",
             CalcReferenceStatus.Confirmed),
+
+        new(MechanismCalculator.Id, "carton-tucker-crank-rocker", "Carton flap tucker: crank-rocker 150/45/140/100 mm at 60 cycles/min",
+            new CalcReferenceSource("Independent python3 recomputation (Freudenstein quadratic, real 2×2 solves, 20001-point scan polished by golden section)", null, "Frame 150 mm, crank 45 mm, coupler 140 mm, rocker 100 mm, crank 60 rpm from 0°, open circuit, T_L = 4 N·m opposing the rocker, J = 0.012 kg·m²: s + l = 195 mm < p + q = 240 mm (Grashof crank-rocker); at θ₂ = 0° θ₄ = 93.8909°, μ = 48.4409° (also the smallest over the cycle); rocker swing 54.7864°; peak |ω₄| 3.543461 rad/s (pin 0.354346 m/s), peak |α₄| 31.5994 rad/s²; peak input torque by virtual work 2.265439 N·m"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Choice("mode", MechanismCalculator.FourBar, CalcProvenance.Specification("Carton line PKG-LINE-7 §3.2 tucker station", "C")),
+                CalcInputValue.Choice("circuit", MechanismCalculator.Open, CalcProvenance.Drawing("PKG-TUCK-02", "B")),
+                CalcInputValue.Quantity("L1", 150, "mm", CalcProvenance.Drawing("PKG-TUCK-02", "B")),
+                CalcInputValue.Quantity("L2", 45, "mm", CalcProvenance.Drawing("PKG-TUCK-02", "B")),
+                CalcInputValue.Quantity("L3", 140, "mm", CalcProvenance.Drawing("PKG-TUCK-02", "B")),
+                CalcInputValue.Quantity("L4", 100, "mm", CalcProvenance.Drawing("PKG-TUCK-02", "B")),
+                CalcInputValue.Quantity("theta_start", 0, "deg", CalcProvenance.Specification("Carton line PKG-LINE-7 §3.2: crank zero at the home position", "C")),
+                CalcInputValue.Quantity("theta_range", 360, "deg", CalcProvenance.Specification("Carton line PKG-LINE-7 §3.2: one cycle", "C")),
+                CalcInputValue.Of("steps", 72, CalcProvenance.Assumed("5° table step.")),
+                CalcInputValue.Quantity("n_in", 60, "rpm", CalcProvenance.Specification("Carton line PKG-LINE-7 §3.2: 60 cartons/min", "C")),
+                CalcInputValue.Quantity("mu_req", 40, "deg", CalcProvenance.Assumed("Default minimum transmission angle; set it from your design rule.")),
+                CalcInputValue.Choice("load_dir", MechanismCalculator.Opposes, CalcProvenance.Assumed("The flap resists the blade in whichever direction it moves.")),
+                CalcInputValue.Quantity("T_load", 4, "N*m", CalcProvenance.Assumed("Example flap-folding torque at the rocker shaft; measure it on the station.")),
+                CalcInputValue.Quantity("J_out", 0.012, "kg*m^2", CalcProvenance.Assumed("Example: rocker arm and blade about the rocker pivot; take it from the CAD mass properties.")),
+            ]),
+            [new CalcExpectedValue("S_plus_L", 195, "mm", 1e-9), new CalcExpectedValue("P_plus_Q", 240, "mm", 1e-9), new CalcExpectedValue("theta4_0", 93.89091781516997, "deg", 1e-9), new CalcExpectedValue("mu_min", 48.44085240812772, "deg", 1e-7), new CalcExpectedValue("swing", 54.78637184965648, "deg", 1e-6), new CalcExpectedValue("omega_out_pk", 3.5434614270355413, "rad/s", 1e-7), new CalcExpectedValue("output_motion", 0.35434614270355413, "m/s", 1e-7), new CalcExpectedValue("peak_accel", 3.162461003500709, "m/s^2", 1e-7), new CalcExpectedValue("input_torque", 2.265439282238162, "N*m", 1e-7)],
+            "A crank-rocker drives a carton flap tucker at 60 cycles a minute. The linkage is Grashof (s + l = 195 mm against p + q = 240 mm), so the 45 mm crank turns fully and the 100 mm rocker swings 54.8°. The transmission angle never falls below 48.4° (the 40° requirement passes at 0.83). With the example flap torque of 4 N·m opposing the rocker and 0.012 kg·m² of arm and blade, the motor must deliver at most 2.27 N·m at the crank, and the blade pin peaks at 0.354 m/s and 3.16 m/s². The torque, mass and the 40° rule are example values marked as assumptions: replace them from the station measurement and your design rules.",
+            CalcReferenceStatus.Confirmed),
     ];
 
     private static CalcInputSet JointInputs(double torque, string method, double workingLoad) => new(

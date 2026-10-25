@@ -18,5 +18,6 @@ public static class MechanicalCalculators
         new ShaftCalculator(),
         new SpringCalculator(),
         new SnapFitCalculator(),
+        new MechanismCalculator(),
     ];
 }
