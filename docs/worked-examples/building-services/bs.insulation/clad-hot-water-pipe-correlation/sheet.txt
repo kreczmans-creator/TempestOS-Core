@@ -21,11 +21,11 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   theta_a | Ambient air temperature (also the radiation sink) | 15 | degC | spec: SPEC-M-12 §2: ambient design temperature | -20 … 50 degC
   lambda | Thermal conductivity of the insulation | 0.04 | W/(m*K) | assumption: Mineral wool; take the maker's value at the mean temperature (W3 material) | 0.015 … 0.2 W/(m*K)
   h_mode | Where the outer surface coefficient comes from | convection + radiation (correlation) |  | assumption: Surface coefficient computed from the correlation. | any
-  h_se | Outer surface coefficient h_se (as given) | 10 | W/(m^2*K) | assumption: Not used: h_se is computed. | 3 … 40 W/(m^2*K)
+  h_se | Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface) | 10 | W/(m^2*K) | assumption: Not used: h_se is computed. | 3 … 40 W/(m^2*K)
   eps | Emissivity of the outer surface (correlation) | 0.1 |  | assumption: Bright aluminium cladding; replace with the cladding maker's emissivity. | 0.05 … 1
   v_wind | Air speed over the surface (correlation; 0 = still air) | 0 | m/s | assumption: Still air, indoors. | 0 … 20 m/s
   L_surf | Height or flow length of the flat surface (correlation, flat) | 1 | m | assumption: Not used: a pipe. | 0.1 … 10 m
-  q_max_m | Heat-loss limit per metre of pipe (blank = not a criterion) | 60 | W/m | spec: SPEC-M-12 §5: heat loss not to exceed 60 W/m | 1 … 1000 W/m
+  q_max_m | Heat-loss limit per metre of pipe (generic default of 25 W/m, replace with your project limit; blank = not a criterion) | 60 | W/m | spec: SPEC-M-12 §5: heat loss not to exceed 60 W/m | 1 … 1000 W/m
   theta_se_max | Highest surface temperature, for a hot surface (blank = not a criterion) | 60 | degC | spec: SPEC-M-12 §6: personnel protection, surface not above 60 °C | 30 … 70 degC
   RH_a | Relative humidity of the ambient air (anti-condensation) | 60 | % | assumption: Not used: a hot pipe has no condensation criterion. | 20 … 95 %
   t_chosen | Chosen insulation thickness (blank = report at the required thickness, no checks; with it, nothing blocks) | 50 | mm | spec: Pipework schedule M-SCH-021: 50 mm sections | 0 … 300 mm
@@ -40,7 +40,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   A7. geometry (Surface) is taken as pipe (cylinder). (A round pipe.)
   A8. lambda (Thermal conductivity of the insulation) is taken as 0.04 W/(m*K). (Mineral wool; take the maker's value at the mean temperature (W3 material))
   A9. h_mode (Where the outer surface coefficient comes from) is taken as convection + radiation (correlation). (Surface coefficient computed from the correlation.)
-  A10. h_se (Outer surface coefficient h_se (as given)) is taken as 10 W/(m^2*K). (Not used: h_se is computed.)
+  A10. h_se (Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface)) is taken as 10 W/(m^2*K). (Not used: h_se is computed.)
   A11. eps (Emissivity of the outer surface (correlation)) is taken as 0.1. (Bright aluminium cladding; replace with the cladding maker's emissivity.)
   A12. v_wind (Air speed over the surface (correlation; 0 = still air)) is taken as 0 m/s. (Still air, indoors.)
   A13. L_surf (Height or flow length of the flat surface (correlation, flat)) is taken as 1 m. (Not used: a pipe.)

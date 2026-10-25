@@ -554,4 +554,25 @@ public sealed class SpringTests
         Assert.DoesNotContain(Run(Mode(SpringCalculator.Extension), Q("F_0", 10, "N"), Q("F_1", 30, "N"), Q("F_2", 60, "N"), Q("r_h1", 8, "mm"), Q("r_h2", 4, "mm"), Q("s_work", 15, "mm")).Warnings, w => w.RuleId == "s-work-unused");
         Assert.Contains("s-work-unused", DeclaredRules());
     }
+
+    [Fact]
+    public void The_Permissible_Stress_Fractions_Default_To_Generic_Textbook_Values_The_User_Replaces_With_The_Licensed_Standard_Value()
+    {
+        // The defaults stay; the wording no longer says the fractions have no default.
+        var defaults = new[] { ("f_tau", 0.45), ("f_sigma", 0.75), ("f_su", 0.67) };
+
+        foreach (var (symbol, value) in defaults)
+        {
+            var spec = Spring.Template.Inputs.Single(i => i.Symbol == symbol);
+            Assert.Equal(value, spec.Default);
+            Assert.Contains("generic textbook default", spec.Description, StringComparison.Ordinal);
+            Assert.Contains("EN 13906", spec.Description, StringComparison.Ordinal);
+        }
+
+        var assumption = Spring.Template.Assumptions.Single(a => a.Statement.Contains("permissible stress fractions", StringComparison.Ordinal));
+        Assert.DoesNotContain("the permissible stress fractions and the endurance strength are the user's inputs", assumption.Statement, StringComparison.Ordinal);
+        Assert.Contains("generic textbook fractions", assumption.Statement, StringComparison.Ordinal);
+        Assert.Contains("licensed EN 13906 value", assumption.Statement, StringComparison.Ordinal);
+        Assert.Contains("generic textbook fractions", Spring.Template.RecordKinds!.Single(k => k.Kind == "spring.permissible").Guidance, StringComparison.Ordinal);
+    }
 }

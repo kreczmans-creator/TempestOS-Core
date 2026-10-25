@@ -45,9 +45,9 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   rho | Density | 7850 | kg/m^3 | assumption: Sheet default value; no project figure given. | 1000 … 20000 kg/m^3
   rm_source | Where R_m(d) comes from: typed (no default: the wire certificate or your wire standard) or the curve R_m = A/d^m of a W3 material | Typed R_m(d) |  | drawing: DRG-TMP-415 rev B | any
   Rm | Tensile strength of the wire at this diameter R_m(d), typed (no default) | 1500 | MPa | drawing: DRG-TMP-415 rev B | 300 … 3500 MPa
-  f_tau | Permissible shear stress as a fraction of R_m | 0.45 |  | assumption: Sheet default value; no project figure given. | 0.2 … 0.8
-  f_sigma | Permissible bending stress as a fraction of R_m (torsion, hooks) | 0.75 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1
-  f_su | Ultimate shear strength as a fraction of R_m (Goodman, shear) | 0.67 |  | assumption: Sheet default value; no project figure given. | 0.4 … 0.9
+  f_tau | Permissible shear stress as a fraction of R_m (generic textbook default; replace with the licensed EN 13906 value) | 0.45 |  | assumption: Sheet default value; no project figure given. | 0.2 … 0.8
+  f_sigma | Permissible bending stress as a fraction of R_m (torsion, hooks; generic textbook default, replace with the licensed EN 13906 value) | 0.75 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1
+  f_su | Ultimate shear strength as a fraction of R_m (Goodman, shear; generic textbook default, replace with the licensed EN 13906 value) | 0.67 |  | assumption: Sheet default value; no project figure given. | 0.4 … 0.9
   nu_seat | End-support coefficient ν (0.5 both ends fixed, 0.7 one fixed one pinned, 1 both pinned, 2 one free) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2
   S_e | Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference) | 400 | MPa | drawing: DRG-TMP-415 rev B | 50 … 2000 MPa
   N_c | Required life the endurance strength belongs to | 10000000 |  | assumption: Sheet default value; no project figure given. | 10000 … 10000000000
@@ -59,7 +59,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   A2. Active coils n are as entered; end coils are accounted for only in the solid length (and the pitch) by the end type; the hook and leg flexibility is in the rate only for the torsion legs. (Shigley 10th ed. Ch. 10, geometry of the ends.)
   A3. Solid length: the EN 13906-1 form (default) uses the maximum wire diameter d_max, adds the 1.5 d of an unground squared end and checks the minimum coil clearance S_a at the working length L₂; plain ends have no EN row and keep the geometric form. The Shigley form (nominal d, no clearance) is selectable. (EN 13906-1 relations written in own notation, to be checked against the owner's copy; Shigley 10th ed. Table 10-1.)
   A4. Torsion bending stress: the EN 13906-3 factor q = (C + 0.07)/(C − 0.75) is the default; Shigley's K_i = (4C² − C − 1)/(4C(C − 1)) is selectable and about 1 % lower at C = 8. (EN 13906-3 relation written in own notation, to be checked against the owner's copy.)
-  A5. R_m(d), the permissible stress fractions and the endurance strength are the user's inputs from the user's own copy of the wire standard and design reference, with no default; R_m(d) can instead be taken from the curve R_m = A/d^m of a W3 material (revision-pinned; A in MPa for d in mm, the diameter range of the fit is the user's to respect). No wire-strength table and no permissible-stress diagram is shipped. (Addendum B §B5.)
+  A5. R_m(d) and the endurance strength are the user's inputs from the user's own copy of the wire standard and design reference, with no default. The permissible stress fractions f_τ, f_σ and f_su do default (0.45, 0.75, 0.67), to generic textbook fractions that the user replaces with the licensed EN 13906 value. R_m(d) can instead be taken from the curve R_m = A/d^m of a W3 material (revision-pinned; A in MPa for d in mm, the diameter range of the fit is the user's to respect). No wire-strength table and no permissible-stress diagram is shipped. (Addendum B §B5.)
   A6. The stress correction factor k_c is applied to the working and the solid stress alike (conservative for the static check). (Choose 'None (uncorrected)' for the uncorrected static stress.)
   A7. Extension: hook fatigue and the hook shape beyond its two radii are not assessed; the initial tension is a force the user enters. (Shigley 10th ed. Ch. 10, extension springs.)
   A8. Surge is the first natural frequency of a spring with both ends fixed; a spring with one end free has half of it. (Shigley 10th ed. Ch. 10, critical frequency.)
@@ -80,9 +80,9 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   A23. G (Shear modulus) is taken as 80 GPa. (Sheet default value; no project figure given.)
   A24. E (Young's modulus) is taken as 206 GPa. (Sheet default value; no project figure given.)
   A25. rho (Density) is taken as 7850 kg/m^3. (Sheet default value; no project figure given.)
-  A26. f_tau (Permissible shear stress as a fraction of R_m) is taken as 0.45. (Sheet default value; no project figure given.)
-  A27. f_sigma (Permissible bending stress as a fraction of R_m (torsion, hooks)) is taken as 0.75. (Sheet default value; no project figure given.)
-  A28. f_su (Ultimate shear strength as a fraction of R_m (Goodman, shear)) is taken as 0.67. (Sheet default value; no project figure given.)
+  A26. f_tau (Permissible shear stress as a fraction of R_m (generic textbook default; replace with the licensed EN 13906 value)) is taken as 0.45. (Sheet default value; no project figure given.)
+  A27. f_sigma (Permissible bending stress as a fraction of R_m (torsion, hooks; generic textbook default, replace with the licensed EN 13906 value)) is taken as 0.75. (Sheet default value; no project figure given.)
+  A28. f_su (Ultimate shear strength as a fraction of R_m (Goodman, shear; generic textbook default, replace with the licensed EN 13906 value)) is taken as 0.67. (Sheet default value; no project figure given.)
   A29. nu_seat (End-support coefficient ν (0.5 both ends fixed, 0.7 one fixed one pinned, 1 both pinned, 2 one free)) is taken as 0.5. (Sheet default value; no project figure given.)
   A30. N_c (Required life the endurance strength belongs to) is taken as 10000000. (Sheet default value; no project figure given.)
   A31. n_f_req (Required Goodman safety factor) is taken as 1.2. (Sheet default value; no project figure given.)
@@ -284,7 +284,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
 
 8. VERIFICATION
   Template: mech.spring@1.2.0
-  Content hash: 59c36009d5f39ba6
+  Content hash: 18298682a27b7ac1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
   Test run: 2026-10-25 15:36 UTC

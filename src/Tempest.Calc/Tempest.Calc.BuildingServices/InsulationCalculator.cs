@@ -39,14 +39,14 @@ public sealed class InsulationCalculator : ICalcCalculator
             new CalcInputSpec("lambda", "Thermal conductivity of the insulation", CalcInputKind.Quantity, "W/(m*K)", Default: 0.04, Min: 0.015, Max: 0.2, HardMin: 0.005, HardMax: 2, Group: "Insulation", MaterialProperty: "lambda"),
             new CalcInputSpec("theta_lambda", "Temperature the conductivity applies at (a note: compared with the mean insulation temperature)", CalcInputKind.Quantity, "degC", Min: -50, Max: 400, HardMin: -200, HardMax: 650, IsOptional: true, Group: "Insulation"),
             new CalcInputSpec("h_mode", "Where the outer surface coefficient comes from", CalcInputKind.Choice, Choices: [HGiven, HCorrelation], DefaultChoice: HGiven, Group: "Outer surface"),
-            new CalcInputSpec("h_se", "Outer surface coefficient h_se (as given)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 10, Min: 3, Max: 40, HardMin: 0.5, HardMax: 200, Group: "Outer surface"),
+            new CalcInputSpec("h_se", "Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 10, Min: 3, Max: 40, HardMin: 0.5, HardMax: 200, Group: "Outer surface"),
             new CalcInputSpec("eps", "Emissivity of the outer surface (correlation)", CalcInputKind.Number, Default: 0.9, Min: 0.05, Max: 1, HardMin: 0.01, HardMax: 1, Group: "Outer surface"),
             new CalcInputSpec("v_wind", "Air speed over the surface (correlation; 0 = still air)", CalcInputKind.Quantity, "m/s", Default: 0, Min: 0, Max: 20, HardMin: 0, HardMax: 60, Group: "Outer surface"),
             new CalcInputSpec("L_surf", "Height or flow length of the flat surface (correlation, flat)", CalcInputKind.Quantity, "m", Default: 1, Min: 0.1, Max: 10, HardMin: 0.01, HardMax: 100, Group: "Outer surface"),
             new CalcInputSpec("h_i", "Inner film coefficient (blank = the pipe wall is at the process temperature)", CalcInputKind.Quantity, "W/(m^2*K)", Min: 50, Max: 20000, HardMin: 0.5, HardMax: 1e5, IsOptional: true, Group: "Pipe wall and film"),
             new CalcInputSpec("t_w", "Pipe wall thickness (with its conductivity; blank = not included)", CalcInputKind.Quantity, "mm", Min: 0.5, Max: 30, HardMin: 0.1, HardMax: 100, IsOptional: true, Group: "Pipe wall and film"),
             new CalcInputSpec("lambda_w", "Pipe wall conductivity", CalcInputKind.Quantity, "W/(m*K)", Min: 0.2, Max: 400, HardMin: 0.1, HardMax: 500, IsOptional: true, Group: "Pipe wall and film"),
-            new CalcInputSpec("q_max_m", "Heat-loss limit per metre of pipe (blank = not a criterion)", CalcInputKind.Quantity, "W/m", Default: 25, Min: 1, Max: 1000, HardMin: 1e-6, HardMax: 1e5, IsOptional: true, Group: "Criteria"),
+            new CalcInputSpec("q_max_m", "Heat-loss limit per metre of pipe (generic default of 25 W/m, replace with your project limit; blank = not a criterion)", CalcInputKind.Quantity, "W/m", Default: 25, Min: 1, Max: 1000, HardMin: 1e-6, HardMax: 1e5, IsOptional: true, Group: "Criteria"),
             new CalcInputSpec("q_max_A", "Heat-loss limit per square metre of flat surface (blank = not a criterion)", CalcInputKind.Quantity, "W/m^2", Min: 1, Max: 500, HardMin: 1e-6, HardMax: 1e5, IsOptional: true, Group: "Criteria"),
             new CalcInputSpec("theta_se_max", "Highest surface temperature, for a hot surface (blank = not a criterion)", CalcInputKind.Quantity, "degC", Min: 30, Max: 70, HardMin: -50, HardMax: 300, IsOptional: true, Group: "Criteria"),
             new CalcInputSpec("dew_margin", "Margin of the surface above the dew point, for a cold surface (blank = not a criterion)", CalcInputKind.Quantity, "K", Min: 0, Max: 5, HardMin: 0, HardMax: 20, IsOptional: true, Group: "Criteria"),
@@ -150,9 +150,9 @@ public sealed class InsulationCalculator : ICalcCalculator
         RecordKinds:
         [
             new CalcRecordKind(MaterialKind, "Material properties", ["lambda"], "A material from the library: its thermal conductivity fills this input, citing the material, its revision and the page or table of the value."),
-            new CalcRecordKind("surface.coefficient", "Outer surface coefficient", ["h_se"], "h_se from your own copy of the standard or the maker's guidance for the surface (still or moving air, jacketing), with its source and edition. No value is shipped."),
+            new CalcRecordKind("surface.coefficient", "Outer surface coefficient", ["h_se"], "h_se from your own copy of the standard or the maker's guidance for the surface (still or moving air, jacketing), with its source and edition. No standard's value is shipped: the sheet opens on a generic 10 W/(m²K), which you replace."),
             new CalcRecordKind("surface.emissivity", "Surface emissivity", ["eps"], "The total emissivity of the jacketing or finish, from its maker or your reference."),
-            new CalcRecordKind("criteria.insulation", "Insulation criteria", ["q_max_m", "q_max_A", "theta_se_max", "dew_margin"], "The heat-loss limit, the hot-surface limit and the dew-point margin of your project specification or your copy of the standard, with their source."),
+            new CalcRecordKind("criteria.insulation", "Insulation criteria", ["q_max_m", "q_max_A", "theta_se_max", "dew_margin"], "The heat-loss limit, the hot-surface limit and the dew-point margin of your project specification or your copy of the standard, with their source. The heat-loss limit per metre opens on a generic 25 W/m, which you replace."),
         ]);
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
