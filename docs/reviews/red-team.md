@@ -523,3 +523,14 @@ Lost update: hold the store gate on the attachment write, run `UpdateInputsAsync
 public void A_Split_Decimal_Is_Refused_Not_Read_As_A_Whole_Number(string csv, string mark) =>
     Assert.Throws<ImportRefusedException>(() => CadImporter.Parse(Samples.Text(csv, "p.csv"), CadSourceFormat.GenericCsv,
         new CadParseSettings { Number = mark == "comma" ? NumberProfile.Comma : NumberProfile.Point }));
+
+### S8 lifting (B-5)
+
+**Attacks that held at b1ba3c35:**
+- **Flag off:** direct template ids, JSON/CSV import, pack templates, revise, links to an S8 upstream, external evidence, the engine by id, the legacy lifting module, and generic Evidence Check/Issue/Revise on calculation Evidence, including Evidence from before the marker (startup sweep).
+- **Governance:** the author attesting; the attester checking or countersigning, by sign-in or by typed name; editing after attestation; an attest/edit race; two countersigners at once; a revision inheriting the attestation.
+- **Flag source:** environment, command line, current directory and per-user `appsettings.json` (none is read); HKCU policies; the WOW64 view (64-bit view forced, win-x64 build); symlinked file; symlinked parent; hard link to a user file; group-writable file; world-writable or user-owned directory; TOCTOU (not reachable without root).
+
+**Residual Info (needs root):** a symlinked grandparent is accepted; a FIFO at the path hung startup (fixed in 8ed89726).
+
+**Accepted and disclosed:** "Switch person…" without a password lets one human hold every role. The sheet says signatures are not authenticated, and the flag stays off until that is addressed.

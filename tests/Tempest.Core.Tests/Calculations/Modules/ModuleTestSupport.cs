@@ -66,6 +66,7 @@ internal static class ModuleTestSupport
         var principals = new CurrentPrincipalAccessor();
         var engine = new CalculationEngine(new EngineeringDocumentStore(new InMemoryQueryablePersistenceStore(), principals), principals);
         ProductCalculationCatalogue.RegisterAll(engine);
+        engine.ConfigureFeatures(_ => true); // a test engine runs every module; the gate itself is tested in GatedEngineExecutionTests
         return engine;
     }
 

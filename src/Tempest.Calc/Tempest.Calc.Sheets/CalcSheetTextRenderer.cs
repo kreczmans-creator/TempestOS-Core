@@ -152,6 +152,9 @@ public static class CalcSheetTextRenderer
         if (f.ApplicationVersion is { Length: > 0 })
             sb.Append("  Application: ").AppendLine(Clean(f.ApplicationVersion));
 
+        if (f.FeatureNote is { Length: > 0 })
+            sb.Append("  Optional feature: ").AppendLine(Clean(f.FeatureNote));
+
         return sb.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
     }
 

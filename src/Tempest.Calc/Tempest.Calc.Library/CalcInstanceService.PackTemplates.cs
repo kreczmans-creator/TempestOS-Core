@@ -28,6 +28,9 @@ public sealed partial class CalcInstanceService
 
         foreach (var step in template.Steps)
         {
+            if (FeatureRefusal(step.TemplateId) is { } switchedOff)
+                return $"Pack template '{template.Title}': step '{step.Key}': {switchedOff}";
+
             if (_catalogue.Find(step.TemplateId) is not { } entry)
                 return $"Pack template '{template.Title}': step '{step.Key}' names template '{step.TemplateId}', which is not registered.";
 

@@ -211,10 +211,52 @@ public sealed record CalcTemplate(
     string? Category = null,
     IReadOnlyList<CalcOutputPort>? OutputPorts = null,
     IReadOnlyList<CalcRecordKind>? RecordKinds = null,
-    bool IndependentCheck = false)
+    bool IndependentCheck = false,
+    string? FeatureFlag = null,
+    bool RequiresAttestation = false,
+    bool RequiresSecondCheck = false)
 {
     /// <summary>"id@version", the reference every instance carries.</summary>
     public string Reference => $"{Id}@{Version}";
 
     public CalcInputSpec? FindInput(string symbol) => Inputs.FirstOrDefault(i => string.Equals(i.Symbol, symbol, StringComparison.Ordinal));
+
+    /// <summary>
+    /// Whether Check and Issue demand more than an ordinary template does (Addendum B, S8): a competent-person attestation, a
+    /// second independent check, or both. A template that sets none of <see cref="RequiresAttestation"/> and
+    /// <see cref="RequiresSecondCheck"/> is governed exactly as before.
+    /// </summary>
+    public bool HasExtraGovernance => RequiresAttestation || RequiresSecondCheck;
+}
+
+/// <summary>
+/// The optional features a template can be gated behind (<see cref="CalcTemplate.FeatureFlag"/>). A gated template is composed
+/// into the build but is withheld from the catalogue until its flag is switched on in the installation's configuration
+/// (ADR-0173). Every flag is off by default.
+/// </summary>
+public static class CalcFeatures
+{
+    /// <summary>Lifting lugs and spreader beams (S8): LOLER/PUWER territory, off until the owner has completed the review checklist.</summary>
+    public const string Lifting = "lifting";
+
+    /// <summary>Every known feature flag.</summary>
+    public static IReadOnlyList<string> All { get; } = [Lifting];
+}
+
+/// <summary>
+/// The inputs a template that <see cref="CalcTemplate.RequiresAttestation"/> declares for the competent person's attestation
+/// (ADR-0173). They are ordinary text inputs, so they print on the sheet like any other input; the Library refuses Check and Issue
+/// while they are blank or name the calculation's own author.
+/// </summary>
+public static class CalcAttestation
+{
+    public const string NameSymbol = "attest_name";
+    public const string QualificationSymbol = "attest_qualification";
+    public const string StatementSymbol = "attest_statement";
+
+    /// <summary>The shortest statement accepted: a bare "ok" is not an attestation.</summary>
+    public const int MinStatementLength = 20;
+
+    /// <summary>The three input symbols, in sheet order.</summary>
+    public static IReadOnlyList<string> Symbols { get; } = [NameSymbol, QualificationSymbol, StatementSymbol];
 }

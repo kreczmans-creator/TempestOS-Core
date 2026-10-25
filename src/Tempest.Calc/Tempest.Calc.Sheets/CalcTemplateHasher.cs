@@ -154,6 +154,16 @@ public static class CalcTemplateHasher
         if (t.IndependentCheck)
             sb.Append("independent-check\n");
 
+        // Addendum B, S8 (ADR-0173): only a template that gates itself or demands extra governance changes its hash, so every earlier template keeps its hash.
+        if (t.FeatureFlag is { Length: > 0 } feature)
+            sb.Append("feature=").Append(feature).Append('\n');
+
+        if (t.RequiresAttestation)
+            sb.Append("requires-attestation\n");
+
+        if (t.RequiresSecondCheck)
+            sb.Append("requires-second-check\n");
+
         foreach (var f in formulas)
             sb.Append("formula=").Append(f).Append('\n');
 

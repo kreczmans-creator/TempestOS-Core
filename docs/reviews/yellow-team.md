@@ -114,7 +114,7 @@ Test totals at the last gate on the build branches (LOG, 2026-10-24): Engine 384
 
 ## Addendum B
 
-Builder quality, 2026-10-25. Scope: the Addendum B branches merged up to `34f196cc` on `v0.26.0/addB-4-workflows` (100 non-merge commits since `510f337c`), the Opus review files of each item, `LOG.md`, `STATUS.md` and DB-01…DB-08. S8: reviewed separately before B-5 merges.
+Builder quality, 2026-10-25. Scope: the Addendum B branches merged up to `34f196cc` on `v0.26.0/addB-4-workflows` (100 non-merge commits since `510f337c`), the Opus review files of each item, `LOG.md`, `STATUS.md` and DB-01…DB-08. S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
 
 ### Per branch
 
@@ -125,7 +125,7 @@ Builder quality, 2026-10-25. Scope: the Addendum B branches merged up to `34f196
 | `addB-2-fluid` | F1, F3, HPU pack | Opus review plus three verification rounds | 1 High (F1 buckling), 10 Medium; F3 L5 accepted | HPU F1 line velocity FAIL after the fix (DB-03: 20 mm line) | 4 | 0 | Tolerance-stack timing test, twice under load (Y-A-05) |
 | `addB-3-reuse` | M8, B8, S9, E8, B9 | Opus per calculator, two to three rounds each | 4 High, 14 Medium | A branch switch in the main checkout invalidated one Desktop run; gates moved to their own worktree | 2–3 | 0 | 0 |
 | `addB-4-workflows` (in progress) | W1, W2, M9, E9, chains 1, 4, 5, 7–10, licence check | Opus (M9, E9, W2), security (W1), verification rounds, two chain reviews | W1 4 High, 6 Medium; W2 2 High, 7 Medium; M9 2 High, 3 Medium; E9 1 High, 4 Medium; chains 0 High, 10 Medium | Desktop `WorkedExamplePdfTests` 4 failures at `34f196cc` (Y-B-01); S9 Ritz timing test fails under load (Y-B-11) | 2–3 | 0 | Import timing tests moved to a non-parallel collection (DB-07) |
-| `addB-5-gated` | S8 | — | S8: reviewed separately before B-5 merges | — | — | — | — |
+| `addB-5-gated` | S8 | — | S8: reviewed in three separate Opus rounds (see Security and Red, S8 lifting) | — | — | — | — |
 
 Every non-merge commit carries the requested trailers (100 of 100). The W2 PDF path was dropped under the §B2 drop order (ADR-0172). E9 and M9, both on the drop list, were built.
 
@@ -164,4 +164,4 @@ New finding in this round:
 |---|---|---|---|---|---|---|
 | Y-B-12 | Medium | 8 worked-example `sheet.pdf` files | The PDFs predate the fixes that changed their `sheet.txt`, so the issued PDF shows the old template version and text. Affected: `fp.accumulator/clamp-circuit-bladder-accumulator` (1.2.0, no gas-process line), `elec.pcb-trace/motor-driver-supply-rail` (1.0.1), all three `bs.pipe-expansion` examples, both `bs.insulation` examples (the chilled one lacks the new warning) and `struct.ltb-interaction/ub-457x191x98-beam-column`. `WorkedExamplePdfTests` checks only existence and size, so the gate cannot see it. | In each folder `sheet.txt` was last changed by `4a19d7b8`, `34044c2d`, `dda97f60`, `5a818356` or `100e8a65`, after the PDF's last commit. | Regenerate after the last fix (`TEMPEST_WRITE_WORKED_EXAMPLES=1 … --filter WorkedExamplePdfTests`). Let the test compare the PDF's extracted text with `sheet.txt` (template line and governing check). | Open: fix now |
 
-S8: reviewed separately before B-5 merges.
+S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.

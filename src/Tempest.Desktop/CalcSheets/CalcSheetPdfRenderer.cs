@@ -216,6 +216,9 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         var f = sheet.Footer;
         Line(state, measure, $"Template {T(f.TemplateReference, 120)}    Content hash {T(f.ContentHash, 80)}    Engine {T(f.EngineVersion, 40)}", DocumentTemplate.CaptionSize, DocumentFontRole.Mono);
         Line(state, measure, $"Known-answer cases passed {f.KnownAnswerPassed}/{f.KnownAnswerTotal}    Test run {Date(f.TestRunAt, true)}    {T(f.ApplicationVersion, 80)}", DocumentTemplate.CaptionSize, DocumentFontRole.Mono);
+
+        if (f.FeatureNote is { Length: > 0 })
+            Line(state, measure, $"Optional feature: {T(f.FeatureNote, 300)}", DocumentTemplate.CaptionSize, DocumentFontRole.Mono);
     }
 
     private static float W(float fraction) => DocumentTemplate.ContentWidth * fraction;

@@ -143,6 +143,12 @@ internal sealed class WorkspaceViewCoordinator
     /// </remarks>
     public Func<IHasAttachments, IAttachment, Task>? OpenAttachmentAsync { get; set; }
 
+    /// <summary>
+    /// Opens the worksheet that manages a piece of Evidence (`ADR-0173`): the Evidence editor asks (its "Open worksheet"), the shell decides where the
+    /// worksheet opens. Assigned by the composer once the worksheet surface exists.
+    /// </summary>
+    public Func<Guid, Task>? OpenCalculationForEvidenceAsync { get; set; }
+
     public WorkspaceViewCoordinator(
         IWorkspace workspace, WorkspaceManager manager, EngineeringDomainContext domainContext, ICommandDispatcher commandDispatcher,
         IRequirementsService requirementsService, CalculationTemplateRegistry? calculationTemplates,
@@ -417,6 +423,7 @@ internal sealed class WorkspaceViewCoordinator
         // surfaces its own Missing/Corrupt/Unsupported state, so there is
         // no result here worth awaiting.
         editor.OpenAttachmentRequested += (owner, attachment) => _ = OpenAttachmentAsync?.Invoke(owner, attachment);
+        editor.OpenCalculationRequested += evidenceId => _ = OpenCalculationForEvidenceAsync?.Invoke(evidenceId);
         // `WP 21.2A`, scope item 3 — only actually wired once a renderer/
         // exporter exist (`ExportReportRequested`'s own remarks: the
         // button itself stays hidden otherwise, so this subscription is

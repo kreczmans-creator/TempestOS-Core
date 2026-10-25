@@ -51,6 +51,10 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
     private EvidenceStatus _status;
     private CheckRecord? _check;
     private IssueRecord? _issue;
+    private string? _managedBy;
+
+    /// <summary>The <see cref="ManagedBy"/> value of the Evidence a calculation worksheet owns (`ADR-0173`): checked, issued and revised from its worksheet only.</summary>
+    public const string CalcWorksheetOwner = "calc.worksheet";
 
     /// <summary>Initialises a new instance of the <see cref="Evidence"/> class.</summary>
     public Evidence(
@@ -58,7 +62,7 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
         string? identifier, string displayName, EngineeringObjectMetadata metadata,
         EvidenceClassification classification, Guid? subjectId, string authorIdentityId,
         IReadOnlyList<EvidenceCitation>? citations = null, IReadOnlyList<DeclaredFigure>? declaredFigures = null,
-        EvidenceStatus status = EvidenceStatus.Draft, CheckRecord? check = null, IssueRecord? issue = null)
+        EvidenceStatus status = EvidenceStatus.Draft, CheckRecord? check = null, IssueRecord? issue = null, string? managedBy = null)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(authorIdentityId);
@@ -71,6 +75,27 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
         _status = status;
         _check = check;
         _issue = issue;
+        _managedBy = string.IsNullOrWhiteSpace(managedBy) ? null : managedBy;
+    }
+
+    /// <summary>
+    /// The surface that owns this evidence's check, issue and revise, or <see langword="null"/> for ordinary evidence (`ADR-0173`). The
+    /// evidence of a calculation worksheet is managed by it: <see cref="IEvidenceService"/> refuses to check, issue or revise managed
+    /// evidence for any caller that does not present its owner, so the generic Evidence commands cannot move a calculation's record past the
+    /// worksheet's own governance (attestation, second check, feature flag, independent check).
+    /// </summary>
+    public string? ManagedBy => _managedBy;
+
+    /// <summary>Marks this evidence as managed by <paramref name="owner"/>, in one transaction with an audit row. Not undone.</summary>
+    internal Task SetManagedByAsync(string owner, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(owner);
+
+        return MutateTypeStateAndPersistAsync(
+            () => new Dictionary<string, string?>(StringComparer.Ordinal) { [nameof(ManagedBy)] = owner },
+            () => _managedBy = owner,
+            $"Managed by '{owner}': checked, issued and revised from its own surface only.",
+            cancellationToken);
     }
 
     /// <inheritdoc cref="IEvidenceRecord.Classification" />
@@ -367,6 +392,10 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
         state[nameof(Status)] = _status.ToString();
         WriteJson(state, nameof(Check), _check);
         WriteJson(state, nameof(Issue), _issue);
+
+        // Only managed evidence writes the key, so every earlier record's stored state is unchanged.
+        if (_managedBy is not null)
+            state[nameof(ManagedBy)] = _managedBy;
     }
 
     /// <inheritdoc />
@@ -378,6 +407,7 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
         _status = ReadStatus(state);
         _check = state.TypeJson<CheckRecord>(nameof(Check));
         _issue = state.TypeJson<IssueRecord>(nameof(Issue));
+        _managedBy = state.Type(nameof(ManagedBy)) is { Length: > 0 } managed ? managed : null;
     }
 
     private static EvidenceClassification ReadClassification(EngineeringObjectState state) =>
@@ -396,7 +426,7 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
         new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
             ReadClassification(state), state.TypeGuid(nameof(SubjectId)), state.Type(nameof(AuthorIdentityId)) ?? string.Empty,
             ReadCitations(state), ReadDeclaredFigures(state), ReadStatus(state),
-            state.TypeJson<CheckRecord>(nameof(Check)), state.TypeJson<IssueRecord>(nameof(Issue)));
+            state.TypeJson<CheckRecord>(nameof(Check)), state.TypeJson<IssueRecord>(nameof(Issue)), state.Type(nameof(ManagedBy)));
 }
 
 /// <summary>Raised inside the Issue transaction when the stored Evidence no longer permits issuing (a concurrent Issue won); the transaction rolls back.</summary>

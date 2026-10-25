@@ -142,7 +142,7 @@ Written from the S8 branch (ADR-0173, `065fe64c`, not merged).
 4. Governance (competent-person attestation, second Checked signature) is in `Library/CalcInstanceService.Governance.cs`.
 5. Test that the flag is off by default, cannot be enabled any other way, and that Issue refuses without both signatures.
 
-S8: reviewed separately before B-5 merges.
+S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
 
 ### Checklist for an Addendum B calculator
 - [ ] Material inputs carry `MaterialProperty` and are listed in `material.properties`; a test applies, pins and stales a material.
@@ -170,4 +170,4 @@ S8: reviewed separately before B-5 merges.
 - O-B-01 is still open: `IndependentCheck: true` is set only on E4, E5 and S6. Decide and record.
 - SEC-B-02 is fixed (`051647fb`); item 6 of "Record kinds" above says so.
 - F2 1.3.0 is the reference for "model the duty": a `process` input defaulting to the duty, the process printed as an output, and a `process` warning when the choice does not suit the duty.
-- O-B-03 is open until B-5 merges. S8: reviewed separately before B-5 merges.
+- O-B-03 is open until B-5 merges. S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
