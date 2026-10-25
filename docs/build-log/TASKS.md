@@ -78,7 +78,7 @@
 - [x] B-1 M7 springs, E7 PCB trace, B7 Glaser, S7 LTB + N+M, F2 accumulator (`v0.26.0/addB-1-core`)
 - [x] B-2 F1 cylinder circuit, F3 O-ring gland; HPU chain F1 → F2 → B1 → E1 → E4 (`v0.26.0/addB-2-fluid`)
 - [x] B-3 M8 snap-fits, B8 pipe expansion, S9 plate bending, E8 containment, B9 insulation (`v0.26.0/addB-3-reuse`)
-- [ ] B-4 W1 CAD import, W2 scan import, M9 kinematics, E9 motor start/PFC; scan-to-seal W2 → M1 → F3 (`v0.26.0/addB-4-workflows`)
+- [x] B-4 W1 CAD import, W2 scan import, M9 kinematics, E9 motor start/PFC; scan-to-seal W2 → M1 → F3 (`v0.26.0/addB-4-workflows`)
 - [ ] B-5 S8 lifting lugs and spreader beams behind a feature flag (`v0.26.0/addB-5-gated`)
 - [ ] §B7 ten chains: integration tests + issued pack worked examples
 - [ ] Security + every colour team re-run on the Addendum B delta
