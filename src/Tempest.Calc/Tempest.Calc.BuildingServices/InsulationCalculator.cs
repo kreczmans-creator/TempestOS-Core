@@ -60,7 +60,7 @@ public sealed class InsulationCalculator : ICalcCalculator
             new CalcAssumption("The dew point is entered (for example from B2) or is the Magnus relation at θ_a and RH, the same closed form B7 uses. Below 0 °C the relation is over ice, so RH is then taken relative to ice, whereas meteorological RH is usually relative to water: enter the dew point for sub-zero air. A margin above it is the user's.", "Derived; B7 shares the function."),
             new CalcAssumption("Pipes are treated as horizontal for free convection and flat surfaces as vertical; air properties are fits (conductivity within about 3 %, viscosity within about 4 % over 250–400 K), Pr = 0.71.", "Stated."),
             new CalcAssumption("The required thickness is the least thickness beyond which the criterion holds for every thicker layer up to 1 m, which is what matters when thin insulation on a small pipe raises the heat flow (critical diameter).", "Stated."),
-            new CalcAssumption("No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data.", "Addendum B §B5."),
+            new CalcAssumption("No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data.", "No standard's table is reproduced."),
         ],
         [
             new CalcClauseRef("ISO 12241", "formula route (clause numbers to be checked)", "Thermal insulation for building equipment and industrial installations: calculation rules"),

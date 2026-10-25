@@ -33,7 +33,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   A3. The dew point is entered (for example from B2) or is the Magnus relation at θ_a and RH, the same closed form B7 uses. Below 0 °C the relation is over ice, so RH is then taken relative to ice, whereas meteorological RH is usually relative to water: enter the dew point for sub-zero air. A margin above it is the user's. (Derived; B7 shares the function.)
   A4. Pipes are treated as horizontal for free convection and flat surfaces as vertical; air properties are fits (conductivity within about 3 %, viscosity within about 4 % over 250–400 K), Pr = 0.71. (Stated.)
   A5. The required thickness is the least thickness beyond which the criterion holds for every thicker layer up to 1 m, which is what matters when thin insulation on a small pipe raises the heat flow (critical diameter). (Stated.)
-  A6. No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data. (Addendum B §B5.)
+  A6. No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data. (No standard's table is reproduced.)
 
 4. WORKING
   [10] t_q = t such that |q| ≤ 30 W/m for every thicker layer    « ISO 12241
