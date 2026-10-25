@@ -20,6 +20,9 @@ def cells(line):
 def level(text):
     """The first severity word in a cell; 'Rejected' wins when present."""
     t = text.replace("*", "")
+    dated = re.findall(r"[Aa]t [0-9a-f]{7,40}: *(Critical|High|Medium|Low|Info|Rejected)", t)
+    if dated:  # a later dated override ("At 0772fcf8: Medium") wins
+        return dated[-1]
     if t.lower().startswith("rejected") or "reject" in t.lower().split(":")[0]:
         return "Rejected"
     found = [(t.find(k), k) for k in RANK if k != "Rejected" and k in t]

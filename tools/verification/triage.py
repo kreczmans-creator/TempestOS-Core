@@ -113,7 +113,7 @@ Every calculator Critical and High finding was reproduced with the probe tool. T
 ## Critical findings (fix before any owner use)
 1. **P1-struct.section-properties-01.** A tube or hollow rectangle inside a composite section counts its hole as solid. A 200 × 10 tube reads 568.6 cm²; the correct area is 59.7 cm². The coordinator reproduced it.
 2. **P1-bs.psychrometrics-01.** Cooling with dehumidification swaps sensible and latent load. At 28 °C 50 % to 12 °C, the sheet shows 8.9 kW sensible and 16.4 kW latent; physics gives about 16.3 kW and 8.9 kW. Total load is right; SHR and coil selection are wrong. The coordinator reproduced it.
-3. **P1-chain.drive-train-01.** The drive-train pack binds motor RMS torque to the shaft as steady torque. Shaft yield and key checks never see peak torque. Fatigue ignores the reversing torque. It still reproduces at 298ade36.
+3. **P1-chain.drive-train-01.** The drive-train pack binds motor RMS torque to the shaft as steady torque. Since the Addendum A Blue round the yield check sees peak torque. Fatigue and key checks still use RMS torque (chain n_f 2.01 against about 1.39).
 
 P1-chain.drive-train-02 (no gear ratio on the torque link) was Critical and is now High. The pack's example shaft sits on the motor side, where motor torque is correct. An output-side shaft still receives motor torque with no warning.
 
