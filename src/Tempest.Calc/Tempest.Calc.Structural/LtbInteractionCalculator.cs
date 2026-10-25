@@ -142,6 +142,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             new CalcApplicabilityRule("engine", "The elastic critical moment could not be evaluated for these inputs.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("c1-psi", "C₁ from the ψ formula applies to end moments with k = 1; Annex A takes C_my,0 from ψ.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("zg-c2", "z_g has no effect while C₂ = 0.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("double-curvature", "End moments of opposite sign are taken as double curvature (ψ < 0, C₁ up to its cap): bending-moment-diagram ordinates, not stiffness-analysis end actions.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("use-f", "The f modification belongs to 6.3.2.3 and is not applied with 6.3.2.2.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("annex-a", "Annex A coefficients are to be checked against the standard.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("slender", "Non-dimensional slenderness above 2.0.", CalcNoticeSeverity.Warning),
@@ -338,7 +339,13 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             myEd = Math.Abs(big);
             psiY = myEd < 1e-9 ? 1.0 : small / big;
             c.Record("M_y_Ed", "max(|M_A|, |M_B|)", $"max(|{F(ma / 1e6)}|, |{F(mb / 1e6)}|) kN·m", ScalarValue.Of(myEd / 1e6, "kN*m"), "Greatest design moment about y-y", "6.3.2");
-            c.Record("psi_y", "ψ = M_small/M_large (same sign: single curvature)", $"{F(small / 1e6)} / {F(big / 1e6)}", new ScalarValue(psiY), "Ratio of the end moments", "Table B.3");
+            c.Record("psi_y", "ψ = M_small/M_large (same sign: single curvature)", $"{F(small / 1e6)} / {F(big / 1e6)}", new ScalarValue(psiY), "Ratio of the end moments, taken as ordinates of the bending-moment diagram (same sign at both ends: single curvature)", "Table B.3");
+
+            if (psiY < 0)
+            {
+                // A frame program prints member end actions, which have OPPOSITE signs for single curvature. Typed that way the diagram reads as a reversal: C₁ rises to its cap and the check can turn from FAIL to PASS without a sign of it.
+                c.Warn("double-curvature", $"M_y_A, M_y_B: opposite signs, so the diagram is taken as double curvature (M_A = {F(ma / 1e6)} kN·m ——— M_B = {F(mb / 1e6)} kN·m, ψ = {F(psiY)}): C₁ = {F(LtbInteractionMath.C1FromPsi(psiY))}, C_my = {F(LtbInteractionMath.CmFromPsi(psiY))}. These are bending-moment-diagram ordinates, not stiffness-analysis end actions. If the member is bent in single curvature, as most beam-columns are, give both moments the same sign (single curvature has opposite signs in a frame program's end actions); only a true reversal justifies this C₁.");
+            }
         }
         else
         {

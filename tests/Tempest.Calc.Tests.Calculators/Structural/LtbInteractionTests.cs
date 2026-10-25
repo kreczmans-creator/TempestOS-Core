@@ -109,6 +109,33 @@ public sealed class LtbInteractionTests
     }
 
     [Fact]
+    public void Black_B_B_01_Opposite_Sign_End_Moments_Warn_That_Double_Curvature_Was_Taken()
+    {
+        // A frame program prints member end actions, which have opposite signs for SINGLE curvature. Typed that way the
+        // diagram reads as a reversal: C1 jumps to its cap and the check can turn from FAIL to PASS with no sign of it.
+        var frameProgram = Run(Choice("moment_mode", LtbInteractionCalculator.ModeEnds), Q("M_y_A", 340, "kN*m"), Q("M_y_B", -170, "kN*m"));
+        var warning = Assert.Single(frameProgram.Warnings, w => w.RuleId == "double-curvature");
+        Assert.Contains("double curvature", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("C₁ = 2.7", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("end actions", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("340", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("-170", warning.Message, StringComparison.Ordinal);
+
+        // The same moments with one sign (single curvature) and ψ = 0 carry no such warning.
+        var single = Run(Choice("moment_mode", LtbInteractionCalculator.ModeEnds), Q("M_y_A", 340, "kN*m"), Q("M_y_B", 170, "kN*m"));
+        Assert.DoesNotContain(single.Warnings, w => w.RuleId == "double-curvature");
+        var zero = Run(Choice("moment_mode", LtbInteractionCalculator.ModeEnds), Q("M_y_A", 340, "kN*m"), Q("M_y_B", 0, "kN*m"));
+        Assert.DoesNotContain(zero.Warnings, w => w.RuleId == "double-curvature");
+
+        // The ψ mode (ψ entered as a number) is not an end-moment slip and is not touched.
+        Assert.DoesNotContain(Run(N("psi_y", -0.5)).Warnings, w => w.RuleId == "double-curvature");
+
+        // The sign convention is stated where it is entered.
+        Assert.Contains("bending-moment diagram", Ltb.Template.FindInput("M_y_A")!.Description, StringComparison.Ordinal);
+        Assert.Contains("double-curvature", Ltb.Template.ApplicabilityRules.Select(r => r.Id));
+    }
+
+    [Fact]
     public void Edition_2022_Changes_Only_The_Label()
     {
         var a = Run();
