@@ -15,6 +15,9 @@ public enum CalcProvenanceKind
 
     /// <summary>Bound to an output of another calculation, pinned to that calculation's revision (Addendum A, L1).</summary>
     Link,
+
+    /// <summary>Imported from a CAD parameter file through a mapping profile (Addendum B, W1): the reference names the system, part, file hash, time and CAD parameter; the revision names the profile.</summary>
+    CadImport,
 }
 
 /// <summary>The provenance of one input value: its kind, a reference (drawing number, spec clause, evidence id, record id) and a revision.</summary>
@@ -57,6 +60,7 @@ public sealed record CalcProvenance(CalcProvenanceKind Kind, string? Reference =
             CalcProvenanceKind.Evidence => "evidence",
             CalcProvenanceKind.Reference => "reference",
             CalcProvenanceKind.Link => "link",
+            CalcProvenanceKind.CadImport => "cad import",
             _ => Kind.ToString().ToLowerInvariant(),
         };
 

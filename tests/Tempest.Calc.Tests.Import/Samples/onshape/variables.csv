@@ -1,0 +1,6 @@
+name,expression,value,description
+#plate_w,40.5 mm,,Plate width
+#plate_t,6 mm,,
+#flange,2 * #plate_w,81 mm,Derived from the plate width
+#tilt,15 deg,,
+#parts,4,,
