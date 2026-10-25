@@ -232,7 +232,7 @@ public sealed class MechanismTests
     [Fact]
     public void Every_Port_Is_An_Output_Of_The_Declared_Dimension_In_Every_Mode()
     {
-        string[] shared = ["input_torque", "output_motion", "peak_accel", "follower_force", "F_pin_pk", "T_rms_in", "n_in", "P_mean"];
+        string[] shared = ["input_torque", "output_motion", "peak_accel", "follower_force", "F_pin_pk", "T_rms_in", "n_in", "f_in", "P_mean"];
 
         foreach (var run in new[] { Run(), Run(Slider()), Cam() })
         {
@@ -947,5 +947,16 @@ public sealed class MechanismTests
 
         var tooMany = Cam([.. rows, .. rows]);
         Assert.True(tooMany.IsBlocked);
+    }
+
+    [Fact]
+    public void The_Input_Frequency_In_Hz_Is_The_Speed_Over_Sixty_For_Every_Mode()
+    {
+        // n_in is an angular velocity (rpm), not a frequency, so it cannot be linked to a frequency input: f_in is the port that can.
+        var fourBar = Run(Q("n_in", 150, "rpm"));
+        Assert.Equal(2.5, fourBar.OutputSi("f_in"), 12);
+        var slider = Run(CalcInputValue.Choice("mode", MechanismCalculator.SliderCrank), Q("n_in", 30, "rpm"));
+        Assert.Equal(0.5, slider.OutputSi("f_in"), 12);
+        Assert.Contains(Mechanism.Template.OutputPorts!, p => p.Symbol == "f_in" && p.Unit == "Hz");
     }
 }

@@ -509,4 +509,25 @@ public sealed class SpringTests
 
         Assert.All(new[] { "missing", "wire-strength", "d-max" }, id => Assert.Contains(id, declared));
     }
+
+    [Fact]
+    public void An_Expected_Working_Travel_More_Than_One_Percent_From_The_Springs_Own_Warns_And_A_Match_Does_Not()
+    {
+        // The default case: F 10 and 40 N on a rate of 4.8828125 N/mm gives s₂ − s₁ = 30/4.8828125 = 6.144 mm.
+        var travel = 30 / 4.8828125;
+        var match = Run(Q("s_work", travel * 1.005, "mm"));
+        Assert.False(match.IsBlocked);
+        Assert.DoesNotContain(match.Warnings, w => w.RuleId == "travel-mismatch");
+        Assert.Equal(travel * 1e-3, match.OutputSi("s_trav"), 12);
+
+        var off = Run(Q("s_work", travel * 1.02, "mm"));
+        var warning = Assert.Single(off.Warnings, w => w.RuleId == "travel-mismatch");
+        Assert.StartsWith("s_work:", warning.Message, StringComparison.Ordinal);
+
+        // Blank (the default) changes nothing, and the deflection form of the working points is judged the same way.
+        Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "travel-mismatch");
+        var byDeflection = Run(CalcInputValue.Choice("work", SpringCalculator.Deflections), Q("s_1", 2, "mm"), Q("s_2", 8, "mm"), Q("s_work", 5, "mm"));
+        Assert.Contains(byDeflection.Warnings, w => w.RuleId == "travel-mismatch");
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("work", SpringCalculator.Deflections), Q("s_1", 2, "mm"), Q("s_2", 8, "mm"), Q("s_work", 6, "mm")).Warnings, w => w.RuleId == "travel-mismatch");
+    }
 }

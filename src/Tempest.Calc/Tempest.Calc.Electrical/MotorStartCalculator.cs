@@ -31,7 +31,7 @@ public sealed class MotorStartCalculator : ICalcCalculator
     public const string DataPerKm = "R and X per km";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Electrical, "Motor start voltage dip and PF correction",
+        Id, "1.2.0", CalcDiscipline.Electrical, "Motor start voltage dip and PF correction",
         "The voltage dip when a three-phase induction motor starts, at the motor terminals and at the point of common coupling, from the supply impedance (a fault level or a transformer), the cable and the motor's locked-rotor impedance for a direct-on-line or star-delta start (a passive motor impedance) or a soft-start or drive start (a regulated current), by the complex potential divider; the dip is checked against a user limit (default 10 %). Also the capacitor kvar to raise the running power factor to a target, the capacitor current and the parallel-resonance order, with a warning when harmonic loads are present. Steady-state phasor model: no motor run-up dynamics, no flicker assessment, no starting-torque adequacy check.",
         "Rated current: I_n = P/(√3·U·cos φ·η), or entered\n" +
         "Starting current at rated voltage: DOL I_LR·I_n; star-delta I_LR·I_n/3; soft starter min(k_soft·I_n, I_LR·I_n); drive k_vfd·I_n\n" +
@@ -50,7 +50,7 @@ public sealed class MotorStartCalculator : ICalcCalculator
             new CalcInputSpec("fault_basis", "Fault level given as", CalcInputKind.Choice, Choices: [BasisSk, BasisIk], DefaultChoice: BasisSk, Group: "Supply"),
             new CalcInputSpec("S_k", "Three-phase fault level at the point of supply (use the minimum fault level, which gives the deepest dip)", CalcInputKind.Quantity, "MVA", Default: 10, Min: 0.5, Max: 500, HardMin: 0.01, HardMax: 10000, Group: "Supply"),
             new CalcInputSpec("I_k", "Three-phase fault current at the point of supply (links E5 I_k3)", CalcInputKind.Quantity, "kA", Default: 15, Min: 1, Max: 150, HardMin: 0.05, HardMax: 1000, Group: "Supply"),
-            new CalcInputSpec("c_src", "Voltage factor c for the fault-level route (blank: 1.1 for the I_k basis, as E5 I_k3 is computed with; 1.0 for a declared S_k)", CalcInputKind.Number, Min: 0.95, Max: 1.1, HardMin: 0.95, HardMax: 1.1, IsOptional: true, Group: "Supply"),
+            new CalcInputSpec("c_src", "Voltage factor c for the fault-level route (blank: 1.1 for the I_k basis, as E5 I_k3 is computed with; 1.0 for a declared S_k; links E5 c_k3, which follows E5's c_max)", CalcInputKind.Number, Min: 0.95, Max: 1.1, HardMin: 0.95, HardMax: 1.1, IsOptional: true, Group: "Supply"),
             new CalcInputSpec("S_n", "Transformer rating", CalcInputKind.Quantity, "kVA", Default: 500, Min: 25, Max: 5000, HardMin: 1, HardMax: 10000, Group: "Supply"),
             new CalcInputSpec("u_k", "Transformer impedance voltage", CalcInputKind.Quantity, "%", Default: 4, Min: 1, Max: 12, HardMin: 0.5, HardMax: 25, Group: "Supply"),
             new CalcInputSpec("S_kQ", "Upstream network fault level at the transformer primary, in series with the transformer (minimum fault level; blank: infinite bus)", CalcInputKind.Quantity, "MVA", Min: 1, Max: 5000, HardMin: 0.1, HardMax: 100000, IsOptional: true, Group: "Supply"),
@@ -265,7 +265,7 @@ public sealed class MotorStartCalculator : ICalcCalculator
                 c.Input("I_k");
                 c.Assign("Z_fl", $"{cName} * U / (sqrt(3) * I_k)", "ohm", "Source impedance magnitude from the fault current", "IEC 60909-0 cl. 5.3");
 
-                if (c.Inputs.Find("I_k")?.Provenance?.Kind == CalcProvenanceKind.Link && Math.Abs(c.Si(cName) - 1.1) > 1e-9)
+                if (c.Inputs.Find("I_k")?.Provenance?.Kind == CalcProvenanceKind.Link && c.Inputs.Find("c_src")?.Provenance?.Kind != CalcProvenanceKind.Link && Math.Abs(c.Si(cName) - 1.1) > 1e-9)
                     c.Warn("c_src", $"c_src: I_k is linked from E5 I_k3, which is computed with c = 1.1, but c is {F(c.Si(cName))}; the source impedance is then {F(c.Si(cName) / 1.1 * 100)} % of E5's Z_T. Set c_src to 1.1 (and U to √3·U_0 for an exact match).");
             }
 

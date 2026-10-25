@@ -26,7 +26,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
+        Id, "1.2.0", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
         "Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.",
         "Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S\n" +
         "Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95\n" +
@@ -111,6 +111,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             new CalcOutputPort("I_f", "A", "Earth fault current"),
             new CalcOutputPort("S_min", "mm^2", "Minimum protective conductor"),
             new CalcOutputPort("I_k3", "kA", "Prospective three-phase fault"),
+            new CalcOutputPort("c_k3", "", "Voltage factor c that I_k3 was computed with, c_max (→ E9 c_src, so the motor start uses the same factor)"),
         ],
         RecordKinds:
         [
@@ -305,7 +306,8 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             c.Assign("U_n", "sqrt(3) * U_0", "V", "Line voltage");
             c.Assign("Z_T", "u_k * U_n^2 / S_r", "ohm", "Transformer impedance");
             c.Assign("I_k3", "c_max * U_n / (sqrt(3) * Z_T)", "kA", "Prospective three-phase fault at the origin (simplified)", "IEC 60909-0 cl. 5.3");
-            outputs.AddRange([("Z_T", "Transformer impedance"), ("I_k3", "Prospective fault current")]);
+            c.Assign("c_k3", "c_max", null, "Voltage factor c of the prospective fault current", "IEC 60909-0 cl. 5.3");
+            outputs.AddRange([("Z_T", "Transformer impedance"), ("I_k3", "Prospective fault current"), ("c_k3", "Voltage factor of I_k3")]);
 
             if (c.Has("I_cn"))
             {

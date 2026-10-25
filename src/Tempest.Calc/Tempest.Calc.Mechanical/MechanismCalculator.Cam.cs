@@ -348,6 +348,7 @@ public sealed partial class MechanismCalculator
         Scalar(c, "T_rms_in", "√(mean T²)", "Simpson per segment", Math.Sqrt(sumT2 / (2 * Math.PI)), "N*m", "RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)", "Virtual work");
         Scalar(c, "P_mean", "ω·mean(T)", "Simpson per segment", omega * sumT / (2 * Math.PI), "W", "Mean input power over the cam revolution (mech.P_mean)", "Virtual work");
         c.Output("n_in", "Cam-shaft speed, passed through for E1's load speed (mech.n_in)");
+        Scalar(c, "f_in", "n_in / 60", "rpm to Hz", omega / (2 * Math.PI), "Hz", "Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)");
     }
 
     private static CalcInputValue[] CamInputs(IReadOnlyList<CalcRow> segments, double rpm, double rb, double rr, double offset, double mass, double rate, double preload, double external, string follower = Roller) =>

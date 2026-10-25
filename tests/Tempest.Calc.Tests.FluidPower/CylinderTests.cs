@@ -332,9 +332,14 @@ public sealed class CylinderTests
         Assert.DoesNotContain(blank.Warnings, w => w.RuleId == "v-req-q");
 
         // The retract speed and the line flows follow the derived flow, not a flow that is also entered.
-        var both = Run(Q("v_req", 150, "mm/s"), Q("Q", 36, "L/min"));
+        var both = Run(Q("v_req", 150, "mm/s"), Q("Q", 50, "L/min"));
         Assert.Equal(expected, both.OutputSi("Q"), 12);
         Assert.Contains(both.Warnings, w => w.RuleId == "v-req-q");
+
+        // A flow still at the sheet's opening 36 L/min is not an entry to warn about (a new sheet given only the speed), and the speed still wins.
+        var atDefault = Run(Q("v_req", 150, "mm/s"));
+        Assert.Equal(expected, atDefault.OutputSi("Q"), 12);
+        Assert.DoesNotContain(atDefault.Warnings, w => w.RuleId == "v-req-q");
         Assert.Equal(blank.OutputSi("Q_prs"), both.OutputSi("Q_prs"), 12);
 
         // The regenerative extend runs on the rod area: Q = v·A_r/η_vc.

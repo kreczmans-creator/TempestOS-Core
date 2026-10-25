@@ -20,6 +20,9 @@ public sealed class CylinderCalculator : ICalcCalculator
 {
     public const string Id = "fp.cylinder";
 
+    /// <summary>The flow the sheet opens on, L/min; a flow still at it beside a required extend speed is not warned about.</summary>
+    public const double DefaultFlowLpm = 36;
+
     public const string Standard = "Standard";
     public const string Regenerative = "Regenerative extend";
 
@@ -51,7 +54,7 @@ public sealed class CylinderCalculator : ICalcCalculator
             new CalcInputSpec("mode", "Extend connection", CalcInputKind.Choice, Choices: [Standard, Regenerative], DefaultChoice: Standard, Group: "Duty"),
             new CalcInputSpec("p", "Supply pressure at the cylinder and the pump (gauge)", CalcInputKind.Quantity, "bar", Default: 160, Min: 1, Max: 700, HardMin: 1, HardMax: 700, Group: "Duty"),
             new CalcInputSpec("p_back", "Back pressure on the discharge side (standard connection)", CalcInputKind.Quantity, "bar", Default: 0, Min: 0, Max: 700, HardMin: 0, HardMax: 700, Group: "Duty"),
-            new CalcInputSpec("Q", "Flow into the cylinder (blank when a required extend speed gives it)", CalcInputKind.Quantity, "L/min", Default: 36, Min: 0.1, Max: 2000, HardMin: 0.1, HardMax: 2000, IsOptional: true, Group: "Duty"),
+            new CalcInputSpec("Q", "Flow into the cylinder (blank when a required extend speed gives it)", CalcInputKind.Quantity, "L/min", Default: DefaultFlowLpm, Min: 0.1, Max: 2000, HardMin: 0.1, HardMax: 2000, IsOptional: true, Group: "Duty"),
             new CalcInputSpec("v_req", "Required extend speed (gives the flow Q = v·A/η_vc and replaces Q; links M9 output_motion as a kinematic proxy: a cylinder-actuated linkage runs at about constant cylinder speed)", CalcInputKind.Quantity, "mm/s", Min: 0.1, Max: 10000, HardMin: 0.1, HardMax: 10000, IsOptional: true, Group: "Duty"),
             new CalcInputSpec("rho", "Fluid density", CalcInputKind.Quantity, "kg/m^3", Default: 870, Min: 700, Max: 1300, HardMin: 700, HardMax: 1300, Group: "Duty"),
             new CalcInputSpec("F_push", "Load to push on the extend stroke (compresses the rod)", CalcInputKind.Quantity, "kN", Default: 80, Min: 0, Max: 15000, HardMin: 0, HardMax: 15000, Group: "Load"),
@@ -100,7 +103,7 @@ public sealed class CylinderCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("rod", "The rod must be smaller than the bore.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("flow", "A flow into the cylinder or a required extend speed is needed, and the flow the speed needs must lie within 0.1 to 2000 L/min.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("v-req-q", "A flow is entered as well as a required extend speed: the flow from the speed is used and Q ignored.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("v-req-q", "A flow other than the sheet's opening 36 L/min is entered as well as a required extend speed: the flow from the speed is used and Q ignored.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("force", "The back pressure must leave a net force on both strokes.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("pump", "The pump displacement and speed are entered together, and the total efficiency cannot exceed the volumetric efficiency.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("motor", "The motor displacement and pressure drop are entered together.", CalcNoticeSeverity.Block),
@@ -254,7 +257,8 @@ public sealed class CylinderCalculator : ICalcCalculator
         {
             c.Input("v_req");
 
-            if (c.Has("Q"))
+            // Q keeps its sheet default (36 L/min) so every other use of the sheet is unchanged: a Q still at that default is not an entry to warn about; any other Q is.
+            if (c.Has("Q") && Math.Abs(c.InputSi("Q") - DefaultFlowLpm / 60000.0) > 1e-12)
                 c.Warn("v-req-q", "Q: ignored, the flow comes from the required extend speed; clear Q to remove this notice.");
 
             c.Assign("Q", regen ? "v_req * A_r / eta_vc" : "v_req * A_b / eta_vc", "L/min", regen ? "Flow the required extend speed needs, regenerative: v·A_r/η_vc" : "Flow the required extend speed needs: v·A_b/η_vc");
