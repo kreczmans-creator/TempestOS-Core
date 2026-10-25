@@ -315,13 +315,44 @@ public sealed class MotorStartTests
     }
 
     [Fact]
-    public void A_Supply_That_Cannot_Hold_The_Regulated_Current_Blocks_Naming_The_Limit_To_Lower()
+    public void A_Supply_That_Cannot_Hold_A_Drives_Regulated_Current_Blocks_Naming_The_Limit_To_Lower()
     {
         var weak = Run(Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", 0.01, "MVA"), Choice("starter", MotorStartCalculator.StarterVfd), N("k_vfd", 5));
         var block = Assert.Single(weak.Blocks, b => b.RuleId == "current-limit");
         Assert.StartsWith("k_vfd:", block.Message, StringComparison.Ordinal);
+
+        // A soft starter never asks the supply for more than the passive locked-rotor current, so it does not block: it conducts fully.
         var soft = Run(Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", 0.01, "MVA"), Choice("starter", MotorStartCalculator.StarterSoft), N("k_soft", 5));
-        Assert.StartsWith("k_soft:", Assert.Single(soft.Blocks, b => b.RuleId == "current-limit").Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(soft.Blocks, b => b.RuleId == "current-limit");
+        Assert.Equal("Full conduction, limit not reached", ((Tempest.Calc.Engine.Values.TextValue)soft.FindOutput("start_mode")!.Value).Value);
+    }
+
+    [Fact]
+    public void A_Soft_Starter_That_Does_Not_Reach_Its_Limit_Gives_The_Passive_Direct_On_Line_Dip()
+    {
+        // Weak 2 MVA supply: fully conducting the motor draws about 682 A at the dipped voltage, below a 5.5 x I_n (724 A) limit.
+        var weak = new[] { Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", 2, "MVA"), N("c_src", 1), N("XR", 4.2) };
+        var dol = Run([.. weak, Choice("starter", MotorStartCalculator.StarterDol)]);
+        var full = Run([.. weak, Choice("starter", MotorStartCalculator.StarterSoft), N("k_soft", 5.5)]);
+        var held = Run([.. weak, Choice("starter", MotorStartCalculator.StarterSoft), N("k_soft", 3)]);
+
+        Assert.Equal(25.97595574, dol.OutputSi("start_dip") * 100, 6);
+        Assert.Equal(dol.OutputSi("start_dip"), full.OutputSi("start_dip"), 12);
+        Assert.Equal(dol.OutputSi("dip_pcc"), full.OutputSi("dip_pcc"), 12);
+        Assert.Equal(dol.OutputSi("I_dip"), full.OutputSi("I_dip"), 9);
+        Assert.Equal("Full conduction, limit not reached", ((Tempest.Calc.Engine.Values.TextValue)full.FindOutput("start_mode")!.Value).Value);
+        Assert.Contains("motor terminals", full.FindOutput("V_m")!.Description, StringComparison.Ordinal);
+        Assert.NotNull(full.FindOutput("k_T"));
+
+        // The same starter with a lower limit reaches it and holds it.
+        Assert.StartsWith("Current limit reached", ((Tempest.Calc.Engine.Values.TextValue)held.FindOutput("start_mode")!.Value).Value, StringComparison.Ordinal);
+        Assert.Equal(3 * held.OutputSi("I_rated"), held.OutputSi("I_dip"), 9);
+        Assert.True(held.OutputSi("start_dip") < dol.OutputSi("start_dip"));
+
+        // The switch-over is at the fully conducting current: just above it conducts fully, just below it holds.
+        var limitRatio = dol.OutputSi("I_dip") / dol.OutputSi("I_rated");
+        Assert.Equal(dol.OutputSi("start_dip"), Run([.. weak, Choice("starter", MotorStartCalculator.StarterSoft), N("k_soft", limitRatio * 1.0001)]).OutputSi("start_dip"), 12);
+        Assert.True(Run([.. weak, Choice("starter", MotorStartCalculator.StarterSoft), N("k_soft", limitRatio * 0.9999)]).OutputSi("start_dip") < dol.OutputSi("start_dip"));
     }
 
     [Fact]

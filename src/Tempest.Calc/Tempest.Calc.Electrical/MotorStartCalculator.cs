@@ -35,8 +35,8 @@ public sealed class MotorStartCalculator : ICalcCalculator
         "The voltage dip when a three-phase induction motor starts, at the motor terminals and at the point of common coupling, from the supply impedance (a fault level or a transformer), the cable and the motor's locked-rotor impedance for a direct-on-line or star-delta start (a passive motor impedance) or a soft-start or drive start (a regulated current), by the complex potential divider; the dip is checked against a user limit (default 10 %). Also the capacitor kvar to raise the running power factor to a target, the capacitor current and the parallel-resonance order, with a warning when harmonic loads are present. Steady-state phasor model: no motor run-up dynamics, no flicker assessment, no starting-torque adequacy check.",
         "Rated current: I_n = P/(√3·U·cos φ·η), or entered\n" +
         "Starting current at rated voltage: DOL I_LR·I_n; star-delta I_LR·I_n/3; soft starter min(k_soft·I_n, I_LR·I_n); drive k_vfd·I_n\n" +
-        "Motor starting impedance (DOL, star-delta, and a soft starter not in current limit): |Z_m| = (U/√3)/I_start at the starting power factor, Z_m = |Z_m|·(cos φ_st + j sin φ_st)\n" +
-        "Regulated current (soft starter in current limit, drive): |I| = I_start held, lagging V_m by φ; with R + jX = Z_s + Z_c, a = |I|(R cos φ + X sin φ), b = |I|(X cos φ − R sin φ): |V_m| = √(E² − b²) − a, V_pcc = V_m + I·Z_c, and Z_m = V_m/I is the equivalent impedance\n" +
+        "Motor starting impedance (DOL, star-delta, and a soft starter that does not reach its limit): |Z_m| = (U/√3)/I_start, for a soft starter (U/√3)/(I_LR·I_n), at the starting power factor, Z_m = |Z_m|·(cos φ_st + j sin φ_st)\n" +
+        "Regulated current (a drive; a soft starter when its fully conducting current E/|Z_s + Z_c + Z_LR| exceeds k_soft·I_n): |I| = I_start held, lagging V_m by φ; with R + jX = Z_s + Z_c, a = |I|(R cos φ + X sin φ), b = |I|(X cos φ − R sin φ): |V_m| = √(E² − b²) − a, V_pcc = V_m + I·Z_c, and Z_m = V_m/I is the equivalent impedance\n" +
         "Source impedance: transformer |Z_T| = u_k·U²/S_n, plus an optional upstream network |Z_Q| = U²/S_kQ in series; fault level |Z_s| = c·U²/S_k or c·U/(√3·I_k); each element Z = |Z|·(1 + j·X/R)/√(1 + (X/R)²)\n" +
         "Cable: R = ρ_T·L/(A·n) with ρ_T = ρ_20·[1 + α(T_c − 20)], or R′·L/n; X = X′·L/n (as E3)\n" +
         "Phasor divider for a passive motor (phase voltage E = U/√3 at 0°): I = E/(Z_s + Z_c + Z_m); V_pcc = E·(Z_c + Z_m)/(Z_s + Z_c + Z_m); V_m = E·Z_m/(Z_s + Z_c + Z_m)\n" +
@@ -81,7 +81,7 @@ public sealed class MotorStartCalculator : ICalcCalculator
             new CalcInputSpec("harmonics", "Harmonic loads present on the supply", CalcInputKind.Boolean, Default: 0, Group: "Power-factor correction"),
         ],
         [
-            new CalcAssumption("The supply is a stiff source behind the stated impedance (voltage E = U/√3 before the start). A direct-on-line or star-delta start, and a soft starter not in current limit, draw current through a passive winding: a constant impedance equal to the locked-rotor impedance at rated voltage and the starting power factor, so the current falls with the dipped voltage. A soft starter in current limit and a drive regulate the current: they hold |I| = I_start whatever the voltage, so the dip is deeper than the passive model gives; the current phasor lags the voltage at the starter or drive input by the stated power factor.", "Standard steady-state starting-dip screening model; the regulated case is solved in closed form."),
+            new CalcAssumption("The supply is a stiff source behind the stated impedance (voltage E = U/√3 before the start). A direct-on-line or star-delta start, and a soft starter that does not reach its current limit at the dipped voltage (full conduction), draw current through a passive winding: a constant impedance equal to the locked-rotor impedance at rated voltage and the starting power factor, so the current falls with the dipped voltage. A soft starter that reaches its limit and a drive regulate the current: they hold |I| = I_start whatever the voltage, so the dip is deeper than the passive model gives; the current phasor lags the voltage at the starter or drive input by the stated power factor.", "Standard steady-state starting-dip screening model; the regulated case is solved in closed form."),
             new CalcAssumption("The dip is the steady-state phasor value at the instant of locked rotor; the current falls as the motor accelerates, so the dip is the worst case. No other load is running on the supply and no run-up dynamics, flicker (Pst) or tap-changer action is assessed.", "Stated limitation."),
             new CalcAssumption("A star-delta start draws one third of the direct-on-line current at rated voltage (and one third of the starting torque, which is not checked here); the current spike at the star-to-delta changeover is not modelled.", "Star-delta connection ratio."),
             new CalcAssumption("The cable resistance follows E3: from the resistivity, area and temperature, or from R′ per kilometre; X′ per kilometre is a user or record value. No cable table is embedded.", "User or record values."),
@@ -101,7 +101,7 @@ public sealed class MotorStartCalculator : ICalcCalculator
             new CalcApplicabilityRule("pfc", "The target power factor is not above the motor's own, so no capacitor is needed.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("pfc-starter", "Power-factor capacitors must not be connected on the output of a drive, or across a soft starter during the start.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("harmonics", "Harmonic loads are present (or a drive is used): the capacitor bank forms a parallel resonance with the supply at the stated order.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("current-limit", "The supply cannot hold the regulated starting current: the source and cable drop alone exceeds the supply voltage.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("current-limit", "The supply cannot hold a drive's regulated starting current: the source and cable drop alone exceeds the supply voltage.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("rated", "The entered rated current and P/η disagree by more than 5 % in input power.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("c_src", "A linked fault current needs c = 1.1, the factor E5 computes it with.", CalcNoticeSeverity.Warning),
         ],
@@ -122,6 +122,10 @@ public sealed class MotorStartCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (regulated current: E = V_m + I·(Z_s + Z_c), solved by fixed-point iteration of the phasors in Python and checked against the closed form)", null, "I_n = 224.161 A; 3·I_n = 672.483 A is below I_LR = 6.5·I_n so the current is held at 672.483 A at cos φ 0.3; |Z_s| = 400²/8 MVA = 0.02 Ω at X/R 6; cable R = 0.0173707 Ω, X = 0.0064 Ω; |V_m| = 363.511 V line, dip 9.1223 % at the starter input and 5.7304 % at the point of common coupling (the passive-impedance model would give 8.3555 % and 5.2548 %); Z_m,eq = 0.312087 Ω; Q_c = 25.381 kvar"),
                 [CalcInputValue.Quantity("U", 400, "V"), CalcInputValue.Choice("source", SourceFault), CalcInputValue.Choice("fault_basis", BasisSk), CalcInputValue.Quantity("S_k", 8, "MVA"), CalcInputValue.Of("c_src", 1), CalcInputValue.Of("XR", 6), CalcInputValue.Quantity("P", 132, "kW"), CalcInputValue.Of("eta", 0.955), CalcInputValue.Of("cos_phi", 0.89), CalcInputValue.Of("I_LR_r", 6.5), CalcInputValue.Of("cos_phi_st", 0.3), CalcInputValue.Choice("starter", StarterSoft), CalcInputValue.Of("k_soft", 3), CalcInputValue.Choice("cable_data", DataResistivity), CalcInputValue.Quantity("L_cab", 80, "m"), CalcInputValue.Quantity("A_c", 95, "mm^2"), CalcInputValue.Quantity("T_c", 70, "degC"), CalcInputValue.Quantity("X_km", 0.08, "ohm/km"), CalcInputValue.Of("cos_phi2", 0.95)],
                 [new CalcExpectedValue("I_rated", 224.1609375, "A", 1e-9), new CalcExpectedValue("I_start", 672.4828125, "A", 1e-9), new CalcExpectedValue("I_dip", 672.4828125, "A", 1e-9), new CalcExpectedValue("Z_m", 0.3120869831, "ohm", 1e-7), new CalcExpectedValue("V_m", 363.510928, "V", 1e-8), new CalcExpectedValue("start_dip", 9.122267996, "%", 1e-8), new CalcExpectedValue("dip_pcc", 5.730420833, "%", 1e-8), new CalcExpectedValue("dV_cab", 13.18106372, "V", 1e-8), new CalcExpectedValue("kvar", 25.38147017, "kvar", 1e-9)]),
+            new CalcTestCase("ka-soft-start-full-conduction", "75 kW soft start with a 5.5 × I_n limit on a weak 2 MVA supply: the limit is not reached (analytic)",
+                new CalcReferenceSource("Analytic (passive locked-rotor divider; the held-current solution is used only when the fully conducting current exceeds the limit)", null, "I_n = 131.671 A, limit 5.5·I_n = 724.19 A; fully conducting at the 7·I_n locked-rotor impedance |Z_m| = 0.250560 Ω, with |Z_s| = 400²/2 MVA = 0.08 Ω at X/R 4.2 and 40 m of 50 mm² (R = 0.0165021 Ω, X = 0.0032 Ω), the current at the dipped voltage is 682.277 A, below the limit, so the result is the passive direct-on-line one: |V_m| = 296.096 V line, dip 25.976 %, PCC dip 23.487 %, dV_cab 9.4577 V"),
+                [CalcInputValue.Quantity("U", 400, "V"), CalcInputValue.Choice("source", SourceFault), CalcInputValue.Choice("fault_basis", BasisSk), CalcInputValue.Quantity("S_k", 2, "MVA"), CalcInputValue.Of("c_src", 1), CalcInputValue.Of("XR", 4.2), CalcInputValue.Quantity("P", 75, "kW"), CalcInputValue.Of("eta", 0.945), CalcInputValue.Of("cos_phi", 0.87), CalcInputValue.Of("I_LR_r", 7), CalcInputValue.Of("cos_phi_st", 0.3), CalcInputValue.Choice("starter", StarterSoft), CalcInputValue.Of("k_soft", 5.5), CalcInputValue.Choice("cable_data", DataResistivity), CalcInputValue.Quantity("L_cab", 40, "m"), CalcInputValue.Quantity("A_c", 50, "mm^2"), CalcInputValue.Quantity("T_c", 70, "degC"), CalcInputValue.Quantity("X_km", 0.08, "ohm/km")],
+                [new CalcExpectedValue("I_start", 724.1895823, "A", 1e-9), new CalcExpectedValue("Z_m", 0.25056, "ohm", 1e-7), new CalcExpectedValue("I_dip", 682.2765307, "A", 1e-8), new CalcExpectedValue("V_m", 296.096177, "V", 1e-8), new CalcExpectedValue("start_dip", 25.97595574, "%", 1e-8), new CalcExpectedValue("dip_pcc", 23.48679018, "%", 1e-8), new CalcExpectedValue("dV_cab", 9.457734301, "V", 1e-8)]),
             new CalcTestCase("ka-vfd-current-limit", "37 kW drive holding 1.5 × I_n at 0.92 displacement power factor on a 5 MVA supply, 30 m of 16 mm² (analytic, current source)",
                 new CalcReferenceSource("Analytic (regulated current: E = V_m + I·(Z_s + Z_c), solved by fixed-point iteration of the phasors in Python and checked against the closed form)", null, "I_n = 66.0625 A; the line current is held at 1.5·I_n = 99.0937 A at cos φ 0.92; |Z_s| = 400²/5 MVA = 0.032 Ω at X/R 3; cable R = 0.0386769 Ω, X = 0.0024 Ω; |V_m| = 390.087 V line, dip 2.4783 % at the drive input and 0.90955 % at the point of common coupling; Z_m,eq = 2.27277 Ω; Q_c from the drive's 0.92 to 0.95 on 37/0.94 kW = 3.83045 kvar"),
                 [CalcInputValue.Quantity("U", 400, "V"), CalcInputValue.Choice("source", SourceFault), CalcInputValue.Choice("fault_basis", BasisSk), CalcInputValue.Quantity("S_k", 5, "MVA"), CalcInputValue.Of("c_src", 1), CalcInputValue.Of("XR", 3), CalcInputValue.Quantity("P", 37, "kW"), CalcInputValue.Of("eta", 0.94), CalcInputValue.Of("cos_phi", 0.86), CalcInputValue.Choice("starter", StarterVfd), CalcInputValue.Of("k_vfd", 1.5), CalcInputValue.Of("cos_phi_vfd", 0.92), CalcInputValue.Choice("cable_data", DataResistivity), CalcInputValue.Quantity("L_cab", 30, "m"), CalcInputValue.Quantity("A_c", 16, "mm^2"), CalcInputValue.Quantity("T_c", 70, "degC"), CalcInputValue.Quantity("X_km", 0.08, "ohm/km")],
@@ -169,7 +173,7 @@ public sealed class MotorStartCalculator : ICalcCalculator
             c.Input("I_LR_r");
         }
 
-        var regulated = starter == StarterVfd || (starter == StarterSoft && c.Si("k_soft") < c.Si("I_LR_r"));
+        var regulated = starter == StarterVfd; // a soft starter is decided below, once the supply impedance is known
         var kSymbol = starter == StarterVfd ? "k_vfd" : "k_soft";
 
         // Rated current: entered, or from the rated output.
@@ -208,13 +212,6 @@ public sealed class MotorStartCalculator : ICalcCalculator
         }
 
         c.Assign("S_start", "sqrt(3) * U * I_start", "kVA", "Starting apparent power");
-
-        if (!regulated)
-        {
-            c.Assign("Z_m", "U / (sqrt(3) * I_start)", "ohm", "Motor starting impedance magnitude");
-            c.Assign("R_m", $"Z_m * {cosSt}", "ohm", "Motor starting resistance");
-            c.Assign("X_m", $"Z_m * sqrt(1 - {cosSt}^2)", "ohm", "Motor starting reactance");
-        }
 
         // Source impedance.
         c.Input("XR");
@@ -306,6 +303,28 @@ public sealed class MotorStartCalculator : ICalcCalculator
         var e = c.Si("U") / root3;
         var zs = new Complex(c.Si("R_src"), c.Si("X_src"));
         var zc = new Complex(c.Si("R_cab"), c.Si("X_cab"));
+
+        // A soft starter conducts fully (a passive winding at locked rotor) unless that would draw more than its limit at the dipped
+        // voltage; only then does it hold the limit. A drive always holds its limit.
+        var startMode = starter == StarterVfd ? "Drive current limit held" : string.Empty;
+
+        if (starter == StarterSoft)
+        {
+            var zLockedRotor = Complex.FromPolarCoordinates(e / (c.Si("I_LR_r") * c.Si("I_rated")), Math.Acos(Math.Min(1, c.Si("cos_phi_st"))));
+            var passive = (e / (zs + zc + zLockedRotor)).Magnitude;
+            var limit = c.Si("k_soft") * c.Si("I_rated");
+            regulated = passive > limit;
+            startMode = regulated ? "Current limit reached: the limit is held" : "Full conduction, limit not reached";
+            c.Record("I_pas", "|I| = E/|Z_s + Z_c + Z_LR| (fully conducting, locked-rotor impedance)", $"{F(e)} V / {F((zs + zc + zLockedRotor).Magnitude)} Ω", ScalarValue.Of(passive, "A"), "Current a fully conducting soft starter would draw at the dipped voltage");
+            c.Record("start_mode", "limit held if |I| > k_soft·I_n, else full conduction", $"{F(passive)} A against {F(limit)} A", new TextValue(startMode), "Soft-starter state while starting");
+        }
+
+        if (!regulated)
+        {
+            c.Assign("Z_m", starter == StarterSoft ? "U / (sqrt(3) * I_LR_r * I_rated)" : "U / (sqrt(3) * I_start)", "ohm", "Motor starting impedance magnitude");
+            c.Assign("R_m", $"Z_m * {cosSt}", "ohm", "Motor starting resistance");
+            c.Assign("X_m", $"Z_m * sqrt(1 - {cosSt}^2)", "ohm", "Motor starting reactance");
+        }
 
         c.Record("E_ph", "E = U/√3 (reference phasor, angle 0°)", $"{F(c.Si("U"))} V / √3", ScalarValue.Of(e, "V"), "Source phase voltage before the start");
         c.Record("Z_s_ph", "Z_s = R_s + jX_s", $"R_s = {F(zs.Real)} Ω, X_s = {F(zs.Imaginary)} Ω", new TextValue(Ph(zs, "Ω")), "Source impedance phasor");
@@ -415,8 +434,12 @@ public sealed class MotorStartCalculator : ICalcCalculator
         c.Output("Z_src", "Source impedance (magnitude)");
         c.Output("Z_m", regulated ? "Equivalent motor-side impedance at the dipped voltage" : "Motor starting impedance (magnitude)");
         c.Output("I_rated", "Motor rated current");
-        c.Output("I_start", regulated ? "Starting current held (soft-starter or drive limit)" : "Starting current at rated voltage");
+        c.Output("I_start", starter == StarterSoft ? "Starting current limit at rated voltage, min(k_soft, I_LR/I_n)·I_n" : regulated ? "Starting current held (drive limit)" : "Starting current at rated voltage");
         c.Output("S_start", "Starting apparent power");
+
+        if (startMode.Length > 0)
+            c.Output("start_mode", "Starter state while starting", new TextValue(startMode));
+
         c.Output("I_dip", "Starting current at the dipped voltage");
         c.Output("V_m", $"Voltage at the {where} while starting");
         c.Output("V_pcc", "Point of common coupling voltage while starting");
