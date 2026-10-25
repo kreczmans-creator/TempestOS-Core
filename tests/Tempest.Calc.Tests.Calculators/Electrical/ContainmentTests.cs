@@ -127,37 +127,112 @@ public sealed class ContainmentTests
     }
 
     [Fact]
-    public void The_Tension_Limit_Is_The_Sum_Of_The_Cable_Limits_Unless_Overridden_And_Is_Skipped_With_A_Warning_When_Unknown()
+    public void The_Cable_Limit_Is_N_Times_The_Weakest_Cable_Not_The_Sum_Of_The_Limits()
     {
-        Assert.Equal(1200, Run().OutputSi("T_lim"), 9);
+        // H1: 2 × 700 N and 1 × 150 N cables share the pull equally; the 150 N cable carries T/3 and governs.
+        var mixed = Run(Cables(("Power", 12, 2, 0.6, 700), ("Control", 8, 1, 0.15, 150)), CalcInputValue.Choice("cont_type", Trunking), Q("W_c", 100, "mm"), Q("H_c", 50, "mm"),
+            CalcInputValue.Of("n_bend", 8), Route(RS(20), RB(90, 500), RS(30), RB(90, 600), RS(10)), Q("T_1", 100, "N"), CalcInputValue.Of("mu", 0.4));
+        Assert.Equal(450, mixed.OutputSi("T_cab"), 9);
+        Assert.Null(mixed.FindOutput("T_lim"));
+        Assert.Equal(mixed.OutputSi("max_tension") / 450, mixed.OutputSi("u_T"), 12);
+        Assert.Equal(mixed.OutputSi("max_tension") / 3 / 150, mixed.Steps.Single(st => st.Symbol == "u_Tc2").Result is ScalarValue sv ? sv.Si : double.NaN, 12);
+        Assert.True(mixed.OutputSi("u_T") > 2);
+        Assert.Contains(mixed.Checks, k => k.Name.StartsWith("Pulling tension against the weakest", StringComparison.Ordinal) && !k.Passed);
 
-        var overridden = Run(Q("T_lim", 300, "N"));
-        Assert.Equal(300, overridden.OutputSi("T_lim"), 9);
-        Assert.Equal(overridden.OutputSi("max_tension") / 300, overridden.OutputSi("u_T"), 12);
-
-        var unknown = Run(CalcInputValue.Table("cables", [CalcRow.Of(("od", new CalcCell(10, "mm")), ("count", new CalcCell(3)), ("mass", new CalcCell(0.2, "kg/m")))]));
-        Assert.False(unknown.IsBlocked);
-        Assert.Contains(unknown.Notices, n => n.RuleId == "T_lim" && n.Severity == CalcNoticeSeverity.Warning);
-        Assert.DoesNotContain(unknown.Checks, k => k.Name.StartsWith("Pulling tension", StringComparison.Ordinal));
-
-        // No route: the fill is worked, there is no tension port and nothing blocks.
-        var fillOnly = Run(CalcInputValue.Table("route", []));
-        Assert.False(fillOnly.IsBlocked);
-        Assert.NotNull(fillOnly.FindOutput("fill"));
-        Assert.Null(fillOnly.FindOutput("max_tension"));
+        // Identical cables: the same as the old sum.
+        Assert.Equal(1200, Run().OutputSi("T_cab"), 9);
     }
 
     [Fact]
-    public void A_Sidewall_Limit_Only_The_Other_Direction_Meets_Warns()
+    public void A_Derating_For_More_Than_Three_Cables_And_A_Separate_Grip_Limit_Apply_Only_When_Entered()
     {
-        // The lower-tension direction (as listed, 1166.9 N) presses 1716 N/m on the 600 mm bend; reversed (1281.1 N) presses 1010 N/m.
+        var six = Cables(("Control", 8, 6, 0.1, 200));
+        Assert.Equal(1200, Run(six).OutputSi("T_cab"), 9);
+        Assert.Equal(960, Run(six, CalcInputValue.Of("k_n", 0.8)).OutputSi("T_cab"), 9);
+
+        // Three cables or fewer ignore the derating.
+        Assert.Equal(1200, Run(CalcInputValue.Of("k_n", 0.5)).OutputSi("T_cab"), 9);
+
+        var grip = Run(Q("T_grip", 100, "N"));
+        Assert.Equal(grip.OutputSi("max_tension") / 100, grip.OutputSi("u_grip"), 12);
+        Assert.Contains(grip.Checks, k => k.Name.Contains("grip", StringComparison.Ordinal) && !k.Passed);
+        Assert.Null(Run().FindOutput("u_grip"));
+    }
+
+    [Fact]
+    public void A_Zero_Or_Missing_Cable_Limit_Is_Refused_Or_Warned_Never_Silently_Skipped()
+    {
+        var zero = Run(CalcInputValue.Table("cables", [CalcRow.Of(("od", new CalcCell(10, "mm")), ("count", new CalcCell(3)), ("mass", new CalcCell(0.2, "kg/m")), ("T_max", new CalcCell(0, "N")))]));
+        Assert.True(zero.IsBlocked);
+
+        var missing = Run(CalcInputValue.Table("cables", [CalcRow.Of(("od", new CalcCell(10, "mm")), ("count", new CalcCell(3)), ("mass", new CalcCell(0.2, "kg/m")))]));
+        Assert.False(missing.IsBlocked);
+        Assert.Contains(missing.Notices, n => n.RuleId == "T_cab" && n.Severity == CalcNoticeSeverity.Warning);
+        Assert.DoesNotContain(missing.Checks, k => k.Name.StartsWith("Pulling tension", StringComparison.Ordinal));
+
+        // No route: the fill is worked, there is no tension port and nothing blocks; route-only values warn that they are unused.
+        var fillOnly = Run(CalcInputValue.Table("route", []), Q("T_grip", 500, "N"));
+        Assert.False(fillOnly.IsBlocked);
+        Assert.NotNull(fillOnly.FindOutput("fill"));
+        Assert.Null(fillOnly.FindOutput("max_tension"));
+        Assert.Contains(fillOnly.Notices, n => n.RuleId == "route-limits" && n.Message.StartsWith("T_grip", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_Direction_That_Passes_Every_Check_Is_Recommended_Even_With_Higher_Tension()
+    {
+        // As listed: 1166.9 N (lower) but 1716 N/m on the 600 mm bend against a 1500 N/m limit; reversed: 1281.1 N and 1010 N/m.
         var r = Run(Cables(("Single", 20, 1, 1.0, 5000)), Q("D_c", 100, "mm"), CalcInputValue.Of("n_bend", 6),
             Route(RS(20), RB(90, 1200), RS(40), RB(180, 600), RS(40)), CalcInputValue.Of("mu", 0.35), Q("T_1", 50, "N"), Q("P_lim", 1500, "N/m"));
         Assert.Equal(1166.9420719154186, r.OutputSi("T_max_a"), 8);
         Assert.Equal(1281.1417720539894, r.OutputSi("T_max_b"), 8);
-        Assert.Equal(1716.081619859031, r.OutputSi("P_max"), 8);
-        Assert.Contains(r.Notices, n => n.RuleId == "swp-direction");
-        Assert.Contains(r.Checks, k => k.Name.StartsWith("Sidewall", StringComparison.Ordinal) && !k.Passed);
+        Assert.Equal(1281.1417720539894, r.OutputSi("max_tension"), 8);
+        Assert.Equal(1010.4126850449912, r.OutputSi("P_max"), 8);
+        Assert.StartsWith("Reverse: pull from segment 5 to segment 1", Direction(r), StringComparison.Ordinal);
+        Assert.Contains("only direction that passes every check", Direction(r), StringComparison.Ordinal);
+        Assert.All(r.Checks, k => Assert.True(k.Passed, k.Name));
+
+        // With no sidewall limit, the lower tension wins again.
+        var free = Run(Cables(("Single", 20, 1, 1.0, 5000)), Q("D_c", 100, "mm"), CalcInputValue.Of("n_bend", 6),
+            Route(RS(20), RB(90, 1200), RS(40), RB(180, 600), RS(40)), CalcInputValue.Of("mu", 0.35), Q("T_1", 50, "N"));
+        Assert.StartsWith("As listed", Direction(free), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Cable_That_Does_Not_Fit_The_Containment_Fails_Whatever_The_Fill()
+    {
+        // One 25 mm cable in a 200 × 20 mm tray: fill is only 12 %, but the cable is deeper than the tray.
+        var tray = Run(Cables(("Big", 25, 1, 1.0, 1000)), CalcInputValue.Choice("cont_type", Trunking), Q("W_c", 200, "mm"), Q("H_c", 20, "mm"), CalcInputValue.Table("route", []));
+        Assert.True(tray.OutputSi("u_fill") < 1);
+        Assert.Contains(tray.Checks, k => k.Name.StartsWith("Largest cable fits", StringComparison.Ordinal) && !k.Passed);
+        Assert.False(tray.Passed);
+
+        var conduit = Run(Cables(("Big", 25, 1, 1.0, 1000)), Q("D_c", 25, "mm"), CalcInputValue.Table("route", []));
+        Assert.Contains(conduit.Checks, k => k.Name.StartsWith("Largest cable fits", StringComparison.Ordinal) && !k.Passed);
+
+        Assert.Contains(Run().Checks, k => k.Name.StartsWith("Largest cable fits", StringComparison.Ordinal) && k.Passed);
+    }
+
+    [Fact]
+    public void Three_Equal_Cables_Near_The_Jam_Ratio_Warn()
+    {
+        // 3 × 10 mm: D/d = 3.0 in a 30 mm conduit may jam; 2.5 (25 mm) and 3.5 (35 mm) do not warn.
+        Assert.Contains(Run(Q("D_c", 30, "mm")).Notices, n => n.RuleId == "jam");
+        Assert.DoesNotContain(Run().Notices, n => n.RuleId == "jam");
+        Assert.DoesNotContain(Run(Q("D_c", 35, "mm")).Notices, n => n.RuleId == "jam");
+    }
+
+    [Fact]
+    public void The_Weight_Correction_Factor_Scales_The_Straight_Term_Only()
+    {
+        // w = 0.6 kg/m, μ 0.4, 25 m straight, T₁ 50 N: 50 + 2 × 0.6 × 9.80665 × 0.4 × 25 = 167.6798 N with w_c = 2.
+        var one = Run(Route(RS(10), RS(15)), CalcInputValue.Of("mu", 0.4), Q("T_1", 50, "N"));
+        var two = Run(Route(RS(10), RS(15)), CalcInputValue.Of("mu", 0.4), Q("T_1", 50, "N"), CalcInputValue.Of("w_c", 2));
+        Assert.Equal(167.6798, two.OutputSi("max_tension"), 9);
+        Assert.Equal(50 + (one.OutputSi("max_tension") - 50) * 2, two.OutputSi("max_tension"), 9);
+
+        var bend = Run(Route(RB(90, 400)), CalcInputValue.Of("mu", 0.4), Q("T_1", 50, "N"), CalcInputValue.Of("w_c", 2));
+        Assert.Equal(50 * Math.Exp(0.4 * Math.PI / 2), bend.OutputSi("max_tension"), 9);
     }
 
     [Fact]
@@ -169,7 +244,7 @@ public sealed class ContainmentTests
 
         Assert.Contains(Cont.Template.RecordKinds!, k => k.Kind == "containment.space-factor" && k.Symbols.Contains("f_max"));
 
-        foreach (var symbol in new[] { "f_max", "n_bend", "mu", "P_lim", "T_lim" })
+        foreach (var symbol in new[] { "f_max", "n_bend", "mu", "P_lim", "T_grip", "k_n" })
             Assert.Null(Cont.Template.Inputs.Single(i => i.Symbol == symbol).Default);
     }
 }

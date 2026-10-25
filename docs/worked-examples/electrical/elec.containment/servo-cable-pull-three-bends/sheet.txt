@@ -1,14 +1,14 @@
 CALCULATION SHEET — DRAFT
 Project: Worked example
-Calc ID: servo-cable-pull-two-bends    Revision: A
+Calc ID: servo-cable-pull-three-bends    Revision: A
 Title: Containment fill, bend radius and cable pulling
 Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
 1. SCOPE AND METHOD
-The fill of a conduit, trunking or tray by the cables in it against the space factor you enter, the bend radius of the route against the multiple of the largest cable diameter you enter, and the pull of the cables through a route of straight lengths and bends in both directions: the tension along the route, the sidewall pressure at each bend, and the direction of lower maximum tension. Space factor, bend multiple, friction coefficient and pulling limits are your own records; no cable or conduit factor method is offered.
-Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Containment area: A_int = π·D²/4 (conduit, internal diameter D) or W·H (trunking or tray, internal width × depth) Fill: fill = A_cab/A_int; utilisation u_fill = fill/f_max, f_max the space factor from your record Bend radius: R_min = n_bend·d_max, d_max the largest cable diameter, n_bend from your record; each bend u_b = R_min/R Weight: w = Σ n_i·m_i (kg/m); force per metre w·g, g = 9.80665 m/s² Straight length: T₂ = T₁ + w·g·μ·L Bend: T₂ = T₁·e^(μθ) (capstan equation, θ in radians) Sidewall pressure at a bend: SWP = T₂/R (N/m) Direction: the route is run in the listed order and in reverse; the direction of lower maximum tension is recommended (equal tension: lower SWP) Limits: u_T = T_max/T_lim, T_lim = Σ n_i·T_max,i or your override; u_P = SWP_max/P_lim
+The fill of a conduit, trunking or tray by the cables in it against the space factor you enter, the bend radius of the route against the multiple of the largest cable diameter you enter, and the pull of the cables through a route of straight lengths and bends in both directions: the tension along the route, the sidewall pressure at each bend, and the pull direction that passes every check (the lower maximum tension when both do or neither does). Space factor, bend multiple, friction coefficient and pulling limits are your own records; no cable or conduit factor method is offered.
+Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Containment area: A_int = π·D²/4 (conduit, internal diameter D) or W·H (trunking or tray, internal width × depth) Fill: fill = A_cab/A_int; utilisation u_fill = fill/f_max, f_max the space factor from your record Bend radius: R_min = n_bend·d_max, d_max the largest cable diameter, n_bend from your record; each bend u_b = R_min/R Weight: w = Σ n_i·m_i (kg/m); force per metre w·g·w_c, g = 9.80665 m/s², w_c your weight-correction factor (1 = full weight) Straight length: T₂ = T₁ + w·g·w_c·μ·L Bend: T₂ = T₁·e^(μθ) (capstan equation, θ in radians) Sidewall pressure at a bend: SWP = T₂/R (N/m) Direction: the route is run in the listed order and in reverse; the direction that passes every tension and sidewall pressure check is recommended, and when both or neither pass, the one of lower maximum tension (equal tension: lower SWP) Cable limit: load shared equally, so each cable carries T/N (N cables); T_cab = k_n·N·min(T_max,i), k_n your derating for more than 3 cables (1 if none); u_T = max_i (T/N)/(k_n·T_max,i) = T/T_cab Grip limit: u_grip = T/T_grip, T_grip the limit of the grip or pulling eye (your record); sidewall pressure u_P = SWP_max/P_lim
   Ref: BS 7671:2018 (as amended) reg. 522.8 — Other mechanical stresses on wiring systems (damage during installation, bending radius)
   Ref: BS EN 61386-1 general — Conduit systems for cable management: general requirements
   Ref: Beer and Johnston, Vector Mechanics for Engineers: Statics Ch. 8 — Friction: belt friction (the capstan equation)
@@ -31,15 +31,17 @@ Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Con
   route[6] |  | kind = Bend; theta = 45 deg; R = 600 mm |  |  | 
   T_1 | Tension at the start of the pull (pulling rope, drum or head) | 150 | N | spec: Pulling method statement PMS-4: 150 N rope and pulling-head tension at the start of the pull | 0 … 10000 N
   mu | Coefficient of friction, cable sheath on containment (from your record) | 0.3 |  | reference: record: coefficient of friction, sheath on lubricated conduit (a value invented for this example; enter your own) | 0 … 2
+  w_c | Weight-correction factor on the cable weight (1 = full weight on the containment; above 1 for cradled or triangular arrangements, from your record) | 1 |  | default | 1 … 3
   P_lim | Sidewall pressure limit, force per metre of bend (from the cable maker) | 3000 | N/m | reference: record: sidewall pressure limit (a value invented for this example; enter the cable maker's figure) | 1 … 10000000 N/m
 
 3. ASSUMPTIONS
   A1. Cables are circular and counted by overall diameter; there is no packing, jamming or cable and conduit factor method. The space factor is yours, from your own record. (Fill by geometry; the factor is a user record.)
-  A2. Every cable is pulled together as one bundle on one pulling head, the load shared equally; the tension limit is the sum of the cable limits unless you override it with the limit of the weakest link. (Common pulling practice; override available.)
-  A3. Straight lengths are horizontal and the cable weight bears on the containment over the full length; bends are taken in the plane of the route. Inclines, vertical runs, cradled or triangular weight corrections and pulley or roller reductions are not modelled; fold them into μ if needed. (Stated limitation of the straight-length relation T₂ = T₁ + w·g·μ·L.)
+  A2. Every cable is pulled together as one bundle on one pulling head with the load shared equally, so each cable carries T/N and the weakest cable governs: the cable limit is N times the lowest maximum pulling tension, optionally derated by your factor for more than 3 cables. The grip or pulling-eye limit is a separate limit you enter. (Equal sharing; unequal sharing is not modelled.)
+  A3. Straight lengths are horizontal and the cable weight bears on the containment over the full length; bends are taken in the plane of the route. Inclines, vertical runs, cradled or triangular weight corrections and pulley or roller reductions are not modelled; enter a cradled or triangular weight correction as w_c; fold other effects into μ. (Stated limitation of the straight-length relation T₂ = T₁ + w·g·w_c·μ·L.)
   A4. The coefficient of friction is one constant for the whole route; static and running friction are not distinguished. (A user record with its source.)
-  A5. Sidewall pressure is the tension leaving the bend over the bend radius, for the bundle as a whole; enter the limit in the same terms (for a single cable it is the cable's own limit). (SWP = T₂/R.)
-  A6. The tension at the start of the pull is the same in both directions; a bend at the very start of a pull with no start tension adds nothing, so enter the pulling rope or drum tension when it matters. (Capstan equation.)
+  A5. Sidewall pressure is the tension leaving the bend over the bend radius, for the bundle as a whole. Enter the cable maker's per-cable limit unchanged: the bundle T/R against it is conservative for a triangular arrangement and roughly equal for a cradled one. Do not multiply the limit by the number of cables. (SWP = T₂/R.)
+  A6. The bend radius uses the individual cable diameter; for a triplexed or bundled assembly, enter the assembly diameter from the cable maker as the overall diameter. (Cable data sheet.)
+  A7. The tension at the start of the pull is the same in both directions; a bend at the very start of a pull with no start tension adds nothing, so enter the pulling rope or drum tension when it matters. (Capstan equation.)
 
 4. WORKING
   [1] A_c1 = n·π·d²/4
@@ -94,115 +96,123 @@ Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Con
       = 3 bend(s)
       = 0.35
         Bend radius utilisation (tightest bend)
-  [20] wg = w * 9.80665 m/s^2
-      = 1.18 kg/m × 9.80665 m/s^2
+  [21] wg = w * 9.80665 m/s^2 * w_c
+      = 1.18 kg/m × 9.80665 m/s^2 × 1
       = 11.572 N/m
-        Weight per metre of the bundle
-  [21] Ta_1 = T₁ + w·g·μ·L
+        Weight per metre of the bundle on the containment (with the weight-correction factor)
+  [22] Ta_1 = T₁ + w·g·μ·L
       = 150 N + 11.572 N/m × 0.3 × 6 m
       = 170.83 N
         Segment 1 (as listed): tension after the straight length
-  [22] Ta_2 = T₁·e^(μθ)
+  [23] Ta_2 = T₁·e^(μθ)
       = 170.83 N × e^(0.3 × 1.5708 rad)
       = 273.66 N
         Segment 2 (as listed): tension after the bend
-  [23] Pa_2 = T₂/R
+  [24] Pa_2 = T₂/R
       = 273.66 N / 0.5 m
       = 547.33 N/m
         Segment 2 (as listed): sidewall pressure
-  [24] Ta_3 = T₁ + w·g·μ·L
+  [25] Ta_3 = T₁ + w·g·μ·L
       = 273.66 N + 11.572 N/m × 0.3 × 14 m
       = 322.27 N
         Segment 3 (as listed): tension after the straight length
-  [25] Ta_4 = T₁·e^(μθ)
+  [26] Ta_4 = T₁·e^(μθ)
       = 322.27 N × e^(0.3 × 1.5708 rad)
       = 516.26 N
         Segment 4 (as listed): tension after the bend
-  [26] Pa_4 = T₂/R
+  [27] Pa_4 = T₂/R
       = 516.26 N / 0.4 m
       = 1290.7 N/m
         Segment 4 (as listed): sidewall pressure
-  [27] Ta_5 = T₁ + w·g·μ·L
+  [28] Ta_5 = T₁ + w·g·μ·L
       = 516.26 N + 11.572 N/m × 0.3 × 9 m
       = 547.51 N
         Segment 5 (as listed): tension after the straight length
-  [28] Ta_6 = T₁·e^(μθ)
+  [29] Ta_6 = T₁·e^(μθ)
       = 547.51 N × e^(0.3 × 0.7854 rad)
       = 692.98 N
         Segment 6 (as listed): tension after the bend
-  [29] Pa_6 = T₂/R
+  [30] Pa_6 = T₂/R
       = 692.98 N / 0.6 m
       = 1155 N/m
         Segment 6 (as listed): sidewall pressure
-  [30] Tb_6 = T₁·e^(μθ)
+  [31] Tb_6 = T₁·e^(μθ)
       = 150 N × e^(0.3 × 0.7854 rad)
       = 189.85 N
         Segment 6 (reversed): tension after the bend
-  [31] Pb_6 = T₂/R
+  [32] Pb_6 = T₂/R
       = 189.85 N / 0.6 m
       = 316.42 N/m
         Segment 6 (reversed): sidewall pressure
-  [32] Tb_5 = T₁ + w·g·μ·L
+  [33] Tb_5 = T₁ + w·g·μ·L
       = 189.85 N + 11.572 N/m × 0.3 × 9 m
       = 221.1 N
         Segment 5 (reversed): tension after the straight length
-  [33] Tb_4 = T₁·e^(μθ)
+  [34] Tb_4 = T₁·e^(μθ)
       = 221.1 N × e^(0.3 × 1.5708 rad)
       = 354.19 N
         Segment 4 (reversed): tension after the bend
-  [34] Pb_4 = T₂/R
+  [35] Pb_4 = T₂/R
       = 354.19 N / 0.4 m
       = 885.48 N/m
         Segment 4 (reversed): sidewall pressure
-  [35] Tb_3 = T₁ + w·g·μ·L
+  [36] Tb_3 = T₁ + w·g·μ·L
       = 354.19 N + 11.572 N/m × 0.3 × 14 m
       = 402.8 N
         Segment 3 (reversed): tension after the straight length
-  [36] Tb_2 = T₁·e^(μθ)
+  [37] Tb_2 = T₁·e^(μθ)
       = 402.8 N × e^(0.3 × 1.5708 rad)
       = 645.27 N
         Segment 2 (reversed): tension after the bend
-  [37] Pb_2 = T₂/R
+  [38] Pb_2 = T₂/R
       = 645.27 N / 0.5 m
       = 1290.5 N/m
         Segment 2 (reversed): sidewall pressure
-  [38] Tb_1 = T₁ + w·g·μ·L
+  [39] Tb_1 = T₁ + w·g·μ·L
       = 645.27 N + 11.572 N/m × 0.3 × 6 m
       = 666.1 N
         Segment 1 (reversed): tension after the straight length
-  [39] T_max_a = T at the end of the route, as listed
+  [40] T_max_a = T at the end of the route, as listed
       = 692.98 N
       = 692.98 N
         Maximum tension, pulling in the listed order
-  [40] T_max_b = T at the end of the route, reversed
+  [41] T_max_b = T at the end of the route, reversed
       = 666.1 N
       = 666.1 N
         Maximum tension, pulling in the reverse order
-  [41] P_max_a = max SWP, as listed
+  [42] P_max_a = max SWP, as listed
       = 1290.7 N/m
       = 1290.7 N/m
         Maximum sidewall pressure, pulling in the listed order
-  [42] P_max_b = max SWP, reversed
+  [43] P_max_b = max SWP, reversed
       = 1290.5 N/m
       = 1290.5 N/m
         Maximum sidewall pressure, pulling in the reverse order
-  [43] max_tension = min(T_max,a ; T_max,b)
+  [44] T_cab = N·min(T_max,i)
+      = 6 × 200 N
+      = 1200 N
+        Pulling tension limit of the bundle from the cables (equal load share, weakest cable)
+  [46] max_tension = min(T_max,a ; T_max,b)
       = 692.98 N ; 666.1 N
       = 666.1 N
         Maximum pulling tension, recommended direction
-  [44] P_max = max SWP in the recommended direction
+  [47] P_max = max SWP in the recommended direction
       = 1290.5 N/m
       = 1290.5 N/m
         Maximum sidewall pressure, recommended direction
-  [45] T_lim = Σ n_i·T_max,i
-      = 2 × 600 N + 4 × 200 N
-      = 2000 N
-        Pulling tension limit of the bundle (sum of the cable limits)
-  [46] u_T = max_tension / T_lim
-      = 666.1 N / 2000 N
-      = 0.33305
-        Tension utilisation against the limit
-  [48] u_P = P_max / P_lim
+  [48] u_Tc1 = (T/N)/(k_n·T_max,i)
+      = 111.02 N / (1 × 600 N)
+      = 0.18503
+        Servo power: share of the pull against its own limit
+  [49] u_Tc2 = (T/N)/(k_n·T_max,i)
+      = 111.02 N / (1 × 200 N)
+      = 0.55508
+        Encoder and control: share of the pull against its own limit
+  [50] u_T = max_tension / T_cab
+      = 666.1 N / 1200 N
+      = 0.55508
+        Tension utilisation against the cable limit (the weakest cable)
+  [51] u_P = P_max / P_lim
       = 1290.5 N/m / 3000 N/m
       = 0.43018
         Sidewall pressure utilisation against the limit
@@ -222,23 +232,25 @@ Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Con
   P_max_b = 1290.5 N/m    Maximum sidewall pressure, reversed
   max_tension = 666.1 N    Maximum tension, recommended direction
   P_max = 1290.5 N/m    Maximum sidewall pressure, recommended direction
-  T_lim = 2000 N    Pulling tension limit
-  u_T = 0.33305    Tension utilisation
+  T_cab = 1200 N    Pulling tension limit from the cables
+  u_T = 0.55508    Cable tension utilisation
   u_P = 0.43018    Sidewall pressure utilisation
   direction = "Reverse: pull from segment 6 to segment 1"    Recommended pull direction
 
 6. CHECKS (governing first)
   PASS  Fill against the space factor: u_fill = 0.895 vs u_fill ≤ 1  utilisation 0.895
+  PASS  Pulling tension against the weakest cable's limit: u_T = 0.55508 vs u_T ≤ 1  utilisation 0.555
   PASS  Sidewall pressure against the limit: u_P = 0.43018 vs u_P ≤ 1  utilisation 0.43
-  PASS  Bend radius against the cable minimum: u_bend = 0.35 vs u_bend ≤ 1  utilisation 0.35  « BS 7671 reg. 522.8
-  PASS  Pulling tension against the limit: u_T = 0.33305 vs u_T ≤ 1  utilisation 0.333
+  PASS  Bend radius against the cable minimum: u_bend = 0.35 vs u_bend ≤ 1  utilisation 0.35  « cable maker's limit; cf. BS 7671 reg. 522.8
+  PASS  Largest cable fits the containment: largest cable 14 mm vs conduit internal diameter 40 mm  utilisation 0
 
 7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: f_max (Containment space factor); n_bend (Minimum bend radius multiple); mu (Pulling friction coefficient); P_lim (Pulling tension and sidewall pressure limits). Enter each as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: f_max (Containment space factor); n_bend (Minimum bend radius multiple); mu (Pulling friction coefficient); P_lim (Pulling tension, grip and sidewall pressure limits). Enter each as one so its source, edition and licence travel with it.
+  WARNING input.w_c: w_c (Weight-correction factor on the cable weight (1 = full weight on the containment; above 1 for cradled or triangular arrangements, from your record)) was not entered; the template default 1 is used.
 
 8. VERIFICATION
-  Template: elec.containment@1.0.0
+  Template: elec.containment@1.1.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 5/5
+  Known-answer cases passed: 6/6
   Test run: —
