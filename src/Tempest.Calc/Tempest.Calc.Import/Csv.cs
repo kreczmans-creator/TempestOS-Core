@@ -206,24 +206,8 @@ public static class CsvReader
 /// </summary>
 public static class CsvSafeWriter
 {
-    private static readonly char[] FormulaStarts = ['=', '+', '-', '@', '\t', '\r', '＝', '＋', '－', '＠'];
-
-    /// <summary>Whether a spreadsheet would read <paramref name="text"/> as a formula.</summary>
-    public static bool IsFormulaLike(string? text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return false;
-
-        foreach (var c in text)
-        {
-            if (c is ' ' or '\u00A0')
-                continue;
-
-            return Array.IndexOf(FormulaStarts, c) >= 0;
-        }
-
-        return false;
-    }
+    /// <summary>Whether a spreadsheet would read <paramref name="text"/> as a formula (the definition is shared with the worksheet CSV export).</summary>
+    public static bool IsFormulaLike(string? text) => Sheets.CsvFormulaGuard.StartsLikeFormula(text);
 
     /// <summary>Defuses a formula-like text with a leading apostrophe; any other text is returned unchanged.</summary>
     public static string Neutralise(string? text)

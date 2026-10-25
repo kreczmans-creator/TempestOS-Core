@@ -93,7 +93,7 @@ public static class CadMapper
             if (!entries.TryGetValue(key, out var entry))
             {
                 rows.Add(new CadMappedRow(p.Name, p.Kind == CadParameterKind.Expression ? CadRowStatus.Expression : CadRowStatus.Unmapped, null, Show(p), p.Kind == CadParameterKind.Expression ? "Expression: shown read-only, never evaluated or imported." : "Not in the profile; not imported.", p.Location));
-                snapshot.Add(Snap(p, null));
+                snapshot.Add(Snap(p, null, null));
                 continue;
             }
 
@@ -104,7 +104,7 @@ public static class CadMapper
                 var message = $"'{p.Name}' is assigned {counts[key].Count} times in the file ({string.Join(", ", counts[key].Select(x => x.Location))}), so there is no single value to import.";
                 rows.Add(new CadMappedRow(p.Name, CadRowStatus.Refused, entry.Target, Show(p), message, p.Location));
                 refusals.Add(message);
-                snapshot.Add(Snap(p, null));
+                snapshot.Add(Snap(p, null, entry.AssumedUnit));
                 continue;
             }
 
@@ -115,12 +115,12 @@ public static class CadMapper
                 var message = $"{p.Name} ({p.Location}): {problem}";
                 rows.Add(new CadMappedRow(p.Name, CadRowStatus.Refused, entry.Target, Show(p), problem, p.Location));
                 refusals.Add(message);
-                snapshot.Add(Snap(p, null));
+                snapshot.Add(Snap(p, null, entry.AssumedUnit));
             }
             else
             {
                 rows.Add(new CadMappedRow(p.Name, CadRowStatus.Mapped, entry.Target, applied!, $"→ {entry.Target}", p.Location));
-                snapshot.Add(Snap(p, entry.Target));
+                snapshot.Add(Snap(p, entry.Target, entry.AssumedUnit));
             }
         }
 
@@ -322,8 +322,15 @@ public static class CadMapper
         if (fromUnit.Dimension != toUnit.Dimension)
             return ($"is in '{fromText}', but '{label}' takes {targetText}. The units are not the same kind of quantity, so it is refused.", null, null);
 
+        // rpm and rad/s share a dimension with Hz and 1/min but differ by 2*pi: only like may be converted to like.
+        if (CadUnits.CarriesAngle(fromText) != CadUnits.CarriesAngle(targetText))
+            return ($"is in '{fromText}', but '{label}' takes {targetText}: one of them counts angle (revolutions or radians) and the other does not, so they differ by a factor of 2\u03C0 and the mapping is refused. Use a unit of the same kind (rpm, rad/s or deg/s for speed; Hz, 1/s or 1/min for frequency).", null, null);
+
         var value = string.Equals(fromText, targetText, StringComparison.Ordinal) ? number : toUnit.FromSi(fromUnit.ToSi(number));
         var shown = Finish(value, targetText, label);
+
+        if (fromUnit.IsAffine != toUnit.IsAffine && shown.Problem is null)
+            shown = (null, shown.Value, shown.Shown + " (an absolute temperature: the scale's offset was applied; a temperature difference needs its own input)");
 
         if (assumed && shown.Problem is null)
             return (null, shown.Value, shown.Shown + $" (unit {fromText} assumed by the profile)");
@@ -356,19 +363,27 @@ public static class CadMapper
         _ => "= " + Clip(p.Text),
     };
 
-    private static CadImportedParameter Snap(CadParameter p, string? target)
+    /// <summary>
+    /// What the next import is compared with, and what the provenance of an imported value is verified against. A value the file states
+    /// without a unit is recorded in the profile's assumed unit, so the snapshot's SI value is the value the input actually took.
+    /// </summary>
+    private static CadImportedParameter Snap(CadParameter p, string? target, string? assumedUnit)
     {
         double? si = null;
+        var unit = p.Unit;
+
+        if (unit is null && p.Number is not null && p.UnitProblem is null && assumedUnit is { Length: > 0 } && CadUnits.TryResolve(assumedUnit, out var assumedSymbol, out _) && assumedSymbol.Length > 0)
+            unit = assumedSymbol;
 
         if (p.Number is { } n)
         {
             si = n;
 
-            if (p.Unit is { Length: > 0 } unit && CadUnits.TryParseEngine(unit, out var parsed))
+            if (unit is { Length: > 0 } && CadUnits.TryParseEngine(unit, out var parsed))
                 si = parsed.ToSi(n);
         }
 
-        return new CadImportedParameter(p.Name, p.Kind, target, p.Number, p.Unit, si, p.Text, p.Flag);
+        return new CadImportedParameter(p.Name, p.Kind, target, p.Number, unit, si, p.Text, p.Flag);
     }
 
     private static string Clip(string? s) => s is null ? string.Empty : s.Length > 60 ? s[..60] + "…" : s;

@@ -77,7 +77,7 @@ public static class ImportPath
             if (segment[^1] is '.' or ' ')
                 throw Unsafe("A path segment may not end in a dot or a space.");
 
-            var stem = segment.Split('.', 2)[0].TrimEnd(' ');
+            var stem = segment.Split('.', 2)[0].TrimEnd(' ').Replace('\u00B9', '1').Replace('\u00B2', '2').Replace('\u00B3', '3');
 
             if (ReservedDeviceNames.Contains(stem))
                 throw Unsafe($"'{segment}' is a reserved device name.");
@@ -89,8 +89,8 @@ public static class ImportPath
         {
             if (requiredRoot is not null)
             {
-                var rootFull = Path.GetFullPath(requiredRoot);
-                full = Path.IsPathRooted(path) ? Path.GetFullPath(path) : Path.GetFullPath(path, rootFull);
+                var rootFull = ResolveParentLinks(Path.GetFullPath(requiredRoot), resolveLeaf: true);
+                full = ResolveParentLinks(Path.IsPathRooted(path) ? Path.GetFullPath(path) : Path.GetFullPath(path, rootFull), resolveLeaf: false);
                 var prefix = rootFull.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
                 var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
@@ -99,15 +99,70 @@ public static class ImportPath
             }
             else
             {
-                full = Path.GetFullPath(path);
+                full = ResolveParentLinks(Path.GetFullPath(path), resolveLeaf: false);
             }
         }
-        catch (Exception e) when (e is ArgumentException or PathTooLongException or NotSupportedException or System.Security.SecurityException)
+        catch (Exception e) when (e is ArgumentException or PathTooLongException or NotSupportedException or System.Security.SecurityException or IOException or UnauthorizedAccessException)
         {
             throw Unsafe("The file path is not valid.");
         }
 
+        // The device and system roots are checked again on the full path: '/./dev/tty' and a link into '/dev' look different before resolving.
+        var resolved = full.Replace('\\', '/');
+
+        foreach (var root in DeviceRoots)
+        {
+            if (resolved.StartsWith(root, StringComparison.Ordinal))
+                throw Unsafe("Device and system paths are not read.");
+        }
+
         return full;
+    }
+
+    /// <summary>
+    /// Replaces every directory link on the way to a path by its target (the leaf only when asked), so a folder that is a link cannot
+    /// carry a path out of the root it appears to be under. Segments that do not exist are left as they are. Repeats while resolving
+    /// changed anything, up to a small bound.
+    /// </summary>
+    private static string ResolveParentLinks(string full, bool resolveLeaf)
+    {
+        var current = full;
+
+        for (var pass = 0; pass < 8; pass++)
+        {
+            var root = Path.GetPathRoot(current) ?? string.Empty;
+            var segments = current[root.Length..].Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
+            var walked = root;
+            var changed = false;
+
+            for (var i = 0; i < segments.Length; i++)
+            {
+                walked = Path.Combine(walked, segments[i]);
+
+                if (i == segments.Length - 1 && !resolveLeaf)
+                    break;
+
+                var info = new DirectoryInfo(walked);
+
+                if (info.LinkTarget is null)
+                    continue;
+
+                var target = info.ResolveLinkTarget(returnFinalTarget: true);
+
+                if (target is null)
+                    continue;
+
+                walked = target.FullName;
+                changed = true;
+            }
+
+            current = walked;
+
+            if (!changed)
+                break;
+        }
+
+        return current;
     }
 
     /// <summary>As <see cref="Canonicalise"/>, then requires an existing regular file that is not a link.</summary>

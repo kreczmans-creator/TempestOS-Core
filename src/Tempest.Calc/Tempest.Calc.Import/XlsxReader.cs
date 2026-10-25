@@ -36,7 +36,7 @@ public sealed record XlsxSheet(string Name, bool Hidden, IReadOnlyList<XlsxRow> 
     public XlsxCell? At(int row, int column) => Rows.FirstOrDefault(r => r.Number == row)?.At(column);
 }
 
-public sealed record XlsxWorkbook(IReadOnlyList<XlsxSheet> Sheets, IReadOnlyList<string> Notices, int FormulaCellCount);
+public sealed record XlsxWorkbook(IReadOnlyList<XlsxSheet> Sheets, IReadOnlyList<string> Notices, int FormulaCellCount, IReadOnlyList<string>? SheetNames = null);
 
 /// <summary>
 /// A safe .xlsx reader over <see cref="System.IO.Compression"/> and <see cref="XmlReader"/>, with no package behind it.
@@ -53,10 +53,14 @@ public static class XlsxReader
     private const string RelNs = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     private const string PackageRelNs = "http://schemas.openxmlformats.org/package/2006/relationships";
 
-    /// <summary>Reads every worksheet of the workbook in <paramref name="file"/>.</summary>
-    public static XlsxWorkbook Read(ImportedFile file, ImportBudget? budget = null) => Read(file?.Bytes ?? throw new ArgumentNullException(nameof(file)), budget);
+    /// <summary>
+    /// Reads ONE worksheet of the workbook in <paramref name="file"/>: the one named <paramref name="sheetName"/>, else the first
+    /// visible one. The sheet is chosen from the workbook part before any sheet is read, so a workbook declaring hundreds of sheets
+    /// costs one sheet. <see cref="XlsxWorkbook.SheetNames"/> lists every declared sheet.
+    /// </summary>
+    public static XlsxWorkbook Read(ImportedFile file, ImportBudget? budget = null, string? sheetName = null) => Read(file?.Bytes ?? throw new ArgumentNullException(nameof(file)), budget, sheetName);
 
-    public static XlsxWorkbook Read(byte[] bytes, ImportBudget? budget = null)
+    public static XlsxWorkbook Read(byte[] bytes, ImportBudget? budget = null, string? sheetName = null)
     {
         ArgumentNullException.ThrowIfNull(bytes);
         budget ??= new ImportBudget();
@@ -84,32 +88,50 @@ public static class XlsxReader
             var workbookEntry = Require(entries, "xl/workbook.xml");
             var sheetsDeclared = ReadWorkbook(workbookEntry, budget);
             var rels = entries.TryGetValue("xl/_rels/workbook.xml.rels", out var relEntry) ? ReadRelationships(relEntry, budget) : [];
-            var shared = entries.TryGetValue("xl/sharedStrings.xml", out var ssEntry) ? ReadSharedStrings(ssEntry, budget) : [];
+            if (sheetsDeclared.Count == 0)
+                throw new ImportRefusedException(ImportRefusalCode.Empty, "The workbook has no worksheets.");
 
-            var sheets = new List<XlsxSheet>();
-            var formulas = 0;
-            var cells = 0;
+            // Every sheet's part is resolved and no two sheets may share one: a workbook whose sheets all point at the same large part
+            // would otherwise make the reader parse it once per sheet.
+            var targets = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var declared in sheetsDeclared)
             {
-                budget.Check();
-
                 if (!rels.TryGetValue(declared.RelationId, out var target))
                     throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Sheet '{declared.Name}' has no relationship in the workbook.");
 
-                var path = ResolveTarget(target);
+                var targetPath = ResolveTarget(target);
 
-                if (!entries.TryGetValue(path, out var sheetEntry))
-                    throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Sheet '{declared.Name}' points at '{path}', which is not in the file.");
+                if (targets.TryGetValue(targetPath, out var other))
+                    throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"The sheets '{other}' and '{declared.Name}' point at the same part of the file, which no real workbook does.");
 
-                var rows = ReadSheet(sheetEntry, shared, budget, ref cells, ref formulas);
-                sheets.Add(new XlsxSheet(declared.Name, declared.Hidden, rows));
+                targets[targetPath] = declared.Name;
             }
 
-            if (sheets.Count == 0)
-                throw new ImportRefusedException(ImportRefusalCode.Empty, "The workbook has no worksheets.");
+            DeclaredSheet chosen;
 
-            return new XlsxWorkbook(sheets, notices, formulas);
+            if (sheetName is { Length: > 0 })
+            {
+                chosen = sheetsDeclared.FirstOrDefault(d => string.Equals(d.Name, sheetName, StringComparison.OrdinalIgnoreCase))
+                    ?? throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"The workbook has no sheet named '{Clip(sheetName)}'. It has: {string.Join(", ", sheetsDeclared.Select(d => d.Name).Take(10))}.");
+            }
+            else
+            {
+                chosen = sheetsDeclared.FirstOrDefault(d => !d.Hidden) ?? sheetsDeclared[0];
+            }
+
+            var chosenPath = ResolveTarget(rels[chosen.RelationId]);
+
+            if (!entries.TryGetValue(chosenPath, out var sheetEntry))
+                throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Sheet '{chosen.Name}' points at '{chosenPath}', which is not in the file.");
+
+            var shared = entries.TryGetValue("xl/sharedStrings.xml", out var ssEntry) ? ReadSharedStrings(ssEntry, budget) : [];
+            var formulas = 0;
+            var cells = 0;
+            var rows = ReadSheet(sheetEntry, shared, budget, ref cells, ref formulas);
+            var sheets = new List<XlsxSheet> { new(chosen.Name, chosen.Hidden, rows) };
+
+            return new XlsxWorkbook(sheets, notices, formulas, sheetsDeclared.Select(d => d.Name).ToList());
         }
         catch (InvalidDataException e)
         {
@@ -212,15 +234,66 @@ public static class XlsxReader
 
     private static void RefuseMacros(Dictionary<string, ZipArchiveEntry> entries, ImportBudget budget)
     {
-        if (entries.Keys.Any(k => k.EndsWith("vbaProject.bin", StringComparison.OrdinalIgnoreCase) || k.Contains("macrosheets/", StringComparison.OrdinalIgnoreCase)))
+        if (entries.Keys.Any(k => k.Contains("vbaProject", StringComparison.OrdinalIgnoreCase) || k.Contains("macrosheets/", StringComparison.OrdinalIgnoreCase) || k.EndsWith(".vba", StringComparison.OrdinalIgnoreCase)))
             throw new ImportRefusedException(ImportRefusalCode.Macros, "The workbook carries macros. Save it as a plain .xlsx without macros and import it again.");
 
-        if (entries.TryGetValue("[Content_Types].xml", out var types))
+        // The package's declarations are read as XML (whatever encoding the part uses), not searched as text: a content type, a part name
+        // or a relationship that names a macro project refuses the workbook even when the part itself was renamed.
+        foreach (var name in new[] { "[Content_Types].xml", "_rels/.rels", "xl/_rels/workbook.xml.rels" })
         {
-            var text = ReadAll(types, budget, 1024 * 1024);
+            if (!entries.TryGetValue(name, out var declaration))
+                continue;
 
-            if (text.Contains("macroEnabled", StringComparison.OrdinalIgnoreCase) || text.Contains("vbaProject", StringComparison.OrdinalIgnoreCase))
-                throw new ImportRefusedException(ImportRefusalCode.Macros, "The workbook is macro-enabled. Save it as a plain .xlsx without macros and import it again.");
+            using var xml = Xml(Open(declaration, budget, 1024 * 1024), budget);
+
+            while (xml.Read())
+            {
+                budget.Tick();
+                CheckDepth(xml, budget);
+
+                if (xml.NodeType != XmlNodeType.Element || !xml.HasAttributes)
+                    continue;
+
+                while (xml.MoveToNextAttribute())
+                {
+                    var value = xml.Value;
+
+                    if (value.Contains("macroEnabled", StringComparison.OrdinalIgnoreCase) || value.Contains("vbaProject", StringComparison.OrdinalIgnoreCase) || value.Contains("macroSheet", StringComparison.OrdinalIgnoreCase) || value.Contains("xlMacrosheet", StringComparison.OrdinalIgnoreCase))
+                        throw new ImportRefusedException(ImportRefusalCode.Macros, "The workbook is macro-enabled. Save it as a plain .xlsx without macros and import it again.");
+                }
+
+                xml.MoveToElement();
+            }
+        }
+    }
+
+    private static void CheckDepth(XmlReader xml, ImportBudget budget)
+    {
+        if (xml.Depth > budget.Limits.MaxXmlDepth)
+            throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"The workbook nests its XML more than {budget.Limits.MaxXmlDepth} levels deep, which no real workbook does.");
+    }
+
+    /// <summary>Skips an element and everything in it, checking the nesting depth and the time as it goes (XmlReader.Skip does neither).</summary>
+    private static void SkipSubtree(XmlReader xml, ImportBudget budget)
+    {
+        if (xml.NodeType != XmlNodeType.Element || xml.IsEmptyElement)
+        {
+            xml.Read();
+            return;
+        }
+
+        var depth = xml.Depth;
+
+        while (xml.Read())
+        {
+            budget.Tick();
+            CheckDepth(xml, budget);
+
+            if (xml.NodeType == XmlNodeType.EndElement && xml.Depth == depth)
+            {
+                xml.Read();
+                return;
+            }
         }
     }
 
@@ -258,7 +331,7 @@ public static class XlsxReader
     private static Stream Open(ZipArchiveEntry entry, ImportBudget budget, long? cap = null)
     {
         var limit = Math.Min(cap ?? budget.Limits.MaxZipEntryBytes, Math.Max(entry.Length, 0) + 1024);
-        return new CountingLimitStream(entry.Open(), limit, entry.FullName);
+        return new CountingLimitStream(entry.Open(), limit, entry.FullName, budget);
     }
 
     private static string ReadAll(ZipArchiveEntry entry, ImportBudget budget, long cap)
@@ -300,6 +373,7 @@ public static class XlsxReader
         while (xml.Read())
         {
             budget.Tick();
+            CheckDepth(xml, budget);
 
             if (xml.NodeType == XmlNodeType.Element && xml.LocalName == "sheet" && xml.NamespaceURI == MainNs)
             {
@@ -328,6 +402,7 @@ public static class XlsxReader
         while (xml.Read())
         {
             budget.Tick();
+            CheckDepth(xml, budget);
 
             if (xml.NodeType == XmlNodeType.Element && xml.LocalName == "Relationship" && xml.NamespaceURI == PackageRelNs)
             {
@@ -353,6 +428,7 @@ public static class XlsxReader
         while (!xml.EOF)
         {
             budget.Tick();
+            CheckDepth(xml, budget);
 
             if (xml.NodeType == XmlNodeType.Element && xml.LocalName == "si" && xml.NamespaceURI == MainNs)
             {
@@ -392,6 +468,7 @@ public static class XlsxReader
                 throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, "The workbook ends inside a string.");
 
             budget.Tick();
+            CheckDepth(xml, budget);
 
             if (xml.NodeType == XmlNodeType.Element && xml.LocalName == "t")
             {
@@ -402,7 +479,7 @@ public static class XlsxReader
             }
             else if (xml.NodeType == XmlNodeType.Element && xml.LocalName == "rPh")
             {
-                xml.Skip();
+                SkipSubtree(xml, budget);
             }
             else
             {
@@ -411,6 +488,7 @@ public static class XlsxReader
         }
 
         xml.Read();
+        budget.ChargeChars(sb.Length);
         return sb.ToString();
     }
 
@@ -424,9 +502,12 @@ public static class XlsxReader
         List<XlsxCell>? cells = null;
         var nextColumn = 0;
 
+        var seenColumns = new HashSet<int>();
+
         while (!xml.EOF)
         {
             budget.Tick();
+            CheckDepth(xml, budget);
 
             if (xml.NodeType == XmlNodeType.Element && xml.LocalName == "row" && xml.NamespaceURI == MainNs)
             {
@@ -437,6 +518,7 @@ public static class XlsxReader
                     throw new ImportRefusedException(ImportRefusalCode.TooManyRows, $"A sheet has more than {limits.MaxRows} rows.");
 
                 nextColumn = 0;
+                seenColumns.Clear();
 
                 if (xml.IsEmptyElement)
                     rows.Add(new XlsxRow(rowNumber, []));
@@ -470,6 +552,9 @@ public static class XlsxReader
                     throw new ImportRefusedException(ImportRefusalCode.TooManyColumns, $"A sheet uses more than {limits.MaxColumns} columns.");
 
                 nextColumn = column;
+
+                if (!seenColumns.Add(column))
+                    throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"The cell {ColumnName(column)}{rowNumber} appears twice in its row, so the sheet has no single value for it.");
 
                 if (++cellCount > limits.MaxCells)
                     throw new ImportRefusedException(ImportRefusalCode.TooManyRows, $"The workbook has more than {limits.MaxCells} cells.");
@@ -512,6 +597,7 @@ public static class XlsxReader
                 throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, "The workbook ends inside a cell.");
 
             budget.Tick();
+            CheckDepth(xml, budget);
 
             if (xml.NodeType != XmlNodeType.Element)
             {
@@ -524,7 +610,7 @@ public static class XlsxReader
                 case "f":
                     // The formula text is skipped, never read: it is not evaluated and not stored.
                     formula = true;
-                    xml.Skip();
+                    SkipSubtree(xml, budget);
                     break;
 
                 case "v":
@@ -533,6 +619,7 @@ public static class XlsxReader
                     if (value.Length > budget.Limits.MaxFieldChars)
                         throw new ImportRefusedException(ImportRefusalCode.FieldTooLong, $"A cell holds more than {budget.Limits.MaxFieldChars} characters.");
 
+                    budget.ChargeChars(value.Length);
                     break;
 
                 case "is":
@@ -540,7 +627,7 @@ public static class XlsxReader
                     break;
 
                 default:
-                    xml.Skip();
+                    SkipSubtree(xml, budget);
                     break;
             }
         }
@@ -594,13 +681,15 @@ public static class XlsxReader
         private readonly Stream _inner;
         private readonly long _limit;
         private readonly string _name;
+        private readonly ImportBudget _budget;
         private long _read;
 
-        public CountingLimitStream(Stream inner, long limit, string name)
+        public CountingLimitStream(Stream inner, long limit, string name, ImportBudget budget)
         {
             _inner = inner;
             _limit = limit;
             _name = name;
+            _budget = budget;
         }
 
         public override bool CanRead => true;
@@ -624,6 +713,7 @@ public static class XlsxReader
         private int Count(int n)
         {
             _read += n;
+            _budget.ChargeBytes(n);
 
             if (_read > _limit)
                 throw new ImportRefusedException(ImportRefusalCode.ZipBomb, $"The part '{_name}' expands past its declared size, so the workbook was not read.");

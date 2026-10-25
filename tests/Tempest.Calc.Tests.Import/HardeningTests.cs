@@ -332,6 +332,8 @@ public sealed class HardeningTests
     [InlineData("@SUM(A1)")]
     [InlineData("\t=1")]
     [InlineData("\r=1")]
+    [InlineData("\n=1+1")]
+    [InlineData("  \n@SUM(1)")]
     [InlineData("  =1+1")]
     [InlineData("\u00A0=1+1")]
     [InlineData("\uFF1D1+1")]

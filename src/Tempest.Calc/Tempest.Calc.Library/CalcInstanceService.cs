@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Tempest.Calc.Engine;
 using Tempest.Calc.Engine.Values;
+using Tempest.Calc.Import.Mapping;
 using Tempest.Calc.Sheets;
 using Tempest.Calc.Verification;
 using Tempest.Core.EngineeringDomain;
@@ -134,7 +135,8 @@ public sealed partial class CalcInstanceService
             if (await UnresolvedEvidenceAsync(null, null, list, cancellationToken).ConfigureAwait(false) is { } unresolved)
                 throw new CalcLinkRefusedException(unresolved);
 
-            inputs = list;
+            // A new calculation has no import record, so no CAD-import provenance can stand on it.
+            inputs = CadImportVerifier.Verify(list, null).Inputs;
         }
 
         var evidence = await _evidence.CreateAsync(projectId, EvidenceTitle(cleanName, entry.Template.Title, "A"), EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
@@ -203,6 +205,14 @@ public sealed partial class CalcInstanceService
 
         var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow(), EditedBy = repin ? instance.EditedBy : WithAuthors(instance.EditedBy, CurrentPrincipal()), RepinnedBy = repin ? WithAuthors(instance.RepinnedBy, CurrentPrincipal()) : instance.RepinnedBy };
         updated = amend is null ? updated : amend(updated);
+
+        // A CAD-import provenance is a claim about a file; it stands only while the calculation's own import record backs it and the value is
+        // still the imported one. Anything else (an edited value, a forged or pasted provenance) is recorded as a manual entry, and the person is told.
+        var verification = CadImportVerifier.Verify(updated.Inputs, updated.CadImports);
+
+        if (verification.Downgraded.Count > 0)
+            updated = updated with { Inputs = verification.Inputs };
+
         updated = await RunAndSnapshotAsync(entry, updated, cancellationToken).ConfigureAwait(false);
 
         try
@@ -217,7 +227,9 @@ public sealed partial class CalcInstanceService
         if (!string.Equals(updated.OutputsHash, instance.OutputsHash, StringComparison.Ordinal))
             await PublishStalenessAsync(updated, $"'{updated.Name}' rev {updated.Revision} has new outputs.", cancellationToken).ConfigureAwait(false);
 
-        return CalcActionResult.Ok(updated);
+        return verification.Downgraded.Count > 0
+            ? new CalcActionResult(true, CadImportVerifier.Describe(verification.Downgraded), updated)
+            : CalcActionResult.Ok(updated);
     }
 
     /// <summary>Whether any input, or any table cell, carries a provenance longer than the caps.</summary>

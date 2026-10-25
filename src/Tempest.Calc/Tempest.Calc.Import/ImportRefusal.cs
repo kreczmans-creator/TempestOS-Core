@@ -122,6 +122,12 @@ public sealed record ImportLimits
 
     public int MaxSharedStrings { get; init; } = 200_000;
 
+    /// <summary>The most characters a workbook may keep in memory as cell and shared-string text, summed over everything read.</summary>
+    public long MaxRetainedChars { get; init; } = 16_000_000;
+
+    /// <summary>The deepest XML element nesting a workbook part may have; real worksheets nest under ten.</summary>
+    public int MaxXmlDepth { get; init; } = 64;
+
     public int MaxCells { get; init; } = 1_000_000;
 }
 
@@ -135,6 +141,8 @@ public sealed class ImportBudget
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private readonly CancellationToken _token;
     private int _ticks;
+    private long _bytes;
+    private long _chars;
 
     public ImportBudget(ImportLimits? limits = null, CancellationToken cancellationToken = default)
     {
@@ -151,6 +159,24 @@ public sealed class ImportBudget
 
         if (_clock.Elapsed > Limits.Timeout)
             throw new ImportRefusedException(ImportRefusalCode.Timeout, $"Reading the file took longer than {Limits.Timeout.TotalSeconds:0.#} seconds, so it was stopped.");
+    }
+
+    /// <summary>Charges bytes actually produced by decompression against the archive total; the one running counter every part read shares.</summary>
+    public void ChargeBytes(long count)
+    {
+        _bytes += count;
+
+        if (_bytes > Limits.MaxZipUncompressedBytes)
+            throw new ImportRefusedException(ImportRefusalCode.ZipBomb, $"Reading the workbook produced more than {Limits.MaxZipUncompressedBytes / (1024 * 1024)} MB of data, so it was stopped.");
+    }
+
+    /// <summary>Charges characters kept in memory (cell and shared-string text).</summary>
+    public void ChargeChars(long count)
+    {
+        _chars += count;
+
+        if (_chars > Limits.MaxRetainedChars)
+            throw new ImportRefusedException(ImportRefusalCode.TooLarge, $"The workbook holds more than {Limits.MaxRetainedChars / 1_000_000} million characters of text and was not read.");
     }
 
     /// <summary>Cheap form for tight loops: checks once every 256 calls.</summary>

@@ -69,6 +69,16 @@ public static class CadImportProvenance
         return new CadImportProvenanceInfo(parts[0], parts[1].Length == 0 ? null : parts[1], parts[2].Length == 0 ? null : parts[2], parts[3], at, parts[5], revision[..atSign], version);
     }
 
+    /// <summary>Whether a CAD name read back from a provenance (sanitised and perhaps shortened) is the given full name.</summary>
+    public static bool NameMatches(string fromProvenance, string fullName)
+    {
+        ArgumentNullException.ThrowIfNull(fromProvenance);
+        ArgumentNullException.ThrowIfNull(fullName);
+        var clean = fullName.Replace('|', '/').Trim();
+        return string.Equals(fromProvenance, clean, StringComparison.Ordinal)
+            || (fromProvenance.EndsWith('\u2026') && fromProvenance.Length > 1 && clean.StartsWith(fromProvenance[..^1].TrimEnd(), StringComparison.Ordinal));
+    }
+
     public static string SystemLabel(CadSystem system) => system switch
     {
         CadSystem.Nx => "NX",
