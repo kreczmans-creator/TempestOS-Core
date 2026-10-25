@@ -9,22 +9,22 @@ public sealed class PressFitCalculator : ICalcCalculator
     public const string Id = "mech.press-fit";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Mechanical, "Press and shrink fit",
+        Id, "1.0.1", CalcDiscipline.Mechanical, "Press and shrink fit",
         "A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.",
-        "Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²), σ_r = −p. Shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²), σ_r = −p. F = μ·p·2πR·L; T = μ·p·2πR²·L; ΔT = (δ + c_a)/(α·2R).",
+        "Radial interference: δ_r = δ/2.\nInterface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ].\nStresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p.\nStresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p.\nAxial force and torque the fit holds by friction: F = μ·p·2πR·L; T = μ·p·2πR²·L.\nTemperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).",
         [
             new CalcInputSpec("d", "Interface (nominal) diameter", CalcInputKind.Quantity, "mm", Default: 50, Min: 1, Max: 1000, HardMin: 1e-3, HardMax: 1e5),
             new CalcInputSpec("delta", "Diametral interference", CalcInputKind.Quantity, "µm", Default: 40, Min: 1, Max: 500, HardMin: 0, HardMax: 1e5),
             new CalcInputSpec("d_o", "Hub outer diameter", CalcInputKind.Quantity, "mm", Default: 100, Min: 1, Max: 2000, HardMin: 1e-3, HardMax: 1e5),
             new CalcInputSpec("d_i", "Shaft bore diameter (0 for a solid shaft)", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5),
             new CalcInputSpec("L", "Engagement length", CalcInputKind.Quantity, "mm", Default: 60, Min: 1, Max: 2000, HardMin: 1e-3, HardMax: 1e5),
-            new CalcInputSpec("E_h", "Hub Young's modulus", CalcInputKind.Quantity, "GPa", Default: 207, Min: 10, Max: 450, HardMin: 0.1, HardMax: 2000),
+            new CalcInputSpec("E_h", "Hub Young's modulus", CalcInputKind.Quantity, "GPa", ReferenceLibrary: "Materials:hub", ReferenceProperty: "YoungsModulus", ReferenceDimension: "Pressure", Default: 207, Min: 10, Max: 450, HardMin: 0.1, HardMax: 2000),
             new CalcInputSpec("nu_h", "Hub Poisson's ratio", CalcInputKind.Number, Default: 0.292, Min: 0.1, Max: 0.45, HardMin: 0, HardMax: 0.5),
-            new CalcInputSpec("E_s", "Shaft Young's modulus", CalcInputKind.Quantity, "GPa", Default: 207, Min: 10, Max: 450, HardMin: 0.1, HardMax: 2000),
+            new CalcInputSpec("E_s", "Shaft Young's modulus", CalcInputKind.Quantity, "GPa", ReferenceLibrary: "Materials:shaft", ReferenceProperty: "YoungsModulus", ReferenceDimension: "Pressure", Default: 207, Min: 10, Max: 450, HardMin: 0.1, HardMax: 2000),
             new CalcInputSpec("nu_s", "Shaft Poisson's ratio", CalcInputKind.Number, Default: 0.292, Min: 0.1, Max: 0.45, HardMin: 0, HardMax: 0.5),
             new CalcInputSpec("mu", "Coefficient of friction at the interface", CalcInputKind.Number, Default: 0.15, Min: 0.05, Max: 0.4, HardMin: 0, HardMax: 2),
-            new CalcInputSpec("S_y_h", "Hub yield strength", CalcInputKind.Quantity, "MPa", Default: 350, Min: 50, Max: 2000, HardMin: 1e-3, HardMax: 1e5),
-            new CalcInputSpec("S_y_s", "Shaft yield strength", CalcInputKind.Quantity, "MPa", Default: 350, Min: 50, Max: 2000, HardMin: 1e-3, HardMax: 1e5),
+            new CalcInputSpec("S_y_h", "Hub yield strength", CalcInputKind.Quantity, "MPa", ReferenceLibrary: "Materials:hub", ReferenceProperty: "YieldStrength", ReferenceDimension: "Pressure", Default: 350, Min: 50, Max: 2000, HardMin: 1e-3, HardMax: 1e5),
+            new CalcInputSpec("S_y_s", "Shaft yield strength", CalcInputKind.Quantity, "MPa", ReferenceLibrary: "Materials:shaft", ReferenceProperty: "YieldStrength", ReferenceDimension: "Pressure", Default: 350, Min: 50, Max: 2000, HardMin: 1e-3, HardMax: 1e5),
             new CalcInputSpec("alpha_h", "Hub thermal expansion coefficient", CalcInputKind.Quantity, "1/K", Default: 12e-6, Min: 5e-6, Max: 30e-6, HardMin: 1e-9, HardMax: 1e-3),
             new CalcInputSpec("c_a", "Assembly clearance wanted for shrink fitting", CalcInputKind.Quantity, "µm", Default: 20, Min: 0, Max: 500, HardMin: 0, HardMax: 1e5),
         ],

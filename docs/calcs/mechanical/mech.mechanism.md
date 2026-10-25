@@ -1,4 +1,6 @@
-# M9 — Mechanism kinematics: four-bar, slider-crank, cam (`mech.mechanism@1.2.0`)
+# M9 — Mechanism kinematics: four-bar, slider-crank, cam (`mech.mechanism@1.2.1`)
+
+**In plain terms.** A mechanism is a set of rigid links that turns one motion into another, like a crank driving a rocker or a slider. The worksheet takes the link lengths (or the cam profile) and works out, for each crank angle, where every link is, its speed and acceleration, how well it transmits force, and the forces in the pins and guides. It also tells you what kind of linkage you have, and where it locks.
 
 **Scope.** A single-degree-of-freedom planar mechanism driven at constant input speed: a **four-bar linkage** or an **offset slider-crank**, and a **cam** with a translating follower (last bullets of Method). For the two linkages: the closed-form vector-loop position on both circuits (open and crossed), velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against an editable minimum, toggle or dead-centre positions, the loop-closure residual, and the input torque by virtual work. Rigid links, planar, no clearance, no friction, one degree of freedom. Standards are not involved; Norton (*Design of Machinery*) and Uicker, Pennock and Shigley (*Theory of Machines and Mechanisms*) are cited by chapter for the methods.
 
@@ -26,3 +28,26 @@
 **Limitations.** Rigid, planar, no clearance, no friction, single degree of freedom, constant input speed; the cam follower translates (no swing arm or oscillating follower), the flat-faced follower is in line, the spring is linear and its surge is not modelled (M7 reports it); link inertia and gravity are not modelled beyond the output element; the open/crossed labels name the two branches of the closed form and the sweep stays on one of them; a change-point linkage (parallelogram, deltoid) is continued through its change points on the same branch, with the circuit named at a reference angle independent of the sweep (the middle of the first interval between change points in 0 … 2π, π/2 when there are none), so `theta_start` does not change which motion `Open` means and the label at a crank angle is the same on every turn (the parity at the start of the sweep is that of the start angle wrapped into 0 … 2π; only the true change points, θ₂ = 0 or π with all four links collinear, flip the branch, the other toggles are assembly limits); a linkage with one change point per turn (a kite, for example 40/40/100/100) repeats every 720°, and a sweep of more than one turn warns; the peak of a quantity that jumps at a sign change of the velocity (an opposing load) is the limit value at the jump.
 
 **Test cases.** Analytic and Confirmed, recomputed in python3 (Freudenstein quadratic as an independent route to the position; the differentiated loop solved as a real 2×2 system and cross-checked by central finite differences; peaks by a 20001-point scan polished by golden section): `ka-fourbar-crank-rocker-open` (120/40/110/90 mm at θ₂ = 90°: θ₃ 25.617841°, θ₄ 103.371151°, ω₄ 5.1533032 rad/s, α₄ 26.749883 rad/s², μ_min 45.815615°, peak T_in 1.5134299 N·m), `ka-fourbar-parallelogram` (closed form: θ₄ = θ₂, θ₃ = 0, ω₄ = ω₂, T_in = T_L, μ_min = 5° on a 5° … 175° sweep), `ka-fourbar-crank-rocker-crossed`, `ka-slider-inline` (closed form: x(90°) = √(l² − r²), v = −rω, a = ω²r²/√(l² − r²), stroke 2r, peak a = rω²(1 + r/l)), `ka-slider-offset` (stroke √((l + r)² − e²) − √((l − r)² − e²) = 100.335104 mm), `ka-slider-crossed`; cams: `ka-cam-cycloidal` (closed form: v_pk = 2hω/β = 1.6 m/s, a_pk = 2πhω²/β² = 201.06193 m/s², j_pk = 4π²hω³/β³ = 50532.375 m/s³), `ka-cam-modified-trapezoid` (C_a = 8π/(π + 2)), `ka-cam-345` (C_v = 15/8, C_a = 10/√3, C_j = 60), `ka-cam-4567` (C_v = 35/16, C_a = f″((5 − √5)/10) = 7.513188, C_j = 52.5), `ka-cam-dwell-only` (ρ_min = R_b + R_r = 48 mm exactly), `ka-cam-flat-faced` (w_face = 2h/β = 19.0986 mm), and the pressure angle, curvature radius and minimum base circle of the offset and in-line roller cams (`ka-cam-offset-roller`, `ka-cam-inline-roller`: pitch curve differentiated numerically by a 4th-order finite-difference stencil, independently of the closed form in the calculator). Worked examples: `carton-tucker-crank-rocker` (packaging crank-rocker) and `indexing-cam-offset-roller`. **Not pinned (owner check):** Norton, *Design of Machinery* 6th ed., Example 4-1, and the Uicker, Pennock and Shigley 5th ed. four-bar example: the book examples' link lengths and θ₃/θ₄ are not available to the build, so no published number is entered; add them as Unconfirmed cases from the owner's copy.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Carton flap tucker: crank-rocker 150/45/140/100 mm at 60 cycles/min ([sheet](../../worked-examples/mechanical/mech.mechanism/carton-tucker-crank-rocker/sheet.txt)).
+
+```text
+f_in = rpm to Hz = 1 Hz
+S_plus_L = shortest + longest link = 195 mm
+P_plus_Q = the other two links = 240 mm
+theta2_sw = 73 rows, θ₂ from 0° to 360° = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg
+theta3_sw = 73 rows, θ₂ from 0° to 360° = [45.45, 43.305, 41.183, 39.119, 37.143, 35.277, 33.533, 31.922, 30.446, 29.103, 27.892, 26.806, … (73 items)] deg
+theta4_sw = 73 rows, θ₂ from 0° to 360° = [93.891, 91.886, 90.182, 88.806, 87.774, 87.09, 86.749, 86.738, 87.038, 87.625, 88.475, 89.561, … (73 items)] deg
+omega3_sw = 73 rows, θ₂ from 0° to 360° = [-2.6928, -2.6892, -2.6368, -2.5435, -2.4183, -2.2706, -2.1088, -1.9402, -1.7705, -1.6037, -1.4425, -1.2886, … (73 items)] rad/s
+omega4_sw = 73 rows, θ₂ from 0° to 360° = [-2.6928, -2.3371, -1.9398, -1.5152, -1.0781, -0.64174, -0.21757, 0.18575, 0.56219, 0.90807, 1.2216, 1.5026, … (73 items)] rad/s
+alpha3_sw = 73 rows, θ₂ from 0° to 360° = [-1.6439, 2.0963, 5.3499, 7.9793, 9.9336, 11.238, 11.97, 12.238, 12.157, 11.832, 11.354, 10.795, … (73 items)] rad/s²
+alpha4_sw = 73 rows, θ₂ from 0° to 360° = [23.794, 27.273, 29.765, 31.194, 31.596, 31.098, 29.878, 28.129, 26.035, 23.751, 21.398, 19.064, … (73 items)] rad/s²
+mu_sw = 73 rows, θ₂ from 0° to 360° = [48.441, 48.581, 48.999, 49.687, 50.631, 51.814, 53.216, 54.816, 56.592, 58.522, 60.583, 62.755, … (73 items)] deg
+T_in_sw = 73 rows, θ₂ from 0° to 360° = [1.5919, 1.3661, 1.1246, 0.87436, 0.62126, 0.37043, 0.1261, 0.12823, 0.38586, 0.61929, 0.82764, 1.0113, … (73 items)] N·m
+theta3_0 = at the first input angle = 45.45 deg
+theta4_0 = at the first input angle = 93.891 deg
+… 25 more step(s) on the sheet
+Governing: PASS  Transmission angle μ_min at or above the required minimum: u_mu = 0.82575 vs u_mu ≤ 1  utilisation 0.826  « Transmission angle
+```
+<!-- hand-arithmetic:end -->

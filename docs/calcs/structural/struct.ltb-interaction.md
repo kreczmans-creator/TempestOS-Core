@@ -1,4 +1,6 @@
-# S7 — EN 1993-1-1 lateral-torsional buckling and N+M interaction (`struct.ltb-interaction@1.1.0`)
+# S7 — EN 1993-1-1 lateral-torsional buckling and N+M interaction (`struct.ltb-interaction@1.1.1`)
+
+**In plain terms.** A long slender I-beam loaded in bending can twist and buckle sideways well before the steel yields, and a column can bow before it crushes; with both loads together the two effects add. The worksheet finds the moment at which the member would buckle elastically, reduces the plain strength by how close the member is to that moment, and checks the axial force and the bending moments together against the Eurocode 3 interaction rules.
 
 **Scope.** A uniform, doubly-symmetric I-section member of class 1, 2 or 3 on fork supports (free to rotate about the minor axis and to warp at the ends, restrained against twist): the elastic critical moment, lateral-torsional buckling resistance (6.3.2.2 general case or 6.3.2.3 rolled and welded equivalent sections), flexural buckling about both axes (6.3.1) and the interaction of axial compression with bending about both axes (6.3.3, Annex B or Annex A). **Every numeric input has a hard range** (soft = hard): an input outside it blocks the sheet. Class 4 blocks.
 
@@ -17,3 +19,26 @@
 **Not pinned (owner check).** SCI P364 worked examples 3, 4, 11 and 12 (UK NA), and the STAAD.Pro EC3 verification UKB 356×171×51 S275, 5.7 m, M_b,Rd ≈ 103.5 kN·m (secondary source): their inputs and answers cannot be stated from memory, so no case is added; they remain to be entered and compared with the owner's copies. External oracle for M_cr: LTBeam or the SCI/BCSA M_cr tool.
 
 **Worked example.** `docs/worked-examples/structural/struct.ltb-interaction/ub-457x191x98-beam-column/`: UB 457×191×98 S355, 5 m between restraints, N = 400 kN, end moments 340 and 170 kN·m (Unconfirmed: Annex B coefficients), equation 6.62 governs at 0.93.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Beam-column UB 457×191×98 S355, 5 m between restraints: LTB, flexural buckling and N+M interaction ([sheet](../../worked-examples/structural/struct.ltb-interaction/ub-457x191x98-beam-column/sheet.txt)).
+
+```text
+M_y_Ed = max(|340|, |170|) kN·m = 340 kN·m
+psi_y = 170 / 340 = 0.5
+C_1 = ψ = 0.5 = 1.31
+Mcr = 1.31 × π² × 210000 × 23470000 / (5000)² × [√((1/1)² × 1175500000000/23470000 + (5000)² × 81000 × 1212900 / (π² × 210000 × 23470000) + (0 × 0)²) − 0] = 808.38 kN·m
+W_y = plastic = 2232.5 cm³
+lambda_LT = √(2232.5 cm³ × 345 MPa / 808.38 kN·m) = 0.9761
+alpha_LT = Table 6.5, rolled, h/b = 2.4232 = 0.49
+Phi_LT = 0.5 × [1 + 0.49 × (0.9761 − 0.4) + 0.75 × 0.9761²] = 0.99843
+chi_LT_0 = 1/(0.99843 + √(0.99843² − 0.75 × 0.9761²)) = 0.6537
+k_c = ψ = 0.5 = 0.85837
+f = 1 − 0.5 × (1 − 0.85837) × [1 − 2 × (0.9761 − 0.8)²] = 0.93358
+chi_LT_mod = 0.6537 / 0.93358, 1/λ̄_LT² = 1.0496 = 0.70022
+chi_LT = as above = 0.70022
+Mb_Rd = 0.70022 × 2232.5 cm³ × 345 MPa / 1 = 539.3 kN·m
+… 31 more step(s) on the sheet
+Governing: PASS  Interaction, equation 6.62: u_62 = 0.9305 vs u_62 ≤ 1  utilisation 0.931  « 6.3.3(4)
+```
+<!-- hand-arithmetic:end -->

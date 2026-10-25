@@ -1,0 +1,115 @@
+[
+  {
+    "Symbol": "A",
+    "Number": 1.2,
+    "Unit": "m^2",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GL-802",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.2"
+  },
+  {
+    "Symbol": "T_1",
+    "Number": 20,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-BS-04 design conditions",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "T_2",
+    "Number": -10,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-BS-04 design conditions",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "-10"
+  },
+  {
+    "Symbol": "h_1",
+    "Number": 10,
+    "Unit": "W/(m^2*K)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-BS-04 design conditions",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "h_2",
+    "Number": 40,
+    "Unit": "W/(m^2*K)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-BS-04 design conditions",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "layers",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "glass"
+          },
+          "t": {
+            "Number": 4,
+            "Unit": "mm"
+          },
+          "k": {
+            "Number": 0.78,
+            "Unit": "W/(m*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "air gap"
+          },
+          "t": {
+            "Number": 10,
+            "Unit": "mm"
+          },
+          "k": {
+            "Number": 0.026,
+            "Unit": "W/(m*K)"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "glass"
+          },
+          "t": {
+            "Number": 4,
+            "Unit": "mm"
+          },
+          "k": {
+            "Number": 0.78,
+            "Unit": "W/(m*K)"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GL-802",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3 row(s)"
+  }
+]

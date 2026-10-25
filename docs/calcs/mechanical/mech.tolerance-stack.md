@@ -1,4 +1,6 @@
-# M1 — Tolerance stack-up (1D) v2 (`mech.tolerance-stack@2.1.0`)
+# M1 — Tolerance stack-up (1D) v2 (`mech.tolerance-stack@2.2.0`)
+
+**In plain terms.** A tolerance stack adds up the dimensions along a chain of parts to find a gap or overall size, where every part varies within its own tolerance. The worst-case method adds every tolerance at its limit, so the gap is guaranteed but the tolerances must be tight. The statistical methods assume the variations are independent and rarely all at their extremes together, so they predict a narrower spread; the Monte Carlo run samples the real distributions to show the same thing directly. The capability figures say how centred and how wide that spread is against the requirement.
 
 **Scope.** A linear (one-axis) tolerance loop of size dimensions and GD&T position/profile contributors. Worst case, RSS, modified RSS, predicted σ, C_p/C_pk, DPMO, yield, contribution Pareto, seeded Monte Carlo. Supersedes `calc.tolerance-stack` (v0.16) on the worksheet engine; the old calculator stays.
 
@@ -26,3 +28,27 @@
 
 **Test cases.** `ka-shigley-screw` (Shigley 9th ed. Ch. 1 shouldered-screw gap: 0.005 ± 0.010 in worst case, RSS ± 0.006 in — *Unconfirmed* page); `ka-rss-analytic` (housing stack: RSS 0.080623 mm, C_pk 2.3567 — analytic, Confirmed).
 `ka-measured-sigma` (A 10 ± 0.03 normal; B 5 ± 0.06 with a stated σ of 0.015: worst case 0.09, RSS 0.067082, σ 0.018027756, C_p = C_pk 1.849000654 against 14.9 to 15.1 mm — analytic, Confirmed, recomputed in python3).
+The legacy module's hand calculations run as `ka-legacy-screw`, `ka-legacy-housing`, `ka-legacy-housing-fails` and `ka-legacy-no-requirement`.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Shouldered-screw assembly gap (Shigley) ([sheet](../../worked-examples/mechanical/mech.tolerance-stack/shouldered-screw-gap/sheet.txt)).
+
+```text
+c1 = mid 1.75 in, ± 0.003 in, σ 0.001 in (normal) = 1.75 in
+c2 = mid 0.75 in, ± 0.001 in, σ 0.000333333 in (normal) = -0.75 in
+c3 = mid 0.12 in, ± 0.005 in, σ 0.00166667 in (normal) = -0.12 in
+c4 = mid 0.875 in, ± 0.001 in, σ 0.000333333 in (normal) = -0.875 in
+x_nom = 1.75 − 0.75 − 0.12 − 0.875 = 0.005 in
+x_mean = 1.75 − 0.75 − 0.12 − 0.875 = 0.005 in
+t_wc = 0.003 + 0.001 + 0.005 + 0.001 = 0.01 in
+x_wc_min = 0.005 in − 0.01 in = -0.005 in
+x_wc_max = 0.005 in + 0.01 in = 0.015 in
+t_rss = √(0.003² + 0.001² + 0.005² + 0.001²) = 0.006 in
+x_rss_min = 0.005 in − 0.006 in = -0.001 in
+x_rss_max = 0.005 in + 0.006 in = 0.011 in
+t_mrss = 1.5 × 0.006 in = 0.009 in
+sigma = √(0.001² + 0.000333333² + 0.00166667² + 0.000333333²) = 0.002 in
+… 11 more step(s) on the sheet
+Governing: FAIL  Worst case within requirement: -0.005 … 0.015 in vs 0.003 … open in  utilisation —
+```
+<!-- hand-arithmetic:end -->

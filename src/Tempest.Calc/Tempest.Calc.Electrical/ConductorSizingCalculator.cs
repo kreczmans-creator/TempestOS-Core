@@ -53,15 +53,15 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Electrical, "Conductor sizing and overload coordination",
+        Id, "1.1.1", CalcDiscipline.Electrical, "Conductor sizing and overload coordination",
         "One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without I₂, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or I₂ must be entered (machine wiring); every other number is the same in both contexts.",
         "Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b\n" +
-        "Device: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b\n" +
+        "Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b\n" +
         "Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1\n" +
         "Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table)\n" +
-        "Conductor: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived)\n" +
+        "Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived)\n" +
         "Carrying capacity: I_z = I_t·C_a·C_g·C_i\n" +
-        "Coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered\n" +
+        "Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered\n" +
         "Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to E5 so the fault check uses the device chosen here)",
         [
             new CalcInputSpec("context", "Design context (changes clause citations and the scope note only)", CalcInputKind.Choice, Choices: [ContextMachine, ContextInstallation], DefaultChoice: ContextMachine, Group: "Context"),

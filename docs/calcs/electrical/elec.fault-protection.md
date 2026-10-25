@@ -1,4 +1,6 @@
-# E5 — Fault protection: Zs, disconnection, adiabatic, fault level (`elec.fault-protection@1.2.0`)
+# E5 — Fault protection: Zs, disconnection, adiabatic, fault level (`elec.fault-protection@1.2.1`)
+
+**In plain terms.** If a live conductor touches an earthed part, the protective device must open the circuit fast enough that the fault is not dangerous. The worksheet works out the loop impedance and fault current of the circuit, whether the device opens in time, whether the protective and line conductors can carry the fault current without overheating, and whether the device can break the fault level. It demands an independent check.
 
 **Scope.** One circuit in a TN system: earth fault loop impedance against the device maximum, disconnection time, protective and line conductors against the adiabatic minimum, and a simplified prospective fault level against breaking capacity. **Independent check demanded** (the author cannot check it, DA-12); every input outside its range is a hard FAIL.
 
@@ -11,3 +13,24 @@
 **Limitations.** TN only; single earth fault; no motor contribution, arc fault or IT systems; no BS 7671 table embedded.
 
 **Test cases.** `ka-mcb-b32` (Z_s 0.7901 Ω, Z_s,max 1.3656 Ω, S_min 0.7616 mm²), `ka-fuse-curve` (t_d 0.1716 s), `ka-fault-level` (I_k3 15.942 kA) — analytic, Confirmed; `ka-wiring-matters-b32` (1.37 Ω, IET Wiring Matters March 2023) and `ka-schneider-k` (k ≈ 143, Schneider guide) — **Unconfirmed** until checked against the articles (values as the addendum quotes them). Eaton Memshield 3 non-trip data (1.13 I_n) is not used by this calculation.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Workshop radial: 16 A type C MCB, 40 m of 4/2.5 mm² copper ([sheet](../../worked-examples/electrical/elec.fault-protection/workshop-radial-c16/sheet.txt)).
+
+```text
+R_12 = 0.000017241 ohm·mm × 40 m × (1 / 4 mm² + 1 / 2.5 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC)) = 0.53635 ohm
+Z_s = 0.8 ohm + 0.53635 ohm = 1.3364 ohm
+I_f = 0.95 × 230 V / 1.3364 ohm = 163.51 A
+I_a = 10 × 16 A = 160 A
+Z_s_max = 0.95 × 230 V / 160 A = 1.3656 ohm
+u_Zs = 1.3364 ohm / 1.3656 ohm = 0.97856
+Z_test = 0.8 × 1.3656 ohm = 1.0925 ohm
+t_d = I_f = 163.51 A = 0.1 s
+I2t = 1500 A²s = 1500 A²·s
+k = √[0.00345 × 254.5 / 0.000017241 × ln(1 + 90/304.5)] = 114.84
+S_min = √1500 / 114.84 = 0.33726 mm²
+u_cpc = 0.33726 mm² / 2.5 mm² = 0.1349
+u_line = 0.33726 mm² / 4 mm² = 0.084315
+Governing: PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.97856 vs u_Zs ≤ 1  utilisation 0.979  « BS 7671 reg. 411.4.4
+```
+<!-- hand-arithmetic:end -->

@@ -1,4 +1,6 @@
-# B8 — Pipe expansion, loops and anchor forces (`bs.pipe-expansion@1.2.1`)
+# B8 — Pipe expansion, loops and anchor forces (`bs.pipe-expansion@1.2.2`)
+
+**In plain terms.** A hot pipe grows longer, and if its ends are held it pushes on its anchors or buckles; a cold pipe shrinks and pulls. The worksheet works out the growth between anchors from the temperature change, the force and stress if the pipe is fully restrained, and the length of an offset or loop that absorbs the growth within a stress range you allow. It is a quick screening, not a piping stress analysis.
 
 **Screening only — not a piping stress analysis.** The sheet says so in its scope and in its first assumption.
 
@@ -39,3 +41,26 @@
 **Version 1.1.0 (review fixes).** Screening `Y` is the resultant `α·|ΔT|·U` (was `ΔL`: unconservative for an offset leg); the run of an offset leg is checked for the leg's growth; the axial bellows layout; `E` is the reference-temperature modulus with an optional `E_hot` for the reactions; `pass` is 0 without a `K1`; the section, `ΔL` and `F_r` no longer wait for `Sa`; `dL_signed` and `direction`; `dT_in` limit −300 K; the short-leg warning is about the available leg only; the elbow intensification factor is its own assumption.
 
 **Version 1.2.0 (second review).** `anchor_force` is the resultant `√(F_leg² + F_run²)` of the perpendicular components (also reported separately); `anchor_moment` is stated as the guided-cantilever simplification and not a frame anchor moment; the optional second run `L2` makes the offset-leg layout a Z-bend, each run checked as its own cantilever (replacing the earlier advice to enter a combined spacing); the method text is reworded; `k1-unused` is its own warning and the warnings are prefixed with the input they are about; `P_b` is the governing pressure and the compression/extension rating note is added.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Low-temperature hot-water main, 50 m between anchors: a U-loop of two 4 m legs ([sheet](../../worked-examples/building-services/bs.pipe-expansion/lthw-main-expansion-loop/sheet.txt)).
+
+```text
+dT = 80 degC − 10 degC = 70 K
+E_r = 210 GPa
+D_i = 88.9 mm − 2 × 3.2 mm = 82.5 mm
+A_m = π / 4 × ((88.9 mm)^2 − (82.5 mm)^2) = 861.55 mm²
+I_x = π / 64 × ((88.9 mm)^4 − (82.5 mm)^4) = 79.206 cm⁴
+Z_x = 79.206 cm⁴ / (88.9 mm / 2) = 17.819 cm³
+L_tot = 50 m
+dL = 12 um/(m·K) × 50 m × abs(70 K) = 42 mm
+dL_signed = 12 um/(m·K) × 50 m × 70 K = 42 mm
+sigma_res = 210 GPa × 12 um/(m·K) × abs(70 K) = 176.4 MPa
+F_res = 210 GPa × 12 um/(m·K) × abs(70 K) × 861.55 mm² = 151.98 kN
+u_res = 176.4 MPa / 100 MPa = 1.764
+Delta = 42 mm / 2 = 21 mm
+L_req = sqrt(3 × 210 GPa × 88.9 mm × 21 mm / 100 MPa) = 3.4295 m
+… 15 more step(s) on the sheet
+Governing: PASS  Available leg against the required leg (3.4295 m): u_leg = 0.85737 vs u_leg ≤ 1  utilisation 0.857
+```
+<!-- hand-arithmetic:end -->

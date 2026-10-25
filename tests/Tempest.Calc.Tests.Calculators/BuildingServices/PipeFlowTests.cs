@@ -33,7 +33,7 @@ public sealed class PipeFlowTests
         // The loss itself is unchanged: the fittings term K·ρ·v²/2 is added as entered.
         var v = 4.53764705882353 / 3600 / (Math.PI * 0.02 * 0.02 / 4);
         Assert.Equal(At(4.53764705882353, 0).OutputSi("dp_total") + 6 * 870 * v * v / 2, transitional.OutputSi("dp_total"), 1e-3);
-        Assert.Equal("1.5.0", Calc.Template.Version);
+        Assert.Equal("1.6.0", Calc.Template.Version);
     }
 
     [Fact]

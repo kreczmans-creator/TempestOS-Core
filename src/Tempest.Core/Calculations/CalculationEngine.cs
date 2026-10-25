@@ -316,6 +316,48 @@ public sealed class CalculationEngine : ICalculationEngine
     }
 
     /// <inheritdoc />
+    /// <inheritdoc />
+    public async Task<CalculationRecordDocument?> FindRecordDocumentAsync(Guid recordId, CancellationToken cancellationToken = default)
+    {
+        var document = await _documentStore.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+        if (document is null)
+            return null;
+
+        if (!string.Equals(document.Kind, CalculationRecordDocumentKind, StringComparison.Ordinal))
+            throw new CalculationException($"Document '{recordId}' is a '{document.Kind}', not a {CalculationRecordDocumentKind}.");
+
+        var revisions = await _documentStore.GetRevisionHistoryAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+        if (revisions.Count == 0)
+            return null;
+
+        CalculationRecordDto<JsonElement>? dto;
+
+        try
+        {
+            dto = JsonSerializer.Deserialize<CalculationRecordDto<JsonElement>>(revisions[^1].Content);
+        }
+        catch (JsonException exception)
+        {
+            throw new CalculationException($"Calculation record '{recordId}' could not be read: {exception.Message}");
+        }
+
+        if (dto is null)
+            throw new CalculationException($"Calculation record '{recordId}' deserialised to nothing.");
+
+        JsonElement? input = dto.Input switch
+        {
+            JsonElement e => e.Clone(),
+            null => null,
+            var other => JsonSerializer.SerializeToElement(other),
+        };
+
+        return new CalculationRecordDocument(
+            recordId, dto.CalculationId, dto.Result.Clone(), dto.ResultTypeName, dto.Assumptions, dto.IntermediateResults, dto.Validation,
+            dto.ReferencedMaterialIds, dto.ExecutedAt, dto.ExecutedByPrincipalId, revisions[^1].RevisionNumber, input, dto.InputTypeName, dto.PredecessorRecordId);
+    }
+
     public async Task<IReadOnlyList<CalculationRecordSummary>> ListRecordsAsync(CancellationToken cancellationToken = default)
     {
         if (_recordIndex is null)

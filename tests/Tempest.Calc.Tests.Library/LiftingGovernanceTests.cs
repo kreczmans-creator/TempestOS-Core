@@ -42,8 +42,9 @@ public sealed class LiftingGovernanceTests
     // ------------------------------------------------------------------
 
     [Fact]
-    public void The_Shipped_Composition_Has_No_Lifting_Calculator_Without_The_Flag_And_Exactly_One_More_With_It()
+    public void The_Shipped_Composition_Has_No_Lifting_Calculator_Without_The_Flag_And_Exactly_Two_More_With_It()
     {
+        // S8 (struct.lifting) and the worksheet that replaced the legacy lifting-lug module (mech.lifting-lug, ADR-0167) are gated alike.
         var off = new CalcCatalogue(ShippedCalculators.All);
         var on = new CalcCatalogue(ShippedCalculators.All, LiftingOn);
 
@@ -55,7 +56,11 @@ public sealed class LiftingGovernanceTests
         Assert.True(off.IsWithheld(LiftingLugCalculator.Id));
 
         Assert.Contains(on.Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-        Assert.Equal(off.Current().Count + 1, on.Current().Count);
+        Assert.DoesNotContain(off.Current(), e => e.Template.Id == "mech.lifting-lug");
+        Assert.Null(off.Find("mech.lifting-lug"));
+        Assert.True(off.IsWithheld("mech.lifting-lug"));
+        Assert.Contains(on.Current(), e => e.Template.Id == "mech.lifting-lug");
+        Assert.Equal(off.Current().Count + 2, on.Current().Count);
 
         // Ctrl+K entries are one per Current() entry, filed under its discipline: none for S8 with the flag off.
         Assert.DoesNotContain(off.Current().Select(e => $"calc.worksheet.{e.Template.Id}"), id => id == "calc.worksheet.struct.lifting");
@@ -65,7 +70,7 @@ public sealed class LiftingGovernanceTests
     [Fact]
     public void No_Other_Shipped_Calculator_Is_Gated_Or_Asks_For_Extra_Governance()
     {
-        foreach (var calculator in ShippedCalculators.All.Where(c => c.Template.Id != LiftingLugCalculator.Id))
+        foreach (var calculator in ShippedCalculators.All.Where(c => c.Template.Id != LiftingLugCalculator.Id && c.Template.Id != "mech.lifting-lug"))
         {
             var t = calculator.Template;
             Assert.Null(t.FeatureFlag);
@@ -79,12 +84,20 @@ public sealed class LiftingGovernanceTests
         var s8 = new LiftingLugCalculator().Template;
         Assert.Equal(CalcFeatures.Lifting, s8.FeatureFlag);
         Assert.Contains("feature=lifting", CalcTemplateHasher.CanonicalText(s8, []), StringComparison.Ordinal);
+
+        // The ported lifting-lug worksheet asks for everything S8 asks for (ADR-0173): the flag, the attestation, an independent first check and a second.
+        var lug = ShippedCalculators.All.Single(c => c.Template.Id == "mech.lifting-lug").Template;
+        Assert.Equal(CalcFeatures.Lifting, lug.FeatureFlag);
+        Assert.True(lug.RequiresAttestation);
+        Assert.True(lug.IndependentCheck);
+        Assert.True(lug.RequiresSecondCheck);
+        Assert.Contains("feature=lifting", CalcTemplateHasher.CanonicalText(lug, []), StringComparison.Ordinal);
     }
 
     [Fact]
     public void No_Shipped_Pack_Template_Names_The_Lifting_Calculator()
     {
-        Assert.DoesNotContain(CalcPackTemplates.All.SelectMany(p => p.Steps), step => step.TemplateId.StartsWith("struct.lifting", StringComparison.Ordinal));
+        Assert.DoesNotContain(CalcPackTemplates.All.SelectMany(p => p.Steps), step => step.TemplateId.StartsWith("struct.lifting", StringComparison.Ordinal) || step.TemplateId.StartsWith("mech.lifting-lug", StringComparison.Ordinal));
     }
 
     [Theory]

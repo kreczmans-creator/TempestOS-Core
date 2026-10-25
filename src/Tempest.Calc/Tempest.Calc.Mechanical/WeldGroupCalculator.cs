@@ -19,13 +19,13 @@ public sealed class WeldGroupCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Mechanical, "Weld group (elastic line method)",
+        Id, "1.1.1", CalcDiscipline.Mechanical, "Weld group (elastic line method)",
         "A group of straight fillet welds in a plane under in-plane forces (with eccentricity, so torsion), an out-of-plane force and out-of-plane moments: the resultant force per unit length at every weld end, the critical point, the throat stress against the design strength and the leg size required.",
         "Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w\n" +
         "Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, product I_uxy = Σ [l(x_m − x_c)(y_m − y_c) + l·Δx·Δy/12], J_u = I_ux + I_uy\n" +
         "Torsion about the centroid: T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z\n" +
         "At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + [(M_x·I_uy − M_y·I_uxy)·y′ + (M_y·I_ux − M_x·I_uxy)·x′]/(I_ux·I_uy − I_uxy²) with F_z's eccentricity added to M_x and M_y (this reduces to M_x·y′/I_ux + M_y·x′/I_uy only for a group symmetric about a centroidal axis); vector sum f_r\n" +
-        "Throat: a = 0.707·s, τ = f_r,max/a; required leg s_req = f_r,max/(0.707·f_w)",
+        "Throat and weld stress: a = 0.707·s, τ = f_r,max/a; required leg s_req = f_r,max/(0.707·f_w)",
         [
             new CalcInputSpec("welds", "Weld lines", CalcInputKind.Table, Columns: Columns, MaxRows: 50),
             new CalcInputSpec("s", "Fillet leg", CalcInputKind.Quantity, "mm", Default: 6, Min: 3, Max: 25, HardMin: 3, HardMax: 25, Group: "Weld"),

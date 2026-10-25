@@ -54,7 +54,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
+        Id, "1.2.1", CalcDiscipline.BuildingServices, "U-values and room heat loss",
         "U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.",
         "Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing\n" +
         "Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside\n" +
@@ -64,7 +64,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         "Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply, plus 0.34·n_inf·V·(θ_int − θ_e) infiltration with MVHR\n" +
         "Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance))\n" +
         "Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor\n" +
-        "Check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)",
+        "U-value check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)",
         [
             new CalcInputSpec("method", "Calculation method (changes the citations; the DHDG option adds the allowance below)", CalcInputKind.Choice, Choices: [En12831, Dhdg], DefaultChoice: En12831, Group: "Method"),
             new CalcInputSpec("theta_int", "Internal design temperature", CalcInputKind.Quantity, "degC", Default: 21, Min: 16, Max: 24, HardMin: 16, HardMax: 24, Group: "Conditions"),

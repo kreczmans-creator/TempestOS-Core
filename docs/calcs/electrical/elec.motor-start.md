@@ -1,4 +1,6 @@
-# E9 — Motor start voltage dip and PF correction (`elec.motor-start@1.2.0`)
+# E9 — Motor start voltage dip and PF correction (`elec.motor-start@1.2.1`)
+
+**In plain terms.** When a large motor starts it draws several times its running current, and the supply voltage dips for a moment, which can upset other equipment. The worksheet takes the supply impedance and the motor's starting current and power factor, and works out the voltage dip at the motor and at the point where it shares the supply with other loads, the effect of a soft starter or drive, and the capacitor needed to correct power factor without resonating with the supply.
 
 **Scope.** The voltage dip when a three-phase induction motor starts, at the motor terminals (the starter or drive input for a soft starter in current limit or a drive) and at the point of common coupling (PCC), from the supply impedance (a fault level S_k or I_k with an X/R ratio, or a transformer S_n, u_k, X/R with an optional upstream network S_kQ in series), the cable (R + jX, as E3) and the motor, for a direct-on-line, star-delta, soft-start or drive start. The dip is checked against a user limit (default 10 % at the motor, editable) and an optional PCC limit. Also the capacitor kvar to raise the running power factor to a target, the capacitor current, the parallel-resonance order and a warning when harmonic loads are present. Steady-state phasor model of the locked-rotor instant: no run-up dynamics, flicker (Pst) assessment, tap-changer action, other running load or starting-torque adequacy check. IEC 60909-0 cl. 5.3 and IEC 61000-3-11 are cited by number and title only; no limit is embedded.
 
@@ -20,3 +22,26 @@
 **Limitations.** The source impedance should be the one at the minimum fault level (the deepest dip); a transformer alone is an infinite bus unless the upstream `S_kQ` is entered, which understates the dip by a few per cent and overstates the resonance order. A passive start is a constant impedance at the locked-rotor instant (the current falls as the motor accelerates, so the dip is the worst case); a regulated start holds the current. Low-voltage (≤ 1 kV) three-phase systems with a balanced source behind the stated impedance. The current spike at the star-to-delta changeover is not modelled. The capacitor sits at the PCC; switching transients, detuning, self-excitation and the capacitor voltage rating are not assessed; with a drive, the correction starts from the drive's displacement factor and the drive is itself a harmonic load. The dip limit and the network operator's PCC limit are yours to enter.
 
 **Test cases.** All analytic and recomputed in python3 with complex arithmetic (Confirmed): `ka-pump-dol-transformer` (75 kW DOL on 500 kVA, 4 %: dip 7.7757 % motor, 4.6746 % PCC, 18.892 kvar, h 25.72), `ka-hand-phasor` (all three impedances at 53.13°: dip exactly 20 % and 10 %, |I| 461.88 A, `dV_cab` 40 V, cross-checked against E3's 40 V in a test), `ka-star-delta-fault-current` (I_k route with c = 1.1), `ka-soft-start-full-conduction` (a 5.5 × I_n limit on a weak 2 MVA supply is not reached, so the passive DOL dip of 25.976 % stands), `ka-soft-start-current-limit` and `ka-vfd-current-limit` (current held; solved in python by fixed-point iteration of the phasors and checked against the closed form: 9.1223 % and 2.4783 % at the starter or drive input), `ka-transformer-upstream-network` (315 kVA behind 20 MVA: 9.5523 % and 7.4333 %), `ka-pfc-resonance`. **Not pinned — owner check:** the Schneider Electric *Electrical Installation Guide* power-factor-correction example (the kvar-per-kW factor table and its worked example); no inputs and answer are quoted here because they could not be stated with confidence. The relation it uses, `Q_c = P(tan φ₁ − tan φ₂)`, is covered by the analytic cases above.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** 75 kW pump motor started direct on line from a 500 kVA transformer ([sheet](../../worked-examples/electrical/elec.motor-start/pump-dol-500kva/sheet.txt)).
+
+```text
+I_rated = 75 kW / (sqrt(3) × 400 V × 0.87 × 0.945) = 131.67 A
+I_start = 7 × 131.67 A = 921.7 A
+S_start = sqrt(3) × 400 V × 921.7 A = 638.57 kVA
+Z_T = 4 % × (400 V)^2 / 500 kVA = 0.0128 ohm
+R_src = 0.0128 ohm / sqrt(1 + 4.2^2) = 0.0029647 ohm
+X_src = 0.0029647 ohm × 4.2 = 0.012452 ohm
+Z_src = hypot(0.0029647 ohm, 0.012452 ohm) = 0.0128 ohm
+rho_T = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (70 degC − 20 degC)) = 0.020628 ohm·mm²/m
+R_cab = 0.020628 ohm·mm²/m × 40 m / (50 mm² × 1) = 0.016502 ohm
+X_cab = 0.08 ohm/km × 40 m / 1 = 0.0032 ohm
+Z_m = 400 V / (sqrt(3) × 921.7 A) = 0.25056 ohm
+R_m = 0.25056 ohm × 0.3 = 0.075168 ohm
+X_m = 0.25056 ohm × sqrt(1 − 0.3^2) = 0.23902 ohm
+E_ph = 400 V / √3 = 230.94 V
+… 25 more step(s) on the sheet
+Governing: PASS  Point-of-common-coupling dip within the limit: u_dip_pcc = 0.93491 vs u_dip_pcc ≤ 1  utilisation 0.935  « IEC 61000-3-11 scope
+```
+<!-- hand-arithmetic:end -->

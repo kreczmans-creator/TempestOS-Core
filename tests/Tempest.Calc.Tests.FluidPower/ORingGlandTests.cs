@@ -755,7 +755,7 @@ public sealed class ORingGlandTests
     [Fact]
     public void The_Template_Version_Is_Bumped_For_The_Changed_Model()
     {
-        Assert.Equal("1.2.0", Gland.Template.Version);
+        Assert.Equal("1.2.1", Gland.Template.Version);
     }
 
     [Fact]

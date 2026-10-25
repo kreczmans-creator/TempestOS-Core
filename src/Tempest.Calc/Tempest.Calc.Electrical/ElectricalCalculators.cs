@@ -16,5 +16,6 @@ public static class ElectricalCalculators
         new PcbTraceCalculator(),
         new ContainmentCalculator(),
         new MotorStartCalculator(),
+        new ThermalChainCalculator(),
     ];
 }

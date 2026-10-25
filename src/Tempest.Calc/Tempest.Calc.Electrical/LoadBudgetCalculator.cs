@@ -29,14 +29,14 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
+        Id, "1.2.1", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
         "The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.",
         "Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative)\n" +
         "Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus\n" +
         "Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0)\n" +
-        "PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude)\n" +
-        "Transformer: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two\n" +
-        "Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t",
+        "Power supply sizing: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude)\n" +
+        "Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two\n" +
+        "Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t",
         [
             new CalcInputSpec("loads", "Loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 100),
             new CalcInputSpec("P_add", "Additional three-phase load (linked from E1's RMS power)", CalcInputKind.Quantity, "kW", Default: 0, Min: 0, Max: 200, HardMin: 0, HardMax: 200, Group: "Loads"),

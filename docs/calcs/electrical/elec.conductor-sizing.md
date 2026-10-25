@@ -1,4 +1,6 @@
-# E4 — Conductor sizing and overload coordination (`elec.conductor-sizing@1.1.0`)
+# E4 — Conductor sizing and overload coordination (`elec.conductor-sizing@1.1.1`)
+
+**In plain terms.** A cable must be big enough to carry the circuit's current without overheating, and the device protecting it must trip before the cable is damaged. The worksheet takes the load current, picks the smallest standard device that carries it, finds the smallest cable whose rated capacity, once reduced for temperature and grouping, carries the device rating, and checks that the device really protects the cable.
 
 **Scope.** One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated capacity (the user's own record) carries that rating once the correction factors are applied, and the overload coordination checks. The context choice (BS EN 60204-1 machine wiring, the default, or BS 7671 installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without `I2`, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or `I2` must be entered (machine wiring); no other number differs. **Independent check demanded** (DA-12); every numeric input outside its range is a hard FAIL (hard limit = stated range). Ships with E5 (`elec.fault-protection`).
 
@@ -19,3 +21,23 @@
 **Limitations.** Single circuit, one installation method per run; the factors are applied as a product and are the user's; the derived `C_a` is a temperature-difference approximation only; the I²t/short-circuit and voltage-drop checks are E5 and E3; E5 accepts a line conductor of 0.5 mm² and above, so a selected CSA below 0.5 mm² (AWG 21 and finer) cannot be linked to E5; no cable ampacity, rating factor or standard table is embedded (§A5).
 
 **Test cases.** All analytic and Confirmed, recomputed in Python. The capacities (1.5→12.3, 2.5→17.7, 4→24.1, 6→31.9, 10→44.6 A; AWG 14→11.2, 12→16.9, 10→26.3, 8→37.4 A; and, in the behaviour tests, 11.4/16.2/23.7/30.8/43.1 A, AWG 18.4 and 27.3 A and C_g 0.58, all invented) and the factors (C_a 0.91, C_g 0.77) are synthetic values invented for these tests, not taken from any table; the ratings 6, 10, 16, 20, 25, 32, 40, 50, 63 A are the typical preferred series. `ka-three-phase-mcb-c` (θ_a 35 °C, two circuits; I_b 14.1507 A, I_n 16 A, I_t,req 22.8343 A, 4 mm², I_z 16.8869 A), `ka-single-phase` (I_b 15.2555 A, 2.5 mm², I_z 17.7 A), `ka-dc` (I_b 25 A, I_t,req 27.4725 A, 6 mm², I_z 29.029 A; a gG fuse in the machine context with `I2` = 40 A entered, u_I2 = 0.95030), `ka-semi-enclosed` (C_c 0.725, I_t,req 27.5862 A, 6 mm², I₂ 40 A), `ka-derived-ca` (C_a = √(30/40) = 0.866025), `ka-awg-10` (AWG 10 = 5.2612 mm², on a type C MCB). Not pinned — owner check: the Schneider *Electrical Installation Guide* chapter G worked examples, the IET *Electrical Installation Design Guide* examples and the Kollmorgen current-carrying-capacity note; no value from them is in source, tests or docs. The worked example `conveyor-motor-circuit` (4 kW rated output, type C MCB, machine panel) uses synthetic values entered with record-style provenance.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** 4 kW conveyor motor circuit in a machine panel, type C MCB ([sheet](../../worked-examples/electrical/elec.conductor-sizing/conveyor-motor-circuit/sheet.txt)).
+
+```text
+I_b = 4 kW / (sqrt(3) × 400 V × 0.82 × 0.85) = 8.2834 A
+I_n = smallest rating ≥ 8.2834 A in the ratings record = 10 A
+device_code = MCB type C = 2
+C_c = MCB type C = 1
+I_t_req = 10 A / (0.91 × 0.77 × 1 × 1) = 14.271 A
+I_t = I_t,req = 14.271 A = 17.7 A
+CSA = I_t,req = 14.271 A = 2.5 mm²
+I_z = 17.7 A × 0.91 × 0.77 × 1 = 12.402 A
+u_Ib = 8.2834 A / 10 A = 0.82834
+u_In = 10 A / 12.402 A = 0.8063
+I2 = 1.45 × 10 A = 14.5 A
+u_I2 = 14.5 A / (1.45 × 12.402 A) = 0.8063
+Governing: PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.82834 vs u_Ib ≤ 1  utilisation 0.828  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+```
+<!-- hand-arithmetic:end -->

@@ -26,12 +26,12 @@ public sealed class ConnectionCalculator : ICalcCalculator
     public static IReadOnlyList<(string Grade, double BetaW)> Steels { get; } = [("S235", 0.8), ("S275", 0.85), ("S355", 0.9), ("S420", 1.0), ("S460", 1.0)];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
+        Id, "1.2.1", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
         "The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.",
         "Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P\n" +
         "Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane)\n" +
-        "Bearing: F_b,Rd = k₁·α_b·f_u·d·t/γ_M2; α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)\n" +
-        "Tension: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1\n" +
+        "Bolt bearing resistance: F_b,Rd = k₁·α_b·f_u·d·t/γ_M2; α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)\n" +
+        "Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1\n" +
         "Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0)\n" +
         "Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2",
         [

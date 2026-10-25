@@ -2,6 +2,9 @@ using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
 using Tempest.Calc.Tests.Sheets;
 using Tempest.Core.Bearings;
+using Tempest.Core.Calculations;
+using Tempest.Core.Calculations.Modules;
+using Tempest.Core.UnitsAndQuantities;
 using Tempest.Core.Configuration;
 using Tempest.Core.Constants;
 using Tempest.Core.EngineeringData;
@@ -65,7 +68,7 @@ public sealed class UpgradeTests
     {
         var root = Path.Combine(Path.GetTempPath(), "tempest-upgrade-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
-        Guid projectId, oldEvidenceId;
+        Guid projectId, oldEvidenceId, legacyRecordId;
 
         try
         {
@@ -80,6 +83,16 @@ public sealed class UpgradeTests
                 Assert.True((await old.Evidence.RecordCheckAsync(created.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
                 var issued = await old.Evidence.IssueAsync(created.Id, "LEGACY-ISS-1", "A", "Client Co");
                 Assert.True(issued.Succeeded, issued.Reason);
+
+                // A legacy calculation module run, as v0.21–v0.26 stored it (ADR-0167).
+                var engine = new CalculationEngine(new EngineeringDocumentStore(old.Store, new CurrentPrincipalAccessor()), new CurrentPrincipalAccessor(), recordIndex: old.Store);
+                engine.RegisterDefinition(new BoltedJointPreloadCalculationDefinition());
+                var record = await engine.ExecuteAsync<BoltedJointPreloadInput, BoltedJointPreloadResult>(BoltedJointPreloadCalculationDefinition.Id, new BoltedJointPreloadInput(
+                    null, "ISO 898-1 class 8.8",
+                    new Quantity<Force>(37_935, ForceUnits.Newton), new Quantity<Force>(20, ForceUnits.Kilonewton),
+                    new Quantity<Stiffness>(200, StiffnessUnits.KilonewtonPerMillimetre), new Quantity<Stiffness>(600, StiffnessUnits.KilonewtonPerMillimetre),
+                    new Quantity<Area>(84.3, AreaUnits.SquareMillimetre), new Quantity<Pressure>(600, PressureUnits.Megapascal)));
+                legacyRecordId = record.Id;
             }
 
             // Phase B: reopen with the v0.26.0 code.
@@ -108,6 +121,17 @@ public sealed class UpgradeTests
                 Assert.NotNull(register);
                 Assert.Contains(await register!.GetRelationshipsAsync(), r => r.TargetId == instance.EvidenceId && r.RelationshipKind == CalcInstanceService.DocumentedByRelationship);
                 Assert.Equal(EvidenceStatus.Issued, ((Evidence)(await upgraded.Context.Repository.FindAsync(oldEvidenceId))!).Status);
+
+                // The legacy record migrates to an archive worksheet; the record itself is untouched (ADR-0167).
+                var engine = new CalculationEngine(new EngineeringDocumentStore(upgraded.Store, new CurrentPrincipalAccessor()), new CurrentPrincipalAccessor(), recordIndex: upgraded.Store);
+                var report = await new LegacyCalculationMigration(engine, upgraded.CalcStore).MigrateAsync();
+                Assert.Equal(1, report.Migrated);
+                Assert.Empty(report.Failed);
+                var archive = (await upgraded.CalcStore.FindInstanceAsync(legacyRecordId))!;
+                Assert.True(archive.IsLegacyArchive);
+                var run = await upgraded.Calc.RunAsync(archive);
+                Assert.Contains("Bolt load = 42935 N", run.SheetText, StringComparison.Ordinal);
+                Assert.NotNull(await engine.FindRecordDocumentAsync(legacyRecordId));
             }
 
             // Phase C: reopen once more — everything persisted, nothing depends on in-memory state.
@@ -119,6 +143,9 @@ public sealed class UpgradeTests
                 var instances = await reopened.CalcStore.ListInstancesAsync(projectId);
                 Assert.Single(instances);
                 Assert.Equal(CalcInstanceStatus.Issued, instances[0].Status);
+                var archive = (await reopened.CalcStore.FindInstanceAsync(legacyRecordId))!;
+                Assert.True(archive.IsLegacyArchive);
+                Assert.Contains("Migrated from calculation record", archive.Notes![0], StringComparison.Ordinal);
             }
         }
         finally

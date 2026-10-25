@@ -54,6 +54,16 @@ public interface ICalculationEngine
     Task<IReadOnlyList<CalculationRecordSummary>> ListRecordsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Reads one stored record as it was written, without knowing its result
+    /// type (ADR-0167: the migration to worksheet templates and the archive
+    /// view read records whose definitions may be gone). Returns
+    /// <see langword="null"/> for an unknown Id; throws
+    /// <see cref="CalculationException"/> for a document of another kind or
+    /// one that will not parse.
+    /// </summary>
+    Task<CalculationRecordDocument?> FindRecordDocumentAsync(Guid recordId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Re-executes the calculation that produced <paramref name="recordId"/>,
     /// using the exact input it was originally run with, and returns the new
     /// record — its own <see cref="CalculationRecord{TResult}.PredecessorRecordId"/>

@@ -16,5 +16,6 @@ public static class BuildingServicesCalculators
         new GlaserCalculator(),
         new PipeExpansionCalculator(),
         new InsulationCalculator(),
+        new PlaneWallCalculator(),
     ];
 }

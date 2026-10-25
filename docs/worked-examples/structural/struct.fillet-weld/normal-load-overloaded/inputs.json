@@ -1,0 +1,90 @@
+[
+  {
+    "Symbol": "F_n",
+    "Number": 120,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "120"
+  },
+  {
+    "Symbol": "F_par",
+    "Number": 0,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "F_tr",
+    "Number": 0,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "L",
+    "Number": 100,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-WD-702",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "a",
+    "Number": 4,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-WD-702",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  },
+  {
+    "Symbol": "beta_w",
+    "Number": 0.9,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-STR-02 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.9"
+  },
+  {
+    "Symbol": "f_u",
+    "Number": 490,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-STR-02 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "490"
+  },
+  {
+    "Symbol": "gamma_M2",
+    "Number": 1.25,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-STR-02 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.25"
+  }
+]

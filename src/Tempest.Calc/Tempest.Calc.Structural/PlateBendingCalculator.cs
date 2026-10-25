@@ -50,7 +50,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
     public const double ThinPlateRatio = 10;
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.Structural, "Plate bending",
+        Id, "1.2.2", CalcDiscipline.Structural, "Plate bending",
         "Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.",
         "Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²)\n" +
         "Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²)\n" +
@@ -58,7 +58,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
         "Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared)\n" +
         "Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K taken as 8, 12, 16, 20, 25, 30 until w and the stress change by < 10⁻⁵ (or the change stops falling)\n" +
         "Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρt)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρt)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis\n" +
-        "Checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t > 0.5",
+        "Plate checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t > 0.5",
         [
             new CalcInputSpec("shape", "Plate shape", CalcInputKind.Choice, Choices: [Circular, Rectangular], DefaultChoice: Rectangular, Group: "Plate"),
             new CalcInputSpec("support", "Edge support, all round", CalcInputKind.Choice, Choices: [Simple, Clamped], DefaultChoice: Simple, Group: "Plate"),

@@ -47,7 +47,7 @@ public sealed class AccumulatorCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.1", CalcDiscipline.FluidPower, "Accumulator sizing (gas law)",
+        Id, "1.3.2", CalcDiscipline.FluidPower, "Accumulator sizing (gas law)",
         "The pre-charge gas volume V0 of a hydraulic accumulator that delivers, or absorbs, a liquid volume ΔV between the lowest working pressure p1 and the highest p2, from p·Vⁿ = const with absolute pressures and an exponent n between 1 (isothermal) and 1.4 (adiabatic), the gas either charged as fast as it is discharged or (a held accumulator, the default for an emergency stroke) charged slowly and isothermally to p2 and then discharged at n; the volume scaled to the lowest operating temperature (T_max/T_min) and the pre-charge pressure at the charging temperature; the next size from your own size list; and the bar·litre product PS·V of the vessel's own maximum allowable pressure and volume against the PSSR Schedule 1 250 bar·L exception. Three modes: energy storage, shock and pulsation (screening only) and emergency stroke (ΔV is the stroke volume, linkable from the cylinder circuit). Not a pressure-vessel code check.",
         "Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode)\n" +
         "Gas volume, one exponent both ways (charged as fast as it is discharged): V0 = ΔV / [(p0/p1)^(1/n) − (p0/p2)^(1/n)], n = 1 isothermal … 1.4 adiabatic\n" +
@@ -56,7 +56,7 @@ public sealed class AccumulatorCalculator : ICalcCalculator
         "Pre-charge rules (records, applied to absolute pressures): p0 ≤ r_0·p1 at T_max (default 0.9, bladder type) and p2/p0(T_min) ≤ r_p (default 4), p0(T_min) = p0·(T_min + 273.15)/(T_max + 273.15)\n" +
         "Pre-charge at the charging temperature: p0(T_c) = p0(T_max)·(T_c + 273.15)/(T_max + 273.15)\n" +
         "Next size: the smallest listed size not below V0\n" +
-        "Bar·litres: PS·V, PS = the vessel's maximum allowable pressure (bar gauge, entered, not below p2 gauge), V = the vessel volume entered (default the selected size); compared with 250 bar·L (PSSR Schedule 1, indication only; not available without PS and a volume)",
+        "PSSR bar-litre product: PS·V, PS = the vessel's maximum allowable pressure (bar gauge, entered, not below p2 gauge), V = the vessel volume entered (default the selected size); compared with 250 bar·L (PSSR Schedule 1, indication only; not available without PS and a volume)",
         [
             new CalcInputSpec("mode", "Duty", CalcInputKind.Choice, Choices: [ModeEnergy, ModeShock, ModeEmergency], DefaultChoice: ModeEnergy, Group: "Duty"),
             new CalcInputSpec("dV", "Liquid volume ΔV delivered, absorbed or (emergency stroke) needed for the stroke", CalcInputKind.Quantity, "L", Default: 10, Min: 0.001, Max: 1000, HardMin: 0.001, HardMax: 1000, Group: "Duty"),

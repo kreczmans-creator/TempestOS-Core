@@ -7,8 +7,8 @@ Checker: —    Checked: —
 Issued: —
 
 1. SCOPE AND METHOD
-One bolt clamping members under an axial working load: the preload from the tightening torque with its scatter, the stiffness of bolt and members, how much of the working load the bolt sees, the residual clamp after embedding, separation, yield under preload plus working load, the thread engagement needed against stripping, and the fatigue amplitude.
-A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut factor: F_M = M_A/(K d). Friction: F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K). F_M,min = F_M/α_A. δ_S = (0.4 d + 0.4 d)/(E_S A_N) + l_k/(E_S A_s) + 0.5 d/(E_S A_d3). Members: two frusta, k = 0.5774 π E d / ln[((1.155 t + d_w − d_h)(d_w + d_h))/((1.155 t + d_w + d_h)(d_w − d_h))]. Φ = n k_S/(k_S + k_P). F_Z = f_Z (k_S k_P)/(k_S + k_P). F_KR = F_M,min − (1 − Φ) F_A − F_Z. F_S,max = F_M + Φ F_A. σ_red = √(σ_z² + 3 (0.5 τ)²). σ_a = Φ F_A/(2 A_s). m_min = S F_S,max/(0.5 π d τ_B).
+One bolt clamping members under an axial working load: the preload from the tightening torque with its scatter (or as measured), the stiffness of bolt and members, how much of the working load the bolt sees, the residual clamp after embedding, separation, yield under preload plus working load, the thread engagement needed against stripping, and the fatigue amplitude.
+Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 P and d_3 = d − 1.2269 P. Assembly preload from the tightening torque, nut-factor method: F_M = M_A/(K d). Assembly preload from the tightening torque, thread and head friction method: F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K). Assembly preload stated directly (measured) instead of derived: F_M = F_V. Bolt and member stiffness and the stress area may also be given (measured, FE or a fastener record) instead of derived. Minimum preload after the tightening scatter: F_M,min = F_M/α_A. Bolt resilience, the head, free shank and engaged thread as springs in series: δ_S = (0.4 d + 0.4 d)/(E_S A_N) + l_k/(E_S A_s) + 0.5 d/(E_S A_d3). Member stiffness, the clamped parts as two pressure frusta: k = 0.5774 π E d / ln[((1.155 t + d_w − d_h)(d_w + d_h))/((1.155 t + d_w + d_h)(d_w − d_h))]. Load factor, the share of the working load the bolt sees: Φ = n k_S/(k_S + k_P). Preload lost to embedding (settling of the interfaces): F_Z = f_Z (k_S k_P)/(k_S + k_P). Residual clamp at the interface under the working load: F_KR = max(F_M,min − (1 − Φ) F_A − F_Z, 0). Maximum bolt load, the whole working load once the joint opens: F_S,max = max(F_M + Φ F_A, F_A). Working equivalent stress in the bolt, tension with half the tightening torsion: σ_red = √(σ_z² + 3 (0.5 τ)²). Fatigue stress amplitude in the thread: σ_a = (F_S,max − F_M)/(2 A_s). Thread engagement length needed against stripping: m_min = S F_S,max/(0.5 π d τ_B).
   Ref: VDI 2230 Part 1:2015 §5.1–§5.5 — Systematic calculation of highly stressed bolted joints — calculation steps R0–R13
   Ref: ISO 898-1:2013 §9.1.6 — Tensile stress area of the thread
   Ref: Shigley's Mechanical Engineering Design §8-5, §8-7 — Joint stiffness (frusta); preload and torque
@@ -146,48 +146,66 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
       = (1 − 0.072047) × 60 kN
       = 55.677 kN
         Load relieved from the members
-  [46] F_KR = F_M_min - F_PA - F_Z    « VDI 2230 R7
-      = 25.431 kN − 55.677 kN − 3.024 kN
-      = -33.27 kN
-        Residual clamp force (minimum)
-  [47] F_S_max = F_M + F_SA
-      = 40.69 kN + 4.3228 kN
-      = 45.013 kN
-        Maximum bolt load (maximum preload + additional load)
+  [46] F_KR = max(F_M_min - F_PA - F_Z, 0 kN)    « VDI 2230 R7
+      = max(25.431 kN − 55.677 kN − 3.024 kN, 0 kN)
+      = 0 kN
+        Residual clamp force (minimum; zero once the joint opens)
+  [47] F_S_max = max(F_M + F_SA, F_A)
+      = max(40.69 kN + 4.3228 kN, 60 kN)
+      = 60 kN
+        Maximum bolt load (maximum preload + additional load; the whole working load once the joint opens)
   [48] sigma_z_max = F_S_max / A_s
-      = 45.013 kN / 84.266 mm²
-      = 534.17 MPa
+      = 60 kN / 84.266 mm²
+      = 712.03 MPa
         Maximum bolt tensile stress
   [49] sigma_red_B = sqrt(sigma_z_max^2 + 3 * (0.5 * tau_M)^2)    « VDI 2230 R8
-      = sqrt((534.17 MPa)^2 + 3 × (0.5 × 224.47 MPa)^2)
-      = 568.44 MPa
+      = sqrt((712.03 MPa)^2 + 3 × (0.5 × 224.47 MPa)^2)
+      = 738.09 MPa
         Equivalent stress in the working state (50 % torsion)
   [50] u_yield = sigma_red_B / R_p02
-      = 568.44 MPa / 640 MPa
-      = 0.88819
+      = 738.09 MPa / 640 MPa
+      = 1.1533
         Yield utilisation in the working state
-  [51] sigma_a = F_SA / (2 * A_s)    « VDI 2230 R9
-      = 4.3228 kN / (2 × 84.266 mm²)
-      = 25.65 MPa
-        Fatigue stress amplitude (pulsating load)
+  [51] sigma_a = (F_S_max - F_M) / (2 * A_s)    « VDI 2230 R9
+      = (60 kN − 40.69 kN) / (2 × 84.266 mm²)
+      = 114.58 MPa
+        Fatigue stress amplitude (pulsating 0…F_A load)
   [52] u_fatigue = sigma_a / sigma_A
-      = 25.65 MPa / 50 MPa
-      = 0.51299
+      = 114.58 MPa / 50 MPa
+      = 2.2916
         Fatigue utilisation
-  [53] u_clamp = F_KR_req / F_KR
-      = 5 kN / (-33.27 kN)
-      = -0.15029
-        Required over available residual clamp
-  [54] m_min = S_strip * F_S_max / (0.5 * pi * d * tau_B)    « VDI 2230 §5.5.5
-      = 1.25 × 45.013 kN / (0.5 × π × 12 mm × 400 MPa)
-      = 7.4625 mm
+  [53] m_min = S_strip * F_S_max / (0.5 * pi * d * tau_B)    « VDI 2230 §5.5.5
+      = 1.25 × 60 kN / (0.5 × π × 12 mm × 400 MPa)
+      = 9.9472 mm
         Thread engagement needed against stripping
-  [55] u_strip = m_min / m_eff
-      = 7.4625 mm / 12 mm
-      = 0.62187
+  [54] u_strip = m_min / m_eff
+      = 9.9472 mm / 12 mm
+      = 0.82893
         Engagement utilisation
+  [55] F_A_sep = (F_M_min - F_Z) / (1 - Phi)    « VDI 2230 R7
+      = (25.431 kN − 3.024 kN) / (1 − 0.072047)
+      = 24.147 kN
+        Working load at which the members separate (minimum preload, after embedding)
+  [56] F_proof = R_p02 * A_s
+      = 640 MPa × 84.266 mm²
+      = 53.93 kN
+        Bolt load at the proof (yield) strength
+  [57] n_0 = F_A_sep / F_A
+      = 24.147 kN / 60 kN
+      = 0.40245
+        Load factor against separation (F_A,sep / F_A)
+  [58] F_A_yield = min((F_proof - F_M) / Phi, F_proof)
+      = min((53.93 kN − 40.69 kN) / 0.072047, 53.93 kN)
+      = 53.93 kN
+        Working load at which the bolt reaches its proof load (separation included)
+  [59] n_L = F_A_yield / F_A
+      = 53.93 kN / 60 kN
+      = 0.89884
+        Load factor against axial yield of the bolt, torsion excluded
 
 5. RESULTS
+  n_0 = 0.40245    Load factor against separation
+  n_L = 0.89884    Load factor against axial yield
   A_s = 84.266 mm²    Tensile stress area
   F_M = 40.69 kN    Assembly preload (maximum)
   F_M_min = 25.431 kN    Minimum preload
@@ -198,26 +216,28 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
   Phi = 0.072047    Load factor
   F_Z = 3.024 kN    Embedding loss
   F_SA = 4.3228 kN    Additional bolt load
-  F_KR = -33.27 kN    Residual clamp
-  F_S_max = 45.013 kN    Maximum bolt load
-  sigma_red_B = 568.44 MPa    Working equivalent stress
-  sigma_a = 25.65 MPa    Fatigue amplitude
-  m_min = 7.4625 mm    Engagement needed
+  F_KR = 0 kN    Residual clamp
+  F_A_sep = 24.147 kN    Separation load
+  F_S_max = 60 kN    Maximum bolt load
+  sigma_z_max = 712.03 MPa    Maximum bolt tensile stress
+  sigma_red_B = 738.09 MPa    Working equivalent stress
+  sigma_a = 114.58 MPa    Fatigue amplitude
+  m_min = 9.9472 mm    Engagement needed
 
 6. CHECKS (governing first)
-  FAIL  No separation: -33.27 kN vs > 0 kN  utilisation —  « VDI 2230 R7
-  PASS  Yield in the working state: u_yield = 0.88819 vs u_yield ≤ 1  utilisation 0.888  « VDI 2230 R8
-  PASS  Thread stripping: u_strip = 0.62187 vs u_strip ≤ 1  utilisation 0.622  « VDI 2230 §5.5.5
-  PASS  Fatigue amplitude: u_fatigue = 0.51299 vs u_fatigue ≤ 1  utilisation 0.513  « VDI 2230 R9
-  FAIL  Residual clamp against requirement: u_clamp = -0.15029 vs u_clamp ≤ 1  utilisation -0.15  « VDI 2230 R7
+  FAIL  No separation: 0 kN vs > 0 kN  utilisation —  « VDI 2230 R7
+  FAIL  Residual clamp against requirement: 0 kN vs ≥ 5 kN  utilisation —  « VDI 2230 R7
+  FAIL  Fatigue amplitude: u_fatigue = 2.2916 vs u_fatigue ≤ 1  utilisation 2.29  « VDI 2230 R9
+  FAIL  Yield in the working state: u_yield = 1.1533 vs u_yield ≤ 1  utilisation 1.15  « VDI 2230 R8
+  PASS  Thread stripping: u_strip = 0.82893 vs u_strip ≤ 1  utilisation 0.829  « VDI 2230 §5.5.5
 
 7. APPLICABILITY
   WARNING preload-yield: M_A: the preload alone takes the bolt above 90 % of its proof strength.
-  WARNING separation: F_KR: the residual clamp force is not positive; the joint separates under the working load.
+  WARNING separation: F_KR: the residual clamp force is not positive; the joint separates under the working load and the bolt carries all of it.
 
 8. VERIFICATION
-  Template: mech.bolted-joint@1.0.0
+  Template: mech.bolted-joint@1.1.1
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 2/2
+  Known-answer cases passed: 5/5
   Test run: —

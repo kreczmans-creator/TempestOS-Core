@@ -115,11 +115,21 @@ public class GatedEngineExecutionTests
     }
 
     [Fact]
+    public async Task The_Ported_Lifting_Lug_Worksheet_Id_Is_Gated_Too()
+    {
+        var engine = Engine(features: _ => false);
+
+        var refused = await Assert.ThrowsAsync<CalculationFeatureDisabledException>(() => engine.ExecuteAsync<int, int>(CalculationFeatureGate.LiftingLugWorksheetId, 1));
+
+        Assert.Equal(CalculationFeatureGate.RefusalFor(CalculationFeatureGate.LiftingLugWorksheetId, null), refused.Message);
+    }
+
+    [Fact]
     public void Only_The_Lifting_Calculations_Are_Gated()
     {
         // Every other product calculation is unaffected, with the features off or never stated.
         Assert.All(ProductCalculationCatalogue.CalculationIds.Where(id => id != LiftingId), id => Assert.Null(CalculationFeatureGate.RefusalFor(id, null)));
-        Assert.Equal(["calc.lifting-lug-pin-joint", "struct.lifting"], new[] { LiftingId, CalculationFeatureGate.LiftingWorksheetId }.Where(id => CalculationFeatureGate.FeatureOf(id) is not null).Order(StringComparer.Ordinal));
+        Assert.Equal(["calc.lifting-lug-pin-joint", "mech.lifting-lug", "struct.lifting"], new[] { LiftingId, CalculationFeatureGate.LiftingWorksheetId, CalculationFeatureGate.LiftingLugWorksheetId }.Where(id => CalculationFeatureGate.FeatureOf(id) is not null).Order(StringComparer.Ordinal));
     }
 
     [Fact]

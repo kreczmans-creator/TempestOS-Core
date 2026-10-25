@@ -1,0 +1,84 @@
+[
+  {
+    "Symbol": "A",
+    "Number": 500,
+    "Unit": "mm^2",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-TX-501",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "500"
+  },
+  {
+    "Symbol": "E",
+    "Number": 200,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-TX-501",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "200"
+  },
+  {
+    "Symbol": "L",
+    "Number": 2,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-TX-501",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2"
+  },
+  {
+    "Symbol": "alpha",
+    "Number": 1.2E-05,
+    "Unit": "1/K",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-TX-501",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.000012"
+  },
+  {
+    "Symbol": "dT",
+    "Number": 60,
+    "Unit": "K",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "g",
+    "Number": 0.5,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-TX-501",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.5"
+  },
+  {
+    "Symbol": "sigma_allow",
+    "Number": 150,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "150"
+  }
+]

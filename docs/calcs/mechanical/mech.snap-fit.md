@@ -1,5 +1,7 @@
 # M8 — Snap-fits: cantilever, annular, torsion (`mech.snap-fit@1.3.0`)
 
+**In plain terms.** A snap fit is a plastic hook that bends out of the way as a part is pushed on and springs back into place. The risk is straining the plastic past what it can take, once or repeatedly. The worksheet takes the hook's shape, the material and the deflection needed to assemble it, and works out the strain at its root and the force to push it on and to take it off, for cantilever, tapered, ring and torsion forms.
+
 **Scope.** Plastic snap-fit joints of five forms, chosen by `mode`: a cantilever lug of **constant section**, of **tapered thickness** or of **tapered width**, an **annular** (closed ring) snap, and a **torsion bar** with a lever. For each: the strain at the critical section against the permissible strain of the plastic (one-time or repeated joining; FAIL above 1), the deflection force from beam theory with the secant modulus, the **assembly force** over the entry face and the **separation force** over the return face with Coulomb friction, the **self-locking** flag, the permissible deflection, and an always-shown root-fillet advisory. The design guide (Covestro, *Snap-Fit Joints for Plastics: A Design Guide*, Section B) is cited by section and title only; none of its text, charts or tables is reproduced. No plastics data are shipped (Addendum B §B5): `Es`, the permissible strains, `ν`, `μ`, `K_ann` and `K_F` have no default. **Attribution:** the sheet cites the guide only for the relations the spec quotes (the constant-section strain and force, `γ_perm ≈ ε_perm·(1 + ν)`, `γ = φ·r/l`, the joining forces and the self-locking condition). The tapered-beam factors, the annular force and the torsion torque and force are derived here and cited as derived.
 
 **Method.** Euler–Bernoulli beam theory. Position `t = x/l` from the root; tip load `P`; moment `M = P·l·(1 − t)`; surface strain `ε(t) = M·(h/2)/(E·I)`; tip deflection `y = ∫ M·m/(E·I) dx` with the unit-load moment `m = l·(1 − t)`.
@@ -31,3 +33,26 @@
 **Changes in 1.1.0** (Opus review): the torsion bar can be held at both ends; the annular force no longer scales with `K_ann` (new optional `K_F`; `K_ann` has no default and is required in the annular mode only; inner-surface strain shown); derived relations are no longer cited to the guide; a W3 point at zero strain is accepted; the fillet advisory names an inside strain peak; `self_locking` reads `No` / `Yes: …`. `ka-annular` moved (P, W, W′: the force now uses the nominal strain); every other existing value is unchanged.
 
 **Holding a load with several latches (1.3.0).** Optional `n_latch` (a whole number of identical latches sharing the load equally) gives `F_hold = n_latch·W′` (port, N; not offered for a self-locking joint, whose holding force is infinite); optional `F_req` (N; may be linked from E2's `F_seal`, the force of a sealed enclosure's pressure on its cover) adds the check "Latches hold the load: F_req ≤ n·W′" (`u_hold = F_req/F_hold`). A load without a count warns (`hold-unused`); a fractional count blocks (`n_latch:`). Test case `ka-holding` (four latches of `ka-constant`, 100 N: F_hold 144.38565 N, u 0.69259).
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Enclosure lid hook: cantilever snap-fit, thickness tapered to half ([sheet](../../worked-examples/mechanical/mech.snap-fit/enclosure-lid-hook/sheet.txt)).
+
+```text
+l_h = 18 mm / 2.2 mm = 8.1818
+J = r = 0.5 = 0.54518
+phi_max = a = 0.5 = 1
+K_y = 2 × 0.54518 / 1 = 1.0904
+eps = 1.2 mm × 2.2 mm / (1.0904 × (18 mm)^2) = 0.74729 %
+eps_perm = 0.04 = 4 %
+P = 7 mm × (2.2 mm)^2 × 2000 MPa × 0.74729 % / (6 × 18 mm × 1) = 4.6886 N
+y_perm = 1.0904 × 4 % × (18 mm)^2 / 2.2 mm = 6.4232 mm
+strain_util = 0.74729 % / 4 % = 0.18682
+tan_a = tan(30 deg) = 0.57735
+mu_tan_a = 0.35 × 0.57735 = 0.20207
+assembly_force = 4.6886 N × (0.35 + 0.57735) / (1 − 0.20207) = 5.4491 N
+alpha_lock = arctan(1/0.35) = 70.71 deg
+tan_ar = tan(65 deg) = 2.1445
+… 1 more step(s) on the sheet
+Governing: PASS  Strain at the critical section against the permissible strain: strain_util = 0.18682 vs strain_util ≤ 1  utilisation 0.187  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+```
+<!-- hand-arithmetic:end -->

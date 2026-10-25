@@ -1,5 +1,7 @@
 # B7 — Glaser condensation (`bs.glaser@1.2.0`)
 
+**In plain terms.** Warm moist air passes through a wall and may reach a cold layer where it condenses and wets the insulation. The worksheet takes the layers of the wall and the indoor and outdoor conditions month by month, finds the temperature and vapour pressure at each layer boundary, and shows where condensation forms, how much builds up in winter and whether it dries out in summer. It also checks the inside surface for mould risk.
+
 **Scope.** Interstitial condensation in a layered wall by the Glaser method over twelve monthly steps, and the surface condensation check, in the form ISO 13788 describes: the temperature and saturation pressure at every layer interface, the vapour-pressure line with its tangent construction at the condensation planes, the condensate on each interface month by month carried forward from the first month of condensation (drying when the weather turns), the annual balance, the peak accumulation against the owner's limit, and the surface temperature factor f_Rsi against f_Rsi,min at the critical surface humidity. A Glaser diagram (saturation line, vapour-pressure line, temperature) is returned as series and as vectors for the chosen month.
 
 **Method.** `R_j = d_j/λ_j`, `s_d,j = μ_j·d_j`, `R_T = R_si + ΣR_j + R_se`; node temperature `θ_k = θ_i − (θ_i − θ_e)(R_si + Σ_(j≤k)R_j)/R_T` (the same series-resistance arithmetic as B4, and the same `layers` table shape plus a `mu` column). Saturation pressure by the Magnus forms `610.5·exp(17.269θ/(237.3 + θ))` over water (θ ≥ 0 °C) and `610.5·exp(21.875θ/(265.5 + θ))` over ice; `p_sat(20 °C) = 2336.95 Pa`. Outside pressure `p_e = RH_e·p_sat(θ_e)`; inside pressure `p_i = RH_i·p_sat(θ_i)`, or `p_e + f_Δp·Δv(θ_e)·R_v·(T_i + T_e)/2` with Δv linear between two user points and constant beyond them, the mean of the inside and the month's outside temperature (in K) and a safety factor `f_Δp` (`dp_f`, a record, default 1.10, applied to the pressure difference in both the interstitial and the surface check; R_v = 461.5 J/(kg·K), derived R/M_w; limited to saturation with a warning). The sheet states that the clause wording (mean temperature and margin) must be checked against the owner's copy of ISO 13788. Vapour flux through a layer `g = δ0·Δp/Δs_d`, `δ0 = 2×10⁻¹⁰ kg/(m·s·Pa)`.
@@ -27,3 +29,26 @@ The layer λ is a column of a table, so it cannot carry a W3 `MaterialProperty` 
 **Test cases (analytic, Confirmed; recomputed in python3, the profile also against an independent obstacle-problem solve).** `ka-seasonal-drying` (100 mm insulation λ 0.04 μ 2 on 200 mm brick λ 0.8 μ 10, R_T 2.92 m²K/W, S_d 2.2 m, in an invented maritime year with calendar-day months: accumulation from November, peak 3083.081 g/m² in March, dry by June, Mc_end 0, balance PASS, peak against a 3000 g/m² limit u = 1.0277); `ka-psat-20` (p_sat(20 °C) = 2336.951 Pa, i.e. the brief's 2337 Pa to its rounding, and a plaster and brick wall at 40 % internal humidity that never condenses and passes the surface check); `ka-single-interface-all-year` (constant 0 °C / 90 %: 38.7385 g/m² a day, 1200.895 g/m² in January, 14139.573 g/m² after the 365 days, balance FAIL); `ka-two-planes-tangent` (five layers, contacts at interfaces 2 and 4: 5143.147 and 772.008 g/m² after twelve months); `ka-surface-factor` (R_si,f 0.25: f_Rsi 0.575372 < f_Rsi,min 0.590256, FAIL); `ka-u-ref-cross-check` (the plaster and brick wall: U_wall = 1/0.46875 = 2.133333 W/m²K, 3.0303 % from a U_ref of 2.2: warns); `ka-humidity-class` (Δv 5 g/m³ at ≤ 0 °C to 0 at 20 °C with the 1.10 margin on Δp: start in October, peak 5111.052 g/m², 91.744 g/m² left, balance FAIL, f_Rsi,min 0.670474) and `ka-humidity-class-no-margin` (f_Δp = 1: peak 4249.892 g/m², PASS balance, f_Rsi,min 0.630284). The climate is invented and every λ, μ and thickness is an illustrative input, not design data. **A published Glaser worked example (an ISO 13788 annex example, a textbook example, or a Condensa/WUFI run) is not pinned**: no example's inputs and answer could be stated from memory with confidence, so none is entered; it needs the owner's copy (see "not pinned" in the build report). Worked examples: `internal-insulation-no-vcl` (peak 3022.6 g/m² against a 500 g/m² limit, FAIL), `internal-insulation-with-vcl` (no condensation, PASS).
 
 **Citations to check.** ISO 13788 clause numbers (cl. 5 surface temperature factor, cl. 6 interstitial condensation) are cited from memory for the structure of the standard and are to be checked against the owner's copy; no text of the standard is reproduced. The δ0, Magnus coefficients and R_v are closed-form physics; the calendar-day month with rows taken as January to December, the 1 K threshold for the surface requirement and the "first month of condensation after a dry month" start rule are this product's reading and are stated on the sheet.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Solid brick wall with internal mineral wool and no vapour control layer: interstitial condensation over a year ([sheet](../../worked-examples/building-services/bs.glaser/internal-insulation-no-vcl/sheet.txt)).
+
+```text
+R_1 = Plasterboard: 12.5 mm / 0.25 W/(m·K) = 0.05 m²·K/W
+sd_1 = Plasterboard: 8 × 12.5 mm = 0.1 m
+R_2 = Mineral wool: 50 mm / 0.035 W/(m·K) = 1.4286 m²·K/W
+sd_2 = Mineral wool: 1 × 50 mm = 0.05 m
+R_3 = Existing brick: 215 mm / 0.8 W/(m·K) = 0.26875 m²·K/W
+sd_3 = Existing brick: 10 × 215 mm = 2.15 m
+R_T = 0.13 + 1.7473 + 0.04 = 1.9173 m²·K/W
+U_wall = 1 / 1.9173 = 0.52156 W/(m²·K)
+S_d = 2.3 m
+psat_i = θ = 20 °C = 2337 Pa
+p_ext_m = months 1 … 12 of the climate = [634.76, 666.5, 785.09, 917.96, 1137.7, 1344.8, 1526.5, 1567.8, 1397.6, 1141.4, 841.16, 689.22] Pa
+p_int_m = 50 % × 2337 Pa = [1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5] Pa
+n_start = M11 (row 11) = 11
+Mc_1 = M1: θ_e = 2 °C; 1023.7 g/m² gained (−: dried) this month = 2069.8 g/m²
+… 29 more step(s) on the sheet
+Governing: FAIL  Peak condensate on an interface against its limit (500 g/m²): u_Mc = 6.0452 vs u_Mc ≤ 1  utilisation 6.05  « ISO 13788 cl. 6
+```
+<!-- hand-arithmetic:end -->

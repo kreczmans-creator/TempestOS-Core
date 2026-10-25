@@ -31,14 +31,14 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     private const string Source = "Vector-loop closed form (Freudenstein / law of cosines)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Mechanical, "Mechanism kinematics: four-bar, slider-crank, cam",
+        Id, "1.2.1", CalcDiscipline.Mechanical, "Mechanism kinematics: four-bar, slider-crank, cam",
         "A single-degree-of-freedom planar mechanism driven at constant speed: a four-bar linkage or an offset slider-crank (both circuits, position, velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against a minimum, toggle and dead-centre positions, loop-closure residual, input torque by virtual work), or a cam with a translating follower. Rigid links, no clearance, no friction.",
-        "Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A\n" +
+        "Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A\n" +
         "Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂\n" +
-        "Grashof: s + l < p + q (crank-rocker, double-crank or double-rocker by the shortest link), = at the change point, > non-Grashof; transmission angle cos μ = (b² + c² − ℓ²)/(2bc) folded to 0 … 90°; toggle where ℓ = b + c or |b − c|\n" +
-        "Slider-crank: x = r·cosθ + σ·√(l² − (r·sinθ − e)²) (σ = +1 open, −1 crossed); dx/dθ = −r·sinθ − r·cosθ·(r·sinθ − e)/(x − r·cosθ); dead centres where crank and rod are collinear; μ = 90° − |rod angle to the slide line|\n" +
+        "Grashof class and transmission angle: s + l < p + q (crank-rocker, double-crank or double-rocker by the shortest link), = at the change point, > non-Grashof; transmission angle cos μ = (b² + c² − ℓ²)/(2bc) folded to 0 … 90°; toggle where ℓ = b + c or |b − c|\n" +
+        "Slider-crank position: x = r·cosθ + σ·√(l² − (r·sinθ − e)²) (σ = +1 open, −1 crossed); dx/dθ = −r·sinθ − r·cosθ·(r·sinθ − e)/(x − r·cosθ); dead centres where crank and rod are collinear; μ = 90° − |rod angle to the slide line|\n" +
         "Input torque by virtual work: T_in·ω_in = Σ F·v; four-bar T_in = (T_L + J·α₄)·ω₄/ω₂; slider T_in = (m·a + F_L)·dx/dθ; RMS torque and mean power over the sweep by Simpson's rule\n" +
-        "Forces: four-bar tangential pin force P = (T_L + J·α₄)/c, coupler (and crank-pin) force P/sin μ; slider slide-direction force F_x = m·a + F_L, rod force F_x/cos θ₃, guide reaction F_x·tan θ₃; cam contact normal F/cos φ\n" +
+        "Mechanism forces: four-bar tangential pin force P = (T_L + J·α₄)/c, coupler (and crank-pin) force P/sin μ; slider slide-direction force F_x = m·a + F_L, rod force F_x/cos θ₃, guide reaction F_x·tan θ₃; cam contact normal F/cos φ\n" +
         "Assembly limits: four-bar toggles at cos θ₂ = (d² + a² − ℓ²)/(2ad), ℓ = b + c or |b − c|; slider sin θ = (e ± l)/r. The sweep is cut at them and, driven at constant speed into one, the unbounded peaks are not reported\n" +
         "Loop closure: |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) asserted below 1e-9 mm at every step\n" +
         "Cam, per segment with x = (θ − θ₀)/β: rise s = s₀ + h·f(x), return s = s₀ − h·f(x); cycloidal f = x − sin(2πx)/(2π); 3-4-5 f = 10x³ − 15x⁴ + 6x⁵; 4-5-6-7 f = 35x⁴ − 84x⁵ + 70x⁶ − 20x⁷; modified trapezoid from its acceleration pieces (C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2))\n" +

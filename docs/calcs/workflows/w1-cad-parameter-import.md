@@ -1,5 +1,7 @@
 # W1 — CAD parameter import (`Tempest.Calc.Import`, ADR-0171)
 
+**In plain terms.** Engineers often hold a design's dimensions in a CAD model, and retyping them into a calculation invites mistakes. This workflow reads the parameters out of a CAD export file, shows what it found, and puts the values you accept into a draft calculation with a note of where each came from. When the file changes it shows exactly what moved, so linked calculations can be marked stale.
+
 **Scope.** Brings parameters out of a CAD file into the inputs of a draft calculation, with provenance on every value, and re-imports a changed file as a diff that updates the draft (and so makes linked calculations stale through the existing machinery). Formats: NX expression files (`.exp`) and NX expressions in a workbook (`.xlsx`); Creo relations and parameters as text; SolidWorks equations (text) and design tables (`.xlsx`); Onshape variables as CSV or JSON; and a generic CSV/JSON schema (below). The files are untrusted. **Nothing is evaluated**: an expression with a reference, a function or an operator is kept as read-only text and cannot be mapped to an input as a number. W1 is a workflow, not a worksheet calculator: it has no template, no hash and no sheet of its own; its mark on a sheet is the provenance of each imported input and the import record on the instance.
 
 **Method.**

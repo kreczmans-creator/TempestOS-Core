@@ -9,9 +9,9 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
     public const string Id = "mech.thick-cylinder";
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.0.0", CalcDiscipline.Mechanical, "Thick-walled cylinder stresses (Lamé)",
+        Id, "2.0.1", CalcDiscipline.Mechanical, "Thick-walled cylinder stresses (Lamé)",
         "Radial, hoop and axial stresses at the bore and the outer surface of a thick-walled cylinder under internal and external pressure, the von Mises and Tresca equivalents, utilisation against an allowable, and the thin-wall estimate for comparison.",
-        "A = (a² p_i − b² p_o)/(b² − a²), B = a² b² (p_i − p_o)/(b² − a²); σ_r = A − B/r², σ_θ = A + B/r²; σ_z = A for closed ends, 0 for open. von Mises from the three principal stresses; Tresca = max principal difference.",
+        "Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(b² − a²); B = a² b² (p_i − p_o)/(b² − a²).\nRadial and hoop stress at radius r: σ_r = A − B/r²; σ_θ = A + B/r².\nAxial stress, closed or open ends: σ_z = A (closed); σ_z = 0 (open).\nEquivalent stresses from the three principal stresses: von Mises; Tresca = the largest principal difference.",
         [
             new CalcInputSpec("a", "Inner radius", CalcInputKind.Quantity, "mm", Default: 50, Min: 0.1, Max: 5000, HardMin: 1e-6, HardMax: 1e6),
             new CalcInputSpec("b", "Outer radius", CalcInputKind.Quantity, "mm", Default: 100, Min: 0.1, Max: 5000, HardMin: 1e-6, HardMax: 1e6),
@@ -37,15 +37,15 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
             new CalcTestCase("ka-internal-closed", "Internal pressure, closed ends (v0.16 vector 1)",
                 new CalcReferenceSource("Analytic (Lamé), cross-checked against the v0.16 calc.thick-walled-cylinder vectors", null, "a = 50, b = 100 mm, p_i = 50 MPa: σ_θ,bore = 83.333 MPa, σ_z = 16.667 MPa, von Mises bore = 115.47 MPa"),
                 [CalcInputValue.Quantity("a", 50, "mm"), CalcInputValue.Quantity("b", 100, "mm"), CalcInputValue.Quantity("p_i", 50, "MPa"), CalcInputValue.Quantity("p_o", 0, "MPa"), CalcInputValue.Switch("closed", true), CalcInputValue.Quantity("sigma_allow", 200, "MPa")],
-                [new CalcExpectedValue("sigma_t_a", 83.333, "MPa", 1e-4), new CalcExpectedValue("sigma_r_a", -50, "MPa", 1e-6), new CalcExpectedValue("sigma_t_b", 33.333, "MPa", 1e-4), new CalcExpectedValue("sigma_z", 16.667, "MPa", 1e-4), new CalcExpectedValue("sigma_vm_a", 115.47, "MPa", 1e-4), new CalcExpectedValue("sigma_tr_a", 133.33, "MPa", 1e-4), new CalcExpectedValue("u", 0.57735, "", 1e-4), new CalcExpectedValue("sigma_thin", 75, "MPa", 1e-6)]),
+                [new CalcExpectedValue("sigma_t_a", 83.333, "MPa", 5e-5), new CalcExpectedValue("sigma_r_a", -50, "MPa", 1e-6), new CalcExpectedValue("sigma_t_b", 33.333, "MPa", 5e-5), new CalcExpectedValue("sigma_z", 16.667, "MPa", 5e-5), new CalcExpectedValue("sigma_vm_a", 115.47, "MPa", 5e-5), new CalcExpectedValue("sigma_tr_a", 133.33, "MPa", 5e-5), new CalcExpectedValue("u", 0.57735, "", 5e-5), new CalcExpectedValue("sigma_thin", 75, "MPa", 1e-6), new CalcExpectedValue("sigma_vm_b", 28.868, "MPa", 5e-5)]),
             new CalcTestCase("ka-external-closed", "External pressure, closed ends (v0.16 vector 2)",
                 new CalcReferenceSource("Analytic (Lamé), cross-checked against the v0.16 vectors", null, "a = 40, b = 60 mm, p_o = 20 MPa: σ_θ,bore = −72 MPa, σ_θ,outer = −52 MPa, σ_z = −36 MPa, von Mises bore = 62.354 MPa"),
                 [CalcInputValue.Quantity("a", 40, "mm"), CalcInputValue.Quantity("b", 60, "mm"), CalcInputValue.Quantity("p_i", 0, "MPa"), CalcInputValue.Quantity("p_o", 20, "MPa"), CalcInputValue.Switch("closed", true), CalcInputValue.Quantity("sigma_allow", 100, "MPa")],
-                [new CalcExpectedValue("sigma_t_a", -72, "MPa", 1e-6), new CalcExpectedValue("sigma_t_b", -52, "MPa", 1e-6), new CalcExpectedValue("sigma_z", -36, "MPa", 1e-6), new CalcExpectedValue("sigma_vm_a", 62.354, "MPa", 1e-4), new CalcExpectedValue("sigma_vm_b", 27.713, "MPa", 1e-4), new CalcExpectedValue("u", 0.62354, "", 1e-4)]),
+                [new CalcExpectedValue("sigma_t_a", -72, "MPa", 1e-6), new CalcExpectedValue("sigma_t_b", -52, "MPa", 1e-6), new CalcExpectedValue("sigma_z", -36, "MPa", 1e-6), new CalcExpectedValue("sigma_vm_a", 62.354, "MPa", 5e-5), new CalcExpectedValue("sigma_vm_b", 27.713, "MPa", 5e-5), new CalcExpectedValue("u", 0.62354, "", 5e-5), new CalcExpectedValue("sigma_thin", -50, "MPa", 5e-5)]),
             new CalcTestCase("ka-internal-open", "Internal pressure, open ends (v0.16 vector 3)",
                 new CalcReferenceSource("Analytic (Lamé)", null, "as vector 1 with σ_z = 0: von Mises bore = 116.67 MPa, outer = 33.333 MPa"),
                 [CalcInputValue.Quantity("a", 50, "mm"), CalcInputValue.Quantity("b", 100, "mm"), CalcInputValue.Quantity("p_i", 50, "MPa"), CalcInputValue.Quantity("p_o", 0, "MPa"), CalcInputValue.Switch("closed", false), CalcInputValue.Quantity("sigma_allow", 200, "MPa")],
-                [new CalcExpectedValue("sigma_vm_a", 116.67, "MPa", 1e-4), new CalcExpectedValue("sigma_vm_b", 33.333, "MPa", 1e-4), new CalcExpectedValue("u", 0.58333, "", 1e-4)]),
+                [new CalcExpectedValue("sigma_vm_a", 116.67, "MPa", 5e-5), new CalcExpectedValue("sigma_vm_b", 33.333, "MPa", 5e-5), new CalcExpectedValue("u", 0.58333, "", 5e-5), new CalcExpectedValue("sigma_t_a", 83.333, "MPa", 5e-5), new CalcExpectedValue("sigma_z", 0, "MPa", 1e-9), new CalcExpectedValue("sigma_thin", 75, "MPa", 5e-5)]),
         ],
         DiagramKey: "thick-walled-cylinder",
         Category: "Pressure Systems");

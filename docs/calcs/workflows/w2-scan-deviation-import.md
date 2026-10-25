@@ -1,5 +1,7 @@
 # W2 — Scan deviation import → statistics → Cpk → M1 / F3 / M2 (`Tempest.Calc.Import.Scan`, ADR-0172)
 
+**In plain terms.** A measuring machine scans a batch of parts and reports how far each feature is from its drawing size. This workflow reads that table through a column profile you define, works out the average and spread for each feature, and offers the fitted normal distribution to a tolerance stack, an O-ring gland or a similar calculation, so that the calculation uses what the parts really measure and not just the drawing tolerance.
+
 **Scope.** Reads scan or inspection deviation tables (ZEISS or GOM Inspect tables, multi-stage tables, PolyWorks and Geomagic Control X text) through the person's own column profile, computes the statistics of each feature over N parts, and pushes a fitted normal distribution into the inputs of a calculation — an M1 tolerance-stack contributor, an F3 measured groove row, or a single input such as an M2 fit's size — with provenance on every value. A re-import is a diff that updates the draft and so makes linked calculations stale. The files are untrusted. W2 is a workflow, not a worksheet calculator: it has no template, no hash and no sheet of its own; its marks on a sheet are the provenance of each fitted value and the import record on the instance. **The PDF table path is not built** (dropped under the §B2 drop order); export the table as CSV or `.xlsx`.
 
 **Method.**

@@ -1,4 +1,6 @@
-# S4 — Bolts and fillet welds, EN 1993-1-8 (`struct.connection-ec3@1.2.0`)
+# S4 — Bolts and fillet welds, EN 1993-1-8 (`struct.connection-ec3@1.2.1`)
+
+**In plain terms.** A bolted joint can fail by the bolt shearing, the plate tearing or crushing at the hole, or the bolt pulling through or stretching, and a fillet weld can fail along its throat. The worksheet takes the bolt, plate and weld you describe and the loads on them, works out how much each failure mode can carry under Eurocode 3, and divides the load by the smallest capacity. A ratio under 1 passes, and the mode with the highest ratio governs.
 
 **Scope.** One bolt in a plate (category A shear, category D tension): shear, bearing, tension, punching, combined shear and tension; optional block tearing; spacing minima; a fillet weld by the simplified and directional methods. Every input is hard-limited (M12–M36, t 3–50 mm).
 
@@ -13,3 +15,26 @@
 **v0.25.2 reconciliation (ADR-0169).** The legacy bolt-shear module is the shank-in-plane case (gross area, α_v 0.6 for every class) and now says so; threads in the shear plane are handled here (A_s, α_v 0.5 for 4.8–6.8 and 10.9).
 
 **Test cases.** `ka-m20-88-shear-bearing` (F_v,Rd 94.00, F_t,Rd 141.00, F_b,Rd 99.39, B_p,Rd 185.48 kN with d_m = s), `ka-m20-punching-e-head` (e = 34 mm, illustrative: B_p,Rd 197.84 kN), `ka-m20-109-threads` (97.92 kN), `ka-weld-s275` (f_vw,d 222.79 MPa) — analytic, Confirmed; `ka-p363-m20-88` (SCI P363 94.1 / 141 kN, 1 %) and `ka-p358-fin-plate` (bearing 99.4 kN pattern) — **Unconfirmed** until checked against the owner's SCI copies.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Beam web splice: M20 8.8 in double shear through 10 mm S275 plates ([sheet](../../worked-examples/structural/struct.connection-ec3/beam-splice-m20/sheet.txt)).
+
+```text
+f_ub = class 8.8 = 800 MPa
+f_yb = class 8.8 = 640 MPa
+A_s = d = 20, P = 2.5 mm = 244.79 mm²
+d_0 = 22 mm
+alpha_v = class 8.8 = 0.6
+F_v_Rd = 0.6 × 800 × 244.79 × 2 / 1.25 = 188 kN
+alpha_b = min(0.60606, 0.81061, 1.9512, 1) = 0.60606
+k_1 = e₂ = 35, p₂ = —, d₀ = 22 = 2.5
+F_b_Rd = 2.5 × 0.60606 × 410 × 20 × 10 / 1.25 = 99.394 kN
+F_t_Rd = 0.9 × 800 × 244.79 / 1.25 = 141 kN
+B_p_Rd = 0.6π × 30 × 10 × 410 / 1.25 = 185.48 kN
+u_v = 55 kN / 188 kN = 0.29255
+u_b = 55 kN / 99.394 kN = 0.55335
+u_t = 0 kN / min(141 kN, 185.48 kN) = 0
+… 1 more step(s) on the sheet
+Governing: PASS  Bolt bearing: u_b = 0.55335 vs u_b ≤ 1  utilisation 0.553  « EN 1993-1-8 Table 3.4
+```
+<!-- hand-arithmetic:end -->

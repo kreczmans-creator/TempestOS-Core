@@ -1,4 +1,6 @@
-# E6 — Load budget, PSU, transformer and battery (`elec.load-budget@1.2.0`)
+# E6 — Load budget, PSU, transformer and battery (`elec.load-budget@1.2.1`)
+
+**In plain terms.** A supply must be sized for what is connected, not just the sum of the nameplates, because loads are not all on at once. The worksheet adds each load with its duty and diversity, gives the current on each supply, sizes the DC power supply, the transformer (including the demand when motors start) and the battery for the backup time you need, and reports the heat released inside the enclosure.
 
 **Scope.** Demand of a set of loads per supply (AC three-phase, AC single-phase, DC); minimum DC PSU, transformer (with a starting check) and battery; the heat released inside the enclosure for E2.
 
@@ -11,3 +13,26 @@
 **Limitations.** No harmonic or unbalance assessment; inrush only for the single largest start.
 
 **Test cases.** `ka-mixed-buses`, `ka-battery` — analytic, Confirmed; `ka-peukert` (Linden relation, numbers analytic) and `ka-psu-derating` (Phoenix Contact QUINT4 curve read as f = 0.75 at 70 °C) — **Unconfirmed** until checked against the book and the datasheet.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Pump skid control panel: supply, PSU, transformer and UPS battery ([sheet](../../worked-examples/electrical/elec.load-budget/pump-skid-panel/sheet.txt)).
+
+```text
+L1 = 11 × 1 × 1 = 11 kW; 12.791 kVA = 11 kW
+L2 = 11 × 1 × 0 = 0 kW; 0 kVA = 0 kW
+L3 = 0.06 × 1 × 1 = 0.06 kW; 0.066667 kVA = 0.06 kW
+L4 = 0.02 × 0.1 × 1 = 0.002 kW; 0.0021053 kVA = 0.002 kW
+L5 = 0.096 × 1 × 1 = 0.096 kW; 0.10667 kVA = 0.096 kW
+L6 = 0.024 × 1 × 1 = 0.024 kW; 0.026667 kVA = 0.024 kW
+P_conn = 11 + 11 + 0.06 + 0.02 + 0.096 + 0.024 = 22.2 kW
+P_dem = 11 + 0 + 0.06 + 0.002 + 0.096 + 0.024 = 11.182 kW
+S_dem = 12.791 + 0 + 0.066667 + 0.0021053 + 0.10667 + 0.026667 = 12.993 kVA
+I_3ph = 12791 / (√3 × 400) = 18.462 A
+I_1ph = 202.11 / 230 = 0.87872 A
+I_DC = 120 / 24 = 5 A
+Phi = 0.09×11 + 0.09×0 + 0.3×0.06 + 0×0.002 + 0.1×0.096 + 0.1×0.024 = 1.02 kW
+P_DC = 120 W
+… 12 more step(s) on the sheet
+Governing: FAIL  Starting peak against transformer overload: u_inrush = 1.1112 vs u_inrush ≤ 1  utilisation 1.11
+```
+<!-- hand-arithmetic:end -->

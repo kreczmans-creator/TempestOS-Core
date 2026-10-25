@@ -62,7 +62,10 @@ public sealed record CalcInputSpec(
     IReadOnlyList<CalcColumnSpec>? Columns = null,
     int MaxRows = 500,
     string? MaterialProperty = null,
-    string? PressureBasis = null)
+    string? PressureBasis = null,
+    string? ReferenceLibrary = null,
+    string? ReferenceProperty = null,
+    string? ReferenceDimension = null)
 {
     /// <summary>A pressure that is always gauge (above the atmosphere): <see cref="PressureBasis"/> "g".</summary>
     public const string BasisGauge = "g";
@@ -93,6 +96,9 @@ public sealed record CalcInputSpec(
             _ => null,
         };
     }
+
+    /// <summary>Whether a released reference record (materials, fasteners, bearings) can fill this input with a pinned provenance (ADR-0167 §3).</summary>
+    public bool IsReferenceFillable => ReferenceLibrary is { Length: > 0 } && ReferenceProperty is { Length: > 0 };
 
     /// <summary>The dimension this input measures, from its default unit.</summary>
     public Dimension Dimension => Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? UnitCatalog.Parse(DefaultUnit).Dimension : Dimension.None;

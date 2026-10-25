@@ -97,3 +97,66 @@ Track P (parallel verification on `v0.26.0/addC-parallel`) is a separate session
 - [ ] C-7 performance and stability soak (`v0.26.0/addC-7-soak`)
 - [ ] C-8 final owner test pack and handover (`v0.26.0/addC-8-pack`)
 - [ ] §C7 gates; Security + colour teams Addendum C section; STATUS final line
+
+## Legacy calculator replacement (written on `release/v0.27.0`; ships in v0.26.0 — nothing ships as 0.27.0)
+The phases below are as they stood on that branch (D-38; ADR-0167), kept unchanged except where the integration into v0.26.0 changed a fact (see the integration list at the end).
+
+## Phase 0 — setup (`release/v0.27.0`)
+- [x] Branch from release/v0.26.0; VERSION 0.27.0; CHANGELOG section; v0.27.0-DECISIONS (D-39)
+- [x] ADR-0167: the legacy calculation modules are superseded by Tempest.Calc templates; records migrate; tests carried as known-answer cases
+- [ ] Draft PR release/v0.27.0 → main (dashboard)
+## Phase 1 — foundations (`v0.27.0/phase-1-foundations`)
+- [x] Record migration: every stored `CalculationRecord` readable as a `CalcInstance` archive snapshot (`LegacyCalculationMigration`, `LegacyArchiveSheet`, `ICalculationEngine.FindRecordDocumentAsync`); lifecycle refusals on archives; Grey upgrade test over a real SQLite database with a legacy bolted-joint record
+- [x] Reference-library fill: `CalcReferenceFill` (released records only; `FromReference` pin per value; library slots such as `Materials:hub`); declared on struct.en1993-member, struct.beam-formulas, struct.frame-2d, mech.press-fit (hub/shaft), mech.bolted-joint (fastener + members); one picker per library in the worksheet form
+- [x] Spec raise: "In plain terms" paragraph (hand-written) + hand arithmetic of the first worked example (generated from its sheet, drift-guarded by `SpecHandArithmeticTests`) in all 16 specs
+- [x] Bolted-joint joint-diagram load factors (F_A_sep, n_0, n_L) with consistency tests; golden, worked examples, PDFs, pack and spec regenerated
+- [x] Beam formulas: legacy stress (M·c/I) and deflection-limit checks, deep-beam warning, four legacy hand calculations as known-answer cases (8/8)
+- [x] `struct.column-buckling` (Perry–Robertson, BS 5950-1 Annex C — the legacy method; three legacy hand calculations as known-answer cases, two worked examples, spec)
+- [x] Yellow pass (Y8-01…Y8-06; Y8-02 and Y8-06 carried to Phases 5 and 4)
+## Phase 2 — mechanical ports (`v0.27.0/phase-2-mech`)
+- [x] mech.lifting-lug (5 checks, governing)
+- [x] mech.bearing-life (ISO 281 L10 with a_ISO as inputs; covers bearing-load-capacity)
+- [x] mech.fatigue-miner
+- [x] mech.shaft-stress
+- [x] mech.thermal-expansion
+- [x] mech.thin-vessel; mech.material-margin (referenced material record)
+- [x] Legacy vectors carried as known-answer cases (same figures, 5 s.f.); two worked examples each; Yellow pass (Y9-01…Y9-05)
+## Phase 3 — structural and thermal ports (`v0.27.0/phase-3-struct-thermal`)
+- [x] struct.fillet-weld (simplified method; long-joint warning above 150·a)
+- [x] bs.plane-wall; elec.thermal-chain (filed under Electrical, D-40)
+- [x] Legacy vectors carried (9 hand calculations, 5 s.f.); two worked examples each; behaviour tests; Yellow pass (Y10)
+- [x] Behaviour tests for the seven Phase 2 ports, to the Phase 3 level (Y10-03: 26 tests)
+- [ ] Phase 3 gate; merge to release
+## Phase 4 — Desktop retirement (`v0.27.0/phase-4-desktop`)
+- [x] Compare reimplemented over calc instances (`CalcInstanceComparer`, Compare with previous revision); archives listed in the worksheet catalogue (Y8-06)
+- [x] Grey: real v0.25.3 and v0.26.0-rc1 databases (46 records, 19 calculations) migrate with nothing lost (`GreyLegacyDatabaseTests`)
+- [x] Reference diagram in the worksheet form for every template (ADR-0158, Principle 33; D-41): 27 diagrams, 60 drawings; coverage, reading and focus tests; every drawing rendered and reviewed for overlaps
+- [x] Legacy Calculators surface (Engineering → Modules → Calculators) retired (ADR-0167 Amendment 1): view, coordinator, workbench, module service; tests superseded as listed there; real-shell journey moved to Worksheets
+- [ ] Legacy definitions, descriptors, diagrams and their tests retired under ADR-0167 (after the migration passes)
+- [ ] Desktop full suite green
+## Phase 5 — reviews and gates (`v0.27.0/phase-5-reviews`)
+- [x] Green: every legacy vector traced and carried at 5e-5 (G-05…G-08 fixed; D-42)
+- [x] Grey: real v0.25.3 and v0.26.0-rc1 databases (Phase 4)
+- [x] Black on a clean clone (B-26 found and fixed; rc1 gate green on a fresh clone)
+- [x] Red delta on the new templates, migration, compare, archives and diagrams
+- [x] Yellow final (Y12; Y11-04 open to the owner)
+- [x] CHANGELOG, release notes, handover
+- [x] rc1 gates (clean clone, Release, every suite)
+- [x] Showcase journey: one worked example per discipline, screenshot per stage; findings Y13-01…09 fixed (sheet diagram D-45, AMA references D-44)
+- [ ] Owner: confirm the book editions in D-44
+- [ ] Draft PR to main and tag `v0.27.0-rc1` (owner)
+
+## Integration into v0.26.0 (2026-10-25)
+- [x] Addendum C Track P merged as is (the C4 merge for `docs/verification/` and `tools/verification/`; Track S has not started and C4's other items are untouched)
+- [x] `release/v0.27.0` merged; VERSION 0.26.0; CHANGELOG subsection, release notes, handover and decisions folded in as marked sections (DI-01, DI-02)
+- [x] `mech.bearing-life` stays M5; legacy port kept as `mech.bearing-life-basic` (DI-03); every port test re-targeted
+- [x] `mech.lifting-lug` gated like S8 (DI-04); legacy surface stays retired, engine gate stays (DI-05)
+- [x] Templates changed on both lines merged and moved up a minor version (DI-06); method labels and "In plain terms" brought up to D-46 for Addenda A and B (DI-07)
+- [x] Generated files regenerated (golden, worked examples, PDFs, spec hand-arithmetic); worked-examples index counts updated
+- [x] Full gate: Engine 465/0, Sheets 135/0, Calculators 2,076/0, FluidPower 97/0, Import 625/0, Library 474/0 (+1 skip), Core 7,235/0 (+15 skip), Desktop 1,389/0; `scripts/check-licences.py` passes
+- [ ] Draw the reference diagrams for the 27 Addendum A and B templates and empty `CalcDiagramsTests.WithoutDiagramYet` (Principle 33; DI-08)
+- [ ] Regenerate graphify-out and its zip (integrator)
+- [ ] Windows CI on the merged head; the RealShell journey on Windows (Y11-04)
+- [ ] Owner: confirm the book editions in D-44; decide DI-03, DI-04 and DI-08
+- [ ] Track S: C-1 fixes for Track P's open Critical and High defects
+

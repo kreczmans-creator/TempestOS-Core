@@ -1,4 +1,6 @@
-# B5 — Heat exchanger, LMTD and ε-NTU (`bs.heat-exchanger@1.2.0`)
+# B5 — Heat exchanger, LMTD and ε-NTU (`bs.heat-exchanger@1.2.1`)
+
+**In plain terms.** A heat exchanger passes heat from a hot stream to a cold one through a wall, and how much it passes depends on the area, how well the wall conducts, and the flow arrangement. The worksheet gives either the duty and outlet temperatures of a given exchanger, or the area needed for a given duty, by the effectiveness-NTU method, and cross-checks the answer with the log-mean temperature difference.
 
 **Scope.** Single-phase exchanger with constant properties. Rating: duty and outlets for a given area. Sizing: area for a given duty. Counterflow, parallel flow, 1-shell-pass/2n-tube-pass, crossflow both unmixed (approximate, flagged), and one fluid at constant temperature (C_r = 0).
 
@@ -11,3 +13,26 @@
 **Limitations.** Single phase; constant properties; no pressure drop.
 
 **Test cases.** `ka-counter-balanced` (ε 0.5, ΔT_lm 30 K), `ka-parallel-balanced` (ε 0.432332, Q 108.42896 kW — tightened to 1e-6), `ka-isothermal-hot` (hot side constant, cold 2 kg/s: NTU 0.5, Q 197.364 kW, cold side to 43.608 °C), `ka-isothermal-cold` (cold side constant: Q 158.536 kW, hot side to 42.073 °C), `ka-shell-tube` (ε 0.539940, F 0.923456 — ε-NTU and LMTD agree), `ka-counter-sizing` (NTU 2, A 8.36 m²) — analytic, Confirmed; `ka-incropera-11-1` (q 8524 W, T_c,o 40.2 °C, ΔT_lm 43.2 °C, UA 197.3 W/K) — **Unconfirmed** until checked against Incropera 7th ed. Example 11.1.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** District heating plate exchanger sizing, counterflow ([sheet](../../worked-examples/building-services/bs.heat-exchanger/lthw-plate-hx-sizing/sheet.txt)).
+
+```text
+C_h = 1.2 kg/s × 4190 J/(kg·K) = 5028 W/K
+C_c = 1.5 kg/s × 4180 J/(kg·K) = 6270 W/K
+C_min = min(5028 W/K, 6270 W/K) = 5028 W/K
+C_r = min(5028 W/K, 6270 W/K) / max(5028 W/K, 6270 W/K) = 0.80191
+U_f = 1 / (1 / 3000 W/(m²·K) + 0.0001 m²·K/W) = 2307.7 W/(m²·K)
+eps = 120000 / (5028 × 40) = 0.59666
+NTU = ε = 0.59666, C_r = 0.80191 = 1.2973
+A_req = 1.2973 × 5028 / 2307.7 = 2.8267 m²
+UA = 1.2973 × 5028 = 6523 W/K
+Q = 0.59666 × 5028 × 40 = 120 kW
+T_h_out = 80 °C − 120000 / 5028 = 56.134 degC
+T_c_out = 40 °C + 120000 / 6270 = 59.139 degC
+dT_c = 59.139 °C − 40 °C = 19.139 K
+T_c_m = (40 °C + 59.139 °C)/2 = 49.569 degC
+… 5 more step(s) on the sheet
+Governing: PASS  Approach against minimum: u_app = 0.18595 vs u_app ≤ 1  utilisation 0.186
+```
+<!-- hand-arithmetic:end -->

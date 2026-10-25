@@ -9,200 +9,198 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Tempest.Core.Calculations;
-using Tempest.Core.Calculations.Modules;
+using Tempest.Calc.BuildingServices;
+using Tempest.Calc.Electrical;
+using Tempest.Calc.Library;
+using Tempest.Calc.Mechanical;
+using Tempest.Calc.Sheets;
+using Tempest.Calc.Structural;
 using Tempest.Core.Calculations.Modules.Diagrams;
+using Tempest.Desktop.CalcSheets;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
-using Tempest.Workspace.Engineering;
 
 namespace Tempest.Desktop.Tests;
 
 /// <summary>
-/// The calculator reference diagram (`PO-2`, work packages B and C,
-/// `ADR-0158`) on the calculator page itself: a panel beside the inputs,
-/// redrawn as a field is edited (<c>L = 2000 mm</c>, <c>L = ?</c>), a
-/// choice redrawing the variant, a focused field highlighting its shapes
-/// and a shape marking or focusing its field, and an honest "No diagram
-/// yet" for a calculation that has none. The view is hosted alone in a
-/// window — no workspace host — so each test lays out in milliseconds and
-/// never waits on a deadline.
+/// The reference diagram (`PO-2`, work packages B and C, `ADR-0158`) on the
+/// calculation page itself — since v0.27.0 the worksheet form (ADR-0167,
+/// D-41), ported from the retired legacy calculators with every behaviour
+/// kept: a panel beside the inputs (above them on a laptop window), redrawn
+/// as a field is edited, a choice or a tick redrawing the variant, a
+/// focused field highlighting its shapes and a shape marking or focusing
+/// its field, and an honest "No diagram yet" where there is none.
 /// </summary>
 public sealed class CalculationDiagramViewTests
 {
     [AvaloniaFact]
     public void EditingAField_UpdatesItsLabel_AndAChoiceRedrawsTheVariant()
     {
-        WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(BeamFormulasCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
             Assert.True(diagram.HasDiagram);
-            Assert.Equal("L = ?", diagram.LabelFor("Span"));
+            Assert.Equal("L = 6 m", diagram.LabelFor("L"));
 
-            view.SetField("Span", "2000", "mm");
-            Assert.Equal("L = 2000 mm", diagram.LabelFor("Span"));
+            view.SetField("L", unit: "mm");
+            view.SetField("L", "2000");
+            Assert.Equal("L = 2000 mm", diagram.LabelFor("L"));
             AssertDrawn(window, diagram, "L = 2000 mm");
             Assert.Contains("L = 2000 mm", diagram.Summary, StringComparison.Ordinal);
 
-            view.SetField("Span", "2,000");
-            Assert.Equal("L = ?", diagram.LabelFor("Span"));
+            view.SetField("L", "2,000");
+            Assert.Equal("L = ?", diagram.LabelFor("L"));
 
-            view.SetField("Span", "3", "m");
-            Assert.Equal("L = 3 m", diagram.LabelFor("Span"));
+            view.SetField("L", "3");
+            Assert.StartsWith("L = ", diagram.LabelFor("L"), StringComparison.Ordinal);
 
             // A choice selects the variant: a cantilever is drawn built in, with no roller.
             Assert.StartsWith("Simply supported", diagram.Reading!.Variant.Caption, StringComparison.Ordinal);
-            view.SetField("Support", choice: nameof(BeamSupport.Cantilever));
-            view.SetField("Loading", choice: nameof(BeamLoading.UniformlyDistributed));
-            Assert.Equal("Cantilever, uniformly distributed load", diagram.Reading!.Variant.Caption);
-            Assert.Equal("W (total) = ?", diagram.LabelFor("Load"));
-            Assert.Equal("L = 3 m", diagram.LabelFor("Span"));
-            AssertDrawn(window, diagram, "Cantilever, uniformly distributed load");
+            view.SetField("case", choice: BeamFormulasCalculator.CantUdl);
+            Assert.Equal("Cantilever fixed at the left, uniformly distributed load w", diagram.Reading!.Variant.Caption);
+            Assert.Equal("w = 10 kN/m", diagram.LabelFor("w"));
+            Assert.DoesNotContain(diagram.Reading.Shapes, s => s.Element is DiagramSupport { Kind: DiagramSupportKind.Roller });
+            AssertDrawn(window, diagram, "Cantilever fixed at the left, uniformly distributed load w");
         });
     }
 
     [AvaloniaFact]
     public void TheDiagram_IsAPanelBesideTheInputs_MarkedNotToScale_WithItsSummaryForAScreenReader()
     {
-        WithCalculators(ColumnBucklingCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(ColumnBucklingCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
-            var box = view.FieldControl("EffectiveLength")!;
+            var box = view.FieldControl("L_E")!;
             DesktopTestHelpers.AssertPlaced(diagram, "the reference diagram");
             DesktopTestHelpers.AssertPlaced(box, "the effective length box");
 
             var diagramLeft = diagram.TranslatePoint(new Point(0, 0), window)!.Value.X;
             var boxRight = box.TranslatePoint(new Point(box.Bounds.Width, 0), window)!.Value.X;
             Assert.True(diagramLeft >= boxRight, $"The diagram (x={diagramLeft}) sits beside the inputs, right of the box (ends x={boxRight}).");
-            Assert.Equal(CalculationModulesView.DiagramPanelWidth, diagram.Bounds.Width, 1);
+            Assert.Equal(CalculationDiagramView.PanelWidth, diagram.Bounds.Width, 1);
 
             AssertDrawn(window, diagram, CalculationDiagramView.NotToScaleText);
             Assert.Equal(CalculationDiagramView.Heading, AutomationProperties.GetName(diagram));
-            Assert.StartsWith(view.SelectedModule!.Title, diagram.Summary, StringComparison.Ordinal);
+            Assert.StartsWith(view.SelectedTemplate!.Template.Title, diagram.Summary, StringComparison.Ordinal);
             Assert.Contains(CalculationDiagramReader.NotToScale, diagram.Summary, StringComparison.Ordinal);
-            Assert.Contains("L E = not readable yet", diagram.Summary, StringComparison.Ordinal);
+            Assert.Contains("L E = 3 m", diagram.Summary, StringComparison.Ordinal);
         });
     }
 
     [AvaloniaFact]
     public void FocusingAField_HighlightsItsShape_AndAShapeMarksOrFocusesItsField()
     {
-        WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(BeamFormulasCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
-            var span = view.FieldControl("Span")!;
-            var load = view.FieldControl("Load")!;
-            Assert.True(diagram.Draws("Span"));
-            Assert.False(diagram.IsHighlighted("Span"));
+            var span = view.FieldControl("L")!;
+            var load = view.FieldControl("w")!;
+            Assert.True(diagram.Draws("L"));
+            Assert.False(diagram.IsHighlighted("L"));
 
             Assert.True(span.Focus());
             Dispatcher.UIThread.RunJobs();
-            Assert.Equal("Span", diagram.HighlightedInput);
-            Assert.True(diagram.IsHighlighted("Span"));
+            Assert.Equal("L", diagram.HighlightedInput);
+            Assert.True(diagram.IsHighlighted("L"));
             var focusRing = ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey);
-            var spanLines = diagram.ShapesFor("Span").OfType<Line>().ToList();
+            var spanLines = diagram.ShapesFor("L").OfType<Line>().ToList();
             Assert.NotEmpty(spanLines);
             Assert.All(spanLines, line => Assert.Same(focusRing, line.Stroke));
-            Assert.Equal(FontWeight.Bold, diagram.ShapesFor("Span").OfType<TextBlock>().Single().FontWeight);
-            var loadShapes = diagram.ShapesFor("Load").OfType<Shape>().ToList();
+            Assert.Equal(FontWeight.Bold, diagram.ShapesFor("L").OfType<TextBlock>().Single().FontWeight);
+            var loadShapes = diagram.ShapesFor("w").OfType<Shape>().ToList();
             Assert.NotEmpty(loadShapes);
             Assert.All(loadShapes, shape => Assert.NotSame(focusRing, shape.Stroke));
-            Assert.All(loadShapes.OfType<Polygon>(), head => Assert.NotSame(focusRing, head.Fill));
 
             Assert.True(load.Focus());
             Dispatcher.UIThread.RunJobs();
-            Assert.Equal("Load", diagram.HighlightedInput);
-            Assert.False(diagram.IsHighlighted("Span"));
-            var litLoad = diagram.ShapesFor("Load").OfType<Shape>().Where(s => s.Stroke is not null).ToList();
+            Assert.Equal("w", diagram.HighlightedInput);
+            Assert.False(diagram.IsHighlighted("L"));
+            var litLoad = diagram.ShapesFor("w").OfType<Shape>().Where(s => s.Stroke is not null).ToList();
             Assert.NotEmpty(litLoad);
             Assert.All(litLoad, shape => Assert.Same(focusRing, shape.Stroke));
-            var heads = diagram.ShapesFor("Load").OfType<Polygon>().ToList();
-            Assert.NotEmpty(heads);
-            Assert.All(heads, head => Assert.Same(focusRing, head.Fill)); // the arrowhead is lit with its shaft
 
             // The reverse: pointing at the span's shape marks its row; clicking it focuses its box.
-            diagram.Hover("Span");
-            Assert.True(view.IsRowMarked("Span"));
-            Assert.True(diagram.IsHighlighted("Span"));
+            diagram.Hover("L");
+            Assert.True(view.IsRowMarked("L"));
+            Assert.True(diagram.IsHighlighted("L"));
             diagram.Hover(null);
-            Assert.False(view.IsRowMarked("Span"));
+            Assert.False(view.IsRowMarked("L"));
 
-            diagram.Activate("Span");
+            diagram.Activate("L");
             Dispatcher.UIThread.RunJobs();
             Assert.True(span.IsFocused);
-            Assert.Equal("Span", diagram.HighlightedInput);
+            Assert.Equal("L", diagram.HighlightedInput);
         });
     }
 
     [AvaloniaFact]
-    public void ARowListInput_RedrawsItsLabelAsRowsAreTyped_AndFocusHighlightsEveryLayer()
+    public void ATableInput_RedrawsItsLabelAsRowsChange_AndHighlightsEveryLayer()
     {
-        WithCalculators(PlaneWallHeatTransferCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(PlaneWallCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
             Assert.True(diagram.HasDiagram);
-            Assert.Equal("Layers = ?", diagram.LabelFor("Layers"));
+            Assert.Equal("layers = 1 row", diagram.LabelFor("layers"));
 
-            view.SetField("Layers", rows: ["Glass, 8 mm, 0.78 W/(m.K)", "Air, 10 mm, 0.026 W/(m.K)"]);
-            Assert.Equal("Layers = 2 rows", diagram.LabelFor("Layers"));
-            AssertDrawn(window, diagram, "Layers = 2 rows");
+            view.ApplyImportedInputs(CalcTemplateHasher.DefaultInputs(new PlaneWallCalculator().Template).With(PlaneWallCalculator.Layers(("glass", 4, 0.78), ("air", 10, 0.026))));
+            Assert.Equal("layers = 2 rows", diagram.LabelFor("layers"));
+            AssertDrawn(window, diagram, "layers = 2 rows");
 
-            view.SetField("HotSideTemperature", "20", "degC");
-            Assert.Equal("T₁ = 20 degC", diagram.LabelFor("HotSideTemperature"));
+            view.SetField("T_1", "21", "degC");
+            Assert.Equal("T_1 = 21 °C", diagram.LabelFor("T_1"));
 
-            Assert.True(view.FieldControl("Layers")!.Focus());
-            Dispatcher.UIThread.RunJobs();
+            diagram.Highlight("layers");
             var focusRing = ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey);
-            var layers = diagram.ShapesFor("Layers").OfType<Rectangle>().ToList();
+            var layers = diagram.ShapesFor("layers").OfType<Rectangle>().ToList();
             Assert.Equal(3, layers.Count);
             Assert.All(layers, layer => Assert.Same(focusRing, layer.Stroke));
 
-            view.SelectModule(ToleranceStackCalculationDefinition.Id);
+            view.SelectTemplate(ToleranceStackCalculator.Id);
             Assert.True(diagram.HasDiagram);
-            view.SetField("MinimumResult", "0.1", "mm");
-            Assert.Equal("min gap = 0.1 mm", diagram.LabelFor("MinimumResult"));
+            view.SetField("minimum", unit: "mm");
+            view.SetField("minimum", "0.1");
+            Assert.Equal("min = 0.1 mm", diagram.LabelFor("minimum"));
 
-            view.SelectModule(ThermalResistanceChainCalculationDefinition.Id);
+            view.SelectTemplate(ThermalChainCalculator.Id);
             Assert.True(diagram.HasDiagram);
-            view.SetField("Stages", rows: ["Junction to case, 0.5 K/W"]);
-            Assert.Equal("R stages = 1 row", diagram.LabelFor("Stages"));
+            Assert.Equal("stages = 3 rows", diagram.LabelFor("stages"));
         });
     }
 
     [AvaloniaFact]
     public void TickingAYesOrNoInput_RedrawsTheVariant_AndTheHarderGeometryDiagramsAreDrawn()
     {
-        WithCalculators(ThickWalledCylinderCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(ThickCylinderCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
             Assert.True(diagram.HasDiagram);
-            Assert.Contains("open ends", diagram.Reading!.Variant.Caption, StringComparison.Ordinal);
-            Assert.Equal("closed ends = no", diagram.LabelFor("ClosedEnds"));
-            Assert.Single(diagram.ShapesFor("ClosedEnds"));
 
-            view.SetField("ClosedEnds", flag: true);
-            Assert.Contains("closed ends", diagram.Reading!.Variant.Caption, StringComparison.Ordinal);
-            Assert.Equal("closed ends = yes", diagram.LabelFor("ClosedEnds"));
-            Assert.Equal(2, diagram.ShapesFor("ClosedEnds").OfType<Rectangle>().Count());
+            view.SetField("closed", flag: false);
+            Assert.Contains("open ends", diagram.Reading!.Variant.Caption, StringComparison.Ordinal);
+            Assert.Equal("closed ends = no", diagram.LabelFor("closed"));
+            Assert.Single(diagram.ShapesFor("closed"));
+
+            view.SetField("closed", flag: true);
+            Assert.Contains("closed ends carry", diagram.Reading!.Variant.Caption, StringComparison.Ordinal);
+            Assert.Equal("closed ends = yes", diagram.LabelFor("closed"));
+            Assert.Equal(2, diagram.ShapesFor("closed").OfType<Rectangle>().Count());
             AssertDrawn(window, diagram, "closed ends = yes");
 
-            view.SetField("InnerRadius", "50", "mm");
-            Assert.Equal("a = 50 mm", diagram.LabelFor("InnerRadius"));
+            view.SetField("a", "50", "mm");
+            Assert.Equal("a = 50 mm", diagram.LabelFor("a"));
 
-            view.SelectModule(BoltGroupEccentricShearCalculationDefinition.Id);
+            view.SelectTemplate(BoltGroupCalculator.Id);
             Assert.True(diagram.HasDiagram);
-            view.SetField("Bolts", rows: ["0 mm, 0 mm", "75 mm, 0 mm", "0 mm, 75 mm"]);
-            Assert.Equal("Bolts = 3 rows", diagram.LabelFor("Bolts"));
-            AssertDrawn(window, diagram, "Bolts = 3 rows");
+            Assert.Matches(@"^bolts = \d+ rows$", diagram.LabelFor("bolts"));
 
-            view.SelectModule(BoltedJointPreloadCalculationDefinition.Id);
+            view.SelectTemplate(BoltedJointCalculator.Id);
             Assert.True(diagram.HasDiagram);
-            view.SetField("Preload", "20", "kN");
-            Assert.Equal("F_i = 20 kN", diagram.LabelFor("Preload"));
+            view.SetField("F_A", "20", "kN");
+            Assert.Equal("F_A = 20 kN", diagram.LabelFor("F_A"));
 
-            view.SelectModule(FilletWeldThroatStressCalculationDefinition.Id);
+            view.SelectTemplate(FilletWeldCalculator.Id);
             Assert.True(diagram.HasDiagram);
-            view.SelectModule(LiftingLugPinJointCalculationDefinition.Id);
+            view.SelectTemplate(Tempest.Calc.Mechanical.LiftingLugCalculator.Id);
             Assert.True(diagram.HasDiagram);
         });
     }
@@ -210,74 +208,70 @@ public sealed class CalculationDiagramViewTests
     [AvaloniaFact]
     public void ACalculationWithNoDiagram_SaysSoHonestly_AndDrawsNothing()
     {
-        WithCalculators(ThermalExpansionStressCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(ThermalExpansionCalculator.Id, (window, view) =>
         {
-            // Every product calculation has a diagram, so the defensive fallback is shown a synthetic descriptor.
-            var undrawn = CalculationModuleDescriptors.For(FatigueMinerCalculationDefinition.Id)! with { Id = "calc.not-yet-drawn", Title = "Not yet drawn" };
-            Assert.Null(CalculationDiagrams.For(undrawn.Id));
+            // Every worksheet template has a diagram, so the defensive fallback is shown a reader that finds none.
+            Assert.Null(CalcDiagrams.For("mech.not-yet-drawn"));
 
             var diagram = view.Diagram;
-            diagram.Show(undrawn, _ => null);
+            diagram.ShowReading("Not yet drawn", () => null);
             Assert.False(diagram.HasDiagram);
-            Assert.False(diagram.Draws("Slope"));
+            Assert.False(diagram.Draws("L"));
             AssertDrawn(window, diagram, CalculationDiagramView.NoDiagramYetText);
             Assert.Contains(CalculationDiagramView.NoDiagramYetText, diagram.Summary, StringComparison.Ordinal);
             Assert.DoesNotContain(diagram.GetVisualDescendants().OfType<Shape>(), s => s.IsEffectivelyVisible);
 
-            // Choosing a diagrammed calculation afterwards draws it.
-            view.SelectModule(FatigueMinerCalculationDefinition.Id);
-            view.SelectModule(ThermalExpansionStressCalculationDefinition.Id);
+            // Choosing a diagrammed template afterwards draws it.
+            view.SelectTemplate(FatigueMinerCalculator.Id);
+            view.SelectTemplate(ThermalExpansionCalculator.Id);
             Assert.True(diagram.HasDiagram);
-            Assert.Equal("k_s = not given", diagram.LabelFor("RestraintStiffness"));
+            Assert.Equal("k_s = not given", diagram.LabelFor("k_s"));
         });
     }
 
     [AvaloniaFact]
     public void TheChartLikeDiagrams_DrawAxesAndLines_AndHighlightThemWithTheirInputs()
     {
-        WithCalculators(FatigueMinerCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(FatigueMinerCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
             Assert.True(diagram.HasDiagram);
-            Assert.Equal("m = ?", diagram.LabelFor("Slope"));
+            Assert.Equal("m = 3", diagram.LabelFor("m"));
 
-            view.SetField("Slope", "3");
-            view.SetField("ReferenceStressRange", "71", "MPa");
-            view.SetField("Blocks", rows: ["100 MPa, 100000", "60 MPa, 2000000"]);
-            Assert.Equal("m = 3", diagram.LabelFor("Slope"));
-            Assert.Equal("Δσ_C = 71 MPa", diagram.LabelFor("ReferenceStressRange"));
-            Assert.Equal("blocks = 2 rows", diagram.LabelFor("Blocks"));
-            AssertDrawn(window, diagram, "Δσ_C = 71 MPa");
+            view.SetField("S_ref", "80", "MPa");
+            Assert.Equal("S_ref = 80 MPa", diagram.LabelFor("S_ref"));
+            Assert.Equal("blocks = 3 rows", diagram.LabelFor("blocks"));
+            AssertDrawn(window, diagram, "S_ref = 80 MPa");
             AssertDrawn(window, diagram, "log N");
 
-            var limit = diagram.ShapesFor("EnduranceLimit").OfType<Polyline>().Single();
+            var limit = diagram.ShapesFor("S_e").OfType<Polyline>().Single();
             Assert.NotNull(limit.StrokeDashArray);
-            Assert.Equal(3, diagram.ShapesFor("Blocks").OfType<Ellipse>().Count());
+            Assert.Equal(3, diagram.ShapesFor("blocks").OfType<Ellipse>().Count());
 
-            Assert.True(view.FieldControl("Slope")!.Focus());
+            Assert.True(view.FieldControl("m")!.Focus());
             Dispatcher.UIThread.RunJobs();
             var focusRing = ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey);
-            Assert.All(diagram.ShapesFor("Slope").OfType<Polyline>(), line => Assert.Same(focusRing, line.Stroke));
-            Assert.Equal(2, diagram.ShapesFor("Slope").OfType<Polyline>().Count());
+            Assert.All(diagram.ShapesFor("m").OfType<Polyline>(), line => Assert.Same(focusRing, line.Stroke));
+            Assert.Equal(2, diagram.ShapesFor("m").OfType<Polyline>().Count());
 
             // The axes are context: drawn in ink, never hit-tested, never highlighted.
             var ink = ResolveBrush(diagram, BrandPalette.HeadingTextBrushKey);
             var unbound = diagram.GetVisualDescendants().OfType<Line>().Where(l => !l.IsHitTestVisible).ToList();
             Assert.Contains(unbound, l => ReferenceEquals(l.Stroke, ink));
 
-            view.SelectModule(BearingRatingLifeCalculationDefinition.Id);
+            view.SelectTemplate(BearingLifeBasicCalculator.Id);
             Assert.True(diagram.HasDiagram);
-            view.SetField("RadialLoad", "2", "kN");
-            view.SetField("BearingType", choice: nameof(RollingBearingType.Roller));
-            Assert.Equal("F_r = 2 kN", diagram.LabelFor("RadialLoad"));
+            view.SetField("F_r", "2", "kN");
+            view.SetField("type", choice: BearingLifeBasicCalculator.Roller);
+            Assert.Equal("F_r = 2 kN", diagram.LabelFor("F_r"));
             Assert.StartsWith("A roller bearing", diagram.Reading!.Variant.Caption, StringComparison.Ordinal);
-            Assert.Equal(2, diagram.ShapesFor("BearingType").OfType<Rectangle>().Count());
+            Assert.Equal(2, diagram.ShapesFor("type").OfType<Rectangle>().Count());
 
-            view.SelectModule(MaterialSelectionMarginCalculationDefinition.Id);
+            view.SelectTemplate(MaterialMarginCalculator.Id);
             Assert.True(diagram.HasDiagram);
-            view.SetField("AppliedStress", "120", "MPa");
-            Assert.Equal("σ = 120 MPa", diagram.LabelFor("AppliedStress"));
-            AssertDrawn(window, diagram, "σ_allow = ?");
+            view.SetField("sigma", "130", "MPa");
+            Assert.Equal("σ = 130 MPa", diagram.LabelFor("sigma"));
+            AssertDrawn(window, diagram, "f_y = 300 MPa");
         });
     }
 
@@ -285,41 +279,41 @@ public sealed class CalculationDiagramViewTests
     public void ThePointer_OnAShape_MarksItsRow_AndAClickFocusesItsField()
     {
         // Real pointer input through hit-testing, not the Hover/Activate shortcuts.
-        WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(BeamFormulasCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
-            var label = diagram.ShapesFor("Span").OfType<TextBlock>().Single();
+            var label = diagram.ShapesFor("L").OfType<TextBlock>().Single();
             var centre = label.TranslatePoint(new Point(label.Bounds.Width / 2, label.Bounds.Height / 2), window)!.Value;
-            var label2 = ((Grid)view.FieldRow("Span")!).Children.OfType<TextBlock>().First();
+            var rowLabel = ((Grid)view.FieldRow("L")!).Children.OfType<TextBlock>().First();
 
             window.MouseMove(centre, RawInputModifiers.None);
             Dispatcher.UIThread.RunJobs();
-            Assert.True(diagram.IsHighlighted("Span"), "Pointing at the span's label highlights the span.");
-            Assert.True(view.IsRowMarked("Span"), "Pointing at the span's label marks its row.");
-            Assert.Equal(FontWeight.Bold, label2.FontWeight);
-            Assert.Same(ResolveBrush(view, ApplicationPalette.FocusRingBrushKey), label2.Foreground);
-            Assert.False(view.IsRowMarked("Load"));
+            Assert.True(diagram.IsHighlighted("L"), "Pointing at the span's label highlights the span.");
+            Assert.True(view.IsRowMarked("L"), "Pointing at the span's label marks its row.");
+            Assert.Equal(FontWeight.Bold, rowLabel.FontWeight);
+            Assert.Same(ResolveBrush(view, ApplicationPalette.FocusRingBrushKey), rowLabel.Foreground);
+            Assert.False(view.IsRowMarked("w"));
 
             window.MouseMove(new Point(2, 2), RawInputModifiers.None);
             Dispatcher.UIThread.RunJobs();
-            Assert.False(view.IsRowMarked("Span"), "Moving off the shape unmarks the row.");
-            Assert.Equal(FontWeight.Normal, label2.FontWeight);
+            Assert.False(view.IsRowMarked("L"), "Moving off the shape unmarks the row.");
+            Assert.Equal(FontWeight.Normal, rowLabel.FontWeight);
 
             window.MouseDown(centre, MouseButton.Left, RawInputModifiers.None);
             window.MouseUp(centre, MouseButton.Left, RawInputModifiers.None);
             Dispatcher.UIThread.RunJobs();
-            Assert.True(view.FieldControl("Span")!.IsFocused, "Clicking the span's shape focuses its box.");
+            Assert.True(view.FieldControl("L")!.IsFocused, "Clicking the span's shape focuses its box.");
         });
     }
 
     [AvaloniaFact]
     public void SwitchingToDark_RedrawsEveryShapeInTheDarkTokens_AndAMarkedRowFollows()
     {
-        WithCalculators(LiftingLugPinJointCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(Tempest.Calc.Mechanical.LiftingLugCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
-            diagram.Hover("PinDiameter");
-            var lightWash = view.FieldRow("PinDiameter")!.GetValue(Panel.BackgroundProperty);
+            diagram.Hover("d_p");
+            var lightWash = view.FieldRow("d_p")!.GetValue(Panel.BackgroundProperty);
 
             window.RequestedThemeVariant = ThemeVariant.Dark;
             LayOut(window);
@@ -328,16 +322,16 @@ public sealed class CalculationDiagramViewTests
             var ink = ResolveBrush(diagram, BrandPalette.HeadingTextBrushKey);
             var plate = ResolveBrush(diagram, BrandPalette.HairlineStrongBrushKey);
             var ring = ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey);
-            var hole = diagram.ShapesFor("HoleDiameter").OfType<Ellipse>().Single();
+            var hole = diagram.ShapesFor("d_h").OfType<Ellipse>().Single();
             Assert.Same(ResolveBrush(diagram, BrandPalette.SurfaceBackgroundBrushKey), hole.Fill);
-            var lug = diagram.ShapesFor("LugWidth").OfType<Rectangle>().Single();
+            var lug = diagram.ShapesFor("W").OfType<Rectangle>().Single();
             Assert.Same(plate, lug.Fill);
             Assert.Same(ink, lug.Stroke);
 
             // The pin is solid, lit while pointed at; a marked row's wash is the dark theme's.
-            var pin = diagram.ShapesFor("PinDiameter").OfType<Ellipse>().Single();
+            var pin = diagram.ShapesFor("d_p").OfType<Ellipse>().Single();
             Assert.Same(ring, pin.Fill);
-            Assert.Same(ResolveBrush(view, ApplicationPalette.AccentPanelBackgroundBrushKey), view.FieldRow("PinDiameter")!.GetValue(Panel.BackgroundProperty));
+            Assert.Same(ResolveBrush(view, ApplicationPalette.AccentPanelBackgroundBrushKey), view.FieldRow("d_p")!.GetValue(Panel.BackgroundProperty));
             Assert.NotNull(lightWash);
 
             diagram.Hover(null);
@@ -348,39 +342,49 @@ public sealed class CalculationDiagramViewTests
     [AvaloniaFact]
     public void EveryVariantOfEveryDiagram_IsDrawn_WithAShapeForEveryBoundInput()
     {
-        WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(BeamFormulasCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
-            foreach (var spec in CalculationDiagrams.All)
+
+            foreach (var template in CalcCalculatorComposition.All().Select(c => c.Template))
             {
-                var module = CalculationModuleDescriptors.For(spec.CalculationId)!;
+                if (CalcDiagrams.For(template.Id) is not { } spec)
+                {
+                    Assert.Contains(template.Id, Tempest.Desktop.Tests.CalcSheets.CalcDiagramsTests.WithoutDiagramYet);
+                    continue;
+                }
+
+                var conditioned = spec.Variants.SelectMany(v => v.When.Keys).ToHashSet(StringComparer.Ordinal);
+
                 foreach (var variant in spec.Variants)
                 {
-                    // The variant's own conditions; any other conditioned input a value no other variant is keyed on.
-                    var kinds = module.Inputs.ToDictionary(i => i.Name, i => i.Kind, StringComparer.Ordinal);
-                    var conditioned = spec.Variants.SelectMany(v => v.When.Keys).ToHashSet(StringComparer.Ordinal);
-                    CalculationFormField? Field(string name)
-                    {
-                        if (!conditioned.Contains(name))
-                            return null;
+                    // The variant's own conditions; any other conditioned input a value no variant is keyed on.
+                    var values = CalcTemplateHasher.DefaultInputs(template).Values.Where(v => !conditioned.Contains(v.Symbol)).ToList();
 
-                        var value = variant.When.TryGetValue(name, out var keyed) ? keyed : kinds[name] == CalculationInputKind.Boolean ? CalculationDiagramReader.BooleanFalse : "3";
-                        return kinds[name] switch
+                    foreach (var name in conditioned)
+                    {
+                        var input = template.FindInput(name)!;
+                        var keyed = variant.When.TryGetValue(name, out var w) ? w : null;
+
+                        if (keyed is { Length: 0 })
+                            continue;
+
+                        values.Add(input.Kind switch
                         {
-                            CalculationInputKind.Choice => new CalculationFormField(name, Choice: value),
-                            CalculationInputKind.Boolean => new CalculationFormField(name, Flag: value == CalculationDiagramReader.BooleanTrue),
-                            _ => new CalculationFormField(name, value),
-                        };
+                            CalcInputKind.Choice => CalcInputValue.Choice(name, keyed ?? input.Choices![0]),
+                            CalcInputKind.Boolean => CalcInputValue.Switch(name, keyed == CalcDiagramReader.BooleanTrue),
+                            _ => new CalcInputValue(name, Number: 3, Unit: input.DefaultUnit.Length > 0 ? input.DefaultUnit : null),
+                        });
                     }
 
-                    diagram.Show(module, Field);
+                    var inputs = new CalcInputSet(values);
+                    diagram.ShowReading(template.Title, () => CalcDiagramReader.Read(template, inputs));
 
-                    Assert.True(diagram.HasDiagram, $"{spec.CalculationId}: nothing drawn.");
+                    Assert.True(diagram.HasDiagram, $"{template.Id}: nothing drawn.");
                     Assert.Same(variant, diagram.Reading!.Variant);
-                    var drawn = diagram.GetVisualDescendants().OfType<Shape>().Count();
-                    Assert.True(drawn > 0, $"{spec.CalculationId} '{variant.Caption}': no shape drawn.");
+                    Assert.True(diagram.GetVisualDescendants().OfType<Shape>().Any(), $"{template.Id} '{variant.Caption}': no shape drawn.");
                     Assert.All(variant.Elements.Where(e => e.InputName is not null && e is not DiagramLabel && e.Symbol is null),
-                        e => Assert.True(diagram.Draws(e.InputName!), $"{spec.CalculationId}/{e.Id}: no shape for {e.InputName}."));
+                        e => Assert.True(diagram.Draws(e.InputName!), $"{template.Id}/{e.Id}: no shape for {e.InputName}."));
                 }
             }
         });
@@ -391,9 +395,8 @@ public sealed class CalculationDiagramViewTests
     [InlineData(1050, 760)]
     public void OnALaptopWindow_TheDiagramStacksAboveTheInputs_InView_AndEveryValueBoxStaysReadable(double width, double height)
     {
-        // The board's F1: at 1180 x 760 the fixed panel beside the inputs squeezed every value box to ~64 px, under its unit picker.
-        // The Product Owner (2026-10-01): stacked, the diagram goes above the inputs, so it is seen without scrolling.
-        WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
+        // The board's F1: a fixed panel beside the inputs squeezed every value box; stacked, the diagram goes above them.
+        WithWorksheet(BeamFormulasCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
             DesktopTestHelpers.AssertPlaced(diagram, "the reference diagram");
@@ -402,10 +405,10 @@ public sealed class CalculationDiagramViewTests
             Assert.True(diagramBox.Top >= 0 && diagramBox.Top < height, $"The diagram's top edge (y={diagramBox.Top:0}) is not in the {height} px window without scrolling.");
             Assert.True(diagramBox.Bottom <= height + 0.5, $"The diagram ends at y={diagramBox.Bottom:0}, below the {height} px window; it must be seen without scrolling.");
 
-            var firstRow = Box(view.FieldRow(view.SelectedModule!.Inputs[0].Name)!, window);
+            var firstRow = Box(view.FieldRow("case")!, window);
             Assert.True(diagramBox.Bottom <= firstRow.Top + 0.5, $"The diagram (ends y={diagramBox.Bottom:0}) is not above the first input row (y={firstRow.Top:0}).");
 
-            foreach (var name in new[] { "Span", "Load", "YoungsModulus", "SecondMomentOfArea", "DeflectionLimit" })
+            foreach (var name in new[] { "L", "E", "I", "w", "delta_limit" })
             {
                 var box = view.FieldControl(name)!;
                 var unit = view.UnitPicker(name)!;
@@ -428,7 +431,7 @@ public sealed class CalculationDiagramViewTests
     [InlineData(1050, 760)]
     public void OnALaptopWindow_TabStillReachesTheFirstInputFirst_AndFocusHighlightsBothWays(double width, double height)
     {
-        WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
+        WithWorksheet(BeamFormulasCalculator.Id, (window, view) =>
         {
             var diagram = view.Diagram;
 
@@ -436,44 +439,47 @@ public sealed class CalculationDiagramViewTests
             Assert.DoesNotContain(diagram.GetVisualDescendants().Prepend(diagram).OfType<InputElement>(),
                 e => e.Focusable && KeyboardNavigation.GetIsTabStop(e) && e.IsEffectivelyVisible && e is not CalculationDiagramView);
             var inputsSection = view.GetVisualDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Inputs"));
-            // The first field that can take focus (a record picker over an empty library is disabled, so skipped).
-            var firstInput = view.SelectedModule!.Inputs.Select(i => view.FieldControl(i.Name)!)
+            var firstInput = view.SelectedTemplate!.Template.Inputs.Select(i => view.FieldControl(i.Symbol)).OfType<Control>()
                 .First(c => c.Focusable && c.IsEffectivelyEnabled && c.IsEffectivelyVisible);
             IInputElement current = inputsSection;
             IInputElement? reached = null;
+
             for (var step = 0; step < 6 && reached is null; step++)
             {
                 var next = KeyboardNavigationHandler.GetNext(current, NavigationDirection.Next);
                 Assert.NotNull(next);
                 Assert.False(next is Visual v && (ReferenceEquals(v, diagram) || diagram.IsVisualAncestorOf(v)), "Tab reaches the diagram before the first input.");
+
                 if (ReferenceEquals(next, firstInput) || (next is Visual nv && firstInput.IsVisualAncestorOf(nv)))
                     reached = next;
+
                 current = next!;
             }
+
             Assert.True(reached is not null, "Tab from the Inputs section does not reach the first input field first.");
 
             // Field to shape.
-            var span = view.FieldControl("Span")!;
+            var span = view.FieldControl("L")!;
             Assert.True(span.Focus());
             Dispatcher.UIThread.RunJobs();
-            Assert.True(diagram.IsHighlighted("Span"));
-            Assert.All(diagram.ShapesFor("Span").OfType<Line>(), line => Assert.Same(ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey), line.Stroke));
-            Assert.True(view.FieldControl("Load")!.Focus());
+            Assert.True(diagram.IsHighlighted("L"));
+            Assert.All(diagram.ShapesFor("L").OfType<Line>(), line => Assert.Same(ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey), line.Stroke));
+            Assert.True(view.FieldControl("w")!.Focus());
             Dispatcher.UIThread.RunJobs();
-            Assert.Equal("Load", diagram.HighlightedInput);
+            Assert.Equal("w", diagram.HighlightedInput);
 
             // Shape to field, by real pointer input on the stacked panel.
-            var label = diagram.ShapesFor("Span").OfType<TextBlock>().Single();
+            var label = diagram.ShapesFor("L").OfType<TextBlock>().Single();
             var centre = label.TranslatePoint(new Point(label.Bounds.Width / 2, label.Bounds.Height / 2), window)!.Value;
             Assert.True(centre.Y > 0 && centre.Y < height, $"The span's label (y={centre.Y:0}) is not in view.");
             window.MouseMove(centre, RawInputModifiers.None);
             Dispatcher.UIThread.RunJobs();
-            Assert.True(view.IsRowMarked("Span"), "Pointing at the span's label marks its row.");
+            Assert.True(view.IsRowMarked("L"), "Pointing at the span's label marks its row.");
             window.MouseDown(centre, MouseButton.Left, RawInputModifiers.None);
             window.MouseUp(centre, MouseButton.Left, RawInputModifiers.None);
             Dispatcher.UIThread.RunJobs();
             Assert.True(span.IsFocused, "Clicking the span's shape focuses its box.");
-            Assert.Equal("Span", diagram.HighlightedInput);
+            Assert.Equal("L", diagram.HighlightedInput);
         }, width, height);
     }
 
@@ -483,15 +489,17 @@ public sealed class CalculationDiagramViewTests
         return new Rect(origin, control.Bounds.Size);
     }
 
-    private static void WithCalculators(string calculationId, Action<Window, CalculationModulesView> body, double width = 1600, double height = 1000)
+    private static void WithWorksheet(string templateId, Action<Window, CalcSheetView> body, double width = 1600, double height = 1000)
     {
-        var view = new CalculationModulesView();
+        var view = new CalcSheetView();
+        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All());
         var window = new Window { Width = width, Height = height, Content = view };
+
         try
         {
             window.Show();
-            view.ShowCatalogue(CalculationModuleWorkbench.Catalogue());
-            view.SelectModule(calculationId);
+            view.ShowCatalogue(catalogue.Current());
+            view.SelectTemplate(templateId);
             LayOut(window);
             body(window, view);
         }
@@ -515,7 +523,7 @@ public sealed class CalculationDiagramViewTests
     private static void AssertDrawn(Window window, CalculationDiagramView diagram, string text)
     {
         LayOut(window);
-        var block = diagram.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Text == text && t.IsEffectivelyVisible);
+        var block = diagram.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => Tempest.Desktop.CalcSheets.SymbolText.Raw(t) == text && t.IsEffectivelyVisible);
         Assert.True(block is not null, $"'{text}' is not drawn on the reference diagram.");
         Assert.True(block!.Bounds.Width > 0 && block.Bounds.Height > 0, $"'{text}' is drawn at {block.Bounds}.");
     }

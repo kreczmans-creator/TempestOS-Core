@@ -534,3 +534,19 @@ public void A_Split_Decimal_Is_Refused_Not_Read_As_A_Whole_Number(string csv, st
 **Residual Info (needs root):** a symlinked grandparent is accepted; a FIFO at the path hung startup (fixed in 8ed89726).
 
 **Accepted and disclosed:** "Switch person…" without a password lets one human hold every role. The sheet says signatures are not authenticated, and the flag stays off until that is addressed.
+
+> The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
+
+## v0.27.0 delta (2026-10-23)
+
+Surfaces new since v0.26.0, attacked with the existing PoC families (every template is enumerated, so the 11 new templates are in each):
+
+| Surface | Attack | Evidence | Outcome |
+|---|---|---|---|
+| 11 new templates, new bolted-joint and bolt-group inputs | Extremes, NaN text, 1e-300 / 1e300 in every numeric input; hostile strings in table text cells | `Extremes_In_Every_Numeric_Input_Never_Throw` (27 templates), `Hostile_Numbers_Never_Throw_And_Never_Reach_A_Sheet` | Pass; Y9-01 found and fixed the one NaN path (bearing light load) |
+| Legacy migration | Real v0.25.3 / v0.26.0-rc1 databases; re-run; corrupt record | `GreyLegacyDatabaseTests`, `LegacyMigrationTests` | Pass: idempotent, a failed record is reported and never fatal |
+| Compare | 520 differing table rows | `Table_Inputs_Compare_Row_By_Row_And_Long_Comparisons_Are_Capped` | Pass: capped at 500 rows, the rest counted |
+| Archive list | 503 archives | `Archives_BeyondTheCap_AreCounted_NotListed` | Pass: capped at 500 |
+| Diagram labels | Unparseable, infinite and missing values | `CalculationDiagramViewTests`, `CalcDiagramsTests` | Pass: shown as "?" or "not given", never NaN |
+
+Observation R-25 (Info): `Extremes_In_Every_Numeric_Input_Never_Throw(mech.tolerance-stack)` ran past its 5 s budget once while the whole Calculators suite ran in parallel on this 2-core container; alone it takes 3 s, and CI applies a ×3 timeout factor. Watched in the gates; no change.

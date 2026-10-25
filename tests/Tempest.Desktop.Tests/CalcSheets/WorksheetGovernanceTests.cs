@@ -363,7 +363,7 @@ public sealed class WorksheetGovernanceTests
             var engine = (Tempest.Core.Calculations.ICalculationEngine)host.Services!.GetService(typeof(Tempest.Core.Calculations.ICalculationEngine));
 
             // The refusal comes before the lookup and before the input is read, so the input type is immaterial.
-            foreach (var id in new[] { "calc.lifting-lug-pin-joint", "struct.lifting" })
+            foreach (var id in new[] { "calc.lifting-lug-pin-joint", "struct.lifting", "mech.lifting-lug" })
             {
                 var refused = await Assert.ThrowsAsync<Tempest.Core.Calculations.CalculationFeatureDisabledException>(() => engine.ExecuteAsync<int, int>(id, 1));
                 Assert.Contains("switched off", refused.Message, StringComparison.Ordinal);
@@ -412,6 +412,8 @@ public sealed class WorksheetGovernanceTests
             Assert.Null(host.CalcCatalogue!.Find("struct.lifting"));
             Assert.False(host.CalcCatalogue.Features.IsEnabled(CalcFeatures.Lifting));
             Assert.True(host.CalcCatalogue.IsWithheld("struct.lifting"));
+            Assert.Null(host.CalcCatalogue.Find("mech.lifting-lug"));
+            Assert.True(host.CalcCatalogue.IsWithheld("mech.lifting-lug"));
             var engine = (Tempest.Core.Calculations.ICalculationEngine)host.Services!.GetService(typeof(Tempest.Core.Calculations.ICalculationEngine));
             await Assert.ThrowsAsync<Tempest.Core.Calculations.CalculationFeatureDisabledException>(() => engine.ExecuteAsync<int, int>("calc.lifting-lug-pin-joint", 1));
         }

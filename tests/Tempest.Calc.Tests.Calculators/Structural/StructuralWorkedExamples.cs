@@ -368,5 +368,35 @@ public static class StructuralWorkedExamples
             ],
             "Two lugs on a horizontal lifting beam carry 150 kN at a sling angle of 30° from the vertical and 2° out of plane; the beam adds the automatic 6° tilt cases: the pitch case (slings at 36° and 24°, the load redistributed between the lugs) governs, with a sling force of 101.9 kN against 86.7 kN untilted. Bearing on the pin governs both the BTH-1 and the EN 13155 modes. The design factors are illustrative user-record values: this example shows the arithmetic and the layout of the sheet and is not an approval of any lug. " +
             "The calculator is behind the lifting feature flag (off by default); this example runs it directly, as the test harness does. To issue a sheet like this the competent-person attestation (name, qualification, statement) must be filled in by someone other than the author, and two different independent checkers must sign; the attestation inputs are left blank here."),
+
+        new(ColumnBucklingCalculator.Id, "rhs-column-curve-c", "Pin-ended column, curve c, intermediate slenderness",
+            new CalcReferenceSource("TempestOS calc.column-buckling (v0.21.0) hand calculation", null, "docs/engineering/calculations/calc.column-buckling.md, Example 1"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Quantity("L_E", 3, "m", CalcProvenance.Drawing("DRG-ST-410", "B")),
+                CalcInputValue.Quantity("A", 2000, "mm^2", CalcProvenance.Specification("SPEC-ST-02 section schedule")),
+                CalcInputValue.Quantity("I", 200, "cm^4", CalcProvenance.Specification("SPEC-ST-02 section schedule")),
+                CalcInputValue.Quantity("E", 205, "GPa", CalcProvenance.Specification("BS 5950-1 3.1.3: E = 205 GPa")),
+                CalcInputValue.Quantity("p_y", 275, "MPa", CalcProvenance.Specification("SPEC-ST-02: S275, t ≤ 16 mm")),
+                CalcInputValue.Choice("curve", ColumnBucklingCalculator.CurveC, CalcProvenance.Specification("BS 5950-1 Table 23: welded box, curve c")),
+                CalcInputValue.Quantity("P", 150, "kN", CalcProvenance.Assumed("Factored axial load from the frame analysis")),
+            ]),
+            [new CalcExpectedValue("lambda", 94.868, "", 5e-5), new CalcExpectedValue("p_c", 133.78, "MPa", 5e-5), new CalcExpectedValue("P_c", 267.56, "kN", 5e-5), new CalcExpectedValue("u", 0.56062, "", 5e-5)],
+            "A column of intermediate slenderness. The Perry factor reduces the strength from the 275 MPa design strength to 134 MPa, about 60 % of Euler's 225 MPa; the column carries 150 kN at a utilisation of 0.56. The legacy module's hand calculation is reproduced to five significant figures."),
+
+        new(ColumnBucklingCalculator.Id, "slender-strut-curve-b", "Slender strut, curve b, S355 — fails",
+            new CalcReferenceSource("TempestOS calc.column-buckling (v0.21.0) hand calculation", null, "docs/engineering/calculations/calc.column-buckling.md, Example 2"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Quantity("L_E", 1.5, "m", CalcProvenance.Drawing("DRG-ST-411", "A")),
+                CalcInputValue.Quantity("A", 1200, "mm^2", CalcProvenance.Specification("SPEC-ST-02 section schedule")),
+                CalcInputValue.Quantity("I", 12, "cm^4", CalcProvenance.Specification("SPEC-ST-02 section schedule")),
+                CalcInputValue.Quantity("E", 205, "GPa", CalcProvenance.Specification("BS 5950-1 3.1.3: E = 205 GPa")),
+                CalcInputValue.Quantity("p_y", 355, "MPa", CalcProvenance.Specification("SPEC-ST-02: S355")),
+                CalcInputValue.Choice("curve", ColumnBucklingCalculator.CurveB, CalcProvenance.Specification("BS 5950-1 Table 23: hot-finished tube, curve b")),
+                CalcInputValue.Quantity("P", 100, "kN", CalcProvenance.Assumed("Factored brace force")),
+            ]),
+            [new CalcExpectedValue("lambda", 150.00, "", 5e-5), new CalcExpectedValue("p_c", 77.973, "MPa", 5e-5), new CalcExpectedValue("P_c", 93.567, "kN", 5e-5), new CalcExpectedValue("u", 1.0688, "", 5e-5)],
+            "A slender strut at λ = 150. Its strength is governed by buckling, not by the higher S355 design strength: 78 MPa against an Euler stress of 90 MPa, so 100 kN is 7 % over the 93.6 kN resistance. The sheet shows the failing check; a shorter effective length or a stockier section is the fix."),
     ];
 }

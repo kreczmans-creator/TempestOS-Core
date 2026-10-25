@@ -1,4 +1,6 @@
-# B9 — Insulation thickness, ISO 12241 formula route (`bs.insulation@1.1.0`)
+# B9 — Insulation thickness, ISO 12241 formula route (`bs.insulation@1.1.1`)
+
+**In plain terms.** Insulation on a pipe or flat surface cuts heat loss, keeps a hot surface safe to touch and stops a cold one sweating, and the thickness needed depends on which of these you want. The worksheet finds the thickness that meets each requirement separately by the ISO 12241 formulae; the largest is the thickness to fit.
 
 **Scope.** The thickness of insulation on a pipe (cylinder) or a flat surface that meets, separately and together, a heat-flow limit, a limit on the surface temperature of a hot surface (personnel protection) and an anti-condensation requirement for a cold one (surface above the dew point plus a margin); the governing thickness is the largest. For a chosen thickness it gives the heat flow, the surface temperature, the mean insulation temperature and PASS/FAIL per criterion. Steady state, one homogeneous layer. **No thickness table of any standard (not BS 5422) is used or shipped.**
 
@@ -19,3 +21,25 @@
 **Limitations.** Steady state, one layer of constant λ (no temperature or moisture dependence), no supports, joints or thermal bridges, no air gaps, no sheet-metal jacket resistance, no heat gain by radiation from sun or neighbours, no wind-dependent λ. Condensation is judged on the outer surface only (no vapour-barrier design: use B7 for the wall). Pipes are treated as horizontal and flat surfaces as vertical for free convection. The correlation is indicative (Holman's air relations and Churchill–Bernstein with fitted air properties); the ISO 12241 surface coefficients are not implemented. ISO 12241 and ISO 13788 clause numbers are cited by title only and are to be checked against the owner's copy. The unused-mode inputs (`eps` in given-h mode, `q_max_m` on a flat sheet) still raise the generic "tabulated value not from a record" warning, as the Glaser sheet does.
 
 **Test cases (analytic, Confirmed; every number recomputed in python3, the correlation cases with an independent implementation).** `ka-pipe-chosen` (D_i 100 mm, 30 mm, λ 0.04, h_se 10, 80 → 20 °C: R 2.0690287 K·m/W, q 28.999114 W/m, θ_se 25.769191 °C); `ka-pipe-heat-loss` (25 W/m needs 37.303597 mm, θ_se 24.557514 °C); `ka-pipe-surface` (45 °C needs 5.325914 mm; the 25 W/m limit governs); `ka-flat-closed-form` (`t = λ(Δθ/q − 1/h_se)` = 116 mm, θ_se 22 °C); `ka-flat-condensation` (5 °C surface in 25 °C air at 70 % RH, 1 K margin: θ_dew 19.145352 °C, t = 12.479052 mm); `ka-pipe-condensation` (the same on a 100 mm pipe: 11.290660 mm, gain 18.695278 W/m); `ka-correlation-still` (114 mm pipe at 120 °C, ε 0.1: h_c 3.674839, h_r 0.580066, h_se 4.254904, q 36.772620 W/m, θ_se 27.854972 °C, 60 W/m needs 23.374326 mm); `ka-correlation-wind` (ε 0.9, 3 m/s: h_se 19.917641, q 40.690036 W/m, 29.585912 mm); `ka-flat-correlation` (2 m high wall, ε 0.9: θ_se 23.942458 °C, q 28.846034 W/m²); `ka-wall-and-film` (3 mm wall λ 50, film 500: R_oth 0.0069695, q 28.901759 W/m); from 1.1.0 `ka-dew-point-entered` (dew point 20 °C entered, 1 K margin: 16 mm exactly, θ_se 21 °C), `ka-flat-condensation-ice` (−10 °C air at 90 %: θ_dew −11.178796 °C, 443.436476 mm), `ka-flat-wind-turbulent` (10 m wall in 20 m/s: h_c 40.206477, h_se 45.367359, q 31.445496 W/m², 39.118252 mm for 40 W/m²) and `ka-bare-complies-window` (D_i 10 mm, λ 0.2: bare 18.85 W/m passes 25 W/m, layers from 2.764604 to 74.291720 mm break it, required 74.291720 mm). **No published example is pinned**: Incropera 7th ed. Ch. 3 (insulated cylinder, critical radius examples) and Çengel & Ghajar Ch. 3 (insulated pipe examples) could not be stated with inputs and answer from memory with confidence, so none is entered; they need the owner's copies. Worked examples: `chilled-water-pipe-condensation` (heat-gain limit 12 W/m governs at 17.8 mm over the dew-point margin's 13.2 mm; 25 mm passes), `clad-hot-water-pipe-correlation` (bright cladding, h_se 4.25 W/m²K; 23.4 mm for 60 W/m, 50 mm chosen passes).
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Chilled-water pipe in a plant room: heat-gain limit and anti-condensation, 25 mm chosen ([sheet](../../worked-examples/building-services/bs.insulation/chilled-water-pipe-condensation/sheet.txt)).
+
+```text
+theta_dew = θ_a = 28 °C, RH = 70 % = 22.012 degC
+t_q = scan 0 … 1000 mm, then bisection = 17.814 mm
+t_dew = scan 0 … 1000 mm, then bisection = 13.162 mm
+thickness = t_q = 17.814 mm, t_dew = 13.162 mm = 17.814 mm
+D_e = 90 mm + 2 × 25 mm = 140 mm
+R_ins = ln(140/90)/(2π × 0.035) = 2.0091 m·K/W
+R_se = 1/(8 × π × 0.14 m) = 0.28421 m·K/W
+R = 0 + 2.0091 + 0.28421 = 2.2933 m·K/W
+q_per_m = 22 K / 2.2933 = 9.593 W/m
+theta_se = 28 °C − 9.593 / 3.5186 = 25.274 degC
+theta_m = (6 + 25.274)/2 = 15.637 degC
+D_crit = 2 × 0.035 / 8 = 8.75 mm
+u_q = |q| ≤ 12 W/m = 0.79941
+u_dew = θ_se ≥ 23.012 °C = 0.54661
+Governing: PASS  Chosen thickness against the heat-gain limit: u_q = 0.79941 vs u_q ≤ 1  utilisation 0.799  « ISO 12241
+```
+<!-- hand-arithmetic:end -->

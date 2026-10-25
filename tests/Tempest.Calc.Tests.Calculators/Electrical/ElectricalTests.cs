@@ -171,7 +171,7 @@ public sealed class ElectricalTests
 
         // Every declared port is produced by a run (the fan duty only when a fan curve is given).
         Assert.All(ports.Where(p => p.Symbol is not ("V_duty" or "dp_seal" or "F_seal")), p => Assert.NotNull(r.FindOutput(p.Symbol)));
-        Assert.Equal("1.4.0", Enclosure.Template.Version);
+        Assert.Equal("1.5.0", Enclosure.Template.Version);
     }
 
     [Fact]

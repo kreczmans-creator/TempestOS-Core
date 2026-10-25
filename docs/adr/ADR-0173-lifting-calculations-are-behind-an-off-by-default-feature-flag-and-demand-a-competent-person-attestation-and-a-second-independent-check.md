@@ -84,3 +84,8 @@ Choices the sheet makes that the standards, not the author, must settle (spec do
 3. Consider a visible "feature off" marker on an existing instance in the project tree.
 
 Resolved since the first version of this decision: the Desktop Countersign and Attest steps (section 2), the Evidence workspace commands (section 3) and the engine's run-by-id path (section 1).
+
+## Amendment 1 (2026-10-25, integration of the legacy-calculator line into v0.26.0)
+
+- **`mech.lifting-lug`** (the worksheet that replaces the legacy lifting-lug and pin-joint module, `ADR-0167`) is a lifting design calculation and is gated exactly as S8 is: `FeatureFlag = CalcFeatures.Lifting`, `RequiresAttestation`, `IndependentCheck` and `RequiresSecondCheck`, with the three attestation inputs and the design-calculation notice on the sheet. Its id is in `CalculationFeatureGate` (`LiftingLugWorksheetId`), and the tie test (`The_Engines_Gated_Ids_Are_Tied_To_The_Templates_Feature_Flags_And_The_Registered_Definitions`) covers it.
+- The Engineering Calculators service and workbench named in §1 (`ModuleSwitchedOff`, `AvailableCatalogue`) were retired with the Calculators surface (`ADR-0167` Amendment 1). The engine's choke point stays and is what refuses `calc.lifting-lug-pin-joint` by id (and so its re-run) while the feature is off. Migrated legacy lifting records open as read-only archive sheets (reading is not running) and cannot be re-run while the feature is off.

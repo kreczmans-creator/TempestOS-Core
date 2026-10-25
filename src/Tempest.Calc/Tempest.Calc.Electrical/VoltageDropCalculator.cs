@@ -23,9 +23,9 @@ public sealed class VoltageDropCalculator : ICalcCalculator
     public const string DataMvAm = "mV/A/m figure";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Electrical, "Voltage drop and I²R loss",
+        Id, "1.0.1", CalcDiscipline.Electrical, "Voltage drop and I²R loss",
         "Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).",
-        "R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X′ L/n. DC: ΔV = 2 I R; single-phase: ΔV = 2 I (R cos φ + X sin φ); three-phase: ΔV = √3 I (R cos φ + X sin φ); mV/A/m: ΔV = (mV/A/m) I L / 1000 (the figure already carries the 2 or √3 by convention). Loss: 2 I² R (DC, 1φ), 3 I² R (3φ). Conductor temperature: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².",
+        "Conductor resistance at its operating temperature, for n conductors in parallel: R = ρ_T L/(A n), with ρ_T = ρ_20 [1 + α (T_c − 20)].\nResistance and reactance from per-length figures instead: R = R′ L/n; X = X′ L/n.\nVoltage drop on a DC circuit: ΔV = 2 I R.\nVoltage drop on a single-phase AC circuit: ΔV = 2 I (R cos φ + X sin φ).\nVoltage drop on a three-phase AC circuit: ΔV = √3 I (R cos φ + X sin φ).\nVoltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000.\nPower lost in the cable: P_loss = 2 I² R (DC and single-phase); 3 I² R (three-phase).\nEstimated conductor temperature at this current: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².",
         [
             new CalcInputSpec("system", "System", CalcInputKind.Choice, Choices: [SystemThree, SystemSingle, SystemDc], DefaultChoice: SystemThree, Group: "Circuit"),
             new CalcInputSpec("V_n", "Nominal voltage (line-to-line for three-phase)", CalcInputKind.Quantity, "V", Default: 400, Min: 12, Max: 1000, HardMin: 0.1, HardMax: 1e6, Group: "Circuit"),

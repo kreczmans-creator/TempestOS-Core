@@ -27,8 +27,8 @@ project/quotation/deliverable/timesheet/invoicing consultancy seam,
 evidence recorded, independently checked and issued against governed
 reference data, fourteen engineering calculation modules (the eleven of
 `WP 21.7A`, plus tolerance stack-up and two thermal modules recovered from
-the v0.16.0 suite) with an
-Engineering Calculators surface (Re-run/Compare), the Engineering Assets
+the v0.16.0 suite), superseded in v0.26.0 by a
+worksheet calculation surface (54 templates, Compare), the Engineering Assets
 surfaces, documents rendered from templates, a Velopack Windows
 installer with backup and restore, and undo across commands. See
 [`PHYSICAL_REVIEW.md`](PHYSICAL_REVIEW.md) §7 for the smoke-test walk

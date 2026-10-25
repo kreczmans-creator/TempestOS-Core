@@ -56,18 +56,18 @@ public sealed class LiftingLugCalculator : ICalcCalculator
     private const string GroupAttest = "Competent-person attestation (required to check and issue)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Structural, "Lifting lugs and spreader beams",
+        Id, "1.1.1", CalcDiscipline.Structural, "Lifting lugs and spreader beams",
         DesignNotice + " Pin-loaded lifting lugs and the lug loads of spreader or lifting beams, checked by the BTH-1 allowable-stress approach (clause 3-3.3), by the EN 13155 proof route (2× the rated load without permanent set, 3× without release) or both: " +
         "sling force from the rated load, sling angle and out-of-plane angle (with the automatic 6° tilt cases for a horizontal beam); tension beyond the hole, single-plane fracture beyond the hole, shear-out on two planes, pin bearing and dishing; capacity and utilisation per mode, the governing mode, the proof load and a marking and certification checklist. " +
         "Scope notes (LOLER and PUWER): this sheet does not replace the thorough examination and inspection of lifting equipment by a competent person (LOLER reg 9), the marking, test and certification that the regulations and the standards require, the planning of the lifting operation, the weld, bolt and beam checks of the linked sheets, or the pin, shackle and sling ratings. " +
         "It is available only while the lifting feature is enabled; its issue needs a competent-person attestation and a second independent check. " + SignatureNotice,
         "Sling force: F_v = WLL/n_eff (n_eff = n_lugs, at most 3); F_s = F_v/(cos θ·cos β); F_ip = F_s·cos β; F_op = F_s·sin β; N_beam = F_v·tan θ; M_op = F_op·h\n" +
         "Horizontal beam, automatic 6° tilt: pitch (θ ± 6°, load redistributed, the sling at θ − 6° takes 2·F_v·sin(θ + 6°)/sin 2θ, and the force along the tilted beam is F_v·sin(θ + 6°)/cos θ); roll (β + 6°); the larger F_s governs, F_ip, F_op and N_beam are the envelopes\n" +
-        "Geometry: side = min(b_e, R − D_h/2); b_e,eff = min(side, 4t, 0.6·(f_u/f_y)·√(D_h/side)·side); a_eff = a (default R − D_h/2); A_t = 2·t·b_e,eff; A_fr = [1.13·a_eff + 0.92·side/(1 + side/D_h)]·t; φ = 55·D_p/D_h (degrees); A_v = 2·t·[a_eff + (D_p/2)(1 − cos φ)]; A_b = D_p·t\n" +
+        "Lug section geometry: side = min(b_e, R − D_h/2); b_e,eff = min(side, 4t, 0.6·(f_u/f_y)·√(D_h/side)·side); a_eff = a (default R − D_h/2); A_t = 2·t·b_e,eff; A_fr = [1.13·a_eff + 0.92·side/(1 + side/D_h)]·t; φ = 55·D_p/D_h (degrees); A_v = 2·t·[a_eff + (D_p/2)(1 − cos φ)]; A_b = D_p·t\n" +
         "Pin clearance: C_r = 1 − 0.275·√(1 − D_p²/D_h²)\n" +
         "BTH-1 (3-3.3): F_a = min(f_y/n_y, f_u/n_u); design load D = N_d·k_svc·F_s; P_t = C_r·F_a·A_t; P_sp = C_r·F_a·A_fr; P_v = F_a·A_v/√3; P_b = k_b·F_a·A_b; u = D/P for each; dishing D_h/t ≤ dish_max\n" +
         "EN 13155 (2× elastic, 3× no release): P_EN = min(Y/2, U/3) for each section, Y with f_y and U with f_u (shear with f/√3; fracture area without C_r); u = F_s/P_EN\n" +
-        "Capacity: WLL_cap = WLL/u_lug for the governing section of each mode (smaller of the modes used); beam: u_beam from N_beam on A_beam; proof load = k_proof·WLL",
+        "Lug capacity and proof load: WLL_cap = WLL/u_lug for the governing section of each mode (smaller of the modes used); beam: u_beam from N_beam on A_beam; proof load = k_proof·WLL",
         [
             new CalcInputSpec("mode", "Design mode", CalcInputKind.Choice, Choices: [ModeBth1, ModeEn, ModeBoth], DefaultChoice: ModeBoth, Group: GroupLoads),
             new CalcInputSpec("WLL", "Rated load (working load limit) of the appliance, carried by all its lugs", CalcInputKind.Quantity, "kN", Default: 150, Min: 0.5, Max: 10000, HardMin: 0.5, HardMax: 10000, Group: GroupLoads),

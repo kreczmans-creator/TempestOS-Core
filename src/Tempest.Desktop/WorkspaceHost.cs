@@ -330,13 +330,6 @@ public sealed class WorkspaceHost : IAsyncDisposable
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
             (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog)));
 
-        // `WP 21.7B`/`WP 21.7C`: the Engineering Calculators. The governed
-        // service runs any product calculation on pinned records from the
-        // three libraries; the workbench names each run as a Calculation
-        // object (the same register the bracket workbench uses) and offers
-        // the record's own Re-run and Compare commands through the
-        // dispatcher and the Template registry — every module registered
-        // there so the commands reach all nineteen.
         // Optional calculators (S8 lifting, `ADR-0173`) are composed in but withheld from the catalogue unless the machine's administrator switches
         // their feature on (the HKLM policy key on Windows, a root-owned file elsewhere). The application installs per user, so the install folder, the
         // current directory, the environment and the command line are not read for it, and nothing at run time changes it. Enabling is logged with its source.
@@ -350,13 +343,6 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
         // The engine refuses a gated calculation run by id until told its feature is on: the one choke point for every caller (`ADR-0173`).
         ((Tempest.Core.Calculations.CalculationEngine)host.Services!.GetService(typeof(ICalculationEngine))).ConfigureFeatures(calcFeatures.IsEnabled);
-
-        CalculationModuleService = new CalculationModuleService(
-            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
-            (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
-            (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
-            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)),
-            featureEnabled: calcFeatures.IsEnabled);
         // `v0.26.0` (ADR-0165): the worksheet calculation surface. The
         // catalogue is composed statically (`CalcCalculatorComposition`),
         // instances live in the one store, and Issue goes through the
@@ -385,15 +371,21 @@ public sealed class WorkspaceHost : IAsyncDisposable
             hostLogger?.Warning($"Marking calculation Evidence as managed failed ({ex.GetType().Name}); it is marked at its next check or issue instead.");
         }
 
-        CalculationModules = new CalculationModuleWorkbench(
-            CalculationModuleService,
-            CalculationTemplates!,
-            new EngineeringCalculationRegister(
-                domainContext,
-                (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
-                projectContext),
-            (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
-            domainContext);
+        // ADR-0167: every stored legacy calculation record is copied once into an archive worksheet (same Id; the record
+        // itself is untouched), so it stays readable once the legacy modules are retired. Idempotent; a failure to read
+        // one record is reported, never fatal to start-up.
+        try
+        {
+            LegacyMigrationReport = await new Tempest.Calc.Library.LegacyCalculationMigration(
+                (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)),
+                new Tempest.Calc.Library.CalcInstanceStore(domainContext.PersistenceStore))
+                .MigrateAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            LegacyMigrationReport = new Tempest.Calc.Library.LegacyMigrationReport(0, 0, [(Guid.Empty, failure.Message)]);
+        }
+
 
         // `WP 21.2B` (`TD-160`, `TD-165`): the merged engineering capability's
         // own three governed libraries and their validation services, so the
@@ -448,7 +440,11 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
         _principalSession.Establish(principal);
         SessionPrincipal = principal;
+        PrincipalChanged?.Invoke(principal);
     }
+
+    /// <summary>Raised by <see cref="SwitchPrincipal"/> after the switch, so the shell header names the person every new record will.</summary>
+    public event Action<ISessionPrincipal>? PrincipalChanged;
 
     /// <summary>Gets what startup rehydration recovered (`TD-85`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public EngineeringRehydrationResult? RehydrationResult { get; private set; }
@@ -584,20 +580,17 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// </remarks>
     public BracketCalculationWorkbench? BracketCalculations { get; private set; }
 
-    /// <summary>Gets the Engineering Calculators' own read-and-run model (`WP 21.7B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
-    public CalculationModuleWorkbench? CalculationModules { get; private set; }
-
     /// <summary>`v0.26.0` (ADR-0165): every worksheet calculator this build composes in.</summary>
     public Tempest.Calc.Library.CalcCatalogue? CalcCatalogue { get; private set; }
 
     /// <summary>`v0.26.0` (ADR-0165): the worksheet instance service (create, run, check, issue, revise, packs).</summary>
     public Tempest.Calc.Library.CalcInstanceService? CalcInstances { get; private set; }
 
+    /// <summary>What the start-up migration of legacy calculation records did (ADR-0167); <see langword="null"/> before start.</summary>
+    public Tempest.Calc.Library.LegacyMigrationReport? LegacyMigrationReport { get; private set; }
+
     /// <summary>`v0.26.0`: the calc-sheet PDF renderer, so the composer can hand it the organisation identity.</summary>
     public Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer? CalcSheetRenderer { get; private set; }
-
-    /// <summary>Gets the governed entry point of every calculation module (`WP 21.7C`): a form-less caller runs a module on pinned records through it. <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
-    public CalculationModuleService? CalculationModuleService { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }
