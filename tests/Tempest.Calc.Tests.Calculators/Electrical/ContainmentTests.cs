@@ -171,11 +171,12 @@ public sealed class ContainmentTests
         Assert.DoesNotContain(missing.Checks, k => k.Name.StartsWith("Pulling tension", StringComparison.Ordinal));
 
         // No route: the fill is worked, there is no tension port and nothing blocks; route-only values warn that they are unused.
-        var fillOnly = Run(CalcInputValue.Table("route", []), Q("T_grip", 500, "N"));
+        var fillOnly = Run(CalcInputValue.Table("route", []), Q("T_grip", 500, "N"), CalcInputValue.Of("w_c", 2));
         Assert.False(fillOnly.IsBlocked);
         Assert.NotNull(fillOnly.FindOutput("fill"));
         Assert.Null(fillOnly.FindOutput("max_tension"));
         Assert.Contains(fillOnly.Notices, n => n.RuleId == "route-limits" && n.Message.StartsWith("T_grip", StringComparison.Ordinal));
+        Assert.Contains(fillOnly.Notices, n => n.RuleId == "route-limits" && n.Message.StartsWith("w_c", StringComparison.Ordinal));
     }
 
     [Fact]

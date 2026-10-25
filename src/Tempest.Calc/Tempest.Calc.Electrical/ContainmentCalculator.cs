@@ -478,7 +478,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
         }
         else
         {
-            foreach (var (symbol, what) in new[] { ("mu", "the coefficient of friction"), ("T_grip", "the grip limit"), ("P_lim", "the sidewall pressure limit"), ("k_n", "the derating") })
+            foreach (var (symbol, what) in new[] { ("mu", "the coefficient of friction"), ("T_grip", "the grip limit"), ("P_lim", "the sidewall pressure limit"), ("k_n", "the derating"), ("w_c", "the weight-correction factor") })
             {
                 if (c.Has(symbol))
                     c.Warn("route-limits", $"{symbol}: {what} is entered but there is no route, so it is not used; enter the route to work the pull.");
