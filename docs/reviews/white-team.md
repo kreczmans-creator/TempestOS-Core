@@ -47,3 +47,28 @@ Findings:
 - W-A-02 (Low, Open): `v0.26.0/addA-7b-chains` is stale on origin. The owner should delete it (Y-A-03).
 - W-A-03 (Info, Open): ADR-0167 is not in this branch (it belongs to v0.27.0), so the ADR numbers on `release/v0.26.0` skip it. The forward merge of `release/v0.26.0` into `release/v0.27.0` (DA-02) must keep both registers.
 - W-A-04 (Info, Open): clause numbers flagged "to be checked" in DA-19 and DA-20, and the Unconfirmed known answers listed in `STATUS.md`, need the owner's copies of the standards (DA-11).
+
+## Addendum B
+
+Checked at `v0.26.0/addB-4-workflows` (`3e4ca602`), the delta `a06e2ec2..3e4ca602` (469 files under `src/`, `tests/`, `docs/`), and the S8 work at `065fe64c` before its merge. Addendum B extends v0.26.0; it does not make a new release.
+
+| Item | Evidence | Status |
+|---|---|---|
+| §B5: no prohibited table data | Grep audit and manual review of every hit, recorded in the White review notes. Families searched by name and by tell-tale numbers: EN 10270 Rm(d), EN 13906 diagrams, IPC-2152, IET factors, NA values and C1/C2, ISO 13788 climate and humidity classes, BS 5422 rows, B31.3 Sa and K1, BTH-1 and EN 13155, AS568 and ISO 3601, extrusion charts, ISO/TS 13725. No table from any of them is in source, tests or docs. | Pass |
+| §B5: what ships is formulae | IPC-2221 k and exponents are the `pcb.method` record with provenance. Magnus, δ0, the gas-law exponent, the capstan equation, Freudenstein and the Navier series are computed. C₁ comes from the ψ closed form; there is no C₁ table. The EN 13906 and BTH-1 relations are written in own notation and cited by clause. | Pass |
+| §B5: licensed values are user records | Rm(d), permissible fractions, NA factors, C₁/C₂, climate, humidity class, Sa, K1, ring sizes, extrusion limits, space factor, line limits and the S8 factors are inputs with a record kind. Each prohibited one has no default; the sheet blocks or does not pass without it. | Pass |
+| §B5: test and example data | Climate, extrusion points, Sa, K1, space factors and S8 factors in tests and worked examples are labelled invented or illustrative. Small factor sets (α, β, λ̄_LT,0, γ_M1, R_si,f, f_Δp, end-type factors) are editable records (D-14). | Pass |
+| §B5: no standards text | No "shall" in the delta or in S8. Standards are cited by clause number and title. | Pass |
+| W3: export redaction | A licensed material is never exported and cannot be re-imported. Values applied from it are withheld from CSV and JSON, through links too. Sheets withhold licensed table rows. Tests: `Licensed_Values_Never_Leave_Through_A_Material_Export_And_Cannot_Be_Re_Imported`, `Values_Applied_From_A_Licensed_Material_Are_Withheld_From_Exports_And_Issued_Sheets`. Seeds are four generic materials, flagged indicative. | Pass |
+| Licence: no new dependency | `*.csproj` gains project references and, in the two new test projects, the test packages already listed. No new package ID. `THIRD-PARTY-NOTICES.md` is still complete. W1 reads xlsx in-house; PdfPig was not added. | Pass |
+| §B5: licence check in CI | `scripts/check-licences.py` and the required Licence Check job (0cf936cc). `Svg.Custom` (MS-PL, since v0.23.0) is a flagged exception for the owner (DB-08). | Pass |
+| Owner pack: licensed records to populate | Owner test pack §5.4 maps each licensed item to its record kind (6ae57e87). | Pass |
+
+Findings:
+
+- W-B-01 (Medium, Fixed in 0cf936cc; DB-08): no licence check in CI, which §B5 asks for. Add a pinned `nuget-license` job with an MIT / Apache-2.0 / BSD allow-list to `ci.yml` and to the gate.
+- W-B-02 (Low, Fixed in f8d675a2: wording corrected, defaults kept): M7 says its permissible fractions have no default, but `f_tau`, `f_sigma` and `f_su` default to 0.45, 0.75 and 0.67. B9 says no `h_se` value ships, but it defaults to 10, and `q_max_m` to 25 W/m. They are generic values, not table data. Remove the defaults or correct the text.
+- W-B-03 (Low, Fixed in 6ae57e87): the owner test pack lacks the Addendum B licensed records to populate (§B10 item 4).
+- W-B-04 (Info, Open): Secondary sources (Shigley 10-3, PDHonline S106, Timoshenko α, the Parker relation and stretch rule, EN 13906 q and S_a) need the owner's printed copies.
+- W-B-05 (Info, Open): label every example value "invented", so one grep can confirm them.
+- S8 merged after this audit must be grepped again before the gate is ticked.

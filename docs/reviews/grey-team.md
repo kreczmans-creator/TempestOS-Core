@@ -42,3 +42,44 @@ Findings:
 - GR-A-02 (Low, Open): `Revise` calls `_catalogue.Get(TemplateId)`. A template removed from the catalogue (not renamed) would throw instead of refusing. No template is removed in this release.
 - GR-A-03 (Info): when v0.26.0 merges forward into `release/v0.27.0` (DA-02), three templates exist in both (`mech.bearing-life`, `bs.plane-wall`, `struct.fillet-weld`). Their ids and versions must be compared before the merge, or stored instances will point at the wrong version.
 - GR-A-04 (Low, Open): P-A-01 and P-A-05 are the two upgrade-visible defects of Blue round 1. Both are in the round 2 brief.
+
+## Addendum B
+
+Checked at `34f196cc` (`v0.26.0/addB-4-workflows`, not yet merged into `release/v0.26.0`) against `510f337c` (end of Addendum A). No v0.26.0 tag exists (DA-01). The "stored instances" below exist only in development and owner-test databases. S8: reviewed separately before B-5 merges.
+
+| Item | Evidence | Status |
+|---|---|---|
+| Template version bumps | 14 new templates (versions 1.0.1 to 1.3.0). Seven earlier ones raised: `bs.pipe-pump` 1.5.0, `elec.motor-sizing` 1.4.0, `elec.enclosure-heat` 1.4.0, `elec.fault-protection` 1.2.0, `bs.psychrometrics` 1.1.0, `bs.room-heat-loss` 1.2.0, `mech.tolerance-stack` 2.1.0. `bs.sealed-system` moved onto the gas-law kernel with identical output and kept 1.2.0 (B-0 gate: B6 tests unchanged). | Pass; drafts on the old versions stop (GR-B-01) |
+| Database | No schema change. Two new collections: `Calc.ImportProfiles` and `Calc.ScanProfiles` (versioned, immutable). Import records live on the instance, capped at 20, and are kept while an input cites them. Record values gain an optional `Source` (source, edition, page, licence class, entered by, date, evidence SHA-256); old records have none and stay unlicensed unless flagged. `UpgradeTests` unchanged. | Pass |
+| Material library (W3) | Materials are reference records of kind `material.properties`. Four generic seeds are written on first use, idempotent and indicative. A pin `record:<id>@<n>` goes stale on a new revision. Exports withhold licensed values. A material licensed from any revision is locked in every revision (SEC-B-02, fixed in `051647fb`). | Pass |
+| New discipline | Fluid Power (ADR-0170): `Tempest.Calc.FluidPower` and its test project, `DisciplineCatalogue`, the explorer module (37 modules pinned), the Desktop composition. The Core change is a comment only. Dashboard export v3 gains a fourth `disciplines` entry with no schema bump (GR-B-05). | Pass |
+| New assemblies and CI | `Tempest.Calc.Import` and `Tempest.Calc.Tests.Import`. Both new test projects run on both CI legs (`ci.yml:309, 331`). Licence Check job, required by the CI Gate (DB-08). `Svg.Custom` MS-PL flagged for the owner. | Pass |
+| Import files | Read from picker streams only. 5 MB per file; W2 up to 64 files and 20 MB. Nothing is written beside the source. Profiles are stored in the database, not in a folder. No import is logged (GR-B-02). | Pass; logging gap |
+| Feature flags (S8) | On the S8 branch the flag is read only from `appsettings.json` in the install folder (`Calc:Features:Lifting`); off by default. S8: reviewed separately before B-5 merges. | Pending B-5 |
+| Test totals at `6a189078` (verification, Linux, 4 cores) | Engine 457, Sheets 135, Calculators 1515, FluidPower 94, Import 625, Library 343 (+1 skipped): all pass. Desktop `WorkedExamplePdfTests` 64 of 64 (Y-B-01 fixed; 8 PDFs stale again, Yellow Y-B-12). At `34f196cc` the Calculators suite failed one timing test under load (Y-B-11, fixed) and the PDF test failed 4 (Y-B-01, fixed). Core and the full Desktop suite were not run. | Pass |
+| Performance | `PerformanceBudgetTests` covers every registered template, Fluid Power included. Worst Addendum B cases (Security): F3 at 100 000 samples 0.6 s, M9 at 3600 steps 48 ms, S9 Navier at the 1024-term cap 21 ms. | Pass |
+| Worked-example PDFs | 16 new PDFs, the largest 189 KiB (LTB, GR-B-06). The four M9/E9 PDFs are missing (Y-B-01). | Pass (Linux) with one gap |
+| Windows build and CI | Last Windows green: `510f337c` (Addendum A). Not run for Addendum B. | Pending CI |
+| STATUS | Final line still "READY FOR OWNER TESTING" while Addendum B is 14/19 (GR-B-03). | Open |
+
+Findings:
+
+- GR-B-01 (Low, Closed by `d1141f45`: a draft on an older version opens as a new sheet on the current one): seven Addendum A templates were raised again, so Addendum A owner-test drafts on them stop running. Fix GR-A-01, or tell the owner to start new sheets.
+- GR-B-02 (Low, Open: fix now if the Desktop logger is at hand, otherwise record as accepted): CAD and scan imports are not logged. Log the refusal code, file kind, size and a hash prefix; never content.
+- GR-B-03 (Low, Open: fix now, one line): STATUS's final line should say Addendum B is in progress until §B9 is met.
+- GR-B-04 (Info, accepted): the material seeds are written on first use; the `Indicative` origin cannot be read by an older build (no downgrade path, as before).
+- GR-B-05 (Info, accepted): the dashboard export gains a Fluid Power entry in `disciplines` with no schema version change.
+- GR-B-06 (Info, open until the stale LTB PDF is regenerated and Windows runs): the LTB PDF is 189 KiB against the 200 KiB cap; watch the Windows run (GR-01).
+
+### Verification at `6a189078`
+
+| ID | Fix | Verdict |
+|---|---|---|
+| GR-B-01 | `d1141f45`: a draft on an older template version opens as a new sheet on the current one, with its inputs and a clear message; the old draft is left unchanged. | Verified: `CalcInstanceServiceTests.Grey_GR_B_01_*`, `WorksheetSavedAndPacksTests.Grey_GR_B_01_*`. Closed; this also covers GR-A-01 for drafts. |
+| GR-B-02 | — | Open: no logging added. |
+| GR-B-03 | — | Open: STATUS's last line still reads "READY FOR OWNER TESTING", and its header "Addendum B: 14/19". |
+| GR-B-06 | — | Open: the LTB PDF is one of the 8 stale ones (Yellow Y-B-12); recheck its size after regeneration. |
+
+Test runs at `6a189078` (Linux, 4 cores) are in `scratchpad/b9colour/verify-suites.log`. Core and the full Desktop suite were not run.
+
+S8: reviewed separately before B-5 merges.

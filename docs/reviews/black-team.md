@@ -181,3 +181,62 @@ The Library (`CalcInstanceService`) cannot be hosted headlessly without the Core
 Counts: **High 5** (B-A-01 to B-A-05), **Medium 8** (B-A-06 to B-A-13), **Low 9** (B-A-14 to B-A-22), **Info 1** (B-A-23).
 
 The calculators are robust against crashes and NaN. The serious problems are a misleading PASS on default factors (bearing Y = 0), a physically impossible PASS (heat exchanger at C_r = 0), a pack that checks the wrong device because choice inputs cannot be linked, an issued pack with an unexplained FAIL, and a CSV round trip that drops tables and can turn a FAIL into a PASS. The worked-example index and the root README are stale for Addendum A.
+
+## Addendum B
+
+> Black-box misuse review of the 14 Addendum B calculators and the §B7 packs at `34f196cc` (`v0.26.0/addB-4-workflows`). A scratch harness drove `CalcRunner.Run` on each worked example's `inputs.json` with one input changed at a time, the way a hurried engineer would get it wrong: unit slips, gauge against absolute, the wrong sign convention, the wrong mode, a default left alone. The Desktop worked-example PDF test was also run. S8: reviewed separately before B-5 merges.
+
+### Reproduction
+- Every Addendum B worked example runs without a block. The values recomputed by Green match the stored sheets.
+- The Desktop `WorkedExamplePdfTests` fails for the four M9 and E9 examples, whose `sheet.pdf` was never written. See Yellow Y-B-01.
+- Pack READMEs: no FAIL is left unexplained. The HPU, mechanism-review and actuated-linkage packs issue PASS. G-AB-01 shows the F2 step in two of them is undersized.
+
+### Misuse that is caught
+- S7 `N_Ed` +400 (compression typed positive): blocked, "must be at most 0 kN".
+- M8 `eps_perm_once` 4 (per cent typed as a fraction): blocked.
+- B7 `RH_int` 0.5 %: blocked.
+- M7 `F_2` < `F_1`: blocked ("working point 2 must not be below working point 1").
+- F3 a piston groove run as a rod seal: blocked (no gland depth).
+- M9 a non-Grashof linkage on a full turn: the sweep is cut at the toggle, warns, and withholds the ports.
+- F2 a linked gauge pressure on the Absolute basis: warns (`link-basis`).
+- B9 a cold surface with no dew margin: warns that condensation is not checked.
+- E8 a cable that does not fit, and a T_max of 0: FAIL or refused (closed from review).
+- B8 no K1: does not PASS (closed from review).
+
+### Findings
+
+| ID | Sev | Where | What I did | What happened | What should happen |
+|---|---|---|---|---|---|
+| B-B-01 | Medium | `struct.ltb-interaction`, end-moment mode (`LtbInteractionCalculator.cs:100-101, 333-341`) | Typed the UB 457 example's end moments as a frame program prints end actions (`M_y_B` −170 in place of +170). | ψ −0.5, C₁ 2.7, C_my 0.4; governing 6.62 falls from 0.931 to 0.694, PASS, no warning. | Warn whenever ψ < 0 in end-moment mode, naming the curvature taken and its C₁ and C_my; or ask for the curvature and take magnitudes. |
+| B-B-02 | Medium | `elec.pcb-trace` `Cu_oz` (`PcbTraceCalculator.cs:48`) | Typed 18 (an 18 µm foil). | w_min 0.10 mm, PASS u 0.04, two range warnings. The real ½ oz gives 3.63 mm, FAIL u 1.45. | Block above 6 oz (§B6), or take the thickness with a unit. |
+| B-B-03 | Medium | `bs.pipe-expansion` `E` (`PipeExpansionCalculator.cs:49`) | Typed 120 with the unit MPa on `copper-offset-leg-too-short`. | Leg FAIL u 1.13 becomes PASS u 0.036; anchor force 192 → 0.19 N (linked into S2/S6 in chain 9); no warning (soft minimum 0.1 GPa). | Soft minimum about 0.5 GPa with "is E in GPa?"; open with the W3 seed pinned. |
+| B-B-04 | Medium | `bs.insulation` `h_mode`/`h_se` (`InsulationCalculator.cs:41-42`) | Left the generic h_se 10 on a chilled-water pipe. | Anti-condensation 10.7 mm against 12.0 mm (correlation, ε 0.9) and 25.2 mm (ε 0.1). A 13 mm layer passes. | On a cold surface with a dew criterion, default to the correlation, or warn that a fixed h_se above it under-sizes. |
+| B-B-05 | Low | `fp.accumulator` `p_basis` (`AccumulatorCalculator.cs:52-53`) | Typed 4/5/10 bar gauge on the Absolute basis; then a 0.5 bar absolute pre-charge. | V0 2.50 against 2.64 L (−5 %), no warning; a sub-atmospheric pre-charge is accepted. | Block an absolute pressure below p_atm; print "bar a"/"bar g" on every pressure. |
+| B-B-06 | Low | M7 `d`, `n`; E7 `I`, `dT` | Entered values outside the §B6 valid ranges. | Warnings only. | Hard limits at §B6, or a DECISIONS row saying these ranges are soft. |
+
+### Summary
+Counts: **Medium 4** (B-B-01 to B-B-04), **Low 2** (B-B-05, B-B-06).
+
+The calculators refuse most slips that change a value by orders of magnitude, and the review rounds closed the silent-PASS cases they found. What remains are slips within a plausible range: a sign convention, a unit of the same dimension, a basis, a default coefficient. Each turns a FAIL into a PASS or under-sizes a part with no warning. The fix in each case is a warning that names the likely slip.
+
+### Verification at `6a189078`
+
+The probes were re-run on the fixed tree (`scratchpad/b9colour/black_probes_v.sh` → `black-probes-v.txt`).
+
+| ID | Fix | Verdict |
+|---|---|---|
+| B-B-01 | `100e8a65`: `double-curvature` warning when the end moments have opposite signs. | Verified: the UB 457 probe (`M_y_B` −170) now warns with ψ, C₁ 2.7, C_my 0.4 and the frame-program explanation. Closed. New Low B-B-07. |
+| B-B-02 | `34044c2d`: E7 1.0.2, `Cu_oz` hard maximum 6, µm equivalents in the description. | Verified: 18 is blocked; ½ oz gives 3.63 mm, FAIL. Closed. |
+| B-B-03 | `dda97f60`: B8 1.2.1, `modulus-low` warning below 0.5 GPa, hard minimum 0.1 GPa, "in GPa" in the description. | Verified: E 120 MPa warns "is E in GPa?". The run still computes a PASS under the warning, which is acceptable for a screening sheet. Closed. |
+| B-B-04 | `5a818356`: `h-se-condensation` warning against the correlation at ε 0.9 and 0.1. | Verified: h_se 10 on the chilled pipe warns, quoting 10.7 / 12.0 / 25.2 mm. Closed. New Low B-B-08. |
+| B-B-05 | — | Open, unchanged on re-probe. Fix now: block an absolute pressure below p_atm and print "bar a"/"bar g" (with Y-B-06). |
+| B-B-06 | — | Open. E7 `Cu_oz` is now hard. M7 `d`, `n` and E7 `I`, `dT` stay soft. Record as accepted in DECISIONS. |
+
+New findings in this round:
+
+| ID | Sev | Where | What happened | What should happen | Status |
+|---|---|---|---|---|---|
+| B-B-07 | Low | `LtbInteractionCalculator.cs`, `double-curvature` warning | With `C_1` 1.5 entered and opposite end moments, the run uses C₁ 1.5, but the warning says "C₁ = 2.7, C_my = 0.4". | Print the C₁ and C_my the run uses. | Open: fix now (one line) |
+| B-B-08 | Low | `InsulationCalculator.cs`, `WarnFixedCoefficientAgainstCondensation` | The warning fires whenever the ε 0.1 correlation needs more than the h_se given. On the `chilled-water-pipe-condensation` example (h_se 8, ε 0.9) it reads "13.162 mm as given, but 12.033 mm … at ε = 0.9 and 25.183 mm at ε = 0.1". The given value is conservative for the stated surface, and the README does not explain the warning. h_se 5 warns the same way. | Judge against the correlation at the entered ε; mention bright cladding as a note (or when ε < 0.5); explain it in the README. | Open: fix now (small) |
+
+S8: reviewed separately before B-5 merges.

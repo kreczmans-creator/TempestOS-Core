@@ -179,3 +179,40 @@ I recomputed in python3 the new weld-group and bolt-group expected values (1500 
 Suites run: filtered only, all green (Library 113 + 3 scratch tests, Sheets 33, Calculators 44 + 2 scratch tests). The full gate was left to the running suite.
 
 Follow-up: P-A-01…P-A-06 and the Partly items B-A-12, B-A-18, B-A-20(b), B-A-22(a) are being fixed in Blue round 2 (see blue-team.md).
+
+## Addendum B
+
+**Summary.** All four Addendum B security findings (SEC-B-01…04 = R-B-01…04) and the three Purple findings they left (P-B-01…03) are fixed and verified on `v0.26.0/addB-4-workflows` at 134ca7bc. There were two Blue rounds:
+- **Round 1** (0ecf1749): 67af5ac7, 051647fb, 75a2d66d and 1dd76d2f.
+  - SEC-B-02 and SEC-B-03 were verified.
+  - SEC-B-01 and SEC-B-04 were partly fixed: three CSV shapes still read a wrong number (P-B-01, Medium), W1 `.xlsx` and JSON numbers still underflowed to 0 (P-B-02, Low), and one message mis-named a column (P-B-03, Info).
+- **Round 2** (134ca7bc): eb02ffb4 for P-B-01 and P-B-03, and 3a143b15 for P-B-02. Every evasion is now refused or blocked.
+
+One contrived decimal-point shape still only warns (P-B-04, Info), and it is accepted under RR-B-01.
+
+**Method.**
+- In a separate worktree, built with warnings as errors, I re-ran Red's B9 PoCs unchanged after each round.
+- I then tried to evade each fix: split decimals in every column and shape (a unit on the remainder, quoted halves, grouping, signs, Onshape expressions); a licence set on rev 3 and cleared on rev 4, and pins to earlier and missing revisions; `>` and `<` in attribute values, tags just under the cap, long comments, a UTF-8 BOM, UTF-16 parts with a 0x3C byte; negative zero, subnormals, and underflow through `LocaleNumber`, `.xlsx` and JSON.
+- I checked honest files: every W1 fixture, quoted, `;` and tab decimal-comma files, public materials and the seeds, and Cyrillic and CJK text.
+- Suites at 134ca7bc: Import 623/623, Library 339 (1 pre-existing skip), Desktop `CadImport|ScanImport` 20/20.
+- The probes were scratch tests and are not in the repository.
+
+| Finding | Fix | Permanent regression test | Verdict | Note (PoC re-run) |
+|---|---|---|---|---|
+| SEC-B-01 / R-B-01 (Medium) | 67af5ac7, eb02ffb4 | Import `AddendumBSecurityRegressionTests.SEC_B_01_A_Split_Decimal_Is_Refused_Not_Read_As_A_Whole_Number`, `SEC_B_01_An_Ambiguous_Whole_Number_File_Is_Blocked_Until_Corrected`, `SEC_B_01_Honest_Files_Are_Still_Read_Without_A_Block`, and the P-B-01 tests | Verified | All the original shapes and the round 1 residuals are refused. Under a decimal comma with a comma delimiter, an unquoted number is refused outright. Under a decimal point, a whole number followed by a digit-led field is refused or blocked. Every W1 fixture imports with 0 blocks. |
+| SEC-B-02 / R-B-02 (Medium) | 051647fb | Library `MaterialLibraryTests.SEC_B_02_A_Material_Licensed_In_A_Later_Revision_Releases_No_Value_Through_An_Earlier_One`, `SEC_B_02_A_Material_That_Was_Never_Licensed_Still_Exports_Every_Revision` | Verified | All five original paths are withheld or refused. Rev 3 licensed and then cleared on rev 4 is refused. Pins to rev 1, rev 2 and a missing rev 9 are withheld. `SaveRecordFromInputsAsync` from rev-1 inputs saves a licensed record. Public materials and the seed still export. |
+| SEC-B-03 / R-B-03 (Medium) | 75a2d66d | Import `AddendumBSecurityRegressionTests.SEC_B_03_A_Start_Tag_With_Millions_Of_Attributes_Is_Refused_Fast_Not_Parsed_In_One_Uninterruptible_Read`, `SEC_B_03_A_Tag_Just_Over_The_Cap_Is_Refused_And_One_Just_Under_It_Is_Read`, `SEC_B_03_Long_Text_Comments_And_Attribute_Values_Are_Not_Mistaken_For_Tags`, `SEC_B_03_Cancel_Is_Honoured_While_The_Reader_Pulls_Bytes_Of_One_Tag` | Verified | The flood is refused in 7 ms with 2 MB (it was 4.5 s and 474 MB). `>` in quoted values is counted. `<` in a value fails XML parsing within 64 KB. 150 tags of 60 KB read. A 25 MB comment stays interruptible. A BOM, Cyrillic, CJK and UTF-16 `м` all read. |
+| SEC-B-04 / R-B-04 (Low) | 1dd76d2f, 3a143b15 | Import `AddendumBSecurityRegressionTests.SEC_B_04_A_Non_Zero_Literal_That_Underflows_To_Zero_Is_Refused_Like_An_Overflow`, `SEC_B_04_Zero_And_Representable_Small_Numbers_Are_Still_Read`, `SEC_B_04_An_Underflowing_Value_In_A_Cad_Csv_Is_Not_Imported_As_A_Number`, and the P-B-02 tests | Verified | `LocaleNumber`, every `.xlsx` numeric cell and W1 JSON numbers refuse `1e-400`, `-1e-400` and `2e-324`. They read `0e-400` and `0.0e-400` as 0, and accept subnormals. |
+
+### Purple findings
+
+| ID | Sev | Location | Description | Fix | Regression test | Status |
+|---|---|---|---|---|---|---|
+| P-B-01 | Medium | `Import/Cad/TableParsers.cs` (`ParseCsv`) | After round 1, three split-decimal shapes still read silently under a declared decimal comma: `L,12,5 mm` gave 12; Onshape `#w,40,5 mm,` gave 40; `name,value,expression` / `L,12,5` gave 5. | eb02ffb4: under a decimal comma with a comma delimiter, any unquoted number in the value or expression column is refused (`CsvTable.WasQuoted`). Under a decimal point, both columns are checked against any neighbour that starts with digits (plus an optional unit), with no column exempt. | `P_B_01_Under_A_Decimal_Comma_An_Unquoted_Number_With_A_Comma_Delimiter_Is_Refused`, `P_B_01_Under_A_Decimal_Point_The_Same_Shapes_Are_Blocked_Not_Read_Silently`, `P_B_01_Quoted_Semicolon_And_Tab_Files_Are_Still_Read_Under_A_Decimal_Comma` | Verified |
+| P-B-02 | Low | `Import/XlsxReader.cs` (`Finish`); `Import/Cad/TableParsers.cs` (`JsonValue`) | After round 1, W1 `.xlsx` numeric cells and JSON numbers still read `1e-400` as 0. | 3a143b15: `LocaleNumber.UnderflowedToZero` is applied to every workbook numeric cell and every JSON number. | `P_B_02_A_Workbook_Cell_That_Underflows_To_Zero_Is_Refused`, `P_B_02_Zero_And_Representable_Workbook_Cells_Are_Still_Read`, `P_B_02_A_Json_Number_That_Underflows_To_Zero_Is_Refused`, `P_B_02_Zero_And_Representable_Json_Numbers_Are_Still_Read` | Verified |
+| P-B-03 | Info | `Import/Cad/TableParsers.cs` | A named column the parser does not read was called "the unnamed column". | eb02ffb4: messages name the column ("'rev' column (which is not read)"). | `P_B_03_The_Message_Names_The_Column_The_Remainder_Landed_In` | Verified |
+| P-B-04 | Info | `Import/Cad/TableParsers.cs` (decimal-point heuristics) | Under a decimal point, `P,1,250` with the only other non-whole value written in exponent form (`Q,2e-1,x`) imports P = 1 with a **Warning**, not a Block: neither the mixed-mark nor the all-whole rule fires. This is contrived and the person is warned. | None (accepted, RR-B-01). | — | Accepted |
+
+**Blue's notes, judged.**
+- **Desktop Cancel abandons a background parse.** Accept: the parse checks the same token on every chunk, and one `Read()` is capped at a 64 KB tag (RR-B-02).
+- **A UTF-16 part with a stray 0x3C byte can be refused.** Accept: a refusal needs more than 64 KB of unbroken text after the byte, cell text is capped at 8 KB, the honest UTF-16 probes read, and Excel and LibreOffice write UTF-8 (RR-B-03).

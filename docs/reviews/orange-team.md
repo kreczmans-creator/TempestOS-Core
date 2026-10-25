@@ -83,3 +83,91 @@ Anchorage and similar designs done in other software (a Hilti PROFIS report) are
 - [ ] A new sheet opens on declared defaults only (`CalcTemplateHasher.NewSheetInputs`). A required table with no default must give a block message that says what to enter next (P-A-05).
 - [ ] No review ids, "§A" or "DA-" text in scope, assumption or method text. It prints on every sheet (B-A-18).
 - [ ] Template version raised when inputs, outputs or formulas change. A stored instance of the old version stops running and its owner must revise it (see `grey-team.md`).
+
+## Addendum B
+
+Materials, fluid power, imports and gated calculators. This extends "How to author a calculator" and the Addendum A section above. Read ADR-0170 (Fluid Power), ADR-0171 and ADR-0172 (imports) and DB-02…DB-08 in `docs/decisions/v0.26.0-DECISIONS.md` first. Paths: `Library/` is `src/Tempest.Calc/Tempest.Calc.Library/`; `Sheets/` is `src/Tempest.Calc/Tempest.Calc.Sheets/`; `Import/` is `src/Tempest.Calc/Tempest.Calc.Import/`.
+
+### Where a calculator goes
+1. **Five discipline assemblies.** `Tempest.Calc.FluidPower` joins the four (ADR-0170). Register the calculator in its `*Calculators.All`. A new discipline must also be listed in `AllCalculators.ByDiscipline` (a test fails until it is) and in the Desktop `CalcCalculatorComposition`.
+2. **Known answers.** Mark a case `Unconfirmed` when you could not open the source. Set `CalcReferenceSource(..., Secondary: true)` when the value comes from a calculator website, a forum, course notes or the brief itself. List both in STATUS and in the spec's "Definition of done" section, with title, edition and example number. A number you could not pin goes in the spec's "not pinned" list, never into a test.
+
+### Take material properties from W3
+1. On each input that is a material property, set `MaterialProperty: "E"` (or `G`, `nu`, `rho`, `alpha`, `lambda`, `f_y`, `f_u`, `Rm_A`, `Rm_m`, the permissible strains). The keys are in `Library/MaterialProperties.cs`. Also list the input in a record kind named `material.properties` (`MaterialLibrary.Kind`).
+2. `MaterialLibrary.ApplyAsync(instance, material, revision, temperature, unit)` fills the inputs in their own units and pins `record:<id>@<n>`. A later revision makes the calculation stale. Typing over a value drops its pin.
+3. A temperature always comes with its unit; none is refused. A property tabulated against temperature (`E(T)`) is read linearly between rows and refused outside them. It is never extrapolated.
+4. Tables (`Es_curve`, `mu_pairs`) are checked against the input's columns and row limit.
+5. Limits:
+   - One material per sheet. A second metal's α is a typed input (F3 `alpha_s`).
+   - A table column cannot carry a `MaterialProperty`. Use a record kind instead (B7 layer λ, `material.conductivity`).
+6. Seeds are generic textbook values flagged `indicative`. Never seed a grade, a catalogue value or a table.
+7. Test: copy `tests/Tempest.Calc.Tests.Library/Materials/PipeExpansionMaterialTests.cs` (apply, pin, run, stale on a new revision).
+
+### Record kinds and the licensed_source lock
+1. Each value of a record can carry a `CalcValueSource(Source, Edition, Reference, Licence, EnteredBy, Date, EvidenceSha256)`. `Licence` is `public` or `licensed_source`.
+2. One licensed value makes the whole record licensed (`CalcDataRecord.IsLicensed()`). The lock follows links at any depth, into inputs and table cells: export withholds the value, and the sheet prints the link with "withheld" (`LicensedLinkTests`).
+3. Licensed quantities have **no default**. A blank one blocks with what to enter: M7 R_m(d) and S_e; M8 E_s and ε_perm; B8 S_a and K1; F3 extrusion limit.
+4. A generic textbook default must say so in its description ("generic default … replace with …"): B9 h_se, M7 stress fractions.
+5. Invented test numbers say "illustrative, not from any standard". A number that happens to equal a published factor is a §B5 breach even when invented (E8 used 0.45, now 0.42).
+6. The lock belongs to the record, not to one revision: flagging any revision licensed locks every revision (SEC-B-02, fixed in `051647fb`).
+
+### Table-cell links in packs
+1. Bind a scalar output into one cell with `CalcPackBinding(from, output, to, input, Row: 0, Column: "D")`. Examples: F1 `d_prs` → B1 `segments[0].D`; E7 loss → an E6 load row.
+2. The step's example must create the row; instantiating never does.
+3. The pack README's chain line is rendered from the bindings by one renderer (DB-06). Do not hand-write it.
+
+### Ports that cannot mislead
+1. When a value cannot be computed, withhold the port; never publish a sentinel or an unbounded peak. M9 cuts the sweep at a toggle and withholds its ports. A text output where a number is expected refuses the link (M8 self-locking).
+2. Give a port a unit that blocks a wrong binding (M9 `output_motion` is m/s in every mode). State the basis of a pressure: F2 warns when a linked gauge pressure meets the Absolute basis.
+3. A value typed in two steps of a chain needs a run-time guard, either a link or a mismatch warning (M7 `travel-mismatch`). A chain test alone is not enough.
+4. Model the duty, not only the formula. A sheet's "Emergency stroke" must use the charge and discharge the duty implies (Green G-AB-01).
+
+### Imports (W1, W2)
+1. A calculator never reads a file. `Import/` parses untrusted files under one set of limits:
+   - 5 MB per file;
+   - a declared number format, never guessed;
+   - strict CSV;
+   - xlsx with zip, depth and size budgets;
+   - no formula, macro or CAD expression evaluated.
+2. Imported values carry provenance kind `CadImport` or `ScanImport`, with file SHA-256, profile id@version and time. Only the importers set it. `CadImportVerifier` and `ScanImportVerifier` run on every input update and turn a claim they cannot verify into `Manual`. A user cannot pick it by hand.
+3. A re-import is a diff: it updates the draft and makes linked calculations stale. A checked or issued calculation is never changed in place.
+4. For a template to take a W2 push, keep the target schema the mapper writes: M1 contributor rows, F3 measured rows, a single input.
+5. Prove each import chain in `tests/Tempest.Calc.Tests.Library/Chains/` (`CadDrivenToleranceChainTests`, `ScanToSealChainTests`), through stale **and** Issue refused.
+
+### Feature flags (gated calculators)
+Written from the S8 branch (ADR-0173, `065fe64c`, not merged).
+1. Set `CalcTemplate.FeatureFlag` to a name in `CalcFeatures.All`.
+2. The catalogue validates a gated template but never lists, creates, links or issues it while the flag is off.
+3. Flags come only from `appsettings.json` in the install folder (`Calc:Features:<Name>: true`), never from the environment, the command line or a user setting. Nothing at run time can turn one on.
+4. Governance (competent-person attestation, second Checked signature) is in `Library/CalcInstanceService.Governance.cs`.
+5. Test that the flag is off by default, cannot be enabled any other way, and that Issue refuses without both signatures.
+
+S8: reviewed separately before B-5 merges.
+
+### Checklist for an Addendum B calculator
+- [ ] Material inputs carry `MaterialProperty` and are listed in `material.properties`; a test applies, pins and stales a material.
+- [ ] Licensed quantities have no default; generic defaults say "generic"; invented numbers say "illustrative".
+- [ ] `Unconfirmed` and `Secondary` set and listed in STATUS and the spec.
+- [ ] Every check has a real ratio: a lower bound is limit/value, an upper bound value/limit. No "utilisation 0" and no sentinel (Yellow Y-B-02, Y-B-03).
+- [ ] Soft limits catch a ×1000 unit slip of each modulus, pressure and thickness (Black B-B-02, B-B-03). Hard limits match §B6 or a decision says why not.
+- [ ] Sign conventions and pressure bases are stated on the input and checked where a slip is plausible (Black B-B-01, B-B-05).
+- [ ] No "§", "Addendum", "DA-", "DB-" or review id in printed text (Yellow Y-B-04).
+- [ ] Ports declared with units; withheld when not computable; chain guards at run time.
+- [ ] `IndependentCheck: true` when the result protects people or structure. For Addendum B this is open: none set it (O-B-01).
+- [ ] Two worked examples, each with `inputs.json`, `sheet.txt`, `sheet.pdf` and README (the Desktop `WorkedExamplePdfTests` fails without the PDF).
+- [ ] Template version raised when inputs, outputs or formulas change.
+
+### Findings
+
+| ID | Sev | Location | Description | Fix | Status |
+|---|---|---|---|---|---|
+| O-B-01 | Low | Addendum B templates | The guidance says `IndependentCheck: true` for safety and structural results; none of the 14 sets it (S7, F1, F2 included). | Set it for S7 and F2, or narrow the guidance and list the templates that need it. | Open: decide (set for S7, F2, or narrow the guidance) and record |
+| O-B-02 | Low | This guide | The Addendum B review lessons (withheld ports, run-time chain guards, real check ratios, slip-catching soft limits, no internal references) were not written down. | Added above. | Closed by this section |
+| O-B-03 | Info | Feature flags | Written from the unmerged S8 branch. | Recheck when B-5 merges. | Open |
+
+### Verification at `6a189078`
+
+- O-B-01 is still open: `IndependentCheck: true` is set only on E4, E5 and S6. Decide and record.
+- SEC-B-02 is fixed (`051647fb`); item 6 of "Record kinds" above says so.
+- F2 1.3.0 is the reference for "model the duty": a `process` input defaulting to the duty, the process printed as an output, and a `process` warning when the choice does not suit the duty.
+- O-B-03 is open until B-5 merges. S8: reviewed separately before B-5 merges.
