@@ -1,0 +1,158 @@
+[
+  {
+    "Symbol": "Es",
+    "Number": 2000,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Example secant modulus at the design strain and temperature. Enter Es for your plastic from its stress\u2013strain data or a W3 material; no plastics data are shipped.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2000"
+  },
+  {
+    "Symbol": "Es_source",
+    "Text": "Typed secant modulus",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Secant modulus typed for this example; a W3 material with its Es(\u03B5) points can be applied instead.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Typed secant modulus"
+  },
+  {
+    "Symbol": "T_use",
+    "Number": 23,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Enclosure ENC-310 \u00A76: room temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "23"
+  },
+  {
+    "Symbol": "alpha",
+    "Number": 30,
+    "Unit": "deg",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-310-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
+  },
+  {
+    "Symbol": "alpha_r",
+    "Number": 65,
+    "Unit": "deg",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-310-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "65"
+  },
+  {
+    "Symbol": "b",
+    "Number": 7,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-310-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "7"
+  },
+  {
+    "Symbol": "eps_perm_once",
+    "Number": 0.04,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Example permissible strain for one-time joining. Enter it for your plastic at the temperature of use from its data or a W3 material; no plastics data are shipped.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.04"
+  },
+  {
+    "Symbol": "h",
+    "Number": 2.2,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-310-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2.2"
+  },
+  {
+    "Symbol": "h_ratio",
+    "Number": 0.5,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-310-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.5"
+  },
+  {
+    "Symbol": "l",
+    "Number": 18,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-310-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "18"
+  },
+  {
+    "Symbol": "loading",
+    "Text": "One-time (assembled once or rarely)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Enclosure ENC-310 \u00A76: the lid is opened for service only",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "One-time (assembled once or rarely)"
+  },
+  {
+    "Symbol": "mode",
+    "Text": "Cantilever, tapered thickness",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-310-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Cantilever, tapered thickness"
+  },
+  {
+    "Symbol": "mu",
+    "Number": 0.35,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Example friction coefficient for a plastic-on-plastic pair. Enter \u03BC for your pair of materials and surfaces from your reference or a test (record snapfit.friction).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.35"
+  },
+  {
+    "Symbol": "y",
+    "Number": 1.2,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-310-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.2"
+  }
+]

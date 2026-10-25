@@ -1,0 +1,140 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: struct.plate-bending    Revision: A
+Title: Plate bending
+
+1. SCOPE AND METHOD
+Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.
+Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²) Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²) Circular, central patch (radius c, pressure q) or ring (radius b, force F): w = A + B·r² (+ q·r⁴/64D) inside, A′ + B′·r² + C′·ln(r/a) + k·r²·ln(r/a) outside, k = q·c²/8D or F/8πD; constants from continuity of w, w′, M_r at the load radius and the edge conditions; M_r = −D(w″ + ν·w′/r), M_θ = −D(w′/r + ν·w″) Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared) Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K taken as 8, 12, 16, 20, 25, 30 until w and the stress change by < 10⁻⁵ (or the change stops falling) Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρt)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρt)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis Checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t > 0.5
+  Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 3 — Symmetrical bending of circular plates
+  Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 5 — Simply supported rectangular plates (Navier solution)
+  Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 6 — Rectangular plates with various edge conditions
+  Ref: Leissa, Vibration of Plates (NASA SP-160) Ch. 2, 4 — Natural frequencies of circular and rectangular plates
+  Ref: BS EN 1993-1-1:2005+A1:2014 6.1(1) — Partial factor γ_M0
+  Ref: BS EN 1993-1-1:2005+A1:2014 6.2.1(5) — Yield criterion for the cross-section
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  shape | Plate shape | circular |  | manual | any
+  support | Edge support, all round | clamped |  | manual | any
+  a | Radius a (circular) or side a (rectangular) | 250 | mm | manual | 10 … 10000 mm
+  b | Side b (rectangular; not used for a circular plate) | 400 | mm | manual | 10 … 10000 mm
+  t | Plate thickness | 5 | mm | manual | 0.5 … 100 mm
+  load_type | Load | uniform |  | manual | any
+  load_basis | Uniform and patch loads given as | pressure q |  | manual | any
+  q | Pressure q on the loaded area (uniform and patch loads, pressure basis) | 20 | kPa | manual | 0.001 … 5000 kPa
+  P | Total force P (force basis: uniform, patch and ring loads; a ring load always uses P) | 5 | kN | manual | 0.001 … 10000 kN
+  r0 | Patch radius (circular plate, central patch) | 50 | mm | manual | 1 … 5000 mm
+  u | Patch size in x (rectangular plate, central patch) | 100 | mm | manual | 1 … 10000 mm
+  v | Patch size in y (rectangular plate, central patch) | 100 | mm | manual | 1 … 10000 mm
+  r_ring | Ring radius (circular plate, ring load) | 150 | mm | manual | 1 … 5000 mm
+  E | Modulus of elasticity | 200 | GPa | manual | 0.1 … 500 GPa
+  nu | Poisson's ratio | 0.3 |  | manual | 0 … 0.45
+  rho | Density (for the frequency) | 7850 | kg/m^3 | manual | 100 … 20000 kg/m^3
+  f_y | Yield strength | 275 | MPa | manual | 5 … 2000 MPa
+  gamma_M0 | Partial factor γ_M0 on the resistance of the cross-section | 1 |  | manual | 1 … 1.5
+  defl_ratio | Deflection limit: span/ratio (span = diameter of a circular plate, shorter side of a rectangle) | 250 |  | manual | 50 … 2000
+
+3. ASSUMPTIONS
+  A1. Thin plate, small-deflection (Kirchhoff) theory: flat, isotropic, linear elastic, constant thickness; the middle surface is unstrained; shear deformation is neglected (span/t of 10 or more). (Scope of S9; a warning below span/t = 10.)
+  A2. The deflection stays small against the thickness: w/t above 0.5 means membrane action stiffens the plate and the small-deflection result is not valid (it overstates the deflection and the bending stress and ignores the membrane stress). (The sheet warns at w/t > 0.5.)
+  A3. The edge support is the same all round and ideal: a simply supported edge is held at zero deflection and free to rotate; a clamped edge allows no deflection or rotation. A simply supported rectangle has its corners held down (the corner reaction 2·M_xy is reported); if the corners can lift, the deflection and the central moments are larger than computed. (Navier solution; no elastic edges, no rotational springs.)
+  A4. The von Mises stress is that of the plane-stress field at the plate surface from the bending and twisting moments (σ = 6M/t²); the through-thickness shear and the local stress under a concentrated load are not included. The stress governing a simply supported rectangle is at the centre or at a corner (twisting); a clamped rectangle is scanned on a 21 × 21 grid over a quarter of the plate. (Surface stresses; no local effects.)
+  A5. The rectangular patch and the circular patch are centred; a ring load is concentric. A load smaller than the thickness is a concentrated load whose local stress thin-plate theory does not give. (Warning `patch-thin`; patches below 1 % (circular), 2 % (simply supported rectangle) or 25 % (clamped rectangle) of the plate size are refused.)
+  A6. The clamped rectangle is a Ritz approximation: the deflection converges quickly, the moments and stress more slowly (the sheet reports the order used and the last change; long plates and small patches converge slowest, and the last change understates the error). Compare a critical result with finite elements. (Approximate; the sheet states the order used and the last change.)
+  A7. Material properties are inputs taken from the W3 library (E, ν, ρ, f_y), each citing the material record, its revision and the page or table; the generic textbook seeds are indicative. (Record kind material.properties.)
+
+4. WORKING
+  [14] F_total = q·A_loaded    « Kirchhoff theory
+      = 20 kPa × 196350 mm²
+      = 3.927 kN
+        Total load on the plate
+  [15] D = E*t^3/(12*(1 - nu^2))    « Kirchhoff theory
+      = 200 GPa × (5 mm)^3 / (12 × (1 − 0.3^2))
+      = 2289.4 N·m
+        Flexural rigidity of the plate
+  [16] w_max = q*a^4/(64*D)    « T&WK Ch. 3
+      = 20 kPa × (250 mm)^4 / (64 × 2289.4 N·m)
+      = 0.5332 mm
+        Maximum deflection (centre), clamped circular plate under uniform pressure
+  [17] sigma_edge = 3*q*a^2/(4*t^2)    « T&WK Ch. 3
+      = 3 × 20 kPa × (250 mm)^2 / (4 × (5 mm)^2)
+      = 37.5 MPa
+        Radial surface stress at the clamped edge
+  [18] M_c = M_r = M_θ at the centre = −2D(1 + ν)·B    « T&WK Ch. 3
+      = from the constants of the solution
+      = 101.56 N·m/m
+        Bending moment at the centre
+  [19] M_edge = M_r at the edge r = a    « T&WK Ch. 3
+      = clamped: fixing moment
+      = -156.25 N·m/m
+        Radial bending moment at the edge
+  [20] M_r_gov = M_r at the governing point    « T&WK Ch. 3
+      = r = 250 mm
+      = -156.25 N·m/m
+        Radial moment at the von Mises maximum
+  [21] M_t_gov = M_θ at the governing point    « T&WK Ch. 3
+      = r = 250 mm
+      = -46.875 N·m/m
+        Circumferential moment at the von Mises maximum
+  [22] lambda2 = λ² from J₀(λ)·I₁(λ) + I₀(λ)·J₁(λ) = 0    « Leissa Ch. 2
+      = clamped edge
+      = 10.216
+        Frequency parameter of the fundamental axisymmetric mode
+  [23] M_vm = √(M_1² − M_1·M_2 + M_2² + 3M_12²) at the governing point    « von Mises
+      = edge
+      = 138.88 N·m/m
+        Greatest von Mises moment per unit width
+  [24] sigma_max = 6·M_vm/t²    « Kirchhoff theory
+      = 6 × 138.88 N·m/m / (5 mm)²
+      = 33.331 MPa
+        Greatest von Mises surface stress
+  [25] sigma_principal = 6·M_principal/t²    « Kirchhoff theory
+      = 6 × 156.25 N·m/m / (5 mm)²
+      = 37.5 MPa
+        Greatest principal surface stress
+  [26] f1 = ω/2π    « Leissa
+      = D = 2289.4 N·m, ρt = 39.25 kg/m²
+      = 198.68 Hz
+        Fundamental natural frequency (ω is the angular frequency, rad/s; f is in Hz)
+  [27] w_over_t = w_max/t    « Kirchhoff theory
+      = 0.5332 mm / 5 mm
+      = 0.10664
+        Deflection over thickness
+  [28] u_stress = sigma_max/(f_y/gamma_M0)    « BS EN 1993-1-1 6.2.1(5)
+      = 33.331 MPa / (275 MPa / 1)
+      = 0.1212
+        Stress utilisation
+  [29] w_lim = span/ratio    « Serviceability
+      = 500 mm / 250
+      = 2 mm
+        Deflection limit
+  [30] u_defl = w_max/w_lim    « Serviceability
+      = 0.5332 mm / 2 mm
+      = 0.2666
+        Deflection utilisation
+
+5. RESULTS
+  w_max = 0.5332 mm    Maximum deflection
+  sigma_max = 33.331 MPa    Greatest von Mises stress
+  sigma_principal = 37.5 MPa    Greatest principal stress
+  f1 = 198.68 Hz    Fundamental frequency
+  u_stress = 0.1212    Stress utilisation
+  u_defl = 0.2666    Deflection utilisation
+  w_over_t = 0.10664    Deflection over thickness
+  D = 2289.4 N·m    Flexural rigidity
+  M_edge = -156.25 N·m/m    Edge moment
+  M_c = 101.56 N·m/m    Moment at the centre
+  lambda2 = 10.216    Frequency parameter λ²
+  location = "edge"    Governing stress point
+
+6. CHECKS (governing first)
+  PASS  Deflection w_max ≤ span/ratio: u_defl = 0.2666 vs u_defl ≤ 1  utilisation 0.267  « Serviceability
+  PASS  Stress σ_vm ≤ f_y/γ_M0: u_stress = 0.1212 vs u_stress ≤ 1  utilisation 0.121  « 6.2.1(5)
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: E, nu, rho, f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: struct.plate-bending@1.2.1
+  Known-answer cases passed: 11/11

@@ -1,0 +1,126 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: mech.snap-fit    Revision: A
+Title: Snap-fits: cantilever, annular, torsion
+
+1. SCOPE AND METHOD
+A plastic snap-fit joint of one of five forms: a cantilever lug of constant section, of tapered thickness or of tapered width, an annular (closed ring) snap, or a torsion bar. The strain at the critical section against the permissible strain of the plastic (one-time or repeated joining), the deflection force with the secant modulus, the assembly force (inclined entry face) and the separation force (return face) with Coulomb friction, and whether the joint is self-locking.
+Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (constant section; the design guides print the rounded 0.67); a linear taper of the thickness to r_h = h_tip/h gives K_y = 2·J/φ_max with J = [2r_h − r_h²/2 − ln r_h − 3/2]/(1 − r_h)³ and φ_max = 1 for r_h ≥ 1/2 (otherwise the strain peaks inside the beam at t = (2a − 1)/a, a = 1 − r_h, with φ_max = (1 − t)/(1 − a·t)²); a linear taper of the width to r_b gives K_y = 2·J with J = [1/2 − 2r_b + 3r_b²/2 − r_b²·ln r_b]/(1 − r_b)³ Strain and force of the cantilever: ε = y·h/(K_y·l²); P = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε)) Annular (derived, free thin ring): nominal hoop strain ε_nom = ΔD/D (the mean diameter D widened by the diametral interference ΔD); the strain checked is the larger of ε = K_ann·ε_nom (K_ann the user's strain factor) and the inner-surface strain ΔD/(D − h); the radial contact force summed round the ring is P = K_F·2π·Es·ε_nom·h·b (hoop force Es·ε_nom·h·b over the radius, K_F the user's optional force factor, 1 if none), b being the effective length of a free ring Torsion bar of radius r with a lever of length a deflected y: φ = y/a; the bar is held at one end (free length l_eff = l) or at both ends with the lever in the middle (l_eff = l/2, two halves in parallel); γ = φ·r/l_eff, equivalent tensile strain ε = γ/(1 + ν), γ_perm = ε_perm·(1 + ν); G = Es/(2(1 + ν)), T = n·G·(π r⁴/2)·φ/l_eff with n = 1 or 2, P = T/a (both ends: P = 4·G·J·φ/(l·a)) Joining forces: W = P·(μ + tan α)/(1 − μ·tan α) on the entry face (angle α to the joining direction) and W′ = P·(μ + tan α′)/(1 − μ·tan α′) on the return face (α′); the joint is self-locking, with an infinite separation force, when α′ ≥ arctan(1/μ); assembly jams when μ·tan α ≥ 1 Utilisation u = ε/ε_perm (FAIL above 1); permissible deflection y_perm = K_y·ε_perm·l²/h (annular ΔD_perm = ε_perm·min(D/K_ann, D − h); torsion y_perm = γ_perm·l_eff·a/r)
+  Ref: Covestro, Snap-Fit Joints for Plastics: A Design Guide Section B — Cantilever, annular and torsion snap-fit relations
+  Ref: Euler–Bernoulli beam theory — Tip deflection and surface strain of a tapered cantilever, by integration
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  mode | Form of snap-fit | Cantilever, constant section |  | manual | any
+  l | Length of the beam (cantilever); of the torsion bar: its free length when held at one end, or its whole length between the two supports when held at both ends with the lever in the middle | 15 | mm | manual | 2 … 100 mm
+  h | Thickness at the root (cantilever); wall thickness of the ring (annular) | 2 | mm | manual | 0.3 … 10 mm
+  b | Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube) | 6 | mm | manual | 1 … 50 mm
+  h_ratio | Tip thickness / root thickness (tapered thickness) | 0.5 |  | manual | 0.25 … 1
+  b_ratio | Tip width / root width (tapered width) | 0.5 |  | manual | 0.1 … 1
+  y | Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared | 1 | mm | manual | 0.05 … 20 mm
+  D_ring | Mean diameter of the ring (annular) | 30 | mm | manual | 5 … 500 mm
+  dD | Interference on the diameter: how much the ring is widened to pass the undercut (annular) | 0.4 | mm | manual | 0 … 5 mm
+  bar_support | How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length) | Held at one end |  | manual | any
+  r_bar | Radius of the torsion bar | 1.5 | mm | manual | 0.3 … 10 mm
+  a_arm | Length of the lever on the torsion bar | 8 | mm | manual | 2 … 100 mm
+  alpha | Entry (assembly) angle α of the inclined face to the joining direction | 30 | deg | manual | 5 … 60 deg
+  alpha_r | Return (separation) angle α′ of the retaining face (90° is a face square to the joining direction) | 60 | deg | manual | 10 … 90 deg
+  mu | Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair) | 0.3 |  | manual | 0.05 … 1
+  Es_source | Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a W3 material | Typed secant modulus |  | manual | any
+  Es | Secant modulus Es at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data) | 2400 | MPa | manual | 10 … 20000 MPa
+  loading | How often the joint is made: selects the one-time or the repeated permissible strain | One-time (assembled once or rarely) |  | manual | any
+  eps_perm_once | Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data) | 0.04 |  | manual | 0.001 … 0.3
+  T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 23 | degC | manual | -40 … 120 degC
+
+3. ASSUMPTIONS
+  A1. Beam theory (Euler–Bernoulli) for the cantilever: a rigid root, a linear taper, a constant secant modulus Es at the design strain over the whole beam, small deflection. The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet; the geometry factors are derived by integration (the 0.67 of the design guides is the constant-section 2/3 rounded). (Euler–Bernoulli beam theory (derived); the guide's closed forms for the constant section are to be checked against the owner's copy.)
+  A2. Es and the permissible strain are properties of the plastic at the temperature of use, with the loading (one-time or repeated) and the moisture state of the part. No values are supplied: they come from the plastic maker's data or a W3 material, and the temperature entered records what they were taken at. (Addendum B §B5: no plastics data are shipped.)
+  A3. Annular snap: a free, thin, closed ring of effective axial length b. The nominal hoop strain is the diametral interference over the mean diameter, ΔD/D; the strain checked is the larger of that times the user's strain factor K_ann (record snapfit.annular-factor, no default) and the inner-surface strain. The contact force is the hoop force Es·ε_nom·h·b taken round the ring, from the nominal strain only, times the user's optional force factor K_F (record snapfit.annular-force-factor; blank is 1); a tube behind the ring stiffens the joint and raises the force, which only K_F can represent. The strain on the inner (contact) surface is ΔD/(D − h), slightly above the mean-diameter value, so the check takes the larger of the two; a wall above a tenth of the diameter warns that the thin-ring model has run out. (Derived from ring geometry (not a relation of the design guide); compare with the owner's copy of the guide.)
+  A4. Torsion bar: a solid round bar of radius r loaded at the end of a lever, the angle small (φ = y/a), held at one end or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length). The permissible shear strain is ε_perm·(1 + ν) and the equivalent tensile strain γ/(1 + ν); G = Es/(2(1 + ν)) with the secant modulus at that strain. (γ = φ·r/l and γ_perm ≈ ε_perm·(1 + ν) are the brief's design-guide relations, to be checked against the owner's copy; the torque, the force and the two-ended case are derived.)
+  A5. Assembly and separation: a rigid mating part, Coulomb friction μ on the inclined face (α for assembly, α′ for separation), the deflection force P taken at the design deflection; no creep or stress relaxation of the joint in service, no impact (speed) effect. (Friction on an inclined plane; the friction coefficient is the user's record.)
+  A6. Es and the permissible strain are the values of the plastic at the temperature of use, 23 °C, as entered, in the moisture state of the part; the sheet cannot check this. (Recorded temperature of use.)
+
+4. WORKING
+  [10] l_h = l / h
+      = 15 mm / 2 mm
+      = 7.5
+        Slenderness of the beam l/h
+  [11] phi_max = 1    « Euler–Bernoulli beam theory (derived)
+      = —
+      = 1
+        Largest value of the strain shape along the beam (the root)
+  [12] K_y = 2/3    « Euler–Bernoulli beam theory (derived)
+      = constant section
+      = 0.66667
+        Deflection factor: y = K_y·ε·l²/h (derived; the design guides print the rounded 0.67)
+  [13] eps = y * h / (K_y * l^2)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 1 mm × 2 mm / (0.66667 × (15 mm)^2)
+      = 1.3333 %
+        Maximum surface strain at the critical section (nominal)
+  [16] eps_perm = eps_perm_once    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 0.04
+      = 4 %
+        Permissible strain (one-time joining, as entered)
+  [19] P = b * h^2 * Es * eps / (6 * l * phi_max)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 6 mm × (2 mm)^2 × 2400 MPa × 1.3333 % / (6 × 15 mm × 1)
+      = 8.5333 N
+        Deflection force at the tip: P = (b·h²/6)·(Es·ε/l) at the root of a constant section
+  [20] y_perm = K_y * eps_perm * l^2 / h    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 0.66667 × 4 % × (15 mm)^2 / 2 mm
+      = 3 mm
+        Permissible tip deflection
+  [21] strain_util = eps / eps_perm
+      = 1.3333 % / 4 %
+      = 0.33333
+        Strain / permissible strain
+  [22] tan_a = tan(alpha)
+      = tan(30 deg)
+      = 0.57735
+        tan α of the entry face
+  [23] mu_tan_a = mu * tan_a
+      = 0.3 × 0.57735
+      = 0.17321
+        μ·tan α of the entry face
+  [24] assembly_force = P * (mu + tan_a) / (1 - mu_tan_a)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 8.5333 N × (0.3 + 0.57735) / (1 − 0.17321)
+      = 9.0551 N
+        Assembly force W = P·(μ + tan α)/(1 − μ·tan α)
+  [25] alpha_lock = arctan(1/μ)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = arctan(1/0.3)
+      = 73.301 deg
+        Return angle above which the joint is self-locking (π/2 when μ = 0)
+  [26] tan_ar = tan(alpha_r)
+      = tan(60 deg)
+      = 1.7321
+        tan α′ of the return face
+  [27] retention_force = P * (mu + tan_ar) / (1 - mu * tan_ar)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 8.5333 N × (0.3 + 1.7321) / (1 − 0.3 × 1.7321)
+      = 36.096 N
+        Separation force W′ = P·(μ + tan α′)/(1 − μ·tan α′)
+
+5. RESULTS
+  eps = 1.3333 %    Maximum strain
+  eps_perm = 4 %    Permissible strain
+  strain_util = 0.33333    Strain / permissible strain
+  Es = 2400 MPa    Secant modulus used
+  P = 8.5333 N    Deflection force
+  y_perm = 3 mm    Permissible deflection
+  l_h = 7.5    Slenderness l/h
+  K_y = 0.66667    Deflection factor K_y
+  phi_max = 1    Strain shape maximum
+  assembly_force = 9.0551 N    Assembly force
+  alpha_lock = 73.301 deg    Self-locking return angle
+  retention_force = 36.096 N    Separation force
+  self_locking = "No"    Self-locking
+  fillet_advisory = "The strain above is the nominal strain, with no local concentration. A sharp internal corner at the root (or at the end of the bar or ring) concentrates the strain and is the usual place for a snap-fit to break: give the root a generous fillet radius, of the order of the thickness, taper the section away from it, and apply a concentration factor from your own reference if the radius is small."    Root-fillet advisory
+
+6. CHECKS (governing first)
+  PASS  Strain at the critical section against the permissible strain: strain_util = 0.33333 vs strain_util ≤ 1  utilisation 0.333  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+  PASS  Assembly: the entry face does not jam (μ·tan α < 1): μ·tan α = 0.17321 vs < 1  utilisation 0  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: eps_perm_once (Material properties); mu (Coefficient of friction); Es (Secant modulus at the design strain). Enter each as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: mech.snap-fit@1.2.0
+  Known-answer cases passed: 10/10

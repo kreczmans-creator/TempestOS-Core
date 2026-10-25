@@ -17,5 +17,6 @@ public static class MechanicalCalculators
         new WeldGroupCalculator(),
         new ShaftCalculator(),
         new SpringCalculator(),
+        new SnapFitCalculator(),
     ];
 }

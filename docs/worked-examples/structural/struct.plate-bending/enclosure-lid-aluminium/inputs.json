@@ -1,0 +1,153 @@
+[
+  {
+    "Symbol": "E",
+    "Number": 70,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed \u0027Aluminium alloy (generic)\u0027, E: indicative, not from a standard; replace with the material record for the alloy on the drawing",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "a",
+    "Number": 300,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-LID-01",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "300"
+  },
+  {
+    "Symbol": "b",
+    "Number": 200,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-LID-01",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "200"
+  },
+  {
+    "Symbol": "defl_ratio",
+    "Number": 250,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Project specification: lid deflection limited to span/250 so the gasket stays seated",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "250"
+  },
+  {
+    "Symbol": "f_y",
+    "Number": 150,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Assumed 0.2 % proof strength for the sheet temper (the W3 generic seed has no strength); replace with the material record from the mill certificate.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "150"
+  },
+  {
+    "Symbol": "gamma_M0",
+    "Number": 1.1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "EN 1999-1-1 partial factor \u03B3_M1 = 1.1 for the resistance of cross-sections of aluminium, entered in the \u03B3_M0 slot; to be checked against the standard and National Annex in use",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.1"
+  },
+  {
+    "Symbol": "load_basis",
+    "Text": "pressure q",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Load given as a pressure.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "pressure q"
+  },
+  {
+    "Symbol": "load_type",
+    "Text": "uniform",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Enclosure datasheet ENC-DS-07: internal pressure rise in a sealed enclosure on thermal cycling",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "uniform"
+  },
+  {
+    "Symbol": "nu",
+    "Number": 0.33,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed \u0027Aluminium alloy (generic)\u0027, nu: indicative",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.33"
+  },
+  {
+    "Symbol": "q",
+    "Number": 20,
+    "Unit": "kPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Enclosure datasheet ENC-DS-07: 0.2 bar differential",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "rho",
+    "Number": 2700,
+    "Unit": "kg/m^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed \u0027Aluminium alloy (generic)\u0027, rho: indicative",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2700"
+  },
+  {
+    "Symbol": "shape",
+    "Text": "rectangular",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-LID-01",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "rectangular"
+  },
+  {
+    "Symbol": "support",
+    "Text": "simply supported",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The lid sits on a gasket land and is bolted at close pitch: treated as simply supported, which is the safe side for deflection and the central stress.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "simply supported"
+  },
+  {
+    "Symbol": "t",
+    "Number": 4,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "ENC-LID-01",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  }
+]

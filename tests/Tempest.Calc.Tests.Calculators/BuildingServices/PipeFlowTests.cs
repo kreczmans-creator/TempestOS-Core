@@ -12,6 +12,31 @@ public sealed class PipeFlowTests
     private static CalcRunResult Run(params CalcInputValue[] values) => CalcRunner.Run(Calc, new CalcInputSet(values));
 
     [Fact]
+    public void Fitting_Losses_Below_Re_4000_Are_Flagged_As_Understated()
+    {
+        // L-h: K is a turbulent-flow coefficient and rises at low Re; the fittings term is used as entered, with a warning.
+        CalcRunResult At(double qh, double k) => Run(CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidCustom), CalcInputValue.Quantity("rho_custom", 870, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 30, "mPa*s"),
+            CalcInputValue.Quantity("Q", qh, "m^3/h"), PipeFlowCalculator.Segments(("line", 12, 20, 0.045, k, 0, 0, "discharge")));
+
+        // 4.5376 m3/h in 20 mm is Re 2327 (transitional): K = 6 warns, K = 0 does not.
+        var transitional = At(4.53764705882353, 6);
+        Assert.Contains(transitional.Notices, n => n.RuleId == "transition");
+        var warning = Assert.Single(transitional.Notices, n => n.RuleId == "fittings");
+        Assert.Contains("line", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("K = 6", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(At(4.53764705882353, 0).Notices, n => n.RuleId == "fittings");
+
+        // Laminar flow too; turbulent flow (Re well above 4000) does not warn.
+        Assert.Contains(At(1, 6).Notices, n => n.RuleId == "fittings");
+        Assert.DoesNotContain(At(40, 6).Notices, n => n.RuleId == "fittings" || n.RuleId == "laminar" || n.RuleId == "transition");
+
+        // The loss itself is unchanged: the fittings term K·ρ·v²/2 is added as entered.
+        var v = 4.53764705882353 / 3600 / (Math.PI * 0.02 * 0.02 / 4);
+        Assert.Equal(At(4.53764705882353, 0).OutputSi("dp_total") + 6 * 870 * v * v / 2, transitional.OutputSi("dp_total"), 1e-3);
+        Assert.Equal("1.3.0", Calc.Template.Version);
+    }
+
+    [Fact]
     public void Water_Correlations_Hit_Reference_Points()
     {
         Assert.Equal(999.97, Water.Density(4), 0.05);
