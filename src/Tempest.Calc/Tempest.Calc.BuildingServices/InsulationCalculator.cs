@@ -21,14 +21,14 @@ public sealed class InsulationCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.BuildingServices, "Insulation thickness (ISO 12241 formula route)",
+        Id, "1.1.0", CalcDiscipline.BuildingServices, "Insulation thickness (ISO 12241 formula route)",
         "The insulation thickness on a pipe (cylinder) or a flat surface that meets a heat-flow limit, a limit on the surface temperature of a hot surface and an anti-condensation requirement for a cold one, each solved separately and the governing one reported; and for a chosen thickness the heat flow, the surface temperature and PASS/FAIL per criterion. Steady state, one layer, no thickness table of any standard.",
         "Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = D_i + 2t; with the inner film and pipe wall R_oth = 1/(h_i·π·D_p) + ln(D_i/D_p)/(2π·λ_w) added in series\n" +
         "Flat resistance per square metre: R = t/λ + 1/h_se (+ 1/h_i + t_w/λ_w)\n" +
         "Heat flow: q = (θ_i − θ_a)/R, positive from the process to the ambient\n" +
         "Surface temperature: θ_se = θ_a + q/(h_se·π·D_e) (pipe), θ_a + q/h_se (flat)\n" +
         "Surface coefficient: h_se as given, or h_se = h_c + h_r with h_r = ε·σ·(T_s² + T_a²)(T_s + T_a); h_c from free convection to air (laminar or turbulent, the larger), forced convection (cross-flow cylinder or flat plate) and their cube-law blend; solved with θ_se, which it depends on\n" +
-        "Heat-loss limit: the thickness beyond which |q| ≤ q_max; surface-temperature limit (hot): θ_se ≤ θ_se,max; anti-condensation (cold): θ_se ≥ θ_dew + margin, θ_dew from the Magnus relation at θ_a and RH\n" +
+        "Heat-loss limit: the thickness beyond which |q| ≤ q_max; surface-temperature limit (hot): θ_se ≤ θ_se,max; anti-condensation (cold): θ_se ≥ θ_dew + margin, θ_dew entered (for example from B2) or from the Magnus relation at θ_a and RH\n" +
         "Solve: each criterion's thickness by scanning t from 0 to 1 m for the last broken point and bisecting the bracket after it; governing t = max over the selected criteria\n" +
         "Critical diameter: D_crit = 2λ/h_se; below it, insulation raises the heat flow until D_e passes D_crit",
         [
@@ -48,37 +48,42 @@ public sealed class InsulationCalculator : ICalcCalculator
             new CalcInputSpec("lambda_w", "Pipe wall conductivity", CalcInputKind.Quantity, "W/(m*K)", Min: 0.2, Max: 400, HardMin: 0.1, HardMax: 500, IsOptional: true, Group: "Pipe wall and film"),
             new CalcInputSpec("q_max_m", "Heat-loss limit per metre of pipe (blank = not a criterion)", CalcInputKind.Quantity, "W/m", Default: 25, Min: 1, Max: 1000, HardMin: 1e-6, HardMax: 1e5, IsOptional: true, Group: "Criteria"),
             new CalcInputSpec("q_max_A", "Heat-loss limit per square metre of flat surface (blank = not a criterion)", CalcInputKind.Quantity, "W/m^2", Min: 1, Max: 500, HardMin: 1e-6, HardMax: 1e5, IsOptional: true, Group: "Criteria"),
-            new CalcInputSpec("theta_se_max", "Highest surface temperature, for a hot surface (blank = not a criterion)", CalcInputKind.Quantity, "degC", Default: 45, Min: 30, Max: 70, HardMin: -50, HardMax: 300, IsOptional: true, Group: "Criteria"),
+            new CalcInputSpec("theta_se_max", "Highest surface temperature, for a hot surface (blank = not a criterion)", CalcInputKind.Quantity, "degC", Min: 30, Max: 70, HardMin: -50, HardMax: 300, IsOptional: true, Group: "Criteria"),
             new CalcInputSpec("dew_margin", "Margin of the surface above the dew point, for a cold surface (blank = not a criterion)", CalcInputKind.Quantity, "K", Min: 0, Max: 5, HardMin: 0, HardMax: 20, IsOptional: true, Group: "Criteria"),
+            new CalcInputSpec("theta_dew", "Dew point of the ambient air, if known, for example linked from B2 (blank = from θ_a and RH_a by the Magnus relation)", CalcInputKind.Quantity, "degC", Min: -50, Max: 50, HardMin: -100, HardMax: 70, IsOptional: true, Group: "Criteria"),
             new CalcInputSpec("RH_a", "Relative humidity of the ambient air (anti-condensation)", CalcInputKind.Quantity, "%", Default: 60, Min: 20, Max: 95, HardMin: 1, HardMax: 100, Group: "Criteria"),
-            new CalcInputSpec("t_chosen", "Chosen insulation thickness (blank = report at the required thickness, no checks)", CalcInputKind.Quantity, "mm", Default: 40, Min: 0, Max: 300, HardMin: 0, HardMax: 1000, IsOptional: true, Group: "Chosen thickness"),
+            new CalcInputSpec("t_chosen", "Chosen insulation thickness (blank = report at the required thickness, no checks; with it, nothing blocks)", CalcInputKind.Quantity, "mm", Default: 40, Min: 0, Max: 300, HardMin: 0, HardMax: 1000, IsOptional: true, Group: "Chosen thickness"),
         ],
         [
             new CalcAssumption("Steady one-dimensional heat flow through a single homogeneous layer of constant conductivity; no thermal bridges at supports, no joints, no moisture in the insulation. λ is taken at the value entered: use the value at the mean insulation temperature shown on the sheet (optionally noted in 'Temperature the conductivity applies at').", "Formula route of the standard."),
-            new CalcAssumption("With the correlation, h_se = h_c + h_r. Radiation: h_r = ε·σ·(T_s² + T_a²)(T_s + T_a) to surroundings at the ambient air temperature. Free convection to air: Holman's simplified relations at atmospheric pressure, the larger of the laminar and turbulent forms (horizontal cylinder 1.32(ΔT/D)^0.25 and 1.24ΔT^(1/3); vertical surface 1.42(ΔT/L)^0.25 and 1.31ΔT^(1/3)). Forced convection: Churchill–Bernstein for a cylinder in cross-flow, the laminar/mixed flat-plate relations along a plate; air properties from fits at the film temperature, Pr = 0.71; blended with free convection as (h_nat³ + h_forced³)^(1/3). Indicative, not the standard's own correlation.", "Incropera 7th ed. §7.2, §7.4, §9.6; Holman, Heat Transfer; the standard's own coefficients are not reproduced."),
-            new CalcAssumption("The dew point is the Magnus relation over water (ice below 0 °C), the same closed form B7 uses. A margin above it is the user's.", "Derived; B7 shares the function."),
+            new CalcAssumption("With the correlation, h_se = h_c + h_r. Radiation: h_r = ε·σ·(T_s² + T_a²)(T_s + T_a) to surroundings at the ambient air temperature. Free convection to air: Holman's simplified relations at atmospheric pressure, the larger of the laminar and turbulent forms (horizontal cylinder 1.32(ΔT/D)^0.25 and 1.24ΔT^(1/3); vertical surface 1.42(ΔT/L)^0.25 and 1.31ΔT^(1/3)). Forced convection: Churchill–Bernstein for a cylinder in cross-flow, the laminar/mixed flat-plate relations along a plate; air properties from fits at the film temperature, Pr = 0.71; blended with free convection as (h_nat³ + h_forced³)^(1/3). Indicative, not the standard's own correlation.", "Incropera 7th ed. §7.2, §7.4, §9.6 free convection and §9.9 mixed convection (section numbers to be checked against the owner's copy); the free-convection constants are Holman's, Heat Transfer; the standard's own coefficients are not reproduced."),
+            new CalcAssumption("The dew point is entered (for example from B2) or is the Magnus relation at θ_a and RH, the same closed form B7 uses. Below 0 °C the relation is over ice, so RH is then taken relative to ice, whereas meteorological RH is usually relative to water: enter the dew point for sub-zero air. A margin above it is the user's.", "Derived; B7 shares the function."),
+            new CalcAssumption("Pipes are treated as horizontal for free convection and flat surfaces as vertical; air properties are fits (conductivity within about 3 %, viscosity within about 4 % over 250–400 K), Pr = 0.71.", "Stated."),
             new CalcAssumption("The required thickness is the least thickness beyond which the criterion holds for every thicker layer up to 1 m, which is what matters when thin insulation on a small pipe raises the heat flow (critical diameter).", "Stated."),
             new CalcAssumption("No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data.", "Addendum B §B5."),
         ],
         [
             new CalcClauseRef("ISO 12241", "formula route (clause numbers to be checked)", "Thermal insulation for building equipment and industrial installations: calculation rules"),
-            new CalcClauseRef("Incropera, Fundamentals of Heat and Mass Transfer", "7th ed., §7.2, §7.4, §9.6", "External forced convection, free convection and mixed convection correlations"),
-            new CalcClauseRef("ISO 13788", "cl. 6", "Magnus saturation vapour pressure (shared with B7)"),
+            new CalcClauseRef("Incropera, Fundamentals of Heat and Mass Transfer", "7th ed., §7.2, §7.4, §9.6, §9.9 (to be checked)", "External forced, free and mixed convection correlations"),
+            new CalcClauseRef("ISO 13788", "cl. 6 (clause number to be checked against the owner's copy)", "Magnus saturation vapour pressure (shared with B7)"),
         ],
         [
             new CalcApplicabilityRule("temperatures", "The process temperature must differ from the ambient temperature.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("criteria", "At least one criterion that applies to the sign of θ_i − θ_a must be selected: a heat-flow limit, a hot-surface limit (hot) or a dew-point margin (cold).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("unattainable", "A criterion that no thickness up to 1 m meets is refused.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("criteria", "At least one criterion that applies to the sign of θ_i − θ_a must be selected (a heat-flow limit, a hot-surface limit (hot) or a dew-point margin (cold)) or a thickness chosen.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("unattainable", "A criterion that no thickness up to 1 m meets blocks the sheet when no thickness is chosen; with a chosen thickness its required thickness shows as > 1000 mm, with a warning, and the chosen thickness is checked against it.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("surface-limit", "The hot-surface limit must be above the ambient temperature.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("dew", "The dew point plus the margin must be below the ambient temperature.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("wall", "The pipe wall needs both thickness and conductivity, and must be thinner than the pipe radius.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("criterion-na", "A hot-surface limit on a cold pipe, or a dew-point margin on a hot one, is ignored.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("no-criteria", "No criterion applies but a thickness is chosen: only the heat flow and surface temperature at it are reported.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("no-condensation-check", "The surface is colder than the air and no dew-point margin is entered, so condensation is not checked.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("bare-complies", "The bare surface meets a heat-flow limit that thin insulation on a pipe below the critical diameter breaks.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("critical-radius", "The pipe is below the critical diameter 2λ/h_se, or the chosen insulation carries more heat than the bare pipe.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("lambda-temperature", "The mean insulation temperature is more than 20 K from the temperature the conductivity applies at.", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-pipe-chosen", "Hot pipe, 30 mm chosen: heat flow and surface temperature",
-                new CalcReferenceSource("Analytic (R = ln(D_e/D_i)/(2πλ) + 1/(h_se·π·D_e); q = Δθ/R; θ_se = θ_a + q/(h_se·π·D_e))", null, "D_i 100 mm, t 30 mm, D_e 160 mm, λ 0.04, h_se 10, 80 → 20 °C: R = 0.2999 + 0.0199 + ... = 2.069029 K·m/W; q = 28.99911 W/m; θ_se = 25.76919 °C; recomputed in python3"),
+                new CalcReferenceSource("Analytic (R = ln(D_e/D_i)/(2πλ) + 1/(h_se·π·D_e); q = Δθ/R; θ_se = θ_a + q/(h_se·π·D_e))", null, "D_i 100 mm, t 30 mm, D_e 160 mm, λ 0.04, h_se 10, 80 → 20 °C: R = 1.870085 (insulation) + 0.198944 (surface) = 2.069029 K·m/W; q = 28.99911 W/m; θ_se = 25.76919 °C; recomputed in python3"),
                 [Choice("geometry", Pipe), Q("t_chosen", 30, "mm"), Q("q_max_m", 30, "W/m"), Q("theta_se_max", 45, "degC")],
                 [new CalcExpectedValue("R", 2.0690287005046017, "m*K/W", 1e-9), new CalcExpectedValue("q_per_m", 28.99911440830521, "W/m", 1e-9), new CalcExpectedValue("theta_se", 25.769190504211473, "degC", 1e-9), new CalcExpectedValue("u_q", 0.9666371469435070, "", 1e-9)]),
             new CalcTestCase("ka-pipe-heat-loss", "Hot pipe: the thickness for a heat-loss limit of 25 W/m",
@@ -117,12 +122,29 @@ public sealed class InsulationCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (series resistances; recomputed in python3)", null, "D_i 100 mm, 30 mm chosen, λ 0.04, h_se 10, 80 → 20 °C, steel-like wall 3 mm λ 50, inner film 500 W/(m²K): R_oth = 0.0069695, R = 2.075998 K·m/W, q = 28.90176 W/m, θ_se = 25.74982 °C"),
                 [Choice("geometry", Pipe), Q("h_i", 500, "W/(m^2*K)"), Q("t_w", 3, "mm"), Q("lambda_w", 50, "W/(m*K)"), Q("q_max_m", 30, "W/m"), Q("t_chosen", 30, "mm")],
                 [new CalcExpectedValue("R_oth", 0.006969506297018693, "m*K/W", 1e-9), new CalcExpectedValue("R", 2.0759982068016205, "m*K/W", 1e-9), new CalcExpectedValue("q_per_m", 28.90175906868378, "W/m", 1e-9), new CalcExpectedValue("theta_se", 25.74982227479005, "degC", 1e-9)]),
+            new CalcTestCase("ka-dew-point-entered", "Cold flat surface with the dew point entered (linked from B2) instead of computed",
+                new CalcReferenceSource("Analytic (plane layer)", null, "5 °C surface in 25 °C air, dew point 20 °C entered, 1 K margin: target 21 °C, X = 4 K; t = 0.04·(20/(10·4) − 0.1) = 16 mm exactly; θ_se = 25 − 20·0.1/0.5 = 21 °C"),
+                [Choice("geometry", Flat), Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Q("theta_dew", 20, "degC"), Q("dew_margin", 1, "K")],
+                [new CalcExpectedValue("theta_dew", 20, "degC", 1e-9), new CalcExpectedValue("thickness", 16, "mm", 1e-9), new CalcExpectedValue("theta_se", 21, "degC", 1e-9)]),
+            new CalcTestCase("ka-flat-condensation-ice", "Cold flat surface in sub-zero air: the dew point over ice",
+                new CalcReferenceSource("Analytic (plane layer, Magnus form over ice below 0 °C)", null, "−30 °C surface in −10 °C air at 90 % RH (relative to ice, as the Magnus form is used below 0 °C), 1 K margin: θ_dew = −11.17880 °C, target −10.17880 °C, X = 0.17880 K; t = 0.04·(20/(10·0.17880) − 0.1) = 443.4365 mm; recomputed in python3"),
+                [Choice("geometry", Flat), Q("theta_i", -30, "degC"), Q("theta_a", -10, "degC"), Q("RH_a", 90, "%"), Q("dew_margin", 1, "K")],
+                [new CalcExpectedValue("theta_dew", -11.178796330412547, "degC", 1e-9), new CalcExpectedValue("thickness", 443.43647599148875, "mm", 1e-9)]),
+            new CalcTestCase("ka-flat-wind-turbulent", "Flat wall 10 m long in a 20 m/s wind: the turbulent flat-plate branch",
+                new CalcReferenceSource("Analytic (mixed laminar/turbulent flat plate, Re_L above 5×10⁵, blended with free convection; recomputed in python3)", null, "λ 0.04, 50 mm, 60 → 20 °C, ε 0.9, L 10 m, 20 m/s: h_c = 40.20648, h_r = 5.160882, h_se = 45.36736 W/(m²K); θ_se = 20.69313 °C; q = 31.44550 W/m²; 40 W/m² needs 39.11825 mm"),
+                [Choice("geometry", Flat), Q("theta_i", 60, "degC"), Q("theta_a", 20, "degC"), Choice("h_mode", HCorrelation), CalcInputValue.Of("eps", 0.9), Q("v_wind", 20, "m/s"), Q("L_surf", 10, "m"), Q("q_max_A", 40, "W/m^2"), Q("t_chosen", 50, "mm")],
+                [new CalcExpectedValue("theta_se", 20.693130399686403, "degC", 1e-8), new CalcExpectedValue("h_c", 40.206477210567066, "W/(m^2*K)", 1e-8), new CalcExpectedValue("h_r", 5.160881795008252, "W/(m^2*K)", 1e-8), new CalcExpectedValue("q_area", 31.44549568025088, "W/m^2", 1e-8), new CalcExpectedValue("thickness", 39.118252413929866, "mm", 1e-8)]),
+            new CalcTestCase("ka-bare-complies-window", "Small pipe below the critical diameter: the bare pipe meets the limit, a window of thin layers does not",
+                new CalcReferenceSource("Analytic (root of q(t) = 25 W/m beyond the hump; recomputed in python3)", null, "D_i 10 mm, λ 0.2, h_se 10, 80 → 20 °C: D_crit = 2λ/h = 40 mm; bare q = 18.84956 W/m ≤ 25, but layers from 2.764604 mm to 74.29172 mm exceed it; the thickness beyond which it holds for every thicker layer is 74.29172 mm"),
+                [Choice("geometry", Pipe), Q("D_i", 10, "mm"), Q("lambda", 0.2, "W/(m*K)"), Q("q_max_m", 25, "W/m")],
+                [new CalcExpectedValue("thickness", 74.29172044012402, "mm", 1e-9), new CalcExpectedValue("q_per_m", 25, "W/m", 1e-9), new CalcExpectedValue("D_crit", 40, "mm", 1e-9)]),
         ],
         Category: "Thermal",
         OutputPorts:
         [
             new CalcOutputPort("thickness", "mm", "Governing required insulation thickness (the largest of the selected criteria)"),
             new CalcOutputPort("q_per_m", "W/m", "Heat flow per metre of pipe at the evaluated thickness (magnitude; pipe only)"),
+            new CalcOutputPort("q_area", "W/m^2", "Heat flow per square metre of a flat surface at the evaluated thickness (magnitude; flat only)"),
             new CalcOutputPort("theta_se", "degC", "Outer surface temperature at the evaluated thickness"),
         ],
         RecordKinds:
@@ -219,6 +241,7 @@ public sealed class InsulationCalculator : ICalcCalculator
         }
 
         // The criteria that apply.
+        var chosen = c.Has("t_chosen");
         var criteria = new List<Criterion>();
         var qLimitSymbol = pipe ? "q_max_m" : "q_max_A";
 
@@ -226,7 +249,7 @@ public sealed class InsulationCalculator : ICalcCalculator
         {
             c.Input(qLimitSymbol);
             var qMax = c.InputSi(qLimitSymbol);
-            criteria.Add(new Criterion("q", "t_q", "heat-loss limit", s => Math.Abs(s.Q) - qMax, s => Math.Abs(s.Q) / qMax, "u_q", $"|q| ≤ {F(qMax)} {(pipe ? "W/m" : "W/m²")}"));
+            criteria.Add(new Criterion("q", qLimitSymbol, "t_q", hot ? "heat-loss limit" : "heat-gain limit", s => Math.Abs(s.Q) - qMax, s => Math.Abs(s.Q) / qMax, "u_q", $"|q| ≤ {F(qMax)} {(pipe ? "W/m" : "W/m²")}"));
         }
 
         if (c.Has("theta_se_max"))
@@ -246,11 +269,16 @@ public sealed class InsulationCalculator : ICalcCalculator
                     return;
                 }
 
-                criteria.Add(new Criterion("se", "t_se", "surface-temperature limit", s => s.Ts - seMax, s => (s.Ts - ta) / (seMax - ta), "u_se", $"θ_se ≤ {F(seMax)} °C"));
+                criteria.Add(new Criterion("se", "theta_se_max", "t_se", "surface-temperature limit", s => s.Ts - seMax, s => (s.Ts - ta) / (seMax - ta), "u_se", $"θ_se ≤ {F(seMax)} °C"));
             }
         }
 
-        var dewTarget = double.NaN;
+        var dewKnown = false;
+
+        if (!hot && !c.Has("dew_margin"))
+        {
+            c.Warn("no-condensation-check", "dew_margin: the surface is colder than the air but no dew-point margin is entered, so condensation is not checked. Enter dew_margin (0 K is a valid margin) to check the surface against the dew point.");
+        }
 
         if (c.Has("dew_margin"))
         {
@@ -261,10 +289,22 @@ public sealed class InsulationCalculator : ICalcCalculator
             else
             {
                 c.Input("dew_margin");
-                c.Input("RH_a");
-                var dew = GlaserModel.DewPoint(c.InputSi("RH_a") * GlaserModel.SaturationPressure(ta));
-                dewTarget = dew + c.InputSi("dew_margin");
-                c.Record("theta_dew", "inverse Magnus of RH·p_sat(θ_a)", $"θ_a = {F(ta)} °C, RH = {F(c.InputSi("RH_a") * 100)} %", ScalarValue.Of(dew, "degC"), "Dew point of the ambient air", "ISO 13788 cl. 6");
+                double dew;
+
+                if (c.Has("theta_dew"))
+                {
+                    c.Input("theta_dew");
+                    dew = c.InputSi("theta_dew") - 273.15;
+                }
+                else
+                {
+                    c.Input("RH_a");
+                    dew = GlaserModel.DewPoint(c.InputSi("RH_a") * GlaserModel.SaturationPressure(ta));
+                    c.Record("theta_dew", "inverse Magnus of RH·p_sat(θ_a)", $"θ_a = {F(ta)} °C, RH = {F(c.InputSi("RH_a") * 100)} %", ScalarValue.Of(dew, "degC"), "Dew point of the ambient air", "ISO 13788 (Magnus form, as B7)");
+                }
+
+                dewKnown = true;
+                var dewTarget = dew + c.InputSi("dew_margin");
 
                 if (!(dewTarget < ta))
                 {
@@ -272,42 +312,61 @@ public sealed class InsulationCalculator : ICalcCalculator
                     return;
                 }
 
-                var target = dewTarget;
-                criteria.Add(new Criterion("dew", "t_dew", "anti-condensation margin", s => target - s.Ts, s => (ta - s.Ts) / (ta - target), "u_dew", $"θ_se ≥ {F(target)} °C"));
+                criteria.Add(new Criterion("dew", "dew_margin", "t_dew", "anti-condensation margin", s => dewTarget - s.Ts, s => (ta - s.Ts) / (ta - dewTarget), "u_dew", $"θ_se ≥ {F(dewTarget)} °C"));
             }
         }
 
         if (criteria.Count == 0)
         {
-            c.Block("criteria", $"{(pipe ? "q_max_m" : "q_max_A")}: no criterion applies. Enter a heat-loss limit{(hot ? " or a hot-surface limit (theta_se_max)" : " or a dew-point margin (dew_margin)")} for this {(hot ? "hot" : "cold")} {(pipe ? "pipe" : "surface")}.");
-            return;
+            if (!chosen)
+            {
+                c.Block("criteria", $"{qLimitSymbol}: no criterion applies and no thickness is chosen. Enter a heat-flow limit{(hot ? " or a hot-surface limit (theta_se_max)" : " or a dew-point margin (dew_margin)")} for this {(hot ? "hot" : "cold")} {(pipe ? "pipe" : "surface")}, or enter t_chosen to see the heat flow and surface temperature at a thickness.");
+                return;
+            }
+
+            c.Warn("no-criteria", $"{qLimitSymbol}: no criterion applies to this {(hot ? "hot" : "cold")} {(pipe ? "pipe" : "surface")}, so no required thickness or PASS/FAIL is given; the heat flow and surface temperature at the chosen thickness are reported.");
         }
 
         var setup = new InsulationModel.Setup(pipe, di, lambda, ti, ta, rOther, surface);
         var grid = InsulationModel.Scan(setup);
         var mm = UnitCatalog.Parse("mm");
-        var required = new List<(Criterion Criterion, double Thickness)>();
+        var required = new List<(Criterion Criterion, double? Thickness)>();
+        var limitMm = F(InsulationModel.MaxThickness * 1000);
 
         foreach (var criterion in criteria)
         {
-            var (outcome, t) = InsulationModel.RequiredThickness(setup, grid, criterion.Violation);
+            var (outcome, t, brokenFrom) = InsulationModel.RequiredThickness(setup, grid, criterion.Violation);
 
             if (outcome == InsulationModel.SearchOutcome.Unattainable)
             {
-                c.Block("unattainable", $"{(criterion.Key == "q" ? qLimitSymbol : criterion.Key == "se" ? "theta_se_max" : "dew_margin")}: the {criterion.Name} ({criterion.Limit}) is not met by any thickness up to {F(InsulationModel.MaxThickness * 1000)} mm with these conductivity and surface values. Relax the limit or use a lower conductivity.");
-                return;
+                var message = $"{criterion.InputSymbol}: the {criterion.Name} ({criterion.Limit}) is not met by any thickness up to {limitMm} mm with these conductivity and surface values";
+
+                if (!chosen)
+                {
+                    c.Block("unattainable", message + ". Relax the limit or use a lower conductivity, or enter t_chosen to see the result at a thickness.");
+                    return;
+                }
+
+                c.Warn("unattainable", message + $"; its required thickness is shown as > {limitMm} mm and the chosen thickness is checked against it.");
+                required.Add((criterion, null));
+                continue;
             }
 
             required.Add((criterion, t));
-            c.Record(criterion.Symbol, $"t such that {criterion.Limit} for every thicker layer", $"scan 0 … {F(InsulationModel.MaxThickness * 1000)} mm, then bisection", ScalarValue.Of(t * 1000, mm), $"Required thickness, {criterion.Name}", "ISO 12241");
+            c.Record(criterion.Symbol, $"t such that {criterion.Limit} for every thicker layer", $"scan 0 … {limitMm} mm, then bisection", ScalarValue.Of(t * 1000, mm), $"Required thickness, {criterion.Name}", "ISO 12241");
+
+            if (brokenFrom is { } from)
+                c.Warn("bare-complies", $"{criterion.InputSymbol}: the bare surface also meets the {criterion.Name} ({criterion.Limit}), but layers from {F(from * 1000)} mm to {F(t * 1000)} mm break it (thin insulation on a pipe below the critical diameter raises the heat flow); the required thickness {F(t * 1000)} mm is the one beyond which it holds for every thicker layer. Insulating at all is a choice of at least that thickness.");
         }
 
-        var governing = required.OrderByDescending(r => r.Thickness).First();
-        var tGov = governing.Thickness;
-        c.Record("thickness", required.Count > 1 ? "max over the selected criteria" : "the one selected criterion", string.Join(", ", required.Select(r => $"{r.Criterion.Symbol} = {F(r.Thickness * 1000)} mm")), ScalarValue.Of(tGov * 1000, mm), tGov > 0 ? $"Governing required thickness ({governing.Criterion.Name})" : "Governing required thickness (the bare surface already complies)", "ISO 12241");
+        Criterion? unattainable = required.FirstOrDefault(r => r.Thickness is null).Criterion;
+        double? tGov = required.Count == 0 || unattainable is not null ? null : required.Max(r => r.Thickness);
+        Criterion? governing = unattainable ?? (required.Count == 0 ? null : required.OrderByDescending(r => r.Thickness).First().Criterion);
+
+        if (tGov is { } tg)
+            c.Record("thickness", required.Count > 1 ? "max over the selected criteria" : "the one selected criterion", string.Join(", ", required.Select(r => $"{r.Criterion.Symbol} = {F(r.Thickness!.Value * 1000)} mm")), ScalarValue.Of(tg * 1000, mm), tg > 0 ? $"Governing required thickness ({governing!.Name})" : "Governing required thickness (the bare surface already complies)", "ISO 12241");
 
         // The thickness the surface is evaluated at: the one chosen, else the required one.
-        var chosen = c.Has("t_chosen");
         double tEval;
 
         if (chosen)
@@ -317,7 +376,7 @@ public sealed class InsulationCalculator : ICalcCalculator
         }
         else
         {
-            tEval = tGov;
+            tEval = tGov!.Value;
         }
 
         var state = InsulationModel.Evaluate(setup, tEval);
@@ -336,20 +395,23 @@ public sealed class InsulationCalculator : ICalcCalculator
 
         if (correlation)
         {
-            c.Record("h_c", "free convection to air, blended with forced convection", pipe ? "horizontal cylinder, Holman; Churchill–Bernstein if the wind blows" : "vertical surface, Holman; flat plate if the wind blows", ScalarValue.Of(state.Convection, "W/(m^2*K)"), "Convective surface coefficient at the surface temperature", "Incropera 7th ed. §7, §9");
+            c.Record("h_c", "free convection to air, blended with forced convection", pipe ? "horizontal cylinder, Holman; Churchill–Bernstein if the wind blows" : "vertical surface, Holman; flat plate if the wind blows", ScalarValue.Of(state.Convection, "W/(m^2*K)"), "Convective surface coefficient at the surface temperature", "Incropera 7th ed. §7, §9.6, §9.9");
             c.Record("h_r", "ε·σ·(T_s² + T_a²)(T_s + T_a)", $"ε = {F(surface.Emissivity)}, θ_se = {F(state.Ts)} °C", ScalarValue.Of(state.Radiation, "W/(m^2*K)"), "Radiative surface coefficient", "Incropera 7th ed. §1.2");
             c.Record("h_se", "h_c + h_r", $"{F(state.Convection)} + {F(state.Radiation)}", ScalarValue.Of(state.H, "W/(m^2*K)"), "Outer surface coefficient used", "ISO 12241");
         }
 
         c.Record("R_se", pipe ? "1/(h_se·π·D_e)" : "1/h_se", pipe ? $"1/({F(state.H)} × π × {F(state.De)} m)" : $"1/{F(state.H)}", ScalarValue.Of(state.RSe, rUnit), "Resistance of the outer surface", "ISO 12241");
-        c.Record("R", pipe ? "R_oth + R_ins + R_se" : "R_oth + R_ins + R_se", $"{F(rOther)} + {F(state.RIns)} + {F(state.RSe)}", ScalarValue.Of(rOther + state.RIns + state.RSe, rUnit), pipe ? "Total resistance per metre" : "Total resistance per square metre", "ISO 12241");
+        c.Record("R", "R_oth + R_ins + R_se", $"{F(rOther)} + {F(state.RIns)} + {F(state.RSe)}", ScalarValue.Of(rOther + state.RIns + state.RSe, rUnit), pipe ? "Total resistance per metre" : "Total resistance per square metre", "ISO 12241");
         var gain = state.Q < 0;
         var direction = gain ? "heat gain" : "heat loss";
         var qUnit = pipe ? "W/m" : "W/m^2";
         c.Record(pipe ? "q_per_m" : "q_area", "|θ_i − θ_a| / R", $"{F(Math.Abs(ti - ta))} K / {F(rOther + state.RIns + state.RSe)}", ScalarValue.Of(Math.Abs(state.Q), qUnit), pipe ? $"Heat flow per metre of pipe ({direction}, magnitude)" : $"Heat flow per square metre ({direction}, magnitude)", "ISO 12241");
         c.Record("theta_se", pipe ? "θ_a + q/(h_se·π·D_e)" : "θ_a + q/h_se", $"{F(ta)} °C {(state.Q < 0 ? "−" : "+")} {F(Math.Abs(state.Q))} / {F(state.H * state.Area)}", ScalarValue.Of(state.Ts, "degC"), "Outer surface temperature", "ISO 12241");
-        var mean = (ti + state.Ts) / 2;
-        c.Record("theta_m", "(θ_i + θ_se)/2", $"({F(ti)} + {F(state.Ts)})/2", ScalarValue.Of(mean, "degC"), "Mean temperature of the insulation: take λ at this temperature");
+
+        // The insulation's inner face is the process temperature less the drop across any film and wall.
+        var inner = ti - state.Q * rOther;
+        var mean = (inner + state.Ts) / 2;
+        c.Record("theta_m", rOther > 0 ? "((θ_i − q·R_oth) + θ_se)/2" : "(θ_i + θ_se)/2", $"({F(inner)} + {F(state.Ts)})/2", ScalarValue.Of(mean, "degC"), "Mean temperature of the insulation: take λ at this temperature");
 
         if (c.Has("theta_lambda"))
         {
@@ -366,7 +428,7 @@ public sealed class InsulationCalculator : ICalcCalculator
         if (pipe)
         {
             var dCrit = 2 * lambda / bare.H;
-            c.Record("D_crit", "2λ/h_se", $"2 × {F(lambda)} / {F(bare.H)}", ScalarValue.Of(dCrit * 1000, mm), "Critical diameter: below it, insulation raises the heat flow", "ISO 12241");
+            c.Record("D_crit", "2λ/h_se at the bare surface", $"2 × {F(lambda)} / {F(bare.H)}", ScalarValue.Of(dCrit * 1000, mm), "Critical diameter at the bare-surface h_se: below it, insulation raises the heat flow", "ISO 12241");
 
             if (di < dCrit)
             {
@@ -376,48 +438,57 @@ public sealed class InsulationCalculator : ICalcCalculator
         }
 
         if (tEval > 0 && Math.Abs(state.Q) > Math.Abs(bare.Q) * (1 + 1e-9))
-            criticalLines.Add($"t_chosen: at {F(tEval * 1000)} mm the insulation carries {F(Math.Abs(state.Q))} {(pipe ? "W/m" : "W/m²")}, more than the bare surface ({F(Math.Abs(bare.Q))}); add more or none.");
+            criticalLines.Add($"{(chosen ? "t_chosen" : "thickness")}: at {F(tEval * 1000)} mm the insulation carries {F(Math.Abs(state.Q))} {(pipe ? "W/m" : "W/m²")}, more than the bare surface ({F(Math.Abs(bare.Q))}); add more or none.");
 
         foreach (var line in criticalLines)
             c.Warn("critical-radius", line);
 
         // Checks, for a chosen thickness only: the required thickness meets each criterion by construction.
-        var outputs = new List<(string, string)>();
+        var outputs = new List<(string Symbol, string Text, CalcValue? Value)>();
 
         foreach (var (criterion, t) in required)
         {
-            outputs.Add((criterion.Symbol, $"Required thickness, {criterion.Name}"));
+            outputs.Add((criterion.Symbol, $"Required thickness, {criterion.Name}", t is null ? new TextValue($"> {limitMm} mm") : null));
 
             if (chosen)
             {
                 var u = criterion.Utilisation(state);
                 c.Record(criterion.UtilisationSymbol, criterion.Key switch { "q" => "|q| / q_max", "se" => "(θ_se − θ_a)/(θ_se,max − θ_a)", _ => "(θ_a − θ_se)/(θ_a − (θ_dew + margin))" }, $"{criterion.Limit}", new ScalarValue(u), $"Utilisation, {criterion.Name}");
-                outputs.Add((criterion.UtilisationSymbol, $"Utilisation, {criterion.Name}"));
+                outputs.Add((criterion.UtilisationSymbol, $"Utilisation, {criterion.Name}", null));
             }
         }
 
-        if (!double.IsNaN(dewTarget))
-            outputs.Insert(0, ("theta_dew", "Dew point of the ambient air"));
+        if (dewKnown)
+            outputs.Insert(0, ("theta_dew", "Dew point of the ambient air", null));
 
-        outputs.Add(("thickness", "Governing required thickness"));
-        outputs.Add((pipe ? "q_per_m" : "q_area", pipe ? $"Heat flow per metre ({direction})" : $"Heat flow per square metre ({direction})"));
-        outputs.Add(("theta_se", "Outer surface temperature"));
-        outputs.Add(("theta_m", "Mean insulation temperature"));
-        outputs.Add(("R", "Total resistance"));
+        if (tGov is not null)
+            outputs.Add(("thickness", "Governing required thickness", null));
+        else if (unattainable is not null)
+            outputs.Add(("thickness", "Governing required thickness", new TextValue($"> {limitMm} mm")));
+
+        outputs.Add((pipe ? "q_per_m" : "q_area", pipe ? $"Heat flow per metre ({direction})" : $"Heat flow per square metre ({direction})", null));
+        outputs.Add(("theta_se", "Outer surface temperature", null));
+        outputs.Add(("theta_m", "Mean insulation temperature", null));
+        outputs.Add(("R", "Total resistance", null));
 
         if (rOther > 0)
-            outputs.Add(("R_oth", "Resistance of the inner film and pipe wall"));
+            outputs.Add(("R_oth", "Resistance of the inner film and pipe wall", null));
 
         if (pipe)
-            outputs.Add(("D_crit", "Critical diameter"));
+            outputs.Add(("D_crit", "Critical diameter (at the bare-surface h_se)", null));
 
         if (correlation)
-            outputs.AddRange([("h_c", "Convective surface coefficient"), ("h_r", "Radiative surface coefficient"), ("h_se", "Outer surface coefficient")]);
+            outputs.AddRange([("h_c", "Convective surface coefficient", null), ("h_r", "Radiative surface coefficient", null), ("h_se", "Outer surface coefficient", null)]);
 
-        foreach (var (symbol, text) in outputs)
-            c.Output(symbol, text);
+        foreach (var (symbol, text, value) in outputs)
+        {
+            if (value is null)
+                c.Output(symbol, text);
+            else
+                c.Output(symbol, text, value);
+        }
 
-        c.Output("governing", "Governing criterion", new TextValue(tGov > 0 ? governing.Criterion.Name : "none: the bare surface complies"));
+        c.Output("governing", "Governing criterion", new TextValue(required.Count == 0 ? "none selected: the chosen thickness only" : unattainable is not null ? unattainable.Name + $" (> {limitMm} mm)" : tGov > 0 ? governing!.Name : "none: the bare surface complies"));
 
         if (chosen)
         {
@@ -426,14 +497,14 @@ public sealed class InsulationCalculator : ICalcCalculator
         }
 
         // The heat flow and surface temperature against thickness, up to a few times the governing thickness.
-        var shown = Math.Min(InsulationModel.MaxThickness, Math.Max(0.05, 4 * Math.Max(tGov, tEval)));
+        var shown = Math.Min(InsulationModel.MaxThickness, Math.Max(0.05, 4 * Math.Max(tGov ?? 0, tEval)));
         var inRange = grid.Where(g => g.Thickness <= shown).ToList();
-        c.Series(new CalcSeries("Heat flow against thickness", "t", "mm", pipe ? "q (magnitude)" : "q (magnitude)", pipe ? "W/m" : "W/m^2", [.. inRange.Select(g => (g.Thickness * 1000, Math.Abs(g.Q)))]));
+        c.Series(new CalcSeries("Heat flow against thickness", "t", "mm", "q (magnitude)", pipe ? "W/m" : "W/m^2", [.. inRange.Select(g => (g.Thickness * 1000, Math.Abs(g.Q)))]));
         c.Series(new CalcSeries("Surface temperature against thickness", "t", "mm", "θ_se", "degC", [.. inRange.Select(g => (g.Thickness * 1000, g.Ts))]));
     }
 
-    /// <summary>One selected criterion: how it is broken, how loaded it is, and what it is called on the sheet.</summary>
-    private sealed record Criterion(string Key, string Symbol, string Name, Func<InsulationModel.State, double> Violation, Func<InsulationModel.State, double> Utilisation, string UtilisationSymbol, string Limit);
+    /// <summary>One selected criterion: how it is broken, how loaded it is, which input holds its limit and what it is called on the sheet.</summary>
+    private sealed record Criterion(string Key, string InputSymbol, string Symbol, string Name, Func<InsulationModel.State, double> Violation, Func<InsulationModel.State, double> Utilisation, string UtilisationSymbol, string Limit);
 
     private static string F(double v) => double.IsFinite(v) ? CalcValue.FormatNumber(v, 5) : "—";
 }

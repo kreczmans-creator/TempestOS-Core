@@ -32,4 +32,4 @@ The dew point of 28 °C air at 70 % is 22.01 °C, so the surface must stay above
 | `u_q` | 0.799415  | 0.799415  | PASS |
 | `u_dew` | 0.546608  | 0.546608  | PASS |
 
-Governing check: Chosen thickness against the heat-loss limit — PASS (utilisation 0.799). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Chosen thickness against the heat-gain limit — PASS (utilisation 0.799). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

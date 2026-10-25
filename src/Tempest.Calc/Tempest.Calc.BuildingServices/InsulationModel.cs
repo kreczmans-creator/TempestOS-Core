@@ -57,10 +57,10 @@ public static class InsulationModel
         }
     }
 
-    /// <summary>Thermal conductivity of air in W/(m·K) at a film temperature in K: 0.0241·(T/273.15)^0.81 (derived fit, within 3 % over 250–400 K).</summary>
+    /// <summary>Thermal conductivity of air in W/(m·K) at a film temperature in K: 0.0241·(T/273.15)^0.81 (derived fit, within about 4 % over 250–400 K).</summary>
     public static double AirConductivity(double kelvin) => 0.0241 * Math.Pow(kelvin / 273.15, 0.81);
 
-    /// <summary>Kinematic viscosity of air in m²/s at a film temperature in K, 1 atm: 1.33×10⁻⁵·(T/273.15)^1.7 (derived fit, within 3 % over 250–400 K).</summary>
+    /// <summary>Kinematic viscosity of air in m²/s at a film temperature in K, 1 atm: 1.33×10⁻⁵·(T/273.15)^1.7 (derived fit, within about 4 % over 250–400 K).</summary>
     public static double AirKinematicViscosity(double kelvin) => 1.33e-5 * Math.Pow(kelvin / 273.15, 1.7);
 
     /// <summary>The fixed part of the problem: geometry, conductivity, temperatures, the other resistances and the surface.</summary>
@@ -146,9 +146,11 @@ public static class InsulationModel
     /// <summary>
     /// The least thickness beyond which <paramref name="violation"/> (positive when the criterion is broken) is not positive for any
     /// thicker layer up to <see cref="MaxThickness"/>: the grid is scanned from the thick end for the last broken point and the root
-    /// bracketed after it is found by bisection. Zero when the criterion holds everywhere on the grid.
+    /// bracketed after it is found by bisection. Zero when the criterion holds everywhere on the grid. When the bare surface complies
+    /// but a window of thicker layers does not (a pipe below the critical diameter), <c>BrokenFrom</c> is the thickness at which that
+    /// window opens; it is <see langword="null"/> otherwise.
     /// </summary>
-    public static (SearchOutcome Outcome, double Thickness) RequiredThickness(Setup s, IReadOnlyList<State> grid, Func<State, double> violation)
+    public static (SearchOutcome Outcome, double Thickness, double? BrokenFrom) RequiredThickness(Setup s, IReadOnlyList<State> grid, Func<State, double> violation)
     {
         var last = -1;
 
@@ -162,13 +164,25 @@ public static class InsulationModel
         }
 
         if (last < 0)
-            return (SearchOutcome.Found, 0);
+            return (SearchOutcome.Found, 0, null);
 
         if (last == grid.Count - 1)
-            return (SearchOutcome.Unattainable, MaxThickness);
+            return (SearchOutcome.Unattainable, MaxThickness, null);
 
         var t = RootFinding.Bisect(x => violation(Evaluate(s, x)), grid[last].Thickness, grid[last + 1].Thickness, 1e-13, 300);
-        return (SearchOutcome.Found, t);
+        double? brokenFrom = null;
+
+        if (violation(grid[0]) <= 0)
+        {
+            var first = 1;
+
+            while (violation(grid[first]) <= 0)
+                first++;
+
+            brokenFrom = RootFinding.Bisect(x => violation(Evaluate(s, x)), grid[first - 1].Thickness, grid[first].Thickness, 1e-13, 300);
+        }
+
+        return (SearchOutcome.Found, t, brokenFrom);
     }
 
     /// <summary>The states on the thickness grid, from bare to <see cref="MaxThickness"/>.</summary>
