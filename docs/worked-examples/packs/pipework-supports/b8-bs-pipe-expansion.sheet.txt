@@ -15,7 +15,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  E | Young's modulus of the pipe material at the installation (reference) temperature, for the stress check | 210 | GPa | spec: SPEC-PIP-11 §4 (thermal movement) | 0.1 … 500 GPa
+  E | Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa) | 210 | GPa | spec: SPEC-PIP-11 §4 (thermal movement) | 0.5 … 500 GPa
   alpha | Mean coefficient of thermal expansion between the install and operating temperatures | 12 | um/(m*K) | spec: SPEC-PIP-11 §4 (thermal movement) | 1 … 250 um/(m*K)
   OD | Pipe outside diameter | 219.1 | mm | spec: SPEC-PIP-11 §4 (thermal movement) | 10 … 1500 mm
   t_wall | Pipe wall thickness | 6.3 | mm | spec: SPEC-PIP-11 §4 (thermal movement) | 0.5 … 60 mm
@@ -234,8 +234,8 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   WARNING record: Tabulated values not taken from a reference record: E, alpha (Material properties); OD, t_wall (Pipe outside diameter and wall); Sa (Allowable displacement-stress range); K_scr (Screening limit K1). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.pipe-expansion@1.2.0
-  Content hash: b9613f83ade581aa
+  Template: bs.pipe-expansion@1.2.1
+  Content hash: 341c3b77609fc7e6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
   Test run: 2026-10-25 08:55 UTC

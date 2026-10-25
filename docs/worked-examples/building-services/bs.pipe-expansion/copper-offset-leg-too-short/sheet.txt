@@ -15,7 +15,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  E | Young's modulus of the pipe material at the installation (reference) temperature, for the stress check | 120 | GPa | assumption: W3 seed 'Copper (generic)', indicative; replace with the project's material record. | 0.1 … 500 GPa
+  E | Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa) | 120 | GPa | assumption: W3 seed 'Copper (generic)', indicative; replace with the project's material record. | 0.5 … 500 GPa
   alpha | Mean coefficient of thermal expansion between the install and operating temperatures | 17 | um/(m*K) | assumption: W3 seed 'Copper (generic)' (17e-6 1/K), indicative; replace with the project's material record. | 1 … 250 um/(m*K)
   OD | Pipe outside diameter | 54 | mm | drawing: DRG-M-212 rev A | 10 … 1500 mm
   t_wall | Pipe wall thickness | 1.5 | mm | drawing: DRG-M-212 rev A | 0.5 … 60 mm
@@ -38,7 +38,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   A7. The material properties are single values: α the mean coefficient between the install and operating temperatures; E the modulus at the installation (reference) temperature, used for the stress check, as the piping codes do (ASME B31.3 para. 319.3.2 and 319.5, numbers to be checked against the owner's copy); E_hot, when given, is used only for the reactions on the anchors. Take them from a W3 material applied at the right temperature. (Material library; code convention to be checked.)
   A8. Sa and K1 are the owner's records from the owner's own copy of the piping code (or the design basis), with their provenance; no allowable stress, K1 or code constant ships. The sheet applies the relation to the numbers entered and does not know which code, material or load case they belong to. (No table from a standard is shipped.)
   A9. No friction, weight, spring-hanger or cold-spring effect is included in the leg force. The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL at the governing pressure entered (the design or the test pressure, whichever governs; a bellows' compression and extension ratings can differ): guide friction and any other bellows load come from the manufacturer's data. (Stated limit.)
-  A10. E (Young's modulus of the pipe material at the installation (reference) temperature, for the stress check) is taken as 120 GPa. (W3 seed 'Copper (generic)', indicative; replace with the project's material record.)
+  A10. E (Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa)) is taken as 120 GPa. (W3 seed 'Copper (generic)', indicative; replace with the project's material record.)
   A11. alpha (Mean coefficient of thermal expansion between the install and operating temperatures) is taken as 17 um/(m*K). (W3 seed 'Copper (generic)' (17e-6 1/K), indicative; replace with the project's material record.)
   A12. temp_mode (Temperature change from) is taken as install and operating temperatures. (Install and operating temperatures are both known.)
   A13. T_install (Temperature at installation (when the run is anchored)) is taken as 10 degC. (Mean site temperature when the riser is anchored.)
@@ -241,7 +241,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   WARNING record: Tabulated values not taken from a reference record: E, alpha (Material properties); OD, t_wall (Pipe outside diameter and wall); Sa (Allowable displacement-stress range); K_scr (Screening limit K1). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.pipe-expansion@1.2.0
+  Template: bs.pipe-expansion@1.2.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5
