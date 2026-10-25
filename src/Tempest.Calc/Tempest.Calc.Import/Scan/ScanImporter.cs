@@ -108,11 +108,12 @@ public static class ScanImporter
         }
 
         // Group by stage and feature, in the order they first appear.
-        var groups = new Dictionary<string, List<ScanObservation>>(StringComparer.Ordinal);
+        var groups = new Dictionary<string, List<int>>(StringComparer.Ordinal);
         var order = new List<(string Key, string Feature, string Stage)>();
 
-        foreach (var o in sink.Observations)
+        for (var index = 0; index < sink.Observations.Count; index++)
         {
+            var o = sink.Observations[index];
             var key = ScanProfile.Key(o.Feature, o.Stage, profile.IgnoreCase);
 
             if (!groups.TryGetValue(key, out var list))
@@ -125,7 +126,7 @@ public static class ScanImporter
                 order.Add((key, o.Feature, o.Stage));
             }
 
-            list.Add(o);
+            list.Add(index);
         }
 
         var stats = new List<ScanFeatureStats>(order.Count);
@@ -133,7 +134,7 @@ public static class ScanImporter
         foreach (var (key, feature, stage) in order)
         {
             budget.Check();
-            stats.Add(ScanStatistics.Compute(feature, stage, groups[key], fileInfos, settings, budget));
+            stats.Add(ScanStatistics.Compute(feature, stage, new ObservationView(sink.Observations, groups[key]), fileInfos, settings, budget));
         }
 
         var notices = new List<CalcNotice>(sink.Notices);
@@ -718,4 +719,20 @@ public static class ScanImporter
     }
 
     private static string Clip(string s) => s.Length > 30 ? s[..30] + "…" : s;
+
+    /// <summary>The observations of one feature at one stage, as indexes into the table's list: no second copy of them is made.</summary>
+    private sealed class ObservationView(List<ScanObservation> all, List<int> indexes) : IReadOnlyList<ScanObservation>
+    {
+        public int Count => indexes.Count;
+
+        public ScanObservation this[int index] => all[indexes[index]];
+
+        public IEnumerator<ScanObservation> GetEnumerator()
+        {
+            foreach (var i in indexes)
+                yield return all[i];
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
 }

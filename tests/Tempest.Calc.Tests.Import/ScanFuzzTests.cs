@@ -275,4 +275,61 @@ public sealed class ScanFuzzTests
         CalcInputValue.Quantity("D", 1, "mm"),
         CalcInputValue.Of("k", 3),
     ];
+
+    [Fact]
+    public void Names_Never_Carry_Markup_Or_A_Link_Whatever_The_Soup()
+    {
+        TokenSoup.Sample(text =>
+        {
+            NeverThrowsButRefusal(() =>
+            {
+                var a = ScanImporter.Analyse(Samples.Text("Feature,Nominal,Actual,Dev,Up,Lo,Serial\n\"" + text.Replace("\"", "\"\"", StringComparison.Ordinal) + "\",10,10.01,0.01,0.05,-0.05,\"" + text.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"\n"), SampleProfiles.Plain());
+
+                foreach (var o in a.Data.Observations)
+                {
+                    foreach (var name in new[] { o.Feature, o.Serial, o.Stage })
+                    {
+                        Assert.True(name.Length <= 128);
+                        Assert.DoesNotContain("<script", name, StringComparison.OrdinalIgnoreCase);
+                        Assert.DoesNotContain("://", name, StringComparison.Ordinal);
+                        Assert.DoesNotContain("javascript:", name, StringComparison.OrdinalIgnoreCase);
+                        Assert.DoesNotContain('\u200B', name);
+                        Assert.False(name.StartsWith("=HYPERLINK", StringComparison.OrdinalIgnoreCase));
+                    }
+                }
+            });
+        }, iter: N(1200));
+    }
+
+    [Fact]
+    public void A_Row_Wider_Than_Its_Header_Is_Always_Refused_Whatever_Is_In_The_Extra_Fields()
+    {
+        Gen.Int[2, 5].List[1, 8].Sample(widths =>
+        {
+            var rows = string.Concat(widths.Select(w => string.Join(',', Enumerable.Range(0, w).Select(i => i == 1 ? "1.5" : i == 0 ? "A" : string.Empty)) + "\n"));
+            var text = "Feature,Actual\n" + rows;
+            var profile = new ScanProfile("p", 1, "P", new ScanColumns("Feature", Actual: "Actual"), [], Delimiter: ScanDelimiter.Comma);
+
+            if (widths.Any(w => w > 2))
+            {
+                var ex = Assert.Throws<ImportRefusedException>(() => ScanImporter.Analyse(Samples.Text(text), profile));
+                Assert.Equal(ImportRefusalCode.MalformedStructure, ex.Code);
+            }
+            else
+            {
+                Assert.Equal(widths.Count, ScanImporter.Analyse(Samples.Text(text), profile).Data.Observations.Count);
+            }
+        }, iter: N(400));
+    }
+
+    [Fact]
+    public void The_Same_File_Twice_Never_Yields_A_Result()
+    {
+        TokenSoup.Sample(text =>
+        {
+            var bytes = new UTF8Encoding(false).GetBytes("Feature,Actual\nA,1.5\nA,1.6\n" + text);
+            var ex = Assert.Throws<ImportRefusedException>(() => ScanImporter.Analyse([new ScanFileInput(BoundedInputReader.FromBytes(bytes, "one.csv")), new ScanFileInput(BoundedInputReader.FromBytes(bytes, "two.csv"))], SampleProfiles.Plain()));
+            Assert.NotEqual(ImportRefusalCode.Internal, ex.Code);
+        }, iter: N(300));
+    }
 }

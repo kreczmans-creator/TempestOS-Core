@@ -22,6 +22,10 @@ internal static class ScanText
         if (string.IsNullOrEmpty(raw))
             return string.Empty;
 
+        // The usual name — printable ASCII with nothing that starts markup, a link or a formula — is returned as it is, without a copy.
+        if (raw.Length <= maxChars && IsPlain(raw))
+            return raw;
+
         // 1. Invisible, formatting and control characters first, so a marker cannot be hidden by one (a zero-width space inside a URL scheme, a soft hyphen inside "javascript:").
         var sb = new StringBuilder(Math.Min(raw.Length, maxChars + 16));
 
@@ -102,6 +106,20 @@ internal static class ScanText
         }
 
         return clean;
+    }
+
+    private static bool IsPlain(string s)
+    {
+        if (s[0] == ' ' || s[^1] == ' ')
+            return false;
+
+        foreach (var c in s)
+        {
+            if (c is < ' ' or > '~' or '<' or '=' or ':')
+                return false;
+        }
+
+        return s.IndexOf("www.", StringComparison.OrdinalIgnoreCase) < 0;
     }
 
     /// <summary>The length of the link marker that starts at <paramref name="i"/> (case-insensitive), or 0.</summary>

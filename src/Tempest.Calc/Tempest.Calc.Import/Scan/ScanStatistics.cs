@@ -66,14 +66,22 @@ public static class ScanStatistics
         }
 
         var n = used.Count;
-        var serials = used.Where(o => o.Serial.Length > 0).Select(o => o.Serial).ToList();
-        var duplicates = serials.GroupBy(s => s, StringComparer.Ordinal).Count(g => g.Count() > 1);
-        var parts = serials.Count == 0 ? 0 : serials.Distinct(StringComparer.Ordinal).Count();
+        var seenSerials = new HashSet<string>(StringComparer.Ordinal);
+        var repeatedSerials = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var o in used)
+        {
+            if (o.Serial.Length > 0 && !seenSerials.Add(o.Serial))
+                repeatedSerials.Add(o.Serial);
+        }
+
+        var duplicates = repeatedSerials.Count;
+        var parts = seenSerials.Count;
 
         if (duplicates > 0)
             warnings.Add($"{duplicates} serial(s) appear more than once; each row is counted as a measurement, so the parts are fewer than the rows.");
 
-        var serialSummary = SerialSummary(used, n);
+        var serialSummary = SerialSummary(used, n, parts);
         var nominal = Common(used.Select(o => o.Nominal), "nominal", warnings, budget);
         var lsl = Common(used.Select(o => o.Lsl), "lower limit", warnings, budget);
         var usl = Common(used.Select(o => o.Usl), "upper limit", warnings, budget);
@@ -477,14 +485,11 @@ public static class ScanStatistics
         return best;
     }
 
-    private static string SerialSummary(IReadOnlyList<ScanObservation> used, int n)
+    private static string SerialSummary(IReadOnlyList<ScanObservation> used, int n, int distinct)
     {
-        var serials = used.Where(o => o.Serial.Length > 0).Select(o => o.Serial).Distinct(StringComparer.Ordinal).Take(4).ToList();
-
-        if (serials.Count == 0)
+        if (distinct == 0)
             return string.Create(CultureInfo.InvariantCulture, $"n={n}");
 
-        var distinct = used.Where(o => o.Serial.Length > 0).Select(o => o.Serial).Distinct(StringComparer.Ordinal).Count();
         var first = used.First(o => o.Serial.Length > 0).Serial;
         var last = used.Last(o => o.Serial.Length > 0).Serial;
         return distinct == 1 ? first : string.Create(CultureInfo.InvariantCulture, $"{first}..{last} (n={distinct})");
