@@ -1,0 +1,45 @@
+# Calc pack — Electronics enclosure (`pack.electronics-enclosure`)
+
+**Chain.** Power trace (`elec.pcb-trace`) → Board load budget (`elec.load-budget`) → Enclosure temperature (`elec.enclosure-heat`) → Lid latch (`mech.snap-fit`) → Lid plate (`struct.plate-bending`).
+
+**Purpose.** Follows the loss of a board's power trace into the heat of its load budget, the temperature the enclosure settles at, and the temperature the lid latch works at, and checks the lid plate under a typed pressure. The trace loss is a row of the load table (a table cell); the enclosure's temperature is the latch's temperature of use; the latch's modulus and permissible strain and the lid's modulus are typed for the plastic at about 55 °C and do not follow that temperature; the trace's board ambient is typed (a link back would be a cycle). The lid is an independent member: nothing in the chain computes the pressure on it, and the plate step has no temperature input.
+
+An 8 A supply trace (2 oz external copper, 2 mm wide, 150 mm long, 30 K allowed rise) loses 1.507 W (23.55 mΩ at 90 °C). That loss is the first row of the board's load table (a table cell, W into kW), all released as heat; with the drivers, the power stage's loss and the display the board dissipates 46.5 W, and with 4 W of terminals the 400 × 500 × 200 mm wall-mounted enclosure carries 50.5 W: 19.1 K above the 35 °C room, 54.1 °C inside, below its 60 °C limit. The internal temperature is the lid latch's temperature of use (a cantilever snap hook, strain 1.67 % against 3 %). **The trace's board ambient (60 °C), the latch's modulus and permissible strain (for 55 °C) and the lid's modulus (for 55 °C) are TYPED, not linked: the trace's real ambient is the enclosure's own temperature, downstream of it (a link back would be a cycle), and the latch and plate steps take their material values as typed numbers for a temperature, so they do not follow the linked temperature; tests guard that 54.1 °C stays below both.** **The lid plate (400 × 200 × 5 mm, simply supported, 1 kPa) is an independent member: no quantity it needs is computed upstream** (its pressure is typed, and the plate step has no temperature input); it deflects 0.634 mm against a span/250 limit of 0.8 mm. The plastic's values (1500 MPa and 3 % for the latch, 2.1 GPa, ν 0.38 and a 55 MPa limit for the lid) are INVENTED illustrations, not a maker's data.
+
+**Issue.** Project “Controller box 7”, pack “Motor controller enclosure calc pack”, checked once as a bundle and issued under issue reference **`ELX-ENC-001`** to Client Co in one transaction. After issue every step is read-only and carries that reference. Checked against SPEC-ELX-02 and DRG-ELX-210 rev B.
+
+## Steps
+
+| Step | Calculator | Revision | Checks |
+|---|---|---|---|
+| Power trace | `elec.pcb-trace` | A | 1 of 1 PASS |
+| Board load budget | `elec.load-budget` | A | none |
+| Enclosure temperature | `elec.enclosure-heat` | A | 1 of 1 PASS |
+| Lid latch | `mech.snap-fit` | A | 2 of 2 PASS |
+| Lid plate | `struct.plate-bending` | A | 2 of 2 PASS |
+
+## Links
+
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes every step below it stale, and the pack cannot be checked or issued until each is updated in order.
+
+| From | Output | To | Input | Value carried |
+|---|---|---|---|---|
+| Power trace | `trace_Ploss` | Board load budget | `loads` row 1 (`P`), a table-cell link | 0.00150734 kW |
+| Board load budget | `Phi` | Enclosure temperature | `P_add` | 46.5073 W |
+| Enclosure temperature | `T_int` | Lid latch | `T_use` | 54.1316 degC |
+
+## Inputs and provenance
+
+Every input of every step carries a provenance on the issued sheet: the figures chosen for this example cite an (invented) specification or drawing, an input left at the sheet's default is recorded as an assumption, and a linked input names the calculation and output it comes from. Project, drawing, specification and issue references are illustrative; they are not real documents.
+
+## Files
+
+- `pack-issue-sheet.txt` — the pack's issue sheet (index, members, revisions) as stored on the Evidence record.
+- `e7-elec-pcb-trace.sheet.txt` — Power trace, the issued sheet.
+- `e6-elec-load-budget.sheet.txt` — Board load budget, the issued sheet.
+- `e2-elec-enclosure-heat.sheet.txt` — Enclosure temperature, the issued sheet.
+- `m8-mech-snap-fit.sheet.txt` — Lid latch, the issued sheet.
+- `s9-struct-plate-bending.sheet.txt` — Lid plate, the issued sheet.
+- `inputs.json` — a record of every step's inputs as issued, links included: one JSON object keyed by step, each value that step's list of inputs. It is not a file that one worksheet imports whole (a worksheet takes the inputs of one calculation: copy one step's list out of it to load that step). Links and attached-file references in it name the original calculations and their Evidence, so they do not resolve in another project.
+
+Generated by `ChainPackWorkedExampleTests` in `tests/Tempest.Calc.Tests.Library/Chains`. The PDFs are rendered separately.

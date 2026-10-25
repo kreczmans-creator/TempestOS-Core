@@ -1,0 +1,1189 @@
+{
+  "e7": [
+    {
+      "Symbol": "Cu_oz",
+      "Number": 2,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A73 (supply rail)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "I",
+      "Number": 8,
+      "Unit": "A",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A73 (supply rail)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "8"
+    },
+    {
+      "Symbol": "L",
+      "Number": 150,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A73 (supply rail)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "150"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 60,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A73 (supply rail)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "60"
+    },
+    {
+      "Symbol": "alpha",
+      "Number": 0.00393,
+      "Unit": "1/K",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.00393"
+    },
+    {
+      "Symbol": "dT",
+      "Number": 30,
+      "Unit": "K",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A73 (supply rail)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "k_ext",
+      "Number": 0.048,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.048"
+    },
+    {
+      "Symbol": "k_int",
+      "Number": 0.024,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.024"
+    },
+    {
+      "Symbol": "layer",
+      "Text": "External layer",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A73 (supply rail)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "External layer"
+    },
+    {
+      "Symbol": "n_A",
+      "Number": 0.725,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.725"
+    },
+    {
+      "Symbol": "n_dT",
+      "Number": 0.44,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.44"
+    },
+    {
+      "Symbol": "rho_20",
+      "Number": 0.01724,
+      "Unit": "ohm*mm^2/m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.01724"
+    },
+    {
+      "Symbol": "t_oz",
+      "Number": 1.378,
+      "Unit": "mil",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.378"
+    },
+    {
+      "Symbol": "w_act",
+      "Number": 2,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A73 (supply rail)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    }
+  ],
+  "e6": [
+    {
+      "Symbol": "DoD",
+      "Number": 0.8,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.8"
+    },
+    {
+      "Symbol": "P_add",
+      "Number": 0,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "U_1ph",
+      "Number": 230,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "230"
+    },
+    {
+      "Symbol": "U_3ph",
+      "Number": 400,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "U_DC",
+      "Number": 24,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "24"
+    },
+    {
+      "Symbol": "U_b",
+      "Number": 24,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "24"
+    },
+    {
+      "Symbol": "cosphi_add",
+      "Number": 0.85,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.85"
+    },
+    {
+      "Symbol": "eta_add",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "eta_b",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "eta_conv",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "eta_psu",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "f_derate",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "heat_add",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "inrush_add",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "k_T",
+      "Number": 3,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "k_age",
+      "Number": 0.8,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.8"
+    },
+    {
+      "Symbol": "k_temp",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "loads",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "Power trace loss (PCB)"
+            },
+            "supply": {
+              "Text": "DC"
+            },
+            "P": {
+              "Number": 0.0015073351085105656,
+              "Unit": "kW",
+              "Provenance": {
+                "Kind": "Link",
+                "Reference": "calc:d572dd008a0141b98f36777b2ea583ce#trace_Ploss",
+                "Revision": "A",
+                "IsSufficientToIssue": true
+              }
+            },
+            "cosphi": {
+              "Number": 1
+            },
+            "eta": {
+              "Number": 1
+            },
+            "heat": {
+              "Number": 1
+            },
+            "d": {
+              "Number": 1
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Gate drivers and logic"
+            },
+            "supply": {
+              "Text": "DC"
+            },
+            "P": {
+              "Number": 0.025,
+              "Unit": "kW"
+            },
+            "cosphi": {
+              "Number": 1
+            },
+            "eta": {
+              "Number": 0.9
+            },
+            "heat": {
+              "Number": 1
+            },
+            "d": {
+              "Number": 1
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Power stage"
+            },
+            "supply": {
+              "Text": "DC"
+            },
+            "P": {
+              "Number": 0.2,
+              "Unit": "kW"
+            },
+            "cosphi": {
+              "Number": 1
+            },
+            "eta": {
+              "Number": 0.96
+            },
+            "d": {
+              "Number": 1
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Display and sensors"
+            },
+            "supply": {
+              "Text": "DC"
+            },
+            "P": {
+              "Number": 0.012,
+              "Unit": "kW"
+            },
+            "cosphi": {
+              "Number": 1
+            },
+            "eta": {
+              "Number": 1
+            },
+            "heat": {
+              "Number": 1
+            },
+            "d": {
+              "Number": 1
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A74 (board loads)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4 row(s)"
+    },
+    {
+      "Symbol": "margin",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "psu_bus",
+      "Text": "AC single-phase",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A74 (board loads)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "AC single-phase"
+    },
+    {
+      "Symbol": "t_auto",
+      "Number": 0,
+      "Unit": "h",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "theta",
+      "Number": 40,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    }
+  ],
+  "e2": [
+    {
+      "Symbol": "A_sun",
+      "Number": 0,
+      "Unit": "m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "D",
+      "Number": 0.2,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.2"
+    },
+    {
+      "Symbol": "H",
+      "Number": 0.5,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "I_sun",
+      "Number": 0,
+      "Unit": "W/m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "P_add",
+      "Number": 46.507335108510574,
+      "Unit": "W",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:39916ab3739a410ba0b1d2a0ab71d5a6#Phi",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "46.5073"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 35,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "35"
+    },
+    {
+      "Symbol": "T_max",
+      "Number": 60,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "60"
+    },
+    {
+      "Symbol": "V_ref",
+      "Number": 100,
+      "Unit": "m^3/h",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "W",
+      "Number": 0.4,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.4"
+    },
+    {
+      "Symbol": "alpha_sun",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "altitude",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "f_bottom",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "f_front",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "f_left",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "f_rear",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "f_right",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "f_top",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "h",
+      "Number": 5.5,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5.5"
+    },
+    {
+      "Symbol": "loads",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "Terminals and wiring"
+            },
+            "P": {
+              "Number": 4,
+              "Unit": "W"
+            },
+            "qty": {
+              "Number": 1
+            },
+            "duty": {
+              "Number": 1
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1 row(s)"
+    },
+    {
+      "Symbol": "p_sys",
+      "Number": 20,
+      "Unit": "Pa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    }
+  ],
+  "m8": [
+    {
+      "Symbol": "D_ring",
+      "Number": 30,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "Es",
+      "Number": 1500,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1500"
+    },
+    {
+      "Symbol": "Es_source",
+      "Text": "Typed secant modulus",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Typed secant modulus"
+    },
+    {
+      "Symbol": "T_use",
+      "Number": 54.13156632898131,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a522684717ee461997f145644a8eb3a9#T_int",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "54.1316"
+    },
+    {
+      "Symbol": "a_arm",
+      "Number": 8,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "8"
+    },
+    {
+      "Symbol": "alpha",
+      "Number": 30,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "alpha_r",
+      "Number": 70,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "b",
+      "Number": 5,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "b_ratio",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "bar_support",
+      "Text": "Held at one end",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Held at one end"
+    },
+    {
+      "Symbol": "dD",
+      "Number": 0.4,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.4"
+    },
+    {
+      "Symbol": "eps_perm_once",
+      "Number": 0.03,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.03"
+    },
+    {
+      "Symbol": "h",
+      "Number": 1.6,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.6"
+    },
+    {
+      "Symbol": "h_ratio",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "l",
+      "Number": 12,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "12"
+    },
+    {
+      "Symbol": "loading",
+      "Text": "One-time (assembled once or rarely)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "One-time (assembled once or rarely)"
+    },
+    {
+      "Symbol": "mode",
+      "Text": "Cantilever, constant section",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Cantilever, constant section"
+    },
+    {
+      "Symbol": "mu",
+      "Number": 0.3,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
+    {
+      "Symbol": "r_bar",
+      "Number": 1.5,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "y",
+      "Number": 1,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    }
+  ],
+  "s9": [
+    {
+      "Symbol": "E",
+      "Number": 2.1,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2.1"
+    },
+    {
+      "Symbol": "P",
+      "Number": 5,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "a",
+      "Number": 400,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "b",
+      "Number": 200,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "200"
+    },
+    {
+      "Symbol": "defl_ratio",
+      "Number": 250,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "250"
+    },
+    {
+      "Symbol": "f_y",
+      "Number": 55,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "55"
+    },
+    {
+      "Symbol": "gamma_M0",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "load_basis",
+      "Text": "pressure q",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "pressure q"
+    },
+    {
+      "Symbol": "load_type",
+      "Text": "uniform",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "uniform"
+    },
+    {
+      "Symbol": "nu",
+      "Number": 0.38,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.38"
+    },
+    {
+      "Symbol": "q",
+      "Number": 1,
+      "Unit": "kPa",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "r0",
+      "Number": 50,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "r_ring",
+      "Number": 150,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "150"
+    },
+    {
+      "Symbol": "rho",
+      "Number": 1200,
+      "Unit": "kg/m^3",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1200"
+    },
+    {
+      "Symbol": "shape",
+      "Text": "rectangular",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "rectangular"
+    },
+    {
+      "Symbol": "support",
+      "Text": "simply supported",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "simply supported"
+    },
+    {
+      "Symbol": "t",
+      "Number": 5,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "u",
+      "Number": 100,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "v",
+      "Number": 100,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    }
+  ]
+}

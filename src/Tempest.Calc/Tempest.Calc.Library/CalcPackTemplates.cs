@@ -298,6 +298,37 @@ public static class CalcPackTemplates
             new CalcPackBinding("s2", "R1_x_abs", "s6", "V_Ed"),
         ]);
 
+    /// <summary>
+    /// Electronics enclosure: PCB power trace (E7) → load budget (E6) → enclosure heat (E2) → snap-fit latch (M8), with the lid (S9) an independent member.
+    /// <para>
+    /// E7 → E6: the trace's I²R loss (<c>trace_Ploss</c>, W) is the input power of a row of the board's load table (<c>loads</c> row 0, column <c>P</c>, kW), a table-cell link; all of it is released as heat inside the enclosure
+    /// (the row's heat share is 1). E6 → E2: the heat the loads release inside (<c>Phi</c>, kW) is the enclosure's additional load (<c>P_add</c>, W), as in the cooling chain. E2 → M8: the enclosure's internal temperature (<c>T_int</c>) is the
+    /// snap-fit's temperature of use (<c>T_use</c>). The snap-fit records the temperature but its secant modulus and permissible strain are typed for a temperature (55 °C in the example): they do not follow the link, so
+    /// when <c>T_use</c> moves they must be re-entered from the plastic's data at the new temperature; a test guards the example's 55 °C against the linked temperature. The trace step's board ambient is typed (60 °C, the enclosure's ceiling): the real ambient is the
+    /// enclosure's internal temperature, downstream of the trace, so linking it back would be a cycle; a test guards that the internal temperature stays below the typed value.
+    /// </para>
+    /// <para>
+    /// <b>S9, the lid, takes nothing from this chain and is kept as an independent member.</b> The plate step has no temperature input (its modulus is typed for the plastic at the operating temperature, as for the latch), and the pressure on a lid is
+    /// not an output of any step here: a sealed enclosure that warms by ΔT would see up to p0·(T_int/T_amb − 1) across the lid, a gas-law relation no step in this chain computes; the example types a 1 kPa allowance instead. No link is invented. Revising the
+    /// trace leaves the lid current; revising the lid leaves the rest current.
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate ElectronicsEnclosure { get; } = new(
+        "pack.electronics-enclosure", "Electronics enclosure",
+        "Follows the loss of a board's power trace into the heat of its load budget, the temperature the enclosure settles at, and the temperature the lid latch works at, and checks the lid plate under a typed pressure. The trace loss is a row of the load table (a table cell); the enclosure's temperature is the latch's temperature of use; the latch's modulus and permissible strain and the lid's modulus are typed for the plastic at about 55 °C and do not follow that temperature; the trace's board ambient is typed (a link back would be a cycle). The lid is an independent member: nothing in the chain computes the pressure on it, and the plate step has no temperature input.",
+        [
+            new CalcPackStep("e7", "elec.pcb-trace", "Power trace", CalcPackExamples.ElxE7),
+            new CalcPackStep("e6", "elec.load-budget", "Board load budget", CalcPackExamples.ElxE6),
+            new CalcPackStep("e2", "elec.enclosure-heat", "Enclosure temperature", CalcPackExamples.ElxE2),
+            new CalcPackStep("m8", "mech.snap-fit", "Lid latch", CalcPackExamples.ElxM8),
+            new CalcPackStep("s9", "struct.plate-bending", "Lid plate", CalcPackExamples.ElxS9),
+        ],
+        [
+            new CalcPackBinding("e7", "trace_Ploss", "e6", "loads", Row: 0, Column: "P"),
+            new CalcPackBinding("e6", "Phi", "e2", "P_add"),
+            new CalcPackBinding("e2", "T_int", "m8", "T_use"),
+        ]);
+
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, EnvelopeMoisture, ColdPipe, PipeworkSupports];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, EnvelopeMoisture, ColdPipe, PipeworkSupports, ElectronicsEnclosure];
 }

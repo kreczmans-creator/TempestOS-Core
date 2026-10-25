@@ -109,4 +109,9 @@ internal static class ChainInputs
     {
         ["b8"] = Spec("SPEC-PIP-11 §4 (thermal movement)"), ["s2"] = Drg("DRG-PIP-610"), ["s6"] = Drg("DRG-PIP-611"),
     });
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> ElectronicsEnclosure(LibraryTestHost host) => For(host, CalcPackTemplates.ElectronicsEnclosure, new Dictionary<string, CalcProvenance>
+    {
+        ["e7"] = Spec("SPEC-ELX-02 §3 (supply rail)"), ["e6"] = Spec("SPEC-ELX-02 §4 (board loads)"), ["e2"] = Drg("DRG-ELX-210"), ["m8"] = Spec("SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C)"), ["s9"] = Spec("SPEC-ELX-02 §6 (lid; E for 55 C)"),
+    });
 }

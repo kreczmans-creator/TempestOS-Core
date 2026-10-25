@@ -492,4 +492,70 @@ internal static class CalcPackExamples
         Q("B", 300, "mm"), Q("L", 350, "mm"), Q("t_p", 25, "mm"), N("alpha", 1), Q("x_b", 135, "mm"), Q("m", 28, "mm"), Q("l_eff", 150, "mm"), Q("e_min", 40, "mm"),
         Q("F_t_Rd", 141.0, "kN"), Q("A_s", 244.79, "mm^2"), Q("F_1_vb_Rd", 248.48, "kN"), Q("f_ub", 800, "MPa"), Q("f_yb", 640, "MPa"),
     ];
+
+    // ---- Electronics enclosure: a power trace's loss, the board's heat, the box's temperature, a latch and a lid ------------------
+
+    /// <summary>
+    /// An 8 A supply trace on 2 oz external copper, 2 mm wide and 150 mm long, allowed a 30 K rise. Its board ambient is TYPED at 60 °C, the enclosure's design ceiling: the real
+    /// ambient is the enclosure's internal temperature, which is downstream of this step (linking it back would be a cycle), so a test guards that the enclosure step stays below it.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ElxE7 { get; } =
+    [
+        Q("I", 8, "A"), Q("dT", 30, "K"), Q("T_amb", 60, "degC"), C("layer", "External layer"), N("Cu_oz", 2), Q("w_act", 2, "mm"), Q("L", 150, "mm"),
+    ];
+
+    /// <summary>
+    /// The board's DC loads (24 V, fed from the single-phase mains through the supply). Row 0 is the power trace itself: its input power is a 1 W placeholder that the trace step's I²R loss
+    /// replaces by cell link, all of it released as heat inside the enclosure. The gate drivers and logic and the display release all their input as heat; the power stage releases its
+    /// loss only (the share is left blank, so 1 − η). The loads, efficiencies and the supply are invented illustrations.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ElxE6 { get; } =
+    [
+        Table("loads",
+            DcLoad("Power trace loss (PCB)", 0.001, 1, 1, 1),
+            DcLoad("Gate drivers and logic", 0.025, 0.9, 1, 1),
+            CalcRow.Of(Txt("name", "Power stage"), Txt("supply", "DC"), ("P", new CalcCell(0.2, "kW")), Num("cosphi", 1), Num("eta", 0.96), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false))),
+            DcLoad("Display and sensors", 0.012, 1, 1, 1)),
+        C("psu_bus", "AC single-phase"),
+    ];
+
+    private static CalcRow DcLoad(string name, double kw, double eta, double heat, double duty) =>
+        CalcRow.Of(Txt("name", name), Txt("supply", "DC"), ("P", new CalcCell(kw, "kW")), Num("cosphi", 1), Num("eta", eta), Num("heat", heat), Num("d", duty), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)));
+
+    /// <summary>
+    /// A 400 × 500 × 200 mm wall-mounted enclosure (back against the wall) in a 35 °C room, limit 60 °C. The board's heat arrives by link as the additional load; the 4 W of terminals
+    /// and wiring is the enclosure's own. The enclosure dissipates by itself (no fan, no cooling unit).
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ElxE2 { get; } =
+    [
+        Table("loads", CalcRow.Of(Txt("name", "Terminals and wiring"), ("P", new CalcCell(4, "W")), Num("qty", 1), Num("duty", 1))),
+        Q("W", 0.4, "m"), Q("H", 0.5, "m"), Q("D", 0.2, "m"),
+        N("f_top", 1), N("f_front", 1), N("f_rear", 0), N("f_left", 1), N("f_right", 1), N("f_bottom", 0),
+        Q("T_amb", 35, "degC"), Q("T_max", 60, "degC"),
+    ];
+
+    /// <summary>
+    /// The lid latch: a cantilever snap hook 12 mm long, 1.6 mm thick and 5 mm wide, deflected 1 mm. The secant modulus (1500 MPa) and the permissible strain (3 %) of the plastic are TYPED values
+    /// for 55 °C, a little above the enclosure's internal temperature (an INVENTED illustration, not a maker's data): the temperature of use arrives by link, but the modulus and the
+    /// permissible strain do not follow it, so when it moves they must be re-entered from the plastic's data at the new temperature (a test guards the 55 °C against the linked one).
+    /// The friction coefficient is a record, typed.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ElxM8 { get; } =
+    [
+        C("mode", "Cantilever, constant section"), Q("l", 12, "mm"), Q("h", 1.6, "mm"), Q("b", 5, "mm"), Q("y", 1, "mm"),
+        Q("alpha", 30, "deg"), Q("alpha_r", 70, "deg"), N("mu", 0.3), C("Es_source", "Typed secant modulus"), Q("Es", 1500, "MPa"),
+        C("loading", "One-time (assembled once or rarely)"), N("eps_perm_once", 0.03),
+    ];
+
+    /// <summary>
+    /// The lid: a 400 × 200 × 5 mm plate simply supported all round under 1 kPa of uniform pressure (TYPED: an allowance for the pressure difference across the lid; it is not an
+    /// output of any step in this chain). The modulus (2.1 GPa), Poisson's ratio, density and limit stress are TYPED for the plastic at about 55 °C, a little above the enclosure's
+    /// internal temperature (INVENTED illustrations). This step takes nothing from the others: no quantity it needs is one they compute.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ElxS9 { get; } =
+    [
+        C("shape", "rectangular"), C("support", "simply supported"), Q("a", 400, "mm"), Q("b", 200, "mm"), Q("t", 5, "mm"),
+        C("load_type", "uniform"), C("load_basis", "pressure q"), Q("q", 1, "kPa"),
+        Q("E", 2.1, "GPa"), N("nu", 0.38), Q("rho", 1200, "kg/m^3"), Q("f_y", 55, "MPa"), N("gamma_M0", 1),
+    ];
 }
