@@ -104,4 +104,9 @@ internal static class ChainInputs
     {
         ["b1"] = Spec("SPEC-CHW-04 §2 (chilled water duty)"), ["b2"] = Spec("SPEC-CHW-04 §3 (plant room conditions)"), ["b9"] = Drg("DRG-CHW-410"),
     });
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> PipeworkSupports(LibraryTestHost host) => For(host, CalcPackTemplates.PipeworkSupports, new Dictionary<string, CalcProvenance>
+    {
+        ["b8"] = Spec("SPEC-PIP-11 §4 (thermal movement)"), ["s2"] = Drg("DRG-PIP-610"), ["s6"] = Drg("DRG-PIP-611"),
+    });
 }

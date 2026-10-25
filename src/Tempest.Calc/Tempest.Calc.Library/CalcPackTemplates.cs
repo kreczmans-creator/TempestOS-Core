@@ -272,6 +272,32 @@ public static class CalcPackTemplates
             new CalcPackBinding("b2", "t_dp_1", "b9", "theta_dew"),
         ]);
 
+    /// <summary>
+    /// Pipework supports: pipe expansion and anchor force (B8) → anchor post frame (S2) → post base plate (S6), with the anchorage design done elsewhere filed as Evidence.
+    /// <para>
+    /// B8 → S2: the anchor force (<c>anchor_force</c>, N) is the first load row's <c>F_x</c> (kN) of the post frame, a table-cell link: the horizontal force the pipe exerts on its anchor, along the pipe. The row's other
+    /// load, the weight, is typed; the ULS combination (factors 1.5 on the thermal force and 1.35 on the weight) is the user's. B8's <c>anchor_moment</c> is NOT linked: it is the largest root moment of the guided-cantilever legs, not a
+    /// moment applied to the anchor by a frame, and the sheet says a formal analysis is needed before an anchor is sized for moment. S2 → S6 as in the steel-support pack: the base reactions are the plate's actions (<c>R1_y</c> compression
+    /// positive → <c>N_Ed</c>, <c>R1_m_abs</c> → <c>M_Ed</c>, <c>R1_x_abs</c> → <c>V_Ed</c>). There is no bolt-check step in this chain, so the holding-down bolt data of S6 (tension resistance, stress area, bearing, strengths) are typed for M20 8.8 in a 25 mm
+    /// plate and guarded by a test against the connection step. The links depend on S2's numbering, which the example fixes: node 1 the column base (fixed), node 2 the anchor; member 1 the post; the first load row the thermal force at node 2.
+    /// S2 must be given its nodes, elements and loads (instantiating never creates rows); the PROFIS anchorage report is attached to S6 as Evidence, as in the steel-support pack. The example's pipe-expansion limits (allowable range, screening limit) are invented.
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate PipeworkSupports { get; } = new(
+        "pack.pipework-supports", "Pipework supports",
+        "Takes the force a heated pipe puts on its anchor from the pipe-expansion step to the steel post that holds the anchor and the post's base plate, and files the anchorage design done elsewhere as Evidence. The links assume the post frame's numbering: node 1 the column base (fixed), node 2 the anchor, member 1 the post, the first load row the thermal force along the pipe; the weight in the second row and the load factors are the user's. The pipe step is a screening: a line that fails it needs a formal stress analysis, and its moment is not carried to the post. The holding-down bolt data are typed (no bolt-check step).",
+        [
+            new CalcPackStep("b8", "bs.pipe-expansion", "Pipe expansion and anchor force", CalcPackExamples.PipeB8),
+            new CalcPackStep("s2", "struct.frame-2d", "Anchor post frame", CalcPackExamples.PipeS2),
+            new CalcPackStep("s6", "struct.base-plate", "Anchor post base plate", CalcPackExamples.PipeS6),
+        ],
+        [
+            new CalcPackBinding("b8", "anchor_force", "s2", "loads", Row: 0, Column: "F_x"),
+            new CalcPackBinding("s2", "R1_y", "s6", "N_Ed"),
+            new CalcPackBinding("s2", "R1_m_abs", "s6", "M_Ed"),
+            new CalcPackBinding("s2", "R1_x_abs", "s6", "V_Ed"),
+        ]);
+
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, EnvelopeMoisture, ColdPipe];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, EnvelopeMoisture, ColdPipe, PipeworkSupports];
 }

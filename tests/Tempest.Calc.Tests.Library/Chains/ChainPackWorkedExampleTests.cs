@@ -12,13 +12,13 @@ using Tempest.Core.EngineeringDomain;
 namespace Tempest.Calc.Tests.Library.Chains;
 
 /// <summary>
-/// Addendum A, §A7: one issued calc pack per built-in chain (drive train, motor circuit, wet heating, cooling, steel support, hydraulic power unit, envelope moisture, cold pipe), written
+/// Addendum A, §A7: one issued calc pack per built-in chain (drive train, motor circuit, wet heating, cooling, steel support, hydraulic power unit, envelope moisture, cold pipe, pipework supports), written
 /// under docs/worked-examples/packs/&lt;chain&gt; when TEMPEST_WRITE_WORKED_EXAMPLES=1: the pack's issue sheet, each step's issued sheet,
 /// every step's inputs and a README naming the chain, every link and the issue reference. The PDFs are made later.
 /// </summary>
 public sealed class ChainPackWorkedExampleTests
 {
-    public static TheoryData<string> Chains => ["drive-train", "motor-circuit", "wet-heating", "cooling", "steel-support", "hydraulic-power-unit", "envelope-moisture", "cold-pipe"];
+    public static TheoryData<string> Chains => ["drive-train", "motor-circuit", "wet-heating", "cooling", "steel-support", "hydraulic-power-unit", "envelope-moisture", "cold-pipe", "pipework-supports"];
 
     private sealed record Example(CalcPackTemplate Template, string Slug, string Title, string Reference, string Client, string Project, string Note, Func<LibraryTestHost, Task<IReadOnlyDictionary<string, IReadOnlyList<CalcInputValue>>>> Inputs, string Remarks);
 
@@ -50,6 +50,9 @@ public sealed class ChainPackWorkedExampleTests
         new(CalcPackTemplates.ColdPipe, "cold-pipe", "Chilled water pipe insulation calc pack", "CHW-INS-001", "Client Co", "Plant room 2 chilled water", "Checked against SPEC-CHW-04 and DRG-CHW-410 rev B.",
             host => Task.FromResult(Plain(ChainInputs.ColdPipe(host))),
             "A chilled-water flow-and-return line at 6 °C (60 m of 54 × 1.2 mm copper tube, inner diameter 51.6 mm, 12 m³/h at 1.6 m/s) runs through a plant room held at 28 °C and 60 % relative humidity. The pipe step finds the flow velocity and pressure drop in the 51.6 mm bore and offers the fluid temperature (6 °C) and the pipe's **outside** diameter (54 mm: the optional OD column of its segments table, added to B1 in 1.4.0) as ports; the psychrometrics step gives the room air's dry-bulb (28 °C) and dew point (19.51 °C). The insulation step takes all four by link and finds the thickness at which the outer surface of a 0.035 W/(m·K) cover stays 1 K above the dew point (7.52 mm), then the heat gain (6.54 W/m) and surface temperature (25.50 °C) at the chosen 25 mm. The heat-gain limit is not a criterion here, so the dew-point margin is the only one. **The conductivity, surface coefficient, margin and chosen thickness are the owner's; the example's are invented and are not maker's or standard's values, and no thickness table is used.** The tube roughness and fittings K are invented illustrations."),
+        new(CalcPackTemplates.PipeworkSupports, "pipework-supports", "Pipe anchor post calc pack", "PIP-SUP-001", "Client Co", "Pipe rack 4 anchor A2", "Checked against SPEC-PIP-11 and DRG-PIP-610/611 rev B.",
+            host => Task.FromResult(Plain(ChainInputs.PipeworkSupports(host))),
+            "A 219.1 × 6.3 mm steel line anchored 60 m apart, 10 to 150 °C, absorbed by a 9.5 m offset leg: the line grows 100.8 mm, the leg needs 9.33 m at an INVENTED allowable range of 160 MPa (u 0.98) and puts 7.07 kN on its anchor (the 4.4 N along the leg from the run is negligible); the screening ratio, 292 mm²/m², is inside an INVENTED limit of 400. That anchor force is the first load row (a table cell) of a 2.5 m cantilever post (a 203 × 203 UC); with the 6 kN weight, the ULS combination takes 1.5 × 7.07 = 10.6 kN along the pipe at the top and 8.1 kN down, which is 26.5 kN·m, 8.1 kN and 10.6 kN at the base: the base plate's actions (the pipe step's moment is NOT carried to the post: it is the guided-cantilever root moment, not an applied one). The 350 × 300 × 25 base plate on C25/30 passes with 56 kN in each bolt. **The anchorage (concrete and anchor design) is done in Hilti PROFIS: the file attached to the base-plate step is a PLACEHOLDER, not a PROFIS report, to be replaced by the engineer's own report before the pack is used.** **The links depend on the frame's numbering: node 1 the column base (fixed), node 2 the anchor; member 1 the post; the first load row the thermal force.** The holding-down bolt data (M20 8.8 in a 25 mm plate) are typed because this chain has no bolt-check step; a test guards them against the connection step. The pipe step is a screening, not a stress analysis: its allowable range and screening limit are the owner's records and the example's are invented, not code values."),
     ];
 
     /// <summary>The motor circuit's inputs with the synthetic E4 tables saved as (unlicensed, synthetic) records and pinned.</summary>
@@ -101,7 +104,7 @@ public sealed class ChainPackWorkedExampleTests
         var made = await ChainKit.InstantiateAsync(host, example.Template, example.Title, inputs, await ProjectAsync(host, example.Project));
 
         // The steel support's anchorage is designed elsewhere: file a clearly marked placeholder against the base plate.
-        if (slug == "steel-support")
+        if (slug is "steel-support" or "pipework-supports")
         {
             var filed = await host.Service.AttachExternalEvidenceAsync(made.Instances["s6"].Id, "PROFIS-BP1-PLACEHOLDER.txt", "text/plain",
                 Encoding.UTF8.GetBytes("PLACEHOLDER. The Hilti PROFIS anchorage report for base plate BP1 is not attached yet; the engineer replaces this file with the real report. This file is not a PROFIS report."), "profis_ref");
@@ -201,7 +204,7 @@ public sealed class ChainPackWorkedExampleTests
         if (template.Id == CalcPackTemplates.MotorCircuit.Id || template.Id == CalcPackTemplates.HydraulicPowerUnit.Id)
             sb.Append("\nThe cable-capacity and device-rating tables are the library's synthetic test tables (`ConductorSizingCalculator.SyntheticAmpacity()` and `TypicalRatings()`), saved as unlicensed records titled “SYNTHETIC … (test values, not a regulation table)” and pinned to the cable step. They are not published values.\n");
 
-        if (template.Id == CalcPackTemplates.SteelSupport.Id)
+        if (template.Id == CalcPackTemplates.SteelSupport.Id || template.Id == CalcPackTemplates.PipeworkSupports.Id)
             sb.Append("\nThe base-plate step cites `PROFIS-BP1-PLACEHOLDER.txt`, filed against its Evidence; that file only says it is a placeholder, and the base plate's anchorage condition reads “external report attached: PROFIS-BP1-PLACEHOLDER.txt” so the issued sheet names what was attached. Its PASS in the base-plate step therefore records that a file is attached, not that the anchorage has been designed.\n");
 
         sb.Append("\n## Files\n\n- `pack-issue-sheet.txt` — the pack's issue sheet (index, members, revisions) as stored on the Evidence record.\n");

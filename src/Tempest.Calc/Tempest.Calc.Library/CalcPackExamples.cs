@@ -448,4 +448,48 @@ internal static class CalcPackExamples
     [
         C("geometry", "pipe (cylinder)"), Q("lambda", 0.035, "W/(m*K)"), C("h_mode", "h_se as given"), Q("h_se", 8, "W/(m^2*K)"), Q("dew_margin", 1, "K"), Q("t_chosen", 25, "mm"),
     ];
+
+    // ---- Pipework supports: a pipe anchor's force on a cantilever post and its base plate ------------------------------------
+
+    /// <summary>
+    /// A 219.1 × 6.3 mm steel line anchored 60 m apart, 10 to 150 °C, absorbed by a 9.5 m offset leg: the anchor takes the leg's force. E and α are the usual steel values
+    /// (the sheet's own defaults, stated here); the 160 MPa allowable range and the 400 mm²/m² screening limit are INVENTED illustrations, not code values: the owner enters his own.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> PipeB8 { get; } =
+    [
+        Q("E", 210, "GPa"), Q("alpha", 12, "um/(m*K)"), Q("OD", 219.1, "mm"), Q("t_wall", 6.3, "mm"), Q("L", 60, "m"),
+        C("temp_mode", "install and operating temperatures"), Q("T_install", 10, "degC"), Q("T_operate", 150, "degC"),
+        C("layout", "offset leg (L- or Z-bend: the leg takes the whole movement)"), Q("H", 9.5, "m"), Q("Sa", 160, "MPa"), Q("K_scr", 400, "mm^2/m^2"),
+    ];
+
+    /// <summary>
+    /// The anchor post: a 2.5 m cantilever column (node 1 fixed, node 2 the anchor), the 203 × 203 UC of the steel-support example. The first load row (case 1) is the horizontal force
+    /// along the pipe at node 2, a 1 kN placeholder that the pipe-expansion step's anchor force replaces by cell link; the second (case 2) is the 6 kN weight of pipe, contents and
+    /// bracket, downward. The ULS combination takes the thermal force at 1.5 and the weight at 1.35 (invented factors for this illustration; the owner's combination rules apply).
+    /// The links depend on this numbering: node 1 the column base, node 2 the anchor; the first load row the thermal force.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> PipeS2 { get; } =
+    [
+        Table("nodes",
+            CalcRow.Of(Num("id", 1), ("x", new CalcCell(0, "m")), ("y", new CalcCell(0, "m")), Txt("support", "fixed")),
+            CalcRow.Of(Num("id", 2), ("x", new CalcCell(0, "m")), ("y", new CalcCell(2.5, "m")), Txt("support", "free"))),
+        Table("elements",
+            CalcRow.Of(Num("id", 1), Num("i", 1), Num("j", 2), ("A", new CalcCell(58.7, "cm^2")), ("I", new CalcCell(4568, "cm^4")), ("rel_i", new CalcCell(Flag: false)), ("rel_j", new CalcCell(Flag: false)))),
+        Table("loads", FrameLoad(1, 2, 1, 0), FrameLoad(2, 2, 0, -6)),
+        Table("combinations",
+            CalcRow.Of(Txt("name", "ULS"), Num("case", 1), Num("factor", 1.5)), CalcRow.Of(Txt("name", "ULS"), Num("case", 2), Num("factor", 1.35))),
+        Q("E", 210, "GPa"), new CalcInputValue("report", Text: "ULS"),
+    ];
+
+    /// <summary>
+    /// The post's base plate: the steel-support example's 350 × 300 × 25 plate on C25/30 concrete, with the holding-down bolt data typed (M20 8.8 in a 25 mm plate: tension resistance 141.0 kN,
+    /// stress area 244.79 mm², bearing 248.48 kN, f_ub 800, f_yb 640 MPa), because this chain has no bolt-check step; a test guards them against the connection step's own values. The anchorage
+    /// is designed outside the program (Hilti PROFIS): the report is attached to this step as Evidence, and until it is the sheet says so.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> PipeS6 { get; } =
+    [
+        C("column", "I/H"), Q("h", 203.2, "mm"), Q("b", 203.6, "mm"), Q("t_f", 11, "mm"), Q("t_w", 7.2, "mm"),
+        Q("B", 300, "mm"), Q("L", 350, "mm"), Q("t_p", 25, "mm"), N("alpha", 1), Q("x_b", 135, "mm"), Q("m", 28, "mm"), Q("l_eff", 150, "mm"), Q("e_min", 40, "mm"),
+        Q("F_t_Rd", 141.0, "kN"), Q("A_s", 244.79, "mm^2"), Q("F_1_vb_Rd", 248.48, "kN"), Q("f_ub", 800, "MPa"), Q("f_yb", 640, "MPa"),
+    ];
 }
