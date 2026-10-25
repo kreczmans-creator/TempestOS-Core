@@ -331,7 +331,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e7faf5a8ee73481aa7284caa9ef6c1af#T_rms",
+        "Reference": "calc:43fb5ecf9c694a76b04a94fa8529e3a4#T_rms",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -343,7 +343,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e7faf5a8ee73481aa7284caa9ef6c1af#T_pk",
+        "Reference": "calc:43fb5ecf9c694a76b04a94fa8529e3a4#T_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -418,7 +418,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e7faf5a8ee73481aa7284caa9ef6c1af#n_pk",
+        "Reference": "calc:43fb5ecf9c694a76b04a94fa8529e3a4#n_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -669,7 +669,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:24f84a6a081d4787b60f064cfca55560#R_A",
+        "Reference": "calc:d0d7e809ee78407a8b9ce7f441f17547#R_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -783,7 +783,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e7faf5a8ee73481aa7284caa9ef6c1af#n_pk",
+        "Reference": "calc:43fb5ecf9c694a76b04a94fa8529e3a4#n_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -817,7 +817,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:24f84a6a081d4787b60f064cfca55560#d_A",
+        "Reference": "calc:d0d7e809ee78407a8b9ce7f441f17547#d_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -980,7 +980,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e7faf5a8ee73481aa7284caa9ef6c1af#T_pk",
+        "Reference": "calc:43fb5ecf9c694a76b04a94fa8529e3a4#T_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

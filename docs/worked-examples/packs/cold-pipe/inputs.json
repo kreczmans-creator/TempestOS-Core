@@ -258,7 +258,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e5b27213757b4aa0a9b9244d70f41d80#OD_1",
+        "Reference": "calc:e408aa3724524073a506e04c739fa164#OD_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -281,7 +281,7 @@
       "Unit": "%",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:f366514f56024cf1bce2784f838a65ca#phi_1",
+        "Reference": "calc:c527f1f857bb4c1c9c39b1a2fb2311ec#phi_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -373,7 +373,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:f366514f56024cf1bce2784f838a65ca#t_1_out",
+        "Reference": "calc:c527f1f857bb4c1c9c39b1a2fb2311ec#t_1_out",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -385,7 +385,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:f366514f56024cf1bce2784f838a65ca#t_dp_1",
+        "Reference": "calc:c527f1f857bb4c1c9c39b1a2fb2311ec#t_dp_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -397,7 +397,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e5b27213757b4aa0a9b9244d70f41d80#T_line",
+        "Reference": "calc:e408aa3724524073a506e04c739fa164#T_line",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

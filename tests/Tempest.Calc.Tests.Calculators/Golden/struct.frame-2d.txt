@@ -5,7 +5,7 @@ Title: Beam and 2D frame analysis
 
 1. SCOPE AND METHOD
 Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.
-Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ terms; end releases by static condensation; supports by removing freedoms or adding spring stiffness; equivalent nodal loads from exact fixed-end forces; K u = F solved by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism). Internal forces and deflections from the member end actions and Macaulay functions of the span loads; extremes at stations plus the zero-shear and zero-slope points found by bisection.
+Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L and bending EI/L³ terms. End releases (pins) are taken out by static condensation; supports remove freedoms or add spring stiffness. Span loads become equivalent nodal loads, the exact fixed-end forces. Displacements, by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism): K u = F. Internal forces and deflections follow from the member end actions and Macaulay functions of the span loads. Extremes are found at stations along each member, plus the zero-shear and zero-slope points found by bisection.
   Ref: Hibbeler, Structural Analysis Ch. 16 — Plane frame analysis using the stiffness method
   Ref: Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
   Ref: BS EN 1990 6.4.3 — Combinations of actions (user-entered factors)
@@ -179,5 +179,5 @@ Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ term
   No warnings.
 
 8. VERIFICATION
-  Template: struct.frame-2d@1.1.0
+  Template: struct.frame-2d@1.2.0
   Known-answer cases passed: 5/5

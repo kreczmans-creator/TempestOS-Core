@@ -1,0 +1,101 @@
+[
+  {
+    "Symbol": "C",
+    "Number": 35.1,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GB-210",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "35.1"
+  },
+  {
+    "Symbol": "F_a",
+    "Number": 0,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "F_r",
+    "Number": 4,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  },
+  {
+    "Symbol": "L_req",
+    "Number": 5000,
+    "Unit": "h",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5000"
+  },
+  {
+    "Symbol": "X",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GB-210",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "Y",
+    "Number": 0,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GB-210",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "a_1",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "n",
+    "Number": 1500,
+    "Unit": "rpm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1500"
+  },
+  {
+    "Symbol": "type",
+    "Text": "ball",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GB-210",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "ball"
+  }
+]

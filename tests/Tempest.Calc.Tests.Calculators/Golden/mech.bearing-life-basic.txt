@@ -1,0 +1,77 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: mech.bearing-life-basic    Revision: A
+Title: Rolling bearing basic rating life (simple form)
+
+1. SCOPE AND METHOD
+Equivalent dynamic load of a rolling bearing under radial and axial load, its basic rating life L₁₀ in millions of revolutions and in hours at the running speed, and the life modified for reliability, against a required life.
+Equivalent dynamic load from the radial and axial loads: P = X·F_r + Y·F_a. Basic rating life in millions of revolutions (p = 3 for ball and 10/3 for roller bearings): L₁₀ = (C/P)^p. Rating life in hours, at speed n: L₁₀h = L₁₀·10⁶ revolutions at speed n. Life adjusted for the required reliability: L_nm = a₁·L₁₀; L_nmh = a₁·L₁₀h. Range of validity of the life equation: P ≤ 0.5·C.
+  Ref: ISO 281 §6 — Basic dynamic load rating and basic rating life
+  Ref: Shigley's Mechanical Engineering Design Ch. 11 — Rolling-contact bearings
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  type | Bearing type (selects the life exponent) | ball |  | manual | any
+  C | Basic dynamic load rating | 35.1 | kN | manual | 0.1 … 100000 kN
+  F_r | Radial load | 4 | kN | manual | 0 … 100000 kN
+  F_a | Axial load | 0 | kN | manual | 0 … 100000 kN
+  X | Radial load factor (bearing catalogue) | 1 |  | manual | 0 … 2
+  Y | Axial load factor (bearing catalogue) | 0 |  | manual | 0 … 5
+  n | Speed | 1500 | rpm | manual | 1 … 100000 rpm
+  a_1 | Life modification factor for reliability | 1 |  | manual | 0.05 … 1
+  L_req | Required life (0 for no criterion) | 5000 | h | manual | 0 … 1000000 h
+
+3. ASSUMPTIONS
+  A1. Steady load and speed; the bearing is correctly fitted, lubricated and free of contamination. (Basic rating life conditions.)
+  A2. X and Y are the catalogue factors for this bearing and load ratio. (Supplied by the user.)
+
+4. WORKING
+  [10] p = 3    « ISO 281 §6
+      = 3
+        Life exponent (ball bearing)
+  [11] P = X * F_r + Y * F_a    « ISO 281 §6
+      = 1 × 4 kN + 0 × 0 kN
+      = 4 kN
+        Equivalent dynamic load
+  [12] k_P = P / C
+      = 4 kN / 35.1 kN
+      = 0.11396
+        Load ratio P/C
+  [13] L_10 = (C / P)^p    « ISO 281 §6
+      = (35.1 kN / 4 kN)^3
+      = 675.68
+        Basic rating life (millions of revolutions)
+  [14] L_10h = L_10 * 1e6 * 2 * pi / n
+      = 675.68 × 1e6 × 2 × π / 1500 rpm
+      = 7507.6 h
+        Basic rating life in hours (10⁶ revolutions of 2π rad at speed n)
+  [15] L_nm = a_1 * L_10
+      = 1 × 675.68
+      = 675.68
+        Modified rating life (millions of revolutions)
+  [16] L_nmh = a_1 * L_10h
+      = 1 × 7507.6 h
+      = 7507.6 h
+        Modified rating life in hours
+  [17] u_life = L_req / L_nmh
+      = 5000 h / 7507.6 h
+      = 0.666
+        Required over modified life
+
+5. RESULTS
+  P = 4 kN    Equivalent dynamic load
+  k_P = 0.11396    Load ratio
+  L_10 = 675.68    L₁₀ (millions of revolutions)
+  L_10h = 7507.6 h    L₁₀ in hours
+  L_nm = 675.68    Modified life (millions of revolutions)
+  L_nmh = 7507.6 h    Modified life in hours
+
+6. CHECKS (governing first)
+  PASS  Modified life against required life: u_life = 0.666 vs u_life ≤ 1  utilisation 0.666  « ISO 281 §6
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.bearing-life-basic@1.0.1
+  Known-answer cases passed: 3/3

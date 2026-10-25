@@ -38,7 +38,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 23/23
-  Test run: 2026-10-25 19:19 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -51,7 +51,7 @@ Issued: 2026-10-25    Issue: CHW-INS-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
-Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT). Mean velocity in the pipe: v = Q/(πD²/4). Reynolds number, which decides laminar or turbulent flow: Re = ρvD/μ. Friction factor for laminar flow (Re < 2300): f = 64/Re. Friction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)). Head lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g. System curve, with friction scaled from the design flow as Q² (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f(Q). Water held in the pipes: V_pipe = Σ π/4·D²·L. Duty point, where the pump and system curves cross (found by bisection): H_pump(Q) = H_sys(Q). Pump affinity laws for a change of speed n or impeller diameter D: Q ∝ n D³; H ∝ n² D². Net positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
   Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
   Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
   Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
@@ -203,11 +203,11 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   No warnings.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.5.0
-  Content hash: fa61fbf098961063
+  Template: bs.pipe-pump@1.6.0
+  Content hash: 5a30160d8816872d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 19:19 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -221,7 +221,7 @@ Issued: 2026-10-25    Issue: CHW-INS-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The state of moist air (humidity ratio, relative humidity, dew point, wet-bulb, enthalpy, specific volume, density) from dry-bulb and one other property at a stated pressure or altitude, and one air-handling process from that state with its heat and moisture balance: sensible heating or cooling, cooling with dehumidification, steam humidification, adiabatic humidification, or mixing with a second stream.
-p_ws from Hyland–Wexler (over water ≥ 0 °C, over ice below); W = 0.621945 p_w/(p − p_w); φ = p_w/p_ws; h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da; v = 0.287042 (t + 273.15)(1 + 1.607858 W)/p; dew point and wet-bulb by bisection (wet-bulb from the adiabatic-saturation relation). Processes on a dry-air mass flow: sensible Q = ṁ (h₂ − h₁) at constant W; cooling/dehumidification Q_total = ṁ(h₁ − h₂) − ṁ_w h_w with condensate ṁ_w = ṁ(W₁ − W₂); steam h₂ = h₁ + (W₂ − W₁) h_steam; adiabatic humidification at constant h; mixing by mass-weighted W and h.
+Saturation vapour pressure at the dry-bulb temperature, over water at or above 0 °C and over ice below: p_ws(t) by Hyland–Wexler. Moisture content (humidity ratio) of the air: W = 0.621945 p_w/(p − p_w). Relative humidity: φ = p_w/p_ws. Specific enthalpy per kilogram of dry air: h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da. Specific volume: v = 0.287042 (t + 273.15)(1 + 1.607858 W)/p. Dew point and wet-bulb temperatures, by bisection (wet-bulb from the adiabatic-saturation relation): p_ws(t_dp) = p_w. Sensible heating or cooling at constant moisture content: Q = ṁ (h₂ − h₁). Cooling with dehumidification, less the heat leaving in the condensate: Q_total = ṁ(h₁ − h₂) − ṁ_w h_w, with ṁ_w = ṁ(W₁ − W₂). Steam humidification: h₂ = h₁ + (W₂ − W₁) h_steam. Adiabatic (spray) humidification, at constant enthalpy: h₂ = h₁. Mixing two airstreams, weighted by dry-air mass flow: W_mix = Σṁ W/Σṁ; h_mix = Σṁ h/Σṁ.
   Ref: ASHRAE Handbook — Fundamentals Ch. 1 — Psychrometrics (ideal-gas relations, processes)
   Ref: Hyland & Wexler, ASHRAE Trans. 89(2A), 1983 — Saturation pressure of water and ice
   Ref: CIBSE Guide C Section 1 — Properties of humid air (principles)
@@ -313,11 +313,11 @@ p_ws from Hyland–Wexler (over water ≥ 0 °C, over ice below); W = 0.621945 p
   No warnings.
 
 8. VERIFICATION
-  Template: bs.psychrometrics@1.1.0
-  Content hash: 019c21a8f58b1d42
+  Template: bs.psychrometrics@1.2.0
+  Content hash: 54d5ab9118e8e356
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 19:19 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -331,7 +331,7 @@ Issued: 2026-10-25    Issue: CHW-INS-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The insulation thickness on a pipe (cylinder) or a flat surface that meets a heat-flow limit, a limit on the surface temperature of a hot surface and an anti-condensation requirement for a cold one, each solved separately and the governing one reported; and for a chosen thickness the heat flow, the surface temperature and PASS/FAIL per criterion. Steady state, one layer, no thickness table of any standard.
-Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = D_i + 2t; with the inner film and pipe wall R_oth = 1/(h_i·π·D_p) + ln(D_i/D_p)/(2π·λ_w) added in series Flat resistance per square metre: R = t/λ + 1/h_se (+ 1/h_i + t_w/λ_w) Heat flow: q = (θ_i − θ_a)/R, positive from the process to the ambient Surface temperature: θ_se = θ_a + q/(h_se·π·D_e) (pipe), θ_a + q/h_se (flat) Surface coefficient: h_se as given, or h_se = h_c + h_r with h_r = ε·σ·(T_s² + T_a²)(T_s + T_a); h_c from free convection to air (laminar or turbulent, the larger), forced convection (cross-flow cylinder or flat plate) and their cube-law blend; solved with θ_se, which it depends on Heat-loss limit: the thickness beyond which |q| ≤ q_max; surface-temperature limit (hot): θ_se ≤ θ_se,max; anti-condensation (cold): θ_se ≥ θ_dew + margin, θ_dew entered (for example from B2) or from the Magnus relation at θ_a and RH Solve: each criterion's thickness by scanning t from 0 to 1 m for the last broken point and bisecting the bracket after it; governing t = max over the selected criteria Critical diameter: D_crit = 2λ/h_se; below it, insulation raises the heat flow until D_e passes D_crit
+Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = D_i + 2t; with the inner film and pipe wall R_oth = 1/(h_i·π·D_p) + ln(D_i/D_p)/(2π·λ_w) added in series Flat resistance per square metre: R = t/λ + 1/h_se (+ 1/h_i + t_w/λ_w) Heat flow: q = (θ_i − θ_a)/R, positive from the process to the ambient Surface temperature: θ_se = θ_a + q/(h_se·π·D_e) (pipe), θ_a + q/h_se (flat) Surface coefficient: h_se as given, or h_se = h_c + h_r with h_r = ε·σ·(T_s² + T_a²)(T_s + T_a); h_c from free convection to air (laminar or turbulent, the larger), forced convection (cross-flow cylinder or flat plate) and their cube-law blend; solved with θ_se, which it depends on Heat-loss limit: the thickness beyond which |q| ≤ q_max; surface-temperature limit (hot): θ_se ≤ θ_se,max; anti-condensation (cold): θ_se ≥ θ_dew + margin, θ_dew entered (for example from B2) or from the Magnus relation at θ_a and RH Thickness solution: each criterion's thickness by scanning t from 0 to 1 m for the last broken point and bisecting the bracket after it; governing t = max over the selected criteria Critical diameter: D_crit = 2λ/h_se; below it, insulation raises the heat flow until D_e passes D_crit
   Ref: ISO 12241 formula route (clause numbers to be checked) — Thermal insulation for building equipment and industrial installations: calculation rules
   Ref: Incropera, Fundamentals of Heat and Mass Transfer 7th ed., §7.2, §7.4, §9.6, §9.9 (to be checked) — External forced, free and mixed convection correlations
   Ref: ISO 13788 cl. 6 (clause number to be checked against the owner's copy) — Magnus saturation vapour pressure (shared with B7)
@@ -429,9 +429,9 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   WARNING record: Tabulated values not taken from a reference record: lambda (Material properties); h_se (Outer surface coefficient); eps (Surface emissivity); dew_margin (Insulation criteria). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.insulation@1.1.0
-  Content hash: 027d4f4ba606eddd
+  Template: bs.insulation@1.1.1
+  Content hash: 16a3b3c2a998a5e8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 14/14
-  Test run: 2026-10-25 19:19 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test

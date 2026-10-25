@@ -325,7 +325,7 @@
       "Unit": "%",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:410c4da3e2ff4ded9fae553d85f90f5f#phi_1",
+        "Reference": "calc:4720e2f7fd19464285ccd04e77bcfac1#phi_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -373,7 +373,7 @@
       "Unit": "W/(m^2*K)",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e5617124561b4affbb8d88cabf83fcc6#U_1",
+        "Reference": "calc:2f214fb0b3394ecda4037245f091d548#U_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -736,7 +736,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:410c4da3e2ff4ded9fae553d85f90f5f#t_1_out",
+        "Reference": "calc:4720e2f7fd19464285ccd04e77bcfac1#t_1_out",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
