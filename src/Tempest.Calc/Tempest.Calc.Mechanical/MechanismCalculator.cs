@@ -49,7 +49,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         BuildInputs(),
         [
             new CalcAssumption("Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed.", "Addendum B §B6 M9 limits."),
-            new CalcAssumption("The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch; for a change-point linkage (parallelogram, deltoid) the circuit is named at a reference angle that does not depend on the sweep (the middle of the first interval between change points in 0 … 2π, π/2 when there are none) and is followed by continuity through the change points. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted.", "Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank."),
+            new CalcAssumption("The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch; for a change-point linkage (parallelogram, deltoid) the circuit is named at a reference angle that does not depend on the sweep (the middle of the first interval between change points in 0 … 2π, π/2 when there are none), so the label at a crank angle means the same motion on every turn; only the true change points (all four links collinear, θ₂ = 0 or π) flip the branch, and it is followed by continuity through them inside the sweep. A linkage with one change point per turn (a kite) repeats every 720° and a sweep of more than one turn warns. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted.", "Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank."),
             new CalcAssumption("Input torque is by virtual work from the output load and the inertia of the output element only (four-bar: the output link's moment of inertia about its pivot; slider: the slider mass); the crank and the coupler or connecting rod are massless.", "No link-inertia or gravity terms: add the link masses to the output element for a first allowance."),
             new CalcAssumption("The peaks (speeds, accelerations, torque, transmission angle, swing) are those of the continuous motion over the swept range, found by a dense scan refined by golden section; the printed table (steps N, up to 3600) only samples it.", "Peaks do not depend on the table's step count."),
             new CalcAssumption("Cam: a translating follower on a cam turning at constant speed; the follower mass, a linear return spring (rate and preload at the base circle, for example linked from M7) and a constant external load make the force the cam must apply, F = m·a + k·s + F_pre + F_ext; contact is lost where it falls below zero. The segment table must add to 360° and close; pressure angle and undercut are checked for the roller follower (R_p = R_b + R_r), the positive profile radius for the flat-faced one.", "Norton, Design of Machinery, cam design: the four classical laws, pressure angle and radius of curvature."),
@@ -302,29 +302,37 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         var sw = new Sweep(arc.Lo, arc.Hi - arc.Lo, req.Steps, req.Omega);
         var unbounded = arc.LimitsInside.Count > 0;
 
-        // The circuit names a branch at a reference angle that does not depend on the sweep: the middle of the first interval between
-        // change points in 0 … 2π (π/2 when there are none). Flips are counted from there, so the same circuit means the same motion
-        // whatever theta_start is.
+        // Only the true change points flip the branch: the toggle angles at which all four links are collinear (θ₂ = 0 or π). The other
+        // toggles are assembly limits. The circuit names a branch at a fixed reference angle (the middle of the first interval between
+        // change points in 0 … 2π, π/2 when there are none), so the label at a crank angle does not depend on the sweep or on the turn
+        // it is in: the parity at the start of the sweep is that of the start angle wrapped into [0, 2π) against the reference, and the
+        // branch is followed by continuity (a flip at every change point passed) only inside the sweep.
+        var changePoints = changePoint ? limits.Where(x => Math.Abs(Math.Sin(x)) < 1e-9).ToList() : [];
         var reference = Math.PI / 2;
 
-        if (changePoint && limits.Count > 0)
+        if (changePoints.Count > 0)
         {
             var points = new List<double> { 0 };
-            points.AddRange(limits.Where(x => x > 1e-9));
+            points.AddRange(changePoints.Where(x => x > 1e-9 && x < 2 * Math.PI - 1e-9));
             points.Add(2 * Math.PI);
             reference = 0.5 * (points[0] + points[1]);
         }
 
-        // A change-point linkage passes through its singular positions; the circuit is followed by continuity (γ changes sign there).
+        var startWrapped = Wrap360(arc.Lo);
+        var startParity = changePoints.Count == 0 ? 0 : changePoints.Count(x => x > Math.Min(reference, startWrapped) + 1e-9 && x < Math.Max(reference, startWrapped) - 1e-9);
+
         int Flips(double t)
         {
-            if (!changePoint)
+            if (changePoints.Count == 0)
                 return 0;
 
-            var lo = Math.Min(reference, t);
-            var hi = Math.Max(reference, t);
-            return MechanismSweep.Unwrap(limits, lo, hi).Count(x => x > lo + 1e-9 && x < hi - 1e-9);
+            var lo = Math.Min(arc.Lo, t);
+            var hi = Math.Max(arc.Lo, t);
+            return startParity + MechanismSweep.Unwrap(changePoints, lo, hi).Count(x => x > lo + 1e-9 && x < hi - 1e-9);
         }
+
+        if (changePoints.Count % 2 == 1 && req.Range > 2 * Math.PI + 1e-9)
+            c.Warn("limit", "theta_range: this linkage has one change point per turn, so on the continued branch its motion repeats every 720°, not every 360°; a sweep of more than one turn passes the change point and does not return to the same configuration after 360°.");
 
         FourBarState? St(double t) => link.At(t, w2, Flips(t));
 
@@ -333,7 +341,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
         if (unbounded)
         {
-            c.Warn("limit", changePoint
+            c.Warn("limit", arc.LimitsInside.Any(x => changePoints.Any(y => Math.Abs(Math.IEEERemainder(x - y, 2 * Math.PI)) < 1e-9))
                 ? $"theta_range: the sweep passes the change point at θ₂ = {AnglesText(arc.LimitsInside)}. The table follows the same circuit through it by continuity, but the velocity system is singular there and the speeds, accelerations, torque and forces next to it are not reliable, so they are not reported. Sweep between the change-point angles (set theta_start and theta_range inside the stretch) to get them."
                 : $"theta_range: the sweep reaches the toggle at θ₂ = {AnglesText(arc.LimitsInside)}, where coupler and rocker are collinear: driven at constant speed the rocker's speed, acceleration, the input torque and the forces are unbounded there, so they and the ports are not reported. Set theta_start and theta_range inside the assemblable stretch (between the toggle angles) or reverse the crank before the toggle.");
         }

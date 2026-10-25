@@ -373,7 +373,7 @@ public sealed class FourBarLinkage
 
             var t4 = Math.Acos(Math.Clamp(cos4, -1, 1));
 
-            foreach (var theta4 in t4 < 1e-12 || Math.PI - t4 < 1e-12 ? new[] { t4 } : [t4, -t4])
+            foreach (var theta4 in t4 < 1e-6 || Math.PI - t4 < 1e-6 ? new[] { t4 } : [t4, -t4])
             {
                 var bx = _d + _c * Math.Cos(theta4);
                 var by = _c * Math.Sin(theta4);
@@ -383,7 +383,11 @@ public sealed class FourBarLinkage
                 if (theta2 < 0)
                     theta2 += 2 * Math.PI;
 
-                if (At(theta2, 1) is { } s && Math.Abs(Math.IEEERemainder(s.Theta4 - theta4, 2 * Math.PI)) < 1e-6)
+                if (theta2 > 2 * Math.PI - 1e-9)
+                    theta2 = 0;
+
+                if (At(theta2, 1) is { } s && Math.Abs(Math.IEEERemainder(s.Theta4 - theta4, 2 * Math.PI)) < 1e-6
+                    && !list.Any(x => Math.Abs(Math.IEEERemainder(x.Item1 - theta2, 2 * Math.PI)) < 1e-6 && Math.Abs(Math.IEEERemainder(x.Item2 - theta4, 2 * Math.PI)) < 1e-6))
                     list.Add((theta2, theta4));
             }
         }

@@ -480,6 +480,59 @@ public sealed class MechanismTests
         Assert.Equal(75, r.OutputSi("follower_force"), 6);
     }
 
+    [Theory]
+    [InlineData(100, 90, 60, 50)]
+    [InlineData(100, 90, 40, 50)]
+    [InlineData(40, 40, 100, 100)]
+    [InlineData(100, 40, 100, 40)]
+    public void A_Change_Point_Linkage_Gives_The_Same_Motion_At_The_Same_Crank_Angle_On_Any_Turn(double d, double a, double b, double c)
+    {
+        // θ₂ = 20° … 40° reached as 20°, 380° and −340°: the label means the same motion on every turn, for linkages with an odd number
+        // of change points per turn too (the kite, period 720°).
+        CalcRunResult At(double start) => Run(Q("L1", d, "mm"), Q("L2", a, "mm"), Q("L3", b, "mm"), Q("L4", c, "mm"), Q("theta_start", start, "deg"), Q("theta_range", 20, "deg"), CalcInputValue.Of("steps", 20));
+        var reference = At(20);
+        Assert.False(reference.IsBlocked, string.Join("; ", reference.Blocks.Select(x => x.Message)));
+        Assert.NotNull(reference.FindOutput("input_torque"));
+
+        foreach (var start in new[] { 380.0, -340.0 })
+        {
+            var other = At(start);
+            Assert.False(other.IsBlocked);
+            Assert.Equal(Vector(reference, "theta4_sw").Select(x => Math.Round(x, 9)), Vector(other, "theta4_sw").Select(x => Math.Round(x, 9)));
+
+            foreach (var symbol in new[] { "theta4_0", "omega4_0", "input_torque", "output_motion", "peak_accel", "follower_force", "F_pin_pk", "mu_min", "swing" })
+                Assert.Equal(reference.OutputSi(symbol), other.OutputSi(symbol), 9);
+        }
+    }
+
+    [Fact]
+    public void The_Kite_Label_Is_Fixed_Per_Crank_Angle_And_A_Sweep_Of_More_Than_One_Turn_Warns_About_The_720_Degree_Period()
+    {
+        // 40/40/100/100 has one change point (θ₂ = 0) per turn. 185° … 355° and −175° … −5° are the same angles.
+        CalcRunResult Kite(double start, double range) => Run(Q("L1", 40, "mm"), Q("L2", 40, "mm"), Q("L3", 100, "mm"), Q("L4", 100, "mm"), Q("theta_start", start, "deg"), Q("theta_range", range, "deg"));
+        var first = Kite(185, 170);
+        var second = Kite(-175, 170);
+        Assert.Equal(Vector(first, "theta4_sw").Select(x => Math.Round(x, 9)), Vector(second, "theta4_sw").Select(x => Math.Round(x, 9)));
+        Assert.Equal(first.OutputSi("input_torque"), second.OutputSi("input_torque"), 9);
+        Assert.Equal(first.OutputSi("output_motion"), second.OutputSi("output_motion"), 9);
+        Assert.DoesNotContain(first.Warnings, w => w.Message.Contains("720", StringComparison.Ordinal));
+
+        var twoTurns = Kite(10, 400);
+        Assert.Contains(twoTurns.Warnings, w => w.RuleId == "limit" && w.Message.Contains("720", StringComparison.Ordinal));
+        Assert.Null(twoTurns.FindOutput("input_torque"));
+    }
+
+    [Fact]
+    public void The_Collinear_Positions_Are_Unique_Wrapped_And_Tolerant_Of_Rounding()
+    {
+        foreach (var (d, a, b, c) in new[] { (0.1, 0.04, 0.1, 0.04), (0.04, 0.04, 0.1, 0.1), (0.12, 0.04, 0.11, 0.09) })
+        {
+            var positions = new FourBarLinkage(d, a, b, c, false).CollinearPositions();
+            Assert.All(positions, p => Assert.InRange(p.Theta2, 0, 2 * Math.PI - 1e-9));
+            Assert.Equal(positions.Count, positions.Select(p => (Math.Round(p.Theta2, 6), Math.Round(Math.IEEERemainder(p.Theta4, 2 * Math.PI), 6))).Distinct().Count());
+        }
+    }
+
     [Fact]
     public void The_Parallelogram_Lists_Both_Collinear_Positions_Including_The_Folded_One_At_180_Degrees()
     {
