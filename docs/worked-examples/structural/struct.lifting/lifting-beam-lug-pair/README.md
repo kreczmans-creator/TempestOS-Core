@@ -1,6 +1,6 @@
 # Lifting beam, two lugs at 30° and 2° out of plane, 150 kN rated load, BTH-1 and EN 13155 modes with the automatic 6° tilt cases (feature flag on in the test harness only) (`struct.lifting`)
 
-**Source.** Analytic (the spec equations of struct.lifting 1.1.0, evaluated independently in python, s8_ref2); the design factors are illustrative user-record values, not values from any standard, struct.lifting spec 1.1.0, F_v = 75 kN; nominal F_s = 75/(cos 30° cos 2°) = 86.655 kN, roll (β + 6° = 8°) 87.454 kN, pitch (slings at 36° and 24°, 2·F_v·sin 36°/sin 60°/cos 2°) 101.869 kN governs; the horizontal component is 43.30 kN untilted and 41.4 kN pitched, so the envelope N_beam is the untilted 43.30 kN; bearing governs both modes; capacities, utilisations and the beam axial utilisation as listed — Confirmed.
+**Source.** Analytic (the spec equations of struct.lifting 1.1.0, evaluated independently in python, s8_ref2); the design factors are illustrative user-record values, not values from any standard, struct.lifting spec 1.1.0, F_v = 75 kN; nominal F_s = 75/(cos 30° cos 2°) = 86.655 kN, roll (β + 6° = 8°) 87.454 kN, pitch (slings at 36° and 24°, 2·F_v·sin 36°/sin 60°/cos 2°) 101.869 kN governs; the force along the beam is 43.30 kN untilted (F_v·tan 30°) and F_v·sin 36°/cos 30° = 50.904 kN pitched, so the envelope N_beam is the pitched 50.904 kN; bearing governs both modes; capacities, utilisations and the beam axial utilisation as listed — Confirmed.
 
 Two lugs on a horizontal lifting beam carry 150 kN at a sling angle of 30° from the vertical and 2° out of plane; the beam adds the automatic 6° tilt cases: the pitch case (slings at 36° and 24°, the load redistributed between the lugs) governs, with a sling force of 101.9 kN against 86.7 kN untilted. Bearing on the pin governs both the BTH-1 and the EN 13155 modes. The design factors are illustrative user-record values: this example shows the arithmetic and the layout of the sheet and is not an approval of any lug. The calculator is behind the lifting feature flag (off by default); this example runs it directly, as the test harness does. To issue a sheet like this the competent-person attestation (name, qualification, statement) must be filled in by someone other than the author, and two different independent checkers must sign; the attestation inputs are left blank here.
 
@@ -34,7 +34,7 @@ Two lugs on a horizontal lifting beam carry 150 kN at a sling angle of 30° from
 | `F_s` | 101.869 kN | 101.869 kN | PASS |
 | `F_ip` | 101.807 kN | 101.807 kN | PASS |
 | `F_op` | 12.1712 kN | 12.1712 kN | PASS |
-| `N_beam` | 43.3013 kN | 43.3013 kN | PASS |
+| `N_beam` | 50.9037 kN | 50.9037 kN | PASS |
 | `M_op` | 2.19081 kN*m | 2.19081 kN*m | PASS |
 | `Cr` | 0.885436  | 0.885436  | PASS |
 | `phi` | 50 deg | 50 deg | PASS |
@@ -65,7 +65,7 @@ Two lugs on a horizontal lifting beam carry 150 kN at a sling angle of 30° from
 | `u_en_b` | 0.520184  | 0.520184  | PASS |
 | `u_en` | 0.520184  | 0.520184  | PASS |
 | `cap_en` | 288.359 kN | 288.359 kN | PASS |
-| `u_beam` | 0.0456045  | 0.0456045  | PASS |
+| `u_beam` | 0.0536113  | 0.0536113  | PASS |
 | `lug_util` | 0.572203  | 0.572203  | PASS |
 | `capacity` | 262.145 kN | 262.145 kN | PASS |
 | `util` | 0.572203  | 0.572203  | PASS |

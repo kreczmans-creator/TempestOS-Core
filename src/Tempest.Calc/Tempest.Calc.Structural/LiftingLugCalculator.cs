@@ -62,7 +62,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         "Scope notes (LOLER and PUWER): this sheet does not replace the thorough examination and inspection of lifting equipment by a competent person (LOLER reg 9), the marking, test and certification that the regulations and the standards require, the planning of the lifting operation, the weld, bolt and beam checks of the linked sheets, or the pin, shackle and sling ratings. " +
         "It is available only while the lifting feature is enabled; its issue needs a competent-person attestation and a second independent check. " + SignatureNotice,
         "Sling force: F_v = WLL/n_eff (n_eff = n_lugs, at most 3); F_s = F_v/(cos θ·cos β); F_ip = F_s·cos β; F_op = F_s·sin β; N_beam = F_v·tan θ; M_op = F_op·h\n" +
-        "Horizontal beam, automatic 6° tilt: pitch (θ ± 6°, load redistributed, the sling at θ − 6° takes 2·F_v·sin(θ + 6°)/sin 2θ); roll (β + 6°); the larger F_s governs, F_ip, F_op and N_beam are the envelopes\n" +
+        "Horizontal beam, automatic 6° tilt: pitch (θ ± 6°, load redistributed, the sling at θ − 6° takes 2·F_v·sin(θ + 6°)/sin 2θ, and the force along the tilted beam is F_v·sin(θ + 6°)/cos θ); roll (β + 6°); the larger F_s governs, F_ip, F_op and N_beam are the envelopes\n" +
         "Geometry: side = min(b_e, R − D_h/2); b_e,eff = min(side, 4t, 0.6·(f_u/f_y)·√(D_h/side)·side); a_eff = a (default R − D_h/2); A_t = 2·t·b_e,eff; A_fr = [1.13·a_eff + 0.92·side/(1 + side/D_h)]·t; φ = 55·D_p/D_h (degrees); A_v = 2·t·[a_eff + (D_p/2)(1 − cos φ)]; A_b = D_p·t\n" +
         "Pin clearance: C_r = 1 − 0.275·√(1 − D_p²/D_h²)\n" +
         "BTH-1 (3-3.3): F_a = min(f_y/n_y, f_u/n_u); design load D = N_d·k_svc·F_s; P_t = C_r·F_a·A_t; P_sp = C_r·F_a·A_fr; P_v = F_a·A_v/√3; P_b = k_b·F_a·A_b; u = D/P for each; dishing D_h/t ≤ dish_max\n" +
@@ -109,7 +109,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
             new CalcAssumption("Nominal-stress screening of four sections (tension beyond the hole, single-plane fracture beyond the hole, shear-out, bearing) on a plate loaded through a pin; no stress-concentration factor, no fatigue (the cycle count is limited to 16,000), no weld, bolt or beam check, which are made on the linked sheets.", "The notch-stress route of EN 13001-3-1 is cited, not implemented."),
             new CalcAssumption("The load on the hole is the resultant sling force F_s whatever the out-of-plane angle, which is conservative; the out-of-plane component and its moment are outputs for the weld and base checks.", "F_op = F_s·sin β."),
             new CalcAssumption("Equal sharing between the lugs, with a fourth lug not relied on (three share). The share of a statically indeterminate set is not computed.", "Conservative convention; replace with the actual share if it is known."),
-            new CalcAssumption("A horizontal beam adds the automatic 6° tilt as two cases: pitch (sling angles θ ± 6° with the load redistributed between the lugs by statics, the slings meeting at the hook) and roll (out-of-plane angle + 6°), the larger sling force governing. With θ ≤ 6° the pitch case puts the whole load on one lug; with more than two lugs the two-lug redistribution is applied to each lug's share.", "Addendum B §B6 S8; EN 13155."),
+            new CalcAssumption("A horizontal beam adds the automatic 6° tilt as two cases: pitch (sling angles θ ± 6° with the load redistributed between the lugs by statics, the slings meeting at the hook) and roll (out-of-plane angle + 6°), the larger sling force governing. N_beam is the force along the beam axis: in the pitch case each sling stays at θ to the beam's normal, so the more loaded lug sends F_v·sin(θ + 6°)/cos θ along the beam. With θ ≤ 6° the pitch case puts the whole load on one lug, with W·sin 6° along the beam; with more than two lugs the two-lug redistribution is applied to each lug's share.", "Addendum B §B6 S8; EN 13155."),
             new CalcAssumption("The allowable stress is the one lesser value min(f_y/n_y, f_u/n_u) for every BTH-1 section, as in the published worked example the sheet is checked against; the pin-clearance factor C_r is applied as stated from D_p/D_h < 1 with no cut-off.", "Conservative; owner checklist."),
             new CalcAssumption("Signatures are not authenticated by TempestOS: the platform asks for no password, so the author, the two checkers and the competent person are as entered into this installation; any person can switch to another name.", "ADR-0173; the feature stays off until this is addressed."),
             new CalcAssumption("The design factor, service-class factor, allowable-stress divisors, bearing multiple, dishing limit and proof-load factor are the user's records from their own licensed copy of the code; none is shipped and none has a default.", "ASME BTH-1 and EN 13155 text and tables are not shipped."),
@@ -171,7 +171,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
                     "F_s,nom = 147.319 kN, F_s,pitch = 179.535 kN, F_s,roll = 148.951 kN; the pitch case governs the lug checks; F_ip, F_op and N_beam are the envelopes over the three cases; BTH-1 bearing and EN 13155 bearing (3× route) govern; beam axial utilisation on 120 cm²"),
                 [.. LugC()],
                 [
-                    Ex("F_s", 179.5352354061199, "kN"), Ex("F_ip", 179.2891886056664, "kN"), Ex("F_op", 23.301052554843444, "kN"), Ex("N_beam", 62.17435442066648, "kN"),
+                    Ex("F_s", 179.5352354061199, "kN"), Ex("F_ip", 179.2891886056664, "kN"), Ex("F_op", 23.301052554843444, "kN"), Ex("N_beam", 75.77088523742714, "kN"),
                     Ex("M_op", 4.660210510968689, "kN*m"), Ex("Cr", 0.9083707559381453, ""), Ex("phi", 51.857142857142854, "deg"), Ex("be_eff", 46.99533799532652, "mm"),
                     Ex("A_t", 2819.7202797195914, "mm^2"), Ex("A_fr", 2839.0, "mm^2"), Ex("A_v", 4357.103829590557, "mm^2"), Ex("A_b", 1980, "mm^2"),
                     Ex("Fa", 213.63636363636363, "MPa"), Ex("D_bth", 323.1634237310158, "kN"), Ex("P_t", 547.1978080685508, "kN"), Ex("P_sp", 550.9392503504298, "kN"),
@@ -179,7 +179,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
                     Ex("u_v", 0.6013256668277062, ""), Ex("u_b", 0.6366497709436877, ""), Ex("u_bth", 0.6366497709436877, ""), Ex("cap_bth", 628.2889247051663, "kN"),
                     Ex("P_en_t", 441.7561771560693, "kN"), Ex("u_en_t", 0.40641250692164377, ""), Ex("P_en_sp", 444.7766666666667, "kN"), Ex("u_en_sp", 0.4036525493831059, ""),
                     Ex("P_en_v", 394.1067607945304, "kN"), Ex("u_en_v", 0.4555497475967471, ""), Ex("P_en_b", 310.2, "kN"), Ex("u_en_b", 0.5787725190397159, ""),
-                    Ex("u_en", 0.5787725190397159, ""), Ex("cap_en", 691.1178171756832, "kN"), Ex("u_beam", 0.04365433395493604, ""), Ex("lug_util", 0.6366497709436877, ""),
+                    Ex("u_en", 0.5787725190397159, ""), Ex("cap_en", 691.1178171756832, "kN"), Ex("u_beam", 0.053200834315640336, ""), Ex("lug_util", 0.6366497709436877, ""),
                     Ex("capacity", 628.2889247051663, "kN"), Ex("util", 0.6366497709436877, ""), Ex("proof_load", 600.0, "kN"),
                 ]),
             new CalcTestCase("ka-both-shear-governs", "Both modes, shear-out governs: the geometry of the EN 13155 case with the BTH-1 user-record factors",
@@ -216,7 +216,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
             new CalcOutputPort("F_s", "kN", "Sling force on each lug (resultant), for the pin, shackle and sling"),
             new CalcOutputPort("F_ip", "kN", "In-plane component of the sling force (→ M6 weld group, S4)"),
             new CalcOutputPort("F_op", "kN", "Out-of-plane component of the sling force (→ M6 weld group, M3 bolt group)"),
-            new CalcOutputPort("N_beam", "kN", "Horizontal sling component per lug: the axial force in a spreader beam (→ S7 member check)"),
+            new CalcOutputPort("N_beam", "kN", "Axial force along the spreader beam at the more loaded lug, the larger of the level and the 6° pitched case (→ S7 member check)"),
         ],
         RecordKinds:
         [
@@ -324,19 +324,20 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         {
             // Pitch: the beam tilts about a horizontal axis across it, so the slings leave at θ + 6° and θ − 6°. The slings meet at the hook, so their
             // horizontal components are equal and opposite and the vertical components carry the load: the sling at θ − 6° takes F = W·sin(θ + 6°)/sin 2θ.
+            // The triangle is rigid with the beam, so each sling stays at θ to the beam's normal and sends F·sin θ along the beam: F_v·sin(θ + 6°)/cos θ.
             double pitchPlane, pitchN;
 
             if (nEff >= 2 && theta > tau)
             {
                 pitchPlane = fV * 2 * Math.Sin((theta + tau) * Math.PI / 180) / Math.Sin(2 * theta * Math.PI / 180);
-                pitchN = fV * 2 * Math.Sin((theta + tau) * Math.PI / 180) * Math.Sin((theta - tau) * Math.PI / 180) / Math.Sin(2 * theta * Math.PI / 180);
+                pitchN = fV * Math.Sin((theta + tau) * Math.PI / 180) / Math.Cos(theta * Math.PI / 180);
                 c.Record("F_s_pitch", "2·F_v·sin(θ + 6°)/sin 2θ / cos β", $"2 × {F(fV / 1e3)} kN × sin({F(theta + tau)}°) / sin({F(2 * theta)}°) / cos({F(beta)}°)",
                     ScalarValue.Of(pitchPlane / Math.Cos(beta * Math.PI / 180) / 1e3, "kN"), "Sling force on the more loaded lug when the beam pitches 6°", "EN 13155");
             }
             else if (nEff >= 2)
             {
                 pitchPlane = wll;
-                pitchN = 0;
+                pitchN = wll * Math.Sin(tau * Math.PI / 180);
                 c.Warn("tilt", $"theta: a sling angle of {F(theta)}° is no more than the 6° tilt, so the tilted beam can put the whole load on one vertical sling; F_s is taken as the whole rated load.");
                 c.Record("F_s_pitch", "WLL / cos β (θ ≤ 6°: the whole load on one sling)", $"{F(wll / 1e3)} kN / cos({F(beta)}°)", ScalarValue.Of(pitchPlane / Math.Cos(beta * Math.PI / 180) / 1e3, "kN"), "Sling force on the more loaded lug when the beam pitches 6°", "EN 13155");
             }
@@ -370,7 +371,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         c.Record("F_s", beam ? "max(F_s,nom, F_s,pitch, F_s,roll)" : "F_s,nom", beam ? $"governing case: {worst.Name}" : "no tilt case", ScalarValue.Of(fS / 1e3, "kN"), "Sling force on each lug (resultant), governing case", "spec");
         c.Record("F_ip", beam ? "max over the cases of F_s·cos β" : "F_s·cos β", $"{F(fS / 1e3)} kN × cos β", ScalarValue.Of(fIp / 1e3, "kN"), "In-plane component of the sling force (envelope)", "spec");
         c.Record("F_op", beam ? "max over the cases of F_s·sin β" : "F_s·sin β", $"{F(fS / 1e3)} kN × sin β", ScalarValue.Of(fOp / 1e3, "kN"), "Out-of-plane component of the sling force (envelope)", "spec");
-        c.Record("N_beam", beam ? "max over the cases of the horizontal component" : "F_v·tan θ", $"{F(fV / 1e3)} kN × tan({F(theta)}°)", ScalarValue.Of(nBeam / 1e3, "kN"), "Horizontal sling component per lug (axial force in a spreader beam, envelope)", "spec");
+        c.Record("N_beam", beam ? "max(F_v·tan θ, F_v·sin(θ + 6°)/cos θ)" : "F_v·tan θ", beam ? $"{F(nBeam / 1e3)} kN, the larger of the level and the pitched case" : $"{F(fV / 1e3)} kN × tan({F(theta)}°)", ScalarValue.Of(nBeam / 1e3, "kN"), "Axial force along the spreader beam at the more loaded lug (envelope over the cases)", "spec");
 
         if (c.Has("h"))
         {

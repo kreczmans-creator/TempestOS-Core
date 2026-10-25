@@ -277,7 +277,9 @@ public sealed class LiftingLugTests
         Assert.Equal(pitch, Kn(beam, "F_s"), 9);
         Assert.Equal(fv / (Math.Cos(th) * Math.Cos(tau)), Kn(beam, "F_s_roll"), 9);
         Assert.True(Kn(beam, "F_s_pitch") > Kn(beam, "F_s_roll"));
-        Assert.Equal(Math.Max(fv * Math.Tan(th), 2 * fv * Math.Sin(th + tau) * Math.Sin(th - tau) / Math.Sin(2 * th)), Kn(beam, "N_beam"), 9);
+        // The force along the tilted beam: the triangle is rigid with the beam, so each sling stays at θ to the beam's normal and the more loaded lug sends F_v·sin(θ + 6°)/cos θ along it.
+        Assert.Equal(Math.Max(fv * Math.Tan(th), fv * Math.Sin(th + tau) / Math.Cos(th)), Kn(beam, "N_beam"), 9);
+        Assert.Equal(pitch * Math.Sin(th), Kn(beam, "N_beam"), 9);
         Assert.True(beam.OutputSi("u_en") > plain.OutputSi("u_en"));
         Assert.Contains(beam.Warnings, w => w.RuleId == "tilt");
         Assert.DoesNotContain(plain.Warnings, w => w.RuleId == "tilt");
@@ -292,8 +294,11 @@ public sealed class LiftingLugTests
         var heavy = Kn(beam, "F_s_pitch");
         var lightSling = heavy * Math.Sin((th - tau) * Math.PI / 180) / Math.Sin((th + tau) * Math.PI / 180);
         Assert.Equal(200, heavy * Math.Cos((th - tau) * Math.PI / 180) + lightSling * Math.Cos((th + tau) * Math.PI / 180), 8);
-        // The beam compression is the envelope: the horizontal components of the pitched slings are equal, and the untilted one is larger here.
-        Assert.Equal(Math.Max(heavy * Math.Sin((th - tau) * Math.PI / 180), 100 * Math.Tan(th * Math.PI / 180)), Kn(beam, "N_beam"), 8);
+        // The beam compression is the envelope. Along the tilted beam each sling sends F·sin θ (the triangle is rigid with the beam), the more loaded lug
+        // the larger of the two, and the difference of the two is the component of the load along the beam: (F1 − F2)·sin θ = W·sin 6°.
+        var thr = th * Math.PI / 180;
+        Assert.Equal((heavy - lightSling) * Math.Sin(thr), 200 * Math.Sin(tau * Math.PI / 180), 8);
+        Assert.Equal(Math.Max(heavy * Math.Sin(thr), 100 * Math.Tan(thr)), Kn(beam, "N_beam"), 8);
     }
 
     [Fact]
@@ -302,6 +307,11 @@ public sealed class LiftingLugTests
         var r = Run(Choice("mode", LiftingLugCalculator.ModeEn), CalcInputValue.Switch("beam", true), Q("theta", 5, "deg"), Q("beta", 0, "deg"));
         Assert.Equal(150, Kn(r, "F_s_pitch"), 9);
         Assert.Contains(r.Warnings, w => w.RuleId == "tilt" && w.Message.Contains("whole load", StringComparison.Ordinal));
+
+        // The whole load on one vertical sling, along a beam tilted 6°: W·sin 6° (the pitch formula gives the same at θ = 6°, so there is no step).
+        Assert.Equal(150 * Math.Sin(6 * Math.PI / 180), Kn(r, "N_beam"), 9);
+        var atTilt = Run(Choice("mode", LiftingLugCalculator.ModeEn), CalcInputValue.Switch("beam", true), Q("theta", 6.000001, "deg"), Q("beta", 0, "deg"));
+        Assert.Equal(Kn(r, "N_beam"), Kn(atTilt, "N_beam"), 4);
     }
 
     [Fact]
