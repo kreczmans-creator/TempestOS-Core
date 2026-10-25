@@ -186,6 +186,52 @@ public static class BuildingServicesWorkedExamples
             [new CalcExpectedValue("R_T", 1.9188214285714285, "m^2*K/W", 1e-9), new CalcExpectedValue("S_d", 8.3, "m", 1e-9), new CalcExpectedValue("n_start", 0, "", 1e-9), new CalcExpectedValue("Mc_max", 0, "g/m^2", 1e-9), new CalcExpectedValue("Mc_end", 0, "g/m^2", 1e-9), new CalcExpectedValue("u_Mc", 0, "", 1e-9), new CalcExpectedValue("R_Tf", 2.0388214285714286, "m^2*K/W", 1e-9), new CalcExpectedValue("fRsi", 0.8773801390859566, "", 1e-9), new CalcExpectedValue("fRsi_min", 0.5902560168111524, "", 1e-9), new CalcExpectedValue("pass", 1, "", 1e-9)],
             "The 6 m diffusion-equivalent layer holds the vapour pressure at the cold interfaces below saturation in every month, so no interface condenses and the sheet passes all three checks. The vapour control layer must be continuous and sealed at laps and penetrations: this calculation does not model air leakage or holes in it.",
             CalcReferenceStatus.Confirmed),
+
+        new(InsulationCalculator.Id, "chilled-water-pipe-condensation", "Chilled-water pipe in a plant room: heat-gain limit and anti-condensation, 25 mm chosen",
+            new CalcReferenceSource("Analytic (ISO 12241 formula route: cylinder resistance, Magnus dew point, root find on the thickness; recomputed in python3)", null, "90 mm pipe at 6 °C in 28 °C plant-room air at 70 % RH, λ 0.035, h_se 8 W/m²K; every value is an invented illustrative input, not design data"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Choice("geometry", InsulationCalculator.Pipe, CalcProvenance.Assumed("A round pipe.")),
+                CalcInputValue.Quantity("D_i", 90, "mm", CalcProvenance.Drawing("M-PIP-014", "A")),
+                CalcInputValue.Quantity("theta_i", 6, "degC", CalcProvenance.Specification("SPEC-M-11 §3: chilled-water flow temperature")),
+                CalcInputValue.Quantity("theta_a", 28, "degC", CalcProvenance.Specification("SPEC-M-11 §2: plant-room design temperature")),
+                CalcInputValue.Quantity("lambda", 0.035, "W/(m*K)", CalcProvenance.Assumed("Closed-cell elastomeric insulation; take the maker's value at the mean temperature (W3 material)")),
+                CalcInputValue.Choice("h_mode", InsulationCalculator.HGiven, CalcProvenance.Assumed("A surface coefficient is given, not computed.")),
+                CalcInputValue.Quantity("h_se", 8, "W/(m^2*K)", CalcProvenance.Assumed("Still air in a plant room; replace with the project's own record.")),
+                CalcInputValue.Of("eps", 0.9, CalcProvenance.Assumed("Not used: h_se is given.")),
+                CalcInputValue.Quantity("v_wind", 0, "m/s", CalcProvenance.Assumed("Not used: h_se is given.")),
+                CalcInputValue.Quantity("L_surf", 1, "m", CalcProvenance.Assumed("Not used: a pipe.")),
+                CalcInputValue.Quantity("RH_a", 70, "%", CalcProvenance.Specification("SPEC-M-11 §2: plant-room design humidity")),
+                CalcInputValue.Quantity("dew_margin", 1, "K", CalcProvenance.Specification("SPEC-M-11 §5: surface at least 1 K above the dew point")),
+                CalcInputValue.Quantity("q_max_m", 12, "W/m", CalcProvenance.Specification("SPEC-M-11 §5: heat gain not to exceed 12 W/m")),
+                CalcInputValue.Quantity("t_chosen", 25, "mm", CalcProvenance.Specification("Pipework schedule M-SCH-014: 25 mm sleeves")),
+            ]),
+            [new CalcExpectedValue("theta_dew", 22.01219207981888, "degC", 1e-9), new CalcExpectedValue("t_dew", 13.161558769442829, "mm", 1e-9), new CalcExpectedValue("t_q", 17.814370694294055, "mm", 1e-9), new CalcExpectedValue("thickness", 17.814370694294055, "mm", 1e-9), new CalcExpectedValue("q_per_m", 9.592977383811599, "W/m", 1e-9), new CalcExpectedValue("theta_se", 25.273625411424334, "degC", 1e-9), new CalcExpectedValue("u_q", 0.7994147819842999, "", 1e-9), new CalcExpectedValue("u_dew", 0.5466077748392254, "", 1e-9)],
+            "The dew point of 28 °C air at 70 % is 22.01 °C, so the surface must stay above 23.01 °C. That needs 13.2 mm, but the 12 W/m heat-gain limit needs 17.8 mm and governs. The chosen 25 mm sleeve gains 9.59 W/m with the surface at 25.27 °C: both criteria pass (utilisation 0.80 and 0.55). The pipe is above the 8.8 mm critical diameter, so insulation reduces the gain at every thickness.",
+            CalcReferenceStatus.Confirmed),
+
+        new(InsulationCalculator.Id, "clad-hot-water-pipe-correlation", "Hot pipe in aluminium cladding: surface coefficient from convection and radiation",
+            new CalcReferenceSource("Analytic (the stated convection and radiation correlation solved with the surface temperature; recomputed in python3 with an independent implementation)", null, "114 mm pipe at 120 °C in 15 °C air, λ 0.04, bright cladding ε 0.1, 50 mm; every value is an invented illustrative input, not design data"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Choice("geometry", InsulationCalculator.Pipe, CalcProvenance.Assumed("A round pipe.")),
+                CalcInputValue.Quantity("D_i", 114, "mm", CalcProvenance.Drawing("M-PIP-021", "B")),
+                CalcInputValue.Quantity("theta_i", 120, "degC", CalcProvenance.Specification("SPEC-M-12 §3: heating flow temperature")),
+                CalcInputValue.Quantity("theta_a", 15, "degC", CalcProvenance.Specification("SPEC-M-12 §2: ambient design temperature")),
+                CalcInputValue.Quantity("lambda", 0.04, "W/(m*K)", CalcProvenance.Assumed("Mineral wool; take the maker's value at the mean temperature (W3 material)")),
+                CalcInputValue.Choice("h_mode", InsulationCalculator.HCorrelation, CalcProvenance.Assumed("Surface coefficient computed from the correlation.")),
+                CalcInputValue.Of("eps", 0.1, CalcProvenance.Assumed("Bright aluminium cladding; replace with the cladding maker's emissivity.")),
+                CalcInputValue.Quantity("v_wind", 0, "m/s", CalcProvenance.Assumed("Still air, indoors.")),
+                CalcInputValue.Quantity("L_surf", 1, "m", CalcProvenance.Assumed("Not used: a pipe.")),
+                CalcInputValue.Quantity("h_se", 10, "W/(m^2*K)", CalcProvenance.Assumed("Not used: h_se is computed.")),
+                CalcInputValue.Quantity("RH_a", 60, "%", CalcProvenance.Assumed("Not used: a hot pipe has no condensation criterion.")),
+                CalcInputValue.Quantity("q_max_m", 60, "W/m", CalcProvenance.Specification("SPEC-M-12 §5: heat loss not to exceed 60 W/m")),
+                CalcInputValue.Quantity("theta_se_max", 60, "degC", CalcProvenance.Specification("SPEC-M-12 §6: personnel protection, surface not above 60 °C")),
+                CalcInputValue.Quantity("t_chosen", 50, "mm", CalcProvenance.Specification("Pipework schedule M-SCH-021: 50 mm sections")),
+            ]),
+            [new CalcExpectedValue("t_q", 23.374326102060238, "mm", 1e-8), new CalcExpectedValue("t_se", 7.8422918751036015, "mm", 1e-8), new CalcExpectedValue("thickness", 23.374326102060238, "mm", 1e-8), new CalcExpectedValue("h_c", 3.6748386376329623, "W/(m^2*K)", 1e-8), new CalcExpectedValue("h_r", 0.5800655776199201, "W/(m^2*K)", 1e-8), new CalcExpectedValue("h_se", 4.254904215252882, "W/(m^2*K)", 1e-8), new CalcExpectedValue("q_per_m", 36.77262036715434, "W/m", 1e-8), new CalcExpectedValue("theta_se", 27.854972274669827, "degC", 1e-8)],
+            "The bright cladding radiates little (h_r 0.58), so h_se is only 4.25 W/m²K and the 60 W/m heat-loss limit needs 23.4 mm; the 60 °C personnel-protection limit needs only 7.8 mm. At the chosen 50 mm the loss is 36.8 W/m with the cladding at 27.9 °C; both criteria pass with room to spare. The correlation is indicative: check h_se against the cladding maker's data before relying on a thin margin.",
+            CalcReferenceStatus.Confirmed),
     ];
 
     /// <summary>The inputs shared by the two Glaser examples, with a layers table supplied by the caller.</summary>

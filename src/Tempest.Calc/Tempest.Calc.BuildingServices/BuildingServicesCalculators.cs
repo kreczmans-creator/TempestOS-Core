@@ -14,5 +14,6 @@ public static class BuildingServicesCalculators
         new RoomHeatLossCalculator(),
         new DuctSizingCalculator(),
         new GlaserCalculator(),
+        new InsulationCalculator(),
     ];
 }
