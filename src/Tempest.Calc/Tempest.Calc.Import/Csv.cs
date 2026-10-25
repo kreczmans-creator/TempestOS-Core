@@ -4,8 +4,11 @@ using System.Text;
 namespace Tempest.Calc.Import;
 
 /// <summary>A parsed CSV table: rows of fields. Row numbers in messages are 1-based file lines of the record's first line.</summary>
-public sealed record CsvTable(IReadOnlyList<IReadOnlyList<string>> Rows, IReadOnlyList<int> Lines)
+public sealed record CsvTable(IReadOnlyList<IReadOnlyList<string>> Rows, IReadOnlyList<int> Lines, IReadOnlyList<IReadOnlyList<bool>>? Quoted = null)
 {
+    /// <summary>Whether the field at (<paramref name="row"/>, <paramref name="column"/>) was written in quotes; false when it is absent or the table was built without that information.</summary>
+    public bool WasQuoted(int row, int column) => Quoted is not null && row < Quoted.Count && column < Quoted[row].Count && Quoted[row][column];
+
     public int ColumnCount => Rows.Count == 0 ? 0 : Rows.Max(r => r.Count);
 }
 
@@ -23,12 +26,14 @@ public static class CsvReader
     {
         var rows = new List<IReadOnlyList<string>>();
         var lines = new List<int>();
-        ReadRows(text, delimiter, budget, (row, line) =>
+        var quoted = new List<IReadOnlyList<bool>>();
+        ReadRowsCore(text, delimiter, budget, (row, quotes, line) =>
         {
             rows.Add(row);
+            quoted.Add(quotes);
             lines.Add(line);
         });
-        return new CsvTable(rows, lines);
+        return new CsvTable(rows, lines, quoted);
     }
 
     /// <summary>
@@ -37,8 +42,13 @@ public static class CsvReader
     /// </summary>
     public static void ReadRows(string text, char delimiter, ImportBudget? budget, Action<IReadOnlyList<string>, int> onRow)
     {
-        ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(onRow);
+        ReadRowsCore(text, delimiter, budget, (row, _, line) => onRow(row, line));
+    }
+
+    private static void ReadRowsCore(string text, char delimiter, ImportBudget? budget, Action<IReadOnlyList<string>, IReadOnlyList<bool>, int> onRow)
+    {
+        ArgumentNullException.ThrowIfNull(text);
         budget ??= new ImportBudget();
         var limits = budget.Limits;
 
@@ -47,6 +57,8 @@ public static class CsvReader
 
         var count = 0;
         var row = new List<string>();
+        var quotes = new List<bool>();
+        var quotedField = false;
         var field = new StringBuilder();
         var line = 1;
         var recordLine = 1;
@@ -98,12 +110,13 @@ public static class CsvReader
                     throw Malformed($"Line {line}: text follows a closing quote.");
 
                 fieldStarted = true;
+                quotedField = true;
                 continue;
             }
 
             if (c == delimiter)
             {
-                EndField(row, field, limits, recordLine);
+                EndField(row, quotes, ref quotedField, field, limits, recordLine);
                 fieldStarted = false;
                 i++;
                 continue;
@@ -119,11 +132,13 @@ public static class CsvReader
 
                 if (!blank)
                 {
-                    EndField(row, field, limits, recordLine);
-                    Emit(onRow, row, limits, recordLine, ref count);
+                    EndField(row, quotes, ref quotedField, field, limits, recordLine);
+                    Emit(onRow, row, quotes, limits, recordLine, ref count);
                 }
 
                 row = [];
+                quotes = [];
+                quotedField = false;
                 fieldStarted = false;
                 line++;
                 recordLine = line;
@@ -140,8 +155,8 @@ public static class CsvReader
 
         if (row.Count > 0 || field.Length > 0 || fieldStarted)
         {
-            EndField(row, field, limits, recordLine);
-            Emit(onRow, row, limits, recordLine, ref count);
+            EndField(row, quotes, ref quotedField, field, limits, recordLine);
+            Emit(onRow, row, quotes, limits, recordLine, ref count);
         }
 
     }
@@ -192,22 +207,24 @@ public static class CsvReader
         field.Append(c);
     }
 
-    private static void EndField(List<string> row, StringBuilder field, ImportLimits limits, int line)
+    private static void EndField(List<string> row, List<bool> quotes, ref bool quotedField, StringBuilder field, ImportLimits limits, int line)
     {
         if (row.Count >= limits.MaxColumns)
             throw new ImportRefusedException(ImportRefusalCode.TooManyColumns, $"Line {line} has more than {limits.MaxColumns} columns.");
 
         row.Add(field.ToString());
+        quotes.Add(quotedField);
+        quotedField = false;
         field.Clear();
     }
 
-    private static void Emit(Action<IReadOnlyList<string>, int> onRow, List<string> row, ImportLimits limits, int line, ref int count)
+    private static void Emit(Action<IReadOnlyList<string>, IReadOnlyList<bool>, int> onRow, List<string> row, List<bool> quotes, ImportLimits limits, int line, ref int count)
     {
         if (count >= limits.MaxRows)
             throw new ImportRefusedException(ImportRefusalCode.TooManyRows, $"The file has more than {limits.MaxRows} rows.");
 
         count++;
-        onRow(row, line);
+        onRow(row, quotes, line);
     }
 
     private static ImportRefusedException Malformed(string message) => new(ImportRefusalCode.MalformedStructure, "The CSV is malformed: " + message);

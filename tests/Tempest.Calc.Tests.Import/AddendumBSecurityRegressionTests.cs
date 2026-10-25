@@ -67,6 +67,64 @@ public sealed class AddendumBSecurityRegressionTests
         Assert.DoesNotContain(r.Notices, n => n.Severity == CalcNoticeSeverity.Block);
     }
 
+    // ---- P-B-01 (Purple): a decimal comma with a comma delimiter makes every unquoted number ambiguous -------
+
+    [Theory]
+    [InlineData("name,value,description\nL,12,5 mm\n", CadSourceFormat.GenericCsv)]
+    [InlineData("name,expression,value,description\n#w,40,5 mm,\n", CadSourceFormat.OnshapeCsv)]
+    [InlineData("name,expression,value,description\n#w,40,5,\n", CadSourceFormat.OnshapeCsv)]
+    [InlineData("name,value,expression\nL,12,5\n", CadSourceFormat.GenericCsv)]
+    [InlineData("name,value,text\nL,12,5\n", CadSourceFormat.GenericCsv)]
+    [InlineData("name,value\nL,12\n", CadSourceFormat.GenericCsv)]
+    [InlineData("name,value\nL,1e3\n", CadSourceFormat.GenericCsv)]
+    public void P_B_01_Under_A_Decimal_Comma_An_Unquoted_Number_With_A_Comma_Delimiter_Is_Refused(string csv, CadSourceFormat format)
+    {
+        var ex = Assert.Throws<ImportRefusedException>(() => Csv(csv, format, NumberProfile.Comma));
+        Assert.Equal(ImportRefusalCode.MalformedStructure, ex.Code);
+        Assert.Contains("quotes", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("semicolon", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("Nothing was imported", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("name,value,description\nL,12,5 mm\n", CadSourceFormat.GenericCsv)]
+    [InlineData("name,expression,value,description\n#w,40,5 mm,\n", CadSourceFormat.OnshapeCsv)]
+    [InlineData("name,expression,value,description\n#w,40,5,\n", CadSourceFormat.OnshapeCsv)]
+    [InlineData("name,value,expression\nL,12,5\n", CadSourceFormat.GenericCsv)]
+    [InlineData("name,value,text\nL,12,5\n", CadSourceFormat.GenericCsv)]
+    public void P_B_01_Under_A_Decimal_Point_The_Same_Shapes_Are_Blocked_Not_Read_Silently(string csv, CadSourceFormat format)
+    {
+        var r = Csv(csv, format, NumberProfile.Point);
+        Assert.Contains(r.Notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("decimal comma", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("name,value,unit\nL,\"12,5\",mm\n", CadSourceFormat.GenericCsv)]
+    [InlineData("name,expression,value,description\n#w,\"40,5 mm\",,\n", CadSourceFormat.OnshapeCsv)]
+    [InlineData("name;value;unit\nL;12,5;mm\nW;3;mm\n", CadSourceFormat.GenericCsv)]
+    [InlineData("name\tvalue\tunit\nL\t12,5\tmm\nW\t3\tmm\n", CadSourceFormat.GenericCsv)]
+    public void P_B_01_Quoted_Semicolon_And_Tab_Files_Are_Still_Read_Under_A_Decimal_Comma(string csv, CadSourceFormat format)
+    {
+        var r = Csv(csv, format, NumberProfile.Comma);
+        Assert.NotEmpty(r.Parameters);
+        Assert.DoesNotContain(r.Notices, n => n.Severity == CalcNoticeSeverity.Block);
+    }
+
+    [Fact]
+    public void P_B_03_The_Message_Names_The_Column_The_Remainder_Landed_In()
+    {
+        // A quoted whole number is not ambiguous by itself, but a digit field right of it is still a split.
+        var ex = Assert.Throws<ImportRefusedException>(() => Csv("name,value,rev\nL,\"12\",5\n", CadSourceFormat.GenericCsv, NumberProfile.Comma));
+        Assert.Contains("'rev' column (which is not read)", ex.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("unnamed column", ex.Message, StringComparison.Ordinal);
+
+        var unit = Assert.Throws<ImportRefusedException>(() => Csv("name,value,unit\nL,\"12\",5\n", CadSourceFormat.GenericCsv, NumberProfile.Comma));
+        Assert.Contains("'unit' column", unit.Message, StringComparison.Ordinal);
+
+        var point = Csv("name,value,rev\nL,12,5\n", CadSourceFormat.GenericCsv, NumberProfile.Point);
+        Assert.Contains(point.Notices, n => n.Message.Contains("'rev' column (which is not read)", StringComparison.Ordinal));
+    }
+
     // ---- SEC-B-03: one XML start tag with millions of attributes ----------------------------------------------
 
     private static string Flood(int attributes, string value)
