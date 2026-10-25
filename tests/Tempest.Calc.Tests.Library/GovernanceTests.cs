@@ -112,6 +112,28 @@ public sealed class GovernanceTests
     // ------------------------------------------------------------------
 
     [Fact]
+    public async Task The_Worksheet_That_Owns_A_Piece_Of_Evidence_Can_Be_Found_From_It()
+    {
+        var host = Host();
+        host.Principal = Designer;
+        var project = await host.ProjectAsync();
+        var calc = await host.Service.CreateAsync(Id(), project, "Lug 1", LibraryTestHost.ProvenancedInputs());
+        var pack = await host.Service.CreatePackAsync(project, "Lug pack", [calc.Id]);
+
+        // A calculation's Evidence leads back to the calculation, a pack's Evidence to the pack; anything else leads nowhere.
+        var (instance, none) = await host.Store.FindByEvidenceAsync(calc.EvidenceId!.Value);
+        Assert.Equal(calc.Id, instance!.Id);
+        Assert.Null(none);
+
+        var packRecord = (await host.Store.FindPackAsync(pack.Id))!;
+        var (noInstance, found) = await host.Store.FindByEvidenceAsync(packRecord.EvidenceId!.Value);
+        Assert.Null(noInstance);
+        Assert.Equal(pack.Id, found!.Id);
+
+        Assert.Equal((null, null), await host.Store.FindByEvidenceAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
     public void With_The_Flag_Off_The_Calculator_Is_Not_In_The_Catalogue_Or_The_Search_Lists()
     {
         var host = Host(on: false);

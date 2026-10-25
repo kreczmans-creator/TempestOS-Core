@@ -135,6 +135,7 @@ public interface IEditorSection
 /// <param name="OwnerSupport">Non-<see langword="null"/> only when the Owner drop-down's own People catalogue/Add-person prompt are wired.</param>
 /// <param name="RefreshAsync">Re-reads the real object and reloads every section — a section calls this after every successful write, exactly as the pre-split shell's own <c>Populate*</c> methods called <c>ObjectEditorView.RefreshAsync</c> directly.</param>
 /// <param name="ReportAction">Reports one action's own outcome — a section calls this exactly where its own pre-split method invoked <c>ActionCompleted</c> directly.</param>
+/// <param name="GetOpenCalculationHandler">Reads the shell's own current <c>OpenCalculationRequested</c> subscriber, live: the Evidence Lifecycle section offers "Open worksheet" for Evidence a worksheet manages (`ADR-0173`), and its click reads this fresh.</param>
 /// <param name="GetOpenAttachmentHandler">Reads the shell's own current <c>OpenAttachmentRequested</c> subscriber, live — the Attachments section's own row-building (does this Kind's attachments even offer "Open"?) and its own row click both read this fresh, mirroring the pre-split shell's own direct field read.</param>
 public sealed record EditorSectionContext(
     Guid ObjectId,
@@ -153,4 +154,5 @@ public sealed record EditorSectionContext(
     Func<Task> RefreshAsync,
     Action<string, ActionOutcome> ReportAction,
     Func<Action<IHasAttachments, IAttachment>?> GetOpenAttachmentHandler,
-    Func<Action<Guid>?>? GetExportReportHandler = null);
+    Func<Action<Guid>?>? GetExportReportHandler = null,
+    Func<Action<Guid>?>? GetOpenCalculationHandler = null);

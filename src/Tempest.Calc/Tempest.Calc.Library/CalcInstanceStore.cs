@@ -76,6 +76,32 @@ public sealed class CalcInstanceStore
     }
 
     /// <summary>
+    /// The calculation or pack whose Evidence is <paramref name="evidenceId"/>, in any project, or <see langword="null"/> when no worksheet owns it. This is the
+    /// route from a managed Evidence record back to the worksheet that governs it (`ADR-0173`); it reads every saved calculation, so it is for a user's
+    /// explicit "Open worksheet", not a hot path.
+    /// </summary>
+    public async Task<(CalcInstance? Instance, CalcPack? Pack)> FindByEvidenceAsync(Guid evidenceId, CancellationToken cancellationToken = default)
+    {
+        var instances = await _store.ReadAllAsync(InstanceCollection, cancellationToken).ConfigureAwait(false);
+
+        foreach (var (_, value) in instances)
+        {
+            if (Deserialise<CalcInstance>(value) is { } instance && instance.EvidenceId == evidenceId)
+                return (instance, null);
+        }
+
+        var packs = await _store.ReadAllAsync(PackCollection, cancellationToken).ConfigureAwait(false);
+
+        foreach (var (_, value) in packs)
+        {
+            if (Deserialise<CalcPack>(value) is { } pack && pack.EvidenceId == evidenceId)
+                return (null, pack);
+        }
+
+        return (null, null);
+    }
+
+    /// <summary>
     /// Writes a draft or checked instance in its own transaction. Refuses to
     /// overwrite an issued one. With <paramref name="expectedUpdatedAt"/>,
     /// the stored copy is re-read under the transaction and the write is

@@ -234,6 +234,7 @@ public sealed partial class CalcSheetView
     {
         _busy = busy;
         UpdateSavedAndPackButtons();
+        UpdateGovernance();
     }
 
     /// <summary>Fills the check fields that are still empty (the organisation and a statement), as the single Check does.</summary>

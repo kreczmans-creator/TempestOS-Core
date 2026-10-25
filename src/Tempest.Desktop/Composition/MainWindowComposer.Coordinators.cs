@@ -311,6 +311,10 @@ internal sealed partial class MainWindowComposer
         var calcSheets = new Tempest.Desktop.CalcSheets.CalcSheetCoordinator(host.CalcInstances!, views.Worksheets, host.ProjectContext!, () => host.SessionPrincipal?.IdentityId,
             (Tempest.Core.Events.IEventBus)host.Services!.GetService(typeof(Tempest.Core.Events.IEventBus)));
 
+        // `ADR-0173`: Evidence a worksheet manages is checked, issued and revised there; its editor's "Open worksheet" lands here.
+        viewCoordinator.OpenCalculationForEvidenceAsync = evidenceId =>
+            calcSheets.OpenForEvidenceAsync(evidenceId, views.EngineeringAreaView.OpenWorksheetAsync);
+
         return new ComposedCoordinators(
             undoRedo, viewCoordinator, cockpitView, homeDashboardView, dockingComposer, attachmentViewers, layoutPresets,
             engineeringCalculationCoordinator, calculationModulesCoordinator, calcSheets, projectDelivery, projectGovernanceCoordinator);

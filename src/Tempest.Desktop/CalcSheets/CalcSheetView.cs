@@ -211,6 +211,7 @@ public sealed partial class CalcSheetView : UserControl
         };
 
         WireSavedAndPacks();
+        WireGovernance();
         Content = BuildLayout();
     }
 
@@ -738,6 +739,7 @@ public sealed partial class CalcSheetView : UserControl
         _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft };
         _issueButton.IsVisible = instance is { Status: CalcInstanceStatus.Checked };
         _reviseButton.IsVisible = instance is { Status: CalcInstanceStatus.Issued };
+        UpdateGovernance();
     }
 
     private void RevealGoverningStep()
@@ -1010,6 +1012,8 @@ public sealed partial class CalcSheetView : UserControl
         resultsHead.Children.Add(_showWorking);
         resultsHead.Children.Add(_working);
         right.Children.Add(Section("Results", resultsHead));
+
+        right.Children.Add(BuildGovernancePanel());
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         actions.Children.Add(_saveButton);

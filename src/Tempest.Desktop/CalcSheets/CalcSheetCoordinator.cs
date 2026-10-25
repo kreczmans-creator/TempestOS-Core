@@ -47,6 +47,8 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.SaveRequested += () => _ = GuardedAsync(SaveAsync, "save that calculation");
         _view.CheckRequested += () => _ = GuardedAsync(CheckAsync, "record the check");
         _view.IssueRequested += () => _ = GuardedAsync(IssueAsync, "issue that calculation");
+        _view.AttestRequested += draft => _ = GuardedAsync(() => ExclusiveAsync(() => AttestAsync(draft)), "record the attestation");
+        _view.CountersignRequested += draft => _ = GuardedAsync(() => ExclusiveAsync(() => CountersignAsync(draft)), "record the second check");
         _view.ReviseRequested += () => _ = GuardedAsync(ReviseAsync, "revise that calculation");
         _view.ExportRequested += () => _ = GuardedAsync(ExportAsync, "export the inputs");
         _view.ImportRequested += () => _ = GuardedAsync(ImportAsync, "import the inputs");
@@ -473,6 +475,35 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.ShowStatus(result.Succeeded ? $"Pack issued as '{draft.IssueReference}'. Its sheet and every calculation are attached to the pack's Evidence." : result.Reason ?? "Refused.");
     }
 
+    /// <summary>
+    /// `ADR-0173`: opens the worksheet that manages a piece of Evidence (the Evidence editor's "Open worksheet"). Evidence a calculation owns is
+    /// checked, issued and revised only there. <paramref name="showSurface"/> brings the Worksheets surface forward for the owning template first.
+    /// For a pack's Evidence the pack is chosen and its first calculation opened. Returns whether a worksheet was found.
+    /// </summary>
+    public async Task<bool> OpenForEvidenceAsync(Guid evidenceId, Func<string, Task>? showSurface = null)
+    {
+        var (instance, pack) = await _service.Store.FindByEvidenceAsync(evidenceId).ConfigureAwait(true);
+
+        if (pack is not null)
+            instance = pack.InstanceIds.Count > 0 ? await _service.Store.FindInstanceAsync(pack.InstanceIds[0]).ConfigureAwait(true) : null;
+
+        if (instance is null)
+        {
+            _view.ShowStatus("No worksheet owns that Evidence.");
+            return false;
+        }
+
+        if (showSurface is not null)
+            await showSurface(instance.TemplateReference).ConfigureAwait(true);
+
+        await OpenAsync(instance.Id).ConfigureAwait(true);
+
+        if (pack is not null)
+            _view.ChoosePack(pack.Id);
+
+        return true;
+    }
+
     /// <summary>Opens an existing instance in the form (read-only when issued).</summary>
     public async Task OpenAsync(Guid instanceId)
     {
@@ -488,7 +519,8 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
 
         if (entry is null)
         {
-            _view.ShowStatus($"Template '{instance.TemplateReference}' is not registered in this build.");
+            // A calculator the installation has switched off is withheld, not missing: say which feature and where it is enabled (`ADR-0173`).
+            _view.ShowStatus(_service.Catalogue.FeatureRefusal(instance.TemplateReference) ?? $"Template '{instance.TemplateReference}' is not registered in this build.");
             return;
         }
 
@@ -536,6 +568,48 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         var who = _principalId() ?? "engineer";
         var result = await _service.CheckAsync(instance.Id, who, "Tempest Engineering", "Checked in the worksheet form.", CheckOutcome.Accepted).ConfigureAwait(true);
         await ReportAsync(result, "Checked. Issue when ready.").ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// `ADR-0173`: records the competent person's attestation under the signed-in principal. The attestation is bound to the saved inputs, so unsaved
+    /// edits are refused here rather than attested.
+    /// </summary>
+    private async Task AttestAsync(CalcSheetView.AttestDraft draft)
+    {
+        if (_view.CurrentInstance is not { } instance)
+        {
+            _view.ShowStatus("Save the calculation first, then attest it.");
+            return;
+        }
+
+        if (_view.HasUnsavedEdits())
+        {
+            _view.ShowStatus("The form has unsaved changes. Save them first: an attestation covers the saved inputs.");
+            return;
+        }
+
+        var result = await _service.AttestAsync(instance.Id, draft.Name, draft.Qualification, draft.Statement).ConfigureAwait(true);
+
+        // The attestation is written into the sheet's inputs: show them as they now are.
+        if (result.Succeeded && result.Instance is { } attested && _service.Catalogue.Find(attested.TemplateReference) is { } entry)
+        {
+            _view.ShowTemplate(entry, attested);
+            _view.ShowStatus("Attested. The attestation is bound to these inputs; the first check can be made now.");
+            await RefreshLinkStateAsync(attested.Id).ConfigureAwait(true);
+            return;
+        }
+
+        Report(result, "Attested.");
+    }
+
+    /// <summary>`ADR-0173`: records the second, independent check of a checked calculation under the signed-in principal.</summary>
+    private async Task CountersignAsync(CalcSheetView.CountersignDraft draft)
+    {
+        if (_view.CurrentInstance is not { } instance)
+            return;
+
+        var result = await _service.CountersignAsync(instance.Id, CheckerName(), draft.Organisation, draft.Statement, draft.Outcome).ConfigureAwait(true);
+        await ReportAsync(result, draft.Outcome == CheckOutcome.Rejected ? "Second check recorded as rejected: it cannot be issued; revise it." : "Second check recorded. Issue when ready.").ConfigureAwait(true);
     }
 
     private async Task IssueAsync()
