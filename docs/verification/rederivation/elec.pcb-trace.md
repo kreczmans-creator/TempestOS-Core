@@ -53,13 +53,13 @@ Each probe compares A_req, w_min, u_w, trace_R, vdrop and trace_Ploss. All 42 va
 | Temperature unit input | degC or K | 77 °F accepted and converted to 25 °C | Yes |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-elec.pcb-trace-01 | Low | Copper thickness is 35.0 µm per oz. The other common value is 34.8 µm (1.37 mil). The product width is 0.58 % narrower, so slightly unconservative. | 3 A, 10 K, 1 oz external: 1.3670 mm at 1.378 mil; 1.3750 mm at 1.37 mil. | Keep 1.378 mil. State in the sheet that 34.8 µm gives 0.6 % wider traces. Confirm the value against the owner's copy of IPC-2221. |
-| P1-elec.pcb-trace-02 | Medium | When u_w > 1, R, ΔV and P are evaluated at the allowed rise. The drawn trace would run hotter, so these values are too low. The label says "at its operating temperature". | ka-half-oz-internal-narrow: drawn width 0.5 mm gives a rise of 65.4 K, not 30 K. R at that temperature is 526 mΩ against 471.5 mΩ reported (11.6 % low). | Add a warning when u_w > 1. Or solve the curve-fit for the actual rise and use it for ρ. Or relabel the outputs "at the allowed rise". |
-| P1-elec.pcb-trace-03 | Low | No notice on the trace temperature. T_amb + ΔT up to 800 °C is accepted without comment, and 185 °C passes quietly. | Probe P7: 500 °C + 300 K gives only usual-range notices. Probe P2: 85 °C + 100 K gives no notice. | Warn when T_amb + ΔT exceeds a recorded laminate limit (for example 105 or 130 °C). |
-| P1-elec.pcb-trace-04 | Low | Seven "was not entered; template default used" warnings appear on every default run. They hide real warnings. | Probe P1 prints seven such lines for k_ext, k_int, n_dT, n_A, t_oz, rho_20 and alpha. | Show one grouped notice about the method record. Do not repeat it per constant. |
-| P1-elec.pcb-trace-05 | Info | The sheet label "legacy IPC-2221 curve-fit, conservative for multilayer boards" lives only in the template description. The probe output does not print it. | `SheetLabel` is used once, in the description string. | Confirm the desktop sheet header shows the label. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-elec.pcb-trace-01 | Low | Low (confirmed; under 1 %) | Copper thickness is 35.0 µm per oz. The other common value is 34.8 µm (1.37 mil). The product width is 0.58 % narrower, so slightly unconservative. | 3 A, 10 K, 1 oz external: 1.3670 mm at 1.378 mil; 1.3750 mm at 1.37 mil. | Keep 1.378 mil. State in the sheet that 34.8 µm gives 0.6 % wider traces. Confirm the value against the owner's copy of IPC-2221. |
+| P1-elec.pcb-trace-02 | Medium | Medium (confirmed: misleading label; the width check already FAILs, so not High) | When u_w > 1, R, ΔV and P are evaluated at the allowed rise. The drawn trace would run hotter, so these values are too low. The label says "at its operating temperature". | ka-half-oz-internal-narrow: drawn width 0.5 mm gives a rise of 65.4 K, not 30 K. R at that temperature is 526 mΩ against 471.5 mΩ reported (11.6 % low). | Add a warning when u_w > 1. Or solve the curve-fit for the actual rise and use it for ρ. Or relabel the outputs "at the allowed rise". |
+| P1-elec.pcb-trace-03 | Low | Low (confirmed) | No notice on the trace temperature. T_amb + ΔT up to 800 °C is accepted without comment, and 185 °C passes quietly. | Probe P7: 500 °C + 300 K gives only usual-range notices. Probe P2: 85 °C + 100 K gives no notice. | Warn when T_amb + ΔT exceeds a recorded laminate limit (for example 105 or 130 °C). |
+| P1-elec.pcb-trace-04 | Low | Low (confirmed) | Seven "was not entered; template default used" warnings appear on every default run. They hide real warnings. | Probe P1 prints seven such lines for k_ext, k_int, n_dT, n_A, t_oz, rho_20 and alpha. | Show one grouped notice about the method record. Do not repeat it per constant. |
+| P1-elec.pcb-trace-05 | Info | Info (confirmed) | The sheet label "legacy IPC-2221 curve-fit, conservative for multilayer boards" lives only in the template description. The probe output does not print it. | `SheetLabel` is used once, in the description string. | Confirm the desktop sheet header shows the label. |
 
 ## Notes for the owner's manual test
 - 3 A, 10 K rise, 1 oz, external: expect A = 74.16 mil² and w_min = 1.367 mm. Internal gives 192.93 mil² and 3.556 mm.
@@ -67,3 +67,14 @@ Each probe compares A_req, w_min, u_w, trace_R, vdrop and trace_Ploss. All 42 va
 - 10 A, 20 K, 1 oz, external, 5 mm × 80 mm: expect w_min 4.724 mm, u_w 0.945, R 8.655 mΩ, ΔV 86.55 mV.
 - Set the copper weight to 0.5 or 6 and the rise to 5 K. Expect the "copper" and "rise" warnings. Set I to 100 A to see the usual-range notice.
 - Make the trace narrower than w_min (finding 02). The check turns to FAIL, but R and P stay at the allowed rise.
+
+## Independent review
+Reviewer: Claude (senior review of the P1 pass), 2026-10-24.
+I re-ran the script (64/64 rows) and read Run() line by line.
+The script is an independent derivation in mil and mm, not a translation of the C#.
+The fit, the k values, the unit path from mil² to mm and the ρ(T) relation all check out.
+I reproduced P1-02 from the script evidence: a 0.5 mm trace against 0.80 mm minimum runs 65 K hot, so R is 11.6 % low.
+That output sits beside a FAIL check, so Medium stands.
+When u_w ≤ 1 the trace runs cooler than T_amb + ΔT, so R, ΔV and P are conservative.
+I found no new defect of Medium or above.
+Residual doubt: the legacy chart is not shown to be conservative for every case (for example thin boards in vacuum). IPC-2152 is the owner's check if such boards arise.

@@ -12,4 +12,4 @@ P6 risk triage: done — regenerate with tools/verification/triage.py
 P7 oracle map: done — 28 calculators
 Open defects (reviewed): 3 Critical (S1 composite holes, B2 SHR swap, drive-train RMS torque in fatigue), 41 High, 75 Medium
 Writes: docs/verification/ and tools/verification/ only
-Next: P1 for M7, S7, B7, E7, F2; re-check M1 and B6 after B-0
+Next: finish reviews at 90d15f11; then rebase on 2f53791c (B-2, B-3: F1, F3, M8, B8, S9, E8, B9, HPU pack)
