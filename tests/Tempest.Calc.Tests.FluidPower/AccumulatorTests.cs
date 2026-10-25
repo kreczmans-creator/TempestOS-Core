@@ -45,7 +45,7 @@ public sealed class AccumulatorTests
         var all = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), CalcInputValue.Quantity("p_0", 90, "bar", link), CalcInputValue.Quantity("p_1", 100, "bar", link), linked);
         Assert.Equal(3, all.Warnings.Count(w => w.RuleId == "link-basis"));
         Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "link-basis");
-        Assert.Equal("1.2.0", Accumulator.Template.Version);
+        Assert.Equal("1.3.0", Accumulator.Template.Version);
     }
 
     [Fact]
@@ -322,6 +322,100 @@ public sealed class AccumulatorTests
         var emergency = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n", 1.4));
         Assert.DoesNotContain(emergency.Warnings, w => w.RuleId == "exponent");
         Assert.Contains(emergency.RunAssumptions, a => a.Statement.Contains("Emergency stroke", StringComparison.Ordinal));
+    }
+
+    private static double Held(double dv, double p0, double p1, double p2, double n) => dv * (p2 / p0) / (Math.Pow(p2 / p1, 1 / n) - 1);
+
+    [Fact]
+    public void An_Emergency_Stroke_Is_Charged_Slowly_And_Discharged_At_N_By_Default()
+    {
+        // python3: 14 × (210/90) / ((210/100)^(1/1.4) − 1) = 46.743039671582224 L, against 36.69278925358671 L with one exponent both ways.
+        var emergency = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n", 1.4));
+        Assert.Equal(46.743039671582224, emergency.OutputSi("V0") / Litre, 9);
+        Assert.Equal(Held(14, 90, 100, 210, 1.4), emergency.OutputSi("V0") / Litre, 9);
+        Assert.DoesNotContain(emergency.Warnings, w => w.RuleId == "process");
+        Assert.Contains("charged slowly to p_2", Assert.IsType<TextValue>(emergency.FindOutput("process")!.Value).Value, StringComparison.Ordinal);
+
+        // The gas held at p2 is V0·p0/p2 and expands at n to V1 = V2 (p2/p1)^(1/n): the stroke is V1 − V2 = 14 L.
+        var held = emergency.OutputSi("V0") * 90 / 210;
+        Assert.Equal(14, (held * Math.Pow(210.0 / 100, 1 / 1.4) - held) / Litre, 9);
+
+        // The pre-charge rules do not depend on the process.
+        Assert.Equal(1.0, emergency.OutputSi("u_r0"), 9);
+        Assert.Equal(210.0 / 90 / 4, emergency.OutputSi("u_rp"), 9);
+    }
+
+    [Fact]
+    public void The_Emergency_Stroke_Default_Can_Be_Set_To_One_Exponent_Both_Ways_And_Warns()
+    {
+        var same = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame), CalcInputValue.Of("n", 1.4));
+        Assert.Equal(36.69278925358671, same.OutputSi("V0") / Litre, 9);
+        var warning = Assert.Single(same.Warnings, w => w.RuleId == "process");
+        Assert.Contains("held at p_2", warning.Message, StringComparison.Ordinal);
+        Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "process");
+
+        // The explicit slow charge is the same as the emergency default.
+        var explicitSlow = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n", 1.4));
+        var byDuty = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n", 1.4));
+        Assert.Equal(byDuty.OutputSi("V0"), explicitSlow.OutputSi("V0"), 15);
+    }
+
+    [Fact]
+    public void Energy_Storage_Keeps_One_Exponent_By_Default_And_Offers_The_Slow_Charge_As_A_Choice()
+    {
+        // The existing behaviour: the energy-storage default is the one-exponent relation, unchanged.
+        Assert.Equal(V0(14, 90, 100, 210, 1.4), Run(CalcInputValue.Of("n", 1.4)).OutputSi("V0") / Litre, 9);
+        Assert.Equal(V0(14, 90, 100, 210, 1.4), Run(CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame), CalcInputValue.Of("n", 1.4)).OutputSi("V0") / Litre, 9);
+        Assert.Equal(AccumulatorCalculator.ProcessByDuty, Accumulator.Template.Inputs.Single(i => i.Symbol == "process").DefaultChoice);
+        Assert.Equal([AccumulatorCalculator.ProcessByDuty, AccumulatorCalculator.ProcessSame, AccumulatorCalculator.ProcessSlowCharge], Accumulator.Template.Inputs.Single(i => i.Symbol == "process").Choices);
+
+        // A held energy-storage accumulator, charged slowly and discharged fast.
+        var slow = Run(CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n", 1.4));
+        Assert.Equal(46.743039671582224, slow.OutputSi("V0") / Litre, 9);
+        Assert.DoesNotContain(slow.Warnings, w => w.RuleId == "process");
+
+        // Isothermal discharge: both processes are the same relation.
+        Assert.Equal(14 / (0.9 - 90.0 / 210), Run(CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n", 1)).OutputSi("V0") / Litre, 9);
+    }
+
+    [Fact]
+    public void The_Shock_Duty_Uses_One_Exponent_Whatever_Process_Is_Chosen()
+    {
+        var shock = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeShock), CalcInputValue.Of("n", 1.4));
+        var chosen = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeShock), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n", 1.4));
+        Assert.Equal(V0(14, 90, 100, 210, 1.4), shock.OutputSi("V0") / Litre, 9);
+        Assert.Equal(shock.OutputSi("V0"), chosen.OutputSi("V0"), 15);
+        Assert.DoesNotContain(shock.Warnings, w => w.RuleId == "process");
+        Assert.Contains(chosen.Warnings, w => w.RuleId == "process" && w.Message.Contains("not applied", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_Held_Volume_Carries_The_Temperature_And_Real_Gas_Factors()
+    {
+        // python3: hydraulic power unit F2 inputs (105/120/160 bar gauge, ΔV 3.92699 L, n 1.4, 10 to 50 °C): 30.080873024534817 L (26.695181275084906 L with one exponent).
+        var pa = 1.01325;
+        var f = (50 + 273.15) / (10 + 273.15);
+        var r = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), CalcInputValue.Quantity("dV", 3.926990816987242, "L"), Bars("p_0", 105), Bars("p_1", 120), Bars("p_2", 160), CalcInputValue.Of("n", 1.4), CalcInputValue.Of("f_rg", 1.05), CalcInputValue.Quantity("T_min", 10, "degC"));
+        Assert.Equal(1.05 * f * Held(3.926990816987242, 105 + pa, 120 + pa, 160 + pa, 1.4), r.OutputSi("V0") / Litre, 9);
+        Assert.Equal(1.05 * 30.080873024534817, r.OutputSi("V0") / Litre, 9);
+    }
+
+    [Fact]
+    public void Property_A_Held_Accumulator_Delivers_Exactly_The_Requested_Liquid_Volume()
+    {
+        Gen.Select(Gen.Double[0.5, 100], Gen.Double[20, 300], Gen.Double[0.3, 0.9], Gen.Double[1.1, 3.5], Gen.Double[1, 1.4]).Sample((dv, p1, f0, f2, n) =>
+        {
+            var (p0, p2) = (p1 * f0, p1 * f2);
+
+            if (p2 > 700)
+                return true;
+
+            var r = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Of("n", n));
+            var v0 = r.OutputSi("V0") / Litre;
+            var held = v0 * p0 / p2;
+            var delivered = held * Math.Pow(p2 / p1, 1 / n) - held;
+            return Math.Abs(delivered - dv) <= 1e-8 * dv;
+        });
     }
 
     [Fact]

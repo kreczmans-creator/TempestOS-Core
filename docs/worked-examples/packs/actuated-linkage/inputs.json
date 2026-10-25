@@ -713,6 +713,16 @@
       "ValueText": "Gauge"
     },
     {
+      "Symbol": "process",
+      "Text": "By duty",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "By duty"
+    },
+    {
       "Symbol": "r_0",
       "Number": 0.9,
       "Provenance": {
