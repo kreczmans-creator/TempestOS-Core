@@ -50,7 +50,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
     public const double ThinPlateRatio = 10;
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Structural, "Plate bending",
+        Id, "1.2.1", CalcDiscipline.Structural, "Plate bending",
         "Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.",
         "Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²)\n" +
         "Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²)\n" +
@@ -111,6 +111,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             new CalcApplicabilityRule("patch-thin", "A patch smaller than the thickness is a concentrated load: the local stress is not given by thin-plate theory.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("navier-converge", "The Navier series reached its cap without changing by less than the tolerance.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("ritz-converge", "The Ritz solution reached its highest order without changing by less than the tolerance.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("ritz-frequency", "The inverse iteration for the clamped rectangle's fundamental frequency did not settle.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("ritz-approx", "The clamped rectangle is a Ritz approximation.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -522,7 +523,10 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             mVm = scan.VonMises;
             mPrin = scan.Principal;
             where = $"x = {F(scan.X * 1e3)} mm, y = {F(scan.Y * 1e3)} mm (quarter-plate grid){(scan.X < 1e-9 * a || scan.Y < 1e-9 * b ? ", clamped edge" : string.Empty)}";
-            var omega = ritz.FundamentalAngularFrequency(rho * t);
+            var omega = ritz.FundamentalAngularFrequency(rho * t, out var frequencySettled, out var frequencyChange);
+
+            if (!frequencySettled)
+                c.Warn("ritz-frequency", $"a: the inverse iteration for the fundamental frequency did not settle in 150 iterations (last relative change of the Rayleigh quotient {F(frequencyChange)}); the frequency is approximate.");
             f1 = omega / (2 * Math.PI);
             c.Record("omega_11", "lowest eigenvalue of K·c = ω²·M·c (Rayleigh–Ritz)", $"order K = {ritz.Terms}, ρt = {F(rho * t)} kg/m²", ScalarValue.Of(omega, "rad/s"), "Angular frequency of the fundamental mode", "Leissa Ch. 4");
 

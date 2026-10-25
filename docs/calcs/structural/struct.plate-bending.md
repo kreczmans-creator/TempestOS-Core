@@ -1,4 +1,4 @@
-# S9 — Plate bending (`struct.plate-bending@1.2.0`)
+# S9 — Plate bending (`struct.plate-bending@1.2.1`)
 
 **Scope.** A thin, flat, isotropic plate of constant thickness under a lateral load, by Kirchhoff small-deflection theory, with the same edge support all round: **circular** (clamped or simply supported; uniform pressure, central patch or ring load) in closed form; **rectangular simply supported** (uniform pressure or centred rectangular patch) by the Navier double series; **rectangular clamped** (uniform or centred patch) by a Ritz solution, **labelled approximate**. Outputs the maximum deflection, the greatest von Mises surface stress, the stress and deflection utilisations and the fundamental frequency. Every numeric input has a hard range; outside it the sheet does not run.
 
@@ -26,3 +26,5 @@
 **Revision 1.1.0 (review).** Corner `M_xy` extrapolated and the Navier convergence test made on the extrapolated value (long plates no longer warn); `RitzCap` 20 → 30, clamped-patch minimum 10 % → 25 %, `ritz-converge` and `ritz-approx` reworded (no accuracy claim); the `ring-basis` warning dropped (it fired on the default setting); the stress check cites 6.2.1(5); an exact 0 for the simply supported edge moment; worked example uses the W3 aluminium seed and γ = 1.1.
 
 **Revision 1.2.0 (second review).** Sparse Ritz schedule with a stall rule and cancellation check, SIMD Cholesky, frequency iteration capped (150 iterations, 10⁻¹¹), `Solve` limited to K ≤ 30; the extrapolation rule for patch corner sums as above, and a patch covering the plate is the uniform path (the full-patch-equals-uniform test is now exact to 10⁻¹²).
+
+**Revision 1.2.1.** The Rayleigh–Ritz frequency iteration reports whether it settled; if the 150-iteration cap is reached the sheet warns (`ritz-frequency`) with the last relative change. Timing tests scale by `TEMPEST_TEST_TIMEOUT_FACTOR`.

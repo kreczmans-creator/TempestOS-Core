@@ -9,6 +9,9 @@ public sealed class PlateBendingTests
 {
     private static readonly PlateBendingCalculator Plate = new();
 
+    /// <summary>The CI runners scale every deadline by <c>TEMPEST_TEST_TIMEOUT_FACTOR</c> (3 on the Windows matrix), as in Red_SolverAttacks.</summary>
+    private static readonly double TimeoutFactor = double.TryParse(Environment.GetEnvironmentVariable("TEMPEST_TEST_TIMEOUT_FACTOR"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) && f >= 1 ? f : 1;
+
     private static CalcInputSet Defaults() => CalcTemplateHasher.DefaultInputs(Plate.Template);
 
     private static CalcRunResult Run(params CalcInputValue[] changes) => CalcRunner.Run(Plate, changes.Aggregate(Defaults(), (set, v) => set.With(v)));
@@ -267,7 +270,7 @@ public sealed class PlateBendingTests
         var r = CalcRunner.Run(Plate, inputs);
         sw.Stop();
         Assert.False(r.IsBlocked);
-        Assert.True(sw.ElapsedMilliseconds < 1500, $"{sw.ElapsedMilliseconds} ms");
+        Assert.True(sw.ElapsedMilliseconds < 1500 * TimeoutFactor, $"{sw.ElapsedMilliseconds} ms (budget {1500 * TimeoutFactor:0} ms)");
         Assert.True(r.OutputSi("terms_used") <= PlateBendingCalculator.RitzCap);
     }
 
@@ -283,7 +286,7 @@ public sealed class PlateBendingTests
         var r = CalcRunner.Run(Plate, inputs);
         sw.Stop();
         Assert.False(r.IsBlocked);
-        Assert.True(sw.ElapsedMilliseconds < 1500, $"{sw.ElapsedMilliseconds} ms");
+        Assert.True(sw.ElapsedMilliseconds < 1500 * TimeoutFactor, $"{sw.ElapsedMilliseconds} ms (budget {1500 * TimeoutFactor:0} ms)");
 
         // The square settles before the cap (the sparse schedule keeps the quality: w to 1e-9, stress to 1e-5).
         var square = With(Rect(true));
@@ -297,6 +300,28 @@ public sealed class PlateBendingTests
     }
 
     [Fact]
+    public void Review_The_Frequency_Iteration_Reports_Whether_It_Settled()
+    {
+        const double a = 0.5;
+        var d = PlateBendingMath.Rigidity(210e9, 0.008, Nu);
+        var ritz = PlateBendingMath.ClampedRitz.Solve(a, a, Nu, d, 1.0, null, null, 8);
+        var full = ritz.FundamentalAngularFrequency(7850 * 0.008, out var settled, out var change);
+        Assert.True(settled);
+        Assert.True(change <= 1e-11);
+        Assert.Equal(ritz.FundamentalAngularFrequency(7850 * 0.008), full);
+
+        // Two iterations cannot settle: the flag is false, the last change is reported and the value is still close.
+        var cut = ritz.FundamentalAngularFrequency(7850 * 0.008, out var cutSettled, out var cutChange, maxIterations: 2);
+        Assert.False(cutSettled);
+        Assert.True(cutChange > 1e-11 && double.IsFinite(cutChange));
+        Assert.Equal(full, cut, full * 1e-2);
+
+        // The sheet does not raise the warning for ordinary clamped plates, and the rule is declared.
+        Assert.DoesNotContain(With(Rect(true)).Warnings, w => w.RuleId == "ritz-frequency");
+        Assert.Contains(Plate.Template.ApplicabilityRules, r => r.Id == "ritz-frequency");
+    }
+
+    [Fact]
     public void Review_L5_L9_The_Stress_Check_Cites_The_Yield_Criterion_And_A_Simply_Supported_Edge_Moment_Is_Exactly_Zero()
     {
         var r = Run(Circle(false));
@@ -304,7 +329,7 @@ public sealed class PlateBendingTests
         Assert.Equal(0, r.OutputSi("M_edge"));
         Assert.Contains(Plate.Template.ClauseRefs, c => c.Clause == "6.2.1(5)");
         Assert.DoesNotContain(Plate.Template.ApplicabilityRules, x => x.Id == "ring-basis");
-        Assert.Equal("1.2.0", Plate.Template.Version);
+        Assert.Equal("1.2.1", Plate.Template.Version);
     }
 
     [Fact]

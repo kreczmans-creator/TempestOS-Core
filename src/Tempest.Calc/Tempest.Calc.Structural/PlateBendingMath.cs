@@ -787,8 +787,16 @@ public static class PlateBendingMath
         /// Rayleigh–Ritz fundamental angular frequency (rad/s) with the same basis: the lowest eigenvalue of K·c = ω²·M·c by inverse iteration
         /// (M = ρt·a·b·(B ⊗ B)). <paramref name="massPerArea"/> is ρ·t in kg/m².
         /// </summary>
-        public double FundamentalAngularFrequency(double massPerArea)
+        public double FundamentalAngularFrequency(double massPerArea) => FundamentalAngularFrequency(massPerArea, out _, out _);
+
+        /// <summary>
+        /// As <see cref="FundamentalAngularFrequency(double)"/>, also reporting whether the iteration settled (the Rayleigh quotient changed by
+        /// less than <paramref name="tolerance"/> before <paramref name="maxIterations"/> ran out) and the last relative change of the quotient.
+        /// </summary>
+        public double FundamentalAngularFrequency(double massPerArea, out bool settled, out double lastChange, int maxIterations = 150, double tolerance = 1e-11)
         {
+            settled = false;
+            lastChange = double.PositiveInfinity;
             var k = _k;
             var n = k * k;
             var x = new double[n];
@@ -797,7 +805,7 @@ public static class PlateBendingMath
             var y = new double[n];
             var rq = 0.0;
 
-            for (var it = 0; it < 150; it++)
+            for (var it = 0; it < maxIterations; it++)
             {
                 ApplyMass(x, rhs, massPerArea);
                 CholeskySolve(rhs, y);
@@ -810,10 +818,16 @@ public static class PlateBendingMath
                 for (var i = 0; i < n; i++)
                     x[i] = y[i] / norm;
 
-                if (it > 0 && Math.Abs(next - rq) <= 1e-11 * Math.Abs(next))
+                if (it > 0)
                 {
-                    rq = next;
-                    break;
+                    lastChange = Math.Abs(next - rq) / Math.Abs(next);
+
+                    if (lastChange <= tolerance)
+                    {
+                        settled = true;
+                        rq = next;
+                        break;
+                    }
                 }
 
                 rq = next;

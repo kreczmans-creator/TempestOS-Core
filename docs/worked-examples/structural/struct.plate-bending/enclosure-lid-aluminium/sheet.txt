@@ -158,7 +158,7 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   WARNING input.r_ring: r_ring (Ring radius (circular plate, ring load)) was not entered; the template default 150 mm is used.
 
 8. VERIFICATION
-  Template: struct.plate-bending@1.2.0
+  Template: struct.plate-bending@1.2.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 11/11
