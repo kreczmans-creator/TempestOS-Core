@@ -216,14 +216,14 @@ public sealed class ContainmentTests
     [Fact]
     public void Three_Equal_Cables_Near_The_Jam_Ratio_Warn()
     {
-        // 3 × 10 mm: D/d = 3.0 in a 30 mm conduit may jam; 2.5 (25 mm) and 3.5 (35 mm) do not warn.
+        // 3 × 10 mm, ratio 1.05·D/d: 3.15 in a 30 mm conduit may jam; 2.625 (25 mm) and 3.675 (35 mm) do not warn.
         Assert.Contains(Run(Q("D_c", 30, "mm")).Notices, n => n.RuleId == "jam");
         Assert.DoesNotContain(Run().Notices, n => n.RuleId == "jam");
         Assert.DoesNotContain(Run(Q("D_c", 35, "mm")).Notices, n => n.RuleId == "jam");
     }
 
     [Fact]
-    public void The_Weight_Correction_Factor_Scales_The_Straight_Term_Only()
+    public void The_Weight_Correction_Factor_Scales_The_Weight_On_Straights_And_The_Friction_In_Bends()
     {
         // w = 0.6 kg/m, μ 0.4, 25 m straight, T₁ 50 N: 50 + 2 × 0.6 × 9.80665 × 0.4 × 25 = 167.6798 N with w_c = 2.
         var one = Run(Route(RS(10), RS(15)), CalcInputValue.Of("mu", 0.4), Q("T_1", 50, "N"));
@@ -231,8 +231,37 @@ public sealed class ContainmentTests
         Assert.Equal(167.6798, two.OutputSi("max_tension"), 9);
         Assert.Equal(50 + (one.OutputSi("max_tension") - 50) * 2, two.OutputSi("max_tension"), 9);
 
+        // N1: a bend is T₁·e^(w_c·μ·θ) = 50·e^(2 × 0.4 × π/2) = 175.6...
         var bend = Run(Route(RB(90, 400)), CalcInputValue.Of("mu", 0.4), Q("T_1", 50, "N"), CalcInputValue.Of("w_c", 2));
-        Assert.Equal(50 * Math.Exp(0.4 * Math.PI / 2), bend.OutputSi("max_tension"), 9);
+        Assert.Equal(175.67928121428668, bend.OutputSi("max_tension"), 9);
+        Assert.Contains(bend.Steps, st => st.Symbol == "Ta_1" && st.Formula.Contains("w_c", StringComparison.Ordinal) && st.Substitution.Contains("2 × 0.4", StringComparison.Ordinal));
+
+        // Blank w_c is 1 and says nothing: no default-used notice, and the same result as an explicit 1.
+        var blank = Run(Route(RB(90, 400)), CalcInputValue.Of("mu", 0.4), Q("T_1", 50, "N"));
+        var explicitOne = Run(Route(RB(90, 400)), CalcInputValue.Of("mu", 0.4), Q("T_1", 50, "N"), CalcInputValue.Of("w_c", 1));
+        Assert.Equal(explicitOne.OutputSi("max_tension"), blank.OutputSi("max_tension"), 12);
+        Assert.Null(Cont.Template.Inputs.Single(i => i.Symbol == "w_c").Default);
+        Assert.DoesNotContain(CalcInputValidator.Validate(Cont.Template, Defaults()), n => n.Message.StartsWith("w_c", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_Weight_Correction_Factor_Below_One_Is_Refused()
+    {
+        var r = Run(CalcInputValue.Of("w_c", 0.5));
+        Assert.True(r.IsBlocked);
+        Assert.Contains(r.Blocks, b => b.Message.StartsWith("w_c", StringComparison.Ordinal));
+        Assert.False(Run(CalcInputValue.Of("w_c", 1)).IsBlocked);
+    }
+
+    [Fact]
+    public void A_Derating_With_Three_Cables_Or_Fewer_Warns_That_It_Is_Not_Applied()
+    {
+        var few = Run(CalcInputValue.Of("k_n", 0.5));
+        Assert.Contains(few.Notices, n => n.RuleId == "k_n" && n.Severity == CalcNoticeSeverity.Warning);
+        Assert.Equal(1200, few.OutputSi("T_cab"), 9);
+
+        var many = Run(Cables(("Control", 8, 6, 0.1, 200)), CalcInputValue.Of("k_n", 0.8));
+        Assert.DoesNotContain(many.Notices, n => n.RuleId == "k_n");
     }
 
     [Fact]

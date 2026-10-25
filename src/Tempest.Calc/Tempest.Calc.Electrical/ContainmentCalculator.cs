@@ -8,8 +8,8 @@ namespace Tempest.Calc.Electrical;
 /// <summary>
 /// E8 — cable containment: the fill of a conduit, trunking or tray by cable cross-section against a space factor the
 /// user supplies, the bend radius against a multiple of the largest cable's diameter the user supplies, and the pull of
-/// the cables through a route of straight lengths and bends in both directions (straight T₂ = T₁ + w·g·μ·L, bend
-/// T₂ = T₁·e^(μθ), sidewall pressure T₂/R), with the direction of lower maximum tension recommended. No cable or conduit
+/// the cables through a route of straight lengths and bends in both directions (straight T₂ = T₁ + w·g·w_c·μ·L, bend
+/// T₂ = T₁·e^(w_c·μ·θ), sidewall pressure T₂/R), with the direction that passes every check recommended (the lower maximum tension when both or neither do). No cable or conduit
 /// factor table and no space-factor value ships: the factors, the friction coefficient and the pulling limits are
 /// records the user enters from their own references and the cable maker's data.
 /// </summary>
@@ -55,7 +55,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
         "Bend radius: R_min = n_bend·d_max, d_max the largest cable diameter, n_bend from your record; each bend u_b = R_min/R\n" +
         "Weight: w = Σ n_i·m_i (kg/m); force per metre w·g·w_c, g = 9.80665 m/s², w_c your weight-correction factor (1 = full weight)\n" +
         "Straight length: T₂ = T₁ + w·g·w_c·μ·L\n" +
-        "Bend: T₂ = T₁·e^(μθ) (capstan equation, θ in radians)\n" +
+        "Bend: T₂ = T₁·e^(w_c·μ·θ) (capstan equation with the friction scaled by the weight-correction factor, θ in radians)\n" +
         "Sidewall pressure at a bend: SWP = T₂/R (N/m)\n" +
         "Direction: the route is run in the listed order and in reverse; the direction that passes every tension and sidewall pressure check is recommended, and when both or neither pass, the one of lower maximum tension (equal tension: lower SWP)\n" +
         "Cable limit: load shared equally, so each cable carries T/N (N cables); T_cab = k_n·N·min(T_max,i), k_n your derating for more than 3 cables (1 if none); u_T = max_i (T/N)/(k_n·T_max,i) = T/T_cab\n" +
@@ -71,15 +71,15 @@ public sealed class ContainmentCalculator : ICalcCalculator
             new CalcInputSpec("route", "Pull route in pull order (straight lengths and bends)", CalcInputKind.Table, Columns: RouteColumns, MaxRows: 50, IsOptional: true, Group: "Pull"),
             new CalcInputSpec("T_1", "Tension at the start of the pull (pulling rope, drum or head)", CalcInputKind.Quantity, "N", Default: 0, Min: 0, Max: 10000, HardMin: 0, HardMax: 1e7, Group: "Pull"),
             new CalcInputSpec("mu", "Coefficient of friction, cable sheath on containment (from your record)", CalcInputKind.Number, HardMin: 0, HardMax: 2, IsOptional: true, Group: "Pull"),
-            new CalcInputSpec("w_c", "Weight-correction factor on the cable weight (1 = full weight on the containment; above 1 for cradled or triangular arrangements, from your record)", CalcInputKind.Number, Default: 1, Min: 1, Max: 3, HardMin: 0.1, HardMax: 10, Group: "Pull"),
+            new CalcInputSpec("w_c", "Weight-correction factor on the cable weight and, by the same factor, the bend friction (blank = 1 = full weight on the containment; above 1 for cradled or triangular arrangements, from your record)", CalcInputKind.Number, Min: 1, Max: 3, HardMin: 1, HardMax: 10, IsOptional: true, Group: "Pull"),
             new CalcInputSpec("T_grip", "Grip or pulling-eye limit of the whole bundle (from the pulling equipment or your record)", CalcInputKind.Quantity, "N", HardMin: 1, HardMax: 1e8, IsOptional: true, Group: "Pull"),
             new CalcInputSpec("k_n", "Derating of the cable limits for more than 3 cables on one grip (from your record)", CalcInputKind.Number, HardMin: 0.05, HardMax: 1, IsOptional: true, Group: "Pull"),
             new CalcInputSpec("P_lim", "Sidewall pressure limit, force per metre of bend (from the cable maker)", CalcInputKind.Quantity, "N/m", HardMin: 1, HardMax: 1e7, IsOptional: true, Group: "Pull"),
         ],
         [
-            new CalcAssumption("Cables are circular and counted by overall diameter; there is no packing, jamming or cable and conduit factor method. The space factor is yours, from your own record.", "Fill by geometry; the factor is a user record."),
+            new CalcAssumption("Cables are circular and counted by overall diameter; there is no packing or cable and conduit factor method (the jam-ratio warning is the only jamming check). The space factor is yours, from your own record.", "Fill by geometry; the factor is a user record."),
             new CalcAssumption("Every cable is pulled together as one bundle on one pulling head with the load shared equally, so each cable carries T/N and the weakest cable governs: the cable limit is N times the lowest maximum pulling tension, optionally derated by your factor for more than 3 cables. The grip or pulling-eye limit is a separate limit you enter.", "Equal sharing; unequal sharing is not modelled."),
-            new CalcAssumption("Straight lengths are horizontal and the cable weight bears on the containment over the full length; bends are taken in the plane of the route. Inclines, vertical runs, cradled or triangular weight corrections and pulley or roller reductions are not modelled; enter a cradled or triangular weight correction as w_c; fold other effects into μ.", "Stated limitation of the straight-length relation T₂ = T₁ + w·g·w_c·μ·L."),
+            new CalcAssumption("Straight lengths are horizontal and the cable weight bears on the containment over the full length; bends are taken in the plane of the route. Inclines, vertical runs and pulley or roller reductions are not modelled; fold them into μ. A cradled or triangular weight correction is entered as w_c, which scales the weight on the straight lengths and the friction in the bends (the contact force of a cradled or triangular arrangement is w_c times that of a flat one), so T₂ = T₁ + w·g·w_c·μ·L and T₂ = T₁·e^(w_c·μ·θ).", "Equivalent friction w_c·μ in the capstan equation; blank w_c means 1."),
             new CalcAssumption("The coefficient of friction is one constant for the whole route; static and running friction are not distinguished.", "A user record with its source."),
             new CalcAssumption("Sidewall pressure is the tension leaving the bend over the bend radius, for the bundle as a whole. Enter the cable maker's per-cable limit unchanged: the bundle T/R against it is conservative for a triangular arrangement and roughly equal for a cradled one. Do not multiply the limit by the number of cables.", "SWP = T₂/R."),
             new CalcAssumption("The bend radius uses the individual cable diameter; for a triplexed or bundled assembly, enter the assembly diameter from the cable maker as the overall diameter.", "Cable data sheet."),
@@ -97,7 +97,8 @@ public sealed class ContainmentCalculator : ICalcCalculator
             new CalcApplicabilityRule("mu", "A route needs the coefficient of friction.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("n_bend", "No bend-radius multiple entered: the bends are not checked against the cable.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("T_cab", "A cable has no maximum pulling tension: the cable limit is not checked.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("jam", "Three equal cables in a conduit with D/d between 2.8 and 3.2 may jam (geometry).", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("jam", "Three equal cables in a conduit with 1.05·D/d between 2.8 and 3.2 may jam (geometry, 5 % allowance for ovality).", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("k_n", "A derating is entered but the bundle has 3 cables or fewer: it is not applied.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("route-limits", "A route-only value (friction, grip limit, sidewall limit, derating) is entered but there is no route: it is not used.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("P_lim", "No sidewall pressure limit entered: the pressure is not checked.", CalcNoticeSeverity.Warning),
         ],
@@ -248,8 +249,8 @@ public sealed class ContainmentCalculator : ICalcCalculator
         var smallSide = rectangular ? Math.Min(c.Si("W_c"), c.Si("H_c")) : c.Si("D_c");
         var fits = rectangular ? dMax <= smallSide : dMax < smallSide;
 
-        if (!rectangular && Math.Abs(totalCables - 3) < 1e-9 && cables.Max(k => k.Od) - cables.Min(k => k.Od) <= 1e-9 * dMax && c.Si("D_c") / dMax is var jam && jam >= 2.8 && jam <= 3.2)
-            c.Warn("jam", $"D_c: three equal cables in a conduit with D/d = {CalcValue.FormatNumber(jam, 3)} (between 2.8 and 3.2) may jam when pulled, whatever the fill; use a larger conduit or smaller cables.");
+        if (!rectangular && Math.Abs(totalCables - 3) < 1e-9 && cables.Max(k => k.Od) - cables.Min(k => k.Od) <= 1e-9 * dMax && 1.05 * c.Si("D_c") / dMax is var jam && jam >= 2.8 && jam <= 3.2)
+            c.Warn("jam", $"D_c: three equal cables in a conduit with 1.05·D/d = {CalcValue.FormatNumber(jam, 3)} (D/d with a 5 % allowance for ovality; between 2.8 and 3.2) may jam when pulled, whatever the fill; use a larger conduit or smaller cables.");
 
         var outputs = new List<(string, string)> { ("A_cab", "Total cable cross-section"), ("A_int", "Internal cross-section"), ("fill", "Fill"), ("u_fill", "Fill utilisation"), ("OD_max", "Largest cable diameter"), ("w", "Mass per metre of the bundle") };
 
@@ -338,14 +339,21 @@ public sealed class ContainmentCalculator : ICalcCalculator
 
             c.Input("mu");
             c.Input("T_1");
-            c.Input("w_c");
-            c.Assign("wg", $"w * {Gravity.ToString("R", CultureInfo.InvariantCulture)} m/s^2 * w_c", "N/m", "Weight per metre of the bundle on the containment (with the weight-correction factor)");
+            var weightFactor = 1.0;
+
+            if (c.Has("w_c"))
+            {
+                c.Input("w_c");
+                weightFactor = c.Si("w_c");
+            }
+
+            c.Assign("wg", $"w * {Gravity.ToString("R", CultureInfo.InvariantCulture)} m/s^2" + (c.Has("w_c") ? " * w_c" : string.Empty), "N/m", c.Has("w_c") ? "Weight per metre of the bundle on the containment (with the weight-correction factor)" : "Weight per metre of the bundle on the containment");
             var wg = c.Si("wg");
             var mu = c.Si("mu");
             var start = c.Si("T_1");
 
-            forward = Pull(segments, start, wg, mu);
-            reverse = Pull([.. segments.AsEnumerable().Reverse()], start, wg, mu);
+            forward = Pull(segments, start, wg, mu, weightFactor);
+            reverse = Pull([.. segments.AsEnumerable().Reverse()], start, wg, mu, weightFactor);
 
             if (!AllFinite(forward) || !AllFinite(reverse))
             {
@@ -353,8 +361,8 @@ public sealed class ContainmentCalculator : ICalcCalculator
                 return;
             }
 
-            RecordPull(c, forward, "a", "as listed", start, wg, mu, newton, perM);
-            RecordPull(c, reverse, "b", "reversed", start, wg, mu, newton, perM);
+            RecordPull(c, forward, "a", "as listed", start, wg, mu, weightFactor, newton, perM);
+            RecordPull(c, reverse, "b", "reversed", start, wg, mu, weightFactor, newton, perM);
 
             var tensionA = forward[^1].T;
             var tensionB = reverse[^1].T;
@@ -378,6 +386,9 @@ public sealed class ContainmentCalculator : ICalcCalculator
                 c.Input("k_n");
 
             var derate = c.Has("k_n") && totalCables > 3 ? c.Si("k_n") : 1.0;
+
+            if (c.Has("k_n") && totalCables <= 3)
+                c.Warn("k_n", $"k_n: the derating is for more than 3 cables on one grip and the bundle has {F(totalCables)}, so it is not applied.");
 
             if (cables.All(k => k.Tmax is not null))
             {
@@ -497,7 +508,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
     }
 
     /// <summary>Tension (and sidewall pressure at bends) after each segment, pulling in the order given.</summary>
-    private static Leg[] Pull(IReadOnlyList<Segment> segments, double start, double weightPerMetre, double mu)
+    private static Leg[] Pull(IReadOnlyList<Segment> segments, double start, double weightPerMetre, double mu, double weightFactor)
     {
         var legs = new Leg[segments.Count];
         var tension = start;
@@ -508,7 +519,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
 
             if (s.IsBend)
             {
-                tension *= Math.Exp(mu * s.Angle);
+                tension *= Math.Exp(weightFactor * mu * s.Angle);
                 legs[i] = new Leg(s, tension, tension / s.Radius);
             }
             else
@@ -532,7 +543,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
     private static bool AllFinite(IEnumerable<Leg> legs) => legs.All(l => double.IsFinite(l.T) && l.T <= TensionCeiling && (l.Swp is null || double.IsFinite(l.Swp.Value)));
 
     /// <summary>One record per segment: the tension after it (and the sidewall pressure at a bend), as <c>Ta_1</c>… for the listed order and <c>Tb_5</c>… for the reverse.</summary>
-    private static void RecordPull(CalcRunContext c, Leg[] legs, string tag, string label, double start, double weightPerMetre, double mu, Unit newton, Unit perM)
+    private static void RecordPull(CalcRunContext c, Leg[] legs, string tag, string label, double start, double weightPerMetre, double mu, double weightFactor, Unit newton, Unit perM)
     {
         var previous = start;
 
@@ -543,12 +554,12 @@ public sealed class ContainmentCalculator : ICalcCalculator
 
             if (s.IsBend)
             {
-                c.Record(symbol, "T₁·e^(μθ)", $"{F(previous)} N × e^({F(mu)} × {F(s.Angle)} rad)", ScalarValue.Of(leg.T, newton), $"{s.Name} ({label}): tension after the bend");
+                c.Record(symbol, "T₁·e^(w_c·μ·θ)", $"{F(previous)} N × e^({F(weightFactor)} × {F(mu)} × {F(s.Angle)} rad)", ScalarValue.Of(leg.T, newton), $"{s.Name} ({label}): tension after the bend");
                 c.Record($"P{tag}_{s.Index}", "T₂/R", $"{F(leg.T)} N / {F(s.Radius)} m", ScalarValue.Of(leg.Swp ?? 0, perM), $"{s.Name} ({label}): sidewall pressure");
             }
             else
             {
-                c.Record(symbol, "T₁ + w·g·μ·L", $"{F(previous)} N + {F(weightPerMetre)} N/m × {F(mu)} × {F(s.Length)} m", ScalarValue.Of(leg.T, newton), $"{s.Name} ({label}): tension after the straight length");
+                c.Record(symbol, "T₁ + w·g·w_c·μ·L", $"{F(previous)} N + {F(weightPerMetre)} N/m × {F(mu)} × {F(s.Length)} m", ScalarValue.Of(leg.T, newton), $"{s.Name} ({label}): tension after the straight length");
             }
 
             previous = leg.T;
