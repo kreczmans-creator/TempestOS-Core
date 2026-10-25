@@ -120,7 +120,7 @@ public static class CadMapper
             else
             {
                 rows.Add(new CadMappedRow(p.Name, CadRowStatus.Mapped, entry.Target, applied!, $"→ {entry.Target}", p.Location));
-                snapshot.Add(Snap(p, entry.Target, entry.AssumedUnit));
+                snapshot.Add(Snap(p, CadTarget.TryParse(entry.Target, out var canonical) ? canonical.ToString() : entry.Target, entry.AssumedUnit));
             }
         }
 

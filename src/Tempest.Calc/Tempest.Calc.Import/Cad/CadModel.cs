@@ -88,7 +88,12 @@ public sealed record CadSourceInfo(
     string? PartName,
     string? PartRevision,
     string? Configuration = null,
-    IReadOnlyList<string>? Configurations = null);
+    IReadOnlyList<string>? Configurations = null,
+    bool PartNameIsFallback = false)
+{
+    /// <summary>The part name the file or the person gave; <see langword="null"/> when <see cref="PartName"/> is only the file name stem.</summary>
+    public string? ExplicitPartName => PartNameIsFallback ? null : PartName;
+}
 
 /// <summary>The outcome of parsing one file: its source facts, every parameter in file order, and notices.</summary>
 public sealed record CadParseResult(CadSourceInfo Source, IReadOnlyList<CadParameter> Parameters, IReadOnlyList<CalcNotice> Notices)

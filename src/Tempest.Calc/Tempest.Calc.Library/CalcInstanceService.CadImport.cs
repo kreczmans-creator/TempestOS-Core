@@ -87,14 +87,14 @@ public sealed partial class CalcInstanceService
         var parse = preview.Parse!;
         var mapping = preview.Mapping!;
         var record = new CadImportRecord(
-            CadImportRecord.KeyFor(parse.Source.System, request.Profile.Id),
+            CadImportRecord.KeyFor(parse.Source.System, request.Profile.Id, parse.Source.ExplicitPartName),
             parse.Source.FileName, parse.Source.Sha256, parse.Source.System, parse.Source.Format,
             parse.Source.CadVersion, parse.Source.PartName, parse.Source.PartRevision, parse.Source.Configuration,
             request.Profile.Id, request.Profile.Version, now, CurrentPrincipal(), mapping.Snapshot);
 
         var result = await UpdateInputsCoreAsync(
             instanceId, mapping.Inputs, instance.UpdatedAt, repin: false, cancellationToken,
-            amend: updated => updated with { CadImports = ReplaceRecord(updated.CadImports, record) }).ConfigureAwait(false);
+            amend: updated => updated with { CadImports = CadImportVerifier.Merge(updated.CadImports, record, updated.Inputs) }).ConfigureAwait(false);
 
         return new CadImportOutcome(result, preview, preview.Diff);
     }
@@ -157,8 +157,8 @@ public sealed partial class CalcInstanceService
         }
 
         var mapping = CadMapper.Map(parse, request.Profile, entry.Template, instance.Inputs, at);
-        var key = CadImportRecord.KeyFor(parse.Source.System, request.Profile.Id);
-        var previous = instance.CadImports?.FirstOrDefault(r => string.Equals(r.Key, key, StringComparison.Ordinal));
+        var key = CadImportRecord.KeyFor(parse.Source.System, request.Profile.Id, parse.Source.ExplicitPartName);
+        var previous = CadImportVerifier.Latest(instance.CadImports, key);
         var diff = CadImportDiff.Compute(previous, mapping.Snapshot);
 
         IReadOnlyList<string> blocks = [];
@@ -172,13 +172,5 @@ public sealed partial class CalcInstanceService
         }
 
         return new CadImportPreview(parse, mapping, diff, blocks, warnings, null, instance.UpdatedAt);
-    }
-
-    private static IReadOnlyList<CadImportRecord> ReplaceRecord(IReadOnlyList<CadImportRecord>? existing, CadImportRecord record)
-    {
-        const int MaxRecords = 20;
-        var list = (existing ?? []).Where(r => !string.Equals(r.Key, record.Key, StringComparison.Ordinal)).ToList();
-        list.Add(record);
-        return list.Count > MaxRecords ? list.Skip(list.Count - MaxRecords).ToList() : list;
     }
 }

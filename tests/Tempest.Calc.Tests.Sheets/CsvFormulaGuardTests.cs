@@ -19,6 +19,8 @@ public sealed class CsvFormulaGuardTests
     [InlineData("\n=1+1")]
     [InlineData("  =1+1")]
     [InlineData(" \u00A0 =1+1")]
+    [InlineData("\u3000=1+1")]
+    [InlineData(" \u3000\u00A0@SUM(1)")]
     [InlineData("＝1+1")]
     [InlineData("＋cmd")]
     [InlineData("＠SUM(1)")]

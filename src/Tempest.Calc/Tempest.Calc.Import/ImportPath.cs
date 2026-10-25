@@ -177,6 +177,10 @@ public static class ImportPath
         if (info.LinkTarget is not null || info.Attributes.HasFlag(FileAttributes.ReparsePoint))
             throw Unsafe("A file that is a link is not followed.");
 
+        // The kind is read without opening: opening a named pipe blocks until something writes to it.
+        if (!OperatingSystem.IsWindows() && FileKind.IsRegularFile(full) == false)
+            throw Unsafe("Only a regular file is read; a pipe, socket or device is not.");
+
         return full;
     }
 

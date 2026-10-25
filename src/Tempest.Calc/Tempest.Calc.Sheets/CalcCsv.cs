@@ -579,7 +579,7 @@ public static class CsvFormulaGuard
 
         foreach (var c in text)
         {
-            if (c is ' ' or '\u00A0')
+            if (c is ' ' or '\u00A0' or '\u3000')
                 continue;
 
             return Array.IndexOf(Starts, c) >= 0;

@@ -71,6 +71,68 @@ public static class CadImportVerifier
         return new CadVerification(result, downgraded);
     }
 
+    /// <summary>The file hashes some input or table cell still cites as its CAD-import provenance.</summary>
+    public static HashSet<string> ReferencedHashes(IReadOnlyList<CalcInputValue> inputs)
+    {
+        ArgumentNullException.ThrowIfNull(inputs);
+        var hashes = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var input in inputs)
+        {
+            if (CadImportProvenance.TryParse(input.Provenance) is { } info)
+                hashes.Add(info.FileSha256);
+
+            foreach (var cell in input.Rows?.Where(r => r is not null).SelectMany(r => r.Cells.Values) ?? [])
+            {
+                if (cell is not null && CadImportProvenance.TryParse(cell.Provenance) is { } cellInfo)
+                    hashes.Add(cellInfo.FileSha256);
+            }
+        }
+
+        return hashes;
+    }
+
+    /// <summary>
+    /// The import records after <paramref name="record"/> is added. A record of the same source that this import supersedes is kept while
+    /// an input still cites its file by hash (a value the new file no longer holds stays at its last imported value and is still backed
+    /// by the import it came from), and dropped once nothing cites it. The list is capped; unreferenced superseded records go first.
+    /// </summary>
+    public static IReadOnlyList<CadImportRecord> Merge(IReadOnlyList<CadImportRecord>? existing, CadImportRecord record, IReadOnlyList<CalcInputValue> inputs, int maxRecords = 20)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        var referenced = ReferencedHashes(inputs);
+        var list = new List<CadImportRecord>();
+
+        foreach (var old in existing ?? [])
+        {
+            if (!string.Equals(old.Key, record.Key, StringComparison.Ordinal))
+                list.Add(old);
+            else if (!string.Equals(old.FileSha256, record.FileSha256, StringComparison.Ordinal) && referenced.Contains(old.FileSha256))
+                list.Add(old);
+        }
+
+        list.Add(record);
+
+        // Over the cap: first the superseded records nothing cites, then any other record nothing cites, then the oldest superseded,
+        // then the oldest of all. The record just added is never the victim.
+        while (list.Count > maxRecords)
+        {
+            var latest = list.GroupBy(r => r.Key, StringComparer.Ordinal).Select(g => g.MaxBy(r => r.ImportedAt)!).ToHashSet();
+            var others = list.Where(r => !ReferenceEquals(r, record)).OrderBy(r => r.ImportedAt).ToList();
+            var victim = others.FirstOrDefault(r => !latest.Contains(r) && !referenced.Contains(r.FileSha256))
+                ?? others.FirstOrDefault(r => !referenced.Contains(r.FileSha256))
+                ?? others.FirstOrDefault(r => !latest.Contains(r))
+                ?? others[0];
+            list.Remove(victim);
+        }
+
+        return list;
+    }
+
+    /// <summary>The latest record of a source (the one a re-import is compared with).</summary>
+    public static CadImportRecord? Latest(IReadOnlyList<CadImportRecord>? records, string key) =>
+        records?.Where(r => string.Equals(r.Key, key, StringComparison.Ordinal)).MaxBy(r => r.ImportedAt);
+
     /// <summary>The sentence a caller shows when provenances were downgraded.</summary>
     public static string Describe(IReadOnlyList<string> downgraded) =>
         downgraded.Count == 0

@@ -37,11 +37,14 @@ public sealed record CadImportRecord(
     IReadOnlyList<CadImportedParameter> Parameters)
 {
     /// <summary>
-    /// The identity of an import source: the same CAD system and mapping profile. The part name is not part of it: it often falls back
-    /// to the file name, and a renamed file must still be compared with the import it replaces (the record keeps the part name).
+    /// The identity of an import source: the same CAD system, mapping profile and part. The part is the name the file states or the person
+    /// entered (<see cref="CadSourceInfo.ExplicitPartName"/>); when neither exists the key has no part, so a renamed file is still compared
+    /// with the import it replaces. Two parts imported through one profile are two sources and are diffed against their own earlier import.
     /// </summary>
-    public static string KeyFor(CadSystem system, string profileId) =>
-        string.Create(CultureInfo.InvariantCulture, $"{system}|{profileId}");
+    public static string KeyFor(CadSystem system, string profileId, string? explicitPart) =>
+        string.IsNullOrWhiteSpace(explicitPart)
+            ? string.Create(CultureInfo.InvariantCulture, $"{system}|{profileId}")
+            : string.Create(CultureInfo.InvariantCulture, $"{system}|{profileId}|{explicitPart.Trim()}");
 }
 
 public enum CadChangeKind

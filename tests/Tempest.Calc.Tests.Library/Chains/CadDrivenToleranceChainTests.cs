@@ -173,8 +173,11 @@ public sealed class CadDrivenToleranceChainTests
         Assert.Equal(25.5, updated.Inputs.Single(i => i.Symbol == "maximum").Number);
         Assert.Equal(0.026, ChainKit.Si(updated, "x_nom"), 9);
         Assert.Equal("B", CadImportProvenance.TryParse(updated.Inputs.Single(i => i.Symbol == "minimum").Provenance)!.PartRevision);
-        Assert.Single(updated.CadImports!); // one record per source: replaced, not accumulated
-        Assert.Equal("B", updated.CadImports![0].PartRevision);
+
+        // The superseded record stays while 'maximum' (no longer in the file) still cites it by hash; the latest record is revision B.
+        Assert.Equal(2, updated.CadImports!.Count);
+        Assert.Equal("B", CadImportVerifier.Latest(updated.CadImports, updated.CadImports[0].Key)!.PartRevision);
+        Assert.Equal(CalcProvenanceKind.CadImport, updated.Inputs.Single(i => i.Symbol == "maximum").Provenance!.Kind);
 
         // The existing machinery did the rest: the fit is stale, the event was published, the fit cannot be checked, updating the link clears it.
         var fitStale = (await host.Store.FindInstanceAsync(fit.Id))!;
