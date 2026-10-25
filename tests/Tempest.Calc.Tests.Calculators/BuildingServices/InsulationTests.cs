@@ -318,6 +318,18 @@ public sealed class InsulationTests
 
         var impossible = Run(cold.With(Q("theta_dew", 24.5, "degC")));
         Assert.Equal("dew", impossible.Blocks[0].RuleId);
+        Assert.StartsWith("theta_dew:", impossible.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.Contains("entered", impossible.Blocks[0].Message, StringComparison.Ordinal);
+
+        // Computed from the humidity, the block still points to the margin and humidity.
+        var humid = Run(cold.With(Q("RH_a", 100, "%")));
+        Assert.StartsWith("dew_margin:", humid.Blocks[0].Message, StringComparison.Ordinal);
+
+        // An entered dew point on a hot sheet is ignored, with a warning.
+        var hot = Run(Sheet(Q("theta_dew", 12, "degC")));
+        Assert.False(hot.IsBlocked);
+        Assert.StartsWith("theta_dew:", hot.Warnings.Single(w => w.RuleId == "criterion-na").Message, StringComparison.Ordinal);
+        Assert.False(Warned(Run(Sheet()), "criterion-na"));
     }
 
     [Fact]

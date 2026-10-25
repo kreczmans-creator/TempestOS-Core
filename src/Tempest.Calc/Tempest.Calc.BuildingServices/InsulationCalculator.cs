@@ -142,7 +142,7 @@ public sealed class InsulationCalculator : ICalcCalculator
         Category: "Thermal",
         OutputPorts:
         [
-            new CalcOutputPort("thickness", "mm", "Governing required insulation thickness (the largest of the selected criteria)"),
+            new CalcOutputPort("thickness", "mm", "Governing required insulation thickness (the largest of the selected criteria); the text \"> 1000 mm\" when a criterion is unattainable, which a downstream link cannot read"),
             new CalcOutputPort("q_per_m", "W/m", "Heat flow per metre of pipe at the evaluated thickness (magnitude; pipe only)"),
             new CalcOutputPort("q_area", "W/m^2", "Heat flow per square metre of a flat surface at the evaluated thickness (magnitude; flat only)"),
             new CalcOutputPort("theta_se", "degC", "Outer surface temperature at the evaluated thickness"),
@@ -275,6 +275,9 @@ public sealed class InsulationCalculator : ICalcCalculator
 
         var dewKnown = false;
 
+        if (hot && c.Has("theta_dew"))
+            c.Warn("criterion-na", "theta_dew: an entered dew point does not apply to a pipe hotter than the air; it is ignored.");
+
         if (!hot && !c.Has("dew_margin"))
         {
             c.Warn("no-condensation-check", "dew_margin: the surface is colder than the air but no dew-point margin is entered, so condensation is not checked. Enter dew_margin (0 K is a valid margin) to check the surface against the dew point.");
@@ -305,10 +308,13 @@ public sealed class InsulationCalculator : ICalcCalculator
 
                 dewKnown = true;
                 var dewTarget = dew + c.InputSi("dew_margin");
+                var dewEntered = c.Has("theta_dew");
 
                 if (!(dewTarget < ta))
                 {
-                    c.Block("dew", $"dew_margin: the dew point ({F(dew)} °C) plus the margin ({F(c.InputSi("dew_margin"))} K) is not below the ambient temperature ({F(ta)} °C); no insulation keeps the surface above it. Lower the margin or the humidity.");
+                    c.Block("dew", dewEntered
+                        ? $"theta_dew: the entered (or linked) dew point ({F(dew)} °C) plus the margin ({F(c.InputSi("dew_margin"))} K) is not below the ambient temperature ({F(ta)} °C); no insulation keeps the surface above it. Check the entered or linked dew point, or lower the margin."
+                        : $"dew_margin: the dew point ({F(dew)} °C) plus the margin ({F(c.InputSi("dew_margin"))} K) is not below the ambient temperature ({F(ta)} °C); no insulation keeps the surface above it. Lower the margin or the humidity.");
                     return;
                 }
 
