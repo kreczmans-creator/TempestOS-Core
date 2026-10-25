@@ -1,0 +1,477 @@
+[
+  {
+    "Symbol": "A",
+    "Number": 125.265,
+    "Unit": "cm^2",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet SEC-01, UB 457\u00D7191\u00D798 (A = 125.265 cm\u00B2)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "125.265"
+  },
+  {
+    "Symbol": "C_2",
+    "Number": 0,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "C\u2082 is 0 for end-moment loading.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "E",
+    "Number": 210,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 cl. 3.2.6",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "210"
+  },
+  {
+    "Symbol": "G",
+    "Number": 81,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 cl. 3.2.6: G = E/(2(1 \u002B \u03BD)) \u2248 81 GPa",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "81"
+  },
+  {
+    "Symbol": "I_t",
+    "Number": 121.28743,
+    "Unit": "cm^4",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet SEC-01 (J = 121.287 cm\u2074)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "121.287"
+  },
+  {
+    "Symbol": "I_w",
+    "Number": 1.1755386,
+    "Unit": "dm^6",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet SEC-01 (I_w = 1.17554 dm\u2076)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.17554"
+  },
+  {
+    "Symbol": "I_y",
+    "Number": 45727.986,
+    "Unit": "cm^4",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet SEC-01 (I_xx = 45727.99 cm\u2074)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "45728"
+  },
+  {
+    "Symbol": "I_z",
+    "Number": 2347.0197,
+    "Unit": "cm^4",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet SEC-01 (I_yy = 2347.02 cm\u2074)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2347.02"
+  },
+  {
+    "Symbol": "L",
+    "Number": 5,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "FR-BM-12",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
+    "Symbol": "L_cr_y",
+    "Number": 5,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "FR-BM-12",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
+    "Symbol": "L_cr_z",
+    "Number": 5,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "FR-BM-12",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
+    "Symbol": "M_y_A",
+    "Number": 340,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet FR-01, member 2, end A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "340"
+  },
+  {
+    "Symbol": "M_y_B",
+    "Number": 170,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet FR-01, member 2, end B (same side: single curvature)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "170"
+  },
+  {
+    "Symbol": "M_z_Ed",
+    "Number": 6,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Small minor-axis moment from the cladding-rail eccentricity (engineer\u0027s estimate).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6"
+  },
+  {
+    "Symbol": "N_Ed",
+    "Number": -400,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet FR-01, member 2, ULS combination (compression negative)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "-400"
+  },
+  {
+    "Symbol": "W_el_y",
+    "Number": 1957.5336,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet SEC-01 (W_el,x = 1957.53 cm\u00B3)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1957.53"
+  },
+  {
+    "Symbol": "W_el_z",
+    "Number": 243.46677,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet SEC-01 (W_el,y = 243.467 cm\u00B3)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "243.467"
+  },
+  {
+    "Symbol": "W_pl_y",
+    "Number": 2232.4587,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet SEC-01 (W_pl,x = 2232.46 cm\u00B3)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2232.46"
+  },
+  {
+    "Symbol": "W_pl_z",
+    "Number": 378.90448,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet SEC-01 (W_pl,y = 378.904 cm\u00B3)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "378.904"
+  },
+  {
+    "Symbol": "alpha_a",
+    "Number": 0.21,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-1 Table 6.1, recommended value",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.21"
+  },
+  {
+    "Symbol": "alpha_a0",
+    "Number": 0.13,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-1 Table 6.1, recommended value",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.13"
+  },
+  {
+    "Symbol": "alpha_b",
+    "Number": 0.34,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-1 Table 6.1, recommended value",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.34"
+  },
+  {
+    "Symbol": "alpha_c",
+    "Number": 0.49,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-1 Table 6.1, recommended value",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.49"
+  },
+  {
+    "Symbol": "alpha_d",
+    "Number": 0.76,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-1 Table 6.1, recommended value",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.76"
+  },
+  {
+    "Symbol": "annex",
+    "Text": "Annex B (method 2)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Annex B (method 2) chosen; Annex A can be selected for comparison.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Annex B (method 2)"
+  },
+  {
+    "Symbol": "b",
+    "Number": 192.8,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UB 457\u00D7191\u00D798",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "192.8"
+  },
+  {
+    "Symbol": "beta_LT",
+    "Number": 0.75,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-1 cl. 6.3.2.3(1), recommended value",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.75"
+  },
+  {
+    "Symbol": "curve_y",
+    "Text": "a",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-1 Table 6.2: rolled I, h/b \u003E 1.2, t_f \u2264 40 mm, buckling about y-y",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "a"
+  },
+  {
+    "Symbol": "curve_z",
+    "Text": "b",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-1 Table 6.2: rolled I, h/b \u003E 1.2, t_f \u2264 40 mm, buckling about z-z",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "b"
+  },
+  {
+    "Symbol": "edition",
+    "Text": "2005\u002BA1:2014",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1:2005\u002BA1:2014 with the UK National Annex",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2005\u002BA1:2014"
+  },
+  {
+    "Symbol": "f_y",
+    "Number": 345,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10025-2 S355, 16 mm \u003C t \u2264 40 mm (flange 19.6 mm)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "345"
+  },
+  {
+    "Symbol": "gamma_M1",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-1, NA.2.15",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "h",
+    "Number": 467.2,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UB 457\u00D7191\u00D798",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "467.2"
+  },
+  {
+    "Symbol": "k",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Fork supports at the lateral restraints (no end restraint of the minor-axis rotation).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "k_w",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Free to warp at the restraints.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "lambda_LT0",
+    "Number": 0.4,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "EN 1993-1-1 cl. 6.3.2.3(1), recommended value",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.4"
+  },
+  {
+    "Symbol": "ltb_curve",
+    "Text": "auto (Table 6.4 / 6.5)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Curve from Table 6.5 for a rolled I with h/b \u003E 2.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "auto (Table 6.4 / 6.5)"
+  },
+  {
+    "Symbol": "ltb_method",
+    "Text": "6.3.2.3 (rolled and welded sections)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "6.3.2.3 chosen for a hot-rolled UB; 6.3.2.2 is the alternative and gives a lower M_b,Rd.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6.3.2.3 (rolled and welded sections)"
+  },
+  {
+    "Symbol": "moment_mode",
+    "Text": "end moments",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The moments are the member end moments.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "end moments"
+  },
+  {
+    "Symbol": "psi_z",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Uniform minor-axis moment (conservative).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "section_class",
+    "Text": "1",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Class 1 assumed for S355 UB 457\u00D7191\u00D798 under N \u002B M; the engineer confirms the classification (EN 1993-1-1 Table 5.2).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "section_type",
+    "Text": "rolled I",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UB 457\u00D7191\u00D798, hot-rolled",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "rolled I"
+  },
+  {
+    "Symbol": "torsion",
+    "Text": "susceptible to torsional deformation (Table B.2)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "An open I-section with no torsional restraint along its length is susceptible to torsional deformation (Table B.2).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "susceptible to torsional deformation (Table B.2)"
+  },
+  {
+    "Symbol": "use_f",
+    "Flag": true,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The f modification of 6.3.2.3(2) is permitted; k_c from the \u03C8 formula.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "yes"
+  },
+  {
+    "Symbol": "z_g",
+    "Number": 0,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "End-moment loading: no transverse load, so the load height does not enter.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  }
+]

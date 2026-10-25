@@ -1,0 +1,335 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: ub-457x191x98-beam-column    Revision: A
+Title: EN 1993-1-1 LTB and N+M interaction
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+Lateral-torsional buckling (6.3.2), flexural buckling (6.3.1) and the interaction of axial compression with bending (6.3.3) for a uniform doubly-symmetric I-section member on fork supports, class 1 to 3: M_cr, λ̄_LT, χ_LT and M_b,Rd; χ_y, χ_z and N_b,Rd; the Annex B (or Annex A) interaction factors and both interaction ratios, with the governing check.
+Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)²·I_w/I_z + (kL)²·G·I_t/(π²E·I_z) + (C₂z_g)²) − C₂z_g]; C₁ = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70 (end moments, k = 1) unless entered LTB slenderness: λ̄_LT = √(W_y·f_y/M_cr), W_y = W_pl,y (class 1, 2) or W_el,y (class 3) 6.3.2.2: Φ_LT = 0.5[1 + α_LT(λ̄_LT − 0.2) + λ̄_LT²]; χ_LT = 1/(Φ_LT + √(Φ_LT² − λ̄_LT²)) ≤ 1 6.3.2.3: Φ_LT = 0.5[1 + α_LT(λ̄_LT − λ̄_LT,0) + β·λ̄_LT²]; χ_LT = 1/(Φ_LT + √(Φ_LT² − β·λ̄_LT²)) ≤ 1, ≤ 1/λ̄_LT²; optional χ_LT,mod = χ_LT/f ≤ 1, f = 1 − 0.5(1 − k_c)[1 − 2(λ̄_LT − 0.8)²] ≤ 1 Buckling resistance in bending: M_b,Rd = χ_LT·W_y·f_y/γ_M1 Flexural buckling: N_cr = π²EI/L_cr², λ̄ = √(A·f_y/N_cr), Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²], χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1, N_b,Rd = χ·A·f_y/γ_M1 Interaction (6.3.3(4)): N_Ed/(χ_y·N_Rk/γ_M1) + k_yy·M_y,Ed/(χ_LT·M_y,Rk/γ_M1) + k_yz·M_z,Ed/(M_z,Rk/γ_M1) ≤ 1; N_Ed/(χ_z·N_Rk/γ_M1) + k_zy·M_y,Ed/(χ_LT·M_y,Rk/γ_M1) + k_zz·M_z,Ed/(M_z,Rk/γ_M1) ≤ 1 Factors k_ij: Annex B from the slenderness, N_Ed/(χ·N_Rk/γ_M1) and C_m (C_m = 0.6 + 0.4ψ ≥ 0.4 for a linear diagram, or entered); Annex A from the μ, w, n_pl, a_LT and C_ij expressions
+  Ref: EN 1993-1-1:2005+A1:2014 6.3.1.2, 6.3.1.3 — Buckling curves; slenderness for flexural buckling
+  Ref: EN 1993-1-1:2005+A1:2014 6.3.2.2 — Lateral-torsional buckling curves: general case
+  Ref: EN 1993-1-1:2005+A1:2014 6.3.2.3 — Lateral-torsional buckling curves for rolled sections and equivalent welded sections
+  Ref: EN 1993-1-1:2005+A1:2014 6.3.3 — Uniform members in bending and axial compression
+  Ref: EN 1993-1-1:2005+A1:2014 Annex A, Annex B — Interaction factors k_ij: methods 1 and 2
+  Ref: NCCI SN003 Mcr expression — Elastic critical moment of a doubly-symmetric member
+  Ref: EN 1993-1-1:2022 8.3 — Stability of members (label only, see the edition note)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  edition | EN 1993-1-1 edition (2005+A1:2014 until the 2022 edition is adopted; the 2022 choice changes only the label, see the sheet note) | 2005+A1:2014 |  | spec: BS EN 1993-1-1:2005+A1:2014 with the UK National Annex | any
+  ltb_method | χ_LT method | 6.3.2.3 (rolled and welded sections) |  | assumption: 6.3.2.3 chosen for a hot-rolled UB; 6.3.2.2 is the alternative and gives a lower M_b,Rd. | any
+  annex | Interaction factors | Annex B (method 2) |  | assumption: Annex B (method 2) chosen; Annex A can be selected for comparison. | any
+  torsion | Member behaviour for Annex B | susceptible to torsional deformation (Table B.2) |  | assumption: An open I-section with no torsional restraint along its length is susceptible to torsional deformation (Table B.2). | any
+  f_y | Yield strength (for the thickness) | 345 | MPa | spec: BS EN 10025-2 S355, 16 mm < t ≤ 40 mm (flange 19.6 mm) | 235 … 460 MPa
+  E | Modulus of elasticity | 210 | GPa | spec: BS EN 1993-1-1 cl. 3.2.6 | 190 … 220 GPa
+  G | Shear modulus | 81 | GPa | spec: BS EN 1993-1-1 cl. 3.2.6: G = E/(2(1 + ν)) ≈ 81 GPa | 70 … 90 GPa
+  gamma_M1 | Partial factor γ_M1 (member buckling) | 1 |  | spec: UK NA to BS EN 1993-1-1, NA.2.15 | 1 … 1.25
+  section_class | Cross-section class (class 4 needs effective properties and is outside this sheet) | 1 |  | assumption: Class 1 assumed for S355 UB 457×191×98 under N + M; the engineer confirms the classification (EN 1993-1-1 Table 5.2). | any
+  section_type | Section type (selects the buckling curve of Table 6.4 / 6.5) | rolled I |  | spec: BS EN 10365 UB 457×191×98, hot-rolled | any
+  h | Overall depth h | 467.2 | mm | spec: BS EN 10365 UB 457×191×98 | 50 … 2500 mm
+  b | Flange width b | 192.8 | mm | spec: BS EN 10365 UB 457×191×98 | 30 … 1000 mm
+  A | Area A | 125.265 | cm^2 | reference: S1 section sheet SEC-01, UB 457×191×98 (A = 125.265 cm²) | 5 … 3000 cm^2
+  I_y | Second moment of area, major axis I_y (S1: I_xx) | 45728 | cm^4 | reference: S1 section sheet SEC-01 (I_xx = 45727.99 cm⁴) | 50 … 5000000 cm^4
+  I_z | Second moment of area, minor axis I_z (S1: I_yy) | 2347.02 | cm^4 | reference: S1 section sheet SEC-01 (I_yy = 2347.02 cm⁴) | 5 … 500000 cm^4
+  I_t | Torsion constant I_t (S1: J) | 121.287 | cm^4 | reference: S1 section sheet SEC-01 (J = 121.287 cm⁴) | 0.1 … 100000 cm^4
+  I_w | Warping constant I_w | 1.17554 | dm^6 | reference: S1 section sheet SEC-01 (I_w = 1.17554 dm⁶) | 0.00001 … 100000 dm^6
+  W_pl_y | Plastic modulus, major axis (S1: W_pl_x) | 2232.46 | cm^3 | reference: S1 section sheet SEC-01 (W_pl,x = 2232.46 cm³) | 1 … 100000 cm^3
+  W_el_y | Elastic modulus, major axis (S1: W_el_x) | 1957.53 | cm^3 | reference: S1 section sheet SEC-01 (W_el,x = 1957.53 cm³) | 1 … 100000 cm^3
+  W_pl_z | Plastic modulus, minor axis (S1: W_pl_y) | 378.904 | cm^3 | reference: S1 section sheet SEC-01 (W_pl,y = 378.904 cm³) | 0.5 … 50000 cm^3
+  W_el_z | Elastic modulus, minor axis (S1: W_el_y) | 243.467 | cm^3 | reference: S1 section sheet SEC-01 (W_el,y = 243.467 cm³) | 0.5 … 50000 cm^3
+  L | Length between lateral restraints (fork supports) | 5 | m | drawing: FR-BM-12 rev B | 0.1 … 100 m
+  k | Effective length factor k (end rotation about the minor axis) | 1 |  | assumption: Fork supports at the lateral restraints (no end restraint of the minor-axis rotation). | 0.5 … 1
+  k_w | Warping factor k_w | 1 |  | assumption: Free to warp at the restraints. | 0.5 … 1
+  z_g | Load height z_g above the shear centre, towards the compression flange (positive destabilises) | 0 | mm | assumption: End-moment loading: no transverse load, so the load height does not enter. | -1000 … 1000 mm
+  C_2 | C₂ (0 for end moments; enter it for transverse loads) | 0 |  | assumption: C₂ is 0 for end-moment loading. | 0 … 1.5
+  ltb_curve | Buckling curve for χ_LT | auto (Table 6.4 / 6.5) |  | assumption: Curve from Table 6.5 for a rolled I with h/b > 2. | any
+  use_f | Apply the f modification to χ_LT (6.3.2.3(2)) | yes |  | assumption: The f modification of 6.3.2.3(2) is permitted; k_c from the ψ formula. | any
+  alpha_a0 | Imperfection factor α, curve a0 (recommended 0.13) | 0.13 |  | spec: EN 1993-1-1 Table 6.1, recommended value | 0.05 … 1
+  alpha_a | Imperfection factor α, curve a (recommended 0.21) | 0.21 |  | spec: EN 1993-1-1 Table 6.1, recommended value | 0.05 … 1
+  alpha_b | Imperfection factor α, curve b (recommended 0.34) | 0.34 |  | spec: EN 1993-1-1 Table 6.1, recommended value | 0.05 … 1
+  alpha_c | Imperfection factor α, curve c (recommended 0.49) | 0.49 |  | spec: EN 1993-1-1 Table 6.1, recommended value | 0.05 … 1
+  alpha_d | Imperfection factor α, curve d (recommended 0.76) | 0.76 |  | spec: EN 1993-1-1 Table 6.1, recommended value | 0.05 … 1
+  lambda_LT0 | λ̄_LT,0 for 6.3.2.3 (recommended 0.4) | 0.4 |  | spec: EN 1993-1-1 cl. 6.3.2.3(1), recommended value | 0.2 … 0.5
+  beta_LT | β for 6.3.2.3 (recommended 0.75) | 0.75 |  | spec: EN 1993-1-1 cl. 6.3.2.3(1), recommended value | 0.5 … 1
+  moment_mode | Moment diagram given as | end moments |  | assumption: The moments are the member end moments. | any
+  N_Ed | Design axial force, TENSION positive and compression negative (as S2 N_e1 and S3; 6.3.3 applies to compression) | -400 | kN | reference: S2 frame sheet FR-01, member 2, ULS combination (compression negative) | -100000 … 0 kN
+  M_y_Ed | Greatest design moment about y-y (ψ mode; S2 M_abs_e1 or S5) | 300 | kN*m | default | 0 … 100000 kN*m
+  psi_y | ψ of the M_y diagram (ratio of the end moments, +1 uniform, −1 reverse symmetric) | 0 |  | default | -1 … 1
+  M_y_A | End moment A about y-y, signed (end-moment mode) | 340 | kN*m | reference: S2 frame sheet FR-01, member 2, end A | -100000 … 100000 kN*m
+  M_y_B | End moment B about y-y, signed, same sign convention as A (end-moment mode) | 170 | kN*m | reference: S2 frame sheet FR-01, member 2, end B (same side: single curvature) | -100000 … 100000 kN*m
+  M_z_Ed | Greatest design moment about z-z | 6 | kN*m | assumption: Small minor-axis moment from the cladding-rail eccentricity (engineer's estimate). | 0 … 100000 kN*m
+  psi_z | ψ of the M_z diagram | 1 |  | assumption: Uniform minor-axis moment (conservative). | -1 … 1
+  L_cr_y | Buckling length about y-y | 5 | m | drawing: FR-BM-12 rev B | 0.1 … 100 m
+  L_cr_z | Buckling length about z-z | 5 | m | drawing: FR-BM-12 rev B | 0.1 … 100 m
+  curve_y | Buckling curve about y-y (Table 6.2) | a |  | spec: EN 1993-1-1 Table 6.2: rolled I, h/b > 1.2, t_f ≤ 40 mm, buckling about y-y | any
+  curve_z | Buckling curve about z-z (Table 6.2) | b |  | spec: EN 1993-1-1 Table 6.2: rolled I, h/b > 1.2, t_f ≤ 40 mm, buckling about z-z | any
+
+3. ASSUMPTIONS
+  A1. Uniform doubly-symmetric I-section member on fork supports (free to warp and to rotate about the minor axis at the ends, restrained against twist); no mono-symmetric or tapered members, no cantilevers, no continuous-restraint effects. (Scope of S7; k and k_w below 1 model partial end restraint of the minor-axis rotation and of warping.)
+  A2. Class 1, 2 or 3 as stated by the user; class 4 effective properties are outside this sheet. (6.2.2.5 is not implemented.)
+  A3. C₁ from the ψ formula applies to end-moment diagrams with k = 1; for transverse loads, k ≠ 1 or other diagrams the user enters C₁, C₂ (and k_c, C_m) from the source in use. (No table of C₁ or C₂ values is shipped (reference records only).)
+  A4. The imperfection factors, β and λ̄_LT,0 default to the recommended values and are a user-verifiable factor set; the National Annex in use may differ. (Record kind ec3.ltb-factors.)
+  A5. The 2022 edition choice changes the label printed on the sheet only. The arithmetic implemented is that of EN 1993-1-1:2005+A1:2014; clause numbers in the 2022 edition differ and must be checked by the user. (The differences between the editions are not implemented.)
+  A6. The Annex A and Annex B expressions are implemented as published; their coefficients are to be checked against the owner's copy of the standard. (Interaction factors for diagrams other than linear are entered, not derived.)
+  A7. ltb_method (χ_LT method) is taken as 6.3.2.3 (rolled and welded sections). (6.3.2.3 chosen for a hot-rolled UB; 6.3.2.2 is the alternative and gives a lower M_b,Rd.)
+  A8. annex (Interaction factors) is taken as Annex B (method 2). (Annex B (method 2) chosen; Annex A can be selected for comparison.)
+  A9. torsion (Member behaviour for Annex B) is taken as susceptible to torsional deformation (Table B.2). (An open I-section with no torsional restraint along its length is susceptible to torsional deformation (Table B.2).)
+  A10. section_class (Cross-section class (class 4 needs effective properties and is outside this sheet)) is taken as 1. (Class 1 assumed for S355 UB 457×191×98 under N + M; the engineer confirms the classification (EN 1993-1-1 Table 5.2).)
+  A11. k (Effective length factor k (end rotation about the minor axis)) is taken as 1. (Fork supports at the lateral restraints (no end restraint of the minor-axis rotation).)
+  A12. k_w (Warping factor k_w) is taken as 1. (Free to warp at the restraints.)
+  A13. z_g (Load height z_g above the shear centre, towards the compression flange (positive destabilises)) is taken as 0 mm. (End-moment loading: no transverse load, so the load height does not enter.)
+  A14. C_2 (C₂ (0 for end moments; enter it for transverse loads)) is taken as 0. (C₂ is 0 for end-moment loading.)
+  A15. ltb_curve (Buckling curve for χ_LT) is taken as auto (Table 6.4 / 6.5). (Curve from Table 6.5 for a rolled I with h/b > 2.)
+  A16. use_f (Apply the f modification to χ_LT (6.3.2.3(2))) is taken as yes. (The f modification of 6.3.2.3(2) is permitted; k_c from the ψ formula.)
+  A17. moment_mode (Moment diagram given as) is taken as end moments. (The moments are the member end moments.)
+  A18. M_z_Ed (Greatest design moment about z-z) is taken as 6 kN*m. (Small minor-axis moment from the cladding-rail eccentricity (engineer's estimate).)
+  A19. psi_z (ψ of the M_z diagram) is taken as 1. (Uniform minor-axis moment (conservative).)
+
+4. WORKING
+  [35] M_y_Ed = max(|M_A|, |M_B|)    « 6.3.2
+      = max(|340|, |170|) kN·m
+      = 340 kN·m
+        Greatest design moment about y-y
+  [36] psi_y = ψ = M_small/M_large (same sign: single curvature)    « Table B.3
+      = 170 / 340
+      = 0.5
+        Ratio of the end moments
+  [37] C_1 = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70    « NCCI SN003 / ENV 1993-1-1 Annex F
+      = ψ = 0.5
+      = 1.31
+        C₁ for end moments (derived)
+  [38] Mcr = C₁·π²E·I_z/(kL)²·[√((k/k_w)²I_w/I_z + (kL)²G·I_t/(π²E·I_z) + (C₂z_g)²) − C₂z_g]    « NCCI SN003
+      = 1.31 × π² × 210000 × 23470000 / (5000)² × [√((1/1)² × 1175500000000/23470000 + (5000)² × 81000 × 1212900 / (π² × 210000 × 23470000) + (0 × 0)²) − 0]
+      = 808.38 kN·m
+        Elastic critical moment for lateral-torsional buckling
+  [39] W_y = W_pl,y (class 1, 2)    « 6.3.2.2(1)
+      = plastic
+      = 2232.5 cm³
+        Section modulus used for bending about y
+  [40] lambda_LT = √(W_y·f_y/M_cr)    « 6.3.2.2(1)
+      = √(2232.5 cm³ × 345 MPa / 808.38 kN·m)
+      = 0.9761
+        Non-dimensional slenderness for lateral-torsional buckling
+  [47] alpha_LT = imperfection factor, curve c    « 6.3.2.3(1), Table 6.5
+      = Table 6.5, rolled, h/b = 2.4232
+      = 0.49
+        Imperfection factor for lateral-torsional buckling
+  [50] Phi_LT = 0.5[1 + α_LT(λ̄_LT − λ̄_LT,0) + β·λ̄_LT²]    « 6.3.2.3(1)
+      = 0.5 × [1 + 0.49 × (0.9761 − 0.4) + 0.75 × 0.9761²]
+      = 0.99843
+        Φ_LT
+  [51] chi_LT_0 = 1/(Φ_LT + √(Φ_LT² − β·λ̄_LT²)) ≤ 1, ≤ 1/λ̄_LT²    « 6.3.2.3(1)
+      = 1/(0.99843 + √(0.99843² − 0.75 × 0.9761²))
+      = 0.6537
+        Lateral-torsional reduction factor
+  [53] k_c = 1/(1.33 − 0.33ψ)    « Table 6.6
+      = ψ = 0.5
+      = 0.85837
+        k_c for a linear moment diagram (derived)
+  [54] f = 1 − 0.5(1 − k_c)[1 − 2(λ̄_LT − 0.8)²] ≤ 1    « 6.3.2.3(2)
+      = 1 − 0.5 × (1 − 0.85837) × [1 − 2 × (0.9761 − 0.8)²]
+      = 0.93358
+        Modification factor f
+  [55] chi_LT_mod = χ_LT/f ≤ 1    « 6.3.2.3(2)
+      = 0.6537 / 0.93358
+      = 0.70022
+        Modified lateral-torsional reduction factor
+  [56] chi_LT = χ_LT,mod    « 6.3.2.3
+      = as above
+      = 0.70022
+        Lateral-torsional reduction factor used
+  [57] Mb_Rd = χ_LT·W_y·f_y/γ_M1    « 6.3.2.1(3)
+      = 0.70022 × 2232.5 cm³ × 345 MPa / 1
+      = 539.3 kN·m
+        Design buckling resistance moment
+  [58] u_LTB = M_y_Ed / Mb_Rd
+      = 340 kN·m / 539.3 kN·m
+      = 0.63044
+        Lateral-torsional buckling utilisation
+  [61] alpha_y = imperfection factor, curve a    « 6.3.1.2
+      = factor set
+      = 0.21
+        Imperfection factor about y
+  [62] alpha_z = imperfection factor, curve b    « 6.3.1.2
+      = factor set
+      = 0.34
+        Imperfection factor about z
+  [63] N_Rk = A·f_y    « 6.3.1.1(3)
+      = 125.27 cm² × 345 MPa
+      = 4321.6 kN
+        Characteristic axial resistance
+  [64] N_cr_y = π²E·I_y/L_cr,y²    « 6.3.1.2
+      = π² × 210000 × 457280000 / 5000²
+      = 37911 kN
+        Elastic critical force about y
+  [65] N_cr_z = π²E·I_z/L_cr,z²    « 6.3.1.2
+      = π² × 210000 × 23470000 / 5000²
+      = 1945.8 kN
+        Elastic critical force about z
+  [66] lambda_y = √(A·f_y/N_cr,y)    « 6.3.1.3
+      = √(4321.6 / 37911)
+      = 0.33763
+        Non-dimensional slenderness about y
+  [67] lambda_z = √(A·f_y/N_cr,z)    « 6.3.1.3
+      = √(4321.6 / 1945.8)
+      = 1.4903
+        Non-dimensional slenderness about z
+  [68] chi_y = 1/(Φ + √(Φ² − λ̄²)) ≤ 1    « 6.3.1.2
+      = α = 0.21, λ̄ = 0.33763
+      = 0.96853
+        Reduction factor about y
+  [69] chi_z = 1/(Φ + √(Φ² − λ̄²)) ≤ 1    « 6.3.1.2
+      = α = 0.34, λ̄ = 1.4903
+      = 0.34582
+        Reduction factor about z
+  [70] N_b_y_Rd = χ_y·A·f_y/γ_M1    « 6.3.1.1(3)
+      = 0.96853 × 4321.6 / 1
+      = 4185.7 kN
+        Buckling resistance about y
+  [71] N_b_z_Rd = χ_z·A·f_y/γ_M1    « 6.3.1.1(3)
+      = 0.34582 × 4321.6 / 1
+      = 1494.5 kN
+        Buckling resistance about z
+  [72] N_b_Rd = min(N_b_y_Rd, N_b_z_Rd)
+      = min(4185.7 kN, 1494.5 kN)
+      = 1494.5 kN
+        Flexural buckling resistance (smaller of the two axes)
+  [73] M_y_Rk = W_y·f_y    « 6.3.3
+      = 2232.5 cm³ × 345 MPa
+      = 770.2 kN·m
+        Characteristic bending resistance about y
+  [74] M_z_Rk = W_z·f_y (W_pl,z class 1, 2; W_el,z class 3)    « 6.3.3
+      = 378.9 cm³ × 345 MPa
+      = 130.72 kN·m
+        Characteristic bending resistance about z
+  [75] C_my = 0.6 + 0.4ψ_y ≥ 0.4 (or entered)    « Table B.3
+      = ψ_y = 0.5
+      = 0.8
+        Equivalent uniform moment factor, y
+  [76] C_mz = 0.6 + 0.4ψ_z ≥ 0.4 (or entered)    « Table B.3
+      = ψ_z = 1
+      = 1
+        Equivalent uniform moment factor, z
+  [77] C_mLT = as C_my (or entered)    « Table B.3
+      = C_my
+      = 0.8
+        Equivalent uniform moment factor for lateral-torsional buckling
+  [78] k_yy = Annex B: C_my(1 + (λ̄_y − 0.2)n_y) ≤ C_my(1 + 0.8n_y) (class 1, 2)    « Annex B Table B.2
+      = n_y = 0.095565
+      = 0.81052
+        Interaction factor k_yy
+  [79] k_yz = Annex B: 0.6k_zz (class 1, 2), k_zz (class 3)    « Annex B Table B.2
+      = as above
+      = 0.82482
+        Interaction factor k_yz
+  [80] k_zy = Annex B: Table B.1 0.6k_yy / 0.8k_yy; Table B.2 from λ̄_z, n_z and C_mLT    « Annex B Table B.2
+      = n_z = 0.26764
+      = 0.95134
+        Interaction factor k_zy
+  [81] k_zz = Annex B: C_mz(1 + (2λ̄_z − 0.6)n_z) ≤ C_mz(1 + 1.4n_z) (class 1, 2)    « Annex B Table B.2
+      = as above
+      = 1.3747
+        Interaction factor k_zz
+  [82] u_N_y = N_Ed/(χ_y·N_Rk/γ_M1)    « 6.3.3(4)
+      = 400 kN / (0.96853 × 4321.6 kN / 1)
+      = 0.095565
+        Axial term about y
+  [83] u_N_z = N_Ed/(χ_z·N_Rk/γ_M1)    « 6.3.3(4)
+      = 400 kN / (0.34582 × 4321.6 kN / 1)
+      = 0.26764
+        Axial term about z
+  [84] u_M_y = M_y,Ed/(χ_LT·M_y,Rk/γ_M1)    « 6.3.3(4)
+      = 340 kN·m / (0.70022 × 770.2 kN·m / 1)
+      = 0.63044
+        Major-axis bending term
+  [85] u_M_z = M_z,Ed/(M_z,Rk/γ_M1)    « 6.3.3(4)
+      = 6 kN·m / (130.72 kN·m / 1)
+      = 0.045899
+        Minor-axis bending term
+  [86] u_61 = N_Ed/(χ_y N_Rk/γ_M1) + k_yy·M_y,Ed/(χ_LT M_y,Rk/γ_M1) + k_yz·M_z,Ed/(M_z,Rk/γ_M1)    « 6.3.3(4)
+      = 0.095565 + 0.81052 × 0.63044 + 0.82482 × 0.045899
+      = 0.64441
+        Interaction, equation 6.61
+  [87] u_62 = N_Ed/(χ_z N_Rk/γ_M1) + k_zy·M_y,Ed/(χ_LT M_y,Rk/γ_M1) + k_zz·M_z,Ed/(M_z,Rk/γ_M1)    « 6.3.3(4)
+      = 0.26764 + 0.95134 × 0.63044 + 1.3747 × 0.045899
+      = 0.9305
+        Interaction, equation 6.62
+  [88] u_interaction = max(u_61, u_62)    « 6.3.3(4)
+      = max(0.64441, 0.9305)
+      = 0.9305
+        Greatest interaction ratio
+  [89] u_buckling = N_Ed/N_b,Rd    « 6.3.1.1
+      = 400 kN / 1494500 kN
+      = 0.26764
+        Flexural buckling utilisation
+  [90] u_member = max(max(u_interaction, u_LTB), u_buckling)
+      = max(max(0.9305, 0.63044), 0.26764)
+      = 0.9305
+        Governing utilisation of the member
+
+5. RESULTS
+  edition_used = "EN 1993-1-1:2005+A1:2014"    EN 1993-1-1 edition
+  psi_y = 0.5    ψ of the M_y diagram
+  M_y_Ed = 340 kN·m    Greatest design moment about y-y
+  C_1 = 1.31    C₁
+  Mcr = 808.38 kN·m    M_cr
+  lambda_LT = 0.9761    λ̄_LT
+  chi_LT = 0.70022    χ_LT
+  Mb_Rd = 539.3 kN·m    M_b,Rd
+  N_Rk = 4321.6 kN    N_Rk
+  N_cr_y = 37911 kN    N_cr,y
+  N_cr_z = 1945.8 kN    N_cr,z
+  lambda_y = 0.33763    λ̄_y
+  lambda_z = 1.4903    λ̄_z
+  chi_y = 0.96853    χ_y
+  chi_z = 0.34582    χ_z
+  N_b_y_Rd = 4185.7 kN    N_b,y,Rd
+  N_b_z_Rd = 1494.5 kN    N_b,z,Rd
+  N_b_Rd = 1494.5 kN    N_b,Rd
+  k_yy = 0.81052    k_yy
+  k_yz = 0.82482    k_yz
+  k_zy = 0.95134    k_zy
+  k_zz = 1.3747    k_zz
+  u_LTB = 0.63044    LTB utilisation
+  u_buckling = 0.26764    Buckling utilisation
+  u_61 = 0.64441    Equation 6.61
+  u_62 = 0.9305    Equation 6.62
+  u_interaction = 0.9305    Interaction utilisation
+  u_member = 0.9305    Member utilisation
+  alpha_LT = 0.49    α_LT
+  Phi_LT = 0.99843    Φ_LT
+  chi_LT_0 = 0.6537    χ_LT before the f modification
+  k_c = 0.85837    k_c
+  f = 0.93358    f
+  W_y = 2232.5 cm³    W_y
+  M_y_Rk = 770.2 kN·m    M_y,Rk
+  M_z_Rk = 130.72 kN·m    M_z,Rk
+  C_my = 0.8    C_my
+  C_mz = 1    C_mz
+  C_mLT = 0.8    C_mLT
+  u_N_y = 0.095565    Axial term, y
+  u_N_z = 0.26764    Axial term, z
+  u_M_y = 0.63044    Bending term, y
+  u_M_z = 0.045899    Bending term, z
+  governing = "interaction 6.62 (0.931)"    Governing check
+
+6. CHECKS (governing first)
+  PASS  Interaction, equation 6.62: u_62 = 0.9305 vs u_62 ≤ 1  utilisation 0.931  « 6.3.3(4)
+  PASS  Interaction, equation 6.61: u_61 = 0.64441 vs u_61 ≤ 1  utilisation 0.644  « 6.3.3(4)
+  PASS  Lateral-torsional buckling M_y,Ed ≤ M_b,Rd: u_LTB = 0.63044 vs u_LTB ≤ 1  utilisation 0.63  « 6.3.2.1
+  PASS  Flexural buckling N_Ed ≤ N_b,Rd: u_buckling = 0.26764 vs u_buckling ≤ 1  utilisation 0.268  « 6.3.1.1
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: E, G, f_y (Material properties); gamma_M1 (EN 1993-1-1 National Annex factors); alpha_a0, alpha_a, alpha_b, alpha_c, alpha_d, lambda_LT0, beta_LT (Imperfection factors and 6.3.2.3 parameters); C_2 (C₁, C₂ and k_c for the moment diagram). Enter each as one so its source, edition and licence travel with it.
+  WARNING input.M_y_Ed: M_y_Ed (Greatest design moment about y-y (ψ mode; S2 M_abs_e1 or S5)) was not entered; the template default 300 kN*m is used.
+  WARNING input.psi_y: psi_y (ψ of the M_y diagram (ratio of the end moments, +1 uniform, −1 reverse symmetric)) was not entered; the template default 0 is used.
+
+8. VERIFICATION
+  Template: struct.ltb-interaction@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 7/7
+  Test run: —

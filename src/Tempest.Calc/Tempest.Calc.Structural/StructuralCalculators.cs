@@ -14,5 +14,6 @@ public static class StructuralCalculators
         new LoadCombinationsCalculator(),
         new ConnectionCalculator(),
         new BasePlateCalculator(),
+        new LtbInteractionCalculator(),
     ];
 }
