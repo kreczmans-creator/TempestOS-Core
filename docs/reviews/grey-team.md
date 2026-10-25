@@ -45,7 +45,7 @@ Findings:
 
 ## Addendum B
 
-Checked at `34f196cc` (`v0.26.0/addB-4-workflows`, not yet merged into `release/v0.26.0`) against `510f337c` (end of Addendum A). No v0.26.0 tag exists (DA-01). The "stored instances" below exist only in development and owner-test databases. S8: reviewed separately before B-5 merges.
+Checked at `34f196cc` (`v0.26.0/addB-4-workflows`, not yet merged into `release/v0.26.0`) against `510f337c` (end of Addendum A). No v0.26.0 tag exists (DA-01). The "stored instances" below exist only in development and owner-test databases. S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
 
 | Item | Evidence | Status |
 |---|---|---|
@@ -55,7 +55,7 @@ Checked at `34f196cc` (`v0.26.0/addB-4-workflows`, not yet merged into `release/
 | New discipline | Fluid Power (ADR-0170): `Tempest.Calc.FluidPower` and its test project, `DisciplineCatalogue`, the explorer module (37 modules pinned), the Desktop composition. The Core change is a comment only. Dashboard export v3 gains a fourth `disciplines` entry with no schema bump (GR-B-05). | Pass |
 | New assemblies and CI | `Tempest.Calc.Import` and `Tempest.Calc.Tests.Import`. Both new test projects run on both CI legs (`ci.yml:309, 331`). Licence Check job, required by the CI Gate (DB-08). `Svg.Custom` MS-PL flagged for the owner. | Pass |
 | Import files | Read from picker streams only. 5 MB per file; W2 up to 64 files and 20 MB. Nothing is written beside the source. Profiles are stored in the database, not in a folder. No import is logged (GR-B-02). | Pass; logging gap |
-| Feature flags (S8) | On the S8 branch the flag is read only from `appsettings.json` in the install folder (`Calc:Features:Lifting`); off by default. S8: reviewed separately before B-5 merges. | Pending B-5 |
+| Feature flags (S8) | On the S8 branch the flag is read only from `appsettings.json` in the install folder (`Calc:Features:Lifting`); off by default. S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default. | Pending B-5 |
 | Test totals at `6a189078` (verification, Linux, 4 cores) | Engine 457, Sheets 135, Calculators 1515, FluidPower 94, Import 625, Library 343 (+1 skipped): all pass. Desktop `WorkedExamplePdfTests` 64 of 64 (Y-B-01 fixed; 8 PDFs stale again, Yellow Y-B-12). At `34f196cc` the Calculators suite failed one timing test under load (Y-B-11, fixed) and the PDF test failed 4 (Y-B-01, fixed). Core and the full Desktop suite were not run. | Pass |
 | Performance | `PerformanceBudgetTests` covers every registered template, Fluid Power included. Worst Addendum B cases (Security): F3 at 100 000 samples 0.6 s, M9 at 3600 steps 48 ms, S9 Navier at the 1024-term cap 21 ms. | Pass |
 | Worked-example PDFs | 16 new PDFs, the largest 189 KiB (LTB, GR-B-06). The four M9/E9 PDFs are missing (Y-B-01). | Pass (Linux) with one gap |
@@ -82,4 +82,4 @@ Findings:
 
 Test runs at `6a189078` (Linux, 4 cores) are in `scratchpad/b9colour/verify-suites.log`. Core and the full Desktop suite were not run.
 
-S8: reviewed separately before B-5 merges.
+S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.

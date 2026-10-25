@@ -721,7 +721,7 @@ The pass criterion is the repository's own (`KnownAnswerRunner.cs:80`): |mine �
 - The §B7 chain packs.
 - W1 does no arithmetic beyond unit conversion; that is covered by the security re-verification.
 - Read-only.
-- S8: reviewed separately before B-5 merges.
+- S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
 
 **Method.**
 - At least one worked example per calculator was run through `CalcRunner.Run` from its `inputs.json`, using a scratch harness outside the repository.
@@ -790,7 +790,7 @@ W3 seeds: the four generic materials satisfy G ≈ E/(2(1 + ν)) within 1.3 %, a
 | B-4 W2 | High: whole-number decimal comma, O(n²) statistics; Medium: provenance, k at import, same file twice, σ with outliers, M2 push | `2ec42994`…`7da71ee1` | B9 security re-verification §1; `ScanReviewTests` 165, 193, 374; `ScanToSealChainTests` 386 |
 | §B7 chains 7–10 | Medium: S9 not downstream, PSU heat missing, mean in place of line temperature, issue gate | `00cfac32`, DB-05 | `ElectronicsEnclosureChainTests` 242, 259; `ColdPipeChainTests` 257; `*Issue_Is_Refused_At_The_Staleness_Gate*` in each |
 | §B7 chains 1, 4, 5 | Medium: star-delta physics, stiffest source, motor above nameplate speed, cam RMS torque into M4, spring data typed twice | `56e038b1`, `c97c958e`, `d6ab772b`, `f8d675a2`, DB-06 | HPU unloaded-start assertions; `MotorSizingCalculator.cs:278`; `MechanismReviewChainTests` 373; `SpringCalculator.cs:664` |
-| B-5 S8 | — | S8: reviewed separately before B-5 merges | — |
+| B-5 S8 | — | S8: reviewed in three separate Opus rounds (see Security and Red, S8 lifting) | — |
 
 ### Findings
 
@@ -812,4 +812,4 @@ Each fix was checked in a fresh worktree (`scratchpad/b9colv`) with the scratch 
 
 No Green item is open.
 
-S8: reviewed separately before B-5 merges.
+S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.

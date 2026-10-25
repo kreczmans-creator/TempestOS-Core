@@ -184,7 +184,7 @@ The calculators are robust against crashes and NaN. The serious problems are a m
 
 ## Addendum B
 
-> Black-box misuse review of the 14 Addendum B calculators and the §B7 packs at `34f196cc` (`v0.26.0/addB-4-workflows`). A scratch harness drove `CalcRunner.Run` on each worked example's `inputs.json` with one input changed at a time, the way a hurried engineer would get it wrong: unit slips, gauge against absolute, the wrong sign convention, the wrong mode, a default left alone. The Desktop worked-example PDF test was also run. S8: reviewed separately before B-5 merges.
+> Black-box misuse review of the 14 Addendum B calculators and the §B7 packs at `34f196cc` (`v0.26.0/addB-4-workflows`). A scratch harness drove `CalcRunner.Run` on each worked example's `inputs.json` with one input changed at a time, the way a hurried engineer would get it wrong: unit slips, gauge against absolute, the wrong sign convention, the wrong mode, a default left alone. The Desktop worked-example PDF test was also run. S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
 
 ### Reproduction
 - Every Addendum B worked example runs without a block. The values recomputed by Green match the stored sheets.
@@ -239,4 +239,4 @@ New findings in this round:
 | B-B-07 | Low | `LtbInteractionCalculator.cs`, `double-curvature` warning | With `C_1` 1.5 entered and opposite end moments, the run uses C₁ 1.5, but the warning says "C₁ = 2.7, C_my = 0.4". | Print the C₁ and C_my the run uses. | Open: fix now (one line) |
 | B-B-08 | Low | `InsulationCalculator.cs`, `WarnFixedCoefficientAgainstCondensation` | The warning fires whenever the ε 0.1 correlation needs more than the h_se given. On the `chilled-water-pipe-condensation` example (h_se 8, ε 0.9) it reads "13.162 mm as given, but 12.033 mm … at ε = 0.9 and 25.183 mm at ε = 0.1". The given value is conservative for the stated surface, and the README does not explain the warning. h_se 5 warns the same way. | Judge against the correlation at the entered ε; mention bright cladding as a note (or when ε < 0.5); explain it in the README. | Open: fix now (small) |
 
-S8: reviewed separately before B-5 merges.
+S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
