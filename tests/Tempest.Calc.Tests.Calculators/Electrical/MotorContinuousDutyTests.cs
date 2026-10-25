@@ -38,25 +38,38 @@ public sealed class MotorContinuousDutyTests
     }
 
     [Fact]
-    public void The_Rated_Power_Is_The_Candidate_Motors_Rated_Torque_Times_The_Running_Speed()
+    public void The_Rated_Power_Is_The_Candidate_Motors_Rated_Torque_Times_Its_Rated_Speed_And_Not_The_Running_Speed()
     {
-        // E1 1.3.0: P_rated = T_rated·ω, for sizing a supply on the motor rather than the load (the pump pack links it to the cable step).
+        // E1 1.4.0: P_rated = T_rated·ω_rated from the nameplate rated speed n_rated, for sizing a supply on the motor rather than the load.
         var r = CalcRunner.Run(Motor, Continuous());
-        var omega = 2 * Math.PI * 2800 / 60;
-        Assert.Equal(2.0 * omega, r.OutputSi("P_rated"), 1e-9);
-        Assert.Equal(586.4306, 2.0 * omega, 3);
+        Assert.Equal(2.0 * 2 * Math.PI * 2850 / 60, r.OutputSi("P_rated"), 1e-9);
+        Assert.Equal(596.9026042, r.OutputSi("P_rated"), 1e-6);
         Assert.True(r.OutputSi("P_rated") > r.OutputSi("P_cont"));
+        Assert.DoesNotContain(r.Notices, n => n.RuleId == "rated-speed");
         Assert.Equal("W", Motor.Template.OutputPorts!.Single(p => p.Symbol == "P_rated").Unit);
-        Assert.Equal("1.3.0", Motor.Template.Version);
+        Assert.Equal("1.4.0", Motor.Template.Version);
+        Assert.Contains(Motor.Template.RecordKinds!, k => k.Kind == "motor.rating" && k.Symbols.Contains("n_rated") && k.Symbols.Contains("T_rated"));
 
-        Gen.Select(Gen.Double[0.1, 500], Gen.Double[50, 3000], Gen.Double[1, 10]).Sample((rated, rpm, ratio) =>
+        // The running speed (2800 rpm) is not the rated speed: changing the load speed leaves the rated power alone.
+        var slower = CalcRunner.Run(Motor, Continuous(CalcInputValue.Quantity("n_L", 500, "rpm")));
+        Assert.Equal(r.OutputSi("P_rated"), slower.OutputSi("P_rated"), 1e-9);
+        Assert.NotEqual(r.OutputSi("P_cont"), slower.OutputSi("P_cont"));
+
+        Gen.Select(Gen.Double[0.1, 500], Gen.Double[50, 3000], Gen.Double[50, 5000]).Sample((rated, rpm, nameplate) =>
         {
-            var run = CalcRunner.Run(Motor, Continuous(CalcInputValue.Quantity("T_rated", rated, "N*m"), CalcInputValue.Quantity("n_L", rpm, "rpm"), CalcInputValue.Of("i", ratio), CalcInputValue.Quantity("n_max", 1e6, "rpm"), CalcInputValue.Quantity("T_peak", 1e6, "N*m")));
-            var expected = rated * 2 * Math.PI * rpm * ratio / 60;
+            var run = CalcRunner.Run(Motor, Continuous(CalcInputValue.Quantity("T_rated", rated, "N*m"), CalcInputValue.Quantity("n_L", rpm, "rpm"), CalcInputValue.Quantity("n_rated", nameplate, "rpm"), CalcInputValue.Quantity("n_max", 1e6, "rpm"), CalcInputValue.Quantity("T_peak", 1e6, "N*m")));
+            var expected = rated * 2 * Math.PI * nameplate / 60;
             Assert.Equal(expected, run.OutputSi("P_rated"), expected * 1e-9);
         }, iter: 60);
 
-        // Point-to-point duty has no running speed, so no rated power.
+        // Without n_rated there is no P_rated, and the sheet says it needs the rated speed: the running speed is not substituted.
+        var without = CalcRunner.Run(Motor, new CalcInputSet([.. Continuous().Values.Where(v => v.Symbol != "n_rated")]));
+        Assert.False(without.IsBlocked);
+        Assert.Null(without.FindOutput("P_rated"));
+        var warning = Assert.Single(without.Notices, n => n.RuleId == "rated-speed");
+        Assert.StartsWith("n_rated:", warning.Message, StringComparison.Ordinal);
+
+        // Point-to-point duty has no rated power.
         Assert.Null(CalcRunner.Run(Motor, CalcTemplateHasher.DefaultInputs(Motor.Template).With(CalcInputValue.Choice("duty_mode", MotorSizingCalculator.DutyPointToPoint))).FindOutput("P_rated"));
     }
 

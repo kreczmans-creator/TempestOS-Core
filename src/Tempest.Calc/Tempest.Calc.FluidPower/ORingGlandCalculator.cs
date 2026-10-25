@@ -645,7 +645,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             return;
         }
 
-        var ringAreaHot = Math.PI / 4.0 * Math.Pow(sectionHot.Max, 2) * (odHeld ? Math.Max(fHot / gHot, Math.Pow(ORingGlandModel.Thickening(cHot), 2)) : fHot / gHot);
+        var ringAreaHot = Math.PI / 4.0 * Math.Pow(sectionHot.Max, 2) * (odHeld ? Math.Max(fHot / refHot, Math.Pow(ORingGlandModel.Thickening(cHot), 2)) : fHot / refHot);
         var fillMaxValue = ringAreaHot / areaHot;
         var fillMinValue = Math.PI / 4.0 * effLow * effLow / areaCold;
 
@@ -671,7 +671,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         c.Record("h_lo_h", "g_h·(depth stack) minimum", $"mean {F(depthHot.Mid)} mm, worst-case minimum", ScalarValue.Of(depthHot.Min, mm), "Smallest gland depth at the hot end");
         c.Record("squeeze_max", "1 − h_lo_h/Weff_hi", $"1 − {F(depthHot.Min)}/{F(effHigh)}", ScalarValue.Of((1.0 - depthHot.Min / effHigh) * 100, "%"), "Largest squeeze");
         c.Record("A_g_lo", "b_min·h_min − 2(1 − π/4)·(g_h·r_g)²", $"{F(widthHot.Min)}·{F(depthHot.Min)} − {F(corner * Math.Pow(gHot * cornerRadius, 2))}", ScalarValue.Of(areaHot, "mm^2"), "Smallest groove area at the hot end");
-        c.Record("fill_max", odHeld ? "(π/4)·Wh_hi²·max(f_h/g_h, 1/(1 − c_h))/A_g_lo" : "(π/4)·Wh_hi²·(f_h/g_h)/A_g_lo", odHeld ? $"(π/4)·{F(sectionHot.Max)}²·max({F(fHot / gHot)}, 1/(1 − {F(cHot)}))/{F(areaHot)}" : $"(π/4)·{F(sectionHot.Max)}²·({F(fHot)}/{F(gHot)})/{F(areaHot)}", ScalarValue.Of(fillMaxValue * 100, "%"), "Largest gland fill (unstretched section, volume basis: the held ring takes its whole volume change in its section)");
+        c.Record("fill_max", odHeld ? "(π/4)·Wh_hi²·max(f_h/g_ref,h, 1/(1 − c_h))/A_g_lo" : "(π/4)·Wh_hi²·(f_h/g_ref,h)/A_g_lo", odHeld ? $"(π/4)·{F(sectionHot.Max)}²·max({F(fHot / refHot)}, 1/(1 − {F(cHot)}))/{F(areaHot)}" : $"(π/4)·{F(sectionHot.Max)}²·({F(fHot)}/{F(refHot)})/{F(areaHot)}", ScalarValue.Of(fillMaxValue * 100, "%"), "Largest gland fill (unstretched section, volume basis: the held ring takes its whole volume change in its section)");
 
         // The mean state at installation.
         var mid = meanVector;

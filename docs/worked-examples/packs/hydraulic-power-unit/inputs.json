@@ -362,7 +362,7 @@
       "Unit": "L",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8ffa644f59bf467a8eb123e5d1f4ed65#dV",
+        "Reference": "calc:392f7dbff35a4aefb017177c3521c1d8#dV",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -426,7 +426,7 @@
       "Unit": "bar",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8ffa644f59bf467a8eb123e5d1f4ed65#p",
+        "Reference": "calc:392f7dbff35a4aefb017177c3521c1d8#p",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -491,7 +491,7 @@
       "Unit": "m^3/h",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8ffa644f59bf467a8eb123e5d1f4ed65#Q_prs",
+        "Reference": "calc:57c861b8a6104bcda463ade077de2005#Q_prs",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -590,7 +590,7 @@
       "Unit": "kg/m^3",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8ffa644f59bf467a8eb123e5d1f4ed65#rho",
+        "Reference": "calc:57c861b8a6104bcda463ade077de2005#rho",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -613,7 +613,7 @@
               "Unit": "mm",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:8ffa644f59bf467a8eb123e5d1f4ed65#d_prs",
+                "Reference": "calc:57c861b8a6104bcda463ade077de2005#d_prs",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -742,7 +742,7 @@
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8ffa644f59bf467a8eb123e5d1f4ed65#T_shaft",
+        "Reference": "calc:392f7dbff35a4aefb017177c3521c1d8#T_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -847,7 +847,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8ffa644f59bf467a8eb123e5d1f4ed65#n_shaft",
+        "Reference": "calc:392f7dbff35a4aefb017177c3521c1d8#n_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -863,6 +863,17 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "3000"
+    },
+    {
+      "Symbol": "n_rated",
+      "Number": 1460,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1460"
     },
     {
       "Symbol": "p_screw",
@@ -994,15 +1005,15 @@
     },
     {
       "Symbol": "P",
-      "Number": 18.2212373908208,
+      "Number": 18.34690109696439,
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6eb2f991fd794dbabb20aede05a20943#P_rated",
+        "Reference": "calc:938d0afba5ab48158b5c06ffe5d83ac0#P_rated",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "18.2212"
+      "ValueText": "18.3469"
     },
     {
       "Symbol": "U",
@@ -1081,7 +1092,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:894fffe936044f8d97e25830125d968a@1 \u00B7 invented values for the worked example",
+        "Reference": "record:5a63fd81817142428d4220530567d30c@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -1235,7 +1246,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:7850589d554d4a3d95f98601745c679b@1 \u00B7 invented values for the worked example",
+        "Reference": "record:98e2735aad7e4ccd9653cec241307db8@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },

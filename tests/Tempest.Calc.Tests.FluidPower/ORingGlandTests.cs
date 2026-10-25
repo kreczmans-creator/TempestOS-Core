@@ -677,6 +677,20 @@ public sealed class ORingGlandTests
         var expected = Math.PI / 4 * Math.Pow(fr * 3.0, 2) * Math.Max(fr / gr, 1 / (1 - c));
         Assert.Equal(expected, ORingGlandModel.HotRingArea(rodEnv, x), 9);
         Assert.True(fr / gr > 1 / (1 - c));
+
+        // A rod seal is held on the rod: the f/g term follows the rod's metal (alpha_s), not the groove's. Python3: the loose rod with an aluminium rod reads 82.6683 %.
+        var alRod = rodEnv with { AlphaSurface = 2.3e-5 };
+        Assert.Equal(gr / ((1 + 2.3e-5 * 60)), ORingGlandModel.HotRingArea(alRod, x) / ORingGlandModel.HotRingArea(rodEnv, x), 9);
+        Assert.Equal(82.6682943055, Pct(Run([.. RodGland, Mm("d_r", 38.0), CalcInputValue.Quantity("alpha_s", 2.3e-5, "1/K")]), "fill_max"), 7);
+
+        // A piston seal is held on the groove: alpha_s does not enter its f/g term.
+        var (pistonEnv, pistonVars) = PistonGland(ReductionRelation.Incompressible);
+        var mid = new double[8];
+
+        foreach (var v in pistonVars)
+            mid[(int)v.Dim] = v.Mid;
+
+        Assert.Equal(ORingGlandModel.HotRingArea(pistonEnv, mid), ORingGlandModel.HotRingArea(pistonEnv with { AlphaSurface = 2.3e-5 }, mid), 12);
     }
 
     [Fact]

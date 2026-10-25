@@ -208,7 +208,7 @@ Stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits on (gr
       = 4.7028·2.7516 − 0.026857
       = 12.914 mm²
         Smallest groove area at the hot end
-  [71] fill_max = (π/4)·Wh_hi²·(f_h/g_h)/A_g_lo
+  [71] fill_max = (π/4)·Wh_hi²·(f_h/g_ref,h)/A_g_lo
       = (π/4)·3.6747²·(1.0208/1.0006)/12.914
       = 83.783 %
         Largest gland fill (unstretched section, volume basis: the held ring takes its whole volume change in its section)

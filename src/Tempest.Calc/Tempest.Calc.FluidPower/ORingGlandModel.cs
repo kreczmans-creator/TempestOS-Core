@@ -379,7 +379,9 @@ public static class ORingGlandModel
     /// </summary>
     public static double HotRingArea(GlandEnvironment env, double[] x)
     {
-        var (f, g) = Factors(env, GlandCase.Hot);
+        // The held circumference follows the part the ring is held on: the rod (factor 1 + α_s·ΔT) for a rod seal, the groove metal for a piston or face seal.
+        var (f, _) = Factors(env, GlandCase.Hot);
+        var g = ReferenceFactor(env, GlandCase.Hot);
         var isotropic = Math.PI / 4.0 * Math.Pow(f * x[(int)GlandDim.Section], 2);
         return env.Kind == SealKind.Rod || env.HeldByOutsideDiameter ? isotropic * Math.Max(f / g, Math.Pow(Thickening(OdCompression(env, GlandCase.Hot, x)), 2)) : isotropic * (f / g);
     }

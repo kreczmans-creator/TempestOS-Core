@@ -342,7 +342,9 @@ internal static class CalcPackExamples
     /// judges is the line F1 judges; the 20 mm bore here is only the row's placeholder. The oil is a custom fluid (30 mPa·s at the working temperature, 50 °C; its density
     /// is linked). At 75.6 L/min in 20 mm the flow is transitional (Re about 2330, just above the 2300 where the sheet switches from 64/Re to Colebrook–White), so
     /// the sheet warns that the friction factor is uncertain; the Colebrook value is the larger of the two and so the conservative one. The 6 velocity heads of fittings
-    /// are a turbulent-flow figure; the real K rises at low Reynolds number, so at Re 2300 the fittings term is understated and the sheet warns of it (`fittings`).
+    /// are a turbulent-flow figure; the real K rises at low Reynolds number, so at Re 2300 the fittings term is understated and the sheet warns of it (`fittings`). The line is judged at the
+    /// retract discharge, where its pressure drop (about 2.5 bar) is the back pressure the cap side pushes against on the retract stroke; neither that drop nor the supply-side drop is
+    /// fed back into F1 (whose <c>p_back</c> and <c>p</c> are entered).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuB1 { get; } =
     [
@@ -351,13 +353,14 @@ internal static class CalcPackExamples
     ];
 
     /// <summary>
-    /// The pump drive: continuous running of a direct-coupled pump (coupling efficiency 0.99) with a 2 s run-up, against a candidate 18.5 kW 4-pole motor (120 N·m
-    /// rated, 275 N·m peak, 3000 rpm). The pump torque and speed arrive by link.
+    /// The pump drive: continuous running of a direct-coupled pump (coupling efficiency 0.99) with a 2 s run-up, against a candidate 4-pole motor (120 N·m rated at
+    /// 1460 rpm rated speed = 18.35 kW, 275 N·m peak, 3000 rpm). The rated speed is an INVENTED nameplate figure for this example, to be replaced from the real motor's
+    /// nameplate; it gives the rated power the cable step is sized on. The pump torque and speed arrive by link.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuE1 { get; } =
     [
         C("mechanism", "direct rotary"), C("duty_mode", "continuous"), N("eta", 0.99), Q("J_L", 0.004, "kg*m^2"), Q("J_mech", 0.001, "kg*m^2"), Q("t_start", 2, "s"),
-        Q("J_motor", 0.1, "kg*m^2"), Q("T_rated", 120, "N*m"), Q("T_peak", 275, "N*m"), Q("n_max", 3000, "rpm"),
+        Q("J_motor", 0.1, "kg*m^2"), Q("T_rated", 120, "N*m"), Q("T_peak", 275, "N*m"), Q("n_rated", 1460, "rpm"), Q("n_max", 3000, "rpm"),
     ];
 
     /// <summary>The motor's supply cable (30 m, PVC, type C device, method C; 400 V, motor efficiency 0.92 and power factor 0.86). The capacity and rating tables are NOT supplied: they are the user's own.</summary>

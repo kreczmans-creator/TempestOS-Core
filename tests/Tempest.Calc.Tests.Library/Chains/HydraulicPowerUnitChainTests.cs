@@ -151,20 +151,22 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.All(e1.Checks, c => Assert.True(c.Passed, c.Name));
         Assert.Equal(0.8099023351401162, Si(e1, "u_rms"), 9);
 
-        // E1's candidate motor (120 N·m rated) at the 1450 rpm running speed is rated 120 × 151.844 = 18.221 kW, above the pump's 11.806 kW.
-        Assert.Equal(120 * omega, Si(e1, "P_rated"), 6);
-        Assert.Equal(18221.2373908208, Si(e1, "P_rated"), 6);
+        // E1's candidate motor is rated 120 N·m at an invented nameplate 1460 rpm (not the 1450 rpm the pump runs at): 120 × 152.904 = 18.347 kW, above the pump's 11.806 kW.
+        Assert.Equal(1460, InputSi(e1, "n_rated") * 60 / (2 * Math.PI), 9);
+        Assert.Equal(120 * 1460 * 2 * Math.PI / 60, Si(e1, "P_rated"), 6);
+        Assert.Equal(18346.90109696439, Si(e1, "P_rated"), 6);
+        Assert.DoesNotContain(e1.Warnings, w => w.RuleId == "rated-speed");
 
         // E1 → E4, rated shaft power P_rated (W into kW): E4 is sized on the motor, not on the load; it takes a shaft power directly, so there is no load-budget step and no design current is linked.
         Assert.Equal(Si(e1, "P_rated"), InputSi(e4, "P"), 6);
-        Assert.Equal(18.2212373908208, InputSi(e4, "P") / 1e3, 9);
+        Assert.Equal(18.34690109696439, InputSi(e4, "P") / 1e3, 9);
         Assert.DoesNotContain(e4.Inputs, i => i.Symbol == "I_b_in");
         Assert.Equal(["P"], e4.Links.Select(l => l.Input.Symbol));
         Assert.Equal("P_rated", e4.Links.Single().Link.OutputSymbol);
 
-        // E4: I_b = P/(√3 U cos φ η) = 33.241 A; the type C device is the 40 A rating and the synthetic capacities give 10 mm² (44.6 A; 6 mm² carries 31.9 A).
-        Assert.Equal(18221.2373908208 / (Math.Sqrt(3) * 400 * 0.86 * 0.92), Si(e4, "I_b"), 9);
-        Assert.Equal(33.240761857174114, Si(e4, "I_b"), 9);
+        // E4: I_b = P/(√3 U cos φ η) = 33.470 A; the type C device is the 40 A rating and the synthetic capacities give 10 mm² (44.6 A; 6 mm² carries 31.9 A).
+        Assert.Equal(18346.90109696439 / (Math.Sqrt(3) * 400 * 0.86 * 0.92), Si(e4, "I_b"), 9);
+        Assert.Equal(33.47000849067186, Si(e4, "I_b"), 9);
         Assert.Equal(40, Si(e4, "I_n"), 9);
         Assert.Equal(10e-6, Si(e4, "CSA"), 15);
         Assert.Equal(44.6, Si(e4, "I_z"), 9);
@@ -239,15 +241,16 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(Si(f1New, "n_shaft"), InputSi(e1, "n_L"), 9);
         Assert.Equal(Si(e1, "P_rated"), InputSi(e4, "P"), 6);
 
-        // The faster pump raises the candidate motor's rated power at the running speed (120 N·m at 1595 rpm = 20.043 kW); the cable follows: 36.565 A, still a 40 A device and 10 mm² (44.6 A).
-        Assert.Equal(20043.36112990288, Si(e1, "P_rated"), 6);
-        Assert.True(Si(e1, "P_rated") > Si(e1Before, "P_rated"));
+        // The faster pump (1595 rpm) changes the load speed only: the candidate motor's nameplate rated power is a property of the motor (120 N·m at 1460 rpm = 18.347 kW) and does not move,
+        // so the cable stays 33.47 A, a 40 A device and 10 mm² (44.6 A).
+        Assert.Equal(Si(e1Before, "P_rated"), Si(e1, "P_rated"), 9);
+        Assert.Equal(18346.90109696439, Si(e1, "P_rated"), 6);
         Assert.Equal(Si(e1, "P_rated") / (Math.Sqrt(3) * 400 * 0.86 * 0.92), Si(e4, "I_b"), 9);
-        Assert.Equal(36.56483804289153, Si(e4, "I_b"), 9);
+        Assert.Equal(33.47000849067186, Si(e4, "I_b"), 9);
+        Assert.Equal(Si(e4Before, "I_b"), Si(e4, "I_b"), 9);
         Assert.Equal(40, Si(e4, "I_n"), 9);
         Assert.Equal(10e-6, Si(e4, "CSA"), 15);
         Assert.Equal(44.6, Si(e4, "I_z"), 9);
-        Assert.NotEqual(Si(e4Before, "I_b"), Si(e4, "I_b"));
         Assert.All(new[] { f2, b1, e1, e4 }, i => Assert.Empty(i.Blocks));
     }
 

@@ -187,9 +187,11 @@ public static class CalcPackTemplates
     /// (<c>d_prs</c>, to the first segment's <c>D</c> by a table-cell link), so revising the cylinder's line bore makes the pressure line stale. B1 is not given a pump, so its
     /// own shaft torque (a water-pump relation) is not used. F1 → E1: the pump shaft torque (<c>T_shaft</c>, N·m) and speed (<c>n_shaft</c>, rpm) are the continuous load
     /// torque and speed (<c>T_L</c>, <c>n_L</c>) of the motor, which is given continuous duty. E1 → E4: E4 takes a shaft power directly (<c>P</c>, which its <c>η</c>
-    /// and cos φ convert to the design current), so E1's rated shaft power (<c>P_rated</c> = T_rated·ω, W to kW) is linked to it without a load-budget step (E6); a design
-    /// current from another calculation would enter <c>I_b_in</c> instead. The cable is sized for the candidate motor's rated power at the running speed, not for the
-    /// pump's demand: a larger motor fitted means a new E1 candidate. The steps carry example inputs except E4's two record tables, which no build
+    /// and cos φ convert to the design current), so E1's nameplate rated shaft power (<c>P_rated</c> = T_rated·ω_rated from the motor's rated speed <c>n_rated</c>, W to kW) is linked to it without a load-budget step (E6); a design
+    /// current from another calculation would enter <c>I_b_in</c> instead. The cable is sized for the candidate motor's rated power, not for the
+    /// pump's demand: a larger motor fitted means a new E1 candidate. E4 does not check the protective device against the motor's starting current: the motor-start calculation (E9)
+    /// takes that in the full §B7 chain. B1 judges the cap-port line at the retract discharge, where its drop is the back pressure of the retract stroke; neither that drop nor the
+    /// supply-side drop is fed back into F1. The steps carry example inputs except E4's two record tables, which no build
     /// ships: the cable step opens blocked (naming them) until the user supplies his own, and the pack cannot be checked or issued while it is. Nothing takes
     /// from E4 yet (the voltage-drop and fault-protection steps follow in a later phase), so the pack is created with E4 blocked, not refused.
     /// </para>

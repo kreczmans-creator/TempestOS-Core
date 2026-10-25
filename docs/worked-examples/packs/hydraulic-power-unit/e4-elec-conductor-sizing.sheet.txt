@@ -20,7 +20,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Symbol | Description | Value | Unit | Source | Valid range
   context | Design context (changes clause citations and the scope note only) | BS EN 60204-1 machine wiring |  | assumption: Sheet default value; no project figure given. | any
   supply | Supply | three-phase |  | assumption: Sheet default value; no project figure given. | any
-  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 18.2212 | kW | link: Pump drive motor rev A · P_rated | 0.01 … 500 kW
+  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 18.3469 | kW | link: Pump drive motor rev A · P_rated | 0.01 … 500 kW
   U | Supply voltage (line voltage for three-phase) | 400 | V | spec: SPEC-HPU-05 §6 (power supply) | 12 … 1000 V
   cos_phi | Power factor (not used for DC) | 0.86 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
   eta | Efficiency (not used for DC) | 0.92 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
@@ -76,11 +76,11 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
 
 4. WORKING
   [14] I_b = P / (sqrt(3) * U * cos_phi * eta)
-      = 18.221 kW / (sqrt(3) × 400 V × 0.86 × 0.92)
-      = 33.241 A
+      = 18.347 kW / (sqrt(3) × 400 V × 0.86 × 0.92)
+      = 33.47 A
         Design current (three-phase)
   [15] I_n = smallest preferred rating with I_n ≥ I_b    « BS EN 60204-1 cl. 7.2
-      = smallest rating ≥ 33.241 A in the ratings record
+      = smallest rating ≥ 33.47 A in the ratings record
       = 40 A
         Rated current of the protective device (ratings record)
   [16] device_code = 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB    « BS EN 60204-1 cl. 7.2
@@ -108,8 +108,8 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = 44.6 A
         Current-carrying capacity in the installed conditions
   [26] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 33.241 A / 40 A
-      = 0.83102
+      = 33.47 A / 40 A
+      = 0.83675
         Design current utilisation of the device
   [27] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 40 A / 44.6 A
@@ -125,7 +125,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
         I₂ utilisation of 1.45 I_z
 
 5. RESULTS
-  I_b = 33.241 A    Design current
+  I_b = 33.47 A    Design current
   I_n = 40 A    Rated current of the device
   C_c = 1    Semi-enclosed fuse factor
   C_a = 1    Ambient factor
@@ -133,7 +133,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   CSA = 10 mm²    Selected cross-section
   I_z = 44.6 A    Current-carrying capacity
   L = 30 m    Circuit length
-  u_Ib = 0.83102    I_b / I_n
+  u_Ib = 0.83675    I_b / I_n
   u_In = 0.89686    I_n / I_z
   I2 = 58 A    Conventional operating current
   u_I2 = 0.89686    I₂ / (1.45 I_z)
@@ -142,7 +142,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
 6. CHECKS (governing first)
   PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.89686 vs u_In ≤ 1  utilisation 0.897  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
   PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.89686 vs u_I2 ≤ 1  utilisation 0.897  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.83102 vs u_Ib ≤ 1  utilisation 0.831  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.83675 vs u_Ib ≤ 1  utilisation 0.837  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.
@@ -152,5 +152,5 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 01:13 UTC
   Application: TempestOS test
