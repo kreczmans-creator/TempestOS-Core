@@ -312,7 +312,8 @@ public static class PlateBendingMath
     /// <paramref name="patchU"/> × <paramref name="patchV"/> of pressure q: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n with
     /// W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²). Terms are added in shells while N doubles from 8 odd terms per direction to
     /// <paramref name="maxTerms"/>, stopping when the deflection, the centre moments and the corner twisting moment each change by
-    /// less than <paramref name="tolerance"/> over a doubling.
+    /// less than <paramref name="tolerance"/> over a doubling. For a uniform load the corner twisting moment (whose sum converges like
+    /// 1/N²) is Richardson-extrapolated from the last two doublings before it is compared and returned.
     /// </summary>
     public static NavierResult NavierSimplySupported(double a, double b, double nu, double d, double q, double? patchU, double? patchV, int maxTerms = 1024, double tolerance = 1e-6)
     {
@@ -362,6 +363,7 @@ public static class PlateBendingMath
         var prevW = double.NaN;
         var prevC = double.NaN;
         var prevK = double.NaN;
+        var prevRawK = double.NaN;
         var change = double.PositiveInfinity;
         var converged = false;
         NavierResult? last = null;
@@ -391,7 +393,12 @@ public static class PlateBendingMath
             var c4 = 16 * q / Math.Pow(Math.PI, 4);
             var mx = c4 * (s1 + nu * s2);
             var my = c4 * (s2 + nu * s1);
-            var mxy = Math.Abs((1 - nu) * c4 * sk / (a * b));
+            var mxyRaw = Math.Abs((1 - nu) * c4 * sk / (a * b));
+
+            // The corner sum of a uniform load has a tail that falls like 1/N²; remove it by Richardson extrapolation of the
+            // last two doublings (limit ≈ s_N + (s_N − s_N/2)/3). A patch load's tail oscillates and is already smaller: no extrapolation.
+            var mxy = patch || double.IsNaN(prevRawK) ? mxyRaw : mxyRaw + (mxyRaw - prevRawK) / 3;
+            prevRawK = mxyRaw;
             var vc = VonMises(mx, my);
 
             if (!double.IsNaN(prevW))
@@ -464,7 +471,7 @@ public static class PlateBendingMath
     /// </summary>
     public sealed class ClampedRitz
     {
-        private const int Nodes = 56;
+        private const int Nodes = 64;
         private readonly double _a;
         private readonly double _b;
         private readonly double _nu;
@@ -491,11 +498,11 @@ public static class PlateBendingMath
         /// <summary>Terms per direction K.</summary>
         public int Terms => _k;
 
-        /// <summary>Solves the Ritz system with <paramref name="k"/> terms per direction (1 … 24).</summary>
+        /// <summary>Solves the Ritz system with <paramref name="k"/> terms per direction (1 … 32).</summary>
         public static ClampedRitz Solve(double a, double b, double nu, double d, double q, double? patchU, double? patchV, int k)
         {
-            if (k < 1 || k > 24)
-                throw new CalcEvaluationException("The Ritz solution takes 1 to 24 terms per direction.");
+            if (k < 1 || k > 32)
+                throw new CalcEvaluationException("The Ritz solution takes 1 to 32 terms per direction.");
 
             var (xs, ws) = GaussLegendre01(Nodes);
             var amat = new double[k * k];

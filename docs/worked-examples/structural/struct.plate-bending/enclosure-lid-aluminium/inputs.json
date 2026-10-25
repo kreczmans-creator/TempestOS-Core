@@ -4,8 +4,8 @@
     "Number": 70,
     "Unit": "GPa",
     "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "Indicative value for a 5000-series aluminium alloy; replace with the W3 material record for the alloy on the drawing.",
+      "Kind": "Reference",
+      "Reference": "record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed \u0027Aluminium alloy (generic)\u0027, E: indicative, not from a standard; replace with the material record for the alloy on the drawing",
       "IsSufficientToIssue": true
     },
     "ValueText": "70"
@@ -50,20 +50,20 @@
     "Unit": "MPa",
     "Provenance": {
       "Kind": "Assumption",
-      "Reference": "Indicative 0.2 % proof strength for the sheet temper; replace with the material record from the mill certificate.",
+      "Reference": "Assumed 0.2 % proof strength for the sheet temper (the W3 generic seed has no strength); replace with the material record from the mill certificate.",
       "IsSufficientToIssue": true
     },
     "ValueText": "150"
   },
   {
     "Symbol": "gamma_M0",
-    "Number": 1,
+    "Number": 1.1,
     "Provenance": {
-      "Kind": "Specification",
-      "Reference": "BS EN 1993-1-1 6.1(1) recommended value; the aluminium code (EN 1999-1-1) uses its own factor, set it from the project specification",
+      "Kind": "Assumption",
+      "Reference": "EN 1999-1-1 partial factor \u03B3_M1 = 1.1 for the resistance of cross-sections of aluminium, entered in the \u03B3_M0 slot; to be checked against the standard and National Annex in use",
       "IsSufficientToIssue": true
     },
-    "ValueText": "1"
+    "ValueText": "1.1"
   },
   {
     "Symbol": "load_basis",
@@ -89,8 +89,8 @@
     "Symbol": "nu",
     "Number": 0.33,
     "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "Indicative value for aluminium alloys (W3 generic seed); replace with the material record.",
+      "Kind": "Reference",
+      "Reference": "record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed \u0027Aluminium alloy (generic)\u0027, nu: indicative",
       "IsSufficientToIssue": true
     },
     "ValueText": "0.33"
@@ -111,8 +111,8 @@
     "Number": 2700,
     "Unit": "kg/m^3",
     "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "Indicative value for aluminium alloys (W3 generic seed).",
+      "Kind": "Reference",
+      "Reference": "record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed \u0027Aluminium alloy (generic)\u0027, rho: indicative",
       "IsSufficientToIssue": true
     },
     "ValueText": "2700"

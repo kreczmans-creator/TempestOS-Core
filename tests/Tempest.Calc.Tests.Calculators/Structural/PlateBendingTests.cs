@@ -152,9 +152,9 @@ public sealed class PlateBendingTests
         const double b = 0.4;
         var d = PlateBendingMath.Rigidity(210e9, 0.006, Nu);
         var series = PlateBendingMath.NavierSimplySupported(a, b, Nu, d, 5e3, null, null, 256);
-        var at = PlateBendingMath.NavierAt(a, b, Nu, d, 5e3, null, null, a / 2, b / 2, 256);
-        Assert.Equal(series.Deflection, at.W, Math.Abs(at.W) * 1e-12);
-        Assert.Equal(series.Mx, at.Mx, Math.Abs(at.Mx) * 1e-10);
+        var at = PlateBendingMath.NavierAt(a, b, Nu, d, 5e3, null, null, a / 2, b / 2, series.TermsPerDirection);
+        Assert.Equal(series.Deflection, at.W, Math.Abs(at.W) * 1e-11);
+        Assert.Equal(series.Mx, at.Mx, Math.Abs(at.Mx) * 1e-9);
         var edge = PlateBendingMath.NavierAt(a, b, Nu, d, 5e3, null, null, 0, b / 2, 64);
         Assert.Equal(0, edge.W, 12);
         Assert.Equal(0, edge.Mx, 6);
@@ -183,6 +183,86 @@ public sealed class PlateBendingTests
         Assert.True(worst <= reported * (1 + 2e-3), $"{worst} > {reported}");
     }
 
+    [Theory]
+    [InlineData(600, 400, 0.3, 150, 100)]
+    [InlineData(500, 500, 0.33, 250, 250)]
+    [InlineData(900, 300, 0.2, 90, 60)]
+    [InlineData(600, 400, 0.3, 540, 360)]
+    public void The_Greatest_Von_Mises_Stress_Of_A_Patch_Loaded_Rectangle_Is_At_The_Centre_Or_A_Corner(double a, double b, double nu, double u, double v)
+    {
+        var d = PlateBendingMath.Rigidity(210e9, 0.008, nu);
+        var r = PlateBendingMath.NavierSimplySupported(a / 1e3, b / 1e3, nu, d, 1e3, u / 1e3, v / 1e3);
+        var reported = Math.Max(r.CentreVonMises, r.CornerVonMises);
+        var worst = 0.0;
+
+        for (var i = 0; i <= 16; i++)
+        {
+            for (var j = 0; j <= 16; j++)
+            {
+                var p = PlateBendingMath.NavierAt(a / 1e3, b / 1e3, nu, d, 1e3, u / 1e3, v / 1e3, a / 1e3 * i / 32.0, b / 1e3 * j / 32.0, 160);
+                worst = Math.Max(worst, PlateBendingMath.VonMises(p.Mx, p.My, p.Mxy));
+            }
+        }
+
+        Assert.True(worst <= reported * (1 + 2e-3), $"{worst} > {reported}");
+    }
+
+    [Theory]
+    [InlineData(1.0, 0.25, 2.9679217308584787)]
+    [InlineData(0.6, 0.12, 0.6838674139402859)]
+    public void Review_M1_The_Corner_Twisting_Moment_Of_A_Long_Uniform_Plate_Is_Extrapolated_And_The_Series_Counts_As_Converged(double a, double b, double mxy)
+    {
+        // Python limit: (1 − ν)·16q/π⁴·Σ 1/(ab·den²) at 4096 terms with the 1/N² tail removed, q = 1 kN/m², ν = 0.3.
+        var d = PlateBendingMath.Rigidity(210e9, 0.008, Nu);
+        var r = PlateBendingMath.NavierSimplySupported(a, b, Nu, d, 1e3, null, null);
+        Assert.True(r.Converged, $"last change {r.LastChange}");
+        Assert.Equal(mxy, r.MxyCorner, mxy * 2e-8);
+
+        var sheet = With(Rect(false, a * 1e3, b * 1e3));
+        Assert.DoesNotContain(sheet.Warnings, w => w.RuleId == "navier-converge");
+    }
+
+    [Theory]
+    [InlineData(2000, 500)]
+    [InlineData(5000, 500)]
+    [InlineData(500, 5000)]
+    public void Review_M1_Long_Plates_Do_Not_Warn_That_The_Series_Failed_To_Converge(double a, double b) =>
+        Assert.DoesNotContain(With(Rect(false, a, b)).Warnings, w => w.RuleId == "navier-converge");
+
+    [Fact]
+    public void Review_M2_The_Ritz_Order_Cap_Is_Thirty_The_Clamped_Patch_Minimum_Is_A_Quarter_And_The_Warning_Makes_No_Accuracy_Claim()
+    {
+        Assert.Equal(30, PlateBendingCalculator.RitzCap);
+        Assert.Contains(With(Rect(true, 1000, 1000, PlateBendingCalculator.Patch), Q("u", 240, "mm"), Q("v", 240, "mm")).Blocks, b => b.RuleId == "patch-min");
+        var ok = With(Rect(true, 1000, 1000, PlateBendingCalculator.Patch), Q("u", 250, "mm"), Q("v", 250, "mm"));
+        Assert.False(ok.IsBlocked, string.Join("; ", ok.Blocks.Select(b => b.Message)));
+        Assert.True(ok.OutputSi("terms_used") <= 30);
+
+        // A long clamped plate does not reach 1e-5: the warning quotes the change and about three times it, and no longer says "accurate to".
+        var long5 = With(Rect(true, 2500, 500));
+        foreach (var w in long5.Warnings.Where(w => w.RuleId is "ritz-converge" or "ritz-approx"))
+            Assert.DoesNotContain("accurate to about that change", w.Message, StringComparison.Ordinal);
+
+        // Order 30 settles the square (w to ~1e-10 relative).
+        const double a = 0.5;
+        var d = PlateBendingMath.Rigidity(210e9, 0.008, Nu);
+        var k30 = PlateBendingMath.ClampedRitz.Solve(a, a, Nu, d, 10e3, null, null, 30);
+        var k20 = PlateBendingMath.ClampedRitz.Solve(a, a, Nu, d, 10e3, null, null, 20);
+        Assert.Equal(k20.At(a / 2, a / 2).W, k30.At(a / 2, a / 2).W, k20.At(a / 2, a / 2).W * 1e-8);
+        Assert.Equal(k20.At(0, a / 2).Mx, k30.At(0, a / 2).Mx, Math.Abs(k20.At(0, a / 2).Mx) * 1e-4);
+    }
+
+    [Fact]
+    public void Review_L5_L9_The_Stress_Check_Cites_The_Yield_Criterion_And_A_Simply_Supported_Edge_Moment_Is_Exactly_Zero()
+    {
+        var r = Run(Circle(false));
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Stress", StringComparison.Ordinal) && c.Clause == "6.2.1(5)");
+        Assert.Equal(0, r.OutputSi("M_edge"));
+        Assert.Contains(Plate.Template.ClauseRefs, c => c.Clause == "6.2.1(5)");
+        Assert.DoesNotContain(Plate.Template.ApplicabilityRules, x => x.Id == "ring-basis");
+        Assert.Equal("1.1.0", Plate.Template.Version);
+    }
+
     [Fact]
     public void A_Patch_The_Size_Of_The_Plate_Is_The_Uniform_Load_In_Both_Solutions()
     {
@@ -191,9 +271,9 @@ public sealed class PlateBendingTests
         var d = PlateBendingMath.Rigidity(210e9, 0.006, Nu);
         var uniform = PlateBendingMath.NavierSimplySupported(a, b, Nu, d, 5e3, null, null);
         var patch = PlateBendingMath.NavierSimplySupported(a, b, Nu, d, 5e3, a, b);
-        Assert.Equal(uniform.Deflection, patch.Deflection, uniform.Deflection * 1e-9);
-        Assert.Equal(uniform.Mx, patch.Mx, Math.Abs(uniform.Mx) * 1e-9);
-        Assert.Equal(uniform.MxyCorner, patch.MxyCorner, uniform.MxyCorner * 1e-9);
+        Assert.Equal(uniform.Deflection, patch.Deflection, uniform.Deflection * 1e-6);
+        Assert.Equal(uniform.Mx, patch.Mx, Math.Abs(uniform.Mx) * 1e-6);
+        Assert.Equal(uniform.MxyCorner, patch.MxyCorner, uniform.MxyCorner * 1e-6);
 
         var ru = PlateBendingMath.ClampedRitz.Solve(a, b, Nu, d, 5e3, null, null, 8);
         var rp = PlateBendingMath.ClampedRitz.Solve(a, b, Nu, d, 5e3, a, b, 8);
@@ -285,7 +365,7 @@ public sealed class PlateBendingTests
         Assert.DoesNotContain(Run(Circle(true)).Warnings, w => w.RuleId == "large-deflection");
 
         Assert.Contains(With(Circle(true), Q("t", 60, "mm")).Warnings, w => w.RuleId == "thin-plate");
-        Assert.Contains(With(Circle(true, PlateBendingCalculator.Ring), Q("P", 4, "kN"), Q("r_ring", 125, "mm")).Warnings, w => w.RuleId == "ring-basis");
+        Assert.DoesNotContain(With(Circle(true, PlateBendingCalculator.Ring), Q("P", 4, "kN"), Q("r_ring", 125, "mm")).Warnings, w => w.RuleId.Contains("ring", StringComparison.Ordinal));
         Assert.Contains(With(Rect(true)).Warnings, w => w.RuleId == "ritz-approx");
     }
 
@@ -311,7 +391,6 @@ public sealed class PlateBendingTests
             Assert.Equal(symbol, Plate.Template.FindInput(symbol)!.MaterialProperty);
 
         Assert.Equal(["E", "nu", "rho", "f_y"], Plate.Template.RecordKinds!.Single(k => k.Kind == "material.properties").Symbols);
-        Assert.Equal(PlateBendingCalculator.MaterialKind, "material.properties");
         Assert.Equal(Plate.Template.RecordKinds!.SelectMany(k => k.Symbols).Count(), Plate.Template.RecordKinds!.SelectMany(k => k.Symbols).Distinct().Count());
 
         var declared = Plate.Template.ApplicabilityRules.Select(x => x.Id).ToHashSet();

@@ -39,19 +39,19 @@ public sealed class PlateBendingCalculator : ICalcCalculator
     public const double RitzTolerance = 1e-5;
 
     public const int RitzStart = 4;
-    public const int RitzCap = 20;
+    public const int RitzCap = 30;
 
     /// <summary>The thin-plate theory is not used for a span/thickness ratio below this (shear deformation).</summary>
     public const double ThinPlateRatio = 10;
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Structural, "Plate bending",
+        Id, "1.1.0", CalcDiscipline.Structural, "Plate bending",
         "Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.",
         "Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²)\n" +
         "Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²)\n" +
         "Circular, central patch (radius c, pressure q) or ring (radius b, force F): w = A + B·r² (+ q·r⁴/64D) inside, A′ + B′·r² + C′·ln(r/a) + k·r²·ln(r/a) outside, k = q·c²/8D or F/8πD; constants from continuity of w, w′, M_r at the load radius and the edge conditions; M_r = −D(w″ + ν·w′/r), M_θ = −D(w′/r + ν·w″)\n" +
-        "Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024)\n" +
-        "Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K raised from 4 to 20 until w and the stress change by < 10⁻⁵\n" +
+        "Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared)\n" +
+        "Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K raised from 4 to 30 until w and the stress change by < 10⁻⁵\n" +
         "Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρt)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρt)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis\n" +
         "Checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t > 0.5",
         [
@@ -82,8 +82,8 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             new CalcAssumption("The deflection stays small against the thickness: w/t above 0.5 means membrane action stiffens the plate and the small-deflection result is not valid (it overstates the deflection and the bending stress and ignores the membrane stress).", "The sheet warns at w/t > 0.5."),
             new CalcAssumption("The edge support is the same all round and ideal: a simply supported edge is held at zero deflection and free to rotate; a clamped edge allows no deflection or rotation. A simply supported rectangle has its corners held down (the corner reaction 2·M_xy is reported); if the corners can lift, the deflection and the central moments are larger than computed.", "Navier solution; no elastic edges, no rotational springs."),
             new CalcAssumption("The von Mises stress is that of the plane-stress field at the plate surface from the bending and twisting moments (σ = 6M/t²); the through-thickness shear and the local stress under a concentrated load are not included. The stress governing a simply supported rectangle is at the centre or at a corner (twisting); a clamped rectangle is scanned on a 21 × 21 grid over a quarter of the plate.", "Surface stresses; no local effects."),
-            new CalcAssumption("The rectangular patch and the circular patch are centred; a ring load is concentric. A load smaller than the thickness is a concentrated load whose local stress thin-plate theory does not give.", "Warning `patch-thin`; patches below 1 % (circular), 2 % (simply supported rectangle) or 10 % (clamped rectangle) of the plate size are refused."),
-            new CalcAssumption("The clamped rectangle is a Ritz approximation: the deflection converges quickly, the moments and stress more slowly (about 10⁻⁴ to 10⁻³ relative at the highest order for aspect ratios up to 5). Compare a critical result with finite elements.", "Approximate; the sheet states the order used and the last change."),
+            new CalcAssumption("The rectangular patch and the circular patch are centred; a ring load is concentric. A load smaller than the thickness is a concentrated load whose local stress thin-plate theory does not give.", "Warning `patch-thin`; patches below 1 % (circular), 2 % (simply supported rectangle) or 25 % (clamped rectangle) of the plate size are refused."),
+            new CalcAssumption("The clamped rectangle is a Ritz approximation: the deflection converges quickly, the moments and stress more slowly (the sheet reports the order used and the last change; long plates and small patches converge slowest, and the last change understates the error). Compare a critical result with finite elements.", "Approximate; the sheet states the order used and the last change."),
             new CalcAssumption("Material properties are inputs taken from the W3 library (E, ν, ρ, f_y), each citing the material record, its revision and the page or table; the generic textbook seeds are indicative.", "Record kind material.properties."),
         ],
         [
@@ -92,12 +92,13 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             new CalcClauseRef("Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells", "Ch. 6", "Rectangular plates with various edge conditions"),
             new CalcClauseRef("Leissa, Vibration of Plates (NASA SP-160)", "Ch. 2, 4", "Natural frequencies of circular and rectangular plates"),
             new CalcClauseRef("BS EN 1993-1-1:2005+A1:2014", "6.1(1)", "Partial factor γ_M0"),
+            new CalcClauseRef("BS EN 1993-1-1:2005+A1:2014", "6.2.1(5)", "Yield criterion for the cross-section"),
         ],
         [
             new CalcApplicabilityRule("ring-rect", "A ring load applies to a circular plate.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("aspect", "The long side of a rectangle can be at most 10 times the short side (beyond that the plate is a one-way strip).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("patch-size", "The patch cannot be larger than the plate.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("patch-min", "The patch must be at least 1 % (circular), 2 % (simply supported rectangle) or 10 % (clamped rectangle) of the plate size for the solution to resolve it.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("patch-min", "The patch must be at least 1 % (circular), 2 % (simply supported rectangle) or 25 % (clamped rectangle) of the plate size for the solution to resolve it.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("ring-radius", "The ring radius must lie between 1 % and 99 % of the plate radius.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("engine", "The solution could not be evaluated for these inputs.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("large-deflection", "w/t above 0.5: the small-deflection theory is not valid.", CalcNoticeSeverity.Warning),
@@ -106,7 +107,6 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             new CalcApplicabilityRule("navier-converge", "The Navier series reached its cap without changing by less than the tolerance.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("ritz-converge", "The Ritz solution reached its highest order without changing by less than the tolerance.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("ritz-approx", "The clamped rectangle is a Ritz approximation.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("ring-basis", "A ring load always uses the total force P.", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-circular-clamped-uniform", "Circular plate, clamped, uniform pressure: w = q·a⁴/(64D), edge stress 3q·a²/(4t²)",
@@ -133,7 +133,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic: the Navier double series summed to the limit (python, numpy, 1024 odd terms per direction with the 1/N² tail removed)", "Timoshenko & Woinowsky-Krieger, Ch. 5",
                     "a = b = 500 mm, t = 8 mm, q = 10 kPa, E = 210 GPa: w_max = 0.00406235266·q·a⁴/D, M_x(centre) = 0.04788638·q·a², corner |M_xy| = 0.0324823·q·a²; σ_vm is the larger of the centre value and √3 times the corner twisting stress"),
                 [.. Square(), CalcInputValue.Choice("support", Simple), CalcInputValue.Choice("load_type", Uniform)],
-                [new CalcExpectedValue("w_max", SquareWMax, "mm", 2e-6), new CalcExpectedValue("M_x_c", SquareMx, "N*m/m", 2e-6), new CalcExpectedValue("M_xy_k", SquareMxy, "N*m/m", 3e-6), new CalcExpectedValue("sigma_max", SquareSigma, "MPa", 3e-6)]),
+                [new CalcExpectedValue("w_max", SquareWMax, "mm", 2e-6), new CalcExpectedValue("M_x_c", SquareMx, "N*m/m", 2e-6), new CalcExpectedValue("M_xy_k", SquareMxy, "N*m/m", 1e-6), new CalcExpectedValue("sigma_max", SquareSigma, "MPa", 1e-6)]),
             new CalcTestCase("ka-rect-simple-square-book", "Square plate, simply supported, uniform pressure: the classical coefficient w_max = 0.00406·q·a⁴/D",
                 new CalcReferenceSource("Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells", "2nd ed.", "Ch. 5, square plate under uniform load, α = 0.00406 (3 s.f.); to be checked against the owner's copy"),
                 [.. Square(), CalcInputValue.Choice("support", Simple), CalcInputValue.Choice("load_type", Uniform)],
@@ -161,7 +161,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
                 [new CalcExpectedValue("w_max", ClampedSquareWMaxBook, "mm", 5e-3)],
                 CalcReferenceStatus.Unconfirmed),
             new CalcTestCase("ka-rect-clamped-natural", "Square plate, clamped: fundamental frequency ω = 35.99/a²·√(D/(ρt))",
-                new CalcReferenceSource("Rayleigh–Ritz result of this sheet (python recomputation); published constant λ² = 35.99 (Leissa, Vibration of Plates, Ch. 4), to be checked against a copy", "NASA SP-160",
+                new CalcReferenceSource("Rayleigh–Ritz result of this sheet (python recomputation); published constant λ² = 35.99 (Leissa, Vibration of Plates, Ch. 4), to be checked against the owner's copy", "NASA SP-160",
                     "a = b = 500 mm, t = 8 mm, steel: λ² = 35.9852 from the Ritz eigenvalue"),
                 [.. Square(), CalcInputValue.Choice("support", Clamped), CalcInputValue.Choice("load_type", Uniform)],
                 [new CalcExpectedValue("f1", ClampedSquareF1, "Hz", 1e-6)],
@@ -298,7 +298,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
                     return;
                 }
 
-                var minFraction = clamped ? 0.10 : 0.02;
+                var minFraction = clamped ? 0.25 : 0.02;
 
                 if (pu < minFraction * a || pv < minFraction * b)
                 {
@@ -334,9 +334,6 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             c.Input("P");
             force = c.InputSi("P");
             q = 0;
-
-            if (!forceBasis)
-                c.Warn("ring-basis", "load_basis: a ring load always uses the total force P; the pressure q is ignored.");
         }
         else if (!forceBasis)
         {
@@ -404,6 +401,10 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             wMax = c.Si("w_max");
             var mc = plate.Mr(0);
             var me = plate.Mr(a);
+
+            if (Math.Abs(me) < 1e-9 * Math.Abs(mc))
+                me = 0;
+
             c.Record("M_c", "M_r = M_θ at the centre = −2D(1 + ν)·B", "from the constants of the solution", ScalarValue.Of(mc, "N*m/m"), "Bending moment at the centre", "T&WK Ch. 3");
             c.Record("M_edge", "M_r at the edge r = a", clamped ? "clamped: fixing moment" : "simply supported: 0", ScalarValue.Of(me, "N*m/m"), "Radial bending moment at the edge", "T&WK Ch. 3");
             var (vm, pr) = PlateBendingMath.ScanMoments(plate);
@@ -459,7 +460,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
         }
         else
         {
-            c.Warn("ritz-approx", "support: the clamped rectangle is a Ritz approximation (energy method with polynomial trial functions); the deflection is accurate, the stress to about 10⁻³ relative at best. Compare a critical result with finite elements.");
+            c.Warn("ritz-approx", "support: the clamped rectangle is a Ritz approximation (energy method with polynomial trial functions); the deflection is accurate, the stress converges more slowly (the order and last change are reported below; long plates and small patches are the worst). Compare a critical result with finite elements.");
             PlateBendingMath.ClampedRitz? ritz = null;
             var prevW = double.NaN;
             var prevS = double.NaN;
@@ -498,7 +499,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             c.Record("terms_used", "Ritz order K (terms per direction)", sums, new ScalarValue(ritz.Terms), "Order of the Ritz solution used", "T&WK Ch. 6");
 
             if (!converged)
-                c.Warn("ritz-converge", $"a: the Ritz solution reached its highest order K = {RitzCap} with a last change of {F(change)} (tolerance {RitzTolerance:0e0}); the stress is accurate to about that change or the plate is too long or the patch too small for this basis.");
+                c.Warn("ritz-converge", $"a: the Ritz solution reached its highest order K = {RitzCap} with a last change of {F(change)} (tolerance {RitzTolerance:0e0}); the stress error can be several times that change (about {F(3 * change)}; an estimate, not a bound) because the plate is long or the patch small for this basis. Compare with finite elements.");
 
             var centre = ritz.At(a / 2, b / 2);
             wMax = centre.W;
@@ -537,7 +538,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
         if (c.Si("w_over_t") > 0.5)
             c.Warn("large-deflection", $"t: w/t = {F(c.Si("w_over_t"))} is above 0.5; membrane action matters and the small-deflection result is not valid (it overstates the deflection and bending stress and omits the membrane stress)." + (c.Si("w_over_t") > 1 ? " Above 1 the result is only an order of magnitude." : string.Empty));
 
-        c.Assign("u_stress", "sigma_max/(f_y/gamma_M0)", null, "Stress utilisation", "BS EN 1993-1-1 6.1(1)");
+        c.Assign("u_stress", "sigma_max/(f_y/gamma_M0)", null, "Stress utilisation", "BS EN 1993-1-1 6.2.1(5)");
         c.Record("w_lim", "span/ratio", $"{F(span * 1e3)} mm / {F(c.InputSi("defl_ratio"))}", ScalarValue.Of(span / c.InputSi("defl_ratio") * 1e3, "mm"), "Deflection limit", "Serviceability");
         c.Assign("u_defl", "w_max/w_lim", null, "Deflection utilisation", "Serviceability");
 
@@ -552,7 +553,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
 
         c.Output("location", "Governing stress point", new TextValue(where));
         c.Series(new CalcSeries(seriesName, "position", "mm", "w", "mm", points));
-        c.CheckUtilisation("Stress σ_vm ≤ f_y/γ_M0", "u_stress", "6.1(1)");
+        c.CheckUtilisation("Stress σ_vm ≤ f_y/γ_M0", "u_stress", "6.2.1(5)");
         c.CheckUtilisation("Deflection w_max ≤ span/ratio", "u_defl", "Serviceability");
     }
 
