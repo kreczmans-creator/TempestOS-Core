@@ -267,6 +267,49 @@ public sealed class CalcInstanceServiceTests
     }
 
     [Fact]
+    public async Task Grey_GR_B_01_A_Draft_On_An_Older_Template_Version_Opens_As_A_New_Sheet_On_The_Current_One_And_Is_Left_Unchanged()
+    {
+        var host = new LibraryTestHost();
+        var project = await host.ProjectAsync();
+        var current = await host.Service.CreateAsync("test.direct-stress", project, "OLD", LibraryTestHost.ProvenancedInputs());
+
+        // The draft as an owner-test database holds it: made on a version that is no longer installed, with an input the new version dropped.
+        var old = current with { TemplateReference = "test.direct-stress@0.9.0", Inputs = [.. current.Inputs, CalcInputValue.Of("retired", 7)] };
+        Assert.Null(host.Catalogue.Find(old.TemplateReference));
+        await host.Store.SaveInstanceAsync(old);
+
+        // It cannot be edited where it is (the formulas of 0.9.0 are not installed), which is why the open path below exists.
+        var refused = await host.Service.UpdateInputsAsync(old.Id, LibraryTestHost.ProvenancedInputs(f: 99));
+        Assert.False(refused.Succeeded);
+        Assert.Contains("no longer registered", refused.Reason, StringComparison.Ordinal);
+
+        var plan = host.Service.PlanDraftUpgrade(old);
+        Assert.NotNull(plan);
+        Assert.Equal("test.direct-stress@1.0.0", plan.Current.Reference);
+        Assert.Equal(["retired"], plan.Dropped);
+        Assert.Null(plan.Inputs.Find("retired"));
+        Assert.Equal(12, plan.Inputs.Find("F")!.Number);
+        Assert.Contains("test.direct-stress@0.9.0", plan.Message, StringComparison.Ordinal);
+        Assert.Contains("test.direct-stress@1.0.0", plan.Message, StringComparison.Ordinal);
+        Assert.Contains("left unchanged", plan.Message, StringComparison.Ordinal);
+        Assert.Contains("retired", plan.Message, StringComparison.Ordinal);
+
+        // The seed runs on the current version.
+        Assert.False(host.Service.Preview(plan.Current.Reference, plan.Inputs).IsBlocked);
+
+        // Nothing was written, and only a draft on a missing version is offered this: not a current-version draft, not a checked or issued one, not a template that is gone.
+        var stored = (await host.Store.FindInstanceAsync(old.Id))!;
+        Assert.Equal("test.direct-stress@0.9.0", stored.TemplateReference);
+        Assert.Equal(old.Inputs.Count, stored.Inputs.Count);
+        Assert.Equal(CalcInstanceStatus.Draft, stored.Status);
+        Assert.Single(await host.Store.ListInstancesAsync(project));
+        Assert.Null(host.Service.PlanDraftUpgrade(current with { Name = "CURRENT" }));
+        Assert.Null(host.Service.PlanDraftUpgrade(old with { Status = CalcInstanceStatus.Checked }));
+        Assert.Null(host.Service.PlanDraftUpgrade(old with { Status = CalcInstanceStatus.Issued }));
+        Assert.Null(host.Service.PlanDraftUpgrade(old with { TemplateReference = "test.gone@1.0.0" }));
+    }
+
+    [Fact]
     public async Task Stale_Instance_Cannot_Be_Issued()
     {
         var host = new LibraryTestHost();

@@ -77,6 +77,50 @@ public sealed class WorksheetSavedAndPacksTests
     }
 
     [AvaloniaFact]
+    public async Task Grey_GR_B_01_A_Draft_On_A_Revised_Template_Opens_As_A_New_Sheet_With_Its_Inputs_And_A_Clear_Message()
+    {
+        await using var fx = await StartAsync("P-OLD");
+        var view = fx.View;
+        view.SelectTemplate("struct.section-properties");
+        await Settle();
+        view.SetField("h", "500");
+        await Settle();
+        Click(view, CalcSheetView.SaveCaption);
+        await WaitFor(() => view.SavedCalculations.Count == 1);
+
+        // The draft as an older build left it: made on a version of the template that is no longer installed.
+        var saved = (await fx.Service.Store.ListInstancesAsync(fx.ProjectId)).Single();
+        var currentReference = fx.Service.Catalogue.Find("struct.section-properties")!.Reference;
+        var old = saved with { TemplateReference = "struct.section-properties@0.0.1" };
+        await fx.Service.Store.SaveInstanceAsync(old);
+
+        view.SelectTemplate("struct.beam-formulas");
+        await Settle();
+        view.ChooseSaved(saved.Id);
+        Click(view, CalcSheetView.OpenSavedCaption);
+        await WaitFor(() => view.SelectedTemplate?.Template.Id == "struct.section-properties");
+
+        // A new, unsaved sheet on the current version, seeded from the draft; the message says what happened and what to do.
+        Assert.Equal(currentReference, view.SelectedTemplate!.Reference);
+        Assert.Null(view.CurrentInstance);
+        Assert.Equal("500", ((TextBox)view.FieldControl("h")!).Text);
+        Assert.Equal($"{saved.Name} ({view.SelectedTemplate.Template.Version})", view.CalculationName);
+        Assert.Contains("struct.section-properties@0.0.1", view.StatusText, StringComparison.Ordinal);
+        Assert.Contains(currentReference, view.StatusText, StringComparison.Ordinal);
+        Assert.Contains("Save to keep it as a new calculation", view.StatusText, StringComparison.Ordinal);
+        Assert.Contains("left unchanged", view.StatusText, StringComparison.Ordinal);
+
+        // The old draft is exactly as it was, and saving the new sheet makes a second calculation on the current version.
+        Assert.Equal("struct.section-properties@0.0.1", (await fx.Service.Store.FindInstanceAsync(saved.Id))!.TemplateReference);
+        await Settle();
+        Click(view, CalcSheetView.SaveCaption);
+        await WaitFor(() => view.CurrentInstance is not null);
+        Assert.NotEqual(saved.Id, view.CurrentInstance!.Id);
+        Assert.Equal(currentReference, view.CurrentInstance.TemplateReference);
+        Assert.Equal(2, (await fx.Service.Store.ListInstancesAsync(fx.ProjectId)).Count);
+    }
+
+    [AvaloniaFact]
     public async Task Opening_Another_Calculation_Over_Unsaved_Edits_Asks_Once_Then_Discards()
     {
         await using var fx = await StartAsync("P-DIRTY");
