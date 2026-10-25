@@ -52,7 +52,8 @@ def sealed(rooms=(), tf=75, tr=65, ti=20, n=1.3, method="am", v_pipe=20, v_plant
     vs = v_em + v_pipe + v_plant
     o["V_s"] = vs
     if e_fluid is None:
-        ex = kell_rho(t_fill) / kell_rho(t_max) - 1.0
+        # Since 1.2.0 (Black B-A-08) the water is sized for the higher of t_max and the flow temperature t_f.
+        ex = kell_rho(t_fill) / kell_rho(max(t_max, tf)) - 1.0
         rho_fill = kell_rho(t_fill)
     else:
         ex = e_fluid
@@ -76,7 +77,7 @@ KATS = [
      [("dT", 29.72013, 1e-6), ("f_dT", 0.5085164, 1e-6)]),
     ("ka-vessel", dict(v_pipe=90, v_plant=10, v_vessel=8),
      [("e_x", 0.03208619, 1e-6), ("p_i", 0.7901852, 1e-6), ("V_e", 6.568060, 1e-6), ("u_vessel", 0.8210075, 1e-6)]),
-    ("ka-manufacturer-dt30", dict(tf=55, tr=45), [("f_dT", 0.51, 0.01)]),
+    # ka-manufacturer-dt30 (Unconfirmed, f_dT about 0.51) was removed from the product in 1.2.0; ka-dt30 above is the exact relation.
 ]
 
 # Extra checks. Product values were read from the C# calculator with the probe tool
@@ -93,8 +94,10 @@ EXTRAS = [
      {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 1100.0, 'e_x': 0.039571055, 'p_i': 3.441888562, 'V_e': 167.6189242}),
     ('S5 glycol record e = 0.05', dict(v_pipe=90, v_plant=10, e_fluid=0.05),
      {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.05, 'p_i': 0.790185221, 'V_e': 10.23502675}),
-    ('S6 fill 4, max 30', dict(v_pipe=90, v_plant=10, t_fill=4, t_max=30),
-     {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.004343642, 'p_i': 0.790318768, 'V_e': 0.889215298}),
+    ('S6 fill 4, max 30 (flow 75 C is hotter: sized for 75 C)', dict(v_pipe=90, v_plant=10, t_fill=4, t_max=30),
+     {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.02577119784, 'p_i': 0.790318768, 'V_e': 5.275790056}),
+    ('S6b fill 4, max 30, flow 30 C (sized for t_max)', dict(v_pipe=90, v_plant=10, t_fill=4, t_max=30, tf=30, tr=30, ti=16),
+     {'e_x': 0.004343642, 'V_e': 0.889215298}),
     ('S7 p_f 2.95 bar, PRV 3 bar', dict(v_pipe=90, v_plant=10, p_f=2.95),
      {'dT': 50.0, 'f_dT': 1.0, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.03208619, 'p_i': 0.790185221, 'V_e': 5.868116696}),
     ('S8 10 000 L system', dict(v_pipe=9990, v_plant=10),
@@ -113,8 +116,7 @@ EXTRAS = [
      {'dT': 40.0, 'dT_fr': 0.0, 't_m_K': 333.15}),
     ('S19 new ports from 167/149/68 degF', dict(rooms=[('A',1000,0,0)], tf=75, tr=65, ti=20),
      {'dT': 50.0, 'dT_fr': 10.0, 't_m_K': 343.15}),
-    ('S11 fill 30 = max 30 (e = 0)', dict(v_pipe=90, v_plant=10, t_fill=30, t_max=30, tf=30, tr=30, ti=16),
-     {'dT': 14.0, 'f_dT': 0.191119694, 'V_em': 0.0, 'V_s': 100.0, 'e_x': 0.0, 'p_i': 0.78819821, 'V_e': 0.0}),
+    # S11 (fill 30 = max 30, e = 0) now blocks in the product (1.2.0); see the t-fill observation below.
 ]
 
 
@@ -143,7 +145,7 @@ def run_extras():
     # 01: fill temperature above the maximum temperature gives a negative expansion.
     o = sealed(v_pipe=90, v_plant=10, t_fill=40, t_max=30, tf=30, tr=30, ti=16)
     print(f"P1-bs.sealed-system-01  fill 40, max 30 degC: e_x {o['e_x']:.7f}, V_e {o['V_e']:.5f} L"
-          f"  (product: -0.0034465, -0.70399 L, no block; vessel check shows FAIL with u = -0.088)")
+          f"  (FIXED at 0772fcf8: the product now blocks with 'the fill temperature must be below the maximum system temperature')")
     # 02: final pressure 0.05 bar below the safety valve setting is accepted.
     d = sealed(v_pipe=90, v_plant=10, p_f=2.5)["V_e"]
     c = sealed(v_pipe=90, v_plant=10, p_f=2.95)["V_e"]

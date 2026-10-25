@@ -188,6 +188,13 @@ def extras():
     o = fault(device="curve", curve=CURVE, L=0.1, Ze=0.02)
     for sym, v in [("I_f", 9842.15997), ("t_d", 0.01), ("S_min", 27.10265766)]:
         x("x16-above-curve-0.01s", sym, v, o[sym])
+    # Re-check after the Addendum A Blue round (874bc235): the line conductor check is made only with a typed let-through I2t.
+    # Product with I2t_let 9 kA2s and 2.5 mm2 line: S_min 0.826119 mm2, u_cpc 0.550746 (1.5 mm2 cpc), u_line 0.330448.
+    smin9 = math.sqrt(9000.0) / k_adiabatic(70, 160)
+    x("x17-I2t-9kA2s", "S_min", 0.8261191979, smin9)
+    x("x17-I2t-9kA2s", "u_cpc", 0.5507461319, smin9 / 1.5)
+    x("x17-I2t-9kA2s", "u_line", 0.3304476791, smin9 / 2.5)
+    x("x17b-I2t-90kA2s", "u_line", 1.044967314, math.sqrt(90000.0) / k_adiabatic(70, 160) / 2.5)
     # Boundary: Z_e chosen so that Z_s equals Z_s_max for B32 (product gives u_Zs = 1, pass).
     ze = 1.365625 - fault()["R_12"]
     x("x14-boundary-Zs-eq-Zsmax", "u_Zs", 1.0, fault(Ze=ze)["u_Zs"])
@@ -214,6 +221,7 @@ def demonstrations():
     print(f"  C16 MCB, I_f = {o['I_f']:.1f} A < I_a = {o['I_a']:.0f} A: product (v0.26.0) states no S_min and no pass (adiabatic check not made) | "
           f"with an assumed 5 s disconnection {o['I_f'] * math.sqrt(5.0) / k:.3f} mm2")
     # Finding 03: line conductor against the short-circuit let-through.
+    print("  B32 MCB, no I2t_let (product 1.1.0): u_line and the line check are no longer shown; the warning says the line check is not made.")
     print(f"  B32 MCB, 2.5 mm2 line: product S_min {fault()['S_min']:.4f} mm2 from I_f | "
           f"with an assumed 90 kA2s let-through at the origin {math.sqrt(90000.0) / k_adiabatic(70, 160):.4f} mm2")
     # Info: temperature multiplier.

@@ -87,14 +87,14 @@ def kats():
     out.append(("ka-three-phase-mcb-c", r, [("I_b", 14.15074189, 1e-6), ("I_n", 16, 1e-9), ("I_t_req", 22.83430855, 1e-6), ("CSA", 4, 1e-9), ("I_z", 16.88687, 1e-6), ("u_Ib", 0.8844213682, 1e-6), ("u_In", 0.9474816825, 1e-6)]))
     r = size(supply="single", P=3, U=230, cosphi=0.95, eta=0.9, device="B")
     out.append(("ka-single-phase", r, [("I_b", 15.25553013, 1e-6), ("I_n", 16, 1e-9), ("I_t_req", 16, 1e-9), ("CSA", 2.5, 1e-9), ("I_z", 17.7, 1e-9), ("u_In", 0.9039548023, 1e-6)]))
-    r = size(supply="dc", P=0.6, U=24, device="gG", Ca=0.91)
-    out.append(("ka-dc", r, [("I_b", 25, 1e-9), ("I_n", 25, 1e-9), ("I_t_req", 27.47252747, 1e-6), ("CSA", 6, 1e-9), ("I_z", 29.029, 1e-9), ("u_In", 0.8612077578, 1e-6)]))
+    r = size(supply="dc", P=0.6, U=24, device="gG", Ca=0.91, I2_in=40)
+    out.append(("ka-dc", r, [("I_b", 25, 1e-9), ("I_n", 25, 1e-9), ("I_t_req", 27.47252747, 1e-6), ("CSA", 6, 1e-9), ("I_z", 29.029, 1e-9), ("u_In", 0.8612077578, 1e-6), ("u_I2", 0.9502982155, 1e-6)]))
     r = size(Ib=18, device="semi")
     out.append(("ka-semi-enclosed", r, [("I_b", 18, 1e-9), ("I_n", 20, 1e-9), ("C_c", 0.725, 1e-9), ("I_t_req", 27.5862069, 1e-6), ("CSA", 6, 1e-9), ("I_z", 31.9, 1e-9), ("I2", 40, 1e-9), ("u_I2", 0.8647713761, 1e-6)]))
     ca = derive_ca(70, 40, 30)
     r = size(supply="three", P=7.5, U=400, cosphi=0.85, eta=0.9, device="C", Ca=ca, Cg=0.77)
     out.append(("ka-derived-ca", r, [("C_a", 0.8660254038, 1e-9), ("I_t_req", 23.99377742, 1e-6), ("CSA", 4, 1e-9), ("I_z", 16.07083342, 1e-6)]))
-    r = size(Ib=25, device="gG", awg=True, table=SYN_AWG)
+    r = size(Ib=25, device="C", awg=True, table=SYN_AWG)
     out.append(("ka-awg-10", r, [("CSA", 5.261154955, 1e-9), ("I_n", 25, 1e-9), ("I_z", 26.3, 1e-9)]))
     return out
 
@@ -147,6 +147,7 @@ def extras():
         ("x13 MCCB I2 = 1.3 In", dict(device="MCCB", I2_in=20.8), {"u_I2": 0.8104422365}),
         ("x14 Cg 1.5, Ci 1.5 (arithmetic only)", dict(device="C", Cg=1.5, Ci=1.5), {"I_t_req": 7.111111111, "CSA": 1.5, "I_z": 27.675}),
         ("x15 DC 10 W 12 V", dict(supply="dc", P=0.01, U=12, device="B"), {"I_b": 0.8333333333, "I_n": 6, "CSA": 1.5, "I_z": 12.3, "u_Ib": 0.1388888889}),
+        ("x18 gG with I2 = 1.6 In (machine ctx)", dict(device="gG", I2_in=25.6), {"I2": 25.6, "u_I2": 0.997467368, "CSA": 2.5, "I_z": 17.7}),
         ("x16 unsorted table, 20 A", dict(Ib=20, device="gG", table=[(10, 44.6), (4, 24.1), (1.5, 12.3), (6, 31.9), (2.5, 17.7)]), {"CSA": 4, "I_z": 24.1}),
         ("x17 non-monotonic table (4mm2=15A), 20 A", dict(Ib=20, device="gG", table=[(1.5, 12.3), (2.5, 17.7), (4, 15), (6, 31.9)]), {"CSA": 6, "I_z": 31.9}),
     ]
@@ -197,6 +198,7 @@ def extras():
     print(f"N5 C_g = C_i = 1.5 is accepted: 16 A MCB gets {r_cg['CSA']} mm2 (I_z {r_cg['I_z']:.4g} A). Grouping and insulation factors are at most 1. Finding -02.")
     print(f"N6 Derived C_a, PVC, theta_a 40 C: ref 30 C gives {derive_ca(70, 40, 30):.4f}; a 40 C-referenced table needs {derive_ca(70, 40, 40):.4f}. Finding -03 (conservative).")
     print(f"N7 Derived C_a at 25 C: PVC {derive_ca(70, 25, 30):.4f}, XLPE {derive_ca(90, 25, 30):.4f}. Published BS 7671 values as I recall them are 1.03 and 1.02. Finding -04.")
+    print("N8 MCB type B with I2 = 40 A entered: product shows I2 23.2 A (1.45 I_n) and ignores the entry, with no notice (new finding E1).")
     return fails
 
 

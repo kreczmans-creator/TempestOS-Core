@@ -72,7 +72,20 @@ def motor(mech, s, t_move, t_dwell, f_acc=1 / 3, profile="trap", i=1.0, eta=0.9,
     int_cv = T_load ** 2 * t_cv
     T_rms = math.sqrt((int_acc + int_cv + int_dec) / (t_move + t_dwell))
     n_pk = w_pk * 60 / (2 * math.pi)
-    o.update(k=k, T_load=T_load, J_refl=J_refl, J_total=J_total, w_pk=w_pk, n_pk=n_pk, a_pk=a_pk,
+    # RMS mechanical power (1.2.0): numerical integral of (T(t) w(t))^2 over the cycle, dwell at zero.
+    # Midpoint rule, 40000 steps per phase. Acceleration: T = T_load + T_acc g(u), w = w_pk h(u); deceleration mirrors w
+    # and flips the acceleration torque. trap: g = 1, h = u. S-curve: g = sin(pi u), h = (1 - cos(pi u))/2.
+    nst = 40000
+    acc_int = dec_int = 0.0
+    for q in range(nst):
+        u = (q + 0.5) / nst
+        g, h = (1.0, u) if profile == "trap" else (math.sin(math.pi * u), (1 - math.cos(math.pi * u)) / 2)
+        acc_int += ((T_load + T_acc * g) * w_pk * h) ** 2 * t_acc / nst
+        dec_int += ((T_load - T_acc * g) * w_pk * (1 - h if profile == "trap" else h)) ** 2 * t_acc / nst
+    # deceleration speed: trap w falls linearly (1 - u); S-curve mirrors (1 + cos)/2 = h at 1 - u, torque g is symmetric.
+    cv_int = (T_load * w_pk) ** 2 * t_cv
+    P_rms = math.sqrt((acc_int + dec_int + cv_int) / (t_move + t_dwell))
+    o.update(P_rms=P_rms, k=k, T_load=T_load, J_refl=J_refl, J_total=J_total, w_pk=w_pk, n_pk=n_pk, a_pk=a_pk,
              T_acc=T_acc, T_pk=T_pk, T_dec=T_dec, T_rms=T_rms, J_ratio=(J_refl + J_mech) / J_motor,
              t_acc=t_acc, theta_m=theta_m)
     if mech in ("screw", "belt", "rack"):
@@ -93,7 +106,7 @@ def cont(mech, T_L, n_L, t_start, i=1.0, eta=0.9, J_L=0.0, J_mech=0.0, J_motor=2
     T_pk = T_acc + T_load
     return dict(T_load=T_load, J_refl=J_refl, J_total=J_total, alpha_pk=alpha, T_acc=T_acc, T_pk=T_pk,
                 T_rms=T_load, n_pk=w, n_pk_rpm=w * 60 / (2 * math.pi), P_cont=T_load * w, P_pk=T_pk * w,
-                J_ratio=(J_refl + J_mech) / J_motor, duty=T_load / T_rated, u_peak=SF * T_pk / T_peak,
+                P_rms=T_load * w, J_ratio=(J_refl + J_mech) / J_motor, duty=T_load / T_rated, u_peak=SF * T_pk / T_peak,
                 u_rms=SF * T_load / T_rated, u_speed=(w * 60 / (2 * math.pi)) / n_max)
 
 
@@ -104,11 +117,13 @@ for sym, e, t in [("v_pk", 1.5, 1e-9), ("n_pk", 9000, 1e-9), ("J_refl", 1.4072e-
                   ("T_acc", 2.4923, 1e-4), ("T_load", 0.08670, 1e-3), ("T_pk", 2.579, 1e-3),
                   ("T_rms", 1.4402, 1e-3), ("J_ratio", 1.2036, 1e-3)]:
     check("ka-ball-screw", sym, e, r[sym], t)
+check("ka-ball-screw", "P_rms", 0.7841424, r["P_rms"] / 1000.0, 1e-6)
 
 r = motor("geared", 0.25, 0.3, 0.7, 1 / 3, "trap", i=10, eta=0.85, J_mech=0, J_L=0.5, T_L=0, J_motor=5e-4)
 for sym, e, t in [("n_pk", 750, 1e-6), ("J_refl", 5.882e-3, 1e-3), ("T_pk", 5.0126, 1e-3),
                   ("T_rms", 2.2417, 1e-3), ("J_ratio", 11.76, 2e-3)]:
     check("ka-geared-index-table", sym, e, r[sym], t)
+check("ka-geared-index-table", "P_rms", 0.1016518, r["P_rms"] / 1000.0, 1e-6)
 
 # ka-continuous-pump (spec 1.1.0, analytic): 700 rpm pump through 4:1, 2 s run-up
 r = cont("geared", 3.0, 700, 2.0, i=4, eta=0.9, J_L=0.01, J_mech=0.0, J_motor=5e-4, T_rated=2.0, T_peak=6.0, n_max=3500, SF=1.25)
@@ -117,6 +132,7 @@ for sym, e, t in [("n_pk_rpm", 2800, 1e-9), ("T_load", 0.8333333, 1e-6), ("J_ref
                   ("T_rms", 0.8333333, 1e-6), ("P_cont", 244.3461, 1e-6), ("u_peak", 0.2100933, 1e-6),
                   ("u_rms", 0.5208333, 1e-6), ("u_speed", 0.8, 1e-9), ("J_ratio", 1.388889, 1e-6)]:
     check("ka-continuous-pump", sym, e, r[sym], t)
+check("ka-continuous-pump", "P_rms", 0.2443461, r["P_rms"] / 1000.0, 1e-6)
 
 # ---------------- Extra checks ----------------
 # Product values below were read from `Probe run elec.motor-sizing` (10 significant figures).
@@ -160,6 +176,16 @@ for name, mk, prod in EXTRA_CASES:
     r["u_speed"] = r["n_pk"] / mot["n_max"]
     for sym, pv in prod.items():
         check("extra " + name.split()[0], sym, pv, r[sym], 1e-8, "product value hard-coded")
+
+# RMS power extras (1.2.0). Product P_rms (kW) read from `Probe run` at 0772fcf8; the independent value is a numerical integral.
+RP_CASES = [
+    ("RP1 rack 200 kg, -20 deg, S-curve, template defaults", dict(mech="rack", i=5, eta=0.8, D_mm=60, m=200, mu=0.1, theta_deg=-20, profile="scurve", s=1.5, t_move=2, f_acc=1 / 3, t_dwell=0.5, J_mech=1e-4, J_motor=2e-4), 0.5175774738),
+    ("RP2 vertical screw 500 kg, 10 s dwell", EXTRA_CASES[4][1], 0.3682229979),
+    ("RP3 ball-screw KAT inputs, S-curve", EXTRA_CASES[7][1], 0.8431893042),
+]
+for nm, mk, pv in RP_CASES:
+    rr = motor(**{**MOT, **mk})
+    check("extra " + nm.split()[0], "P_rms", pv, rr["P_rms"] / 1000.0, 1e-6, "product value hard-coded (kW)")
 
 # Continuous-duty extras (elec.motor-sizing 1.1.0). Product values were read from `Probe run elec.motor-sizing`
 # (10 significant figures, SI units). Motor data: J_motor 2e-4, T_rated 2, T_peak 6 N*m, n_max 10000 rpm, SF 1.25,
@@ -228,7 +254,7 @@ finding("P1-elec.motor-sizing-C2", f"continuous duty, T_L -10 N*m, 2:1: T_rms {r
 r1 = cont("direct", 0.002037166263, 2800, 5.0, eta=1.0, J_L=0.002)
 r9 = cont("direct", 0.002037166263, 2800, 5.0, eta=0.9, J_L=0.002)
 finding("P1-elec.motor-sizing-C3", f"direct coupling: T_load {r9['T_load']:.6f} N*m at eta 0.9 against {r1['T_load']:.6f} at eta 1 "
-        f"({100 * (r9['T_load'] / r1['T_load'] - 1):+.1f} %).")
+        f"({100 * (r9['T_load'] / r1['T_load'] - 1):+.1f} %). Since 1.2.0 a warning names the 0.9 for a direct coupling; the default is unchanged.")
 # C4: continuous duty prints 'template default used' notices for inputs it ignores (probe, CE1 inputs).
 finding("P1-elec.motor-sizing-C4", "continuous duty ignores mu, theta, F_p, profile, s, t_move, f_acc and t_dwell, yet the probe lists "
         "eight 'was not entered; the template default ... is used' warnings for them, plus the fixed 'continuous-ignored' warning.")

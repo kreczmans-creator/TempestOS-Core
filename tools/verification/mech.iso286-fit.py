@@ -114,8 +114,9 @@ def hole_fd(letter, n, D):
     return ES, ES - t
 
 
-def fit(D, hl, hg, sl, sg):
-    ES, EI = hole_fd(hl, hg, D)
+def fit(D, hl, hg, sl, sg, bore=None):
+    """bore = (ES, EI) in µm replaces the hole deviations (rolling-bearing bore, ISO 492; product 1.1.0 hole_kind)."""
+    ES, EI = bore if bore else hole_fd(hl, hg, D)
     es, ei = shaft_fd(sl, sg, D)
     out = dict(ES=ES, EI=EI, es=es, ei=ei, IT_hole=IT(hg, D), IT_shaft=IT(sg, D))
     out["c_max"] = ES - ei
@@ -129,6 +130,9 @@ def fit(D, hl, hg, sl, sg):
 KATS = [
     ("ka-h7g6-25", fit(25, "H", 7, "g", 6), [("IT_hole", 21, 0.03), ("IT_shaft", 13, 0.03), ("es", -7, 0.06), ("c_min", 7, 0.06), ("c_max", 41, 0.03)]),
     ("ka-h7p6-50", fit(50, "H", 7, "p", 6), [("IT_hole", 25, 0.03), ("ei", 26, 0.06), ("i_max", 42, 0.05), ("i_min", 0, 1.5)]),
+    # New in 1.1.0: 35 mm bearing bore (ES 0, EI -9 µm, illustrative) on a k6 seat; tight tolerances, own formula derivation.
+    ("ka-bearing-bore-k6", fit(35, "H", 7, "k", 6, bore=(0.0, -9.0)),
+     [("ei", 2.030017, 1e-5), ("es", 17.642448, 1e-5), ("c_max", -2.030017, 1e-5), ("c_min", -26.642448, 1e-5), ("i_min", 2.030017, 1e-5)]),
 ]
 
 
@@ -163,6 +167,12 @@ PROBES = [
     ((25, "K", 8, "h", 7), dict(ES=11.766377, EI=-20.918004, es=0.0, ei=-20.918004), "K8 drops the k deviation (finding 03)"),
     ((25, "N", 9, "h", 9), dict(ES=-14.570583, EI=-66.865593, es=0.0, ei=-52.29501), "N above IT8 should have ES = 0 (finding 02)"),
     ((28, "H", 7, "t", 6), dict(ES=20.918004, EI=0.0, es=46.758133, ei=33.684381), "t falls back to s when the step mean is <= 24 mm (finding 04)"),
+]
+
+# Bearing-bore mode (product 1.1.0), values from the Probe tool (µm): (D, shaft letter, grade, ES, EI, product dict).
+BORE_PROBES = [
+    (35, "p", 6, 0.0, -9.0, dict(ES=0.0, EI=-9.0, es=40.59231799, ei=24.97988799)),
+    (25, "g", 6, 0.0, -8.0, dict(ES=0.0, EI=-8.0, es=-7.285291741, ei=-20.35904412)),
 ]
 
 # Tabulated ISO 286-2 values as I know them (µm, values only). The standard rounds and uses finer
@@ -210,6 +220,14 @@ def main():
                 fails += 1
             if tag != "PASS" or sym == "ES":
                 print(f"{D:7g} {hl}{hg}/{sl}{sg} {sym:3} product={a:10.4f} indep={b:10.4f} diff={diff:8.4f} {tag} {note if tag == 'FINDING' else ''}")
+    print("== Bearing-bore mode: product (hard-coded) vs independent, µm ==")
+    for D, sl, sg, ES, EI, prod in BORE_PROBES:
+        ind = fit(D, "H", 7, sl, sg, bore=(ES, EI))
+        for sym in ("ES", "EI", "es", "ei"):
+            diff = abs(prod[sym] - ind[sym])
+            ok = diff <= 1e-3
+            fails += not ok
+            print(f"{D:7g} bore/{sl}{sg} {sym:3} product={prod[sym]:10.4f} indep={ind[sym]:10.4f} diff={diff:8.4f} {'PASS' if ok else 'FAIL'}")
     print("== Product vs tabulated values (allowance %.1f um); informational ==" % TABLE_ALLOW)
     for label, D, tab, prod in TABLE:
         d = prod - tab

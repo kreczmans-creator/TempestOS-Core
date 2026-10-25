@@ -17,6 +17,8 @@ Model: the connected parts are rigid.
 
 Exit code: 0 when every KAT row passes (tolerance max(KAT tol, 1e-6)), else 1.
 EXTRA rows compare product values read from the Probe tool. They do not set the exit code.
+Product version 1.1.0 (since 3c637a3d) solves the unsymmetric-bending form with the product moment and blocks a
+collinear pattern when the moment has a component about the line. The KAT ka-unsymmetric-bending covers it.
 """
 import math
 import sys
@@ -84,6 +86,10 @@ check("KAT", "ka-four-bolt-eccentric", "u_max", 0.91109, g1["u_max_circ"], 1e-3)
 g2 = group(TWO_ROWS, M_x=20, V_R=40, T_R=60)
 check("KAT", "ka-moment-tension", "t_max", 50.0, g2["t_max"], 1e-6)
 check("KAT", "ka-moment-tension", "u_max", 0.83333, g2["u_max_circ"], 1e-4)
+UNSYM4 = [(0, 0, 84.3), (120, 0, 84.3), (60, 80, 84.3), (0, 160, 84.3)]
+g3 = group(UNSYM4, M_x=12, V_R=1000, T_R=100)
+check("KAT", "ka-unsymmetric-bending", "t_max", 62.5, g3["t_max"], 1e-9)
+check("KAT", "ka-unsymmetric-bending", "u_max", 0.625, g3["u_max_circ"], 1e-9)
 n_kat = len(rows)
 
 # ---------------------------------------------------------------- extra checks
@@ -96,6 +102,7 @@ OFF = [(x + 5e4, y + 5e4, A0) for x in range(0, 500, 100) for y in range(0, 500,
 RING = [(1000 * math.cos(2 * math.pi * i / 100), 1000 * math.sin(2 * math.pi * i / 100), A0) for i in range(100)]
 TWO = [(0, 0, A0), (150, 0, A0)]
 TINY = [(0, 0, A0), (1e-4, 0, A0)]
+SLOPE = [(0, 0, A0), (100, 100, A0), (200, 200, A0)]
 
 # Product values come from the Probe tool (C# calculator): (name, pattern, loads, outputs, governing bolt no.).
 # The product reports v_max, t_max and u_lin for its governing bolt (highest circular interaction).
@@ -121,13 +128,21 @@ EXTRAS = [
     ('linear-mismatch', G6, {'F_x': 25, 'F_y': -75, 'e_x': 300, 'e_y': 100, 'N': 55, 'M_x': -5, 'M_y': 0, 'V_R': 60, 'T_R': 90},
      {'T': -17.75, 'J': 3422580.0, 'v_max': 54.1412742, 't_max': 0.0, 'u_max': 0.90235457, 'u_lin': 0.90235457}, 6),
     ('unequal-areas', DIFFA, {'F_x': 10, 'F_y': -40, 'e_x': 180, 'e_y': 20, 'N': 20, 'M_x': 3, 'V_R': 40, 'T_R': 50},
-     {'T': -3.64137931, 'J': 2318965.52, 'v_max': 37.8830065, 't_max': 34.0290381, 'u_max': 1.16625106, 'u_lin': 1.43320428}, 3),
+     {'T': -3.64137931, 'J': 2318965.517, 'v_max': 37.88300647, 't_max': 33.28600406, 'u_max': 1.157641822, 'u_lin': 1.422589505}, 3),
     ('triangle-Mx', TRI, {'M_x': 10, 'V_R': 40, 'T_R': 50, 'F_y': 0},
-     {'T': 0.0, 'J': 1124000.0, 'v_max': 0.0, 't_max': 100.0, 'u_max': 2.0, 'u_lin': 1.42857143}, 3),
+     {'T': 0.0, 'J': 1124000.0, 'v_max': 0.0, 't_max': 100.0, 'u_max': 2.0, 'u_lin': 1.428571429}, 3),
     ('triangle-Mx-My', TRI, {'M_x': 10, 'M_y': 10, 'V_R': 40, 'T_R': 50, 'F_y': 0},
-     {'T': 0.0, 'J': 1124000.0, 'v_max': 0.0, 't_max': 50.0, 'u_max': 1.0, 'u_lin': 0.714285714}, 2),
-    ('collinear-Mx', COL, {'M_x': 20, 'V_R': 40, 'T_R': 50, 'F_y': 0},
-     {'T': 0.0, 'J': 1686000.0, 'v_max': 0.0, 't_max': 0.0, 'u_max': 0.0, 'u_lin': 0.0}, 1),
+     {'T': 0.0, 'J': 1124000.0, 'v_max': 0.0, 't_max': 100.0, 'u_max': 2.0, 'u_lin': 1.428571429}, 2),
+    ('collinear-My (moment about the line is not involved: resisted)', COL, {'M_y': 20, 'V_R': 40, 'T_R': 50, 'F_y': 0},
+     {'T': 0.0, 'J': 1686000.0, 'v_max': 0.0, 't_max': 100.0, 'u_max': 2.0, 'u_lin': 1.428571429}, 3),
+    ('sloped-line-along', SLOPE, {'M_x': 10, 'M_y': 10, 'V_R': 400, 'T_R': 500, 'F_y': 0},
+     {'T': 0.0, 'J': 3372000.0, 'v_max': 0.0, 't_max': 50.0, 'u_max': 0.1, 'u_lin': 0.071428571}, 3),
+    ('unsym-Mx', UNSYM4, {'M_x': 12, 'V_R': 1000, 'T_R': 100, 'F_y': 0},
+     {'T': 0.0, 'J': 2318250.0, 'v_max': 0.0, 't_max': 62.5, 'u_max': 0.625, 'u_lin': 0.446428571}, 4),
+    ('unsym-all-loads', UNSYM4, {'M_x': 12, 'M_y': -7, 'N': 40, 'F_x': 10, 'F_y': -30, 'e_x': 200, 'e_y': 50, 'V_R': 60, 'T_R': 100},
+     {'T': -4.55, 'J': 2318250.0, 'v_max': 19.04553265, 't_max': 82.22222222, 'u_max': 0.881367323, 'u_lin': 0.904727131}, 4),
+    ('unsym-prying', UNSYM4, {'M_x': 12, 'V_R': 1000, 'T_R': 100, 'F_y': 0, 'a': 30, 'b': 60},
+     {'T': 0.0, 'J': 2318250.0, 'v_max': 0.0, 't_max': 187.5, 'u_max': 1.875, 'u_lin': 1.339285714}, 4),
 ]
 
 EX_TOL = 1e-4
@@ -146,13 +161,26 @@ for name, bl, kw, prod, gov in EXTRAS:
     check("GROUP", name, "v_max(all)", prod["v_max"], p["v"].max(), EX_TOL)
     check("GROUP", name, "t_max(all)", prod["t_max"], p["tp"].max(), EX_TOL)
     check("GROUP", name, "u_lin(all)", prod["u_lin"], p["u_lin"].max(), EX_TOL)
-    # Root cause of tension differences: the decoupled formula reproduces the product.
-    check("DECOUP", name, "t_max(gov)", prod["t_max"], d["tp"][int(np.argmax(d["u_circ"]))], EX_TOL)
-    check("DECOUP", name, "u_max", prod["u_max"], d["u_max_circ"], EX_TOL)
-    # Moment equilibrium of the decoupled distribution (1.0 means the applied moment is resisted).
-    for sym, applied, got in (("Mx_resisted", kw.get("M_x", 0) * 1e3, d["res_Mx"]), ("My_resisted", kw.get("M_y", 0) * 1e3, d["res_My"])):
-        if applied != 0:
-            check("EQUIL", name, sym, 1.0, got / applied, EX_TOL)
+
+# Blocked cases (product 1.1.0): a collinear pattern with a moment component about the line.  The product returns no outputs and a
+# 'collinear' Block notice.  Independent criterion: det of the 2 x 2 second-moment matrix is zero and the moment has a part across the line.
+def blocked(bolts, M_x, M_y):
+    B = np.array(bolts, dtype=float)
+    x, y, A = B[:, 0], B[:, 1], B[:, 2]
+    dx, dy = x - (A * x).sum() / A.sum(), y - (A * y).sum() / A.sum()
+    Sxx, Syy, Sxy = (A * dx * dx).sum(), (A * dy * dy).sum(), (A * dx * dy).sum()
+    if abs(Sxx * Syy - Sxy ** 2) > 1e-9 * (Sxx + Syy) ** 2:
+        return False
+    # Pattern lies along u; moments resisted only if the moment vector (M_x, M_y) satisfies t = c (u . d) solvable: compatibility.
+    m = np.array([M_y, M_x])
+    mat = np.array([[Sxx, Sxy], [Sxy, Syy]])
+    c = np.linalg.lstsq(mat, m, rcond=None)[0]
+    return np.linalg.norm(mat @ c - m) > 1e-6 * max(np.linalg.norm(m), 1e-30)
+
+
+for name, bl, mx, my, prod_blocked in (("collinear-Mx (three in a row)", COL, 20, 0, 1), ("sloped-line-across (M_x 10, M_y -10)", SLOPE, 10, -10, 1),
+                                       ("sloped-line-Mx (R1)", SLOPE, 20, 0, 1), ("two-bolts-Mx", TWO, 20, 0, 1), ("collinear-My", COL, 0, 20, 0), ("sloped-line-along", SLOPE, 10, 10, 0)):
+    check("BLOCK", name, "blocked (1 = yes)", float(prod_blocked), 1.0 if blocked(bl, mx, my) else 0.0, 1e-9)
 
 # ---------------------------------------------------------------- report
 print(f"{'kind':6} {'case':24} {'symbol':14} {'expected':>13} {'independent':>13} {'rel.diff':>10} {'tol':>7}  result")

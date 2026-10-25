@@ -194,6 +194,27 @@ def extras():
     for sym, v in [("C_req", 165789.4737 / 3600.0), ("u_PSU", 0.875), ("u_batt", 0.8373205742)]:
         x("x13-psu-and-battery", sym, v, o[sym])
 
+    # Re-check after the Addendum A Blue round (v1.2.0): PSU bus, heat share and the starting-peak transformer rating.
+    # Independent arithmetic; product values read from the probe. 4 kW DC load, PSU on the three-phase bus, eta_psu 0.9, pf 1.
+    s_in = 4.0 / 0.9
+    x("x17-psu-bus-ac3", "S_dem", 4.444444444, s_in)
+    x("x17-psu-bus-ac3", "I_3ph", 6.415002991, s_in * 1000.0 / (math.sqrt(3.0) * 400.0))
+    x("x17-psu-bus-ac3", "S_T_req", 5.555555556, 1.25 * s_in)
+    x("x17-psu-bus-ac1", "I_1ph", 19.3236715, s_in * 1000.0 / 230.0)
+    # The same PSU with an 11 kW pump (d 1, m 6, cos 0.85, eta 0.9): start increment 6*11/0.85 - 11/0.85, PSU input stays in S_dem.
+    s_pump = 11.0 / 0.85
+    s_dem2 = s_pump + s_in
+    s_pk2 = s_dem2 + (6.0 * s_pump - s_pump)
+    x("x18-psu-pump", "S_peak", 82.09150327, s_pk2)
+    x("x18-psu-pump", "S_T_req_start", 27.36383442, s_pk2 / 3.0)
+    x("x18-psu-pump", "S_T_min", 27.36383442, max(1.25 * s_dem2, s_pk2 / 3.0))
+    x("x18-psu-pump", "S_T_req", 21.73202614, 1.25 * s_dem2)
+    # Heat share h = 1 for a 1 kW electronics row at d 0.5, k 0.8: Phi = h*P*d*k = 0.4 kW. A linked 5 kW load with heat_add 0.1 gives P/eta*0.1.
+    x("x19-heat-share", "Phi", 0.4, 1.0 * 1.0 * 0.5 * 0.8)
+    x("x19-heat-add", "Phi", 0.5555555556, (5.0 / 0.9) * 0.1)
+    # Peak for the starting transformer rating of the 11 kW pump alone: 77.647 / 3 = 25.882 kVA, above S_T_req 16.176 kVA.
+    x("x20-pump-start-rating", "S_T_min", 25.88235294, max(1.25 * s_pump, 6.0 * s_pump / 3.0))
+
 
 def demonstrations():
     """Differences between the product convention and the physical case. They do not change the exit code."""

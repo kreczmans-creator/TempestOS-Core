@@ -386,6 +386,17 @@ def extras_heat():
     row(c, "H_duty (m)", 2.345552552, h["Hd"], 4e-3)
     row(c, "P_shaft (W)", 28.31903394, h["Ps"], 4e-3)
     row(c, "T_shaft (N m)", 0.1865012787, h["T_shaft"], 4e-3, "larger of design and duty-point power")
+    # CC1 (1.2.0, circuit = closed): DN80, 60 m, K 8, dz 10 m entered, 30 m3/h, water at 20 C, h_out 0.
+    # A closed flow-and-return loop has no static lift, so H_static = h_out = 0 and H_sys is the friction head alone.
+    # V_pipe = pi/4 D^2 L in litres. Product values read at 0772fcf8 with `Probe run bs.pipe-pump`.
+    c = "probe CC1 closed circuit"
+    segs_cc = [(60, 80, 0.045, 8, 0, 10)]
+    _, hf_cc, _ = system(30, rho_water(20), mu_water(20), segs_cc, 0)
+    row(c, "H_static (m)", 0.0, 0.0, 1e-9, "closed: rises ignored")
+    row(c, "H_sys (m)", 3.214981351, hf_cc, 2e-3, "friction head only")
+    row(c, "V_pipe (L)", 301.5928947, math.pi / 4 * 0.08 ** 2 * 60 * 1000, 1e-9)
+    c = "probe CC2 open circuit, same loop"
+    row(c, "H_sys (m)", 13.21498135, hf_cc + 10.0, 2e-3, "dz 10 m counts as lift")
     # ---- findings evidence (informational) ----
     ref = heat_case(70, 594.544716, 10, 4186.0, [(40, 28, 0.045, 12, 0, 3)], n_pump=2800)
     closed = heat_case(70, 594.544716, 10, 4186.0, [(40, 28, 0.045, 12, 0, 0)], n_pump=2800)

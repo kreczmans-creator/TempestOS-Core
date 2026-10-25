@@ -55,9 +55,14 @@ def ft_rd(grade, size, gm2=1.25, k2=0.9):
     return k2 * GRADES[grade][1] * stress_area(size) / gm2 / 1e3
 
 
-def bp_rd(size, t, fu, gm2=1.25):
+def bp_rd(size, t, fu, gm2=1.25, e_head=None):
+    """Punching resistance. d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut.
+
+    Addendum A (G-A-09): with no e entered the product takes d_m = s (conservative); the sharp-hexagon e = s/cos 30 is
+    an upper bound a real nut does not reach (finding R3, now fixed).
+    """
     af = SIZES[size][2]
-    dm = 0.5 * (af + af / math.cos(math.radians(30)))
+    dm = af if e_head is None else 0.5 * (af + e_head)
     return 0.6 * math.pi * dm * t * fu / gm2 / 1e3, dm
 
 
@@ -142,7 +147,10 @@ def kats():
     check(c, "F_v_Rd", 94.00105, fvrd, 1e-6)
     check(c, "F_t_Rd", 141.0016, ftrd, 1e-6)
     check(c, "F_b_Rd", 99.39394, fb, 1e-6)
-    check(c, "B_p_Rd", 199.8265, bp, 1e-6)
+    check(c, "B_p_Rd", 185.4796, bp, 1e-6)
+    c = "ka-m20-punching-e-head"
+    check(c, "B_p_Rd", 197.8449, bp_rd("M20", 10, 410, 1.25, 34)[0], 1e-6)
+    c = "ka-m20-88-shear-bearing"
     check(c, "u_vt", 0.6838832, combined(50, fvrd, 30, ftrd), 1e-6)
     c = "ka-m20-109-threads"
     check(c, "alpha_v", 0.5, alpha_v("10.9"), 1e-12)
@@ -205,17 +213,17 @@ def solve(i):
 
 PROBES = {
     'P1 M16 4.6 shank, 2 planes, S235': ({'grade': '4.6', 'size': 'M16', 'threads': 0, 'n_s': 2, 'steel': 'S235', 't': 8, 'f_y': 235, 'f_u': 360, 'e_1': 35, 'e_2': 30, 'F_v_Ed': 40},
-        {'A_s': 156.66841, 'alpha_v': 0.6, 'F_v_Rd': 77.207781, 'alpha_b': 0.64814815, 'k_1': 2.5, 'F_b_Rd': 59.733333, 'F_t_Rd': 45.120502, 'B_p_Rd': 112.29276, 'u_v': 0.5180825, 'u_b': 0.66964286, 'u_t': 0.0, 'u_vt': 0.5180825}),
+        {'A_s': 156.66841, 'alpha_v': 0.6, 'F_v_Rd': 77.207781, 'alpha_b': 0.64814815, 'k_1': 2.5, 'F_b_Rd': 59.733333, 'F_t_Rd': 45.120502, 'B_p_Rd': 104.2305044, 'u_v': 0.5180825, 'u_b': 0.66964286, 'u_t': 0.0, 'u_vt': 0.5180825}),
     'P2 M24 10.9 threads, S355, inner-bolt alpha_d governs': ({'grade': '10.9', 'size': 'M24', 'steel': 'S355', 't': 16, 'f_y': 355, 'f_u': 490, 'e_1': 60, 'e_2': 45, 'p_1': 65, 'p_2': 80, 'F_v_Ed': 150, 'F_t_Ed': 60},
-        {'A_s': 352.50392, 'alpha_v': 0.5, 'F_v_Rd': 141.00157, 'alpha_b': 0.58333333, 'k_1': 2.5, 'F_b_Rd': 219.52, 'F_t_Rd': 253.80283, 'B_p_Rd': 458.52878, 'u_v': 1.0638179, 'u_b': 0.68330904, 'u_t': 0.23640399, 'u_vt': 1.2326779}),
+        {'A_s': 352.50392, 'alpha_v': 0.5, 'F_v_Rd': 141.00157, 'alpha_b': 0.58333333, 'k_1': 2.5, 'F_b_Rd': 219.52, 'F_t_Rd': 253.80283, 'B_p_Rd': 425.6078931, 'u_v': 1.0638179, 'u_b': 0.68330904, 'u_t': 0.23640399, 'u_vt': 1.2326779}),
     'P3 M12 8.8 default hole, 3 mm plate (punching governs tension)': ({'grade': '8.8', 'size': 'M12', 'steel': 'S275', 't': 3, 'f_y': 275, 'f_u': 410, 'e_1': 25, 'e_2': 25, 'F_v_Ed': 10, 'F_t_Ed': 30},
-        {'A_s': 84.266538, 'alpha_v': 0.6, 'F_v_Rd': 32.358351, 'alpha_b': 0.5952381, 'k_1': 2.5, 'F_b_Rd': 17.571429, 'F_t_Rd': 48.537526, 'B_p_Rd': 35.968775, 'u_v': 0.30903924, 'u_b': 0.56910569, 'u_t': 0.83405675, 'u_vt': 0.75052386}),
+        {'A_s': 84.266538, 'alpha_v': 0.6, 'F_v_Rd': 32.358351, 'alpha_b': 0.5952381, 'k_1': 2.5, 'F_b_Rd': 17.571429, 'F_t_Rd': 48.537526, 'B_p_Rd': 33.38633345, 'u_v': 0.30903924, 'u_b': 0.56910569, 'u_t': 0.89857127, 'u_vt': 0.75052386}),
     'P4 M36 5.6, hole d+3, S460, large plate': ({'grade': '5.6', 'size': 'M36', 'steel': 'S460', 't': 40, 'f_y': 460, 'f_u': 550, 'e_1': 120, 'e_2': 100, 'p_1': 130, 'p_2': 130, 'F_v_Ed': 300, 'F_t_Ed': 100},
-        {'A_s': 816.72256, 'alpha_v': 0.6, 'F_v_Rd': 196.01341, 'alpha_b': 0.86111111, 'k_1': 2.5, 'F_b_Rd': 1364.0, 'F_t_Rd': 294.02012, 'B_p_Rd': 1965.7732, 'u_v': 1.5305075, 'u_b': 0.21994135, 'u_t': 0.34011278, 'u_vt': 1.7734452}),
+        {'A_s': 816.72256, 'alpha_v': 0.6, 'F_v_Rd': 196.01341, 'alpha_b': 0.86111111, 'k_1': 2.5, 'F_b_Rd': 1364.0, 'F_t_Rd': 294.02012, 'B_p_Rd': 1824.637013, 'u_v': 1.5305075, 'u_b': 0.21994135, 'u_t': 0.34011278, 'u_vt': 1.7734452}),
     'P5 M20 4.6 in S355 (f_ub/f_u limits alpha_b)': ({'grade': '4.6', 'size': 'M20', 'steel': 'S355', 't': 20, 'f_y': 355, 'f_u': 510, 'e_1': 100, 'e_2': 60, 'F_v_Ed': 40},
-        {'A_s': 244.79439, 'alpha_v': 0.6, 'F_v_Rd': 47.000523, 'alpha_b': 0.78431373, 'k_1': 2.5, 'F_b_Rd': 320.0, 'F_t_Rd': 70.500785, 'B_p_Rd': 497.12942, 'u_v': 0.85105436, 'u_t': 0.0, 'u_vt': 0.85105436}),
+        {'A_s': 244.79439, 'alpha_v': 0.6, 'F_v_Rd': 47.000523, 'alpha_b': 0.78431373, 'k_1': 2.5, 'F_b_Rd': 320.0, 'F_t_Rd': 70.500785, 'B_p_Rd': 461.437129, 'u_v': 0.85105436, 'u_t': 0.0, 'u_vt': 0.85105436}),
     'P6 M27 8.8, hole 33 entered, k_1 from e2 and p2': ({'grade': '8.8', 'size': 'M27', 'd_0': 33, 'steel': 'S275', 't': 12, 'f_y': 275, 'f_u': 410, 'e_1': 50, 'e_2': 45, 'p_1': 80, 'p_2': 80, 'F_v_Ed': 100},
-        {'A_s': 459.40644, 'alpha_v': 0.6, 'F_v_Rd': 176.41207, 'alpha_b': 0.50505051, 'k_1': 1.6939394, 'F_b_Rd': 90.918347, 'F_t_Rd': 264.61811, 'B_p_Rd': 327.71551, 'u_v': 0.56685463, 'u_b': 1.099888, 'u_t': 0.0, 'u_vt': 0.56685463}),
+        {'A_s': 459.40644, 'alpha_v': 0.6, 'F_v_Rd': 176.41207, 'alpha_b': 0.50505051, 'k_1': 1.6939394, 'F_b_Rd': 90.918347, 'F_t_Rd': 264.61811, 'B_p_Rd': 304.1865936, 'u_v': 0.56685463, 'u_b': 1.099888, 'u_t': 0.0, 'u_vt': 0.56685463}),
     'P8 weld S355: simplified and directional (sigma_perp < 0)': ({'grade': '8.8', 'size': 'M20', 'steel': 'S355', 't': 10, 'f_y': 355, 'f_u': 490, 'e_1': 40, 'e_2': 40, 'a': 5, 'F_w_Ed': 800, 'sigma_perp': -150, 'tau_perp': 90, 'tau_par': 60},
         {'f_vw_d': 251.46812, 'F_w_Rd': 1257.3406, 'u_w': 0.63626356, 'u_dir': 0.55102041, 'u_perp': 0.42517007}),
     'P9 block tearing, concentric': ({'grade': '8.8', 'size': 'M20', 'steel': 'S275', 't': 10, 'f_y': 275, 'f_u': 410, 'e_1': 40, 'e_2': 40, 'V_Ed': 200, 'A_nt': 300, 'A_nv': 900},
@@ -227,10 +235,10 @@ GRADE_TABLE = {"4.6": (47.000523, 60.318579), "4.8": (39.167103, 60.318579), "5.
                "5.8": (48.958878, 75.398224), "6.8": (58.750654, 90.477868), "8.8": (94.001046, 120.637158),
                "10.9": (97.917757, 150.796447)}
 # M12 ... M36, 8.8, threads: product A_s, F_v_Rd, F_t_Rd, B_p_Rd  (t = 12 mm, S275 f_u 410)
-SIZE_TABLE = {"M12": (84.26653836, 32.35835073, 48.5375261, 143.8751013), "M16": (156.6684107, 60.16066971, 90.24100457, 191.8334684),
-              "M20": (244.7943917, 94.00104643, 141.0015696, 239.7918355), "M22": (303.399279, 116.5053231, 174.7579847, 271.7640803),
-              "M24": (352.5039241, 135.3615069, 203.0422603, 287.7502026), "M27": (459.4064379, 176.4120722, 264.6181082, 327.7155085),
-              "M30": (560.5872129, 215.2654898, 322.8982346, 367.6808145), "M36": (816.7225563, 313.6214616, 470.4321924, 439.6183651)}
+SIZE_TABLE = {"M12": (84.26653836, 32.35835073, 48.5375261, 133.5453338), "M16": (156.6684107, 60.16066971, 90.24100457, 178.0604451),
+              "M20": (244.7943917, 94.00104643, 141.0015696, 222.5755563), "M22": (303.399279, 116.5053231, 174.7579847, 252.2522972),
+              "M24": (352.5039241, 135.3615069, 203.0422603, 267.0906676), "M27": (459.4064379, 176.4120722, 264.6181082, 304.1865936),
+              "M30": (560.5872129, 215.2654898, 322.8982346, 341.2825197), "M36": (816.7225563, 313.6214616, 470.4321924, 408.0551866)}
 # weld f_vw_d for f_u = 410, gamma_M2 = 1.25 (product, MPa)
 STEEL_TABLE = {"S235": 236.71, "S275": 222.79, "S355": 210.41, "S420": 189.37, "S460": 189.37}
 
@@ -288,6 +296,13 @@ def extras():
     for sz, pv in {"M20": 244.7943917, "M16": 156.6684107}.items():
         iv = stress_area(sz)
         xrows.append((f"ports 1.1.0: {sz} A_s (mm2)", "A_s (port)", pv, iv, abs(iv - pv) / pv, "PASS" if abs(iv - pv) / pv < 1e-6 else "FAIL", ""))
+    # E1 (0772fcf8): e_head is bounded only by 13-70 mm. A regular hexagon nut of s = 30 mm has e = s/cos 30 = 34.64 mm at most.
+    # Probe: M20, e_head 60 mm gives B_p,Rd 278.22 kN; the largest value a real nut allows gives 199.82 kN.
+    bp_max = bp_rd("M20", 10, 410, 1.25, 30 / math.cos(math.radians(30)))[0]
+    xrows.append(("M20 8.8, e_head 60 mm entered (largest real hexagon: 34.64 mm)", "B_p_Rd (kN)", 278.2194, bp_max, 278.2194 / bp_max - 1.0, "FAIL", "P1-struct.connection-ec3-E1 (no upper bound on e_head)"))
+    # R3 (fixed at 0772fcf8): the default d_m is now s (e not entered). Probe: M20 default gives 185.4796 kN.
+    iv = bp_rd("M20", 10, 410)[0]
+    xrows.append(("M20 8.8 default punching, e not entered (d_m = s)", "B_p_Rd (kN)", 185.4796, iv, abs(iv - 185.4796) / 185.4796, "PASS" if abs(iv - 185.4796) < 1e-3 else "FAIL", "P1-struct.connection-ec3-R3 fixed"))
     # D1 (re-check): the 10.9 f_yb port (900 MPa) is above the S6 input limit (640 MPa, base-plate-03), so a 10.9 holding-down bolt blocks S6.
     xrows.append(("ports 1.1.0: class 10.9 f_yb against S6 limit 640 MPa", "f_yb (MPa)", 900.0, 640.0, 900.0 / 640.0 - 1.0, "FAIL", "P1-struct.connection-ec3-D1 (S6 blocks)"))
 
@@ -302,7 +317,8 @@ def report_extras():
     for name, sym, pv, iv, rd, tag, note in xrows:
         print(f"{name[:62]:62s} {sym[:16]:16s} {pv:12.6g} {iv:12.6g} {rd:9.2e}  {tag} {note}")
     print()
-    print("Note: with e_2 = 12 mm (M20, d_0 = 22) k_1 is negative, so F_b,Rd = 0; the product stops with 'Division by zero'.")
+    print("Note: with e_2 = 12 mm (M20, d_0 = 22) k_1 is negative, so F_b,Rd = 0. Since 0772fcf8 the product blocks with 'e_2: ... too small for any bearing resistance'")
+    print("(findings -05 and R2 fixed; M36 with p_1 = 25 mm blocks the same way).")
 
 
 if __name__ == "__main__":

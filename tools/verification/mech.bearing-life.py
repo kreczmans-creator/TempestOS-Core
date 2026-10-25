@@ -7,7 +7,8 @@ Sources, cited by title and number only:
 - Shigley's Mechanical Engineering Design, 11th ed., Chapter 11: rolling-contact bearings.
 
 Model:
-- Step equivalent load: P_i = F_r when F_a/F_r <= e, else X F_r + Y F_a. A step with F_r = 0 uses the second form.
+- Step equivalent load: P_i = X_1 F_r + Y_1 F_a when F_a/F_r <= e, else X F_r + Y F_a. A step with F_r = 0 uses the second form.
+  Since 3c637a3d the product has X_1 and Y_1 (defaults 1 and 0), blocks Y = 0 when an axial load acts above e, and holds L_10 at 1e12 for a very light load.
 - Duty cycle: P = (sum(P_i^p U_i) / sum(U_i))^(1/p), p = 3 (ball) or 10/3 (roller).
 - L_10 = (C/P)^p in million revolutions. L_10h = 1e6 L_10 / (60 n).
 - Reliability factor a_1 = 0.05 + 0.95 (ln(100/R) / ln(100/90))^(2/3), the Weibull form behind the ISO 281:2007 a_1 table.
@@ -27,20 +28,20 @@ def a1(R):
     return 0.05 + 0.95 * (math.log(100.0 / R) / math.log(100.0 / 90.0)) ** (2.0 / 3.0)
 
 
-def bearing(type_=BALL, F_r=2.0, F_a=0.0, duty=None, n=1000.0, C=20.0, C_0=11.0, e_lim=0.3, X=1.0, Y=0.0,
+def bearing(type_=BALL, F_r=2.0, F_a=0.0, duty=None, n=1000.0, C=20.0, C_0=11.0, e_lim=0.3, X_1=1.0, Y_1=0.0, X=1.0, Y=0.0,
             X_0=0.6, Y_0=0.5, R=90.0, a_iso=1.0, L_req=20000.0, s_0_req=1.0):
     """duty: list of (F_r, F_a, U) or None. Loads in kN, n in rpm, L_req in h."""
     p = 3.0 if type_ == BALL else 10.0 / 3.0
     steps = duty if duty else [(F_r, F_a, 1.0)]
 
     def p_dyn(fr, fa):
-        if fr > 0 and fa / fr <= e_lim:
-            return fr
+        if fa == 0 or (fr > 0 and fa / fr <= e_lim):
+            return X_1 * fr + Y_1 * fa
         return X * fr + Y * fa
 
     U = sum(s[2] for s in steps)
     P = (sum(p_dyn(s[0], s[1]) ** p * s[2] for s in steps) / U) ** (1.0 / p)
-    L10 = (C / P) ** p
+    L10 = min((C / P) ** p, 1e12)      # held at 1e12 million revolutions for a very light load (warning in the product)
     L10h = 1e6 * L10 / (60.0 * n)
     a_1 = a1(R)
     Lnm = a_1 * a_iso * L10
@@ -110,8 +111,18 @@ EXTRAS = [
      {'P': 3.30192725, 'L_10': 434.027778, 'L_10h': 7233.7963, 'a_1': 1.0, 'L_nm': 434.027778, 'L_nmh': 7233.7963, 'P_0': 4.0, 's_0': 3.75, 'u_life': 2.7648, 'u_s0': 0.266666667}),
     ('thrust-Fr-zero', {'F_r': 0, 'F_a': 5, 'e_lim': 0.3, 'X': 0.56, 'Y': 1.2, 'C': 30, 'C_0': 40},
      {'P': 6.0, 'L_10': 125.0, 'L_10h': 2083.33333, 'a_1': 1.0, 'L_nm': 125.0, 'L_nmh': 2083.33333, 'P_0': 2.5, 's_0': 16.0, 'u_life': 9.6, 'u_s0': 0.0625}),
-    ('default-factors-Fa-4', {'F_r': 2, 'F_a': 4},
-     {'P': 2.0, 'L_10': 1000.0, 'L_10h': 16666.6667, 'a_1': 1.0, 'L_nm': 1000.0, 'L_nmh': 16666.6667, 'P_0': 3.2, 's_0': 3.4375, 'u_life': 1.2, 'u_s0': 0.290909091}),
+    ('double-row-below-e (Y_1 3.3)', {'F_r': 10, 'F_a': 1.9, 'e_lim': 0.19, 'Y_1': 3.3, 'X': 0.56, 'Y': 2.3, 'C': 40, 'C_0': 30},
+     {'P': 16.27, 'L_10': 14.85994887, 'L_10h': 247.6658145, 'a_1': 1.0, 'L_nm': 14.85994887, 'L_nmh': 247.6658145, 'P_0': 10.0, 's_0': 3.0, 'u_life': 80.75397906, 'u_s0': 0.3333333333}),
+    ('double-row-roller (Y_1 3.3)', {'type': 'roller', 'F_r': 10, 'F_a': 1.9, 'e_lim': 0.19, 'Y_1': 3.3, 'X': 0.56, 'Y': 2.3, 'C': 40, 'C_0': 30},
+     {'P': 16.27, 'L_10': 20.05586794, 'L_10h': 334.2644656, 'a_1': 1.0, 'L_nm': 20.05586794, 'L_nmh': 334.2644656, 'P_0': 10.0, 's_0': 3.0, 'u_life': 59.83286306, 'u_s0': 0.3333333333}),
+    ('x1-y1-below-e', {'F_r': 10, 'F_a': 3, 'e_lim': 0.5, 'X_1': 0.9, 'Y_1': 0.5, 'X': 0.56, 'Y': 1.5, 'C': 40},
+     {'P': 10.5, 'L_10': 55.28560631, 'L_10h': 921.4267717, 'a_1': 1.0, 'L_nm': 55.28560631, 'L_nmh': 921.4267717, 'P_0': 10.0, 's_0': 1.1, 'u_life': 21.70546875, 'u_s0': 0.9090909091}),
+    ('duty-with-y1', {'duty': [(2, 0.2, 0.5), (4, 0.5, 0.5)], 'e_lim': 0.3, 'Y_1': 0.8, 'X': 0.56, 'Y': 1.5, 'C': 40},
+     {'P': 3.62490062, 'L_10': 1343.667029, 'L_10h': 22394.45047, 'a_1': 1.0, 'L_nm': 1343.667029, 'L_nmh': 22394.45047, 'P_0': 4.0, 's_0': 2.75, 'u_life': 0.8930784, 'u_s0': 0.3636363636}),
+    ('duty-axial-step', {'duty': [(2, 0, 0.5), (1, 3, 0.5)], 'X': 0.56, 'Y': 1.5},
+     {'P': 4.09714471, 'L_10': 116.3177725, 'L_10h': 1938.629541, 'a_1': 1.0, 'L_nm': 116.3177725, 'L_nmh': 1938.629541, 'P_0': 2.1, 's_0': 5.238095238, 'u_life': 10.3165662, 'u_s0': 0.1909090909}),
+    ('light-load-capped (F_r 1 N, C 20 kN)', {'F_r': 0.001, 'C': 20},
+     {'P': 0.001, 'L_10': 1000000000000.0, 'L_10h': 16666666670000.0, 'a_1': 1.0, 'L_nm': 1000000000000.0, 'L_nmh': 16666666670000.0, 'P_0': 0.001, 's_0': 11000.0, 'u_life': 1.2e-09, 'u_s0': 9.090909091e-05}),
 ]
 
 for name, kw, prod in EXTRAS:
@@ -123,15 +134,14 @@ for name, kw, prod in EXTRAS:
         check("EXTRA", name, sym, pv, ind[sym], 1e-6)
 
 # Behaviour notes from probes (no row, no effect on the exit code).
-# 1. Defaults X = 1, Y = 0, e_lim = 0.3 make F_a drop out of P. F_r 2 kN, F_a 4 kN gave P = 2 kN.
-#    With ball factors X 0.56, Y 1.5 the same load gives P = 7.12 kN and a life ratio of (7.12/2)^3 = 45.
+# 1. Defaults X = 1, Y = 0, e_lim = 0.3 used to drop F_a from P silently. Since 3c637a3d the product blocks ('axial-factor')
+#    when F_a/F_r exceeds e_lim and Y = 0 (F_r 2, F_a 4 kN, defaults).  The independent life for the factors X 0.56, Y 1.5 follows.
 p_default = bearing(F_r=2, F_a=4)["P"]
 p_ball = bearing(F_r=2, F_a=4, e_lim=0.3, X=0.56, Y=1.5)["P"]
-print(f"note  default factors: P {p_default:.3f} kN; ball factors: P {p_ball:.3f} kN; life ratio {(p_ball / p_default) ** 3:.1f}")
-# 2. Double-row bearing, F_a/F_r <= e: ISO 281:2007 cl. 6 factor tables use P = F_r + Y_1 F_a. The product has no Y_1.
+print(f"note  default factors give P {p_default:.3f} kN (the product now blocks this case); ball factors: P {p_ball:.3f} kN; life ratio {(p_ball / p_default) ** 3:.1f}")
+# 2. Double-row bearing, F_a/F_r <= e: P = F_r + Y_1 F_a (ISO 281:2007 cl. 6 factor tables).  The product has Y_1 since 3c637a3d.
 fr, fa, y1 = 10.0, 1.9, 3.3
-print(f"note  double row, F_a/F_r = 0.19 <= e: P = F_r + Y_1 F_a = {fr + y1 * fa:.2f} kN; product gives {fr:.2f} kN; "
-      f"life overstated by {((fr + y1 * fa) / fr) ** 3:.2f}x")
+print(f"note  double row, F_a/F_r = 0.19 <= e: P = F_r + Y_1 F_a = {fr + y1 * fa:.2f} kN (the product now gives 16.27 kN)")
 
 # ---------------------------------------------------------------- report
 print(f"{'kind':6} {'case':24} {'symbol':10} {'expected':>13} {'independent':>13} {'rel.diff':>10} {'tol':>7}  result")

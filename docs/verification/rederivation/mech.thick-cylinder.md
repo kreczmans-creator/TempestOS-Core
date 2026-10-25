@@ -73,12 +73,12 @@ Guards behave as specified. b ≤ a blocks. Both pressures zero block. A negativ
 | Boundary stress values | exactly −p_i and −p_o | Round-off noise at times | Partly (finding 02) |
 
 ## Findings
-| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|---|
-| P1-mech.thick-cylinder-01 | Medium | High: a missing guard lets an unsafe pass through in plausible use. With the default 200 MPa allowable, elastic collapse governs whenever t/r_m is below about 0.06. Real tubes collapse well below the elastic value because of out-of-roundness | Under external pressure on a moderately thin wall, the check passes although elastic collapse governs. The calculator checks stress only and gives no stability notice. | a 95 mm, b 100 mm, p_o 7.5 MPa, closed, allowable 200 MPa. Product: u = 0.666, pass. Long-tube collapse pressure E/(4(1 − ν²))·(t/r_m)³ with E 207 GPa and ν 0.3 is 7.67 MPa. The load is 98 % of it. | Add a warning when p_o > p_i and (b − a)/a is below about 0.1. State that stability is not checked. Optionally add the collapse pressure as a comparison output. |
-| P1-mech.thick-cylinder-02 | Low | Low: confirmed (σ_r,a −1.4901e-14 MPa in my probe) | A boundary stress that should be exactly zero shows round-off noise such as −1.49e-14 MPa. Such values appear in the sheet and outputs. | a 95, b 100, p_i 0, p_o 7.5: σ_r,a = −1.4901e-14 MPa. a 5000, b 6000: σ_r,b = −4.77e-13 MPa. a 50, b 100, p_i 50: σ_r,b = 1.86e-15 MPa. | Set σ_r(a) = −p_i and σ_r(b) = −p_o directly. The Lamé form then only supplies the interior values. |
-| P1-mech.thick-cylinder-03 | Info | Info: confirmed | The check uses von Mises only. Tresca is reported but not checked. Tresca is 15 % higher in the first KAT (133.3 against 115.5 MPa). | KAT ka-internal-closed. | Say in the check text which criterion the allowable stress assumes. |
-| P1-mech.thick-cylinder-04 | Info | Info: confirmed | At exactly 5 % wall, the thin-wall warning depends on floating-point rounding. | a 50 mm, b 52.5 mm warns; the spec threshold is "thinner than 5 %". | None needed. Optionally add a small tolerance. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) | Status @ 0772fcf8 |
+|---|---|---|---|---|---|---|
+| P1-mech.thick-cylinder-01 | Medium | High: a missing guard lets an unsafe pass through in plausible use. With the default 200 MPa allowable, elastic collapse governs whenever t/r_m is below about 0.06. Real tubes collapse well below the elastic value because of out-of-roundness | Under external pressure on a moderately thin wall, the check passes although elastic collapse governs. The calculator checks stress only and gives no stability notice. | a 95 mm, b 100 mm, p_o 7.5 MPa, closed, allowable 200 MPa. Product: u = 0.666, pass. Long-tube collapse pressure E/(4(1 − ν²))·(t/r_m)³ with E 207 GPa and ν 0.3 is 7.67 MPa. The load is 98 % of it. | Add a warning when p_o > p_i and (b − a)/a is below about 0.1. State that stability is not checked. Optionally add the collapse pressure as a comparison output. | Open. Probe: a 95, b 100, p_o 7.5 MPa, closed still gives u 0.666, pass, with no stability notice. Long-tube collapse is 7.67 MPa. |
+| P1-mech.thick-cylinder-02 | Low | Low: confirmed (σ_r,a −1.4901e-14 MPa in my probe) | A boundary stress that should be exactly zero shows round-off noise such as −1.49e-14 MPa. Such values appear in the sheet and outputs. | a 95, b 100, p_i 0, p_o 7.5: σ_r,a = −1.4901e-14 MPa. a 5000, b 6000: σ_r,b = −4.77e-13 MPa. a 50, b 100, p_i 50: σ_r,b = 1.86e-15 MPa. | Set σ_r(a) = −p_i and σ_r(b) = −p_o directly. The Lamé form then only supplies the interior values. | Open. Probe: σ_r,a is still −1.4901e-14 MPa (a 95, b 100, p_o 7.5) and σ_r,b is 1.86e-15 MPa (a 50, b 100, p_i 50). |
+| P1-mech.thick-cylinder-03 | Info | Info: confirmed | The check uses von Mises only. Tresca is reported but not checked. Tresca is 15 % higher in the first KAT (133.3 against 115.5 MPa). | KAT ka-internal-closed. | Say in the check text which criterion the allowable stress assumes. | Open (Info). Unchanged. The check still uses von Mises only. |
+| P1-mech.thick-cylinder-04 | Info | Info: confirmed | At exactly 5 % wall, the thin-wall warning depends on floating-point rounding. | a 50 mm, b 52.5 mm warns; the spec threshold is "thinner than 5 %". | None needed. Optionally add a small tolerance. | Open (Info). Probe: a 50, b 52.5 still warns 'thin-wall' at exactly 5 %; a 50, b 52.4 warns too. |
 
 ## Notes for the owner's manual test
 - Enter a 50, b 100, p_i 50 MPa, closed. Expect σ_θ,bore 83.33, σ_r,bore −50, σ_z 16.67, σ_vm 115.47, Tresca 133.33, thin-wall 75 MPa.
@@ -95,3 +95,10 @@ Guards behave as specified. b ≤ a blocks. Both pressures zero block. A negativ
 - I read Run line by line. A, B, σ_z for closed ends, von Mises, Tresca and the thin-wall estimate are all correct.
 - Change: -01 up to High. Its trigger should cover p_o > p_i with b/a up to about 1.1, not only the 5 % thin-wall case.
 - No new findings. Residual doubt: none on the stress formulae.
+
+## Re-check after the Addendum A Blue round (0772fcf8)
+- Source changed: none. ThickCylinderCalculator.cs and its spec are untouched, and the version stays 2.0.0. Shared sheet code changed, so I re-ran the probes.
+- All three KATs pass in the probe. The script is unchanged and exits 0 (12 cases agree to 5e-10).
+- I re-ran the findings and the reference cases (internal closed, open ends, external pressure, p_i = p_o, very thin). Every value is as before.
+- All four findings are still open: -01 (Medium, reviewed High), -02 (Low), -03 (Info) and -04 (Info).
+- I found no new defect.

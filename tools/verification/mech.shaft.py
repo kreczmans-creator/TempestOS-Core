@@ -274,23 +274,25 @@ def kat2():
 
 
 def kat3():
-    sut, sy = 735.0, 574.0
-    d = 28.0
+    # Data of Shigley 10th ed. Example 7-1 converted exactly to SI (the v0.26.0 KAT): M 1260 lbf*in, T 1100 lbf*in,
+    # d 1.100 in, S_ut 105 kpsi, S_y 82 kpsi.
+    sut, sy = 723.949485, 565.370074
+    d = 27.94
     sh = Shaft([(400, d, 0)], 0, 400, 207, rho=0.0).build([200])
-    loads = [(200, -1424.0)]
+    loads = [(200, -1423.6088)]
     M = abs(sh.moment(loads, 200))
     se = endurance(sut, "machined or cold-drawn", d, 99.0)
-    sa, tm = stresses(d, 0.0, M, 0.1243e6, 1.68, 1.42, 0.85, 0.92)
-    check("ka-shigley-7-1", "S_e", 203.7091, se, 1e-5)
-    check("ka-shigley-7-1", "n_f_min", 1.650015, n_goodman(sa, tm, se, sut), 1e-5)
-    check("ka-shigley-7-1", "n_y_min", 4.585856, n_yield(sa, tm, sy), 1e-5)
+    sa, tm = stresses(d, 0.0, M, 0.1242833119e6, 1.68, 1.42, 0.85, 0.92)
+    check("ka-shigley-7-1", "S_e", 201.4997, se, 1e-5)
+    check("ka-shigley-7-1", "n_f_min", 1.620988, n_goodman(sa, tm, se, sut), 1e-5)
+    check("ka-shigley-7-1", "n_y_min", 4.488973, n_yield(sa, tm, sy), 1e-5)
 
 
 def other_criteria():
     """Same stresses as ka-shigley-7-1 under the other fatigue criteria (information, no KAT)."""
-    sut, sy, d = 735.0, 574.0, 28.0
+    sut, sy, d = 723.949485, 565.370074, 27.94
     se = endurance(sut, "machined or cold-drawn", d, 99.0)
-    sa, tm = stresses(d, 0.0, 142400.0, 124300.0, 1.68, 1.42, 0.85, 0.92)
+    sa, tm = stresses(d, 0.0, 142360.88, 124283.3119, 1.68, 1.42, 0.85, 0.92)
     print()
     print("Other fatigue criteria for the ka-shigley-7-1 stresses (information only):")
     print(f"  DE-Goodman  {n_goodman(sa, tm, se, sut):.4f}   DE-Gerber {n_gerber(sa, tm, se, sut):.4f}   "
@@ -500,10 +502,27 @@ def extras():
     o = analyze(dict(segs=SEG1, xA=20, xB=380, loads=[(100, -3, 1.5, 0), (300, 2, -4, 0)], T=0.35, xT1=100, xT2=300, secs=[]))
     extra_rows.append(("E1 shaft self-mass only (lumped, 37 nodes)", "n_c (Rayleigh) vs exact eigen", 30485.0, o["n_c_exact"], 30485.0 / o["n_c_exact"] - 1.0,
                        "PASS" if 1.0 - 1e-3 <= 30485.0 / o["n_c_exact"] <= 1.05 else "FAIL", "lumped-mass error about +1 %"))
-    # Missed warning: tip mass 5 kg, n = 3800 rpm.  Product ratio 2.0991 (no warning); true ratio from the exact eigenvalue.
+    # Ratio to the operating speed: tip mass 5 kg, n = 3800 rpm.  Since 3c637a3d the product compares the Dunkerley lower bound.
+    # Product r_c 1.84305 (warning fires); the exact ratio from the eigenvalue is 1.892.
     o = analyze(CRIT[2][1])
-    extra_rows.append(("C3 at n = 3800 rpm: ratio n_c/n (warning needs < 2)", "product ratio vs exact ratio", 2.0991, o["n_c_exact"] / 3800.0,
-                       2.0991 / (o["n_c_exact"] / 3800.0) - 1.0, "FAIL", "P1-mech.shaft-01: exact ratio is below 2, product shows no warning"))
+    r_x = o["n_c_exact"] / 3800.0
+    ok_r = 1.84305 <= r_x * (1 + 1e-3) and 1.84305 >= 0.95 * r_x and (1.84305 < 2) == (r_x < 2)
+    extra_rows.append(("C3 at n = 3800 rpm: r_c = Dunkerley / n (warning needs < 2)", "product r_c vs exact ratio", 1.84305, r_x,
+                       1.84305 / r_x - 1.0, "PASS" if ok_r else "FAIL",
+                       "conservative (below the exact ratio, within 5 %) and the warning fires; fixed by 3c637a3d"))
+    extra_rows.append(("C3 at n = 3800 rpm: the n_c port is still Rayleigh", "port n_c vs exact eigen", 7976.6, o["n_c_exact"], 7976.6 / o["n_c_exact"] - 1.0,
+                       "FAIL", "P1-mech.shaft-01 (remaining part): n_c output keeps the |y| quotient; r_c is no longer n_c/n"))
+    # v0.26.0 peak torque T_pk (yield only): Shigley 7-1 SI data with T_pk 0.3 kN*m; product n_y 2.913840805, n_f unchanged 1.650015153.
+    sut_, sy_, d_ = 735.0, 574.0, 28.0
+    se_ = endurance(sut_, "machined or cold-drawn", d_, 99.0)
+    sa_, tm_ = stresses(d_, 0.0, 142400.0, 124300.0, 1.68, 1.42, 0.85, 0.92)
+    _, tpk_ = stresses(d_, 0.0, 142400.0, 300000.0, 1.68, 1.42, 0.85, 0.92)
+    ny_ = n_yield(sa_, tpk_, sy_)
+    extra_rows.append(("E12 peak torque T_pk 0.3 kN*m (yield only)", "n_y_min", 2.913840805, ny_, abs(ny_ - 2.913840805) / ny_,
+                       "PASS" if abs(ny_ - 2.913840805) <= 1e-6 * ny_ else "FAIL", "new input in 1.1.0"))
+    nf_ = n_goodman(sa_, tm_, se_, sut_)
+    extra_rows.append(("E12 peak torque T_pk 0.3 kN*m (yield only)", "n_f_min", 1.650015153, nf_, abs(nf_ - 1.650015153) / nf_,
+                       "PASS" if abs(nf_ - 1.650015153) <= 1e-6 * nf_ else "FAIL", "fatigue keeps the mean torque T"))
 
 
 extra_rows = []

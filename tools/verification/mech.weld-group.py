@@ -17,6 +17,8 @@ Model (rigid parts, elastic):
 
 Exit code: 0 when every KAT row passes (tolerance max(KAT tol, 1e-6)), else 1.
 EXTRA rows compare product values read from the Probe tool. They do not set the exit code.
+Product version 1.1.0 (since 3c637a3d) solves the plane-section law with I_uxy and blocks only a collinear group whose moment
+acts about the line. The one-line cases are no longer refused when no such moment acts.
 """
 import math
 import sys
@@ -93,6 +95,9 @@ for sym, exp, tol in [("J_u", 1333333.3, 1e-6), ("f_r_max", 106.0660, 1e-6)]:
 w3 = weld(H2, F_y=10, e_x=50, e_y=0, M_x=5)
 for sym, exp, tol in [("I_ux", 500000, 1e-9), ("f_r_max", 502.4938, 1e-6), ("s_req", 3.230640, 1e-5)]:
     check("KAT", "ka-two-horizontal-bending", sym, exp, w3[sym], tol)
+w4 = weld([(0, 0, 150, 0), (0, 0, 0, 50)], F_y=0, M_x=1)
+for sym, exp, tol in [("I_ux", 33854.16667, 1e-9), ("I_uy", 492187.5, 1e-9), ("I_uxy", -70312.5, 1e-9), ("f_r_max", 1500.0, 1e-9)]:
+    check("KAT", "ka-l-group-bending", sym, exp, w4[sym], tol)
 n_kat = len(rows)
 
 # ---------------------------------------------------------------- extra checks
@@ -109,38 +114,49 @@ H2Z = H2 + [(10, 10, 10, 10)]      # the zero-length row has no effect
 # Product values come from the Probe tool (C# calculator): (name, layout, inputs, outputs).
 EXTRAS = [
     ('L-shape-in-plane', L, {'F_x': 5, 'F_y': -30, 'e_x': 200, 'e_y': -40, 'M_z': 1},
-     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': -3.35, 'f_r_max': 536.027907, 'tau': 126.362071, 's_req': 3.44623831, 'u': 0.574373052}),
+     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.3333, 'I_uy': 618750.0, 'I_uxy': -225000.0, 'J_u': 852083.3333, 'T': -3.35, 'f_r_max': 536.0279074, 'tau': 126.3620715, 's_req': 3.446238314, 'u': 0.5743730523}),
     ('L-shape-Mx-only', L, {'F_z': 10, 'M_x': 5, 'F_y': 0, 'e_x': 0, 'e_y': 0},
-     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': 0.0, 'f_r_max': 1718.441558, 'tau': 405.1017347, 's_req': 11.04822913, 'u': 1.841371521}),
+     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.3333, 'I_uy': 618750.0, 'I_uxy': -225000.0, 'J_u': 852083.3333, 'T': 0.0, 'f_r_max': 2020.0, 'tau': 476.1904762, 's_req': 12.98701299, 'u': 2.164502165}),
     ('L-shape-Mx-My', L, {'F_z': 10, 'M_x': 3, 'M_y': 4, 'F_y': 0, 'e_x': 0, 'e_y': 0},
-     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.333, 'I_uy': 618750.0, 'J_u': 852083.333, 'T': 0.0, 'f_r_max': 741.8181818, 'tau': 174.8746303, 's_req': 4.7693081, 'u': 0.7948846833}),
+     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.3333, 'I_uy': 618750.0, 'I_uxy': -225000.0, 'J_u': 852083.3333, 'T': 0.0, 'f_r_max': 1500.0, 'tau': 353.6067893, 's_req': 9.643821525, 'u': 1.607303588}),
     ('C-section', C, {'F_y': -25, 'e_x': 180, 'e_y': 50, 's': 5, 'f_w': 180},
-     {'L_w': 220.0, 'x_c': 16.3636364, 'y_c': 50.0, 'I_ux': 383333.333, 'I_uy': 85090.9091, 'J_u': 468424.242, 'T': -4.09090909, 'f_r_max': 659.873928, 'tau': 186.668721, 's_req': 5.18524225, 'u': 1.03704845}),
+     {'L_w': 220.0, 'x_c': 16.36363636, 'y_c': 50.0, 'I_ux': 383333.3333, 'I_uy': 85090.90909, 'I_uxy': 0.0, 'J_u': 468424.2424, 'T': -4.090909091, 'f_r_max': 659.8739283, 'tau': 186.6687209, 's_req': 5.185242246, 'u': 1.037048449}),
     ('trapezoid-3D', TRAP, {'F_x': -12, 'F_y': -40, 'F_z': 15, 'e_x': 300, 'e_y': 60, 'M_x': 2, 'M_z': -1},
-     {'L_w': 560.0, 'x_c': 100.0, 'y_c': 49.2857143, 'I_ux': 1327714.29, 'I_uy': 2266666.67, 'J_u': 3594380.95, 'T': -8.87142857, 'f_r_max': 357.7402997, 'tau': 84.3329325, 's_req': 2.299989068, 'u': 0.3833315114}),
+     {'L_w': 560.0, 'x_c': 100.0, 'y_c': 49.28571429, 'I_ux': 1327714.286, 'I_uy': 2266666.667, 'I_uxy': 0.0, 'J_u': 3594380.952, 'T': -8.871428571, 'f_r_max': 357.7402997, 'tau': 84.3329325, 's_req': 2.299989068, 'u': 0.3833315114}),
     ('ring-48-torsion', RING, {'F_y': 0, 'e_x': 0, 'e_y': 0, 'M_z': 10, 's': 6},
-     {'L_w': 627.870041, 'x_c': 2.89707947e-15, 'y_c': -1.33537257e-15, 'I_ux': 3130397.68, 'I_uy': 3130397.68, 'J_u': 6260795.36, 'T': 10.0, 'f_r_max': 159.724115, 'tau': 37.6530211, 's_req': 1.02690057, 'u': 0.171150096}),
+     {'L_w': 627.8700406, 'x_c': 2.897079469e-15, 'y_c': -1.335372568e-15, 'I_ux': 3130397.678, 'I_uy': 3130397.678, 'I_uxy': -3.637978807e-11, 'J_u': 6260795.355, 'T': 10.0, 'f_r_max': 159.7241154, 'tau': 37.65302108, 's_req': 1.026900575, 'u': 0.1711500958}),
     ('rect-60x140-torsion', RECT, {'F_y': 0, 'e_x': 30, 'e_y': 70, 'M_z': 4},
-     {'L_w': 400.0, 'x_c': 30.0, 'y_c': 70.0, 'I_ux': 1045333.33, 'I_uy': 288000.0, 'J_u': 1333333.33, 'T': 4.0, 'f_r_max': 228.473193, 'tau': 53.8597815, 's_req': 1.46890313, 'u': 0.244817189}),
+     {'L_w': 400.0, 'x_c': 30.0, 'y_c': 70.0, 'I_ux': 1045333.333, 'I_uy': 288000.0, 'I_uxy': 0.0, 'J_u': 1333333.333, 'T': 4.0, 'f_r_max': 228.4731932, 'tau': 53.85978151, 's_req': 1.468903132, 'u': 0.2448171887}),
     ('zero-loads', H2, {'F_y': 0},
-     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.667, 'J_u': 291666.667, 'T': 0.0, 'f_r_max': 0.0, 'tau': 0.0, 's_req': 0.0, 'u': 0.0}),
+     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.6667, 'I_uxy': 0.0, 'J_u': 291666.6667, 'T': 0.0, 'f_r_max': 0.0, 'tau': 0.0, 's_req': 0.0, 'u': 0.0}),
     ('tiny-load', H2, {'F_y': -1e-06, 'e_x': 0, 'e_y': 0},
-     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.667, 'J_u': 291666.667, 'T': 5e-08, 'f_r_max': 1.4232042e-05, 'tau': 3.35503112e-06, 's_req': 9.15008489e-08, 'u': 1.52501415e-08}),
+     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.6667, 'I_uxy': 0.0, 'J_u': 291666.6667, 'T': 5e-08, 'f_r_max': 1.423204203e-05, 'tau': 3.355031125e-06, 's_req': 9.150084886e-08, 'u': 1.525014148e-08}),
     ('large-4000mm-box', BIG, {'F_y': -90000, 'F_z': 5000, 'e_x': 1500, 'e_y': 0, 'M_x': 800, 'M_y': 500, 's': 25, 'f_w': 600},
-     {'L_w': 16000.0, 'x_c': 0.0, 'y_c': 0.0, 'I_ux': 42666666700.0, 'I_uy': 42666666700.0, 'J_u': 85333333300.0, 'T': -135000.0, 'f_r_max': 9369.340219, 'tau': 530.0899699, 's_req': 22.087082080000002, 'u': 0.8834832832}),
+     {'L_w': 16000.0, 'x_c': 0.0, 'y_c': 0.0, 'I_ux': 42666666670.0, 'I_uy': 42666666670.0, 'I_uxy': 0.0, 'J_u': 85333333330.0, 'T': -135000.0, 'f_r_max': 9369.340219, 'tau': 530.0899699, 's_req': 22.08708208, 'u': 0.8834832832}),
     ('zero-length-row', H2Z, {'F_y': -10, 'e_x': 50, 'e_y': 40, 'M_x': 1},
-     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.667, 'J_u': 291666.667, 'T': 0.0, 'f_r_max': 206.155281, 'tau': 48.5986047, 's_req': 1.32541649, 'u': 0.220902749}),
+     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.6667, 'I_uxy': 0.0, 'J_u': 291666.6667, 'T': 0.0, 'f_r_max': 206.1552813, 'tau': 48.59860473, 's_req': 1.325416493, 'u': 0.2209027488}),
     ('leg-3mm', H2, {'F_y': -10, 'e_x': 50, 'e_y': 40, 's': 3},
-     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.667, 'J_u': 291666.667, 'T': 0.0, 'f_r_max': 50.0, 'tau': 23.5737859, 's_req': 0.321460717, 'u': 0.107153573}),
+     {'L_w': 200.0, 'x_c': 50.0, 'y_c': 25.0, 'I_ux': 125000.0, 'I_uy': 166666.6667, 'I_uxy': 0.0, 'J_u': 291666.6667, 'T': 0.0, 'f_r_max': 50.0, 'tau': 23.57378595, 's_req': 0.3214607175, 'u': 0.1071535725}),
+    ('single-vertical (Table 9-1 case 1)', [(0, 0, 0, 100)], {'F_y': -10, 'e_x': 100, 'e_y': 50},
+     {'L_w': 100.0, 'x_c': 0.0, 'y_c': 50.0, 'I_ux': 83333.33333, 'I_uy': 0.0, 'I_uxy': 0.0, 'J_u': 83333.33333, 'T': -1.0, 'f_r_max': 608.276253, 'tau': 143.3937419, 's_req': 3.910738415, 'u': 0.6517897358}),
+    ('vertical-Fz-off-centre', [(0, 0, 0, 100)], {'F_z': 10, 'e_x': 0, 'e_y': 80},
+     {'L_w': 100.0, 'x_c': 0.0, 'y_c': 50.0, 'I_ux': 83333.33333, 'I_uy': 0.0, 'I_uxy': 0.0, 'J_u': 83333.33333, 'T': 0.0, 'f_r_max': 280.0, 'tau': 66.00660066, 's_req': 1.800180018, 'u': 0.300030003}),
+    ('horizontal-My', [(0, 0, 100, 0)], {'M_y': 5},
+     {'L_w': 100.0, 'x_c': 50.0, 'y_c': 0.0, 'I_ux': 0.0, 'I_uy': 83333.33333, 'I_uxy': 0.0, 'J_u': 83333.33333, 'T': 0.0, 'f_r_max': 3000.0, 'tau': 707.2135785, 's_req': 19.28764305, 'u': 3.214607175}),
+    ('diagonal-Mx-My-along', [(0, 0, 100, 100)], {'M_x': 5, 'M_y': 5},
+     {'L_w': 141.4213562, 'x_c': 50.0, 'y_c': 50.0, 'I_ux': 117851.1302, 'I_uy': 117851.1302, 'I_uxy': 117851.1302, 'J_u': 235702.2604, 'T': 0.0, 'f_r_max': 2121.320344, 'tau': 500.0755171, 's_req': 13.63842319, 'u': 2.273070532}),
+    ('L-Fz-at-corner', L, {'F_z': 10, 'e_x': 0, 'e_y': 0},
+     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.3333, 'I_uy': 618750.0, 'I_uxy': -225000.0, 'J_u': 852083.3333, 'T': 0.0, 'f_r_max': 160.0, 'tau': 37.71805752, 's_req': 1.028674296, 'u': 0.171445716}),
+    ('L-My-only', L, {'M_y': 4},
+     {'L_w': 250.0, 'x_c': 45.0, 'y_c': 20.0, 'I_ux': 233333.3333, 'I_uy': 618750.0, 'I_uxy': -225000.0, 'J_u': 852083.3333, 'T': 0.0, 'f_r_max': 853.3333333, 'tau': 201.1629734, 's_req': 5.486262912, 'u': 0.914377152}),
 ]
-KEYS = ["L_w", "x_c", "y_c", "I_ux", "I_uy", "J_u", "T", "f_r_max", "tau", "s_req", "u"]
+KEYS = ["L_w", "x_c", "y_c", "I_ux", "I_uy", "I_uxy", "J_u", "T", "f_r_max", "tau", "s_req", "u"]
 for name, wl, kw, prod in EXTRAS:
     p = weld([w for w in wl if (w[0], w[1]) != (w[2], w[3])], **kw)
-    d = weld([w for w in wl if (w[0], w[1]) != (w[2], w[3])], outofplane="decoupled", **kw)
     for k in KEYS:
+        if k == "I_uxy" and abs(prod[k]) < 1e-3 and abs(p[k]) < 1e-3:
+            continue          # both are rounding noise around zero
         check("EXTRA", name, k, prod[k], p[k], 1e-6)
-    # Root cause of any out-of-plane difference: the decoupled law reproduces the product.
-    check("DECOUP", name, "f_r_max", prod["f_r_max"], d["f_r_max"], 1e-6)
 
 # Closed forms from Shigley, 11th ed., Table 9-1 (independent of the numeric kernel).
 b_, d_ = 60.0, 100.0
@@ -150,16 +166,33 @@ check("CLOSED", "rect-60x140-torsion", "J_u", dict((e[0], e[3]) for e in EXTRAS)
 ring_J = dict((e[0], e[3]) for e in EXTRAS)["ring-48-torsion"]["J_u"]
 check("CLOSED", "ring-48-torsion", "J_u(2*pi*r^3)", 2 * math.pi * 100 ** 3, ring_J, 5e-3)   # 48-sided polygon, 0.4 % below the circle
 
-# Guard checks. Product behaviour was read from the Probe tool.
-# 1. A single vertical weld is blocked ("collinear"). The closed form for one line gives J_u = d^3/12.
-one = weld([(0, 0, 0, 100)], F_y=-10, e_x=100, e_y=50)
-check("BLOCK", "single-vertical", "runs(1=yes)", 0.0, 1.0, 0.0)   # product blocks it (0); the case is valid (1)
-print(f"note  single vertical weld: product blocks it. Independent J_u {one['J_u']:.1f} mm^3, f_r,max {one['f_r_max']:.2f} N/mm, u {one['u']:.3f}.")
-# 2. A single diagonal weld under M_x: the moment about the line itself cannot be resisted.
-diag = weld([(0, 0, 100, 100)], M_x=5, F_y=0, e_x=50, e_y=50)
-Ix, Iy, Ixy = diag["I_ux"], diag["I_uy"], diag["I_uxy"]
-print(f"note  single diagonal weld, M_x 5 kN*m: I_ux {Ix:.0f}, I_uy {Iy:.0f}, I_uxy {Ixy:.0f} mm^3. The 2x2 system is singular.")
-print("      Product ran without a notice: f_r,max 2121.3 N/mm, u 2.273 (decoupled law).")
+# Guard checks.  Product 1.1.0 blocks a collinear group only when the out-of-plane moment has a part across the line.
+def blocked(welds_, F_z=0.0, e_x=0.0, e_y=0.0, M_x=0.0, M_y=0.0, **_):
+    W = np.array(welds_, dtype=float)
+    x1, y1, x2, y2 = W.T
+    dx, dy = x2 - x1, y2 - y1
+    l = np.hypot(dx, dy)
+    xm, ym = (x1 + x2) / 2, (y1 + y2) / 2
+    xc, yc = (l * xm).sum() / l.sum(), (l * ym).sum() / l.sum()
+    ax, ay = xm - xc, ym - yc
+    Iux, Iuy, Iuxy = (l * ay ** 2 + l * dy ** 2 / 12).sum(), (l * ax ** 2 + l * dx ** 2 / 12).sum(), (l * ax * ay + l * dx * dy / 12).sum()
+    if abs(Iux * Iuy - Iuxy ** 2) > 1e-9 * (Iux + Iuy) ** 2:
+        return False
+    rhs = np.array([M_y * 1e3 + F_z * (e_x - xc), M_x * 1e3 + F_z * (e_y - yc)])
+    mat = np.array([[Iuy, Iuxy], [Iuxy, Iux]])
+    c = np.linalg.lstsq(mat, rhs, rcond=None)[0]
+    return np.linalg.norm(mat @ c - rhs) > 1e-6 * max(np.linalg.norm(rhs), 1e-30)
+
+
+for name, wl, kw, prod_blocked in (
+        ("single-vertical, in-plane load only", [(0, 0, 0, 100)], {"F_y": -10, "e_x": 100, "e_y": 50}, 0),
+        ("single-vertical, F_z with e_x 10 (moment about the line)", [(0, 0, 0, 100)], {"F_z": 10, "e_x": 10, "e_y": 50}, 1),
+        ("single-diagonal, M_x 5 (old -03)", [(0, 0, 100, 100)], {"M_x": 5}, 1),
+        ("single-diagonal, M_x 5 and M_y -5 (across the line)", [(0, 0, 100, 100)], {"M_x": 5, "M_y": -5}, 1),
+        ("single-diagonal, M_x 5 and M_y 5 (along the line)", [(0, 0, 100, 100)], {"M_x": 5, "M_y": 5}, 0),
+        ("single-horizontal, M_x 5", [(0, 0, 100, 0)], {"M_x": 5}, 1),
+        ("single-horizontal, M_y 5", [(0, 0, 100, 0)], {"M_y": 5}, 0)):
+    check("BLOCK", name, "blocked (1 = yes)", float(prod_blocked), 1.0 if blocked(wl, **kw) else 0.0, 1e-9)
 
 # ---------------------------------------------------------------- report
 print(f"{'kind':6} {'case':26} {'symbol':14} {'expected':>13} {'independent':>13} {'rel.diff':>10} {'tol':>7}  result")

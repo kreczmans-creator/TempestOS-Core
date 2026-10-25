@@ -54,10 +54,14 @@ def areas(p, c):
 
 def zc_default(p, c):
     col = p["column"]
+    # The compression strip runs from c inside the flange (or wall) to the outstand outside it. When that outstand is cut
+    # back to the plate edge, the strip centroid moves inward by (c - c_cut)/2 (Addendum A fix G-A-10; the pre-A product
+    # and this script's first version used the uncut value).
+    cut = max(0.0, c - max(0.0, min(c, (p["L"] - p["h"]) / 2))) if col in ("I/H", "RHS") else 0.0
     if col == "I/H":
-        return (p["h"] - p["t_f"]) / 2
+        return (p["h"] - p["t_f"]) / 2 - cut / 2
     if col == "RHS":
-        return (p["h"] - p["t"]) / 2
+        return (p["h"] - p["t"]) / 2 - cut / 2
     D, t = p["D"], p["t"]
     co = max(0.0, min(c, (min(p["B"], p["L"]) - D) / 2))
     R = D / 2 + co
@@ -201,7 +205,7 @@ KATS = {
 # The RHS, CHS and clip cases leave x_b, m, l_eff, n_t, n_b, F_t_Rd and bolt data at the template defaults.
 
 # Extra probes: inputs not in the KATs (other inputs at the template defaults of the product), and the values the
-# C# product returned for them (Probe run, observed 2026-10-24). None means the product does not output that value.
+# C# product returned for them (Probe run, observed 2026-10-24; RHS-clip and the four cut-outstand rows re-observed at 0772fcf8). None means the product does not output that value.
 EXTRAS = [
     ('typ-UC254-C30', {'h': 260.3, 'b': 256.3, 't_f': 17.3, 't_w': 10.3, 'B': 450, 'L': 450, 't_p': 30, 'f_ck': 30, 'alpha': 1.8, 'N_Ed': 800, 'M_Ed': 150, 'V_Ed': 100, 'x_b': 185, 'm': 35, 'l_eff': 300},
      [('A_eff', 124361.7798), ('z_C', 121.5), ('C_Ed', 972.2675367), ('T_Ed', 172.2675367), ('F_t_Ed', 86.13376835), ('u_C', 0.8601559792), ('T_Rd', 282.0), ('u_T', 0.6108777897), ('u_V', 0.3170453653), ('V_b_Ed', 0.0), ('t_req_N', 10.0), ('t_req', 26.4363213), ('u_max', 0.8601559792)]),
@@ -221,8 +225,16 @@ EXTRAS = [
      [('A_eff', 98849.98688), ('z_C', 121.5), ('C_Ed', 12739.9651), ('T_Ed', 2739.965096), ('F_t_Ed', 1369.982548), ('u_C', 21.16850591), ('T_Rd', 282.0), ('u_T', 9.716188284), ('u_V', 0.9278967291), ('V_b_Ed', 0.0), ('t_req_N', '> 100 mm'), ('t_req', 'bolts govern'), ('u_max', 21.16850591)]),
     ('RHS-moment', {'column': 'RHS', 'h': 250, 'b': 150, 't': 8, 'B': 400, 'L': 450, 't_p': 25, 'N_Ed': 250, 'M_Ed': 80, 'V_Ed': 40, 'x_b': 180, 'm': 30},
      [('A_eff', 103823.4277), ('z_C', 121.0), ('C_Ed', 415.282392), ('T_Ed', 165.282392), ('F_t_Ed', 82.64119601), ('u_C', 0.7822926061), ('T_Rd', 282.0), ('u_T', 0.5861077731), ('u_V', 0.1947303293), ('V_b_Ed', 0.0), ('t_req_N', 10.0), ('t_req', 20.9045267), ('u_max', 0.7822926061)]),
-    ('RHS-clip', {'column': 'RHS', 'h': 200, 'b': 200, 't': 10, 'B': 230, 'L': 300, 't_p': 40, 'N_Ed': 300, 'M_Ed': 60, 'V_Ed': 0, 'x_b': 130, 'm': 20},
-     [('A_eff', 69000.0), ('z_C', 95.0), ('C_Ed', 440.0), ('T_Ed', 140.0), ('F_t_Ed', 70.0), ('u_C', 0.9002557545), ('T_Rd', 282.0), ('u_T', 0.4964539007), ('u_V', 0.0), ('V_b_Ed', 0.0), ('t_req_N', 10.0), ('t_req', 29.49928367), ('u_max', 0.9002557545)]),
+    ('RHS-clip', {'column': 'RHS', 'h': 200, 'b': 200, 't': 10, 'B': 230, 'L': 300, 'N_Ed': 300, 'M_Ed': 60, 'V_Ed': 0, 'x_b': 130, 'm': 20, 't_p': 40},
+     [('A_eff', 69000.0), ('z_C', 69.12529809), ('C_Ed', 497.174397), ('T_Ed', 197.174397), ('F_t_Ed', 98.58719848), ('u_C', 1.017236618), ('T_Rd', 282.0), ('u_T', 0.6991999892), ('u_V', 0.0), ('V_b_Ed', 0.0), ('t_req_N', 10.0), ('t_req', '> 100 mm'), ('u_max', 1.017236618)]),
+    ('RHS-clip-tp20', {'column': 'RHS', 'h': 200, 'b': 200, 't': 10, 'B': 230, 'L': 300, 'N_Ed': 300, 'M_Ed': 60, 'V_Ed': 0, 'x_b': 130, 'm': 20, 't_p': 20},
+     [('A_eff', 62876.8442), ('z_C', 94.56264905), ('C_Ed', 440.8569298), ('T_Ed', 140.8569298), ('F_t_Ed', 70.42846489), ('u_C', 1.220308665), ('T_Rd', 282.0), ('u_T', 0.4994926588), ('u_V', 0.0), ('V_b_Ed', 0.0), ('t_req_N', 10.0), ('t_req', 29.60267351), ('u_max', 1.220308665)]),
+    ('RHS-clip-at-its-own-t_req', {'column': 'RHS', 'h': 200, 'b': 200, 't': 10, 'B': 230, 'L': 300, 'N_Ed': 300, 'M_Ed': 60, 'V_Ed': 0, 'x_b': 130, 'm': 20, 't_p': 29.60267351},
+     [('A_eff', 68135.79987), ('z_C', 82.34932024), ('C_Ed', 466.2129358), ('T_Ed', 166.2129358), ('F_t_Ed', 83.10646789), ('u_C', 1.057515271), ('T_Rd', 282.0), ('u_T', 0.5894075737), ('u_V', 0.0), ('V_b_Ed', 0.0), ('t_req_N', 10.0), ('t_req', 32.66191283), ('u_max', 1.057515271)]),
+    ('IH-cutL-tp20', {'B': 360, 'L': 360, 'N_Ed': 500, 'M_Ed': 100, 'V_Ed': 0, 'x_b': 165, 't_p': 20},
+     [('A_eff', 98224.13871), ('z_C', 121.062649), ('C_Ed', 637.9721386), ('T_Ed', 137.9721386), ('F_t_Ed', 68.98606932), ('u_C', 1.067909651), ('T_Rd', 282.0), ('u_T', 0.489262903), ('u_V', 0.0), ('V_b_Ed', 0.0), ('t_req_N', 10.0), ('t_req', 22.83751021), ('u_max', 1.067909651)]),
+    ('IH-cutL-at-its-own-t_req', {'B': 360, 'L': 360, 'N_Ed': 500, 'M_Ed': 100, 'V_Ed': 0, 'x_b': 165, 't_p': 22.8375},
+     [('A_eff', 103923.6403), ('z_C', 117.4537249), ('C_Ed', 646.1235379), ('T_Ed', 146.1235379), ('F_t_Ed', 73.06176893), ('u_C', 1.012777256), ('T_Rd', 282.0), ('u_T', 0.518168574), ('u_V', 0.0), ('V_b_Ed', 0.0), ('t_req_N', 10.0), ('t_req', 23.46584355), ('u_max', 1.012777256)]),
     ('CHS-clip', {'column': 'CHS', 'D': 300, 't': 10, 'B': 340, 'L': 500, 't_p': 40, 'N_Ed': 800, 'M_Ed': 0, 'V_Ed': 0, 'x_b': 200, 'm': 20},
      [('A_eff', 86195.538), ('z_C', 75.13204442), ('C_Ed', 400.0), ('T_Ed', 0.0), ('F_t_Ed', 0.0), ('u_C', None), ('T_Rd', 282.0), ('u_T', 0.0), ('u_V', 0.0), ('V_b_Ed', 0.0), ('t_req_N', 13.94719762), ('t_req', 13.94719762), ('u_max', 0.6551451449)]),
     ('CHS-thick-wall', {'column': 'CHS', 'D': 100, 't': 40, 'B': 400, 'L': 400, 't_p': 30, 'N_Ed': 800, 'M_Ed': 0, 'V_Ed': 0, 'x_b': 100, 'm': 20},
@@ -269,7 +281,15 @@ def consistency_note():
     print("\nSelf-consistent t_req for a CHS (z_C re-evaluated at every t), against the product (z_C held at the entered t_p)")
     cases = [("ka-chs-moment (KAT)", KATS["ka-chs-moment"][0], 15.39956042)]
     for name, kw, obs in EXTRAS:
-        if name.startswith("CHS-") and kw.get("M_Ed", 0) > 0 and any(o[0] == "t_req" for o in obs):
+        # Any column whose z_C moves with c: a CHS always, an I/H or RHS once the outstand is cut at the plate edge
+        # (Addendum A fix G-A-10 made the strip centroid depend on c, so the finding now reaches those columns too).
+        if kw.get("M_Ed", 0) > 0 and any(o[0] == "t_req" for o in obs) and name not in ("RHS-clip", ) and \
+                isinstance(dict(obs)["t_req"], float):
+            t_hold = calc(hold_forces=True, **kw)["t_req"]
+            t_self = calc(**kw)["t_req"]
+            if name.startswith(("RHS-clip-", "IH-cutL")) or (isinstance(t_self, float) and isinstance(t_hold, float) and abs(t_self - t_hold) > 1e-4):
+                cases.append((name, kw, dict(obs)["t_req"]))
+        elif name.startswith("CHS-") and kw.get("M_Ed", 0) > 0 and any(o[0] == "t_req" for o in obs):
             cases.append((name, kw, dict(obs)["t_req"]))
     for name, kw, prod_t in cases:
         c_ = calc(**kw)
@@ -278,6 +298,8 @@ def consistency_note():
         p.update(kw)
         at_prod = utilisations(p, prod_t) if not isinstance(prod_t, str) else None
         extra = ""
+        if isinstance(t_, str):
+            extra = " (the search is not monotone once z_C moves with c, so no single self-consistent value exists)"
         if at_prod is not None:
             extra = f"; at the product t_req the self-consistent u_C = {at_prod['u_C'] or 0:.4f}, u_T = {at_prod['u_T']:.4f}"
         print(f"  {name:26s} product t_req = {prod_t}   self-consistent t_req = {t_ if isinstance(t_, str) else round(t_, 4)}{extra}")
