@@ -1,10 +1,10 @@
 # Worked examples — v0.26.0
 
-52 worked examples (two for seventeen of the 35 worksheet templates, one for each of the other eighteen) and 7 calculation packs (the bracket assembly and the six linked chains). The 35 templates carry 165 known-answer cases between them. Each example folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF). A pack folder holds the pack's issue sheet, each step's issued sheet, a README and an `inputs.json` that records every step's inputs (one object keyed by step); that file is a record of what was issued, not one worksheet's import, so load a pack step by copying that step's list out of it.
+60 worked examples (three for one of the 40 worksheet templates, two for eighteen, one for each of the other twenty-one) and 7 calculation packs (the bracket assembly and the six linked chains). The 40 templates carry 211 known-answer cases between them. Each example folder holds `README.md` (the problem, the inputs and the expected results with their source), `inputs.json` (the inputs as the worksheet reads them), `sheet.txt` (the rendered sheet) and `sheet.pdf` (the Desktop's PDF). A pack folder holds the pack's issue sheet, each step's issued sheet, a README and an `inputs.json` that records every step's inputs (one object keyed by step); that file is a record of what was issued, not one worksheet's import, so load a pack step by copying that step's list out of it.
 
 **How to use one.** In the Desktop open Modules → Calculations → Worksheets (or the discipline's own Calculations node) and pick the template named in the table; the form opens on the template's declared defaults only. A table or a required value with no default (a frame's nodes, a shaft's segments, a base plate's `m` and `l_eff`) starts empty, so a new sheet for many templates opens blocked with a message saying what to enter next. Enter the values from the example's README (every input lists its value, unit and source); the form recalculates at once, *Show working* is the `sheet.txt` text and the issued sheet is `sheet.pdf`. `inputs.json` is the same input set in the exchange form the Calc API reads: headless, `CalcInputJson.Read` → `CalcRunner.Run` → `CalcSheetBuilder.Build` → `CalcSheetTextRenderer.Render` reproduces the sheet (`tests/Tempest.Calc.Tests.Calculators/WorkedExamples.cs`). To load an example into the form, copy the text of its `inputs.json` to the clipboard and press *Import inputs (CSV/JSON)*; the form re-seeds from it (table inputs included) and recalculates. *Export inputs (CSV)* copies the current inputs back out in the CSV the same button reads.
 
-Ten examples end on a **FAIL** governing check on purpose: they show how an overloaded or undersized design reads on the sheet. The verification footers in the stored sheets carry fixed placeholder values (hash `0000…`, engine `engine`); a sheet rendered in the product carries the real hash, engine version and test-run time.
+Eleven examples end on a **FAIL** governing check on purpose: they show how an overloaded or undersized design reads on the sheet. The verification footers in the stored sheets carry fixed placeholder values (hash `0000…`, engine `engine`); a sheet rendered in the product carries the real hash, engine version and test-run time.
 
 | Discipline | Template | Example | Governing check |
 |---|---|---|---|
@@ -13,6 +13,11 @@ Ten examples end on a **FAIL** governing check on purpose: they show how an over
 | building-services | `bs.glaser` | [internal-insulation-no-vcl](building-services/bs.glaser/internal-insulation-no-vcl/README.md) | FAIL — Peak condensate on an interface against its limit |
 | building-services | `bs.glaser` | [internal-insulation-with-vcl](building-services/bs.glaser/internal-insulation-with-vcl/README.md) | PASS — Surface condensation (f_Rsi against f_Rsi,min) |
 | building-services | `bs.heat-exchanger` | [lthw-plate-hx-sizing](building-services/bs.heat-exchanger/lthw-plate-hx-sizing/README.md) | PASS — Approach against minimum |
+| building-services | `bs.insulation` | [chilled-water-pipe-condensation](building-services/bs.insulation/chilled-water-pipe-condensation/README.md) | PASS — Chosen thickness against the heat-gain limit |
+| building-services | `bs.insulation` | [clad-hot-water-pipe-correlation](building-services/bs.insulation/clad-hot-water-pipe-correlation/README.md) | PASS — Chosen thickness against the heat-loss limit |
+| building-services | `bs.pipe-expansion` | [copper-axial-bellows](building-services/bs.pipe-expansion/copper-axial-bellows/README.md) | PASS — Movement against the rated axial movement of the bellows |
+| building-services | `bs.pipe-expansion` | [copper-offset-leg-too-short](building-services/bs.pipe-expansion/copper-offset-leg-too-short/README.md) | FAIL — Screening OD·Y/(L − U)² ≤ K1 |
+| building-services | `bs.pipe-expansion` | [lthw-main-expansion-loop](building-services/bs.pipe-expansion/lthw-main-expansion-loop/README.md) | PASS — Available leg against the required leg |
 | building-services | `bs.pipe-pump` | [chilled-water-riser-duty](building-services/bs.pipe-pump/chilled-water-riser-duty/README.md) | FAIL — Velocity ≤ limit |
 | building-services | `bs.pipe-pump` | [oil-transfer-laminar](building-services/bs.pipe-pump/oil-transfer-laminar/README.md) | PASS — Velocity ≤ limit |
 | building-services | `bs.psychrometrics` | [cooling-coil-summer](building-services/bs.psychrometrics/cooling-coil-summer/README.md) | no pass/fail checks |
@@ -20,6 +25,7 @@ Ten examples end on a **FAIL** governing check on purpose: they show how an over
 | building-services | `bs.room-heat-loss` | [semi-detached-living-room](building-services/bs.room-heat-loss/semi-detached-living-room/README.md) | PASS — U-value of Party wall against its target (1.2 W/m²K) |
 | building-services | `bs.sealed-system` | [heat-pump-retrofit-55-45](building-services/bs.sealed-system/heat-pump-retrofit-55-45/README.md) | FAIL — Selected emitters against room heat (governing room) |
 | electrical | `elec.conductor-sizing` | [conveyor-motor-circuit](electrical/elec.conductor-sizing/conveyor-motor-circuit/README.md) | PASS — Design current within device rating (I_b ≤ I_n) |
+| electrical | `elec.containment` | [servo-cable-pull-three-bends](electrical/elec.containment/servo-cable-pull-three-bends/README.md) | PASS — Fill against the space factor |
 | electrical | `elec.enclosure-heat` | [outdoor-kiosk-cooling-unit](electrical/elec.enclosure-heat/outdoor-kiosk-cooling-unit/README.md) | FAIL — Natural dissipation holds T_max |
 | electrical | `elec.enclosure-heat` | [wall-mounted-plc-panel](electrical/elec.enclosure-heat/wall-mounted-plc-panel/README.md) | FAIL — Natural dissipation holds T_max |
 | electrical | `elec.fault-protection` | [workshop-radial-c16](electrical/elec.fault-protection/workshop-radial-c16/README.md) | PASS — Loop impedance within maximum (disconnection in time) |
@@ -42,6 +48,7 @@ Ten examples end on a **FAIL** governing check on purpose: they show how an over
 | mechanical | `mech.press-fit` | [hollow-shaft](mechanical/mech.press-fit/hollow-shaft/README.md) | PASS — Hub yield |
 | mechanical | `mech.press-fit` | [solid-steel-shaft](mechanical/mech.press-fit/solid-steel-shaft/README.md) | PASS — Hub yield |
 | mechanical | `mech.shaft` | [gearbox-input-shaft](mechanical/mech.shaft/gearbox-input-shaft/README.md) | PASS — Slope at the bearings against limit |
+| mechanical | `mech.snap-fit` | [enclosure-lid-hook](mechanical/mech.snap-fit/enclosure-lid-hook/README.md) | PASS — Strain at the critical section against the permissible strain |
 | mechanical | `mech.spring` | [plunger-return-spring](mechanical/mech.spring/plunger-return-spring/README.md) | PASS — Static shear stress at solid length |
 | mechanical | `mech.thick-cylinder` | [external-pressure-closed](mechanical/mech.thick-cylinder/external-pressure-closed/README.md) | PASS — von Mises against allowable |
 | mechanical | `mech.thick-cylinder` | [internal-pressure-closed](mechanical/mech.thick-cylinder/internal-pressure-closed/README.md) | PASS — von Mises against allowable |
@@ -58,6 +65,7 @@ Ten examples end on a **FAIL** governing check on purpose: they show how an over
 | structural | `struct.frame-2d` | [two-span-continuous-beam](structural/struct.frame-2d/two-span-continuous-beam/README.md) | no pass/fail checks |
 | structural | `struct.load-combinations` | [office-floor-beam-uk-na](structural/struct.load-combinations/office-floor-beam-uk-na/README.md) | no pass/fail checks |
 | structural | `struct.ltb-interaction` | [ub-457x191x98-beam-column](structural/struct.ltb-interaction/ub-457x191x98-beam-column/README.md) | PASS — Interaction, equation 6.62 |
+| structural | `struct.plate-bending` | [enclosure-lid-aluminium](structural/struct.plate-bending/enclosure-lid-aluminium/README.md) | PASS — Deflection w_max ≤ span/ratio |
 | structural | `struct.section-properties` | [fabricated-box-girder](structural/struct.section-properties/fabricated-box-girder/README.md) | no pass/fail checks |
 | structural | `struct.section-properties` | [ub-457x191x98](structural/struct.section-properties/ub-457x191x98/README.md) | no pass/fail checks |
 

@@ -1,0 +1,154 @@
+[
+  {
+    "Symbol": "D_i",
+    "Number": 114,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "M-PIP-021",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "114"
+  },
+  {
+    "Symbol": "L_surf",
+    "Number": 1,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used: a pipe.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "RH_a",
+    "Number": 60,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used: a hot pipe has no condensation criterion.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "eps",
+    "Number": 0.1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Bright aluminium cladding; replace with the cladding maker\u0027s emissivity.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.1"
+  },
+  {
+    "Symbol": "geometry",
+    "Text": "pipe (cylinder)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "A round pipe.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "pipe (cylinder)"
+  },
+  {
+    "Symbol": "h_mode",
+    "Text": "convection \u002B radiation (correlation)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Surface coefficient computed from the correlation.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "convection \u002B radiation (correlation)"
+  },
+  {
+    "Symbol": "h_se",
+    "Number": 10,
+    "Unit": "W/(m^2*K)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used: h_se is computed.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "lambda",
+    "Number": 0.04,
+    "Unit": "W/(m*K)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Mineral wool; take the maker\u0027s value at the mean temperature (W3 material)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.04"
+  },
+  {
+    "Symbol": "q_max_m",
+    "Number": 60,
+    "Unit": "W/m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-12 \u00A75: heat loss not to exceed 60 W/m",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "t_chosen",
+    "Number": 50,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Pipework schedule M-SCH-021: 50 mm sections",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "theta_a",
+    "Number": 15,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-12 \u00A72: ambient design temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "15"
+  },
+  {
+    "Symbol": "theta_i",
+    "Number": 120,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-12 \u00A73: heating flow temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "120"
+  },
+  {
+    "Symbol": "theta_se_max",
+    "Number": 60,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-12 \u00A76: personnel protection, surface not above 60 \u00B0C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "v_wind",
+    "Number": 0,
+    "Unit": "m/s",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Still air, indoors.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  }
+]

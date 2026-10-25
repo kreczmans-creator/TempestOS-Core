@@ -14,5 +14,6 @@ public static class ElectricalCalculators
         new FaultProtectionCalculator(),
         new ConductorSizingCalculator(),
         new PcbTraceCalculator(),
+        new ContainmentCalculator(),
     ];
 }
