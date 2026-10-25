@@ -42,7 +42,8 @@ public enum CalcInputKind
 /// default and its soft and hard limits. Soft limits warn; hard limits
 /// block. Limits are in <see cref="DefaultUnit"/>. <see cref="MaterialProperty"/> names the material property
 /// (<c>E</c>, <c>rho</c>, <c>f_y</c>, <c>E(T)</c>, …) this input takes from a <c>material.properties</c> record; the
-/// template also lists the input's symbol in a record kind of that name (Addendum B, W3).
+/// template also lists the input's symbol in a record kind of that name (Addendum B, W3). <see cref="PressureBasis"/> names the
+/// basis of a pressure input so the sheet prints "bar a" or "bar g" beside it.
 /// </summary>
 public sealed record CalcInputSpec(
     string Symbol,
@@ -60,8 +61,39 @@ public sealed record CalcInputSpec(
     string? Group = null,
     IReadOnlyList<CalcColumnSpec>? Columns = null,
     int MaxRows = 500,
-    string? MaterialProperty = null)
+    string? MaterialProperty = null,
+    string? PressureBasis = null)
 {
+    /// <summary>A pressure that is always gauge (above the atmosphere): <see cref="PressureBasis"/> "g".</summary>
+    public const string BasisGauge = "g";
+
+    /// <summary>A pressure that is always absolute: <see cref="PressureBasis"/> "a".</summary>
+    public const string BasisAbsolute = "a";
+
+    /// <summary>
+    /// The basis label printed beside this pressure on the sheet: "g" (gauge) or "a" (absolute), or <see langword="null"/> for an
+    /// input that is not a pressure, a pressure difference, or a pressure with no stated basis. <see cref="PressureBasis"/> is "g",
+    /// "a", or "@symbol" when the basis follows the choice input of that name ("Gauge" or "Absolute"); <paramref name="choiceOf"/>
+    /// returns that choice. The label only names the basis; it converts nothing.
+    /// </summary>
+    public string? BasisLabel(Func<string, string?> choiceOf)
+    {
+        ArgumentNullException.ThrowIfNull(choiceOf);
+
+        if (PressureBasis is not { Length: > 0 } basis)
+            return null;
+
+        if (basis[0] != '@')
+            return basis;
+
+        return choiceOf(basis[1..]) switch
+        {
+            { } c when c.Equals("Absolute", StringComparison.OrdinalIgnoreCase) => BasisAbsolute,
+            { } c when c.Equals("Gauge", StringComparison.OrdinalIgnoreCase) => BasisGauge,
+            _ => null,
+        };
+    }
+
     /// <summary>The dimension this input measures, from its default unit.</summary>
     public Dimension Dimension => Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? UnitCatalog.Parse(DefaultUnit).Dimension : Dimension.None;
 

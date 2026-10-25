@@ -57,7 +57,7 @@ Stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits on (gr
   x_hi | Installed stretch: highest acceptable (the installation rule is up to 6 % on a piston groove); also applied at the cold end | 6 | % | manual | 1 … 10 %
   od_hi | Ring outside-diameter compression: highest acceptable, in a rod-seal groove or against the groove outer wall of an internal-pressure face seal (your record; the default is a placeholder equal to the stretch limit, not a handbook value) | 6 | % | manual | 1 … 10 %
   H_A | Ring hardness, Shore A (for the extrusion record) | 70 |  | manual | 40 … 95
-  p_op | Operating pressure (for the extrusion record) | 160 | bar | manual | 0 … 700 bar
+  p_op | Operating pressure (for the extrusion record, gauge) | 160 | bar g | manual | 0 … 700 bar g
   dD_p | Diametral growth under the operating pressure of the bore (piston seal) or of the housing bore round the rod (rod seal), from your cylinder or housing calculation; added to the extrusion gap (0 if not known) | 0 | mm | manual | 0 … 0.5 mm
   gap_allow | Largest permitted extrusion gap at this pressure and hardness, if you have it as one value | 0.15 | mm | manual | 0.01 … 1 mm
   n_mc | Monte Carlo samples | 10000 |  | manual | 1000 … 100000

@@ -1,5 +1,6 @@
 using Tempest.Calc.Engine;
 using Tempest.Calc.Engine.Units;
+using Tempest.Calc.Engine.Values;
 
 namespace Tempest.Calc.Tests.Engine;
 
@@ -51,6 +52,35 @@ public sealed class DimensionAndUnitTests
         var unit = UnitCatalog.Parse(symbol);
         Assert.Equal(Dimension.L, unit.Dimension);
         Assert.Equal(factor, unit.Factor, 12);
+    }
+
+    [Theory]
+    [InlineData("bar a", "bar a")]
+    [InlineData("bar g", "bar g")]
+    public void A_Bar_Names_Its_Basis_Without_Changing_Its_Value(string text, string symbol)
+    {
+        // Y-B-06: "bar a" and "bar g" are labels for the sheet. They are the bar, with nothing added for the atmosphere.
+        var unit = UnitCatalog.Parse(text);
+        Assert.Equal(symbol, unit.Symbol);
+        Assert.Equal(Dimension.Pressure, unit.Dimension);
+        Assert.Equal(1e5, UnitCatalog.Parse("bar a").Factor, 9);
+        Assert.Equal(1e5, UnitCatalog.Parse("bar g").Factor, 9);
+        Assert.Equal(0.0, UnitCatalog.Parse("bar g").Offset);
+        Assert.Equal("90 bar a", ScalarValue.Of(90, UnitCatalog.Parse("bar a")).Format());
+        Assert.Equal("90 bar a", ScalarValue.Of(90, UnitCatalog.Parse("bar")).In(UnitCatalog.Parse("bar a")).Format());
+        Assert.Equal("bar a·L", UnitCatalog.Parse("bar a*L").Symbol);
+    }
+
+    [Theory]
+    [InlineData("bar ag")]
+    [InlineData("bar a1")]
+    [InlineData("bar b")]
+    [InlineData("bar  x")]
+    public void A_Bar_With_Anything_Else_After_It_Is_Not_A_Basis(string text)
+    {
+        Assert.False(UnitCatalog.TryParse(text, out _, out var error));
+        Assert.NotEmpty(error);
+        Assert.Equal(Dimension.Pressure, UnitCatalog.Parse("bar").Dimension);
     }
 
     [Theory]
