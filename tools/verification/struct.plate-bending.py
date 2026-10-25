@@ -335,20 +335,262 @@ def run_kats():
     return ok
 
 
-EXTRAS = []
+
+def _clamped_solve(a, b, t, E, nu, q, nx, ny, u=None, v=None, grid=40):
+    """One Ritz solve with beam functions: centre values, edge-middle moments and the largest von Mises
+    moment on a quarter-plate grid. q in MPa. u, v: centred patch sizes (None = whole plate)."""
+    D = rigidity(E, nu, t)
+    xg, wg = np.polynomial.legendre.leggauss(240)
+    xi = 0.5 * (xg + 1)
+    wt = 0.5 * wg
+    px, d1x, d2x, _ = beam_basis(nx, xi)
+    py, d1y, d2y, _ = beam_basis(ny, xi)
+    Ax, Bx, Cx = (d2x * wt) @ d2x.T, (d1x * wt) @ d1x.T, (px * wt) @ px.T
+    Ay, By, Cy = (d2y * wt) @ d2y.T, (d1y * wt) @ d1y.T, (py * wt) @ py.T
+    K = D * a * b * (np.kron(Ax, Cy) / a ** 4 + np.kron(Cx, Ay) / b ** 4 + 2 * np.kron(Bx, By) / (a ** 2 * b ** 2))
+
+    def load(n, span):
+        lo, hi = (0.0, 1.0) if span is None else (0.5 - span / 2, 0.5 + span / 2)
+        ph, _, _, _ = beam_basis(n, lo + (hi - lo) * xi)
+        return ph @ (wt * (hi - lo))
+    f = q * a * b * np.kron(load(nx, None if u is None else u / a), load(ny, None if v is None else v / b))
+    cm = np.linalg.solve(K, f).reshape(nx, ny)
+    g = np.linspace(0, 0.5, grid + 1)
+    pxg, d1xg, d2xg, _ = beam_basis(nx, g)
+    pyg, d1yg, d2yg, _ = beam_basis(ny, g)
+    wxx = (d2xg.T @ cm @ pyg) / a ** 2
+    wyy = (pxg.T @ cm @ d2yg) / b ** 2
+    wxy = (d1xg.T @ cm @ d1yg) / (a * b)
+    Mx, My, Mxy = -D * (wxx + nu * wyy), -D * (wyy + nu * wxx), -D * (1 - nu) * wxy
+    vmm = np.sqrt(Mx ** 2 - Mx * My + My ** 2 + 3 * Mxy ** 2)
+    return dict(w=pxg[:, -1] @ cm @ pyg[:, -1], Mx_c=Mx[-1, -1], My_c=My[-1, -1],
+                M_edge=max(abs(Mx[0, -1]), abs(My[-1, 0])), vm=vmm.max())
+
+
+def clamped_case(a, b, t, E, nu, rho, q, u=None, v=None, n1=14, n2=20):
+    """Reference values for a clamped rectangle: two orders, moments extrapolated with a 1/n^2 tail."""
+    ar = a / b
+    sol = [_clamped_solve(a, b, t, E, nu, q, max(2, round(n * max(ar, 1))), max(2, round(n * max(1 / ar, 1))), u, v) for n in (n1, n2)]
+    fac = (1 / n2 ** 2) / (1 / n1 ** 2 - 1 / n2 ** 2)
+    out = {k: sol[1][k] + (sol[1][k] - sol[0][k]) * fac for k in ("Mx_c", "My_c", "M_edge", "vm")}
+    out["w"] = sol[1]["w"]
+    # fundamental frequency from the eigenproblem at a small order (dense generalised eigenvalue problem)
+    from scipy.linalg import eigh
+    n = 12
+    nx, ny = max(2, round(n * max(ar, 1))), max(2, round(n * max(1 / ar, 1)))
+    D = rigidity(E, nu, t)
+    xg, wg = np.polynomial.legendre.leggauss(240)
+    xi, wt = 0.5 * (xg + 1), 0.5 * wg
+    px, d1x, d2x, _ = beam_basis(nx, xi)
+    py, d1y, d2y, _ = beam_basis(ny, xi)
+    Ax, Bx, Cx = (d2x * wt) @ d2x.T, (d1x * wt) @ d1x.T, (px * wt) @ px.T
+    Ay, By, Cy = (d2y * wt) @ d2y.T, (d1y * wt) @ d1y.T, (py * wt) @ py.T
+    K = D * a * b * (np.kron(Ax, Cy) / a ** 4 + np.kron(Cx, Ay) / b ** 4 + 2 * np.kron(Bx, By) / (a ** 2 * b ** 2))
+    Mm = rho * 1e-12 * t * a * b * np.kron(Cx, Cy)                    # kg/m^3 = 1e-12 N s^2/mm^4
+    out["f1"] = math.sqrt(eigh(K, Mm, eigvals_only=True, subset_by_index=[0, 0])[0]) / (2 * PI)
+    return out
+
+
+_CACHE = {}
+
+
+def independent(spec):
+    """Independent values for one extra-check case, in the units the probe tool displays (mm, MPa, N*m/m, Hz)."""
+    key = repr(sorted(spec.items()))
+    if key in _CACHE:
+        return _CACHE[key]
+    s = spec
+    if s["shape"] == "circular":
+        a, t = s["a"], s["t"]
+        D = rigidity(s["E"], s["nu"], t)
+        clamped = s["support"] == "clamped"
+        w0, mom = circ_axisym(a, D, s["nu"], clamped, s["kind"], q=s["q"] / 1000, c=s["c"], F=s["F"])
+        vmax, pmax = circ_scan(a, t, mom, extra=[s["c"]] if s["c"] else [])
+        lam2 = circ_freq_lambda2(clamped, s["nu"])
+        f1 = lam2 / (2 * PI * (a / 1000) ** 2) * math.sqrt(D / 1000 / (s["rho"] * t / 1000))
+        res = dict(w_max=w0, sigma_max=vmax, sigma_principal=pmax, f1=f1)
+    elif s["support"] != "clamped":
+        a, b, t, nu = s["a"], s["b"], s["t"], s["nu"]
+        w, Mx, My, Mxy = navier_converged(a, b, t, s["E"], nu, s["q"] / 1000, s["u"], s["v"])[0]
+        res = dict(w_max=w, M_x_c=Mx, M_y_c=My, M_xy_k=Mxy,
+                   sigma_max=max(vm(6 * Mx / t ** 2, 6 * My / t ** 2), math.sqrt(3) * 6 * Mxy / t ** 2),
+                   sigma_principal=6 * max(abs(Mx), abs(My), Mxy) / t ** 2, f1=rect_ss_freq(a, b, s["E"], nu, s["rho"], t))
+    else:
+        c = clamped_case(s["a"], s["b"], s["t"], s["E"], s["nu"], s["rho"], s["q"] / 1000, s["u"], s["v"])
+        res = dict(w_max=c["w"], M_x_c=c["Mx_c"], M_y_c=c["My_c"], M_edge=c["M_edge"], sigma_max=6 * c["vm"] / s["t"] ** 2, f1=c["f1"])
+    _CACHE[key] = res
+    return res
+
+
+EXTRAS = [   # (label, case, symbol, product value as printed by the probe tool, 9 significant digits)
+    ('circ clamped uniform Al', {'shape': 'circular', 'a': 300, 't': 6, 'q': 15, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'clamped', 'kind': 'uniform', 'c': 0.0, 'F': 0.0}, 'w_max', 1.34261719),
+    ('circ clamped uniform Al', {'shape': 'circular', 'a': 300, 't': 6, 'q': 15, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'clamped', 'kind': 'uniform', 'c': 0.0, 'F': 0.0}, 'sigma_max', 24.8218063),
+    ('circ clamped uniform Al', {'shape': 'circular', 'a': 300, 't': 6, 'q': 15, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'clamped', 'kind': 'uniform', 'c': 0.0, 'F': 0.0}, 'sigma_principal', 28.125),
+    ('circ clamped uniform Al', {'shape': 'circular', 'a': 300, 't': 6, 'q': 15, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'clamped', 'kind': 'uniform', 'c': 0.0, 'F': 0.0}, 'f1', 168.777932),
+    ('circ SS uniform nu=0.49', {'shape': 'circular', 'a': 300, 't': 6, 'q': 15, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'kind': 'uniform', 'c': 0.0, 'F': 0.0}, 'w_max', 98.4339844),
+    ('circ SS uniform nu=0.49', {'shape': 'circular', 'a': 300, 't': 6, 'q': 15, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'kind': 'uniform', 'c': 0.0, 'F': 0.0}, 'sigma_max', 49.078125),
+    ('circ SS uniform nu=0.49', {'shape': 'circular', 'a': 300, 't': 6, 'q': 15, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'kind': 'uniform', 'c': 0.0, 'F': 0.0}, 'sigma_principal', 49.078125),
+    ('circ SS uniform nu=0.49', {'shape': 'circular', 'a': 300, 't': 6, 'q': 15, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'kind': 'uniform', 'c': 0.0, 'F': 0.0}, 'f1', 30.1711049),
+    ('circ clamped patch beta=0.25', {'shape': 'circular', 'a': 300, 't': 6, 'q': 40, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'clamped', 'kind': 'patch', 'c': 75, 'F': 0.0}, 'w_max', 0.775568728),
+    ('circ clamped patch beta=0.25', {'shape': 'circular', 'a': 300, 't': 6, 'q': 40, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'clamped', 'kind': 'patch', 'c': 75, 'F': 0.0}, 'sigma_max', 17.480182),
+    ('circ clamped patch beta=0.25', {'shape': 'circular', 'a': 300, 't': 6, 'q': 40, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'clamped', 'kind': 'patch', 'c': 75, 'F': 0.0}, 'sigma_principal', 17.480182),
+    ('circ clamped patch beta=0.25', {'shape': 'circular', 'a': 300, 't': 6, 'q': 40, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'clamped', 'kind': 'patch', 'c': 75, 'F': 0.0}, 'f1', 168.777932),
+    ('circ SS patch beta=0.8', {'shape': 'circular', 'a': 300, 't': 5, 'q': 40, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'patch', 'c': 240, 'F': 0.0}, 'w_max', 8.05743643),
+    ('circ SS patch beta=0.8', {'shape': 'circular', 'a': 300, 't': 5, 'q': 40, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'patch', 'c': 240, 'F': 0.0}, 'sigma_max', 162.858694),
+    ('circ SS patch beta=0.8', {'shape': 'circular', 'a': 300, 't': 5, 'q': 40, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'patch', 'c': 240, 'F': 0.0}, 'sigma_principal', 162.858694),
+    ('circ SS patch beta=0.8', {'shape': 'circular', 'a': 300, 't': 5, 'q': 40, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'patch', 'c': 240, 'F': 0.0}, 'f1', 66.652547),
+    ('circ SS patch beta=1', {'shape': 'circular', 'a': 300, 't': 5, 'q': 40, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'patch', 'c': 300, 'F': 0.0}, 'w_max', 9.0153),
+    ('circ SS patch beta=1', {'shape': 'circular', 'a': 300, 't': 5, 'q': 40, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'patch', 'c': 300, 'F': 0.0}, 'sigma_max', 178.2),
+    ('circ SS patch beta=1', {'shape': 'circular', 'a': 300, 't': 5, 'q': 40, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'patch', 'c': 300, 'F': 0.0}, 'sigma_principal', 178.2),
+    ('circ SS patch beta=1', {'shape': 'circular', 'a': 300, 't': 5, 'q': 40, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'patch', 'c': 300, 'F': 0.0}, 'f1', 66.652547),
+    ('circ clamped ring beta=0.1', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'ring', 'c': 25, 'F': 3000}, 'w_max', 1.53802096),
+    ('circ clamped ring beta=0.1', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'ring', 'c': 25, 'F': 3000}, 'sigma_max', 134.637096),
+    ('circ clamped ring beta=0.1', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'ring', 'c': 25, 'F': 3000}, 'sigma_principal', 134.637096),
+    ('circ clamped ring beta=0.1', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'ring', 'c': 25, 'F': 3000}, 'f1', 198.679229),
+    ('circ SS ring beta=0.9', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'ring', 'c': 225, 'F': 3000}, 'w_max', 0.50774361),
+    ('circ SS ring beta=0.9', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'ring', 'c': 225, 'F': 3000}, 'sigma_max', 11.6578961),
+    ('circ SS ring beta=0.9', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'ring', 'c': 225, 'F': 3000}, 'sigma_principal', 11.6578961),
+    ('circ SS ring beta=0.9', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'kind': 'ring', 'c': 225, 'F': 3000}, 'f1', 95.9796677),
+    ('circ SS ring beta=0.5 nu=0', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'kind': 'ring', 'c': 125, 'F': 3000}, 'w_max', 3.40807187),
+    ('circ SS ring beta=0.5 nu=0', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'kind': 'ring', 'c': 125, 'F': 3000}, 'sigma_max', 61.2003253),
+    ('circ SS ring beta=0.5 nu=0', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'kind': 'ring', 'c': 125, 'F': 3000}, 'sigma_principal', 61.2003253),
+    ('circ SS ring beta=0.5 nu=0', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'kind': 'ring', 'c': 125, 'F': 3000}, 'f1', 82.4396207),
+    ('circ clamped ring beta=0.99', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'ring', 'c': 247.5, 'F': 3000}, 'w_max', 0.000324780787),
+    ('circ clamped ring beta=0.99', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'ring', 'c': 247.5, 'F': 3000}, 'sigma_max', 1.01341949),
+    ('circ clamped ring beta=0.99', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'ring', 'c': 247.5, 'F': 3000}, 'sigma_principal', 1.14018601),
+    ('circ clamped ring beta=0.99', {'shape': 'circular', 'a': 250, 't': 5, 'q': 0, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'ring', 'c': 247.5, 'F': 3000}, 'f1', 198.679229),
+    ('circ clamped patch beta=0.02', {'shape': 'circular', 'a': 250, 't': 5, 'q': 2000, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'patch', 'c': 5, 'F': 0.0}, 'w_max', 0.0851534085),
+    ('circ clamped patch beta=0.02', {'shape': 'circular', 'a': 250, 't': 5, 'q': 2000, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'patch', 'c': 5, 'F': 0.0}, 'sigma_max', 15.2572797),
+    ('circ clamped patch beta=0.02', {'shape': 'circular', 'a': 250, 't': 5, 'q': 2000, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'patch', 'c': 5, 'F': 0.0}, 'sigma_principal', 15.2572797),
+    ('circ clamped patch beta=0.02', {'shape': 'circular', 'a': 250, 't': 5, 'q': 2000, 'E': 200, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'kind': 'patch', 'c': 5, 'F': 0.0}, 'f1', 198.679229),
+    ('SS 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'w_max', 0.642932714),
+    ('SS 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'sigma_max', 20.6659184),
+    ('SS 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'sigma_principal', 23.8319711),
+    ('SS 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'f1', 98.3429809),
+    ('SS 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_x_c', 115.8757),
+    ('SS 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_y_c', 254.207692),
+    ('SS 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_xy_k', 115.667644),
+    ('SS 5:1 uniform', {'shape': 'rect', 'a': 2500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'w_max', 0.82334383),
+    ('SS 5:1 uniform', {'shape': 'rect', 'a': 2500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'sigma_max', 25.9426601),
+    ('SS 5:1 uniform', {'shape': 'rect', 'a': 2500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'sigma_principal', 29.208861),
+    ('SS 5:1 uniform', {'shape': 'rect', 'a': 2500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'f1', 81.8213601),
+    ('SS 5:1 uniform', {'shape': 'rect', 'a': 2500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_x_c', 94.3629668),
+    ('SS 5:1 uniform', {'shape': 'rect', 'a': 2500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_y_c', 311.561185),
+    ('SS 5:1 uniform', {'shape': 'rect', 'a': 2500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_xy_k', 118.726981),
+    ('SS 10:1 uniform', {'shape': 'rect', 'a': 5000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'w_max', 0.826515527),
+    ('SS 10:1 uniform', {'shape': 'rect', 'a': 5000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'sigma_max', 26.039564),
+    ('SS 10:1 uniform', {'shape': 'rect', 'a': 5000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'sigma_principal', 29.2968123),
+    ('SS 10:1 uniform', {'shape': 'rect', 'a': 5000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'f1', 79.4611286),
+    ('SS 10:1 uniform', {'shape': 'rect', 'a': 5000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_x_c', 93.7503848),
+    ('SS 10:1 uniform', {'shape': 'rect', 'a': 5000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_y_c', 312.499331),
+    ('SS 10:1 uniform', {'shape': 'rect', 'a': 5000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_xy_k', 118.72755),
+    ('SS square nu=0 (corner governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 210, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'w_max', 0.550244593),
+    ('SS square nu=0 (corner governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 210, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'sigma_max', 42.865587),
+    ('SS square nu=0 (corner governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 210, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'sigma_principal', 24.7484582),
+    ('SS square nu=0 (corner governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 210, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'f1', 175.899796),
+    ('SS square nu=0 (corner governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 210, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_x_c', 117.874153),
+    ('SS square nu=0 (corner governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 210, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_y_c', 117.874153),
+    ('SS square nu=0 (corner governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 210, 'nu': 0.0, 'rho': 7850, 'support': 'simply supported', 'u': None, 'v': None}, 'M_xy_k', 148.490749),
+    ('SS square nu=0.49 (centre governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'u': None, 'v': None}, 'w_max', 29.2691606),
+    ('SS square nu=0.49 (centre governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'u': None, 'v': None}, 'sigma_max', 29.2720813),
+    ('SS square nu=0.49 (centre governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'u': None, 'v': None}, 'sigma_principal', 29.2720813),
+    ('SS square nu=0.49 (centre governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'u': None, 'v': None}, 'f1', 64.4282863),
+    ('SS square nu=0.49 (centre governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'u': None, 'v': None}, 'M_x_c', 175.632488),
+    ('SS square nu=0.49 (centre governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'u': None, 'v': None}, 'M_y_c', 175.632488),
+    ('SS square nu=0.49 (centre governs)', {'shape': 'rect', 'a': 400, 'b': 400, 't': 6, 'q': 20, 'E': 3, 'nu': 0.49, 'rho': 1100, 'support': 'simply supported', 'u': None, 'v': None}, 'M_xy_k', 75.730282),
+    ('SS 3:1 patch 20% x 20%', {'shape': 'rect', 'a': 1200, 'b': 400, 't': 6, 'q': 50, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'simply supported', 'u': 240, 'v': 80}, 'w_max', 1.59500322),
+    ('SS 3:1 patch 20% x 20%', {'shape': 'rect', 'a': 1200, 'b': 400, 't': 6, 'q': 50, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'simply supported', 'u': 240, 'v': 80}, 'sigma_max', 28.0314732),
+    ('SS 3:1 patch 20% x 20%', {'shape': 'rect', 'a': 1200, 'b': 400, 't': 6, 'q': 50, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'simply supported', 'u': 240, 'v': 80}, 'sigma_principal', 32.0865507),
+    ('SS 3:1 patch 20% x 20%', {'shape': 'rect', 'a': 1200, 'b': 400, 't': 6, 'q': 50, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'simply supported', 'u': 240, 'v': 80}, 'f1', 101.911203),
+    ('SS 3:1 patch 20% x 20%', {'shape': 'rect', 'a': 1200, 'b': 400, 't': 6, 'q': 50, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'simply supported', 'u': 240, 'v': 80}, 'M_x_c', 118.389357),
+    ('SS 3:1 patch 20% x 20%', {'shape': 'rect', 'a': 1200, 'b': 400, 't': 6, 'q': 50, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'simply supported', 'u': 240, 'v': 80}, 'M_y_c', 192.519304),
+    ('SS 3:1 patch 20% x 20%', {'shape': 'rect', 'a': 1200, 'b': 400, 't': 6, 'q': 50, 'E': 70, 'nu': 0.33, 'rho': 2700, 'support': 'simply supported', 'u': 240, 'v': 80}, 'M_xy_k', 9.25591523),
+    ('SS square patch 2% (cap warning)', {'shape': 'rect', 'a': 500, 'b': 500, 't': 6, 'q': 500, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 10, 'v': 10}, 'w_max', 0.0348693698),
+    ('SS square patch 2% (cap warning)', {'shape': 'rect', 'a': 500, 'b': 500, 't': 6, 'q': 500, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 10, 'v': 10}, 'sigma_max', 3.7550987),
+    ('SS square patch 2% (cap warning)', {'shape': 'rect', 'a': 500, 'b': 500, 't': 6, 'q': 500, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 10, 'v': 10}, 'sigma_principal', 3.7550987),
+    ('SS square patch 2% (cap warning)', {'shape': 'rect', 'a': 500, 'b': 500, 't': 6, 'q': 500, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 10, 'v': 10}, 'f1', 118.011577),
+    ('SS square patch 2% (cap warning)', {'shape': 'rect', 'a': 500, 'b': 500, 't': 6, 'q': 500, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 10, 'v': 10}, 'M_x_c', 22.5305922),
+    ('SS square patch 2% (cap warning)', {'shape': 'rect', 'a': 500, 'b': 500, 't': 6, 'q': 500, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 10, 'v': 10}, 'M_y_c', 22.5305922),
+    ('SS square patch 2% (cap warning)', {'shape': 'rect', 'a': 500, 'b': 500, 't': 6, 'q': 500, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 10, 'v': 10}, 'M_xy_k', 3.04699536),
+    ('SS patch = whole plate', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 400}, 'w_max', 2.38014296),
+    ('SS patch = whole plate', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 400}, 'sigma_max', 99.1470097),
+    ('SS patch = whole plate', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 400}, 'sigma_principal', 108.213448),
+    ('SS patch = whole plate', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 400}, 'f1', 133.172787),
+    ('SS patch = whole plate', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 400}, 'M_x_c', 398.741582),
+    ('SS patch = whole plate', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 400}, 'M_y_c', 649.28069),
+    ('SS patch = whole plate', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 400}, 'M_xy_k', 343.455316),
+    ('SS patch 100% x 10%', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 40}, 'w_max', 0.38343472),
+    ('SS patch 100% x 10%', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 40}, 'sigma_max', 19.5032012),
+    ('SS patch 100% x 10%', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 40}, 'sigma_principal', 22.4995032),
+    ('SS patch 100% x 10%', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 40}, 'f1', 133.172787),
+    ('SS patch 100% x 10%', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 40}, 'M_x_c', 72.5332361),
+    ('SS patch 100% x 10%', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 40}, 'M_y_c', 134.997019),
+    ('SS patch 100% x 10%', {'shape': 'rect', 'a': 600, 'b': 400, 't': 6, 'q': 50, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'simply supported', 'u': 600, 'v': 40}, 'M_xy_k', 46.1495215),
+    ('clamped 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'w_max', 0.160783325),
+    ('clamped 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'M_x_c', 39.5200739),
+    ('clamped 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'M_y_c', 102.887475),
+    ('clamped 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'M_edge', 207.164718),
+    ('clamped 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'sigma_max', 17.2623778),
+    ('clamped 2:1 uniform', {'shape': 'rect', 'a': 1000, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'f1', 195.918316),
+    ('clamped 3:1 uniform', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'w_max', 0.16613271),
+    ('clamped 3:1 uniform', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'M_x_c', 31.7319936),
+    ('clamped 3:1 uniform', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'M_y_c', 104.753339),
+    ('clamped 3:1 uniform', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'M_edge', 209.441625),
+    ('clamped 3:1 uniform', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'sigma_max', 17.4522584),
+    ('clamped 3:1 uniform', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 10, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': None, 'v': None}, 'f1', 184.90666),
+    ('clamped square patch 50%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 100, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 250, 'v': 250}, 'w_max', 0.538431319),
+    ('clamped square patch 50%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 100, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 250, 'v': 250}, 'M_x_c', 448.222023),
+    ('clamped square patch 50%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 100, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 250, 'v': 250}, 'M_y_c', 448.222023),
+    ('clamped square patch 50%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 100, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 250, 'v': 250}, 'M_edge', 650.997875),
+    ('clamped square patch 50%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 100, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 250, 'v': 250}, 'sigma_max', 54.2455845),
+    ('clamped square patch 50%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 100, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 250, 'v': 250}, 'f1', 286.851697),
+    ('clamped square patch 25%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 300, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 125, 'v': 125}, 'w_max', 0.56754478),
+    ('clamped square patch 25%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 300, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 125, 'v': 125}, 'M_x_c', 644.341968),
+    ('clamped square patch 25%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 300, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 125, 'v': 125}, 'M_y_c', 644.341968),
+    ('clamped square patch 25%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 300, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 125, 'v': 125}, 'M_edge', 565.435995),
+    ('clamped square patch 25%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 300, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 125, 'v': 125}, 'sigma_max', 60.4070595),
+    ('clamped square patch 25%', {'shape': 'rect', 'a': 500, 'b': 500, 't': 8, 'q': 300, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 125, 'v': 125}, 'f1', 286.851697),
+    ('clamped 3:1 band patch 25% x 100%', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 20, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 375, 'v': 500}, 'w_max', 0.249415747),
+    ('clamped 3:1 band patch 25% x 100%', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 20, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 375, 'v': 500}, 'M_x_c', 99.3342567),
+    ('clamped 3:1 band patch 25% x 100%', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 20, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 375, 'v': 500}, 'M_y_c', 166.04572),
+    ('clamped 3:1 band patch 25% x 100%', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 20, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 375, 'v': 500}, 'M_edge', 345.149936),
+    ('clamped 3:1 band patch 25% x 100%', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 20, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 375, 'v': 500}, 'sigma_max', 28.7602475),
+    ('clamped 3:1 band patch 25% x 100%', {'shape': 'rect', 'a': 1500, 'b': 500, 't': 8, 'q': 20, 'E': 210, 'nu': 0.3, 'rho': 7850, 'support': 'clamped', 'u': 375, 'v': 500}, 'f1', 184.90666),
+]
 
 
 def run_extras():
     print()
     print("Extra checks (product values observed with the probe tool)")
-    print("%-40s %-14s %14s %14s %10s  %s" % ("probe", "symbol", "product", "independent", "rel diff", "result"))
-    for label, fn, sym, prod, tol in EXTRAS:
-        v = fn()
-        if prod is None:
-            print("%-40s %-14s %14s %14.8g %10s  INFO" % (label, sym, "-", v, "-"))
-            continue
+    print("%-40s %-16s %14s %14s %10s  %s" % ("probe", "symbol", "product", "independent", "rel diff", "result"))
+    for label, spec, sym, prod in EXTRAS:
+        spec = dict(spec)
+        if spec.get("shape") == "rect":
+            spec["shape"] = "rectangular"
+        v = independent(spec)[sym]
+        if spec["shape"] == "circular":
+            tol = 1e-7
+        elif spec["support"] != "clamped":
+            tol = 2e-5 if sym in ("M_x_c", "M_y_c") else 3e-6
+            if sym == "M_x_c" and abs(v) < 1e-3 * abs(independent(spec)["M_y_c"]):
+                tol = 1e-2                        # a centre moment far smaller than the other one: the product stops summing early
+        else:
+            tol = 1e-5 if sym == "f1" else (1e-5 if sym == "w_max" else 3e-3)
         rd = abs(v - prod) / abs(v) if v != 0 else abs(prod)
-        print("%-40s %-14s %14.8g %14.8g %10.2e  %s" % (label, sym, prod, v, rd, "PASS" if rd <= tol else "FAIL"))
+        print("%-40s %-16s %14.8g %14.8g %10.2e  %s" % (label, sym, prod, v, rd, "PASS" if rd <= tol else "FAIL"))
+    # strip limit of a long clamped plate (analytic): edge moment q*b^2/12, w = q*b^4/(384 D)
+    q, b = 0.01, 500.0
+    print("%-40s %-16s %14.8g %14.8g %10.2e  %s" % ("clamped 10:1 uniform vs strip limit", "M_edge", 208.386300, q * b * b / 12,
+                                                    abs(208.3863 - q * b * b / 12) / (q * b * b / 12), "INFO (K=16 stalled; +0.025 %)"))
+    # textbook coefficients (Roark 8th ed. Tables 11.2 and 11.4, values from memory, not pinned): simply supported
+    # square beta = 0.2874, alpha = 0.0444; clamped square beta = 0.3078, alpha = 0.0138; circular clamped 0.75, SS 1.2375
+    D = rigidity(210, 0.3, 8)
+    ss = navier_converged(500, 500, 8, 210, 0.3, 0.01)[0]
+    cl = _clamped_solve(500, 500, 8, 210, 0.3, 0.01, 40, 40)
+    print("INFO Roark cross-check (coefficients from memory): SS square beta %.4f (book 0.2874), alpha %.4f (book 0.0444)"
+          % (6 * ss[1] / (0.01 * 500 ** 2) * 1e0 / 64 * 64 / 6 * 6 / 64 * 64 / 1, ss[0] * 210e3 * 8 ** 3 / (0.01 * 500 ** 4)))
+    print("INFO clamped square: edge beta %.4f (book 0.3078), alpha %.4f (book 0.0138)"
+          % (6 * cl["M_edge"] / (0.01 * 500 ** 2), cl["w"] * 210e3 * 8 ** 3 / (0.01 * 500 ** 4)))
 
 
 if __name__ == "__main__":
