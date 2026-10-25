@@ -6858,9 +6858,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Composition/MainWindowComposer.Layout.cs": {
-    "mtime": 1792744137.1266642,
-    "seen": 1792768942.0535605,
-    "ast_hash": "0ee7a3c6ab0fdb44e8aaf20b3b30653d",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.797096,
+    "ast_hash": "99d9d80c079a1d2b21018800bd34d921",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Composition/MainWindowComposer.Wire.cs": {
@@ -7332,9 +7332,9 @@
     "semantic_hash": "96268d2a89da0c5406624b50af47373a"
   },
   "src/Tempest.Desktop/Tempest.Desktop.csproj": {
-    "mtime": 1792764147.461528,
-    "seen": 1792768942.0537775,
-    "ast_hash": "872ff898eea3b50b944728d0f35d6dfe",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7972763,
+    "ast_hash": "4f1a28e7e4112df665f684df05d220f6",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Theming/ApplicationPalette.cs": {
@@ -7974,9 +7974,9 @@
     "semantic_hash": "8b3c96e4ed3c32490c0cc8fd67c940db"
   },
   "src/Tempest.Workspace/Composition/EngineeringWorkspaceComposer.cs": {
-    "mtime": 1792704802.3327699,
-    "seen": 1792768942.0540352,
-    "ast_hash": "3e92caf8cef364c3e54ce695d2fe417c",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7975342,
+    "ast_hash": "31d0f7b06b0daa9c07e14ff9b1fdffb7",
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Editors/KindEditorDeclaration.cs": {
@@ -9792,9 +9792,9 @@
     "semantic_hash": "be5cb25e39bd13943e9498cfc0237bbc"
   },
   "src/TempestOS.slnx": {
-    "mtime": 1792764147.461528,
-    "seen": 1792768942.0546432,
-    "ast_hash": "2f710c853a5fcd8cf1a498ad2fd141d1",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7981255,
+    "ast_hash": "86e79e4b41519efaf0f7a54982955237",
     "semantic_hash": ""
   },
   "src/Templates/Tempest.Templates.Module/.template.config/template.json": {
@@ -11010,9 +11010,9 @@
     "semantic_hash": "1e80bf398d511a6dc6cf4f98f2770fb1"
   },
   "tests/Tempest.Core.Tests/EngineeringDomain/ProductionRehydrationTests.cs": {
-    "mtime": 1792704802.365827,
-    "seen": 1792768942.055159,
-    "ast_hash": "36be29e19970b8bd151eef8b456f2660",
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.7987475,
+    "ast_hash": "d217cef142990a97a23f13e456d93960",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/EngineeringDomain/R7FalsificationTests.cs": {
@@ -11736,9 +11736,9 @@
     "semantic_hash": "2c62c75b858da9b157c64a574d088df2"
   },
   "tests/Tempest.Core.Tests/Modules/ModuleMetadataCoverageTests.cs": {
-    "mtime": 1792704802.3828068,
-    "seen": 1792768942.0555835,
-    "ast_hash": "b311fab6a39a309e56df1673a0294a5b",
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.7991683,
+    "ast_hash": "3f7b9fad23032dcb191859da0aca1b33",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Modules/ModuleSdkFixtures.cs": {
@@ -13644,9 +13644,9 @@
     "semantic_hash": "adb549df2a8ad369d02fc81d9d41a61e"
   },
   "tests/Tempest.Desktop.Tests/KindEligibilityInvariantTests.cs": {
-    "mtime": 1792704802.4087436,
-    "seen": 1792768942.0563116,
-    "ast_hash": "4290eb380142c5edbd1dd732f724950c",
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.7999296,
+    "ast_hash": "f3cdfde08584f8a7d6b4dc4b8de0f083",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Layout/LayoutWalkTests.cs": {
@@ -14154,9 +14154,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1792742225.454516,
-    "seen": 1792768942.0565581,
-    "ast_hash": "0c04ba1e1494d3fd1765c810f0439312",
+    "mtime": 1792886285.2628555,
+    "seen": 1792886480.8001583,
+    "ast_hash": "f31fb00cabe905bb8db548736feaeefb",
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
@@ -16320,9 +16320,9 @@
     "semantic_hash": "02761aebc91e9212387d67cb32970407"
   },
   "docs/governance/Architecture/ADR Register.md": {
-    "mtime": 1792854677.0370765,
-    "seen": 1792854879.250722,
-    "ast_hash": "691225dca1117b9402f29cb802eb6dfc",
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.8030927,
+    "ast_hash": "880c862d3fc0f6ffbc6f85f8f839d7e1",
     "semantic_hash": ""
   },
   "docs/governance/Future Capability Register.md": {
@@ -17154,9 +17154,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/packages.lock.json": {
-    "mtime": 1792849688.143021,
-    "seen": 1792849898.080152,
-    "ast_hash": "fe1f66d9fec3be1f9936b57db6d94b2a",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.797482,
+    "ast_hash": "98a30b4b1b7be616859517a184bd2feb",
     "semantic_hash": ""
   },
   "src/Tempest.Harness/packages.lock.json": {
@@ -17190,9 +17190,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Integration/DashboardExport/EngineeringStatusExportAdapter.cs": {
-    "mtime": 1792737606.914104,
-    "seen": 1792768942.0540786,
-    "ast_hash": "286b7e23e7b30d52714301e7bba40176",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7975771,
+    "ast_hash": "a2887bd1a4872345d220923a1d739c6c",
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Integration/DashboardExport/ExportDashboardDataNowCommand.cs": {
@@ -17688,9 +17688,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Workspace/DashboardExport/EngineeringStatusExportAdapterTests.cs": {
-    "mtime": 1792737606.9149272,
-    "seen": 1792768942.0559916,
-    "ast_hash": "281b5c199f7a5c5bb89ccf7a154a6c16",
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.7996109,
+    "ast_hash": "98d321c9f9dd37503fe9fea2011f7be0",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Workspace/DashboardExport/ProgrammeHierarchyExportAdapterTests.cs": {
@@ -17730,9 +17730,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.RealShell/packages.lock.json": {
-    "mtime": 1792849688.1442833,
-    "seen": 1792849898.0842009,
-    "ast_hash": "b3788b017ec3b043f9bd9758d7f66454",
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.799747,
+    "ast_hash": "1f29c4b3b399d237f18989b2473863a4",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/CalculationDiagramViewTests.cs": {
@@ -17862,9 +17862,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/packages.lock.json": {
-    "mtime": 1792849688.1442833,
-    "seen": 1792849898.0850167,
-    "ast_hash": "a5ad70dbeb161aeee7ba5cbf8f765174",
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.8001466,
+    "ast_hash": "e7834efd2e2850cf2122211ea8dfaeac",
     "semantic_hash": ""
   },
   ".github/ISSUE_TEMPLATE/config.yml": {
@@ -30642,9 +30642,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/EngineeringDisciplines.cs": {
-    "mtime": 1792704802.3238766,
-    "seen": 1792768942.053894,
-    "ast_hash": "72d5a484e1a92e9890e25ff40a9c19d2",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7973716,
+    "ast_hash": "50af2b42cb2e02d0cf39a7b9f8e1bace",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/EngineeringDisciplineNavigationTests.cs": {
@@ -30690,9 +30690,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/EngineeringDomain/Contracts/DisciplineObjects.cs": {
-    "mtime": 1792704802.2639017,
-    "seen": 1792768942.0512524,
-    "ast_hash": "2a7905d977a757b0ac57397c742ee72d",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.794851,
+    "ast_hash": "fb87d896489f11a08892a8681e535d38",
     "semantic_hash": ""
   },
   "src/Tempest.Core/EngineeringDomain/Implementation/DisciplineObject.cs": {
@@ -30702,9 +30702,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Workspace/Disciplines/DisciplineCatalogue.cs": {
-    "mtime": 1792704802.3390894,
-    "seen": 1792768942.054235,
-    "ast_hash": "c0f93bfe8141fc431d69a61e502e7dce",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.797737,
+    "ast_hash": "58cef8e22c2322896338bcf4d83062a0",
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Workspace/Disciplines/DisciplineDefinition.cs": {
@@ -30732,9 +30732,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Workspace/Disciplines/DisciplineWorkspaceExplorerModules.cs": {
-    "mtime": 1792704802.3395488,
-    "seen": 1792768942.0542462,
-    "ast_hash": "7d311c23758b0a5b02a90d8e85a40a19",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7977479,
+    "ast_hash": "2ebdaa1f5135103c6e38f20974389adf",
     "semantic_hash": ""
   },
   "src/Tempest.Workspace/Workspace/Disciplines/DisciplineWorkspaceRegistration.cs": {
@@ -30750,9 +30750,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Workspace/DisciplineWorkspaceTests.cs": {
-    "mtime": 1792704802.3969636,
-    "seen": 1792768942.0560029,
-    "ast_hash": "3448e67fbf90b0768740df5eb04772ab",
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.799621,
+    "ast_hash": "4a0529e9d8a3a1e3f7582406cb61a056",
     "semantic_hash": ""
   },
   "docs/adr/ADR-0163-engineering-splits-into-disciplines-and-shared-modules-and-structural-electrical-and-building-services-share-one-attribute-carrying-object.md": {
@@ -31578,9 +31578,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Library/CalcInstanceService.cs": {
-    "mtime": 1792878933.022136,
-    "seen": 1792879159.4786086,
-    "ast_hash": "8af51c9a150061c92995578fc8abe440",
+    "mtime": 1792886285.2668002,
+    "seen": 1792886480.7941973,
+    "ast_hash": "a80c58ddd502f6935f59473cf493b8a3",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Library/CalcInstanceStore.cs": {
@@ -31656,9 +31656,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Mechanical/ToleranceStackCalculator.cs": {
-    "mtime": 1792878933.0266297,
-    "seen": 1792879159.478692,
-    "ast_hash": "baf8436e5dd8d8bd6d48987343d869e2",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7942495,
+    "ast_hash": "d448d1ecf2a05493273eb8b1a3cfebd6",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Mechanical/packages.lock.json": {
@@ -31668,9 +31668,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Sheets/CalcCsv.cs": {
-    "mtime": 1792878933.0274947,
-    "seen": 1792879159.4787,
-    "ast_hash": "33489fab5b659b31cd669ffc0d5802be",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.794256,
+    "ast_hash": "482e1c8e191d75e165306e6f2632059a",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Sheets/CalcInputBinder.cs": {
@@ -31716,9 +31716,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Sheets/CalcTemplateHasher.cs": {
-    "mtime": 1792878933.0287566,
-    "seen": 1792879159.4787266,
-    "ast_hash": "7779e5d4c4672ad8f371e2c3bb820734",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7942817,
+    "ast_hash": "fbf3f7bf4f1af8d071848094b996ac77",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Sheets/InputValues.cs": {
@@ -31740,9 +31740,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Sheets/Template.cs": {
-    "mtime": 1792878933.0297575,
-    "seen": 1792879159.4787364,
-    "ast_hash": "88e70bd5d2373541c7a5c8e937c7535a",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7942932,
+    "ast_hash": "6b2e6f4e4667aff515a0fa379da3ea5e",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Sheets/packages.lock.json": {
@@ -31830,9 +31830,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Verification/KnownAnswerRunner.cs": {
-    "mtime": 1792742225.4650824,
-    "seen": 1792768942.0508044,
-    "ast_hash": "efa8243e7c22d5b84a739ba4e0d081d4",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7943356,
+    "ast_hash": "0ceeb0a24a534692556522e09924477f",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Verification/Tempest.Calc.Verification.csproj": {
@@ -31854,9 +31854,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/CalcCalculatorComposition.cs": {
-    "mtime": 1792764147.461528,
-    "seen": 1792768942.0535343,
-    "ast_hash": "ad6b1d775cebc7de6a54b779ca9c40da",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7970624,
+    "ast_hash": "e54d7fd3bb6ad33dd9793396dbd11f08",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/CalcSheetCoordinator.cs": {
@@ -31872,9 +31872,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/CalcSheetView.cs": {
-    "mtime": 1792869248.0717866,
-    "seen": 1792869438.4989886,
-    "ast_hash": "c7990151b421872e665b97df59bc2093",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7970777,
+    "ast_hash": "256cec4e1f6ed33c147fd87384a20ba8",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Documents/TrueTypeSubsetter.cs": {
@@ -31884,9 +31884,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/AllCalculators.cs": {
-    "mtime": 1792764147.461528,
-    "seen": 1792768942.054817,
-    "ast_hash": "bd5cb128a1170bf784512c298fdd7494",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7982683,
+    "ast_hash": "0071eb951a4049b3e3a23adb99ea5588",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/BuildingServices/BuildingServicesWorkedExamples.cs": {
@@ -31992,9 +31992,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/Tempest.Calc.Tests.Calculators.csproj": {
-    "mtime": 1792764147.4655037,
-    "seen": 1792768942.0548513,
-    "ast_hash": "0d2610732342a1dbec49b00b1fa41910",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.79835,
+    "ast_hash": "4cab27ecc12858dfbbe65940932ed835",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/WorkedExamples.cs": {
@@ -32004,9 +32004,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/packages.lock.json": {
-    "mtime": 1792849688.1442833,
-    "seen": 1792849898.0817003,
-    "ast_hash": "29ca9d92cdb932747c9691965506855a",
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7983541,
+    "ast_hash": "1e69536c6e4edcc825a9737fedc7ce21",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Engine/AnalysisAndNumericsTests.cs": {
@@ -32094,9 +32094,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Library/Tempest.Calc.Tests.Library.csproj": {
-    "mtime": 1792849688.1442833,
-    "seen": 1792849898.0817654,
-    "ast_hash": "e5a614a2588d11566a3855ea5700f805",
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.798442,
+    "ast_hash": "898b09746eed3aae1f740edaa2a28e51",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Library/UpgradeTests.cs": {
@@ -32106,9 +32106,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Library/packages.lock.json": {
-    "mtime": 1792849688.1442833,
-    "seen": 1792849898.0817704,
-    "ast_hash": "26ae91fabdd07d97b869bb8c9fdd50ce",
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.7984455,
+    "ast_hash": "d3f181073bd4a7aa041789fa29ddc66d",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Sheets/DirectStressCalculator.cs": {
@@ -32154,9 +32154,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/CalcSheets/CalcSheetViewTests.cs": {
-    "mtime": 1792878933.0529552,
-    "seen": 1792879159.4842925,
-    "ast_hash": "e1350c389b36245d363cd4e8649566e2",
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.799771,
+    "ast_hash": "8e7d074841ce48a7ecb45c76361b2035",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/CalcSheets/Red_PdfRendererAttacks.cs": {
@@ -32184,9 +32184,9 @@
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1792878933.3416693,
-    "seen": 1792879159.484781,
-    "ast_hash": "c470b2908fee00145ba85c41f28cbcbb",
+    "mtime": 1792886285.2628555,
+    "seen": 1792886480.8001626,
+    "ast_hash": "2bc50ebe7adfb5fff78b8fb8c5f2977a",
     "semantic_hash": ""
   },
   "docs/adr/ADR-0165-tempest-computes-through-a-transparent-worksheet-engine-and-evidence-governs-everything.md": {
@@ -32202,21 +32202,21 @@
     "semantic_hash": ""
   },
   "docs/build-log/LOG.md": {
-    "mtime": 1792878933.3436682,
-    "seen": 1792879159.4875777,
-    "ast_hash": "917638be899021eaf7e977496a117a1d",
+    "mtime": 1792886285.2628555,
+    "seen": 1792886480.8028047,
+    "ast_hash": "e5e820ef9c584447847e0fa6b231132b",
     "semantic_hash": ""
   },
   "docs/build-log/STATUS.md": {
-    "mtime": 1792878933.3411763,
-    "seen": 1792879159.4875796,
-    "ast_hash": "3f2f71845963f153d2ce77571168050f",
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.8028069,
+    "ast_hash": "5d6c7041f776497be5496035944128f0",
     "semantic_hash": ""
   },
   "docs/build-log/TASKS.md": {
-    "mtime": 1792878933.3403127,
-    "seen": 1792879159.4875817,
-    "ast_hash": "fe032f09ee593dd6624faaa9600cfeb3",
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.802809,
+    "ast_hash": "637815b913adace1fbcc6e6a2764b462",
     "semantic_hash": ""
   },
   "docs/calcs/building-services/bs.duct-sizing.md": {
@@ -32316,15 +32316,15 @@
     "semantic_hash": ""
   },
   "docs/decisions/v0.26.0-DECISIONS.md": {
-    "mtime": 1792878932.741171,
-    "seen": 1792879159.487673,
-    "ast_hash": "dc54367aa982dd51b00dd2cede95b398",
+    "mtime": 1792881779.627197,
+    "seen": 1792886480.8028731,
+    "ast_hash": "f31d5ba4caa09dc8dff31ad84da3a4c9",
     "semantic_hash": ""
   },
   "docs/handover/v0.26.0-handover.md": {
-    "mtime": 1792842049.952522,
-    "seen": 1792844492.351284,
-    "ast_hash": "9faa283bbd74626b438b5ccdf3bb6340",
+    "mtime": 1792881779.6275964,
+    "seen": 1792886480.8031316,
+    "ast_hash": "3f206e1ebd03ae37f1962ca1ef84a87a",
     "semantic_hash": ""
   },
   "docs/releases/v0.26.0/Release Notes.md": {
@@ -32334,9 +32334,9 @@
     "semantic_hash": ""
   },
   "docs/reviews/blue-team.md": {
-    "mtime": 1792878932.7426467,
-    "seen": 1792879159.488116,
-    "ast_hash": "1fe697ac913e83f2b194f41287958eff",
+    "mtime": 1792881779.627838,
+    "seen": 1792886480.8032706,
+    "ast_hash": "68149dc6f0c9d54dd6a64afd91e67c61",
     "semantic_hash": ""
   },
   "docs/reviews/green-team.md": {
@@ -33096,15 +33096,15 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Library/CalcDataRecord.cs": {
-    "mtime": 1792878933.0193596,
-    "seen": 1792879159.4785948,
-    "ast_hash": "6b8ad637dc209a9dc1b8e16272aa1192",
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.7941806,
+    "ast_hash": "b2a08db5af178a44b91fba05e6b4c954",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Library/CalcInstanceService.Linking.cs": {
-    "mtime": 1792878933.020547,
-    "seen": 1792879159.4786031,
-    "ast_hash": "76c4dc5b84aacbb13f111aebcbb37ec9",
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.7941885,
+    "ast_hash": "06c5fe50d837446e5afca8c02a569713",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Library/CalcInstanceService.PackTemplates.cs": {
@@ -33114,9 +33114,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Library/CalcInstanceService.Records.cs": {
-    "mtime": 1792878933.021738,
-    "seen": 1792879159.478607,
-    "ast_hash": "84ef6847345f129cd049d4ed7b17cb45",
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.794195,
+    "ast_hash": "e4c68ec3de873912d41e226b84459e0c",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Library/CalcPackTemplate.cs": {
@@ -33228,9 +33228,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.BuildingServices/SealedSystemCalculator.cs": {
-    "mtime": 1792878933.015214,
-    "seen": 1792879159.4785151,
-    "ast_hash": "162bbd4d3b6d63c7aaeed03e1c5fd8c2",
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.7940795,
+    "ast_hash": "bc261692bf1cddfb3f47227cc31b5b63",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Electrical/LoadBudgetCalculator.cs": {
@@ -33888,9 +33888,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Library/CalcPackExamples.cs": {
-    "mtime": 1792878933.0233862,
-    "seen": 1792879159.4786148,
-    "ast_hash": "8a5f8cf92f36fb8d95a8de01f59e0a59",
+    "mtime": 1792881779.6297166,
+    "seen": 1792886480.7942052,
+    "ast_hash": "5014eb8244da4151c61bba4bff3a74f2",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/CalcSheetView.SavedAndPacks.cs": {
@@ -34194,15 +34194,177 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Library/BlueRoundTests.cs": {
-    "mtime": 1792878933.0475192,
-    "seen": 1792879159.4829478,
-    "ast_hash": "860168067bfe60a23e4474b69c76ddad",
+    "mtime": 1792886285.2709074,
+    "seen": 1792886480.7983882,
+    "ast_hash": "a3164bdb1d8c384344add20a4aa44ab7",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Sheets/BlueRoundTests.cs": {
     "mtime": 1792878933.0521567,
     "seen": 1792879159.4830043,
     "ast_hash": "29b564bb7f12739ffa6f0932a3b88007",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Engine/Analysis/ToleranceStack/ToleranceStackEngine.cs": {
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.794122,
+    "ast_hash": "48126f741341412f2395cb63f81e7cb0",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Engine/Physics/GasLaw.cs": {
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.7941558,
+    "ast_hash": "2ce5a6bc99f3b14ab1593ff9022ac065",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.FluidPower/FluidPowerCalculators.cs": {
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.794171,
+    "ast_hash": "9bead34aed471233d12cd993f085bd43",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.FluidPower/Tempest.Calc.FluidPower.csproj": {
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.7941737,
+    "ast_hash": "8b023e67f70a5a726a2587926ca9e343",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.FluidPower/packages.lock.json": {
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.7941754,
+    "ast_hash": "975eeae7b2282fb6423a052607de5372",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Library/CalcInstanceService.Materials.cs": {
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.7941904,
+    "ast_hash": "2ab5421e966184b6f6cb2c1458150382",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Library/MaterialLibrary.cs": {
+    "mtime": 1792886285.2668002,
+    "seen": 1792886480.794212,
+    "ast_hash": "9f292dddb115234fc774ed70b2f0b5b4",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Library/MaterialProperties.cs": {
+    "mtime": 1792886285.2668002,
+    "seen": 1792886480.7942142,
+    "ast_hash": "0b216ba2deaa9a8e1bdad8082c92cfbf",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Library/MaterialSeeds.cs": {
+    "mtime": 1792886285.2668002,
+    "seen": 1792886480.794216,
+    "ast_hash": "1eadc9695dbd61a158f5af467b15c74d",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/AllCalculatorsTests.cs": {
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.7982705,
+    "ast_hash": "e3186d2f82fd1c9eab5a6df2fa4b7155",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/Mechanical/ToleranceStackEngineTests.cs": {
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.798325,
+    "ast_hash": "7cab23dcfa20ea93c1ea03940f9b3bf4",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Engine/GasLawTests.cs": {
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.798365,
+    "ast_hash": "542a4c948f64c2d0d3e7eecc2785b672",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Engine/ToleranceStackEngineGuardTests.cs": {
+    "mtime": 1792886285.2669075,
+    "seen": 1792886480.798375,
+    "ast_hash": "f762fc07fa3b63d00abf97055c75c7fc",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.FluidPower/CommonChecks.cs": {
+    "mtime": 1792886285.2709074,
+    "seen": 1792886480.7983782,
+    "ast_hash": "3f63f6df96f047e4cd481dd7880759ca",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.FluidPower/FluidPowerDisciplineTests.cs": {
+    "mtime": 1792886285.2709074,
+    "seen": 1792886480.7983809,
+    "ast_hash": "907bfc7895dc1aa4c037ec86dc29530c",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.FluidPower/HarnessFixtureCalculator.cs": {
+    "mtime": 1792886285.2709074,
+    "seen": 1792886480.7983828,
+    "ast_hash": "10b288b5181d08bf0a35cfca8dcae56f",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.FluidPower/Tempest.Calc.Tests.FluidPower.csproj": {
+    "mtime": 1792886285.2709074,
+    "seen": 1792886480.7983842,
+    "ast_hash": "5a67e713606ac0dc7016da9b079b05b6",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.FluidPower/packages.lock.json": {
+    "mtime": 1792886285.2709074,
+    "seen": 1792886480.798386,
+    "ast_hash": "e98062c0efc363e3f438a4b963883b09",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Library/LicensedLinkTests.cs": {
+    "mtime": 1792886285.2709074,
+    "seen": 1792886480.7984228,
+    "ast_hash": "e689bbd6127161fe5b856d6df7929830",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Library/Materials/MaterialLibraryReviewTests.cs": {
+    "mtime": 1792886285.2709074,
+    "seen": 1792886480.7984288,
+    "ast_hash": "a674bf52fd2b7b105c6412706a60fce0",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Library/Materials/MaterialLibraryTests.cs": {
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.7984307,
+    "ast_hash": "4c78681629c48b65ca8fab4652f039c6",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Library/ShippedCalculators.cs": {
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.79844,
+    "ast_hash": "2665e35d64b5f41a7a5da70640c571c6",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Sheets/SecondarySourceTests.cs": {
+    "mtime": 1792886285.2728949,
+    "seen": 1792886480.7984543,
+    "ast_hash": "804cd70209264d3481551e7a9081e76a",
+    "semantic_hash": ""
+  },
+  "docs/adr/ADR-0170-fluid-power-is-a-discipline-with-typed-attributes-and-no-design-code-check-and-pneumatics-iso-6358-is-out-of-scope.md": {
+    "mtime": 1792886285.2628555,
+    "seen": 1792886480.8027654,
+    "ast_hash": "da1174a5e92c678866b01042b1a291f8",
+    "semantic_hash": ""
+  },
+  "docs/build-log/addendum-B-orientation.md": {
+    "mtime": 1792886285.2629075,
+    "seen": 1792886480.8028128,
+    "ast_hash": "c4eeee41ffa093e4d8afb7a6824daba8",
+    "semantic_hash": ""
+  },
+  "docs/testing/v0.26.0-owner-test-pack.md": {
+    "mtime": 1792881779.627838,
+    "seen": 1792886480.8033278,
+    "ast_hash": "ff11b3e81c6695361f152541f5ea3350",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.FluidPower/Golden/test.fluid-power-pascal.txt": {
+    "mtime": 1792886285.2709074,
+    "seen": 1792886480.803742,
+    "ast_hash": "3f2f7f45b7ff02a2a7d297a749d7ef7a",
     "semantic_hash": ""
   }
 }
