@@ -117,5 +117,5 @@ The nu_M and sigma_red_B rows fail only through the polar-modulus basis. The scr
 - Both KATs pass in the probe (2 of 2). The script is unchanged and exits 0. It holds 7 KAT rows.
 - I re-ran all 11 probe cases (p1 to p11). All 15 outputs match the hard-coded product values to 4e-9 in the right units.
 - All nine findings are still open, including R1 (High) and R2 (Medium). Probes F_A 100 kN and M_A 95 N·m reproduce -02 and R1.
-- The 23 FAIL rows in the script output stay: they show the d_S basis (-01) and the missing bound after separation (-02).
+- The 23 FAIL rows in the script output stay. They show the d_S basis (-01) and the missing bound after separation (-02).
 - I found no new defect.

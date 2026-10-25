@@ -15,7 +15,8 @@ import sys
 RHO_CP_WH = 1.2 * 1005.0 / 3600.0  # 0.335 Wh/(m3 K), compared with the product constant 0.34
 K_AIR = 0.34
 
-CAVITY_LAYERS = [(102.5, 0.77), (100.0, 0.022), (100.0, 0.15), (13.0, 0.57)]  # d in mm, lambda W/(m K)
+# The product's known-answer layers changed at 0772fcf8 (invented illustrative conductivities, no manufacturer-style values).
+CAVITY_LAYERS = [(102.5, 0.84), (100.0, 0.03), (100.0, 0.2), (13.0, 0.4)]  # d in mm, lambda W/(m K)
 
 
 def u_value(layers_mm_lambda, rsi=0.13, rse=0.04, rg=0.0):
@@ -37,8 +38,9 @@ def room(elements, t_int, t_e, y_tb=0.0, n=0.5, V=40.0, t_supply=None, n_inf=Non
         outside = e.get("t_adj") is None or e["t_adj"] <= t_e
         # The product uses the entered adjacent temperature even when it is below theta_e (see report P1-bs.room-heat-loss-02).
         t_adj = t_e if e.get("t_adj") is None else e["t_adj"]
-        rsi = e.get("rsi", 0.13)
-        rse = e.get("rse", 0.04 if outside else 0.13)
+        # Heat-flow direction (product 1.1.0): blank = horizontal 0.13, upward 0.10, downward 0.17 (BS EN ISO 6946 conventional values).
+        rsi = e.get("rsi", {"upward": 0.10, "downward": 0.17}.get(e.get("flow"), 0.13))
+        rse = e.get("rse", 0.04 if outside else rsi)
         rg = e.get("rg", 0.0)
         if e.get("u_user") is not None:
             u = e["u_user"]
@@ -49,7 +51,8 @@ def room(elements, t_int, t_e, y_tb=0.0, n=0.5, V=40.0, t_supply=None, n_inf=Non
         phi = e["area"] * u * f * (t_int - t_adj)
         out[f"U_{i}"] = u
         out[f"Phi_{i}"] = phi
-        tgt = e.get("u_max", u_target)
+        # The global target applies to built-up elements facing outside only (product 1.1.0, B-A-04).
+        tgt = e.get("u_max", u_target if outside else None)
         if tgt is not None and e.get("u_user") is None:
             out[f"u_{i}"] = u / tgt
         phi_sum += phi
@@ -93,36 +96,41 @@ def cavity_room(**kw):
 
 def mvhr_room(**kw):
     els = [dict(area=15, layers=CAVITY_LAYERS),
-           dict(area=12, layers=[(12.5, 0.25), (12.5, 0.25)], t_adj=18, rg=0.18),
+           dict(area=12, layers=[(12.5, 0.22), (12.5, 0.22)], t_adj=18, rg=0.18),
            dict(area=10, u_user=0.25, f=0.6)]
     return room(els, 21, -3, y_tb=0.05, n=0.6, V=50, t_supply=16, **kw)
 
 
 # (case, symbol, KAT expected, KAT tol)
 KATS = [
-    ("ka-cavity-wall", "R_1", 5.538045, 1e-6), ("ka-cavity-wall", "U_1", 0.1805691, 1e-6),
-    ("ka-cavity-wall", "u_1", 0.6018971, 1e-6), ("ka-cavity-wall", "Phi_1", 86.67318, 1e-6),
-    ("ka-cavity-wall", "Phi_2", 100.8, 1e-9), ("ka-cavity-wall", "Phi_T", 187.4732, 1e-6),
+    ("ka-cavity-wall", "R_1", 4.157857, 1e-6), ("ka-cavity-wall", "U_1", 0.2405085, 1e-6),
+    ("ka-cavity-wall", "u_1", 0.8016950, 1e-6), ("ka-cavity-wall", "Phi_1", 115.44408, 1e-6),
+    ("ka-cavity-wall", "Phi_2", 100.8, 1e-9), ("ka-cavity-wall", "Phi_T", 216.2441, 1e-6),
     ("ka-cavity-wall", "q_v", 20, 1e-9), ("ka-cavity-wall", "Phi_V", 163.2, 1e-9),
-    ("ka-cavity-wall", "Phi_HL", 350.6732, 1e-6), ("ka-cavity-wall", "HLC", 14.61138, 1e-6),
-    ("ka-mvhr-partition", "U_2", 1.851852, 1e-6), ("ka-mvhr-partition", "Phi_1", 65.00489, 1e-6),
-    ("ka-mvhr-partition", "Phi_2", 66.66667, 1e-6), ("ka-mvhr-partition", "Phi_3", 36, 1e-9),
+    ("ka-cavity-wall", "Phi_HL", 379.4441, 1e-6), ("ka-cavity-wall", "HLC", 15.81017, 1e-6),
+    ("ka-mvhr-partition", "U_2", 1.806240, 1e-6), ("ka-mvhr-partition", "Phi_1", 86.58306, 1e-6),
+    ("ka-mvhr-partition", "Phi_2", 65.02463, 1e-6), ("ka-mvhr-partition", "Phi_3", 36, 1e-9),
     ("ka-mvhr-partition", "A_tb", 21, 1e-9), ("ka-mvhr-partition", "Phi_tb", 25.2, 1e-9),
-    ("ka-mvhr-partition", "Phi_T", 192.8716, 1e-6), ("ka-mvhr-partition", "Phi_V", 51, 1e-9),
-    ("ka-mvhr-partition", "Phi_HL", 243.8716, 1e-6), ("ka-mvhr-partition", "HLC", 10.16131, 1e-6),
-    ("ka-dhdg-allowance", "Phi_T", 187.4732, 1e-6), ("ka-dhdg-allowance", "Phi_V", 163.2, 1e-9),
-    ("ka-dhdg-allowance", "Phi_HL", 385.7405, 1e-6), ("ka-dhdg-allowance", "HLC", 16.07253, 1e-6),
-    ("ka-single-layer-target", "U_1", 3.868538, 1e-6), ("ka-single-layer-target", "u_1", 0.9671345, 1e-6),
-    ("ka-single-layer-target", "Phi_1", 928.4492, 1e-6), ("ka-single-layer-target", "Phi_V", 4.08, 1e-9),
-    ("ka-mvhr-infiltration", "Phi_V", 91.8, 1e-9), ("ka-mvhr-infiltration", "Phi_T", 192.8716, 1e-6),
-    ("ka-mvhr-infiltration", "Phi_HL", 284.6716, 1e-6), ("ka-mvhr-infiltration", "HLC", 11.86131, 1e-6),
+    ("ka-mvhr-partition", "Phi_T", 212.8077, 1e-6), ("ka-mvhr-partition", "Phi_V", 51, 1e-9),
+    ("ka-mvhr-partition", "Phi_HL", 263.8077, 1e-6), ("ka-mvhr-partition", "HLC", 10.99199, 1e-6),
+    ("ka-dhdg-allowance", "Phi_T", 216.2441, 1e-6), ("ka-dhdg-allowance", "Phi_V", 163.2, 1e-9),
+    ("ka-dhdg-allowance", "Phi_HL", 417.3885, 1e-6), ("ka-dhdg-allowance", "HLC", 17.39119, 1e-6),
+    ("ka-single-layer-target", "U_1", 4.142012, 1e-6), ("ka-single-layer-target", "u_1", 0.9204471, 1e-6),
+    ("ka-single-layer-target", "Phi_1", 994.0828, 1e-6), ("ka-single-layer-target", "Phi_V", 4.08, 1e-9),
+    ("ka-mvhr-infiltration", "Phi_V", 91.8, 1e-9), ("ka-mvhr-infiltration", "Phi_T", 212.8077, 1e-6),
+    ("ka-mvhr-infiltration", "Phi_HL", 304.6077, 1e-6), ("ka-mvhr-infiltration", "HLC", 12.69199, 1e-6),
+    ("ka-roof-upward", "R_1", 2.14, 1e-9), ("ka-roof-upward", "U_1", 0.4672897, 1e-6),
+    ("ka-roof-upward", "u_1", 0.9345794, 1e-6), ("ka-roof-upward", "Phi_1", 112.1495, 1e-6),
+    ("ka-roof-upward", "U_2", 2.173913, 1e-6),
 ]
 
 CASES = {
     "ka-cavity-wall": lambda: cavity_room(),
     "ka-mvhr-partition": lambda: mvhr_room(),
     "ka-dhdg-allowance": lambda: cavity_room(dhdg=True, f_add=10),
-    "ka-single-layer-target": lambda: room([dict(area=10, layers=[(100, 1.13)])], 21, -3, n=0.1, V=5, u_target=4.0),
+    "ka-single-layer-target": lambda: room([dict(area=10, layers=[(100, 1.4)])], 21, -3, n=0.1, V=5, u_target=4.5),
+    "ka-roof-upward": lambda: room([dict(area=10, layers=[(100, 0.05)], flow="upward"),
+                                    dict(area=12, layers=[(100, 0.5)], t_adj=18)], 21, -3, n=0.1, V=5, u_target=0.5),
     "ka-mvhr-infiltration": lambda: mvhr_room(n_inf=0.1),
 }
 

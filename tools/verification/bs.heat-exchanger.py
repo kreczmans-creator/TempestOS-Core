@@ -82,12 +82,17 @@ def f_one_shell(r, p):
     return num / den
 
 
-def solve(arr, mode, mh, cph, thi, mc, cpc, tci, U, A=None, Rf=0.0, qreq=None):
+def solve(arr, mode, mh, cph, thi, mc, cpc, tci, U, A=None, Rf=0.0, qreq=None, const="hot"):
+    """const: for the isothermal arrangement, which side is at constant temperature (product 1.2.0, input const_side).
+
+    That side's capacity rate is infinite: the other stream is C_min and the constant stream leaves at its inlet temperature.
+    """
     ch, cc = mh * cph, mc * cpc
     cmin, cmax = min(ch, cc), max(ch, cc)
     cr = cmin / cmax
     if arr == ISO:
         cr = 0.0
+        cmin = cc if const == "hot" else ch
     uf = 1.0 / (1.0 / U + Rf)
     dtmax = thi - tci
     out = {"C_r": cr}
@@ -101,12 +106,12 @@ def solve(arr, mode, mh, cph, thi, mc, cpc, tci, U, A=None, Rf=0.0, qreq=None):
         eps = q / (cmin * dtmax)
         ntu = ntu_of(arr, eps, cr)
         out["A_req"] = ntu * cmin / uf
-    tho = thi - q / ch
-    tco = tci + q / cc
-    # Outlets by energy balance on both streams, also for ISO (as a finite-C stream).
+    tho = thi if (arr == ISO and const == "hot") else thi - q / ch
+    tco = tci if (arr == ISO and const == "cold") else tci + q / cc
+    # Outlets by energy balance on both streams; the constant-temperature stream of the ISO arrangement leaves at its inlet temperature.
     out.update(NTU=ntu, eps=eps, Q=q / 1000.0, T_h_out=tho, T_c_out=tco)
     # Cold-stream ports added in product 1.1.0 (A8 cooling chain): rise, mean temperature, c_p as entered.
-    out.update(dT_c=q / cc, T_c_m=(tci + tco) / 2.0, cp_c=cpc)
+    out.update(dT_c=tco - tci, T_c_m=(tci + tco) / 2.0, cp_c=cpc)
     ua = ntu * cmin
     out["UA"] = ua
     # LMTD (counterflow end differences) and F
@@ -142,10 +147,16 @@ KATS = [
       ("dT_lm", 30, 1e-9), ("F", 1, 1e-9)]),
     ("ka-parallel-balanced",
      dict(arr=PARALLEL, mode="rating", mh=1, cph=4180, thi=80, mc=1, cpc=4180, tci=20, U=1000, A=4.18),
-     [("eps", 0.4323324, 1e-6), ("Q", 108.4282, 1e-5)]),
+     [("eps", 0.4323324, 1e-6), ("Q", 108.42896, 1e-6)]),  # the product corrected its expected Q from 108.4282 at 0772fcf8 (finding -04)
     ("ka-shell-tube",
      dict(arr=SHELL, mode="rating", mh=1, cph=4180, thi=80, mc=2, cpc=4180, tci=20, U=1000, A=4.18),
      [("eps", 0.5399396, 1e-6), ("Q", 135.4168, 1e-5), ("T_c_out", 36.19819, 1e-6), ("F", 0.9234561, 1e-6)]),
+    ("ka-isothermal-hot",
+     dict(arr=ISO, mode="rating", mh=0.5, cph=4180, thi=80, mc=2, cpc=4180, tci=20, U=1000, A=4.18, const="hot"),
+     [("NTU", 0.5, 1e-9), ("eps", 0.3934693, 1e-6), ("Q", 197.36422, 1e-6), ("T_h_out", 80, 1e-9), ("T_c_out", 43.60816, 1e-6)]),
+    ("ka-isothermal-cold",
+     dict(arr=ISO, mode="rating", mh=1, cph=4180, thi=80, mc=1, cpc=4180, tci=20, U=1000, A=4.18, const="cold"),
+     [("eps", 0.6321206, 1e-6), ("Q", 158.53584, 1e-6), ("T_c_out", 20, 1e-9), ("T_h_out", 42.07277, 1e-6)]),
     ("ka-counter-sizing",
      dict(arr=COUNTER, mode="sizing", mh=1, cph=4180, thi=80, mc=2, cpc=4180, tci=20, U=1000, qreq=194.2697),
      [("NTU", 2, 1e-5), ("A_req", 8.36, 1e-5)]),
@@ -172,7 +183,7 @@ EXTRAS = [
     ('E6 shell 1-2 Cr=1 rating A=10', dict(arr=SHELL, mode='rating', mh=1, cph=4180, thi=80, mc=1, cpc=4180, tci=20, U=1000, A=10),
      {'NTU': 2.392344498, 'eps': 0.569221599, 'Q': 142.7607769, 'T_h_out': 45.8467041, 'T_c_out': 54.1532959, 'dT_app': 25.84670408, 'UA': 10000.0, 'dT_lm': 25.84670408, 'F': 0.552336486}),
     ('E7 isothermal, C_h=1e6 W/K, A=2', dict(arr=ISO, mode='rating', mh=10, cph=100000, thi=120, mc=1, cpc=4180, tci=20, U=1000, A=2),
-     {'NTU': 0.478468899, 'eps': 0.380268463, 'Q': 158.9522175, 'T_h_out': 119.8410478, 'T_c_out': 58.0268463, 'dT_app': 61.9731537, 'UA': 2000.0, 'dT_lm': 79.40790963, 'F': 1.0}),
+     {'NTU': 0.478468899, 'eps': 0.380268463, 'Q': 158.9522175, 'T_h_out': 120.0, 'T_c_out': 58.0268463, 'dT_app': 61.9731537, 'UA': 2000.0, 'dT_lm': 79.47610876, 'F': 1.0}),  # 1.2.0: hot side constant, leaves at 120 degC
     ('E8 near-zero area A=0.01', dict(arr=COUNTER, mode='rating', mh=1, cph=4180, thi=80, mc=1, cpc=4180, tci=20, U=1000, A=0.01),
      {'NTU': 0.002392344, 'eps': 0.002386635, 'Q': 0.598568019, 'T_h_out': 79.8568019, 'T_c_out': 20.1431981, 'dT_app': 59.85680191, 'UA': 10.0, 'dT_lm': 59.85680191, 'F': 1.0}),
     ('E9 counter very large NTU (2392)', dict(arr=COUNTER, mode='rating', mh=1, cph=4180, thi=80, mc=1, cpc=4180, tci=20, U=10000, A=1000),
@@ -200,7 +211,7 @@ EXTRAS = [
     ('P5 ports 1.1.0: sub-zero streams', dict(arr=COUNTER, mode='rating', mh=1, cph=4180, thi=-30, mc=1, cpc=4180, tci=-40, U=1000, A=2),
      {'dT_c': 3.236245955, 'T_c_m': -38.381877, 'cp_c': 4180.0}),
     ('P6 ports 1.1.0: isothermal choice, mc=2', dict(arr=ISO, mode='rating', mh=1, cph=4180, thi=80, mc=2, cpc=4180, tci=20, U=1000, A=4.18),
-     {'dT_c': 18.96361676, 'T_c_m': 29.4818084, 'cp_c': 4180.0}),
+     {'dT_c': 23.60816042, 'T_c_m': 31.8040802, 'cp_c': 4180.0}),  # 1.2.0: hot side constant, C_min = the cold stream
 ]
 
 
@@ -242,11 +253,11 @@ def run_extras():
         fails += (flag == "FAIL")
         line = f"{label:40s} eps_req {eps_req:.5f} eps_max {emax:.5f} independent: {got}; product: {product}"
         print(line, flag, ("  " + note) if got != product else "")
-    # Isothermal idealisation (finding 01): product treats C_r as 0 whatever the stream ratio.
-    iso = solve(arr=ISO, mode="rating", mh=1, cph=4180, thi=80, mc=2, cpc=4180, tci=20, U=1000, A=4.18)
+    # Isothermal idealisation (finding 01, fixed at 0772fcf8): the constant side is now named, so the other stream is C_min.
+    iso = solve(arr=ISO, mode="rating", mh=1, cph=4180, thi=80, mc=2, cpc=4180, tci=20, U=1000, A=4.18, const="hot")
     cf = solve(arr=COUNTER, mode="rating", mh=1, cph=4180, thi=80, mc=2, cpc=4180, tci=20, U=1000, A=4.18)
-    print(f"Isothermal choice with C_r(true)=0.5: Q {iso['Q']:.3f} kW (product 158.536) vs counterflow {cf['Q']:.3f} kW"
-          f" (product 141.635): FINDING P1-bs.heat-exchanger-01 (no guard on the stream ratio)")
+    print(f"Isothermal (hot side constant) Q {iso['Q']:.3f} kW (product 197.364), outlet T_h {iso['T_h_out']:.2f} degC;"
+          f" counterflow with the true C_r = 0.5 gives {cf['Q']:.3f} kW (product 141.635): finding P1-bs.heat-exchanger-01 fixed")
     return fails
 
 
