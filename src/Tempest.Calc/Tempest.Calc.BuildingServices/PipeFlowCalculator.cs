@@ -39,7 +39,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
+        Id, "1.3.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
         "Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.",
         "Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.",
         [
@@ -87,6 +87,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcApplicabilityRule("segments", "At least one segment is needed.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("laminar", "Laminar flow in a segment (Re < 2300): f = 64/Re.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("transition", "Transitional flow (2300 ≤ Re < 4000): the friction factor is uncertain; Colebrook is used.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("fittings", "Fitting loss coefficients K are entered for a segment below Re 4000: K is a turbulent-flow value and rises at low Re, so the fittings term K·v²/2g is understated.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("velocity", "A segment exceeds the velocity limit.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("pump-curve", "The pump curve needs at least two points with matching flow and head counts, flows increasing.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("no-duty", "The pump curve and the system curve do not cross within the curve's flow range.", CalcNoticeSeverity.Warning),
@@ -288,6 +289,9 @@ public sealed class PipeFlowCalculator : ICalcCalculator
                 if (re < Friction.TurbulentLimit)
                     c.Warn("transition", $"segments: {s.Name} is transitional (Re = {F(re)}); the friction factor is uncertain.");
             }
+
+            if (s.K > 0 && re < Friction.TurbulentLimit)
+                c.Warn("fittings", $"segments: {s.Name} has fitting losses (K = {F(s.K)}) at Re = {F(re)}; the K values are turbulent-flow values and rise at low Reynolds number, so the fittings loss K·v²/2g is understated here.");
 
             var hf = f * (s.L + s.Leq) / s.D * v * v / (2 * g) + s.K * v * v / (2 * g);
             hfTotal += hf;

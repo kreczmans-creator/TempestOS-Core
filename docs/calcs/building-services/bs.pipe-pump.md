@@ -1,4 +1,4 @@
-# B1 — Pipe pressure drop and pump duty (`bs.pipe-pump@1.2.0`)
+# B1 — Pipe pressure drop and pump duty (`bs.pipe-pump@1.3.0`)
 
 **Scope.** Series pipe segments at a design flow: velocity, Re, Darcy friction factor, friction + fitting (K and equivalent length) losses, elevation, static head, system curve; pump curve as user points, duty point, affinity shift (speed, impeller), shaft power; NPSH available with an optional NPSH-required check; velocity limit check.
 
@@ -9,3 +9,5 @@
 **Test cases.** Heat-load flow `Q = Φ/(ρ c_p ΔT)` (analytic, 12 kW at 20 K, water at 70 °C); laminar oil (Hagen–Poiseuille, exact); turbulent water Re = 1e5, ε/D = 0.001 against an independently solved Colebrook value (Moody point f = 0.02237); duty point against a parabolic pump curve (analytic); `ka-closed-circuit` (the same loop closed: H_static 0, V_pipe 301.593 L). Crane TP-410 cited for the K/L_eq practice only.
 
 **Notice rules added in 1.1.0.** `heat-flow` (block): a heat load needs its temperature difference and the reverse; with neither a heat load nor a flow there is nothing to size. `heat-flow-q` (warning): a flow typed beside a heat load is ignored. `heat-t` (warning): a heat load is given without the fluid temperature `T`, so the template's 20 °C is used. `cp_load` (block): a custom fluid on the heat-load path needs its specific heat. `eta_pump` is entered once whether it serves the pump curve, the shaft power or both.
+
+**Fittings at low Reynolds number (1.3.0).** Fitting loss coefficients K are turbulent-flow values and rise at low Re; for a segment below Re 4000 with K entered the sheet warns (`fittings`) that the fittings term is understated. The term is used as entered.
