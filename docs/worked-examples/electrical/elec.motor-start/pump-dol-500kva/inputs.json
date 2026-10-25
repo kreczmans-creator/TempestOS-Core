@@ -1,0 +1,248 @@
+[
+  {
+    "Symbol": "A_c",
+    "Number": 50,
+    "Unit": "mm^2",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cable schedule CS-31: 50 mm\u00B2 copper",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "I_LR_r",
+    "Number": 7,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: motor MD-12 locked-rotor current ratio 7.0 (datasheet; test value invented for this example)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "7"
+  },
+  {
+    "Symbol": "L_cab",
+    "Number": 40,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-LAY-031",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "P",
+    "Number": 75,
+    "Unit": "kW",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Pump schedule PS-03: 75 kW motor rated output",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "75"
+  },
+  {
+    "Symbol": "S_n",
+    "Number": 500,
+    "Unit": "kVA",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Transformer datasheet TR-01: 500 kVA rating plate",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "500"
+  },
+  {
+    "Symbol": "T_c",
+    "Number": 70,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Cable warm from the running load before a restart.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "U",
+    "Number": 400,
+    "Unit": "V",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Site supply SS-1: 400 V three-phase",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "400"
+  },
+  {
+    "Symbol": "XR",
+    "Number": 4.2,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: transformer TR-01 X/R 4.2 (from the load-loss figure; test value invented for this example)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4.2"
+  },
+  {
+    "Symbol": "X_km",
+    "Number": 0.08,
+    "Unit": "ohm/km",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: cable reactance 0.08 \u03A9/km (generic value as the E3 default; replace with the cable datasheet figure)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.08"
+  },
+  {
+    "Symbol": "alpha",
+    "Number": 0.00393,
+    "Unit": "1/K",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: annealed copper, 0.00393 per K at 20 \u00B0C, derived physical constant",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.00393"
+  },
+  {
+    "Symbol": "cable_data",
+    "Text": "resistivity and area",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cable schedule CS-31: resistivity route as E3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "resistivity and area"
+  },
+  {
+    "Symbol": "cos_phi",
+    "Number": 0.87,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Motor datasheet MD-12: 0.87 at full load",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.87"
+  },
+  {
+    "Symbol": "cos_phi2",
+    "Number": 0.95,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Connection agreement CA-2: power factor not below 0.95",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.95"
+  },
+  {
+    "Symbol": "cos_phi_st",
+    "Number": 0.3,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: motor MD-12 locked-rotor power factor 0.3 (datasheet; test value invented for this example)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.3"
+  },
+  {
+    "Symbol": "dip_limit",
+    "Number": 10,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Machine specification MS-3: motor terminal voltage not below 90 % while starting",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "dip_limit_pcc",
+    "Number": 5,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Connection agreement CA-2: 5 % at the point of common coupling (test value invented for this example)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
+    "Symbol": "eta",
+    "Number": 0.945,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Motor datasheet MD-12: 94.5 % at full load",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.945"
+  },
+  {
+    "Symbol": "harmonics",
+    "Flag": false,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No drives or other harmonic loads on the supply.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "no"
+  },
+  {
+    "Symbol": "n_par",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-031",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "rho_20",
+    "Number": 0.01724,
+    "Unit": "ohm*mm^2/m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: annealed copper 1.724e-8 \u03A9\u00B7m at 20 \u00B0C, derived physical constant",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.01724"
+  },
+  {
+    "Symbol": "source",
+    "Text": "Transformer",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-031",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Transformer"
+  },
+  {
+    "Symbol": "starter",
+    "Text": "Direct on line (DOL)",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-031",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Direct on line (DOL)"
+  },
+  {
+    "Symbol": "u_k",
+    "Number": 4,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: transformer TR-01 impedance voltage 4 % (rating plate; test value invented for this example)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  }
+]
