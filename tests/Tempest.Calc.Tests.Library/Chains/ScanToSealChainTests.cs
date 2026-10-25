@@ -13,7 +13,7 @@ namespace Tempest.Calc.Tests.Library.Chains;
 /// Addendum B §B7 chain 2, scan-to-seal: W2 → M1 → F3. An inspection table of ten parts is imported into an M1 groove-diameter stack (the scanned groove root
 /// becomes a normal contributor, mean shift and ± kσ band) and into F3's measured groove rows (bore and groove width as mean and σ); F3's groove root is linked to
 /// the stack's mean. Re-importing a table in which the groove root moved updates the stack through the ordinary input update, so F3 goes stale through the
-/// existing machinery, cannot be checked while stale, and a link update brings it back.
+/// existing machinery, cannot be checked while stale, cannot be issued while stale, and a link update brings it back. The chain is a workflow proved here, not a pack template.
 /// </summary>
 public sealed class ScanToSealChainTests
 {
@@ -461,5 +461,44 @@ public sealed class ScanToSealChainTests
         var third = await host.Service.ApplyScanImportAsync(stack.Id, Request(Table(0.01), two));
         Assert.True(third.Action.Succeeded, third.Action.Reason);
         Assert.True(third.Action.Instance!.ScanImports!.Count <= 3);
+    }
+
+    [Fact]
+    public async Task Issue_Is_Refused_While_A_Checked_Gland_Is_Stale_After_A_Moved_Table_Is_Re_Imported_Into_A_Revised_Stack()
+    {
+        var host = Host();
+        var (stack, gland) = await BuildAsync(host);
+        Assert.True((await host.Service.ApplyScanImportAsync(stack.Id, Request(Table(), StackProfile()))).Action.Succeeded);
+
+        // The stack is checked and issued, so the gland can be checked against it.
+        Assert.True((await host.Service.CheckAsync(stack.Id, "J. Reviewer", "Client Co", "OK", Tempest.Core.Evidence.CheckOutcome.Accepted)).Succeeded);
+        var issuedStack = await host.Service.IssueAsync(stack.Id, "STK-1", "Client Co");
+        Assert.True(issuedStack.Succeeded, issuedStack.Reason);
+        var linked = await host.Service.UpdateLinksAsync(gland.Id);
+        Assert.True(linked.Succeeded, linked.Reason);
+        Assert.True((await host.Service.ApplyScanImportAsync(gland.Id, Request(Table(), SealProfile()))).Action.Succeeded);
+        var checkedGland = await host.Service.CheckAsync(gland.Id, "J. Reviewer", "Client Co", "OK", Tempest.Core.Evidence.CheckOutcome.Accepted);
+        Assert.True(checkedGland.Succeeded, checkedGland.Reason);
+        Assert.False((await host.Service.StalenessAsync((await host.Store.FindInstanceAsync(gland.Id))!)).IsStale);
+
+        // A re-scan in which the groove root runs 0.010 mm larger goes into a new revision of the stack; the checked gland still points at the issued one.
+        var revised = await host.Service.ReviseAsync(stack.Id);
+        Assert.True(revised.Succeeded, revised.Reason);
+        var moved = await host.Service.ApplyScanImportAsync(revised.Instance!.Id, Request(Table(groove: 0.010), StackProfile()));
+        Assert.True(moved.Action.Succeeded, moved.Action.Reason);
+        Assert.Equal(0.051495, ChainKit.Si(moved.Action.Instance!, "x_mean"), 9);
+
+        var glandNow = (await host.Store.FindInstanceAsync(gland.Id))!;
+        Assert.Equal(CalcInstanceStatus.Checked, glandNow.Status);
+        Assert.True((await host.Service.StalenessAsync(glandNow)).IsStale);
+
+        // The real Issue path refuses it at the staleness gate, and nothing is issued.
+        var refused = await host.Service.IssueAsync(gland.Id, "GLD-1", "Client Co");
+        Assert.False(refused.Succeeded);
+        Assert.Contains("is stale", refused.Reason, StringComparison.Ordinal);
+        Assert.Contains("Re-run it as a new revision first", refused.Reason, StringComparison.Ordinal);
+        var after = (await host.Store.FindInstanceAsync(gland.Id))!;
+        Assert.Equal(CalcInstanceStatus.Checked, after.Status);
+        Assert.Null(after.IssueReference);
     }
 }
