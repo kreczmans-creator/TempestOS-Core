@@ -30,7 +30,7 @@ public sealed record CalcSheetHeader(
 public sealed record CalcSheetInputRow(string Symbol, string Description, string Value, string Unit, string Source, string ValidRange);
 
 /// <summary>§3.4 item 8: the verification footer.</summary>
-public sealed record CalcSheetFooter(string TemplateReference, string ContentHash, string EngineVersion, int KnownAnswerPassed, int KnownAnswerTotal, DateTimeOffset? TestRunAt, string? ApplicationVersion = null);
+public sealed record CalcSheetFooter(string TemplateReference, string ContentHash, string EngineVersion, int KnownAnswerPassed, int KnownAnswerTotal, DateTimeOffset? TestRunAt, string? ApplicationVersion = null, string? FeatureNote = null);
 
 /// <summary>A row of a pack's revision table.</summary>
 public sealed record CalcRevisionRow(string Revision, DateTimeOffset Date, string Author, string Description);

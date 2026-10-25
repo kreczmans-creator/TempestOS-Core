@@ -181,6 +181,24 @@ public sealed class WorksheetGovernanceTests
         Assert.DoesNotContain("not registered in this build", view.StatusText, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void The_Issued_Pdf_Prints_How_The_Optional_Feature_Was_Switched_On()
+    {
+        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All(), new CalcFeatureFlags([CalcFeatures.Lifting], "machine policy HKLM\\SOFTWARE\\Policies\\TempestOS\\Features"));
+        var entry = catalogue.Find("struct.lifting")!;
+        var inputs = CalcTemplateHasher.DefaultInputs(entry.Template);
+        var result = CalcRunner.Run(entry.Calculator, new CalcInputSet(inputs.Values.Select(v => v.Symbol == "mode" ? CalcInputValue.Choice("mode", "EN 13155") : v)));
+        var at = new DateTimeOffset(2026, 10, 23, 12, 0, 0, TimeSpan.Zero);
+        var header = new CalcSheetHeader("P", "C", entry.Template.Title, "A", CalcSheetStatus.Issued, "author", "checker", at, at, at);
+        var footer = new CalcSheetFooter(entry.Reference, entry.ShortHash, "e", 1, 1, at, "TempestOS", "lifting feature enabled (machine policy HKLM\\SOFTWARE\\Policies\\TempestOS\\Features)");
+        var sheet = CalcSheetBuilder.Build(entry.Template, new CalcInputSet(inputs.Values.Select(v => v.Symbol == "mode" ? CalcInputValue.Choice("mode", "EN 13155") : v)), result, header, footer);
+
+        var text = Quotations.PdfTextExtractor.ExtractText(new CalcSheetPdfRenderer().Render(sheet).ToArray());
+        Assert.Contains("Optional feature", text, StringComparison.Ordinal);
+        Assert.Contains("lifting feature enabled", text, StringComparison.Ordinal);
+        Assert.Contains("Optional feature: lifting feature enabled", CalcSheetTextRenderer.Render(sheet), StringComparison.Ordinal);
+    }
+
     [AvaloniaFact]
     public async Task The_Evidence_Of_A_Calculation_Offers_Open_Worksheet_Not_Check_Issue_Or_Revise()
     {

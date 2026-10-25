@@ -357,6 +357,7 @@ public sealed class GovernanceTests
         Assert.Null(issued.Instance.CheckerPrincipal);
         Assert.Null(issued.Instance.Attestation);
         Assert.Null(issued.Instance.Issue!.FeatureNote);
+        Assert.DoesNotContain("Optional feature", issued.Instance.Issue.SheetText, StringComparison.Ordinal);
 
         Assert.False((await host.Service.CountersignAsync(plain.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted)).Succeeded);
         Assert.False((await host.Service.AttestAsync(plain.Id, CompetentName, Qualification, Statement)).Succeeded);
@@ -801,6 +802,7 @@ public sealed class GovernanceTests
         Assert.Contains("Attested by competent.person", text, StringComparison.Ordinal);
         Assert.Equal(Competent, issued.Instance.Attestation!.Principal);
         Assert.Equal("lifting feature enabled (set in code (test or tool host))", issued.Instance.Issue.FeatureNote);
+        Assert.Contains("Optional feature: lifting feature enabled", issued.Instance.Issue.SheetText, StringComparison.Ordinal);
 
         host.Principal = "checker.three";
         Assert.False((await host.Service.CountersignAsync(instance.Id, "Third Person", "Check Co", "third", CheckOutcome.Accepted)).Succeeded);
@@ -915,6 +917,7 @@ public sealed class GovernanceTests
         Assert.Equal(CalcInstanceStatus.Issued, stored!.Status);
         Assert.Contains("second check: Dana Second", stored.Issue!.SheetText, StringComparison.Ordinal);
         Assert.Contains("lifting feature enabled", stored.Issue.FeatureNote, StringComparison.Ordinal);
+        Assert.Contains("Optional feature: lifting feature enabled", stored.Issue.SheetText, StringComparison.Ordinal);
     }
 
     [Fact]

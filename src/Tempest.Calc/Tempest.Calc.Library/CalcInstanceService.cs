@@ -978,7 +978,8 @@ public sealed partial class CalcInstanceService
                 var cover = new CalcSheet(
                     new CalcSheetHeader(project, pack.Title, "Calculation pack", pack.Revision, CalcSheetStatus.Issued, evidence.AuthorIdentityId, CheckerLabel(evidence.Check?.CheckerName, pack.SecondCheck), evidence.CreatedAt, evidence.Check?.DateUtc, issuedAtUtc, client, issueReference),
                     "Calculation pack: the calculations listed in the index, issued together under one issue sheet.", string.Empty, [], [], [], [], [], [], [], [],
-                    new CalcSheetFooter("pack", "—", _engine.EngineVersion, members.Sum(m => m.Report.Passed), members.Sum(m => m.Report.Total), issuedAtUtc, _applicationVersion),
+                    new CalcSheetFooter("pack", "—", _engine.EngineVersion, members.Sum(m => m.Report.Passed), members.Sum(m => m.Report.Total), issuedAtUtc, _applicationVersion,
+                        string.Join("; ", members.Select(m => FeatureNoteFor(m.Entry.Template)).Where(n => n is not null).Distinct(StringComparer.Ordinal))),
                     pack.Revisions.Select(r => new CalcRevisionRow(r.Revision, r.Date, r.Author, r.Description)).ToList(), index);
 
                 var bytes = _renderer?.RenderPack(cover, sheets) ?? Encoding.UTF8.GetBytes(CalcSheetTextRenderer.Render(cover) + "\n" + string.Join("\n\f\n", sheets.Select(CalcSheetTextRenderer.Render)));
@@ -1055,7 +1056,7 @@ public sealed partial class CalcInstanceService
 
         var header = await HeaderAsync(entry, instance, evidence, status, instance.IssuedAt, instance.IssueReference, packEvidence?.Issue?.Client ?? evidence?.Issue?.Client, cancellationToken, packEvidence, packSecond).ConfigureAwait(false);
         var footer = instance.Issue is { } issue
-            ? new CalcSheetFooter(entry.Reference, CalcTemplateHasher.Short(instance.TemplateHash), issue.EngineVersion, issue.KnownAnswerPassed, issue.KnownAnswerTotal, issue.TestRunAt, issue.ApplicationVersion)
+            ? new CalcSheetFooter(entry.Reference, CalcTemplateHasher.Short(instance.TemplateHash), issue.EngineVersion, issue.KnownAnswerPassed, issue.KnownAnswerTotal, issue.TestRunAt, issue.ApplicationVersion, issue.FeatureNote)
             : Footer(entry, KnownAnswerRunner.Run(entry.Calculator, _time));
         return await FinishSheetAsync(entry, inputs, result, header, footer, cancellationToken).ConfigureAwait(false);
     }
@@ -1114,7 +1115,7 @@ public sealed partial class CalcInstanceService
     }
 
     private CalcSheetFooter Footer(CalcCatalogueEntry entry, KnownAnswerReport report) =>
-        new(entry.Reference, entry.ShortHash, _engine.EngineVersion, report.Passed, report.Total, report.RunAt, _applicationVersion);
+        new(entry.Reference, entry.ShortHash, _engine.EngineVersion, report.Passed, report.Total, report.RunAt, _applicationVersion, FeatureNoteFor(entry.Template));
 
     private async Task<string> ProjectLabelAsync(Guid? projectId, CancellationToken cancellationToken)
     {
