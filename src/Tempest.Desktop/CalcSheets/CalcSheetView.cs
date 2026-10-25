@@ -38,11 +38,12 @@ public sealed partial class CalcSheetView : UserControl
     public const string ExportCsvCaption = "Export inputs (CSV)";
     public const string ImportCaption = "Import inputs (CSV/JSON)";
     public const string ImportCadCaption = "Import CAD parameters…";
+    public const string ImportScanCaption = "Import scan deviations…";
     public const string AttachEvidenceCaption = "Attach external report…";
     public const string StaleMarker = "Recalculating…";
     public const string PickGuidance = "Choose a worksheet from the catalogue on the left. Its inputs, with their units, sources and limits, appear here.";
 
-    private static readonly string[] ProvenanceKinds = ["manual", "drawing", "spec", "assumption", "evidence", "reference", "link", "cad import"];
+    private static readonly string[] ProvenanceKinds = ["manual", "drawing", "spec", "assumption", "evidence", "reference", "link", "cad import", "scan import"];
 
     public const string LinkCaption = "Link input";
     public const string LinkPanelName = "Link an input to another calculation";
@@ -114,11 +115,13 @@ public sealed partial class CalcSheetView : UserControl
     private readonly Button _exportButton = new() { Content = ExportCsvCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly Button _importButton = new() { Content = ImportCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly Button _importCadButton = new() { Content = ImportCadCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
+    private readonly Button _importScanButton = new() { Content = ImportScanCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly Button _attachButton = new() { Content = AttachEvidenceCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     /// <summary>Inputs the form has no field for (tables, vectors): carried from the seed so an imported or saved set keeps them (§3.8).</summary>
     private readonly List<CalcInputValue> _carriedInputs = [];
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
     private readonly StackPanel _cadHost = new();
+    private readonly StackPanel _scanHost = new();
     private readonly Dictionary<string, StackPanel> _stepRows = new(StringComparer.Ordinal);
     private bool _loadingForm;
     private string? _governingStep;
@@ -146,6 +149,7 @@ public sealed partial class CalcSheetView : UserControl
         AutomationProperties.SetName(_exportButton, ExportCsvCaption);
         AutomationProperties.SetName(_importButton, ImportCaption);
         AutomationProperties.SetName(_importCadButton, ImportCadCaption);
+        AutomationProperties.SetName(_importScanButton, ImportScanCaption);
         AutomationProperties.SetName(_working, "Working");
         AutomationProperties.SetName(_results, "Results");
 
@@ -157,6 +161,7 @@ public sealed partial class CalcSheetView : UserControl
         _exportButton.Click += (_, _) => ExportRequested?.Invoke();
         _importButton.Click += (_, _) => ImportRequested?.Invoke();
         _importCadButton.Click += (_, _) => ImportCadRequested?.Invoke();
+        _importScanButton.Click += (_, _) => ImportScanRequested?.Invoke();
         AutomationProperties.SetName(_attachButton, AttachEvidenceCaption);
         _attachButton.Click += (_, _) => AttachEvidenceRequested?.Invoke();
         _showWorking.IsCheckedChanged += (_, _) => _working.IsVisible = _showWorking.IsChecked == true;
@@ -245,6 +250,27 @@ public sealed partial class CalcSheetView : UserControl
 
     /// <summary>The user asked to import CAD parameters into the shown draft (Addendum B, W1).</summary>
     public event Action? ImportCadRequested;
+
+    /// <summary>The user asked to import scan deviations into the shown draft (Addendum B, W2).</summary>
+    public event Action? ImportScanRequested;
+
+    /// <summary>The panel that previews and applies a scan deviation import; the coordinator gives it its view model.</summary>
+    public ScanImportPanel? ScanPanel { get; private set; }
+
+    /// <summary>Installs the scan import panel under the CAD import panel. Done once, by the coordinator.</summary>
+    public void InstallScanImportPanel(ScanImportPanel panel)
+    {
+        ArgumentNullException.ThrowIfNull(panel);
+
+        if (ScanPanel is not null)
+            return;
+
+        ScanPanel = panel;
+        _scanHost.Children.Add(panel);
+    }
+
+    /// <summary>Whether the scan import action is available: a saved draft is shown.</summary>
+    public bool CanImportScan => _importScanButton.IsEnabled;
 
     /// <summary>The panel that previews and applies a CAD parameter import; the coordinator gives it its view model.</summary>
     public CadImportPanel? CadPanel { get; private set; }
@@ -481,7 +507,7 @@ public sealed partial class CalcSheetView : UserControl
         var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.NewSheetInputs(entry.Template) : new CalcInputSet(instance.Inputs));
         _shownLinks.Clear();
 
-        foreach (var value in seed.Values.Where(v => v.Provenance is { Kind: CalcProvenanceKind.Link or CalcProvenanceKind.CadImport }))
+        foreach (var value in seed.Values.Where(v => v.Provenance is { Kind: CalcProvenanceKind.Link or CalcProvenanceKind.CadImport or CalcProvenanceKind.ScanImport }))
             _shownLinks[value.Symbol] = value.Provenance!;
 
         _staleBanner.IsVisible = false;
@@ -632,7 +658,7 @@ public sealed partial class CalcSheetView : UserControl
             var provenance = ReadProvenance(f);
 
             // A linked input keeps its pin (upstream, output and revision) while its reference text is unchanged.
-            if (provenance.Kind is CalcProvenanceKind.Link or CalcProvenanceKind.CadImport && _shownLinks.TryGetValue(symbol, out var shown) && shown.Kind == provenance.Kind && string.Equals(shown.Reference, provenance.Reference, StringComparison.Ordinal))
+            if (provenance.Kind is CalcProvenanceKind.Link or CalcProvenanceKind.CadImport or CalcProvenanceKind.ScanImport && _shownLinks.TryGetValue(symbol, out var shown) && shown.Kind == provenance.Kind && string.Equals(shown.Reference, provenance.Reference, StringComparison.Ordinal))
                 provenance = shown;
 
             switch (f.Spec.Kind)
@@ -765,6 +791,7 @@ public sealed partial class CalcSheetView : UserControl
         _issueButton.IsVisible = instance is { Status: CalcInstanceStatus.Checked };
         _reviseButton.IsVisible = instance is { Status: CalcInstanceStatus.Issued };
         _importCadButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft };
+        _importScanButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft };
     }
 
     private void RevealGoverningStep()
@@ -935,6 +962,7 @@ public sealed partial class CalcSheetView : UserControl
             "reference" => CalcProvenanceKind.Reference,
             "link" => CalcProvenanceKind.Link,
             "cad import" => CalcProvenanceKind.CadImport,
+            "scan import" => CalcProvenanceKind.ScanImport,
             _ => CalcProvenanceKind.Manual,
         };
 
@@ -951,6 +979,7 @@ public sealed partial class CalcSheetView : UserControl
         CalcProvenanceKind.Reference => "reference",
         CalcProvenanceKind.Link => "link",
         CalcProvenanceKind.CadImport => "cad import",
+        CalcProvenanceKind.ScanImport => "scan import",
         _ => "manual",
     };
 
@@ -1025,6 +1054,7 @@ public sealed partial class CalcSheetView : UserControl
         _recordPanel.Children.Add(saveRow);
         right.Children.Add(_recordPanel);
         right.Children.Add(_cadHost);
+        right.Children.Add(_scanHost);
         right.Children.Add(_problems);
 
         var resultsHead = new StackPanel { Spacing = DesignTokens.SpaceXs };
@@ -1049,6 +1079,7 @@ public sealed partial class CalcSheetView : UserControl
         actions.Children.Add(_exportButton);
         actions.Children.Add(_importButton);
         actions.Children.Add(_importCadButton);
+        actions.Children.Add(_importScanButton);
         actions.Children.Add(_attachButton);
         right.Children.Add(actions);
         right.Children.Add(_status);
