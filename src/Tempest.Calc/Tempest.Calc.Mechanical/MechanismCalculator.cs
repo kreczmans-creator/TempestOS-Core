@@ -49,7 +49,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         BuildInputs(),
         [
             new CalcAssumption("Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed.", "Addendum B §B6 M9 limits."),
-            new CalcAssumption("The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted.", "Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank."),
+            new CalcAssumption("The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch; for a change-point linkage (parallelogram, deltoid) the circuit is named at a reference angle that does not depend on the sweep (the middle of the first interval between change points in 0 … 2π, π/2 when there are none) and is followed by continuity through the change points. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted.", "Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank."),
             new CalcAssumption("Input torque is by virtual work from the output load and the inertia of the output element only (four-bar: the output link's moment of inertia about its pivot; slider: the slider mass); the crank and the coupler or connecting rod are massless.", "No link-inertia or gravity terms: add the link masses to the output element for a first allowance."),
             new CalcAssumption("The peaks (speeds, accelerations, torque, transmission angle, swing) are those of the continuous motion over the swept range, found by a dense scan refined by golden section; the printed table (steps N, up to 3600) only samples it.", "Peaks do not depend on the table's step count."),
             new CalcAssumption("Cam: a translating follower on a cam turning at constant speed; the follower mass, a linear return spring (rate and preload at the base circle, for example linked from M7) and a constant external load make the force the cam must apply, F = m·a + k·s + F_pre + F_ext; contact is lost where it falls below zero. The segment table must add to 360° and close; pressure angle and undercut are checked for the roller follower (R_p = R_b + R_r), the positive profile radius for the flat-faced one.", "Norton, Design of Machinery, cam design: the four classical laws, pressure angle and radius of curvature."),
@@ -153,6 +153,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
             return;
 
         var omega = c.InputSi("n_in");
+        c.Output("n_in", "Input (crank) speed, passed through for E1's load speed (mech.n_in)");
         var steps = (int)Math.Round(c.InputSi("steps"));
         var start = c.InputSi("theta_start");
         var range = c.InputSi("theta_range");
@@ -255,7 +256,6 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         var rms = Math.Sqrt(SimpsonMean([.. torque.Select(t => t * t)]));
         Scalar(c, "T_rms_in", "√(mean T_in²)", span, rms, "N*m", "RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)", "Virtual work");
         Scalar(c, "P_mean", "ω·mean(T_in)", span, omega * mean, "W", "Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)", "Virtual work");
-        c.Output("n_in", "Input (crank) speed, passed through for E1's load speed (mech.n_in)");
     }
 
     // ------------------------------------------------------------------
@@ -301,7 +301,19 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
         var sw = new Sweep(arc.Lo, arc.Hi - arc.Lo, req.Steps, req.Omega);
         var unbounded = arc.LimitsInside.Count > 0;
-        var reference = arc.Lo;
+
+        // The circuit names a branch at a reference angle that does not depend on the sweep: the middle of the first interval between
+        // change points in 0 … 2π (π/2 when there are none). Flips are counted from there, so the same circuit means the same motion
+        // whatever theta_start is.
+        var reference = Math.PI / 2;
+
+        if (changePoint && limits.Count > 0)
+        {
+            var points = new List<double> { 0 };
+            points.AddRange(limits.Where(x => x > 1e-9));
+            points.Add(2 * Math.PI);
+            reference = 0.5 * (points[0] + points[1]);
+        }
 
         // A change-point linkage passes through its singular positions; the circuit is followed by continuity (γ changes sign there).
         int Flips(double t)

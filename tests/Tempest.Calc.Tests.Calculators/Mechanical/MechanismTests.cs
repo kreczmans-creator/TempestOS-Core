@@ -459,6 +459,48 @@ public sealed class MechanismTests
         Assert.Null(r.FindOutput("output_motion"));
     }
 
+    [Theory]
+    [InlineData(185, 170)]
+    [InlineData(5, 170)]
+    [InlineData(200, 150)]
+    [InlineData(-170, 160)]
+    public void The_Open_Circuit_Of_A_Parallelogram_Is_The_Same_Motion_Whatever_The_Sweep_Starts_At(double start, double range)
+    {
+        // Past 180° the old reference (the first row of the sweep) took the anti-parallelogram branch. The reference is now fixed.
+        var r = Run(CalcInputValue.Choice("load_dir", MechanismCalculator.Constant), Q("L1", 100, "mm"), Q("L2", 40, "mm"), Q("L3", 100, "mm"), Q("L4", 40, "mm"), Q("theta_start", start, "deg"), Q("theta_range", range, "deg"), Q("T_load", 3, "N*m"), Q("J_out", 0.01, "kg*m^2"), Q("mu_req", 4, "deg"));
+        Assert.False(r.IsBlocked);
+        var t2 = Vector(r, "theta2_sw");
+        var t4 = Vector(r, "theta4_sw");
+
+        for (var i = 0; i < t2.Count; i++)
+            Assert.Equal(0, Math.IEEERemainder(t4[i] - t2[i], 2 * Math.PI), 8);
+
+        Assert.Equal(0.04 * 120 * 2 * Math.PI / 60, r.OutputSi("output_motion"), 8);
+        Assert.Equal(3, r.OutputSi("input_torque"), 8);
+        Assert.Equal(75, r.OutputSi("follower_force"), 6);
+    }
+
+    [Fact]
+    public void The_Parallelogram_Lists_Both_Collinear_Positions_Including_The_Folded_One_At_180_Degrees()
+    {
+        var r = Run(Q("L1", 100, "mm"), Q("L2", 40, "mm"), Q("L3", 100, "mm"), Q("L4", 40, "mm"));
+        var text = Text(r, "limit_positions");
+        Assert.True(text.Contains("θ₂ = 0°", StringComparison.Ordinal), text);
+        Assert.True(text.Contains("θ₂ = 180°", StringComparison.Ordinal), text);
+    }
+
+    [Fact]
+    public void The_Input_Speed_Is_Always_Passed_Through_Even_When_The_Other_Ports_Are_Withheld()
+    {
+        var withheld = Run(Q("L1", 60, "mm"), Q("L2", 40, "mm"), Q("L3", 50, "mm"), Q("L4", 35, "mm"));
+        Assert.Null(withheld.FindOutput("input_torque"));
+        Assert.Equal(120, ((ScalarValue)withheld.FindOutput("n_in")!.Value).Displayed, 9);
+
+        var slider = Run([.. Slider(100, 80, 0, 0)]);
+        Assert.Null(slider.FindOutput("input_torque"));
+        Assert.NotNull(slider.FindOutput("n_in"));
+    }
+
     [Fact]
     public void Peaks_Are_Reported_For_A_Non_Grashof_Sweep_Inside_Its_Assemblable_Stretch_And_Do_Not_Depend_On_The_Start()
     {

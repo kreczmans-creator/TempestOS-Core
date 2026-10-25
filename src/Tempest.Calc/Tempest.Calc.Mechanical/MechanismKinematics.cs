@@ -368,10 +368,10 @@ public sealed class FourBarLinkage
         {
             var cos4 = (span * span - _d * _d - _c * _c) / (2 * _d * _c);
 
-            if (!(Math.Abs(cos4) <= 1))
+            if (!(Math.Abs(cos4) <= 1 + 1e-12))
                 continue;
 
-            var t4 = Math.Acos(cos4);
+            var t4 = Math.Acos(Math.Clamp(cos4, -1, 1));
 
             foreach (var theta4 in t4 < 1e-12 || Math.PI - t4 < 1e-12 ? new[] { t4 } : [t4, -t4])
             {
