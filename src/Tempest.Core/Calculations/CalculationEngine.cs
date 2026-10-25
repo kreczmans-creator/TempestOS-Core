@@ -316,7 +316,6 @@ public sealed class CalculationEngine : ICalculationEngine
     }
 
     /// <inheritdoc />
-    /// <inheritdoc />
     public async Task<CalculationRecordDocument?> FindRecordDocumentAsync(Guid recordId, CancellationToken cancellationToken = default)
     {
         var document = await _documentStore.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
@@ -358,6 +357,7 @@ public sealed class CalculationEngine : ICalculationEngine
             dto.ReferencedMaterialIds, dto.ExecutedAt, dto.ExecutedByPrincipalId, revisions[^1].RevisionNumber, input, dto.InputTypeName, dto.PredecessorRecordId);
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<CalculationRecordSummary>> ListRecordsAsync(CancellationToken cancellationToken = default)
     {
         if (_recordIndex is null)
