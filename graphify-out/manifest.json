@@ -31332,9 +31332,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.BuildingServices/BuildingServicesCalculators.cs": {
-    "mtime": 1792854677.191903,
-    "seen": 1792854879.2411194,
-    "ast_hash": "b342d6b11cf839c065050afc7ec6ba8c",
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.1404345,
+    "ast_hash": "8e65fb11f638429d56cc9eb780849c0f",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.BuildingServices/DuctSizingCalculator.cs": {
@@ -31380,9 +31380,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Electrical/ElectricalCalculators.cs": {
-    "mtime": 1792854677.192318,
-    "seen": 1792854879.2411473,
-    "ast_hash": "65fe1dcd5830f1bb6d7b93c75d1a13c2",
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.1404817,
+    "ast_hash": "f16837306e51dfdd0f1634ab4a75a433",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Electrical/EnclosureHeatCalculator.cs": {
@@ -31632,9 +31632,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Mechanical/MechanicalCalculators.cs": {
-    "mtime": 1792849688.140792,
-    "seen": 1792849898.075065,
-    "ast_hash": "9c7a7235ec6ca589409bd98a5c4f3068",
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.140718,
+    "ast_hash": "a344558e83bb5afb79aec3f748de77ec",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Mechanical/PressFitCalculator.cs": {
@@ -31806,9 +31806,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Structural/StructuralCalculators.cs": {
-    "mtime": 1792856152.5666873,
-    "seen": 1792856353.8477132,
-    "ast_hash": "5ded92dc5ea8b2667269c9a35498daf2",
+    "mtime": 1792889784.7788274,
+    "seen": 1792889969.140844,
+    "ast_hash": "cab99accda795a73abb2cb59d74c79fc",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Structural/Tempest.Calc.Structural.csproj": {
@@ -31890,9 +31890,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/BuildingServices/BuildingServicesWorkedExamples.cs": {
-    "mtime": 1792878933.033808,
-    "seen": 1792879159.482848,
-    "ast_hash": "d63108aec4925e6155d9cca90a96f283",
+    "mtime": 1792889784.7788274,
+    "seen": 1792889969.1462603,
+    "ast_hash": "065360d23ab1f542694023ce09990a3e",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/BuildingServices/DuctSizingTests.cs": {
@@ -31926,9 +31926,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/Electrical/ElectricalWorkedExamples.cs": {
-    "mtime": 1792878933.0384595,
-    "seen": 1792879159.4828749,
-    "ast_hash": "a774e299aa5c51615347483a169670a7",
+    "mtime": 1792889784.7788274,
+    "seen": 1792889969.146296,
+    "ast_hash": "c718bd56f47021712c7b72bc3740bf05",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/HostileInputTests.cs": {
@@ -31944,9 +31944,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/Mechanical/MechanicalWorkedExamples.cs": {
-    "mtime": 1792849688.1442833,
-    "seen": 1792849898.0816605,
-    "ast_hash": "562ed77944ac19482b358f68568e895f",
+    "mtime": 1792889784.7813494,
+    "seen": 1792889969.1463263,
+    "ast_hash": "5e37e44a80747a2424882daa09cf1f7b",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/Mechanical/ToleranceStackTests.cs": {
@@ -31986,9 +31986,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/Structural/StructuralWorkedExamples.cs": {
-    "mtime": 1792878933.0470946,
-    "seen": 1792879159.4829202,
-    "ast_hash": "a7297c6c288cc8a885b2eca2a4daad93",
+    "mtime": 1792889784.7833245,
+    "seen": 1792889969.1463635,
+    "ast_hash": "eabb2682896f5f5c788aceb91155ff1e",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/Tempest.Calc.Tests.Calculators.csproj": {
@@ -31998,9 +31998,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/WorkedExamples.cs": {
-    "mtime": 1792842051.5117478,
-    "seen": 1792844492.3461158,
-    "ast_hash": "59cc82698aafcb9ce17c10450253bc01",
+    "mtime": 1792889784.7833245,
+    "seen": 1792889969.1463697,
+    "ast_hash": "bafba08bc9828a742489e1df6a4c6b39",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/packages.lock.json": {
@@ -32184,9 +32184,9 @@
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1792886285.2628555,
-    "seen": 1792886480.8001626,
-    "ast_hash": "2bc50ebe7adfb5fff78b8fb8c5f2977a",
+    "mtime": 1792889784.7588274,
+    "seen": 1792889969.1486647,
+    "ast_hash": "150ecd5c2c9fa30b1cb973aa651f3ef3",
     "semantic_hash": ""
   },
   "docs/adr/ADR-0165-tempest-computes-through-a-transparent-worksheet-engine-and-evidence-governs-everything.md": {
@@ -32202,21 +32202,21 @@
     "semantic_hash": ""
   },
   "docs/build-log/LOG.md": {
-    "mtime": 1792886285.2628555,
-    "seen": 1792886480.8028047,
-    "ast_hash": "e5e820ef9c584447847e0fa6b231132b",
+    "mtime": 1792889784.7588274,
+    "seen": 1792889969.1519904,
+    "ast_hash": "7ba33dbe51842345fa46e3a0922d25ab",
     "semantic_hash": ""
   },
   "docs/build-log/STATUS.md": {
-    "mtime": 1792886285.2629075,
-    "seen": 1792886480.8028069,
-    "ast_hash": "5d6c7041f776497be5496035944128f0",
+    "mtime": 1792889784.7628274,
+    "seen": 1792889969.1519935,
+    "ast_hash": "97df1946ca23fac71758304487f06bcf",
     "semantic_hash": ""
   },
   "docs/build-log/TASKS.md": {
-    "mtime": 1792886285.2629075,
-    "seen": 1792886480.802809,
-    "ast_hash": "637815b913adace1fbcc6e6a2764b462",
+    "mtime": 1792889784.7638354,
+    "seen": 1792889969.1519961,
+    "ast_hash": "cbaec4a213ffa6319a98d2ecb4dc200a",
     "semantic_hash": ""
   },
   "docs/calcs/building-services/bs.duct-sizing.md": {
@@ -32904,194 +32904,194 @@
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.duct-sizing/extract-velocity-method/sheet.pdf": {
-    "mtime": 1792878932.749776,
-    "seen": 1792879159.4885497,
+    "mtime": 1792888636.0788538,
+    "seen": 1792889969.1532862,
     "ast_hash": "d9ccc4687cade761dd2d70b6a688eb6f",
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.duct-sizing/office-supply-equal-friction/sheet.pdf": {
-    "mtime": 1792878932.7521837,
-    "seen": 1792879159.4885516,
+    "mtime": 1792888637.1188538,
+    "seen": 1792889969.1532888,
     "ast_hash": "0c98e1cfc24275c3c214bbe83a519d1c",
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.pipe-pump/chilled-water-riser-duty/sheet.pdf": {
-    "mtime": 1792878932.7575448,
-    "seen": 1792879159.4885566,
+    "mtime": 1792888630.982854,
+    "seen": 1792889969.1532989,
     "ast_hash": "02bc9adbdab40effa47e8e5a2dfdff1d",
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.pipe-pump/oil-transfer-laminar/sheet.pdf": {
-    "mtime": 1792878932.7602847,
-    "seen": 1792879159.4885585,
+    "mtime": 1792888634.6308537,
+    "seen": 1792889969.1533017,
     "ast_hash": "c6c283364531f1ff0cf286e8d0c91593",
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.psychrometrics/cooling-coil-summer/sheet.pdf": {
-    "mtime": 1792872341.1585128,
-    "seen": 1792879159.4885614,
+    "mtime": 1792888633.5828538,
+    "seen": 1792889969.1533053,
     "ast_hash": "d2ae157fb40b22d80fd0975ff4f00a62",
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.psychrometrics/winter-mixing-and-steam/sheet.pdf": {
-    "mtime": 1792872339.9905128,
-    "seen": 1792879159.488565,
+    "mtime": 1792888632.0828538,
+    "seen": 1792889969.1533103,
     "ast_hash": "1d15f906c944a1a9df227d791b74aa56",
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.enclosure-heat/outdoor-kiosk-cooling-unit/sheet.pdf": {
-    "mtime": 1792872342.9905126,
-    "seen": 1792879159.4885726,
+    "mtime": 1792888635.5268538,
+    "seen": 1792889969.153322,
     "ast_hash": "0555706210b5383c0de7f14166f5a318",
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.enclosure-heat/wall-mounted-plc-panel/sheet.pdf": {
-    "mtime": 1792872344.6345127,
-    "seen": 1792879159.4885747,
+    "mtime": 1792888637.2268536,
+    "seen": 1792889969.1533248,
     "ast_hash": "0a42e0765b512d70e9203a8f99a1db9d",
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.motor-sizing/ball-screw-pick-and-place/sheet.pdf": {
-    "mtime": 1792878932.7803485,
-    "seen": 1792879159.488581,
+    "mtime": 1792888631.3228538,
+    "seen": 1792889969.1533332,
     "ast_hash": "f2193213117420af25afd5a5008dd5a9",
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.motor-sizing/geared-index-table/sheet.pdf": {
-    "mtime": 1792878932.8236682,
-    "seen": 1792879159.488583,
+    "mtime": 1792888637.3628538,
+    "seen": 1792889969.1533368,
     "ast_hash": "8e30e772728bfa2932e995239b4ab471",
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.voltage-drop/dc-battery-feed/sheet.pdf": {
-    "mtime": 1792872341.3025126,
-    "seen": 1792879159.4885852,
+    "mtime": 1792888633.7148538,
+    "seen": 1792889969.153342,
     "ast_hash": "c822360db9dcc5ff8d7a2652f719aa7f",
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.voltage-drop/three-phase-motor-feeder/sheet.pdf": {
-    "mtime": 1792872340.5025127,
-    "seen": 1792879159.4885879,
+    "mtime": 1792888632.7828538,
+    "seen": 1792889969.153345,
     "ast_hash": "183dcfd2cd516b91dcdf5f111d14261f",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.bolt-group/end-plate-moment/sheet.pdf": {
-    "mtime": 1792878932.8314211,
-    "seen": 1792879159.4885917,
+    "mtime": 1792888634.9308538,
+    "seen": 1792889969.1533527,
     "ast_hash": "b9cf1441f01c5e6dbf1517207cf64e44",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.bolt-group/four-bolt-bracket/sheet.pdf": {
-    "mtime": 1792878932.8331275,
-    "seen": 1792879159.4885936,
+    "mtime": 1792888632.9308538,
+    "seen": 1792889969.1533556,
     "ast_hash": "2a0c0c3fd860cd2aa24d5d6abcce9acb",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.bolted-joint/m12-88-flange/sheet.pdf": {
-    "mtime": 1792872339.4065127,
-    "seen": 1792879159.488596,
+    "mtime": 1792888631.1588538,
+    "seen": 1792889969.153358,
     "ast_hash": "77ad8e002f29612cb7cb5ff440761f59",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.bolted-joint/m12-88-overloaded/sheet.pdf": {
-    "mtime": 1792872342.6985128,
-    "seen": 1792879159.4886029,
+    "mtime": 1792888635.2508538,
+    "seen": 1792889969.1533616,
     "ast_hash": "39527cc97ab0c855a75dc1f7fa0b7a24",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.iso286-fit/h7-g6-25mm/sheet.pdf": {
-    "mtime": 1792878932.8756683,
-    "seen": 1792879159.488605,
+    "mtime": 1792888638.4868536,
+    "seen": 1792889969.1533647,
     "ast_hash": "4d8104319a45795f44e877273998871b",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.iso286-fit/h7-p6-50mm/sheet.pdf": {
-    "mtime": 1792878932.878838,
-    "seen": 1792879159.4886074,
+    "mtime": 1792888636.4108536,
+    "seen": 1792889969.1533675,
     "ast_hash": "8db4945014a7adde8e8d1e5bd84be875",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.press-fit/hollow-shaft/sheet.pdf": {
-    "mtime": 1792872344.3945127,
-    "seen": 1792879159.4886105,
+    "mtime": 1792888637.0028536,
+    "seen": 1792889969.1533701,
     "ast_hash": "39e7e06e435ca333fa9a97952e54156a",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.press-fit/solid-steel-shaft/sheet.pdf": {
-    "mtime": 1792872345.1025126,
-    "seen": 1792879159.488613,
+    "mtime": 1792888637.9588537,
+    "seen": 1792889969.1533728,
     "ast_hash": "409e7aae998266c7bd4c740ea9f21c0e",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.thick-cylinder/external-pressure-closed/sheet.pdf": {
-    "mtime": 1792872345.4065127,
-    "seen": 1792879159.488617,
+    "mtime": 1792888638.6548536,
+    "seen": 1792889969.1533816,
     "ast_hash": "89b690c783d650084bf3b69486adadb6",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.thick-cylinder/internal-pressure-closed/sheet.pdf": {
-    "mtime": 1792872344.9945126,
-    "seen": 1792879159.4886196,
+    "mtime": 1792888637.7988536,
+    "seen": 1792889969.1533842,
     "ast_hash": "00e3ae6c088eba0c5233104918fc7237",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.tolerance-stack/bearing-housing-gap/sheet.pdf": {
-    "mtime": 1792872340.1505127,
-    "seen": 1792879159.4886224,
+    "mtime": 1792888632.482854,
+    "seen": 1792889969.1533878,
     "ast_hash": "681f1ad6bd943780bb97e341e8fdfdab",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.tolerance-stack/shouldered-screw-gap/sheet.pdf": {
-    "mtime": 1792872341.9585128,
-    "seen": 1792879159.488648,
+    "mtime": 1792888634.3308537,
+    "seen": 1792889969.1533906,
     "ast_hash": "0c237c9b05d20d8a6db1cac113b59ea9",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.beam-formulas/propped-cantilever-udl/sheet.pdf": {
-    "mtime": 1792872341.6105127,
-    "seen": 1792879159.4886575,
+    "mtime": 1792888634.0108538,
+    "seen": 1792889969.1534011,
     "ast_hash": "c35d8e1f1b2a260fc1689f94d641146d",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.beam-formulas/ss-point-offcentre/sheet.pdf": {
-    "mtime": 1792872343.2985127,
-    "seen": 1792879159.4886596,
+    "mtime": 1792888635.8148537,
+    "seen": 1792889969.1534042,
     "ast_hash": "c4be7aef8841503a83f82638f7cdae10",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.en1993-member/ub-beam-bending-shear/sheet.pdf": {
-    "mtime": 1792878933.0073152,
-    "seen": 1792879159.4886646,
+    "mtime": 1792888631.7508538,
+    "seen": 1792889969.153411,
     "ast_hash": "4248f182affd0e2b2cb1f193115c4437",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.en1993-member/uc-column-axial-moment/sheet.pdf": {
-    "mtime": 1792878933.0094829,
-    "seen": 1792879159.4886665,
+    "mtime": 1792888636.8788538,
+    "seen": 1792889969.1534138,
     "ast_hash": "a4b835efe21fb16d09c8e98e195246c6",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.frame-2d/pinned-portal-gravity-wind/sheet.pdf": {
-    "mtime": 1792872340.3345127,
-    "seen": 1792879159.4886687,
+    "mtime": 1792888632.646854,
+    "seen": 1792889969.1534164,
     "ast_hash": "1c8ff30ebcb201d54ee5c331452d122f",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.frame-2d/two-span-continuous-beam/sheet.pdf": {
-    "mtime": 1792872342.1225128,
-    "seen": 1792879159.4886703,
+    "mtime": 1792888634.4868538,
+    "seen": 1792889969.153419,
     "ast_hash": "eeacaab614097db99a3cb1043cdf5cad",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.section-properties/fabricated-box-girder/sheet.pdf": {
-    "mtime": 1792872343.9465127,
-    "seen": 1792879159.4886744,
+    "mtime": 1792888636.5628538,
+    "seen": 1792889969.1534257,
     "ast_hash": "71e0723c6b1632090f26289b65daa1a7",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.section-properties/ub-457x191x98/sheet.pdf": {
-    "mtime": 1792872343.1705127,
-    "seen": 1792879159.488676,
+    "mtime": 1792888635.6788538,
+    "seen": 1792889969.153428,
     "ast_hash": "209a7335b3fddc14aa7c68d9d2d30ad9",
     "semantic_hash": ""
   },
@@ -33186,9 +33186,9 @@
     "semantic_hash": ""
   },
   "docs/worked-examples/README.md": {
-    "mtime": 1792878932.7489212,
-    "seen": 1792879159.4881768,
-    "ast_hash": "9c53bca7aa1e8bb32080e17fdab82a27",
+    "mtime": 1792889784.765183,
+    "seen": 1792889969.1527529,
+    "ast_hash": "ac71954e074408a13c62b8d48e9b1aad",
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.heat-exchanger/lthw-plate-hx-sizing/inputs.json": {
@@ -33408,32 +33408,32 @@
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.heat-exchanger/lthw-plate-hx-sizing/sheet.pdf": {
-    "mtime": 1792878932.7546957,
-    "seen": 1792879159.488554,
+    "mtime": 1792888635.3828537,
+    "seen": 1792889969.1532972,
     "ast_hash": "697782dc0e46d63fb938892a36dd25ce",
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.sealed-system/heat-pump-retrofit-55-45/sheet.pdf": {
-    "mtime": 1792878932.7673604,
-    "seen": 1792879159.488569,
+    "mtime": 1792888633.4308538,
+    "seen": 1792889969.1533163,
     "ast_hash": "4017168e453e47c3f59fb29e47f5f464",
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.load-budget/pump-skid-panel/sheet.pdf": {
-    "mtime": 1792878932.776526,
-    "seen": 1792879159.488579,
+    "mtime": 1792888631.9148538,
+    "seen": 1792889969.1533308,
     "ast_hash": "bcbc9376b69df9b809f63cf04020f41b",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.bearing-life/skf-6206-pump/sheet.pdf": {
-    "mtime": 1792878932.8293304,
-    "seen": 1792879159.48859,
+    "mtime": 1792888633.8868537,
+    "seen": 1792889969.15335,
     "ast_hash": "216058f78cd80fe0ae3edb45d526907a",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.load-combinations/office-floor-beam-uk-na/sheet.pdf": {
-    "mtime": 1792878933.0114315,
-    "seen": 1792879159.4886725,
+    "mtime": 1792888634.7788537,
+    "seen": 1792889969.1534216,
     "ast_hash": "405bf09cd268bf89863018660e37cb45",
     "semantic_hash": ""
   },
@@ -33588,20 +33588,20 @@
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.fault-protection/workshop-radial-c16/sheet.pdf": {
-    "mtime": 1792878932.7727723,
-    "seen": 1792879159.4885767,
+    "mtime": 1792888636.2788537,
+    "seen": 1792889969.153328,
     "ast_hash": "70e33b40052b0c80cd67a5f7236463d8",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.shaft/gearbox-input-shaft/sheet.pdf": {
-    "mtime": 1792878932.880738,
-    "seen": 1792879159.4886153,
+    "mtime": 1792888633.258854,
+    "seen": 1792889969.153376,
     "ast_hash": "6be7c9995d78bbb39affd05e90069b47",
     "semantic_hash": ""
   },
   "docs/worked-examples/mechanical/mech.weld-group/bracket-c-weld/sheet.pdf": {
-    "mtime": 1792878932.883009,
-    "seen": 1792879159.488652,
+    "mtime": 1792888638.3308537,
+    "seen": 1792889969.1533945,
     "ast_hash": "5b38fd17525dcd4e9e6caa0569973345",
     "semantic_hash": ""
   },
@@ -33768,20 +33768,20 @@
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.room-heat-loss/semi-detached-living-room/sheet.pdf": {
-    "mtime": 1792878932.7640467,
-    "seen": 1792879159.488567,
+    "mtime": 1792888634.1588538,
+    "seen": 1792889969.1533139,
     "ast_hash": "0cd46675f644f0fe1594f7a8facc3795",
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.conductor-sizing/conveyor-motor-circuit/sheet.pdf": {
-    "mtime": 1792878932.769968,
-    "seen": 1792879159.4885712,
+    "mtime": 1792888637.5028536,
+    "seen": 1792889969.1533194,
     "ast_hash": "40d9ef38e32a4b5e7605720131135331",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.connection-ec3/beam-splice-m20/sheet.pdf": {
-    "mtime": 1792878933.005258,
-    "seen": 1792879159.4886622,
+    "mtime": 1792888635.9348538,
+    "seen": 1792889969.1534078,
     "ast_hash": "a4e9aacb275d13f29e72bbb05278fe35",
     "semantic_hash": ""
   },
@@ -33834,8 +33834,8 @@
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.base-plate/portal-column-base-uc254/sheet.pdf": {
-    "mtime": 1792878932.9996684,
-    "seen": 1792879159.4886553,
+    "mtime": 1792888636.7468538,
+    "seen": 1792889969.1533978,
     "ast_hash": "732f9a754b9b629dbbb40bea20d0cc47",
     "semantic_hash": ""
   },
@@ -34218,9 +34218,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.FluidPower/FluidPowerCalculators.cs": {
-    "mtime": 1792886285.2629075,
-    "seen": 1792886480.794171,
-    "ast_hash": "9bead34aed471233d12cd993f085bd43",
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.140625,
+    "ast_hash": "f7e5bbd793d9fceffda80c28451832f4",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.FluidPower/Tempest.Calc.FluidPower.csproj": {
@@ -34365,6 +34365,312 @@
     "mtime": 1792886285.2709074,
     "seen": 1792886480.803742,
     "ast_hash": "3f2f7f45b7ff02a2a7d297a749d7ef7a",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/building-services/bs.glaser/internal-insulation-no-vcl/inputs.json": {
+    "mtime": 1792889784.765516,
+    "seen": 1792889969.1394246,
+    "ast_hash": "fe532eef530fe4629f2c4c419888a339",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/building-services/bs.glaser/internal-insulation-with-vcl/inputs.json": {
+    "mtime": 1792889784.7674787,
+    "seen": 1792889969.1394298,
+    "ast_hash": "58413998483d977a554c7f0d846a80da",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/electrical/elec.pcb-trace/motor-driver-supply-rail/inputs.json": {
+    "mtime": 1792889784.7694292,
+    "seen": 1792889969.139483,
+    "ast_hash": "782d6b77d13b926675c838502b299837",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/fluid-power/fp.accumulator/clamp-circuit-bladder-accumulator/inputs.json": {
+    "mtime": 1792889784.7710063,
+    "seen": 1792889969.139491,
+    "ast_hash": "be4b81c41d53085d93a1c2609bb738fa",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/mechanical/mech.spring/plunger-return-spring/inputs.json": {
+    "mtime": 1792889784.7726908,
+    "seen": 1792889969.139525,
+    "ast_hash": "9c85cdeb0155e5a129f78fcb311ec4f6",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/structural/struct.ltb-interaction/ub-457x191x98-beam-column/inputs.json": {
+    "mtime": 1792889784.7747598,
+    "seen": 1792889969.1396637,
+    "ast_hash": "167f4ff63388568edd815a321b1a5f4a",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.BuildingServices/GlaserCalculator.cs": {
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.1404471,
+    "ast_hash": "c620e797f85285463a6a3c9a0b0764ef",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.BuildingServices/GlaserModel.cs": {
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.140451,
+    "ast_hash": "0889484851067323fe6b979759771b65",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Electrical/PcbTraceCalculator.cs": {
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.1404982,
+    "ast_hash": "90a1532e6f96797ef070c77c513369b9",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.FluidPower/AccumulatorCalculator.cs": {
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.1406205,
+    "ast_hash": "f8bb67a4bdf684c979705f58a7be2900",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Mechanical/FatigueRelations.cs": {
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.1407056,
+    "ast_hash": "f47314f662e6fac0fe408d17eb46db50",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Mechanical/SpringCalculator.cs": {
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.1407263,
+    "ast_hash": "86f6088226c59a9dc36a8de9bca0c080",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Structural/LtbInteractionCalculator.cs": {
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.1408322,
+    "ast_hash": "5962907d839c8442157b6f8cebcceb1c",
+    "semantic_hash": ""
+  },
+  "src/Tempest.Calc/Tempest.Calc.Structural/LtbInteractionMath.cs": {
+    "mtime": 1792889784.7788274,
+    "seen": 1792889969.1408348,
+    "ast_hash": "d860420c279e1f7eaa57ce37bd6e3046",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/BuildingServices/GlaserTests.cs": {
+    "mtime": 1792889784.7788274,
+    "seen": 1792889969.1462674,
+    "ast_hash": "c9ce63965e291a57ce4598f3432c4aa7",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/Electrical/PcbTraceTests.cs": {
+    "mtime": 1792889784.7788274,
+    "seen": 1792889969.1463096,
+    "ast_hash": "e28020740137c10680971550b304b786",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/FluidPower/FluidPowerWorkedExamples.cs": {
+    "mtime": 1792889784.7788274,
+    "seen": 1792889969.1463118,
+    "ast_hash": "50447638d536a8e6367dda92dd8d8d83",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/Mechanical/SpringTests.cs": {
+    "mtime": 1792889784.7813494,
+    "seen": 1792889969.14633,
+    "ast_hash": "4d0e4fd6123dfe5679d1474dbe264cff",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/Structural/LtbInteractionTests.cs": {
+    "mtime": 1792889784.7813494,
+    "seen": 1792889969.1463559,
+    "ast_hash": "9af03f44d32b1fa5815fee2b57171653",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.FluidPower/AccumulatorTests.cs": {
+    "mtime": 1792889784.7833245,
+    "seen": 1792889969.1464012,
+    "ast_hash": "53ce6fd6168942d23cf8aded1f9bca4c",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Library/Materials/LtbInteractionMaterialTests.cs": {
+    "mtime": 1792889784.7833245,
+    "seen": 1792889969.146467,
+    "ast_hash": "f680cf3223a783be3a74f947be0e0292",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Library/Materials/SpringMaterialTests.cs": {
+    "mtime": 1792889784.7833245,
+    "seen": 1792889969.1464748,
+    "ast_hash": "8905f9571c7ae731f390d70e8dcb1b83",
+    "semantic_hash": ""
+  },
+  "docs/calcs/building-services/bs.glaser.md": {
+    "mtime": 1792889784.7640555,
+    "seen": 1792889969.1520073,
+    "ast_hash": "bf87670276e6050ac0eec31c05ac9af6",
+    "semantic_hash": ""
+  },
+  "docs/calcs/electrical/elec.pcb-trace.md": {
+    "mtime": 1792889784.7640555,
+    "seen": 1792889969.152039,
+    "ast_hash": "a7920789bc4e88c16ec2bf7c2c44de75",
+    "semantic_hash": ""
+  },
+  "docs/calcs/fluid-power/fp.accumulator.md": {
+    "mtime": 1792889784.7640555,
+    "seen": 1792889969.152044,
+    "ast_hash": "c437924f74affcc160a69964b2ef9acb",
+    "semantic_hash": ""
+  },
+  "docs/calcs/mechanical/mech.spring.md": {
+    "mtime": 1792889784.7640555,
+    "seen": 1792889969.1520646,
+    "ast_hash": "d3206a52d42fd1126963decbf5345f53",
+    "semantic_hash": ""
+  },
+  "docs/calcs/structural/struct.ltb-interaction.md": {
+    "mtime": 1792889784.7640555,
+    "seen": 1792889969.152092,
+    "ast_hash": "80dd1c4eca79a72af6631816f8b0cbe8",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/building-services/bs.glaser/internal-insulation-no-vcl/README.md": {
+    "mtime": 1792889784.7653584,
+    "seen": 1792889969.1527655,
+    "ast_hash": "2821f640cef2d7e640419c3c0ad38242",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/building-services/bs.glaser/internal-insulation-no-vcl/sheet.txt": {
+    "mtime": 1792889784.7669957,
+    "seen": 1792889969.1527684,
+    "ast_hash": "8ed43f699c49f6aeab510e042e271374",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/building-services/bs.glaser/internal-insulation-with-vcl/README.md": {
+    "mtime": 1792889784.7669957,
+    "seen": 1792889969.1527708,
+    "ast_hash": "46c9088199a75bdda7b9e505d0a89700",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/building-services/bs.glaser/internal-insulation-with-vcl/sheet.txt": {
+    "mtime": 1792889784.7690897,
+    "seen": 1792889969.1527724,
+    "ast_hash": "2eddc45e5727ee5336fee5e20aa25c79",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/electrical/elec.pcb-trace/motor-driver-supply-rail/README.md": {
+    "mtime": 1792889784.7692814,
+    "seen": 1792889969.15286,
+    "ast_hash": "2bc0555b852b6cac6e5d2626443eb3bd",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/electrical/elec.pcb-trace/motor-driver-supply-rail/sheet.txt": {
+    "mtime": 1792889784.7706444,
+    "seen": 1792889969.1528618,
+    "ast_hash": "fff5a1c8866c6da1884e75384c661bb5",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/fluid-power/fp.accumulator/clamp-circuit-bladder-accumulator/README.md": {
+    "mtime": 1792889784.7708583,
+    "seen": 1792889969.152873,
+    "ast_hash": "b25be83fbf19625dc0517068731b13d3",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/fluid-power/fp.accumulator/clamp-circuit-bladder-accumulator/sheet.txt": {
+    "mtime": 1792889784.7710063,
+    "seen": 1792889969.1528754,
+    "ast_hash": "71a85b2c6129f3ec9bbb58727a50ad8b",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/mechanical/mech.spring/plunger-return-spring/README.md": {
+    "mtime": 1792889784.772533,
+    "seen": 1792889969.1529264,
+    "ast_hash": "9834c99802911e6699ad07212371d2af",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/mechanical/mech.spring/plunger-return-spring/sheet.txt": {
+    "mtime": 1792889784.774302,
+    "seen": 1792889969.1529293,
+    "ast_hash": "d42f13069c3e2c2f0bf0e2f42c6b56c7",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/structural/struct.ltb-interaction/ub-457x191x98-beam-column/README.md": {
+    "mtime": 1792889784.7745903,
+    "seen": 1792889969.1531296,
+    "ast_hash": "fa4a65ee026364be8e95a4ae4b05e0e0",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/structural/struct.ltb-interaction/ub-457x191x98-beam-column/sheet.txt": {
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.1531312,
+    "ast_hash": "54244402586abd26406ad13559da6105",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/Golden/bs.glaser.txt": {
+    "mtime": 1792889784.7813494,
+    "seen": 1792889969.1531646,
+    "ast_hash": "e8f3c93b8b00b7d7b93f0cb073ccef54",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/Golden/elec.pcb-trace.txt": {
+    "mtime": 1792889784.7813494,
+    "seen": 1792889969.153194,
+    "ast_hash": "36e3c3925547f5dacae0181ee4956476",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/Golden/fp.accumulator.txt": {
+    "mtime": 1792889784.7813494,
+    "seen": 1792889969.1531994,
+    "ast_hash": "c091999600152743c4f7307479e26c3c",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/Golden/mech.spring.txt": {
+    "mtime": 1792889784.7813494,
+    "seen": 1792889969.153217,
+    "ast_hash": "a768d79061b8d76629f220ee4af8c96b",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.Calculators/Golden/struct.ltb-interaction.txt": {
+    "mtime": 1792889784.7813494,
+    "seen": 1792889969.1532428,
+    "ast_hash": "76fd118e6aaf95bf32d87c27bb9a72e4",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Calc.Tests.FluidPower/Golden/fp.accumulator.txt": {
+    "mtime": 1792889784.7833245,
+    "seen": 1792889969.153248,
+    "ast_hash": "c091999600152743c4f7307479e26c3c",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/building-services/bs.glaser/internal-insulation-no-vcl/sheet.pdf": {
+    "mtime": 1792889784.765516,
+    "seen": 1792889969.153291,
+    "ast_hash": "f60de49b7f3955309a288dbd3acbfa10",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/building-services/bs.glaser/internal-insulation-with-vcl/sheet.pdf": {
+    "mtime": 1792889784.7674787,
+    "seen": 1792889969.1532938,
+    "ast_hash": "e2ccc09737206f0d15a5b2f879107aea",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/electrical/elec.pcb-trace/motor-driver-supply-rail/sheet.pdf": {
+    "mtime": 1792889784.7694292,
+    "seen": 1792889969.153339,
+    "ast_hash": "99fd3d18a25f1444ff1f5ee9afbe7a68",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/fluid-power/fp.accumulator/clamp-circuit-bladder-accumulator/sheet.pdf": {
+    "mtime": 1792889784.7710063,
+    "seen": 1792889969.153347,
+    "ast_hash": "013e095cd3a82587948a6e415574dbca",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/mechanical/mech.spring/plunger-return-spring/sheet.pdf": {
+    "mtime": 1792889784.7726908,
+    "seen": 1792889969.1533787,
+    "ast_hash": "87c9031430f90bc4077930ffe9981d33",
+    "semantic_hash": ""
+  },
+  "docs/worked-examples/structural/struct.ltb-interaction/ub-457x191x98-beam-column/sheet.pdf": {
+    "mtime": 1792889784.7748275,
+    "seen": 1792889969.1534233,
+    "ast_hash": "47ce09c4aa30e64dbfdca16d801a7179",
     "semantic_hash": ""
   }
 }
