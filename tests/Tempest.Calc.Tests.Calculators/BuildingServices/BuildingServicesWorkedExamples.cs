@@ -232,7 +232,49 @@ public static class BuildingServicesWorkedExamples
             [new CalcExpectedValue("t_q", 23.374326102060238, "mm", 1e-8), new CalcExpectedValue("t_se", 7.8422918751036015, "mm", 1e-8), new CalcExpectedValue("thickness", 23.374326102060238, "mm", 1e-8), new CalcExpectedValue("h_c", 3.6748386376329623, "W/(m^2*K)", 1e-8), new CalcExpectedValue("h_r", 0.5800655776199201, "W/(m^2*K)", 1e-8), new CalcExpectedValue("h_se", 4.254904215252882, "W/(m^2*K)", 1e-8), new CalcExpectedValue("q_per_m", 36.77262036715434, "W/m", 1e-8), new CalcExpectedValue("theta_se", 27.854972274669827, "degC", 1e-8)],
             "The bright cladding radiates little (h_r 0.58), so h_se is only 4.25 W/m²K and the 60 W/m heat-loss limit needs 23.4 mm; the 60 °C personnel-protection limit needs only 7.8 mm. At the chosen 50 mm the loss is 36.8 W/m with the cladding at 27.9 °C; both criteria pass with room to spare. The correlation is indicative: check h_se against the cladding maker's data before relying on a thin margin.",
             CalcReferenceStatus.Confirmed),
+
+        new(PipeExpansionCalculator.Id, "lthw-main-expansion-loop", "Low-temperature hot-water main, 50 m between anchors: a U-loop of two 4 m legs",
+            new CalcReferenceSource("Analytic (ΔL = α·L·ΔT; U-loop as two guided cantilevers L = √(3·E·D·Δ/Sa), F = 12·E·I·Δ/L³, M = 6·E·I·Δ/L²; recomputed in python3)", null, "88.9 × 3.2 mm steel main, 10 → 80 °C, 50 m between anchors; E 210 GPa and α 12 µm/(m·K) are textbook generic values, Sa and K1 are invented illustrative records, not code values"),
+            PipeExpansionInputs(
+                CalcInputValue.Quantity("E", 210, "GPa", CalcProvenance.Specification("Generic carbon steel, indicative (W3 seed value); take from the project's material record")),
+                CalcInputValue.Quantity("alpha", 12, "um/(m*K)", CalcProvenance.Specification("Generic carbon steel, mean 10–80 °C, indicative")),
+                CalcInputValue.Quantity("OD", 88.9, "mm", CalcProvenance.Drawing("DRG-M-210", "B")),
+                CalcInputValue.Quantity("t_wall", 3.2, "mm", CalcProvenance.Drawing("DRG-M-210", "B")),
+                CalcInputValue.Quantity("L", 50, "m", CalcProvenance.Drawing("DRG-M-210", "B")),
+                CalcInputValue.Quantity("T_install", 10, "degC", CalcProvenance.Assumed("Mean site temperature when the main is anchored.")),
+                CalcInputValue.Quantity("T_operate", 80, "degC", CalcProvenance.Specification("SPEC-M-04 §3: LTHW flow temperature")),
+                CalcInputValue.Choice("layout", PipeExpansionCalculator.UpLoop, CalcProvenance.Drawing("DRG-M-210", "B")),
+                CalcInputValue.Quantity("H", 4, "m", CalcProvenance.Drawing("DRG-M-210", "B")),
+                CalcInputValue.Quantity("Sa", 100, "MPa", CalcProvenance.Assumed("Invented illustrative allowable range; take Sa from the project's piping code and its formula.")),
+                CalcInputValue.Quantity("K_scr", 120, "mm^2/m^2", CalcProvenance.Assumed("Invented illustrative screening limit; take K1 from the project's piping code."))),
+            [new CalcExpectedValue("dL", 42, "mm", 1e-9), new CalcExpectedValue("Delta", 21, "mm", 1e-9), new CalcExpectedValue("L_req", 3.4294999635515384, "m", 1e-9), new CalcExpectedValue("u_leg", 0.8573749908878846, "", 1e-9), new CalcExpectedValue("anchor_force", 654.9336148497111, "N", 1e-9), new CalcExpectedValue("anchor_moment", 1309.8672296994223, "N*m", 1e-9), new CalcExpectedValue("sigma_leg", 73.5091875, "MPa", 1e-9), new CalcExpectedValue("scr", 58.340625, "mm^2/m^2", 1e-9), new CalcExpectedValue("u_scr", 0.486171875, "", 1e-9), new CalcExpectedValue("pass", 1, "", 1e-9)],
+            "The 50 m main grows 42 mm; fully restrained it would carry 176 MPa and push 152 kN on its anchors. A U-loop in the middle of the run gives two 4 m legs that take 21 mm each; they need 3.43 m (utilisation 0.857), push 655 N on the anchors and put 1310 N·m into the loop corners (73.5 MPa). The screening ratio 58.3 mm²/m² is under the 120 mm²/m² K1 record, so the line passes the screen. Screening only — not a piping stress analysis: the real routing, supports and guides still need checking by the designer.",
+            CalcReferenceStatus.Confirmed),
+
+        new(PipeExpansionCalculator.Id, "copper-offset-leg-bellows", "Copper heating riser, 24 m between anchors: a 2.5 m offset leg is too short, and a bellows would put 2.4 kN on the anchors",
+            new CalcReferenceSource("Analytic (ΔL = α·L·ΔT; offset leg as one guided cantilever; bellows thrust P·A_eff; recomputed in python3)", null, "54 × 1.5 mm copper, 10 → 70 °C, 24 m between anchors; E 120 GPa and α 16.6 µm/(m·K) are textbook generic values, Sa and K1 are invented illustrative records, not code values; the bellows is a placeholder from the same invented datasheet"),
+            PipeExpansionInputs(
+                CalcInputValue.Quantity("E", 120, "GPa", CalcProvenance.Specification("Generic copper, indicative; take from the project's material record")),
+                CalcInputValue.Quantity("alpha", 16.6, "um/(m*K)", CalcProvenance.Specification("Generic copper, mean 10–70 °C, indicative")),
+                CalcInputValue.Quantity("OD", 54, "mm", CalcProvenance.Drawing("DRG-M-212", "A")),
+                CalcInputValue.Quantity("t_wall", 1.5, "mm", CalcProvenance.Drawing("DRG-M-212", "A")),
+                CalcInputValue.Quantity("L", 24, "m", CalcProvenance.Drawing("DRG-M-212", "A")),
+                CalcInputValue.Quantity("T_install", 10, "degC", CalcProvenance.Assumed("Mean site temperature when the riser is anchored.")),
+                CalcInputValue.Quantity("T_operate", 70, "degC", CalcProvenance.Specification("SPEC-M-04 §3: heating flow temperature")),
+                CalcInputValue.Choice("layout", PipeExpansionCalculator.OffsetLeg, CalcProvenance.Drawing("DRG-M-212", "A")),
+                CalcInputValue.Quantity("H", 2.5, "m", CalcProvenance.Drawing("DRG-M-212", "A")),
+                CalcInputValue.Quantity("Sa", 60, "MPa", CalcProvenance.Assumed("Invented illustrative allowable range; take Sa from the project's piping code and its formula.")),
+                CalcInputValue.Quantity("K_scr", 100, "mm^2/m^2", CalcProvenance.Assumed("Invented illustrative screening limit; take K1 from the project's piping code.")),
+                CalcInputValue.Quantity("P_b", 6, "bar", CalcProvenance.Specification("Heating circuit design pressure, gauge")),
+                CalcInputValue.Quantity("A_eff", 40, "cm^2", CalcProvenance.Assumed("Placeholder effective area; replace with the manufacturer's datasheet value."))),
+            [new CalcExpectedValue("dL", 23.904, "mm", 1e-9), new CalcExpectedValue("sigma_res", 119.52, "MPa", 1e-9), new CalcExpectedValue("F_res", 29.56929837411787, "kN", 1e-9), new CalcExpectedValue("L_req", 2.7829653249726274, "m", 1e-9), new CalcExpectedValue("u_leg", 1.1131861299890509, "", 1e-9), new CalcExpectedValue("anchor_force", 187.93015963776955, "N", 1e-9), new CalcExpectedValue("anchor_moment", 234.91269954721193, "N*m", 1e-9), new CalcExpectedValue("scr", 229.78160033259212, "mm^2/m^2", 1e-9), new CalcExpectedValue("u_scr", 2.297816003325921, "", 1e-9), new CalcExpectedValue("F_thrust", 2.4, "kN", 1e-9), new CalcExpectedValue("pass", 0, "", 1e-9)],
+            "The 24 m riser grows 23.9 mm. The 2.5 m offset leg would have to be 2.78 m to keep the root stress within Sa (utilisation 1.113, FAIL) and the screening ratio 230 mm²/m² is more than twice the K1 record: the line needs a formal stress analysis or a longer leg. The alternative of a bellows replaces the leg and puts its pressure thrust, 6 bar × 40 cm² = 2.4 kN, on the anchors (spring force and guide friction come from the manufacturer's data).",
+            CalcReferenceStatus.Confirmed),
     ];
+
+    /// <summary>The inputs shared by the two pipe-expansion examples: the caller's values over the unit-free choices.</summary>
+    private static CalcInputSet PipeExpansionInputs(params CalcInputValue[] values) =>
+        new([CalcInputValue.Choice("temp_mode", PipeExpansionCalculator.TwoTemperatures, CalcProvenance.Assumed("Install and operating temperatures are both known.")), .. values]);
 
     /// <summary>The inputs shared by the two Glaser examples, with a layers table supplied by the caller.</summary>
     private static CalcInputSet GlaserInputs(CalcInputValue layers) =>

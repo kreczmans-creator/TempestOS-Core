@@ -1,0 +1,137 @@
+[
+  {
+    "Symbol": "E",
+    "Number": 210,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Generic carbon steel, indicative (W3 seed value); take from the project\u0027s material record",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "210"
+  },
+  {
+    "Symbol": "H",
+    "Number": 4,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-210",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  },
+  {
+    "Symbol": "K_scr",
+    "Number": 120,
+    "Unit": "mm^2/m^2",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Invented illustrative screening limit; take K1 from the project\u0027s piping code.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "120"
+  },
+  {
+    "Symbol": "L",
+    "Number": 50,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-210",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "OD",
+    "Number": 88.9,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-210",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "88.9"
+  },
+  {
+    "Symbol": "Sa",
+    "Number": 100,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Invented illustrative allowable range; take Sa from the project\u0027s piping code and its formula.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "T_install",
+    "Number": 10,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Mean site temperature when the main is anchored.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "T_operate",
+    "Number": 80,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-04 \u00A73: LTHW flow temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "80"
+  },
+  {
+    "Symbol": "alpha",
+    "Number": 12,
+    "Unit": "um/(m*K)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Generic carbon steel, mean 10\u201380 \u00B0C, indicative",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "12"
+  },
+  {
+    "Symbol": "layout",
+    "Text": "U-loop (two legs, each takes half the movement)",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-210",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "U-loop (two legs, each takes half the movement)"
+  },
+  {
+    "Symbol": "t_wall",
+    "Number": 3.2,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-210",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3.2"
+  },
+  {
+    "Symbol": "temp_mode",
+    "Text": "install and operating temperatures",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Install and operating temperatures are both known.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "install and operating temperatures"
+  }
+]

@@ -1,0 +1,159 @@
+[
+  {
+    "Symbol": "A_eff",
+    "Number": 40,
+    "Unit": "cm^2",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Placeholder effective area; replace with the manufacturer\u0027s datasheet value.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "E",
+    "Number": 120,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Generic copper, indicative; take from the project\u0027s material record",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "120"
+  },
+  {
+    "Symbol": "H",
+    "Number": 2.5,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-212",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2.5"
+  },
+  {
+    "Symbol": "K_scr",
+    "Number": 100,
+    "Unit": "mm^2/m^2",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Invented illustrative screening limit; take K1 from the project\u0027s piping code.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "L",
+    "Number": 24,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-212",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "24"
+  },
+  {
+    "Symbol": "OD",
+    "Number": 54,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-212",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "54"
+  },
+  {
+    "Symbol": "P_b",
+    "Number": 6,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Heating circuit design pressure, gauge",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6"
+  },
+  {
+    "Symbol": "Sa",
+    "Number": 60,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Invented illustrative allowable range; take Sa from the project\u0027s piping code and its formula.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "T_install",
+    "Number": 10,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Mean site temperature when the riser is anchored.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "T_operate",
+    "Number": 70,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-04 \u00A73: heating flow temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "alpha",
+    "Number": 16.6,
+    "Unit": "um/(m*K)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Generic copper, mean 10\u201370 \u00B0C, indicative",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "16.6"
+  },
+  {
+    "Symbol": "layout",
+    "Text": "offset leg (L- or Z-bend: the leg takes the whole movement)",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-212",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "offset leg (L- or Z-bend: the leg takes the whole movement)"
+  },
+  {
+    "Symbol": "t_wall",
+    "Number": 1.5,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-M-212",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "temp_mode",
+    "Text": "install and operating temperatures",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Install and operating temperatures are both known.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "install and operating temperatures"
+  }
+]
