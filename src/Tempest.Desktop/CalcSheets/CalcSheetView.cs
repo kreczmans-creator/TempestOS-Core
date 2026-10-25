@@ -1363,7 +1363,8 @@ public sealed partial class CalcSheetView : UserControl
 
         right.Children.Add(BuildGovernancePanel());
 
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        // A wrapping row: Compare (ADR-0167) and the two import panels' buttons (Addendum B) no longer fit one line in a narrow right column.
+        var actions = new WrapPanel { Orientation = Orientation.Horizontal };
         actions.Children.Add(_saveButton);
         actions.Children.Add(_checkButton);
         actions.Children.Add(_issueButton);
@@ -1374,6 +1375,10 @@ public sealed partial class CalcSheetView : UserControl
         actions.Children.Add(_importScanButton);
         actions.Children.Add(_attachButton);
         actions.Children.Add(_compareButton);
+
+        foreach (var button in actions.Children.OfType<Control>())
+            button.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceXs);
+
         right.Children.Add(actions);
         right.Children.Add(_status);
         right.Children.Add(new ScrollViewer { Content = _comparison, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });

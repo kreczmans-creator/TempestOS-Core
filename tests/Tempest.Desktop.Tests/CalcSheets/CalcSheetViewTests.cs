@@ -422,7 +422,8 @@ public sealed class CalcSheetDisciplineFilterTests
         view.FilterDiscipline(CalcDiscipline.Mechanical);
         var only = Assert.Single(tree.Items.OfType<TreeViewItem>());
         Assert.Equal("Mechanical", AutomationProperties.GetName(only));
-        Assert.Equal(Tempest.Calc.Mechanical.MechanicalCalculators.All.Count, only.Items.Count);
+        // The gated lifting-lug worksheet (ADR-0173) is withheld from the catalogue with the feature off.
+        Assert.Equal(Tempest.Calc.Mechanical.MechanicalCalculators.All.Count(c => c.Template.FeatureFlag is not { Length: > 0 }), only.Items.Count);
 
         view.FilterDiscipline(null);
         Assert.Equal(2, tree.Items.Count);

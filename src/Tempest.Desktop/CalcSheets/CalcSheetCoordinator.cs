@@ -113,15 +113,18 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         events?.Subscribe<ProjectContextChangedEvent>(this);
     }
 
-    /// <summary>Lists the open project's worksheet calculations in the register (every one when no project is open).</summary>
+    /// <summary>
+    /// Lists the open project's worksheet calculations in the register; with no project open, those saved without one. The store never lists
+    /// every project's calculations at once (Red R-A-12), so the project is passed to it.
+    /// </summary>
     public async Task RefreshRegisterAsync()
     {
         if (_register is null)
             return;
 
         var project = _projects.Current;
-        var instances = await _service.Store.ListInstancesAsync().ConfigureAwait(true);
-        _register.ShowEntries([.. instances.Where(i => project is null || i.ProjectId == project.Id)], project?.DisplayName, reference => _service.Catalogue.Find(reference)?.Template.Title);
+        var instances = await _service.Store.ListInstancesAsync(project?.Id).ConfigureAwait(true);
+        _register.ShowEntries(instances, project?.DisplayName, reference => _service.Catalogue.Find(reference)?.Template.Title);
     }
 
     /// <summary>ADR-0167 §4: the current revision against the one it superseded.</summary>

@@ -155,13 +155,13 @@ public sealed class CalculationDiagramViewTests
             Assert.Equal(3, layers.Count);
             Assert.All(layers, layer => Assert.Same(focusRing, layer.Stroke));
 
-            view.SelectTemplate(ToleranceStackCalculator.Id);
+            SelectFilled(view, ToleranceStackCalculator.Id);
             Assert.True(diagram.HasDiagram);
             view.SetField("minimum", unit: "mm");
             view.SetField("minimum", "0.1");
             Assert.Equal("min = 0.1 mm", diagram.LabelFor("minimum"));
 
-            view.SelectTemplate(ThermalChainCalculator.Id);
+            SelectFilled(view, ThermalChainCalculator.Id);
             Assert.True(diagram.HasDiagram);
             Assert.Equal("stages = 3 rows", diagram.LabelFor("stages"));
         });
@@ -189,18 +189,18 @@ public sealed class CalculationDiagramViewTests
             view.SetField("a", "50", "mm");
             Assert.Equal("a = 50 mm", diagram.LabelFor("a"));
 
-            view.SelectTemplate(BoltGroupCalculator.Id);
+            SelectFilled(view, BoltGroupCalculator.Id);
             Assert.True(diagram.HasDiagram);
             Assert.Matches(@"^bolts = \d+ rows$", diagram.LabelFor("bolts"));
 
-            view.SelectTemplate(BoltedJointCalculator.Id);
+            SelectFilled(view, BoltedJointCalculator.Id);
             Assert.True(diagram.HasDiagram);
             view.SetField("F_A", "20", "kN");
             Assert.Equal("F_A = 20 kN", diagram.LabelFor("F_A"));
 
-            view.SelectTemplate(FilletWeldCalculator.Id);
+            SelectFilled(view, FilletWeldCalculator.Id);
             Assert.True(diagram.HasDiagram);
-            view.SelectTemplate(Tempest.Calc.Mechanical.LiftingLugCalculator.Id);
+            SelectFilled(view, Tempest.Calc.Mechanical.LiftingLugCalculator.Id);
             Assert.True(diagram.HasDiagram);
         });
     }
@@ -222,8 +222,8 @@ public sealed class CalculationDiagramViewTests
             Assert.DoesNotContain(diagram.GetVisualDescendants().OfType<Shape>(), s => s.IsEffectivelyVisible);
 
             // Choosing a diagrammed template afterwards draws it.
-            view.SelectTemplate(FatigueMinerCalculator.Id);
-            view.SelectTemplate(ThermalExpansionCalculator.Id);
+            SelectFilled(view, FatigueMinerCalculator.Id);
+            SelectFilled(view, ThermalExpansionCalculator.Id);
             Assert.True(diagram.HasDiagram);
             Assert.Equal("k_s = not given", diagram.LabelFor("k_s"));
         });
@@ -259,7 +259,7 @@ public sealed class CalculationDiagramViewTests
             var unbound = diagram.GetVisualDescendants().OfType<Line>().Where(l => !l.IsHitTestVisible).ToList();
             Assert.Contains(unbound, l => ReferenceEquals(l.Stroke, ink));
 
-            view.SelectTemplate(BearingLifeBasicCalculator.Id);
+            SelectFilled(view, BearingLifeBasicCalculator.Id);
             Assert.True(diagram.HasDiagram);
             view.SetField("F_r", "2", "kN");
             view.SetField("type", choice: BearingLifeBasicCalculator.Roller);
@@ -267,7 +267,7 @@ public sealed class CalculationDiagramViewTests
             Assert.StartsWith("A roller bearing", diagram.Reading!.Variant.Caption, StringComparison.Ordinal);
             Assert.Equal(2, diagram.ShapesFor("type").OfType<Rectangle>().Count());
 
-            view.SelectTemplate(MaterialMarginCalculator.Id);
+            SelectFilled(view, MaterialMarginCalculator.Id);
             Assert.True(diagram.HasDiagram);
             view.SetField("sigma", "130", "MPa");
             Assert.Equal("σ = 130 MPa", diagram.LabelFor("sigma"));
@@ -489,17 +489,30 @@ public sealed class CalculationDiagramViewTests
         return new Rect(origin, control.Bounds.Size);
     }
 
+    /// <summary>
+    /// Opens a template the way these diagram tests were written (on the v0.27.0 line a new sheet opened on the first known-answer case):
+    /// the form is filled with that case, so tables have rows and the diagram labels read values. Addendum A's rule (Green G-A-02) is that a
+    /// new sheet opens on the declared defaults only, with tables empty; the diagram of that blank sheet reads "?" and is tested in
+    /// <c>CalcDiagramsTests</c>.
+    /// </summary>
+    private static void SelectFilled(CalcSheetView view, string templateId)
+    {
+        view.SelectTemplate(templateId);
+        view.ApplyImportedInputs(CalcTemplateHasher.DefaultInputs(view.SelectedTemplate!.Template));
+    }
+
     private static void WithWorksheet(string templateId, Action<Window, CalcSheetView> body, double width = 1600, double height = 1000)
     {
         var view = new CalcSheetView();
-        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All());
+        // The lifting-lug port is gated (ADR-0173): its diagram is read here with the feature on, in this test only.
+        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All(), new CalcFeatureFlags([CalcFeatures.Lifting]));
         var window = new Window { Width = width, Height = height, Content = view };
 
         try
         {
             window.Show();
             view.ShowCatalogue(catalogue.Current());
-            view.SelectTemplate(templateId);
+            SelectFilled(view, templateId);
             LayOut(window);
             body(window, view);
         }
