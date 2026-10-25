@@ -1,5 +1,5 @@
 # Manual test — bs.glaser (Glaser condensation (interstitial and surface))
-Liability: Medium. Time: ~65 min. Pre-requisites: a project open in the desktop app. A pocket calculator for the hand checks. Step 10 also needs the calculator bs.room-heat-loss in the same project.
+Liability: High. Time: ~65 min. Pre-requisites: a project open in the desktop app. A pocket calculator for the hand checks. Step 10 also needs the calculator bs.room-heat-loss in the same project.
 
 | # | Step | Inputs (value + unit) | Expected output (symbol = value unit) | Tolerance | Expected PASS/FAIL/BLOCK/WARN | Basis | Result | Notes |
 |---|---|---|---|---|---|---|---|---|

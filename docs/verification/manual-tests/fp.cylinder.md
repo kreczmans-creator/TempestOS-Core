@@ -1,5 +1,5 @@
 # Manual test — fp.cylinder (Cylinder and actuator circuit)
-Liability: Medium. Time: ~55 min. Pre-requisites: a project open in the desktop app. A pocket calculator for the hand checks.
+Liability: High. Time: ~60 min. Pre-requisites: a project open in the desktop app. A pocket calculator for the hand checks.
 
 | # | Step | Inputs (value + unit) | Expected output (symbol = value unit) | Tolerance | Expected PASS/FAIL/BLOCK/WARN | Basis | Result | Notes |
 |---|---|---|---|---|---|---|---|---|
@@ -15,6 +15,7 @@ Liability: Medium. Time: ~55 min. Pre-requisites: a project open in the desktop 
 | 10 | Known defect P1-fp.cylinder-01 (Low). Import Block D0 and read F_ext. Then import Block D1 and read F_ext again. | Block D0: Regenerative extend, p_back 0. Block D1: p_back 30 bar | Product: F_ext = 58.496 kN in both cases. Correct: the 30 bar drop from the annulus to the cap lowers the force by p_back x A_a, about 12 kN. Or the sheet warns that F_ext is a lossless upper bound. | ±0.1 % | FAIL | Independent script (row x7); hand: 30e5 x 40.06e-4 = 12.0 kN before efficiency |  | Known defect P1-fp.cylinder-01; expect FAIL until fixed. The sheet states the omission in its assumption text only. The report estimate is 11.4 kN. |
 | 11 | Known defect P1-fp.cylinder-03 (Low). Import Block D2 and read Q_p, u_pump, v_ext and t_cycle. | Block D2: V_g 20 cm³/rev; n_p 1450 rpm; other inputs default | Product: Q_p = 27.55 L/min; u_pump = 1.3067 (FAIL); v_ext = 74.866 mm/s and t_cycle = 10.085 s, both worked from 36 L/min. Correct: speed follows the delivery, v_ext = 57.294 mm/s, or a second speed is shown. | ±0.1 % | FAIL | Independent script (row x4 shows the same effect); hand: v = Q_p x eta_vc / A_b |  | Known defect P1-fp.cylinder-03; expect FAIL until fixed. The pump check does fail, but the speed and the cycle time stay optimistic. |
 | 12 | Known defect P1-fp.cylinder-04 (Low). Import Block K1 again. Read Q_line, Q_prs and u_prs. | Block K1 (step 2) | Product: Q_line = 38.57 L/min (the pump delivery) but Q_prs = 75.627 L/min and u_prs = 1.2538 (FAIL). Correct: the output offered to the pressure-line sheet is a pump-line flow of 38.57 L/min. Or Q_prs is named as the cap-side retract flow. | Shown digits | FAIL | Independent script (KAT ka-circuit-standard: Q_prs 75.627 L/min is Q_p x A_b / A_a) |  | Known defect P1-fp.cylinder-04; expect FAIL until fixed. In the hydraulic power unit pack this flow feeds the pressure line. See chain.hydraulic-power-unit.md. |
+| 13 | Known defect P1-fp.cylinder-R1 (High). Import Block D3 and read L_eff, F_cr and u_buck. | Block D3: D 63; d_r 45; stroke 1000 mm; p 160 bar; K_m 1; L_add 100 mm; F_push 40; F_pull 20 kN | Product: L_eff = 1100 mm; F_cr = 344.79 kN; u_buck = 0.5063, a PASS. Correct: the cylinder body is not rigid air. A clevis-to-clevis cylinder buckles over its pin-to-pin length. A stepped column with a rigid 1150 mm body and the 1100 mm rod, pinned at both ends, gives F_cr = 141.7 kN and u_buck = 1.23, a FAIL. | ±1 % | FAIL | Independent calculation (stepped column, tan(kb) = -k a, E 210 GPa, rod I = pi d⁴ / 64); P1 report R1. Maker practice uses about twice the stroke as the basic length; owner to confirm |  | Known defect P1-fp.cylinder-R1; expect FAIL until fixed. The default mounting factor of 1 gives a critical load two to four times too high. Compare the cylinder maker's rod-sizing guide for the same mounting. |
 
 ## Import blocks
 Copy the whole line of a block to the clipboard. Then press *Import inputs (CSV/JSON)*. The status line must read "Imported n input(s)".
@@ -87,6 +88,11 @@ Copy the whole line of a block to the clipboard. Then press *Import inputs (CSV/
 **Block D2** — Standard circuit with an undersized pump: 20 cm³/rev at 1450 rpm, delivering 27.55 L/min against the 36 L/min circuit flow.
 ```json
 [{"Symbol":"V_g","Number":20,"Unit":"cm^3/rev"},{"Symbol":"n_p","Number":1450,"Unit":"rpm"}]
+```
+
+**Block D3** — Cylinder 63/45 mm, stroke 1000 mm, 160 bar, mounting factor 1, L_add 100 mm, push 40 kN, pull 20 kN.
+```json
+[{"Symbol":"D","Number":63,"Unit":"mm"},{"Symbol":"d_r","Number":45,"Unit":"mm"},{"Symbol":"stroke","Number":1000,"Unit":"mm"},{"Symbol":"p","Number":160,"Unit":"bar"},{"Symbol":"K_m","Number":1},{"Symbol":"L_add","Number":100,"Unit":"mm"},{"Symbol":"F_push","Number":40,"Unit":"kN"},{"Symbol":"F_pull","Number":20,"Unit":"kN"}]
 ```
 
 ## Notes for the tester

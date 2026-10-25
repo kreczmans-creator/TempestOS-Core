@@ -14,10 +14,10 @@ Track P changed no product code, test project, migration, build-log file or CI w
 | P1 re-check | "Status @ <sha>" columns | Reports re-checked after DA-17/DA-18, A-4/A-5, A7a, A7b/A8 and the Addendum A Blue round. 31 findings fixed on release; a senior reviewer confirmed every Critical/High fix. |
 | P2 KAT sources | `kat-sources.md` | 51 cases checked to B-3: 38 confirmed, 9 still unconfirmed, 4 contradicted. |
 | P3 record templates | `record-templates/` | 82 header-only CSV templates (to B-3) with READMEs, in priority order, matched to the record kinds in code. |
-| P4 manual tests | `manual-tests/` | One script per calculator and per pack (648+ steps), using the A8 saved-calculation and pack panels. |
+| P4 manual tests | `manual-tests/` | One script per calculator (40) and per pack (6), using the saved-calculation and pack panels. |
 | P5 consistency audit | `consistency-audit.md` | 60 findings, glossary seeds, port rename map. |
 | P6 risk triage | `risk-triage.md` (regenerate with `tools/verification/triage.py`) | Open counts: see the summary table in `risk-triage.md`. Test order for the owner. |
-| P7 oracle map | `oracles.md` | Free external cross-checks per calculator, with inputs and tolerance. |
+| P7 oracle map | `oracles.md` | Free external cross-checks for all 40 calculators, with inputs and tolerance. |
 
 ## Critical findings (fix before owner testing)
 1. **S1 section properties:** a tube or hollow rectangle in a composite counts its hole as solid (568.6 cm² for a 59.7 cm² tube).

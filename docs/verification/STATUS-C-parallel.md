@@ -6,10 +6,10 @@ Scope on release: 40 calculators, 6 packs, 219 KATs (all pass), 29 Unconfirmed, 
 P1: 40 calculators + 6 packs + Desktop sheet, senior-reviewed at 2f53791c
 P2 KAT sources: done to B-3 — 51 checked: 38 confirmed, 9 unconfirmed, 4 contradicted
 P3 record templates: done to B-3 — 82 header-only CSVs
-P4 manual tests: done — 28 calculators + 3 packs
+P4 manual tests: done — 40 calculators + 6 packs
 P5 consistency audit: done — 60 findings
 P6 risk triage: done — regenerate with tools/verification/triage.py
-P7 oracle map: done — 28 calculators
+P7 oracle map: done — 40 calculators
 Open defects (reviewed): 4 Critical (S1 composite holes, B2 SHR swap, drive-train RMS torque, F2 emergency stroke), 55 High, 86 Medium
 Writes: docs/verification/ and tools/verification/ only
-Next: P4/P7 for Addendum B running; P2/P3 for B-2/B-3 pending; 2-hourly poll
+Next: 2-hourly poll (next 15:25 UTC); Addendum B-4 and B-5 not yet on release
