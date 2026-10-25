@@ -77,13 +77,16 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.True(InputSi(f2, "p_1") > 80e3 / (areaBore * 0.95), "the lowest working pressure must still finish the stroke under load");
         Assert.Equal(107.2, 80e3 / (areaBore * 0.95) / 1e5, 1);
 
-        // F2: V0 = f_T·ΔV/[(p0/p1)^(1/n) − (p0/p2)^(1/n)] on absolute pressures with n = 1.4 and a 10 to 50 °C range.
-        Assert.Equal(26.69518127508491e-3, Si(f2, "V0"), 12);
+        // F2 (1.3.0): an emergency stroke is held at p2, charged slowly (isothermal) and discharged at n = 1.4: V0 = f_T·ΔV·(p2/p0)/[(p2/p1)^(1/n) − 1] on absolute pressures, a 10 to 50 °C range.
+        // python3: ΔV 3.926990816987242 L, p0 106.01325, p1 121.01325, p2 161.01325 bar abs, f_T 323.15/283.15: 30.080873024534817 L (the one-exponent form gave 26.695181275084906 L, 12.7 % less).
+        Assert.Equal(30.080873024534817e-3, Si(f2, "V0"), 12);
+        Assert.Equal(26.695181275084906e-3 * 1.1268278238893188, Si(f2, "V0"), 12);
         Assert.Equal(0.9733851458414678, Si(f2, "u_r0"), 9);
         Assert.Equal(0.43334029084376174, Si(f2, "u_rp"), 9);
         Assert.Equal(2, f2.Checks.Count);
         Assert.All(f2.Checks, c => Assert.True(c.Passed, c.Name));
-        Assert.DoesNotContain(f2.Warnings, w => w.RuleId is "exponent" or "realgas" or "shock");
+        Assert.DoesNotContain(f2.Warnings, w => w.RuleId is "exponent" or "realgas" or "shock" or "process");
+        Assert.Contains("charged slowly to p_2", f2.Outputs.Single(o => o.Symbol == "process").Text, StringComparison.Ordinal);
 
         // F1 → B1: the pressure line B1 judges is the line F1 judges, the line to the cylinder cap port: its flow Q_prs (L/min into m³/h) is the larger of the two strokes,
         // the retract discharge Q·A_b/A_a = 38.57 × 1.9608 = 75.627 L/min = 4.5376 m³/h; the oil density and the line bore come by link too (the bore as a table-cell link).

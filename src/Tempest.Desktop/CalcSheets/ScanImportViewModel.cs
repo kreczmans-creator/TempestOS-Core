@@ -566,7 +566,7 @@ public sealed class ScanImportViewModel
         {
             yield return string.Create(
                 CultureInfo.InvariantCulture,
-                $"{s.Feature} ({Stage(s.Stage)}): n = {s.Count}, mean {s.Mean:0.#####} {unit}, σ {s.Sigma:0.######} {unit}, Cp {Num(s.Cp)} Cpk {Num(s.Cpk)} Pp {Num(s.Pp)} Ppk {Num(s.Ppk)}, normality {NormalityText(s.Normality)}");
+                $"{s.Feature} ({Stage(s.Stage)}): n = {s.Count}, mean {s.Mean:0.#####} {unit}, σ {s.Sigma:0.######} {unit}, Cp {Num(s.Cp)} Cpk {Num(s.Cpk)}{(s.WithinC4 is { } ? $" (σ within {s.SigmaWithin:0.######} {unit}, {s.WithinBasis})" : string.Empty)} Pp {Num(s.Pp)} Ppk {Num(s.Ppk)}, normality {NormalityText(s.Normality)}");
         }
 
         foreach (var w in s.Warnings)

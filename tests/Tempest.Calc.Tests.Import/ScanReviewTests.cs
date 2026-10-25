@@ -202,13 +202,16 @@ public sealed class ScanReviewTests
 
         var s = ScanStatistics.Compute("F", string.Empty, Obs(v), OneFile, new ScanSettings { SubgroupSize = 5, ExcludeOutliers = true });
 
-        // python3: the subgroups stay as cut (the first loses its outlier and keeps four values): pooled sigma 0.010066445913694117, not the 0.012909944487357782 of re-cut groups.
+        // python3: the subgroups stay as cut (the first loses its outlier and keeps four values): pooled sigma 0.010066445913694117 on 15 degrees of freedom, not the 0.012909944487357782 of re-cut groups;
+        // divided by c4(16) = 0.983483531615841 the within sigma is 0.010235500229632903, Cp = 0.2/(6 x 0.0102355) = 3.2566394006645165, Cpk = 0.0926316/(3 x 0.0102355) = 3.016676497457689
+        // (uncorrected 3.3113 and 3.0673).
         Assert.Equal(19, s.Count);
         Assert.Equal(10.00736842105263, s.Mean, 12);
         Assert.Equal(0.01326738074424858, s.Sigma, 12);
-        Assert.Equal(0.010066445913694117, s.SigmaWithin, 12);
-        Assert.Equal(3.3113308926626686, s.Cp!.Value, 9);
-        Assert.Equal(3.0673380900454514, s.Cpk!.Value, 9);
+        Assert.Equal(0.010235500229632903, s.SigmaWithin, 12);
+        Assert.Equal(0.983483531615841, s.WithinC4!.Value, 12);
+        Assert.Equal(3.2566394006645165, s.Cp!.Value, 9);
+        Assert.Equal(3.016676497457689, s.Cpk!.Value, 9);
         Assert.Equal(2.512427582798002, s.Pp!.Value, 9);
     }
 

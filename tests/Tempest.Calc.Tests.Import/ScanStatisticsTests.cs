@@ -51,24 +51,69 @@ public sealed class ScanStatisticsTests
         Assert.Equal(s.Cp, s.Pp);
         Assert.Equal(s.Cpk, s.Ppk);
         Assert.Equal(s.Sigma, s.SigmaWithin);
+
+        // Nothing is pooled, so nothing is c4-corrected, and the output says so.
+        Assert.Null(s.WithinC4);
+        Assert.Equal("the overall σ (no subgrouping)", s.WithinBasis);
+    }
+
+    [Fact]
+    public void C4_Matches_The_Published_Table_And_The_Gamma_Function()
+    {
+        // Published c4 (Montgomery, Introduction to Statistical Quality Control, appendix table): n = 2 0.7979, 5 0.9400, 10 0.9727; python3 math.lgamma to 10 places.
+        Close(0.7978845608028651, ScanStatistics.C4(2), 1e-12);
+        Close(0.9399856029866257, ScanStatistics.C4(5), 1e-12);
+        Close(0.9726592741215869, ScanStatistics.C4(10), 1e-12);
+        Close(0.9914180532926701, ScanStatistics.C4(30), 1e-12);
+        Close(0.9997497811016857, ScanStatistics.C4(1000), 1e-11);
+        Close(0.9999975000276928, ScanStatistics.C4(1e5), 1e-9);
+
+        // ln Γ: Γ(1/2) = √π, Γ(5) = 24, Γ(20.5) from the recurrence and the series agree at the join.
+        Close(0.5 * Math.Log(Math.PI), ScanStatistics.LogGamma(0.5), 1e-13);
+        Close(Math.Log(24), ScanStatistics.LogGamma(5), 1e-13);
+        Close(ScanStatistics.LogGamma(19.999999) + Math.Log(19.999999), ScanStatistics.LogGamma(20.999999), 1e-12);
+
+        // c4 rises towards 1 and a pooled sigma of more degrees of freedom is corrected less.
+        Assert.True(ScanStatistics.C4(9) < ScanStatistics.C4(25));
+        Assert.True(ScanStatistics.C4(25) < 1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => ScanStatistics.C4(1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ScanStatistics.LogGamma(0));
+    }
+
+    [Fact]
+    public void The_Statistics_Csv_Carries_The_C4_Used_For_The_Within_Sigma()
+    {
+        var pooled = ScanImportReport.StatisticsCsv([Compute(Ten, new ScanSettings { SubgroupSize = 5 })], "mm");
+        var plain = ScanImportReport.StatisticsCsv([Compute(Ten)], "mm");
+
+        Assert.Contains("sigma_within,within_c4,min", pooled, StringComparison.Ordinal);
+        Assert.Contains("0.02063321905546", pooled, StringComparison.Ordinal);
+        Assert.Contains("0.969310699713", pooled, StringComparison.Ordinal);
+        Assert.Contains(",,9.97,", plain, StringComparison.Ordinal);
     }
 
     [Fact]
     public void Subgroups_Pool_The_Within_Sigma_And_Leave_The_Overall_Sigma_Alone()
     {
-        // Two subgroups of five: pooled variance (0.00268 + 0.00052)/8 = 0.0004, within sigma exactly 0.02.
+        // Two subgroups of five: pooled variance (0.00268 + 0.00052)/8 = 0.0004, pooled sigma exactly 0.02 on 8 degrees of freedom. It is divided by c4(d) with
+        // d = 8 + 1 = 9 (python3, math.lgamma: c4(9) = 0.969310699713954), so the within sigma is 0.02063321905546036 and Cp = 0.2/(6 x 0.0206332) = 0.8077589164283239,
+        // Cpk = 0.077/(3 x 0.0206332) = 0.7592933814426233 (uncorrected 0.8333 and 0.7833, 3.2 % optimistic).
         var s = Compute(Ten, new ScanSettings { SubgroupSize = 5 });
 
-        Close(0.02, s.SigmaWithin, 1e-12);
-        Close(0.8333333333333629, s.Cp, 1e-10);
-        Close(0.78333333333336, s.Cpk, 1e-10);
+        Close(0.02063321905546036, s.SigmaWithin, 1e-12);
+        Close(0.969310699713954, s.WithinC4, 1e-12);
+        Close(0.8077589164283239, s.Cp, 1e-10);
+        Close(0.7592933814426233, s.Cpk, 1e-10);
+        Assert.Contains("c4 = 0.96931", s.WithinBasis, StringComparison.Ordinal);
         Close(0.8825056370227913, s.Pp);
         Close(0.8295552988014225, s.Ppk);
         Assert.NotEqual(s.Cp, s.Pp);
 
         // Subgroups of three: the last subgroup holds one value and is not used for the within sigma (and the warning says so).
         var three = Compute(Ten, new ScanSettings { SubgroupSize = 3 });
-        Close(0.022852182001336326, three.SigmaWithin, 1e-12);
+        // python3: pooled 0.022852182001336326 on 6 degrees of freedom, c4(7) = 0.959368788699833, within 0.023820018193740002.
+        Close(0.023820018193740002, three.SigmaWithin, 1e-12);
+        Close(0.959368788699833, three.WithinC4, 1e-12);
         Assert.Contains(three.Warnings, w => w.Contains("incomplete final subgroup", StringComparison.Ordinal));
     }
 
@@ -367,9 +412,12 @@ public sealed class ScanStatisticsTests
         // Subgroups of five parts, in file order per feature: the within sigma and so Cp, Cpk move; Pp and Ppk do not.
         var grouped = ScanImporter.Analyse(file, profile, new ScanSettings { SubgroupSize = 5 });
         var dgm = grouped.Stats.Single(s => s.Feature == "D_g groove root");
-        Close(0.009029581016488797, dgm.SigmaWithin);
-        Close(1.8457851628144146, dgm.Cp);
-        Close(1.309276942156354, dgm.Cpk);
+        // python3: pooled 0.0090295810164887965 on 24 degrees of freedom (six subgroups of five), c4(25) = 0.989640375585705, within 0.0091241032997918699;
+        // Cp = 0.1/(6 x 0.0091241) = 1.826663521778179, Cpk = 0.0645333/(3 x 0.0091241) = 1.295713324781317 (uncorrected 1.84579 and 1.30928).
+        Close(0.0091241032997918699, dgm.SigmaWithin);
+        Close(0.989640375585705, dgm.WithinC4, 1e-12);
+        Close(1.826663521778179, dgm.Cp);
+        Close(1.295713324781317, dgm.Cpk);
         Close(1.6790249979130663, dgm.Pp);
         Close(1.1909883985196645, dgm.Ppk);
     }

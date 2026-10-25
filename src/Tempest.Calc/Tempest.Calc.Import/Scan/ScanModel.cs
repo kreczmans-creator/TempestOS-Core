@@ -217,8 +217,17 @@ public sealed record ScanFeatureStats(
     IReadOnlyList<int> Files,
     string SetSha256,
     string SerialSummary,
-    IReadOnlyList<string> Warnings)
+    IReadOnlyList<string> Warnings,
+    double? WithinC4 = null)
 {
     /// <summary>The stage as shown: "(none)" for a table without stages.</summary>
     public string StageLabel => Stage.Length == 0 ? "(none)" : Stage;
+
+    /// <summary>
+    /// How <see cref="SigmaWithin"/> was formed, for the output: pooled over the subgroups and divided by c4(d), d = Σ(nⱼ − 1) + 1 (<see cref="WithinC4"/> is that divisor),
+    /// otherwise the overall σ (no subgrouping).
+    /// </summary>
+    public string WithinBasis => WithinC4 is { } c4
+        ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"pooled over the subgroups and divided by c4 = {c4:0.#####} (unbiased)")
+        : "the overall σ (no subgrouping)";
 }

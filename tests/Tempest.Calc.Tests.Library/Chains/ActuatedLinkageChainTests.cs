@@ -89,13 +89,14 @@ public sealed class ActuatedLinkageChainTests
         Assert.DoesNotContain(f1.Warnings, w => w.RuleId == "v-req-q");
 
         // F1 → F2: the swept volume of the larger stroke (0.25133 L) and the supply pressure (100 bar gauge, so the accumulator's pressures stay on the Gauge basis) size the emergency-stroke accumulator:
-        // V0 = f_T ΔV/[(p0/p1)^(1/n) − (p0/p2)^(1/n)] on absolute pressures, p0 = 50, p1 = 60, p2 = 100 bar gauge, n = 1.4, 10 to 50 °C: 1.0779 L.
+        // F2 1.3.0, held at p2 and charged slowly: V0 = f_T ΔV (p2/p0)/[(p2/p1)^(1/n) − 1] on absolute pressures, p0 = 50, p1 = 60, p2 = 100 bar gauge, n = 1.4, 10 to 50 °C: 1.3102 L
+        // (python3: 1.3102067238305006 L; the one-exponent form gave 1.0778782868400334 L, 21.6 % less).
         Assert.Equal(["dV", "p_2"], f2.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
         Assert.Equal(Si(f1, "dV"), InputSi(f2, "dV"), 15);
         Assert.Equal(Si(f1, "p"), InputSi(f2, "p_2"), 6);
         Assert.Equal("Gauge", f2.Inputs.Single(i => i.Symbol == "p_basis").Text);
         Assert.DoesNotContain(f2.Warnings, w => w.RuleId == "link-basis");
-        Assert.Equal(1.0778782868400335e-3, Si(f2, "V0"), 12);
+        Assert.Equal(1.3102067238305006e-3, Si(f2, "V0"), 12);
         Assert.Equal(0.9290013052720334, Si(f2, "u_r0"), 9);
         Assert.Equal(0.564966835088001, Si(f2, "u_rp"), 9);
         Assert.Equal(2, f2.Checks.Count);
