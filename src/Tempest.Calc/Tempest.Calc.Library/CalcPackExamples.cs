@@ -27,13 +27,16 @@ internal static class CalcPackExamples
 
     private static (string, CalcCell) Txt(string key, string value) => (key, new CalcCell(Text: value));
 
-    // ---- Drive train: a 4-pole motor through a 12.5:1 gearbox turns a conveyor drum at 120 rpm against 1.8 kN·m -------------
+    // ---- Drive train: a 4-pole motor through a 12.5:1 gearbox turns a conveyor drum at 118 rpm against 1.8 kN·m -------------
 
-    /// <summary>The 4-pole motor's rated speed (1480 rpm) is an INVENTED nameplate figure for this example, to be replaced from the real motor's nameplate.</summary>
+    /// <summary>
+    /// The 4-pole motor's rated speed (1480 rpm) is an INVENTED nameplate figure for this example, to be replaced from the real motor's nameplate. The drum speed (118 rpm)
+    /// puts the motor at 118 × 12.5 = 1475 rpm, just below that nameplate, as an induction motor under load runs (a 120 rpm drum would ask for 1500 rpm, the synchronous speed).
+    /// </summary>
     public static IReadOnlyList<CalcInputValue> DriveE1 { get; } =
     [
         C("mechanism", "gearbox rotary"), C("duty_mode", "continuous"), N("i", 12.5), N("eta", 0.95),
-        Q("J_mech", 0.002, "kg*m^2"), Q("J_L", 4, "kg*m^2"), Q("T_L", 1800, "N*m"), Q("n_L", 120, "rpm"), Q("t_start", 3, "s"),
+        Q("J_mech", 0.002, "kg*m^2"), Q("J_L", 4, "kg*m^2"), Q("T_L", 1800, "N*m"), Q("n_L", 118, "rpm"), Q("t_start", 3, "s"),
         Q("J_motor", 0.12, "kg*m^2"), Q("T_rated", 200, "N*m"), Q("T_peak", 400, "N*m"), Q("n_rated", 1480, "rpm"), Q("n_max", 3000, "rpm"),
     ];
 
