@@ -253,8 +253,13 @@ def analyse(i):
         if cls <= 2:
             Cyy = max(1 + (wy - 1) * ((2 - 1.6 / wy * Cmy_a ** 2 * lam_max - 1.6 / wy * Cmy_a ** 2 * lam_max ** 2) * npl - bLT),
                       Wely / Wply)
-            Czz = max(1 + (wz - 1) * ((2 - 1.6 / wz * Cmz_a ** 2 * lam_max - 1.6 / wz * Cmz_a ** 2 * lam_max ** 2) * npl - eLT),
-                      Welz / Wplz)
+            if i.get("_czz_eLT_in_npl", False):
+                # Reviewer's reading of Table A.1 (owner to confirm): e_LT sits inside the bracket that n_pl multiplies.
+                Czz = max(1 + (wz - 1) * ((2 - 1.6 / wz * Cmz_a ** 2 * lam_max - 1.6 / wz * Cmz_a ** 2 * lam_max ** 2 - eLT) * npl),
+                          Welz / Wplz)
+            else:
+                Czz = max(1 + (wz - 1) * ((2 - 1.6 / wz * Cmz_a ** 2 * lam_max - 1.6 / wz * Cmz_a ** 2 * lam_max ** 2) * npl - eLT),
+                          Welz / Wplz)
             Cyz = max(1 + (wz - 1) * ((2 - 14 * Cmz_a ** 2 * lam_max ** 2 / wz ** 5) * npl - cLT),
                       0.6 * math.sqrt(wz / wy) * Welz / Wplz)
             Czy = max(1 + (wy - 1) * ((2 - 14 * Cmy_a ** 2 * lam_max ** 2 / wy ** 5) * npl - dLT),
@@ -608,6 +613,33 @@ def numeric_section():
     return bad
 
 
+def reviewer_info():
+    """Independent review, 2026-10-24. Information only: nothing here changes the exit code."""
+    import numpy as np
+    E, G = 210e3, 81e3
+    Iz, It, Iw = UB["I_z"] * 1e4, UB["I_t"] * 1e4, UB["I_w"] * 1e12
+    print("\n== Reviewer notes (info only) ==")
+    print("C1 at L = 60 m (torsion-dominated limit), UB 457x191x98, against the psi formula:")
+    Ls = 60e3
+    Mus = mcr_general(E, G, Iz, It, Iw, Ls, 1, 1, 1.0, 0.0, 0.0)
+    for psi in (0.5, 0.0, -0.25, -0.5, -0.75, -1.0):
+        c1n = _lt_eigen(E, G, Iz, It, Iw, Ls, lambda x, psi=psi: 1 - (1 - psi) * x / Ls) / Mus
+        print(f"  psi {psi:5.2f}: eigen {c1n:.3f}  formula {c1_from_psi(psi):.3f}  ratio {c1_from_psi(psi) / c1n:.3f}")
+    print("Welded 500x200x16/10, 6.3.2.3, psi 1: recommended (0.4, 0.75) against UK NA welded values (0.2, 1.0), owner to confirm:")
+    for Lm in (4.0, 6.0):
+        a = analyse(dict(WELDED, ltb_method="rolled", psi_y=1, M_y_Ed=150, N_Ed=0, L=Lm))
+        b = analyse(dict(WELDED, ltb_method="rolled", psi_y=1, M_y_Ed=150, N_Ed=0, L=Lm, lambda_LT0=0.2, beta_LT=1.0))
+        print(f"  L {Lm} m: Mb_Rd {a['Mb_Rd']:.2f} against {b['Mb_Rd']:.2f} kNm ({(a['Mb_Rd'] / b['Mb_Rd'] - 1) * 100:+.1f} %)")
+    print("Annex A C_zz with e_LT inside the n_pl bracket (reviewer's reading, owner to confirm):")
+    case = dict(WELDED, section_class=2, ltb_method="rolled", annex="A", **ACT)
+    a, b = analyse(case), analyse(dict(case, _czz_eLT_in_npl=True))
+    print(f"  ka-annex-a-class2: k_zz {a['k_zz']:.5f} -> {b['k_zz']:.5f}, u_62 {a['u_62']:.5f} -> {b['u_62']:.5f}")
+    print("Table B.1 chosen for the ka-annex-b-class2 member (chi_LT < 1, so it is susceptible):")
+    a = analyse(dict(WELDED, section_class=2, ltb_method="rolled", **ACT))
+    b = analyse(dict(WELDED, section_class=2, ltb_method="rolled", torsion="not susceptible", **ACT))
+    print(f"  k_zy {a['k_zy']:.5f} (B.2) -> {b['k_zy']:.5f} (B.1), u_62 {a['u_62']:.5f} -> {b['u_62']:.5f}")
+
+
 def table_row(case, sym, exp, ind, tol, ok):
     rel = abs(ind - exp) / abs(exp) if exp != 0 else abs(ind - exp)
     print(f"{case:<26} {sym:<11} {exp:>16.9g} {ind:>16.9g} {rel:>10.2e} {tol:>8.0e}  {'PASS' if ok else 'FAIL'}")
@@ -642,6 +674,7 @@ def main():
     nbad = numeric_section()
     bad += nbad
     total += 1 + 4
+    reviewer_info()
     print(f"\n{total - bad}/{total} values match; {bad} differ")
     return 1 if bad else 0
 

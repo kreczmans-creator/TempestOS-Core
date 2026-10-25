@@ -413,6 +413,13 @@ for label, L in (("as given", [(25, 0.035, 8), (50, 0.5, 10), (215, 0.5, 40)]),
     r = glaser(L, COLD_, RH_i=40, Mc_limit=1000)
     finding("mesh-flip", f"25+50+215 mm wall, 40 % inside, {label}: Mc_max {r['Mc_max']:.1f} g/m2, Mc_end {r['Mc_end']:.1f} g/m2, "
             f"balance {'PASS' if r['balance'] else 'FAIL'}, pass {r['pass']}.")
+# Reviewer 2026-10-24: convergence of the same wall. The fine-mesh limit is the true Glaser answer: FAIL, Mc_end about 580 g/m2.
+# Sub-layers of R <= 0.25 m2K/W (3 + 1 + 2) still give PASS, so that rule alone does not fix it.
+for N in (20, 40, 80):
+    L = [(25 / N, 0.035, 8)] * N + [(50 / N, 0.5, 10)] * N + [(215 / N, 0.5, 40)] * N
+    r = glaser(L, COLD_, RH_i=40, Mc_limit=1000)
+    finding("mesh-converge", f"25+50+215 mm wall, 40 % inside, each layer in {N} slices: Mc_max {r['Mc_max']:.1f} g/m2, "
+            f"Mc_end {r['Mc_end']:.1f} g/m2, pass {r['pass']}.")
 # F5: inside surface below the dew point of the inside air: the interstitial flux into the first interface scales with 1/s_d of the first slice.
 for N in (12, 24, 48, 96, 200):
     L = []

@@ -1,7 +1,7 @@
 # bs.glaser — independent re-derivation (Track P, P1)
 Calculator: Glaser condensation (interstitial and surface), version 1.1.0. Source files: src/Tempest.Calc/Tempest.Calc.BuildingServices/GlaserCalculator.cs and GlaserModel.cs. Spec: docs/calcs/building-services/bs.glaser.md.
 Script: tools/verification/bs.glaser.py (exit 0 = all KATs match). It checks 68 KAT values and 492 extra probe values in 0.05 s.
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (reviewed: P1-01 upgraded to High)
 
 ## Method re-derived
 - Layer values: R_j = d_j/λ_j in m²K/W and s_d,j = μ_j·d_j in m. R_T = R_si + ΣR_j + R_se.
@@ -67,13 +67,13 @@ Guards tested and working: 31 layers, 11 climate rows, θ_b below θ_a and a mis
 | Limits | μ ≥ 1, d 0.01–2000 mm, 12 rows, ≤ 30 layers | All enforced | Yes |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-bs.glaser-01 | Medium | The verdict changes with layer subdivision, with no warning. The spec says splitting "made no difference in any test case". That is not true in general. | 25 mm (λ 0.035, μ 8) + 50 mm (0.5, μ 10) + 215 mm (0.5, μ 40), 40 % inside, cold climate of script X16, Mc_limit 1000: as entered Mc_end 0, pass 1. Each layer in 9 slices (X17, run in the product): Mc_end 528.6 g/m², pass 0. Five slices still pass. | Split each layer internally into sub-layers (about 5 to 10) for the saturation test. Or warn when the chord exceeds p_sat inside a layer. Correct the spec wording "slightly understates". |
-| P1-bs.glaser-02 | Low | When the inside surface is already below the dew point, all interstitial condensate lands on interface 1. Its amount scales with 1/s_d of the first layer. The numbers are meaningless, with no notice. | 102 mm + 15 mm uninsulated wall, 50 % inside (X14, X15): f_Rsi 0.386 against 0.737. Mc_max is 0 as entered, 1918 g/m² at 12 slices per layer, 34438 g/m² at 200. | Warn when p_sat(θ_si) < p_i in any month: "surface condensation; interstitial amounts not valid". The overall verdict is already FAIL. |
-| P1-bs.glaser-03 | Low | The annual-balance check prints u = Infinity when condensate remains. | X10, X12, X18 show `u=Infinity FAIL` in the CHECK line. | Print the residual (g/m²) as the check value, not a ratio. |
-| P1-bs.glaser-04 | Info | The margin f_Δp is applied to both the interstitial and the surface check. I cannot confirm from memory that both uses are in ISO 13788. The mean-temperature form of Δp needs the same check. | The spec states both uses. If the margin belongs only to the surface check, the interstitial result is conservative. | Owner to check the humidity-class clause of ISO 13788 in the licensed copy. |
-| P1-bs.glaser-05 | Info | In constant-humidity mode no safety margin is applied to the internal humidity. The spec says so. A user who enters 50 % gets the bare criterion. | ka-surface-factor: f_Rsi,min 0.5903 at 50 % with no margin. Design practice adds a margin, so the user must raise RH_int. | Keep. Consider a note beside RH_int. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-bs.glaser-01 | Medium | High (upgraded: a PASS in plausible use that the converged method fails; no guard) | The verdict changes with layer subdivision, with no warning. The spec says splitting "made no difference in any test case". That is not true in general. | 25 mm (λ 0.035, μ 8) + 50 mm (0.5, μ 10) + 215 mm (0.5, μ 40), 40 % inside, cold climate of script X16, Mc_limit 1000: as entered Mc_end 0, pass 1. Each layer in 9 slices (X17, run in the product): Mc_end 528.6 g/m², pass 0. Five slices still pass. Reviewer: the result converges to FAIL (20, 40, 80 slices: Mc_end 562, 576, 583 g/m²). Sub-layers of R ≤ 0.25 m²K/W still PASS in the product (probe, 6 layers). | Split each layer internally into sub-layers (about 20 per layer; inside the model, not counted against the 30-layer limit) for the whole simulation. Or warn when the chord exceeds p_sat inside a layer. Correct the spec wording "slightly understates". Owner to confirm whether ISO 13788 requires sub-division, against the licensed copy. |
+| P1-bs.glaser-02 | Low | Low (confirmed; the overall verdict is already FAIL) | When the inside surface is already below the dew point, all interstitial condensate lands on interface 1. Its amount scales with 1/s_d of the first layer. The numbers are meaningless, with no notice. | 102 mm + 15 mm uninsulated wall, 50 % inside (X14, X15): f_Rsi 0.386 against 0.737. Mc_max is 0 as entered, 1918 g/m² at 12 slices per layer, 34438 g/m² at 200. | Warn when p_sat(θ_si) < p_i in any month: "surface condensation; interstitial amounts not valid". The overall verdict is already FAIL. |
+| P1-bs.glaser-03 | Low | Low (confirmed) | The annual-balance check prints u = Infinity when condensate remains. | X10, X12, X18 show `u=Infinity FAIL` in the CHECK line. | Print the residual (g/m²) as the check value, not a ratio. |
+| P1-bs.glaser-04 | Info | Info (confirmed; owner to confirm against licensed copy) | The margin f_Δp is applied to both the interstitial and the surface check. I cannot confirm from memory that both uses are in ISO 13788. The mean-temperature form of Δp needs the same check. | The spec states both uses. If the margin belongs only to the surface check, the interstitial result is conservative. | Owner to check the humidity-class clause of ISO 13788 in the licensed copy. |
+| P1-bs.glaser-05 | Info | Info (confirmed) | In constant-humidity mode no safety margin is applied to the internal humidity. The spec says so. A user who enters 50 % gets the bare criterion. | ka-surface-factor: f_Rsi,min 0.5903 at 50 % with no margin. Design practice adds a margin, so the user must raise RH_int. | Keep. Consider a note beside RH_int. |
 
 ## Notes for the owner's manual test
 - Dew point check: 20 °C, 50 % inside, φ_crit 80 % gives θ_si,min = 12.91 °C. For 2 °C outside, f_Rsi,min = 0.5903.
@@ -81,3 +81,14 @@ Guards tested and working: 31 layers, 11 climate rows, θ_b below θ_a and a mis
 - Five-layer wall of the KAT ka-two-planes-tangent: expect planes only at interfaces 2 and 4 (5143.1 and 772.0 g/m²).
 - Take any wall and split a thick layer in two with the same λ and μ. Compare Mc_max and the balance (finding 01).
 - Use 40 °C and 100 % inside to see the Infinity display (finding 03). Use a humidity class with large Δv to see the saturation cap warning.
+
+## Independent review
+Reviewer: Claude (senior review of the P1 pass), 2026-10-24.
+I re-ran the script (560/560 rows) and read Run(), Profile, NodeFlux and Simulate line by line.
+The script is an independent lower-hull implementation, not a translation of the C#.
+I reproduced X16 in the product. I also ran the wall with sub-layers of R ≤ 0.25 m²K/W; it still passes.
+The saturation line is convex inside a uniform layer, so the chord can cross it between interfaces. The interface-only model misses that condensate.
+The fine-mesh limit fails the annual balance (Mc_end about 580 g/m²). The as-entered PASS is therefore unconservative, so P1-01 is High.
+The Magnus constants, the tangent construction, the wet-node drying, the start month and f_Rsi,min all check out.
+I found no new defect of Medium or above.
+Residual doubts: the ISO 13788 clause on sub-layers and the f_Δp wording need the owner's licensed copy.
