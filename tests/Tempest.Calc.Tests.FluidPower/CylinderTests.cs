@@ -1,0 +1,340 @@
+using CsCheck;
+using Tempest.Calc.Engine.Units;
+using Tempest.Calc.Engine.Values;
+using Tempest.Calc.FluidPower;
+using Tempest.Calc.Sheets;
+
+namespace Tempest.Calc.Tests.FluidPower;
+
+/// <summary>F1 — cylinder and actuator circuit: behaviour beyond the known-answer cases.</summary>
+public sealed class CylinderTests
+{
+    private static readonly CylinderCalculator Cylinder = new();
+
+    private const double Bar = 1e5;
+    private const double Litre = 1e-3;
+    private const double Mm = 1e-3;
+
+    /// <summary>The first known-answer case (pump, motor, orifice and a hose list included) with overrides applied in order.</summary>
+    private static CalcInputSet With(params CalcInputValue[] overrides) => overrides.Aggregate(CalcTemplateHasher.DefaultInputs(Cylinder.Template), (set, value) => set.With(value));
+
+    private static CalcRunResult Run(params CalcInputValue[] overrides) => CalcRunner.Run(Cylinder, With(overrides));
+
+    private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
+
+    private static CalcInputValue Hoses(params double[] millimetres) => CalcInputValue.Table("hoses", millimetres.Select(v => CalcRow.Of(("ID", new CalcCell(v, "mm")))).ToList());
+
+    private static double Area(double dMm) => Math.PI * dMm * Mm * dMm * Mm / 4;
+
+    [Fact]
+    public void Areas_And_Forces_Follow_Pressure_Times_Area_Times_Efficiency()
+    {
+        var r = Run();
+        double ab = Area(100), ar = Area(70), aa = ab - ar;
+        Assert.Equal(ab, r.OutputSi("A_b"), 12);
+        Assert.Equal(ar, r.OutputSi("A_r"), 12);
+        Assert.Equal(aa, r.OutputSi("A_a"), 12);
+        Assert.Equal(160 * Bar * ab * 0.95, r.OutputSi("F_ext"), 6);
+        Assert.Equal(160 * Bar * aa * 0.95, r.OutputSi("F_ret"), 6);
+        Assert.Equal(ab / aa, r.OutputSi("phi"), 12);
+
+        var lossless = Run(CalcInputValue.Of("eta_m", 1), CalcInputValue.Of("eta_vc", 1));
+        Assert.Equal(160 * Bar * ab, lossless.OutputSi("F_ext"), 6);
+    }
+
+    [Fact]
+    public void Speed_Time_And_Swept_Volume_Follow_The_Flow_And_The_Stroke()
+    {
+        var r = Run(Q("t_dwell", 2, "s"));
+        double ab = Area(100), aa = ab - Area(70), q = 36 * Litre / 60;
+        Assert.Equal(q * 0.98 / ab, r.OutputSi("v_ext"), 12);
+        Assert.Equal(q * 0.98 / aa, r.OutputSi("v_ret"), 12);
+        Assert.Equal(0.5 / (q * 0.98 / ab), r.OutputSi("t_ext"), 9);
+        Assert.Equal(r.OutputSi("t_ext") + r.OutputSi("t_ret") + 2, r.OutputSi("t_cycle"), 9);
+        Assert.Equal(ab * 0.5, r.OutputSi("dV_ext"), 12);
+        Assert.Equal(aa * 0.5, r.OutputSi("dV_ret"), 12);
+        Assert.Equal(Math.Max(ab, aa) * 0.5, r.OutputSi("dV"), 12);
+    }
+
+    [Fact]
+    public void The_Output_Power_Of_The_Cylinder_Is_The_Fluid_Power_Times_Both_Efficiencies_In_Both_Connections()
+    {
+        // Property: F·v = p·Q·η_m·η_vc for the standard connection without back pressure and for the regenerative one, for any valid inputs.
+        Gen.Select(Gen.Double[15, 700], Gen.Double[1, 2000], Gen.Double[0.5, 1], Gen.Double[0.5, 1], Gen.Double[20, 500], Gen.Double[0.2, 0.9], Gen.Bool).Sample((p, q, em, ev, bore, rodRatio, regen) =>
+        {
+            var r = Run(Q("p", p, "bar"), Q("Q", q, "L/min"), CalcInputValue.Of("eta_m", em), CalcInputValue.Of("eta_vc", ev), Q("D", bore, "mm"), Q("d_r", bore * rodRatio, "mm"),
+                CalcInputValue.Choice("mode", regen ? CylinderCalculator.Regenerative : CylinderCalculator.Standard));
+            var expected = p * Bar * q * Litre / 60 * em * ev;
+            return Math.Abs(r.OutputSi("F_ext") * r.OutputSi("v_ext") - expected) <= 1e-9 * expected;
+        }, iter: 120);
+    }
+
+    [Fact]
+    public void Regenerative_Extend_Trades_Force_For_Speed_And_Loads_The_Cap_Line()
+    {
+        var standard = Run(Q("F_push", 40, "kN"));
+        var regen = Run(Q("F_push", 40, "kN"), CalcInputValue.Choice("mode", CylinderCalculator.Regenerative), Q("d_prs", 25, "mm"));
+        double ab = Area(100), ar = Area(70);
+        Assert.Equal(160 * Bar * ar * 0.95, regen.OutputSi("F_ext"), 6);
+        Assert.Equal(standard.OutputSi("F_ext"), regen.OutputSi("F_std"), 9);
+        Assert.Equal(standard.OutputSi("v_ext") * ab / ar, regen.OutputSi("v_ext"), 9);
+        Assert.Equal(standard.OutputSi("v_ext"), regen.OutputSi("v_std"), 9);
+        Assert.Equal(regen.OutputSi("Q_line") * ab / ar, regen.OutputSi("Q_prs"), 9);
+        Assert.Equal(ar * 0.5, regen.OutputSi("dV_ext"), 12);
+        Assert.Equal(standard.OutputSi("F_ret"), regen.OutputSi("F_ret"), 9);
+        Assert.Null(standard.FindOutput("F_std"));
+    }
+
+    [Fact]
+    public void A_Back_Pressure_Takes_Force_Off_Both_Strokes_And_One_That_Takes_It_All_Blocks()
+    {
+        var free = Run();
+        var loaded = Run(Q("p_back", 10, "bar"));
+        double ab = Area(100), aa = ab - Area(70);
+        Assert.Equal((160 * Bar * ab - 10 * Bar * aa) * 0.95, loaded.OutputSi("F_ext"), 6);
+        Assert.Equal((160 * Bar * aa - 10 * Bar * ab) * 0.95, loaded.OutputSi("F_ret"), 6);
+        Assert.True(loaded.OutputSi("F_ext") < free.OutputSi("F_ext"));
+
+        var all = Run(Q("p", 5, "bar"), Q("p_back", 20, "bar"));
+        Assert.True(all.IsBlocked);
+        Assert.StartsWith("p_back:", all.Blocks[0].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Rod_As_Large_As_The_Bore_Blocks_And_Names_The_Rod()
+    {
+        var r = Run(Q("d_r", 100, "mm"));
+        Assert.True(r.IsBlocked);
+        Assert.StartsWith("d_r:", r.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.True(Run(Q("D", 63, "mm"), Q("d_r", 45, "mm")).IsBlocked is false);
+    }
+
+    [Fact]
+    public void The_Pump_Delivery_Power_Torque_And_Speed_Follow_The_Displacement()
+    {
+        var r = Run();
+        double qp = 28e-6 * 1450 / 60 * 0.95, p = 160 * Bar, power = p * qp / 0.88;
+        Assert.Equal(qp, r.OutputSi("Q_p"), 12);
+        Assert.Equal(power, r.OutputSi("P_pump"), 6);
+        Assert.Equal(power / (1450 * 2 * Math.PI / 60), r.OutputSi("T_shaft"), 6);
+        Assert.Equal(1450 * 2 * Math.PI / 60, r.OutputSi("n_shaft"), 9);
+        Assert.Equal(36 * Litre / 60 / qp, r.OutputSi("u_pump"), 9);
+        // The displacement the circuit flow needs, per radian in SI: Q / (ω·η_vp).
+        Assert.Equal(36 * Litre / 60 / (1450 * 2 * Math.PI / 60 * 0.95), r.OutputSi("Vg_req"), 15);
+
+        // A pump that cannot deliver the circuit flow fails the delivery check; with no pump entered there is no pump torque, but the power still follows from the flow.
+        Assert.Contains(Run(Q("V_g", 20, "cm^3/rev")).Checks, c => c.Name.StartsWith("Pump delivery", StringComparison.Ordinal) && !c.Passed);
+
+        var none = CalcRunner.Run(Cylinder, CalcTemplateHasher.DefaultInputs(Cylinder.Template).With(new CalcInputValue("V_g")).With(new CalcInputValue("n_p")));
+        Assert.False(none.IsBlocked);
+        Assert.Null(none.FindOutput("T_shaft"));
+        Assert.Null(none.FindOutput("n_shaft"));
+        Assert.Equal(p * 36 * Litre / 60 / 0.88, none.OutputSi("P_pump"), 6);
+    }
+
+    [Fact]
+    public void A_Pump_Entered_Half_Way_Or_With_A_Total_Efficiency_Above_Its_Volumetric_One_Blocks()
+    {
+        var noSpeed = CalcRunner.Run(Cylinder, With(new CalcInputValue("n_p")));
+        Assert.True(noSpeed.IsBlocked);
+        Assert.StartsWith("n_p:", noSpeed.Blocks[0].Message, StringComparison.Ordinal);
+
+        var noDisplacement = CalcRunner.Run(Cylinder, With(new CalcInputValue("V_g")));
+        Assert.StartsWith("V_g:", noDisplacement.Blocks[0].Message, StringComparison.Ordinal);
+
+        var impossible = Run(CalcInputValue.Of("eta_vp", 0.9), CalcInputValue.Of("eta_tp", 0.95));
+        Assert.True(impossible.IsBlocked);
+        Assert.StartsWith("eta_tp:", impossible.Blocks[0].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Motor_Torque_Is_Pressure_Drop_Times_Displacement_Over_Two_Pi_Times_Efficiency()
+    {
+        Assert.Equal(160 * Bar * 16e-6 / (2 * Math.PI) * 0.9, Run().OutputSi("T_motor"), 9);
+        Assert.Equal(100 * Bar * 40e-6 / (2 * Math.PI) * 0.85, Run(Q("V_gm", 40, "cm^3/rev"), Q("dp_m", 100, "bar"), CalcInputValue.Of("eta_hm", 0.85)).OutputSi("T_motor"), 9);
+
+        var half = CalcRunner.Run(Cylinder, With(new CalcInputValue("dp_m")));
+        Assert.True(half.IsBlocked);
+        Assert.StartsWith("dp_m:", half.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.Null(CalcRunner.Run(Cylinder, With(new CalcInputValue("V_gm"), new CalcInputValue("dp_m"))).FindOutput("T_motor"));
+    }
+
+    [Fact]
+    public void Line_Velocities_Are_Checked_Against_The_Limit_Records_And_The_Bore_Comes_From_The_List()
+    {
+        var r = Run();
+        double qLine = 28e-6 * 1450 / 60 * 0.95;
+        Assert.Equal(qLine / Area(40), r.OutputSi("v_suc"), 9);
+        Assert.Equal(qLine / Area(16), r.OutputSi("v_prs"), 9);
+        Assert.Equal(qLine * Area(100) / (Area(100) - Area(70)) / Area(25), r.OutputSi("v_rtn"), 9);
+
+        // The smallest listed size not below the bore the limit needs; the order of the list does not matter.
+        Assert.Equal(32 * Mm, Run(Hoses(50, 8, 32, 12.5, 16, 40, 20, 25, 10)).OutputSi("d_rec_suc"), 12);
+        Assert.Equal(Math.Sqrt(4 * qLine / (Math.PI * 1.2)), r.OutputSi("d_min_suc"), 9);
+
+        // A bore at exactly the minimum is accepted (a hair of rounding allowed).
+        var exact = Run(Hoses(8, Math.Sqrt(4 * qLine / (Math.PI * 1.2)) / Mm, 50));
+        Assert.Equal(Math.Sqrt(4 * qLine / (Math.PI * 1.2)), exact.OutputSi("d_rec_suc"), 9);
+
+        // A limit that is too tight fails the check and names the line; no list gives no recommendation.
+        var tight = Run(Q("v_prs_max", 2, "m/s"));
+        Assert.Contains(tight.Checks, c => c.Name.StartsWith("Pressure line velocity", StringComparison.Ordinal) && !c.Passed);
+        Assert.False(tight.Passed);
+        Assert.Null(CalcRunner.Run(Cylinder, With(CalcInputValue.Table("hoses", []))).FindOutput("d_rec_suc"));
+    }
+
+    [Fact]
+    public void A_Size_List_That_Is_Too_Small_Warns_And_Recommends_Nothing_For_That_Line()
+    {
+        var r = Run(Hoses(8, 10, 12.5, 16, 20));
+        Assert.Contains(r.Warnings, w => w.RuleId == "size" && w.Message.Contains("suction", StringComparison.Ordinal));
+        Assert.Null(r.FindOutput("d_rec_suc"));
+        Assert.Equal(16 * Mm, r.OutputSi("d_rec_prs"), 12);
+    }
+
+    [Fact]
+    public void The_Regenerative_Pressure_Line_Is_Judged_At_The_Larger_Cap_Side_Flow()
+    {
+        var standard = Run();
+        var regen = Run(CalcInputValue.Choice("mode", CylinderCalculator.Regenerative));
+        Assert.Equal(standard.OutputSi("v_prs") * Area(100) / Area(70), regen.OutputSi("v_prs"), 9);
+        Assert.True(regen.OutputSi("u_prs") > standard.OutputSi("u_prs"));
+    }
+
+    [Fact]
+    public void The_Orifice_Passes_Cd_Times_Area_Times_The_Jet_Velocity_And_The_Bore_For_The_Flow_Round_Trips()
+    {
+        var r = Run(Q("rho", 800, "kg/m^3"), CalcInputValue.Of("C_d", 0.6), Q("dp_o", 10, "bar"), Q("d_o", 4, "mm"));
+        Assert.Equal(0.6 * Area(4) * 50, r.OutputSi("Q_o"), 12);
+
+        // Property: an orifice of the diameter the sheet asks for passes the circuit flow.
+        Gen.Select(Gen.Double[0.5, 600], Gen.Double[0.5, 1000], Gen.Double[0.3, 1], Gen.Double[700, 1300]).Sample((dp, q, cd, rho) =>
+        {
+            var need = Run(Q("dp_o", dp, "bar"), Q("Q", q, "L/min"), CalcInputValue.Of("C_d", cd), Q("rho", rho, "kg/m^3"), Q("p", 700, "bar"));
+            var d = need.OutputSi("d_o_req");
+            var check = Run(Q("dp_o", dp, "bar"), Q("Q", q, "L/min"), CalcInputValue.Of("C_d", cd), Q("rho", rho, "kg/m^3"), Q("p", 700, "bar"), Q("d_o", d / Mm, "mm"));
+            return d / Mm is >= 0.1 and <= 100 && Math.Abs(check.OutputSi("Q_o") - q * Litre / 60) <= 1e-9 * q * Litre / 60;
+        }, iter: 60);
+
+        var half = CalcRunner.Run(Cylinder, With(Q("d_o", 4, "mm"), new CalcInputValue("dp_o")));
+        Assert.True(half.IsBlocked);
+        Assert.StartsWith("dp_o:", half.Blocks[0].Message, StringComparison.Ordinal);
+
+        var above = Run(Q("p", 100, "bar"), Q("dp_o", 150, "bar"));
+        Assert.True(above.IsBlocked);
+        Assert.StartsWith("dp_o:", above.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.Null(CalcRunner.Run(Cylinder, With(new CalcInputValue("dp_o"), new CalcInputValue("d_o"))).FindOutput("d_o_req"));
+    }
+
+    [Fact]
+    public void A_Slender_Rod_Buckles_As_Euler_And_A_Stocky_One_As_Johnson_And_The_Sheet_Says_Screening()
+    {
+        var slender = Run(Q("D", 80, "mm"), Q("d_r", 40, "mm"), Q("stroke", 2000, "mm"), Q("F_push", 15, "kN"));
+        Assert.Equal(Math.PI * Math.PI * 210e9 * (Math.PI * Math.Pow(0.04, 4) / 64) / (2.1 * 2.1), slender.OutputSi("F_cr"), 3);
+        Assert.Contains("slender", Assert.IsType<TextValue>(slender.FindOutput("buckling_note")!.Value).Value, StringComparison.Ordinal);
+
+        var stocky = Run();
+        Assert.Contains("Johnson", Assert.IsType<TextValue>(stocky.FindOutput("buckling_note")!.Value).Value, StringComparison.Ordinal);
+        Assert.True(stocky.OutputSi("F_cr") < Math.PI * 0.035 * 0.035 * 500e6);
+
+        foreach (var r in new[] { slender, stocky })
+        {
+            Assert.Contains(CylinderCalculator.ScreeningLabel, Assert.IsType<TextValue>(r.FindOutput("buckling_note")!.Value).Value, StringComparison.Ordinal);
+            Assert.Contains(r.Checks, c => c.Name.Contains(CylinderCalculator.ScreeningLabel, StringComparison.Ordinal));
+        }
+
+        Assert.Contains(CylinderCalculator.ScreeningLabel, Cylinder.Template.Scope, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Critical_Load_Is_Johnson_Below_The_Transition_Euler_Above_It_And_Never_Exceeds_Either_Limit()
+    {
+        // Property: independent recomputation of the column relations, including the continuity at the transition slenderness.
+        Gen.Select(Gen.Double[20, 300], Gen.Double[0.3, 0.8], Gen.Double[50, 3000], Gen.Double[0.5, 2.5], Gen.Double[100, 1500], Gen.Double[50, 250]).Sample((bore, rodRatio, stroke, k, fy, e) =>
+        {
+            var d = bore * rodRatio;
+            var r = Run(Q("D", bore, "mm"), Q("d_r", d, "mm"), Q("stroke", stroke, "mm"), CalcInputValue.Of("K_m", k), Q("f_y", fy, "MPa"), Q("E", e, "GPa"));
+            double leff = k * (stroke + 100), lam = leff / (d / 4), lamC = Math.PI * Math.Sqrt(2 * e * 1e3 / fy);
+            double a = Math.PI * d * d / 4, i = Math.PI * Math.Pow(d, 4) / 64;
+            var euler = Math.PI * Math.PI * e * 1e3 * i / (leff * leff);
+            var johnson = a * fy * (1 - fy * lam * lam / (4 * Math.PI * Math.PI * e * 1e3));
+            var expected = (lam > lamC ? euler : johnson) / 1e3;
+            var got = r.OutputSi("F_cr") / 1e3;
+            return !r.IsBlocked && got > 0 && Math.Abs(got - expected) <= 1e-9 * expected && got <= a * fy / 1e3 * (1 + 1e-12) && got <= euler / 1e3 * (1 + 1e-12);
+        }, iter: 200);
+    }
+
+    [Fact]
+    public void The_Mounting_Factor_Scales_The_Effective_Length_And_The_Push_Load_Sets_The_Utilisation()
+    {
+        var pinned = Run(Q("stroke", 1500, "mm"));
+        var cantilever = Run(Q("stroke", 1500, "mm"), CalcInputValue.Of("K_m", 2));
+        Assert.Equal(1.6, pinned.OutputSi("L_eff"), 9);
+        Assert.Equal(3.2, cantilever.OutputSi("L_eff"), 9);
+        Assert.True(cantilever.OutputSi("F_cr") < pinned.OutputSi("F_cr"));
+        Assert.Equal(80e3 * 3.5 / pinned.OutputSi("F_cr"), pinned.OutputSi("u_buck"), 9);
+        Assert.Equal(0, Run(Q("F_push", 0, "kN")).OutputSi("u_buck"), 12);
+
+        var over = Run(Q("stroke", 3500, "mm"), Q("F_push", 100, "kN"));
+        Assert.Contains(over.Checks, c => c.Name.StartsWith("Rod buckling", StringComparison.Ordinal) && !c.Passed);
+        Assert.False(over.Passed);
+    }
+
+    [Fact]
+    public void A_Load_Above_The_Force_Of_Either_Stroke_Fails_The_Check()
+    {
+        Assert.True(Run().Passed);
+        Assert.Contains(Run(Q("F_push", 130, "kN")).Checks, c => c.Name.StartsWith("Extend force covers", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(Run(Q("F_pull", 70, "kN")).Checks, c => c.Name.StartsWith("Retract force covers", StringComparison.Ordinal) && !c.Passed);
+    }
+
+    [Fact]
+    public void The_Material_The_Mounting_The_Limits_And_The_Hose_List_Are_Records_And_Nothing_Is_Shipped_As_A_Table()
+    {
+        var t = Cylinder.Template;
+        Assert.Equal("E", t.FindInput("E")!.MaterialProperty);
+        Assert.Equal("f_y", t.FindInput("f_y")!.MaterialProperty);
+        Assert.Null(t.FindInput("rho")!.MaterialProperty);
+        Assert.Null(t.FindInput("K_m")!.MaterialProperty);
+        Assert.Equal(["E", "f_y"], t.RecordKinds!.Single(k => k.Kind == CylinderCalculator.MaterialKind).Symbols);
+        Assert.Contains(t.RecordKinds!, k => k.Kind == "cylinder.mounting" && k.Symbols.SequenceEqual(["K_m"]));
+        Assert.Contains(t.RecordKinds!, k => k.Kind == "cylinder.line-limits" && k.Symbols.SequenceEqual(["v_suc_max", "v_prs_max", "v_ret_max"]));
+        Assert.Contains(t.RecordKinds!, k => k.Kind == "cylinder.hose-sizes" && k.Symbols.SequenceEqual(["hoses"]));
+        Assert.Equal(CalcInputKind.Table, t.FindInput("hoses")!.Kind);
+        Assert.True(t.FindInput("hoses")!.IsOptional);
+    }
+
+    [Fact]
+    public void The_Ports_Are_Outputs_Of_A_Default_Run_With_The_Declared_Units()
+    {
+        var r = Run();
+        Assert.Equal(["Q", "p", "P_pump", "u_buck", "F_ext", "dV", "T_shaft", "n_shaft"], Cylinder.Template.OutputPorts!.Select(p => p.Symbol));
+
+        foreach (var port in Cylinder.Template.OutputPorts!)
+        {
+            var scalar = Assert.IsType<ScalarValue>(r.FindOutput(port.Symbol)!.Value);
+            Assert.Equal(UnitCatalog.Parse(port.Unit).Dimension, scalar.Dimension);
+        }
+    }
+
+    [Fact]
+    public void Every_Input_Outside_Its_Valid_Range_Is_A_Hard_Fail()
+    {
+        Assert.All(Cylinder.Template.Inputs.Where(i => i.Kind is CalcInputKind.Quantity or CalcInputKind.Number), spec =>
+        {
+            Assert.Equal(spec.Min, spec.HardMin);
+            Assert.Equal(spec.Max, spec.HardMax);
+        });
+
+        foreach (var (symbol, value, unit) in new[]
+        {
+            ("D", 9.0, "mm"), ("D", 501.0, "mm"), ("stroke", 0.5, "mm"), ("stroke", 5001.0, "mm"), ("p", 0.5, "bar"), ("p", 701.0, "bar"),
+            ("Q", 0.05, "L/min"), ("Q", 2001.0, "L/min"), ("eta_m", 0.4, ""), ("eta_vc", 1.1, ""), ("eta_vp", 0.49, ""), ("eta_tp", 1.01, ""), ("eta_hm", 0.3, ""),
+            ("K_m", 0.4, ""), ("K_m", 2.6, ""), ("rho", 600.0, "kg/m^3"), ("E", 40.0, "GPa"), ("f_y", 50.0, "MPa"), ("S_f", 0.9, ""), ("d_suc", 2.0, "mm"),
+        })
+        {
+            var value1 = unit.Length > 0 ? Q(symbol, value, unit) : CalcInputValue.Of(symbol, value);
+            Assert.Contains(CalcInputValidator.Validate(Cylinder.Template, With(value1)), n => n.Severity == CalcNoticeSeverity.Block);
+        }
+    }
+}
