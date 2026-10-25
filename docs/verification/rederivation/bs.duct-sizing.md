@@ -97,7 +97,7 @@ Units were also checked: L/s, m³/h, cfm, in, inH₂O and kPa inputs give the sa
 - Residual doubt: the EN 1506 size series in finding 02 is from memory.
 
 ## Re-check after the Addendum A Blue round (0772fcf8)
-- Source change (a23e6e18): a reference-source label lost a review tag, and the empty-table block now uses the standard "enter at least one row of …" text. The sizing and friction maths is unchanged.
+- Source change (a23e6e18): a reference-source label lost a review tag. The empty-table block now uses the standard "enter at least one row of …" text. The sizing and friction maths is unchanged.
 - KATs: `Probe kat` passes all 4 cases and no expected value changed. The script exits 0.
 - Probes P6c, P12, P18 and P4 give the same numbers as the review.
 - Findings: 6 earlier rows, 0 fixed, 6 open. There was no Critical or High finding.

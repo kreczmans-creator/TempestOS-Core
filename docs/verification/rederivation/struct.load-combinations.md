@@ -100,9 +100,9 @@ The script compares all eight envelope values (E_d, E_k, E_fr, E_qp, max and min
 - New defects: none found.
 
 ## Re-check after the Addendum A Blue round (0772fcf8)
-- Source change (a23e6e18): an assumption label was reworded, and the empty-table block now uses the standard "enter at least one row of …" text. No maths changed.
+- Source change (a23e6e18): an assumption label was reworded. The empty-table block now uses the standard "enter at least one row of …" text. No maths changed.
 - KATs: `Probe kat` passes all 6 cases and no expected value changed. The script exits 0 with 0 fails.
-- Probes re-run: default ξ (35.655 kN/m), the recommended ψ set (24.9 kN), K_FI 1.1 (40.095 kN) and the empty table (block, with the new wording). All match the earlier results.
+- Probes re-run: default ξ (35.655 kN/m), the recommended ψ set (24.9 kN) and K_FI 1.1 (40.095 kN). The empty table blocks with the new wording. All match the earlier results.
 - Findings: 4 earlier rows, 1 fixed (-03, earlier), 3 open (-01, -02 Low; -04 Info). There was no Critical or High finding.
 - New defects: none found.
 - Probe inputs: /tmp/claude-0/probe-inputs/struct-lc-*.json and /tmp/claude-0/recheck4/struct-bs/.

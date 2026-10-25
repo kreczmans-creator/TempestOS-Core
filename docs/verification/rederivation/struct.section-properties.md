@@ -154,7 +154,7 @@ Guard probes that behaved correctly: thickness at or above half the size (tube, 
 ## Re-check after the Addendum A Blue round (0772fcf8)
 - Source change: none. SectionPropertiesCalculator.cs has no diff between 298ade36 and 0772fcf8.
 - KATs: `Probe kat` passes all 6 cases and no expected value changed. The script exits 0 (4 extra checks show the known DIFF rows for finding -01).
-- Spot-check of the Critical finding -01 with the live probe: composite tube gives A 568.6 cm² (correct 59.69), SHS 100×100×5 gives 180.3 cm² (correct 18.73), rectangle minus tube gives 331.4 cm² (correct 840.3). Identical to the review.
+- Spot-check of the Critical finding -01 with the live probe. A composite tube gives A 568.6 cm² (correct 59.69). SHS 100×100×5 gives 180.3 cm² (correct 18.73). Rectangle minus tube gives 331.4 cm² (correct 840.3). Identical to the review.
 - Findings: 6 earlier rows, 0 fixed, 6 open. The Critical finding -01 is still open.
 - New defects: none; the code did not change.
 - Probe inputs: /tmp/claude-0/recheck4/struct-bs/sp1.py.

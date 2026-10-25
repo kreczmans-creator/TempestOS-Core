@@ -140,7 +140,7 @@ Guard probes that behaved correctly: mechanism (single pin, vertical rollers onl
 ## Re-check after the Addendum A Blue round (0772fcf8)
 - Source change: none. FrameCalculator.cs and FrameSolver.cs have no diff between 298ade36 and 0772fcf8 (the Blue round did not touch S2).
 - KATs: `Probe kat` passes all 6 cases and no expected value changed. The script exits 0.
-- Spot-check with the live probe (original inputs): couple at 3 m gives M_max 13.5 (correct 15.0); couple at the end gives 28.5 (correct 30); blank 'a' gives R2_y 0; trapezoid with w2 blank gives ΣR_y 30.
+- Spot-check with the live probe (original inputs). A couple at 3 m gives M_max 13.5 (correct 15.0). A couple at the end gives 28.5 (correct 30). A blank 'a' gives R2_y 0. A trapezoid with w2 blank gives ΣR_y 30.
 - Findings: 7 earlier rows, 0 fixed, 7 open. The High finding -01 is still open.
 - New defects: none; the code did not change.
 - Probe inputs: /tmp/claude-0/recheck4/struct-bs/fr1.py.

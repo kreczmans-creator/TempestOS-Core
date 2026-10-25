@@ -127,7 +127,7 @@ Full rows are in the script. Product values were read from the Probe tool. Water
 ## Re-check after the Addendum A Blue round (0772fcf8)
 - Source change (3c637a3d, a23e6e18; version 1.2.0): a new `circuit` input (open or closed). A closed loop ignores the rises, so H_static = h_out. A new port V_pipe gives the water in the pipes in litres. The empty-table block text changed.
 - KATs: `Probe kat` passes all 6 cases, including the new `ka-closed-circuit` (H_static 0, V_pipe 301.593 L). No earlier expected value changed.
-- Script: it still exits 0. I added four rows (CC1, CC2) for the closed and open loop (H_sys 3.215 m and 13.215 m, V_pipe 301.593 L). All 90 rows pass.
+- Script: it still exits 0. I added four rows (CC1, CC2) for the closed and open loop. They check H_sys (3.215 m and 13.215 m) and V_pipe (301.593 L). All 90 rows pass.
 - Findings: 13 earlier rows, 0 fixed, 13 open. The High findings -01, -02 and R1 are still open.
 - New defects: none found. The closed-circuit option changes only the static head and agrees with the independent model.
 - Probe inputs: /tmp/claude-0/probe-inputs/bs.pipe-pump.*.json and /tmp/claude-0/recheck4/struct-bs/pp1.py.
