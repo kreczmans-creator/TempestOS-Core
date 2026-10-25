@@ -412,6 +412,34 @@ public sealed class PipeExpansionTests
     }
 
     [Fact]
+    public void Z3_Property_However_The_Length_Is_Split_Into_Two_Runs_The_Leg_And_The_Screening_Are_The_L_Bends_And_The_Run_Stresses_Go_As_The_Lengths()
+    {
+        Gen.Select(Gen.Double[20, 200], Gen.Double[0.15, 0.85], Gen.Double[3, 20], Gen.Double[-40, 60]).Sample((total, share, h, dt) =>
+        {
+            if (Math.Abs(dt) < 1)
+                return true;
+
+            var l1 = total * share;
+            var l2 = total - l1;
+            var mode = CalcInputValue.Choice("temp_mode", PipeExpansionCalculator.ChangeGiven);
+            var z = Run(mode, Q("dT_in", dt, "K"), Q("L", l1, "m"), Q("L2", l2, "m"), Q("H", h, "m"));
+            var l = Run(mode, Q("dT_in", dt, "K"), Q("L", total, "m"), Q("H", h, "m"));
+
+            if (z.IsBlocked || l.IsBlocked)
+                return false;
+
+            static bool Close(double a, double b) => Math.Abs(a - b) <= 1e-9 * Math.Max(Math.Abs(a), Math.Abs(b)) + 1e-18;
+
+            return Close(z.OutputSi("L_req"), l.OutputSi("L_req"))
+                && Close(z.OutputSi("scr"), l.OutputSi("scr"))
+                && Close(z.OutputSi("dL"), l.OutputSi("dL"))
+                && Close(z.OutputSi("F_leg"), l.OutputSi("F_leg"))
+                && Close(z.OutputSi("sigma_run") / z.OutputSi("sigma_run2"), l1 / l2)
+                && Close(z.OutputSi("F_run"), 12 * 210e9 * (Math.PI / 64 * (Math.Pow(0.0889, 4) - Math.Pow(0.0825, 4))) * (12e-6 * Math.Abs(dt) * h) / (Math.Pow(l1, 3) + Math.Pow(l2, 3)));
+        }, iter: 200);
+    }
+
+    [Fact]
     public void N2_L2_Is_Only_For_The_Offset_Leg_And_The_Anchor_Moment_Is_Stated_As_A_Simplification()
     {
         var loop = Run(Loop(), Q("H", 3, "m"), Q("L2", 20, "m"));
