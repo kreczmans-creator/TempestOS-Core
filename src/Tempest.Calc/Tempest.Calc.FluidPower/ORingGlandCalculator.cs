@@ -127,7 +127,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             new CalcInputSpec("od_hi", "Ring outside-diameter compression: highest acceptable, in a rod-seal groove or against the groove outer wall of an internal-pressure face seal (your record; the default is a placeholder equal to the stretch limit, not a handbook value)", CalcInputKind.Quantity, "%", Default: 6, Min: 1, Max: 10, HardMin: 0.1, HardMax: 100, Group: "Acceptance"),
 
             new CalcInputSpec("H_A", "Ring hardness, Shore A (for the extrusion record)", CalcInputKind.Number, Default: 70, Min: 40, Max: 95, HardMin: 20, HardMax: 100, Group: "Extrusion"),
-            new CalcInputSpec("p_op", "Operating pressure (for the extrusion record)", CalcInputKind.Quantity, "bar", Default: 160, Min: 0, Max: 700, HardMin: 0, HardMax: 2000, Group: "Extrusion"),
+            new CalcInputSpec("p_op", "Operating pressure (for the extrusion record, gauge)", CalcInputKind.Quantity, "bar", Default: 160, Min: 0, Max: 700, HardMin: 0, HardMax: 2000, Group: "Extrusion", PressureBasis: CalcInputSpec.BasisGauge),
             new CalcInputSpec("dD_p", "Diametral growth under the operating pressure of the bore (piston seal) or of the housing bore round the rod (rod seal), from your cylinder or housing calculation; added to the extrusion gap (0 if not known)", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 0.5, HardMin: 0, HardMax: 5, Group: "Extrusion"),
             new CalcInputSpec("gap_allow", "Largest permitted extrusion gap at this pressure and hardness, if you have it as one value", CalcInputKind.Quantity, "mm", Min: 0.01, Max: 1, HardMin: 0, HardMax: 5, IsOptional: true, Group: "Extrusion"),
             new CalcInputSpec("ext", "Permitted extrusion gap against hardness and pressure (your own record)", CalcInputKind.Table, Columns: ExtrusionColumns, MaxRows: 100, IsOptional: true, Group: "Extrusion"),
@@ -140,7 +140,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         ],
         [
             new CalcAssumption("The gland is a plain rectangular groove with a bottom corner radius; the ring is a circle of the stated cross-section. Edge breaks, groove wall angles and surface finish are not modelled.", "Closed-form gland geometry; no gland table."),
-            new CalcAssumption("Squeeze is the compressed fraction of the effective cross-section W_eff, which is the nominal section after thermal expansion, swell and the cross-section reduction of the stretch. The reduction relation is chosen by the user; the quadratic of Parker ORD 5700 section 3.5 is implemented as quoted in Addendum B, used for about 3 to 25 % stretch only, and is not confirmed against the handbook. Where the ring outside diameter is held (a rod seal in its housing groove, an internal-pressure face seal), the compression c thickens the section to W/√(1 − c).", "The relation is an input choice; the default is the constant-volume rubber relation, derived."),
+            new CalcAssumption("Squeeze is the compressed fraction of the effective cross-section W_eff, which is the nominal section after thermal expansion, swell and the cross-section reduction of the stretch. The reduction relation is chosen by the user; the quadratic of Parker ORD 5700 section 3.5 is implemented as quoted second-hand, used for about 3 to 25 % stretch only, and is not confirmed against the handbook. Where the ring outside diameter is held (a rod seal in its housing groove, an internal-pressure face seal), the compression c thickens the section to W/√(1 − c).", "The relation is an input choice; the default is the constant-volume rubber relation, derived."),
             new CalcAssumption("The cold end is the lowest temperature with the least swell and sets the minimum squeeze and fill; the hot end is the highest temperature with the most swell and sets the maximum. This assumes the ring expands more than the groove metal (alpha above alpha_m).", "Bounding cases of a monotonic model."),
             new CalcAssumption("The worst case combines each dimension at its extreme independently. Where one dimension appears twice (the groove root diameter sets both the depth and the stretch of a piston seal) the worst case is slightly conservative.", "Independent ends of linear stacks."),
             new CalcAssumption("The Monte Carlo samples each dimension from its own distribution about its mean and evaluates each criterion exactly (the non-linear model) on the engine's seeded sampler. It counts the fraction outside each limit at the cold or hot end; it does not model pressure, friction or compression set. The capability index C_pk uses the first-order (secant) linearisation.", "Exact model on the engine's seeded sampler."),
@@ -148,8 +148,8 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             new CalcAssumption("The extrusion gap is the largest diametral clearance of a radial seal (the axial gap of a face seal) over the installed, cold and hot temperatures, the sealing-surface part and the groove metal each with its own expansion coefficient, plus the diametral growth of the bore under pressure that the user enters (0 if none). The permitted gap is the user's record; the sheet never states a handbook value. With no permitted gap entered the extrusion check fails (not verified) while the operating pressure is above zero.", "Extrusion limits are licensed data and are not shipped."),
         ],
         [
-            new CalcClauseRef("Parker O-Ring Handbook ORD 5700", "Section 3.5", "Cross-section reduction with stretch (relation quoted in Addendum B; not confirmed)"),
-            new CalcClauseRef("Parker PTD 5705", "—", "O-ring installation guidance (stretch rule quoted in Addendum B; not confirmed)"),
+            new CalcClauseRef("Parker O-Ring Handbook ORD 5700", "Section 3.5", "Cross-section reduction with stretch (relation quoted second-hand; not confirmed)"),
+            new CalcClauseRef("Parker PTD 5705", "—", "O-ring installation guidance (stretch rule quoted second-hand; not confirmed)"),
             new CalcClauseRef("ISO 3601-1", "—", "O-rings: inside diameters, cross-sections, tolerances and size codes"),
             new CalcClauseRef("ISO 3601-2", "—", "O-rings: housing dimensions for general applications"),
         ],
@@ -323,8 +323,8 @@ public sealed class ORingGlandCalculator : ICalcCalculator
                     CalcInputValue.Of("H_A", 80), CalcInputValue.Quantity("p_op", 150, "bar"), CalcInputValue.Of("n_mc", 1_000),
                 ],
                 [new CalcExpectedValue("gap_allow", 0.1575, "mm", 1e-9), new CalcExpectedValue("u_gap", 0.10607632 / 0.1575, "", 1e-9)]),
-            new CalcTestCase("ka-parker-quadratic", "Parker ORD 5700 section 3.5 quadratic at 4 % stretch, as Addendum B quotes it",
-                new CalcReferenceSource("Parker Hannifin, O-Ring Handbook ORD 5700, section 3.5, relation as quoted in Addendum B §B6 F3", null, "Y = 0.56 + 0.59·4 − 0.0046·16 = 2.8464 %; arithmetic of the quoted relation, used here for about 3 to 25 % stretch only; to be checked against the owner's copy of the handbook, including what Y measures and the range it covers", Secondary: true),
+            new CalcTestCase("ka-parker-quadratic", "Parker ORD 5700 section 3.5 quadratic at 4 % stretch, as quoted second-hand",
+                new CalcReferenceSource("Parker Hannifin, O-Ring Handbook ORD 5700, section 3.5, relation as quoted second-hand", null, "Y = 0.56 + 0.59·4 − 0.0046·16 = 2.8464 %; arithmetic of the quoted relation, used here for about 3 to 25 % stretch only; to be checked against the owner's copy of the handbook, including what Y measures and the range it covers", Secondary: true),
                 [
                     CalcInputValue.Quantity("d_r_tol", 0, "mm"),
                     CalcInputValue.Quantity("D_s", 57, "mm"), CalcInputValue.Quantity("D_g", 52, "mm"), CalcInputValue.Quantity("D_g_u", 0, "mm"), CalcInputValue.Quantity("D_g_l", 0, "mm"),
@@ -333,7 +333,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
                 [new CalcExpectedValue("red_nom", 2.8464, "%", 1e-9), new CalcExpectedValue("squeeze_nom", 26.1405209306, "%", 1e-9)],
                 CalcReferenceStatus.Unconfirmed),
             new CalcTestCase("ka-stretch-rule", "Installation rule: up to 6 % stretch on a piston groove (5.8 % reads 0.967 of the limit)",
-                new CalcReferenceSource("Parker Hannifin, PTD 5705, installation guidance, rule as quoted in Addendum B §B6 F3", null, "piston-groove stretch not above 6 %; the limit is the default of x_hi, a record; to be checked against the owner's copy, including the edition", Secondary: true),
+                new CalcReferenceSource("Parker Hannifin, PTD 5705, installation guidance, rule as quoted second-hand", null, "piston-groove stretch not above 6 %; the limit is the default of x_hi, a record; to be checked against the owner's copy, including the edition", Secondary: true),
                 [
                     CalcInputValue.Quantity("d_r_tol", 0, "mm"),
                     CalcInputValue.Quantity("D_s", 57.6, "mm"), CalcInputValue.Quantity("D_g", 52.9, "mm"), CalcInputValue.Quantity("D_g_u", 0, "mm"), CalcInputValue.Quantity("D_g_l", 0, "mm"),
@@ -845,7 +845,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             : "Static duty: the squeeze band for static seals from the oring.criteria record is used.", "The bands are the user's record.");
 
         if (relation == ReductionRelation.Parker)
-            c.Assume("The cross-section reduction uses the quadratic as Addendum B quotes it from Parker ORD 5700 section 3.5 (Y = 0.56 + 0.59X − 0.0046X², X and Y in per cent, applied for X above zero, used for about 3 to 25 % stretch only: below 3 % it is blended linearly to zero, above 25 % it is held at its 25 % value); it has not been confirmed against the handbook.", "Cited relation, unconfirmed.");
+            c.Assume("The cross-section reduction uses the quadratic as quoted second-hand from Parker ORD 5700 section 3.5 (Y = 0.56 + 0.59X − 0.0046X², X and Y in per cent, applied for X above zero, used for about 3 to 25 % stretch only: below 3 % it is blended linearly to zero, above 25 % it is held at its 25 % value); it has not been confirmed against the handbook.", "Cited relation, unconfirmed.");
 
     }
 

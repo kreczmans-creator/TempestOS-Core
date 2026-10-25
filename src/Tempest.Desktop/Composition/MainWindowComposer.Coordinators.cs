@@ -309,7 +309,8 @@ internal sealed partial class MainWindowComposer
 
         // `v0.26.0` (ADR-0165): the worksheet surface's own collaborator.
         var calcSheets = new Tempest.Desktop.CalcSheets.CalcSheetCoordinator(host.CalcInstances!, views.Worksheets, host.ProjectContext!, () => host.SessionPrincipal?.IdentityId,
-            (Tempest.Core.Events.IEventBus)host.Services!.GetService(typeof(Tempest.Core.Events.IEventBus)));
+            (Tempest.Core.Events.IEventBus)host.Services!.GetService(typeof(Tempest.Core.Events.IEventBus)),
+            (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger)));
 
         return new ComposedCoordinators(
             undoRedo, viewCoordinator, cockpitView, homeDashboardView, dockingComposer, attachmentViewers, layoutPresets,

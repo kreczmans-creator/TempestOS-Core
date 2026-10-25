@@ -29,7 +29,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
     private readonly CadImportViewModel _cad;
     private readonly ScanImportViewModel _scan;
 
-    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, Tempest.Core.Events.IEventBus? events = null)
+    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, Tempest.Core.Events.IEventBus? events = null, Tempest.Core.Logging.ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(view);
@@ -42,7 +42,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _principalId = principalId;
 
         // Addendum B, W1: the CAD import panel lives under the records panel; its view model does the work.
-        _cad = new CadImportViewModel(service);
+        _cad = new CadImportViewModel(service, logger);
         var cadPanel = new CadImportPanel(_cad);
         _cad.Applied += instance =>
         {
@@ -58,7 +58,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.ImportCadRequested += () => _ = GuardedAsync(ImportCadAsync, "start the CAD import");
 
         // Addendum B, W2: the scan deviation import panel, installed the same way.
-        _scan = new ScanImportViewModel(service);
+        _scan = new ScanImportViewModel(service, logger);
         var scanPanel = new ScanImportPanel(_scan);
         _scan.Applied += instance =>
         {

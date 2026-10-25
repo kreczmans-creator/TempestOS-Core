@@ -167,6 +167,40 @@ public sealed class InsulationTests
     }
 
     [Fact]
+    public void Black_B_B_08_The_Condensation_Warning_Judges_A_Fixed_H_Se_Against_The_Correlation_At_The_Entered_Emissivity()
+    {
+        // The chilled-water worked example: h_se 8 and ε 0.9. The given value needs 13.16 mm, the correlation at ε 0.9 only 12.03 mm, so the
+        // given value is already conservative for this surface and must not warn (it did, against the bright-cladding 25.18 mm).
+        var chilled = WorkedExamples.Get(InsulationCalculator.Id + "/chilled-water-pipe-condensation").Inputs;
+        var run = Run(chilled);
+        Assert.False(run.IsBlocked);
+        Assert.Equal(13.161558769442829, run.OutputSi("t_dew") * 1000, 6);
+        Assert.False(Warned(run, "h-se-condensation"));
+
+        double Correlation(double eps) => Run(chilled.With(CalcInputValue.Choice("h_mode", InsulationCalculator.HCorrelation)).With(CalcInputValue.Of("eps", eps))).OutputSi("t_dew") * 1000;
+        Assert.True(Correlation(0.9) < 13.1615 && Correlation(0.1) > 25, $"{Correlation(0.9)} {Correlation(0.1)}");
+
+        // The same h_se on a bright surface (ε 0.1 entered) is not conservative: it warns, and says which emissivity it judged against.
+        var bright = Run(chilled.With(CalcInputValue.Of("eps", 0.1)));
+        var warning = Assert.Single(bright.Warnings, w => w.RuleId == "h-se-condensation");
+        Assert.Contains("ε = 0.1,", warning.Message, StringComparison.Ordinal);
+        Assert.Contains($"{Tempest.Calc.Engine.Values.CalcValue.FormatNumber(Correlation(0.1), 5)} mm", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("bright cladding", warning.Message, StringComparison.Ordinal);
+
+        // A lower h_se is the conservative direction (the surface sits nearer the pipe): no warning at ε 0.9.
+        Assert.False(Warned(Run(chilled.With(Q("h_se", 5, "W/(m^2*K)"))), "h-se-condensation"));
+
+        // A higher h_se than the surface gives holds the surface too near the air: it warns at ε 0.9 too, and then adds the bright-cladding thickness as a note.
+        var high = Run(chilled.With(Q("h_se", 15, "W/(m^2*K)")));
+        var highWarning = Assert.Single(high.Warnings, w => w.RuleId == "h-se-condensation");
+        Assert.Contains("ε = 0.9 (bright cladding, ε = 0.1, would need", highWarning.Message, StringComparison.Ordinal);
+        Assert.Contains($"{Tempest.Calc.Engine.Values.CalcValue.FormatNumber(Correlation(0.9), 5)} mm", highWarning.Message, StringComparison.Ordinal);
+
+        // The emissivity input says it is read for this judgement.
+        Assert.Contains("only judges", Insulation.Template.FindInput("eps")!.Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_Criterion_For_The_Wrong_Sign_Is_Ignored_With_A_Warning_And_No_Criterion_At_All_Blocks()
     {
         // A hot-surface limit on a cold pipe is ignored; the heat-flow limit still applies.

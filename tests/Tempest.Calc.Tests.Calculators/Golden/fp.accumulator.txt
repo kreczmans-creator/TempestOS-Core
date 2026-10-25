@@ -16,10 +16,10 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   dV | Liquid volume ΔV delivered, absorbed or (emergency stroke) needed for the stroke | 14 | L | manual | 0.001 … 1000 L
   process | Gas process (By duty: an emergency stroke is charged slowly to p2 and discharged at n, the other duties use one exponent both ways) | By duty |  | manual | any
   p_basis | Pressures entered as | Absolute |  | manual | any
-  p_0 | Gas pre-charge pressure p0, at the maximum operating temperature | 90 | bar | manual | 0 … 700 bar
-  p_1 | Lowest working pressure p1 | 100 | bar | manual | 0 … 700 bar
-  p_2 | Highest working pressure p2 | 210 | bar | manual | 0 … 700 bar
-  p_atm | Atmospheric pressure (gauge to absolute) | 1.01325 | bar | manual | 0.5 … 1.1 bar
+  p_0 | Gas pre-charge pressure p0, at the maximum operating temperature | 90 | bar a | manual | 0 … 700 bar a
+  p_1 | Lowest working pressure p1 | 100 | bar a | manual | 0 … 700 bar a
+  p_2 | Highest working pressure p2 | 210 | bar a | manual | 0 … 700 bar a
+  p_atm | Atmospheric pressure (gauge to absolute) | 1.01325 | bar a | manual | 0.5 … 1.1 bar a
   n | Gas exponent n of the discharge (1 isothermal, slow; 1.4 adiabatic, fast); with the same exponent both ways it is also the charge exponent | 1 |  | manual | 1 … 1.4
   f_rg | Real-gas factor on V0 (1 = ideal gas; at least 1, as nitrogen's compressibility factor exceeds 1 at high pressure; from a gas-property source above 200 bar) | 1 |  | manual | 1 … 1.5
   T_max | Maximum operating temperature (p0 applies here) | 50 | degC | manual | -40 … 150 degC
@@ -35,25 +35,25 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   A4. The gas is ideal unless a real-gas factor is entered (at least 1: nitrogen's compressibility factor exceeds 1 at high pressure, so the real gas needs more volume, never less); above 200 bar the sheet warns that nitrogen departs from the ideal-gas law and a factor from a gas-property source should be entered. (Real-gas correction as a user factor.)
   A5. The pre-charge p0 is defined at the maximum operating temperature T_max and V0 is sized there; at the lowest operating temperature T_min the same gas delivers only the fraction T_min/T_max (absolute) of ΔV, so V0 is multiplied by T_max/T_min, and the p2/p0 rule is checked with p0 at T_min. The temperature range is the user's; with T_min = T_max the correction is 1. (Manufacturer sizing practice; the gas law at constant mass.)
   A6. The pre-charge rules (p0 ≤ 0.9·p1 and p2/p0 ≤ 4 by default) are records for the accumulator type and make and are checked as PASS/FAIL on ABSOLUTE pressures, whichever basis the pressures are entered on; the right values, and whether the manufacturer states the ratio on gauge or absolute pressures, come from the manufacturer (the same numbers read as gauge pressures give a different ratio). (Rules are records, not built-in limits.)
-  A7. The bar·litre product is PS times V of the vessel itself: PS is the vessel's maximum allowable pressure in bar gauge (the nameplate or relief setting, never below the highest working pressure p2) and V its internal volume (the selected size unless entered). Without PS and a volume the indication is not available. It indicates whether the 250 bar·L exception of PSSR Schedule 1 can apply; it is not a compliance statement, and PED / UK PER, PSSR examination and the vessel's own design code stay with the manufacturer and the competent person. (Addendum B §B5 regulatory gating: no pressure-vessel code check.)
+  A7. The bar·litre product is PS times V of the vessel itself: PS is the vessel's maximum allowable pressure in bar gauge (the nameplate or relief setting, never below the highest working pressure p2) and V its internal volume (the selected size unless entered). Without PS and a volume the indication is not available. It indicates whether the 250 bar·L exception of PSSR Schedule 1 can apply; it is not a compliance statement, and PED / UK PER, PSSR examination and the vessel's own design code stay with the manufacturer and the competent person. (Regulatory gating: no pressure-vessel code check.)
   A8. Energy storage duty: ΔV is the liquid volume the accumulator delivers between p_2 and p_1 over a cycle; n = 1 for a slow discharge, towards 1.4 for a fast one. (Gas-law sizing for a stored-energy duty.)
 
 4. WORKING
   [15] pa_0 = p_0
-      = 90 bar
-      = 90 bar
+      = 90 bar a
+      = 90 bar a
         Pre-charge pressure, absolute
   [16] pa_1 = p_1
-      = 100 bar
-      = 100 bar
+      = 100 bar a
+      = 100 bar a
         Lowest working pressure, absolute
   [17] pa_2 = p_2
-      = 210 bar
-      = 210 bar
+      = 210 bar a
+      = 210 bar a
         Highest working pressure, absolute
   [18] p2_g = max(pa_2 - p_atm, 0 bar)
-      = max(210 bar − 1.0132 bar, 0 bar)
-      = 208.99 bar
+      = max(210 bar a − 1.0132 bar a, 0 bar)
+      = 208.99 bar g
         Highest working pressure, gauge
   [20] V0_ideal = dV / [(pa_0/pa_1)^(1/n) − (pa_0/pa_2)^(1/n)]    « p·Vⁿ = const
       = 14 L / [(0.9) − (0.42857)]
@@ -72,31 +72,31 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
       = 0.90716
         Charging over maximum absolute temperature
   [24] p0 = pa_0 * T_ratio
-      = 90 bar × 0.90716
-      = 81.645 bar
+      = 90 bar a × 0.90716
+      = 81.645 bar a
         Absolute pre-charge pressure at the charging temperature
   [25] p0_min = pa_0 / f_T
-      = 90 bar / 1
-      = 90 bar
+      = 90 bar a / 1
+      = 90 bar a
         Absolute pre-charge pressure at the minimum operating temperature
   [26] p0_set = p0
-      = 81.645 bar
-      = 81.645 bar
+      = 81.645 bar a
+      = 81.645 bar a
         Pre-charge to set at the charging temperature (absolute)
   [27] u_r0 = pa_0 / (r_0 * pa_1)
-      = 90 bar / (0.9 × 100 bar)
+      = 90 bar a / (0.9 × 100 bar a)
       = 1
         Pre-charge against the p0/p1 rule
   [28] u_rp = (pa_2 / p0_min) / r_p
-      = 210 bar / 90 bar / 4
+      = 210 bar a / 90 bar a / 4
       = 0.58333
         Pressure ratio p2/p0 (p0 at the minimum temperature) against the rule
 
 5. RESULTS
   V0 = 29.697 L    Accumulator gas volume required
-  p0 = 81.645 bar    Pre-charge, absolute, at the charging temperature
-  p0_set = 81.645 bar    Pre-charge to set at the charging temperature
-  p0_min = 90 bar    Pre-charge, absolute, at the minimum operating temperature
+  p0 = 81.645 bar a    Pre-charge, absolute, at the charging temperature
+  p0_set = 81.645 bar a    Pre-charge to set at the charging temperature
+  p0_min = 90 bar a    Pre-charge, absolute, at the minimum operating temperature
   f_T = 1    Gas volume scaling T_max/T_min
   u_r0 = 1    Pre-charge rule utilisation (p0/p1)
   u_rp = 0.58333    Pressure ratio utilisation (p2/p0 at the minimum temperature)
@@ -112,5 +112,5 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   WARNING realgas: p_2: the highest working pressure is 210 bar absolute, above 200 bar; nitrogen departs from the ideal-gas law there and the volume shown is the ideal-gas value. Enter a real-gas factor f_rg from a gas-property source.
 
 8. VERIFICATION
-  Template: fp.accumulator@1.3.0
+  Template: fp.accumulator@1.3.1
   Known-answer cases passed: 10/10

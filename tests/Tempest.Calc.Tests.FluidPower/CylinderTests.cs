@@ -3,6 +3,7 @@ using Tempest.Calc.Engine.Units;
 using Tempest.Calc.Engine.Values;
 using Tempest.Calc.FluidPower;
 using Tempest.Calc.Sheets;
+using Tempest.Calc.Verification;
 
 namespace Tempest.Calc.Tests.FluidPower;
 
@@ -517,5 +518,25 @@ public sealed class CylinderTests
             var value1 = unit.Length > 0 ? Q(symbol, value, unit) : CalcInputValue.Of(symbol, value);
             Assert.Contains(CalcInputValidator.Validate(Cylinder.Template, With(value1)), n => n.Severity == CalcNoticeSeverity.Block);
         }
+    }
+
+    [Fact]
+    public void Yellow_Y_B_06_The_Supply_And_Back_Pressure_Print_As_Gauge_And_Pressure_Drops_Stay_Plain_Bar()
+    {
+        var inputs = With();
+        var result = CalcRunner.Run(Cylinder, inputs);
+        var sheet = CalcSheetBuilder.Build(Cylinder.Template, inputs, result, GoldenFiles.FixedHeader(Cylinder.Template.Id, "F1"), GoldenFiles.FixedFooter(Cylinder.Template, 0, 0));
+
+        Assert.Equal("bar g", sheet.Inputs.Single(i => i.Symbol == "p").Unit);
+        Assert.Equal("bar g", sheet.Inputs.Single(i => i.Symbol == "p_back").Unit);
+        Assert.EndsWith("700 bar g", sheet.Inputs.Single(i => i.Symbol == "p").ValidRange, StringComparison.Ordinal);
+
+        // A pressure drop is a difference between two pressures and has no basis.
+        Assert.Equal("bar", sheet.Inputs.Single(i => i.Symbol == "dp_m").Unit);
+        Assert.Equal("bar", sheet.Inputs.Single(i => i.Symbol == "dp_o").Unit);
+
+        // The working shows the supply pressure with its basis; the numbers are the bar's.
+        Assert.Contains("160 bar g", sheet.Working.Single(w => w.Symbol == "F_ext").Substitution, StringComparison.Ordinal);
+        Assert.Equal(160 * Bar * Area(100) * 0.95, result.OutputSi("F_ext"), 6);
     }
 }

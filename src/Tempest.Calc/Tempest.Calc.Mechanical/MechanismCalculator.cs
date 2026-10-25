@@ -48,14 +48,14 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         "Cam follower force F = m·a + k·s + F_pre + F_ext (the follower leaves the cam where F < 0); input torque by virtual work T = F·s′ (T·ω = F·v)",
         BuildInputs(),
         [
-            new CalcAssumption("Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed.", "Addendum B §B6 M9 limits."),
+            new CalcAssumption("Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed.", "Scope limits of the model."),
             new CalcAssumption("The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch; for a change-point linkage (parallelogram, deltoid) the circuit is named at a reference angle that does not depend on the sweep (the middle of the first interval between change points in 0 … 2π, π/2 when there are none), so the label at a crank angle means the same motion on every turn; only the true change points (all four links collinear, θ₂ = 0 or π) flip the branch, and it is followed by continuity through them inside the sweep. A linkage with one change point per turn (a kite) repeats every 720° and a sweep of more than one turn warns. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted.", "Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank."),
             new CalcAssumption("Input torque is by virtual work from the output load and the inertia of the output element only (four-bar: the output link's moment of inertia about its pivot; slider: the slider mass); the crank and the coupler or connecting rod are massless.", "No link-inertia or gravity terms: add the link masses to the output element for a first allowance."),
             new CalcAssumption("The peaks (speeds, accelerations, torque, transmission angle, swing) are those of the continuous motion over the swept range, found by a dense scan refined by golden section; the printed table (steps N, up to 3600) only samples it.", "Peaks do not depend on the table's step count."),
             new CalcAssumption("Cam: a translating follower on a cam turning at constant speed; the follower mass, a linear return spring (rate and preload at the base circle, for example linked from M7) and a constant external load make the force the cam must apply, F = m·a + k·s + F_pre + F_ext; contact is lost where it falls below zero. The segment table must add to 360° and close; pressure angle and undercut are checked for the roller follower (R_p = R_b + R_r), the positive profile radius for the flat-faced one.", "Norton, Design of Machinery, cam design: the four classical laws, pressure angle and radius of curvature."),
             new CalcAssumption("Follower force (four-bar: the tangential force at the output pin, (T_L + J·α₄)/c; slider: the slide-direction force m·a + F_L; cam: the axial force) is the force the mechanism must apply to the output element. The force in the coupler (F_pin_pk) is the tangential force over sin μ; in the connecting rod it is the slide-direction force over cos θ₃, and the guide reaction is that force times tan θ₃; the roller contact normal force is F/cos φ. Crank, coupler and rod are massless two-force members.", "Rigid body, frictionless."),
             new CalcAssumption("When the sweep meets an assembly limit (a toggle of a four-bar, the rod perpendicular to the slide line of a slider-crank) the sweep is cut there and, because the speed, acceleration, torque and forces at constant input speed are unbounded at the limit, they are not reported; the limit angles are listed. A change-point four-bar (parallelogram, deltoid) is continued through its singular position on the same branch by continuity (γ changes sign there), but its speeds and torques next to the singular position are not reported.", "Closed-form limit angles: ℓ = b + c or |b − c| (four-bar), |r·sinθ − e| = l (slider)."),
-            new CalcAssumption("Into F1 and E1: output_motion is a kinematic proxy at constant crank speed, not the cylinder speed of an actuated linkage. For E1 use the peak input_torque for the peak check and T_rms_in with n_in for the thermal sizing; the mean power is P_mean.", "Chains 4 and 5, Addendum B §B7."),
+            new CalcAssumption("Into F1 and E1: output_motion is a kinematic proxy at constant crank speed, not the cylinder speed of an actuated linkage. For E1 use the peak input_torque for the peak check and T_rms_in with n_in for the thermal sizing; the mean power is P_mean.", "Used by the actuated-linkage and mechanism-review packs."),
         ],
         [
             new CalcClauseRef("Norton, Design of Machinery", "Ch. 4, 6, 7", "Position, velocity and acceleration analysis; transmission angle; Grashof condition"),
@@ -245,7 +245,16 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
     private static void UtilisationMu(CalcRunContext c, double muReq, double muMin)
     {
-        var u = muMin > 1e-9 ? muReq / muMin : (muReq > 0 ? 1e9 : 0);
+        // At a toggle (μ_min = 0) a positive requirement has no finite ratio: the ratio is withheld and the check fails on its own terms,
+        // as a condition, never as a stand-in number (Yellow Y-B-03). A zero requirement is met at any angle: u = 0.
+        if (muMin <= 1e-9 && muReq > 0)
+        {
+            c.Output("u_mu", "Required against smallest transmission angle", new TextValue($"— (μ_min = {F(Deg(muMin))}°: the sweep reaches a toggle, so there is no ratio)"));
+            c.CheckCondition("Transmission angle μ_min at or above the required minimum", false, $"μ_min = {F(Deg(muMin))}° (toggle in the sweep)", $"μ_req = {F(Deg(muReq))}°", null, "Transmission angle");
+            return;
+        }
+
+        var u = muMin > 1e-9 ? muReq / muMin : 0;
         c.Record("u_mu", "μ_req / μ_min", $"{F(Deg(muReq))}° / {F(Deg(muMin))}°", new ScalarValue(u), "Transmission angle: required minimum against the smallest over the sweep", "Transmission angle");
         c.Output("u_mu", "Required against smallest transmission angle");
         c.CheckUtilisation("Transmission angle μ_min at or above the required minimum", "u_mu", "Transmission angle");

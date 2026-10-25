@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 47/47
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 19:18 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -63,8 +63,8 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Extend connection | Standard |  | spec: SPEC-HPU-05 §2 (press duty) | any
-  p | Supply pressure at the cylinder and the pump (gauge) | 160 | bar | spec: SPEC-HPU-05 §2 (press duty) | 1 … 700 bar
-  p_back | Back pressure on the discharge side (standard connection) | 0 | bar | assumption: Sheet default value; no project figure given. | 0 … 700 bar
+  p | Supply pressure at the cylinder and the pump (gauge) | 160 | bar g | spec: SPEC-HPU-05 §2 (press duty) | 1 … 700 bar g
+  p_back | Back pressure on the discharge side (standard connection, gauge) | 0 | bar g | assumption: Sheet default value; no project figure given. | 0 … 700 bar g
   Q | Flow into the cylinder (blank when a required extend speed gives it) | 36 | L/min | spec: SPEC-HPU-05 §2 (press duty) | 0.1 … 2000 L/min
   rho | Fluid density | 870 | kg/m^3 | spec: SPEC-HPU-05 §2 (press duty) | 700 … 1300 kg/m^3
   F_push | Load to push on the extend stroke (compresses the rod) | 80 | kN | spec: SPEC-HPU-05 §2 (press duty) | 0 … 15000 kN
@@ -100,7 +100,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   A4. The line flows use the pump delivery when it is larger than the circuit flow: the suction line the geometric delivery V_g·n, the pressure line and the return line Q_line = max(Q, Q_p), which carries no volumetric efficiency while the speeds use Q·η_vc (the flows are the conservative side of the speeds). The line to the cylinder cap port is judged at the larger flow of the two strokes: on the retract stroke it carries the cap-side discharge Q_line·A_b/A_a (the same flow as the return line), and in the regenerative extend Q_line·A_b/A_r if that is larger. The velocity limits are your records; the sheet's defaults are placeholders, not values from a standard. (Continuity.)
   A5. The orifice relation is the sharp-edged turbulent one, Q = C_d·A·√(2Δp/ρ), with your discharge coefficient; it ignores viscosity and cavitation and is a screening of a flow-control orifice, not a valve selection. (Orifice equation, closed form.)
   A6. The rod is treated as a solid round column of its own diameter with the effective-length factor of the mounting; the tube, the piston and the rod-end stiffness are not modelled. The rod is judged at the larger of the push load you enter and the stall thrust p·A_b (a stalled, obstructed or relief-limited cylinder loads the rod with the full pressure force on the bore: no flow, so no back pressure, and the seal friction does not relieve it); no pressure-limiting device is credited, and the regenerative extend is judged at the same stall thrust because the standard connection can always be selected. The mounting factor K_m defaults to 1 (pinned at both ends): a fixed-free mounting is K_m = 2, and the factor and the safety factor S_f are your records. screening only; ISO/TS 13725 method not implemented. (Euler and Johnson column relations, closed form.)
-  A7. p_back (Back pressure on the discharge side (standard connection)) is taken as 0 bar. (Sheet default value; no project figure given.)
+  A7. p_back (Back pressure on the discharge side (standard connection, gauge)) is taken as 0 bar g. (Sheet default value; no project figure given.)
   A8. eta_m (Mechanical efficiency of the cylinder (seal and guide friction)) is taken as 0.95. (Sheet default value; no project figure given.)
   A9. eta_vc (Volumetric efficiency of the cylinder (leakage past the piston)) is taken as 0.98. (Sheet default value; no project figure given.)
   A10. t_dwell (Dwell time added to each cycle) is taken as 0 s. (Sheet default value; no project figure given.)
@@ -138,7 +138,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 1.9608
         Area ratio A_b/A_a
   [33] F_ext = (p * A_b - p_back * A_a) * eta_m
-      = (160 bar × 78.54 cm² − 0 bar × 40.055 cm²) × 0.95
+      = (160 bar g × 78.54 cm² − 0 bar g × 40.055 cm²) × 0.95
       = 119.38 kN
         Extend force
   [34] v_ext = Q * eta_vc / A_b
@@ -150,7 +150,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 3.927 L
         Liquid taken from the supply for the extend stroke
   [36] F_ret = (p * A_a - p_back * A_b) * eta_m
-      = (160 bar × 40.055 cm² − 0 bar × 78.54 cm²) × 0.95
+      = (160 bar g × 40.055 cm² − 0 bar g × 78.54 cm²) × 0.95
       = 60.884 kN
         Retract force
   [37] v_ret = Q * eta_vc / A_a
@@ -194,7 +194,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 38.57 L/min
         Flow the pump delivers at the supply pressure
   [47] P_hyd = p * Q_pump
-      = 160 bar × 38.57 L/min
+      = 160 bar g × 38.57 L/min
       = 10.285 kW
         Hydraulic power at the pump outlet
   [48] P_pump = P_hyd / eta_tp
@@ -294,7 +294,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 510.8 kN
         Allowable push load: critical load over the safety factor
   [72] F_stall = p * A_b
-      = 160 bar × 78.54 cm²
+      = 160 bar g × 78.54 cm²
       = 125.66 kN
         Stall thrust: the supply pressure on the bore area (no flow, so no back pressure; the friction of the seals does not relieve the rod of a stalled cylinder)
   [73] F_buck = max(F_push, F_stall)
@@ -332,7 +332,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   u_push = 0.67013    Push load over the extend force
   u_pull = 0.65699    Pull load over the retract force
   Q = 36 L/min    Flow into the cylinder
-  p = 160 bar    Supply pressure
+  p = 160 bar g    Supply pressure
   rho = 870 kg/m³    Fluid density
   d_prs = 20 mm    Pressure line inside diameter
   Q_p = 38.57 L/min    Pump delivery
@@ -378,10 +378,10 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
 
 8. VERIFICATION
   Template: fp.cylinder@1.3.0
-  Content hash: f94c2e869fa10d18
+  Content hash: 8babd365346bafe6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 19:18 UTC
   Application: TempestOS test
 
 
@@ -406,10 +406,10 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   dV | Liquid volume ΔV delivered, absorbed or (emergency stroke) needed for the stroke | 3.92699 | L | link: Cylinder and pump circuit rev A · dV | 0.001 … 1000 L
   process | Gas process (By duty: an emergency stroke is charged slowly to p2 and discharged at n, the other duties use one exponent both ways) | By duty |  | assumption: Sheet default value; no project figure given. | any
   p_basis | Pressures entered as | Gauge |  | assumption: Sheet default value; no project figure given. | any
-  p_0 | Gas pre-charge pressure p0, at the maximum operating temperature | 105 | bar | spec: SPEC-HPU-05 §3 (accumulator) | 0 … 700 bar
-  p_1 | Lowest working pressure p1 | 120 | bar | spec: SPEC-HPU-05 §3 (accumulator) | 0 … 700 bar
-  p_2 | Highest working pressure p2 | 160 | bar | link: Cylinder and pump circuit rev A · p | 0 … 700 bar
-  p_atm | Atmospheric pressure (gauge to absolute) | 1.01325 | bar | assumption: Sheet default value; no project figure given. | 0.5 … 1.1 bar
+  p_0 | Gas pre-charge pressure p0, at the maximum operating temperature | 105 | bar g | spec: SPEC-HPU-05 §3 (accumulator) | 0 … 700 bar g
+  p_1 | Lowest working pressure p1 | 120 | bar g | spec: SPEC-HPU-05 §3 (accumulator) | 0 … 700 bar g
+  p_2 | Highest working pressure p2 | 160 | bar g | link: Cylinder and pump circuit rev A · p | 0 … 700 bar g
+  p_atm | Atmospheric pressure (gauge to absolute) | 1.01325 | bar a | assumption: Sheet default value; no project figure given. | 0.5 … 1.1 bar a
   n | Gas exponent n of the discharge (1 isothermal, slow; 1.4 adiabatic, fast); with the same exponent both ways it is also the charge exponent | 1.4 |  | spec: SPEC-HPU-05 §3 (accumulator) | 1 … 1.4
   f_rg | Real-gas factor on V0 (1 = ideal gas; at least 1, as nitrogen's compressibility factor exceeds 1 at high pressure; from a gas-property source above 200 bar) | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
   T_max | Maximum operating temperature (p0 applies here) | 50 | degC | spec: SPEC-HPU-05 §3 (accumulator) | -40 … 150 degC
@@ -425,10 +425,10 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   A4. The gas is ideal unless a real-gas factor is entered (at least 1: nitrogen's compressibility factor exceeds 1 at high pressure, so the real gas needs more volume, never less); above 200 bar the sheet warns that nitrogen departs from the ideal-gas law and a factor from a gas-property source should be entered. (Real-gas correction as a user factor.)
   A5. The pre-charge p0 is defined at the maximum operating temperature T_max and V0 is sized there; at the lowest operating temperature T_min the same gas delivers only the fraction T_min/T_max (absolute) of ΔV, so V0 is multiplied by T_max/T_min, and the p2/p0 rule is checked with p0 at T_min. The temperature range is the user's; with T_min = T_max the correction is 1. (Manufacturer sizing practice; the gas law at constant mass.)
   A6. The pre-charge rules (p0 ≤ 0.9·p1 and p2/p0 ≤ 4 by default) are records for the accumulator type and make and are checked as PASS/FAIL on ABSOLUTE pressures, whichever basis the pressures are entered on; the right values, and whether the manufacturer states the ratio on gauge or absolute pressures, come from the manufacturer (the same numbers read as gauge pressures give a different ratio). (Rules are records, not built-in limits.)
-  A7. The bar·litre product is PS times V of the vessel itself: PS is the vessel's maximum allowable pressure in bar gauge (the nameplate or relief setting, never below the highest working pressure p2) and V its internal volume (the selected size unless entered). Without PS and a volume the indication is not available. It indicates whether the 250 bar·L exception of PSSR Schedule 1 can apply; it is not a compliance statement, and PED / UK PER, PSSR examination and the vessel's own design code stay with the manufacturer and the competent person. (Addendum B §B5 regulatory gating: no pressure-vessel code check.)
+  A7. The bar·litre product is PS times V of the vessel itself: PS is the vessel's maximum allowable pressure in bar gauge (the nameplate or relief setting, never below the highest working pressure p2) and V its internal volume (the selected size unless entered). Without PS and a volume the indication is not available. It indicates whether the 250 bar·L exception of PSSR Schedule 1 can apply; it is not a compliance statement, and PED / UK PER, PSSR examination and the vessel's own design code stay with the manufacturer and the competent person. (Regulatory gating: no pressure-vessel code check.)
   A8. process (Gas process (By duty: an emergency stroke is charged slowly to p2 and discharged at n, the other duties use one exponent both ways)) is taken as By duty. (Sheet default value; no project figure given.)
   A9. p_basis (Pressures entered as) is taken as Gauge. (Sheet default value; no project figure given.)
-  A10. p_atm (Atmospheric pressure (gauge to absolute)) is taken as 1.01325 bar. (Sheet default value; no project figure given.)
+  A10. p_atm (Atmospheric pressure (gauge to absolute)) is taken as 1.01325 bar a. (Sheet default value; no project figure given.)
   A11. f_rg (Real-gas factor on V0 (1 = ideal gas; at least 1, as nitrogen's compressibility factor exceeds 1 at high pressure; from a gas-property source above 200 bar)) is taken as 1. (Sheet default value; no project figure given.)
   A12. T_c (Charging temperature) is taken as 20 degC. (Sheet default value; no project figure given.)
   A13. r_0 (Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures (state whether the manufacturer's ratio is on gauge or absolute pressures)) is taken as 0.9. (Sheet default value; no project figure given.)
@@ -437,20 +437,20 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
 
 4. WORKING
   [15] pa_0 = p_0 + p_atm
-      = 105 bar + 1.0132 bar
-      = 106.01 bar
+      = 105 bar g + 1.0132 bar a
+      = 106.01 bar a
         Pre-charge pressure, absolute
   [16] pa_1 = p_1 + p_atm
-      = 120 bar + 1.0132 bar
-      = 121.01 bar
+      = 120 bar g + 1.0132 bar a
+      = 121.01 bar a
         Lowest working pressure, absolute
   [17] pa_2 = p_2 + p_atm
-      = 160 bar + 1.0132 bar
-      = 161.01 bar
+      = 160 bar g + 1.0132 bar a
+      = 161.01 bar a
         Highest working pressure, absolute
   [18] p2_g = max(pa_2 - p_atm, 0 bar)
-      = max(161.01 bar − 1.0132 bar, 0 bar)
-      = 160 bar
+      = max(161.01 bar a − 1.0132 bar a, 0 bar)
+      = 160 bar g
         Highest working pressure, gauge
   [20] V0_ideal = dV · (pa_2/pa_0) / [(pa_2/pa_1)^(1/n) − 1], charged isothermally to pa_2, discharged at n    « p·Vⁿ = const, charge exponent 1, discharge exponent n
       = 3.927 L · 1.5188 / [(1.3305)^(1/1.4) − 1]
@@ -469,31 +469,31 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
       = 0.90716
         Charging over maximum absolute temperature
   [24] p0 = pa_0 * T_ratio
-      = 106.01 bar × 0.90716
-      = 96.171 bar
+      = 106.01 bar a × 0.90716
+      = 96.171 bar a
         Absolute pre-charge pressure at the charging temperature
   [25] p0_min = pa_0 / f_T
-      = 106.01 bar / 1.1413
-      = 92.891 bar
+      = 106.01 bar a / 1.1413
+      = 92.891 bar a
         Absolute pre-charge pressure at the minimum operating temperature
   [26] p0_set = p0 - p_atm
-      = 96.171 bar − 1.0132 bar
-      = 95.158 bar
+      = 96.171 bar a − 1.0132 bar a
+      = 95.158 bar g
         Pre-charge to set at the charging temperature (gauge)
   [27] u_r0 = pa_0 / (r_0 * pa_1)
-      = 106.01 bar / (0.9 × 121.01 bar)
+      = 106.01 bar a / (0.9 × 121.01 bar a)
       = 0.97339
         Pre-charge against the p0/p1 rule
   [28] u_rp = (pa_2 / p0_min) / r_p
-      = 161.01 bar / 92.891 bar / 4
+      = 161.01 bar a / 92.891 bar a / 4
       = 0.43334
         Pressure ratio p2/p0 (p0 at the minimum temperature) against the rule
 
 5. RESULTS
   V0 = 30.081 L    Accumulator gas volume required
-  p0 = 96.171 bar    Pre-charge, absolute, at the charging temperature
-  p0_set = 95.158 bar    Pre-charge to set at the charging temperature
-  p0_min = 92.891 bar    Pre-charge, absolute, at the minimum operating temperature
+  p0 = 96.171 bar a    Pre-charge, absolute, at the charging temperature
+  p0_set = 95.158 bar g    Pre-charge to set at the charging temperature
+  p0_min = 92.891 bar a    Pre-charge, absolute, at the minimum operating temperature
   f_T = 1.1413    Gas volume scaling T_max/T_min
   u_r0 = 0.97339    Pre-charge rule utilisation (p0/p1)
   u_rp = 0.43334    Pressure ratio utilisation (p2/p0 at the minimum temperature)
@@ -508,11 +508,11 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   WARNING record: Tabulated values not taken from a reference record: r_0, r_p (Pre-charge rules). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: fp.accumulator@1.3.0
-  Content hash: 16e08f67dfcb21ed
+  Template: fp.accumulator@1.3.1
+  Content hash: 227b66437e399138
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 19:18 UTC
   Application: TempestOS test
 
 
@@ -666,7 +666,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Content hash: fa61fbf098961063
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 19:18 UTC
   Application: TempestOS test
 
 
@@ -844,7 +844,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 0f221113aba05f54
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 19:18 UTC
   Application: TempestOS test
 
 
@@ -1002,7 +1002,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 19:18 UTC
   Application: TempestOS test
 
 
@@ -1104,7 +1104,7 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   Content hash: 3ed2f07610b34189
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 19:18 UTC
   Application: TempestOS test
 
 
@@ -1273,7 +1273,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   Content hash: 28c5e83cec7eb404
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 19:18 UTC
   Application: TempestOS test
 
 
@@ -1539,5 +1539,5 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   Content hash: 619b634f509eb509
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 19:18 UTC
   Application: TempestOS test

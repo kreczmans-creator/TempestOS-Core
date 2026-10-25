@@ -1,4 +1,5 @@
 using Tempest.Calc.Engine;
+using Tempest.Calc.Engine.Units;
 using Tempest.Calc.Engine.Values;
 
 namespace Tempest.Calc.Sheets;
@@ -94,9 +95,16 @@ public sealed class CalcRunContext
     {
         var spec = Template.FindInput(symbol) ?? throw new CalcEvaluationException($"'{symbol}' is not an input of {Template.Id}.");
         var value = CalcInputBinder.Bind(spec, Inputs.Find(symbol));
+
+        // A pressure entered in bar is shown with its basis ("90 bar a"): the label changes the text, never the number.
+        if (value is ScalarValue { DisplayUnit.Symbol: "bar" } pressure && spec.BasisLabel(ChoiceOf) is { } basis)
+            value = pressure.In(UnitCatalog.Parse("bar " + basis));
+
         Session.Define(symbol, value, spec.Description);
         return value;
     }
+
+    private string? ChoiceOf(string symbol) => Inputs.Find(symbol)?.Text ?? Template.FindInput(symbol)?.DefaultChoice;
 
     /// <summary>The scalar SI value of an input, defining it in the session on first use.</summary>
     public double InputSi(string symbol) => (Session.Find(symbol) ?? Input(symbol)) is ScalarValue s ? s.Si : throw new CalcEvaluationException($"'{symbol}' is not a single number.");

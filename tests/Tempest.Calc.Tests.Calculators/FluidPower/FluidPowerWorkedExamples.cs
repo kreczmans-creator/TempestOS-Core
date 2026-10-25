@@ -47,7 +47,7 @@ public static class FluidPowerWorkedExamples
             CalcReferenceStatus.Confirmed),
 
         new(AccumulatorCalculator.Id, "clamp-circuit-bladder-accumulator", "Bladder accumulator for a clamp circuit: 14 L delivered between 100 and 210 bar",
-            new CalcReferenceSource("Analytic (isothermal gas law p·V = const, V0 = ΔV/[(p0/p1) − (p0/p2)]; pressures after the Parker HY10-4004/UK numbers quoted in Addendum B, read as absolute bar; size list invented for this example)", null, "V0_ideal = 14/(0.9 − 0.428571) = 29.69697 L; oil range 30 to 50 °C: f_T = 323.15/303.15 = 1.065974, V0 = 31.65620 L; next listed size 32 L; p0 at 20 °C from 50 °C = 90·293.15/323.15 = 81.64475 bar abs; p0 at 30 °C = 90·303.15/323.15 = 84.42983 bar abs, p2/p0 = 2.48727; PS 230 bar gauge on the 32 L: bar·L = 230·32 = 7360"),
+            new CalcReferenceSource("Analytic (isothermal gas law p·V = const, V0 = ΔV/[(p0/p1) − (p0/p2)]; pressures after the Parker HY10-4004/UK numbers quoted second-hand, read as absolute bar; size list invented for this example)", null, "V0_ideal = 14/(0.9 − 0.428571) = 29.69697 L; oil range 30 to 50 °C: f_T = 323.15/303.15 = 1.065974, V0 = 31.65620 L; next listed size 32 L; p0 at 20 °C from 50 °C = 90·293.15/323.15 = 81.64475 bar abs; p0 at 30 °C = 90·303.15/323.15 = 84.42983 bar abs, p2/p0 = 2.48727; PS 230 bar gauge on the 32 L: bar·L = 230·32 = 7360"),
             new CalcInputSet(
             [
                 CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEnergy, CalcProvenance.Assumed("Slow clamp-and-hold cycle: stored-energy duty.")),
@@ -102,10 +102,10 @@ public static class FluidPowerWorkedExamples
                 CalcInputValue.Choice("red", ORingGlandCalculator.RelationIncompressible, CalcProvenance.Assumed("Constant-volume rubber relation, derived.")),
                 CalcInputValue.Quantity("q_lo_s", 15, "%", CalcProvenance.FromReference("record: oring.criteria, static squeeze band, to be taken from the owner's handbook or the seal maker")),
                 CalcInputValue.Quantity("q_hi_s", 30, "%", CalcProvenance.FromReference("record: oring.criteria, static squeeze band, to be taken from the owner's handbook or the seal maker")),
-                CalcInputValue.Quantity("fill_lo", 60, "%", CalcProvenance.FromReference("record: oring.criteria, gland fill band (Addendum B default 60 to 85 %)")),
-                CalcInputValue.Quantity("fill_hi", 85, "%", CalcProvenance.FromReference("record: oring.criteria, gland fill band (Addendum B default 60 to 85 %)")),
+                CalcInputValue.Quantity("fill_lo", 60, "%", CalcProvenance.FromReference("record: oring.criteria, gland fill band (default 60 to 85 %)")),
+                CalcInputValue.Quantity("fill_hi", 85, "%", CalcProvenance.FromReference("record: oring.criteria, gland fill band (default 60 to 85 %)")),
                 CalcInputValue.Quantity("x_lo", 0, "%", CalcProvenance.FromReference("record: oring.criteria, installed stretch lower limit")),
-                CalcInputValue.Quantity("x_hi", 6, "%", CalcProvenance.FromReference("record: oring.criteria, installed stretch limit (Addendum B quotes up to 6 % on a piston groove)")),
+                CalcInputValue.Quantity("x_hi", 6, "%", CalcProvenance.FromReference("record: oring.criteria, installed stretch limit (up to 6 % on a piston groove, as quoted second-hand)")),
                 CalcInputValue.Of("H_A", 70, CalcProvenance.Specification("Seal specification: compound 70 Shore A")),
                 CalcInputValue.Quantity("p_op", 160, "bar", CalcProvenance.Specification("Hydraulic specification HS-63: working pressure 160 bar")),
                 CalcInputValue.Quantity("gap_allow", 0.20, "mm", CalcProvenance.FromReference("record: oring.extrusion, illustrative permitted gap invented for this example, to be replaced by the seal maker's value for 70 Shore A at 160 bar")),

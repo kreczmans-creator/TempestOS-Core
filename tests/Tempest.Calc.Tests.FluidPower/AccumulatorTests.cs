@@ -2,6 +2,7 @@ using CsCheck;
 using Tempest.Calc.Engine.Values;
 using Tempest.Calc.FluidPower;
 using Tempest.Calc.Sheets;
+using Tempest.Calc.Verification;
 
 namespace Tempest.Calc.Tests.FluidPower;
 
@@ -45,7 +46,7 @@ public sealed class AccumulatorTests
         var all = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), CalcInputValue.Quantity("p_0", 90, "bar", link), CalcInputValue.Quantity("p_1", 100, "bar", link), linked);
         Assert.Equal(3, all.Warnings.Count(w => w.RuleId == "link-basis"));
         Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "link-basis");
-        Assert.Equal("1.3.0", Accumulator.Template.Version);
+        Assert.Equal("1.3.1", Accumulator.Template.Version);
     }
 
     [Fact]
@@ -429,5 +430,59 @@ public sealed class AccumulatorTests
         Assert.NotNull(Run().FindOutput("p0"));
         Assert.DoesNotContain(r.Checks, c => c.Name.Contains("PD 5500", StringComparison.Ordinal) || c.Name.Contains("EN 13445", StringComparison.Ordinal) || c.Name.Contains("ASME", StringComparison.Ordinal));
         Assert.Contains("Not a pressure-vessel code check", Accumulator.Template.Scope, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Black_B_B_05_An_Absolute_Pressure_Below_The_Atmosphere_Is_Blocked_As_A_Gauge_Value_Typed_As_Absolute()
+    {
+        // 0.5 bar is a vacuum, not a pre-charge: on the Absolute basis it can only be a gauge number typed in the wrong mode.
+        var absolute = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 0.5), Bars("p_1", 100), Bars("p_2", 210));
+        Assert.True(absolute.IsBlocked);
+        var block = Assert.Single(absolute.Blocks, b => b.RuleId == "basis");
+        Assert.StartsWith("p_0:", block.Message, StringComparison.Ordinal);
+        Assert.Contains("bar a is below the atmospheric pressure", block.Message, StringComparison.Ordinal);
+        Assert.Contains("p_basis to Gauge", block.Message, StringComparison.Ordinal);
+        Assert.Empty(absolute.Outputs);
+        Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "basis" && r.Severity == CalcNoticeSeverity.Block);
+
+        // The same number on the Gauge basis is a real (low) pre-charge, and an absolute pressure at or above the atmosphere is untouched.
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), Bars("p_0", 0.5), Bars("p_1", 100), Bars("p_2", 210)).Blocks, b => b.RuleId == "basis");
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 1.01325), Bars("p_1", 2), Bars("p_2", 5)).Blocks, b => b.RuleId == "basis");
+        Assert.False(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 4), Bars("p_1", 5), Bars("p_2", 10)).IsBlocked);
+
+        // The atmosphere entered is the limit, not a fixed 1.01325 bar.
+        Assert.Contains(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_atm", 1.1), Bars("p_0", 1.05), Bars("p_1", 2), Bars("p_2", 5)).Blocks, b => b.RuleId == "basis");
+    }
+
+    [Fact]
+    public void Yellow_Y_B_06_Every_Pressure_On_The_Sheet_Prints_Its_Basis()
+    {
+        foreach (var (basis, label) in new[] { (AccumulatorCalculator.Absolute, "bar a"), (AccumulatorCalculator.Gauge, "bar g") })
+        {
+            var inputs = With(CalcInputValue.Choice("p_basis", basis), Bars("PS", 230));
+            var result = CalcRunner.Run(Accumulator, inputs);
+            var sheet = CalcSheetBuilder.Build(Accumulator.Template, inputs, result, GoldenFiles.FixedHeader(Accumulator.Template.Id, "F2"), GoldenFiles.FixedFooter(Accumulator.Template, 0, 0));
+
+            // Inputs: the pressures that follow the basis chosen, the atmosphere absolute and the vessel PS gauge.
+            string UnitOf(string symbol) => sheet.Inputs.Single(i => i.Symbol == symbol).Unit;
+            Assert.All(new[] { "p_0", "p_1", "p_2" }, symbol => Assert.Equal(label, UnitOf(symbol)));
+            Assert.Equal("bar a", UnitOf("p_atm"));
+            Assert.Equal("bar g", UnitOf("PS"));
+            Assert.EndsWith("700 bar " + label[^1], sheet.Inputs.Single(i => i.Symbol == "p_0").ValidRange, StringComparison.Ordinal);
+
+            // No pressure input prints a bare "bar".
+            Assert.DoesNotContain(sheet.Inputs, i => i.Unit == "bar");
+
+            // Working and Results: absolute and gauge pressures say which they are, and no step prints a bare " bar" for a pressure.
+            string Shown(string symbol) => sheet.Working.Single(w => w.Symbol == symbol).ResultText;
+            Assert.EndsWith(" bar a", Shown("pa_0"), StringComparison.Ordinal);
+            Assert.EndsWith(" bar a", Shown("pa_2"), StringComparison.Ordinal);
+            Assert.EndsWith(" bar g", Shown("p2_g"), StringComparison.Ordinal);
+            Assert.EndsWith(" bar a", Shown("p0"), StringComparison.Ordinal);
+            Assert.EndsWith(" bar a", Shown("p0_min"), StringComparison.Ordinal);
+            Assert.EndsWith(" " + label, Shown("p0_set"), StringComparison.Ordinal);
+            Assert.All(sheet.Outputs.Where(o => o.Symbol is "p0" or "p0_min" or "p0_set"), o => Assert.Matches(@" bar [ag]$", o.ValueText));
+            Assert.DoesNotContain(sheet.Working, w => w.ResultText.EndsWith(" bar", StringComparison.Ordinal));
+        }
     }
 }

@@ -15,8 +15,8 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Extend connection | Standard |  | assumption: Standard connection: the ram needs its full bore force for the press stroke. | any
-  p | Supply pressure at the cylinder and the pump (gauge) | 180 | bar | spec: Hydraulic specification HS-31: relief valve set 180 bar at the ram | 1 … 700 bar
-  p_back | Back pressure on the discharge side (standard connection) | 0 | bar | assumption: Return line direct to tank; the return filter drop is neglected for this example. | 0 … 700 bar
+  p | Supply pressure at the cylinder and the pump (gauge) | 180 | bar g | spec: Hydraulic specification HS-31: relief valve set 180 bar at the ram | 1 … 700 bar g
+  p_back | Back pressure on the discharge side (standard connection, gauge) | 0 | bar g | assumption: Return line direct to tank; the return filter drop is neglected for this example. | 0 … 700 bar g
   Q | Flow into the cylinder (blank when a required extend speed gives it) | 60 | L/min | spec: Hydraulic specification HS-31: ram flow 60 L/min | 0.1 … 2000 L/min
   rho | Fluid density | 870 | kg/m^3 | reference: fluid data sheet: mineral oil, density at 40 °C, to be taken from the oil supplier's data | 700 … 1300 kg/m^3
   F_push | Load to push on the extend stroke (compresses the rod) | 150 | kN | spec: Hydraulic specification HS-31: pressing force 150 kN | 0 … 15000 kN
@@ -61,7 +61,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   A5. The orifice relation is the sharp-edged turbulent one, Q = C_d·A·√(2Δp/ρ), with your discharge coefficient; it ignores viscosity and cavitation and is a screening of a flow-control orifice, not a valve selection. (Orifice equation, closed form.)
   A6. The rod is treated as a solid round column of its own diameter with the effective-length factor of the mounting; the tube, the piston and the rod-end stiffness are not modelled. The rod is judged at the larger of the push load you enter and the stall thrust p·A_b (a stalled, obstructed or relief-limited cylinder loads the rod with the full pressure force on the bore: no flow, so no back pressure, and the seal friction does not relieve it); no pressure-limiting device is credited, and the regenerative extend is judged at the same stall thrust because the standard connection can always be selected. The mounting factor K_m defaults to 1 (pinned at both ends): a fixed-free mounting is K_m = 2, and the factor and the safety factor S_f are your records. screening only; ISO/TS 13725 method not implemented. (Euler and Johnson column relations, closed form.)
   A7. mode (Extend connection) is taken as Standard. (Standard connection: the ram needs its full bore force for the press stroke.)
-  A8. p_back (Back pressure on the discharge side (standard connection)) is taken as 0 bar. (Return line direct to tank; the return filter drop is neglected for this example.)
+  A8. p_back (Back pressure on the discharge side (standard connection, gauge)) is taken as 0 bar g. (Return line direct to tank; the return filter drop is neglected for this example.)
   A9. eta_m (Mechanical efficiency of the cylinder (seal and guide friction)) is taken as 0.95. (Typical seal and guide friction for a new cylinder; to be confirmed against the cylinder maker's figure.)
   A10. eta_vc (Volumetric efficiency of the cylinder (leakage past the piston)) is taken as 0.98. (Allowance for leakage past the piston; to be confirmed against the cylinder maker's figure.)
   A11. t_dwell (Dwell time added to each cycle) is taken as 0 s. (Cycle time of the strokes only; dwell added by the machine controller.)
@@ -88,7 +88,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 2.0764
         Area ratio A_b/A_a
   [33] F_ext = (p * A_b - p_back * A_a) * eta_m
-      = (180 bar × 122.72 cm² − 0 bar × 59.101 cm²) × 0.95
+      = (180 bar g × 122.72 cm² − 0 bar g × 59.101 cm²) × 0.95
       = 209.85 kN
         Extend force
   [34] v_ext = Q * eta_vc / A_b
@@ -100,7 +100,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 9.8175 L
         Liquid taken from the supply for the extend stroke
   [36] F_ret = (p * A_a - p_back * A_b) * eta_m
-      = (180 bar × 59.101 cm² − 0 bar × 122.72 cm²) × 0.95
+      = (180 bar g × 59.101 cm² − 0 bar g × 122.72 cm²) × 0.95
       = 101.06 kN
         Retract force
   [37] v_ret = Q * eta_vc / A_a
@@ -144,7 +144,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 61.988 L/min
         Flow the pump delivers at the supply pressure
   [47] P_hyd = p * Q_pump
-      = 180 bar × 61.988 L/min
+      = 180 bar g × 61.988 L/min
       = 18.596 kW
         Hydraulic power at the pump outlet
   [48] P_pump = P_hyd / eta_tp
@@ -256,7 +256,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 811.11 kN
         Allowable push load: critical load over the safety factor
   [75] F_stall = p * A_b
-      = 180 bar × 122.72 cm²
+      = 180 bar g × 122.72 cm²
       = 220.89 kN
         Stall thrust: the supply pressure on the bore area (no flow, so no back pressure; the friction of the seals does not relieve the rod of a stalled cylinder)
   [76] F_buck = max(F_push, F_stall)
@@ -294,7 +294,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   u_push = 0.7148    Push load over the extend force
   u_pull = 0.59369    Pull load over the retract force
   Q = 60 L/min    Flow into the cylinder
-  p = 180 bar    Supply pressure
+  p = 180 bar g    Supply pressure
   rho = 870 kg/m³    Fluid density
   d_prs = 25 mm    Pressure line inside diameter
   Q_p = 61.988 L/min    Pump delivery

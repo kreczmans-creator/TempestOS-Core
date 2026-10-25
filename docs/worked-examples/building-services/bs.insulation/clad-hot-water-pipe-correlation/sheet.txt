@@ -22,7 +22,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   lambda | Thermal conductivity of the insulation | 0.04 | W/(m*K) | assumption: Mineral wool; take the maker's value at the mean temperature (W3 material) | 0.015 … 0.2 W/(m*K)
   h_mode | Where the outer surface coefficient comes from | convection + radiation (correlation) |  | assumption: Surface coefficient computed from the correlation. | any
   h_se | Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there) | 10 | W/(m^2*K) | assumption: Not used: h_se is computed. | 3 … 40 W/(m^2*K)
-  eps | Emissivity of the outer surface (correlation) | 0.1 |  | assumption: Bright aluminium cladding; replace with the cladding maker's emissivity. | 0.05 … 1
+  eps | Emissivity of the outer surface (for the correlation; with h_se as given it only judges that value against condensation on a cold surface) | 0.1 |  | assumption: Bright aluminium cladding; replace with the cladding maker's emissivity. | 0.05 … 1
   v_wind | Air speed over the surface (correlation; 0 = still air) | 0 | m/s | assumption: Still air, indoors. | 0 … 20 m/s
   L_surf | Height or flow length of the flat surface (correlation, flat) | 1 | m | assumption: Not used: a pipe. | 0.1 … 10 m
   q_max_m | Heat-loss limit per metre of pipe (generic default of 25 W/m, replace with your project limit; blank = not a criterion) | 60 | W/m | spec: SPEC-M-12 §5: heat loss not to exceed 60 W/m | 1 … 1000 W/m
@@ -36,12 +36,12 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   A3. The dew point is entered (for example from B2) or is the Magnus relation at θ_a and RH, the same closed form B7 uses. Below 0 °C the relation is over ice, so RH is then taken relative to ice, whereas meteorological RH is usually relative to water: enter the dew point for sub-zero air. A margin above it is the user's. (Derived; B7 shares the function.)
   A4. Pipes are treated as horizontal for free convection and flat surfaces as vertical; air properties are fits (conductivity within about 3 %, viscosity within about 4 % over 250–400 K), Pr = 0.71. (Stated.)
   A5. The required thickness is the least thickness beyond which the criterion holds for every thicker layer up to 1 m, which is what matters when thin insulation on a small pipe raises the heat flow (critical diameter). (Stated.)
-  A6. No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data. (Addendum B §B5.)
+  A6. No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data. (No standard's table is reproduced.)
   A7. geometry (Surface) is taken as pipe (cylinder). (A round pipe.)
   A8. lambda (Thermal conductivity of the insulation) is taken as 0.04 W/(m*K). (Mineral wool; take the maker's value at the mean temperature (W3 material))
   A9. h_mode (Where the outer surface coefficient comes from) is taken as convection + radiation (correlation). (Surface coefficient computed from the correlation.)
   A10. h_se (Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there)) is taken as 10 W/(m^2*K). (Not used: h_se is computed.)
-  A11. eps (Emissivity of the outer surface (correlation)) is taken as 0.1. (Bright aluminium cladding; replace with the cladding maker's emissivity.)
+  A11. eps (Emissivity of the outer surface (for the correlation; with h_se as given it only judges that value against condensation on a cold surface)) is taken as 0.1. (Bright aluminium cladding; replace with the cladding maker's emissivity.)
   A12. v_wind (Air speed over the surface (correlation; 0 = still air)) is taken as 0 m/s. (Still air, indoors.)
   A13. L_surf (Height or flow length of the flat surface (correlation, flat)) is taken as 1 m. (Not used: a pipe.)
   A14. RH_a (Relative humidity of the ambient air (anti-condensation)) is taken as 60 %. (Not used: a hot pipe has no condensation criterion.)

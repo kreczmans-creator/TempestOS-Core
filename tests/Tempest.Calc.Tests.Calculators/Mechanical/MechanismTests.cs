@@ -600,6 +600,38 @@ public sealed class MechanismTests
     }
 
     [Fact]
+    public void Yellow_Y_B_03_A_Toggle_In_The_Sweep_Withholds_The_Transmission_Ratio_Instead_Of_Printing_A_Sentinel()
+    {
+        var geometry = new[] { Q("L1", 60, "mm"), Q("L2", 40, "mm"), Q("L3", 50, "mm"), Q("L4", 35, "mm") };
+        var inputs = geometry.Append(Q("mu_req", 40, "deg")).Aggregate(Defaults(), (set, v) => set.With(v));
+        var toggle = CalcRunner.Run(Mechanism, inputs);
+        Assert.False(toggle.IsBlocked, string.Join("; ", toggle.Blocks.Select(b => b.Message)));
+
+        // The ratio is text, not a number: there is no u_mu step and no 1e9.
+        Assert.StartsWith("— (μ_min = 0°", Text(toggle, "u_mu"), StringComparison.Ordinal);
+        Assert.DoesNotContain(toggle.Steps, step => step.Symbol == "u_mu");
+
+        // The check fails as a condition, with no utilisation to print.
+        var check = Assert.Single(toggle.Checks, ch => ch.Name.StartsWith("Transmission angle", StringComparison.Ordinal));
+        Assert.False(check.Passed);
+        Assert.True(double.IsPositiveInfinity(check.Utilisation));
+        Assert.Contains("toggle in the sweep", check.DemandText, StringComparison.Ordinal);
+        Assert.Contains("40", check.CapacityText, StringComparison.Ordinal);
+        Assert.False(toggle.Passed);
+
+        // The rendered sheet carries neither the sentinel nor "u_mu = 1…".
+        var sheet = CalcSheetTextRenderer.Render(CalcSheetBuilder.Build(Mechanism.Template, inputs, toggle, GoldenFiles.FixedHeader(Mechanism.Template.Id, "M9"), GoldenFiles.FixedFooter(Mechanism.Template, 0, 0)));
+        Assert.DoesNotContain("1000000000", sheet, StringComparison.Ordinal);
+        Assert.DoesNotContain("1e+09", sheet, StringComparison.Ordinal);
+        Assert.Contains("FAIL  Transmission angle", sheet, StringComparison.Ordinal);
+        Assert.Contains("utilisation —", sheet, StringComparison.Ordinal);
+
+        // A finite minimum angle still gives the ratio, and a zero requirement is met at any angle.
+        Assert.Equal(50 / 45.815614846695546, Run(Q("mu_req", 50, "deg")).OutputSi("u_mu"), 6);
+        Assert.Equal(0, Run([.. geometry, Q("mu_req", 0, "deg")]).OutputSi("u_mu"));
+    }
+
+    [Fact]
     public void A_Zero_Transmission_Requirement_Passes_Even_At_A_Toggle_And_A_Positive_One_Fails()
     {
         var geometry = new[] { Q("L1", 60, "mm"), Q("L2", 40, "mm"), Q("L3", 50, "mm"), Q("L4", 35, "mm") };

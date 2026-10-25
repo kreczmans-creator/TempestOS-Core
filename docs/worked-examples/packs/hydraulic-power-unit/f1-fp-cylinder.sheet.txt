@@ -15,8 +15,8 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Extend connection | Standard |  | spec: SPEC-HPU-05 §2 (press duty) | any
-  p | Supply pressure at the cylinder and the pump (gauge) | 160 | bar | spec: SPEC-HPU-05 §2 (press duty) | 1 … 700 bar
-  p_back | Back pressure on the discharge side (standard connection) | 0 | bar | assumption: Sheet default value; no project figure given. | 0 … 700 bar
+  p | Supply pressure at the cylinder and the pump (gauge) | 160 | bar g | spec: SPEC-HPU-05 §2 (press duty) | 1 … 700 bar g
+  p_back | Back pressure on the discharge side (standard connection, gauge) | 0 | bar g | assumption: Sheet default value; no project figure given. | 0 … 700 bar g
   Q | Flow into the cylinder (blank when a required extend speed gives it) | 36 | L/min | spec: SPEC-HPU-05 §2 (press duty) | 0.1 … 2000 L/min
   rho | Fluid density | 870 | kg/m^3 | spec: SPEC-HPU-05 §2 (press duty) | 700 … 1300 kg/m^3
   F_push | Load to push on the extend stroke (compresses the rod) | 80 | kN | spec: SPEC-HPU-05 §2 (press duty) | 0 … 15000 kN
@@ -52,7 +52,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   A4. The line flows use the pump delivery when it is larger than the circuit flow: the suction line the geometric delivery V_g·n, the pressure line and the return line Q_line = max(Q, Q_p), which carries no volumetric efficiency while the speeds use Q·η_vc (the flows are the conservative side of the speeds). The line to the cylinder cap port is judged at the larger flow of the two strokes: on the retract stroke it carries the cap-side discharge Q_line·A_b/A_a (the same flow as the return line), and in the regenerative extend Q_line·A_b/A_r if that is larger. The velocity limits are your records; the sheet's defaults are placeholders, not values from a standard. (Continuity.)
   A5. The orifice relation is the sharp-edged turbulent one, Q = C_d·A·√(2Δp/ρ), with your discharge coefficient; it ignores viscosity and cavitation and is a screening of a flow-control orifice, not a valve selection. (Orifice equation, closed form.)
   A6. The rod is treated as a solid round column of its own diameter with the effective-length factor of the mounting; the tube, the piston and the rod-end stiffness are not modelled. The rod is judged at the larger of the push load you enter and the stall thrust p·A_b (a stalled, obstructed or relief-limited cylinder loads the rod with the full pressure force on the bore: no flow, so no back pressure, and the seal friction does not relieve it); no pressure-limiting device is credited, and the regenerative extend is judged at the same stall thrust because the standard connection can always be selected. The mounting factor K_m defaults to 1 (pinned at both ends): a fixed-free mounting is K_m = 2, and the factor and the safety factor S_f are your records. screening only; ISO/TS 13725 method not implemented. (Euler and Johnson column relations, closed form.)
-  A7. p_back (Back pressure on the discharge side (standard connection)) is taken as 0 bar. (Sheet default value; no project figure given.)
+  A7. p_back (Back pressure on the discharge side (standard connection, gauge)) is taken as 0 bar g. (Sheet default value; no project figure given.)
   A8. eta_m (Mechanical efficiency of the cylinder (seal and guide friction)) is taken as 0.95. (Sheet default value; no project figure given.)
   A9. eta_vc (Volumetric efficiency of the cylinder (leakage past the piston)) is taken as 0.98. (Sheet default value; no project figure given.)
   A10. t_dwell (Dwell time added to each cycle) is taken as 0 s. (Sheet default value; no project figure given.)
@@ -90,7 +90,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 1.9608
         Area ratio A_b/A_a
   [33] F_ext = (p * A_b - p_back * A_a) * eta_m
-      = (160 bar × 78.54 cm² − 0 bar × 40.055 cm²) × 0.95
+      = (160 bar g × 78.54 cm² − 0 bar g × 40.055 cm²) × 0.95
       = 119.38 kN
         Extend force
   [34] v_ext = Q * eta_vc / A_b
@@ -102,7 +102,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 3.927 L
         Liquid taken from the supply for the extend stroke
   [36] F_ret = (p * A_a - p_back * A_b) * eta_m
-      = (160 bar × 40.055 cm² − 0 bar × 78.54 cm²) × 0.95
+      = (160 bar g × 40.055 cm² − 0 bar g × 78.54 cm²) × 0.95
       = 60.884 kN
         Retract force
   [37] v_ret = Q * eta_vc / A_a
@@ -146,7 +146,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 38.57 L/min
         Flow the pump delivers at the supply pressure
   [47] P_hyd = p * Q_pump
-      = 160 bar × 38.57 L/min
+      = 160 bar g × 38.57 L/min
       = 10.285 kW
         Hydraulic power at the pump outlet
   [48] P_pump = P_hyd / eta_tp
@@ -246,7 +246,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 510.8 kN
         Allowable push load: critical load over the safety factor
   [72] F_stall = p * A_b
-      = 160 bar × 78.54 cm²
+      = 160 bar g × 78.54 cm²
       = 125.66 kN
         Stall thrust: the supply pressure on the bore area (no flow, so no back pressure; the friction of the seals does not relieve the rod of a stalled cylinder)
   [73] F_buck = max(F_push, F_stall)
@@ -284,7 +284,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   u_push = 0.67013    Push load over the extend force
   u_pull = 0.65699    Pull load over the retract force
   Q = 36 L/min    Flow into the cylinder
-  p = 160 bar    Supply pressure
+  p = 160 bar g    Supply pressure
   rho = 870 kg/m³    Fluid density
   d_prs = 20 mm    Pressure line inside diameter
   Q_p = 38.57 L/min    Pump delivery
@@ -330,8 +330,8 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
 
 8. VERIFICATION
   Template: fp.cylinder@1.3.0
-  Content hash: f94c2e869fa10d18
+  Content hash: 8babd365346bafe6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-25 15:36 UTC
+  Test run: 2026-10-25 19:18 UTC
   Application: TempestOS test
