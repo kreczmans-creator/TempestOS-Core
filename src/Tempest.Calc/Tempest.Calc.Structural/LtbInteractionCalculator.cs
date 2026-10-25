@@ -344,7 +344,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             if (psiY < 0)
             {
                 // A frame program prints member end actions, which have OPPOSITE signs for single curvature. Typed that way the diagram reads as a reversal: C₁ rises to its cap and the check can turn from FAIL to PASS without a sign of it.
-                c.Warn("double-curvature", $"M_y_A, M_y_B: opposite signs, so the diagram is taken as double curvature (M_A = {F(ma / 1e6)} kN·m ——— M_B = {F(mb / 1e6)} kN·m, ψ = {F(psiY)}): C₁ = {F(LtbInteractionMath.C1FromPsi(psiY))}, C_my = {F(LtbInteractionMath.CmFromPsi(psiY))}. These are bending-moment-diagram ordinates, not stiffness-analysis end actions. If the member is bent in single curvature, as most beam-columns are, give both moments the same sign (single curvature has opposite signs in a frame program's end actions); only a true reversal justifies this C₁.");
+                c.Warn("double-curvature", $"M_y_A, M_y_B: opposite signs, so the diagram is taken as double curvature (M_A = {F(ma / 1e6)} kN·m ——— M_B = {F(mb / 1e6)} kN·m, ψ = {F(psiY)}): {UsedFactors(c, psiY, annexA)}. These are bending-moment-diagram ordinates, not stiffness-analysis end actions. If the member is bent in single curvature, as most beam-columns are, give both moments the same sign (single curvature has opposite signs in a frame program's end actions); only a true reversal justifies this C₁.");
             }
         }
         else
@@ -680,6 +680,17 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         "d" => c.InputSi("alpha_d"),
         _ => throw new ArgumentOutOfRangeException(nameof(curve), curve, "Buckling curve must be a0, a, b, c or d."),
     };
+
+    /// <summary>The C₁ and C_my the run uses, as the double-curvature warning prints them: an entered value overrides the one derived from ψ (B-B-07), and Annex A takes its own C_my from ψ.</summary>
+    private static string UsedFactors(CalcRunContext c, double psiY, bool annexA)
+    {
+        var c1 = c.Has("C_1") ? $"C₁ = {F(c.InputSi("C_1"))} (entered, not the ψ value {F(LtbInteractionMath.C1FromPsi(psiY))})" : $"C₁ = {F(LtbInteractionMath.C1FromPsi(psiY))}";
+
+        if (annexA)
+            return $"{c1}, and Annex A takes its C_my from ψ";
+
+        return c.Has("C_m_y") ? $"{c1}, C_my = {F(c.InputSi("C_m_y"))} (entered, not the ψ value {F(LtbInteractionMath.CmFromPsi(psiY))})" : $"{c1}, C_my = {F(LtbInteractionMath.CmFromPsi(psiY))}";
+    }
 
     private static string F(double v) => double.IsFinite(v) ? CalcValue.FormatNumber(v, 5) : "—";
 }

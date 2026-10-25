@@ -136,6 +136,32 @@ public sealed class LtbInteractionTests
     }
 
     [Fact]
+    public void Black_B_B_07_The_Double_Curvature_Warning_Prints_The_C1_And_C_my_The_Run_Uses()
+    {
+        var ends = new[] { Choice("moment_mode", LtbInteractionCalculator.ModeEnds), Q("M_y_A", 340, "kN*m"), Q("M_y_B", -170, "kN*m") };
+
+        // An entered C₁ (and C_my) overrides the ψ-derived value: the warning must name the one the run uses, not the ψ value.
+        var entered = Run([.. ends, N("C_1", 1.5), N("C_m_y", 0.9)]);
+        var warning = Assert.Single(entered.Warnings, w => w.RuleId == "double-curvature");
+        Assert.Equal(1.5, entered.OutputSi("C_1"), 12);
+        Assert.Contains("C₁ = 1.5 (entered, not the ψ value 2.7)", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("C_my = 0.9 (entered, not the ψ value 0.4)", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("C₁ = 2.7", warning.Message, StringComparison.Ordinal);
+
+        // C₁ entered alone: C_my still comes from ψ.
+        var c1Only = Assert.Single(Run([.. ends, N("C_1", 1.5)]).Warnings, w => w.RuleId == "double-curvature");
+        Assert.Contains("C₁ = 1.5 (entered", c1Only.Message, StringComparison.Ordinal);
+        Assert.Contains("C_my = 0.4.", c1Only.Message, StringComparison.Ordinal);
+
+        // Nothing entered: both come from ψ, as before. Annex A takes its own C_my.
+        var derived = Assert.Single(Run(ends).Warnings, w => w.RuleId == "double-curvature");
+        Assert.Contains("C₁ = 2.7, C_my = 0.4.", derived.Message, StringComparison.Ordinal);
+        var annexA = Assert.Single(Run([.. ends, N("C_1", 1.5), Choice("annex", LtbInteractionCalculator.AnnexAMethod)]).Warnings, w => w.RuleId == "double-curvature");
+        Assert.Contains("C₁ = 1.5 (entered", annexA.Message, StringComparison.Ordinal);
+        Assert.Contains("Annex A takes its C_my from ψ", annexA.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Edition_2022_Changes_Only_The_Label()
     {
         var a = Run();
