@@ -42,7 +42,7 @@ public sealed partial class CalcSheetView : UserControl
     public const string StaleMarker = "Recalculating…";
     public const string PickGuidance = "Choose a worksheet from the catalogue on the left. Its inputs, with their units, sources and limits, appear here.";
 
-    private static readonly string[] ProvenanceKinds = ["manual", "drawing", "spec", "assumption", "evidence", "reference", "link", "cad import"];
+    private static readonly string[] ProvenanceKinds = ["manual", "drawing", "spec", "assumption", "evidence", "reference", "link"];
 
     public const string LinkCaption = "Link input";
     public const string LinkPanelName = "Link an input to another calculation";
@@ -634,6 +634,8 @@ public sealed partial class CalcSheetView : UserControl
             // A linked input keeps its pin (upstream, output and revision) while its reference text is unchanged.
             if (provenance.Kind is CalcProvenanceKind.Link or CalcProvenanceKind.CadImport && _shownLinks.TryGetValue(symbol, out var shown) && shown.Kind == provenance.Kind && string.Equals(shown.Reference, provenance.Reference, StringComparison.Ordinal))
                 provenance = shown;
+            else if (provenance.Kind == CalcProvenanceKind.CadImport)
+                provenance = CalcProvenance.Manual; // typed by hand, or the text was changed: not an import
 
             switch (f.Spec.Kind)
             {
@@ -846,7 +848,8 @@ public sealed partial class CalcSheetView : UserControl
             }
         }
 
-        var provenance = new ComboBox { MinHeight = DesignTokens.MinControlSize, ItemsSource = ProvenanceKinds, HorizontalAlignment = HorizontalAlignment.Stretch };
+        // "cad import" is offered only for a value that was imported: it cannot be picked by hand. The service also checks it against the import record.
+        var provenance = new ComboBox { MinHeight = DesignTokens.MinControlSize, ItemsSource = seed?.Provenance is { Kind: CalcProvenanceKind.CadImport } ? ProvenanceKinds.Append("cad import").ToArray() : ProvenanceKinds, HorizontalAlignment = HorizontalAlignment.Stretch };
         provenance.SelectedItem = ProvenanceLabel(seed?.Provenance?.Kind ?? CalcProvenanceKind.Manual);
         provenance.SelectionChanged += (_, _) => RaiseInputsChanged();
         AutomationProperties.SetName(provenance, $"{spec.Symbol} source");

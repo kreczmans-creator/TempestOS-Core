@@ -157,8 +157,8 @@ public sealed class WorksheetCadImportTests
             Assert.False(model.CanApply);
             Assert.Contains(model.Lines, l => l.Status == CadRowStatus.Refused && l.Text.Contains("gap_min", StringComparison.Ordinal));
             Assert.Null((await service.Store.FindInstanceAsync(stack.Id))!.CadImports);
-            var refused = await model.ApplyAsync();
-            Assert.False(refused!.Action.Succeeded);
+            Assert.Null(await model.ApplyAsync()); // nothing previewed can be applied, so the service is not even asked
+            Assert.Contains("nothing to apply", model.Status, StringComparison.Ordinal);
 
             // A UTF-16 file is not read at all; a file with no CAD extension offers no format.
             await model.LoadFileAsync("utf16.exp", new MemoryStream([0xFF, 0xFE, 0x5B, 0x00]));
