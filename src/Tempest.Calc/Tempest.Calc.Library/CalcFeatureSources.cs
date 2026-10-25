@@ -102,8 +102,8 @@ public sealed class WindowsPolicyFeatureSource : ICalcFeatureSource
     }
 }
 
-/// <summary>The owner and mode of a file or directory, and whether it is a symbolic link.</summary>
-public readonly record struct UnixFileFacts(uint OwnerUid, UnixFileMode Mode, bool IsSymbolicLink);
+/// <summary>The owner and mode of a file or directory, whether it is a symbolic link, and whether it is a regular file (not a FIFO, socket or device).</summary>
+public readonly record struct UnixFileFacts(uint OwnerUid, UnixFileMode Mode, bool IsSymbolicLink, bool IsRegularFile = true);
 
 /// <summary>Looks a path up for the trust check; injectable so a test can say who owns it.</summary>
 public interface IUnixFileProbe
@@ -150,7 +150,8 @@ public sealed class UnixFeatureFileSource : ICalcFeatureSource
                 return CalcFeatureFlags.None;
             }
 
-            var reason = Untrusted(file, "file") ?? Untrusted(folder, "directory");
+            // A FIFO or device at the path would block or stream forever when read (S8 verification I-2): only a regular file is read.
+            var reason = (file.IsRegularFile ? null : "file is not a regular file") ?? Untrusted(file, "file") ?? Untrusted(folder, "directory");
 
             if (reason is not null)
             {
@@ -227,8 +228,8 @@ internal sealed class StatFileProbe : IUnixFileProbe
 
             FileSystemInfo entry = isDirectory ? new DirectoryInfo(path) : info;
             var mode = File.GetUnixFileMode(path);
-            var owner = OwnerOf(path);
-            return owner is null ? null : new UnixFileFacts(owner.Value, mode, entry.LinkTarget is not null);
+            var stat = OwnerAndType(path);
+            return stat is null ? null : new UnixFileFacts(stat.Value.Uid, mode, entry.LinkTarget is not null, isDirectory || stat.Value.IsRegular);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
         {
@@ -236,10 +237,13 @@ internal sealed class StatFileProbe : IUnixFileProbe
         }
     }
 
-    private static uint? OwnerOf(string path)
+    private const uint FileTypeMask = 0xF000; // S_IFMT
+    private const uint RegularFile = 0x8000; // S_IFREG
+
+    private static (uint Uid, bool IsRegular)? OwnerAndType(string path)
     {
-        // GNU stat first, then the BSD/macOS form.
-        foreach (var arguments in new[] { new[] { "-c", "%u", path }, new[] { "-f", "%u", path } })
+        // GNU stat first (raw mode in hex), then the BSD/macOS form (mode in octal).
+        foreach (var (arguments, modeBase) in new[] { (new[] { "-c", "%u %f", path }, 16), (new[] { "-f", "%u %p", path }, 8) })
         {
             var start = new ProcessStartInfo("/usr/bin/stat") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
 
@@ -259,8 +263,20 @@ internal sealed class StatFileProbe : IUnixFileProbe
                 continue;
             }
 
-            if (process.ExitCode == 0 && uint.TryParse(output, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var uid))
-                return uid;
+            var parts = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            if (process.ExitCode != 0 || parts.Length != 2 || !uint.TryParse(parts[0], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var uid))
+                continue;
+
+            try
+            {
+                var rawMode = Convert.ToUInt32(parts[1], modeBase);
+                return (uid, (rawMode & FileTypeMask) == RegularFile);
+            }
+            catch (Exception ex) when (ex is FormatException or OverflowException or ArgumentException)
+            {
+                continue;
+            }
         }
 
         return null;

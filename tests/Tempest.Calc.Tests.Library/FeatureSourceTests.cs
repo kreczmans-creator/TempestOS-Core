@@ -84,6 +84,7 @@ public sealed class FeatureSourceTests
         ("a directory the group can write", null, new UnixFileFacts(0, (UnixFileMode)0b111_111_101, false), "writable by someone other than root"),
         ("a directory anyone can write", null, new UnixFileFacts(0, (UnixFileMode)0b111_111_111, false), "writable by someone other than root"),
         ("a directory that is a symbolic link", null, new UnixFileFacts(0, (UnixFileMode)0b111_101_101, true), "symbolic link"),
+        ("a FIFO or device in place of the file", new UnixFileFacts(0, UnixFileMode.UserRead | UnixFileMode.UserWrite, false, IsRegularFile: false), null, "not a regular file"),
     ];
 
     [Theory]
@@ -95,6 +96,7 @@ public sealed class FeatureSourceTests
     [InlineData(5)]
     [InlineData(6)]
     [InlineData(7)]
+    [InlineData(8)]
     public void A_File_Or_Directory_The_User_Could_Write_Is_Ignored_Even_When_It_Says_True(int index)
     {
         var (what, file, directory, reason) = UntrustedCases[index];
@@ -127,7 +129,7 @@ public sealed class FeatureSourceTests
     }
 
     [Fact]
-    public void The_Real_Probe_Reads_Mode_And_Link_State_And_A_Real_User_Writable_File_Is_Ignored()
+    public async Task The_Real_Probe_Reads_Mode_And_Link_State_And_A_Real_User_Writable_File_Is_Ignored()
     {
         if (OperatingSystem.IsWindows())
             return;
@@ -147,6 +149,7 @@ public sealed class FeatureSourceTests
             Assert.NotNull(facts);
             Assert.Equal((UnixFileMode)0b110_110_110, facts.Value.Mode);
             Assert.False(facts.Value.IsSymbolicLink);
+            Assert.True(facts.Value.IsRegularFile);
 
             // Whoever owns it, a file anyone can write is not trusted.
             var flags = CalcFeatureFlags.FromSource(new UnixFeatureFileSource(path, probe), out var problem);
@@ -157,6 +160,16 @@ public sealed class FeatureSourceTests
             File.CreateSymbolicLink(link, path);
             Assert.True(probe.Probe(link)!.Value.IsSymbolicLink);
             Assert.Null(probe.Probe(Path.Combine(root, "missing.json")));
+
+            // A FIFO at the path is examined, never opened: reading it would block start-up (S8 verification I-2).
+            var fifo = Path.Combine(root, "fifo.json");
+            using (var mkfifo = System.Diagnostics.Process.Start("/usr/bin/mkfifo", [fifo]))
+                mkfifo!.WaitForExit();
+
+            Assert.False(probe.Probe(fifo)!.Value.IsRegularFile);
+            var read = Task.Run(() => CalcFeatureFlags.FromSource(new UnixFeatureFileSource(fifo, probe), out _));
+            var flagsFromFifo = await read.WaitAsync(TimeSpan.FromSeconds(10)); // throws TimeoutException if reading the FIFO blocks
+            Assert.False(flagsFromFifo.IsEnabled(CalcFeatures.Lifting));
         }
         finally
         {
