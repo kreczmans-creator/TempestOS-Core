@@ -1,0 +1,85 @@
+[
+  {
+    "Symbol": "A",
+    "Number": 1.2,
+    "Unit": "m^2",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GL-801",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.2"
+  },
+  {
+    "Symbol": "T_1",
+    "Number": 20,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-BS-04 design conditions",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "T_2",
+    "Number": -10,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-BS-04 design conditions",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "-10"
+  },
+  {
+    "Symbol": "h_1",
+    "Number": 10,
+    "Unit": "W/(m^2*K)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-BS-04 design conditions",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "h_2",
+    "Number": 40,
+    "Unit": "W/(m^2*K)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-BS-04 design conditions",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "layers",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "glass"
+          },
+          "t": {
+            "Number": 8,
+            "Unit": "mm"
+          },
+          "k": {
+            "Number": 0.78,
+            "Unit": "W/(m*K)"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GL-801",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1 row(s)"
+  }
+]

@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bracket assembly calc pack (M2 + M3 + S1)    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: BRK-CALC-001    Client: Client Co
 
 PACK INDEX
   1. Bearing bush press fit — Press and shrink fit — rev A — ISSUED — Hub yield PASS
@@ -12,7 +12,7 @@ PACK INDEX
   3. Bracket arm section — Section properties — rev A — ISSUED
 
 REVISIONS
-  A  2026-10-24  test.engineer  First issue
+  A  2026-10-25  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -37,21 +37,21 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 9/9
-  Test run: 2026-10-24 20:02 UTC
+  Known-answer cases passed: 12/12
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bearing bush press fit    Revision: A
 Title: Press and shrink fit
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.
-Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²), σ_r = −p. Shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²), σ_r = −p. F = μ·p·2πR·L; T = μ·p·2πR²·L; ΔT = (δ + c_a)/(α·2R).
+Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Stresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p. Stresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p. Axial force and torque the fit holds by friction: F = μ·p·2πR·L; T = μ·p·2πR²·L. Temperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).
   Ref: Shigley's Mechanical Engineering Design §3-16, §3-17 — Press and shrink fits; stresses in pressurised cylinders
   Ref: Roark's Formulas for Stress and Strain Ch. 13, Table 13.5 — Thick-walled cylinders under pressure
 
@@ -161,11 +161,11 @@ Radial interference δ_r = δ/2. p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² −
   No warnings.
 
 8. VERIFICATION
-  Template: mech.press-fit@1.0.0
-  Content hash: 45cae33eae60ff08
+  Template: mech.press-fit@1.0.1
+  Content hash: 5e8607713caa1fea
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -173,13 +173,13 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bracket flange bolts    Revision: A
 Title: Bolted joint (simplified VDI 2230)
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
-One bolt clamping members under an axial working load: the preload from the tightening torque with its scatter, the stiffness of bolt and members, how much of the working load the bolt sees, the residual clamp after embedding, separation, yield under preload plus working load, the thread engagement needed against stripping, and the fatigue amplitude.
-A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut factor: F_M = M_A/(K d). Friction: F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K). F_M,min = F_M/α_A. δ_S = (0.4 d + 0.4 d)/(E_S A_N) + l_k/(E_S A_s) + 0.5 d/(E_S A_d3). Members: two frusta, k = 0.5774 π E d / ln[((1.155 t + d_w − d_h)(d_w + d_h))/((1.155 t + d_w + d_h)(d_w − d_h))]. Φ = n k_S/(k_S + k_P). F_Z = f_Z (k_S k_P)/(k_S + k_P). F_KR = F_M,min − (1 − Φ) F_A − F_Z. F_S,max = F_M + Φ F_A. σ_red = √(σ_z² + 3 (0.5 τ)²). σ_a = Φ F_A/(2 A_s). m_min = S F_S,max/(0.5 π d τ_B).
+One bolt clamping members under an axial working load: the preload from the tightening torque with its scatter (or as measured), the stiffness of bolt and members, how much of the working load the bolt sees, the residual clamp after embedding, separation, yield under preload plus working load, the thread engagement needed against stripping, and the fatigue amplitude.
+Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 P and d_3 = d − 1.2269 P. Assembly preload from the tightening torque, nut-factor method: F_M = M_A/(K d). Assembly preload from the tightening torque, thread and head friction method: F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K). Assembly preload stated directly (measured) instead of derived: F_M = F_V. Bolt and member stiffness and the stress area may also be given (measured, FE or a fastener record) instead of derived. Minimum preload after the tightening scatter: F_M,min = F_M/α_A. Bolt resilience, the head, free shank and engaged thread as springs in series: δ_S = (0.4 d + 0.4 d)/(E_S A_N) + l_k/(E_S A_s) + 0.5 d/(E_S A_d3). Member stiffness, the clamped parts as two pressure frusta: k = 0.5774 π E d / ln[((1.155 t + d_w − d_h)(d_w + d_h))/((1.155 t + d_w + d_h)(d_w − d_h))]. Load factor, the share of the working load the bolt sees: Φ = n k_S/(k_S + k_P). Preload lost to embedding (settling of the interfaces): F_Z = f_Z (k_S k_P)/(k_S + k_P). Residual clamp at the interface under the working load: F_KR = max(F_M,min − (1 − Φ) F_A − F_Z, 0). Maximum bolt load, the whole working load once the joint opens: F_S,max = max(F_M + Φ F_A, F_A). Working equivalent stress in the bolt, tension with half the tightening torsion: σ_red = √(σ_z² + 3 (0.5 τ)²). Fatigue stress amplitude in the thread: σ_a = (F_S,max − F_M)/(2 A_s). Thread engagement length needed against stripping: m_min = S F_S,max/(0.5 π d τ_B).
   Ref: VDI 2230 Part 1:2015 §5.1–§5.5 — Systematic calculation of highly stressed bolted joints — calculation steps R0–R13
   Ref: ISO 898-1:2013 §9.1.6 — Tensile stress area of the thread
   Ref: Shigley's Mechanical Engineering Design §8-5, §8-7 — Joint stiffness (frusta); preload and torque
@@ -308,14 +308,14 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
       = (1 − 0.072047) × 10 kN
       = 9.2795 kN
         Load relieved from the members
-  [46] F_KR = F_M_min - F_PA - F_Z    « VDI 2230 R7
-      = 24.219 kN − 9.2795 kN − 3.024 kN
+  [46] F_KR = max(F_M_min - F_PA - F_Z, 0 kN)    « VDI 2230 R7
+      = max(24.219 kN − 9.2795 kN − 3.024 kN, 0 kN)
       = 11.915 kN
-        Residual clamp force (minimum)
-  [47] F_S_max = F_M + F_SA
-      = 38.75 kN + 0.72047 kN
+        Residual clamp force (minimum; zero once the joint opens)
+  [47] F_S_max = max(F_M + F_SA, F_A)
+      = max(38.75 kN + 0.72047 kN, 10 kN)
       = 39.47 kN
-        Maximum bolt load (maximum preload + additional load)
+        Maximum bolt load (maximum preload + additional load; the whole working load once the joint opens)
   [48] sigma_z_max = F_S_max / A_s
       = 39.47 kN / 84.266 mm²
       = 468.4 MPa
@@ -328,28 +328,50 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
       = 503.66 MPa / 640 MPa
       = 0.78697
         Yield utilisation in the working state
-  [51] sigma_a = F_SA / (2 * A_s)    « VDI 2230 R9
-      = 0.72047 kN / (2 × 84.266 mm²)
+  [51] sigma_a = (F_S_max - F_M) / (2 * A_s)    « VDI 2230 R9
+      = (39.47 kN − 38.75 kN) / (2 × 84.266 mm²)
       = 4.2749 MPa
-        Fatigue stress amplitude (pulsating load)
+        Fatigue stress amplitude (pulsating 0…F_A load)
   [52] u_fatigue = sigma_a / sigma_A
       = 4.2749 MPa / 50 MPa
       = 0.085499
         Fatigue utilisation
-  [53] u_clamp = F_KR_req / F_KR
-      = 5 kN / 11.915 kN
-      = 0.41963
-        Required over available residual clamp
-  [54] m_min = S_strip * F_S_max / (0.5 * pi * d * tau_B)    « VDI 2230 §5.5.5
+  [53] m_min = S_strip * F_S_max / (0.5 * pi * d * tau_B)    « VDI 2230 §5.5.5
       = 1.25 × 39.47 kN / (0.5 × π × 12 mm × 400 MPa)
       = 6.5437 mm
         Thread engagement needed against stripping
-  [55] u_strip = m_min / m_eff
+  [54] u_strip = m_min / m_eff
       = 6.5437 mm / 12 mm
       = 0.54531
         Engagement utilisation
+  [55] F_A_sep = (F_M_min - F_Z) / (1 - Phi)    « VDI 2230 R7
+      = (24.219 kN − 3.024 kN) / (1 − 0.072047)
+      = 22.84 kN
+        Working load at which the members separate (minimum preload, after embedding)
+  [56] F_proof = R_p02 * A_s
+      = 640 MPa × 84.266 mm²
+      = 53.93 kN
+        Bolt load at the proof (yield) strength
+  [57] n_0 = F_A_sep / F_A
+      = 22.84 kN / 10 kN
+      = 2.284
+        Load factor against separation (F_A,sep / F_A)
+  [58] F_A_yield = min((F_proof - F_M) / Phi, F_proof)
+      = min((53.93 kN − 38.75 kN) / 0.072047, 53.93 kN)
+      = 53.93 kN
+        Working load at which the bolt reaches its proof load (separation included)
+  [59] n_L = F_A_yield / F_A
+      = 53.93 kN / 10 kN
+      = 5.393
+        Load factor against axial yield of the bolt, torsion excluded
+  [60] u_clamp = F_KR_req / F_KR
+      = 5 kN / 11.915 kN
+      = 0.41963
+        Required over available residual clamp
 
 5. RESULTS
+  n_0 = 2.284    Load factor against separation
+  n_L = 5.393    Load factor against axial yield
   A_s = 84.266 mm²    Tensile stress area
   F_M = 38.75 kN    Assembly preload (maximum)
   F_M_min = 24.219 kN    Minimum preload
@@ -361,7 +383,9 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
   F_Z = 3.024 kN    Embedding loss
   F_SA = 0.72047 kN    Additional bolt load
   F_KR = 11.915 kN    Residual clamp
+  F_A_sep = 22.84 kN    Separation load
   F_S_max = 39.47 kN    Maximum bolt load
+  sigma_z_max = 468.4 MPa    Maximum bolt tensile stress
   sigma_red_B = 503.66 MPa    Working equivalent stress
   sigma_a = 4.2749 MPa    Fatigue amplitude
   m_min = 6.5437 mm    Engagement needed
@@ -377,11 +401,11 @@ A_s = (π/4)·((d_2 + d_3)/2)², d_2 = d − 0.6495 P, d_3 = d − 1.2269 P. Nut
   WARNING preload-yield: M_A: the preload alone takes the bolt above 90 % of its proof strength.
 
 8. VERIFICATION
-  Template: mech.bolted-joint@1.0.0
-  Content hash: 171bd836528ea883
+  Template: mech.bolted-joint@1.1.1
+  Content hash: b62d38a48d8639fd
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 2/2
-  Test run: 2026-10-24 20:02 UTC
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -389,13 +413,13 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bracket arm section    Revision: A
 Title: Section properties
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: BRK-CALC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Area, centroid, second moments of area (Ixx, Iyy, Ixy), principal axes and values, elastic and plastic section moduli, radii of gyration, torsion constant and (I-sections) warping constant for a parametric shape, an arbitrary polygon with holes, or a composite of placed parts. The x axis is horizontal (major axis of an I-section), y vertical.
-Outline loops are integrated by Green's theorem: A = ½∮(x dy − y dx), Ixx = ∫y² dA, Iyy = ∫x² dA, Ixy = ∫xy dA, transferred to the centroid by the parallel-axis theorem. Principal: tan 2θ = −2Ixy/(Ixx − Iyy). Elastic modulus Ixx/y_max; plastic modulus from the equal-area axis found by bisection, Wpl = |Q_above| + |Q_below|. Torsion: Saint-Venant series for a solid rectangle, πd⁴/32 for circles, Bredt for closed thin-walled, Σbt³/3 (+ fillet term for rolled I) for open sections. Warping (I): Iw = Iyy (h − t_f)²/4.
+Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − y dx); Ixx = ∫y² dA; Iyy = ∫x² dA; Ixy = ∫xy dA. Second moments moved to the centroid by the parallel-axis theorem: I_c = I − A d². Principal axes: tan 2θ = −2Ixy/(Ixx − Iyy). Elastic section modulus: W_el = Ixx/y_max. Plastic section modulus, about the equal-area axis found by bisection: W_pl = |Q_above| + |Q_below|. Torsion constant by shape, a Saint-Venant series for a solid rectangle, πd⁴/32 for a circle, Bredt for a closed thin-walled section, Σbt³/3 (plus a fillet term for rolled I) for an open section. Warping constant of an I-section: I_w = Iyy (h − t_f)²/4.
   Ref: Roark's Formulas for Stress and Strain Appendix A, Table A.1; Ch. 10, Table 10.1 — Properties of sections; torsion of solid and thin-walled sections
   Ref: AISC Design Guide 9 (Seaburg & Carter) Appendix — Torsional properties of rolled I-shapes
   Ref: BS EN 10365 — Hot rolled steel channels, I and H sections: dimensions and masses
@@ -520,9 +544,9 @@ Outline loops are integrated by Green's theorem: A = ½∮(x dy − y dx), Ixx =
   No warnings.
 
 8. VERIFICATION
-  Template: struct.section-properties@1.0.0
-  Content hash: 7f7a93ac64011ba4
+  Template: struct.section-properties@1.0.1
+  Content hash: b7d59144d05267d4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test

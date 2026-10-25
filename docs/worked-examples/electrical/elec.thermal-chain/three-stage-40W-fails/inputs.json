@@ -1,0 +1,81 @@
+[
+  {
+    "Symbol": "P",
+    "Number": 40,
+    "Unit": "W",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DS-PWR-902 device and heat sink datasheets",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "T_a",
+    "Number": 40,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-EL-05 thermal limits",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "T_max",
+    "Number": 125,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-EL-05 thermal limits",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "125"
+  },
+  {
+    "Symbol": "stages",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "junction to case"
+          },
+          "R": {
+            "Number": 0.5,
+            "Unit": "K/W"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "case to sink"
+          },
+          "R": {
+            "Number": 0.2,
+            "Unit": "K/W"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "sink to ambient"
+          },
+          "R": {
+            "Number": 1.8,
+            "Unit": "K/W"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DS-PWR-902 device and heat sink datasheets",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3 row(s)"
+  }
+]

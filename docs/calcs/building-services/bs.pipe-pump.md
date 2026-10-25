@@ -1,4 +1,6 @@
-# B1 — Pipe pressure drop and pump duty (`bs.pipe-pump@1.5.0`)
+# B1 — Pipe pressure drop and pump duty (`bs.pipe-pump@1.6.0`)
+
+**In plain terms.** Water loses pressure as it flows, by friction along the pipe and at every bend, valve and fitting. The friction factor depends on how rough the pipe is and how turbulent the flow is, which the Colebrook equation captures. Plotting the pressure needed against flow gives the system curve; where it crosses the pump's curve is the flow the pump will actually deliver. The suction side is checked so the pressure never falls far enough for the water to boil and cavitate.
 
 **Scope.** Series pipe segments at a design flow: velocity, Re, Darcy friction factor, friction + fitting (K and equivalent length) losses, elevation, static head, system curve; pump curve as user points, duty point, affinity shift (speed, impeller), shaft power; NPSH available with an optional NPSH-required check; velocity limit check.
 
@@ -11,3 +13,25 @@
 **Notice rules added in 1.1.0.** `heat-flow` (block): a heat load needs its temperature difference and the reverse; with neither a heat load nor a flow there is nothing to size. `heat-flow-q` (warning): a flow typed beside a heat load is ignored. `heat-t` (warning): a heat load is given without the fluid temperature `T`, so the template's 20 °C is used. `cp_load` (block): a custom fluid on the heat-load path needs its specific heat. `eta_pump` is entered once whether it serves the pump curve, the shaft power or both.
 
 **Fittings at low Reynolds number (1.3.0).** Fitting loss coefficients K are turbulent-flow values and rise at low Re; for a segment below Re 4000 with K entered the sheet warns (`fittings`) that the fittings term is understated. The term is used as entered.
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Chilled-water riser: pressure drop, duty point, speed turn-down ([sheet](../../worked-examples/building-services/bs.pipe-pump/chilled-water-riser-duty/sheet.txt)).
+
+```text
+rho = T = 6 °C = 999.94 kg/m³
+mu = T_K = 279.15 K = 1.4684 mPa·s
+p_v = T = 6 °C = 0.93525 kPa
+T_line = 6 °C = 6 degC
+Q_design = 30 m³/h
+v_s1 = 30 m³/h / (π × 100² mm² / 4) = 1.061 m/s
+Re_s1 = 999.94 × 1.061 × 0.1 / 0.0014684 = 72253
+f_s1 = Colebrook–White, 10 iterations (Swamee–Jain start 0.021152) = 0.021093
+f_sj_s1 = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)² = 0.021152
+h_f_s1 = 0.021093 × (8 + 0) / 0.1 × 0.057399 + 3 × 0.057399 = 0.26906 m
+v_s2 = 30 m³/h / (π × 80² mm² / 4) = 1.6579 m/s
+Re_s2 = 999.94 × 1.6579 × 0.08 / 0.0014684 = 90316
+f_s2 = Colebrook–White, 10 iterations (Swamee–Jain start 0.020946) = 0.020849
+f_sj_s2 = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)² = 0.020946
+… 25 more step(s) on the sheet
+Governing: FAIL  Velocity ≤ limit: u_v = 1.0045 vs u_v ≤ 1  utilisation 1
+```
+<!-- hand-arithmetic:end -->

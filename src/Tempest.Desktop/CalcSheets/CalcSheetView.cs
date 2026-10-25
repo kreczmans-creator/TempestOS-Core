@@ -40,6 +40,12 @@ public sealed partial class CalcSheetView : UserControl
     public const string ImportCadCaption = "Import CAD parameters…";
     public const string ImportScanCaption = "Import scan deviations…";
     public const string AttachEvidenceCaption = "Attach external report…";
+    public const string CompareCaption = "Compare with previous revision";
+    public const string ComparisonName = "Comparison";
+    public const string ArchivesNodeName = "Archived legacy calculations";
+
+    /// <summary>Archived legacy records listed in the catalogue; the rest are counted (§3.8 caps).</summary>
+    public const int MaxArchivesListed = 500;
     public const string StaleMarker = "Recalculating…";
     public const string PickGuidance = "Choose a worksheet from the catalogue on the left. Its inputs, with their units, sources and limits, appear here.";
 
@@ -117,9 +123,24 @@ public sealed partial class CalcSheetView : UserControl
     private readonly Button _importCadButton = new() { Content = ImportCadCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly Button _importScanButton = new() { Content = ImportScanCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly Button _attachButton = new() { Content = AttachEvidenceCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly Button _compareButton = new() { Content = CompareCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly SelectableTextBlock _comparison = new() { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap, IsVisible = false };
+    private IReadOnlyList<CalcInstance> _archives = [];
+
+    // ADR-0158, D-41: the template's reference diagram beside the inputs, read against the form as it stands.
+    private readonly Tempest.Desktop.Views.CalculationDiagramView _diagram = new() { Width = Tempest.Desktop.Views.CalculationDiagramView.PanelWidth, VerticalAlignment = VerticalAlignment.Top, IsVisible = false };
+    private string? _markedSymbol;
+
+    /// <summary>Below this width of the right column the diagram stacks above the inputs (a laptop window): label, value, unit, source and reference columns, plus the panel.</summary>
+    public const double DiagramBesideMinimumWidth = 200 + 160 + 90 + 120 + 150 + DesignTokens.SpaceLg + Tempest.Desktop.Views.CalculationDiagramView.PanelWidth;
     /// <summary>Inputs the form has no field for (tables, vectors): carried from the seed so an imported or saved set keeps them (§3.8).</summary>
     private readonly List<CalcInputValue> _carriedInputs = [];
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
+    /// <summary>One picker per reference library (or slot) the template draws on; items are the released records' labels (ADR-0167 §3).</summary>
+    private readonly Dictionary<string, ComboBox> _referencePickers = new(StringComparer.Ordinal);
+    /// <summary>The labels last listed per library for <see cref="_referenceLabelsFor"/>: a rebuilt form (an import, a save, a revision) shows them again instead of "Loading…".</summary>
+    private readonly Dictionary<string, IReadOnlyList<string>> _referenceLabels = new(StringComparer.Ordinal);
+    private string? _referenceLabelsFor;
     private readonly StackPanel _cadHost = new();
     private readonly StackPanel _scanHost = new();
     private readonly Dictionary<string, StackPanel> _stepRows = new(StringComparer.Ordinal);
@@ -150,6 +171,9 @@ public sealed partial class CalcSheetView : UserControl
         AutomationProperties.SetName(_importButton, ImportCaption);
         AutomationProperties.SetName(_importCadButton, ImportCadCaption);
         AutomationProperties.SetName(_importScanButton, ImportScanCaption);
+        AutomationProperties.SetName(_compareButton, CompareCaption);
+        AutomationProperties.SetName(_governingLink, "Go to the governing step");
+        AutomationProperties.SetName(_comparison, ComparisonName);
         AutomationProperties.SetName(_working, "Working");
         AutomationProperties.SetName(_results, "Results");
 
@@ -164,8 +188,12 @@ public sealed partial class CalcSheetView : UserControl
         _importScanButton.Click += (_, _) => ImportScanRequested?.Invoke();
         AutomationProperties.SetName(_attachButton, AttachEvidenceCaption);
         _attachButton.Click += (_, _) => AttachEvidenceRequested?.Invoke();
+        _compareButton.Click += (_, _) => CompareRequested?.Invoke();
         _showWorking.IsCheckedChanged += (_, _) => _working.IsVisible = _showWorking.IsChecked == true;
         _governingLink.Click += (_, _) => RevealGoverningStep();
+        _diagram.InputActivated += FocusField;
+        _diagram.InputHovered += MarkRow;
+        ActualThemeVariantChanged += (_, _) => MarkRow(_markedSymbol);
 
         AutomationProperties.SetName(_linkPanel, LinkPanelName);
         AutomationProperties.SetName(_linkInput, "Input to link");
@@ -395,6 +423,98 @@ public sealed partial class CalcSheetView : UserControl
     private void UpdateLinkButton() =>
         _linkButton.IsEnabled = _linkInput.SelectedItem is string && _linkTarget.SelectedIndex >= 0 && _linkOutput.SelectedIndex >= 0 && CurrentInstance is { Status: CalcInstanceStatus.Draft };
 
+    /// <summary>Raised by Compare with previous revision (ADR-0167 §4).</summary>
+    public event Action? CompareRequested;
+
+    /// <summary>Raised when an archived legacy record is picked in the catalogue; carries its instance Id.</summary>
+    public event Action<Guid>? ArchiveSelected;
+
+    /// <summary>The comparison last shown, or null.</summary>
+    public CalcComparison? LastComparison { get; private set; }
+
+    /// <summary>The archived legacy records the catalogue lists.</summary>
+    public IReadOnlyList<CalcInstance> Archives => _archives;
+
+    /// <summary>Lists the migrated legacy records under their own catalogue node, newest first (Y8-06).</summary>
+    public void ShowArchives(IReadOnlyList<CalcInstance> archives)
+    {
+        ArgumentNullException.ThrowIfNull(archives);
+        _archives = [.. archives.Where(a => a.IsLegacyArchive).OrderByDescending(a => a.CreatedAt).ThenBy(a => a.Name, StringComparer.Ordinal)];
+        ShowCatalogue(Catalogue);
+    }
+
+    /// <summary>Shows two revisions side by side as text: every input, output and check that differs.</summary>
+    public void ShowComparison(CalcComparison comparison)
+    {
+        ArgumentNullException.ThrowIfNull(comparison);
+        LastComparison = comparison;
+        _comparison.Text = comparison.Text;
+        _comparison.IsVisible = true;
+    }
+
+    private void ClearComparison()
+    {
+        LastComparison = null;
+        _comparison.Text = string.Empty;
+        _comparison.IsVisible = false;
+    }
+
+    /// <summary>The text of the comparison shown, or empty.</summary>
+    public string ComparisonText => _comparison.IsVisible ? _comparison.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The user picked a released reference record for a library (or slot): the library key and the index into the options last set by <see cref="SetReferenceOptions"/>.</summary>
+    public event Action<string, int>? ReferencePicked;
+
+    public static string ReferencePickerName(string library) => $"{library} record";
+
+    /// <summary>The libraries the shown template draws on, in input order; empty when none.</summary>
+    public IReadOnlyList<string> ReferenceLibraries => _referencePickers.Keys.ToList();
+
+    /// <summary>Fills a library's picker with the released records' labels; the selection is cleared.</summary>
+    public void SetReferenceOptions(string library, IReadOnlyList<string> labels)
+    {
+        ArgumentNullException.ThrowIfNull(labels);
+
+        if (!_referencePickers.TryGetValue(library, out var picker))
+            return;
+
+        _referenceLabels[library] = labels;
+        _referenceLabelsFor = SelectedTemplate?.Reference;
+        ShowOptions(picker, labels);
+    }
+
+    private void ShowOptions(ComboBox picker, IReadOnlyList<string> labels)
+    {
+        var loading = _loadingForm;
+        _loadingForm = true;
+        picker.ItemsSource = labels;
+        picker.SelectedIndex = -1;
+        picker.IsEnabled = labels.Count > 0 && !IsReadOnly;
+        picker.PlaceholderText = labels.Count == 0 ? "No released record" : $"Pick a released record ({labels.Count})";
+        _loadingForm = loading;
+    }
+
+    /// <summary>Writes the values a reference record supplied into their fields, with the record's pin as the source.</summary>
+    public void ApplyReferenceFill(IReadOnlyList<CalcInputValue> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+
+        if (IsReadOnly)
+            return;
+
+        foreach (var value in values)
+        {
+            if (value.Unit is { } unit)
+                SetField(value.Symbol, unit: unit);
+
+            SetField(value.Symbol,
+                text: value.Number is { } n ? n.ToString("R", CultureInfo.InvariantCulture) : null,
+                choice: value.Text,
+                provenance: ProvenanceLabel(CalcProvenanceKind.Reference),
+                reference: value.Provenance?.Reference ?? string.Empty);
+        }
+    }
+
     public CalcCatalogueEntry? SelectedTemplate { get; private set; }
 
     public CalcInstance? CurrentInstance { get; private set; }
@@ -464,6 +584,25 @@ public sealed partial class CalcSheetView : UserControl
             _catalogue.Items.Add(node);
         }
 
+        if (_archives.Count > 0)
+        {
+            var node = new TreeViewItem { Header = $"{ArchivesNodeName} ({_archives.Count})", IsExpanded = false };
+            AutomationProperties.SetName(node, ArchivesNodeName);
+
+            foreach (var archive in _archives.Take(MaxArchivesListed))
+            {
+                var leaf = new TreeViewItem { Header = $"{archive.Name}  ·  {archive.CreatedAt:yyyy-MM-dd}", Tag = archive };
+                AutomationProperties.SetName(leaf, archive.Name);
+                ToolTip.SetTip(leaf, $"{archive.TemplateReference}\nRead-only archive of a legacy calculation record (ADR-0167).");
+                node.Items.Add(leaf);
+            }
+
+            if (_archives.Count > MaxArchivesListed)
+                node.Items.Add(new TreeViewItem { Header = $"… and {_archives.Count - MaxArchivesListed} more", IsEnabled = false });
+
+            _catalogue.Items.Add(node);
+        }
+
         if (entries.Count == 0)
             _scope.Text = "No worksheets are registered in this build.";
     }
@@ -493,6 +632,7 @@ public sealed partial class CalcSheetView : UserControl
         SelectedTemplate = entry;
         CurrentInstance = instance;
         IsReadOnly = instance is { IsImmutable: true };
+        ClearComparison();
         _loadingForm = true;
 
         _title.Text = entry.Template.Title;
@@ -505,6 +645,11 @@ public sealed partial class CalcSheetView : UserControl
         _watermark.Foreground = instance?.Status == CalcInstanceStatus.Issued ? Brushes.SeaGreen : instance?.Status == CalcInstanceStatus.Superseded ? Brushes.Gray : Brushes.DarkOrange;
         _form.Children.Clear();
         _fields.Clear();
+        _referencePickers.Clear();
+
+        if (_referenceLabelsFor != entry.Reference)
+            _referenceLabels.Clear();
+
         _problems.Text = string.Empty;
         _status.Text = IsReadOnly ? $"This calculation is {instance!.Status}; it is read-only. Revise it to start a new revision." : string.Empty;
 
@@ -521,6 +666,29 @@ public sealed partial class CalcSheetView : UserControl
         _carriedInputs.AddRange(entry.Template.Inputs.Where(s => s.Kind is CalcInputKind.Table or CalcInputKind.Vector).Select(s => seed.Find(s.Symbol)).OfType<CalcInputValue>());
         string? lastGroup = null;
 
+        foreach (var library in CalcReferenceFill.LibrariesOf(entry.Template))
+        {
+            var picker = new ComboBox { MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch, IsEnabled = false, PlaceholderText = "Loading released records…" };
+            var key = library;
+            picker.SelectionChanged += (_, _) =>
+            {
+                if (!_loadingForm && picker.SelectedIndex >= 0)
+                    ReferencePicked?.Invoke(key, picker.SelectedIndex);
+            };
+            AutomationProperties.SetName(picker, ReferencePickerName(library));
+            ToolTip.SetTip(picker, $"Fills {string.Join(", ", entry.Template.Inputs.Where(i => i.IsReferenceFillable && i.ReferenceLibrary == library).Select(i => i.Symbol))} from a released reference record, with the record's pin as the source.");
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("160,*"), Margin = DesignTokens.ControlMargin };
+            var label = new TextBlock { Text = CalcReferenceFill.PickerLabel(library), VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeBody };
+            Grid.SetColumn(picker, 1);
+            row.Children.Add(label);
+            row.Children.Add(picker);
+            _form.Children.Add(row);
+            _referencePickers[library] = picker;
+
+            if (_referenceLabels.TryGetValue(library, out var known))
+                ShowOptions(picker, known);
+        }
+
         foreach (var spec in entry.Template.Inputs)
         {
             if (spec.Kind is CalcInputKind.Table or CalcInputKind.Vector)
@@ -532,12 +700,68 @@ public sealed partial class CalcSheetView : UserControl
                 lastGroup = g;
             }
 
-            _form.Children.Add(BuildField(spec, seed.Find(spec.Symbol)));
+            // A saved instance or an import states its inputs in full: an optional input it leaves out stays blank rather than
+            // taking the template default, which would arrive unsourced and refuse the check (the showcase journey found it).
+            var stated = seedOverride is not null || instance is not null;
+            _form.Children.Add(BuildField(spec, seed.Find(spec.Symbol), blankWhenAbsent: stated && spec.IsOptional));
         }
 
         _loadingForm = false;
+        var template = entry.Template;
+        _diagram.IsVisible = true;
+        _diagram.ShowReading(template.Title, () => SelectedTemplate is { } t ? CalcDiagramReader.Read(t.Template, ReadForm()) : null, symbol => template.FindInput(symbol)?.Description);
         UpdateActions();
         RaiseInputsChanged();
+    }
+
+    /// <summary>The reference diagram beside the inputs (ADR-0158, D-41).</summary>
+    public Tempest.Desktop.Views.CalculationDiagramView Diagram => _diagram;
+
+    /// <summary>The row of <paramref name="symbol"/>'s field, or <see langword="null"/>.</summary>
+    public Control? FieldRow(string symbol) => _fields.TryGetValue(symbol, out var f) ? f.Row : null;
+
+    /// <summary>Whether <paramref name="symbol"/>'s row is marked (the pointer is on one of its shapes).</summary>
+    public bool IsRowMarked(string symbol) => _fields.TryGetValue(symbol, out var f) && f.Row.Background is not null;
+
+    /// <summary>
+    /// Marks the row of the input whose shape the pointer is on: the accent wash behind it and its label bold in the
+    /// focus-ring colour (a wash alone is barely visible). Re-applied on a theme change.
+    /// </summary>
+    private void MarkRow(string? symbol)
+    {
+        _markedSymbol = symbol;
+        var wash = ThemeReactiveBrush.Resolve(this, ApplicationPalette.AccentPanelBackgroundBrushKey) ?? Brushes.LightBlue;
+        var ring = ThemeReactiveBrush.Resolve(this, ApplicationPalette.FocusRingBrushKey) ?? Brushes.RoyalBlue;
+
+        foreach (var (key, field) in _fields)
+        {
+            var marked = key == symbol;
+            field.Row.Background = marked ? wash : null;
+
+            if (field.Row.Children.OfType<TextBlock>().FirstOrDefault() is not { } label)
+                continue;
+
+            if (marked)
+            {
+                label.Foreground = ring;
+                label.FontWeight = FontWeight.Bold;
+            }
+            else
+            {
+                label.ClearValue(TextBlock.ForegroundProperty);
+                label.FontWeight = FontWeight.Normal;
+            }
+        }
+    }
+
+    /// <summary>A shape on the diagram was clicked: its input's own control takes focus.</summary>
+    private void FocusField(string symbol)
+    {
+        if (FieldControl(symbol) is { } control)
+        {
+            control.Focus();
+            control.BringIntoView();
+        }
     }
 
     /// <summary>Shows a run: governing bar, results, checks, notices, working. Clears the stale marker.</summary>
@@ -595,13 +819,13 @@ public sealed partial class CalcSheetView : UserControl
             _results.Children.Add(Readout(o.Symbol, o.ValueText, o.Description));
 
         foreach (var c in result.Checks.OrderByDescending(c => c.Utilisation))
-            _checks.Children.Add(Readout(c.Passed ? "PASS" : "FAIL", $"{c.Name}: {c.DemandText} vs {c.CapacityText} (u = {FormatUtilisation(c.Utilisation)})", c.Clause));
+            _checks.Children.Add(CheckRow(c));
 
         foreach (var n in result.Blocks)
-            _notices.Children.Add(new TextBlock { Text = $"Block — {n.Message}", Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody });
+            _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Block — {n.Message}"));
 
         foreach (var n in result.Warnings)
-            _notices.Children.Add(new TextBlock { Text = $"Warning — {n.Message}", Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody });
+            _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Warning — {n.Message}"));
 
         foreach (var s in result.Steps.Where(s => s.Kind != CalcStepKind.Input))
         {
@@ -614,7 +838,7 @@ public sealed partial class CalcSheetView : UserControl
             row.Children.Add(Mono($"      = {s.ResultText}"));
 
             if (s.Description is { Length: > 0 })
-                row.Children.Add(Caption("        " + s.Description));
+                row.Children.Add(Typeset(Caption(string.Empty), "        " + s.Description));
 
             AutomationProperties.SetName(row, $"Step {s.Symbol}");
             _working.Children.Add(row);
@@ -761,7 +985,7 @@ public sealed partial class CalcSheetView : UserControl
 
     public string GoverningText => _governing.Text ?? string.Empty;
 
-    public IReadOnlyList<string> WorkingLines => _working.Children.OfType<StackPanel>().SelectMany(p => p.Children.OfType<TextBlock>()).Select(t => t.Text ?? string.Empty).ToList();
+    public IReadOnlyList<string> WorkingLines => _working.Children.OfType<StackPanel>().SelectMany(p => p.Children.OfType<TextBlock>()).Select(SymbolText.Raw).ToList();
 
     public void ToggleWorking(bool shown) => _showWorking.IsChecked = shown;
 
@@ -774,6 +998,10 @@ public sealed partial class CalcSheetView : UserControl
             ShowTemplate(entry);
             TemplateSelected?.Invoke(entry);
         }
+        else if (_catalogue.SelectedItem is TreeViewItem { Tag: CalcInstance archive })
+        {
+            ArchiveSelected?.Invoke(archive.Id);
+        }
     }
 
     private void RaiseInputsChanged()
@@ -785,7 +1013,50 @@ public sealed partial class CalcSheetView : UserControl
             f.Problem.IsVisible = false;
 
         _stale.IsVisible = true;
+        _diagram.Refresh();
         InputsChanged?.Invoke(ReadForm());
+    }
+
+    /// <summary>Automation name of the read-only text an archived legacy record shows.</summary>
+    public const string ArchiveSheetName = "Archived legacy calculation";
+
+    /// <summary>
+    /// Shows a migrated legacy calculation record (ADR-0167) as its archive
+    /// sheet: read-only, no form, no lifecycle actions. Its inputs can be
+    /// re-entered in the matching worksheet template for a sheet with working.
+    /// </summary>
+    public void ShowArchive(CalcInstance instance, string sheetText)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(sheetText);
+
+        _loadingForm = true;
+        SelectedTemplate = null;
+        CurrentInstance = instance;
+        IsReadOnly = true;
+        ClearComparison();
+        _diagram.ShowReading(null, null);
+        _diagram.IsVisible = false;
+        LastRun = null;
+        _title.Text = instance.Name;
+        _reference.Text = instance.TemplateReference;
+        _scope.Text = LegacyArchiveSheet.MethodText;
+        _watermark.Text = "ARCHIVE";
+        _watermark.IsVisible = true;
+        _watermark.Foreground = Brushes.Gray;
+        _form.Children.Clear();
+        _fields.Clear();
+        _referencePickers.Clear();
+        _carriedInputs.Clear();
+        _problems.Text = string.Empty;
+        var text = new SelectableTextBlock { Text = sheetText, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap };
+        AutomationProperties.SetName(text, ArchiveSheetName);
+        _form.Children.Add(new ScrollViewer { Content = text, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
+        _status.Text = "A migrated legacy calculation record: read-only. Re-enter its inputs in the matching worksheet template for a sheet with working.";
+        _exportButton.IsEnabled = false;
+        _importButton.IsEnabled = false;
+        _loadingForm = false;
+        UpdateActions();
     }
 
     private void UpdateActions()
@@ -793,7 +1064,8 @@ public sealed partial class CalcSheetView : UserControl
         var instance = CurrentInstance;
         _saveButton.Content = instance is null ? SaveCaption : "Save changes";
         _saveButton.IsEnabled = !IsReadOnly && SelectedTemplate is not null && LastRun is { IsBlocked: false };
-        _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft };
+        _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft, IsLegacyArchive: false };
+        _compareButton.IsVisible = instance is { PredecessorId: not null, IsLegacyArchive: false };
         _issueButton.IsVisible = instance is { Status: CalcInstanceStatus.Checked };
         _reviseButton.IsVisible = instance is { Status: CalcInstanceStatus.Issued };
         _importCadButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft };
@@ -811,10 +1083,10 @@ public sealed partial class CalcSheetView : UserControl
         row.BringIntoView();
     }
 
-    private Control BuildField(CalcInputSpec spec, CalcInputValue? seed)
+    private Control BuildField(CalcInputSpec spec, CalcInputValue? seed, bool blankWhenAbsent = false)
     {
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("200,160,90,120,*") };
-        var label = new TextBlock { Text = $"{spec.Symbol} — {spec.Description}", FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
+        var label = Typeset(new TextBlock { FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap }, $"{spec.Symbol} — {spec.Description}");
         var tip = $"{spec.Symbol}: {spec.Description}\nValid range: {spec.RangeText}{(spec.IsOptional ? "\nOptional" : string.Empty)}";
         ToolTip.SetTip(label, tip);
         Grid.SetColumn(label, 0);
@@ -831,7 +1103,7 @@ public sealed partial class CalcSheetView : UserControl
             case CalcInputKind.Number:
             case CalcInputKind.Text:
             {
-                var initial = seed?.Number is { } n ? n.ToString("R", CultureInfo.InvariantCulture) : seed?.Text ?? (spec.Default is { } d ? d.ToString("R", CultureInfo.InvariantCulture) : string.Empty);
+                var initial = seed?.Number is { } n ? n.ToString("R", CultureInfo.InvariantCulture) : seed?.Text ?? (!blankWhenAbsent && spec.Default is { } d ? d.ToString("R", CultureInfo.InvariantCulture) : string.Empty);
                 text = Input(initial, spec.Kind == CalcInputKind.Text ? "text" : "number");
                 text.TextChanged += (_, _) => RaiseInputsChanged();
                 AutomationProperties.SetName(text, spec.Symbol);
@@ -900,6 +1172,12 @@ public sealed partial class CalcSheetView : UserControl
         var block = new StackPanel { Spacing = 0 };
         block.Children.Add(row);
         block.Children.Add(problem);
+
+        foreach (var control in new Control?[] { text, unit, choice, flag }.OfType<Control>())
+        {
+            control.GotFocus += (_, _) => _diagram.Highlight(spec.Symbol);
+            control.LostFocus += (_, _) => _diagram.Highlight(null);
+        }
 
         var controls = new FieldControls(spec, text, unit, choice, flag, provenance, reference, problem, row);
         _fields[spec.Symbol] = controls;
@@ -1044,7 +1322,11 @@ public sealed partial class CalcSheetView : UserControl
         staleRow.Children.Add(_staleBanner);
         staleRow.Children.Add(_updateLinksButton);
         right.Children.Add(staleRow);
-        right.Children.Add(Section("Inputs", _form));
+        // The diagram sits beside the inputs, or above them on a laptop window; the inputs stay first in the tab order.
+        var inputsBeside = new Tempest.Desktop.Views.BesideOrAbovePanel(DiagramBesideMinimumWidth, DesignTokens.SpaceLg);
+        inputsBeside.Children.Add(_form);
+        inputsBeside.Children.Add(_diagram);
+        right.Children.Add(Section("Inputs", inputsBeside));
         right.Children.Add(_linkPanel);
         var applyRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         applyRow.Children.Add(new TextBlock { Text = "Take values from", VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeBody });
@@ -1081,7 +1363,8 @@ public sealed partial class CalcSheetView : UserControl
 
         right.Children.Add(BuildGovernancePanel());
 
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        // A wrapping row: Compare (ADR-0167) and the two import panels' buttons (Addendum B) no longer fit one line in a narrow right column.
+        var actions = new WrapPanel { Orientation = Orientation.Horizontal };
         actions.Children.Add(_saveButton);
         actions.Children.Add(_checkButton);
         actions.Children.Add(_issueButton);
@@ -1091,8 +1374,14 @@ public sealed partial class CalcSheetView : UserControl
         actions.Children.Add(_importCadButton);
         actions.Children.Add(_importScanButton);
         actions.Children.Add(_attachButton);
+        actions.Children.Add(_compareButton);
+
+        foreach (var button in actions.Children.OfType<Control>())
+            button.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceXs);
+
         right.Children.Add(actions);
         right.Children.Add(_status);
+        right.Children.Add(new ScrollViewer { Content = _comparison, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
 
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("380,*") };
         var leftScroll = new ScrollViewer { Content = left };
@@ -1107,11 +1396,19 @@ public sealed partial class CalcSheetView : UserControl
         return grid;
     }
 
-    private static Expander Section(string title, Control content) => new() { Header = title, IsExpanded = true, Margin = DesignTokens.SectionMargin, Content = content };
+    // Stretched, so a section is as wide as the column and not as wide as its widest line (the showcase journey found Results shrunk to its values).
+    private static Expander Section(string title, Control content) => new() { Header = title, IsExpanded = true, Margin = DesignTokens.SectionMargin, Content = content, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
 
     private static TextBlock Caption(string text) => new() { Text = text, FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, MaxWidth = 760, Opacity = 0.8 };
 
-    private static TextBlock Mono(string text) => new() { Text = text, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap, MaxWidth = 760 };
+    private static TextBlock Mono(string text) => Typeset(new TextBlock { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap, MaxWidth = 760 }, text);
+
+    /// <summary>Shows <paramref name="text"/> with its symbols set as an engineer writes them (D_1 as D with a subscript 1).</summary>
+    private static TextBlock Typeset(TextBlock block, string text)
+    {
+        SymbolText.Set(block, text);
+        return block;
+    }
 
     private static Control LabelledRow(string label, Control control)
     {
@@ -1127,8 +1424,8 @@ public sealed partial class CalcSheetView : UserControl
     private static Control Readout(string label, string value, string? note)
     {
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("120,220,*") };
-        var name = new TextBlock { Text = label, Opacity = 0.8, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Top };
-        var read = new TextBlock { Text = value, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap };
+        var name = Typeset(new TextBlock { Opacity = 0.8, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Top }, label);
+        var read = Typeset(new TextBlock { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap }, value);
         var desc = Caption(note ?? string.Empty);
         AutomationProperties.SetName(read, $"Result {label}");
         Grid.SetColumn(name, 0);
@@ -1137,6 +1434,22 @@ public sealed partial class CalcSheetView : UserControl
         row.Children.Add(name);
         row.Children.Add(read);
         row.Children.Add(desc);
+        return row;
+    }
+
+    /// <summary>A check: PASS/FAIL, then the check's text across the width, then its clause.</summary>
+    private static Control CheckRow(CalcCheck check)
+    {
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("120,*,Auto"), Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXs) };
+        var verdict = new TextBlock { Text = check.Passed ? "PASS" : "FAIL", FontWeight = DesignTokens.WeightHeading, Foreground = check.Passed ? Brushes.SeaGreen : Brushes.IndianRed, FontSize = DesignTokens.FontSizeBody };
+        var text = Typeset(new TextBlock { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap }, $"{check.Name}: {check.DemandText} vs {check.CapacityText} (u = {FormatUtilisation(check.Utilisation)})");
+        var clause = new TextBlock { Text = check.Clause ?? string.Empty, FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0) };
+        AutomationProperties.SetName(text, $"Result {verdict.Text}");
+        Grid.SetColumn(text, 1);
+        Grid.SetColumn(clause, 2);
+        row.Children.Add(verdict);
+        row.Children.Add(text);
+        row.Children.Add(clause);
         return row;
     }
 

@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 25/25
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -54,7 +54,7 @@ Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell. RMS mechanical power (the thermal-equivalent continuous power a supply sees; regeneration counts as power): P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle} (trapezoid), with t_acc·[(3/4) T_load² + (5/16) T_acc²] for the S-curve; the instantaneous peak P_pk is not a continuous demand. Continuous rotary duty: ω = 2π n_L i/60; T_load = T_L/(i η); T_rms = T_load; T_pk = J_total ω/t_start + T_load (full load during the run-up, conservative); n_pk = n_L i; P_cont = T_load ω; P_rms = P_cont; P_rated = T_rated·2π n_rated/60, the candidate motor's nameplate rated shaft power from its rated torque and rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns.
+Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load. RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle). RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont. Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -237,11 +237,11 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   WARNING overhauling: T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.4.0
-  Content hash: 0f221113aba05f54
+  Template: elec.motor-sizing@1.5.0
+  Content hash: e27e82fd084979ba
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -255,7 +255,7 @@ Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
-Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) Power supply sizing: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
   Ref: Linden's Handbook of Batteries 5th ed., Ch. 3–4 — Battery sizing and the Peukert relation
   Ref: BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance; cited by number only)
 
@@ -394,11 +394,11 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.2.0
-  Content hash: dc7b6b8e4454e8eb
+  Template: elec.load-budget@1.2.1
+  Content hash: 39f53bc4722e29b8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -412,7 +412,7 @@ Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without I₂, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or I₂ must be entered (machine wiring); every other number is the same in both contexts.
-Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Device: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to E5 so the fault check uses the device chosen here)
+Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to E5 so the fault check uses the device chosen here)
   Ref: BS 7671:2018 (as amended) reg. 433.1.1 — Co-ordination of conductors and overload protective devices
   Ref: BS 7671:2018 (as amended) reg. 523.1 — Current-carrying capacity of a cable
   Ref: BS EN 60204-1:2018 cl. 12.4 — Current-carrying capacity of conductors and cables in normal service
@@ -556,11 +556,11 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   WARNING record: Tabulated values not taken from a reference record: C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.conductor-sizing@1.1.0
-  Content hash: 536348060f88e8f8
+  Template: elec.conductor-sizing@1.1.1
+  Content hash: b804e5325cd160b1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -574,7 +574,7 @@ Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).
-R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X′ L/n. DC: ΔV = 2 I R; single-phase: ΔV = 2 I (R cos φ + X sin φ); three-phase: ΔV = √3 I (R cos φ + X sin φ); mV/A/m: ΔV = (mV/A/m) I L / 1000 (the figure already carries the 2 or √3 by convention). Loss: 2 I² R (DC, 1φ), 3 I² R (3φ). Conductor temperature: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².
+Conductor resistance at its operating temperature, for n conductors in parallel: R = ρ_T L/(A n), with ρ_T = ρ_20 [1 + α (T_c − 20)]. Resistance and reactance from per-length figures instead: R = R′ L/n; X = X′ L/n. Voltage drop on a DC circuit: ΔV = 2 I R. Voltage drop on a single-phase AC circuit: ΔV = 2 I (R cos φ + X sin φ). Voltage drop on a three-phase AC circuit: ΔV = √3 I (R cos φ + X sin φ). Voltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000. Power lost in the cable: P_loss = 2 I² R (DC and single-phase); 3 I² R (three-phase). Estimated conductor temperature at this current: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².
   Ref: BS 7671 525 — Voltage drop in consumers' installations
   Ref: BS 7671 Appendix 4, section 6 — Voltage drop (mV/A/m tables and the temperature-correction method)
   Ref: Hughes, Electrical and Electronic Technology Ch. on DC and AC circuits — Resistance, resistivity and temperature coefficient
@@ -658,11 +658,11 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   No warnings.
 
 8. VERIFICATION
-  Template: elec.voltage-drop@1.0.0
-  Content hash: 3ed2f07610b34189
+  Template: elec.voltage-drop@1.0.1
+  Content hash: 2c07193ab8ffc91f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -676,7 +676,7 @@ Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.
-Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault (the line conductor check, reg. 434.5.2, needs it and is not made without it; the protective conductor check then uses I_f²·0.1 s at the end-of-line fault only) Device: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
+Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault (the line conductor check, reg. 434.5.2, needs it and is not made without it; the protective conductor check then uses I_f²·0.1 s at the end-of-line fault only) Protective device check: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
   Ref: BS 7671:2018 (as amended) reg. 411.3.2.2, 411.3.2.3, 411.4.4 — Automatic disconnection in TN systems: times and the loop impedance condition
   Ref: BS 7671:2018 (as amended) reg. 543.1.3, 434.5.2 — Protective conductor and fault current adiabatic checks
   Ref: BS EN 60204-1:2018 cl. 6.3.3 — Protection by automatic disconnection of supply
@@ -799,11 +799,11 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   WARNING record: Tabulated values not taken from a reference record: rho_20, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let (Device time–current points). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.fault-protection@1.2.0
-  Content hash: 28c5e83cec7eb404
+  Template: elec.fault-protection@1.2.1
+  Content hash: b8f2af25892a73e4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -817,7 +817,7 @@ Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
-P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive. Sealed enclosure (T_seal entered, no breather): the pressure difference across the walls when the air warms from the sealing temperature to T_int at constant volume, Δp = p_site·|T_int/T_seal − 1| (absolute temperatures), a rise when T_int > T_seal, a suction when below. A pressure-compensation element (breather or relief) limits it: dp_seal = min(that difference, dp_relief), the cracking pressure. The force of dp_seal on a cover of area A_cover is F_seal = dp_seal·A_cover.
+Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun). Effective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face. Temperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h A_eff). Air flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K). Fan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)². Cooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h A_eff (T_max − T_amb). Sealed enclosure (sealing temperature T_seal entered, no breather), pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below): Δp = p_site·|T_int/T_seal − 1|. A pressure-compensation element (breather or relief) limits it to its cracking pressure: dp_seal = min(Δp, dp_relief). Force of that pressure on a cover of area A_cover: F_seal = dp_seal·A_cover.
   Ref: IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
   Ref: Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
   Ref: BS EN 61439-1 10.10 — Verification of temperature rise
@@ -945,9 +945,9 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   No warnings.
 
 8. VERIFICATION
-  Template: elec.enclosure-heat@1.4.0
-  Content hash: 3add357ba3b44d85
+  Template: elec.enclosure-heat@1.5.0
+  Content hash: 857f14f33a5fb9c0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test

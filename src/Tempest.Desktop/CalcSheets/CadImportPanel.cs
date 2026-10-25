@@ -74,6 +74,11 @@ public sealed class CadImportPanel : Border
         AutomationProperties.SetName(_lines, "Import preview");
         AutomationProperties.SetName(_changes, "Changes since the previous import");
         AutomationProperties.SetName(_status, "Import status");
+        AutomationProperties.SetName(_version, "CAD version (optional)");
+        AutomationProperties.SetName(_part, "Part name (optional)");
+        AutomationProperties.SetName(_revision, "Revision (optional)");
+        AutomationProperties.SetName(_configuration, "Configuration (design table)");
+        AutomationProperties.SetName(_sheet, "Sheet (workbook)");
         AutomationProperties.SetLiveSetting(_status, AutomationLiveSetting.Polite);
 
         var files = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };

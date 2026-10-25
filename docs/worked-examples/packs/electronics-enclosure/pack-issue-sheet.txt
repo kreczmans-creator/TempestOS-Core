@@ -40,7 +40,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 36/36
-  Test run: 2026-10-25 19:19 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -53,7 +53,7 @@ Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The minimum width of a printed-circuit trace for a current and an allowed temperature rise, from the legacy IPC-2221 curve-fit, and the resistance, voltage drop and I²R loss of the trace as drawn: legacy IPC-2221 curve-fit, conservative for multilayer boards. External or internal layer; copper weight in oz/ft²; resistance at the trace's operating temperature (ambient plus rise). The IPC-2152 method (charts, plane and board-thickness factors) is not implemented.
-Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with A in mil², k = 0.048 external, 0.024 internal Copper thickness: t = w_Cu·t_oz, t_oz = 1.378 mil per oz/ft² (35 µm, derived) Minimum width: w_min = A/t; utilisation u_w = w_min/w_act Resistivity at the operating temperature: ρ_T = ρ_20·[1 + α·(T_amb + ΔT − 20)] Trace resistance: R = ρ_T·L/(w_act·t); voltage drop ΔV = I·R; loss P = I²·R
+Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with A in mil², k = 0.048 external, 0.024 internal Copper thickness: t = w_Cu·t_oz, t_oz = 1.378 mil per oz/ft² (35 µm, derived) Minimum width: w_min = A/t; utilisation u_w = w_min/w_act Resistivity at the operating temperature: ρ_T = ρ_20·[1 + α·(T_amb + ΔT − 20)] Trace resistance: R = ρ_T·L/(w_act·t); voltage drop ΔV = I·R; loss P = I²·R
   Ref: IPC-2221 6 — Electrical properties: current-carrying capacity of printed-board conductors (legacy curve-fit)
   Ref: Hughes, Electrical and Electronic Technology Ch. on DC circuits — Resistivity and temperature coefficient of resistance
 
@@ -156,11 +156,11 @@ Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with
   WARNING record: Tabulated values not taken from a reference record: k_ext, k_int, n_dT, n_A, t_oz (IPC-2221 legacy curve-fit constants); rho_20, alpha (Copper resistivity constants). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.pcb-trace@1.0.2
-  Content hash: ae6d5ceb1daa0957
+  Template: elec.pcb-trace@1.0.3
+  Content hash: 0d7d5417226f1fcc
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 19:19 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -174,7 +174,7 @@ Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
-Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) Power supply sizing: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
   Ref: Linden's Handbook of Batteries 5th ed., Ch. 3–4 — Battery sizing and the Peukert relation
   Ref: BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance; cited by number only)
 
@@ -329,11 +329,11 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.2.0
-  Content hash: dc7b6b8e4454e8eb
+  Template: elec.load-budget@1.2.1
+  Content hash: 39f53bc4722e29b8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 19:19 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -347,7 +347,7 @@ Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
-P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive. Sealed enclosure (T_seal entered, no breather): the pressure difference across the walls when the air warms from the sealing temperature to T_int at constant volume, Δp = p_site·|T_int/T_seal − 1| (absolute temperatures), a rise when T_int > T_seal, a suction when below. A pressure-compensation element (breather or relief) limits it: dp_seal = min(that difference, dp_relief), the cracking pressure. The force of dp_seal on a cover of area A_cover is F_seal = dp_seal·A_cover.
+Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun). Effective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face. Temperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h A_eff). Air flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K). Fan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)². Cooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h A_eff (T_max − T_amb). Sealed enclosure (sealing temperature T_seal entered, no breather), pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below): Δp = p_site·|T_int/T_seal − 1|. A pressure-compensation element (breather or relief) limits it to its cracking pressure: dp_seal = min(Δp, dp_relief). Force of that pressure on a cover of area A_cover: F_seal = dp_seal·A_cover.
   Ref: IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
   Ref: Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
   Ref: BS EN 61439-1 10.10 — Verification of temperature rise
@@ -486,11 +486,11 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   WARNING seal-relief: dp_relief: the breather or relief element opens at 1 kPa, below the gas-law difference of 10.83 kPa, so dp_seal is the cracking pressure.
 
 8. VERIFICATION
-  Template: elec.enclosure-heat@1.4.0
-  Content hash: 3add357ba3b44d85
+  Template: elec.enclosure-heat@1.5.0
+  Content hash: 857f14f33a5fb9c0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 19:19 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -645,7 +645,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   Content hash: 1df7e5a03f212571
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-25 19:19 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -659,7 +659,7 @@ Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.
-Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²) Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²) Circular, central patch (radius c, pressure q) or ring (radius b, force F): w = A + B·r² (+ q·r⁴/64D) inside, A′ + B′·r² + C′·ln(r/a) + k·r²·ln(r/a) outside, k = q·c²/8D or F/8πD; constants from continuity of w, w′, M_r at the load radius and the edge conditions; M_r = −D(w″ + ν·w′/r), M_θ = −D(w′/r + ν·w″) Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared) Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K taken as 8, 12, 16, 20, 25, 30 until w and the stress change by < 10⁻⁵ (or the change stops falling) Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρt)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρt)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis Checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t > 0.5
+Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²) Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²) Circular, central patch (radius c, pressure q) or ring (radius b, force F): w = A + B·r² (+ q·r⁴/64D) inside, A′ + B′·r² + C′·ln(r/a) + k·r²·ln(r/a) outside, k = q·c²/8D or F/8πD; constants from continuity of w, w′, M_r at the load radius and the edge conditions; M_r = −D(w″ + ν·w′/r), M_θ = −D(w′/r + ν·w″) Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared) Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K taken as 8, 12, 16, 20, 25, 30 until w and the stress change by < 10⁻⁵ (or the change stops falling) Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρt)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρt)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis Plate checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t > 0.5
   Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 3 — Symmetrical bending of circular plates
   Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 5 — Simply supported rectangular plates (Navier solution)
   Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 6 — Rectangular plates with various edge conditions
@@ -806,9 +806,9 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   WARNING record: Tabulated values not taken from a reference record: E, nu, rho, f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: struct.plate-bending@1.2.1
-  Content hash: 7776225ec2491f68
+  Template: struct.plate-bending@1.2.2
+  Content hash: 82862b637af72f75
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-25 19:19 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test

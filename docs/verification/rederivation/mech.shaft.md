@@ -1,0 +1,127 @@
+# mech.shaft — independent re-derivation (Track P, P1)
+Calculator: Shaft: static, fatigue, keys, critical speed, version 1.0.0 (re-checked at 1.1.0). Source file: src/Tempest.Calc/Tempest.Calc.Mechanical/ShaftCalculator.cs. Spec: docs/calcs/mechanical/mech.shaft.md.
+Script: tools/verification/mech.shaft.py (exit 0 = all KATs match).
+Verdict: MATCH WITH FINDINGS (reviewed: one High, five Medium including R1)
+
+The three known-answer cases agree with my own derivation. The weak points are the critical-speed quotient, the shoulder side, and two silent input traps.
+
+## Method re-derived
+- Beam: Euler-Bernoulli finite elements with piecewise-constant EI. Pin at A, roller at B, one solve per plane. M, slope and deflection add as vectors. Units mm, N, MPa.
+- Stress: σ_a = K_f 32 M d/(π(d⁴ − d_i⁴)) and τ_m = K_fs 16 T d/(π(d⁴ − d_i⁴)), with K_f = 1 + q(K_t − 1). Source: Shigley 11th ed., §6-10 and §7-4.
+- Endurance: S_e′ = 0.5 S_ut up to 1400 MPa, else 700 MPa. Source: Shigley 11th ed., §6-9.
+- Marin factors: k_a = a S_ut^b with (a, b) = (1.58, −0.085) ground, (4.51, −0.265) machined, (57.7, −0.718) hot-rolled, (272, −0.995) forged. Source: Shigley Table 6-2, MPa form, as printed in the 9th and 10th editions (see R1 on the 11th).
+- Size and reliability: k_b = 1.24 d^−0.107 up to 51 mm, 1.51 d^−0.157 above. k_c = 1. k_e = 1 − 0.08 z_R, with z_R from SciPy's normal quantile.
+- Criteria: DE-Goodman 1/n_f = σ_a/S_e + √3 τ_m/S_ut. First-cycle yield n_y = S_y/√(σ_a² + 3τ_m²). Shigley 11th ed., §7-4.
+- Other criteria for information: DE-Gerber, DE-ASME and DE-Soderberg with σ_m′ = √3 τ_m. Shigley 11th ed., §6-12.
+- Critical speed: exact first eigenvalue from consistent-mass finite elements. Rayleigh quotient with signed deflection. Dunkerley as shaft term plus Σ m δ_ii. Shigley 11th ed., §7-6.
+- Keys: τ = 2T/(d w L), σ = 4T/(d h L). Required length from 0.577 S_y in shear and S_y in bearing. Shigley 11th ed., §7-7.
+
+## Known-answer cases
+| Case | Symbol | KAT expected | Independent | Rel. diff | KAT tol | Result |
+|---|---|---|---|---|---|---|
+| ka-simply-supported | R_A (kN) | 1 | 1 | 0 | 1e-6 | PASS |
+| ka-simply-supported | M_max (kN·m) | 0.2 | 0.2 | 0 | 1e-6 | PASS |
+| ka-simply-supported | theta_A (rad) | 2.429991e-3 | 2.429991e-3 | 1.6e-7 | 1e-5 | PASS |
+| ka-simply-supported | y_load (mm) | 0.3239989 | 0.3239989 | 1.5e-7 | 1e-5 | PASS |
+| ka-simply-supported | n_c (rpm) | 5305.174 | 5305.174 | 3.4e-8 | 1e-5 | PASS |
+| ka-simply-supported | n_c_D (rpm) | 5305.174 | 5305.174 | 3.4e-8 | 1e-5 | PASS |
+| ka-key | tau_key (MPa) | 36.99405 | 36.99405 | 6.4e-8 | 1e-6 | PASS |
+| ka-key | sigma_key (MPa) | 84.55782 | 84.55782 | 3.7e-8 | 1e-6 | PASS |
+| ka-shigley-7-1 | S_e (MPa) | 203.7091 | 203.7091 | 1.0e-7 | 1e-5 | PASS |
+| ka-shigley-7-1 | n_f_min | 1.650015 | 1.650015 | 9.3e-8 | 1e-5 | PASS |
+| ka-shigley-7-1 | n_y_min | 4.585856 | 4.585856 | 1.1e-7 | 1e-5 | PASS |
+
+All 11 KAT values (3 of 3 cases) agree with physics and with the Shigley relations. The script also checks the n_c case against a closed form and an exact eigenvalue. The product passes its own 3 KATs through the probe.
+
+For the same stresses, the other criteria give n_f = 1.892 (Gerber), 1.902 (ASME) and 1.581 (Soderberg). Goodman (1.650) lies between them.
+
+## Extra probes (product vs independent)
+All rows use the Probe tool. "Product" values are hard-coded in the script. Rows E1 to E10 agree to 1e-6 or better unless a finding is named.
+| Probe | Inputs (short) | Symbol | Product | Independent | Rel. diff | Result |
+|---|---|---|---|---|---|---|
+| E1 | stepped Ø25/30/40/30/25, two planes, ground, R 95 %, 3 sections | n_f_min / n_y_min | 1.23245 / 1.77198 | same | 3e-10 | PASS |
+| E1 | same | R_A, R_B, M_max, θ_B, y_load | 1.9092, 2.9165 kN, 0.23332 kN·m, 2.1292e-3, 0.12545 mm | same | 2e-10 | PASS |
+| E2 | hollow 60/40, S_ut 1500, hot-rolled, R 99.9 %, k_d 0.95, k_f 0.9 | S_e / n_f_min | 108.214 MPa / 1.60662 | same | 5e-10 | PASS |
+| E3 | Ø300 as-forged, R 50 %, k_b held at 254 mm | S_e / n_f_min | 88.9575 MPa / 6.33855 | same | 4e-11 | PASS |
+| E4 | near zero: 1 N load, Ø20 | n_f_min / y_load | 1428.75 / 8.2012e-4 mm | same | 2e-10 | PASS |
+| E5 | key 14×9×40 on Ø50, S_y,key 350, n 2 | tau_key / sigma_key / L_key_req | 85.714 / 266.67 MPa / 60.952 mm | same | 1e-10 | PASS |
+| E9 | lower bounds: Ø5, S_ut 300, R 99.9 % | n_f_min / n_y_min | 1.86683 / 2.15447 | same | 1e-10 | PASS |
+| E10 | upper bounds: Ø300, 3 m, T 50 kN·m, S_ut 2000, two planes | n_f_min / n_y_min | 5.68893 / 38.1385 | same | 2e-10 | PASS |
+| C1 | overhang, tip mass 40 kg | n_c vs exact | 2740.4 rpm | 2698.1 rpm | +1.6 % | PASS |
+| C3 | overhang, tip mass 5 kg | n_c vs exact | 7976.6 rpm | 7189.7 rpm | +10.9 % | FAIL (-01) |
+| C4 | overhang, tip mass 1 kg | n_c vs exact | 17493 rpm | 12991 rpm | +34.7 % | FAIL (-01) |
+| C3 | same, n = 3800 rpm | n_c/n | 2.099, no warning | 1.892 | +10.9 % | FAIL (-01) |
+| C5 | masses 25 and 40 kg between bearings | n_c / n_c_D vs exact | 10259 / 9750 rpm | 10195 rpm | +0.6 % / −4.4 % | PASS |
+| E8 | shoulder Ø50 bore 46 to Ø40 solid, 2 kN | n_f_min | 5.3065 | 2.8700 | +85 % | FAIL (-02) |
+| E6 | L 800, T 1 kN·m, x_T2 left at 400, section at 600 | n_f at 600 mm | 7.075 | 2.695 with x_T2 = 800 | +163 % | Trap (-03) |
+| E5b | shaft S_y 250, key S_y 400, n 2 | L_key_req | 53.33 mm | 85.33 mm | −37 % | FAIL (-05) |
+
+## Implementation comparison
+| Aspect | Spec / textbook | Implementation | Agrees? |
+|---|---|---|---|
+| Beam model, two planes, vector sum | Euler-Bernoulli, M/θ/y combined | S2 frame solver, √(M_y² + M_z²) | Yes |
+| Stress formulas, hollow shaft | 32 M d/(π(d⁴ − d_i⁴)) | modulus = π(d⁴ − d_i⁴)/d | Yes |
+| K_f, K_fs on alternating and steady parts | Shigley §7-4 | applied to both; q defaults to 1 if blank | Yes |
+| k_a constants, four finishes | Table 6-2 | 1.58/−0.085, 4.51/−0.265, 57.7/−0.718, 272/−0.995 | Yes |
+| k_b, k_c, k_e, S_e′ | §6-9 | as above; Acklam quantile, error below 1e-9 | Yes |
+| k_b above 254 mm | 0.6 to 0.75 band | held at 0.6330, warning issued | Yes (see -09) |
+| Fatigue and yield criteria | Goodman and Langer | Goodman and Langer only | Yes (see -08) |
+| Shoulder section | worse side governs | smaller outer diameter governs | No (-02) |
+| Torque on a section | from x_T1 to x_T2 | inclusive span; default x_T2 = 400 mm | Trap (-03) |
+| Loads in bending | forces only | mass column and self-weight excluded | Undocumented (-04) |
+| Rayleigh quotient | g Σ m y/Σ m y², signed y | uses \|y\| in the numerator | No (-01) |
+| Dunkerley | Σ m δ_ii, lower bound | all lumped nodes; 1 % to 7 % below exact | Yes |
+| Critical-speed warning | n_c/n < 2 | uses Rayleigh, the upper bound | Unconservative (-01) |
+| Keys | 2T/(d w L), 4T/(d h L), 0.577 S_y | same; full T at any x_key | Yes (see -05) |
+| Guards | geometry, S_y > S_ut, d > 254 mm | all fire; tested with five bad inputs | Yes |
+| Units | mm, kN, MPa, rpm | SI inside, rpm out | Yes |
+
+## Findings
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) | Status @ 614ddf89 | Status @ 0772fcf8 |
+|---|---|---|---|---|---|---|---|
+| P1-mech.shaft-01 | High | High: confirmed. Probe C3 gives 7976.6 rpm; my consistent-mass eigenvalue gives 7189.7 rpm. Overhung pulleys are common. At 0772fcf8: Medium (downgraded). The ratio and warning now err safe; Dunkerley is 2.6 % below exact. Only the n_c output and port read 11 % high. No pack binds n_c. That is a misleading output. | The Rayleigh sum uses \|y\| for the weights. With an overhung mass the span deflects upward, so the numerator is too large. n_c, r_c, the warning and port n_c read high. | Bearings at 100 and 500 mm on a Ø40 shaft of 700 mm, tip mass 5 kg: product 7977 rpm, exact 7190 rpm. At 3800 rpm the ratio shows 2.10 and no warning, but the true ratio is 1.89. A 1 kg mass gives +35 %. | Use signed y in the numerator. Use the lower of Rayleigh and Dunkerley for r_c, the warning and port n_c. Add an overhung-mass test. | Open. Probe C3 still gives n_c 7976.6 rpm, r_c 2.099 and no warning; exact 7190 rpm. | Partly fixed (3c637a3d): r_c and the warning now use the Dunkerley lower bound. Probe C3 at 3800 rpm gives r_c 1.843 and the warning fires; exact ratio 1.892. The n_c output and port keep the \|y\| quotient: 7976.6 rpm against 7189.7 exact (+10.9 %). Reviewer check (2026-10-25): confirmed Partly fixed. C3 gives n_c 7976.6 rpm, n_c_D 7003.6 rpm and r_c 1.843 with the warning. The exact value is 7190 rpm. |
+| P1-mech.shaft-02 | Medium | Medium: confirmed. A bore that changes at a shoulder is an edge case | A shoulder is checked on the side with the smaller outer diameter. With different bores that side can be the stronger one. | Ø50 bore 46 to Ø40 solid, 2 kN at the shoulder: product uses Ø40, σ_a 31.8 MPa, n_f 5.31. The hollow side has σ_a 57.5 MPa and n_f 2.87. | Evaluate both sides of a step and keep the lower n_f. | Open. Probe E8 still gives n_f 5.3065 (outer-diameter side); the hollow side gives 2.87. | Open. Probe E8 (sh02) still gives n_f 5.3065 from the outer-diameter side; the hollow side gives 2.87. |
+| P1-mech.shaft-03 | Medium | Medium: confirmed. The default notice and T = 0 in the section line give some warning | Defaults x_T1 = 0 and x_T2 = 400 mm suit the 400 mm example only. Sections beyond 400 mm silently carry no torque. | L 800 mm, T 1 kN·m, section at 600 mm: n_f 7.08 against 2.70 with x_T2 = 800. Only a generic "default used" notice appears. | Default x_T2 to the shaft length. Warn when T > 0 and a section or key lies outside the span. | Open. Probe E6 still gives T = 0 at 600 mm and n_f 7.075; default x_T2 stays 400 mm. | Open. Probe E6 (sh03) still gives T = 0 at 600 mm and n_f 7.0753. Default x_T2 stays 400 mm with no notice. |
+| P1-mech.shaft-04 | Medium | Medium: confirmed. The label "Radial loads and masses" invites users to enter weights as masses | The "mass carried" column adds no weight to reactions, moment or deflection. Shaft self-weight is also absent. Neither the label nor the assumptions say so. | ka-simply-supported: 20 kg at mid-span gives M_max = 0.2 kN·m = PL/4, not 0.2196. A Ø300 × 3 m shaft weighs 16.3 kN. | State the assumption in the label and assumption list. Offer an option to add weights as vertical loads. | Open. Probe: 20 kg at mid-span still gives M_max 0.2 kN·m with no weight added. | Open. Probe sh04: 20 kg at mid-span still gives M_max 0.2 kN·m; the label and assumptions are unchanged. |
+| P1-mech.shaft-05 | Low | Medium: unconservative by 37 % when the shaft is weaker than the key. The hub, often the weakest part, has no input at all | Key bearing uses the key yield strength only. The shaft S_y is on the sheet but unused. | Shaft S_y 250, key S_y 400, T 1.2 kN·m, Ø50, 14×9: L_key_req 53.3 mm. Using 250 MPa gives 85.3 mm. | Use min(S_y,key, S_y,shaft) for bearing, and add a hub strength input. | Open. Probe: shaft S_y 250, key S_y 400 still gives L_key_req 53.33 mm. | Open. Probe sh05: shaft S_y 250, key S_y 400 still gives L_key_req 53.333 mm. |
+| P1-mech.shaft-06 | Low | Low: confirmed | The spec says K_t comes "from records or fit equations". No fit equation exists. K_t, K_ts, q and q_s are typed in. | Template and spec text against the input list. | Reword the spec and assumption, or add the fit equations. | Open. No fit equation added; input list unchanged apart from k_a. | Open. The assumption text still says K_t comes from "published fit equations"; none exist. |
+| P1-mech.shaft-07 | Low | Rejected (owner to confirm against licensed copy): as I recall, Example 7-1 of the 10th edition holds these shoulder data in inch units. The number is probably right; only the edition needs checking | The ka-shigley-7-1 source cites Example 7-1. I recall these data (28 mm, 142.4 N·m, 124.3 N·m, 735/574 MPa) from the shoulder example numbered 7-2. I cannot check the book. | KAT source text. | Owner to confirm the example number against the book page and fix the text. | Changed: the citation now reads '10th ed., Ch. 7, Example 7-1' and notes the kpsi conversion. The example number is still unconfirmed; owner to check. | Changed: the KAT now uses the example's inch and kpsi data, converted exactly to SI. The case is still Unconfirmed. Owner to check the example number and printed answers. |
+| P1-mech.shaft-08 | Info | Info: confirmed | Only DE-Goodman and first-cycle yield are offered. Soderberg is 4 % lower, Gerber and ASME are 15 % higher. | See the other-criteria line above. | None needed. Consider a criterion choice. | Open (Info). Unchanged. | Open (Info). Unchanged. |
+| P1-mech.shaft-09 | Info | Info: confirmed | Lumped-mass Rayleigh for self-mass only reads 1.2 % above exact. Holding k_b at 254 mm is 2.8 % high at Ø300. Both are minor and the k_b case warns. | E1 self-mass row, E3 row. | None needed. | Open (Info). Unchanged. | Open (Info). Unchanged. |
+| P1-mech.shaft-R1 | — | Medium (if confirmed) | The sheet cites Shigley 11th ed. but uses the 9th/10th edition Table 6-2 constants (4.51/−0.265 for machined). My recollection is that the 11th edition revised Table 6-2 to lower k_a values (machined 3.04/−0.217). If so, k_a and S_e read high. Owner to confirm against licensed copy. | S_ut 600, machined: code k_a 0.828. With the constants I recall for the 11th ed.: 0.758, so S_e is 9 % high. | Check Table 6-2 in the cited edition. Either update the constants and KATs or cite the 10th edition. | Fixed (499bfb01, DA-17): the sheet now cites the 10th ed., which matches the 4.51/−0.265 constants. A k_a override input and record kind shaft.marin cover the 11th ed. values. | Fixed (499bfb01, DA-17). Unchanged at 0772fcf8. |
+| P1-mech.shaft-C1 | Low | New | The new k_a override accepts up to 1.5 with no notice. A surface factor above 1 is not physical in Shigley's scheme. A typed 1.5 raises S_e by 81 % against the default. | Probe: Shigley 7-1 data with k_a 1.5 gives S_e 317.95 MPa against 175.48 MPa by default. Only the generic record notice appears. | Set the soft maximum to 1.0. | Open (new) | Open. Probe shC1: k_a 1.5 still gives S_e 317.95 MPa with only the record notice; the range stays 0.1 to 1.5. |
+| P1-mech.shaft-C2 | Info | New | With k_a entered the finish choice is ignored without a notice. The sheet still shows the finish. | Probe: k_a 0.758 with finish machined: step reads 'k_a (entered, from a record)'. | State on the sheet that the finish is not used when k_a is entered. | Open (new) | Open. Probe shC1: the step still reads 'k_a (entered, from a record)' and the finish is not mentioned as unused. |
+| P1-mech.shaft-E1 | Low | — | After the Dunkerley change the sheet shows n_c (Rayleigh) and a ratio r_c that is not n_c/n. A reader who divides the two gets a different number. | Probe C3: n_c 7976.6 rpm, n 3800 rpm, r_c 1.843. Dividing gives 2.099. The step label reads n_c,D/n, but the output list shows only n_c beside r_c. | Output the Dunkerley bound next to r_c in the sheet, or make the n_c output and port the lower bound. | — | Open (new) |
+
+## Notes for the owner's manual test
+- Enter the ka-simply-supported data (Ø30, 400 mm, 2 kN, 20 kg, ρ = 0). Expect θ_A 2.430 mrad, y 0.3240 mm and n_c 5305 rpm.
+- Enter the Shigley shoulder data (Ø28, 142.4 N·m, 124.3 N·m, 735/574, R 99 %, K_t 1.68, K_ts 1.42, q 0.85, q_s 0.92). Expect S_e 203.7 MPa, n_f 1.650, n_y 4.586. My Gerber, ASME and Soderberg values are 1.89, 1.90 and 1.58. Compare them with the book.
+- Try the overhang: Ø40 × 700 mm, bearings at 100 and 500 mm, 5 kg at 700 mm, ρ 7850. Expect the product at 7977 rpm and Dunkerley at 7004 rpm. An exact solution gives 7190 rpm.
+- Try L = 800 mm with T = 1 kN·m and a section at 600 mm. Check the torque shown in the section line.
+- Run a key test: Ø50, 14×9×40, T 1.2 kN·m. Expect 85.71 MPa shear and 266.67 MPa bearing.
+
+## Independent review
+- Reviewer: senior reviewer (Claude), 2026-10-24.
+- I ran the script (exit 0). It builds its own consistent-mass beam model in NumPy and does not translate the C#.
+- I reproduced -01 with the probe: n_c 7976.6 rpm and r_c 2.10 at 3800 rpm, no warning. My own eigen-solve gives 7189.7 rpm.
+- Even the signed Rayleigh quotient is 15 % high for a 1 kg tip mass. So the fix must also use Dunkerley for the warning.
+- I read RunCore line by line. Stresses, k_b, k_e, Goodman, Langer yield and key formulas agree with Shigley.
+- Changes: -05 up to Medium, -07 rejected pending the owner's check, new R1 (Medium if confirmed).
+- Residual doubt: R1 and -07 rest on my memory of the Shigley 11th edition. I have not seen the book.
+
+## Re-check after DA-17/DA-18 and A-4/A-5 (2026-10-24)
+- Source changed: the edition citations moved from Shigley 11th to 10th ed. (Table 6-2). A new optional input k_a overrides the surface factor, with record kind shaft.marin.
+- No change to the beam, critical-speed, shoulder, torque-span or key code. The probe at 614ddf89 confirms 01 to 06 and 08 to 09 are Open.
+- R1 is Fixed: the cited edition now matches the constants. Row 07 is Changed: the edition changed, the example number is not confirmed.
+- New: C1 (Low) k_a up to 1.5 is accepted. C2 (Info) the finish is silently ignored when k_a is entered.
+- Script updated: new E11 rows for the k_a override and the default k_a. The docstring now names the 10th ed.
+- The script exits 0.
+- The method text above still says 11th ed. for the section numbers. Those section numbers are the same in the 10th ed.
+
+## Re-check after the Addendum A Blue round (0772fcf8)
+- Source changed (3c637a3d, a23e6e18): version 1.1.0. New optional input T_pk for the yield check. The bearings must be at least L/200 apart. Key and critical-speed notices added.
+- Critical-speed ratio r_c and its warning now use the Dunkerley lower bound. This fixes the unconservative warning in -01. The n_c output still uses the |y| Rayleigh quotient, so -01 is partly fixed.
+- The ka-shigley-7-1 KAT changed: exact SI conversion of the inch data, now S_e 201.50 MPa, n_f 1.6210, n_y 4.4890. The script follows it and passes. The Gerber, ASME and Soderberg values move to 1.859, 1.869 and 1.553.
+- New features tested and correct: T_pk 0.3 kN·m gives n_y 2.9138 and leaves n_f at 1.650. T_pk is ignored outside the torque span. Bearings 1 mm apart block; 2 mm apart pass. The partial-key and no-mass notices fire.
+- Counts: 1 fixed (R1, earlier), 1 partly fixed (-01), 1 changed (-07). Nine are open: -02 to -06, -08, -09, C1 and C2. One new Low (E1).
+- Script updated: new KAT data, an E12 row for T_pk, and C3 ratio rows. It exits 0.

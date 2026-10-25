@@ -17,5 +17,7 @@ public static class StructuralCalculators
         new LtbInteractionCalculator(),
         new PlateBendingCalculator(),
         new LiftingLugCalculator(),
+        new ColumnBucklingCalculator(),
+        new FilletWeldCalculator(),
     ];
 }

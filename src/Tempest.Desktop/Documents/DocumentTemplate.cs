@@ -1,3 +1,4 @@
+using System.Text;
 using SkiaSharp;
 
 namespace Tempest.Desktop.Documents;
@@ -263,7 +264,7 @@ public static class DocumentTemplate
     // ------------------------------------------------------------
 
     /// <summary>One text run, at its own absolute page coordinates (the baseline), in its own colour and <see cref="DocumentFontRole"/> (`WP 21.2A`; <see cref="DocumentFontRole.Body"/> — the platform default before this Work Package — when a caller does not say otherwise, so every pre-existing positional construction of this record keeps compiling and rendering exactly as before).</summary>
-    public readonly record struct TextRun(float X, float Y, string Text, float Size, bool Bold, SKTextAlign Align, SKColor Color, DocumentFontRole FontRole = DocumentFontRole.Body);
+    public readonly record struct TextRun(float X, float Y, string Text, float Size, bool Bold, SKTextAlign Align, SKColor Color, DocumentFontRole FontRole = DocumentFontRole.Body, bool Symbols = false);
 
     /// <summary>One horizontal rule, spanning <paramref name="X1"/> to <paramref name="X2"/> at <paramref name="Y"/>, in its own colour.</summary>
     public readonly record struct RuleRun(float X1, float X2, float Y, float StrokeWidth, SKColor Color);
@@ -272,11 +273,15 @@ public static class DocumentTemplate
     public readonly record struct ImageRun(float X, float Y, float Width, float Height);
 
     /// <summary>One page's own plan: every text run, rule and image it carries, in draw order (rules and images beneath text — <see cref="RenderPdf"/>'s own fixed draw order).</summary>
+    /// <summary>One vector drawing (a calculation's reference diagram): <paramref name="Draw"/> paints in its own units, placed at <paramref name="X"/>/<paramref name="Y"/> and scaled by <paramref name="Scale"/>. Its words are text runs, so they are subset, searchable and selectable like every other.</summary>
+    public readonly record struct DrawingRun(float X, float Y, float Scale, Action<SKCanvas> Draw);
+
     public sealed class PagePlan
     {
         public List<TextRun> Texts { get; } = [];
         public List<RuleRun> Rules { get; } = [];
         public List<ImageRun> Images { get; } = [];
+        public List<DrawingRun> Drawings { get; } = [];
     }
 
     /// <summary>The layout cursor threaded through every <c>Add*</c> helper below — which page is current, how far down it the next line goes, and (`WP 21.2A`) which of the two page geometries (<see cref="Landscape"/>) this document lays out against.</summary>
@@ -344,6 +349,8 @@ public static class DocumentTemplate
     /// <summary>A section heading — bold, <see cref="HeadingSize"/>, <see cref="Ink900"/> (headings on paper), <see cref="DocumentFontRole.Display"/> (`WP 21.2A`; Chakra Petch, the design system's own display face for headings).</summary>
     public static void AddHeading(LayoutState state, SKPaint measure, string text)
     {
+        // Kept with the first two lines beneath it, so a heading never stands alone at the foot of a page (the showcase journey found one).
+        EnsureSpace(state, HeadingSize * LineLeading + 2f + BodySize * LineLeading * 2);
         AddWrappedLine(state, measure, text, HeadingSize, bold: true, color: Ink900, fontRole: DocumentFontRole.Display);
         state.Y += 2f;
     }
@@ -351,7 +358,7 @@ public static class DocumentTemplate
     /// <summary>A word-wrapped line of running text, <paramref name="color"/> defaulting to <see cref="Slate700"/> (body text on paper) and <paramref name="fontRole"/> (`WP 21.2A`) defaulting to <see cref="DocumentFontRole.Body"/> (Inter).</summary>
     public static void AddWrappedLine(
         LayoutState state, SKPaint measure, string text, float size, bool bold, SKTextAlign align = SKTextAlign.Left, SKColor? color = null,
-        DocumentFontRole fontRole = DocumentFontRole.Body)
+        DocumentFontRole fontRole = DocumentFontRole.Body, bool symbols = false)
     {
         measure.TextSize = size;
         var lineHeight = size * LineLeading;
@@ -366,7 +373,7 @@ public static class DocumentTemplate
                 SKTextAlign.Center => (ContentLeft + state.ContentRight) / 2f,
                 _ => ContentLeft,
             };
-            state.Page.Texts.Add(new TextRun(x, state.Y + size, line, size, bold, align, runColor, fontRole));
+            state.Page.Texts.Add(new TextRun(x, state.Y + size, line, size, bold, align, runColor, fontRole, symbols));
             state.Y += lineHeight;
         }
     }
@@ -387,7 +394,7 @@ public static class DocumentTemplate
     /// </summary>
     public static void AddTable(
         LayoutState state, SKPaint measure, string[] headers, float[] widths, IReadOnlyList<string[]> rows,
-        SKTextAlign[]? columnAligns = null)
+        SKTextAlign[]? columnAligns = null, bool[]? symbolColumns = null)
     {
         var aligns = columnAligns ?? new SKTextAlign[headers.Length];
 
@@ -456,7 +463,7 @@ public static class DocumentTemplate
                 for (var lineIndex = 0; lineIndex < wrapped[i].Count; lineIndex++)
                 {
                     var baseline = rowTop + BodySize + lineIndex * lineHeight;
-                    state.Page.Texts.Add(new TextRun(x, baseline, wrapped[i][lineIndex], BodySize, false, aligns[i], Slate700, cellFontRole));
+                    state.Page.Texts.Add(new TextRun(x, baseline, wrapped[i][lineIndex], BodySize, false, aligns[i], Slate700, cellFontRole, symbolColumns is { } sc && i < sc.Length && sc[i]));
                 }
             }
 
@@ -630,6 +637,112 @@ public static class DocumentTemplate
     /// <see cref="LayoutState.Landscape"/> <paramref name="pages"/> was laid
     /// out with.
     /// </summary>
+    /// <summary>
+    /// Sets the symbols of every run that asks for it (<see cref="TextRun.Symbols"/>) as an engineer writes them: a
+    /// run is split into pieces on the line and pieces set low and smaller (a subscript), each placed after the last,
+    /// so <c>D_1</c> prints as D₁ (<see cref="Tempest.Desktop.CalcSheets.SymbolText"/>). A centred or right-aligned
+    /// run keeps its alignment as a whole.
+    /// </summary>
+    internal static void TypesetSymbols(List<TextRun> texts)
+    {
+        using var paint = new SKPaint();
+
+        for (var i = 0; i < texts.Count; i++)
+        {
+            var run = texts[i];
+
+            if (!run.Symbols || !Tempest.Desktop.CalcSheets.SymbolText.HasSymbols(run.Text))
+                continue;
+
+            paint.Typeface = DocumentFonts.For(run.FontRole, run.Bold);
+            paint.FakeBoldText = run.Bold && run.FontRole == DocumentFontRole.Body;
+            var segments = Tempest.Desktop.CalcSheets.SymbolText.Parse(run.Text);
+            var subSize = run.Size * (float)Tempest.Desktop.CalcSheets.SymbolText.SubscriptScale;
+            var widths = segments.Select(s => { paint.TextSize = s.Subscript ? subSize : run.Size; return paint.MeasureText(s.Text); }).ToList();
+            var total = widths.Sum();
+            var x = run.Align switch
+            {
+                SKTextAlign.Right => run.X - total,
+                SKTextAlign.Center => run.X - total / 2,
+                _ => run.X,
+            };
+
+            var pieces = new List<TextRun>(segments.Count);
+
+            for (var n = 0; n < segments.Count; n++)
+            {
+                if (segments[n].Text.Length > 0)
+                {
+                    pieces.Add(segments[n].Subscript
+                        ? run with { X = x, Y = run.Y + run.Size * 0.22f, Text = segments[n].Text, Size = subSize, Align = SKTextAlign.Left, Symbols = false }
+                        : run with { X = x, Text = segments[n].Text, Align = SKTextAlign.Left, Symbols = false });
+                }
+
+                x += widths[n];
+            }
+
+            texts.RemoveAt(i);
+            texts.InsertRange(i, pieces);
+            i += pieces.Count - 1;
+        }
+    }
+
+    /// <summary>
+    /// A brand face (Space Mono, Chakra Petch) lacks some symbols a calculation prints — Σ in "R_tot = Σ R_i" drew as a
+    /// box (the showcase journey found it). A left-aligned run is split so each such character is drawn in the body
+    /// face, which has it, in place; any other run that has one is drawn wholly in the body face.
+    /// </summary>
+    internal static void FallBackForMissingGlyphs(List<TextRun> texts)
+    {
+        using var paint = new SKPaint();
+
+        for (var i = 0; i < texts.Count; i++)
+        {
+            var run = texts[i];
+
+            if (run.FontRole == DocumentFontRole.Body)
+                continue;
+
+            var face = DocumentFonts.For(run.FontRole, run.Bold);
+            var body = DocumentFonts.For(DocumentFontRole.Body, run.Bold);
+
+            if (ReferenceEquals(face, body) || face.ContainsGlyphs(run.Text))
+                continue;
+
+            if (run.Align != SKTextAlign.Left)
+            {
+                texts[i] = run with { FontRole = DocumentFontRole.Body };
+                continue;
+            }
+
+            var pieces = new List<TextRun>();
+            var x = run.X;
+            var start = 0;
+
+            while (start < run.Text.Length)
+            {
+                var own = face.ContainsGlyphs(Rune.GetRuneAt(run.Text, start).ToString());
+                var end = start;
+
+                while (end < run.Text.Length && face.ContainsGlyphs(Rune.GetRuneAt(run.Text, end).ToString()) == own)
+                    end += Rune.GetRuneAt(run.Text, end).Utf16SequenceLength;
+
+                var piece = run.Text[start..end];
+                var role = own ? run.FontRole : DocumentFontRole.Body;
+                pieces.Add(run with { X = x, Text = piece, FontRole = role });
+                paint.Typeface = own ? face : body;
+                paint.TextSize = run.Size;
+                paint.FakeBoldText = run.Bold && role == DocumentFontRole.Body;
+                x += paint.MeasureText(piece);
+                start = end;
+            }
+
+            texts.RemoveAt(i);
+            texts.InsertRange(i, pieces);
+            i += pieces.Count - 1;
+        }
+    }
+
     public static ReadOnlyMemory<byte> RenderPdf(List<PagePlan> pages, SKDocumentPdfMetadata metadata, bool landscape = false)
     {
         var pageWidth = landscape ? LandscapePageWidth : PageWidth;
@@ -645,6 +758,12 @@ public static class DocumentTemplate
             using var linePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
             using var imagePaint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High };
             var logo = DocumentLogo.HorizontalInk;
+
+            foreach (var page in pages)
+            {
+                TypesetSymbols(page.Texts);
+                FallBackForMissingGlyphs(page.Texts);
+            }
 
             // `v0.26.0` (§3.6): each brand face is embedded as a subset of
             // the glyphs this document draws, not whole (`TrueTypeSubsetter`).
@@ -663,6 +782,15 @@ public static class DocumentTemplate
                     linePaint.StrokeWidth = rule.StrokeWidth;
                     linePaint.Color = rule.Color;
                     canvas.DrawLine(rule.X1, rule.Y, rule.X2, rule.Y, linePaint);
+                }
+
+                foreach (var drawing in page.Drawings)
+                {
+                    canvas.Save();
+                    canvas.Translate(drawing.X, drawing.Y);
+                    canvas.Scale(drawing.Scale);
+                    drawing.Draw(canvas);
+                    canvas.Restore();
                 }
 
                 if (logo is not null)

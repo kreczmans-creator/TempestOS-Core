@@ -59,7 +59,8 @@ public sealed record CalcSheet(
     CalcSheetFooter Footer,
     IReadOnlyList<CalcRevisionRow>? Revisions = null,
     IReadOnlyList<CalcPackIndexRow>? PackIndex = null,
-    string? DiagramKey = null)
+    string? DiagramKey = null,
+    CalcInputSet? InputValues = null)
 {
     public CalcCheck? Governing => Checks.Count == 0 ? null : Checks.OrderByDescending(c => c.Utilisation).First();
 }

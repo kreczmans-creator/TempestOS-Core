@@ -250,7 +250,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:04000d8304ab49ddb24fc918120e1fb4#P_rms",
+        "Reference": "calc:717779b90cc649c8a8cda6b376f6e451#P_rms",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -571,7 +571,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c707fe36214140969ce23cc7b6d8ac82#I_3ph",
+        "Reference": "calc:5d38f2d35e4544e1a21f6de36d798ce2#I_3ph",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -686,7 +686,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:fe4dcef5795246a4ae1d273c44db2850@1 \u00B7 invented values for the worked example",
+        "Reference": "record:2456ef21798947bb94c81b3e9ea31de4@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -840,7 +840,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:3da4415f48164df4b7d2459358a229f3@1 \u00B7 invented values for the worked example",
+        "Reference": "record:13dde72ceac949ae956c61d97864652e@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -896,7 +896,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6efd975e03b14c059d48ce16e3852321#CSA",
+        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -908,7 +908,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6efd975e03b14c059d48ce16e3852321#I_b",
+        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#I_b",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -920,7 +920,7 @@
       "Unit": "m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6efd975e03b14c059d48ce16e3852321#L",
+        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1081,7 +1081,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6efd975e03b14c059d48ce16e3852321#I_n",
+        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#I_n",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1093,7 +1093,7 @@
       "Unit": "m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6efd975e03b14c059d48ce16e3852321#L",
+        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1127,7 +1127,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6efd975e03b14c059d48ce16e3852321#CSA",
+        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1202,7 +1202,7 @@
       "Number": 2,
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6efd975e03b14c059d48ce16e3852321#device_code",
+        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#device_code",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1317,7 +1317,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c707fe36214140969ce23cc7b6d8ac82#Phi",
+        "Reference": "calc:5d38f2d35e4544e1a21f6de36d798ce2#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

@@ -71,7 +71,7 @@ public static class CalcSheetBuilder
         return new CalcSheet(
             header, template.Scope, template.Method, template.ClauseRefs, inputRows, assumptions,
             result.Steps.Where(s => s.Kind != CalcStepKind.Input).ToList(),
-            checks, CollapseUnsourced(result.Warnings, template), result.Blocks, result.Outputs, footer, revisions, null, template.DiagramKey);
+            checks, CollapseUnsourced(result.Warnings, template), result.Blocks, result.Outputs, footer, revisions, null, template.DiagramKey, inputs);
     }
 
     private const string UnsourcedPrefix = "record.";

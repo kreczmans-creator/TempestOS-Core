@@ -39,12 +39,12 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Structural, "EN 1993-1-1 LTB and N+M interaction",
+        Id, "1.1.1", CalcDiscipline.Structural, "EN 1993-1-1 LTB and N+M interaction",
         "Lateral-torsional buckling (6.3.2), flexural buckling (6.3.1) and the interaction of axial compression with bending (6.3.3) for a uniform doubly-symmetric I-section member on fork supports, class 1 to 3: M_cr, λ̄_LT, χ_LT and M_b,Rd; χ_y, χ_z and N_b,Rd; the Annex B (or Annex A) interaction factors and both interaction ratios, with the governing check.",
         "Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)²·I_w/I_z + (kL)²·G·I_t/(π²E·I_z) + (C₂z_g)²) − C₂z_g]; C₁ = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70 (end moments, k = 1) unless entered\n" +
         "LTB slenderness: λ̄_LT = √(W_y·f_y/M_cr), W_y = W_pl,y (class 1, 2) or W_el,y (class 3)\n" +
-        "6.3.2.2: Φ_LT = 0.5[1 + α_LT(λ̄_LT − 0.2) + λ̄_LT²]; χ_LT = 1/(Φ_LT + √(Φ_LT² − λ̄_LT²)) ≤ 1\n" +
-        "6.3.2.3: Φ_LT = 0.5[1 + α_LT(λ̄_LT − λ̄_LT,0) + β·λ̄_LT²]; χ_LT = 1/(Φ_LT + √(Φ_LT² − β·λ̄_LT²)) ≤ 1, ≤ 1/λ̄_LT²; optional χ_LT,mod = χ_LT/f ≤ 1, ≤ 1/λ̄_LT² (eq. 6.58), f = 1 − 0.5(1 − k_c)[1 − 2(λ̄_LT − 0.8)²] ≤ 1\n" +
+        "Lateral-torsional buckling, general case (6.3.2.2): Φ_LT = 0.5[1 + α_LT(λ̄_LT − 0.2) + λ̄_LT²]; χ_LT = 1/(Φ_LT + √(Φ_LT² − λ̄_LT²)) ≤ 1\n" +
+        "Lateral-torsional buckling, rolled sections (6.3.2.3): Φ_LT = 0.5[1 + α_LT(λ̄_LT − λ̄_LT,0) + β·λ̄_LT²]; χ_LT = 1/(Φ_LT + √(Φ_LT² − β·λ̄_LT²)) ≤ 1, ≤ 1/λ̄_LT²; optional χ_LT,mod = χ_LT/f ≤ 1, ≤ 1/λ̄_LT² (eq. 6.58), f = 1 − 0.5(1 − k_c)[1 − 2(λ̄_LT − 0.8)²] ≤ 1\n" +
         "Buckling resistance in bending: M_b,Rd = χ_LT·W_y·f_y/γ_M1\n" +
         "Flexural buckling: N_cr = π²EI/L_cr², λ̄ = √(A·f_y/N_cr), Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²], χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1, N_b,Rd = χ·A·f_y/γ_M1; the curve of each axis from Table 6.2 (section type, h/b, t_f; f_y ≤ 420 MPa) or chosen\n" +
         "Interaction (6.3.3(4)): N_Ed/(χ_y·N_Rk/γ_M1) + k_yy·M_y,Ed/(χ_LT·M_y,Rk/γ_M1) + k_yz·M_z,Ed/(M_z,Rk/γ_M1) ≤ 1; N_Ed/(χ_z·N_Rk/γ_M1) + k_zy·M_y,Ed/(χ_LT·M_y,Rk/γ_M1) + k_zz·M_z,Ed/(M_z,Rk/γ_M1) ≤ 1\n" +

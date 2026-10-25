@@ -202,6 +202,9 @@ public sealed partial class CalcInstanceService
     /// <param name="amend">A change to the instance that must commit with the new inputs (the CAD import record, Addendum B W1).</param>
     private async Task<CalcActionResult> UpdateInputsCoreAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset? expectedUpdatedAt, bool repin, CancellationToken cancellationToken, Func<CalcInstance, CalcInstance>? amend = null)
     {
+        if (await LegacyRefusalAsync(instanceId, cancellationToken).ConfigureAwait(false) is { } legacy)
+            return legacy;
+
         ArgumentNullException.ThrowIfNull(inputs);
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
 
@@ -292,6 +295,15 @@ public sealed partial class CalcInstanceService
     public async Task<CalcInstanceRun> RunAsync(CalcInstance instance, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(instance);
+
+        if (instance.IsLegacyArchive)
+        {
+            // A migrated legacy record has no calculator: its run is the archive sheet (ADR-0167).
+            var archive = await SheetAsync(instance, cancellationToken).ConfigureAwait(false);
+            var archived = new CalcRunResult([], archive.Outputs, archive.Checks, archive.Warnings, [], archive.Assumptions);
+            return new CalcInstanceRun(instance, archived, archive, CalcSheetTextRenderer.Render(archive));
+        }
+
         var entry = _catalogue.Get(instance.TemplateReference);
         var inputs = new CalcInputSet(instance.Inputs);
         var result = CalcRunner.Run(entry.Calculator, inputs, _engine, cancellationToken: cancellationToken);
@@ -321,6 +333,9 @@ public sealed partial class CalcInstanceService
 
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
+
+        if (instance.IsLegacyArchive)
+            return CalcActionResult.Refused(LegacyMessage(instance), instance);
 
         if (instance.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only a draft can be checked.", instance);
@@ -461,6 +476,16 @@ public sealed partial class CalcInstanceService
         return null;
     }
 
+    /// <summary>A migrated legacy record (ADR-0167) is an archive: readable, never changed, checked, issued or revised.</summary>
+    private static string LegacyMessage(CalcInstance instance) =>
+        $"Calculation '{instance.Name}' is a migrated legacy record; it can be read but not changed, checked, issued or revised. Re-enter its inputs in the matching worksheet template.";
+
+    private async Task<CalcActionResult?> LegacyRefusalAsync(Guid instanceId, CancellationToken cancellationToken)
+    {
+        var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
+        return instance is { IsLegacyArchive: true } ? CalcActionResult.Refused(LegacyMessage(instance), instance) : null;
+    }
+
     /// <summary>The first provenance block Issue would raise for this instance's inputs, or <see langword="null"/>.</summary>
     private string? ProvenanceGate(CalcInstance instance)
     {
@@ -489,6 +514,9 @@ public sealed partial class CalcInstanceService
 
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
+
+        if (instance.IsLegacyArchive)
+            return CalcActionResult.Refused(LegacyMessage(instance), instance);
 
         // ADR-0173: first, whatever else is true of it, a calculation of a switched-off calculator is never issued.
         if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
@@ -596,6 +624,9 @@ public sealed partial class CalcInstanceService
         if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
             return CalcActionResult.Refused(switchedOff, instance);
 
+        if (instance.IsLegacyArchive)
+            return CalcActionResult.Refused(LegacyMessage(instance), instance);
+
         // A checked calculation that has gone stale (a record was revised, a template changed, an upstream moved) is never a dead end:
         // it can be revised, which starts a draft to correct and check again (Red R-A-04, ADR-0166).
         if (instance.Status != CalcInstanceStatus.Issued
@@ -690,6 +721,60 @@ public sealed partial class CalcInstanceService
     }
 
     // ------------------------------------------------------------------
+    // Compare (ADR-0167 §4)
+    // ------------------------------------------------------------------
+
+    /// <summary>The comparison of a revision with the one it superseded; a refusal when the calculation has no earlier revision.</summary>
+    public async Task<(CalcComparison? Comparison, string? Reason)> CompareWithPredecessorAsync(Guid instanceId, CancellationToken cancellationToken = default)
+    {
+        var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
+
+        if (instance is null)
+            return (null, $"No calculation '{instanceId}' exists.");
+
+        if (instance.IsLegacyArchive)
+            return (null, LegacyMessage(instance));
+
+        // A calculation the worksheet surface withholds (its feature is switched off) is not shown through Compare either.
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return (null, switchedOff);
+
+        if (instance.PredecessorId is not { } predecessorId)
+            return (null, $"Calculation '{instance.Name}' rev {instance.Revision} has no earlier revision to compare with; compare it with another calculation of the same template instead.");
+
+        var predecessor = await _store.FindInstanceAsync(predecessorId, cancellationToken).ConfigureAwait(false);
+        return predecessor is null ? (null, $"The earlier revision of '{instance.Name}' no longer exists.") : Compared(predecessor, instance);
+    }
+
+    /// <summary>The comparison of two calculations of one template; a refusal names why they cannot be compared.</summary>
+    public async Task<(CalcComparison? Comparison, string? Reason)> CompareAsync(Guid beforeId, Guid afterId, CancellationToken cancellationToken = default)
+    {
+        var before = await _store.FindInstanceAsync(beforeId, cancellationToken).ConfigureAwait(false);
+        var after = await _store.FindInstanceAsync(afterId, cancellationToken).ConfigureAwait(false);
+
+        if (before is null || after is null)
+            return (null, $"No calculation '{(before is null ? beforeId : afterId)}' exists.");
+
+        // Compare shows the stored inputs and outputs, which the worksheet surface refuses to show for a switched-off template (ADR-0173).
+        if ((FeatureRefusal(before.TemplateReference) ?? FeatureRefusal(after.TemplateReference)) is { } switchedOff)
+            return (null, switchedOff);
+
+        return Compared(before, after);
+    }
+
+    private static (CalcComparison? Comparison, string? Reason) Compared(CalcInstance before, CalcInstance after)
+    {
+        try
+        {
+            return (CalcInstanceComparer.Compare(before, after), null);
+        }
+        catch (ArgumentException refused)
+        {
+            return (null, refused.Message);
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Staleness
     // ------------------------------------------------------------------
 
@@ -716,6 +801,10 @@ public sealed partial class CalcInstanceService
         {
             if (await _store.FindInstanceAsync(id, cancellationToken).ConfigureAwait(false) is not { } found)
                 continue;
+
+            // A migrated legacy record is an archive that is never changed (ADR-0167); a pack would write its PackId and could never be checked.
+            if (found.IsLegacyArchive)
+                throw new ArgumentException(LegacyMessage(found), nameof(instanceIds));
 
             if (found.ProjectId != projectId)
                 throw new ArgumentException($"Calculation '{found.Name}' belongs to another project; a pack holds the calculations of one project.", nameof(instanceIds));
@@ -1070,6 +1159,10 @@ public sealed partial class CalcInstanceService
     public async Task<CalcSheet> SheetAsync(CalcInstance instance, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(instance);
+
+        if (instance.IsLegacyArchive)
+            return LegacyArchiveSheet.Build(instance, await ProjectLabelAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false), instance.CreatedBy, _engine.EngineVersion, _applicationVersion, _time.GetUtcNow());
+
         var entry = _catalogue.Get(instance.TemplateReference);
         var inputs = new CalcInputSet(instance.Inputs);
         var result = CalcRunner.Run(entry.Calculator, inputs, _engine, cancellationToken: cancellationToken);

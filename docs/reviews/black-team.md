@@ -240,3 +240,13 @@ New findings in this round:
 | B-B-08 | Low | `InsulationCalculator.cs`, `WarnFixedCoefficientAgainstCondensation` | The warning fires whenever the ε 0.1 correlation needs more than the h_se given. On the `chilled-water-pipe-condensation` example (h_se 8, ε 0.9) it reads "13.162 mm as given, but 12.033 mm … at ε = 0.9 and 25.183 mm at ε = 0.1". The given value is conservative for the stated surface, and the README does not explain the warning. h_se 5 warns the same way. | Judge against the correlation at the entered ε; mention bright cladding as a note (or when ε < 0.5); explain it in the README. | Open: fix now (small) |
 
 S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
+
+> The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
+
+## v0.27.0 — clean clone (2026-10-23)
+
+A fresh clone of `v0.27.0/phase-5-reviews` at `b2d1647` (no untracked files, no build output carried over), built in Release with warnings as errors and every suite run: Core 7,194/0 (+15 skipped), Calc Engine 386/0, Sheets 93/0, Library 59/1 (+1 skipped), Calculators 560/0, Desktop 1,271/0; the clone stayed clean after the run.
+
+| ID | Sev | Where | Finding | Fix | Status |
+|---|---|---|---|---|---|
+| B-26 | Medium | `CalcReferenceFill` | Picking a fastener record that has no stress area refused the whole fill, so the bolt's proof strength could no longer be filled from it: the new optional `A_s_given` input (Green G-08) is fillable from fasteners, and any property a record lacks was a block. Missed in the Phase 5 run because only the Calculators suite was rerun after the template change. | An optional input the record does not supply is left as it is, with a warning; the fill succeeds when nothing blocks. `A_Released_Fastener_Fills_The_Bolt_Proof_Strength…` asserts both. | Fixed |

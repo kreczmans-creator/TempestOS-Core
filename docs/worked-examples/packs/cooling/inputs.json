@@ -410,7 +410,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:fbaa5e7eccbd475983045980767e76d1#Phi",
+        "Reference": "calc:26754b10eb96441bac44b8d30a8bfcc8#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -609,7 +609,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:192c93ed44d74825b54d18771868fd5f#P_cool",
+        "Reference": "calc:2d90366ad89449a8a903ce63be54a248#P_cool",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -643,7 +643,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:192c93ed44d74825b54d18771868fd5f#T_max",
+        "Reference": "calc:2d90366ad89449a8a903ce63be54a248#T_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -763,7 +763,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:19c84b81117e4724b484910f7f4f9302#Q",
+        "Reference": "calc:979d63693e7c479ead64c3c737ca28b7#Q",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -775,7 +775,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:19c84b81117e4724b484910f7f4f9302#T_c_m",
+        "Reference": "calc:979d63693e7c479ead64c3c737ca28b7#T_c_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -798,7 +798,7 @@
       "Unit": "J/(kg*K)",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:19c84b81117e4724b484910f7f4f9302#cp_c",
+        "Reference": "calc:979d63693e7c479ead64c3c737ca28b7#cp_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -810,7 +810,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:19c84b81117e4724b484910f7f4f9302#dT_c",
+        "Reference": "calc:979d63693e7c479ead64c3c737ca28b7#dT_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

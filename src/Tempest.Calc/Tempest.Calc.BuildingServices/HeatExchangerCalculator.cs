@@ -19,14 +19,14 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
     public const string Sizing = "sizing (given duty)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.BuildingServices, "Heat exchanger (LMTD and ε-NTU)",
+        Id, "1.2.1", CalcDiscipline.BuildingServices, "Heat exchanger (LMTD and ε-NTU)",
         "Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.",
         "Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with one fluid at constant temperature (C_r = 0) that fluid's capacity rate is infinite, C_min is the other stream's and the constant stream leaves at its inlet temperature\n" +
         "Overall coefficient with fouling: U_f = 1/(1/U + R_f)\n" +
         "Transfer units: NTU = U_f·A/C_min; effectiveness ε(NTU, C_r) for the arrangement\n" +
-        "Duty: Q = ε·C_min·(T_h,in − T_c,in); outlets from the energy balance\n" +
-        "Sizing: ε = Q/(C_min·ΔT_max), NTU from the inverse relation, A = NTU·C_min/U_f\n" +
-        "Cross-check: Q = U_f·A·F·ΔT_lm, F from R and P (1 shell pass) or back-calculated",
+        "Heat exchanger duty: Q = ε·C_min·(T_h,in − T_c,in); outlets from the energy balance\n" +
+        "Area for a required duty: ε = Q/(C_min·ΔT_max), NTU from the inverse relation, A = NTU·C_min/U_f\n" +
+        "Cross-check with LMTD: Q = U_f·A·F·ΔT_lm, F from R and P (1 shell pass) or back-calculated",
         [
             new CalcInputSpec("arrangement", "Flow arrangement", CalcInputKind.Choice, Choices: [Counterflow, Parallel, ShellTube, Crossflow, Isothermal], DefaultChoice: Counterflow),
             new CalcInputSpec("const_side", "Which side is at constant temperature (used only by the C_r = 0 arrangement)", CalcInputKind.Choice, Choices: [HotConstant, ColdConstant], DefaultChoice: HotConstant),

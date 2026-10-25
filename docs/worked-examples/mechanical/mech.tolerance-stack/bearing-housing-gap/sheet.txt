@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.
-Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bender-style). Predicted σ: √Σ σ_i² with σ_i from each contributor's distribution. C_pk from the nearer limit. Monte Carlo: seeded sampling of every contributor, summed with its sign.
+Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of squares, the statistical stack: T_rss = √Σ half². Modified RSS, a factor on the RSS (Bender-style): T_mrss = factor × RSS. Predicted standard deviation of the stack, from each contributor's distribution: σ = √Σ σ_i². Process capability, taken from the nearer limit: C_pk = min(USL − μ, μ − LSL)/(3σ). Monte Carlo check, every contributor sampled from a fixed seed and summed with its sign: stack = Σ s_i x_i.
   Ref: BS 8888 — Technical product documentation and specification
   Ref: ASME Y14.5 — Dimensioning and tolerancing
   Ref: ISO 2768-1 — General tolerances (where a contributor's band is a general tolerance)
@@ -110,10 +110,10 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
         Process capability C_p
   [24] dpmo = 10⁶ × P(outside)
       = 10⁶ × Φ-tails at σ = 0.0268742
-      = 7.7759e-7
+      = 7.7755e-7
         Predicted defects per million
   [25] yield = 1 − dpmo / 10⁶
-      = 1 − 7.7759e-7 / 10⁶
+      = 1 − 7.7755e-7 / 10⁶
       = 100 %
         Predicted yield
   [26] u_cpk = cpk_target / cpk
@@ -158,7 +158,7 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
   m_max = 0.06 mm    Worst-case margin to the maximum
   cp = 2.4807    C_p
   cpk = 2.3567    C_pk
-  dpmo = 7.7759e-7    DPMO (predicted)
+  dpmo = 7.7755e-7    DPMO (predicted)
   yield = 100 %    Yield (predicted)
   mc_mean = 0.60987 mm    Monte Carlo mean
   mc_sigma = 0.027228 mm    Monte Carlo σ
@@ -174,8 +174,8 @@ Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bend
   WARNING few-contributors: contributors: fewer than four contributors; RSS and modified RSS are optimistic for so few.
 
 8. VERIFICATION
-  Template: mech.tolerance-stack@2.1.0
+  Template: mech.tolerance-stack@2.2.0
   Content hash: 0000000000000000
   Engine: engine
-  Known-answer cases passed: 3/3
+  Known-answer cases passed: 7/7
   Test run: —

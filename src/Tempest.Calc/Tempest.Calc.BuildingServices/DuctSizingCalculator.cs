@@ -38,9 +38,9 @@ public sealed class DuctSizingCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.BuildingServices, "Duct sizing",
+        Id, "1.0.1", CalcDiscipline.BuildingServices, "Duct sizing",
         "Sizes each duct section by the equal-friction method (a target friction rate) or the velocity method (a target velocity), rounds to standard sizes, and reports velocity, friction rate, friction and fitting losses per section and the total pressure drop along the index run, with warnings against user velocity and pressure-drop limits.",
-        "Round: D from the target (friction: Colebrook with the air properties at T; velocity: D = √(4Q/πv)), rounded up to the next standard size. Rectangular: equivalent diameter D_e = 1.30 (ab)^0.625/(a + b)^0.25 (equal friction and capacity); flat oval: D_e = 1.55 A^0.625/P^0.25 with A = πb²/4 + b(a − b), P = πb + 2(a − b). Friction rate Δp/L = f ρ v_e²/(2D_e) with v_e the velocity in the equivalent round duct; fitting loss ΣC ρ v²/2 at the actual velocity; totals summed over the index-run sections.",
+        "Round duct diameter from the design target: D by Colebrook with the air properties at T (equal friction), or D = √(4Q/πv) (velocity), rounded up to the next standard size.\nRectangular duct of equal friction and capacity: D_e = 1.30 (ab)^0.625/(a + b)^0.25.\nFlat-oval duct of equal friction and capacity: D_e = 1.55 A^0.625/P^0.25, with A = πb²/4 + b(a − b) and P = πb + 2(a − b).\nFriction loss per metre, at the velocity v_e of the equivalent round duct: Δp/L = f ρ v_e²/(2D_e).\nFitting losses, at the actual velocity: Δp = ΣC ρ v²/2.\nIndex-run totals, summed over every section of the run: Δp_run = Σ(Δp/L · L + ΣC ρ v²/2).",
         [
             new CalcInputSpec("method", "Sizing method", CalcInputKind.Choice, Choices: [MethodEqualFriction, MethodVelocity], DefaultChoice: MethodEqualFriction, Group: "Design"),
             new CalcInputSpec("dp_target", "Target friction rate (equal friction)", CalcInputKind.Quantity, "Pa/m", Default: 1.0, Min: 0.3, Max: 5, HardMin: 0.01, HardMax: 100, Group: "Design"),

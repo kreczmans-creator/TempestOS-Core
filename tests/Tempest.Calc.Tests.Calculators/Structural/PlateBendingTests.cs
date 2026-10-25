@@ -283,7 +283,7 @@ public sealed class PlateBendingTests
         Assert.Equal(0, r.OutputSi("M_edge"));
         Assert.Contains(Plate.Template.ClauseRefs, c => c.Clause == "6.2.1(5)");
         Assert.DoesNotContain(Plate.Template.ApplicabilityRules, x => x.Id == "ring-basis");
-        Assert.Equal("1.2.1", Plate.Template.Version);
+        Assert.Equal("1.2.2", Plate.Template.Version);
     }
 
     [Fact]

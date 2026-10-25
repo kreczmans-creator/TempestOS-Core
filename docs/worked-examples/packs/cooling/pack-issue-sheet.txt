@@ -39,7 +39,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 20/20
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -52,7 +52,7 @@ Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
-Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) PSU: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) Power supply sizing: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
   Ref: Linden's Handbook of Batteries 5th ed., Ch. 3–4 — Battery sizing and the Peukert relation
   Ref: BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance; cited by number only)
 
@@ -202,11 +202,11 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.2.0
-  Content hash: dc7b6b8e4454e8eb
+  Template: elec.load-budget@1.2.1
+  Content hash: 39f53bc4722e29b8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -220,7 +220,7 @@ Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
-P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive. Sealed enclosure (T_seal entered, no breather): the pressure difference across the walls when the air warms from the sealing temperature to T_int at constant volume, Δp = p_site·|T_int/T_seal − 1| (absolute temperatures), a rise when T_int > T_seal, a suction when below. A pressure-compensation element (breather or relief) limits it: dp_seal = min(that difference, dp_relief), the cracking pressure. The force of dp_seal on a cover of area A_cover is F_seal = dp_seal·A_cover.
+Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun). Effective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face. Temperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h A_eff). Air flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K). Fan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)². Cooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h A_eff (T_max − T_amb). Sealed enclosure (sealing temperature T_seal entered, no breather), pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below): Δp = p_site·|T_int/T_seal − 1|. A pressure-compensation element (breather or relief) limits it to its cracking pressure: dp_seal = min(Δp, dp_relief). Force of that pressure on a cover of area A_cover: F_seal = dp_seal·A_cover.
   Ref: IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
   Ref: Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
   Ref: BS EN 61439-1 10.10 — Verification of temperature rise
@@ -341,11 +341,11 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   WARNING cooling-unit: T_max: natural dissipation holds 237.6 W of 3660 W; ventilate or fit a 3422 W cooling unit.
 
 8. VERIFICATION
-  Template: elec.enclosure-heat@1.4.0
-  Content hash: 3add357ba3b44d85
+  Template: elec.enclosure-heat@1.5.0
+  Content hash: 857f14f33a5fb9c0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -359,7 +359,7 @@ Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.
-Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with one fluid at constant temperature (C_r = 0) that fluid's capacity rate is infinite, C_min is the other stream's and the constant stream leaves at its inlet temperature Overall coefficient with fouling: U_f = 1/(1/U + R_f) Transfer units: NTU = U_f·A/C_min; effectiveness ε(NTU, C_r) for the arrangement Duty: Q = ε·C_min·(T_h,in − T_c,in); outlets from the energy balance Sizing: ε = Q/(C_min·ΔT_max), NTU from the inverse relation, A = NTU·C_min/U_f Cross-check: Q = U_f·A·F·ΔT_lm, F from R and P (1 shell pass) or back-calculated
+Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with one fluid at constant temperature (C_r = 0) that fluid's capacity rate is infinite, C_min is the other stream's and the constant stream leaves at its inlet temperature Overall coefficient with fouling: U_f = 1/(1/U + R_f) Transfer units: NTU = U_f·A/C_min; effectiveness ε(NTU, C_r) for the arrangement Heat exchanger duty: Q = ε·C_min·(T_h,in − T_c,in); outlets from the energy balance Area for a required duty: ε = Q/(C_min·ΔT_max), NTU from the inverse relation, A = NTU·C_min/U_f Cross-check with LMTD: Q = U_f·A·F·ΔT_lm, F from R and P (1 shell pass) or back-calculated
   Ref: Incropera, Fundamentals of Heat and Mass Transfer 7th ed., §11.3–11.5, Tables 11.3–11.4 — LMTD and effectiveness-NTU methods
   Ref: Çengel & Ghajar, Heat and Mass Transfer 5th ed., Ch. 11 — Heat exchangers
 
@@ -488,11 +488,11 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   WARNING record: Tabulated values not taken from a reference record: cp_h, cp_c (Fluid specific heats). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.heat-exchanger@1.2.0
-  Content hash: d4c992a2cd44e8bc
+  Template: bs.heat-exchanger@1.2.1
+  Content hash: f7e1a4c344c6fcf3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test
 
 
@@ -506,7 +506,7 @@ Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
-Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT). Mean velocity in the pipe: v = Q/(πD²/4). Reynolds number, which decides laminar or turbulent flow: Re = ρvD/μ. Friction factor for laminar flow (Re < 2300): f = 64/Re. Friction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)). Head lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g. System curve, with friction scaled from the design flow as Q² (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f(Q). Water held in the pipes: V_pipe = Σ π/4·D²·L. Duty point, where the pump and system curves cross (found by bisection): H_pump(Q) = H_sys(Q). Pump affinity laws for a change of speed n or impeller diameter D: Q ∝ n D³; H ∝ n² D². Net positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
   Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
   Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
   Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
@@ -674,9 +674,9 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   No warnings.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.5.0
-  Content hash: fa61fbf098961063
+  Template: bs.pipe-pump@1.6.0
+  Content hash: 5a30160d8816872d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 09:40 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test

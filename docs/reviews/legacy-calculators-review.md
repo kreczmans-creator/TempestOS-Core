@@ -35,17 +35,17 @@ Requested by the owner on 2026-10-23 ("review all of the currently built work â€
 | `calc.bolt-group-eccentric-shear` | Superseded | `mech.bolt-group` (shipped) |
 | `calc.beam-deflection` | Superseded | `struct.beam-formulas` (shipped; add the legacy cases not yet in the Roark set) |
 | `calc.column-buckling` | Superseded | `struct.en1993-member` flexural buckling (shipped) + Euler/Johnson as `struct.column-buckling` |
-| `calc.lifting-lug-pin-joint` | Port | `mech.lifting-lug` |
+| `calc.lifting-lug-pin-joint` | Port | `mech.lifting-lug` (gated with the `lifting` feature, with an attestation and a second check, like S8: ADR-0173 Amendment 1) |
 | `calc.fillet-weld-throat-stress` | Port | `struct.fillet-weld` |
-| `calc.bearing-rating-life` | Port | `mech.bearing-life` (ISO 281 L10, aÂ·ISO as inputs) |
+| `calc.bearing-rating-life` | Port | `mech.bearing-life-basic` (ISO 281 L10 with the reliability factor entered; Addendum A's `mech.bearing-life` kept its id: ADR-0167 Amendment 2) |
 | `calc.fatigue-miner` | Port | `mech.fatigue-miner` |
 | `calc.shaft-combined-stress` | Port | `mech.shaft-stress` |
 | `calc.plane-wall-heat-transfer` | Port | `bs.plane-wall` |
-| `calc.thermal-resistance-chain` | Port | `bs.thermal-chain` |
+| `calc.thermal-resistance-chain` | Port | `elec.thermal-chain` (D-40) |
 | `calc.thermal-expansion-stress` | Port | `mech.thermal-expansion` |
 | `calc.bolt-shear-capacity` | Retire (covered) | `mech.bolt-group` single-bolt case |
 | `calc.beam-bending-stress` | Retire (covered) | `struct.beam-formulas` + `struct.section-properties` |
-| `calc.bearing-load-capacity` | Retire (covered) | `mech.bearing-life` |
+| `calc.bearing-load-capacity` | Retire (covered) | `mech.bearing-life-basic` (and `mech.bearing-life` for a full ISO 281 check) |
 | `calc.pressure-vessel-wall-thickness` | Port | `mech.thin-vessel` (thin-wall membrane formulae; the thick-wall case is `mech.thick-cylinder`) |
 | `calc.material-selection-margin` | Port | `mech.material-margin` (yield / ultimate margins from a referenced material record) |
 

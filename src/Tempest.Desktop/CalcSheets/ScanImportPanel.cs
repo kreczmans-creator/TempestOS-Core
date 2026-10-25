@@ -77,6 +77,12 @@ public sealed class ScanImportPanel : Border
         AutomationProperties.SetName(_lines, "Import preview");
         AutomationProperties.SetName(_changes, "Changes since the previous import");
         AutomationProperties.SetName(_status, "Import status");
+        AutomationProperties.SetName(_stage, "Stage of the next table (optional)");
+        AutomationProperties.SetName(_serial, "Serial of the next table (optional)");
+        AutomationProperties.SetName(_software, "Software version (optional)");
+        AutomationProperties.SetName(_alignment, "Alignment (RPS, best fit …)");
+        AutomationProperties.SetName(_subgroup, "Subgroup size");
+        AutomationProperties.SetName(_minParts, "Minimum parts");
         AutomationProperties.SetLiveSetting(_status, AutomationLiveSetting.Polite);
 
         var pick = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };

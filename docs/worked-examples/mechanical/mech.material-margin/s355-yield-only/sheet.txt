@@ -1,0 +1,54 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: s355-yield-only    Revision: A
+Title: Material strength margin
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+The factors of safety of a material against an applied (equivalent) stress on its yield and, when given, its ultimate strength, against a required factor; the strengths can be filled from a released material record so the margin cites its source.
+Factor of safety against yield and against ultimate: n_y = f_y/σ; n_u = f_u/σ. Governing factor, the ultimate margin scaled to the yield basis by k_u ≥ 1: n_gov = min(n_y, n_u/k_u). Utilisation against the required factor: u = n_req/n_gov.
+  Ref: Shigley's Mechanical Engineering Design §1-10 — Design factor and factor of safety
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  sigma | Applied (equivalent) stress | 250 | MPa | spec: LOAD-SCHEDULE-01 | 0.01 … 5000 MPa
+  f_y | Yield strength | 355 | MPa | drawing: DRG-BR-702 rev A | 1 … 5000 MPa
+  k_u | Ratio of the ultimate to the yield safety factor required | 1.5 |  | spec: SPEC-MECH-03 design criteria | 1 … 3
+  n_req | Required factor of safety on yield | 1.5 |  | spec: SPEC-MECH-03 design criteria | 1 … 10
+
+3. ASSUMPTIONS
+  A1. Static loading; the applied stress is the equivalent stress at the critical point. (Fatigue and stability are separate checks.)
+
+4. WORKING
+  [5] n_y = f_y / sigma    « Shigley §1-10
+      = 355 MPa / 250 MPa
+      = 1.42
+        Factor of safety on yield
+  [6] n_gov = n_y
+      = 1.42
+      = 1.42
+        Governing factor (yield only)
+  [7] u = n_req / n_gov
+      = 1.5 / 1.42
+      = 1.0563
+        Required over governing factor of safety
+
+5. RESULTS
+  n_y = 1.42    Factor on yield
+  n_gov = 1.42    Governing factor
+  u = 1.0563    Utilisation
+
+6. CHECKS (governing first)
+  FAIL  Factor of safety against the required factor: u = 1.0563 vs u ≤ 1  utilisation 1.06  « Shigley §1-10
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.material-margin@1.0.1
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 2/2
+  Test run: —

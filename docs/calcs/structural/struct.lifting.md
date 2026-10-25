@@ -1,4 +1,6 @@
-# S8 — Lifting lugs and spreader/lifting beams (`struct.lifting@1.1.0`) — GATED, OFF BY DEFAULT
+# S8 — Lifting lugs and spreader/lifting beams (`struct.lifting@1.1.1`) — GATED, OFF BY DEFAULT
+
+**In plain terms.** A lifting lug is a plate with a hole through which a pin takes the weight of a load, and it can tear, crush or shear out at the hole. The worksheet takes the rated load, the sling angles and the lug geometry, finds the force each lug really sees, and checks each way the lug could fail against design factors you supply from your own copy of the code. It is a design calculation, never a thorough examination, and it stays switched off in the product until the owner enables it.
 
 **Status.** Behind the `lifting` feature flag (`ADR-0173`): composed into the build but withheld from the catalogue, the Worksheets tree, the Ctrl+K entries, every service path and every pack until the machine's administrator switches it on: on Windows the policy value `HKLM\SOFTWARE\Policies\TempestOS\Features` `Lifting` = DWORD 1, elsewhere `"Lifting": true` in the root-owned `/etc/tempestos/features.json` (the file and its directory writable by no one but root). No other source is read: not the per-user install folder, an `appsettings.json`, the environment, the command line or the current directory (`ADR-0173`). The older lifting-lug and pin-joint module (`calc.lifting-lug-pin-joint`, Engineering Calculators) is withheld by the same flag, down to the engine's run-by-id path (`ADR-0173`). Issue needs a competent-person attestation (`AttestAsync`, by a signed-in person other than the authors) and a second, independent check. **The flag stays off until the owner has compared the equations below with BTH-1 and EN 13155+A1 (owner test pack, S8 review checklist, §B10 item 6).**
 
@@ -53,3 +55,26 @@
 **Not pinned (owner check).** The BTH-1 clause numbers other than 3-3.3 and the EN 13155 clause numbers (the sheet says "clause to be confirmed"); the LOLER and PUWER regulation numbers in the checklist (reg 7, 9; reg 4, 5) are from memory of the Regulations and to be confirmed.
 
 **Worked example.** `docs/worked-examples/structural/struct.lifting/lifting-beam-lug-pair/`: two lugs on a 150 kN horizontal lifting beam at 30° and 2° (with the 6° pitch and roll cases), both modes, all inputs with provenance, with the feature flag on in the test harness only. The attestation inputs are left blank (an example is not an issued sheet).
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Lifting beam, two lugs at 30° and 2° out of plane, 150 kN rated load, BTH-1 and EN 13155 modes with the automatic 6° tilt cases (feature flag on in the test harness only) ([sheet](../../worked-examples/structural/struct.lifting/lifting-beam-lug-pair/sheet.txt)).
+
+```text
+n_eff = min(2, 3) = 2
+F_v = 150 kN / 2 = 75 kN
+F_s_nom = 75 kN / (cos 30° × cos 2°) = 86.655 kN
+F_s_pitch = 2 × 75 kN × sin(36°) / sin(60°) / cos(2°) = 101.87 kN
+F_s_roll = 75 kN / (cos 30° × cos 8°) = 87.454 kN
+F_s = governing case: pitch = 101.87 kN
+F_ip = 101.87 kN × cos β = 101.81 kN
+F_op = 101.87 kN × sin β = 12.171 kN
+N_beam = 50.904 kN, the larger of the level and the pitched case = 50.904 kN
+M_op = 12.171 kN × 180 mm = 2.1908 kN·m
+side = min(40, 75 − 55/2) mm = 40 mm
+a_eff = 75 − 55/2 mm = 47.5 mm
+phi = 55 × 50 / 55 = 50 deg
+be_eff = min(40, 100, 38.339) mm = 38.339 mm
+… 34 more step(s) on the sheet
+Governing: PASS  BTH-1: bearing: u_b = 0.5722 vs u_b ≤ 1  utilisation 0.572  « BTH-1 3-3.3
+```
+<!-- hand-arithmetic:end -->

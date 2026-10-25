@@ -1,4 +1,6 @@
-# F3 — O-ring and seal gland (`fp.oring-gland@1.2.0`)
+# F3 — O-ring and seal gland (`fp.oring-gland@1.2.1`)
+
+**In plain terms.** An O-ring seals by being squeezed in its groove, and how it fits changes with stretch, temperature, swelling in the fluid and the tolerances of the parts. The worksheet works out the squeeze, the stretch, how full the groove is and the gap the ring could be pushed into, at the coldest and hottest ends of the range, for a piston, rod or face seal, and says whether each stays within the band for static or dynamic duty.
 
 **Scope.** Squeeze, installed stretch, gland fill and extrusion gap of a radial piston seal, a radial rod seal or a face seal, from the ring and groove dimensions with their tolerances, at the cold and shrunk end and the hot and swollen end of the temperature and swell range. Static or dynamic duty selects the squeeze band. The worst case and the capability indices run through the tolerance-stack engine of M1 (`Tempest.Calc.Engine.Analysis.ToleranceStack.ToleranceStackEngine`); the seeded Monte Carlo is the engine's `MonteCarlo` run on the exact non-linear model, and reports the fraction of samples outside each limit; a capability index per criterion comes from the linearised stack. A face seal is entered with the pressure outside or inside. Measured groove or ring distributions (mean, standard deviation, distribution) can replace the toleranced dimensions from an optional table, so the scan import W2 can feed it. **No data is shipped**: the ring size, the squeeze, fill and stretch bands and the permitted extrusion gap are inputs or user records; there is no AS568 or ISO 3601 size table, no gland table and no extrusion chart in source, seeds, fixtures, tests or this document (Addendum B §B5). Fluid Power, ADR-0170.
 
@@ -21,3 +23,26 @@ The cross-section reduction `r(X)` is a user-selectable relation: **None**; **In
 **Test cases.** Analytic, recomputed in python3 (Confirmed): `ka-thermal-swell` (the defaults: squeeze 16.956 % to 26.957 %, fill 63.951 % to 84.643 % on the volume basis, cold-end stretch 4.4072 %, gap 0.106076 mm at 80 °C), `ka-worst-case-hand` (no reduction, no thermal change: squeeze 19.17647 % to 25 %, fill 67.5132 % to 78.6440 %, stretch 2.0833 % to 3.8306 %, gap 0.106 mm, all by hand arithmetic), `ka-rod-seal` (OD thickening: squeeze_max 26.820 %, fill_max 84.566 %), `ka-face-seal`, `ka-face-seal-internal` (pressure inside: OD compression 1.477 % at most), `ka-gap-over-temperature` (aluminium bore round a steel piston, 0.02 mm dilation: gap 0.163661 mm), `ka-incompressible-reduction` (r = 1 − 1/√1.04 = 1.94193 % at 4 % stretch), `ka-linear-reduction` (ν·X = 1.96 %), `ka-extrusion-record` (interpolation in an illustrative record invented for the test: 0.1575 mm at 80 Shore A and 150 bar), and two seeded Monte Carlo cases, `ka-monte-carlo-seeded` (20 000 samples, seed 7, normal tolerances, Parker quadratic) and `ka-monte-carlo-measured` (10 000 samples, seed 11, triangular tolerances with a measured groove and ring section), whose fractions are checked against a python3 re-implementation of the engine's xoshiro256** sampler on the exact non-linear criteria, and whose capability indices against the linearised stacks (the counts agree exactly; the nearest sample to any limit is more than 3e-7 away, far above rounding). **Unconfirmed + Secondary:** see *Definition of done* below.
 
 **Definition of done (Addendum B §A3, §B4).** Every case above that is analytic is Confirmed; no published known-answer case is shipped, and none is invented. **Unconfirmed / Secondary items to list in the owner test pack:** `ka-parker-quadratic` (Unconfirmed, Secondary: Y at 4 % stretch is 2.8464 %, the arithmetic of the relation as Addendum B quotes it from Parker ORD 5700 section 3.5; the 3 to 25 % range, the sub-3 % blend and what Y measures are to be checked against the owner's copy of the handbook) and `ka-stretch-rule` (Unconfirmed, Secondary: the installation rule of up to 6 % piston-groove stretch, quoted from Parker PTD 5705; 5.8 % reads 0.967 of the limit; to be checked against the owner's copy, including the edition). **Not pinned (owner check):** the Parker ORD 5700 design examples of sections 3.5 to 3.7 — their inputs and answers are not available, so no published example is pinned.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Static piston O-ring seal of a 63 mm locking cylinder: squeeze, fill, stretch and extrusion over tolerance, temperature and swell ([sheet](../../worked-examples/fluid-power/fp.oring-gland/locking-cylinder-piston-seal/sheet.txt)).
+
+```text
+v_W = 3.5 mm nominal → mid 3.5 ± 0.1 mm, σ 0.033333 mm = 3.5 mm
+v_d = 56 mm nominal → mid 56 ± 0.45 mm, σ 0.15 mm = 56 mm
+v_Ds = 63 mm nominal → mid 63.023 ± 0.023 mm, σ 0.0076667 mm = 63.023 mm
+v_Dg = 57.5 mm nominal → mid 57.463 ± 0.037 mm, σ 0.012333 mm = 57.463 mm
+v_Dc = 63 mm nominal → mid 62.955 ± 0.015 mm, σ 0.005 mm = 62.955 mm
+v_b = 4.7 mm nominal → mid 4.75 ± 0.05 mm, σ 0.016667 mm = 4.75 mm
+f_c = (1 + 0.00015·(-25 − 20))·(1 + 0)^(1/3) = 0.99325
+g_c = 1 + 0.000012·(-25 − 20) = 0.99946
+f_h = (1 + 0.00015·(70 − 20))·(1 + 0.04)^(1/3) = 1.0208
+g_h = 1 + 0.000012·(70 − 20) = 1.0006
+stretch_nom = 57.463/56 − 1 = 2.6125 %
+stretch = 57.5/55.55 − 1 = 3.5104 %
+stretch_min = 57.426/56.45 − 1 = 1.729 %
+red_nom = r(2.6125 %) = 1.2812 %
+… 37 more step(s) on the sheet
+Governing: PASS  Squeeze minimum within the band: squeeze_min 15.125 % vs ≥ 15 %  utilisation 0  « oring.criteria record
+```
+<!-- hand-arithmetic:end -->

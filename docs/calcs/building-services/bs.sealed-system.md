@@ -1,4 +1,6 @@
-# B6 — Sealed system: emitters and expansion vessel (`bs.sealed-system@1.2.0`)
+# B6 — Sealed system: emitters and expansion vessel (`bs.sealed-system@1.2.1`)
+
+**In plain terms.** In a closed heating circuit the water expands as it warms, and with nowhere to go it would overpressure the pipes; an expansion vessel with a cushion of gas takes the extra volume. The worksheet works out how much heat each radiator must give at your flow and return temperatures, how much the system water expands, and so the smallest vessel and its pre-charge pressure that will hold it.
 
 **Scope.** Closed LTHW system below 100 °C: the catalogue output (ΔT 50 K) each room's emitter needs at the design temperatures, checked against the selected emitters; the minimum expansion vessel.
 
@@ -11,3 +13,26 @@
 **Limitations.** Closed LTHW below 100 °C; no pipe-loss or emitter-position corrections; Kell density at atmospheric pressure.
 
 **Test cases.** `ka-dt50`, `ka-dt30`, `ka-lmtd`, `ka-vessel` (V_e 6.568 L) — analytic, Confirmed. The unattributed manufacturer factor 0.51 (`ka-manufacturer-dt30`) was dropped: the analytic cases cover the characteristic equation. CIBSE Guide B1 (2016) and vessel-manufacturer worked examples are not pinned: the owner's copies are needed.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Heat pump retrofit at 55/45 °C: existing radiators and expansion vessel ([sheet](../../worked-examples/building-services/bs.sealed-system/heat-pump-retrofit-55-45/sheet.txt)).
+
+```text
+dT = (55 degC + 45 degC) / 2 − 21 degC = 29 K
+dT_fr = 55 degC − 45 degC = 10 K
+t_m = (55 degC + 45 degC) / 2 = 50 degC
+f_dT = (29 K / 50 K)^1.3 = 0.49256
+R1 = 1800 / 0.49256 = 3654.4 W
+R2 = 1100 / 0.49256 = 2233.2 W
+R3 = 900 / 0.49256 = 1827.2 W
+R4 = 700 / 0.49256 = 1421.2 W
+R5 = 600 / 0.49256 = 1218.1 W
+Phi_tot = 5100 W
+V_em = 36 L
+V_s = 36 L + 40 L + 15 L = 91 L
+rho_fill = t = 10 °C = 999.7 kg/m³
+rho_max = t = 60 °C = 983.2 kg/m³
+… 6 more step(s) on the sheet
+Governing: FAIL  Selected emitters against room heat (governing room): u_emit = 1.1074 vs u_emit ≤ 1  utilisation 1.11
+```
+<!-- hand-arithmetic:end -->

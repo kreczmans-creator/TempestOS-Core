@@ -317,7 +317,7 @@ public sealed class CylinderTests
     [Fact]
     public void The_Template_Version_Is_Bumped_For_The_Changed_Model()
     {
-        Assert.Equal("1.3.0", Cylinder.Template.Version);
+        Assert.Equal("1.3.1", Cylinder.Template.Version);
     }
 
     [Fact]

@@ -1,4 +1,6 @@
-# M2a — ISO 286 limits and fits (`mech.iso286-fit@1.1.0`)
+# M2a — ISO 286 limits and fits (`mech.iso286-fit@1.2.0`)
+
+**In plain terms.** A hole and a shaft each get a tolerance band from the ISO system: the letter fixes how far the band sits from the nominal size and the number fixes how wide it is. Pairing the largest hole with the smallest shaft gives the loosest fit, and the smallest hole with the largest shaft the tightest. If the hole is always larger the fit has clearance, if it is always smaller it has interference, and if the bands overlap it is a transition fit that can go either way.
 
 **Scope.** Hole and shaft limits for a nominal size and tolerance classes; fit kind and extreme clearance/interference. Formulae only (ISO 286-1 §4–§5); no tables are embedded.
 
@@ -16,3 +18,25 @@
 **Limitations.** Unrounded formula values; tabulated values differ by the standard's rounding (≈ 1 µm, see the H7/p6 example). Letters a, b, c, j need overrides.
 
 **Test cases.** `ka-h7g6-25` (25 mm H7/g6: 21/13 µm, g −7 µm, clearance 7…41 µm, within 3–6 %); `ka-h7p6-50` (50 mm H7/p6, interference up to 42 µm); `ka-bearing-bore-k6` (35 mm bore 0/−9 µm on k6: c_max −2.030 µm, c_min −26.642 µm — formula values recomputed in python3, Confirmed; the bore deviations are invented for the test).
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** 25 mm H7/g6 sliding fit ([sheet](../../worked-examples/mechanical/mech.iso286-fit/h7-g6-25mm/sheet.txt)).
+
+```text
+D_step = (18, 30] mm = 23.238 mm
+i = D = 23.238 mm = 1.3074 µm
+IT_hole = 16 × i = 20.918 µm
+IT_shaft = 10 × i = 13.074 µm
+es = −2.5·D^0.34 = -7.2853 µm
+ei = -7.2853 − 13.074 = -20.359 µm
+ES = 0 + 20.918 = 20.918 µm
+EI = −es of the same letter = 0 µm
+D_hole_max = 25 mm + 20.918 µm = 25.021 mm
+D_hole_min = 25 mm + 0 µm = 25 mm
+d_shaft_max = 25 mm + -7.2853 µm = 24.993 mm
+d_shaft_min = 25 mm + -20.359 µm = 24.98 mm
+c_max = 20.918 µm − (-20.359 µm) = 41.277 µm
+c_min = 0 µm − (-7.2853 µm) = 7.2853 µm
+… 4 more step(s) on the sheet
+Governing: PASS  Fit classified: H7/g6 vs clearance  utilisation 0
+```
+<!-- hand-arithmetic:end -->

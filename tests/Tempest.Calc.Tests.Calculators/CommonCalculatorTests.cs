@@ -41,6 +41,26 @@ public sealed class CommonCalculatorTests
 
     [Theory]
     [MemberData(nameof(AllCalculators.Ids), MemberType = typeof(AllCalculators))]
+    public void Method_Is_One_Step_Per_Line_Each_Saying_What_It_Calculates(string id)
+    {
+        // The owner's ask (2026-10-24): each line of the method says what it is doing before the relation, so the sheet
+        // does not read as a wall of formulas. "What it calculates: relation"; a line without a relation is narrative.
+        var lines = AllCalculators.Get(id).Template.Method.Split('\n');
+        Assert.True(lines.Length >= 3, $"{id}: the method is {lines.Length} line(s); state it one step per line");
+
+        foreach (var line in lines)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(line), $"{id}: blank method line");
+            var at = line.IndexOf(": ", StringComparison.Ordinal);
+            var words = at > 0 ? line[..at] : line;
+            Assert.True(words.Count(c => c == ' ') >= 1 && char.IsLetter(words[0]), $"{id}: '{line}' does not say in words what it calculates");
+        }
+
+        Assert.Contains(lines, l => l.Contains(": ", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [MemberData(nameof(AllCalculators.Ids), MemberType = typeof(AllCalculators))]
     public void Defaults_Or_First_Case_Run_Without_A_Block(string id)
     {
         var calculator = AllCalculators.Get(id);

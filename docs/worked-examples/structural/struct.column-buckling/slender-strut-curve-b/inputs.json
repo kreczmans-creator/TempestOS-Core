@@ -1,0 +1,79 @@
+[
+  {
+    "Symbol": "A",
+    "Number": 1200,
+    "Unit": "mm^2",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-ST-02 section schedule",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1200"
+  },
+  {
+    "Symbol": "E",
+    "Number": 205,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS 5950-1 3.1.3: E = 205 GPa",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "205"
+  },
+  {
+    "Symbol": "I",
+    "Number": 12,
+    "Unit": "cm^4",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-ST-02 section schedule",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "12"
+  },
+  {
+    "Symbol": "L_E",
+    "Number": 1.5,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-ST-411",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "P",
+    "Number": 100,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Factored brace force",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "curve",
+    "Text": "b",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS 5950-1 Table 23: hot-finished tube, curve b",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "b"
+  },
+  {
+    "Symbol": "p_y",
+    "Number": 355,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-ST-02: S355",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "355"
+  }
+]

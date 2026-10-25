@@ -89,7 +89,8 @@ public sealed record CalcInstance(
     IReadOnlyList<ScanImportRecord>? ScanImports = null,
     string? CheckerPrincipal = null,
     CalcCountersignature? SecondCheck = null,
-    CalcAttestationRecord? Attestation = null)
+    CalcAttestationRecord? Attestation = null,
+    IReadOnlyList<string>? Notes = null)
 {
     /// <summary>
     /// Everyone who set up or changed this revision's inputs: its creator and every principal in <see cref="EditedBy"/> (kept
@@ -97,6 +98,12 @@ public sealed record CalcInstance(
     /// </summary>
     [JsonIgnore]
     public IReadOnlyList<string> Authors => [.. new[] { CreatedBy }.Concat(EditedBy ?? []).Where(a => !string.IsNullOrWhiteSpace(a)).Distinct(StringComparer.Ordinal)];
+
+    /// <summary>Template references of this form name an instance migrated from a legacy calculation record (ADR-0167); no calculator is registered for them.</summary>
+    public const string LegacyReferencePrefix = "legacy/";
+
+    [JsonIgnore]
+    public bool IsLegacyArchive => TemplateReference.StartsWith(LegacyReferencePrefix, StringComparison.Ordinal);
 
     [JsonIgnore]
     public bool IsImmutable => Status is CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded;

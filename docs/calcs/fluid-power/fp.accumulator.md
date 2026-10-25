@@ -1,4 +1,6 @@
-# F2 — Accumulator sizing, gas law (`fp.accumulator@1.3.1`)
+# F2 — Accumulator sizing, gas law (`fp.accumulator@1.3.2`)
+
+**In plain terms.** A hydraulic accumulator is a vessel with a gas cushion that stores fluid under pressure and gives it back when the pump cannot keep up. Gas gets stiffer as it is squeezed, so the volume of fluid you can take from it depends on the pressures at which it is charged and works. The worksheet works out the gas volume and pre-charge pressure needed to deliver the fluid you want between two pressures, picks the next standard size, and flags the bar-litre product against the pressure-equipment rules.
 
 **Scope.** The pre-charge gas volume V0 of a hydraulic accumulator that delivers (or absorbs) a liquid volume ΔV between the lowest working pressure p1 and the highest p2, the pre-charge pressure at the charging temperature, the next size from the user's size list, and the bar·litre product PS·V of the vessel against the PSSR Schedule 1 250 bar·L exception. Three duties: energy storage, shock and pulsation (screening only; the pressure wave is not modelled) and emergency stroke (ΔV is the stroke volume, linked from the cylinder circuit F1). **Not a pressure-vessel code check**: no PD 5500, EN 13445 or ASME VIII calculation, no PED / UK PER or PSSR compliance statement (ADR-0170, Addendum B §B5). Every input outside its valid range is a hard FAIL (hard limit = valid range).
 
@@ -17,3 +19,26 @@
 **Slow charge, fast discharge (1.3.0).** Before 1.3.0 the sheet sized every duty with one exponent from the pre-charge to both working pressures, which is right only when the charge is as fast as the discharge. A held accumulator (emergency stroke) is charged slowly; its volume is larger (the hydraulic power unit F2 step from 26.70 L to 30.08 L, the actuated-linkage F2 step from 1.078 L to 1.310 L). Energy storage keeps the one-exponent default and offers the slow charge as a choice. Sheets issued under 1.2.0 for an emergency stroke should be re-run.
 
 **Pressure basis (1.3.1).** A gauge number typed on the Absolute basis gives a smaller volume with no other sign (4, 5 and 10 bar read as absolute give 2.50 L, against 2.64 L as gauge), and a pre-charge of 0.5 bar absolute is a vacuum. On the Absolute basis a pressure below `p_atm` is now blocked (`basis`) with a message that names the input and says to switch `p_basis` to Gauge. Every pressure on the sheet prints its basis beside the unit: `p_0`, `p_1`, `p_2` follow `p_basis`, `p_atm` is "bar a", `PS` is "bar g", and the working and results show "bar a" or "bar g". The labels name the basis and convert nothing. F1 (`p`, `p_back`) and F3 (`p_op`) print "bar g".
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Bladder accumulator for a clamp circuit: 14 L delivered between 100 and 210 bar ([sheet](../../worked-examples/fluid-power/fp.accumulator/clamp-circuit-bladder-accumulator/sheet.txt)).
+
+```text
+pa_0 = 90 bar a
+pa_1 = 100 bar a
+pa_2 = 210 bar a
+p2_g = max(210 bar a − 1.0132 bar a, 0 bar) = 208.99 bar g
+V0_ideal = 14 L / [(0.9) − (0.42857)] = 29.697 L
+f_T = 50 degC / 1 K / (30 degC / 1 K) = 1.066
+V0 = 29.697 L × 1 × 1.066 = 31.656 L
+T_ratio = 20 degC / 1 K / (50 degC / 1 K) = 0.90716
+p0 = 90 bar a × 0.90716 = 81.645 bar a
+p0_min = 90 bar a / 1.066 = 84.43 bar a
+p0_set = 81.645 bar a
+u_r0 = 90 bar a / (0.9 × 100 bar a) = 1
+u_rp = 210 bar a / 84.43 bar a / 4 = 0.62182
+V_sel = V0 = 31.656 L, 4 sizes listed = 32 L
+… 3 more step(s) on the sheet
+Governing: PASS  Pre-charge within the p0/p1 rule: u_r0 = 1 vs u_r0 ≤ 1  utilisation 1  « accumulator.rules record
+```
+<!-- hand-arithmetic:end -->

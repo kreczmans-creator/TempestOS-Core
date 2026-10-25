@@ -165,3 +165,72 @@ New finding in this round:
 | Y-B-12 | Medium | 8 worked-example `sheet.pdf` files | The PDFs predate the fixes that changed their `sheet.txt`, so the issued PDF shows the old template version and text. Affected: `fp.accumulator/clamp-circuit-bladder-accumulator` (1.2.0, no gas-process line), `elec.pcb-trace/motor-driver-supply-rail` (1.0.1), all three `bs.pipe-expansion` examples, both `bs.insulation` examples (the chilled one lacks the new warning) and `struct.ltb-interaction/ub-457x191x98-beam-column`. `WorkedExamplePdfTests` checks only existence and size, so the gate cannot see it. | In each folder `sheet.txt` was last changed by `4a19d7b8`, `34044c2d`, `dda97f60`, `5a818356` or `100e8a65`, after the PDF's last commit. | Regenerate after the last fix (`TEMPEST_WRITE_WORKED_EXAMPLES=1 … --filter WorkedExamplePdfTests`). Let the test compare the PDF's extracted text with `sheet.txt` (template line and governing check). | Open: fix now |
 
 S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
+
+> The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
+
+## v0.27.0 Phase 1 — foundations (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y8-01 | Low | `CalcReferenceFill.FillAsync` | Reads each quantity through `MakeGenericMethod` over the Core dimension type, as the legacy `CalculationModuleService` did; reflection on a closed, compile-time list of dimension types. | `ReferenceFillTests` (5). | Accepted: the Core readers are generic over the dimension; a non-generic reader in Core is a v0.28 tidy. | Closed |
+| Y8-02 | Low | `CalcInputSpec.ReferenceLibrary` | Library slots are strings (`"Materials:hub"`); a typo in a template would show an empty picker rather than fail to compile. | `Slots_Fill_Hub_And_Shaft_From_Different_Records`. | Accepted for v0.27.0: `CalcReferenceFill.Libraries` names the three catalogues and `CatalogueOf` rejects an unknown one with an exception in `ListReleasedAsync`, which the Desktop reports; a template-level unit test per calculator (Phase 5) closes it. | Open → Phase 5 |
+| Y8-03 | Info | `LegacyCalculationMigration.MigrateAsync` | One instance read per legacy record on every start-up (idempotence check). | Upgrade test. | Accepted: record counts are hundreds, not millions; a migration marker is unnecessary until measured. | Closed |
+| Y8-04 | Low | `ColumnBucklingCalculator.Run` | The slenderness block formats λ with a .NET format string rather than `CalcValue.FormatNumber`, the convention every other sheet message uses. | Code read. | Fixed after the Phase 1 gate (same output under invariant globalization). | Fixed |
+| Y8-05 | Info | `SpecHandArithmeticTests` | Spec arithmetic is generated from stored sheets; a template change now needs three write passes (golden, worked examples, spec), in that order, because the spec reads the sheet the worked examples wrote. | Two drift failures during Phase 1, both caught by the test. | Documented in `docs/worked-examples/README.md` regeneration line. | Closed |
+| Y8-06 | Info | Archives | A migrated record has no project and no register entry, so nothing in the Desktop lists it yet; the coordinator opens it by Id. | `ALegacyArchive_IsShownReadOnly_…`. | Phase 4: the worksheet catalogue lists archives under their own node, newest first, capped at 500 (`Archives_AreListedUnderTheirOwnNode…`). | Fixed |
+
+## v0.27.0 Phase 2 — mechanical ports (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y9-01 | Medium | `BearingLifeCalculator` | A load of 1e-300 kN passed the hard limits and drove (C/P)^p to infinity; the engine blocked the step, but its message named NaN on the sheet. | `Hostile_Numbers_Never_Throw_And_Never_Reach_A_Sheet(mech.bearing-life)`. | `light-load` block below P/C = 10⁻⁶ (life effectively unlimited). | Fixed |
+| Y9-02 | Low | `ThinVesselCalculator` | Keeps the legacy design factor `n` on the computed thickness, which UG-27 does not have. | Spec, input description. | Kept so a legacy record re-entered gives the same thickness; defaults to 1 and is labelled "legacy". | Closed |
+| Y9-03 | Info | `MaterialMarginCalculator` | Adds `k_u` (ultimate factor relative to yield), which the legacy module did not have; with `f_u` empty the sheet reduces to the legacy yield margin. | `ka-margin-yield-only`. | None. | Closed |
+| Y9-04 | Info | `FatigueMinerCalculator` | Two outputs per block (N_i, d_i): a 200-block spectrum gives 400 outputs on the results table. | Code read. | Accepted; the sheet's results are the record of the spectrum. | Closed |
+| Y9-05 | Info | Known answers | Every legacy hand calculation of the five ported modules reproduces to five significant figures (17 cases); the two originals with property tests only gained two hand calculations each. | 468 Calculators tests. | None. | Closed |
+
+## v0.27.0 Phase 3 — structural and thermal ports (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y10-01 | Medium | `FilletWeldCalculator` | A lap weld longer than 150·a carries less than the simplified method says (BS EN 1993-1-8 4.11 long-joint reduction β_Lw); the legacy module and the first port said nothing. | `Long_Welds_Warn_That_The_Long_Joint_Reduction_Is_Not_Applied`. | `long-joint` warning above 150·a; spec limitation updated. | Fixed |
+| Y10-02 | Info | `PlaneWallCalculator` | No pass/fail check: the result is a heat flow. No condensation (dew-point) check on the cold surface; the single-pane example's −2.2 °C inner surface would frost. | Worked example `single-pane-window`. | Stated in the spec's limitations and the example's notes. | Closed |
+| Y10-03 | Low | Phase 2 ports | Phase 3's templates have behaviour tests (properties, blocks, warnings); the seven Phase 2 ports have known answers and the shared hostile-input and template tests only. | `tests/Tempest.Calc.Tests.Calculators/Mechanical` has no port tests. | `MechanicalPortTests`: 26 tests over all seven (linearity, limit cases, Tresca/von Mises relations, gap and restraint limits, UG-27 inverse, Miner additivity, every block). | Fixed |
+| Y10-04 | Info | Known answers | All nine legacy hand calculations of the three ported modules reproduce to five significant figures, including the exactly-on-limit chain (u = 1, margin 0). | 530 Calculators tests. | None. | Closed |
+
+## v0.27.0 Phase 4 — Desktop retirement (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y11-01 | High | Worksheet form | The legacy calculators drew an input-bound reference diagram for every calculation (ADR-0158, Principle 33); the worksheet form drew none, so retiring the legacy surface would have lost it. | Found while retiring: `CalculationDiagramViewTests` exercised the diagram only through the legacy form. | D-41: retirement parked; `CalcDiagrams` (27 templates, 60 drawings) and `CalcDiagramReader`; the legacy form's behaviours (beside or above, focus both ways, row marking, theme) moved to the worksheet form and its 11 tests ported. Every drawing rendered and checked for overlapping labels. | Fixed |
+| Y11-02 | Low | `CalcSheetView` | The governing-check "Go to step" button had no automation name; the coverage scan never reached the Worksheets node because Calculators stood first. | `AutomationNameCoverageTests` after the node change. | Named. | Fixed |
+| Y11-03 | Info | Calculation register | Calculation objects created by the retired surface lose their Re-run command; their runs are archives (read-only). | ADR-0167 Amendment 1. | Accepted: re-enter the inputs in the worksheet template for a run with working. | Closed |
+| Y11-04 | Info | Real-shell journey | `MainJourney.Calculators` now drives Worksheets; it needs a display and was not run in this container. | Code change only. | Run on the owner's Windows machine with the runbook. | Open → owner |
+
+
+## v0.27.0 final (2026-10-23)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y12-01 | Info | Open items | Y11-04 (the real-shell journey on Windows) is the only open Yellow item; it needs the owner's machine. | Handover step 3. | — | Open → owner |
+| Y12-02 | Info | Results that change | Bolted-joint sheets saved under v0.26.0 with a failed separation check understated bolt stress (G-05); their template hash changes, so they show the stale marker until re-run. | `StalenessAsync` (template hash). | Release notes tell the owner to re-run them. | Closed |
+| Y12-03 | Low | Lesson | B-26 was a regression in a suite not rerun after a template change. | Black on the clean clone found it. | Before a merge, run every Calc suite, not only the one changed. | Closed |
+
+## v0.27.0 showcase journey (2026-10-24)
+
+One worked example per discipline driven through the real window, a screenshot per stage, then each finding fixed and the journey re-run.
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y13-01 | High | `CalcSheetView` | An optional input an import left out came back at its default with no source, so Check was refused on the beam example. | `An_Optional_Input_An_Import_Leaves_Out_Stays_Blank_So_The_Inputs_Remain_Sourced`. | A stated seed (import or saved instance) leaves absent optional inputs blank. | Fixed |
+| Y13-02 | Medium | `CalcSheetView` | An import, save or revision rebuilt the form and left the record pickers on "Loading released records…". | `Released_Record_Options_Survive_An_Import_And_Are_Dropped_For_Another_Template`. | The view keeps the listed records per template and shows them on a rebuild. | Fixed |
+| Y13-03 | Medium | Worksheet checker, shell header | The checker was read from `host.SessionPrincipal`, the author from `ICurrentPrincipalAccessor`; the header was refreshed only by Settings. | `WorksheetJourneyTests` (switch person, issue, author = checker = header). | Checker read from the accessor; `WorkspaceHost.PrincipalChanged` refreshes the header. | Fixed |
+| Y13-04 | Medium | Calculation register | The node showed only the bracket-check records; issued worksheets were not listed anywhere in the register. | `CalcRegisterViewTests`, `WorksheetJourneyTests`. | `CalcRegisterView` above the bracket surface: every worksheet calculation in the project, status, governing check, Open into the form. | Fixed |
+| Y13-05 | Low | `CalcSheetView` | Results shrank to its values; each check wrapped in a 220 px column. | `Results_Fill_The_Column_And_A_Check_Reads_Across_It`. | Sections stretch; a check row reads across the column with its clause at the right. | Fixed |
+| Y13-06 | Low | Sheet PDF | Table input rows wrapped a word per line in the Value column; check demands wrapped; status fields ran together. | `WorksheetJourneyTests` (row text on one line). | Table rows in a full-width table under the inputs; wider Demand column; fields parted by "·". | Fixed |
+| Y13-07 | Medium | PDF fonts | Space Mono has no Σ: "R_tot = Σ R_i" printed a box. | `A_Symbol_The_Mono_Face_Lacks_Is_Drawn_In_The_Body_Face_In_Place`. | A missing glyph is drawn in the body face, in place. | Fixed |
+| Y13-08 | Medium | Sheet PDF | The issued sheet carried only text and maths; the annotated reference diagram the form shows was not exported (owner's ask, 2026-10-24). | `An_Issued_Sheet_Carries_Its_Reference_Diagram_Read_Against_Its_Inputs`, `WorksheetJourneyTests`. | `CalcSheet.InputValues`; `CalcDiagramPainter` draws the diagram as vectors, its labels as text, under Scope and method as Figure 1 with the variant's caption. | Fixed |
+| Y13-09 | Low | Sheet PDF | References were listed as "Ref:" lines under the method and as free text in the working margin and checks table; no numbered list (owner's ask: AMA, at the very end). | `CalcBibliographyTests`, `An_Issued_Sheet_Carries_Its_Reference_Diagram_Read_Against_Its_Inputs`. | D-44: AMA superscript citations with locators throughout; "9. References" closes the sheet. | Fixed |
+| Y13-10 | Low | Templates, sheet PDF | The method printed as one paragraph of formulas with no words for what each one calculates. | `Method_Is_One_Step_Per_Line_Each_Saying_What_It_Calculates` (27 templates); PDF table assertion. | D-46: one step per line with its narrative; a two-column method table on the sheet; golden sheets and worked examples regenerated (only method, version and hash lines change). | Fixed |
+| Y13-11 | Info | `Red_SolverAttacks` | `Extremes_In_Every_Numeric_Input_Never_Throw(mech.tolerance-stack)` failed once (5 s) right after a golden-file regeneration; it passed in three full-suite runs and five isolated runs after. | Not reproduced. | Watch: if it recurs, capture the message (the run kept no detail). | Open |
+| Y13-12 | Low | Form, diagram, sheet PDF | Symbols read as identifiers (D_1, sigma_A, F_KR_req). | `SymbolTextTests` (15). | D-47: typeset subscripts and Greek letters. On screen a subscript run's baseline setting barely lowered it at form sizes; it is drawn as a small lowered block instead (checked on the showcase screenshots). | Fixed |

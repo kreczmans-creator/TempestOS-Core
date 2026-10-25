@@ -1,4 +1,6 @@
-# E8 — Containment fill, bend radius and cable pulling (`elec.containment@1.1.0`)
+# E8 — Containment fill, bend radius and cable pulling (`elec.containment@1.1.1`)
+
+**In plain terms.** Cables laid in conduit, trunking or tray must not fill it too far, must not be bent tighter than their diameter allows, and must not be pulled so hard that they are damaged. The worksheet works out how full the containment is against the space factor you set, whether the bends are wide enough, and the tension and sidewall pressure on the cables as they are pulled along the route, in both directions.
 
 **Scope.** The fill of a conduit, trunking or tray by the cables in it against a space factor the user enters; the bend radius of a pull route against a multiple of the largest cable diameter the user enters; and the pull of the cables through a route of straight lengths and bends, worked in both directions, with the direction that passes every check recommended (the lower maximum tension when both or neither pass). No IET or other cable and conduit factor table, no space-factor value and no bend or friction value ships (Addendum B §B5): the factor method is not offered, and every limit is a record the user enters from their own references and the cable maker's data. Standards are cited by clause number and title only.
 
@@ -11,3 +13,26 @@
 **Limitations.** Circular cables counted by overall diameter, no packing rules, no cable or conduit factors (the jam-ratio warning is the only jamming check). Straight lengths are horizontal and the cable weight bears on the containment over the full length (enter a cradled or triangular correction as `w_c`, which scales the weight on straights and the friction in bends, so a bend is `T₁·e^(w_c·μ·θ)`); inclines, vertical runs, rollers and pulleys are not modelled (fold them into μ). The bend radius uses the individual cable diameter; for a triplexed or bundled assembly enter the assembly diameter from the cable maker. One μ for the whole route; static and running friction not distinguished. Bends use the capstan equation only (no weight term). SWP is the whole bundle's tension over the bend radius; enter the cable maker's per-cable limit unchanged (conservative for a triangular arrangement, roughly equal for a cradled one; never multiply it by the cable count). Load is shared equally between cables on one pulling head; unequal sharing is not modelled.
 
 **Test cases.** All Confirmed and analytic, recomputed in python3: `ka-fill-3x10-in-25` (3 × 10 mm in a 25 mm conduit: 48 % exactly; with a five-segment route at μ 0.35: 154.919528 N as listed, 138.420988 N reversed, SWP 461.4812 / 284.2706 N/m, T_cab 1200 N), `ka-pull-tray-two-bends` (mixed bundle in 100 × 50 trunking from 100 N: 1074.235304 N as listed, 941.126090 N reversed; T_cab 3 × 150 = 450 N, u_T 2.0914, FAIL because the 150 N control cable carries a third of the pull), `ka-direction-passes-every-check` (the lower-tension direction, 1166.942 N, presses 1716 N/m against a 1500 N/m limit, so the reverse, 1281.142 N and 1010.413 N/m, is recommended), `ka-capstan-180` (T₂ = 200·e^(0.35π) = 600.567352 N, SWP 1501.41838 N/m), `ka-trunking-fill` (12 × 8 mm in 100 × 50: 12.0637 %, u_fill 0.2872 at an illustrative factor of 0.42), `ka-bend-too-tight` (R_min 120 mm against a 100 mm bend: u_b = 1.2). **Not pinned — owner check:** a cable maker's published pulling-guide example (straight plus bend tension and sidewall pressure); none is stated here because its inputs and answer cannot be quoted with confidence, so no Unconfirmed or Secondary case is declared. Every record value in the known-answer cases (space factor, bend multiple, friction, limits) is illustrative, not from any standard. The clause citations are from memory and should be checked against the owner's copies: BS 7671 reg. 522.8 (and its bend-radius sub-regulation), BS EN 61386-1 (cited as general), and Beer and Johnston Statics Ch. 8 (belt friction).
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Servo power and encoder cables pulled through 40 mm conduit with three bends ([sheet](../../worked-examples/electrical/elec.containment/servo-cable-pull-three-bends/sheet.txt)).
+
+```text
+A_c1 = 2 × π × (14 mm)² / 4 = 307.88 mm²
+A_c2 = 4 × π × (9 mm)² / 4 = 254.47 mm²
+A_cab = A_c1 + A_c2 = 562.35 mm²
+OD_max = 14 mm
+w = 2 × 0.35 kg/m + 4 × 0.12 kg/m = 1.18 kg/m
+A_int = π × (40 mm)^2 / 4 = 1256.6 mm²
+fill = 562.35 mm² / 1256.6 mm² = 44.75 %
+u_fill = 562.35 mm² / (1256.6 mm² × 0.5) = 0.895
+R_min = 10 × 14 mm = 140 mm
+u_b2 = 140 mm / 500 mm = 0.28
+u_b4 = 140 mm / 400 mm = 0.35
+u_b6 = 140 mm / 600 mm = 0.23333
+u_bend = 3 bend(s) = 0.35
+wg = 1.18 kg/m × 9.80665 m/s^2 = 11.572 N/m
+… 29 more step(s) on the sheet
+Governing: PASS  Fill against the space factor: u_fill = 0.895 vs u_fill ≤ 1  utilisation 0.895
+```
+<!-- hand-arithmetic:end -->

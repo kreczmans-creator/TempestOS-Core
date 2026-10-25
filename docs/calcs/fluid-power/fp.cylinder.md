@@ -1,4 +1,6 @@
-# F1 — Cylinder and actuator circuit (`fp.cylinder@1.3.0`)
+# F1 — Cylinder and actuator circuit (`fp.cylinder@1.3.1`)
+
+**In plain terms.** A hydraulic cylinder turns fluid pressure into force and fluid flow into speed; because the rod takes up part of one side, the cylinder pushes harder than it pulls and moves faster in than out. The worksheet works out the areas, the force and speed on each stroke, the pump flow, shaft power and torque needed, the line velocities and an orifice, with the regenerative connection as an option.
 
 **Scope.** A double-acting hydraulic cylinder in its circuit: bore, rod and annulus areas; force and speed on the extend and the retract stroke with mechanical and volumetric efficiency and an optional back pressure, or with the regenerative extend connection; swept volume per stroke and cycle time; the pump delivery, shaft power, torque and speed; a hydraulic motor's torque; the velocity in the suction, pressure and return lines against the user's limits, with the smallest listed hose or pipe bore that meets them; a sharp orifice's flow for flow-control screening; and a screening check of the rod against buckling. **Screening only; ISO/TS 13725 method not implemented**: the buckling result carries that label on the sheet (scope, assumptions, the `buckling_note` output and the check name), and none of the standard's text, factors or tables is shipped (Addendum B §B5). Not a cylinder design to a standard. Every numeric input outside its valid range is a hard FAIL (hard limit = valid range).
 
@@ -13,3 +15,26 @@
 **Test cases.** Analytic, recomputed in python3 (all Confirmed): `ka-circuit-standard` (100/70 at 160 bar, 36 L/min, 28 cm³/rev pump at 1450 rpm, motor, orifice, hose list, Johnson rod: `F_ext` 119.3805 kN, `F_ret` 60.88407 kN, `v_ext` 74.8665 mm/s, `t_cycle` 10.0846 s, `P_pump` 11.6879 kW, `T_shaft` 76.9731 N·m, `T_motor` 36.6693 N·m, return line 2.5678 m/s, suction at the geometric delivery 0.53847 m/s, cap-port line at the retract flow 75.627 L/min 6.2690 m/s (utilisation 1.254, a FAIL on the 16 mm line; the next listed size is 20 mm), `d_o_req` 5.0694 mm, `F_cr` 1787.81 kN, `u_buck` 0.24601 at the 125.66 kN stall thrust); `ka-regenerative` (`F_ext` 58.4965 kN, `v_ext` 152.789 mm/s, `Q_prs` 78.7143 L/min); `ka-euler-slender` (40 mm rod over 2100 mm: λ = 210, Euler `F_cr` 59.0596 kN; the 15 kN push load alone reads 0.88893, but a stalled cylinder at 160 bar carries `p·A_b` = 80.4248 kN (76.4035 kN with `η_m`, which does not relieve a stalled rod), above `F_cr` even without a safety factor, so `u_buck` = 80.4248·3.5/59.0596 = 4.76615, a FAIL); `ka-back-pressure-fixed-free` (10 bar back pressure, K = 2: `F_ext` 115.5753 kN, `F_ret` 53.4228 kN, Johnson `F_cr` 1681.70 kN, `u_buck` 0.26153 at the 125.66 kN stall thrust (no back pressure at stall)); `ka-orifice` (ρ 800, Δp 10 bar, C_d 0.6: jet 30 m/s, a 4 mm orifice passes 22.6195 L/min and the bore for that flow is 4 mm); `ka-lossless` (η = 1: `F = p·A`, `v = Q/A`, `t_ext` 4 s). `ka-required-speed` (since 1.3.0: the lossless cylinder driven by `v_req` = 100 mm/s with `Q` blank: `Q` = 47.1239 L/min exactly, `v_ext` 100 mm/s, `t_ext` 4 s). **Unconfirmed / Secondary:** none shipped. See *Definition of done* below.
 
 **Definition of done (Addendum B §A3, §B4).** Every case above is analytic and Confirmed; no published known-answer case is shipped, and none is invented. **Unconfirmed / Secondary items to list in the owner test pack:** none (this calculator has none). **Not pinned (owner check):** the Esposito *Fluid Power with Applications* 7th ed. cylinder force/speed and pump power examples (Ch. 5–6) and the Parker industrial cylinder catalogue rod-sizing procedure: their inputs and answers cannot be stated from a source available to the build, so no case is added; check the sheet against the owner's copy of the book and the catalogue (the catalogue procedure would also be Secondary).
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Press ram: 125/90 cylinder at 180 bar on a 45 cm³/rev pump, lines checked, rod screened for buckling ([sheet](../../worked-examples/fluid-power/fp.cylinder/press-ram-125-90-pump-and-lines/sheet.txt)).
+
+```text
+A_b = π × (125 mm)^2 / 4 = 122.72 cm²
+A_r = π × (90 mm)^2 / 4 = 63.617 cm²
+A_a = 122.72 cm² − 63.617 cm² = 59.101 cm²
+phi = 122.72 cm² / 59.101 cm² = 2.0764
+F_ext = (180 bar g × 122.72 cm² − 0 bar g × 59.101 cm²) × 0.95 = 209.85 kN
+v_ext = 60 L/min × 0.98 / 122.72 cm² = 79.858 mm/s
+dV_ext = 122.72 cm² × 800 mm = 9.8175 L
+F_ret = (180 bar g × 59.101 cm² − 0 bar g × 122.72 cm²) × 0.95 = 101.06 kN
+v_ret = 60 L/min × 0.98 / 59.101 cm² = 165.82 mm/s
+t_ext = 800 mm / 79.858 mm/s = 10.018 s
+t_ret = 800 mm / 165.82 mm/s = 4.8246 s
+t_cycle = 10.018 s + 4.8246 s + 0 s = 14.842 s
+dV_ret = 59.101 cm² × 800 mm = 4.7281 L
+dV = max(9.8175 L, 4.7281 L) = 9.8175 L
+… 37 more step(s) on the sheet
+Governing: PASS  Pump delivery covers the circuit flow: u_pump = 0.96794 vs u_pump ≤ 1  utilisation 0.968
+```
+<!-- hand-arithmetic:end -->

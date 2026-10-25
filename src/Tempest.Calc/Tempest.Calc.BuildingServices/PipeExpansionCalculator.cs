@@ -42,7 +42,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
     private const string ScreeningClause = "ASME B31.3 para. 319.4.1 (screening form; number to be checked against the owner's copy)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
+        Id, "1.2.2", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
         "Screening only — not a piping stress analysis. Thermal growth of a straight run between anchors, the fully restrained stress and force, the leg an offset leg or a U-loop (two guided cantilevers) needs to absorb the growth within the owner's allowable displacement-stress range Sa and whether the available leg is long enough (an offset leg or Z-bend also loads its run or runs with the leg's own growth), the force on the anchors and the largest root moment of the guided-cantilever model, the screening ratio D·Y/(L − U)² against the owner's K1 (PASS, or the line needs a formal stress analysis), and, for an axial bellows, the anchor force P·A_eff plus its spring force. No allowable stress, K1 or code table ships.",
         "Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴ − d_i⁴); Z = I/(OD/2)\n" +
         "Temperature change: ΔT = T_operate − T_install, or as entered; the movement uses |ΔT| and its sign gives the direction\n" +
@@ -53,7 +53,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
         "Force and moment of the available leg: F_leg = 12·E_r·I·Δ/H³ (acts along the run); M_leg = 6·E_r·I·Δ/H² (= F_leg·H/2); σ_leg = 3·E·OD·Δ/H² = Sa·(L_req/H)²\n" +
         "Offset leg or Z-bend, the runs bend for the leg's growth Δ_leg = α·|ΔT|·H: the runs act in series under one force F_run = 12·E_r·I·Δ_leg/(L³ + L2³) (L2 = 0 for an L-bend) acting along the leg; run i takes the share L_i³/(L³ + L2³) of Δ_leg, with root stress σ_i = 3·E·OD·Δ_i/L_i² and moment M_i = F_run·L_i/2; each run is checked as its own cantilever, PASS when √(σ_i/Sa) ≤ 1 (for an L-bend the run needed is L_req,run = √(3·E·OD·Δ_leg/Sa))\n" +
         "Force on the anchors: the two components are perpendicular, F_leg along the run and F_run along the leg, so the force is √(F_leg² + F_run²); the moment reported is the largest root moment of the legs and runs in the guided-cantilever model\n" +
-        "Screening: OD·Y/(L_dev − U)² ≤ K1 with Y = α·|ΔT|·U, the free growth between the anchors; offset leg or Z-bend L_dev = L_tot + H, U = √(L_tot² + H²); U-loop L_dev = L + 2·H, U = L (so Y = ΔL); PASS, or the line needs a formal stress analysis\n" +
+        "Flexibility screening: OD·Y/(L_dev − U)² ≤ K1 with Y = α·|ΔT|·U, the free growth between the anchors; offset leg or Z-bend L_dev = L_tot + H, U = √(L_tot² + H²); U-loop L_dev = L + 2·H, U = L (so Y = ΔL); PASS, or the line needs a formal stress analysis\n" +
         "Axial bellows (no leg or loop, no leg check, no screening): anchor force = P·A_eff + k·ΔL; the movement is checked against the bellows' rated axial movement when given",
         [
             new CalcInputSpec("E", "Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa)", CalcInputKind.Quantity, "GPa", Default: 210, Min: PlausibleMinModulusGPa, Max: 500, HardMin: HardMinModulusGPa, HardMax: 1000, Group: "Material", MaterialProperty: "E"),

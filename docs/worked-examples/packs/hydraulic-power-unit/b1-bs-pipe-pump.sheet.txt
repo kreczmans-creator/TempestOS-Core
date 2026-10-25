@@ -8,7 +8,7 @@ Issued: 2026-10-25    Issue: HPU-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
-Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT). Mean velocity in the pipe: v = Q/(πD²/4). Reynolds number, which decides laminar or turbulent flow: Re = ρvD/μ. Friction factor for laminar flow (Re < 2300): f = 64/Re. Friction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)). Head lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g. System curve, with friction scaled from the design flow as Q² (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f(Q). Water held in the pipes: V_pipe = Σ π/4·D²·L. Duty point, where the pump and system curves cross (found by bisection): H_pump(Q) = H_sys(Q). Pump affinity laws for a change of speed n or impeller diameter D: Q ∝ n D³; H ∝ n² D². Net positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
   Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
   Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
   Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
@@ -144,9 +144,9 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   WARNING fittings: segments: pressure line to cylinder has fitting losses (K = 6) at Re = 2327.1; the K values are turbulent-flow values and rise at low Reynolds number, so the fittings loss K·v²/2g is understated here.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.5.0
-  Content hash: fa61fbf098961063
+  Template: bs.pipe-pump@1.6.0
+  Content hash: 5a30160d8816872d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 15:45 UTC
+  Test run: 2026-10-25 21:13 UTC
   Application: TempestOS test

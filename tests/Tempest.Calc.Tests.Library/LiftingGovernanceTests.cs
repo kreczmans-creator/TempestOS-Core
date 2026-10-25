@@ -1,14 +1,15 @@
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
-using Tempest.Calc.Structural;
 using Tempest.Core.Evidence;
 
 namespace Tempest.Calc.Tests.Library;
 
 /// <summary>
-/// S8 (struct.lifting) end to end through the Library with the real calculator: the feature flag closes every way in while it is off
-/// (the catalogue, a direct template id, JSON and CSV import, a pack template, the service API, an instance that already exists), and
-/// the attestation and the second check govern Issue when it is on (ADR-0173). The flag is on in this test host only.
+/// The two lifting worksheets, S8 (<c>struct.lifting</c>) and the worksheet that replaced the legacy lifting-lug module
+/// (<c>mech.lifting-lug</c>, ADR-0167 Amendment 2), end to end through the Library with the real calculators: the feature flag closes every
+/// way in while it is off (the catalogue, a direct template id, <c>id@version</c>, JSON and CSV import, a pack template, the service API, an
+/// instance that already exists), and the attestation and the second check govern Issue when it is on (ADR-0173). Every lifecycle test is a
+/// theory over both ids (merge review finding 2), so the governance of one cannot drift from the other. The flag is on in this test host only.
 /// </summary>
 public sealed class LiftingGovernanceTests
 {
@@ -16,16 +17,33 @@ public sealed class LiftingGovernanceTests
     private const string FirstChecker = "checker.one";
     private const string SecondChecker = "checker.two";
 
+    private const string StructLifting = "struct.lifting";
+    private const string MechLifting = "mech.lifting-lug";
+
     private static readonly CalcFeatureFlags LiftingOn = new([CalcFeatures.Lifting]);
 
-    private static LibraryTestHost Host(bool on, IReadOnlyList<CalcPackTemplate>? packTemplates = null) =>
-        new(calculators: [new LiftingLugCalculator()], features: on ? LiftingOn : null, packTemplates: packTemplates);
-
-    /// <summary>The first known-answer case of S8 with a source on every input (Issue demands one).</summary>
-    private static IReadOnlyList<CalcInputValue> Inputs()
+    /// <summary>The real calculator of a lifting worksheet by its id.</summary>
+    private static ICalcCalculator Calc(string id) => id switch
     {
-        var basis = CalcProvenance.Assumed("Worked inputs of the S8 test case.");
-        return [.. new LiftingLugCalculator().Template.TestCases[0].Inputs.Select(v => v with { Provenance = basis })];
+        StructLifting => new Tempest.Calc.Structural.LiftingLugCalculator(),
+        MechLifting => new Tempest.Calc.Mechanical.LiftingLugCalculator(),
+        _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Not a lifting worksheet."),
+    };
+
+    private static LibraryTestHost Host(string id, bool on, IReadOnlyList<CalcPackTemplate>? packTemplates = null) =>
+        new(calculators: [Calc(id)], features: on ? LiftingOn : null, packTemplates: packTemplates);
+
+    /// <summary>A catalogue of the one worksheet with the feature off, as another installation (or the same one switched off) would have it.</summary>
+    private static CalcCatalogue OffCatalogue(string id) => new([Calc(id)]);
+
+    /// <summary>The references that name a worksheet: its id, a version that never existed, and the version it ships at.</summary>
+    private static string[] References(string id) => [id, $"{id}@1.0.0", $"{id}@{Calc(id).Template.Version}"];
+
+    /// <summary>The first known-answer case of a lifting worksheet with a source on every input (Issue demands one).</summary>
+    private static IReadOnlyList<CalcInputValue> Inputs(string id)
+    {
+        var basis = CalcProvenance.Assumed($"Worked inputs of the {id} test case.");
+        return [.. Calc(id).Template.TestCases[0].Inputs.Select(v => v with { Provenance = basis })];
     }
 
     private static async Task<CalcActionResult> AttestAsync(LibraryTestHost host, Guid id, string principal = "competent.person", string name = "Pat Competent")
@@ -42,20 +60,25 @@ public sealed class LiftingGovernanceTests
     // ------------------------------------------------------------------
 
     [Fact]
-    public void The_Shipped_Composition_Has_No_Lifting_Calculator_Without_The_Flag_And_Exactly_One_More_With_It()
+    public void The_Shipped_Composition_Has_No_Lifting_Calculator_Without_The_Flag_And_Exactly_Two_More_With_It()
     {
+        // S8 (struct.lifting) and the worksheet that replaced the legacy lifting-lug module (mech.lifting-lug, ADR-0167) are gated alike.
         var off = new CalcCatalogue(ShippedCalculators.All);
         var on = new CalcCatalogue(ShippedCalculators.All, LiftingOn);
 
-        Assert.DoesNotContain(off.Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-        Assert.DoesNotContain(off.All(), e => e.Template.Id == LiftingLugCalculator.Id);
-        Assert.DoesNotContain(off.ByDiscipline(CalcDiscipline.Structural), e => e.Template.Id == LiftingLugCalculator.Id);
-        Assert.Null(off.Find(LiftingLugCalculator.Id));
+        Assert.DoesNotContain(off.Current(), e => e.Template.Id == StructLifting);
+        Assert.DoesNotContain(off.All(), e => e.Template.Id == StructLifting);
+        Assert.DoesNotContain(off.ByDiscipline(CalcDiscipline.Structural), e => e.Template.Id == StructLifting);
+        Assert.Null(off.Find(StructLifting));
         Assert.Null(off.Find("struct.lifting@1.0.0"));
-        Assert.True(off.IsWithheld(LiftingLugCalculator.Id));
+        Assert.True(off.IsWithheld(StructLifting));
 
-        Assert.Contains(on.Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-        Assert.Equal(off.Current().Count + 1, on.Current().Count);
+        Assert.Contains(on.Current(), e => e.Template.Id == StructLifting);
+        Assert.DoesNotContain(off.Current(), e => e.Template.Id == "mech.lifting-lug");
+        Assert.Null(off.Find("mech.lifting-lug"));
+        Assert.True(off.IsWithheld("mech.lifting-lug"));
+        Assert.Contains(on.Current(), e => e.Template.Id == "mech.lifting-lug");
+        Assert.Equal(off.Current().Count + 2, on.Current().Count);
 
         // Ctrl+K entries are one per Current() entry, filed under its discipline: none for S8 with the flag off.
         Assert.DoesNotContain(off.Current().Select(e => $"calc.worksheet.{e.Template.Id}"), id => id == "calc.worksheet.struct.lifting");
@@ -65,7 +88,7 @@ public sealed class LiftingGovernanceTests
     [Fact]
     public void No_Other_Shipped_Calculator_Is_Gated_Or_Asks_For_Extra_Governance()
     {
-        foreach (var calculator in ShippedCalculators.All.Where(c => c.Template.Id != LiftingLugCalculator.Id))
+        foreach (var calculator in ShippedCalculators.All.Where(c => c.Template.Id != StructLifting && c.Template.Id != MechLifting))
         {
             var t = calculator.Template;
             Assert.Null(t.FeatureFlag);
@@ -76,38 +99,72 @@ public sealed class LiftingGovernanceTests
             Assert.DoesNotContain("requires-", canonical, StringComparison.Ordinal);
         }
 
-        var s8 = new LiftingLugCalculator().Template;
+        var s8 = Calc(StructLifting).Template;
         Assert.Equal(CalcFeatures.Lifting, s8.FeatureFlag);
         Assert.Contains("feature=lifting", CalcTemplateHasher.CanonicalText(s8, []), StringComparison.Ordinal);
+
+        // The ported lifting-lug worksheet asks for everything S8 asks for (ADR-0173): the flag, the attestation, an independent first check and a second.
+        var lug = ShippedCalculators.All.Single(c => c.Template.Id == "mech.lifting-lug").Template;
+        Assert.Equal(CalcFeatures.Lifting, lug.FeatureFlag);
+        Assert.True(lug.RequiresAttestation);
+        Assert.True(lug.IndependentCheck);
+        Assert.True(lug.RequiresSecondCheck);
+        Assert.Contains("feature=lifting", CalcTemplateHasher.CanonicalText(lug, []), StringComparison.Ordinal);
     }
 
     [Fact]
     public void No_Shipped_Pack_Template_Names_The_Lifting_Calculator()
     {
-        Assert.DoesNotContain(CalcPackTemplates.All.SelectMany(p => p.Steps), step => step.TemplateId.StartsWith("struct.lifting", StringComparison.Ordinal));
+        Assert.DoesNotContain(CalcPackTemplates.All.SelectMany(p => p.Steps), step => step.TemplateId.StartsWith("struct.lifting", StringComparison.Ordinal) || step.TemplateId.StartsWith("mech.lifting-lug", StringComparison.Ordinal));
     }
 
     [Theory]
-    [InlineData("struct.lifting")]
-    [InlineData("struct.lifting@1.0.0")]
-    public async Task A_Direct_Template_Id_Cannot_Create_A_Calculation(string reference)
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task A_Direct_Template_Id_Or_Id_At_Version_Cannot_Create_A_Calculation(string id)
     {
-        var host = Host(on: false);
+        var host = Host(id, on: false);
         var project = await host.ProjectAsync();
 
-        var ex = await Assert.ThrowsAsync<CalcFeatureDisabledException>(() => host.Service.CreateAsync(reference, project, "Lug", Inputs()));
-        Assert.Contains("switched off", ex.Message, StringComparison.Ordinal);
-        Assert.Contains("HKLM\\SOFTWARE\\Policies\\TempestOS\\Features", ex.Message, StringComparison.Ordinal);
-        Assert.Contains("Lifting lugs and spreader beams", ex.Message, StringComparison.Ordinal);
+        foreach (var reference in References(id))
+        {
+            var ex = await Assert.ThrowsAsync<CalcFeatureDisabledException>(() => host.Service.CreateAsync(reference, project, "Lug", Inputs(id)));
+            Assert.Contains("switched off", ex.Message, StringComparison.Ordinal);
+            Assert.Contains("HKLM\\SOFTWARE\\Policies\\TempestOS\\Features", ex.Message, StringComparison.Ordinal);
+            Assert.Contains(Calc(id).Template.Title, ex.Message, StringComparison.Ordinal);
+        }
+
         Assert.Empty(await host.Store.ListInstancesAsync(project));
     }
 
-    [Fact]
-    public async Task Json_And_Csv_Import_Cannot_Create_A_Lifting_Calculation()
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task With_The_Flag_On_A_Calculation_Is_Created_By_Id_And_By_Id_At_Version(string id)
     {
-        var host = Host(on: false);
-        var template = new LiftingLugCalculator().Template;
-        var set = new CalcInputSet(Inputs());
+        var host = Host(id, on: true);
+        var project = await host.ProjectAsync();
+        var version = Calc(id).Template.Version;
+
+        var byId = await host.Service.CreateAsync(id, project, "By id", Inputs(id));
+        var byVersion = await host.Service.CreateAsync($"{id}@{version}", project, "By id@version", Inputs(id));
+
+        Assert.Equal(id, byId.TemplateId);
+        Assert.Equal(id, byVersion.TemplateId);
+        Assert.Equal(version, byId.TemplateVersion);
+        Assert.Equal(version, byVersion.TemplateVersion);
+        Assert.Equal(2, (await host.Store.ListInstancesAsync(project)).Count);
+        await Assert.ThrowsAnyAsync<Exception>(() => host.Service.CreateAsync($"{id}@0.0.1", project, "Unknown version", Inputs(id)));
+    }
+
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task Json_And_Csv_Import_Cannot_Create_A_Lifting_Calculation(string id)
+    {
+        var host = Host(id, on: false);
+        var template = Calc(id).Template;
+        var set = new CalcInputSet(Inputs(id));
 
         var (fromJson, jsonNotices) = CalcInputJson.Read(CalcInputJson.Write(set), template);
         Assert.DoesNotContain(jsonNotices, n => n.Severity == CalcNoticeSeverity.Block);
@@ -115,16 +172,18 @@ public sealed class LiftingGovernanceTests
         Assert.DoesNotContain(csvNotices, n => n.Severity == CalcNoticeSeverity.Block);
         Assert.Equal(fromJson.Values.Count, fromCsv.Values.Count);
 
-        await Assert.ThrowsAsync<CalcFeatureDisabledException>(() => host.Service.CreateAsync("struct.lifting", null, "From JSON", [.. fromJson.Values]));
-        await Assert.ThrowsAsync<CalcFeatureDisabledException>(() => host.Service.CreateAsync("struct.lifting", null, "From CSV", [.. fromCsv.Values]));
+        await Assert.ThrowsAsync<CalcFeatureDisabledException>(() => host.Service.CreateAsync(id, null, "From JSON", [.. fromJson.Values]));
+        await Assert.ThrowsAsync<CalcFeatureDisabledException>(() => host.Service.CreateAsync(id, null, "From CSV", [.. fromCsv.Values]));
         Assert.Empty(await host.Store.ListInstancesAsync(null));
     }
 
-    [Fact]
-    public async Task A_Pack_Template_With_A_Lifting_Step_Cannot_Be_Instantiated()
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task A_Pack_Template_With_A_Lifting_Step_Cannot_Be_Instantiated(string id)
     {
-        var template = new CalcPackTemplate("lifting-beam-test", "Lifting beam", "Lug then beam.", [new CalcPackStep("lug", "struct.lifting", "Lug 1", Inputs())], []);
-        var host = Host(on: false, packTemplates: [template]);
+        var template = new CalcPackTemplate("lifting-beam-test", "Lifting beam", "Lug then beam.", [new CalcPackStep("lug", id, "Lug 1", Inputs(id))], []);
+        var host = Host(id, on: false, packTemplates: [template]);
         var project = await host.ProjectAsync();
 
         Assert.Contains("switched off", host.Service.ValidatePackTemplate(template), StringComparison.Ordinal);
@@ -135,27 +194,33 @@ public sealed class LiftingGovernanceTests
         Assert.Empty(await host.Store.ListPacksAsync(project));
 
         // The same template works with the flag on, in the test host.
-        var on = Host(on: true, packTemplates: [template]);
+        var on = Host(id, on: true, packTemplates: [template]);
         Assert.Null(on.Service.ValidatePackTemplate(template));
     }
 
-    [Fact]
-    public void The_Service_Api_Refuses_A_Preview_Ports_And_A_Catalogue_Get_While_The_Flag_Is_Off()
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public void The_Service_Api_Refuses_A_Preview_Ports_And_A_Catalogue_Get_While_The_Flag_Is_Off(string id)
     {
-        var host = Host(on: false);
-        Assert.Throws<CalcFeatureDisabledException>(() => host.Service.Preview("struct.lifting", new CalcInputSet(Inputs())));
-        Assert.Throws<CalcFeatureDisabledException>(() => host.Service.OutputPorts("struct.lifting"));
-        Assert.Throws<CalcFeatureDisabledException>(() => host.Catalogue.Get("struct.lifting"));
-        Assert.Throws<CalcFeatureDisabledException>(() => host.Catalogue.Get("struct.lifting@1.0.0"));
-        Assert.Null(host.Catalogue.Find("struct.lifting"));
+        var host = Host(id, on: false);
+        Assert.Throws<CalcFeatureDisabledException>(() => host.Service.Preview(id, new CalcInputSet(Inputs(id))));
+        Assert.Throws<CalcFeatureDisabledException>(() => host.Service.OutputPorts(id));
+
+        foreach (var reference in References(id))
+            Assert.Throws<CalcFeatureDisabledException>(() => host.Catalogue.Get(reference));
+
+        Assert.Null(host.Catalogue.Find(id));
     }
 
-    [Fact]
-    public async Task A_Lifting_Calculation_That_Already_Exists_Cannot_Be_Issued_When_The_Flag_Is_Switched_Off()
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task A_Lifting_Calculation_That_Already_Exists_Cannot_Be_Issued_When_The_Flag_Is_Switched_Off(string id)
     {
-        var on = Host(on: true);
+        var on = Host(id, on: true);
         on.Principal = Designer;
-        var instance = await on.Service.CreateAsync("struct.lifting", await on.ProjectAsync(), "Lug", Inputs());
+        var instance = await on.Service.CreateAsync(id, await on.ProjectAsync(), "Lug", Inputs(id));
         Assert.True((await AttestAsync(on, instance.Id)).Succeeded);
         on.Principal = FirstChecker;
         Assert.True((await on.Service.CheckAsync(instance.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Succeeded);
@@ -163,7 +228,7 @@ public sealed class LiftingGovernanceTests
         Assert.True((await on.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
 
         // Everything is in place to issue it, but the installation has the feature off.
-        var off = new CalcInstanceService(new CalcCatalogue([new LiftingLugCalculator()]), on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => "issuer" };
+        var off = new CalcInstanceService(OffCatalogue(id), on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => "issuer" };
         var refused = await off.IssueAsync(instance.Id, "ISS-1", "Client");
         Assert.False(refused.Succeeded);
         Assert.Contains("switched off", refused.Reason, StringComparison.Ordinal);
@@ -180,16 +245,18 @@ public sealed class LiftingGovernanceTests
         Assert.True(issued.Succeeded, issued.Reason);
     }
 
-    [Fact]
-    public void The_Administrator_Source_Is_The_Only_Switch()
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public void The_Administrator_Source_Is_The_Only_Switch(string id)
     {
         // A DWORD of 1 under the machine policy key switches the calculator into the catalogue; anything else leaves it withheld.
         static CalcCatalogue Catalogue(PolicyValue value) =>
             new(ShippedCalculators.All, CalcFeatureFlags.FromSource(new WindowsPolicyFeatureSource((_, name) => name == "Lifting" ? value : default), out _));
 
-        Assert.Contains(Catalogue(new PolicyValue(true, true, 1)).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-        Assert.DoesNotContain(Catalogue(default).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
-        Assert.DoesNotContain(Catalogue(new PolicyValue(true, false, 1)).Current(), e => e.Template.Id == LiftingLugCalculator.Id);
+        Assert.Contains(Catalogue(new PolicyValue(true, true, 1)).Current(), e => e.Template.Id == id);
+        Assert.DoesNotContain(Catalogue(default).Current(), e => e.Template.Id == id);
+        Assert.DoesNotContain(Catalogue(new PolicyValue(true, false, 1)).Current(), e => e.Template.Id == id);
 
         // A catalogue has no way to be turned on later.
         var catalogue = new CalcCatalogue(ShippedCalculators.All);
@@ -199,14 +266,16 @@ public sealed class LiftingGovernanceTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task The_Generic_Evidence_Acts_Cannot_Check_Issue_Or_Revise_The_Evidence_Of_A_Lifting_Calculation(bool flagOn)
+    [InlineData(StructLifting, false)]
+    [InlineData(StructLifting, true)]
+    [InlineData(MechLifting, false)]
+    [InlineData(MechLifting, true)]
+    public async Task The_Generic_Evidence_Acts_Cannot_Check_Issue_Or_Revise_The_Evidence_Of_A_Lifting_Calculation(string id, bool flagOn)
     {
         // The Evidence workspace commands call IEvidenceService directly; the evidence of a calculation is managed by its worksheet and they are refused.
-        var on = Host(on: true);
+        var on = Host(id, on: true);
         on.Principal = Designer;
-        var instance = await on.Service.CreateAsync("struct.lifting", await on.ProjectAsync(), "Lug", Inputs());
+        var instance = await on.Service.CreateAsync(id, await on.ProjectAsync(), "Lug", Inputs(id));
         var evidenceId = instance.EvidenceId!.Value;
         var evidence = (Evidence)(await on.Context.Repository.FindAsync(evidenceId))!;
         Assert.Equal(Evidence.CalcWorksheetOwner, evidence.ManagedBy);
@@ -220,21 +289,23 @@ public sealed class LiftingGovernanceTests
         Assert.Equal(EvidenceStatus.Draft, evidence.Status);
 
         // With the flag off or on the worksheet's own governance still decides.
-        var service = flagOn ? on.Service : new CalcInstanceService(new CalcCatalogue([new LiftingLugCalculator()]), on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => FirstChecker };
+        var service = flagOn ? on.Service : new CalcInstanceService(OffCatalogue(id), on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => FirstChecker };
         var worksheet = await service.CheckAsync(instance.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted);
         Assert.False(worksheet.Succeeded);
         Assert.Contains(flagOn ? "competent-person attestation" : "switched off", worksheet.Reason, StringComparison.Ordinal);
         Assert.Equal(EvidenceStatus.Draft, evidence.Status);
     }
 
-    [Fact]
-    public async Task The_Startup_Sweep_Marks_Old_Calculation_Evidence_Managed_Even_When_The_Feature_Is_Off()
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task The_Startup_Sweep_Marks_Old_Calculation_Evidence_Managed_Even_When_The_Feature_Is_Off(string id)
     {
         // Evidence made before the marker existed, for a lifting calculation and a pack, in a store whose installation has the feature off.
-        var on = Host(on: true);
+        var on = Host(id, on: true);
         on.Principal = Designer;
         var project = await on.ProjectAsync();
-        var lug = await on.Service.CreateAsync("struct.lifting", project, "Old lug", Inputs());
+        var lug = await on.Service.CreateAsync(id, project, "Old lug", Inputs(id));
         var other = await on.Service.CreateAsync("test.direct-stress", project, "Old stress", LibraryTestHost.ProvenancedInputs());
         var pack = await on.Service.CreatePackAsync(project, "Old pack", [other.Id]);
         // Point each at Evidence made the way it was before the marker existed: unmanaged.
@@ -251,7 +322,7 @@ public sealed class LiftingGovernanceTests
         Assert.Null(oldPack.ManagedBy);
 
         // The service of an installation with the feature off: the next check would be refused before it adopted anything.
-        var off = new CalcInstanceService(new CalcCatalogue([new LiftingLugCalculator()]), on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => FirstChecker };
+        var off = new CalcInstanceService(OffCatalogue(id), on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => FirstChecker };
         Assert.Equal(3, await off.AdoptAllEvidenceAsync());
 
         foreach (var evidenceId in oldIds)
@@ -267,7 +338,7 @@ public sealed class LiftingGovernanceTests
     [Fact]
     public async Task Calculation_Evidence_Made_Before_Evidence_Could_Be_Managed_Is_Adopted_At_The_Next_Check()
     {
-        var host = Host(on: true);
+        var host = Host(StructLifting, on: true);
         host.Principal = Designer;
         var project = await host.ProjectAsync();
         var instance = await host.Service.CreateAsync("test.direct-stress", project, "Old calc", LibraryTestHost.ProvenancedInputs());
@@ -306,27 +377,32 @@ public sealed class LiftingGovernanceTests
         Assert.Equal(flagged.Select(c => c.Template.Id).Order(StringComparer.Ordinal), Tempest.Core.Calculations.CalculationFeatureGate.GatedIds.Where(id => id != Tempest.Core.Calculations.CalculationFeatureGate.LiftingModuleId));
     }
 
-    [Fact]
-    public void The_Engine_And_The_Catalogue_Refuse_The_Lifting_Worksheet_In_The_Same_Words()
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public void The_Engine_And_The_Catalogue_Refuse_The_Lifting_Worksheet_In_The_Same_Words(string id)
     {
-        var catalogue = new CalcCatalogue([new LiftingLugCalculator()]);
+        var catalogue = OffCatalogue(id);
 
-        Assert.Equal(catalogue.FeatureRefusal("struct.lifting"), Tempest.Core.Calculations.CalculationFeatureGate.RefusalFor("struct.lifting", null));
-        Assert.Equal(catalogue.FeatureRefusal("struct.lifting@1.1.0"), Tempest.Core.Calculations.CalculationFeatureGate.RefusalFor("struct.lifting", _ => false));
-        Assert.Null(Tempest.Core.Calculations.CalculationFeatureGate.RefusalFor("struct.lifting", feature => feature == CalcFeatures.Lifting));
+        Assert.NotNull(catalogue.FeatureRefusal(id));
+        Assert.Equal(catalogue.FeatureRefusal(id), Tempest.Core.Calculations.CalculationFeatureGate.RefusalFor(id, null));
+        Assert.Equal(catalogue.FeatureRefusal($"{id}@{Calc(id).Template.Version}"), Tempest.Core.Calculations.CalculationFeatureGate.RefusalFor(id, _ => false));
+        Assert.Null(Tempest.Core.Calculations.CalculationFeatureGate.RefusalFor(id, feature => feature == CalcFeatures.Lifting));
     }
 
     // ------------------------------------------------------------------
     // Governance, flag on (the test host only)
     // ------------------------------------------------------------------
 
-    [Fact]
-    public async Task Check_Is_Refused_Without_The_Attestation_And_The_Author_Cannot_Attest()
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task Check_Is_Refused_Without_The_Attestation_And_The_Author_Cannot_Attest(string id)
     {
-        var host = Host(on: true);
+        var host = Host(id, on: true);
         host.Principal = Designer;
         var project = await host.ProjectAsync();
-        var missing = await host.Service.CreateAsync("struct.lifting", project, "No attestation", Inputs());
+        var missing = await host.Service.CreateAsync(id, project, "No attestation", Inputs(id));
         host.Principal = FirstChecker;
 
         var noAttestation = await host.Service.CheckAsync(missing.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted);
@@ -346,12 +422,14 @@ public sealed class LiftingGovernanceTests
         Assert.True((await AttestAsync(host, missing.Id)).Succeeded);
     }
 
-    [Fact]
-    public async Task The_Author_Cannot_Check_And_Issue_Needs_A_Second_Different_Checker()
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task The_Author_Cannot_Check_And_Issue_Needs_A_Second_Different_Checker(string id)
     {
-        var host = Host(on: true);
+        var host = Host(id, on: true);
         host.Principal = Designer;
-        var instance = await host.Service.CreateAsync("struct.lifting", await host.ProjectAsync(), "Lug", Inputs());
+        var instance = await host.Service.CreateAsync(id, await host.ProjectAsync(), "Lug", Inputs(id));
         Assert.True((await AttestAsync(host, instance.Id)).Succeeded);
 
         Assert.Contains("needs an independent check", (await host.Service.CheckAsync(instance.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
@@ -384,17 +462,20 @@ public sealed class LiftingGovernanceTests
         Assert.Contains("Chris Checker; second check: Dana Second", text, StringComparison.Ordinal);
         Assert.Contains("Pat Competent", text, StringComparison.Ordinal);
         Assert.Contains("competent person", text, StringComparison.Ordinal);
-        Assert.Contains("checklist", text, StringComparison.Ordinal);
+        // The one sheet difference: S8 prints a marking and certification checklist; the ported worksheet states the same duty in its notice.
+        Assert.Contains(id == StructLifting ? "checklist" : "marking, testing and certification", text, StringComparison.Ordinal);
         Assert.StartsWith("lifting feature enabled", issued.Instance.Issue.FeatureNote, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task A_Pack_Holding_A_Lifting_Calculation_Needs_Its_Own_Attestation_And_Second_Check()
+    [Theory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task A_Pack_Holding_A_Lifting_Calculation_Needs_Its_Own_Attestation_And_Second_Check(string id)
     {
-        var host = Host(on: true);
+        var host = Host(id, on: true);
         var project = await host.ProjectAsync();
         host.Principal = Designer;
-        var unattested = await host.Service.CreateAsync("struct.lifting", project, "Lug unattested", Inputs());
+        var unattested = await host.Service.CreateAsync(id, project, "Lug unattested", Inputs(id));
         var pack = await host.Service.CreatePackAsync(project, "Lifting beam", [unattested.Id]);
 
         host.Principal = FirstChecker;
@@ -404,7 +485,7 @@ public sealed class LiftingGovernanceTests
 
         // Fix it: a new calculation with the attestation, in its own pack.
         host.Principal = Designer;
-        var lug = await host.Service.CreateAsync("struct.lifting", project, "Lug", Inputs());
+        var lug = await host.Service.CreateAsync(id, project, "Lug", Inputs(id));
         Assert.True((await AttestAsync(host, lug.Id)).Succeeded);
         host.Principal = Designer;
         var good = await host.Service.CreatePackAsync(project, "Lifting beam 2", [lug.Id]);
@@ -428,7 +509,7 @@ public sealed class LiftingGovernanceTests
     [Fact]
     public async Task The_Lifting_Calculation_Does_Not_Change_The_Governance_Of_Any_Other_Calculator_In_The_Same_Host()
     {
-        var host = Host(on: true);
+        var host = Host(StructLifting, on: true);
         host.Principal = Designer;
         var plain = await host.Service.CreateAsync("test.direct-stress", await host.ProjectAsync(), "Plain", LibraryTestHost.ProvenancedInputs());
         host.Principal = FirstChecker;

@@ -24,14 +24,14 @@ public sealed class SealedSystemCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.BuildingServices, "Sealed heating system: emitters and expansion vessel",
+        Id, "1.2.1", CalcDiscipline.BuildingServices, "Sealed heating system: emitters and expansion vessel",
         "A closed LTHW system below 100 °C: the catalogue output (at ΔT 50 K) each room's emitter needs at the design flow, return and room temperatures, checked against the selected emitters; and the minimum expansion vessel for the system volume, fill and maximum temperatures, static head and pressures.",
         "Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_f − t_r)/ln((t_f − t_i)/(t_r − t_i))\n" +
         "Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n\n" +
         "System volume: V_s = Σ V_em + V_pipe + V_plant\n" +
-        "Expansion: e_x = ρ(t_fill)/ρ(t_max) − 1 (water density by Kell 1975), or a glycol record\n" +
-        "Pre-charge: p_i = ρ·g·h_static + margin (≥ static head)\n" +
-        "Vessel: V_e = e_x·V_s/[1 − (p_i + 1)/(p_f + 1)] (pressures in bar gauge, + 1 bar for absolute); the expansion volume only, sized for the higher of t_max and t_f; a water reserve and a safety-valve margin are not included",
+        "Water expansion: e_x = ρ(t_fill)/ρ(t_max) − 1 (water density by Kell 1975), or a glycol record\n" +
+        "Vessel pre-charge: p_i = ρ·g·h_static + margin (≥ static head)\n" +
+        "Vessel size: V_e = e_x·V_s/[1 − (p_i + 1)/(p_f + 1)] (pressures in bar gauge, + 1 bar for absolute); the expansion volume only, sized for the higher of t_max and t_f; a water reserve and a safety-valve margin are not included",
         [
             new CalcInputSpec("rooms", "Rooms and emitters", CalcInputKind.Table, Columns: RoomColumns, MaxRows: 200, IsOptional: true, Group: "Emitters"),
             new CalcInputSpec("t_f", "Flow temperature", CalcInputKind.Quantity, "degC", Default: 75, Min: 30, Max: 90, HardMin: 30, HardMax: 90, Group: "Emitters"),

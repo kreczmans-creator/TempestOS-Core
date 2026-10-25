@@ -47,17 +47,17 @@ public sealed class ContainmentCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Electrical, "Containment fill, bend radius and cable pulling",
+        Id, "1.1.1", CalcDiscipline.Electrical, "Containment fill, bend radius and cable pulling",
         "The fill of a conduit, trunking or tray by the cables in it against the space factor you enter, the bend radius of the route against the multiple of the largest cable diameter you enter, and the pull of the cables through a route of straight lengths and bends in both directions: the tension along the route, the sidewall pressure at each bend, and the pull direction that passes every check (the lower maximum tension when both do or neither does). Space factor, bend multiple, friction coefficient and pulling limits are your own records; no cable or conduit factor method is offered.",
         "Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i)\n" +
         "Containment area: A_int = π·D²/4 (conduit, internal diameter D) or W·H (trunking or tray, internal width × depth)\n" +
-        "Fill: fill = A_cab/A_int; utilisation u_fill = fill/f_max, f_max the space factor from your record\n" +
+        "Containment fill: fill = A_cab/A_int; utilisation u_fill = fill/f_max, f_max the space factor from your record\n" +
         "Bend radius: R_min = n_bend·d_max, d_max the largest cable diameter, n_bend from your record; each bend u_b = R_min/R\n" +
-        "Weight: w = Σ n_i·m_i (kg/m); force per metre w·g·w_c, g = 9.80665 m/s², w_c your weight-correction factor (1 = full weight)\n" +
+        "Cable weight: w = Σ n_i·m_i (kg/m); force per metre w·g·w_c, g = 9.80665 m/s², w_c your weight-correction factor (1 = full weight)\n" +
         "Straight length: T₂ = T₁ + w·g·w_c·μ·L\n" +
-        "Bend: T₂ = T₁·e^(w_c·μ·θ) (capstan equation with the friction scaled by the weight-correction factor, θ in radians)\n" +
+        "Tension round a bend: T₂ = T₁·e^(w_c·μ·θ) (capstan equation with the friction scaled by the weight-correction factor, θ in radians)\n" +
         "Sidewall pressure at a bend: SWP = T₂/R (N/m)\n" +
-        "Direction: the route is run in the listed order and in reverse; the direction that passes every tension and sidewall pressure check is recommended, and when both or neither pass, the one of lower maximum tension (equal tension: lower SWP)\n" +
+        "Pulling direction: the route is run in the listed order and in reverse; the direction that passes every tension and sidewall pressure check is recommended, and when both or neither pass, the one of lower maximum tension (equal tension: lower SWP)\n" +
         "Cable limit: load shared equally, so each cable carries T/N (N cables); T_cab = k_n·N·min(T_max,i), k_n your derating for more than 3 cables (1 if none); u_T = max_i (T/N)/(k_n·T_max,i) = T/T_cab\n" +
         "Grip limit: u_grip = T/T_grip, T_grip the limit of the grip or pulling eye (your record); sidewall pressure u_P = SWP_max/P_lim",
         [

@@ -45,11 +45,11 @@ public sealed class ShaftCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Mechanical, "Shaft: static, fatigue, keys, critical speed",
+        Id, "1.1.1", CalcDiscipline.Mechanical, "Shaft: static, fatigue, keys, critical speed",
         "A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a steady torque: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.",
-        "Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²)\n" +
+        "Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²)\n" +
         "Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1)\n" +
-        "Endurance: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R\n" +
+        "Endurance limit: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R\n" +
         "Fatigue (DE-Goodman): 1/n_f = σ_a/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_pk²), τ_pk from the larger of T and the peak torque T_pk when given\n" +
         "Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²) (upper bound); Dunkerley 1/ω² = Σ m_i·δ_ii (lower bound, used for the ratio to the operating speed)\n" +
         "Parallel key: τ = 2T/(d·w·L), σ = 4T/(d·h·L); required length L = max(2T·n_target/(d·w·0.577·S_y), 4T·n_target/(d·h·S_y))",

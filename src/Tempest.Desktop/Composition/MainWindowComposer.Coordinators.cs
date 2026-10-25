@@ -29,7 +29,6 @@ internal sealed record ComposedCoordinators(
     AttachmentViewerLauncher AttachmentViewers,
     WorkspaceLayoutPresetCoordinator LayoutPresets,
     EngineeringCalculationCoordinator EngineeringCalculationCoordinator,
-    CalculationModulesCoordinator CalculationModulesCoordinator,
     Tempest.Desktop.CalcSheets.CalcSheetCoordinator CalcSheets,
     ProjectDeliveryCoordinator ProjectDelivery,
     ProjectGovernanceCoordinator ProjectGovernanceCoordinator);
@@ -304,13 +303,15 @@ internal sealed partial class MainWindowComposer
         // (`ADR-0103`, the same shape as the two above).
         var engineeringCalculationCoordinator = new EngineeringCalculationCoordinator(host.BracketCalculations!, views.EngineeringCalculation);
 
-        // The Engineering Calculators' own collaborator (`WP 21.7B`).
-        var calculationModulesCoordinator = new CalculationModulesCoordinator(host.CalculationModules!, views.CalculationModules);
-
         // `v0.26.0` (ADR-0165): the worksheet surface's own collaborator.
-        var calcSheets = new Tempest.Desktop.CalcSheets.CalcSheetCoordinator(host.CalcInstances!, views.Worksheets, host.ProjectContext!, () => host.SessionPrincipal?.IdentityId,
+        // The checker is read where the author is (ICurrentPrincipalAccessor, the one source of truth), never from
+        // host.SessionPrincipal, so a sheet cannot name its author and checker from two different sessions.
+        var principals = (Tempest.Core.Identity.ICurrentPrincipalAccessor)host.Services!.GetService(typeof(Tempest.Core.Identity.ICurrentPrincipalAccessor));
+        var calcSheets = new Tempest.Desktop.CalcSheets.CalcSheetCoordinator(host.CalcInstances!, views.Worksheets, host.ProjectContext!, () => principals.Current?.Identity.Id,
             (Tempest.Core.Events.IEventBus)host.Services!.GetService(typeof(Tempest.Core.Events.IEventBus)),
-            (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger)));
+            (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger)),
+            host.Materials is { } materials && host.Fasteners is { } fasteners && host.Bearings is { } bearings ? new Tempest.Calc.Library.CalcReferenceFill(materials, fasteners, bearings) : null,
+            views.WorksheetRegister);
 
         // `ADR-0173`: Evidence a worksheet manages is checked, issued and revised there; its editor's "Open worksheet" lands here.
         viewCoordinator.OpenCalculationForEvidenceAsync = evidenceId =>
@@ -318,6 +319,6 @@ internal sealed partial class MainWindowComposer
 
         return new ComposedCoordinators(
             undoRedo, viewCoordinator, cockpitView, homeDashboardView, dockingComposer, attachmentViewers, layoutPresets,
-            engineeringCalculationCoordinator, calculationModulesCoordinator, calcSheets, projectDelivery, projectGovernanceCoordinator);
+            engineeringCalculationCoordinator, calcSheets, projectDelivery, projectGovernanceCoordinator);
     }
 }

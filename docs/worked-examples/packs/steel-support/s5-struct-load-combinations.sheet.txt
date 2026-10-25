@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Load combinations    Revision: A
 Title: Load combinations (EN 1990)
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Design values of a single action effect (a force, a moment or a load intensity) under every EN 1990 Annex A1 combination for buildings: ULS persistent/transient, SLS characteristic, frequent and quasi-permanent, and accidental. Every variable action is tried as the leading one; the maximum and minimum envelopes and their governing combinations are reported.
@@ -131,5 +131,5 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 60a0615ba7745102
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 22:51 UTC
   Application: TempestOS test

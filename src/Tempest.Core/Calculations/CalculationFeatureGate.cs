@@ -4,7 +4,8 @@ namespace Tempest.Core.Calculations;
 /// `ADR-0173`: the calculations an installation withholds until a feature is switched on, and the one refusal sentence every path that would run
 /// one gives. The engine consults this at its single execution choke point (<see cref="CalculationEngine"/>), so a caller that runs a definition
 /// by id, whether a command, a plugin, a script or a future entry point, cannot reach a gated calculation while its feature is off. The worksheet
-/// catalogue (<c>CalcCatalogue.FeatureRefusal</c>) and the Engineering Calculators service use the same wording.
+/// catalogue (<c>CalcCatalogue.FeatureRefusal</c>) uses the same wording. (The Engineering Calculators service that also used it was retired in
+/// v0.27.0, ADR-0167 Amendment 1; the engine gate stays for the legacy definition.)
 /// </summary>
 public static class CalculationFeatureGate
 {
@@ -14,13 +15,17 @@ public static class CalculationFeatureGate
     /// <summary>The worksheet calculator of S8 (lifting lugs and spreader beams); it is not an engine definition, and is listed so that a definition ever registered under its id is gated too.</summary>
     public const string LiftingWorksheetId = "struct.lifting";
 
-    /// <summary>The older lifting-lug and pin-joint engine definition.</summary>
+    /// <summary>The worksheet template that replaced the older lifting-lug and pin-joint module (ADR-0167; gated like S8 under ADR-0173); a definition ever registered under its id is gated too.</summary>
+    public const string LiftingLugWorksheetId = "mech.lifting-lug";
+
+    /// <summary>The older lifting-lug and pin-joint engine definition (still reachable by id; its stored runs are read, never re-run, while the feature is off).</summary>
     public const string LiftingModuleId = "calc.lifting-lug-pin-joint";
 
     private static readonly Dictionary<string, (string Title, string Feature)> Gated = new(StringComparer.Ordinal)
     {
         [LiftingModuleId] = ("Lifting lug and pin joint", LiftingFeature),
         [LiftingWorksheetId] = ("Lifting lugs and spreader beams", LiftingFeature),
+        [LiftingLugWorksheetId] = ("Lifting lug and pin joint", LiftingFeature),
     };
 
     /// <summary>The ids the engine gates, ordered (a test ties this list to the worksheet templates' own <c>FeatureFlag</c> and to the engine's registered definitions).</summary>

@@ -63,10 +63,9 @@ internal sealed record ComposedViews(
     ProjectBrowserView ProjectBrowser,
     ProjectWorkspaceView ProjectWorkspace,
     EngineeringCalculationView EngineeringCalculation,
-    // `WP 21.7B`: the Engineering Calculators, threaded to `BuildCoordinators` for their own collaborator.
-    CalculationModulesView CalculationModules,
     // `v0.26.0` (ADR-0165): the worksheet calculators (§3.8a form).
     Tempest.Desktop.CalcSheets.CalcSheetView Worksheets,
+    Tempest.Desktop.CalcSheets.CalcRegisterView WorksheetRegister,
     LibrariesView LibrariesView,
     OrganisationPicker OrganisationPicker,
     RateCardPicker RateCardPicker,
@@ -139,8 +138,9 @@ internal sealed record MainWindowCallbacks(
     Func<string, string, Task<string?>> PromptForNewProjectAsync,
     Func<Task> RenderCurrentModuleAsync,
     Func<Task> EnterEngineeringCalculationAsync,
-    Func<Task> EnterCalculationModulesAsync,
-    Func<Task> EnterWorksheetsAsync);
+    Func<Task> EnterWorksheetsAsync,
+    Func<Task> EnterCalcRegisterAsync,
+    Func<Guid, Task> OpenWorksheetInstanceAsync);
 
 /// <summary>
 /// Assembles <see cref="MainWindow"/>'s entire object graph — every view,
@@ -455,6 +455,7 @@ internal sealed partial class MainWindowComposer
         // header already just re-displays whatever it is) rather than
         // invent a second, principal-only event.
         settingsView.ActionCompleted += (_, _) => header.SetPrincipal(host.SessionPrincipal?.Identity.DisplayName, host.SessionPrincipal?.Role.ToString());
+        host.PrincipalChanged += p => header.SetPrincipal(p.Identity.DisplayName, p.Role.ToString());
         header.SetNotifications(headerNotifications.Messages);
         headerNotifications.Changed = () => header.SetNotifications(headerNotifications.Messages);
 
@@ -801,10 +802,8 @@ internal sealed partial class MainWindowComposer
 
         var engineeringCalculation = new EngineeringCalculationView(principals.Describe);
 
-        // `WP 21.7B`: the Engineering Calculators — every product
-        // calculation from a form generated from its own descriptor.
-        var calculationModules = new CalculationModulesView();
         var worksheets = new Tempest.Desktop.CalcSheets.CalcSheetView();
+        var worksheetRegister = new Tempest.Desktop.CalcSheets.CalcRegisterView();
 
         // `WP 19.6A`: the "cited by" read side — a fresh Evidence scan
         // over the same already-composed domain, holding no state of its
@@ -924,7 +923,8 @@ internal sealed partial class MainWindowComposer
         var engineeringAreaView = new EngineeringAreaView(
             host.ShellNavigator!, tasksReadModel, engineeringCalculation, referenceDataLibrariesView,
             engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp,
-            engineeringAssetsView, calculationModules, callbacks.EnterCalculationModulesAsync, worksheets, callbacks.EnterWorksheetsAsync)
+            engineeringAssetsView, worksheets, callbacks.EnterWorksheetsAsync,
+            worksheetRegister, callbacks.EnterCalcRegisterAsync, callbacks.OpenWorksheetInstanceAsync)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
@@ -984,7 +984,7 @@ internal sealed partial class MainWindowComposer
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, calculationModules, worksheets, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
+            engineeringCalculation, worksheets, worksheetRegister, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,

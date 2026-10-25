@@ -15,10 +15,14 @@ public static class WorkedExamples
     public static IReadOnlyList<WorkedExample> All { get; } =
     [
         .. Mechanical.MechanicalWorkedExamples.All,
+        .. Mechanical.MechanicalPortWorkedExamples.All,
         .. Structural.StructuralWorkedExamples.All,
+        .. Structural.StructuralPortWorkedExamples.All,
         .. BuildingServices.BuildingServicesWorkedExamples.All,
+        .. BuildingServices.BuildingServicesPortWorkedExamples.All,
         .. Electrical.ElectricalWorkedExamples.All,
         .. FluidPower.FluidPowerWorkedExamples.All,
+        .. Electrical.ElectricalPortWorkedExamples.All,
     ];
 
     public static TheoryData<string> Keys => [.. All.Select(e => e.TemplateId + "/" + e.Slug)];

@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 The state of moist air (humidity ratio, relative humidity, dew point, wet-bulb, enthalpy, specific volume, density) from dry-bulb and one other property at a stated pressure or altitude, and one air-handling process from that state with its heat and moisture balance: sensible heating or cooling, cooling with dehumidification, steam humidification, adiabatic humidification, or mixing with a second stream.
-p_ws from Hyland–Wexler (over water ≥ 0 °C, over ice below); W = 0.621945 p_w/(p − p_w); φ = p_w/p_ws; h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da; v = 0.287042 (t + 273.15)(1 + 1.607858 W)/p; dew point and wet-bulb by bisection (wet-bulb from the adiabatic-saturation relation). Processes on a dry-air mass flow: sensible Q = ṁ (h₂ − h₁) at constant W; cooling/dehumidification Q_total = ṁ(h₁ − h₂) − ṁ_w h_w with condensate ṁ_w = ṁ(W₁ − W₂); steam h₂ = h₁ + (W₂ − W₁) h_steam; adiabatic humidification at constant h; mixing by mass-weighted W and h.
+Saturation vapour pressure at the dry-bulb temperature, over water at or above 0 °C and over ice below: p_ws(t) by Hyland–Wexler. Moisture content (humidity ratio) of the air: W = 0.621945 p_w/(p − p_w). Relative humidity: φ = p_w/p_ws. Specific enthalpy per kilogram of dry air: h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da. Specific volume: v = 0.287042 (t + 273.15)(1 + 1.607858 W)/p. Dew point and wet-bulb temperatures, by bisection (wet-bulb from the adiabatic-saturation relation): p_ws(t_dp) = p_w. Sensible heating or cooling at constant moisture content: Q = ṁ (h₂ − h₁). Cooling with dehumidification, less the heat leaving in the condensate: Q_total = ṁ(h₁ − h₂) − ṁ_w h_w, with ṁ_w = ṁ(W₁ − W₂). Steam humidification: h₂ = h₁ + (W₂ − W₁) h_steam. Adiabatic (spray) humidification, at constant enthalpy: h₂ = h₁. Mixing two airstreams, weighted by dry-air mass flow: W_mix = Σṁ W/Σṁ; h_mix = Σṁ h/Σṁ.
   Ref: ASHRAE Handbook — Fundamentals Ch. 1 — Psychrometrics (ideal-gas relations, processes)
   Ref: Hyland & Wexler, ASHRAE Trans. 89(2A), 1983 — Saturation pressure of water and ice
   Ref: CIBSE Guide C Section 1 — Properties of humid air (principles)
@@ -218,7 +218,7 @@ p_ws from Hyland–Wexler (over water ≥ 0 °C, over ice below); W = 0.621945 p
   WARNING input.h_steam: h_steam (Steam enthalpy (steam humidification)) was not entered; the template default 2676 is used.
 
 8. VERIFICATION
-  Template: bs.psychrometrics@1.1.0
+  Template: bs.psychrometrics@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4

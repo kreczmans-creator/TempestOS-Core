@@ -50,9 +50,9 @@ public sealed class WorkedExamplePdfTests
         var folder = Path.Combine(root, relative);
         var templateId = relative.Split('/')[1];
         // The gated calculators (S8 lifting, ADR-0173) are withheld from the shipped catalogue; their worked examples are rendered with the features
-        // they are gated behind on, in this test only. A feature is on only because a composed template names it, and S8 is the one gated template.
+        // they are gated behind on, in this test only. A feature is on only because a composed template names it, and the two lifting templates (S8 and the lifting-lug port) are the gated ones.
         var gated = CalcCalculatorComposition.All().Where(c => c.Template.FeatureFlag is { Length: > 0 }).ToList();
-        Assert.Equal(["struct.lifting"], gated.Select(c => c.Template.Id));
+        Assert.Equal(["mech.lifting-lug", "struct.lifting"], gated.Select(c => c.Template.Id).Order(StringComparer.Ordinal));
         var catalogue = new CalcCatalogue(CalcCalculatorComposition.All(), new CalcFeatureFlags(gated.Select(c => c.Template.FeatureFlag!).Distinct(StringComparer.Ordinal)));
         var entry = catalogue.Find(templateId);
         Assert.NotNull(entry);
@@ -114,7 +114,9 @@ public sealed class WorkedExamplePdfTests
         if (governing.Success)
         {
             // The extractor joins wrapped lines without a separator, so the name is compared with every white space dropped.
-            var name = Regex.Replace(governing.Groups["name"].Value, @"\s+", string.Empty);
+            // The PDF typesets symbols (D-47: T_max prints as T with a subscript, which the extractor reads as "Tmax"), so the name is compared as printed.
+            var typeset = string.Concat(SymbolText.Parse(governing.Groups["name"].Value).Select(segment => segment.Text));
+            var name = Regex.Replace(typeset, @"\s+", string.Empty);
             Assert.True(Regex.Replace(text, @"\s+", string.Empty).Contains(name, StringComparison.Ordinal), $"{stale} It does not print the governing check '{governing.Groups["name"].Value.Trim()}'.");
         }
     }

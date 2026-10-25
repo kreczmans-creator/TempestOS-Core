@@ -813,3 +813,18 @@ Each fix was checked in a fresh worktree (`scratchpad/b9colv`) with the scratch 
 No Green item is open.
 
 S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
+
+> The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
+
+## v0.27.0 Phase 5 — legacy vectors recomputed (2026-10-23)
+
+Every "Computes" vector of the 14 legacy module test suites was traced to a worksheet known-answer case (a read-only inventory, then each gap closed and run). All 19 legacy calculations are now carried at a relative tolerance of 5 × 10⁻⁵ or tighter; `CommonCalculatorTests.Every_Known_Answer_Case_Passes` runs them.
+
+| ID | Sev | Location | Finding | Fix | Status |
+|---|---|---|---|---|---|
+| G-05 | High | `mech.bolted-joint` | After separation the template still took the bolt load as F_M + Φ·F_A and reported a negative clamp; the legacy module (correctly) gave the bolt the whole working load and zero clamp. The overloaded worked example showed yield at 89 % (pass) where the bolt is at 115 % of proof. | `F_KR = max(…, 0)`, `F_S,max = max(F_M + Φ F_A, F_A)`, fatigue amplitude from the bolt-load range; separation-aware yield factor (D-42); version 1.1.0. | Fixed |
+| G-06 | Medium | `mech.bolt-group` | A moment about an axis all the bolts lie on was silently dropped; the single-bolt case the review promised (retired `calc.bolt-shear-capacity`) was blocked. | `unresisted-moment` block; a single bolt takes direct shear and blocks only under a torque; version 1.1.0. | Fixed |
+| G-07 | Medium | `Statistics.PartsPerMillionOutside` | The upper tail was 1 − Φ(z): at z ≈ 7 the subtraction kept four digits (7.77591e-7 against the exact 7.77547e-7 the legacy module gave). | Φ(−z); regression test at ±7σ to 1e-6 relative. | Fixed |
+| G-08 | Low | Carried vectors | Not carried before this pass: bolted joint (3 vectors: the template could not take a given preload), bolt group (5), tolerance stack Example 4 and the no-requirement vector, and outputs left unasserted on thick cylinder, fillet weld and tolerance stack. | Bolted joint gains a given-preload method with optional given k_S, k_P, A_s (A_s fillable from a fastener record); every vector added. | Fixed |
+
+**Integration note (2026-10-25).** After the legacy-calculator line was folded into v0.26.0: G-06 fixed the unresisted moment under the rule `unresisted-moment`; the bolt group now shares Addendum A's group-geometry kernel, whose `collinear` rule blocks the same case (and a line at any angle), so `unresisted-moment` was removed and the G-06 test re-targeted at `collinear`. The legacy bearing vectors (G-08) run on `mech.bearing-life-basic` because `mech.bearing-life` is Addendum A's M5, which does not reproduce them (`BearingLifeBasicTests`).

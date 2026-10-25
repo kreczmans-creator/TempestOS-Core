@@ -54,9 +54,9 @@ public sealed class SectionPropertiesCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Structural, "Section properties",
+        Id, "1.0.1", CalcDiscipline.Structural, "Section properties",
         "Area, centroid, second moments of area (Ixx, Iyy, Ixy), principal axes and values, elastic and plastic section moduli, radii of gyration, torsion constant and (I-sections) warping constant for a parametric shape, an arbitrary polygon with holes, or a composite of placed parts. The x axis is horizontal (major axis of an I-section), y vertical.",
-        "Outline loops are integrated by Green's theorem: A = ½∮(x dy − y dx), Ixx = ∫y² dA, Iyy = ∫x² dA, Ixy = ∫xy dA, transferred to the centroid by the parallel-axis theorem. Principal: tan 2θ = −2Ixy/(Ixx − Iyy). Elastic modulus Ixx/y_max; plastic modulus from the equal-area axis found by bisection, Wpl = |Q_above| + |Q_below|. Torsion: Saint-Venant series for a solid rectangle, πd⁴/32 for circles, Bredt for closed thin-walled, Σbt³/3 (+ fillet term for rolled I) for open sections. Warping (I): Iw = Iyy (h − t_f)²/4.",
+        "Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − y dx); Ixx = ∫y² dA; Iyy = ∫x² dA; Ixy = ∫xy dA.\nSecond moments moved to the centroid by the parallel-axis theorem: I_c = I − A d².\nPrincipal axes: tan 2θ = −2Ixy/(Ixx − Iyy).\nElastic section modulus: W_el = Ixx/y_max.\nPlastic section modulus, about the equal-area axis found by bisection: W_pl = |Q_above| + |Q_below|.\nTorsion constant by shape, a Saint-Venant series for a solid rectangle, πd⁴/32 for a circle, Bredt for a closed thin-walled section, Σbt³/3 (plus a fillet term for rolled I) for an open section.\nWarping constant of an I-section: I_w = Iyy (h − t_f)²/4.",
         [
             new CalcInputSpec("shape", "Shape", CalcInputKind.Choice, Choices: [.. Primitives, ShapePolygon, ShapeComposite], DefaultChoice: ShapeI),
             new CalcInputSpec("h", "Depth h (or vertical leg)", CalcInputKind.Quantity, "mm", Default: 467.2, Min: 1, Max: 5000, HardMin: 1e-3, HardMax: 1e5, IsOptional: true, Group: "Dimensions"),

@@ -73,11 +73,11 @@ public sealed class FrameCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
+        Id, "1.2.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
         "Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.",
-        "Three freedoms per node; Euler–Bernoulli member stiffness EA/L and EI/L³ terms; end releases by static condensation; supports by removing freedoms or adding spring stiffness; equivalent nodal loads from exact fixed-end forces; K u = F solved by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism). Internal forces and deflections from the member end actions and Macaulay functions of the span loads; extremes at stations plus the zero-shear and zero-slope points found by bisection.",
+        "Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L and bending EI/L³ terms.\nEnd releases (pins) are taken out by static condensation; supports remove freedoms or add spring stiffness.\nSpan loads become equivalent nodal loads, the exact fixed-end forces.\nDisplacements, by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism): K u = F.\nInternal forces and deflections follow from the member end actions and Macaulay functions of the span loads.\nExtremes are found at stations along each member, plus the zero-shear and zero-slope points found by bisection.",
         [
-            new CalcInputSpec("E", "Default modulus of elasticity", CalcInputKind.Quantity, "GPa", Default: 210, Min: 1, Max: 500, HardMin: 1e-3, HardMax: 1e4),
+            new CalcInputSpec("E", "Default modulus of elasticity", CalcInputKind.Quantity, "GPa", ReferenceLibrary: "Materials", ReferenceProperty: "YoungsModulus", ReferenceDimension: "Pressure", Default: 210, Min: 1, Max: 500, HardMin: 1e-3, HardMax: 1e4),
             new CalcInputSpec("nodes", "Nodes", CalcInputKind.Table, Columns: NodeColumns, MaxRows: FrameLimits.MaxNodes),
             new CalcInputSpec("elements", "Elements", CalcInputKind.Table, Columns: ElementColumns, MaxRows: FrameLimits.MaxElements),
             new CalcInputSpec("loads", "Loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: FrameLimits.MaxLoads),

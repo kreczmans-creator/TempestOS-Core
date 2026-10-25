@@ -1,5 +1,7 @@
 # S6 — Column base plate, EN 1993-1-8 (`struct.base-plate@1.1.1`)
 
+**In plain terms.** A column stands on a concrete foundation through a steel base plate, which spreads the column's load over the concrete and, when the column is bent, is pulled up on one side by holding-down bolts. The worksheet works out how much the grout and concrete can bear, how much tension the bolts take under axial load and moment, how thick the plate must be to carry that, and whether friction and the bolts resist the shear.
+
 **Scope.** An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction plus anchor bolts, and the plate thickness that satisfies them together. **Independent check demanded** (the author cannot check it, DA-12); every input outside its range is a hard FAIL, and each numeric input's hard limit equals its stated range (plate 100–1500 mm, t_p 10–100 mm, f_y 235–460 MPa, f_ck 20–50 MPa, α 1–3, α_cc 0.8–1.0, γ_c 1.2–1.8, γ_M0 1.0–1.25, γ_M2 1.1–1.5, C_f,d 0–0.45, and so on). The concrete and anchor design is **not** done here: the sheet outputs the holding-down bolt tension and the shear per anchor for Hilti PROFIS, and the PROFIS report is filed as Evidence and referenced by `profis_ref`.
 
 **Method.**
@@ -23,3 +25,26 @@
 **Limitations.** Static loading; uniaxial (major-axis) moment; unstiffened plate; the simplified T-stub model (one compression resultant per flange and one tension resultant per bolt row; the web gets no credit in the moment check, so the compression check jumps at M_Ed = 0⁺ where the whole footprint resists); one `l_eff` for modes 1 and 2; prying is the user's `prying` switch, not a computed L_b ≤ L_b*, and Q is not included in F_t,Ed; anchor shear assumes standard clearance holes and equal sharing (oversized or slotted holes are outside this sheet); β_j = 2/3 depends on the grout conditions (checked only when entered); the CHS compression side is half the annulus (approximate); **anchorage, pull-out, breakout, edge distances and the tension–shear interaction of the anchors are designed externally in PROFIS**; no shear key, no weld design, no fatigue.
 
 **Test cases.** All analytic, Confirmed, recomputed independently in python (`model2.py`, `kat2.py`, `kat3.py`). `ka-ih-moment-bolts` (I-section 260×256×17×10 on 400×400×20 S275, C25/30, N 300, M 100, V 80, x_b 165, m 28, no prying: z_C 121.5, z 286.5 mm; C_Ed 521.82, T_Ed 221.82 kN, F_t,Ed 110.91 kN per bolt; C_Rd 601.84 kN; mode 1-2 392.86, mode 3 282 → 282 kN; α_bc 0.248, F_2,vb,Rd 38.853, V_Rd 215.41 kN; V_b,Ed 5 kN; t_req 17.609 mm), `ka-ih-moment-prying` (modes 785.71 / 331.27 / 282 kN), `ka-ih-both-compression` (N 600, M 40: 464.61 and 135.39 kN), `ka-ih-both-tension` (N −300, M 20: rows 210.61 and 89.39 kN, 105.30 kN per bolt), `ka-ih-axial` (f_jd 14.167 MPa, c 50.875 mm, A_eff 98 849.99 mm², N_j,Rd 1400.37 kN, t_req 17.075 mm), `ka-rhs-axial` (A_eff 84 929.55 mm²), `ka-chs-axial` (A_eff 73 724.93 mm²), `ka-chs-moment` (z_C 73.155 mm from the half-annulus centroid; C_Ed 412.85, T_Ed 212.85 kN), `ka-ih-overlap-clip` (overlap and plate-edge cut-back: A_eff 106 049.64 mm²), `ka-ih-moment-clipped` (300×300 section on a 340 mm long plate, only 20 mm of plate outside the flange: z_C 126.063 mm, C_Ed 513.64 kN, T_Ed 213.64 kN, where the uncut centroid gave 487.77 kN). **Not pinned — owner check:** the SCI P358 column-base worked examples and Wald, Sokol, Steenhuis & Jaspart, "Component method for steel column bases", *Heron* 53(1/2), 2008, are not available to the author; no published inputs or answers are stated here. The α_bc range 235–640 MPa and the clause numbers (6.2.6.9, 6.2.6.10, 6.2.6.12, 6.2.8.2, 6.2.8.3, Table 6.7) are to be checked against the owner's copy of EN 1993-1-8. The worked example `portal-column-base-uc254` is **Unconfirmed** (UC 254×254×89 dimensions, grout datasheet placeholder and the `l_eff` estimate to be checked).
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Portal-frame column base: UC 254×254×89 on a 450×400×25 S275 plate, four M24 8.8 bolts ([sheet](../../worked-examples/structural/struct.base-plate/portal-column-base-uc254/sheet.txt)).
+
+```text
+f_cd = 0.85 × 30 MPa / 1.5 = 17 MPa
+beta_j = grout conditions of cl. 6.2.5 assumed met = 0.66667
+f_jd = 0.66667 × 1.5 × 17 MPa = 17 MPa
+c = 25 mm × sqrt(265 MPa / (3 × 17 MPa × 1)) = 56.987 mm
+A_eff = 2 × 370.27 × 131.27 + 111.73 × 124.27 mm² = 111100 mm²
+N_j_Rd = 17 MPa × 111100 mm² = 1888.7 kN
+N_c_Ed = N_Ed = 210 kN = 210 kN
+u_N = 210 kN / 1888.7 kN = 0.11119
+t_req_N = N_c,Ed = 210 kN; carried at the 10 mm minimum = 10 mm
+z_C = (260.3 − 17.3)/2 mm = 121.5 mm
+z = 121.5 + 185 = 306.5 mm
+C_Ed = (95 kN·m + 210 kN × 185 mm)/306.5 mm = 436.7 kN
+T_Ed = 436.7 − 210 = 226.7 kN
+C_Ed_2 = other side = 0 kN
+… 20 more step(s) on the sheet
+Governing: PASS  Base plate tension T-stub (bending at the bolts): u_T = 0.55839 vs u_T ≤ 1  utilisation 0.558  « EN 1993-1-8 cl. 6.2.6.11
+```
+<!-- hand-arithmetic:end -->

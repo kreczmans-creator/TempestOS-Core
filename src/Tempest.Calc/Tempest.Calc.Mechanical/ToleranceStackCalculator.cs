@@ -45,9 +45,9 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.1.0", CalcDiscipline.Mechanical, "Tolerance stack-up (1D) v2",
+        Id, "2.2.0", CalcDiscipline.Mechanical, "Tolerance stack-up (1D) v2",
         "A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.",
-        "Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bender-style). Predicted σ: √Σ σ_i² with σ_i from each contributor's distribution. C_pk from the nearer limit. Monte Carlo: seeded sampling of every contributor, summed with its sign.",
+        "Worst case, every contributor at its limit: T_wc = Σ|half-bands|.\nRoot sum of squares, the statistical stack: T_rss = √Σ half².\nModified RSS, a factor on the RSS (Bender-style): T_mrss = factor × RSS.\nPredicted standard deviation of the stack, from each contributor's distribution: σ = √Σ σ_i².\nProcess capability, taken from the nearer limit: C_pk = min(USL − μ, μ − LSL)/(3σ).\nMonte Carlo check, every contributor sampled from a fixed seed and summed with its sign: stack = Σ s_i x_i.",
         [
             new CalcInputSpec("contributors", "Contributors in the loop", CalcInputKind.Table, Columns: Columns, MaxRows: 200),
             new CalcInputSpec("minimum", "Minimum acceptable result", CalcInputKind.Quantity, "mm", IsOptional: true, HardMin: -1e6, HardMax: 1e6),
@@ -134,9 +134,27 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                     new CalcExpectedValue("cpk", 1.8490006541, "", 1e-8),
                     new CalcExpectedValue("cp", 1.8490006541, "", 1e-8),
                 ]),
+            new CalcTestCase("ka-legacy-screw", "Legacy examples 1 and 2: shouldered-screw gap, worst case and statistical", Legacy("1 and 2"),
+                [Table(("a shoulder length", "adds", 1.750, 0.003, -0.003), ("b sleeve", "subtracts", 0.750, 0.001, -0.001), ("c washer", "subtracts", 0.120, 0.005, -0.005), ("d sleeve", "subtracts", 0.875, 0.001, -0.001)), CalcInputValue.Quantity("minimum", 0.003, "in"), CalcInputValue.Of("k", 3)],
+                [new CalcExpectedValue("x_nom", 0.005, "in", 5e-5), new CalcExpectedValue("x_mean", 0.005, "in", 5e-5), new CalcExpectedValue("t_wc", 0.010, "in", 5e-5), new CalcExpectedValue("x_wc_min", -0.005, "in", 5e-5), new CalcExpectedValue("x_wc_max", 0.015, "in", 5e-5), new CalcExpectedValue("m_min", -0.008, "in", 5e-5), new CalcExpectedValue("t_rss", 0.006, "in", 5e-5), new CalcExpectedValue("sigma", 0.002, "in", 5e-5), new CalcExpectedValue("cpk", 1.0 / 3.0, "", 5e-5), new CalcExpectedValue("dpmo", 158_655.25, "", 5e-5)]),
+            new CalcTestCase("ka-legacy-housing", "Legacy example 3: housing stack, minimum 0.40 mm, maximum 0.80 mm", Legacy("3"),
+                [Housing(), CalcInputValue.Quantity("minimum", 0.40, "mm"), CalcInputValue.Quantity("maximum", 0.80, "mm"), CalcInputValue.Of("k", 3)],
+                [new CalcExpectedValue("x_nom", 0.5, "mm", 5e-5), new CalcExpectedValue("x_mean", 0.61, "mm", 5e-5), new CalcExpectedValue("t_wc", 0.13, "mm", 5e-5), new CalcExpectedValue("x_wc_min", 0.48, "mm", 5e-5), new CalcExpectedValue("x_wc_max", 0.74, "mm", 5e-5), new CalcExpectedValue("m_min", 0.08, "mm", 5e-5), new CalcExpectedValue("m_max", 0.06, "mm", 5e-5), new CalcExpectedValue("t_rss", 0.080622577, "mm", 5e-5), new CalcExpectedValue("sigma", 0.026874192, "mm", 5e-5), new CalcExpectedValue("cpk", 2.3566600, "", 5e-5), new CalcExpectedValue("dpmo", 7.7755e-7, "", 5e-5)]),
+            new CalcTestCase("ka-legacy-housing-fails", "Legacy example 4: the housing stack against a 0.55 mm minimum — worst case fails", Legacy("4"),
+                [Housing(), CalcInputValue.Quantity("minimum", 0.55, "mm"), CalcInputValue.Quantity("maximum", 0.80, "mm"), CalcInputValue.Of("k", 3)],
+                [new CalcExpectedValue("x_nom", 0.5, "mm", 5e-5), new CalcExpectedValue("x_mean", 0.61, "mm", 5e-5), new CalcExpectedValue("t_wc", 0.13, "mm", 5e-5), new CalcExpectedValue("x_wc_min", 0.48, "mm", 5e-5), new CalcExpectedValue("x_wc_max", 0.74, "mm", 5e-5), new CalcExpectedValue("m_min", -0.07, "mm", 5e-5), new CalcExpectedValue("m_max", 0.06, "mm", 5e-5), new CalcExpectedValue("t_rss", 0.080622577, "mm", 5e-5), new CalcExpectedValue("sigma", 0.026874192, "mm", 5e-5), new CalcExpectedValue("cpk", 0.74420841, "", 5e-5), new CalcExpectedValue("dpmo", 12_786.83, "", 5e-5)]),
+            new CalcTestCase("ka-legacy-no-requirement", "Legacy vector: the housing stack with no requirement stated", Legacy("5"),
+                [Housing(), CalcInputValue.Of("k", 3)],
+                [new CalcExpectedValue("x_nom", 0.5, "mm", 5e-5), new CalcExpectedValue("x_mean", 0.61, "mm", 5e-5), new CalcExpectedValue("t_wc", 0.13, "mm", 5e-5), new CalcExpectedValue("x_wc_min", 0.48, "mm", 5e-5), new CalcExpectedValue("x_wc_max", 0.74, "mm", 5e-5), new CalcExpectedValue("t_rss", 0.080622577, "mm", 5e-5), new CalcExpectedValue("sigma", 0.026874192, "mm", 5e-5)]),
         ],
         DiagramKey: "tolerance-stack",
         Category: "Tolerancing");
+
+    private static CalcReferenceSource Legacy(string n) =>
+        new("TempestOS calc.tolerance-stack (v0.16.0, recovered v0.21.0) hand calculation and test vector", null, $"docs/engineering/calculations/calc.tolerance-stack.md, Example {n}");
+
+    private static CalcInputValue Housing() =>
+        TableMm(("Housing bore depth", "adds", 40, 0.10, 0), ("Bearing width", "subtracts", 20, 0, -0.12), ("Spacer", "subtracts", 19.5, 0.02, -0.02));
 
     private static CalcInputValue Table(params (string Name, string Direction, double Nominal, double Upper, double Lower)[] rows) => Table("in", rows);
 

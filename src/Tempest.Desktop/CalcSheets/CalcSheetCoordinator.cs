@@ -29,7 +29,12 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
     private readonly CadImportViewModel _cad;
     private readonly ScanImportViewModel _scan;
 
-    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, Tempest.Core.Events.IEventBus? events = null, Tempest.Core.Logging.ILogger? logger = null)
+    private readonly CalcReferenceFill? _references;
+    private readonly Dictionary<string, IReadOnlyList<CalcReferenceOption>> _referenceOptions = new(StringComparer.Ordinal);
+
+    private readonly CalcRegisterView? _register;
+
+    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, Tempest.Core.Events.IEventBus? events = null, Tempest.Core.Logging.ILogger? logger = null, CalcReferenceFill? references = null, CalcRegisterView? register = null)
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(view);
@@ -98,8 +103,48 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.CountersignPackRequested += (id, draft) => _ = GuardedAsync(() => ExclusiveAsync(() => CountersignPackAsync(id, draft)), "countersign that pack");
         _view.ReopenPackRequested += id => _ = GuardedAsync(() => ExclusiveAsync(() => ReopenPackAsync(id)), "reopen that pack");
         _view.IssuePackRequested += (id, draft) => _ = GuardedAsync(() => ExclusiveAsync(() => IssuePackAsync(id, draft)), "issue that pack");
+        _references = references;
+        _view.TemplateSelected += entry => _ = GuardedAsync(() => LoadReferenceOptionsAsync(entry), "list the released reference records");
+        _view.ReferencePicked += (library, index) => _ = GuardedAsync(() => PickReferenceAsync(library, index), "fill from the reference record");
+        _view.CompareRequested += () => _ = GuardedAsync(CompareAsync, "compare with the previous revision");
+        _view.ArchiveSelected += id => _ = GuardedAsync(() => OpenAsync(id), "open that archived calculation");
+        _register = register;
         events?.Subscribe<CalcStalenessChanged>(this);
         events?.Subscribe<ProjectContextChangedEvent>(this);
+    }
+
+    /// <summary>
+    /// Lists the open project's worksheet calculations in the register; with no project open, those saved without one. The store never lists
+    /// every project's calculations at once (Red R-A-12), so the project is passed to it.
+    /// </summary>
+    public async Task RefreshRegisterAsync()
+    {
+        if (_register is null)
+            return;
+
+        var project = _projects.Current;
+        var instances = await _service.Store.ListInstancesAsync(project?.Id).ConfigureAwait(true);
+        _register.ShowEntries(instances, project?.DisplayName, reference => _service.Catalogue.Find(reference)?.Template.Title);
+    }
+
+    /// <summary>ADR-0167 §4: the current revision against the one it superseded.</summary>
+    private async Task CompareAsync()
+    {
+        if (_view.CurrentInstance is not { } instance)
+            return;
+
+        var (comparison, reason) = await _service.CompareWithPredecessorAsync(instance.Id).ConfigureAwait(true);
+
+        if (comparison is null)
+        {
+            _view.ShowStatus(reason ?? "Nothing to compare.");
+            return;
+        }
+
+        _view.ShowComparison(comparison);
+        _view.ShowStatus(comparison.HasChanges
+            ? $"Compared rev {comparison.After.Revision} with rev {comparison.Before.Revision}: {comparison.Rows.Count + comparison.Omitted} value(s) differ."
+            : $"Compared rev {comparison.After.Revision} with rev {comparison.Before.Revision}: nothing differs.");
     }
 
     /// <summary>The open project changed: relist its calculations and packs.</summary>
@@ -359,6 +404,8 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
     public async Task RefreshAsync()
     {
         _view.ShowCatalogue(_service.Catalogue.Current());
+        var archives = await _service.Store.ListInstancesAsync().ConfigureAwait(true);
+        _view.ShowArchives([.. archives.Where(i => i.IsLegacyArchive)]);
         _view.SetPackTemplates([.. (await _service.ListPackTemplatesAsync().ConfigureAwait(true)).Select(t => new CalcSheetView.PackTemplateChoice(t.Id, t.Title, t.Description))]);
         await RefreshListsAsync().ConfigureAwait(true);
     }
@@ -564,6 +611,13 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
             return;
         }
 
+        if (instance.IsLegacyArchive)
+        {
+            var archive = await _service.RunAsync(instance).ConfigureAwait(true);
+            _view.ShowArchive(instance, archive.SheetText);
+            return;
+        }
+
         var entry = _service.Catalogue.Find(instance.TemplateReference);
 
         if (entry is null)
@@ -725,6 +779,36 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
 
         await clipboard.SetTextAsync(csv).ConfigureAwait(true);
         _view.ShowStatus($"Copied {entry.Template.Inputs.Count} input row(s) as CSV to the clipboard.");
+    }
+
+    /// <summary>Lists the released records of every library the template draws on (empty lists when no catalogue is wired).</summary>
+    private async Task LoadReferenceOptionsAsync(CalcCatalogueEntry entry)
+    {
+        _referenceOptions.Clear();
+
+        foreach (var library in CalcReferenceFill.LibrariesOf(entry.Template))
+        {
+            var options = _references is null ? [] : await _references.ListReleasedAsync(library).ConfigureAwait(true);
+            _referenceOptions[library] = options;
+            _view.SetReferenceOptions(library, options.Select(o => o.Label).ToList());
+        }
+    }
+
+    private async Task PickReferenceAsync(string library, int index)
+    {
+        if (_references is null || _view.SelectedTemplate is not { } entry || !_referenceOptions.TryGetValue(library, out var options) || index < 0 || index >= options.Count)
+            return;
+
+        var option = options[index];
+        var fill = await _references.FillAsync(entry.Template, library, option.RecordId).ConfigureAwait(true);
+
+        if (fill.Values.Count > 0)
+            _view.ApplyReferenceFill(fill.Values);
+
+        var filled = string.Join(", ", fill.Values.Select(v => v.Symbol));
+        _view.ShowStatus(fill.Problems.Count == 0
+            ? $"Filled {filled} from {option.Label} ({option.Pin})."
+            : $"{(fill.Values.Count > 0 ? $"Filled {filled} from {option.Label}; " : string.Empty)}{string.Join(" ", fill.Problems.Select(p => p.Message))}");
     }
 
     /// <summary>Inputs come in from the clipboard as the CSV the form exports or as a worked example's <c>inputs.json</c>; the file formats' own caps and notices apply (§3.8).</summary>

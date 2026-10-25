@@ -1,4 +1,6 @@
-# B4 — U-values and room heat loss (`bs.room-heat-loss@1.2.0`)
+# B4 — U-values and room heat loss (`bs.room-heat-loss@1.2.1`)
+
+**In plain terms.** A room loses heat through its walls, floor, roof and windows and by air leaking or being ventilated out. The worksheet works out the U-value of each construction from its layers (how easily heat flows through it), the heat lost through each element and by ventilation at the design temperatures, and the total heating the room needs, with an allowance for thermal bridges. It also checks each U-value against its target.
 
 **Scope.** One room per sheet: the U-value of each built-up element from its layers and surface resistances, and the steady-state design heat loss of the room (fabric through each element to its adjacent temperature, a thermal-bridge allowance, ventilation through the outside air or an MVHR supply), the heat loss coefficient, and an optional check of each element against a target U.
 
@@ -19,3 +21,26 @@
 **Test cases.** `ka-cavity-wall` (R 4.157857 m²K/W, U 0.240509, Φ_T 216.244 W, Φ_V 163.2 W, Φ_HL 379.444 W, HLC 15.8102 W/K); `ka-mvhr-partition` (partition U 1.806240, bridge allowance 25.2 W with f applied, Φ_T 212.808 W, MVHR Φ_V 51 W, Φ_HL 263.808 W, HLC 10.9920 W/K); `ka-mvhr-infiltration` (Φ_V 91.8 W, Φ_HL 304.608 W); `ka-dhdg-allowance` (Φ_HL × 1.10 = 417.389 W); `ka-single-layer-target` (invented λ 1.4: U 4.142012, utilisation 0.9204 against a target of 4.5); `ka-roof-upward` (R_si 0.10 for upward flow: R 2.14 m²K/W, U 0.467290, utilisation 0.9346; the 18 °C partition U 2.173913 is not held to the outside target) — analytic, Confirmed, recomputed independently in python3. The conductivities in the cases are invented illustrative inputs, not design data (they are deliberately not the familiar textbook values). The CIBSE *Domestic Heating Design Guide* (2026 ed.) worked examples and the CIBSE Guide A (8th ed.) Ch. 3 U-value examples are **not pinned**: they need the owner's copies, and no example is entered from memory. Worked example: `semi-detached-living-room` (Φ_HL 638.11 W, 39.4 W/m²).
 
 **Citations to check.** The BS EN 12831-1 clause numbers (cl. 6.3.2 transmission, cl. 6.3.3 ventilation) and the BS EN ISO 6946 clause numbers are not verified here and are to be checked against the owner's copies. "CIBSE DHDG reduced method" and its 2026 edition are the brief's names for the method and are unverified; the additional-allowance form is this product's own simplification, not a quotation of the guide.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Semi-detached living room: U-values and design heat loss for the emitter sizing ([sheet](../../worked-examples/building-services/bs.room-heat-loss/semi-detached-living-room/sheet.txt)).
+
+```text
+R_1 = Front wall: 0.13 + (0.12202 + 3.3333 + 0.5 + 0.0325) + 0 + 0.04 = 4.1579 m²·K/W
+U_1 = 1 / 4.1579 = 0.24051 W/(m²·K)
+Phi_1 = 8.7 × 0.24051 × 1 × (21 − -3) °C = 50.218 W
+U_2 = Window: 1.4 W/m²K = 1.4 W/(m²·K)
+Phi_2 = 2.1 × 1.4 × 1 × (21 − -3) °C = 70.56 W
+R_3 = Gable wall: 0.13 + (0.12202 + 3.3333 + 0.5 + 0.0325) + 0 + 0.04 = 4.1579 m²·K/W
+U_3 = 1 / 4.1579 = 0.24051 W/(m²·K)
+Phi_3 = 8.64 × 0.24051 × 1 × (21 − -3) °C = 49.872 W
+R_4 = Party wall: 0.13 + (0.0325 + 0.16667 + 0.16667 + 0.0325) + 0.18 + 0.13 = 0.83833 m²·K/W
+U_4 = 1 / 0.83833 = 1.1928 W/(m²·K)
+Phi_4 = 8.64 × 1.1928 × 1 × (21 − 18) °C = 30.918 W
+U_5 = Ground floor: 0.25 W/m²K = 0.25 W/(m²·K)
+Phi_5 = 16.2 × 0.25 × 1 × (21 − -3) °C = 97.2 W
+A_fab = 44.28 m²
+… 16 more step(s) on the sheet
+Governing: PASS  U-value of Party wall against its target (1.2 W/m²K): u_4 = 0.99404 vs u_4 ≤ 1  utilisation 0.994
+```
+<!-- hand-arithmetic:end -->

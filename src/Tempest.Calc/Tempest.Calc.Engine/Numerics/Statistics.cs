@@ -13,7 +13,9 @@ public static class Statistics
             return 0;
 
         var below = lower is { } l ? NormalCdf((l - mean) / sigma) : 0.0;
-        var above = upper is { } u ? 1.0 - NormalCdf((u - mean) / sigma) : 0.0;
+        // The upper tail as Φ(−z), not 1 − Φ(z): the subtraction cancels to a few digits deep in the tail (Green G-07; the
+        // legacy calc.tolerance-stack took the tail directly and was right to 5 s.f. where this was not).
+        var above = upper is { } u ? NormalCdf(-(u - mean) / sigma) : 0.0;
         return 1e6 * (below + above);
     }
 

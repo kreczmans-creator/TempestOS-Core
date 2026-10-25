@@ -21,7 +21,7 @@ public sealed class InsulationCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.BuildingServices, "Insulation thickness (ISO 12241 formula route)",
+        Id, "1.1.1", CalcDiscipline.BuildingServices, "Insulation thickness (ISO 12241 formula route)",
         "The insulation thickness on a pipe (cylinder) or a flat surface that meets a heat-flow limit, a limit on the surface temperature of a hot surface and an anti-condensation requirement for a cold one, each solved separately and the governing one reported; and for a chosen thickness the heat flow, the surface temperature and PASS/FAIL per criterion. Steady state, one layer, no thickness table of any standard.",
         "Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = D_i + 2t; with the inner film and pipe wall R_oth = 1/(h_i·π·D_p) + ln(D_i/D_p)/(2π·λ_w) added in series\n" +
         "Flat resistance per square metre: R = t/λ + 1/h_se (+ 1/h_i + t_w/λ_w)\n" +
@@ -29,7 +29,7 @@ public sealed class InsulationCalculator : ICalcCalculator
         "Surface temperature: θ_se = θ_a + q/(h_se·π·D_e) (pipe), θ_a + q/h_se (flat)\n" +
         "Surface coefficient: h_se as given, or h_se = h_c + h_r with h_r = ε·σ·(T_s² + T_a²)(T_s + T_a); h_c from free convection to air (laminar or turbulent, the larger), forced convection (cross-flow cylinder or flat plate) and their cube-law blend; solved with θ_se, which it depends on\n" +
         "Heat-loss limit: the thickness beyond which |q| ≤ q_max; surface-temperature limit (hot): θ_se ≤ θ_se,max; anti-condensation (cold): θ_se ≥ θ_dew + margin, θ_dew entered (for example from B2) or from the Magnus relation at θ_a and RH\n" +
-        "Solve: each criterion's thickness by scanning t from 0 to 1 m for the last broken point and bisecting the bracket after it; governing t = max over the selected criteria\n" +
+        "Thickness solution: each criterion's thickness by scanning t from 0 to 1 m for the last broken point and bisecting the bracket after it; governing t = max over the selected criteria\n" +
         "Critical diameter: D_crit = 2λ/h_se; below it, insulation raises the heat flow until D_e passes D_crit",
         [
             new CalcInputSpec("geometry", "Surface", CalcInputKind.Choice, Choices: [Pipe, Flat], DefaultChoice: Pipe, Group: "Geometry"),

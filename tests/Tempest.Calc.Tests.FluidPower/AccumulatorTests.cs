@@ -46,7 +46,7 @@ public sealed class AccumulatorTests
         var all = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), CalcInputValue.Quantity("p_0", 90, "bar", link), CalcInputValue.Quantity("p_1", 100, "bar", link), linked);
         Assert.Equal(3, all.Warnings.Count(w => w.RuleId == "link-basis"));
         Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "link-basis");
-        Assert.Equal("1.3.1", Accumulator.Template.Version);
+        Assert.Equal("1.3.2", Accumulator.Template.Version);
     }
 
     [Fact]

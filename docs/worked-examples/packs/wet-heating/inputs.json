@@ -575,7 +575,7 @@
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:607f4fd2fa8e42c3a71ce30bf52c9cd7#Phi_HL",
+                "Reference": "calc:782c8b97f7da460d835dda92d80be2f7#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -596,7 +596,7 @@
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:c43be88d0c324451a106b719093713b8#Phi_HL",
+                "Reference": "calc:a36a7c16497d467fa179c9dfd75bf03c#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -688,7 +688,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:df58437d38454e0d80bf8499108ea17a#Phi_tot",
+        "Reference": "calc:1487856b836046b89ad2d9c6dbee4d41#Phi_tot",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -700,7 +700,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:df58437d38454e0d80bf8499108ea17a#t_m",
+        "Reference": "calc:1487856b836046b89ad2d9c6dbee4d41#t_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -722,7 +722,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:df58437d38454e0d80bf8499108ea17a#dT_fr",
+        "Reference": "calc:1487856b836046b89ad2d9c6dbee4d41#dT_fr",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -929,7 +929,7 @@
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7995736b5b094c8a86a26dd0e5e3676f#T_shaft",
+        "Reference": "calc:09c35f9154d94e998178314f73101941#T_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1034,7 +1034,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7995736b5b094c8a86a26dd0e5e3676f#n_shaft",
+        "Reference": "calc:09c35f9154d94e998178314f73101941#n_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

@@ -1,4 +1,6 @@
-# S9 — Plate bending (`struct.plate-bending@1.2.1`)
+# S9 — Plate bending (`struct.plate-bending@1.2.2`)
+
+**In plain terms.** A thin flat plate bends like a slab when a pressure or load pushes on its face, and the thinner it is, the faster the bending stress and the sag grow. The worksheet takes the plate's size, thickness, material, edge support and load, works out how far the middle sags and how hard the most stressed point is working, and compares that stress with the steel's yield and the sag with a limit you choose. It is a screening tool for lids, covers and panels, not a finite-element analysis.
 
 **Scope.** A thin, flat, isotropic plate of constant thickness under a lateral load, by Kirchhoff small-deflection theory, with the same edge support all round: **circular** (clamped or simply supported; uniform pressure, central patch or ring load) in closed form; **rectangular simply supported** (uniform pressure or centred rectangular patch) by the Navier double series; **rectangular clamped** (uniform or centred patch) by a Ritz solution, **labelled approximate**. Outputs the maximum deflection, the greatest von Mises surface stress, the stress and deflection utilisations and the fundamental frequency. Every numeric input has a hard range; outside it the sheet does not run.
 
@@ -28,3 +30,26 @@
 **Revision 1.2.0 (second review).** Sparse Ritz schedule with a stall rule and cancellation check, SIMD Cholesky, frequency iteration capped (150 iterations, 10⁻¹¹), `Solve` limited to K ≤ 30; the extrapolation rule for patch corner sums as above, and a patch covering the plate is the uniform path (the full-patch-equals-uniform test is now exact to 10⁻¹²).
 
 **Revision 1.2.1.** The Rayleigh–Ritz frequency iteration reports whether it settled; if the 150-iteration cap is reached the sheet warns (`ritz-frequency`) with the last relative change. Timing tests scale by `TEMPEST_TEST_TIMEOUT_FACTOR`.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Aluminium enclosure lid 300 × 200 × 4 mm, simply supported, 20 kPa internal pressure rise ([sheet](../../worked-examples/structural/struct.plate-bending/enclosure-lid-aluminium/sheet.txt)).
+
+```text
+F_total = 20 kPa × 60000 mm² = 1.2 kN
+D = 70 GPa × (4 mm)^3 / (12 × (1 − 0.33^2)) = 418.96 N·m
+terms_used = 128 odd terms per direction (16384 terms), last change 6.5537e-7 = 128
+w_max = 128 odd terms per direction (16384 terms), last change 6.5537e-7 = 0.58996 mm
+M_x_c = 128 odd terms per direction (16384 terms), last change 6.5537e-7 = 41.62 N·m/m
+M_y_c = 128 odd terms per direction (16384 terms), last change 6.5537e-7 = 65.6 N·m/m
+M_xy_k = 128 odd terms per direction (16384 terms), last change 6.5537e-7 = 32.874 N·m/m
+R_corner = 2 × 32.874 N·m/m = 0.065747 kN
+M_vm_c = M_x = 41.62, M_y = 65.6 N·m/m = 57.492 N·m/m
+M_vm_k = M_xy = 32.874 N·m/m = 56.939 N·m/m
+omega_11 = a = 300 mm, b = 200 mm, D = 418.96 N·m, ρt = 10.8 kg/m² = 2219.8 rad/s
+M_vm = centre = 57.492 N·m/m
+sigma_max = 6 × 57.492 N·m/m / (4 mm)² = 21.56 MPa
+sigma_principal = 6 × 65.6 N·m/m / (4 mm)² = 24.6 MPa
+… 5 more step(s) on the sheet
+Governing: PASS  Deflection w_max ≤ span/ratio: u_defl = 0.73745 vs u_defl ≤ 1  utilisation 0.737  « Serviceability
+```
+<!-- hand-arithmetic:end -->

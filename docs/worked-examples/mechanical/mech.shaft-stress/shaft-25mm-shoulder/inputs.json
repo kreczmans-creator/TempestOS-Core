@@ -1,0 +1,78 @@
+[
+  {
+    "Symbol": "K_t",
+    "Number": 1.6,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.6"
+  },
+  {
+    "Symbol": "K_ts",
+    "Number": 1.3,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.3"
+  },
+  {
+    "Symbol": "M",
+    "Number": 120,
+    "Unit": "N*m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "120"
+  },
+  {
+    "Symbol": "S_y",
+    "Number": 250,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-SH-402",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "250"
+  },
+  {
+    "Symbol": "T",
+    "Number": 60,
+    "Unit": "N*m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "d",
+    "Number": 25,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-SH-402",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
+    "Symbol": "n_req",
+    "Number": 1.5,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  }
+]

@@ -1,4 +1,6 @@
-# M7 — Helical springs: compression, extension, torsion (`mech.spring@1.2.0`)
+# M7 — Helical springs: compression, extension, torsion (`mech.spring@1.2.1`)
+
+**In plain terms.** A coil spring stores energy by twisting its wire, so its stiffness comes from the wire diameter, the coil diameter and the number of turns, and its stress is highest on the inside of the coil. The worksheet takes the spring geometry and working loads, finds the rate and the stress at each working point and at solid length, and checks them against the wire's allowable stress, with a surge check (the coil ringing at its own frequency) for compression, extension and torsion springs.
 
 **Scope.** Cylindrical helical springs of round wire, cold-coiled (d up to 20 mm), linear characteristic. Compression is the first mode: rate, working points (given as loads or as deflections), shear stress with a correction factor at the two working points and at solid length, solid length (EN 13906-1 form or Shigley form) with the minimum coil clearance at the working length, pitch by end type, buckling, Goodman fatigue, surge frequency. Extension adds the initial tension and the two hook stresses. Torsion gives the rate with the legs, the curvature-corrected bending stress, the wound diameter and the body length. EN 13906-1/-2/-3 are cited by part and title only; their text, wire-strength tables and permissible-stress diagrams are not reproduced or shipped (Addendum B §B5).
 
@@ -24,3 +26,26 @@
 **Limitations.** Linear characteristic; cold-coiled round wire up to 20 mm; no conical or variable-pitch springs, no rectangular wire; the wire-diameter tolerance enters only through the optional `d_max` of the EN solid-length form; the spring ranges are soft by design (index outside 4 … 20 and `n` below 2 only warn, `d` above 20 mm is a soft limit with a wider hard one), because Addendum B §B4 requires a hard FAIL outside the valid range for S7, S8, F1 and F2 only; the Goodman function is the shared `FatigueRelations.GoodmanUtilisation` (M4 itself is unchanged), not a call into the M4 sheet; extension hook fatigue and hook shape beyond the two radii are not assessed; surge for both ends fixed only; R_m(d), permissible stress fractions and endurance strength are the user's (no EN 10270 table, no EN 13906 permissible-stress diagram); the fatigue check is a Goodman line on the user's endurance strength, not a diagram.
 
 **Test cases.** Analytic and Confirmed, recomputed in python3: `ka-compression` (k = 4.8828125 N/mm exactly, L_s 20 mm, s₂ 8.192 mm, τ₂ 238.842 MPa, τ_c 728.888 MPa, f_n 350.845 Hz, 1/n_f 0.347693), `ka-wahl-slender` (Wahl k_c 1.144833, y_cr 15.7950 mm, s₂/y_cr 0.759734, f_n 179.633 Hz), `ka-extension` (k = 1.953125 N/mm exactly, σ_A 693.006 MPa, τ_B 381.972 MPa, f_n 140.338 Hz), `ka-torsion` (Shigley K_i chosen explicitly: k_φ 0.503096 N·m/rad, σ₂ 210.596 MPa, D_w 15.8745 mm), `ka-rm-curve` (R_m = 1800/2^0.1 = 1679.459 MPa from A and m; the stresses and utilisations follow). **Unconfirmed** (the EN 13906 relations are typed from the published expressions): `ka-torsion-en` (q = 1.113103, σ₂ 212.587 MPa), `ka-squared-en` (squared unground ends with d_max 2.04 mm: L_s 23.46 mm, S_a 3.136 mm, L_n 26.596 mm, u_n 0.445). **Unconfirmed + Secondary** (solutions manual): `ka-shigley-10-3`, Shigley 10th ed. problem 10-3, d 2.5 mm, D 28.5 mm, n 13, plain and ground ends, G 81 GPa, R_m 1935.9 MPa: the sheet's method reproduces k = 1.3142 N/mm, K_B = 1.1174, L_s = 35 mm, F_s = π d³·0.45 R_m/(8 K_B D) = 167.85 N (published 167.86) and L₀ = L_s + F_s/k = 162.72 mm; the published L₀ is entered, so F_c = 167.856 N and u_c = 1.0000 at solid length. Working points, E, ρ and S_e of that case are placeholders, not part of the problem. **Not pinned (owner check):** the Shigley solutions-manual values for problems 10-5 (k 28 lbf/in, τ_s 48.56 kpsi) and 10-6 (k 3.333 N/mm, τ_s 178.2 MPa): the problem statements are not available to the build, so their inputs cannot be stated; add them as Unconfirmed + Secondary cases once the owner has the problem text. The EN 13906 clause numbers are not quoted (only part and title) for the same reason.
+
+<!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
+**Worked example, by hand.** Plunger return spring: squared and ground compression spring, 60 to 180 N ([sheet](../../worked-examples/mechanical/mech.spring/plunger-return-spring/sheet.txt)).
+
+```text
+C = 24 mm / 3 mm = 8
+k_c = (8 + 0.5) / (8 − 0.75) = 1.1724
+tau_perm = 0.45 × 1650 MPa = 742.5 MPa
+k = 79.3 GPa × (3 mm)^4 / (8 × (24 mm)^3 × 9) = 6.4535 N/mm
+n_t = 9 + 2 = 11
+d_max = 3 mm
+L_s = 3 mm × (11 + 0.0) = 33 mm
+S_a = (0.0015 × (24 mm)^2 / 3 mm + 0.1 × 3 mm) × 9 = 5.292 mm
+L_n = 33 mm + 5.292 mm = 38.292 mm
+p = (70 mm − 2 × 3 mm) / (9 + 0) = 7.1111 mm
+s_c = 70 mm − 33 mm = 37 mm
+F_c = 6.4535 N/mm × 37 mm = 238.78 N
+s_1 = 60 N / 6.4535 N/mm = 9.2974 mm
+s_2 = 180 N / 6.4535 N/mm = 27.892 mm
+… 22 more step(s) on the sheet
+Governing: PASS  Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a: u_n = 0.87965 vs u_n ≤ 1  utilisation 0.88  « EN 13906-1
+```
+<!-- hand-arithmetic:end -->

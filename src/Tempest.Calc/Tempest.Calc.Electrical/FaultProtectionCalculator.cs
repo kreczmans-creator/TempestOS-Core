@@ -26,13 +26,13 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
+        Id, "1.2.1", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
         "Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.",
         "Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S\n" +
         "Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95\n" +
         "Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log)\n" +
-        "Adiabatic: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault (the line conductor check, reg. 434.5.2, needs it and is not made without it; the protective conductor check then uses I_f²·0.1 s at the end-of-line fault only)\n" +
-        "Device: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked\n" +
+        "Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault (the line conductor check, reg. 434.5.2, needs it and is not made without it; the protective conductor check then uses I_f²·0.1 s at the end-of-line fault only)\n" +
+        "Protective device check: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked\n" +
         "Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0",
         [
             new CalcInputSpec("U_0", "Nominal voltage to earth", CalcInputKind.Quantity, "V", Default: 230, Min: 50, Max: 1000, HardMin: 50, HardMax: 1000, Group: "Supply"),
