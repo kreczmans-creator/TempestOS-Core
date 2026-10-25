@@ -392,7 +392,9 @@ public sealed class FourBarLinkage
             }
         }
 
-        return [.. list.OrderBy(x => x.Item1)];
+        // Snap rounding noise (acos near ±1, atan2 near 0) to exact angles so a sheet never prints 6.4e-7° for 0°.
+        static double Snap(double a) => Math.Abs(a) < 1e-7 ? 0 : Math.Abs(Math.Abs(a) - Math.PI) < 1e-7 ? Math.CopySign(Math.PI, a) : a;
+        return [.. list.Select(x => (Snap(x.Item1), Snap(x.Item2))).OrderBy(x => x.Item1)];
     }
 
     /// <summary>True when s + l = p + q (a change-point linkage: parallelogram, deltoid): the links become collinear and the branch can be continued through.</summary>
