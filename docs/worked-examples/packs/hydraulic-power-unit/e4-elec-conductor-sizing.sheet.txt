@@ -152,5 +152,5 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test

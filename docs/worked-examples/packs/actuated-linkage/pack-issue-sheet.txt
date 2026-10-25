@@ -38,7 +38,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 32/32
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -106,149 +106,154 @@ Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|,
   A20. F_ext (External load on the follower, positive against the rise) is taken as 0 N. (Sheet default value; no project figure given.)
 
 4. WORKING
-  [14] theta_sw = θ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [8] f_in = n_in / 60
+      = rpm to Hz
+      = 0.5 Hz
+        Input (crank) frequency, for the spring surge check of M7 (mech.f_in)
+  [15] theta_sw = θ    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ from 0° to 360°
       = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg
         Table: crank angle
-  [15] x_sw = x = r·cosθ + σ·√(l² − (r·sinθ − e)²)    « Vector-loop closed form (Freudenstein / law of cosines)
+  [16] x_sw = x = r·cosθ + σ·√(l² − (r·sinθ − e)²)    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ from 0° to 360°
       = [400, 399.49, 397.98, 395.47, 392.01, 387.64, 382.41, 376.38, 369.64, 362.26, 354.33, 345.96, … (73 items)] mm
         Table: slider position
-  [16] v_sw = v = ω·dx/dθ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [17] v_sw = v = ω·dx/dθ    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ from 0° to 360°
       = [0, -0.036477, -0.072491, -0.10759, -0.14133, -0.17328, -0.20307, -0.23032, -0.25473, -0.27602, -0.29399, -0.30849, … (73 items)] m/s
         Table: slider velocity
-  [17] a_sw = a = ω²·d²x/dθ²    « Vector-loop closed form (Freudenstein / law of cosines)
+  [18] a_sw = a = ω²·d²x/dθ²    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ from 0° to 360°
       = [-1.3159, -1.3076, -1.2827, -1.2416, -1.185, -1.1136, -1.0287, -0.93164, -0.82405, -0.70784, -0.58513, -0.4582, … (73 items)] m/s²
         Table: slider acceleration
-  [18] theta3_sw = θ₃ = atan2(e − r·sinθ, x − r·cosθ)    « Vector-loop closed form (Freudenstein / law of cosines)
+  [19] theta3_sw = θ₃ = atan2(e − r·sinθ, x − r·cosθ)    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ from 0° to 360°
       = [0, -1.6648, -3.3183, -4.9492, -6.5463, -8.0984, -9.5941, -11.022, -12.372, -13.633, -14.794, -15.846, … (73 items)] deg
         Table: connecting-rod angle
-  [19] omega3_sw = ω₃ = −ω·r·cosθ/(x − r·cosθ)    « Vector-loop closed form (Freudenstein / law of cosines)
+  [20] omega3_sw = ω₃ = −ω·r·cosθ/(x − r·cosθ)    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ from 0° to 360°
       = [-1.0472, -1.0437, -1.033, -1.0153, -0.9905, -0.95864, -0.91976, -0.87394, -0.82127, -0.76195, -0.69621, -0.62437, … (73 items)] rad/s
         Table: connecting-rod angular velocity
-  [20] mu_sw = μ = 90° − |rod angle to the slide line|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [21] mu_sw = μ = 90° − |rod angle to the slide line|    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ from 0° to 360°
       = [90, 88.335, 86.682, 85.051, 83.454, 81.902, 80.406, 78.978, 77.628, 76.367, 75.206, 74.154, … (73 items)] deg
         Table: transmission angle
-  [21] T_in_sw = (m·a + F_L)·dx/dθ    « Virtual work
+  [22] T_in_sw = (m·a + F_L)·dx/dθ    « Virtual work
       = 73 rows, θ from 0° to 360°
       = [0, 35.44, 70.408, 104.44, 137.09, 167.93, 196.58, 222.67, 245.92, 266.07, 282.93, 296.39, … (73 items)] N·m
         Table: input torque by virtual work
-  [22] x_0 = x    « Vector-loop closed form (Freudenstein / law of cosines)
+  [23] x_0 = x    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 400 mm
         Slider position at the first input angle
-  [23] v_0 = ω·dx/dθ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [24] v_0 = ω·dx/dθ    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 0 m/s
         Slider velocity at the first input angle
-  [24] a_0 = ω²·d²x/dθ²    « Vector-loop closed form (Freudenstein / law of cosines)
+  [25] a_0 = ω²·d²x/dθ²    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = -1.3159 m/s²
         Slider acceleration at the first input angle
-  [25] theta3_0 = θ₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [26] theta3_0 = θ₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 0 deg
         Connecting-rod angle at the first input angle
-  [26] omega3_0 = ω₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [27] omega3_0 = ω₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = -1.0472 rad/s
         Connecting-rod angular velocity at the first input angle
-  [27] alpha3_0 = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [28] alpha3_0 = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 0 rad/s²
         Connecting-rod angular acceleration at the first input angle
-  [28] mu_0 = μ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [29] mu_0 = μ    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 90 deg
         Transmission angle at the first input angle
-  [29] T_in_0 = (m·a + F_L)·dx/dθ    « Virtual work
+  [30] T_in_0 = (m·a + F_L)·dx/dθ    « Virtual work
       = at the first input angle
       = 0 N·m
         Input torque at the first input angle
-  [30] x_alt = x on the other circuit    « Vector-loop closed form (Freudenstein / law of cosines)
+  [31] x_alt = x on the other circuit    « Vector-loop closed form (Freudenstein / law of cosines)
       = mirror branch, at the first input angle
       = -200 mm
         Slider position on the other circuit at the first input angle
-  [31] x_max = max x    « Vector-loop closed form (Freudenstein / law of cosines)
+  [32] x_max = max x    « Vector-loop closed form (Freudenstein / law of cosines)
       = over the sweep
       = 400 mm
         Largest slider position over the sweep
-  [32] x_min = min x    « Vector-loop closed form (Freudenstein / law of cosines)
+  [33] x_min = min x    « Vector-loop closed form (Freudenstein / law of cosines)
       = over the sweep
       = 200 mm
         Smallest slider position over the sweep
-  [33] stroke = max x − min x    « Vector-loop closed form (Freudenstein / law of cosines)
+  [34] stroke = max x − min x    « Vector-loop closed form (Freudenstein / law of cosines)
       = over the sweep
       = 200 mm
         Slider stroke over the sweep (the full stroke when the sweep covers 360°)
-  [34] mu_min = min μ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [35] mu_min = min μ    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 70.529 deg
         Smallest transmission angle over the sweep
-  [35] res_max = max |loop residual|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [36] res_max = max |loop residual|    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 table rows and 1441 scan angles
       = 1.1444e-13 mm
         Largest loop-closure residual
-  [36] res_vel_max = max |velocity loop| / its terms    « Vector-loop closed form (Freudenstein / law of cosines)
+  [37] res_vel_max = max |velocity loop| / its terms    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 table rows
       = 1.3508e-16
         Largest velocity-loop residual, relative to the size of its terms
-  [37] stroke_closed = √((l + r)² − e²) − √((l − r)² − e²)    « Vector-loop closed form (Freudenstein / law of cosines)
+  [38] stroke_closed = √((l + r)² − e²) − √((l − r)² − e²)    « Vector-loop closed form (Freudenstein / law of cosines)
       = between the dead centres
       = 200 mm
         Full slider stroke between the dead centres (closed form)
-  [38] omega3_pk = max |ω₃|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [39] omega3_pk = max |ω₃|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 1.0472 rad/s
         Peak connecting-rod angular velocity
-  [39] alpha3_pk = max |α₃|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [40] alpha3_pk = max |α₃|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 3.4894 rad/s²
         Peak connecting-rod angular acceleration
-  [40] input_torque = max |T_in|    « Virtual work
+  [41] input_torque = max |T_in|    « Virtual work
       = dense scan, refined
       = 316.43 N·m
         Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)
-  [41] output_motion = max |v|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [42] output_motion = max |v|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 0.33132 m/s
         Peak slider velocity (mech.output_motion; the cylinder speed of F1 for a slider driven at constant crank speed, a kinematic proxy)
-  [42] peak_accel = max |a|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [43] peak_accel = max |a|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 1.3159 m/s²
         Peak slider acceleration (mech.peak_accel)
-  [43] follower_force = max |m·a + F_L|    « Virtual work
+  [44] follower_force = max |m·a + F_L|    « Virtual work
       = slide-direction force on the slider
       = 3052.6 N
         Peak force on the slider in the slide direction, the rod's component along the slide line (mech.follower_force)
-  [44] F_pin_pk = max |m·a + F_L|/cosθ₃    « Virtual work
+  [45] F_pin_pk = max |m·a + F_L|/cosθ₃    « Virtual work
       = force along the connecting rod
       = 3198.7 N
         Peak force in the connecting rod, also the crank-pin load (mech.F_pin_pk → M4, M5)
-  [45] F_guide_pk = max |m·a + F_L|·tanθ₃    « Virtual work
+  [46] F_guide_pk = max |m·a + F_L|·tanθ₃    « Virtual work
       = reaction of the slide on the slider
       = 1065.7 N
         Peak side reaction of the guide on the slider (frictionless)
-  [46] T_rms_in = √(mean T_in²)    « Virtual work
+  [47] T_rms_in = √(mean T_in²)    « Virtual work
       = Simpson over the scan
       = 215.24 N·m
         RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)
-  [47] P_mean = ω·mean(T_in)    « Virtual work
+  [48] P_mean = ω·mean(T_in)    « Virtual work
       = Simpson over the scan
       = 600 W
         Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
-  [48] u_mu = μ_req / μ_min    « Transmission angle
+  [49] u_mu = μ_req / μ_min    « Transmission angle
       = 40° / 70.529°
       = 0.56714
         Transmission angle: required minimum against the smallest over the sweep
 
 5. RESULTS
   n_in = 30 rpm    Input (crank) speed, passed through for E1's load speed (mech.n_in)
+  f_in = 0.5 Hz    Input (crank) frequency, for the spring surge check of M7 (mech.f_in)
   slider_class = "Crank-slider: the crank can turn through 360° (l ≥ r + |e|)"    Class of the slider-crank
   theta_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: crank angle
   x_sw = [400, 399.49, 397.98, 395.47, 392.01, 387.64, 382.41, 376.38, 369.64, 362.26, 354.33, 345.96, … (73 items)] mm    Table: slider position
@@ -297,11 +302,11 @@ Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|,
   No warnings.
 
 8. VERIFICATION
-  Template: mech.mechanism@1.1.0
-  Content hash: c7eba69789649452
+  Template: mech.mechanism@1.2.0
+  Content hash: 082569fdde676480
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 16/16
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -614,10 +619,10 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
 
 8. VERIFICATION
   Template: fp.cylinder@1.3.0
-  Content hash: c71c19afc508f61e
+  Content hash: f94c2e869fa10d18
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -744,5 +749,5 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   Content hash: 13736352fb1985ad
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test

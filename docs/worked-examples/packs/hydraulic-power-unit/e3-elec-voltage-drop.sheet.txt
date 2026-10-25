@@ -96,5 +96,5 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   Content hash: 3ed2f07610b34189
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test

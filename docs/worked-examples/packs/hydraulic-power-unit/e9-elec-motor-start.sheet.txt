@@ -21,6 +21,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   fault_basis | Fault level given as | Fault current I_k (kA) |  | spec: SPEC-HPU-05 §5 (pump drive starting) | any
   S_k | Three-phase fault level at the point of supply (use the minimum fault level, which gives the deepest dip) | 10 | MVA | assumption: Sheet default value; no project figure given. | 0.5 … 500 MVA
   I_k | Three-phase fault current at the point of supply (links E5 I_k3) | 15.942 | kA | link: Motor supply fault protection rev A · I_k3 | 1 … 150 kA
+  c_src | Voltage factor c for the fault-level route (blank: 1.1 for the I_k basis, as E5 I_k3 is computed with; 1.0 for a declared S_k; links E5 c_k3, which follows E5's c_max) | 1.1 |  | link: Motor supply fault protection rev A · c_k3 | 0.95 … 1.1
   S_n | Transformer rating | 500 | kVA | assumption: Sheet default value; no project figure given. | 25 … 5000 kVA
   u_k | Transformer impedance voltage | 4 | % | assumption: Sheet default value; no project figure given. | 1 … 12 %
   XR_Q | Upstream network X/R ratio | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 50
@@ -85,10 +86,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
       = sqrt(3) × 400 V × 78.097 A
       = 54.107 kVA
         Starting apparent power
-  [17] c_f = 1.1    « IEC 60909-0 cl. 5.3
-      = 1.1
-        Voltage factor c (1.1, as E5 computes I_k3)
-  [19] Z_fl = c_f * U / (sqrt(3) * I_k)    « IEC 60909-0 cl. 5.3
+  [19] Z_fl = c_src * U / (sqrt(3) * I_k)    « IEC 60909-0 cl. 5.3
       = 1.1 × 400 V / (sqrt(3) × 15.942 kA)
       = 0.015935 ohm
         Source impedance magnitude from the fault current
@@ -258,9 +256,9 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   WARNING record: Tabulated values not taken from a reference record: X_km (Cable resistance and reactance per kilometre); rho_20, alpha (Conductor material constants); I_LR_r, cos_phi_st (Motor starting data); k_soft, k_vfd (Soft-starter and drive limits); u_k, XR (Transformer impedance data). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.motor-start@1.1.0
-  Content hash: f03da225f21ad1b0
+  Template: elec.motor-start@1.2.0
+  Content hash: 15bfc7e08b76ce1f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test

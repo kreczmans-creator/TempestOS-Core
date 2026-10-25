@@ -204,17 +204,17 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(Si(e4, "I_n"), InputSi(e5, "I_n"), 9);
         Assert.Equal(Si(e4, "device_code"), InputSi(e5, "device_code"), 9);
 
-        // E5: R1 + R2 = ρ_70 L (1/10 + 1/10) with ρ_20 = 17.241·10⁻⁶ Ω·mm = 0.123773 Ω; Z_s = 0.35 + 0.123773 = 0.473773 Ω; I_f = 0.95 · 230/Z_s = 461.19 A against I_a = 10 · 40 = 400 A; Z_T = 0.04 · (√3 · 230)² / 400 kVA = 0.01587 Ω;
+        // E5: R1 + R2 = ρ_70 L (1/10 + 1/10) with ρ_20 = 17.241·10⁻⁶ Ω·mm = 0.123773 Ω; Z_s = 0.05 + 0.123773 = 0.173773 Ω (the 0.05 Ω external loop of a close-coupled 400 kVA transformer, invented); I_f = 0.95 · 230/Z_s = 1257.39 A against I_a = 10 · 40 = 400 A; Z_T = 0.04 · (√3 · 230)² / 400 kVA = 0.01587 Ω;
         // I_k3 = 1.1 · √3 · 230 / (√3 · Z_T) = 15.942 kA, 63.8 % of the 25 kA breaking capacity.
         var r12 = 17.241e-3 * (1 + 0.00393 * 50) * 30 * (1.0 / 10 + 1.0 / 10);
         Assert.Equal(r12, Si(e5, "R_12"), 12);
         Assert.Equal(0.12377313899999998, Si(e5, "R_12"), 12);
-        Assert.Equal(0.35 + r12, Si(e5, "Z_s"), 12);
-        Assert.Equal(0.95 * 230 / (0.35 + r12), Si(e5, "I_f"), 9);
-        Assert.Equal(461.1911947165076, Si(e5, "I_f"), 9);
+        Assert.Equal(0.05 + r12, Si(e5, "Z_s"), 12);
+        Assert.Equal(0.95 * 230 / (0.05 + r12), Si(e5, "I_f"), 9);
+        Assert.Equal(1257.3865055174035, Si(e5, "I_f"), 9);
         Assert.Equal(400, Si(e5, "I_a"), 9);
         Assert.Equal(0.54625, Si(e5, "Z_s_max"), 12);
-        Assert.Equal(0.8673192475972539, Si(e5, "u_Zs"), 9);
+        Assert.Equal(0.3181201629290617, Si(e5, "u_Zs"), 9);
         Assert.Equal(114.83612782557213, Si(e5, "k"), 9);
         Assert.Equal(Math.Sqrt(8e4) / 114.83612782557213, Si(e5, "S_min") * 1e6, 9);
         Assert.Equal(0.04 * (Math.Sqrt(3) * 230) * (Math.Sqrt(3) * 230) / 400e3, Si(e5, "Z_T"), 12);
@@ -222,11 +222,14 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(1.1 * Math.Sqrt(3) * 230 / (Math.Sqrt(3) * 0.01587), Si(e5, "I_k3"), 6);
         Assert.Equal(15942.028985507251, Si(e5, "I_k3"), 6);
         Assert.Equal(0.63768115942029, Si(e5, "u_Icn"), 9);
+        Assert.Equal(1.1, Si(e5, "c_k3"), 12);
         Assert.Equal(5, e5.Checks.Count);
         Assert.All(e5.Checks, c => Assert.True(c.Passed, c.Name));
 
         // E1 → E9 (rated power, W into kW), E4 → E9 (conductor area and length) and E5 → E9 (the three-phase fault current, kA): the start is judged on the cable E4 sized and the supply E5 protects.
-        Assert.Equal(["A_c", "I_k", "L_cab", "P"], e9.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(["A_c", "I_k", "L_cab", "P", "c_src"], e9.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(Si(e5, "c_k3"), InputSi(e9, "c_src"), 12);
+        Assert.Equal("c_k3", e9.Links.Single(l => l.Input.Symbol == "c_src").Link.OutputSymbol);
         Assert.Equal(Si(e1, "P_rated"), InputSi(e9, "P"), 6);
         Assert.Equal(Si(e4, "CSA"), InputSi(e9, "A_c"), 15);
         Assert.Equal(Si(e4, "L"), InputSi(e9, "L_cab"), 9);
@@ -270,6 +273,16 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(234.290059434703, 7 * Si(e9, "I_rated"), 9);
         Assert.Equal(10 * Si(e4, "I_n"), Si(e5, "I_a"), 9);
 
+        // Star-start torque: in star the motor gives about a third of its direct-on-line torque, and E1 judges its run-up at the direct-on-line peak torque T_peak. A pump held at relief pressure is at full load: E1's SF · T_pk
+        // (107.16 N·m) exceeds T_peak/3 (91.67 N·m), so a LOADED star start fails E1's own criterion. The pack starts the pump UNLOADED (vent or unloading valve to tank), with an INVENTED unloaded torque of 20 N·m (typed here, not shipped):
+        // SF · (T_acc + 20) = 34.97 N·m, inside T_peak/3.
+        var starTorque = InputSi(e1, "T_peak") / 3;
+        var safety = InputSi(e1, "SF");
+        const double unloadedTorque = 20;
+        Assert.True(starTorque < safety * Si(e1, "T_pk"), "a loaded star start is not covered");
+        Assert.True(starTorque >= safety * (Si(e1, "T_acc") + unloadedTorque), "an unloaded star start is covered");
+        Assert.Equal(34.96857363358299, safety * (Si(e1, "T_acc") + unloadedTorque), 8);
+
         // The tables are labelled synthetic on the sheet's inputs and nowhere cite a regulation.
         Assert.Contains("SYNTHETIC", e4.Inputs.Single(i => i.Symbol == "ampacity").Provenance!.Reference, StringComparison.Ordinal);
         Assert.Contains("SYNTHETIC", e4.Inputs.Single(i => i.Symbol == "ratings").Provenance!.Reference, StringComparison.Ordinal);
@@ -290,10 +303,10 @@ public sealed class HydraulicPowerUnitChainTests
                 ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "Q_prs", "b1", "Q"), ("f1", "rho", "b1", "rho_custom"), ("f1", "d_prs", "b1", "segments"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_rated", "e4", "P"),
                 ("e4", "I_b", "e3", "I"), ("e4", "L", "e3", "L"), ("e4", "CSA", "e3", "A_c"),
                 ("e4", "CSA", "e5", "S_line"), ("e4", "L", "e5", "L"), ("e4", "I_n", "e5", "I_n"), ("e4", "device_code", "e5", "device_code"),
-                ("e1", "P_rated", "e9", "P"), ("e4", "CSA", "e9", "A_c"), ("e4", "L", "e9", "L_cab"), ("e5", "I_k3", "e9", "I_k"),
+                ("e1", "P_rated", "e9", "P"), ("e4", "CSA", "e9", "A_c"), ("e4", "L", "e9", "L_cab"), ("e5", "I_k3", "e9", "I_k"), ("e5", "c_k3", "e9", "c_src"),
             ],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));
-        Assert.Equal(19, template.Bindings.Count);
+        Assert.Equal(20, template.Bindings.Count);
         Assert.Equal((0, "D"), (template.Bindings.Single(b => b.Input == "segments").Row, template.Bindings.Single(b => b.Input == "segments").Column));
 
         foreach (var b in template.Bindings.Where(b => b.Row is null))
@@ -478,6 +491,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Contains("link: Motor supply cable rev A · CSA", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Motor supply cable rev A · device_code", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Motor supply fault protection rev A · I_k3", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Motor supply fault protection rev A · c_k3", sheet, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -578,6 +592,28 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(1.5585449743588775, Si(e9, "start_dip") * 100, 9);
         Assert.Equal(0.8453037369859029, Si(e9, "dip_pcc") * 100, 9);
         Assert.Equal(393.7658201025645, Si(e9, "V_m"), 8);
+    }
+
+    [Fact]
+    public async Task A_Different_Voltage_Factor_On_The_Fault_Protection_Reaches_The_Motor_Start_Source_Impedance_Without_A_Spurious_Warning()
+    {
+        var host = Host();
+        var made = await InstantiateAsync(host);
+        var e5 = made.Instances["e5"];
+        var e9Before = made.Instances["e9"];
+
+        // c_max 1.05 (instead of 1.1) lowers the fault current to 1.05/1.1 of its value. The source impedance Z = c U/(√3 I_k) with I_k proportional to c does not depend on c, so with c_src linked to E5's factor Z_src is unchanged
+        // (E5's own Z_T); before the link c_src stayed 1.1 and Z_src would have been 4.8 % high, with no warning.
+        var revised = await host.Service.UpdateInputsAsync(e5.Id, [.. e5.Inputs.Select(i => i.Symbol == "c_max" ? i with { Number = 1.05 } : i)]);
+        Assert.True(revised.Succeeded, revised.Reason);
+        Assert.True((await host.Service.StalenessAsync(await Fresh(host, made, "e9"))).IsStale);
+        Assert.True((await host.Service.UpdateLinksAsync(e9Before.Id)).Succeeded);
+        var e9 = await Fresh(host, made, "e9");
+
+        Assert.Equal(1.05, InputSi(e9, "c_src"), 12);
+        Assert.Equal(15942.028985507251 * 1.05 / 1.1, InputSi(e9, "I_k"), 6);
+        Assert.Equal(Si(e9Before, "Z_src"), Si(e9, "Z_src"), 12);
+        Assert.DoesNotContain(e9.Warnings, w => w.RuleId == "c_src");
     }
 
     [Fact]

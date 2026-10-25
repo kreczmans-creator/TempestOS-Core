@@ -8,8 +8,8 @@ namespace Tempest.Calc.Library;
 /// recorded as an assumption to replace. Choice values are the calculators' own texts (the Library does not reference the calculator
 /// assemblies); instantiating each template in the tests proves they are accepted. No tabulated regulation data appears, and catalogue data
 /// is limited to the single steel section the steel-support example uses as a user input (UC 203×203×46). The motor circuit's
-/// cable-capacity and device-rating tables are not here, so that chain stays refused until the user supplies them (the hydraulic power unit's cable step is
-/// in the same position: it opens blocked, naming the tables, until they are supplied).
+/// cable-capacity and device-rating tables are not here, so that chain stays refused until the user supplies them (the hydraulic power unit is in the same position: it is refused
+/// at the cable step, naming the tables, until they are supplied; the mechanism review's cable step, which nothing takes from, is created blocked instead).
 /// </summary>
 internal static class CalcPackExamples
 {
@@ -381,21 +381,25 @@ internal static class CalcPackExamples
     ];
 
     /// <summary>
-    /// Earth-fault disconnection of the motor supply: a 230 V to earth system (the 398 V line voltage the fault-level route uses is √3 × 230), a 0.35 Ω external loop, a 10 mm² protective conductor (the cable step's size
-    /// by hand), the type C MCB the cable step sizes (the choice must agree with it or the step is blocked) and a 0.4 s disconnection time. The supply transformer (400 kVA, 4 %: INVENTED) is entered here, once: its three-phase
-    /// fault current <c>I_k3</c> is the source of the motor-start step. The 25 kA breaking capacity and the 8·10⁴ A²s let-through are invented illustrations, to be replaced from the device datasheet.
+    /// Earth-fault disconnection of the motor supply: a 230 V to earth system (the 398 V line voltage the fault-level route uses is √3 × 230), a 0.05 Ω external loop impedance (INVENTED: a close-coupled 400 kVA transformer, whose own
+    /// impedance is 0.0159 Ω; the figure is coherent with the transformer data below, which a 0.35 Ω loop was not), a 10 mm² protective conductor (the cable step's size by hand), the type C MCB the cable step sizes (the choice must agree with it or
+    /// the step is blocked) and a 0.4 s disconnection time. The supply transformer (400 kVA, 4 %: INVENTED) is entered here, once: its three-phase fault current <c>I_k3</c> (with the factor <c>c_k3</c> it was computed with) is the source of the
+    /// motor-start step. <b>That source is the fault level at the transformer terminals, a lower bound on the dip:</b> the supply cabling and the upstream network are not in it (E9's <c>S_kQ</c> is where an upstream network is added; for a remote
+    /// board enter a lower fault level). The 25 kA breaking capacity and the 8·10⁴ A²s let-through are invented illustrations, to be replaced from the device datasheet.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuE5 { get; } =
     [
-        Q("U_0", 230, "V"), Q("Z_e", 0.35, "ohm"), Q("S_cpc", 10, "mm^2"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 8e4, "A^2*s"),
+        Q("U_0", 230, "V"), Q("Z_e", 0.05, "ohm"), Q("S_cpc", 10, "mm^2"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 8e4, "A^2*s"),
         Q("S_r", 400, "kVA"), Q("u_k", 4, "%"), Q("I_cn", 25, "kA"),
     ];
 
     /// <summary>
-    /// The pump motor's starting: star-delta (a pump starts against the open relief valve, unloaded, so a third of the direct-on-line current is enough). The rated power arrives from the drive step (the nameplate
-    /// <c>P_rated</c>), the cable's length and conductor area from the cable step, and the supply from the fault current of the fault-protection step (<c>I_k3</c>, computed with c = 1.1, which a fault current basis uses by default).
-    /// The motor's efficiency and power factor are typed equal to the cable step's (a chain test guards that, and that this step's rated current equals the cable step's design current). The 7 × locked-rotor ratio and 0.3
-    /// starting power factor are INVENTED motor data, to be replaced from the datasheet. The 400 V here is the motor's; the fault current was computed at √3 × 230 = 398.4 V, 0.4 % lower, which makes this step's source impedance 0.4 % high (conservative).
+    /// The pump motor's starting: star-delta, with the pump started UNLOADED (through a vent or unloading valve to tank, not against its relief valve: a pump held at relief pressure is at full load, and in star the motor gives about a third of its
+    /// direct-on-line torque; a chain test guards that T_peak/3 covers the safety factor times the run-up and the unloaded torque, a typed INVENTED 20 N·m). A star start draws a third of the direct-on-line current, which stays below the type C
+    /// device's instantaneous band; the open-transition changeover from star to delta is NOT modelled and can briefly approach the direct-on-line current, which would reach that band. The rated power arrives from the drive step (the nameplate
+    /// <c>P_rated</c>), the cable's length and conductor area from the cable step, and the supply from the fault-protection step (<c>I_k3</c> with the factor <c>c_k3</c> it was computed with). The motor's efficiency and power factor are typed equal to
+    /// the cable step's (a chain test guards that, and that this step's rated current equals the cable step's design current). The 7 × locked-rotor ratio and 0.3 starting power factor are INVENTED motor data, to be replaced from the datasheet.
+    /// The 400 V here is the motor's; the fault current was computed at √3 × 230 = 398.4 V, 0.4 % lower, which makes this step's source impedance 0.4 % high (conservative).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuE9 { get; } =
     [
@@ -411,7 +415,8 @@ internal static class CalcPackExamples
     /// <summary>
     /// A carton tamper: a 4 kg follower on a Ø30 roller (60 mm base circle, in line) rises 40 mm in 120° (cycloidal), dwells 60°, returns in 120° (modified trapezoid) and dwells 60°, at 150 cam revolutions per minute,
     /// against a return spring of rate 9.874 N/mm and 50 N preload. All INVENTED for this illustration. The spring rate and preload are the ones the spring step (M7) is designed for: M7 takes the spring force at full lift
-    /// from this step, so M7's rate cannot be linked back (a cycle); the two are typed equal (the rate to 0.01 %) and a chain test guards both.
+    /// from this step, so M7's rate cannot be linked back (a cycle); the two are typed equal. M7 is told the cam's lift (<c>s_work</c>) and warns (<c>travel-mismatch</c>) when its own working travel differs from it by more than 1 %,
+    /// which is what a rate that no longer matches does; a chain test also checks the rate (to 0.01 %) and the preload.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> CamM9 { get; } =
     [
@@ -422,13 +427,14 @@ internal static class CalcPackExamples
 
     /// <summary>
     /// The follower's return spring: a compression spring of 6 mm wire on a 50 mm mean coil with 10.5 active coils (rate 9.874 N/mm with G = 80 GPa), squared and ground, 145 mm free. Its working points are loads: the force at
-    /// the base circle is the 50 N preload (typed equal to the cam step's, guarded) and the force at full lift arrives from the cam step (<c>F_spring_max</c> = k·lift + F_pre there). The cam's 40 mm lift and the spring's own working
-    /// travel agree only because the two rates agree (guarded). The wire strength (1500 MPa) and the endurance strength (400 MPa) are INVENTED illustrations, not wire-standard figures; 2.5 Hz is the cam frequency (150 rpm).
+    /// the base circle is the 50 N preload (typed equal to the cam step's, guarded) and the force at full lift arrives from the cam step (<c>F_spring_max</c> = k·lift + F_pre there). The cam's lift arrives as the expected working
+    /// travel (<c>s_work</c>, which warns on a mismatch above 1 %) and the cam frequency as the operating frequency (<c>f_op</c>, from <c>f_in</c> in Hz). The wire strength (1500 MPa) and the endurance strength (400 MPa) are
+    /// INVENTED illustrations, not wire-standard figures.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> CamM7 { get; } =
     [
         C("mode", "Compression"), Q("d", 6, "mm"), Q("D", 50, "mm"), N("n", 10.5), C("ends", "Squared and ground"), Q("L0", 145, "mm"), C("work", "Loads"), Q("F_1", 50, "N"),
-        C("rm_source", "Typed R_m(d)"), Q("Rm", 1500, "MPa"), Q("S_e", 400, "MPa"), Q("f_op", 2.5, "Hz"),
+        C("rm_source", "Typed R_m(d)"), Q("Rm", 1500, "MPa"), Q("S_e", 400, "MPa"),
     ];
 
     /// <summary>
@@ -454,12 +460,13 @@ internal static class CalcPackExamples
     ];
 
     /// <summary>
-    /// The cam drive: a geared motor (10:1, 0.9 efficient) running continuously on the cam's RMS torque at the cam's speed; the load inertia is the cam, follower and shaft (invented). The candidate motor's rated speed (1440 rpm) and torque
-    /// are INVENTED nameplate figures; the rated power <c>P_rated</c> = T_rated·ω_rated sizes the supply cable.
+    /// The cam drive: a geared motor (9.6:1, 0.9 efficient) running continuously on the cam's RMS torque at the cam's speed, so that the motor runs at its 1440 rpm nameplate speed (4-pole, 50 Hz) when the cam turns at 150 rpm; the load inertia is
+    /// the cam, follower and shaft (invented). The candidate motor's rated speed and torque are INVENTED nameplate figures; the rated power <c>P_rated</c> = T_rated·ω_rated sizes the supply cable. The RMS torque is a stand-in for a steady
+    /// load: the cam's torque is fully alternating (mean zero), which the motor's thermal duty sees as its RMS.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> CamE1 { get; } =
     [
-        C("mechanism", "gearbox rotary"), C("duty_mode", "continuous"), N("i", 10), N("eta", 0.9), Q("J_mech", 0.0002, "kg*m^2"), Q("J_L", 0.05, "kg*m^2"), Q("t_start", 2, "s"),
+        C("mechanism", "gearbox rotary"), C("duty_mode", "continuous"), N("i", 9.6), N("eta", 0.9), Q("J_mech", 0.0002, "kg*m^2"), Q("J_L", 0.05, "kg*m^2"), Q("t_start", 2, "s"),
         Q("J_motor", 0.0005, "kg*m^2"), Q("T_rated", 1.0, "N*m"), Q("T_peak", 3.0, "N*m"), Q("n_rated", 1440, "rpm"), Q("n_max", 3000, "rpm"),
     ];
 

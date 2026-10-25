@@ -13,7 +13,7 @@ PACK INDEX
   4. Pump drive motor — Motor and actuator sizing — rev A — ISSUED — RMS torque SF·T_rms ≤ T_rated PASS
   5. Motor supply cable — Conductor sizing and overload coordination — rev A — ISSUED — Device rating within conductor capacity (I_n ≤ I_z) PASS
   6. Motor supply voltage drop — Voltage drop and I²R loss — rev A — ISSUED — Voltage drop ≤ limit PASS
-  7. Motor supply fault protection — Fault protection: Zs, disconnection, adiabatic, fault level — rev A — ISSUED — Loop impedance within maximum (disconnection in time) PASS
+  7. Motor supply fault protection — Fault protection: Zs, disconnection, adiabatic, fault level — rev A — ISSUED — Breaking capacity against prospective fault PASS
   8. Pump motor start — Motor start voltage dip and PF correction — rev A — ISSUED — Motor-terminal dip within the limit PASS
 
 REVISIONS
@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 46/46
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -378,10 +378,10 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
 
 8. VERIFICATION
   Template: fp.cylinder@1.3.0
-  Content hash: c71c19afc508f61e
+  Content hash: f94c2e869fa10d18
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -508,7 +508,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   Content hash: 13736352fb1985ad
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -657,7 +657,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Content hash: d3c3c38f4c81cf2d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -835,7 +835,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 64020d560b0ee248
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -993,7 +993,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -1095,7 +1095,7 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   Content hash: 3ed2f07610b34189
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -1118,7 +1118,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   U_0 | Nominal voltage to earth | 230 | V | spec: SPEC-HPU-05 §6 (earthing and protection) | 50 … 1000 V
-  Z_e | External earth fault loop impedance | 0.35 | ohm | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.01 … 3 ohm
+  Z_e | External earth fault loop impedance | 0.05 | ohm | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.01 … 3 ohm
   C_min | Voltage factor C_min | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.9 … 1
   S_r | Supply transformer rating (for the fault level) | 400 | kVA | spec: SPEC-HPU-05 §6 (earthing and protection) | 1 … 5000 kVA
   u_k | Transformer impedance voltage | 4 | % | spec: SPEC-HPU-05 §6 (earthing and protection) | 1 … 20 %
@@ -1163,12 +1163,12 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
       = 0.12377 ohm
         R₁ + R₂ at the conductor temperature
   [20] Z_s = Z_e + R_12    « BS 7671 reg. 411.4.4
-      = 0.35 ohm + 0.12377 ohm
-      = 0.47377 ohm
+      = 0.05 ohm + 0.12377 ohm
+      = 0.17377 ohm
         Earth fault loop impedance
   [21] I_f = C_min * U_0 / Z_s
-      = 0.95 × 230 V / 0.47377 ohm
-      = 461.19 A
+      = 0.95 × 230 V / 0.17377 ohm
+      = 1257.4 A
         Earth fault current
   [22] I_a = 10 * I_n    « BS EN 60898-1
       = 10 × 40 A
@@ -1179,15 +1179,15 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
       = 0.54625 ohm
         Maximum earth fault loop impedance
   [24] u_Zs = Z_s / Z_s_max
-      = 0.47377 ohm / 0.54625 ohm
-      = 0.86732
+      = 0.17377 ohm / 0.54625 ohm
+      = 0.31812
         Loop impedance utilisation
   [25] Z_test = 0.8 * Z_s_max
       = 0.8 × 0.54625 ohm
       = 0.437 ohm
         Field-test maximum at ambient (0.8 × Z_s,max, rule of thumb)
   [26] t_d = instantaneous region (I_f ≥ I_a): t ≤ 0.1 s
-      = I_f = 461.19 A
+      = I_f = 1257.4 A
       = 0.1 s
         Disconnection time
   [28] I2t = device let-through I²t at the maximum prospective fault
@@ -1222,19 +1222,23 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
       = 1.1 × 398.37 V / (sqrt(3) × 0.01587 ohm)
       = 15.942 kA
         Prospective three-phase fault at the origin (simplified)
-  [39] u_Icn = I_k3 / I_cn
+  [38] c_k3 = c_max    « IEC 60909-0 cl. 5.3
+      = 1.1
+      = 1.1
+        Voltage factor c of the prospective fault current
+  [40] u_Icn = I_k3 / I_cn
       = 15.942 kA / 25 kA
       = 0.63768
         Breaking capacity utilisation
 
 5. RESULTS
   R_12 = 0.12377 ohm    R₁ + R₂
-  Z_s = 0.47377 ohm    Loop impedance
-  I_f = 461.19 A    Earth fault current
+  Z_s = 0.17377 ohm    Loop impedance
+  I_f = 1257.4 A    Earth fault current
   I_a = 400 A    Disconnection current
   t_d = 0.1 s    Disconnection time
   Z_s_max = 0.54625 ohm    Maximum loop impedance
-  u_Zs = 0.86732    Loop impedance utilisation
+  u_Zs = 0.31812    Loop impedance utilisation
   Z_test = 0.437 ohm    Field-test maximum (rule of thumb)
   k = 114.84    Adiabatic k (derived)
   S_min = 2.463 mm²    Minimum cross-section
@@ -1242,11 +1246,12 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   u_line = 0.2463    Line conductor utilisation
   Z_T = 0.01587 ohm    Transformer impedance
   I_k3 = 15.942 kA    Prospective fault current
+  c_k3 = 1.1    Voltage factor of I_k3
   u_Icn = 0.63768    Breaking capacity utilisation
 
 6. CHECKS (governing first)
-  PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.86732 vs u_Zs ≤ 1  utilisation 0.867  « BS 7671 reg. 411.4.4
   PASS  Breaking capacity against prospective fault: u_Icn = 0.63768 vs u_Icn ≤ 1  utilisation 0.638
+  PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.31812 vs u_Zs ≤ 1  utilisation 0.318  « BS 7671 reg. 411.4.4
   PASS  Disconnection time within required: 0.1 s vs 0.4 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
   PASS  Protective conductor against adiabatic minimum: u_cpc = 0.2463 vs u_cpc ≤ 1  utilisation 0.246  « BS 7671 reg. 543.1.3
   PASS  Line conductor against adiabatic minimum: u_line = 0.2463 vs u_line ≤ 1  utilisation 0.246  « BS 7671 reg. 434.5.2
@@ -1255,11 +1260,11 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   WARNING record: Tabulated values not taken from a reference record: rho_20, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let, I_cn (Device time–current points). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.fault-protection@1.1.0
-  Content hash: d3ade76a1accaba7
+  Template: elec.fault-protection@1.2.0
+  Content hash: 28c5e83cec7eb404
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -1286,6 +1291,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   fault_basis | Fault level given as | Fault current I_k (kA) |  | spec: SPEC-HPU-05 §5 (pump drive starting) | any
   S_k | Three-phase fault level at the point of supply (use the minimum fault level, which gives the deepest dip) | 10 | MVA | assumption: Sheet default value; no project figure given. | 0.5 … 500 MVA
   I_k | Three-phase fault current at the point of supply (links E5 I_k3) | 15.942 | kA | link: Motor supply fault protection rev A · I_k3 | 1 … 150 kA
+  c_src | Voltage factor c for the fault-level route (blank: 1.1 for the I_k basis, as E5 I_k3 is computed with; 1.0 for a declared S_k; links E5 c_k3, which follows E5's c_max) | 1.1 |  | link: Motor supply fault protection rev A · c_k3 | 0.95 … 1.1
   S_n | Transformer rating | 500 | kVA | assumption: Sheet default value; no project figure given. | 25 … 5000 kVA
   u_k | Transformer impedance voltage | 4 | % | assumption: Sheet default value; no project figure given. | 1 … 12 %
   XR_Q | Upstream network X/R ratio | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 50
@@ -1350,10 +1356,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
       = sqrt(3) × 400 V × 78.097 A
       = 54.107 kVA
         Starting apparent power
-  [17] c_f = 1.1    « IEC 60909-0 cl. 5.3
-      = 1.1
-        Voltage factor c (1.1, as E5 computes I_k3)
-  [19] Z_fl = c_f * U / (sqrt(3) * I_k)    « IEC 60909-0 cl. 5.3
+  [19] Z_fl = c_src * U / (sqrt(3) * I_k)    « IEC 60909-0 cl. 5.3
       = 1.1 × 400 V / (sqrt(3) × 15.942 kA)
       = 0.015935 ohm
         Source impedance magnitude from the fault current
@@ -1523,9 +1526,9 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   WARNING record: Tabulated values not taken from a reference record: X_km (Cable resistance and reactance per kilometre); rho_20, alpha (Conductor material constants); I_LR_r, cos_phi_st (Motor starting data); k_soft, k_vfd (Soft-starter and drive limits); u_k, XR (Transformer impedance data). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.motor-start@1.1.0
-  Content hash: f03da225f21ad1b0
+  Template: elec.motor-start@1.2.0
+  Content hash: 15bfc7e08b76ce1f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-25 09:33 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test

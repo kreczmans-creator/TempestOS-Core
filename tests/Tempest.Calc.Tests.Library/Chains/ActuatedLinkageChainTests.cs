@@ -237,6 +237,14 @@ public sealed class ActuatedLinkageChainTests
         Assert.Contains("link: Ejector slider-crank rev A · follower_force", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Replacement cylinder rev A · dV", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Replacement cylinder rev A · p", sheet, StringComparison.Ordinal);
+
+        // The checker is independent: the principal who checked and issued the pack is not among the authors of any step.
+        foreach (var key in made.Instances.Keys)
+        {
+            var member = await Fresh(host, made, key);
+            Assert.NotEmpty(member.Authors);
+            Assert.DoesNotContain(host.Principal, member.Authors);
+        }
     }
 
     [Fact]

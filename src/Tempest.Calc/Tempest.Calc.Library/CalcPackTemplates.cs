@@ -194,10 +194,13 @@ public static class CalcPackTemplates
     /// <para>
     /// The electrical tail follows the motor circuit: E4's design current, length and conductor area are E3's (voltage drop), E4's conductor area, length, device rating and device type code are E5's (fault protection, with the
     /// supply transformer entered once, there). The motor-start step (E9) is placed last because it takes from both: the cable's length and conductor area from E4, the motor's rated power from E1 and the supply's
-    /// three-phase fault current from E5 (<c>I_k3</c> into <c>I_k</c>; E5 computes it with c = 1.1, the factor E9's fault-current basis defaults to), so the dip is judged on the cable the pack sized and the supply the pack
-    /// protects. E9's rated current is therefore NOT fed back to E4 (<c>I_b_in</c>): E4 → E5 → E9 → E4 would be a cycle, and E4 sizes on E1's rated power already. E9 and E4 each carry the motor's efficiency and power factor (typed equal;
+    /// three-phase fault current from E5 (<c>I_k3</c> into <c>I_k</c> and the factor it was computed with, <c>c_k3</c>, into <c>c_src</c>, so a change of E5's <c>c_max</c> reaches the source impedance), so the dip is judged on the cable the pack sized and the supply the pack
+    /// protects. <b>That supply is the transformer-terminal fault level: the dip is a lower bound.</b> The supply cabling and the upstream network are not in it (E9's <c>S_kQ</c> adds an upstream network; a remote board needs a lower fault level), and E5's
+    /// example loop impedance (0.05 Ω) is chosen to be coherent with a close-coupled 400 kVA transformer. E9's rated current is therefore NOT fed back to E4 (<c>I_b_in</c>): E4 → E5 → E9 → E4 would be a cycle, and E4 sizes on E1's rated power already. E9 and E4 each carry the motor's efficiency and power factor (typed equal;
     /// a chain test guards them, and that E9's <c>I_rated</c> equals E4's design current). E9's <c>I_start</c> is for starting-current coordination only (it is not a design current): the pack's star-delta start
-    /// draws a third of the direct-on-line current, which stays below the type C device's instantaneous band; a direct-on-line start of the same motor would not (the chain test records it). E9's 400 V is the motor's; E5 computes its
+    /// draws a third of the direct-on-line current, which stays below the type C device's instantaneous band; a direct-on-line start of the same motor would not (the chain test records it). The pump is started UNLOADED (through a vent or unloading valve
+    /// to tank): a pump at relief pressure is at full load, and in star the motor gives about a third of its direct-on-line torque, so E1's run-up check, made at the direct-on-line peak torque, does not cover a loaded star start (a chain test guards that
+    /// T_peak/3 covers the safety factor times the run-up and a typed, invented unloaded torque). The open-transition changeover from star to delta is not modelled: it can briefly approach the direct-on-line current and so reach the instantaneous band. E9's 400 V is the motor's; E5 computes its
     /// fault current at √3 × 230 V, 0.4 % lower, so E9's source impedance is 0.4 % high (conservative). B1 judges the cap-port line at the retract discharge, where its drop is the back pressure of the retract stroke; neither that drop nor the
     /// supply-side drop is fed back into F1. The steps carry example inputs except E4's two record tables, which no build ships: as in the motor circuit, the pack is refused at the cable step (naming the tables) until the user supplies his own,
     /// because E3, E5 and E9 take from it.
@@ -237,18 +240,28 @@ public static class CalcPackTemplates
             new CalcPackBinding("e4", "CSA", "e9", "A_c"),
             new CalcPackBinding("e4", "L", "e9", "L_cab"),
             new CalcPackBinding("e5", "I_k3", "e9", "I_k"),
+            new CalcPackBinding("e5", "c_k3", "e9", "c_src"),
         ]);
 
     /// <summary>
     /// Mechanism review: cam (M9) → return spring (M7), cam shaft (M4) → bearing (M5), geared motor (E1) → supply cable (E4). The cam step is the source of everything: its spring force at full lift (<c>F_spring_max</c>, N) is the spring's working force at full
     /// lift; its roller contact force (<c>F_pin_pk</c>, N) is the radial load at the cam on the shaft (a table-cell link into the load row, N to kN), its RMS and peak input torque (<c>T_rms_in</c>, <c>input_torque</c>, N·m to kN·m) the torque and the peak
-    /// torque of the shaft, and its speed (<c>n_in</c>) the shaft's, the bearing's and the motor's load speed; the shaft's reaction at bearing A (<c>R_A</c>, kN) is the bearing's radial load; the cam's RMS torque is the motor's continuous load torque; and the
+    /// torque of the shaft, and its speed (<c>n_in</c>) the shaft's, the bearing's and the motor's load speed; the shaft's reaction at bearing A (<c>R_A</c>, kN) is the bearing's radial load; the cam's RMS torque is the motor's continuous load torque (the motor runs at its 1440 rpm nameplate speed through the 9.6:1 gearbox); and the
     /// motor's nameplate rated power (<c>P_rated</c>, from <c>n_rated</c>) sizes the supply cable.
     /// <para>
-    /// Not linked, deliberately. M7's rate cannot go back to M9 (<c>k_sp</c> and <c>F_pre</c> are typed in M9, M7's own rate would make a cycle); M9 and M7 carry the same 9.874 N/mm and 50 N (chain test guard), and the cam's lift is not a
-    /// port into M7 (it has no travel input in the Loads mode): the spring's working travel s₂ − s₁ equals the lift only while the two rates agree (guarded). M7's operating frequency is the cam frequency in Hz, typed (<c>n_in</c> is an angular
-    /// speed; guarded). The peak input torque is also checked against the motor's peak torque by a test (E1 is judged on the RMS torque, as the motor's thermal duty). The cable step opens blocked until the user supplies his own cable-capacity and
-    /// device-rating tables, which no build ships: the pack cannot be checked or issued until then (nothing takes from the cable step, so the pack is created, not refused).
+    /// Run-time links that replace what would otherwise be test guards: the cam's lift (<c>lift</c>, mm) is the spring's expected working travel (<c>s_work</c>), and M7 warns (<c>travel-mismatch</c>) when its own s₂ − s₁ is more than 1 % away;
+    /// the cam's frequency in Hz (<c>f_in</c>, since rpm is an angular velocity and <c>n_in</c> cannot be linked to a frequency) is the spring's operating frequency (<c>f_op</c>).
+    /// </para>
+    /// <para>
+    /// Not linked, deliberately. M7's rate cannot go back to M9 (<c>k_sp</c> and <c>F_pre</c> are typed in M9, M7's own rate would make a cycle); M9 and M7 carry the same 9.874 N/mm and 50 N (chain test guard), and a revised cam whose
+    /// rate no longer matches the spring's makes M7 warn <c>travel-mismatch</c> instead of silently still checking.
+    /// </para>
+    /// <para>
+    /// The cam's RMS torque enters the shaft's steady-torque input <c>T</c> as a stand-in: M4 models the bending as fully reversed and the torque as steady, whereas the cam's torque (a frictionless spring system) is fully alternating, mean zero,
+    /// ranging −9.61 to +10.11 N·m. In this example bending dominates and a chain test recomputes M4's fatigue factor with the torque taken as fully alternating (σ′ₐ = √(σₐ² + 3τₐ²)) and shows the margin; on a torque-dominated or keyed section the
+    /// RMS-as-steady mapping would understate the alternating stress. M4 is unchanged. The peak input torque is checked against the motor's peak torque by a test (E1 is judged on the RMS torque, as the motor's thermal duty). The motor runs at
+    /// its 1440 rpm nameplate through a 9.6:1 gearbox. The cable step opens blocked until the user supplies his own cable-capacity and device-rating tables, which no build ships: the pack cannot be checked or issued until then (nothing takes from
+    /// the cable step, so the pack is created, not refused).
     /// </para>
     /// </summary>
     public static CalcPackTemplate MechanismReview { get; } = new(
@@ -265,6 +278,8 @@ public static class CalcPackTemplates
         ],
         [
             new CalcPackBinding("m9", "F_spring_max", "m7", "F_2"),
+            new CalcPackBinding("m9", "lift", "m7", "s_work"),
+            new CalcPackBinding("m9", "f_in", "m7", "f_op"),
             new CalcPackBinding("m9", "F_pin_pk", "m4", "loads", Row: 0, Column: "F_y"),
             new CalcPackBinding("m9", "T_rms_in", "m4", "T"),
             new CalcPackBinding("m9", "input_torque", "m4", "T_pk"),

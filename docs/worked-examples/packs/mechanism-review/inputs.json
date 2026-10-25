@@ -416,7 +416,7 @@
       "Unit": "N",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:443217420f254e2a878b3d587f5d3e40#F_spring_max",
+        "Reference": "calc:90d59d72a503499ea620aaf2b69514e7#F_spring_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -539,9 +539,9 @@
       "Number": 2.5,
       "Unit": "Hz",
       "Provenance": {
-        "Kind": "Drawing",
-        "Reference": "DRG-TMP-415",
-        "Revision": "B",
+        "Kind": "Link",
+        "Reference": "calc:90d59d72a503499ea620aaf2b69514e7#f_in",
+        "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "2.5"
@@ -729,6 +729,18 @@
       "ValueText": "8"
     },
     {
+      "Symbol": "s_work",
+      "Number": 40,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:90d59d72a503499ea620aaf2b69514e7#lift",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
       "Symbol": "solid_method",
       "Text": "EN 13906-1 (d_max, coil clearance)",
       "Provenance": {
@@ -814,7 +826,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:443217420f254e2a878b3d587f5d3e40#T_rms_in",
+        "Reference": "calc:90d59d72a503499ea620aaf2b69514e7#T_rms_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -826,7 +838,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:443217420f254e2a878b3d587f5d3e40#input_torque",
+        "Reference": "calc:90d59d72a503499ea620aaf2b69514e7#input_torque",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -877,7 +889,7 @@
               "Unit": "kN",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:443217420f254e2a878b3d587f5d3e40#F_pin_pk",
+                "Reference": "calc:90d59d72a503499ea620aaf2b69514e7#F_pin_pk",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -907,7 +919,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:443217420f254e2a878b3d587f5d3e40#n_in",
+        "Reference": "calc:90d59d72a503499ea620aaf2b69514e7#n_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1158,7 +1170,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8679c1959a9141f89c4f45f484ea6fe2#R_A",
+        "Reference": "calc:8ae22098b9ed4bea89d6c7cef6a7b1c3#R_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1272,7 +1284,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:443217420f254e2a878b3d587f5d3e40#n_in",
+        "Reference": "calc:90d59d72a503499ea620aaf2b69514e7#n_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1370,7 +1382,7 @@
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:443217420f254e2a878b3d587f5d3e40#T_rms_in",
+        "Reference": "calc:90d59d72a503499ea620aaf2b69514e7#T_rms_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1430,13 +1442,13 @@
     },
     {
       "Symbol": "i",
-      "Number": 10,
+      "Number": 9.6,
       "Provenance": {
         "Kind": "Specification",
         "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "10"
+      "ValueText": "9.6"
     },
     {
       "Symbol": "m",
@@ -1475,7 +1487,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:443217420f254e2a878b3d587f5d3e40#n_in",
+        "Reference": "calc:90d59d72a503499ea620aaf2b69514e7#n_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1637,7 +1649,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:b9060989a82c4321b19a25386def2c2e#P_rated",
+        "Reference": "calc:f7e0491dedf4415497d54b2fa02e0a49#P_rated",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1720,7 +1732,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:9e2b00a8bad0486690c9acbacb7d4dad@1 \u00B7 invented values for the worked example",
+        "Reference": "record:5ed71711bf9b49d18b5381c066123a20@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -1874,7 +1886,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:1cfd117bb04e452c873efad1d6b2197e@1 \u00B7 invented values for the worked example",
+        "Reference": "record:9d11a091b09c4603ad36c65a8d2444c9@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },

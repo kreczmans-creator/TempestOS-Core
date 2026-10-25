@@ -307,8 +307,8 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
 
 8. VERIFICATION
   Template: fp.cylinder@1.3.0
-  Content hash: c71c19afc508f61e
+  Content hash: f94c2e869fa10d18
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test

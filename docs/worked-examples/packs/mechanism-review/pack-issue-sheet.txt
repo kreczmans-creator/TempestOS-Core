@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 41/41
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -251,6 +251,10 @@ Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|,
       = Simpson per segment
       = 4.885e-14 W
         Mean input power over the cam revolution (mech.P_mean)
+  [49] f_in = n_in / 60
+      = rpm to Hz
+      = 2.5 Hz
+        Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
 
 5. RESULTS
   theta_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: cam angle
@@ -289,6 +293,7 @@ Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|,
   T_rms_in = 4.8162 N·m    RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)
   P_mean = 4.885e-14 W    Mean input power over the cam revolution (mech.P_mean)
   n_in = 150 rpm    Cam-shaft speed, passed through for E1's load speed (mech.n_in)
+  f_in = 2.5 Hz    Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
 
 6. CHECKS (governing first)
   PASS  Pressure angle φ_max within the allowed maximum: u_phi = 0.74234 vs u_phi ≤ 1  utilisation 0.742  « Cam follower kinematics
@@ -299,11 +304,11 @@ Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|,
   No warnings.
 
 8. VERIFICATION
-  Template: mech.mechanism@1.1.0
-  Content hash: c7eba69789649452
+  Template: mech.mechanism@1.2.0
+  Content hash: 082569fdde676480
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 16/16
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -348,6 +353,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   M_2 | Torque at working point 2 (torsion, loads) | 0.15 | N*m | assumption: Sheet default value; no project figure given. | 0 … 100 N*m
   phi_1 | Angle at working point 1 (torsion, deflections) | 5 | deg | assumption: Sheet default value; no project figure given. | 0 … 1080 deg
   phi_2 | Angle at working point 2 (torsion, deflections) | 15 | deg | assumption: Sheet default value; no project figure given. | 0 … 1080 deg
+  s_work | Expected working travel s₂ − s₁ (optional; M9 lift links here): the sheet warns when the spring's own travel differs by more than 1 % | 40 | mm | link: Tamper cam rev A · lift | 0.1 … 1000 mm
   G | Shear modulus | 80 | GPa | assumption: Sheet default value; no project figure given. | 20 … 100 GPa
   E | Young's modulus | 206 | GPa | assumption: Sheet default value; no project figure given. | 50 … 250 GPa
   rho | Density | 7850 | kg/m^3 | assumption: Sheet default value; no project figure given. | 1000 … 20000 kg/m^3
@@ -360,7 +366,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   S_e | Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference) | 400 | MPa | drawing: DRG-TMP-415 rev B | 50 … 2000 MPa
   N_c | Required life the endurance strength belongs to | 10000000 |  | assumption: Sheet default value; no project figure given. | 10000 … 10000000000
   n_f_req | Required Goodman safety factor | 1.2 |  | assumption: Sheet default value; no project figure given. | 1 … 5
-  f_op | Operating (excitation) frequency | 2.5 | Hz | drawing: DRG-TMP-415 rev B | 0 … 1000 Hz
+  f_op | Operating (excitation) frequency | 2.5 | Hz | link: Tamper cam rev A · f_in | 0 … 1000 Hz
 
 3. ASSUMPTIONS
   A1. Linear characteristic: the rate is constant between the working points; no progressive or conical spring, no variable pitch. (Cold-coiled round wire up to 20 mm.)
@@ -452,96 +458,101 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
       = 444.96 N / 9.8743 N/mm
       = 45.063 mm
         Deflection at working point 2
-  [33] tau_1 = k_c * 8 * F_1 * D / (pi * d^3)    « EN 13906-1
+  [34] s_trav = s_2 - s_1
+      = 45.063 mm − 5.0637 mm
+      = 39.999 mm
+        Working travel of the spring, s₂ − s₁
+  [35] tau_1 = k_c * 8 * F_1 * D / (pi * d^3)    « EN 13906-1
       = 1.1648 × 8 × 50 N × 50 mm / (π × (6 mm)^3)
       = 34.331 MPa
         Shear stress at working point 1
-  [34] tau_2 = k_c * 8 * F_2 * D / (pi * d^3)    « EN 13906-1
+  [36] tau_2 = k_c * 8 * F_2 * D / (pi * d^3)    « EN 13906-1
       = 1.1648 × 8 × 444.96 N × 50 mm / (π × (6 mm)^3)
       = 305.52 MPa
         Shear stress at working point 2
-  [35] tau_c = k_c * 8 * F_c * D / (pi * d^3)    « EN 13906-1
+  [37] tau_c = k_c * 8 * F_c * D / (pi * d^3)    « EN 13906-1
       = 1.1648 × 8 × 691.2 N × 50 mm / (π × (6 mm)^3)
       = 474.6 MPa
         Shear stress at solid length
-  [36] u_2 = tau_2 / tau_perm
+  [38] u_2 = tau_2 / tau_perm
       = 305.52 MPa / 675 MPa
       = 0.45262
         Utilisation at working point 2
-  [37] u_c = tau_c / tau_perm
+  [39] u_c = tau_c / tau_perm
       = 474.6 MPa / 675 MPa
       = 0.70311
         Utilisation at solid length
-  [38] L_1 = L0 - s_1
+  [40] L_1 = L0 - s_1
       = 145 mm − 5.0637 mm
       = 139.94 mm
         Spring length at working point 1
-  [39] L_2 = L0 - s_2
+  [41] L_2 = L0 - s_2
       = 145 mm − 45.063 mm
       = 99.937 mm
         Spring length at working point 2
-  [40] u_s = s_2 / s_c
+  [42] u_s = s_2 / s_c
       = 45.063 mm / 70 mm
       = 0.64375
         Working deflection / travel to solid
-  [41] s_n = L0 - L_n
+  [43] s_n = L0 - L_n
       = 145 mm − 87.862 mm
       = 57.137 mm
         Travel to the minimum length L_n
-  [42] u_n = s_2 / s_n
+  [44] u_n = s_2 / s_n
       = 45.063 mm / 57.137 mm
       = 0.78867
         Working deflection / travel to the minimum length (coil clearance at L₂)
-  [43] lambda_eff = ν·L₀/D    « EN 13906-1
+  [45] lambda_eff = ν·L₀/D    « EN 13906-1
       = 0.5 × 145 / 50
       = 1.45
         Effective slenderness
-  [44] C1p = E/(2(E − G))    « Shigley 10th ed. Ch. 10, buckling
+  [46] C1p = E/(2(E − G))    « Shigley 10th ed. Ch. 10, buckling
       = 206 / (2 × (206 − 80))
       = 0.81746
         Buckling constant C₁′
-  [45] C2p = 2π²(E − G)/(2G + E)    « Shigley 10th ed. Ch. 10, buckling
+  [47] C2p = 2π²(E − G)/(2G + E)    « Shigley 10th ed. Ch. 10, buckling
       = 2π² × (206 − 80) / (2 × 80 + 206)
       = 6.7955
         Buckling constant C₂′
-  [46] u_b = stable at any deflection (λ_eff² < C₂′)
+  [48] u_b = stable at any deflection (λ_eff² < C₂′)
       = 2.1025 < 6.7955
       = 0
         Deflection at point 2 against the buckling deflection (none: stable)
-  [47] f_n = d / (2 * pi * n * D^2) * sqrt(G / (2 * rho))    « EN 13906-1 / EN 13906-2
+  [49] f_n = d / (2 * pi * n * D^2) * sqrt(G / (2 * rho))    « EN 13906-1 / EN 13906-2
       = 6 mm / (2 × π × 10.5 × (50 mm)^2) × sqrt(80 GPa / (2 × 7850 kg/m³))
       = 82.118 Hz
         Surge (natural) frequency, both ends fixed
-  [49] r_f = f_n / f_op
+  [51] r_f = f_n / f_op
       = 82.118 Hz / 2.5 Hz
       = 32.847
         Surge frequency / operating frequency
-  [54] tau_a = (tau_2 - tau_1) / 2
+  [56] tau_a = (tau_2 - tau_1) / 2
       = (305.52 MPa − 34.331 MPa) / 2
       = 135.6 MPa
         Alternating shear stress
-  [55] tau_m = (tau_2 + tau_1) / 2
+  [57] tau_m = (tau_2 + tau_1) / 2
       = (305.52 MPa + 34.331 MPa) / 2
       = 169.93 MPa
         Mean shear stress
-  [56] S_su = f_su * Rm
+  [58] S_su = f_su * Rm
       = 0.67 × 1500 MPa
       = 1005 MPa
         Ultimate shear strength (fraction of R_m, user input)
-  [57] u_f = tau_a/S_e + tau_m/S_su    « Goodman, as M4 (Shigley 10th ed. Ch. 6)
+  [59] u_f = tau_a/S_e + tau_m/S_su    « Goodman, as M4 (Shigley 10th ed. Ch. 6)
       = 135.6 / 400 + 169.93 / 1005
       = 0.50807
         Goodman utilisation (1/n_f)
-  [58] n_f = 1/u_f
+  [60] n_f = 1/u_f
       = 1 / 0.50807
       = 1.9682
         Goodman safety factor
-  [59] u_fat = n_f_req * u_f
+  [61] u_fat = n_f_req * u_f
       = 1.2 × 0.50807
       = 0.60968
         Fatigue utilisation against the required factor
 
 5. RESULTS
+  s_trav = 39.999 mm    Working travel s₂ − s₁
   C = 8.3333    Spring index
   Rm = 1500 MPa    Wire tensile strength R_m(d)
   k = 9.8743 N/mm    Rate
@@ -586,11 +597,11 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   WARNING record: Tabulated values not taken from a reference record: G, E, rho (Material properties); Rm (Wire tensile strength R_m(d)); f_tau, f_sigma, f_su (Permissible and ultimate stress fractions); nu_seat (End-support coefficient); S_e (Endurance strength). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: mech.spring@1.1.0
-  Content hash: 666e6c5f8235a52a
+  Template: mech.spring@1.2.0
+  Content hash: 82e8bcd0e855f0b9
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -775,7 +786,7 @@ Bending: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(
   Content hash: 393369b2fc1168ca
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -899,7 +910,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   Content hash: 555757395aab4030
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -920,7 +931,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   mechanism | Mechanism | gearbox rotary |  | spec: SPEC-TMP-04 §6 (cam drive) | any
-  i | Gear ratio i (motor : output, 1 = none) | 10 |  | spec: SPEC-TMP-04 §6 (cam drive) | 1 … 1000
+  i | Gear ratio i (motor : output, 1 = none) | 9.6 |  | spec: SPEC-TMP-04 §6 (cam drive) | 1 … 1000
   eta | Mechanism efficiency (overall) | 0.9 |  | spec: SPEC-TMP-04 §6 (cam drive) | 0.3 … 1
   p_screw | Screw lead (per revolution of the screw) | 10 | mm | assumption: Sheet default value; no project figure given. | 1 … 100 mm
   J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0.0002 | kg*m^2 | spec: SPEC-TMP-04 §6 (cam drive) | 0 … 10 kg*m^2
@@ -966,47 +977,47 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
 
 4. WORKING
   [19] k = 1 / i
-      = 1 / 10
-      = 0.1
+      = 1 / 9.6
+      = 0.10417
         Output radians per motor radian
   [20] T_load = T_L / (i * eta)
-      = 4.8162 N·m / (10 × 0.9)
-      = 0.53513 N·m
+      = 4.8162 N·m / (9.6 × 0.9)
+      = 0.55743 N·m
         Load torque at the motor shaft (constant)
   [21] J_refl = J_L / (i^2 * eta)
-      = 0.05 kg·m² / (10^2 × 0.9)
-      = 0.00055556 kg·m²
+      = 0.05 kg·m² / (9.6^2 × 0.9)
+      = 0.00060282 kg·m²
         Load inertia reflected to the motor shaft
   [22] omega_pk = n_L * i
-      = 150 rpm × 10
-      = 157.08 rad/s
+      = 150 rpm × 9.6
+      = 150.8 rad/s
         Motor speed, n_L · i
   [23] J_total = J_motor + J_mech + J_refl
-      = 0.0005 kg·m² + 0.0002 kg·m² + 0.00055556 kg·m²
-      = 0.0012556 kg·m²
+      = 0.0005 kg·m² + 0.0002 kg·m² + 0.00060282 kg·m²
+      = 0.0013028 kg·m²
         Total inertia at the motor shaft
   [24] alpha_pk = omega_pk / t_start
-      = 157.08 rad/s / 2 s
-      = 78.54 rad/s²
+      = 150.8 rad/s / 2 s
+      = 75.398 rad/s²
         Run-up angular acceleration (to speed in t_start)
   [25] T_acc = J_total * alpha_pk
-      = 0.0012556 kg·m² × 78.54 rad/s²
-      = 0.098611 N·m
+      = 0.0013028 kg·m² × 75.398 rad/s²
+      = 0.09823 N·m
         Run-up (acceleration) torque
   [26] T_pk = T_acc + T_load
-      = 0.098611 N·m + 0.53513 N·m
-      = 0.63374 N·m
+      = 0.09823 N·m + 0.55743 N·m
+      = 0.65566 N·m
         Peak torque: run-up carrying the full load (conservative)
   [27] T_rms = T_load
-      = 0.53513 N·m
-      = 0.53513 N·m
+      = 0.55743 N·m
+      = 0.55743 N·m
         RMS torque: continuous running at the load torque
   [28] n_pk = omega_pk
-      = 157.08 rad/s
-      = 1500 rpm
+      = 150.8 rad/s
+      = 1440 rpm
         Motor speed
   [29] P_cont = T_load * omega_pk
-      = 0.53513 N·m × 157.08 rad/s
+      = 0.55743 N·m × 150.8 rad/s
       = 84.058 W
         Continuous shaft power at the motor
   [31] P_rated = T_rated * n_rated
@@ -1014,58 +1025,58 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
       = 150.8 W
         Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed
   [32] P_pk = T_pk * omega_pk
-      = 0.63374 N·m × 157.08 rad/s
-      = 0.099548 kW
+      = 0.65566 N·m × 150.8 rad/s
+      = 0.098871 kW
         Peak mechanical power (end of the run-up)
   [33] P_rms = P_cont
       = 84.058 W
       = 0.084058 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
   [34] J_ratio = (J_refl + J_mech) / J_motor
-      = (0.00055556 kg·m² + 0.0002 kg·m²) / 0.0005 kg·m²
-      = 1.5111
+      = (0.00060282 kg·m² + 0.0002 kg·m²) / 0.0005 kg·m²
+      = 1.6056
         Inertia ratio (load : motor)
   [35] u_peak = SF * T_pk / T_peak
-      = 1.25 × 0.63374 N·m / 3 N·m
-      = 0.26406
+      = 1.25 × 0.65566 N·m / 3 N·m
+      = 0.27319
         Peak torque utilisation with safety margin
   [36] u_rms = SF * T_rms / T_rated
-      = 1.25 × 0.53513 N·m / 1 N·m
-      = 0.66891
+      = 1.25 × 0.55743 N·m / 1 N·m
+      = 0.69678
         Continuous torque utilisation with safety margin
   [37] u_speed = n_pk / n_max
-      = 1500 rpm / 3000 rpm
-      = 0.5
+      = 1440 rpm / 3000 rpm
+      = 0.48
         Speed utilisation
   [38] duty = T_rms / T_rated
-      = 0.53513 N·m / 1 N·m
-      = 0.53513
+      = 0.55743 N·m / 1 N·m
+      = 0.55743
         Thermal duty (without margin)
 
 5. RESULTS
-  k = 0.1    Transmission constant
-  T_load = 0.53513 N·m    Load torque at motor
-  J_refl = 0.00055556 kg·m²    Reflected load inertia
-  J_total = 0.0012556 kg·m²    Total inertia
-  alpha_pk = 78.54 rad/s²    Run-up angular acceleration
-  T_acc = 0.098611 N·m    Run-up torque
-  T_pk = 0.63374 N·m    Peak torque
-  T_rms = 0.53513 N·m    RMS torque
-  n_pk = 1500 rpm    Motor speed
+  k = 0.10417    Transmission constant
+  T_load = 0.55743 N·m    Load torque at motor
+  J_refl = 0.00060282 kg·m²    Reflected load inertia
+  J_total = 0.0013028 kg·m²    Total inertia
+  alpha_pk = 75.398 rad/s²    Run-up angular acceleration
+  T_acc = 0.09823 N·m    Run-up torque
+  T_pk = 0.65566 N·m    Peak torque
+  T_rms = 0.55743 N·m    RMS torque
+  n_pk = 1440 rpm    Motor speed
   P_cont = 84.058 W    Continuous power
-  P_pk = 0.099548 kW    Peak power
+  P_pk = 0.098871 kW    Peak power
   P_rms = 0.084058 kW    RMS power (continuous equivalent)
-  J_ratio = 1.5111    Inertia ratio
-  duty = 0.53513    Thermal duty
-  u_peak = 0.26406    Peak utilisation
-  u_rms = 0.66891    Continuous utilisation
-  u_speed = 0.5    Speed utilisation
+  J_ratio = 1.6056    Inertia ratio
+  duty = 0.55743    Thermal duty
+  u_peak = 0.27319    Peak utilisation
+  u_rms = 0.69678    Continuous utilisation
+  u_speed = 0.48    Speed utilisation
   P_rated = 150.8 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
 
 6. CHECKS (governing first)
-  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.66891 vs u_rms ≤ 1  utilisation 0.669
-  PASS  Speed n_pk ≤ n_max: u_speed = 0.5 vs u_speed ≤ 1  utilisation 0.5
-  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.26406 vs u_peak ≤ 1  utilisation 0.264
+  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.69678 vs u_rms ≤ 1  utilisation 0.697
+  PASS  Speed n_pk ≤ n_max: u_speed = 0.48 vs u_speed ≤ 1  utilisation 0.48
+  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.27319 vs u_peak ≤ 1  utilisation 0.273
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.
@@ -1076,7 +1087,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 64020d560b0ee248
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
 
 
@@ -1234,5 +1245,5 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test

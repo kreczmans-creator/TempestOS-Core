@@ -205,6 +205,10 @@ Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|,
       = Simpson per segment
       = 4.885e-14 W
         Mean input power over the cam revolution (mech.P_mean)
+  [49] f_in = n_in / 60
+      = rpm to Hz
+      = 2.5 Hz
+        Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
 
 5. RESULTS
   theta_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: cam angle
@@ -243,6 +247,7 @@ Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|,
   T_rms_in = 4.8162 N·m    RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)
   P_mean = 4.885e-14 W    Mean input power over the cam revolution (mech.P_mean)
   n_in = 150 rpm    Cam-shaft speed, passed through for E1's load speed (mech.n_in)
+  f_in = 2.5 Hz    Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
 
 6. CHECKS (governing first)
   PASS  Pressure angle φ_max within the allowed maximum: u_phi = 0.74234 vs u_phi ≤ 1  utilisation 0.742  « Cam follower kinematics
@@ -253,9 +258,9 @@ Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|,
   No warnings.
 
 8. VERIFICATION
-  Template: mech.mechanism@1.1.0
-  Content hash: c7eba69789649452
+  Template: mech.mechanism@1.2.0
+  Content hash: 082569fdde676480
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 16/16
-  Test run: 2026-10-25 09:44 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test
