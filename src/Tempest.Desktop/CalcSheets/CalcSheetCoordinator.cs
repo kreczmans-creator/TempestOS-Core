@@ -61,6 +61,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.CreatePackRequested += (templateId, title) => _ = GuardedAsync(() => ExclusiveAsync(() => CreatePackAsync(templateId, title)), "create that pack");
         _view.PackSelected += id => _ = GuardedAsync(() => SelectPackAsync(id), "list that pack");
         _view.CheckPackRequested += (id, draft) => _ = GuardedAsync(() => ExclusiveAsync(() => CheckPackAsync(id, draft)), "check that pack");
+        _view.CountersignPackRequested += (id, draft) => _ = GuardedAsync(() => ExclusiveAsync(() => CountersignPackAsync(id, draft)), "countersign that pack");
         _view.ReopenPackRequested += id => _ = GuardedAsync(() => ExclusiveAsync(() => ReopenPackAsync(id)), "reopen that pack");
         _view.IssuePackRequested += (id, draft) => _ = GuardedAsync(() => ExclusiveAsync(() => IssuePackAsync(id, draft)), "issue that pack");
         events?.Subscribe<CalcStalenessChanged>(this);
@@ -361,7 +362,9 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.SetSavedCalculations(saved, current.Count > MaxListed);
 
         var packs = await _service.Store.ListPacksAsync(projectId).ConfigureAwait(true);
-        _view.SetPacks([.. packs.Take(MaxListed).Select(p => new CalcSheetView.PackChoice(p.Id, p.Title, p.Revision, p.Status, p.InstanceIds.Count))], packs.Count > MaxListed);
+        var templates = (await _service.Store.ListInstancesAsync(projectId).ConfigureAwait(true)).ToDictionary(i => i.Id, i => i.TemplateReference);
+        bool NeedsSecondCheck(CalcPack p) => p.InstanceIds.Any(id => templates.TryGetValue(id, out var reference) && _service.Catalogue.Find(reference)?.Template.RequiresSecondCheck == true);
+        _view.SetPacks([.. packs.Take(MaxListed).Select(p => new CalcSheetView.PackChoice(p.Id, p.Title, p.Revision, p.Status, p.InstanceIds.Count, NeedsSecondCheck(p), p.SecondCheck is not null))], packs.Count > MaxListed);
         await ShowPackMembersAsync(_view.SelectedPackId, staleness).ConfigureAwait(true);
     }
 
@@ -454,6 +457,18 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         var result = await _service.CheckPackAsync(packId, who, draft.Organisation, draft.Statement, draft.Outcome).ConfigureAwait(true);
         await RefreshListsAsync().ConfigureAwait(true);
         _view.ShowStatus(result.Succeeded ? $"Pack checked by {who}. Issue it when ready." : result.Reason ?? "Refused.");
+    }
+
+    /// <summary>`ADR-0173`: records the pack's second, independent check under the signed-in principal, so a pack holding a calculation that needs one can be issued.</summary>
+    private async Task CountersignPackAsync(Guid packId, CalcSheetView.PackCheckDraft draft)
+    {
+        var who = CheckerName();
+        _view.SetPackChecker(who);
+        var result = await _service.CountersignPackAsync(packId, who, draft.Organisation, draft.Statement, draft.Outcome).ConfigureAwait(true);
+        await RefreshListsAsync().ConfigureAwait(true);
+        _view.ShowStatus(result.Succeeded
+            ? draft.Outcome == CheckOutcome.Rejected ? $"Second check by {who} recorded as rejected: the pack cannot be issued; reopen it." : $"Pack countersigned by {who}. Issue it when ready."
+            : result.Reason ?? "Refused.");
     }
 
     private async Task ReopenPackAsync(Guid packId)

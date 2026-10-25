@@ -26,6 +26,7 @@ public sealed partial class CalcSheetView
     public const string CheckPackCaption = "Check pack";
     public const string IssuePackCaption = "Issue pack";
     public const string ReopenPackCaption = "Reopen pack";
+    public const string CountersignPackCaption = "Countersign pack";
     public const string StaleListMark = "STALE";
 
     /// <summary>One saved calculation as listed: its name, template title, revision, status and whether it is stale.</summary>
@@ -35,7 +36,9 @@ public sealed partial class CalcSheetView
     }
 
     /// <summary>One pack as listed.</summary>
-    public sealed record PackChoice(Guid Id, string Title, string Revision, CalcInstanceStatus Status, int Members)
+    /// <param name="NeedsSecondCheck">A member's template requires a second, independent check (`ADR-0173`), so the pack is countersigned before it is issued.</param>
+    /// <param name="HasSecondCheck">The pack already holds that second check.</param>
+    public sealed record PackChoice(Guid Id, string Title, string Revision, CalcInstanceStatus Status, int Members, bool NeedsSecondCheck = false, bool HasSecondCheck = false)
     {
         public string Label => $"{Title} · rev {Revision} · {Status} · {Members} calculation(s)";
     }
@@ -76,6 +79,7 @@ public sealed partial class CalcSheetView
 
     private readonly ComboBox _packOutcome = new() { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = Outcomes.Select(o => o.Text).ToList(), SelectedIndex = 0 };
     private readonly Button _checkPack = new() { Content = CheckPackCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
+    private readonly Button _countersignPack = new() { Content = CountersignPackCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false, IsEnabled = false };
     private readonly Button _reopenPack = new() { Content = ReopenPackCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
     private readonly TextBox _packReference = PackInput("Issue reference");
     private readonly TextBox _packClient = PackInput("Client");
@@ -99,6 +103,12 @@ public sealed partial class CalcSheetView
 
     /// <summary>Check the pack (id) with what was typed.</summary>
     public event Action<Guid, PackCheckDraft>? CheckPackRequested;
+
+    /// <summary>
+    /// The second checker countersigns the checked pack (id) with the organisation, statement and outcome typed in the check fields; the person is the
+    /// one signed in, never typed text (`ADR-0173`).
+    /// </summary>
+    public event Action<Guid, PackCheckDraft>? CountersignPackRequested;
 
     /// <summary>Take the checked pack (id) back to a draft under a new revision, so a member that went stale can be corrected and the pack checked again.</summary>
     public event Action<Guid>? ReopenPackRequested;
@@ -155,6 +165,12 @@ public sealed partial class CalcSheetView
     public bool CanIssuePack => _issuePack.IsEnabled;
 
     public bool CanReopenPack => _reopenPack.IsEnabled;
+
+    /// <summary>Whether Countersign pack is offered and available for the selected pack.</summary>
+    public bool CanCountersignPack => _countersignPack.IsVisible && _countersignPack.IsEnabled;
+
+    /// <summary>Whether Countersign pack is shown (the selected pack is checked and holds a calculation that needs a second check not yet made).</summary>
+    public bool IsCountersignPackVisible => _countersignPack.IsVisible;
 
     /// <summary>Whether a project is open (Create pack needs one; the lists show the open project's calculations and packs).</summary>
     public void SetProjectOpen(bool open)
@@ -312,6 +328,7 @@ public sealed partial class CalcSheetView
         AutomationProperties.SetName(_packClient, "Pack client");
         AutomationProperties.SetName(_issuePack, IssuePackCaption);
         AutomationProperties.SetName(_reopenPack, ReopenPackCaption);
+        AutomationProperties.SetName(_countersignPack, CountersignPackCaption);
 
         _savedList.SelectionChanged += (_, _) => UpdateSavedAndPackButtons();
         _packMemberList.SelectionChanged += (_, _) => UpdateSavedAndPackButtons();
@@ -372,6 +389,11 @@ public sealed partial class CalcSheetView
             if (SelectedPackId is { } id && _packOutcome.SelectedIndex is >= 0 and var o && o < Outcomes.Length)
                 CheckPackRequested?.Invoke(id, new PackCheckDraft(_packOrganisation.Text?.Trim() ?? string.Empty, _packStatement.Text?.Trim() ?? string.Empty, Outcomes[o].Outcome));
         };
+        _countersignPack.Click += (_, _) =>
+        {
+            if (SelectedPackId is { } id && _packOutcome.SelectedIndex is >= 0 and var o && o < Outcomes.Length)
+                CountersignPackRequested?.Invoke(id, new PackCheckDraft(_packOrganisation.Text?.Trim() ?? string.Empty, _packStatement.Text?.Trim() ?? string.Empty, Outcomes[o].Outcome));
+        };
         _reopenPack.Click += (_, _) =>
         {
             if (SelectedPackId is { } id)
@@ -396,6 +418,9 @@ public sealed partial class CalcSheetView
         _checkPack.IsEnabled = ready && pack is { Status: CalcInstanceStatus.Draft }
             && !string.IsNullOrWhiteSpace(_packChecker.Text) && !string.IsNullOrWhiteSpace(_packOrganisation.Text);
         _reopenPack.IsEnabled = ready && pack is { Status: CalcInstanceStatus.Checked };
+        _countersignPack.IsVisible = pack is { Status: CalcInstanceStatus.Checked, NeedsSecondCheck: true, HasSecondCheck: false };
+        _countersignPack.IsEnabled = ready && _countersignPack.IsVisible
+            && !string.IsNullOrWhiteSpace(_packChecker.Text) && !string.IsNullOrWhiteSpace(_packOrganisation.Text) && !string.IsNullOrWhiteSpace(_packStatement.Text);
         _issuePack.IsEnabled = ready && !_issueRefillPending && pack is { Status: CalcInstanceStatus.Checked }
             && !string.IsNullOrWhiteSpace(_packReference.Text) && !string.IsNullOrWhiteSpace(_packClient.Text);
     }
@@ -431,6 +456,7 @@ public sealed partial class CalcSheetView
         panel.Children.Add(_packStatement);
         panel.Children.Add(_packOutcome);
         panel.Children.Add(_checkPack);
+        panel.Children.Add(_countersignPack);
         panel.Children.Add(_reopenPack);
         panel.Children.Add(new TextBlock { Text = "Issue the pack", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody, Margin = DesignTokens.SectionMargin });
         panel.Children.Add(_packReference);

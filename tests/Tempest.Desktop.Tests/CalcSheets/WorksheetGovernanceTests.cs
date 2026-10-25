@@ -120,6 +120,67 @@ public sealed class WorksheetGovernanceTests
     }
 
     [AvaloniaFact]
+    public async Task A_Pack_Holding_A_Lifting_Calculation_Is_Countersigned_And_Issued_From_The_Desktop()
+    {
+        await using var fx = await StartAsync("P-GOV-PACK", liftingOn: true);
+        var view = fx.View;
+
+        fx.SignInAs(Author, "Alex Author");
+        view.SelectTemplate("struct.lifting");
+        await Settle();
+        view.SetField("mode", choice: "EN 13155");
+        CiteEverything(view);
+        await Settle();
+        Click(view, CalcSheetView.SaveCaption);
+        await WaitFor(() => view.CurrentInstance is not null);
+        var id = view.CurrentInstance!.Id;
+
+        // The calculation is attested on its own sheet, by someone other than its author.
+        fx.SignInAs(Attester, "Alice Attester");
+        view.FillAttest("Alice Attester", "CEng MIStructE", "I am competent to attest this lifting calculation and have reviewed it.");
+        Click(view, CalcSheetView.AttestCaption);
+        await WaitFor(() => view.CurrentInstance?.Attestation is not null);
+
+        var pack = await fx.Service.CreatePackAsync(fx.ProjectId, "Lifting pack", [id]);
+        await fx.Coordinator.RefreshListsAsync();
+        view.ChoosePack(pack.Id);
+        await WaitFor(() => view.Packs.Count == 1 && view.PackCheckerText.Length > 0);
+        Assert.False(view.IsCountersignPackVisible, "a draft pack is not countersigned");
+        Assert.True(view.Packs[0].NeedsSecondCheck);
+
+        fx.SignInAs(FirstChecker, "Chris Checker");
+        view.ChoosePack(pack.Id);
+        view.FillPackCheck("Check Co", "Checked the lug pair and the spreader against the standard.");
+        Click(view, CalcSheetView.CheckPackCaption);
+        await WaitFor(() => view.Packs.Count == 1 && view.Packs[0].Status == CalcInstanceStatus.Checked);
+
+        // Issue is refused until the second checker countersigns; the first checker cannot be the second.
+        Assert.True(view.IsCountersignPackVisible);
+        view.FillPackIssue("LP-1", "Client Ltd");
+        Click(view, CalcSheetView.IssuePackCaption);
+        await WaitFor(() => view.StatusText.Contains("second", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(CalcInstanceStatus.Checked, (await fx.Service.Store.FindPackAsync(pack.Id))!.Status);
+
+        view.FillPackCheck("Check Co", "Independently checked the lug and spreader capacities.");
+        Click(view, CalcSheetView.CountersignPackCaption);
+        await WaitFor(() => view.StatusText.Contains("first", StringComparison.OrdinalIgnoreCase) || view.StatusText.Contains("same", StringComparison.OrdinalIgnoreCase));
+        Assert.Null((await fx.Service.Store.FindPackAsync(pack.Id))!.SecondCheck);
+
+        fx.SignInAs(SecondChecker, "Sam Second");
+        view.ChoosePack(pack.Id);
+        await WaitFor(() => view.PackCheckerText.Length > 0);
+        view.FillPackCheck("Second Co", "Independently checked the lug and spreader capacities.");
+        Click(view, CalcSheetView.CountersignPackCaption);
+        await WaitFor(() => view.Packs.Count == 1 && !view.IsCountersignPackVisible);
+        Assert.Equal(SecondChecker, (await fx.Service.Store.FindPackAsync(pack.Id))!.SecondCheck!.Principal);
+
+        view.FillPackIssue("LP-1", "Client Ltd");
+        Click(view, CalcSheetView.IssuePackCaption);
+        await WaitFor(() => view.Packs.Count == 1 && view.Packs[0].Status == CalcInstanceStatus.Issued, () => view.StatusText);
+        Assert.Equal(CalcInstanceStatus.Issued, (await fx.Service.Store.FindInstanceAsync(id))!.Status);
+    }
+
+    [AvaloniaFact]
     public async Task A_Rejected_Second_Check_Is_Recorded_And_Blocks_Issue()
     {
         await using var fx = await StartAsync("P-GOV-REJ", liftingOn: true);
