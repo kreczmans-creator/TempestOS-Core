@@ -1,0 +1,146 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: copper-axial-bellows    Revision: A
+Title: Pipe expansion, loops and anchor forces (screening)
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+Screening only — not a piping stress analysis. Thermal growth of a straight run between anchors, the fully restrained stress and force, the leg an offset leg or a U-loop (two guided cantilevers) needs to absorb the growth within the owner's allowable displacement-stress range Sa and whether the available leg is long enough (an offset leg also loads the run with the leg's own growth), the force and moment on the anchors, the screening ratio D·Y/(L − U)² against the owner's K1 (PASS, or the line needs a formal stress analysis), and, for an axial bellows, the anchor force P·A_eff plus its spring force. No allowable stress, K1 or code table ships.
+Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴ − d_i⁴); Z = I/(OD/2) Temperature change: ΔT = T_operate − T_install, or as entered; the movement is taken for |ΔT|, the sign gives the direction Thermal growth between anchors: ΔL = α·L·|ΔT| Fully restrained pipe: σ_r = E·α·|ΔT| (E at the installation temperature); F_r = E_r·α·|ΔT|·A_m (E_r = E_hot, else E) Movement one leg must absorb: Δ = ΔL for an offset leg; Δ = ΔL/2 for a U-loop (two identical legs in series, the cross leg a rigid guide) Guided cantilever, required leg: L_req = √(3·E·OD·Δ/Sa), the leg at which the bending stress M/Z reaches Sa; PASS when L_req ≤ the available leg H Force and moment of the available leg: F = 12·E_r·I·Δ/H³; M = 6·E_r·I·Δ/H² (= F·H/2); σ_leg = M/Z = 3·E·OD·Δ/H² = Sa·(L_req/H)² Offset leg only, the run bends for the leg's growth: Δ_run = α·|ΔT|·H; L_req,run = √(3·E·OD·Δ_run/Sa), PASS when L_req,run ≤ L; F_run = 12·E_r·I·Δ_run/L³; M_run = 6·E_r·I·Δ_run/L²; the anchor force and moment are the larger of the leg's and the run's Screening: OD·Y/(L_dev − U)² ≤ K1 with Y = α·|ΔT|·U, the free growth between the anchors; offset leg L_dev = L + H, U = √(L² + H²); U-loop L_dev = L + 2·H, U = L (so Y = ΔL); PASS, or the line needs a formal stress analysis Axial bellows (no leg or loop, no leg check, no screening): anchor force = P·A_eff + k·ΔL; the movement is checked against the bellows' rated axial movement when given
+  Ref: ASME B31.3 para. 319.4.1 (screening relation; number to be checked against the owner's copy) — Process piping — flexibility analysis, exemption from formal analysis
+  Ref: ASME B31.3 para. 319.3.2 and 319.5 (reference and hot moduli; numbers to be checked against the owner's copy) — Process piping — displacement stress range and reactions
+  Ref: EN 13480-3 cl. 12 (number to be checked against the owner's copy) — Metallic industrial piping — flexibility analysis
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  E | Young's modulus of the pipe material at the installation (reference) temperature, for the stress check | 120 | GPa | assumption: W3 seed 'Copper (generic)', indicative; replace with the project's material record. | 0.1 … 500 GPa
+  alpha | Mean coefficient of thermal expansion between the install and operating temperatures | 17 | um/(m*K) | assumption: W3 seed 'Copper (generic)' (17e-6 1/K), indicative; replace with the project's material record. | 1 … 250 um/(m*K)
+  OD | Pipe outside diameter | 54 | mm | drawing: DRG-M-212 rev B | 10 … 1500 mm
+  t_wall | Pipe wall thickness | 1.5 | mm | drawing: DRG-M-212 rev B | 0.5 … 60 mm
+  L | Anchor spacing: the straight length that grows (an offset leg: the run, which also bends for the leg's growth) | 24 | m | drawing: DRG-M-212 rev B | 1 … 500 m
+  temp_mode | Temperature change from | install and operating temperatures |  | assumption: Install and operating temperatures are both known. | any
+  T_install | Temperature at installation (when the run is anchored) | 10 | degC | assumption: Mean site temperature when the riser is anchored. | -50 … 50 degC
+  T_operate | Operating temperature (hot or cold) | 70 | degC | spec: SPEC-M-04 §3: heating flow temperature | -50 … 500 degC
+  layout | What absorbs the movement | axial bellows (no leg or loop: the bellows absorbs the movement) |  | drawing: DRG-M-212 rev B | any
+  P_b | Axial bellows design pressure, gauge, at or above zero (a vacuum bellows is outside this sheet) | 6 | bar | spec: Heating circuit design pressure, gauge | 0.1 … 40 bar
+  A_eff | Axial bellows effective area A_eff (manufacturer's data) | 40 | cm^2 | assumption: Placeholder effective area; replace with the manufacturer's datasheet value. | 1 … 5000 cm^2
+  k_b | Axial bellows spring rate (manufacturer's data; blank = no spring force) | 80 | N/mm | assumption: Placeholder spring rate; replace with the manufacturer's datasheet value. | 1 … 5000 N/mm
+  dL_rated | Rated axial movement of the bellows (manufacturer's data; blank = movement not checked) | 40 | mm | assumption: Placeholder rated axial movement; replace with the manufacturer's datasheet value. | 1 … 500 mm
+
+3. ASSUMPTIONS
+  A1. Screening only — not a piping stress analysis. The result tells whether a simple leg or loop is plausible and what it puts on its anchors; it does not replace a flexibility analysis of the real routing (elbow flexibility, intensification, torsion, branches, restraint friction, supports, sustained and occasional loads). (Stated scope.)
+  A2. A guided cantilever: the available leg is straight, uniform, fixed against rotation at both ends and loaded only by the movement it absorbs (stiffness 12·E·I/H³, end moment F·H/2). Elbows are taken as rigid and the leg as slender: the beam model is not valid for legs shorter than about ten diameters. (Beam theory.)
+  A3. No stress-intensification factor and no elbow flexibility are applied: the stress at the elbow root of a real bend is higher than the beam stress M/Z, by the intensification factor of the code, so a leg that passes here can still exceed Sa at the elbow. This is the main reason the result is a screen and not a stress analysis. (Stated limit.)
+  A4. A U-loop is two identical legs in series, each a guided cantilever taking half the growth, the cross leg a rigid guide; the force along the line is the same F in both legs. The moment M is the moment at the leg roots (the corners of the loop); it reaches an anchor only where the leg ends at the anchor (an offset leg). The growth of the loop's own legs, which the cross leg has to absorb, is not checked. (Loop model.)
+  A5. An offset leg is anchored at both ends: the run L bends for the growth of the leg (α·|ΔT|·H) as a second guided cantilever and is checked against the same Sa; the anchor force and moment reported are the larger of the leg's and the run's. (Offset-leg model.)
+  A6. The material properties are single values: α the mean coefficient between the install and operating temperatures; E the modulus at the installation (reference) temperature, used for the stress check, as the piping codes do (ASME B31.3 para. 319.3.2 and 319.5, numbers to be checked against the owner's copy); E_hot, when given, is used only for the reactions on the anchors. Take them from a W3 material applied at the right temperature. (Material library; code convention to be checked.)
+  A7. Sa and K1 are the owner's records from the owner's own copy of the piping code (or the design basis), with their provenance; no allowable stress, K1 or code constant ships. The sheet applies the relation to the numbers entered and does not know which code, material or load case they belong to. (No table from a standard is shipped.)
+  A8. No friction, weight, spring-hanger or cold-spring effect is included in the leg force. The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL: guide friction and any other bellows load come from the manufacturer's data. (Stated limit.)
+  A9. E (Young's modulus of the pipe material at the installation (reference) temperature, for the stress check) is taken as 120 GPa. (W3 seed 'Copper (generic)', indicative; replace with the project's material record.)
+  A10. alpha (Mean coefficient of thermal expansion between the install and operating temperatures) is taken as 17 um/(m*K). (W3 seed 'Copper (generic)' (17e-6 1/K), indicative; replace with the project's material record.)
+  A11. temp_mode (Temperature change from) is taken as install and operating temperatures. (Install and operating temperatures are both known.)
+  A12. T_install (Temperature at installation (when the run is anchored)) is taken as 10 degC. (Mean site temperature when the riser is anchored.)
+  A13. A_eff (Axial bellows effective area A_eff (manufacturer's data)) is taken as 40 cm^2. (Placeholder effective area; replace with the manufacturer's datasheet value.)
+  A14. k_b (Axial bellows spring rate (manufacturer's data; blank = no spring force)) is taken as 80 N/mm. (Placeholder spring rate; replace with the manufacturer's datasheet value.)
+  A15. dL_rated (Rated axial movement of the bellows (manufacturer's data; blank = movement not checked)) is taken as 40 mm. (Placeholder rated axial movement; replace with the manufacturer's datasheet value.)
+  A16. Layout: an axial bellows absorbs the whole movement of 24.48 mm; there is no leg check and no screening. The anchors take the pressure thrust P·A_eff plus the spring force k·ΔL; guide friction, lateral and angular movement and the bellows' own limits are the manufacturer's. Screening only — not a piping stress analysis. (Bellows layout.)
+
+4. WORKING
+  [9] dT = T_operate - T_install
+      = 70 degC − 10 degC
+      = 60 K
+        Temperature change, operating − install
+  [11] E_r = E
+      = 120 GPa
+      = 120 GPa
+        Modulus for the reactions (E, no E_hot given)
+  [12] D_i = OD - 2 * t_wall
+      = 54 mm − 2 × 1.5 mm
+      = 51 mm
+        Inside diameter
+  [13] A_m = pi / 4 * (OD^2 - D_i^2)
+      = π / 4 × ((54 mm)^2 − (51 mm)^2)
+      = 247.4 mm²
+        Metal cross-section
+  [14] I_x = pi / 64 * (OD^4 - D_i^4)
+      = π / 64 × ((54 mm)^4 − (51 mm)^4)
+      = 8.5307 cm⁴
+        Second moment of area of the pipe section
+  [15] Z_x = I_x / (OD / 2)
+      = 8.5307 cm⁴ / (54 mm / 2)
+      = 3.1595 cm³
+        Section modulus
+  [16] dL = alpha * L * abs(dT)
+      = 17 um/(m·K) × 24 m × abs(60 K)
+      = 24.48 mm
+        Thermal growth between the anchors, as a magnitude
+  [17] dL_signed = alpha * L * dT
+      = 17 um/(m·K) × 24 m × 60 K
+      = 24.48 mm
+        Thermal movement with its sign: positive lengthens, negative shortens
+  [18] sigma_res = E * alpha * abs(dT)
+      = 120 GPa × 17 um/(m·K) × abs(60 K)
+      = 122.4 MPa
+        Stress in the fully restrained pipe (E at the installation temperature)
+  [19] F_res = E_r * alpha * abs(dT) * A_m
+      = 120 GPa × 17 um/(m·K) × abs(60 K) × 247.4 mm²
+      = 30.282 kN
+        Force on the anchors of the fully restrained pipe
+  [22] F_thrust = P_b * A_eff
+      = 6 bar × 40 cm²
+      = 2.4 kN
+        Bellows pressure thrust on the anchors
+  [24] F_spring = k_b * dL
+      = 80 N/mm × 24.48 mm
+      = 1958.4 N
+        Bellows spring force at the full movement
+  [25] anchor_force = F_thrust + F_spring
+      = 2.4 kN + 1958.4 N
+      = 4358.4 N
+        Force on the anchors: pressure thrust plus spring force
+  [26] anchor_moment = axial bellows: no bending
+      = the movement is axial
+      = 0 N·m
+        Moment at the anchors: none from an axial bellows
+  [28] u_bellows = dL / dL_rated
+      = 24.48 mm / 40 mm
+      = 0.612
+        Movement over the bellows' rated axial movement
+  [29] pass = the rated movement is given and met
+      = 1 check(s)
+      = 1
+        1 when the movement is within the bellows' rated axial movement; 0 when it is not or when no rating was entered
+
+5. RESULTS
+  D_i = 51 mm    Inside diameter
+  A_m = 247.4 mm²    Metal cross-section
+  I_x = 8.5307 cm⁴    Second moment of area
+  Z_x = 3.1595 cm³    Section modulus
+  dT = 60 K    Temperature change
+  dL = 24.48 mm    Thermal movement between the anchors (magnitude)
+  dL_signed = 24.48 mm    Thermal movement, signed
+  sigma_res = 122.4 MPa    Fully restrained stress
+  F_res = 30.282 kN    Fully restrained force
+  direction = "growth: the pipe lengthens; fully restrained it presses on its anchors (compression)"    Direction of the movement
+  F_thrust = 2.4 kN    Bellows pressure thrust
+  anchor_force = 4358.4 N    Force on the anchors
+  anchor_moment = 0 N·m    Moment at the anchors
+  F_spring = 1958.4 N    Bellows spring force
+  u_bellows = 0.612    Movement over the rated movement
+  screen = "not applicable: the bellows absorbs the movement"    Screening result
+  pass = 1    All checks pass
+
+6. CHECKS (governing first)
+  PASS  Movement against the rated axial movement of the bellows (40 mm): u_bellows = 0.612 vs u_bellows ≤ 1  utilisation 0.612
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: E, alpha (Material properties); OD, t_wall (Pipe outside diameter and wall); A_eff, k_b, dL_rated (Axial bellows data). Enter each as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: bs.pipe-expansion@1.1.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 4/4
+  Test run: —

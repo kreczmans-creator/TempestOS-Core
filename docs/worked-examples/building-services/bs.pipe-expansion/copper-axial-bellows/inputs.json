@@ -15,34 +15,11 @@
     "Number": 120,
     "Unit": "GPa",
     "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Generic copper, indicative; take from the project\u0027s material record",
+      "Kind": "Assumption",
+      "Reference": "W3 seed \u0027Copper (generic)\u0027, indicative; replace with the project\u0027s material record.",
       "IsSufficientToIssue": true
     },
     "ValueText": "120"
-  },
-  {
-    "Symbol": "H",
-    "Number": 2.5,
-    "Unit": "m",
-    "Provenance": {
-      "Kind": "Drawing",
-      "Reference": "DRG-M-212",
-      "Revision": "A",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "2.5"
-  },
-  {
-    "Symbol": "K_scr",
-    "Number": 100,
-    "Unit": "mm^2/m^2",
-    "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "Invented illustrative screening limit; take K1 from the project\u0027s piping code.",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "100"
   },
   {
     "Symbol": "L",
@@ -51,7 +28,7 @@
     "Provenance": {
       "Kind": "Drawing",
       "Reference": "DRG-M-212",
-      "Revision": "A",
+      "Revision": "B",
       "IsSufficientToIssue": true
     },
     "ValueText": "24"
@@ -63,7 +40,7 @@
     "Provenance": {
       "Kind": "Drawing",
       "Reference": "DRG-M-212",
-      "Revision": "A",
+      "Revision": "B",
       "IsSufficientToIssue": true
     },
     "ValueText": "54"
@@ -78,17 +55,6 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "6"
-  },
-  {
-    "Symbol": "Sa",
-    "Number": 60,
-    "Unit": "MPa",
-    "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "Invented illustrative allowable range; take Sa from the project\u0027s piping code and its formula.",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "60"
   },
   {
     "Symbol": "T_install",
@@ -114,25 +80,47 @@
   },
   {
     "Symbol": "alpha",
-    "Number": 16.6,
+    "Number": 17,
     "Unit": "um/(m*K)",
     "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Generic copper, mean 10\u201370 \u00B0C, indicative",
+      "Kind": "Assumption",
+      "Reference": "W3 seed \u0027Copper (generic)\u0027 (17e-6 1/K), indicative; replace with the project\u0027s material record.",
       "IsSufficientToIssue": true
     },
-    "ValueText": "16.6"
+    "ValueText": "17"
+  },
+  {
+    "Symbol": "dL_rated",
+    "Number": 40,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Placeholder rated axial movement; replace with the manufacturer\u0027s datasheet value.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "k_b",
+    "Number": 80,
+    "Unit": "N/mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Placeholder spring rate; replace with the manufacturer\u0027s datasheet value.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "80"
   },
   {
     "Symbol": "layout",
-    "Text": "offset leg (L- or Z-bend: the leg takes the whole movement)",
+    "Text": "axial bellows (no leg or loop: the bellows absorbs the movement)",
     "Provenance": {
       "Kind": "Drawing",
       "Reference": "DRG-M-212",
-      "Revision": "A",
+      "Revision": "B",
       "IsSufficientToIssue": true
     },
-    "ValueText": "offset leg (L- or Z-bend: the leg takes the whole movement)"
+    "ValueText": "axial bellows (no leg or loop: the bellows absorbs the movement)"
   },
   {
     "Symbol": "t_wall",
@@ -141,7 +129,7 @@
     "Provenance": {
       "Kind": "Drawing",
       "Reference": "DRG-M-212",
-      "Revision": "A",
+      "Revision": "B",
       "IsSufficientToIssue": true
     },
     "ValueText": "1.5"

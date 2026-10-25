@@ -31,7 +31,7 @@ public sealed class PipeExpansionMaterialTests
         Assert.Null(refusal);
 
         var calc = await host.Service.CreateAsync(PipeExpansionCalculator.Id, project, "LTHW main",
-            [CalcInputValue.Quantity("Sa", 100, "MPa", CalcProvenance.Specification("Design basis")), CalcInputValue.Quantity("E", 1, "GPa", CalcProvenance.Specification("typed"))]);
+            [CalcInputValue.Quantity("Sa", 100, "MPa", CalcProvenance.Specification("Design basis")), CalcInputValue.Quantity("H", 6, "m", CalcProvenance.Drawing("DRG-M-210", "B")), CalcInputValue.Quantity("E", 1, "GPa", CalcProvenance.Specification("typed"))]);
         var applied = await host.Service.Materials.ApplyAsync(calc.Id, steel!.Id);
         Assert.True(applied.Succeeded, applied.Reason);
 
@@ -47,6 +47,7 @@ public sealed class PipeExpansionMaterialTests
         var run = await host.Service.RunAsync(calc.Id);
         Assert.NotNull(run);
         Assert.Contains(run!.Instance.Outputs, o => o.Symbol == "dL");
+        Assert.Contains(run.Instance.Outputs, o => o.Symbol == "anchor_force");
 
         // A later revision of the material makes the calculation stale; the inputs stay editable.
         var (second, again) = await host.Service.Materials.SaveAsync(steel with { Values = [new CalcDataValue("E", 205, "GPa"), new CalcDataValue("alpha", 12e-6, "1/K")] });

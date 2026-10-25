@@ -4,8 +4,8 @@
     "Number": 210,
     "Unit": "GPa",
     "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Generic carbon steel, indicative (W3 seed value); take from the project\u0027s material record",
+      "Kind": "Assumption",
+      "Reference": "W3 seed \u0027Carbon steel (generic)\u0027, indicative; replace with the project\u0027s material record.",
       "IsSufficientToIssue": true
     },
     "ValueText": "210"
@@ -95,8 +95,8 @@
     "Number": 12,
     "Unit": "um/(m*K)",
     "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Generic carbon steel, mean 10\u201380 \u00B0C, indicative",
+      "Kind": "Assumption",
+      "Reference": "W3 seed \u0027Carbon steel (generic)\u0027 (12e-6 1/K), indicative; replace with the project\u0027s material record.",
       "IsSufficientToIssue": true
     },
     "ValueText": "12"

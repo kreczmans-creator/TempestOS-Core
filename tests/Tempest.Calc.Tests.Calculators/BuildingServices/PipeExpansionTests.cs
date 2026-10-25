@@ -115,7 +115,8 @@ public sealed class PipeExpansionTests
         var offset = Run();
         Assert.Equal(56, offset.OutputSi("L_dev"), 12);
         Assert.Equal(Math.Sqrt(50 * 50 + 6 * 6), offset.OutputSi("U_a"), 12);
-        Assert.Equal(0.0889 * 0.042 / Math.Pow(56 - Math.Sqrt(2536), 2), offset.OutputSi("scr"), 12);
+        Assert.Equal(12e-6 * 70 * Math.Sqrt(2536), offset.OutputSi("Y_scr"), 12);
+        Assert.Equal(0.0889 * 12e-6 * 70 * Math.Sqrt(2536) / Math.Pow(56 - Math.Sqrt(2536), 2), offset.OutputSi("scr"), 12);
         Assert.Equal("needs formal stress analysis", Screen(offset));
 
         var loop = Run(Loop(), Q("H", 3, "m"), Q("K_scr", 120, "mm^2/m^2"));
@@ -148,6 +149,10 @@ public sealed class PipeExpansionTests
         Assert.StartsWith("not evaluated", Screen(r), StringComparison.Ordinal);
         Assert.DoesNotContain(r.Checks, c => c.Name.StartsWith("Screening", StringComparison.Ordinal));
         Assert.True(r.OutputSi("scr") > 0);
+
+        // M4: with the leg met and no K1 the sheet does not pass, whatever the leg says.
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Available leg", StringComparison.Ordinal) && c.Passed);
+        Assert.Equal(0, r.OutputSi("pass"));
     }
 
     // ------------------------------------------------------------------ no allowable ships, blocks, warnings
@@ -188,16 +193,199 @@ public sealed class PipeExpansionTests
         Assert.Contains(short_.Warnings, w => w.RuleId == "short-leg");
     }
 
-    [Fact]
-    public void A_Bellows_Thrust_Is_Pressure_Times_Effective_Area_And_Needs_Both()
-    {
-        var r = Run(Q("P_b", 10, "bar"), Q("A_eff", 50, "cm^2"));
-        Assert.Equal(5000, r.OutputSi("F_thrust"), 6);
+    // ------------------------------------------------------------------ review fixes (version 1.1.0)
 
-        var half = Run(Q("P_b", 10, "bar"));
-        Assert.Contains(half.Warnings, w => w.RuleId == "bellows-incomplete");
-        Assert.Null(half.FindOutput("F_thrust"));
-        Assert.Null(Run().FindOutput("F_thrust"));
+    private static CalcInputValue Bellows() => CalcInputValue.Choice("layout", PipeExpansionCalculator.AxialBellows);
+
+    [Fact]
+    public void H1_A_Square_L_Bend_Has_A_Screening_Ratio_Root_Two_Times_The_One_From_The_Run_Growth_Alone()
+    {
+        // 10 m x 10 m: U = 10*sqrt(2), L_dev - U = (2 - sqrt(2))*10, and Y is the free growth between the anchors, alpha*dT*U = sqrt(2)*alpha*dT*L.
+        var r = Run(Q("L", 10, "m"), Q("H", 10, "m"));
+        var u = 10 * Math.Sqrt(2);
+        var denominator = Math.Pow(20 - u, 2);
+        Assert.Equal(12e-6 * 70 * u, r.OutputSi("Y_scr"), 12);
+        Assert.Equal(0.0889 * 12e-6 * 70 * u / denominator, r.OutputSi("scr"), 12);
+        Assert.Equal(30.776371797566e-6, r.OutputSi("scr"), 12);
+
+        var oldForm = 0.0889 * r.OutputSi("dL") / denominator;
+        Assert.Equal(Math.Sqrt(2), r.OutputSi("scr") / oldForm, 12);
+
+        // The U-loop has U = L, so Y = dL and its ratio is unchanged.
+        var loop = Run(Loop(), Q("H", 3, "m"));
+        Assert.Equal(loop.OutputSi("dL"), loop.OutputSi("Y_scr"), 12);
+    }
+
+    [Fact]
+    public void M1_The_Run_Of_An_Offset_Leg_Bends_For_The_Growth_Of_The_Leg_And_Is_Checked_And_Reported()
+    {
+        // A "leg" longer than the run: 20 m off a 4 m run. The leg's growth, 12e-6*70*20 = 16.8 mm, bends the 4 m run.
+        var r = Run(Q("L", 4, "m"), Q("H", 20, "m"));
+        Assert.Equal(0.0168, r.OutputSi("Delta_run"), 12);
+        Assert.Equal(3.0674380189337165, r.OutputSi("L_req_run"), 9);
+        Assert.Equal(0.7668595047334291, r.OutputSi("u_run"), 9);
+        Assert.Equal(523.9468918797689, r.OutputSi("F_run"), 6);
+        Assert.Equal(523.9468918797689, r.OutputSi("anchor_force"), 6);
+        Assert.Equal(1047.8937837595379, r.OutputSi("anchor_moment"), 6);
+        Assert.True(r.OutputSi("F_run") > r.OutputSi("F_leg"));
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Run against", StringComparison.Ordinal) && c.Passed);
+
+        // A 2 m run is too short for it: the check fails, though the long leg is fine.
+        var short_ = Run(Q("L", 2, "m"), Q("H", 20, "m"));
+        Assert.Contains(short_.Checks, c => c.Name.StartsWith("Run against", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(short_.Checks, c => c.Name.StartsWith("Available leg", StringComparison.Ordinal) && c.Passed);
+        Assert.Equal(0, short_.OutputSi("pass"));
+
+        // The ordinary case (long run, short leg) is governed by the leg, and a U-loop has no run check.
+        var ordinary = Run();
+        Assert.Equal(ordinary.OutputSi("F_leg"), ordinary.OutputSi("anchor_force"), 9);
+        Assert.Null(Run(Loop()).FindOutput("u_run"));
+    }
+
+    [Fact]
+    public void M2_The_Axial_Bellows_Layout_Skips_The_Leg_And_The_Screening_And_Anchors_At_Thrust_Plus_Spring()
+    {
+        var r = Run(Bellows(), Q("P_b", 6, "bar"), Q("A_eff", 80, "cm^2"), Q("k_b", 120, "N/mm"), Q("dL_rated", 50, "mm"));
+        Assert.False(r.IsBlocked);
+        Assert.Equal(4800, r.OutputSi("F_thrust"), 6);
+        Assert.Equal(5040, r.OutputSi("F_spring"), 6);
+        Assert.Equal(9840, r.OutputSi("anchor_force"), 6);
+        Assert.Equal(0, r.OutputSi("anchor_moment"), 12);
+        Assert.Equal(0.84, r.OutputSi("u_bellows"), 12);
+        Assert.Equal(1, r.OutputSi("pass"));
+        Assert.Null(r.FindOutput("L_req"));
+        Assert.Null(r.FindOutput("scr"));
+        Assert.DoesNotContain(r.Checks, c => c.Name.StartsWith("Available leg", StringComparison.Ordinal) || c.Name.StartsWith("Screening", StringComparison.Ordinal));
+        Assert.Equal("not applicable: the bellows absorbs the movement", Screen(r));
+
+        // The port follows the bellows; no Sa is needed (the default sheet has one, the bellows ignores a missing one).
+        var noSa = CalcRunner.Run(Pipe, new CalcInputSet(Sheet(Bellows(), Q("P_b", 6, "bar"), Q("A_eff", 80, "cm^2")).Values.Where(v => v.Symbol != "Sa")));
+        Assert.False(noSa.IsBlocked);
+        Assert.Equal(4800, noSa.OutputSi("anchor_force"), 6);
+        Assert.Null(noSa.FindOutput("F_spring"));
+
+        // Without a rating nothing is checked, so the sheet does not pass.
+        Assert.Equal(0, noSa.OutputSi("pass"));
+    }
+
+    [Fact]
+    public void M2_The_Axial_Bellows_Needs_Both_The_Pressure_And_The_Effective_Area_And_A_Movement_Over_Its_Rating_Fails()
+    {
+        var onlyArea = Run(Bellows(), Q("A_eff", 80, "cm^2"));
+        Assert.StartsWith("P_b: ", Assert.Single(onlyArea.Blocks).Message, StringComparison.Ordinal);
+        var onlyPressure = Run(Bellows(), Q("P_b", 6, "bar"));
+        Assert.StartsWith("A_eff: ", Assert.Single(onlyPressure.Blocks).Message, StringComparison.Ordinal);
+        Assert.Contains("enter", onlyPressure.Blocks[0].Message, StringComparison.OrdinalIgnoreCase);
+
+        var over = Run(Bellows(), Q("P_b", 6, "bar"), Q("A_eff", 80, "cm^2"), Q("dL_rated", 30, "mm"));
+        Assert.Equal(1.4, over.OutputSi("u_bellows"), 12);
+        Assert.Equal(0, over.OutputSi("pass"));
+        Assert.Contains(over.Warnings, w => w.RuleId == "bellows-unused");
+    }
+
+    [Fact]
+    public void M2_Bellows_Inputs_With_A_Leg_Or_Loop_Layout_Are_Not_Used_And_Say_So()
+    {
+        var r = Run(Q("P_b", 6, "bar"), Q("A_eff", 80, "cm^2"));
+        Assert.Contains(r.Warnings, w => w.RuleId == "bellows-unused");
+        Assert.Null(r.FindOutput("F_thrust"));
+        Assert.Equal(r.OutputSi("F_leg"), r.OutputSi("anchor_force"), 9);
+        Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "bellows-unused");
+    }
+
+    [Fact]
+    public void M3_E_Is_The_Reference_Modulus_For_The_Stress_Check_And_E_Hot_Only_Changes_The_Reactions()
+    {
+        var cold = Run();
+        var hot = Run(Q("E_hot", 190, "GPa"));
+        Assert.Equal(cold.OutputSi("L_req"), hot.OutputSi("L_req"), 12);
+        Assert.Equal(cold.OutputSi("sigma_leg"), hot.OutputSi("sigma_leg"), 6);
+        Assert.Equal(cold.OutputSi("sigma_res"), hot.OutputSi("sigma_res"), 6);
+        Assert.Equal(cold.OutputSi("u_leg"), hot.OutputSi("u_leg"), 12);
+        Assert.Equal(351.14606510460703, hot.OutputSi("anchor_force"), 6);
+        Assert.Equal(1053.438195313821, hot.OutputSi("anchor_moment"), 6);
+        Assert.Equal(137503.4389435462, hot.OutputSi("F_res"), 3);
+        Assert.Equal(cold.OutputSi("anchor_force") * 190 / 210, hot.OutputSi("anchor_force"), 9);
+        Assert.Equal(cold.OutputSi("F_res") * 190 / 210, hot.OutputSi("F_res"), 3);
+        Assert.Null(Pipe.Template.FindInput("E_hot")!.MaterialProperty);
+        Assert.True(Pipe.Template.FindInput("E_hot")!.IsOptional);
+    }
+
+    [Fact]
+    public void M4_Without_A_K1_The_Sheet_Does_Not_Pass_Even_When_Every_Check_Made_Is_Met()
+    {
+        var r = CalcRunner.Run(Pipe, new CalcInputSet(Sheet(Q("H", 8, "m")).Values.Where(v => v.Symbol != "K_scr")));
+        Assert.All(r.Checks, c => Assert.True(c.Passed));
+        Assert.Equal(0, r.OutputSi("pass"));
+        Assert.Contains("not evaluated", Screen(r), StringComparison.Ordinal);
+
+        var withK1 = Run(Q("H", 8, "m"), Q("K_scr", 200, "mm^2/m^2"));
+        Assert.Equal(1, withK1.OutputSi("pass"));
+    }
+
+    [Fact]
+    public void L1_The_Section_Growth_And_Restrained_Force_Are_Reported_Even_When_Sa_Is_Missing()
+    {
+        var r = CalcRunner.Run(Pipe, new CalcInputSet(Sheet().Values.Where(v => v.Symbol != "Sa")));
+        Assert.Equal("Sa", Assert.Single(r.Blocks).RuleId);
+        Assert.Equal(0.042, r.OutputSi("dL"), 12);
+        Assert.Equal(151977.48514813, r.OutputSi("F_res"), 3);
+        Assert.NotNull(r.FindOutput("A_m"));
+        Assert.Null(r.FindOutput("L_req"));
+    }
+
+    [Fact]
+    public void The_Leg_Has_No_Default_A_Leg_Layout_Without_It_Blocks_And_An_Axial_Bellows_Does_Not_Need_It()
+    {
+        Assert.Null(Pipe.Template.FindInput("H")!.Default);
+        var noLeg = CalcRunner.Run(Pipe, new CalcInputSet(Sheet().Values.Where(v => v.Symbol != "H")));
+        var block = Assert.Single(noLeg.Blocks);
+        Assert.Equal("H", block.RuleId);
+        Assert.StartsWith("H: ", block.Message, StringComparison.Ordinal);
+        Assert.Contains("enter", block.Message, StringComparison.OrdinalIgnoreCase);
+
+        var bellows = CalcRunner.Run(Pipe, new CalcInputSet(Sheet(Bellows(), Q("P_b", 6, "bar"), Q("A_eff", 80, "cm^2")).Values.Where(v => v.Symbol != "H")));
+        Assert.False(bellows.IsBlocked);
+        Assert.DoesNotContain(bellows.Warnings, w => w.Message.Contains("not entered", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void L2_The_Signed_Movement_And_Its_Direction_Are_Reported()
+    {
+        var hot = Run();
+        Assert.Equal(0.042, hot.OutputSi("dL_signed"), 12);
+        Assert.StartsWith("growth", ((TextValue)hot.FindOutput("direction")!.Value).Value, StringComparison.Ordinal);
+
+        var cold = Run(Q("T_install", 80, "degC"), Q("T_operate", 10, "degC"));
+        Assert.Equal(-0.042, cold.OutputSi("dL_signed"), 12);
+        Assert.Equal(0.042, cold.OutputSi("dL"), 12);
+        Assert.StartsWith("contraction", ((TextValue)cold.FindOutput("direction")!.Value).Value, StringComparison.Ordinal);
+        Assert.Contains("tension", ((TextValue)cold.FindOutput("direction")!.Value).Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void L3_A_Temperature_Change_Below_Minus_300_K_Is_Refused()
+    {
+        var r = Run(CalcInputValue.Choice("temp_mode", PipeExpansionCalculator.ChangeGiven), Q("dT_in", -301, "K"));
+        Assert.True(r.IsBlocked);
+        Assert.Contains(r.Blocks, b => b.Message.StartsWith("dT_in", StringComparison.Ordinal));
+        Assert.False(Run(CalcInputValue.Choice("temp_mode", PipeExpansionCalculator.ChangeGiven), Q("dT_in", -300, "K")).IsBlocked);
+    }
+
+    [Fact]
+    public void L4_A_Short_Required_Leg_Alone_Does_Not_Warn_But_A_Short_Available_Leg_Does()
+    {
+        // A tiny movement needs a leg of well under ten diameters, yet the 6 m available leg is long: no warning.
+        var tiny = Run(Q("L", 1, "m"), Q("T_operate", 11, "degC"));
+        Assert.True(tiny.OutputSi("L_req") < 10 * 0.0889);
+        Assert.DoesNotContain(tiny.Warnings, w => w.RuleId == "short-leg");
+        Assert.Contains(Run(Q("H", 0.8, "m")).Warnings, w => w.RuleId == "short-leg");
+    }
+
+    [Fact]
+    public void L7_The_Elbow_Stress_Intensification_Limit_Is_Its_Own_Assumption()
+    {
+        Assert.Contains(Pipe.Template.Assumptions, a => a.Statement.Contains("stress-intensification factor", StringComparison.Ordinal) && a.Statement.Contains("elbow", StringComparison.Ordinal));
     }
 
     // ------------------------------------------------------------------ material mapping and the label
@@ -225,25 +413,36 @@ public sealed class PipeExpansionTests
     // ------------------------------------------------------------------ properties
 
     [Fact]
-    public void Property_Growth_Is_Linear_The_Leg_Scales_With_The_Root_Of_The_Movement_And_Moment_Is_Half_Force_Times_Leg()
+    public void Property_Growth_Is_Linear_And_The_Leg_Obeys_The_Cantilever_Scaling_In_E_Od_Sa_And_H()
     {
-        Gen.Select(Gen.Double[1, 300], Gen.Double[-40, 60], Gen.Double[5, 30], Gen.Double[0.5, 2.0], Gen.Bool).Sample((len, dt, alpha, scale, loop) =>
+        Gen.Select(Gen.Select(Gen.Double[5, 300], Gen.Double[-40, 60], Gen.Double[5, 30], Gen.Double[0.5, 2.0], Gen.Bool), Gen.Select(Gen.Double[50, 300], Gen.Double[30, 300], Gen.Double[3, 30], Gen.Double[20, 300])).Sample((a, b) =>
         {
+            var (len, dt, alpha, scale, loop) = a;
+            var (e, od, h, sa) = b;
+
             if (Math.Abs(dt) < 1)
                 return true;
 
-            var layout = CalcInputValue.Choice("layout", loop ? PipeExpansionCalculator.UpLoop : PipeExpansionCalculator.OffsetLeg);
-            var a = Run(layout, CalcInputValue.Choice("temp_mode", PipeExpansionCalculator.ChangeGiven), Q("L", len, "m"), Q("dT_in", dt, "K"), Q("alpha", alpha, "um/(m*K)"));
-            var b = Run(layout, CalcInputValue.Choice("temp_mode", PipeExpansionCalculator.ChangeGiven), Q("L", len * scale, "m"), Q("dT_in", dt, "K"), Q("alpha", alpha, "um/(m*K)"));
+            CalcRunResult At(double l, double height) => Run(
+                CalcInputValue.Choice("layout", loop ? PipeExpansionCalculator.UpLoop : PipeExpansionCalculator.OffsetLeg), CalcInputValue.Choice("temp_mode", PipeExpansionCalculator.ChangeGiven),
+                Q("L", l, "m"), Q("dT_in", dt, "K"), Q("alpha", alpha, "um/(m*K)"), Q("E", e, "GPa"), Q("OD", od, "mm"), Q("H", height, "m"), Q("Sa", sa, "MPa"));
 
-            if (a.IsBlocked || b.IsBlocked)
+            var one = At(len, h);
+            var longer = At(len * scale, h);
+            var higher = At(len, 2 * h);
+
+            if (one.IsBlocked || longer.IsBlocked || higher.IsBlocked)
                 return false;
 
-            var linear = Math.Abs(b.OutputSi("dL") - scale * a.OutputSi("dL")) <= 1e-12 * Math.Abs(b.OutputSi("dL")) + 1e-18;
-            var root = Math.Abs(b.OutputSi("L_req") - Math.Sqrt(scale) * a.OutputSi("L_req")) <= 1e-9 * b.OutputSi("L_req");
-            var moment = Math.Abs(a.OutputSi("anchor_moment") - a.OutputSi("anchor_force") * 6.0 / 2) <= 1e-9 * a.OutputSi("anchor_moment");
-            var stress = Math.Abs(a.OutputSi("u_sigma") - a.OutputSi("u_leg") * a.OutputSi("u_leg")) <= 1e-9 * a.OutputSi("u_sigma");
-            return linear && root && moment && stress;
+            var delta = alpha * 1e-6 * len * Math.Abs(dt) * (loop ? 0.5 : 1);
+            var expected = Math.Sqrt(3 * e * 1e9 * od / 1000 * delta / (sa * 1e6));
+            var linear = Math.Abs(longer.OutputSi("dL") - scale * one.OutputSi("dL")) <= 1e-12 * Math.Abs(longer.OutputSi("dL")) + 1e-18;
+            var cantilever = Math.Abs(one.OutputSi("L_req") - expected) <= 1e-9 * expected;
+            var root = Math.Abs(longer.OutputSi("L_req") - Math.Sqrt(scale) * one.OutputSi("L_req")) <= 1e-9 * longer.OutputSi("L_req");
+            var cubic = Math.Abs(one.OutputSi("F_leg") - 8 * higher.OutputSi("F_leg")) <= 1e-9 * one.OutputSi("F_leg");
+            var moment = Math.Abs(one.OutputSi("M_leg") - one.OutputSi("F_leg") * h / 2) <= 1e-9 * one.OutputSi("M_leg");
+            var stress = Math.Abs(one.OutputSi("u_sigma") - one.OutputSi("u_leg") * one.OutputSi("u_leg")) <= 1e-9 * one.OutputSi("u_sigma");
+            return linear && cantilever && root && cubic && moment && stress;
         }, iter: 200);
     }
 }
