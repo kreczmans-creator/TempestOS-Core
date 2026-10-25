@@ -245,7 +245,16 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
     private static void UtilisationMu(CalcRunContext c, double muReq, double muMin)
     {
-        var u = muMin > 1e-9 ? muReq / muMin : (muReq > 0 ? 1e9 : 0);
+        // At a toggle (μ_min = 0) a positive requirement has no finite ratio: the ratio is withheld and the check fails on its own terms,
+        // as a condition, never as a stand-in number (Yellow Y-B-03). A zero requirement is met at any angle: u = 0.
+        if (muMin <= 1e-9 && muReq > 0)
+        {
+            c.Output("u_mu", "Required against smallest transmission angle", new TextValue($"— (μ_min = {F(Deg(muMin))}°: the sweep reaches a toggle, so there is no ratio)"));
+            c.CheckCondition("Transmission angle μ_min at or above the required minimum", false, $"μ_min = {F(Deg(muMin))}° (toggle in the sweep)", $"μ_req = {F(Deg(muReq))}°", null, "Transmission angle");
+            return;
+        }
+
+        var u = muMin > 1e-9 ? muReq / muMin : 0;
         c.Record("u_mu", "μ_req / μ_min", $"{F(Deg(muReq))}° / {F(Deg(muMin))}°", new ScalarValue(u), "Transmission angle: required minimum against the smallest over the sweep", "Transmission angle");
         c.Output("u_mu", "Required against smallest transmission angle");
         c.CheckUtilisation("Transmission angle μ_min at or above the required minimum", "u_mu", "Transmission angle");
