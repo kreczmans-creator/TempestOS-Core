@@ -117,9 +117,9 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   WARNING record: Tabulated values not taken from a reference record: r_0, r_p (Pre-charge rules). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: fp.accumulator@1.1.0
-  Content hash: dc898a3b1568f62d
+  Template: fp.accumulator@1.2.0
+  Content hash: 13736352fb1985ad
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-25 01:13 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test

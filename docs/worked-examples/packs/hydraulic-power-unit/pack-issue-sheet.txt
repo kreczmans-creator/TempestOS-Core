@@ -40,7 +40,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 29/29
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -378,7 +378,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   Content hash: 29090df0de4e6fb3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -501,11 +501,11 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   WARNING record: Tabulated values not taken from a reference record: r_0, r_p (Pre-charge rules). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: fp.accumulator@1.1.0
-  Content hash: dc898a3b1568f62d
+  Template: fp.accumulator@1.2.0
+  Content hash: 13736352fb1985ad
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -647,13 +647,14 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
 
 7. APPLICABILITY
   WARNING transition: segments: pressure line to cylinder is transitional (Re = 2327.1); the friction factor is uncertain.
+  WARNING fittings: segments: pressure line to cylinder has fitting losses (K = 6) at Re = 2327.1; the K values are turbulent-flow values and rise at low Reynolds number, so the fittings loss K·v²/2g is understated here.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.2.0
-  Content hash: 4747971fae135dcd
+  Template: bs.pipe-pump@1.3.0
+  Content hash: d3c3c38f4c81cf2d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -829,7 +830,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 6a42b00a3903716d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -987,5 +988,5 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test

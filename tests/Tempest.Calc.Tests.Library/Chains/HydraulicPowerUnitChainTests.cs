@@ -68,6 +68,10 @@ public sealed class HydraulicPowerUnitChainTests
 
         // F1 → F2, supply pressure p (bar) is the accumulator's highest working pressure p_2; p_1 stays above the pressure the 80 kN push needs (80 kN / (A_b·η_m)).
         Assert.Equal(Si(f1, "p"), InputSi(f2, "p_2"), 6);
+
+        // L-g: the linked p is gauge and F2's p_basis is Gauge (its default), so the link is consistent and F2 does not warn; in Absolute mode it would (see the accumulator tests).
+        Assert.Equal("Gauge", f2.Inputs.Single(i => i.Symbol == "p_basis").Text);
+        Assert.DoesNotContain(f2.Warnings, w => w.RuleId == "link-basis");
         Assert.True(InputSi(f2, "p_1") > 80e3 / (areaBore * 0.95), "the lowest working pressure must still finish the stroke under load");
         Assert.Equal(107.2, 80e3 / (areaBore * 0.95) / 1e5, 1);
 
@@ -119,6 +123,10 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.True(Si(b1, "dp_total") < 0.02 * Si(f1, "p"));
         Assert.Contains(b1.Warnings, w => w.RuleId == "transition");
         Assert.DoesNotContain(b1.Warnings, w => w.RuleId == "laminar");
+
+        // L-h: the six velocity heads of fittings are a turbulent-flow figure applied at Re 2327, where the real K is higher: the sheet says the fittings term is understated.
+        var fittingsWarning = Assert.Single(b1.Warnings, w => w.RuleId == "fittings");
+        Assert.Contains("understated", fittingsWarning.Message, StringComparison.Ordinal);
         Assert.DoesNotContain(b1.Outputs, o => o.Symbol == "T_shaft");
         Assert.Single(b1.Checks);
         Assert.True(b1.Checks[0].Passed);

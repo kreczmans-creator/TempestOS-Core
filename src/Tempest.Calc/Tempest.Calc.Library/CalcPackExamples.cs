@@ -341,7 +341,8 @@ internal static class CalcPackExamples
     /// 75.6 L/min, the larger of its two strokes), the oil density and the tube bore (the first table row's <c>D</c>) are all linked from the cylinder step, so the line B1
     /// judges is the line F1 judges; the 20 mm bore here is only the row's placeholder. The oil is a custom fluid (30 mPa·s at the working temperature, 50 °C; its density
     /// is linked). At 75.6 L/min in 20 mm the flow is transitional (Re about 2330, just above the 2300 where the sheet switches from 64/Re to Colebrook–White), so
-    /// the sheet warns that the friction factor is uncertain; the Colebrook value is the larger of the two and so the conservative one.
+    /// the sheet warns that the friction factor is uncertain; the Colebrook value is the larger of the two and so the conservative one. The 6 velocity heads of fittings
+    /// are a turbulent-flow figure; the real K rises at low Reynolds number, so at Re 2300 the fittings term is understated and the sheet warns of it (`fittings`).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuB1 { get; } =
     [

@@ -143,7 +143,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   WARNING realgas: p_2: the highest working pressure is 210 bar absolute, above 200 bar; nitrogen departs from the ideal-gas law there and the volume shown is the ideal-gas value. Enter a real-gas factor f_rg from a gas-property source.
 
 8. VERIFICATION
-  Template: fp.accumulator@1.1.0
+  Template: fp.accumulator@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 9/9

@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Drive panel cooling calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 PACK INDEX
   1. Panel load budget — Load budget, PSU, transformer and battery — rev A — ISSUED
@@ -13,7 +13,7 @@ PACK INDEX
   4. Cooling-water pipework and pump — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
 
 REVISIONS
-  A  2026-10-24  test.engineer  First issue
+  A  2026-10-25  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -39,16 +39,16 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 18/18
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Panel load budget    Revision: A
 Title: Load budget, PSU, transformer and battery
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
@@ -206,7 +206,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: dc7b6b8e4454e8eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -214,9 +214,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Enclosure heat    Revision: A
 Title: Enclosure heat dissipation and fan sizing
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
@@ -344,7 +344,7 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   Content hash: 48cdd32546406349
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -352,9 +352,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Cooling-water air coil    Revision: A
 Title: Heat exchanger (LMTD and ε-NTU)
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.
@@ -491,7 +491,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   Content hash: d4c992a2cd44e8bc
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -499,9 +499,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Cooling-water pipework and pump    Revision: A
 Title: Pipe pressure drop and pump duty
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
@@ -668,9 +668,9 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   No warnings.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.2.0
-  Content hash: 4747971fae135dcd
+  Template: bs.pipe-pump@1.3.0
+  Content hash: d3c3c38f4c81cf2d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test

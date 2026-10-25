@@ -25,6 +25,30 @@ public sealed class AccumulatorTests
     private static double V0(double dv, double p0, double p1, double p2, double n) => dv / (Math.Pow(p0 / p1, 1 / n) - Math.Pow(p0 / p2, 1 / n));
 
     [Fact]
+    public void A_Linked_Pressure_Warns_When_The_Pressures_Are_Entered_As_Absolute()
+    {
+        // L-g: the cylinder's supply pressure p (gauge) linked to p_2 is read on p_basis; Absolute would take it one atmosphere low.
+        var link = CalcProvenance.Link(Guid.NewGuid(), "p", "A");
+        var linked = CalcInputValue.Quantity("p_2", 160, "bar", link);
+
+        var absolute = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), linked);
+        var warning = Assert.Single(absolute.Warnings, w => w.RuleId == "link-basis");
+        Assert.StartsWith("p_2:", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("bar low", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("p_basis", warning.Message, StringComparison.Ordinal);
+
+        // Gauge (the default the pack uses), or a typed value, is consistent and silent; so is a link to another pressure only when it is on the gauge basis.
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), linked).Warnings, w => w.RuleId == "link-basis");
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_2", 160)).Warnings, w => w.RuleId == "link-basis");
+
+        // Every pressure input is covered.
+        var all = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), CalcInputValue.Quantity("p_0", 90, "bar", link), CalcInputValue.Quantity("p_1", 100, "bar", link), linked);
+        Assert.Equal(3, all.Warnings.Count(w => w.RuleId == "link-basis"));
+        Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "link-basis");
+        Assert.Equal("1.2.0", Accumulator.Template.Version);
+    }
+
+    [Fact]
     public void The_Parker_Numbers_Give_29_7_Litres_As_Absolute_And_29_8_As_Gauge()
     {
         Assert.Equal(14 / (0.9 - 90.0 / 210), Run().OutputSi("V0") / Litre, 9);

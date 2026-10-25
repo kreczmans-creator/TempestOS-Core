@@ -40,7 +40,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 24/24
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -200,7 +200,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: 4860d86fbd28e4cd
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -373,7 +373,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: 4860d86fbd28e4cd
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -515,7 +515,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   Content hash: dad2559cb15ff370
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -692,11 +692,11 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   No warnings.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.2.0
-  Content hash: 4747971fae135dcd
+  Template: bs.pipe-pump@1.3.0
+  Content hash: d3c3c38f4c81cf2d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test
 
 
@@ -879,5 +879,5 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 6a42b00a3903716d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 03:59 UTC
+  Test run: 2026-10-25 04:07 UTC
   Application: TempestOS test

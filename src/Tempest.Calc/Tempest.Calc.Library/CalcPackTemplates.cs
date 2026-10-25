@@ -181,7 +181,8 @@ public static class CalcPackTemplates
     /// <para>
     /// F1 → F2: the swept volume of the larger stroke (<c>dV</c>, L) is the liquid the accumulator must deliver for an emergency stroke (or store), and the supply
     /// pressure (<c>p</c>, bar gauge) is its highest working pressure <c>p_2</c>: the accumulator charges to the pressure the pump holds. The lowest working pressure
-    /// <c>p_1</c> and the pre-charge are the user's. F1 → B1: B1 judges the line F1 judges, the line to the cylinder cap port, so it takes F1's cap-port line flow (<c>Q_prs</c>,
+    /// <c>p_1</c> and the pre-charge are the user's. The linked <c>p</c> is a gauge pressure, so the accumulator's <c>p_basis</c> must stay Gauge (its default): in Absolute mode the
+    /// value would be read one atmosphere low, and the accumulator sheet warns (<c>link-basis</c>). F1 → B1: B1 judges the line F1 judges, the line to the cylinder cap port, so it takes F1's cap-port line flow (<c>Q_prs</c>,
     /// L/min to m³/h: the larger of the two strokes, the retract discharge Q·A_b/A_a), the oil density (<c>rho</c>, to the custom fluid's <c>rho_custom</c>) and the line bore
     /// (<c>d_prs</c>, to the first segment's <c>D</c> by a table-cell link), so revising the cylinder's line bore makes the pressure line stale. B1 is not given a pump, so its
     /// own shaft torque (a water-pump relation) is not used. F1 → E1: the pump shaft torque (<c>T_shaft</c>, N·m) and speed (<c>n_shaft</c>, rpm) are the continuous load
