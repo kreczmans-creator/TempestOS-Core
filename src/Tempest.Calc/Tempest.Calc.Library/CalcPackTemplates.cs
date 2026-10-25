@@ -246,6 +246,32 @@ public static class CalcPackTemplates
             new CalcPackBinding("b2", "phi_1", "b7", "RH_int"),
         ]);
 
+    /// <summary>
+    /// Cold pipe: chilled-water pipe (B1) and the room air state (B2) → insulation thickness (B9).
+    /// <para>
+    /// B1 → B9: the fluid temperature the pipe step worked at (<c>T_fluid</c>, a declared port since B1 1.4.0) is the process temperature <c>theta_i</c>, and the first segment's outside
+    /// diameter (<c>OD_1</c>, from the optional <c>OD</c> column added to the segments table in B1 1.4.0) is the insulation's inside diameter <c>D_i</c>: the inner diameter B1 judges the flow in is not the
+    /// diameter the insulation covers. B2 → B9: the room air's dry-bulb (<c>t_1_out</c>) is the ambient temperature <c>theta_a</c> and its dew point (<c>t_dp_1</c>) the dew point <c>theta_dew</c> the surface must
+    /// stay above by the margin; the relative humidity <c>RH_a</c> is then not used (an entered dew point wins), so it is not linked. The heat-gain limit <c>q_max_m</c> is omitted from the example so that the
+    /// dew-point margin is the one criterion; the conductivity, the surface coefficient, the margin and the chosen thickness are the user's. Revising the pipe's temperature or outside diameter, or the room air,
+    /// makes the insulation stale. The pipe step's own pump and pressure checks are unaffected by the insulation: nothing is fed back.
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate ColdPipe { get; } = new(
+        "pack.cold-pipe", "Cold pipe",
+        "Takes the temperature and outside diameter of a chilled-water pipe from the pipe step, and the ambient temperature and dew point of the surrounding air from the psychrometrics step, to the insulation thickness that keeps the pipe's outer surface above the dew point by the chosen margin, and the heat gain and surface temperature at the chosen thickness. The pipe step also checks the flow velocity in the pipe's inner diameter; the insulation's conductivity and surface coefficient are the user's.",
+        [
+            new CalcPackStep("b1", "bs.pipe-pump", "Chilled water pipe", CalcPackExamples.ColdB1),
+            new CalcPackStep("b2", "bs.psychrometrics", "Plant room air", CalcPackExamples.ColdB2),
+            new CalcPackStep("b9", "bs.insulation", "Pipe insulation", CalcPackExamples.ColdB9, Omit: ["q_max_m"]),
+        ],
+        [
+            new CalcPackBinding("b1", "OD_1", "b9", "D_i"),
+            new CalcPackBinding("b1", "T_fluid", "b9", "theta_i"),
+            new CalcPackBinding("b2", "t_1_out", "b9", "theta_a"),
+            new CalcPackBinding("b2", "t_dp_1", "b9", "theta_dew"),
+        ]);
+
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, EnvelopeMoisture];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, EnvelopeMoisture, ColdPipe];
 }

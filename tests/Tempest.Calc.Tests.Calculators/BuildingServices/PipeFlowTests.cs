@@ -33,7 +33,7 @@ public sealed class PipeFlowTests
         // The loss itself is unchanged: the fittings term K·ρ·v²/2 is added as entered.
         var v = 4.53764705882353 / 3600 / (Math.PI * 0.02 * 0.02 / 4);
         Assert.Equal(At(4.53764705882353, 0).OutputSi("dp_total") + 6 * 870 * v * v / 2, transitional.OutputSi("dp_total"), 1e-3);
-        Assert.Equal("1.3.0", Calc.Template.Version);
+        Assert.Equal("1.4.0", Calc.Template.Version);
     }
 
     [Fact]
@@ -297,5 +297,44 @@ public sealed class PipeFlowTests
         var r = Run(CalcInputValue.Quantity("Q", 1, "m^3/h"), PipeFlowCalculator.Segments(("a", 40, 28, 0.045, 0, 0, 0, "discharge"), ("b", 10, 20, 0.045, 0, 0, 0, "discharge")));
         var expected = (Math.PI / 4 * 0.028 * 0.028 * 40 + Math.PI / 4 * 0.020 * 0.020 * 10) * 1e3;
         Assert.Equal(expected, r.OutputSi("V_pipe") * 1e3, 9);
+    }
+
+    private static CalcRow ColdRow(string name, double l, double d, double? od) =>
+        CalcRow.Of([("name", new CalcCell(Text: name)), ("L", new CalcCell(l, "m")), ("D", new CalcCell(d, "mm")), ("eps", new CalcCell(0.0015, "mm")), ("K", new CalcCell(0)), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), ("side", new CalcCell(Text: "discharge")), .. od is { } o ? [("OD", new CalcCell(o, "mm"))] : Array.Empty<(string, CalcCell)>()]);
+
+    private static CalcInputValue Cold(double? od, double d = 51.6) =>
+        CalcInputValue.Table("segments", [ColdRow("chilled water flow", 60, d, od), ColdRow("branch", 10, 30, od is null ? null : 34)]);
+
+    [Fact]
+    public void The_Outside_Diameter_Of_The_First_Segment_And_The_Fluid_Temperature_Are_Ports_For_The_Insulation()
+    {
+        // 1.4.0: an optional OD column of the segments table; OD_1 is the first segment's (the insulation's inside diameter), T_fluid the temperature the properties were taken at.
+        Assert.Contains(Calc.Template.OutputPorts!, p => p is { Symbol: "OD_1", Unit: "mm" });
+        Assert.Contains(Calc.Template.OutputPorts!, p => p is { Symbol: "T_fluid", Unit: "degC" });
+        Assert.Contains(Calc.Template.FindInput("segments")!.Columns!, c => c is { Key: "OD", IsOptional: true });
+
+        var r = Run(CalcInputValue.Quantity("T", 6, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(0.054, r.OutputSi("OD_1"), 12);
+        Assert.Equal(6 + 273.15, r.OutputSi("T_fluid"), 9);
+        Assert.Equal("degC", ((Tempest.Calc.Engine.Values.ScalarValue)r.FindOutput("T_fluid")!.Value).DisplayUnit.Symbol);
+        Assert.Equal("mm", ((Tempest.Calc.Engine.Values.ScalarValue)r.FindOutput("OD_1")!.Value).DisplayUnit.Symbol);
+
+        // The OD changes nothing the sheet worked out before: the same run without it gives the same hydraulics.
+        var without = Run(CalcInputValue.Quantity("T", 6, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(null));
+        Assert.Null(without.FindOutput("OD_1"));
+        Assert.Equal(without.OutputSi("dp_total"), r.OutputSi("dp_total"), 12);
+        Assert.Equal(without.OutputSi("V_pipe"), r.OutputSi("V_pipe"), 12);
+        Assert.Equal(6 + 273.15, without.OutputSi("T_fluid"), 9);
+    }
+
+    [Fact]
+    public void An_Outside_Diameter_Not_Larger_Than_The_Inner_Diameter_Blocks_Naming_The_Segment()
+    {
+        var r = Run(CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(51.6));
+        Assert.True(r.IsBlocked);
+        var block = Assert.Single(r.Blocks, b => b.Message.StartsWith("segments:", StringComparison.Ordinal));
+        Assert.Contains("segment 1", block.Message, StringComparison.Ordinal);
+        Assert.Contains("chilled water flow", block.Message, StringComparison.Ordinal);
     }
 }

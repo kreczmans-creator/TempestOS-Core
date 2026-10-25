@@ -12,13 +12,13 @@ using Tempest.Core.EngineeringDomain;
 namespace Tempest.Calc.Tests.Library.Chains;
 
 /// <summary>
-/// Addendum A, §A7: one issued calc pack per built-in chain (drive train, motor circuit, wet heating, cooling, steel support, hydraulic power unit, envelope moisture), written
+/// Addendum A, §A7: one issued calc pack per built-in chain (drive train, motor circuit, wet heating, cooling, steel support, hydraulic power unit, envelope moisture, cold pipe), written
 /// under docs/worked-examples/packs/&lt;chain&gt; when TEMPEST_WRITE_WORKED_EXAMPLES=1: the pack's issue sheet, each step's issued sheet,
 /// every step's inputs and a README naming the chain, every link and the issue reference. The PDFs are made later.
 /// </summary>
 public sealed class ChainPackWorkedExampleTests
 {
-    public static TheoryData<string> Chains => ["drive-train", "motor-circuit", "wet-heating", "cooling", "steel-support", "hydraulic-power-unit", "envelope-moisture"];
+    public static TheoryData<string> Chains => ["drive-train", "motor-circuit", "wet-heating", "cooling", "steel-support", "hydraulic-power-unit", "envelope-moisture", "cold-pipe"];
 
     private sealed record Example(CalcPackTemplate Template, string Slug, string Title, string Reference, string Client, string Project, string Note, Func<LibraryTestHost, Task<IReadOnlyDictionary<string, IReadOnlyList<CalcInputValue>>>> Inputs, string Remarks);
 
@@ -47,6 +47,9 @@ public sealed class ChainPackWorkedExampleTests
         new(CalcPackTemplates.EnvelopeMoisture, "envelope-moisture", "Internally insulated wall moisture calc pack", "ENV-MOI-001", "Client Co", "Studio 3 external wall", "Checked against SPEC-ENV-02 and DRG-ENV-210 rev B.",
             host => Task.FromResult(Plain(ChainInputs.EnvelopeMoisture(host))),
             "A solid brick wall (215 mm) lined inside with 80 mm of mineral wool and 12.5 mm plasterboard, rendered outside, in a room held at 21 °C and 50 % relative humidity. The heat-loss step finds the wall's U-value (0.3991 W/m²K, 89 % of its 0.45 target); the psychrometrics step gives the room air state, and its dry-bulb (21 °C) and relative humidity (50 %, as a percentage quantity) are the Glaser step's internal conditions. The Glaser step checks the same wall, with a 0.2 mm vapour control layer behind the plasterboard (μ 20000, an invented figure for a taped but imperfect membrane), over twelve months of an INVENTED maritime climate: the vapour pressure touches saturation only at the interface between the mineral wool and the brick, condensate collects from December to February (peak 9.8 g/m² in January, against an invented 500 g/m² limit), and the wall is dry again in March; the surface temperature factor (0.905) is far above the 0.609 the room needs at 80 % critical humidity. **The wall's layers are typed in both the heat-loss and the Glaser steps** (the heat-loss step offers no per-layer output to link); the one value they share, the wall's U-value, is linked from the heat-loss step to the Glaser step, which compares it with 1/R_T of its own layers and warns if they differ by more than 2 % (here 0.02 %: the vapour control layer, 0.2 mm, is the only difference, and it is thermally negligible). **The monthly climate, the vapour resistance factors, the surface resistances, the critical humidity and the limit are the owner's records; the example's are invented and are not data from ISO 13788 or any other standard.** A timber or breathable build-up is outside the Glaser method (EN 15026 applies)."),
+        new(CalcPackTemplates.ColdPipe, "cold-pipe", "Chilled water pipe insulation calc pack", "CHW-INS-001", "Client Co", "Plant room 2 chilled water", "Checked against SPEC-CHW-04 and DRG-CHW-410 rev B.",
+            host => Task.FromResult(Plain(ChainInputs.ColdPipe(host))),
+            "A chilled-water flow-and-return line at 6 °C (60 m of 54 × 1.2 mm copper tube, inner diameter 51.6 mm, 12 m³/h at 1.6 m/s) runs through a plant room held at 28 °C and 60 % relative humidity. The pipe step finds the flow velocity and pressure drop in the 51.6 mm bore and offers the fluid temperature (6 °C) and the pipe's **outside** diameter (54 mm: the optional OD column of its segments table, added to B1 in 1.4.0) as ports; the psychrometrics step gives the room air's dry-bulb (28 °C) and dew point (19.51 °C). The insulation step takes all four by link and finds the thickness at which the outer surface of a 0.035 W/(m·K) cover stays 1 K above the dew point (7.52 mm), then the heat gain (6.54 W/m) and surface temperature (25.50 °C) at the chosen 25 mm. The heat-gain limit is not a criterion here, so the dew-point margin is the only one. **The conductivity, surface coefficient, margin and chosen thickness are the owner's; the example's are invented and are not maker's or standard's values, and no thickness table is used.** The tube roughness and fittings K are invented illustrations."),
     ];
 
     /// <summary>The motor circuit's inputs with the synthetic E4 tables saved as (unlicensed, synthetic) records and pinned.</summary>

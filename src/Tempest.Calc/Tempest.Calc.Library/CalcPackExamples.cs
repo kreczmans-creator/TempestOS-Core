@@ -421,4 +421,31 @@ internal static class CalcPackExamples
 
     private static CalcRow Month(string name, double thetaE, double rhE) =>
         CalcRow.Of(Txt("month", name), ("theta_e", new CalcCell(thetaE, "degC")), ("RH_e", new CalcCell(rhE, "%")));
+
+    // ---- Cold pipe: a chilled water line, the room air around it and the insulation that keeps its surface above the dew point ----
+
+    /// <summary>
+    /// A chilled-water flow-and-return line at 6 °C: 60 m of 54 × 1.2 mm copper tube (inner diameter 51.6 mm; the outside diameter is the insulation's inside diameter and goes to the
+    /// insulation step by link), 12 m³/h, ten velocity heads of fittings. The tube roughness (0.0015 mm) and the fittings are invented illustrations.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ColdB1 { get; } =
+    [
+        C("fluid", "water"), Q("T", 6, "degC"), Q("Q", 12, "m^3/h"), C("circuit", "closed (flow and return: the rises cancel, no static lift)"),
+        Table("segments", CalcRow.Of(Txt("name", "chilled water flow and return"), ("L", new CalcCell(60, "m")), Mm("D", 51.6), Mm("OD", 54), Mm("eps", 0.0015), Num("K", 10), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
+    ];
+
+    /// <summary>The plant room air around the pipe: 28 °C dry-bulb at 60 % relative humidity, sea level. Its dry-bulb is the insulation step's ambient temperature and its dew point the temperature the surface must stay above.</summary>
+    public static IReadOnlyList<CalcInputValue> ColdB2 { get; } =
+    [
+        Q("altitude", 0, "m"), Q("t_db", 28, "degC"), C("known", "relative humidity"), N("RH", 60), C("process", "none (state only)"),
+    ];
+
+    /// <summary>
+    /// The insulation on that pipe: a closed-cell elastomeric-type cover of conductivity 0.035 W/(m·K) (an invented illustration, not a maker's value), still-air surface coefficient 8 W/(m²·K) as given, 1 K above the dew point,
+    /// and 25 mm chosen. The pipe's outside diameter, the process temperature, the ambient temperature and the dew point arrive by link; the heat-gain limit (default 25 W/m) is left out, so the dew-point margin is the only criterion.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ColdB9 { get; } =
+    [
+        C("geometry", "pipe (cylinder)"), Q("lambda", 0.035, "W/(m*K)"), C("h_mode", "h_se as given"), Q("h_se", 8, "W/(m^2*K)"), Q("dew_margin", 1, "K"), Q("t_chosen", 25, "mm"),
+    ];
 }

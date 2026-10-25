@@ -99,4 +99,9 @@ internal static class ChainInputs
     {
         ["b4"] = Spec("SPEC-ENV-02 §3 (wall build-up)"), ["b2"] = Spec("SPEC-ENV-02 §2 (room conditions)"), ["b7"] = Drg("DRG-ENV-210"),
     });
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> ColdPipe(LibraryTestHost host) => For(host, CalcPackTemplates.ColdPipe, new Dictionary<string, CalcProvenance>
+    {
+        ["b1"] = Spec("SPEC-CHW-04 §2 (chilled water duty)"), ["b2"] = Spec("SPEC-CHW-04 §3 (plant room conditions)"), ["b9"] = Drg("DRG-CHW-410"),
+    });
 }

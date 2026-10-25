@@ -1,0 +1,167 @@
+CALCULATION SHEET — ISSUED
+Project: Plant room 2 chilled water
+Calc ID: Chilled water pipe    Revision: A
+Title: Pipe pressure drop and pump duty
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: CHW-INS-001    Client: Client Co
+
+1. SCOPE AND METHOD
+Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
+Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+  Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
+  Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
+  Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
+  Ref: Kell, J. Chem. Eng. Data 20(1), 1975 — Density of liquid water
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  fluid | Fluid | water |  | spec: SPEC-CHW-04 §2 (chilled water duty) | any
+  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 6 | degC | spec: SPEC-CHW-04 §2 (chilled water duty) | 0 … 100 degC
+  Q | Design flow rate (blank when a heat load gives it) | 12 | m^3/h | spec: SPEC-CHW-04 §2 (chilled water duty) | 0.01 … 100000 m^3/h
+  segments | Pipe segments in series | 1 row(s) |  | spec: SPEC-CHW-04 §2 (chilled water duty) | any
+  segments[1] |  | name = chilled water flow and return; L = 60 m; D = 51.6 mm; OD = 54 mm; eps = 0.0015 mm; K = 10; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | closed (flow and return: the rises cancel, no static lift) |  | spec: SPEC-CHW-04 §2 (chilled water duty) | any
+  h_out | Pressure head required at the outlet | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 1000 m
+  v_max | Velocity limit (warning) | 3 | m/s | assumption: Sheet default value; no project figure given. | 0.5 … 10 m/s
+  n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.2 … 2
+  D_ratio | Impeller diameter ratio D₂/D₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1.1
+  eta_pump | Pump efficiency at duty (for shaft power) | 0.7 |  | assumption: Sheet default value; no project figure given. | 0.2 … 0.95
+  p_atm | Atmospheric pressure (NPSH) | 101.325 | kPa | assumption: Sheet default value; no project figure given. | 50 … 110 kPa
+  z_s | Static head at the pump suction (+ flooded, − lift) | 0 | m | assumption: Sheet default value; no project figure given. | -10 … 100 m
+
+3. ASSUMPTIONS
+  A1. Steady, incompressible, fully developed flow; all segments carry the full design flow in series. (Darcy–Weisbach.)
+  A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
+  A3. The system curve scales friction losses with Q² from the design flow (turbulent assumption); the static part is independent of flow. (H_sys = H_static + k Q².)
+  A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
+  A5. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
+  A6. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
+  A7. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A8. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A9. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
+  A10. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
+  A11. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [3] rho = Kell (1975) density of water at T    « Kell 1975
+      = T = 6 °C
+      = 999.94 kg/m³
+        Density
+  [4] mu = Vogel fit μ = 0.02939 exp(507.88/(T_K − 149.3)) mPa·s
+      = T_K = 279.15 K
+      = 1.4684 mPa·s
+        Dynamic viscosity
+  [5] p_v = Hyland–Wexler saturation pressure
+      = T = 6 °C
+      = 0.93525 kPa
+        Vapour pressure (NPSH)
+  [6] T_fluid = T (as entered)
+      = 6 °C
+      = 6 degC
+        Fluid temperature the properties were taken at
+  [10] Q_design = Q
+      = 12 m³/h
+      = 12 m³/h
+        Design flow (as entered)
+  [11] v_s1 = chilled water flow and return: Q / (π D²/4)
+      = 12 m³/h / (π × 51.6² mm² / 4)
+      = 1.594 m/s
+        Velocity, chilled water flow and return
+  [12] Re_s1 = chilled water flow and return: ρ v D / μ
+      = 999.94 × 1.594 × 0.0516 / 0.0014684
+      = 56010
+        Reynolds number, chilled water flow and return
+  [13] f_s1 = chilled water flow and return: Darcy friction factor
+      = Colebrook–White, 12 iterations (Swamee–Jain start 0.020367)
+      = 0.020484
+        Friction factor, chilled water flow and return
+  [14] f_sj_s1 = chilled water flow and return: Swamee–Jain check
+      = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
+      = 0.020367
+        Explicit cross-check, chilled water flow and return
+  [15] h_f_s1 = chilled water flow and return: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.020484 × (60 + 0) / 0.0516 × 0.12955 + 10 × 0.12955
+      = 4.3811 m
+        Head loss, chilled water flow and return
+  [16] h_f_total = Σ h_f
+      = 1 segment(s)
+      = 4.3811 m
+        Total friction and fitting loss at the design flow
+  [18] V_pipe = Σ π/4·D²·L
+      = 1 segment(s)
+      = 125.47 L
+        Water held in the pipe segments
+  [19] OD_1 = OD of the first segment (as entered)
+      = chilled water flow and return: 54 mm
+      = 54 mm
+        Outside diameter of the first pipe segment (the inside of its insulation)
+  [20] H_static = h_out (closed circuit: no static lift)
+      = 0
+      = 0 m
+        Static head
+  [21] H_sys = H_static + h_f_total
+      = 0 m + 4.3811 m
+      = 4.3811 m
+        System head at the design flow
+  [22] dp_total = rho * 9.80665 m/s^2 * h_f_total
+      = 999.94 kg/m³ × 9.80665 m/s^2 × 4.3811 m
+      = 42.961 kPa
+        Friction pressure drop at the design flow
+  [23] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 999.94 kg/m³ × 9.80665 m/s^2 × 4.3811 m
+      = 42.961 kPa
+        System pressure at the design flow
+  [24] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+      = 999.94 kg/m³ × 9.80665 m/s^2 × 12 m³/h × 4.3811 m
+      = 0.1432 kW
+        Hydraulic power at the design point
+  [27] h_f_suction = Σ h_f on the suction side
+      = 0 suction segment(s)
+      = 0 m
+        Suction-side friction loss
+  [28] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
+      = 101.32 kPa / (999.94 kg/m³ × 9.80665 m/s^2) + 0 m − 0 m − 0.93525 kPa / (999.94 kg/m³ × 9.80665 m/s^2)
+      = 10.238 m
+        NPSH available
+  [29] v_peak = highest segment velocity
+      = 1.594 m/s
+      = 1.594 m/s
+        Highest velocity
+  [30] u_v = v_peak / v_max
+      = 1.594 / 3
+      = 0.53133
+        Velocity utilisation
+
+5. RESULTS
+  T_fluid = 6 degC    Fluid temperature
+  v_s1 = 1.594 m/s    Velocity, chilled water flow and return
+  Re_s1 = 56010    Re, chilled water flow and return
+  f_s1 = 0.020484    f, chilled water flow and return
+  f_sj_s1 = 0.020367    f (Swamee–Jain), chilled water flow and return
+  h_f_s1 = 4.3811 m    h_f, chilled water flow and return
+  OD_1 = 54 mm    Outside diameter of the first segment
+  h_f_total = 4.3811 m    Σ h_f
+  H_static = 0 m    Static head
+  V_pipe = 125.47 L    Water held in the pipes
+  H_sys = 4.3811 m    System head at Q
+  dp_total = 42.961 kPa    Friction Δp
+  dp_sys = 42.961 kPa    System Δp
+  Q_design = 12 m³/h    Design flow
+  P_hyd = 0.1432 kW    Hydraulic power
+  NPSH_a = 10.238 m    NPSH available
+  v_peak = 1.594 m/s    Highest velocity
+
+6. CHECKS (governing first)
+  PASS  Velocity ≤ limit: u_v = 0.53133 vs u_v ≤ 1  utilisation 0.531
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: bs.pipe-pump@1.4.0
+  Content hash: 05d8b37c038bc8a2
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-25 08:48 UTC
+  Application: TempestOS test
