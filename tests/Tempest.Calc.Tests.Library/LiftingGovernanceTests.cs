@@ -160,7 +160,7 @@ public sealed class LiftingGovernanceTests
         on.Principal = FirstChecker;
         Assert.True((await on.Service.CheckAsync(instance.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Succeeded);
         on.Principal = SecondChecker;
-        Assert.True((await on.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await on.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
 
         // Everything is in place to issue it, but the installation has the feature off.
         var off = new CalcInstanceService(new CalcCatalogue([new LiftingLugCalculator()]), on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => "issuer" };
@@ -365,12 +365,12 @@ public sealed class LiftingGovernanceTests
         Assert.Contains("second, independent check", one.Reason, StringComparison.Ordinal);
 
         host.Principal = FirstChecker;
-        Assert.Contains("two different checkers", (await host.Service.CountersignAsync(instance.Id, "Chris Checker", "Check Co", "again", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
+        Assert.Contains("two different checkers", (await host.Service.CountersignAsync(instance.Id, "Chris Checker", "Check Co", "Checked again: the lug sizes agree.", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
         host.Principal = Designer;
-        Assert.Contains("independent", (await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "mine", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
+        Assert.Contains("independent", (await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "My own check of the lug sizes made.", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
 
         host.Principal = SecondChecker;
-        Assert.True((await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "Second check made.", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
 
         host.Principal = "issuer";
         var issued = await host.Service.IssueAsync(instance.Id, "ISS-1", "Client");
@@ -417,7 +417,7 @@ public sealed class LiftingGovernanceTests
         Assert.Contains("second, independent check", withoutSecond.Reason, StringComparison.Ordinal);
 
         host.Principal = SecondChecker;
-        Assert.True((await host.Service.CountersignPackAsync(good.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.CountersignPackAsync(good.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
 
         host.Principal = "issuer";
         var issued = await host.Service.IssuePackAsync(good.Id, "ISS-1", "Client");

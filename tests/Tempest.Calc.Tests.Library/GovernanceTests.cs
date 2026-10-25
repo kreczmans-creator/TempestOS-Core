@@ -102,7 +102,7 @@ public sealed class GovernanceTests
     {
         var instance = await CheckedAsync(host);
         host.Principal = SecondChecker;
-        var second = await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "Second check made.", CheckOutcome.Accepted);
+        var second = await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.True(second.Succeeded, second.Reason);
         return (await host.Store.FindInstanceAsync(instance.Id))!;
     }
@@ -238,7 +238,7 @@ public sealed class GovernanceTests
 
         AssertSwitchedOff(await off.IssueAsync(counter.Id, "ISS-1", "Client"));
         AssertSwitchedOff(await off.ReviseAsync(counter.Id));
-        AssertSwitchedOff(await off.CountersignAsync(draft.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted));
+        AssertSwitchedOff(await off.CountersignAsync(draft.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted));
         AssertSwitchedOff(await off.AttestAsync(draft.Id, CompetentName, Qualification, Statement));
         AssertSwitchedOff(await off.CheckAsync(draft.Id, "Chris Checker", "Check Co", "x", CheckOutcome.Accepted));
         AssertSwitchedOff(await off.UpdateInputsAsync(draft.Id, LibraryTestHost.ProvenancedInputs()));
@@ -286,7 +286,7 @@ public sealed class GovernanceTests
         on.Principal = FirstChecker;
         Assert.True((await on.Service.CheckPackAsync(pack.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Succeeded);
         on.Principal = SecondChecker;
-        Assert.True((await on.Service.CountersignPackAsync(pack.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await on.Service.CountersignPackAsync(pack.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
 
         var off = new CalcInstanceService(new CalcCatalogue([new GovernedCalculator(), new DirectStressCalculator()]), on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => "someone.else" };
 
@@ -359,7 +359,7 @@ public sealed class GovernanceTests
         Assert.Null(issued.Instance.Issue!.FeatureNote);
         Assert.DoesNotContain("Optional feature", issued.Instance.Issue.SheetText, StringComparison.Ordinal);
 
-        Assert.False((await host.Service.CountersignAsync(plain.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted)).Succeeded);
+        Assert.False((await host.Service.CountersignAsync(plain.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
         Assert.False((await host.Service.AttestAsync(plain.Id, CompetentName, Qualification, Statement)).Succeeded);
     }
 
@@ -562,7 +562,7 @@ public sealed class GovernanceTests
 
         // And not the second checker either.
         host.Principal = Competent;
-        var second = await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted);
+        var second = await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.False(second.Succeeded);
         Assert.Contains("independent of its competent-person attestation", second.Reason, StringComparison.Ordinal);
     }
@@ -637,16 +637,16 @@ public sealed class GovernanceTests
         var instance = await CheckedAsync(host);
 
         host.Principal = FirstChecker;
-        var sameSignIn = await host.Service.CountersignAsync(instance.Id, "Someone Else", "Check Co", "second", CheckOutcome.Accepted);
+        var sameSignIn = await host.Service.CountersignAsync(instance.Id, "Someone Else", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.False(sameSignIn.Succeeded);
         Assert.Contains("two different checkers", sameSignIn.Reason, StringComparison.Ordinal);
 
         host.Principal = SecondChecker;
-        var sameName = await host.Service.CountersignAsync(instance.Id, "chris  CHECKER", "Check Co", "second", CheckOutcome.Accepted);
+        var sameName = await host.Service.CountersignAsync(instance.Id, "chris  CHECKER", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.False(sameName.Succeeded);
         Assert.Contains("two different checkers", sameName.Reason, StringComparison.Ordinal);
 
-        var signInAsName = await host.Service.CountersignAsync(instance.Id, "Checker One", "Check Co", "second", CheckOutcome.Accepted);
+        var signInAsName = await host.Service.CountersignAsync(instance.Id, "Checker One", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.False(signInAsName.Succeeded);
 
         Assert.Null((await host.Store.FindInstanceAsync(instance.Id))!.SecondCheck);
@@ -661,7 +661,7 @@ public sealed class GovernanceTests
         var instance = await CheckedAsync(host);
         host.Principal = principal;
 
-        var refused = await host.Service.CountersignAsync(instance.Id, typedName, "Check Co", "second", CheckOutcome.Accepted);
+        var refused = await host.Service.CountersignAsync(instance.Id, typedName, "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.False(refused.Succeeded);
         Assert.Contains("independent", refused.Reason, StringComparison.Ordinal);
         Assert.Null((await host.Store.FindInstanceAsync(instance.Id))!.SecondCheck);
@@ -674,7 +674,7 @@ public sealed class GovernanceTests
         var instance = await CheckedAsync(host);
         host.Principal = EngineeringDocumentStore.UnknownAuthorPrincipalId;
 
-        var refused = await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted);
+        var refused = await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.False(refused.Succeeded);
         Assert.Contains("nobody is signed in", refused.Reason, StringComparison.Ordinal);
     }
@@ -686,7 +686,7 @@ public sealed class GovernanceTests
         var draft = await AttestedAsync(host);
         host.Principal = SecondChecker;
 
-        var early = await host.Service.CountersignAsync(draft.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted);
+        var early = await host.Service.CountersignAsync(draft.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.False(early.Succeeded);
         Assert.Contains("after the first check", early.Reason, StringComparison.Ordinal);
 
@@ -700,9 +700,9 @@ public sealed class GovernanceTests
         Assert.Null((await h2.Store.FindInstanceAsync(again.Id))!.SecondCheck);
         Assert.NotNull(checkedOne);
 
-        Assert.False((await host.Service.CountersignAsync(draft.Id, " ", "Check Co", "second", CheckOutcome.Accepted)).Succeeded);
-        Assert.False((await host.Service.CountersignAsync(draft.Id, "Dana Second", " ", "second", CheckOutcome.Accepted)).Succeeded);
-        Assert.False((await host.Service.CountersignAsync(Guid.NewGuid(), "Dana Second", "Check Co", "second", CheckOutcome.Accepted)).Succeeded);
+        Assert.False((await host.Service.CountersignAsync(draft.Id, " ", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
+        Assert.False((await host.Service.CountersignAsync(draft.Id, "Dana Second", " ", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
+        Assert.False((await host.Service.CountersignAsync(Guid.NewGuid(), "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
     }
 
     [Fact]
@@ -712,7 +712,7 @@ public sealed class GovernanceTests
         var instance = await CountersignedAsync(host);
         host.Principal = "checker.three";
 
-        var again = await host.Service.CountersignAsync(instance.Id, "Third Person", "Check Co", "third", CheckOutcome.Accepted);
+        var again = await host.Service.CountersignAsync(instance.Id, "Third Person", "Check Co", "Third person checked the lug sizes.", CheckOutcome.Accepted);
         Assert.False(again.Succeeded);
         Assert.Contains("already has a second check", again.Reason, StringComparison.Ordinal);
     }
@@ -723,7 +723,7 @@ public sealed class GovernanceTests
         var host = new LibraryTestHost(calculators: [new GovernedCalculator(gated: false, attestation: false, secondCheck: false)], features: LiftingOn);
         var instance = await CheckedAsync(host, gated: false);
         host.Principal = SecondChecker;
-        var refused = await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted);
+        var refused = await host.Service.CountersignAsync(instance.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.False(refused.Succeeded);
         Assert.Contains("does not require one", refused.Reason, StringComparison.Ordinal);
 
@@ -805,7 +805,7 @@ public sealed class GovernanceTests
         Assert.Contains("Optional feature: lifting feature enabled", issued.Instance.Issue.SheetText, StringComparison.Ordinal);
 
         host.Principal = "checker.three";
-        Assert.False((await host.Service.CountersignAsync(instance.Id, "Third Person", "Check Co", "third", CheckOutcome.Accepted)).Succeeded);
+        Assert.False((await host.Service.CountersignAsync(instance.Id, "Third Person", "Check Co", "Third person checked the lug sizes.", CheckOutcome.Accepted)).Succeeded);
     }
 
     [Fact]
@@ -895,15 +895,15 @@ public sealed class GovernanceTests
         Assert.Contains("second, independent check", early.Reason, StringComparison.Ordinal);
 
         host.Principal = FirstChecker;
-        Assert.Contains("two different checkers", (await host.Service.CountersignPackAsync(pack.Id, "Other Name", "Check Co", "second", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
+        Assert.Contains("two different checkers", (await host.Service.CountersignPackAsync(pack.Id, "Other Name", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
         host.Principal = SecondChecker;
-        Assert.Contains("two different checkers", (await host.Service.CountersignPackAsync(pack.Id, "Chris Checker", "Check Co", "second", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
+        Assert.Contains("two different checkers", (await host.Service.CountersignPackAsync(pack.Id, "Chris Checker", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
         host.Principal = Designer;
-        Assert.False((await host.Service.CountersignPackAsync(pack.Id, "Other Name", "Check Co", "second", CheckOutcome.Accepted)).Succeeded);
+        Assert.False((await host.Service.CountersignPackAsync(pack.Id, "Other Name", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
         host.Principal = SecondChecker;
-        Assert.False((await host.Service.CountersignPackAsync(pack.Id, "Designer", "Check Co", "second", CheckOutcome.Accepted)).Succeeded);
+        Assert.False((await host.Service.CountersignPackAsync(pack.Id, "Designer", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Succeeded);
         host.Principal = Competent;
-        Assert.Contains("independent of its competent-person attestation", (await host.Service.CountersignPackAsync(pack.Id, "Anyone Else", "Check Co", "second", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
+        Assert.Contains("independent of its competent-person attestation", (await host.Service.CountersignPackAsync(pack.Id, "Anyone Else", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted)).Reason, StringComparison.Ordinal);
         host.Principal = SecondChecker;
         Assert.False((await host.Service.CountersignPackAsync(pack.Id, "Dana Second", "Check Co", "", CheckOutcome.Accepted)).Succeeded);
 
@@ -917,7 +917,7 @@ public sealed class GovernanceTests
         host.Principal = FirstChecker;
         Assert.True((await host.Service.CheckPackAsync(pack.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Succeeded);
         host.Principal = SecondChecker;
-        var second = await host.Service.CountersignPackAsync(pack.Id, "Dana Second", "Check Co", "second made", CheckOutcome.Accepted);
+        var second = await host.Service.CountersignPackAsync(pack.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.True(second.Succeeded, second.Reason);
 
         host.Principal = "issuer";
@@ -989,7 +989,7 @@ public sealed class GovernanceTests
         host.Principal = FirstChecker;
         Assert.True((await host.Service.CheckPackAsync(pack.Id, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Succeeded);
         host.Principal = SecondChecker;
-        var refused = await host.Service.CountersignPackAsync(pack.Id, "Dana Second", "Check Co", "second", CheckOutcome.Accepted);
+        var refused = await host.Service.CountersignPackAsync(pack.Id, "Dana Second", "Check Co", "Second check of the lug sizes made.", CheckOutcome.Accepted);
         Assert.False(refused.Succeeded);
         Assert.Contains("no member's template requires one", refused.Reason, StringComparison.Ordinal);
 

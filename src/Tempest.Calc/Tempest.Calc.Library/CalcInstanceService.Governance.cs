@@ -17,7 +17,7 @@ public sealed partial class CalcInstanceService
     public const int MinAttestationFieldLength = 3;
 
     /// <summary>The shortest statement a countersignature or a rejection carries.</summary>
-    public const int MinSignatureStatementLength = 3;
+    public const int MinSignatureStatementLength = 20;
 
     /// <summary>Why <paramref name="templateReference"/> is switched off, or <see langword="null"/> (the catalogue's one message).</summary>
     private string? FeatureRefusal(string templateReference) => _catalogue.FeatureRefusal(templateReference);
@@ -389,7 +389,7 @@ public sealed partial class CalcInstanceService
             : CalcActionResult.Refused($"The second checker rejected the calculation; it stays checked but cannot be issued. {signature.Statement}".TrimEnd() + " Revise it to correct and check it again.", updated);
     }
 
-    /// <summary>A countersignature or rejection says something: at least a few characters.</summary>
+    /// <summary>A countersignature or rejection says what was verified or why it is rejected: at least 20 characters, as for the attestation.</summary>
     private static string? SignatureStatementProblem(string? statement) =>
         (statement ?? string.Empty).Trim().Length < MinSignatureStatementLength ? $"A statement of at least {MinSignatureStatementLength} characters is needed: what the second checker verified, or why they reject it." : null;
 
