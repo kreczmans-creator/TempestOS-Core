@@ -222,4 +222,55 @@ public sealed class AddendumBSecurityRegressionTests
         Assert.Null(r.Parameters.Single(p => p.Name == "tiny").Number);
         Assert.Equal(0, r.Parameters.Single(p => p.Name == "zero").Number);
     }
+
+    // ---- P-B-02 (Purple): workbook cells and JSON numbers do not underflow to zero either ----------------------
+
+    private static byte[] NxWorkbook(string number) => Samples.Workbook(
+        "<row><c t=\"inlineStr\"><is><t>Name</t></is></c><c t=\"inlineStr\"><is><t>Value</t></is></c></row>" +
+        $"<row><c t=\"inlineStr\"><is><t>gap</t></is></c><c><v>{number}</v></c></row>");
+
+    [Theory]
+    [InlineData("1E-400")]
+    [InlineData("-2.5e-999")]
+    [InlineData("0.0001E-320")]
+    public void P_B_02_A_Workbook_Cell_That_Underflows_To_Zero_Is_Refused(string number)
+    {
+        var ex = Assert.Throws<ImportRefusedException>(() => XlsxReader.Read(NxWorkbook(number)));
+        Assert.Contains("too small", ex.Message, StringComparison.Ordinal);
+        Assert.Throws<ImportRefusedException>(() => CadImporter.Parse(Samples.Bytes(NxWorkbook(number), "t.xlsx"), CadSourceFormat.NxXlsx));
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("0E-400")]
+    [InlineData("1E-300")]
+    [InlineData("12.5")]
+    public void P_B_02_Zero_And_Representable_Workbook_Cells_Are_Still_Read(string number)
+    {
+        var r = CadImporter.Parse(Samples.Bytes(NxWorkbook(number), "t.xlsx"), CadSourceFormat.NxXlsx);
+        Assert.Equal(double.Parse(number, System.Globalization.CultureInfo.InvariantCulture), r.Parameters.Single(p => p.Name == "gap").Number);
+    }
+
+    [Theory]
+    [InlineData("1e-400")]
+    [InlineData("-3E-999")]
+    [InlineData("0.5e-330")]
+    public void P_B_02_A_Json_Number_That_Underflows_To_Zero_Is_Refused(string number)
+    {
+        var json = $"[{{\"name\":\"gap\",\"value\":{number},\"unit\":\"mm\"}}]";
+        var ex = Assert.Throws<ImportRefusedException>(() => CadImporter.Parse(Samples.Text(json, "p.json"), CadSourceFormat.GenericJson));
+        Assert.Equal(ImportRefusalCode.NumberFormat, ex.Code);
+        Assert.Contains("too small", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("0", 0)]
+    [InlineData("0e-400", 0)]
+    [InlineData("1e-300", 1e-300)]
+    public void P_B_02_Zero_And_Representable_Json_Numbers_Are_Still_Read(string number, double expected)
+    {
+        var json = $"[{{\"name\":\"gap\",\"value\":{number},\"unit\":\"mm\"}}]";
+        var r = CadImporter.Parse(Samples.Text(json, "p.json"), CadSourceFormat.GenericJson);
+        Assert.Equal(expected, r.Parameters.Single().Number);
+    }
 }

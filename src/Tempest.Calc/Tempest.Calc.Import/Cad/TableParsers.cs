@@ -597,6 +597,9 @@ internal static class TabularParametersParser
                 if (!v.TryGetDouble(out var number) || !double.IsFinite(number))
                     throw new ImportRefusedException(ImportRefusalCode.NumberFormat, $"'{CadValueParser.Clip(name)}' holds a number outside the range of a number.");
 
+                if (LocaleNumber.UnderflowedToZero(v.GetRawText(), number))
+                    throw new ImportRefusedException(ImportRefusalCode.NumberFormat, $"'{CadValueParser.Clip(name)}' holds the number {CadValueParser.Clip(v.GetRawText())}, which is too small to represent and would be read as 0.");
+
                 if (unitText is { Length: > 0 })
                     return CadValueParser.WithUnit(number, unitText);
 

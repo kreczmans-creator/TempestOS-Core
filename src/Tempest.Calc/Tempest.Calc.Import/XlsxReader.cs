@@ -670,6 +670,9 @@ public static class XlsxReader
                 if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
                     throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, "A numeric cell holds something that is not a finite number.");
 
+                if (LocaleNumber.UnderflowedToZero(value, number))
+                    throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"A numeric cell holds '{Clip(value.Trim())}', which is too small to represent and would be read as 0.");
+
                 return new XlsxCell(column, value.Trim(), XlsxCellKind.Number, formula);
         }
     }

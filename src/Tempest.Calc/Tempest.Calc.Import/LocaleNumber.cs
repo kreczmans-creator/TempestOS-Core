@@ -173,6 +173,20 @@ public static class LocaleNumber
         return true;
     }
 
+    /// <summary>
+    /// Whether a number that parsed to exactly 0 was not written as zero: its mantissa (the part before any exponent) holds a non-zero digit, so it
+    /// underflowed (<c>1e-400</c>). For readers that parse a number without <see cref="TryParse"/> (workbook cells, JSON numbers).
+    /// </summary>
+    internal static bool UnderflowedToZero(string literal, double parsed)
+    {
+        if (parsed != 0)
+            return false;
+
+        var end = literal.AsSpan().IndexOfAny('e', 'E');
+        var mantissa = end < 0 ? literal.AsSpan() : literal.AsSpan(0, end);
+        return mantissa.ContainsAnyInRange('1', '9');
+    }
+
     /// <summary>As <see cref="TryParse"/>, throwing <see cref="ImportRefusedException"/> (<see cref="ImportRefusalCode.NumberFormat"/>) on failure.</summary>
     public static double Parse(string? text, NumberProfile profile)
     {
