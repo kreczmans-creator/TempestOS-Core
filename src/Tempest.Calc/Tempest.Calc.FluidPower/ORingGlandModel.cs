@@ -260,6 +260,35 @@ public static class ORingGlandModel
         };
     }
 
+    /// <summary>
+    /// The size factor of the part that carries the reference diameter in a case: the sealing-surface part (the rod, factor 1 + α_s·ΔT) for a
+    /// rod seal, the groove metal (1 + α_m·ΔT) for the groove root a piston or face seal seats on.
+    /// </summary>
+    public static double ReferenceFactor(GlandEnvironment env, GlandCase c)
+    {
+        var (surface, metal) = GapFactors(env, c);
+        return env.Kind == SealKind.Rod ? surface : metal;
+    }
+
+    /// <summary>
+    /// The gland depth in a case, mm, with each part at its own temperature: half the difference of the bore (or rod) at the
+    /// sealing-surface factor and the groove root at the groove-metal factor, or the face-seal depth at the groove-metal factor. With one
+    /// expansion coefficient this is g·<see cref="Depth"/>.
+    /// </summary>
+    public static double DepthAt(GlandEnvironment env, GlandCase c, double[] x)
+    {
+        ArgumentNullException.ThrowIfNull(env);
+        ArgumentNullException.ThrowIfNull(x);
+        var (gs, gm) = GapFactors(env, c);
+
+        return env.Kind switch
+        {
+            SealKind.Piston => (gs * x[(int)GlandDim.Surface] - gm * x[(int)GlandDim.Groove]) / 2.0,
+            SealKind.Rod => (gm * x[(int)GlandDim.Groove] - gs * x[(int)GlandDim.Surface]) / 2.0,
+            _ => gm * x[(int)GlandDim.FaceDepth],
+        };
+    }
+
     /// <summary>The ring diameter that sits on the reference diameter: the inside diameter, or the outside diameter d + 2W of an internal-pressure face seal.</summary>
     public static double RingSeatDiameter(GlandEnvironment env, double[] x)
     {
@@ -271,8 +300,8 @@ public static class ORingGlandModel
     /// <summary>The ring stretch in a case: (g·D_ref)/(f·d) − 1, a fraction (d is the outside diameter d + 2W for an internal-pressure face seal, where a negative value is the outside-diameter compression).</summary>
     public static double Stretch(GlandEnvironment env, GlandCase c, double[] x)
     {
-        var (f, g) = Factors(env, c);
-        return g * ReferenceDiameter(env.Kind, x) / (f * RingSeatDiameter(env, x)) - 1.0;
+        var (f, _) = Factors(env, c);
+        return ReferenceFactor(env, c) * ReferenceDiameter(env.Kind, x) / (f * RingSeatDiameter(env, x)) - 1.0;
     }
 
     /// <summary>
@@ -345,27 +374,27 @@ public static class ORingGlandModel
     /// The ring area of the hot-end gland fill, mm², on a volume basis. A ring held circumferentially by the groove takes the whole
     /// volume change in its section: (π/4)·W²·f³/g with f³ = (1 + αΔT)³(1 + s) and the held circumference growing by g. Where the
     /// outside diameter is held (rod seal, internal-pressure face seal) the compression c = 1 − g·D_g/(f·OD), thermal growth
-    /// included, is that same volume change: (π/4)·(f·W)²/(1 − c).
+    /// included, is that same volume change: (π/4)·(f·W)²/(1 − c); a ring that is not compressed (c = 0) still takes the f/g of the held
+    /// circumference, so the larger of the two factors is used.
     /// </summary>
     public static double HotRingArea(GlandEnvironment env, double[] x)
     {
         var (f, g) = Factors(env, GlandCase.Hot);
         var isotropic = Math.PI / 4.0 * Math.Pow(f * x[(int)GlandDim.Section], 2);
-        return env.Kind == SealKind.Rod || env.HeldByOutsideDiameter ? isotropic * Math.Pow(Thickening(OdCompression(env, GlandCase.Hot, x)), 2) : isotropic * (f / g);
+        return env.Kind == SealKind.Rod || env.HeldByOutsideDiameter ? isotropic * Math.Max(f / g, Math.Pow(Thickening(OdCompression(env, GlandCase.Hot, x)), 2)) : isotropic * (f / g);
     }
 
     /// <summary>The groove area in a case, mm²: (g·width)(g·depth) less the two bottom corner fillets.</summary>
     public static double GrooveArea(GlandEnvironment env, GlandCase c, double[] x)
     {
         var (_, g) = Factors(env, c);
-        return g * x[(int)GlandDim.Width] * g * Depth(env.Kind, x) - 2.0 * (1.0 - Math.PI / 4.0) * Math.Pow(g * env.CornerRadius, 2);
+        return g * x[(int)GlandDim.Width] * DepthAt(env, c, x) - 2.0 * (1.0 - Math.PI / 4.0) * Math.Pow(g * env.CornerRadius, 2);
     }
 
     /// <summary>The squeeze in a case: 1 − (g·depth)/W_eff.</summary>
     public static double Squeeze(GlandEnvironment env, GlandCase c, double[] x)
     {
-        var (_, g) = Factors(env, c);
-        return 1.0 - g * Depth(env.Kind, x) / EffectiveSection(env, c, x);
+        return 1.0 - DepthAt(env, c, x) / EffectiveSection(env, c, x);
     }
 
     /// <summary>The ring outside diameter d + 2W, mm.</summary>

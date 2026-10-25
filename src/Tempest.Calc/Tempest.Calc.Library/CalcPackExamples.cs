@@ -317,7 +317,8 @@ internal static class CalcPackExamples
     /// <summary>
     /// A double-acting 100/70 × 500 mm cylinder at 160 bar fed by a 28 cm³/rev pump at 1450 rpm (38.6 L/min delivered against the circuit's 36 L/min), mineral
     /// oil of 870 kg/m³. The 80 kN push and 40 kN pull are the press loads; the rest of the sheet (mounting factor, line velocity limits, rod material) is left at the
-    /// sheet's own defaults, which the chain tests record as assumptions. The pressure line is 20 mm: that figure is also entered in the pressure-line step (the line to the cap port carries the 75.6 L/min retract discharge at 4.0 m/s, inside the 5 m/s placeholder limit).
+    /// sheet's own defaults, which the chain tests record as assumptions. The pressure line is 20 mm and goes to the pressure-line step by link, with the oil density (the
+    /// line to the cap port carries the 75.6 L/min retract discharge at 4.0 m/s, inside the 5 m/s placeholder limit).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuF1 { get; } =
     [
@@ -336,13 +337,15 @@ internal static class CalcPackExamples
     ];
 
     /// <summary>
-    /// The pressure line from the unit to the cylinder: 12 m of 20 mm tube with 6 velocity heads of fittings, carrying the circuit flow (linked). The oil (870 kg/m³ and
-    /// 30 mPa·s at the working temperature, 50 °C) is a custom fluid: the density is entered equal to the cylinder step's, and a test guards the match. The flow is laminar
-    /// (Re about 1100), so the friction factor is 64/Re and the sheet says so. The tube diameter is also entered equal to the cylinder step's pressure-line bore.
+    /// The pressure line from the unit to the cylinder cap port: 12 m of tube with 6 velocity heads of fittings. The flow (the cap-port line flow of the cylinder step,
+    /// 75.6 L/min, the larger of its two strokes), the oil density and the tube bore (the first table row's <c>D</c>) are all linked from the cylinder step, so the line B1
+    /// judges is the line F1 judges; the 20 mm bore here is only the row's placeholder. The oil is a custom fluid (30 mPa·s at the working temperature, 50 °C; its density
+    /// is linked). At 75.6 L/min in 20 mm the flow is transitional (Re about 2330, just above the 2300 where the sheet switches from 64/Re to Colebrook–White), so
+    /// the sheet warns that the friction factor is uncertain; the Colebrook value is the larger of the two and so the conservative one.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuB1 { get; } =
     [
-        C("fluid", "custom (ρ and μ given)"), Q("T", 50, "degC"), Q("rho_custom", 870, "kg/m^3"), Q("mu_custom", 30, "mPa*s"), Q("v_max", 5, "m/s"),
+        C("fluid", "custom (ρ and μ given)"), Q("T", 50, "degC"), Q("mu_custom", 30, "mPa*s"), Q("v_max", 5, "m/s"),
         Table("segments", CalcRow.Of(Txt("name", "pressure line to cylinder"), ("L", new CalcCell(12, "m")), Mm("D", 20), Mm("eps", 0.045), Num("K", 6), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
     ];
 

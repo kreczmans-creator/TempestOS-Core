@@ -65,7 +65,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.FluidPower, "O-ring and seal gland",
+        Id, "1.2.0", CalcDiscipline.FluidPower, "O-ring and seal gland",
         "Squeeze, stretch, gland fill and extrusion gap of a radial piston, radial rod or face O-ring seal, from the ring and groove dimensions with their tolerances, at the cold and shrunk and at the hot and swollen end of the temperature and swell range. The ring's cross-section shrinks with stretch by a relation you choose (none, constant-volume rubber, the quadratic cited from Parker ORD 5700 section 3.5, or linear in stretch). The worst case and the capability indices run through the tolerance-stack engine of M1, and the seeded Monte Carlo of the engine runs the exact non-linear model and reports the fraction outside each limit. A face seal is entered with the pressure on its outside or its inside. Measured groove distributions (from the scan import) can replace the toleranced dimensions. Ring sizes, the squeeze and fill bands and the extrusion limit are your own records: no O-ring size table, gland table or extrusion chart is shipped.",
         "Stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits on (groove root for a piston or face seal, rod for a rod seal); f = (1 + α(T − 20 °C))(1 + swell)^(1/3) the ring and g = 1 + α_m(T − 20 °C) the groove metal\n" +
         "Cross-section: W_eff = f·W·(1 − r(X))/√(1 − c), r(X) the chosen relation (none; 1 − 1/√(1+X); Y = 0.56 + 0.59X − 0.0046X² per cent as cited, used for about 3 to 25 % stretch only; ν·X) and c the compression of the ring outside diameter where it is held (rod seal in the housing groove; internal-pressure face seal on the groove outer wall), c = 1 − g·D_g/(f·(d + 2W))\n" +
@@ -244,12 +244,14 @@ public sealed class ORingGlandCalculator : ICalcCalculator
                     new CalcExpectedValue("squeeze_nom", 20.8771662406, "%", 1e-9), new CalcExpectedValue("X_c", 1.2378342453, "%", 1e-9),
                 ]),
             new CalcTestCase("ka-gap-over-temperature", "Extrusion gap over temperature with a bore of another metal and the bore dilation under pressure (analytic)",
-                new CalcReferenceSource("Analytic worst case, recomputed in python3", null, "the defaults with the bore (sealing surface) at α_s = 2.3e-5 and the steel piston at α_m = 1.2e-5, bore dilation 0.02 mm: gap = g_s·D_s − g_m·D_c with the largest at 80 °C, D_s,max = 56.946 and D_c,min = 56.84 mm: 1.00138·56.946 − 1.00072·56.84 = 0.14366 mm, plus 0.02 mm = 0.16366 mm (0.106 mm as dimensioned); smallest gap 0.0049496 mm at −20 °C"),
+                new CalcReferenceSource("Analytic worst case, recomputed in python3", null, "the defaults with the bore (sealing surface) at α_s = 2.3e-5 and the steel piston at α_m = 1.2e-5, bore dilation 0.02 mm: gap = g_s·D_s − g_m·D_c with the largest at 80 °C, D_s,max = 56.946 and D_c,min = 56.84 mm: 1.00138·56.946 − 1.00072·56.84 = 0.14366 mm, plus 0.02 mm = 0.16366 mm (0.106 mm as dimensioned); smallest gap 0.0049496 mm at −20 °C; the depth is taken with each part at its own temperature, h = (g_s·D_s − g_m·D_g)/2, so the squeeze moves with α_s: 17.335 % to 26.450 %, fill 64.245 % to 84.058 %"),
                 [
                     CalcInputValue.Quantity("alpha_s", 2.3e-5, "1/K"), CalcInputValue.Quantity("dD_p", 0.02, "mm"), CalcInputValue.Quantity("gap_allow", 0.2, "mm"),
                     CalcInputValue.Of("n_mc", 1_000),
                 ],
-                [new CalcExpectedValue("gap_max", 0.16366068, "mm", 1e-9), new CalcExpectedValue("gap_min", 0.0049496, "mm", 1e-9), new CalcExpectedValue("u_gap", 0.8183034, "", 1e-9)]),
+                [new CalcExpectedValue("gap_max", 0.16366068, "mm", 1e-9), new CalcExpectedValue("gap_min", 0.0049496, "mm", 1e-9), new CalcExpectedValue("u_gap", 0.8183034, "", 1e-9),
+                 new CalcExpectedValue("squeeze_min", 17.3347820634, "%", 1e-9), new CalcExpectedValue("squeeze_max", 26.4498064079, "%", 1e-9),
+                 new CalcExpectedValue("fill_min", 64.2445202775, "%", 1e-9), new CalcExpectedValue("fill_max", 84.0579883229, "%", 1e-9)]),
             new CalcTestCase("ka-incompressible-reduction", "Cross-section reduction of constant-volume rubber at 4 % stretch (analytic)",
                 new CalcReferenceSource("Analytic: r = 1 − 1/√(1 + X), derived from constant volume", null, "ring 50, seat 52 mm: X = 4 %, r = 1 − 1/√1.04 = 1.94193 %"),
                 [
@@ -534,11 +536,12 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         var width = V(GlandDim.Width);
         var reference = V(kind == SealKind.Rod ? GlandDim.Surface : GlandDim.Groove);
 
-        Contributor[] DepthStack(double g) => kind switch
+        // The depth with each part at its own temperature: the bore or rod at the sealing-surface factor gs, the groove root at the groove-metal factor gm.
+        Contributor[] DepthStack(double gs, double gm) => kind switch
         {
-            SealKind.Piston => [V(GlandDim.Surface).Scaled(g / 2.0, "D_s / 2"), V(GlandDim.Groove).Scaled(-g / 2.0, "D_g / 2")],
-            SealKind.Rod => [V(GlandDim.Groove).Scaled(g / 2.0, "D_g / 2"), V(GlandDim.Surface).Scaled(-g / 2.0, "D_s / 2")],
-            _ => [V(GlandDim.FaceDepth).Scaled(g)],
+            SealKind.Piston => [V(GlandDim.Surface).Scaled(gs / 2.0, "D_s / 2"), V(GlandDim.Groove).Scaled(-gm / 2.0, "D_g / 2")],
+            SealKind.Rod => [V(GlandDim.Groove).Scaled(gm / 2.0, "D_g / 2"), V(GlandDim.Surface).Scaled(-gs / 2.0, "D_s / 2")],
+            _ => [V(GlandDim.FaceDepth).Scaled(gm)],
         };
 
         // Each contributor, as the sheet lists them.
@@ -554,10 +557,20 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         // Cases.
         var (fCold, gCold) = ORingGlandModel.Factors(env, GlandCase.Cold);
         var (fHot, gHot) = ORingGlandModel.Factors(env, GlandCase.Hot);
+        var (gsCold, _) = ORingGlandModel.GapFactors(env, GlandCase.Cold);
+        var (gsHot, _) = ORingGlandModel.GapFactors(env, GlandCase.Hot);
+        var refCold = ORingGlandModel.ReferenceFactor(env, GlandCase.Cold);
+        var refHot = ORingGlandModel.ReferenceFactor(env, GlandCase.Hot);
         c.Record("f_c", "(1 + α·(T_min − 20 °C))·(1 + s_min)^(1/3)", $"(1 + {F(alpha)}·({F(tMin)} − 20))·(1 + {F(sMin)})^(1/3)", new ScalarValue(fCold), "Ring size factor, cold end");
         c.Record("g_c", "1 + α_m·(T_min − 20 °C)", $"1 + {F(alphaMetal)}·({F(tMin)} − 20)", new ScalarValue(gCold), "Groove metal size factor, cold end");
         c.Record("f_h", "(1 + α·(T_max − 20 °C))·(1 + s_max)^(1/3)", $"(1 + {F(alpha)}·({F(tMax)} − 20))·(1 + {F(sMax)})^(1/3)", new ScalarValue(fHot), "Ring size factor, hot end");
         c.Record("g_h", "1 + α_m·(T_max − 20 °C)", $"1 + {F(alphaMetal)}·({F(tMax)} − 20)", new ScalarValue(gHot), "Groove metal size factor, hot end");
+
+        if (alphaSurface is { } aSurface)
+        {
+            c.Record("gs_c", "1 + α_s·(T_min − 20 °C)", $"1 + {F(aSurface)}·({F(tMin)} − 20)", new ScalarValue(gsCold), "Sealing-surface part (bore or rod) size factor, cold end");
+            c.Record("gs_h", "1 + α_s·(T_max − 20 °C)", $"1 + {F(aSurface)}·({F(tMax)} − 20)", new ScalarValue(gsHot), "Sealing-surface part (bore or rod) size factor, hot end");
+        }
 
         if (alpha < alphaMetal)
             c.Warn("expansion", "alpha: the ring expands less than the groove metal, so the cold and hot ends do not bound the squeeze; the minimum and maximum shown may not be the extremes.");
@@ -588,27 +601,27 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             c.Warn("stretch", $"d_r: the largest installed stretch is {F(stretchMax * 100)} %, far beyond installation practice; check the ring and groove diameters.");
 
         // Cold end: minimum squeeze and fill.
-        var drefC = Range(reference.Scaled(gCold));
+        var drefC = Range(reference.Scaled(refCold));
         var idC = Range(RingSeat(fCold));
         var stretchCold = drefC.Max / idC.Min - 1.0;
         var redCold = Red(stretchCold);
         var sectionCold = Range(section.Scaled(fCold));
         var cCold = odHeld ? Math.Clamp(1.0 - Range(V(GlandDim.Groove).Scaled(gCold)).Max / Range(ringId.Scaled(fCold), section.Scaled(2.0 * fCold)).Min, 0.0, ORingGlandModel.MaxCompression) : 0.0;
         var effLow = sectionCold.Min * (1.0 - redCold) * ORingGlandModel.Thickening(cCold);
-        var depthCold = Range(DepthStack(gCold));
+        var depthCold = Range(DepthStack(gsCold, gCold));
         var widthCold = Range(width.Scaled(gCold));
         var corner = 2.0 * (1.0 - Math.PI / 4.0);
         var areaCold = widthCold.Max * depthCold.Max - corner * Math.Pow(gCold * cornerRadius, 2);
 
         // Hot end: maximum squeeze and fill.
-        var drefH = Range(reference.Scaled(gHot));
+        var drefH = Range(reference.Scaled(refHot));
         var idH = Range(RingSeat(fHot));
         var stretchHot = drefH.Min / idH.Max - 1.0;
         var redHot = Red(stretchHot);
         var sectionHot = Range(section.Scaled(fHot));
         var cHot = odHeld ? Math.Clamp(1.0 - Range(V(GlandDim.Groove).Scaled(gHot)).Min / Range(ringId.Scaled(fHot), section.Scaled(2.0 * fHot)).Max, 0.0, ORingGlandModel.MaxCompression) : 0.0;
         var effHigh = sectionHot.Max * (1.0 - redHot) * ORingGlandModel.Thickening(cHot);
-        var depthHot = Range(DepthStack(gHot));
+        var depthHot = Range(DepthStack(gsHot, gHot));
         var widthHot = Range(width.Scaled(gHot));
         var areaHot = widthHot.Min * depthHot.Min - corner * Math.Pow(gHot * cornerRadius, 2);
 
@@ -632,11 +645,11 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             return;
         }
 
-        var ringAreaHot = Math.PI / 4.0 * Math.Pow(sectionHot.Max, 2) * (odHeld ? Math.Pow(ORingGlandModel.Thickening(cHot), 2) : fHot / gHot);
+        var ringAreaHot = Math.PI / 4.0 * Math.Pow(sectionHot.Max, 2) * (odHeld ? Math.Max(fHot / gHot, Math.Pow(ORingGlandModel.Thickening(cHot), 2)) : fHot / gHot);
         var fillMaxValue = ringAreaHot / areaHot;
         var fillMinValue = Math.PI / 4.0 * effLow * effLow / areaCold;
 
-        c.Record("X_c", $"g_c·D_ref,max/(f_c·{seatSym}_min) − 1", $"{F(gCold)}·{F(drefC.Max / gCold)}/({F(fCold)}·{F(idC.Min / fCold)}) − 1", ScalarValue.Of(stretchCold * 100, "%"), "Largest stretch at the cold end");
+        c.Record("X_c", $"g_c·D_ref,max/(f_c·{seatSym}_min) − 1", $"{F(refCold)}·{F(drefC.Max / refCold)}/({F(fCold)}·{F(idC.Min / fCold)}) − 1", ScalarValue.Of(stretchCold * 100, "%"), "Largest stretch at the cold end");
         c.Record("r_c", "r(X_c)", $"r({F(stretchCold * 100)} %)", ScalarValue.Of(redCold * 100, "%"), "Cross-section reduction at the cold end");
         c.Record("Wc_lo", "f_c·W_min", $"{F(fCold)}·{F(sectionCold.Min / fCold)}", ScalarValue.Of(sectionCold.Min, mm), "Smallest ring section at the cold end");
         if (odHeld)
@@ -648,7 +661,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         c.Record("A_g_hi", "b_max·h_max − 2(1 − π/4)·(g_c·r_g)²", $"{F(widthCold.Max)}·{F(depthCold.Max)} − {F(corner * Math.Pow(gCold * cornerRadius, 2))}", ScalarValue.Of(areaCold, "mm^2"), "Largest groove area at the cold end");
         c.Record("fill_min", "(π/4)·Weff_lo²/A_g_hi", $"(π/4)·{F(effLow)}²/{F(areaCold)}", ScalarValue.Of(fillMinValue * 100, "%"), "Smallest gland fill");
 
-        c.Record("X_h", "g_h·D_ref,min/(f_h·d_max) − 1", $"{F(gHot)}·{F(drefH.Min / gHot)}/({F(fHot)}·{F(idH.Max / fHot)}) − 1", ScalarValue.Of(stretchHot * 100, "%"), "Smallest stretch at the hot end");
+        c.Record("X_h", "g_h·D_ref,min/(f_h·d_max) − 1", $"{F(refHot)}·{F(drefH.Min / refHot)}/({F(fHot)}·{F(idH.Max / fHot)}) − 1", ScalarValue.Of(stretchHot * 100, "%"), "Smallest stretch at the hot end");
         c.Record("r_h", "r(X_h)", $"r({F(stretchHot * 100)} %)", ScalarValue.Of(redHot * 100, "%"), "Cross-section reduction at the hot end");
         c.Record("Wh_hi", "f_h·W_max", $"{F(fHot)}·{F(sectionHot.Max / fHot)}", ScalarValue.Of(sectionHot.Max, mm), "Largest ring section at the hot end");
         if (odHeld)
@@ -658,7 +671,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         c.Record("h_lo_h", "g_h·(depth stack) minimum", $"mean {F(depthHot.Mid)} mm, worst-case minimum", ScalarValue.Of(depthHot.Min, mm), "Smallest gland depth at the hot end");
         c.Record("squeeze_max", "1 − h_lo_h/Weff_hi", $"1 − {F(depthHot.Min)}/{F(effHigh)}", ScalarValue.Of((1.0 - depthHot.Min / effHigh) * 100, "%"), "Largest squeeze");
         c.Record("A_g_lo", "b_min·h_min − 2(1 − π/4)·(g_h·r_g)²", $"{F(widthHot.Min)}·{F(depthHot.Min)} − {F(corner * Math.Pow(gHot * cornerRadius, 2))}", ScalarValue.Of(areaHot, "mm^2"), "Smallest groove area at the hot end");
-        c.Record("fill_max", odHeld ? "(π/4)·Wh_hi²/(1 − c_h)/A_g_lo" : "(π/4)·Wh_hi²·(f_h/g_h)/A_g_lo", odHeld ? $"(π/4)·{F(sectionHot.Max)}²/(1 − {F(cHot)})/{F(areaHot)}" : $"(π/4)·{F(sectionHot.Max)}²·({F(fHot)}/{F(gHot)})/{F(areaHot)}", ScalarValue.Of(fillMaxValue * 100, "%"), "Largest gland fill (unstretched section, volume basis: the held ring takes its whole volume change in its section)");
+        c.Record("fill_max", odHeld ? "(π/4)·Wh_hi²·max(f_h/g_h, 1/(1 − c_h))/A_g_lo" : "(π/4)·Wh_hi²·(f_h/g_h)/A_g_lo", odHeld ? $"(π/4)·{F(sectionHot.Max)}²·max({F(fHot / gHot)}, 1/(1 − {F(cHot)}))/{F(areaHot)}" : $"(π/4)·{F(sectionHot.Max)}²·({F(fHot)}/{F(gHot)})/{F(areaHot)}", ScalarValue.Of(fillMaxValue * 100, "%"), "Largest gland fill (unstretched section, volume basis: the held ring takes its whole volume change in its section)");
 
         // The mean state at installation.
         var mid = meanVector;
@@ -727,7 +740,10 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             c.CheckCondition("Installed stretch not below the limit", stretchMin >= xLo - Slack, $"stretch_min {F(stretchMin * 100)} %", $"≥ {F(xLo * 100)} %", "stretch_min", "oring.criteria record");
 
         if (odHeld)
+        {
             c.CheckCondition("Ring OD compression not above the limit", odMax <= odHi + Slack, $"od_comp {F(odMax * 100)} %", $"≤ {F(odHi * 100)} %", "od_comp", "oring.criteria record");
+            c.CheckCondition("Ring OD compression at the hot end not above the limit", cHot <= odHi + Slack, $"c_h {F(cHot * 100)} %", $"≤ {F(odHi * 100)} %", "c_h", "oring.criteria record");
+        }
 
         if (gapLimit is { } allowed)
         {

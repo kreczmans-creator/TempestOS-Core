@@ -11,7 +11,7 @@ PACK INDEX
   2. Emergency stroke accumulator — Accumulator sizing (gas law) — rev A — ISSUED — Pre-charge within the p0/p1 rule PASS
   3. Pressure line — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
   4. Pump drive motor — Motor and actuator sizing — rev A — ISSUED — RMS torque SF·T_rms ≤ T_rated PASS
-  5. Motor supply cable — Conductor sizing and overload coordination — rev A — ISSUED — Design current within device rating (I_b ≤ I_n) PASS
+  5. Motor supply cable — Conductor sizing and overload coordination — rev A — ISSUED — Device rating within conductor capacity (I_n ≤ I_z) PASS
 
 REVISIONS
   A  2026-10-25  test.engineer  First issue
@@ -40,7 +40,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 29/29
-  Test run: 2026-10-25 03:34 UTC
+  Test run: 2026-10-25 03:59 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -53,7 +53,7 @@ Issued: 2026-10-25    Issue: HPU-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A double-acting hydraulic cylinder in its circuit: the bore, rod and annulus areas; the force and speed on the extend and the retract stroke with mechanical and volumetric efficiency and an optional back pressure, or with the regenerative extend connection; the swept volume and the cycle time; the pump delivery, shaft power, torque and speed; a hydraulic motor's torque; the velocity in the suction, pressure and return lines against your own limits and the smallest listed hose or pipe bore that meets them; a sharp orifice's flow for flow-control screening; and a screening check of the rod against buckling (Euler above the transition slenderness, Johnson parabola below it). screening only; ISO/TS 13725 method not implemented. Not a cylinder design to a standard: the limits, the hose sizes, the mounting factor and the material properties are your records.
-Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a Force: F_ext = (p·A_b − p_back·A_a)·η_m, F_ret = (p·A_a − p_back·A_b)·η_m; regenerative extend F_ext = p·A_r·η_m Speed and time: v_ext = Q·η_vc/A_b (regenerative: A_r), v_ret = Q·η_vc/A_a; t = stroke/v; t_cycle = t_ext + t_ret + t_dwell Swept volume: ΔV_ext = A_b·stroke (regenerative: A_r·stroke), ΔV_ret = A_a·stroke; ΔV = the larger Pump: Q_p = V_g·n·η_vp; P = p·Q_p/η_tp; T = P/ω; displacement needed V_g,req = Q/(n·η_vp) Hydraulic motor: T = Δp·V_g/(2π)·η_hm (V_g per revolution) Lines: v = Q_line/A_line; suction Q_suc = max(Q, V_g·n) (the geometric delivery), pressure/cap-port line Q_prs = Q_line·A_b/A_a on the retract stroke (regenerative extend: Q_line·A_b/A_r if larger), return Q_rtn = Q_line·A_b/A_a, with Q_line = max(Q, Q_p); smallest bore d = √(4Q/(π·v_max)), recommended = the smallest listed size not below it Orifice: Q = C_d·A_o·√(2Δp/ρ); bore for the circuit flow d_o = √(4Q/(π·C_d·√(2Δp/ρ))) Rod buckling (screening): L_eff = K·(stroke + L_add), r = d_r/4, λ = L_eff/r, λ_c = π·√(2E/f_y); Euler F_cr = π²·E·I/L_eff² for λ > λ_c, Johnson F_cr = A_r·f_y·[1 − f_y·λ²/(4π²E)] for λ ≤ λ_c; load F_b = max(F_push, F_ext) (the rod carries the thrust the cylinder can produce when it stalls or meets an obstruction); utilisation u = F_b·S_f/F_cr
+Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a Force: F_ext = (p·A_b − p_back·A_a)·η_m, F_ret = (p·A_a − p_back·A_b)·η_m; regenerative extend F_ext = p·A_r·η_m Speed and time: v_ext = Q·η_vc/A_b (regenerative: A_r), v_ret = Q·η_vc/A_a; t = stroke/v; t_cycle = t_ext + t_ret + t_dwell Swept volume: ΔV_ext = A_b·stroke (regenerative: A_r·stroke), ΔV_ret = A_a·stroke; ΔV = the larger Pump: Q_p = V_g·n·η_vp; P = p·Q_p/η_tp; T = P/ω; displacement needed V_g,req = Q/(n·η_vp) Hydraulic motor: T = Δp·V_g/(2π)·η_hm (V_g per revolution) Lines: v = Q_line/A_line; suction Q_suc = max(Q, V_g·n) (the geometric delivery), pressure/cap-port line Q_prs = Q_line·A_b/A_a on the retract stroke (regenerative extend: Q_line·A_b/A_r if larger), return Q_rtn = Q_line·A_b/A_a, with Q_line = max(Q, Q_p); smallest bore d = √(4Q/(π·v_max)), recommended = the smallest listed size not below it Orifice: Q = C_d·A_o·√(2Δp/ρ); bore for the circuit flow d_o = √(4Q/(π·C_d·√(2Δp/ρ))) Rod buckling (screening): L_eff = K·(stroke + L_add), r = d_r/4, λ = L_eff/r, λ_c = π·√(2E/f_y); Euler F_cr = π²·E·I/L_eff² for λ > λ_c, Johnson F_cr = A_r·f_y·[1 − f_y·λ²/(4π²E)] for λ ≤ λ_c; load F_b = max(F_push, F_stall) with F_stall = p·A_b (the stalled cylinder at the supply pressure: no flow, so no back pressure and no friction loss; in the regenerative extend too, since the standard connection can always be selected); utilisation u = F_b·S_f/F_cr
   Ref: ISO/TS 13725 — Cylinder buckling load: method not implemented, screening only
   Ref: Esposito, Fluid Power with Applications Cylinder and pump chapters — Force, speed, flow and power relations, closed form
 
@@ -96,7 +96,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   A3. The pump power is the supply pressure times the pump's delivery over the total efficiency: when the pump delivers more than the circuit takes, the excess is taken to go over the relief valve at the supply pressure, which is the conservative case for the drive. The shaft torque is the power over the angular speed. (P = p·Q_p/η_tp.)
   A4. The line flows use the pump delivery when it is larger than the circuit flow: the suction line the geometric delivery V_g·n, the pressure line and the return line Q_line = max(Q, Q_p), which carries no volumetric efficiency while the speeds use Q·η_vc (the flows are the conservative side of the speeds). The line to the cylinder cap port is judged at the larger flow of the two strokes: on the retract stroke it carries the cap-side discharge Q_line·A_b/A_a (the same flow as the return line), and in the regenerative extend Q_line·A_b/A_r if that is larger. The velocity limits are your records; the sheet's defaults are placeholders, not values from a standard. (Continuity.)
   A5. The orifice relation is the sharp-edged turbulent one, Q = C_d·A·√(2Δp/ρ), with your discharge coefficient; it ignores viscosity and cavitation and is a screening of a flow-control orifice, not a valve selection. (Orifice equation, closed form.)
-  A6. The rod is treated as a solid round column of its own diameter with the effective-length factor of the mounting; the tube, the piston and the rod-end stiffness are not modelled. The rod is judged at the larger of the push load you enter and the extend force the cylinder can produce at the supply pressure (a stalled, obstructed or relief-limited cylinder loads the rod with its full thrust); no pressure-limiting device is credited. The mounting factor K_m defaults to 1 (pinned at both ends): a fixed-free mounting is K_m = 2, and the factor and the safety factor S_f are your records. screening only; ISO/TS 13725 method not implemented. (Euler and Johnson column relations, closed form.)
+  A6. The rod is treated as a solid round column of its own diameter with the effective-length factor of the mounting; the tube, the piston and the rod-end stiffness are not modelled. The rod is judged at the larger of the push load you enter and the stall thrust p·A_b (a stalled, obstructed or relief-limited cylinder loads the rod with the full pressure force on the bore: no flow, so no back pressure, and the seal friction does not relieve it); no pressure-limiting device is credited, and the regenerative extend is judged at the same stall thrust because the standard connection can always be selected. The mounting factor K_m defaults to 1 (pinned at both ends): a fixed-free mounting is K_m = 2, and the factor and the safety factor S_f are your records. screening only; ISO/TS 13725 method not implemented. (Euler and Johnson column relations, closed form.)
   A7. p_back (Back pressure on the discharge side (standard connection)) is taken as 0 bar. (Sheet default value; no project figure given.)
   A8. eta_m (Mechanical efficiency of the cylinder (seal and guide friction)) is taken as 0.95. (Sheet default value; no project figure given.)
   A9. eta_vc (Volumetric efficiency of the cylinder (leakage past the piston)) is taken as 0.98. (Sheet default value; no project figure given.)
@@ -290,19 +290,23 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
       = 1787.8 kN / 3.5
       = 510.8 kN
         Allowable push load: critical load over the safety factor
-  [72] F_buck = max(F_push, F_ext)
-      = max(80 kN, 119.38 kN)
-      = 119.38 kN
-        Rod load for the buckling check: the larger of the push load entered and the extend force the cylinder can produce
-  [73] u_buck = F_buck / F_allow
-      = 119.38 kN / 510.8 kN
-      = 0.23371
+  [72] F_stall = p * A_b
+      = 160 bar × 78.54 cm²
+      = 125.66 kN
+        Stall thrust: the supply pressure on the bore area (no flow, so no back pressure; the friction of the seals does not relieve the rod of a stalled cylinder)
+  [73] F_buck = max(F_push, F_stall)
+      = max(80 kN, 125.66 kN)
+      = 125.66 kN
+        Rod load for the buckling check: the larger of the push load entered and the stall thrust p·A_b
+  [74] u_buck = F_buck / F_allow
+      = 125.66 kN / 510.8 kN
+      = 0.24601
         Buckling utilisation
-  [74] u_push = F_push / F_ext
+  [75] u_push = F_push / F_ext
       = 80 kN / 119.38 kN
       = 0.67013
         Push load over the extend force
-  [75] u_pull = F_pull / F_ret
+  [76] u_pull = F_pull / F_ret
       = 40 kN / 60.884 kN
       = 0.65699
         Pull load over the retract force
@@ -326,6 +330,8 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   u_pull = 0.65699    Pull load over the retract force
   Q = 36 L/min    Flow into the cylinder
   p = 160 bar    Supply pressure
+  rho = 870 kg/m³    Fluid density
+  d_prs = 20 mm    Pressure line inside diameter
   Q_p = 38.57 L/min    Pump delivery
   Vg_req = 26.134 cm³/rev    Pump displacement the circuit needs
   u_pump = 0.93337    Circuit flow over the pump delivery
@@ -350,8 +356,9 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   lam_c = 91.052    Transition slenderness
   F_cr = 1787.8 kN    Critical load (screening)
   F_allow = 510.8 kN    Allowable push load (screening)
-  F_buck = 119.38 kN    Rod load judged for buckling: the larger of the push load and the extend force
-  u_buck = 0.23371    Rod buckling utilisation (screening)
+  F_stall = 125.66 kN    Stall thrust p·A_b
+  F_buck = 125.66 kN    Rod load judged for buckling: the larger of the push load and the stall thrust
+  u_buck = 0.24601    Rod buckling utilisation (screening)
   buckling_note = "screening only; ISO/TS 13725 method not implemented; stocky rod, Johnson parabola"    Rod buckling check
 
 6. CHECKS (governing first)
@@ -361,17 +368,17 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   PASS  Extend force covers the push load: u_push = 0.67013 vs u_push ≤ 1  utilisation 0.67
   PASS  Retract force covers the pull load: u_pull = 0.65699 vs u_pull ≤ 1  utilisation 0.657
   PASS  Suction line velocity within its limit: u_suc = 0.44873 vs u_suc ≤ 1  utilisation 0.449  « cylinder.line-limits record
-  PASS  Rod buckling at the larger of the push load and the extend force, screening only; ISO/TS 13725 method not implemented: u_buck = 0.23371 vs u_buck ≤ 1  utilisation 0.234  « Euler / Johnson column relations
+  PASS  Rod buckling at the larger of the push load and the stall thrust, screening only; ISO/TS 13725 method not implemented: u_buck = 0.24601 vs u_buck ≤ 1  utilisation 0.246  « Euler / Johnson column relations
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: E, f_y (Rod material); K_m (Mounting effective-length factor); S_f (Rod buckling safety factor); v_suc_max, v_prs_max, v_ret_max (Line velocity limits). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: fp.cylinder@1.1.0
-  Content hash: ce58a264393d850d
+  Template: fp.cylinder@1.2.0
+  Content hash: 29090df0de4e6fb3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 03:34 UTC
+  Test run: 2026-10-25 03:59 UTC
   Application: TempestOS test
 
 
@@ -498,7 +505,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   Content hash: dc898a3b1568f62d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-25 03:34 UTC
+  Test run: 2026-10-25 03:59 UTC
   Application: TempestOS test
 
 
@@ -522,11 +529,11 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | custom (ρ and μ given) |  | drawing: DRG-HPU-510 rev B | any
   T | Fluid temperature (mean; link B6 t_m for a heating loop) | 50 | degC | drawing: DRG-HPU-510 rev B | 0 … 100 degC
-  rho_custom | Density (custom fluid) | 870 | kg/m^3 | drawing: DRG-HPU-510 rev B | 500 … 2000 kg/m^3
+  rho_custom | Density (custom fluid) | 870 | kg/m^3 | link: Cylinder and pump circuit rev A · rho | 500 … 2000 kg/m^3
   mu_custom | Dynamic viscosity (custom fluid) | 30 | mPa*s | drawing: DRG-HPU-510 rev B | 0.1 … 1000 mPa*s
-  Q | Design flow rate (blank when a heat load gives it) | 2.16 | m^3/h | link: Cylinder and pump circuit rev A · Q | 0.01 … 100000 m^3/h
+  Q | Design flow rate (blank when a heat load gives it) | 4.53765 | m^3/h | link: Cylinder and pump circuit rev A · Q_prs | 0.01 … 100000 m^3/h
   segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-HPU-510 rev B | any
-  segments[1] |  | name = pressure line to cylinder; L = 12 m; D = 20 mm; eps = 0.045 mm; K = 6; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
+  segments[1] |  | name = pressure line to cylinder; L = 12 m; D = 20 mm; eps = 0.045 mm; K = 6; L_eq = 0 m; dz = 0 m; side = discharge |  | D: link: Cylinder and pump circuit rev A · d_prs | 
   circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | assumption: Sheet default value; no project figure given. | any
   h_out | Pressure head required at the outlet | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 1000 m
   v_max | Velocity limit (warning) | 5 | m/s | drawing: DRG-HPU-510 rev B | 0.5 … 10 m/s
@@ -559,89 +566,94 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = 30 mPa·s
         Dynamic viscosity (as entered)
   [10] Q_design = Q
-      = 2.16 m³/h
-      = 2.16 m³/h
+      = 4.5376 m³/h
+      = 4.5376 m³/h
         Design flow (as entered)
   [11] v_s1 = pressure line to cylinder: Q / (π D²/4)
-      = 2.16 m³/h / (π × 20² mm² / 4)
-      = 1.9099 m/s
+      = 4.5376 m³/h / (π × 20² mm² / 4)
+      = 4.0122 m/s
         Velocity, pressure line to cylinder
   [12] Re_s1 = pressure line to cylinder: ρ v D / μ
-      = 870 × 1.9099 × 0.02 / 0.03
-      = 1107.7
+      = 870 × 4.0122 × 0.02 / 0.03
+      = 2327.1
         Reynolds number, pressure line to cylinder
   [13] f_s1 = pressure line to cylinder: Darcy friction factor
-      = 64 / Re (laminar)
-      = 0.057776
+      = Colebrook–White, 15 iterations (Swamee–Jain start 0.050521)
+      = 0.048912
         Friction factor, pressure line to cylinder
-  [14] h_f_s1 = pressure line to cylinder: f (L + L_eq)/D · v²/2g + K v²/2g
-      = 0.057776 × (12 + 0) / 0.02 × 0.18597 + 6 × 0.18597
-      = 7.5628 m
+  [14] f_sj_s1 = pressure line to cylinder: Swamee–Jain check
+      = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
+      = 0.050521
+        Explicit cross-check, pressure line to cylinder
+  [15] h_f_s1 = pressure line to cylinder: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.048912 × (12 + 0) / 0.02 × 0.82074 + 6 × 0.82074
+      = 29.011 m
         Head loss, pressure line to cylinder
-  [15] h_f_total = Σ h_f
+  [16] h_f_total = Σ h_f
       = 1 segment(s)
-      = 7.5628 m
+      = 29.011 m
         Total friction and fitting loss at the design flow
-  [17] V_pipe = Σ π/4·D²·L
+  [18] V_pipe = Σ π/4·D²·L
       = 1 segment(s)
       = 3.7699 L
         Water held in the pipe segments
-  [18] H_static = Σ dz + h_out
+  [19] H_static = Σ dz + h_out
       = 0 + 0
       = 0 m
         Static head
-  [19] H_sys = H_static + h_f_total
-      = 0 m + 7.5628 m
-      = 7.5628 m
+  [20] H_sys = H_static + h_f_total
+      = 0 m + 29.011 m
+      = 29.011 m
         System head at the design flow
-  [20] dp_total = rho * 9.80665 m/s^2 * h_f_total
-      = 870 kg/m³ × 9.80665 m/s^2 × 7.5628 m
-      = 64.524 kPa
+  [21] dp_total = rho * 9.80665 m/s^2 * h_f_total
+      = 870 kg/m³ × 9.80665 m/s^2 × 29.011 m
+      = 247.51 kPa
         Friction pressure drop at the design flow
-  [21] dp_sys = rho * 9.80665 m/s^2 * H_sys
-      = 870 kg/m³ × 9.80665 m/s^2 × 7.5628 m
-      = 64.524 kPa
+  [22] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 870 kg/m³ × 9.80665 m/s^2 × 29.011 m
+      = 247.51 kPa
         System pressure at the design flow
-  [22] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
-      = 870 kg/m³ × 9.80665 m/s^2 × 2.16 m³/h × 7.5628 m
-      = 0.038714 kW
+  [23] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+      = 870 kg/m³ × 9.80665 m/s^2 × 4.5376 m³/h × 29.011 m
+      = 0.31198 kW
         Hydraulic power at the design point
-  [25] v_peak = highest segment velocity
-      = 1.9099 m/s
-      = 1.9099 m/s
+  [26] v_peak = highest segment velocity
+      = 4.0122 m/s
+      = 4.0122 m/s
         Highest velocity
-  [26] u_v = v_peak / v_max
-      = 1.9099 / 5
-      = 0.38197
+  [27] u_v = v_peak / v_max
+      = 4.0122 / 5
+      = 0.80243
         Velocity utilisation
 
 5. RESULTS
-  v_s1 = 1.9099 m/s    Velocity, pressure line to cylinder
-  Re_s1 = 1107.7    Re, pressure line to cylinder
-  f_s1 = 0.057776    f, pressure line to cylinder
-  h_f_s1 = 7.5628 m    h_f, pressure line to cylinder
-  h_f_total = 7.5628 m    Σ h_f
+  v_s1 = 4.0122 m/s    Velocity, pressure line to cylinder
+  Re_s1 = 2327.1    Re, pressure line to cylinder
+  f_s1 = 0.048912    f, pressure line to cylinder
+  f_sj_s1 = 0.050521    f (Swamee–Jain), pressure line to cylinder
+  h_f_s1 = 29.011 m    h_f, pressure line to cylinder
+  h_f_total = 29.011 m    Σ h_f
   H_static = 0 m    Static head
   V_pipe = 3.7699 L    Water held in the pipes
-  H_sys = 7.5628 m    System head at Q
-  dp_total = 64.524 kPa    Friction Δp
-  dp_sys = 64.524 kPa    System Δp
-  Q_design = 2.16 m³/h    Design flow
-  P_hyd = 0.038714 kW    Hydraulic power
-  v_peak = 1.9099 m/s    Highest velocity
+  H_sys = 29.011 m    System head at Q
+  dp_total = 247.51 kPa    Friction Δp
+  dp_sys = 247.51 kPa    System Δp
+  Q_design = 4.5376 m³/h    Design flow
+  P_hyd = 0.31198 kW    Hydraulic power
+  v_peak = 4.0122 m/s    Highest velocity
 
 6. CHECKS (governing first)
-  PASS  Velocity ≤ limit: u_v = 0.38197 vs u_v ≤ 1  utilisation 0.382
+  PASS  Velocity ≤ limit: u_v = 0.80243 vs u_v ≤ 1  utilisation 0.802
 
 7. APPLICABILITY
-  WARNING laminar: segments: pressure line to cylinder is laminar (Re = 1107.7); f = 64/Re.
+  WARNING transition: segments: pressure line to cylinder is transitional (Re = 2327.1); the friction factor is uncertain.
 
 8. VERIFICATION
   Template: bs.pipe-pump@1.2.0
   Content hash: 4747971fae135dcd
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 03:34 UTC
+  Test run: 2026-10-25 03:59 UTC
   Application: TempestOS test
 
 
@@ -655,7 +667,7 @@ Issued: 2026-10-25    Issue: HPU-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell. RMS mechanical power (the thermal-equivalent continuous power a supply sees; regeneration counts as power): P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle} (trapezoid), with t_acc·[(3/4) T_load² + (5/16) T_acc²] for the S-curve; the instantaneous peak P_pk is not a continuous demand. Continuous rotary duty: ω = 2π n_L i/60; T_load = T_L/(i η); T_rms = T_load; T_pk = J_total ω/t_start + T_load (full load during the run-up, conservative); n_pk = n_L i; P_cont = T_load ω; P_rms = P_cont.
+Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); rack D_p/(2 i)); J_refl = m k²/η; T_load = F k/η with F = m g (sin θ + μ cos θ) + F_p. Rotary: J_refl = J_L/(i² η), T_load = T_L/(i η). Trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve: sine acceleration with a_pk = (π/2) a_trap and the same v_pk. T_acc = J_total α; T_pk = T_acc + T_load; T_rms = √(Σ T_i² t_i / t_cycle) including the dwell. RMS mechanical power (the thermal-equivalent continuous power a supply sees; regeneration counts as power): P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle} (trapezoid), with t_acc·[(3/4) T_load² + (5/16) T_acc²] for the S-curve; the instantaneous peak P_pk is not a continuous demand. Continuous rotary duty: ω = 2π n_L i/60; T_load = T_L/(i η); T_rms = T_load; T_pk = J_total ω/t_start + T_load (full load during the run-up, conservative); n_pk = n_L i; P_cont = T_load ω; P_rms = P_cont; P_rated = T_rated ω, the candidate motor's rated torque at the running speed (the motor's rated speed is taken as the running speed), the shaft power its supply must be sized for.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -751,31 +763,35 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
       = 77.751 N·m × 151.84 rad/s
       = 11806 W
         Continuous shaft power at the motor
-  [30] P_pk = T_pk * omega_pk
+  [30] P_rated = T_rated * omega_pk
+      = 120 N·m × 151.84 rad/s
+      = 18221 W
+        Rated continuous shaft power of the candidate motor at the running speed (its rated torque times the running speed, taken as the rated speed)
+  [31] P_pk = T_pk * omega_pk
       = 85.725 N·m × 151.84 rad/s
       = 13.017 kW
         Peak mechanical power (end of the run-up)
-  [31] P_rms = P_cont
+  [32] P_rms = P_cont
       = 11806 W
       = 11.806 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
-  [32] J_ratio = (J_refl + J_mech) / J_motor
+  [33] J_ratio = (J_refl + J_mech) / J_motor
       = (0.0040404 kg·m² + 0.001 kg·m²) / 0.1 kg·m²
       = 0.050404
         Inertia ratio (load : motor)
-  [33] u_peak = SF * T_pk / T_peak
+  [34] u_peak = SF * T_pk / T_peak
       = 1.25 × 85.725 N·m / 275 N·m
       = 0.38966
         Peak torque utilisation with safety margin
-  [34] u_rms = SF * T_rms / T_rated
+  [35] u_rms = SF * T_rms / T_rated
       = 1.25 × 77.751 N·m / 120 N·m
       = 0.8099
         Continuous torque utilisation with safety margin
-  [35] u_speed = n_pk / n_max
+  [36] u_speed = n_pk / n_max
       = 1450 rpm / 3000 rpm
       = 0.48333
         Speed utilisation
-  [36] duty = T_rms / T_rated
+  [37] duty = T_rms / T_rated
       = 77.751 N·m / 120 N·m
       = 0.64792
         Thermal duty (without margin)
@@ -791,6 +807,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   T_rms = 77.751 N·m    RMS torque
   n_pk = 1450 rpm    Motor speed
   P_cont = 11806 W    Continuous power
+  P_rated = 18221 W    Rated power of the candidate motor at the running speed
   P_pk = 13.017 kW    Peak power
   P_rms = 11.806 kW    RMS power (continuous equivalent)
   J_ratio = 0.050404    Inertia ratio
@@ -808,11 +825,11 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.2.0
-  Content hash: 07f83040d397a49f
+  Template: elec.motor-sizing@1.3.0
+  Content hash: 6a42b00a3903716d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 03:34 UTC
+  Test run: 2026-10-25 03:59 UTC
   Application: TempestOS test
 
 
@@ -838,7 +855,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Symbol | Description | Value | Unit | Source | Valid range
   context | Design context (changes clause citations and the scope note only) | BS EN 60204-1 machine wiring |  | assumption: Sheet default value; no project figure given. | any
   supply | Supply | three-phase |  | assumption: Sheet default value; no project figure given. | any
-  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 11.8059 | kW | link: Pump drive motor rev A · P_cont | 0.01 … 500 kW
+  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 18.2212 | kW | link: Pump drive motor rev A · P_rated | 0.01 … 500 kW
   U | Supply voltage (line voltage for three-phase) | 400 | V | spec: SPEC-HPU-05 §6 (power supply) | 12 … 1000 V
   cos_phi | Power factor (not used for DC) | 0.86 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
   eta | Efficiency (not used for DC) | 0.92 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
@@ -894,12 +911,12 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
 
 4. WORKING
   [14] I_b = P / (sqrt(3) * U * cos_phi * eta)
-      = 11.806 kW / (sqrt(3) × 400 V × 0.86 × 0.92)
-      = 21.537 A
+      = 18.221 kW / (sqrt(3) × 400 V × 0.86 × 0.92)
+      = 33.241 A
         Design current (three-phase)
   [15] I_n = smallest preferred rating with I_n ≥ I_b    « BS EN 60204-1 cl. 7.2
-      = smallest rating ≥ 21.537 A in the ratings record
-      = 25 A
+      = smallest rating ≥ 33.241 A in the ratings record
+      = 40 A
         Rated current of the protective device (ratings record)
   [16] device_code = 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB    « BS EN 60204-1 cl. 7.2
       = MCB type C
@@ -910,57 +927,57 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = 1
         Semi-enclosed fuse factor
   [22] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
-      = 25 A / (1 × 1 × 1 × 1)
-      = 25 A
+      = 40 A / (1 × 1 × 1 × 1)
+      = 40 A
         Required tabulated capacity
   [23] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
-      = I_t,req = 25 A
-      = 31.9 A
+      = I_t,req = 40 A
+      = 44.6 A
         Tabulated current-carrying capacity of the selected conductor
   [24] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
-      = I_t,req = 25 A
-      = 6 mm²
+      = I_t,req = 40 A
+      = 10 mm²
         Selected conductor cross-section
   [25] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
-      = 31.9 A × 1 × 1 × 1
-      = 31.9 A
+      = 44.6 A × 1 × 1 × 1
+      = 44.6 A
         Current-carrying capacity in the installed conditions
   [26] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 21.537 A / 25 A
-      = 0.8615
+      = 33.241 A / 40 A
+      = 0.83102
         Design current utilisation of the device
   [27] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 25 A / 31.9 A
-      = 0.7837
+      = 40 A / 44.6 A
+      = 0.89686
         Device rating utilisation of the conductor
   [28] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 1.45 × 25 A
-      = 36.25 A
+      = 1.45 × 40 A
+      = 58 A
         Conventional operating current (inherent 1.45 I_n)
   [29] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 36.25 A / (1.45 × 31.9 A)
-      = 0.7837
+      = 58 A / (1.45 × 44.6 A)
+      = 0.89686
         I₂ utilisation of 1.45 I_z
 
 5. RESULTS
-  I_b = 21.537 A    Design current
-  I_n = 25 A    Rated current of the device
+  I_b = 33.241 A    Design current
+  I_n = 40 A    Rated current of the device
   C_c = 1    Semi-enclosed fuse factor
   C_a = 1    Ambient factor
-  I_t_req = 25 A    Required tabulated capacity
-  CSA = 6 mm²    Selected cross-section
-  I_z = 31.9 A    Current-carrying capacity
+  I_t_req = 40 A    Required tabulated capacity
+  CSA = 10 mm²    Selected cross-section
+  I_z = 44.6 A    Current-carrying capacity
   L = 30 m    Circuit length
-  u_Ib = 0.8615    I_b / I_n
-  u_In = 0.7837    I_n / I_z
-  I2 = 36.25 A    Conventional operating current
-  u_I2 = 0.7837    I₂ / (1.45 I_z)
+  u_Ib = 0.83102    I_b / I_n
+  u_In = 0.89686    I_n / I_z
+  I2 = 58 A    Conventional operating current
+  u_I2 = 0.89686    I₂ / (1.45 I_z)
   device_code = 2    Protective device type code
 
 6. CHECKS (governing first)
-  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.8615 vs u_Ib ≤ 1  utilisation 0.861  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.7837 vs u_I2 ≤ 1  utilisation 0.784  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.7837 vs u_In ≤ 1  utilisation 0.784  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.89686 vs u_In ≤ 1  utilisation 0.897  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.89686 vs u_I2 ≤ 1  utilisation 0.897  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.83102 vs u_Ib ≤ 1  utilisation 0.831  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.
@@ -970,5 +987,5 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 03:34 UTC
+  Test run: 2026-10-25 03:59 UTC
   Application: TempestOS test

@@ -20,7 +20,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Symbol | Description | Value | Unit | Source | Valid range
   context | Design context (changes clause citations and the scope note only) | BS EN 60204-1 machine wiring |  | assumption: Sheet default value; no project figure given. | any
   supply | Supply | three-phase |  | assumption: Sheet default value; no project figure given. | any
-  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 11.8059 | kW | link: Pump drive motor rev A · P_cont | 0.01 … 500 kW
+  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 18.2212 | kW | link: Pump drive motor rev A · P_rated | 0.01 … 500 kW
   U | Supply voltage (line voltage for three-phase) | 400 | V | spec: SPEC-HPU-05 §6 (power supply) | 12 … 1000 V
   cos_phi | Power factor (not used for DC) | 0.86 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
   eta | Efficiency (not used for DC) | 0.92 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
@@ -76,12 +76,12 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
 
 4. WORKING
   [14] I_b = P / (sqrt(3) * U * cos_phi * eta)
-      = 11.806 kW / (sqrt(3) × 400 V × 0.86 × 0.92)
-      = 21.537 A
+      = 18.221 kW / (sqrt(3) × 400 V × 0.86 × 0.92)
+      = 33.241 A
         Design current (three-phase)
   [15] I_n = smallest preferred rating with I_n ≥ I_b    « BS EN 60204-1 cl. 7.2
-      = smallest rating ≥ 21.537 A in the ratings record
-      = 25 A
+      = smallest rating ≥ 33.241 A in the ratings record
+      = 40 A
         Rated current of the protective device (ratings record)
   [16] device_code = 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB    « BS EN 60204-1 cl. 7.2
       = MCB type C
@@ -92,57 +92,57 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = 1
         Semi-enclosed fuse factor
   [22] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
-      = 25 A / (1 × 1 × 1 × 1)
-      = 25 A
+      = 40 A / (1 × 1 × 1 × 1)
+      = 40 A
         Required tabulated capacity
   [23] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
-      = I_t,req = 25 A
-      = 31.9 A
+      = I_t,req = 40 A
+      = 44.6 A
         Tabulated current-carrying capacity of the selected conductor
   [24] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
-      = I_t,req = 25 A
-      = 6 mm²
+      = I_t,req = 40 A
+      = 10 mm²
         Selected conductor cross-section
   [25] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
-      = 31.9 A × 1 × 1 × 1
-      = 31.9 A
+      = 44.6 A × 1 × 1 × 1
+      = 44.6 A
         Current-carrying capacity in the installed conditions
   [26] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 21.537 A / 25 A
-      = 0.8615
+      = 33.241 A / 40 A
+      = 0.83102
         Design current utilisation of the device
   [27] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 25 A / 31.9 A
-      = 0.7837
+      = 40 A / 44.6 A
+      = 0.89686
         Device rating utilisation of the conductor
   [28] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 1.45 × 25 A
-      = 36.25 A
+      = 1.45 × 40 A
+      = 58 A
         Conventional operating current (inherent 1.45 I_n)
   [29] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 36.25 A / (1.45 × 31.9 A)
-      = 0.7837
+      = 58 A / (1.45 × 44.6 A)
+      = 0.89686
         I₂ utilisation of 1.45 I_z
 
 5. RESULTS
-  I_b = 21.537 A    Design current
-  I_n = 25 A    Rated current of the device
+  I_b = 33.241 A    Design current
+  I_n = 40 A    Rated current of the device
   C_c = 1    Semi-enclosed fuse factor
   C_a = 1    Ambient factor
-  I_t_req = 25 A    Required tabulated capacity
-  CSA = 6 mm²    Selected cross-section
-  I_z = 31.9 A    Current-carrying capacity
+  I_t_req = 40 A    Required tabulated capacity
+  CSA = 10 mm²    Selected cross-section
+  I_z = 44.6 A    Current-carrying capacity
   L = 30 m    Circuit length
-  u_Ib = 0.8615    I_b / I_n
-  u_In = 0.7837    I_n / I_z
-  I2 = 36.25 A    Conventional operating current
-  u_I2 = 0.7837    I₂ / (1.45 I_z)
+  u_Ib = 0.83102    I_b / I_n
+  u_In = 0.89686    I_n / I_z
+  I2 = 58 A    Conventional operating current
+  u_I2 = 0.89686    I₂ / (1.45 I_z)
   device_code = 2    Protective device type code
 
 6. CHECKS (governing first)
-  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.8615 vs u_Ib ≤ 1  utilisation 0.861  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.7837 vs u_I2 ≤ 1  utilisation 0.784  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.7837 vs u_In ≤ 1  utilisation 0.784  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.89686 vs u_In ≤ 1  utilisation 0.897  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.89686 vs u_I2 ≤ 1  utilisation 0.897  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.83102 vs u_Ib ≤ 1  utilisation 0.831  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.
@@ -152,5 +152,5 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 01:13 UTC
+  Test run: 2026-10-25 03:59 UTC
   Application: TempestOS test

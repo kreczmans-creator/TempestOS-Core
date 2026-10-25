@@ -324,5 +324,5 @@ Stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits on (gr
   WARNING record: Tabulated values not taken from a reference record: alpha, nu (Material properties); d_r, d_r_tol, W, W_tol (Ring size); q_lo_s, q_hi_s, q_lo_d, q_hi_d, fill_lo, fill_hi, x_lo, x_hi, od_hi (Squeeze, fill and stretch bands); gap_allow (Permitted extrusion gap). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: fp.oring-gland@1.1.0
+  Template: fp.oring-gland@1.2.0
   Known-answer cases passed: 13/13

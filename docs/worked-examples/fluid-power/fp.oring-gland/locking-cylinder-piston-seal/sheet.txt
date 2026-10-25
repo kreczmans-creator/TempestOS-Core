@@ -348,7 +348,7 @@ Stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits on (gr
   WARNING input.dD_p: dD_p (Diametral growth under the operating pressure of the bore (piston seal) or of the housing bore round the rod (rod seal), from your cylinder or housing calculation; added to the extrusion gap (0 if not known)) was not entered; the template default 0 mm is used.
 
 8. VERIFICATION
-  Template: fp.oring-gland@1.1.0
+  Template: fp.oring-gland@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 13/13

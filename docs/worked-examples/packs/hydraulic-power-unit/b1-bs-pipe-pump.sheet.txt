@@ -18,11 +18,11 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | custom (ρ and μ given) |  | drawing: DRG-HPU-510 rev B | any
   T | Fluid temperature (mean; link B6 t_m for a heating loop) | 50 | degC | drawing: DRG-HPU-510 rev B | 0 … 100 degC
-  rho_custom | Density (custom fluid) | 870 | kg/m^3 | drawing: DRG-HPU-510 rev B | 500 … 2000 kg/m^3
+  rho_custom | Density (custom fluid) | 870 | kg/m^3 | link: Cylinder and pump circuit rev A · rho | 500 … 2000 kg/m^3
   mu_custom | Dynamic viscosity (custom fluid) | 30 | mPa*s | drawing: DRG-HPU-510 rev B | 0.1 … 1000 mPa*s
-  Q | Design flow rate (blank when a heat load gives it) | 2.16 | m^3/h | link: Cylinder and pump circuit rev A · Q | 0.01 … 100000 m^3/h
+  Q | Design flow rate (blank when a heat load gives it) | 4.53765 | m^3/h | link: Cylinder and pump circuit rev A · Q_prs | 0.01 … 100000 m^3/h
   segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-HPU-510 rev B | any
-  segments[1] |  | name = pressure line to cylinder; L = 12 m; D = 20 mm; eps = 0.045 mm; K = 6; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
+  segments[1] |  | name = pressure line to cylinder; L = 12 m; D = 20 mm; eps = 0.045 mm; K = 6; L_eq = 0 m; dz = 0 m; side = discharge |  | D: link: Cylinder and pump circuit rev A · d_prs | 
   circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | assumption: Sheet default value; no project figure given. | any
   h_out | Pressure head required at the outlet | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 1000 m
   v_max | Velocity limit (warning) | 5 | m/s | drawing: DRG-HPU-510 rev B | 0.5 … 10 m/s
@@ -55,87 +55,92 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = 30 mPa·s
         Dynamic viscosity (as entered)
   [10] Q_design = Q
-      = 2.16 m³/h
-      = 2.16 m³/h
+      = 4.5376 m³/h
+      = 4.5376 m³/h
         Design flow (as entered)
   [11] v_s1 = pressure line to cylinder: Q / (π D²/4)
-      = 2.16 m³/h / (π × 20² mm² / 4)
-      = 1.9099 m/s
+      = 4.5376 m³/h / (π × 20² mm² / 4)
+      = 4.0122 m/s
         Velocity, pressure line to cylinder
   [12] Re_s1 = pressure line to cylinder: ρ v D / μ
-      = 870 × 1.9099 × 0.02 / 0.03
-      = 1107.7
+      = 870 × 4.0122 × 0.02 / 0.03
+      = 2327.1
         Reynolds number, pressure line to cylinder
   [13] f_s1 = pressure line to cylinder: Darcy friction factor
-      = 64 / Re (laminar)
-      = 0.057776
+      = Colebrook–White, 15 iterations (Swamee–Jain start 0.050521)
+      = 0.048912
         Friction factor, pressure line to cylinder
-  [14] h_f_s1 = pressure line to cylinder: f (L + L_eq)/D · v²/2g + K v²/2g
-      = 0.057776 × (12 + 0) / 0.02 × 0.18597 + 6 × 0.18597
-      = 7.5628 m
+  [14] f_sj_s1 = pressure line to cylinder: Swamee–Jain check
+      = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
+      = 0.050521
+        Explicit cross-check, pressure line to cylinder
+  [15] h_f_s1 = pressure line to cylinder: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.048912 × (12 + 0) / 0.02 × 0.82074 + 6 × 0.82074
+      = 29.011 m
         Head loss, pressure line to cylinder
-  [15] h_f_total = Σ h_f
+  [16] h_f_total = Σ h_f
       = 1 segment(s)
-      = 7.5628 m
+      = 29.011 m
         Total friction and fitting loss at the design flow
-  [17] V_pipe = Σ π/4·D²·L
+  [18] V_pipe = Σ π/4·D²·L
       = 1 segment(s)
       = 3.7699 L
         Water held in the pipe segments
-  [18] H_static = Σ dz + h_out
+  [19] H_static = Σ dz + h_out
       = 0 + 0
       = 0 m
         Static head
-  [19] H_sys = H_static + h_f_total
-      = 0 m + 7.5628 m
-      = 7.5628 m
+  [20] H_sys = H_static + h_f_total
+      = 0 m + 29.011 m
+      = 29.011 m
         System head at the design flow
-  [20] dp_total = rho * 9.80665 m/s^2 * h_f_total
-      = 870 kg/m³ × 9.80665 m/s^2 × 7.5628 m
-      = 64.524 kPa
+  [21] dp_total = rho * 9.80665 m/s^2 * h_f_total
+      = 870 kg/m³ × 9.80665 m/s^2 × 29.011 m
+      = 247.51 kPa
         Friction pressure drop at the design flow
-  [21] dp_sys = rho * 9.80665 m/s^2 * H_sys
-      = 870 kg/m³ × 9.80665 m/s^2 × 7.5628 m
-      = 64.524 kPa
+  [22] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 870 kg/m³ × 9.80665 m/s^2 × 29.011 m
+      = 247.51 kPa
         System pressure at the design flow
-  [22] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
-      = 870 kg/m³ × 9.80665 m/s^2 × 2.16 m³/h × 7.5628 m
-      = 0.038714 kW
+  [23] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+      = 870 kg/m³ × 9.80665 m/s^2 × 4.5376 m³/h × 29.011 m
+      = 0.31198 kW
         Hydraulic power at the design point
-  [25] v_peak = highest segment velocity
-      = 1.9099 m/s
-      = 1.9099 m/s
+  [26] v_peak = highest segment velocity
+      = 4.0122 m/s
+      = 4.0122 m/s
         Highest velocity
-  [26] u_v = v_peak / v_max
-      = 1.9099 / 5
-      = 0.38197
+  [27] u_v = v_peak / v_max
+      = 4.0122 / 5
+      = 0.80243
         Velocity utilisation
 
 5. RESULTS
-  v_s1 = 1.9099 m/s    Velocity, pressure line to cylinder
-  Re_s1 = 1107.7    Re, pressure line to cylinder
-  f_s1 = 0.057776    f, pressure line to cylinder
-  h_f_s1 = 7.5628 m    h_f, pressure line to cylinder
-  h_f_total = 7.5628 m    Σ h_f
+  v_s1 = 4.0122 m/s    Velocity, pressure line to cylinder
+  Re_s1 = 2327.1    Re, pressure line to cylinder
+  f_s1 = 0.048912    f, pressure line to cylinder
+  f_sj_s1 = 0.050521    f (Swamee–Jain), pressure line to cylinder
+  h_f_s1 = 29.011 m    h_f, pressure line to cylinder
+  h_f_total = 29.011 m    Σ h_f
   H_static = 0 m    Static head
   V_pipe = 3.7699 L    Water held in the pipes
-  H_sys = 7.5628 m    System head at Q
-  dp_total = 64.524 kPa    Friction Δp
-  dp_sys = 64.524 kPa    System Δp
-  Q_design = 2.16 m³/h    Design flow
-  P_hyd = 0.038714 kW    Hydraulic power
-  v_peak = 1.9099 m/s    Highest velocity
+  H_sys = 29.011 m    System head at Q
+  dp_total = 247.51 kPa    Friction Δp
+  dp_sys = 247.51 kPa    System Δp
+  Q_design = 4.5376 m³/h    Design flow
+  P_hyd = 0.31198 kW    Hydraulic power
+  v_peak = 4.0122 m/s    Highest velocity
 
 6. CHECKS (governing first)
-  PASS  Velocity ≤ limit: u_v = 0.38197 vs u_v ≤ 1  utilisation 0.382
+  PASS  Velocity ≤ limit: u_v = 0.80243 vs u_v ≤ 1  utilisation 0.802
 
 7. APPLICABILITY
-  WARNING laminar: segments: pressure line to cylinder is laminar (Re = 1107.7); f = 64/Re.
+  WARNING transition: segments: pressure line to cylinder is transitional (Re = 2327.1); the friction factor is uncertain.
 
 8. VERIFICATION
   Template: bs.pipe-pump@1.2.0
   Content hash: 4747971fae135dcd
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 03:34 UTC
+  Test run: 2026-10-25 03:59 UTC
   Application: TempestOS test

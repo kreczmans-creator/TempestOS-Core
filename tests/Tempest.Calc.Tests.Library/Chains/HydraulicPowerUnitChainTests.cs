@@ -10,8 +10,8 @@ namespace Tempest.Calc.Tests.Library.Chains;
 
 /// <summary>
 /// Addendum B, §B7 chain 1 (phase B-2): the hydraulic power unit F1 → F2, B1, E1 → E4 from the built-in pack template. The cylinder and pump circuit gives the
-/// accumulator its stroke volume and supply pressure, the pressure line its flow, and the pump motor its load torque and speed; the motor's continuous shaft power
-/// sizes the supply cable. The cable step's two tables are SYNTHETIC test values (never a regulation or manufacturer table); the shipped example omits them.
+/// accumulator its stroke volume and supply pressure, the pressure line (the line to the cylinder cap port) its flow, oil density and bore, and the pump motor its
+/// load torque and speed; the candidate motor's rated shaft power sizes the supply cable. The cable step's two tables are SYNTHETIC test values (never a regulation or manufacturer table); the shipped example omits them.
 /// </summary>
 public sealed class HydraulicPowerUnitChainTests
 {
@@ -48,10 +48,11 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(160e5 * 28e-6 * 0.95 / (2 * Math.PI * 0.88), Si(f1, "T_shaft"), 9);
         Assert.Equal(1450, Si(f1, "n_shaft") * 60 / (2 * Math.PI), 9);
 
-        // F1 1.1.0 moved these (independent hand recompute): the rod is judged at the cylinder's thrust (119.38 kN, above the 80 kN push), and the 20 mm
+        // F1 1.2.0 moved these (independent hand recompute): the rod is judged at the stall thrust p·A_b (125.66 kN, above the 80 kN push), and the 20 mm
         // cap-port line at the retract flow Q·A_b/A_a = 75.63 L/min, 4.01 m/s against the 5 m/s placeholder limit (a 16 mm line read 6.27 m/s and failed, so the pack uses 20 mm).
-        var thrust = 160e5 * areaBore * 0.95;
-        Assert.Equal(thrust * 3.5 / 1787806.9776735522, Si(f1, "u_buck"), 9);
+        var stall = 160e5 * areaBore;
+        Assert.Equal(stall * 3.5 / 1787806.9776735522, Si(f1, "u_buck"), 9);
+        Assert.Equal(0.2460125600778818, Si(f1, "u_buck"), 9);
         var areaRod = Math.PI * 0.07 * 0.07 / 4;
         var capFlow = 28e-6 * 1450 / 60 * 0.95 * areaBore / (areaBore - areaRod);
         Assert.Equal(capFlow / (Math.PI * 0.02 * 0.02 / 4), Si(f1, "v_prs"), 9);
@@ -78,31 +79,46 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.All(f2.Checks, c => Assert.True(c.Passed, c.Name));
         Assert.DoesNotContain(f2.Warnings, w => w.RuleId is "exponent" or "realgas" or "shock");
 
-        // F1 → B1, circuit flow Q (L/min into m³/h): 36 L/min is 2.16 m³/h, and it is the only value B1 takes by link.
-        Assert.Equal(Si(f1, "Q"), InputSi(b1, "Q"), 15);
-        Assert.Equal(2.16, Si(b1, "Q_design") * 3600, 12);
-        Assert.Equal(["Q"], b1.Links.Select(l => l.Input.Symbol));
-
-        // B1: the oil is a custom fluid whose density and the tube bore are entered equal to F1's rho and d_prs (F1 offers no output for either): this guards the match.
+        // F1 → B1: the pressure line B1 judges is the line F1 judges, the line to the cylinder cap port: its flow Q_prs (L/min into m³/h) is the larger of the two strokes,
+        // the retract discharge Q·A_b/A_a = 38.57 × 1.9608 = 75.627 L/min = 4.5376 m³/h; the oil density and the line bore come by link too (the bore as a table-cell link).
+        Assert.Equal(Si(f1, "Q_prs"), InputSi(b1, "Q"), 15);
+        Assert.Equal(75.62745098039215e-3 / 60, Si(f1, "Q_prs"), 12);
+        Assert.Equal(4.53764705882353, Si(b1, "Q_design") * 3600, 9);
+        Assert.Equal(["Q", "rho_custom"], b1.Links.Select(l => l.Input.Symbol));
+        var boreLink = Assert.Single(b1.CellLinks);
+        Assert.Equal(("segments", 0, "D", "d_prs"), (boreLink.Symbol, boreLink.Row, boreLink.Column, boreLink.Link.OutputSymbol));
+        Assert.Equal(f1.Id, boreLink.Link.UpstreamId);
         Assert.Equal(InputSi(f1, "rho"), InputSi(b1, "rho_custom"), 12);
         Assert.Equal(870, InputSi(b1, "rho_custom"), 12);
+        Assert.Equal(Si(f1, "rho"), InputSi(b1, "rho_custom"), 12);
         Assert.Equal(InputSi(f1, "d_prs"), CellSi(b1, "segments", 0, "D"), 12);
+        Assert.Equal(Si(f1, "d_prs"), CellSi(b1, "segments", 0, "D"), 12);
         Assert.Equal(20e-3, CellSi(b1, "segments", 0, "D"), 15);
 
-        // B1: laminar (Re 1108), so f = 64/Re and Δp = 32 μ L v/D² + K ρ v²/2 = 55.004 + 9.520 = 64.524 kPa; the line takes about 0.4 % of the supply pressure.
-        var velocity = 36e-3 / 60 / (Math.PI * 0.02 * 0.02 / 4);
+        // B1 at 75.6 L/min in the 20 mm line: v = 4.012 m/s and Re = 2327, just above the 2300 where B1 switches from 64/Re to Colebrook–White, so the flow is
+        // TRANSITIONAL (the sheet warns that the friction factor is uncertain; it is not flagged laminar). Colebrook f = 0.048912 (64/Re would read 0.027503, a 44 % step
+        // across the threshold, so the Colebrook figure is the conservative one): Δp = f L/D ρ v²/2 + K ρ v²/2 = 205.499 + 42.014 = 247.513 kPa, 1.55 % of the supply pressure.
+        var velocity = 75.62745098039215e-3 / 60 / (Math.PI * 0.02 * 0.02 / 4);
         var reynolds = 870 * velocity * 0.02 / 0.03;
         Assert.Equal(velocity, Si(b1, "v_s1"), 9);
-        Assert.Equal(1107.7184039195913, reynolds, 6);
+        Assert.Equal(4.012160885656472, velocity, 9);
+        Assert.Equal(2327.0533136807544, reynolds, 6);
         Assert.Equal(reynolds, Si(b1, "Re_s1"), 6);
-        Assert.Equal(64 / reynolds, Si(b1, "f_s1"), 9);
-        var laminar = 32 * 0.03 * 12 * velocity / (0.02 * 0.02);
+        var friction = 0.02;
+
+        for (var i = 0; i < 200; i++)
+            friction = Math.Pow(-2 * Math.Log10(0.045e-3 / 0.02 / 3.7 + 2.51 / (reynolds * Math.Sqrt(friction))), -2);
+
+        Assert.Equal(0.04891170887386416, friction, 12);
+        Assert.Equal(friction, Si(b1, "f_s1"), 8);
+        var frictionLoss = friction * 12 / 0.02 * 870 * velocity * velocity / 2;
         var fittings = 6 * 870 * velocity * velocity / 2;
-        Assert.Equal(64524.086747593065, laminar + fittings, 3);
-        Assert.Equal(laminar + fittings, Si(b1, "dp_total"), 3);
+        Assert.Equal(247513.4521071798, frictionLoss + fittings, 2);
+        Assert.Equal(frictionLoss + fittings, Si(b1, "dp_total"), 1);
         Assert.Equal(Si(b1, "dp_total"), Si(b1, "dp_sys"), 6);
         Assert.True(Si(b1, "dp_total") < 0.02 * Si(f1, "p"));
-        Assert.Contains(b1.Warnings, w => w.RuleId == "laminar");
+        Assert.Contains(b1.Warnings, w => w.RuleId == "transition");
+        Assert.DoesNotContain(b1.Warnings, w => w.RuleId == "laminar");
         Assert.DoesNotContain(b1.Outputs, o => o.Symbol == "T_shaft");
         Assert.Single(b1.Checks);
         Assert.True(b1.Checks[0].Passed);
@@ -127,18 +143,23 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.All(e1.Checks, c => Assert.True(c.Passed, c.Name));
         Assert.Equal(0.8099023351401162, Si(e1, "u_rms"), 9);
 
-        // E1 → E4, continuous shaft power P_cont (W into kW): E4 takes a shaft power directly, so there is no load-budget step and no design current is linked.
-        Assert.Equal(Si(e1, "P_cont"), InputSi(e4, "P"), 6);
-        Assert.Equal(11.805938169574532, InputSi(e4, "P") / 1e3, 9);
+        // E1's candidate motor (120 N·m rated) at the 1450 rpm running speed is rated 120 × 151.844 = 18.221 kW, above the pump's 11.806 kW.
+        Assert.Equal(120 * omega, Si(e1, "P_rated"), 6);
+        Assert.Equal(18221.2373908208, Si(e1, "P_rated"), 6);
+
+        // E1 → E4, rated shaft power P_rated (W into kW): E4 is sized on the motor, not on the load; it takes a shaft power directly, so there is no load-budget step and no design current is linked.
+        Assert.Equal(Si(e1, "P_rated"), InputSi(e4, "P"), 6);
+        Assert.Equal(18.2212373908208, InputSi(e4, "P") / 1e3, 9);
         Assert.DoesNotContain(e4.Inputs, i => i.Symbol == "I_b_in");
         Assert.Equal(["P"], e4.Links.Select(l => l.Input.Symbol));
+        Assert.Equal("P_rated", e4.Links.Single().Link.OutputSymbol);
 
-        // E4: I_b = P/(√3 U cos φ η) = 21.537 A; the type C device is the 25 A rating and the synthetic capacities give 6 mm² (31.9 A).
-        Assert.Equal(11805.938169574532 / (Math.Sqrt(3) * 400 * 0.86 * 0.92), Si(e4, "I_b"), 9);
-        Assert.Equal(21.537416519969458, Si(e4, "I_b"), 9);
-        Assert.Equal(25, Si(e4, "I_n"), 9);
-        Assert.Equal(6e-6, Si(e4, "CSA"), 15);
-        Assert.Equal(31.9, Si(e4, "I_z"), 9);
+        // E4: I_b = P/(√3 U cos φ η) = 33.241 A; the type C device is the 40 A rating and the synthetic capacities give 10 mm² (44.6 A; 6 mm² carries 31.9 A).
+        Assert.Equal(18221.2373908208 / (Math.Sqrt(3) * 400 * 0.86 * 0.92), Si(e4, "I_b"), 9);
+        Assert.Equal(33.240761857174114, Si(e4, "I_b"), 9);
+        Assert.Equal(40, Si(e4, "I_n"), 9);
+        Assert.Equal(10e-6, Si(e4, "CSA"), 15);
+        Assert.Equal(44.6, Si(e4, "I_z"), 9);
         Assert.Equal(30, Si(e4, "L"), 9);
         Assert.Equal(2, Si(e4, "device_code"), 9);
         Assert.All(e4.Checks, c => Assert.True(c.Passed, c.Name));
@@ -159,10 +180,11 @@ public sealed class HydraulicPowerUnitChainTests
 
         Assert.Equal(["f1", "f2", "b1", "e1", "e4"], template.Steps.Select(s => s.Key));
         Assert.Equal(
-            [("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "Q", "b1", "Q"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_cont", "e4", "P")],
+            [("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "Q_prs", "b1", "Q"), ("f1", "rho", "b1", "rho_custom"), ("f1", "d_prs", "b1", "segments"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_rated", "e4", "P")],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));
+        Assert.Equal((0, "D"), (template.Bindings.Single(b => b.Input == "segments").Row, template.Bindings.Single(b => b.Input == "segments").Column));
 
-        foreach (var b in template.Bindings)
+        foreach (var b in template.Bindings.Where(b => b.Row is null))
         {
             var link = CalcLink.From(made.Instances[b.ToStep].Inputs.Single(i => i.Symbol == b.Input).Provenance);
             Assert.NotNull(link);
@@ -170,9 +192,10 @@ public sealed class HydraulicPowerUnitChainTests
             Assert.Equal(b.Output, link.OutputSymbol);
         }
 
-        // Nothing else is linked: the oil's density and the tube bore are entered, and so is every table.
-        Assert.Equal(template.Bindings.Count, made.Instances.Values.Sum(i => i.Links.Count));
-        Assert.All(made.Instances.Values, i => Assert.Empty(i.CellLinks));
+        // Nothing else is linked: the oil's density and the tube bore come from the cylinder step (the bore as one table cell), and every other input and table is entered.
+        Assert.Equal(template.Bindings.Count(b => b.Row is null), made.Instances.Values.Sum(i => i.Links.Count));
+        Assert.Equal(1, made.Instances.Values.Sum(i => i.CellLinks.Count));
+        Assert.Equal("d_prs", Assert.Single(made.Instances["b1"].CellLinks).Link.OutputSymbol);
     }
 
     [Fact]
@@ -182,7 +205,8 @@ public sealed class HydraulicPowerUnitChainTests
         var made = await InstantiateAsync(host);
         var f1 = made.Instances["f1"];
         var e4Before = made.Instances["e4"];
-        Assert.Equal(6e-6, Si(e4Before, "CSA"), 15);
+        var e1Before = made.Instances["e1"];
+        Assert.Equal(10e-6, Si(e4Before, "CSA"), 15);
 
         await ChainKit.ReviseAndUpdateAsync(host, made, "f1", Uprate, ["f2", "b1", "e1", "e4"]);
 
@@ -200,19 +224,57 @@ public sealed class HydraulicPowerUnitChainTests
         // ... and the update carried each one to its step.
         Assert.Equal(Si(f1New, "dV"), InputSi(f2, "dV"), 15);
         Assert.Equal(Si(f1New, "p"), InputSi(f2, "p_2"), 6);
-        Assert.Equal(Si(f1New, "Q"), InputSi(b1, "Q"), 15);
+        Assert.Equal(Si(f1New, "Q_prs"), InputSi(b1, "Q"), 15);
+        Assert.Equal(71.30093055555555e-3 / 60, Si(f1New, "Q_prs"), 12);
+        Assert.NotEqual(Si(f1, "Q_prs"), Si(f1New, "Q_prs"));
         Assert.Equal(Si(f1New, "T_shaft"), InputSi(e1, "T_L"), 12);
         Assert.Equal(Si(f1New, "n_shaft"), InputSi(e1, "n_L"), 9);
-        Assert.Equal(Si(e1, "P_cont"), InputSi(e4, "P"), 6);
+        Assert.Equal(Si(e1, "P_rated"), InputSi(e4, "P"), 6);
 
-        // The bigger pump takes more power and the supply cable grows with it: 14.3 kW, 26.1 A, a 32 A device and 10 mm² (the 6 mm² capacity of 31.9 A is below 32 A).
-        Assert.True(Si(e1, "P_cont") > 1.2 * 11805.938169574532);
-        Assert.Equal(Si(e1, "P_cont") / (Math.Sqrt(3) * 400 * 0.86 * 0.92), Si(e4, "I_b"), 9);
-        Assert.Equal(32, Si(e4, "I_n"), 9);
+        // The faster pump raises the candidate motor's rated power at the running speed (120 N·m at 1595 rpm = 20.043 kW); the cable follows: 36.565 A, still a 40 A device and 10 mm² (44.6 A).
+        Assert.Equal(20043.36112990288, Si(e1, "P_rated"), 6);
+        Assert.True(Si(e1, "P_rated") > Si(e1Before, "P_rated"));
+        Assert.Equal(Si(e1, "P_rated") / (Math.Sqrt(3) * 400 * 0.86 * 0.92), Si(e4, "I_b"), 9);
+        Assert.Equal(36.56483804289153, Si(e4, "I_b"), 9);
+        Assert.Equal(40, Si(e4, "I_n"), 9);
         Assert.Equal(10e-6, Si(e4, "CSA"), 15);
         Assert.Equal(44.6, Si(e4, "I_z"), 9);
         Assert.NotEqual(Si(e4Before, "I_b"), Si(e4, "I_b"));
         Assert.All(new[] { f2, b1, e1, e4 }, i => Assert.Empty(i.Blocks));
+    }
+
+    [Fact]
+    public async Task Revising_The_Cylinder_Line_Bore_Makes_The_Pressure_Line_Stale_And_The_Update_Carries_The_Bore_Into_Its_Segment()
+    {
+        var host = Host();
+        var made = await InstantiateAsync(host);
+        await AuthoredByAnotherAsync(host, made);
+        var f1 = made.Instances["f1"];
+        var b1Before = made.Instances["b1"];
+        Assert.Equal(20e-3, CellSi(b1Before, "segments", 0, "D"), 15);
+
+        IReadOnlyList<CalcInputValue> Rebore(IReadOnlyList<CalcInputValue> inputs) => [.. inputs.Select(i => i.Symbol == "d_prs" ? i with { Number = 25 } : i)];
+        var revised = await host.Service.UpdateInputsAsync(f1.Id, Rebore(f1.Inputs));
+        Assert.True(revised.Succeeded, revised.Reason);
+
+        // Only the pressure line takes the bore, so only it goes stale, and the reason names the cell and the cylinder output it follows.
+        var staleness = await host.Service.StalenessAsync(await Fresh(host, made, "b1"));
+        Assert.True(staleness.IsStale);
+        Assert.Contains(staleness.Reasons, r => r.Contains("segments", StringComparison.Ordinal) && r.Contains("d_prs", StringComparison.Ordinal));
+
+        foreach (var key in new[] { "f2", "e1", "e4" })
+            Assert.False((await host.Service.StalenessAsync(await Fresh(host, made, key))).IsStale, key);
+
+        Assert.True((await host.Service.UpdateLinksAsync(b1Before.Id)).Succeeded);
+        var b1 = await Fresh(host, made, "b1");
+        Assert.Equal(25e-3, CellSi(b1, "segments", 0, "D"), 15);
+        Assert.False((await host.Service.StalenessAsync(b1)).IsStale);
+
+        // The wider line slows the flow: 75.63 L/min in 25 mm is 2.568 m/s, Re 1861 (laminar again, f = 64/Re).
+        Assert.Equal(75.62745098039215e-3 / 60 / (Math.PI * 0.025 * 0.025 / 4), Si(b1, "v_s1"), 9);
+        Assert.Equal(1861.6426509446035, Si(b1, "Re_s1"), 6);
+        Assert.Contains(b1.Warnings, w => w.RuleId == "laminar");
+        Assert.DoesNotContain(b1.Warnings, w => w.RuleId == "transition");
     }
 
     [Fact]
@@ -237,7 +299,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Contains(f2Reasons, r => r.Contains("'dV'", StringComparison.Ordinal) && r.Contains("different 'dV'", StringComparison.Ordinal));
         Assert.Contains(f2Reasons, r => r.Contains("'p_2'", StringComparison.Ordinal) && r.Contains("different 'p'", StringComparison.Ordinal));
         var b1Reasons = (await host.Service.StalenessAsync(await Fresh(host, made, "b1"))).Reasons;
-        Assert.Contains(b1Reasons, r => r.Contains("'Q'", StringComparison.Ordinal) && r.Contains("different 'Q'", StringComparison.Ordinal));
+        Assert.Contains(b1Reasons, r => r.Contains("'Q'", StringComparison.Ordinal) && r.Contains("different 'Q_prs'", StringComparison.Ordinal));
         var e1Reasons = (await host.Service.StalenessAsync(await Fresh(host, made, "e1"))).Reasons;
         Assert.Contains(e1Reasons, r => r.Contains("'T_L'", StringComparison.Ordinal) && r.Contains("different 'T_shaft'", StringComparison.Ordinal));
         Assert.Contains(e1Reasons, r => r.Contains("'n_L'", StringComparison.Ordinal) && r.Contains("different 'n_shaft'", StringComparison.Ordinal));
@@ -272,10 +334,12 @@ public sealed class HydraulicPowerUnitChainTests
 
         Assert.Contains("link: Cylinder and pump circuit rev A · dV", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Cylinder and pump circuit rev A · p", sheet, StringComparison.Ordinal);
-        Assert.Contains("link: Cylinder and pump circuit rev A · Q", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Cylinder and pump circuit rev A · Q_prs", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Cylinder and pump circuit rev A · rho", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Cylinder and pump circuit rev A · d_prs", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Cylinder and pump circuit rev A · T_shaft", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Cylinder and pump circuit rev A · n_shaft", sheet, StringComparison.Ordinal);
-        Assert.Contains("link: Pump drive motor rev A · P_cont", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Pump drive motor rev A · P_rated", sheet, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -319,6 +383,6 @@ public sealed class HydraulicPowerUnitChainTests
 
         Assert.True(refusal is null, refusal);
         Assert.All(made!.Instances.Values, i => Assert.False(i.Blocks.Count > 0, i.Name));
-        Assert.Equal(25, Si(made.Instances["e4"], "I_n"), 9);
+        Assert.Equal(40, Si(made.Instances["e4"], "I_n"), 9);
     }
 }

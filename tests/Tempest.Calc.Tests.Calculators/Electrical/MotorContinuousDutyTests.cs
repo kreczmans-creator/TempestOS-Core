@@ -38,6 +38,29 @@ public sealed class MotorContinuousDutyTests
     }
 
     [Fact]
+    public void The_Rated_Power_Is_The_Candidate_Motors_Rated_Torque_Times_The_Running_Speed()
+    {
+        // E1 1.3.0: P_rated = T_rated·ω, for sizing a supply on the motor rather than the load (the pump pack links it to the cable step).
+        var r = CalcRunner.Run(Motor, Continuous());
+        var omega = 2 * Math.PI * 2800 / 60;
+        Assert.Equal(2.0 * omega, r.OutputSi("P_rated"), 1e-9);
+        Assert.Equal(586.4306, 2.0 * omega, 3);
+        Assert.True(r.OutputSi("P_rated") > r.OutputSi("P_cont"));
+        Assert.Equal("W", Motor.Template.OutputPorts!.Single(p => p.Symbol == "P_rated").Unit);
+        Assert.Equal("1.3.0", Motor.Template.Version);
+
+        Gen.Select(Gen.Double[0.1, 500], Gen.Double[50, 3000], Gen.Double[1, 10]).Sample((rated, rpm, ratio) =>
+        {
+            var run = CalcRunner.Run(Motor, Continuous(CalcInputValue.Quantity("T_rated", rated, "N*m"), CalcInputValue.Quantity("n_L", rpm, "rpm"), CalcInputValue.Of("i", ratio), CalcInputValue.Quantity("n_max", 1e6, "rpm"), CalcInputValue.Quantity("T_peak", 1e6, "N*m")));
+            var expected = rated * 2 * Math.PI * rpm * ratio / 60;
+            Assert.Equal(expected, run.OutputSi("P_rated"), expected * 1e-9);
+        }, iter: 60);
+
+        // Point-to-point duty has no running speed, so no rated power.
+        Assert.Null(CalcRunner.Run(Motor, CalcTemplateHasher.DefaultInputs(Motor.Template).With(CalcInputValue.Choice("duty_mode", MotorSizingCalculator.DutyPointToPoint))).FindOutput("P_rated"));
+    }
+
+    [Fact]
     public void The_Move_Inputs_Are_Ignored_And_Said_To_Be()
     {
         var baseline = CalcRunner.Run(Motor, Continuous());

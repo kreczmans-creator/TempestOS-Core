@@ -490,7 +490,7 @@ public sealed class ORingGlandTests
         var rod = Run(RodGland);
         Assert.Equal(2.7144408252, Pct(rod, "od_comp"), 9);
 
-        bool Od(CalcRunResult r) => r.Checks.Single(c => c.Name.StartsWith("Ring OD compression", StringComparison.Ordinal)).Passed;
+        bool Od(CalcRunResult r) => r.Checks.Single(c => c.Name == "Ring OD compression not above the limit").Passed;
         bool StretchOk(CalcRunResult r) => r.Checks.Single(c => c.Name == "Installed stretch not above the limit").Passed;
         Assert.True(Od(rod));
         Assert.False(Od(Run([.. RodGland, Percent("od_hi", 2.5)])));
@@ -653,9 +653,95 @@ public sealed class ORingGlandTests
     }
 
     [Fact]
+    public void A_Held_Ring_Takes_The_Larger_Of_The_Held_Circumference_Factor_And_The_Compression_Factor_In_The_Hot_Fill()
+    {
+        // M4 residual: the OD-held fill is max(f/g, 1/(1 − c)). A ring compressed little at the hot end (c_h = 1.87 %, 1/(1 − c) = 1.0191) still takes f/g = 1.0248.
+        var loose = Run([.. RodGland, Mm("d_r", 38.0)]);
+        Assert.Equal(0.018729779285, Step(loose, "c_h"), 9);
+        Assert.Equal(82.2700204416, Pct(loose, "fill_max"), 7);
+
+        // ... isotropic (f W)² × f/g over the groove area, with f/g = 1.025544/1.00072 and no compression term.
+        var (env, _) = PistonGland();
+        var (f, g) = ORingGlandModel.Factors(env with { Kind = SealKind.Rod }, GlandCase.Hot);
+        Assert.Equal(1.0248060637, f / g, 9);
+
+        // A strongly compressed ring (ka-rod-seal, c_h = 5.07 %) takes 1/(1 − c) = 1.0534 instead; unchanged from 1.1.0.
+        Assert.Equal(84.5655009226, Pct(Run(RodGland), "fill_max"), 7);
+
+        // The model agrees at the mean dimensions.
+        var rodEnv = new GlandEnvironment(SealKind.Rod, ReductionRelation.Incompressible, 0.49, 1.5e-4, 1.2e-5, 20, -20, 80, 0, 0.05, 0.2);
+        var x = new double[8];
+        x[(int)GlandDim.Section] = 3.0; x[(int)GlandDim.RingId] = 38.0; x[(int)GlandDim.Surface] = 39.9625; x[(int)GlandDim.Groove] = 44.831; x[(int)GlandDim.Clearance] = 40.0195; x[(int)GlandDim.Width] = 4.15;
+        var c = ORingGlandModel.OdCompression(rodEnv, GlandCase.Hot, x);
+        var (fr, gr) = ORingGlandModel.Factors(rodEnv, GlandCase.Hot);
+        var expected = Math.PI / 4 * Math.Pow(fr * 3.0, 2) * Math.Max(fr / gr, 1 / (1 - c));
+        Assert.Equal(expected, ORingGlandModel.HotRingArea(rodEnv, x), 9);
+        Assert.True(fr / gr > 1 / (1 - c));
+    }
+
+    [Fact]
+    public void The_Ring_OD_Compression_Is_Also_Checked_At_The_Hot_End()
+    {
+        // L-d: ka-rod-seal is compressed 2.71 % as installed and 5.07 % at the hot end (the ring grows more than the housing).
+        var rod = Run(RodGland);
+        Assert.Contains(rod.Checks, c => c.Name == "Ring OD compression at the hot end not above the limit" && c.Passed);
+
+        // An od_hi between the two: the installed check passes and the hot-end check fails.
+        var between = Run([.. RodGland, Percent("od_hi", 4)]);
+        Assert.Contains(between.Checks, c => c.Name == "Ring OD compression not above the limit" && c.Passed);
+        Assert.Contains(between.Checks, c => c.Name == "Ring OD compression at the hot end not above the limit" && !c.Passed);
+        Assert.False(between.Passed);
+
+        // The internal-pressure face seal has it too, and the radial piston seal neither.
+        Assert.Contains(Run([.. InternalFace, Percent("od_hi", 3)]).Checks, c => c.Name == "Ring OD compression at the hot end not above the limit" && !c.Passed);
+        Assert.DoesNotContain(Run().Checks, c => c.Name.StartsWith("Ring OD compression", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_Depth_And_The_Stretch_Follow_Each_Part_Metal_When_The_Sealing_Surface_Part_Differs_From_The_Groove_Metal()
+    {
+        // L-f: the bore (piston seal) or rod (rod seal) expands with alpha_s, the groove with alpha_m; with alpha_s = alpha_m nothing moves.
+        var same = Run(CalcInputValue.Quantity("alpha_s", 1.2e-5, "1/K"));
+        Assert.Equal(Pct(Run(), "squeeze_min"), Pct(same, "squeeze_min"), 12);
+        Assert.Equal(Pct(Run(), "squeeze_max"), Pct(same, "squeeze_max"), 12);
+        Assert.Equal(Pct(Run(), "fill_max"), Pct(same, "fill_max"), 12);
+
+        // Aluminium bore round a steel piston: h = (g_s·D_s − g_m·D_g)/2 at each end (python3 recompute of the worst case).
+        var al = Run(CalcInputValue.Quantity("alpha_s", 2.3e-5, "1/K"));
+        Assert.Equal(17.3347820634, Pct(al, "squeeze_min"), 7);
+        Assert.Equal(26.4498064079, Pct(al, "squeeze_max"), 7);
+        Assert.Equal(64.2445202775, Pct(al, "fill_min"), 7);
+        Assert.Equal(84.0579883229, Pct(al, "fill_max"), 7);
+        Assert.Equal(Pct(Run(), "stretch"), Pct(al, "stretch"), 12);
+        Assert.Equal(Pct(Run(), "X_c"), Pct(al, "X_c"), 12);
+
+        // A rod seal: the rod is the reference diameter, so the stretch at the ends follows the rod's metal (gs), the depth too, and the gap.
+        var rod = Run([.. RodGland, CalcInputValue.Quantity("alpha_s", 2.3e-5, "1/K")]);
+        Assert.Equal(2.6291156903, Pct(rod, "X_c"), 7);
+        Assert.Equal(13.4189415951, Pct(rod, "squeeze_min"), 7);
+        Assert.Equal(27.1961603931, Pct(rod, "squeeze_max"), 7);
+        Assert.Equal(61.5880054912, Pct(rod, "fill_min"), 7);
+        Assert.Equal(85.0309304132, Pct(rod, "fill_max"), 7);
+        Assert.Equal(0.10653528e-3, rod.OutputSi("gap_max"), 12);
+        Assert.Equal(Pct(Run(RodGland), "stretch"), Pct(rod, "stretch"), 12);
+
+        // The model's depth is the same expression, and the stack never reads below the exact corner (the worst-case check stays silent).
+        var (env, vars) = PistonGland(ReductionRelation.Incompressible);
+        var x = new double[8];
+
+        foreach (var v in vars)
+            x[(int)v.Dim] = v.Mid;
+
+        var metals = env with { AlphaSurface = 2.3e-5 };
+        Assert.Equal((1 + 2.3e-5 * 60) * x[(int)GlandDim.Surface] / 2 - (1 + 1.2e-5 * 60) * x[(int)GlandDim.Groove] / 2, ORingGlandModel.DepthAt(metals, GlandCase.Hot, x), 9);
+        Assert.DoesNotContain(al.Warnings, w => w.RuleId == "worst-case");
+        Assert.DoesNotContain(rod.Warnings, w => w.RuleId == "worst-case");
+    }
+
+    [Fact]
     public void The_Template_Version_Is_Bumped_For_The_Changed_Model()
     {
-        Assert.Equal("1.1.0", Gland.Template.Version);
+        Assert.Equal("1.2.0", Gland.Template.Version);
     }
 
     [Fact]

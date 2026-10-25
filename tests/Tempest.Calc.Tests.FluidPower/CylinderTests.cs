@@ -256,28 +256,30 @@ public sealed class CylinderTests
     [Fact]
     public void A_Stalled_Cylinder_Loads_The_Rod_With_Its_Thrust_So_A_Slender_Rod_Fails_Whatever_The_Push_Load_Entered()
     {
-        // H1: 40 mm rod over 2100 mm, Euler F_cr = 59.06 kN. The cylinder's thrust at 160 bar is 76.40 kN, above F_cr even with a safety factor of 1.
+        // H1: 40 mm rod over 2100 mm, Euler F_cr = 59.06 kN. A stalled cylinder at 160 bar carries p·A_b = 80.42 kN (76.40 kN with the seal friction, which does not relieve a stalled rod), above F_cr even with a safety factor of 1.
         var slender = Run(Q("D", 80, "mm"), Q("d_r", 40, "mm"), Q("stroke", 2000, "mm"), Q("F_push", 15, "kN"));
-        double thrust = 160 * Bar * Area(80) * 0.95, fcr = Math.PI * Math.PI * 210e9 * (Math.PI * Math.Pow(0.04, 4) / 64) / (2.1 * 2.1);
+        double thrust = 160 * Bar * Area(80) * 0.95, stall = 160 * Bar * Area(80), fcr = Math.PI * Math.PI * 210e9 * (Math.PI * Math.Pow(0.04, 4) / 64) / (2.1 * 2.1);
         Assert.Equal(thrust, slender.OutputSi("F_ext"), 6);
-        Assert.Equal(thrust, slender.OutputSi("F_buck"), 6);
-        Assert.Equal(thrust * 3.5 / fcr, slender.OutputSi("u_buck"), 9);
-        Assert.InRange(slender.OutputSi("u_buck"), 4.52, 4.54);
+        Assert.Equal(stall, slender.OutputSi("F_stall"), 6);
+        Assert.Equal(stall, slender.OutputSi("F_buck"), 6);
+        Assert.True(slender.OutputSi("F_buck") > slender.OutputSi("F_ext"));
+        Assert.Equal(stall * 3.5 / fcr, slender.OutputSi("u_buck"), 9);
+        Assert.InRange(slender.OutputSi("u_buck"), 4.76, 4.77);
         Assert.Contains(slender.Checks, c => c.Name.StartsWith("Rod buckling", StringComparison.Ordinal) && !c.Passed);
         Assert.False(slender.Passed);
 
         // Even with a safety factor of 1 the rod buckles at the thrust.
         Assert.True(Run(Q("D", 80, "mm"), Q("d_r", 40, "mm"), Q("stroke", 2000, "mm"), Q("F_push", 15, "kN"), CalcInputValue.Of("S_f", 1)).OutputSi("u_buck") > 1);
 
-        // Property: the load judged is the larger of the push load entered and the thrust, in both connections, and the utilisation follows from it.
+        // Property: the load judged is the larger of the push load entered and the stall thrust p·A_b (no η_m, no back pressure), in both connections, and the utilisation follows from it.
         Gen.Select(Gen.Double[0, 400], Gen.Double[20, 200], Gen.Double[0.3, 0.8], Gen.Double[50, 3000], Gen.Bool).Sample((push, bore, rodRatio, stroke, regen) =>
         {
             var r = Run(Q("F_push", push, "kN"), Q("D", bore, "mm"), Q("d_r", bore * rodRatio, "mm"), Q("stroke", stroke, "mm"), CalcInputValue.Choice("mode", regen ? CylinderCalculator.Regenerative : CylinderCalculator.Standard));
-            var expected = Math.Max(push * 1e3, r.OutputSi("F_ext"));
+            var expected = Math.Max(push * 1e3, 160 * Bar * Area(bore));
             return !r.IsBlocked && Math.Abs(r.OutputSi("F_buck") - expected) <= 1e-9 * expected && Math.Abs(r.OutputSi("u_buck") - expected * 3.5 / r.OutputSi("F_cr")) <= 1e-9 * Math.Max(1, r.OutputSi("u_buck"));
         }, iter: 100);
 
-        // A push load above the thrust is the load judged.
+        // A push load above the stall thrust is the load judged.
         var heavy = Run(Q("F_push", 200, "kN"));
         Assert.Equal(200e3, heavy.OutputSi("F_buck"), 6);
     }
@@ -292,9 +294,29 @@ public sealed class CylinderTests
     }
 
     [Fact]
+    public void The_Stall_Thrust_Carries_No_Seal_Friction_And_The_Regenerative_Extend_Is_Judged_At_The_Standard_Connection_Thrust()
+    {
+        // L-a: a stalled rod is not relieved by the seal friction: F_stall = p·A_b, not p·A_b·eta_m.
+        var standard = Run(Q("F_push", 10, "kN"));
+        Assert.Equal(160 * Bar * Area(100), standard.OutputSi("F_stall"), 6);
+        Assert.True(standard.OutputSi("F_stall") > standard.OutputSi("F_ext"));
+        Assert.Equal(standard.OutputSi("F_ext") / 0.95, standard.OutputSi("F_buck"), 6);
+
+        // L-b: the regenerative thrust p·A_r·eta_m is the lower one; the rod is judged at the standard connection's p·A_b, which the valve can always select.
+        var regen = Run(Q("F_push", 10, "kN"), CalcInputValue.Choice("mode", CylinderCalculator.Regenerative));
+        Assert.True(regen.OutputSi("F_ext") < standard.OutputSi("F_ext"));
+        Assert.Equal(standard.OutputSi("F_buck"), regen.OutputSi("F_buck"), 6);
+        Assert.Equal(standard.OutputSi("u_buck"), regen.OutputSi("u_buck"), 9);
+
+        // The back pressure does not enter (no flow at stall), and a bigger push load than the stall thrust is the load.
+        Assert.Equal(standard.OutputSi("F_buck"), Run(Q("F_push", 10, "kN"), Q("p_back", 10, "bar")).OutputSi("F_buck"), 6);
+        Assert.Equal(300e3, Run(Q("F_push", 300, "kN")).OutputSi("F_buck"), 6);
+    }
+
+    [Fact]
     public void The_Template_Version_Is_Bumped_For_The_Changed_Model()
     {
-        Assert.Equal("1.1.0", Cylinder.Template.Version);
+        Assert.Equal("1.2.0", Cylinder.Template.Version);
     }
 
     [Fact]
@@ -375,9 +397,9 @@ public sealed class CylinderTests
         Assert.Equal(1.6, pinned.OutputSi("L_eff"), 9);
         Assert.Equal(3.2, cantilever.OutputSi("L_eff"), 9);
         Assert.True(cantilever.OutputSi("F_cr") < pinned.OutputSi("F_cr"));
-        // The rod is judged at the larger of the push load and the cylinder's thrust (here the thrust, 119.4 kN).
-        Assert.Equal(pinned.OutputSi("F_ext") * 3.5 / pinned.OutputSi("F_cr"), pinned.OutputSi("u_buck"), 9);
-        Assert.Equal(pinned.OutputSi("F_ext"), pinned.OutputSi("F_buck"), 9);
+        // The rod is judged at the larger of the push load and the stall thrust p·A_b (here the stall thrust, 125.7 kN).
+        Assert.Equal(160 * Bar * Area(100) * 3.5 / pinned.OutputSi("F_cr"), pinned.OutputSi("u_buck"), 9);
+        Assert.Equal(160 * Bar * Area(100), pinned.OutputSi("F_buck"), 6);
         Assert.Equal(pinned.OutputSi("u_buck"), Run(Q("F_push", 0, "kN"), Q("stroke", 1500, "mm")).OutputSi("u_buck"), 12);
 
         var over = Run(Q("stroke", 3500, "mm"), Q("F_push", 100, "kN"));
@@ -414,7 +436,10 @@ public sealed class CylinderTests
     public void The_Ports_Are_Outputs_Of_A_Default_Run_With_The_Declared_Units()
     {
         var r = Run();
-        Assert.Equal(["Q", "p", "P_pump", "u_buck", "F_ext", "dV", "T_shaft", "n_shaft"], Cylinder.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal(["Q", "p", "P_pump", "u_buck", "F_ext", "dV", "T_shaft", "n_shaft", "Q_prs", "rho", "d_prs"], Cylinder.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal(870, r.OutputSi("rho"), 9);
+        Assert.Equal(0.016, r.OutputSi("d_prs"), 12);
+        Assert.Equal(r.OutputSi("Q_rtn"), r.OutputSi("Q_prs"), 12);
 
         foreach (var port in Cylinder.Template.OutputPorts!)
         {
