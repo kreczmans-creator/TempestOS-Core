@@ -39,7 +39,7 @@ internal sealed class CalculationModulesCoordinator
 
     private async Task RefreshCoreAsync()
     {
-        _view.ShowCatalogue(CalculationModuleWorkbench.Catalogue());
+        _view.ShowCatalogue(_workbench.AvailableCatalogue());
 
         foreach (var library in Enum.GetValues<ReferenceLibrary>())
             _view.ShowReleased(library, await _workbench.ListReleasedAsync(library).ConfigureAwait(true));

@@ -312,6 +312,10 @@ internal sealed partial class MainWindowComposer
             (Tempest.Core.Events.IEventBus)host.Services!.GetService(typeof(Tempest.Core.Events.IEventBus)),
             (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger)));
 
+        // `ADR-0173`: Evidence a worksheet manages is checked, issued and revised there; its editor's "Open worksheet" lands here.
+        viewCoordinator.OpenCalculationForEvidenceAsync = evidenceId =>
+            calcSheets.OpenForEvidenceAsync(evidenceId, views.EngineeringAreaView.OpenWorksheetAsync);
+
         return new ComposedCoordinators(
             undoRedo, viewCoordinator, cockpitView, homeDashboardView, dockingComposer, attachmentViewers, layoutPresets,
             engineeringCalculationCoordinator, calculationModulesCoordinator, calcSheets, projectDelivery, projectGovernanceCoordinator);

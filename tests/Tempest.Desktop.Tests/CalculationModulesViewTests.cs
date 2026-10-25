@@ -36,7 +36,8 @@ public sealed class CalculationModulesViewTests
     [AvaloniaFact]
     public async Task TheCatalogue_ListsEveryProductCalculationByCategory_AndTheColumnsSitSideBySide()
     {
-        await InCalculatorsAsync(async (host, window, view) =>
+        // With the lifting feature on (`ADR-0173`): the lifting-lug module is withheld from the surface until it is.
+        await InCalculatorsAsync(liftingOn: true, body: async (host, window, view) =>
         {
             LayOut(window);
 
@@ -211,7 +212,7 @@ public sealed class CalculationModulesViewTests
     [AvaloniaFact]
     public async Task TheLug_HasItsOwnPickerForEachMaterial_AndBothArePinnedAndCited()
     {
-        await InCalculatorsAsync(async (host, window, view) =>
+        await InCalculatorsAsync(liftingOn: true, body: async (host, window, view) =>
         {
             await ReleaseSeededSteelAsync(host, window);
             view = SurfaceOf(window);
@@ -540,9 +541,24 @@ public sealed class CalculationModulesViewTests
         await Task.Yield();
     }
 
-    private static async Task InCalculatorsAsync(Func<WorkspaceHost, MainWindow, CalculationModulesView, Task> body)
+    [AvaloniaFact]
+    public async Task WithTheLiftingFeatureOff_TheSurfaceOffersEveryCalculationButTheLiftingLug()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
+        await InCalculatorsAsync(async (host, window, view) =>
+        {
+            var ids = view.Catalogue.SelectMany(g => g.Modules).Select(m => m.Id).ToList();
+            Assert.Equal(ProductCalculationCatalogue.CalculationIds.Count - 1, ids.Count);
+            Assert.DoesNotContain(LiftingLugPinJointCalculationDefinition.Id, ids);
+            await Task.CompletedTask;
+        });
+    }
+
+    private static async Task InCalculatorsAsync(Func<WorkspaceHost, MainWindow, CalculationModulesView, Task> body, bool liftingOn = false)
+    {
+        // The administrator source is injected: the machine's own is never consulted, so the result does not depend on the machine running the test.
+        Tempest.Calc.Library.ICalcFeatureSource source = new Tempest.Calc.Library.WindowsPolicyFeatureSource(
+            (_, name) => liftingOn && name == "Lifting" ? new Tempest.Calc.Library.PolicyValue(true, true, 1) : default);
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs, calcFeatureSource: source);
         try
         {
             await host.StartAsync();

@@ -100,6 +100,14 @@ public sealed class CalculationModuleWorkbench
             .Select(g => new CalculationModuleGroup(g.Key, g.ToList()))
             .ToList();
 
+    /// <summary>The calculations this installation offers: <see cref="Catalogue"/> less the modules whose feature is switched off (`ADR-0173`).</summary>
+    public IReadOnlyList<CalculationModuleGroup> AvailableCatalogue() =>
+        CalculationModuleDescriptors.All
+            .Where(_service.IsAvailable)
+            .GroupBy(d => d.Category, StringComparer.Ordinal)
+            .Select(g => new CalculationModuleGroup(g.Key, g.ToList()))
+            .ToList();
+
     /// <summary>Registers every product calculation <paramref name="templates"/> does not already hold, so the Re-run and Compare commands reach all of them.</summary>
     public static void RegisterMissingTemplates(CalculationTemplateRegistry templates)
     {

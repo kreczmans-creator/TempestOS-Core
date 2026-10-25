@@ -47,6 +47,7 @@ public sealed partial class CalcInstanceService
     private readonly string? _applicationVersion;
     private readonly Tempest.Core.Events.IEventBus? _events;
     private readonly IReadOnlyList<CalcPackTemplate> _packTemplates;
+    private readonly Tempest.Core.Identity.IPrincipalDirectory? _principals;
 
     public CalcInstanceService(
         CalcCatalogue catalogue,
@@ -58,7 +59,8 @@ public sealed partial class CalcInstanceService
         ICalcEngine? engine = null,
         string? applicationVersion = null,
         Tempest.Core.Events.IEventBus? events = null,
-        IReadOnlyList<CalcPackTemplate>? packTemplates = null)
+        IReadOnlyList<CalcPackTemplate>? packTemplates = null,
+        Tempest.Core.Identity.IPrincipalDirectory? principals = null)
     {
         _catalogue = catalogue ?? throw new ArgumentNullException(nameof(catalogue));
         _store = store ?? throw new ArgumentNullException(nameof(store));
@@ -70,9 +72,38 @@ public sealed partial class CalcInstanceService
         _applicationVersion = applicationVersion;
         _events = events;
         _packTemplates = packTemplates ?? [];
+        _principals = principals;
     }
 
     public CalcCatalogue Catalogue => _catalogue;
+
+    /// <summary>The owner this service presents to <see cref="IEvidenceService"/>: the evidence of a calculation is checked, issued and revised here and nowhere else (`ADR-0173`).</summary>
+    private static readonly EvidenceOwner CalcOwner = new(Evidence.CalcWorksheetOwner);
+
+    /// <summary>
+    /// Marks the Evidence of a calculation made before Evidence could be managed as managed by the worksheet, so the generic Evidence acts
+    /// refuse it from now on. Evidence created now is managed from the start.
+    /// </summary>
+    private async Task AdoptEvidenceAsync(Guid? evidenceId, CancellationToken cancellationToken)
+    {
+        if (evidenceId is { } id)
+            await _evidence.ManageAsync(id, CalcOwner, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The one-off startup sweep (review N4): marks the Evidence of every saved calculation and pack as managed by its worksheet, so Evidence made
+    /// before the marker existed is closed to the generic Evidence acts at once, not at its next check or issue (which a switched-off or blocked
+    /// calculation never reaches). Idempotent; Evidence already managed is left alone. Returns how many Evidence records it looked at.
+    /// </summary>
+    public async Task<int> AdoptAllEvidenceAsync(CancellationToken cancellationToken = default)
+    {
+        var ids = await _store.ListEvidenceIdsAsync(cancellationToken).ConfigureAwait(false);
+
+        foreach (var id in ids)
+            await AdoptEvidenceAsync(id, cancellationToken).ConfigureAwait(false);
+
+        return ids.Count;
+    }
 
     /// <summary>
     /// Stands in for the signed-in principal when set. Internal, for the tests, which have no sign-in to switch between two people;
@@ -140,7 +171,7 @@ public sealed partial class CalcInstanceService
             inputs = ScanImportVerifier.Verify(CadImportVerifier.Verify(list, null).Inputs, null).Inputs;
         }
 
-        var evidence = await _evidence.CreateAsync(projectId, EvidenceTitle(cleanName, entry.Template.Title, "A"), EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
+        var evidence = await _evidence.CreateManagedAsync(projectId, EvidenceTitle(cleanName, entry.Template.Title, "A"), EvidenceClassification.Calculation, Evidence.CalcWorksheetOwner, null, cancellationToken).ConfigureAwait(false);
         var register = await CreateRegisterEntryAsync(projectId, cleanName, evidence.Id, cancellationToken).ConfigureAwait(false);
 
         var instance = new CalcInstance(
@@ -176,6 +207,9 @@ public sealed partial class CalcInstanceService
 
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
+
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
 
         if (expectedUpdatedAt is { } expected && instance.UpdatedAt != expected)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' was changed after these inputs were read from it; reopen it and try again.", instance);
@@ -221,6 +255,10 @@ public sealed partial class CalcInstanceService
             updated = updated with { Inputs = scanVerification.Inputs };
 
         updated = await RunAndSnapshotAsync(entry, updated, cancellationToken).ConfigureAwait(false);
+
+        // ADR-0173: an attestation is of the inputs as they were; any change to them voids it.
+        if (updated.Attestation is { } attested && !string.Equals(attested.InputsHash, HashInputs(updated.Inputs), StringComparison.Ordinal))
+            updated = updated with { Attestation = null };
 
         try
         {
@@ -287,6 +325,10 @@ public sealed partial class CalcInstanceService
         if (instance.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only a draft can be checked.", instance);
 
+        // ADR-0173: a calculator that is switched off cannot be checked, however the instance came to exist.
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
+
         // Addendum A, L1: a stale calculation cannot be checked; it is updated to the current upstream revisions first.
         if (await StalenessAsync(instance, cancellationToken).ConfigureAwait(false) is { IsStale: true } stale)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is stale: {stale.Reasons[0]} Update it before checking.", instance);
@@ -301,6 +343,8 @@ public sealed partial class CalcInstanceService
         if (instance.EvidenceId is not { } evidenceId)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' has no Evidence to check.", instance);
 
+        await AdoptEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
+
         // Addendum A, §A3: E4, E5 and S6 demand an independent check whatever the Evidence setting — the signed-in checker
         // must not be the author (DA-12).
         if (IndependenceRefusal(instance, $"'{instance.Name}'", "check it") is { } notIndependent)
@@ -311,6 +355,18 @@ public sealed partial class CalcInstanceService
 
         if (provenanceGate is not null)
             return CalcActionResult.Refused(provenanceGate.Replace("before the sheet can be issued", "before it can be checked", StringComparison.Ordinal), instance);
+
+        // ADR-0173: a template that demands a competent-person attestation is not checked without one (Issue would refuse it).
+        var checkedTemplate = _catalogue.Find(instance.TemplateReference)?.Template;
+
+        if (outcome != CheckOutcome.Rejected && checkedTemplate is not null)
+        {
+            if (CheckGovernanceRefusal(instance, checkedTemplate) is { } attestationRefusal)
+                return CalcActionResult.Refused(attestationRefusal, instance);
+
+            if (AttesterIsSigningRefusal(instance, checkedTemplate, checkerName, $"Calculation '{instance.Name}'") is { } attesterChecks)
+                return CalcActionResult.Refused(attesterChecks, instance);
+        }
 
         if (outcome == CheckOutcome.Rejected)
         {
@@ -336,13 +392,18 @@ public sealed partial class CalcInstanceService
         // transaction-time re-read of both (R-15: an Update racing this check is refused; R-19: a second check is refused).
         var checkedAt = _time.GetUtcNow();
         var updated = instance with { Status = CalcInstanceStatus.Checked, CheckedBy = checkerName, CheckedAt = checkedAt, UpdatedAt = checkedAt };
+
+        // ADR-0173: the second check must be by a different person, so the first checker's sign-in is kept (only where a second check is asked for).
+        if (checkedTemplate?.RequiresSecondCheck == true)
+            updated = updated with { CheckerPrincipal = CurrentPrincipal() };
+
         EvidenceActionResult result;
 
         try
         {
             result = await _evidence.RecordCheckInOneTransactionAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome,
                 alsoWrite: (transaction, token) => CalcInstanceStore.WriteGuardedAsync(transaction, updated, instance.UpdatedAt, token),
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken, owner: CalcOwner).ConfigureAwait(false);
         }
         catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
         {
@@ -429,16 +490,26 @@ public sealed partial class CalcInstanceService
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
 
+        // ADR-0173: first, whatever else is true of it, a calculation of a switched-off calculator is never issued.
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
+
         if (instance.Status != CalcInstanceStatus.Checked)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; check it before issuing.", instance);
 
         if (instance.EvidenceId is not { } evidenceId)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' has no Evidence to issue.", instance);
 
+        await AdoptEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
+
         var entry = _catalogue.Find(instance.TemplateReference);
 
         if (entry is null)
             return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
+
+        // ADR-0173: the competent-person attestation and the second independent check a template can demand.
+        if (IssueGovernanceRefusal(instance, entry.Template) is { } governance)
+            return CalcActionResult.Refused(governance, instance);
 
         var inputs = new CalcInputSet(instance.Inputs);
         var provenance = CalcInputValidator.ValidateProvenanceForIssue(entry.Template, inputs);
@@ -484,13 +555,14 @@ public sealed partial class CalcInstanceService
                     IssuedAt = issuedAtUtc,
                     UpdatedAt = issuedAtUtc,
                     IssueReference = issueReference,
-                    Issue = new CalcIssueSnapshot(text, CalcTemplateHasher.CanonicalText(entry.Template, CalcTemplateHasher.Formulas(entry.Calculator)), _engine.EngineVersion, report.Passed, report.Total, report.RunAt, attachmentId.ToString("N"), _applicationVersion),
+                    Issue = new CalcIssueSnapshot(text, CalcTemplateHasher.CanonicalText(entry.Template, CalcTemplateHasher.Formulas(entry.Calculator)), _engine.EngineVersion, report.Passed, report.Total, report.RunAt, attachmentId.ToString("N"), _applicationVersion, FeatureNoteFor(entry.Template)),
                 };
 
                 return new IssueSheetContent(fileName, _renderer is null ? "text/plain" : "application/pdf", bytes, attachmentId);
             },
             alsoWrite: (transaction, token) => CalcInstanceStore.WriteIssuedInstanceAsync(transaction, issued!, token),
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+            cancellationToken: cancellationToken,
+            owner: CalcOwner).ConfigureAwait(false);
         }
         catch (InvalidOperationException ex) when (ex is CalcConcurrentIssueException || ex.Message.Contains("larger than", StringComparison.Ordinal))
         {
@@ -521,10 +593,13 @@ public sealed partial class CalcInstanceService
         if (instance is null)
             return CalcActionResult.Refused($"No calculation '{instanceId}' exists.");
 
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return CalcActionResult.Refused(switchedOff, instance);
+
         // A checked calculation that has gone stale (a record was revised, a template changed, an upstream moved) is never a dead end:
         // it can be revised, which starts a draft to correct and check again (Red R-A-04, ADR-0166).
         if (instance.Status != CalcInstanceStatus.Issued
-            && !(instance.Status == CalcInstanceStatus.Checked && (inputsOverride is not null || (await StalenessAsync(instance, cancellationToken).ConfigureAwait(false)).IsStale)))
+            && !(instance.Status == CalcInstanceStatus.Checked && (inputsOverride is not null || instance.SecondCheck is { Accepted: false } || (await StalenessAsync(instance, cancellationToken).ConfigureAwait(false)).IsStale)))
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only an issued calculation, or a checked one that has gone stale, can be revised.", instance);
 
         var entry = _catalogue.Get(instance.TemplateId);
@@ -555,7 +630,7 @@ public sealed partial class CalcInstanceService
         {
             try
             {
-                evidence = await _evidence.CreateAsync(instance.ProjectId, EvidenceTitle(instance.Name, entry.Template.Title, nextRevision), EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
+                evidence = await _evidence.CreateManagedAsync(instance.ProjectId, EvidenceTitle(instance.Name, entry.Template.Title, nextRevision), EvidenceClassification.Calculation, Evidence.CalcWorksheetOwner, null, cancellationToken).ConfigureAwait(false);
             }
             catch (DuplicateBusinessIdentifierException ex)
             {
@@ -585,9 +660,15 @@ public sealed partial class CalcInstanceService
             }
         }
 
+        // A revision starts unattested (review N6): the earlier attestation's inputs, with their "Attested by X on date" source, are not carried, so
+        // the draft's sheet does not read as attested. A fresh AttestAsync writes them again.
+        var carried = entry.Template.RequiresAttestation
+            ? (inputsOverride ?? instance.Inputs).Where(i => !CalcAttestation.Symbols.Contains(i.Symbol, StringComparer.Ordinal)).ToList()
+            : inputsOverride ?? instance.Inputs;
+
         var next = new CalcInstance(
             id, entry.Reference, entry.ContentHash, instance.ProjectId, instance.Name, nextRevision,
-            inputsOverride ?? instance.Inputs, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, repin ? instance.CreatedBy : author, now, now, PredecessorId: instance.Id,
+            carried, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, repin ? instance.CreatedBy : author, now, now, PredecessorId: instance.Id,
             EditedBy: repin ? WithAuthors(instance.EditedBy, instance.CreatedBy) : WithAuthors(instance.EditedBy, instance.CreatedBy, author),
             RepinnedBy: repin ? WithAuthors(instance.RepinnedBy, author) : instance.RepinnedBy,
             CadImports: instance.CadImports,
@@ -639,13 +720,16 @@ public sealed partial class CalcInstanceService
             if (found.ProjectId != projectId)
                 throw new ArgumentException($"Calculation '{found.Name}' belongs to another project; a pack holds the calculations of one project.", nameof(instanceIds));
 
+            if (FeatureRefusal(found.TemplateReference) is { } switchedOff)
+                throw new CalcFeatureDisabledException(switchedOff);
+
             members.Add(found);
         }
 
         var now = _time.GetUtcNow();
         var author = CurrentPrincipal();
         var cleanTitle = CalcSheetTextRenderer.Clean(title.Length > 200 ? title[..200] : title);
-        var evidence = await _evidence.CreateAsync(projectId, $"{cleanTitle} — calculation pack", EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
+        var evidence = await _evidence.CreateManagedAsync(projectId, $"{cleanTitle} — calculation pack", EvidenceClassification.Calculation, Evidence.CalcWorksheetOwner, null, cancellationToken).ConfigureAwait(false);
         var pack = new CalcPack(Guid.NewGuid(), projectId, cleanTitle, "A", instanceIds, [new CalcPackRevision("A", now, author, "First issue")], CalcInstanceStatus.Draft, evidence.Id, author, now, now);
         await _store.SavePackAsync(pack, cancellationToken).ConfigureAwait(false);
 
@@ -690,6 +774,8 @@ public sealed partial class CalcInstanceService
         if (pack.Status != CalcInstanceStatus.Draft)
             return CalcActionResult.Refused($"Pack '{pack.Title}' is {pack.Status}.");
 
+        await AdoptEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
+
         var (members, gone) = await PackMembersAsync(pack, cancellationToken).ConfigureAwait(false);
 
         if (gone is not null)
@@ -701,6 +787,10 @@ public sealed partial class CalcInstanceService
 
         foreach (var member in members)
         {
+            // ADR-0173: a member of a switched-off calculator holds the whole pack back, whatever else is true of it.
+            if (FeatureRefusal(member.TemplateReference) is { } switchedOff)
+                return CalcActionResult.Refused($"Pack member '{member.Name}': {switchedOff}");
+
             if (member.Blocks.Count > 0)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is blocked: {member.Blocks[0].Message}");
 
@@ -715,6 +805,17 @@ public sealed partial class CalcInstanceService
 
             if (IndependenceRefusal(member, $"Pack member '{member.Name}'", "check the pack") is { } notIndependent)
                 return CalcActionResult.Refused(notIndependent);
+
+            // ADR-0173: a member that lacks the attestation its template demands holds an accepting check of the pack back (a rejection needs none), and
+            // the attester of a member cannot be the one checking the pack.
+            if (outcome != CheckOutcome.Rejected && _catalogue.Find(member.TemplateReference)?.Template is { } memberTemplate)
+            {
+                if (AttestationRefusal(member, memberTemplate, $"Pack member '{member.Name}'") is { } attestationRefusal)
+                    return CalcActionResult.Refused(attestationRefusal);
+
+                if (AttesterIsSigningRefusal(member, memberTemplate, checkerName, $"Pack member '{member.Name}'") is { } attesterChecks)
+                    return CalcActionResult.Refused(attesterChecks);
+            }
         }
 
         // A rejection leaves the pack and its Evidence as drafts (Black B-12).
@@ -724,14 +825,14 @@ public sealed partial class CalcInstanceService
         // The Evidence check and the pack's Checked mark commit together, after a re-read of the pack: a crash between them cannot
         // leave a pack that can never be checked (Red R-A-14).
         var now = _time.GetUtcNow();
-        var checkedPack = pack with { Status = CalcInstanceStatus.Checked, UpdatedAt = now };
+        var checkedPack = pack with { Status = CalcInstanceStatus.Checked, UpdatedAt = now, CheckerPrincipal = CurrentPrincipal(), CheckerName = checkerName };
         EvidenceActionResult result;
 
         try
         {
             result = await _evidence.RecordCheckInOneTransactionAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome,
                 alsoWrite: (transaction, token) => CalcInstanceStore.WriteGuardedPackAsync(transaction, checkedPack, pack.UpdatedAt, token),
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken, owner: CalcOwner).ConfigureAwait(false);
         }
         catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
         {
@@ -765,7 +866,7 @@ public sealed partial class CalcInstanceService
 
         try
         {
-            evidence = await _evidence.CreateAsync(pack.ProjectId, $"{pack.Title} — calculation pack (rev {next})", EvidenceClassification.Calculation, null, cancellationToken).ConfigureAwait(false);
+            evidence = await _evidence.CreateManagedAsync(pack.ProjectId, $"{pack.Title} — calculation pack (rev {next})", EvidenceClassification.Calculation, Evidence.CalcWorksheetOwner, null, cancellationToken).ConfigureAwait(false);
         }
         catch (DuplicateBusinessIdentifierException ex)
         {
@@ -779,6 +880,9 @@ public sealed partial class CalcInstanceService
             EvidenceId = evidence.Id,
             UpdatedAt = now,
             Revisions = [.. pack.Revisions, new CalcPackRevision(next, now, CurrentPrincipal(), "Reopened after its check")],
+            CheckerPrincipal = null,
+            CheckerName = null,
+            SecondCheck = null,
         };
 
         try
@@ -807,6 +911,8 @@ public sealed partial class CalcInstanceService
         if (pack.Status != CalcInstanceStatus.Checked)
             return CalcActionResult.Refused($"Pack '{pack.Title}' is {pack.Status}; check it before issuing.");
 
+        await AdoptEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
+
         var (stored, gone) = await PackMembersAsync(pack, cancellationToken).ConfigureAwait(false);
 
         if (gone is not null)
@@ -816,11 +922,17 @@ public sealed partial class CalcInstanceService
         var together = pack.InstanceIds.ToHashSet();
         var members = new List<(CalcInstance Instance, CalcCatalogueEntry Entry, CalcInputSet Inputs, CalcRunResult Result, KnownAnswerReport Report)>();
 
+        // The authors of every member, not only those looked at so far (the second check is held to all of them).
+        var allAuthors = stored.SelectMany(m => m.Authors).Distinct(StringComparer.Ordinal).ToList();
+
         // What the checks below were made against: the issue is refused if any of it changes before it commits (Red R-A-14).
         var seen = new Dictionary<Guid, (Guid? ProjectId, string Name, DateTimeOffset UpdatedAt)>();
 
         foreach (var member in stored)
         {
+            if (FeatureRefusal(member.TemplateReference) is { } switchedOff)
+                return CalcActionResult.Refused($"Pack member '{member.Name}': {switchedOff}");
+
             if (member.Status is CalcInstanceStatus.Superseded)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is superseded.");
 
@@ -837,6 +949,18 @@ public sealed partial class CalcInstanceService
 
             if (entry is null)
                 return CalcActionResult.Refused($"Template '{member.TemplateReference}' is no longer registered.");
+
+            // ADR-0173: the attestation per member; the second check once for the pack, below.
+            if (AttestationRefusal(member, entry.Template, $"Pack member '{member.Name}'", pack) is { } attestationRefusal)
+                return CalcActionResult.Refused(attestationRefusal);
+
+            if (entry.Template.RequiresSecondCheck)
+            {
+                var packRefusal = CountersignatureRefusal(pack.SecondCheck, pack.CheckerName, pack.CheckerPrincipal, allAuthors, $"Pack '{pack.Title}'");
+
+                if (packRefusal is not null)
+                    return CalcActionResult.Refused(packRefusal);
+            }
 
             var inputs = new CalcInputSet(member.Inputs);
             var provenance = CalcInputValidator.ValidateProvenanceForIssue(entry.Template, inputs);
@@ -877,7 +1001,7 @@ public sealed partial class CalcInstanceService
                 foreach (var (member, entry, inputs, result, report) in members)
                 {
                     n++;
-                    var header = await HeaderAsync(entry, member, evidence, CalcSheetStatus.Issued, issuedAtUtc, issueReference, client, token).ConfigureAwait(false);
+                    var header = await HeaderAsync(entry, member, evidence, CalcSheetStatus.Issued, issuedAtUtc, issueReference, client, token, second: pack.SecondCheck).ConfigureAwait(false);
                     var sheet = await FinishSheetAsync(entry, inputs, result, header, Footer(entry, report), token).ConfigureAwait(false);
                     sheets.Add(sheet);
                     index.Add(new CalcPackIndexRow(n, member.Name, entry.Template.Title, member.Revision, "ISSUED", sheet.Governing is { } g ? $"{g.Name} {(g.Passed ? "PASS" : "FAIL")}" : null));
@@ -890,15 +1014,16 @@ public sealed partial class CalcInstanceService
                         UpdatedAt = issuedAtUtc,
                         IssueReference = issueReference,
                         PackId = pack.Id,
-                        Issue = new CalcIssueSnapshot(text, CalcTemplateHasher.CanonicalText(entry.Template, CalcTemplateHasher.Formulas(entry.Calculator)), _engine.EngineVersion, report.Passed, report.Total, report.RunAt, null, _applicationVersion),
+                        Issue = new CalcIssueSnapshot(text, CalcTemplateHasher.CanonicalText(entry.Template, CalcTemplateHasher.Formulas(entry.Calculator)), _engine.EngineVersion, report.Passed, report.Total, report.RunAt, null, _applicationVersion, FeatureNoteFor(entry.Template)),
                     });
                 }
 
                 var project = await ProjectLabelAsync(pack.ProjectId, token).ConfigureAwait(false);
                 var cover = new CalcSheet(
-                    new CalcSheetHeader(project, pack.Title, "Calculation pack", pack.Revision, CalcSheetStatus.Issued, evidence.AuthorIdentityId, evidence.Check?.CheckerName, evidence.CreatedAt, evidence.Check?.DateUtc, issuedAtUtc, client, issueReference),
+                    new CalcSheetHeader(project, pack.Title, "Calculation pack", pack.Revision, CalcSheetStatus.Issued, evidence.AuthorIdentityId, CheckerLabel(evidence.Check?.CheckerName, pack.SecondCheck), evidence.CreatedAt, evidence.Check?.DateUtc, issuedAtUtc, client, issueReference),
                     "Calculation pack: the calculations listed in the index, issued together under one issue sheet.", string.Empty, [], [], [], [], [], [], [], [],
-                    new CalcSheetFooter("pack", "—", _engine.EngineVersion, members.Sum(m => m.Report.Passed), members.Sum(m => m.Report.Total), issuedAtUtc, _applicationVersion),
+                    new CalcSheetFooter("pack", "—", _engine.EngineVersion, members.Sum(m => m.Report.Passed), members.Sum(m => m.Report.Total), issuedAtUtc, _applicationVersion,
+                        string.Join("; ", members.Select(m => FeatureNoteFor(m.Entry.Template)).Where(n => n is not null).Distinct(StringComparer.Ordinal))),
                     pack.Revisions.Select(r => new CalcRevisionRow(r.Revision, r.Date, r.Author, r.Description)).ToList(), index);
 
                 var bytes = _renderer?.RenderPack(cover, sheets) ?? Encoding.UTF8.GetBytes(CalcSheetTextRenderer.Render(cover) + "\n" + string.Join("\n\f\n", sheets.Select(CalcSheetTextRenderer.Render)));
@@ -918,7 +1043,8 @@ public sealed partial class CalcInstanceService
 
                 await CalcInstanceStore.WritePackAsync(transaction, issuedPack!, token).ConfigureAwait(false);
             },
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+            cancellationToken: cancellationToken,
+            owner: CalcOwner).ConfigureAwait(false);
 
         }
         catch (InvalidOperationException ex) when (ex is CalcConcurrentIssueException or CalcConcurrencyException or CalcInstanceImmutableException || ex.Message.Contains("larger than", StringComparison.Ordinal))
@@ -967,9 +1093,14 @@ public sealed partial class CalcInstanceService
             CalcInstanceStatus.Superseded => CalcSheetStatus.Superseded,
             _ => CalcSheetStatus.Draft,
         };
-        var header = await HeaderAsync(entry, instance, evidence, status, instance.IssuedAt, instance.IssueReference, packEvidence?.Issue?.Client ?? evidence?.Issue?.Client, cancellationToken, packEvidence).ConfigureAwait(false);
+        CalcCountersignature? packSecond = null;
+
+        if (instance.PackId is { } secondPackId && instance.SecondCheck is null && await _store.FindPackAsync(secondPackId, cancellationToken).ConfigureAwait(false) is { } secondPack)
+            packSecond = secondPack.SecondCheck;
+
+        var header = await HeaderAsync(entry, instance, evidence, status, instance.IssuedAt, instance.IssueReference, packEvidence?.Issue?.Client ?? evidence?.Issue?.Client, cancellationToken, packEvidence, packSecond).ConfigureAwait(false);
         var footer = instance.Issue is { } issue
-            ? new CalcSheetFooter(entry.Reference, CalcTemplateHasher.Short(instance.TemplateHash), issue.EngineVersion, issue.KnownAnswerPassed, issue.KnownAnswerTotal, issue.TestRunAt, issue.ApplicationVersion)
+            ? new CalcSheetFooter(entry.Reference, CalcTemplateHasher.Short(instance.TemplateHash), issue.EngineVersion, issue.KnownAnswerPassed, issue.KnownAnswerTotal, issue.TestRunAt, issue.ApplicationVersion, issue.FeatureNote)
             : Footer(entry, KnownAnswerRunner.Run(entry.Calculator, _time));
         return await FinishSheetAsync(entry, inputs, result, header, footer, cancellationToken).ConfigureAwait(false);
     }
@@ -1016,18 +1147,19 @@ public sealed partial class CalcInstanceService
     }
 
     /// <param name="checkEvidence">The Evidence whose check the header shows when it is not the calculation's own (a pack member shows its pack's).</param>
-    private async Task<CalcSheetHeader> HeaderAsync(CalcCatalogueEntry entry, CalcInstance instance, Evidence? evidence, CalcSheetStatus status, DateTimeOffset? issuedAt, string? issueReference, string? client, CancellationToken cancellationToken, Evidence? checkEvidence = null)
+    /// <param name="second">The second check a pack gives its members (ADR-0173); an instance's own second check takes precedence.</param>
+    private async Task<CalcSheetHeader> HeaderAsync(CalcCatalogueEntry entry, CalcInstance instance, Evidence? evidence, CalcSheetStatus status, DateTimeOffset? issuedAt, string? issueReference, string? client, CancellationToken cancellationToken, Evidence? checkEvidence = null, CalcCountersignature? second = null)
     {
         var project = await ProjectLabelAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
         var check = (checkEvidence ?? evidence)?.Check;
         return new CalcSheetHeader(
             project, instance.Name, entry.Template.Title, instance.Revision, status,
-            evidence?.AuthorIdentityId ?? instance.CreatedBy, check?.CheckerName ?? instance.CheckedBy,
+            evidence?.AuthorIdentityId ?? instance.CreatedBy, CheckerLabel(check?.CheckerName ?? instance.CheckedBy, instance.SecondCheck ?? second),
             instance.CreatedAt, check?.DateUtc ?? instance.CheckedAt, issuedAt, client, issueReference);
     }
 
     private CalcSheetFooter Footer(CalcCatalogueEntry entry, KnownAnswerReport report) =>
-        new(entry.Reference, entry.ShortHash, _engine.EngineVersion, report.Passed, report.Total, report.RunAt, _applicationVersion);
+        new(entry.Reference, entry.ShortHash, _engine.EngineVersion, report.Passed, report.Total, report.RunAt, _applicationVersion, FeatureNoteFor(entry.Template));
 
     private async Task<string> ProjectLabelAsync(Guid? projectId, CancellationToken cancellationToken)
     {

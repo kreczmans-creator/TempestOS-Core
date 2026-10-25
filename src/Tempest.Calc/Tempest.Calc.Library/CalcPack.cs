@@ -21,7 +21,10 @@ public sealed record CalcPack(
     DateTimeOffset UpdatedAt,
     DateTimeOffset? IssuedAt = null,
     string? IssueReference = null,
-    string? SheetAttachmentId = null)
+    string? SheetAttachmentId = null,
+    string? CheckerPrincipal = null,
+    string? CheckerName = null,
+    CalcCountersignature? SecondCheck = null)
 {
     public const int MaxInstances = 50;
 }

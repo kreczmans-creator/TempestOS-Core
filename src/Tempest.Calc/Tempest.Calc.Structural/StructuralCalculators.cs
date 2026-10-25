@@ -16,5 +16,6 @@ public static class StructuralCalculators
         new BasePlateCalculator(),
         new LtbInteractionCalculator(),
         new PlateBendingCalculator(),
+        new LiftingLugCalculator(),
     ];
 }

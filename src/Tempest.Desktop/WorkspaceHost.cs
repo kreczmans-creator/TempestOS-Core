@@ -48,6 +48,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     private readonly string? _persistenceRootPathOverride;
     private readonly ISessionPrincipalSource? _sessionPrincipalsOverride;
     private readonly IReadOnlyList<string>? _commandLineArgs;
+    private readonly Tempest.Calc.Library.ICalcFeatureSource? _calcFeatureSource;
 
     private ITempestHost? _host;
     private WorkspaceManager? _manager;
@@ -106,14 +107,20 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <see langword="null"/> (the default) to contribute none — reaches
     /// the Host's default configuration source (`WP 17.2A`, ADR-0146).
     /// </param>
+    /// <param name="calcFeatureSource">
+    /// Where the optional calculator features (`ADR-0173`) are switched on, or <see langword="null"/> (the default) for the machine's own
+    /// administrator-only source (the HKLM policy key on Windows, the root-owned file elsewhere). A test supplies its own.
+    /// </param>
     public WorkspaceHost(
         string? persistenceRootPathOverride = null,
         ISessionPrincipalSource? sessionPrincipals = null,
-        IReadOnlyList<string>? commandLineArgs = null)
+        IReadOnlyList<string>? commandLineArgs = null,
+        Tempest.Calc.Library.ICalcFeatureSource? calcFeatureSource = null)
     {
         _persistenceRootPathOverride = persistenceRootPathOverride;
         _sessionPrincipalsOverride = sessionPrincipals;
         _commandLineArgs = commandLineArgs;
+        _calcFeatureSource = calcFeatureSource;
     }
 
     /// <summary>
@@ -330,16 +337,33 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // the record's own Re-run and Compare commands through the
         // dispatcher and the Template registry — every module registered
         // there so the commands reach all nineteen.
+        // Optional calculators (S8 lifting, `ADR-0173`) are composed in but withheld from the catalogue unless the machine's administrator switches
+        // their feature on (the HKLM policy key on Windows, a root-owned file elsewhere). The application installs per user, so the install folder, the
+        // current directory, the environment and the command line are not read for it, and nothing at run time changes it. Enabling is logged with its source.
+        var calcFeatures = Tempest.Calc.Library.CalcFeatureFlags.FromSource(_calcFeatureSource ?? Tempest.Calc.Library.CalcFeatureSources.ForThisMachine(), out var calcFeatureProblem);
+
+        if (calcFeatureProblem is not null)
+            hostLogger?.Warning(calcFeatureProblem);
+
+        foreach (var feature in calcFeatures.Enabled)
+            hostLogger?.Warning($"Optional calculator feature '{feature}' is ENABLED by {calcFeatures.SourceOf(feature)}. It has not been through the owner's review checklist unless the owner has recorded it.");
+
+        // The engine refuses a gated calculation run by id until told its feature is on: the one choke point for every caller (`ADR-0173`).
+        ((Tempest.Core.Calculations.CalculationEngine)host.Services!.GetService(typeof(ICalculationEngine))).ConfigureFeatures(calcFeatures.IsEnabled);
+
         CalculationModuleService = new CalculationModuleService(
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
             (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
             (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
-            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
+            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)),
+            featureEnabled: calcFeatures.IsEnabled);
         // `v0.26.0` (ADR-0165): the worksheet calculation surface. The
         // catalogue is composed statically (`CalcCalculatorComposition`),
         // instances live in the one store, and Issue goes through the
         // Evidence service in one transaction with the rendered PDF.
-        CalcCatalogue = new Tempest.Calc.Library.CalcCatalogue(Tempest.Desktop.CalcSheets.CalcCalculatorComposition.All());
+        CalcCatalogue = new Tempest.Calc.Library.CalcCatalogue(
+            Tempest.Desktop.CalcSheets.CalcCalculatorComposition.All(),
+            calcFeatures);
         CalcInstances = new Tempest.Calc.Library.CalcInstanceService(
             CalcCatalogue,
             new Tempest.Calc.Library.CalcInstanceStore(domainContext.PersistenceStore),
@@ -348,7 +372,18 @@ public sealed class WorkspaceHost : IAsyncDisposable
             CalcSheetRenderer = new Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer(),
             applicationVersion: $"TempestOS {typeof(WorkspaceHost).Assembly.GetName().Version?.ToString(3)}",
             events: eventBus,
-            packTemplates: Tempest.Desktop.CalcSheets.CalcPackTemplateComposition.All());
+            packTemplates: Tempest.Desktop.CalcSheets.CalcPackTemplateComposition.All(),
+            principals: (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory)));
+
+        // One-off sweep (`ADR-0173`): Evidence a worksheet made before the managed marker existed is marked now, so the generic Evidence acts refuse it.
+        try
+        {
+            await CalcInstances.AdoptAllEvidenceAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            hostLogger?.Warning($"Marking calculation Evidence as managed failed ({ex.GetType().Name}); it is marked at its next check or issue instead.");
+        }
 
         CalculationModules = new CalculationModuleWorkbench(
             CalculationModuleService,

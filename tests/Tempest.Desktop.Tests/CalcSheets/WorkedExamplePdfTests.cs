@@ -49,7 +49,11 @@ public sealed class WorkedExamplePdfTests
         var root = Path.Combine(DesktopTestHelpers.RepositoryRoot, "docs", "worked-examples");
         var folder = Path.Combine(root, relative);
         var templateId = relative.Split('/')[1];
-        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All());
+        // The gated calculators (S8 lifting, ADR-0173) are withheld from the shipped catalogue; their worked examples are rendered with the features
+        // they are gated behind on, in this test only. A feature is on only because a composed template names it, and S8 is the one gated template.
+        var gated = CalcCalculatorComposition.All().Where(c => c.Template.FeatureFlag is { Length: > 0 }).ToList();
+        Assert.Equal(["struct.lifting"], gated.Select(c => c.Template.Id));
+        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All(), new CalcFeatureFlags(gated.Select(c => c.Template.FeatureFlag!).Distinct(StringComparer.Ordinal)));
         var entry = catalogue.Find(templateId);
         Assert.NotNull(entry);
 
