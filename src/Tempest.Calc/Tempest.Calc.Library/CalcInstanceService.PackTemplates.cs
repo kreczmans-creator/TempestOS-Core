@@ -224,8 +224,8 @@ public sealed partial class CalcInstanceService
 
                 if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, b.Output, StringComparison.Ordinal)) is not { Si: { } } output)
                 {
-                    // Say why: the upstream sheet's own warnings usually name the missing input (E1 gives no P_rated without its rated speed n_rated).
-                    var reason = upstream.Warnings.FirstOrDefault(w => w.Message.Contains(b.Output, StringComparison.Ordinal)) ?? upstream.Warnings.FirstOrDefault();
+                    // Say why when the upstream sheet has a warning naming the output (only that one, never an unrelated warning) (E1 gives no P_rated without its rated speed n_rated).
+                    var reason = upstream.Warnings.FirstOrDefault(w => w.Message.Contains(b.Output, StringComparison.Ordinal));
                     var why = reason is null ? string.Empty : " " + reason.Message;
                     return $"Step '{step.Key}': '{step.Name}' cannot take '{b.Output}': '{upstream.Name}' gives no numeric output '{b.Output}'.{why}";
                 }
