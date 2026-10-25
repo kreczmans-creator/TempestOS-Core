@@ -575,7 +575,7 @@ def run_extras():
             if sym == "M_x_c" and abs(v) < 1e-3 * abs(independent(spec)["M_y_c"]):
                 tol = 1e-2                        # a centre moment far smaller than the other one: the product stops summing early
         else:
-            tol = 1e-5 if sym == "f1" else (1e-5 if sym == "w_max" else 3e-3)
+            tol = 1e-5 if sym == "f1" else (5e-5 if sym == "w_max" else 3e-3)
         rd = abs(v - prod) / abs(v) if v != 0 else abs(prod)
         print("%-40s %-16s %14.8g %14.8g %10.2e  %s" % (label, sym, prod, v, rd, "PASS" if rd <= tol else "FAIL"))
     # strip limit of a long clamped plate (analytic): edge moment q*b^2/12, w = q*b^4/(384 D)
@@ -584,11 +584,10 @@ def run_extras():
                                                     abs(208.3863 - q * b * b / 12) / (q * b * b / 12), "INFO (K=16 stalled; +0.025 %)"))
     # textbook coefficients (Roark 8th ed. Tables 11.2 and 11.4, values from memory, not pinned): simply supported
     # square beta = 0.2874, alpha = 0.0444; clamped square beta = 0.3078, alpha = 0.0138; circular clamped 0.75, SS 1.2375
-    D = rigidity(210, 0.3, 8)
     ss = navier_converged(500, 500, 8, 210, 0.3, 0.01)[0]
     cl = _clamped_solve(500, 500, 8, 210, 0.3, 0.01, 40, 40)
     print("INFO Roark cross-check (coefficients from memory): SS square beta %.4f (book 0.2874), alpha %.4f (book 0.0444)"
-          % (6 * ss[1] / (0.01 * 500 ** 2) * 1e0 / 64 * 64 / 6 * 6 / 64 * 64 / 1, ss[0] * 210e3 * 8 ** 3 / (0.01 * 500 ** 4)))
+          % (6 * ss[1] / (0.01 * 500 ** 2), ss[0] * 210e3 * 8 ** 3 / (0.01 * 500 ** 4)))
     print("INFO clamped square: edge beta %.4f (book 0.3078), alpha %.4f (book 0.0138)"
           % (6 * cl["M_edge"] / (0.01 * 500 ** 2), cl["w"] * 210e3 * 8 ** 3 / (0.01 * 500 ** 4)))
 

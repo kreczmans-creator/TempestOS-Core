@@ -134,6 +134,9 @@ EXTRA = [
  # psi, degF and US gallon inputs, converted here with exact factors (rounded inputs 1305.34, 1450.377, 2900.755 psi; 2.64172052 gal; 68 F)
  ("X15 psi / degF / US gal inputs", dict(dV=2.64172052 * gal, p0=1305.34 * psi, p1=1450.377 * psi, p2=2900.755 * psi, Tmax=F2C(68), Tmin=F2C(68)),
   dict(V0=22.22220261, p0=90.00002485, u_r0=1.000000536, u_rp=0.555555449)),
+ # Addendum B-2 re-check at 2f53791c (fp.accumulator 1.2.0): the F2 step of pack.hydraulic-power-unit (Emergency stroke, dV and p_2 linked from F1)
+ ("X16 HPU pack F2, 105/120/160 bar g, n 1.4, 50 to 10 C", dict(dV=3.926990816987242, p0=105, p1=120, p2=160, basis="Gauge", n=1.4, Tmax=50, Tmin=10),
+  dict(V0=26.69518128, p0=96.17138864, p0_min=92.89076818, f_T=1.141267879, u_r0=0.9733851458, u_rp=0.4333402908)),
 ]
 for name, inp, prod in EXTRA:
     r = accumulator(**inp)
@@ -227,6 +230,28 @@ pv, iv = 38.65436223, v0_product(14, 90, 100, 200, 1.4)
 if abs(pv - iv) / iv > 1e-6:
     fails += 1
 print(f"probe check: product {pv} L, independent product-form {iv:.8f} L, hold-then-stroke {v0_hold(14, 90, 100, 200, 1.4):.3f} L")
+
+
+print("\n=== Model note 5: the HPU pack accumulator (Addendum B-2 re-check at 2f53791c; finding R1 and R2 in the pack) ===")
+# pack.hydraulic-power-unit F2: Emergency stroke, dV 3.92699 L (F1 swept volume), p0 105 / p1 120 / p2 160 bar gauge, n 1.4,
+# T_max 50 C, T_min 10 C. Product V0 = 26.695 L. Gas held at p2 reaches ambient, then a fast stroke (hold-then-stroke).
+def hold_ideal_hpu(dV, p0max, p1, p2, n, T_amb, T_max=50.0):
+    p0 = p0max * (T_amb + K) / (T_max + K)           # pre-charge at ambient, constant gas mass and volume
+    return dV / ((p0 / p2) * ((p2 / p1) ** (1 / n) - 1))
+def end_pressure_ideal(V0, p0max, p2, dV, n, T_amb, T_max=50.0):
+    p0 = p0max * (T_amb + K) / (T_max + K)
+    V2 = V0 * p0 / p2
+    return p2 * (V2 / (V2 + dV)) ** n
+pa0, pa1, pa2, atm = 105 + 1.01325, 120 + 1.01325, 160 + 1.01325, 1.01325
+dVh, Vprod = 3.926990816987242, 26.69518128
+# Real-nitrogen values: Span et al. (2000) reference equation via CoolProp 8.0.0 (hard-coded; isothermal hold at ambient, isentropic stroke).
+REAL_V0 = {10: 39.432, 20: 37.190, 50: 31.953}
+REAL_PEND = {10: 106.6, 20: 108.8, 50: 114.1}       # bar gauge at the end of the stroke in the product's 26.695 L vessel
+print("ambient   hold-then-stroke V0 ideal   real N2   product/ideal  product/real   end pressure in 26.695 L (bar g): ideal / real   (80 kN needs 107.2)")
+for Ta in (10, 20, 50):
+    vi = hold_ideal_hpu(dVh, pa0, pa1, pa2, 1.4, Ta)
+    pe = end_pressure_ideal(Vprod, pa0, pa2, dVh, 1.4, Ta) - atm
+    print(f"{Ta:4d} C   {vi:8.3f} L   {REAL_V0[Ta]:8.3f} L   {Vprod / vi:8.3f}   {Vprod / REAL_V0[Ta]:8.3f}   {pe:8.1f} / {REAL_PEND[Ta]:6.1f}")
 
 print(f"\nRESULT: {'ALL PASS' if fails == 0 else str(fails) + ' FAIL'}")
 sys.exit(0 if fails == 0 else 1)

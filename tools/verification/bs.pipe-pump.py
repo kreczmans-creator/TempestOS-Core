@@ -10,6 +10,8 @@ Written without reading the C# Calculate method. Method:
   - affinity: Q ~ n D^3, H ~ n^2 D^2
   - water properties: Kell (1975) density, tabulated IAPWS-2008 style viscosity
     (log-spline), Wagner-Pruss (2002) saturation pressure.
+  - HPU line and the `fittings` warning (1.3.0, added at the Addendum B-2 re-check): K is a turbulent-flow value, so a
+    segment with K > 0 below Re 4000 understates K v^2/2g; the sheet must warn there and only there.
   - heat-load flow (1.1.0, added at the A7a re-check): Q = Phi / (rho c_p dT), rho from Kell at the stated
     temperature; pump shaft power P = rho g Q H / eta; shaft torque T = P / omega with omega = 2 pi n / 60.
 Run: python3 tools/verification/bs.pipe-pump.py   (exit 0 = all rows PASS)
@@ -406,6 +408,32 @@ def extras_heat():
     finding("no n_pump entered", "T_shaft offered (0 = no, 1 = yes)", 0.0, 1.0, "P1-bs.pipe-pump-C1")
 
 
+def extras_hpu():
+    """Addendum B-2 re-check at 2f53791c (version 1.3.0): the HPU pressure-line step and the new `fittings` warning.
+    Product values were read from `Probe run bs.pipe-pump` (10 significant figures) and are hard-coded."""
+    rho, mu = 870.0, 0.030
+    Q = 4.537647058823531 / 3600                      # F1 Q_prs, 75.627 L/min
+    r = segment(Q, rho, mu, (12, 20, 0.045, 6, 0, 0))
+    c = "HPU B1 retract discharge"
+    row(c, "v_s1 (m/s)", 4.012160885, r["v"], 1e-6)
+    row(c, "Re_s1", 2327.053313, r["Re"], 1e-6)
+    row(c, "f_s1 (Colebrook)", 0.04891170888, r["f"], 1e-6)
+    row(c, "f_sj_s1 (Swamee-Jain)", 0.0505212271, r["f_sj"], 1e-6)
+    row(c, "h_f_total (m)", 29.01074482, r["hf"], 1e-6)
+    row(c, "dp_total (Pa)", 247513.452, rho * G * r["hf"], 1e-6)
+    # Laminar value that 64/Re would give at the same Re (informational: the product, correctly, uses Colebrook above Re 2300).
+    hf_lam = (64 / r["Re"] * 12 / 0.020 + 6) * r["v"] ** 2 / (2 * G)
+    finding("HPU B1 retract discharge", "dp if laminar f = 64/Re (Pa)", rho * G * r["hf"], rho * G * hf_lam, "P1-chain.hydraulic-power-unit-05 (f jumps at Re 2300)")
+
+    # The `fittings` warning: K > 0 and Re < 4000 (K is a turbulent-flow value). Observed 1 = warning present, 0 = absent.
+    def expect_warning(K, Re):
+        return 1.0 if (K > 0 and Re < 4000) else 0.0
+    for nm, Re, K, Leq, seen in (("Re 2327, K 6", 2327, 6, 0, 1.0), ("Re 3999, K 6", 3999, 6, 0, 1.0), ("Re 4001, K 6", 4001, 6, 0, 0.0),
+                                 ("Re 2327, K 0", 2327, 0, 0, 0.0), ("Re 2327, K 0, L_eq 5 m", 2327, 0, 5, 0.0),
+                                 ("Re 1000, K 6 (laminar)", 1000, 6, 0, 1.0)):
+        row("fittings warning " + nm, "warning present (1/0)", seen, expect_warning(K, Re), 1e-9, "product observed with Probe run")
+
+
 def duty_all(Qp, Hp, Hstat, k):
     xs = np.linspace(Qp[0], Qp[-1], 40001)
     d = lambda q: float(np.interp(q, Qp, Hp)) - (Hstat + k * q * q)
@@ -442,4 +470,5 @@ if __name__ == "__main__":
         print(info)
     extras()
     extras_heat()
+    extras_hpu()
     sys.exit(1 if report() else 0)
