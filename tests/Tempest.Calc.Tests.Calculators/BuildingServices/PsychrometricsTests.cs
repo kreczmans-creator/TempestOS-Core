@@ -98,4 +98,15 @@ public sealed class PsychrometricsTests
         Assert.Equal(4, r.Series.Count(s => s.Name.StartsWith("RH ", StringComparison.Ordinal)));
         Assert.Contains(r.Series, s => s.Name == "Process");
     }
+
+    [Fact]
+    public void The_Relative_Humidity_Is_Also_Offered_As_A_Percentage_Quantity_For_Linking()
+    {
+        // RH_1 is a plain number (50), which a percentage input cannot take by link (it would read 5000 %); phi_1 is the same value as a % quantity (SI 0.5).
+        var r = Run(CalcInputValue.Quantity("t_db", 21, "degC"), CalcInputValue.Of("RH", 50));
+        Assert.Equal(50, r.OutputSi("RH_1"), 9);
+        Assert.Equal(0.5, r.OutputSi("phi_1"), 12);
+        Assert.Equal("%", r.FindOutput("phi_1")!.Value is Tempest.Calc.Engine.Values.ScalarValue s ? s.DisplayUnit.Symbol : string.Empty);
+        Assert.Equal(21 + 273.15, r.OutputSi("t_1_out"), 9);
+    }
 }

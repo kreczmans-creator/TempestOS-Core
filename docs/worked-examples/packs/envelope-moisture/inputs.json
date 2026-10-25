@@ -1,0 +1,746 @@
+{
+  "b4": [
+    {
+      "Symbol": "A_floor",
+      "Number": 16,
+      "Unit": "m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A73 (wall build-up)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "16"
+    },
+    {
+      "Symbol": "U_target",
+      "Number": 0.45,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A73 (wall build-up)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.45"
+    },
+    {
+      "Symbol": "V",
+      "Number": 48,
+      "Unit": "m^3",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A73 (wall build-up)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "48"
+    },
+    {
+      "Symbol": "elements",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "External wall"
+            },
+            "area": {
+              "Number": 18,
+              "Unit": "m^2"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Window"
+            },
+            "area": {
+              "Number": 3,
+              "Unit": "m^2"
+            },
+            "U_user": {
+              "Number": 1.4,
+              "Unit": "W/(m^2*K)"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A73 (wall build-up)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "f_add",
+      "Number": 0,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "layers",
+      "Rows": [
+        {
+          "Cells": {
+            "element": {
+              "Text": "External wall"
+            },
+            "name": {
+              "Text": "Plasterboard"
+            },
+            "d": {
+              "Number": 12.5,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.25,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "External wall"
+            },
+            "name": {
+              "Text": "Mineral wool"
+            },
+            "d": {
+              "Number": 80,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.04,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "External wall"
+            },
+            "name": {
+              "Text": "Solid brick"
+            },
+            "d": {
+              "Number": 215,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.8,
+              "Unit": "W/(m*K)"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "External wall"
+            },
+            "name": {
+              "Text": "Render"
+            },
+            "d": {
+              "Number": 15,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.9,
+              "Unit": "W/(m*K)"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A73 (wall build-up)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4 row(s)"
+    },
+    {
+      "Symbol": "method",
+      "Text": "BS EN 12831-1 elemental",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "BS EN 12831-1 elemental"
+    },
+    {
+      "Symbol": "n",
+      "Number": 0.5,
+      "Unit": "1/h",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A73 (wall build-up)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "theta_e",
+      "Number": -3,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A73 (wall build-up)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "-3"
+    },
+    {
+      "Symbol": "theta_int",
+      "Number": 21,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A73 (wall build-up)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    },
+    {
+      "Symbol": "y_tb",
+      "Number": 0,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "b2": [
+    {
+      "Symbol": "RH",
+      "Number": 50,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A72 (room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "altitude",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A72 (room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "h_steam",
+      "Number": 2676,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2676"
+    },
+    {
+      "Symbol": "known",
+      "Text": "relative humidity",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A72 (room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "relative humidity"
+    },
+    {
+      "Symbol": "m_da",
+      "Number": 1,
+      "Unit": "kg/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "process",
+      "Text": "none (state only)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A72 (room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "none (state only)"
+    },
+    {
+      "Symbol": "t_db",
+      "Number": 21,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A72 (room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    }
+  ],
+  "b7": [
+    {
+      "Symbol": "Mc_limit",
+      "Number": 500,
+      "Unit": "g/m^2",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ENV-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "500"
+    },
+    {
+      "Symbol": "RH_crit",
+      "Number": 80,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ENV-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "80"
+    },
+    {
+      "Symbol": "RH_int",
+      "Number": 50,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:410c4da3e2ff4ded9fae553d85f90f5f#phi_1",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "Rse",
+      "Number": 0.04,
+      "Unit": "m^2*K/W",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ENV-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.04"
+    },
+    {
+      "Symbol": "Rsi",
+      "Number": 0.13,
+      "Unit": "m^2*K/W",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ENV-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.13"
+    },
+    {
+      "Symbol": "Rsi_f",
+      "Number": 0.25,
+      "Unit": "m^2*K/W",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ENV-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.25"
+    },
+    {
+      "Symbol": "U_ref",
+      "Number": 0.3991352070513887,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:e5617124561b4affbb8d88cabf83fcc6#U_1",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.399135"
+    },
+    {
+      "Symbol": "breathable",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "climate",
+      "Rows": [
+        {
+          "Cells": {
+            "month": {
+              "Text": "Jan"
+            },
+            "theta_e": {
+              "Number": 2,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 90,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "Feb"
+            },
+            "theta_e": {
+              "Number": 3,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 88,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "Mar"
+            },
+            "theta_e": {
+              "Number": 6,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 84,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "Apr"
+            },
+            "theta_e": {
+              "Number": 9,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 80,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "May"
+            },
+            "theta_e": {
+              "Number": 13,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 76,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "Jun"
+            },
+            "theta_e": {
+              "Number": 16,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 74,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "Jul"
+            },
+            "theta_e": {
+              "Number": 18,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 74,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "Aug"
+            },
+            "theta_e": {
+              "Number": 18,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 76,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "Sep"
+            },
+            "theta_e": {
+              "Number": 15,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 82,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "Oct"
+            },
+            "theta_e": {
+              "Number": 11,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 87,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "Nov"
+            },
+            "theta_e": {
+              "Number": 6,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 90,
+              "Unit": "%"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "month": {
+              "Text": "Dec"
+            },
+            "theta_e": {
+              "Number": 3,
+              "Unit": "degC"
+            },
+            "RH_e": {
+              "Number": 91,
+              "Unit": "%"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ENV-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "12 row(s)"
+    },
+    {
+      "Symbol": "dp_f",
+      "Number": 1.1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.1"
+    },
+    {
+      "Symbol": "element",
+      "Text": "External wall",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ENV-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "External wall"
+    },
+    {
+      "Symbol": "humidity_mode",
+      "Text": "constant internal relative humidity",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ENV-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "constant internal relative humidity"
+    },
+    {
+      "Symbol": "layers",
+      "Rows": [
+        {
+          "Cells": {
+            "element": {
+              "Text": "External wall"
+            },
+            "name": {
+              "Text": "Plasterboard"
+            },
+            "d": {
+              "Number": 12.5,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.25,
+              "Unit": "W/(m*K)"
+            },
+            "mu": {
+              "Number": 8
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "External wall"
+            },
+            "name": {
+              "Text": "Vapour control layer"
+            },
+            "d": {
+              "Number": 0.2,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.35,
+              "Unit": "W/(m*K)"
+            },
+            "mu": {
+              "Number": 20000
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "External wall"
+            },
+            "name": {
+              "Text": "Mineral wool"
+            },
+            "d": {
+              "Number": 80,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.04,
+              "Unit": "W/(m*K)"
+            },
+            "mu": {
+              "Number": 1
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "External wall"
+            },
+            "name": {
+              "Text": "Solid brick"
+            },
+            "d": {
+              "Number": 215,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.8,
+              "Unit": "W/(m*K)"
+            },
+            "mu": {
+              "Number": 10
+            }
+          }
+        },
+        {
+          "Cells": {
+            "element": {
+              "Text": "External wall"
+            },
+            "name": {
+              "Text": "Render"
+            },
+            "d": {
+              "Number": 15,
+              "Unit": "mm"
+            },
+            "lambda": {
+              "Number": 0.9,
+              "Unit": "W/(m*K)"
+            },
+            "mu": {
+              "Number": 25
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ENV-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5 row(s)"
+    },
+    {
+      "Symbol": "theta_int",
+      "Number": 21,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:410c4da3e2ff4ded9fae553d85f90f5f#t_1_out",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    }
+  ]
+}

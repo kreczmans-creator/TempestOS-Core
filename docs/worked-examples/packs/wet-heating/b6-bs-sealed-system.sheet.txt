@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room heating
 Calc ID: Sealed system    Revision: A
 Title: Sealed heating system: emitters and expansion vessel
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A closed LTHW system below 100 °C: the catalogue output (at ΔT 50 K) each room's emitter needs at the design flow, return and room temperatures, checked against the selected emitters; and the minimum expansion vessel for the system volume, fill and maximum temperatures, static head and pressures.
@@ -136,5 +136,5 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   Content hash: dad2559cb15ff370
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 08:40 UTC
   Application: TempestOS test

@@ -1,0 +1,641 @@
+CALCULATION SHEET — ISSUED
+Project: Studio 3 external wall
+Calc ID: Internally insulated wall moisture calc pack    Revision: A
+Title: Calculation pack
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: ENV-MOI-001    Client: Client Co
+
+PACK INDEX
+  1. Room heat loss — U-values and room heat loss — rev A — ISSUED — U-value of External wall against its target (0.45 W/m²K) PASS
+  2. Room air state — Psychrometrics — rev A — ISSUED
+  3. Wall condensation — Glaser condensation (interstitial and surface) — rev A — ISSUED — Surface condensation: f_Rsi against f_Rsi,min at 80 % critical humidity PASS
+
+REVISIONS
+  A  2026-10-25  test.engineer  First issue
+
+1. SCOPE AND METHOD
+Calculation pack: the calculations listed in the index, issued together under one issue sheet.
+
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+
+3. ASSUMPTIONS
+
+4. WORKING
+
+5. RESULTS
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: pack
+  Content hash: —
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 18/18
+  Test run: 2026-10-25 08:40 UTC
+  Application: TempestOS test
+
+CALCULATION SHEET — ISSUED
+Project: Studio 3 external wall
+Calc ID: Room heat loss    Revision: A
+Title: U-values and room heat loss
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: ENV-MOI-001    Client: Client Co
+
+1. SCOPE AND METHOD
+U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.
+Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(θ_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation flow: q_v = n·V Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply, plus 0.34·n_inf·V·(θ_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor Check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)
+  Ref: BS EN ISO 6946 homogeneous layers and surface resistances (clause numbers to be checked against the owner's copy) — Building components — thermal resistance and thermal transmittance
+  Ref: BS EN 12831-1 cl. 6.3.2 (clause number to be checked against the owner's copy) — Heating systems in buildings — design heat load: transmission heat loss
+  Ref: BS EN 12831-1 cl. 6.3.3 (clause number to be checked against the owner's copy) — Heating systems in buildings — design heat load: ventilation heat loss
+  Ref: CIBSE Domestic Heating Design Guide 2026 ed., reduced method (name and edition unverified; to be checked against the owner's copy) — Room heat loss and the additional allowance
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  method | Calculation method (changes the citations; the DHDG option adds the allowance below) | BS EN 12831-1 elemental |  | assumption: Sheet default value; no project figure given. | any
+  theta_int | Internal design temperature | 21 | degC | spec: SPEC-ENV-02 §3 (wall build-up) | 16 … 24 degC
+  theta_e | External design temperature (location record) | -3 | degC | spec: SPEC-ENV-02 §3 (wall build-up) | -15 … 5 degC
+  layers | Construction layers (several elements share the table, keyed by element name) | 4 row(s) |  | spec: SPEC-ENV-02 §3 (wall build-up) | any
+  layers[1] |  | element = External wall; name = Plasterboard; d = 12.5 mm; lambda = 0.25 W/(m*K) |  |  | 
+  layers[2] |  | element = External wall; name = Mineral wool; d = 80 mm; lambda = 0.04 W/(m*K) |  |  | 
+  layers[3] |  | element = External wall; name = Solid brick; d = 215 mm; lambda = 0.8 W/(m*K) |  |  | 
+  layers[4] |  | element = External wall; name = Render; d = 15 mm; lambda = 0.9 W/(m*K) |  |  | 
+  elements | Building elements bounding the room | 2 row(s) |  | spec: SPEC-ENV-02 §3 (wall build-up) | any
+  elements[1] |  | name = External wall; area = 18 m^2 |  |  | 
+  elements[2] |  | name = Window; area = 3 m^2; U_user = 1.4 W/(m^2*K) |  |  | 
+  y_tb | Thermal-bridge allowance on the area facing outside | 0 | W/(m^2*K) | assumption: Sheet default value; no project figure given. | 0 … 0.3 W/(m^2*K)
+  U_target | Target U for built-up elements without their own target | 0.45 | W/(m^2*K) | spec: SPEC-ENV-02 §3 (wall build-up) | 0.05 … 8 W/(m^2*K)
+  n | Air change rate | 0.5 | 1/h | spec: SPEC-ENV-02 §3 (wall build-up) | 0.1 … 3 1/h
+  V | Room volume | 48 | m^3 | spec: SPEC-ENV-02 §3 (wall build-up) | 5 … 1000 m^3
+  A_floor | Floor area, for the loss per floor area | 16 | m^2 | spec: SPEC-ENV-02 §3 (wall build-up) | 1 … 200 m^2
+  f_add | Additional allowance on the room load (CIBSE DHDG method only) | 0 | % | assumption: Sheet default value; no project figure given. | 0 … 20 %
+
+3. ASSUMPTIONS
+  A1. Steady state: every temperature is constant, with no solar or internal gains, no thermal mass and no dynamic simulation. (Design heat loss, not an annual energy estimate.)
+  A2. Layers are homogeneous and in series (one-dimensional flow); no bridged layers (timber studs, mortar joints, fixings) are corrected for: a thermal-bridge allowance y_tb is added instead. (BS EN ISO 6946 homogeneous-layer calculation.)
+  A3. A blank Rsi is the conventional BS EN ISO 6946 value for the element's heat-flow direction (0.13 m²K/W horizontal, 0.10 upward, 0.17 downward) and a blank Rse is 0.04 m²K/W for an element facing outside (no adjacent temperature, or one at or below θ_e), or the same as Rsi where it faces another space. (Small conventional BS EN ISO 6946 set (three values), not a table of design data.)
+  A4. The global target U applies to built-up elements facing outside only: an internal partition or floor has no outside target, so it is checked only against a target entered on its own row. (Scope of the target check.)
+  A5. Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer. (Stated limit.)
+  A6. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table. (Derived.)
+  A7. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded. (No table from a standard or a manufacturer is shipped.)
+  A8. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Sheet default value; no project figure given.)
+  A9. y_tb (Thermal-bridge allowance on the area facing outside) is taken as 0 W/(m^2*K). (Sheet default value; no project figure given.)
+  A10. f_add (Additional allowance on the room load (CIBSE DHDG method only)) is taken as 0 %. (Sheet default value; no project figure given.)
+  A11. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: External wall. (Small conventional set; enter your own where the construction needs other values.)
+
+4. WORKING
+  [8] R_1 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
+      = External wall: 0.13 + (0.05 + 2 + 0.26875 + 0.016667) + 0 + 0.04
+      = 2.5054 m²·K/W
+        External wall: total thermal resistance
+  [9] U_1 = 1/R    « BS EN ISO 6946
+      = 1 / 2.5054
+      = 0.39914 W/(m²·K)
+        External wall: U-value
+  [10] Phi_1 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
+      = 18 × 0.39914 × 1 × (21 − -3) °C
+      = 172.43 W
+        External wall: fabric loss to θ_e = -3 °C
+  [11] U_2 = U override (user-entered)
+      = Window: 1.4 W/m²K
+      = 1.4 W/(m²·K)
+        Window: U-value as entered (ground floor or glazing)
+  [12] Phi_2 = A·U·f·(θ_int − θ_adj)    « BS EN 12831-1 cl. 6.3.2
+      = 3 × 1.4 × 1 × (21 − -3) °C
+      = 100.8 W
+        Window: fabric loss to θ_e = -3 °C
+  [13] A_fab = Σ A
+      = 21 m²
+      = 21 m²
+        Total fabric area
+  [14] A_ext = Σ A facing outside
+      = 21 m²
+      = 21 m²
+        Fabric area facing outside
+  [15] A_tb = Σ A·f facing outside    « BS EN 12831-1 cl. 6.3.2
+      = 21 m²
+      = 21 m²
+        Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)
+  [16] U_m = Σ A·U·f / Σ A
+      = 11.384 / 21
+      = 0.54212 W/(m²·K)
+        Area-weighted mean U-value of the fabric
+  [17] dT = theta_int - theta_e
+      = 21 degC − (-3 degC)
+      = 24 K
+        Design temperature difference, inside to outside
+  [18] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
+      = 273.23 W
+      = 273.23 W
+        Fabric loss through the elements
+  [19] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
+      = 0 W/(m²·K) × 21 m² × 24 K
+      = 0 W
+        Thermal-bridge allowance
+  [20] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
+      = 273.23 W + 0 W
+      = 273.23 W
+        Fabric heat loss
+  [21] q_v = n * V
+      = 0.5 1/h × 48 m³
+      = 24 m³/h
+        Ventilation air flow
+  [22] dT_v = dT
+      = 24 K
+      = 24 K
+        Ventilation temperature difference, inside to outside
+  [23] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
+      = 0.34 Wh/(m^3*K) × 24 m³/h × 24 K
+      = 195.84 W
+        Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
+  [25] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
+      = 273.23 W + 195.84 W
+      = 469.07 W
+        Room design heat loss
+  [26] HLC = Phi_HL / dT
+      = 469.07 W / 24 K
+      = 19.544 W/K
+        Heat loss coefficient
+  [28] Phi_A = Phi_HL / A_floor
+      = 469.07 W / 16 m²
+      = 29.317 W/m²
+        Room design heat loss per floor area
+  [29] u_1 = U / U_target
+      = 0.39914 / 0.45
+      = 0.88697
+        External wall: utilisation of the target U-value
+
+5. RESULTS
+  R_1 = 2.5054 m²·K/W    External wall: thermal resistance
+  U_1 = 0.39914 W/(m²·K)    External wall: U-value
+  Phi_1 = 172.43 W    External wall: fabric loss
+  U_2 = 1.4 W/(m²·K)    Window: U-value
+  Phi_2 = 100.8 W    Window: fabric loss
+  A_fab = 21 m²    Total fabric area
+  A_ext = 21 m²    Fabric area facing outside
+  A_tb = 21 m²    Fabric area facing outside weighted by f
+  U_m = 0.54212 W/(m²·K)    Mean fabric U-value
+  dT = 24 K    Design temperature difference
+  Phi_el = 273.23 W    Element fabric loss
+  Phi_tb = 0 W    Thermal-bridge allowance
+  Phi_T = 273.23 W    Fabric heat loss
+  q_v = 24 m³/h    Ventilation air flow
+  Phi_V = 195.84 W    Ventilation heat loss
+  Phi_HL = 469.07 W    Room design heat loss
+  HLC = 19.544 W/K    Heat loss coefficient
+  Phi_A = 29.317 W/m²    Heat loss per floor area
+  u_1 = 0.88697    External wall: U against target
+
+6. CHECKS (governing first)
+  PASS  U-value of External wall against its target (0.45 W/m²K): u_1 = 0.88697 vs u_1 ≤ 1  utilisation 0.887
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: bs.room-heat-loss@1.2.0
+  Content hash: bb674847377954a3
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 6/6
+  Test run: 2026-10-25 08:40 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Studio 3 external wall
+Calc ID: Room air state    Revision: A
+Title: Psychrometrics
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: ENV-MOI-001    Client: Client Co
+
+1. SCOPE AND METHOD
+The state of moist air (humidity ratio, relative humidity, dew point, wet-bulb, enthalpy, specific volume, density) from dry-bulb and one other property at a stated pressure or altitude, and one air-handling process from that state with its heat and moisture balance: sensible heating or cooling, cooling with dehumidification, steam humidification, adiabatic humidification, or mixing with a second stream.
+p_ws from Hyland–Wexler (over water ≥ 0 °C, over ice below); W = 0.621945 p_w/(p − p_w); φ = p_w/p_ws; h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da; v = 0.287042 (t + 273.15)(1 + 1.607858 W)/p; dew point and wet-bulb by bisection (wet-bulb from the adiabatic-saturation relation). Processes on a dry-air mass flow: sensible Q = ṁ (h₂ − h₁) at constant W; cooling/dehumidification Q_total = ṁ(h₁ − h₂) − ṁ_w h_w with condensate ṁ_w = ṁ(W₁ − W₂); steam h₂ = h₁ + (W₂ − W₁) h_steam; adiabatic humidification at constant h; mixing by mass-weighted W and h.
+  Ref: ASHRAE Handbook — Fundamentals Ch. 1 — Psychrometrics (ideal-gas relations, processes)
+  Ref: Hyland & Wexler, ASHRAE Trans. 89(2A), 1983 — Saturation pressure of water and ice
+  Ref: CIBSE Guide C Section 1 — Properties of humid air (principles)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  altitude | Altitude (used when pressure is blank) | 0 | m | spec: SPEC-ENV-02 §2 (room conditions) | -500 … 5000 m
+  t_db | Dry-bulb temperature | 21 | degC | spec: SPEC-ENV-02 §2 (room conditions) | -40 … 60 degC
+  known | Second known property | relative humidity |  | spec: SPEC-ENV-02 §2 (room conditions) | any
+  RH | Relative humidity | 50 |  | spec: SPEC-ENV-02 §2 (room conditions) | 0 … 100
+  m_da | Dry-air mass flow | 1 | kg/s | assumption: Sheet default value; no project figure given. | 0 … 1000 kg/s
+  process | Process | none (state only) |  | spec: SPEC-ENV-02 §2 (room conditions) | any
+  h_steam | Steam enthalpy (steam humidification) | 2676 |  | assumption: Sheet default value; no project figure given. | 2500 … 3000
+
+3. ASSUMPTIONS
+  A1. Moist air is an ideal mixture of ideal gases; the enhancement factor is taken as 1. (ASHRAE Fundamentals Ch. 1 ideal-gas relations.)
+  A2. Condensate leaves at the coil leaving dry-bulb; steam adds enthalpy h_steam at negligible mass of dry air. (Process conventions.)
+  A3. Adiabatic humidification follows a line of constant enthalpy (close to constant wet-bulb). (Evaporative process idealisation.)
+  A4. m_da (Dry-air mass flow) is taken as 1 kg/s. (Sheet default value; no project figure given.)
+  A5. h_steam (Steam enthalpy (steam humidification)) is taken as 2676. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [2] p = 101.325 (1 − 2.25577e-5 z)^5.2559    « ASHRAE Ch. 1 eq. 3
+      = z = 0 m
+      = 101.32 kPa
+        Barometric pressure (standard atmosphere)
+  [6] p_ws_1 = p_ws(t) Hyland–Wexler (entering)
+      = t = 21 °C
+      = 2.4877 kPa
+        Saturation pressure, state 1
+  [7] p_w_1 = p W/(0.621945 + W)
+      = W = 0.0077297
+      = 1.2438 kPa
+        Vapour pressure, state 1
+  [8] t_1_out = dry-bulb (entering)
+      = 
+      = 21 degC
+        Dry-bulb, state 1
+  [9] W_1 = 0.621945 p_w/(p − p_w)
+      = 1.2438 / (101.32 − 1.2438)
+      = 7.7297
+        Humidity ratio, state 1 (g/kg dry air)
+  [10] RH_1 = p_w / p_ws
+      = 1.2438 / 2.4877
+      = 50
+        Relative humidity, state 1 (%)
+  [11] phi_1 = p_w / p_ws
+      = 1.2438 / 2.4877
+      = 50 %
+        Relative humidity, state 1, as a percentage quantity (the same value as RH_1; a plain-number output cannot be linked to a percentage input)
+  [12] t_dp_1 = p_ws(t_dp) = p_w, bisection
+      = p_w = 1.2438 kPa
+      = 10.191 degC
+        Dew point, state 1
+  [13] t_wb_1 = adiabatic-saturation relation, bisection
+      = t = 21, W = 0.0077297
+      = 14.605 degC
+        Wet-bulb, state 1
+  [14] h_1 = 1.006 t + W (2501 + 1.86 t)
+      = 1.006 × 21 + 0.0077297 × (2501 + 1.86 × 21)
+      = 40.76
+        Enthalpy, state 1 (kJ/kg dry air)
+  [15] v_1 = 0.287042 (t + 273.15)(1 + 1.607858 W)/p
+      = p = 101.32 kPa
+      = 0.84365 m³/kg
+        Specific volume, state 1 (per kg dry air)
+  [16] rho_1 = (1 + W)/v
+      = 
+      = 1.1945 kg/m³
+        Moist-air density, state 1
+
+5. RESULTS
+  t_1_out = 21 degC    Dry-bulb 1
+  p_ws_1 = 2.4877 kPa    p_ws 1
+  p_w_1 = 1.2438 kPa    p_w 1
+  W_1 = 7.7297    W 1 (g/kg)
+  RH_1 = 50    RH 1 (%)
+  phi_1 = 50 %    φ 1 (RH as a % quantity, for linking)
+  t_dp_1 = 10.191 degC    Dew point 1
+  t_wb_1 = 14.605 degC    Wet-bulb 1
+  h_1 = 40.76    h 1 (kJ/kg)
+  v_1 = 0.84365 m³/kg    v 1
+  rho_1 = 1.1945 kg/m³    ρ 1
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: bs.psychrometrics@1.1.0
+  Content hash: 019c21a8f58b1d42
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-25 08:40 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Studio 3 external wall
+Calc ID: Wall condensation    Revision: A
+Title: Glaser condensation (interstitial and surface)
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: ENV-MOI-001    Client: Client Co
+
+1. SCOPE AND METHOD
+Interstitial condensation in a layered wall by the Glaser method over twelve monthly climate steps: the temperature and saturation pressure at every layer interface, the vapour-pressure line with its tangent construction at the condensation planes, the condensate on each interface month by month carried forward from the first month of condensation (drying when the weather turns), the annual balance, the peak accumulation against the owner's limit, and the surface temperature factor f_Rsi against its minimum at the critical surface humidity.
+Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Total resistance and interface temperature: R_T = R_si + Σ R_j + R_se; θ_k = θ_i − (θ_i − θ_e)·(R_si + Σ_(j≤k) R_j)/R_T Saturation pressure (Magnus): p_sat = 610.5·exp(17.269·θ/(237.3 + θ)) over water (θ ≥ 0 °C); p_sat = 610.5·exp(21.875·θ/(265.5 + θ)) over ice (θ < 0 °C) Outside vapour pressure: p_e = RH_e·p_sat(θ_e) Inside vapour pressure: p_i = RH_i·p_sat(θ_i), or p_e + f_Δp·Δv(θ_e)·R_v·(T_i + T_e)/2 with the moisture excess Δv linear between two user points and constant beyond them (R_v = 461.5 J/(kg·K)) and the safety factor f_Δp on the pressure difference (a record, default 1.10; clause wording to be checked against the owner's copy of ISO 13788) Vapour flux through a layer: g = δ0·Δp/Δs_d with δ0 = 2×10⁻¹⁰ kg/(m·s·Pa) Tangent construction: the line from p_i to p_e is bent onto the saturation line at the interfaces it would rise above (and at wet interfaces), by the smallest-slope rule from each contact point Condensation at an interface: g_c = g_in − g_out; Mc accumulates g_c·t over 12 months from the first month of condensation (t = the row's days, else the calendar days of the month, January to December order), a wet interface (held at saturation) drying at g_c < 0 until nothing is left Annual balance and peak: PASS when no condensate remains after the 12 months; Mc_max = the most held on any interface, checked against the user's limit Wall U-value and its cross-check: U = 1/R_T; when the heat-loss calculation's U-value U_ref is given, the sheet warns if |U − U_ref|/U_ref exceeds 2 % (the two calculations then describe different constructions) Surface factor: f_Rsi = 1 − R_si,f/R_T,f with R_si,f = 0.25 m²K/W by default for an opaque element (conventional, a record; 0.13 for glazing); f_Rsi,min = the largest monthly (θ_si,min − θ_e)/(θ_i − θ_e) with p_sat(θ_si,min) = p_i/φ_crit; PASS when f_Rsi ≥ f_Rsi,min
+  Ref: ISO 13788 cl. 5 (clause number to be checked against the owner's copy) — Hygrothermal performance of building components and elements — internal surface temperature and surface condensation
+  Ref: ISO 13788 cl. 6 (clause number to be checked against the owner's copy) — Hygrothermal performance of building components and elements — interstitial condensation (Glaser method)
+  Ref: ISO 13788 moisture excess and its design margin on Δp (clause number and wording to be checked against the owner's copy) — Hygrothermal performance of building components and elements — internal humidity from the humidity class
+  Ref: EN 15026 whole standard (named as the recommended method for timber and breathable builds) — Hygrothermal performance of building components — assessment of moisture transfer by numerical simulation
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  element | Element whose rows of the layers table to use (blank = all rows) | External wall |  | drawing: DRG-ENV-210 rev B | any
+  layers | Wall layers from the inside outwards (d, λ, μ; the shape of the B4 layers table plus μ) | 5 row(s) |  | drawing: DRG-ENV-210 rev B | any
+  layers[1] |  | element = External wall; name = Plasterboard; d = 12.5 mm; lambda = 0.25 W/(m*K); mu = 8 |  |  | 
+  layers[2] |  | element = External wall; name = Vapour control layer; d = 0.2 mm; lambda = 0.35 W/(m*K); mu = 20000 |  |  | 
+  layers[3] |  | element = External wall; name = Mineral wool; d = 80 mm; lambda = 0.04 W/(m*K); mu = 1 |  |  | 
+  layers[4] |  | element = External wall; name = Solid brick; d = 215 mm; lambda = 0.8 W/(m*K); mu = 10 |  |  | 
+  layers[5] |  | element = External wall; name = Render; d = 15 mm; lambda = 0.9 W/(m*K); mu = 25 |  |  | 
+  Rsi | Internal surface resistance R_si | 0.13 | m^2*K/W | drawing: DRG-ENV-210 rev B | 0.04 … 0.25 m^2*K/W
+  Rse | External surface resistance R_se | 0.04 | m^2*K/W | drawing: DRG-ENV-210 rev B | 0.02 … 0.25 m^2*K/W
+  Rsi_f | Internal surface resistance R_si,f for the f_Rsi check (0.25 m²K/W is the conventional value for an opaque element, a record to check against the owner's copy of ISO 13788; 0.13 for glazing) | 0.25 | m^2*K/W | drawing: DRG-ENV-210 rev B | 0.04 … 0.5 m^2*K/W
+  U_ref | U-value of this wall from the heat-loss calculation (B4), for the consistency check against 1/R_T (blank = not checked) | 0.399135 | W/(m^2*K) | link: Room heat loss rev A · U_1 | 0.05 … 8 W/(m^2*K)
+  theta_int | Internal air temperature | 21 | degC | link: Room air state rev A · t_1_out | 10 … 30 degC
+  humidity_mode | Internal humidity from | constant internal relative humidity |  | drawing: DRG-ENV-210 rev B | any
+  RH_int | Internal relative humidity (constant-humidity mode) | 50 | % | link: Room air state rev A · phi_1 | 20 … 90 %
+  dp_f | Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (design margin, 1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788) | 1.1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
+  climate | Twelve monthly outside conditions (the user's climate record, in the order the year is run) | 12 row(s) |  | drawing: DRG-ENV-210 rev B | any
+  climate[1] |  | month = Jan; theta_e = 2 degC; RH_e = 90 % |  |  | 
+  climate[2] |  | month = Feb; theta_e = 3 degC; RH_e = 88 % |  |  | 
+  climate[3] |  | month = Mar; theta_e = 6 degC; RH_e = 84 % |  |  | 
+  climate[4] |  | month = Apr; theta_e = 9 degC; RH_e = 80 % |  |  | 
+  climate[5] |  | month = May; theta_e = 13 degC; RH_e = 76 % |  |  | 
+  climate[6] |  | month = Jun; theta_e = 16 degC; RH_e = 74 % |  |  | 
+  climate[7] |  | month = Jul; theta_e = 18 degC; RH_e = 74 % |  |  | 
+  climate[8] |  | month = Aug; theta_e = 18 degC; RH_e = 76 % |  |  | 
+  climate[9] |  | month = Sep; theta_e = 15 degC; RH_e = 82 % |  |  | 
+  climate[10] |  | month = Oct; theta_e = 11 degC; RH_e = 87 % |  |  | 
+  climate[11] |  | month = Nov; theta_e = 6 degC; RH_e = 90 % |  |  | 
+  climate[12] |  | month = Dec; theta_e = 3 degC; RH_e = 91 % |  |  | 
+  RH_crit | Critical surface relative humidity | 80 | % | drawing: DRG-ENV-210 rev B | 50 … 100 %
+  Mc_limit | Limit on the condensate on any interface (blank = report only) | 500 | g/m^2 | drawing: DRG-ENV-210 rev B | 1 … 5000 g/m^2
+  breathable | The build-up is timber or breathable (hygroscopic layers, capillary transport) | no |  | assumption: Sheet default value; no project figure given. | any
+
+3. ASSUMPTIONS
+  A1. Steady state in each month: one-dimensional diffusion of water vapour through homogeneous layers in series, with the monthly mean climate; no air movement, no liquid transport, no moisture storage, no solar or rain gain. (The Glaser method.)
+  A2. Material properties (λ, μ) are constants of the layer, not functions of its moisture or temperature; condensate does not change them. (The Glaser method.)
+  A3. Condensation is checked at the interfaces between layers only; a thick layer where the plane would lie inside it should be split into thinner layers. The saturation line is joined straight between the interface values. (Stated limit.)
+  A4. The Magnus saturation pressure is used over water at and above 0 °C and over ice below, and the water-vapour permeability of air is δ0 = 2×10⁻¹⁰ kg/(m·s·Pa); both are closed-form physics, not data of a standard. (Derived.)
+  A5. Where a month's length is blank it is the calendar days of the month, taking the climate rows as January to December (February 28 days); enter the days where the record starts in another month. A wet interface that dries within a month is taken as dry from the next month; the month's rates are those of the wet state at its start. (Monthly steps.)
+  A6. The monthly climate, the humidity-class points, the surface resistances, the critical humidity and the limit on the condensate are the user's records from the user's own licensed copies; no climate data, humidity-class table, material table or limit of any standard is shipped. (No table from a standard is shipped.)
+  A7. dp_f (Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (design margin, 1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788)) is taken as 1.1. (Sheet default value; no project figure given.)
+  A8. breathable (The build-up is timber or breathable (hygroscopic layers, capillary transport)) is taken as no. (Sheet default value; no project figure given.)
+  A9. Month length: 12 row(s) of the climate gave no days, so the calendar days of the month are used with the rows taken as January to December (February 28 days). If the record starts in another month, enter the days of each row. (Calendar months.)
+
+4. WORKING
+  [9] R_1 = d / λ    « ISO 13788 cl. 6
+      = Plasterboard: 12.5 mm / 0.25 W/(m·K)
+      = 0.05 m²·K/W
+        Plasterboard: thermal resistance
+  [10] sd_1 = μ · d    « ISO 13788 cl. 6
+      = Plasterboard: 8 × 12.5 mm
+      = 0.1 m
+        Plasterboard: diffusion-equivalent air layer thickness
+  [11] R_2 = d / λ    « ISO 13788 cl. 6
+      = Vapour control layer: 0.2 mm / 0.35 W/(m·K)
+      = 0.00057143 m²·K/W
+        Vapour control layer: thermal resistance
+  [12] sd_2 = μ · d    « ISO 13788 cl. 6
+      = Vapour control layer: 20000 × 0.2 mm
+      = 4 m
+        Vapour control layer: diffusion-equivalent air layer thickness
+  [13] R_3 = d / λ    « ISO 13788 cl. 6
+      = Mineral wool: 80 mm / 0.04 W/(m·K)
+      = 2 m²·K/W
+        Mineral wool: thermal resistance
+  [14] sd_3 = μ · d    « ISO 13788 cl. 6
+      = Mineral wool: 1 × 80 mm
+      = 0.08 m
+        Mineral wool: diffusion-equivalent air layer thickness
+  [15] R_4 = d / λ    « ISO 13788 cl. 6
+      = Solid brick: 215 mm / 0.8 W/(m·K)
+      = 0.26875 m²·K/W
+        Solid brick: thermal resistance
+  [16] sd_4 = μ · d    « ISO 13788 cl. 6
+      = Solid brick: 10 × 215 mm
+      = 2.15 m
+        Solid brick: diffusion-equivalent air layer thickness
+  [17] R_5 = d / λ    « ISO 13788 cl. 6
+      = Render: 15 mm / 0.9 W/(m·K)
+      = 0.016667 m²·K/W
+        Render: thermal resistance
+  [18] sd_5 = μ · d    « ISO 13788 cl. 6
+      = Render: 25 × 15 mm
+      = 0.375 m
+        Render: diffusion-equivalent air layer thickness
+  [19] R_T = R_si + Σ R_j + R_se    « ISO 13788 cl. 6
+      = 0.13 + 2.336 + 0.04
+      = 2.506 m²·K/W
+        Total thermal resistance
+  [20] U_wall = 1/R_T    « ISO 13788 cl. 6
+      = 1 / 2.506
+      = 0.39904 W/(m²·K)
+        U-value of the wall from the layers and the surface resistances above
+  [22] dU_ref = |U − U_ref|/U_ref
+      = |0.39904 − 0.39914| / 0.39914
+      = 0.00022803
+        Relative difference between this wall's U-value and the one given by the heat-loss calculation
+  [23] S_d = Σ s_d,j    « ISO 13788 cl. 6
+      = 6.705 m
+      = 6.705 m
+        Total diffusion-equivalent air layer thickness
+  [24] psat_i = 610.5·exp(17.269·θ/(237.3 + θ))    « ISO 13788 cl. 6
+      = θ = 21 °C
+      = 2485.6 Pa
+        Saturation vapour pressure at the internal air temperature (Magnus)
+  [25] p_ext_m = RH_e · p_sat(θ_e)    « ISO 13788 cl. 6
+      = months 1 … 12 of the climate
+      = [634.76, 666.5, 785.09, 917.96, 1137.7, 1344.8, 1526.5, 1567.8, 1397.6, 1141.4, 841.16, 689.22] Pa
+        Outside vapour pressure by month
+  [26] p_int_m = RH_i · p_sat(θ_i)    « ISO 13788 cl. 6
+      = 50 % × 2485.6 Pa
+      = [1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8] Pa
+        Inside vapour pressure by month
+  [27] n_start = first month of condensation    « ISO 13788 cl. 6
+      = Dec (row 12)
+      = 12
+        Row of the climate in which the accumulation starts (0 when nothing condenses)
+  [28] Mc_1 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Jan: θ_e = 2 °C; 8.0873 g/m² gained (−: dried) this month
+      = 9.8141 g/m²
+        Jan: condensate on the wall at the end of the month
+  [29] Mc_2 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Feb: θ_e = 3 °C; -2.7942 g/m² gained (−: dried) this month
+      = 7.0199 g/m²
+        Feb: condensate on the wall at the end of the month
+  [30] Mc_3 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Mar: θ_e = 6 °C; -7.0199 g/m² gained (−: dried) this month
+      = 0 g/m²
+        Mar: condensate on the wall at the end of the month
+  [31] Mc_4 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Apr: θ_e = 9 °C; 0 g/m² gained (−: dried) this month
+      = 0 g/m²
+        Apr: condensate on the wall at the end of the month
+  [32] Mc_5 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = May: θ_e = 13 °C; 0 g/m² gained (−: dried) this month
+      = 0 g/m²
+        May: condensate on the wall at the end of the month
+  [33] Mc_6 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Jun: θ_e = 16 °C; 0 g/m² gained (−: dried) this month
+      = 0 g/m²
+        Jun: condensate on the wall at the end of the month
+  [34] Mc_7 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Jul: θ_e = 18 °C; 0 g/m² gained (−: dried) this month
+      = 0 g/m²
+        Jul: condensate on the wall at the end of the month
+  [35] Mc_8 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Aug: θ_e = 18 °C; 0 g/m² gained (−: dried) this month
+      = 0 g/m²
+        Aug: condensate on the wall at the end of the month
+  [36] Mc_9 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Sep: θ_e = 15 °C; 0 g/m² gained (−: dried) this month
+      = 0 g/m²
+        Sep: condensate on the wall at the end of the month
+  [37] Mc_10 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Oct: θ_e = 11 °C; 0 g/m² gained (−: dried) this month
+      = 0 g/m²
+        Oct: condensate on the wall at the end of the month
+  [38] Mc_11 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Nov: θ_e = 6 °C; 0 g/m² gained (−: dried) this month
+      = 0 g/m²
+        Nov: condensate on the wall at the end of the month
+  [39] Mc_12 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+      = Dec: θ_e = 3 °C; 1.7268 g/m² gained (−: dried) this month
+      = 1.7268 g/m²
+        Dec: condensate on the wall at the end of the month
+  [40] Mc_if_1 = max over the year of Mc    « ISO 13788 cl. 6
+      = between 'Plasterboard' and 'Vapour control layer'
+      = 0 g/m²
+        Most condensate held on the interface between 'Plasterboard' and 'Vapour control layer'
+  [41] Mc_if_2 = max over the year of Mc    « ISO 13788 cl. 6
+      = between 'Vapour control layer' and 'Mineral wool'
+      = 0 g/m²
+        Most condensate held on the interface between 'Vapour control layer' and 'Mineral wool'
+  [42] Mc_if_3 = max over the year of Mc    « ISO 13788 cl. 6
+      = between 'Mineral wool' and 'Solid brick'
+      = 9.8141 g/m²
+        Most condensate held on the interface between 'Mineral wool' and 'Solid brick'
+  [43] Mc_if_4 = max over the year of Mc    « ISO 13788 cl. 6
+      = between 'Solid brick' and 'Render'
+      = 0 g/m²
+        Most condensate held on the interface between 'Solid brick' and 'Render'
+  [44] Mc_max = max over interfaces and months of Mc    « ISO 13788 cl. 6
+      = 9.8141 g/m²
+      = 9.8141 g/m²
+        Most condensate held on any one interface in the year
+  [45] Mc_tot = max over months of Σ Mc    « ISO 13788 cl. 6
+      = 9.8141 g/m²
+      = 9.8141 g/m²
+        Most condensate on the whole wall in the year
+  [46] Mc_end = Σ Mc after 12 months    « ISO 13788 cl. 6
+      = 0 g/m²
+      = 0 g/m²
+        Condensate left on the wall at the end of the 12-month cycle
+  [47] n_diag = month drawn
+      = Jan (row 1)
+      = 1
+        Row of the climate the diagram vectors are for
+  [48] sd_if = Σ s_d to the node    « ISO 13788 cl. 6
+      = 6 nodes, inside surface first
+      = [0, 0.1, 4.1, 4.18, 6.33, 6.705] m
+        Diffusion thickness at the surfaces and interfaces
+  [49] x_if = Σ d to the node    « ISO 13788 cl. 6
+      = 6 nodes
+      = [0, 0.0125, 0.0127, 0.0927, 0.3077, 0.3227] m
+        Depth from the inside surface at the surfaces and interfaces
+  [50] theta_if = θ_i − (θ_i − θ_e)·(R_si + Σ R)/R_T    « ISO 13788 cl. 6
+      = θ_e = 2 °C
+      = [20.014, 19.635, 19.631, 4.4673, 2.4296, 2.3033] degC
+        Temperature at the surfaces and interfaces
+  [51] psat_if = 610.5·exp(17.269·θ/(237.3 + θ)), ice below 0 °C    « ISO 13788 cl. 6
+      = 6 nodes
+      = [2339, 2284.7, 2284.1, 839.97, 727.27, 720.74] Pa
+        Saturation vapour pressure at the surfaces and interfaces (the Glaser saturation line)
+  [52] p_if = tangent construction    « ISO 13788 cl. 6
+      = 6 nodes
+      = [1242.8, 1233.2, 847.68, 839.97, 665.24, 634.76] Pa
+        Vapour pressure at the surfaces and interfaces after the tangent construction
+  [53] R_Tf = R_si,f + Σ R_j + R_se    « ISO 13788 cl. 5
+      = 0.25 + 2.336 + 0.04
+      = 2.626 m²·K/W
+        Total thermal resistance with the internal surface resistance of the surface check
+  [54] fRsi = 1 − R_si/R_T    « ISO 13788 cl. 5
+      = 1 − 0.25 / 2.626
+      = 0.9048
+        Temperature factor of the internal surface
+  [55] fRsi_min = max over months of (θ_si,min − θ_e)/(θ_i − θ_e)    « ISO 13788 cl. 5
+      = θ_si,min from p_i/φ_crit; governing month: Jan
+      = 0.60884
+        Minimum temperature factor at the critical surface humidity
+  [56] n_fcrit = month that governs f_Rsi,min    « ISO 13788 cl. 5
+      = Jan (row 1)
+      = 1
+        Row of the climate that governs the surface check (0 when none applies)
+  [58] u_Mc = Mc_max / Mc_limit
+      = 9.8141 g/m² / 500 g/m²
+      = 0.019628
+        Utilisation of the limit on the condensate per interface
+  [59] u_f = f_Rsi,min / f_Rsi    « ISO 13788 cl. 5
+      = 0.60884 / 0.9048
+      = 0.6729
+        Utilisation of the surface temperature factor
+  [60] pass = every check passes
+      = 3 check(s)
+      = 1
+        1 when the annual balance, the limit and the surface factor all pass, else 0
+
+5. RESULTS
+  U_wall = 0.39904 W/(m²·K)    U-value of the wall
+  dU_ref = 0.00022803    Difference from the heat-loss calculation's U-value
+  R_T = 2.506 m²·K/W    Total thermal resistance
+  S_d = 6.705 m    Total diffusion-equivalent air layer thickness
+  psat_i = 2485.6 Pa    Saturation vapour pressure at the internal temperature
+  p_ext_m = [634.76, 666.5, 785.09, 917.96, 1137.7, 1344.8, 1526.5, 1567.8, 1397.6, 1141.4, 841.16, 689.22] Pa    Outside vapour pressure by month
+  p_int_m = [1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8, 1242.8] Pa    Inside vapour pressure by month
+  n_start = 12    First month of condensation
+  Mc_1 = 9.8141 g/m²    Jan: condensate on the wall
+  Mc_2 = 7.0199 g/m²    Feb: condensate on the wall
+  Mc_3 = 0 g/m²    Mar: condensate on the wall
+  Mc_4 = 0 g/m²    Apr: condensate on the wall
+  Mc_5 = 0 g/m²    May: condensate on the wall
+  Mc_6 = 0 g/m²    Jun: condensate on the wall
+  Mc_7 = 0 g/m²    Jul: condensate on the wall
+  Mc_8 = 0 g/m²    Aug: condensate on the wall
+  Mc_9 = 0 g/m²    Sep: condensate on the wall
+  Mc_10 = 0 g/m²    Oct: condensate on the wall
+  Mc_11 = 0 g/m²    Nov: condensate on the wall
+  Mc_12 = 1.7268 g/m²    Dec: condensate on the wall
+  Mc_if_1 = 0 g/m²    Peak condensate on interface 1
+  Mc_if_2 = 0 g/m²    Peak condensate on interface 2
+  Mc_if_3 = 9.8141 g/m²    Peak condensate on interface 3
+  Mc_if_4 = 0 g/m²    Peak condensate on interface 4
+  Mc_max = 9.8141 g/m²    Most condensate on any interface
+  Mc_tot = 9.8141 g/m²    Most condensate on the wall
+  Mc_end = 0 g/m²    Condensate left after 12 months
+  n_diag = 1    Month of the diagram
+  sd_if = [0, 0.1, 4.1, 4.18, 6.33, 6.705] m    Diffusion thickness at the nodes
+  x_if = [0, 0.0125, 0.0127, 0.0927, 0.3077, 0.3227] m    Depth at the nodes
+  theta_if = [20.014, 19.635, 19.631, 4.4673, 2.4296, 2.3033] degC    Temperature at the nodes
+  psat_if = [2339, 2284.7, 2284.1, 839.97, 727.27, 720.74] Pa    Saturation pressure at the nodes
+  p_if = [1242.8, 1233.2, 847.68, 839.97, 665.24, 634.76] Pa    Vapour pressure at the nodes
+  fRsi = 0.9048    Temperature factor of the internal surface
+  fRsi_min = 0.60884    Minimum temperature factor
+  n_fcrit = 1    Month governing the surface check
+  R_Tf = 2.626 m²·K/W    Total resistance for the surface check
+  u_Mc = 0.019628    Peak condensate against its limit
+  u_f = 0.6729    Surface factor against its minimum
+  pass = 1    All checks pass
+
+6. CHECKS (governing first)
+  PASS  Surface condensation: f_Rsi against f_Rsi,min at 80 % critical humidity: u_f = 0.6729 vs u_f ≤ 1  utilisation 0.673  « ISO 13788 cl. 5
+  PASS  Peak condensate on an interface against its limit (500 g/m²): u_Mc = 0.019628 vs u_Mc ≤ 1  utilisation 0.0196  « ISO 13788 cl. 6
+  PASS  Annual moisture balance: the condensate dries out within the year: Mc_end = 0 g/m² vs Mc_end ≤ 0 g/m²  utilisation 0  « ISO 13788 cl. 6
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: layers (Layer conductivity and vapour resistance); Rsi, Rse, Rsi_f (Surface resistances); climate (Monthly outside climate); dp_f (Internal humidity class); RH_crit, Mc_limit (Condensation criteria). Enter each as one so its source, edition and licence travel with it.
+  WARNING input.layers[2].d: layers[2].d (Thickness) is outside its usual range 1 … 500 mm; 0.2 mm was given.
+
+8. VERIFICATION
+  Template: bs.glaser@1.2.0
+  Content hash: c1e7f4dbc79c6026
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 8/8
+  Test run: 2026-10-25 08:40 UTC
+  Application: TempestOS test

@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room heating
 Calc ID: Plant room heating calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HTG-001    Client: Client Co
 
 PACK INDEX
   1. Room A heat loss — U-values and room heat loss — rev A — ISSUED — U-value of Cavity wall against its target (0.3 W/m²K) PASS
@@ -14,7 +14,7 @@ PACK INDEX
   5. Circulator motor — Motor and actuator sizing — rev A — ISSUED — Speed n_pk ≤ n_max PASS
 
 REVISIONS
-  A  2026-10-24  test.engineer  First issue
+  A  2026-10-25  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -40,16 +40,16 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 24/24
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 08:40 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
 Project: Plant room heating
 Calc ID: Room A heat loss    Revision: A
 Title: U-values and room heat loss
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.
@@ -196,11 +196,11 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.1.0
-  Content hash: 4860d86fbd28e4cd
+  Template: bs.room-heat-loss@1.2.0
+  Content hash: bb674847377954a3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 08:40 UTC
   Application: TempestOS test
 
 
@@ -208,9 +208,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room heating
 Calc ID: Room B heat loss    Revision: A
 Title: U-values and room heat loss
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.
@@ -369,11 +369,11 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.1.0
-  Content hash: 4860d86fbd28e4cd
+  Template: bs.room-heat-loss@1.2.0
+  Content hash: bb674847377954a3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 08:40 UTC
   Application: TempestOS test
 
 
@@ -381,9 +381,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room heating
 Calc ID: Sealed system    Revision: A
 Title: Sealed heating system: emitters and expansion vessel
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A closed LTHW system below 100 °C: the catalogue output (at ΔT 50 K) each room's emitter needs at the design flow, return and room temperatures, checked against the selected emitters; and the minimum expansion vessel for the system volume, fill and maximum temperatures, static head and pressures.
@@ -515,7 +515,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   Content hash: dad2559cb15ff370
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 08:40 UTC
   Application: TempestOS test
 
 
@@ -523,9 +523,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room heating
 Calc ID: Primary pipework and pump    Revision: A
 Title: Pipe pressure drop and pump duty
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
@@ -696,7 +696,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   Content hash: d3c3c38f4c81cf2d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 08:40 UTC
   Application: TempestOS test
 
 
@@ -704,9 +704,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room heating
 Calc ID: Circulator motor    Revision: A
 Title: Motor and actuator sizing
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: HTG-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
@@ -881,5 +881,5 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 64020d560b0ee248
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 08:40 UTC
   Application: TempestOS test

@@ -94,4 +94,9 @@ internal static class ChainInputs
         ["s5"] = Spec("SPEC-STR-09 §2 (actions)"), ["s2"] = Drg("DRG-STR-310"), ["s3"] = Spec("SPEC-STR-09 §3 (members)"), ["m3"] = Drg("DRG-STR-312"),
         ["s4a"] = Drg("DRG-STR-312"), ["s4b"] = Drg("DRG-STR-315"), ["s6"] = Drg("DRG-STR-315"),
     });
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> EnvelopeMoisture(LibraryTestHost host) => For(host, CalcPackTemplates.EnvelopeMoisture, new Dictionary<string, CalcProvenance>
+    {
+        ["b4"] = Spec("SPEC-ENV-02 §3 (wall build-up)"), ["b2"] = Spec("SPEC-ENV-02 §2 (room conditions)"), ["b7"] = Drg("DRG-ENV-210"),
+    });
 }

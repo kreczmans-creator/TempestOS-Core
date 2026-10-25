@@ -370,4 +370,55 @@ internal static class CalcPackExamples
     [
         Q("L", 30, "m"), Q("U", 400, "V"), N("cos_phi", 0.86), N("eta", 0.92), C("insulation", "PVC 70 °C"), C("method", "C"), C("device", "MCB type C"),
     ];
+
+    // ---- Envelope moisture: a wall's U-value, the room air state and the Glaser condensation check -----------------------------
+
+    /// <summary>
+    /// A room with a solid brick external wall lined internally with 80 mm of mineral wool and plasterboard, and a window. The wall is the FIRST element of the elements table: its
+    /// U-value (<c>U_1</c>) is what the Glaser step cross-checks. The layer conductivities, the target U and the window U are invented illustrations, not design data. The 0.2 mm vapour
+    /// control layer of the Glaser step is not a row here: it is thermally negligible and below this sheet's 1 mm layer minimum.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> EnvB4 { get; } =
+    [
+        Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
+        Table("layers",
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Plasterboard"), Mm("d", 12.5), ("lambda", new CalcCell(0.25, "W/(m*K)"))),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Mineral wool"), Mm("d", 80), ("lambda", new CalcCell(0.04, "W/(m*K)"))),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Solid brick"), Mm("d", 215), ("lambda", new CalcCell(0.8, "W/(m*K)"))),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Render"), Mm("d", 15), ("lambda", new CalcCell(0.9, "W/(m*K)")))),
+        Table("elements",
+            CalcRow.Of(Txt("name", "External wall"), ("area", new CalcCell(18, "m^2"))),
+            CalcRow.Of(Txt("name", "Window"), ("area", new CalcCell(3, "m^2")), ("U_user", new CalcCell(1.4, "W/(m^2*K)")))),
+        Q("U_target", 0.45, "W/(m^2*K)"), Q("n", 0.5, "1/h"), Q("V", 48, "m^3"), Q("A_floor", 16, "m^2"),
+    ];
+
+    /// <summary>The room air: 21 °C dry-bulb at 50 % relative humidity, sea level, state only. Its dry-bulb and relative humidity are the Glaser step's internal conditions.</summary>
+    public static IReadOnlyList<CalcInputValue> EnvB2 { get; } =
+    [
+        Q("altitude", 0, "m"), Q("t_db", 21, "degC"), C("known", "relative humidity"), N("RH", 50), C("process", "none (state only)"),
+    ];
+
+    /// <summary>
+    /// The same wall for the Glaser check (inside first), with a 0.2 mm vapour control layer behind the plasterboard (μ 20000, an invented figure for a taped but imperfect membrane:
+    /// real membranes are often higher). The conductivities match the heat-loss step's; the layer thicknesses and conductivities are typed here too, because the
+    /// heat-loss step offers no per-layer output to link (a test guards that they agree). The U-value of the layers is cross-checked against the heat-loss step's by link.
+    /// The twelve monthly outside conditions are an INVENTED maritime year, not a climate record of any standard; the 500 g/m² limit is an invented illustration of the owner's criterion.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> EnvB7 { get; } =
+    [
+        C("humidity_mode", "constant internal relative humidity"), C("element", "External wall"),
+        Table("layers",
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Plasterboard"), Mm("d", 12.5), ("lambda", new CalcCell(0.25, "W/(m*K)")), Num("mu", 8)),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Vapour control layer"), Mm("d", 0.2), ("lambda", new CalcCell(0.35, "W/(m*K)")), Num("mu", 20000)),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Mineral wool"), Mm("d", 80), ("lambda", new CalcCell(0.04, "W/(m*K)")), Num("mu", 1)),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Solid brick"), Mm("d", 215), ("lambda", new CalcCell(0.8, "W/(m*K)")), Num("mu", 10)),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Render"), Mm("d", 15), ("lambda", new CalcCell(0.9, "W/(m*K)")), Num("mu", 25))),
+        Q("Rsi", 0.13, "m^2*K/W"), Q("Rse", 0.04, "m^2*K/W"), Q("Rsi_f", 0.25, "m^2*K/W"), Q("RH_crit", 80, "%"), Q("Mc_limit", 500, "g/m^2"),
+        Table("climate",
+            Month("Jan", 2, 90), Month("Feb", 3, 88), Month("Mar", 6, 84), Month("Apr", 9, 80), Month("May", 13, 76), Month("Jun", 16, 74),
+            Month("Jul", 18, 74), Month("Aug", 18, 76), Month("Sep", 15, 82), Month("Oct", 11, 87), Month("Nov", 6, 90), Month("Dec", 3, 91)),
+    ];
+
+    private static CalcRow Month(string name, double thetaE, double rhE) =>
+        CalcRow.Of(Txt("month", name), ("theta_e", new CalcCell(thetaE, "degC")), ("RH_e", new CalcCell(rhE, "%")));
 }

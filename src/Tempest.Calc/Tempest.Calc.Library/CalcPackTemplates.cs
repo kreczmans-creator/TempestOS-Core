@@ -218,6 +218,34 @@ public static class CalcPackTemplates
             new CalcPackBinding("e1", "P_rated", "e4", "P"),
         ]);
 
+    /// <summary>
+    /// Envelope moisture: room heat loss (B4) and the room air state (B2) → Glaser condensation (B7).
+    /// <para>
+    /// B4 → B7: the heat-loss step offers no per-layer output (its layers table is an input, and a link feeds one number or one table cell from a declared output), so
+    /// the wall's layers are typed in the Glaser step as well, with the vapour resistance factors it needs, and the one value the two share is linked: B4's U-value of the
+    /// first element (<c>U_1</c>, a declared port since B4 1.2.0) is the Glaser step's <c>U_ref</c>. The Glaser step compares it with <c>1/R_T</c> of its own layers and warns when
+    /// they differ by more than 2 %, so a revision of the wall in one step makes the other stale and, once updated, shows whether the layers still agree. The Glaser step's vapour control
+    /// layer is not in the heat-loss step (0.2 mm is below its 1 mm layer minimum and thermally negligible: 0.0006 m²K/W). B2 → B7: the room air's dry-bulb (<c>t_1_out</c>) is the
+    /// internal air temperature <c>theta_int</c> and its relative humidity (<c>phi_1</c>, added to B2 in 1.1.0 as a percentage quantity: the plain-number <c>RH_1</c> cannot be linked
+    /// to a percentage input) the internal relative humidity <c>RH_int</c>. The heat-loss step's own internal design temperature is typed (21 °C, the same as the air state's;
+    /// a test guards the match). The twelve monthly outside conditions, the surface resistances, the critical humidity and the limit on the condensate are the user's records:
+    /// the example's are invented and no climate or material data of any standard is shipped.
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate EnvelopeMoisture { get; } = new(
+        "pack.envelope-moisture", "Envelope moisture",
+        "Takes the U-value of a wall from the room heat-loss step and the temperature and humidity of the room air from the psychrometrics step to the Glaser condensation check of the wall: the condensate on each interface month by month, the annual balance, the peak against the owner's limit, and the surface temperature factor. The wall's layers are typed in both the heat-loss and the Glaser steps (no per-layer link exists) and the Glaser step warns if its U-value departs from the heat-loss step's by more than 2 %. The monthly climate is the user's own record: the example's is invented.",
+        [
+            new CalcPackStep("b4", "bs.room-heat-loss", "Room heat loss", CalcPackExamples.EnvB4),
+            new CalcPackStep("b2", "bs.psychrometrics", "Room air state", CalcPackExamples.EnvB2),
+            new CalcPackStep("b7", "bs.glaser", "Wall condensation", CalcPackExamples.EnvB7),
+        ],
+        [
+            new CalcPackBinding("b4", "U_1", "b7", "U_ref"),
+            new CalcPackBinding("b2", "t_1_out", "b7", "theta_int"),
+            new CalcPackBinding("b2", "phi_1", "b7", "RH_int"),
+        ]);
+
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, EnvelopeMoisture];
 }
