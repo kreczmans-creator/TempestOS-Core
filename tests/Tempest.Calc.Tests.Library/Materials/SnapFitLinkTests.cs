@@ -52,4 +52,33 @@ public sealed class SnapFitLinkTests
         var assembly = await host.Service.BindAsync(downstream.Id, "F_1", locked.Id, "assembly_force");
         Assert.True(assembly.Succeeded, assembly.Reason);
     }
+
+    [Fact]
+    public async Task A_Pinned_Link_To_The_Separation_Force_Goes_Stale_When_The_Upstream_Is_Changed_To_A_Locking_Angle()
+    {
+        var host = Host();
+        var project = await host.ProjectAsync();
+        var upstream = await SnapFit(host, project, "Lid hook", 60);
+        var downstream = await host.Service.CreateAsync(SpringCalculator.Id, project, "Release spring", []);
+        var bound = await host.Service.BindAsync(downstream.Id, "F_2", upstream.Id, "retention_force");
+        Assert.True(bound.Succeeded, bound.Reason);
+        Assert.False((await host.Service.StalenessAsync((await host.Store.FindInstanceAsync(downstream.Id))!)).IsStale);
+
+        // The draft upstream is changed to a return angle of 70° (mu = 0.5 locks from 63.43°) and run again: it no longer gives a number.
+        var inputs = upstream.Inputs.Where(i => i.Symbol != "alpha_r").Append(CalcInputValue.Quantity("alpha_r", 70, "deg", CalcProvenance.Drawing("DRG-9", "B")));
+        var changed = await host.Service.UpdateInputsAsync(upstream.Id, inputs);
+        Assert.True(changed.Succeeded, changed.Reason);
+        var run = await host.Service.RunAsync(upstream.Id);
+        Assert.NotNull(run);
+        Assert.Null(run!.Instance.Outputs.Single(o => o.Symbol == "retention_force").Si);
+
+        var staleness = await host.Service.StalenessAsync((await host.Store.FindInstanceAsync(downstream.Id))!);
+        Assert.True(staleness.IsStale);
+        Assert.Contains(staleness.Reasons, reason => reason.Contains("no longer gives 'retention_force'", StringComparison.Ordinal));
+
+        // Updating the link cannot help: there is nothing to take, and the refusal says so.
+        var update = await host.Service.UpdateLinksAsync(downstream.Id);
+        Assert.False(update.Succeeded);
+        Assert.Contains("no longer gives", update.Reason, StringComparison.Ordinal);
+    }
 }

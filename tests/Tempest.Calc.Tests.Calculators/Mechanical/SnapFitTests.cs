@@ -233,18 +233,21 @@ public sealed class SnapFitTests
             // U = ½·Es·ε²·(π·D·h·b);  U = F·(dD/2)/2  =>  F = 4U/dD (times the user's force factor).
             var energy = 0.5 * es * epsNom * epsNom * Math.PI * d * h * b;
             var force = kf * 4 * energy / dd;
-            return !r.IsBlocked && Math.Abs(r.OutputSi("eps") * 1e0 - k * epsNom) <= 1e-9 * epsNom * k && Math.Abs(r.OutputSi("eps_nom") - epsNom) <= 1e-9 * epsNom
-                && Math.Abs(r.OutputSi("P") - force) <= 1e-9 * force && Math.Abs(r.OutputSi("y_perm") * 1e3 - 0.04 * d / k) <= 1e-9 * d
-                && Math.Abs(r.OutputSi("eps_inner") - dd / (d - h)) <= 1e-9 * epsNom;
+            var inner = dd / (d - h);
+            var governing = Math.Max(k * epsNom, inner);
+            return !r.IsBlocked && Math.Abs(r.OutputSi("eps") - governing) <= 1e-9 * governing && Math.Abs(r.OutputSi("eps_nom") - epsNom) <= 1e-9 * epsNom
+                && Math.Abs(r.OutputSi("P") - force) <= 1e-9 * force && Math.Abs(r.OutputSi("y_perm") * 1e3 - 0.04 * Math.Min(d / k, d - h)) <= 1e-9 * d
+                && Math.Abs(r.OutputSi("eps_inner") - inner) <= 1e-9 * inner;
         }, iter: 60);
     }
 
     [Fact]
     public void The_Annular_Strain_Factor_Scales_The_Strain_Not_The_Force_And_The_Force_Factor_The_Force_Not_The_Strain()
     {
-        var ring = new[] { Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1) };
+        // K_ann of 1.2 and 1.8 both exceed D/(D − h) = 1.0526 here, so the K_ann strain governs the check in both.
+        var ring = new[] { Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1.2) };
         var plain = Run(ring);
-        var strained = Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1.5));
+        var strained = Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1.8));
         Assert.Equal(1.5 * plain.OutputSi("strain_util"), strained.OutputSi("strain_util"), 12);
         Assert.Equal(plain.OutputSi("P"), strained.OutputSi("P"), plain.OutputSi("P") * 1e-12);
         Assert.Equal(plain.OutputSi("assembly_force"), strained.OutputSi("assembly_force"), plain.OutputSi("assembly_force") * 1e-12);
@@ -263,6 +266,16 @@ public sealed class SnapFitTests
         Assert.False(Run().IsBlocked);
         Assert.DoesNotContain(Run().Notices, n => n.Message.Contains("K_ann", StringComparison.Ordinal));
         Assert.Contains(Snap.Template.RecordKinds!, k => k.Kind == "snapfit.annular-force-factor" && k.Symbols.SequenceEqual(["K_F"]));
+
+        // With K_ann = 1 the inner-surface strain ΔD/(D − h) is the larger and is the one checked; the force is unchanged.
+        var inner = Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1));
+        Assert.Equal(inner.OutputSi("eps_inner"), inner.OutputSi("eps"), 15);
+        Assert.True(inner.OutputSi("eps") > inner.OutputSi("eps_nom"));
+        Assert.Equal(plain.OutputSi("P"), inner.OutputSi("P"), plain.OutputSi("P") * 1e-12);
+
+        // A wall above a tenth of the mean diameter warns that the thin-ring model has run out.
+        Assert.DoesNotContain(Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1), Q("h", 3, "mm"), Q("D_ring", 30, "mm")).Warnings, w => w.RuleId == "thick-ring");
+        Assert.Contains(Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1), Q("h", 3.1, "mm"), Q("D_ring", 30, "mm")).Warnings, w => w.RuleId == "thick-ring" && w.Message.StartsWith("h:", StringComparison.Ordinal));
 
         // The ring must be wider than its wall.
         Assert.Contains(Run([.. ring, Q("D_ring", 1, "mm"), Q("h", 1.5, "mm")]).Blocks, b => b.RuleId == "geometry" && b.Message.StartsWith("D_ring:", StringComparison.Ordinal));
@@ -368,6 +381,19 @@ public sealed class SnapFitTests
         var noEps = Run(new CalcInputValue("eps_perm_once"));
         Assert.Contains(noEps.Blocks, b => b.RuleId == "missing" && b.Message.StartsWith("eps_perm_once: enter", StringComparison.Ordinal));
         Assert.Null(noEps.FindOutput("strain_util"));
+    }
+
+    [Fact]
+    public void The_Secant_Modulus_Says_It_Is_Read_At_The_Nominal_Hoop_Strain_For_The_Annular_Snap()
+    {
+        Assert.Contains("annular: at the nominal hoop strain ΔD/D", Snap.Template.FindInput("Es")!.Description, StringComparison.Ordinal);
+        Assert.Contains("annular: at the nominal hoop strain ΔD/D", Snap.Template.RecordKinds!.Single(k => k.Kind == "snapfit.secant-modulus").Guidance, StringComparison.Ordinal);
+
+        // The curve is read at ε_nom, not at the K_ann-scaled or inner-surface strain: the same modulus for any K_ann.
+        var curve = new[] { Mode(SnapFitCalculator.Annular), CalcInputValue.Choice("Es_source", SnapFitCalculator.EsCurve), SnapFitCalculator.SecantPoints((0.005, 2600), (0.03, 1800)) };
+        var a = Run([.. curve, CalcInputValue.Of("K_ann", 1)]);
+        var b = Run([.. curve, CalcInputValue.Of("K_ann", 2)]);
+        Assert.Equal(a.OutputSi("Es"), b.OutputSi("Es"), 1e-6);
     }
 
     [Fact]
@@ -482,6 +508,7 @@ public sealed class SnapFitTests
             Run(CalcInputValue.Choice("Es_source", SnapFitCalculator.EsCurve), CalcInputValue.Table("Es_pts", [])),
             Run(new CalcInputValue("Es")), Run(Mode(SnapFitCalculator.TaperedWidth), new CalcInputValue("b_ratio")),
             Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1), Q("D_ring", 1, "mm"), Q("h", 1.5, "mm")),
+            Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1), Q("D_ring", 10, "mm"), Q("h", 2, "mm")),
         };
 
         foreach (var notice in runs.SelectMany(r => r.Notices))
@@ -509,6 +536,10 @@ public sealed class SnapFitTests
 
         foreach (var symbol in new[] { "eps", "T_bar", "P", "y_perm" })
             Assert.DoesNotContain(guide, bar.Steps.Single(st => st.Symbol == symbol).Clause, StringComparison.Ordinal);
+
+        Assert.DoesNotContain(guide, bar.Steps.Single(st => st.Symbol == "phi").Clause, StringComparison.Ordinal);
+        var curve = Run(CalcInputValue.Choice("Es_source", SnapFitCalculator.EsCurve), SnapFitCalculator.SecantPoints((0.005, 2600), (0.03, 1800)));
+        Assert.Equal("W3 material points (linear interpolation)", curve.Steps.Single(st => st.Symbol == "Es").Clause);
 
         // What the guide states stays attributed to it: the constant-section strain and force, γ_perm, the joining forces.
         var constant = Run();
