@@ -4,8 +4,8 @@ Kind: `material.properties` (W3 material library: secant modulus against strain)
 Status: existing CalcRecordKind `material.properties`. The W3 material library owns this kind.
 
 ## Used by
-- No built calculator maps an input to this property yet.
-- The library stores it so a later calculator can read the curve for a nonlinear material.
+- M8 snap-fits (built, `mech.snap-fit`) read the curve as the table input `Es_pts`. The columns are `eps` and `Es`.
+- The library also stores it so a later calculator can read the curve for a nonlinear material.
 
 ## Symbol mapping
 - Each material becomes one value with the Symbol `Es_curve`. Its rows hold the points of the curve.

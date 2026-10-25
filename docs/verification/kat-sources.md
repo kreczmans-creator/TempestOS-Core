@@ -15,9 +15,11 @@ Both contradictions below are provisional. They rest on open secondary sources, 
 | Unconfirmed KATs | 8 | 5 | 1 | 14 |
 | Secondary KATs | 20 | 0 | 1 | 21 |
 | Addendum B-0/B-1 cases (90d15f11) | 7 | 2 | 1 | 10 |
-| All | 35 | 7 | 3 | 45 |
+| Addendum B-2/B-3 cases (2f53791c) | 3 | 2 | 1 | 6 |
+| All | 38 | 9 | 4 | 51 |
 
-The first three rows cover the earlier 35 cases, checked on 2026-10-24. The addendum row is new and is detailed in the last section.
+The first three rows cover the earlier 35 cases, checked on 2026-10-24. The two addendum rows are detailed in the last two sections.
+The B-2/B-3 section also holds a relation-level check of the Analytic cases in seven calculators. Those checks are not in the totals.
 
 Of the earlier 28 confirmed, 3 rest on a manufacturer or IET page: B32 Z_s, ΔT 30 factor and SKF 6206.
 The other 25 use open course notes, open secondary pages or recomputation. Each row says which.
@@ -207,3 +209,81 @@ The NextPCB worked example gives 39 mil for the external width, which conflicts 
 4. EN 13906-1:2013, the solid length of unground ends and the minimum coil clearance S_a. The Gutekunst page is a manufacturer source only (`ka-squared-en`).
 5. IPC-2221 chart for 1 oz copper. Optional, since all calculators share the sheet's curve-fit (`ka-published-3a-10k-1oz` and `-internal`).
 6. Parker catalogue HY10-4001/UK, the sizing page. Check whether its ratio is on absolute or gauge pressures, and update the citation (`ka-parker-hy10-4004`).
+
+## Addendum B-2/B-3 cases (2f53791c)
+
+Date: 2026-10-25. Release commit: 2f53791c. Rules and outcome words are the same as above.
+I ran `python3 tools/verification/kat_inventory.py`. It lists 220 cases, 29 tagged Unconfirmed or Secondary.
+Twenty-three of the 29 are in the tables above. Six are new and sit in `ORingGlandCalculator.cs` and `PlateBendingCalculator.cs`.
+I recorded values, locations and URLs only. I copied no source text.
+
+### Summary of the six new cases
+
+| Outcome | Cases |
+|---|---|
+| Confirmed (3) | `ka-parker-quadratic`, `ka-rect-simple-square-book`, `ka-rect-clamped-square-book` |
+| Still unconfirmed (2) | `ka-rect-clamped-square`, `ka-rect-clamped-natural` |
+| Contradicted (1) | `ka-stretch-rule` |
+
+The Parker checks use a free university copy of the 2001 edition (ORD 5700A/US). Current editions may differ.
+The plate checks rest on search-tool extracts of vendor pages, because direct fetches returned no usable text.
+
+### Table (tagged cases)
+
+| Calculator | Case | Tag | Value(s) checked | Source checked (title, edition, URL, page/table) | Outcome | Notes |
+|---|---|---|---|---|---|---|
+| fp.oring-gland | ka-parker-quadratic | Unconfirmed/Secondary | Y = 0.56 + 0.59·X − 0.0046·X² for 3 to 25 % ID stretch; X = 4 gives Y 2.8464 % | Parker O-Ring Handbook ORD 5700A/US, 2001 ed., section 3.5 and Figure 3-3 (empirical formulas for the observed curve): https://wp.optics.arizona.edu/optomech/wp-content/uploads/sites/53/2016/10/Parker-O-ring-handbook.pdf | Confirmed | The handbook prints the same three coefficients. X is percent stretch on the inside diameter. Y is percent reduction in cross-section diameter. A separate quartic covers 0 to 3 %. The case uses 4 %, so the quadratic applies. I recomputed 0.56 + 2.36 − 0.0736 = 2.8464. I did not recheck squeeze_nom 26.14 %. |
+| fp.oring-gland | ka-stretch-rule | Unconfirmed/Secondary | piston-groove stretch limit 6 % (5.8 % reads 0.9667 of the limit) | Same Parker handbook, section 3 design list item 1 and section 3.5; also section 5 text on stretch close to five percent | Contradicted | See C4. The 2001 edition recommends no more than 5 % and allows more only for a shorter life. PTD 5705 and the current edition are unseen. |
+| struct.plate-bending | ka-rect-simple-square-book | Unconfirmed | α = 0.00406 in w_max = α·q·a⁴/D, simply supported square, uniform load; 0.25771 mm | SolidWorks Simulation help, "Simply Supported Rectangular Plate", citing Timoshenko and Woinowsky-Krieger, 2nd ed. (extract): https://help.solidworks.com/2025/English/simconntutorial/Simply_Supported_Rectangular_Plate_Static.htm | Confirmed | The page prints 0.00406. I recomputed D = 9846.15 N·m for E 210 GPa, ν 0.3, t 8 mm. Then w = 0.00406·10 kPa·0.5⁴/D = 0.25771 mm. The book itself is unseen. |
+| struct.plate-bending | ka-rect-clamped-square-book | Unconfirmed | α = 0.00126, clamped square, uniform load; 0.07998 mm | SolidWorks Simulation help, "Clamped Square Plate Under Uniform Loading", citing the same book (extract): https://help.solidworks.com/2025/English/simconntutorial/Clamped_Square_Plate_Under_Uniform_Loading.htm | Confirmed | The page prints 0.00126. The expected 0.07998 mm recomputes from it. A CIMNE lab sheet (extract) uses 0.0012567 for the same case, which is 0.3 % below the book's rounding. See the note on ka-rect-clamped-square. |
+| struct.plate-bending | ka-rect-clamped-square | Unconfirmed | w_max 0.001265319·q·a⁴/D; M_x centre 0.022905·q·a²; edge M −0.05133·q·a²; book 0.00126 and 0.0513 | Same SolidWorks page for the deflection. No open page found for the moment coefficients | Still unconfirmed | The sheet's converged 0.0012653 rounds to 0.00127, one unit above the book's 0.00126. The CIMNE value 0.0012567 sits below both. Only the book's table can settle the third digit. The moments 0.0231 and 0.0513 appear in no open page I found. |
+| struct.plate-bending | ka-rect-clamped-natural | Unconfirmed | λ² = 35.99 (sheet 35.9852); f₁ = 286.85 Hz for 500 × 500 × 8 mm steel | Leissa, Vibration of Plates, NASA SP-160 (1969), Ch. 4: no open page found. An ANSYS verification page cites a different plate (extract) | Still unconfirmed | I recomputed f₁ = (35.9852/a²)·√(D/ρt)/2π = 286.85 Hz from the stated λ². The constant 35.99 is not read from any open source. |
+
+### Relation-level checks of the Analytic cases
+
+These cases carry the Analytic tag and cite no book. I checked whether the underlying relation appears in an open source.
+I also recomputed a few expected values by hand. "Not checked" means I did not open any source for that case.
+
+| Calculator | Cases | Relation or value checked | Source checked | Outcome | Notes |
+|---|---|---|---|---|---|
+| mech.snap-fit | ka-constant, ka-taper-thickness | y_perm = 0.67·ε·l²/h (the KAT uses 2/3); tapered to half thickness 1.09 (the KAT has K_y 1.0904); P = b·h²·Es·ε/(6·l) | Synectic, "How to Design a Snap Fit Joint": https://synectic.net/?p=42601. BASF snap-fit Part II (P = k·Y only): https://ulprospector.ul.com/1228/pe-snapfit-2/ | Confirmed | The Synectic page prints 0.67, 1.09 and the force relation. It cites no standard and swaps the meaning of H and B. The BASF manual formulas themselves are unseen. I could not find a Covestro guide. |
+| mech.snap-fit | ka-taper-thickness-deep, ka-taper-width, ka-annular, ka-annular-inner-surface, ka-annular-force-factor, ka-torsion, ka-torsion-both-ends, ka-curve | Tapers beyond half thickness, width taper, thin ring, torsion bar and secant-modulus curve | None found | Still unconfirmed | No open source prints these forms. They rest on the author's python3 integration and strain-energy checks. |
+| bs.pipe-expansion | ka-offset-leg-steel-50m, ka-u-loop-too-short, ka-cold-copper-loop | Δ = α·L·ΔT and guided-cantilever leg L = √(3·E·D·Δ/Sa) | EPCLAND, "Pipe expansion loops": https://epcland.com/pipe-expansion-loops/ | Confirmed | The page prints both relations. I recomputed L_req = 4.850 m for Δ 42 mm and 3.4295 m for Δ 21 mm with Sa 100 MPa. Sa is a record input. The B31.3 Sa equation is paid text. |
+| bs.pipe-expansion | ka-axial-bellows | Anchor force 6 bar × 80 cm² + 120 N/mm × 42 mm | Recomputed | Confirmed | 4800 N + 5040 N = 9840 N. |
+| bs.pipe-expansion | ka-z-bend-steel, and the F = 12·E·I·Δ/L³ and M = 6·E·I·Δ/L² forms | Guided-cantilever force and moment; Z-bend series sharing | None found | Still unconfirmed | EPCLAND prints no force or moment form. These are standard beam results but I opened no source. Manufacturer guides (for example the CDA copper handbook) gave no formula in the extract. |
+| bs.insulation | ka-pipe-chosen, ka-pipe-heat-loss, ka-pipe-surface, ka-wall-and-film | Cylinder series resistance R = ln(D_e/D_i)/(2πλ) + 1/(h_se·π·D_e) | Recomputed | Confirmed | ka-pipe-chosen: 1.870085 + 0.198944 = 2.069029 K·m/W; q 28.999 W/m. Matches. |
+| bs.insulation | ka-bare-complies-window | Critical diameter 2λ/h = 40 mm (critical radius λ/h) | Search extracts of several heat-transfer course pages. I opened none of them | Confirmed | r_cr = λ/h for a cylinder. The sphere form is 2λ/h, so do not mix them. |
+| bs.insulation | ka-correlation-still, ka-correlation-wind, ka-flat-correlation, ka-flat-wind-turbulent, and the Magnus dew-point cases | Free-convection, Churchill–Bernstein, flat-plate and Magnus correlations | None opened | Still unconfirmed | Not checked here. The 25 W/m and 45 °C limits are record values. BS 5422 and ISO 12241 are paid. |
+| elec.containment | ka-capstan-180, ka-fill-3x10-in-25, ka-pull-tray-two-bends, ka-direction-passes-every-check | T₂ = T₁·e^(μθ), θ in radians; fill = Σ(π·d²/4)/area | Wikipedia, Capstan equation: https://en.wikipedia.org/wiki/Capstan_equation | Confirmed | I recomputed 200·e^(0.35π) = 600.567 N and the 48 % fill. The bend loop of the two-bend cases is the same relation applied per bend. |
+| elec.containment | ka-trunking-fill, ka-bend-too-tight | Space factor 0.42, bend multiple 12, friction and sidewall limits | None | Still unconfirmed | The KATs state these values are illustrative. BS 7671 Appendix 5 and IET Guidance Note 1 are paid. Nothing to match. |
+| fp.cylinder | ka-orifice | Q = C_d·A·√(2Δp/ρ) | Wikipedia, Orifice plate: https://en.wikipedia.org/wiki/Orifice_plate | Confirmed | The page adds 1/√(1 − β⁴). The KAT omits it, so it holds only for β near 0. Check that the model says free discharge. |
+| fp.cylinder | ka-euler-slender | F_cr = π²·E·I/(K·L)² | Wikipedia, Buckling: https://en.wikipedia.org/wiki/Buckling | Confirmed | I recomputed 59.06 kN. The page lists K = 2 for fixed-free. |
+| fp.cylinder | ka-back-pressure-fixed-free, ka-circuit-standard, ka-regenerative, ka-lossless | Johnson parabola and λ_c = π√(2E/f_y); area and force arithmetic | None open for Johnson | Still unconfirmed | Wikipedia names Johnson's formula but prints neither it nor λ_c. The two curves meet at λ_c by algebra. The areas recompute (A_b 78.5398 cm²). |
+| fp.oring-gland | ka-thermal-swell, ka-worst-case-hand, ka-rod-seal, ka-face-seal, ka-face-seal-internal, ka-gap-over-temperature, ka-incompressible-reduction, ka-linear-reduction, ka-extrusion-record | Worst-case stack-up, constant-volume and Poisson reductions | Not checked | Not checked | Analytic arithmetic. No source opened. |
+| fp.oring-gland | ka-monte-carlo-seeded, ka-monte-carlo-measured | Seeded sampler results | Not applicable | Not checked | Both are tagged Published, but the source is a python re-implementation of the engine's own sampler. See the observations. |
+| struct.plate-bending | ka-circular-clamped-uniform, ka-circular-simple-uniform, ka-circular-simple-patch, ka-circular-clamped-ring, ka-rect-simple-square-series, ka-rect-simple-natural, ka-rect-simple-patch | Kirchhoff closed forms and Navier series | Not checked | Not checked | The LIRA test 1.45 page (https://help.liraland.com/en-gb/section-1/test-1-45.html) prints a clamped circular plate with centre values from Timoshenko. I did not compare them with the case inputs. |
+
+### Observations
+
+- The two `ka-monte-carlo-*` cases carry the Published kind but check the engine against its own algorithm in python. Relabel them Analytic.
+- `ka-rect-clamped-square` states the book values 0.00126 and 0.0513. Only the first is confirmed, and only to 3 s.f.
+- `ka-rect-simple-square-book` and `ka-rect-clamped-square-book` carry tolerances of 1e-3 and 5e-3. Both are looser than the 3 s.f. print, which is acceptable.
+- The remaining cases of the inventory are Analytic and Confirmed and outside this check, as in the main tables.
+
+### C4. fp.oring-gland / ka-stretch-rule
+
+- The KAT cites Parker PTD 5705 for a piston-groove stretch limit of 6 %. It reads 5.8 % as 0.9667 of that limit.
+- The 2001 Parker O-Ring Handbook (ORD 5700A/US) says the installed ID stretch should not exceed 5 %. Section 3 list item 1 prints this.
+- Section 3.5 repeats it. It allows more only when a shorter life is acceptable. The dynamic section again says stretch near five percent.
+- I found no open page that prints 6 %, and I did not find PTD 5705.
+- At a 5 % limit the case gives u_stretch 1.16 (FAIL). At 6 % it passes.
+- Action: set the x_hi default to 5 and update the case. Or cite the exact edition that prints 6 %.
+
+### Owner action for the addendum
+
+1. Parker O-Ring Handbook, current edition: the section 3.5 stretch limit (`ka-stretch-rule`). Also check whether PTD 5705 prints 6 %. Free from parker.com.
+2. Timoshenko and Woinowsky-Krieger, Theory of Plates and Shells, 2nd ed., Ch. 5 and 6 tables: α 0.00406 and 0.00126, clamped centre moment and edge moment coefficients (`ka-rect-clamped-square`).
+3. Leissa, Vibration of Plates (NASA SP-160), Ch. 4 frequency table for the clamped square, λ² 35.99 (`ka-rect-clamped-natural`).
+4. BASF Snap-Fit Design Manual, pages IV-4 and V-1 to V-4, for the cantilever formulas and the 1.09 taper factor. Optional.
+5. ASME B31.3 expansion-loop guidance or a manufacturer guide that prints F = 12·E·I·Δ/L³ (`ka-z-bend-steel`). Optional.
+6. BS 7671 Appendix 5 and IET Guidance Note 1 give cable space factors. BS 5422 and ISO 12241 give insulation limits. Both are paid; the KAT values are illustrative.

@@ -6,7 +6,12 @@ Status: existing CalcRecordKind `material.properties`. The W3 material library o
 ## Used by
 - S7 LTB (built, `struct.ltb-interaction`) takes `E`, `G` and `f_y` from a material.
 - M7 springs (built, `mech.spring`) take `G`, `E`, `rho`, `Rm_A` and `Rm_m` from a material.
-- Other calculators do not map any input to a material property yet.
+- F1 cylinder circuit (built, `fp.cylinder`) takes `E` and `f_y` of the rod.
+- F3 O-ring gland (built, `fp.oring-gland`) takes `alpha` and `nu` of the ring compound.
+- M8 snap-fits (built, `mech.snap-fit`) take `nu`, `eps_perm_once`, `eps_perm_repeated` and the curve `Es_pts` (template 64).
+- S9 plate bending (built, `struct.plate-bending`) takes `E`, `nu`, `rho` and `f_y`.
+- B8 pipe expansion (built, `bs.pipe-expansion`) takes `E` and `alpha`. It uses um/(m*K) for alpha.
+- B9 insulation (built, `bs.insulation`) takes `lambda`.
 - A material can replace templates 39 (the `Rm_A` and `Rm_m` curve) and 12 (the yield strength) for those calculators.
 
 ## Symbol mapping

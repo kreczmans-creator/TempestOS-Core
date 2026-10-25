@@ -1,14 +1,17 @@
 # 35 asme.b31-3.stress-range
 
-Kind: `asme.b31-3.stress-range` (ASME B31.3 stress range reduction factor).
-Status: proposed — no CalcRecordKind yet; Track S confirms symbols when the calculator is built
+Kind: none. No CalcRecordKind reads these columns.
+Status: superseded. B8 reads the allowable stress range Sa as one value, so the factor f is already inside it. Do not fill this file.
+Planned name: `asme.b31-3.stress-range`. The file and its header stay so the numbering holds.
 
 ## Used by
-- B8 pipe expansion (planned) reads f to reduce the allowable stress range for cyclic service.
+- B8 pipe expansion (built, `bs.pipe-expansion`) lists the kinds `pipe.allowable-range`, `pipe.section`, `pipe.screening-k1`, `bellows.data` and `material.properties`. None holds f.
+
+## Symbol mapping
+- Apply f when you work out Sa. Enter Sa in template 34.
 
 ## Copy from
-- Type the values from ASME B31.3, Table 302.3.5.
-- Cite the edition and the table number.
+- Nothing. Skip this file.
 
 ## Columns
 - `N_min[-]`: lower bound of the equivalent full-range cycles.
@@ -16,14 +19,10 @@ Status: proposed — no CalcRecordKind yet; Track S confirms symbols when the ca
 - `f_stress[-]`: stress range reduction factor.
 
 ## Edition to record
-Record the ASME B31.3 edition year and addenda.
+Not applicable.
 
 ## Importer checks
-- Reject any row with a blank or non-positive number in a numeric column.
-- Reject a row where N_max does not exceed N_min.
-- Reject overlapping cycle bands.
-- f_stress must not rise as N rises. Reject an f_stress above 1.
+- None. Track S may delete this template.
 
 ## Maps to CalcDataRecord
-Kind is `asme.b31-3.stress-range`. The importer saves one CalcDataRecord for the file.
-One CalcDataValue with Symbol `f_stress_table` holds Rows. Each CalcRow has one cell per column, keyed by column symbol.
+No CalcDataRecord.

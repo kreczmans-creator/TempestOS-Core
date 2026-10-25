@@ -1,30 +1,30 @@
 # 37 containment.cable-factors
 
-Kind: `containment.cable-factors` (IET containment cable factors).
-Status: proposed — no CalcRecordKind yet; Track S confirms symbols when the calculator is built
+Kind: none. No CalcRecordKind reads these columns.
+Status: superseded. E8 sizes the fill from cable areas and a space factor, not from cable factors. Do not fill this file.
+Planned name: `containment.cable-factors`. The file and its header stay so the numbering holds.
 
 ## Used by
-- E8 containment (planned) sums cable factors to size conduit and trunking.
+- E8 containment (built, `elec.containment`) sums the cable cross-section areas and compares the fill with `f_max`. It sums no cable factors.
+
+## Symbol mapping
+- E8 has no cable factor input. Enter the fill limit in template 38.
 
 ## Copy from
-- Type the values from the IET On-Site Guide, the appendix on cable capacities of conduit and trunking.
-- Cite the guide edition and table numbers. Confirm them against your copy.
+- Nothing. Skip this file.
 
 ## Columns
 - `cable_type[text]`: cable type, as the table prints it.
 - `csa[mm2]`: conductor cross-sectional area.
-- `F_conduit_straight[-]`: cable factor for a straight conduit run. Blank if not given.
-- `F_conduit_bends[-]`: cable factor for a conduit run with bends. Blank if not given.
-- `F_trunking[-]`: cable factor for trunking. Blank if not given.
+- `F_conduit_straight[-]`: cable factor for a straight conduit run.
+- `F_conduit_bends[-]`: cable factor for a conduit run with bends.
+- `F_trunking[-]`: cable factor for trunking.
 
 ## Edition to record
-Record the guide edition and the BS 7671 amendment it follows.
+Not applicable.
 
 ## Importer checks
-- Reject any row with a non-positive number in a numeric column. Factor columns may be blank.
-- Reject a duplicate cable_type and csa row.
-- Within one cable_type, csa and every filled factor must rise.
+- None. Track S may delete this template.
 
 ## Maps to CalcDataRecord
-Kind is `containment.cable-factors`. The importer saves one CalcDataRecord for the file.
-One CalcDataValue with Symbol `cable_factor_table` holds Rows. Each CalcRow has one cell per column, keyed by column symbol.
+No CalcDataRecord.

@@ -12,8 +12,8 @@ Track P changed no product code, test project, migration, build-log file or CI w
 | P1 independent re-derivation | `rederivation/<id>.md`, `tools/verification/<id>.py` | 40 calculators, 6 packs, the Desktop sheet. All 219 KATs match independently. Every script exits 0. |
 | P1 senior review | "Reviewed" column and "Independent review" section in each report | Every Critical, High and Medium reproduced with the probe or rejected. |
 | P1 re-check | "Status @ <sha>" columns | Reports re-checked after DA-17/DA-18, A-4/A-5, A7a, A7b/A8 and the Addendum A Blue round. 31 findings fixed on release; a senior reviewer confirmed every Critical/High fix. |
-| P2 KAT sources | `kat-sources.md` | 45 cases checked to B-1: 35 confirmed, 7 still unconfirmed, 3 contradicted. B-2/B-3 cases not yet checked. |
-| P3 record templates | `record-templates/` | 65 header-only CSV templates (to B-1) with READMEs, in priority order, matched to the record kinds in code. |
+| P2 KAT sources | `kat-sources.md` | 51 cases checked to B-3: 38 confirmed, 9 still unconfirmed, 4 contradicted. |
+| P3 record templates | `record-templates/` | 82 header-only CSV templates (to B-3) with READMEs, in priority order, matched to the record kinds in code. |
 | P4 manual tests | `manual-tests/` | One script per calculator and per pack (648+ steps), using the A8 saved-calculation and pack panels. |
 | P5 consistency audit | `consistency-audit.md` | 60 findings, glossary seeds, port rename map. |
 | P6 risk triage | `risk-triage.md` (regenerate with `tools/verification/triage.py`) | Open counts: see the summary table in `risk-triage.md`. Test order for the owner. |
@@ -36,7 +36,7 @@ Track P changed no product code, test project, migration, build-log file or CI w
 The ranked list with evidence is in `risk-triage.md`.
 
 ## KAT sources
-- Contradicted: `ka-shigley-stiffness` (bolt versus hole diameter; upheld on review) and `ka-shigley-7-1` (provisional).
+- Contradicted: `ka-shigley-10-3` (Shigley prints L0 = 162.8 mm), `ka-stretch-rule` (Parker 2001 prints 5 % stretch, not 6 %), `ka-shigley-stiffness` (bolt versus hole diameter; upheld on review) and `ka-shigley-7-1` (provisional).
 - `ka-chs-moment` (S6) pins defect P1-struct.base-plate-01 and must change with the fix.
 - Still unconfirmed, owner's copy needed: Incropera 11.1, Shigley screw stack, SCI P358 fin plate, Designers' Guide to EN 1990, Phoenix Contact QUINT4 derating.
 - The E4, B4 and S6 KATs are analytic or synthetic, so no published source applies.

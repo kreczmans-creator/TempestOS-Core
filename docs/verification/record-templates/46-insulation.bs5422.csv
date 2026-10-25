@@ -1,1 +1,1 @@
-purpose[text],lambda_ref[W/(m*K)],t_fluid[degC],dn[mm],thickness[mm]
+purpose[text],q_max_m[W/m],q_max_A[W/m2],theta_se_max[degC],dew_margin[K]
