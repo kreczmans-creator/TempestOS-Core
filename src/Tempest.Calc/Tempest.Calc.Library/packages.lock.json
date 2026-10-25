@@ -154,6 +154,12 @@
       "tempest.calc.engine": {
         "type": "Project"
       },
+      "tempest.calc.import": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.calc.sheets": {
         "type": "Project",
         "dependencies": {

@@ -1,0 +1,4 @@
+name;value;unit
+plate_w;40,5;mm
+plate_t;6,25;mm
+tilt;1,5e1;deg

@@ -41,10 +41,11 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
         new("bonus", "MMC bonus (position/profile)", CalcInputKind.Quantity, "mm", HardMin: 0, HardMax: 1e3, IsOptional: true),
         new("distribution", "Distribution", CalcInputKind.Choice, Choices: [DistributionNormal, DistributionUniform, DistributionTriangular], IsOptional: true),
         new("shift", "Mean shift", CalcInputKind.Quantity, "mm", HardMin: -1e3, HardMax: 1e3, IsOptional: true),
+        new("sigma", "Standard deviation (normal contributors; replaces band/k for the statistics and the Monte Carlo, not for the worst case)", CalcInputKind.Quantity, "mm", HardMin: 0, HardMax: 1e3, IsOptional: true),
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.0.0", CalcDiscipline.Mechanical, "Tolerance stack-up (1D) v2",
+        Id, "2.1.0", CalcDiscipline.Mechanical, "Tolerance stack-up (1D) v2",
         "A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.",
         "Worst case: Σ|half-bands|. RSS: √Σ half². Modified RSS: factor × RSS (Bender-style). Predicted σ: √Σ σ_i² with σ_i from each contributor's distribution. C_pk from the nearer limit. Monte Carlo: seeded sampling of every contributor, summed with its sign.",
         [
@@ -71,6 +72,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("few-contributors", "Fewer than four contributors: RSS and modified RSS are optimistic.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("no-requirement", "No requirement stated: capability and yield are not computed.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("sigma-ignored", "A standard deviation is stated for a uniform or triangular contributor: it applies to normal contributors only and is ignored.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("min-above-max", "The stated minimum is above the stated maximum.", CalcNoticeSeverity.Block),
         ],
         [
@@ -115,6 +117,23 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                     new CalcExpectedValue("cpk", 2.3566600, "", 1e-6),
                     new CalcExpectedValue("dpmo", 7.7755e-7, "", 0.05),
                 ]),
+            new CalcTestCase(
+                "ka-measured-sigma", "A measured contributor: stated σ replaces band/k, the worst case keeps the band",
+                new CalcReferenceSource("Analytic check", null, "A: 10 ± 0.03 (normal, σ = 0.03/3 = 0.01); B: 5 ± 0.06 with a measured σ of 0.015. Worst case 0.03 + 0.06 = 0.09, RSS √(0.03² + 0.06²) = 0.067082 (both from the bands); σ = √(0.01² + 0.015²) = 0.018027756; C_p = C_pk = 0.1/(3σ) = 1.849000654 against 14.9 to 15.1 mm (recomputed in python3)"),
+                [
+                    MeasuredSigma(),
+                    CalcInputValue.Quantity("minimum", 14.9, "mm"),
+                    CalcInputValue.Quantity("maximum", 15.1, "mm"),
+                    CalcInputValue.Of("k", 3),
+                ],
+                [
+                    new CalcExpectedValue("x_mean", 15.0, "mm", 1e-9),
+                    new CalcExpectedValue("t_wc", 0.09, "mm", 1e-9),
+                    new CalcExpectedValue("t_rss", 0.0670820393, "mm", 1e-6),
+                    new CalcExpectedValue("sigma", 0.018027756377, "mm", 1e-9),
+                    new CalcExpectedValue("cpk", 1.8490006541, "", 1e-8),
+                    new CalcExpectedValue("cp", 1.8490006541, "", 1e-8),
+                ]),
         ],
         DiagramKey: "tolerance-stack",
         Category: "Tolerancing");
@@ -132,8 +151,16 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             ("upper", new CalcCell(r.Upper, unit)),
             ("lower", new CalcCell(r.Lower, unit)))).ToList());
 
+    /// <summary>The two-contributor loop of the measured-σ case: B carries a stated standard deviation.</summary>
+    private static CalcInputValue MeasuredSigma() =>
+        CalcInputValue.Table("contributors",
+        [
+            CalcRow.Of(("name", new CalcCell(Text: "A")), ("direction", new CalcCell(Text: "adds")), ("nominal", new CalcCell(10, "mm")), ("upper", new CalcCell(0.03, "mm")), ("lower", new CalcCell(-0.03, "mm"))),
+            CalcRow.Of(("name", new CalcCell(Text: "B (measured)")), ("direction", new CalcCell(Text: "adds")), ("nominal", new CalcCell(5, "mm")), ("upper", new CalcCell(0.06, "mm")), ("lower", new CalcCell(-0.06, "mm")), ("sigma", new CalcCell(0.015, "mm"))),
+        ]);
+
     /// <summary>A table row as the sheet shows it: the engine contributor plus its label.</summary>
-    private sealed record Line(Contributor Source, string Label)
+    private sealed record Line(Contributor Source, string Label, bool SigmaStated = false)
     {
         public double Sign => Source.Sign;
 
@@ -221,13 +248,24 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                 label = $"{kind} zone {F(upper, unit)}{mmc}{(bonus > 0 ? $" + bonus {F(bonus, unit)}" : string.Empty)}";
             }
 
+            // A stated standard deviation (a measured population, from the scan import) replaces band/k for a normal contributor; the band still sets the worst case.
+            var sigmaStated = row.Get("sigma")?.Number is null ? (double?)null : Si(row, "sigma");
+
+            if (sigmaStated is { } stated)
+            {
+                if (distribution == ContributorDistribution.Normal)
+                    source = source with { Sigma = stated };
+                else
+                    c.Warn("sigma-ignored", $"contributors row {i + 1} ({name}): a standard deviation is stated, but the distribution is {distributionName}; a stated σ applies to normal contributors only and is ignored.");
+            }
+
             var mid = source.Mid;
             var half = source.Half;
             var sigma = source.Sigma;
 
-            contributors.Add(new Line(source, label));
+            contributors.Add(new Line(source, label, sigmaStated is not null && distribution == ContributorDistribution.Normal));
             var symbol = $"c{i + 1}";
-            c.Record(symbol, $"{(sign > 0 ? "+" : "−")} {label}", $"mid {F(mid, unit)} {unitSymbol}, ± {F(half, unit)} {unitSymbol}, σ {F(sigma, unit)} {unitSymbol} ({distributionName})", ScalarValue.Of(unit.FromSi(sign * mid), unit), name);
+            c.Record(symbol, $"{(sign > 0 ? "+" : "−")} {label}", $"mid {F(mid, unit)} {unitSymbol}, ± {F(half, unit)} {unitSymbol}, σ {F(sigma, unit)} {unitSymbol} ({distributionName}{(sigmaStated is not null && distribution == ContributorDistribution.Normal ? ", σ stated" : string.Empty)})", ScalarValue.Of(unit.FromSi(sign * mid), unit), name);
         }
 
         if (contributors.Count < 4)
@@ -320,10 +358,29 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
 
         // Contribution Pareto.
         var paretoWc = stack.WorstCaseShare.Select((y, i) => (X: (double)(i + 1), Y: y)).ToList();
-        var paretoSt = stack.StatisticalShare.Select((y, i) => (X: (double)(i + 1), Y: y)).ToList();
+        var statShare = stack.StatisticalShare;
+        var largest = stack.LargestStatisticalIndex;
+
+        // A contributor with a stated σ weighs by that σ: its band-equivalent half-width is k·σ (what band/k would have to be to give that σ), the same weight a normal
+        // contributor with no stated σ already has, so the shares stay comparable. With no stated σ the engine's shares are used unchanged.
+        if (contributors.Any(x => x.SigmaStated))
+        {
+            var weights = contributors.Select(x => x.SigmaStated ? k * x.SigmaSi * (k * x.SigmaSi) : x.HalfSi * x.HalfSi).ToArray();
+            var total = weights.Sum() is var sum && sum > 0 ? sum : 1;
+            statShare = weights.Select(w => 100 * w / total).ToArray();
+            largest = 0;
+
+            for (var i = 1; i < statShare.Count; i++)
+            {
+                if (statShare[i] > statShare[largest])
+                    largest = i;
+            }
+        }
+
+        var paretoSt = statShare.Select((y, i) => (X: (double)(i + 1), Y: y)).ToList();
         c.Series(new CalcSeries("Contribution, worst case", "contributor", "", "share", "%", paretoWc));
         c.Series(new CalcSeries("Contribution, statistical", "contributor", "", "share", "%", paretoSt));
-        c.Record("pareto", "largest contributor (statistical)", string.Join("; ", contributors.Select((x, i) => $"{x.Source.Name} {CalcValue.FormatNumber(paretoSt[i].Y, 3)} %")), new TextValue(contributors[stack.LargestStatisticalIndex].Source.Name), "Contribution Pareto");
+        c.Record("pareto", "largest contributor (statistical)", string.Join("; ", contributors.Select((x, i) => $"{x.Source.Name} {CalcValue.FormatNumber(paretoSt[i].Y, 3)} %")), new TextValue(contributors[largest].Source.Name), "Contribution Pareto");
 
         // Monte Carlo.
         var n = (int)Math.Round(c.InputSi("n_mc"));

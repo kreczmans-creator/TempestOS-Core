@@ -14,6 +14,7 @@ namespace Tempest.Calc.Tests.Calculators;
 /// runner returns a block instead of throwing, and a run stays inside the
 /// 5 s budget.
 /// </summary>
+[Collection(TimingCollection.Name)]
 public sealed class Red_SolverAttacks
 {
     /// <summary>The CI runners scale every deadline by <c>TEMPEST_TEST_TIMEOUT_FACTOR</c> (3 on the Windows matrix); the budgets here scale the same way.</summary>
