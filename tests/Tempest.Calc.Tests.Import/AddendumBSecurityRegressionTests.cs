@@ -123,4 +123,45 @@ public sealed class AddendumBSecurityRegressionTests
         var bytes = Samples.Workbook(Flood(2_000, "x"));
         Assert.ThrowsAny<OperationCanceledException>(() => XlsxReader.Read(bytes, new ImportBudget(ImportLimits.Default, cts.Token)));
     }
+
+    // ---- SEC-B-04: an underflowing literal is not read as zero ------------------------------------------------
+
+    [Theory]
+    [InlineData("1e-400", "point")]
+    [InlineData("-2e-999", "point")]
+    [InlineData("1,5e-400", "comma")]
+    [InlineData("0.0001e-320", "point")]
+    [InlineData("0.000000000000000000001e-310", "point")]
+    public void SEC_B_04_A_Non_Zero_Literal_That_Underflows_To_Zero_Is_Refused_Like_An_Overflow(string text, string mark)
+    {
+        var profile = mark == "comma" ? NumberProfile.Comma : NumberProfile.Point;
+        Assert.False(LocaleNumber.TryParse(text, profile, out var value, out var problem));
+        Assert.Equal(0, value);
+        Assert.Contains("too small", problem, StringComparison.Ordinal);
+        Assert.False(LocaleNumber.TryParse("1e400", NumberProfile.Point, out _, out var overflow));
+        Assert.Contains("outside the range", overflow, StringComparison.Ordinal);
+        Assert.Throws<ImportRefusedException>(() => LocaleNumber.Parse(text, profile));
+    }
+
+    [Theory]
+    [InlineData("0", 0)]
+    [InlineData("0.0", 0)]
+    [InlineData("-0", 0)]
+    [InlineData("0e-400", 0)]
+    [InlineData("000.000e5", 0)]
+    [InlineData("1e-300", 1e-300)]
+    [InlineData("5e-324", double.Epsilon)]
+    public void SEC_B_04_Zero_And_Representable_Small_Numbers_Are_Still_Read(string text, double expected)
+    {
+        Assert.True(LocaleNumber.TryParse(text, NumberProfile.Point, out var value, out _));
+        Assert.Equal(expected, value);
+    }
+
+    [Fact]
+    public void SEC_B_04_An_Underflowing_Value_In_A_Cad_Csv_Is_Not_Imported_As_A_Number()
+    {
+        var r = Csv("name,value\ntiny,1e-400\nzero,0\n", CadSourceFormat.GenericCsv, NumberProfile.Point);
+        Assert.Null(r.Parameters.Single(p => p.Name == "tiny").Number);
+        Assert.Equal(0, r.Parameters.Single(p => p.Name == "zero").Number);
+    }
 }
