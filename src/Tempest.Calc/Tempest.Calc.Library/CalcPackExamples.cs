@@ -4,11 +4,12 @@ namespace Tempest.Calc.Library;
 
 /// <summary>
 /// Addendum A, §A7: the example inputs of the built-in chains (see <see cref="CalcPackStep.Example"/>). They are invented for illustration
-/// — a conveyor head drive, a servo axis, a two-room heating circuit, a drive panel's cooling and an equipment support — and every one is
+/// — a conveyor head drive, a servo axis, a two-room heating circuit, a drive panel's cooling, an equipment support and a hydraulic power unit — and every one is
 /// recorded as an assumption to replace. Choice values are the calculators' own texts (the Library does not reference the calculator
 /// assemblies); instantiating each template in the tests proves they are accepted. No tabulated regulation data appears, and catalogue data
 /// is limited to the single steel section the steel-support example uses as a user input (UC 203×203×46). The motor circuit's
-/// cable-capacity and device-rating tables are not here, so that chain stays refused until the user supplies them.
+/// cable-capacity and device-rating tables are not here, so that chain stays refused until the user supplies them (the hydraulic power unit's cable step is
+/// in the same position: it opens blocked, naming the tables, until they are supplied).
 /// </summary>
 internal static class CalcPackExamples
 {
@@ -309,5 +310,55 @@ internal static class CalcPackExamples
     [
         C("column", "I/H"), Q("h", 203.2, "mm"), Q("b", 203.6, "mm"), Q("t_f", 11, "mm"), Q("t_w", 7.2, "mm"),
         Q("B", 300, "mm"), Q("L", 350, "mm"), Q("t_p", 25, "mm"), N("alpha", 1), Q("x_b", 135, "mm"), Q("m", 28, "mm"), Q("l_eff", 150, "mm"), Q("e_min", 40, "mm"),
+    ];
+
+    // ---- Hydraulic power unit: a 160 bar press circuit, its accumulator, pressure line, pump motor and supply cable ----------------
+
+    /// <summary>
+    /// A double-acting 100/70 × 500 mm cylinder at 160 bar fed by a 28 cm³/rev pump at 1450 rpm (38.6 L/min delivered against the circuit's 36 L/min), mineral
+    /// oil of 870 kg/m³. The 80 kN push and 40 kN pull are the press loads; the rest of the sheet (mounting factor, line velocity limits, rod material) is left at the
+    /// sheet's own defaults, which the chain tests record as assumptions. The pressure line is 16 mm: that figure is also entered in the pressure-line step.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> HpuF1 { get; } =
+    [
+        C("mode", "Standard"), Q("p", 160, "bar"), Q("Q", 36, "L/min"), Q("rho", 870, "kg/m^3"), Q("F_push", 80, "kN"), Q("F_pull", 40, "kN"),
+        Q("D", 100, "mm"), Q("d_r", 70, "mm"), Q("stroke", 500, "mm"), Q("V_g", 28, "cm^3/rev"), Q("n_p", 1450, "rpm"), Q("d_prs", 16, "mm"),
+    ];
+
+    /// <summary>
+    /// An emergency stroke: the accumulator carries the whole stroke volume (linked) from the system pressure (linked) down to 120 bar gauge, above the 107 bar the 80 kN
+    /// push needs on the 100 mm bore (80 kN / (78.5 cm² × 0.95)). Fast discharge, so n = 1.4; 105 bar gauge pre-charge (at 50 °C) from the manufacturer's rule of
+    /// p0 below 0.9 p1 on absolute pressures; a cold shed at 10 °C. These are invented illustrations.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> HpuF2 { get; } =
+    [
+        C("mode", "Emergency stroke"), Q("p_0", 105, "bar"), Q("p_1", 120, "bar"), N("n", 1.4), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
+    ];
+
+    /// <summary>
+    /// The pressure line from the unit to the cylinder: 12 m of 16 mm tube with 6 velocity heads of fittings, carrying the circuit flow (linked). The oil (870 kg/m³ and
+    /// 30 mPa·s at the working temperature, 50 °C) is a custom fluid: the density is entered equal to the cylinder step's, and a test guards the match. The flow is laminar
+    /// (Re about 1400), so the friction factor is 64/Re and the sheet says so. The tube diameter is also entered equal to the cylinder step's pressure-line bore.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> HpuB1 { get; } =
+    [
+        C("fluid", "custom (ρ and μ given)"), Q("T", 50, "degC"), Q("rho_custom", 870, "kg/m^3"), Q("mu_custom", 30, "mPa*s"), Q("v_max", 5, "m/s"),
+        Table("segments", CalcRow.Of(Txt("name", "pressure line to cylinder"), ("L", new CalcCell(12, "m")), Mm("D", 16), Mm("eps", 0.045), Num("K", 6), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
+    ];
+
+    /// <summary>
+    /// The pump drive: continuous running of a direct-coupled pump (coupling efficiency 0.99) with a 2 s run-up, against a candidate 18.5 kW 4-pole motor (120 N·m
+    /// rated, 275 N·m peak, 3000 rpm). The pump torque and speed arrive by link.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> HpuE1 { get; } =
+    [
+        C("mechanism", "direct rotary"), C("duty_mode", "continuous"), N("eta", 0.99), Q("J_L", 0.004, "kg*m^2"), Q("J_mech", 0.001, "kg*m^2"), Q("t_start", 2, "s"),
+        Q("J_motor", 0.1, "kg*m^2"), Q("T_rated", 120, "N*m"), Q("T_peak", 275, "N*m"), Q("n_max", 3000, "rpm"),
+    ];
+
+    /// <summary>The motor's supply cable (30 m, PVC, type C device, method C; 400 V, motor efficiency 0.92 and power factor 0.86). The capacity and rating tables are NOT supplied: they are the user's own.</summary>
+    public static IReadOnlyList<CalcInputValue> HpuE4 { get; } =
+    [
+        Q("L", 30, "m"), Q("U", 400, "V"), N("cos_phi", 0.86), N("eta", 0.92), C("insulation", "PVC 70 °C"), C("method", "C"), C("device", "MCB type C"),
     ];
 }

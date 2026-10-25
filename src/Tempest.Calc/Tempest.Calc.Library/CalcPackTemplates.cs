@@ -2,7 +2,7 @@ namespace Tempest.Calc.Library;
 
 /// <summary>
 /// Addendum A, §A7: the linked chains every build ships as pack templates. Each carries example step inputs (<see cref="CalcPackStep.Example"/>)
-/// so it can be created as it stands, except the motor circuit, which stays refused until its cable tables are supplied. Steps name calculators by template id
+/// so it can be created as it stands, except the motor circuit, which stays refused until its cable tables are supplied (the hydraulic power unit's cable step opens blocked until then). Steps name calculators by template id
 /// (the Library does not reference the calculator assemblies); <see cref="CalcInstanceService.ValidatePackTemplate"/>
 /// refuses a template whose calculators are not composed in.
 /// </summary>
@@ -176,6 +176,44 @@ public static class CalcPackTemplates
             new CalcPackBinding("s4b", "f_yb", "s6", "f_yb"),
         ]);
 
+    /// <summary>
+    /// Hydraulic power unit: cylinder and pump circuit (F1) → accumulator (F2), pressure line (B1), pump motor (E1) → motor supply cable (E4).
+    /// <para>
+    /// F1 → F2: the swept volume of the larger stroke (<c>dV</c>, L) is the liquid the accumulator must deliver for an emergency stroke (or store), and the supply
+    /// pressure (<c>p</c>, bar gauge) is its highest working pressure <c>p_2</c>: the accumulator charges to the pressure the pump holds. The lowest working pressure
+    /// <c>p_1</c> and the pre-charge are the user's. F1 → B1: the circuit flow into the cylinder (<c>Q</c>, L/min to m³/h) is the flow the pressure line to the cylinder
+    /// carries (the pump's surplus over the circuit flow goes over the relief valve before the line, so the pump delivery is not the line flow). F1 offers no output for
+    /// the oil's density or the line's bore, so B1 is given the oil as a custom fluid with ρ and μ entered, and its tube bore, equal to F1's <c>rho</c> and <c>d_prs</c>
+    /// (the example enters both, and a test guards the match, as the wet-heating chain does for its pipework water content); B1 is not given a pump, so its own
+    /// shaft torque (a water-pump relation) is not used. F1 → E1: the pump shaft torque (<c>T_shaft</c>, N·m) and speed (<c>n_shaft</c>, rpm) are the continuous load
+    /// torque and speed (<c>T_L</c>, <c>n_L</c>) of the motor, which is given continuous duty. E1 → E4: E4 takes a shaft power directly (<c>P</c>, which its <c>η</c>
+    /// and cos φ convert to the design current), so E1's continuous shaft power (<c>P_cont</c>, W to kW) is linked to it without a load-budget step (E6); a design
+    /// current from another calculation would enter <c>I_b_in</c> instead. The cable is therefore sized for the continuous demand of the pump, not for the nameplate
+    /// of the candidate motor: if a larger motor is fitted, enter its rated power in E4. The steps carry example inputs except E4's two record tables, which no build
+    /// ships: the cable step opens blocked (naming them) until the user supplies his own, and the pack cannot be checked or issued while it is. Nothing takes
+    /// from E4 yet (the voltage-drop and fault-protection steps follow in a later phase), so the pack is created with E4 blocked, not refused.
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate HydraulicPowerUnit { get; } = new(
+        "pack.hydraulic-power-unit", "Hydraulic power unit",
+        "Takes a cylinder circuit and its pump through to the electric supply: the cylinder, pump and line velocities; the accumulator that carries the emergency stroke between the supply pressure and the lowest pressure the stroke can finish at; the pressure drop in the line to the cylinder; the motor that drives the pump continuously; and the cable that supplies the motor. The line's oil density and tube bore, and the motor's cable tables, are entered by the user: the cylinder step gives no output for the first two, and no build ships the tables.",
+        [
+            new CalcPackStep("f1", "fp.cylinder", "Cylinder and pump circuit", CalcPackExamples.HpuF1),
+            new CalcPackStep("f2", "fp.accumulator", "Emergency stroke accumulator", CalcPackExamples.HpuF2),
+            new CalcPackStep("b1", "bs.pipe-pump", "Pressure line", CalcPackExamples.HpuB1),
+            new CalcPackStep("e1", "elec.motor-sizing", "Pump drive motor", CalcPackExamples.HpuE1),
+            new CalcPackStep("e4", "elec.conductor-sizing", "Motor supply cable", CalcPackExamples.HpuE4,
+                Hint: "The cable step needs your own cable-capacity (ampacity) and preferred device-rating (ratings) tables: none ship with the program. Enter them from your copy of the wiring regulations and the device manufacturer's data, then create the pack again."),
+        ],
+        [
+            new CalcPackBinding("f1", "dV", "f2", "dV"),
+            new CalcPackBinding("f1", "p", "f2", "p_2"),
+            new CalcPackBinding("f1", "Q", "b1", "Q"),
+            new CalcPackBinding("f1", "T_shaft", "e1", "T_L"),
+            new CalcPackBinding("f1", "n_shaft", "e1", "n_L"),
+            new CalcPackBinding("e1", "P_cont", "e4", "P"),
+        ]);
+
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit];
 }

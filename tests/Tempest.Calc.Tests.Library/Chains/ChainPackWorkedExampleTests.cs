@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Tempest.Calc.BuildingServices;
 using Tempest.Calc.Electrical;
+using Tempest.Calc.FluidPower;
 using Tempest.Calc.Library;
 using Tempest.Calc.Mechanical;
 using Tempest.Calc.Sheets;
@@ -11,13 +12,13 @@ using Tempest.Core.EngineeringDomain;
 namespace Tempest.Calc.Tests.Library.Chains;
 
 /// <summary>
-/// Addendum A, §A7: one issued calc pack per built-in chain (drive train, motor circuit, wet heating, cooling, steel support), written
+/// Addendum A, §A7: one issued calc pack per built-in chain (drive train, motor circuit, wet heating, cooling, steel support, hydraulic power unit), written
 /// under docs/worked-examples/packs/&lt;chain&gt; when TEMPEST_WRITE_WORKED_EXAMPLES=1: the pack's issue sheet, each step's issued sheet,
 /// every step's inputs and a README naming the chain, every link and the issue reference. The PDFs are made later.
 /// </summary>
 public sealed class ChainPackWorkedExampleTests
 {
-    public static TheoryData<string> Chains => ["drive-train", "motor-circuit", "wet-heating", "cooling", "steel-support"];
+    public static TheoryData<string> Chains => ["drive-train", "motor-circuit", "wet-heating", "cooling", "steel-support", "hydraulic-power-unit"];
 
     private sealed record Example(CalcPackTemplate Template, string Slug, string Title, string Reference, string Client, string Project, string Note, Func<LibraryTestHost, Task<IReadOnlyDictionary<string, IReadOnlyList<CalcInputValue>>>> Inputs, string Remarks);
 
@@ -40,10 +41,27 @@ public sealed class ChainPackWorkedExampleTests
         new(CalcPackTemplates.SteelSupport, "steel-support", "Equipment support steelwork calc pack", "STR-SUP-001", "Client Co", "Equipment support ES-4", "Checked against SPEC-STR-09 and DRG-STR-310 to 315 rev B.",
             host => Task.FromResult(Plain(ChainInputs.SteelSupport(host))),
             "The equipment's dead (12 kN) and maintenance (8 kN) loads, both downward, are combined (EN 1990 6.10: 28.2 kN); that ULS effect is a cell of the frame's load table; the frame's column forces check the column; the arm's end shear and moment load a six-bolt group whose governing-bolt shear and tension are the arm connection's design forces (S4); the frame's base reactions are the base plate's actions; and a second S4 run for the 25 mm base plate gives S6 its holding-down bolt data. The 5 kN horizontal action at the column top is an ULS design value (combined at factor 1). **The links depend on the frame's numbering: nodes 1 (column base, fixed), 2 (column top) and 3 (arm tip); member 1 the column (1 → 2) and member 2 the arm (2 → 3); the first load row the vertical load at node 3 (filled from the load combinations) and the second the horizontal action at node 2.** The bolt group's bolt resistances (94.0 kN shear, 141.0 kN tension) are typed values equal to what the arm connection step computes for M20 8.8; a test guards the match. The holding-down bolts' own demand fields are zero: S6 checks the anchor bolts against the base reactions. **The anchorage (concrete and anchor design) is done in Hilti PROFIS: the file attached to the base-plate step is a PLACEHOLDER, not a PROFIS report, to be replaced by the engineer's own report before the pack is used.**"),
+        new(CalcPackTemplates.HydraulicPowerUnit, "hydraulic-power-unit", "Press hydraulic power unit calc pack", "HPU-001", "Client Co", "Press 5 hydraulic power unit", "Checked against SPEC-HPU-05 and DRG-HPU-510 rev B.",
+            async host => Plain(await HydraulicPowerUnitInputsAsync(host)),
+            "A 100/70 × 500 mm cylinder at 160 bar and 36 L/min, fed by a 28 cm³/rev pump at 1450 rpm (38.57 L/min delivered), presses with 80 kN and pulls with 40 kN. Its swept volume (3.927 L, the extend stroke) and its supply pressure (160 bar) size an emergency-stroke accumulator (26.7 L of gas, n = 1.4, 10 to 50 °C, working range 120 to 160 bar; 120 bar still finishes the 80 kN push, which needs 107 bar). Its circuit flow (36 L/min = 2.16 m³/h) runs through 12 m of 16 mm pressure line; the oil (870 kg/m³, 30 mPa·s) and the tube bore are entered equal to the cylinder step's `rho` and `d_prs` (the cylinder step offers no output for them, and a test guards the match), the flow is laminar (Re 1385) and the line costs 157.5 kPa (1.6 bar of the 160). The pump's shaft torque (76.97 N·m) and speed (1450 rpm) are the continuous load of its drive motor (77.75 N·m through a 0.99 coupling, 11.81 kW, against a candidate 18.5 kW motor of 120 N·m), and that continuous shaft power sizes the supply cable (400 V, η 0.92, cos φ 0.86: 21.5 A, a 25 A type C device, 6 mm²). The cable is sized for the pump's continuous demand, not the nameplate of the motor that will be fitted, and the pressure line carries the circuit flow because the relief valve is taken to be at the pump (the cylinder step takes the larger pump delivery for its own line velocities). **The cable-capacity and device-rating tables of the cable step are SYNTHETIC test values, invented for this example and labelled as such on the sheet; they are not from any regulation or manufacturer table, and the example must not be used to size a real cable.**"),
     ];
 
     /// <summary>The motor circuit's inputs with the synthetic E4 tables saved as (unlicensed, synthetic) records and pinned.</summary>
     internal static async Task<Dictionary<string, IReadOnlyList<CalcInputValue>>> MotorCircuitInputsAsync(LibraryTestHost host)
+    {
+        var (ampacity, ratings) = await SyntheticCableRecordsAsync(host);
+        return ChainInputs.MotorCircuit(host, ampacity, ratings);
+    }
+
+    /// <summary>The hydraulic power unit's inputs with the synthetic E4 tables saved as (unlicensed, synthetic) records and pinned.</summary>
+    internal static async Task<Dictionary<string, IReadOnlyList<CalcInputValue>>> HydraulicPowerUnitInputsAsync(LibraryTestHost host)
+    {
+        var (ampacity, ratings) = await SyntheticCableRecordsAsync(host);
+        return ChainInputs.HydraulicPowerUnit(host, ampacity, ratings);
+    }
+
+    /// <summary>The cable step's two tables as SYNTHETIC records (test values, not from any regulation or manufacturer), and the provenance that pins each.</summary>
+    private static async Task<(CalcProvenance Ampacity, CalcProvenance Ratings)> SyntheticCableRecordsAsync(LibraryTestHost host)
     {
         var (ampacity, r1) = await host.Service.SaveRecordAsync(new CalcDataRecord(
             Guid.Empty, "cable.ampacity", "SYNTHETIC cable capacities (test values, not a regulation table)", 0, "Synthetic test data, not from any standard", "n/a", "invented values for the worked example", "Tempest test data", "tempest.tests",
@@ -53,7 +71,7 @@ public sealed class ChainPackWorkedExampleTests
             false, CalcDataOrigin.UserEntered, [new CalcDataValue("ratings", Rows: ConductorSizingCalculator.TypicalRatings().Rows)], DateTimeOffset.UnixEpoch));
         Assert.Null(r1);
         Assert.Null(r2);
-        return ChainInputs.MotorCircuit(host, CalcInstanceService.RecordProvenance(ampacity!), CalcInstanceService.RecordProvenance(ratings!));
+        return (CalcInstanceService.RecordProvenance(ampacity!), CalcInstanceService.RecordProvenance(ratings!));
     }
 
     private static async Task<Guid?> ProjectAsync(LibraryTestHost host, string name)
@@ -64,7 +82,7 @@ public sealed class ChainPackWorkedExampleTests
     }
 
     private static LibraryTestHost Host() => new(
-        calculators: [.. ElectricalCalculators.All, .. MechanicalCalculators.All, .. BuildingServicesCalculators.All, .. StructuralCalculators.All],
+        calculators: [.. ElectricalCalculators.All, .. MechanicalCalculators.All, .. BuildingServicesCalculators.All, .. StructuralCalculators.All, .. FluidPowerCalculators.All],
         packTemplates: CalcPackTemplates.All);
 
     [Theory]
@@ -174,7 +192,7 @@ public sealed class ChainPackWorkedExampleTests
 
         sb.Append("\n## Inputs and provenance\n\nEvery input of every step carries a provenance on the issued sheet: the figures chosen for this example cite an (invented) specification or drawing, an input left at the sheet's default is recorded as an assumption, and a linked input names the calculation and output it comes from. Project, drawing, specification and issue references are illustrative; they are not real documents.\n");
 
-        if (template.Id == CalcPackTemplates.MotorCircuit.Id)
+        if (template.Id == CalcPackTemplates.MotorCircuit.Id || template.Id == CalcPackTemplates.HydraulicPowerUnit.Id)
             sb.Append("\nThe cable-capacity and device-rating tables are the library's synthetic test tables (`ConductorSizingCalculator.SyntheticAmpacity()` and `TypicalRatings()`), saved as unlicensed records titled “SYNTHETIC … (test values, not a regulation table)” and pinned to the cable step. They are not published values.\n");
 
         if (template.Id == CalcPackTemplates.SteelSupport.Id)

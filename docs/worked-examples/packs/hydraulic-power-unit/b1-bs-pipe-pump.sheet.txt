@@ -1,0 +1,141 @@
+CALCULATION SHEET — ISSUED
+Project: Press 5 hydraulic power unit
+Calc ID: Pressure line    Revision: A
+Title: Pipe pressure drop and pump duty
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: HPU-001    Client: Client Co
+
+1. SCOPE AND METHOD
+Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
+Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+  Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
+  Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
+  Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
+  Ref: Kell, J. Chem. Eng. Data 20(1), 1975 — Density of liquid water
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  fluid | Fluid | custom (ρ and μ given) |  | drawing: DRG-HPU-510 rev B | any
+  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 50 | degC | drawing: DRG-HPU-510 rev B | 0 … 100 degC
+  rho_custom | Density (custom fluid) | 870 | kg/m^3 | drawing: DRG-HPU-510 rev B | 500 … 2000 kg/m^3
+  mu_custom | Dynamic viscosity (custom fluid) | 30 | mPa*s | drawing: DRG-HPU-510 rev B | 0.1 … 1000 mPa*s
+  Q | Design flow rate (blank when a heat load gives it) | 2.16 | m^3/h | link: Cylinder and pump circuit rev A · Q | 0.01 … 100000 m^3/h
+  segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-HPU-510 rev B | any
+  segments[1] |  | name = pressure line to cylinder; L = 12 m; D = 16 mm; eps = 0.045 mm; K = 6; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | assumption: Sheet default value; no project figure given. | any
+  h_out | Pressure head required at the outlet | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 1000 m
+  v_max | Velocity limit (warning) | 5 | m/s | drawing: DRG-HPU-510 rev B | 0.5 … 10 m/s
+  n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.2 … 2
+  D_ratio | Impeller diameter ratio D₂/D₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1.1
+  eta_pump | Pump efficiency at duty (for shaft power) | 0.7 |  | assumption: Sheet default value; no project figure given. | 0.2 … 0.95
+  p_atm | Atmospheric pressure (NPSH) | 101.325 | kPa | assumption: Sheet default value; no project figure given. | 50 … 110 kPa
+  z_s | Static head at the pump suction (+ flooded, − lift) | 0 | m | assumption: Sheet default value; no project figure given. | -10 … 100 m
+
+3. ASSUMPTIONS
+  A1. Steady, incompressible, fully developed flow; all segments carry the full design flow in series. (Darcy–Weisbach.)
+  A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
+  A3. The system curve scales friction losses with Q² from the design flow (turbulent assumption); the static part is independent of flow. (H_sys = H_static + k Q².)
+  A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
+  A5. circuit (Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored)) is taken as open (the pump lifts the water by the rises entered). (Sheet default value; no project figure given.)
+  A6. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
+  A7. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A8. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A9. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
+  A10. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
+  A11. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [5] rho = rho_custom
+      = 870 kg/m³
+      = 870 kg/m³
+        Density (as entered)
+  [6] mu = mu_custom
+      = 30 mPa·s
+      = 30 mPa·s
+        Dynamic viscosity (as entered)
+  [10] Q_design = Q
+      = 2.16 m³/h
+      = 2.16 m³/h
+        Design flow (as entered)
+  [11] v_s1 = pressure line to cylinder: Q / (π D²/4)
+      = 2.16 m³/h / (π × 16² mm² / 4)
+      = 2.9842 m/s
+        Velocity, pressure line to cylinder
+  [12] Re_s1 = pressure line to cylinder: ρ v D / μ
+      = 870 × 2.9842 × 0.016 / 0.03
+      = 1384.6
+        Reynolds number, pressure line to cylinder
+  [13] f_s1 = pressure line to cylinder: Darcy friction factor
+      = 64 / Re (laminar)
+      = 0.046221
+        Friction factor, pressure line to cylinder
+  [14] h_f_s1 = pressure line to cylinder: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.046221 × (12 + 0) / 0.016 × 0.45404 + 6 × 0.45404
+      = 18.464 m
+        Head loss, pressure line to cylinder
+  [15] h_f_total = Σ h_f
+      = 1 segment(s)
+      = 18.464 m
+        Total friction and fitting loss at the design flow
+  [17] V_pipe = Σ π/4·D²·L
+      = 1 segment(s)
+      = 2.4127 L
+        Water held in the pipe segments
+  [18] H_static = Σ dz + h_out
+      = 0 + 0
+      = 0 m
+        Static head
+  [19] H_sys = H_static + h_f_total
+      = 0 m + 18.464 m
+      = 18.464 m
+        System head at the design flow
+  [20] dp_total = rho * 9.80665 m/s^2 * h_f_total
+      = 870 kg/m³ × 9.80665 m/s^2 × 18.464 m
+      = 157.53 kPa
+        Friction pressure drop at the design flow
+  [21] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 870 kg/m³ × 9.80665 m/s^2 × 18.464 m
+      = 157.53 kPa
+        System pressure at the design flow
+  [22] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+      = 870 kg/m³ × 9.80665 m/s^2 × 2.16 m³/h × 18.464 m
+      = 0.094518 kW
+        Hydraulic power at the design point
+  [25] v_peak = highest segment velocity
+      = 2.9842 m/s
+      = 2.9842 m/s
+        Highest velocity
+  [26] u_v = v_peak / v_max
+      = 2.9842 / 5
+      = 0.59683
+        Velocity utilisation
+
+5. RESULTS
+  v_s1 = 2.9842 m/s    Velocity, pressure line to cylinder
+  Re_s1 = 1384.6    Re, pressure line to cylinder
+  f_s1 = 0.046221    f, pressure line to cylinder
+  h_f_s1 = 18.464 m    h_f, pressure line to cylinder
+  h_f_total = 18.464 m    Σ h_f
+  H_static = 0 m    Static head
+  V_pipe = 2.4127 L    Water held in the pipes
+  H_sys = 18.464 m    System head at Q
+  dp_total = 157.53 kPa    Friction Δp
+  dp_sys = 157.53 kPa    System Δp
+  Q_design = 2.16 m³/h    Design flow
+  P_hyd = 0.094518 kW    Hydraulic power
+  v_peak = 2.9842 m/s    Highest velocity
+
+6. CHECKS (governing first)
+  PASS  Velocity ≤ limit: u_v = 0.59683 vs u_v ≤ 1  utilisation 0.597
+
+7. APPLICABILITY
+  WARNING laminar: segments: pressure line to cylinder is laminar (Re = 1384.6); f = 64/Re.
+
+8. VERIFICATION
+  Template: bs.pipe-pump@1.2.0
+  Content hash: 4747971fae135dcd
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-25 01:13 UTC
+  Application: TempestOS test
