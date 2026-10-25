@@ -39,3 +39,20 @@ Coordinator review, 2026-10-24. The finding comes from reading BuildField and Un
 - Findings: 3 rows (-01 High, -02 Medium, C1 Low), 0 fixed, 3 open. The High finding -01 is still open.
 - New defects: none found in the changed lines. I did not run the Desktop app.
 - No script exists for this report.
+
+## Library records and materials (90d15f11)
+- Scope: how reference records and W3 materials fill calculator inputs. Source files: CalcDataRecord.cs, CalcInstanceService.Records.cs, CalcInstanceService.Materials.cs, MaterialLibrary.cs (all under src/Tempest.Calc/Tempest.Calc.Library/). The Desktop form was not run.
+- Method: I read the diff 0772fcf8..90d15f11 and ran the service in a scratch harness over the real in-memory test host. Inputs and harness: /tmp/claude-0/recheck5/mat/. The 37 existing Material tests pass.
+- The earlier rows -01, -02 and C1 stay Open. CalcSheetView.cs changed only for the Fluid Power labels. The seeded-unit line is now at line 786 and reads the same.
+
+What I checked and found correct:
+- Unit conversion: a material value arrives in the input's own default unit. Carbon steel E (210 GPa) gives 30 457 925 psi. Density gives 7.85 g/cm^3. A 1.8 GPa curve coefficient gives 1800 MPa. Temperature-denominator units such as 1/degC are refused.
+- Table cells keep their own units (210000 MPa beside 180 GPa). Staleness compares them in SI and reports none.
+- Revision pinning: applying revision 1 after revision 2 exists pins revision 1 and reports "revision 2 has been entered since". Applying without a revision pins the latest one. A temperature reading carries its kelvin value in the pin.
+- Export lock: one licensed value makes the whole material licensed. CSV and JSON export are refused. A revision that clears the flag is refused. Withheld inputs lose their numbers and table rows. A record saved from licensed inputs is licensed.
+
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) | Status @ 90d15f11 |
+|---|---|---|---|---|---|---|
+| P1-desktop.calc-sheet-view-F1 | Low | — | A licence correction does not reach earlier revisions. If a value was first saved as public and a later revision marks it licensed, the earlier revision stays exportable. A calculation pinned to it is not withheld. | Harness: material 'Mat Late' revision 1 public, revision 2 with one licensed value. ExportJson of revision 1 returns the file. Revision 2 is refused. An input applied from revision 1 keeps its number in WithholdLicensedAsync. | When a revision becomes licensed, mark earlier revisions licensed too. Or warn the user that earlier revisions stay exportable. | Open (new) |
+| P1-desktop.calc-sheet-view-F2 | Low | — | A value whose own reference text starts with a temperature part is read as the application temperature. The staleness check then re-reads the material at that temperature and can report a false change. | Harness: E with reference 'T=293 K · Table 5' and a table E(T). Apply with no temperature. The pin reads '… · E · T=293 K · Table 5'. Staleness says the value was changed. The parser takes the third part of the reference as T. | Store the application temperature in a field of its own. Or mark it with a prefix a reference cannot start with. | Open (new) |
+| P1-desktop.calc-sheet-view-F3 | Info | — | Two small wording and cross-link points. First, applying a revision that does not exist says "No reference record … exists", not that the revision is missing. Second, a non-material record copies its own unit into the input, with no conversion. | Harness: ApplyAsync revision 99 gives the first message. ApplyRecordCoreAsync passes `Unit: value.Unit` for non-material records. With -01 above, a record unit outside the pick list would change scale on the form. Materials convert to the input's default unit, so they avoid this. | Name the missing revision in the message. Convert a record's number to the input's default unit on apply, or fix -01. | Open (new; the second point is by code reading) |

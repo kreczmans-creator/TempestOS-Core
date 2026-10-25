@@ -18,7 +18,7 @@ The method is correct. Both KATs match. The only defects are a loss of precision
 
 ## Known-answer cases
 | Case | Symbol | KAT expected | Independent | Rel. diff | KAT tol | Result |
-|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|---|
 | ka-shigley-screw | x_nom | 0.005 | 0.005 | 8.7e-16 | 1e-09 | PASS |
 | ka-shigley-screw | t_wc | 0.01 | 0.01 | 0.0e+00 | 1e-09 | PASS |
 | ka-shigley-screw | x_wc_min | -0.005 | -0.005 | 8.7e-16 | 1e-06 | PASS |
@@ -38,7 +38,7 @@ The Shigley case is marked Unconfirmed in the source for its page number. The ar
 ## Extra probes (product vs independent)
 All values are in mm unless stated. The script re-runs each probe. Product values are hard-coded from the probe tool.
 | Probe | Inputs (short) | Symbol | Product | Independent | Rel. diff | Result |
-|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|---|---|
 | p1 typical | 5 size rows, limits 0.1 to 1.0 | sigma / cpk | 0.0213437 / 6.40312 | 0.0213437 / 6.40312 | < 1e-10 | PASS |
 | p2 distributions | uniform, triangular, shifts, limits 0.2 to 1.2 | x_mean / sigma / cpk / dpmo | 0.535 / 0.0666041 / 1.67657 / 0.245601 | same | < 1.5e-8 | PASS |
 | p3 GD&T | position 0.2 + bonus 0.1, profile 0.1 | t_wc / sigma / cpk | 0.35 / 0.0645497 / 2.58199 | same | < 2e-10 | PASS |
@@ -72,14 +72,14 @@ Guard probes also behave as specified. A lower deviation above the upper blocks.
 | Mean shift | enters m_i | Moves x_mean and the worst-case limits; t_wc is unchanged | Yes (note 04) |
 
 ## Findings
-| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) | Status @ 0772fcf8 |
-|---|---|---|---|---|---|---|
-| P1-mech.tolerance-stack-01 | Low | Low: confirmed. It only matters below 1e-6 DPMO, where no decision changes | The upper-tail DPMO is computed as 1 − Φ(z). This loses all precision beyond z of about 7. The result is only wrong when DPMO is below 1e-6. The KAT tolerance of 5 % hides it. | Four rows of 10 ± 0.01, 9, 0.5, 0 and σ = 0.0066667 mm. USL at z = 7: product 1.27987e-6, true 1.27981e-6. At z = 8: 6.66e-10 against 6.22e-10. At z = 8.6: 0 against 4.0e-12. KAT ka-rss-analytic gives 7.7759e-7 against 7.77547e-7. | Compute the upper tail as 0.5·erfc(z/√2). Use a higher-precision erfc. Tighten the KAT tolerance to 1e-4. | Open. Probe z7: upper limit at z = 7 still gives DPMO 1.279865e-06 (true 1.27981e-06). z = 8.6 still gives 0. |
-| P1-mech.tolerance-stack-02 | Low | Low: confirmed. The worst-case check still runs | When every band is zero, σ = 0. C_p, C_pk, DPMO, yield and the C_pk check are all skipped. No notice says so. | Rows 10 ± 0 and 9 ± 0, limits 0.5 to 2.0. Outputs hold only the worst-case results. | Add a notice such as "zero spread: capability not computed". | Open. Probe: rows 10 ± 0 and 9 ± 0, limits 0.5 to 2.0. C_p, C_pk and DPMO are still missing, with no notice. |
-| P1-mech.tolerance-stack-03 | Info | Info: confirmed | A blank lower deviation on a size row counts as 0. Upper 0.1 with a blank lower gives +0.1/0, not ±0.1. This matches the column help, but a user may expect a symmetric band. | Probe p18: upper 0.1, lower blank gives h = 0.05 and mid +0.05. | Optional: show the resolved band in the row label. The worksheet already does this. | Open (Info). Probe: upper 0.1 with a blank lower still gives +0.1/0 (x_mean 10.05, t_wc 0.05). |
-| P1-mech.tolerance-stack-04 | Info | Info: confirmed | A mean shift moves x_mean and so the worst-case limits. It does not widen t_wc. A shift of a drifting process is therefore not a worst-case allowance. | Probe p2. Spec describes this behaviour. | Say so in the help text for the shift column. | Open (Info). Unchanged. A shift of 0.05 mm moves x_mean to 10.05 and leaves t_wc at 0.1. |
-| P1-mech.tolerance-stack-R1 | — | Low | A size row with lower equal to upper gives a zero band with no notice. A user who types the lower deviation as a magnitude (0.1 for −0.1) loses that row's tolerance. The row label does show "+0.1/0.1". | Probe: row C, 0.5 mm, upper 0.1, lower 0.1: half-band 0, mid 0.6 mm, no notice. | Warn when a size row has a zero band, or when lower equals upper and is not zero. | Open. Probe: size row 0.5 mm with upper 0.1 and lower 0.1 still gives a zero band and no notice. |
-| P1-mech.tolerance-stack-R2 | — | Low | The statistical Pareto uses h² for each row, not σ_i². With mixed distributions the shares and the named largest contributor are wrong. | Probe: A normal ±0.1 and B uniform ±0.1. Product: A 50 %, B 50 %, largest "A". By σ²: A 25 %, B 75 %. | Use σ_i² for the statistical share. | Open. Probe: A normal ±0.1 and B uniform ±0.1 still show A 50 %, B 50 %, largest 'A'. By σ² they are 25 % and 75 %. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) | Status @ 0772fcf8 | Status @ 90d15f11 |
+|---|---|---|---|---|---|---|---|
+| P1-mech.tolerance-stack-01 | Low | Low: confirmed. It only matters below 1e-6 DPMO, where no decision changes | The upper-tail DPMO is computed as 1 − Φ(z). This loses all precision beyond z of about 7. The result is only wrong when DPMO is below 1e-6. The KAT tolerance of 5 % hides it. | Four rows of 10 ± 0.01, 9, 0.5, 0 and σ = 0.0066667 mm. USL at z = 7: product 1.27987e-6, true 1.27981e-6. At z = 8: 6.66e-10 against 6.22e-10. At z = 8.6: 0 against 4.0e-12. KAT ka-rss-analytic gives 7.7759e-7 against 7.77547e-7. | Compute the upper tail as 0.5·erfc(z/√2). Use a higher-precision erfc. Tighten the KAT tolerance to 1e-4. | Open. Probe z7: upper limit at z = 7 still gives DPMO 1.279865e-06 (true 1.27981e-06). z = 8.6 still gives 0. | Open. Probe z7: DPMO 1.279865e-06 (true 1.27981e-06). z8: 6.6613e-10 (true 6.221e-10). z8.6: 0 (true 4.0e-12). The engine still calls the old tail code. |
+| P1-mech.tolerance-stack-02 | Low | Low: confirmed. The worst-case check still runs | When every band is zero, σ = 0. C_p, C_pk, DPMO, yield and the C_pk check are all skipped. No notice says so. | Rows 10 ± 0 and 9 ± 0, limits 0.5 to 2.0. Outputs hold only the worst-case results. | Add a notice such as "zero spread: capability not computed". | Open. Probe: rows 10 ± 0 and 9 ± 0, limits 0.5 to 2.0. C_p, C_pk and DPMO are still missing, with no notice. | Open. Probe: rows 10 ± 0 and 9 ± 0, limits 0.5 to 2.0. C_p, C_pk and DPMO are still missing, with no notice. The engine returns no capability by design. |
+| P1-mech.tolerance-stack-03 | Info | Info: confirmed | A blank lower deviation on a size row counts as 0. Upper 0.1 with a blank lower gives +0.1/0, not ±0.1. This matches the column help, but a user may expect a symmetric band. | Probe p18: upper 0.1, lower blank gives h = 0.05 and mid +0.05. | Optional: show the resolved band in the row label. The worksheet already does this. | Open (Info). Probe: upper 0.1 with a blank lower still gives +0.1/0 (x_mean 10.05, t_wc 0.05). | Open (Info). Probe: upper 0.1 with a blank lower still gives x_mean 10.05 and t_wc 0.05. |
+| P1-mech.tolerance-stack-04 | Info | Info: confirmed | A mean shift moves x_mean and so the worst-case limits. It does not widen t_wc. A shift of a drifting process is therefore not a worst-case allowance. | Probe p2. Spec describes this behaviour. | Say so in the help text for the shift column. | Open (Info). Unchanged. A shift of 0.05 mm moves x_mean to 10.05 and leaves t_wc at 0.1. | Open (Info). Unchanged. A shift of 0.05 mm gives x_mean 10.05 and t_wc 0.1. |
+| P1-mech.tolerance-stack-R1 | — | Low | A size row with lower equal to upper gives a zero band with no notice. A user who types the lower deviation as a magnitude (0.1 for −0.1) loses that row's tolerance. The row label does show "+0.1/0.1". | Probe: row C, 0.5 mm, upper 0.1, lower 0.1: half-band 0, mid 0.6 mm, no notice. | Warn when a size row has a zero band, or when lower equals upper and is not zero. | Open. Probe: size row 0.5 mm with upper 0.1 and lower 0.1 still gives a zero band and no notice. | Open. Probe: size row 0.5 mm with upper 0.1 and lower 0.1 gives label +0.1/0.1, half-band 0 and no notice except the few-contributors warning. |
+| P1-mech.tolerance-stack-R2 | — | Low | The statistical Pareto uses h² for each row, not σ_i². With mixed distributions the shares and the named largest contributor are wrong. | Probe: A normal ±0.1 and B uniform ±0.1. Product: A 50 %, B 50 %, largest "A". By σ²: A 25 %, B 75 %. | Use σ_i² for the statistical share. | Open. Probe: A normal ±0.1 and B uniform ±0.1 still show A 50 %, B 50 %, largest 'A'. By σ² they are 25 % and 75 %. | Open. Probe: A normal ±0.1 and B uniform ±0.1 still show A 50 %, B 50 %, largest 'A'. The engine's StatisticalShare still uses half-band squared. |
 
 ## Notes for the owner's manual test
 - Enter the Shigley stack in inches: 1.750 ± 0.003 adds; 0.750, 0.120 (± 0.005) and 0.875 subtract. Expect gap 0.005, t_wc 0.010, RSS 0.006, σ 0.002.
@@ -102,3 +102,11 @@ Guard probes also behave as specified. A lower deviation above the upper blocks.
 - I re-ran every finding with the probe. -01, -02, -03, -04, R1 and R2 behave as before. None is fixed.
 - Counts: 0 fixed, 6 open (two Info, four Low). The new Block text reads correctly with the probe: an empty contributor table gives it.
 - I found no new defect.
+
+## Re-check after Addendum B-0/B-1 (90d15f11)
+- Source changed (B-0a, 0800a369): the arithmetic moved into the public ToleranceStackEngine (Analyse and Simulate) in Tempest.Calc.Engine/Analysis/ToleranceStack. The calculator now reads the table, calls the engine and writes the steps.
+- I read the engine against my method. Mid-limit, half-band, worst case, RSS, σ, C_p, C_pk, DPMO, shares and the check slack are unchanged, and the Monte Carlo is identical. The engine adds input guards (finite figures, sign, a 200-contributor cap).
+- No KAT changed. `Probe kat` passes 2 of 2. The Shigley case still gives the same Monte Carlo figures as before (mc_sigma 0.0019919 in, mc_yield 84.61 %). The script is unchanged and exits 0.
+- I re-ran every finding with the probe. -01, -02, -03, -04, R1 and R2 behave as before. Counts: 0 fixed, 6 open (two Info, four Low). No Critical or High finding exists.
+- New defects: none found. Negative bonus, negative zone, zero bands with uniform or triangular rows and a one-sided minimum all behave sensibly.
+- Probe inputs: /tmp/claude-0/recheck5/ts/.
