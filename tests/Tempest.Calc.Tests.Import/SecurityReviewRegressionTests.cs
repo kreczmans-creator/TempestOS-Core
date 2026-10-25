@@ -349,13 +349,75 @@ public sealed class SecurityReviewRegressionTests
             Assert.True(watch.Elapsed < TimeSpan.FromSeconds(6), $"took {watch.Elapsed}");
             Assert.True(ex.Code is ImportRefusalCode.Timeout or ImportRefusalCode.UnsafePath, ex.Code.ToString());
 
-            // Release the abandoned open so its thread ends: a writer arrives, the worker finds a pipe that cannot seek, and refuses it.
-            await using var writer = new FileStream(fifo, FileMode.Open, FileAccess.Write, FileShare.ReadWrite, 1, true);
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            {
+                // Residual: the kind of the file is read before any open, so the pipe is refused at once and nothing is left blocked on it.
+                Assert.Equal(ImportRefusalCode.UnsafePath, ex.Code);
+                Assert.Contains("regular file", ex.Message, StringComparison.Ordinal);
+                Assert.True(watch.Elapsed < TimeSpan.FromMilliseconds(500), $"took {watch.Elapsed}");
+                Assert.False(FileKind.IsRegularFile(fifo));
+                Assert.True(FileKind.IsRegularFile(Path.Combine(folder)) == false);
+                Assert.False(FileKind.IsRegularFile("/dev/null"));
+            }
+            else
+            {
+                await using var writer = new FileStream(fifo, FileMode.Open, FileAccess.Write, FileShare.ReadWrite, 1, true);
+            }
         }
         finally
         {
             Directory.Delete(folder, recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task Residual_A_Regular_File_Is_Told_From_A_Pipe_Without_Opening_It()
+    {
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+            return;
+
+        var file = Path.Combine(Path.GetTempPath(), "w1-kind-" + Guid.NewGuid().ToString("N") + ".exp");
+        await File.WriteAllTextAsync(file, "[mm]a=1\n");
+
+        try
+        {
+            Assert.True(FileKind.IsRegularFile(file));
+            Assert.Null(FileKind.IsRegularFile(file + ".missing"));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    // ---- N2: canonical targets; N5: a byte order mark in front of a profile --------------
+
+    [Theory]
+    [InlineData("rows[01].x")]
+    [InlineData("rows[007].nominal")]
+    [InlineData("rows[00].x")]
+    public void N2_A_Row_Index_With_A_Leading_Zero_Is_Not_A_Target(string target)
+    {
+        Assert.False(CadTarget.TryParse(target, out _));
+        var profile = new CadMappingProfile("p", 1, "t", [new("a", target)], CadSystem.Nx, "any");
+        Assert.NotEmpty(profile.Validate());
+    }
+
+    [Theory]
+    [InlineData("rows[0].x")]
+    [InlineData("rows[10].x")]
+    public void N2_A_Canonical_Row_Index_Is_Kept_And_Prints_As_Written(string target)
+    {
+        Assert.True(CadTarget.TryParse(target, out var parsed));
+        Assert.Equal(target, parsed.ToString());
+    }
+
+    [Fact]
+    public void N5_A_Profile_File_With_A_Byte_Order_Mark_Is_Read()
+    {
+        const string Json = "{\"id\":\"p\",\"version\":1,\"title\":\"t\",\"entries\":[{\"cadName\":\"a\",\"target\":\"W\"}]}";
+        var profile = CadMappingProfileJson.Read("\uFEFF" + Json);
+        Assert.Equal("p", profile.Id);
     }
 
     [Fact]

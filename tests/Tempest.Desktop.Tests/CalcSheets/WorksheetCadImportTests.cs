@@ -106,6 +106,10 @@ public sealed class WorksheetCadImportTests
             var applied = await model.ApplyAsync();
             Assert.True(applied!.Action.Succeeded, applied.Action.Reason);
             await Settle();
+
+            // N3: the re-preview that follows the apply must not overwrite the message that says what was done.
+            Assert.StartsWith("Imported from", model.Status, StringComparison.Ordinal);
+            Assert.StartsWith("Imported from", model.Summary, StringComparison.Ordinal);
             Assert.Equal(24.5, view.ReadForm().Find("minimum")!.Number);
             var imported = (await service.Store.FindInstanceAsync(stack.Id))!;
             Assert.Equal(24.5, imported.Inputs.Single(i => i.Symbol == "minimum").Number);

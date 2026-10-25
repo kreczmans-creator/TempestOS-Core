@@ -54,14 +54,16 @@ internal sealed class CadParseContext
     public CadParseResult Finish(CadSystem system, CadSourceFormat format)
     {
         var stem = Path.GetFileNameWithoutExtension(File.FileName);
-        var part = Settings.PartName ?? FilePartName ?? (string.IsNullOrWhiteSpace(stem) ? null : stem);
+        var explicitPart = Settings.PartName ?? FilePartName;
+        var part = explicitPart ?? (string.IsNullOrWhiteSpace(stem) ? null : stem);
         var source = new CadSourceInfo(
             system, format, File.FileName, File.Sha256,
             Clean(Settings.CadVersion ?? FileCadVersion, 40),
             Clean(part, 80),
             Clean(Settings.Revision ?? FileRevision, 20),
             Configuration,
-            Configurations);
+            Configurations,
+            string.IsNullOrWhiteSpace(explicitPart));
 
         return new CadParseResult(source, Parameters, Notices);
     }

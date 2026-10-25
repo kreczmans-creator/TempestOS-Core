@@ -143,7 +143,7 @@ public readonly record struct CadTarget(string Symbol, int? Row = null, string? 
         while (i < text.Length && text[i] is >= '0' and <= '9')
             i++;
 
-        if (i == digits || i - digits > 4 || i >= text.Length || text[i] != ']')
+        if (i == digits || i - digits > 4 || i >= text.Length || text[i] != ']' || (text[digits] == '0' && i - digits > 1))
             return false;
 
         var row = int.Parse(text.AsSpan(digits, i - digits), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);
@@ -208,6 +208,7 @@ public static class CadMappingProfileJson
         if (System.Text.Encoding.UTF8.GetByteCount(json) > MaxBytes)
             throw new ImportRefusedException(ImportRefusalCode.TooLarge, $"A mapping profile is at most {MaxBytes / 1000} KB.");
 
+        json = json.TrimStart('\uFEFF');
         BoundedInputReader.RejectControlCharacters(json);
         CadMappingProfile? profile;
 

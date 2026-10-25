@@ -191,4 +191,92 @@ public sealed class CadImportSecurityTests
         var applied = await host.Service.ApplyCadImportAsync(stack.Id, Request(StackFile, expected: fresh.InstanceUpdatedAt));
         Assert.True(applied.Action.Succeeded, applied.Action.Reason);
     }
+
+    private const string PlateFile = "[mm]plate_len=30\n[mm]pin_len=5\n[mm]gap_min=24.5\n[mm]gap_max=25.5\n";
+    private const string SpacerFile = "[mm]spacer_len=10\n";
+
+    private static string WithPart(string part, string body) => "// Part: " + part + "\n" + body;
+
+    private static void AssertEveryImportedInputStillBacked(CalcInstance instance, params string[] symbols)
+    {
+        foreach (var symbol in symbols)
+            Assert.Equal(CalcProvenanceKind.CadImport, Input(instance, symbol).Provenance!.Kind);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task N1_A_Second_Part_File_Through_The_Same_Profile_Keeps_The_First_Parts_Provenance_And_The_Stack_Can_Be_Checked_And_Issued(bool partHeaders)
+    {
+        var host = Host();
+        var stack = await host.Service.CreateAsync(ToleranceStackCalculator.Id, await host.ProjectAsync(), "Pin stack", StackInputs());
+
+        var plate = await host.Service.ApplyCadImportAsync(stack.Id, Request(partHeaders ? WithPart("PLATE", PlateFile) : PlateFile, "plate.exp"));
+        Assert.True(plate.Action.Succeeded, plate.Action.Reason);
+        Assert.True(plate.Diff!.FirstImport);
+
+        var spacer = await host.Service.ApplyCadImportAsync(stack.Id, Request(partHeaders ? WithPart("SPACER", SpacerFile) : SpacerFile, "spacer.exp"));
+        Assert.True(spacer.Action.Succeeded, spacer.Action.Reason);
+        Assert.Null(spacer.Action.Reason);
+
+        // With a part header each part is its own source with its own first import; without one the file-name fallback keeps one source.
+        Assert.Equal(partHeaders, spacer.Diff!.FirstImport);
+
+        var after = spacer.Action.Instance!;
+        AssertEveryImportedInputStillBacked(after, "minimum", "maximum");
+        var rows = Input(after, "contributors").Rows!;
+        Assert.Equal(CalcProvenanceKind.CadImport, rows[0].Get("nominal")!.Provenance!.Kind);
+        Assert.Equal(CalcProvenanceKind.CadImport, rows[1].Get("nominal")!.Provenance!.Kind);
+        Assert.Equal(CalcProvenanceKind.CadImport, rows[2].Get("nominal")!.Provenance!.Kind);
+        Assert.Equal(2, after.CadImports!.Count);
+
+        var stored = (await host.Store.FindInstanceAsync(stack.Id))!;
+        Assert.Equal(CalcProvenanceKind.CadImport, Input(stored, "minimum").Provenance!.Kind);
+
+        var check = await host.Service.CheckAsync(stack.Id, "J. Reviewer", "Client Co", "OK", Tempest.Core.Evidence.CheckOutcome.Accepted);
+        Assert.True(check.Succeeded, check.Reason);
+        var issue = await host.Service.IssueAsync(stack.Id, "ISS-1", "Client Co");
+        Assert.True(issue.Succeeded, issue.Reason);
+    }
+
+    [Fact]
+    public async Task N1_A_Re_Import_That_Drops_An_Unrequired_Parameter_Keeps_The_Earlier_Values_Backed_Until_Nothing_Cites_Them()
+    {
+        var host = Host();
+        var stack = await host.Service.CreateAsync(ToleranceStackCalculator.Id, await host.ProjectAsync(), "Pin stack", StackInputs());
+        Assert.True((await host.Service.ApplyCadImportAsync(stack.Id, Request(StackFile))).Action.Succeeded);
+
+        // The next export no longer holds pin_len (an optional parameter): its value stays as imported and stays backed by the first import.
+        var withoutPin = StackFile.Replace("[mm]pin_len=5\n", string.Empty, StringComparison.Ordinal).Replace("plate_len=30", "plate_len=31", StringComparison.Ordinal);
+        var second = await host.Service.ApplyCadImportAsync(stack.Id, Request(withoutPin));
+        Assert.True(second.Action.Succeeded, second.Action.Reason);
+        Assert.Null(second.Action.Reason);
+        Assert.Equal(CalcProvenanceKind.CadImport, Input(second.Action.Instance!, "contributors").Rows![2].Get("nominal")!.Provenance!.Kind);
+        Assert.Equal(2, second.Action.Instance!.CadImports!.Count);
+
+        // An export that holds every parameter again cites only itself, so the superseded records are pruned.
+        var third = await host.Service.ApplyCadImportAsync(stack.Id, Request(StackFile.Replace("plate_len=30", "plate_len=32", StringComparison.Ordinal)));
+        Assert.True(third.Action.Succeeded, third.Action.Reason);
+        Assert.Single(third.Action.Instance!.CadImports!);
+
+        var check = await host.Service.CheckAsync(stack.Id, "J. Reviewer", "Client Co", "OK", Tempest.Core.Evidence.CheckOutcome.Accepted);
+        Assert.True(check.Succeeded, check.Reason);
+    }
+
+    [Fact]
+    public async Task N1_The_Number_Of_Kept_Import_Records_Is_Capped()
+    {
+        var host = Host();
+        var stack = await host.Service.CreateAsync(ToleranceStackCalculator.Id, await host.ProjectAsync(), "Pin stack", StackInputs());
+
+        for (var i = 0; i < 30; i++)
+        {
+            var applied = await host.Service.ApplyCadImportAsync(stack.Id, Request(WithPart("P" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), "[mm]spacer_len=" + (10 + i).ToString(System.Globalization.CultureInfo.InvariantCulture) + "\n"), "p" + i + ".exp"));
+            Assert.True(applied.Action.Succeeded, applied.Action.Reason);
+        }
+
+        var instance = (await host.Store.FindInstanceAsync(stack.Id))!;
+        Assert.InRange(instance.CadImports!.Count, 1, 20);
+        Assert.Equal(CalcProvenanceKind.CadImport, Input(instance, "contributors").Rows![1].Get("nominal")!.Provenance!.Kind);
+    }
 }

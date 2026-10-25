@@ -344,9 +344,12 @@ public sealed class CadImportViewModel
 
         if (outcome.Action.Succeeded)
         {
-            Status = $"Imported from {_file.FileName}. {outcome.Diff?.Summary}";
+            var done = $"Imported from {_file.FileName}. {outcome.Diff?.Summary}";
             await PreviewAsync(token, operation).ConfigureAwait(true);
-            Summary = Status;
+
+            // The re-preview describes what could be applied next ("Ready to apply."); what the person needs to read now is what was done.
+            Status = done;
+            Summary = done;
         }
         else
         {
@@ -395,7 +398,11 @@ public sealed class CadImportViewModel
     private async Task PreviewAsync(CancellationToken token, int operation)
     {
         if (InstanceId is not { } id || _file is null || _format is null)
+        {
+            IsBusy = false;
+            Raise();
             return;
+        }
 
         if (_profile is null)
         {
