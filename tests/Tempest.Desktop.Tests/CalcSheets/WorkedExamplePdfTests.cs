@@ -44,7 +44,8 @@ public sealed class WorkedExamplePdfTests
         var root = Path.Combine(DesktopTestHelpers.RepositoryRoot, "docs", "worked-examples");
         var folder = Path.Combine(root, relative);
         var templateId = relative.Split('/')[1];
-        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All());
+        // The gated calculators (S8 lifting, ADR-0173) are withheld from the shipped catalogue; their worked examples are rendered with every feature on, in this test only.
+        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All(), new CalcFeatureFlags(CalcFeatures.All));
         var entry = catalogue.Find(templateId);
         Assert.NotNull(entry);
 

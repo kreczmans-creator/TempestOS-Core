@@ -1,0 +1,244 @@
+[
+  {
+    "Symbol": "A_beam",
+    "Number": 80,
+    "Unit": "cm^2",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-03",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "80"
+  },
+  {
+    "Symbol": "Dh",
+    "Number": 55,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "55"
+  },
+  {
+    "Symbol": "Dp",
+    "Number": 50,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "Nd",
+    "Number": 1.8,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Illustrative user-record value for this worked example, not a value from any standard: replace with the design factor of your Design Category from your own copy of the code.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.8"
+  },
+  {
+    "Symbol": "R",
+    "Number": 75,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "75"
+  },
+  {
+    "Symbol": "WLL",
+    "Number": 150,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Lifting beam specification LB-150, rated load 150 kN",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "150"
+  },
+  {
+    "Symbol": "be",
+    "Number": 40,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "beam",
+    "Flag": true,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-01",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "yes"
+  },
+  {
+    "Symbol": "beta",
+    "Number": 2,
+    "Unit": "deg",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Allowance for the sling not hanging exactly in the plane of the lug.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2"
+  },
+  {
+    "Symbol": "dish_max",
+    "Number": 40,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Illustrative user-record value, not from a standard: replace with your own record.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "f_u",
+    "Number": 470,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "S355 plate 25 mm, mill certificate MC-2291 (lower bound of the ultimate range)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "470"
+  },
+  {
+    "Symbol": "f_y",
+    "Number": 345,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "S355 plate 25 mm, mill certificate MC-2291 (16 mm \u003C t \u2264 40 mm)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "345"
+  },
+  {
+    "Symbol": "h",
+    "Number": 180,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "180"
+  },
+  {
+    "Symbol": "k_b",
+    "Number": 1.2,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Illustrative user-record value, not from a standard: replace with your own record.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.2"
+  },
+  {
+    "Symbol": "k_proof",
+    "Number": 1.5,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Illustrative user-record value, not from a standard: replace with the proof-load factor of your procedure.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "mode",
+    "Text": "both",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Both modes are run so the sheet shows which governs; the owner\u0027s code route decides which counts.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "both"
+  },
+  {
+    "Symbol": "n_cycles",
+    "Number": 1000,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Lifting beam specification LB-150: not more than 1000 lifts in its life",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1000"
+  },
+  {
+    "Symbol": "n_lugs",
+    "Text": "2",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-01",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2"
+  },
+  {
+    "Symbol": "n_u",
+    "Number": 2.2,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Illustrative user-record value, not from a standard: replace with your own record.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2.2"
+  },
+  {
+    "Symbol": "n_y",
+    "Number": 1.6,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Illustrative user-record value, not from a standard: replace with your own record.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.6"
+  },
+  {
+    "Symbol": "t",
+    "Number": 25,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
+    "Symbol": "theta",
+    "Number": 30,
+    "Unit": "deg",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-01",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
+  }
+]
