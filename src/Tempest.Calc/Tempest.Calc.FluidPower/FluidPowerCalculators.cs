@@ -14,5 +14,6 @@ public static class FluidPowerCalculators
     [
         new CylinderCalculator(),
         new AccumulatorCalculator(),
+        new ORingGlandCalculator(),
     ];
 }
