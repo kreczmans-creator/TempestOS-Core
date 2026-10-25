@@ -4,8 +4,8 @@ Calc ID: struct.lifting    Revision: A
 Title: Lifting lugs and spreader beams
 
 1. SCOPE AND METHOD
-This is a design calculation, not a thorough examination. Pin-loaded lifting lugs and the lug loads of spreader or lifting beams, checked by the BTH-1 allowable-stress approach (clause 3-3.3), by the EN 13155 proof route (2× the rated load without permanent set, 3× without release) or both: sling force from the rated load, sling angle and out-of-plane angle; tension beyond the hole, net-section fracture, shear-out on two planes, pin bearing and dishing; capacity and utilisation per mode, the governing mode, the proof load and a marking and certification checklist. Scope notes (LOLER and PUWER): this sheet does not replace the thorough examination and inspection of lifting equipment by a competent person (LOLER reg 9), the marking, test and certification that the regulations and the standards require, the planning of the lifting operation, the weld, bolt and beam checks of the linked sheets, or the pin, shackle and sling ratings. It is available only while the lifting feature is enabled; its issue needs a competent-person attestation and a second independent check.
-Sling force: F_v = WLL/n_eff (n_eff = n_lugs, at most 3); θ_d = θ (+6° for a horizontal beam); β_d = β (+6° for a horizontal beam); F_s = F_v/cos θ_d; in-plane F_ip = F_s·cos β_d; out-of-plane F_op = F_s·sin β_d; horizontal N_beam = F_v·tan θ_d; M_op = F_op·h Geometry: b_e,eff = min(b_e, R − D_h/2); a_eff = a (default R − D_h/2); A_t = 2·t·b_e,eff; A_net = t·(2R − D_h); φ = 55·D_p/D_h (degrees); A_v = 2·t·[a_eff + (D_h/2)(1 − cos φ)]; A_b = D_p·t Pin clearance: C_r = 1 − 0.275·√(1 − D_p²/D_h²) BTH-1 (3-3.3): F_y,a = f_y/n_y; F_u,a = f_u/n_u; design load D = N_d·k_svc·F_s; P_t = C_r·F_y,a·A_t; P_sp = C_r·F_u,a·A_net; P_v = (F_y,a/√3)·A_v; P_b = k_b·F_y,a·A_b; u = D/P for each; dishing D_h/t ≤ dish_max EN 13155 (2× elastic, 3× no release): P_EN = min(Y/2, U/3) for each section, Y with f_y and U with f_u (shear with f/√3); u = F_s/P_EN Capacity: WLL_cap = WLL/u_lug for the governing section of each mode (smaller of the modes used); beam: u_beam from N_beam on A_beam; proof load = k_proof·WLL
+This is a design calculation, not a thorough examination. Pin-loaded lifting lugs and the lug loads of spreader or lifting beams, checked by the BTH-1 allowable-stress approach (clause 3-3.3), by the EN 13155 proof route (2× the rated load without permanent set, 3× without release) or both: sling force from the rated load, sling angle and out-of-plane angle (with the automatic 6° tilt cases for a horizontal beam); tension beyond the hole, single-plane fracture beyond the hole, shear-out on two planes, pin bearing and dishing; capacity and utilisation per mode, the governing mode, the proof load and a marking and certification checklist. Scope notes (LOLER and PUWER): this sheet does not replace the thorough examination and inspection of lifting equipment by a competent person (LOLER reg 9), the marking, test and certification that the regulations and the standards require, the planning of the lifting operation, the weld, bolt and beam checks of the linked sheets, or the pin, shackle and sling ratings. It is available only while the lifting feature is enabled; its issue needs a competent-person attestation and a second independent check. Signatures are not authenticated by TempestOS: the signed-in names of the author, the checkers and the competent person are as entered into this installation.
+Sling force: F_v = WLL/n_eff (n_eff = n_lugs, at most 3); F_s = F_v/(cos θ·cos β); F_ip = F_s·cos β; F_op = F_s·sin β; N_beam = F_v·tan θ; M_op = F_op·h Horizontal beam, automatic 6° tilt: pitch (θ ± 6°, load redistributed, the sling at θ − 6° takes 2·F_v·sin(θ + 6°)/sin 2θ); roll (β + 6°); the larger F_s governs, F_ip, F_op and N_beam are the envelopes Geometry: side = min(b_e, R − D_h/2); b_e,eff = min(side, 4t, 0.6·(f_u/f_y)·√(D_h/side)·side); a_eff = a (default R − D_h/2); A_t = 2·t·b_e,eff; A_fr = [1.13·a_eff + 0.92·side/(1 + side/D_h)]·t; φ = 55·D_p/D_h (degrees); A_v = 2·t·[a_eff + (D_p/2)(1 − cos φ)]; A_b = D_p·t Pin clearance: C_r = 1 − 0.275·√(1 − D_p²/D_h²) BTH-1 (3-3.3): F_a = min(f_y/n_y, f_u/n_u); design load D = N_d·k_svc·F_s; P_t = C_r·F_a·A_t; P_sp = C_r·F_a·A_fr; P_v = F_a·A_v/√3; P_b = k_b·F_a·A_b; u = D/P for each; dishing D_h/t ≤ dish_max EN 13155 (2× elastic, 3× no release): P_EN = min(Y/2, U/3) for each section, Y with f_y and U with f_u (shear with f/√3; fracture area without C_r); u = F_s/P_EN Capacity: WLL_cap = WLL/u_lug for the governing section of each mode (smaller of the modes used); beam: u_beam from N_beam on A_beam; proof load = k_proof·WLL
   Ref: ASME BTH-1 3-3.3 — Pin-connected plates (design of lifting lugs)
   Ref: BS EN 13155 design requirements (clause to be confirmed) — Non-fixed load lifting attachments: 2× elastic, 3× no release
   Ref: BS EN 13001-3-1 5 — Proof of static strength: the calculation route cited, not implemented
@@ -17,94 +17,96 @@ Sling force: F_v = WLL/n_eff (n_eff = n_lugs, at most 3); θ_d = θ (+6° for a 
   mode | Design mode | BTH-1 |  | manual | any
   WLL | Rated load (working load limit) of the appliance, carried by all its lugs | 150 | kN | manual | 0.5 … 10000 kN
   n_lugs | Number of lugs sharing the load (a fourth is not relied on: three share) | 2 |  | manual | any
-  theta | Sling angle from the vertical, in the plane of the lug | 30 | deg | manual | 0 … 60 deg
-  beta | Out-of-plane angle of the sling | 5 | deg | manual | 0 … 30 deg
-  beam | The lugs are on a horizontal spreader or lifting beam (adds the automatic 6° tilt case) | no |  | manual | any
+  theta | Sling angle θ from the vertical, measured in the plane of the lug (the out-of-plane angle β is applied on top: F_s = F_v/(cos θ·cos β)) | 30 | deg | manual | 0 … 60 deg
+  beta | Out-of-plane angle β of the sling out of the lug plane | 5 | deg | manual | 0 … 30 deg
+  beam | The lugs are on a horizontal spreader or lifting beam (adds the automatic 6° pitch and roll tilt cases) | no |  | manual | any
   n_cycles | Load cycles in the life of the lug (the 2×/3× route covers up to 16,000; beyond that a fatigue assessment is needed and the sheet does not run) | 1000 |  | manual | 1 … 16000
   t | Lug plate thickness t | 20 | mm | manual | 5 … 150 mm
   Dh | Hole diameter D_h | 50 | mm | manual | 10 … 500 mm
   Dp | Pin diameter D_p (not larger than the hole) | 45 | mm | manual | 8 … 500 mm
   R | Lug end radius R about the hole centre (the plate is 2R wide at the hole) | 65 | mm | manual | 15 … 600 mm
-  be | Effective edge distance b_e on each side of the hole for tension beyond the hole (limited to R − D_h/2) | 35 | mm | manual | 5 … 400 mm
+  be | Edge distance b_e from the hole edge to the plate edge on each side, across the load line (limited to R − D_h/2; the effective width for tension is reduced further by 4t and f_u/f_y) | 35 | mm | manual | 5 … 400 mm
   h | Distance h from the hole centre to the weld or base, for the out-of-plane moment (blank: no moment given) | 150 | mm | manual | 1 … 3000 mm
   f_y | Yield strength f_y of the lug plate for its thickness | 355 | MPa | manual | 100 … 1100 MPa
   f_u | Ultimate strength f_u of the lug plate | 470 | MPa | manual | 150 … 1400 MPa
   Nd | Design factor N_d of the Design Category (BTH-1 mode; user record) | 1.8 |  | manual | 1 … 5
-  n_y | Divisor n_y on f_y for the allowable stress, F_y,a = f_y/n_y (BTH-1 mode; user record) | 1.6 |  | manual | 1 … 3
-  n_u | Divisor n_u on f_u for the allowable stress, F_u,a = f_u/n_u (BTH-1 mode; user record) | 2.2 |  | manual | 1 … 4
-  k_b | Bearing multiple k_b of the allowable yield stress on the projected pin area (BTH-1 mode; user record) | 1.2 |  | manual | 0.5 … 3
+  n_y | Divisor n_y on f_y; the allowable stress is F_a = min(f_y/n_y, f_u/n_u) (BTH-1 mode; user record) | 1.6 |  | manual | 1 … 4
+  n_u | Divisor n_u on f_u; the allowable stress is F_a = min(f_y/n_y, f_u/n_u) (BTH-1 mode; user record) | 2.2 |  | manual | 1 … 6
+  k_b | Bearing multiple k_b of the allowable stress on the projected pin area (BTH-1 mode; user record) | 1.2 |  | manual | 0.5 … 3
   dish_max | Dishing-ratio limit on D_h/t (blank: the dishing check is not made; user record) | 40 |  | manual | 1 … 100
   k_proof | Proof-load factor on the rated load (blank: no proof load given; user record) | 1.5 |  | manual | 1 … 3
 
 3. ASSUMPTIONS
   A1. A design calculation, not a thorough examination: it checks the lug plate at the pin hole against the user's chosen criteria and nothing else. (LOLER reg 9 and PUWER duties are the owner's and the competent person's.)
-  A2. Nominal-stress screening of four sections (tension beyond the hole, net section across the hole, shear-out, bearing) on a plate loaded through a pin; no stress-concentration factor, no fatigue (the cycle count is limited to 16,000), no weld, bolt or beam check, which are made on the linked sheets. (The notch-stress route of EN 13001-3-1 is cited, not implemented.)
-  A3. The load on the hole is the resultant sling force F_s whatever the out-of-plane angle, which is conservative; the out-of-plane component and its moment are outputs for the weld and base checks. (F_op = F_s·sin β_d.)
+  A2. Nominal-stress screening of four sections (tension beyond the hole, single-plane fracture beyond the hole, shear-out, bearing) on a plate loaded through a pin; no stress-concentration factor, no fatigue (the cycle count is limited to 16,000), no weld, bolt or beam check, which are made on the linked sheets. (The notch-stress route of EN 13001-3-1 is cited, not implemented.)
+  A3. The load on the hole is the resultant sling force F_s whatever the out-of-plane angle, which is conservative; the out-of-plane component and its moment are outputs for the weld and base checks. (F_op = F_s·sin β.)
   A4. Equal sharing between the lugs, with a fourth lug not relied on (three share). The share of a statically indeterminate set is not computed. (Conservative convention; replace with the actual share if it is known.)
-  A5. A horizontal beam adds the automatic tilt case: sling angle and out-of-plane angle each increased by 6° together, which dominates the untilted case. (Addendum B §B6 S8.)
-  A6. The design factor, service-class factor, allowable-stress divisors, bearing multiple, dishing limit and proof-load factor are the user's records from their own licensed copy of the code; none is shipped and none has a default. (ASME BTH-1 and EN 13155 text and tables are not shipped.)
-  A7. The equations are written out in the spec document in the author's notation; the owner compares them with BTH-1 (2023 or later) and EN 13155+A1 before the feature is ever enabled. (Owner test pack, S8 review checklist.)
+  A5. A horizontal beam adds the automatic 6° tilt as two cases: pitch (sling angles θ ± 6° with the load redistributed between the lugs by statics, the slings meeting at the hook) and roll (out-of-plane angle + 6°), the larger sling force governing. With θ ≤ 6° the pitch case puts the whole load on one lug; with more than two lugs the two-lug redistribution is applied to each lug's share. (Addendum B §B6 S8; EN 13155.)
+  A6. The allowable stress is the one lesser value min(f_y/n_y, f_u/n_u) for every BTH-1 section, as in the published worked example the sheet is checked against; the pin-clearance factor C_r is applied as stated from D_p/D_h < 1 with no cut-off. (Conservative; owner checklist.)
+  A7. Signatures are not authenticated by TempestOS: the platform asks for no password, so the author, the two checkers and the competent person are as entered into this installation; any person can switch to another name. (ADR-0173; the feature stays off until this is addressed.)
+  A8. The design factor, service-class factor, allowable-stress divisors, bearing multiple, dishing limit and proof-load factor are the user's records from their own licensed copy of the code; none is shipped and none has a default. (ASME BTH-1 and EN 13155 text and tables are not shipped.)
+  A9. The equations are written out in the spec document in the author's notation (the single-plane fracture and effective-width relations and the 1.13 and 0.92 constants follow the published course example); the owner compares them with BTH-1 (2023 or later) and EN 13155+A1 before the feature is ever enabled. (Owner test pack, S8 review checklist.)
 
 4. WORKING
   [19] n_eff = min(n_lugs, 3)    « spec
       = min(2, 3)
       = 2
         Lugs sharing the load (a fourth is not relied on)
-  [20] theta_d = θ    « spec
-      = 30°
-      = 30 deg
-        Sling angle used
-  [21] beta_d = β    « spec
-      = 5°
-      = 5 deg
-        Out-of-plane angle used
-  [22] F_v = WLL/n_eff    « spec
+  [20] F_v = WLL/n_eff    « spec
       = 150 kN / 2
       = 75 kN
         Vertical load on each lug
-  [23] F_s = F_v/cos θ_d    « spec
-      = 75 kN / cos(30°)
+  [21] F_s_nom = F_v/(cos θ·cos β)    « spec
+      = 75 kN / (cos 30° × cos 5°)
+      = 86.933 kN
+        Sling force on each lug, untilted
+  [22] F_s = F_s,nom    « spec
+      = no tilt case
+      = 86.933 kN
+        Sling force on each lug (resultant), governing case
+  [23] F_ip = F_s·cos β    « spec
+      = 86.933 kN × cos β
       = 86.603 kN
-        Sling force on each lug (resultant)
-  [24] F_ip = F_s·cos β_d    « spec
-      = 86.603 kN × cos(5°)
-      = 86.273 kN
-        In-plane component of the sling force
-  [25] F_op = F_s·sin β_d    « spec
-      = 86.603 kN × sin(5°)
-      = 7.5479 kN
-        Out-of-plane component of the sling force
-  [26] N_beam = F_v·tan θ_d    « spec
+        In-plane component of the sling force (envelope)
+  [24] F_op = F_s·sin β    « spec
+      = 86.933 kN × sin β
+      = 7.5767 kN
+        Out-of-plane component of the sling force (envelope)
+  [25] N_beam = F_v·tan θ    « spec
       = 75 kN × tan(30°)
       = 43.301 kN
-        Horizontal sling component per lug (axial force in a spreader beam)
-  [28] M_op = F_op·h    « spec
-      = 7.5479 kN × 150 mm
-      = 1.1322 kN·m
+        Horizontal sling component per lug (axial force in a spreader beam, envelope)
+  [27] M_op = F_op·h    « spec
+      = 7.5767 kN × 150 mm
+      = 1.1365 kN·m
         Out-of-plane moment at the weld or base
-  [29] be_eff = min(b_e, R − D_h/2)    « spec
+  [28] side = min(b_e, R − D_h/2)    « spec
       = min(35, 65 − 50/2) mm
       = 35 mm
-        Effective edge distance used
-  [30] a_eff = a, or R − D_h/2    « spec
+        Edge distance on each side of the hole
+  [29] a_eff = a, or R − D_h/2    « spec
       = 65 − 50/2 mm
       = 40 mm
-        Edge distance along the load line
-  [31] phi = 55·D_p/D_h (degrees)    « BTH-1 3-3.3
+        End distance along the load line
+  [30] phi = 55·D_p/D_h (degrees)    « BTH-1 3-3.3
       = 55 × 45 / 50
       = 49.5 deg
         Angle of the shear planes
-  [32] A_t = 2·t·b_e,eff    « spec
-      = 2 × 20 × 35 mm
-      = 1400 mm²
+  [31] be_eff = min(b_e,eff, 4t, 0.6·(f_u/f_y)·√(D_h/b_e,eff)·b_e,eff)    « BTH-1 3-3.3
+      = min(35, 80, 33.231) mm
+      = 33.231 mm
+        Effective width beyond the hole in tension
+  [32] A_t = 2·t·b_e,eff    « BTH-1 3-3.3
+      = 2 × 20 × 33.231 mm
+      = 1329.2 mm²
         Area beyond the hole in tension
-  [33] A_net = t·(2R − D_h)    « spec
-      = 20 × (2 × 65 − 50) mm
-      = 1600 mm²
-        Net section across the hole (single plane)
-  [34] A_v = 2·t·[a + (D_h/2)(1 − cos φ)]    « BTH-1 3-3.3
-      = 2 × 20 × [40 + (50/2) × (1 − cos 49.5°)] mm
-      = 1950.6 mm²
+  [33] A_fr = (1.13·a + 0.92·b_e/(1 + b_e/D_h))·t    « BTH-1 3-3.3
+      = (1.13 × 40 + 0.92 × 35 / (1 + 35/50)) × 20 mm
+      = 1282.8 mm²
+        Single-plane fracture area beyond the hole (before C_r)
+  [34] A_v = 2·t·[a + (D_p/2)(1 − cos φ)]    « BTH-1 3-3.3
+      = 2 × 20 × [40 + (45/2) × (1 − cos 49.5°)] mm
+      = 1915.5 mm²
         Shear area of the two shear-out planes
   [35] A_b = D_p·t    « spec
       = 45 × 20 mm
@@ -114,131 +116,128 @@ Sling force: F_v = WLL/n_eff (n_eff = n_lugs, at most 3); θ_d = θ (+6° for a 
       = 1 − 0.275 × √(1 − (45/50)²)
       = 0.88013
         Pin-clearance factor
-  [37] Fy_a = f_y/n_y    « spec
-      = 355 MPa / 1.6
-      = 221.88 MPa
-        Allowable stress on yield
-  [38] Fu_a = f_u/n_u    « spec
-      = 470 MPa / 2.2
+  [37] Fa = min(f_y/n_y, f_u/n_u)    « spec
+      = min(355 / 1.6, 470 / 2.2) MPa
       = 213.64 MPa
-        Allowable stress on ultimate
-  [39] D_bth = N_d·k_svc·F_s    « BTH-1 3-3.3
-      = 1.8 × 1 × 86.603 kN
-      = 155.88 kN
+        Allowable stress
+  [38] D_bth = N_d·k_svc·F_s    « BTH-1 3-3.3
+      = 1.8 × 1 × 86.933 kN
+      = 156.48 kN
         Design load on each lug
-  [40] P_t = C_r·F_y,a·A_t    « BTH-1 3-3.3
-      = 0.88013 × 221.88 MPa × 1400 mm²
-      = 273.39 kN
+  [39] P_t = C_r·F_a·A_t    « BTH-1 3-3.3
+      = 0.88013 × 213.64 MPa × 1329.2 mm²
+      = 249.93 kN
         Tension beyond the hole
-  [41] P_sp = C_r·F_u,a·A_net    « BTH-1 3-3.3
-      = 0.88013 × 213.64 MPa × 1600 mm²
-      = 300.84 kN
-        Single-plane fracture of the net section
-  [42] P_v = (F_y,a/√3)·A_v    « BTH-1 3-3.3
-      = (221.88 MPa / √3) × 1950.6 mm²
-      = 249.86 kN
+  [40] P_sp = C_r·F_a·A_fr    « BTH-1 3-3.3
+      = 0.88013 × 213.64 MPa × 1282.8 mm²
+      = 241.21 kN
+        Single-plane fracture beyond the hole
+  [41] P_v = F_a·A_v/√3    « BTH-1 3-3.3
+      = 213.64 MPa × 1915.5 mm² / √3
+      = 236.26 kN
         Double-plane shear-out
-  [43] P_b = k_b·F_y,a·A_b    « BTH-1 3-3.3
-      = 1.2 × 221.88 MPa × 900 mm²
-      = 239.62 kN
+  [42] P_b = k_b·F_a·A_b    « BTH-1 3-3.3
+      = 1.2 × 213.64 MPa × 900 mm²
+      = 230.73 kN
         Pin bearing
-  [44] u_t = D/P    « BTH-1 3-3.3
-      = 155.88 kN / 273.39 kN
-      = 0.57019
+  [43] u_t = D/P    « BTH-1 3-3.3
+      = 156.48 kN / 249.93 kN
+      = 0.62609
         Utilisation, tension beyond the hole
-  [45] u_sp = D/P    « BTH-1 3-3.3
-      = 155.88 kN / 300.84 kN
-      = 0.51816
+  [44] u_sp = D/P    « BTH-1 3-3.3
+      = 156.48 kN / 241.21 kN
+      = 0.64874
         Utilisation, single-plane fracture
-  [46] u_v = D/P    « BTH-1 3-3.3
-      = 155.88 kN / 249.86 kN
-      = 0.62388
+  [45] u_v = D/P    « BTH-1 3-3.3
+      = 156.48 kN / 236.26 kN
+      = 0.66231
         Utilisation, double-plane shear
-  [47] u_b = D/P    « BTH-1 3-3.3
-      = 155.88 kN / 239.62 kN
-      = 0.65054
+  [46] u_b = D/P    « BTH-1 3-3.3
+      = 156.48 kN / 230.73 kN
+      = 0.6782
         Utilisation, bearing
-  [48] u_bth = max(u_t, u_sp, u_v, u_b)    « BTH-1 3-3.3
+  [47] u_bth = max(u_t, u_sp, u_v, u_b)    « BTH-1 3-3.3
       = governing BTH-1 section
-      = 0.65054
+      = 0.6782
         BTH-1 utilisation
-  [49] cap_bth = WLL/u_bth    « BTH-1 3-3.3
-      = 150 kN / 0.65054
-      = 230.58 kN
+  [48] cap_bth = WLL/u_bth    « BTH-1 3-3.3
+      = 150 kN / 0.6782
+      = 221.17 kN
         Rated load the lug carries by the BTH-1 approach
-  [51] dish = D_h/t    « BTH-1 3-3.3
+  [50] dish = D_h/t    « spec
       = 50 / 20
       = 2.5
         Dishing ratio
-  [52] u_dish = (D_h/t)/dish_max    « BTH-1 3-3.3
+  [51] u_dish = (D_h/t)/dish_max    « spec
       = 2.5 / 40
       = 0.0625
         Dishing-ratio utilisation
-  [53] lug_util = max over the modes used    « spec
+  [52] lug_util = max over the modes used    « spec
       = governing lug section
-      = 0.65054
+      = 0.6782
         Governing lug utilisation
-  [54] capacity = WLL/lug_util    « spec
-      = 150 kN / 0.65054
-      = 230.58 kN
+  [53] capacity = WLL/lug_util    « spec
+      = 150 kN / 0.6782
+      = 221.17 kN
         Rated load the lug carries in the governing mode
-  [55] util = max(lug_util, u_beam, u_dish)    « spec
-      = max(0.65054, 0, 0.0625)
-      = 0.65054
+  [54] util = max(lug_util, u_beam, u_dish)    « spec
+      = max(0.6782, 0, 0.0625)
+      = 0.6782
         Governing utilisation of the lug and the spreader
-  [57] proof_load = k_proof·WLL    « spec
+  [56] proof_load = k_proof·WLL    « spec
       = 1.5 × 150 kN
       = 225 kN
         Proof-load value
 
 5. RESULTS
   governing_mode = "BTH-1: bearing"    Governing mode and section
-  capacity = 230.58 kN    Rated load the lug carries in the governing mode
-  util = 0.65054    Governing utilisation of the lug and the spreader
-  lug_util = 0.65054    Governing lug utilisation
-  cap_bth = 230.58 kN    Capacity, BTH-1 mode
-  u_bth = 0.65054    Utilisation, BTH-1 mode
-  F_s = 86.603 kN    Sling force on each lug
-  F_ip = 86.273 kN    In-plane component
-  F_op = 7.5479 kN    Out-of-plane component
+  capacity = 221.17 kN    Rated load the lug carries in the governing mode
+  util = 0.6782    Governing utilisation of the lug and the spreader
+  lug_util = 0.6782    Governing lug utilisation
+  cap_bth = 221.17 kN    Capacity, BTH-1 mode
+  u_bth = 0.6782    Utilisation, BTH-1 mode
+  F_s = 86.933 kN    Sling force on each lug
+  F_ip = 86.603 kN    In-plane component
+  F_op = 7.5767 kN    Out-of-plane component
   N_beam = 43.301 kN    Horizontal component per lug
-  M_op = 1.1322 kN·m    Out-of-plane moment
-  be_eff = 35 mm    Effective edge distance used
-  a_eff = 40 mm    Edge distance along the load line
+  M_op = 1.1365 kN·m    Out-of-plane moment
+  side = 35 mm    Edge distance on each side of the hole
+  be_eff = 33.231 mm    Effective width beyond the hole
+  a_eff = 40 mm    End distance along the load line
   Cr = 0.88013    Pin-clearance factor C_r
   phi = 49.5 deg    Shear-plane angle φ
-  A_v = 1950.6 mm²    Shear area
-  A_t = 1400 mm²    Tension area beyond the hole
-  A_net = 1600 mm²    Net section
+  A_v = 1915.5 mm²    Shear area
+  A_t = 1329.2 mm²    Tension area beyond the hole
+  A_fr = 1282.8 mm²    Fracture area beyond the hole
   A_b = 900 mm²    Bearing area
-  Fy_a = 221.88 MPa    Allowable stress on yield
-  Fu_a = 213.64 MPa    Allowable stress on ultimate
-  D_bth = 155.88 kN    Design load on each lug
-  P_t = 273.39 kN    Tension beyond the hole
-  P_sp = 300.84 kN    Single-plane fracture
-  P_v = 249.86 kN    Double-plane shear
-  P_b = 239.62 kN    Bearing
-  u_t = 0.57019    Utilisation, tension
-  u_sp = 0.51816    Utilisation, fracture
-  u_v = 0.62388    Utilisation, shear
-  u_b = 0.65054    Utilisation, bearing
+  Fa = 213.64 MPa    Allowable stress
+  D_bth = 156.48 kN    Design load on each lug
+  P_t = 249.93 kN    Tension beyond the hole
+  P_sp = 241.21 kN    Single-plane fracture
+  P_v = 236.26 kN    Double-plane shear
+  P_b = 230.73 kN    Bearing
+  u_t = 0.62609    Utilisation, tension
+  u_sp = 0.64874    Utilisation, fracture
+  u_v = 0.66231    Utilisation, shear
+  u_b = 0.6782    Utilisation, bearing
   dish = 2.5    Dishing ratio
   u_dish = 0.0625    Dishing utilisation
   proof_load = 225 kN    Proof-load value
-  sheet_notice = "This is a design calculation, not a thorough examination. It does not replace the thorough examination by a competent person (LOLER reg 9) or the marking, testing and certification that the regulations require."    Status of this sheet
-  checklist = "(1) mark the appliance with its rated load and a unique identification (LOLER reg 7); (2) thorough examination by a competent person before first use and at the intervals required (LOLER reg 9) — this sheet is not one; (3) proof load 225 kN, test certificate where the route requires it; (4) material certificates for the lug plate and the pin, and weld procedure and inspection records for the lug welds; (5) pin, shackle and sling ratings at least 86.603 kN at 30° (PUWER reg 4); (6) record the design basis: mode, Design Category, service class and the user records used; (7) keep the report of the thorough examination with the appliance."    Marking and certification checklist
+  sheet_notice = "This is a design calculation, not a thorough examination. It does not replace the thorough examination by a competent person (LOLER reg 9) or the marking, testing and certification that the regulations require. Signatures are not authenticated by TempestOS: the signed-in names of the author, the checkers and the competent person are as entered into this installation."    Status of this sheet
+  checklist = "(1) mark the appliance with its rated load and a unique identification (LOLER reg 7); (2) thorough examination by a competent person before first use and at the intervals required (LOLER reg 9) — this sheet is not one; (3) proof load 225 kN, test certificate where the route requires it; (4) material certificates for the lug plate and the pin, and weld procedure and inspection records for the lug welds; (5) pin, shackle and sling ratings at least 86.933 kN (PUWER reg 4); (6) record the design basis: mode, Design Category, service class and the user records used; (7) keep the report of the thorough examination with the appliance."    Marking and certification checklist
 
 6. CHECKS (governing first)
-  PASS  BTH-1: bearing: u_b = 0.65054 vs u_b ≤ 1  utilisation 0.651  « BTH-1 3-3.3
-  PASS  BTH-1: double-plane shear: u_v = 0.62388 vs u_v ≤ 1  utilisation 0.624  « BTH-1 3-3.3
-  PASS  BTH-1: tension beyond the hole: u_t = 0.57019 vs u_t ≤ 1  utilisation 0.57  « BTH-1 3-3.3
-  PASS  BTH-1: single-plane fracture: u_sp = 0.51816 vs u_sp ≤ 1  utilisation 0.518  « BTH-1 3-3.3
-  PASS  BTH-1: dishing ratio: u_dish = 0.0625 vs u_dish ≤ 1  utilisation 0.0625  « BTH-1 3-3.3
+  PASS  BTH-1: bearing: u_b = 0.6782 vs u_b ≤ 1  utilisation 0.678  « BTH-1 3-3.3
+  PASS  BTH-1: double-plane shear: u_v = 0.66231 vs u_v ≤ 1  utilisation 0.662  « BTH-1 3-3.3
+  PASS  BTH-1: single-plane fracture: u_sp = 0.64874 vs u_sp ≤ 1  utilisation 0.649  « BTH-1 3-3.3
+  PASS  BTH-1: tension beyond the hole: u_t = 0.62609 vs u_t ≤ 1  utilisation 0.626  « BTH-1 3-3.3
+  PASS  BTH-1: dishing ratio: u_dish = 0.0625 vs u_dish ≤ 1  utilisation 0.0625  « spec
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: f_y, f_u (Material properties); Nd (Design factor and service-class factor); n_y, n_u, k_b (Allowable-stress divisors and bearing multiple); dish_max, k_proof (Dishing limit and proof-load factor). Enter each as one so its source, edition and licence travel with it.
   WARNING k-svc: k_svc: no service-class factor entered, 1.0 used; enter it from your own copy of the code if it applies.
+  WARNING be-eff: be: the effective width 33.231 mm is below the edge distance 35 mm (limited to 4t and by f_u/f_y), so the tension area uses the smaller.
 
 8. VERIFICATION
-  Template: struct.lifting@1.0.0
+  Template: struct.lifting@1.1.0
   Known-answer cases passed: 5/5

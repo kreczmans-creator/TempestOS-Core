@@ -88,7 +88,7 @@ public sealed class LiftingLugTests
     [InlineData("f_u", 1401, "MPa")]
     [InlineData("Nd", 0.9, "")]
     [InlineData("Nd", 5.1, "")]
-    [InlineData("n_y", 3.1, "")]
+    [InlineData("n_y", 4.1, "")]
     [InlineData("k_b", 0.4, "")]
     [InlineData("k_proof", 3.5, "")]
     [InlineData("A_beam", 0.5, "cm^2")]
@@ -131,27 +131,71 @@ public sealed class LiftingLugTests
     }
 
     [Fact]
-    public void The_S106_Case_Is_Unconfirmed_And_Secondary_And_Says_What_Is_Not_Pinned()
+    public void The_S106_Case_Is_Secondary_Confirmed_And_Pins_All_Six_Published_Values()
     {
-        var s106 = Lug.Template.TestCases.Single(c => c.Id == "ka-pdhonline-s106-ratio");
-        Assert.Equal(CalcReferenceStatus.Unconfirmed, s106.Status);
+        var s106 = Lug.Template.TestCases.Single(c => c.Id == "ka-pdhonline-s106");
         Assert.True(s106.Source.Secondary);
-        Assert.Contains("NOT pinned", s106.Source.Location, StringComparison.Ordinal);
+        Assert.Equal(CalcReferenceStatus.Confirmed, s106.Status);
         Assert.Contains("checked against the owner's copy", s106.Source.Location, StringComparison.Ordinal);
+        Assert.Equal(["A_v", "Cr", "P_b", "P_sp", "P_t", "P_v", "phi"], s106.Expected.Select(e => e.Symbol).Order().ToArray());
 
-        // The analytic cases are confirmed.
-        Assert.All(Lug.Template.TestCases.Where(c => c.Id != s106.Id), c => Assert.Equal(CalcReferenceStatus.Confirmed, c.Status));
-        Assert.True(Lug.Template.TestCases.Count(c => c.Status == CalcReferenceStatus.Confirmed) >= 2);
+        // The six published values, to the rounding of the published three decimals.
+        var published = new Dictionary<string, double> { ["Cr"] = 0.78, ["phi"] = 33, ["A_v"] = 2.964, ["P_t"] = 25.448, ["P_b"] = 10.875, ["P_v"] = 19.849, ["P_sp"] = 20.539 };
+
+        foreach (var e in s106.Expected)
+            Assert.Equal(published[e.Symbol], e.Value);
+
+        // Run on the published inputs: every value matches without the test-case tolerance helping more than the rounding of the course notes.
+        var r = CalcRunner.Run(Lug, new CalcInputSet(s106.Inputs));
+        Assert.False(r.IsBlocked);
+        Assert.Equal(11.6, r.OutputSi("Fa") / 6.894757293168361e6, 1e-9);
+        Assert.Equal(25.448, r.OutputSi("P_t") / 4448.2216152605, 6e-4);
+        Assert.Equal(20.539, r.OutputSi("P_sp") / 4448.2216152605, 6e-4);
+        Assert.Equal(19.849, r.OutputSi("P_v") / 4448.2216152605, 6e-4);
+        Assert.Equal(10.875, r.OutputSi("P_b") / 4448.2216152605, 6e-4);
+
+        // The other analytic cases are confirmed and are not secondary.
+        Assert.All(Lug.Template.TestCases.Where(c => c.Id != s106.Id), c =>
+        {
+            Assert.Equal(CalcReferenceStatus.Confirmed, c.Status);
+            Assert.False(c.Source.Secondary);
+        });
     }
 
     [Fact]
-    public void Shear_Out_Uses_The_Two_Planes_At_Phi_And_Grows_With_The_Pin_Ratio()
+    public void Shear_Out_Uses_The_Pin_Radius_And_The_Two_Planes_At_Phi_And_Grows_With_The_Pin_Ratio()
     {
-        // A_v = 2·t·[a + (D_h/2)(1 − cos φ)], φ = 55·D_p/D_h: a larger pin opens the planes and adds area.
+        // A_v = 2·t·[e + (D_p/2)(1 − cos φ)], φ = 55·D_p/D_h, e the end distance (here R − D_h/2 = 40 mm): a larger pin opens the planes and adds area.
         var small = Run(Q("Dp", 30, "mm")).OutputSi("A_v");
         var large = Run(Q("Dp", 50, "mm")).OutputSi("A_v");
         Assert.True(large > small);
         Assert.Equal(2 * 20 * (40 + 25 * (1 - Math.Cos(Math.PI * 55 / 180))), large * 1e6, 1e-6);
+        Assert.Equal(2 * 20 * (40 + 15 * (1 - Math.Cos(Math.PI * 33 / 180))), small * 1e6, 1e-6);
+    }
+
+    [Fact]
+    public void The_Single_Plane_Fracture_Is_The_Section_Beyond_The_Hole_Not_The_Net_Section_Across_It()
+    {
+        var r = Run();
+        Assert.Null(r.FindOutput("A_net"));
+        var side = 35.0;
+        Assert.Equal((1.13 * 40 + 0.92 * side / (1 + side / 50)) * 20, r.OutputSi("A_fr") * 1e6, 1e-6);
+        var cr = r.OutputSi("Cr");
+        Assert.Equal(cr * r.OutputSi("Fa") * r.OutputSi("A_fr"), r.OutputSi("P_sp"), r.OutputSi("P_sp") * 1e-12);
+    }
+
+    [Fact]
+    public void The_Effective_Width_Is_Limited_By_4t_And_By_The_Strength_Ratio()
+    {
+        // t = 10 mm: 4t = 40 mm caps a 60 mm edge distance (the plate is wide enough: R = 100).
+        var thin = Run(Q("t", 10, "mm"), Q("R", 100, "mm"), Q("be", 60, "mm"), Q("a", 50, "mm"));
+        Assert.Equal(40, thin.OutputSi("be_eff") * 1e3, 9);
+        Assert.Equal(2 * 10 * 40, thin.OutputSi("A_t") * 1e6, 6);
+        Assert.Contains(thin.Warnings, w => w.RuleId == "be-eff");
+
+        // The third limit, 0.6·(f_u/f_y)·√(D_h/b)·b, is below b here (f_u = f_y, a wide edge distance).
+        var strength = Run(Q("t", 40, "mm"), Q("R", 200, "mm"), Q("be", 120, "mm"), Q("f_y", 355, "MPa"), Q("f_u", 355, "MPa"));
+        Assert.Equal(0.6 * Math.Sqrt(50.0 / 120) * 120, strength.OutputSi("be_eff") * 1e3, 9);
     }
 
     [Fact]
@@ -205,18 +249,59 @@ public sealed class LiftingLugTests
     }
 
     [Fact]
-    public void A_Horizontal_Beam_Adds_The_Automatic_Six_Degree_Tilt_To_Both_Angles()
+    public void The_Sling_Force_Includes_Both_Angles_And_Is_Not_Understated_By_The_Out_Of_Plane_Angle()
     {
-        var plain = Run(Choice("mode", LiftingLugCalculator.ModeEn));
-        var beam = Run(Choice("mode", LiftingLugCalculator.ModeEn), CalcInputValue.Switch("beam", true));
-        var fV = 75.0;
-        Assert.Equal(fV / Math.Cos(30 * Math.PI / 180), Kn(plain, "F_s"), 9);
-        Assert.Equal(fV / Math.Cos(36 * Math.PI / 180), Kn(beam, "F_s"), 9);
-        Assert.Equal(fV * Math.Tan(36 * Math.PI / 180), Kn(beam, "N_beam"), 9);
-        Assert.Equal(Kn(beam, "F_s") * Math.Sin(11 * Math.PI / 180), Kn(beam, "F_op"), 9);
+        var r = Run(Choice("mode", LiftingLugCalculator.ModeEn), Q("theta", 30, "deg"), Q("beta", 30, "deg"));
+        var expected = 75 / (Math.Cos(30 * Math.PI / 180) * Math.Cos(30 * Math.PI / 180));
+        Assert.Equal(expected, Kn(r, "F_s"), 9);
+        Assert.Equal(expected * Math.Cos(30 * Math.PI / 180), Kn(r, "F_ip"), 9);
+        Assert.Equal(expected * Math.Sin(30 * Math.PI / 180), Kn(r, "F_op"), 9);
+        Assert.Equal(75 * Math.Tan(30 * Math.PI / 180), Kn(r, "N_beam"), 9);
+        // The vertical component is the load on the lug.
+        Assert.Equal(75, Kn(r, "F_s") * Math.Cos(30 * Math.PI / 180) * Math.Cos(30 * Math.PI / 180), 9);
+    }
+
+    [Fact]
+    public void A_Horizontal_Beam_Adds_The_Automatic_Pitch_And_Roll_Tilt_Cases()
+    {
+        var plain = Run(Choice("mode", LiftingLugCalculator.ModeEn), Q("beta", 0, "deg"));
+        var beam = Run(Choice("mode", LiftingLugCalculator.ModeEn), CalcInputValue.Switch("beam", true), Q("beta", 0, "deg"));
+        const double fv = 75.0;
+        var th = 30 * Math.PI / 180;
+        var tau = 6 * Math.PI / 180;
+        Assert.Equal(fv / Math.Cos(th), Kn(plain, "F_s"), 9);
+
+        // Pitch: the slings at θ ± 6° meet at the hook, so the sling at θ − 6° carries 2·F_v·sin(θ + 6°)/sin 2θ.
+        var pitch = 2 * fv * Math.Sin(th + tau) / Math.Sin(2 * th);
+        Assert.Equal(pitch, Kn(beam, "F_s_pitch"), 9);
+        Assert.Equal(pitch, Kn(beam, "F_s"), 9);
+        Assert.Equal(fv / (Math.Cos(th) * Math.Cos(tau)), Kn(beam, "F_s_roll"), 9);
+        Assert.True(Kn(beam, "F_s_pitch") > Kn(beam, "F_s_roll"));
+        Assert.Equal(Math.Max(fv * Math.Tan(th), 2 * fv * Math.Sin(th + tau) * Math.Sin(th - tau) / Math.Sin(2 * th)), Kn(beam, "N_beam"), 9);
         Assert.True(beam.OutputSi("u_en") > plain.OutputSi("u_en"));
         Assert.Contains(beam.Warnings, w => w.RuleId == "tilt");
         Assert.DoesNotContain(plain.Warnings, w => w.RuleId == "tilt");
+    }
+
+    [Fact]
+    public void The_Pitch_Redistribution_Matches_Statics_Of_Two_Slings_Meeting_At_The_Hook()
+    {
+        // Slings at θ + 6° and θ − 6°: equal and opposite horizontal components, vertical components carrying the whole load.
+        var beam = Run(Choice("mode", LiftingLugCalculator.ModeEn), CalcInputValue.Switch("beam", true), Q("WLL", 200, "kN"), Q("beta", 0, "deg"));
+        const double th = 30, tau = 6;
+        var heavy = Kn(beam, "F_s_pitch");
+        var lightSling = heavy * Math.Sin((th - tau) * Math.PI / 180) / Math.Sin((th + tau) * Math.PI / 180);
+        Assert.Equal(200, heavy * Math.Cos((th - tau) * Math.PI / 180) + lightSling * Math.Cos((th + tau) * Math.PI / 180), 8);
+        // The beam compression is the envelope: the horizontal components of the pitched slings are equal, and the untilted one is larger here.
+        Assert.Equal(Math.Max(heavy * Math.Sin((th - tau) * Math.PI / 180), 100 * Math.Tan(th * Math.PI / 180)), Kn(beam, "N_beam"), 8);
+    }
+
+    [Fact]
+    public void A_Sling_Angle_No_More_Than_The_Tilt_Puts_The_Whole_Load_On_One_Lug_With_A_Warning()
+    {
+        var r = Run(Choice("mode", LiftingLugCalculator.ModeEn), CalcInputValue.Switch("beam", true), Q("theta", 5, "deg"), Q("beta", 0, "deg"));
+        Assert.Equal(150, Kn(r, "F_s_pitch"), 9);
+        Assert.Contains(r.Warnings, w => w.RuleId == "tilt" && w.Message.Contains("whole load", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -287,8 +372,8 @@ public sealed class LiftingLugTests
     {
         var r = Run(Q("be", 60, "mm"));
         Assert.Contains(r.Warnings, w => w.RuleId == "be");
-        Assert.Equal(40.0 * 1.0, r.OutputSi("a_eff") * 1e3 * 1.0, 9);
-        Assert.Equal(2 * 20 * 40.0, r.OutputSi("A_t") * 1e6, 6);
+        Assert.Equal(40, r.OutputSi("side") * 1e3, 9);
+        Assert.Equal(40, r.OutputSi("a_eff") * 1e3, 9);
     }
 
     [Fact]
