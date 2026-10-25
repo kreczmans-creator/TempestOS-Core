@@ -1,0 +1,204 @@
+[
+  {
+    "Symbol": "PS",
+    "Number": 230,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-12: accumulator relief setting 230 bar gauge (vessel PS; illustrative, to be replaced by the nameplate)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "230"
+  },
+  {
+    "Symbol": "T_c",
+    "Number": 20,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Charged in the workshop at 20 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "T_max",
+    "Number": 50,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-12: oil temperature limit 50 \u00B0C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "T_min",
+    "Number": 30,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Oil temperature range assumed 30 to 50 \u00B0C in service (invented for this example); the gas is coldest at 30 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
+  },
+  {
+    "Symbol": "dV",
+    "Number": 14,
+    "Unit": "L",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-12: clamp stroke plus leakage make-up, 14 L per cycle",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "14"
+  },
+  {
+    "Symbol": "f_rg",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Ideal gas; the highest pressure is just above 200 bar, so the sheet warns.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "mode",
+    "Text": "Energy storage",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Slow clamp-and-hold cycle: stored-energy duty.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Energy storage"
+  },
+  {
+    "Symbol": "n",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Isothermal: the clamp holds for minutes between cycles.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "p_0",
+    "Number": 90,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-12: pre-charge 90 bar at the maximum oil temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "90"
+  },
+  {
+    "Symbol": "p_1",
+    "Number": 100,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-12: lowest clamp pressure 100 bar",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "p_2",
+    "Number": 210,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-12: pump cut-out 210 bar",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "210"
+  },
+  {
+    "Symbol": "p_atm",
+    "Number": 1.01325,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Standard atmosphere, derived constant.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.01325"
+  },
+  {
+    "Symbol": "p_basis",
+    "Text": "Absolute",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Pressures entered as absolute bar, as the source numbers are quoted.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Absolute"
+  },
+  {
+    "Symbol": "r_0",
+    "Number": 0.9,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: accumulator pre-charge rules (bladder type), to be taken from the manufacturer\u0027s guide",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.9"
+  },
+  {
+    "Symbol": "r_p",
+    "Number": 4,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: accumulator pre-charge rules (bladder type), to be taken from the manufacturer\u0027s guide",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  },
+  {
+    "Symbol": "sizes",
+    "Rows": [
+      {
+        "Cells": {
+          "V": {
+            "Number": 10,
+            "Unit": "L"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "V": {
+            "Number": 20,
+            "Unit": "L"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "V": {
+            "Number": 32,
+            "Unit": "L"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "V": {
+            "Number": 50,
+            "Unit": "L"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: illustrative size list invented for this example, to be replaced by the manufacturer\u0027s range",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4 row(s)"
+  }
+]

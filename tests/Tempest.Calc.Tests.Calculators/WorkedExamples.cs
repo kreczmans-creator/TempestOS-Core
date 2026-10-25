@@ -18,6 +18,7 @@ public static class WorkedExamples
         .. Structural.StructuralWorkedExamples.All,
         .. BuildingServices.BuildingServicesWorkedExamples.All,
         .. Electrical.ElectricalWorkedExamples.All,
+        .. FluidPower.FluidPowerWorkedExamples.All,
     ];
 
     public static TheoryData<string> Keys => [.. All.Select(e => e.TemplateId + "/" + e.Slug)];
@@ -31,6 +32,7 @@ public static class WorkedExamples
         var discipline = AllCalculators.Get(e.TemplateId).Template.Discipline switch
         {
             CalcDiscipline.BuildingServices => "building-services",
+            CalcDiscipline.FluidPower => "fluid-power",
             var d => d.ToString().ToLowerInvariant(),
         };
 

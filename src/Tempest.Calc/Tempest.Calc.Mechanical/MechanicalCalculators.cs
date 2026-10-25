@@ -16,5 +16,6 @@ public static class MechanicalCalculators
         new BearingLifeCalculator(),
         new WeldGroupCalculator(),
         new ShaftCalculator(),
+        new SpringCalculator(),
     ];
 }
