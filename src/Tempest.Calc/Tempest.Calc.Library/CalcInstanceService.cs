@@ -735,6 +735,10 @@ public sealed partial class CalcInstanceService
         if (instance.IsLegacyArchive)
             return (null, LegacyMessage(instance));
 
+        // A calculation the worksheet surface withholds (its feature is switched off) is not shown through Compare either.
+        if (FeatureRefusal(instance.TemplateReference) is { } switchedOff)
+            return (null, switchedOff);
+
         if (instance.PredecessorId is not { } predecessorId)
             return (null, $"Calculation '{instance.Name}' rev {instance.Revision} has no earlier revision to compare with; compare it with another calculation of the same template instead.");
 
@@ -750,6 +754,10 @@ public sealed partial class CalcInstanceService
 
         if (before is null || after is null)
             return (null, $"No calculation '{(before is null ? beforeId : afterId)}' exists.");
+
+        // Compare shows the stored inputs and outputs, which the worksheet surface refuses to show for a switched-off template (ADR-0173).
+        if ((FeatureRefusal(before.TemplateReference) ?? FeatureRefusal(after.TemplateReference)) is { } switchedOff)
+            return (null, switchedOff);
 
         return Compared(before, after);
     }

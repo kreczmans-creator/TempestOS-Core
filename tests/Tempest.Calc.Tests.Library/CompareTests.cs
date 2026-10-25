@@ -61,6 +61,46 @@ public sealed class CompareTests
         Assert.Contains("exists", (await host.Service.CompareAsync(issued.Id, Guid.NewGuid())).Reason, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("struct.lifting")]
+    [InlineData("mech.lifting-lug")]
+    public async Task A_Calculation_Whose_Template_Is_Switched_Off_Is_Not_Compared(string id)
+    {
+        // Merge review finding 5: the worksheet surface refuses to show a withheld calculation, so Compare must not show its stored figures either.
+        ICalcCalculator calculator = id == "struct.lifting" ? new Tempest.Calc.Structural.LiftingLugCalculator() : new Tempest.Calc.Mechanical.LiftingLugCalculator();
+        var on = new LibraryTestHost(calculators: [calculator], features: new CalcFeatureFlags([CalcFeatures.Lifting]));
+        var project = await on.ProjectAsync();
+        var basis = CalcProvenance.Assumed("Worked inputs of the test case.");
+        var inputs = calculator.Template.TestCases[0].Inputs.Select(v => v with { Provenance = basis }).ToList();
+        var first = await on.Service.CreateAsync(id, project, "Lug A", inputs);
+        var second = await on.Service.CreateAsync(id, project, "Lug B", inputs);
+        var live = await on.Service.CreateAsync("test.direct-stress", project, "Live", LibraryTestHost.ProvenancedInputs());
+
+        // With the feature on the two compare.
+        Assert.Null((await on.Service.CompareAsync(first.Id, second.Id)).Reason);
+
+        // The same store, seen by an installation that has the feature off.
+        var offCatalogue = new CalcCatalogue([on.Catalogue.Get("test.direct-stress").Calculator, calculator]);
+        var off = new CalcInstanceService(offCatalogue, on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => on.Principal };
+        var refusal = offCatalogue.FeatureRefusal(id);
+        Assert.NotNull(refusal);
+
+        var (comparison, reason) = await off.CompareAsync(first.Id, second.Id);
+        Assert.Null(comparison);
+        Assert.Equal(refusal, reason);
+
+        // Either side being withheld is enough, and the live calculation alone still compares with itself.
+        Assert.Equal(refusal, (await off.CompareAsync(first.Id, live.Id)).Reason);
+        Assert.Equal(refusal, (await off.CompareAsync(live.Id, second.Id)).Reason);
+        Assert.Null((await off.CompareAsync(live.Id, live.Id)).Reason);
+
+        // And the route through the predecessor: a revision written into the store around the service, as a later revise would leave it.
+        var revision = second with { Id = Guid.NewGuid(), Name = "Lug A rev B", PredecessorId = first.Id, Revision = "B", UpdatedAt = second.UpdatedAt.AddSeconds(1) };
+        await on.Store.SaveInstanceAsync(revision);
+        Assert.Null((await on.Service.CompareWithPredecessorAsync(revision.Id)).Reason);
+        Assert.Equal(refusal, (await off.CompareWithPredecessorAsync(revision.Id)).Reason);
+    }
+
     [Fact]
     public async Task Different_Templates_And_Legacy_Archives_Are_Not_Compared()
     {
