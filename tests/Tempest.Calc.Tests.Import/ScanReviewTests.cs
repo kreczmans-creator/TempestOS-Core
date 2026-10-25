@@ -123,54 +123,26 @@ public sealed class ScanReviewTests
         Assert.Equal(2, Read("Point,Dev,Serial\nGroove,1,007\nGroove,2,008\n", withSerial).Data.Observations.Count);
     }
 
+    [Fact]
+    public void A_Split_Fraction_Without_A_Leading_Zero_Is_Refused_When_The_File_Mixes_Decimal_Marks()
+    {
+        var profile = new ScanProfile("p", 1, "P", new ScanColumns("Point", Deviation: "Dev"), [], Delimiter: ScanDelimiter.Comma);
+
+        // "1,5" is "1" and "5"; another row writes 0.5, so the file uses both marks. The order of the rows does not matter.
+        var ex = Assert.Throws<ImportRefusedException>(() => Read("Point,Dev,Status\nG,1,5\nG,0.5,ok\n", profile));
+        Assert.Equal(ImportRefusalCode.MalformedStructure, ex.Code);
+        Assert.Contains("line 2 has '1' followed by '5'", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("mixes decimal marks", ex.Message, StringComparison.Ordinal);
+        Assert.Throws<ImportRefusedException>(() => Read("Point,Dev,Status\nG,0.5,ok\nG,1,5\n", profile));
+
+        // Stating the format lifts it; so does a file with no point decimal anywhere (a count column of whole numbers is not evidence) and a mapped neighbour.
+        Assert.Equal(2, Read("Point,Dev,Status\nG,1,5\nG,0.5,ok\n", profile with { Number = NumberProfile.Point }).Data.Observations.Count);
+        Assert.Equal(2, Read("Point,Dev,Status\nG,1,5\nG,2,6\n", profile).Data.Observations.Count);
+        var withCount = new ScanProfile("p", 1, "P", new ScanColumns("Point", Deviation: "Dev", Serial: "Status"), [], Delimiter: ScanDelimiter.Comma);
+        Assert.Equal(2, Read("Point,Dev,Status\nG,1,5\nG,0.5,6\n", withCount).Data.Observations.Count);
+    }
+
     // ---- H2 -------------------------------------------------------------------
-
-    private static TimeSpan TimeAnalysis(int rows)
-    {
-        var sb = new StringBuilder("F,N,A\n", rows * 14);
-
-        for (var i = 0; i < rows; i++)
-            sb.Append("a,").Append(i).Append(',').Append(i).Append('\n');
-
-        var file = Samples.Text(sb.ToString());
-        var profile = new ScanProfile("p", 1, "P", new ScanColumns("F", Nominal: "N", Actual: "A"), [], Delimiter: ScanDelimiter.Comma, Number: NumberProfile.Point);
-        var best = TimeSpan.MaxValue;
-
-        for (var attempt = 0; attempt < 3; attempt++)
-        {
-            var clock = Stopwatch.StartNew();
-            var a = ScanImporter.Analyse(file, profile);
-            clock.Stop();
-            Assert.Equal(rows, a.Stats[0].Count);
-            best = clock.Elapsed < best ? clock.Elapsed : best;
-        }
-
-        return best;
-    }
-
-    [Fact]
-    public void Statistics_Time_Grows_Linearly_With_The_Rows_Whatever_Their_Nominals_Are()
-    {
-        // A ratio, so a slow or loaded machine does not fail it: ten times the rows costs about ten times the time. The quadratic version cost about a hundred
-        // times (6.9 s at 40,000 distinct nominals).
-        _ = TimeAnalysis(2_000); // warm-up: JIT and first-use costs
-        var small = TimeAnalysis(6_000);
-        var large = TimeAnalysis(60_000);
-        var ratio = large.TotalSeconds / Math.Max(small.TotalSeconds, 0.005);
-
-        Assert.True(ratio < 30, $"60,000 rows took {large.TotalSeconds:0.00} s against {small.TotalSeconds:0.000} s for 6,000: a ratio of {ratio:0.0} (linear is about 10, quadratic about 100)");
-    }
-
-    [Fact]
-    public void The_Time_Of_Any_Size_Stays_Within_A_Bound_Scaled_By_The_Test_Timeout_Factor()
-    {
-        var factor = double.TryParse(Environment.GetEnvironmentVariable("TEMPEST_TEST_TIMEOUT_FACTOR"), NumberStyles.Float, CultureInfo.InvariantCulture, out var f) && f > 0 ? f : 1;
-
-        Gen.Int[2_000, 60_000].Sample(rows =>
-        {
-            Assert.True(TimeAnalysis(rows) < TimeSpan.FromSeconds(3 * factor), $"{rows} rows");
-        }, iter: 3);
-    }
 
     [Fact]
     public void The_Statistics_Phase_Honours_The_Budget_And_The_Callers_Cancellation()

@@ -253,6 +253,12 @@ public static class ScanImporter
 
         public HashSet<int> Mapped { get; } = [];
 
+        /// <summary>Some row writes a number with a decimal point (the file uses the point as its decimal mark at least somewhere).</summary>
+        public bool SawPoint { get; set; }
+
+        /// <summary>The first row whose number is a whole number followed, in a column nothing is mapped to, by bare digits (a fraction without a leading zero, "1,5" split in two).</summary>
+        public string? SplitSuspect { get; set; }
+
         public long Values { get; set; }
 
         public long WholeValues { get; set; }
@@ -338,6 +344,11 @@ public static class ScanImporter
         if (profile.HeaderRow > run.RowIndex)
             throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"{file.FileName}: the profile '{profile.Label}' expects the header on row {profile.HeaderRow}, but the table has only {run.RowIndex} row(s).");
 
+        // A file that writes a point decimal in one row and, in another, a whole number followed by bare digits in an unmapped column mixes decimal marks: the second
+        // is a decimal comma split in two ("1,5"). The leading-zero form is refused row by row; this one needs the whole file, so it is decided here.
+        if (run.SplitSuspect is not null && run.SawPoint)
+            throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"{file.FileName}: {run.SplitSuspect}, yet other rows write a decimal point, so the file mixes decimal marks. That looks like a decimal comma split by the comma delimiter. State the number format in the profile (decimal comma with a semicolon or tab delimiter, or decimal point to confirm) to import this table. Nothing was imported.");
+
         // A comma-separated table whose numbers are declared with a decimal point and are all whole numbers is what a decimal-comma export looks like once its
         // commas have been taken as delimiters; the column-count check catches most of these, this catches the rest.
         // Unless the number format was stated this is a block, not a hint: a person lifts it by declaring the decimal format in the profile.
@@ -375,8 +386,20 @@ public static class ScanImporter
         {
             foreach (var index in new[] { roles.Nominal, roles.Actual, roles.Deviation, roles.Upper, roles.Lower })
             {
-                if (index >= 0 && index + 1 < row.Count && !run.Mapped.Contains(index + 1) && IsWholeNumberText(row[index]) && IsLeadingZeroDigits(row[index + 1]))
-                    throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"{file.FileName} line {line}: '{row[index].Trim()}' is followed by '{row[index + 1].Trim()}' in a column nothing is mapped to. That looks like a decimal comma ('{row[index].Trim()},{row[index + 1].Trim()}') split by the comma delimiter. State the number format in the profile (decimal comma with a semicolon or tab delimiter, or decimal point to confirm) to import this table. Nothing was imported.");
+                if (index < 0 || index >= row.Count)
+                    continue;
+
+                if (row[index].Contains('.', StringComparison.Ordinal))
+                    run.SawPoint = true;
+
+                if (index + 1 < row.Count && !run.Mapped.Contains(index + 1) && IsWholeNumberText(row[index]))
+                {
+                    if (IsLeadingZeroDigits(row[index + 1]))
+                        throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"{file.FileName} line {line}: '{row[index].Trim()}' is followed by '{row[index + 1].Trim()}' in a column nothing is mapped to. That looks like a decimal comma ('{row[index].Trim()},{row[index + 1].Trim()}') split by the comma delimiter. State the number format in the profile (decimal comma with a semicolon or tab delimiter, or decimal point to confirm) to import this table. Nothing was imported.");
+
+                    if (run.SplitSuspect is null && IsBareDigits(row[index + 1]))
+                        run.SplitSuspect = $"line {line} has '{row[index].Trim()}' followed by '{row[index + 1].Trim()}' in a column nothing is mapped to";
+                }
             }
         }
 
@@ -547,6 +570,12 @@ public static class ScanImporter
         if (t.Length > 0 && t[0] is '+' or '-')
             t = t[1..];
 
+        return t.Length > 0 && t.Length <= 15 && !t.ContainsAnyExceptInRange('0', '9');
+    }
+
+    private static bool IsBareDigits(string text)
+    {
+        var t = text.AsSpan().Trim();
         return t.Length > 0 && t.Length <= 15 && !t.ContainsAnyExceptInRange('0', '9');
     }
 
