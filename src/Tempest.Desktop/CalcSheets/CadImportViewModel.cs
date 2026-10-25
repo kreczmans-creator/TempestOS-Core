@@ -4,6 +4,7 @@ using Tempest.Calc.Import.Cad;
 using Tempest.Calc.Import.Mapping;
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
+using Tempest.Core.Logging;
 
 namespace Tempest.Desktop.CalcSheets;
 
@@ -28,6 +29,7 @@ public sealed class CadImportViewModel
     private const int MaxNoticeLines = 20;
 
     private readonly CalcInstanceService _service;
+    private readonly ILogger? _logger;
     private ImportedFile? _file;
     private CadImportPreview? _preview;
     private CadSourceFormat? _format;
@@ -37,7 +39,13 @@ public sealed class CadImportViewModel
     private int _operation;
     private bool _applying;
 
-    public CadImportViewModel(CalcInstanceService service) => _service = service ?? throw new ArgumentNullException(nameof(service));
+    /// <param name="service">The calculation service the import runs through.</param>
+    /// <param name="logger">The host's logger; one Information line per step (file name, size, hash prefix, counts, refusal code), never a value read from the file (GR-B-02). Null logs nothing.</param>
+    public CadImportViewModel(CalcInstanceService service, ILogger? logger = null)
+    {
+        _service = service ?? throw new ArgumentNullException(nameof(service));
+        _logger = logger;
+    }
 
     /// <summary>Raised (on the UI thread) whenever anything the panel shows has changed.</summary>
     public event Action? Changed;
@@ -193,6 +201,7 @@ public sealed class CadImportViewModel
         catch (ImportRefusedException e)
         {
             _file = null;
+            ImportLog.Info(_logger, "CAD import: file refused", ("file", ImportLog.FileName(fileName)), ("code", e.Code));
             Reset("That file was not read: " + e.Message);
             return;
         }
@@ -205,6 +214,7 @@ public sealed class CadImportViewModel
 
         Formats = CadImporter.CandidatesFor(_file.FileName, _file);
         _format = Formats.Count > 0 ? Formats[0] : null;
+        ImportLog.Info(_logger, "CAD import: file read", ("file", ImportLog.FileName(_file.FileName)), ("bytes", _file.Bytes.Length), ("sha256", ImportLog.HashPrefix(_file.Sha256)), ("formats", Formats.Count));
 
         if (_format is null)
         {
@@ -338,6 +348,9 @@ public sealed class CadImportViewModel
         }
 
         IsBusy = false;
+        ImportLog.Info(
+            _logger, outcome.Action.Succeeded ? "CAD import: applied" : "CAD import: not applied",
+            ("file", ImportLog.FileName(_file.FileName)), ("sha256", ImportLog.HashPrefix(_file.Sha256)), ("changes", outcome.Diff?.Changes.Count ?? 0), ("reasons", outcome.Action.Succeeded ? 0 : outcome.Preview?.Reasons.Count ?? 1));
 
         if (operation != _operation)
             return outcome;
@@ -443,7 +456,20 @@ public sealed class CadImportViewModel
         IsBusy = false;
         _preview = preview;
         Describe(preview);
+        LogPreview(preview);
         Raise();
+    }
+
+    private void LogPreview(CadImportPreview preview)
+    {
+        var rows = preview.Mapping?.Rows;
+        int Count(CadRowStatus status) => rows?.Count(r => r.Status == status) ?? 0;
+
+        ImportLog.Info(
+            _logger, preview.CanApply ? "CAD import: previewed, ready to apply" : "CAD import: previewed, nothing can be imported",
+            ("file", ImportLog.FileName(_file?.FileName)), ("sha256", ImportLog.HashPrefix(_file?.Sha256)),
+            ("mapped", Count(CadRowStatus.Mapped)), ("unmapped", Count(CadRowStatus.Unmapped)), ("expressions", Count(CadRowStatus.Expression)), ("missing", Count(CadRowStatus.Missing)), ("refused", Count(CadRowStatus.Refused)),
+            ("reasons", preview.Reasons.Count), ("fileRefused", preview.Refusal is not null));
     }
 
     private CadParseSettings Settings() => new()

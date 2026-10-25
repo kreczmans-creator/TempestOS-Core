@@ -4,6 +4,7 @@ using Tempest.Calc.Import;
 using Tempest.Calc.Import.Scan;
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
+using Tempest.Core.Logging;
 
 namespace Tempest.Desktop.CalcSheets;
 
@@ -32,6 +33,7 @@ public sealed class ScanImportViewModel
     public const int MaxLines = 200;
 
     private readonly CalcInstanceService _service;
+    private readonly ILogger? _logger;
     private readonly List<ScanChosenFile> _files = [];
     private ScanImportPreview? _preview;
     private ScanProfile? _profile;
@@ -40,7 +42,13 @@ public sealed class ScanImportViewModel
     private bool _applying;
     private string _templateId = string.Empty;
 
-    public ScanImportViewModel(CalcInstanceService service) => _service = service ?? throw new ArgumentNullException(nameof(service));
+    /// <param name="service">The calculation service the import runs through.</param>
+    /// <param name="logger">The host's logger; one Information line per step (file name, size, hash prefix, counts, refusal code), never a value read from the tables (GR-B-02). Null logs nothing.</param>
+    public ScanImportViewModel(CalcInstanceService service, ILogger? logger = null)
+    {
+        _service = service ?? throw new ArgumentNullException(nameof(service));
+        _logger = logger;
+    }
 
     /// <summary>Raised (on the UI thread) whenever anything the panel shows has changed.</summary>
     public event Action? Changed;
@@ -203,6 +211,7 @@ public sealed class ScanImportViewModel
         }
         catch (ImportRefusedException e)
         {
+            ImportLog.Info(_logger, "Scan import: file refused", ("file", ImportLog.FileName(fileName)), ("code", e.Code));
             Fail(operation, "That file was not read: " + e.Message);
             return;
         }
@@ -213,9 +222,12 @@ public sealed class ScanImportViewModel
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException or ObjectDisposedException or InvalidOperationException)
         {
+            ImportLog.Info(_logger, "Scan import: file could not be read", ("file", ImportLog.FileName(fileName)), ("error", e.GetType().Name));
             Fail(operation, "That file could not be read: " + e.Message);
             return;
         }
+
+        ImportLog.Info(_logger, "Scan import: file read", ("file", ImportLog.FileName(file.FileName)), ("bytes", file.Bytes.Length), ("sha256", ImportLog.HashPrefix(file.Sha256)), ("files", _files.Count + 1));
 
         if (operation != _operation)
             return; // a newer read superseded this one
@@ -384,6 +396,7 @@ public sealed class ScanImportViewModel
         catch (Exception e) when (e is not OperationCanceledException)
         {
             _applying = false;
+            ImportLog.Info(_logger, "Scan import: not applied", ("files", _files.Count), ("error", e.GetType().Name));
 
             if (operation == _operation)
                 SetBusy(false, "The import could not be applied: " + e.Message);
@@ -396,6 +409,9 @@ public sealed class ScanImportViewModel
         }
 
         IsBusy = false;
+        ImportLog.Info(
+            _logger, outcome.Action.Succeeded ? "Scan import: applied" : "Scan import: not applied",
+            ("files", _files.Count), ("sha256", string.Join("+", _files.Select(f => ImportLog.HashPrefix(f.Sha256)))), ("changes", outcome.Diff?.Changes.Count ?? 0), ("reasons", outcome.Action.Succeeded ? 0 : outcome.Preview?.Reasons.Count ?? 1));
 
         if (operation != _operation)
             return outcome;
@@ -504,7 +520,21 @@ public sealed class ScanImportViewModel
         IsBusy = false;
         _preview = preview;
         Describe(preview);
+        LogPreview(preview);
         Raise();
+    }
+
+    private void LogPreview(ScanImportPreview preview)
+    {
+        var rows = preview.Mapping?.Rows;
+        int Count(ScanRowStatus status) => rows?.Count(r => r.Status == status) ?? 0;
+
+        ImportLog.Info(
+            _logger, preview.CanApply ? "Scan import: previewed, ready to apply" : "Scan import: previewed, nothing can be imported",
+            ("files", _files.Count), ("sha256", string.Join("+", _files.Select(f => ImportLog.HashPrefix(f.Sha256)))),
+            ("usableRows", preview.Analysis?.Data.Observations.Count ?? 0), ("problems", preview.Analysis?.Data.ProblemCount ?? 0), ("features", preview.Analysis?.Stats.Count ?? 0),
+            ("mapped", Count(ScanRowStatus.Mapped)), ("unmapped", Count(ScanRowStatus.Unmapped)), ("missing", Count(ScanRowStatus.Missing)), ("refused", Count(ScanRowStatus.Refused)),
+            ("reasons", preview.Reasons.Count), ("filesRefused", preview.Refusal is not null));
     }
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
