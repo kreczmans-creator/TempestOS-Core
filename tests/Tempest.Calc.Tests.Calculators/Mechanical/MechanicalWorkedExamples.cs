@@ -306,6 +306,33 @@ public static class MechanicalWorkedExamples
             [new CalcExpectedValue("S_plus_L", 195, "mm", 1e-9), new CalcExpectedValue("P_plus_Q", 240, "mm", 1e-9), new CalcExpectedValue("theta4_0", 93.89091781516997, "deg", 1e-9), new CalcExpectedValue("mu_min", 48.44085240812772, "deg", 1e-7), new CalcExpectedValue("swing", 54.78637184965648, "deg", 1e-6), new CalcExpectedValue("omega_out_pk", 3.5434614270355413, "rad/s", 1e-7), new CalcExpectedValue("output_motion", 0.35434614270355413, "m/s", 1e-7), new CalcExpectedValue("peak_accel", 3.162461003500709, "m/s^2", 1e-7), new CalcExpectedValue("input_torque", 2.265439282238162, "N*m", 1e-7)],
             "A crank-rocker drives a carton flap tucker at 60 cycles a minute. The linkage is Grashof (s + l = 195 mm against p + q = 240 mm), so the 45 mm crank turns fully and the 100 mm rocker swings 54.8°. The transmission angle never falls below 48.4° (the 40° requirement passes at 0.83). With the example flap torque of 4 N·m opposing the rocker and 0.012 kg·m² of arm and blade, the motor must deliver at most 2.27 N·m at the crank, and the blade pin peaks at 0.354 m/s and 3.16 m/s². The torque, mass and the 40° rule are example values marked as assumptions: replace them from the station measurement and your design rules.",
             CalcReferenceStatus.Confirmed),
+        new(MechanismCalculator.Id, "indexing-cam-offset-roller", "Indexing-station cam: offset roller follower, cycloidal rise and 3-4-5 return, 120 rpm",
+            new CalcReferenceSource("Independent python3 recomputation (laws from their closed forms, pitch-curve curvature by a 4th-order finite-difference stencil, peaks by a scan of each segment polished by golden section)", null, "Rise 20 mm cycloidal over 120°, dwell 60°, return 20 mm 3-4-5 over 120°, dwell 60°, 120 rpm, R_b 40 mm, R_r 8 mm, offset +10 mm, follower 0.2 kg, spring 5 N/mm with 20 N preload: v_pk = 2hω/β = 0.24 m/s, a_pk = 4.5239 m/s² (cycloidal rise), j_pk = 259.2 m/s³ (3-4-5 return), F from 20 to 120 N, peak input torque 1.53449 N·m, φ_max 26.5958°, ρ_min 44.6811 mm, smallest base circle for φ ≤ 30° 32.9632 mm"),
+            new CalcInputSet(
+            [
+                CalcInputValue.Choice("mode", MechanismCalculator.CamMode, CalcProvenance.Specification("Indexing station IDX-12 §2", "A")),
+                CalcInputValue.Choice("follower", MechanismCalculator.Roller, CalcProvenance.Drawing("IDX-12-CAM", "A")),
+                CalcInputValue.Quantity("Rb", 40, "mm", CalcProvenance.Drawing("IDX-12-CAM", "A")),
+                CalcInputValue.Quantity("R_r", 8, "mm", CalcProvenance.Drawing("IDX-12-CAM", "A")),
+                CalcInputValue.Quantity("e_off", 10, "mm", CalcProvenance.Drawing("IDX-12-CAM", "A")),
+                CalcInputValue.Quantity("phi_max", 30, "deg", CalcProvenance.Assumed("Usual limit for a translating roller follower; set it from your design rule.")),
+                CalcInputValue.Table("segs",
+                [
+                    MechanismCalculator.Row(MechanismCalculator.Rise, MechanismCalculator.Cycloidal, 120, 20),
+                    MechanismCalculator.Row(MechanismCalculator.Dwell, null, 60, 0),
+                    MechanismCalculator.Row(MechanismCalculator.Return, MechanismCalculator.Poly345, 120, 20),
+                    MechanismCalculator.Row(MechanismCalculator.Dwell, null, 60, 0),
+                ], CalcProvenance.Specification("Indexing station IDX-12 §2.3 motion table", "A")),
+                CalcInputValue.Of("steps", 72, CalcProvenance.Assumed("5° table step.")),
+                CalcInputValue.Quantity("n_in", 120, "rpm", CalcProvenance.Specification("Indexing station IDX-12 §2: 120 index cycles/min", "A")),
+                CalcInputValue.Quantity("m_f", 0.2, "kg", CalcProvenance.Assumed("Example: follower arm, roller and tooling; take it from the CAD mass properties.")),
+                CalcInputValue.Quantity("k_sp", 5, "N/mm", CalcProvenance.Assumed("Example return-spring rate; link the rate k of the M7 spring sheet.")),
+                CalcInputValue.Quantity("F_pre", 20, "N", CalcProvenance.Assumed("Example preload at the base circle; link a force of the M7 spring sheet.")),
+                CalcInputValue.Quantity("F_ext", 0, "N", CalcProvenance.Assumed("No external load on the follower in this example.")),
+            ]),
+            [new CalcExpectedValue("lift", 20, "mm", 1e-9), new CalcExpectedValue("output_motion", 0.24, "m/s", 1e-9), new CalcExpectedValue("peak_accel", 4.523893421169301, "m/s^2", 1e-9), new CalcExpectedValue("j_pk", 259.2, "m/s^3", 1e-9), new CalcExpectedValue("F_min", 20, "N", 1e-9), new CalcExpectedValue("follower_force", 120, "N", 1e-9), new CalcExpectedValue("input_torque", 1.534487469171382, "N*m", 1e-7), new CalcExpectedValue("phi_max_pk", 26.595805687051826, "deg", 1e-7), new CalcExpectedValue("rho_min", 44.68108272683772, "mm", 1e-6), new CalcExpectedValue("Rb_min_phi", 32.96315610207776, "mm", 1e-7)],
+            "A 20 mm index stroke with a cycloidal rise over 120° and a 3-4-5 return over 120°, 60° of dwell at each end, 120 cycles a minute. The offset roller follower peaks at 0.24 m/s and 4.5 m/s²; the 3-4-5 return has the larger jerk (259 m/s³). The pressure angle peaks at 26.6° against the 30° allowed (utilisation 0.89; a 33.0 mm base circle would just reach 30°), the pitch curve's smallest radius of curvature is 44.7 mm against the 8 mm roller (no undercut), and the follower force stays between 20 and 120 N, so the spring keeps the follower on the cam. The follower mass, spring and preload are example values marked as assumptions: replace them from the CAD mass properties and the M7 spring sheet.",
+            CalcReferenceStatus.Confirmed),
     ];
 
     private static CalcInputSet JointInputs(double torque, string method, double workingLoad) => new(

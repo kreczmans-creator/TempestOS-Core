@@ -38,13 +38,19 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         "Grashof: s + l < p + q (crank-rocker, double-crank or double-rocker by the shortest link), = at the change point, > non-Grashof; transmission angle cos μ = (b² + c² − ℓ²)/(2bc) folded to 0 … 90°; toggle where ℓ = b + c or |b − c|\n" +
         "Slider-crank: x = r·cosθ + σ·√(l² − (r·sinθ − e)²) (σ = +1 open, −1 crossed); dx/dθ = −r·sinθ − r·cosθ·(r·sinθ − e)/(x − r·cosθ); dead centres where crank and rod are collinear; μ = 90° − |rod angle to the slide line|\n" +
         "Input torque by virtual work: T_in·ω_in = Σ F·v; four-bar T_in = (T_L + J·α₄)·ω₄/ω₂; slider T_in = (m·a + F_L)·dx/dθ\n" +
-        "Loop closure: |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) asserted below 1e-9 mm at every step",
+        "Loop closure: |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) asserted below 1e-9 mm at every step\n" +
+        "Cam, per segment with x = (θ − θ₀)/β: rise s = s₀ + h·f(x), return s = s₀ − h·f(x); cycloidal f = x − sin(2πx)/(2π); 3-4-5 f = 10x³ − 15x⁴ + 6x⁵; 4-5-6-7 f = 35x⁴ − 84x⁵ + 70x⁶ − 20x⁷; modified trapezoid from its acceleration pieces (C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2))\n" +
+        "Cam SVAJ at constant ω: v = ω·s′, a = ω²·s″, j = ω³·s‴ (′ = d/dθ); peak coefficients C_v = max f′, C_a = max |f″|, C_j = max |f‴|, so v_pk = C_v·h·ω/β\n" +
+        "Pressure angle (roller, offset e, R_p = R_b + R_r): φ = arctan[(s′ − e)/(√(R_p² − e²) + s)], which for e = 0 is arctan[s′/(R_p + s)]; the base circle that holds φ ≤ φ_max has R_p,req = √(s₀,req² + e²) with s₀,req = max(|s′ − e|/tan φ_max − s)\n" +
+        "Radius of curvature of the pitch curve P(θ) = Rot(−θ)·(e, √(R_p² − e²) + s): ρ = |P′|³/(P′ × P″), convex where positive; undercut where ρ_min ≤ R_r (FAIL), none where the curve is nowhere convex; flat-faced follower ρ = R_b + s + s″ must stay positive and the face must reach |s′|\n" +
+        "Cam follower force F = m·a + k·s + F_pre + F_ext (the follower leaves the cam where F < 0); input torque by virtual work T = F·s′ (T·ω = F·v)",
         BuildInputs(),
         [
             new CalcAssumption("Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed.", "Addendum B §B6 M9 limits."),
             new CalcAssumption("The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted.", "Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank."),
             new CalcAssumption("Input torque is by virtual work from the output load and the inertia of the output element only (four-bar: the output link's moment of inertia about its pivot; slider: the slider mass); the crank and the coupler or connecting rod are massless.", "No link-inertia or gravity terms: add the link masses to the output element for a first allowance."),
             new CalcAssumption("The peaks (speeds, accelerations, torque, transmission angle, swing) are those of the continuous motion over the swept range, found by a dense scan refined by golden section; the printed table (steps N, up to 3600) only samples it.", "Peaks do not depend on the table's step count."),
+            new CalcAssumption("Cam: a translating follower on a cam turning at constant speed; the follower mass, a linear return spring (rate and preload at the base circle, for example linked from M7) and a constant external load make the force the cam must apply, F = m·a + k·s + F_pre + F_ext; contact is lost where it falls below zero. The segment table must add to 360° and close; pressure angle and undercut are checked for the roller follower (R_p = R_b + R_r), the positive profile radius for the flat-faced one.", "Norton, Design of Machinery, cam design: the four classical laws, pressure angle and radius of curvature."),
             new CalcAssumption("Follower force (four-bar: the tangential force at the output pin, (T_L + J·α₄)/c; slider: the rod force on the slider, m·a + F_L) is the force the mechanism must apply to the output element.", "Rigid body, frictionless."),
         ],
         [
@@ -61,10 +67,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
             new CalcOutputPort("peak_accel", "m/s^2", "Peak output acceleration: the slider or the follower; for a four-bar the magnitude of the acceleration of the output pin (mech.peak_accel)"),
             new CalcOutputPort("follower_force", "N", "Peak force on the output element: the follower contact force, the slider's driving force, or the tangential force at the output pin (mech.follower_force → M7, F1)"),
         ],
-        RecordKinds:
-        [
-            new CalcRecordKind("mech.spring-link", "Return spring of the cam follower", ["k_sp", "F_pre"], "The spring rate and preload from the spring sheet (M7: rate k and the force at its working point 1), linked rather than retyped."),
-        ]);
+        RecordKinds: null);
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
 
@@ -79,7 +82,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         var list = new List<CalcInputSpec>
         {
             new("mode", "Kind of mechanism", CalcInputKind.Choice, Choices: ModeChoices, DefaultChoice: FourBar, Group: "Mechanism"),
-            new("circuit", "Assembly circuit (four-bar, slider-crank): open is θ₄ = φ − γ (slider on the +x side of the crank pin), crossed the mirror branch", CalcInputKind.Choice, Choices: [Open, Crossed], DefaultChoice: Open, Group: "Mechanism"),
+            new("circuit", "Assembly circuit (four-bar, slider-crank): open is θ₄ = φ − γ (slider on the +x side of the crank pin), crossed the mirror branch", CalcInputKind.Choice, Choices: [Open, Crossed], DefaultChoice: Open, IsOptional: true, Group: "Mechanism"),
             new("L1", "Ground link d, O₂ to O₄ (four-bar)", CalcInputKind.Quantity, "mm", Default: 100, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Links"),
             new("L2", "Crank length a (four-bar) or r (slider-crank)", CalcInputKind.Quantity, "mm", Default: 30, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Links"),
             new("L3", "Coupler length b (four-bar) or connecting-rod length l (slider-crank)", CalcInputKind.Quantity, "mm", Default: 90, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Links"),

@@ -9,6 +9,7 @@ namespace Tempest.Calc.Mechanical;
 public static class MechanismPeaks
 {
     private const double GoldenRatio = 0.6180339887498949;
+    private const int MaxCandidates = 6;
 
     /// <summary>
     /// The largest (or smallest) finite value of <paramref name="f"/> on [lo, hi] and where it occurs, or <see langword="null"/>
@@ -39,20 +40,53 @@ public static class MechanismPeaks
         ArgumentNullException.ThrowIfNull(xs);
         ArgumentNullException.ThrowIfNull(ys);
         ArgumentNullException.ThrowIfNull(around);
-        var best = -1;
+        // Candidates: every sample that is not below (above, for a minimum) its finite neighbours. A periodic sweep has its peak
+        // just before the last sample or just after the first, and the two tie, so every candidate is refined, the best few kept.
+        var candidates = new List<int>();
 
         for (var i = 0; i < ys.Count; i++)
         {
             if (!double.IsFinite(ys[i]))
                 continue;
 
-            if (best < 0 || (max ? ys[i] > ys[best] : ys[i] < ys[best]))
-                best = i;
+            var leftOk = i == 0 || !double.IsFinite(ys[i - 1]) || (max ? ys[i] >= ys[i - 1] : ys[i] <= ys[i - 1]);
+            var rightOk = i == ys.Count - 1 || !double.IsFinite(ys[i + 1]) || (max ? ys[i] >= ys[i + 1] : ys[i] <= ys[i + 1]);
+
+            if (leftOk && rightOk)
+                candidates.Add(i);
         }
 
-        if (best < 0)
+        if (candidates.Count == 0)
             return null;
 
+        if (candidates.Count > MaxCandidates)
+        {
+            var ordered = candidates.OrderBy(i => max ? -ys[i] : ys[i]).ThenBy(i => i).Take(MaxCandidates - 2).ToList();
+
+            if (!ordered.Contains(candidates[0]))
+                ordered.Add(candidates[0]);
+
+            if (!ordered.Contains(candidates[^1]))
+                ordered.Add(candidates[^1]);
+
+            candidates = ordered;
+        }
+
+        (double Value, double At)? result = null;
+
+        foreach (var best in candidates)
+        {
+            var refined = RefineAround(xs, ys, best, around, max);
+
+            if (result is null || (max ? refined.Value > result.Value.Value : refined.Value < result.Value.Value))
+                result = refined;
+        }
+
+        return result;
+    }
+
+    private static (double Value, double At) RefineAround(IReadOnlyList<double> xs, IReadOnlyList<double> ys, int best, Func<int, double, double> around, bool max)
+    {
         var value = ys[best];
         var at = xs[best];
         var left = best > 0 && double.IsFinite(ys[best - 1]) ? xs[best - 1] : xs[best];

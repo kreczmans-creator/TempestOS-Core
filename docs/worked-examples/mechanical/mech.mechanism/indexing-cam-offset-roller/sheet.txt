@@ -1,0 +1,217 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: indexing-cam-offset-roller    Revision: A
+Title: Mechanism kinematics: four-bar, slider-crank, cam
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. SCOPE AND METHOD
+A single-degree-of-freedom planar mechanism driven at constant speed: a four-bar linkage or an offset slider-crank (both circuits, position, velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against a minimum, toggle and dead-centre positions, loop-closure residual, input torque by virtual work), or a cam with a translating follower. Rigid links, no clearance, no friction.
+Four-bar: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂ Grashof: s + l < p + q (crank-rocker, double-crank or double-rocker by the shortest link), = at the change point, > non-Grashof; transmission angle cos μ = (b² + c² − ℓ²)/(2bc) folded to 0 … 90°; toggle where ℓ = b + c or |b − c| Slider-crank: x = r·cosθ + σ·√(l² − (r·sinθ − e)²) (σ = +1 open, −1 crossed); dx/dθ = −r·sinθ − r·cosθ·(r·sinθ − e)/(x − r·cosθ); dead centres where crank and rod are collinear; μ = 90° − |rod angle to the slide line| Input torque by virtual work: T_in·ω_in = Σ F·v; four-bar T_in = (T_L + J·α₄)·ω₄/ω₂; slider T_in = (m·a + F_L)·dx/dθ Loop closure: |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) asserted below 1e-9 mm at every step Cam, per segment with x = (θ − θ₀)/β: rise s = s₀ + h·f(x), return s = s₀ − h·f(x); cycloidal f = x − sin(2πx)/(2π); 3-4-5 f = 10x³ − 15x⁴ + 6x⁵; 4-5-6-7 f = 35x⁴ − 84x⁵ + 70x⁶ − 20x⁷; modified trapezoid from its acceleration pieces (C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2)) Cam SVAJ at constant ω: v = ω·s′, a = ω²·s″, j = ω³·s‴ (′ = d/dθ); peak coefficients C_v = max f′, C_a = max |f″|, C_j = max |f‴|, so v_pk = C_v·h·ω/β Pressure angle (roller, offset e, R_p = R_b + R_r): φ = arctan[(s′ − e)/(√(R_p² − e²) + s)], which for e = 0 is arctan[s′/(R_p + s)]; the base circle that holds φ ≤ φ_max has R_p,req = √(s₀,req² + e²) with s₀,req = max(|s′ − e|/tan φ_max − s) Radius of curvature of the pitch curve P(θ) = Rot(−θ)·(e, √(R_p² − e²) + s): ρ = |P′|³/(P′ × P″), convex where positive; undercut where ρ_min ≤ R_r (FAIL), none where the curve is nowhere convex; flat-faced follower ρ = R_b + s + s″ must stay positive and the face must reach |s′| Cam follower force F = m·a + k·s + F_pre + F_ext (the follower leaves the cam where F < 0); input torque by virtual work T = F·s′ (T·ω = F·v)
+  Ref: Norton, Design of Machinery Ch. 4, 6, 7 — Position, velocity and acceleration analysis; transmission angle; Grashof condition
+  Ref: Uicker, Pennock and Shigley, Theory of Machines and Mechanisms Ch. 4–6 — Loop-closure position analysis; velocity and acceleration of planar linkages
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  mode | Kind of mechanism | Cam |  | spec: Indexing station IDX-12 §2 rev A | any
+  e_off | Offset e: slide line above the crank centre (slider-crank); follower axis offset (cam) | 10 | mm | drawing: IDX-12-CAM rev A | -1000 … 1000 mm
+  steps | Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it) | 72 |  | assumption: 5° table step. | 4 … 720
+  n_in | Input speed (constant) | 120 | rpm | spec: Indexing station IDX-12 §2: 120 index cycles/min rev A | 0.1 … 30000 rpm
+  follower | Follower type: roller (translating, pressure angle and undercut checked) or flat-faced (in-line) | Roller |  | drawing: IDX-12-CAM rev A | any
+  Rb | Base-circle radius of the cam profile R_b | 40 | mm | drawing: IDX-12-CAM rev A | 1 … 1000 mm
+  R_r | Roller radius R_r (roller follower) | 8 | mm | drawing: IDX-12-CAM rev A | 1 … 200 mm
+  phi_max | Maximum pressure angle allowed (roller follower) | 30 | deg | assumption: Usual limit for a translating roller follower; set it from your design rule. | 5 … 45 deg
+  segs | Cam segments: rise, dwell or return, with motion law, angle and lift; the angles add to 360° and the rises equal the returns | 4 row(s) |  | spec: Indexing station IDX-12 §2.3 motion table rev A | any
+  segs[1] |  | kind = Rise; law = Cycloidal; beta = 120 deg; h = 20 mm |  |  | 
+  segs[2] |  | kind = Dwell; law = —; beta = 60 deg; h = 0 mm |  |  | 
+  segs[3] |  | kind = Return; law = 3-4-5 polynomial; beta = 120 deg; h = 20 mm |  |  | 
+  segs[4] |  | kind = Dwell; law = —; beta = 60 deg; h = 0 mm |  |  | 
+  m_f | Follower mass (all moving parts that follow the cam) | 0.2 | kg | assumption: Example: follower arm, roller and tooling; take it from the CAD mass properties. | 0 … 1000 kg
+  k_sp | Return spring rate (link M7 rate k) | 5 | N/mm | assumption: Example return-spring rate; link the rate k of the M7 spring sheet. | 0 … 1000 N/mm
+  F_pre | Spring preload at the base circle (link an M7 force) | 20 | N | assumption: Example preload at the base circle; link a force of the M7 spring sheet. | 0 … 100000 N
+  F_ext | External load on the follower, positive against the rise | 0 | N | assumption: No external load on the follower in this example. | -100000 … 100000 N
+
+3. ASSUMPTIONS
+  A1. Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed. (Addendum B §B6 M9 limits.)
+  A2. The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted. (Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank.)
+  A3. Input torque is by virtual work from the output load and the inertia of the output element only (four-bar: the output link's moment of inertia about its pivot; slider: the slider mass); the crank and the coupler or connecting rod are massless. (No link-inertia or gravity terms: add the link masses to the output element for a first allowance.)
+  A4. The peaks (speeds, accelerations, torque, transmission angle, swing) are those of the continuous motion over the swept range, found by a dense scan refined by golden section; the printed table (steps N, up to 3600) only samples it. (Peaks do not depend on the table's step count.)
+  A5. Cam: a translating follower on a cam turning at constant speed; the follower mass, a linear return spring (rate and preload at the base circle, for example linked from M7) and a constant external load make the force the cam must apply, F = m·a + k·s + F_pre + F_ext; contact is lost where it falls below zero. The segment table must add to 360° and close; pressure angle and undercut are checked for the roller follower (R_p = R_b + R_r), the positive profile radius for the flat-faced one. (Norton, Design of Machinery, cam design: the four classical laws, pressure angle and radius of curvature.)
+  A6. Follower force (four-bar: the tangential force at the output pin, (T_L + J·α₄)/c; slider: the rod force on the slider, m·a + F_L) is the force the mechanism must apply to the output element. (Rigid body, frictionless.)
+  A7. steps (Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it)) is taken as 72. (5° table step.)
+  A8. phi_max (Maximum pressure angle allowed (roller follower)) is taken as 30 deg. (Usual limit for a translating roller follower; set it from your design rule.)
+  A9. m_f (Follower mass (all moving parts that follow the cam)) is taken as 0.2 kg. (Example: follower arm, roller and tooling; take it from the CAD mass properties.)
+  A10. k_sp (Return spring rate (link M7 rate k)) is taken as 5 N/mm. (Example return-spring rate; link the rate k of the M7 spring sheet.)
+  A11. F_pre (Spring preload at the base circle (link an M7 force)) is taken as 20 N. (Example preload at the base circle; link a force of the M7 spring sheet.)
+  A12. F_ext (External load on the follower, positive against the rise) is taken as 0 N. (No external load on the follower in this example.)
+
+4. WORKING
+  [15] theta_sw = θ    « Cam follower kinematics
+      = 73 rows, θ from 0° to 360°
+      = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg
+        Table: cam angle
+  [16] s_sw = s = s₀ + h·f(θ/β)    « Cam follower kinematics
+      = 73 rows, θ from 0° to 360°
+      = [0, 0.0094867, 0.075117, 0.24921, 0.57669, 1.092, 1.8169, 2.7587, 3.91, 5.2492, 6.7418, 8.3428, … (73 items)] mm
+        Table: follower displacement
+  [17] v_sw = v = ω·ds/dθ    « Cam follower kinematics
+      = 73 rows, θ from 0° to 360°
+      = [0, 0.0040889, 0.016077, 0.035147, 0.06, 0.088942, 0.12, 0.15106, 0.18, 0.20485, 0.22392, 0.23591, … (73 items)] m/s
+        Table: follower velocity
+  [18] a_sw = a = ω²·d²s/dθ²    « Cam follower kinematics
+      = 73 rows, θ from 0° to 360°
+      = [0, 1.1709, 2.2619, 3.1989, 3.9178, 4.3697, 4.5239, 4.3697, 3.9178, 3.1989, 2.2619, 1.1709, … (73 items)] m/s²
+        Table: follower acceleration
+  [19] j_sw = j = ω³·d³s/dθ³    « Cam follower kinematics
+      = 73 rows, θ from 0° to 360°
+      = [170.55, 164.74, 147.7, 120.59, 85.273, 44.141, 1.0443e-14, -44.141, -85.273, -120.59, -147.7, -164.74, … (73 items)] m/s³
+        Table: follower jerk
+  [20] phi_sw = φ = arctan[(s′ − e)/(√(R_p² − e²) + s)]    « Cam follower kinematics
+      = 73 rows, θ from 0° to 360°
+      = [-12.025, -11.642, -10.507, -8.6775, -6.2746, -3.4811, -0.52955, 2.3281, 4.8597, 6.8841, 8.2863, 9.0164, … (73 items)] deg
+        Table: pressure angle
+  [21] rho_sw = ρ = 1/κ of the pitch curve (1e6 mm: not convex)    « Cam follower kinematics
+      = 73 rows, θ from 0° to 360°
+      = [48, 56.592, 68.258, 83.507, 101.02, 115.37, 118.72, 109.57, 94.617, 80.311, 69.02, 60.734, … (73 items)] mm
+        Table: radius of curvature of the pitch curve
+  [22] F_sw = F = m·a + k·s + F_pre + F_ext    « Cam follower kinematics
+      = 73 rows, θ from 0° to 360°
+      = [20, 20.282, 20.828, 21.886, 23.667, 26.334, 29.989, 34.667, 40.334, 46.886, 54.161, 61.948, … (73 items)] N
+        Table: follower force on the cam
+  [23] T_in_sw = T = F·ds/dθ    « Virtual work
+      = 73 rows, θ from 0° to 360°
+      = [0, 0.0065993, 0.026647, 0.061213, 0.113, 0.18639, 0.28638, 0.41673, 0.57774, 0.76432, 0.96511, 1.163, … (73 items)] N·m
+        Table: input torque by virtual work
+  [24] seg_start = Σ β of the segments before    « Cam follower kinematics
+      = 4 segments
+      = [0, 120, 180, 300] deg
+        Segments: start angle
+  [25] seg_beta = β    « Cam follower kinematics
+      = 4 segments
+      = [120, 60, 120, 60] deg
+        Segments: angle
+  [26] seg_s_end = s at the end of the segment    « Cam follower kinematics
+      = 4 segments
+      = [20, 20, 0, 0] mm
+        Segments: displacement at the end
+  [27] seg_v_pk = max |v| in the segment    « Cam follower kinematics
+      = 4 segments
+      = [0.24, 0, 0.225, 0] m/s
+        Segments: peak velocity
+  [28] seg_a_pk = max |a| in the segment    « Cam follower kinematics
+      = 4 segments
+      = [4.5239, 0, 4.1569, 0] m/s²
+        Segments: peak acceleration
+  [29] seg_j_pk = max |j| in the segment    « Cam follower kinematics
+      = 4 segments
+      = [170.55, 0, 259.2, 0] m/s³
+        Segments: peak jerk
+  [30] lift = max s    « Cam follower kinematics
+      = over the revolution
+      = 20 mm
+        Greatest follower displacement
+  [31] v_pk = max |v|    « Cam follower kinematics
+      = scan of each segment, refined
+      = 0.24 m/s
+        Peak follower velocity
+  [32] a_pk = max |a|    « Cam follower kinematics
+      = scan of each segment, refined
+      = 4.5239 m/s²
+        Peak follower acceleration
+  [33] j_pk = max |j|    « Cam follower kinematics
+      = scan of each segment, refined
+      = 259.2 m/s³
+        Peak follower jerk
+  [34] F_max = max F    « Cam follower kinematics
+      = scan of each segment, refined
+      = 120 N
+        Greatest follower force on the cam
+  [35] F_min = min F    « Cam follower kinematics
+      = scan of each segment, refined
+      = 20 N
+        Smallest follower force on the cam (negative: the follower leaves the cam)
+  [36] phi_max_pk = max |φ|    « Cam follower kinematics
+      = scan of each segment, refined
+      = 26.596 deg
+        Largest pressure angle
+  [37] Rb_min_phi = R_b that keeps φ at its limit    « Cam follower kinematics
+      = s₀ = max(|s′ − e|/tan φ_max − s), R_p = √(s₀² + e²)
+      = 32.963 mm
+        Smallest base-circle radius that keeps the pressure angle within its limit (roller follower)
+  [38] rho_min = 1/κ_max    « Cam follower kinematics
+      = pitch curve
+      = 44.681 mm
+        Smallest radius of curvature of the pitch curve
+  [39] u_rho = R_r / ρ_min    « Cam follower kinematics
+      = 8 mm / 44.681 mm
+      = 0.17905
+        Roller radius against the smallest radius of curvature (undercut at 1 or more)
+  [40] u_phi = φ_max / φ_allowed    « Cam follower kinematics
+      = 26.596° / 30°
+      = 0.88653
+        Largest pressure angle against the allowed one
+  [41] input_torque = max |F·ds/dθ|    « Virtual work
+      = virtual work, scan of each segment, refined
+      = 1.5345 N·m
+        Peak input torque by virtual work (mech.input_torque)
+  [42] output_motion = max |v|    « Cam follower kinematics
+      = follower
+      = 0.24 m/s
+        Peak follower velocity (mech.output_motion)
+  [43] peak_accel = max |a|    « Cam follower kinematics
+      = follower
+      = 4.5239 m/s²
+        Peak follower acceleration (mech.peak_accel)
+  [44] follower_force = max |F|    « Cam follower kinematics
+      = m·a + k·s + F_pre + F_ext
+      = 120 N
+        Peak follower force on the cam (mech.follower_force)
+
+5. RESULTS
+  theta_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: cam angle
+  s_sw = [0, 0.0094867, 0.075117, 0.24921, 0.57669, 1.092, 1.8169, 2.7587, 3.91, 5.2492, 6.7418, 8.3428, … (73 items)] mm    Table: follower displacement
+  v_sw = [0, 0.0040889, 0.016077, 0.035147, 0.06, 0.088942, 0.12, 0.15106, 0.18, 0.20485, 0.22392, 0.23591, … (73 items)] m/s    Table: follower velocity
+  a_sw = [0, 1.1709, 2.2619, 3.1989, 3.9178, 4.3697, 4.5239, 4.3697, 3.9178, 3.1989, 2.2619, 1.1709, … (73 items)] m/s²    Table: follower acceleration
+  j_sw = [170.55, 164.74, 147.7, 120.59, 85.273, 44.141, 1.0443e-14, -44.141, -85.273, -120.59, -147.7, -164.74, … (73 items)] m/s³    Table: follower jerk
+  phi_sw = [-12.025, -11.642, -10.507, -8.6775, -6.2746, -3.4811, -0.52955, 2.3281, 4.8597, 6.8841, 8.2863, 9.0164, … (73 items)] deg    Table: pressure angle
+  rho_sw = [48, 56.592, 68.258, 83.507, 101.02, 115.37, 118.72, 109.57, 94.617, 80.311, 69.02, 60.734, … (73 items)] mm    Table: radius of curvature of the pitch curve
+  F_sw = [20, 20.282, 20.828, 21.886, 23.667, 26.334, 29.989, 34.667, 40.334, 46.886, 54.161, 61.948, … (73 items)] N    Table: follower force on the cam
+  T_in_sw = [0, 0.0065993, 0.026647, 0.061213, 0.113, 0.18639, 0.28638, 0.41673, 0.57774, 0.76432, 0.96511, 1.163, … (73 items)] N·m    Table: input torque by virtual work
+  seg_start = [0, 120, 180, 300] deg    Segments: start angle
+  seg_beta = [120, 60, 120, 60] deg    Segments: angle
+  seg_s_end = [20, 20, 0, 0] mm    Segments: displacement at the end
+  seg_v_pk = [0.24, 0, 0.225, 0] m/s    Segments: peak velocity
+  seg_a_pk = [4.5239, 0, 4.1569, 0] m/s²    Segments: peak acceleration
+  seg_j_pk = [170.55, 0, 259.2, 0] m/s³    Segments: peak jerk
+  seg_law = "1: rise (Cycloidal); 2: dwell; 3: return (3-4-5 polynomial); 4: dwell"    Segments: kind and motion law
+  lift = 20 mm    Greatest follower displacement
+  v_pk = 0.24 m/s    Peak follower velocity
+  a_pk = 4.5239 m/s²    Peak follower acceleration
+  j_pk = 259.2 m/s³    Peak follower jerk
+  F_max = 120 N    Greatest follower force on the cam
+  F_min = 20 N    Smallest follower force on the cam (negative: the follower leaves the cam)
+  phi_max_pk = 26.596 deg    Largest pressure angle
+  Rb_min_phi = 32.963 mm    Smallest base-circle radius that keeps the pressure angle within its limit (roller follower)
+  rho_min = 44.681 mm    Smallest radius of curvature of the pitch curve
+  u_rho = 0.17905    Roller radius against the smallest radius of curvature
+  u_phi = 0.88653    Largest pressure angle against the allowed one
+  input_torque = 1.5345 N·m    Peak input torque by virtual work (mech.input_torque)
+  output_motion = 0.24 m/s    Peak follower velocity (mech.output_motion)
+  peak_accel = 4.5239 m/s²    Peak follower acceleration (mech.peak_accel)
+  follower_force = 120 N    Peak follower force on the cam (mech.follower_force)
+
+6. CHECKS (governing first)
+  PASS  Pressure angle φ_max within the allowed maximum: u_phi = 0.88653 vs u_phi ≤ 1  utilisation 0.887  « Cam follower kinematics
+  PASS  No undercut: ρ_min of the pitch curve exceeds the roller radius: ρ_min = 44.681 mm vs > 8 mm  utilisation 0  « Cam follower kinematics
+  PASS  Follower stays on the cam: F_min ≥ 0: F_min = 20 N vs ≥ 0 N  utilisation 0  « Cam follower kinematics
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: mech.mechanism@1.0.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 14/14
+  Test run: —
