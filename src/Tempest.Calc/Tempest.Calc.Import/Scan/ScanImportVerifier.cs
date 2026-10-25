@@ -110,47 +110,68 @@ public static class ScanImportVerifier
     }
 
     /// <summary>
-    /// Keeps the records an input still stands on. The new record replaces the earlier one of its key as "the latest", but an earlier record stays while any
-    /// input's scan provenance names its file and profile, so a later import through the same profile does not strip the provenance of values it did not
-    /// rewrite (a multi-file or multi-stage workflow). Records nothing refers to are dropped; at most <paramref name="max"/> are kept, the oldest first to go.
+    /// The import records after <paramref name="latest"/> is added, by the same rule as the CAD import's. A record of the same source (profile) that this import
+    /// supersedes is kept while an input still cites one of its files by hash — a value the new tables no longer hold stays at its last imported value and is
+    /// still backed by the import it came from, and a second stage or file imported later does not strip the first — and dropped once nothing cites it.
+    /// Records of other sources are kept. The list is capped; unreferenced superseded records go first, and the record just added is never the victim.
     /// </summary>
-    public static IReadOnlyList<ScanImportRecord> Merge(IReadOnlyList<ScanImportRecord>? existing, ScanImportRecord latest, IReadOnlyList<CalcInputValue> inputs, int max = 20)
+    public static IReadOnlyList<ScanImportRecord> Merge(IReadOnlyList<ScanImportRecord>? existing, ScanImportRecord latest, IReadOnlyList<CalcInputValue> inputs, int maxRecords = 20)
     {
         ArgumentNullException.ThrowIfNull(latest);
         ArgumentNullException.ThrowIfNull(inputs);
-        var claims = Claims(inputs);
-        var kept = new List<ScanImportRecord>();
+        var referenced = ReferencedHashes(inputs);
+        var list = new List<ScanImportRecord>();
 
-        foreach (var record in existing ?? [])
+        foreach (var old in existing ?? [])
         {
-            if (ReferenceEquals(record, latest))
+            if (ReferenceEquals(old, latest))
                 continue;
 
-            if (claims.Any(c => string.Equals(c.ProfileId, record.ProfileId, StringComparison.Ordinal) && c.ProfileVersion == record.ProfileVersion && record.Features.Any(f => string.Equals(f.SetSha256, c.Sha256, StringComparison.Ordinal))))
-                kept.Add(record);
+            if (!string.Equals(old.Key, latest.Key, StringComparison.Ordinal))
+                list.Add(old);
+            else if (Hashes(old).Overlaps(referenced) && !Hashes(old).SetEquals(Hashes(latest)))
+                list.Add(old);
         }
 
-        kept.Add(latest);
-        return kept.Count > max ? kept.Skip(kept.Count - max).ToList() : kept;
+        list.Add(latest);
+
+        while (list.Count > maxRecords)
+        {
+            var newest = list.GroupBy(r => r.Key, StringComparer.Ordinal).Select(g => g.MaxBy(r => r.ImportedAt)!).ToHashSet();
+            var others = list.Where(r => !ReferenceEquals(r, latest)).OrderBy(r => r.ImportedAt).ToList();
+            var victim = others.FirstOrDefault(r => !newest.Contains(r) && !Hashes(r).Overlaps(referenced))
+                ?? others.FirstOrDefault(r => !Hashes(r).Overlaps(referenced))
+                ?? others.FirstOrDefault(r => !newest.Contains(r))
+                ?? others[0];
+            list.Remove(victim);
+        }
+
+        return list;
     }
 
-    private static List<ScanImportProvenanceInfo> Claims(IEnumerable<CalcInputValue> inputs)
+    /// <summary>The latest record of a source (the one a re-import is compared with).</summary>
+    public static ScanImportRecord? Latest(IReadOnlyList<ScanImportRecord>? records, string key) =>
+        records?.Where(r => string.Equals(r.Key, key, StringComparison.Ordinal)).MaxBy(r => r.ImportedAt);
+
+    private static HashSet<string> Hashes(ScanImportRecord record) => record.Features.Select(f => f.SetSha256).ToHashSet(StringComparer.Ordinal);
+
+    private static HashSet<string> ReferencedHashes(IEnumerable<CalcInputValue> inputs)
     {
-        var claims = new List<ScanImportProvenanceInfo>();
+        var hashes = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var input in inputs)
         {
             if (ScanImportProvenance.TryParse(input.Provenance) is { } info)
-                claims.Add(info);
+                hashes.Add(info.Sha256);
 
             foreach (var cell in (input.Rows ?? []).SelectMany(r => r?.Cells.Values ?? []))
             {
                 if (ScanImportProvenance.TryParse(cell?.Provenance) is { } cellInfo)
-                    claims.Add(cellInfo);
+                    hashes.Add(cellInfo.Sha256);
             }
         }
 
-        return claims;
+        return hashes;
     }
 
     private static bool Holds(CalcProvenance provenance, string path, IReadOnlyList<ScanImportRecord>? records, double? number, string? unit, string? text, double? currentK)

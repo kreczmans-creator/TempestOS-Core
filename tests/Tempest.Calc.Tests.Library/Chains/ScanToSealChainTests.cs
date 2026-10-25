@@ -323,47 +323,143 @@ public sealed class ScanToSealChainTests
         Assert.Null((await host.Store.FindInstanceAsync(stack.Id))!.ScanImports);
     }
 
+    private static CalcInputValue Input(CalcInstance instance, string symbol) => instance.Inputs.Single(i => i.Symbol == symbol);
+
+    private static CalcCell Cell(CalcInstance instance, string table, int row, string column) => Input(instance, table).Rows![row].Get(column)!;
+
+    private static IReadOnlyList<CalcInputValue> EditCell(IReadOnlyList<CalcInputValue> inputs, int row, string column, Func<CalcCell, CalcCell> change) =>
+        inputs.Select(i => i.Symbol != "contributors" ? i : i with
+        {
+            Rows = i.Rows!.Select((r, n) => n != row ? r : new CalcRow(new Dictionary<string, CalcCell>(r.Cells) { [column] = change(r.Cells[column]) })).ToList(),
+        }).ToList();
+
     [Fact]
-    public async Task Scan_Provenance_Is_A_Claim_That_Is_Checked_An_Edited_Or_Forged_Value_Is_Refused_And_An_Unchanged_One_Is_Kept()
+    public async Task Scan_Provenance_Is_A_Claim_That_Is_Checked_An_Edited_Or_Forged_Value_Becomes_A_Manual_Entry_With_The_Reason()
     {
         var host = Host();
         var (stack, _) = await BuildAsync(host);
         var imported = (await host.Service.ApplyScanImportAsync(stack.Id, Request(Table(), StackProfile()))).Action.Instance!;
 
-        // Saving the imported inputs as they are is fine, and an input the import did not touch can be edited.
+        // Saving the imported inputs as they are keeps every claim, and an input the import did not touch can be edited.
         var resave = await host.Service.UpdateInputsAsync(stack.Id, imported.Inputs);
         Assert.True(resave.Succeeded, resave.Reason);
-        var other = imported.Inputs.Select(i => i.Symbol == "minimum" ? i with { Number = 51.3 } : i).ToList();
-        Assert.True((await host.Service.UpdateInputsAsync(stack.Id, other)).Succeeded);
+        Assert.True(string.IsNullOrEmpty(resave.Reason));
+        Assert.Equal(CalcProvenanceKind.ScanImport, Cell(resave.Instance!, "contributors", 0, "upper").Provenance!.Kind);
+        Assert.True((await host.Service.UpdateInputsAsync(stack.Id, imported.Inputs.Select(i => i.Symbol == "minimum" ? i with { Number = 51.3 } : i).ToList())).Succeeded);
 
-        // Changing a fitted number but keeping its claim is refused, naming the place.
-        var edited = imported.Inputs.Select(i => i.Symbol != "contributors" ? i : i with
-        {
-            Rows = i.Rows!.Select((r, n) => n != 0 ? r : new CalcRow(new Dictionary<string, CalcCell>(r.Cells) { ["upper"] = r.Get("upper")! with { Number = 0.5 } })).ToList(),
-        }).ToList();
-        var refused = await host.Service.UpdateInputsAsync(stack.Id, edited);
-        Assert.False(refused.Succeeded);
-        Assert.Contains("'contributors[0].upper' claims to be fitted from a scan", refused.Reason, StringComparison.Ordinal);
+        // Changing a fitted number but keeping its claim: saved, but that cell is a manual entry now and the person is told which.
+        var edited = await host.Service.UpdateInputsAsync(stack.Id, EditCell(imported.Inputs, 0, "upper", c => c with { Number = 0.5 }));
+        Assert.True(edited.Succeeded, edited.Reason);
+        Assert.Contains("Scan-import provenance was removed from 'contributors[0].upper'", edited.Reason, StringComparison.Ordinal);
+        Assert.Equal(CalcProvenanceKind.Manual, Cell(edited.Instance!, "contributors", 0, "upper").Provenance!.Kind);
+        Assert.Equal(0.5, Cell(edited.Instance!, "contributors", 0, "upper").Number);
+        Assert.Equal(CalcProvenanceKind.ScanImport, Cell(edited.Instance!, "contributors", 0, "lower").Provenance!.Kind);
 
-        // Choosing the kind by hand, with a reference copied from another value, is refused too.
-        var copied = imported.Inputs.Single(i => i.Symbol == "contributors").Rows![0].Get("upper")!.Provenance!;
-        var forged = imported.Inputs.Select(i => i.Symbol == "maximum" ? i with { Provenance = copied } : i).ToList();
-        Assert.Contains("'maximum' claims", (await host.Service.UpdateInputsAsync(stack.Id, forged)).Reason, StringComparison.Ordinal);
+        // The kind chosen by hand with a reference copied from another value, and a made-up one: both lose the claim.
+        var copied = Cell(imported, "contributors", 0, "upper").Provenance!;
+        var forged = await host.Service.UpdateInputsAsync(stack.Id, imported.Inputs.Select(i => i.Symbol == "maximum" ? i with { Provenance = copied } : i).ToList());
+        Assert.Contains("'maximum'", forged.Reason, StringComparison.Ordinal);
+        Assert.Equal(CalcProvenanceKind.Manual, Input(forged.Instance!, "maximum").Provenance!.Kind);
+        var made = await host.Service.UpdateInputsAsync(stack.Id, imported.Inputs.Select(i => i.Symbol == "maximum" ? i with { Provenance = new CalcProvenance(CalcProvenanceKind.ScanImport, "scan:made up", "p@1") } : i).ToList());
+        Assert.Equal(CalcProvenanceKind.Manual, Input(made.Instance!, "maximum").Provenance!.Kind);
 
-        var malformed = imported.Inputs.Select(i => i.Symbol == "maximum" ? i with { Provenance = new CalcProvenance(CalcProvenanceKind.ScanImport, "scan:made up", "p@1") } : i).ToList();
-        Assert.Contains("not well formed", (await host.Service.UpdateInputsAsync(stack.Id, malformed)).Reason, StringComparison.Ordinal);
+        // Free text of the reference rewritten (a claim of 300 parts): the whole provenance must be the one written.
+        var rewritten = await host.Service.UpdateInputsAsync(stack.Id, EditCell(imported.Inputs, 0, "upper", c => c with { Provenance = c.Provenance! with { Reference = c.Provenance.Reference!.Replace("S001..S010 (n=10)", "S001..S300 (n=300)", StringComparison.Ordinal) } }));
+        Assert.Equal(CalcProvenanceKind.Manual, Cell(rewritten.Instance!, "contributors", 0, "upper").Provenance!.Kind);
 
-        // A new calculation cannot cite an import it never had.
-        await Assert.ThrowsAsync<CalcLinkRefusedException>(() => host.Service.CreateAsync(ToleranceStackCalculator.Id, null, "Forged", imported.Inputs));
+        // A claim on the whole table is never honoured; a hand-typed row cannot borrow one.
+        var wholeTable = await host.Service.UpdateInputsAsync(stack.Id, imported.Inputs.Select(i => i.Symbol == "contributors" ? i with { Provenance = copied, Rows = [.. i.Rows!, CalcRow.Of(("nominal", new CalcCell(1, "mm")), ("upper", new CalcCell(0.1, "mm", Provenance: copied)))] } : i).ToList());
+        Assert.Equal(CalcProvenanceKind.Manual, Input(wholeTable.Instance!, "contributors").Provenance!.Kind);
+        Assert.Equal(CalcProvenanceKind.Manual, Cell(wholeTable.Instance!, "contributors", 2, "upper").Provenance!.Kind);
 
-        // Overriding a fitted value is allowed with another source.
-        var overridden = imported.Inputs.Select(i => i.Symbol != "contributors" ? i : i with
-        {
-            Rows = i.Rows!.Select((r, n) => n != 0 ? r : new CalcRow(new Dictionary<string, CalcCell>(r.Cells) { ["upper"] = new CalcCell(0.5, "mm", Provenance: CalcProvenance.Assumed("measured on a different day")) })).ToList(),
-        }).ToList();
-        Assert.True((await host.Service.UpdateInputsAsync(stack.Id, overridden)).Succeeded);
+        // A new calculation has no import record, so it cannot cite one.
+        var created = await host.Service.CreateAsync(ToleranceStackCalculator.Id, null, "Copied", imported.Inputs);
+        Assert.Equal(CalcProvenanceKind.Manual, Cell(created, "contributors", 0, "upper").Provenance!.Kind);
 
-        // A re-import is accepted against the new record, and a second profile's cells do not break the first's.
+        // Overriding a fitted value is allowed with another source; a re-import is accepted against the new record.
+        var overridden = await host.Service.UpdateInputsAsync(stack.Id, EditCell(imported.Inputs, 0, "upper", c => new CalcCell(0.5, "mm", Provenance: CalcProvenance.Assumed("measured on a different day"))));
+        Assert.Equal(CalcProvenanceKind.Assumption, Cell(overridden.Instance!, "contributors", 0, "upper").Provenance!.Kind);
         Assert.True((await host.Service.ApplyScanImportAsync(stack.Id, Request(Table(0.01), StackProfile()))).Action.Succeeded);
+    }
+
+    [Fact]
+    public async Task The_Measured_Sigma_Goes_Into_M1_Itself_So_Changing_K_Later_Neither_Moves_It_Nor_Costs_The_Claim()
+    {
+        var host = Host();
+        var (stack, _) = await BuildAsync(host);
+        var imported = (await host.Service.ApplyScanImportAsync(stack.Id, Request(Table(), StackProfile()))).Action.Instance!;
+
+        Assert.Equal(0.006236095644623894, Cell(imported, "contributors", 0, "sigma").Number!.Value, 12);
+        Assert.Equal(3 * 0.006236095644623894, Cell(imported, "contributors", 0, "upper").Number!.Value, 12);
+
+        // k from 3 to 6: the plating (band/k) halves its sigma, the scanned groove root keeps its measured sigma; both claims survive the save.
+        var sixK = await host.Service.UpdateInputsAsync(stack.Id, imported.Inputs.Select(i => i.Symbol == "k" ? i with { Number = 6 } : i).ToList());
+        Assert.True(sixK.Succeeded, sixK.Reason);
+        Assert.True(string.IsNullOrEmpty(sixK.Reason));
+        Assert.Equal(CalcProvenanceKind.ScanImport, Cell(sixK.Instance!, "contributors", 0, "sigma").Provenance!.Kind);
+        Assert.Equal(Math.Sqrt(0.006236095644623894 * 0.006236095644623894 + (0.002 / 6) * (0.002 / 6)) / 1000, ChainKit.Si(sixK.Instance!, "sigma"), 12);
+    }
+
+    [Fact]
+    public async Task A_Table_That_Came_From_A_Scan_Is_Issuable_Only_While_Every_Number_In_It_Has_A_Verified_Source()
+    {
+        var host = Host();
+        var (_, gland) = await BuildAsync(host);
+        var imported = (await host.Service.ApplyScanImportAsync(gland.Id, Request(Table(), SealProfile()))).Action.Instance!;
+        var template = new ORingGlandCalculator().Template;
+
+        // An import gives the whole table no provenance of its own; its cells stand for it.
+        Assert.Null(Input(imported, "measured").Provenance);
+        Assert.DoesNotContain(CalcInputValidator.ValidateProvenanceForIssue(template, new CalcInputSet(imported.Inputs)), n => n.Message.StartsWith("measured", StringComparison.Ordinal));
+
+        // A value edited afterwards loses its scan source (the verifier), so the table is blocked like any input without a source.
+        var edited = imported.Inputs.Select(i => i.Symbol != "measured" ? i : i with
+        {
+            Rows = i.Rows!.Select((r, n) => n != 0 ? r : new CalcRow(new Dictionary<string, CalcCell>(r.Cells) { ["mean"] = r.Cells["mean"] with { Number = 56.9 } })).ToList(),
+        }).ToList();
+        var saved = await host.Service.UpdateInputsAsync(gland.Id, edited);
+        Assert.True(saved.Succeeded, saved.Reason);
+        Assert.Contains(CalcInputValidator.ValidateProvenanceForIssue(template, new CalcInputSet(saved.Instance!.Inputs)), n => n.Message.StartsWith("measured", StringComparison.Ordinal));
+
+        // A hand-typed row is blocked too.
+        var typed = imported.Inputs.Select(i => i.Symbol != "measured" ? i : i with { Rows = [.. i.Rows!, CalcRow.Of(("dim", new CalcCell(Text: "D_g")), ("mean", new CalcCell(51.5, "mm")), ("sigma", new CalcCell(0.01, "mm")))] }).ToList();
+        Assert.Contains(CalcInputValidator.ValidateProvenanceForIssue(template, new CalcInputSet(typed)), n => n.Message.StartsWith("measured", StringComparison.Ordinal));
+
+        // A table with no scan cells at all and no source is, as before, blocked.
+        var plain = imported.Inputs.Select(i => i.Symbol != "measured" ? i : i with { Rows = [CalcRow.Of(("dim", new CalcCell(Text: "D_s")), ("mean", new CalcCell(56.9, "mm")), ("sigma", new CalcCell(0.01, "mm")))] }).ToList();
+        Assert.Contains(CalcInputValidator.ValidateProvenanceForIssue(template, new CalcInputSet(plain)), n => n.Message.StartsWith("measured", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_Later_Import_Through_The_Same_Profile_Keeps_The_Provenance_Of_Values_It_Did_Not_Rewrite()
+    {
+        var host = Host();
+        var (stack, _) = await BuildAsync(host);
+        var two = new ScanProfile(
+            "seal-two", 1, "Groove root and plating", Columns,
+            [new ScanFeatureEntry("Groove root", "contributors[0]"), new ScanFeatureEntry("Plating", "contributors[1]")],
+            ScanSoftware.ZeissInspect, TemplateId: ToleranceStackCalculator.Id);
+        var plating = "Element,Nominal,Actual,Deviation,Upper tol.,Lower tol.,Serial\r\nPlating,0,0.001,0.001,0.002,-0.002,P1\r\nPlating,0,0.0015,0.0015,0.002,-0.002,P2\r\nPlating,0,0.0005,0.0005,0.002,-0.002,P3\r\n";
+
+        var first = await host.Service.ApplyScanImportAsync(stack.Id, Request(Table(), two));
+        Assert.True(first.Action.Succeeded, first.Action.Reason);
+
+        // The second file holds only the plating: the groove root is not rewritten, and keeps the first file's provenance.
+        var second = await host.Service.ApplyScanImportAsync(stack.Id, Request(plating, two));
+        Assert.True(second.Action.Succeeded, second.Action.Reason);
+        var now = second.Action.Instance!;
+        Assert.Equal(CalcProvenanceKind.ScanImport, Cell(now, "contributors", 0, "upper").Provenance!.Kind);
+        Assert.Equal(CalcProvenanceKind.ScanImport, Cell(now, "contributors", 1, "upper").Provenance!.Kind);
+        Assert.Equal(2, now.ScanImports!.Count);
+        Assert.NotEqual(ScanImportProvenance.TryParse(Cell(now, "contributors", 0, "upper").Provenance)!.Sha256, ScanImportProvenance.TryParse(Cell(now, "contributors", 1, "upper").Provenance)!.Sha256);
+
+        // A later save changes nothing about either claim.
+        var resave = await host.Service.UpdateInputsAsync(stack.Id, now.Inputs);
+        Assert.True(string.IsNullOrEmpty(resave.Reason));
+
+        // Once an import rewrites the first file's values, the first record is dropped (nothing cites it).
+        var third = await host.Service.ApplyScanImportAsync(stack.Id, Request(Table(0.01), two));
+        Assert.True(third.Action.Succeeded, third.Action.Reason);
+        Assert.True(third.Action.Instance!.ScanImports!.Count <= 3);
     }
 }

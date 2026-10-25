@@ -1,7 +1,9 @@
 using System.Globalization;
+using Avalonia.Threading;
 using Tempest.Calc.Import;
 using Tempest.Calc.Import.Scan;
 using Tempest.Calc.Library;
+using Tempest.Calc.Sheets;
 
 namespace Tempest.Desktop.CalcSheets;
 
@@ -15,29 +17,35 @@ public sealed record ScanChosenFile(ScanFileInput Input, string Name, string Sha
 /// Addendum B, W2: the state behind the worksheet form's "Import scan deviations…" action, with no UI in it. Scan tables are read through the
 /// bounded reader (5 MB each, strict UTF-8 or a safe workbook), a stored scan profile is picked, and a preview says what each feature's statistics are,
 /// which features are mapped, refused, unmapped or missing, what was reported in the tables (blank cells, text where a number should be, removed markup),
-/// and what changed since the previous import; Apply then updates the open draft through <see cref="CalcInstanceService.ApplyScanImportAsync"/>.
-/// Nothing is applied while any row is refused.
+/// and what changed since the previous import; Apply then updates the open draft through <see cref="CalcInstanceService.ApplyScanImportAsync"/> — to the
+/// draft as it was previewed: if it changed since, Apply is refused and the import must be previewed again. Nothing is applied while any row is refused.
 /// <para>
-/// Every continuation stays on the caller's context (<c>ConfigureAwait(true)</c>), so <see cref="Changed"/> and <see cref="Applied"/> are raised on the
-/// UI thread whatever stream the picker hands over (a real file stream completes on a pool thread); the CPU-bound parse and fit run on the pool and can be
-/// cancelled with <see cref="Cancel"/> (W1 security review, H4).
+/// Threading: every method is called on the UI thread and continues on it (a picker's stream completes on a pool thread, and the panel sets Avalonia
+/// properties from <see cref="Changed"/>); the events are marshalled to the UI thread whichever thread raised them. The parse and the fit run on the pool
+/// under a token <see cref="Cancel"/> trips. Whatever goes wrong in a read, a preview or an apply (an I/O error from a locked file or a dropped share
+/// included) is reported in <see cref="Status"/> and leaves the model idle, so Apply, Cancel and Close stay usable.
 /// </para>
 /// </summary>
 public sealed class ScanImportViewModel
 {
+    /// <summary>The most lines of each kind shown; the rest are summarised (a table of thousands of features must not become thousands of controls).</summary>
+    public const int MaxLines = 200;
+
     private readonly CalcInstanceService _service;
     private readonly List<ScanChosenFile> _files = [];
     private ScanImportPreview? _preview;
     private ScanProfile? _profile;
-    private CancellationTokenSource? _running;
+    private CancellationTokenSource? _cts;
+    private int _operation;
+    private bool _applying;
     private string _templateId = string.Empty;
 
     public ScanImportViewModel(CalcInstanceService service) => _service = service ?? throw new ArgumentNullException(nameof(service));
 
-    /// <summary>Raised whenever anything the panel shows has changed.</summary>
+    /// <summary>Raised (on the UI thread) whenever anything the panel shows has changed.</summary>
     public event Action? Changed;
 
-    /// <summary>Raised after an import changed the draft, with the updated instance, so the open form can show it.</summary>
+    /// <summary>Raised (on the UI thread) after an import changed the draft, with the updated instance, so the open form can show it.</summary>
     public event Action<CalcInstance>? Applied;
 
     public Guid? InstanceId { get; private set; }
@@ -46,6 +54,7 @@ public sealed class ScanImportViewModel
 
     public IReadOnlyList<ScanChosenFile> Files => _files;
 
+    /// <summary>The profiles offered: the latest version of each that fits this calculation, and the chosen one if it is an older version.</summary>
     public IReadOnlyList<ScanProfile> Profiles { get; private set; } = [];
 
     public ScanProfile? Profile => _profile;
@@ -75,21 +84,25 @@ public sealed class ScanImportViewModel
     /// <summary>What was reported in the tables: blank cells, text where a number should be, markup removed, rows not used.</summary>
     public IReadOnlyList<string> ProblemLines { get; private set; } = [];
 
+    /// <summary>The importer's own warnings about the tables (whole numbers under a comma delimiter, formula cells, …).</summary>
+    public IReadOnlyList<string> NoticeLines { get; private set; } = [];
+
     public IReadOnlyList<string> ChangeLines { get; private set; } = [];
 
     /// <summary>What the calculation would block or warn about once the import is applied.</summary>
     public IReadOnlyList<string> AfterLines { get; private set; } = [];
 
     /// <summary>The number format the profile fixes, in words; the profile's own always wins and is shown, not hidden.</summary>
-    public string NumberFormatText => _profile is null ? string.Empty : _profile.Number is { Decimal: DecimalMark.Comma } n ? $"Numbers use a decimal comma{(n.Grouping is { } g ? $" with '{g}' as the grouping mark" : string.Empty)} (fixed by the profile)." : "Numbers use a decimal point (fixed by the profile).";
+    public string NumberFormatText => _profile is null ? string.Empty : _profile.Number is { Decimal: DecimalMark.Comma } n ? $"Numbers use a decimal comma{(n.Grouping is { } g ? $" with '{(g == ' ' ? "no-break space" : g.ToString())}' as the grouping mark" : string.Empty)} (fixed by the profile)." : "Numbers use a decimal point (fixed by the profile).";
 
     public string Summary { get; private set; } = string.Empty;
 
     public string Status { get; private set; } = string.Empty;
 
-    public bool CanApply => _preview is { CanApply: true } && _running is null;
+    public bool CanApply => !IsBusy && _preview is { CanApply: true, InstanceUpdatedAt: not null };
 
-    public bool IsBusy => _running is not null;
+    /// <summary>A read, parse or apply is running (the panel offers Cancel).</summary>
+    public bool IsBusy { get; private set; }
 
     public bool IsOpen => InstanceId is not null;
 
@@ -98,19 +111,46 @@ public sealed class ScanImportViewModel
 
     // ------------------------------------------------------------------
 
+    /// <summary>Stops the read, parse or apply that is running. Once the draft is being written there is nothing to cancel: the write finishes or fails as a whole.</summary>
+    public void Cancel()
+    {
+        if (_applying)
+            return;
+
+        try
+        {
+            _cts?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Nothing running: nothing to stop.
+        }
+    }
+
     /// <summary>Starts an import into a saved draft: forgets earlier files and lists the profiles that fit its template.</summary>
     public async Task BeginAsync(CalcInstance draft, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(draft);
+        Cancel();
         InstanceId = draft.Id;
         InstanceName = draft.Name;
         _templateId = draft.TemplateId;
         _files.Clear();
         _preview = null;
         ClearOutput();
+        IsBusy = false;
         Status = "Choose one or more scan tables (CSV, text or .xlsx exported from ZEISS or GOM Inspect, PolyWorks or Geomagic Control X), then a scan profile that says which column is which.";
-        await LoadProfilesAsync(cancellationToken).ConfigureAwait(true);
-        Changed?.Invoke();
+
+        try
+        {
+            await LoadProfilesAsync(cancellationToken).ConfigureAwait(true);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            Status = "The stored scan profiles could not be listed: " + e.Message;
+        }
+
+        Raise();
     }
 
     public void Close()
@@ -120,61 +160,84 @@ public sealed class ScanImportViewModel
         _files.Clear();
         _preview = null;
         ClearOutput();
-        Changed?.Invoke();
+        IsBusy = false;
+        Raise();
     }
-
-    /// <summary>Stops a read or fit that is running.</summary>
-    public void Cancel() => _running?.Cancel();
 
     public async Task LoadProfilesAsync(CancellationToken cancellationToken = default)
     {
         var all = await _service.ListScanProfilesAsync(cancellationToken).ConfigureAwait(true);
-        Profiles = all.Where(p => p.TemplateId is null || string.Equals(p.TemplateId, _templateId, StringComparison.Ordinal)).ToList();
+        var fitting = all.Where(p => p.TemplateId is null || string.Equals(p.TemplateId, _templateId, StringComparison.Ordinal)).ToList();
 
-        // A chosen profile stays the version chosen: a newer version of the same id is offered, never switched to silently.
-        if (_profile is not null && !Profiles.Any(p => p.Id == _profile.Id))
-            _profile = null;
+        // The chosen profile stays exactly the version it was: a newer version published to the shared store is offered, never switched to.
+        if (_profile is not null && !fitting.Any(p => p.Id == _profile.Id && p.Version == _profile.Version))
+            fitting.Add(_profile);
+
+        Profiles = fitting;
 
         if (_profile is null && Profiles.Count == 1)
             _profile = Profiles[0];
     }
 
-    /// <summary>Reads a chosen table through the bounded reader and previews it. A refused file is reported, not thrown.</summary>
-    public async Task AddFileAsync(string fileName, Stream content, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Reads a chosen table through the bounded reader and (unless <paramref name="refresh"/> is false, for the first files of several) previews it.
+    /// A refused file, an I/O error or a cancellation is reported, not thrown; the same file twice is refused.
+    /// </summary>
+    public async Task AddFileAsync(string fileName, Stream content, bool refresh = true, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(content);
 
         if (_files.Count >= ScanImporter.MaxFiles)
         {
-            Status = $"At most {ScanImporter.MaxFiles} files are imported at once.";
-            Changed?.Invoke();
+            SetBusy(false, $"At most {ScanImporter.MaxFiles} files are imported at once.");
             return;
         }
 
-        using var cts = StartRun(cancellationToken);
+        var (token, operation) = Begin(cancellationToken);
+        SetBusy(true, "Reading the file…");
+        ImportedFile file;
 
         try
         {
-            var file = await BoundedInputReader.ReadAsync(content, fileName, new ScanSettings().Limits, cts.Token).ConfigureAwait(true);
-            _files.Add(new ScanChosenFile(new ScanFileInput(file, Clean(NextStage), Clean(NextSerial)), file.FileName, file.Sha256));
+            file = await BoundedInputReader.ReadAsync(content, fileName, new ScanSettings().Limits, token).ConfigureAwait(true);
         }
         catch (ImportRefusedException e)
         {
-            Status = "That file was not read: " + e.Message;
-            EndRun();
-            Changed?.Invoke();
+            Fail(operation, "That file was not read: " + e.Message);
             return;
         }
         catch (OperationCanceledException)
         {
-            Status = "Cancelled.";
-            EndRun();
-            Changed?.Invoke();
+            Fail(operation, "Cancelled.");
+            return;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException or ObjectDisposedException or InvalidOperationException)
+        {
+            Fail(operation, "That file could not be read: " + e.Message);
             return;
         }
 
-        EndRun();
-        await RefreshAsync(cancellationToken).ConfigureAwait(true);
+        if (operation != _operation)
+            return; // a newer read superseded this one
+
+        if (_files.FirstOrDefault(f => string.Equals(f.Sha256, file.Sha256, StringComparison.Ordinal)) is { } same)
+        {
+            SetBusy(false, $"'{file.FileName}' is the same file as '{same.Name}' (identical SHA-256) and was not added: it would count every part twice.");
+            return;
+        }
+
+        if (_files.Sum(f => (long)f.Input.File.Bytes.Length) + file.Bytes.Length > new ScanSettings().MaxTotalBytes)
+        {
+            SetBusy(false, $"'{file.FileName}' was not added: the tables together may hold at most {new ScanSettings().MaxTotalBytes / (1024 * 1024)} MB.");
+            return;
+        }
+
+        _files.Add(new ScanChosenFile(new ScanFileInput(file, Clean(NextStage), Clean(NextSerial)), file.FileName, file.Sha256));
+
+        if (refresh)
+            await PreviewAsync(token, operation).ConfigureAwait(true);
+        else
+            SetBusy(false, $"{_files.Count} table(s) chosen.");
     }
 
     public async Task RemoveFileAsync(int index, CancellationToken cancellationToken = default)
@@ -186,7 +249,34 @@ public sealed class ScanImportViewModel
         await RefreshAsync(cancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>Stores a scan profile typed or loaded as JSON (a new version of an existing id is a new profile version) and selects it.</summary>
+    /// <summary>
+    /// Reads a scan profile from a stream (the 200 KB cap, strict UTF-8 with the BOM dropped), stores it as a versioned profile and selects it.
+    /// Returns the reason when it was refused.
+    /// </summary>
+    public async Task<string?> LoadProfileStreamAsync(Stream content, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        try
+        {
+            var file = await BoundedInputReader.ReadAsync(content, "profile.json", ImportLimits.Default with { MaxBytes = ScanProfileJson.MaxBytes }, cancellationToken).ConfigureAwait(true);
+            return await SaveProfileJsonAsync(BoundedInputReader.DecodeText(file), cancellationToken).ConfigureAwait(true);
+        }
+        catch (ImportRefusedException e)
+        {
+            Status = "That profile was not read: " + e.Message;
+            Raise();
+            return Status;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException or ObjectDisposedException)
+        {
+            Status = "That profile could not be read: " + e.Message;
+            Raise();
+            return Status;
+        }
+    }
+
+    /// <summary>Stores a scan profile typed or pasted as JSON (a new version of an existing id is a new profile version) and selects it.</summary>
     public async Task<string?> SaveProfileJsonAsync(string json, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -199,7 +289,7 @@ public sealed class ScanImportViewModel
         catch (ImportRefusedException e)
         {
             Status = e.Message;
-            Changed?.Invoke();
+            Raise();
             return e.Message;
         }
 
@@ -208,12 +298,12 @@ public sealed class ScanImportViewModel
         if (saved is null)
         {
             Status = refusal ?? "The profile was not saved.";
-            Changed?.Invoke();
+            Raise();
             return Status;
         }
 
+        _profile = saved;
         await LoadProfilesAsync(cancellationToken).ConfigureAwait(true);
-        _profile = Profiles.FirstOrDefault(p => p.Id == saved.Id && p.Version == saved.Version) ?? saved;
         Status = $"Profile {saved.Label} saved.";
         await RefreshAsync(cancellationToken).ConfigureAwait(true);
         return null;
@@ -221,17 +311,28 @@ public sealed class ScanImportViewModel
 
     public Task SelectProfileAsync(ScanProfile? profile, CancellationToken cancellationToken = default)
     {
+        if (profile is not null && _profile is not null && profile.Id == _profile.Id && profile.Version == _profile.Version)
+            return Task.CompletedTask;
+
         _profile = profile;
         return RefreshAsync(cancellationToken);
     }
 
-    /// <summary>What the person entered about the measurement; each goes into provenance or the statistics.</summary>
+    /// <summary>What the person entered about the measurement; each goes into provenance or the statistics. Nothing is re-read when nothing changed.</summary>
     public Task SetSettingsAsync(string? softwareVersion, string? alignment, int subgroupSize, int minParts, bool excludeOutliers, CancellationToken cancellationToken = default)
     {
-        SoftwareVersion = softwareVersion?.Trim() ?? string.Empty;
-        Alignment = alignment?.Trim() ?? string.Empty;
-        SubgroupSize = Math.Clamp(subgroupSize, 1, 1000);
-        MinParts = Math.Clamp(minParts, 2, 100_000);
+        var version = softwareVersion?.Trim() ?? string.Empty;
+        var align = alignment?.Trim() ?? string.Empty;
+        var sub = Math.Clamp(subgroupSize, 1, 1000);
+        var min = Math.Clamp(minParts, 2, 100_000);
+
+        if (version == SoftwareVersion && align == Alignment && sub == SubgroupSize && min == MinParts && excludeOutliers == ExcludeOutliers)
+            return Task.CompletedTask;
+
+        SoftwareVersion = version;
+        Alignment = align;
+        SubgroupSize = sub;
+        MinParts = min;
         ExcludeOutliers = excludeOutliers;
         return RefreshAsync(cancellationToken);
     }
@@ -239,98 +340,114 @@ public sealed class ScanImportViewModel
     /// <summary>Re-reads the files with the current choices and rebuilds the preview.</summary>
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        if (InstanceId is not { } id || _files.Count == 0)
+        if (InstanceId is null || _files.Count == 0)
         {
-            Changed?.Invoke();
+            if (_files.Count == 0)
+            {
+                _preview = null;
+                ClearOutput();
+            }
+
+            Raise();
             return;
         }
 
-        if (_profile is null)
-        {
-            _preview = null;
-            ClearOutput();
-            Status = Profiles.Count == 0
-                ? "No scan profile fits this calculation yet. Load a profile (JSON) that names the table's columns and maps its features to inputs."
-                : "Choose a scan profile.";
-            Changed?.Invoke();
-            return;
-        }
-
-        var request = Request();
-        using var cts = StartRun(cancellationToken);
-        Status = "Reading and fitting…";
-        Changed?.Invoke();
-
-        try
-        {
-            // The parse and the statistics are CPU-bound: off the UI thread, back on it for the result.
-            _preview = await Task.Run(() => _service.PreviewScanImportAsync(id, request, cts.Token), cts.Token).ConfigureAwait(true);
-        }
-        catch (OperationCanceledException)
-        {
-            _preview = null;
-            ClearOutput();
-            Status = "Cancelled.";
-            EndRun();
-            Changed?.Invoke();
-            return;
-        }
-
-        EndRun();
-        Describe(_preview);
-        Changed?.Invoke();
+        var (token, operation) = Begin(cancellationToken);
+        await PreviewAsync(token, operation).ConfigureAwait(true);
     }
 
-    /// <summary>Applies the previewed import to the draft. Refused (with the reasons) when anything in the preview is refused.</summary>
+    /// <summary>
+    /// Applies the previewed import to the draft. It is applied to what was previewed: if the draft changed since the preview, it is refused and must be
+    /// previewed again. Refused (with the reasons) when anything in the preview is refused.
+    /// </summary>
     public async Task<ScanImportOutcome?> ApplyAsync(CancellationToken cancellationToken = default)
     {
         if (InstanceId is not { } id || _files.Count == 0 || _profile is null)
             return null;
 
-        var request = Request();
-        using var cts = StartRun(cancellationToken);
-        ScanImportOutcome outcome;
-
-        try
+        if (_preview is not { CanApply: true, InstanceUpdatedAt: { } updatedAt })
         {
-            outcome = await Task.Run(() => _service.ApplyScanImportAsync(id, request, cts.Token), cts.Token).ConfigureAwait(true);
-        }
-        catch (OperationCanceledException)
-        {
-            Status = "Cancelled.";
-            EndRun();
-            Changed?.Invoke();
+            SetBusy(false, "Preview the import first; there is nothing to apply.");
             return null;
         }
 
-        EndRun();
+        var (token, operation) = Begin(cancellationToken);
+        SetBusy(true, "Applying…");
+        var request = Request(updatedAt);
+        ScanImportOutcome outcome;
+        _applying = true;
+
+        try
+        {
+            outcome = await Task.Run(() => _service.ApplyScanImportAsync(id, request, CancellationToken.None), CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            _applying = false;
+
+            if (operation == _operation)
+                SetBusy(false, "The import could not be applied: " + e.Message);
+
+            return null;
+        }
+        finally
+        {
+            _applying = false;
+        }
+
+        IsBusy = false;
+
+        if (operation != _operation)
+            return outcome;
 
         if (outcome.Action.Succeeded)
         {
-            Status = $"Imported from {string.Join(", ", _files.Select(f => f.Name))}. {outcome.Diff?.Summary}";
-            _preview = outcome.Preview;
-
-            if (_preview is not null)
-                Describe(_preview);
-
-            Summary = Status;
+            var applied = $"Imported from {string.Join(", ", _files.Select(f => f.Name))}. {outcome.Diff?.Summary}{(string.IsNullOrEmpty(outcome.Action.Reason) ? string.Empty : " " + outcome.Action.Reason)}";
+            await PreviewAsync(token, operation).ConfigureAwait(true);
+            Status = applied;
+            Summary = applied;
         }
         else
         {
             Status = outcome.Action.Reason ?? "Nothing was imported.";
         }
 
-        Changed?.Invoke();
+        Raise();
 
         if (outcome.Action is { Succeeded: true, Instance: { } instance })
-            Applied?.Invoke(instance);
+            RaiseApplied(instance);
 
         return outcome;
     }
 
     // ------------------------------------------------------------------
 
-    private ScanImportRequest Request() => new(
+    private (CancellationToken Token, int Operation) Begin(CancellationToken external)
+    {
+        Cancel();
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(external);
+        return (_cts.Token, ++_operation);
+    }
+
+    private void SetBusy(bool busy, string status)
+    {
+        IsBusy = busy;
+        Status = status;
+        Raise();
+    }
+
+    /// <summary>The operation failed or was cancelled: back to idle with the preview cleared, unless a newer operation has taken over.</summary>
+    private void Fail(int operation, string status)
+    {
+        if (operation != _operation)
+            return;
+
+        _preview = null;
+        ClearOutput();
+        SetBusy(false, status);
+    }
+
+    private ScanImportRequest Request(DateTimeOffset? expectedUpdatedAt = null) => new(
         _files.Select(f => f.Input).ToList(),
         _profile!,
         new ScanSettings
@@ -340,17 +457,55 @@ public sealed class ScanImportViewModel
             SubgroupSize = SubgroupSize,
             MinParts = MinParts,
             ExcludeOutliers = ExcludeOutliers,
-        });
+        },
+        expectedUpdatedAt);
 
-    private CancellationTokenSource StartRun(CancellationToken external)
+    private async Task PreviewAsync(CancellationToken token, int operation)
     {
-        _running?.Cancel();
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(external);
-        _running = cts;
-        return cts;
-    }
+        if (InstanceId is not { } id || _files.Count == 0)
+        {
+            SetBusy(false, Status);
+            return;
+        }
 
-    private void EndRun() => _running = null;
+        if (_profile is null)
+        {
+            _preview = null;
+            ClearOutput();
+            SetBusy(false, Profiles.Count == 0
+                ? "No scan profile fits this calculation yet. Load a profile (JSON) that names the table's columns and maps its features to inputs."
+                : "Choose a scan profile.");
+            return;
+        }
+
+        SetBusy(true, "Reading and fitting…");
+        var request = Request();
+        ScanImportPreview preview;
+
+        try
+        {
+            // The parse and the statistics are CPU-bound: on the pool, under the token Cancel() trips, and the continuation returns to the UI thread.
+            preview = await Task.Run(() => _service.PreviewScanImportAsync(id, request, token), CancellationToken.None).WaitAsync(token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            Fail(operation, "Cancelled.");
+            return;
+        }
+        catch (Exception e)
+        {
+            Fail(operation, "The tables could not be previewed: " + e.Message);
+            return;
+        }
+
+        if (operation != _operation)
+            return; // a newer read or preview superseded this one
+
+        IsBusy = false;
+        _preview = preview;
+        Describe(preview);
+        Raise();
+    }
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
@@ -359,10 +514,14 @@ public sealed class ScanImportViewModel
         StatLines = [];
         Lines = [];
         ProblemLines = [];
+        NoticeLines = [];
         ChangeLines = [];
         AfterLines = [];
         Summary = string.Empty;
     }
+
+    private static IReadOnlyList<T> Cap<T>(IReadOnlyList<T> lines, Func<int, T> more) =>
+        lines.Count <= MaxLines ? lines : [.. lines.Take(MaxLines), more(lines.Count - MaxLines)];
 
     private void Describe(ScanImportPreview preview)
     {
@@ -377,18 +536,19 @@ public sealed class ScanImportViewModel
         var mapping = preview.Mapping!;
         var unit = analysis.Profile.Unit;
 
-        StatLines = analysis.Stats.SelectMany(s => StatLine(s, unit)).ToList();
-        ProblemLines = analysis.Data.Problems.Select(p => $"{p.Kind.ToString().ToLowerInvariant()} in {p.Column}: {p.Count} time(s). {p.Examples.FirstOrDefault()}").ToList();
-        Lines = mapping.Rows.Select(Line).ToList();
+        StatLines = Cap(analysis.Stats.SelectMany(s => StatLine(s, unit)).ToList(), n => $"… and {n} more line(s)");
+        ProblemLines = Cap(analysis.Data.Problems.Select(p => $"{p.Kind.ToString().ToLowerInvariant()} in {p.Column}: {p.Count} time(s). {p.Examples.FirstOrDefault()}").ToList(), n => $"… and {n} more kind(s) of problem");
+        NoticeLines = Cap(analysis.Data.Notices.Where(n => n.Severity == CalcNoticeSeverity.Warning).Select(n => "note: " + n.Message).ToList(), n => $"note: … and {n} more");
+        Lines = Cap(mapping.Rows.Select(Line).ToList(), n => new ScanPreviewLine(ScanRowStatus.Unmapped, $"… and {n} more row(s)"));
         ChangeLines = preview.Diff is { FirstImport: false } diff
-            ? diff.Changes.Select(c => c.Kind switch
+            ? Cap(diff.Changes.Select(c => c.Kind switch
             {
                 ScanChangeKind.Added => $"added   {c.Feature} ({Stage(c.Stage)}): {c.After}",
                 ScanChangeKind.Removed => $"removed {c.Feature} ({Stage(c.Stage)}) (was {c.Before}){(c.AffectsInput ? "; its input keeps the last imported value" : string.Empty)}",
                 _ => $"changed {c.Feature} ({Stage(c.Stage)}): {c.Before} → {c.After}",
-            }).ToList()
+            }).ToList(), n => $"… and {n} more change(s)")
             : [];
-        AfterLines = [.. preview.BlocksAfter.Select(b => "block: " + b), .. preview.WarningsAfter.Select(w => "warning: " + w)];
+        AfterLines = [.. preview.BlocksAfter.Take(MaxLines).Select(b => "block: " + b), .. preview.WarningsAfter.Take(MaxLines).Select(w => "warning: " + w)];
 
         Summary = preview.CanApply
             ? $"{mapping.Count(ScanRowStatus.Mapped)} mapped, {mapping.Count(ScanRowStatus.Unmapped)} not in the profile, {mapping.Count(ScanRowStatus.Missing)} missing; {analysis.Data.Observations.Count} usable rows, {analysis.Data.ProblemCount} reported. {preview.Diff?.Summary}"
@@ -431,4 +591,17 @@ public sealed class ScanImportViewModel
         ScanRowStatus.Unmapped => $"unmapped   {row.Feature} ({Stage(row.Stage)}): {row.Value}",
         _ => $"missing    {row.Feature}: {row.Message}",
     });
+
+    /// <summary>Raises <see cref="Changed"/> on the UI thread.</summary>
+    private void Raise() => OnUiThread(() => Changed?.Invoke());
+
+    private void RaiseApplied(CalcInstance instance) => OnUiThread(() => Applied?.Invoke(instance));
+
+    private static void OnUiThread(Action action)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            action();
+        else
+            Dispatcher.UIThread.Post(action);
+    }
 }

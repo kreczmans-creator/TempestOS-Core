@@ -117,8 +117,8 @@ public sealed class ScanImportPanel : Border
         _clearFiles.Click += async (_, _) => await GuardedAsync(ClearFilesAsync).ConfigureAwait(true);
         _loadProfile.Click += async (_, _) => await GuardedAsync(PickProfileAsync).ConfigureAwait(true);
         _apply.Click += async (_, _) => await GuardedAsync(async () => { await _model.ApplyAsync().ConfigureAwait(true); }).ConfigureAwait(true);
-        _cancel.Click += (_, _) => _model.Cancel();
-        _close.Click += (_, _) => _model.Close();
+        _cancel.Click += (_, _) => Guarded(_model.Cancel);
+        _close.Click += (_, _) => Guarded(_model.Close);
         _profile.SelectionChanged += async (_, _) => await GuardedAsync(OnProfileAsync).ConfigureAwait(true);
         _exclude.IsCheckedChanged += async (_, _) => await GuardedAsync(OnSettingsAsync).ConfigureAwait(true);
         _stage.LostFocus += (_, _) => _model.NextStage = _stage.Text ?? string.Empty;
@@ -154,11 +154,23 @@ public sealed class ScanImportPanel : Border
             FileTypeFilter = [new FilePickerFileType("Scan tables") { Patterns = ["*.csv", "*.txt", "*.tsv", "*.xlsx"] }],
         }).ConfigureAwait(true);
 
-        foreach (var file in picked)
+        var added = false;
+
+        try
         {
-            // Read through the bounded reader: the 5 MB cap and the time limit hold whatever the file claims.
-            await using var stream = await file.OpenReadAsync().ConfigureAwait(true);
-            await _model.AddFileAsync(file.Name, stream).ConfigureAwait(true);
+            foreach (var file in picked)
+            {
+                // Read through the bounded reader: the 5 MB cap and the time limit hold whatever the file claims.
+                await using var stream = await file.OpenReadAsync().ConfigureAwait(true);
+                await _model.AddFileAsync(file.Name, stream, refresh: false).ConfigureAwait(true);
+                added = true;
+            }
+        }
+        finally
+        {
+            // One analysis for all the tables chosen together, not one per table.
+            if (added)
+                await _model.RefreshAsync().ConfigureAwait(true);
         }
     }
 
@@ -188,18 +200,9 @@ public sealed class ScanImportPanel : Border
         if (picked.Count == 0)
             return;
 
-        // Bounded read (size cap and time limit) and strict UTF-8 with the BOM dropped, like every other untrusted file.
+        // Bounded read (size cap and time limit) and strict UTF-8 with the BOM dropped, like every other untrusted file; the view model reports a refusal.
         await using var stream = await picked[0].OpenReadAsync().ConfigureAwait(true);
-
-        try
-        {
-            var file = await BoundedInputReader.ReadAsync(stream, picked[0].Name, ImportLimits.Default with { MaxBytes = ScanProfileJson.MaxBytes }).ConfigureAwait(true);
-            await _model.SaveProfileJsonAsync(BoundedInputReader.DecodeText(file)).ConfigureAwait(true);
-        }
-        catch (ImportRefusedException e)
-        {
-            _status.Text = "That profile was not read: " + e.Message;
-        }
+        await _model.LoadProfileStreamAsync(stream).ConfigureAwait(true);
     }
 
     private async Task OnProfileAsync()
@@ -218,6 +221,18 @@ public sealed class ScanImportPanel : Border
         var subgroup = int.TryParse(_subgroup.Text, NumberStyles.None, CultureInfo.InvariantCulture, out var g) ? g : 1;
         var minParts = int.TryParse(_minParts.Text, NumberStyles.None, CultureInfo.InvariantCulture, out var m) ? m : 30;
         await _model.SetSettingsAsync(_software.Text, _alignment.Text, subgroup, minParts, _exclude.IsChecked == true).ConfigureAwait(true);
+    }
+
+    private void Guarded(Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            _status.Text = $"Could not do that: {failure.Message}";
+        }
     }
 
     private async Task GuardedAsync(Func<Task> action)
@@ -254,7 +269,7 @@ public sealed class ScanImportPanel : Border
             _cancel.IsEnabled = _model.IsBusy;
 
             Fill(_stats, _model.StatLines.Select(t => (t, t.StartsWith("    ", StringComparison.Ordinal) ? (IBrush)Brushes.DarkOrange : Brushes.Gray)));
-            Fill(_problems, _model.ProblemLines.Select(t => (t, (IBrush)Brushes.DarkOrange)));
+            Fill(_problems, _model.NoticeLines.Concat(_model.ProblemLines).Select(t => (t, (IBrush)Brushes.DarkOrange)));
             Fill(_lines, _model.Lines.Select(l => (l.Text, l.Status switch
             {
                 ScanRowStatus.Refused or ScanRowStatus.Missing => (IBrush)Brushes.IndianRed,

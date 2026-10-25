@@ -218,8 +218,8 @@ public sealed class WorksheetScanImportTests
             await model.AddFileAsync("groove.csv", Utf8(Table()));
             Assert.False(model.CanApply);
             Assert.Contains(model.Lines, l => l.Status == ScanRowStatus.Refused && l.Text.Contains("no row 5", StringComparison.Ordinal));
-            var refused = await model.ApplyAsync();
-            Assert.False(refused!.Action.Succeeded);
+            Assert.Null(await model.ApplyAsync()); // nothing previewed that can apply, so nothing is sent
+            Assert.Contains("Preview the import first", model.Status, StringComparison.Ordinal);
             Assert.Null((await service.Store.FindInstanceAsync(stack.Id))!.ScanImports);
 
             // The wrong columns: the profile mismatch is reported with the headers the file has.

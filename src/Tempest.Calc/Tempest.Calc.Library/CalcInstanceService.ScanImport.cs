@@ -152,7 +152,7 @@ public sealed partial class CalcInstanceService
 
         var mapping = ScanMapper.Map(analysis, entry.Template, instance.Inputs, at);
         var key = ScanImportRecord.KeyFor(request.Profile.Id);
-        var previous = instance.ScanImports?.LastOrDefault(r => string.Equals(r.Key, key, StringComparison.Ordinal));
+        var previous = ScanImportVerifier.Latest(instance.ScanImports, key);
         var diff = ScanImportDiff.Compute(previous, mapping.Snapshot);
 
         IReadOnlyList<string> blocks = [];

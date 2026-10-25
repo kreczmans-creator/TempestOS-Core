@@ -544,6 +544,6 @@ public sealed class ScanReviewTests
 
         // The cap drops the oldest.
         var many = Enumerable.Range(0, 30).Select(n => first with { ImportedAt = At.AddMinutes(n) }).ToList();
-        Assert.Equal(5, ScanImportVerifier.Merge(many, other, mapping.Inputs, max: 5).Count);
+        Assert.Equal(5, ScanImportVerifier.Merge(many, other, mapping.Inputs, maxRecords: 5).Count);
     }
 }
