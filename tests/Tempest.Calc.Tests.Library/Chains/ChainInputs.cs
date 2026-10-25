@@ -94,4 +94,37 @@ internal static class ChainInputs
         ["s5"] = Spec("SPEC-STR-09 §2 (actions)"), ["s2"] = Drg("DRG-STR-310"), ["s3"] = Spec("SPEC-STR-09 §3 (members)"), ["m3"] = Drg("DRG-STR-312"),
         ["s4a"] = Drg("DRG-STR-312"), ["s4b"] = Drg("DRG-STR-315"), ["s6"] = Drg("DRG-STR-315"),
     });
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> EnvelopeMoisture(LibraryTestHost host) => For(host, CalcPackTemplates.EnvelopeMoisture, new Dictionary<string, CalcProvenance>
+    {
+        ["b4"] = Spec("SPEC-ENV-02 §3 (wall build-up)"), ["b2"] = Spec("SPEC-ENV-02 §2 (room conditions)"), ["b7"] = Drg("DRG-ENV-210"),
+    });
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> ColdPipe(LibraryTestHost host) => For(host, CalcPackTemplates.ColdPipe, new Dictionary<string, CalcProvenance>
+    {
+        ["b1"] = Spec("SPEC-CHW-04 §2 (chilled water duty)"), ["b2"] = Spec("SPEC-CHW-04 §3 (plant room conditions)"), ["b9"] = Drg("DRG-CHW-410"),
+    });
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> PipeworkSupports(LibraryTestHost host) => For(host, CalcPackTemplates.PipeworkSupports, new Dictionary<string, CalcProvenance>
+    {
+        ["b8"] = Spec("SPEC-PIP-11 §4 (thermal movement)"), ["s2"] = Drg("DRG-PIP-610"), ["s6"] = Drg("DRG-PIP-611"),
+    });
+
+    /// <summary>The temperature, °C, the example types the latch's plastic and the lid's alloy values for: the enclosure's limit.</summary>
+    public const double ElectronicsTypedForCelsius = 60;
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> ElectronicsEnclosure(LibraryTestHost host)
+    {
+        var inputs = For(host, CalcPackTemplates.ElectronicsEnclosure, new Dictionary<string, CalcProvenance>
+        {
+            ["e7"] = Spec("SPEC-ELX-02 §3 (supply rail)"), ["e6"] = Spec("SPEC-ELX-02 §4 (board loads)"), ["e2"] = Drg("DRG-ELX-210"), ["m8"] = Spec("SPEC-ELX-02 §6 (lid latch geometry)"), ["s9"] = Spec("SPEC-ELX-02 §7 (lid plate geometry)"),
+        });
+
+        // Only the material values carry the temperature they are typed for, so a test can read it off exactly those inputs.
+        var latch = Spec($"SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at {ElectronicsTypedForCelsius:0} C)");
+        var lid = Spec($"SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at {ElectronicsTypedForCelsius:0} C)");
+        inputs["m8"] = [.. inputs["m8"].Select(v => v.Symbol is "Es" or "eps_perm_once" ? v with { Provenance = latch } : v)];
+        inputs["s9"] = [.. inputs["s9"].Select(v => v.Symbol is "E" or "nu" or "rho" or "f_y" ? v with { Provenance = lid } : v)];
+        return inputs;
+    }
 }

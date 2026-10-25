@@ -303,4 +303,17 @@ public sealed class RoomHeatLossTests
         Assert.True(run.IsBlocked);
         Assert.Contains(run.Blocks, b => b.Message.StartsWith("elements", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void The_U_Value_Of_The_First_Element_Is_A_Declared_Port()
+    {
+        Assert.Contains(Room.Template.OutputPorts!, p => p is { Symbol: "U_1", Unit: "W/(m^2*K)" });
+        var inputs = new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
+            .With(RoomHeatLossCalculator.Layers(("Wall", "Brick", 215, 0.8), ("Wall", "Board", 12.5, 0.25)))
+            .With(Table(("Wall", "horizontal", 10, null)));
+        var r = CalcRunner.Run(Room, inputs);
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(1 / (0.13 + 0.215 / 0.8 + 0.0125 / 0.25 + 0.04), r.OutputSi("U_1"), 12);
+        Assert.Contains(Room.Template.OutputPorts!, p => p.Symbol == "U_1");
+    }
 }

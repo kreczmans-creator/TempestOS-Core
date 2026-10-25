@@ -55,7 +55,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Mechanical, "Snap-fits: cantilever, annular, torsion",
+        Id, "1.3.0", CalcDiscipline.Mechanical, "Snap-fits: cantilever, annular, torsion",
         "A plastic snap-fit joint of one of five forms: a cantilever lug of constant section, of tapered thickness or of tapered width, an annular (closed ring) snap, or a torsion bar. The strain at the critical section against the permissible strain of the plastic (one-time or repeated joining), the deflection force with the secant modulus, the assembly force (inclined entry face) and the separation force (return face) with Coulomb friction, and whether the joint is self-locking.",
         "Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (constant section; the design guides print the rounded 0.67); a linear taper of the thickness to r_h = h_tip/h gives K_y = 2·J/φ_max with J = [2r_h − r_h²/2 − ln r_h − 3/2]/(1 − r_h)³ and φ_max = 1 for r_h ≥ 1/2 (otherwise the strain peaks inside the beam at t = (2a − 1)/a, a = 1 − r_h, with φ_max = (1 − t)/(1 − a·t)²); a linear taper of the width to r_b gives K_y = 2·J with J = [1/2 − 2r_b + 3r_b²/2 − r_b²·ln r_b]/(1 − r_b)³\n" +
         "Strain and force of the cantilever: ε = y·h/(K_y·l²); P = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε))\n" +
@@ -88,6 +88,8 @@ public sealed class SnapFitCalculator : ICalcCalculator
             new CalcInputSpec("eps_perm_once", "Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data)", CalcInputKind.Number, Min: 0.001, Max: 0.3, HardMin: 1e-6, HardMax: 1, IsOptional: true, Group: "Material", MaterialProperty: "eps_perm_once"),
             new CalcInputSpec("eps_perm_repeated", "Permissible strain for repeated joining, as a fraction (no default)", CalcInputKind.Number, Min: 0.001, Max: 0.3, HardMin: 1e-6, HardMax: 1, IsOptional: true, Group: "Material", MaterialProperty: "eps_perm_repeated"),
             new CalcInputSpec("nu", "Poisson's ratio ν (torsion bar)", CalcInputKind.Number, Min: 0.2, Max: 0.49, HardMin: -0.99, HardMax: 0.499, IsOptional: true, Group: "Material", MaterialProperty: "nu"),
+            new CalcInputSpec("n_latch", "Number of identical latches that share a holding load (a whole number; blank = the holding force is not worked out)", CalcInputKind.Number, Min: 1, Max: 100, HardMin: 1, HardMax: 1000, IsOptional: true, Group: "Holding"),
+            new CalcInputSpec("F_req", "Force the latches must hold against, for example the pressure on a cover (blank = no check; needs n_latch; may be linked from E2 F_seal)", CalcInputKind.Quantity, "N", Min: 0, Max: 100000, HardMin: 0, HardMax: 1e8, IsOptional: true, Group: "Holding"),
             new CalcInputSpec("T_use", "Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature", CalcInputKind.Quantity, "degC", Default: 23, Min: -40, Max: 120, HardMin: -150, HardMax: 400, Group: "Material"),
         ],
         [
@@ -108,6 +110,8 @@ public sealed class SnapFitCalculator : ICalcCalculator
             new CalcApplicabilityRule("slender", "The beam is shorter than 5 times its thickness (l/h < 5): beam theory underestimates the stiffness and the strain is not reliable.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("es-range", "The design strain is outside the strains of the secant-modulus points: the end value is held, with no extrapolation.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("assembly-jam", "μ·tan α is 1 or more: the entry face jams and the part cannot be pushed on.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("n-latch", "The number of latches must be a whole number.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("hold-unused", "A force to hold is given without a number of latches: the holding check is not made.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("self-locking", "The return angle α′ is at or above arctan(1/μ): the joint cannot be separated by pulling, however large the force.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("thick-ring", "The ring's wall is more than a tenth of its mean diameter (h/D > 0.1): the thin-ring model no longer holds.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("small-angle", "The torsion-bar twist is above about 20°: the small-angle relation φ = y/a is no longer good.", CalcNoticeSeverity.Warning),
@@ -153,6 +157,10 @@ public sealed class SnapFitCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "l 15 mm, h 2 mm, b 6 mm, y 1.5 mm: ε = 2 %; points (0.5 %, 2600 MPa), (1 %, 2400 MPa), (3 %, 1800 MPa) give Es(2 %) = 2400 − 600·(0.01/0.02) = 2100 MPa; P = b·h²·Es·ε/(6·l) = 11.2 N; ε_perm 0.04: u = 0.5"),
                 [Q("l", 15, "mm"), Q("h", 2, "mm"), Q("b", 6, "mm"), Q("y", 1.5, "mm"), CalcInputValue.Choice("Es_source", EsCurve), SecantPoints((0.005, 2600), (0.01, 2400), (0.03, 1800)), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
                 [new CalcExpectedValue("eps", 2, "%", 1e-9), new CalcExpectedValue("Es", 2100, "MPa", 1e-9), new CalcExpectedValue("P", 11.2, "N", 1e-9), new CalcExpectedValue("strain_util", 0.5, "", 1e-9)]),
+            new CalcTestCase("ka-holding", "Four of the constant-section latches hold a 100 N load: F_hold = n·W′",
+                new CalcReferenceSource("Analytic (n identical latches sharing the load equally; recomputed in python3)", null, "The cantilever of ka-constant (W′ = 36.096414 N) with n_latch = 4 and a load F_req = 100 N: F_hold = 4 × 36.096414 = 144.385654 N, utilisation 100/144.385654 = 0.692590 (PASS)"),
+                [Q("l", 15, "mm"), Q("h", 2, "mm"), Q("b", 6, "mm"), Q("y", 1, "mm"), Q("Es", 2400, "MPa"), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg"), CalcInputValue.Of("n_latch", 4), Q("F_req", 100, "N")],
+                [new CalcExpectedValue("retention_force", 36.096413577352465, "N", 1e-9), new CalcExpectedValue("F_hold", 144.38565430940986, "N", 1e-9), new CalcExpectedValue("u_hold", 0.692589582242748, "", 1e-9)]),
         ],
         Category: "Joining",
         OutputPorts:
@@ -160,6 +168,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
             new CalcOutputPort("assembly_force", "N", "Force to push the parts together over the entry face (snap.assembly_force)"),
             new CalcOutputPort("retention_force", "N", "Force to separate the parts over the return face (snap.retention_force); reads \"self-locking\" and has no number when the return angle locks"),
             new CalcOutputPort("strain_util", "", "Strain at the critical section / permissible strain (snap.strain_util)"),
+            new CalcOutputPort("F_hold", "N", "Force n_latch latches hold, n × the separation force (only when n_latch is entered and the joint is not self-locking)"),
         ],
         RecordKinds:
         [
@@ -532,6 +541,33 @@ public sealed class SnapFitCalculator : ICalcCalculator
             c.Assign("retention_force", "P * (mu + tan_ar) / (1 - mu * tan_ar)", "N", "Separation force W′ = P·(μ + tan α′)/(1 − μ·tan α′)", Ref);
             c.Output("retention_force", "Separation force");
             c.Output("self_locking", "Self-locking", new TextValue("No"));
+
+            if (c.Has("n_latch"))
+            {
+                c.Input("n_latch");
+                var n = c.Si("n_latch");
+
+                if (Math.Abs(n - Math.Round(n)) > 1e-9)
+                {
+                    c.Block("n_latch", "n_latch: the number of latches must be a whole number.");
+                    return;
+                }
+
+                c.Assign("F_hold", "n_latch * retention_force", "N", "Force the latches hold together: n × the separation force W′ of one (equal sharing assumed)", Ref);
+                c.Output("F_hold", "Holding force of the latches");
+
+                if (c.Has("F_req"))
+                {
+                    c.Input("F_req");
+                    c.Assign("u_hold", "F_req / F_hold", null, "Utilisation of the latches' holding force");
+                    c.Output("u_hold", "Holding utilisation");
+                    c.CheckUtilisation("Latches hold the load: F_req ≤ n·W′", "u_hold", Ref);
+                }
+            }
+            else if (c.Has("F_req"))
+            {
+                c.Warn("hold-unused", "F_req: a force to hold was given without n_latch, so the holding check is not made.");
+            }
         }
     }
 

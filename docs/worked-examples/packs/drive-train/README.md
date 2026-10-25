@@ -1,6 +1,6 @@
 # Calc pack — Drive train (`pack.drive-train`)
 
-**Chain.** Motor sizing (`elec.motor-sizing`) → Shaft (`mech.shaft`) → Bearing A life (`mech.bearing-life`) → Bearing A seat fit (`mech.iso286-fit`) → Coupling flange bolts (`mech.bolt-group`).
+**Chain.** Motor sizing (`elec.motor-sizing`) → Shaft (`mech.shaft`) and Bearing A life (`mech.bearing-life`) and Coupling flange bolts (`mech.bolt-group`); Shaft (`mech.shaft`) → Bearing A life (`mech.bearing-life`) and Bearing A seat fit (`mech.iso286-fit`).
 
 **Purpose.** Motor sizing gives the torque and speed the shaft carries; the shaft gives the bearing load and the seat diameter; the bearing life uses the shaft reaction and the motor speed; the seat fit (a rolling-bearing bore against the shaft seat) uses the shaft diameter; the coupling flange bolts and the shaft's yield check carry the peak torque the load demands at the motor shaft. The gear mesh forces on the shaft are entered for the E1 torque and must be re-derived if it changes.
 
@@ -20,7 +20,7 @@ A 4-pole motor (about 24 kW at 1500 rpm) turns a conveyor drum at 120 rpm throug
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes every step below it stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes the steps that take from it, and every step that takes from those, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|

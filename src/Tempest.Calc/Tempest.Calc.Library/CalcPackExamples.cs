@@ -370,4 +370,198 @@ internal static class CalcPackExamples
     [
         Q("L", 30, "m"), Q("U", 400, "V"), N("cos_phi", 0.86), N("eta", 0.92), C("insulation", "PVC 70 °C"), C("method", "C"), C("device", "MCB type C"),
     ];
+
+    // ---- Envelope moisture: a wall's U-value, the room air state and the Glaser condensation check -----------------------------
+
+    /// <summary>
+    /// A room with a solid brick external wall lined internally with 80 mm of mineral wool and plasterboard, and a window. The wall is the FIRST element of the elements table: its
+    /// U-value (<c>U_1</c>) is what the Glaser step cross-checks. The layer conductivities, the target U and the window U are invented illustrations, not design data. The 0.2 mm vapour
+    /// control layer of the Glaser step is not a row here: it is thermally negligible and below this sheet's 1 mm layer minimum.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> EnvB4 { get; } =
+    [
+        Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
+        Table("layers",
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Plasterboard"), Mm("d", 12.5), ("lambda", new CalcCell(0.25, "W/(m*K)"))),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Mineral wool"), Mm("d", 80), ("lambda", new CalcCell(0.04, "W/(m*K)"))),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Solid brick"), Mm("d", 215), ("lambda", new CalcCell(0.8, "W/(m*K)"))),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Render"), Mm("d", 15), ("lambda", new CalcCell(0.9, "W/(m*K)")))),
+        Table("elements",
+            CalcRow.Of(Txt("name", "External wall"), ("area", new CalcCell(18, "m^2"))),
+            CalcRow.Of(Txt("name", "Window"), ("area", new CalcCell(3, "m^2")), ("U_user", new CalcCell(1.4, "W/(m^2*K)")))),
+        Q("U_target", 0.45, "W/(m^2*K)"), Q("n", 0.5, "1/h"), Q("V", 48, "m^3"), Q("A_floor", 16, "m^2"),
+    ];
+
+    /// <summary>The room air: 21 °C dry-bulb at 50 % relative humidity, sea level, state only. Its dry-bulb and relative humidity are the Glaser step's internal conditions.</summary>
+    public static IReadOnlyList<CalcInputValue> EnvB2 { get; } =
+    [
+        Q("altitude", 0, "m"), Q("t_db", 21, "degC"), C("known", "relative humidity"), N("RH", 50), C("process", "none (state only)"),
+    ];
+
+    /// <summary>
+    /// The same wall for the Glaser check (inside first), with a 0.2 mm vapour control layer behind the plasterboard (μ 20000, an invented figure for a taped but imperfect membrane:
+    /// real membranes are often higher). The conductivities match the heat-loss step's; the layer thicknesses and conductivities are typed here too, because the
+    /// heat-loss step offers no per-layer output to link (a test guards that they agree). The U-value of the layers is cross-checked against the heat-loss step's by link.
+    /// The twelve monthly outside conditions are an INVENTED maritime year, not a climate record of any standard; the 500 g/m² limit is an invented illustration of the owner's criterion.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> EnvB7 { get; } =
+    [
+        C("humidity_mode", "constant internal relative humidity"), C("element", "External wall"),
+        Table("layers",
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Plasterboard"), Mm("d", 12.5), ("lambda", new CalcCell(0.25, "W/(m*K)")), Num("mu", 8)),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Vapour control layer"), Mm("d", 0.2), ("lambda", new CalcCell(0.35, "W/(m*K)")), Num("mu", 20000)),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Mineral wool"), Mm("d", 80), ("lambda", new CalcCell(0.04, "W/(m*K)")), Num("mu", 1)),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Solid brick"), Mm("d", 215), ("lambda", new CalcCell(0.8, "W/(m*K)")), Num("mu", 10)),
+            CalcRow.Of(Txt("element", "External wall"), Txt("name", "Render"), Mm("d", 15), ("lambda", new CalcCell(0.9, "W/(m*K)")), Num("mu", 25))),
+        Q("Rsi", 0.13, "m^2*K/W"), Q("Rse", 0.04, "m^2*K/W"), Q("Rsi_f", 0.25, "m^2*K/W"), Q("RH_crit", 80, "%"), Q("Mc_limit", 500, "g/m^2"),
+        Table("climate",
+            Month("Jan", 2, 90), Month("Feb", 3, 88), Month("Mar", 6, 84), Month("Apr", 9, 80), Month("May", 13, 76), Month("Jun", 16, 74),
+            Month("Jul", 18, 74), Month("Aug", 18, 76), Month("Sep", 15, 82), Month("Oct", 11, 87), Month("Nov", 6, 90), Month("Dec", 3, 91)),
+    ];
+
+    private static CalcRow Month(string name, double thetaE, double rhE) =>
+        CalcRow.Of(Txt("month", name), ("theta_e", new CalcCell(thetaE, "degC")), ("RH_e", new CalcCell(rhE, "%")));
+
+    // ---- Cold pipe: a chilled water line, the room air around it and the insulation that keeps its surface above the dew point ----
+
+    /// <summary>
+    /// A chilled-water flow-and-return line, 6 °C flow and 12 °C return, so the MEAN fluid temperature <c>T</c> the properties are taken at is 9 °C, while the temperature the insulation is sized on is the coldest in
+    /// the line, the 6 °C flow (<c>T_line</c>: a link from the mean would understate the thickness). 60 m of 54 × 1.2 mm copper tube (inner diameter 51.6 mm; the outside diameter is the insulation's inside diameter
+    /// and goes to the insulation step by link), 12 m³/h, ten velocity heads of fittings. The tube roughness (0.0015 mm) and the fittings are invented illustrations.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ColdB1 { get; } =
+    [
+        C("fluid", "water"), Q("T", 9, "degC"), Q("T_line", 6, "degC"), Q("Q", 12, "m^3/h"), C("circuit", "closed (flow and return: the rises cancel, no static lift)"),
+        Table("segments", CalcRow.Of(Txt("name", "chilled water flow and return"), ("L", new CalcCell(60, "m")), Mm("D", 51.6), Mm("OD", 54), Mm("eps", 0.0015), Num("K", 10), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
+    ];
+
+    /// <summary>The plant room air around the pipe: 28 °C dry-bulb at 60 % relative humidity, sea level. Its dry-bulb is the insulation step's ambient temperature and its dew point the temperature the surface must stay above.</summary>
+    public static IReadOnlyList<CalcInputValue> ColdB2 { get; } =
+    [
+        Q("altitude", 0, "m"), Q("t_db", 28, "degC"), C("known", "relative humidity"), N("RH", 60), C("process", "none (state only)"),
+    ];
+
+    /// <summary>
+    /// The insulation on that pipe: a closed-cell elastomeric-type cover of conductivity 0.035 W/(m·K) (an invented illustration, not a maker's value), still-air surface coefficient 8 W/(m²·K) as given, 1 K above the dew point,
+    /// and 25 mm chosen. The pipe's outside diameter, the process temperature, the ambient temperature and the dew point arrive by link; the heat-gain limit (default 25 W/m) is left out, so the dew-point margin is the only criterion.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ColdB9 { get; } =
+    [
+        C("geometry", "pipe (cylinder)"), Q("lambda", 0.035, "W/(m*K)"), C("h_mode", "h_se as given"), Q("h_se", 8, "W/(m^2*K)"), Q("dew_margin", 1, "K"), Q("t_chosen", 25, "mm"),
+    ];
+
+    // ---- Pipework supports: a pipe anchor's force on a cantilever post and its base plate ------------------------------------
+
+    /// <summary>
+    /// A 219.1 × 6.3 mm steel line anchored 60 m apart, 10 to 150 °C, absorbed by a 9.5 m offset leg: the anchor takes the leg's force. E and α are the usual steel values
+    /// (the sheet's own defaults, stated here); the 160 MPa allowable range and the 400 mm²/m² screening limit are INVENTED illustrations, not code values: the owner enters his own.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> PipeB8 { get; } =
+    [
+        Q("E", 210, "GPa"), Q("alpha", 12, "um/(m*K)"), Q("OD", 219.1, "mm"), Q("t_wall", 6.3, "mm"), Q("L", 60, "m"),
+        C("temp_mode", "install and operating temperatures"), Q("T_install", 10, "degC"), Q("T_operate", 150, "degC"),
+        C("layout", "offset leg (L- or Z-bend: the leg takes the whole movement)"), Q("H", 9.5, "m"), Q("Sa", 160, "MPa"), Q("K_scr", 400, "mm^2/m^2"),
+    ];
+
+    /// <summary>
+    /// The anchor post: a 2.5 m cantilever column (node 1 fixed, node 2 the anchor), the 203 × 203 UC of the steel-support example. The first load row (case 1) is the horizontal force
+    /// along the pipe at node 2, a 1 kN placeholder that the pipe-expansion step's anchor force replaces by cell link; the second (case 2) is the 6 kN weight of pipe, contents and
+    /// bracket, downward. The ULS combination takes the thermal force at 1.5 and the weight at 1.35 (invented factors for this illustration; the owner's combination rules apply).
+    /// The links depend on this numbering: node 1 the column base, node 2 the anchor; the first load row the thermal force.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> PipeS2 { get; } =
+    [
+        Table("nodes",
+            CalcRow.Of(Num("id", 1), ("x", new CalcCell(0, "m")), ("y", new CalcCell(0, "m")), Txt("support", "fixed")),
+            CalcRow.Of(Num("id", 2), ("x", new CalcCell(0, "m")), ("y", new CalcCell(2.5, "m")), Txt("support", "free"))),
+        Table("elements",
+            CalcRow.Of(Num("id", 1), Num("i", 1), Num("j", 2), ("A", new CalcCell(58.7, "cm^2")), ("I", new CalcCell(4568, "cm^4")), ("rel_i", new CalcCell(Flag: false)), ("rel_j", new CalcCell(Flag: false)))),
+        Table("loads", FrameLoad(1, 2, 1, 0), FrameLoad(2, 2, 0, -6)),
+        Table("combinations",
+            CalcRow.Of(Txt("name", "ULS"), Num("case", 1), Num("factor", 1.5)), CalcRow.Of(Txt("name", "ULS"), Num("case", 2), Num("factor", 1.35))),
+        Q("E", 210, "GPa"), new CalcInputValue("report", Text: "ULS"),
+    ];
+
+    /// <summary>
+    /// The post's base plate: the steel-support example's 350 × 300 × 25 plate on C25/30 concrete, with the holding-down bolt data typed (M20 8.8 in a 25 mm plate: tension resistance 141.0 kN,
+    /// stress area 244.79 mm², bearing 248.48 kN, f_ub 800, f_yb 640 MPa), because this chain has no bolt-check step; a test guards them against the connection step's own values. The anchorage
+    /// is designed outside the program (Hilti PROFIS): the report is attached to this step as Evidence, and until it is the sheet says so.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> PipeS6 { get; } =
+    [
+        C("column", "I/H"), Q("h", 203.2, "mm"), Q("b", 203.6, "mm"), Q("t_f", 11, "mm"), Q("t_w", 7.2, "mm"),
+        Q("B", 300, "mm"), Q("L", 350, "mm"), Q("t_p", 25, "mm"), N("alpha", 1), Q("x_b", 135, "mm"), Q("m", 28, "mm"), Q("l_eff", 150, "mm"), Q("e_min", 40, "mm"),
+        Q("F_t_Rd", 141.0, "kN"), Q("A_s", 244.79, "mm^2"), Q("F_1_vb_Rd", 248.48, "kN"), Q("f_ub", 800, "MPa"), Q("f_yb", 640, "MPa"),
+    ];
+
+    // ---- Electronics enclosure: a power trace's loss, the board's heat, the box's temperature, a latch and a lid ------------------
+
+    /// <summary>
+    /// An 8 A supply trace on 2 oz external copper, 2 mm wide and 150 mm long, allowed a 30 K rise. Its board ambient is TYPED at 60 °C, the enclosure's design ceiling: the real
+    /// ambient is the enclosure's internal temperature, which is downstream of this step (linking it back would be a cycle), so a test guards that the enclosure step stays below it.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ElxE7 { get; } =
+    [
+        Q("I", 8, "A"), Q("dT", 30, "K"), Q("T_amb", 60, "degC"), C("layer", "External layer"), N("Cu_oz", 2), Q("w_act", 2, "mm"), Q("L", 150, "mm"),
+    ];
+
+    /// <summary>
+    /// The board's loads (24 V DC, fed from the single-phase mains through a 90 % efficient supply that sits INSIDE the enclosure). Row 0 is the power trace itself: its input power is a 1 W placeholder that the trace
+    /// step's I²R loss replaces by cell link, all of it released as heat inside the enclosure. The gate drivers and logic and the display release all their input as heat; the power stage releases its loss
+    /// only (the share is left blank, so 1 − η). The last row is the supply's own loss, which the sheet counts only if it is a row (E6's convention): 26.5 W = the 238.5 W the DC loads draw × (1/0.9 − 1), typed
+    /// (a test guards it against the loads; it does not follow them automatically). The loads, efficiencies and the supply are invented illustrations.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ElxE6 { get; } =
+    [
+        Table("loads",
+            DcLoad("Power trace loss (PCB)", 0.001, 1, 1, 1),
+            DcLoad("Gate drivers and logic", 0.025, 0.9, 1, 1),
+            CalcRow.Of(Txt("name", "Power stage"), Txt("supply", "DC"), ("P", new CalcCell(0.2, "kW")), Num("cosphi", 1), Num("eta", 0.96), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false))),
+            DcLoad("Display and sensors", 0.012, 1, 1, 1),
+            CalcRow.Of(Txt("name", "24 V supply loss"), Txt("supply", "AC single-phase"), ("P", new CalcCell(0.0265, "kW")), Num("cosphi", 1), Num("eta", 1), Num("heat", 1), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)))),
+        C("psu_bus", "AC single-phase"),
+    ];
+
+    private static CalcRow DcLoad(string name, double kw, double eta, double heat, double duty) =>
+        CalcRow.Of(Txt("name", name), Txt("supply", "DC"), ("P", new CalcCell(kw, "kW")), Num("cosphi", 1), Num("eta", eta), Num("heat", heat), Num("d", duty), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)));
+
+    /// <summary>
+    /// A 500 × 600 × 200 mm wall-mounted enclosure (back against the wall) in a 35 °C room, limit 60 °C, SEALED when it was closed at 25 °C but fitted with a pressure-compensation breather that cracks at 1 kPa
+    /// (an INVENTED breather rating, not a maker's data): the air warming would put 10.83 kPa across the walls, the breather limits it to 1 kPa, and that acts on the 500 × 600 front cover (0.3 m², typed; a test guards it
+    /// against the cover plate's dimensions). The board's heat arrives by link as the additional load; the 4 W of terminals and wiring is the enclosure's own. It dissipates by itself (no fan, no cooling unit).
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ElxE2 { get; } =
+    [
+        Table("loads", CalcRow.Of(Txt("name", "Terminals and wiring"), ("P", new CalcCell(4, "W")), Num("qty", 1), Num("duty", 1))),
+        Q("W", 0.5, "m"), Q("H", 0.6, "m"), Q("D", 0.2, "m"),
+        N("f_top", 1), N("f_front", 1), N("f_rear", 0), N("f_left", 1), N("f_right", 1), N("f_bottom", 0),
+        Q("T_amb", 35, "degC"), Q("T_max", 60, "degC"), Q("T_seal", 25, "degC"), Q("dp_relief", 1, "kPa"), Q("A_cover", 0.3, "m^2"),
+    ];
+
+    /// <summary>
+    /// The cover latch: a cantilever snap hook 12 mm long, 1.6 mm thick and 5 mm wide, deflected 1 mm; SIX identical latches around the cover (a typed count, an invented illustration) share the load on it, which arrives by link
+    /// (a 1 N placeholder here). The secant modulus (1400 MPa) and the permissible strain (3 %) of the plastic are TYPED values
+    /// for 60 °C, the enclosure's limit (<c>T_max</c>), an INVENTED illustration and not a maker's data: the temperature of use arrives by link, but the modulus and the permissible strain do not follow
+    /// it, so they stay valid only while the enclosure stays at or below 60 °C, which the enclosure step's own check (natural dissipation holds <c>T_max</c>) guards at run time. The friction coefficient is a record, typed.
+    /// IDEALISATION: the load is shared equally (F_req/n each). The cover's edge reactions peak mid-edge, so the latches nearest mid-edge carry more than that; equal sharing is an idealisation, so place the latches at the mid-edges or apply a load-share factor to F_req.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ElxM8 { get; } =
+    [
+        C("mode", "Cantilever, constant section"), Q("l", 12, "mm"), Q("h", 1.6, "mm"), Q("b", 5, "mm"), Q("y", 1, "mm"),
+        Q("alpha", 30, "deg"), Q("alpha_r", 70, "deg"), N("mu", 0.3), C("Es_source", "Typed secant modulus"), Q("Es", 1400, "MPa"),
+        C("loading", "One-time (assembled once or rarely)"), N("eps_perm_once", 0.03), N("n_latch", 6),
+    ];
+
+    /// <summary>
+    /// The front cover, the enclosure's largest face and so the panel that governs: a 600 × 500 × 4 mm aluminium plate (600 high, 500 wide), simply supported all round. Its pressure is the sealed enclosure's pressure difference limited by the
+    /// breather (1 kPa), which arrives by link (a 1 kPa placeholder here). 4 mm passes; 3 mm would deflect (4/3)³ times as much, 2.03 mm against the 2 mm limit. The modulus (69 GPa), Poisson's ratio, density and limit stress (120 MPa) are
+    /// generic aluminium-alloy values, TYPED for 60 °C, the enclosure's limit, and indicative only (not a maker's data).
+    /// IDEALISATION: the plate is simply supported all round, whereas the real cover is held at six latches and a gasket; its edge reactions peak at mid-edge, so the latches nearest mid-edge carry more than F_req/n (see the latch step).
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> ElxS9 { get; } =
+    [
+        C("shape", "rectangular"), C("support", "simply supported"), Q("a", 600, "mm"), Q("b", 500, "mm"), Q("t", 4, "mm"),
+        C("load_type", "uniform"), C("load_basis", "pressure q"), Q("q", 1, "kPa"),
+        Q("E", 69, "GPa"), N("nu", 0.33), Q("rho", 2700, "kg/m^3"), Q("f_y", 120, "MPa"), N("gamma_M0", 1),
+    ];
 }

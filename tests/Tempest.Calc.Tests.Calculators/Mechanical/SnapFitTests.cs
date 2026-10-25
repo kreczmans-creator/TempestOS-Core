@@ -474,11 +474,14 @@ public sealed class SnapFitTests
 
         foreach (var port in Snap.Template.OutputPorts!)
         {
+            if (port.Symbol == "F_hold")
+                continue; // only with n_latch
+
             var scalar = Assert.IsType<ScalarValue>(r.FindOutput(port.Symbol)!.Value);
             Assert.Equal(Engine.Units.UnitCatalog.Parse(port.Unit.Length > 0 ? port.Unit : "1").Dimension, scalar.Dimension);
         }
 
-        Assert.Equal(["assembly_force", "retention_force", "strain_util"], Snap.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal(["assembly_force", "retention_force", "strain_util", "F_hold"], Snap.Template.OutputPorts!.Select(p => p.Symbol));
         Assert.All(Snap.Template.RecordKinds!, kind => Assert.All(kind.Symbols, symbol => Assert.NotNull(Snap.Template.FindInput(symbol))));
         Assert.Contains(Snap.Template.RecordKinds!, k => k.Kind == "snapfit.annular-factor" && k.Symbols.SequenceEqual(["K_ann"]));
         Assert.Contains(Snap.Template.RecordKinds!, k => k.Kind == "snapfit.friction" && k.Symbols.SequenceEqual(["mu"]));
@@ -546,5 +549,33 @@ public sealed class SnapFitTests
         Assert.Contains(guide, constant.Steps.Single(st => st.Symbol == "P").Clause, StringComparison.Ordinal);
         Assert.Contains(guide, constant.Steps.Single(st => st.Symbol == "assembly_force").Clause, StringComparison.Ordinal);
         Assert.Contains(guide, bar.Steps.Single(st => st.Symbol == "gamma_perm").Clause, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Several_Latches_Hold_A_Load_Together_And_The_Check_Needs_Both_Their_Number_And_The_Load()
+    {
+        var plain = Run();
+        Assert.Null(plain.FindOutput("F_hold"));
+        var wPrime = plain.OutputSi("retention_force");
+
+        var held = Run(CalcInputValue.Of("n_latch", 6), Q("F_req", 300, "N"));
+        Assert.Equal(6 * wPrime, held.OutputSi("F_hold"), 1e-9);
+        Assert.Equal(300 / (6 * wPrime), held.OutputSi("u_hold"), 1e-12);
+        Assert.Contains(held.Checks, c => c.Name.StartsWith("Latches hold the load", StringComparison.Ordinal));
+
+        // Too few: the check fails; no load: a holding force without a check; a load without a number: a notice, no check.
+        Assert.Contains(Run(CalcInputValue.Of("n_latch", 1), Q("F_req", 300, "N")).Checks, c => !c.Passed);
+        var noLoad = Run(CalcInputValue.Of("n_latch", 6));
+        Assert.Equal(6 * wPrime, noLoad.OutputSi("F_hold"), 1e-9);
+        Assert.Null(noLoad.FindOutput("u_hold"));
+        var noCount = Run(Q("F_req", 300, "N"));
+        Assert.Contains(noCount.Notices, n => n.RuleId == "hold-unused");
+        Assert.DoesNotContain(noCount.Checks, c => c.Name.StartsWith("Latches hold the load", StringComparison.Ordinal));
+
+        // A part of a latch is not a latch; a self-locking joint has no finite holding force.
+        Assert.Contains(Run(CalcInputValue.Of("n_latch", 2.5)).Blocks, b => b.Message.StartsWith("n_latch:", StringComparison.Ordinal));
+        var locking = Run(Q("alpha_r", 85, "deg"), CalcInputValue.Of("n_latch", 6), Q("F_req", 300, "N"));
+        Assert.Null(locking.FindOutput("F_hold"));
+        Assert.DoesNotContain(locking.Checks, c => !c.Passed);
     }
 }

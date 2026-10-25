@@ -1,6 +1,6 @@
 # Calc pack — Steel support (`pack.steel-support`)
 
-**Chain.** Load combinations (`struct.load-combinations`) → Support frame (`struct.frame-2d`) → Column check (`struct.en1993-member`) → Arm joint bolt group (`mech.bolt-group`) → Arm connection bolts (`struct.connection-ec3`) → Holding-down bolts (`struct.connection-ec3`) → Column base plate (`struct.base-plate`).
+**Chain.** Load combinations (`struct.load-combinations`) → Support frame (`struct.frame-2d`); Support frame (`struct.frame-2d`) → Column check (`struct.en1993-member`) and Arm joint bolt group (`mech.bolt-group`) and Arm connection bolts (`struct.connection-ec3`) and Column base plate (`struct.base-plate`); Arm joint bolt group (`mech.bolt-group`) → Arm connection bolts (`struct.connection-ec3`); Holding-down bolts (`struct.connection-ec3`) → Column base plate (`struct.base-plate`).
 
 **Purpose.** Combines the actions on an equipment support, analyses the steel frame, checks the column, designs the bracket's bolted joint and the column base plate, and files the anchorage design done elsewhere as Evidence. The links assume the frame's numbering: nodes 1 (column base, fixed), 2 (column top), 3 (arm tip); member 1 the column, member 2 the arm; the first load row the vertical load at node 3 (filled from the load combinations), the second the horizontal design action at node 2. Signs: the column check takes the axial force tension positive (S2's N_e1), the base plate takes it compression positive (S2's R1_y). One ULS case is analysed (every action unfavourable); the favourable-permanent case is not.
 
@@ -22,7 +22,7 @@ The equipment's dead (12 kN) and maintenance (8 kN) loads, both downward, are co
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes every step below it stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes the steps that take from it, and every step that takes from those, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|

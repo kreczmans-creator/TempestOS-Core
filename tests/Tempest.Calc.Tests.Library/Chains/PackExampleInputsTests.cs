@@ -14,7 +14,7 @@ public sealed class PackExampleInputsTests
         calculators: [.. ElectricalCalculators.All, .. MechanicalCalculators.All, .. BuildingServicesCalculators.All, .. StructuralCalculators.All],
         packTemplates: CalcPackTemplates.All);
 
-    public static TheoryData<string> Templates => ["pack.drive-train", "pack.wet-heating", "pack.cooling", "pack.steel-support"];
+    public static TheoryData<string> Templates => ["pack.drive-train", "pack.wet-heating", "pack.cooling", "pack.steel-support", "pack.envelope-moisture", "pack.cold-pipe", "pack.pipework-supports", "pack.electronics-enclosure"];
 
     private static CalcPackTemplate Template(string id) => CalcPackTemplates.All.Single(t => t.Id == id);
 

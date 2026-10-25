@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Drive panel cooling calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 PACK INDEX
   1. Panel load budget — Load budget, PSU, transformer and battery — rev A — ISSUED
@@ -13,7 +13,7 @@ PACK INDEX
   4. Cooling-water pipework and pump — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
 
 REVISIONS
-  A  2026-10-24  test.engineer  First issue
+  A  2026-10-25  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -38,17 +38,17 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 18/18
-  Test run: 2026-10-24 20:02 UTC
+  Known-answer cases passed: 20/20
+  Test run: 2026-10-25 09:40 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Panel load budget    Revision: A
 Title: Load budget, PSU, transformer and battery
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
@@ -206,7 +206,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: dc7b6b8e4454e8eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 09:40 UTC
   Application: TempestOS test
 
 
@@ -214,13 +214,13 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Enclosure heat    Revision: A
 Title: Enclosure heat dissipation and fan sizing
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
-P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive.
+P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive. Sealed enclosure (T_seal entered, no breather): the pressure difference across the walls when the air warms from the sealing temperature to T_int at constant volume, Δp = p_site·|T_int/T_seal − 1| (absolute temperatures), a rise when T_int > T_seal, a suction when below. A pressure-compensation element (breather or relief) limits it: dp_seal = min(that difference, dp_relief), the cracking pressure. The force of dp_seal on a cover of area A_cover is F_seal = dp_seal·A_cover.
   Ref: IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
   Ref: Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
   Ref: BS EN 61439-1 10.10 — Verification of temperature rise
@@ -252,14 +252,15 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
 3. ASSUMPTIONS
   A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing. (IEC TR 60890-style effective-surface approach; h is a reference value the user may edit.)
   A2. Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise; natural dissipation is neglected for the airflow (conservative). (Manufacturer fan-sizing practice.)
-  A3. The fan curve is linear between the entered points; the system resistance scales with airflow squared. (Duty-point idealisation.)
-  A4. I_sun (Solar irradiance on the enclosure (0 = indoors)) is taken as 0 W/m^2. (Sheet default value; no project figure given.)
-  A5. A_sun (Sunlit area) is taken as 0 m^2. (Sheet default value; no project figure given.)
-  A6. alpha_sun (Surface absorptivity) is taken as 0.5. (Sheet default value; no project figure given.)
-  A7. h (Overall heat-transfer coefficient of the enclosure surface (editable reference value)) is taken as 5.5 W/(m^2*K). (Sheet default value; no project figure given.)
-  A8. altitude (Site altitude (air density)) is taken as 0 m. (Sheet default value; no project figure given.)
-  A9. p_sys (System resistance (filters, grilles) at the reference airflow) is taken as 20 Pa. (Sheet default value; no project figure given.)
-  A10. V_ref (Reference airflow for the system resistance) is taken as 100 m^3/h. (Sheet default value; no project figure given.)
+  A3. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed: the pressure difference follows from the ideal-gas relation at constant volume, from the sealing temperature to the internal temperature with natural dissipation T_int (the temperature without a cooling unit); a breather, a seal that leaks or a flexing wall reduces it, so it is an upper bound (a pressure-compensation element is modelled only as a cap at its cracking pressure, with no flow resistance); the site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
+  A4. The fan curve is linear between the entered points; the system resistance scales with airflow squared. (Duty-point idealisation.)
+  A5. I_sun (Solar irradiance on the enclosure (0 = indoors)) is taken as 0 W/m^2. (Sheet default value; no project figure given.)
+  A6. A_sun (Sunlit area) is taken as 0 m^2. (Sheet default value; no project figure given.)
+  A7. alpha_sun (Surface absorptivity) is taken as 0.5. (Sheet default value; no project figure given.)
+  A8. h (Overall heat-transfer coefficient of the enclosure surface (editable reference value)) is taken as 5.5 W/(m^2*K). (Sheet default value; no project figure given.)
+  A9. altitude (Site altitude (air density)) is taken as 0 m. (Sheet default value; no project figure given.)
+  A10. p_sys (System resistance (filters, grilles) at the reference airflow) is taken as 20 Pa. (Sheet default value; no project figure given.)
+  A11. V_ref (Reference airflow for the system resistance) is taken as 100 m^3/h. (Sheet default value; no project figure given.)
 
 4. WORKING
   [18] P_loads = Σ P_i × n_i × d_i
@@ -340,11 +341,11 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   WARNING cooling-unit: T_max: natural dissipation holds 237.6 W of 3660 W; ventilate or fit a 3422 W cooling unit.
 
 8. VERIFICATION
-  Template: elec.enclosure-heat@1.2.0
-  Content hash: 48cdd32546406349
+  Template: elec.enclosure-heat@1.4.0
+  Content hash: 3add357ba3b44d85
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 2/2
-  Test run: 2026-10-24 20:02 UTC
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-25 09:40 UTC
   Application: TempestOS test
 
 
@@ -352,9 +353,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Cooling-water air coil    Revision: A
 Title: Heat exchanger (LMTD and ε-NTU)
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.
@@ -491,7 +492,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   Content hash: d4c992a2cd44e8bc
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 09:40 UTC
   Application: TempestOS test
 
 
@@ -499,9 +500,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Cooling-water pipework and pump    Revision: A
 Title: Pipe pressure drop and pump duty
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
@@ -556,92 +557,97 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = T = 23.638 °C
       = 2.9207 kPa
         Vapour pressure (NPSH)
-  [11] c_p = cp_load
+  [6] T_line = T (no T_line entered)
+      = 23.638 °C
+      = 23.638 degC
+        Design temperature of the line to insulate: the fluid temperature T, since no T_line was entered
+  [12] c_p = cp_load
       = 4180 J/(kg·K)
       = 4180 J/(kg·K)
         Specific heat (as entered)
-  [12] Q_design = Phi_load / (rho * c_p * dT_load)
+  [13] Q_design = Phi_load / (rho * c_p * dT_load)
       = 3422.4 W / (997.39 kg/m³ × 4180 J/(kg·K) × 3.275 K)
       = 0.90236 m³/h
         Design flow from the heat carried: Φ / (ρ c_p ΔT)
-  [13] v_s1 = cooling water supply and return: Q / (π D²/4)
+  [14] v_s1 = cooling water supply and return: Q / (π D²/4)
       = 0.90236 m³/h / (π × 25² mm² / 4)
       = 0.51063 m/s
         Velocity, cooling water supply and return
-  [14] Re_s1 = cooling water supply and return: ρ v D / μ
+  [15] Re_s1 = cooling water supply and return: ρ v D / μ
       = 997.39 × 0.51063 × 0.025 / 0.00091984
       = 13842
         Reynolds number, cooling water supply and return
-  [15] f_s1 = cooling water supply and return: Darcy friction factor
+  [16] f_s1 = cooling water supply and return: Darcy friction factor
       = Colebrook–White, 11 iterations (Swamee–Jain start 0.031748)
       = 0.031412
         Friction factor, cooling water supply and return
-  [16] f_sj_s1 = cooling water supply and return: Swamee–Jain check
+  [17] f_sj_s1 = cooling water supply and return: Swamee–Jain check
       = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
       = 0.031748
         Explicit cross-check, cooling water supply and return
-  [17] h_f_s1 = cooling water supply and return: f (L + L_eq)/D · v²/2g + K v²/2g
+  [18] h_f_s1 = cooling water supply and return: f (L + L_eq)/D · v²/2g + K v²/2g
       = 0.031412 × (30 + 0) / 0.025 × 0.013294 + 12 × 0.013294
       = 0.66065 m
         Head loss, cooling water supply and return
-  [18] h_f_total = Σ h_f
+  [19] h_f_total = Σ h_f
       = 1 segment(s)
       = 0.66065 m
         Total friction and fitting loss at the design flow
-  [20] V_pipe = Σ π/4·D²·L
+  [21] V_pipe = Σ π/4·D²·L
       = 1 segment(s)
       = 14.726 L
         Water held in the pipe segments
-  [21] H_static = h_out (closed circuit: no static lift)
+  [22] H_static = h_out (closed circuit: no static lift)
       = 0
       = 0 m
         Static head
-  [22] H_sys = H_static + h_f_total
+  [23] H_sys = H_static + h_f_total
       = 0 m + 0.66065 m
       = 0.66065 m
         System head at the design flow
-  [23] dp_total = rho * 9.80665 m/s^2 * h_f_total
+  [24] dp_total = rho * 9.80665 m/s^2 * h_f_total
       = 997.39 kg/m³ × 9.80665 m/s^2 × 0.66065 m
       = 6.4618 kPa
         Friction pressure drop at the design flow
-  [24] dp_sys = rho * 9.80665 m/s^2 * H_sys
+  [25] dp_sys = rho * 9.80665 m/s^2 * H_sys
       = 997.39 kg/m³ × 9.80665 m/s^2 × 0.66065 m
       = 6.4618 kPa
         System pressure at the design flow
-  [25] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+  [26] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
       = 997.39 kg/m³ × 9.80665 m/s^2 × 0.90236 m³/h × 0.66065 m
       = 0.0016197 kW
         Hydraulic power at the design point
-  [28] P_shaft_design = P_hyd / eta_pump
+  [29] P_shaft_design = P_hyd / eta_pump
       = 0.0016197 kW / 0.7
       = 0.0023138 kW
         Pump shaft power at the design flow
-  [29] T_shaft = P_shaft_design / n_pump
+  [30] T_shaft = P_shaft_design / n_pump
       = 0.0023138 kW / 2800 rpm
       = 0.0078912 N·m
         Pump shaft torque P / ω at the design flow
-  [30] n_shaft = n_pump
+  [31] n_shaft = n_pump
       = 2800 rpm
       = 2800 rpm
         Pump shaft speed
-  [33] h_f_suction = Σ h_f on the suction side
+  [34] h_f_suction = Σ h_f on the suction side
       = 0 suction segment(s)
       = 0 m
         Suction-side friction loss
-  [34] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
+  [35] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
       = 101.32 kPa / (997.39 kg/m³ × 9.80665 m/s^2) + 0 m − 0 m − 2.9207 kPa / (997.39 kg/m³ × 9.80665 m/s^2)
       = 10.061 m
         NPSH available
-  [35] v_peak = highest segment velocity
+  [36] v_peak = highest segment velocity
       = 0.51063 m/s
       = 0.51063 m/s
         Highest velocity
-  [36] u_v = v_peak / v_max
+  [37] u_v = v_peak / v_max
       = 0.51063 / 3
       = 0.17021
         Velocity utilisation
 
 5. RESULTS
+  T_line = 23.638 degC    Line design temperature
   v_s1 = 0.51063 m/s    Velocity, cooling water supply and return
   Re_s1 = 13842    Re, cooling water supply and return
   f_s1 = 0.031412    f, cooling water supply and return
@@ -668,9 +674,9 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   No warnings.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.3.0
-  Content hash: d3c3c38f4c81cf2d
+  Template: bs.pipe-pump@1.5.0
+  Content hash: fa61fbf098961063
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 09:40 UTC
   Application: TempestOS test

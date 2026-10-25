@@ -218,6 +218,123 @@ public static class CalcPackTemplates
             new CalcPackBinding("e1", "P_rated", "e4", "P"),
         ]);
 
+    /// <summary>
+    /// Envelope moisture: room heat loss (B4) and the room air state (B2) → Glaser condensation (B7).
+    /// <para>
+    /// B4 → B7: the heat-loss step offers no per-layer output (its layers table is an input, and a link feeds one number or one table cell from a declared output), so
+    /// the wall's layers are typed in the Glaser step as well, with the vapour resistance factors it needs, and the one value the two share is linked: B4's U-value of the
+    /// first element (<c>U_1</c>, a declared port since B4 1.2.0) is the Glaser step's <c>U_ref</c>. The Glaser step compares it with <c>1/R_T</c> of its own layers and warns when
+    /// they differ by more than 2 %, so a revision of the wall in the heat-loss step makes the Glaser step stale and, once updated, the warning shows whether the layers still agree (a revision of the Glaser layers makes nothing stale: the warning is the only guard). The comparison is of the thermal resistance only: it cannot see a swapped layer order or a wrong vapour resistance factor in the twice-typed layers. The Glaser step's vapour control
+    /// layer is not in the heat-loss step (0.2 mm is below its 1 mm layer minimum and thermally negligible: 0.0006 m²K/W). B2 → B7: the room air's dry-bulb (<c>t_1_out</c>) is the
+    /// internal air temperature <c>theta_int</c> and its relative humidity (<c>phi_1</c>, added to B2 in 1.1.0 as a percentage quantity: the plain-number <c>RH_1</c> cannot be linked
+    /// to a percentage input) the internal relative humidity <c>RH_int</c>. The heat-loss step's own internal design temperature is typed (21 °C, the same as the air state's;
+    /// a test guards the match). The twelve monthly outside conditions, the surface resistances, the critical humidity and the limit on the condensate are the user's records:
+    /// the example's are invented and no climate or material data of any standard is shipped.
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate EnvelopeMoisture { get; } = new(
+        "pack.envelope-moisture", "Envelope moisture",
+        "Takes the U-value of a wall from the room heat-loss step and the temperature and humidity of the room air from the psychrometrics step to the Glaser condensation check of the wall: the condensate on each interface month by month, the annual balance, the peak against the owner's limit, and the surface temperature factor. The wall's layers are typed in both the heat-loss and the Glaser steps (no per-layer link exists) and the Glaser step warns if its U-value departs from the heat-loss step's by more than 2 %. The monthly climate is the user's own record: the example's is invented.",
+        [
+            new CalcPackStep("b4", "bs.room-heat-loss", "Room heat loss", CalcPackExamples.EnvB4),
+            new CalcPackStep("b2", "bs.psychrometrics", "Room air state", CalcPackExamples.EnvB2),
+            new CalcPackStep("b7", "bs.glaser", "Wall condensation", CalcPackExamples.EnvB7),
+        ],
+        [
+            new CalcPackBinding("b4", "U_1", "b7", "U_ref"),
+            new CalcPackBinding("b2", "t_1_out", "b7", "theta_int"),
+            new CalcPackBinding("b2", "phi_1", "b7", "RH_int"),
+        ]);
+
+    /// <summary>
+    /// Cold pipe: chilled-water pipe (B1) and the room air state (B2) → insulation thickness (B9).
+    /// <para>
+    /// B1 → B9: the design temperature of the line (<c>T_line</c>, a declared port since B1 1.5.0) is the process temperature <c>theta_i</c>. It is NOT the mean fluid temperature <c>T</c> the pipe step takes its properties at: for a
+    /// 6/12 °C chilled line the mean is 9 °C but anti-condensation must be sized on the 6 °C flow, so the pipe step is given the flow temperature as <c>T_line</c> (the port is offered only when <c>T_line</c> or <c>T</c> is entered). The first segment's
+    /// outside diameter (<c>OD_1</c>, from the optional <c>OD</c> column added to the segments table in B1 1.4.0) is the insulation's inside diameter <c>D_i</c>: the inner diameter B1 judges the flow in is not the
+    /// diameter the insulation covers. B2 → B9: the room air's dry-bulb (<c>t_1_out</c>) is the ambient temperature <c>theta_a</c>, its dew point (<c>t_dp_1</c>) the dew point <c>theta_dew</c> the surface must
+    /// stay above by the margin, and its relative humidity (<c>phi_1</c>) <c>RH_a</c>: an entered dew point wins, so <c>RH_a</c> is not used in the result, but it is linked so that the sheet's printed humidity is the air state's, not a default. The heat-gain limit <c>q_max_m</c> is omitted from the example so that the
+    /// dew-point margin is the one criterion; the conductivity, the surface coefficient, the margin and the chosen thickness are the user's. Revising the pipe's line temperature or outside diameter, or the room air,
+    /// makes the insulation stale. The pipe step's own pump and pressure checks are unaffected by the insulation: nothing is fed back.
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate ColdPipe { get; } = new(
+        "pack.cold-pipe", "Cold pipe",
+        "Takes the design temperature (the coldest fluid temperature in the line, not its mean) and the outside diameter of a chilled-water pipe from the pipe step, and the ambient temperature, dew point and humidity of the surrounding air from the psychrometrics step, to the insulation thickness that keeps the pipe's outer surface above the dew point by the chosen margin, and the heat gain and surface temperature at the chosen thickness. The pipe step also checks the flow velocity in the pipe's inner diameter; the insulation's conductivity and surface coefficient are the user's.",
+        [
+            new CalcPackStep("b1", "bs.pipe-pump", "Chilled water pipe", CalcPackExamples.ColdB1),
+            new CalcPackStep("b2", "bs.psychrometrics", "Plant room air", CalcPackExamples.ColdB2),
+            new CalcPackStep("b9", "bs.insulation", "Pipe insulation", CalcPackExamples.ColdB9, Omit: ["q_max_m"]),
+        ],
+        [
+            new CalcPackBinding("b1", "OD_1", "b9", "D_i"),
+            new CalcPackBinding("b1", "T_line", "b9", "theta_i"),
+            new CalcPackBinding("b2", "t_1_out", "b9", "theta_a"),
+            new CalcPackBinding("b2", "t_dp_1", "b9", "theta_dew"),
+            new CalcPackBinding("b2", "phi_1", "b9", "RH_a"),
+        ]);
+
+    /// <summary>
+    /// Pipework supports: pipe expansion and anchor force (B8) → anchor post frame (S2) → post base plate (S6), with the anchorage design done elsewhere filed as Evidence.
+    /// <para>
+    /// B8 → S2: the anchor force (<c>anchor_force</c>, N) is the first load row's <c>F_x</c> (kN) of the post frame, a table-cell link: the horizontal force the pipe exerts on its anchor, along the pipe. The row's other
+    /// load, the weight, is typed; the ULS combination (factors 1.5 on the thermal force and 1.35 on the weight) is the user's. B8's <c>anchor_moment</c> is NOT linked: it is the largest root moment of the guided-cantilever legs, not a
+    /// moment applied to the anchor by a frame, and the sheet says a formal analysis is needed before an anchor is sized for moment. S2 → S6 as in the steel-support pack: the base reactions are the plate's actions (<c>R1_y</c> compression
+    /// positive → <c>N_Ed</c>, <c>R1_m_abs</c> → <c>M_Ed</c>, <c>R1_x_abs</c> → <c>V_Ed</c>). There is no bolt-check step in this chain, so the holding-down bolt data of S6 (tension resistance, stress area, bearing, strengths) are typed for M20 8.8 in a 25 mm
+    /// plate and guarded by a test against the connection step. The links depend on S2's numbering, which the example fixes: node 1 the column base (fixed), node 2 the anchor; member 1 the post; the first load row the thermal force at node 2.
+    /// S2 must be given its nodes, elements and loads (instantiating never creates rows); the PROFIS anchorage report is attached to S6 as Evidence, as in the steel-support pack. The example's pipe-expansion limits (allowable range, screening limit) are invented.
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate PipeworkSupports { get; } = new(
+        "pack.pipework-supports", "Pipework supports",
+        "Takes the force a heated pipe puts on its anchor from the pipe-expansion step to the steel post that holds the anchor and the post's base plate, and files the anchorage design done elsewhere as Evidence. The links assume the post frame's numbering: node 1 the column base (fixed), node 2 the anchor, member 1 the post, the first load row the thermal force along the pipe; the weight in the second row and the load factors are the user's. The pipe step is a screening: a line that fails it needs a formal stress analysis, and its moment is not carried to the post. The holding-down bolt data are typed (no bolt-check step).",
+        [
+            new CalcPackStep("b8", "bs.pipe-expansion", "Pipe expansion and anchor force", CalcPackExamples.PipeB8),
+            new CalcPackStep("s2", "struct.frame-2d", "Anchor post frame", CalcPackExamples.PipeS2),
+            new CalcPackStep("s6", "struct.base-plate", "Anchor post base plate", CalcPackExamples.PipeS6),
+        ],
+        [
+            new CalcPackBinding("b8", "anchor_force", "s2", "loads", Row: 0, Column: "F_x"),
+            new CalcPackBinding("s2", "R1_y", "s6", "N_Ed"),
+            new CalcPackBinding("s2", "R1_m_abs", "s6", "M_Ed"),
+            new CalcPackBinding("s2", "R1_x_abs", "s6", "V_Ed"),
+        ]);
+
+    /// <summary>
+    /// Electronics enclosure: PCB power trace (E7) → load budget (E6) → enclosure heat (E2) → cover latches (M8) and cover plate (S9).
+    /// <para>
+    /// E7 → E6: the trace's I²R loss (<c>trace_Ploss</c>, W) is the input power of a row of the board's load table (<c>loads</c> row 0, column <c>P</c>, kW), a table-cell link; all of it is released as heat inside the enclosure
+    /// (the row's heat share is 1). E6 → E2: the heat the loads release inside (<c>Phi</c>, kW) is the enclosure's additional load (<c>P_add</c>, W), as in the cooling chain. The supply's own loss is a TYPED row of the load table (E6 counts it
+    /// only if it is a row); a test guards it against the loads. E2 → M8: the enclosure's internal temperature (<c>T_int</c>) is the latches' temperature of use (<c>T_use</c>). The enclosure is sealed (<c>T_seal</c>) with a
+    /// pressure-compensation breather (<c>dp_relief</c>), so the air warming from the sealing temperature to <c>T_int</c> at constant volume would put p0·(T_int/T_seal − 1) across the walls (an upper bound) and the breather
+    /// limits it: <c>dp_seal</c> = min of the two. E2 → S9: <c>dp_seal</c> is the uniform pressure <c>q</c> on the cover plate. E2 → M8: the force <c>F_seal</c> = <c>dp_seal</c>·<c>A_cover</c> on the cover is the force <c>F_req</c> the
+    /// <c>n_latch</c> latches (typed: six) must hold, each by its separation force W′; M8 checks <c>F_req</c> ≤ n·W′. The cover area is typed in E2 and in the plate's dimensions (a test guards the match).
+    /// </para>
+    /// <para>
+    /// With the breather governing, the linked pressure and force do not change when the trace is revised, so the cover plate and the force on the latches stay current; they go stale when E2 itself, or the breather rating, is revised.
+    /// The snap-fit records the temperature but its secant modulus and permissible strain, and the cover's modulus and limit stress, are TYPED for 60 °C, the enclosure's limit <c>T_max</c>: they do not follow the links, and are valid only while the enclosure stays
+    /// at or below that limit, which the enclosure step's own check (natural dissipation holds <c>T_max</c>) guards at run time; if the limit or the temperature moves they must be re-entered from the material's data. The trace step's board ambient is typed (60 °C, also <c>T_max</c>):
+    /// the real ambient is the enclosure's internal temperature, downstream of the trace, so linking it back would be a cycle; the same check guards it. The plate step has no temperature input.
+    /// </para>
+    /// </summary>
+    public static CalcPackTemplate ElectronicsEnclosure { get; } = new(
+        "pack.electronics-enclosure", "Electronics enclosure",
+        "Follows the loss of a board's power trace into the heat of its load budget, the temperature a sealed enclosure with a pressure-compensation breather settles at, the pressure difference that temperature puts across it (limited by the breather) and the force of that pressure on the front cover, the cover latches that must hold it, and the cover plate under that pressure. The trace loss is a row of the load table (a table cell); the enclosure's internal temperature is the latches' temperature of use; the pressure difference is the cover's pressure and, times the cover area, the force on the latches. The latches' and cover's material values are typed for 60 °C, the enclosure's limit, and do not follow the links; the trace's board ambient, the supply's loss row and the latch count are typed.",
+        [
+            new CalcPackStep("e7", "elec.pcb-trace", "Power trace", CalcPackExamples.ElxE7),
+            new CalcPackStep("e6", "elec.load-budget", "Board load budget", CalcPackExamples.ElxE6),
+            new CalcPackStep("e2", "elec.enclosure-heat", "Enclosure temperature", CalcPackExamples.ElxE2),
+            new CalcPackStep("m8", "mech.snap-fit", "Cover latches", CalcPackExamples.ElxM8),
+            new CalcPackStep("s9", "struct.plate-bending", "Cover plate", CalcPackExamples.ElxS9),
+        ],
+        [
+            new CalcPackBinding("e7", "trace_Ploss", "e6", "loads", Row: 0, Column: "P"),
+            new CalcPackBinding("e6", "Phi", "e2", "P_add"),
+            new CalcPackBinding("e2", "T_int", "m8", "T_use"),
+            new CalcPackBinding("e2", "F_seal", "m8", "F_req"),
+            new CalcPackBinding("e2", "dp_seal", "s9", "q"),
+        ]);
+
     /// <summary>Every built-in chain.</summary>
-    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit];
+    public static IReadOnlyList<CalcPackTemplate> All { get; } = [DriveTrain, MotorCircuit, WetHeating, Cooling, SteelSupport, HydraulicPowerUnit, EnvelopeMoisture, ColdPipe, PipeworkSupports, ElectronicsEnclosure];
 }

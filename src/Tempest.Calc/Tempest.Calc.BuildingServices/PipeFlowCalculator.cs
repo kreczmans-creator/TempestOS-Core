@@ -31,6 +31,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         new("name", "Segment", CalcInputKind.Text, IsOptional: true),
         new("L", "Length", CalcInputKind.Quantity, "m", HardMin: 0, HardMax: 1e6),
         new("D", "Inner diameter", CalcInputKind.Quantity, "mm", HardMin: 0.1, HardMax: 1e4),
+        new("OD", "Outside diameter of the pipe (optional; the first segment's is offered as OD_1, the inside diameter of its insulation)", CalcInputKind.Quantity, "mm", HardMin: 0.1, HardMax: 1e4, IsOptional: true),
         new("eps", "Roughness", CalcInputKind.Quantity, "mm", HardMin: 0, HardMax: 100),
         new("K", "Σ K of fittings", CalcInputKind.Number, HardMin: 0, HardMax: 1e4, IsOptional: true),
         new("L_eq", "Equivalent length of fittings", CalcInputKind.Quantity, "m", HardMin: 0, HardMax: 1e6, IsOptional: true),
@@ -39,12 +40,13 @@ public sealed class PipeFlowCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
+        Id, "1.5.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
         "Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.",
         "Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.",
         [
             new CalcInputSpec("fluid", "Fluid", CalcInputKind.Choice, Choices: [FluidWater, FluidCustom], DefaultChoice: FluidWater, Group: "Fluid"),
             new CalcInputSpec("T", "Fluid temperature (mean; link B6 t_m for a heating loop)", CalcInputKind.Quantity, "degC", Default: 20, Min: 0, Max: 100, HardMin: -50, HardMax: 300, Group: "Fluid"),
+            new CalcInputSpec("T_line", "Design temperature of the line for the insulation step: the coldest (cold line) or hottest (hot line) fluid temperature in it, for example the flow temperature of a 6/12 °C chilled line whose mean T is 9 °C (blank = T; offered as the port T_line only when T_line or T is entered; not used for the fluid properties)", CalcInputKind.Quantity, "degC", Min: -50, Max: 150, HardMin: -100, HardMax: 400, IsOptional: true, Group: "Fluid"),
             new CalcInputSpec("rho_custom", "Density (custom fluid)", CalcInputKind.Quantity, "kg/m^3", Min: 500, Max: 2000, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Fluid"),
             new CalcInputSpec("mu_custom", "Dynamic viscosity (custom fluid)", CalcInputKind.Quantity, "mPa*s", Min: 0.1, Max: 1000, HardMin: 1e-4, HardMax: 1e6, IsOptional: true, Group: "Fluid"),
             new CalcInputSpec("Q", "Design flow rate (blank when a heat load gives it)", CalcInputKind.Quantity, "m^3/h", Default: 20, Min: 0.01, Max: 1e5, HardMin: 1e-9, HardMax: 1e7, IsOptional: true, Group: "System"),
@@ -131,6 +133,8 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcOutputPort("T_shaft", "N*m", "Pump shaft torque, for the larger of the design-flow and duty-point shaft power (→ E1 load torque)"),
             new CalcOutputPort("n_shaft", "rpm", "Pump shaft speed (→ E1 load speed)"),
             new CalcOutputPort("v_peak", "m/s", "Highest velocity"),
+            new CalcOutputPort("T_line", "degC", "Design temperature of the line to insulate: T_line as entered, else the fluid temperature T when entered (not offered when neither is entered; → B9 process temperature)"),
+            new CalcOutputPort("OD_1", "mm", "Outside diameter of the first pipe segment, where entered (→ B9 pipe outer diameter D_i)"),
             new CalcOutputPort("NPSH_a", "m", "NPSH available (water)"),
             new CalcOutputPort("Q_duty", "m^3/h", "Duty flow against the pump curve"),
             new CalcOutputPort("H_duty", "m", "Duty head against the pump curve"),
@@ -185,6 +189,21 @@ public sealed class PipeFlowCalculator : ICalcCalculator
 
         rho = c.Si("rho");
         mu = c.Si("mu");
+
+        // The line temperature the insulation step sizes on (anti-condensation on the coldest, a hot surface limit on the hottest), which need not be the mean T:
+        // offered only when the user entered it, never the 20 °C default.
+        if (c.Has("T_line"))
+        {
+            c.Input("T_line");
+            var tLine = c.Si("T_line") - 273.15;
+            c.Record("T_line", "T_line (as entered)", $"{F(tLine)} °C", ScalarValue.Of(tLine, UnitCatalog.Parse("degC")), "Design temperature of the line to insulate (the coldest or hottest fluid temperature in it)");
+            c.Output("T_line", "Line design temperature");
+        }
+        else if (tEntered)
+        {
+            c.Record("T_line", "T (no T_line entered)", $"{F(t)} °C", ScalarValue.Of(t, UnitCatalog.Parse("degC")), "Design temperature of the line to insulate: the fluid temperature T, since no T_line was entered");
+            c.Output("T_line", "Line design temperature");
+        }
         c.Input("h_out");
         c.Input("v_max");
 
@@ -251,6 +270,15 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         {
             c.Block("segments", "segments: every segment needs a positive diameter and a non-negative length.");
             return;
+        }
+
+        for (var i = 0; i < rows.Count; i++)
+        {
+            if (rows[i].Get("OD")?.Number is not null && Cell(rows[i], "OD", "mm") <= segments[i].D)
+            {
+                c.Block("segments", $"segments: segment {i + 1} ('{segments[i].Name}') has an outside diameter OD of {F(Cell(rows[i], "OD", "mm") * 1000)} mm that is not larger than its inner diameter D of {F(segments[i].D * 1000)} mm; the pipe wall needs a thickness. Enter the outside diameter or clear it.");
+                return;
+            }
         }
 
         var detailed = segments.Count <= MaxDetailedSegments;
@@ -331,6 +359,12 @@ public sealed class PipeFlowCalculator : ICalcCalculator
 
         var vPipe = segments.Sum(s => Math.PI * s.D * s.D / 4 * s.L);
         c.Record("V_pipe", "Σ π/4·D²·L", $"{segments.Count} segment(s)", ScalarValue.Of(vPipe * 1e3, "L"), "Water held in the pipe segments");
+        if (rows[0].Get("OD")?.Number is not null)
+        {
+            c.Record("OD_1", "OD of the first segment (as entered)", $"{segments[0].Name}: {F(Cell(rows[0], "OD", "mm") * 1000)} mm", ScalarValue.Of(Cell(rows[0], "OD", "mm") * 1e3, "mm"), "Outside diameter of the first pipe segment (the inside of its insulation)");
+            c.Output("OD_1", "Outside diameter of the first segment");
+        }
+
         c.Record("H_static", closed ? "h_out (closed circuit: no static lift)" : "Σ dz + h_out", closed ? $"{F(c.Si("h_out"))}" : $"{F(dzTotal)} + {F(c.Si("h_out"))}", ScalarValue.Of(lift + c.Si("h_out"), m), "Static head");
         c.Assign("H_sys", "H_static + h_f_total", "m", "System head at the design flow");
         c.Assign("dp_total", "rho * 9.80665 m/s^2 * h_f_total", "kPa", "Friction pressure drop at the design flow");

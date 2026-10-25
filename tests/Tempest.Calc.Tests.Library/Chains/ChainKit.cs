@@ -155,4 +155,42 @@ internal static class ChainKit
         Assert.False((await host.Service.UpdateInputsAsync(made.Instances[template.Steps[0].Key].Id, [])).Succeeded);
         return sheet;
     }
+
+    /// <summary>
+    /// Proves the staleness gate of Issue (not the unchecked-pack gate). A pack member of a checked pack is frozen, so the first step cannot be revised in place; as in the drive-train
+    /// test, an outside copy of the first step (<paramref name="firstKey"/>) feeds the first downstream step in its place (<paramref name="rebind"/>, done while the pack is a draft), is checked and issued, the pack is
+    /// checked on it, and then the outside copy moves on to a new revision. No pack member is touched, yet every step downstream of the rebound one is stale: Issue is refused naming the first stale member,
+    /// not for the pack's status and not for an edit after the check, and the pack stays Checked.
+    /// </summary>
+    public static async Task IssueIsRefusedAtTheStalenessGateWhenTheFirstStepMovesAfterTheCheckAsync(
+        LibraryTestHost host, CalcPackInstantiation made, CalcPackTemplate template, string firstKey, string firstDownstreamKey,
+        Func<Guid, Guid, Task<CalcActionResult>> rebind, IReadOnlyList<string> downstreamInOrder)
+    {
+        var first = template.Steps.Single(s => s.Key == firstKey);
+        var outside = await host.Service.CreateAsync(first.TemplateId, made.Pack.ProjectId, "Outside copy of " + first.Name, (await Fresh(host, made, firstKey)).Inputs);
+        Assert.Empty(outside.Blocks);
+        var rebound = await rebind(made.Instances[firstDownstreamKey].Id, outside.Id);
+        Assert.True(rebound.Succeeded, rebound.Reason);
+        await AuthoredByAnotherAsync(host, made);
+        host.Principal = "j.reviewer";
+        Assert.True((await host.Service.CheckAsync(outside.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        Assert.True((await host.Service.IssueAsync(outside.Id, "EXT-1", "Client Co")).Succeeded);
+        var check = await host.Service.CheckPackAsync(made.Pack.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
+        Assert.True(check.Succeeded, check.Reason);
+        Assert.Equal(CalcInstanceStatus.Checked, (await host.Store.FindPackAsync(made.Pack.Id))!.Status);
+
+        // The first step moves on after the check, as a new revision; no pack member is touched.
+        var moved = await host.Service.ReviseAsync(outside.Id);
+        Assert.True(moved.Succeeded, moved.Reason);
+
+        foreach (var key in downstreamInOrder)
+            Assert.True((await host.Service.StalenessAsync(await Fresh(host, made, key))).IsStale, $"{key} should be stale");
+
+        var refused = await host.Service.IssuePackAsync(made.Pack.Id, "STALE-ISSUE", "Client Co");
+        Assert.False(refused.Succeeded);
+        Assert.Contains($"Pack member '{made.Instances[downstreamInOrder[0]].Name}' is stale", refused.Reason, StringComparison.Ordinal);
+        Assert.DoesNotContain("changed after the pack was checked", refused.Reason, StringComparison.Ordinal);
+        Assert.DoesNotContain("check it before issuing", refused.Reason, StringComparison.Ordinal);
+        Assert.Equal(CalcInstanceStatus.Checked, (await host.Store.FindPackAsync(made.Pack.Id))!.Status);
+    }
 }

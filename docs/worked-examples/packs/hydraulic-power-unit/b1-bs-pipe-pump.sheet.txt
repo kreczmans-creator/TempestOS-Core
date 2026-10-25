@@ -54,68 +54,73 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = 30 mPa·s
       = 30 mPa·s
         Dynamic viscosity (as entered)
-  [10] Q_design = Q
+  [7] T_line = T (no T_line entered)
+      = 50 °C
+      = 50 degC
+        Design temperature of the line to insulate: the fluid temperature T, since no T_line was entered
+  [11] Q_design = Q
       = 4.5376 m³/h
       = 4.5376 m³/h
         Design flow (as entered)
-  [11] v_s1 = pressure line to cylinder: Q / (π D²/4)
+  [12] v_s1 = pressure line to cylinder: Q / (π D²/4)
       = 4.5376 m³/h / (π × 20² mm² / 4)
       = 4.0122 m/s
         Velocity, pressure line to cylinder
-  [12] Re_s1 = pressure line to cylinder: ρ v D / μ
+  [13] Re_s1 = pressure line to cylinder: ρ v D / μ
       = 870 × 4.0122 × 0.02 / 0.03
       = 2327.1
         Reynolds number, pressure line to cylinder
-  [13] f_s1 = pressure line to cylinder: Darcy friction factor
+  [14] f_s1 = pressure line to cylinder: Darcy friction factor
       = Colebrook–White, 15 iterations (Swamee–Jain start 0.050521)
       = 0.048912
         Friction factor, pressure line to cylinder
-  [14] f_sj_s1 = pressure line to cylinder: Swamee–Jain check
+  [15] f_sj_s1 = pressure line to cylinder: Swamee–Jain check
       = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
       = 0.050521
         Explicit cross-check, pressure line to cylinder
-  [15] h_f_s1 = pressure line to cylinder: f (L + L_eq)/D · v²/2g + K v²/2g
+  [16] h_f_s1 = pressure line to cylinder: f (L + L_eq)/D · v²/2g + K v²/2g
       = 0.048912 × (12 + 0) / 0.02 × 0.82074 + 6 × 0.82074
       = 29.011 m
         Head loss, pressure line to cylinder
-  [16] h_f_total = Σ h_f
+  [17] h_f_total = Σ h_f
       = 1 segment(s)
       = 29.011 m
         Total friction and fitting loss at the design flow
-  [18] V_pipe = Σ π/4·D²·L
+  [19] V_pipe = Σ π/4·D²·L
       = 1 segment(s)
       = 3.7699 L
         Water held in the pipe segments
-  [19] H_static = Σ dz + h_out
+  [20] H_static = Σ dz + h_out
       = 0 + 0
       = 0 m
         Static head
-  [20] H_sys = H_static + h_f_total
+  [21] H_sys = H_static + h_f_total
       = 0 m + 29.011 m
       = 29.011 m
         System head at the design flow
-  [21] dp_total = rho * 9.80665 m/s^2 * h_f_total
+  [22] dp_total = rho * 9.80665 m/s^2 * h_f_total
       = 870 kg/m³ × 9.80665 m/s^2 × 29.011 m
       = 247.51 kPa
         Friction pressure drop at the design flow
-  [22] dp_sys = rho * 9.80665 m/s^2 * H_sys
+  [23] dp_sys = rho * 9.80665 m/s^2 * H_sys
       = 870 kg/m³ × 9.80665 m/s^2 × 29.011 m
       = 247.51 kPa
         System pressure at the design flow
-  [23] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+  [24] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
       = 870 kg/m³ × 9.80665 m/s^2 × 4.5376 m³/h × 29.011 m
       = 0.31198 kW
         Hydraulic power at the design point
-  [26] v_peak = highest segment velocity
+  [27] v_peak = highest segment velocity
       = 4.0122 m/s
       = 4.0122 m/s
         Highest velocity
-  [27] u_v = v_peak / v_max
+  [28] u_v = v_peak / v_max
       = 4.0122 / 5
       = 0.80243
         Velocity utilisation
 
 5. RESULTS
+  T_line = 50 degC    Line design temperature
   v_s1 = 4.0122 m/s    Velocity, pressure line to cylinder
   Re_s1 = 2327.1    Re, pressure line to cylinder
   f_s1 = 0.048912    f, pressure line to cylinder
@@ -139,9 +144,9 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   WARNING fittings: segments: pressure line to cylinder has fitting losses (K = 6) at Re = 2327.1; the K values are turbulent-flow values and rise at low Reynolds number, so the fittings loss K·v²/2g is understated here.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.3.0
-  Content hash: d3c3c38f4c81cf2d
+  Template: bs.pipe-pump@1.5.0
+  Content hash: fa61fbf098961063
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 03:34 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test

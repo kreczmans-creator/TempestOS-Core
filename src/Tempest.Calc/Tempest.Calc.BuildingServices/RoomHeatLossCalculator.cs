@@ -54,7 +54,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
+        Id, "1.2.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
         "U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.",
         "Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing\n" +
         "Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside\n" +
@@ -140,6 +140,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcOutputPort("HLC", "W/K", "Heat loss coefficient"),
             new CalcOutputPort("Phi_T", "W", "Fabric heat loss including the thermal-bridge allowance"),
             new CalcOutputPort("Phi_V", "W", "Ventilation heat loss"),
+            new CalcOutputPort("U_1", "W/(m^2*K)", "U-value of the first element in the elements table (→ B7 wall U-value cross-check)"),
         ],
         RecordKinds:
         [

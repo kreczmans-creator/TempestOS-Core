@@ -1,0 +1,437 @@
+CALCULATION SHEET — ISSUED
+Project: Plant room 2 chilled water
+Calc ID: Chilled water pipe insulation calc pack    Revision: A
+Title: Calculation pack
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: CHW-INS-001    Client: Client Co
+
+PACK INDEX
+  1. Chilled water pipe — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
+  2. Plant room air — Psychrometrics — rev A — ISSUED
+  3. Pipe insulation — Insulation thickness (ISO 12241 formula route) — rev A — ISSUED — Chosen thickness against the anti-condensation margin PASS
+
+REVISIONS
+  A  2026-10-25  test.engineer  First issue
+
+1. SCOPE AND METHOD
+Calculation pack: the calculations listed in the index, issued together under one issue sheet.
+
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+
+3. ASSUMPTIONS
+
+4. WORKING
+
+5. RESULTS
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: pack
+  Content hash: —
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 23/23
+  Test run: 2026-10-25 09:27 UTC
+  Application: TempestOS test
+
+CALCULATION SHEET — ISSUED
+Project: Plant room 2 chilled water
+Calc ID: Chilled water pipe    Revision: A
+Title: Pipe pressure drop and pump duty
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: CHW-INS-001    Client: Client Co
+
+1. SCOPE AND METHOD
+Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
+Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f = 64/Re (Re < 2300) else Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) by fixed-point iteration (≤ 100 steps) with the Swamee–Jain explicit value as start and cross-check; h_f = f (L + L_eq)/D · v²/2g + K v²/2g; H_sys(Q) = Σdz + h_out + Σh_f(Q) with h_f ∝ Q² scaled from the design flow (closed circuit: Σdz = 0, the rise in the flow is recovered in the return); the water held in the pipes V_pipe = Σ π/4·D²·L; duty point where H_pump(Q) = H_sys(Q) (bisection); affinity: Q ∝ n D³, H ∝ n² D²; NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.
+  Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
+  Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
+  Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
+  Ref: Kell, J. Chem. Eng. Data 20(1), 1975 — Density of liquid water
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  fluid | Fluid | water |  | spec: SPEC-CHW-04 §2 (chilled water duty) | any
+  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 9 | degC | spec: SPEC-CHW-04 §2 (chilled water duty) | 0 … 100 degC
+  T_line | Design temperature of the line for the insulation step: the coldest (cold line) or hottest (hot line) fluid temperature in it, for example the flow temperature of a 6/12 °C chilled line whose mean T is 9 °C (blank = T; offered as the port T_line only when T_line or T is entered; not used for the fluid properties) | 6 | degC | spec: SPEC-CHW-04 §2 (chilled water duty) | -50 … 150 degC
+  Q | Design flow rate (blank when a heat load gives it) | 12 | m^3/h | spec: SPEC-CHW-04 §2 (chilled water duty) | 0.01 … 100000 m^3/h
+  segments | Pipe segments in series | 1 row(s) |  | spec: SPEC-CHW-04 §2 (chilled water duty) | any
+  segments[1] |  | name = chilled water flow and return; L = 60 m; D = 51.6 mm; OD = 54 mm; eps = 0.0015 mm; K = 10; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | closed (flow and return: the rises cancel, no static lift) |  | spec: SPEC-CHW-04 §2 (chilled water duty) | any
+  h_out | Pressure head required at the outlet | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 1000 m
+  v_max | Velocity limit (warning) | 3 | m/s | assumption: Sheet default value; no project figure given. | 0.5 … 10 m/s
+  n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.2 … 2
+  D_ratio | Impeller diameter ratio D₂/D₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1.1
+  eta_pump | Pump efficiency at duty (for shaft power) | 0.7 |  | assumption: Sheet default value; no project figure given. | 0.2 … 0.95
+  p_atm | Atmospheric pressure (NPSH) | 101.325 | kPa | assumption: Sheet default value; no project figure given. | 50 … 110 kPa
+  z_s | Static head at the pump suction (+ flooded, − lift) | 0 | m | assumption: Sheet default value; no project figure given. | -10 … 100 m
+
+3. ASSUMPTIONS
+  A1. Steady, incompressible, fully developed flow; all segments carry the full design flow in series. (Darcy–Weisbach.)
+  A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
+  A3. The system curve scales friction losses with Q² from the design flow (turbulent assumption); the static part is independent of flow. (H_sys = H_static + k Q².)
+  A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
+  A5. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
+  A6. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
+  A7. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A8. D_ratio (Impeller diameter ratio D₂/D₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A9. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
+  A10. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
+  A11. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [3] rho = Kell (1975) density of water at T    « Kell 1975
+      = T = 9 °C
+      = 999.78 kg/m³
+        Density
+  [4] mu = Vogel fit μ = 0.02939 exp(507.88/(T_K − 149.3)) mPa·s
+      = T_K = 282.15 K
+      = 1.3443 mPa·s
+        Dynamic viscosity
+  [5] p_v = Hyland–Wexler saturation pressure
+      = T = 9 °C
+      = 1.1481 kPa
+        Vapour pressure (NPSH)
+  [7] T_line = T_line (as entered)
+      = 6 °C
+      = 6 degC
+        Design temperature of the line to insulate (the coldest or hottest fluid temperature in it)
+  [11] Q_design = Q
+      = 12 m³/h
+      = 12 m³/h
+        Design flow (as entered)
+  [12] v_s1 = chilled water flow and return: Q / (π D²/4)
+      = 12 m³/h / (π × 51.6² mm² / 4)
+      = 1.594 m/s
+        Velocity, chilled water flow and return
+  [13] Re_s1 = chilled water flow and return: ρ v D / μ
+      = 999.78 × 1.594 × 0.0516 / 0.0013443
+      = 61172
+        Reynolds number, chilled water flow and return
+  [14] f_s1 = chilled water flow and return: Darcy friction factor
+      = Colebrook–White, 12 iterations (Swamee–Jain start 0.019983)
+      = 0.020099
+        Friction factor, chilled water flow and return
+  [15] f_sj_s1 = chilled water flow and return: Swamee–Jain check
+      = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
+      = 0.019983
+        Explicit cross-check, chilled water flow and return
+  [16] h_f_s1 = chilled water flow and return: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.020099 × (60 + 0) / 0.0516 × 0.12955 + 10 × 0.12955
+      = 4.3231 m
+        Head loss, chilled water flow and return
+  [17] h_f_total = Σ h_f
+      = 1 segment(s)
+      = 4.3231 m
+        Total friction and fitting loss at the design flow
+  [19] V_pipe = Σ π/4·D²·L
+      = 1 segment(s)
+      = 125.47 L
+        Water held in the pipe segments
+  [20] OD_1 = OD of the first segment (as entered)
+      = chilled water flow and return: 54 mm
+      = 54 mm
+        Outside diameter of the first pipe segment (the inside of its insulation)
+  [21] H_static = h_out (closed circuit: no static lift)
+      = 0
+      = 0 m
+        Static head
+  [22] H_sys = H_static + h_f_total
+      = 0 m + 4.3231 m
+      = 4.3231 m
+        System head at the design flow
+  [23] dp_total = rho * 9.80665 m/s^2 * h_f_total
+      = 999.78 kg/m³ × 9.80665 m/s^2 × 4.3231 m
+      = 42.386 kPa
+        Friction pressure drop at the design flow
+  [24] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 999.78 kg/m³ × 9.80665 m/s^2 × 4.3231 m
+      = 42.386 kPa
+        System pressure at the design flow
+  [25] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+      = 999.78 kg/m³ × 9.80665 m/s^2 × 12 m³/h × 4.3231 m
+      = 0.14129 kW
+        Hydraulic power at the design point
+  [28] h_f_suction = Σ h_f on the suction side
+      = 0 suction segment(s)
+      = 0 m
+        Suction-side friction loss
+  [29] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
+      = 101.32 kPa / (999.78 kg/m³ × 9.80665 m/s^2) + 0 m − 0 m − 1.1481 kPa / (999.78 kg/m³ × 9.80665 m/s^2)
+      = 10.217 m
+        NPSH available
+  [30] v_peak = highest segment velocity
+      = 1.594 m/s
+      = 1.594 m/s
+        Highest velocity
+  [31] u_v = v_peak / v_max
+      = 1.594 / 3
+      = 0.53133
+        Velocity utilisation
+
+5. RESULTS
+  T_line = 6 degC    Line design temperature
+  v_s1 = 1.594 m/s    Velocity, chilled water flow and return
+  Re_s1 = 61172    Re, chilled water flow and return
+  f_s1 = 0.020099    f, chilled water flow and return
+  f_sj_s1 = 0.019983    f (Swamee–Jain), chilled water flow and return
+  h_f_s1 = 4.3231 m    h_f, chilled water flow and return
+  OD_1 = 54 mm    Outside diameter of the first segment
+  h_f_total = 4.3231 m    Σ h_f
+  H_static = 0 m    Static head
+  V_pipe = 125.47 L    Water held in the pipes
+  H_sys = 4.3231 m    System head at Q
+  dp_total = 42.386 kPa    Friction Δp
+  dp_sys = 42.386 kPa    System Δp
+  Q_design = 12 m³/h    Design flow
+  P_hyd = 0.14129 kW    Hydraulic power
+  NPSH_a = 10.217 m    NPSH available
+  v_peak = 1.594 m/s    Highest velocity
+
+6. CHECKS (governing first)
+  PASS  Velocity ≤ limit: u_v = 0.53133 vs u_v ≤ 1  utilisation 0.531
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: bs.pipe-pump@1.5.0
+  Content hash: fa61fbf098961063
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-25 09:27 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Plant room 2 chilled water
+Calc ID: Plant room air    Revision: A
+Title: Psychrometrics
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: CHW-INS-001    Client: Client Co
+
+1. SCOPE AND METHOD
+The state of moist air (humidity ratio, relative humidity, dew point, wet-bulb, enthalpy, specific volume, density) from dry-bulb and one other property at a stated pressure or altitude, and one air-handling process from that state with its heat and moisture balance: sensible heating or cooling, cooling with dehumidification, steam humidification, adiabatic humidification, or mixing with a second stream.
+p_ws from Hyland–Wexler (over water ≥ 0 °C, over ice below); W = 0.621945 p_w/(p − p_w); φ = p_w/p_ws; h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da; v = 0.287042 (t + 273.15)(1 + 1.607858 W)/p; dew point and wet-bulb by bisection (wet-bulb from the adiabatic-saturation relation). Processes on a dry-air mass flow: sensible Q = ṁ (h₂ − h₁) at constant W; cooling/dehumidification Q_total = ṁ(h₁ − h₂) − ṁ_w h_w with condensate ṁ_w = ṁ(W₁ − W₂); steam h₂ = h₁ + (W₂ − W₁) h_steam; adiabatic humidification at constant h; mixing by mass-weighted W and h.
+  Ref: ASHRAE Handbook — Fundamentals Ch. 1 — Psychrometrics (ideal-gas relations, processes)
+  Ref: Hyland & Wexler, ASHRAE Trans. 89(2A), 1983 — Saturation pressure of water and ice
+  Ref: CIBSE Guide C Section 1 — Properties of humid air (principles)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  altitude | Altitude (used when pressure is blank) | 0 | m | spec: SPEC-CHW-04 §3 (plant room conditions) | -500 … 5000 m
+  t_db | Dry-bulb temperature | 28 | degC | spec: SPEC-CHW-04 §3 (plant room conditions) | -40 … 60 degC
+  known | Second known property | relative humidity |  | spec: SPEC-CHW-04 §3 (plant room conditions) | any
+  RH | Relative humidity | 60 |  | spec: SPEC-CHW-04 §3 (plant room conditions) | 0 … 100
+  m_da | Dry-air mass flow | 1 | kg/s | assumption: Sheet default value; no project figure given. | 0 … 1000 kg/s
+  process | Process | none (state only) |  | spec: SPEC-CHW-04 §3 (plant room conditions) | any
+  h_steam | Steam enthalpy (steam humidification) | 2676 |  | assumption: Sheet default value; no project figure given. | 2500 … 3000
+
+3. ASSUMPTIONS
+  A1. Moist air is an ideal mixture of ideal gases; the enhancement factor is taken as 1. (ASHRAE Fundamentals Ch. 1 ideal-gas relations.)
+  A2. Condensate leaves at the coil leaving dry-bulb; steam adds enthalpy h_steam at negligible mass of dry air. (Process conventions.)
+  A3. Adiabatic humidification follows a line of constant enthalpy (close to constant wet-bulb). (Evaporative process idealisation.)
+  A4. m_da (Dry-air mass flow) is taken as 1 kg/s. (Sheet default value; no project figure given.)
+  A5. h_steam (Steam enthalpy (steam humidification)) is taken as 2676. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [2] p = 101.325 (1 − 2.25577e-5 z)^5.2559    « ASHRAE Ch. 1 eq. 3
+      = z = 0 m
+      = 101.32 kPa
+        Barometric pressure (standard atmosphere)
+  [6] p_ws_1 = p_ws(t) Hyland–Wexler (entering)
+      = t = 28 °C
+      = 3.7822 kPa
+        Saturation pressure, state 1
+  [7] p_w_1 = p W/(0.621945 + W)
+      = W = 0.014249
+      = 2.2693 kPa
+        Vapour pressure, state 1
+  [8] t_1_out = dry-bulb (entering)
+      = 
+      = 28 degC
+        Dry-bulb, state 1
+  [9] W_1 = 0.621945 p_w/(p − p_w)
+      = 2.2693 / (101.32 − 2.2693)
+      = 14.249
+        Humidity ratio, state 1 (g/kg dry air)
+  [10] RH_1 = p_w / p_ws
+      = 2.2693 / 3.7822
+      = 60
+        Relative humidity, state 1 (%)
+  [11] phi_1 = p_w / p_ws
+      = 2.2693 / 3.7822
+      = 60 %
+        Relative humidity, state 1, as a percentage quantity (the same value as RH_1; a plain-number output cannot be linked to a percentage input)
+  [12] t_dp_1 = p_ws(t_dp) = p_w, bisection
+      = p_w = 2.2693 kPa
+      = 19.514 degC
+        Dew point, state 1
+  [13] t_wb_1 = adiabatic-saturation relation, bisection
+      = t = 28, W = 0.014249
+      = 22.074 degC
+        Wet-bulb, state 1
+  [14] h_1 = 1.006 t + W (2501 + 1.86 t)
+      = 1.006 × 28 + 0.014249 × (2501 + 1.86 × 28)
+      = 64.546
+        Enthalpy, state 1 (kJ/kg dry air)
+  [15] v_1 = 0.287042 (t + 273.15)(1 + 1.607858 W)/p
+      = p = 101.32 kPa
+      = 0.87267 m³/kg
+        Specific volume, state 1 (per kg dry air)
+  [16] rho_1 = (1 + W)/v
+      = 
+      = 1.1622 kg/m³
+        Moist-air density, state 1
+
+5. RESULTS
+  t_1_out = 28 degC    Dry-bulb 1
+  p_ws_1 = 3.7822 kPa    p_ws 1
+  p_w_1 = 2.2693 kPa    p_w 1
+  W_1 = 14.249    W 1 (g/kg)
+  RH_1 = 60    RH 1 (%)
+  phi_1 = 60 %    φ 1 (RH as a % quantity, for linking)
+  t_dp_1 = 19.514 degC    Dew point 1
+  t_wb_1 = 22.074 degC    Wet-bulb 1
+  h_1 = 64.546    h 1 (kJ/kg)
+  v_1 = 0.87267 m³/kg    v 1
+  rho_1 = 1.1622 kg/m³    ρ 1
+
+6. CHECKS (governing first)
+  No pass/fail checks in this calculation.
+
+7. APPLICABILITY
+  No warnings.
+
+8. VERIFICATION
+  Template: bs.psychrometrics@1.1.0
+  Content hash: 019c21a8f58b1d42
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-25 09:27 UTC
+  Application: TempestOS test
+
+
+CALCULATION SHEET — ISSUED
+Project: Plant room 2 chilled water
+Calc ID: Pipe insulation    Revision: A
+Title: Insulation thickness (ISO 12241 formula route)
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: CHW-INS-001    Client: Client Co
+
+1. SCOPE AND METHOD
+The insulation thickness on a pipe (cylinder) or a flat surface that meets a heat-flow limit, a limit on the surface temperature of a hot surface and an anti-condensation requirement for a cold one, each solved separately and the governing one reported; and for a chosen thickness the heat flow, the surface temperature and PASS/FAIL per criterion. Steady state, one layer, no thickness table of any standard.
+Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = D_i + 2t; with the inner film and pipe wall R_oth = 1/(h_i·π·D_p) + ln(D_i/D_p)/(2π·λ_w) added in series Flat resistance per square metre: R = t/λ + 1/h_se (+ 1/h_i + t_w/λ_w) Heat flow: q = (θ_i − θ_a)/R, positive from the process to the ambient Surface temperature: θ_se = θ_a + q/(h_se·π·D_e) (pipe), θ_a + q/h_se (flat) Surface coefficient: h_se as given, or h_se = h_c + h_r with h_r = ε·σ·(T_s² + T_a²)(T_s + T_a); h_c from free convection to air (laminar or turbulent, the larger), forced convection (cross-flow cylinder or flat plate) and their cube-law blend; solved with θ_se, which it depends on Heat-loss limit: the thickness beyond which |q| ≤ q_max; surface-temperature limit (hot): θ_se ≤ θ_se,max; anti-condensation (cold): θ_se ≥ θ_dew + margin, θ_dew entered (for example from B2) or from the Magnus relation at θ_a and RH Solve: each criterion's thickness by scanning t from 0 to 1 m for the last broken point and bisecting the bracket after it; governing t = max over the selected criteria Critical diameter: D_crit = 2λ/h_se; below it, insulation raises the heat flow until D_e passes D_crit
+  Ref: ISO 12241 formula route (clause numbers to be checked) — Thermal insulation for building equipment and industrial installations: calculation rules
+  Ref: Incropera, Fundamentals of Heat and Mass Transfer 7th ed., §7.2, §7.4, §9.6, §9.9 (to be checked) — External forced, free and mixed convection correlations
+  Ref: ISO 13788 cl. 6 (clause number to be checked against the owner's copy) — Magnus saturation vapour pressure (shared with B7)
+
+2. INPUTS
+  Symbol | Description | Value | Unit | Source | Valid range
+  geometry | Surface | pipe (cylinder) |  | drawing: DRG-CHW-410 rev B | any
+  D_i | Pipe outer diameter, the inside of the insulation (pipe) | 54 | mm | link: Chilled water pipe rev A · OD_1 | 10 … 1000 mm
+  theta_i | Process (fluid) temperature | 6 | degC | link: Chilled water pipe rev A · T_line | -50 … 400 degC
+  theta_a | Ambient air temperature (also the radiation sink) | 28 | degC | link: Plant room air rev A · t_1_out | -20 … 50 degC
+  lambda | Thermal conductivity of the insulation | 0.035 | W/(m*K) | drawing: DRG-CHW-410 rev B | 0.015 … 0.2 W/(m*K)
+  h_mode | Where the outer surface coefficient comes from | h_se as given |  | drawing: DRG-CHW-410 rev B | any
+  h_se | Outer surface coefficient h_se (as given) | 8 | W/(m^2*K) | drawing: DRG-CHW-410 rev B | 3 … 40 W/(m^2*K)
+  eps | Emissivity of the outer surface (correlation) | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.05 … 1
+  v_wind | Air speed over the surface (correlation; 0 = still air) | 0 | m/s | assumption: Sheet default value; no project figure given. | 0 … 20 m/s
+  L_surf | Height or flow length of the flat surface (correlation, flat) | 1 | m | assumption: Sheet default value; no project figure given. | 0.1 … 10 m
+  dew_margin | Margin of the surface above the dew point, for a cold surface (blank = not a criterion) | 1 | K | drawing: DRG-CHW-410 rev B | 0 … 5 K
+  theta_dew | Dew point of the ambient air, if known, for example linked from B2 (blank = from θ_a and RH_a by the Magnus relation) | 19.5141 | degC | link: Plant room air rev A · t_dp_1 | -50 … 50 degC
+  RH_a | Relative humidity of the ambient air (anti-condensation) | 60 | % | link: Plant room air rev A · phi_1 | 20 … 95 %
+  t_chosen | Chosen insulation thickness (blank = report at the required thickness, no checks; with it, nothing blocks) | 25 | mm | drawing: DRG-CHW-410 rev B | 0 … 300 mm
+
+3. ASSUMPTIONS
+  A1. Steady one-dimensional heat flow through a single homogeneous layer of constant conductivity; no thermal bridges at supports, no joints, no moisture in the insulation. λ is taken at the value entered: use the value at the mean insulation temperature shown on the sheet (optionally noted in 'Temperature the conductivity applies at'). (Formula route of the standard.)
+  A2. With the correlation, h_se = h_c + h_r. Radiation: h_r = ε·σ·(T_s² + T_a²)(T_s + T_a) to surroundings at the ambient air temperature. Free convection to air: Holman's simplified relations at atmospheric pressure, the larger of the laminar and turbulent forms (horizontal cylinder 1.32(ΔT/D)^0.25 and 1.24ΔT^(1/3); vertical surface 1.42(ΔT/L)^0.25 and 1.31ΔT^(1/3)). Forced convection: Churchill–Bernstein for a cylinder in cross-flow, the laminar/mixed flat-plate relations along a plate; air properties from fits at the film temperature, Pr = 0.71; blended with free convection as (h_nat³ + h_forced³)^(1/3). Indicative, not the standard's own correlation. (Incropera 7th ed. §7.2, §7.4, §9.6 free convection and §9.9 mixed convection (section numbers to be checked against the owner's copy); the free-convection constants are Holman's, Heat Transfer; the standard's own coefficients are not reproduced.)
+  A3. The dew point is entered (for example from B2) or is the Magnus relation at θ_a and RH, the same closed form B7 uses. Below 0 °C the relation is over ice, so RH is then taken relative to ice, whereas meteorological RH is usually relative to water: enter the dew point for sub-zero air. A margin above it is the user's. (Derived; B7 shares the function.)
+  A4. Pipes are treated as horizontal for free convection and flat surfaces as vertical; air properties are fits (conductivity within about 3 %, viscosity within about 4 % over 250–400 K), Pr = 0.71. (Stated.)
+  A5. The required thickness is the least thickness beyond which the criterion holds for every thicker layer up to 1 m, which is what matters when thin insulation on a small pipe raises the heat flow (critical diameter). (Stated.)
+  A6. No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data. (Addendum B §B5.)
+  A7. eps (Emissivity of the outer surface (correlation)) is taken as 0.9. (Sheet default value; no project figure given.)
+  A8. v_wind (Air speed over the surface (correlation; 0 = still air)) is taken as 0 m/s. (Sheet default value; no project figure given.)
+  A9. L_surf (Height or flow length of the flat surface (correlation, flat)) is taken as 1 m. (Sheet default value; no project figure given.)
+
+4. WORKING
+  [10] t_dew = t such that θ_se ≥ 20.514 °C for every thicker layer    « ISO 12241
+      = scan 0 … 1000 mm, then bisection
+      = 7.5207 mm
+        Required thickness, anti-condensation margin
+  [11] thickness = the one selected criterion    « ISO 12241
+      = t_dew = 7.5207 mm
+      = 7.5207 mm
+        Governing required thickness (anti-condensation margin)
+  [13] D_e = D_i + 2t
+      = 54 mm + 2 × 25 mm
+      = 104 mm
+        Outer diameter of the insulation, chosen thickness
+  [14] R_ins = ln(D_e/D_i)/(2π·λ)    « ISO 12241
+      = ln(104/54)/(2π × 0.035)
+      = 2.9803 m·K/W
+        Resistance of the insulation
+  [15] R_se = 1/(h_se·π·D_e)    « ISO 12241
+      = 1/(8 × π × 0.104 m)
+      = 0.38258 m·K/W
+        Resistance of the outer surface
+  [16] R = R_oth + R_ins + R_se    « ISO 12241
+      = 0 + 2.9803 + 0.38258
+      = 3.3629 m·K/W
+        Total resistance per metre
+  [17] q_per_m = |θ_i − θ_a| / R    « ISO 12241
+      = 22 K / 3.3629
+      = 6.542 W/m
+        Heat flow per metre of pipe (heat gain, magnitude)
+  [18] theta_se = θ_a + q/(h_se·π·D_e)    « ISO 12241
+      = 28 °C − 6.542 / 2.6138
+      = 25.497 degC
+        Outer surface temperature
+  [19] theta_m = (θ_i + θ_se)/2
+      = (6 + 25.497)/2
+      = 15.749 degC
+        Mean temperature of the insulation: take λ at this temperature
+  [20] D_crit = 2λ/h_se at the bare surface    « ISO 12241
+      = 2 × 0.035 / 8
+      = 8.75 mm
+        Critical diameter at the bare-surface h_se: below it, insulation raises the heat flow
+  [21] u_dew = (θ_a − θ_se)/(θ_a − (θ_dew + margin))
+      = θ_se ≥ 20.514 °C
+      = 0.33434
+        Utilisation, anti-condensation margin
+
+5. RESULTS
+  theta_dew = 19.514 degC    Dew point of the ambient air
+  t_dew = 7.5207 mm    Required thickness, anti-condensation margin
+  u_dew = 0.33434    Utilisation, anti-condensation margin
+  thickness = 7.5207 mm    Governing required thickness
+  q_per_m = 6.542 W/m    Heat flow per metre (heat gain)
+  theta_se = 25.497 degC    Outer surface temperature
+  theta_m = 15.749 degC    Mean insulation temperature
+  R = 3.3629 m·K/W    Total resistance
+  D_crit = 8.75 mm    Critical diameter (at the bare-surface h_se)
+  governing = "anti-condensation margin"    Governing criterion
+
+6. CHECKS (governing first)
+  PASS  Chosen thickness against the anti-condensation margin: u_dew = 0.33434 vs u_dew ≤ 1  utilisation 0.334  « ISO 12241
+
+7. APPLICABILITY
+  WARNING record: Tabulated values not taken from a reference record: lambda (Material properties); h_se (Outer surface coefficient); eps (Surface emissivity); dew_margin (Insulation criteria). Enter each as one so its source, edition and licence travel with it.
+
+8. VERIFICATION
+  Template: bs.insulation@1.1.0
+  Content hash: 38a2737abf1a41c2
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 14/14
+  Test run: 2026-10-25 09:27 UTC
+  Application: TempestOS test
