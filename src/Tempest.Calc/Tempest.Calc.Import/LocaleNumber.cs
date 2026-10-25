@@ -161,6 +161,15 @@ public static class LocaleNumber
             return false;
         }
 
+        // A non-zero literal that is too small to represent reads as 0, which would be a silent reinterpretation; refuse it as an overflow is refused.
+        if (value == 0 && (integer.AsSpan().ContainsAnyExcept('0') || fraction.AsSpan().ContainsAnyExcept('0')))
+        {
+            value = 0;
+            usedGrouping = false;
+            problem = $"'{Clip(s)}' is too small to represent and would be read as 0.";
+            return false;
+        }
+
         return true;
     }
 

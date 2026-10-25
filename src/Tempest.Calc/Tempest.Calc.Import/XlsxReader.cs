@@ -256,6 +256,7 @@ public static class XlsxReader
 
                 while (xml.MoveToNextAttribute())
                 {
+                    budget.Tick();
                     var value = xml.Value;
 
                     if (value.Contains("macroEnabled", StringComparison.OrdinalIgnoreCase) || value.Contains("vbaProject", StringComparison.OrdinalIgnoreCase) || value.Contains("macroSheet", StringComparison.OrdinalIgnoreCase) || value.Contains("xlMacrosheet", StringComparison.OrdinalIgnoreCase))
@@ -683,6 +684,17 @@ public static class XlsxReader
         private readonly string _name;
         private readonly ImportBudget _budget;
         private long _read;
+        private int _tagState;
+        private int _tagBytes;
+        private byte _quote;
+
+        private const int TagText = 0;
+        private const int TagOpened = 1;
+        private const int TagInside = 2;
+        private const int TagSkip = 3;
+
+        /// <summary>The longest XML start tag read; <c>&lt;c r="A1" s="3" t="s"&gt;</c> is 20 bytes, so this is generous by three orders of magnitude.</summary>
+        internal const int MaxStartTagBytes = 64 * 1024;
 
         public CountingLimitStream(Stream inner, long limit, string name, ImportBudget budget)
         {
@@ -706,9 +718,19 @@ public static class XlsxReader
             set => throw new NotSupportedException();
         }
 
-        public override int Read(byte[] buffer, int offset, int count) => Count(_inner.Read(buffer, offset, count));
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            var n = Count(_inner.Read(buffer, offset, count));
+            ScanTags(buffer.AsSpan(offset, n));
+            return n;
+        }
 
-        public override int Read(Span<byte> buffer) => Count(_inner.Read(buffer));
+        public override int Read(Span<byte> buffer)
+        {
+            var n = Count(_inner.Read(buffer));
+            ScanTags(buffer[..n]);
+            return n;
+        }
 
         private int Count(int n)
         {
@@ -718,7 +740,82 @@ public static class XlsxReader
             if (_read > _limit)
                 throw new ImportRefusedException(ImportRefusalCode.ZipBomb, $"The part '{_name}' expands past its declared size, so the workbook was not read.");
 
+            // XmlReader parses every attribute of a start tag inside one Read() call, where neither the time budget nor Cancel is looked at. Looking here, on every
+            // chunk it pulls, keeps a long tag interruptible; the tag length cap below bounds how much one call can take (Addendum B review, SEC-B-03).
+            _budget.Check();
             return n;
+        }
+
+        /// <summary>
+        /// Follows the bytes for the start tags only: a tag that runs past <see cref="MaxStartTagBytes"/> is refused before the XML reader sees it. A
+        /// quoted attribute value may hold <c>&gt;</c> but never <c>&lt;</c>, so tracking the quote state is exact for a well-formed tag, and any
+        /// <c>&lt;</c> starts a fresh tag, so a malformed one cannot hide the next. Comments, CDATA and processing instructions (<c>&lt;!</c>, <c>&lt;?</c>)
+        /// carry no attributes and are skipped to their <c>&gt;</c>. Only ASCII bytes are examined, so multi-byte UTF-8 text cannot be mistaken for markup.
+        /// </summary>
+        private void ScanTags(ReadOnlySpan<byte> data)
+        {
+            var i = 0;
+
+            while (i < data.Length)
+            {
+                if (_tagState == TagText)
+                {
+                    var at = data[i..].IndexOf((byte)'<');
+
+                    if (at < 0)
+                        return;
+
+                    i += at + 1;
+                    _tagState = TagOpened;
+                    _tagBytes = 1;
+                    continue;
+                }
+
+                var b = data[i++];
+
+                if (b == (byte)'<')
+                {
+                    _tagState = TagOpened;
+                    _tagBytes = 1;
+                    _quote = 0;
+                    continue;
+                }
+
+                switch (_tagState)
+                {
+                    case TagOpened:
+                        _quote = 0;
+                        _tagBytes = 2;
+                        _tagState = b is (byte)'!' or (byte)'?' ? TagSkip : b == (byte)'>' ? TagText : TagInside;
+                        break;
+
+                    case TagSkip:
+                        if (b == (byte)'>')
+                            _tagState = TagText;
+
+                        break;
+
+                    default:
+                        if (++_tagBytes > MaxStartTagBytes)
+                            throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"The part '{_name}' holds an XML start tag longer than {MaxStartTagBytes / 1024} KB, which no real workbook has, so the workbook was not read.");
+
+                        if (_quote != 0)
+                        {
+                            if (b == _quote)
+                                _quote = 0;
+                        }
+                        else if (b is (byte)'"' or (byte)'\'')
+                        {
+                            _quote = b;
+                        }
+                        else if (b == (byte)'>')
+                        {
+                            _tagState = TagText;
+                        }
+
+                        break;
+                }
+            }
         }
 
         public override void Flush()

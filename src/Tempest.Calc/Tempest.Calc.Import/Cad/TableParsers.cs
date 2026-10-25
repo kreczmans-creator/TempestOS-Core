@@ -324,7 +324,8 @@ internal static class TabularParametersParser
     public static CadParseResult ParseCsv(CadParseContext c, CadSystem system, CadSourceFormat format)
     {
         var text = BoundedInputReader.DecodeText(c.File);
-        var table = CsvReader.Read(text, CsvReader.DetectDelimiter(text), c.Budget);
+        var delimiter = CsvReader.DetectDelimiter(text);
+        var table = CsvReader.Read(text, delimiter, c.Budget);
 
         if (table.Rows.Count == 0)
             throw new ImportRefusedException(ImportRefusalCode.Empty, "The CSV is empty.");
@@ -346,6 +347,16 @@ internal static class TabularParametersParser
 
         var np = c.Settings.Number;
 
+        // A comma delimiter is where a decimal comma or a thousands separator splits a number in two. The width check below catches a row wider than the header;
+        // these catch what it cannot: a header that ends in a delimiter (a blank column that takes the split-off digits) and a column that is not read as a number
+        // (a description, a unit, an unnamed one) sitting right of a whole number. The same rules guard the scan importer (ADR-0172).
+        var commaSplit = delimiter == ',';
+        var blankHeaders = Enumerable.Range(0, header.Count).Where(i => header[i].Length == 0).ToList();
+        var splitSuspect = default(string);
+        var sawPoint = false;
+        var values = 0;
+        var wholeValues = 0;
+
         for (var r = 1; r < table.Rows.Count; r++)
         {
             c.Budget.Tick();
@@ -354,6 +365,45 @@ internal static class TabularParametersParser
 
             if (row.Count > header.Count)
                 throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Line {table.Lines[r]} has {row.Count} fields but the header has {header.Count}. A number written with a decimal comma or a thousands separator, but not in quotes, is split into two fields and would be read as the wrong value; put such numbers in quotes or use the other delimiter.");
+
+            if (commaSplit)
+            {
+                foreach (var h in blankHeaders)
+                {
+                    if (h < row.Count && !string.IsNullOrWhiteSpace(row[h]))
+                        throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Line {table.Lines[r]}: column {h + 1} has no header but holds a value. A number written with a decimal comma or a thousands separator, but not in quotes, is split by the comma delimiter and spills its digits into an unnamed column; put such numbers in quotes or use the other delimiter. Nothing was imported.");
+                }
+
+                if (valueCol >= 0 && valueCol < row.Count)
+                {
+                    var valueField = row[valueCol];
+
+                    if (valueField.Contains('.', StringComparison.Ordinal))
+                        sawPoint = true;
+
+                    if (IsWholeNumberText(valueField))
+                    {
+                        values++;
+                        wholeValues++;
+                    }
+                    else if (LocaleNumber.TryParse(valueField, np, out _, out _))
+                    {
+                        values++;
+                    }
+
+                    var next = valueCol + 1;
+
+                    if (next < row.Count && next != nameCol && next != exprCol && next != textCol && IsWholeNumberText(valueField) && IsBareDigits(row[next]))
+                    {
+                        var shown = $"'{CadValueParser.Clip(valueField.Trim())}' is followed by '{CadValueParser.Clip(row[next].Trim())}' in the {(next == unitCol ? "unit" : next == commentCol ? "description" : "unnamed")} column";
+
+                        if (np.Decimal == DecimalMark.Comma || IsLeadingZeroDigits(row[next]))
+                            throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Line {table.Lines[r]}: {shown}. That is a number written with a decimal comma or a thousands separator ('{CadValueParser.Clip(valueField.Trim())},{CadValueParser.Clip(row[next].Trim())}') split by the comma delimiter and would be read as the wrong value; put such numbers in quotes or use the other delimiter. Nothing was imported.");
+
+                        splitSuspect ??= $"line {table.Lines[r]}: {shown}";
+                    }
+                }
+            }
 
             var rawName = Cell(row, nameCol);
 
@@ -393,6 +443,20 @@ internal static class TabularParametersParser
 
             c.Hint(value, name);
             c.Add(NxExpressionParser.ToParameter(c, name, value, location, null, false, reported, comment));
+        }
+
+        if (splitSuspect is not null)
+        {
+            // Mixed marks in one file, or nothing but whole numbers in a comma-delimited file, is what a split decimal comma looks like; one lone case is reported.
+            if (sawPoint)
+                throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"The CSV mixes decimal marks: {splitSuspect}, yet other values are written with a decimal point. That looks like a decimal comma split by the comma delimiter. Put such numbers in quotes or use the other delimiter. Nothing was imported.");
+
+            var message = $"{splitSuspect}. That may be a decimal comma or a thousands separator split by the comma delimiter ('12,5' read as 12 and 5); check the file and put such numbers in quotes or use the other delimiter.";
+
+            if (values >= 1 && values == wholeValues)
+                c.Block(message + " Every value is a whole number, so nothing is imported until the file is corrected.");
+            else
+                c.Warn(message);
         }
 
         if (c.Parameters.Count == 0)
@@ -590,6 +654,28 @@ internal static class TabularParametersParser
         }
 
         return -1;
+    }
+
+    private static bool IsWholeNumberText(string text)
+    {
+        var t = text.AsSpan().Trim();
+
+        if (t.Length > 0 && t[0] is '+' or '-')
+            t = t[1..];
+
+        return t.Length > 0 && t.Length <= 15 && !t.ContainsAnyExceptInRange('0', '9');
+    }
+
+    private static bool IsBareDigits(string text)
+    {
+        var t = text.AsSpan().Trim();
+        return t.Length > 0 && t.Length <= 15 && !t.ContainsAnyExceptInRange('0', '9');
+    }
+
+    private static bool IsLeadingZeroDigits(string text)
+    {
+        var t = text.AsSpan().Trim();
+        return t.Length >= 2 && t.Length <= 15 && t[0] == '0' && !t.ContainsAnyExceptInRange('0', '9');
     }
 
     private static string Cell(IReadOnlyList<string> row, int index) => index >= 0 && index < row.Count ? row[index] : string.Empty;
