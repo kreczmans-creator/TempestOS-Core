@@ -6,16 +6,8 @@ namespace Tempest.Calc.Import.Cad;
 /// <summary>Shared helpers for the workbook and CSV readers.</summary>
 internal static class CadTables
 {
-    public static XlsxSheet PickSheet(XlsxWorkbook workbook, string? wanted)
-    {
-        if (wanted is { Length: > 0 })
-        {
-            return workbook.Sheets.FirstOrDefault(s => string.Equals(s.Name, wanted, StringComparison.OrdinalIgnoreCase))
-                ?? throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"The workbook has no sheet named '{CadValueParser.Clip(wanted)}'. It has: {string.Join(", ", workbook.Sheets.Select(s => s.Name).Take(10))}.");
-        }
-
-        return workbook.Sheets.FirstOrDefault(s => !s.Hidden) ?? workbook.Sheets[0];
-    }
+    /// <summary>The sheet the reader was asked for (it reads only that one; see <see cref="XlsxReader.Read(ImportedFile, ImportBudget?, string?)"/>).</summary>
+    public static XlsxSheet PickSheet(XlsxWorkbook workbook, string? wanted) => workbook.Sheets[0];
 
     public static string Lower(string? s) => (s ?? string.Empty).Trim().ToLowerInvariant();
 
@@ -57,7 +49,7 @@ internal static class NxXlsxParser
 
     public static CadParseResult Parse(CadParseContext c)
     {
-        var workbook = XlsxReader.Read(c.File, c.Budget);
+        var workbook = XlsxReader.Read(c.File, c.Budget, c.Settings.SheetName);
 
         foreach (var n in workbook.Notices)
             c.Warn(n);
@@ -69,11 +61,24 @@ internal static class NxXlsxParser
 
         foreach (var row in sheet.Rows.Take(30))
         {
-            var byName = row.Cells.Where(x => x.Kind == XlsxCellKind.Text).ToDictionary(x => CadTables.Lower(x.Text), x => x.Column, StringComparer.Ordinal);
+            var byName = new Dictionary<string, int>(StringComparer.Ordinal);
+            var repeated = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var cell in row.Cells.Where(x => x.Kind == XlsxCellKind.Text))
+            {
+                if (!byName.TryAdd(CadTables.Lower(cell.Text), cell.Column))
+                    repeated.Add(CadTables.Lower(cell.Text));
+            }
+
             var found = NameHeaders.Where(byName.ContainsKey).Select(h => byName[h]).ToList();
 
             if (found.Count == 0)
                 continue;
+
+            var allAliases = NameHeaders.Concat(FormulaHeaders).Concat(ValueHeaders).Concat(UnitHeaders).Concat(TypeHeaders).Concat(CommentHeaders);
+
+            if (allAliases.FirstOrDefault(repeated.Contains) is { } twice)
+                throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Row {row.Number} is the header, but it repeats the column '{twice}', so it is not clear which column to read.");
 
             nameCol = found[0];
             formulaCol = FirstColumn(byName, FormulaHeaders);
@@ -173,7 +178,7 @@ internal static class SolidWorksDesignTableParser
 {
     public static CadParseResult Parse(CadParseContext c)
     {
-        var workbook = XlsxReader.Read(c.File, c.Budget);
+        var workbook = XlsxReader.Read(c.File, c.Budget, c.Settings.SheetName);
 
         foreach (var n in workbook.Notices)
             c.Warn(n);
@@ -346,6 +351,10 @@ internal static class TabularParametersParser
             c.Budget.Tick();
             var row = table.Rows[r];
             var location = $"line {table.Lines[r]}";
+
+            if (row.Count > header.Count)
+                throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"Line {table.Lines[r]} has {row.Count} fields but the header has {header.Count}. A number written with a decimal comma or a thousands separator, but not in quotes, is split into two fields and would be read as the wrong value; put such numbers in quotes or use the other delimiter.");
+
             var rawName = Cell(row, nameCol);
 
             if (rawName.Trim().Length == 0)
@@ -399,7 +408,7 @@ internal static class TabularParametersParser
 
         try
         {
-            document = JsonDocument.Parse(text, new JsonDocumentOptions { MaxDepth = 16, AllowTrailingCommas = false, CommentHandling = JsonCommentHandling.Disallow });
+            document = JsonDocument.Parse(text, new JsonDocumentOptions { MaxDepth = 16, AllowTrailingCommas = false, CommentHandling = JsonCommentHandling.Disallow, AllowDuplicateProperties = false });
         }
         catch (JsonException e)
         {

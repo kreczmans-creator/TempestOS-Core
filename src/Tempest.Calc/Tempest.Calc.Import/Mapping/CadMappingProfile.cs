@@ -189,6 +189,7 @@ public static class CadMappingProfileJson
     {
         WriteIndented = true,
         MaxDepth = 8,
+        AllowDuplicateProperties = false,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
     };

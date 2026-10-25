@@ -6,7 +6,11 @@ using Tempest.Calc.Sheets;
 namespace Tempest.Calc.Library;
 
 /// <summary>One CAD import to preview or apply: the untrusted file as read, its format, the mapping profile and the person's settings.</summary>
-public sealed record CadImportRequest(ImportedFile File, CadSourceFormat Format, CadMappingProfile Profile, CadParseSettings? Settings = null);
+/// <param name="ExpectedUpdatedAt">
+/// The draft's update time when the preview was taken. Apply is refused when the draft changed since, so what is applied is what was
+/// previewed and not what a change made in between would map to.
+/// </param>
+public sealed record CadImportRequest(ImportedFile File, CadSourceFormat Format, CadMappingProfile Profile, CadParseSettings? Settings = null, DateTimeOffset? ExpectedUpdatedAt = null);
 
 /// <summary>
 /// What an import would do to a draft, without doing it: the parse (or why the file was refused), every row mapped, the
@@ -18,7 +22,8 @@ public sealed record CadImportPreview(
     CadImportDiff? Diff,
     IReadOnlyList<string> BlocksAfter,
     IReadOnlyList<string> WarningsAfter,
-    string? Refusal)
+    string? Refusal,
+    DateTimeOffset? InstanceUpdatedAt = null)
 {
     /// <summary>Whether Apply would proceed.</summary>
     public bool CanApply => Refusal is null && Mapping is { CanApply: true };
@@ -70,6 +75,9 @@ public sealed partial class CalcInstanceService
         if (instance.Status != CalcInstanceStatus.Draft)
             return new CadImportOutcome(CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only a draft takes new inputs. Revise it first, then import.", instance), null, null);
 
+        if (request.ExpectedUpdatedAt is { } expected && expected != instance.UpdatedAt)
+            return new CadImportOutcome(CalcActionResult.Refused($"Calculation '{instance.Name}' was changed after this import was previewed; preview it again before applying.", instance), null, null);
+
         var now = _time.GetUtcNow();
         var preview = BuildCadImportPreview(instance, request, now, cancellationToken);
 
@@ -79,7 +87,7 @@ public sealed partial class CalcInstanceService
         var parse = preview.Parse!;
         var mapping = preview.Mapping!;
         var record = new CadImportRecord(
-            CadImportRecord.KeyFor(parse.Source.System, request.Profile.Id, parse.Source.PartName),
+            CadImportRecord.KeyFor(parse.Source.System, request.Profile.Id),
             parse.Source.FileName, parse.Source.Sha256, parse.Source.System, parse.Source.Format,
             parse.Source.CadVersion, parse.Source.PartName, parse.Source.PartRevision, parse.Source.Configuration,
             request.Profile.Id, request.Profile.Version, now, CurrentPrincipal(), mapping.Snapshot);
@@ -149,7 +157,7 @@ public sealed partial class CalcInstanceService
         }
 
         var mapping = CadMapper.Map(parse, request.Profile, entry.Template, instance.Inputs, at);
-        var key = CadImportRecord.KeyFor(parse.Source.System, request.Profile.Id, parse.Source.PartName);
+        var key = CadImportRecord.KeyFor(parse.Source.System, request.Profile.Id);
         var previous = instance.CadImports?.FirstOrDefault(r => string.Equals(r.Key, key, StringComparison.Ordinal));
         var diff = CadImportDiff.Compute(previous, mapping.Snapshot);
 
@@ -163,7 +171,7 @@ public sealed partial class CalcInstanceService
             warnings = run.Warnings.Select(w => w.Message).ToList();
         }
 
-        return new CadImportPreview(parse, mapping, diff, blocks, warnings, null);
+        return new CadImportPreview(parse, mapping, diff, blocks, warnings, null, instance.UpdatedAt);
     }
 
     private static IReadOnlyList<CadImportRecord> ReplaceRecord(IReadOnlyList<CadImportRecord>? existing, CadImportRecord record)

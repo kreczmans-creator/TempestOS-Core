@@ -724,7 +724,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         if (result.Instance is { } instance)
             _view.ShowInstance(instance);
 
-        _view.ShowStatus(result.Succeeded ? success : result.Reason ?? "Refused.");
+        _view.ShowStatus(result.Succeeded ? (string.IsNullOrWhiteSpace(result.Reason) ? success : $"{success} {result.Reason}".Trim()) : result.Reason ?? "Refused.");
     }
 
     private void Guarded(Action action, string what)

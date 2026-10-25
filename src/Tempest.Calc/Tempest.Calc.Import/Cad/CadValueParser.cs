@@ -51,18 +51,27 @@ internal static class CadValueParser
 
         var (token, rest) = SplitNumberPrefix(s, np);
 
-        if (token.Length > 0 && LocaleNumber.TryParse(token, np, out var number, out _))
+        if (token.Length > 0 && LocaleNumber.TryParse(token, np, out var number, out _, out var grouped))
         {
+            var groupNote = grouped ? $"'{Clip(token)}' was read as {Engine.Values.CalcValue.FormatNumber(number, 12)}: the number format declares '{np.Grouping}' as a thousands separator. Check that is what the file means." : null;
+
             if (rest.Length == 0)
             {
                 if (declaredUnit is { Length: > 0 })
-                    return WithUnit(number, declaredUnit);
+                    return WithUnit(number, declaredUnit) with { Hint = groupNote };
 
-                return new CadValue(CadParameterKind.Number, Number: number);
+                return new CadValue(CadParameterKind.Number, Number: number, Hint: groupNote);
             }
 
             if (CadUnits.TryResolve(rest, out var symbol, out _))
-                return new CadValue(CadParameterKind.Number, Number: number, Unit: symbol.Length == 0 ? null : symbol);
+            {
+                // A unit written on the value and a different one declared for it (NX [mm]len=12 in): the value's own unit is used, and the conflict is said.
+                var conflict = declaredUnit is { Length: > 0 } && CadUnits.TryResolve(declaredUnit, out var declaredSymbol, out _) && !string.Equals(declaredSymbol, symbol, StringComparison.Ordinal)
+                    ? $"the declared unit [{declaredUnit.Trim()}] and the unit written on the value ({rest}) differ; the unit written on the value was used."
+                    : null;
+
+                return new CadValue(CadParameterKind.Number, Number: number, Unit: symbol.Length == 0 ? null : symbol, Hint: conflict ?? groupNote);
+            }
 
             if (rest.Length <= CadUnits.MaxChars && IsUnitToken(rest))
                 return new CadValue(CadParameterKind.Number, Number: number, RawUnit: rest, UnitProblem: $"The unit '{rest}' is not one the engine knows.");

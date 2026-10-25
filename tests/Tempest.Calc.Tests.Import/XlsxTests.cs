@@ -168,7 +168,7 @@ public sealed class XlsxTests
         var budget = () => new ImportBudget(limits);
         Samples.Refuses(ImportRefusalCode.TooManyRows, () => XlsxReader.Read(Samples.Workbook(string.Concat(Enumerable.Range(1, 4).Select(i => $"<row r=\"{i}\"/>"))), budget()));
         Samples.Refuses(ImportRefusalCode.TooManyColumns, () => XlsxReader.Read(Samples.Workbook("<row r=\"1\"><c r=\"E1\"><v>1</v></c></row>"), budget()));
-        Samples.Refuses(ImportRefusalCode.TooManyRows, () => XlsxReader.Read(Samples.Workbook("<row r=\"1\"><c r=\"A1\"><v>1</v><c r=\"B1\"/></c></row><row r=\"2\"><c r=\"A2\"><v>1</v></c><c r=\"B2\"><v>1</v></c><c r=\"C2\"><v>1</v></c><c r=\"D2\"><v>1</v></c><c r=\"A3\"><v>1</v></c><c r=\"B3\"><v>1</v></c></row>"), budget()));
+        Samples.Refuses(ImportRefusalCode.TooManyRows, () => XlsxReader.Read(Samples.Workbook("<row r=\"1\"><c r=\"A1\"><v>1</v><c r=\"B1\"/></c></row><row r=\"2\"><c r=\"A2\"><v>1</v></c><c r=\"B2\"><v>1</v></c><c r=\"C2\"><v>1</v></c><c r=\"D2\"><v>1</v></c></row><row r=\"3\"><c r=\"A3\"><v>1</v></c><c r=\"B3\"><v>1</v></c></row>"), budget()));
     }
 
     [Fact]

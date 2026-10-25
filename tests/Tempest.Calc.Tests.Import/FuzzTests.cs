@@ -117,6 +117,49 @@ public sealed class FuzzTests
         }
     }
 
+    private static readonly string[] XmlFragments =
+    [
+        "<c r=\"A1\"><v>1</v></c>", "<c r=\"B2\" t=\"s\"><v>0</v></c>", "<c r=\"B2\" t=\"s\"><v>99999999999</v></c>", "<row r=\"1\">", "</row>", "<row r=\"1048577\"/>", "<c r=\"XFE1\"><v>1</v></c>",
+        "<f>", "</f>", "<f>SUM(A1:A9)</f>", "<v>", "</v>", "<v>NaN</v>", "<v>1e999</v>", "<is><t>x</t></is>", "<si><t>x</t></si>", "<si>", "</si>", "<sheet name=\"S\" sheetId=\"1\" r:id=\"rId1\"/>",
+        "<sheet name=\"Dup\" sheetId=\"2\" r:id=\"rId1\"/>", "<sheet name=\"Gone\" sheetId=\"3\" r:id=\"rId77\"/>", "<Relationship Id=\"rId1\" Target=\"../../x.xml\"/>", "<Relationship Id=\"rId1\" Target=\"/xl/worksheets/sheet1.xml\" TargetMode=\"External\"/>",
+        "<a>", "</a>", "<!DOCTYPE x [<!ENTITY e \"v\">]>", "&e;", "&#0;", "&amp;", "<![CDATA[x]]>", "<?pi x?>", " xmlns=\"urn:x\"", " t=\"b\"", " t=\"e\"", " t=\"inlineStr\"", " t=\"str\"", " t=\"d\"",
+    ];
+
+    [Fact]
+    public void Structure_Aware_Mutations_Of_The_Workbook_Samples_Are_Never_Anything_But_A_Documented_Refusal()
+    {
+        foreach (var (sample, format) in SampleFiles.Where(f => f.Sample.EndsWith(".xlsx", StringComparison.Ordinal)))
+        {
+            var parts = new List<(string Name, string Text)>();
+
+            using (var zip = new System.IO.Compression.ZipArchive(new MemoryStream(Samples.BytesOf(sample))))
+            {
+                foreach (var entry in zip.Entries)
+                {
+                    using var reader = new StreamReader(entry.Open(), Encoding.UTF8);
+                    parts.Add((entry.FullName, reader.ReadToEnd()));
+                }
+            }
+
+            Gen.Select(Gen.Int[0, parts.Count - 1], Gen.Int[0, 100_000], Gen.Int[0, XmlFragments.Length - 1], Gen.Int[0, 3], Gen.Int[1, 4]).Sample((part, position, fragment, kind, repeat) =>
+            {
+                var mutated = parts.Select(p => p).ToList();
+                var text = mutated[part].Text;
+                var at = position % (text.Length + 1);
+
+                text = kind switch
+                {
+                    0 => text.Insert(at, string.Concat(Enumerable.Repeat(XmlFragments[fragment], repeat))),
+                    1 => text.Remove(at, Math.Min(text.Length - at, repeat * 7)),
+                    2 => text.Remove(at, Math.Min(text.Length - at, 5)).Insert(at, XmlFragments[fragment]),
+                    _ => text + string.Concat(Enumerable.Repeat(text[at..Math.Min(text.Length, at + 40)], repeat * 50)),
+                };
+                mutated[part] = (mutated[part].Name, text);
+                ParseBytes(Samples.Zip(mutated.Select(p => (p.Name, Encoding.UTF8.GetBytes(p.Text)))), format);
+            }, iter: N(400));
+        }
+    }
+
     [Fact]
     public void Truncations_Of_The_Golden_Samples_Are_Never_Anything_But_A_Documented_Refusal()
     {

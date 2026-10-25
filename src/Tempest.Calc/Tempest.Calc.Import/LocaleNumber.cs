@@ -43,11 +43,20 @@ public static class LocaleNumber
     public const int MaxChars = 40;
 
     /// <summary>Reads a finite number written the way <paramref name="profile"/> declares; otherwise returns <see langword="false"/> with the reason.</summary>
-    public static bool TryParse(string? text, NumberProfile profile, out double value, out string problem)
+    public static bool TryParse(string? text, NumberProfile profile, out double value, out string problem) =>
+        TryParse(text, profile, out value, out problem, out _);
+
+    /// <summary>
+    /// As the four-argument form; <paramref name="usedGrouping"/> says the profile's grouping character was found in the number and
+    /// removed (<c>1.500</c> read as 1500 under a decimal-comma profile that groups with a point), so a caller can say how the
+    /// value was read.
+    /// </summary>
+    public static bool TryParse(string? text, NumberProfile profile, out double value, out string problem, out bool usedGrouping)
     {
         ArgumentNullException.ThrowIfNull(profile);
         value = 0;
         problem = string.Empty;
+        usedGrouping = false;
 
         if (!profile.IsValid)
         {
@@ -109,6 +118,7 @@ public static class LocaleNumber
             }
 
             integer = string.Concat(parts);
+            usedGrouping = true;
         }
 
         if (!AllDigits(integer) || !AllDigits(fraction))
@@ -146,6 +156,7 @@ public static class LocaleNumber
         if (!double.TryParse(invariant, NumberStyles.Float, CultureInfo.InvariantCulture, out value) || !double.IsFinite(value))
         {
             value = 0;
+            usedGrouping = false;
             problem = $"'{Clip(s)}' is outside the range of a number.";
             return false;
         }

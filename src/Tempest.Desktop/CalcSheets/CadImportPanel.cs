@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Tempest.Calc.Import;
 using Tempest.Calc.Import.Cad;
 using Tempest.Calc.Import.Mapping;
 using Tempest.Calc.Library;
@@ -24,6 +25,7 @@ public sealed class CadImportPanel : Border
     public const string LoadProfileCaption = "Load profile (JSON)…";
     public const string ApplyCaption = "Apply import";
     public const string CloseCaption = "Close import";
+    public const string CancelCaption = "Cancel";
 
     private readonly CadImportViewModel _model;
     private readonly TextBlock _heading = new() { FontSize = DesignTokens.FontSizeBody + 2, FontWeight = DesignTokens.WeightHeading, TextWrapping = TextWrapping.Wrap };
@@ -33,6 +35,9 @@ public sealed class CadImportPanel : Border
     private readonly ComboBox _format = new() { MinWidth = 220, PlaceholderText = "File format" };
     private readonly ComboBox _profile = new() { MinWidth = 260, PlaceholderText = "Mapping profile" };
     private readonly CheckBox _decimalComma = new() { Content = "Numbers use a decimal comma" };
+    private readonly TextBlock _numberFormat = new() { FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, MaxWidth = 900, Opacity = 0.85 };
+    private readonly Button _cancel = new() { Content = CancelCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly StackPanel _notices = new() { Spacing = 2 };
     private readonly TextBox _version = new() { MinWidth = 140, Watermark = "CAD version (optional)", MaxLength = 40 };
     private readonly TextBox _part = new() { MinWidth = 160, Watermark = "Part name (optional)", MaxLength = 80 };
     private readonly TextBox _revision = new() { MinWidth = 120, Watermark = "Revision (optional)", MaxLength = 20 };
@@ -60,6 +65,9 @@ public sealed class CadImportPanel : Border
         AutomationProperties.SetName(_loadProfile, LoadProfileCaption);
         AutomationProperties.SetName(_apply, ApplyCaption);
         AutomationProperties.SetName(_close, CloseCaption);
+        AutomationProperties.SetName(_cancel, CancelCaption);
+        AutomationProperties.SetName(_numberFormat, "Number format in use");
+        AutomationProperties.SetName(_notices, "Notes about the file");
         AutomationProperties.SetName(_format, "CAD file format");
         AutomationProperties.SetName(_profile, "Mapping profile");
         AutomationProperties.SetName(_decimalComma, "Numbers use a decimal comma");
@@ -84,6 +92,7 @@ public sealed class CadImportPanel : Border
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         buttons.Children.Add(_apply);
+        buttons.Children.Add(_cancel);
         buttons.Children.Add(_close);
 
         var stack = new StackPanel { Spacing = DesignTokens.SpaceSm };
@@ -91,7 +100,9 @@ public sealed class CadImportPanel : Border
         stack.Children.Add(files);
         stack.Children.Add(_file);
         stack.Children.Add(facts);
+        stack.Children.Add(_numberFormat);
         stack.Children.Add(_summary);
+        stack.Children.Add(_notices);
         stack.Children.Add(_lines);
         stack.Children.Add(_changes);
         stack.Children.Add(buttons);
@@ -102,6 +113,7 @@ public sealed class CadImportPanel : Border
         _loadProfile.Click += async (_, _) => await GuardedAsync(PickProfileAsync).ConfigureAwait(true);
         _apply.Click += async (_, _) => await GuardedAsync(ApplyAsync).ConfigureAwait(true);
         _close.Click += (_, _) => _model.Close();
+        _cancel.Click += (_, _) => _model.Cancel();
         _format.SelectionChanged += async (_, _) => await GuardedAsync(OnFormatAsync).ConfigureAwait(true);
         _profile.SelectionChanged += async (_, _) => await GuardedAsync(OnProfileAsync).ConfigureAwait(true);
         _decimalComma.IsCheckedChanged += async (_, _) => await GuardedAsync(OnSettingsAsync).ConfigureAwait(true);
@@ -166,22 +178,8 @@ public sealed class CadImportPanel : Border
 
         await using var stream = await picked[0].OpenReadAsync().ConfigureAwait(true);
 
-        if (stream.CanSeek && stream.Length > CadMappingProfileJson.MaxBytes)
-        {
-            _status.Text = $"A mapping profile is at most {CadMappingProfileJson.MaxBytes / 1000} KB.";
-            return;
-        }
-
-        using var buffer = new MemoryStream();
-        await stream.CopyToAsync(buffer).ConfigureAwait(true);
-
-        if (buffer.Length > CadMappingProfileJson.MaxBytes)
-        {
-            _status.Text = $"A mapping profile is at most {CadMappingProfileJson.MaxBytes / 1000} KB.";
-            return;
-        }
-
-        await _model.SaveProfileJsonAsync(System.Text.Encoding.UTF8.GetString(buffer.ToArray())).ConfigureAwait(true);
+        // The stream is read through the same bounded reader as a CAD file (cap, time limit, strict UTF-8 with the byte order mark dropped).
+        await _model.LoadProfileStreamAsync(stream).ConfigureAwait(true);
     }
 
     private async Task ApplyAsync()
@@ -241,6 +239,11 @@ public sealed class CadImportPanel : Border
             _profile.ItemsSource = _model.Profiles.Select(p => $"{p.Title} ({p.Label})").ToList();
             _profile.SelectedIndex = _model.Profile is { } profile ? _model.Profiles.ToList().FindIndex(p => p.Id == profile.Id && p.Version == profile.Version) : -1;
             _summary.Text = _model.Summary;
+            _numberFormat.Text = _model.NumberFormatText;
+            _decimalComma.IsChecked = _model.EffectiveNumber.Decimal == DecimalMark.Comma;
+            _decimalComma.IsEnabled = !_model.NumberFormatFixedByProfile;
+            _cancel.IsVisible = _model.IsBusy;
+            _chooseFile.IsEnabled = !_model.IsBusy;
             _status.Text = _model.Status;
             _apply.IsEnabled = _model.CanApply;
 
@@ -258,6 +261,11 @@ public sealed class CadImportPanel : Border
                 };
                 _lines.Children.Add(block);
             }
+
+            _notices.Children.Clear();
+
+            foreach (var text in _model.NoticeLines)
+                _notices.Children.Add(new TextBlock { Text = text, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.Wrap, MaxWidth = 900, Foreground = Brushes.DarkOrange });
 
             _changes.Children.Clear();
 

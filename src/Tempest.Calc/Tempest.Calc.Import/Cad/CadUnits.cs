@@ -73,6 +73,39 @@ public static class CadUnits
     /// <summary>Whether the unit is a plane-angle unit (dimensionless to the engine, but not interchangeable with a ratio or a count).</summary>
     public static bool IsAngle(string? symbol) => !string.IsNullOrEmpty(symbol) && AngleSymbols.Contains(symbol);
 
+    /// <summary>
+    /// Whether the unit text has an angle in it (rpm, rev, rad, deg, grad, including SI-prefixed radians). The engine gives rpm, rad/s, Hz and
+    /// 1/min the same dimension (per time), but rpm and rad/s carry a factor of 2π relative to Hz and 1/s; a mapping may only convert between
+    /// units that either both carry an angle or both do not.
+    /// </summary>
+    public static bool CarriesAngle(string? symbol)
+    {
+        if (string.IsNullOrEmpty(symbol))
+            return false;
+
+        var start = -1;
+
+        for (var i = 0; i <= symbol.Length; i++)
+        {
+            var letter = i < symbol.Length && (char.IsLetter(symbol[i]) || symbol[i] == '\u00B0' || symbol[i] == '\u00B5');
+
+            if (letter && start < 0)
+            {
+                start = i;
+            }
+            else if (!letter && start >= 0)
+            {
+                var atom = symbol[start..i];
+                start = -1;
+
+                if (AngleSymbols.Contains(atom) || atom is "rpm" or "grad" || (atom.Length > 3 && atom.EndsWith("rad", StringComparison.Ordinal)))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>The engine's parser can throw something other than a unit error on hostile text (a huge exponent), so the call is contained here.</summary>
     internal static bool TryParseEngine(string text, out Unit unit)
     {

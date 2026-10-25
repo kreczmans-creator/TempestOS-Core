@@ -72,15 +72,56 @@ public static class BoundedInputReader
         return FromBytes(buffer.ToArray(), fileName, limits);
     }
 
-    /// <summary>Reads a file from disk after canonicalising its path (see <see cref="ImportPath"/>).</summary>
+    /// <summary>
+    /// Reads a file from disk after canonicalising its path (see <see cref="ImportPath"/>). The open and the read both run under the
+    /// time limit: a path that blocks on open (a named pipe) is abandoned at the limit, not waited for. Only a regular file is read:
+    /// a stream that cannot seek (a pipe, a character device) is refused.
+    /// </summary>
     public static async Task<ImportedFile> ReadFileAsync(string path, string? requiredRoot = null, ImportLimits? limits = null, CancellationToken cancellationToken = default)
     {
+        limits ??= ImportLimits.Default;
         var full = ImportPath.CanonicaliseExistingFile(path, requiredRoot);
-        var stream = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.Read, ChunkBytes, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        var leaf = ImportPath.SafeLeafName(full);
 
-        await using (stream.ConfigureAwait(false))
+        // The token the worker reads under is its own, cancelled at the limit; the caller's cancellation and the limit are both applied
+        // to the wait, so a worker stuck inside open() cannot hold the caller.
+        var workerStop = new CancellationTokenSource(limits.Timeout);
+
+        var worker = Task.Run(
+            async () =>
+            {
+                var stream = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.Read, ChunkBytes, FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+                await using (stream.ConfigureAwait(false))
+                {
+                    if (!stream.CanSeek)
+                        throw new ImportRefusedException(ImportRefusalCode.UnsafePath, "Only a regular file is read; a pipe or a device is not.");
+
+                    return await ReadAsync(stream, leaf, limits, workerStop.Token).ConfigureAwait(false);
+                }
+            },
+            CancellationToken.None);
+
+        try
         {
-            return await ReadAsync(stream, ImportPath.SafeLeafName(full), limits, cancellationToken).ConfigureAwait(false);
+            return await worker.WaitAsync(limits.Timeout + TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            await workerStop.CancelAsync().ConfigureAwait(false);
+            throw new ImportRefusedException(ImportRefusalCode.Timeout, $"Opening or reading the file took longer than {limits.Timeout.TotalSeconds:0.#} seconds, so it was stopped.");
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ImportRefusedException(ImportRefusalCode.Timeout, $"Opening or reading the file took longer than {limits.Timeout.TotalSeconds:0.#} seconds, so it was stopped.");
+        }
+        catch (IOException e)
+        {
+            throw new ImportRefusedException(ImportRefusalCode.NotFound, "The file could not be opened: " + (e.Message.Length > 120 ? e.Message[..120] : e.Message));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw new ImportRefusedException(ImportRefusalCode.UnsafePath, "The file could not be opened (access denied, or it is not a file).");
         }
     }
 
@@ -125,6 +166,8 @@ public static class BoundedInputReader
             throw new ImportRefusedException(ImportRefusalCode.InvalidEncoding, "The file is not valid UTF-8 text. Save it as UTF-8 and import it again.");
         }
 
+        // A second byte order mark (a file saved twice) is dropped too, so it cannot sit in the first header field.
+        text = text.TrimStart('\uFEFF');
         RejectControlCharacters(text);
         return text;
     }
@@ -150,6 +193,10 @@ public static class BoundedInputReader
 
             if (char.IsControl(c))
                 throw new ImportRefusedException(ImportRefusalCode.ControlCharacter, $"The file holds a control character (U+{(int)c:X4}) on line {line}. Only tab, carriage return and line feed are allowed.");
+
+            // Characters that change how text is displayed without being visible: a name or value can read differently from what it is.
+            if (c is '\uFEFF' or '\u061C' or '\u200E' or '\u200F' or (>= '\u202A' and <= '\u202E') or (>= '\u2066' and <= '\u2069'))
+                throw new ImportRefusedException(ImportRefusalCode.ControlCharacter, $"The file holds an invisible direction-changing character (U+{(int)c:X4}) on line {line}.");
         }
     }
 
