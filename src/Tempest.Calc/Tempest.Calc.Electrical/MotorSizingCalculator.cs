@@ -79,6 +79,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
             new CalcApplicabilityRule("eta", "A direct-coupled rotary load has no transmission: an overall efficiency below 0.95 is probably a leftover default; use 1 or the coupling's efficiency.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("rated-speed", "Continuous duty without the candidate motor's rated speed n_rated: the rated power P_rated is not given.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("rated-speed-ignored", "The rated speed n_rated is entered on a point-to-point sheet: it is used in continuous duty only and is ignored here.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("speed-above-rated", "Continuous duty: the motor speed n_pk = n_L·i is above the candidate motor's rated (nameplate) speed n_rated; the motor then runs past its nameplate point, where its rated torque and power no longer hold.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("overhauling", "The load drives the motor during deceleration or on the decline (negative load torque); check the drive can regenerate or brake.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -271,6 +272,10 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         {
             c.Input("n_rated");
             c.Assign("P_rated", "T_rated * n_rated", "W", "Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed");
+
+            // A relative tolerance of 1e-6 keeps a speed that only rounds above the nameplate (n_L * i against n_rated) from warning.
+            if (c.Si("n_pk") > c.Si("n_rated") * (1 + 1e-6))
+                c.Warn("speed-above-rated", $"n_L: the motor speed n_pk = {CalcValue.FormatNumber(c.Si("n_pk") * 60 / (2 * Math.PI), 4)} rpm is above the candidate motor's rated speed {CalcValue.FormatNumber(c.Si("n_rated") * 60 / (2 * Math.PI), 4)} rpm; its rated torque and power hold at the nameplate speed, so check the motor's torque and power at this speed (field weakening or a different ratio i).");
         }
         else
         {

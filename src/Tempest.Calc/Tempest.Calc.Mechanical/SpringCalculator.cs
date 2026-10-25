@@ -88,7 +88,7 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcInputSpec("M_2", "Torque at working point 2 (torsion, loads)", CalcInputKind.Quantity, "N*m", Default: 0.15, Min: 0, Max: 100, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
             new CalcInputSpec("phi_1", "Angle at working point 1 (torsion, deflections)", CalcInputKind.Quantity, "deg", Default: 5, Min: 0, Max: 1080, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
             new CalcInputSpec("phi_2", "Angle at working point 2 (torsion, deflections)", CalcInputKind.Quantity, "deg", Default: 15, Min: 0, Max: 1080, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
-            new CalcInputSpec("s_work", "Expected working travel s₂ − s₁ (optional; M9 lift links here): the sheet warns when the spring's own travel differs by more than 1 %", CalcInputKind.Quantity, "mm", Min: 0.1, Max: 1000, HardMin: 0.001, HardMax: 1e5, IsOptional: true, Group: "Working points"),
+            new CalcInputSpec("s_work", "Expected working travel s₂ − s₁ (optional, compression and extension; M9 lift links here): the sheet warns when the spring's own travel differs by more than 1 %; in torsion mode it is not used and the sheet says so", CalcInputKind.Quantity, "mm", Min: 0.1, Max: 1000, HardMin: 0.001, HardMax: 1e5, IsOptional: true, Group: "Working points"),
             new CalcInputSpec("G", "Shear modulus", CalcInputKind.Quantity, "GPa", Default: 80, Min: 20, Max: 100, HardMin: 1, HardMax: 200, Group: "Material", MaterialProperty: "G"),
             new CalcInputSpec("E", "Young's modulus", CalcInputKind.Quantity, "GPa", Default: 206, Min: 50, Max: 250, HardMin: 5, HardMax: 500, Group: "Material", MaterialProperty: "E"),
             new CalcInputSpec("rho", "Density", CalcInputKind.Quantity, "kg/m^3", Default: 7850, Min: 1000, Max: 20000, HardMin: 100, HardMax: 25000, Group: "Material", MaterialProperty: "rho"),
@@ -133,6 +133,7 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcApplicabilityRule("buckling", "The deflection at working point 2 reaches the buckling deflection of the spring.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("surge", "The surge frequency is less than 13 times the operating frequency.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("travel-mismatch", "The spring's working travel s₂ − s₁ differs from the expected working travel by more than 1 %.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("s-work-unused", "An expected working travel s_work is given in torsion mode: the travel check applies to compression and extension only, so it is not used.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("fatigue-cycles", "The required life is below 10⁴ cycles: the Goodman relation is for high-cycle fatigue.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -530,6 +531,13 @@ public sealed class SpringCalculator : ICalcCalculator
 
         foreach (var s in new[] { "E", "l_1", "l_2", "f_sigma" })
             c.Input(s);
+
+        // The travel check (TravelCheck) compares a deflection in mm; a torsion spring works through an angle, so a linked or typed s_work has nothing to be compared with. Say so rather than ignore it silently.
+        if (c.Has("s_work"))
+        {
+            c.Input("s_work");
+            c.Warn("s-work-unused", "s_work: the expected working travel is not used in torsion mode; the travel check applies to compression and extension springs only (a torsion spring works through an angle).");
+        }
 
         c.Assign("n_a", "n + (l_1 + l_2) / (3 * pi * D)", null, "Active coils including the legs", Part3);
         c.Assign("k_phi", "E * d^4 / (64 * D * n_a)", "N*m/rad", "Torsional rate", Part3);

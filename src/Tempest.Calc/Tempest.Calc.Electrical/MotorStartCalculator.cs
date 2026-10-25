@@ -103,7 +103,7 @@ public sealed class MotorStartCalculator : ICalcCalculator
             new CalcApplicabilityRule("harmonics", "Harmonic loads are present (or a drive is used): the capacitor bank forms a parallel resonance with the supply at the stated order.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("current-limit", "The supply cannot hold a drive's regulated starting current: the source and cable drop alone exceeds the supply voltage.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("rated", "The entered rated current and P/η disagree by more than 5 % in input power.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("c_src", "A linked fault current needs c = 1.1, the factor E5 computes it with.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("c_src", "A linked fault current needs the voltage factor c_src to match the c its fault level was computed with: a typed c_src other than 1.1 is flagged; linking c_src from the fault-protection step's c_k3 removes the mismatch.", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-pump-dol-transformer", "75 kW pump motor, direct on line, on a 500 kVA 4 % transformer, 40 m of 50 mm² copper (analytic)",
@@ -266,7 +266,7 @@ public sealed class MotorStartCalculator : ICalcCalculator
                 c.Assign("Z_fl", $"{cName} * U / (sqrt(3) * I_k)", "ohm", "Source impedance magnitude from the fault current", "IEC 60909-0 cl. 5.3");
 
                 if (c.Inputs.Find("I_k")?.Provenance?.Kind == CalcProvenanceKind.Link && c.Inputs.Find("c_src")?.Provenance?.Kind != CalcProvenanceKind.Link && Math.Abs(c.Si(cName) - 1.1) > 1e-9)
-                    c.Warn("c_src", $"c_src: I_k is linked from E5 I_k3, which is computed with c = 1.1, but c is {F(c.Si(cName))}; the source impedance is then {F(c.Si(cName) / 1.1 * 100)} % of E5's Z_T. Set c_src to 1.1 (and U to √3·U_0 for an exact match).");
+                    c.Warn("c_src", $"c_src: I_k is linked from E5 I_k3, and the fault level's voltage factor must match c_src, but c_src is typed as {F(c.Si(cName))}; if E5 was computed with another c (its c_max) the source impedance is off by the ratio of the two. Link c_src from the fault-protection step's c_k3 to remove the mismatch (and set U to √3·U_0 for an exact match).");
             }
 
             c.Assign("R_src", "Z_fl / sqrt(1 + XR^2)", "ohm", "Source resistance");

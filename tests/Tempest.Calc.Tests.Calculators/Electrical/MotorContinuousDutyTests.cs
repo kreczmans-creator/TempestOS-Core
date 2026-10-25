@@ -133,4 +133,30 @@ public sealed class MotorContinuousDutyTests
 
         Assert.Equal("W", Motor.Template.OutputPorts!.Single(p => p.Symbol == "P_cont").Unit);
     }
+
+    [Fact]
+    public void A_Motor_Speed_Above_The_Rated_Speed_Warns_And_A_Speed_At_Or_Below_It_Does_Not()
+    {
+        // The pump case runs at 2800 rpm on a 2850 rpm nameplate: below rated, silent.
+        Assert.DoesNotContain(CalcRunner.Run(Motor, Continuous()).Notices, n => n.RuleId == "speed-above-rated");
+
+        // Exactly at the nameplate (n_L · i = n_rated, which floating point may land a hair above) is silent.
+        Assert.DoesNotContain(CalcRunner.Run(Motor, Continuous(CalcInputValue.Quantity("n_L", 360, "rpm"), CalcInputValue.Quantity("n_rated", 1440, "rpm"))).Notices, n => n.RuleId == "speed-above-rated");
+
+        // 3000 rpm against the 2850 rpm nameplate: past the nameplate point, so the sheet says so; the message names both speeds.
+        var above = CalcRunner.Run(Motor, Continuous(CalcInputValue.Quantity("n_L", 750, "rpm")));
+        Assert.False(above.IsBlocked);
+        var warning = Assert.Single(above.Notices, n => n.RuleId == "speed-above-rated");
+        Assert.Equal(CalcNoticeSeverity.Warning, warning.Severity);
+        Assert.StartsWith("n_L:", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("3000", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("2850", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("speed-above-rated", Motor.Template.ApplicabilityRules.Select(r => r.Id));
+
+        // Without n_rated there is nothing to compare with (the rated-speed notice already says so); a point-to-point sheet ignores n_rated altogether.
+        var without = CalcRunner.Run(Motor, new CalcInputSet([.. Continuous(CalcInputValue.Quantity("n_L", 750, "rpm")).Values.Where(v => v.Symbol != "n_rated")]));
+        Assert.DoesNotContain(without.Notices, n => n.RuleId == "speed-above-rated");
+        var pointToPoint = CalcTemplateHasher.DefaultInputs(Motor.Template).With(CalcInputValue.Choice("duty_mode", MotorSizingCalculator.DutyPointToPoint)).With(CalcInputValue.Quantity("n_rated", 100, "rpm"));
+        Assert.DoesNotContain(CalcRunner.Run(Motor, pointToPoint).Notices, n => n.RuleId == "speed-above-rated");
+    }
 }

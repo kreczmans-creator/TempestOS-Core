@@ -226,6 +226,13 @@ public sealed class MechanismReviewChainTests
         Assert.Equal(0.5970754375011612, Si(e1, "T_load"), 6);
         Assert.Equal(5.158731780010033 / (9.6 * 0.9), Si(e1, "T_load"), 6);
         Assert.Equal(1728, Si(e1, "n_pk") * 60 / (2 * Math.PI), 9);
+
+        // The revised cam runs at 180 rpm, so the motor now runs at 1728 rpm against its 1440 rpm nameplate: E1 says so (speed-above-rated); the base case at 1440 rpm did not.
+        Assert.Equal(1440, InputSi(e1, "n_rated") * 60 / (2 * Math.PI), 9);
+        var fast = Assert.Single(e1.Warnings, w => w.RuleId == "speed-above-rated");
+        Assert.Contains("1728", fast.Message, StringComparison.Ordinal);
+        Assert.Contains("1440", fast.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(e1Before.Warnings, w => w.RuleId == "speed-above-rated");
         Assert.Equal(Si(m9New, "f_in"), InputSi(m7, "f_op"), 12);
         Assert.Equal(3, InputSi(m7, "f_op"), 12);
 

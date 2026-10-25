@@ -353,7 +353,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   M_2 | Torque at working point 2 (torsion, loads) | 0.15 | N*m | assumption: Sheet default value; no project figure given. | 0 … 100 N*m
   phi_1 | Angle at working point 1 (torsion, deflections) | 5 | deg | assumption: Sheet default value; no project figure given. | 0 … 1080 deg
   phi_2 | Angle at working point 2 (torsion, deflections) | 15 | deg | assumption: Sheet default value; no project figure given. | 0 … 1080 deg
-  s_work | Expected working travel s₂ − s₁ (optional; M9 lift links here): the sheet warns when the spring's own travel differs by more than 1 % | 40 | mm | link: Tamper cam rev A · lift | 0.1 … 1000 mm
+  s_work | Expected working travel s₂ − s₁ (optional, compression and extension; M9 lift links here): the sheet warns when the spring's own travel differs by more than 1 %; in torsion mode it is not used and the sheet says so | 40 | mm | link: Tamper cam rev A · lift | 0.1 … 1000 mm
   G | Shear modulus | 80 | GPa | assumption: Sheet default value; no project figure given. | 20 … 100 GPa
   E | Young's modulus | 206 | GPa | assumption: Sheet default value; no project figure given. | 50 … 250 GPa
   rho | Density | 7850 | kg/m^3 | assumption: Sheet default value; no project figure given. | 1000 … 20000 kg/m^3
@@ -598,7 +598,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
 
 8. VERIFICATION
   Template: mech.spring@1.2.0
-  Content hash: 82e8bcd0e855f0b9
+  Content hash: 59c36009d5f39ba6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
   Test run: 2026-10-25 15:36 UTC
@@ -1084,7 +1084,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
 
 8. VERIFICATION
   Template: elec.motor-sizing@1.4.0
-  Content hash: 64020d560b0ee248
+  Content hash: 0f221113aba05f54
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
   Test run: 2026-10-25 15:36 UTC

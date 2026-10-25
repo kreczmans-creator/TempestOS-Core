@@ -530,4 +530,28 @@ public sealed class SpringTests
         Assert.Contains(byDeflection.Warnings, w => w.RuleId == "travel-mismatch");
         Assert.DoesNotContain(Run(CalcInputValue.Choice("work", SpringCalculator.Deflections), Q("s_1", 2, "mm"), Q("s_2", 8, "mm"), Q("s_work", 6, "mm")).Warnings, w => w.RuleId == "travel-mismatch");
     }
+
+    [Fact]
+    public void An_Expected_Working_Travel_Is_Not_Used_In_Torsion_Mode_And_The_Sheet_Says_So()
+    {
+        // The travel check is a deflection in mm and runs for compression and extension only; a torsion spring works through an angle, so s_work (typed or linked) has nothing to be compared with.
+        var typed = Run([.. Torsion(), Q("s_work", 6, "mm")]);
+        Assert.False(typed.IsBlocked);
+        var unused = Assert.Single(typed.Warnings, w => w.RuleId == "s-work-unused");
+        Assert.StartsWith("s_work:", unused.Message, StringComparison.Ordinal);
+        Assert.Contains("not used in torsion mode", unused.Message, StringComparison.Ordinal);
+        Assert.Null(typed.FindOutput("s_trav"));
+        Assert.DoesNotContain(typed.Warnings, w => w.RuleId == "travel-mismatch");
+
+        // A linked s_work (the M9 lift) is the same: the provenance does not matter, the mode does.
+        var link = CalcProvenance.Link(Guid.NewGuid(), "lift", "1");
+        var linked = Run([.. Torsion(), Q("s_work", 6, "mm") with { Provenance = link }]);
+        Assert.Single(linked.Warnings, w => w.RuleId == "s-work-unused");
+
+        // Blank s_work is silent in torsion mode, and the warning is for torsion only: compression and extension use s_work (travel check).
+        Assert.DoesNotContain(Run(Torsion()).Warnings, w => w.RuleId == "s-work-unused");
+        Assert.DoesNotContain(Run(Q("s_work", 6.144, "mm")).Warnings, w => w.RuleId == "s-work-unused");
+        Assert.DoesNotContain(Run(Mode(SpringCalculator.Extension), Q("F_0", 10, "N"), Q("F_1", 30, "N"), Q("F_2", 60, "N"), Q("r_h1", 8, "mm"), Q("r_h2", 4, "mm"), Q("s_work", 15, "mm")).Warnings, w => w.RuleId == "s-work-unused");
+        Assert.Contains("s-work-unused", DeclaredRules());
+    }
 }
