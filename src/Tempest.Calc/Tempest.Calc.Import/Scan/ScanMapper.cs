@@ -131,6 +131,7 @@ public static class ScanMapper
             }
 
             var stat = analysis.Stats[candidates[0]];
+            context.Pushed.Clear();
             var (problemText, shown) = Apply(context, stat, entry);
 
             if (problemText is not null)
@@ -142,7 +143,7 @@ public static class ScanMapper
             }
 
             rows.Add(new ScanMappedRow(stat.Feature, stat.Stage, ScanRowStatus.Mapped, entry.Target, shown!, $"→ {entry.Target}"));
-            snapshot.Add(Snap(stat, entry.Target, unitSymbol));
+            snapshot.Add(Snap(stat, entry.Target, unitSymbol, context.Pushed.ToList()));
 
             foreach (var w in stat.Warnings)
                 warnings.Add($"{stat.Feature} ({stat.StageLabel}): {w}");
@@ -169,7 +170,10 @@ public static class ScanMapper
 
     // ------------------------------------------------------------------
 
-    private sealed record Context(ScanAnalysis Analysis, CalcTemplate Template, Dictionary<string, CalcInputValue> Working, List<string> Order, Unit Scan, string ScanSymbol, DateTimeOffset At);
+    private sealed record Context(ScanAnalysis Analysis, CalcTemplate Template, Dictionary<string, CalcInputValue> Working, List<string> Order, Unit Scan, string ScanSymbol, DateTimeOffset At)
+    {
+        public List<ScanPushedValue> Pushed { get; } = [];
+    }
 
     private static (string? Problem, string? Shown) Apply(Context c, ScanFeatureStats stat, ScanFeatureEntry entry)
     {
@@ -261,6 +265,7 @@ public static class ScanMapper
             c.Order.Add(target.Symbol);
 
         c.Working[target.Symbol] = new CalcInputValue(target.Symbol, value, dimensioned ? targetText : null, Provenance: provenance);
+        c.Pushed.Add(new ScanPushedValue(target.Symbol, value, dimensioned ? targetText : null, null));
         return (null, $"{Format(value)}{(dimensioned ? " " + targetText : string.Empty)} ({target.Stat.ToString().ToLowerInvariant()} of {shown})");
     }
 
@@ -360,6 +365,12 @@ public static class ScanMapper
             cells["distribution"] = new CalcCell(Text: normal, Provenance: provenance);
         }
 
+        foreach (var key in new[] { "nominal", "upper", "lower", "shift", "distribution" })
+        {
+            if (cells.TryGetValue(key, out var written) && ReferenceEquals(written.Provenance, provenance))
+                c.Pushed.Add(new ScanPushedValue($"{target.Symbol}[{target.Row.Value}].{key}", written.Number, written.Number is null ? null : written.Unit, written.Text));
+        }
+
         var newRows = table.Rows.ToList();
         newRows[target.Row.Value] = new CalcRow(cells);
         c.Working[target.Symbol] = table with { Rows = newRows };
@@ -420,6 +431,12 @@ public static class ScanMapper
         }
 
         var newRow = new CalcRow(cells);
+
+        foreach (var column in new[] { "mean", "sigma", "dist" })
+        {
+            if (cells.TryGetValue(column, out var written) && ReferenceEquals(written.Provenance, provenance))
+                c.Pushed.Add(new ScanPushedValue($"{target.Symbol}{{{key}}}.{column}", written.Number, written.Number is null ? null : written.Unit, written.Text));
+        }
 
         if (index >= 0)
             rows[index] = newRow;
@@ -490,8 +507,8 @@ public static class ScanMapper
     /// <summary>A spread or width converted between two scale units (no offset).</summary>
     private static double Scale(Unit from, Unit to, double value) => value * from.Factor / to.Factor;
 
-    private static ScanImportedFeature Snap(ScanFeatureStats s, string? target, string unit) =>
-        new(s.Feature, s.Stage, target, s.Count, s.Mean, s.Sigma, s.Cpk, s.Ppk, s.Nominal, s.SetSha256, unit);
+    private static ScanImportedFeature Snap(ScanFeatureStats s, string? target, string unit, IReadOnlyList<ScanPushedValue>? pushed = null) =>
+        new(s.Feature, s.Stage, target, s.Count, s.Mean, s.Sigma, s.Cpk, s.Ppk, s.Nominal, s.SetSha256, unit, pushed ?? []);
 
     private static string Describe(ScanFeatureStats s, string unit) =>
         s.Computable

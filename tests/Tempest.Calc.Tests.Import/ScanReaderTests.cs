@@ -356,6 +356,39 @@ public sealed class ScanReaderTests
         Assert.Equal(12, excluded.Stats[0].Total);
     }
 
+    // ---- ragged rows (the review of W1, H3) ----
+
+    [Fact]
+    public void A_Row_With_More_Fields_Than_The_Header_Is_Refused_Because_A_Split_Number_Would_Shift_The_Values()
+    {
+        var profile = new ScanProfile("p", 1, "P", new ScanColumns("Feature", Actual: "Actual"), [], Delimiter: ScanDelimiter.Comma, Number: NumberProfile.Comma);
+
+        var ex = Assert.Throws<ImportRefusedException>(() => ScanImporter.Analyse(Samples.Text("Feature,Actual\nA,12,5\nA,13,0\n"), profile));
+
+        Assert.Equal(ImportRefusalCode.MalformedStructure, ex.Code);
+        Assert.Contains("line 2", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("3 fields but the header row has 2", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("Nothing was imported", ex.Message, StringComparison.Ordinal);
+
+        // A thousands separator under a decimal-point profile splits the same way.
+        var point = new ScanProfile("p", 1, "P", new ScanColumns("Feature", Actual: "Actual"), [], Delimiter: ScanDelimiter.Comma);
+        Assert.Throws<ImportRefusedException>(() => ScanImporter.Analyse(Samples.Text("Feature,Actual\nA,1,250\n"), point));
+
+        // Quoting keeps a field whole; trailing empty fields are harmless.
+        var ok = ScanImporter.Analyse(Samples.Text("Feature,Actual\nA,\"12,5\",,\nA,\"13,0\"\n"), profile);
+        Assert.Equal(2, ok.Data.Observations.Count);
+        Assert.Equal(12.5, ok.Data.Observations[0].Value);
+    }
+
+    [Fact]
+    public void A_Whitespace_Report_Row_With_Extra_Words_Is_Refused_In_The_Same_Way()
+    {
+        var text = "Name Actual\nPin 10.01\nPin 10.02 extra\n";
+        var profile = new ScanProfile("p", 1, "P", new ScanColumns("#1", Actual: "#2"), [], Delimiter: ScanDelimiter.Whitespace);
+
+        Samples.Refuses(ImportRefusalCode.MalformedStructure, () => ScanImporter.Analyse(Samples.Text(text), profile));
+    }
+
     // ---- profile mismatch ----------------------------------------------------
 
     [Fact]

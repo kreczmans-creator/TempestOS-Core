@@ -231,6 +231,7 @@ public static class ScanImporter
             throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"{file.FileName}: the profile '{profile.Label}' expects the header on row {profile.HeaderRow}, but the table has only {rows.Count} row(s).");
 
         var header = rows[profile.HeaderRow - 1].Select(h => ScanText.Clean(h, 128, out _)).ToList();
+        var headerWidth = header.Count;
         var roles = ResolveColumns(profile, header, file.FileName);
         var stage0 = Clean(input.Stage, MaxStageChars) ?? Clean(profile.FixedStage, MaxStageChars) ?? string.Empty;
         var serial0 = Clean(input.Serial, MaxSerialChars) ?? Clean(profile.FixedSerial, MaxSerialChars) ?? string.Empty;
@@ -255,6 +256,9 @@ public static class ScanImporter
                 sink.Log.Add(ScanProblemKind.NoFeature, "(row)", fileIndex, line, null, "an empty row");
                 continue;
             }
+
+            if (row.Count > headerWidth && row.Skip(headerWidth).Any(static f => !string.IsNullOrWhiteSpace(f)))
+                throw new ImportRefusedException(ImportRefusalCode.MalformedStructure, $"{file.FileName} line {line}: the row has {row.Count} fields but the header row has {headerWidth}. A number written with the other decimal mark, or a delimiter inside a value, splits a field and would shift the values; check the delimiter and the number format, or quote the field. Nothing was imported.");
 
             if (row.Count < width)
                 sink.Log.Add(ScanProblemKind.ShortRow, "(row)", fileIndex, line, null, $"the row has {row.Count} column(s) and the profile maps up to column {width}; the missing cells are blank");

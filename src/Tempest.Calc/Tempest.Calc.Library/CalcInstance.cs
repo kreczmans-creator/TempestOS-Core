@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Tempest.Calc.Import.Mapping;
+using Tempest.Calc.Import.Scan;
 using Tempest.Calc.Sheets;
 
 namespace Tempest.Calc.Library;
@@ -69,7 +70,8 @@ public sealed record CalcInstance(
     string? LastRejection = null,
     IReadOnlyList<string>? EditedBy = null,
     IReadOnlyList<string>? RepinnedBy = null,
-    IReadOnlyList<CadImportRecord>? CadImports = null)
+    IReadOnlyList<CadImportRecord>? CadImports = null,
+    IReadOnlyList<ScanImportRecord>? ScanImports = null)
 {
     /// <summary>
     /// Everyone who set up or changed this revision's inputs: its creator and every principal in <see cref="EditedBy"/> (kept

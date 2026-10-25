@@ -3,6 +3,9 @@ using System.Text;
 
 namespace Tempest.Calc.Import.Scan;
 
+/// <summary>One value an import wrote: where (<c>D</c>, <c>contributors[0].upper</c>, <c>measured{D_s}.mean</c>), the number and unit or the text. What a claim of scan provenance is checked against.</summary>
+public sealed record ScanPushedValue(string Path, double? Number, string? Unit, string? Text);
+
 /// <summary>One fitted feature as it was when imported: what the next import is compared against. Values are in the profile's unit.</summary>
 public sealed record ScanImportedFeature(
     string Feature,
@@ -15,7 +18,8 @@ public sealed record ScanImportedFeature(
     double? Ppk,
     double? Nominal,
     string SetSha256,
-    string Unit);
+    string Unit,
+    IReadOnlyList<ScanPushedValue>? Pushed = null);
 
 /// <summary>A file of an import: its name and SHA-256, and the stage and serial the person entered for it.</summary>
 public sealed record ScanImportFile(string FileName, string Sha256, string? Stage, string? Serial);

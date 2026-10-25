@@ -22,6 +22,9 @@ public sealed class CalcInstanceStore
 
     /// <summary>CAD import mapping profiles (Addendum B, W1), one document per profile version, never overwritten.</summary>
     public const string ImportProfileCollection = "Calc.ImportProfiles";
+
+    /// <summary>Scan import profiles (Addendum B, W2), one document per profile version, never overwritten.</summary>
+    public const string ScanProfileCollection = "Calc.ScanProfiles";
     public const string InstanceKind = "CalcInstance";
     public const string PackKind = "CalcPack";
     public const int MaxDocumentBytes = 4_000_000;
@@ -349,6 +352,48 @@ public sealed class CalcInstanceStore
     {
         var all = await _store.ReadAllAsync(ImportProfileCollection, cancellationToken).ConfigureAwait(false);
         return all.Select(kv => Deserialise<Import.Mapping.CadMappingProfile>(kv.Value)).OfType<Import.Mapping.CadMappingProfile>()
+            .GroupBy(p => p.Id, StringComparer.Ordinal).Select(g => g.OrderBy(p => p.Version).Last())
+            .OrderBy(p => p.Title, StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>Saves a scan import profile version (W2). A version is never overwritten: a change is a new version.</summary>
+    public async Task SaveScanProfileAsync(Import.Scan.ScanProfile profile, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        var key = ImportProfileKey(profile.Id, profile.Version);
+        var json = Serialise(profile);
+
+        if (json.Length > MaxDocumentBytes)
+            throw new InvalidOperationException($"Scan profile '{profile.Label}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not written.");
+
+        await _store.ExecuteInTransactionAsync(async (tx, token) =>
+        {
+            if (await tx.ReadAsync(ScanProfileCollection, key, token).ConfigureAwait(false) is not null)
+                throw new CalcInstanceImmutableException($"Scan profile {profile.Label} exists already; a change is a new version.");
+
+            await tx.WriteAsync(ScanProfileCollection, key, json, token).ConfigureAwait(false);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>A scan profile at a version, or its latest version.</summary>
+    public async Task<Import.Scan.ScanProfile?> FindScanProfileAsync(string id, int? version = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        var keys = (await _store.ListKeysAsync(ScanProfileCollection, id + "@", cancellationToken).ConfigureAwait(false)).OrderBy(k => k, StringComparer.Ordinal).ToList();
+        var key = version is { } v ? ImportProfileKey(id, v) : keys.LastOrDefault();
+
+        if (key is null || !keys.Contains(key))
+            return null;
+
+        var read = await _store.ReadManyAsync(ScanProfileCollection, [key], cancellationToken).ConfigureAwait(false);
+        return Deserialise<Import.Scan.ScanProfile>(read.GetValueOrDefault(key));
+    }
+
+    /// <summary>The latest version of every scan profile.</summary>
+    public async Task<IReadOnlyList<Import.Scan.ScanProfile>> ListScanProfilesAsync(CancellationToken cancellationToken = default)
+    {
+        var all = await _store.ReadAllAsync(ScanProfileCollection, cancellationToken).ConfigureAwait(false);
+        return all.Select(kv => Deserialise<Import.Scan.ScanProfile>(kv.Value)).OfType<Import.Scan.ScanProfile>()
             .GroupBy(p => p.Id, StringComparer.Ordinal).Select(g => g.OrderBy(p => p.Version).Last())
             .OrderBy(p => p.Title, StringComparer.Ordinal).ToList();
     }

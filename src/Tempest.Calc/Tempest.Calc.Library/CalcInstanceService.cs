@@ -127,6 +127,10 @@ public sealed partial class CalcInstanceService
 
             var probe = new CalcInstance(id, entry.Reference, entry.ContentHash, projectId, cleanName, "A", [], [], [], [], [], CalcInstanceStatus.Draft, null, null, author, now, now);
 
+            // A new calculation has no scan import record, so it cannot cite one.
+            if (ScanProvenanceProblem(null, probe with { Inputs = list }) is { } scanProblem)
+                throw new CalcLinkRefusedException(scanProblem);
+
             if (await LinkProblemAsync(probe, entry.Template, list, cancellationToken).ConfigureAwait(false) is { } problem)
                 throw new CalcLinkRefusedException(problem);
 
@@ -203,6 +207,10 @@ public sealed partial class CalcInstanceService
 
         var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow(), EditedBy = repin ? instance.EditedBy : WithAuthors(instance.EditedBy, CurrentPrincipal()), RepinnedBy = repin ? WithAuthors(instance.RepinnedBy, CurrentPrincipal()) : instance.RepinnedBy };
         updated = amend is null ? updated : amend(updated);
+
+        if (ScanProvenanceProblem(instance, updated) is { } scanProblem)
+            return CalcActionResult.Refused(scanProblem, instance);
+
         updated = await RunAndSnapshotAsync(entry, updated, cancellationToken).ConfigureAwait(false);
 
         try
@@ -571,7 +579,8 @@ public sealed partial class CalcInstanceService
             inputsOverride ?? instance.Inputs, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, repin ? instance.CreatedBy : author, now, now, PredecessorId: instance.Id,
             EditedBy: repin ? WithAuthors(instance.EditedBy, instance.CreatedBy) : WithAuthors(instance.EditedBy, instance.CreatedBy, author),
             RepinnedBy: repin ? WithAuthors(instance.RepinnedBy, author) : instance.RepinnedBy,
-            CadImports: instance.CadImports);
+            CadImports: instance.CadImports,
+            ScanImports: instance.ScanImports);
         next = await RunAndSnapshotAsync(entry, next, cancellationToken).ConfigureAwait(false);
 
         // The new draft and the superseded mark on the old instance commit together; the mark changes only status and time (the store checks the rest).
