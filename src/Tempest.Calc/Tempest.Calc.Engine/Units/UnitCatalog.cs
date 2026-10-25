@@ -309,10 +309,24 @@ public static class UnitCatalog
 
             var n = exponent.Value;
 
-            if (n == 0 || Math.Abs(n) > 8)
+            if (n == 0 || n < -8 || n > 8)
                 throw new CalcUnitException($"A unit power must be between -8 and 8 and not zero, not {n}.");
 
             return new Unit($"{atom.Symbol}{Dimension.Superscript(n)}", atom.Dimension.Pow(n), Math.Pow(atom.Factor, n));
+        }
+
+        /// <summary>Any power beyond this is out of range anyway; digits past it are never accumulated, so no text can overflow.</summary>
+        private const int PowerClamp = 1000;
+
+        /// <summary>A run of ASCII digits as an int, clamped to <see cref="PowerClamp"/> (a longer run, or a value over it, is simply "too large").</summary>
+        private static int ClampDigits(ReadOnlySpan<char> digits)
+        {
+            var significant = digits.TrimStart('0');
+
+            if (significant.IsEmpty)
+                return 0;
+
+            return significant.Length <= 4 && int.TryParse(significant, NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? Math.Min(n, PowerClamp) : PowerClamp;
         }
 
         private int? TryReadExponent()
@@ -341,7 +355,7 @@ public static class UnitCatalog
                 if (start == _pos)
                     throw new CalcUnitException("A unit power needs an integer after '^'.");
 
-                var n = int.Parse(_text.AsSpan(start, _pos - start), CultureInfo.InvariantCulture);
+                var n = ClampDigits(_text.AsSpan(start, _pos - start));
                 return negative ? -n : n;
             }
 
@@ -359,7 +373,7 @@ public static class UnitCatalog
 
                 while (_pos < _text.Length && superscripts.IndexOf(_text[_pos], StringComparison.Ordinal) is var d and >= 0)
                 {
-                    value = value * 10 + d;
+                    value = Math.Min((value * 10) + d, PowerClamp);
                     _pos++;
                     any = true;
                 }
@@ -378,7 +392,7 @@ public static class UnitCatalog
                 while (_pos < _text.Length && char.IsAsciiDigit(_text[_pos]))
                     _pos++;
 
-                return int.Parse(_text.AsSpan(start, _pos - start), CultureInfo.InvariantCulture);
+                return ClampDigits(_text.AsSpan(start, _pos - start));
             }
 
             return null;

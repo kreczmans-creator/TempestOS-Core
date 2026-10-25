@@ -447,11 +447,14 @@ public static class CalcCsv
             : null;
     }
 
-    /// <summary>A cell a spreadsheet would evaluate: anything starting with =, +, −, @, tab or CR — except a plain signed number (R-03: "-1+cmd|…" is not a number).</summary>
+    /// <summary>
+    /// A cell a spreadsheet would evaluate: anything whose first visible character is =, +, −, @, tab, carriage return or line feed (or
+    /// their full-width forms) — except a plain signed number (R-03: "-1+cmd|…" is not a number). Leading spaces and no-break spaces are
+    /// skipped, as a spreadsheet may skip them.
+    /// </summary>
     public static bool IsFormulaLike(string s) =>
-        s.Length > 0
-        && s[0] is '=' or '+' or '-' or '@' or '\t' or '\r'
-        && !(s[0] is '-' or '+' && double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _));
+        CsvFormulaGuard.StartsLikeFormula(s)
+        && !(s.TrimStart(' ').Length > 0 && s.TrimStart(' ')[0] is '-' or '+' && double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _));
 
     private static void Row(StringBuilder sb, params string[] cells)
     {
@@ -558,5 +561,30 @@ public static class CalcCsv
             notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, "The file ends inside a quoted cell."));
 
         return rows;
+    }
+}
+
+/// <summary>
+/// The one definition of "a spreadsheet would run this text" for everything that writes CSV: the first visible character (after spaces and
+/// no-break spaces) is =, +, −, @, tab, carriage return or line feed, or the full-width form of one of the four signs.
+/// </summary>
+public static class CsvFormulaGuard
+{
+    private static readonly char[] Starts = ['=', '+', '-', '@', '\t', '\r', '\n', '\uFF1D', '\uFF0B', '\uFF0D', '\uFF20'];
+
+    public static bool StartsLikeFormula(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return false;
+
+        foreach (var c in text)
+        {
+            if (c is ' ' or '\u00A0')
+                continue;
+
+            return Array.IndexOf(Starts, c) >= 0;
+        }
+
+        return false;
     }
 }
