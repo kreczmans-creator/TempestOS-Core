@@ -23,6 +23,9 @@ public static class CalculationFeatureGate
         [LiftingWorksheetId] = ("Lifting lugs and spreader beams", LiftingFeature),
     };
 
+    /// <summary>The ids the engine gates, ordered (a test ties this list to the worksheet templates' own <c>FeatureFlag</c> and to the engine's registered definitions).</summary>
+    public static IReadOnlyList<string> GatedIds => [.. Gated.Keys.Order(StringComparer.Ordinal)];
+
     /// <summary>The feature the calculation <paramref name="calculationId"/> is gated behind, or <see langword="null"/> when it is always available.</summary>
     public static string? FeatureOf(string? calculationId) =>
         calculationId is not null && Gated.TryGetValue(calculationId, out var gate) ? gate.Feature : null;

@@ -285,6 +285,28 @@ public sealed class LiftingGovernanceTests
     }
 
     [Fact]
+    public void The_Engines_Gated_Ids_Are_Tied_To_The_Templates_Feature_Flags_And_The_Registered_Definitions()
+    {
+        // Every shipped template that names a feature is gated by the engine under the same feature ...
+        var flagged = ShippedCalculators.All.Where(c => c.Template.FeatureFlag is { Length: > 0 }).ToList();
+        Assert.NotEmpty(flagged);
+        Assert.All(flagged, c => Assert.Equal(c.Template.FeatureFlag, Tempest.Core.Calculations.CalculationFeatureGate.FeatureOf(c.Template.Id)));
+
+        // ... and every id the engine gates is either such a template or an engine definition the product registers, under a feature the worksheet
+        // catalogue knows. So adding a flagged template without gating it in the engine, or gating an id nothing carries, fails here.
+        foreach (var id in Tempest.Core.Calculations.CalculationFeatureGate.GatedIds)
+        {
+            var feature = Tempest.Core.Calculations.CalculationFeatureGate.FeatureOf(id);
+            Assert.Contains(feature, CalcFeatures.All);
+            var isFlaggedTemplate = flagged.Any(c => c.Template.Id == id);
+            var isRegisteredDefinition = Tempest.Core.Calculations.ProductCalculationCatalogue.CalculationIds.Contains(id);
+            Assert.True(isFlaggedTemplate || isRegisteredDefinition, $"'{id}' is gated by the engine but is neither a flagged template nor a registered definition.");
+        }
+
+        Assert.Equal(flagged.Select(c => c.Template.Id).Order(StringComparer.Ordinal), Tempest.Core.Calculations.CalculationFeatureGate.GatedIds.Where(id => id != Tempest.Core.Calculations.CalculationFeatureGate.LiftingModuleId));
+    }
+
+    [Fact]
     public void The_Engine_And_The_Catalogue_Refuse_The_Lifting_Worksheet_In_The_Same_Words()
     {
         var catalogue = new CalcCatalogue([new LiftingLugCalculator()]);
