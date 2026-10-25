@@ -104,14 +104,17 @@ public static class ScanStatistics
         var mean = Mean(values);
         var s = Sigma(values, mean);
         var within = s;
+        double? withinC4 = null;
 
         if (settings.SubgroupSize >= 2)
         {
-            var pooled = PooledSigma(values, usedIndex.Select(i => i / settings.SubgroupSize).ToArray(), out var dropped);
+            var pooled = PooledSigma(values, usedIndex.Select(i => i / settings.SubgroupSize).ToArray(), out var dropped, out var dof);
 
             if (pooled is { } p)
             {
-                within = p;
+                // The pooled variance is unbiased, its square root is not: divide by c4(d) with d = Σ(nⱼ − 1) + 1, as common SPC practice does.
+                withinC4 = C4(dof + 1);
+                within = p / withinC4.Value;
 
                 if (dropped > 0)
                     warnings.Add($"{dropped} observation(s) alone in their subgroup (an incomplete final subgroup, or the only one left after outliers were left out) were not used for the within-subgroup σ.");
@@ -164,7 +167,7 @@ public static class ScanStatistics
 
         return new ScanFeatureStats(
             feature, stage, n, total, parts, Computable: true, nominal, lsl, usl, mean, s, within, values.Min(), values.Max(),
-            cp, cpk, pp, ppk, normality, outliers, excluded, deviationOnly, fileIndexes, setHash, serialSummary, warnings);
+            cp, cpk, pp, ppk, normality, outliers, excluded, deviationOnly, fileIndexes, setHash, serialSummary, warnings, withinC4);
     }
 
     /// <summary>Cp and Cpk (or Pp and Ppk) for a mean, a standard deviation (positive) and limits; the indices that need a missing limit are null.</summary>
@@ -238,13 +241,17 @@ public static class ScanStatistics
     /// The pooled standard deviation of subgroups given by <paramref name="groupIds"/> (one id per value, non-decreasing: the subgroup each value belonged to
     /// when the table was cut, whether or not every value of it is still in use). A subgroup left with one value has no degree of freedom and is dropped.
     /// </summary>
-    public static double? PooledSigma(IReadOnlyList<double> values, IReadOnlyList<int> groupIds, out int dropped)
+    public static double? PooledSigma(IReadOnlyList<double> values, IReadOnlyList<int> groupIds, out int dropped) =>
+        PooledSigma(values, groupIds, out dropped, out _);
+
+    /// <summary>The pooled standard deviation as above, with the degrees of freedom Σ(nⱼ − 1) it was formed on. It is NOT c4-corrected; <see cref="C4"/> of (dof + 1) is the divisor that makes it unbiased.</summary>
+    public static double? PooledSigma(IReadOnlyList<double> values, IReadOnlyList<int> groupIds, out int dropped, out int dof)
     {
         ArgumentNullException.ThrowIfNull(values);
         ArgumentNullException.ThrowIfNull(groupIds);
         dropped = 0;
         double sumSquares = 0;
-        var dof = 0;
+        var degrees = 0;
         var start = 0;
 
         while (start < values.Count)
@@ -275,13 +282,46 @@ public static class ScanStatistics
                     sumSquares += d * d;
                 }
 
-                dof += count - 1;
+                degrees += count - 1;
             }
 
             start = end;
         }
 
-        return dof == 0 ? null : Math.Sqrt(sumSquares / dof);
+        dof = degrees;
+        return degrees == 0 ? null : Math.Sqrt(sumSquares / degrees);
+    }
+
+    /// <summary>
+    /// The bias-correction constant c4(n) = √(2/(n − 1)) · Γ(n/2) / Γ((n − 1)/2), the mean of the sample standard deviation of n normal values divided by σ,
+    /// formed with the log-gamma function so it cannot overflow for a large n. For a pooled within-subgroup σ, n is d = Σ(nⱼ − 1) + 1. n must be at least 2.
+    /// </summary>
+    public static double C4(double n)
+    {
+        if (!(n >= 2) || !double.IsFinite(n))
+            throw new ArgumentOutOfRangeException(nameof(n), "c4 needs n of at least 2.");
+
+        return Math.Exp(0.5 * Math.Log(2.0 / (n - 1.0)) + LogGamma(n / 2.0) - LogGamma((n - 1.0) / 2.0));
+    }
+
+    /// <summary>ln Γ(x) for x &gt; 0: Stirling's series (to the x⁻⁷ term) from x = 20, the recurrence Γ(x) = Γ(x + 1)/x below it; about 1e-15 absolute.</summary>
+    public static double LogGamma(double x)
+    {
+        if (!(x > 0) || !double.IsFinite(x))
+            throw new ArgumentOutOfRangeException(nameof(x), "ln Γ(x) is formed for positive x.");
+
+        var shift = 0.0;
+
+        while (x < 20)
+        {
+            shift += Math.Log(x);
+            x += 1;
+        }
+
+        var inverse = 1.0 / x;
+        var square = inverse * inverse;
+        var series = inverse * (1.0 / 12 - square * (1.0 / 360 - square * (1.0 / 1260 - square / 1680)));
+        return (x - 0.5) * Math.Log(x) - x + 0.5 * Math.Log(2 * Math.PI) + series - shift;
     }
 
     /// <summary>The pooled standard deviation of consecutive subgroups of <paramref name="size"/>; the last subgroup is used if it holds at least two. <see langword="null"/> when no subgroup has a degree of freedom.</summary>

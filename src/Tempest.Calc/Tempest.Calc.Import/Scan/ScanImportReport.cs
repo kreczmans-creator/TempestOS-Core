@@ -10,7 +10,7 @@ public static class ScanImportReport
     {
         ArgumentNullException.ThrowIfNull(stats);
         var sb = new StringBuilder();
-        sb.Append(CsvSafeWriter.Row(["feature", "stage", "n", "n_rows", "parts", "unit", "nominal", "lsl", "usl", "mean", "sigma", "sigma_within", "min", "max", "cp", "cpk", "pp", "ppk", "ad_a2", "ad_a2_star", "ad_p", "normality", "outliers", "warnings"]));
+        sb.Append(CsvSafeWriter.Row(["feature", "stage", "n", "n_rows", "parts", "unit", "nominal", "lsl", "usl", "mean", "sigma", "sigma_within", "within_c4", "min", "max", "cp", "cpk", "pp", "ppk", "ad_a2", "ad_a2_star", "ad_p", "normality", "outliers", "warnings"]));
 
         foreach (var s in stats)
         {
@@ -28,6 +28,7 @@ public static class ScanImportReport
                 s.Computable ? CsvSafeWriter.Number(s.Mean) : string.Empty,
                 s.Computable ? CsvSafeWriter.Number(s.Sigma) : string.Empty,
                 s.Computable ? CsvSafeWriter.Number(s.SigmaWithin) : string.Empty,
+                Num(s.WithinC4),
                 s.Computable ? CsvSafeWriter.Number(s.Min) : string.Empty,
                 s.Computable ? CsvSafeWriter.Number(s.Max) : string.Empty,
                 Num(s.Cp),
