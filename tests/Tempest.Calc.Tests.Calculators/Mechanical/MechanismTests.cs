@@ -97,11 +97,22 @@ public sealed class MechanismTests
         // 60/40/50/35 is non-Grashof: the crank cannot turn through 360°. The rows that cannot be assembled are left out and counted.
         var r = Run(Q("L1", 60, "mm"), Q("L2", 40, "mm"), Q("L3", 50, "mm"), Q("L4", 35, "mm"));
         Assert.False(r.IsBlocked);
-        Assert.Contains(r.Warnings, w => w.RuleId == "reach" && w.Message.StartsWith("L2:", StringComparison.Ordinal));
+        Assert.Contains(r.Warnings, w => w.RuleId == "limit" && w.Message.StartsWith("theta_range:", StringComparison.Ordinal));
         Assert.Contains(r.Warnings, w => w.RuleId == "grashof");
         Assert.True(Vector(r, "theta2_sw").Count < 73 && Vector(r, "theta2_sw").Count > 3);
         Assert.Contains("Non-Grashof", Text(r, "grashof"), StringComparison.Ordinal);
         Assert.True(r.OutputSi("res_max") < 1e-12);
+
+        // The sweep is cut at the toggle (cos θ₂ = −0.42 → 114.9°) and the unbounded peaks and the ports are withheld, never printed.
+        var last = Vector(r, "theta2_sw")[^1] * 180 / Math.PI;
+        var limitDeg = Math.Acos(-0.42) * 180 / Math.PI;
+        Assert.InRange(last, limitDeg - 3, limitDeg); // the row exactly at the toggle has no defined velocity and is left out
+
+        foreach (var symbol in new[] { "input_torque", "output_motion", "peak_accel", "follower_force", "F_pin_pk", "T_rms_in", "P_mean", "omega_out_pk", "alpha_out_pk" })
+            Assert.Null(r.FindOutput(symbol));
+
+        Assert.Equal(0, r.OutputSi("mu_min"), 12);
+        Assert.Contains("114", Text(r, "toggle_angles"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -221,19 +232,32 @@ public sealed class MechanismTests
     [Fact]
     public void Every_Port_Is_An_Output_Of_The_Declared_Dimension_In_Every_Mode()
     {
-        foreach (var run in new[] { Run(), Run(Slider()) })
+        string[] shared = ["input_torque", "output_motion", "peak_accel", "follower_force", "F_pin_pk", "T_rms_in", "n_in", "P_mean"];
+
+        foreach (var run in new[] { Run(), Run(Slider()), Cam() })
         {
             Assert.False(run.IsBlocked, string.Join("; ", run.Blocks.Select(b => b.Message)));
 
             foreach (var port in Mechanism.Template.OutputPorts!)
             {
                 var output = run.FindOutput(port.Symbol);
-                Assert.NotNull(output);
+
+                if (output is null)
+                {
+                    // lift and F_spring_max belong to the cam only.
+                    Assert.DoesNotContain(port.Symbol, shared);
+                    continue;
+                }
+
                 Assert.Equal(UnitCatalog.Parse(port.Unit).Dimension, output.Value.Dimension);
             }
+
+            Assert.All(shared, symbol => Assert.NotNull(run.FindOutput(symbol)));
         }
 
-        Assert.Equal(["input_torque", "output_motion", "peak_accel", "follower_force"], Mechanism.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal([.. shared, "lift", "F_spring_max"], Mechanism.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.DoesNotContain("M5", Mechanism.Template.OutputPorts!.Single(p => p.Symbol == "input_torque").Description, StringComparison.Ordinal);
+        Assert.Contains("kinematic proxy", Mechanism.Template.OutputPorts!.Single(p => p.Symbol == "output_motion").Description, StringComparison.Ordinal);
     }
 
     // ------------------------------------------------------------------
@@ -299,9 +323,20 @@ public sealed class MechanismTests
     {
         var r = Run(Slider(100, 80, 0, 0));
         Assert.False(r.IsBlocked);
-        Assert.Contains(r.Warnings, w => w.RuleId == "reach" && w.Message.StartsWith("L3:", StringComparison.Ordinal));
+        Assert.Contains(r.Warnings, w => w.RuleId == "limit" && w.Message.StartsWith("theta_range:", StringComparison.Ordinal));
         Assert.Contains("Rocker-slider", Text(r, "slider_class"), StringComparison.Ordinal);
         Assert.True(Vector(r, "theta_sw").Count < 73);
+
+        // Cut at the limit sin θ = l/r = 0.8 (53.13°): the unbounded peaks and every port are withheld.
+        var lastRow = Vector(r, "theta_sw")[^1] * 180 / Math.PI;
+        var limitAngle = Math.Asin(0.8) * 180 / Math.PI;
+        Assert.InRange(lastRow, limitAngle - 2, limitAngle + 1e-9);
+
+        foreach (var symbol in new[] { "input_torque", "output_motion", "peak_accel", "follower_force", "F_pin_pk", "F_guide_pk", "T_rms_in", "P_mean" })
+            Assert.Null(r.FindOutput(symbol));
+
+        Assert.Equal(0, r.OutputSi("mu_min"), 12);
+        Assert.Contains("53.13", Text(r, "limit_angles"), StringComparison.Ordinal);
 
         var never = Run(Slider(100, 80, 300, 0));
         Assert.True(never.IsBlocked);
@@ -379,6 +414,121 @@ public sealed class MechanismTests
         }
 
         Assert.True(sw.Elapsed.TotalSeconds < 120, $"{sw.Elapsed.TotalSeconds:0} s");
+    }
+
+    [Fact]
+    public void A_Plateau_Does_Not_Crowd_A_True_Peak_Out_Of_The_Candidates()
+    {
+        // Two plateaus of 5 with a bump between them whose best sample (about 4.88) is below the plateau: the peak 5.2 must still be found.
+        var peak = MechanismPeaks.Find(x => x < 0.3 || x > 0.7 ? 5 : 4 + 1.2 * Math.Exp(-Math.Pow((x - 0.5025) / 0.01, 2)), 0, 1, 200)!.Value;
+        Assert.Equal(5.2, peak.Value, 3);
+        Assert.InRange(peak.At, 0.5, 0.505);
+    }
+
+    [Fact]
+    public void New_Outputs_Have_Closed_Forms_On_The_Parallelogram_RMS_Torque_Mean_Power_And_Forces()
+    {
+        // 100/40/100/40 swept 5° to 175°: ω₄ = ω₂, α = 0, so T_in = T_L = 3 N·m throughout; RMS 3 N·m, mean power ω₂·T_L; the pin force T_L/c.
+        var r = Run(CalcInputValue.Choice("load_dir", MechanismCalculator.Constant), Q("L1", 100, "mm"), Q("L2", 40, "mm"), Q("L3", 100, "mm"), Q("L4", 40, "mm"), Q("theta_start", 5, "deg"), Q("theta_range", 170, "deg"), Q("T_load", 3, "N*m"), Q("J_out", 0.01, "kg*m^2"), Q("mu_req", 4, "deg"));
+        var w = 120 * 2 * Math.PI / 60;
+        Assert.Equal(3, r.OutputSi("T_rms_in"), 9);
+        Assert.Equal(3 * w, r.OutputSi("P_mean"), 8);
+        Assert.Equal(120, ((ScalarValue)r.FindOutput("n_in")!.Value).Displayed, 9);
+        Assert.Equal(75, r.OutputSi("follower_force"), 8);
+
+        // sin μ_min = sin 5°: the coupler carries the tangential force over sin μ.
+        Assert.Equal(75 / Math.Sin(5 * Math.PI / 180), r.OutputSi("F_pin_pk"), 6);
+    }
+
+    [Fact]
+    public void A_Change_Point_Linkage_Is_Followed_By_Continuity_And_Warns_Without_Printing_Peaks()
+    {
+        // The parallelogram swept a full turn from 5°: θ₄ = θ₂ on every row (the old fixed-sign branch jumped to the anti-parallelogram past 180°).
+        var r = Run(Q("L1", 100, "mm"), Q("L2", 40, "mm"), Q("L3", 100, "mm"), Q("L4", 40, "mm"), Q("theta_start", 5, "deg"), Q("theta_range", 360, "deg"), CalcInputValue.Of("steps", 72));
+        Assert.False(r.IsBlocked);
+        var t2 = Vector(r, "theta2_sw");
+        var t4 = Vector(r, "theta4_sw");
+        Assert.Contains(r.Warnings, w => w.RuleId == "limit" && w.Message.Contains("change point", StringComparison.Ordinal));
+        Assert.True(t2.Count > 60);
+
+        for (var i = 0; i < t2.Count; i++)
+            Assert.Equal(0, Math.IEEERemainder(t4[i] - t2[i], 2 * Math.PI), 8);
+
+        Assert.Equal(360, r.OutputSi("swing") * 180 / Math.PI, 5);
+        Assert.Null(r.FindOutput("input_torque"));
+        Assert.Null(r.FindOutput("output_motion"));
+    }
+
+    [Fact]
+    public void Peaks_Are_Reported_For_A_Non_Grashof_Sweep_Inside_Its_Assemblable_Stretch_And_Do_Not_Depend_On_The_Start()
+    {
+        // 60/40/50/35 assembles for |θ₂| < 114.9°; a sweep of ±90° stays inside and has finite, step-count-independent peaks.
+        var geometry = new[] { Q("L1", 60, "mm"), Q("L2", 40, "mm"), Q("L3", 50, "mm"), Q("L4", 35, "mm") };
+        var inside = Run([.. geometry, Q("theta_start", -90, "deg"), Q("theta_range", 180, "deg")]);
+        Assert.DoesNotContain(inside.Warnings, w => w.RuleId == "limit");
+        Assert.True(inside.OutputSi("input_torque") > 0 && inside.OutputSi("input_torque") < 1e4);
+        var finer = Run([.. geometry, Q("theta_start", -90, "deg"), Q("theta_range", 180, "deg"), CalcInputValue.Of("steps", 600)]);
+        Assert.Equal(inside.OutputSi("input_torque"), finer.OutputSi("input_torque"), 9);
+
+        // Driving to the limit instead withholds them, whatever the start.
+        foreach (var start in new[] { 0.1, 0.37, 5 })
+        {
+            var driven = Run([.. geometry, Q("theta_start", start, "deg")]);
+            Assert.Null(driven.FindOutput("input_torque"));
+            Assert.Null(driven.FindOutput("follower_force"));
+        }
+
+        var doubleRocker = Run(Q("L1", 100, "mm"), Q("L2", 90, "mm"), Q("L3", 40, "mm"), Q("L4", 110, "mm"));
+        Assert.Null(doubleRocker.FindOutput("input_torque"));
+        Assert.Contains(doubleRocker.Warnings, w => w.RuleId == "limit");
+    }
+
+    [Fact]
+    public void A_Rocker_Slider_Swept_Inside_Its_Limits_Reports_Finite_Peaks()
+    {
+        var r = Run([.. Slider(100, 80, 0, -30), Q("theta_range", 60, "deg")]);
+        Assert.False(r.IsBlocked);
+        Assert.DoesNotContain(r.Warnings, w => w.RuleId == "limit");
+        Assert.True(r.OutputSi("input_torque") > 0 && r.OutputSi("input_torque") < 1e4);
+        Assert.True(r.OutputSi("F_pin_pk") >= r.OutputSi("follower_force") - 1e-9);
+        Assert.True(r.OutputSi("F_guide_pk") > 0);
+    }
+
+    [Fact]
+    public void A_Blank_Slider_Offset_Defaults_To_Zero_And_Gives_The_Inline_Result()
+    {
+        var blank = Run([.. Slider(), new CalcInputValue("e_off")]);
+        Assert.False(blank.IsBlocked, string.Join("; ", blank.Blocks.Select(b => b.Message)));
+        var inline = Run(Slider());
+        Assert.Equal(inline.OutputSi("x_0"), blank.OutputSi("x_0"), 12);
+        Assert.Equal(inline.OutputSi("stroke"), blank.OutputSi("stroke"), 12);
+    }
+
+    [Fact]
+    public void A_Zero_Transmission_Requirement_Passes_Even_At_A_Toggle_And_A_Positive_One_Fails()
+    {
+        var geometry = new[] { Q("L1", 60, "mm"), Q("L2", 40, "mm"), Q("L3", 50, "mm"), Q("L4", 35, "mm") };
+        var zero = Run([.. geometry, Q("mu_req", 0, "deg")]);
+        Assert.Equal(0, zero.OutputSi("u_mu"));
+        Assert.Contains(zero.Checks, c => c.Name.StartsWith("Transmission angle", StringComparison.Ordinal) && c.Passed);
+        var forty = Run([.. geometry, Q("mu_req", 40, "deg")]);
+        Assert.Contains(forty.Checks, c => c.Name.StartsWith("Transmission angle", StringComparison.Ordinal) && !c.Passed);
+    }
+
+    [Fact]
+    public void The_Velocity_Loop_Closes_On_Both_Mechanisms_And_The_Rocker_Extremes_Are_Where_Crank_And_Coupler_Are_Collinear()
+    {
+        foreach (var run in new[] { Run(), Run(Slider(50, 250, 20, 0)) })
+        {
+            Assert.True(run.OutputSi("res_vel_max") < 1e-8);
+            Assert.Contains(run.Checks, c => c.Name.StartsWith("Velocity-loop residual", StringComparison.Ordinal) && c.Passed);
+        }
+
+        var link = new FourBarLinkage(0.120, 0.040, 0.110, 0.090, false);
+        var positions = link.CollinearPositions();
+        Assert.Equal(2, positions.Count);
+        Assert.Equal(Math.Abs(positions[0].Theta4 - positions[1].Theta4), Run().OutputSi("swing"), 9);
+        Assert.Contains("θ₂ =", Text(Run(), "limit_positions"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -596,8 +746,50 @@ public sealed class MechanismTests
         Assert.False(r.IsBlocked);
         Assert.Null(r.FindOutput("phi_sw"));
         Assert.Null(r.FindOutput("Rb_min_phi"));
+        Assert.Null(r.FindOutput("u_rho"));
         Assert.Equal(2 * 0.02 / (Math.PI / 2), r.OutputSi("w_face"), 9);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("No cusp", StringComparison.Ordinal));
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("No cusp", StringComparison.Ordinal) && c.Passed);
+        Assert.NotNull(r.FindOutput("rho_sw"));
+        Assert.Null(r.FindOutput("kappa_sw"));
+    }
+
+    [Fact]
+    public void A_Flat_Faced_Follower_On_A_Cusped_Profile_Fails_Where_The_Radius_Goes_Negative()
+    {
+        // R_b = 5 mm with a 20 mm cycloidal rise over 60°: R_b + s + s″ reaches about −91 mm. The old check read a clamped 1e-9 and passed.
+        var r = Cam(RiseDwellReturnDwell(MechanismCalculator.Cycloidal, 60, 120, 20), CalcInputValue.Choice("follower", MechanismCalculator.FlatFaced), Q("Rb", 5, "mm"));
+        Assert.False(r.IsBlocked);
+        Assert.True(r.OutputSi("rho_min") < -0.05);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("No cusp", StringComparison.Ordinal) && !c.Passed);
+        Assert.False(r.Passed);
+        Assert.True(Vector(r, "rho_sw").Min() >= r.OutputSi("rho_min") - 1e-9);
+    }
+
+    [Fact]
+    public void A_Positive_Offset_Lowers_The_Rise_Pressure_Angle_And_The_Sign_Is_As_Documented()
+    {
+        // The cam turns counter-clockwise, the follower axis is at +x: φ = arctan[(s′ − e)/(√(R_p² − e²) + s)].
+        var rows = RiseDwellReturnDwell(MechanismCalculator.Cycloidal, 120, 60, 20);
+        var inline = Cam(rows, Q("e_off", 0, "mm"));
+        var plus = Cam(rows, Q("e_off", 10, "mm"));
+        var minus = Cam(rows, Q("e_off", -10, "mm"));
+        const int mid = 60 / 5; // the row of the mid-rise (θ = 60°) of the 5° table
+        Assert.True(Math.Abs(Vector(plus, "phi_sw")[mid]) < Math.Abs(Vector(inline, "phi_sw")[mid]));
+        Assert.True(Math.Abs(Vector(minus, "phi_sw")[mid]) > Math.Abs(Vector(inline, "phi_sw")[mid]));
+        Assert.True(Vector(plus, "phi_sw")[0] < 0);
+        Assert.Contains("positive e reduces the pressure angle", Mechanism.Template.FindInput("e_off")!.Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Roller_Curvature_Table_Replaces_The_Radius_Placeholder_And_The_Contact_Normal_Exceeds_The_Axial_Force()
+    {
+        var r = Cam();
+        Assert.Null(r.FindOutput("rho_sw"));
+        var kappa = Vector(r, "kappa_sw");
+        Assert.InRange(kappa.Max(), 0.9 / r.OutputSi("rho_min"), 1 / r.OutputSi("rho_min") + 1e-9);
+        Assert.True(r.OutputSi("F_pin_pk") >= r.OutputSi("follower_force") - 1e-9);
+        Assert.Equal(8000 * 0.02 + 30, r.OutputSi("F_spring_max"), 9);
+        Assert.Equal(0.02, r.OutputSi("lift"), 12);
     }
 
     [Fact]

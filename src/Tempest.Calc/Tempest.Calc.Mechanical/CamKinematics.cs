@@ -239,14 +239,14 @@ public sealed class CamProfile
 }
 
 /// <summary>Everything the cam analysis reports at one cam angle (SI): motion, dynamics, geometry.</summary>
-public readonly record struct CamPoint(double Theta, double S, double V, double A, double J, double PressureAngle, double Curvature, double Force, double Torque, double SPrime, double FaceDemand);
+public readonly record struct CamPoint(double Theta, double S, double V, double A, double J, double PressureAngle, double Curvature, double Force, double Torque, double SPrime, double FaceDemand, double ProfileRadius, double NormalForce);
 
 /// <summary>
 /// The kinematic and dynamic analysis of a cam with a translating follower at constant cam speed ω.
 /// <para>Roller follower: prime-circle radius R_p = R_b + R_r, offset e; pressure angle φ = arctan[(s′ − e)/(√(R_p² − e²) + s)] (s′ = ds/dθ),
 /// with e = 0 the φ = arctan[s′/(R_p + s)] of the in-line follower. The pitch curve is P(θ) = Rot(−θ)·(e, √(R_p² − e²) + s); its signed
 /// convex curvature κ gives the radius of curvature ρ = 1/κ, and the cam profile is undercut where 0 &lt; ρ ≤ R_r.</para>
-/// <para>Flat-faced follower (in-line): no pressure angle; the profile radius of curvature is R_b + s + s″, which must stay positive;
+/// <para>Flat-faced follower (in-line): no pressure angle; the signed profile radius R_b + s + s″ must stay positive (a value at or below zero is a cusp or an undercut);
 /// the face must reach |s′| either side of the follower axis.</para>
 /// <para>Force on the follower F = m·a + k·s + F_pre + F_ext; input torque by virtual work T = F·s′ (T·ω = F·v, constant ω).</para>
 /// </summary>
@@ -300,6 +300,7 @@ public sealed class CamAnalysis
         var torque = force * m.S1;
         double phi;
         double kappa;
+        var profileRadius = 0.0;
 
         if (_roller)
         {
@@ -318,10 +319,10 @@ public sealed class CamAnalysis
         else
         {
             phi = 0;
-            var radius = _rb + m.S + m.S2;
-            kappa = radius > 1e-9 ? 1 / radius : 1e9;
+            profileRadius = _rb + m.S + m.S2;
+            kappa = profileRadius > 1e-9 ? 1 / profileRadius : 1e9;
         }
 
-        return new CamPoint(theta, m.S, v, a, j, phi, kappa, force, torque, m.S1, Math.Abs(m.S1));
+        return new CamPoint(theta, m.S, v, a, j, phi, kappa, force, torque, m.S1, Math.Abs(m.S1), profileRadius, force / Math.Cos(phi));
     }
 }

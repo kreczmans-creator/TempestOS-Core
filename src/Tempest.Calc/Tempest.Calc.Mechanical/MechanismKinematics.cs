@@ -2,9 +2,9 @@ namespace Tempest.Calc.Mechanical;
 
 /// <summary>
 /// Extremum search over a smooth function of one angle: a dense uniform scan, then a golden-section refinement between the
-/// neighbours of the best sample. Undefined points (the function returns NaN, for example an angle at which a linkage cannot be
-/// assembled) are skipped, so a peak is always a value the mechanism really reaches. Used by M9 for every peak, so a peak does not
-/// depend on the number of rows of the printed table.
+/// neighbours of each local maximum (a plateau of equal samples counts once). Undefined points (the function returns NaN, for
+/// example an angle at which a linkage cannot be assembled) are skipped, so a peak is always a value the mechanism really reaches.
+/// Used by M9 for every peak, so a peak does not depend on the number of rows of the printed table.
 /// </summary>
 public static class MechanismPeaks
 {
@@ -40,28 +40,47 @@ public static class MechanismPeaks
         ArgumentNullException.ThrowIfNull(xs);
         ArgumentNullException.ThrowIfNull(ys);
         ArgumentNullException.ThrowIfNull(around);
-        // Candidates: every sample that is not below (above, for a minimum) its finite neighbours. A periodic sweep has its peak
-        // just before the last sample or just after the first, and the two tie, so every candidate is refined, the best few kept.
-        var candidates = new List<int>();
 
-        for (var i = 0; i < ys.Count; i++)
+        // Runs of equal finite samples (a dwell, a plateau) are one candidate, so a plateau cannot crowd out a true peak.
+        var runs = new List<(int First, int Last)>();
+
+        for (var i = 0; i < ys.Count;)
         {
             if (!double.IsFinite(ys[i]))
+            {
+                i++;
                 continue;
+            }
 
-            var leftOk = i == 0 || !double.IsFinite(ys[i - 1]) || (max ? ys[i] >= ys[i - 1] : ys[i] <= ys[i - 1]);
-            var rightOk = i == ys.Count - 1 || !double.IsFinite(ys[i + 1]) || (max ? ys[i] >= ys[i + 1] : ys[i] <= ys[i + 1]);
+            var j = i;
 
-            if (leftOk && rightOk)
-                candidates.Add(i);
+            while (j + 1 < ys.Count && double.IsFinite(ys[j + 1]) && Math.Abs(ys[j + 1] - ys[i]) <= 1e-12 * Math.Max(1, Math.Abs(ys[i])))
+                j++;
+
+            runs.Add((i, j));
+            i = j + 1;
         }
 
-        if (candidates.Count == 0)
+        if (runs.Count == 0)
             return null;
+
+        bool Better(double a, double b) => max ? a > b : a < b;
+
+        var candidates = new List<int>();
+
+        for (var r = 0; r < runs.Count; r++)
+        {
+            var leftAdjacent = r > 0 && runs[r - 1].Last + 1 == runs[r].First;
+            var rightAdjacent = r < runs.Count - 1 && runs[r].Last + 1 == runs[r + 1].First;
+            var value = ys[runs[r].First];
+
+            if ((!leftAdjacent || Better(value, ys[runs[r - 1].First])) && (!rightAdjacent || Better(value, ys[runs[r + 1].First])))
+                candidates.Add(r);
+        }
 
         if (candidates.Count > MaxCandidates)
         {
-            var ordered = candidates.OrderBy(i => max ? -ys[i] : ys[i]).ThenBy(i => i).Take(MaxCandidates - 2).ToList();
+            var ordered = candidates.OrderBy(r => max ? -ys[runs[r].First] : ys[runs[r].First]).ThenBy(r => r).Take(MaxCandidates - 2).ToList();
 
             if (!ordered.Contains(candidates[0]))
                 ordered.Add(candidates[0]);
@@ -74,30 +93,30 @@ public static class MechanismPeaks
 
         (double Value, double At)? result = null;
 
-        foreach (var best in candidates)
+        foreach (var r in candidates)
         {
-            var refined = RefineAround(xs, ys, best, around, max);
+            var refined = RefineAround(xs, ys, runs[r].First, runs[r].Last, around, max);
 
-            if (result is null || (max ? refined.Value > result.Value.Value : refined.Value < result.Value.Value))
+            if (result is null || Better(refined.Value, result.Value.Value))
                 result = refined;
         }
 
         return result;
     }
 
-    private static (double Value, double At) RefineAround(IReadOnlyList<double> xs, IReadOnlyList<double> ys, int best, Func<int, double, double> around, bool max)
+    private static (double Value, double At) RefineAround(IReadOnlyList<double> xs, IReadOnlyList<double> ys, int first, int last, Func<int, double, double> around, bool max)
     {
-        var value = ys[best];
-        var at = xs[best];
-        var left = best > 0 && double.IsFinite(ys[best - 1]) ? xs[best - 1] : xs[best];
-        var right = best < ys.Count - 1 && double.IsFinite(ys[best + 1]) ? xs[best + 1] : xs[best];
+        var value = ys[first];
+        var at = xs[first];
+        var left = first > 0 && double.IsFinite(ys[first - 1]) ? xs[first - 1] : xs[first];
+        var right = last < ys.Count - 1 && double.IsFinite(ys[last + 1]) ? xs[last + 1] : xs[last];
 
         if (right - left <= 0)
             return (value, at);
 
         double G(double x)
         {
-            var y = around(best, x);
+            var y = around(first, x);
             return double.IsFinite(y) ? (max ? y : -y) : double.NegativeInfinity;
         }
 
@@ -129,7 +148,7 @@ public static class MechanismPeaks
         }
 
         var xm = 0.5 * (a + b);
-        var ym = around(best, xm);
+        var ym = around(first, xm);
 
         if (double.IsFinite(ym) && (max ? ym > value : ym < value))
         {
@@ -141,8 +160,81 @@ public static class MechanismPeaks
     }
 }
 
+/// <summary>
+/// The part of a requested sweep a mechanism can really be driven through at constant speed: the first assemblable stretch of
+/// [start, end], cut where the assembly limit (a toggle, the rod perpendicular to the slide line) is met.
+/// </summary>
+/// <param name="Found">False when no angle of the sweep can be assembled.</param>
+/// <param name="Lo">First angle of the stretch (radians, unwrapped).</param>
+/// <param name="Hi">Last angle of the stretch.</param>
+/// <param name="LimitsInside">The limit angles that lie at, or inside, the stretch (unwrapped): where velocity and acceleration at constant input speed are unbounded or the branch is singular.</param>
+/// <param name="Clipped">True when the stretch is shorter than the request.</param>
+public readonly record struct SweepArc(bool Found, double Lo, double Hi, IReadOnlyList<double> LimitsInside, bool Clipped);
+
+public static class MechanismSweep
+{
+    private const double Tol = 1e-9;
+
+    /// <summary>The limit angles (given modulo 2π) that fall in [start, end], with their 2π copies, sorted.</summary>
+    public static List<double> Unwrap(IReadOnlyList<double> limitAngles, double start, double end)
+    {
+        var list = new List<double>();
+
+        foreach (var phi in limitAngles)
+        {
+            var k0 = (int)Math.Floor((start - Tol - phi) / (2 * Math.PI));
+            var k1 = (int)Math.Ceiling((end + Tol - phi) / (2 * Math.PI));
+
+            for (var k = k0; k <= k1; k++)
+            {
+                var x = phi + 2 * Math.PI * k;
+
+                if (x >= start - Tol && x <= end + Tol)
+                    list.Add(x);
+            }
+        }
+
+        list.Sort();
+        return list;
+    }
+
+    public static SweepArc Clip(double start, double end, IReadOnlyList<double> limitAngles, Func<double, bool> assemblable)
+    {
+        var limits = Unwrap(limitAngles, start, end);
+        var points = new List<double> { start };
+
+        foreach (var x in limits)
+        {
+            if (x > points[^1] + Tol && x < end - Tol)
+                points.Add(x);
+        }
+
+        points.Add(end);
+
+        var reachable = new List<bool>();
+
+        for (var i = 0; i + 1 < points.Count; i++)
+            reachable.Add(assemblable(0.5 * (points[i] + points[i + 1])));
+
+        var first = reachable.IndexOf(true);
+
+        if (first < 0)
+            return new SweepArc(false, start, end, [], false);
+
+        var last = first;
+
+        while (last + 1 < reachable.Count && reachable[last + 1])
+            last++;
+
+        var lo = points[first];
+        var hi = points[last + 1];
+        var inside = limits.Where(x => x >= lo - Tol && x <= hi + Tol).ToList();
+        return new SweepArc(true, lo, hi, inside, lo > start + Tol || hi < end - Tol);
+    }
+}
+
 /// <summary>The state of a four-bar linkage at one crank angle (SI: rad, rad/s, rad/s², metres).</summary>
-public readonly record struct FourBarState(double Theta2, double Theta3, double Theta4, double Omega3, double Omega4, double Alpha3, double Alpha4, double Mu, double Residual, bool Singular);
+public readonly record struct FourBarState(double Theta2, double Theta3, double Theta4, double Omega3, double Omega4, double Alpha3, double Alpha4, double Mu, double Residual, bool Singular, double VelocityResidual = 0);
 
 /// <summary>
 /// A planar four-bar linkage O₂–A–B–O₄: ground link d (O₂ at the origin, O₄ at (d, 0)), crank a, coupler b, rocker c. The position is
@@ -171,9 +263,14 @@ public sealed class FourBarLinkage
         _sign = crossed ? 1 : -1;
     }
 
-    /// <summary>The state at crank angle <paramref name="theta2"/> turning at <paramref name="omega2"/> (constant), or <see langword="null"/> when the linkage cannot be assembled there.</summary>
-    public FourBarState? At(double theta2, double omega2)
+    /// <summary>
+    /// The state at crank angle <paramref name="theta2"/> turning at <paramref name="omega2"/> (constant), or <see langword="null"/> when
+    /// the linkage cannot be assembled there. <paramref name="flips"/> is the number of change points passed since the reference angle:
+    /// an odd number takes the other sign of γ, which is the same branch followed by continuity through a change point.
+    /// </summary>
+    public FourBarState? At(double theta2, double omega2, int flips = 0)
     {
+        var sign = (flips & 1) == 0 ? _sign : -_sign;
         var (sin2, cos2) = Math.SinCos(theta2);
         var ax = _a * cos2;
         var ay = _a * sin2;
@@ -191,7 +288,7 @@ public sealed class FourBarLinkage
 
         cosGamma = Math.Clamp(cosGamma, -1, 1);
         var gamma = Math.Atan2(Math.Sqrt(Math.Max(0, (1 - cosGamma) * (1 + cosGamma))), cosGamma);
-        var theta4 = Math.Atan2(ay, dx) + _sign * gamma;
+        var theta4 = Math.Atan2(ay, dx) + sign * gamma;
         var (sin4, cos4) = Math.SinCos(theta4);
         var bx = _d + _c * cos4;
         var by = _c * sin4;
@@ -224,10 +321,19 @@ public sealed class FourBarLinkage
         var alpha3 = (-_c * cos4 * r1 - _c * sin4 * r2) / det;
         var alpha4 = (-_b * sin3 * r2 - _b * cos3 * r1) / det;
 
-        return new FourBarState(theta2, theta3, theta4, omega3, omega4, alpha3, alpha4, mu, residual, false);
+        // Velocity loop: the differentiated loop equation, relative to the scale of its terms.
+        var vx = -_a * omega2 * sin2 - _b * omega3 * sin3 + _c * omega4 * sin4;
+        var vy = _a * omega2 * cos2 + _b * omega3 * cos3 - _c * omega4 * cos4;
+        var scale = _a * Math.Abs(omega2) + _b * Math.Abs(omega3) + _c * Math.Abs(omega4);
+        var velocityResidual = scale > 0 ? Math.Sqrt(vx * vx + vy * vy) / scale : 0;
+        return new FourBarState(theta2, theta3, theta4, omega3, omega4, alpha3, alpha4, mu, residual, false, velocityResidual);
     }
 
-    /// <summary>The crank angles (radians, 0 … 2π) at which coupler and rocker are collinear (transmission angle 0 or 180°): the toggle positions that limit the rocker's stroke or the drive.</summary>
+    /// <summary>
+    /// The crank angles (radians, 0 … 2π) at which coupler and rocker are collinear (transmission angle 0 or 180°). These are the
+    /// toggle positions where, driven from the crank at constant speed, the rocker's velocity is unbounded: they bound the crank's
+    /// assemblable range (a crank that cannot turn fully has to reverse before them).
+    /// </summary>
     public IReadOnlyList<double> ToggleCrankAngles()
     {
         var angles = new List<double>();
@@ -248,6 +354,48 @@ public sealed class FourBarLinkage
 
         angles.Sort();
         return angles;
+    }
+
+    /// <summary>
+    /// The crank angles (radians, 0 … 2π) and rocker angles at which crank and coupler are collinear on this circuit: the rocker
+    /// reaches its extreme positions there (the dead centres of a crank-rocker, where the crank cannot drive the rocker further).
+    /// </summary>
+    public IReadOnlyList<(double Theta2, double Theta4)> CollinearPositions()
+    {
+        var list = new List<(double, double)>();
+
+        foreach (var span in new[] { _a + _b, Math.Abs(_b - _a) })
+        {
+            var cos4 = (span * span - _d * _d - _c * _c) / (2 * _d * _c);
+
+            if (!(Math.Abs(cos4) <= 1))
+                continue;
+
+            var t4 = Math.Acos(cos4);
+
+            foreach (var theta4 in t4 < 1e-12 || Math.PI - t4 < 1e-12 ? new[] { t4 } : [t4, -t4])
+            {
+                var bx = _d + _c * Math.Cos(theta4);
+                var by = _c * Math.Sin(theta4);
+                var theta2 = Math.Atan2(by, bx) + (span < _a + _b - 1e-12 && _b > _a ? Math.PI : 0);
+                theta2 %= 2 * Math.PI;
+
+                if (theta2 < 0)
+                    theta2 += 2 * Math.PI;
+
+                if (At(theta2, 1) is { } s && Math.Abs(Math.IEEERemainder(s.Theta4 - theta4, 2 * Math.PI)) < 1e-6)
+                    list.Add((theta2, theta4));
+            }
+        }
+
+        return [.. list.OrderBy(x => x.Item1)];
+    }
+
+    /// <summary>True when s + l = p + q (a change-point linkage: parallelogram, deltoid): the links become collinear and the branch can be continued through.</summary>
+    public static bool IsChangePoint(double ground, double crank, double coupler, double rocker)
+    {
+        var sorted = new[] { ground, crank, coupler, rocker }.Order().ToArray();
+        return Math.Abs(sorted[0] + sorted[3] - sorted[1] - sorted[2]) <= 1e-9 * Math.Max(1, sorted[1] + sorted[2]);
     }
 
     /// <summary>
@@ -296,7 +444,7 @@ public sealed class FourBarLinkage
 }
 
 /// <summary>The state of a slider-crank at one crank angle (SI).</summary>
-public readonly record struct SliderState(double Theta, double X, double DxDtheta, double D2xDtheta2, double Theta3, double Dtheta3, double D2theta3, double Mu, double Residual);
+public readonly record struct SliderState(double Theta, double X, double DxDtheta, double D2xDtheta2, double Theta3, double Dtheta3, double D2theta3, double Mu, double Residual, double VelocityResidual = 0, double RodCos = 1, double RodTan = 0);
 
 /// <summary>
 /// An offset slider-crank: crank r about the origin, connecting rod l, slider on the line y = e. x = r·cosθ + σ·√(l² − (r·sinθ − e)²),
@@ -350,7 +498,36 @@ public sealed class SliderCrankLinkage
         // Loop closure: crank pin + rod = slider position (x, e).
         var rx = _r * cos + _l * Math.Cos(theta3) - x;
         var ry = _r * sin + _l * Math.Sin(theta3) - _e;
-        return new SliderState(theta, x, dx, d2x, theta3, dtheta3, d2theta3, mu, Math.Sqrt(rx * rx + ry * ry));
+
+        // Velocity loop (per radian of crank): x′ = −r sinθ − l sinθ₃·θ₃′ and 0 = r cosθ + l cosθ₃·θ₃′, relative to the scale of the terms.
+        var vx = -_r * sin - _l * Math.Sin(theta3) * dtheta3 - dx;
+        var vy = _r * cos + _l * Math.Cos(theta3) * dtheta3;
+        var scale = _r + _l * Math.Abs(dtheta3) + Math.Abs(dx);
+        return new SliderState(theta, x, dx, d2x, theta3, dtheta3, d2theta3, mu, Math.Sqrt(rx * rx + ry * ry), Math.Sqrt(vx * vx + vy * vy) / scale, Math.Abs(s) / _l, Math.Abs(w) / guard);
+    }
+
+    /// <summary>
+    /// The crank angles (radians, 0 … 2π) at which the rod is perpendicular to the slide line, |r·sinθ − e| = l: the limits of the
+    /// crank's assemblable range when l &lt; r + |e|. At constant crank speed the slider's velocity and acceleration are unbounded there.
+    /// </summary>
+    public IReadOnlyList<double> LimitAngles()
+    {
+        var list = new List<double>();
+
+        foreach (var sine in new[] { (_e + _l) / _r, (_e - _l) / _r })
+        {
+            if (!(Math.Abs(sine) <= 1 + 1e-12))
+                continue;
+
+            var t = Math.Asin(Math.Clamp(sine, -1, 1));
+            list.Add(Wrap(t));
+
+            if (Math.Abs(Math.Abs(sine) - 1) > 1e-12)
+                list.Add(Wrap(Math.PI - t));
+        }
+
+        list.Sort();
+        return list;
     }
 
     /// <summary>The crank angles (radians, wrapped to 0 … 2π) of the two dead centres, outer then inner (slider velocity zero: crank and rod collinear). Inner is absent when l ≤ r + |e| fails to leave room.</summary>

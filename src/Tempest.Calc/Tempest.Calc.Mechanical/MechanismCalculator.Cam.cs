@@ -208,7 +208,9 @@ public sealed partial class MechanismCalculator
         var fMin = Best(k => SegPeak(k, p => p.Force, false), false);
         var fPk = Math.Max(Math.Abs(fMax), Math.Abs(fMin));
         var tPk = Best(k => SegPeak(k, p => Math.Abs(p.Torque)), true);
-        var kappaMax = Best(k => SegPeak(k, p => p.Curvature), true);
+        var kappaMax = roller ? Best(k => SegPeak(k, p => p.Curvature), true) : 0;
+        var radiusMin = roller ? 0 : Best(k => SegPeak(k, p => p.ProfileRadius, false), false);
+        var normalPk = Best(k => SegPeak(k, p => Math.Abs(p.NormalForce)), true);
         var phiPk = roller ? Best(k => SegPeak(k, p => Math.Abs(p.PressureAngle)), true) : 0;
         var faceMax = Best(k => SegPeak(k, p => p.FaceDemand), true);
 
@@ -234,7 +236,12 @@ public sealed partial class MechanismCalculator
         if (roller)
             Table(c, "phi_sw", "φ = arctan[(s′ − e)/(√(R_p² − e²) + s)]", cols, table.Select(p => Deg(p.PressureAngle)).ToList(), "deg", "Table: pressure angle", CamClause);
 
-        Table(c, "rho_sw", "ρ = 1/κ of the pitch curve (1e6 mm: not convex)", cols, table.Select(p => p.Curvature > 1e-9 ? Mm(1 / p.Curvature) : 1e6).ToList(), "mm", roller ? "Table: radius of curvature of the pitch curve" : "Table: radius of curvature of the cam profile", CamClause);
+
+        if (roller)
+            Table(c, "kappa_sw", "κ = 1/ρ of the pitch curve (positive convex, negative concave)", cols, table.Select(p => p.Curvature / 1e3).ToList(), "1/mm", "Table: curvature of the pitch curve (the radius of curvature is 1/κ where κ is positive)", CamClause);
+        else
+            Table(c, "rho_sw", "ρ = R_b + s + s″", cols, table.Select(p => Mm(p.ProfileRadius)).ToList(), "mm", "Table: signed radius of curvature of the cam profile (zero or negative: cusp)", CamClause);
+
         Table(c, "F_sw", "F = m·a + k·s + F_pre + F_ext", cols, table.Select(p => p.Force).ToList(), "N", "Table: follower force on the cam", CamClause);
         Table(c, "T_in_sw", "T = F·ds/dθ", cols, table.Select(p => p.Torque).ToList(), "N*m", "Table: input torque by virtual work", "Virtual work");
 
@@ -278,13 +285,18 @@ public sealed partial class MechanismCalculator
 
         var limit = roller ? rr : 0.0;
 
-        if (kappaMax > 1e-9)
+        if (!roller)
+        {
+            Scalar(c, "rho_min", "min (R_b + s + s″)", "signed, scan of each segment, refined", Mm(radiusMin), "mm", "Smallest radius of curvature of the cam profile (zero or negative: the profile has a cusp and the flat follower cannot follow it)", CamClause);
+            c.CheckCondition("No cusp: the profile's radius of curvature stays above zero", radiusMin > 0, $"ρ_min = {F(Mm(radiusMin))} mm", "> 0 mm", "rho_min", CamClause);
+        }
+        else if (kappaMax > 1e-9)
         {
             var rhoMin = 1 / kappaMax;
-            Scalar(c, "rho_min", "1/κ_max", roller ? "pitch curve" : "R_b + s + s″", Mm(rhoMin), "mm", roller ? "Smallest radius of curvature of the pitch curve" : "Smallest radius of curvature of the cam profile", CamClause);
+            Scalar(c, "rho_min", "1/κ_max", "pitch curve", Mm(rhoMin), "mm", "Smallest radius of curvature of the pitch curve", CamClause);
             c.Record("u_rho", "R_r / ρ_min", $"{F(Mm(limit))} mm / {F(Mm(rhoMin))} mm", new ScalarValue(limit / rhoMin), "Roller radius against the smallest radius of curvature (undercut at 1 or more)", CamClause);
             c.Output("u_rho", "Roller radius against the smallest radius of curvature");
-            c.CheckCondition(roller ? "No undercut: ρ_min of the pitch curve exceeds the roller radius" : "No cusp: the profile's radius of curvature stays positive", rhoMin > limit, $"ρ_min = {F(Mm(rhoMin))} mm", $"> {F(Mm(limit))} mm", "rho_min", CamClause);
+            c.CheckCondition("No undercut: ρ_min of the pitch curve exceeds the roller radius", rhoMin > limit, $"ρ_min = {F(Mm(rhoMin))} mm", $"> {F(Mm(limit))} mm", "rho_min", CamClause);
         }
         else
         {
@@ -308,7 +320,34 @@ public sealed partial class MechanismCalculator
         Scalar(c, "input_torque", "max |F·ds/dθ|", "virtual work, scan of each segment, refined", tPk, "N*m", "Peak input torque by virtual work (mech.input_torque)", "Virtual work");
         Scalar(c, "output_motion", "max |v|", "follower", vPk, "m/s", "Peak follower velocity (mech.output_motion)", CamClause);
         Scalar(c, "peak_accel", "max |a|", "follower", aPk, "m/s^2", "Peak follower acceleration (mech.peak_accel)", CamClause);
-        Scalar(c, "follower_force", "max |F|", "m·a + k·s + F_pre + F_ext", fPk, "N", "Peak follower force on the cam (mech.follower_force)", CamClause);
+        Scalar(c, "follower_force", "max |F|", "m·a + k·s + F_pre + F_ext", fPk, "N", "Peak axial force of the follower on the cam (mech.follower_force)", CamClause);
+        Scalar(c, "F_pin_pk", roller ? "max |F|/cos φ" : "max |F|", roller ? "roller contact normal force" : "flat-faced contact force", normalPk, "N", "Peak contact normal force on the cam, the load on the cam shaft's bearings (mech.F_pin_pk → M4, M5)", CamClause);
+        Scalar(c, "F_spring_max", "k·h + F_pre", "spring force at full lift, no inertia", rate * lift + preload, "N", "Spring force at full lift (mech.F_spring_max → M7 working force)", CamClause);
+
+        // RMS torque and mean power over the revolution, Simpson per segment.
+        double sumT = 0, sumT2 = 0;
+
+        for (var k = 0; k < count; k++)
+        {
+            const int m = 400;
+            var beta = profile.Segment(k).Beta;
+            double a1 = 0, a2 = 0;
+
+            for (var i = 0; i <= m; i++)
+            {
+                var weight = i == 0 || i == m ? 1 : i % 2 == 1 ? 4 : 2;
+                var t = cam.In(k, (double)i / m).Torque;
+                a1 += weight * t;
+                a2 += weight * t * t;
+            }
+
+            sumT += beta * a1 / (3.0 * m);
+            sumT2 += beta * a2 / (3.0 * m);
+        }
+
+        Scalar(c, "T_rms_in", "√(mean T²)", "Simpson per segment", Math.Sqrt(sumT2 / (2 * Math.PI)), "N*m", "RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)", "Virtual work");
+        Scalar(c, "P_mean", "ω·mean(T)", "Simpson per segment", omega * sumT / (2 * Math.PI), "W", "Mean input power over the cam revolution (mech.P_mean)", "Virtual work");
+        c.Output("n_in", "Cam-shaft speed, passed through for E1's load speed (mech.n_in)");
     }
 
     private static CalcInputValue[] CamInputs(IReadOnlyList<CalcRow> segments, double rpm, double rb, double rr, double offset, double mass, double rate, double preload, double external, string follower = Roller) =>
@@ -338,7 +377,7 @@ public sealed partial class MechanismCalculator
             new("ka-cam-cycloidal", "Cycloidal rise and return, 20 mm over 90° at 600 rpm: closed-form peak velocity, acceleration and jerk",
                 new CalcReferenceSource(AnalyticSource, null, "Rise 20 mm over β = 90° (cycloidal), dwell 90°, return 20 mm over 90°, dwell 90°, 600 rpm (ω = 20π rad/s), roller R_b 40 mm, R_r 8 mm, in-line; follower 0.3 kg, spring 8 N/mm with 30 N preload, external 10 N: v_pk = 2hω/β = 1.6 m/s exactly, a_pk = 2πhω²/β² = 64π = 201.06193 m/s², j_pk = 4π²hω³/β³ = 50532.375 m/s³; F_max = k·h + F_pre + F_ext = 200 N (at the top dwell), F_min = 40 N (at the base circle); the scan gives φ_max 23.9626°, ρ_min 37.8305 mm, peak T 3.07379 N·m and the smallest R_b for φ ≤ 30° of 27.0189 mm. The pressure angle and curvature are recomputed independently (pitch curve by a 4th-order finite-difference stencil)."),
                 CamInputs(FourSegments(Cycloidal, 90, 90, 20), 600, 40, 8, 0, 0.3, 8, 30, 10),
-                [X("lift", 20, "mm", 1e-9), X("output_motion", 1.6, "m/s", 1e-9), X("v_pk", 1.6, "m/s", 1e-9), X("peak_accel", 201.0619298297468, "m/s^2", 1e-9), X("j_pk", 50532.37453357752, "m/s^3", 1e-9), X("F_max", 200, "N", 1e-9), X("F_min", 40, "N", 1e-9), X("follower_force", 200, "N", 1e-9), X("input_torque", 3.0737873633237385, "N*m", 1e-7), X("phi_max_pk", 23.9625811239909, "deg", 1e-7), X("rho_min", 37.83054104211253, "mm", 1e-6), X("Rb_min_phi", 27.018890600603154, "mm", 1e-7)]),
+                [X("lift", 20, "mm", 1e-9), X("output_motion", 1.6, "m/s", 1e-9), X("v_pk", 1.6, "m/s", 1e-9), X("peak_accel", 201.0619298297468, "m/s^2", 1e-9), X("j_pk", 50532.37453357752, "m/s^3", 1e-9), X("F_max", 200, "N", 1e-9), X("F_min", 40, "N", 1e-9), X("follower_force", 200, "N", 1e-9), X("input_torque", 3.0737873633237385, "N*m", 1e-7), X("phi_max_pk", 23.9625811239909, "deg", 1e-7), X("rho_min", 37.83054104211253, "mm", 1e-6), X("Rb_min_phi", 27.018890600603154, "mm", 1e-7), X("F_pin_pk", 200, "N", 1e-9), X("F_spring_max", 190, "N", 1e-9), X("lift", 20, "mm", 1e-9), X("T_rms_in", 1.3246676918337672, "N*m", 1e-6), X("P_mean", 0, "W", 1e-6), X("n_in", 600, "rpm", 1e-9)]),
             new("ka-cam-modified-trapezoid", "Modified-trapezoid rise and return, 25 mm over 120° at 300 rpm: C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2)",
                 new CalcReferenceSource(AnalyticSource, null, "Rise 25 mm over β = 120° (modified trapezoid), dwell 60°, return, dwell 60°, 300 rpm (ω = 10π rad/s), R_b 45 mm, R_r 10 mm, in-line; follower 0.5 kg, spring 6 N/mm, preload 25 N: v_pk = 2hω/β = 0.75 m/s, a_pk = (8π/(π + 2))·hω²/β² = 27.495696 m/s², j_pk = (32π²/(π + 2))·hω³/β³ = 5182.8166 m/s³; F_max = 6·25 + 25 = 175 N, F_min = 25 N; the scan gives φ_max 19.6415°, ρ_min 53.0778 mm, peak T 2.45387 N·m, smallest R_b 19.8387 mm."),
                 CamInputs(FourSegments(ModifiedTrapezoid, 120, 60, 25), 300, 45, 10, 0, 0.5, 6, 25, 0),
@@ -354,7 +393,7 @@ public sealed partial class MechanismCalculator
             new("ka-cam-offset-roller", "Offset roller follower (e = 10 mm), cycloidal rise and 3-4-5 return: pressure angle, undercut radius, minimum base circle",
                 new CalcReferenceSource(CamOracle, null, "Rise 20 mm cycloidal over 120°, dwell 60°, return 20 mm 3-4-5 over 120°, dwell 60°, 120 rpm, R_b 40 mm, R_r 8 mm, offset e = +10 mm (φ = arctan[(s′ − e)/(√(R_p² − e²) + s)]), follower 0.2 kg, spring 5 N/mm, preload 20 N: v_pk = 0.24 m/s (cycloidal rise), j_pk = 259.2 m/s³ (3-4-5 return), φ_max 26.5958°, ρ_min 44.6811 mm, smallest R_b for φ ≤ 30° of 32.9632 mm, peak T 1.53449 N·m; the same cam in line (e = 0) has φ_max 18.4350° and ρ_min 45.9704 mm."),
                 CamInputs(Mixed(), 120, 40, 8, 10, 0.2, 5, 20, 0),
-                [X("output_motion", 0.24, "m/s", 1e-9), X("peak_accel", 4.523893421169301, "m/s^2", 1e-9), X("j_pk", 259.2, "m/s^3", 1e-9), X("F_max", 120, "N", 1e-9), X("input_torque", 1.534487469171382, "N*m", 1e-7), X("phi_max_pk", 26.595805687051826, "deg", 1e-7), X("rho_min", 44.68108272683772, "mm", 1e-6), X("Rb_min_phi", 32.96315610207776, "mm", 1e-7)]),
+                [X("output_motion", 0.24, "m/s", 1e-9), X("peak_accel", 4.523893421169301, "m/s^2", 1e-9), X("j_pk", 259.2, "m/s^3", 1e-9), X("F_max", 120, "N", 1e-9), X("input_torque", 1.534487469171382, "N*m", 1e-7), X("phi_max_pk", 26.595805687051826, "deg", 1e-7), X("rho_min", 44.68108272683772, "mm", 1e-6), X("Rb_min_phi", 32.96315610207776, "mm", 1e-7), X("F_pin_pk", 121.33134128619405, "N", 1e-7), X("F_spring_max", 120, "N", 1e-9), X("T_rms_in", 0.6975859169412787, "N*m", 1e-6), X("P_mean", 0, "W", 1e-6)]),
             new("ka-cam-inline-roller", "The same cam in line (e = 0): arctan[s′/(R_p + s)] and the pitch-curve radius",
                 new CalcReferenceSource(CamOracle, null, "As the offset case with e = 0: φ_max = 18.4350°, ρ_min = 45.9704 mm, smallest R_b for φ ≤ 30° of 16.2901 mm; the peak velocity, acceleration, force and torque are those of the offset case (the offset does not change the motion or the virtual-work torque)."),
                 CamInputs(Mixed(), 120, 40, 8, 0, 0.2, 5, 20, 0),
