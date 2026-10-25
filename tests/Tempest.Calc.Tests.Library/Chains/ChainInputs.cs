@@ -5,7 +5,7 @@ using Tempest.Calc.Sheets;
 namespace Tempest.Calc.Tests.Library.Chains;
 
 /// <summary>
-/// The inputs of every step of the five built-in chains for the chain tests and the pack worked examples. The values are the pack templates'
+/// The inputs of every step of the six built-in chains for the chain tests and the pack worked examples. The values are the pack templates'
 /// own example inputs (<see cref="CalcPackStep.Example"/>); here the figures a step chooses cite that step's (invented) specification or
 /// drawing, and an input left at the sheet's default is recorded as an assumption.
 /// </summary>
@@ -39,6 +39,27 @@ internal static class ChainInputs
         {
             ["e1"] = Spec("SPEC-LINE-12 §2 (axis duty cycle)"), ["e6"] = Spec("SPEC-LINE-12 §4 (panel schedule)"), ["e4"] = cable, ["e3"] = cable,
             ["e5"] = Spec("SPEC-LINE-12 §6 (earthing and protection)"), ["e2"] = Drg("DRG-LINE-120"),
+        });
+        inputs["e4"] =
+        [
+            .. inputs["e4"],
+            ConductorSizingCalculator.SyntheticAmpacity() with { Provenance = ampacityPin ?? Spec("SYNTHETIC test capacities (not a regulation table)") },
+            ConductorSizingCalculator.TypicalRatings() with { Provenance = ratingsPin ?? Spec("SYNTHETIC test device ratings (not a manufacturer table)") },
+        ];
+        return inputs;
+    }
+
+    /// <summary>
+    /// The hydraulic power unit's inputs: the example inputs, and E4's two tables given as pins to the records it is passed (null: the tables as plain
+    /// synthetic inputs, labelled SYNTHETIC, never table values from a regulation or a manufacturer). The shipped example omits both tables.
+    /// </summary>
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> HydraulicPowerUnit(LibraryTestHost host, CalcProvenance? ampacityPin = null, CalcProvenance? ratingsPin = null)
+    {
+        var duty = Spec("SPEC-HPU-05 §2 (press duty)");
+        var cable = Spec("SPEC-HPU-05 §6 (power supply)");
+        var inputs = For(host, CalcPackTemplates.HydraulicPowerUnit, new Dictionary<string, CalcProvenance>
+        {
+            ["f1"] = duty, ["f2"] = Spec("SPEC-HPU-05 §3 (accumulator)"), ["b1"] = Drg("DRG-HPU-510"), ["e1"] = Spec("SPEC-HPU-05 §5 (pump drive)"), ["e4"] = cable,
         });
         inputs["e4"] =
         [

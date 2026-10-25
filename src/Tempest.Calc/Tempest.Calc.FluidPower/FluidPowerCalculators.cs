@@ -10,5 +10,10 @@ namespace Tempest.Calc.FluidPower;
 /// </summary>
 public static class FluidPowerCalculators
 {
-    public static IReadOnlyList<ICalcCalculator> All { get; } = [new AccumulatorCalculator()];
+    public static IReadOnlyList<ICalcCalculator> All { get; } =
+    [
+        new CylinderCalculator(),
+        new AccumulatorCalculator(),
+        new ORingGlandCalculator(),
+    ];
 }

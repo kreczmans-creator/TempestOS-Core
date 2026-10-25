@@ -38,7 +38,7 @@ public sealed class AccumulatorCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.FluidPower, "Accumulator sizing (gas law)",
+        Id, "1.2.0", CalcDiscipline.FluidPower, "Accumulator sizing (gas law)",
         "The pre-charge gas volume V0 of a hydraulic accumulator that delivers, or absorbs, a liquid volume ΔV between the lowest working pressure p1 and the highest p2, from p·Vⁿ = const with absolute pressures and an exponent n between 1 (isothermal) and 1.4 (adiabatic); the volume scaled to the lowest operating temperature (T_max/T_min) and the pre-charge pressure at the charging temperature; the next size from your own size list; and the bar·litre product PS·V of the vessel's own maximum allowable pressure and volume against the PSSR Schedule 1 250 bar·L exception. Three modes: energy storage, shock and pulsation (screening only) and emergency stroke (ΔV is the stroke volume, linkable from the cylinder circuit). Not a pressure-vessel code check.",
         "Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode)\n" +
         "Gas volume: V0 = ΔV / [(p0/p1)^(1/n) − (p0/p2)^(1/n)], n = 1 isothermal … 1.4 adiabatic, then × the real-gas factor f_rg (user input, at least 1) and × (T_max + 273.15)/(T_min + 273.15), because p0 is defined at T_max and the gas delivers less when cold\n" +
@@ -83,6 +83,7 @@ public sealed class AccumulatorCalculator : ICalcCalculator
             new CalcApplicabilityRule("realgas", "The highest working pressure is above 200 bar absolute: nitrogen departs from the ideal-gas law.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("shock", "Shock and pulsation sizing is a screening estimate; the dynamic response of the line is not modelled.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("exponent", "A shock or emergency discharge is fast: an exponent near 1.4 is the usual choice.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("link-basis", "A pressure is linked from another calculation while the pressures are entered as Absolute: linked pressures are gauge, so the value is read one atmosphere low.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("size", "No listed size is as large as the calculated volume.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("temperature", "The minimum operating temperature must not be above the maximum.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("PS", "PS (bar gauge) must not be below the highest working pressure p2 (gauge).", CalcNoticeSeverity.Block),
@@ -151,6 +152,16 @@ public sealed class AccumulatorCalculator : ICalcCalculator
         var mode = c.InputText("mode");
         var absolute = c.InputText("p_basis") == Absolute;
         var litre = UnitCatalog.Parse("L");
+
+        // A pressure linked from another calculation (the cylinder's supply pressure p is gauge) is read on this sheet's basis: Absolute mode would take the gauge value as absolute.
+        if (absolute)
+        {
+            foreach (var symbol in new[] { "p_0", "p_1", "p_2" })
+            {
+                if (CalcLink.From(c.Inputs.Find(symbol)?.Provenance) is { } link)
+                    c.Warn("link-basis", $"{symbol}: linked from '{link.OutputSymbol}' of another calculation while the pressures are entered as Absolute; the outputs that other calculations offer as pressures (the cylinder's supply pressure p) are gauge, so the linked value would be read {F(c.Si("p_atm") / 1e5)} bar low. Switch p_basis to Gauge, or add the atmospheric pressure to the linked value.");
+            }
+        }
 
         c.Assign("pa_0", absolute ? "p_0" : "p_0 + p_atm", "bar", "Pre-charge pressure, absolute");
         c.Assign("pa_1", absolute ? "p_1" : "p_1 + p_atm", "bar", "Lowest working pressure, absolute");
