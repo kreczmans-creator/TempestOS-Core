@@ -21,7 +21,8 @@ namespace Tempest.Desktop.Tests.CalcSheets;
 
 /// <summary>
 /// `ADR-0173` (S8 review H2, M9, Low 13) on the worksheet form: Attest and Countersign are offered only for a template that demands them, each is
-/// recorded under the signed-in person, and an S8 calculation can be taken from a draft to an issued sheet through the form alone. The Evidence of
+/// recorded under the signed-in person, and a lifting calculation (S8, <c>struct.lifting</c>, and the ported <c>mech.lifting-lug</c>, run over
+/// both ids; merge review finding 2) can be taken from a draft to an issued sheet through the form alone. The Evidence of
 /// a calculation is checked, issued and revised in its worksheet, so its editor offers "Open worksheet" instead.
 /// </summary>
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
@@ -31,6 +32,8 @@ public sealed class WorksheetGovernanceTests
     private const string Attester = "S-1-5-21-1111111111-2222222222-3333333333-1002";
     private const string FirstChecker = "S-1-5-21-1111111111-2222222222-3333333333-1003";
     private const string SecondChecker = "S-1-5-21-1111111111-2222222222-3333333333-1004";
+    private const string StructLifting = "struct.lifting";
+    private const string MechLifting = "mech.lifting-lug";
 
     private sealed record Fixture(WorkspaceHost Host, CalcInstanceService Service, CalcSheetView View, CalcSheetCoordinator Coordinator, Guid ProjectId) : IAsyncDisposable
     {
@@ -43,18 +46,16 @@ public sealed class WorksheetGovernanceTests
         }
     }
 
-    [AvaloniaFact]
-    public async Task A_Lifting_Calculation_Is_Attested_Checked_Countersigned_And_Issued_Through_The_Form_By_Four_People()
+    [AvaloniaTheory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task A_Lifting_Calculation_Is_Attested_Checked_Countersigned_And_Issued_Through_The_Form_By_Four_People(string template)
     {
         await using var fx = await StartAsync("P-GOV", liftingOn: true);
         var view = fx.View;
 
         fx.SignInAs(Author, "Alex Author");
-        view.SelectTemplate("struct.lifting");
-        await Settle();
-        view.SetField("mode", choice: "EN 13155");
-        CiteEverything(view);
-        await Settle();
+        await OpenWorksheetAsync(view, template);
         Assert.True(view.IsGovernancePanelVisible);
         Assert.Contains("Signatures are not authenticated by TempestOS", view.GovernanceNoticeText, StringComparison.Ordinal);
         Assert.False(view.CanAttest);
@@ -115,22 +116,21 @@ public sealed class WorksheetGovernanceTests
         await WaitFor(() => view.CurrentInstance?.Status == CalcInstanceStatus.Issued);
         var issued = (await fx.Service.Store.FindInstanceAsync(id))!;
         Assert.Equal(CalcInstanceStatus.Issued, issued.Status);
+        Assert.Equal(template, issued.TemplateId);
         Assert.Contains("lifting feature enabled", issued.Issue!.FeatureNote, StringComparison.Ordinal);
         Assert.False(view.CanAttest);
     }
 
-    [AvaloniaFact]
-    public async Task A_Pack_Holding_A_Lifting_Calculation_Is_Countersigned_And_Issued_From_The_Desktop()
+    [AvaloniaTheory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task A_Pack_Holding_A_Lifting_Calculation_Is_Countersigned_And_Issued_From_The_Desktop(string template)
     {
         await using var fx = await StartAsync("P-GOV-PACK", liftingOn: true);
         var view = fx.View;
 
         fx.SignInAs(Author, "Alex Author");
-        view.SelectTemplate("struct.lifting");
-        await Settle();
-        view.SetField("mode", choice: "EN 13155");
-        CiteEverything(view);
-        await Settle();
+        await OpenWorksheetAsync(view, template);
         Click(view, CalcSheetView.SaveCaption);
         await WaitFor(() => view.CurrentInstance is not null);
         var id = view.CurrentInstance!.Id;
@@ -180,17 +180,15 @@ public sealed class WorksheetGovernanceTests
         Assert.Equal(CalcInstanceStatus.Issued, (await fx.Service.Store.FindInstanceAsync(id))!.Status);
     }
 
-    [AvaloniaFact]
-    public async Task A_Rejected_Second_Check_Is_Recorded_And_Blocks_Issue()
+    [AvaloniaTheory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task A_Rejected_Second_Check_Is_Recorded_And_Blocks_Issue(string template)
     {
         await using var fx = await StartAsync("P-GOV-REJ", liftingOn: true);
         var view = fx.View;
         fx.SignInAs(Author, "Alex Author");
-        view.SelectTemplate("struct.lifting");
-        await Settle();
-        view.SetField("mode", choice: "EN 13155");
-        CiteEverything(view);
-        await Settle();
+        await OpenWorksheetAsync(view, template);
         Click(view, CalcSheetView.SaveCaption);
         await WaitFor(() => view.CurrentInstance is not null);
 
@@ -224,12 +222,14 @@ public sealed class WorksheetGovernanceTests
         Assert.False(fx.View.CanCountersign);
     }
 
-    [AvaloniaFact]
-    public async Task Opening_A_Calculation_Whose_Calculator_Is_Switched_Off_Names_The_Feature_Not_A_Missing_Build()
+    [AvaloniaTheory]
+    [InlineData(StructLifting)]
+    [InlineData(MechLifting)]
+    public async Task Opening_A_Calculation_Whose_Calculator_Is_Switched_Off_Names_The_Feature_Not_A_Missing_Build(string template)
     {
         await using var fx = await StartAsync("P-GOV-OFF", liftingOn: true);
         fx.SignInAs(Author, "Alex Author");
-        var made = await fx.Service.CreateAsync("struct.lifting", fx.ProjectId, "Lug");
+        var made = await fx.Service.CreateAsync(template, fx.ProjectId, "Lug");
 
         // The same store, with the lifting feature switched off.
         var off = BuildService(fx.Host, liftingOn: false);
@@ -447,6 +447,7 @@ public sealed class WorksheetGovernanceTests
             await host.StartAsync();
 
             Assert.NotNull(host.CalcCatalogue!.Find("struct.lifting"));
+            Assert.NotNull(host.CalcCatalogue.Find("mech.lifting-lug"));
             Assert.Contains("machine policy", host.CalcCatalogue.Features.SourceOf(CalcFeatures.Lifting), StringComparison.Ordinal);
             var engine = (Tempest.Core.Calculations.ICalculationEngine)host.Services!.GetService(typeof(Tempest.Core.Calculations.ICalculationEngine));
 
@@ -520,6 +521,19 @@ public sealed class WorksheetGovernanceTests
         var editor = window.GetLogicalDescendants().OfType<ObjectEditorView>().FirstOrDefault(e => GetPrivateField<Guid>(e, "_objectId") == id);
         Assert.NotNull(editor);
         return editor!;
+    }
+
+    /// <summary>Opens a lifting worksheet on a runnable set of inputs (S8's mode is set to EN 13155; the ported worksheet runs on its defaults) with a source on every input.</summary>
+    private static async Task OpenWorksheetAsync(CalcSheetView view, string template)
+    {
+        view.SelectTemplate(template);
+        await Settle();
+
+        if (template == StructLifting)
+            view.SetField("mode", choice: "EN 13155");
+
+        CiteEverything(view);
+        await Settle();
     }
 
     /// <summary>A check refuses an input with no source, so every input of the shown template is given one.</summary>
