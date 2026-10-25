@@ -269,26 +269,26 @@
       "tempest.harness": {
         "type": "Project",
         "dependencies": {
-          "Tempest.Workspace": "[0.23.0, )"
+          "Tempest.Workspace": "[0.26.0, )"
         }
       },
       "tempest.samples": {
         "type": "Project",
         "dependencies": {
-          "Tempest.Core": "[0.23.0, )",
-          "Tempest.Workspace": "[0.23.0, )"
+          "Tempest.Core": "[0.26.0, )",
+          "Tempest.Workspace": "[0.26.0, )"
         }
       },
       "tempest.validation": {
         "type": "Project",
         "dependencies": {
-          "Tempest.Core": "[0.23.0, )"
+          "Tempest.Core": "[0.26.0, )"
         }
       },
       "tempest.workspace": {
         "type": "Project",
         "dependencies": {
-          "Tempest.Core": "[0.23.0, )"
+          "Tempest.Core": "[0.26.0, )"
         }
       }
     },

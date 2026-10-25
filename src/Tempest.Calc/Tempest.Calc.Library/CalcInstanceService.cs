@@ -165,7 +165,8 @@ public sealed partial class CalcInstanceService
     /// The change is only a link re-pinned to its upstream's current revision (Update to revision n): the person pressing it did not
     /// design anything, so they are recorded in <see cref="CalcInstance.RepinnedBy"/> and not among the authors (Purple P-A-03).
     /// </param>
-    private async Task<CalcActionResult> UpdateInputsCoreAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset? expectedUpdatedAt, bool repin, CancellationToken cancellationToken)
+    /// <param name="amend">A change to the instance that must commit with the new inputs (the CAD import record, Addendum B W1).</param>
+    private async Task<CalcActionResult> UpdateInputsCoreAsync(Guid instanceId, IEnumerable<CalcInputValue> inputs, DateTimeOffset? expectedUpdatedAt, bool repin, CancellationToken cancellationToken, Func<CalcInstance, CalcInstance>? amend = null)
     {
         ArgumentNullException.ThrowIfNull(inputs);
         var instance = await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false);
@@ -201,6 +202,7 @@ public sealed partial class CalcInstanceService
             return CalcActionResult.Refused(unresolvedEvidence, instance);
 
         var updated = instance with { Inputs = newInputs, UpdatedAt = _time.GetUtcNow(), EditedBy = repin ? instance.EditedBy : WithAuthors(instance.EditedBy, CurrentPrincipal()), RepinnedBy = repin ? WithAuthors(instance.RepinnedBy, CurrentPrincipal()) : instance.RepinnedBy };
+        updated = amend is null ? updated : amend(updated);
         updated = await RunAndSnapshotAsync(entry, updated, cancellationToken).ConfigureAwait(false);
 
         try
@@ -568,7 +570,8 @@ public sealed partial class CalcInstanceService
             id, entry.Reference, entry.ContentHash, instance.ProjectId, instance.Name, nextRevision,
             inputsOverride ?? instance.Inputs, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, repin ? instance.CreatedBy : author, now, now, PredecessorId: instance.Id,
             EditedBy: repin ? WithAuthors(instance.EditedBy, instance.CreatedBy) : WithAuthors(instance.EditedBy, instance.CreatedBy, author),
-            RepinnedBy: repin ? WithAuthors(instance.RepinnedBy, author) : instance.RepinnedBy);
+            RepinnedBy: repin ? WithAuthors(instance.RepinnedBy, author) : instance.RepinnedBy,
+            CadImports: instance.CadImports);
         next = await RunAndSnapshotAsync(entry, next, cancellationToken).ConfigureAwait(false);
 
         // The new draft and the superseded mark on the old instance commit together; the mark changes only status and time (the store checks the rest).

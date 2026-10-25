@@ -19,6 +19,9 @@ public sealed class CalcInstanceStore
     public const string PackCollection = "Calc.Packs";
     public const string PackTemplateCollection = "Calc.PackTemplates";
     public const string RecordCollection = "Calc.DataRecords";
+
+    /// <summary>CAD import mapping profiles (Addendum B, W1), one document per profile version, never overwritten.</summary>
+    public const string ImportProfileCollection = "Calc.ImportProfiles";
     public const string InstanceKind = "CalcInstance";
     public const string PackKind = "CalcPack";
     public const int MaxDocumentBytes = 4_000_000;
@@ -304,6 +307,50 @@ public sealed class CalcInstanceStore
             .Where(r => kind is null || string.Equals(r.Kind, kind, StringComparison.Ordinal))
             .GroupBy(r => r.Id).Select(g => g.OrderBy(r => r.Revision).Last())
             .OrderBy(r => r.Kind, StringComparer.Ordinal).ThenBy(r => r.Title, StringComparer.Ordinal).ToList();
+    }
+
+    public static string ImportProfileKey(string id, int version) => $"{id}@{version:D6}";
+
+    /// <summary>Saves a CAD import mapping profile version (W1). A version is never overwritten: a change is a new version.</summary>
+    public async Task SaveImportProfileAsync(Import.Mapping.CadMappingProfile profile, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        var key = ImportProfileKey(profile.Id, profile.Version);
+        var json = Serialise(profile);
+
+        if (json.Length > MaxDocumentBytes)
+            throw new InvalidOperationException($"Import profile '{profile.Label}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not written.");
+
+        await _store.ExecuteInTransactionAsync(async (tx, token) =>
+        {
+            if (await tx.ReadAsync(ImportProfileCollection, key, token).ConfigureAwait(false) is not null)
+                throw new CalcInstanceImmutableException($"Import profile {profile.Label} exists already; a change is a new version.");
+
+            await tx.WriteAsync(ImportProfileCollection, key, json, token).ConfigureAwait(false);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>A profile at a version, or its latest version.</summary>
+    public async Task<Import.Mapping.CadMappingProfile?> FindImportProfileAsync(string id, int? version = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        var keys = (await _store.ListKeysAsync(ImportProfileCollection, id + "@", cancellationToken).ConfigureAwait(false)).OrderBy(k => k, StringComparer.Ordinal).ToList();
+        var key = version is { } v ? ImportProfileKey(id, v) : keys.LastOrDefault();
+
+        if (key is null || !keys.Contains(key))
+            return null;
+
+        var read = await _store.ReadManyAsync(ImportProfileCollection, [key], cancellationToken).ConfigureAwait(false);
+        return Deserialise<Import.Mapping.CadMappingProfile>(read.GetValueOrDefault(key));
+    }
+
+    /// <summary>The latest version of every profile.</summary>
+    public async Task<IReadOnlyList<Import.Mapping.CadMappingProfile>> ListImportProfilesAsync(CancellationToken cancellationToken = default)
+    {
+        var all = await _store.ReadAllAsync(ImportProfileCollection, cancellationToken).ConfigureAwait(false);
+        return all.Select(kv => Deserialise<Import.Mapping.CadMappingProfile>(kv.Value)).OfType<Import.Mapping.CadMappingProfile>()
+            .GroupBy(p => p.Id, StringComparer.Ordinal).Select(g => g.OrderBy(p => p.Version).Last())
+            .OrderBy(p => p.Title, StringComparer.Ordinal).ToList();
     }
 
     private async Task<string?> FindKeyAsync(string collection, Guid id, CancellationToken cancellationToken)

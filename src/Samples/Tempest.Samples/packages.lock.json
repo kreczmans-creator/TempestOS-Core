@@ -166,7 +166,7 @@
       "tempest.workspace": {
         "type": "Project",
         "dependencies": {
-          "Tempest.Core": "[0.23.0, )"
+          "Tempest.Core": "[0.26.0, )"
         }
       }
     },
