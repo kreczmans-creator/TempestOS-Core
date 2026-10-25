@@ -1,0 +1,11 @@
+[
+  {
+    "variables": [
+      { "name": "plate_w", "type": "LENGTH", "expression": "40.5 mm", "value": 0.0405 },
+      { "name": "plate_t", "type": "LENGTH", "expression": "6 mm", "value": 0.006 },
+      { "name": "flange", "type": "LENGTH", "expression": "2 * #plate_w", "value": 0.081 },
+      { "name": "tilt", "type": "ANGLE", "value": 0.2617993877991494 },
+      { "name": "parts", "type": "NUMBER", "expression": "4", "value": 4 }
+    ]
+  }
+]

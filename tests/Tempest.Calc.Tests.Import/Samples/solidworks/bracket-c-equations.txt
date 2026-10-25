@@ -1,0 +1,9 @@
+"Plate_W"= 40.5mm
+"Plate_T"= 6mm
+"Hole_D@Sketch1"= 8.5
+"Angle@Sketch1"= 90deg
+"Länge@Skizze1"= 120 mm
+"Flange_W@Sketch1"= "Plate_W" * 2
+'Edge distance, derived
+"Edge@Sketch1"= ("Plate_W" - "Hole_D@Sketch1") / 2
+"Count" = 3

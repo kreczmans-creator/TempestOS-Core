@@ -13,6 +13,12 @@ public static class UnitCatalog
     private const double Pound = 0.45359237;
     private const double PoundForce = Pound * 9.80665;
 
+    /// <summary>The bar read as an absolute pressure. A label for the sheet, written with the one space ("bar a").</summary>
+    public const string BarAbsolute = "bar a";
+
+    /// <summary>The bar read as a gauge pressure (above the atmosphere). A label for the sheet, written with the one space ("bar g").</summary>
+    public const string BarGauge = "bar g";
+
     private static readonly Dictionary<string, Unit> Units = new(StringComparer.Ordinal);
     private static readonly HashSet<string> Prefixable = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, double> Prefixes = new(StringComparer.Ordinal)
@@ -47,6 +53,11 @@ public static class UnitCatalog
         Add("l", Dimension.Volume, 1e-3, prefixable: true);
         Add("t", Dimension.M, 1000);
         Add("bar", Dimension.Pressure, 1e5, prefixable: true);
+
+        // The bar with its pressure basis named, so a sheet prints "90 bar a" or "8 bar g". They are labels only: the factor is the bar's
+        // and nothing is added for the atmosphere, so a calculator that converts gauge to absolute does it explicitly and says so.
+        Add(BarAbsolute, Dimension.Pressure, 1e5);
+        Add(BarGauge, Dimension.Pressure, 1e5);
         Add("Wh", Dimension.Energy, 3600, prefixable: true);
         Add("VA", Dimension.Power, 1, prefixable: true);
         Add("var", Dimension.Power, 1, prefixable: true);
@@ -309,10 +320,24 @@ public static class UnitCatalog
 
             var n = exponent.Value;
 
-            if (n == 0 || Math.Abs(n) > 8)
+            if (n == 0 || n < -8 || n > 8)
                 throw new CalcUnitException($"A unit power must be between -8 and 8 and not zero, not {n}.");
 
             return new Unit($"{atom.Symbol}{Dimension.Superscript(n)}", atom.Dimension.Pow(n), Math.Pow(atom.Factor, n));
+        }
+
+        /// <summary>Any power beyond this is out of range anyway; digits past it are never accumulated, so no text can overflow.</summary>
+        private const int PowerClamp = 1000;
+
+        /// <summary>A run of ASCII digits as an int, clamped to <see cref="PowerClamp"/> (a longer run, or a value over it, is simply "too large").</summary>
+        private static int ClampDigits(ReadOnlySpan<char> digits)
+        {
+            var significant = digits.TrimStart('0');
+
+            if (significant.IsEmpty)
+                return 0;
+
+            return significant.Length <= 4 && int.TryParse(significant, NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? Math.Min(n, PowerClamp) : PowerClamp;
         }
 
         private int? TryReadExponent()
@@ -341,7 +366,7 @@ public static class UnitCatalog
                 if (start == _pos)
                     throw new CalcUnitException("A unit power needs an integer after '^'.");
 
-                var n = int.Parse(_text.AsSpan(start, _pos - start), CultureInfo.InvariantCulture);
+                var n = ClampDigits(_text.AsSpan(start, _pos - start));
                 return negative ? -n : n;
             }
 
@@ -359,7 +384,7 @@ public static class UnitCatalog
 
                 while (_pos < _text.Length && superscripts.IndexOf(_text[_pos], StringComparison.Ordinal) is var d and >= 0)
                 {
-                    value = value * 10 + d;
+                    value = Math.Min((value * 10) + d, PowerClamp);
                     _pos++;
                     any = true;
                 }
@@ -378,7 +403,7 @@ public static class UnitCatalog
                 while (_pos < _text.Length && char.IsAsciiDigit(_text[_pos]))
                     _pos++;
 
-                return int.Parse(_text.AsSpan(start, _pos - start), CultureInfo.InvariantCulture);
+                return ClampDigits(_text.AsSpan(start, _pos - start));
             }
 
             return null;
@@ -426,6 +451,11 @@ public static class UnitCatalog
                 if (TryGetAtomic(candidate, out var unit))
                 {
                     _pos = end;
+
+                    // "bar a" and "bar g": the basis follows the bar after one space and ends at a boundary ("bar ag" is not "bar a" then "g").
+                    if (candidate == "bar" && TryReadBasis(out var basis))
+                        return basis;
+
                     return unit;
                 }
 
@@ -434,6 +464,28 @@ public static class UnitCatalog
             }
 
             throw new CalcUnitException($"Unknown unit '{_text[start.._pos]}'.");
+        }
+
+        private bool TryReadBasis(out Unit basis)
+        {
+            basis = Unit.One;
+
+            if (_pos + 1 >= _text.Length || _text[_pos] != ' ' || _text[_pos + 1] is not ('a' or 'g'))
+                return false;
+
+            var after = _pos + 2;
+
+            if (after < _text.Length && (IsAtomChar(_text[after]) || char.IsAsciiDigit(_text[after])))
+                return false;
+
+            var symbol = _text[_pos + 1] == 'a' ? BarAbsolute : BarGauge;
+
+            if (!Units.TryGetValue(symbol, out var found))
+                return false;
+
+            basis = found;
+            _pos = after;
+            return true;
         }
 
         private static bool IsAtomChar(char c) => char.IsLetter(c) || c is '°' or 'µ' or 'Ω' or '%' or '‰';

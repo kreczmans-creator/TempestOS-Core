@@ -5,7 +5,7 @@ using Tempest.Calc.Sheets;
 namespace Tempest.Calc.Tests.Library.Chains;
 
 /// <summary>
-/// The inputs of every step of the six built-in chains for the chain tests and the pack worked examples. The values are the pack templates'
+/// The inputs of every step of the built-in chains for the chain tests and the pack worked examples. The values are the pack templates'
 /// own example inputs (<see cref="CalcPackStep.Example"/>); here the figures a step chooses cite that step's (invented) specification or
 /// drawing, and an input left at the sheet's default is recorded as an assumption.
 /// </summary>
@@ -60,6 +60,7 @@ internal static class ChainInputs
         var inputs = For(host, CalcPackTemplates.HydraulicPowerUnit, new Dictionary<string, CalcProvenance>
         {
             ["f1"] = duty, ["f2"] = Spec("SPEC-HPU-05 §3 (accumulator)"), ["b1"] = Drg("DRG-HPU-510"), ["e1"] = Spec("SPEC-HPU-05 §5 (pump drive)"), ["e4"] = cable,
+            ["e3"] = cable, ["e5"] = Spec("SPEC-HPU-05 §6 (earthing and protection)"), ["e9"] = Spec("SPEC-HPU-05 §5 (pump drive starting)"),
         });
         inputs["e4"] =
         [
@@ -69,6 +70,31 @@ internal static class ChainInputs
         ];
         return inputs;
     }
+
+    /// <summary>
+    /// The mechanism review's inputs: the example inputs, and E4's two tables given as pins to the records it is passed (null: the tables as plain synthetic inputs, labelled SYNTHETIC, never table values from a regulation or
+    /// a manufacturer). The shipped example omits both tables.
+    /// </summary>
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> MechanismReview(LibraryTestHost host, CalcProvenance? ampacityPin = null, CalcProvenance? ratingsPin = null)
+    {
+        var inputs = For(host, CalcPackTemplates.MechanismReview, new Dictionary<string, CalcProvenance>
+        {
+            ["m9"] = Drg("DRG-TMP-410"), ["m7"] = Drg("DRG-TMP-415"), ["m4"] = Drg("DRG-TMP-420"), ["m5"] = Spec("SPEC-TMP-04 §5 (bearing schedule)"),
+            ["e1"] = Spec("SPEC-TMP-04 §6 (cam drive)"), ["e4"] = Spec("SPEC-TMP-04 §7 (power supply)"),
+        });
+        inputs["e4"] =
+        [
+            .. inputs["e4"],
+            ConductorSizingCalculator.SyntheticAmpacity() with { Provenance = ampacityPin ?? Spec("SYNTHETIC test capacities (not a regulation table)") },
+            ConductorSizingCalculator.TypicalRatings() with { Provenance = ratingsPin ?? Spec("SYNTHETIC test device ratings (not a manufacturer table)") },
+        ];
+        return inputs;
+    }
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> ActuatedLinkage(LibraryTestHost host) => For(host, CalcPackTemplates.ActuatedLinkage, new Dictionary<string, CalcProvenance>
+    {
+        ["m9"] = Spec("SPEC-EJT-02 §2 (ejector duty)"), ["f1"] = Drg("DRG-EJT-210"), ["f2"] = Spec("SPEC-EJT-02 §4 (accumulator)"),
+    });
 
     public static Dictionary<string, IReadOnlyList<CalcInputValue>> WetHeating(LibraryTestHost host)
     {
@@ -94,4 +120,37 @@ internal static class ChainInputs
         ["s5"] = Spec("SPEC-STR-09 §2 (actions)"), ["s2"] = Drg("DRG-STR-310"), ["s3"] = Spec("SPEC-STR-09 §3 (members)"), ["m3"] = Drg("DRG-STR-312"),
         ["s4a"] = Drg("DRG-STR-312"), ["s4b"] = Drg("DRG-STR-315"), ["s6"] = Drg("DRG-STR-315"),
     });
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> EnvelopeMoisture(LibraryTestHost host) => For(host, CalcPackTemplates.EnvelopeMoisture, new Dictionary<string, CalcProvenance>
+    {
+        ["b4"] = Spec("SPEC-ENV-02 §3 (wall build-up)"), ["b2"] = Spec("SPEC-ENV-02 §2 (room conditions)"), ["b7"] = Drg("DRG-ENV-210"),
+    });
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> ColdPipe(LibraryTestHost host) => For(host, CalcPackTemplates.ColdPipe, new Dictionary<string, CalcProvenance>
+    {
+        ["b1"] = Spec("SPEC-CHW-04 §2 (chilled water duty)"), ["b2"] = Spec("SPEC-CHW-04 §3 (plant room conditions)"), ["b9"] = Drg("DRG-CHW-410"),
+    });
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> PipeworkSupports(LibraryTestHost host) => For(host, CalcPackTemplates.PipeworkSupports, new Dictionary<string, CalcProvenance>
+    {
+        ["b8"] = Spec("SPEC-PIP-11 §4 (thermal movement)"), ["s2"] = Drg("DRG-PIP-610"), ["s6"] = Drg("DRG-PIP-611"),
+    });
+
+    /// <summary>The temperature, °C, the example types the latch's plastic and the lid's alloy values for: the enclosure's limit.</summary>
+    public const double ElectronicsTypedForCelsius = 60;
+
+    public static Dictionary<string, IReadOnlyList<CalcInputValue>> ElectronicsEnclosure(LibraryTestHost host)
+    {
+        var inputs = For(host, CalcPackTemplates.ElectronicsEnclosure, new Dictionary<string, CalcProvenance>
+        {
+            ["e7"] = Spec("SPEC-ELX-02 §3 (supply rail)"), ["e6"] = Spec("SPEC-ELX-02 §4 (board loads)"), ["e2"] = Drg("DRG-ELX-210"), ["m8"] = Spec("SPEC-ELX-02 §6 (lid latch geometry)"), ["s9"] = Spec("SPEC-ELX-02 §7 (lid plate geometry)"),
+        });
+
+        // Only the material values carry the temperature they are typed for, so a test can read it off exactly those inputs.
+        var latch = Spec($"SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at {ElectronicsTypedForCelsius:0} C)");
+        var lid = Spec($"SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at {ElectronicsTypedForCelsius:0} C)");
+        inputs["m8"] = [.. inputs["m8"].Select(v => v.Symbol is "Es" or "eps_perm_once" ? v with { Provenance = latch } : v)];
+        inputs["s9"] = [.. inputs["s9"].Select(v => v.Symbol is "E" or "nu" or "rho" or "f_y" ? v with { Provenance = lid } : v)];
+        return inputs;
+    }
 }

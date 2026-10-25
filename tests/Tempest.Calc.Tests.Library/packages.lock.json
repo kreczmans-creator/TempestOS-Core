@@ -274,9 +274,16 @@
           "Tempest.Calc.Sheets": "[0.26.0, )"
         }
       },
+      "tempest.calc.import": {
+        "type": "Project",
+        "dependencies": {
+          "Tempest.Calc.Sheets": "[0.26.0, )"
+        }
+      },
       "tempest.calc.library": {
         "type": "Project",
         "dependencies": {
+          "Tempest.Calc.Import": "[0.26.0, )",
           "Tempest.Calc.Verification": "[0.26.0, )",
           "Tempest.Core": "[0.26.0, )"
         }

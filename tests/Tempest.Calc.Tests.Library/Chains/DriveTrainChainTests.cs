@@ -36,8 +36,12 @@ public sealed class DriveTrainChainTests
         // Four bolts on a 40 mm radius share that torque equally in shear: v = T / (n r).
         Assert.Equal(Si(e1, "T_pk") / (4 * 0.040), Si(m3, "v_max"), 6);
 
-        // The chain's physical figures: a 12.5:1 gearbox at 120 rpm on the drum puts 1500 rpm on the motor and the shaft.
-        Assert.Equal(1500, Si(e1, "n_pk") * 60 / (2 * Math.PI), 6);
+        // The chain's physical figures: a 12.5:1 gearbox at 118 rpm on the drum puts 1475 rpm on the motor and the shaft, just below the motor's 1480 rpm nameplate
+        // (the induction motor runs under its synchronous 1500 rpm), so E1 does not warn speed-above-rated.
+        Assert.Equal(1475, Si(e1, "n_pk") * 60 / (2 * Math.PI), 6);
+        Assert.Equal(1480, InputSi(e1, "n_rated") * 60 / (2 * Math.PI), 6);
+        Assert.True(Si(e1, "n_pk") < InputSi(e1, "n_rated"));
+        Assert.DoesNotContain(e1.Warnings, w => w.RuleId == "speed-above-rated");
         Assert.Equal(1800 / (12.5 * 0.95), Si(e1, "T_load"), 9);
         Assert.Equal(Si(e1, "T_load"), Si(e1, "T_rms"), 9);
         Assert.Equal(35, Si(m4, "d_A") * 1000, 9);

@@ -1,0 +1,19 @@
+/* Creo relations and parameters for an invented part (golden sample, not a real design) */
+/* multi-line
+   block comment */
+d5 = 25.4
+d6 = d5 / 2
+PLATE_T = 6
+IF d5 > 30
+  d7 = 1
+ELSE
+  d7 = 2
+ENDIF
+
+PARAMETERS
+NAME  TYPE  VALUE
+MASS  REAL NUMBER  1.25 kg
+MATERIAL STRING "Steel S275"
+PRODUCTION YES_NO YES
+COUNT INTEGER 4
+WIDTH REAL 40,5

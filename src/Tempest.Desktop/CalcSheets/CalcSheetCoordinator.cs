@@ -26,8 +26,10 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
     private Guid? _pendingOpen;
     private bool _relistQueued;
     private Guid? _relistLinkState;
+    private readonly CadImportViewModel _cad;
+    private readonly ScanImportViewModel _scan;
 
-    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, Tempest.Core.Events.IEventBus? events = null)
+    public CalcSheetCoordinator(CalcInstanceService service, CalcSheetView view, IProjectContext projects, Func<string?> principalId, Tempest.Core.Events.IEventBus? events = null, Tempest.Core.Logging.ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(view);
@@ -38,6 +40,38 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view = view;
         _projects = projects;
         _principalId = principalId;
+
+        // Addendum B, W1: the CAD import panel lives under the records panel; its view model does the work.
+        _cad = new CadImportViewModel(service, logger);
+        var cadPanel = new CadImportPanel(_cad);
+        _cad.Applied += instance =>
+        {
+            _view.ShowInstance(instance);
+            _ = GuardedAsync(async () =>
+            {
+                var message = _cad.Status;
+                await OpenAsync(instance.Id).ConfigureAwait(true);
+                _view.ShowStatus(message);
+            }, "show the imported values");
+        };
+        _view.InstallCadImportPanel(cadPanel);
+        _view.ImportCadRequested += () => _ = GuardedAsync(ImportCadAsync, "start the CAD import");
+
+        // Addendum B, W2: the scan deviation import panel, installed the same way.
+        _scan = new ScanImportViewModel(service, logger);
+        var scanPanel = new ScanImportPanel(_scan);
+        _scan.Applied += instance =>
+        {
+            _view.ShowInstance(instance);
+            _ = GuardedAsync(async () =>
+            {
+                var message = _scan.Status;
+                await OpenAsync(instance.Id).ConfigureAwait(true);
+                _view.ShowStatus(message);
+            }, "show the imported values");
+        };
+        _view.InstallScanImportPanel(scanPanel);
+        _view.ImportScanRequested += () => _ = GuardedAsync(ImportScanAsync, "start the scan import");
 
         _view.InputsChanged += inputs =>
         {
@@ -488,6 +522,18 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
 
         if (entry is null)
         {
+            // A draft made on an older version of a template that has since been revised (Grey GR-B-01): it cannot run on the
+            // current formulas, so its inputs open as a new, unsaved sheet on the current version and the draft stays as it was.
+            if (_service.PlanDraftUpgrade(instance) is { } upgrade)
+            {
+                _view.SelectTemplate(upgrade.Current.Reference);
+                _view.ShowTemplate(upgrade.Current, null, upgrade.Inputs);
+                _view.SuggestName($"{instance.Name} ({upgrade.Current.Template.Version})");
+                _latest = upgrade.Inputs;
+                _view.ShowStatus(upgrade.Message);
+                return;
+            }
+
             _view.ShowStatus($"Template '{instance.TemplateReference}' is not registered in this build.");
             return;
         }
@@ -604,6 +650,56 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         ImportInputsText(text);
     }
 
+    /// <summary>The CAD import view model, for the panel and the tests.</summary>
+    public CadImportViewModel CadImport => _cad;
+
+    /// <summary>
+    /// "Import CAD parameters…": opens the preview panel on the shown draft. The import applies to the saved draft (it keeps the
+    /// import record that a re-import is compared with), so an unsaved form, or one holding unsaved edits, is asked to be saved first.
+    /// </summary>
+    public async Task ImportCadAsync()
+    {
+        if (_view.CurrentInstance is not { Status: CalcInstanceStatus.Draft } draft)
+        {
+            _view.ShowStatus("Save the calculation as a draft first; CAD parameters are imported into a saved draft.");
+            return;
+        }
+
+        if (_view.HasUnsavedEdits())
+        {
+            _view.ShowStatus("Save or discard your edits first; the import starts from the saved draft.");
+            return;
+        }
+
+        await _cad.BeginAsync(draft).ConfigureAwait(true);
+        _view.ShowStatus("Choose a CAD file, then a mapping profile; the preview shows what will change before anything is applied.");
+    }
+
+    /// <summary>The scan import view model, for the panel and the tests.</summary>
+    public ScanImportViewModel ScanImport => _scan;
+
+    /// <summary>
+    /// "Import scan deviations…": opens the preview panel on the shown draft. As with the CAD import, the import applies to the saved draft (it keeps
+    /// the import record a re-import is compared with), so an unsaved form, or one holding unsaved edits, is asked to be saved first.
+    /// </summary>
+    public async Task ImportScanAsync()
+    {
+        if (_view.CurrentInstance is not { Status: CalcInstanceStatus.Draft } draft)
+        {
+            _view.ShowStatus("Save the calculation as a draft first; scan deviations are imported into a saved draft.");
+            return;
+        }
+
+        if (_view.HasUnsavedEdits())
+        {
+            _view.ShowStatus("Save or discard your edits first; the import starts from the saved draft.");
+            return;
+        }
+
+        await _scan.BeginAsync(draft).ConfigureAwait(true);
+        _view.ShowStatus("Choose one or more scan tables, then a scan profile; the preview shows the statistics and what will change before anything is applied.");
+    }
+
     /// <summary>Parses <paramref name="text"/> as JSON (a list) or CSV, reports every notice, and re-seeds the form when nothing blocks.</summary>
     public void ImportInputsText(string text)
     {
@@ -640,7 +736,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         if (result.Instance is { } instance)
             _view.ShowInstance(instance);
 
-        _view.ShowStatus(result.Succeeded ? success : result.Reason ?? "Refused.");
+        _view.ShowStatus(result.Succeeded ? (string.IsNullOrWhiteSpace(result.Reason) ? success : $"{success} {result.Reason}".Trim()) : result.Reason ?? "Refused.");
     }
 
     private void Guarded(Action action, string what)

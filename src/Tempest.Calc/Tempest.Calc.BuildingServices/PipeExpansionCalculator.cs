@@ -29,10 +29,20 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
     /// <summary>Legs shorter than this many pipe diameters are outside the beam model.</summary>
     public const double ShortLegDiameters = 10;
 
+    /// <summary>
+    /// The smallest modulus (GPa) a pipe material is expected to have: PE, PP and PEX are about 0.5 to 1.5 GPa short-term. Below it the
+    /// sheet warns that E may have been typed in MPa (steel 210 GPa is 210 000 MPa, so a metal typed in MPa lands at 0.07 to 0.21 GPa and
+    /// turns a failing leg into a passing one with an anchor force 1000 times low, Black B-B-03).
+    /// </summary>
+    public const double PlausibleMinModulusGPa = 0.5;
+
+    /// <summary>The smallest modulus (GPa) accepted at all: long-term or hot values of the softest plastic pipe are about 0.1 to 0.3 GPa.</summary>
+    public const double HardMinModulusGPa = 0.1;
+
     private const string ScreeningClause = "ASME B31.3 para. 319.4.1 (screening form; number to be checked against the owner's copy)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
+        Id, "1.2.1", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
         "Screening only — not a piping stress analysis. Thermal growth of a straight run between anchors, the fully restrained stress and force, the leg an offset leg or a U-loop (two guided cantilevers) needs to absorb the growth within the owner's allowable displacement-stress range Sa and whether the available leg is long enough (an offset leg or Z-bend also loads its run or runs with the leg's own growth), the force on the anchors and the largest root moment of the guided-cantilever model, the screening ratio D·Y/(L − U)² against the owner's K1 (PASS, or the line needs a formal stress analysis), and, for an axial bellows, the anchor force P·A_eff plus its spring force. No allowable stress, K1 or code table ships.",
         "Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴ − d_i⁴); Z = I/(OD/2)\n" +
         "Temperature change: ΔT = T_operate − T_install, or as entered; the movement uses |ΔT| and its sign gives the direction\n" +
@@ -46,8 +56,8 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
         "Screening: OD·Y/(L_dev − U)² ≤ K1 with Y = α·|ΔT|·U, the free growth between the anchors; offset leg or Z-bend L_dev = L_tot + H, U = √(L_tot² + H²); U-loop L_dev = L + 2·H, U = L (so Y = ΔL); PASS, or the line needs a formal stress analysis\n" +
         "Axial bellows (no leg or loop, no leg check, no screening): anchor force = P·A_eff + k·ΔL; the movement is checked against the bellows' rated axial movement when given",
         [
-            new CalcInputSpec("E", "Young's modulus of the pipe material at the installation (reference) temperature, for the stress check", CalcInputKind.Quantity, "GPa", Default: 210, Min: 0.1, Max: 500, HardMin: 0.01, HardMax: 1000, Group: "Material", MaterialProperty: "E"),
-            new CalcInputSpec("E_hot", "Young's modulus at the operating temperature, for the reactions on the anchors (blank = E); do not use it for the stress check", CalcInputKind.Quantity, "GPa", Min: 0.1, Max: 500, HardMin: 0.01, HardMax: 1000, IsOptional: true, Group: "Material"),
+            new CalcInputSpec("E", "Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa)", CalcInputKind.Quantity, "GPa", Default: 210, Min: PlausibleMinModulusGPa, Max: 500, HardMin: HardMinModulusGPa, HardMax: 1000, Group: "Material", MaterialProperty: "E"),
+            new CalcInputSpec("E_hot", "Young's modulus at the operating temperature, for the reactions on the anchors (blank = E), in GPa; do not use it for the stress check", CalcInputKind.Quantity, "GPa", Min: PlausibleMinModulusGPa, Max: 500, HardMin: HardMinModulusGPa, HardMax: 1000, IsOptional: true, Group: "Material"),
             new CalcInputSpec("alpha", "Mean coefficient of thermal expansion between the install and operating temperatures", CalcInputKind.Quantity, "um/(m*K)", Default: 12, Min: 1, Max: 250, HardMin: 0.1, HardMax: 1000, Group: "Material", MaterialProperty: "alpha"),
             new CalcInputSpec("OD", "Pipe outside diameter", CalcInputKind.Quantity, "mm", Default: 88.9, Min: 10, Max: 1500, HardMin: 1, HardMax: 10000, Group: "Pipe"),
             new CalcInputSpec("t_wall", "Pipe wall thickness", CalcInputKind.Quantity, "mm", Default: 3.2, Min: 0.5, Max: 60, HardMin: 0.1, HardMax: 1000, Group: "Pipe"),
@@ -88,6 +98,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             new CalcApplicabilityRule("dT_in", "Enter the temperature change when it is the source of the movement; it must not be zero.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("dT-zero", "Install and operating temperatures are equal: there is no movement to absorb.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("bellows", "An axial bellows needs both the pressure P_b and the effective area A_eff.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("modulus-low", "E (or E_hot) is below 0.5 GPa, lower than any usual pipe material: it may have been typed in MPa.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("short-leg", "The available leg (or, for an offset leg or Z-bend, a run) is shorter than ten pipe diameters: the guided-cantilever beam model is not valid.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("bellows-unused", "Bellows inputs are given with a leg or loop layout and are not used; choose the axial bellows layout.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("k1-unused", "K1 is given with the axial bellows layout, which has no screening; it is not used.", CalcNoticeSeverity.Warning),
@@ -192,6 +203,17 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
         else
         {
             c.Assign("E_r", "E", "GPa", "Modulus for the reactions (E, no E_hot given)");
+        }
+
+        foreach (var symbol in new[] { "E", "E_hot" })
+        {
+            if (symbol == "E" || c.Has("E_hot"))
+            {
+                var gpa = c.Si(symbol) / 1e9;
+
+                if (gpa < PlausibleMinModulusGPa)
+                    c.Warn("modulus-low", $"{symbol}: {F(gpa)} GPa is below any usual pipe material (steel 210, copper 120, PE and PP about 1 GPa); is E in GPa? A metal's modulus typed in MPa (steel 210 000 MPa) lands near 0.1 to 0.2 GPa, which makes a leg look 1000 times more flexible, passes a leg that fails and gives an anchor force 1000 times low. Enter {symbol} in GPa, or take it from a material.");
+            }
         }
 
         // Section, movement and the restrained case: none of it needs Sa.

@@ -1,10 +1,10 @@
 # Calc pack — Drive train (`pack.drive-train`)
 
-**Chain.** Motor sizing (`elec.motor-sizing`) → Shaft (`mech.shaft`) → Bearing A life (`mech.bearing-life`) → Bearing A seat fit (`mech.iso286-fit`) → Coupling flange bolts (`mech.bolt-group`).
+**Chain.** Motor sizing (`elec.motor-sizing`) → Shaft, Bearing A life, Coupling flange bolts; Shaft (`mech.shaft`) → Bearing A life, Bearing A seat fit.
 
 **Purpose.** Motor sizing gives the torque and speed the shaft carries; the shaft gives the bearing load and the seat diameter; the bearing life uses the shaft reaction and the motor speed; the seat fit (a rolling-bearing bore against the shaft seat) uses the shaft diameter; the coupling flange bolts and the shaft's yield check carry the peak torque the load demands at the motor shaft. The gear mesh forces on the shaft are entered for the E1 torque and must be re-derived if it changes.
 
-A 4-pole motor (about 24 kW at 1500 rpm) turns a conveyor drum at 120 rpm through a 12.5:1 gearbox against a steady 1.8 kN·m. The motor's torque and speed are the gearbox input shaft's; the shaft's reaction and speed give bearing A its load and speed; the shaft's seat diameter is the nominal size of the bearing-bore fit (the bore has its own tolerance, entered from the bearing record, against a k6 seat); and the peak torque the load demands at the motor shaft (T_pk, run-up included) is the torque the four-bolt coupling flange carries and the torque the shaft's yield check sees. The gear mesh forces on the shaft are entered for the motor's torque (a pinion of 60 mm pitch radius), not linked.
+A 4-pole motor (about 23 kW at 1475 rpm) turns a conveyor drum at 118 rpm through a 12.5:1 gearbox against a steady 1.8 kN·m. The motor's torque and speed are the gearbox input shaft's; the shaft's reaction and speed give bearing A its load and speed; the shaft's seat diameter is the nominal size of the bearing-bore fit (the bore has its own tolerance, entered from the bearing record, against a k6 seat); and the peak torque the load demands at the motor shaft (T_pk, run-up included) is the torque the four-bolt coupling flange carries and the torque the shaft's yield check sees. The gear mesh forces on the shaft are entered for the motor's torque (a pinion of 60 mm pitch radius), not linked.
 
 **Issue.** Project “Conveyor 7 head drive”, pack “Conveyor head drive calc pack”, checked once as a bundle and issued under issue reference **`CNV-DRV-001`** to Client Co in one transaction. After issue every step is read-only and carries that reference. Checked against SPEC-CNV-07 and DRG-CNV-410 to 412 rev B.
 
@@ -20,17 +20,17 @@ A 4-pole motor (about 24 kW at 1500 rpm) turns a conveyor drum at 120 rpm throug
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes every step below it stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an input of a step makes every step that takes from it, directly or through other steps, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
 | Motor sizing | `T_rms` | Shaft | `T` | 0.151579 kN*m |
-| Motor sizing | `n_pk` | Shaft | `n` | 1500 rpm |
+| Motor sizing | `n_pk` | Shaft | `n` | 1475 rpm |
 | Shaft | `R_A` | Bearing A life | `F_r` | 1.34604 kN |
-| Motor sizing | `n_pk` | Bearing A life | `n` | 1500 rpm |
+| Motor sizing | `n_pk` | Bearing A life | `n` | 1475 rpm |
 | Shaft | `d_A` | Bearing A seat fit | `D` | 35 mm |
-| Motor sizing | `T_pk` | Shaft | `T_pk` | 0.159378 kN*m |
-| Motor sizing | `T_pk` | Coupling flange bolts | `T_z` | 0.159378 kN*m |
+| Motor sizing | `T_pk` | Shaft | `T_pk` | 0.159248 kN*m |
+| Motor sizing | `T_pk` | Coupling flange bolts | `T_z` | 0.159248 kN*m |
 
 ## Inputs and provenance
 

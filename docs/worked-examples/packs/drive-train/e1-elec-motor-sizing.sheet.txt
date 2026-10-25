@@ -26,7 +26,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   J_L | Load inertia at the output (rotary mechanisms) | 4 | kg*m^2 | spec: SPEC-CNV-07 §3 (conveyor duty) | 0 … 10000 kg*m^2
   T_L | Constant load torque at the output (rotary) | 1800 | N*m | spec: SPEC-CNV-07 §3 (conveyor duty) | 0 … 100000 N*m
   duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | continuous |  | spec: SPEC-CNV-07 §3 (conveyor duty) | any
-  n_L | Load speed at the output (continuous duty) | 120 | rpm | spec: SPEC-CNV-07 §3 (conveyor duty) | 1 … 100000 rpm
+  n_L | Load speed at the output (continuous duty) | 118 | rpm | spec: SPEC-CNV-07 §3 (conveyor duty) | 1 … 100000 rpm
   t_start | Run-up time to full speed (continuous duty) | 3 | s | spec: SPEC-CNV-07 §3 (conveyor duty) | 0.1 … 600 s
   profile | Motion profile | trapezoidal |  | assumption: Sheet default value; no project figure given. | any
   s | Move distance (linear: m; rotary: output revolutions) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.0001 … 10000
@@ -73,64 +73,64 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
       = 0.026947 kg·m²
         Load inertia reflected to the motor shaft
   [22] omega_pk = n_L * i
-      = 120 rpm × 12.5
-      = 157.08 rad/s
+      = 118 rpm × 12.5
+      = 154.46 rad/s
         Motor speed, n_L · i
   [23] J_total = J_motor + J_mech + J_refl
       = 0.12 kg·m² + 0.002 kg·m² + 0.026947 kg·m²
       = 0.14895 kg·m²
         Total inertia at the motor shaft
   [24] alpha_pk = omega_pk / t_start
-      = 157.08 rad/s / 3 s
-      = 52.36 rad/s²
+      = 154.46 rad/s / 3 s
+      = 51.487 rad/s²
         Run-up angular acceleration (to speed in t_start)
   [25] T_acc = J_total * alpha_pk
-      = 0.14895 kg·m² × 52.36 rad/s²
-      = 7.7989 N·m
+      = 0.14895 kg·m² × 51.487 rad/s²
+      = 7.6689 N·m
         Run-up (acceleration) torque
   [26] T_pk = T_acc + T_load
-      = 7.7989 N·m + 151.58 N·m
-      = 159.38 N·m
+      = 7.6689 N·m + 151.58 N·m
+      = 159.25 N·m
         Peak torque: run-up carrying the full load (conservative)
   [27] T_rms = T_load
       = 151.58 N·m
       = 151.58 N·m
         RMS torque: continuous running at the load torque
   [28] n_pk = omega_pk
-      = 157.08 rad/s
-      = 1500 rpm
+      = 154.46 rad/s
+      = 1475 rpm
         Motor speed
   [29] P_cont = T_load * omega_pk
-      = 151.58 N·m × 157.08 rad/s
-      = 23810 W
+      = 151.58 N·m × 154.46 rad/s
+      = 23413 W
         Continuous shaft power at the motor
   [31] P_rated = T_rated * n_rated
       = 200 N·m × 1480 rpm
       = 30997 W
         Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed
   [32] P_pk = T_pk * omega_pk
-      = 159.38 N·m × 157.08 rad/s
-      = 25.035 kW
+      = 159.25 N·m × 154.46 rad/s
+      = 24.598 kW
         Peak mechanical power (end of the run-up)
   [33] P_rms = P_cont
-      = 23810 W
-      = 23.81 kW
+      = 23413 W
+      = 23.413 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
   [34] J_ratio = (J_refl + J_mech) / J_motor
       = (0.026947 kg·m² + 0.002 kg·m²) / 0.12 kg·m²
       = 0.24123
         Inertia ratio (load : motor)
   [35] u_peak = SF * T_pk / T_peak
-      = 1.25 × 159.38 N·m / 400 N·m
-      = 0.49806
+      = 1.25 × 159.25 N·m / 400 N·m
+      = 0.49765
         Peak torque utilisation with safety margin
   [36] u_rms = SF * T_rms / T_rated
       = 1.25 × 151.58 N·m / 200 N·m
       = 0.94737
         Continuous torque utilisation with safety margin
   [37] u_speed = n_pk / n_max
-      = 1500 rpm / 3000 rpm
-      = 0.5
+      = 1475 rpm / 3000 rpm
+      = 0.49167
         Speed utilisation
   [38] duty = T_rms / T_rated
       = 151.58 N·m / 200 N·m
@@ -142,25 +142,25 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   T_load = 151.58 N·m    Load torque at motor
   J_refl = 0.026947 kg·m²    Reflected load inertia
   J_total = 0.14895 kg·m²    Total inertia
-  alpha_pk = 52.36 rad/s²    Run-up angular acceleration
-  T_acc = 7.7989 N·m    Run-up torque
-  T_pk = 159.38 N·m    Peak torque
+  alpha_pk = 51.487 rad/s²    Run-up angular acceleration
+  T_acc = 7.6689 N·m    Run-up torque
+  T_pk = 159.25 N·m    Peak torque
   T_rms = 151.58 N·m    RMS torque
-  n_pk = 1500 rpm    Motor speed
-  P_cont = 23810 W    Continuous power
-  P_pk = 25.035 kW    Peak power
-  P_rms = 23.81 kW    RMS power (continuous equivalent)
+  n_pk = 1475 rpm    Motor speed
+  P_cont = 23413 W    Continuous power
+  P_pk = 24.598 kW    Peak power
+  P_rms = 23.413 kW    RMS power (continuous equivalent)
   J_ratio = 0.24123    Inertia ratio
   duty = 0.75789    Thermal duty
-  u_peak = 0.49806    Peak utilisation
+  u_peak = 0.49765    Peak utilisation
   u_rms = 0.94737    Continuous utilisation
-  u_speed = 0.5    Speed utilisation
+  u_speed = 0.49167    Speed utilisation
   P_rated = 30997 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
 
 6. CHECKS (governing first)
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.94737 vs u_rms ≤ 1  utilisation 0.947
-  PASS  Speed n_pk ≤ n_max: u_speed = 0.5 vs u_speed ≤ 1  utilisation 0.5
-  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.49806 vs u_peak ≤ 1  utilisation 0.498
+  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.49765 vs u_peak ≤ 1  utilisation 0.498
+  PASS  Speed n_pk ≤ n_max: u_speed = 0.49167 vs u_speed ≤ 1  utilisation 0.492
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.
@@ -168,7 +168,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
 
 8. VERIFICATION
   Template: elec.motor-sizing@1.4.0
-  Content hash: 64020d560b0ee248
+  Content hash: 0f221113aba05f54
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
   Test run: 2026-10-24 20:02 UTC

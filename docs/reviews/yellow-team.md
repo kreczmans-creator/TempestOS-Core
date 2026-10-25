@@ -111,3 +111,57 @@ Test totals at the last gate on the build branches (LOG, 2026-10-24): Engine 384
 | Y-A-10 | Low | Builder data | The first "illustrative" E4 ampacity values matched a published table, which breaks §A5. The review caught it before merge, and a second set matching another published column (G-B-15) came later. | DA-19; Green G-B-15, G-B-16. | Every value in tests and source is now invented. The A9 gate asks the White team for a grep audit of table data. | Closed |
 | Y-A-11 | Low | Documentation | The worked-examples index, the root README counts and 28 stored sheets still carry stale counts or internal section references. DA-23 left the sheet text to the calculator builders, and they did not remove it. | B-A-12, B-A-18, P-A-04. | Blue round 2. Add a template hygiene test for "§A" and review ids in printed text. | Open |
 | Y-A-12 | Info | Gates | Every gate built with 0 warnings. Suites are green. Purple ran filtered suites only; the full gate follows round 2. | `LOG.md`, `purple-team.md`. | None. | Closed |
+
+## Addendum B
+
+Builder quality, 2026-10-25. Scope: the Addendum B branches merged up to `34f196cc` on `v0.26.0/addB-4-workflows` (100 non-merge commits since `510f337c`), the Opus review files of each item, `LOG.md`, `STATUS.md` and DB-01…DB-08. S8: reviewed separately before B-5 merges.
+
+### Per branch
+
+| Branch | Content | Reviews run | Defects found by review | Defects found by tests or the gate | Re-work rounds | Warnings | Flaky tests |
+|---|---|---|---|---|---|---|---|
+| `addB-0-foundations` | Fluid Power discipline (ADR-0170), W3, gas-law kernel, stack-engine API | Opus | 6 Medium, 9 Low (`64342b37`) | Core module count | 1 | 0 | 0 |
+| `addB-1-core` | M7, S7, B7, E7, F2 | Opus per calculator, every value recomputed | 2 High (S7 Annex A class 3, F2 bar·L basis), 12 Medium | 0 recorded | 1 | 0 | 0 |
+| `addB-2-fluid` | F1, F3, HPU pack | Opus review plus three verification rounds | 1 High (F1 buckling), 10 Medium; F3 L5 accepted | HPU F1 line velocity FAIL after the fix (DB-03: 20 mm line) | 4 | 0 | Tolerance-stack timing test, twice under load (Y-A-05) |
+| `addB-3-reuse` | M8, B8, S9, E8, B9 | Opus per calculator, two to three rounds each | 4 High, 14 Medium | A branch switch in the main checkout invalidated one Desktop run; gates moved to their own worktree | 2–3 | 0 | 0 |
+| `addB-4-workflows` (in progress) | W1, W2, M9, E9, chains 1, 4, 5, 7–10, licence check | Opus (M9, E9, W2), security (W1), verification rounds, two chain reviews | W1 4 High, 6 Medium; W2 2 High, 7 Medium; M9 2 High, 3 Medium; E9 1 High, 4 Medium; chains 0 High, 10 Medium | Desktop `WorkedExamplePdfTests` 4 failures at `34f196cc` (Y-B-01); S9 Ritz timing test fails under load (Y-B-11) | 2–3 | 0 | Import timing tests moved to a non-parallel collection (DB-07) |
+| `addB-5-gated` | S8 | — | S8: reviewed separately before B-5 merges | — | — | — | — |
+
+Every non-merge commit carries the requested trailers (100 of 100). The W2 PDF path was dropped under the §B2 drop order (ADR-0172). E9 and M9, both on the drop list, were built.
+
+### Sheets read
+I read the issued text of every Addendum B worked example and the HPU, mechanism-review, cold-pipe and electronics-enclosure packs. The working is mostly clear: formula, substitution, result, and a description on each step. Block messages start with the input and say what to enter. The problems are listed below.
+
+### Findings
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y-B-01 | Medium | `docs/worked-examples/{mechanical/mech.mechanism,electrical/elec.motor-start}/*/` | Four worked examples have no `sheet.pdf`. The Desktop gate fails, and the READMEs promise the file. | `WorkedExamplePdfTests`: 4 failed, 60 passed at `34f196cc`; the size check passed. | Write the PDFs with `TEMPEST_WRITE_WORKED_EXAMPLES=1` and commit before B-4 merges. | Closed (`16caceb7`); 8 PDFs stale again (Y-B-12) |
+| Y-B-02 | Low | `ORingGlandCalculator.cs:732-…`; M8, M9, B7 condition checks | Band checks print "utilisation 0", so the governing order is arbitrary; a 0.8 % squeeze margin reads 0 (B-A-14). | F3 worked example §6. | Use limit/value or value/limit; a condition gives its own ratio. | Open: accept for v0.26.0, fix with B-A-14 in v0.26.1 |
+| Y-B-03 | Low | `MechanismCalculator.cs:248` | "u_mu = 1000000000" at a toggle. | Probe: L3 50 on the crank-rocker. | Print μ_min 0° (toggle) and "—". | Open: fix now (small) |
+| Y-B-04 | Low | `SnapFitCalculator.cs:97`, `AccumulatorCalculator.cs:74`, `ORingGlandCalculator.cs:143`, input texts | "Addendum B §B5/§B6" is printed on 8 issued sheets (14 lines); no hygiene test exists (Y-A-11). | `grep "Addendum B" docs/worked-examples/*/*/*/sheet.txt`. | Plain words; a template hygiene test for "§", "Addendum", "DA-", "DB-". | Open: fix now (text + hygiene test) |
+| Y-B-05 | Low | `CalcInputValidator.cs:64` | "was not entered; the template default … is used" for inputs the mode never reads: 34 lines on six Addendum B sheets (F3 12, E9 13, S9 5). | Worked-example sheets. | Warn only for inputs the run read (B-21). | Open: accept for v0.26.0 (B-21, v0.26.1) |
+| Y-B-06 | Low | `fp.accumulator` sheet | Pressures print "bar" with no basis; the example mixes absolute p and gauge PS. | `clamp-circuit-bladder-accumulator/sheet.txt` §2, §4. | "bar a"/"bar g" everywhere. | Open: fix now with B-B-05 |
+| Y-B-07 | Low | `packs/hydraulic-power-unit/README.md:5` | A single 900-word paragraph. | — | One paragraph per step; an "invented" list. | Open: the narrative moved to line 7 and is now 1074 words; fix now (docs only) or accept |
+| Y-B-08 | Low | Worked examples | Eight Addendum B calculators have one example (build prompt §5 asks for two); Addendum A was the same. | `docs/worked-examples/*/`. | Add the second, or a DECISIONS row. | Open: record as accepted (DECISIONS row) |
+| Y-B-09 | Info | W2 | PDF table path dropped (§B2 order), recorded in ADR-0172 and the spec. | — | Add it to STATUS and the owner test pack. | Closed (owner test pack, `6ae57e87`) |
+| Y-B-11 | Medium | `PlateBendingTests.cs:285-289` (`Review_Ritz_Speed_…_Honours_Cancellation`) | A wall-clock budget (1500 ms) fails in full parallel runs of the Calculators suite; it passes alone. | 1537 ms and 1972 ms in two full runs on 4 cores, 1503/1506 and 1505/1506 passed. | Measure CPU time or move it into the non-parallel timing collection (as Y-A-05). | Closed (`9f3fd919`; Calculators 1515/1515 at `6a189078`) |
+| Y-B-10 | Info | Review timing | Every Addendum B item was reviewed before its merge, and every High was fixed with a named regression test (`Review_H1_*`, `H1_*`). The F2 emergency-sizing defect (G-AB-01) passed four review rounds because every reviewer checked the formula as briefed. | Green G-AB-01. | Keep one reviewer who checks the model against the duty, not the formula against the brief. | Closed |
+
+### Verification at `6a189078`
+
+| ID | Fix | Verdict |
+|---|---|---|
+| Y-B-01 | `16caceb7`: the four M9 and E9 PDFs added; PDFs left stale by version bumps refreshed. | Verified: present. Later fix commits made 8 PDFs stale again (Y-B-12). |
+| Y-B-11 | `9f3fd919`: the S9 Ritz speed tests run in the Timing collection and take the fastest of 3. | Verified: Calculators 1515 of 1515 in a full parallel run. Closed. |
+| Y-B-07 | `0b6e19cd` rewrote the narrative. | Not closed: the narrative paragraph (README line 7) is now 1074 words. |
+| Y-B-09 | `6ae57e87`: the owner test pack records the dropped W2 PDF path (lines 201, 3476). | Closed. |
+| Y-B-02…06, Y-B-08 | — | Unchanged. F2 1.3.0 adds one more unused-default warning (`process`) to the energy-storage example (Y-B-05). |
+
+New finding in this round:
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y-B-12 | Medium | 8 worked-example `sheet.pdf` files | The PDFs predate the fixes that changed their `sheet.txt`, so the issued PDF shows the old template version and text. Affected: `fp.accumulator/clamp-circuit-bladder-accumulator` (1.2.0, no gas-process line), `elec.pcb-trace/motor-driver-supply-rail` (1.0.1), all three `bs.pipe-expansion` examples, both `bs.insulation` examples (the chilled one lacks the new warning) and `struct.ltb-interaction/ub-457x191x98-beam-column`. `WorkedExamplePdfTests` checks only existence and size, so the gate cannot see it. | In each folder `sheet.txt` was last changed by `4a19d7b8`, `34044c2d`, `dda97f60`, `5a818356` or `100e8a65`, after the PDF's last commit. | Regenerate after the last fix (`TEMPEST_WRITE_WORKED_EXAMPLES=1 … --filter WorkedExamplePdfTests`). Let the test compare the PDF's extracted text with `sheet.txt` (template line and governing check). | Open: fix now |
+
+S8: reviewed separately before B-5 merges.

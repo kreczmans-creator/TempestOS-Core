@@ -1,0 +1,13 @@
+PolyWorks Inspector report (invented sample)
+Alignment: RPS-1 best fit
+Name Nominal Measured Dev USL LSL Part
+Pin_dia 10.000 9.994 -0.006 10.030 9.970 PW-01
+Pin_dia 10.000 10.021 0.021 10.030 9.970 PW-02
+Pin_dia 10.000 10.004 0.004 10.030 9.970 PW-03
+Pin_dia 10.000 9.995 -0.005 10.030 9.970 PW-04
+Pin_dia 10.000 9.993 -0.007 10.030 9.970 PW-05
+Pin_dia 10.000 10.014 0.014 10.030 9.970 PW-06
+Pin_dia 10.000 9.999 -0.001 10.030 9.970 PW-07
+Pin_dia 10.000 9.990 -0.010 10.030 9.970 PW-08
+Pin_dia 10.000 10.007 0.007 10.030 9.970 PW-09
+Pin_dia 10.000 9.989 -0.011 10.030 9.970 PW-10

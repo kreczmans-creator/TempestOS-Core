@@ -109,6 +109,59 @@ public sealed class LtbInteractionTests
     }
 
     [Fact]
+    public void Black_B_B_01_Opposite_Sign_End_Moments_Warn_That_Double_Curvature_Was_Taken()
+    {
+        // A frame program prints member end actions, which have opposite signs for SINGLE curvature. Typed that way the
+        // diagram reads as a reversal: C1 jumps to its cap and the check can turn from FAIL to PASS with no sign of it.
+        var frameProgram = Run(Choice("moment_mode", LtbInteractionCalculator.ModeEnds), Q("M_y_A", 340, "kN*m"), Q("M_y_B", -170, "kN*m"));
+        var warning = Assert.Single(frameProgram.Warnings, w => w.RuleId == "double-curvature");
+        Assert.Contains("double curvature", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("C₁ = 2.7", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("end actions", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("340", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("-170", warning.Message, StringComparison.Ordinal);
+
+        // The same moments with one sign (single curvature) and ψ = 0 carry no such warning.
+        var single = Run(Choice("moment_mode", LtbInteractionCalculator.ModeEnds), Q("M_y_A", 340, "kN*m"), Q("M_y_B", 170, "kN*m"));
+        Assert.DoesNotContain(single.Warnings, w => w.RuleId == "double-curvature");
+        var zero = Run(Choice("moment_mode", LtbInteractionCalculator.ModeEnds), Q("M_y_A", 340, "kN*m"), Q("M_y_B", 0, "kN*m"));
+        Assert.DoesNotContain(zero.Warnings, w => w.RuleId == "double-curvature");
+
+        // The ψ mode (ψ entered as a number) is not an end-moment slip and is not touched.
+        Assert.DoesNotContain(Run(N("psi_y", -0.5)).Warnings, w => w.RuleId == "double-curvature");
+
+        // The sign convention is stated where it is entered.
+        Assert.Contains("bending-moment diagram", Ltb.Template.FindInput("M_y_A")!.Description, StringComparison.Ordinal);
+        Assert.Contains("double-curvature", Ltb.Template.ApplicabilityRules.Select(r => r.Id));
+    }
+
+    [Fact]
+    public void Black_B_B_07_The_Double_Curvature_Warning_Prints_The_C1_And_C_my_The_Run_Uses()
+    {
+        var ends = new[] { Choice("moment_mode", LtbInteractionCalculator.ModeEnds), Q("M_y_A", 340, "kN*m"), Q("M_y_B", -170, "kN*m") };
+
+        // An entered C₁ (and C_my) overrides the ψ-derived value: the warning must name the one the run uses, not the ψ value.
+        var entered = Run([.. ends, N("C_1", 1.5), N("C_m_y", 0.9)]);
+        var warning = Assert.Single(entered.Warnings, w => w.RuleId == "double-curvature");
+        Assert.Equal(1.5, entered.OutputSi("C_1"), 12);
+        Assert.Contains("C₁ = 1.5 (entered, not the ψ value 2.7)", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("C_my = 0.9 (entered, not the ψ value 0.4)", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("C₁ = 2.7", warning.Message, StringComparison.Ordinal);
+
+        // C₁ entered alone: C_my still comes from ψ.
+        var c1Only = Assert.Single(Run([.. ends, N("C_1", 1.5)]).Warnings, w => w.RuleId == "double-curvature");
+        Assert.Contains("C₁ = 1.5 (entered", c1Only.Message, StringComparison.Ordinal);
+        Assert.Contains("C_my = 0.4.", c1Only.Message, StringComparison.Ordinal);
+
+        // Nothing entered: both come from ψ, as before. Annex A takes its own C_my.
+        var derived = Assert.Single(Run(ends).Warnings, w => w.RuleId == "double-curvature");
+        Assert.Contains("C₁ = 2.7, C_my = 0.4.", derived.Message, StringComparison.Ordinal);
+        var annexA = Assert.Single(Run([.. ends, N("C_1", 1.5), Choice("annex", LtbInteractionCalculator.AnnexAMethod)]).Warnings, w => w.RuleId == "double-curvature");
+        Assert.Contains("C₁ = 1.5 (entered", annexA.Message, StringComparison.Ordinal);
+        Assert.Contains("Annex A takes its C_my from ψ", annexA.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Edition_2022_Changes_Only_The_Label()
     {
         var a = Run();

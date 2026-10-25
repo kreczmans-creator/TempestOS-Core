@@ -711,3 +711,105 @@ The pass criterion is the repository's own (`KnownAnswerRunner.cs:80`): |mine �
 | G-B-16 | Low (§A5) | `ConductorSizingTests.cs` ~214/224; B4 layer λ values; B6 0.51 factor | AWG 20/30 A (NEC), C_g 0.65 (4 circuits), common λ values, an unattributed catalogue factor. | Replace with invented values; attribute or drop the factor. |
 | G-B-17 | Low | wet-heating chain | B6 system volume not linked from B1 pipework (20 L default vs 24.6 L). | B1 `V_pipe` port linked to B6. |
 | G-B-18 | Info | B5, B6, E1, E5 | Loose expected values (B5 parallel Q at 70 % of tolerance; B6 0.51 at 93 %); direct-drive E1 keeps η 0.9; E5 √3·U₀ 398.4 V; Kell vs IAPWS negligible; 2.5 mm² CPC on 1.5 mm² line. | Tighten; note. |
+
+## Addendum B
+
+**Scope.**
+- The 14 Addendum B calculators at `34f196cc` (`v0.26.0/addB-4-workflows`): M7 `mech.spring` 1.2.0, M8 `mech.snap-fit` 1.3.0, M9 `mech.mechanism` 1.2.0, S7 `struct.ltb-interaction` 1.1.0, S9 `struct.plate-bending` 1.2.1, B7 `bs.glaser` 1.2.0, B8 `bs.pipe-expansion` 1.2.0, B9 `bs.insulation` 1.1.0, E7 `elec.pcb-trace` 1.0.1, E8 `elec.containment` 1.1.0, E9 `elec.motor-start` 1.2.0, F1 `fp.cylinder` 1.3.0, F2 `fp.accumulator` 1.2.0 and F3 `fp.oring-gland` 1.2.0.
+- The W2 statistics.
+- The W3 seed materials.
+- The §B7 chain packs.
+- W1 does no arithmetic beyond unit conversion; that is covered by the security re-verification.
+- Read-only.
+- S8: reviewed separately before B-5 merges.
+
+**Method.**
+- At least one worked example per calculator was run through `CalcRunner.Run` from its `inputs.json`, using a scratch harness outside the repository.
+- Its outputs were recomputed in python3 from the relations in my own notation, not ported from the C#. The relations used:
+  - Bergsträsser factor, Goodman in shear and both-ends-fixed surge for M7.
+  - Simpson integration of a tapered cantilever for M8.
+  - A Newton solution of the loop equations with an analytic velocity and acceleration loop, and a 0.01° scan polished by golden section for the peak torque, for M9.
+  - EN 1993-1-1 6.3.1, 6.3.2.3 and Annex B with the end-moment C₁ fit for S7.
+  - A 400 × 400-term Navier series for S9.
+  - Monthly Glaser accumulation by a lower-hull construction for B7.
+  - Guided cantilever and screening ratio for B8.
+  - Bisection on the cylinder resistance, Magnus dew point and a 1.32·(Δθ/D)^¼ plus radiation surface balance for B9.
+  - The IPC-2221 legacy fit for E7.
+  - Capstan pull in both directions for E8.
+  - A complex divider for E9.
+  - Areas, Johnson buckling, pump power and the cap-port flow for F1.
+  - Gas law with temperature scaling for F2.
+  - Incompressible-ring section reduction and the cold-end worst case for F3.
+  - Mean, s, Cp, Cpk and Anderson–Darling A*² with its p-value for W2.
+- The pass criterion is the repository's own relative tolerance.
+- Scripts: `scratchpad/b9colour/*.py`; table `scratchpad/b9colour/green-table.md`.
+
+**Result.**
+- 132 of 132 recomputed values agree.
+- The worst agreements are a finite-difference acceleration (2e-6) and the classical plate coefficient used as a cross-check (5e-4). Every other value agrees to 1e-9 or better.
+- The defects are in a model choice (G-AB-01) and chain coverage (G-AB-02), not in the pinned numbers.
+
+| Calculator | Worked example | Values | Worst rel. diff |
+|---|---|---|---|
+| `mech.spring` | `plunger-return-spring` | 11 (k, k_c, L_s, S_a, F_c, τ₂, τ_c, u_c, f_n two ways, n_f) | 3e-16 |
+| `mech.snap-fit` | `enclosure-lid-hook` | 6 (P, ε, u, W, W′, self-locking angle) | 1e-15 |
+| `mech.mechanism` | `carton-tucker-crank-rocker` | 12 (θ₃, θ₄, ω₄, α₄, μ, T_in at 0°; peak T_in; T_rms; μ_min; θ₄ limits) | 2e-6 (finite-difference α₄) |
+| `struct.ltb-interaction` | `ub-457x191x98-beam-column` | 13 (C₁, M_cr, λ̄_LT, χ_LT, M_b,Rd, χ_y, χ_z, k_yy, k_yz, k_zy, k_zz, 6.61, 6.62) | 5e-16 |
+| `struct.plate-bending` | `enclosure-lid-aluminium` | 10 (D, w, M_x, M_y, M_xy, σ_vm, f₁, u_σ, u_w; classical coefficient) | 5e-4 (coefficient) |
+| `bs.glaser` | `internal-insulation-no-vcl` | 10 (R_T, f_Rsi, M_c for Nov–Jun) | 7e-15 |
+| `bs.pipe-expansion` | `lthw-main-expansion-loop`, `copper-axial-bellows` | 8 (ΔL, F_r, L_req, anchor F and M, σ_leg, screening; bellows anchor) | 0 |
+| `bs.insulation` | `chilled-water-pipe-condensation`, `clad-hot-water-pipe-correlation` | 9 (θ_dew, t_q, t_dew, q, θ_se; h_c, h_r, q, θ_se) | 1e-12 |
+| `elec.pcb-trace` | `motor-driver-supply-rail` | 5 | 4e-16 |
+| `elec.containment` | `servo-cable-pull-three-bends` | 7 (fill, T and SWP both directions, u_T, u_P) | 0 |
+| `elec.motor-start` | `pump-dol-500kva` | 8 (I_n, Z_m, Z_src, I, dip, PCC dip, kvar, h_res) | 2e-15 |
+| `fp.cylinder` | `press-ram-125-90-pump-and-lines` | 10 | 0 |
+| `fp.accumulator` | `clamp-circuit-bladder-accumulator` + both pack F2 steps | 7 | 4e-16 |
+| `fp.oring-gland` | `locking-cylinder-piston-seal` | 6 (nominal stretch, section reduction, squeeze; worst stretch; cold-end stretch and minimum squeeze) | 4e-15 |
+| W2 statistics | `gom-two-stage.csv`, both stages | 10 (mean, s, Cp, Cpk, A*², p) | 6e-14 |
+
+W3 seeds: the four generic materials satisfy G ≈ E/(2(1 + ν)) within 1.3 %, are flagged indicative and are unlicensed. Temperature tables are read linearly and never extrapolated (`MaterialLibrary.cs:479-507`).
+
+**Opus reviews of each item and how they were closed.** Each closure was checked in the code at `34f196cc`.
+
+| Item | Review findings | Closed | Evidence |
+|---|---|---|---|
+| B-0 W3, gas law, stack engine | 6 Medium, 9 Low: material values credited to their own source; a temperature needs its unit; unit-free property staleness; malformed files; one licensed value licenses the record; licensed values withheld through links | `64342b37` | `MaterialLibraryReviewTests` (Review_M1…M5, LOW4–6); `LicensedLinkTests` (7 tests, any depth, table cells) |
+| B-1 S7 | High: Annex A class 3 k_yz/k_zy carried a wrong 0.6 (40 % low); Medium: χ_LT,mod cap, an entered C₁ needs k_c and C_my, warping constant, Table 6.2 curves | `f7ccb5c8` (1.1.0) | `LtbInteractionTests.Review_H1_Annex_A_Class_3_*`, `Review_M1_*`, `Review_M7_*`, `Review_Low_*` |
+| B-1 M7 | Medium: R_m(d) from the W3 curve; EN solid length and coil clearance; torsion q factor; travel utilisation | `f7ccb5c8` | `SpringTests.Review_M6_*`, `Review_Low_The_En_*`; `SpringMaterialTests.Review_M6_*` |
+| B-1 B7, E7, F2 | High: F2 bar·L basis (now the vessel's PS × V); Medium: B7 R_si,f, moisture excess with dp_f, calendar month lengths, timber flag; E7 range warnings; F2 T_min scaling, f_rg ≥ 1 | `152d845f` | `AccumulatorTests` 173, 206, 235; `GlaserTests` 272, 292; `PcbTraceTests` 112 |
+| B-2 F1 | High: rod buckling at max(push, stall thrust); Medium: cap-port line at Q·A_b/A_a | `a6e8a825`, `2f127253` | `CylinderTests` 207, 405; recomputed (u_buck at p·A_b) |
+| B-2 F3 | Medium: hot fill on a volume basis, Parker quadratic range, held OD, face-seal pressure side; Low L5 (second metal α) | `a6e8a825` | `ORingGlandTests` 433, 460, 518, 656; L5 accepted: one W3 material per sheet, α_s typed |
+| B-2 HPU pack | Three verification rounds: B1 on F1's own line; E4 on the nameplate | `2f127253`, DB-03 | `HydraulicPowerUnitChainTests` |
+| B-3 M8 | Medium: torsion bar held at both ends; K_ann on the strain, not the force; derived relations credited to the guide | `cd3026a9`, `0f12b92f` | `SnapFitTests` 245, 322, 522 |
+| B-3 B8 | High: screening Y = α·ΔT·U; Medium: run check, axial bellows layout, E at the reference temperature, no PASS without K1; second round: resultant anchor force, Z-bend | `7ee5afe4`, `118f3438` | `PipeExpansionTests.H1_*`, `M1_*`…`M4_*`, `N1_*`, `N2_*` |
+| B-3 S9 | Medium: Navier convergence warning; Ritz cap 30 and clamped-patch minimum 25 % | `f53fc0f9` | `PlateBendingTests.Review_M1_*`, `Review_M2_*` |
+| B-3 E8 | High: bundle limit N × weakest; Medium: a cable must fit, a zero T_max is refused, f_max 0.45 replaced by an invented 0.42 | `8969bcda`, `5293fea7` | `ContainmentTests` 130, 163, 203; `ka-trunking-fill` |
+| B-3 B9 | Medium: a chosen thickness with no criterion, an unattainable criterion, the bare-pipe window, no condensation check, a θ_dew input for B2 | `d71cd8ac`, `e789bc51` | `InsulationTests` 235, 264, 284, 308; `no-condensation-check` warning seen in a run |
+| B-4 E9 | High: soft starter and drive were fixed impedances (dip understated); Medium: c factor, drive PF, `I_start` port, entered I_n | `d2622586`, DB-04 | `MotorStartTests` 276, 302, 372, 402, 417 |
+| B-4 M9 | High: flat-faced cusp check could not fail; peaks and ports unbounded at a toggle; Medium: change-point branch, force ports, port meaning | `90318147`, `7c4a0fc4`, `4c53f72e`, DB-04 | `MechanismTests` 444, 488, 546, 558, 852; probe: ports withheld at a toggle |
+| B-4 W2 | High: whole-number decimal comma, O(n²) statistics; Medium: provenance, k at import, same file twice, σ with outliers, M2 push | `2ec42994`…`7da71ee1` | B9 security re-verification §1; `ScanReviewTests` 165, 193, 374; `ScanToSealChainTests` 386 |
+| §B7 chains 7–10 | Medium: S9 not downstream, PSU heat missing, mean in place of line temperature, issue gate | `00cfac32`, DB-05 | `ElectronicsEnclosureChainTests` 242, 259; `ColdPipeChainTests` 257; `*Issue_Is_Refused_At_The_Staleness_Gate*` in each |
+| §B7 chains 1, 4, 5 | Medium: star-delta physics, stiffest source, motor above nameplate speed, cam RMS torque into M4, spring data typed twice | `56e038b1`, `c97c958e`, `d6ab772b`, `f8d675a2`, DB-06 | HPU unloaded-start assertions; `MotorSizingCalculator.cs:278`; `MechanismReviewChainTests` 373; `SpringCalculator.cs:664` |
+| B-5 S8 | — | S8: reviewed separately before B-5 merges | — |
+
+### Findings
+
+| ID | Severity | Location | Description | Evidence | Fix or justification | Status |
+|---|---|---|---|---|---|---|
+| G-AB-01 | High | `AccumulatorCalculator.cs:216, 337-341`; `GasLaw.cs:136` | Emergency stroke sizes V0 with one exponent from p0 to both p1 and p2. A held accumulator is charged slowly (isothermal) and discharged fast (n), which needs V0 = ΔV·(p2/p0)/[(p2/p1)^(1/n) − 1]. Unconservative. | HPU pack 26.70 L against 30.08 L (−12.7 %); actuated-linkage 1.078 against 1.310 L (−21.6 %); `ka-adiabatic` 36.7 against 46.7 L (−27.4 %). Both packs issued PASS. | Separate charge and discharge exponents in Emergency stroke, and as a choice in Energy storage. New known-answer case (Unconfirmed). Re-pin the two packs and their chain tests. | Closed (`4a19d7b8`, DB-09; verified) |
+| G-AB-02 | Medium | `CadDrivenToleranceChainTests.cs`; `ScanToSealChainTests.cs`; `docs/worked-examples/packs/` | Chain 3 has no M8 leg. Chains 2 and 3 do not prove Issue blocked while stale and have no issued worked example. | No test maps CAD parameters into `mech.snap-fit`; the stale tests stop at the check. | Add the M8 leg and the Issue refusal; add the examples, or record a DECISIONS row. | Closed (`6819c014`, DB-10; verified) |
+| G-AB-03 | Low | `ScanStatistics.cs:108-121` | Pooled within-subgroup σ without c4: Cp and Cpk about 3 % optimistic at ten parts. Documented. | Ten-value case: σ_w 0.0200 against 0.0206 unbiased. | Apply c4(d), or print "not bias-corrected" beside Cp and Cpk. | Closed (`df1f6424`, DB-11; verified) |
+
+### Verification at `6a189078`
+
+Each fix was checked in a fresh worktree (`scratchpad/b9colv`) with the scratch harness and independent python3 (`scratchpad/b9colour/f2_verify.py`).
+
+| ID | Fix | Verdict |
+|---|---|---|
+| G-AB-01 | `4a19d7b8`: `fp.accumulator` 1.3.0 with a `process` input (by duty, one exponent, slow charge) and `GasLaw.ChargeVolumeSplit`; DB-09; pack READMEs `0b6e19cd`. | Verified. HPU F2 30.080873 L and actuated-linkage F2 1.310207 L both equal the held-accumulator recompute (rel. diff ≤ 1.2e-16). The new Unconfirmed case `ka-held-slow-charge-fast-discharge` gives 46.743040 L, as recomputed. The sheet states the gas process as an output, and the pack READMEs quote 30.1 L and 1.310 L. Closed. |
+| G-AB-02 | `6819c014`: M8 leg of the CAD chain; Issue refused while stale in chains 2 and 3; DB-10 records them as integration tests, not packs. | Verified: `CadDrivenToleranceChainTests.The_M8_Hook_Takes_Its_Beam_From_The_File_…`, `Issue_Is_Refused_While_A_Checked_Fit_Is_Stale_…`, `ScanToSealChainTests.Issue_Is_Refused_While_A_Checked_Gland_Is_Stale_…`. Closed. |
+| G-AB-03 | `df1f6424`: pooled σ divided by c4(d); DB-11. | Verified: c4(9) = 0.969311, σ_w 0.0206332, Cp 0.80776, Cpk 0.75929 by python3 `math.gamma`, equal to the pinned values; c4(7) = 0.959369 likewise. Closed. |
+
+No Green item is open.
+
+S8: reviewed separately before B-5 merges.

@@ -1,0 +1,19 @@
+// Expression file created by NX 2306 for an invented part (golden sample, not a real design)
+// Part: BRACKET-A
+// Revision: C
+[mm]plate_t=8
+[mm]plate_w=40.5
+[mm]hole_d=8.5
+[Degrees]bend_angle=90
+[mm]gap_min=0.2
+[mm]gap_max=0.8
+count=4
+(String) material="S275"
+(Boolean) with_rib=true
+[MilliMeter]slot_l=12 // slot length, long unit name
+[mm]flange_w=plate_w*2
+[mm]edge=(plate_w-hole_d)/2   // derived distance
+[mm]diag=sqrt(plate_t^2+9)
+[Kilogram]mass_est=0.35
+[mm]odd_unit_len=10 furlongs
+[mm]new_rib_t=3

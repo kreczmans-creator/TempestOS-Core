@@ -218,3 +218,48 @@ No Critical or High finding is open. The risks that remain are these.
 - G-B-08 is accepted on the strength of the sheet's own statement. It needs a DA entry. The vessel excludes the water reserve and the safety-valve margin, so a user must add them.
 - The shipped worked examples use invented data and placeholder files. They show the method. They are not designs.
 - Purple ran filtered suites only. The full gate follows round 2.
+
+## Addendum B
+
+Inputs: `security-review.md` (SEC-B-01…SEC-B-04), `red-team.md` (R-B-01…R-B-04) and the Purple verification (`purple-team.md`, Addendum B, including P-B-01…P-B-04). The fixes are on `v0.26.0/addB-4-workflows`:
+
+| Round | Merged at | Commit | Finding | Change |
+|---|---|---|---|---|
+| 1 | 0ecf1749 | 67af5ac7 | SEC-B-01 | W1 CSV split-decimal rules |
+| 1 | 0ecf1749 | 051647fb | SEC-B-02 | Licence lock per record |
+| 1 | 0ecf1749 | 75a2d66d | SEC-B-03 | 64 KB start-tag cap and budget on every chunk |
+| 1 | 0ecf1749 | 1dd76d2f | SEC-B-04 | Underflow refused in `LocaleNumber` |
+| 2 | 134ca7bc | eb02ffb4 | P-B-01, P-B-03 | Unquoted numbers refused under a decimal comma with a comma delimiter; digit-led neighbours checked; columns named |
+| 2 | 134ca7bc | 3a143b15 | P-B-02 | Underflow refused for workbook cells and JSON numbers |
+
+Statuses are Purple's final verdicts at 134ca7bc.
+
+Paths: `Import/` is `src/Tempest.Calc/Tempest.Calc.Import/`; `Library/` is `src/Tempest.Calc/Tempest.Calc.Library/`. Tests are in `tests/Tempest.Calc.Tests.Import` (`AddendumBSecurityRegressionTests`) and `tests/Tempest.Calc.Tests.Library/Materials` (`MaterialLibraryLicenceRevisionTests.cs`, class `MaterialLibraryTests`).
+
+### Red and Security findings (R-B-01…R-B-04 = SEC-B-01…SEC-B-04)
+
+| Finding | Mitigation | Where | Regression test | Status |
+|---|---|---|---|---|
+| R-B-01 / SEC-B-01 Medium — W1 CSV split decimal read as a whole number | **Round 1 (67af5ac7):** a value under a blank header column is refused, and a whole number followed by bare digits in an unread column is refused or blocked. **Round 2 (eb02ffb4):** under a declared decimal comma with a comma delimiter, any unquoted number in the value or expression column is refused (quote it or use `;`; ADR-0171). Under a decimal point, both columns are checked against any neighbour that starts with digits (plus an optional unit), with no column exempt. | `Import/Cad/TableParsers.cs`, `Import/Csv.cs` (`CsvTable.WasQuoted`) | `AddendumBSecurityRegressionTests.SEC_B_01_A_Split_Decimal_Is_Refused_Not_Read_As_A_Whole_Number`, `SEC_B_01_An_Ambiguous_Whole_Number_File_Is_Blocked_Until_Corrected`, `SEC_B_01_Honest_Files_Are_Still_Read_Without_A_Block`, and the P-B-01 tests | Fixed |
+| R-B-02 / SEC-B-02 Medium — licensing a later revision left the earlier one exportable | A record is licensed when any of its revisions is (`CalcInstanceStore.IsLicensedInAnyRevisionAsync`, `CalcInstanceService.IsLicensedRecordAsync`). This is used by `LicensedRecordPinAsync` (clipboard CSV, sheets, links, save-from-inputs), `ExportRecordAsync` and the material CSV/JSON export. | `Library/CalcInstanceService.Records.cs`, `CalcInstanceStore.cs`, `MaterialLibrary.cs` | `MaterialLibraryTests.SEC_B_02_A_Material_Licensed_In_A_Later_Revision_Releases_No_Value_Through_An_Earlier_One`, `SEC_B_02_A_Material_That_Was_Never_Licensed_Still_Exports_Every_Revision` | Fixed |
+| R-B-03 / SEC-B-03 Medium — xlsx attribute flood | `CountingLimitStream` follows start tags byte by byte (aware of quotes, skipping `<!` and `<?`) and refuses one over 64 KB. It checks the time budget and Cancel on every chunk. The macro-declaration attribute loop ticks the budget. | `Import/XlsxReader.cs` | `AddendumBSecurityRegressionTests.SEC_B_03_A_Start_Tag_With_Millions_Of_Attributes_Is_Refused_Fast_Not_Parsed_In_One_Uninterruptible_Read`, `SEC_B_03_A_Tag_Just_Over_The_Cap_Is_Refused_And_One_Just_Under_It_Is_Read`, `SEC_B_03_Long_Text_Comments_And_Attribute_Values_Are_Not_Mistaken_For_Tags`, `SEC_B_03_Cancel_Is_Honoured_While_The_Reader_Pulls_Bytes_Of_One_Tag` | Fixed |
+| R-B-04 / SEC-B-04 Low — underflow read as 0 | **Round 1 (1dd76d2f):** `LocaleNumber` refuses a literal with a non-zero digit that parses to 0. **Round 2 (3a143b15):** the same check, `LocaleNumber.UnderflowedToZero`, is applied to every `.xlsx` numeric cell and every W1 JSON number. | `Import/LocaleNumber.cs`, `Import/XlsxReader.cs`, `Import/Cad/TableParsers.cs` | `AddendumBSecurityRegressionTests.SEC_B_04_A_Non_Zero_Literal_That_Underflows_To_Zero_Is_Refused_Like_An_Overflow`, `SEC_B_04_Zero_And_Representable_Small_Numbers_Are_Still_Read`, `SEC_B_04_An_Underflowing_Value_In_A_Cad_Csv_Is_Not_Imported_As_A_Number`, and the P-B-02 tests | Fixed |
+
+### Purple findings (P-B-01…P-B-04)
+
+| Finding | Mitigation | Where | Regression test | Status |
+|---|---|---|---|---|
+| P-B-01 Medium — three split shapes still read silently after round 1 | As R-B-01, round 2. | `Import/Cad/TableParsers.cs`, `Import/Csv.cs` | `P_B_01_Under_A_Decimal_Comma_An_Unquoted_Number_With_A_Comma_Delimiter_Is_Refused`, `P_B_01_Under_A_Decimal_Point_The_Same_Shapes_Are_Blocked_Not_Read_Silently`, `P_B_01_Quoted_Semicolon_And_Tab_Files_Are_Still_Read_Under_A_Decimal_Comma` | Fixed |
+| P-B-02 Low — W1 xlsx and JSON numbers underflowed to 0 after round 1 | As R-B-04, round 2. | `Import/XlsxReader.cs`, `Import/Cad/TableParsers.cs`, `Import/LocaleNumber.cs` | `P_B_02_A_Workbook_Cell_That_Underflows_To_Zero_Is_Refused`, `P_B_02_Zero_And_Representable_Workbook_Cells_Are_Still_Read`, `P_B_02_A_Json_Number_That_Underflows_To_Zero_Is_Refused`, `P_B_02_Zero_And_Representable_Json_Numbers_Are_Still_Read` | Fixed |
+| P-B-03 Info — "unnamed column" wording | The messages name the column the remainder landed in. | `Import/Cad/TableParsers.cs` | `P_B_03_The_Message_Names_The_Column_The_Remainder_Landed_In` | Fixed |
+| P-B-04 Info — exponent-only decimal-point file warns instead of blocking | None. It is contrived, and the person is warned. | `Import/Cad/TableParsers.cs` | — | Accepted (RR-B-01) |
+
+### Residual risk register (Addendum B)
+
+| ID | Risk | Likelihood / impact | Owner | Status |
+|---|---|---|---|---|
+| RR-B-01 | A decimal-point W1 CSV whose thousands separator splits a whole number, while every other non-whole value is written in exponent form with no decimal point (P-B-04), imports with a warning rather than a block. Under a declared decimal comma with a comma delimiter, unquoted numbers are refused outright. The panel shows every value read, and the issued sheet cites the file hash. | Very low / Medium | Blue | Accepted |
+| RR-B-02 | Desktop Cancel abandons the preview task (`WaitAsync`). The abandoned parse sees the same token on its next chunk, and one `Read()` is capped at a 64 KB start tag, so it stops within milliseconds. Apply runs with no token, bounded by the 10 s budget. | Low / Low | Blue | Accepted |
+| RR-B-03 | The start-tag scanner works on bytes. A UTF-16 part whose text holds a character with a 0x3C byte, followed by more than 64 KB without a 0x3C or 0x3E byte, is refused. Cell text is capped at 8 KB in UTF-16, and Excel and LibreOffice write UTF-8. The failure is a loud refusal, never a wrong value. | Very low / Low | Blue | Accepted |
+| RR-B-04 | `IsLicensedInAnyRevisionAsync` reads every revision of a record for each pinned input on export or sheet build. This is linear in the revisions and fine at desktop scale. | Low / Low | Blue | Accepted |
+| RR-B-05 | A comma-delimited W1 CSV under a declared decimal comma must quote every number (ADR-0171). Honest unquoted files of that shape are refused with instructions (quote the numbers or save with `;`). A decimal-point file with a numeric description after a whole number is refused or blocked. Both are loud and never read a wrong value. | Low / Low (usability) | Blue | Accepted |

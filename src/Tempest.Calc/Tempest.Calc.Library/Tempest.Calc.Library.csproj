@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Tempest.Calc.Verification\Tempest.Calc.Verification.csproj" />
+    <ProjectReference Include="..\Tempest.Calc.Import\Tempest.Calc.Import.csproj" />
     <ProjectReference Include="..\..\Tempest.Core\Tempest.Core.csproj" />
   </ItemGroup>
 

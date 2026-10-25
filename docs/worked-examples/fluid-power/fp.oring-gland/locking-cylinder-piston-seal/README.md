@@ -29,8 +29,8 @@ The groove leaves a gland depth of 2.780 mm ± 0.030 for a 3.5 ± 0.1 mm ring. O
 | `d_r_tol` | 0.45 mm | reference: record: oring.ring, illustrative tolerance invented for this example |
 | `dist` | Normal | assumption: Normal distribution of the machined dimensions. |
 | `duty` | Static | spec: Cylinder datasheet LC-63: locking duty, no stroke under pressure |
-| `fill_hi` | 85 % | reference: record: oring.criteria, gland fill band (Addendum B default 60 to 85 %) |
-| `fill_lo` | 60 % | reference: record: oring.criteria, gland fill band (Addendum B default 60 to 85 %) |
+| `fill_hi` | 85 % | reference: record: oring.criteria, gland fill band (default 60 to 85 %) |
+| `fill_lo` | 60 % | reference: record: oring.criteria, gland fill band (default 60 to 85 %) |
 | `gap_allow` | 0.2 mm | reference: record: oring.extrusion, illustrative permitted gap invented for this example, to be replaced by the seal maker's value for 70 Shore A at 160 bar |
 | `k_sigma` | 3 | assumption: Normal tolerances taken as ±3σ. |
 | `n_mc` | 20000 | assumption: 20 000 samples. |
@@ -43,7 +43,7 @@ The groove leaves a gland depth of 2.780 mm ± 0.030 for a 3.5 ± 0.1 mm ring. O
 | `s_min` | 0 % | assumption: No shrinkage assumed in the mineral oil. |
 | `seed` | 42 | assumption: Fixed seed for a repeatable sheet. |
 | `type` | Piston (radial) | spec: Cylinder datasheet LC-63: ring on the piston, sealing on the bore |
-| `x_hi` | 6 % | reference: record: oring.criteria, installed stretch limit (Addendum B quotes up to 6 % on a piston groove) |
+| `x_hi` | 6 % | reference: record: oring.criteria, installed stretch limit (up to 6 % on a piston groove, as quoted second-hand) |
 | `x_lo` | 0 % | reference: record: oring.criteria, installed stretch lower limit |
 
 | Output | Expected | Computed | Result |

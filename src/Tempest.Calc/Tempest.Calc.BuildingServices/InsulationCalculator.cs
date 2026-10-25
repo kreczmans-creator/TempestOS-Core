@@ -39,14 +39,14 @@ public sealed class InsulationCalculator : ICalcCalculator
             new CalcInputSpec("lambda", "Thermal conductivity of the insulation", CalcInputKind.Quantity, "W/(m*K)", Default: 0.04, Min: 0.015, Max: 0.2, HardMin: 0.005, HardMax: 2, Group: "Insulation", MaterialProperty: "lambda"),
             new CalcInputSpec("theta_lambda", "Temperature the conductivity applies at (a note: compared with the mean insulation temperature)", CalcInputKind.Quantity, "degC", Min: -50, Max: 400, HardMin: -200, HardMax: 650, IsOptional: true, Group: "Insulation"),
             new CalcInputSpec("h_mode", "Where the outer surface coefficient comes from", CalcInputKind.Choice, Choices: [HGiven, HCorrelation], DefaultChoice: HGiven, Group: "Outer surface"),
-            new CalcInputSpec("h_se", "Outer surface coefficient h_se (as given)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 10, Min: 3, Max: 40, HardMin: 0.5, HardMax: 200, Group: "Outer surface"),
-            new CalcInputSpec("eps", "Emissivity of the outer surface (correlation)", CalcInputKind.Number, Default: 0.9, Min: 0.05, Max: 1, HardMin: 0.01, HardMax: 1, Group: "Outer surface"),
+            new CalcInputSpec("h_se", "Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 10, Min: 3, Max: 40, HardMin: 0.5, HardMax: 200, Group: "Outer surface"),
+            new CalcInputSpec("eps", "Emissivity of the outer surface (for the correlation; with h_se as given it only judges that value against condensation on a cold surface)", CalcInputKind.Number, Default: 0.9, Min: 0.05, Max: 1, HardMin: 0.01, HardMax: 1, Group: "Outer surface"),
             new CalcInputSpec("v_wind", "Air speed over the surface (correlation; 0 = still air)", CalcInputKind.Quantity, "m/s", Default: 0, Min: 0, Max: 20, HardMin: 0, HardMax: 60, Group: "Outer surface"),
             new CalcInputSpec("L_surf", "Height or flow length of the flat surface (correlation, flat)", CalcInputKind.Quantity, "m", Default: 1, Min: 0.1, Max: 10, HardMin: 0.01, HardMax: 100, Group: "Outer surface"),
             new CalcInputSpec("h_i", "Inner film coefficient (blank = the pipe wall is at the process temperature)", CalcInputKind.Quantity, "W/(m^2*K)", Min: 50, Max: 20000, HardMin: 0.5, HardMax: 1e5, IsOptional: true, Group: "Pipe wall and film"),
             new CalcInputSpec("t_w", "Pipe wall thickness (with its conductivity; blank = not included)", CalcInputKind.Quantity, "mm", Min: 0.5, Max: 30, HardMin: 0.1, HardMax: 100, IsOptional: true, Group: "Pipe wall and film"),
             new CalcInputSpec("lambda_w", "Pipe wall conductivity", CalcInputKind.Quantity, "W/(m*K)", Min: 0.2, Max: 400, HardMin: 0.1, HardMax: 500, IsOptional: true, Group: "Pipe wall and film"),
-            new CalcInputSpec("q_max_m", "Heat-loss limit per metre of pipe (blank = not a criterion)", CalcInputKind.Quantity, "W/m", Default: 25, Min: 1, Max: 1000, HardMin: 1e-6, HardMax: 1e5, IsOptional: true, Group: "Criteria"),
+            new CalcInputSpec("q_max_m", "Heat-loss limit per metre of pipe (generic default of 25 W/m, replace with your project limit; blank = not a criterion)", CalcInputKind.Quantity, "W/m", Default: 25, Min: 1, Max: 1000, HardMin: 1e-6, HardMax: 1e5, IsOptional: true, Group: "Criteria"),
             new CalcInputSpec("q_max_A", "Heat-loss limit per square metre of flat surface (blank = not a criterion)", CalcInputKind.Quantity, "W/m^2", Min: 1, Max: 500, HardMin: 1e-6, HardMax: 1e5, IsOptional: true, Group: "Criteria"),
             new CalcInputSpec("theta_se_max", "Highest surface temperature, for a hot surface (blank = not a criterion)", CalcInputKind.Quantity, "degC", Min: 30, Max: 70, HardMin: -50, HardMax: 300, IsOptional: true, Group: "Criteria"),
             new CalcInputSpec("dew_margin", "Margin of the surface above the dew point, for a cold surface (blank = not a criterion)", CalcInputKind.Quantity, "K", Min: 0, Max: 5, HardMin: 0, HardMax: 20, IsOptional: true, Group: "Criteria"),
@@ -60,7 +60,7 @@ public sealed class InsulationCalculator : ICalcCalculator
             new CalcAssumption("The dew point is entered (for example from B2) or is the Magnus relation at θ_a and RH, the same closed form B7 uses. Below 0 °C the relation is over ice, so RH is then taken relative to ice, whereas meteorological RH is usually relative to water: enter the dew point for sub-zero air. A margin above it is the user's.", "Derived; B7 shares the function."),
             new CalcAssumption("Pipes are treated as horizontal for free convection and flat surfaces as vertical; air properties are fits (conductivity within about 3 %, viscosity within about 4 % over 250–400 K), Pr = 0.71.", "Stated."),
             new CalcAssumption("The required thickness is the least thickness beyond which the criterion holds for every thicker layer up to 1 m, which is what matters when thin insulation on a small pipe raises the heat flow (critical diameter).", "Stated."),
-            new CalcAssumption("No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data.", "Addendum B §B5."),
+            new CalcAssumption("No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data.", "No standard's table is reproduced."),
         ],
         [
             new CalcClauseRef("ISO 12241", "formula route (clause numbers to be checked)", "Thermal insulation for building equipment and industrial installations: calculation rules"),
@@ -76,6 +76,7 @@ public sealed class InsulationCalculator : ICalcCalculator
             new CalcApplicabilityRule("wall", "The pipe wall needs both thickness and conductivity, and must be thinner than the pipe radius.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("criterion-na", "A hot-surface limit on a cold pipe, or a dew-point margin on a hot one, is ignored.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("no-criteria", "No criterion applies but a thickness is chosen: only the heat flow and surface temperature at it are reported.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("h-se-condensation", "A fixed h_se on a cold surface with a dew-point margin gives a thinner layer than the correlation does: the generic default is not conservative against condensation.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("no-condensation-check", "The surface is colder than the air and no dew-point margin is entered, so condensation is not checked.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("bare-complies", "The bare surface meets a heat-flow limit that thin insulation on a pipe below the critical diameter breaks.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("critical-radius", "The pipe is below the critical diameter 2λ/h_se, or the chosen insulation carries more heat than the bare pipe.", CalcNoticeSeverity.Warning),
@@ -150,9 +151,9 @@ public sealed class InsulationCalculator : ICalcCalculator
         RecordKinds:
         [
             new CalcRecordKind(MaterialKind, "Material properties", ["lambda"], "A material from the library: its thermal conductivity fills this input, citing the material, its revision and the page or table of the value."),
-            new CalcRecordKind("surface.coefficient", "Outer surface coefficient", ["h_se"], "h_se from your own copy of the standard or the maker's guidance for the surface (still or moving air, jacketing), with its source and edition. No value is shipped."),
+            new CalcRecordKind("surface.coefficient", "Outer surface coefficient", ["h_se"], "h_se from your own copy of the standard or the maker's guidance for the surface (still or moving air, jacketing), with its source and edition. No standard's value is shipped: the sheet opens on a generic 10 W/(m²K), which you replace."),
             new CalcRecordKind("surface.emissivity", "Surface emissivity", ["eps"], "The total emissivity of the jacketing or finish, from its maker or your reference."),
-            new CalcRecordKind("criteria.insulation", "Insulation criteria", ["q_max_m", "q_max_A", "theta_se_max", "dew_margin"], "The heat-loss limit, the hot-surface limit and the dew-point margin of your project specification or your copy of the standard, with their source."),
+            new CalcRecordKind("criteria.insulation", "Insulation criteria", ["q_max_m", "q_max_A", "theta_se_max", "dew_margin"], "The heat-loss limit, the hot-surface limit and the dew-point margin of your project specification or your copy of the standard, with their source. The heat-loss limit per metre opens on a generic 25 W/m, which you replace."),
         ]);
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
@@ -365,6 +366,12 @@ public sealed class InsulationCalculator : ICalcCalculator
                 c.Warn("bare-complies", $"{criterion.InputSymbol}: the bare surface also meets the {criterion.Name} ({criterion.Limit}), but layers from {F(from * 1000)} mm to {F(t * 1000)} mm break it (thin insulation on a pipe below the critical diameter raises the heat flow); the required thickness {F(t * 1000)} mm is the one beyond which it holds for every thicker layer. Insulating at all is a choice of at least that thickness.");
         }
 
+        // Black B-B-04: against condensation the most favourable surface coefficient is the highest one, because it holds the surface
+        // closest to the air temperature. A fixed h_se (the generic 10 W/(m²K) in particular) can therefore under-size a cold pipe's
+        // insulation, so the sheet shows what the correlation gives and warns when it asks for more.
+        if (!correlation && required.FirstOrDefault(r => r.Criterion.Key == "dew") is { Criterion: { } dewCriterion, Thickness: { } tDewGiven })
+            WarnFixedCoefficientAgainstCondensation(c, setup, dewCriterion, tDewGiven, pipe);
+
         Criterion? unattainable = required.FirstOrDefault(r => r.Thickness is null).Criterion;
         double? tGov = required.Count == 0 || unattainable is not null ? null : required.Max(r => r.Thickness);
         Criterion? governing = unattainable ?? (required.Count == 0 ? null : required.OrderByDescending(r => r.Thickness).First().Criterion);
@@ -511,6 +518,39 @@ public sealed class InsulationCalculator : ICalcCalculator
 
     /// <summary>One selected criterion: how it is broken, how loaded it is, which input holds its limit and what it is called on the sheet.</summary>
     private sealed record Criterion(string Key, string InputSymbol, string Symbol, string Name, Func<InsulationModel.State, double> Violation, Func<InsulationModel.State, double> Utilisation, string UtilisationSymbol, string Limit);
+
+    /// <summary>Emissivity of an ordinary (painted or plastic) outer surface, the first comparison of the condensation warning.</summary>
+    public const double CondensationEmissivityOrdinary = 0.9;
+
+    /// <summary>Emissivity of bright metal cladding, the second comparison of the condensation warning.</summary>
+    public const double CondensationEmissivityBright = 0.1;
+
+    private static void WarnFixedCoefficientAgainstCondensation(CalcRunContext c, InsulationModel.Setup given, Criterion dew, double tGiven, bool pipe)
+    {
+        // Still air and, for a flat surface, the template's 1 m height: the unfavourable end of the correlation, which is also what
+        // the sheet's correlation mode opens on. The emissivity is the one on the sheet (the template's 0.9 when none is entered):
+        // the given h_se is judged against the surface it was entered for, and bright cladding is a note, not the test (Black B-B-08).
+        var length = pipe ? 1 : c.Template.FindInput("L_surf")?.Default ?? 1;
+        var eps = Math.Clamp(c.Inputs.Find("eps")?.Number ?? c.Template.FindInput("eps")?.Default ?? CondensationEmissivityOrdinary, 0.01, 1);
+
+        double Required(double e)
+        {
+            var setup = given with { Surface = new InsulationModel.Surface(null, e, 0, length) };
+            var (outcome, t, _) = InsulationModel.RequiredThickness(setup, InsulationModel.Scan(setup), dew.Violation);
+            return outcome == InsulationModel.SearchOutcome.Found ? t : double.PositiveInfinity;
+        }
+
+        var atEntered = Required(eps);
+
+        if (!(atEntered > tGiven * 1.02 + 1e-4))
+            return;
+
+        string Mm(double t) => double.IsFinite(t) ? $"{F(t * 1000)} mm" : $"more than {F(InsulationModel.MaxThickness * 1000)} mm";
+
+        var bright = eps > CondensationEmissivityBright + 1e-9 ? $" (bright cladding, ε = {F(CondensationEmissivityBright)}, would need {Mm(Required(CondensationEmissivityBright))})" : string.Empty;
+
+        c.Warn("h-se-condensation", $"h_se: the anti-condensation thickness is {F(tGiven * 1000)} mm with h_se = {F(given.Surface.Fixed ?? 0)} W/(m²·K) as given, but {Mm(atEntered)} with the convection and radiation correlation at the emissivity on this sheet, ε = {F(eps)}{bright}, still air. A fixed h_se above the real surface coefficient holds the surface too near the air temperature and under-sizes the insulation against condensation (the generic 10 W/(m²·K) is not conservative here). Choose 'convection + radiation (correlation)', or enter a measured h_se, and enter the emissivity of the real cladding.");
+    }
 
     private static string F(double v) => double.IsFinite(v) ? CalcValue.FormatNumber(v, 5) : "—";
 }

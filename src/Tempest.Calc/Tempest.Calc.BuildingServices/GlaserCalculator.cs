@@ -18,6 +18,9 @@ public sealed class GlaserCalculator : ICalcCalculator
     public const string MoistureExcess = "moisture excess from a humidity class (linear in the outside temperature)";
     public const int Months = 12;
 
+    /// <summary>The relative difference between this wall's U-value and the heat-loss calculation's above which the sheet warns (the layers are typed twice, so rounding is expected, not a different build-up).</summary>
+    public const double UrefTolerance = 0.02;
+
     /// <summary>The internal surface resistance (m²K/W) conventional for the surface-condensation check of an opaque element.</summary>
     public const double ConventionalRsiF = 0.25;
 
@@ -40,7 +43,7 @@ public sealed class GlaserCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.BuildingServices, "Glaser condensation (interstitial and surface)",
+        Id, "1.2.0", CalcDiscipline.BuildingServices, "Glaser condensation (interstitial and surface)",
         "Interstitial condensation in a layered wall by the Glaser method over twelve monthly climate steps: the temperature and saturation pressure at every layer interface, the vapour-pressure line with its tangent construction at the condensation planes, the condensate on each interface month by month carried forward from the first month of condensation (drying when the weather turns), the annual balance, the peak accumulation against the owner's limit, and the surface temperature factor f_Rsi against its minimum at the critical surface humidity.",
         "Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j\n" +
         "Total resistance and interface temperature: R_T = R_si + Σ R_j + R_se; θ_k = θ_i − (θ_i − θ_e)·(R_si + Σ_(j≤k) R_j)/R_T\n" +
@@ -51,6 +54,7 @@ public sealed class GlaserCalculator : ICalcCalculator
         "Tangent construction: the line from p_i to p_e is bent onto the saturation line at the interfaces it would rise above (and at wet interfaces), by the smallest-slope rule from each contact point\n" +
         "Condensation at an interface: g_c = g_in − g_out; Mc accumulates g_c·t over 12 months from the first month of condensation (t = the row's days, else the calendar days of the month, January to December order), a wet interface (held at saturation) drying at g_c < 0 until nothing is left\n" +
         "Annual balance and peak: PASS when no condensate remains after the 12 months; Mc_max = the most held on any interface, checked against the user's limit\n" +
+        "Wall U-value and its cross-check: U = 1/R_T; when the heat-loss calculation's U-value U_ref is given, the sheet warns if |U − U_ref|/U_ref exceeds 2 % (the two calculations then describe different constructions)\n" +
         "Surface factor: f_Rsi = 1 − R_si,f/R_T,f with R_si,f = 0.25 m²K/W by default for an opaque element (conventional, a record; 0.13 for glazing); f_Rsi,min = the largest monthly (θ_si,min − θ_e)/(θ_i − θ_e) with p_sat(θ_si,min) = p_i/φ_crit; PASS when f_Rsi ≥ f_Rsi,min",
         [
             new CalcInputSpec("element", "Element whose rows of the layers table to use (blank = all rows)", CalcInputKind.Text, IsOptional: true, Group: "Construction"),
@@ -58,6 +62,7 @@ public sealed class GlaserCalculator : ICalcCalculator
             new CalcInputSpec("Rsi", "Internal surface resistance R_si", CalcInputKind.Quantity, "m^2*K/W", Default: 0.13, Min: 0.04, Max: 0.25, HardMin: 0.01, HardMax: 1, Group: "Construction"),
             new CalcInputSpec("Rse", "External surface resistance R_se", CalcInputKind.Quantity, "m^2*K/W", Default: 0.04, Min: 0.02, Max: 0.25, HardMin: 0.01, HardMax: 1, Group: "Construction"),
             new CalcInputSpec("Rsi_f", "Internal surface resistance R_si,f for the f_Rsi check (0.25 m²K/W is the conventional value for an opaque element, a record to check against the owner's copy of ISO 13788; 0.13 for glazing)", CalcInputKind.Quantity, "m^2*K/W", Default: 0.25, Min: 0.04, Max: 0.5, HardMin: 0.01, HardMax: 1, Group: "Construction"),
+            new CalcInputSpec("U_ref", "U-value of this wall from the heat-loss calculation (B4), for the consistency check against 1/R_T (blank = not checked)", CalcInputKind.Quantity, "W/(m^2*K)", Min: 0.05, Max: 8, HardMin: 0.01, HardMax: 10, IsOptional: true, Group: "Construction"),
             new CalcInputSpec("theta_int", "Internal air temperature", CalcInputKind.Quantity, "degC", Default: 20, Min: 10, Max: 30, HardMin: 0, HardMax: 40, Group: "Inside"),
             new CalcInputSpec("humidity_mode", "Internal humidity from", CalcInputKind.Choice, Choices: [ConstantRh, MoistureExcess], DefaultChoice: ConstantRh, Group: "Inside"),
             new CalcInputSpec("RH_int", "Internal relative humidity (constant-humidity mode)", CalcInputKind.Quantity, "%", Default: 50, Min: 20, Max: 90, HardMin: 1, HardMax: 100, Group: "Inside"),
@@ -96,6 +101,7 @@ public sealed class GlaserCalculator : ICalcCalculator
             new CalcApplicabilityRule("p-int-saturated", "The internal vapour pressure from the humidity class exceeds saturation at the internal temperature in some month and is limited to it.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("fRsi-not-applicable", "No month has the outside air at least 1 K colder than the inside: f_Rsi,min is taken as 0.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("rsi-f-low", "The internal surface resistance for the surface check is below 0.25 m²K/W, the conventional value for an opaque element (0.13 is for glazing).", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("u-ref-mismatch", "The U-value 1/R_T of the layers differs by more than 2 % from the U-value given by the heat-loss calculation: the two describe different constructions or surface resistances.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("en15026", "A timber or breathable build-up (the flag, or any layer flagged timber or breathable) is outside the Glaser method: use EN 15026 hygrothermal simulation.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -119,6 +125,10 @@ public sealed class GlaserCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (f_Rsi = 1 − R_si/R_T; inverse Magnus for θ_si,min)", null, "The plaster and brick wall with R_si,f = 0.25: R_T,f = 0.25 + 0.03 + 0.26875 + 0.04 = 0.58875, f_Rsi = 1 − 0.25/0.58875 = 0.575372; p_i = 0.5·2336.951 = 1168.476 Pa, p_i/0.8 = 1460.594 Pa, θ_si,min = 12.9098 °C; in the coldest month (2 °C) f_Rsi,min = (12.9098 − 2)/(20 − 2) = 0.590256 > f_Rsi, so the surface check FAILS (utilisation 1.025869) though nothing condenses inside the wall"),
                 [WallVapourOpen(), SeasonalClimate(), Q("theta_int", 20, "degC"), Q("RH_int", 50, "%"), Q("Rsi_f", 0.25, "m^2*K/W")],
                 [new CalcExpectedValue("R_Tf", 0.58875, "m^2*K/W", 1e-9), new CalcExpectedValue("fRsi", 0.5753715498938429, "", 1e-9), new CalcExpectedValue("fRsi_min", 0.5902560168111524, "", 1e-9), new CalcExpectedValue("n_fcrit", 1, "", 1e-9), new CalcExpectedValue("u_f", 1.0258693133507482, "", 1e-9), new CalcExpectedValue("Mc_max", 0, "g/m^2", 1e-9), new CalcExpectedValue("pass", 0, "", 1e-9)]),
+            new CalcTestCase("ka-u-ref-cross-check", "Wall U-value 1/R_T and the cross-check against the heat-loss calculation's U-value",
+                new CalcReferenceSource("Analytic (U = 1/R_T; |U − U_ref|/U_ref)", null, "The plaster and brick wall: R_T = 0.13 + 0.03 + 0.26875 + 0.04 = 0.46875 m²K/W, U = 1/0.46875 = 2.133333 W/m²K; against U_ref = 2.2 W/m²K the difference is |2.133333 − 2.2|/2.2 = 3.0303 %, above the 2 % tolerance, so the sheet warns (the warning is not a check: nothing else changes)"),
+                [WallVapourOpen(), SeasonalClimate(), Q("theta_int", 20, "degC"), Q("RH_int", 40, "%"), Q("U_ref", 2.2, "W/(m^2*K)")],
+                [new CalcExpectedValue("U_wall", 2.1333333333333333, "W/(m^2*K)", 1e-9), new CalcExpectedValue("dU_ref", 0.030303030303030304, "", 1e-9), new CalcExpectedValue("R_T", 0.46875, "m^2*K/W", 1e-9), new CalcExpectedValue("pass", 1, "", 1e-9)]),
             new CalcTestCase("ka-humidity-class", "Moisture excess from two user points: Δv = 5 g/m³ at or below 0 °C, falling linearly to 0 at 20 °C, with the 1.10 margin on Δp",
                 new CalcReferenceSource("Analytic (p_i = p_e + f_Δp·Δv·R_v·(T_i + T_e)/2, f_Δp = 1.10, R_v = 461.5 J/(kg·K); single-interface closed form; clause wording to be checked against the owner's copy of ISO 13788)", null, "The insulated brick wall in the invented seasonal climate with p_i = RH_e·p_sat(θ_e) + 1.10·Δv(θ_e)·461.5·(293.15 + T_e)/2 (January: Δv 4.5 g/m³, Δp = 1.10·4.5e-3·461.5·284.15 = 649.1 Pa); condensation starts in October (row 10), the peak is 5111.052 g/m² in April, 91.744 g/m² is still on the wall after twelve months (September) so the balance FAILS; f_Rsi,min = 0.670474 in January (θ_si,min from p_i/0.8)"),
                 [WallInsulatedBrick(), SeasonalClimate(), Q("theta_int", 20, "degC"), Choice("humidity_mode", MoistureExcess), Q("dv_a", 5, "g/m^3"), Q("theta_a", 0, "degC"), Q("dv_b", 0, "g/m^3"), Q("theta_b", 20, "degC"), CalcInputValue.Of("dp_f", 1.10)],
@@ -443,6 +453,19 @@ public sealed class GlaserCalculator : ICalcCalculator
         }
 
         c.Record("R_T", "R_si + Σ R_j + R_se", $"{F(rsi)} + {F(layers.Sum(l => l.R))} + {F(rse)}", ScalarValue.Of(rTotal, m2kw), "Total thermal resistance", "ISO 13788 cl. 6");
+        c.Record("U_wall", "1/R_T", $"1 / {F(rTotal)}", ScalarValue.Of(1.0 / rTotal, UnitCatalog.Parse("W/(m^2*K)")), "U-value of the wall from the layers and the surface resistances above", "ISO 13788 cl. 6");
+
+        if (c.Has("U_ref"))
+        {
+            c.Input("U_ref");
+            var uRef = c.Si("U_ref");
+            var dU = Math.Abs(1.0 / rTotal - uRef) / uRef;
+            c.Record("dU_ref", "|U − U_ref|/U_ref", $"|{F(1.0 / rTotal)} − {F(uRef)}| / {F(uRef)}", new ScalarValue(dU), "Relative difference between this wall's U-value and the one given by the heat-loss calculation");
+
+            if (dU > UrefTolerance)
+                c.Warn("u-ref-mismatch", $"U_ref: the U-value of these layers ({F(1.0 / rTotal)} W/m²K) differs from the heat-loss calculation's ({F(uRef)} W/m²K) by {F(dU * 100)} %, more than {UrefTolerance * 100:0} %; the two calculations describe different constructions or surface resistances. Make the layers, R_si and R_se agree.");
+        }
+
         c.Record("S_d", "Σ s_d,j", $"{F(layers.Sum(l => l.Sd))} m", ScalarValue.Of(layers.Sum(l => l.Sd), meter), "Total diffusion-equivalent air layer thickness", "ISO 13788 cl. 6");
         c.Record("psat_i", "610.5·exp(17.269·θ/(237.3 + θ))", $"θ = {F(thetaInt)} °C", ScalarValue.Of(satInt, pascal), "Saturation vapour pressure at the internal air temperature (Magnus)", "ISO 13788 cl. 6");
         c.Record("p_ext_m", "RH_e · p_sat(θ_e)", "months 1 … 12 of the climate", VectorValue.Of(pExt, pascal), "Outside vapour pressure by month", "ISO 13788 cl. 6");
@@ -520,6 +543,11 @@ public sealed class GlaserCalculator : ICalcCalculator
             var which = timberLayers.Count > 0 ? $" (layer(s) flagged timber or breathable: {string.Join(", ", timberLayers)})" : string.Empty;
             c.Warn("en15026", $"{(timberLayers.Count > 0 ? "layers" : "breathable")}: a timber or breathable build-up{which} (hygroscopic layers, capillary and liquid transport, moisture storage) is outside the Glaser method; use an EN 15026 hygrothermal simulation for the moisture risk. This result is not a moisture assessment of the build-up.");
         }
+
+        c.Output("U_wall", "U-value of the wall");
+
+        if (c.Has("U_ref"))
+            c.Output("dU_ref", "Difference from the heat-loss calculation's U-value");
 
         foreach (var (symbol, text) in new[] { ("R_T", "Total thermal resistance"), ("S_d", "Total diffusion-equivalent air layer thickness"), ("psat_i", "Saturation vapour pressure at the internal temperature"), ("p_ext_m", "Outside vapour pressure by month"), ("p_int_m", "Inside vapour pressure by month"), ("n_start", "First month of condensation") })
             c.Output(symbol, text);

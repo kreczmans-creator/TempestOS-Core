@@ -1,0 +1,14 @@
+{
+  "schema": "tempest.cad-parameters/1",
+  "cad_version": "Inventor 2025.1",
+  "part": "Bracket-A",
+  "revision": "B",
+  "parameters": [
+    { "name": "plate_w", "value": 40.5, "unit": "mm" },
+    { "name": "plate_t", "value": "6 mm" },
+    { "name": "material", "value": "S275" },
+    { "name": "ribbed", "value": true },
+    { "name": "flange", "expression": "2 * plate_w" },
+    { "name": "force", "value": 12, "unit": "kN", "description": "Design load" }
+  ]
+}

@@ -306,7 +306,7 @@ jobs:
         timeout-minutes: 25
         shell: pwsh
         run: |
-          foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators", "tests/Tempest.Calc.Tests.FluidPower")) {
+          foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators", "tests/Tempest.Calc.Tests.FluidPower", "tests/Tempest.Calc.Tests.Import")) {
             if (-not (Test-Path $project)) { continue }
             dotnet test $project `
               --configuration Release `
@@ -328,7 +328,7 @@ jobs:
         timeout-minutes: 25
         shell: pwsh
         run: |
-          foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators", "tests/Tempest.Calc.Tests.FluidPower")) {
+          foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators", "tests/Tempest.Calc.Tests.FluidPower", "tests/Tempest.Calc.Tests.Import")) {
             if (-not (Test-Path $project)) { continue }
             dotnet test $project `
               --configuration Debug `
@@ -917,6 +917,23 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # Licence check (white-team finding W-B-01, Addendum B §B5): every NuGet
+  # package in any packages.lock.json, direct or transitive, must be listed
+  # in scripts/licence-allowlist.json with an MIT, BSD-2-Clause,
+  # BSD-3-Clause or Apache-2.0 licence, or carry an explicit, reasoned
+  # exception there. Offline and deterministic: it reads only files in the
+  # repository, so it needs no restore, no build and no .NET SDK.
+  licence-check:
+    name: Licence Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check NuGet package licences against the allow-list
+        run: python3 scripts/check-licences.py
+
   # WP 16.5B — Linux/X11 launch smoke test. `TD-116` (a Linux `TypeLoadException`
   # inside Avalonia.FreeDesktop's DBus/X11 IME path, root-caused to a security
   # pin — `Tmds.DBus.Protocol` 0.94.2 — that Avalonia.FreeDesktop 11.2.3
@@ -1173,6 +1190,9 @@ jobs:
   # identical reason: a required check nobody's merge can outrun is the only
   # kind that actually gates anything.
   #
+  # W-B-01: the gate also requires licence-check to succeed, on the same
+  # "red here is red at the gate" terms as dependency-scan.
+  #
   # linux-launch-smoke (WP 16.5B) is deliberately NOT in the needs list:
   # advisory for this release — see the comment above that job for why.
   #
@@ -1193,7 +1213,7 @@ jobs:
   # printed (v0.23.0 CI board G-23).
   gate:
     name: CI Gate
-    needs: [build-and-test, governance-health-check, dependency-scan, branch-name]
+    needs: [build-and-test, governance-health-check, dependency-scan, branch-name, licence-check]
     if: always()
     runs-on: windows-2022
     timeout-minutes: 5
@@ -1224,8 +1244,12 @@ jobs:
             Write-Host "::error::Branch Name did not succeed - the branch (or, for a Claude session branch, the PR title) must carry its version; see that job's log."
             $failed = $true
           }
+          if ("${{ needs.licence-check.result }}" -ne "success") {
+            Write-Host "::error::Licence Check did not succeed - a NuGet package is missing from scripts/licence-allowlist.json or has a licence outside MIT, BSD-2/3-Clause and Apache-2.0; see that job's log."
+            $failed = $true
+          }
           if ($failed) { exit 1 }
           if ("${{ github.event_name }}" -eq "pull_request") {
             Write-Host "Pull request: Debug built in every leg; its tests are not run on a pull request (ADR-0160) and run on the push to main or release/**."
           }
-          Write-Host "All Build & Test configurations, the Governance Health Check and the Dependency Scan succeeded."
+          Write-Host "All Build & Test configurations, the Governance Health Check, the Dependency Scan and the Licence Check succeeded."

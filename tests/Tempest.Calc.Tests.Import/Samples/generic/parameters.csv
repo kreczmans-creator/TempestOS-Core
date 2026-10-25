@@ -1,0 +1,8 @@
+name,value,unit,expression,description
+plate_w,40.5,mm,,Plate width
+plate_t,6 mm,,,Thickness given with its unit in the value
+material,S275,,,A text value
+ribbed,true,,,A yes/no value
+flange,,,2 * plate_w,An expression is kept read-only
+force,12,kN,,
+"Straße ""A""",7,mm,,A quoted name with a Unicode letter

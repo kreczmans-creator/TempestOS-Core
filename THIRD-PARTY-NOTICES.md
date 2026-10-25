@@ -32,6 +32,7 @@ rendering dependency is directly relevant to what this platform ships.
 | [Microsoft.NET.Test.Sdk](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk) | 17.14.1 | MIT |
 | [PDFtoImage](https://www.nuget.org/packages/PDFtoImage) | 4.1.1 | MIT |
 | [Svg.Skia](https://www.nuget.org/packages/Svg.Skia) | 2.0.0.8 | MIT |
+| [Svg.Custom](https://www.nuget.org/packages/Svg.Custom) (transitive, via Svg.Skia) | 2.0.0.8 | MS-PL (owner decision DB-08) |
 | [System.Security.Cryptography.ProtectedData](https://www.nuget.org/packages/System.Security.Cryptography.ProtectedData) | 10.0.11 | MIT |
 | [Tmds.DBus.Protocol](https://www.nuget.org/packages/Tmds.DBus.Protocol) | 0.21.3 | MIT |
 | [Velopack](https://www.nuget.org/packages/Velopack) | 1.2.0 | MIT |

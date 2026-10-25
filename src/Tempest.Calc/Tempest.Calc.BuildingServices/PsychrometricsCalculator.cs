@@ -33,7 +33,7 @@ public sealed class PsychrometricsCalculator : ICalcCalculator
     public const string ProcessMixing = "adiabatic mixing";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.BuildingServices, "Psychrometrics",
+        Id, "1.1.0", CalcDiscipline.BuildingServices, "Psychrometrics",
         "The state of moist air (humidity ratio, relative humidity, dew point, wet-bulb, enthalpy, specific volume, density) from dry-bulb and one other property at a stated pressure or altitude, and one air-handling process from that state with its heat and moisture balance: sensible heating or cooling, cooling with dehumidification, steam humidification, adiabatic humidification, or mixing with a second stream.",
         "p_ws from Hyland–Wexler (over water ≥ 0 °C, over ice below); W = 0.621945 p_w/(p − p_w); φ = p_w/p_ws; h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da; v = 0.287042 (t + 273.15)(1 + 1.607858 W)/p; dew point and wet-bulb by bisection (wet-bulb from the adiabatic-saturation relation). Processes on a dry-air mass flow: sensible Q = ṁ (h₂ − h₁) at constant W; cooling/dehumidification Q_total = ṁ(h₁ − h₂) − ṁ_w h_w with condensate ṁ_w = ṁ(W₁ − W₂); steam h₂ = h₁ + (W₂ − W₁) h_steam; adiabatic humidification at constant h; mixing by mass-weighted W and h.",
         [
@@ -280,13 +280,14 @@ public sealed class PsychrometricsCalculator : ICalcCalculator
         c.Record($"t_{k}_out", $"dry-bulb ({label})", "", ScalarValue.Of(s.T, degC), $"Dry-bulb, state {k}");
         c.Record($"W_{k}", "0.621945 p_w/(p − p_w)", $"{F(s.Pw)} / ({F(s.P)} − {F(s.Pw)})", new ScalarValue(s.W * 1000), $"Humidity ratio, state {k} (g/kg dry air)");
         c.Record($"RH_{k}", "p_w / p_ws", $"{F(s.Pw)} / {F(s.Pws)}", new ScalarValue(s.RelativeHumidity * 100), $"Relative humidity, state {k} (%)");
+        c.Record($"phi_{k}", "p_w / p_ws", $"{F(s.Pw)} / {F(s.Pws)}", ScalarValue.Of(s.RelativeHumidity * 100, "%"), $"Relative humidity, state {k}, as a percentage quantity (the same value as RH_{k}; a plain-number output cannot be linked to a percentage input)");
         c.Record($"t_dp_{k}", "p_ws(t_dp) = p_w, bisection", $"p_w = {F(s.Pw)} kPa", ScalarValue.Of(s.DewPoint, degC), $"Dew point, state {k}");
         c.Record($"t_wb_{k}", "adiabatic-saturation relation, bisection", $"t = {F(s.T)}, W = {F(s.W)}", ScalarValue.Of(s.WetBulb, degC), $"Wet-bulb, state {k}");
         c.Record($"h_{k}", "1.006 t + W (2501 + 1.86 t)", $"1.006 × {F(s.T)} + {F(s.W)} × (2501 + 1.86 × {F(s.T)})", new ScalarValue(s.Enthalpy), $"Enthalpy, state {k} (kJ/kg dry air)");
         c.Record($"v_{k}", "0.287042 (t + 273.15)(1 + 1.607858 W)/p", $"p = {F(s.P)} kPa", ScalarValue.Of(s.SpecificVolume, "m^3/kg"), $"Specific volume, state {k} (per kg dry air)");
         c.Record($"rho_{k}", "(1 + W)/v", "", ScalarValue.Of(s.Density, "kg/m^3"), $"Moist-air density, state {k}");
 
-        foreach (var (symbol, text) in new[] { ($"t_{k}_out", $"Dry-bulb {k}"), ($"p_ws_{k}", $"p_ws {k}"), ($"p_w_{k}", $"p_w {k}"), ($"W_{k}", $"W {k} (g/kg)"), ($"RH_{k}", $"RH {k} (%)"), ($"t_dp_{k}", $"Dew point {k}"), ($"t_wb_{k}", $"Wet-bulb {k}"), ($"h_{k}", $"h {k} (kJ/kg)"), ($"v_{k}", $"v {k}"), ($"rho_{k}", $"ρ {k}") })
+        foreach (var (symbol, text) in new[] { ($"t_{k}_out", $"Dry-bulb {k}"), ($"p_ws_{k}", $"p_ws {k}"), ($"p_w_{k}", $"p_w {k}"), ($"W_{k}", $"W {k} (g/kg)"), ($"RH_{k}", $"RH {k} (%)"), ($"phi_{k}", $"φ {k} (RH as a % quantity, for linking)"), ($"t_dp_{k}", $"Dew point {k}"), ($"t_wb_{k}", $"Wet-bulb {k}"), ($"h_{k}", $"h {k} (kJ/kg)"), ($"v_{k}", $"v {k}"), ($"rho_{k}", $"ρ {k}") })
             c.Output(symbol, text);
     }
 

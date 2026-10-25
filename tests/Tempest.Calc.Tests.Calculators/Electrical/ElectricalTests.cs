@@ -170,8 +170,8 @@ public sealed class ElectricalTests
         Assert.Contains(ports, p => p is { Symbol: "P_total", Unit: "W" });
 
         // Every declared port is produced by a run (the fan duty only when a fan curve is given).
-        Assert.All(ports.Where(p => p.Symbol != "V_duty"), p => Assert.NotNull(r.FindOutput(p.Symbol)));
-        Assert.Equal("1.2.0", Enclosure.Template.Version);
+        Assert.All(ports.Where(p => p.Symbol is not ("V_duty" or "dp_seal" or "F_seal")), p => Assert.NotNull(r.FindOutput(p.Symbol)));
+        Assert.Equal("1.4.0", Enclosure.Template.Version);
     }
 
     [Fact]
@@ -181,4 +181,61 @@ public sealed class ElectricalTests
         Assert.Equal(50 + 273.15, r.OutputSi("T_max"), 1e-9);
         Assert.Contains(Enclosure.Template.OutputPorts!, p => p is { Symbol: "T_max", Unit: "degC" });
     }
+
+    [Fact]
+    public void A_Sealed_Enclosure_Offers_The_Pressure_Difference_Of_Its_Air_Warming_At_Constant_Volume()
+    {
+        Assert.Contains(Enclosure.Template.OutputPorts!, p => p is { Symbol: "dp_seal", Unit: "kPa" });
+
+        // Vented (no T_seal): no pressure difference is offered.
+        var vented = CalcRunner.Run(Enclosure, With(Enclosure, 0));
+        Assert.Null(vented.FindOutput("dp_seal"));
+
+        // Sealed at 25 °C: Δp = p_site·(T_int/T_seal − 1), the site pressure falling with altitude; nothing else on the sheet moves.
+        var sealed25 = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_seal", 25, "degC")));
+        var tInt = sealed25.OutputSi("T_int");
+        Assert.Equal(101325 * (tInt / 298.15 - 1) / 1e3, sealed25.OutputSi("dp_seal") / 1e3, 1e-9);
+        Assert.Equal(vented.OutputSi("T_int"), tInt, 1e-12);
+        Assert.Equal(vented.OutputSi("P_cool"), sealed25.OutputSi("P_cool"), 1e-12);
+        var high = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_seal", 25, "degC"), CalcInputValue.Quantity("altitude", 2000, "m")));
+        // ISA at 2000 m: 79.4951 kPa (79495.12403775351 Pa), not the 101.325 kPa of sea level.
+        Assert.Equal(79495.12403775351, PressureAt(2000), 1e-6);
+        Assert.Equal(79495.12403775351 * (tInt / 298.15 - 1), high.OutputSi("dp_seal"), 1e-6);
+
+        // Sealed warmer than it runs: a suction, shown as its magnitude with a notice.
+        var cold = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_seal", 90, "degC")));
+        Assert.Equal(101325 * (1 - tInt / 363.15), cold.OutputSi("dp_seal"), 1e-6);
+        Assert.Contains(cold.Notices, n => n.RuleId == "seal-suction");
+        Assert.DoesNotContain(sealed25.Notices, n => n.RuleId == "seal-suction");
+    }
+
+    [Fact]
+    public void A_Breather_Caps_The_Sealed_Pressure_And_The_Cover_Force_Follows()
+    {
+        var gas = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_seal", 20, "degC")));
+        var gasPa = gas.OutputSi("dp_seal");
+        Assert.Equal(21722.534962994757, gasPa, 1e-6);
+        Assert.Equal(gasPa, gas.OutputSi("dp_gas"), 1e-9);
+        Assert.DoesNotContain(gas.Notices, n => n.RuleId == "seal-relief");
+
+        // A 10 kPa breather caps it (notice); a 30 kPa one does not. The force is the capped pressure on the cover area.
+        var capped = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_seal", 20, "degC"), CalcInputValue.Quantity("dp_relief", 10, "kPa"), CalcInputValue.Quantity("A_cover", 0.3, "m^2")));
+        Assert.Equal(10000, capped.OutputSi("dp_seal"), 1e-9);
+        Assert.Equal(gasPa, capped.OutputSi("dp_gas"), 1e-9);
+        Assert.Equal(3000, capped.OutputSi("F_seal"), 1e-9);
+        Assert.Contains(capped.Notices, n => n.RuleId == "seal-relief");
+
+        var loose = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_seal", 20, "degC"), CalcInputValue.Quantity("dp_relief", 30, "kPa"), CalcInputValue.Quantity("A_cover", 0.3, "m^2")));
+        Assert.Equal(gasPa, loose.OutputSi("dp_seal"), 1e-9);
+        Assert.Equal(6516.760488898428, loose.OutputSi("F_seal"), 1e-6);
+        Assert.DoesNotContain(loose.Notices, n => n.RuleId == "seal-relief");
+
+        // Without a sealing temperature the enclosure is vented: a relief pressure and a cover area are not used, with a notice, and nothing is offered.
+        var vented = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("dp_relief", 10, "kPa"), CalcInputValue.Quantity("A_cover", 0.3, "m^2")));
+        Assert.Null(vented.FindOutput("dp_seal"));
+        Assert.Null(vented.FindOutput("F_seal"));
+        Assert.Contains(vented.Notices, n => n.RuleId == "seal-unused");
+    }
+
+    private static double PressureAt(double z) => EnclosureHeatCalculator.PressureAtAltitude(z);
 }

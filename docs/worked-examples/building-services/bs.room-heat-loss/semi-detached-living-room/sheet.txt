@@ -218,7 +218,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   WARNING input.f_add: f_add (Additional allowance on the room load (CIBSE DHDG method only)) was not entered; the template default 0 % is used.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.1.0
+  Template: bs.room-heat-loss@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 6/6

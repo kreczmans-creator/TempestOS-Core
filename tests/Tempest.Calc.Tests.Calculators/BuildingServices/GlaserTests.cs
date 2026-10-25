@@ -428,4 +428,30 @@ public sealed class GlaserTests
         var vap = result.Series.First(s => s.Name == "Vapour pressure").Points[1].Y;
         Assert.Equal(sat, vap, 9);
     }
+
+    [Fact]
+    public void The_Wall_U_Value_Is_Offered_And_Checked_Against_The_Heat_Loss_Calculations_U_Value()
+    {
+        // The plaster and brick wall: R_T = 0.13 + 0.03 + 0.26875 + 0.04 = 0.46875 m²K/W, U = 2.133333 W/m²K (hand calculation).
+        var wall = GlaserCalculator.Layers(("", "Plaster", 15, 0.5, 10), ("", "Brick", 215, 0.8, 8));
+        var plain = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("theta_int", 20, "degC")).With(Q("RH_int", 40, "%")));
+        Assert.Equal(1 / 0.46875, plain.OutputSi("U_wall"), 12);
+        Assert.Null(plain.FindOutput("dU_ref"));
+        Assert.DoesNotContain(plain.Warnings, w => w.RuleId == "u-ref-mismatch");
+
+        // Within 2 % the two U-values agree; 3.03 % apart the sheet warns, and the difference is reported.
+        var near = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("theta_int", 20, "degC")).With(Q("RH_int", 40, "%")).With(Q("U_ref", 2.14, "W/(m^2*K)")));
+        Assert.Equal(Math.Abs(1 / 0.46875 - 2.14) / 2.14, near.OutputSi("dU_ref"), 12);
+        Assert.DoesNotContain(near.Warnings, w => w.RuleId == "u-ref-mismatch");
+
+        var far = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("theta_int", 20, "degC")).With(Q("RH_int", 40, "%")).With(Q("U_ref", 2.2, "W/(m^2*K)")));
+        Assert.Equal(Math.Abs(1 / 0.46875 - 2.2) / 2.2, far.OutputSi("dU_ref"), 12);
+        Assert.Equal(0.030303030303030304, far.OutputSi("dU_ref"), 12);
+        var warning = Assert.Single(far.Warnings, w => w.RuleId == "u-ref-mismatch");
+        Assert.StartsWith("U_ref:", warning.Message, StringComparison.Ordinal);
+
+        // The reading changes nothing else: the checks and the condensate are those of the sheet without it.
+        Assert.Equal(plain.OutputSi("Mc_max"), far.OutputSi("Mc_max"), 12);
+        Assert.Equal(plain.OutputSi("pass"), far.OutputSi("pass"), 12);
+    }
 }

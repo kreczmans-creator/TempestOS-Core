@@ -131,7 +131,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   WARNING record: Tabulated values not taken from a reference record: rho_20, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let (Device time–current points). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.fault-protection@1.1.0
+  Template: elec.fault-protection@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

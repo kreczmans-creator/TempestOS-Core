@@ -158,6 +158,39 @@ public static class GasLaw
     }
 
     /// <summary>
+    /// The gas volume V₀ of an accumulator whose gas is charged to <paramref name="highPressure"/> by one process and discharged to
+    /// <paramref name="lowPressure"/> by another: charged from the pre-charge state at <paramref name="chargePressure"/> with exponent
+    /// <paramref name="chargeExponent"/> (V₂ = V₀·(p₀/p₂)^(1/n_c)), then discharged with <paramref name="dischargeExponent"/>
+    /// (V₁ = V₂·(p₂/p₁)^(1/n_d)), so that <c>ΔV = V₁ − V₂</c> and
+    /// <c>V₀ = ΔV / [(p₀/p₂)^(1/n_c) · ((p₂/p₁)^(1/n_d) − 1)]</c>. A held accumulator is charged slowly (<c>n_c</c> = <see cref="Isothermal"/>,
+    /// V₂ = V₀·p₀/p₂) and discharged fast (<c>n_d</c> = κ), which gives <c>V₀ = ΔV·(p₂/p₀) / [(p₂/p₁)^(1/κ) − 1]</c>. With
+    /// <c>n_c</c> = <c>n_d</c> = n it is <see cref="ChargeVolume"/>. All pressures are absolute; the same rules as <see cref="ChargeVolume"/> apply
+    /// (<paramref name="chargePressure"/> not above <paramref name="lowPressure"/>, <paramref name="lowPressure"/> &lt; <paramref name="highPressure"/>).
+    /// </summary>
+    public static double ChargeVolumeSplit(double displaced, double chargePressure, double lowPressure, double highPressure, double chargeExponent, double dischargeExponent)
+    {
+        RequireFinite(displaced, "displaced volume");
+        RequirePressure(chargePressure, "pre-charge pressure");
+        RequirePressure(lowPressure, "low pressure");
+        RequirePressure(highPressure, "high pressure");
+
+        if (!(lowPressure < highPressure))
+            throw new CalcEvaluationException("The low pressure must be below the high pressure.");
+
+        if (chargePressure > lowPressure)
+            throw new CalcEvaluationException($"The pre-charge pressure ({Show(chargePressure)}) must not be above the low working pressure ({Show(lowPressure)}).");
+
+        // V₂/V₀ from the charge process, V₁/V₂ − 1 from the discharge process.
+        var heldFraction = Ratio(chargePressure / highPressure, Polytropic(chargeExponent));
+        var denominator = heldFraction * (Ratio(highPressure / lowPressure, Polytropic(dischargeExponent)) - 1.0);
+
+        if (!(denominator > 0.0))
+            throw new CalcEvaluationException("The pressures leave no usable gas volume between them.");
+
+        return displaced / denominator;
+    }
+
+    /// <summary>
     /// The gas volume at <paramref name="lowPressure"/> that displaces <paramref name="displaced"/> when compressed to
     /// <paramref name="highPressure"/>: <c>V = ΔV / [1 − (p₁/p₂)^(1/n)]</c>. With n = 1 and absolute pressures this is the expansion
     /// vessel of a sealed system: <c>V_e = ΔV / [1 − (p_i + 1)/(p_f + 1)]</c> (B6).

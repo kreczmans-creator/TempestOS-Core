@@ -113,3 +113,51 @@ Method: STRIDE over the new trust boundaries, then the §7 scopes re-checked for
 | SEC-A-10 | Low | `CalcInstanceService.Records.cs:181` (citation not escaped), `:26` (`EnteredBy` taken from the caller), `CalcDataRecord.cs:61-82`, `CalcInstanceStore.cs:229-240,257-263` | Record API hardening (library only; the Desktop does not call `ExportRecordAsync`). The CSV header line embeds `Citation` unescaped, so an `Edition` of `x,=cmd|' /C calc'!A0` produces a formula cell. `EnteredBy` can be set by the caller. Records have no size cap (cells per row and cell text are unbounded), and `ListRecordsAsync` deserialises every revision of every record on each link-state refresh. | Escape the header through `Csv()` or drop it. Always set `EnteredBy` from the principal. Cap the serialised record at `MaxDocumentBytes` and cap cell text. List only the latest revision of each record. | R-A-16 | Open |
 
 **Gate:** three High findings (SEC-A-01, -02, -03) are open, so §A9 "no open Critical/High" does not hold until they are fixed or justified. Seven Medium and Low findings are logged with fixes. Attacks that held are listed in `red-team.md` § Addendum A.
+
+## Addendum B
+
+Scope: the Addendum B delta to 3e4ca602 (`v0.26.0/addB-4-workflows`). That covers the W1 CAD-parameter and W2 scan-deviation importers (`Tempest.Calc.Import`: `BoundedInputReader`, `ImportPath`, `FileKind`, `CsvReader`/`CsvSafeWriter`, `XlsxReader`, `LocaleNumber`, `Cad/*`, `Scan/*`, `Mapping/*`, ADR-0171/0172), their Desktop panels and view models, the W3 material library and its export lock (`MaterialLibrary`, `MaterialProperties`, `CalcInstanceService.Materials/Records`, `FinishSheetAsync`), and the numeric limits of the Addendum B calculators (M7, M8, M9, S7, S9, B7, B8, B9, E7, E8, E9, F1, F2, F3; M1 as the W2 target). S8 lifting was reviewed separately.
+
+Method: the fixes from the B-4 reviews (W1, W2, M9) were re-verified in code and, where a probe could show it, by a PoC. STRIDE was then run over the new boundaries, every §B8 attack class was driven against the parsers with crafted files, the licensed-source lock was traced through every place a material value leaves, and every numeric input and table of the Addendum B calculators was driven to its hard limits with timing. PoCs ran as throwaway xUnit tests (`red-team.md` § Addendum B) and were removed afterwards.
+
+### Trust boundaries (new or changed)
+
+| Boundary | What crosses it | Control in the delta |
+|---|---|---|
+| CAD file → W1 parser → mapping → inputs | `.exp`, Creo and SolidWorks text, `.xlsx`, generic and Onshape CSV and JSON, up to 5 MB | Bounded streaming reader (5 MB, strict UTF-8, control characters refused, timeout and cancel). Hand-written xlsx reader: DTD prohibited, zip entry, total, ratio and actual-byte caps, depth 64, one sheet read. Strict locale numbers. Expressions never evaluated. Dimension and angle-factor checks in mapping. `CadImportVerifier` on every input update. **Gaps:** a CSV decimal comma is split silently when the header ends in a delimiter (SEC-B-01). One XML start tag is unbounded (SEC-B-03). |
+| Scan table → W2 analysis → M1/M2/F3 | CSV, text and xlsx, up to 64 files and 20 MB | The same primitives. Ragged-row, blank-header, split-decimal and whole-number checks. O(n) statistics under the budget. Duplicate files refused. `ScanImportVerifier`. **Gap:** SEC-B-03. |
+| Material record → inputs → sheet and exports | E, G, ν, ρ, α, λ, f_y, f_u, R_m(d), permissible strains, `Es_curve` and `mu_pairs` tables, temperature tables | A per-value source and licence. One licensed value licenses the record. A pin in the provenance. Clipboard CSV, linked values and table rows withheld. Material and record export refused for a licensed record. **Gap:** licence is judged per revision (SEC-B-02). |
+| Inputs → calculators | Numbers, tables | `HardMin`/`HardMax` and `MaxRows` enforced by `CalcInputValidator`. Internal caps: S9 Navier 1024 terms and Ritz 30, M9 3600 steps and 24 cam segments, F3 100 000 samples. |
+
+### STRIDE
+
+| Threat | Where | Finding | Status |
+|---|---|---|---|
+| Spoofing | Import provenance | CAD and scan provenance are verified against the import record on every update, and cannot be picked by hand. | Closed |
+| Tampering | W1 CSV numbers | A decimal comma split by a comma delimiter is still read as a whole number when the header ends in a delimiter or a trailing column is omitted (SEC-B-01). An underflowing exponent reads as 0 (SEC-B-04). | Fixed (67af5ac7 + eb02ffb4; 1dd76d2f + 3a143b15) |
+| Repudiation | Imports | The file SHA-256, the profile id@version and the import time are in the provenance and the record. | Closed |
+| Information disclosure | Licensed materials | Every export path withholds or refuses a licensed material. A material licensed only from a later revision leaves through its earlier revision (SEC-B-02). | Fixed (051647fb) |
+| Denial of service | xlsx reader | One element with millions of attributes: about 0.5 GB and several seconds past the timeout and Cancel (SEC-B-03). All calculators are bounded (worst case F3 at 100 000 samples: 0.6 s). | Fixed (75a2d66d) |
+| Elevation of privilege | Import | No formula, macro or expression is evaluated. External links and embedded objects are ignored. No new dependency. | No new surface |
+
+### §7 scopes on the delta
+
+| # | Scope | Result |
+|---|---|---|
+| 1 | Input handling | 5 MB, strict UTF-8, row, column, field, cell, parameter and feature caps, depth 64, ratio 100, a 64 MB expanded total, actual bytes counted. Gaps: SEC-B-01, SEC-B-03, SEC-B-04. |
+| 2 | Template and sheet text | Imported text is cleaned (markup, links, format and bidi characters). The sheet renderer strips format characters. |
+| 3 | SQLite | New `Calc.CadImports`/`ScanImports` on the instance (capped at 20 records) and profile collections, through the parameterised API. |
+| 4–5 | Engine and numeric DoS | Every Addendum B calculator was driven to its hard limits and its table caps: the worst case is 0.58 s (F3, 100 000 samples) and everything else is under 0.25 s. |
+| 6 | Plugins | None. |
+| 7 | Dependencies | None added. xlsx is read with `System.IO.Compression` and `XmlReader`, with no ClosedXML (ADR-0171). |
+| 8 | Secrets and PII | None. The seed materials are generic and indicative. |
+| 9 | Supply chain | No vendored code. The samples are invented and labelled so. |
+
+### Findings
+
+| ID | Sev | Location | Description | Proposed fix | PoC | Status |
+|---|---|---|---|---|---|---|
+| SEC-B-01 | Medium | `Cad/TableParsers.cs:327,355`; `Csv.cs:150-185` | W1 CSV still splits a decimal comma or a thousands separator silently when the header ends in a delimiter (`name,value,` with `L,12,5` gives 12; Point with `P,1,250` gives 1), or when an optional trailing column is left out (`name,value,description` with `L,12,5` gives 12). The delimiter is detected as `,` even when a decimal comma is declared. W2 has the full set of checks (`ScanImporter.cs:373-404,786`); W1 has only the row-width one. | Port W2's blank-header and split-decimal rules to `ParseCsv`, and never take `,` as the delimiter under a declared decimal comma. | R-B-01 | Fixed in 67af5ac7 (`AddendumBSecurityRegressionTests.SEC_B_01_A_Split_Decimal_Is_Refused_Not_Read_As_A_Whole_Number`, `SEC_B_01_An_Ambiguous_Whole_Number_File_Is_Blocked_Until_Corrected`, `SEC_B_01_Honest_Files_Are_Still_Read_Without_A_Block`); round 2 eb02ffb4 (`P_B_01_Under_A_Decimal_Comma_An_Unquoted_Number_With_A_Comma_Delimiter_Is_Refused`, `P_B_01_Under_A_Decimal_Point_The_Same_Shapes_Are_Blocked_Not_Read_Silently`, `P_B_01_Quoted_Semicolon_And_Tab_Files_Are_Still_Read_Under_A_Decimal_Comma`); Purple: Verified at 134ca7bc |
+| SEC-B-02 | Medium | `CalcInstanceService.Records.cs:345-354,357-365`; `MaterialLibrary.cs:358-368`; `CalcInstanceService.cs:985-990` | Licence is judged per revision. When revision 2 of a material (or any record) is flagged licensed to correct a slip, revision 1 holds the same values unlocked. The clipboard CSV of every calculation pinned to rev 1, its draft and preview sheet (`Es_pts` rows), links from it, and `ExportCsvAsync`/`ExportJsonAsync`/`ExportRecordAsync(id, 1)` all release them. | Treat a record as licensed when the pinned revision or the latest revision is licensed, in `LicensedRecordPinAsync`, `ExportableAsync` and `ExportRecordAsync`. | R-B-02 | Fixed in 051647fb (`MaterialLibraryTests.SEC_B_02_A_Material_Licensed_In_A_Later_Revision_Releases_No_Value_Through_An_Earlier_One`, `SEC_B_02_A_Material_That_Was_Never_Licensed_Still_Exports_Every_Revision`); Purple: Verified |
+| SEC-B-03 | Medium | `XlsxReader.cs:352-364,507-512` (budget per node); `CadImportViewModel.cs:333,430`; `ScanImportViewModel.cs:382,488` | One `<c>` with 1.5 M attributes, in a 3.5 MB `.xlsx`, parses inside a single `XmlReader.Read()`: 474 MB peak, 4.3–4.7 s with a 1 s budget and a 1 s cancel, and then accepted. Desktop abandons the task on Cancel (`WaitAsync`) but the work continues, so re-previews stack up. | Refuse a start tag longer than 64 KB in `CountingLimitStream` (count bytes since `<`). | R-B-03 | Fixed in 75a2d66d (`AddendumBSecurityRegressionTests.SEC_B_03_A_Start_Tag_With_Millions_Of_Attributes_Is_Refused_Fast_Not_Parsed_In_One_Uninterruptible_Read`, `SEC_B_03_A_Tag_Just_Over_The_Cap_Is_Refused_And_One_Just_Under_It_Is_Read`, `SEC_B_03_Long_Text_Comments_And_Attribute_Values_Are_Not_Mistaken_For_Tags`, `SEC_B_03_Cancel_Is_Honoured_While_The_Reader_Pulls_Bytes_Of_One_Tag`); Purple: Verified |
+| SEC-B-04 | Low | `LocaleNumber.cs:156` | `1e-400` is read as 0 with no notice. | Refuse a non-zero mantissa that underflows to 0. | R-B-04 | Fixed in 1dd76d2f (`AddendumBSecurityRegressionTests.SEC_B_04_A_Non_Zero_Literal_That_Underflows_To_Zero_Is_Refused_Like_An_Overflow`, `SEC_B_04_Zero_And_Representable_Small_Numbers_Are_Still_Read`, `SEC_B_04_An_Underflowing_Value_In_A_Cad_Csv_Is_Not_Imported_As_A_Number`); round 2 3a143b15 (`P_B_02_A_Workbook_Cell_That_Underflows_To_Zero_Is_Refused`, `P_B_02_A_Json_Number_That_Underflows_To_Zero_Is_Refused`, with the two honest-value tests); Purple: Verified at 134ca7bc |

@@ -20,6 +20,9 @@ public sealed class CylinderCalculator : ICalcCalculator
 {
     public const string Id = "fp.cylinder";
 
+    /// <summary>The flow the sheet opens on, L/min; a flow still at it beside a required extend speed is not warned about.</summary>
+    public const double DefaultFlowLpm = 36;
+
     public const string Standard = "Standard";
     public const string Regenerative = "Regenerative extend";
 
@@ -35,11 +38,12 @@ public sealed class CylinderCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.FluidPower, "Cylinder and actuator circuit",
+        Id, "1.3.0", CalcDiscipline.FluidPower, "Cylinder and actuator circuit",
         "A double-acting hydraulic cylinder in its circuit: the bore, rod and annulus areas; the force and speed on the extend and the retract stroke with mechanical and volumetric efficiency and an optional back pressure, or with the regenerative extend connection; the swept volume and the cycle time; the pump delivery, shaft power, torque and speed; a hydraulic motor's torque; the velocity in the suction, pressure and return lines against your own limits and the smallest listed hose or pipe bore that meets them; a sharp orifice's flow for flow-control screening; and a screening check of the rod against buckling (Euler above the transition slenderness, Johnson parabola below it). " + ScreeningLabel + ". Not a cylinder design to a standard: the limits, the hose sizes, the mounting factor and the material properties are your records.",
         "Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a\n" +
         "Force: F_ext = (p·A_b − p_back·A_a)·η_m, F_ret = (p·A_a − p_back·A_b)·η_m; regenerative extend F_ext = p·A_r·η_m\n" +
         "Speed and time: v_ext = Q·η_vc/A_b (regenerative: A_r), v_ret = Q·η_vc/A_a; t = stroke/v; t_cycle = t_ext + t_ret + t_dwell\n" +
+        "Required speed (optional): when v_req is given it gives the flow, Q = v_req·A_b/η_vc (regenerative: A_r), and replaces the entered Q; the flow must lie within 0.1 to 2000 L/min\n" +
         "Swept volume: ΔV_ext = A_b·stroke (regenerative: A_r·stroke), ΔV_ret = A_a·stroke; ΔV = the larger\n" +
         "Pump: Q_p = V_g·n·η_vp; P = p·Q_p/η_tp; T = P/ω; displacement needed V_g,req = Q/(n·η_vp)\n" +
         "Hydraulic motor: T = Δp·V_g/(2π)·η_hm (V_g per revolution)\n" +
@@ -48,9 +52,10 @@ public sealed class CylinderCalculator : ICalcCalculator
         "Rod buckling (screening): L_eff = K·(stroke + L_add), r = d_r/4, λ = L_eff/r, λ_c = π·√(2E/f_y); Euler F_cr = π²·E·I/L_eff² for λ > λ_c, Johnson F_cr = A_r·f_y·[1 − f_y·λ²/(4π²E)] for λ ≤ λ_c; load F_b = max(F_push, F_stall) with F_stall = p·A_b (the stalled cylinder at the supply pressure: no flow, so no back pressure and no friction loss; in the regenerative extend too, since the standard connection can always be selected); utilisation u = F_b·S_f/F_cr",
         [
             new CalcInputSpec("mode", "Extend connection", CalcInputKind.Choice, Choices: [Standard, Regenerative], DefaultChoice: Standard, Group: "Duty"),
-            new CalcInputSpec("p", "Supply pressure at the cylinder and the pump (gauge)", CalcInputKind.Quantity, "bar", Default: 160, Min: 1, Max: 700, HardMin: 1, HardMax: 700, Group: "Duty"),
-            new CalcInputSpec("p_back", "Back pressure on the discharge side (standard connection)", CalcInputKind.Quantity, "bar", Default: 0, Min: 0, Max: 700, HardMin: 0, HardMax: 700, Group: "Duty"),
-            new CalcInputSpec("Q", "Flow into the cylinder", CalcInputKind.Quantity, "L/min", Default: 36, Min: 0.1, Max: 2000, HardMin: 0.1, HardMax: 2000, Group: "Duty"),
+            new CalcInputSpec("p", "Supply pressure at the cylinder and the pump (gauge)", CalcInputKind.Quantity, "bar", Default: 160, Min: 1, Max: 700, HardMin: 1, HardMax: 700, Group: "Duty", PressureBasis: CalcInputSpec.BasisGauge),
+            new CalcInputSpec("p_back", "Back pressure on the discharge side (standard connection, gauge)", CalcInputKind.Quantity, "bar", Default: 0, Min: 0, Max: 700, HardMin: 0, HardMax: 700, Group: "Duty", PressureBasis: CalcInputSpec.BasisGauge),
+            new CalcInputSpec("Q", "Flow into the cylinder (blank when a required extend speed gives it)", CalcInputKind.Quantity, "L/min", Default: DefaultFlowLpm, Min: 0.1, Max: 2000, HardMin: 0.1, HardMax: 2000, IsOptional: true, Group: "Duty"),
+            new CalcInputSpec("v_req", "Required extend speed (gives the flow Q = v·A/η_vc and replaces Q; links M9 output_motion as a kinematic proxy: a cylinder-actuated linkage runs at about constant cylinder speed)", CalcInputKind.Quantity, "mm/s", Min: 0.1, Max: 10000, HardMin: 0.1, HardMax: 10000, IsOptional: true, Group: "Duty"),
             new CalcInputSpec("rho", "Fluid density", CalcInputKind.Quantity, "kg/m^3", Default: 870, Min: 700, Max: 1300, HardMin: 700, HardMax: 1300, Group: "Duty"),
             new CalcInputSpec("F_push", "Load to push on the extend stroke (compresses the rod)", CalcInputKind.Quantity, "kN", Default: 80, Min: 0, Max: 15000, HardMin: 0, HardMax: 15000, Group: "Load"),
             new CalcInputSpec("F_pull", "Load to pull on the retract stroke", CalcInputKind.Quantity, "kN", Default: 40, Min: 0, Max: 15000, HardMin: 0, HardMax: 15000, Group: "Load"),
@@ -97,6 +102,8 @@ public sealed class CylinderCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("rod", "The rod must be smaller than the bore.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("flow", "A flow into the cylinder or a required extend speed is needed, and the flow the speed needs must lie within 0.1 to 2000 L/min.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("v-req-q", "A flow other than the sheet's opening 36 L/min is entered as well as a required extend speed: the flow from the speed is used and Q ignored.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("force", "The back pressure must leave a net force on both strokes.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("pump", "The pump displacement and speed are entered together, and the total efficiency cannot exceed the volumetric efficiency.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("motor", "The motor displacement and pressure drop are entered together.", CalcNoticeSeverity.Block),
@@ -129,6 +136,10 @@ public sealed class CylinderCalculator : ICalcCalculator
                 [CalcInputValue.Choice("mode", Standard), CalcInputValue.Quantity("p", 100, "bar"), CalcInputValue.Quantity("p_back", 0, "bar"), CalcInputValue.Quantity("Q", 47.1238898038469, "L/min"), CalcInputValue.Quantity("rho", 870, "kg/m^3"), CalcInputValue.Quantity("F_push", 80, "kN"), CalcInputValue.Quantity("F_pull", 40, "kN"), CalcInputValue.Quantity("D", 100, "mm"), CalcInputValue.Quantity("d_r", 56, "mm"), CalcInputValue.Quantity("stroke", 400, "mm"), CalcInputValue.Of("eta_m", 1), CalcInputValue.Of("eta_vc", 1), CalcInputValue.Quantity("t_dwell", 0, "s"), CalcInputValue.Of("K_m", 1), CalcInputValue.Quantity("L_add", 100, "mm"), CalcInputValue.Quantity("E", 210, "GPa"), CalcInputValue.Quantity("f_y", 500, "MPa"), CalcInputValue.Of("S_f", 3.5), CalcInputValue.Of("eta_vp", 0.95), CalcInputValue.Of("eta_tp", 0.88), CalcInputValue.Of("eta_hm", 0.9), CalcInputValue.Quantity("d_suc", 40, "mm"), CalcInputValue.Quantity("d_prs", 16, "mm"), CalcInputValue.Quantity("d_ret", 25, "mm"), CalcInputValue.Quantity("v_suc_max", 1.2, "m/s"), CalcInputValue.Quantity("v_prs_max", 5, "m/s"), CalcInputValue.Quantity("v_ret_max", 3, "m/s"), CalcInputValue.Of("C_d", 0.62)],
                 [new CalcExpectedValue("A_a", 53.90972993560086, "cm^2", 1e-9), new CalcExpectedValue("F_ext", 78.53981633974483, "kN", 1e-9), new CalcExpectedValue("F_ret", 53.90972993560086, "kN", 1e-9), new CalcExpectedValue("v_ext", 99.99999999999999, "mm/s", 1e-9), new CalcExpectedValue("t_ext", 4.000000000000001, "s", 1e-9), new CalcExpectedValue("v_ret", 145.68764568764567, "mm/s", 1e-9), new CalcExpectedValue("t_ret", 2.7456000000000005, "s", 1e-9), new CalcExpectedValue("dV", 3.1415926535897936, "L", 1e-9)]),
 
+            new CalcTestCase("ka-required-speed", "Lossless cylinder driven at a required extend speed: Q = v·A_b exactly (analytic)",
+                new CalcReferenceSource("Analytic (η = 1: Q = v_req·A_b; the flow field is blank)", null, "D = 100 mm: A_b = 78.5398 cm²; v_req = 100 mm/s needs Q = 0.1 m/s · 7.85398e-3 m² = 7.85398e-4 m³/s = 47.1239 L/min, which is the flow of ka-lossless, so the strokes, times and swept volume are the same (v_ext 100 mm/s, t_ext 4 s, dV 3.14159 L)"),
+                [CalcInputValue.Choice("mode", Standard), CalcInputValue.Quantity("p", 100, "bar"), CalcInputValue.Quantity("p_back", 0, "bar"), CalcInputValue.Quantity("v_req", 100, "mm/s"), CalcInputValue.Quantity("rho", 870, "kg/m^3"), CalcInputValue.Quantity("F_push", 80, "kN"), CalcInputValue.Quantity("F_pull", 40, "kN"), CalcInputValue.Quantity("D", 100, "mm"), CalcInputValue.Quantity("d_r", 56, "mm"), CalcInputValue.Quantity("stroke", 400, "mm"), CalcInputValue.Of("eta_m", 1), CalcInputValue.Of("eta_vc", 1), CalcInputValue.Quantity("t_dwell", 0, "s"), CalcInputValue.Of("K_m", 1), CalcInputValue.Quantity("L_add", 100, "mm"), CalcInputValue.Quantity("E", 210, "GPa"), CalcInputValue.Quantity("f_y", 500, "MPa"), CalcInputValue.Of("S_f", 3.5), CalcInputValue.Of("eta_vp", 0.95), CalcInputValue.Of("eta_tp", 0.88), CalcInputValue.Of("eta_hm", 0.9), CalcInputValue.Quantity("d_suc", 40, "mm"), CalcInputValue.Quantity("d_prs", 16, "mm"), CalcInputValue.Quantity("d_ret", 25, "mm"), CalcInputValue.Quantity("v_suc_max", 1.2, "m/s"), CalcInputValue.Quantity("v_prs_max", 5, "m/s"), CalcInputValue.Quantity("v_ret_max", 3, "m/s"), CalcInputValue.Of("C_d", 0.62)],
+                [new CalcExpectedValue("Q", 47.1238898038469, "L/min", 1e-9), new CalcExpectedValue("v_ext", 99.99999999999999, "mm/s", 1e-9), new CalcExpectedValue("t_ext", 4.000000000000001, "s", 1e-9), new CalcExpectedValue("v_ret", 145.68764568764567, "mm/s", 1e-9), new CalcExpectedValue("dV", 3.1415926535897936, "L", 1e-9)]),
         ],
         Category: "Hydraulics",
         OutputPorts:
@@ -159,7 +170,7 @@ public sealed class CylinderCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
-        foreach (var s in new[] { "p", "p_back", "Q", "rho", "F_push", "F_pull", "D", "d_r", "stroke", "eta_m", "eta_vc", "t_dwell", "K_m", "L_add", "E", "f_y", "S_f", "eta_tp", "d_suc", "d_prs", "d_ret", "v_suc_max", "v_prs_max", "v_ret_max" })
+        foreach (var s in new[] { "p", "p_back", "rho", "F_push", "F_pull", "D", "d_r", "stroke", "eta_m", "eta_vc", "t_dwell", "K_m", "L_add", "E", "f_y", "S_f", "eta_tp", "d_suc", "d_prs", "d_ret", "v_suc_max", "v_prs_max", "v_ret_max" })
             c.Input(s);
 
         var regen = c.InputText("mode") == Regenerative;
@@ -240,6 +251,35 @@ public sealed class CylinderCalculator : ICalcCalculator
         c.Assign("A_r", "pi * d_r^2 / 4", "cm^2", "Rod area");
         c.Assign("A_a", "A_b - A_r", "cm^2", "Annulus (rod-side) area");
         c.Assign("phi", "A_b / A_a", null, "Area ratio A_b/A_a");
+
+        // Flow into the cylinder: entered, or the flow a required extend speed needs (v·A/η_vc over the area the flow acts on in the extend stroke).
+        if (c.Has("v_req"))
+        {
+            c.Input("v_req");
+
+            // Q is optional but carries a sheet default (DefaultFlowLpm, 36 L/min) so every other use of the sheet is unchanged; c.Has("Q") is therefore true on every new sheet,
+            // and a sheet given only v_req would warn about a Q nobody entered. The run cannot tell that default from a typed 36 L/min, so Q at the default value is treated as not entered
+            // and any other Q warns. Compare with the shared constant (the same one the Q spec defaults from), never a literal, so the two cannot drift apart.
+            if (c.Has("Q") && Math.Abs(c.InputSi("Q") - DefaultFlowLpm / 60000.0) > 1e-12)
+                c.Warn("v-req-q", "Q: ignored, the flow comes from the required extend speed; clear Q to remove this notice.");
+
+            c.Assign("Q", regen ? "v_req * A_r / eta_vc" : "v_req * A_b / eta_vc", "L/min", regen ? "Flow the required extend speed needs, regenerative: v·A_r/η_vc" : "Flow the required extend speed needs: v·A_b/η_vc");
+
+            if (!(c.Si("Q") >= 0.1 / 60000 * (1 - 1e-9) && c.Si("Q") <= 2000.0 / 60000 * (1 + 1e-9)))
+            {
+                c.Block("flow", $"v_req: the required extend speed needs a flow of {F(c.Si("Q") * 60000)} L/min, outside the 0.1 to 2000 L/min this sheet covers; change the speed or the cylinder.");
+                return;
+            }
+        }
+        else if (!c.Has("Q"))
+        {
+            c.Block("flow", "Q: enter the flow into the cylinder, or a required extend speed.");
+            return;
+        }
+        else
+        {
+            c.Input("Q");
+        }
 
         // Force and speed.
         if (regen)

@@ -119,6 +119,10 @@ public static class CalcTemplateHasher
             if (i.MaterialProperty is { Length: > 0 } material)
                 sb.Append("  material=").Append(material).Append('\n');
 
+            // Only a pressure that names its basis changes its hash, so every earlier template keeps its hash.
+            if (i.PressureBasis is { Length: > 0 } basis)
+                sb.Append("  basis=").Append(basis).Append('\n');
+
             foreach (var c in i.Columns ?? [])
                 sb.Append("  column=").Append(c.Key).Append('|').Append(c.Label).Append('|').Append(c.Kind).Append('|').Append(c.DefaultUnit).Append('|').Append(string.Join(",", c.Choices ?? [])).Append('\n');
         }

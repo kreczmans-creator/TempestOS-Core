@@ -97,7 +97,7 @@ Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)�
   [37] psi_y = ψ = M_small/M_large (same sign: single curvature)    « Table B.3
       = 170 / 340
       = 0.5
-        Ratio of the end moments
+        Ratio of the end moments, taken as ordinates of the bending-moment diagram (same sign at both ends: single curvature)
   [38] C_1 = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70    « NCCI SN003 / ENV 1993-1-1 Annex F
       = ψ = 0.5
       = 1.31

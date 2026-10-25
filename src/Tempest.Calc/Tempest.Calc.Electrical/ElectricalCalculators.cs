@@ -15,5 +15,6 @@ public static class ElectricalCalculators
         new ConductorSizingCalculator(),
         new PcbTraceCalculator(),
         new ContainmentCalculator(),
+        new MotorStartCalculator(),
     ];
 }

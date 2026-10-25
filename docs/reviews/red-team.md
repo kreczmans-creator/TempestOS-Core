@@ -494,3 +494,32 @@ Lost update: hold the store gate on the attachment write, run `UpdateInputsAsync
 - **Concurrency.** `BindAsync`, `BindCellAsync` and `UpdateLinksAsync` pass `expectedUpdatedAt`. Concurrent record saves get distinct revisions. A double click on Open, Create pack, Check pack or Issue pack is dropped (`ExclusiveAsync`). Two "Update to revision" presses produce one revision B.
 - **Injection.** Link names, record citations, pack titles and step names reach the sheet, PDF and FTS through `Clean` with length caps.
 - **Pack templates.** A stored template naming an unregistered calculator, a binding upstream of its source, or a cell binding without a row is refused by `ValidatePackTemplate` before anything is written. The dry run runs every step in memory first.
+
+## Addendum B
+
+**Scope.** The Addendum B delta to 3e4ca602: the W1 and W2 importers and their Desktop panels, the W3 material library and its licensed-source lock, and the numeric limits of the Addendum B calculators (M7, M8, M9, S7, S9, B7, B8, B9, E7, E8, E9, F1, F2, F3; M1 as the W2 target). S8 lifting was attacked separately.
+
+**Method.** Every attack was run as a throwaway xUnit probe inside `Tempest.Calc.Tests.Import`, `.Library` and `.Calculators`, built with `-p:TreatWarningsAsErrors=true`, and removed afterwards. Crafted inputs are built in the test with `Samples.Workbook`, `Samples.Zip` and `Samples.Text`. The probes below are written as the secure assertion, so each fails while its hole is open.
+
+**Result.** 4 findings: 0 High, 3 Medium, 1 Low. All four are fixed and verified at 134ca7bc. Round 1 (0ecf1749) fixed SEC-B-02 and SEC-B-03 outright. It left residuals of SEC-B-01 and SEC-B-04 (P-B-01 and P-B-02), which round 2 (eb02ffb4, 3a143b15) closed; see `purple-team.md`, Addendum B. The fixes from the B-4 reviews hold (W1 H1–H4 and M1–M6; W2 H1, H2, M1, M2, M4, M6 and L1; M9 H2). The numeric-DoS sweep of every Addendum B calculator found nothing.
+
+### Findings
+
+| ID | Severity | Location | Description | Status |
+|---|---|---|---|---|
+| R-B-01 | Medium | `Cad/TableParsers.cs:327,355` | W1 CSV: a decimal comma split by the comma delimiter is read as a whole number when the header ends in a delimiter or a trailing column is left out | Fixed (67af5ac7, eb02ffb4) |
+| R-B-02 | Medium | `CalcInstanceService.Records.cs:345-365`; `MaterialLibrary.cs:358-368` | A material licensed from revision 2 on still exports, and still prints its tables, through revision 1 | Fixed (051647fb) |
+| R-B-03 | Medium | `XlsxReader.cs:507-512` | One xlsx element with 1.5 M attributes: 474 MB and 4.5 s past a 1 s timeout and cancel, then accepted | Fixed (75a2d66d) |
+| R-B-04 | Low | `LocaleNumber.cs:156` | `1e-400` is read as 0 | Fixed (1dd76d2f, 3a143b15) |
+
+#### R-B-01 — Medium — W1 CSV decimal-comma split through a trailing header delimiter
+
+**PoC** (Import tests):
+```csharp
+[Theory]
+[InlineData("name,value,\nL,12,5\n", "comma")]
+[InlineData("name,value,\nP,1,250\n", "point")]
+[InlineData("name,value,description\nL,12,5\n", "comma")]
+public void A_Split_Decimal_Is_Refused_Not_Read_As_A_Whole_Number(string csv, string mark) =>
+    Assert.Throws<ImportRefusedException>(() => CadImporter.Parse(Samples.Text(csv, "p.csv"), CadSourceFormat.GenericCsv,
+        new CadParseSettings { Number = mark == "comma" ? NumberProfile.Comma : NumberProfile.Point }));

@@ -267,7 +267,7 @@
     "Unit": "%",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "record: oring.criteria, gland fill band (Addendum B default 60 to 85 %)",
+      "Reference": "record: oring.criteria, gland fill band (default 60 to 85 %)",
       "IsSufficientToIssue": true
     },
     "ValueText": "85"
@@ -278,7 +278,7 @@
     "Unit": "%",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "record: oring.criteria, gland fill band (Addendum B default 60 to 85 %)",
+      "Reference": "record: oring.criteria, gland fill band (default 60 to 85 %)",
       "IsSufficientToIssue": true
     },
     "ValueText": "60"
@@ -417,7 +417,7 @@
     "Unit": "%",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "record: oring.criteria, installed stretch limit (Addendum B quotes up to 6 % on a piston groove)",
+      "Reference": "record: oring.criteria, installed stretch limit (up to 6 % on a piston groove, as quoted second-hand)",
       "IsSufficientToIssue": true
     },
     "ValueText": "6"

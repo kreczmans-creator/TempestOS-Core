@@ -33,7 +33,16 @@ public static class CalcSheetBuilder
             var shown = value ?? DefaultValue(spec);
             var unit = spec.Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? (shown.Unit ?? spec.DefaultUnit) : string.Empty;
             var source = Truncate(shown.Provenance?.ToString() ?? (value is null ? "default" : "manual"));
-            inputRows.Add(new CalcSheetInputRow(spec.Symbol, spec.Description, Truncate(shown.ValueText), unit, source, RangeIn(spec, unit)));
+            var range = RangeIn(spec, unit);
+
+            // A pressure prints its basis beside the unit ("bar a", "bar g"): the label names the basis and converts nothing.
+            if (unit.Length > 0 && spec.Kind == CalcInputKind.Quantity && spec.BasisLabel(s => inputs.Find(s)?.Text ?? template.FindInput(s)?.DefaultChoice) is { } basis)
+            {
+                range = range.EndsWith(unit, StringComparison.Ordinal) ? $"{range} {basis}" : range;
+                unit = $"{unit} {basis}";
+            }
+
+            inputRows.Add(new CalcSheetInputRow(spec.Symbol, spec.Description, Truncate(shown.ValueText), unit, source, range));
 
             // A table's rows are reproduced under their summary row so the model (nodes, loads, vertices, contributors)
             // can be checked from the sheet alone (Black B-17); past the cap the count is stated.

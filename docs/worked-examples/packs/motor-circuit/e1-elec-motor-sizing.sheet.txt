@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Motor sizing    Revision: A
 Title: Motor and actuator sizing
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
@@ -192,8 +192,8 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
 
 8. VERIFICATION
   Template: elec.motor-sizing@1.4.0
-  Content hash: 64020d560b0ee248
+  Content hash: 0f221113aba05f54
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test

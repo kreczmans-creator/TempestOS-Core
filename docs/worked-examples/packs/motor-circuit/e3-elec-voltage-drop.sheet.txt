@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Voltage drop    Revision: A
 Title: Voltage drop and I²R loss
-Author: unknown    Authored: 2026-10-24
-Checker: J. Reviewer    Checked: 2026-10-24
-Issued: 2026-10-24    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-25
+Checker: J. Reviewer    Checked: 2026-10-25
+Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).
@@ -96,5 +96,5 @@ R = ρ_T L/(A n) with ρ_T = ρ_20 [1 + α (T_c − 20)], or R = R′ L/n, X = X
   Content hash: 3ed2f07610b34189
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-24 20:02 UTC
+  Test run: 2026-10-25 15:36 UTC
   Application: TempestOS test

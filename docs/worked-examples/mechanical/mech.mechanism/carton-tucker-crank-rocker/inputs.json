@@ -1,0 +1,161 @@
+[
+  {
+    "Symbol": "J_out",
+    "Number": 0.012,
+    "Unit": "kg*m^2",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Example: rocker arm and blade about the rocker pivot; take it from the CAD mass properties.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.012"
+  },
+  {
+    "Symbol": "L1",
+    "Number": 150,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PKG-TUCK-02",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "150"
+  },
+  {
+    "Symbol": "L2",
+    "Number": 45,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PKG-TUCK-02",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "45"
+  },
+  {
+    "Symbol": "L3",
+    "Number": 140,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PKG-TUCK-02",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "140"
+  },
+  {
+    "Symbol": "L4",
+    "Number": 100,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PKG-TUCK-02",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "T_load",
+    "Number": 4,
+    "Unit": "N*m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Example flap-folding torque at the rocker shaft; measure it on the station.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4"
+  },
+  {
+    "Symbol": "circuit",
+    "Text": "Open",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "PKG-TUCK-02",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Open"
+  },
+  {
+    "Symbol": "load_dir",
+    "Text": "Opposes motion",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The flap resists the blade in whichever direction it moves.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Opposes motion"
+  },
+  {
+    "Symbol": "mode",
+    "Text": "Four-bar",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Carton line PKG-LINE-7 \u00A73.2 tucker station",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Four-bar"
+  },
+  {
+    "Symbol": "mu_req",
+    "Number": 40,
+    "Unit": "deg",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Default minimum transmission angle; set it from your design rule.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "n_in",
+    "Number": 60,
+    "Unit": "rpm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Carton line PKG-LINE-7 \u00A73.2: 60 cartons/min",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "steps",
+    "Number": 72,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "5\u00B0 table step.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "72"
+  },
+  {
+    "Symbol": "theta_range",
+    "Number": 360,
+    "Unit": "deg",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Carton line PKG-LINE-7 \u00A73.2: one cycle",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "360"
+  },
+  {
+    "Symbol": "theta_start",
+    "Number": 0,
+    "Unit": "deg",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Carton line PKG-LINE-7 \u00A73.2: crank zero at the home position",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  }
+]

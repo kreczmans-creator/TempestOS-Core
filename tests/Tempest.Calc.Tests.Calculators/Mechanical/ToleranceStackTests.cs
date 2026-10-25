@@ -155,4 +155,109 @@ public sealed class ToleranceStackTests
             return wc >= rss - 1e-15 && Math.Abs(wc - count * tol * 1e-3) < 1e-12 && Math.Abs(inch.OutputSi("t_wc") - count * tol * 0.0254) < 1e-12;
         }, iter: 100);
     }
+
+    // ---- the stated standard deviation (the scan import writes a measured population here) -------------------------
+
+    private static CalcInputSet Measured(double? sigmaB, string distributionB = "normal", double k = 3, double? lowerB = -0.06) => new(new[]
+    {
+        CalcInputValue.Table("contributors",
+        [
+            CalcRow.Of(("name", new CalcCell(Text: "A")), ("direction", new CalcCell(Text: "adds")), ("nominal", new CalcCell(10, "mm")), ("upper", new CalcCell(0.03, "mm")), ("lower", new CalcCell(-0.03, "mm"))),
+            CalcRow.Of(
+                ("name", new CalcCell(Text: "B")), ("direction", new CalcCell(Text: "adds")), ("nominal", new CalcCell(5, "mm")), ("upper", new CalcCell(0.06, "mm")), ("lower", new CalcCell(lowerB, "mm")),
+                ("distribution", new CalcCell(Text: distributionB)), ("sigma", sigmaB is { } sg ? new CalcCell(sg, "mm") : new CalcCell())),
+        ]),
+        CalcInputValue.Quantity("minimum", 14.9, "mm"),
+        CalcInputValue.Quantity("maximum", 15.1, "mm"),
+        CalcInputValue.Of("k", k),
+        CalcInputValue.Of("n_mc", 50_000),
+    });
+
+    [Fact]
+    public void A_Stated_Sigma_Replaces_Band_Over_K_In_The_Statistics_And_Leaves_The_Worst_Case_And_Rss_On_The_Band()
+    {
+        var plain = CalcRunner.Run(Calculator, Measured(null));
+        var stated = CalcRunner.Run(Calculator, Measured(0.015));
+
+        // Python3: sigma without it sqrt(0.01^2 + 0.02^2) = 0.022360679775, Cpk 1.490711985; with it sqrt(0.01^2 + 0.015^2) = 0.018027756377, Cpk 1.849000654.
+        Assert.Equal(0.022360679774997897e-3, plain.OutputSi("sigma"), 15);
+        Assert.Equal(1.4907119849998545, plain.OutputSi("cpk"), 9);
+        Assert.Equal(0.018027756377319945e-3, stated.OutputSi("sigma"), 15);
+        Assert.Equal(1.8490006540840906, stated.OutputSi("cpk"), 9);
+        Assert.Equal(1.8490006540840906, stated.OutputSi("cp"), 9);
+
+        Assert.Equal(plain.OutputSi("t_wc"), stated.OutputSi("t_wc"), 15);
+        Assert.Equal(plain.OutputSi("t_rss"), stated.OutputSi("t_rss"), 15);
+        Assert.Equal(plain.OutputSi("x_wc_min"), stated.OutputSi("x_wc_min"), 15);
+        Assert.Contains("σ stated", stated.Steps.Single(x => x.Symbol == "c2").Substitution, StringComparison.Ordinal);
+        Assert.DoesNotContain("σ stated", plain.Steps.Single(x => x.Symbol == "c2").Substitution, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Stated_Sigma_Does_Not_Depend_On_K_While_Band_Over_K_Does()
+    {
+        var k3 = CalcRunner.Run(Calculator, Measured(0.015, k: 3));
+        var k6 = CalcRunner.Run(Calculator, Measured(0.015, k: 6));
+        // Only A still follows k: sigma_A = 0.03/6 at k = 6.
+        Assert.Equal(Math.Sqrt(0.005 * 0.005 + 0.015 * 0.015) * 1e-3, k6.OutputSi("sigma"), 15);
+        Assert.Equal(Math.Sqrt(0.01 * 0.01 + 0.015 * 0.015) * 1e-3, k3.OutputSi("sigma"), 15);
+    }
+
+    [Fact]
+    public void The_Monte_Carlo_Samples_A_Normal_Contributor_With_Its_Stated_Sigma()
+    {
+        var r = CalcRunner.Run(Calculator, Measured(0.015));
+
+        Assert.InRange(r.OutputSi("mc_sigma"), 0.018027756377e-3 * 0.97, 0.018027756377e-3 * 1.03);
+        Assert.InRange(r.OutputSi("mc_mean"), 14.9995e-3, 15.0005e-3);
+    }
+
+    [Fact]
+    public void A_Stated_Sigma_On_A_Uniform_Contributor_Is_Ignored_With_A_Warning()
+    {
+        var plain = CalcRunner.Run(Calculator, Measured(null, "uniform"));
+        var stated = CalcRunner.Run(Calculator, Measured(0.015, "uniform"));
+
+        Assert.Equal(plain.OutputSi("sigma"), stated.OutputSi("sigma"), 15);
+        Assert.Contains(stated.Warnings, w => w.RuleId == "sigma-ignored");
+        Assert.DoesNotContain(plain.Warnings, w => w.RuleId == "sigma-ignored");
+    }
+
+    [Fact]
+    public void A_Blank_Sigma_Column_Changes_Nothing_Against_A_Table_Without_It()
+    {
+        var without = CalcRunner.Run(Calculator, Housing());
+        var rows = Housing().Find("contributors")!.Rows!.Select(r => new CalcRow(new Dictionary<string, CalcCell>(r.Cells) { ["sigma"] = new CalcCell() })).ToList();
+        var blank = CalcRunner.Run(Calculator, Housing().With(CalcInputValue.Table("contributors", rows)));
+
+        foreach (var symbol in new[] { "x_mean", "t_wc", "t_rss", "sigma", "cpk", "dpmo" })
+            Assert.Equal(without.OutputSi(symbol), blank.OutputSi(symbol), 15);
+    }
+
+    [Fact]
+    public void A_Negative_Sigma_Is_Blocked()
+    {
+        Assert.True(CalcRunner.Run(Calculator, Measured(-0.01)).IsBlocked);
+    }
+
+    [Fact]
+    public void The_Statistical_Pareto_Weighs_A_Stated_Sigma_By_K_Sigma_And_Is_Unchanged_Without_One()
+    {
+        // A: half 0.03 (weight 0.0009). B stated sigma 0.015 at k = 3: weight (3 x 0.015)^2 = 0.002025, not its band 0.06^2 = 0.0036.
+        // Python3: shares 0.0009/0.002925 = 30.769 % and 0.002025/0.002925 = 69.231 %; by the band alone they would be 20 % and 80 %.
+        var stated = CalcRunner.Run(Calculator, Measured(0.015));
+        var pareto = stated.Steps.Single(x => x.Symbol == "pareto").Substitution;
+        Assert.Contains("A 30.8 %", pareto, StringComparison.Ordinal);
+        Assert.Contains("B 69.2 %", pareto, StringComparison.Ordinal);
+
+        var plain = CalcRunner.Run(Calculator, Measured(null));
+        var plainPareto = plain.Steps.Single(x => x.Symbol == "pareto").Substitution;
+        Assert.Contains("A 20 %", plainPareto, StringComparison.Ordinal);
+        Assert.Contains("B 80 %", plainPareto, StringComparison.Ordinal);
+
+        // A smaller stated sigma than band/k moves the largest contributor.
+        var small = CalcRunner.Run(Calculator, Measured(0.005));
+        Assert.Contains("A", small.Steps.Single(x => x.Symbol == "pareto").ResultText, StringComparison.Ordinal);
+        Assert.DoesNotContain("B", small.Steps.Single(x => x.Symbol == "pareto").ResultText, StringComparison.Ordinal);
+    }
 }

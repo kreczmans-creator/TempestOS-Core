@@ -1,4 +1,4 @@
-# B4 — U-values and room heat loss (`bs.room-heat-loss@1.1.0`)
+# B4 — U-values and room heat loss (`bs.room-heat-loss@1.2.0`)
 
 **Scope.** One room per sheet: the U-value of each built-up element from its layers and surface resistances, and the steady-state design heat loss of the room (fabric through each element to its adjacent temperature, a thermal-bridge allowance, ventilation through the outside air or an MVHR supply), the heat loss coefficient, and an optional check of each element against a target U.
 
@@ -12,7 +12,7 @@
 - `n` 0.1–3 h⁻¹; `V` m³; optional `theta_supply` (MVHR) and `n_inf` 0–3 h⁻¹; optional `A_floor`; `f_add` 0–50 % (DHDG only).
 - Blank `Rsi` is the BS EN ISO 6946 conventional value for the element's heat-flow direction (0.13 m²K/W horizontal, 0.10 upward, 0.17 downward); blank `Rse` is 0.04 outside or the same as `Rsi` for an element facing a heated space. These three values are the only surface-resistance values in the product and are listed on the sheet's assumptions. The elements table is geometry, not a licensed record, so a new sheet keeps it. No conductivity, design temperature or CIBSE/MCS table ships.
 
-**Outputs.** Per element `R_i`, `U_i`, `Phi_i` (and `u_i` against a target); `A_fab`, `A_ext`, `A_tb`, `U_m`, `dT`, `Phi_el`, `Phi_tb`, `Phi_T`, `q_v`, `Phi_V` (with `q_inf` where `n_inf` is used), `Phi_HL`, `HLC`, `Phi_A`. **Ports.** `Phi_HL` (→ B6 room heat required), `HLC`, `Phi_T`, `Phi_V`. **Checks.** One utilisation check per element with a target (U/U_target ≤ 1).
+**Outputs.** Per element `R_i`, `U_i`, `Phi_i` (and `u_i` against a target); `A_fab`, `A_ext`, `A_tb`, `U_m`, `dT`, `Phi_el`, `Phi_tb`, `Phi_T`, `q_v`, `Phi_V` (with `q_inf` where `n_inf` is used), `Phi_HL`, `HLC`, `Phi_A`. **Ports.** `Phi_HL` (→ B6 room heat required), `HLC`, `Phi_T`, `Phi_V`, `U_1` (U-value of the first element of the elements table, added in 1.2.0 for the envelope-moisture chain: it is the B7 `U_ref` cross-check; it offers no per-layer output, so a wall's layers are typed in B7 as well). **Checks.** One utilisation check per element with a target (U/U_target ≤ 1).
 
 **Limitations.** Steady state, no gains, no thermal mass or dynamic simulation. Homogeneous layers only: no bridged-layer (combined) method, no corrections for fixings, ventilated cavities or inverted roofs. Ground-floor U is user-entered; there is no ground model. The thermal-bridge allowance is a single W/(m²·K) on the area facing outside (a deliberate reading of "total fabric area"): elements to heated or unheated spaces entered with an adjacent temperature above `θ_e` get no bridge allowance. A warning is raised if Φ_HL ≤ 0 (the room gains heat from warmer neighbours). No intermittency or reheat allowance except the DHDG user allowance.
 
