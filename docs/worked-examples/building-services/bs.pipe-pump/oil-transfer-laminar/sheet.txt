@@ -50,10 +50,10 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = 800 mPa·s
       = 800 mPa·s
         Dynamic viscosity (as entered)
-  [7] T_fluid = T (as entered)
+  [7] T_line = T (no T_line entered)
       = 20 °C
       = 20 degC
-        Fluid temperature the properties were taken at
+        Design temperature of the line to insulate: the fluid temperature T, since no T_line was entered
   [11] Q_design = Q
       = 1 m³/h
       = 1 m³/h
@@ -112,7 +112,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
         Velocity utilisation
 
 5. RESULTS
-  T_fluid = 20 degC    Fluid temperature
+  T_line = 20 degC    Line design temperature
   v_s1 = 0.14147 m/s    Velocity, transfer line
   Re_s1 = 7.8516    Re, transfer line
   f_s1 = 8.1512    f, transfer line
@@ -140,7 +140,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   WARNING laminar: segments: transfer line is laminar (Re = 7.8516); f = 64/Re.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.4.0
+  Template: bs.pipe-pump@1.5.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

@@ -40,7 +40,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 24/24
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -200,7 +200,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: bb674847377954a3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -373,7 +373,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: bb674847377954a3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -515,7 +515,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   Content hash: dad2559cb15ff370
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -580,10 +580,10 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = T = 70 °C
       = 31.198 kPa
         Vapour pressure (NPSH)
-  [6] T_fluid = T (as entered)
+  [6] T_line = T (no T_line entered)
       = 70 °C
       = 70 degC
-        Fluid temperature the properties were taken at
+        Design temperature of the line to insulate: the fluid temperature T, since no T_line was entered
   [11] c_p = c_p of water 4186 J/(kg·K) (assumed)
       = rounded constant for 10–90 °C
       = 4186 J/(kg·K)
@@ -670,7 +670,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
         Velocity utilisation
 
 5. RESULTS
-  T_fluid = 70 degC    Fluid temperature
+  T_line = 70 degC    Line design temperature
   v_s1 = 0.2001 m/s    Velocity, primary flow and return
   Re_s1 = 4846.8    Re, primary flow and return
   f_s1 = 0.042402    f, primary flow and return
@@ -697,11 +697,11 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   No warnings.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.4.0
-  Content hash: 05d8b37c038bc8a2
+  Template: bs.pipe-pump@1.5.0
+  Content hash: fa61fbf098961063
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -886,5 +886,5 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 64020d560b0ee248
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test

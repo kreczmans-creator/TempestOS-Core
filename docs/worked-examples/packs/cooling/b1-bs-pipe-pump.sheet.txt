@@ -59,10 +59,10 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = T = 23.638 °C
       = 2.9207 kPa
         Vapour pressure (NPSH)
-  [6] T_fluid = T (as entered)
+  [6] T_line = T (no T_line entered)
       = 23.638 °C
       = 23.638 degC
-        Fluid temperature the properties were taken at
+        Design temperature of the line to insulate: the fluid temperature T, since no T_line was entered
   [12] c_p = cp_load
       = 4180 J/(kg·K)
       = 4180 J/(kg·K)
@@ -149,7 +149,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
         Velocity utilisation
 
 5. RESULTS
-  T_fluid = 23.638 degC    Fluid temperature
+  T_line = 23.638 degC    Line design temperature
   v_s1 = 0.51063 m/s    Velocity, cooling water supply and return
   Re_s1 = 13842    Re, cooling water supply and return
   f_s1 = 0.031412    f, cooling water supply and return
@@ -176,9 +176,9 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   No warnings.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.4.0
-  Content hash: 05d8b37c038bc8a2
+  Template: bs.pipe-pump@1.5.0
+  Content hash: fa61fbf098961063
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test

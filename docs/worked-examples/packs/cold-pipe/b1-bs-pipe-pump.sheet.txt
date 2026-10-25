@@ -17,7 +17,8 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | water |  | spec: SPEC-CHW-04 §2 (chilled water duty) | any
-  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 6 | degC | spec: SPEC-CHW-04 §2 (chilled water duty) | 0 … 100 degC
+  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 9 | degC | spec: SPEC-CHW-04 §2 (chilled water duty) | 0 … 100 degC
+  T_line | Design temperature of the line for the insulation step: the coldest (cold line) or hottest (hot line) fluid temperature in it, for example the flow temperature of a 6/12 °C chilled line whose mean T is 9 °C (blank = T; offered as the port T_line only when T_line or T is entered; not used for the fluid properties) | 6 | degC | spec: SPEC-CHW-04 §2 (chilled water duty) | -50 … 150 degC
   Q | Design flow rate (blank when a heat load gives it) | 12 | m^3/h | spec: SPEC-CHW-04 §2 (chilled water duty) | 0.01 … 100000 m^3/h
   segments | Pipe segments in series | 1 row(s) |  | spec: SPEC-CHW-04 §2 (chilled water duty) | any
   segments[1] |  | name = chilled water flow and return; L = 60 m; D = 51.6 mm; OD = 54 mm; eps = 0.0015 mm; K = 10; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
@@ -45,111 +46,111 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
 
 4. WORKING
   [3] rho = Kell (1975) density of water at T    « Kell 1975
-      = T = 6 °C
-      = 999.94 kg/m³
+      = T = 9 °C
+      = 999.78 kg/m³
         Density
   [4] mu = Vogel fit μ = 0.02939 exp(507.88/(T_K − 149.3)) mPa·s
-      = T_K = 279.15 K
-      = 1.4684 mPa·s
+      = T_K = 282.15 K
+      = 1.3443 mPa·s
         Dynamic viscosity
   [5] p_v = Hyland–Wexler saturation pressure
-      = T = 6 °C
-      = 0.93525 kPa
+      = T = 9 °C
+      = 1.1481 kPa
         Vapour pressure (NPSH)
-  [6] T_fluid = T (as entered)
+  [7] T_line = T_line (as entered)
       = 6 °C
       = 6 degC
-        Fluid temperature the properties were taken at
-  [10] Q_design = Q
+        Design temperature of the line to insulate (the coldest or hottest fluid temperature in it)
+  [11] Q_design = Q
       = 12 m³/h
       = 12 m³/h
         Design flow (as entered)
-  [11] v_s1 = chilled water flow and return: Q / (π D²/4)
+  [12] v_s1 = chilled water flow and return: Q / (π D²/4)
       = 12 m³/h / (π × 51.6² mm² / 4)
       = 1.594 m/s
         Velocity, chilled water flow and return
-  [12] Re_s1 = chilled water flow and return: ρ v D / μ
-      = 999.94 × 1.594 × 0.0516 / 0.0014684
-      = 56010
+  [13] Re_s1 = chilled water flow and return: ρ v D / μ
+      = 999.78 × 1.594 × 0.0516 / 0.0013443
+      = 61172
         Reynolds number, chilled water flow and return
-  [13] f_s1 = chilled water flow and return: Darcy friction factor
-      = Colebrook–White, 12 iterations (Swamee–Jain start 0.020367)
-      = 0.020484
+  [14] f_s1 = chilled water flow and return: Darcy friction factor
+      = Colebrook–White, 12 iterations (Swamee–Jain start 0.019983)
+      = 0.020099
         Friction factor, chilled water flow and return
-  [14] f_sj_s1 = chilled water flow and return: Swamee–Jain check
+  [15] f_sj_s1 = chilled water flow and return: Swamee–Jain check
       = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
-      = 0.020367
+      = 0.019983
         Explicit cross-check, chilled water flow and return
-  [15] h_f_s1 = chilled water flow and return: f (L + L_eq)/D · v²/2g + K v²/2g
-      = 0.020484 × (60 + 0) / 0.0516 × 0.12955 + 10 × 0.12955
-      = 4.3811 m
+  [16] h_f_s1 = chilled water flow and return: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.020099 × (60 + 0) / 0.0516 × 0.12955 + 10 × 0.12955
+      = 4.3231 m
         Head loss, chilled water flow and return
-  [16] h_f_total = Σ h_f
+  [17] h_f_total = Σ h_f
       = 1 segment(s)
-      = 4.3811 m
+      = 4.3231 m
         Total friction and fitting loss at the design flow
-  [18] V_pipe = Σ π/4·D²·L
+  [19] V_pipe = Σ π/4·D²·L
       = 1 segment(s)
       = 125.47 L
         Water held in the pipe segments
-  [19] OD_1 = OD of the first segment (as entered)
+  [20] OD_1 = OD of the first segment (as entered)
       = chilled water flow and return: 54 mm
       = 54 mm
         Outside diameter of the first pipe segment (the inside of its insulation)
-  [20] H_static = h_out (closed circuit: no static lift)
+  [21] H_static = h_out (closed circuit: no static lift)
       = 0
       = 0 m
         Static head
-  [21] H_sys = H_static + h_f_total
-      = 0 m + 4.3811 m
-      = 4.3811 m
+  [22] H_sys = H_static + h_f_total
+      = 0 m + 4.3231 m
+      = 4.3231 m
         System head at the design flow
-  [22] dp_total = rho * 9.80665 m/s^2 * h_f_total
-      = 999.94 kg/m³ × 9.80665 m/s^2 × 4.3811 m
-      = 42.961 kPa
+  [23] dp_total = rho * 9.80665 m/s^2 * h_f_total
+      = 999.78 kg/m³ × 9.80665 m/s^2 × 4.3231 m
+      = 42.386 kPa
         Friction pressure drop at the design flow
-  [23] dp_sys = rho * 9.80665 m/s^2 * H_sys
-      = 999.94 kg/m³ × 9.80665 m/s^2 × 4.3811 m
-      = 42.961 kPa
+  [24] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 999.78 kg/m³ × 9.80665 m/s^2 × 4.3231 m
+      = 42.386 kPa
         System pressure at the design flow
-  [24] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
-      = 999.94 kg/m³ × 9.80665 m/s^2 × 12 m³/h × 4.3811 m
-      = 0.1432 kW
+  [25] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+      = 999.78 kg/m³ × 9.80665 m/s^2 × 12 m³/h × 4.3231 m
+      = 0.14129 kW
         Hydraulic power at the design point
-  [27] h_f_suction = Σ h_f on the suction side
+  [28] h_f_suction = Σ h_f on the suction side
       = 0 suction segment(s)
       = 0 m
         Suction-side friction loss
-  [28] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
-      = 101.32 kPa / (999.94 kg/m³ × 9.80665 m/s^2) + 0 m − 0 m − 0.93525 kPa / (999.94 kg/m³ × 9.80665 m/s^2)
-      = 10.238 m
+  [29] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
+      = 101.32 kPa / (999.78 kg/m³ × 9.80665 m/s^2) + 0 m − 0 m − 1.1481 kPa / (999.78 kg/m³ × 9.80665 m/s^2)
+      = 10.217 m
         NPSH available
-  [29] v_peak = highest segment velocity
+  [30] v_peak = highest segment velocity
       = 1.594 m/s
       = 1.594 m/s
         Highest velocity
-  [30] u_v = v_peak / v_max
+  [31] u_v = v_peak / v_max
       = 1.594 / 3
       = 0.53133
         Velocity utilisation
 
 5. RESULTS
-  T_fluid = 6 degC    Fluid temperature
+  T_line = 6 degC    Line design temperature
   v_s1 = 1.594 m/s    Velocity, chilled water flow and return
-  Re_s1 = 56010    Re, chilled water flow and return
-  f_s1 = 0.020484    f, chilled water flow and return
-  f_sj_s1 = 0.020367    f (Swamee–Jain), chilled water flow and return
-  h_f_s1 = 4.3811 m    h_f, chilled water flow and return
+  Re_s1 = 61172    Re, chilled water flow and return
+  f_s1 = 0.020099    f, chilled water flow and return
+  f_sj_s1 = 0.019983    f (Swamee–Jain), chilled water flow and return
+  h_f_s1 = 4.3231 m    h_f, chilled water flow and return
   OD_1 = 54 mm    Outside diameter of the first segment
-  h_f_total = 4.3811 m    Σ h_f
+  h_f_total = 4.3231 m    Σ h_f
   H_static = 0 m    Static head
   V_pipe = 125.47 L    Water held in the pipes
-  H_sys = 4.3811 m    System head at Q
-  dp_total = 42.961 kPa    Friction Δp
-  dp_sys = 42.961 kPa    System Δp
+  H_sys = 4.3231 m    System head at Q
+  dp_total = 42.386 kPa    Friction Δp
+  dp_sys = 42.386 kPa    System Δp
   Q_design = 12 m³/h    Design flow
-  P_hyd = 0.1432 kW    Hydraulic power
-  NPSH_a = 10.238 m    NPSH available
+  P_hyd = 0.14129 kW    Hydraulic power
+  NPSH_a = 10.217 m    NPSH available
   v_peak = 1.594 m/s    Highest velocity
 
 6. CHECKS (governing first)
@@ -159,9 +160,9 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   No warnings.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.4.0
-  Content hash: 05d8b37c038bc8a2
+  Template: bs.pipe-pump@1.5.0
+  Content hash: fa61fbf098961063
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test

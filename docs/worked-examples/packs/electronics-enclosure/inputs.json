@@ -341,7 +341,7 @@
               "Unit": "kW",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:d572dd008a0141b98f36777b2ea583ce#trace_Ploss",
+                "Reference": "calc:337f3c00476f429588ff2e7b0ab6f97a#trace_Ploss",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -470,6 +470,41 @@
               "Flag": false
             }
           }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "24 V supply loss"
+            },
+            "supply": {
+              "Text": "AC single-phase"
+            },
+            "P": {
+              "Number": 0.0265,
+              "Unit": "kW"
+            },
+            "cosphi": {
+              "Number": 1
+            },
+            "eta": {
+              "Number": 1
+            },
+            "heat": {
+              "Number": 1
+            },
+            "d": {
+              "Number": 1
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
         }
       ],
       "Provenance": {
@@ -477,7 +512,7 @@
         "Reference": "SPEC-ELX-02 \u00A74 (board loads)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "4 row(s)"
+      "ValueText": "5 row(s)"
     },
     {
       "Symbol": "margin",
@@ -548,7 +583,7 @@
     },
     {
       "Symbol": "H",
-      "Number": 0.5,
+      "Number": 0.6,
       "Unit": "m",
       "Provenance": {
         "Kind": "Drawing",
@@ -556,7 +591,7 @@
         "Revision": "B",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.5"
+      "ValueText": "0.6"
     },
     {
       "Symbol": "I_sun",
@@ -571,15 +606,15 @@
     },
     {
       "Symbol": "P_add",
-      "Number": 46.507335108510574,
+      "Number": 73.00733510851057,
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:39916ab3739a410ba0b1d2a0ab71d5a6#Phi",
+        "Reference": "calc:385a9a39452049cf88773fb7caf559b9#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "46.5073"
+      "ValueText": "73.0073"
     },
     {
       "Symbol": "T_amb",
@@ -606,6 +641,18 @@
       "ValueText": "60"
     },
     {
+      "Symbol": "T_seal",
+      "Number": 25,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-ELX-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
       "Symbol": "V_ref",
       "Number": 100,
       "Unit": "m^3/h",
@@ -618,7 +665,7 @@
     },
     {
       "Symbol": "W",
-      "Number": 0.4,
+      "Number": 0.5,
       "Unit": "m",
       "Provenance": {
         "Kind": "Drawing",
@@ -626,7 +673,7 @@
         "Revision": "B",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.4"
+      "ValueText": "0.5"
     },
     {
       "Symbol": "alpha_sun",
@@ -781,36 +828,36 @@
     },
     {
       "Symbol": "Es",
-      "Number": 1500,
+      "Number": 1400,
       "Unit": "MPa",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (latch plastic: Es and eps_perm at 60 C)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1500"
+      "ValueText": "1400"
     },
     {
       "Symbol": "Es_source",
       "Text": "Typed secant modulus",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "Typed secant modulus"
     },
     {
       "Symbol": "T_use",
-      "Number": 54.13156632898131,
+      "Number": 56.877083837645046,
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a522684717ee461997f145644a8eb3a9#T_int",
+        "Reference": "calc:0e599c2e98c34e57ae0d64036099e8a9#T_int",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "54.1316"
+      "ValueText": "56.8771"
     },
     {
       "Symbol": "a_arm",
@@ -829,7 +876,7 @@
       "Unit": "deg",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "30"
@@ -840,7 +887,7 @@
       "Unit": "deg",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "70"
@@ -851,7 +898,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "5"
@@ -892,7 +939,7 @@
       "Number": 0.03,
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (latch plastic: Es and eps_perm at 60 C)",
         "IsSufficientToIssue": true
       },
       "ValueText": "0.03"
@@ -903,7 +950,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "1.6"
@@ -924,7 +971,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "12"
@@ -934,7 +981,7 @@
       "Text": "One-time (assembled once or rarely)",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "One-time (assembled once or rarely)"
@@ -944,7 +991,7 @@
       "Text": "Cantilever, constant section",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "Cantilever, constant section"
@@ -954,7 +1001,7 @@
       "Number": 0.3,
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "0.3"
@@ -976,7 +1023,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid latch; Es and eps_perm for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A76 (lid latch geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "1"
@@ -985,14 +1032,14 @@
   "s9": [
     {
       "Symbol": "E",
-      "Number": 2.1,
+      "Number": 69,
       "Unit": "GPa",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid alloy: E, nu, rho and f_y at 60 C)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "2.1"
+      "ValueText": "69"
     },
     {
       "Symbol": "P",
@@ -1007,14 +1054,14 @@
     },
     {
       "Symbol": "a",
-      "Number": 400,
+      "Number": 500,
       "Unit": "mm",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid plate geometry)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "400"
+      "ValueText": "500"
     },
     {
       "Symbol": "b",
@@ -1022,7 +1069,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid plate geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "200"
@@ -1039,21 +1086,21 @@
     },
     {
       "Symbol": "f_y",
-      "Number": 55,
+      "Number": 120,
       "Unit": "MPa",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid alloy: E, nu, rho and f_y at 60 C)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "55"
+      "ValueText": "120"
     },
     {
       "Symbol": "gamma_M0",
       "Number": 1,
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid plate geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "1"
@@ -1063,7 +1110,7 @@
       "Text": "pressure q",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid plate geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "pressure q"
@@ -1073,31 +1120,32 @@
       "Text": "uniform",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid plate geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "uniform"
     },
     {
       "Symbol": "nu",
-      "Number": 0.38,
+      "Number": 0.33,
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid alloy: E, nu, rho and f_y at 60 C)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.38"
+      "ValueText": "0.33"
     },
     {
       "Symbol": "q",
-      "Number": 1,
+      "Number": 10.833290356697589,
       "Unit": "kPa",
       "Provenance": {
-        "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Kind": "Link",
+        "Reference": "calc:0e599c2e98c34e57ae0d64036099e8a9#dp_seal",
+        "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1"
+      "ValueText": "10.8333"
     },
     {
       "Symbol": "r0",
@@ -1123,21 +1171,21 @@
     },
     {
       "Symbol": "rho",
-      "Number": 1200,
+      "Number": 2700,
       "Unit": "kg/m^3",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid alloy: E, nu, rho and f_y at 60 C)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "1200"
+      "ValueText": "2700"
     },
     {
       "Symbol": "shape",
       "Text": "rectangular",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid plate geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "rectangular"
@@ -1147,21 +1195,21 @@
       "Text": "simply supported",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid plate geometry)",
         "IsSufficientToIssue": true
       },
       "ValueText": "simply supported"
     },
     {
       "Symbol": "t",
-      "Number": 5,
+      "Number": 4,
       "Unit": "mm",
       "Provenance": {
         "Kind": "Specification",
-        "Reference": "SPEC-ELX-02 \u00A76 (lid; E for 55 C)",
+        "Reference": "SPEC-ELX-02 \u00A77 (lid plate geometry)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "5"
+      "ValueText": "4"
     },
     {
       "Symbol": "u",

@@ -18,24 +18,24 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  shape | Plate shape | rectangular |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | any
-  support | Edge support, all round | simply supported |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | any
-  a | Radius a (circular) or side a (rectangular) | 400 | mm | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 10 … 10000 mm
-  b | Side b (rectangular; not used for a circular plate) | 200 | mm | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 10 … 10000 mm
-  t | Plate thickness | 5 | mm | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 0.5 … 100 mm
-  load_type | Load | uniform |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | any
-  load_basis | Uniform and patch loads given as | pressure q |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | any
-  q | Pressure q on the loaded area (uniform and patch loads, pressure basis) | 1 | kPa | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 0.001 … 5000 kPa
+  shape | Plate shape | rectangular |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  support | Edge support, all round | simply supported |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  a | Radius a (circular) or side a (rectangular) | 500 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 10 … 10000 mm
+  b | Side b (rectangular; not used for a circular plate) | 200 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 10 … 10000 mm
+  t | Plate thickness | 4 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 0.5 … 100 mm
+  load_type | Load | uniform |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  load_basis | Uniform and patch loads given as | pressure q |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  q | Pressure q on the loaded area (uniform and patch loads, pressure basis) | 10.8333 | kPa | link: Enclosure temperature rev A · dp_seal | 0.001 … 5000 kPa
   P | Total force P (force basis: uniform, patch and ring loads; a ring load always uses P) | 5 | kN | assumption: Sheet default value; no project figure given. | 0.001 … 10000 kN
   r0 | Patch radius (circular plate, central patch) | 50 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
   u | Patch size in x (rectangular plate, central patch) | 100 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
   v | Patch size in y (rectangular plate, central patch) | 100 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
   r_ring | Ring radius (circular plate, ring load) | 150 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
-  E | Modulus of elasticity | 2.1 | GPa | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 0.1 … 500 GPa
-  nu | Poisson's ratio | 0.38 |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 0 … 0.45
-  rho | Density (for the frequency) | 1200 | kg/m^3 | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 100 … 20000 kg/m^3
-  f_y | Yield strength | 55 | MPa | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 5 … 2000 MPa
-  gamma_M0 | Partial factor γ_M0 on the resistance of the cross-section | 1 |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 1 … 1.5
+  E | Modulus of elasticity | 69 | GPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0.1 … 500 GPa
+  nu | Poisson's ratio | 0.33 |  | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0 … 0.45
+  rho | Density (for the frequency) | 2700 | kg/m^3 | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 100 … 20000 kg/m^3
+  f_y | Yield strength | 120 | MPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 5 … 2000 MPa
+  gamma_M0 | Partial factor γ_M0 on the resistance of the cross-section | 1 |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | 1 … 1.5
   defl_ratio | Deflection limit: span/ratio (span = diameter of a circular plate, shorter side of a rectangle) | 250 |  | assumption: Sheet default value; no project figure given. | 50 … 2000
 
 3. ASSUMPTIONS
@@ -55,101 +55,101 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
 
 4. WORKING
   [15] F_total = q·A_loaded    « Kirchhoff theory
-      = 1 kPa × 80000 mm²
-      = 0.08 kN
+      = 10.833 kPa × 100000 mm²
+      = 1.0833 kN
         Total load on the plate
   [16] D = E*t^3/(12*(1 - nu^2))    « Kirchhoff theory
-      = 2.1 GPa × (5 mm)^3 / (12 × (1 − 0.38^2))
-      = 25.567 N·m
+      = 69 GPa × (4 mm)^3 / (12 × (1 − 0.33^2))
+      = 412.97 N·m
         Flexural rigidity of the plate
   [17] terms_used = odd terms per direction N (m, n = 1, 3, … 2N − 1)    « T&WK Ch. 5
-      = 128 odd terms per direction (16384 terms), last change 6.8281e-7
+      = 128 odd terms per direction (16384 terms), last change 5.7374e-7
       = 128
         Terms of the Navier series used
   [18] w_max = 16q/(π⁶D)·Σ (−1)^((m+n)/2−1)/(m·n·(m²/a² + n²/b²)²), m, n odd    « T&WK Ch. 5
-      = 128 odd terms per direction (16384 terms), last change 6.8281e-7
-      = 0.63386 mm
+      = 128 odd terms per direction (16384 terms), last change 5.7374e-7
+      = 0.4825 mm
         Maximum deflection (centre)
   [19] M_x_c = D·π²·Σ W_mn(m²/a² + ν·n²/b²)·sin·sin at the centre    « T&WK Ch. 5
-      = 128 odd terms per direction (16384 terms), last change 6.8281e-7
-      = 2.1627 N·m/m
+      = 128 odd terms per direction (16384 terms), last change 5.7374e-7
+      = 20.043 N·m/m
         M_x at the centre
   [20] M_y_c = D·π²·Σ W_mn(n²/b² + ν·m²/a²)·sin·sin at the centre    « T&WK Ch. 5
-      = 128 odd terms per direction (16384 terms), last change 6.8281e-7
-      = 4.123 N·m/m
+      = 128 odd terms per direction (16384 terms), last change 5.7374e-7
+      = 49.07 N·m/m
         M_y at the centre
   [21] M_xy_k = |D(1 − ν)·π²·Σ W_mn·(mn/ab)| at a corner, with the 1/N² tail of the sum removed by Richardson extrapolation (s_N + (s_N − s_N/2)/3)    « T&WK Ch. 5
-      = 128 odd terms per direction (16384 terms), last change 6.8281e-7
-      = 1.6392 N·m/m
+      = 128 odd terms per direction (16384 terms), last change 5.7374e-7
+      = 19.569 N·m/m
         Twisting moment at a corner
   [22] R_corner = 2·M_xy at a corner    « T&WK Ch. 5
-      = 2 × 1.6392 N·m/m
-      = 0.0032784 kN
+      = 2 × 19.569 N·m/m
+      = 0.039137 kN
         Corner reaction holding the corner down
   [23] M_vm_c = √(M_x² − M_x·M_y + M_y²) at the centre    « von Mises
-      = M_x = 2.1627, M_y = 4.123 N·m/m
-      = 3.5721 N·m/m
+      = M_x = 20.043, M_y = 49.07 N·m/m
+      = 42.733 N·m/m
         Von Mises moment at the centre
   [24] M_vm_k = √3·|M_xy| at a corner    « von Mises
-      = M_xy = 1.6392 N·m/m
-      = 2.8391 N·m/m
+      = M_xy = 19.569 N·m/m
+      = 33.894 N·m/m
         Von Mises moment at a corner (pure twist)
   [25] omega_11 = π²(1/a² + 1/b²)·√(D/(ρt))    « T&WK Ch. 5
-      = a = 400 mm, b = 200 mm, D = 25.567 N·m, ρt = 6 kg/m²
-      = 636.67 rad/s
+      = a = 500 mm, b = 200 mm, D = 412.97 N·m, ρt = 10.8 kg/m²
+      = 1769.9 rad/s
         Angular frequency of the (1,1) mode
   [26] M_vm = √(M_1² − M_1·M_2 + M_2² + 3M_12²) at the governing point    « von Mises
       = centre
-      = 3.5721 N·m/m
+      = 42.733 N·m/m
         Greatest von Mises moment per unit width
   [27] sigma_max = 6·M_vm/t²    « Kirchhoff theory
-      = 6 × 3.5721 N·m/m / (5 mm)²
-      = 0.8573 MPa
+      = 6 × 42.733 N·m/m / (4 mm)²
+      = 16.025 MPa
         Greatest von Mises surface stress
   [28] sigma_principal = 6·M_principal/t²    « Kirchhoff theory
-      = 6 × 4.123 N·m/m / (5 mm)²
-      = 0.98953 MPa
+      = 6 × 49.07 N·m/m / (4 mm)²
+      = 18.401 MPa
         Greatest principal surface stress
   [29] f1 = ω/2π    « Leissa
-      = D = 25.567 N·m, ρt = 6 kg/m²
-      = 101.33 Hz
+      = D = 412.97 N·m, ρt = 10.8 kg/m²
+      = 281.69 Hz
         Fundamental natural frequency (ω is the angular frequency, rad/s; f is in Hz)
   [30] w_over_t = w_max/t    « Kirchhoff theory
-      = 0.63386 mm / 5 mm
-      = 0.12677
+      = 0.4825 mm / 4 mm
+      = 0.12063
         Deflection over thickness
   [31] u_stress = sigma_max/(f_y/gamma_M0)    « BS EN 1993-1-1 6.2.1(5)
-      = 0.8573 MPa / (55 MPa / 1)
-      = 0.015587
+      = 16.025 MPa / (120 MPa / 1)
+      = 0.13354
         Stress utilisation
   [32] w_lim = span/ratio    « Serviceability
       = 200 mm / 250
       = 0.8 mm
         Deflection limit
   [33] u_defl = w_max/w_lim    « Serviceability
-      = 0.63386 mm / 0.8 mm
-      = 0.79233
+      = 0.4825 mm / 0.8 mm
+      = 0.60313
         Deflection utilisation
 
 5. RESULTS
-  w_max = 0.63386 mm    Maximum deflection
-  sigma_max = 0.8573 MPa    Greatest von Mises stress
-  sigma_principal = 0.98953 MPa    Greatest principal stress
-  f1 = 101.33 Hz    Fundamental frequency
-  u_stress = 0.015587    Stress utilisation
-  u_defl = 0.79233    Deflection utilisation
-  w_over_t = 0.12677    Deflection over thickness
-  D = 25.567 N·m    Flexural rigidity
+  w_max = 0.4825 mm    Maximum deflection
+  sigma_max = 16.025 MPa    Greatest von Mises stress
+  sigma_principal = 18.401 MPa    Greatest principal stress
+  f1 = 281.69 Hz    Fundamental frequency
+  u_stress = 0.13354    Stress utilisation
+  u_defl = 0.60313    Deflection utilisation
+  w_over_t = 0.12063    Deflection over thickness
+  D = 412.97 N·m    Flexural rigidity
   terms_used = 128    Series terms used
-  M_x_c = 2.1627 N·m/m    M_x at the centre
-  M_y_c = 4.123 N·m/m    M_y at the centre
-  M_xy_k = 1.6392 N·m/m    Corner twisting moment
-  R_corner = 0.0032784 kN    Corner reaction
+  M_x_c = 20.043 N·m/m    M_x at the centre
+  M_y_c = 49.07 N·m/m    M_y at the centre
+  M_xy_k = 19.569 N·m/m    Corner twisting moment
+  R_corner = 0.039137 kN    Corner reaction
   location = "centre"    Governing stress point
 
 6. CHECKS (governing first)
-  PASS  Deflection w_max ≤ span/ratio: u_defl = 0.79233 vs u_defl ≤ 1  utilisation 0.792  « Serviceability
-  PASS  Stress σ_vm ≤ f_y/γ_M0: u_stress = 0.015587 vs u_stress ≤ 1  utilisation 0.0156  « 6.2.1(5)
+  PASS  Deflection w_max ≤ span/ratio: u_defl = 0.60313 vs u_defl ≤ 1  utilisation 0.603  « Serviceability
+  PASS  Stress σ_vm ≤ f_y/γ_M0: u_stress = 0.13354 vs u_stress ≤ 1  utilisation 0.134  « 6.2.1(5)
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: E, nu, rho, f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.
@@ -159,5 +159,5 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   Content hash: 7776225ec2491f68
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-25 09:01 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test

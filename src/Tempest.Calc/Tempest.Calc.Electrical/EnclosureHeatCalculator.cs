@@ -26,9 +26,9 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
+        Id, "1.3.0", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
         "Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.",
-        "P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive.",
+        "P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive. Sealed enclosure (T_seal entered, no breather): the pressure difference across the walls when the air warms from the sealing temperature to T_int at constant volume, Δp = p_site·|T_int/T_seal − 1| (absolute temperatures), a rise when T_int > T_seal, a suction when below.",
         [
             new CalcInputSpec("loads", "Heat loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 500, Group: "Heat load"),
             new CalcInputSpec("P_add", "Additional heat load (linked from E6's dissipated heat or another calculation)", CalcInputKind.Quantity, "W", Default: 0, Min: 0, Max: 1e5, HardMin: 0, HardMax: 1e6, Group: "Heat load"),
@@ -47,6 +47,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
             new CalcInputSpec("h", "Overall heat-transfer coefficient of the enclosure surface (editable reference value)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 5.5, Min: 3, Max: 8, HardMin: 0.1, HardMax: 100, Group: "Enclosure"),
             new CalcInputSpec("T_amb", "Ambient temperature", CalcInputKind.Quantity, "degC", Default: 35, Min: -20, Max: 55, HardMin: -60, HardMax: 100, Group: "Conditions"),
             new CalcInputSpec("T_max", "Maximum internal temperature", CalcInputKind.Quantity, "degC", Default: 50, Min: 20, Max: 80, HardMin: -60, HardMax: 150, Group: "Conditions"),
+            new CalcInputSpec("T_seal", "Temperature at which the enclosure was closed with no breather or vent, for the pressure difference across its walls when the air warms or cools (blank = vented: no pressure difference)", CalcInputKind.Quantity, "degC", Min: -20, Max: 55, HardMin: -60, HardMax: 100, IsOptional: true, Group: "Conditions"),
             new CalcInputSpec("altitude", "Site altitude (air density)", CalcInputKind.Quantity, "m", Default: 0, Min: 0, Max: 4000, HardMin: -500, HardMax: 10000, Group: "Conditions"),
             new CalcInputSpec("V_pts", "Fan curve: airflow points", CalcInputKind.Vector, "m^3/h", IsOptional: true, Group: "Fan"),
             new CalcInputSpec("p_pts", "Fan curve: static pressure points", CalcInputKind.Vector, "Pa", IsOptional: true, Group: "Fan"),
@@ -56,6 +57,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
         [
             new CalcAssumption("Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing.", "IEC TR 60890-style effective-surface approach; h is a reference value the user may edit."),
             new CalcAssumption("Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise; natural dissipation is neglected for the airflow (conservative).", "Manufacturer fan-sizing practice."),
+            new CalcAssumption("A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed: the pressure difference follows from the ideal-gas relation at constant volume, from the sealing temperature to the internal temperature with natural dissipation T_int (the temperature without a cooling unit); a breather, a seal that leaks or a flexing wall reduces it, so it is an upper bound; the site pressure is the standard atmosphere at the altitude.", "Ideal gas at constant volume (derived)."),
             new CalcAssumption("The fan curve is linear between the entered points; the system resistance scales with airflow squared.", "Duty-point idealisation."),
         ],
         [
@@ -68,6 +70,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
             new CalcApplicabilityRule("limit", "The maximum internal temperature must exceed the ambient.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("fan-curve", "The fan curve needs at least two points with matching counts, flows increasing.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("no-fan-duty", "The fan curve and the system resistance do not cross: no duty point.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("seal-suction", "The internal temperature is below the sealing temperature: the pressure difference is a suction, shown as its magnitude.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("cooling-unit", "Natural dissipation cannot hold the limit: forced ventilation or a cooling unit is needed.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -79,6 +82,10 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic", null, "Fan p = 60 − 0.3 V (V in m³/h), system p = 20 (V/100)²: 0.002 V² + 0.3 V − 60 = 0 ⇒ V = 113.75 m³/h, p = 25.88 Pa; required 62.48 m³/h ⇒ utilisation 0.5493"),
                 [Loads(("load", 300, 1, 1)), CalcInputValue.Quantity("W", 0.6, "m"), CalcInputValue.Quantity("H", 0.8, "m"), CalcInputValue.Quantity("D", 0.3, "m"), CalcInputValue.Quantity("T_amb", 35, "degC"), CalcInputValue.Quantity("T_max", 50, "degC"), CalcInputValue.Quantity("altitude", 0, "m"), CalcInputValue.VectorOf("V_pts", [0, 100, 200], "m^3/h"), CalcInputValue.VectorOf("p_pts", [60, 30, 0], "Pa"), CalcInputValue.Quantity("p_sys", 20, "Pa"), CalcInputValue.Quantity("V_ref", 100, "m^3/h")],
                 [new CalcExpectedValue("V_duty", 113.75, "m^3/h", 1e-3), new CalcExpectedValue("p_duty", 25.88, "Pa", 2e-3), new CalcExpectedValue("u_fan", 0.5493, "", 2e-3)]),
+            new CalcTestCase("ka-sealed-enclosure", "The wall-mounted enclosure sealed at 20 °C: the pressure difference when it warms (analytic)",
+                new CalcReferenceSource("Analytic (ideal gas at constant volume: Δp = p0·(T_int/T_seal − 1); recomputed in python3)", null, "300 W in the 600 × 800 × 300 wall-mounted enclosure at 35 °C: ΔT = 47.847 K, T_int = 82.84689 °C = 355.99689 K; sealed at 20 °C = 293.15 K: Δp = 101.325 kPa × (355.99689/293.15 − 1) = 21.72253 kPa; sealed at 90 °C (363.15 K) the walls see a suction of 101.325 × (1 − 355.99689/363.15) = 1.99584 kPa"),
+                [Loads(("load", 300, 1, 1)), CalcInputValue.Quantity("W", 0.6, "m"), CalcInputValue.Quantity("H", 0.8, "m"), CalcInputValue.Quantity("D", 0.3, "m"), CalcInputValue.Quantity("T_amb", 35, "degC"), CalcInputValue.Quantity("T_max", 50, "degC"), CalcInputValue.Quantity("altitude", 0, "m"), CalcInputValue.Quantity("T_seal", 20, "degC")],
+                [new CalcExpectedValue("T_int", 82.8468899521531, "degC", 1e-9), new CalcExpectedValue("dp_seal", 21.722534962994757, "kPa", 1e-9)]),
         ],
         DiagramKey: "enclosure-heat",
         Category: "Thermal",
@@ -92,6 +99,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
             new CalcOutputPort("T_int", "degC", "Internal temperature with natural dissipation"),
             new CalcOutputPort("V_req", "m^3/h", "Airflow for forced ventilation at the allowed rise"),
             new CalcOutputPort("V_duty", "m^3/h", "Fan duty airflow (when a fan curve is given)"),
+            new CalcOutputPort("dp_seal", "kPa", "Pressure difference across the walls of a sealed enclosure (T_seal entered) between the sealing temperature and T_int, as a magnitude (→ S9 lid pressure q)"),
         ]);
 
     public static CalcInputValue Loads(params (string Name, double P, double Qty, double Duty)[] rows) =>
@@ -138,6 +146,18 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
 
         // Forced ventilation.
         c.Record("p_site", "101325 (1 − 2.25577e-5 z)^5.2559", $"z = {CalcValue.FormatNumber(c.Si("altitude"), 4)} m", ScalarValue.Of(PressureAtAltitude(c.Si("altitude")) / 1e3, "kPa"), "Site pressure");
+
+        if (c.Has("T_seal"))
+        {
+            c.Input("T_seal");
+            var ratio = c.Si("T_int") / c.Si("T_seal") - 1;
+            c.Record("dp_seal", "p_site·|T_int/T_seal − 1|", $"{CalcValue.FormatNumber(PressureAtAltitude(c.Si("altitude")) / 1e3, 5)} kPa × |{CalcValue.FormatNumber(c.Si("T_int"), 5)} K / {CalcValue.FormatNumber(c.Si("T_seal"), 5)} K − 1|", ScalarValue.Of(PressureAtAltitude(c.Si("altitude")) * Math.Abs(ratio) / 1e3, "kPa"), "Pressure difference across the walls of the sealed enclosure (magnitude)");
+            c.Output("dp_seal", "Pressure difference of the sealed enclosure");
+
+            if (ratio < 0)
+                c.Warn("seal-suction", $"T_seal: the internal temperature ({CalcValue.FormatNumber(c.Si("T_int") - 273.15, 4)} °C) is below the sealing temperature, so the walls see a suction; dp_seal is its magnitude.");
+        }
+
         c.Assign("rho_air", "p_site / (287.055 J/(kg*K) * T_amb)", "kg/m^3", "Air density at ambient and altitude");
         c.Assign("V_req", "P_total / (rho_air * 1006 J/(kg*K) * dT_allow)", "m^3/h", "Airflow for forced ventilation at the allowed rise (natural dissipation neglected)");
         c.Assign("V_req_net", "max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))", "m^3/h", "Airflow crediting natural dissipation");

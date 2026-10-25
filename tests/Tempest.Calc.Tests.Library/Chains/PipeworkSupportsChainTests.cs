@@ -127,6 +127,15 @@ public sealed class PipeworkSupportsChainTests
         Assert.Equal(Si(s4, "f_ub"), InputSi(s6, "f_ub"), 9);
         Assert.Equal(Si(s4, "f_yb"), InputSi(s6, "f_yb"), 9);
         Assert.Equal(25e-3, InputSi(s6, "t_p"), 12);
+
+        // Geometry, not just values: the S4 run is for S6's own plate and edge (thickness 25 mm, the 40 mm edge distance S6 uses as e_min, S275 plate steel), and for the same M20 8.8 bolt.
+        Assert.Equal(InputSi(s6, "t_p"), InputSi(s4, "t"), 12);
+        Assert.Equal(InputSi(s6, "e_min"), InputSi(s4, "e_1"), 12);
+        Assert.Equal(40e-3, InputSi(s4, "e_1"), 12);
+        Assert.Equal("S275", s4.Inputs.Single(i => i.Symbol == "steel").Text);
+        Assert.Equal("M20", s4.Inputs.Single(i => i.Symbol == "size").Text);
+        Assert.Equal("8.8", s4.Inputs.Single(i => i.Symbol == "grade").Text);
+        Assert.Equal(275e6, InputSi(s6, "f_y"), 3);
     }
 
     [Fact]
@@ -250,5 +259,14 @@ public sealed class PipeworkSupportsChainTests
         Assert.Contains("link: Anchor post frame rev A · R1_x_abs", sheet, StringComparison.Ordinal);
         Assert.Contains("PROFIS-BP1-PLACEHOLDER.txt", sheet, StringComparison.Ordinal);
         Assert.Contains("external report attached: PROFIS-BP1-PLACEHOLDER.txt", sheet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Issue_Is_Refused_At_The_Staleness_Gate_When_The_Pipe_Step_Moves_After_The_Pack_Was_Checked()
+    {
+        var host = Host();
+        var made = await InstantiateAsync(host);
+        await IssueIsRefusedAtTheStalenessGateWhenTheFirstStepMovesAfterTheCheckAsync(host, made, CalcPackTemplates.PipeworkSupports, "b8", "s2",
+            (id, outside) => host.Service.BindCellAsync(id, "loads", 0, "F_x", outside, "anchor_force"), ["s2", "s6"]);
     }
 }

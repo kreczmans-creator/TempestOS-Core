@@ -425,12 +425,13 @@ internal static class CalcPackExamples
     // ---- Cold pipe: a chilled water line, the room air around it and the insulation that keeps its surface above the dew point ----
 
     /// <summary>
-    /// A chilled-water flow-and-return line at 6 °C: 60 m of 54 × 1.2 mm copper tube (inner diameter 51.6 mm; the outside diameter is the insulation's inside diameter and goes to the
-    /// insulation step by link), 12 m³/h, ten velocity heads of fittings. The tube roughness (0.0015 mm) and the fittings are invented illustrations.
+    /// A chilled-water flow-and-return line, 6 °C flow and 12 °C return, so the MEAN fluid temperature <c>T</c> the properties are taken at is 9 °C, while the temperature the insulation is sized on is the coldest in
+    /// the line, the 6 °C flow (<c>T_line</c>: a link from the mean would understate the thickness). 60 m of 54 × 1.2 mm copper tube (inner diameter 51.6 mm; the outside diameter is the insulation's inside diameter
+    /// and goes to the insulation step by link), 12 m³/h, ten velocity heads of fittings. The tube roughness (0.0015 mm) and the fittings are invented illustrations.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ColdB1 { get; } =
     [
-        C("fluid", "water"), Q("T", 6, "degC"), Q("Q", 12, "m^3/h"), C("circuit", "closed (flow and return: the rises cancel, no static lift)"),
+        C("fluid", "water"), Q("T", 9, "degC"), Q("T_line", 6, "degC"), Q("Q", 12, "m^3/h"), C("circuit", "closed (flow and return: the rises cancel, no static lift)"),
         Table("segments", CalcRow.Of(Txt("name", "chilled water flow and return"), ("L", new CalcCell(60, "m")), Mm("D", 51.6), Mm("OD", 54), Mm("eps", 0.0015), Num("K", 10), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
     ];
 
@@ -505,9 +506,10 @@ internal static class CalcPackExamples
     ];
 
     /// <summary>
-    /// The board's DC loads (24 V, fed from the single-phase mains through the supply). Row 0 is the power trace itself: its input power is a 1 W placeholder that the trace step's I²R loss
-    /// replaces by cell link, all of it released as heat inside the enclosure. The gate drivers and logic and the display release all their input as heat; the power stage releases its
-    /// loss only (the share is left blank, so 1 − η). The loads, efficiencies and the supply are invented illustrations.
+    /// The board's loads (24 V DC, fed from the single-phase mains through a 90 % efficient supply that sits INSIDE the enclosure). Row 0 is the power trace itself: its input power is a 1 W placeholder that the trace
+    /// step's I²R loss replaces by cell link, all of it released as heat inside the enclosure. The gate drivers and logic and the display release all their input as heat; the power stage releases its loss
+    /// only (the share is left blank, so 1 − η). The last row is the supply's own loss, which the sheet counts only if it is a row (E6's convention): 26.5 W = the 238.5 W the DC loads draw × (1/0.9 − 1), typed
+    /// (a test guards it against the loads; it does not follow them automatically). The loads, efficiencies and the supply are invented illustrations.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxE6 { get; } =
     [
@@ -515,7 +517,8 @@ internal static class CalcPackExamples
             DcLoad("Power trace loss (PCB)", 0.001, 1, 1, 1),
             DcLoad("Gate drivers and logic", 0.025, 0.9, 1, 1),
             CalcRow.Of(Txt("name", "Power stage"), Txt("supply", "DC"), ("P", new CalcCell(0.2, "kW")), Num("cosphi", 1), Num("eta", 0.96), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false))),
-            DcLoad("Display and sensors", 0.012, 1, 1, 1)),
+            DcLoad("Display and sensors", 0.012, 1, 1, 1),
+            CalcRow.Of(Txt("name", "24 V supply loss"), Txt("supply", "AC single-phase"), ("P", new CalcCell(0.0265, "kW")), Num("cosphi", 1), Num("eta", 1), Num("heat", 1), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)))),
         C("psu_bus", "AC single-phase"),
     ];
 
@@ -523,39 +526,37 @@ internal static class CalcPackExamples
         CalcRow.Of(Txt("name", name), Txt("supply", "DC"), ("P", new CalcCell(kw, "kW")), Num("cosphi", 1), Num("eta", eta), Num("heat", heat), Num("d", duty), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)));
 
     /// <summary>
-    /// A 400 × 500 × 200 mm wall-mounted enclosure (back against the wall) in a 35 °C room, limit 60 °C. The board's heat arrives by link as the additional load; the 4 W of terminals
-    /// and wiring is the enclosure's own. The enclosure dissipates by itself (no fan, no cooling unit).
+    /// A 500 × 600 × 200 mm wall-mounted enclosure (back against the wall) in a 35 °C room, limit 60 °C, SEALED with no breather when it was closed at 25 °C (so it sees a pressure difference as it warms: its lid
+    /// takes it). The board's heat arrives by link as the additional load; the 4 W of terminals and wiring is the enclosure's own. It dissipates by itself (no fan, no cooling unit).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxE2 { get; } =
     [
         Table("loads", CalcRow.Of(Txt("name", "Terminals and wiring"), ("P", new CalcCell(4, "W")), Num("qty", 1), Num("duty", 1))),
-        Q("W", 0.4, "m"), Q("H", 0.5, "m"), Q("D", 0.2, "m"),
+        Q("W", 0.5, "m"), Q("H", 0.6, "m"), Q("D", 0.2, "m"),
         N("f_top", 1), N("f_front", 1), N("f_rear", 0), N("f_left", 1), N("f_right", 1), N("f_bottom", 0),
-        Q("T_amb", 35, "degC"), Q("T_max", 60, "degC"),
+        Q("T_amb", 35, "degC"), Q("T_max", 60, "degC"), Q("T_seal", 25, "degC"),
     ];
 
     /// <summary>
-    /// The lid latch: a cantilever snap hook 12 mm long, 1.6 mm thick and 5 mm wide, deflected 1 mm. The secant modulus (1500 MPa) and the permissible strain (3 %) of the plastic are TYPED values
-    /// for 55 °C, a little above the enclosure's internal temperature (an INVENTED illustration, not a maker's data): the temperature of use arrives by link, but the modulus and the
-    /// permissible strain do not follow it, so when it moves they must be re-entered from the plastic's data at the new temperature (a test guards the 55 °C against the linked one).
-    /// The friction coefficient is a record, typed.
+    /// The lid latch: a cantilever snap hook 12 mm long, 1.6 mm thick and 5 mm wide, deflected 1 mm. The secant modulus (1400 MPa) and the permissible strain (3 %) of the plastic are TYPED values
+    /// for 60 °C, the enclosure's limit (<c>T_max</c>), an INVENTED illustration and not a maker's data: the temperature of use arrives by link, but the modulus and the permissible strain do not follow
+    /// it, so they stay valid only while the enclosure stays at or below 60 °C, which the enclosure step's own check (natural dissipation holds <c>T_max</c>) guards at run time. The friction coefficient is a record, typed.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxM8 { get; } =
     [
         C("mode", "Cantilever, constant section"), Q("l", 12, "mm"), Q("h", 1.6, "mm"), Q("b", 5, "mm"), Q("y", 1, "mm"),
-        Q("alpha", 30, "deg"), Q("alpha_r", 70, "deg"), N("mu", 0.3), C("Es_source", "Typed secant modulus"), Q("Es", 1500, "MPa"),
+        Q("alpha", 30, "deg"), Q("alpha_r", 70, "deg"), N("mu", 0.3), C("Es_source", "Typed secant modulus"), Q("Es", 1400, "MPa"),
         C("loading", "One-time (assembled once or rarely)"), N("eps_perm_once", 0.03),
     ];
 
     /// <summary>
-    /// The lid: a 400 × 200 × 5 mm plate simply supported all round under 1 kPa of uniform pressure (TYPED: an allowance for the pressure difference across the lid; it is not an
-    /// output of any step in this chain). The modulus (2.1 GPa), Poisson's ratio, density and limit stress are TYPED for the plastic at about 55 °C, a little above the enclosure's
-    /// internal temperature (INVENTED illustrations). This step takes nothing from the others: no quantity it needs is one they compute.
+    /// The lid: a 500 × 200 × 4 mm aluminium plate (the enclosure's top face), simply supported all round. Its pressure is the sealed enclosure's pressure difference, which arrives by link (a 1 kPa placeholder here).
+    /// The modulus (69 GPa), Poisson's ratio, density and limit stress (120 MPa) are generic aluminium-alloy values, TYPED for 60 °C, the enclosure's limit, and indicative only (not a maker's data).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxS9 { get; } =
     [
-        C("shape", "rectangular"), C("support", "simply supported"), Q("a", 400, "mm"), Q("b", 200, "mm"), Q("t", 5, "mm"),
+        C("shape", "rectangular"), C("support", "simply supported"), Q("a", 500, "mm"), Q("b", 200, "mm"), Q("t", 4, "mm"),
         C("load_type", "uniform"), C("load_basis", "pressure q"), Q("q", 1, "kPa"),
-        Q("E", 2.1, "GPa"), N("nu", 0.38), Q("rho", 1200, "kg/m^3"), Q("f_y", 55, "MPa"), N("gamma_M0", 1),
+        Q("E", 69, "GPa"), N("nu", 0.33), Q("rho", 2700, "kg/m^3"), Q("f_y", 120, "MPa"), N("gamma_M0", 1),
     ];
 }

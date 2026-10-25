@@ -33,7 +33,7 @@ public sealed class PipeFlowTests
         // The loss itself is unchanged: the fittings term K·ρ·v²/2 is added as entered.
         var v = 4.53764705882353 / 3600 / (Math.PI * 0.02 * 0.02 / 4);
         Assert.Equal(At(4.53764705882353, 0).OutputSi("dp_total") + 6 * 870 * v * v / 2, transitional.OutputSi("dp_total"), 1e-3);
-        Assert.Equal("1.4.0", Calc.Template.Version);
+        Assert.Equal("1.5.0", Calc.Template.Version);
     }
 
     [Fact]
@@ -306,26 +306,48 @@ public sealed class PipeFlowTests
         CalcInputValue.Table("segments", [ColdRow("chilled water flow", 60, d, od), ColdRow("branch", 10, 30, od is null ? null : 34)]);
 
     [Fact]
-    public void The_Outside_Diameter_Of_The_First_Segment_And_The_Fluid_Temperature_Are_Ports_For_The_Insulation()
+    public void The_Outside_Diameter_Of_The_First_Segment_And_The_Line_Temperature_Are_Ports_For_The_Insulation()
     {
-        // 1.4.0: an optional OD column of the segments table; OD_1 is the first segment's (the insulation's inside diameter), T_fluid the temperature the properties were taken at.
+        // 1.4.0: an optional OD column of the segments table; OD_1 is the first segment's (the insulation's inside diameter). 1.5.0: T_line, the design temperature of the insulated line.
         Assert.Contains(Calc.Template.OutputPorts!, p => p is { Symbol: "OD_1", Unit: "mm" });
-        Assert.Contains(Calc.Template.OutputPorts!, p => p is { Symbol: "T_fluid", Unit: "degC" });
+        Assert.Contains(Calc.Template.OutputPorts!, p => p is { Symbol: "T_line", Unit: "degC" });
+        Assert.DoesNotContain(Calc.Template.OutputPorts!, p => p.Symbol == "T_fluid");
         Assert.Contains(Calc.Template.FindInput("segments")!.Columns!, c => c is { Key: "OD", IsOptional: true });
+        Assert.True(Calc.Template.FindInput("T_line")!.IsOptional);
 
-        var r = Run(CalcInputValue.Quantity("T", 6, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));
+        var r = Run(CalcInputValue.Quantity("T", 9, "degC"), CalcInputValue.Quantity("T_line", 6, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));
         Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
         Assert.Equal(0.054, r.OutputSi("OD_1"), 12);
-        Assert.Equal(6 + 273.15, r.OutputSi("T_fluid"), 9);
-        Assert.Equal("degC", ((Tempest.Calc.Engine.Values.ScalarValue)r.FindOutput("T_fluid")!.Value).DisplayUnit.Symbol);
-        Assert.Equal("mm", ((Tempest.Calc.Engine.Values.ScalarValue)r.FindOutput("OD_1")!.Value).DisplayUnit.Symbol);
 
-        // The OD changes nothing the sheet worked out before: the same run without it gives the same hydraulics.
-        var without = Run(CalcInputValue.Quantity("T", 6, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(null));
+        // The line temperature is the COLDEST temperature entered for the line (the 6 °C flow), not the 9 °C mean the properties are taken at.
+        Assert.Equal(6 + 273.15, r.OutputSi("T_line"), 9);
+        Assert.Equal("degC", ((Tempest.Calc.Engine.Values.ScalarValue)r.FindOutput("T_line")!.Value).DisplayUnit.Symbol);
+        Assert.Equal("mm", ((Tempest.Calc.Engine.Values.ScalarValue)r.FindOutput("OD_1")!.Value).DisplayUnit.Symbol);
+        Assert.Equal(Run(CalcInputValue.Quantity("T", 9, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54)).OutputSi("dp_total"), r.OutputSi("dp_total"), 12);
+
+        // The OD changes nothing the sheet worked out before.
+        var without = Run(CalcInputValue.Quantity("T", 9, "degC"), CalcInputValue.Quantity("T_line", 6, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(null));
         Assert.Null(without.FindOutput("OD_1"));
         Assert.Equal(without.OutputSi("dp_total"), r.OutputSi("dp_total"), 12);
         Assert.Equal(without.OutputSi("V_pipe"), r.OutputSi("V_pipe"), 12);
-        Assert.Equal(6 + 273.15, without.OutputSi("T_fluid"), 9);
+    }
+
+    [Fact]
+    public void Without_T_Line_The_Port_Is_The_Entered_T_And_With_Neither_It_Is_Not_Offered_So_The_Default_20_C_Never_Travels()
+    {
+        var onlyT = Run(CalcInputValue.Quantity("T", 9, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));
+        Assert.Equal(9 + 273.15, onlyT.OutputSi("T_line"), 9);
+
+        var neither = Run(CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));
+        Assert.False(neither.IsBlocked);
+        Assert.Null(neither.FindOutput("T_line"));
+        Assert.Equal(54e-3, neither.OutputSi("OD_1"), 12);
+
+        // A custom fluid takes its properties from rho and mu, not from T: T_line is still the design temperature of the line.
+        var custom = Run(CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidCustom), CalcInputValue.Quantity("rho_custom", 1000, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 1.5, "mPa*s"),
+            CalcInputValue.Quantity("T_line", -5, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));
+        Assert.False(custom.IsBlocked, string.Join("; ", custom.Blocks.Select(b => b.Message)));
+        Assert.Equal(-5 + 273.15, custom.OutputSi("T_line"), 9);
     }
 
     [Fact]

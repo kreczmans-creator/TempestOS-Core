@@ -1,9 +1,9 @@
-# E2 — Enclosure heat dissipation and fan sizing (`elec.enclosure-heat@1.2.0`)
+# E2 — Enclosure heat dissipation and fan sizing (`elec.enclosure-heat@1.3.0`)
 
 **Scope.** Heat-load schedule (P × qty × duty) plus optional solar gain; effective surface from per-face exposure factors (D-20); natural temperature rise through an editable overall coefficient h; forced-ventilation airflow at the allowed rise with altitude density; fan duty point against user fan-curve points and a V² system resistance; cooling-unit capacity when the limit cannot be held.
 
-**Method.** A_eff = Σ f_face A_face; ΔT = P/(h A_eff); V = P/(ρ c_p ΔT_allow), ρ = p(z)/(287.055 T_amb); duty by bisection of p_fan(V) − p_sys (V/V_ref)²; P_cool = max(0, P − h A_eff ΔT_allow).
+**Method.** A_eff = Σ f_face A_face; ΔT = P/(h A_eff); V = P/(ρ c_p ΔT_allow), ρ = p(z)/(287.055 T_amb); duty by bisection of p_fan(V) − p_sys (V/V_ref)²; P_cool = max(0, P − h A_eff ΔT_allow). **Sealed enclosure (1.3.0).** With the optional `T_seal` (the temperature the enclosure was closed at, no breather) the sheet offers `dp_seal = p_site·|T_int/T_seal − 1|` (kPa, absolute temperatures, constant volume, `p_site` the standard atmosphere at the altitude), the pressure difference across the walls when the air warms (a suction, with the notice `seal-suction`, when `T_int` is below `T_seal`); blank = vented, nothing offered. It is an upper bound (a breather, a leak or a flexing wall reduces it). Port `dp_seal` (→ S9 `q`, the pressure on a lid).
 
 **Inputs.** `P_add` (W, a linked heat load such as E6's dissipated heat; v1.1.0); `loads`, `I_sun`, `A_sun`, `alpha_sun`, `W`, `H`, `D`, `f_top…f_bottom`, `h`, `T_amb`, `T_max`, `altitude`, `V_pts`, `p_pts`, `p_sys`, `V_ref`. **Outputs.** `P_loads`, `P_solar`, `P_total`, `A_eff`, `dT_nat`, `T_int`, `P_nat_max`, `P_cool`, `rho_air`, `V_req`, `V_req_net`, `V_duty`, `p_duty`, `u_fan`. **Ports (1.2.0).** `P_total`, `P_cool` (→ B5 `Q_req` in the cooling chain), `P_nat_max`, `T_max` (the limit as entered, → B5 `T_h_in`), `dT_nat`, `T_int`, `V_req`, `V_duty`. **Checks.** natural dissipation holds T_max; fan delivers V_req (when a curve is given); fan duty point exists.
 
-**Test cases.** Wall-mounted 600 × 800 × 300 at 300 W (analytic); fan duty against a linear curve (analytic).
+**Test cases.** Wall-mounted 600 × 800 × 300 at 300 W (analytic); fan duty against a linear curve (analytic); `ka-sealed-enclosure` (the first case sealed at 20 °C: T_int 82.84689 °C, Δp 21.72253 kPa).

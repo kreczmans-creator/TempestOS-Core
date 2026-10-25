@@ -7,7 +7,7 @@ using static Tempest.Calc.Tests.Library.Chains.ChainKit;
 namespace Tempest.Calc.Tests.Library.Chains;
 
 /// <summary>
-/// Addendum B, §B7 chain 8: the chilled-water pipe B1 and the plant room air state B2 → the pipe insulation B9, from the built-in pack template. B1 (1.4.0) offers the fluid temperature (<c>T_fluid</c>) and the
+/// Addendum B, §B7 chain 8: the chilled-water pipe B1 and the plant room air state B2 → the pipe insulation B9, from the built-in pack template. B1 offers the design temperature of the line (<c>T_line</c>, 1.5.0: the 6 °C flow, not the 9 °C mean the properties are taken at) and the
 /// outside diameter of its first segment (<c>OD_1</c>, from the new optional <c>OD</c> column); B2 the dry-bulb (<c>t_1_out</c>) and the dew point (<c>t_dp_1</c>). Every expected number was recomputed in python3
 /// (Kell density, Vogel viscosity, Colebrook; Hyland–Wexler saturation pressure inverted for the dew point; the cylinder resistance series and a scan-and-bisect for the thickness).
 /// </summary>
@@ -19,7 +19,7 @@ public sealed class ColdPipeChainTests
         ChainKit.InstantiateAsync(host, CalcPackTemplates.ColdPipe, "Plant room 2 chilled water", ChainInputs.ColdPipe(host));
 
     /// <summary>A revision of the pipe step: the water 9 °C instead of 6 °C and the tube 59.4 mm outside diameter instead of 54 mm.</summary>
-    private static IReadOnlyList<CalcInputValue> WarmerAndWider(IReadOnlyList<CalcInputValue> inputs) => ScaleCell("segments", 0, "OD", 1.1)(Scale("T", 1.5)(inputs));
+    private static IReadOnlyList<CalcInputValue> WarmerAndWider(IReadOnlyList<CalcInputValue> inputs) => ScaleCell("segments", 0, "OD", 1.1)(Scale("T_line", 1.5)(inputs));
 
     [Fact]
     public async Task Values_Flow_Down_Every_Link_Of_The_Chain_With_Their_Units()
@@ -30,22 +30,23 @@ public sealed class ColdPipeChainTests
         var (b1, b2, b9) = (made.Instances["b1"], made.Instances["b2"], made.Instances["b9"]);
         Assert.Equal(3, made.Pack.InstanceIds.Count);
 
-        // B1: 12 m³/h in 51.6 mm at 6 °C (Kell ρ 999.9402 kg/m³, Vogel μ 1.46841 mPa·s): 1.594004 m/s, Re 56010, Colebrook f 0.0204838, 4.3811 m of head, 42.961 kPa.
+        // B1: 12 m³/h in 51.6 mm at the 9 °C MEAN of the 6/12 °C line (Kell ρ 999.7808 kg/m³, Vogel μ 1.34428 mPa·s): 1.594004 m/s, Re 61172, Colebrook f 0.0200988, 4.32308 m of head, 42.386 kPa.
         var area = Math.PI * 0.0516 * 0.0516 / 4;
         Assert.Equal(12.0 / 3600 / area, Si(b1, "v_s1"), 12);
         Assert.Equal(1.594004197382923, Si(b1, "v_s1"), 12);
-        Assert.Equal(56009.9637244056, Si(b1, "Re_s1"), 6);
-        Assert.Equal(0.020483780837774843, Si(b1, "f_s1"), 9);
-        Assert.Equal(4.3810747397903445, Si(b1, "h_f_total"), 8);
-        Assert.Equal(42961.095842564595, Si(b1, "dp_total"), 4);
+        Assert.Equal(61172.28675951049, Si(b1, "Re_s1"), 6);
+        Assert.Equal(0.020098794721890557, Si(b1, "f_s1"), 9);
+        Assert.Equal(4.3230818345048, Si(b1, "h_f_total"), 8);
+        Assert.Equal(42385.6583120926, Si(b1, "dp_total"), 4);
         Assert.Equal(125.47018403613059e-3, Si(b1, "V_pipe"), 12);
         Assert.Single(b1.Checks);
         Assert.True(b1.Checks[0].Passed);
 
-        // B1's two new ports: the fluid temperature as entered (K, shown in °C) and the first segment's OUTSIDE diameter (m, shown in mm) — not the 51.6 mm bore it judges the flow in.
-        Assert.Equal(6 + 273.15, Si(b1, "T_fluid"), 9);
+        // B1's two new ports: the design temperature of the line as entered, the 6 °C flow and NOT the 9 °C mean (K, shown in °C) and the first segment's OUTSIDE diameter (m, shown in mm) — not the 51.6 mm bore it judges the flow in.
+        Assert.Equal(6 + 273.15, Si(b1, "T_line"), 9);
+        Assert.Equal(9 + 273.15, InputSi(b1, "T"), 9);
         Assert.Equal(0.054, Si(b1, "OD_1"), 12);
-        Assert.Equal(["OD_1", "T_fluid"], CalcPackTemplates.ColdPipe.Bindings.Where(b => b.FromStep == "b1").Select(b => b.Output).Order(StringComparer.Ordinal));
+        Assert.Equal(["OD_1", "T_line"], CalcPackTemplates.ColdPipe.Bindings.Where(b => b.FromStep == "b1").Select(b => b.Output).Order(StringComparer.Ordinal));
         Assert.Equal(0.0516, CellSi(b1, "segments", 0, "D"), 12);
         Assert.Equal(0.054, CellSi(b1, "segments", 0, "OD"), 12);
 
@@ -58,7 +59,7 @@ public sealed class ColdPipeChainTests
         Assert.Equal(Si(b1, "OD_1"), InputSi(b9, "D_i"), 12);
         Assert.Equal(54, b9.Inputs.Single(i => i.Symbol == "D_i").Number!.Value, 9);
         Assert.Equal("mm", b9.Inputs.Single(i => i.Symbol == "D_i").Unit);
-        Assert.Equal(Si(b1, "T_fluid"), InputSi(b9, "theta_i"), 9);
+        Assert.Equal(Si(b1, "T_line"), InputSi(b9, "theta_i"), 9);
         Assert.Equal(6, b9.Inputs.Single(i => i.Symbol == "theta_i").Number!.Value, 9);
 
         // B2 → B9: the ambient dry-bulb and the dew point (degC to degC).
@@ -66,6 +67,11 @@ public sealed class ColdPipeChainTests
         Assert.Equal(28, b9.Inputs.Single(i => i.Symbol == "theta_a").Number!.Value, 9);
         Assert.Equal(Si(b2, "t_dp_1"), InputSi(b9, "theta_dew"), 9);
         Assert.Equal(19.51406457315946, b9.Inputs.Single(i => i.Symbol == "theta_dew").Number!.Value, 7);
+
+        // B2 → B9: the humidity (a % quantity) is linked too, so the sheet prints the air state's 60 %, not a default; the entered dew point wins, so it does not enter the result.
+        Assert.Equal(Si(b2, "phi_1"), InputSi(b9, "RH_a"), 12);
+        Assert.Equal(60, b9.Inputs.Single(i => i.Symbol == "RH_a").Number!.Value, 9);
+        Assert.Equal("%", b9.Inputs.Single(i => i.Symbol == "RH_a").Unit);
 
         // B9: R = ln(104/54)/(2π·0.035) + 1/(8·π·0.104) = 2.98475 + 0.38257 = 3.362905 K·m/W at 25 mm; q = 22 K / R = 6.541963 W/m gained; θ_se = 28 − 6.541963/(8π·0.104) = 25.49715 °C.
         var de = 0.054 + 2 * 0.025;
@@ -111,7 +117,7 @@ public sealed class ColdPipeChainTests
         Assert.Equal(["b1", "b2", "b9"], template.Steps.Select(s => s.Key));
         Assert.Equal(["bs.pipe-pump", "bs.psychrometrics", "bs.insulation"], template.Steps.Select(s => s.TemplateId));
         Assert.Equal(
-            [("b1", "OD_1", "b9", "D_i"), ("b1", "T_fluid", "b9", "theta_i"), ("b2", "t_1_out", "b9", "theta_a"), ("b2", "t_dp_1", "b9", "theta_dew")],
+            [("b1", "OD_1", "b9", "D_i"), ("b1", "T_line", "b9", "theta_i"), ("b2", "t_1_out", "b9", "theta_a"), ("b2", "t_dp_1", "b9", "theta_dew"), ("b2", "phi_1", "b9", "RH_a")],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));
         Assert.All(template.Bindings, b => Assert.Null(b.Row));
 
@@ -123,10 +129,10 @@ public sealed class ColdPipeChainTests
             Assert.Equal(b.Output, link.OutputSymbol);
         }
 
-        // Nothing else is linked: the conductivity, the surface coefficient, the margin and the chosen thickness are the user's; the relative humidity is not used when a dew point is entered.
-        Assert.Equal(4, made.Instances.Values.Sum(i => i.Links.Count));
+        // Nothing else is linked: the conductivity, the surface coefficient, the margin and the chosen thickness are the user's; the conductivity and the margin are the pipe's own.
+        Assert.Equal(5, made.Instances.Values.Sum(i => i.Links.Count));
         Assert.Equal(0, made.Instances.Values.Sum(i => i.CellLinks.Count));
-        Assert.Equal(["D_i", "theta_a", "theta_dew", "theta_i"], made.Instances["b9"].Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(["D_i", "RH_a", "theta_a", "theta_dew", "theta_i"], made.Instances["b9"].Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
         Assert.Empty(made.Instances["b1"].Links);
         Assert.Empty(made.Instances["b2"].Links);
     }
@@ -141,9 +147,9 @@ public sealed class ColdPipeChainTests
         await ChainKit.ReviseAndUpdateAsync(host, made, "b1", WarmerAndWider, ["b9"]);
 
         var (b1, b2, b9) = (await Fresh(host, made, "b1"), await Fresh(host, made, "b2"), await Fresh(host, made, "b9"));
-        Assert.Equal(9 + 273.15, Si(b1, "T_fluid"), 9);
+        Assert.Equal(9 + 273.15, Si(b1, "T_line"), 9);
         Assert.Equal(0.0594, Si(b1, "OD_1"), 12);
-        Assert.Equal(Si(b1, "T_fluid"), InputSi(b9, "theta_i"), 9);
+        Assert.Equal(Si(b1, "T_line"), InputSi(b9, "theta_i"), 9);
         Assert.Equal(9, b9.Inputs.Single(i => i.Symbol == "theta_i").Number!.Value, 9);
         Assert.Equal(Si(b1, "OD_1"), InputSi(b9, "D_i"), 12);
         Assert.Equal(59.4, b9.Inputs.Single(i => i.Symbol == "D_i").Number!.Value, 9);
@@ -169,12 +175,13 @@ public sealed class ColdPipeChainTests
         var b2Before = made.Instances["b2"];
         await AuthoredByAnotherAsync(host, made);
 
-        // 60 % to 66 %: the dew point rises to 21.056088 °C and the dry-bulb does not move, so only theta_dew is stale.
+        // 60 % to 66 %: the dew point rises to 21.056088 °C and the humidity to 66 %; the dry-bulb does not move, so only theta_dew and RH_a are stale.
         var revised = await host.Service.UpdateInputsAsync(b2Before.Id, Scale("RH", 1.1)(b2Before.Inputs));
         Assert.True(revised.Succeeded, revised.Reason);
         var staleness = await host.Service.StalenessAsync(await Fresh(host, made, "b9"));
         Assert.True(staleness.IsStale);
         Assert.Contains(staleness.Reasons, r => r.Contains("'theta_dew'", StringComparison.Ordinal) && r.Contains("different 't_dp_1'", StringComparison.Ordinal));
+        Assert.Contains(staleness.Reasons, r => r.Contains("'RH_a'", StringComparison.Ordinal) && r.Contains("different 'phi_1'", StringComparison.Ordinal));
         Assert.DoesNotContain(staleness.Reasons, r => r.Contains("'theta_a'", StringComparison.Ordinal));
         Assert.DoesNotContain(staleness.Reasons, r => r.Contains("'D_i'", StringComparison.Ordinal) || r.Contains("'theta_i'", StringComparison.Ordinal));
         Assert.False((await host.Service.StalenessAsync(await Fresh(host, made, "b1"))).IsStale);
@@ -183,6 +190,7 @@ public sealed class ColdPipeChainTests
         var b9 = await Fresh(host, made, "b9");
         Assert.False((await host.Service.StalenessAsync(b9)).IsStale);
         Assert.Equal(21.056087900134088, b9.Inputs.Single(i => i.Symbol == "theta_dew").Number!.Value, 6);
+        Assert.Equal(66, b9.Inputs.Single(i => i.Symbol == "RH_a").Number!.Value, 9);
         Assert.Equal(10.12154443422767e-3, Si(b9, "thickness"), 8);
         Assert.Equal(0.42107793572430213, Si(b9, "u_dew"), 7);
         Assert.All(b9.Checks, c => Assert.True(c.Passed, c.Name));
@@ -213,7 +221,7 @@ public sealed class ColdPipeChainTests
         var staleness = await host.Service.StalenessAsync(await Fresh(host, made, "b9"));
         Assert.True(staleness.IsStale);
         Assert.Contains(staleness.Reasons, r => r.Contains("'D_i'", StringComparison.Ordinal) && r.Contains("different 'OD_1'", StringComparison.Ordinal));
-        Assert.Contains(staleness.Reasons, r => r.Contains("'theta_i'", StringComparison.Ordinal) && r.Contains("different 'T_fluid'", StringComparison.Ordinal));
+        Assert.Contains(staleness.Reasons, r => r.Contains("'theta_i'", StringComparison.Ordinal) && r.Contains("different 'T_line'", StringComparison.Ordinal));
         Assert.Contains(staleness.Reasons, r => r.Contains("'theta_a'", StringComparison.Ordinal) && r.Contains("different 't_1_out'", StringComparison.Ordinal));
         Assert.Contains(staleness.Reasons, r => r.Contains("'theta_dew'", StringComparison.Ordinal) && r.Contains("different 't_dp_1'", StringComparison.Ordinal));
 
@@ -239,8 +247,50 @@ public sealed class ColdPipeChainTests
         var sheet = await CheckAndIssueAsync(host, made, CalcPackTemplates.ColdPipe, "CHW-INS-001", "Client Co", "Checked against SPEC-CHW-04.");
 
         Assert.Contains("link: Chilled water pipe rev A · OD_1", sheet, StringComparison.Ordinal);
-        Assert.Contains("link: Chilled water pipe rev A · T_fluid", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Chilled water pipe rev A · T_line", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Plant room air rev A · t_1_out", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Plant room air rev A · t_dp_1", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Plant room air rev A · phi_1", sheet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Linking_The_Mean_Temperature_Instead_Of_The_Flow_Temperature_Would_Have_Understated_The_Insulation_Which_Is_Why_T_Line_Is_A_Separate_Input()
+    {
+        var host = Host();
+        var made = await InstantiateAsync(host);
+        var (b1, b9) = (made.Instances["b1"], made.Instances["b9"]);
+
+        // The 6/12 °C line has a mean of 9 °C, but anti-condensation is sized on the 6 °C flow: the link carries the flow temperature, the pipe step still works at the mean.
+        Assert.Equal(9 + 273.15, InputSi(b1, "T"), 9);
+        Assert.Equal(6 + 273.15, InputSi(b9, "theta_i"), 9);
+        Assert.Equal(7.5206514741039125e-3, Si(b9, "thickness"), 9);
+
+        // The same insulation run at the 9 °C mean needs 6.0890 mm (python3), 19 % less: unsafe at the cold end.
+        var copy = (IReadOnlyList<CalcInputValue>)[.. b9.Inputs.Select(i => i.Symbol == "theta_i" ? i with { Number = 9, Provenance = CalcProvenance.Assumed("test: the mean temperature") } : i with { Provenance = CalcProvenance.Assumed("test") })];
+        var mean = await host.Service.CreateAsync("bs.insulation", made.Pack.ProjectId, "Insulation at the mean temperature", copy);
+        Assert.Empty(mean.Blocks);
+        Assert.Equal(6.089036686315434e-3, Si(mean, "thickness"), 9);
+        Assert.True(Si(mean, "thickness") < 0.82 * Si(b9, "thickness"));
+    }
+
+    [Fact]
+    public async Task Without_A_Line_Temperature_Or_A_Fluid_Temperature_The_Pipe_Step_Offers_No_Port_And_The_Pack_Is_Refused_Rather_Than_Take_The_20_C_Default()
+    {
+        var host = Host();
+        var inputs = ChainInputs.ColdPipe(host);
+        inputs["b1"] = [.. inputs["b1"].Where(v => v.Symbol is not ("T" or "T_line"))];
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.ColdPipe, await host.ProjectAsync(), "Plant room 3 chilled water", inputs);
+        Assert.Null(made);
+        Assert.NotNull(refusal);
+        Assert.Contains("T_line", refusal, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Issue_Is_Refused_At_The_Staleness_Gate_When_The_Pipe_Step_Moves_After_The_Pack_Was_Checked()
+    {
+        var host = Host();
+        var made = await InstantiateAsync(host);
+        await IssueIsRefusedAtTheStalenessGateWhenTheFirstStepMovesAfterTheCheckAsync(host, made, CalcPackTemplates.ColdPipe, "b1", "b9",
+            (id, outside) => host.Service.BindAsync(id, "theta_i", outside, "T_line"), ["b9"]);
     }
 }

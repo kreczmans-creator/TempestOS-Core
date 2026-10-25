@@ -170,8 +170,8 @@ public sealed class ElectricalTests
         Assert.Contains(ports, p => p is { Symbol: "P_total", Unit: "W" });
 
         // Every declared port is produced by a run (the fan duty only when a fan curve is given).
-        Assert.All(ports.Where(p => p.Symbol != "V_duty"), p => Assert.NotNull(r.FindOutput(p.Symbol)));
-        Assert.Equal("1.2.0", Enclosure.Template.Version);
+        Assert.All(ports.Where(p => p.Symbol is not ("V_duty" or "dp_seal")), p => Assert.NotNull(r.FindOutput(p.Symbol)));
+        Assert.Equal("1.3.0", Enclosure.Template.Version);
     }
 
     [Fact]
@@ -181,4 +181,31 @@ public sealed class ElectricalTests
         Assert.Equal(50 + 273.15, r.OutputSi("T_max"), 1e-9);
         Assert.Contains(Enclosure.Template.OutputPorts!, p => p is { Symbol: "T_max", Unit: "degC" });
     }
+
+    [Fact]
+    public void A_Sealed_Enclosure_Offers_The_Pressure_Difference_Of_Its_Air_Warming_At_Constant_Volume()
+    {
+        Assert.Contains(Enclosure.Template.OutputPorts!, p => p is { Symbol: "dp_seal", Unit: "kPa" });
+
+        // Vented (no T_seal): no pressure difference is offered.
+        var vented = CalcRunner.Run(Enclosure, With(Enclosure, 0));
+        Assert.Null(vented.FindOutput("dp_seal"));
+
+        // Sealed at 25 °C: Δp = p_site·(T_int/T_seal − 1), the site pressure falling with altitude; nothing else on the sheet moves.
+        var sealed25 = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_seal", 25, "degC")));
+        var tInt = sealed25.OutputSi("T_int");
+        Assert.Equal(101325 * (tInt / 298.15 - 1) / 1e3, sealed25.OutputSi("dp_seal") / 1e3, 1e-9);
+        Assert.Equal(vented.OutputSi("T_int"), tInt, 1e-12);
+        Assert.Equal(vented.OutputSi("P_cool"), sealed25.OutputSi("P_cool"), 1e-12);
+        var high = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_seal", 25, "degC"), CalcInputValue.Quantity("altitude", 2000, "m")));
+        Assert.Equal(PressureAt(2000) * (tInt / 298.15 - 1), high.OutputSi("dp_seal"), 1e-6);
+
+        // Sealed warmer than it runs: a suction, shown as its magnitude with a notice.
+        var cold = CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_seal", 90, "degC")));
+        Assert.Equal(101325 * (1 - tInt / 363.15), cold.OutputSi("dp_seal"), 1e-6);
+        Assert.Contains(cold.Notices, n => n.RuleId == "seal-suction");
+        Assert.DoesNotContain(sealed25.Notices, n => n.RuleId == "seal-suction");
+    }
+
+    private static double PressureAt(double z) => EnclosureHeatCalculator.PressureAtAltitude(z);
 }

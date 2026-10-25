@@ -17,7 +17,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   Symbol | Description | Value | Unit | Source | Valid range
   geometry | Surface | pipe (cylinder) |  | drawing: DRG-CHW-410 rev B | any
   D_i | Pipe outer diameter, the inside of the insulation (pipe) | 54 | mm | link: Chilled water pipe rev A · OD_1 | 10 … 1000 mm
-  theta_i | Process (fluid) temperature | 6 | degC | link: Chilled water pipe rev A · T_fluid | -50 … 400 degC
+  theta_i | Process (fluid) temperature | 6 | degC | link: Chilled water pipe rev A · T_line | -50 … 400 degC
   theta_a | Ambient air temperature (also the radiation sink) | 28 | degC | link: Plant room air rev A · t_1_out | -20 … 50 degC
   lambda | Thermal conductivity of the insulation | 0.035 | W/(m*K) | drawing: DRG-CHW-410 rev B | 0.015 … 0.2 W/(m*K)
   h_mode | Where the outer surface coefficient comes from | h_se as given |  | drawing: DRG-CHW-410 rev B | any
@@ -27,7 +27,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   L_surf | Height or flow length of the flat surface (correlation, flat) | 1 | m | assumption: Sheet default value; no project figure given. | 0.1 … 10 m
   dew_margin | Margin of the surface above the dew point, for a cold surface (blank = not a criterion) | 1 | K | drawing: DRG-CHW-410 rev B | 0 … 5 K
   theta_dew | Dew point of the ambient air, if known, for example linked from B2 (blank = from θ_a and RH_a by the Magnus relation) | 19.5141 | degC | link: Plant room air rev A · t_dp_1 | -50 … 50 degC
-  RH_a | Relative humidity of the ambient air (anti-condensation) | 60 | % | assumption: Sheet default value; no project figure given. | 20 … 95 %
+  RH_a | Relative humidity of the ambient air (anti-condensation) | 60 | % | link: Plant room air rev A · phi_1 | 20 … 95 %
   t_chosen | Chosen insulation thickness (blank = report at the required thickness, no checks; with it, nothing blocks) | 25 | mm | drawing: DRG-CHW-410 rev B | 0 … 300 mm
 
 3. ASSUMPTIONS
@@ -40,7 +40,6 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   A7. eps (Emissivity of the outer surface (correlation)) is taken as 0.9. (Sheet default value; no project figure given.)
   A8. v_wind (Air speed over the surface (correlation; 0 = still air)) is taken as 0 m/s. (Sheet default value; no project figure given.)
   A9. L_surf (Height or flow length of the flat surface (correlation, flat)) is taken as 1 m. (Sheet default value; no project figure given.)
-  A10. RH_a (Relative humidity of the ambient air (anti-condensation)) is taken as 60 %. (Sheet default value; no project figure given.)
 
 4. WORKING
   [10] t_dew = t such that θ_se ≥ 20.514 °C for every thicker layer    « ISO 12241
@@ -111,5 +110,5 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   Content hash: 38a2737abf1a41c2
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 14/14
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test

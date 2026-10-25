@@ -1,10 +1,10 @@
 # Calc pack — Cold pipe (`pack.cold-pipe`)
 
-**Chain.** Chilled water pipe (`bs.pipe-pump`) → Plant room air (`bs.psychrometrics`) → Pipe insulation (`bs.insulation`).
+**Chain.** Chilled water pipe (`bs.pipe-pump`) → Pipe insulation (`bs.insulation`); Plant room air (`bs.psychrometrics`) → Pipe insulation (`bs.insulation`).
 
-**Purpose.** Takes the temperature and outside diameter of a chilled-water pipe from the pipe step, and the ambient temperature and dew point of the surrounding air from the psychrometrics step, to the insulation thickness that keeps the pipe's outer surface above the dew point by the chosen margin, and the heat gain and surface temperature at the chosen thickness. The pipe step also checks the flow velocity in the pipe's inner diameter; the insulation's conductivity and surface coefficient are the user's.
+**Purpose.** Takes the design temperature (the coldest fluid temperature in the line, not its mean) and the outside diameter of a chilled-water pipe from the pipe step, and the ambient temperature, dew point and humidity of the surrounding air from the psychrometrics step, to the insulation thickness that keeps the pipe's outer surface above the dew point by the chosen margin, and the heat gain and surface temperature at the chosen thickness. The pipe step also checks the flow velocity in the pipe's inner diameter; the insulation's conductivity and surface coefficient are the user's.
 
-A chilled-water flow-and-return line at 6 °C (60 m of 54 × 1.2 mm copper tube, inner diameter 51.6 mm, 12 m³/h at 1.6 m/s) runs through a plant room held at 28 °C and 60 % relative humidity. The pipe step finds the flow velocity and pressure drop in the 51.6 mm bore and offers the fluid temperature (6 °C) and the pipe's **outside** diameter (54 mm: the optional OD column of its segments table, added to B1 in 1.4.0) as ports; the psychrometrics step gives the room air's dry-bulb (28 °C) and dew point (19.51 °C). The insulation step takes all four by link and finds the thickness at which the outer surface of a 0.035 W/(m·K) cover stays 1 K above the dew point (7.52 mm), then the heat gain (6.54 W/m) and surface temperature (25.50 °C) at the chosen 25 mm. The heat-gain limit is not a criterion here, so the dew-point margin is the only one. **The conductivity, surface coefficient, margin and chosen thickness are the owner's; the example's are invented and are not maker's or standard's values, and no thickness table is used.** The tube roughness and fittings K are invented illustrations.
+A chilled-water flow-and-return line, 6 °C flow and 12 °C return (60 m of 54 × 1.2 mm copper tube, inner diameter 51.6 mm, 12 m³/h at 1.6 m/s), runs through a plant room held at 28 °C and 60 % relative humidity. The pipe step takes its fluid properties at the 9 °C MEAN temperature and finds the flow velocity and pressure drop in the 51.6 mm bore; it offers the design temperature of the line, `T_line`, the 6 °C flow (the coldest in the line, which is what the anti-condensation sizing needs: linking the mean would understate the thickness by 19 %), and the pipe's **outside** diameter (54 mm: the optional OD column of its segments table, added to B1 in 1.4.0) as ports; the psychrometrics step gives the room air's dry-bulb (28 °C), dew point (19.51 °C) and humidity (60 %, which the insulation step prints but does not use because the dew point is entered). The insulation step takes all five by link and finds the thickness at which the outer surface of a 0.035 W/(m·K) cover stays 1 K above the dew point (7.52 mm), then the heat gain (6.54 W/m) and surface temperature (25.50 °C) at the chosen 25 mm. The heat-gain limit is not a criterion here, so the dew-point margin is the only one. **The conductivity, surface coefficient, margin and chosen thickness are the owner's; the example's are invented and are not maker's or standard's values, and no thickness table is used.** The tube roughness and fittings K are invented illustrations.
 
 **Issue.** Project “Plant room 2 chilled water”, pack “Chilled water pipe insulation calc pack”, checked once as a bundle and issued under issue reference **`CHW-INS-001`** to Client Co in one transaction. After issue every step is read-only and carries that reference. Checked against SPEC-CHW-04 and DRG-CHW-410 rev B.
 
@@ -18,14 +18,15 @@ A chilled-water flow-and-return line at 6 °C (60 m of 54 × 1.2 mm copper tube,
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes every step below it stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes the steps that take from it, and every step that takes from those, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
 | Chilled water pipe | `OD_1` | Pipe insulation | `D_i` | 54 mm |
-| Chilled water pipe | `T_fluid` | Pipe insulation | `theta_i` | 6 degC |
+| Chilled water pipe | `T_line` | Pipe insulation | `theta_i` | 6 degC |
 | Plant room air | `t_1_out` | Pipe insulation | `theta_a` | 28 degC |
 | Plant room air | `t_dp_1` | Pipe insulation | `theta_dew` | 19.5141 degC |
+| Plant room air | `phi_1` | Pipe insulation | `RH_a` | 60 % |
 
 ## Inputs and provenance
 

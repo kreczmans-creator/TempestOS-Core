@@ -327,4 +327,13 @@ public sealed class EnvelopeMoistureChainTests
         Assert.Contains("link: Room air state rev A · t_1_out", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Room air state rev A · phi_1", sheet, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task Issue_Is_Refused_At_The_Staleness_Gate_When_The_Heat_Loss_Step_Moves_After_The_Pack_Was_Checked()
+    {
+        var host = Host();
+        var made = await InstantiateAsync(host);
+        await IssueIsRefusedAtTheStalenessGateWhenTheFirstStepMovesAfterTheCheckAsync(host, made, CalcPackTemplates.EnvelopeMoisture, "b4", "b7",
+            (id, outside) => host.Service.BindAsync(id, "U_ref", outside, "U_1"), ["b7"]);
+    }
 }

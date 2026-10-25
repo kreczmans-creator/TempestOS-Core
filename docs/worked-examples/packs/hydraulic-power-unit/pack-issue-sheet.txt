@@ -40,7 +40,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 29/29
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -378,7 +378,7 @@ Areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_
   Content hash: 29090df0de4e6fb3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -505,7 +505,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   Content hash: 13736352fb1985ad
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -565,10 +565,10 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
       = 30 mPa·s
       = 30 mPa·s
         Dynamic viscosity (as entered)
-  [7] T_fluid = T (as entered)
+  [7] T_line = T (no T_line entered)
       = 50 °C
       = 50 degC
-        Fluid temperature the properties were taken at
+        Design temperature of the line to insulate: the fluid temperature T, since no T_line was entered
   [11] Q_design = Q
       = 4.5376 m³/h
       = 4.5376 m³/h
@@ -631,7 +631,7 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
         Velocity utilisation
 
 5. RESULTS
-  T_fluid = 50 degC    Fluid temperature
+  T_line = 50 degC    Line design temperature
   v_s1 = 4.0122 m/s    Velocity, pressure line to cylinder
   Re_s1 = 2327.1    Re, pressure line to cylinder
   f_s1 = 0.048912    f, pressure line to cylinder
@@ -655,11 +655,11 @@ Q = Φ/(ρ c_p ΔT) when a heat load is given; v = Q/(πD²/4); Re = ρvD/μ; f 
   WARNING fittings: segments: pressure line to cylinder has fitting losses (K = 6) at Re = 2327.1; the K values are turbulent-flow values and rise at low Reynolds number, so the fittings loss K·v²/2g is understated here.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.4.0
-  Content hash: 05d8b37c038bc8a2
+  Template: bs.pipe-pump@1.5.0
+  Content hash: fa61fbf098961063
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -837,7 +837,7 @@ Linear mechanisms: k = metres per motor radian (screw p/(2π i); belt D/(2 i); r
   Content hash: 64020d560b0ee248
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -995,5 +995,5 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 536348060f88e8f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 08:48 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test

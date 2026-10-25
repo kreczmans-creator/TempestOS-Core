@@ -1,6 +1,6 @@
 # Calc pack — Wet heating (`pack.wet-heating`)
 
-**Chain.** Room A heat loss (`bs.room-heat-loss`) → Room B heat loss (`bs.room-heat-loss`) → Sealed system (`bs.sealed-system`) → Primary pipework and pump (`bs.pipe-pump`) → Circulator motor (`elec.motor-sizing`).
+**Chain.** Room A heat loss (`bs.room-heat-loss`) → Sealed system (`bs.sealed-system`); Room B heat loss (`bs.room-heat-loss`) → Sealed system (`bs.sealed-system`); Sealed system (`bs.sealed-system`) → Primary pipework and pump (`bs.pipe-pump`); Primary pipework and pump (`bs.pipe-pump`) → Circulator motor (`elec.motor-sizing`).
 
 **Purpose.** Sizes a wet heating circuit from the rooms to the circulator: room heat losses, emitters and expansion vessel, the pipework and pump at the flow that heat needs, and the motor that drives the pump. The loop is closed (no static lift) and the example load is small, so the pump duty is a deliberately tiny illustration. The pipework water content in the sealed system is entered by hand from the pipework's V_pipe, because a link back from B1 would be a cycle.
 
@@ -20,7 +20,7 @@ Two rooms' design heat losses are the two rows of the sealed system's room table
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes every step below it stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes the steps that take from it, and every step that takes from those, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|

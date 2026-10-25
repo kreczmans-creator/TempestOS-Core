@@ -224,7 +224,7 @@ public static class CalcPackTemplates
     /// B4 → B7: the heat-loss step offers no per-layer output (its layers table is an input, and a link feeds one number or one table cell from a declared output), so
     /// the wall's layers are typed in the Glaser step as well, with the vapour resistance factors it needs, and the one value the two share is linked: B4's U-value of the
     /// first element (<c>U_1</c>, a declared port since B4 1.2.0) is the Glaser step's <c>U_ref</c>. The Glaser step compares it with <c>1/R_T</c> of its own layers and warns when
-    /// they differ by more than 2 %, so a revision of the wall in one step makes the other stale and, once updated, shows whether the layers still agree. The Glaser step's vapour control
+    /// they differ by more than 2 %, so a revision of the wall in the heat-loss step makes the Glaser step stale and, once updated, the warning shows whether the layers still agree (a revision of the Glaser layers makes nothing stale: the warning is the only guard). The comparison is of the thermal resistance only: it cannot see a swapped layer order or a wrong vapour resistance factor in the twice-typed layers. The Glaser step's vapour control
     /// layer is not in the heat-loss step (0.2 mm is below its 1 mm layer minimum and thermally negligible: 0.0006 m²K/W). B2 → B7: the room air's dry-bulb (<c>t_1_out</c>) is the
     /// internal air temperature <c>theta_int</c> and its relative humidity (<c>phi_1</c>, added to B2 in 1.1.0 as a percentage quantity: the plain-number <c>RH_1</c> cannot be linked
     /// to a percentage input) the internal relative humidity <c>RH_int</c>. The heat-loss step's own internal design temperature is typed (21 °C, the same as the air state's;
@@ -249,17 +249,18 @@ public static class CalcPackTemplates
     /// <summary>
     /// Cold pipe: chilled-water pipe (B1) and the room air state (B2) → insulation thickness (B9).
     /// <para>
-    /// B1 → B9: the fluid temperature the pipe step worked at (<c>T_fluid</c>, a declared port since B1 1.4.0) is the process temperature <c>theta_i</c>, and the first segment's outside
-    /// diameter (<c>OD_1</c>, from the optional <c>OD</c> column added to the segments table in B1 1.4.0) is the insulation's inside diameter <c>D_i</c>: the inner diameter B1 judges the flow in is not the
-    /// diameter the insulation covers. B2 → B9: the room air's dry-bulb (<c>t_1_out</c>) is the ambient temperature <c>theta_a</c> and its dew point (<c>t_dp_1</c>) the dew point <c>theta_dew</c> the surface must
-    /// stay above by the margin; the relative humidity <c>RH_a</c> is then not used (an entered dew point wins), so it is not linked. The heat-gain limit <c>q_max_m</c> is omitted from the example so that the
-    /// dew-point margin is the one criterion; the conductivity, the surface coefficient, the margin and the chosen thickness are the user's. Revising the pipe's temperature or outside diameter, or the room air,
+    /// B1 → B9: the design temperature of the line (<c>T_line</c>, a declared port since B1 1.5.0) is the process temperature <c>theta_i</c>. It is NOT the mean fluid temperature <c>T</c> the pipe step takes its properties at: for a
+    /// 6/12 °C chilled line the mean is 9 °C but anti-condensation must be sized on the 6 °C flow, so the pipe step is given the flow temperature as <c>T_line</c> (the port is offered only when <c>T_line</c> or <c>T</c> is entered). The first segment's
+    /// outside diameter (<c>OD_1</c>, from the optional <c>OD</c> column added to the segments table in B1 1.4.0) is the insulation's inside diameter <c>D_i</c>: the inner diameter B1 judges the flow in is not the
+    /// diameter the insulation covers. B2 → B9: the room air's dry-bulb (<c>t_1_out</c>) is the ambient temperature <c>theta_a</c>, its dew point (<c>t_dp_1</c>) the dew point <c>theta_dew</c> the surface must
+    /// stay above by the margin, and its relative humidity (<c>phi_1</c>) <c>RH_a</c>: an entered dew point wins, so <c>RH_a</c> is not used in the result, but it is linked so that the sheet's printed humidity is the air state's, not a default. The heat-gain limit <c>q_max_m</c> is omitted from the example so that the
+    /// dew-point margin is the one criterion; the conductivity, the surface coefficient, the margin and the chosen thickness are the user's. Revising the pipe's line temperature or outside diameter, or the room air,
     /// makes the insulation stale. The pipe step's own pump and pressure checks are unaffected by the insulation: nothing is fed back.
     /// </para>
     /// </summary>
     public static CalcPackTemplate ColdPipe { get; } = new(
         "pack.cold-pipe", "Cold pipe",
-        "Takes the temperature and outside diameter of a chilled-water pipe from the pipe step, and the ambient temperature and dew point of the surrounding air from the psychrometrics step, to the insulation thickness that keeps the pipe's outer surface above the dew point by the chosen margin, and the heat gain and surface temperature at the chosen thickness. The pipe step also checks the flow velocity in the pipe's inner diameter; the insulation's conductivity and surface coefficient are the user's.",
+        "Takes the design temperature (the coldest fluid temperature in the line, not its mean) and the outside diameter of a chilled-water pipe from the pipe step, and the ambient temperature, dew point and humidity of the surrounding air from the psychrometrics step, to the insulation thickness that keeps the pipe's outer surface above the dew point by the chosen margin, and the heat gain and surface temperature at the chosen thickness. The pipe step also checks the flow velocity in the pipe's inner diameter; the insulation's conductivity and surface coefficient are the user's.",
         [
             new CalcPackStep("b1", "bs.pipe-pump", "Chilled water pipe", CalcPackExamples.ColdB1),
             new CalcPackStep("b2", "bs.psychrometrics", "Plant room air", CalcPackExamples.ColdB2),
@@ -267,9 +268,10 @@ public static class CalcPackTemplates
         ],
         [
             new CalcPackBinding("b1", "OD_1", "b9", "D_i"),
-            new CalcPackBinding("b1", "T_fluid", "b9", "theta_i"),
+            new CalcPackBinding("b1", "T_line", "b9", "theta_i"),
             new CalcPackBinding("b2", "t_1_out", "b9", "theta_a"),
             new CalcPackBinding("b2", "t_dp_1", "b9", "theta_dew"),
+            new CalcPackBinding("b2", "phi_1", "b9", "RH_a"),
         ]);
 
     /// <summary>
@@ -299,23 +301,22 @@ public static class CalcPackTemplates
         ]);
 
     /// <summary>
-    /// Electronics enclosure: PCB power trace (E7) → load budget (E6) → enclosure heat (E2) → snap-fit latch (M8), with the lid (S9) an independent member.
+    /// Electronics enclosure: PCB power trace (E7) → load budget (E6) → enclosure heat (E2) → snap-fit latch (M8) and lid plate (S9).
     /// <para>
     /// E7 → E6: the trace's I²R loss (<c>trace_Ploss</c>, W) is the input power of a row of the board's load table (<c>loads</c> row 0, column <c>P</c>, kW), a table-cell link; all of it is released as heat inside the enclosure
-    /// (the row's heat share is 1). E6 → E2: the heat the loads release inside (<c>Phi</c>, kW) is the enclosure's additional load (<c>P_add</c>, W), as in the cooling chain. E2 → M8: the enclosure's internal temperature (<c>T_int</c>) is the
-    /// snap-fit's temperature of use (<c>T_use</c>). The snap-fit records the temperature but its secant modulus and permissible strain are typed for a temperature (55 °C in the example): they do not follow the link, so
-    /// when <c>T_use</c> moves they must be re-entered from the plastic's data at the new temperature; a test guards the example's 55 °C against the linked temperature. The trace step's board ambient is typed (60 °C, the enclosure's ceiling): the real ambient is the
-    /// enclosure's internal temperature, downstream of the trace, so linking it back would be a cycle; a test guards that the internal temperature stays below the typed value.
+    /// (the row's heat share is 1). E6 → E2: the heat the loads release inside (<c>Phi</c>, kW) is the enclosure's additional load (<c>P_add</c>, W), as in the cooling chain. The supply's own loss is a typed row of the load table (E6 counts it
+    /// only if it is a row); a test guards it against the loads. E2 → M8: the enclosure's internal temperature (<c>T_int</c>) is the snap-fit's temperature of use (<c>T_use</c>). E2 → S9: the enclosure is sealed (<c>T_seal</c>, no breather), so the air warming from the
+    /// sealing temperature to <c>T_int</c> at constant volume puts the pressure difference <c>dp_seal</c> = p0·(T_int/T_seal − 1) (kPa, an upper bound: a breather or a leak reduces it) across the walls, which is the uniform pressure <c>q</c> on the lid plate.
     /// </para>
     /// <para>
-    /// <b>S9, the lid, takes nothing from this chain and is kept as an independent member.</b> The plate step has no temperature input (its modulus is typed for the plastic at the operating temperature, as for the latch), and the pressure on a lid is
-    /// not an output of any step here: a sealed enclosure that warms by ΔT would see up to p0·(T_int/T_amb − 1) across the lid, a gas-law relation no step in this chain computes; the example types a 1 kPa allowance instead. No link is invented. Revising the
-    /// trace leaves the lid current; revising the lid leaves the rest current.
+    /// The snap-fit records the temperature but its secant modulus and permissible strain, and the lid's modulus and limit stress, are TYPED for 60 °C, the enclosure's limit <c>T_max</c>: they do not follow the links, and are valid only while the enclosure stays
+    /// at or below that limit, which the enclosure step's own check (natural dissipation holds <c>T_max</c>) guards at run time; if the limit or the temperature moves they must be re-entered from the material's data. The trace step's board ambient is typed (60 °C, also <c>T_max</c>):
+    /// the real ambient is the enclosure's internal temperature, downstream of the trace, so linking it back would be a cycle; the same check guards it. The plate step has no temperature input.
     /// </para>
     /// </summary>
     public static CalcPackTemplate ElectronicsEnclosure { get; } = new(
         "pack.electronics-enclosure", "Electronics enclosure",
-        "Follows the loss of a board's power trace into the heat of its load budget, the temperature the enclosure settles at, and the temperature the lid latch works at, and checks the lid plate under a typed pressure. The trace loss is a row of the load table (a table cell); the enclosure's temperature is the latch's temperature of use; the latch's modulus and permissible strain and the lid's modulus are typed for the plastic at about 55 °C and do not follow that temperature; the trace's board ambient is typed (a link back would be a cycle). The lid is an independent member: nothing in the chain computes the pressure on it, and the plate step has no temperature input.",
+        "Follows the loss of a board's power trace into the heat of its load budget, the temperature a sealed enclosure settles at and the pressure difference that temperature puts across it, the temperature the lid latch works at, and the lid plate under that pressure. The trace loss is a row of the load table (a table cell); the enclosure's internal temperature is the latch's temperature of use; the enclosure's sealed-air pressure difference is the lid's pressure. The latch's and lid's material values are typed for 60 °C, the enclosure's limit, and do not follow the links; the trace's board ambient is typed (a link back would be a cycle).",
         [
             new CalcPackStep("e7", "elec.pcb-trace", "Power trace", CalcPackExamples.ElxE7),
             new CalcPackStep("e6", "elec.load-budget", "Board load budget", CalcPackExamples.ElxE6),
@@ -327,6 +328,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("e7", "trace_Ploss", "e6", "loads", Row: 0, Column: "P"),
             new CalcPackBinding("e6", "Phi", "e2", "P_add"),
             new CalcPackBinding("e2", "T_int", "m8", "T_use"),
+            new CalcPackBinding("e2", "dp_seal", "s9", "q"),
         ]);
 
     /// <summary>Every built-in chain.</summary>

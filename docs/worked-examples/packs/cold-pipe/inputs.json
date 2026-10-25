@@ -23,6 +23,17 @@
     },
     {
       "Symbol": "T",
+      "Number": 9,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A72 (chilled water duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "9"
+    },
+    {
+      "Symbol": "T_line",
       "Number": 6,
       "Unit": "degC",
       "Provenance": {
@@ -247,7 +258,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6078f59b56674087aa2d56927a7e2d87#OD_1",
+        "Reference": "calc:e5b27213757b4aa0a9b9244d70f41d80#OD_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -269,8 +280,9 @@
       "Number": 60,
       "Unit": "%",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Link",
+        "Reference": "calc:f366514f56024cf1bce2784f838a65ca#phi_1",
+        "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "60"
@@ -361,7 +373,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d2326543c81248b691e3b86a0f277127#t_1_out",
+        "Reference": "calc:f366514f56024cf1bce2784f838a65ca#t_1_out",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -373,7 +385,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d2326543c81248b691e3b86a0f277127#t_dp_1",
+        "Reference": "calc:f366514f56024cf1bce2784f838a65ca#t_dp_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -385,7 +397,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6078f59b56674087aa2d56927a7e2d87#T_fluid",
+        "Reference": "calc:e5b27213757b4aa0a9b9244d70f41d80#T_line",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

@@ -14,26 +14,26 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  mode | Form of snap-fit | Cantilever, constant section |  | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | any
-  l | Length of the beam (cantilever); of the torsion bar: its free length when held at one end, or its whole length between the two supports when held at both ends with the lever in the middle | 12 | mm | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 2 … 100 mm
-  h | Thickness at the root (cantilever); wall thickness of the ring (annular) | 1.6 | mm | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 0.3 … 10 mm
-  b | Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube) | 5 | mm | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 1 … 50 mm
+  mode | Form of snap-fit | Cantilever, constant section |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  l | Length of the beam (cantilever); of the torsion bar: its free length when held at one end, or its whole length between the two supports when held at both ends with the lever in the middle | 12 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 2 … 100 mm
+  h | Thickness at the root (cantilever); wall thickness of the ring (annular) | 1.6 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.3 … 10 mm
+  b | Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube) | 5 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 1 … 50 mm
   h_ratio | Tip thickness / root thickness (tapered thickness) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.25 … 1
   b_ratio | Tip width / root width (tapered width) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
-  y | Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared | 1 | mm | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 0.05 … 20 mm
+  y | Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared | 1 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.05 … 20 mm
   D_ring | Mean diameter of the ring (annular) | 30 | mm | assumption: Sheet default value; no project figure given. | 5 … 500 mm
   dD | Interference on the diameter: how much the ring is widened to pass the undercut (annular) | 0.4 | mm | assumption: Sheet default value; no project figure given. | 0 … 5 mm
   bar_support | How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length) | Held at one end |  | assumption: Sheet default value; no project figure given. | any
   r_bar | Radius of the torsion bar | 1.5 | mm | assumption: Sheet default value; no project figure given. | 0.3 … 10 mm
   a_arm | Length of the lever on the torsion bar | 8 | mm | assumption: Sheet default value; no project figure given. | 2 … 100 mm
-  alpha | Entry (assembly) angle α of the inclined face to the joining direction | 30 | deg | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 5 … 60 deg
-  alpha_r | Return (separation) angle α′ of the retaining face (90° is a face square to the joining direction) | 70 | deg | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 10 … 90 deg
-  mu | Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair) | 0.3 |  | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 0.05 … 1
-  Es_source | Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a W3 material | Typed secant modulus |  | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | any
-  Es | Secant modulus Es at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data) | 1500 | MPa | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 10 … 20000 MPa
-  loading | How often the joint is made: selects the one-time or the repeated permissible strain | One-time (assembled once or rarely) |  | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | any
-  eps_perm_once | Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data) | 0.03 |  | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 0.001 … 0.3
-  T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 54.1316 | degC | link: Enclosure temperature rev A · T_int | -40 … 120 degC
+  alpha | Entry (assembly) angle α of the inclined face to the joining direction | 30 | deg | spec: SPEC-ELX-02 §6 (lid latch geometry) | 5 … 60 deg
+  alpha_r | Return (separation) angle α′ of the retaining face (90° is a face square to the joining direction) | 70 | deg | spec: SPEC-ELX-02 §6 (lid latch geometry) | 10 … 90 deg
+  mu | Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair) | 0.3 |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.05 … 1
+  Es_source | Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a W3 material | Typed secant modulus |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  Es | Secant modulus Es at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data) | 1400 | MPa | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 10 … 20000 MPa
+  loading | How often the joint is made: selects the one-time or the repeated permissible strain | One-time (assembled once or rarely) |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  eps_perm_once | Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data) | 0.03 |  | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 0.001 … 0.3
+  T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 56.8771 | degC | link: Enclosure temperature rev A · T_int | -40 … 120 degC
 
 3. ASSUMPTIONS
   A1. Beam theory (Euler–Bernoulli) for the cantilever: a rigid root, a linear taper, a constant secant modulus Es at the design strain over the whole beam, small deflection. The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet; the geometry factors are derived by integration (the 0.67 of the design guides is the constant-section 2/3 rounded). (Euler–Bernoulli beam theory (derived); the guide's closed forms for the constant section are to be checked against the owner's copy.)
@@ -48,7 +48,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   A10. bar_support (How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length)) is taken as Held at one end. (Sheet default value; no project figure given.)
   A11. r_bar (Radius of the torsion bar) is taken as 1.5 mm. (Sheet default value; no project figure given.)
   A12. a_arm (Length of the lever on the torsion bar) is taken as 8 mm. (Sheet default value; no project figure given.)
-  A13. Es and the permissible strain are the values of the plastic at the temperature of use, 54.132 °C, as entered, in the moisture state of the part; the sheet cannot check this. (Recorded temperature of use.)
+  A13. Es and the permissible strain are the values of the plastic at the temperature of use, 56.877 °C, as entered, in the moisture state of the part; the sheet cannot check this. (Recorded temperature of use.)
 
 4. WORKING
   [10] l_h = l / h
@@ -72,8 +72,8 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = 3 %
         Permissible strain (one-time joining, as entered)
   [19] P = b * h^2 * Es * eps / (6 * l * phi_max)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
-      = 5 mm × (1.6 mm)^2 × 1500 MPa × 1.6667 % / (6 × 12 mm × 1)
-      = 4.4444 N
+      = 5 mm × (1.6 mm)^2 × 1400 MPa × 1.6667 % / (6 × 12 mm × 1)
+      = 4.1481 N
         Deflection force at the tip: P = (b·h²/6)·(Es·ε/l) at the root of a constant section
   [20] y_perm = K_y * eps_perm * l^2 / h    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = 0.66667 × 3 % × (12 mm)^2 / 1.6 mm
@@ -92,8 +92,8 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = 0.17321
         μ·tan α of the entry face
   [24] assembly_force = P * (mu + tan_a) / (1 - mu_tan_a)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
-      = 4.4444 N × (0.3 + 0.57735) / (1 − 0.17321)
-      = 4.7162 N
+      = 4.1481 N × (0.3 + 0.57735) / (1 − 0.17321)
+      = 4.4018 N
         Assembly force W = P·(μ + tan α)/(1 − μ·tan α)
   [25] alpha_lock = arctan(1/μ)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = arctan(1/0.3)
@@ -104,23 +104,23 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = 2.7475
         tan α′ of the return face
   [27] retention_force = P * (mu + tan_ar) / (1 - mu * tan_ar)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
-      = 4.4444 N × (0.3 + 2.7475) / (1 − 0.3 × 2.7475)
-      = 77.063 N
+      = 4.1481 N × (0.3 + 2.7475) / (1 − 0.3 × 2.7475)
+      = 71.925 N
         Separation force W′ = P·(μ + tan α′)/(1 − μ·tan α′)
 
 5. RESULTS
   eps = 1.6667 %    Maximum strain
   eps_perm = 3 %    Permissible strain
   strain_util = 0.55556    Strain / permissible strain
-  Es = 1500 MPa    Secant modulus used
-  P = 4.4444 N    Deflection force
+  Es = 1400 MPa    Secant modulus used
+  P = 4.1481 N    Deflection force
   y_perm = 1.8 mm    Permissible deflection
   l_h = 7.5    Slenderness l/h
   K_y = 0.66667    Deflection factor K_y
   phi_max = 1    Strain shape maximum
-  assembly_force = 4.7162 N    Assembly force
+  assembly_force = 4.4018 N    Assembly force
   alpha_lock = 73.301 deg    Self-locking return angle
-  retention_force = 77.063 N    Separation force
+  retention_force = 71.925 N    Separation force
   self_locking = "No"    Self-locking
   fillet_advisory = "The strain above is the nominal strain, with no local concentration. A sharp internal corner at the root (or at the end of the bar or ring) concentrates the strain and is the usual place for a snap-fit to break: give the root a generous fillet radius, of the order of the thickness, taper the section away from it, and apply a concentration factor from your own reference if the radius is small."    Root-fillet advisory
 
@@ -136,5 +136,5 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   Content hash: 978d3be9638ee882
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-25 09:01 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test

@@ -39,8 +39,8 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 33/33
-  Test run: 2026-10-25 09:01 UTC
+  Known-answer cases passed: 34/34
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -160,7 +160,7 @@ Cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with
   Content hash: 9ca8abd73b338300
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 09:01 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -180,11 +180,12 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  loads | Loads | 4 row(s) |  | spec: SPEC-ELX-02 §4 (board loads) | any
+  loads | Loads | 5 row(s) |  | spec: SPEC-ELX-02 §4 (board loads) | any
   loads[1] |  | name = Power trace loss (PCB); supply = DC; P = 0.0015073 kW; cosphi = 1; eta = 1; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  | P: link: Power trace rev A · trace_Ploss | 
   loads[2] |  | name = Gate drivers and logic; supply = DC; P = 0.025 kW; cosphi = 1; eta = 0.9; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
   loads[3] |  | name = Power stage; supply = DC; P = 0.2 kW; cosphi = 1; eta = 0.96; d = 1; k = 1; inrush = 1; backed = no |  |  | 
   loads[4] |  | name = Display and sensors; supply = DC; P = 0.012 kW; cosphi = 1; eta = 1; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
+  loads[5] |  | name = 24 V supply loss; supply = AC single-phase; P = 0.0265 kW; cosphi = 1; eta = 1; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
   P_add | Additional three-phase load (linked from E1's RMS power) | 0 | kW | assumption: Sheet default value; no project figure given. | 0 … 200 kW
   cosphi_add | Power factor of the additional load | 0.85 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   eta_add | Efficiency of the additional load | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
@@ -250,72 +251,76 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
       = 0.012 × 1 × 1 = 0.012 kW; 0.013333 kVA
       = 0.012 kW
         Display and sensors (DC)
-  [26] P_conn = Σ P_i
-      = 0.0015073 + 0.025 + 0.2 + 0.012
-      = 0.23851 kW
+  [26] L5 = P·d·k; P·d·k/cosφ
+      = 0.0265 × 1 × 1 = 0.0265 kW; 0.0265 kVA
+      = 0.0265 kW
+        24 V supply loss (AC single-phase)
+  [27] P_conn = Σ P_i
+      = 0.0015073 + 0.025 + 0.2 + 0.012 + 0.0265
+      = 0.26501 kW
         Connected load
-  [27] P_dem = Σ P_i·d_i·k_i
-      = 0.0015073 + 0.025 + 0.2 + 0.012
-      = 0.23851 kW
+  [28] P_dem = Σ P_i·d_i·k_i
+      = 0.0015073 + 0.025 + 0.2 + 0.012 + 0.0265
+      = 0.26501 kW
         Demand active power
-  [28] S_dem = Σ P_i·d_i·k_i/cosφ_i
-      = 0.0016748 + 0.027778 + 0.22222 + 0.013333
-      = 0.26501 kVA
+  [29] S_dem = Σ P_i·d_i·k_i/cosφ_i
+      = 0.0016748 + 0.027778 + 0.22222 + 0.013333 + 0.0265
+      = 0.29151 kVA
         Demand apparent power (arithmetic)
-  [29] I_3ph = S_3φ/(√3·U_3ph)
+  [30] I_3ph = S_3φ/(√3·U_3ph)
       = 0 / (√3 × 400)
       = 0 A
         Three-phase bus current
-  [30] I_1ph = S_1φ/U_1ph
-      = 265.01 / 230
-      = 1.1522 A
+  [31] I_1ph = S_1φ/U_1ph
+      = 291.51 / 230
+      = 1.2674 A
         Single-phase bus current
-  [31] I_DC = P_DC/U_DC
+  [32] I_DC = P_DC/U_DC
       = 238.51 / 24
       = 9.9378 A
         DC bus current
-  [32] Phi = Σ h_i·P_i·d_i·k_i
-      = 1×0.0015073 + 1×0.025 + 0.04×0.2 + 1×0.012
-      = 0.046507 kW
+  [33] Phi = Σ h_i·P_i·d_i·k_i
+      = 1×0.0015073 + 1×0.025 + 0.04×0.2 + 1×0.012 + 1×0.0265
+      = 0.073007 kW
         Heat dissipated inside the enclosure (→ E2)
-  [33] P_DC = Σ DC P_i·d_i·k_i
+  [34] P_DC = Σ DC P_i·d_i·k_i
       = 238.51 W
       = 238.51 W
         DC demand
-  [34] P_PSU_req = margin * P_DC / f_derate
+  [35] P_PSU_req = margin * P_DC / f_derate
       = 1.25 × 238.51 W / 1
       = 298.13 W
         Minimum PSU rating
-  [35] S_T_req = margin * S_dem
-      = 1.25 × 0.26501 kVA
-      = 0.33126 kVA
+  [36] S_T_req = margin * S_dem
+      = 1.25 × 0.29151 kVA
+      = 0.36439 kVA
         Minimum transformer rating for the running load
-  [36] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
-      = 0.26501 + 0
-      = 0.26501 kVA
+  [37] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+      = 0.29151 + 0 (24 V supply loss starting)
+      = 0.29151 kVA
         Peak apparent power while the largest load starts
-  [37] S_T_req_start = S_peak / k_T
-      = 0.26501 kVA / 3
-      = 0.088336 kVA
+  [38] S_T_req_start = S_peak / k_T
+      = 0.29151 kVA / 3
+      = 0.097169 kVA
         Minimum transformer rating for the starting peak
-  [38] S_T_min = max(S_T_req, S_T_req_start)
-      = max(0.33126 kVA, 0.088336 kVA)
-      = 0.33126 kVA
+  [39] S_T_min = max(S_T_req, S_T_req_start)
+      = max(0.36439 kVA, 0.097169 kVA)
+      = 0.36439 kVA
         Minimum transformer rating (running load and starting peak)
 
 5. RESULTS
-  P_conn = 0.23851 kW    Connected load
-  P_dem = 0.23851 kW    Demand active power
-  S_dem = 0.26501 kVA    Demand apparent power
+  P_conn = 0.26501 kW    Connected load
+  P_dem = 0.26501 kW    Demand active power
+  S_dem = 0.29151 kVA    Demand apparent power
   I_3ph = 0 A    Three-phase bus current
-  I_1ph = 1.1522 A    Single-phase bus current
+  I_1ph = 1.2674 A    Single-phase bus current
   I_DC = 9.9378 A    DC bus current
-  Phi = 0.046507 kW    Heat dissipated inside the enclosure
+  Phi = 0.073007 kW    Heat dissipated inside the enclosure
   P_PSU_req = 298.13 W    Minimum PSU rating
-  S_T_req = 0.33126 kVA    Minimum transformer rating, running load
-  S_peak = 0.26501 kVA    Peak apparent power at start
-  S_T_req_start = 0.088336 kVA    Minimum transformer rating, starting peak
-  S_T_min = 0.33126 kVA    Minimum transformer rating, running and starting
+  S_T_req = 0.36439 kVA    Minimum transformer rating, running load
+  S_peak = 0.29151 kVA    Peak apparent power at start
+  S_T_req_start = 0.097169 kVA    Minimum transformer rating, starting peak
+  S_T_min = 0.36439 kVA    Minimum transformer rating, running and starting
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
@@ -328,7 +333,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: dc7b6b8e4454e8eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 09:01 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -342,7 +347,7 @@ Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
-P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive.
+P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: ΔT = P/(h A_eff) (a plain sum of exposed face areas times one coefficient; the IEC TR 60890 tables are not used). Forced: V = P/(ρ c_p ΔT_target) with ρ = p(z)/(287.055 T) and c_p = 1006 J/kg·K; fan duty where p_fan(V) = p_sys (V/V_ref)² (bisection). Cooling unit: P_cool = P − h A_eff (T_max − T_amb) when positive. Sealed enclosure (T_seal entered, no breather): the pressure difference across the walls when the air warms from the sealing temperature to T_int at constant volume, Δp = p_site·|T_int/T_seal − 1| (absolute temperatures), a rise when T_int > T_seal, a suction when below.
   Ref: IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
   Ref: Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
   Ref: BS EN 61439-1 10.10 — Verification of temperature rise
@@ -351,12 +356,12 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   Symbol | Description | Value | Unit | Source | Valid range
   loads | Heat loads | 1 row(s) |  | drawing: DRG-ELX-210 rev B | any
   loads[1] |  | name = Terminals and wiring; P = 4 W; qty = 1; duty = 1 |  |  | 
-  P_add | Additional heat load (linked from E6's dissipated heat or another calculation) | 46.5073 | W | link: Board load budget rev A · Phi | 0 … 100000 W
+  P_add | Additional heat load (linked from E6's dissipated heat or another calculation) | 73.0073 | W | link: Board load budget rev A · Phi | 0 … 100000 W
   I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m^2 | assumption: Sheet default value; no project figure given. | 0 … 1200 W/m^2
   A_sun | Sunlit area | 0 | m^2 | assumption: Sheet default value; no project figure given. | 0 … 100 m^2
   alpha_sun | Surface absorptivity | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
-  W | Enclosure width | 0.4 | m | drawing: DRG-ELX-210 rev B | 0.1 … 5 m
-  H | Enclosure height | 0.5 | m | drawing: DRG-ELX-210 rev B | 0.1 … 5 m
+  W | Enclosure width | 0.5 | m | drawing: DRG-ELX-210 rev B | 0.1 … 5 m
+  H | Enclosure height | 0.6 | m | drawing: DRG-ELX-210 rev B | 0.1 … 5 m
   D | Enclosure depth | 0.2 | m | drawing: DRG-ELX-210 rev B | 0.1 … 5 m
   f_top | Top exposure (1 free, 0 covered) | 1 |  | drawing: DRG-ELX-210 rev B | 0 … 1
   f_front | Front exposure | 1 |  | drawing: DRG-ELX-210 rev B | 0 … 1
@@ -367,6 +372,7 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
   h | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m^2*K) | assumption: Sheet default value; no project figure given. | 3 … 8 W/(m^2*K)
   T_amb | Ambient temperature | 35 | degC | drawing: DRG-ELX-210 rev B | -20 … 55 degC
   T_max | Maximum internal temperature | 60 | degC | drawing: DRG-ELX-210 rev B | 20 … 80 degC
+  T_seal | Temperature at which the enclosure was closed with no breather or vent, for the pressure difference across its walls when the air warms or cools (blank = vented: no pressure difference) | 25 | degC | drawing: DRG-ELX-210 rev B | -20 … 55 degC
   altitude | Site altitude (air density) | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 4000 m
   p_sys | System resistance (filters, grilles) at the reference airflow | 20 | Pa | assumption: Sheet default value; no project figure given. | 0 … 500 Pa
   V_ref | Reference airflow for the system resistance | 100 | m^3/h | assumption: Sheet default value; no project figure given. | 1 … 100000 m^3/h
@@ -374,14 +380,15 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
 3. ASSUMPTIONS
   A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing. (IEC TR 60890-style effective-surface approach; h is a reference value the user may edit.)
   A2. Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise; natural dissipation is neglected for the airflow (conservative). (Manufacturer fan-sizing practice.)
-  A3. The fan curve is linear between the entered points; the system resistance scales with airflow squared. (Duty-point idealisation.)
-  A4. I_sun (Solar irradiance on the enclosure (0 = indoors)) is taken as 0 W/m^2. (Sheet default value; no project figure given.)
-  A5. A_sun (Sunlit area) is taken as 0 m^2. (Sheet default value; no project figure given.)
-  A6. alpha_sun (Surface absorptivity) is taken as 0.5. (Sheet default value; no project figure given.)
-  A7. h (Overall heat-transfer coefficient of the enclosure surface (editable reference value)) is taken as 5.5 W/(m^2*K). (Sheet default value; no project figure given.)
-  A8. altitude (Site altitude (air density)) is taken as 0 m. (Sheet default value; no project figure given.)
-  A9. p_sys (System resistance (filters, grilles) at the reference airflow) is taken as 20 Pa. (Sheet default value; no project figure given.)
-  A10. V_ref (Reference airflow for the system resistance) is taken as 100 m^3/h. (Sheet default value; no project figure given.)
+  A3. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed: the pressure difference follows from the ideal-gas relation at constant volume, from the sealing temperature to the internal temperature with natural dissipation T_int (the temperature without a cooling unit); a breather, a seal that leaks or a flexing wall reduces it, so it is an upper bound; the site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
+  A4. The fan curve is linear between the entered points; the system resistance scales with airflow squared. (Duty-point idealisation.)
+  A5. I_sun (Solar irradiance on the enclosure (0 = indoors)) is taken as 0 W/m^2. (Sheet default value; no project figure given.)
+  A6. A_sun (Sunlit area) is taken as 0 m^2. (Sheet default value; no project figure given.)
+  A7. alpha_sun (Surface absorptivity) is taken as 0.5. (Sheet default value; no project figure given.)
+  A8. h (Overall heat-transfer coefficient of the enclosure surface (editable reference value)) is taken as 5.5 W/(m^2*K). (Sheet default value; no project figure given.)
+  A9. altitude (Site altitude (air density)) is taken as 0 m. (Sheet default value; no project figure given.)
+  A10. p_sys (System resistance (filters, grilles) at the reference airflow) is taken as 20 Pa. (Sheet default value; no project figure given.)
+  A11. V_ref (Reference airflow for the system resistance) is taken as 100 m^3/h. (Sheet default value; no project figure given.)
 
 4. WORKING
   [18] P_loads = Σ P_i × n_i × d_i
@@ -393,80 +400,85 @@ P = Σ P_i n_i d_i (+ solar α I A_sun). A_eff = Σ f_face × A_face. Natural: �
       = 0 W
         Solar gain
   [20] P_total = P_loads + P_add + P_solar
-      = 4 W + 46.507 W + 0 W
-      = 50.507 W
+      = 4 W + 73.007 W + 0 W
+      = 77.007 W
         Total heat to remove
   [21] A_eff = f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D    « IEC TR 60890 approach
-      = 1 × 0.4 m × 0.2 m + 0 × 0.4 m × 0.2 m + 1 × 0.4 m × 0.5 m + 0 × 0.4 m × 0.5 m + 1 × 0.5 m × 0.2 m + 1 × 0.5 m × 0.2 m
-      = 0.48 m²
+      = 1 × 0.5 m × 0.2 m + 0 × 0.5 m × 0.2 m + 1 × 0.5 m × 0.6 m + 0 × 0.5 m × 0.6 m + 1 × 0.6 m × 0.2 m + 1 × 0.6 m × 0.2 m
+      = 0.64 m²
         Effective dissipating surface
   [22] dT_nat = P_total / (h * A_eff)
-      = 50.507 W / (5.5 W/(m²·K) × 0.48 m²)
-      = 19.132 K
+      = 77.007 W / (5.5 W/(m²·K) × 0.64 m²)
+      = 21.877 K
         Temperature rise with natural dissipation
   [23] T_int = T_amb + dT_nat
-      = 35 degC + 19.132 K
-      = 54.132 degC
+      = 35 degC + 21.877 K
+      = 56.877 degC
         Internal temperature with natural dissipation
   [24] dT_allow = T_max - T_amb
       = 60 degC − 35 degC
       = 25 K
         Allowed rise
   [25] u_nat = dT_nat / dT_allow
-      = 19.132 K / 25 K
-      = 0.76526
+      = 21.877 K / 25 K
+      = 0.87508
         Natural dissipation utilisation
   [26] P_nat_max = h * A_eff * dT_allow
-      = 5.5 W/(m²·K) × 0.48 m² × 25 K
-      = 66 W
+      = 5.5 W/(m²·K) × 0.64 m² × 25 K
+      = 88 W
         Heat the enclosure dissipates naturally at the limit
   [27] P_cool = max(0 W, P_total - P_nat_max)
-      = max(0 W, 50.507 W − 66 W)
+      = max(0 W, 77.007 W − 88 W)
       = 0 W
         Cooling-unit capacity needed if ventilation is not used
   [28] p_site = 101325 (1 − 2.25577e-5 z)^5.2559
       = z = 0 m
       = 101.32 kPa
         Site pressure
-  [29] rho_air = p_site / (287.055 J/(kg*K) * T_amb)
+  [30] dp_seal = p_site·|T_int/T_seal − 1|
+      = 101.32 kPa × |330.03 K / 298.15 K − 1|
+      = 10.833 kPa
+        Pressure difference across the walls of the sealed enclosure (magnitude)
+  [31] rho_air = p_site / (287.055 J/(kg*K) * T_amb)
       = 101.32 kPa / (287.055 J/(kg*K) × 35 degC)
       = 1.1455 kg/m³
         Air density at ambient and altitude
-  [30] V_req = P_total / (rho_air * 1006 J/(kg*K) * dT_allow)
-      = 50.507 W / (1.1455 kg/m³ × 1006 J/(kg*K) × 25 K)
-      = 6.3115 m³/h
+  [32] V_req = P_total / (rho_air * 1006 J/(kg*K) * dT_allow)
+      = 77.007 W / (1.1455 kg/m³ × 1006 J/(kg*K) × 25 K)
+      = 9.6229 m³/h
         Airflow for forced ventilation at the allowed rise (natural dissipation neglected)
-  [31] V_req_net = max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))
-      = max(0 m^3/h, (50.507 W − 66 W) / (1.1455 kg/m³ × 1006 J/(kg*K) × 25 K))
+  [33] V_req_net = max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))
+      = max(0 m^3/h, (77.007 W − 88 W) / (1.1455 kg/m³ × 1006 J/(kg*K) × 25 K))
       = 0 m³/h
         Airflow crediting natural dissipation
 
 5. RESULTS
+  dp_seal = 10.833 kPa    Pressure difference of the sealed enclosure
   P_loads = 4 W    Internal heat load
   P_solar = 0 W    Solar gain
-  P_total = 50.507 W    Total heat
-  A_eff = 0.48 m²    Effective surface
-  dT_nat = 19.132 K    Natural temperature rise
-  T_int = 54.132 degC    Internal temperature (natural)
-  P_nat_max = 66 W    Natural dissipation at the limit
+  P_total = 77.007 W    Total heat
+  A_eff = 0.64 m²    Effective surface
+  dT_nat = 21.877 K    Natural temperature rise
+  T_int = 56.877 degC    Internal temperature (natural)
+  P_nat_max = 88 W    Natural dissipation at the limit
   P_cool = 0 W    Cooling unit needed
   T_max = 60 degC    Internal temperature limit
   rho_air = 1.1455 kg/m³    Air density
-  V_req = 6.3115 m³/h    Required airflow
+  V_req = 9.6229 m³/h    Required airflow
   V_req_net = 0 m³/h    Required airflow (net)
 
 6. CHECKS (governing first)
-  PASS  Natural dissipation holds T_max: u_nat = 0.76526 vs u_nat ≤ 1  utilisation 0.765
+  PASS  Natural dissipation holds T_max: u_nat = 0.87508 vs u_nat ≤ 1  utilisation 0.875
 
 7. APPLICABILITY
   No warnings.
 
 8. VERIFICATION
-  Template: elec.enclosure-heat@1.2.0
-  Content hash: 48cdd32546406349
+  Template: elec.enclosure-heat@1.3.0
+  Content hash: 03403271b11284cd
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 2/2
-  Test run: 2026-10-25 09:01 UTC
+  Known-answer cases passed: 3/3
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -486,26 +498,26 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  mode | Form of snap-fit | Cantilever, constant section |  | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | any
-  l | Length of the beam (cantilever); of the torsion bar: its free length when held at one end, or its whole length between the two supports when held at both ends with the lever in the middle | 12 | mm | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 2 … 100 mm
-  h | Thickness at the root (cantilever); wall thickness of the ring (annular) | 1.6 | mm | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 0.3 … 10 mm
-  b | Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube) | 5 | mm | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 1 … 50 mm
+  mode | Form of snap-fit | Cantilever, constant section |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  l | Length of the beam (cantilever); of the torsion bar: its free length when held at one end, or its whole length between the two supports when held at both ends with the lever in the middle | 12 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 2 … 100 mm
+  h | Thickness at the root (cantilever); wall thickness of the ring (annular) | 1.6 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.3 … 10 mm
+  b | Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube) | 5 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 1 … 50 mm
   h_ratio | Tip thickness / root thickness (tapered thickness) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.25 … 1
   b_ratio | Tip width / root width (tapered width) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
-  y | Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared | 1 | mm | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 0.05 … 20 mm
+  y | Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared | 1 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.05 … 20 mm
   D_ring | Mean diameter of the ring (annular) | 30 | mm | assumption: Sheet default value; no project figure given. | 5 … 500 mm
   dD | Interference on the diameter: how much the ring is widened to pass the undercut (annular) | 0.4 | mm | assumption: Sheet default value; no project figure given. | 0 … 5 mm
   bar_support | How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length) | Held at one end |  | assumption: Sheet default value; no project figure given. | any
   r_bar | Radius of the torsion bar | 1.5 | mm | assumption: Sheet default value; no project figure given. | 0.3 … 10 mm
   a_arm | Length of the lever on the torsion bar | 8 | mm | assumption: Sheet default value; no project figure given. | 2 … 100 mm
-  alpha | Entry (assembly) angle α of the inclined face to the joining direction | 30 | deg | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 5 … 60 deg
-  alpha_r | Return (separation) angle α′ of the retaining face (90° is a face square to the joining direction) | 70 | deg | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 10 … 90 deg
-  mu | Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair) | 0.3 |  | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 0.05 … 1
-  Es_source | Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a W3 material | Typed secant modulus |  | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | any
-  Es | Secant modulus Es at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data) | 1500 | MPa | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 10 … 20000 MPa
-  loading | How often the joint is made: selects the one-time or the repeated permissible strain | One-time (assembled once or rarely) |  | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | any
-  eps_perm_once | Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data) | 0.03 |  | spec: SPEC-ELX-02 §6 (lid latch; Es and eps_perm for 55 C) | 0.001 … 0.3
-  T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 54.1316 | degC | link: Enclosure temperature rev A · T_int | -40 … 120 degC
+  alpha | Entry (assembly) angle α of the inclined face to the joining direction | 30 | deg | spec: SPEC-ELX-02 §6 (lid latch geometry) | 5 … 60 deg
+  alpha_r | Return (separation) angle α′ of the retaining face (90° is a face square to the joining direction) | 70 | deg | spec: SPEC-ELX-02 §6 (lid latch geometry) | 10 … 90 deg
+  mu | Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair) | 0.3 |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.05 … 1
+  Es_source | Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a W3 material | Typed secant modulus |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  Es | Secant modulus Es at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data) | 1400 | MPa | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 10 … 20000 MPa
+  loading | How often the joint is made: selects the one-time or the repeated permissible strain | One-time (assembled once or rarely) |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  eps_perm_once | Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data) | 0.03 |  | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 0.001 … 0.3
+  T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 56.8771 | degC | link: Enclosure temperature rev A · T_int | -40 … 120 degC
 
 3. ASSUMPTIONS
   A1. Beam theory (Euler–Bernoulli) for the cantilever: a rigid root, a linear taper, a constant secant modulus Es at the design strain over the whole beam, small deflection. The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet; the geometry factors are derived by integration (the 0.67 of the design guides is the constant-section 2/3 rounded). (Euler–Bernoulli beam theory (derived); the guide's closed forms for the constant section are to be checked against the owner's copy.)
@@ -520,7 +532,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   A10. bar_support (How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length)) is taken as Held at one end. (Sheet default value; no project figure given.)
   A11. r_bar (Radius of the torsion bar) is taken as 1.5 mm. (Sheet default value; no project figure given.)
   A12. a_arm (Length of the lever on the torsion bar) is taken as 8 mm. (Sheet default value; no project figure given.)
-  A13. Es and the permissible strain are the values of the plastic at the temperature of use, 54.132 °C, as entered, in the moisture state of the part; the sheet cannot check this. (Recorded temperature of use.)
+  A13. Es and the permissible strain are the values of the plastic at the temperature of use, 56.877 °C, as entered, in the moisture state of the part; the sheet cannot check this. (Recorded temperature of use.)
 
 4. WORKING
   [10] l_h = l / h
@@ -544,8 +556,8 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = 3 %
         Permissible strain (one-time joining, as entered)
   [19] P = b * h^2 * Es * eps / (6 * l * phi_max)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
-      = 5 mm × (1.6 mm)^2 × 1500 MPa × 1.6667 % / (6 × 12 mm × 1)
-      = 4.4444 N
+      = 5 mm × (1.6 mm)^2 × 1400 MPa × 1.6667 % / (6 × 12 mm × 1)
+      = 4.1481 N
         Deflection force at the tip: P = (b·h²/6)·(Es·ε/l) at the root of a constant section
   [20] y_perm = K_y * eps_perm * l^2 / h    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = 0.66667 × 3 % × (12 mm)^2 / 1.6 mm
@@ -564,8 +576,8 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = 0.17321
         μ·tan α of the entry face
   [24] assembly_force = P * (mu + tan_a) / (1 - mu_tan_a)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
-      = 4.4444 N × (0.3 + 0.57735) / (1 − 0.17321)
-      = 4.7162 N
+      = 4.1481 N × (0.3 + 0.57735) / (1 − 0.17321)
+      = 4.4018 N
         Assembly force W = P·(μ + tan α)/(1 − μ·tan α)
   [25] alpha_lock = arctan(1/μ)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = arctan(1/0.3)
@@ -576,23 +588,23 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = 2.7475
         tan α′ of the return face
   [27] retention_force = P * (mu + tan_ar) / (1 - mu * tan_ar)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
-      = 4.4444 N × (0.3 + 2.7475) / (1 − 0.3 × 2.7475)
-      = 77.063 N
+      = 4.1481 N × (0.3 + 2.7475) / (1 − 0.3 × 2.7475)
+      = 71.925 N
         Separation force W′ = P·(μ + tan α′)/(1 − μ·tan α′)
 
 5. RESULTS
   eps = 1.6667 %    Maximum strain
   eps_perm = 3 %    Permissible strain
   strain_util = 0.55556    Strain / permissible strain
-  Es = 1500 MPa    Secant modulus used
-  P = 4.4444 N    Deflection force
+  Es = 1400 MPa    Secant modulus used
+  P = 4.1481 N    Deflection force
   y_perm = 1.8 mm    Permissible deflection
   l_h = 7.5    Slenderness l/h
   K_y = 0.66667    Deflection factor K_y
   phi_max = 1    Strain shape maximum
-  assembly_force = 4.7162 N    Assembly force
+  assembly_force = 4.4018 N    Assembly force
   alpha_lock = 73.301 deg    Self-locking return angle
-  retention_force = 77.063 N    Separation force
+  retention_force = 71.925 N    Separation force
   self_locking = "No"    Self-locking
   fillet_advisory = "The strain above is the nominal strain, with no local concentration. A sharp internal corner at the root (or at the end of the bar or ring) concentrates the strain and is the usual place for a snap-fit to break: give the root a generous fillet radius, of the order of the thickness, taper the section away from it, and apply a concentration factor from your own reference if the radius is small."    Root-fillet advisory
 
@@ -608,7 +620,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   Content hash: 978d3be9638ee882
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-25 09:01 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test
 
 
@@ -632,24 +644,24 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  shape | Plate shape | rectangular |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | any
-  support | Edge support, all round | simply supported |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | any
-  a | Radius a (circular) or side a (rectangular) | 400 | mm | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 10 … 10000 mm
-  b | Side b (rectangular; not used for a circular plate) | 200 | mm | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 10 … 10000 mm
-  t | Plate thickness | 5 | mm | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 0.5 … 100 mm
-  load_type | Load | uniform |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | any
-  load_basis | Uniform and patch loads given as | pressure q |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | any
-  q | Pressure q on the loaded area (uniform and patch loads, pressure basis) | 1 | kPa | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 0.001 … 5000 kPa
+  shape | Plate shape | rectangular |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  support | Edge support, all round | simply supported |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  a | Radius a (circular) or side a (rectangular) | 500 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 10 … 10000 mm
+  b | Side b (rectangular; not used for a circular plate) | 200 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 10 … 10000 mm
+  t | Plate thickness | 4 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 0.5 … 100 mm
+  load_type | Load | uniform |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  load_basis | Uniform and patch loads given as | pressure q |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  q | Pressure q on the loaded area (uniform and patch loads, pressure basis) | 10.8333 | kPa | link: Enclosure temperature rev A · dp_seal | 0.001 … 5000 kPa
   P | Total force P (force basis: uniform, patch and ring loads; a ring load always uses P) | 5 | kN | assumption: Sheet default value; no project figure given. | 0.001 … 10000 kN
   r0 | Patch radius (circular plate, central patch) | 50 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
   u | Patch size in x (rectangular plate, central patch) | 100 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
   v | Patch size in y (rectangular plate, central patch) | 100 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
   r_ring | Ring radius (circular plate, ring load) | 150 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
-  E | Modulus of elasticity | 2.1 | GPa | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 0.1 … 500 GPa
-  nu | Poisson's ratio | 0.38 |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 0 … 0.45
-  rho | Density (for the frequency) | 1200 | kg/m^3 | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 100 … 20000 kg/m^3
-  f_y | Yield strength | 55 | MPa | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 5 … 2000 MPa
-  gamma_M0 | Partial factor γ_M0 on the resistance of the cross-section | 1 |  | spec: SPEC-ELX-02 §6 (lid; E for 55 C) | 1 … 1.5
+  E | Modulus of elasticity | 69 | GPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0.1 … 500 GPa
+  nu | Poisson's ratio | 0.33 |  | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0 … 0.45
+  rho | Density (for the frequency) | 2700 | kg/m^3 | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 100 … 20000 kg/m^3
+  f_y | Yield strength | 120 | MPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 5 … 2000 MPa
+  gamma_M0 | Partial factor γ_M0 on the resistance of the cross-section | 1 |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | 1 … 1.5
   defl_ratio | Deflection limit: span/ratio (span = diameter of a circular plate, shorter side of a rectangle) | 250 |  | assumption: Sheet default value; no project figure given. | 50 … 2000
 
 3. ASSUMPTIONS
@@ -669,101 +681,101 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
 
 4. WORKING
   [15] F_total = q·A_loaded    « Kirchhoff theory
-      = 1 kPa × 80000 mm²
-      = 0.08 kN
+      = 10.833 kPa × 100000 mm²
+      = 1.0833 kN
         Total load on the plate
   [16] D = E*t^3/(12*(1 - nu^2))    « Kirchhoff theory
-      = 2.1 GPa × (5 mm)^3 / (12 × (1 − 0.38^2))
-      = 25.567 N·m
+      = 69 GPa × (4 mm)^3 / (12 × (1 − 0.33^2))
+      = 412.97 N·m
         Flexural rigidity of the plate
   [17] terms_used = odd terms per direction N (m, n = 1, 3, … 2N − 1)    « T&WK Ch. 5
-      = 128 odd terms per direction (16384 terms), last change 6.8281e-7
+      = 128 odd terms per direction (16384 terms), last change 5.7374e-7
       = 128
         Terms of the Navier series used
   [18] w_max = 16q/(π⁶D)·Σ (−1)^((m+n)/2−1)/(m·n·(m²/a² + n²/b²)²), m, n odd    « T&WK Ch. 5
-      = 128 odd terms per direction (16384 terms), last change 6.8281e-7
-      = 0.63386 mm
+      = 128 odd terms per direction (16384 terms), last change 5.7374e-7
+      = 0.4825 mm
         Maximum deflection (centre)
   [19] M_x_c = D·π²·Σ W_mn(m²/a² + ν·n²/b²)·sin·sin at the centre    « T&WK Ch. 5
-      = 128 odd terms per direction (16384 terms), last change 6.8281e-7
-      = 2.1627 N·m/m
+      = 128 odd terms per direction (16384 terms), last change 5.7374e-7
+      = 20.043 N·m/m
         M_x at the centre
   [20] M_y_c = D·π²·Σ W_mn(n²/b² + ν·m²/a²)·sin·sin at the centre    « T&WK Ch. 5
-      = 128 odd terms per direction (16384 terms), last change 6.8281e-7
-      = 4.123 N·m/m
+      = 128 odd terms per direction (16384 terms), last change 5.7374e-7
+      = 49.07 N·m/m
         M_y at the centre
   [21] M_xy_k = |D(1 − ν)·π²·Σ W_mn·(mn/ab)| at a corner, with the 1/N² tail of the sum removed by Richardson extrapolation (s_N + (s_N − s_N/2)/3)    « T&WK Ch. 5
-      = 128 odd terms per direction (16384 terms), last change 6.8281e-7
-      = 1.6392 N·m/m
+      = 128 odd terms per direction (16384 terms), last change 5.7374e-7
+      = 19.569 N·m/m
         Twisting moment at a corner
   [22] R_corner = 2·M_xy at a corner    « T&WK Ch. 5
-      = 2 × 1.6392 N·m/m
-      = 0.0032784 kN
+      = 2 × 19.569 N·m/m
+      = 0.039137 kN
         Corner reaction holding the corner down
   [23] M_vm_c = √(M_x² − M_x·M_y + M_y²) at the centre    « von Mises
-      = M_x = 2.1627, M_y = 4.123 N·m/m
-      = 3.5721 N·m/m
+      = M_x = 20.043, M_y = 49.07 N·m/m
+      = 42.733 N·m/m
         Von Mises moment at the centre
   [24] M_vm_k = √3·|M_xy| at a corner    « von Mises
-      = M_xy = 1.6392 N·m/m
-      = 2.8391 N·m/m
+      = M_xy = 19.569 N·m/m
+      = 33.894 N·m/m
         Von Mises moment at a corner (pure twist)
   [25] omega_11 = π²(1/a² + 1/b²)·√(D/(ρt))    « T&WK Ch. 5
-      = a = 400 mm, b = 200 mm, D = 25.567 N·m, ρt = 6 kg/m²
-      = 636.67 rad/s
+      = a = 500 mm, b = 200 mm, D = 412.97 N·m, ρt = 10.8 kg/m²
+      = 1769.9 rad/s
         Angular frequency of the (1,1) mode
   [26] M_vm = √(M_1² − M_1·M_2 + M_2² + 3M_12²) at the governing point    « von Mises
       = centre
-      = 3.5721 N·m/m
+      = 42.733 N·m/m
         Greatest von Mises moment per unit width
   [27] sigma_max = 6·M_vm/t²    « Kirchhoff theory
-      = 6 × 3.5721 N·m/m / (5 mm)²
-      = 0.8573 MPa
+      = 6 × 42.733 N·m/m / (4 mm)²
+      = 16.025 MPa
         Greatest von Mises surface stress
   [28] sigma_principal = 6·M_principal/t²    « Kirchhoff theory
-      = 6 × 4.123 N·m/m / (5 mm)²
-      = 0.98953 MPa
+      = 6 × 49.07 N·m/m / (4 mm)²
+      = 18.401 MPa
         Greatest principal surface stress
   [29] f1 = ω/2π    « Leissa
-      = D = 25.567 N·m, ρt = 6 kg/m²
-      = 101.33 Hz
+      = D = 412.97 N·m, ρt = 10.8 kg/m²
+      = 281.69 Hz
         Fundamental natural frequency (ω is the angular frequency, rad/s; f is in Hz)
   [30] w_over_t = w_max/t    « Kirchhoff theory
-      = 0.63386 mm / 5 mm
-      = 0.12677
+      = 0.4825 mm / 4 mm
+      = 0.12063
         Deflection over thickness
   [31] u_stress = sigma_max/(f_y/gamma_M0)    « BS EN 1993-1-1 6.2.1(5)
-      = 0.8573 MPa / (55 MPa / 1)
-      = 0.015587
+      = 16.025 MPa / (120 MPa / 1)
+      = 0.13354
         Stress utilisation
   [32] w_lim = span/ratio    « Serviceability
       = 200 mm / 250
       = 0.8 mm
         Deflection limit
   [33] u_defl = w_max/w_lim    « Serviceability
-      = 0.63386 mm / 0.8 mm
-      = 0.79233
+      = 0.4825 mm / 0.8 mm
+      = 0.60313
         Deflection utilisation
 
 5. RESULTS
-  w_max = 0.63386 mm    Maximum deflection
-  sigma_max = 0.8573 MPa    Greatest von Mises stress
-  sigma_principal = 0.98953 MPa    Greatest principal stress
-  f1 = 101.33 Hz    Fundamental frequency
-  u_stress = 0.015587    Stress utilisation
-  u_defl = 0.79233    Deflection utilisation
-  w_over_t = 0.12677    Deflection over thickness
-  D = 25.567 N·m    Flexural rigidity
+  w_max = 0.4825 mm    Maximum deflection
+  sigma_max = 16.025 MPa    Greatest von Mises stress
+  sigma_principal = 18.401 MPa    Greatest principal stress
+  f1 = 281.69 Hz    Fundamental frequency
+  u_stress = 0.13354    Stress utilisation
+  u_defl = 0.60313    Deflection utilisation
+  w_over_t = 0.12063    Deflection over thickness
+  D = 412.97 N·m    Flexural rigidity
   terms_used = 128    Series terms used
-  M_x_c = 2.1627 N·m/m    M_x at the centre
-  M_y_c = 4.123 N·m/m    M_y at the centre
-  M_xy_k = 1.6392 N·m/m    Corner twisting moment
-  R_corner = 0.0032784 kN    Corner reaction
+  M_x_c = 20.043 N·m/m    M_x at the centre
+  M_y_c = 49.07 N·m/m    M_y at the centre
+  M_xy_k = 19.569 N·m/m    Corner twisting moment
+  R_corner = 0.039137 kN    Corner reaction
   location = "centre"    Governing stress point
 
 6. CHECKS (governing first)
-  PASS  Deflection w_max ≤ span/ratio: u_defl = 0.79233 vs u_defl ≤ 1  utilisation 0.792  « Serviceability
-  PASS  Stress σ_vm ≤ f_y/γ_M0: u_stress = 0.015587 vs u_stress ≤ 1  utilisation 0.0156  « 6.2.1(5)
+  PASS  Deflection w_max ≤ span/ratio: u_defl = 0.60313 vs u_defl ≤ 1  utilisation 0.603  « Serviceability
+  PASS  Stress σ_vm ≤ f_y/γ_M0: u_stress = 0.13354 vs u_stress ≤ 1  utilisation 0.134  « 6.2.1(5)
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: E, nu, rho, f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.
@@ -773,5 +785,5 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   Content hash: 7776225ec2491f68
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-25 09:01 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test

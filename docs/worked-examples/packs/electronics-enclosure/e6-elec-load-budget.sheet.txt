@@ -14,11 +14,12 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
 
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
-  loads | Loads | 4 row(s) |  | spec: SPEC-ELX-02 §4 (board loads) | any
+  loads | Loads | 5 row(s) |  | spec: SPEC-ELX-02 §4 (board loads) | any
   loads[1] |  | name = Power trace loss (PCB); supply = DC; P = 0.0015073 kW; cosphi = 1; eta = 1; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  | P: link: Power trace rev A · trace_Ploss | 
   loads[2] |  | name = Gate drivers and logic; supply = DC; P = 0.025 kW; cosphi = 1; eta = 0.9; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
   loads[3] |  | name = Power stage; supply = DC; P = 0.2 kW; cosphi = 1; eta = 0.96; d = 1; k = 1; inrush = 1; backed = no |  |  | 
   loads[4] |  | name = Display and sensors; supply = DC; P = 0.012 kW; cosphi = 1; eta = 1; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
+  loads[5] |  | name = 24 V supply loss; supply = AC single-phase; P = 0.0265 kW; cosphi = 1; eta = 1; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
   P_add | Additional three-phase load (linked from E1's RMS power) | 0 | kW | assumption: Sheet default value; no project figure given. | 0 … 200 kW
   cosphi_add | Power factor of the additional load | 0.85 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   eta_add | Efficiency of the additional load | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
@@ -84,72 +85,76 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
       = 0.012 × 1 × 1 = 0.012 kW; 0.013333 kVA
       = 0.012 kW
         Display and sensors (DC)
-  [26] P_conn = Σ P_i
-      = 0.0015073 + 0.025 + 0.2 + 0.012
-      = 0.23851 kW
+  [26] L5 = P·d·k; P·d·k/cosφ
+      = 0.0265 × 1 × 1 = 0.0265 kW; 0.0265 kVA
+      = 0.0265 kW
+        24 V supply loss (AC single-phase)
+  [27] P_conn = Σ P_i
+      = 0.0015073 + 0.025 + 0.2 + 0.012 + 0.0265
+      = 0.26501 kW
         Connected load
-  [27] P_dem = Σ P_i·d_i·k_i
-      = 0.0015073 + 0.025 + 0.2 + 0.012
-      = 0.23851 kW
+  [28] P_dem = Σ P_i·d_i·k_i
+      = 0.0015073 + 0.025 + 0.2 + 0.012 + 0.0265
+      = 0.26501 kW
         Demand active power
-  [28] S_dem = Σ P_i·d_i·k_i/cosφ_i
-      = 0.0016748 + 0.027778 + 0.22222 + 0.013333
-      = 0.26501 kVA
+  [29] S_dem = Σ P_i·d_i·k_i/cosφ_i
+      = 0.0016748 + 0.027778 + 0.22222 + 0.013333 + 0.0265
+      = 0.29151 kVA
         Demand apparent power (arithmetic)
-  [29] I_3ph = S_3φ/(√3·U_3ph)
+  [30] I_3ph = S_3φ/(√3·U_3ph)
       = 0 / (√3 × 400)
       = 0 A
         Three-phase bus current
-  [30] I_1ph = S_1φ/U_1ph
-      = 265.01 / 230
-      = 1.1522 A
+  [31] I_1ph = S_1φ/U_1ph
+      = 291.51 / 230
+      = 1.2674 A
         Single-phase bus current
-  [31] I_DC = P_DC/U_DC
+  [32] I_DC = P_DC/U_DC
       = 238.51 / 24
       = 9.9378 A
         DC bus current
-  [32] Phi = Σ h_i·P_i·d_i·k_i
-      = 1×0.0015073 + 1×0.025 + 0.04×0.2 + 1×0.012
-      = 0.046507 kW
+  [33] Phi = Σ h_i·P_i·d_i·k_i
+      = 1×0.0015073 + 1×0.025 + 0.04×0.2 + 1×0.012 + 1×0.0265
+      = 0.073007 kW
         Heat dissipated inside the enclosure (→ E2)
-  [33] P_DC = Σ DC P_i·d_i·k_i
+  [34] P_DC = Σ DC P_i·d_i·k_i
       = 238.51 W
       = 238.51 W
         DC demand
-  [34] P_PSU_req = margin * P_DC / f_derate
+  [35] P_PSU_req = margin * P_DC / f_derate
       = 1.25 × 238.51 W / 1
       = 298.13 W
         Minimum PSU rating
-  [35] S_T_req = margin * S_dem
-      = 1.25 × 0.26501 kVA
-      = 0.33126 kVA
+  [36] S_T_req = margin * S_dem
+      = 1.25 × 0.29151 kVA
+      = 0.36439 kVA
         Minimum transformer rating for the running load
-  [36] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
-      = 0.26501 + 0
-      = 0.26501 kVA
+  [37] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+      = 0.29151 + 0 (24 V supply loss starting)
+      = 0.29151 kVA
         Peak apparent power while the largest load starts
-  [37] S_T_req_start = S_peak / k_T
-      = 0.26501 kVA / 3
-      = 0.088336 kVA
+  [38] S_T_req_start = S_peak / k_T
+      = 0.29151 kVA / 3
+      = 0.097169 kVA
         Minimum transformer rating for the starting peak
-  [38] S_T_min = max(S_T_req, S_T_req_start)
-      = max(0.33126 kVA, 0.088336 kVA)
-      = 0.33126 kVA
+  [39] S_T_min = max(S_T_req, S_T_req_start)
+      = max(0.36439 kVA, 0.097169 kVA)
+      = 0.36439 kVA
         Minimum transformer rating (running load and starting peak)
 
 5. RESULTS
-  P_conn = 0.23851 kW    Connected load
-  P_dem = 0.23851 kW    Demand active power
-  S_dem = 0.26501 kVA    Demand apparent power
+  P_conn = 0.26501 kW    Connected load
+  P_dem = 0.26501 kW    Demand active power
+  S_dem = 0.29151 kVA    Demand apparent power
   I_3ph = 0 A    Three-phase bus current
-  I_1ph = 1.1522 A    Single-phase bus current
+  I_1ph = 1.2674 A    Single-phase bus current
   I_DC = 9.9378 A    DC bus current
-  Phi = 0.046507 kW    Heat dissipated inside the enclosure
+  Phi = 0.073007 kW    Heat dissipated inside the enclosure
   P_PSU_req = 298.13 W    Minimum PSU rating
-  S_T_req = 0.33126 kVA    Minimum transformer rating, running load
-  S_peak = 0.26501 kVA    Peak apparent power at start
-  S_T_req_start = 0.088336 kVA    Minimum transformer rating, starting peak
-  S_T_min = 0.33126 kVA    Minimum transformer rating, running and starting
+  S_T_req = 0.36439 kVA    Minimum transformer rating, running load
+  S_peak = 0.29151 kVA    Peak apparent power at start
+  S_T_req_start = 0.097169 kVA    Minimum transformer rating, starting peak
+  S_T_min = 0.36439 kVA    Minimum transformer rating, running and starting
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
@@ -162,5 +167,5 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: dc7b6b8e4454e8eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 09:01 UTC
+  Test run: 2026-10-25 09:27 UTC
   Application: TempestOS test

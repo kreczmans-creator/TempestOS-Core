@@ -1,6 +1,6 @@
 # Calc pack — Hydraulic power unit (`pack.hydraulic-power-unit`)
 
-**Chain.** Cylinder and pump circuit (`fp.cylinder`) → Emergency stroke accumulator (`fp.accumulator`) → Pressure line (`bs.pipe-pump`) → Pump drive motor (`elec.motor-sizing`) → Motor supply cable (`elec.conductor-sizing`).
+**Chain.** Cylinder and pump circuit (`fp.cylinder`) → Emergency stroke accumulator (`fp.accumulator`) and Pressure line (`bs.pipe-pump`) and Pump drive motor (`elec.motor-sizing`); Pump drive motor (`elec.motor-sizing`) → Motor supply cable (`elec.conductor-sizing`).
 
 **Purpose.** Takes a cylinder circuit and its pump through to the electric supply: the cylinder, pump and line velocities; the accumulator that carries the emergency stroke between the supply pressure and the lowest pressure the stroke can finish at; the pressure drop in the line to the cylinder; the motor that drives the pump continuously; and the cable that supplies the motor. The motor's cable tables are entered by the user: no build ships them. The pressure line takes its flow, oil density and tube bore from the cylinder step, and the cable is sized for the rated power of the candidate motor.
 
@@ -20,7 +20,7 @@ A 100/70 × 500 mm cylinder at 160 bar and 36 L/min, fed by a 28 cm³/rev pump a
 
 ## Links
 
-Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes every step below it stale, and the pack cannot be checked or issued until each is updated in order.
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an upstream input makes the steps that take from it, and every step that takes from those, stale, and the pack cannot be checked or issued until each is updated in order.
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
