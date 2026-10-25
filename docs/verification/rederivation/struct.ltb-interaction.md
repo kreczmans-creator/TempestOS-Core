@@ -1,7 +1,7 @@
 # struct.ltb-interaction — independent re-derivation (Track P, P1)
 Calculator: EN 1993-1-1 LTB and N+M interaction (S7), version 1.1.0. Source files: src/Tempest.Calc/Tempest.Calc.Structural/LtbInteractionCalculator.cs and LtbInteractionMath.cs. Spec: docs/calcs/structural/struct.ltb-interaction.md.
 Script: tools/verification/struct.ltb-interaction.py (exit 0 = all KATs match; runs in under 1 s).
-Verdict: MATCH WITH FINDINGS
+Verdict: MATCH WITH FINDINGS (after independent review: 2 High, 3 Medium; see the Reviewed column)
 
 All 60 expected values of the 8 KATs match. All 567 values of 62 extra probes match to 5e-10. The code is correct against the published formulas as I know them. Two findings concern the method itself: the C1 curve fit and an extra cap on the f-modified factor. The branch was claude/tempestos-v0260-test-readiness-s4jwh1 (VERSION 0.26.0), as the brief said.
 
@@ -64,25 +64,30 @@ UB 457×191×98 S355 is the sheet default; UC 254×254×73 and a welded 400×300
 | C1 from ψ | ENV Annex F fit, k = 1 | Same formula, cap 2.70, warns for k ≠ 1 | Yes (see -01) |
 | Curve choice, Tables 6.4, 6.5, 6.2 | As listed above | Same, boundaries h/b = 2, 1.2; t_f 40, 100 | Yes |
 | λ̄ thresholds | 0.2 (6.3.2.2), 0.4 (6.3.2.3) | χ = 1 at or below; continuous | Yes |
-| χ_LT ≤ 1/λ̄² | Applies to 6.3.2.3 | Applied; also applied to f-modified χ | Partly (see -02) |
+| χ_LT ≤ 1/λ̄² | Applies to 6.3.2.3; reviewer recalls Eq. 6.58 also caps χ_LT,mod at 1/λ̄² | Applied to both | Yes, owner to confirm (see -02) |
 | f and k_c | Table 6.6, linear diagram | Same; blocks when C1 entered and k_c missing | Yes |
 | Annex B Tables B.1, B.2, B.3 | As listed above | Same, including elastic kzy with 0.05 | Yes |
-| Annex A Tables A.1, A.2 | As listed above | Same; threshold turns b_LT to e_LT, C_mLT off | Yes |
+| Annex A Tables A.1, A.2 | As listed above | Same; threshold turns b_LT to e_LT, C_mLT off | Yes, except C_zz (see R3) |
 | Annex A at N = 0 | Undefined (ε_y → ∞) | Uses the limit C_my = 1 | Yes |
 | Guards | Class 4, W_pl < W_el, N ≥ N_cr (Annex A), curve missing, tension | All block as intended; k and k_w ≤ 1 keeps out cantilevers | Yes |
 | C_mLT > 0.25 block | Table B.2 divides by C_mLT − 0.25 | Input minimum 0.4, so the block cannot fire | See -03 |
 | Cantilever, mono-symmetric, tapered | Out of scope | Not supported; no input allows it | Yes |
-| UK NA | γ_M1 1.0; λ̄_LT,0 0.4; β 0.75; Table 6.5 | Defaults equal these | Yes |
+| UK NA | γ_M1 1.0; rolled λ̄_LT,0 0.4, β 0.75; welded λ̄_LT,0 0.2, β 1.0 (reviewer recollection, owner to confirm) | One factor pair for both section types; defaults are the rolled values | No for welded (see R1) |
 
 ## Findings
-| ID | Severity | Finding | Evidence | Suggested fix (for Track S) |
-|---|---|---|---|---|
-| P1-struct.ltb-interaction-01 | Medium | The ψ formula for C1 is unconservative against the exact elastic solution for long members and double curvature. No warning says so. | UB 457×191×98, ψ −0.5 (A 100, B −50 kN·m), L 12 m: formula C1 2.70, eigen C1 2.459 (+9.8 %). M_b,Rd 407.75 kN·m against 384.46 with C1 2.4589 entered (+6.1 %). ψ 0, L 20 m: 1.88 against 1.789; M_b,Rd +4.2 %. At L 6 m the error is 2.4 % (ψ 0) and 5.9 % (ψ −0.5). The formula matches the SN003 table values to about 0.5 %, so a hand check against the table agrees. An LTBeam run will not. | Add a note or warning on the ψ-derived C1: "curve fit, can exceed the exact value by up to about 10 % for L/h large and ψ < 0.25; use LTBeam or enter C1". Optionally lower the cap or the ψ < 0.25 branch. |
-| P1-struct.ltb-interaction-02 | Medium | The 1/λ̄² cap is also applied to the f-modified χ_LT,mod. As I know cl. 6.3.2.3(2), only χ_LT,mod ≤ 1 applies. The cap is conservative. | UB, 6.3.2.3, curve a, use_f, ψ −1, L chosen for λ̄ 1.2: χ_LT 0.6442, f 0.8648, χ/f 0.745. Product gives 0.6944 (= 1/λ̄²), M_b,Rd 550.4 against 590.4 kN·m (−6.8 %). | Check the owner's copy of cl. 6.3.2.3(2) and Eq. 6.58. If it caps at 1 only, remove the second cap. If kept, say so in the method text, which now cites 6.58 for it. |
-| P1-struct.ltb-interaction-03 | Low | Rule `C_m_LT` (block when C_mLT ≤ 0.25) cannot fire. C_m_LT input has a hard minimum of 0.4 and the derived values are at least 0.4. | Template: C_m_LT Min 0.4; Table B.3 value ≥ 0.4. | Keep as defence, or drop the rule from the declared list. |
-| P1-struct.ltb-interaction-04 | Info | Annex B class 3 with Table B.2 and the λ̄_z < 0.4 branch of Table B.2 have no KAT. | Probes "AnnexB class3 B.2" and "AnnexB class2 B.2 lam_z<0.4" match the script. | Add two KATs from the script values (k_zy 0.971761 for the class 3 probe). |
-| P1-struct.ltb-interaction-05 | Info | LTB may also be ignored when M_Ed/M_cr ≤ λ̄_LT,0² (cl. 6.3.2.2(4)). The sheet checks only λ̄. This errs on the safe side. | Code path in ChiLtRolled / ChiLtGeneral. | None needed. |
-| P1-struct.ltb-interaction-06 | Info | No consistency check between section inputs (for example I_y < I_z, or I_w far from the plate value). Wrong typed properties pass silently. | Not run as a case; only the hard ranges apply. | Optional warning for I_y < I_z. |
+| ID | Severity | Reviewed | Finding | Evidence | Suggested fix (for Track S) |
+|---|---|---|---|---|---|
+| P1-struct.ltb-interaction-01 | Medium | High: unconservative M_b,Rd in plausible use (ψ < 0.25, long or torsion-dominated members), +9.7 % at L 20 m, ψ −0.5; reproduced with the probe and an independent finite-difference solve | The ψ formula for C1 is unconservative against the exact elastic solution for long members and double curvature. No warning says so. | UB 457×191×98, ψ −0.5 (A 100, B −50 kN·m), L 12 m: formula C1 2.70, eigen C1 2.459 (+9.8 %). M_b,Rd 407.75 kN·m against 384.46 with C1 2.4589 entered (+6.1 %). ψ 0, L 20 m: 1.88 against 1.789; M_b,Rd +4.2 %. At L 6 m the error is 2.4 % (ψ 0) and 5.9 % (ψ −0.5). The formula matches the older ENV Annex F values. Newer NCCI lower-bound values are lower (reviewer recollection: 1.77, 2.05, 2.33, 2.55 at ψ 0, −0.25, −0.5, −1; owner to confirm). A finite-difference eigen solve at L 60 m reproduces those within 1 %, so the fit is up to 15 % high. An LTBeam run will not agree. | Add a note or warning on the ψ-derived C1: "curve fit, can exceed the exact value by up to about 10 % for L/h large and ψ < 0.25; use LTBeam or enter C1". Optionally lower the cap or the ψ < 0.25 branch. |
+| P1-struct.ltb-interaction-02 | Medium | Rejected (Info at most): the reviewer recalls Eq. 6.58 in 2005+A1 carrying both limits, ≤ 1 and ≤ 1/λ̄²; the product then matches. Conservative either way. Owner to confirm against licensed copy | The 1/λ̄² cap is also applied to the f-modified χ_LT,mod. As I know cl. 6.3.2.3(2), only χ_LT,mod ≤ 1 applies. The cap is conservative. | UB, 6.3.2.3, curve a, use_f, ψ −1, L chosen for λ̄ 1.2: χ_LT 0.6442, f 0.8648, χ/f 0.745. Product gives 0.6944 (= 1/λ̄²), M_b,Rd 550.4 against 590.4 kN·m (−6.8 %). | Check the owner's copy of cl. 6.3.2.3(2) and Eq. 6.58. If it caps at 1 only, remove the second cap. If kept, say so in the method text, which now cites 6.58 for it. |
+| P1-struct.ltb-interaction-03 | Low | Low (confirmed) | Rule `C_m_LT` (block when C_mLT ≤ 0.25) cannot fire. C_m_LT input has a hard minimum of 0.4 and the derived values are at least 0.4. | Template: C_m_LT Min 0.4; Table B.3 value ≥ 0.4. | Keep as defence, or drop the rule from the declared list. |
+| P1-struct.ltb-interaction-04 | Info | Info (confirmed) | Annex B class 3 with Table B.2 and the λ̄_z < 0.4 branch of Table B.2 have no KAT. | Probes "AnnexB class3 B.2" and "AnnexB class2 B.2 lam_z<0.4" match the script. | Add two KATs from the script values (k_zy 0.971761 for the class 3 probe). |
+| P1-struct.ltb-interaction-05 | Info | Info (confirmed) | LTB may also be ignored when M_Ed/M_cr ≤ λ̄_LT,0² (cl. 6.3.2.2(4)). The sheet checks only λ̄. This errs on the safe side. | Code path in ChiLtRolled / ChiLtGeneral. | None needed. |
+| P1-struct.ltb-interaction-06 | Info | Info (confirmed) | No consistency check between section inputs (for example I_y < I_z, or I_w far from the plate value). Wrong typed properties pass silently. | Not run as a case; only the hard ranges apply. | Optional warning for I_y < I_z. |
+| P1-struct.ltb-interaction-R1 | High | High | The UK NA (reviewer recollection, owner to confirm against licensed copy) sets λ̄_LT,0 = 0.2 and β = 1.0 for welded sections in 6.3.2.3. The sheet has one factor pair for all sections, and its defaults are the rolled values. A UK user with a welded section and the default method gets an unconservative χ_LT. The first-pass claim that the UK NA equals the defaults was wrong. The UK NA also limits its rolled rows to h/b ≤ 3.1 (owner to confirm). | Welded 500×200×16/10, 6.3.2.3, ψ 1, curve d: L 4 m M_b,Rd 426.33 against 356.08 kN·m (+19.7 %); L 6 m 286.53 against 235.06 kN·m (+21.9 %). Probe runs weld_rec_*, weld_uk_*. | Separate λ̄_LT,0 and β for welded sections, or warn when a welded section uses 6.3.2.3 with λ̄_LT,0 > 0.2. State the UK NA values in the factor-set label. |
+| P1-struct.ltb-interaction-R2 | Medium | Medium | Table B.1 (not susceptible) can be chosen for an open I-section whose own χ_LT is below 1. No warning fires. Table B.1 then gives k_zy = 0.6 k_yy, far below the Table B.2 value. | ka-annex-b-class2 inputs with torsion = Table B.1: k_zy 0.509 against 0.918; u_62 1.008 against 1.248 (−19 %). No notice in the probe output. | Warn (or block) when Table B.1 is chosen and χ_LT < 1. Say on the input that an I-section is susceptible unless restrained against twist. |
+| P1-struct.ltb-interaction-R3 | Medium | Medium | Annex A C_zz: the reviewer reads Table A.1 with e_LT inside the bracket that n_pl multiplies. Code and script both subtract e_LT outside it. The code is then conservative. Owner to confirm against licensed copy. | ka-annex-a-class2: k_zz 1.92681 against 1.77413; u_62 1.19077 against 1.17132. UB 457×191×98 S355, ψ 0, M_y 300, M_z 60 kN·m, N 300 kN, L 4 m: u_62 0.987 against 0.884 (+11.7 %). Script reviewer notes. | Check Table A.1 C_zz in the owner's copy and align code, script and KAT. |
+| P1-struct.ltb-interaction-R4 | Low | Low | The ka-annex-b-class2 reference text states n_y = 0.1. The value that gives k_yy 0.848513 is n_y = 0.32738 (1200/3665.5). | k_yy = 0.8(1 + 0.185234 × 0.32738) = 0.848513. | Correct the reference text. |
+| P1-struct.ltb-interaction-R5 | Low | Low | The Annex A threshold for the LTB terms uses the ψ-formula C₁. Table A.2 permits C₁ = k_c⁻². The formula value is higher for ψ < 1, so it raises the threshold slightly. This can switch the LTB terms off near the threshold (unconservative edge case). | ψ 0: √1.88 = 1.371 against √1.769 = 1.330 (3 %). | Use k_c⁻² in the threshold, or the lower of the two. |
 
 ## Notes for the owner's manual test
 - Uniform moment, welded 500×200×16/10, S355, 6 m, 6.3.2.2: M_cr 398.10 kN·m, λ̄_LT 1.3673, χ_LT 0.3159, M_b,Rd 235.06 kN·m. Hand-check with M_cr = (π/L)√(E I_z G I_t)·√(1 + π²E I_w/(L² G I_t)).
@@ -90,3 +95,16 @@ UB 457×191×98 S355 is the sheet default; UC 254×254×73 and a welded 400×300
 - Compare k_yy, k_yz, k_zy, k_zz for Annex A and B with SCI P364 examples 3, 4, 11 and 12, and check the Table A.1, A.2, B.1, B.2 coefficients against a printed copy. Both teams worked from the same memory of those tables.
 - Run an LTBeam case with ψ −0.5, L 12 m on the default UB. Expect C1 about 2.46 against the sheet's 2.70 (finding -01).
 - Try z_g +233.6 mm with C1 1.127, C2 0.454 (UDL): M_cr 396.03 kN·m. With z_g −233.6 mm: 719.04 kN·m. A positive z_g must lower M_cr.
+
+## Independent review
+- Reviewer: senior review agent (Claude), 2026-10-24, on claude/tempestos-v0260-test-readiness-s4jwh1 rebased on release/v0.26.0 @ 90d15f11.
+- Ran the script (exit 0, 632/632) and all 8 KATs with the probe (8/8 PASS). The script is an independent rewrite with its own eigen check. It shares the team's memory of Annex A and B.
+- Reproduced -01 with the probe: UB default, end moments 100 / −50 kN·m, L 20 m: M_b,Rd 276.34 (C₁ 2.70) against 252.02 kN·m (C₁ 2.3972 entered), +9.7 %. A separate finite-difference eigen solve gave the same C₁ values as the script's Ritz solve. Upgraded to High.
+- Hand spot-checks of Annex B (Table B.1/B.2, class 2) on the ka-annex-b-class2 case agree: k_yy 0.848513, k_zz 1.600473, k_zy 0.917840.
+- Annex A: every term matches the reviewer's recollection except the e_LT placement in C_zz (R3, conservative).
+- -02 rejected: the reviewer recalls both caps in Eq. 6.58; it is conservative in any case.
+- The N+M check uses χ_LT,mod consistently in M_b,Rd, in 6.61/6.62 and in the Annex A terms.
+- Guards: class 4 blocks; only I-section types exist; S1 supplies I_w only for doubly-symmetric I shapes; tapered input is impossible. Class is self-declared, not checked (Info).
+- New: R1 (High, UK NA welded factors), R2 (Medium, Table B.1 without warning), R3 (Medium), R4, R5 (Low).
+- Residual doubts: the UK NA values (R1), Eq. 6.58 (-02) and the C_zz form (R3) are from memory. The owner should confirm all three against licensed copies.
+- Script: added a non-failing "Reviewer notes" block (C₁ at L 60 m, UK NA welded comparison, alternative C_zz, Table B.1 effect).

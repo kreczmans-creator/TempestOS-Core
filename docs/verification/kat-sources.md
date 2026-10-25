@@ -14,7 +14,10 @@ Both contradictions below are provisional. They rest on open secondary sources, 
 |---|---|---|---|---|
 | Unconfirmed KATs | 8 | 5 | 1 | 14 |
 | Secondary KATs | 20 | 0 | 1 | 21 |
-| All | 28 | 5 | 2 | 35 |
+| Addendum B-0/B-1 cases (90d15f11) | 7 | 2 | 1 | 10 |
+| All | 35 | 7 | 3 | 45 |
+
+The first three rows cover the earlier 35 cases, checked on 2026-10-24. The addendum row is new and is detailed in the last section.
 
 Of the 28 confirmed, 3 rest on a manufacturer or IET page: B32 Z_s, ΔT 30 factor and SKF 6206.
 The other 25 use open course notes, open secondary pages or recomputation. Each row says which.
