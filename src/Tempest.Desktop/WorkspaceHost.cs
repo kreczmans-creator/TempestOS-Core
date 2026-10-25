@@ -375,6 +375,16 @@ public sealed class WorkspaceHost : IAsyncDisposable
             packTemplates: Tempest.Desktop.CalcSheets.CalcPackTemplateComposition.All(),
             principals: (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory)));
 
+        // One-off sweep (`ADR-0173`): Evidence a worksheet made before the managed marker existed is marked now, so the generic Evidence acts refuse it.
+        try
+        {
+            await CalcInstances.AdoptAllEvidenceAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            hostLogger?.Warning($"Marking calculation Evidence as managed failed ({ex.GetType().Name}); it is marked at its next check or issue instead.");
+        }
+
         CalculationModules = new CalculationModuleWorkbench(
             CalculationModuleService,
             CalculationTemplates!,

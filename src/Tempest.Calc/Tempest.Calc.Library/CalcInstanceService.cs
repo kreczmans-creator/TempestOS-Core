@@ -89,6 +89,21 @@ public sealed partial class CalcInstanceService
     }
 
     /// <summary>
+    /// The one-off startup sweep (review N4): marks the Evidence of every saved calculation and pack as managed by its worksheet, so Evidence made
+    /// before the marker existed is closed to the generic Evidence acts at once, not at its next check or issue (which a switched-off or blocked
+    /// calculation never reaches). Idempotent; Evidence already managed is left alone. Returns how many Evidence records it looked at.
+    /// </summary>
+    public async Task<int> AdoptAllEvidenceAsync(CancellationToken cancellationToken = default)
+    {
+        var ids = await _store.ListEvidenceIdsAsync(cancellationToken).ConfigureAwait(false);
+
+        foreach (var id in ids)
+            await AdoptEvidenceAsync(id, cancellationToken).ConfigureAwait(false);
+
+        return ids.Count;
+    }
+
+    /// <summary>
     /// Stands in for the signed-in principal when set. Internal, for the tests, which have no sign-in to switch between two people;
     /// the product always resolves the principal from the domain context.
     /// </summary>

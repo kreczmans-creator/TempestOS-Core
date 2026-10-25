@@ -200,6 +200,51 @@ public sealed class WorksheetGovernanceTests
     }
 
     [AvaloniaFact]
+    public async Task Starting_The_Host_Marks_Evidence_A_Worksheet_Made_Before_The_Marker_As_Managed()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        Guid oldEvidenceId;
+
+        var first = new WorkspaceHost(root);
+
+        try
+        {
+            await first.StartAsync();
+            var project = await first.ProjectDirectory!.CreateAsync("P-SWEEP", "Sweep project");
+            await first.ProjectContext!.OpenAsync(project.Id);
+            var instance = await first.CalcInstances!.CreateAsync("struct.section-properties", project.Id, "Old section");
+
+            // Evidence made the way it was before the marker existed: unmanaged, then pointed at by the instance.
+            var old = await first.EvidenceService!.CreateAsync(project.Id, "Old evidence", EvidenceClassification.Calculation);
+            await first.CalcInstances.Store.SaveInstanceAsync(instance with { EvidenceId = old.Id, UpdatedAt = instance.UpdatedAt.AddSeconds(1) });
+            oldEvidenceId = old.Id;
+            Assert.Null(old.ManagedBy);
+        }
+        finally
+        {
+            await first.ShutdownAsync();
+            await first.DisposeAsync();
+        }
+
+        var second = new WorkspaceHost(root);
+
+        try
+        {
+            await second.StartAsync();
+            var domain = (EngineeringDomainContext)second.Services!.GetService(typeof(EngineeringDomainContext));
+            var evidence = (CoreEvidence)(await domain.Repository.FindAsync(oldEvidenceId))!;
+
+            Assert.Equal(CoreEvidence.CalcWorksheetOwner, evidence.ManagedBy);
+            Assert.Equal(EvidenceRefusal.ManagedElsewhere, (await second.EvidenceService!.RecordCheckAsync(oldEvidenceId, "Chris Checker", "Org", "ok", CheckOutcome.Accepted)).Refusal);
+        }
+        finally
+        {
+            await second.ShutdownAsync();
+            await second.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task The_Evidence_Of_A_Calculation_Offers_Open_Worksheet_Not_Check_Issue_Or_Revise()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());

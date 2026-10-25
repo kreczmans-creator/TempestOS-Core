@@ -228,6 +228,43 @@ public sealed class LiftingGovernanceTests
     }
 
     [Fact]
+    public async Task The_Startup_Sweep_Marks_Old_Calculation_Evidence_Managed_Even_When_The_Feature_Is_Off()
+    {
+        // Evidence made before the marker existed, for a lifting calculation and a pack, in a store whose installation has the feature off.
+        var on = Host(on: true);
+        on.Principal = Designer;
+        var project = await on.ProjectAsync();
+        var lug = await on.Service.CreateAsync("struct.lifting", project, "Old lug", Inputs());
+        var other = await on.Service.CreateAsync("test.direct-stress", project, "Old stress", LibraryTestHost.ProvenancedInputs());
+        var pack = await on.Service.CreatePackAsync(project, "Old pack", [other.Id]);
+        // Point each at Evidence made the way it was before the marker existed: unmanaged.
+        var oldLug = await on.Evidence.CreateAsync(project, "Old lug evidence", EvidenceClassification.Calculation);
+        var oldOther = await on.Evidence.CreateAsync(project, "Old stress evidence", EvidenceClassification.Calculation);
+        var oldPack = await on.Evidence.CreateAsync(project, "Old pack evidence", EvidenceClassification.Calculation);
+        await on.Store.SaveInstanceAsync(lug with { EvidenceId = oldLug.Id, UpdatedAt = lug.UpdatedAt.AddSeconds(1) });
+        await on.Store.SaveInstanceAsync(other with { EvidenceId = oldOther.Id, UpdatedAt = other.UpdatedAt.AddSeconds(1) });
+        var storedPack = (await on.Store.FindPackAsync(pack.Id))!;
+        await on.Store.SavePackAsync(storedPack with { EvidenceId = oldPack.Id, UpdatedAt = storedPack.UpdatedAt.AddSeconds(1) });
+        var oldIds = new[] { oldLug.Id, oldOther.Id, oldPack.Id };
+        Assert.Null(oldLug.ManagedBy);
+        Assert.Null(oldOther.ManagedBy);
+        Assert.Null(oldPack.ManagedBy);
+
+        // The service of an installation with the feature off: the next check would be refused before it adopted anything.
+        var off = new CalcInstanceService(new CalcCatalogue([new LiftingLugCalculator()]), on.Store, on.Evidence, on.Context, renderer: null, applicationVersion: "test") { PrincipalOverride = () => FirstChecker };
+        Assert.Equal(3, await off.AdoptAllEvidenceAsync());
+
+        foreach (var evidenceId in oldIds)
+        {
+            Assert.Equal(Evidence.CalcWorksheetOwner, ((Evidence)(await on.Context.Repository.FindAsync(evidenceId))!).ManagedBy);
+            Assert.Equal(EvidenceRefusal.ManagedElsewhere, (await on.Evidence.RecordCheckAsync(evidenceId, "Chris Checker", "Check Co", "ok", CheckOutcome.Accepted)).Refusal);
+        }
+
+        // Idempotent.
+        Assert.Equal(3, await off.AdoptAllEvidenceAsync());
+    }
+
+    [Fact]
     public async Task Calculation_Evidence_Made_Before_Evidence_Could_Be_Managed_Is_Adopted_At_The_Next_Check()
     {
         var host = Host(on: true);

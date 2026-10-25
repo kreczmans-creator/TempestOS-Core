@@ -101,6 +101,26 @@ public sealed class CalcInstanceStore
         return (null, null);
     }
 
+    /// <summary>The Evidence of every saved calculation and pack, in every project (for the one-off sweep that marks it as managed by its worksheet).</summary>
+    public async Task<IReadOnlyList<Guid>> ListEvidenceIdsAsync(CancellationToken cancellationToken = default)
+    {
+        var ids = new HashSet<Guid>();
+
+        foreach (var (_, value) in await _store.ReadAllAsync(InstanceCollection, cancellationToken).ConfigureAwait(false))
+        {
+            if (Deserialise<CalcInstance>(value) is { EvidenceId: { } id })
+                ids.Add(id);
+        }
+
+        foreach (var (_, value) in await _store.ReadAllAsync(PackCollection, cancellationToken).ConfigureAwait(false))
+        {
+            if (Deserialise<CalcPack>(value) is { EvidenceId: { } id })
+                ids.Add(id);
+        }
+
+        return [.. ids];
+    }
+
     /// <summary>
     /// Writes a draft or checked instance in its own transaction. Refuses to
     /// overwrite an issued one. With <paramref name="expectedUpdatedAt"/>,
