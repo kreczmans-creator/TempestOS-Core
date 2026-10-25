@@ -71,7 +71,7 @@ Copy the whole line of a block to the clipboard. Then press *Import inputs (CSV/
 [{"Symbol":"cables","Rows":[{"Cells":{"name":{"Text":"S"},"od":{"Number":15,"Unit":"mm"},"count":{"Number":1},"mass":{"Number":0.5,"Unit":"kg/m"},"T_max":{"Number":1000000.0,"Unit":"N"}}}]},{"Symbol":"cont_type","Text":"Conduit (round)"},{"Symbol":"D_c","Number":40,"Unit":"mm"},{"Symbol":"f_max","Number":0.4},{"Symbol":"n_bend","Number":8},{"Symbol":"route","Rows":[{"Cells":{"kind":{"Text":"Straight"},"L":{"Number":500,"Unit":"m"}}},{"Cells":{"kind":{"Text":"Bend"},"theta":{"Number":720,"Unit":"deg"},"R":{"Number":500,"Unit":"mm"}}},{"Cells":{"kind":{"Text":"Straight"},"L":{"Number":500,"Unit":"m"}}}]},{"Symbol":"T_1","Number":100,"Unit":"N"},{"Symbol":"mu","Number":0.5}]
 ```
 
-**Block U** — Imperial entry: four 0.5 in cables of 0.2 lb/ft and 100 lbf each in a 1.5 in conduit, a 100 ft run and a 12 in bend, T_1 10 lbf, mu 0.3.
+**Block U** — Imperial entry: four 0.5 in cables in a 1.5 in conduit, a 100 ft run and a 12 in bend.
 ```json
 [{"Symbol":"cables","Rows":[{"Cells":{"name":{"Text":"A"},"od":{"Number":0.5,"Unit":"in"},"count":{"Number":4},"mass":{"Number":0.2,"Unit":"lb/ft"},"T_max":{"Number":100,"Unit":"lbf"}}}]},{"Symbol":"cont_type","Text":"Conduit (round)"},{"Symbol":"D_c","Number":1.5,"Unit":"in"},{"Symbol":"f_max","Number":0.4},{"Symbol":"n_bend","Number":10},{"Symbol":"route","Rows":[{"Cells":{"kind":{"Text":"Straight"},"L":{"Number":100,"Unit":"ft"}}},{"Cells":{"kind":{"Text":"Bend"},"theta":{"Number":90,"Unit":"deg"},"R":{"Number":12,"Unit":"in"}}}]},{"Symbol":"T_1","Number":10,"Unit":"lbf"},{"Symbol":"mu","Number":0.3}]
 ```
