@@ -105,8 +105,8 @@ public sealed class FaultProtectionTests
         var check = Assert.Single(r.Checks, c => c.Name == "Disconnection time within required");
         Assert.Equal(0.25, check.Utilisation, 9);
         Assert.True(check.Passed);
-        Assert.Equal("0.10 s", check.DemandText);
-        Assert.Equal("0.40 s", check.CapacityText);
+        Assert.Equal("0.1000 s", check.DemandText);
+        Assert.Equal("0.4000 s", check.CapacityText);
     }
 
     [Theory]

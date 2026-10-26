@@ -31,10 +31,10 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "§3-14", "Stresses in pressurised cylinders"),
         ],
         [
-            new CalcApplicabilityRule("geometry", "The outer radius must exceed the inner radius.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("no-pressure", "Both pressures are zero: nothing to compute.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("stability", "External pressure above the internal on a wall thinner than 10 % of the inner radius: the stress check does not cover collapse, and elastic collapse can govern before the allowable stress is reached.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("thin-wall", "Wall thinner than 5 % of the inner radius: the thin-wall estimate is within a few percent of Lamé.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("geometry", "The outer radius must exceed the inner radius.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-pressure", "Both pressures are zero: nothing to compute.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("stability", "External pressure above the internal on a wall thinner than 10 % of the inner radius: the stress check does not cover collapse, and elastic collapse can govern before the allowable stress is reached.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("thin-wall", "Wall thinner than 5 % of the inner radius: the thin-wall estimate is within a few percent of Lamé.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-internal-closed", "Internal pressure, closed ends (v0.16 vector 1)",
@@ -55,6 +55,7 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u", "u_cr");
         c.Input("a");
         c.Input("b");
         c.Input("p_i");
@@ -107,6 +108,8 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
         c.Assign("u", "sigma_vm_max / sigma_allow", null, "Utilisation");
         c.Assign("sigma_thin", "(p_i - p_o) * (a + b) / 2 / (b - a)", "MPa", "Thin-wall hoop estimate at the mean radius");
         c.Assign("k_wall", "b / a", null, "Wall ratio b/a");
+
+        c.MarkNoiseProne("sigma_r_a", "sigma_r_b");
 
         foreach (var (symbol, text) in new[] { ("sigma_r_a", "Radial stress, bore"), ("sigma_t_a", "Hoop stress, bore"), ("sigma_r_b", "Radial stress, outer"), ("sigma_t_b", "Hoop stress, outer"), ("sigma_z", "Axial stress"), ("sigma_vm_a", "von Mises, bore"), ("sigma_vm_b", "von Mises, outer"), ("sigma_tr_a", "Tresca, bore"), ("sigma_tr_b", "Tresca, outer"), ("sigma_vm_max", "Maximum von Mises"), ("u", "Utilisation"), ("sigma_thin", "Thin-wall hoop estimate"), ("k_wall", "Wall ratio") })
             c.Output(symbol, text);

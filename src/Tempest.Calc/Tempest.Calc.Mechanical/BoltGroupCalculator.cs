@@ -58,9 +58,9 @@ public sealed class BoltGroupCalculator : ICalcCalculator
             new CalcClauseRef("AISC Steel Construction Manual", "Part 7", "Eccentrically loaded bolt groups — elastic method"),
         ],
         [
-            new CalcApplicabilityRule("few-bolts", "No bolts, or a single bolt under an in-plane torque it cannot resist.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("coincident", "Two bolts share a position.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("collinear", "All bolts on one line: an out-of-plane moment about that line cannot be resisted.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("few-bolts", "No bolts, or a single bolt under an in-plane torque it cannot resist.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("coincident", "Two bolts share a position.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("collinear", "All bolts on one line: an out-of-plane moment about that line cannot be resisted.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-four-bolt-eccentric", "Four-bolt square pattern, 50 kN at 150 mm eccentricity",
@@ -109,6 +109,7 @@ public sealed class BoltGroupCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_lin", "u_max", "u_t", "u_v");
         var rows = c.Rows("bolts");
 
         foreach (var s in new[] { "F_x", "F_y", "e_x", "e_y", "T_z", "N", "M_x", "M_y", "V_R", "T_R" })

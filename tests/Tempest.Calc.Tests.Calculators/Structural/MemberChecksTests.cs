@@ -24,15 +24,16 @@ public sealed class MemberChecksTests
             .. more]);
 
     [Fact]
-    public void A_Member_Interaction_With_The_Default_K_Of_One_Under_Heavy_Compression_Warns_And_Shows_The_Annex_B_Bound()
+    public void A_Member_Interaction_With_The_Default_K_Of_One_Under_Heavy_Compression_Warns_And_Uses_The_Annex_B_Bound()
     {
         // P1-struct.en1993-member-02. SHS 40 cm2, W_pl 150 cm3, I 1200 cm4, S355, curve a, L 3 m, N -700, uniform M_y 20.
         // python3: lambda 0.71683, chi 0.83970, N_b 1192.37 kN, n 0.58707; u_member 0.96265 with k_yy = 1; with 1 + 0.8n = 1.46965 it is 1.13905; with k_yy 1.3034 it is 1.07661.
+        // C-2 fix (M1): a k left at 1.0 is replaced in the check by the bound, so u_member is 1.13905 (it was 0.96265 with a warning that the bound was higher).
         var r = CalcRunner.Run(Calc, Shs());
-        Assert.Equal(0.9626522, r.OutputSi("u_member"), 6);
+        Assert.Equal(1.1390474, r.OutputSi("u_member"), 6);
         var warning = Assert.Single(r.Notices, n => n.RuleId == "k-default");
+        Assert.StartsWith("k_yy:", warning.Message, StringComparison.Ordinal);
         Assert.Contains("1.470", warning.Message, StringComparison.Ordinal);
-        Assert.Contains("1.139", warning.Message, StringComparison.Ordinal);
 
         var entered = CalcRunner.Run(Calc, Shs(CalcInputValue.Of("k_yy", 1.3034)));
         Assert.Equal(1.0766052, entered.OutputSi("u_member"), 6);
@@ -41,7 +42,7 @@ public sealed class MemberChecksTests
         // Light compression (N/N_b,Rd <= 0.3), no moment about the axis, or tension: no warning.
         Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("N_Ed", -300, "kN"))).Notices, n => n.RuleId == "k-default");
         Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("M_y_Ed", 0, "kN*m"))).Notices, n => n.RuleId == "k-default");
-        Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("N_Ed", 700, "kN"))).Notices, n => n.RuleId == "k-default");
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("N_Ed", 700, "kN"), CalcInputValue.Quantity("A_net", 40, "cm^2"), CalcInputValue.Quantity("f_u", 510, "MPa"))).Notices, n => n.RuleId == "k-default");
     }
 
     [Fact]
@@ -99,7 +100,7 @@ public sealed class MemberChecksTests
     [Fact]
     public void Tension_Skips_Buckling_Checks()
     {
-        var r = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("N_Ed", 500, "kN")));
+        var r = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("N_Ed", 500, "kN"), CalcInputValue.Quantity("A_net", 58.7, "cm^2"), CalcInputValue.Quantity("f_u", 510, "MPa")));
         Assert.False(r.IsBlocked);
         Assert.DoesNotContain(r.Checks, c => c.Name.StartsWith("Flexural", StringComparison.Ordinal));
         Assert.Equal(0, r.OutputSi("u_buckling"));
@@ -153,18 +154,56 @@ public sealed class MemberChecksTests
     {
         // struct.en1993-member-R2: UC 203x203x46, N -900, M_y 40, gamma_M0 1.05, gamma_M1 1.1: u_member 1.1365 (moments over W f_y/gamma_M0) against 1.1479 (EN 6.61, M_Rk/gamma_M1).
         // python3: chi_z 0.5288 (curve c); N_b,z,Rd = chi A f_y/1.1; M_Rk/1.1 = 497e3 * 355/1.1 N.mm = 160.395 kN.m.
-        var r = CalcRunner.Run(Calc, Uc(CalcInputValue.Of("gamma_M0", 1.05), CalcInputValue.Of("gamma_M1", 1.1), CalcInputValue.Quantity("N_Ed", -900, "kN"), CalcInputValue.Quantity("M_y_Ed", 40, "kN*m")));
+        // k_yy and k_zz are the user's 1.0, recorded as an assumption, so the check keeps them (a k left at 1.0 would be replaced by the Annex bound).
+        var r = CalcRunner.Run(Calc, Uc(CalcInputValue.Of("gamma_M0", 1.05), CalcInputValue.Of("gamma_M1", 1.1), CalcInputValue.Quantity("N_Ed", -900, "kN"), CalcInputValue.Quantity("M_y_Ed", 40, "kN*m"),
+            CalcInputValue.Of("k_yy", 1.0, CalcProvenance.Assumed("Simplified interaction: k_yy = 1.0.")), CalcInputValue.Of("k_zz", 1.0, CalcProvenance.Assumed("Simplified interaction: k_zz = 1.0."))));
         var nb = r.OutputSi("N_b_Rd") / 1e3;
         Assert.Equal(900 / nb + 40 / (497e3 * 355 / 1.1 / 1e6), r.OutputSi("u_member"), 6);
         Assert.Equal(1.1479, r.OutputSi("u_member"), 3);
     }
 
     [Fact]
-    public void A_Tension_Member_Warns_That_The_Net_Section_Fracture_Is_Not_Checked()
+    public void A_Tension_Member_Needs_Its_Net_Area_And_Is_Checked_For_Net_Section_Fracture()
     {
-        // struct.en1993-member-06: only gross-section yielding was checked and nothing warned about bolt holes (N_u,Rd = 0.9 A_net f_u/gamma_M2 governs many bolted ties).
-        Assert.Contains(CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("N_Ed", 500, "kN"))).Notices, n => n.RuleId == "net-section");
+        // struct.en1993-member-06: only gross-section yielding was checked and a warning said bolt holes were not accounted for (N_u,Rd = 0.9 A_net f_u/gamma_M2 governs many bolted ties).
+        // C-2 fix (M1): without A_net and f_u a tension member is blocked; with them the fracture resistance is a check.
+        var blocked = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("N_Ed", 500, "kN")));
+        Assert.True(blocked.IsBlocked);
+        Assert.Equal("net-section", blocked.Blocks[0].RuleId);
+        Assert.StartsWith("A_net:", blocked.Blocks[0].Message, StringComparison.Ordinal);
         Assert.DoesNotContain(CalcRunner.Run(Calc, Uc()).Notices, n => n.RuleId == "net-section");
+
+        // python3: A_net 40 cm2 (A 58.7 cm2, bolt holes), f_u 490 MPa, gamma_M2 1.1: N_u,Rd = 0.9 × 4000 × 490 / 1.1 = 1603.64 kN; N = 1700 kN: u = 1.06 (a fail; N_pl,Rd = 5870 × 355 = 2083.85 kN passes).
+        var holes = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("N_Ed", 1700, "kN"), CalcInputValue.Quantity("A_net", 40, "cm^2"), CalcInputValue.Quantity("f_u", 490, "MPa")));
+        Assert.False(holes.IsBlocked);
+        Assert.Equal(1603.6364, holes.OutputSi("N_u_Rd") / 1e3, 3);
+        Assert.Equal(1700 / 1603.6364, holes.OutputSi("u_net"), 6);
+        Assert.Equal(0.81577, holes.OutputSi("u_N"), 4);
+        Assert.False(Assert.Single(holes.Checks, c => c.Name.StartsWith("Tension against the net-section", StringComparison.Ordinal)).Passed);
+        Assert.False(holes.Passed);
+
+        // A net area above the gross area is refused.
+        var larger = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("N_Ed", 500, "kN"), CalcInputValue.Quantity("A_net", 80, "cm^2"), CalcInputValue.Quantity("f_u", 490, "MPa")));
+        Assert.True(larger.IsBlocked);
+        Assert.StartsWith("A_net:", larger.Blocks[0].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Member_Bending_About_Y_With_An_Unrestrained_Compression_Flange_Is_Blocked_Not_Passed()
+    {
+        // struct.en1993-member no-ltb: lateral-torsional buckling is not checked, so the sheet used to warn on every run and pass an unrestrained beam.
+        var restrained = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("M_y_Ed", 120, "kN*m"), CalcInputValue.Quantity("N_Ed", 0, "kN")));
+        Assert.False(restrained.IsBlocked);
+        Assert.DoesNotContain(restrained.Notices, n => n.RuleId == "no-ltb");
+        Assert.Contains(restrained.RunAssumptions, a => a.Statement.Contains("restrained", StringComparison.Ordinal));
+
+        var free = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("M_y_Ed", 120, "kN*m"), CalcInputValue.Quantity("N_Ed", 0, "kN"), CalcInputValue.Choice("ltb", MemberChecksCalculator.NotRestrained)));
+        Assert.True(free.IsBlocked);
+        Assert.Equal("no-ltb", free.Blocks[0].RuleId);
+        Assert.StartsWith("ltb:", free.Blocks[0].Message, StringComparison.Ordinal);
+
+        // No moment about y: nothing to buckle laterally, the choice is moot.
+        Assert.False(CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("M_y_Ed", 0, "kN*m"), CalcInputValue.Choice("ltb", MemberChecksCalculator.NotRestrained))).IsBlocked);
     }
 
     [Fact]

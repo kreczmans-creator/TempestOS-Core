@@ -155,17 +155,17 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             new CalcClauseRef("ISO 3601-2", "—", "O-rings: housing dimensions for general applications"),
         ],
         [
-            new CalcApplicabilityRule("geometry", "Every dimension stays positive across its band, the deviations are in order, the gland has a positive depth and area and the ring section does not vanish.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("limits", "Each lower limit is below its upper limit and the temperature and swell ranges are in order.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("measured", "A measured row names a dimension the arrangement does not use (a name that is not a dimension at all blocks).", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("extrusion", "No permitted extrusion gap is entered (no record rows and no value): the extrusion is not verified and the check fails while the operating pressure is above zero.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("extrusion-range", "The pressure or hardness lies outside the extrusion record; the check fails because the record cannot confirm it.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("expansion", "The ring expands less than the groove metal: the cold and hot ends are not the bounding cases.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("stretch", "The installed stretch is far beyond installation practice, or the Parker quadratic is used outside about 3 to 25 % stretch.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("installed-state", "The operating temperature range does not include the installation temperature 20 °C: the installed state can have a smaller squeeze than the cold end.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("contact", "The minimum squeeze is zero or negative: the ring can lose contact.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("face", "A face seal is normally a static seal.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("worst-case", "The exact corner is lower than the stack worst case; the stack is not conservative for this geometry.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("geometry", "Every dimension stays positive across its band, the deviations are in order, the gland has a positive depth and area and the ring section does not vanish.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("limits", "Each lower limit is below its upper limit and the temperature and swell ranges are in order.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("measured", "A measured row names a dimension the arrangement does not use (a name that is not a dimension at all blocks).", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("extrusion", "No permitted extrusion gap is entered (no record rows and no value): the extrusion is not verified and the check fails while the operating pressure is above zero.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("extrusion-range", "The pressure or hardness lies outside the extrusion record; the check fails because the record cannot confirm it.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("expansion", "The ring expands less than the groove metal: the cold and hot ends are not the bounding cases.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("stretch", "The installed stretch is far beyond installation practice, or the Parker quadratic is used outside about 3 to 25 % stretch.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("installed-state", "The operating temperature range does not include the installation temperature 20 °C: the installed state can have a smaller squeeze than the cold end.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("contact", "The minimum squeeze is zero or negative: the ring can lose contact.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("face", "A face seal is normally a static seal.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("worst-case", "The exact corner is lower than the stack worst case; the stack is not conservative for this geometry.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-thermal-swell", "Piston seal with the constant-volume reduction, thermal expansion and swell: the defaults (analytic)",
@@ -362,6 +362,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_gap", "u_stretch");
         var typeText = c.InputText("type");
         var kind = typeText == TypeRod ? SealKind.Rod : typeText == TypeFace ? SealKind.Face : SealKind.Piston;
         var dynamicDuty = c.InputText("duty") == DutyDynamic;

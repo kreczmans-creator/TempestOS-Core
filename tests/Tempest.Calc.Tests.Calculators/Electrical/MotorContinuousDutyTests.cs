@@ -47,7 +47,7 @@ public sealed class MotorContinuousDutyTests
         Assert.True(r.OutputSi("P_rated") > r.OutputSi("P_cont"));
         Assert.DoesNotContain(r.Notices, n => n.RuleId == "rated-speed");
         Assert.Equal("W", Motor.Template.OutputPorts!.Single(p => p.Symbol == "P_rated").Unit);
-        Assert.Equal("1.9.0", Motor.Template.Version);
+        Assert.Equal("1.10.0", Motor.Template.Version);
         Assert.Contains(Motor.Template.RecordKinds!, k => k.Kind == "motor.rating" && k.Symbols.Contains("n_rated") && k.Symbols.Contains("T_rated"));
 
         // The running speed (2800 rpm) is not the rated speed: changing the load speed leaves the rated power alone.

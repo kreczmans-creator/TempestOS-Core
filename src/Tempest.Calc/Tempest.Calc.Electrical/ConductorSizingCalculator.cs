@@ -107,14 +107,14 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             new CalcClauseRef("BS 7671:2018 (as amended)", "reg. 433.1.201, 433.1.202", "Overload protection by gG fuses and semi-enclosed fuses: deemed conditions"),
         ],
         [
-            new CalcApplicabilityRule("ampacity", "The ampacity record must hold at least one usable row.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("I_n", "A preferred rating of at least I_b must be in the ratings record.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("CSA", "A conductor in the ampacity record must carry I_t,req.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("I2", "For a gG fuse, MCCB or MPCB in the machine-wiring context, I₂ must be entered (blocked without it); in the BS 7671 installation context a gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45 I_z when I_n ≤ I_z, and an MCCB or MPCB without I₂ is treated the same with a warning.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("C_g", "More than one grouped circuit with C_g = 1 is probably a missing grouping factor.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("theta_a", "An ambient temperature above the reference with C_a left at 1: the ambient has not reached the sizing.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("ampacity-sense", "A cross-section entered twice (the lower capacity is used) or a capacity that falls as the cross-section grows is probably a typing slip or a mix of installation methods.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("theta_a-limit", "An ambient temperature at or above the conductor operating temperature leaves no current-carrying capacity.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("ampacity", "The ampacity record must hold at least one usable row.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("I_n", "A preferred rating of at least I_b must be in the ratings record.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("CSA", "A conductor in the ampacity record must carry I_t,req.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("I2", "For a gG fuse, MCCB or MPCB in the machine-wiring context, I₂ must be entered (blocked without it); in the BS 7671 installation context a gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45 I_z when I_n ≤ I_z, and an MCCB or MPCB without I₂ is treated the same with a warning.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("C_g", "More than one grouped circuit with C_g = 1 is probably a missing grouping factor.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("theta_a", "An ambient temperature above the reference with C_a left at 1: the ambient has not reached the sizing.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("ampacity-sense", "A cross-section entered twice (the lower capacity is used) or a capacity that falls as the cross-section grows is probably a typing slip or a mix of installation methods.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("theta_a-limit", "An ambient temperature at or above the conductor operating temperature leaves no current-carrying capacity.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-three-phase-mcb-c", "Three-phase 7.5 kW (output) load on a type C MCB, θ_a 35 °C with C_a 0.91, two circuits with C_g 0.77",
@@ -197,6 +197,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_I2", "u_Ib", "u_In");
         var machine = c.InputText("context") == ContextMachine;
         var sizing = machine ? "BS EN 60204-1 cl. 12.4" : "BS 7671 reg. 523.1";
         var protection = machine ? "BS EN 60204-1 cl. 7.2" : "BS 7671 reg. 433.1.1";

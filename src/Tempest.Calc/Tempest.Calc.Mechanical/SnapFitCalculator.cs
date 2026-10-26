@@ -107,18 +107,18 @@ public sealed class SnapFitCalculator : ICalcCalculator
             new CalcClauseRef("Euler–Bernoulli beam theory", "—", "Tip deflection and surface strain of a tapered cantilever, by integration"),
         ],
         [
-            new CalcApplicabilityRule("missing", "An input the chosen form, or the chosen source of the secant modulus or the permissible strain, needs is blank.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("geometry", "The mean diameter of the ring does not exceed its wall thickness.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("es-curve", "The W3 secant-modulus points hold no usable row (a strain of zero or more with a positive modulus).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("slender", "The beam is shorter than 5 times its thickness (l/h < 5): beam theory underestimates the stiffness and the strain is not reliable.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("large-deflection", "The cantilever deflection is more than 0.3 of its length: linear beam theory under-predicts the strain (about 4 % at 0.3, 8.5 % at 0.41) and the force (10 %, 22 %).", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("es-range", "The design strain is outside the strains of the secant-modulus points: the end value is held, with no extrapolation.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("assembly-jam", "μ·tan α is 1 or more: the entry face jams and the part cannot be pushed on.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("n-latch", "The number of latches must be a whole number.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("hold-unused", "A force to hold is given without a number of latches: the holding check is not made.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("self-locking", "The return angle α′ is at or above arctan(1/μ): the joint cannot be separated by pulling, however large the force.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("thick-ring", "The ring's wall is more than a tenth of its mean diameter (h/D > 0.1): the thin-ring model no longer holds.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("small-angle", "The torsion-bar twist is above about 20°: the small-angle relation φ = y/a is no longer good.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("missing", "An input the chosen form, or the chosen source of the secant modulus or the permissible strain, needs is blank.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("geometry", "The mean diameter of the ring does not exceed its wall thickness.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("es-curve", "The W3 secant-modulus points hold no usable row (a strain of zero or more with a positive modulus).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("slender", "The beam is shorter than 5 times its thickness (l/h < 5): beam theory underestimates the stiffness and the strain is not reliable.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("large-deflection", "The cantilever deflection is more than 0.3 of its length: linear beam theory under-predicts the strain (about 4 % at 0.3, 8.5 % at 0.41) and the force (10 %, 22 %).", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("es-range", "The design strain is outside the strains of the secant-modulus points: the end value is held, with no extrapolation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("assembly-jam", "μ·tan α is 1 or more: the entry face jams and the part cannot be pushed on.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("n-latch", "The number of latches must be a whole number.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("hold-unused", "A force to hold is given without a number of latches: the holding check is not made.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("self-locking", "The return angle α′ is at or above arctan(1/μ): the joint cannot be separated by pulling, however large the force.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("thick-ring", "The ring's wall is more than a tenth of its mean diameter (h/D > 0.1): the thin-ring model no longer holds.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("small-angle", "The torsion-bar twist is above about 20°: the small-angle relation φ = y/a is no longer good.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-constant", "Cantilever of constant section: strain, deflection force, assembly and separation forces",
@@ -191,6 +191,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("strain_util", "u_hold");
         var mode = c.InputText("mode");
 
         foreach (var s in new[] { "mu", "alpha", "alpha_r", "T_use" })

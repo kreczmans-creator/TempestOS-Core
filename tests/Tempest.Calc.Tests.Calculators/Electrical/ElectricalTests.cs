@@ -114,10 +114,12 @@ public sealed class ElectricalTests
     {
         Gen.Select(Gen.Double[1, 500], Gen.Double[1, 500]).Sample((i, l) =>
         {
-            var a = CalcRunner.Run(Drop, With(Drop, 1, CalcInputValue.Quantity("I", i, "A"), CalcInputValue.Quantity("L", l, "m")));
-            var b = CalcRunner.Run(Drop, With(Drop, 1, CalcInputValue.Quantity("I", 2 * i, "A"), CalcInputValue.Quantity("L", 3 * l, "m")));
+            // The capacity is made huge so the conductor stays at the temperature entered: with a realistic I_z the estimated temperature, and so the resistance, rises with the current (C-2 M1), which this property does not cover.
+            var roomy = CalcInputValue.Quantity("I_z", 1e6, "A");
+            var a = CalcRunner.Run(Drop, With(Drop, 1, roomy, CalcInputValue.Quantity("I", i, "A"), CalcInputValue.Quantity("L", l, "m")));
+            var b = CalcRunner.Run(Drop, With(Drop, 1, roomy, CalcInputValue.Quantity("I", 2 * i, "A"), CalcInputValue.Quantity("L", 3 * l, "m")));
             Assert.Equal(6 * a.OutputSi("dV"), b.OutputSi("dV"), b.OutputSi("dV") * 1e-9);
-            var par = CalcRunner.Run(Drop, With(Drop, 1, CalcInputValue.Quantity("I", i, "A"), CalcInputValue.Quantity("L", l, "m"), CalcInputValue.Of("n_par", 2)));
+            var par = CalcRunner.Run(Drop, With(Drop, 1, roomy, CalcInputValue.Quantity("I", i, "A"), CalcInputValue.Quantity("L", l, "m"), CalcInputValue.Of("n_par", 2)));
             Assert.Equal(a.OutputSi("dV") / 2, par.OutputSi("dV"), a.OutputSi("dV") * 1e-9);
         }, iter: 60);
     }

@@ -41,8 +41,8 @@ public sealed class PressFitCalculator : ICalcCalculator
             new CalcClauseRef("Roark's Formulas for Stress and Strain", "Ch. 13, Table 13.5", "Thick-walled cylinders under pressure"),
         ],
         [
-            new CalcApplicabilityRule("thin-hub", "Hub wall thinner than 10 % of the interface diameter: the thick-cylinder relation still holds but assembly distortion is likely.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("bore-geometry", "The shaft bore must be smaller than the interface, and the interface smaller than the hub outer diameter.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("thin-hub", "Hub wall thinner than 10 % of the interface diameter: the thick-cylinder relation still holds but assembly distortion is likely.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("bore-geometry", "The shaft bore must be smaller than the interface, and the interface smaller than the hub outer diameter.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-steel-steel-solid", "50 mm solid steel shaft in a 100 mm steel hub, 40 µm interference",

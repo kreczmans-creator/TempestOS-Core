@@ -52,8 +52,8 @@ public sealed class FatigueMinerCalculator : ICalcCalculator
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "§6-15", "Cumulative fatigue damage"),
         ],
         [
-            new CalcApplicabilityRule("no-blocks", "At least one stress-range block is needed.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("low-cycle", "A block with a predicted life below 10⁴ cycles is in the low-cycle (strain-life) regime.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("no-blocks", "At least one stress-range block is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("low-cycle", "A block with a predicted life below 10⁴ cycles is in the low-cycle (strain-life) regime.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-legacy-cat71", "Legacy example 1: detail category 71, no cut-off", Legacy(1),

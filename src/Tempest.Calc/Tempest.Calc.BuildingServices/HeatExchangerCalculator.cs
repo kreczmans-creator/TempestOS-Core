@@ -54,14 +54,14 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
             new CalcClauseRef("Çengel & Ghajar, Heat and Mass Transfer", "5th ed., Ch. 11", "Heat exchangers"),
         ],
         [
-            new CalcApplicabilityRule("temperatures", "The hot inlet must be hotter than the cold inlet.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("area-missing", "Rating needs an area; sizing needs a required duty.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("duty-unattainable", "The required duty exceeds what any area of this arrangement can transfer.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("lmtd-mismatch", "The ε-NTU duty and the LMTD duty differ by more than 2 %: the arrangement or the temperatures are inconsistent.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("crossflow-approx", "Crossflow both-unmixed effectiveness is an approximate correlation.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("condensation", "The cold-side inlet is below the dew point of the hot-side air: the coil surface can condense water, which this sensible-only duty does not include and which needs a drain.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("pinch", "An end temperature difference is zero: the area is effectively infinite.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("low-F", "F below 0.75: the 1-shell-pass arrangement is used inefficiently; consider more shell passes.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("temperatures", "The hot inlet must be hotter than the cold inlet.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("area-missing", "Rating needs an area; sizing needs a required duty.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("duty-unattainable", "The required duty exceeds what any area of this arrangement can transfer.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("lmtd-mismatch", "The ε-NTU duty and the LMTD duty differ by more than 2 %: the arrangement or the temperatures are inconsistent.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("crossflow-approx", "Crossflow both-unmixed effectiveness is an approximate correlation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("condensation", "The cold-side inlet is below the dew point of the hot-side air: the coil surface can condense water, which this sensible-only duty does not include and which needs a drain.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("pinch", "An end temperature difference is zero: the area is effectively infinite.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("low-F", "F below 0.75: the 1-shell-pass arrangement is used inefficiently; consider more shell passes.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-counter-balanced", "Balanced counterflow, NTU = 1",
@@ -116,6 +116,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_app", "u_duty");
         var arrangement = c.InputText("arrangement");
         var sizing = c.InputText("mode") == Sizing;
 

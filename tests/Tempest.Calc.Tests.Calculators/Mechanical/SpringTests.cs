@@ -120,7 +120,7 @@ public sealed class SpringTests
     }
 
     [Fact]
-    public void Buckling_Passes_Below_The_Critical_Deflection_And_Warns_At_Or_Above_It()
+    public void Buckling_Passes_Below_The_Critical_Deflection_And_Fails_At_Or_Above_It()
     {
         var slender = new[] { Q("D", 20, "mm"), CalcInputValue.Of("n", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 80, "mm"), CalcInputValue.Of("nu_seat", 1) };
         var ok = Run([.. slender, Q("F_1", 8, "N"), Q("F_2", 24, "N")]);
@@ -128,9 +128,11 @@ public sealed class SpringTests
         Assert.DoesNotContain(ok.Warnings, w => w.RuleId == "buckling");
 
         var over = Run([.. slender, Q("F_1", 8, "N"), Q("F_2", 60, "N")]);
-        Assert.Equal("WARN", Text(over, "buckling"));
+        // C-2 fix (M1): the buckling status reads FAIL (it read WARN), the warning stays and the buckling check is in the verdict.
+        Assert.Equal("FAIL", Text(over, "buckling"));
         Assert.Contains(over.Warnings, w => w.RuleId == "buckling");
         Assert.True(over.OutputSi("u_b") > 1);
+        Assert.False(over.Passed);
     }
 
     [Fact]

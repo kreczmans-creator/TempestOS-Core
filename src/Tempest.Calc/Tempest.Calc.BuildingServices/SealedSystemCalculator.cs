@@ -62,13 +62,13 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             new CalcClauseRef("CIBSE Guide B1", "2016, §1.4", "Heating — sealed systems and expansion"),
         ],
         [
-            new CalcApplicabilityRule("temperatures", "Flow above return above room temperature.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("pressures", "Pre-charge below final pressure below the safety valve setting.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("volume", "System volume between 10 and 10 000 L.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("v-pipe-default", "The pipework water content V_pipe is the template default of 20 L: it is not linked to the pipework, so a larger system gets an undersized expansion vessel.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("t-fill", "The fill temperature must be below the maximum system temperature.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("emitter", "A selected emitter output of 0 W is refused: leave the cell empty for none selected.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("t-max", "The maximum temperature is below the flow temperature: the vessel is sized for the flow temperature.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("temperatures", "Flow above return above room temperature.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("pressures", "Pre-charge below final pressure below the safety valve setting.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("volume", "System volume between 10 and 10 000 L.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("v-pipe-default", "The pipework water content V_pipe is the template default of 20 L: it is not linked to the pipework, so a larger system gets an undersized expansion vessel.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("t-fill", "The fill temperature must be below the maximum system temperature.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("emitter", "A selected emitter output of 0 W is refused: leave the cell empty for none selected.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("t-max", "The maximum temperature is below the flow temperature: the vessel is sized for the flow temperature.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-dt50", "Catalogue conditions 75/65/20: correction 1",
@@ -121,6 +121,7 @@ public sealed class SealedSystemCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_emit", "u_vessel");
         foreach (var s in new[] { "t_f", "t_r", "t_i", "n", "V_pipe", "V_plant", "t_fill", "t_max", "h_static", "p_margin", "p_f", "p_prv" })
             c.Input(s);
 

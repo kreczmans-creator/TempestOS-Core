@@ -96,11 +96,11 @@ public sealed class FrameCalculator : ICalcCalculator
             new CalcClauseRef("BS EN 1990", "6.4.3", "Combinations of actions (user-entered factors)"),
         ],
         [
-            new CalcApplicabilityRule("model", "The model is incomplete or inconsistent (a missing node, a zero-length member, a load off the member).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("mechanism", "The structure is a mechanism: a non-positive stiffness pivot.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("size", "The model exceeds a cap (2,000 nodes, 4,000 elements, 50 cases, 200 load rows per member, factorisation work).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("summary-only", "More than 50 members or supports: per-member and per-support lines are omitted from the sheet; the extremes and envelope remain.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("large-deflection", "A deflection exceeds 1/50 of its member length: the small-displacement assumption is doubtful.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("model", "The model is incomplete or inconsistent (a missing node, a zero-length member, a load off the member).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("mechanism", "The structure is a mechanism: a non-positive stiffness pivot.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("size", "The model exceeds a cap (2,000 nodes, 4,000 elements, 50 cases, 200 load rows per member, factorisation work).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("summary-only", "More than 50 members or supports: per-member and per-support lines are omitted from the sheet; the extremes and envelope remain.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("large-deflection", "A deflection exceeds 1/50 of its member length: the small-displacement assumption is doubtful.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-ss-udl", "Simply supported beam, UDL (Roark Table 8.1 case 2e)",
@@ -222,6 +222,8 @@ public sealed class FrameCalculator : ICalcCalculator
 
             if (detailed)
             {
+                // A reaction that is zero by equilibrium (a moment on a pinned support) comes out as solver noise: shown as 0 (C2-20).
+                c.MarkNoiseProne($"R{node.Id}_x", $"R{node.Id}_y", $"R{node.Id}_m");
                 c.Record($"R{node.Id}_x", $"reaction at node {node.Id}, x", "Σ member end forces − applied nodal loads", ScalarValue.Of(rx / 1e3, kN), $"Horizontal reaction at node {node.Id}");
                 c.Record($"R{node.Id}_y", $"reaction at node {node.Id}, y", "Σ member end forces − applied nodal loads", ScalarValue.Of(ry / 1e3, kN), $"Vertical reaction at node {node.Id}");
                 c.Record($"R{node.Id}_m", $"reaction at node {node.Id}, moment", "Σ member end moments − applied nodal couple", ScalarValue.Of(mz / 1e3, kNm), $"Moment reaction at node {node.Id}");
@@ -241,6 +243,7 @@ public sealed class FrameCalculator : ICalcCalculator
         var sumRx = report.Reactions.Values.Sum(r => r.Rx);
         c.Record("sum_R_y", "Σ R_y", "all supports", ScalarValue.Of(sumRy / 1e3, kN), "Total vertical reaction (equilibrium check against the applied load)");
         c.Record("sum_R_x", "Σ R_x", "all supports", ScalarValue.Of(sumRx / 1e3, kN), "Total horizontal reaction");
+        c.MarkNoiseProne("sum_R_y", "sum_R_x");
         c.Output("sum_R_y", "Σ R_y");
         c.Output("sum_R_x", "Σ R_x");
 
@@ -252,6 +255,7 @@ public sealed class FrameCalculator : ICalcCalculator
             if (detailed)
             {
                 var e = s.Member.Element.Id;
+                c.MarkNoiseProne($"M_max_e{e}", $"M_min_e{e}", $"V_e{e}", $"N_e{e}", $"d_e{e}");
                 c.Record($"M_max_e{e}", $"member {e}: max sagging M", $"at x = {Fmt(s.XMmax)} m from node {s.Member.Element.I}", ScalarValue.Of(s.Mmax / 1e3, kNm), $"Member {e} maximum moment");
                 c.Record($"M_min_e{e}", $"member {e}: min (hogging) M", $"at x = {Fmt(s.XMmin)} m", ScalarValue.Of(s.Mmin / 1e3, kNm), $"Member {e} minimum moment");
                 c.Record($"M_abs_e{e}", $"member {e}: max |M|", $"max(|{Fmt(s.Mmax / 1e3)}|, |{Fmt(s.Mmin / 1e3)}|) kN·m", ScalarValue.Of(Math.Max(Math.Abs(s.Mmax), Math.Abs(s.Mmin)) / 1e3, kNm), $"Member {e} greatest moment magnitude (sagging or hogging)");

@@ -126,20 +126,20 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcClauseRef("EN 1992-1-1:2004", "cl. 3.1.6, 6.7", "Design strength of concrete; partial area loading"),
         ],
         [
-            new CalcApplicabilityRule("plate", "The column must stand inside the plate.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("section", "The wall or flange thickness must be less than half the section, and the section's dimensions must be entered.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("bolts", "The bolt counts must be whole numbers with n_b at least 2·n_t.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("x_b", "The bolt row must lie outside the column face and inside the plate edge, with m and e_min fitting between.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("z_C", "An entered compression lever arm z_C must lie inside the plate (below L/2).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("z_C_entered", "An entered compression lever arm that differs from the section's by more than the outstand c is probably the lever arm z, not z_C.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("alpha_bc", "α_bc is defined for f_yb of 235–640 MPa; an anchor bolt strength above 800 MPa has a higher yield strength than the formula covers.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("f_y_thickness", "One plate yield strength is used at every thickness; EN 10025-2 lowers it for thicker plate.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("outstand-cut", "With the bearing outstand cut at the plate edge a thicker plate can raise the compression utilisation.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("alpha_basis", "A concentration factor above 1 needs its foundation geometry stated.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("grout", "β_j = 2/3 needs the grout at least 0.2·f_ck and no thicker than 0.2 of the smaller plate dimension.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("prying", "With prying the prying force is not in F_t,Ed.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("anchorage", "The PROFIS report is not attached as Evidence (a typed reference is not enough).", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("anchorage-result", "The anchorage (concrete cone, pull-out, edge and shear failure of the anchors) is not assessed on this sheet and u_max excludes it, unless the report's governing utilisation u_profis is entered.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("plate", "The column must stand inside the plate.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("section", "The wall or flange thickness must be less than half the section, and the section's dimensions must be entered.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("bolts", "The bolt counts must be whole numbers with n_b at least 2·n_t.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("x_b", "The bolt row must lie outside the column face and inside the plate edge, with m and e_min fitting between.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("z_C", "An entered compression lever arm z_C must lie inside the plate (below L/2).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("z_C_entered", "An entered compression lever arm that differs from the section's by more than the outstand c is probably the lever arm z, not z_C.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("alpha_bc", "α_bc is defined for f_yb of 235–640 MPa; an anchor bolt strength above 800 MPa has a higher yield strength than the formula covers.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("f_y_thickness", "One plate yield strength is used at every thickness; EN 10025-2 lowers it for thicker plate.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("outstand-cut", "With the bearing outstand cut at the plate edge a thicker plate can raise the compression utilisation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("alpha_basis", "A concentration factor above 1 needs its foundation geometry stated.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("grout", "β_j = 2/3 needs the grout at least 0.2·f_ck and no thicker than 0.2 of the smaller plate dimension.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("prying", "With prying the prying force is not in F_t,Ed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("anchorage", "The PROFIS report is not attached as Evidence (a typed reference is not enough).", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("anchorage-result", "The anchorage (concrete cone, pull-out, edge and shear failure of the anchors) is not assessed on this sheet and u_max excludes it, unless the report's governing utilisation u_profis is entered.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-ih-moment-bolts", "The 260×256 I-section with N = 300 kN, M = 100 kN·m, V = 80 kN; two bolts a row, bolt rows at 165 mm from the axis, no prying",
@@ -439,6 +439,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_C", "u_N", "u_T", "u_V", "u_anchorage", "u_bt", "u_max", "u_profis");
         foreach (var s in new[] { "B", "L", "t_p", "f_y", "f_ck", "alpha_cc", "gamma_c", "gamma_M0", "gamma_M2", "C_fd", "alpha", "N_Ed", "M_Ed", "V_Ed", "n_t", "n_b", "x_b", "m", "l_eff", "F_t_Rd", "f_ub", "f_yb", "A_s", "F_1_vb_Rd" })
             c.Input(s);
 

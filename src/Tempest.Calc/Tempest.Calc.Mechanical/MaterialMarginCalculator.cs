@@ -44,6 +44,8 @@ public sealed class MaterialMarginCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u");
+        c.MarkAtLeast("n_u", "n_y", "n_gov");
         foreach (var s in new[] { "sigma", "f_y", "k_u", "n_req" })
             c.Input(s);
 

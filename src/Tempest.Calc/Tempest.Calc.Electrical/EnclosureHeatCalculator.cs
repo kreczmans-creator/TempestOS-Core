@@ -68,14 +68,14 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
             new CalcClauseRef("BS EN 61439-1", "10.10", "Verification of temperature rise"),
         ],
         [
-            new CalcApplicabilityRule("loads", "At least one heat load is needed.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("limit", "The maximum internal temperature must exceed the ambient.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("fan-curve", "The fan curve needs at least two points with matching counts, flows increasing.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("no-fan-duty", "The fan curve and the system resistance do not cross: no duty point.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("seal-relief", "The breather or relief element opens before the gas-law pressure difference is reached: dp_seal is the cracking pressure.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("seal-unused", "A relief pressure or a cover area is given without a sealing temperature: they are not used.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("seal-suction", "The internal temperature is below the sealing temperature: the pressure difference is a suction, shown as its magnitude.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("cooling-unit", "Natural dissipation cannot hold the limit: forced ventilation or a cooling unit is needed.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("loads", "At least one heat load is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("limit", "The maximum internal temperature must exceed the ambient.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("fan-curve", "The fan curve needs at least two points with matching counts, flows increasing.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-fan-duty", "The fan curve and the system resistance do not cross: no duty point.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("seal-relief", "The breather or relief element opens before the gas-law pressure difference is reached: dp_seal is the cracking pressure.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("seal-unused", "A relief pressure or a cover area is given without a sealing temperature: they are not used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("seal-suction", "The internal temperature is below the sealing temperature: the pressure difference is a suction, shown as its magnitude.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("cooling-unit", "Natural dissipation cannot hold the limit: forced ventilation or a cooling unit is needed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-wall-mounted", "Wall-mounted 600 × 800 × 300 enclosure, 300 W (analytic)",
@@ -118,6 +118,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_fan", "u_nat");
         var rows = c.Rows("loads");
 
         c.Input("P_add");

@@ -43,7 +43,7 @@ public sealed class ShaftStressCalculator : ICalcCalculator
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "§7-4", "Shaft design for stress"),
         ],
         [
-            new CalcApplicabilityRule("no-load", "Bending moment and torque cannot both be zero.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("no-load", "Bending moment and torque cannot both be zero.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-legacy-1", "Legacy example 1", Legacy(1), Example(40, 500, 800, 350, 1, 1, 2),
@@ -57,6 +57,8 @@ public sealed class ShaftStressCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u");
+        c.MarkAtLeast("n_T", "n_VM", "n_min");
         foreach (var s in new[] { "d", "M", "T", "S_y", "K_t", "K_ts", "n_req" })
             c.Input(s);
 
