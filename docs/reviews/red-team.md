@@ -550,7 +550,7 @@ public void A_Split_Decimal_Is_Refused_Not_Read_As_A_Whole_Number(string csv, st
 
 The probes below are written as the secure assertion, so each fails while its hole is open. The four that were fixed are kept as `AddendumCSecurityRegressionTests`.
 
-**Result.** 20 probe cases ran (19 Library, 1 Calculators). They produced 5 findings: 0 Critical, 0 High, 2 Medium, 3 Low. The security review logs five Info items as well. R-C-01 to R-C-04 are fixed in 0cc88a60; R-C-05 is open. Fix these two first:
+**Result.** 20 probe cases ran (19 Library, 1 Calculators). They produced 5 findings: 0 Critical, 0 High, 2 Medium, 3 Low. The security review logs five Info items as well. R-C-01 to R-C-04 are fixed in 0cc88a60, and R-C-05 in 1c67d7a8. Fix these two first:
 - R-C-02: an unconservative output was suggested as a guided Pass.
 - R-C-01: a decimal-comma record file was split silently.
 
@@ -564,7 +564,7 @@ The Calculators probe's only differences were display artefacts: the tolerance s
 | R-C-02 | Medium | `GuidedTolerance.cs:109-124`; `GuidedAutoCompare.cs:87` | The guided auto-compare allowed up to ±50 % against an expected value written as a short exact number, and suggested an unconservative output as a Pass | Fixed (0cc88a60) |
 | R-C-03 | Low | `CalcInstanceStore.cs:293`; `CalcDemoProjectService.cs:235` | Remove demo project deleted a scan profile the person had saved under the demo's id | Fixed (0cc88a60) |
 | R-C-04 | Low | `RecordImportService.cs:180` | A provenance file's `origin = 7` made an origin no record can have | Fixed (0cc88a60) |
-| R-C-05 | Low | `CalcInstanceService.cs:152`; `CalcDemoProjectService.cs:370` | A calculation can be created in the removed demo project, and the row is then out of reach of Remove | Open |
+| R-C-05 | Low | `CalcInstanceService.cs:152`; `CalcDemoProjectService.cs:370` | A calculation can be created in the removed demo project, and the row is then out of reach of Remove | Fixed (1c67d7a8) |
 
 #### R-C-01 — Medium — a decimal comma split by the comma delimiter in a record file
 
@@ -618,7 +618,7 @@ Assert.All(rows, r => Assert.True(Enum.IsDefined(r.Provenance.Origin)));   // wa
 
 #### R-C-05 — Low — a late create lands in the removed demo project
 
-**PoC** (Library tests, open):
+**PoC** (Library tests; now `SEC_C_05_Nothing_New_Can_Be_Made_In_A_Deleted_Project`):
 ```csharp
 var host = DemoHost.New();
 var demo = DemoHost.Service(host);
@@ -626,10 +626,10 @@ await demo.InstallAsync();
 var id = (await demo.StatusAsync()).ProjectId!.Value;
 await demo.RemoveAsync();
 var late = await host.Service.CreateAsync("mech.tolerance-stack", id, "late write", CalcDemoProject.SealStackInputs());
-Assert.Null(late);   // accepted; RemoveAsync then says "There is no demo project to remove" and the row stays
+Assert.Null(late);   // was accepted; RemoveAsync then said "There is no demo project to remove" and the row stayed
 ```
 
-**Proposed fix.** Refuse `CreateAsync`, `CreatePackAsync` and `InstantiatePackTemplateAsync` into a deleted project, and let Remove find a deleted demo project that still holds rows.
+**Fix.** `CreateAsync`, `CreatePackAsync` and `InstantiatePackTemplateAsync` refuse a deleted project with one sentence. A row that still lands there (a create that passed its check while the removal ran) is reported by `StatusAsync` as left over, and Remove demo project clears it (`SEC_C_05_Remove_Clears_Rows_Left_In_A_Removed_Demo_Project`).
 
 ### Attacks that found nothing (the code held)
 
