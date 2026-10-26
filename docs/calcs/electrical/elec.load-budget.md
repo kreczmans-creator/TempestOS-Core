@@ -34,9 +34,9 @@ S_dem = 12.791 + 0 + 0.066667 + 0.0021053 + 0.10667 + 0.026667 = 12.993 kVA
 I_3ph = 12791 / (√3 × 400) = 18.462 A
 I_1ph = 221.05 / 230 = 0.9611 A
 I_DC = 120 / 24 = 5 A
-Phi = 0.09×11 + 0.09×0 + 0.3×0.06 + 0×0.002 + 0.1×0.096 + 0.1×0.024 = 1.02 kW
+Phi = 0.09×11 + 0.09×0 + 0.3×0.06 + 0×0.002 + 0.1×0.096 + 0.1×0.024 + PSU loss 0.013333 = 1.0333 kW
 P_DC = 120 W
-… 13 more step(s) on the sheet
+… 15 more step(s) on the sheet
 Governing: FAIL  Starting peak against transformer overload: u_inrush = 1.1112 vs u_inrush ≤ 1  utilisation 1.11
 ```
 <!-- hand-arithmetic:end -->

@@ -27,9 +27,9 @@ A_req = (5 / (0.048 × 20^0.44))^(1 / 0.725) × 1 mil^2 = 98.511 mil²
 t_Cu = 2 × 1.378 mil = 70.002 um
 w_min = 98.511 mil² / 70.002 um = 0.9079 mm
 u_w = 0.9079 mm / 2.5 mm = 0.36316
+A_act = 2.5 mm × 70.002 um = 0.17501 mm²
 T_trace = 25 degC + 20 K = 45 degC
 rho_T = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (45 degC − 20 degC)) = 0.018934 ohm·mm²/m
-A_act = 2.5 mm × 70.002 um = 0.17501 mm²
 trace_R = 0.018934 ohm·mm²/m × 100 mm / 0.17501 mm² = 10.819 mohm
 vdrop = 5 A × 10.819 mohm = 54.095 mV
 trace_Ploss = (5 A)^2 × 10.819 mohm = 270.47 mW

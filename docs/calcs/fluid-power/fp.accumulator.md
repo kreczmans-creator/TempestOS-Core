@@ -35,7 +35,8 @@ pa_1 = 100 bar a
 pa_2 = 210 bar a
 p2_g = max(210 bar a − 1.0132 bar a, 0 bar) = 208.99 bar g
 V0_ideal = 14 L / [(0.9) − (0.42857)] = 29.697 L
-f_T = 50 degC / 1 K / (30 degC / 1 K) = 1.066
+f_Tabs = 50 degC / 1 K / (30 degC / 1 K) = 1.066
+f_T = 1.066^(1 / 1) = 1.066
 V0 = 29.697 L × 1 × 1.066 = 31.656 L
 T_ratio = 20 degC / 1 K / (50 degC / 1 K) = 0.90716
 p0 = 90 bar a × 0.90716 = 81.645 bar a
@@ -43,8 +44,7 @@ p0_min = 90 bar a / 1.066 = 84.43 bar a
 p0_set = 81.645 bar a
 u_r0 = 90 bar a / (0.9 × 100 bar a) = 1
 u_rp = 210 bar a / 84.43 bar a / 4 = 0.62182
-V_sel = V0 = 31.656 L, 4 sizes listed = 32 L
-… 3 more step(s) on the sheet
+… 4 more step(s) on the sheet
 Governing: PASS  Pre-charge within the p0/p1 rule: u_r0 = 1 vs u_r0 ≤ 1  utilisation 1  « accumulator.rules record
 ```
 <!-- hand-arithmetic:end -->

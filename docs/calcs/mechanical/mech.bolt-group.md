@@ -29,11 +29,11 @@ b2 = v = (-18.75, -31.25) kN, t = 0 kN = 0.91109
 b3 = v = (18.75, -31.25) kN, t = 0 kN = 0.91109
 b4 = v = (18.75, 6.25) kN, t = 0 kN = 0.49411
 v_max = bolt 2 = 36.443 kN
-t_max = bolt 2 = 0 kN
+t_max = bolt 1 = 0 kN
+bolt_v = bolt 2 = "bolt 2"
+bolt_t = bolt 1 = "bolt 1"
 u_max = √((36.443/40)² + (0/45)²) = 0.91109
-governing = bolt 2 = "bolt 2"
-u_v = 36.443 kN / 40 kN = 0.91109
-… 3 more step(s) on the sheet
+… 5 more step(s) on the sheet
 Governing: PASS  Circular shear–tension interaction (governing bolt): u_max = 0.91109 vs u_max ≤ 1  utilisation 0.911
 ```
 <!-- hand-arithmetic:end -->

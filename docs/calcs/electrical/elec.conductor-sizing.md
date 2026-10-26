@@ -34,6 +34,7 @@ I_b = 4 kW / (sqrt(3) × 400 V × 0.82 × 0.85) = 8.2834 A
 I_n = smallest rating ≥ 8.2834 A in the ratings record = 10 A
 device_code = MCB type C = 2
 C_c = MCB type C = 1
+theta_op = 70 degC
 I_t_req = 10 A / (0.91 × 0.77 × 1 × 1) = 14.271 A
 I_t = I_t,req = 14.271 A = 17.7 A
 CSA = I_t,req = 14.271 A = 2.5 mm²

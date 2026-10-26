@@ -37,7 +37,7 @@ J_total = 0.0002 kg·m² + 0.0001 kg·m² + 0.00014072 kg·m² = 0.00044072 kg·
 T_acc = 0.00044072 kg·m² × 5654.9 rad/s² = 2.4922 N·m
 T_pk = 2.4922 N·m + 0.08671 N·m = 2.5789 N·m
 T_dec = −2.4922 N·m + 0.08671 N·m = -2.4055 N·m
-… 16 more step(s) on the sheet
+… 17 more step(s) on the sheet
 Governing: PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.90012 vs u_rms ≤ 1  utilisation 0.9
 ```
 <!-- hand-arithmetic:end -->
