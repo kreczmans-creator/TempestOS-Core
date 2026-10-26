@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.
-Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
+Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
   Ref: EN 1993-1-8:2005 cl. 3.5, Table 3.3 — Positioning of holes for bolts
   Ref: EN 1993-1-8:2005 cl. 3.6.1, Table 3.4 — Design resistance of individual fasteners
   Ref: EN 1993-1-8:2005 cl. 3.10.2 — Block tearing
@@ -38,6 +38,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   gamma_M0 | γ_M0 | 1 |  | spec: UK NA to BS EN 1993-1-1, NA.2.15 | 1 … 1.2
   F_v_Ed | Shear per bolt | 55 | kN | assumption: Governing bolt from the bolt-group calculation (M3). | 0 … 2000 kN
   F_t_Ed | Tension per bolt | 0 | kN | assumption: No tension. | 0 … 2000 kN
+  block_load | Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved) | Concentric loading (V_eff,1) |  | default | any
 
 3. ASSUMPTIONS
   A1. Static loading; category A (bearing type) shear and category D (non-preloaded) tension; no slip-resistant joints or moment end plates. (Scope of S4.)
@@ -50,35 +51,35 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   A8. F_t_Ed (Tension per bolt) is taken as 0 kN. (No tension.)
 
 4. WORKING
-  [19] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
+  [20] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
       = class 8.8
       = 800 MPa
         Bolt ultimate strength
-  [20] f_yb = f_ub × second figure / 10    « EN 1993-1-8 Table 3.1
+  [21] f_yb = f_ub × second figure / 10    « EN 1993-1-8 Table 3.1
       = class 8.8
       = 640 MPa
         Bolt yield strength
-  [21] A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P    « ISO 898-1 cl. 9.1
+  [22] A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P    « ISO 898-1 cl. 9.1
       = d = 20, P = 2.5 mm
       = 244.79 mm²
         Tensile stress area
-  [22] d_0 = d + 2 (≤ M24), d + 3 (≥ M27) unless entered
+  [23] d_0 = d + 2 (≤ M24), d + 3 (≥ M27) unless entered
       = 22 mm
       = 22 mm
         Hole diameter
-  [23] alpha_v = α_v (threads in the shear plane)    « EN 1993-1-8 Table 3.4
+  [24] alpha_v = α_v (threads in the shear plane)    « EN 1993-1-8 Table 3.4
       = class 8.8
       = 0.6
         Shear factor
-  [24] F_v_Rd = α_v·f_ub·A·n_s/γ_M2    « EN 1993-1-8 Table 3.4
+  [25] F_v_Rd = α_v·f_ub·A·n_s/γ_M2    « EN 1993-1-8 Table 3.4
       = 0.6 × 800 × 244.79 × 2 / 1.25
       = 188 kN
         Shear resistance per bolt
-  [25] alpha_b = min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)    « EN 1993-1-8 Table 3.4
+  [26] alpha_b = min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)    « EN 1993-1-8 Table 3.4
       = min(0.60606, 0.81061, 1.9512, 1)
       = 0.60606
         Bearing factor α_b
-  [26] k_1 = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)    « EN 1993-1-8 Table 3.4
+  [27] k_1 = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)    « EN 1993-1-8 Table 3.4
       = e₂ = 35, p₂ = —, d₀ = 22
       = 2.5
         Bearing factor k₁
@@ -138,9 +139,10 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: gamma_M2, gamma_M0, k_e1, k_e2, k_p1, k_p2 (EN 1993-1-8 National Annex factors); f_y, f_u (Plate strengths). Enter each as one so its source, edition and licence travel with it.
   WARNING input.hole_type: hole_type (Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize)) was not entered; the template default 'Normal clearance' is used.
+  WARNING input.block_load: block_load (Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved)) was not entered; the template default 'Concentric loading (V_eff,1)' is used.
 
 8. VERIFICATION
-  Template: struct.connection-ec3@1.3.0
+  Template: struct.connection-ec3@1.6.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 8/8

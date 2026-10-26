@@ -40,7 +40,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 24/24
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -124,47 +124,51 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 23 m²
       = 23 m²
         Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)
-  [16] U_m = Σ A·U·f / Σ A
+  [16] U_m = Σ A·U / Σ A
       = 9.0102 / 23
       = 0.39175 W/(m²·K)
-        Area-weighted mean U-value of the fabric
-  [17] dT = theta_int - theta_e
+        Area-weighted mean U-value of the fabric (without the temperature factor f)
+  [17] U_eff = Σ A·U·f / Σ A
+      = 9.0102 / 23
+      = 0.39175 W/(m²·K)
+        Heat-loss weighted mean U-value of the fabric (includes the temperature factor f)
+  [18] dT = theta_int - theta_e
       = 21 degC − (-3 degC)
       = 24 K
         Design temperature difference, inside to outside
-  [18] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
+  [19] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
       = 216.24 W
       = 216.24 W
         Fabric loss through the elements
-  [19] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
+  [20] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
       = 0 W/(m²·K) × 23 m² × 24 K
       = 0 W
         Thermal-bridge allowance
-  [20] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
+  [21] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
       = 216.24 W + 0 W
       = 216.24 W
         Fabric heat loss
-  [21] q_v = n * V
+  [22] q_v = n * V
       = 0.5 1/h × 40 m³
       = 20 m³/h
         Ventilation air flow
-  [22] dT_v = dT
+  [23] dT_v = dT
       = 24 K
       = 24 K
         Ventilation temperature difference, inside to outside
-  [23] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
+  [24] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
       = 0.34 Wh/(m^3*K) × 20 m³/h × 24 K
       = 163.2 W
         Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
-  [25] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
+  [26] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
       = 216.24 W + 163.2 W
       = 379.44 W
         Room design heat loss
-  [26] HLC = Phi_HL / dT
+  [27] HLC = Phi_HL / dT
       = 379.44 W / 24 K
       = 15.81 W/K
         Heat loss coefficient
-  [27] u_1 = U / U_target
+  [28] u_1 = U / U_target
       = 0.24051 / 0.3
       = 0.8017
         Cavity wall: utilisation of the target U-value
@@ -175,10 +179,12 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Phi_1 = 115.44 W    Cavity wall: fabric loss
   U_2 = 1.4 W/(m²·K)    Window: U-value
   Phi_2 = 100.8 W    Window: fabric loss
+  theta_int = 21 degC    Internal design temperature
   A_fab = 23 m²    Total fabric area
   A_ext = 23 m²    Fabric area facing outside
   A_tb = 23 m²    Fabric area facing outside weighted by f
-  U_m = 0.39175 W/(m²·K)    Mean fabric U-value
+  U_m = 0.39175 W/(m²·K)    Mean fabric U-value (area-weighted)
+  U_eff = 0.39175 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
   dT = 24 K    Design temperature difference
   Phi_el = 216.24 W    Element fabric loss
   Phi_tb = 0 W    Thermal-bridge allowance
@@ -196,11 +202,11 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.2.2
-  Content hash: 8057e7a6276191a0
+  Template: bs.room-heat-loss@1.4.0
+  Content hash: 3e4b1ea3ce5d1522
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test
 
 
@@ -300,47 +306,51 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 21 m²
       = 21 m²
         Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)
-  [19] U_m = Σ A·U·f / Σ A
+  [19] U_m = Σ A·U / Σ A
+      = 27.783 / 37
+      = 0.75088 W/(m²·K)
+        Area-weighted mean U-value of the fabric (without the temperature factor f)
+  [20] U_eff = Σ A·U·f / Σ A
       = 26.783 / 37
       = 0.72385 W/(m²·K)
-        Area-weighted mean U-value of the fabric
-  [20] dT = theta_int - theta_e
+        Heat-loss weighted mean U-value of the fabric (includes the temperature factor f)
+  [21] dT = theta_int - theta_e
       = 21 degC − (-3 degC)
       = 24 K
         Design temperature difference, inside to outside
-  [21] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
+  [22] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
       = 187.61 W
       = 187.61 W
         Fabric loss through the elements
-  [22] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
+  [23] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
       = 0.05 W/(m²·K) × 21 m² × 24 K
       = 25.2 W
         Thermal-bridge allowance
-  [23] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
+  [24] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
       = 187.61 W + 25.2 W
       = 212.81 W
         Fabric heat loss
-  [24] q_v = n * V
+  [25] q_v = n * V
       = 0.6 1/h × 50 m³
       = 30 m³/h
         Ventilation air flow
-  [25] dT_v = theta_int - theta_supply    « BS EN 12831-1 cl. 6.3.3
+  [26] dT_v = theta_int - theta_supply    « BS EN 12831-1 cl. 6.3.3
       = 21 degC − 16 degC
       = 5 K
         Ventilation temperature difference, inside to MVHR supply
-  [27] q_inf = n_inf * V
+  [28] q_inf = n_inf * V
       = 0.1 1/h × 50 m³
       = 5 m³/h
         Infiltration air flow at the outside temperature (not through the MVHR)
-  [28] Phi_V = 0.34 Wh/(m^3*K) * (q_v * dT_v + q_inf * dT)    « BS EN 12831-1 cl. 6.3.3
+  [29] Phi_V = 0.34 Wh/(m^3*K) * (q_v * dT_v + q_inf * dT)    « BS EN 12831-1 cl. 6.3.3
       = 0.34 Wh/(m^3*K) × (30 m³/h × 5 K + 5 m³/h × 24 K)
       = 91.8 W
         Ventilation heat loss: MVHR flow to the supply temperature plus infiltration to outside (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
-  [30] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
+  [31] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
       = 212.81 W + 91.8 W
       = 304.61 W
         Room design heat loss
-  [31] HLC = Phi_HL / dT
+  [32] HLC = Phi_HL / dT
       = 304.61 W / 24 K
       = 12.692 W/K
         Heat loss coefficient
@@ -354,10 +364,12 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Phi_2 = 65.025 W    Partition: fabric loss
   U_3 = 0.25 W/(m²·K)    Ground floor: U-value
   Phi_3 = 36 W    Ground floor: fabric loss
+  theta_int = 21 degC    Internal design temperature
   A_fab = 37 m²    Total fabric area
   A_ext = 25 m²    Fabric area facing outside
   A_tb = 21 m²    Fabric area facing outside weighted by f
-  U_m = 0.72385 W/(m²·K)    Mean fabric U-value
+  U_m = 0.75088 W/(m²·K)    Mean fabric U-value (area-weighted)
+  U_eff = 0.72385 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
   dT = 24 K    Design temperature difference
   Phi_el = 187.61 W    Element fabric loss
   Phi_tb = 25.2 W    Thermal-bridge allowance
@@ -374,11 +386,11 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.2.2
-  Content hash: 8057e7a6276191a0
+  Template: bs.room-heat-loss@1.4.0
+  Content hash: 3e4b1ea3ce5d1522
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test
 
 
@@ -399,8 +411,8 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   rooms | Rooms and emitters | 2 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  rooms[1] |  | name = Room A; Phi = 379.44 W; V_em = 4 L |  | Phi: link: Room A heat loss rev A · Phi_HL | 
-  rooms[2] |  | name = Room B; Phi = 304.61 W; V_em = 4 L |  | Phi: link: Room B heat loss rev A · Phi_HL | 
+  rooms[1] |  | name = Room A; Phi = 379.44 W; V_em = 4 L; t_i = 21 degC |  | Phi: link: Room A heat loss rev A · Phi_HL; t_i: link: Room A heat loss rev A · theta_int | 
+  rooms[2] |  | name = Room B; Phi = 304.61 W; V_em = 4 L; t_i = 21 degC |  | Phi: link: Room B heat loss rev A · Phi_HL; t_i: link: Room B heat loss rev A · theta_int | 
   t_f | Flow temperature | 75 | degC | assumption: Sheet default value; no project figure given. | 30 … 90 degC
   t_r | Return temperature | 65 | degC | assumption: Sheet default value; no project figure given. | 30 … 90 degC
   t_i | Room temperature | 20 | degC | assumption: Sheet default value; no project figure given. | 16 … 24 degC
@@ -451,13 +463,13 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
       = 1
         Output correction from ΔT 50 K
   [18] R1 = Φ_req/f_dT
-      = 379.44 / 1
-      = 379.44 W
-        Room A: catalogue output needed at ΔT 50 K
+      = 379.44 / 0.97408
+      = 389.54 W
+        Room A: catalogue output needed at ΔT 50 K at its room temperature 21 °C (ΔT 49 K)
   [19] R2 = Φ_req/f_dT
-      = 304.61 / 1
-      = 304.61 W
-        Room B: catalogue output needed at ΔT 50 K
+      = 304.61 / 0.97408
+      = 312.71 W
+        Room B: catalogue output needed at ΔT 50 K at its room temperature 21 °C (ΔT 49 K)
   [20] Phi_tot = Σ Φ_req
       = 684.05 W
       = 684.05 W
@@ -500,8 +512,8 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   dT_fr = 10 K    Flow-to-return temperature difference
   t_m = 70 degC    Mean water temperature
   f_dT = 1    Output correction factor
-  R1 = 379.44 W    Room A: Φ50 needed
-  R2 = 304.61 W    Room B: Φ50 needed
+  R1 = 389.54 W    Room A: Φ50 needed
+  R2 = 312.71 W    Room B: Φ50 needed
   Phi_tot = 684.05 W    Total heat required
   V_em = 8 L    Emitter water content
   V_s = 21.14 L    System water volume
@@ -516,11 +528,11 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   WARNING record.n: n: a tabulated value not taken from a reference record (Emitter exponent); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.sealed-system@1.2.1
-  Content hash: ae2947ba87fac092
+  Template: bs.sealed-system@1.3.0
+  Content hash: 957f282656ddee12
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test
 
 
@@ -534,7 +546,7 @@ Issued: 2026-10-26    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
-Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT). Mean velocity in the pipe: v = Q/(πD²/4). Reynolds number, which decides laminar or turbulent flow: Re = ρvD/μ. Friction factor for laminar flow (Re < 2300): f = 64/Re. Friction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)). Head lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g. System curve, with friction scaled from the design flow as Q² (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f(Q). Water held in the pipes: V_pipe = Σ π/4·D²·L. Duty point, where the pump and system curves cross (found by bisection): H_pump(Q) = H_sys(Q). Pump affinity laws for a change of speed n: Q ∝ n; H ∝ n². For a change of impeller diameter D, by the choice: a trimmed impeller of the same casing, Q ∝ D and H ∝ D² (the default, the usual practice for a trim); or a geometrically similar pump scaled in all dimensions, Q ∝ D³ and H ∝ D². Speed and diameter combine as Q ∝ n·D^a, H ∝ n²·D², a = 1 or 3. Net positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with p_v from the water correlation or, for a custom fluid, from the vapour pressure entered. The friction h_f,suction is that of the segments marked 'suction' only. Shaft torque for the motor: T = P/ω with P the larger of the design-flow shaft power and the duty-point shaft power, at the speed n_pump; when a speed or diameter ratio shifts the duty, the shifted duty power at the shifted speed n_pump·n₂/n₁.
+Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT). Mean velocity in the pipe: v = Q/(πD²/4). Reynolds number, which decides laminar or turbulent flow: Re = ρvD/μ. Friction factor for laminar flow (Re < 2300): f = 64/Re. Friction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)). Head lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g. System curve, with the friction of a turbulent or transitional segment and every fitting loss scaled from the design flow as Q², and the friction of a laminar segment (Re < 2300, h_f ∝ Q) as Q (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f,lam·(Q/Q₀) + Σh_f,other·(Q/Q₀)². Water held in the pipes: V_pipe = Σ π/4·D²·L. Duty point, where the pump and system curves cross (every crossing is found by a scan and refined by bisection; the stable one, where the pump curve falls through the system curve, nearest the design flow is reported): H_pump(Q) = H_sys(Q). Pump affinity laws for a change of speed n: Q ∝ n; H ∝ n². For a change of impeller diameter D, by the choice: a trimmed impeller of the same casing, Q ∝ D and H ∝ D² (the default, the usual practice for a trim); or a geometrically similar pump scaled in all dimensions, Q ∝ D³ and H ∝ D². Speed and diameter combine as Q ∝ n·D^a, H ∝ n²·D², a = 1 or 3. Net positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with p_v from the water correlation or, for a custom fluid, from the vapour pressure entered. The friction h_f,suction is that of the segments marked 'suction' only, at the larger of the design flow and the duty flow the pump runs at. Shaft torque for the motor: T = P/ω with P the larger of the design-flow shaft power and the duty-point shaft power, at the speed n_pump; when a speed or diameter ratio shifts the duty, the shifted duty power at the shifted speed n_pump·n₂/n₁.
   Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
   Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
   Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
@@ -562,7 +574,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
 3. ASSUMPTIONS
   A1. Steady, incompressible, fully developed flow; all segments carry the full design flow in series. (Darcy–Weisbach.)
   A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
-  A3. The system curve scales friction losses with Q² from the design flow (turbulent assumption); the static part is independent of flow. (H_sys = H_static + k Q².)
+  A3. The system curve scales the friction of turbulent and transitional segments and all fitting losses with Q² from the design flow (the friction factor is held at its design-flow value); the friction of a laminar segment scales with Q; the static part is independent of flow. (H_sys = H_static + k₁ Q + k₂ Q².)
   A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
   A5. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
   A6. v_max (Velocity limit (warning)) is taken as 3 m/s. (Sheet default value; no project figure given.)
@@ -701,14 +713,15 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   PASS  Velocity ≤ limit: u_v = 0.070932 vs u_v ≤ 1  utilisation 0.0709
 
 7. APPLICABILITY
-  No warnings.
+  WARNING plant-loss: h_out: the head required at the outlet is 0, so the pump head holds pipe friction only. The boiler or heat exchanger, coil, valves and emitters of the circuit have their own water-side pressure loss, usually larger than the pipe's; enter it in h_out (or as K or L_eq on a segment) from the manufacturers' data, otherwise the head and the torque handed to the motor are low.
+  WARNING eta-default: eta_pump: the default 0.7 is used for a pump of only 0.094824 W shaft power. A small circulator has a far lower overall efficiency (often 0.2 or less), which raises its shaft power and torque several times (at 0.2 the torque is 3.5 times the default's); enter the pump's overall efficiency at its duty point.
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.7.0
-  Content hash: f891afe6e1b6d955
+  Template: bs.pipe-pump@1.8.1
+  Content hash: 4723d62a61e80298
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test
 
 
@@ -944,5 +957,5 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   Content hash: fc37ad5186d37d4c
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test

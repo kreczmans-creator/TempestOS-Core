@@ -55,7 +55,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | drawing: DRG-PIP-611 rev B | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.79 | mm^2 | drawing: DRG-PIP-611 rev B | 50 … 1500 mm^2
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.48 | kN | drawing: DRG-PIP-611 rev B | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 830e41233227411bb675f647a6e28f63/c7d796afe6534d12abb3d36377badf59 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 0c3ab000b841498fac46822505afb622/372237b9229c48b386651c757572035e | any
 
 3. ASSUMPTIONS
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -267,11 +267,13 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength). Enter each as one so its source, edition and licence travel with it.
+  WARNING f_y_thickness: f_y: one yield strength (275 MPa) is used at every plate thickness, but EN 10025-2 lowers the yield strength of a grade as the thickness passes 16 mm and again above 40 mm. t_p = 25 mm and t_req = 12.295 mm pass the first step: enter the yield strength for the plate thickness in use (steel.strengths record), so M_pl,Rd and the T-stub are not overstated.
+  WARNING anchorage-result: u_profis: the anchorage is not assessed on this sheet. The concrete failure modes of the anchors (cone, pull-out, edge, shear, interaction), which usually govern, are designed in PROFIS; u_max covers the steel parts only, whether or not a report is attached. Enter the report's governing utilisation to include it.
 
 8. VERIFICATION
-  Template: struct.base-plate@1.2.0
-  Content hash: 78225cb0777ee5bb
+  Template: struct.base-plate@1.4.0
+  Content hash: cf631b3ae895bf39
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 10:14 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test
