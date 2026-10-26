@@ -22,6 +22,9 @@ public sealed class ContainmentCalculator : ICalcCalculator
     public const string Straight = "Straight";
     public const string Bend = "Bend";
 
+    public const string BendWeighted = "Horizontal bend, cable on the containment floor (weight term)";
+    public const string BendCapstan = "Capstan (no weight term)";
+
     /// <summary>Standard gravity, m/s² (derived constant), for the weight per metre of the bundle.</summary>
     public const double Gravity = 9.80665;
 
@@ -47,7 +50,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.1", CalcDiscipline.Electrical, "Containment fill, bend radius and cable pulling",
+        Id, "1.2.0", CalcDiscipline.Electrical, "Containment fill, bend radius and cable pulling",
         "The fill of a conduit, trunking or tray by the cables in it against the space factor you enter, the bend radius of the route against the multiple of the largest cable diameter you enter, and the pull of the cables through a route of straight lengths and bends in both directions: the tension along the route, the sidewall pressure at each bend, and the pull direction that passes every check (the lower maximum tension when both do or neither does). Space factor, bend multiple, friction coefficient and pulling limits are your own records; no cable or conduit factor method is offered.",
         "Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i)\n" +
         "Containment area: A_int = π·D²/4 (conduit, internal diameter D) or W·H (trunking or tray, internal width × depth)\n" +
@@ -55,7 +58,8 @@ public sealed class ContainmentCalculator : ICalcCalculator
         "Bend radius: R_min = n_bend·d_max, d_max the largest cable diameter, n_bend from your record; each bend u_b = R_min/R\n" +
         "Cable weight: w = Σ n_i·m_i (kg/m); force per metre w·g·w_c, g = 9.80665 m/s², w_c your weight-correction factor (1 = full weight)\n" +
         "Straight length: T₂ = T₁ + w·g·w_c·μ·L\n" +
-        "Tension round a bend: T₂ = T₁·e^(w_c·μ·θ) (capstan equation with the friction scaled by the weight-correction factor, θ in radians)\n" +
+        "Tension round a bend in the horizontal plane, the cable resting on the containment floor (the default): T₂ = T₁·cosh(μ_e·θ) + √(T₁² + (w·g·w_c·R)²)·sinh(μ_e·θ), μ_e = w_c·μ, θ in radians, R the bend radius: the cable's weight bears on the floor round the bend as well as the tension, so a heavy cable on a large radius gains tension even from T₁ = 0\n" +
+        "Tension round a bend, capstan option (no weight term): T₂ = T₁·e^(w_c·μ·θ), the equation for a weightless pull; it is T₂ = T₁·e^(μ_e·θ) and equals the weighted form when w·g·w_c·R is small against T₁\n" +
         "Sidewall pressure at a bend: SWP = T₂/R (N/m)\n" +
         "Pulling direction: the route is run in the listed order and in reverse; the direction that passes every tension and sidewall pressure check is recommended, and when both or neither pass, the one of lower maximum tension (equal tension: lower SWP)\n" +
         "Cable limit: load shared equally, so each cable carries T/N (N cables); T_cab = k_n·N·min(T_max,i), k_n your derating for more than 3 cables (1 if none); u_T = max_i (T/N)/(k_n·T_max,i) = T/T_cab\n" +
@@ -70,6 +74,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
             new CalcInputSpec("n_bend", "Minimum bend radius as a multiple of the largest cable diameter (from your record)", CalcInputKind.Number, HardMin: 1, HardMax: 100, IsOptional: true, Group: "Bends"),
             new CalcInputSpec("route", "Pull route in pull order (straight lengths and bends)", CalcInputKind.Table, Columns: RouteColumns, MaxRows: 50, IsOptional: true, Group: "Pull"),
             new CalcInputSpec("T_1", "Tension at the start of the pull (pulling rope, drum or head)", CalcInputKind.Quantity, "N", Default: 0, Min: 0, Max: 10000, HardMin: 0, HardMax: 1e7, Group: "Pull"),
+            new CalcInputSpec("bend_model", "Tension round a bend: horizontal bend with the cable's weight on the containment floor (default), or the capstan equation without the weight term", CalcInputKind.Choice, Choices: [BendWeighted, BendCapstan], DefaultChoice: BendWeighted, Group: "Pull"),
             new CalcInputSpec("mu", "Coefficient of friction, cable sheath on containment (from your record)", CalcInputKind.Number, HardMin: 0, HardMax: 2, IsOptional: true, Group: "Pull"),
             new CalcInputSpec("w_c", "Weight-correction factor on the cable weight and, by the same factor, the bend friction (blank = 1 = full weight on the containment; above 1 for cradled or triangular arrangements, from your record)", CalcInputKind.Number, Min: 1, Max: 3, HardMin: 1, HardMax: 10, IsOptional: true, Group: "Pull"),
             new CalcInputSpec("T_grip", "Grip or pulling-eye limit of the whole bundle (from the pulling equipment or your record)", CalcInputKind.Quantity, "N", HardMin: 1, HardMax: 1e8, IsOptional: true, Group: "Pull"),
@@ -79,11 +84,11 @@ public sealed class ContainmentCalculator : ICalcCalculator
         [
             new CalcAssumption("Cables are circular and counted by overall diameter; there is no packing or cable and conduit factor method (the jam-ratio warning is the only jamming check). The space factor is yours, from your own record.", "Fill by geometry; the factor is a user record."),
             new CalcAssumption("Every cable is pulled together as one bundle on one pulling head with the load shared equally, so each cable carries T/N and the weakest cable governs: the cable limit is N times the lowest maximum pulling tension, optionally derated by your factor for more than 3 cables. The grip or pulling-eye limit is a separate limit you enter.", "Equal sharing; unequal sharing is not modelled."),
-            new CalcAssumption("Straight lengths are horizontal and the cable weight bears on the containment over the full length; bends are taken in the plane of the route. Inclines, vertical runs and pulley or roller reductions are not modelled; fold them into μ. A cradled or triangular weight correction is entered as w_c, which scales the weight on the straight lengths and the friction in the bends (the contact force of a cradled or triangular arrangement is w_c times that of a flat one), so T₂ = T₁ + w·g·w_c·μ·L and T₂ = T₁·e^(w_c·μ·θ).", "Equivalent friction w_c·μ in the capstan equation; blank w_c means 1."),
+            new CalcAssumption("Straight lengths are horizontal and the cable weight bears on the containment over the full length; bends are taken in the plane of the route. Inclines, vertical runs and pulley or roller reductions are not modelled; fold them into μ. A cradled or triangular weight correction is entered as w_c, which scales the weight on the straight lengths and the friction in the bends (the contact force of a cradled or triangular arrangement is w_c times that of a flat one), so T₂ = T₁ + w·g·w_c·μ·L and, at a bend, μ_e = w_c·μ in the cosh/sinh (or capstan) form. A bend in a vertical plane has the weight along the cable rather than on the floor: take the capstan option and fold the rise into the route.", "Equivalent friction w_c·μ at the bends; blank w_c means 1."),
             new CalcAssumption("The coefficient of friction is one constant for the whole route; static and running friction are not distinguished.", "A user record with its source."),
             new CalcAssumption("Sidewall pressure is the tension leaving the bend over the bend radius, for the bundle as a whole. Enter the cable maker's per-cable limit unchanged: the bundle T/R against it is conservative for a triangular arrangement and roughly equal for a cradled one. Do not multiply the limit by the number of cables.", "SWP = T₂/R."),
             new CalcAssumption("The bend radius uses the individual cable diameter; for a triplexed or bundled assembly, enter the assembly diameter from the cable maker as the overall diameter.", "Cable data sheet."),
-            new CalcAssumption("The tension at the start of the pull is the same in both directions; a bend at the very start of a pull with no start tension adds nothing, so enter the pulling rope or drum tension when it matters.", "Capstan equation."),
+            new CalcAssumption("The tension at the start of the pull is the same in both directions. With the horizontal-bend (weight) model a heavy cable gains tension at a bend even from T₁ = 0; with the capstan option a bend at the very start of a pull with no start tension adds nothing, so enter the pulling rope or drum tension when it matters.", "Weight term for a horizontal bend; capstan equation as the option."),
         ],
         [
             new CalcClauseRef("BS 7671:2018 (as amended)", "reg. 522.8", "Other mechanical stresses on wiring systems (damage during installation, bending radius)"),
@@ -104,21 +109,29 @@ public sealed class ContainmentCalculator : ICalcCalculator
         ],
         [
             new CalcTestCase("ka-fill-3x10-in-25", "Three 10 mm cables in a 25 mm conduit: 48 % fill, and a pull through two bends in both directions (analytic)",
-                new CalcReferenceSource("Analytic (geometry, capstan equation; recomputed in python3)", null, "fill = 3·π·10²/4 / (π·25²/4) = 300/625 = 48 %; w = 3 × 0.2 = 0.6 kg/m, w·g·μ = 2.0593965 N/m (μ 0.35); route 12 m, 90° R 400 mm, 18 m, 90° R 300 mm, 8 m: as listed 24.712758, 42.823985, 79.893122, 138.444356, 154.919528 N; reversed 16.475172, 28.549323, 65.618460, 113.708230, 138.420988 N; SWP at the last bend 461.4812 N/m as listed, 284.2706 N/m reversed; R_min = 12 × 10 = 120 mm; T_cab = 3 × 400 = 1200 N. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
-                [Cables(("Control", 10, 3, 0.2, 400)), CalcInputValue.Choice("cont_type", Conduit), Q("D_c", 25, "mm"), CalcInputValue.Of("f_max", 0.5), CalcInputValue.Of("n_bend", 12), Route(RS(12), RB(90, 400), RS(18), RB(90, 300), RS(8)), CalcInputValue.Of("mu", 0.35), Q("P_lim", 400, "N/m")],
+                new CalcReferenceSource("Analytic (geometry, capstan equation as the bend_model option; recomputed in python3)", null, "fill = 3·π·10²/4 / (π·25²/4) = 300/625 = 48 %; w = 3 × 0.2 = 0.6 kg/m, w·g·μ = 2.0593965 N/m (μ 0.35); route 12 m, 90° R 400 mm, 18 m, 90° R 300 mm, 8 m: as listed 24.712758, 42.823985, 79.893122, 138.444356, 154.919528 N; reversed 16.475172, 28.549323, 65.618460, 113.708230, 138.420988 N; SWP at the last bend 461.4812 N/m as listed, 284.2706 N/m reversed; R_min = 12 × 10 = 120 mm; T_cab = 3 × 400 = 1200 N. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
+                [Cables(("Control", 10, 3, 0.2, 400)), CalcInputValue.Choice("cont_type", Conduit), Q("D_c", 25, "mm"), CalcInputValue.Of("f_max", 0.5), CalcInputValue.Of("n_bend", 12), Route(RS(12), RB(90, 400), RS(18), RB(90, 300), RS(8)), CalcInputValue.Choice("bend_model", BendCapstan), CalcInputValue.Of("mu", 0.35), Q("P_lim", 400, "N/m")],
                 [new CalcExpectedValue("A_cab", 235.6194490, "mm^2", 1e-9), new CalcExpectedValue("A_int", 490.8738521, "mm^2", 1e-9), new CalcExpectedValue("fill", 48, "%", 1e-9), new CalcExpectedValue("u_fill", 0.96, "", 1e-9), new CalcExpectedValue("R_min", 120, "mm", 1e-9), new CalcExpectedValue("u_bend", 0.4, "", 1e-9), new CalcExpectedValue("w", 0.6, "kg/m", 1e-9), new CalcExpectedValue("T_max_a", 154.9195277, "N", 1e-9), new CalcExpectedValue("T_max_b", 138.4209876, "N", 1e-9), new CalcExpectedValue("max_tension", 138.4209876, "N", 1e-9), new CalcExpectedValue("P_max_a", 461.4811856, "N/m", 1e-9), new CalcExpectedValue("P_max", 284.2705741, "N/m", 1e-9), new CalcExpectedValue("T_cab", 1200, "N", 1e-9), new CalcExpectedValue("u_T", 0.1153508230, "", 1e-9), new CalcExpectedValue("u_P", 0.7106764352, "", 1e-9)]),
             new CalcTestCase("ka-pull-tray-two-bends", "Mixed bundle pulled through two bends from a 100 N start tension, in a 100 × 50 mm tray (analytic)",
-                new CalcReferenceSource("Analytic (capstan equation, recomputed in python3)", null, "2 × 12 mm at 0.6 kg/m and 1 × 8 mm at 0.15 kg/m: w = 1.35 kg/m, w·g·μ = 5.295591 N/m (μ 0.4), T₁ = 100 N; route 20 m, 90° R 500 mm, 30 m, 90° R 600 mm, 10 m: as listed 1074.235304 N, SWP 1702.132 N/m; reversed 941.126090 N, SWP 1670.429 N/m; T_cab = 3 × min(700, 150) = 450 N (the 150 N control cable carries 941.126/3 = 313.709 N, u_T = 2.091391, FAIL in both directions); fill = (2·π·12²/4 + π·8²/4)/(100·50) = 5.529 %. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
-                [Cables(("Power", 12, 2, 0.6, 700), ("Control", 8, 1, 0.15, 150)), CalcInputValue.Choice("cont_type", Trunking), Q("W_c", 100, "mm"), Q("H_c", 50, "mm"), CalcInputValue.Of("f_max", 0.5), CalcInputValue.Of("n_bend", 8), Route(RS(20), RB(90, 500), RS(30), RB(90, 600), RS(10)), Q("T_1", 100, "N"), CalcInputValue.Of("mu", 0.4), Q("P_lim", 2000, "N/m")],
+                new CalcReferenceSource("Analytic (capstan equation, the bend_model option; recomputed in python3)", null, "2 × 12 mm at 0.6 kg/m and 1 × 8 mm at 0.15 kg/m: w = 1.35 kg/m, w·g·μ = 5.295591 N/m (μ 0.4), T₁ = 100 N; route 20 m, 90° R 500 mm, 30 m, 90° R 600 mm, 10 m: as listed 1074.235304 N, SWP 1702.132 N/m; reversed 941.126090 N, SWP 1670.429 N/m; T_cab = 3 × min(700, 150) = 450 N (the 150 N control cable carries 941.126/3 = 313.709 N, u_T = 2.091391, FAIL in both directions); fill = (2·π·12²/4 + π·8²/4)/(100·50) = 5.529 %. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
+                [Cables(("Power", 12, 2, 0.6, 700), ("Control", 8, 1, 0.15, 150)), CalcInputValue.Choice("cont_type", Trunking), Q("W_c", 100, "mm"), Q("H_c", 50, "mm"), CalcInputValue.Of("f_max", 0.5), CalcInputValue.Of("n_bend", 8), Route(RS(20), RB(90, 500), RS(30), RB(90, 600), RS(10)), Q("T_1", 100, "N"), CalcInputValue.Choice("bend_model", BendCapstan), CalcInputValue.Of("mu", 0.4), Q("P_lim", 2000, "N/m")],
                 [new CalcExpectedValue("A_cab", 276.4601535, "mm^2", 1e-9), new CalcExpectedValue("fill", 5.529203071, "%", 1e-9), new CalcExpectedValue("w", 1.35, "kg/m", 1e-9), new CalcExpectedValue("T_max_a", 1074.235304, "N", 1e-9), new CalcExpectedValue("T_max_b", 941.1260901, "N", 1e-9), new CalcExpectedValue("max_tension", 941.1260901, "N", 1e-9), new CalcExpectedValue("P_max_a", 1702.132324, "N/m", 1e-9), new CalcExpectedValue("P_max_b", 1670.428540, "N/m", 1e-9), new CalcExpectedValue("T_cab", 450, "N", 1e-9), new CalcExpectedValue("u_T", 2.091391311, "", 1e-9), new CalcExpectedValue("R_min", 96, "mm", 1e-9)]),
             new CalcTestCase("ka-direction-passes-every-check", "A route whose lower-tension direction breaks the sidewall limit: the other direction is recommended (analytic)",
-                new CalcReferenceSource("Analytic (capstan equation, recomputed in python3)", null, "1 × 20 mm at 1.0 kg/m, T₁ = 50 N, μ 0.35, route 20 m, 90° R 1200 mm, 40 m, 180° R 600 mm, 40 m: as listed 1166.942072 N, SWP 1716.0816 N/m (fails P_lim 1500 N/m); reversed 1281.141772 N, SWP 1010.4127 N/m (passes); the reverse direction passes every check and is recommended although its tension is higher; T_cab = 5000 N. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
-                [Cables(("Single", 20, 1, 1.0, 5000)), CalcInputValue.Choice("cont_type", Conduit), Q("D_c", 100, "mm"), CalcInputValue.Of("f_max", 0.5), CalcInputValue.Of("n_bend", 6), Route(RS(20), RB(90, 1200), RS(40), RB(180, 600), RS(40)), Q("T_1", 50, "N"), CalcInputValue.Of("mu", 0.35), Q("P_lim", 1500, "N/m")],
+                new CalcReferenceSource("Analytic (capstan equation, the bend_model option; recomputed in python3)", null, "1 × 20 mm at 1.0 kg/m, T₁ = 50 N, μ 0.35, route 20 m, 90° R 1200 mm, 40 m, 180° R 600 mm, 40 m: as listed 1166.942072 N, SWP 1716.0816 N/m (fails P_lim 1500 N/m); reversed 1281.141772 N, SWP 1010.4127 N/m (passes); the reverse direction passes every check and is recommended although its tension is higher; T_cab = 5000 N. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
+                [Cables(("Single", 20, 1, 1.0, 5000)), CalcInputValue.Choice("cont_type", Conduit), Q("D_c", 100, "mm"), CalcInputValue.Of("f_max", 0.5), CalcInputValue.Of("n_bend", 6), Route(RS(20), RB(90, 1200), RS(40), RB(180, 600), RS(40)), Q("T_1", 50, "N"), CalcInputValue.Choice("bend_model", BendCapstan), CalcInputValue.Of("mu", 0.35), Q("P_lim", 1500, "N/m")],
                 [new CalcExpectedValue("T_max_a", 1166.942072, "N", 1e-9), new CalcExpectedValue("T_max_b", 1281.141772, "N", 1e-9), new CalcExpectedValue("max_tension", 1281.141772, "N", 1e-9), new CalcExpectedValue("P_max_a", 1716.081620, "N/m", 1e-9), new CalcExpectedValue("P_max", 1010.412685, "N/m", 1e-9), new CalcExpectedValue("T_cab", 5000, "N", 1e-9), new CalcExpectedValue("u_T", 0.2562283544, "", 1e-9), new CalcExpectedValue("u_P", 0.6736084567, "", 1e-9)]),
             new CalcTestCase("ka-capstan-180", "A single 180° bend with a 200 N start tension: the capstan equation (analytic)",
-                new CalcReferenceSource("Analytic (T₂ = T₁·e^(μθ), recomputed in python3)", null, "T₂ = 200·e^(0.35·π) = 600.567352 N; SWP = 600.567352/0.4 = 1501.418380 N/m; the same in both directions. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
-                [Cables(("Single", 20, 1, 0.3, 1000)), CalcInputValue.Choice("cont_type", Conduit), Q("D_c", 50, "mm"), CalcInputValue.Of("f_max", 0.5), CalcInputValue.Of("n_bend", 6), Route(RB(180, 400)), Q("T_1", 200, "N"), CalcInputValue.Of("mu", 0.35)],
+                new CalcReferenceSource("Analytic (T₂ = T₁·e^(μθ), the bend_model capstan option; recomputed in python3)", null, "T₂ = 200·e^(0.35·π) = 600.567352 N; SWP = 600.567352/0.4 = 1501.418380 N/m; the same in both directions. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
+                [Cables(("Single", 20, 1, 0.3, 1000)), CalcInputValue.Choice("cont_type", Conduit), Q("D_c", 50, "mm"), CalcInputValue.Of("f_max", 0.5), CalcInputValue.Of("n_bend", 6), Route(RB(180, 400)), Q("T_1", 200, "N"), CalcInputValue.Choice("bend_model", BendCapstan), CalcInputValue.Of("mu", 0.35)],
                 [new CalcExpectedValue("T_max_a", 600.5673521, "N", 1e-9), new CalcExpectedValue("T_max_b", 600.5673521, "N", 1e-9), new CalcExpectedValue("P_max", 1501.418380, "N/m", 1e-9), new CalcExpectedValue("u_bend", 0.3, "", 1e-9)]),
+            new CalcTestCase("ka-heavy-cable-horizontal-bend", "A heavy cable round a large horizontal bend: the weight term adds 64 % to the capstan tension (analytic)",
+                new CalcReferenceSource("Analytic (horizontal bend with the cable's weight on the containment floor, recomputed in python3)", null, "One 20 mm cable at 10 kg/m, μ 0.3, T₁ = 100 N, one 90° bend R 3 m: w·g = 98.0665 N/m, w·g·R = 294.1995 N, μθ = 0.471239; T₂ = 100·cosh(0.471239) + √(100² + 294.1995²)·sinh(0.471239) = 263.218479 N; SWP = 263.218479/3 = 87.739493 N/m; the capstan equation gives 100·e^(0.471239) = 160.197765 N. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
+                [Cables(("Heavy", 20, 1, 10, 5000)), CalcInputValue.Choice("cont_type", Conduit), Q("D_c", 100, "mm"), CalcInputValue.Of("f_max", 0.5), CalcInputValue.Of("n_bend", 6), Route(RB(90, 3000)), Q("T_1", 100, "N"), CalcInputValue.Of("mu", 0.3)],
+                [new CalcExpectedValue("T_max_a", 263.2184789, "N", 1e-9), new CalcExpectedValue("T_max_b", 263.2184789, "N", 1e-9), new CalcExpectedValue("P_max", 87.73949298, "N/m", 1e-9), new CalcExpectedValue("u_bend", 0.04, "", 1e-9)]),
+            new CalcTestCase("ka-heavy-cable-bend-from-rest", "The same bend with no start tension: the weight term still pulls tension in (analytic)",
+                new CalcReferenceSource("Analytic (horizontal bend with the cable's weight on the containment floor, recomputed in python3)", null, "As ka-heavy-cable-horizontal-bend with T₁ = 0: T₂ = √(0 + 294.1995²)·sinh(0.471239) = 143.826665 N; the capstan equation gives 0. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
+                [Cables(("Heavy", 20, 1, 10, 5000)), CalcInputValue.Choice("cont_type", Conduit), Q("D_c", 100, "mm"), CalcInputValue.Of("f_max", 0.5), CalcInputValue.Of("n_bend", 6), Route(RB(90, 3000)), Q("T_1", 0, "N"), CalcInputValue.Of("mu", 0.3)],
+                [new CalcExpectedValue("T_max_a", 143.8266655, "N", 1e-9)]),
             new CalcTestCase("ka-trunking-fill", "Twelve 8 mm cables in 100 × 50 mm trunking (analytic)",
                 new CalcReferenceSource("Analytic (geometry, recomputed in python3)", null, "fill = 12·π·8²/4 / (100 × 50) = 603.1858 mm² / 5000 mm² = 12.0637 %; u_fill = 0.120637/0.42 = 0.287231. Record values (space factor, bend multiple, friction, limits) are illustrative, not from any standard."),
                 [Cables(("Data", 8, 12, 0.07, 100)), CalcInputValue.Choice("cont_type", Trunking), Q("W_c", 100, "mm"), Q("H_c", 50, "mm"), CalcInputValue.Of("f_max", 0.42)],
@@ -351,9 +364,10 @@ public sealed class ContainmentCalculator : ICalcCalculator
             var wg = c.Si("wg");
             var mu = c.Si("mu");
             var start = c.Si("T_1");
+            var weighted = c.InputText("bend_model") == BendWeighted;
 
-            forward = Pull(segments, start, wg, mu, weightFactor);
-            reverse = Pull([.. segments.AsEnumerable().Reverse()], start, wg, mu, weightFactor);
+            forward = Pull(segments, start, wg, mu, weightFactor, weighted);
+            reverse = Pull([.. segments.AsEnumerable().Reverse()], start, wg, mu, weightFactor, weighted);
 
             if (!AllFinite(forward) || !AllFinite(reverse))
             {
@@ -361,8 +375,8 @@ public sealed class ContainmentCalculator : ICalcCalculator
                 return;
             }
 
-            RecordPull(c, forward, "a", "as listed", start, wg, mu, weightFactor, newton, perM);
-            RecordPull(c, reverse, "b", "reversed", start, wg, mu, weightFactor, newton, perM);
+            RecordPull(c, forward, "a", "as listed", start, wg, mu, weightFactor, weighted, newton, perM);
+            RecordPull(c, reverse, "b", "reversed", start, wg, mu, weightFactor, weighted, newton, perM);
 
             var tensionA = forward[^1].T;
             var tensionB = reverse[^1].T;
@@ -508,7 +522,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
     }
 
     /// <summary>Tension (and sidewall pressure at bends) after each segment, pulling in the order given.</summary>
-    private static Leg[] Pull(IReadOnlyList<Segment> segments, double start, double weightPerMetre, double mu, double weightFactor)
+    private static Leg[] Pull(IReadOnlyList<Segment> segments, double start, double weightPerMetre, double mu, double weightFactor, bool weighted)
     {
         var legs = new Leg[segments.Count];
         var tension = start;
@@ -519,7 +533,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
 
             if (s.IsBend)
             {
-                tension *= Math.Exp(weightFactor * mu * s.Angle);
+                tension = BendTension(tension, weightPerMetre, s.Radius, weightFactor * mu * s.Angle, weighted);
                 legs[i] = new Leg(s, tension, tension / s.Radius);
             }
             else
@@ -540,10 +554,23 @@ public sealed class ContainmentCalculator : ICalcCalculator
         return legs;
     }
 
+    /// <summary>
+    /// The tension leaving a bend of friction angle <paramref name="muTheta"/> (μ_e·θ). Capstan: T₁·e^(μθ). Horizontal bend with the cable resting on the floor (Rifenburg):
+    /// T₁·cosh(μθ) + √(T₁² + (w·g·R)²)·sinh(μθ), <paramref name="weightPerMetre"/> already carrying the weight-correction factor.
+    /// </summary>
+    private static double BendTension(double t1, double weightPerMetre, double radius, double muTheta, bool weighted)
+    {
+        if (!weighted)
+            return t1 * Math.Exp(muTheta);
+
+        var wr = weightPerMetre * radius;
+        return t1 * Math.Cosh(muTheta) + Math.Sqrt(t1 * t1 + wr * wr) * Math.Sinh(muTheta);
+    }
+
     private static bool AllFinite(IEnumerable<Leg> legs) => legs.All(l => double.IsFinite(l.T) && l.T <= TensionCeiling && (l.Swp is null || double.IsFinite(l.Swp.Value)));
 
     /// <summary>One record per segment: the tension after it (and the sidewall pressure at a bend), as <c>Ta_1</c>… for the listed order and <c>Tb_5</c>… for the reverse.</summary>
-    private static void RecordPull(CalcRunContext c, Leg[] legs, string tag, string label, double start, double weightPerMetre, double mu, double weightFactor, Unit newton, Unit perM)
+    private static void RecordPull(CalcRunContext c, Leg[] legs, string tag, string label, double start, double weightPerMetre, double mu, double weightFactor, bool weighted, Unit newton, Unit perM)
     {
         var previous = start;
 
@@ -554,7 +581,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
 
             if (s.IsBend)
             {
-                c.Record(symbol, "T₁·e^(w_c·μ·θ)", $"{F(previous)} N × e^({F(weightFactor)} × {F(mu)} × {F(s.Angle)} rad)", ScalarValue.Of(leg.T, newton), $"{s.Name} ({label}): tension after the bend");
+                c.Record(symbol, weighted ? "T₁·cosh(μ_e·θ) + √(T₁² + (w·g·w_c·R)²)·sinh(μ_e·θ)" : "T₁·e^(w_c·μ·θ)", weighted ? $"{F(previous)} N × cosh({F(weightFactor * mu * s.Angle)}) + √({F(previous)}² + ({F(weightPerMetre)} N/m × {F(s.Radius)} m)²) × sinh({F(weightFactor * mu * s.Angle)})" : $"{F(previous)} N × e^({F(weightFactor)} × {F(mu)} × {F(s.Angle)} rad)", ScalarValue.Of(leg.T, newton), $"{s.Name} ({label}): tension after the bend");
                 c.Record($"P{tag}_{s.Index}", "T₂/R", $"{F(leg.T)} N / {F(s.Radius)} m", ScalarValue.Of(leg.Swp ?? 0, perM), $"{s.Name} ({label}): sidewall pressure");
             }
             else
