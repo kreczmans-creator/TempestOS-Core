@@ -12,7 +12,7 @@ public sealed class Iso286FitCalculator : ICalcCalculator
     public const string BearingBore = "rolling-bearing bore (deviations from the bearing record)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Mechanical, "ISO 286 limits and fits",
+        Id, "1.4.0", CalcDiscipline.Mechanical, "ISO 286 limits and fits",
         "Hole and shaft limits for a nominal size and tolerance classes, the resulting fit (clearance, transition or interference) and its extreme values, from the ISO 286-1 formulae.",
         "Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^(1/3) + 0.001·D (µm).\nWidth of the tolerance band for the grade: ITn = multiplier × i.\nFundamental deviations by letter from the published formulae, and hole deviations by the general rule: EI = −es (A–H); ES = −ei + Δ (K–ZC).\nLimits of size of the hole and the shaft: limit = nominal + deviation.\nFit extremes, the largest and smallest clearance (negative is interference): c_max = ES − ei; c_min = EI − es.\nRolling-bearing bore mode: a bearing bore is not an ISO 286 hole; it has its own tolerance (ISO 492) lying below nominal, so ES and EI are entered from the bearing record instead of being computed.",
         [
@@ -112,7 +112,9 @@ public sealed class Iso286FitCalculator : ICalcCalculator
 
             if (fundamental is null)
             {
-                c.Block("input.shaft_letter", $"shaft_letter: no formula gives '{shaftLetter}'; enter es_override and ei_override from a reference record.");
+                c.Block("input.shaft_letter", shaftLetter == "t"
+                    ? $"shaft_letter: the standard has no t shaft at {CalcValue.FormatNumber(dMm)} mm; t starts above {CalcValue.FormatNumber(Iso286.TShaftFromMm)} mm. Choose another letter, or enter es_override and ei_override from a reference record."
+                    : $"shaft_letter: no formula gives '{shaftLetter}'; enter es_override and ei_override from a reference record.");
                 return;
             }
 
@@ -164,7 +166,9 @@ public sealed class Iso286FitCalculator : ICalcCalculator
 
             if (fundamental is null)
             {
-                c.Block("input.hole_letter", $"hole_letter: no formula gives '{holeLetter}'; enter ES_override and EI_override from a reference record.");
+                c.Block("input.hole_letter", holeLetter.Equals("T", StringComparison.OrdinalIgnoreCase)
+                    ? $"hole_letter: the standard has no T hole at {CalcValue.FormatNumber(dMm)} mm; T starts above {CalcValue.FormatNumber(Iso286.TShaftFromMm)} mm. Choose another letter, or enter ES_override and EI_override from a reference record."
+                    : $"hole_letter: no formula gives '{holeLetter}'; enter ES_override and EI_override from a reference record.");
                 return;
             }
 
