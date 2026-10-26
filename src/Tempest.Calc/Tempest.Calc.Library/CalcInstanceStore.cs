@@ -229,6 +229,75 @@ public sealed class CalcInstanceStore
         }, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// The one place a calculation, a pack or a scan profile is ever deleted (Addendum C, C-6): in <b>one</b> transaction, every instance and pack row of
+    /// <paramref name="projectId"/> and every version of the named demonstration scan profiles, with their search-index rows. It deletes nothing else: rows are
+    /// found by the project's own key prefix, and a profile id must start with <see cref="CalcDemoProject.ScanProfilePrefix"/>. The caller
+    /// (<see cref="CalcDemoProjectService"/>) has already proved the project is the demonstration; below that, an issued or superseded row is never
+    /// deleted — one found under the project stops the transaction with <see cref="CalcInstanceImmutableException"/> and nothing is removed.
+    /// </summary>
+    /// <returns>How many calculation rows, pack rows and scan-profile rows were deleted.</returns>
+    public async Task<(int Instances, int Packs, int ScanProfiles)> DeleteDemonstrationRowsAsync(Guid projectId, IReadOnlyCollection<string> scanProfileIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(scanProfileIds);
+
+        if (projectId == Guid.Empty)
+            throw new ArgumentException("A project id is needed to delete a demonstration's rows.", nameof(projectId));
+
+        if (scanProfileIds.Any(id => !id.StartsWith(CalcDemoProject.ScanProfilePrefix, StringComparison.Ordinal)))
+            throw new ArgumentException($"Only scan profiles whose id starts with '{CalcDemoProject.ScanProfilePrefix}' belong to the demonstration.", nameof(scanProfileIds));
+
+        var counts = (Instances: 0, Packs: 0, ScanProfiles: 0);
+
+        await _store.ExecuteInTransactionAsync(async (tx, token) =>
+        {
+            // A transaction may be retried; count from nothing each time.
+            counts = (0, 0, 0);
+            var prefix = projectId.ToString("N") + "/";
+
+            foreach (var key in await tx.ListKeysAsync(InstanceCollection, prefix, token).ConfigureAwait(false))
+            {
+                var instance = Deserialise<CalcInstance>(await tx.ReadAsync(InstanceCollection, key, token).ConfigureAwait(false));
+
+                if (instance is { IsImmutable: true })
+                    throw new CalcInstanceImmutableException(instance.Id, instance.Status);
+
+                await tx.DeleteAsync(InstanceCollection, key, token).ConfigureAwait(false);
+
+                if (Guid.TryParseExact(key[prefix.Length..], "N", out var id))
+                    await tx.RemoveFromIndexAsync(id, token).ConfigureAwait(false);
+
+                counts.Instances++;
+            }
+
+            foreach (var key in await tx.ListKeysAsync(PackCollection, prefix, token).ConfigureAwait(false))
+            {
+                var pack = Deserialise<CalcPack>(await tx.ReadAsync(PackCollection, key, token).ConfigureAwait(false));
+
+                if (pack is { Status: CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded })
+                    throw new CalcInstanceImmutableException(pack.Id, pack.Status);
+
+                await tx.DeleteAsync(PackCollection, key, token).ConfigureAwait(false);
+
+                if (Guid.TryParseExact(key[prefix.Length..], "N", out var id))
+                    await tx.RemoveFromIndexAsync(id, token).ConfigureAwait(false);
+
+                counts.Packs++;
+            }
+
+            foreach (var profileId in scanProfileIds)
+            {
+                foreach (var key in await tx.ListKeysAsync(ScanProfileCollection, profileId + "@", token).ConfigureAwait(false))
+                {
+                    await tx.DeleteAsync(ScanProfileCollection, key, token).ConfigureAwait(false);
+                    counts.ScanProfiles++;
+                }
+            }
+        }, cancellationToken).ConfigureAwait(false);
+
+        return counts;
+    }
+
     public async Task<CalcPack?> FindPackAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var key = await FindKeyAsync(PackCollection, id, cancellationToken).ConfigureAwait(false);
