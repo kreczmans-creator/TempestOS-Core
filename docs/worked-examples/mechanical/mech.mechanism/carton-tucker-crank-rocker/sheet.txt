@@ -1,18 +1,16 @@
 CALCULATION SHEET — DRAFT
 Project: Worked example
 Calc ID: carton-tucker-crank-rocker    Revision: A
-Title: Mechanism kinematics: four-bar, slider-crank, cam
+Title: Mechanism kinematics
 Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 A single-degree-of-freedom planar mechanism driven at constant speed: a four-bar linkage or an offset slider-crank (both circuits, position, velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against a minimum, toggle and dead-centre positions, loop-closure residual, input torque by virtual work), or a cam with a translating follower. Rigid links, no clearance, no friction.
 Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂ Grashof class and transmission angle: s + l < p + q (crank-rocker, double-crank or double-rocker by the shortest link), = at the change point, > non-Grashof; transmission angle cos μ = (b² + c² − ℓ²)/(2bc) folded to 0 … 90°; toggle where ℓ = b + c or |b − c| Slider-crank position: x = r·cosθ + σ·√(l² − (r·sinθ − e)²) (σ = +1 open, −1 crossed); dx/dθ = −r·sinθ − r·cosθ·(r·sinθ − e)/(x − r·cosθ); dead centres where crank and rod are collinear; μ = 90° − |rod angle to the slide line| Input torque by virtual work: T_in·ω_in = Σ F·v; four-bar T_in = (T_L + J·α₄)·ω₄/ω₂; slider T_in = (m·a + F_L)·dx/dθ; RMS torque and mean power over the sweep by Simpson's rule Mechanism forces: four-bar tangential pin force P = (T_L + J·α₄)/c, coupler (and crank-pin) force P/sin μ; slider slide-direction force F_x = m·a + F_L, rod force F_x/cos θ₃, guide reaction F_x·tan θ₃; cam contact normal F/cos φ Assembly limits: four-bar toggles at cos θ₂ = (d² + a² − ℓ²)/(2ad), ℓ = b + c or |b − c|; slider sin θ = (e ± l)/r. The sweep is cut at them and, driven at constant speed into one, the unbounded peaks are not reported Loop closure: |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) asserted below 1e-9 mm at every step Cam, per segment with x = (θ − θ₀)/β: rise s = s₀ + h·f(x), return s = s₀ − h·f(x); cycloidal f = x − sin(2πx)/(2π); 3-4-5 f = 10x³ − 15x⁴ + 6x⁵; 4-5-6-7 f = 35x⁴ − 84x⁵ + 70x⁶ − 20x⁷; modified trapezoid from its acceleration pieces (C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2)) Cam SVAJ at constant ω: v = ω·s′, a = ω²·s″, j = ω³·s‴ (′ = d/dθ); peak coefficients C_v = max f′, C_a = max |f″|, C_j = max |f‴|, so v_pk = C_v·h·ω/β Pressure angle (roller, offset e, R_p = R_b + R_r): φ = arctan[(s′ − e)/(√(R_p² − e²) + s)], which for e = 0 is arctan[s′/(R_p + s)]; the base circle that holds φ ≤ φ_max has R_p,req = √(s₀,req² + e²) with s₀,req = max(|s′ − e|/tan φ_max − s) Radius of curvature of the pitch curve P(θ) = Rot(−θ)·(e, √(R_p² − e²) + s): ρ = |P′|³/(P′ × P″), convex where positive; undercut where ρ_min ≤ R_r (FAIL), none where the curve is nowhere convex; flat-faced follower: signed profile radius ρ = R_b + s + s″, the minimum of which must stay above zero (FAIL at or below) and the face must reach |s′|; the cam turns counter-clockwise with the follower axis at +x offset e Cam follower force F = m·a + k·s + F_pre + F_ext (the follower leaves the cam where F < 0); input torque by virtual work T = F·s′ (T·ω = F·v)
-  Ref: Norton, Design of Machinery Ch. 4, 6, 7 — Position, velocity and acceleration analysis; transmission angle; Grashof condition
-  Ref: Uicker, Pennock and Shigley, Theory of Machines and Mechanisms Ch. 4–6 — Loop-closure position analysis; velocity and acceleration of planar linkages
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Kind of mechanism | Four-bar |  | spec: Carton line PKG-LINE-7 §3.2 tucker station rev C | any
   circuit | Assembly circuit (four-bar, slider-crank): open is θ₄ = φ − γ (slider on the +x side of the crank pin), crossed the mirror branch | Open |  | drawing: PKG-TUCK-02 rev B | any
@@ -20,16 +18,16 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   L2 | Crank length a (four-bar) or r (slider-crank) | 45 | mm | drawing: PKG-TUCK-02 rev B | 1 … 10000 mm
   L3 | Coupler length b (four-bar) or connecting-rod length l (slider-crank) | 140 | mm | drawing: PKG-TUCK-02 rev B | 1 … 10000 mm
   L4 | Rocker length c (four-bar) | 100 | mm | drawing: PKG-TUCK-02 rev B | 1 … 10000 mm
-  theta_start | Input angle at the first row of the table | 0 | deg | spec: Carton line PKG-LINE-7 §3.2: crank zero at the home position rev C | -720 … 720 deg
-  theta_range | Swept range of the input angle (360° for a full turn) | 360 | deg | spec: Carton line PKG-LINE-7 §3.2: one cycle rev C | 1 … 720 deg
+  theta_start | Input angle at the first row of the table | 0 | ° | spec: Carton line PKG-LINE-7 §3.2: crank zero at the home position rev C | -720 … 720 °
+  theta_range | Swept range of the input angle (360° for a full turn) | 360 | ° | spec: Carton line PKG-LINE-7 §3.2: one cycle rev C | 1 … 720 °
   steps | Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it) | 72 |  | assumption: 5° table step. | 4 … 720
   n_in | Input speed (constant) | 60 | rpm | spec: Carton line PKG-LINE-7 §3.2: 60 cartons/min rev C | 0.1 … 30000 rpm
-  mu_req | Minimum transmission angle required (linkages) | 40 | deg | assumption: Default minimum transmission angle; set it from your design rule. | 0 … 90 deg
+  mu_req | Minimum transmission angle required (linkages) | 40 | ° | assumption: Default minimum transmission angle; set it from your design rule. | 0 … 90 °
   load_dir | External load: constant direction, or always opposing the output motion | Opposes motion |  | assumption: The flap resists the blade in whichever direction it moves. | any
-  T_load | External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists) | 4 | N*m | assumption: Example flap-folding torque at the rocker shaft; measure it on the station. | -10000 … 10000 N*m
-  J_out | Moment of inertia of the output link about its pivot (four-bar) | 0.012 | kg*m^2 | assumption: Example: rocker arm and blade about the rocker pivot; take it from the CAD mass properties. | 0 … 1000 kg*m^2
+  T_load | External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists) | 4 | N·m | assumption: Example flap-folding torque at the rocker shaft; measure it on the station. | -10000 … 10000 N·m
+  J_out | Moment of inertia of the output link about its pivot (four-bar) | 0.012 | kg·m² | assumption: Example: rocker arm and blade about the rocker pivot; take it from the CAD mass properties. | 0 … 1000 kg·m²
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed. (Scope limits of the model.)
   A2. The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch; for a change-point linkage (parallelogram, deltoid) the circuit is named at a reference angle that does not depend on the sweep (the middle of the first interval between change points in 0 … 2π, π/2 when there are none), so the label at a crank angle means the same motion on every turn; only the true change points (all four links collinear, θ₂ = 0 or π) flip the branch, and it is followed by continuity through them inside the sweep. A linkage with one change point per turn (a kite) repeats every 720° and a sweep of more than one turn warns. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted. (Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank.)
   A3. Input torque is by virtual work from the output load and the inertia of the output element only (four-bar: the output link's moment of inertia about its pivot; slider: the slider mass); the crank and the coupler or connecting rod are massless. (No link-inertia or gravity terms: add the link masses to the output element for a first allowance.)
@@ -39,12 +37,12 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   A7. When the sweep meets an assembly limit (a toggle of a four-bar, the rod perpendicular to the slide line of a slider-crank) the sweep is cut there and, because the speed, acceleration, torque and forces at constant input speed are unbounded at the limit, they are not reported; the limit angles are listed. A change-point four-bar (parallelogram, deltoid) is continued through its singular position on the same branch by continuity (γ changes sign there), but its speeds and torques next to the singular position are not reported. (Closed-form limit angles: ℓ = b + c or |b − c| (four-bar), |r·sinθ − e| = l (slider).)
   A8. Into F1 and E1: output_motion is a kinematic proxy at constant crank speed, not the cylinder speed of an actuated linkage. For E1 use the peak input_torque for the peak check and T_rms_in with n_in for the thermal sizing; the mean power is P_mean. (Used by the actuated-linkage and mechanism-review packs.)
   A9. steps (Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it)) is taken as 72. (5° table step.)
-  A10. mu_req (Minimum transmission angle required (linkages)) is taken as 40 deg. (Default minimum transmission angle; set it from your design rule.)
+  A10. mu_req (Minimum transmission angle required (linkages)) is taken as 40 °. (Default minimum transmission angle; set it from your design rule.)
   A11. load_dir (External load: constant direction, or always opposing the output motion) is taken as Opposes motion. (The flap resists the blade in whichever direction it moves.)
-  A12. T_load (External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists)) is taken as 4 N*m. (Example flap-folding torque at the rocker shaft; measure it on the station.)
-  A13. J_out (Moment of inertia of the output link about its pivot (four-bar)) is taken as 0.012 kg*m^2. (Example: rocker arm and blade about the rocker pivot; take it from the CAD mass properties.)
+  A12. T_load (External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists)) is taken as 4 N·m. (Example flap-folding torque at the rocker shaft; measure it on the station.)
+  A13. J_out (Moment of inertia of the output link about its pivot (four-bar)) is taken as 0.012 kg·m². (Example: rocker arm and blade about the rocker pivot; take it from the CAD mass properties.)
 
-4. WORKING
+4. Working
   [10] f_in = n_in / 60
       = rpm to Hz
       = 1 Hz
@@ -202,12 +200,19 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
       = 0.82575
         Transmission angle: required minimum against the smallest over the sweep
 
-5. RESULTS
+5. Results
+  input_torque = 2.27 N·m    Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)
+  output_motion = 0.35 m/s    Peak speed of the output pin at the rocker length c (mech.output_motion; a kinematic proxy for F1 only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)
+  peak_accel = 3.16 m/s²    Peak acceleration of the output pin (mech.peak_accel)
+  follower_force = 43.5 N    Peak force perpendicular to the rocker at the output pin, the drive force of the output (mech.follower_force)
+  F_pin_pk = 53.7 N    Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings (mech.F_pin_pk → M4, M5)
+  T_rms_in = 1.37 N·m    RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)
   n_in = 60 rpm    Input (crank) speed, passed through for E1's load speed (mech.n_in)
-  f_in = 1 Hz    Input (crank) frequency, for the spring surge check of M7 (mech.f_in)
+  f_in = 1.00 Hz    Input (crank) frequency, for the spring surge check of M7 (mech.f_in)
+  P_mean = 7.6 W    Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
   grashof = "Grashof crank-rocker, input link shortest"    Grashof classification
-  S_plus_L = 195 mm    Shortest plus longest link
-  P_plus_Q = 240 mm    Sum of the other two links
+  S_plus_L = 195.0 mm    Shortest plus longest link
+  P_plus_Q = 240.0 mm    Sum of the other two links
   theta2_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: crank angle
   theta3_sw = [45.45, 43.305, 41.183, 39.119, 37.143, 35.277, 33.533, 31.922, 30.446, 29.103, 27.892, 26.806, … (73 items)] deg    Table: coupler angle
   theta4_sw = [93.891, 91.886, 90.182, 88.806, 87.774, 87.09, 86.749, 86.738, 87.038, 87.625, 88.475, 89.561, … (73 items)] deg    Table: rocker angle
@@ -217,47 +222,44 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   alpha4_sw = [23.794, 27.273, 29.765, 31.194, 31.596, 31.098, 29.878, 28.129, 26.035, 23.751, 21.398, 19.064, … (73 items)] rad/s²    Table: rocker angular acceleration
   mu_sw = [48.441, 48.581, 48.999, 49.687, 50.631, 51.814, 53.216, 54.816, 56.592, 58.522, 60.583, 62.755, … (73 items)] deg    Table: transmission angle
   T_in_sw = [1.5919, 1.3661, 1.1246, 0.87436, 0.62126, 0.37043, 0.1261, 0.12823, 0.38586, 0.61929, 0.82764, 1.0113, … (73 items)] N·m    Table: input torque by virtual work
-  theta3_0 = 45.45 deg    Coupler angle at the first input angle
-  theta4_0 = 93.891 deg    Rocker angle at the first input angle
-  omega3_0 = -2.6928 rad/s    Coupler angular velocity at the first input angle
-  omega4_0 = -2.6928 rad/s    Rocker angular velocity at the first input angle
-  alpha3_0 = -1.6439 rad/s²    Coupler angular acceleration at the first input angle
-  alpha4_0 = 23.794 rad/s²    Rocker angular acceleration at the first input angle
-  mu_0 = 48.441 deg    Transmission angle at the first input angle
-  T_in_0 = 1.5919 N·m    Input torque at the first input angle
-  theta4_alt = 266.11 deg    Rocker angle on the other circuit at the first input angle
-  theta4_min = 86.704 deg    Smallest rocker angle
-  theta4_max = 141.49 deg    Largest rocker angle
-  swing = 54.786 deg    Rocker swing over the sweep
-  mu_min = 48.441 deg    Smallest transmission angle over the sweep
-  res_max = 9.3095e-14 mm    Largest loop-closure residual
+  theta3_0 = 45.45°    Coupler angle at the first input angle
+  theta4_0 = 93.89°    Rocker angle at the first input angle
+  omega3_0 = -2.69 rad/s    Coupler angular velocity at the first input angle
+  omega4_0 = -2.69 rad/s    Rocker angular velocity at the first input angle
+  alpha3_0 = -1.64 rad/s²    Coupler angular acceleration at the first input angle
+  alpha4_0 = 23.79 rad/s²    Rocker angular acceleration at the first input angle
+  mu_0 = 48.44°    Transmission angle at the first input angle
+  T_in_0 = 1.59 N·m    Input torque at the first input angle
+  theta4_alt = 266.11°    Rocker angle on the other circuit at the first input angle
+  theta4_min = 86.70°    Smallest rocker angle
+  theta4_max = 141.49°    Largest rocker angle
+  swing = 54.79°    Rocker swing over the sweep
+  mu_min = 48.44°    Smallest transmission angle over the sweep
+  res_max = 0 mm    Largest loop-closure residual
   res_vel_max = 2.1412e-16    Largest velocity-loop residual, relative to the size of its terms
   toggle_angles = "none: coupler and rocker are never collinear"    Toggle crank angles (coupler and rocker collinear, μ = 0): the limits of the crank's assemblable range
   limit_positions = "θ₂ = 32.66° with θ₄ = 86.704°; θ₂ = 220.95° with θ₄ = 141.49°"    Crank and coupler collinear (the rocker's dead-centre positions)
-  omega3_pk = 2.6976 rad/s    Peak coupler angular velocity
-  omega_out_pk = 3.5435 rad/s    Peak output (rocker) angular velocity
-  alpha3_pk = 22.724 rad/s²    Peak coupler angular acceleration
-  alpha_out_pk = 31.599 rad/s²    Peak output (rocker) angular acceleration
-  input_torque = 2.2654 N·m    Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)
-  output_motion = 0.35435 m/s    Peak speed of the output pin at the rocker length c (mech.output_motion; a kinematic proxy for F1 only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)
-  peak_accel = 3.1625 m/s²    Peak acceleration of the output pin (mech.peak_accel)
-  follower_force = 43.476 N    Peak force perpendicular to the rocker at the output pin, the drive force of the output (mech.follower_force)
-  F_pin_pk = 53.69 N    Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings (mech.F_pin_pk → M4, M5)
-  T_rms_in = 1.3744 N·m    RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)
-  P_mean = 7.6496 W    Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
-  u_mu = 0.82575    Required against smallest transmission angle
+  omega3_pk = 2.70 rad/s    Peak coupler angular velocity
+  omega_out_pk = 3.54 rad/s    Peak output (rocker) angular velocity
+  alpha3_pk = 22.72 rad/s²    Peak coupler angular acceleration
+  alpha_out_pk = 31.60 rad/s²    Peak output (rocker) angular acceleration
+  u_mu = 0.83    Required against smallest transmission angle (governing)
 
-6. CHECKS (governing first)
-  PASS  Transmission angle μ_min at or above the required minimum: u_mu = 0.82575 vs u_mu ≤ 1  utilisation 0.826  « Transmission angle
-  PASS  Loop-closure residual below 1e-9 mm at every step: max residual = 9.3095e-14 mm vs < 1e-9 mm  utilisation 0  « Self-consistency
-  PASS  Velocity-loop residual below 1e-8 of the size of its terms: max residual = 2.1412e-16 vs < 1e-8  utilisation 0  « Self-consistency
+6. Checks (governing first)
+  PASS  Transmission angle μ_min at or above the required minimum: u_mu = 0.83 vs u_mu ≤ 1  utilisation 0.83  « Transmission angle
+  PASS  Loop-closure residual below 1e-9 mm at every step: max residual = 9.3095e-14 mm vs < 1e-9 mm  « Self-consistency
+  PASS  Velocity-loop residual below 1e-8 of the size of its terms: max residual = 2.1412e-16 vs < 1e-8  « Self-consistency
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
-  Template: mech.mechanism@1.2.1
+8. Verification
+  Template: mech.mechanism@1.2.2
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 16/16
   Test run: —
+
+9. References
+  1. Norton, Design of Machinery Ch. 4, 6, 7 — Position, velocity and acceleration analysis; transmission angle; Grashof condition
+  2. Uicker, Pennock and Shigley, Theory of Machines and Mechanisms Ch. 4–6 — Loop-closure position analysis; velocity and acceleration of planar linkages

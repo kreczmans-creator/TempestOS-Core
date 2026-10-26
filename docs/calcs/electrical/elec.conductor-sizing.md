@@ -43,6 +43,6 @@ u_Ib = 8.2834 A / 10 A = 0.82834
 u_In = 10 A / 12.402 A = 0.8063
 I2 = 1.45 × 10 A = 14.5 A
 u_I2 = 14.5 A / (1.45 × 12.402 A) = 0.8063
-Governing: PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.82834 vs u_Ib ≤ 1  utilisation 0.828  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+Governing: PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.83 vs u_Ib ≤ 1  utilisation 0.83  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 ```
 <!-- hand-arithmetic:end -->

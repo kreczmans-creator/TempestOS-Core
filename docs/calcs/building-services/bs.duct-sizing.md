@@ -31,6 +31,6 @@ dp_s1 = 11.152 + 18.814 + 0 = 29.966 Pa
 D_s2 = target 573.91 mm rounded up to 50 mm = 600 mm
 v_s2 = 2 / 0.28274 = 7.0736 m/s
 … 37 more step(s) on the sheet
-Governing: PASS  Velocity ≤ limit: u_v = 0.88419 vs u_v ≤ 1  utilisation 0.884
+Governing: PASS  Velocity ≤ limit: u_v = 0.88 vs u_v ≤ 1  utilisation 0.88
 ```
 <!-- hand-arithmetic:end -->

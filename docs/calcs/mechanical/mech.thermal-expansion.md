@@ -23,6 +23,6 @@ F = 0.94 mm × 50 kN/mm = 47000 N
 sigma = −47000 N / 500 mm² = -94 MPa
 delta = 1.44 mm − 47000 N / 50 kN/mm = 0.5 mm
 u = abs(-94 MPa) / 150 MPa = 0.62667
-Governing: PASS  Thermal stress against allowable: u = 0.62667 vs u ≤ 1  utilisation 0.627
+Governing: PASS  Thermal stress against allowable: u = 0.63 vs u ≤ 1  utilisation 0.63
 ```
 <!-- hand-arithmetic:end -->

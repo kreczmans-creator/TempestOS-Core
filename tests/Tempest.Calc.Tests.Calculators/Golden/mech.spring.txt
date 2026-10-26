@@ -1,17 +1,13 @@
 CALCULATION SHEET — DRAFT
 Project: GOLDEN
 Calc ID: mech.spring    Revision: A
-Title: Helical springs: compression, extension, torsion
+Title: Helical springs
 
-1. SCOPE AND METHOD
+1. Scope and method
 A cylindrical helical spring of round wire, cold-coiled, with a linear characteristic: compression (rate, working points, solid length by end type, stress at the working points and at solid, buckling, Goodman fatigue, surge frequency), extension (the same with the initial tension and the hook stresses) or torsion (rate with the legs, curvature-corrected bending stress, wound diameter and body length).
 Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n + (l₁ + l₂)/(3π·D) (torsion) Spring stress: τ_k = k_c·8·F·D/(π·d³), k_c = (C + 0.5)/(C − 0.75) (Bergsträsser) or (4C − 1)/(4C − 4) + 0.615/C (Wahl); torsion σ = q·32·M/(π·d³) with q = (C + 0.07)/(C − 0.75) (EN 13906-3, the default) or K_i = (4C² − C − 1)/(4C·(C − 1)) (Shigley) Solid length (compression): n_t = n + e_n; EN 13906-1 form L_s = d_max·(n_t + e_s) with (e_n, e_s) = (0, 1) plain, (1, 0) plain and ground, (2, 1.5) squared (closed, unground), (2, 0) squared and ground, and the minimum coil clearance S_a = (0.0015·D²/d + 0.1·d)·n checked at the working length (L₂ ≥ L_s + S_a); Shigley form L_s = d·(n_t + e_s) with e_s = 1 for squared; pitch p = (L₀ − a·d)/(n + b) Extension spring hook stresses: F = F₀ + k·s; hook bending σ_A = F·[K_A·16·D/(π·d³) + 4/(π·d²)], K_A = (4C₁² − C₁ − 1)/(4C₁·(C₁ − 1)), C₁ = 2r₁/d; hook torsion τ_B = K_B·8·F·D/(π·d³), K_B = (4C₂ − 1)/(4C₂ − 4), C₂ = 2r₂/d Buckling (compression): λ_eff = ν·L₀/D; y_cr = L₀·C₁′·[1 − √(1 − C₂′/λ_eff²)], C₁′ = E/(2(E − G)), C₂′ = 2π²(E − G)/(2G + E); stable at any deflection when λ_eff² < C₂′ Fatigue (Goodman, as M4): 1/n_f = a/S_e + m/S_u with a = (x₂ − x₁)/2, m = (x₂ + x₁)/2 of the stresses at the two working points; S_u = f_su·R_m in shear, R_m in bending; R_m typed or R_m = A/d^m from a W3 material (A in MPa, d in mm) Surge frequency: f_n = (d/(2π·n·D²))·√(G/(2ρ)); warning when f_n/f_op < 13 Torsion body: D_w = D·n/(n + φ/2π); L_w = d·(n + 1 + φ/2π)
-  Ref: EN 13906-1 Calculation of compression springs — Rate, stress correction, solid length, buckling, fatigue, surge
-  Ref: EN 13906-2 Calculation of extension springs — Rate, initial tension, hook stress
-  Ref: EN 13906-3 Calculation of torsion springs — Rate, bending stress with curvature correction
-  Ref: Shigley's Mechanical Engineering Design 10th ed., Ch. 10 — Helical springs: end geometry, buckling, critical frequency, extension and torsion springs
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Kind of spring | Compression |  | manual | any
   corr | Stress correction factor k_c for the shear stress | Bergsträsser |  | manual | any
@@ -32,13 +28,13 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   s_1 | Deflection at working point 1 (deflections) | 2 | mm | manual | 0 … 1000 mm
   s_2 | Deflection at working point 2 (deflections) | 8 | mm | manual | 0 … 1000 mm
   F_0 | Initial tension (extension) | 10 | N | manual | 0 … 5000 N
-  M_1 | Torque at working point 1 (torsion, loads) | 0.05 | N*m | manual | 0 … 100 N*m
-  M_2 | Torque at working point 2 (torsion, loads) | 0.15 | N*m | manual | 0 … 100 N*m
-  phi_1 | Angle at working point 1 (torsion, deflections) | 5 | deg | manual | 0 … 1080 deg
-  phi_2 | Angle at working point 2 (torsion, deflections) | 15 | deg | manual | 0 … 1080 deg
+  M_1 | Torque at working point 1 (torsion, loads) | 0.05 | N·m | manual | 0 … 100 N·m
+  M_2 | Torque at working point 2 (torsion, loads) | 0.15 | N·m | manual | 0 … 100 N·m
+  phi_1 | Angle at working point 1 (torsion, deflections) | 5 | ° | manual | 0 … 1080 °
+  phi_2 | Angle at working point 2 (torsion, deflections) | 15 | ° | manual | 0 … 1080 °
   G | Shear modulus | 80 | GPa | manual | 20 … 100 GPa
   E | Young's modulus | 206 | GPa | manual | 50 … 250 GPa
-  rho | Density | 7850 | kg/m^3 | manual | 1000 … 20000 kg/m^3
+  rho | Density | 7850 | kg/m³ | manual | 1000 … 20000 kg/m³
   rm_source | Where R_m(d) comes from: typed (no default: the wire certificate or your wire standard) or the curve R_m = A/d^m of a W3 material | Typed R_m(d) |  | manual | any
   Rm | Tensile strength of the wire at this diameter R_m(d), typed (no default) | 1800 | MPa | manual | 300 … 3500 MPa
   f_tau | Permissible shear stress as a fraction of R_m (generic textbook default; replace with the licensed EN 13906 value) | 0.45 |  | manual | 0.2 … 0.8
@@ -50,7 +46,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   n_f_req | Required Goodman safety factor | 1.2 |  | manual | 1 … 5
   f_op | Operating (excitation) frequency | 10 | Hz | manual | 0 … 1000 Hz
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Linear characteristic: the rate is constant between the working points; no progressive or conical spring, no variable pitch. (Cold-coiled round wire up to 20 mm.)
   A2. Active coils n are as entered; end coils are accounted for only in the solid length (and the pitch) by the end type; the hook and leg flexibility is in the rate only for the torsion legs. (Shigley 10th ed. Ch. 10, geometry of the ends.)
   A3. Solid length: the EN 13906-1 form (default) uses the maximum wire diameter d_max, adds the 1.5 d of an unground squared end and checks the minimum coil clearance S_a at the working length L₂; plain ends have no EN row and keep the geometric form. The Shigley form (nominal d, no clearance) is selectable. (EN 13906-1 relations written in own notation, to be checked against the owner's copy; Shigley 10th ed. Table 10-1.)
@@ -60,7 +56,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   A7. Extension: hook fatigue and the hook shape beyond its two radii are not assessed; the initial tension is a force the user enters. (Shigley 10th ed. Ch. 10, extension springs.)
   A8. Surge is the first natural frequency of a spring with both ends fixed; a spring with one end free has half of it. (Shigley 10th ed. Ch. 10, critical frequency.)
 
-4. WORKING
+4. Working
   [7] C = D / d    « EN 13906-1 / EN 13906-2 / EN 13906-3
       = 16 mm / 2 mm
       = 8
@@ -210,50 +206,56 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
       = 0.41723
         Fatigue utilisation against the required factor
 
-5. RESULTS
+5. Results
+  k = 4.9 N/mm    Rate
+  F_1 = 10.0 N    Force at point 1
+  F_2 = 40.0 N    Force at point 2
+  L_s = 20.0 mm    Solid length
+  f_n = 350.85 Hz    Surge frequency
   C = 8    Spring index
-  Rm = 1800 MPa    Wire tensile strength R_m(d)
-  k = 4.8828 N/mm    Rate
+  Rm = 1800.0 MPa    Wire tensile strength R_m(d)
   k_c = 1.1724    Stress correction factor
   n_t = 10    Total coils
-  L_s = 20 mm    Solid length
-  p = 5.125 mm    Pitch
-  F_1 = 10 N    Force at point 1
-  F_2 = 40 N    Force at point 2
-  s_1 = 2.048 mm    Deflection at point 1
-  s_2 = 8.192 mm    Deflection at point 2
-  L_1 = 42.952 mm    Length at point 1
-  L_2 = 36.808 mm    Length at point 2
-  s_c = 25 mm    Travel to solid
-  F_c = 122.07 N    Force at solid
-  tau_1 = 59.711 MPa    Stress at point 1
-  tau_2 = 238.84 MPa    Stress at point 2
-  tau_c = 728.89 MPa    Stress at solid
-  u_2 = 0.29487    Utilisation at point 2
-  u_c = 0.89986    Utilisation at solid
-  u_s = 0.32768    Working deflection / travel to solid
-  d_max = 2 mm    Maximum wire diameter
-  S_a = 3.136 mm    Minimum sum of coil clearances
-  L_n = 23.136 mm    Minimum length L_n
-  s_n = 21.864 mm    Travel to L_n
-  u_n = 0.37468    Working deflection / travel to L_n
+  p = 5.1 mm    Pitch
+  s_1 = 2.0 mm    Deflection at point 1
+  s_2 = 8.2 mm    Deflection at point 2
+  L_1 = 43.0 mm    Length at point 1
+  L_2 = 36.8 mm    Length at point 2
+  s_c = 25.0 mm    Travel to solid
+  F_c = 122.1 N    Force at solid
+  tau_1 = 59.7 MPa    Stress at point 1
+  tau_2 = 238.8 MPa    Stress at point 2
+  tau_c = 728.9 MPa    Stress at solid
+  d_max = 2.0 mm    Maximum wire diameter
+  S_a = 3.1 mm    Minimum sum of coil clearances
+  L_n = 23.1 mm    Minimum length L_n
+  s_n = 21.9 mm    Travel to L_n
   y_cr = "— (stable at any deflection)"    Buckling deflection
-  u_b = 0    Deflection at point 2 / buckling deflection
   buckling = "PASS"    Buckling
-  f_n = 350.85 Hz    Surge frequency
   r_f = 35.085    Surge ratio f_n/f_op
-  u_f = 0.34769    Goodman utilisation
-  n_f = 2.8761    Goodman safety factor
+  n_f = 2.88    Goodman safety factor
+  u_2 = 0.29    Utilisation at point 2
+  u_c = 0.90    Utilisation at solid (governing)
+  u_s = 0.33    Working deflection / travel to solid
+  u_n = 0.37    Working deflection / travel to L_n
+  u_b = 0.00    Deflection at point 2 / buckling deflection
+  u_f = 0.35    Goodman utilisation
 
-6. CHECKS (governing first)
-  PASS  Static shear stress at solid length: u_c = 0.89986 vs u_c ≤ 1  utilisation 0.9  « EN 13906-1
-  PASS  Goodman fatigue against the required safety factor: u_fat = 0.41723 vs u_fat ≤ 1  utilisation 0.417  « Goodman, as M4
-  PASS  Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a: u_n = 0.37468 vs u_n ≤ 1  utilisation 0.375  « EN 13906-1
-  PASS  Working deflection within the travel to solid: u_s = 0.32768 vs u_s ≤ 1  utilisation 0.328  « EN 13906-1
+6. Checks (governing first)
+  PASS  Static shear stress at solid length: u_c = 0.90 vs u_c ≤ 1  utilisation 0.90  « EN 13906-1
+  PASS  Goodman fatigue against the required safety factor: u_fat = 0.42 vs u_fat ≤ 1  utilisation 0.42  « Goodman, as M4
+  PASS  Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a: u_n = 0.37 vs u_n ≤ 1  utilisation 0.37  « EN 13906-1
+  PASS  Working deflection within the travel to solid: u_s = 0.33 vs u_s ≤ 1  utilisation 0.33  « EN 13906-1
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: G, E, rho (Material properties); Rm (Wire tensile strength R_m(d)); f_tau, f_sigma, f_su (Permissible and ultimate stress fractions); nu_seat (End-support coefficient); S_e (Endurance strength). Enter each as one so its source, edition and licence travel with it.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are G, E, rho (Material properties); Rm (Wire tensile strength R_m(d)); f_tau, f_sigma, f_su (Permissible and ultimate stress fractions); nu_seat (End-support coefficient); S_e (Endurance strength). Enter each as one so its source, edition and licence travel with it.  [record]
 
-8. VERIFICATION
-  Template: mech.spring@1.3.1
+8. Verification
+  Template: mech.spring@1.3.2
   Known-answer cases passed: 8/8
+
+9. References
+  1. EN 13906-1 Calculation of compression springs — Rate, stress correction, solid length, buckling, fatigue, surge
+  2. EN 13906-2 Calculation of extension springs — Rate, initial tension, hook stress
+  3. EN 13906-3 Calculation of torsion springs — Rate, bending stress with curvature correction
+  4. Shigley's Mechanical Engineering Design 10th ed., Ch. 10 — Helical springs: end geometry, buckling, critical frequency, extension and torsion springs

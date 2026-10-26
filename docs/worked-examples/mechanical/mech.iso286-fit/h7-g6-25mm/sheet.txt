@@ -1,18 +1,16 @@
 CALCULATION SHEET — DRAFT
 Project: Worked example
 Calc ID: h7-g6-25mm    Revision: A
-Title: ISO 286 limits and fits
+Title: Limits and fits (ISO 286)
 Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 Hole and shaft limits for a nominal size and tolerance classes, the resulting fit (clearance, transition or interference) and its extreme values, from the ISO 286-1 formulae.
 Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^(1/3) + 0.001·D (µm). Width of the tolerance band for the grade: ITn = multiplier × i. Fundamental deviations by letter from the published formulae, and hole deviations by the general rule: EI = −es (A–H); ES = −ei + Δ (K–ZC). Limits of size of the hole and the shaft: limit = nominal + deviation. Fit extremes, the largest and smallest clearance (negative is interference): c_max = ES − ei; c_min = EI − es. Rolling-bearing bore mode: a bearing bore is not an ISO 286 hole; it has its own tolerance (ISO 492) lying below nominal, so ES and EI are entered from the bearing record instead of being computed.
-  Ref: ISO 286-1:2010 §4, §5 — Bases of tolerances, deviations and fits — tolerance grades and fundamental deviations
-  Ref: ISO 286-2:2010 — Tables of standard tolerance classes and limit deviations (not reproduced)
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   D | Nominal size | 25 | mm | drawing: DRG-SHAFT-12 rev A | 1 … 500 mm
   hole_kind | Hole: an ISO 286 class, or a rolling-bearing bore (ES and EI from the bearing record, ISO 492) | ISO 286 hole class |  | default | any
@@ -21,11 +19,11 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   shaft_letter | Shaft fundamental deviation letter | g |  | spec: DRG-SHAFT-12 note 3 | any
   shaft_grade | Shaft IT grade | 6 |  | spec: DRG-SHAFT-12 note 3 | 4 … 11
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. IT values and fundamental deviations are the unrounded results of the ISO 286-1 formulae at the geometric mean of the size step. (The tabulated values apply the standard's own rounding and may differ by about 1 µm for the clearance and transition letters (a to n). For the interference letters p to zc the tables also carry the standard's own increments and sub-steps, so the formula value can be several µm below the tabulated one (p6 at 450 mm: 62.2 against 68 µm), and the sheet warns; enter overrides from a released reference record where the tabulated value governs.)
   A2. Hole deviations follow the general rule from the shaft deviations, with Δ = ITn − IT(n−1) where the standard applies it. (Table-specific departures in the standard are not reproduced; use the overrides where they govern.)
 
-4. WORKING
+4. Working
   [7] D_step = size step (lower, upper]    « ISO 286-1 §4
       = (18, 30] mm
       = 23.238 mm
@@ -99,33 +97,39 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
       = 24.281 µm
         Mean clearance
 
-5. RESULTS
-  IT_hole = 20.918 µm    Hole tolerance
-  IT_shaft = 13.074 µm    Shaft tolerance
-  ES = 20.918 µm    Hole upper deviation
+5. Results
+  IT_hole = 20.9 µm    Hole tolerance
+  IT_shaft = 13.1 µm    Shaft tolerance
+  ES = 20.9 µm    Hole upper deviation
   EI = 0 µm    Hole lower deviation
-  es = -7.2853 µm    Shaft upper deviation
-  ei = -20.359 µm    Shaft lower deviation
-  D_hole_max = 25.021 mm    Hole maximum
-  D_hole_min = 25 mm    Hole minimum
-  d_shaft_max = 24.993 mm    Shaft maximum
-  d_shaft_min = 24.98 mm    Shaft minimum
+  es = -7.3 µm    Shaft upper deviation
+  ei = -20.4 µm    Shaft lower deviation
+  D_hole_max = 25.0 mm    Hole maximum
+  D_hole_min = 25.0 mm    Hole minimum
+  d_shaft_max = 25.0 mm    Shaft maximum
+  d_shaft_min = 25.0 mm    Shaft minimum
   fit = "clearance"    Fit kind
-  c_max = 41.277 µm    Maximum clearance
-  c_min = 7.2853 µm    Minimum clearance
-  i_max = -7.2853 µm    Maximum interference
-  i_min = -41.277 µm    Minimum interference
-  c_mean = 24.281 µm    Mean clearance
+  c_max = 41.3 µm    Maximum clearance
+  c_min = 7.3 µm    Minimum clearance
+  i_max = -7.3 µm    Maximum interference
+  i_min = -41.3 µm    Minimum interference
+  c_mean = 24.3 µm    Mean clearance
 
-6. CHECKS (governing first)
-  PASS  Fit classified: H7/g6 vs clearance  utilisation 0
+6. Checks (governing first)
+  PASS  Fit classified: H7/g6 vs clearance
 
-7. APPLICABILITY
-  WARNING input.hole_kind: hole_kind (Hole: an ISO 286 class, or a rolling-bearing bore (ES and EI from the bearing record, ISO 492)) was not entered; the template default 'ISO 286 hole class' is used.
+7. Applicability
+  None.
+  Defaults used (inputs left empty):
+    hole_kind: not entered, so the default of 'ISO 286 hole class' is used.
 
-8. VERIFICATION
-  Template: mech.iso286-fit@1.4.0
+8. Verification
+  Template: mech.iso286-fit@1.4.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3
   Test run: —
+
+9. References
+  1. ISO 286-1:2010 §4, §5 — Bases of tolerances, deviations and fits — tolerance grades and fundamental deviations
+  2. ISO 286-2:2010 — Tables of standard tolerance classes and limit deviations (not reproduced)

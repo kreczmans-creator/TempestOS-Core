@@ -1,4 +1,4 @@
-# M4 — Shaft: static, fatigue, keys, critical speed (`mech.shaft@1.3.0`)
+# M4 — Shaft: static, fatigue, keys, critical speed (`mech.shaft@1.4.0`)
 
 **In plain terms.** A shaft carries gears, pulleys and bearings, so it bends and twists, and every turn the bending stress reverses, which is why shafts fail by fatigue at shoulders and keyways. The worksheet takes the stepped shaft, its loads and torque, finds the bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections you mark, the keys, and the speed at which the shaft would whirl.
 
@@ -9,6 +9,8 @@
 **Inputs.** `segments` (x_end 1–3000 mm, d 5–300 mm, bore), `x_A`, `x_B`; `loads` (x, F_y, F_z kN, mass kg); `T` 0–50 kN·m (steady or mean torque) between `x_T1` and `x_T2` (blank: the shaft length), `w_masses` (add the weights of the carried masses and the shaft, off by default), optional `T_a` (alternating torque amplitude about it, 1.2.0), optional `T_pk` (peak torque for the yield check and the key); `n` 0–30 000 rpm; `sections` (x, K_t, K_ts, q, q_s); `S_ut` 300–2000 MPa, `S_y`, `E`, `rho` (record `shaft.material`); `finish`, `R` 50–99.9 %, `k_d`, `k_f`; `n_target` 1.2–4; `theta_max`, `y_max` (record `shaft.limits`); optional key `x_key`, `w`, `h`, `L_key`, `S_y_key`, `S_y_hub`.
 
 **Outputs.** `R_A`, `R_B`, `d_A`, `d_B`, `M_max`, `theta_A`, `theta_B`, `y_load`, `S_e`, `n_f_min`, `n_y_min`, per-section `X1…`, `n_c`, `n_c_D`, `r_c`, key `tau_key`, `sigma_key`, `L_key_req`. **Ports.** `R_A`, `R_B` → M5; `d_A`, `d_B` → M2; `n_f_min`, `n_c`. Links in: E1 torque and speed (the load torque `T_load` as `T`, the torque swing `T_alt` as `T_a`, the peak `T_pk` as `T_pk`; **not** the RMS torque `T_rms`, a thermal figure: before 1.2.0 the drive-train and mechanism-review packs bound it to `T` as a steady torque and the shaft saw no alternating torque).
+
+**Port names (C-2).** Each port is listed under its public name, `<area>.<quantity>`; the output symbol stays as its symbol and as an alias, so a link, a pack binding or an inputs file written before the rename still resolves. `R_A` = `shaft.reaction_a`; `R_B` = `shaft.reaction_b`; `d_A` = `shaft.seat_diameter_a`; `d_B` = `shaft.seat_diameter_b`; `n_f_min` = `shaft.safety_fatigue_min`; `n_c` = `shaft.speed_critical`.
 
 **Limitations.** Linear elastic; two simple supports (the bearings must be at least 1/200 of the shaft length apart, else the sheet blocks in its own words); no torsional vibration; first lateral mode only; K_t from records or fit equations, never a digitised chart.
 
@@ -35,6 +37,6 @@ X1 = x = 120 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 
 X2 = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 186.8 MPa, K_f = 1.912, K_fs = 2.8, M = 415.39 N·m, T = 300 N·m, σ_a = 88.778 MPa, τ_m = 46.947 MPa = 1.6909
 X3 = x = 180 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 300 N·m, σ_a = 79.334 MPa, τ_m = 34.616 MPa (shoulder: the side with d = 40 mm governs, of 2) = 1.9801
 … 15 more step(s) on the sheet
-Governing: PASS  Slope at the bearings against limit: u_slope = 0.8961 vs u_slope ≤ 1  utilisation 0.896
+Governing: PASS  Slope at the bearings against limit: u_slope = 0.90 vs u_slope ≤ 1  utilisation 0.90
 ```
 <!-- hand-arithmetic:end -->

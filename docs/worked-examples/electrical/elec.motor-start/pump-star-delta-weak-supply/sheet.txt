@@ -6,15 +6,11 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 The voltage dip when a three-phase induction motor starts, at the motor terminals and at the point of common coupling, from the supply impedance (a fault level or a transformer), the cable and the motor's locked-rotor impedance for a direct-on-line or star-delta start (a passive motor impedance) or a soft-start or drive start (a regulated current), by the complex potential divider; the dip is checked against a user limit (default 10 %). Also the capacitor kvar to raise the running power factor to a target, the capacitor current and the parallel-resonance order, with a warning when harmonic loads are present. Steady-state phasor model: no motor run-up dynamics, no flicker assessment, no starting-torque adequacy check.
 Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rated voltage: DOL I_LR·I_n; star-delta I_LR·I_n/3; soft starter min(k_soft·I_n, I_LR·I_n); drive k_vfd·I_n Motor starting impedance (DOL, star-delta, and a soft starter that does not reach its limit): |Z_m| = (U/√3)/I_start, for a soft starter (U/√3)/(I_LR·I_n), at the starting power factor, Z_m = |Z_m|·(cos φ_st + j sin φ_st) Regulated current (a drive; a soft starter when its fully conducting current E/|Z_s + Z_c + Z_LR| exceeds k_soft·I_n): |I| = I_start held, lagging V_m by φ; with R + jX = Z_s + Z_c, a = |I|(R cos φ + X sin φ), b = |I|(X cos φ − R sin φ): |V_m| = √(E² − b²) − a, V_pcc = V_m + I·Z_c, and Z_m = V_m/I is the equivalent impedance Source impedance: transformer |Z_T| = u_k·U²/S_n, plus an optional upstream network |Z_Q| = U²/S_kQ in series; fault level |Z_s| = c·U²/S_k or c·U/(√3·I_k); each element Z = |Z|·(1 + j·X/R)/√(1 + (X/R)²) Supply cable impedance: R = ρ_T·L/(A·n) with ρ_T = ρ_20·[1 + α(T_c − 20)], or R′·L/n; X = X′·L/n (as E3) Phasor divider for a passive motor (phase voltage E = U/√3 at 0°): I = E/(Z_s + Z_c + Z_m); V_pcc = E·(Z_c + Z_m)/(Z_s + Z_c + Z_m); V_m = E·Z_m/(Z_s + Z_c + Z_m) Voltage dip: 100·(1 − |V|/E) at the motor terminals and at the point of common coupling; checked against the limits Cable drop along V_m: dV_cab = √3·Re[I·Z_c·V̄_m/|V_m|] = √3·I·(R cos φ_st + X sin φ_st), the E3 three-phase form at the dipped current Power-factor correction: P_in = P/η (or √3·U·I_n·cos φ when I_n is entered), Q_c = P_in·(tan φ₁ − tan φ₂) with φ₁ the motor's (a drive's displacement factor with a drive), I_c = Q_c/(√3·U), I after = P_in/(√3·U·cos φ₂) Parallel resonance: S_sc = U²/|Z_s|, parallel resonance order h ≈ √(S_sc/Q_c) (|Z_s| used for X_s, so h reads 1 to 1.4 % low)
-  Ref: IEC 60909-0 cl. 5.3 — Voltage factor c and the equivalent voltage source
-  Ref: IEC 61000-3-11 scope — Limitation of voltage changes and flicker in public low-voltage systems (limits are user inputs)
-  Ref: Hughes, Electrical and Electronic Technology Ch. on AC circuits — Complex impedance and the potential divider
-  Ref: Hughes, Electrical and Electronic Technology Ch. on power factor — Power-factor correction: Q = P (tan φ₁ − tan φ₂)
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   U | Supply and motor rated voltage (line-to-line) | 400 | V | spec: Site supply SS-1: 400 V three-phase | 50 … 1000 V
   source | Source impedance from | Transformer |  | drawing: E-SCH-031 rev A | any
@@ -38,17 +34,17 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   cable_data | Cable resistance from | resistivity and area |  | spec: Cable schedule CS-31: resistivity route as E3 | any
   L_cab | Cable length, source to motor (links E4 L) | 60 | m | drawing: E-LAY-031 rev B | 0 … 1000 m
   n_par | Parallel conductors per phase | 1 |  | drawing: E-SCH-031 rev A | 1 … 6
-  A_c | Conductor cross-section (links E4 CSA) | 95 | mm^2 | spec: Cable schedule CS-31: 95 mm² copper | 1 … 1000 mm^2
-  rho_20 | Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | ohm*mm^2/m | reference: record: annealed copper 1.724e-8 Ω·m at 20 °C, derived physical constant | 0.01 … 0.05 ohm*mm^2/m
+  A_c | Conductor cross-section (links E4 CSA) | 95 | mm² | spec: Cable schedule CS-31: 95 mm² copper | 1 … 1000 mm²
+  rho_20 | Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | Ω·mm²/m | reference: record: annealed copper 1.724e-8 Ω·m at 20 °C, derived physical constant | 0.01 … 0.05 Ω·mm²/m
   alpha | Temperature coefficient of resistance | 0.00393 | 1/K | reference: record: annealed copper, 0.00393 per K at 20 °C, derived physical constant | 0.003 … 0.0045 1/K
-  T_c | Conductor temperature for the resistance | 70 | degC | assumption: Cable warm from the running load before a restart. | 20 … 90 degC
-  X_km | Reactance per km per conductor | 0.08 | ohm/km | reference: record: cable reactance 0.08 Ω/km (generic value as the E3 default; replace with the cable datasheet figure) | 0 … 1 ohm/km
+  T_c | Conductor temperature for the resistance | 70 | °C | assumption: Cable warm from the running load before a restart. | 20 … 90 °C
+  X_km | Reactance per km per conductor | 0.08 | Ω/km | reference: record: cable reactance 0.08 Ω/km (generic value as the E3 default; replace with the cable datasheet figure) | 0 … 1 Ω/km
   dip_limit | Dip limit at the motor terminals | 10 | % | spec: Machine specification MS-3: motor terminal voltage not below 90 % while starting | 1 … 30 %
   dip_limit_pcc | Dip limit at the point of common coupling (when the network operator sets one) | 7 | % | spec: Connection agreement CA-2: 7 % at the point of common coupling (test value invented for this example) | 0.5 … 20 %
   cos_phi2 | Target power factor after correction | 0.95 |  | spec: Connection agreement CA-2: power factor not below 0.95 | 0.8 … 1
   harmonics | Harmonic loads present on the supply | no |  | assumption: No drives or other harmonic loads on the supply. | any
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. The supply is a stiff source behind the stated impedance (voltage E = U/√3 before the start). A direct-on-line or star-delta start, and a soft starter that does not reach its current limit at the dipped voltage (full conduction), draw current through a passive winding: a constant impedance equal to the locked-rotor impedance at rated voltage and the starting power factor, so the current falls with the dipped voltage. A soft starter that reaches its limit and a drive regulate the current: they hold |I| = I_start whatever the voltage, so the dip is deeper than the passive model gives; the current phasor lags the voltage at the starter or drive input by the stated power factor. (Standard steady-state starting-dip screening model; the regulated case is solved in closed form.)
   A2. The dip is the steady-state phasor value at the instant of locked rotor; the current falls as the motor accelerates, so the dip is the worst case. No other load is running on the supply and no run-up dynamics, flicker (Pst) or tap-changer action is assessed. (Stated limitation.)
   A3. A star-delta start draws one third of the direct-on-line current at rated voltage (and one third of the starting torque, which is not checked here); the current spike at the star-to-delta changeover is not modelled. (Star-delta connection ratio.)
@@ -58,10 +54,10 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   A7. The source impedance should be taken at the minimum fault level (the deepest dip); a transformer alone is an infinite bus behind it, which understates the dip by a few per cent and overstates the resonance order unless the upstream network fault level S_kQ is entered. (Stated limitation.)
   A8. With a drive, the power-factor correction starts from the drive's displacement factor, not the motor's, the drive is itself a harmonic load, and the 'torque factor' and the voltage at the starter or drive input (not the motor terminals) are reported only for what they are. (Regulated-current starters.)
   A9. XR_Q (Upstream network X/R ratio) is taken as 10. (Network X/R taken as 10, mostly reactive.)
-  A10. T_c (Conductor temperature for the resistance) is taken as 70 degC. (Cable warm from the running load before a restart.)
+  A10. T_c (Conductor temperature for the resistance) is taken as 70 °C. (Cable warm from the running load before a restart.)
   A11. harmonics (Harmonic loads present on the supply) is taken as no. (No drives or other harmonic loads on the supply.)
 
-4. WORKING
+4. Working
   [10] I_rated = P / (sqrt(3) * U * cos_phi * eta)
       = 160 kW / (sqrt(3) × 400 V × 0.88 × 0.95)
       = 276.24 A
@@ -239,45 +235,52 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
       = 0.84699
         Point-of-common-coupling dip against the limit
 
-5. RESULTS
-  Z_src = 0.023414 ohm    Source impedance (magnitude)
-  Z_m = 0.35829 ohm    Motor starting impedance (magnitude)
-  I_rated = 276.24 A    Motor rated current
+5. Results
+  start_dip = 8.1 %    Voltage dip at the motor terminals
+  kvar = 35.55 kvar    Capacitor kvar to the target power factor
   I_start = 644.57 A    Starting current at rated voltage
+  I_rated = 276.24 A    Motor rated current
+  Z_src = 0.0234 Ω    Source impedance (magnitude)
+  Z_m = 0.3583 Ω    Motor starting impedance (magnitude)
   S_start = 446.57 kVA    Starting apparent power
   I_dip = 592.06 A    Starting current at the dipped voltage
-  V_m = 367.41 V    Voltage at the motor terminals while starting
-  V_pcc = 376.28 V    Point of common coupling voltage while starting
-  start_dip = 8.147 %    Voltage dip at the motor terminals
-  dip_pcc = 5.9289 %    Voltage dip at the point of common coupling
-  dV_cab = 8.7035 V    Cable drop along the starting voltage
+  V_m = 367.4 V    Voltage at the motor terminals while starting
+  V_pcc = 376.3 V    Point of common coupling voltage while starting
+  dip_pcc = 5.9 %    Voltage dip at the point of common coupling
+  dV_cab = 8.7 V    Cable drop along the starting voltage
   k_T = 0.8437    Torque factor at the dipped voltage
-  u_dip = 0.8147    Dip utilisation at the motor terminals
   P_in = 168.42 kW    Motor input power at rated load
-  kvar = 35.547 kvar    Capacitor kvar to the target power factor
-  I_cap = 51.307 A    Capacitor current
+  I_cap = 51.31 A    Capacitor current
   I_run1 = 276.24 A    Running current before correction
   I_run2 = 255.89 A    Running current after correction
-  S_sc = 6.8334 MVA    Short-circuit apparent power at the bank
+  S_sc = 6.833 MVA    Short-circuit apparent power at the bank
   h_res = 13.865    Parallel resonance order
-  u_dip_pcc = 0.84699    Point-of-common-coupling dip utilisation
+  u_dip = 0.81    Dip utilisation at the motor terminals
+  u_dip_pcc = 0.85    Point-of-common-coupling dip utilisation (governing)
 
-6. CHECKS (governing first)
-  PASS  Point-of-common-coupling dip within the limit: u_dip_pcc = 0.84699 vs u_dip_pcc ≤ 1  utilisation 0.847  « IEC 61000-3-11 scope
-  PASS  Motor-terminal dip within the limit: u_dip = 0.8147 vs u_dip ≤ 1  utilisation 0.815
+6. Checks (governing first)
+  PASS  Point-of-common-coupling dip within the limit: u_dip_pcc = 0.85 vs u_dip_pcc ≤ 1  utilisation 0.85  « IEC 61000-3-11 scope
+  PASS  Motor-terminal dip within the limit: u_dip = 0.81 vs u_dip ≤ 1  utilisation 0.81
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: X_km (Cable resistance and reactance per kilometre); rho_20, alpha (Conductor material constants); I_LR_r, cos_phi_st (Motor starting data); u_k, XR (Transformer impedance data). Enter each as one so its source, edition and licence travel with it.
-  WARNING input.fault_basis: fault_basis (Fault level given as) was not entered; the template default 'Fault level S_k (MVA)' is used.
-  WARNING input.S_k: S_k (Three-phase fault level at the point of supply (use the minimum fault level, which gives the deepest dip)) was not entered; the template default 10 MVA is used.
-  WARNING input.I_k: I_k (Three-phase fault current at the point of supply (links E5 I_k3)) was not entered; the template default 15 kA is used.
-  WARNING input.k_soft: k_soft (Soft-starter current limit as a multiple of the rated current) was not entered; the template default 3.5 is used.
-  WARNING input.k_vfd: k_vfd (Drive line-current limit as a multiple of the rated current) was not entered; the template default 1.5 is used.
-  WARNING input.cos_phi_vfd: cos_phi_vfd (Drive line displacement power factor while starting) was not entered; the template default 0.95 is used.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are X_km (Cable resistance and reactance per kilometre); rho_20, alpha (Conductor material constants); I_LR_r, cos_phi_st (Motor starting data); u_k, XR (Transformer impedance data). Enter each as one so its source, edition and licence travel with it.  [record]
+  Defaults used (inputs left empty):
+    fault_basis: not entered, so the default of 'Fault level S_k (MVA)' is used.
+    S_k: not entered, so the default of 10 MVA is used.
+    I_k: not entered, so the default of 15 kA is used.
+    k_soft: not entered, so the default of 3.5 is used.
+    k_vfd: not entered, so the default of 1.5 is used.
+    cos_phi_vfd: not entered, so the default of 0.95 is used.
 
-8. VERIFICATION
+8. Verification
   Template: elec.motor-start@1.2.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 8/8
   Test run: —
+
+9. References
+  1. IEC 60909-0 cl. 5.3 — Voltage factor c and the equivalent voltage source
+  2. IEC 61000-3-11 scope — Limitation of voltage changes and flicker in public low-voltage systems (limits are user inputs)
+  3. Hughes, Electrical and Electronic Technology Ch. on AC circuits — Complex impedance and the potential divider
+  4. Hughes, Electrical and Electronic Technology Ch. on power factor — Power-factor correction: Q = P (tan φ₁ − tan φ₂)

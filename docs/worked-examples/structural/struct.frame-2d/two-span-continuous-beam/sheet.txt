@@ -6,14 +6,11 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.
 Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L and bending EI/L³ terms. End releases (pins) are taken out by static condensation; supports remove freedoms or add spring stiffness. Span loads become equivalent nodal loads, the exact fixed-end forces. Displacements, by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism): K u = F. Internal forces and deflections follow from the member end actions and Macaulay functions of the span loads. Extremes are found at stations along each member, plus the zero-shear and zero-slope points found by bisection.
-  Ref: Hibbeler, Structural Analysis Ch. 16 — Plane frame analysis using the stiffness method
-  Ref: Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
-  Ref: BS EN 1990 6.4.3 — Combinations of actions (user-entered factors)
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   E | Default modulus of elasticity | 210 | GPa | spec: BS EN 1993-1-1 3.2.6: E = 210 GPa | 1 … 500 GPa
   nodes | Nodes | 3 row(s) |  | drawing: DRG-FL-201 rev A | any
@@ -36,14 +33,14 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   report | Combination to report in detail (blank = first) | ULS |  | assumption: ULS reported in detail; SLS in the envelope. | any
   n_div | Stations per member | 24 |  | assumption: 24 stations per span. | 4 … 100
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Linear elastic, small displacements, first order; no shear deformation, no P–Δ, no buckling. (Euler–Bernoulli direct stiffness.)
   A2. Members are prismatic between nodes and connect rigidly unless a release is stated; a release transmits no moment at that end. (Static condensation of the released rotation.)
   A3. Distributed loads act perpendicular to the member unless marked as gravity loads, which act in global −y per metre of member length. (Load table convention.)
   A4. report (Combination to report in detail (blank = first)) is taken as ULS. (ULS reported in detail; SLS in the envelope.)
   A5. n_div (Stations per member) is taken as 24. (24 stations per span.)
 
-4. WORKING
+4. Working
   [4] n_nodes = nodes
       = 3
       = 3
@@ -221,57 +218,62 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
       = 11.321 mm
         Maximum deflection over all combinations
 
-5. RESULTS
+5. Results
   R1_x = 0 kN    R_x node 1
-  R1_y = 64.8 kN    R_y node 1
+  R1_y = 64.80 kN    R_y node 1
   R1_m = 0 kN·m    M node 1
   R1_x_abs = 0 kN    |R_x| node 1
   R1_m_abs = 0 kN·m    |M| node 1
+  N_e1 = 0 kN    N, member 1
+  V_e1 = 108.00 kN    |V| max, member 1
+  M_abs_e1 = 129.60 kN·m    |M| max, member 1
+  M_max_e1 = 72.90 kN·m    M max, member 1
+  M_min_e1 = -129.60 kN·m    M min, member 1
+  V_e2 = 108.00 kN    |V| max, member 2
+  M_abs_e2 = 129.60 kN·m    |M| max, member 2
+  sum_R_y = 345.60 kN    Σ R_y
+  sum_R_x = 0 kN    Σ R_x
+  M_max = 72.90 kN·m    M max
+  M_min = -129.60 kN·m    M min
+  V_max = 108.00 kN    |V| max
+  N_max = 0 kN    N max (tension)
+  N_min = 0 kN    N min (compression)
+  d_max = 11.3 mm    δ max
   R2_x = 0 kN    R_x node 2
-  R2_y = 216 kN    R_y node 2
+  R2_y = 216.00 kN    R_y node 2
   R2_m = 0 kN·m    M node 2
   R2_x_abs = 0 kN    |R_x| node 2
   R2_m_abs = 0 kN·m    |M| node 2
   R3_x = 0 kN    R_x node 3
-  R3_y = 64.8 kN    R_y node 3
+  R3_y = 64.80 kN    R_y node 3
   R3_m = 0 kN·m    M node 3
   R3_x_abs = 0 kN    |R_x| node 3
   R3_m_abs = 0 kN·m    |M| node 3
-  sum_R_y = 345.6 kN    Σ R_y
-  sum_R_x = 0 kN    Σ R_x
-  M_max_e1 = 72.9 kN·m    M max, member 1
-  M_min_e1 = -129.6 kN·m    M min, member 1
-  M_abs_e1 = 129.6 kN·m    |M| max, member 1
-  V_e1 = 108 kN    |V| max, member 1
-  N_e1 = 0 kN    N, member 1
-  d_e1 = 11.321 mm    δ max, member 1
-  M_max_e2 = 72.9 kN·m    M max, member 2
-  M_min_e2 = -129.6 kN·m    M min, member 2
-  M_abs_e2 = 129.6 kN·m    |M| max, member 2
-  V_e2 = 108 kN    |V| max, member 2
+  d_e1 = 11.3 mm    δ max, member 1
+  M_max_e2 = 72.90 kN·m    M max, member 2
+  M_min_e2 = -129.60 kN·m    M min, member 2
   N_e2 = 0 kN    N, member 2
-  d_e2 = 11.321 mm    δ max, member 2
-  M_max = 72.9 kN·m    M max
+  d_e2 = 11.3 mm    δ max, member 2
   x_Mmax = 2.25 m    x of M max
-  M_min = -129.6 kN·m    M min
-  V_max = 108 kN    |V| max
-  N_max = 0 kN    N max (tension)
-  N_min = 0 kN    N min (compression)
-  d_max = 11.321 mm    δ max
-  M_max_env = 72.9 kN·m    M max, envelope
-  M_min_env = -129.6 kN·m    M min, envelope
-  V_max_env = 108 kN    |V| max, envelope
-  d_max_env = 11.321 mm    δ max, envelope
+  M_max_env = 72.90 kN·m    M max, envelope
+  M_min_env = -129.60 kN·m    M min, envelope
+  V_max_env = 108.00 kN    |V| max, envelope
+  d_max_env = 11.3 mm    δ max, envelope
 
-6. CHECKS (governing first)
-  No pass/fail checks in this calculation.
+6. Checks (governing first)
+  None.
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: struct.frame-2d@1.4.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 6/6
   Test run: —
+
+9. References
+  1. Hibbeler, Structural Analysis Ch. 16 — Plane frame analysis using the stiffness method
+  2. Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
+  3. BS EN 1990 6.4.3 — Combinations of actions (user-entered factors)

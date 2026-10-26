@@ -6,34 +6,31 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 The state of moist air (humidity ratio, relative humidity, dew point, wet-bulb, enthalpy, specific volume, density) from dry-bulb and one other property at a stated pressure or altitude, and one air-handling process from that state with its heat and moisture balance: sensible heating or cooling, cooling with dehumidification, steam humidification, adiabatic humidification, or mixing with a second stream.
 Saturation vapour pressure at the dry-bulb temperature, over water at or above 0 °C and over ice below: p_ws(t) by Hyland–Wexler. Moisture content (humidity ratio) of the air: W = 0.621945 p_w/(p − p_w). Relative humidity: φ = p_w/p_ws. Specific enthalpy per kilogram of dry air: h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da. Specific volume: v = 0.287042 (t + 273.15)(1 + 1.607858 W)/p. Dew point and wet-bulb temperatures, by bisection (wet-bulb from the adiabatic-saturation relation): p_ws(t_dp) = p_w. Sensible heating or cooling at constant moisture content: Q = ṁ (h₂ − h₁). Cooling with dehumidification, less the heat leaving in the condensate: Q_total = ṁ(h₁ − h₂) − ṁ_w h_w, with ṁ_w = ṁ(W₁ − W₂). Sensible and latent split of the coil load, along the path t₁ → t₂ at W₁ then W₁ → W₂ at t₂: Q_sensible = ṁ(h₁ − h(t₂, W₁)); Q_latent = ṁ(h(t₂, W₁) − h₂); SHR = Q_sensible/(Q_sensible + Q_latent). With RH_2 blank and t₂ above the entering dew point the coil is dry: W₂ = W₁, no condensate, sensible only. Steam humidification: h₂ = h₁ + (W₂ − W₁) h_steam. Adiabatic (spray) humidification, at constant enthalpy: h₂ = h₁. Mixing two airstreams, weighted by dry-air mass flow: W_mix = Σṁ W/Σṁ; h_mix = Σṁ h/Σṁ.
-  Ref: ASHRAE Handbook — Fundamentals Ch. 1 — Psychrometrics (ideal-gas relations, processes)
-  Ref: Hyland & Wexler, ASHRAE Trans. 89(2A), 1983 — Saturation pressure of water and ice
-  Ref: CIBSE Guide C Section 1 — Properties of humid air (principles)
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   altitude | Altitude (used when pressure is blank) | 120 | m | drawing: Site survey SRV-01: 120 m AOD | -500 … 5000 m
-  t_db | Dry-bulb temperature | 22 | degC | spec: Return air 22 °C / 40 % | -40 … 60 degC
+  t_db | Dry-bulb temperature | 22 | °C | spec: Return air 22 °C / 40 % | -40 … 60 °C
   known | Second known property | relative humidity |  | assumption: RH given. | any
   RH | Relative humidity | 40 |  | spec: Return air 22 °C / 40 % | 0 … 100
   m_da | Dry-air mass flow | 3 | kg/s | spec: AHU-02 return 3 kg/s | 0 … 1000 kg/s
   process | Process | adiabatic mixing |  | assumption: Mixing box. | any
   h_steam | Steam enthalpy (steam humidification) | 2676 |  | default | 2500 … 3000
-  t_db_b | Second stream dry-bulb (mixing) | -3 | degC | spec: CIBSE Guide A winter design −3 °C / 90 %, assumed | -40 … 60 degC
+  t_db_b | Second stream dry-bulb (mixing) | -3 | °C | spec: CIBSE Guide A winter design −3 °C / 90 %, assumed | -40 … 60 °C
   RH_b | Second stream relative humidity (mixing) | 90 |  | spec: Winter design condition | 0 … 100
   m_da_b | Second stream dry-air mass flow (mixing) | 1 | kg/s | spec: AHU-02 minimum outdoor air 1 kg/s | 0 … 1000 kg/s
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Moist air is an ideal mixture of ideal gases; the enhancement factor is taken as 1. (ASHRAE Fundamentals Ch. 1 ideal-gas relations.)
   A2. Condensate leaves at the coil leaving dry-bulb; steam adds enthalpy h_steam at negligible mass of dry air. (Process conventions.)
   A3. Adiabatic humidification follows a line of constant enthalpy (close to constant wet-bulb). (Evaporative process idealisation.)
   A4. known (Second known property) is taken as relative humidity. (RH given.)
   A5. process (Process) is taken as adiabatic mixing. (Mixing box.)
 
-4. WORKING
+4. Working
   [2] p = 101.325 (1 − 2.25577e-5 z)^5.2559    « ASHRAE Ch. 1 eq. 3
       = z = 120 m
       = 99.892 kPa
@@ -175,51 +172,58 @@ Saturation vapour pressure at the dry-bulb temperature, over water at or above 0
       = 1.2003 kg/m³
         Moist-air density, state 2
 
-5. RESULTS
-  t_1_out = 22 degC    Dry-bulb 1
-  p_ws_1 = 2.6448 kPa    p_ws 1
-  p_w_1 = 1.0579 kPa    p_w 1
+5. Results
+  t_1_out = 22.0 °C    Dry-bulb 1
+  p_ws_1 = 2.6 kPa    p_ws 1
+  p_w_1 = 1.1 kPa    p_w 1
   W_1 = 6.6572    W 1 (g/kg)
   RH_1 = 40    RH 1 (%)
-  phi_1 = 40 %    φ 1 (RH as a % quantity, for linking)
-  t_dp_1 = 7.7942 degC    Dew point 1
-  t_wb_1 = 13.853 degC    Wet-bulb 1
+  phi_1 = 40.0 %    φ 1 (RH as a % quantity, for linking)
+  t_dp_1 = 7.8 °C    Dew point 1
+  t_wb_1 = 13.9 °C    Wet-bulb 1
   h_1 = 39.054    h 1 (kJ/kg)
   v_1 = 0.8572 m³/kg    v 1
-  rho_1 = 1.1744 kg/m³    ρ 1
-  t_b_out = -3 degC    Dry-bulb b
-  p_ws_b = 0.47606 kPa    p_ws b
-  p_w_b = 0.42845 kPa    p_w b
+  rho_1 = 1.2 kg/m³    ρ 1
+  t_b_out = -3.0 °C    Dry-bulb b
+  p_ws_b = 0.48 kPa    p_ws b
+  p_w_b = 0.43 kPa    p_w b
   W_b = 2.6791    W b (g/kg)
   RH_b = 90    RH b (%)
-  phi_b = 90 %    φ b (RH as a % quantity, for linking)
-  t_dp_b = -4.2454 degC    Dew point b
-  t_wb_b = -3.4949 degC    Wet-bulb b
+  phi_b = 90.0 %    φ b (RH as a % quantity, for linking)
+  t_dp_b = -4.2 °C    Dew point b
+  t_wb_b = -3.5 °C    Wet-bulb b
   h_b = 3.6675    h b (kJ/kg)
-  v_b = 0.77963 m³/kg    v b
-  rho_b = 1.2861 kg/m³    ρ b
-  t_2_out = 15.784 degC    Dry-bulb 2
-  p_ws_2 = 1.7935 kPa    p_ws 2
-  p_w_2 = 0.90129 kPa    p_w 2
+  v_b = 0.7796 m³/kg    v b
+  rho_b = 1.3 kg/m³    ρ b
+  t_2_out = 15.8 °C    Dry-bulb 2
+  p_ws_2 = 1.8 kPa    p_ws 2
+  p_w_2 = 0.90 kPa    p_w 2
   W_2 = 5.6627    W 2 (g/kg)
   RH_2 = 50.253    RH 2 (%)
-  phi_2 = 50.253 %    φ 2 (RH as a % quantity, for linking)
-  t_dp_2 = 5.4665 degC    Dew point 2
-  t_wb_2 = 10.314 degC    Wet-bulb 2
+  phi_2 = 50.3 %    φ 2 (RH as a % quantity, for linking)
+  t_dp_2 = 5.5 °C    Dew point 2
+  t_wb_2 = 10.3 °C    Wet-bulb 2
   h_2 = 30.207    h 2 (kJ/kg)
-  v_2 = 0.83782 m³/kg    v 2
-  rho_2 = 1.2003 kg/m³    ρ 2
-  m_da_3 = 4 kg/s    Mixed mass flow
+  v_2 = 0.8378 m³/kg    v 2
+  rho_2 = 1.2 kg/m³    ρ 2
+  m_da_3 = 4.000 kg/s    Mixed mass flow
 
-6. CHECKS (governing first)
-  No pass/fail checks in this calculation.
+6. Checks (governing first)
+  None.
 
-7. APPLICABILITY
-  WARNING input.h_steam: h_steam (Steam enthalpy (steam humidification)) was not entered; the template default 2676 is used.
+7. Applicability
+  None.
+  Defaults used (inputs left empty):
+    h_steam: not entered, so the default of 2676 is used.
 
-8. VERIFICATION
+8. Verification
   Template: bs.psychrometrics@1.3.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4
   Test run: —
+
+9. References
+  1. ASHRAE Handbook — Fundamentals Ch. 1 — Psychrometrics (ideal-gas relations, processes)
+  2. Hyland & Wexler, ASHRAE Trans. 89(2A), 1983 — Saturation pressure of water and ice
+  3. CIBSE Guide C Section 1 — Properties of humid air (principles)

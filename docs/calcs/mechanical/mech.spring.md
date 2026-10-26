@@ -1,4 +1,4 @@
-# M7 — Helical springs: compression, extension, torsion (`mech.spring@1.3.1`)
+# M7 — Helical springs: compression, extension, torsion (`mech.spring@1.3.2`)
 
 **In plain terms.** A coil spring stores energy by twisting its wire, so its stiffness comes from the wire diameter, the coil diameter and the number of turns, and its stress is highest on the inside of the coil. The worksheet takes the spring geometry and working loads, finds the rate and the stress at each working point and at solid length, and checks them against the wire's allowable stress, with a surge check (the coil ringing at its own frequency) for compression, extension and torsion springs.
 
@@ -48,6 +48,6 @@ s_c = 70 mm − 33 mm = 37 mm
 F_c = 6.4535 N/mm × 37 mm = 238.78 N
 s_1 = 60 N / 6.4535 N/mm = 9.2974 mm
 … 23 more step(s) on the sheet
-Governing: PASS  Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a: u_n = 0.87965 vs u_n ≤ 1  utilisation 0.88  « EN 13906-1
+Governing: PASS  Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a: u_n = 0.88 vs u_n ≤ 1  utilisation 0.88  « EN 13906-1
 ```
 <!-- hand-arithmetic:end -->

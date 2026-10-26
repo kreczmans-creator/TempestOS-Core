@@ -76,7 +76,7 @@ def main() -> int:
           "example's `inputs.json` (Import inputs… on the worksheet form; the path is given) or type the inputs below. Run it. "
           "Each expected output must match to the digits shown. The governing check must read as stated. A table input lists its "
           "rows under it (for example `sizes[1]`).", "",
-          "Units are as the form shows them. `bar a` and `bar g` are absolute and gauge bar. A value marked `default` is the form's "
+          "Units are written as symbols (kN·m, m², °C, Ω), as the sheet prints them; the form's unit list spells the same unit kN*m, m^2, degC, ohm. `bar a` and `bar g` are absolute and gauge bar. A value marked `default` is the form's "
           "own default: leave it as it opens.", "", "## Contents", ""]
     for disc, title in DISCIPLINES:
         ts = [t for d, t in templates if d == disc]

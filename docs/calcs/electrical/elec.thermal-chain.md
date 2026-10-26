@@ -27,6 +27,6 @@ T_3 = 90 °C − 5 K = 85 degC
 dT_m = 125 degC − 102.5 degC = 22.5 K
 u = 62.5 K / (125 degC − 40 degC) = 0.73529
 R_max = (125 degC − 40 degC) / 25 W = 3.4 K/W
-Governing: PASS  Source temperature T_1 ≤ T_max: u = 0.73529 vs u ≤ 1  utilisation 0.735  « Çengel §15-2
+Governing: PASS  Source temperature T_1 ≤ T_max: u = 0.74 vs u ≤ 1  utilisation 0.74  « Çengel §15-2
 ```
 <!-- hand-arithmetic:end -->

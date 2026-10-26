@@ -35,6 +35,6 @@ u_b6 = 140 mm / 600 mm = 0.23333
 u_bend = 3 bend(s) = 0.35
 wg = 1.18 kg/m × 9.80665 m/s^2 = 11.572 N/m
 … 29 more step(s) on the sheet
-Governing: PASS  Fill against the space factor: u_fill = 0.895 vs u_fill ≤ 1  utilisation 0.895
+Governing: PASS  Fill against the space factor: u_fill = 0.90 vs u_fill ≤ 1  utilisation 0.90
 ```
 <!-- hand-arithmetic:end -->

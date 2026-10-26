@@ -3,34 +3,36 @@ Project: GOLDEN
 Calc ID: test.fluid-power-pascal    Revision: A
 Title: Cylinder force from pressure (harness fixture)
 
-1. SCOPE AND METHOD
+1. Scope and method
 The force a hydraulic cylinder develops from a gauge pressure acting on a piston area, losses ignored.
 Force: F = p·A (Pascal's law, gauge pressure on the full bore area; no seal friction, no back pressure).
-  Ref: Pascal's law — Pressure acts equally on a confined fluid
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   p | Gauge pressure | 100 | bar | manual | 1 … 400 bar
-  A | Piston area | 1000 | mm^2 | manual | 1 … 1000000 mm^2
+  A | Piston area | 1000 | mm² | manual | 1 … 1000000 mm²
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. No seal friction, back pressure or acceleration: the static force. (Pascal's law on a confined incompressible fluid.)
 
-4. WORKING
+4. Working
   [3] F = p * A
       = 100 bar × 1000 mm²
       = 10 kN
         Cylinder force
 
-5. RESULTS
-  F = 10 kN    Cylinder force
+5. Results
+  F = 10.00 kN    Cylinder force
 
-6. CHECKS (governing first)
-  No pass/fail checks in this calculation.
+6. Checks (governing first)
+  None.
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: test.fluid-power-pascal@1.0.0
   Known-answer cases passed: 2/2
+
+9. References
+  1. Pascal's law — Pressure acts equally on a confined fluid

@@ -1,4 +1,4 @@
-# S4 — Bolts and fillet welds, EN 1993-1-8 (`struct.connection-ec3@1.6.0`)
+# S4 — Bolts and fillet welds, EN 1993-1-8 (`struct.connection-ec3@1.7.0`)
 
 **In plain terms.** A bolted joint can fail by the bolt shearing, the plate tearing or crushing at the hole, or the bolt pulling through or stretching, and a fillet weld can fail along its throat. The worksheet takes the bolt, plate and weld you describe and the loads on them, works out how much each failure mode can carry under Eurocode 3, and divides the load by the smallest capacity. A ratio under 1 passes, and the mode with the highest ratio governs.
 
@@ -9,6 +9,8 @@
 **Inputs.** `grade`, `size`, optional `d_0`, `hole_type`, `single_lap`, `n_s`, `threads`, `e_head`; `steel`, `t`, `f_y`, `f_u` (record `steel.strengths`); `e_1`, `e_2`, optional `p_1`, `p_2`; Table 3.3 minima `k_e1`, `k_e2`, `k_p1`, `k_p2` and `gamma_M2`, `gamma_M0` (record `ec3.national-annex`); `F_v_Ed`, `F_t_Ed`; optional block tearing `block_load`, `V_Ed`, `A_nt`, `A_nv`; optional weld `a`, `F_w_Ed`, `sigma_perp`, `tau_perp`, `tau_par`.
 
 **Outputs.** `f_ub`, `A_s`, `alpha_v`, `F_v_Rd`, `alpha_b`, `k_1`, `F_b_Rd`, `F_t_Rd`, `B_p_Rd`, utilisations, `governing`, `V_eff_Rd`, `f_vw_d`, `F_w_Rd`. **Ports.** `F_v_Rd`, `F_b_Rd` (→ S6 `F_1_vb_Rd`), `F_t_Rd` (→ S6 `F_t_Rd`), `A_s` (→ S6 `A_s`), `f_ub`, `f_yb` (→ S6 `f_ub`, `f_yb`; ports added in 1.1.0; in the steel-support chain a second S4 run for the base plate's thickness and edge distances feeds S6), `f_vw_d` (→ M6). Links in: M3 bolt forces, M6 weld force per length, S3, S5.
+
+**Port names (C-2).** Each port is listed under its public name, `<area>.<quantity>`; the output symbol stays as its symbol and as an alias, so a link, a pack binding or an inputs file written before the rename still resolves. `F_v_Rd` = `bolt.resistance_shear`; `F_b_Rd` = `bolt.resistance_bearing`; `F_t_Rd` = `bolt.resistance_tension`; `A_s` = `bolt.area_stress`; `f_ub` = `bolt.strength_ultimate`; `f_yb` = `bolt.strength_yield`; `f_vw_d` = `weld.strength_shear_design`.
 
 **Hole type (1.5.0).** A hole type of "Oversize" or "Slot across the load" with `d_0` blank is blocked (rule `hole`): the sheet does not ship the oversize clearances of the execution standard, and the normal hole d + 2 (d + 3 from M27) in `α_d`, `k₁` and the edge checks overstated the bearing resistance (M20, e₁ = e₂ = 40 mm: 79.52 kN against 72.89 kN at the 24 mm oversize hole, 9 % unconservative). Enter `d_0` (for a slot, its width across the load).
 
@@ -39,6 +41,6 @@ u_v = 55 kN / 188 kN = 0.29255
 u_b = 55 kN / 99.394 kN = 0.55335
 u_t = 0 kN / min(141 kN, 185.48 kN) = 0
 … 1 more step(s) on the sheet
-Governing: PASS  Bolt bearing: u_b = 0.55335 vs u_b ≤ 1  utilisation 0.553  « EN 1993-1-8 Table 3.4
+Governing: PASS  Bolt bearing: u_b = 0.55 vs u_b ≤ 1  utilisation 0.55  « EN 1993-1-8 Table 3.4
 ```
 <!-- hand-arithmetic:end -->

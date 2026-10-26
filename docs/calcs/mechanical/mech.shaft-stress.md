@@ -24,6 +24,6 @@ n_T = 350 MPa / 2 / 75.073 MPa = 2.3311
 n_VM = 350 MPa / 135.98 MPa = 2.5739
 n_min = min(2.3311, 2.5739) = 2.3311
 u = 2 / 2.3311 = 0.85798
-Governing: PASS  Factor of safety against the required factor: u = 0.85798 vs u ≤ 1  utilisation 0.858  « Shigley §7-4
+Governing: PASS  Factor of safety against the required factor: u = 0.86 vs u ≤ 1  utilisation 0.86  « Shigley §7-4
 ```
 <!-- hand-arithmetic:end -->

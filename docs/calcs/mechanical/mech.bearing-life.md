@@ -1,4 +1,4 @@
-# M5 — Rolling bearing life, ISO 281 (`mech.bearing-life@1.1.0`)
+# M5 — Rolling bearing life, ISO 281 (`mech.bearing-life@1.2.0`)
 
 **In plain terms.** A rolling bearing wears out by fatigue of its rolling surfaces, and the load sets how many revolutions that takes: halving the load multiplies the life of a ball bearing by eight. The worksheet follows ISO 281 by combining radial and axial load, or a whole duty cycle, into one equivalent load, giving the life in hours at the running speed, adjusting it for the reliability and lubrication you need, and checking the static load safety factor.
 
@@ -9,6 +9,8 @@
 **Inputs.** `type`; `F_r`, `F_a` 0–2000 kN; optional `duty` table (F_r, F_a, U; ≤ 50 rows); `n` 1–50 000 rpm; `C`, `C_0` kN; `e_lim`, `X_1`, `Y_1`, `X`, `Y`, `X_0`, `Y_0`; `R` 90–99.95 %; `a_iso` 0.1–50; optional `kappa` (range 0.1–100, so below 0.1 is refused by the range; above 4 it is treated as 4 with a warning); `L_req` h; `s_0_req` 0.5–4. The factor `e` is entered as `e_lim` because `e` is the engine's constant.
 
 **Outputs.** `P`, `L_10`, `L_10h`, `a_1`, `L_nm`, `L_nmh`, `P_0`, `s_0`, `u_life`, `u_s0`. **Ports.** `L_nmh`, `L_10h` (h), `P`, `P_0` (kN), `s_0`. **Checks.** modified life against required; s₀ against required.
+
+**Port names (C-2).** Each port is listed under its public name, `<area>.<quantity>`; the output symbol stays as its symbol and as an alias, so a link, a pack binding or an inputs file written before the rename still resolves. `L_nmh` = `bearing.life_modified`; `L_10h` = `bearing.life_basic`; `P` = `bearing.load_dynamic`; `P_0` = `bearing.load_static`; `s_0` = `bearing.safety_static`.
 
 **Limitations.** Constant speed per step; a_ISO is the manufacturer's value, not computed; P > 0.5 C warns. A load so light that `L_10` would exceed 10¹² million revolutions is no longer blocked: the life is held at 10¹² Mrev with a warning (`light-load`).
 
@@ -29,6 +31,6 @@ L_nmh = 0.63791 × 2 × 5948.7 h = 7589.6 h
 s_0 = 11.2 kN / 2.5 kN = 4.48
 u_life = 5000 h / 7589.6 h = 0.6588
 u_s0 = 1 / 4.48 = 0.22321
-Governing: PASS  Modified rating life against required life: u_life = 0.6588 vs u_life ≤ 1  utilisation 0.659  « ISO 281:2007 cl. 9
+Governing: PASS  Modified rating life against required life: u_life = 0.66 vs u_life ≤ 1  utilisation 0.66  « ISO 281:2007 cl. 9
 ```
 <!-- hand-arithmetic:end -->

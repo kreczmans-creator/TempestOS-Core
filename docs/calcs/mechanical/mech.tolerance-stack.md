@@ -1,4 +1,4 @@
-# M1 — Tolerance stack-up (1D) v2 (`mech.tolerance-stack@2.2.0`)
+# M1 — Tolerance stack-up (1D) v2 (`mech.tolerance-stack@2.2.1`)
 
 **In plain terms.** A tolerance stack adds up the dimensions along a chain of parts to find a gap or overall size, where every part varies within its own tolerance. The worst-case method adds every tolerance at its limit, so the gap is guaranteed but the tolerances must be tight. The statistical methods assume the variations are independent and rarely all at their extremes together, so they predict a narrower spread; the Monte Carlo run samples the real distributions to show the same thing directly. The capability figures say how centred and how wide that spread is against the requirement.
 
@@ -49,6 +49,6 @@ x_rss_max = 0.005 in + 0.006 in = 0.011 in
 t_mrss = 1.5 × 0.006 in = 0.009 in
 sigma = √(0.001² + 0.000333333² + 0.00166667² + 0.000333333²) = 0.002 in
 … 11 more step(s) on the sheet
-Governing: FAIL  Worst case within requirement: -0.005 … 0.015 in vs 0.003 … open in  utilisation —
+Governing: FAIL  Worst case within requirement: -0.005 … 0.015 in vs 0.003 … open in
 ```
 <!-- hand-arithmetic:end -->

@@ -1,4 +1,4 @@
-# M9 — Mechanism kinematics: four-bar, slider-crank, cam (`mech.mechanism@1.2.1`)
+# M9 — Mechanism kinematics: four-bar, slider-crank, cam (`mech.mechanism@1.2.2`)
 
 **In plain terms.** A mechanism is a set of rigid links that turns one motion into another, like a crank driving a rocker or a slider. The worksheet takes the link lengths (or the cam profile) and works out, for each crank angle, where every link is, its speed and acceleration, how well it transmits force, and the forces in the pins and guides. It also tells you what kind of linkage you have, and where it locks.
 
@@ -48,6 +48,6 @@ T_in_sw = 73 rows, θ₂ from 0° to 360° = [1.5919, 1.3661, 1.1246, 0.87436, 0
 theta3_0 = at the first input angle = 45.45 deg
 theta4_0 = at the first input angle = 93.891 deg
 … 25 more step(s) on the sheet
-Governing: PASS  Transmission angle μ_min at or above the required minimum: u_mu = 0.82575 vs u_mu ≤ 1  utilisation 0.826  « Transmission angle
+Governing: PASS  Transmission angle μ_min at or above the required minimum: u_mu = 0.83 vs u_mu ≤ 1  utilisation 0.83  « Transmission angle
 ```
 <!-- hand-arithmetic:end -->

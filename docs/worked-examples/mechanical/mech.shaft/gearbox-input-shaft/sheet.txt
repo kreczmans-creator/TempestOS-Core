@@ -1,18 +1,16 @@
 CALCULATION SHEET — DRAFT
 Project: Worked example
 Calc ID: gearbox-input-shaft    Revision: A
-Title: Shaft: static, fatigue, keys, critical speed
+Title: Shaft design
 Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a torque with a steady (mean) part and an optional alternating part: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.
 Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²) Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1) Endurance limit: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R Fatigue (DE-Goodman, bending fully reversed, torque T_m ± T_a): 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_pk²), τ_pk from the larger of T_m + T_a and the peak torque T_pk when given Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²), y signed (an overhung mass lifts the span, which lowers the quotient); Dunkerley 1/ω² = Σ m_i·δ_ii (lower bound, used for the ratio to the operating speed) Weight loads (with w_masses): F_y,i = −m_i·g at each node, m_i the carried mass plus the shaft's own mass split to the node; without it the loads table is the whole load Parallel key, on the peak torque T_k = the larger of T_m + T_a and T_pk: τ = 2T_k/(d·w·L), σ = 4T_k/(d·h·L); required length L = max(2T_k·n_target/(d·w·0.577·S_y,key), 4T_k·n_target/(d·h·S_y,min)), S_y,min the lowest of the key, the shaft and (when entered) the hub; a shoulder is checked on both sides and the lower n_f governs
-  Ref: Shigley's Mechanical Engineering Design 10th ed., Ch. 6 (§6-9, Table 6-2 Marin surface factors), Ch. 7 (§7-4 to §7-7) — Fatigue, shaft stresses, deflection, critical speeds, keys
-  Ref: Mott, Machine Elements in Mechanical Design 6th ed., Ch. 12 — Shaft design
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   segments | Shaft segments (left to right) | 5 row(s) |  | drawing: GBX-SH-01 rev C | any
   segments[1] |  | x_end = 40 mm; d = 35 mm; d_i = 0 mm |  |  | 
@@ -25,7 +23,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   loads | Radial loads and masses (a carried mass adds no weight unless w_masses is on: enter its weight as a force in F_y) | 1 row(s) |  | spec: Gear mesh forces from the gear calculation | any
   loads[1] |  | x = 150 mm; F_y = -2.2 kN; F_z = 6 kN; m = 4 kg |  |  | 
   w_masses | Add the weight of the carried masses and of the shaft itself as downward vertical loads (off: the loads table is the whole load; the masses then enter the critical speed only) | no |  | default | any
-  T | Torque transmitted, steady or mean part T_m | 0.3 | kN*m | spec: Motor rated torque × service factor (E1) | 0 … 50 kN*m
+  T | Torque transmitted, steady or mean part T_m | 0.3 | kN·m | spec: Motor rated torque × service factor (E1) | 0 … 50 kN·m
   x_T1 | Torque enters at | 150 | mm | drawing: GBX-SH-01 rev C | 0 … 3000 mm
   x_T2 | Torque leaves at (blank: the shaft length, so every section beyond x_T1 carries the torque) | 330 | mm | drawing: GBX-SH-01 rev C | 0 … 3000 mm
   n | Operating speed | 1450 | rpm | spec: Motor nameplate | 0 … 30000 rpm
@@ -37,7 +35,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   S_ut | Ultimate tensile strength | 700 | MPa | spec: EN 10083-3 42CrMo4 +QT, certificate | 300 … 2000 MPa
   S_y | Yield strength | 500 | MPa | spec: EN 10083-3 42CrMo4 +QT, certificate | 150 … 1900 MPa
   E | Young's modulus | 207 | GPa | assumption: Steel. | 50 … 250 GPa
-  rho | Density (shaft self-mass in the critical speed) | 7850 | kg/m^3 | assumption: Steel. | 0 … 20000 kg/m^3
+  rho | Density (shaft self-mass in the critical speed) | 7850 | kg/m³ | assumption: Steel. | 0 … 20000 kg/m³
   finish | Surface finish | machined or cold-drawn |  | drawing: GBX-SH-01 rev C | any
   R | Reliability | 99 | % | assumption: Design reliability. | 50 … 99.9 %
   k_d | Temperature factor k_d | 1 |  | assumption: Below 250 °C. | 0.5 … 1.1
@@ -51,7 +49,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   L_key | Key length | 40 | mm | drawing: GBX-SH-01 rev C | 1 … 500 mm
   S_y_key | Key yield strength | 400 | MPa | spec: C45 key steel | 150 … 1500 MPa
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation; torque a steady part T_m plus an alternating part T_a about it (fully alternating when T_m = 0), both acting between the torque-in and torque-out positions. (Shigley 10th ed. §7-4.)
   A2. No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound. (Shigley 10th ed. §7-6.)
   A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (No stress-concentration chart is shipped; the factors are entered or derived.)
@@ -60,14 +58,14 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   A6. Loads, sections and steps closer together than 1/200 of the shaft length share one node. (Keeps the beam model well conditioned.)
   A7. sections (Sections to check) is taken as 4 row(s). (Shoulders r/d ≈ 0.05; keyseat at the pinion (K_t 2.14, K_ts 3.0); q from the Neuber fit.)
   A8. E (Young's modulus) is taken as 207 GPa. (Steel.)
-  A9. rho (Density (shaft self-mass in the critical speed)) is taken as 7850 kg/m^3. (Steel.)
+  A9. rho (Density (shaft self-mass in the critical speed)) is taken as 7850 kg/m³. (Steel.)
   A10. R (Reliability) is taken as 99 %. (Design reliability.)
   A11. k_d (Temperature factor k_d) is taken as 1. (Below 250 °C.)
   A12. k_f (Miscellaneous factor k_f) is taken as 1. (No other effects.)
   A13. theta_max (Slope limit at the bearings) is taken as 0.001 rad. (Deep-groove ball bearing slope limit.)
   A14. y_max (Deflection limit at the loads) is taken as 0.13 mm. (Spur gear deflection limit.)
 
-4. WORKING
+4. Working
   [18] R_A = √(R_A,y² + R_A,z²)
       = √(1.1² + -3²)
       = 3.1953 kN
@@ -185,42 +183,46 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
       = 0.55212
         Deflection utilisation
 
-5. RESULTS
-  R_A = 3.1953 kN    Reaction at A
-  R_B = 3.1953 kN    Reaction at B
-  d_A = 35 mm    Seat diameter at A
-  d_B = 35 mm    Seat diameter at B
-  M_max = 0.41539 kN·m    Largest bending moment
-  theta_A = 0.0008961 rad    Slope at A
-  theta_B = 0.0008961 rad    Slope at B
-  y_load = 0.071775 mm    Deflection at the loads
-  S_e = 186.8 MPa    Endurance limit
-  n_f_min = 1.6909    Lowest fatigue safety factor
-  n_y_min = 4.1532    Lowest yield safety factor
+5. Results
+  R_A = 3.20 kN    Reaction at A
+  R_B = 3.20 kN    Reaction at B
+  d_A = 35.0 mm    Seat diameter at A
+  d_B = 35.0 mm    Seat diameter at B
+  n_f_min = 1.69    Lowest fatigue safety factor
   n_c = 38275 rpm    First critical speed (Rayleigh)
+  M_max = 0.42 kN·m    Largest bending moment
+  theta_A = 0.00090 rad    Slope at A
+  theta_B = 0.00090 rad    Slope at B
+  y_load = 0.072 mm    Deflection at the loads
+  S_e = 186.8 MPa    Endurance limit
+  n_y_min = 4.15    Lowest yield safety factor
   n_c_D = 37295 rpm    Dunkerley lower bound
   r_c = 25.721    Critical-speed ratio
-  tau_key = 23.81 MPa    Key shear
-  sigma_key = 74.074 MPa    Key bearing
-  L_key_req = 11.111 mm    Key length required
-  u_key = 0.27778    Key utilisation
+  tau_key = 23.8 MPa    Key shear
+  sigma_key = 74.1 MPa    Key bearing
+  L_key_req = 11.1 mm    Key length required
+  u_key = 0.28    Key utilisation
 
-6. CHECKS (governing first)
-  PASS  Slope at the bearings against limit: u_slope = 0.8961 vs u_slope ≤ 1  utilisation 0.896
-  PASS  Fatigue safety factor against target (DE-Goodman): u_f = 0.88712 vs u_f ≤ 1  utilisation 0.887  « Shigley 10th ed. §7-4
-  PASS  Deflection at the loads against limit: u_defl = 0.55212 vs u_defl ≤ 1  utilisation 0.552
-  PASS  Yield safety factor against target: u_y = 0.36117 vs u_y ≤ 1  utilisation 0.361
-  PASS  Key length against required: u_key = 0.27778 vs u_key ≤ 1  utilisation 0.278
+6. Checks (governing first)
+  PASS  Slope at the bearings against limit: u_slope = 0.90 vs u_slope ≤ 1  utilisation 0.90
+  PASS  Fatigue safety factor against target (DE-Goodman): u_f = 0.89 vs u_f ≤ 1  utilisation 0.89  « Shigley 10th ed. §7-4
+  PASS  Deflection at the loads against limit: u_defl = 0.55 vs u_defl ≤ 1  utilisation 0.55
+  PASS  Yield safety factor against target: u_y = 0.36 vs u_y ≤ 1  utilisation 0.36
+  PASS  Key length against required: u_key = 0.28 vs u_key ≤ 1  utilisation 0.28
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.
-  WARNING mass-weight: m: the carried mass (4 kg) adds no weight to the reactions, the moment or the deflection, and neither does the shaft's own weight; switch w_masses on to add them, or enter the weights as forces in F_y.
-  WARNING torque-span: x_T2: the torque is transmitted only between x_T1 = 150 mm and x_T2 = 330 mm, so the section(s) at 120 mm carry no torque; set x_T2 (blank: the shaft length) if the torque is carried there.
-  WARNING key-hub: S_y_hub: no hub strength is entered, so the key bearing is checked against the key and the shaft only; the hub is often the weakest part, enter its yield strength.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  m: the carried mass (4 kg) adds no weight to the reactions, the moment or the deflection, and neither does the shaft's own weight; switch w_masses on to add them, or enter the weights as forces in F_y.  [mass-weight]
+  WARNING  x_T2: the torque is transmitted only between x_T1 = 150 mm and x_T2 = 330 mm, so the section(s) at 120 mm carry no torque; set x_T2 (blank: the shaft length) if the torque is carried there.  [torque-span]
+  WARNING  S_y_hub: no hub strength is entered, so the key bearing is checked against the key and the shaft only; the hub is often the weakest part, enter its yield strength.  [key-hub]
 
-8. VERIFICATION
-  Template: mech.shaft@1.3.0
+8. Verification
+  Template: mech.shaft@1.4.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3
   Test run: —
+
+9. References
+  1. Shigley's Mechanical Engineering Design 10th ed., Ch. 6 (§6-9, Table 6-2 Marin surface factors), Ch. 7 (§7-4 to §7-7) — Fatigue, shaft stresses, deflection, critical speeds, keys
+  2. Mott, Machine Elements in Mechanical Design 6th ed., Ch. 12 — Shaft design

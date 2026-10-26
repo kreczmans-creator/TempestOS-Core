@@ -1,4 +1,4 @@
-# M2a — ISO 286 limits and fits (`mech.iso286-fit@1.4.0`)
+# M2a — ISO 286 limits and fits (`mech.iso286-fit@1.4.1`)
 
 **In plain terms.** A hole and a shaft each get a tolerance band from the ISO system: the letter fixes how far the band sits from the nominal size and the number fixes how wide it is. Pairing the largest hole with the smallest shaft gives the loosest fit, and the smallest hole with the largest shaft the tightest. If the hole is always larger the fit has clearance, if it is always smaller it has interference, and if the bands overlap it is a transition fit that can go either way.
 
@@ -39,6 +39,6 @@ d_shaft_min = 25 mm + -20.359 µm = 24.98 mm
 c_max = 20.918 µm − (-20.359 µm) = 41.277 µm
 c_min = 0 µm − (-7.2853 µm) = 7.2853 µm
 … 4 more step(s) on the sheet
-Governing: PASS  Fit classified: H7/g6 vs clearance  utilisation 0
+Governing: PASS  Fit classified: H7/g6 vs clearance
 ```
 <!-- hand-arithmetic:end -->

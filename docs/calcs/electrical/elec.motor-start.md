@@ -42,6 +42,6 @@ R_m = 0.25056 ohm × 0.3 = 0.075168 ohm
 X_m = 0.25056 ohm × sqrt(1 − 0.3^2) = 0.23902 ohm
 E_ph = 400 V / √3 = 230.94 V
 … 25 more step(s) on the sheet
-Governing: PASS  Point-of-common-coupling dip within the limit: u_dip_pcc = 0.93491 vs u_dip_pcc ≤ 1  utilisation 0.935  « IEC 61000-3-11 scope
+Governing: PASS  Point-of-common-coupling dip within the limit: u_dip_pcc = 0.93 vs u_dip_pcc ≤ 1  utilisation 0.93  « IEC 61000-3-11 scope
 ```
 <!-- hand-arithmetic:end -->

@@ -3,15 +3,11 @@ Project: GOLDEN
 Calc ID: mech.bearing-life    Revision: A
 Title: Rolling bearing life (ISO 281)
 
-1. SCOPE AND METHOD
+1. Scope and method
 The basic and modified rating life of a rolling bearing under a steady load or a duty cycle, at a chosen reliability, against a required life; and the static safety factor against a required value.
 Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 0 for a single-row radial ball bearing), else P = X·F_r + Y·F_a (Y = 0 is refused when an axial load acts above e_lim) Duty cycle: P_eq = (Σ P_i^p·U_i / Σ U_i)^(1/p) Basic rating life: L_10 = (C/P)^p million revolutions, p = 3 ball, 10/3 roller Life in hours: L_10h = 10⁶·L_10 / (60·n) Reliability factor (ISO 281:2007, derived): a_1 = 0.95·[ln(100/R)/ln(100/90)]^(2/3) + 0.05 Modified life: L_nm = a_1·a_ISO·L_10 Static safety: P_0 = max(X_0·F_r + Y_0·F_a, F_r), s_0 = C_0/P_0
-  Ref: ISO 281:2007 cl. 6–7 — Dynamic equivalent load and basic rating life
-  Ref: ISO 281:2007 cl. 9 — Modified rating life
-  Ref: ISO 76:2006 cl. 6–7 — Static equivalent load and static safety factor
-  Ref: Shigley's Mechanical Engineering Design 11th ed., Ch. 11 — Rolling-contact bearings
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   type | Bearing type | ball (p = 3) |  | manual | any
   F_r | Radial load | 2 | kN | manual | 0 … 2000 kN
@@ -31,12 +27,12 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   L_req | Required life | 10000 | h | manual | 1 … 1000000 h
   s_0_req | Required static safety factor | 1 |  | manual | 0.5 … 4
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Ratings C and C₀, factors X, Y, e, X₀, Y₀ and a_ISO are the manufacturer's values for the bearing, entered as reference records. (No catalogue table ships with TempestOS.)
   A2. a₁ uses the ISO 281:2007 Weibull form (0.64 at 95 %, 0.25 at 99 %); ISO 281:1990 gave 0.62 and 0.21. (Edition stated on the sheet.)
   A3. Loads are steady within each duty step; speed is constant. (Duty steps weighted by share of revolutions.)
 
-4. WORKING
+4. Working
   [18] p = 3    « ISO 281:2007 cl. 6–7
       = 3
         Life exponent, ball bearing
@@ -81,25 +77,31 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
       = 0.18182
         Static utilisation (required / actual safety factor)
 
-5. RESULTS
-  P = 2 kN    Equivalent dynamic load
-  L_10 = 1000    Basic rating life (Mrev)
+5. Results
+  L_nmh = 10632 h    Modified rating life
   L_10h = 16667 h    Basic rating life
+  P = 2.00 kN    Equivalent dynamic load
+  P_0 = 2.00 kN    Equivalent static load
+  s_0 = 5.50    Static safety factor
+  L_10 = 1000    Basic rating life (Mrev)
   a_1 = 0.63791    Reliability factor
   L_nm = 637.91    Modified rating life (Mrev)
-  L_nmh = 10632 h    Modified rating life
-  P_0 = 2 kN    Equivalent static load
-  s_0 = 5.5    Static safety factor
-  u_life = 0.94057    Life utilisation
-  u_s0 = 0.18182    Static utilisation
+  u_life = 0.94    Life utilisation (governing)
+  u_s0 = 0.18    Static utilisation
 
-6. CHECKS (governing first)
-  PASS  Modified rating life against required life: u_life = 0.94057 vs u_life ≤ 1  utilisation 0.941  « ISO 281:2007 cl. 9
-  PASS  Static safety factor against required: u_s0 = 0.18182 vs u_s0 ≤ 1  utilisation 0.182  « ISO 76:2006
+6. Checks (governing first)
+  PASS  Modified rating life against required life: u_life = 0.94 vs u_life ≤ 1  utilisation 0.94  « ISO 281:2007 cl. 9
+  PASS  Static safety factor against required: u_s0 = 0.18 vs u_s0 ≤ 1  utilisation 0.18  « ISO 76:2006
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: C, C_0 (Bearing load ratings); e_lim, X_1, Y_1, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing a_ISO). Enter each as one so its source, edition and licence travel with it.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are C, C_0 (Bearing load ratings); e_lim, X_1, Y_1, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing a_ISO). Enter each as one so its source, edition and licence travel with it.  [record]
 
-8. VERIFICATION
-  Template: mech.bearing-life@1.1.0
+8. Verification
+  Template: mech.bearing-life@1.2.0
   Known-answer cases passed: 5/5
+
+9. References
+  1. ISO 281:2007 cl. 6–7 — Dynamic equivalent load and basic rating life
+  2. ISO 281:2007 cl. 9 — Modified rating life
+  3. ISO 76:2006 cl. 6–7 — Static equivalent load and static safety factor
+  4. Shigley's Mechanical Engineering Design 11th ed., Ch. 11 — Rolling-contact bearings

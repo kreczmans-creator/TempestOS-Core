@@ -1,4 +1,4 @@
-# S5 — Fillet weld, simplified method (`struct.fillet-weld@1.0.1`)
+# S5 — Fillet weld, simplified method (`struct.fillet-weld@1.0.2`)
 
 **In plain terms.** A fillet weld fails by shearing through its throat, the shortest line from the root to the face. The simplified method adds every force on the weld into one resultant, spreads it along the weld length, and compares the stress on the throat area with one design shear strength. The weld is adequate when the throat carries the resultant; the sheet also gives the smallest throat that would do.
 
@@ -24,6 +24,6 @@ u = 150 kN / 251.47 kN = 0.5965
 a_calc = 150 kN / (251.47 MPa × 200 mm) = 2.9825 mm
 a_req = max(2.9825 mm, 3 mm) = 3 mm
 s_leg = sqrt(2) × 5 mm = 7.0711 mm
-Governing: PASS  Weld resistance: u = 0.5965 vs u ≤ 1  utilisation 0.596  « BS EN 1993-1-8 4.5.3.3
+Governing: PASS  Weld resistance: u = 0.60 vs u ≤ 1  utilisation 0.60  « BS EN 1993-1-8 4.5.3.3
 ```
 <!-- hand-arithmetic:end -->

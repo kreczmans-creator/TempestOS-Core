@@ -26,6 +26,6 @@ L_10h = 675.68 × 1e6 × 2 × π / 1500 rpm = 7507.6 h
 L_nm = 1 × 675.68 = 675.68
 L_nmh = 1 × 7507.6 h = 7507.6 h
 u_life = 5000 h / 7507.6 h = 0.666
-Governing: PASS  Modified life against required life: u_life = 0.666 vs u_life ≤ 1  utilisation 0.666  « ISO 281 §6
+Governing: PASS  Modified life against required life: u_life = 0.67 vs u_life ≤ 1  utilisation 0.67  « ISO 281 §6
 ```
 <!-- hand-arithmetic:end -->

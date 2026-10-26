@@ -6,20 +6,17 @@ Author: unknown    Authored: 2026-10-26
 Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
-1. SCOPE AND METHOD
+1. Scope and method
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
 Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun). Effective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face. Temperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h A_eff). Air flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K). Fan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)². Cooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h A_eff (T_max − T_amb). Sealed enclosure (sealing temperature T_seal entered, no breather), pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below): Δp = p_site·|T_int/T_seal − 1|. A pressure-compensation element (breather or relief) limits it to its cracking pressure: dp_seal = min(Δp, dp_relief). Force of that pressure on a cover of area A_cover: F_seal = dp_seal·A_cover.
-  Ref: IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
-  Ref: Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
-  Ref: BS EN 61439-1 10.10 — Verification of temperature rise
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   loads | Heat loads | 1 row(s) |  | drawing: DRG-ELX-210 rev B | any
   loads[1] |  | name = Terminals and wiring; P = 4 W; qty = 1; duty = 1 |  |  | 
   P_add | Additional heat load (linked from E6's dissipated heat or another calculation) | 73.0082 | W | link: Board load budget rev A · Phi | 0 … 100000 W
-  I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m^2 | assumption: Sheet default value; no project figure given. | 0 … 1200 W/m^2
-  A_sun | Sunlit area | 0 | m^2 | assumption: Sheet default value; no project figure given. | 0 … 100 m^2
+  I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m² | assumption: Sheet default value; no project figure given. | 0 … 1200 W/m²
+  A_sun | Sunlit area | 0 | m² | assumption: Sheet default value; no project figure given. | 0 … 100 m²
   alpha_sun | Surface absorptivity | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   W | Enclosure width | 0.5 | m | drawing: DRG-ELX-210 rev B | 0.1 … 5 m
   H | Enclosure height | 0.6 | m | drawing: DRG-ELX-210 rev B | 0.1 … 5 m
@@ -30,31 +27,31 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   f_left | Left side exposure | 1 |  | drawing: DRG-ELX-210 rev B | 0 … 1
   f_right | Right side exposure | 1 |  | drawing: DRG-ELX-210 rev B | 0 … 1
   f_bottom | Bottom exposure (0 = on the floor) | 0 |  | drawing: DRG-ELX-210 rev B | 0 … 1
-  h | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m^2*K) | assumption: Sheet default value; no project figure given. | 3 … 8 W/(m^2*K)
-  T_amb | Ambient temperature | 35 | degC | drawing: DRG-ELX-210 rev B | -20 … 55 degC
-  T_max | Maximum internal temperature | 60 | degC | drawing: DRG-ELX-210 rev B | 20 … 80 degC
-  T_seal | Temperature at which the enclosure was closed with no breather or vent, for the pressure difference across its walls when the air warms or cools (blank = vented: no pressure difference) | 25 | degC | drawing: DRG-ELX-210 rev B | -20 … 55 degC
+  h | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m²·K) | assumption: Sheet default value; no project figure given. | 3 … 8 W/(m²·K)
+  T_amb | Ambient temperature | 35 | °C | drawing: DRG-ELX-210 rev B | -20 … 55 °C
+  T_max | Maximum internal temperature | 60 | °C | drawing: DRG-ELX-210 rev B | 20 … 80 °C
+  T_seal | Temperature at which the enclosure was closed with no breather or vent, for the pressure difference across its walls when the air warms or cools (blank = vented: no pressure difference) | 25 | °C | drawing: DRG-ELX-210 rev B | -20 … 55 °C
   dp_relief | Cracking pressure of the breather or relief element a sealed enclosure has (blank = none: the full gas-law difference acts; needs T_seal) | 1 | kPa | drawing: DRG-ELX-210 rev B | 0.1 … 20 kPa
-  A_cover | Area of the cover or door the pressure difference acts on, for the force on its fixings (blank = not worked out; needs T_seal) | 0.3 | m^2 | drawing: DRG-ELX-210 rev B | 0.01 … 5 m^2
+  A_cover | Area of the cover or door the pressure difference acts on, for the force on its fixings (blank = not worked out; needs T_seal) | 0.3 | m² | drawing: DRG-ELX-210 rev B | 0.01 … 5 m²
   altitude | Site altitude (air density) | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 4000 m
   p_sys | System resistance (filters, grilles) at the reference airflow | 20 | Pa | assumption: Sheet default value; no project figure given. | 0 … 500 Pa
-  V_ref | Reference airflow for the system resistance | 100 | m^3/h | assumption: Sheet default value; no project figure given. | 1 … 100000 m^3/h
+  V_ref | Reference airflow for the system resistance | 100 | m³/h | assumption: Sheet default value; no project figure given. | 1 … 100000 m³/h
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h is a reference value the user may edit.)
   A2. Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise; natural dissipation is neglected for the airflow (conservative). (Manufacturer fan-sizing practice.)
   A3. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed: the pressure difference follows from the ideal-gas relation at constant volume, from the sealing temperature to the internal temperature with natural dissipation T_int (the temperature without a cooling unit); a breather, a seal that leaks or a flexing wall reduces it, so it is an upper bound (a pressure-compensation element is modelled only as a cap at its cracking pressure, with no flow resistance); the site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
   A4. The fan curve is linear between the entered points; the system resistance scales with airflow squared. (Duty-point idealisation.)
-  A5. I_sun (Solar irradiance on the enclosure (0 = indoors)) is taken as 0 W/m^2. (Sheet default value; no project figure given.)
-  A6. A_sun (Sunlit area) is taken as 0 m^2. (Sheet default value; no project figure given.)
+  A5. I_sun (Solar irradiance on the enclosure (0 = indoors)) is taken as 0 W/m². (Sheet default value; no project figure given.)
+  A6. A_sun (Sunlit area) is taken as 0 m². (Sheet default value; no project figure given.)
   A7. alpha_sun (Surface absorptivity) is taken as 0.5. (Sheet default value; no project figure given.)
-  A8. h (Overall heat-transfer coefficient of the enclosure surface (editable reference value)) is taken as 5.5 W/(m^2*K). (Sheet default value; no project figure given.)
+  A8. h (Overall heat-transfer coefficient of the enclosure surface (editable reference value)) is taken as 5.5 W/(m²·K). (Sheet default value; no project figure given.)
   A9. altitude (Site altitude (air density)) is taken as 0 m. (Sheet default value; no project figure given.)
   A10. p_sys (System resistance (filters, grilles) at the reference airflow) is taken as 20 Pa. (Sheet default value; no project figure given.)
-  A11. V_ref (Reference airflow for the system resistance) is taken as 100 m^3/h. (Sheet default value; no project figure given.)
+  A11. V_ref (Reference airflow for the system resistance) is taken as 100 m³/h. (Sheet default value; no project figure given.)
   A12. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
 
-4. WORKING
+4. Working
   [18] P_loads = Σ P_i × n_i × d_i
       = 1 item(s)
       = 4 W
@@ -124,33 +121,38 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
       = 0 m³/h
         Airflow crediting natural dissipation
 
-5. RESULTS
-  dp_gas = 10.833 kPa    Gas-law pressure difference (no breather)
-  dp_seal = 1 kPa    Pressure difference of the sealed enclosure
-  F_seal = 300 N    Force on the cover
-  P_loads = 4 W    Internal heat load
-  P_solar = 0 W    Solar gain
-  P_total = 77.008 W    Total heat
-  A_eff = 0.64 m²    Effective surface
-  dT_nat = 21.877 K    Natural temperature rise
-  T_int = 56.877 degC    Internal temperature (natural)
-  P_nat_max = 88 W    Natural dissipation at the limit
+5. Results
+  P_total = 77.0 W    Total heat
   P_cool = 0 W    Cooling unit needed
-  T_max = 60 degC    Internal temperature limit
-  rho_air = 1.1455 kg/m³    Air density
-  V_req = 9.623 m³/h    Required airflow
+  P_nat_max = 88.0 W    Natural dissipation at the limit
+  T_max = 60.0 °C    Internal temperature limit
+  dT_nat = 21.9 K    Natural temperature rise
+  T_int = 56.9 °C    Internal temperature (natural)
+  V_req = 9.6 m³/h    Required airflow
+  dp_seal = 1.0 kPa    Pressure difference of the sealed enclosure
+  F_seal = 300.0 N    Force on the cover
+  dp_gas = 10.8 kPa    Gas-law pressure difference (no breather)
+  P_loads = 4.0 W    Internal heat load
+  P_solar = 0 W    Solar gain
+  A_eff = 0.64 m²    Effective surface
+  rho_air = 1.1 kg/m³    Air density
   V_req_net = 0 m³/h    Required airflow (net)
 
-6. CHECKS (governing first)
-  PASS  Natural dissipation holds T_max: u_nat = 0.87509 vs u_nat ≤ 1  utilisation 0.875
+6. Checks (governing first)
+  PASS  Natural dissipation holds T_max: u_nat = 0.88 vs u_nat ≤ 1  utilisation 0.88
 
-7. APPLICABILITY
-  WARNING seal-relief: dp_relief: the breather or relief element opens at 1 kPa, below the gas-law difference of 10.83 kPa, so dp_seal is the cracking pressure.
+7. Applicability
+  WARNING  dp_relief: the breather or relief element opens at 1 kPa, below the gas-law difference of 10.83 kPa, so dp_seal is the cracking pressure.  [seal-relief]
 
-8. VERIFICATION
+8. Verification
   Template: elec.enclosure-heat@1.5.1
   Content hash: 6c68c61c7df7f4fe
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 12:17 UTC
+  Test run: 2026-10-26 14:32 UTC
   Application: TempestOS test
+
+9. References
+  1. IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
+  2. Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
+  3. BS EN 61439-1 10.10 — Verification of temperature rise

@@ -1,4 +1,4 @@
-# S7 — EN 1993-1-1 lateral-torsional buckling and N+M interaction (`struct.ltb-interaction@1.1.3`)
+# S7 — EN 1993-1-1 lateral-torsional buckling and N+M interaction (`struct.ltb-interaction@1.1.4`)
 
 **In plain terms.** A long slender I-beam loaded in bending can twist and buckle sideways well before the steel yields, and a column can bow before it crushes; with both loads together the two effects add. The worksheet finds the moment at which the member would buckle elastically, reduces the plain strength by how close the member is to that moment, and checks the axial force and the bending moments together against the Eurocode 3 interaction rules.
 
@@ -41,6 +41,6 @@ chi_LT_mod = 0.6537 / 0.93358, 1/λ̄_LT² = 1.0496 = 0.70022
 chi_LT = as above = 0.70022
 Mb_Rd = 0.70022 × 2232.5 cm³ × 345 MPa / 1 = 539.3 kN·m
 … 31 more step(s) on the sheet
-Governing: PASS  Interaction, equation 6.62: u_62 = 0.9305 vs u_62 ≤ 1  utilisation 0.931  « 6.3.3(4)
+Governing: PASS  Interaction, equation 6.62: u_62 = 0.93 vs u_62 ≤ 1  utilisation 0.93  « 6.3.3(4)
 ```
 <!-- hand-arithmetic:end -->

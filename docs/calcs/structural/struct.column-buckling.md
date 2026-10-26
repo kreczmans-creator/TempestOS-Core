@@ -27,6 +27,6 @@ phi = (275 MPa + (0.42742 + 1) × 224.81 MPa) / 2 = 297.95 MPa
 p_c = 224.81 MPa × 275 MPa / (297.95 MPa + sqrt((297.95 MPa)^2 − 224.81 MPa × 275 MPa)) = 133.78 MPa
 P_c = 133.78 MPa × 2000 mm² = 267.56 kN
 u = 150 kN / 267.56 kN = 0.56062
-Governing: PASS  Axial load against compression resistance: u = 0.56062 vs u ≤ 1  utilisation 0.561  « BS 5950-1 Annex C
+Governing: PASS  Axial load against compression resistance: u = 0.56 vs u ≤ 1  utilisation 0.56  « BS 5950-1 Annex C
 ```
 <!-- hand-arithmetic:end -->

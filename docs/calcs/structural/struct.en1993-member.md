@@ -1,4 +1,4 @@
-# S3 — EN 1993-1-1 member checks, basic (`struct.en1993-member@1.3.0`)
+# S3 — EN 1993-1-1 member checks, basic (`struct.en1993-member@1.3.1`)
 
 **In plain terms.** EN 1993-1-1 checks a steel member in two stages. First the cross-section: can it carry the tension, compression, bending and shear without yielding. Then the member: a strut buckles sideways before it crushes, so its compression resistance is reduced by a factor that depends on how slender it is and on the buckling curve for its shape. Combined compression and bending use a simplified interaction, and the governing ratio is the highest of all the checks.
 
@@ -31,6 +31,6 @@ M_z_c_Rd = (1 − 0) × 231 cm³ × 355 MPa / 1 = 82.005 kN·m
 u_M_y = 40 kN·m / 176.44 kN·m = 0.22671
 u_M_z = 0 kN·m / 82.005 kN·m = 0
 … 19 more step(s) on the sheet
-Governing: FAIL  Member interaction (simplified): u_member = 1.0435 vs u_member ≤ 1  utilisation 1.04  « 6.3.3
+Governing: FAIL  Member interaction (simplified): u_member = 1.05 vs u_member ≤ 1  utilisation 1.05  « 6.3.3
 ```
 <!-- hand-arithmetic:end -->

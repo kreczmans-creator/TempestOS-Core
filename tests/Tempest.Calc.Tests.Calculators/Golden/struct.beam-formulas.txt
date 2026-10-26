@@ -3,27 +3,26 @@ Project: GOLDEN
 Calc ID: struct.beam-formulas    Revision: A
 Title: Beam formulas (single span)
 
-1. SCOPE AND METHOD
+1. Scope and method
 Closed-form reactions, maximum moment and its position, maximum shear and maximum deflection for the standard single-span beam cases, as a quick check. Left end at x = 0; loads downward; sagging moments positive; deflection downward positive.
 Formulas from Roark Table 8.1, in this sheet's own notation, for the chosen support and load case. Simply supported beam, point load at a (b = L − a), reaction and largest moment: R_A = Pb/L; M_max = Pab/L. Simply supported beam, point load at a, largest deflection when a ≥ b: δ_max = Pb(L² − b²)^(3/2)/(9√3 L EI) at x = √((L² − b²)/3). Propped cantilever, uniform load, reaction and moments: R_B = 3wL/8; M_A = −wL²/8; sagging M_max = 9wL²/128 at x = 5L/8.
-  Ref: Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   case | Case | simply supported, UDL |  | manual | any
   L | Span | 6 | m | manual | 0.1 … 100 m
   E | Modulus of elasticity | 210 | GPa | manual | 1 … 500 GPa
-  I | Second moment of area | 8000 | cm^4 | manual | 1 … 100000000 cm^4
+  I | Second moment of area | 8000 | cm⁴ | manual | 1 … 100000000 cm⁴
   w | Distributed load (downward) | 10 | kN/m | manual | 0 … 10000 kN/m
   P | Point load (downward) | 50 | kN | manual | 0 … 100000 kN
-  M_0 | Applied couple | 20 | kN*m | manual | 0 … 1000000 kN*m
+  M_0 | Applied couple | 20 | kN·m | manual | 0 … 1000000 kN·m
   a | Load position from the left end | 3 | m | manual | 0 … 100 m
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Prismatic, linear elastic, Euler–Bernoulli beam; small deflections. (Roark Table 8.1 conditions.)
   A2. A cantilever is fixed at the left end (x = 0) and free at the right. (Case convention.)
 
-4. WORKING
+4. Working
   [5] EI = E * I
       = 210 GPa × 8000 cm⁴
       = 16800 kN·m²
@@ -60,22 +59,25 @@ Formulas from Roark Table 8.1, in this sheet's own notation, for the chosen supp
       = 3 m
         Position of the maximum deflection
 
-5. RESULTS
-  R_A = 30 kN    Left reaction
-  R_B = 30 kN    Right reaction
-  M_max = 45 kN·m    Maximum sagging moment
-  x_M = 3 m    Position of M_max
+5. Results
+  R_A = 30.00 kN    Left reaction
+  R_B = 30.00 kN    Right reaction
+  M_max = 45.00 kN·m    Maximum sagging moment
+  x_M = 3.00 m    Position of M_max
   M_min = 0 kN·m    Minimum (hogging) moment
-  V_max = 30 kN    Maximum shear
-  delta_max = 10.045 mm    Maximum deflection
-  x_delta = 3 m    Position of δ_max
+  V_max = 30.00 kN    Maximum shear
+  delta_max = 10.0 mm    Maximum deflection
+  x_delta = 3.00 m    Position of δ_max
 
-6. CHECKS (governing first)
-  No pass/fail checks in this calculation.
+6. Checks (governing first)
+  None.
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: struct.beam-formulas@1.1.0
   Known-answer cases passed: 8/8
+
+9. References
+  1. Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams

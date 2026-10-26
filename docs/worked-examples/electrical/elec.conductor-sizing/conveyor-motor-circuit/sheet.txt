@@ -6,17 +6,11 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without I₂, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or I₂ must be entered (machine wiring); every other number is the same in both contexts.
 Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to E5 so the fault check uses the device chosen here)
-  Ref: BS 7671:2018 (as amended) reg. 433.1.1 — Co-ordination of conductors and overload protective devices
-  Ref: BS 7671:2018 (as amended) reg. 523.1 — Current-carrying capacity of a cable
-  Ref: BS EN 60204-1:2018 cl. 12.4 — Current-carrying capacity of conductors and cables in normal service
-  Ref: BS EN 60204-1:2018 cl. 7.2 — Overcurrent protection
-  Ref: BS EN 60898-1 clause number to be checked — Circuit-breakers for overcurrent protection: conventional tripping current
-  Ref: BS 7671:2018 (as amended) reg. 433.1.201, 433.1.202 — Overload protection by gG fuses and semi-enclosed fuses: deemed conditions
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   context | Design context (changes clause citations and the scope note only) | BS EN 60204-1 machine wiring |  | spec: Machine design basis MDB-2: BS EN 60204-1 wiring | any
   supply | Supply | three-phase |  | drawing: E-SCH-021 rev A | any
@@ -25,7 +19,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   cos_phi | Power factor (not used for DC) | 0.82 |  | spec: Motor datasheet MD-04: 0.82 at full load | 0.5 … 1
   eta | Efficiency (not used for DC) | 0.85 |  | spec: Motor datasheet MD-04: 85 % at full load | 0.5 … 1
   L | Circuit length (carried to the voltage-drop calculation) | 35 | m | drawing: E-LAY-021 rev B | 0.1 … 500 m
-  theta_a | Ambient temperature | 40 | degC | spec: Machine design basis MDB-2: 40 °C inside the panel and trunking | -10 … 70 degC
+  theta_a | Ambient temperature | 40 | °C | spec: Machine design basis MDB-2: 40 °C inside the panel and trunking | -10 … 70 °C
   insulation | Insulation | PVC 70 °C |  | spec: Cable schedule CS-21: PVC 70 °C single cores | any
   method | Installation method key (descriptive only, e.g. B2, C, E) | B2 |  | drawing: E-LAY-021 rev B | any
   N_g | Grouped circuits | 3 |  | drawing: E-LAY-021 rev B | 1 … 20
@@ -35,7 +29,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   C_g | Grouping correction factor (at most 1) | 0.77 |  | reference: record: owner's licensed table (not shipped); 0.77 is a synthetic value invented for this example | 0.1 … 1
   C_i | Thermal insulation correction factor (at most 1) | 1 |  | reference: record: owner's licensed table (not shipped); 1 is a neutral value for this example | 0.1 … 1
   derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: The entered C_a is used; the derived approximation is not applied. | any
-  theta_ref | Reference ambient temperature for the derived C_a | 30 | degC | assumption: Reference ambient of the licensed table; only used when C_a is derived. | 0 … 60 degC
+  theta_ref | Reference ambient temperature for the derived C_a | 30 | °C | assumption: Reference ambient of the licensed table; only used when C_a is derived. | 0 … 60 °C
   ratings | Preferred device ratings | 9 row(s) |  | reference: record: owner's licensed table (not shipped); ratings are the typical preferred series | any
   ratings[1] |  | I_n = 6 A |  |  | 
   ratings[2] |  | I_n = 10 A |  |  | 
@@ -53,7 +47,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   ampacity[4] |  | CSA = 6 mm^2; I_t = 31.9 A |  |  | 
   ampacity[5] |  | CSA = 10 mm^2; I_t = 44.6 A |  |  | 
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator. (No table from a standard or a manufacturer is shipped.)
   A2. The capacities in the table are for the installation method stated; the method key is descriptive and is not interpreted. (Records carry their source and edition.)
   A3. A gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671 (installation context); an IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. (BS 7671 reg. 433.1.201; IEC 60269-1.)
@@ -63,10 +57,10 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   A7. AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm; no AWG capacity is supplied. (Derived.)
   A8. DC circuits use I_b = P/U; the power factor and efficiency are not applied. (Method.)
   A9. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (The entered C_a is used; the derived approximation is not applied.)
-  A10. theta_ref (Reference ambient temperature for the derived C_a) is taken as 30 degC. (Reference ambient of the licensed table; only used when C_a is derived.)
+  A10. theta_ref (Reference ambient temperature for the derived C_a) is taken as 30 °C. (Reference ambient of the licensed table; only used when C_a is derived.)
   A11. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
 
-4. WORKING
+4. Working
   [14] I_b = P / (sqrt(3) * U * cos_phi * eta)
       = 4 kW / (sqrt(3) × 400 V × 0.82 × 0.85)
       = 8.2834 A
@@ -119,33 +113,41 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = 0.8063
         I₂ utilisation of 1.45 I_z
 
-5. RESULTS
-  I_b = 8.2834 A    Design current
-  I_n = 10 A    Rated current of the device
+5. Results
+  I_b = 8.28 A    Design current
+  I_n = 10.00 A    Rated current of the device
+  CSA = 2.5 mm²    Selected cross-section
+  I_z = 12.40 A    Current-carrying capacity
+  L = 35.00 m    Circuit length
+  theta_op = 70.0 °C    Conductor operating temperature for the insulation
+  device_code = 2    Protective device type code
   C_c = 1    Semi-enclosed fuse factor
   C_a = 0.91    Ambient factor
-  I_t_req = 14.271 A    Required tabulated capacity
-  CSA = 2.5 mm²    Selected cross-section
-  I_z = 12.402 A    Current-carrying capacity
-  L = 35 m    Circuit length
-  u_Ib = 0.82834    I_b / I_n
-  u_In = 0.8063    I_n / I_z
-  theta_op = 70 degC    Conductor operating temperature for the insulation
-  I2 = 14.5 A    Conventional operating current
-  u_I2 = 0.8063    I₂ / (1.45 I_z)
-  device_code = 2    Protective device type code
+  I_t_req = 14.27 A    Required tabulated capacity
+  I2 = 14.50 A    Conventional operating current
+  u_Ib = 0.83    I_b / I_n (governing)
+  u_In = 0.81    I_n / I_z
+  u_I2 = 0.81    I₂ / (1.45 I_z)
 
-6. CHECKS (governing first)
-  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.82834 vs u_Ib ≤ 1  utilisation 0.828  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.8063 vs u_In ≤ 1  utilisation 0.806  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.8063 vs u_I2 ≤ 1  utilisation 0.806  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+6. Checks (governing first)
+  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.83 vs u_Ib ≤ 1  utilisation 0.83  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.81 vs u_In ≤ 1  utilisation 0.81  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.81 vs u_I2 ≤ 1  utilisation 0.81  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: ampacity (Cable current-carrying capacities); C_a, C_g, C_i (Cable correction factors); ratings (Preferred device ratings). Enter each as one so its source, edition and licence travel with it.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are ampacity (Cable current-carrying capacities); C_a, C_g, C_i (Cable correction factors); ratings (Preferred device ratings). Enter each as one so its source, edition and licence travel with it.  [record]
 
-8. VERIFICATION
+8. Verification
   Template: elec.conductor-sizing@1.3.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 6/6
   Test run: —
+
+9. References
+  1. BS 7671:2018 (as amended) reg. 433.1.1 — Co-ordination of conductors and overload protective devices
+  2. BS 7671:2018 (as amended) reg. 523.1 — Current-carrying capacity of a cable
+  3. BS EN 60204-1:2018 cl. 12.4 — Current-carrying capacity of conductors and cables in normal service
+  4. BS EN 60204-1:2018 cl. 7.2 — Overcurrent protection
+  5. BS EN 60898-1 clause number to be checked — Circuit-breakers for overcurrent protection: conventional tripping current
+  6. BS 7671:2018 (as amended) reg. 433.1.201, 433.1.202 — Overload protection by gG fuses and semi-enclosed fuses: deemed conditions

@@ -28,6 +28,6 @@ P_loss = 3 × (100 A)^2 × 0.047149 ohm = 1414.5 W
 u_dv = 1.8814 / 5 = 0.37627
 u_Iz = 100 A / 119 A = 0.84034
 T_c_est = 30 degC + (70 degC − 30 degC) × 0.84034^2 = 58.247 degC
-Governing: PASS  I ≤ I_z: u_Iz = 0.84034 vs u_Iz ≤ 1  utilisation 0.84  « BS 7671 523
+Governing: PASS  I ≤ I_z: u_Iz = 0.84 vs u_Iz ≤ 1  utilisation 0.84  « BS 7671 523
 ```
 <!-- hand-arithmetic:end -->

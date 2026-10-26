@@ -7,9 +7,9 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
 
 PACK INDEX
-  1. Tamper cam — Mechanism kinematics: four-bar, slider-crank, cam — rev A — ISSUED — Pressure angle φ_max within the allowed maximum PASS
-  2. Follower return spring — Helical springs: compression, extension, torsion — rev A — ISSUED — Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a PASS
-  3. Cam shaft — Shaft: static, fatigue, keys, critical speed — rev A — ISSUED — Slope at the bearings against limit PASS
+  1. Tamper cam — Mechanism kinematics — rev A — ISSUED — Pressure angle φ_max within the allowed maximum PASS
+  2. Follower return spring — Helical springs — rev A — ISSUED — Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a PASS
+  3. Cam shaft — Shaft design — rev A — ISSUED — Slope at the bearings against limit PASS
   4. Cam shaft bearing A — Rolling bearing life (ISO 281) — rev A — ISSUED — Static safety factor against required PASS
   5. Cam drive motor — Motor and actuator sizing — rev A — ISSUED — RMS torque SF·T_rms ≤ T_rated PASS
   6. Cam drive supply cable — Conductor sizing and overload coordination — rev A — ISSUED — Device rating within conductor capacity (I_n ≤ I_z) PASS
@@ -17,48 +17,52 @@ PACK INDEX
 REVISIONS
   A  2026-10-26  test.engineer  First issue
 
-1. SCOPE AND METHOD
+1. Scope and method
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
 
 
-2. INPUTS
-  Symbol | Description | Value | Unit | Source | Valid range
+2. Inputs
+  None.
 
-3. ASSUMPTIONS
+3. Assumptions
+  None.
 
-4. WORKING
+4. Working
+  None.
 
-5. RESULTS
+5. Results
+  None.
 
-6. CHECKS (governing first)
-  No pass/fail checks in this calculation.
+6. Checks (governing first)
+  None.
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 41/41
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 14:32 UTC
   Application: TempestOS test
+
+9. References
+  None.
 
 CALCULATION SHEET — ISSUED
 Project: Carton tamper station 4
 Calc ID: Tamper cam    Revision: A
-Title: Mechanism kinematics: four-bar, slider-crank, cam
+Title: Mechanism kinematics
 Author: unknown    Authored: 2026-10-26
 Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
 
-1. SCOPE AND METHOD
+1. Scope and method
 A single-degree-of-freedom planar mechanism driven at constant speed: a four-bar linkage or an offset slider-crank (both circuits, position, velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against a minimum, toggle and dead-centre positions, loop-closure residual, input torque by virtual work), or a cam with a translating follower. Rigid links, no clearance, no friction.
 Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂ Grashof class and transmission angle: s + l < p + q (crank-rocker, double-crank or double-rocker by the shortest link), = at the change point, > non-Grashof; transmission angle cos μ = (b² + c² − ℓ²)/(2bc) folded to 0 … 90°; toggle where ℓ = b + c or |b − c| Slider-crank position: x = r·cosθ + σ·√(l² − (r·sinθ − e)²) (σ = +1 open, −1 crossed); dx/dθ = −r·sinθ − r·cosθ·(r·sinθ − e)/(x − r·cosθ); dead centres where crank and rod are collinear; μ = 90° − |rod angle to the slide line| Input torque by virtual work: T_in·ω_in = Σ F·v; four-bar T_in = (T_L + J·α₄)·ω₄/ω₂; slider T_in = (m·a + F_L)·dx/dθ; RMS torque and mean power over the sweep by Simpson's rule Mechanism forces: four-bar tangential pin force P = (T_L + J·α₄)/c, coupler (and crank-pin) force P/sin μ; slider slide-direction force F_x = m·a + F_L, rod force F_x/cos θ₃, guide reaction F_x·tan θ₃; cam contact normal F/cos φ Assembly limits: four-bar toggles at cos θ₂ = (d² + a² − ℓ²)/(2ad), ℓ = b + c or |b − c|; slider sin θ = (e ± l)/r. The sweep is cut at them and, driven at constant speed into one, the unbounded peaks are not reported Loop closure: |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) asserted below 1e-9 mm at every step Cam, per segment with x = (θ − θ₀)/β: rise s = s₀ + h·f(x), return s = s₀ − h·f(x); cycloidal f = x − sin(2πx)/(2π); 3-4-5 f = 10x³ − 15x⁴ + 6x⁵; 4-5-6-7 f = 35x⁴ − 84x⁵ + 70x⁶ − 20x⁷; modified trapezoid from its acceleration pieces (C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2)) Cam SVAJ at constant ω: v = ω·s′, a = ω²·s″, j = ω³·s‴ (′ = d/dθ); peak coefficients C_v = max f′, C_a = max |f″|, C_j = max |f‴|, so v_pk = C_v·h·ω/β Pressure angle (roller, offset e, R_p = R_b + R_r): φ = arctan[(s′ − e)/(√(R_p² − e²) + s)], which for e = 0 is arctan[s′/(R_p + s)]; the base circle that holds φ ≤ φ_max has R_p,req = √(s₀,req² + e²) with s₀,req = max(|s′ − e|/tan φ_max − s) Radius of curvature of the pitch curve P(θ) = Rot(−θ)·(e, √(R_p² − e²) + s): ρ = |P′|³/(P′ × P″), convex where positive; undercut where ρ_min ≤ R_r (FAIL), none where the curve is nowhere convex; flat-faced follower: signed profile radius ρ = R_b + s + s″, the minimum of which must stay above zero (FAIL at or below) and the face must reach |s′|; the cam turns counter-clockwise with the follower axis at +x offset e Cam follower force F = m·a + k·s + F_pre + F_ext (the follower leaves the cam where F < 0); input torque by virtual work T = F·s′ (T·ω = F·v)
-  Ref: Norton, Design of Machinery Ch. 4, 6, 7 — Position, velocity and acceleration analysis; transmission angle; Grashof condition
-  Ref: Uicker, Pennock and Shigley, Theory of Machines and Mechanisms Ch. 4–6 — Loop-closure position analysis; velocity and acceleration of planar linkages
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Kind of mechanism | Cam |  | drawing: DRG-TMP-410 rev B | any
   circuit | Assembly circuit (four-bar, slider-crank): open is θ₄ = φ − γ (slider on the +x side of the crank pin), crossed the mirror branch | Open |  | assumption: Sheet default value; no project figure given. | any
@@ -67,20 +71,20 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   L3 | Coupler length b (four-bar) or connecting-rod length l (slider-crank) | 90 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
   L4 | Rocker length c (four-bar) | 70 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
   e_off | Offset e: slide line above the crank centre (slider-crank; blank: 0); cam follower axis offset, with the cam turning counter-clockwise and the follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (the rise), negative raises it | 0 | mm | drawing: DRG-TMP-410 rev B | -1000 … 1000 mm
-  theta_start | Input angle at the first row of the table | 0 | deg | assumption: Sheet default value; no project figure given. | -720 … 720 deg
-  theta_range | Swept range of the input angle (360° for a full turn) | 360 | deg | assumption: Sheet default value; no project figure given. | 1 … 720 deg
+  theta_start | Input angle at the first row of the table | 0 | ° | assumption: Sheet default value; no project figure given. | -720 … 720 °
+  theta_range | Swept range of the input angle (360° for a full turn) | 360 | ° | assumption: Sheet default value; no project figure given. | 1 … 720 °
   steps | Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it) | 72 |  | drawing: DRG-TMP-410 rev B | 4 … 720
   n_in | Input speed (constant) | 150 | rpm | drawing: DRG-TMP-410 rev B | 0.1 … 30000 rpm
-  mu_req | Minimum transmission angle required (linkages) | 40 | deg | assumption: Sheet default value; no project figure given. | 0 … 90 deg
+  mu_req | Minimum transmission angle required (linkages) | 40 | ° | assumption: Sheet default value; no project figure given. | 0 … 90 °
   load_dir | External load: constant direction, or always opposing the output motion | Opposes motion |  | assumption: Sheet default value; no project figure given. | any
-  T_load | External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists) | 1.5 | N*m | assumption: Sheet default value; no project figure given. | -10000 … 10000 N*m
-  J_out | Moment of inertia of the output link about its pivot (four-bar) | 0.002 | kg*m^2 | assumption: Sheet default value; no project figure given. | 0 … 1000 kg*m^2
+  T_load | External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists) | 1.5 | N·m | assumption: Sheet default value; no project figure given. | -10000 … 10000 N·m
+  J_out | Moment of inertia of the output link about its pivot (four-bar) | 0.002 | kg·m² | assumption: Sheet default value; no project figure given. | 0 … 1000 kg·m²
   m_slider | Slider mass (slider-crank) | 0.5 | kg | assumption: Sheet default value; no project figure given. | 0 … 10000 kg
   F_load | External load on the slider (slider-crank). Positive acts in the −x direction, resisting +x motion; with 'Opposes motion' it is applied against the actual direction of motion | 200 | N | assumption: Sheet default value; no project figure given. | -1000000 … 1000000 N
   follower | Follower type: roller (translating, pressure angle and undercut checked) or flat-faced (in-line) | Roller |  | drawing: DRG-TMP-410 rev B | any
   Rb | Base-circle radius of the cam profile R_b | 60 | mm | drawing: DRG-TMP-410 rev B | 1 … 1000 mm
   R_r | Roller radius R_r (roller follower) | 15 | mm | drawing: DRG-TMP-410 rev B | 1 … 200 mm
-  phi_max | Maximum pressure angle allowed (roller follower) | 30 | deg | drawing: DRG-TMP-410 rev B | 5 … 45 deg
+  phi_max | Maximum pressure angle allowed (roller follower) | 30 | ° | drawing: DRG-TMP-410 rev B | 5 … 45 °
   segs | Cam segments: rise, dwell or return, with motion law, angle and lift; the angles add to 360° and the rises equal the returns | 4 row(s) |  | drawing: DRG-TMP-410 rev B | any
   segs[1] |  | kind = Rise; law = Cycloidal; beta = 120 deg; h = 40 mm |  |  | 
   segs[2] |  | kind = Dwell; law = —; beta = 60 deg; h = 0 mm |  |  | 
@@ -91,7 +95,7 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   F_pre | Spring preload at the base circle (link an M7 force) | 50 | N | drawing: DRG-TMP-410 rev B | 0 … 100000 N
   F_ext | External load on the follower, positive against the rise | 0 | N | drawing: DRG-TMP-410 rev B | -100000 … 100000 N
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed. (Scope limits of the model.)
   A2. The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch; for a change-point linkage (parallelogram, deltoid) the circuit is named at a reference angle that does not depend on the sweep (the middle of the first interval between change points in 0 … 2π, π/2 when there are none), so the label at a crank angle means the same motion on every turn; only the true change points (all four links collinear, θ₂ = 0 or π) flip the branch, and it is followed by continuity through them inside the sweep. A linkage with one change point per turn (a kite) repeats every 720° and a sweep of more than one turn warns. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted. (Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank.)
   A3. Input torque is by virtual work from the output load and the inertia of the output element only (four-bar: the output link's moment of inertia about its pivot; slider: the slider mass); the crank and the coupler or connecting rod are massless. (No link-inertia or gravity terms: add the link masses to the output element for a first allowance.)
@@ -105,16 +109,16 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   A11. L2 (Crank length a (four-bar) or r (slider-crank)) is taken as 30 mm. (Sheet default value; no project figure given.)
   A12. L3 (Coupler length b (four-bar) or connecting-rod length l (slider-crank)) is taken as 90 mm. (Sheet default value; no project figure given.)
   A13. L4 (Rocker length c (four-bar)) is taken as 70 mm. (Sheet default value; no project figure given.)
-  A14. theta_start (Input angle at the first row of the table) is taken as 0 deg. (Sheet default value; no project figure given.)
-  A15. theta_range (Swept range of the input angle (360° for a full turn)) is taken as 360 deg. (Sheet default value; no project figure given.)
-  A16. mu_req (Minimum transmission angle required (linkages)) is taken as 40 deg. (Sheet default value; no project figure given.)
+  A14. theta_start (Input angle at the first row of the table) is taken as 0 °. (Sheet default value; no project figure given.)
+  A15. theta_range (Swept range of the input angle (360° for a full turn)) is taken as 360 °. (Sheet default value; no project figure given.)
+  A16. mu_req (Minimum transmission angle required (linkages)) is taken as 40 °. (Sheet default value; no project figure given.)
   A17. load_dir (External load: constant direction, or always opposing the output motion) is taken as Opposes motion. (Sheet default value; no project figure given.)
-  A18. T_load (External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists)) is taken as 1.5 N*m. (Sheet default value; no project figure given.)
-  A19. J_out (Moment of inertia of the output link about its pivot (four-bar)) is taken as 0.002 kg*m^2. (Sheet default value; no project figure given.)
+  A18. T_load (External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists)) is taken as 1.5 N·m. (Sheet default value; no project figure given.)
+  A19. J_out (Moment of inertia of the output link about its pivot (four-bar)) is taken as 0.002 kg·m². (Sheet default value; no project figure given.)
   A20. m_slider (Slider mass (slider-crank)) is taken as 0.5 kg. (Sheet default value; no project figure given.)
   A21. F_load (External load on the slider (slider-crank). Positive acts in the −x direction, resisting +x motion; with 'Opposes motion' it is applied against the actual direction of motion) is taken as 200 N. (Sheet default value; no project figure given.)
 
-4. WORKING
+4. Working
   [15] theta_sw = θ    « Cam follower kinematics
       = 73 rows, θ from 0° to 360°
       = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg
@@ -256,7 +260,18 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
       = 2.5 Hz
         Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
 
-5. RESULTS
+5. Results
+  input_torque = 10.11 N·m    Peak input torque by virtual work (mech.input_torque)
+  output_motion = 0.60 m/s    Peak follower velocity (mech.output_motion)
+  peak_accel = 14.14 m/s²    Peak follower acceleration (mech.peak_accel)
+  follower_force = 445.0 N    Peak axial force of the follower on the cam (mech.follower_force)
+  F_pin_pk = 445.0 N    Peak contact normal force on the cam, the load on the cam shaft's bearings (mech.F_pin_pk → M4, M5)
+  T_rms_in = 4.82 N·m    RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)
+  n_in = 150 rpm    Cam-shaft speed, passed through for E1's load speed (mech.n_in)
+  f_in = 2.50 Hz    Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
+  P_mean = 4.885e-14 W    Mean input power over the cam revolution (mech.P_mean)
+  lift = 40.0 mm    Greatest follower displacement
+  F_spring_max = 445.0 N    Spring force at full lift (mech.F_spring_max → M7 working force)
   theta_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: cam angle
   s_sw = [0, 0.018973, 0.15023, 0.49842, 1.1534, 2.1841, 3.6338, 5.5174, 7.82, 10.498, 13.484, 16.686, … (73 items)] mm    Table: follower displacement
   v_sw = [0, 0.010222, 0.040192, 0.087868, 0.15, 0.22235, 0.3, 0.37765, 0.45, 0.51213, 0.55981, 0.58978, … (73 items)] m/s    Table: follower velocity
@@ -273,62 +288,51 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   seg_a_pk = [14.137, 0, 10.998, 0] m/s²    Segments: peak acceleration
   seg_j_pk = [666.2, 0, 1036.6, 0] m/s³    Segments: peak jerk
   seg_law = "1: rise (Cycloidal); 2: dwell; 3: return (Modified trapezoid); 4: dwell"    Segments: kind and motion law
-  lift = 40 mm    Greatest follower displacement
-  v_pk = 0.6 m/s    Peak follower velocity
-  a_pk = 14.137 m/s²    Peak follower acceleration
+  v_pk = 0.60 m/s    Peak follower velocity
+  a_pk = 14.14 m/s²    Peak follower acceleration
   j_pk = 1036.6 m/s³    Peak follower jerk
-  F_max = 444.96 N    Greatest follower force on the cam
-  F_min = 50 N    Smallest follower force on the cam (negative: the follower leaves the cam)
-  phi_max_pk = 22.27 deg    Largest pressure angle
-  Rb_min_phi = 33.58 mm    Smallest base-circle radius that keeps the pressure angle within its limit (roller follower)
-  rho_min = 73.345 mm    Smallest radius of curvature of the pitch curve
-  u_rho = 0.20451    Roller radius against the smallest radius of curvature
-  u_phi = 0.74234    Largest pressure angle against the allowed one
-  input_torque = 10.111 N·m    Peak input torque by virtual work (mech.input_torque)
-  output_motion = 0.6 m/s    Peak follower velocity (mech.output_motion)
-  peak_accel = 14.137 m/s²    Peak follower acceleration (mech.peak_accel)
-  follower_force = 444.96 N    Peak axial force of the follower on the cam (mech.follower_force)
-  F_pin_pk = 444.96 N    Peak contact normal force on the cam, the load on the cam shaft's bearings (mech.F_pin_pk → M4, M5)
-  F_spring_max = 444.96 N    Spring force at full lift (mech.F_spring_max → M7 working force)
-  T_rms_in = 4.8162 N·m    RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)
-  P_mean = 4.885e-14 W    Mean input power over the cam revolution (mech.P_mean)
-  n_in = 150 rpm    Cam-shaft speed, passed through for E1's load speed (mech.n_in)
-  f_in = 2.5 Hz    Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
+  F_max = 445.0 N    Greatest follower force on the cam
+  F_min = 50.0 N    Smallest follower force on the cam (negative: the follower leaves the cam)
+  phi_max_pk = 22.27°    Largest pressure angle
+  Rb_min_phi = 33.6 mm    Smallest base-circle radius that keeps the pressure angle within its limit (roller follower)
+  rho_min = 73.3 mm    Smallest radius of curvature of the pitch curve
+  u_rho = 0.20    Roller radius against the smallest radius of curvature
+  u_phi = 0.74    Largest pressure angle against the allowed one (governing)
 
-6. CHECKS (governing first)
-  PASS  Pressure angle φ_max within the allowed maximum: u_phi = 0.74234 vs u_phi ≤ 1  utilisation 0.742  « Cam follower kinematics
-  PASS  No undercut: ρ_min of the pitch curve exceeds the roller radius: ρ_min = 73.345 mm vs > 15 mm  utilisation 0  « Cam follower kinematics
-  PASS  Follower stays on the cam: F_min ≥ 0: F_min = 50 N vs ≥ 0 N  utilisation 0  « Cam follower kinematics
+6. Checks (governing first)
+  PASS  Pressure angle φ_max within the allowed maximum: u_phi = 0.74 vs u_phi ≤ 1  utilisation 0.74  « Cam follower kinematics
+  PASS  No undercut: ρ_min of the pitch curve exceeds the roller radius: ρ_min = 73.345 mm vs > 15 mm  « Cam follower kinematics
+  PASS  Follower stays on the cam: F_min ≥ 0: F_min = 50 N vs ≥ 0 N  « Cam follower kinematics
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
-  Template: mech.mechanism@1.2.1
-  Content hash: d38ef071d1fe242e
+8. Verification
+  Template: mech.mechanism@1.2.2
+  Content hash: ec0fa964408ca211
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 16/16
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 14:32 UTC
   Application: TempestOS test
+
+9. References
+  1. Norton, Design of Machinery Ch. 4, 6, 7 — Position, velocity and acceleration analysis; transmission angle; Grashof condition
+  2. Uicker, Pennock and Shigley, Theory of Machines and Mechanisms Ch. 4–6 — Loop-closure position analysis; velocity and acceleration of planar linkages
 
 
 CALCULATION SHEET — ISSUED
 Project: Carton tamper station 4
 Calc ID: Follower return spring    Revision: A
-Title: Helical springs: compression, extension, torsion
+Title: Helical springs
 Author: unknown    Authored: 2026-10-26
 Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
 
-1. SCOPE AND METHOD
+1. Scope and method
 A cylindrical helical spring of round wire, cold-coiled, with a linear characteristic: compression (rate, working points, solid length by end type, stress at the working points and at solid, buckling, Goodman fatigue, surge frequency), extension (the same with the initial tension and the hook stresses) or torsion (rate with the legs, curvature-corrected bending stress, wound diameter and body length).
 Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n + (l₁ + l₂)/(3π·D) (torsion) Spring stress: τ_k = k_c·8·F·D/(π·d³), k_c = (C + 0.5)/(C − 0.75) (Bergsträsser) or (4C − 1)/(4C − 4) + 0.615/C (Wahl); torsion σ = q·32·M/(π·d³) with q = (C + 0.07)/(C − 0.75) (EN 13906-3, the default) or K_i = (4C² − C − 1)/(4C·(C − 1)) (Shigley) Solid length (compression): n_t = n + e_n; EN 13906-1 form L_s = d_max·(n_t + e_s) with (e_n, e_s) = (0, 1) plain, (1, 0) plain and ground, (2, 1.5) squared (closed, unground), (2, 0) squared and ground, and the minimum coil clearance S_a = (0.0015·D²/d + 0.1·d)·n checked at the working length (L₂ ≥ L_s + S_a); Shigley form L_s = d·(n_t + e_s) with e_s = 1 for squared; pitch p = (L₀ − a·d)/(n + b) Extension spring hook stresses: F = F₀ + k·s; hook bending σ_A = F·[K_A·16·D/(π·d³) + 4/(π·d²)], K_A = (4C₁² − C₁ − 1)/(4C₁·(C₁ − 1)), C₁ = 2r₁/d; hook torsion τ_B = K_B·8·F·D/(π·d³), K_B = (4C₂ − 1)/(4C₂ − 4), C₂ = 2r₂/d Buckling (compression): λ_eff = ν·L₀/D; y_cr = L₀·C₁′·[1 − √(1 − C₂′/λ_eff²)], C₁′ = E/(2(E − G)), C₂′ = 2π²(E − G)/(2G + E); stable at any deflection when λ_eff² < C₂′ Fatigue (Goodman, as M4): 1/n_f = a/S_e + m/S_u with a = (x₂ − x₁)/2, m = (x₂ + x₁)/2 of the stresses at the two working points; S_u = f_su·R_m in shear, R_m in bending; R_m typed or R_m = A/d^m from a W3 material (A in MPa, d in mm) Surge frequency: f_n = (d/(2π·n·D²))·√(G/(2ρ)); warning when f_n/f_op < 13 Torsion body: D_w = D·n/(n + φ/2π); L_w = d·(n + 1 + φ/2π)
-  Ref: EN 13906-1 Calculation of compression springs — Rate, stress correction, solid length, buckling, fatigue, surge
-  Ref: EN 13906-2 Calculation of extension springs — Rate, initial tension, hook stress
-  Ref: EN 13906-3 Calculation of torsion springs — Rate, bending stress with curvature correction
-  Ref: Shigley's Mechanical Engineering Design 10th ed., Ch. 10 — Helical springs: end geometry, buckling, critical frequency, extension and torsion springs
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Kind of spring | Compression |  | drawing: DRG-TMP-415 rev B | any
   corr | Stress correction factor k_c for the shear stress | Bergsträsser |  | assumption: Sheet default value; no project figure given. | any
@@ -349,14 +353,14 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   s_1 | Deflection at working point 1 (deflections) | 2 | mm | assumption: Sheet default value; no project figure given. | 0 … 1000 mm
   s_2 | Deflection at working point 2 (deflections) | 8 | mm | assumption: Sheet default value; no project figure given. | 0 … 1000 mm
   F_0 | Initial tension (extension) | 10 | N | assumption: Sheet default value; no project figure given. | 0 … 5000 N
-  M_1 | Torque at working point 1 (torsion, loads) | 0.05 | N*m | assumption: Sheet default value; no project figure given. | 0 … 100 N*m
-  M_2 | Torque at working point 2 (torsion, loads) | 0.15 | N*m | assumption: Sheet default value; no project figure given. | 0 … 100 N*m
-  phi_1 | Angle at working point 1 (torsion, deflections) | 5 | deg | assumption: Sheet default value; no project figure given. | 0 … 1080 deg
-  phi_2 | Angle at working point 2 (torsion, deflections) | 15 | deg | assumption: Sheet default value; no project figure given. | 0 … 1080 deg
+  M_1 | Torque at working point 1 (torsion, loads) | 0.05 | N·m | assumption: Sheet default value; no project figure given. | 0 … 100 N·m
+  M_2 | Torque at working point 2 (torsion, loads) | 0.15 | N·m | assumption: Sheet default value; no project figure given. | 0 … 100 N·m
+  phi_1 | Angle at working point 1 (torsion, deflections) | 5 | ° | assumption: Sheet default value; no project figure given. | 0 … 1080 °
+  phi_2 | Angle at working point 2 (torsion, deflections) | 15 | ° | assumption: Sheet default value; no project figure given. | 0 … 1080 °
   s_work | Expected working travel s₂ − s₁ (optional, compression and extension; M9 lift links here): the sheet warns when the spring's own travel differs by more than 1 %; in torsion mode it is not used and the sheet says so | 40 | mm | link: Tamper cam rev A · lift | 0.1 … 1000 mm
   G | Shear modulus | 80 | GPa | assumption: Sheet default value; no project figure given. | 20 … 100 GPa
   E | Young's modulus | 206 | GPa | assumption: Sheet default value; no project figure given. | 50 … 250 GPa
-  rho | Density | 7850 | kg/m^3 | assumption: Sheet default value; no project figure given. | 1000 … 20000 kg/m^3
+  rho | Density | 7850 | kg/m³ | assumption: Sheet default value; no project figure given. | 1000 … 20000 kg/m³
   rm_source | Where R_m(d) comes from: typed (no default: the wire certificate or your wire standard) or the curve R_m = A/d^m of a W3 material | Typed R_m(d) |  | drawing: DRG-TMP-415 rev B | any
   Rm | Tensile strength of the wire at this diameter R_m(d), typed (no default) | 1500 | MPa | drawing: DRG-TMP-415 rev B | 300 … 3500 MPa
   f_tau | Permissible shear stress as a fraction of R_m (generic textbook default; replace with the licensed EN 13906 value) | 0.45 |  | assumption: Sheet default value; no project figure given. | 0.2 … 0.8
@@ -368,7 +372,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   n_f_req | Required Goodman safety factor | 1.2 |  | assumption: Sheet default value; no project figure given. | 1 … 5
   f_op | Operating (excitation) frequency | 2.5 | Hz | link: Tamper cam rev A · f_in | 0 … 1000 Hz
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Linear characteristic: the rate is constant between the working points; no progressive or conical spring, no variable pitch. (Cold-coiled round wire up to 20 mm.)
   A2. Active coils n are as entered; end coils are accounted for only in the solid length (and the pitch) by the end type; the hook and leg flexibility is in the rate only for the torsion legs. (Shigley 10th ed. Ch. 10, geometry of the ends.)
   A3. Solid length: the EN 13906-1 form (default) uses the maximum wire diameter d_max, adds the 1.5 d of an unground squared end and checks the minimum coil clearance S_a at the working length L₂; plain ends have no EN row and keep the geometric form. The Shigley form (nominal d, no clearance) is selectable. (EN 13906-1 relations written in own notation, to be checked against the owner's copy; Shigley 10th ed. Table 10-1.)
@@ -387,13 +391,13 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   A16. s_1 (Deflection at working point 1 (deflections)) is taken as 2 mm. (Sheet default value; no project figure given.)
   A17. s_2 (Deflection at working point 2 (deflections)) is taken as 8 mm. (Sheet default value; no project figure given.)
   A18. F_0 (Initial tension (extension)) is taken as 10 N. (Sheet default value; no project figure given.)
-  A19. M_1 (Torque at working point 1 (torsion, loads)) is taken as 0.05 N*m. (Sheet default value; no project figure given.)
-  A20. M_2 (Torque at working point 2 (torsion, loads)) is taken as 0.15 N*m. (Sheet default value; no project figure given.)
-  A21. phi_1 (Angle at working point 1 (torsion, deflections)) is taken as 5 deg. (Sheet default value; no project figure given.)
-  A22. phi_2 (Angle at working point 2 (torsion, deflections)) is taken as 15 deg. (Sheet default value; no project figure given.)
+  A19. M_1 (Torque at working point 1 (torsion, loads)) is taken as 0.05 N·m. (Sheet default value; no project figure given.)
+  A20. M_2 (Torque at working point 2 (torsion, loads)) is taken as 0.15 N·m. (Sheet default value; no project figure given.)
+  A21. phi_1 (Angle at working point 1 (torsion, deflections)) is taken as 5 °. (Sheet default value; no project figure given.)
+  A22. phi_2 (Angle at working point 2 (torsion, deflections)) is taken as 15 °. (Sheet default value; no project figure given.)
   A23. G (Shear modulus) is taken as 80 GPa. (Sheet default value; no project figure given.)
   A24. E (Young's modulus) is taken as 206 GPa. (Sheet default value; no project figure given.)
-  A25. rho (Density) is taken as 7850 kg/m^3. (Sheet default value; no project figure given.)
+  A25. rho (Density) is taken as 7850 kg/m³. (Sheet default value; no project figure given.)
   A26. f_tau (Permissible shear stress as a fraction of R_m (generic textbook default; replace with the licensed EN 13906 value)) is taken as 0.45. (Sheet default value; no project figure given.)
   A27. f_sigma (Permissible bending stress as a fraction of R_m (torsion, hooks; generic textbook default, replace with the licensed EN 13906 value)) is taken as 0.75. (Sheet default value; no project figure given.)
   A28. f_su (Ultimate shear strength as a fraction of R_m (Goodman, shear; generic textbook default, replace with the licensed EN 13906 value)) is taken as 0.67. (Sheet default value; no project figure given.)
@@ -401,7 +405,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   A30. N_c (Required life the endurance strength belongs to) is taken as 10000000. (Sheet default value; no project figure given.)
   A31. n_f_req (Required Goodman safety factor) is taken as 1.2. (Sheet default value; no project figure given.)
 
-4. WORKING
+4. Working
   [7] C = D / d    « EN 13906-1 / EN 13906-2 / EN 13906-3
       = 50 mm / 6 mm
       = 8.3333
@@ -555,75 +559,79 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
       = 0.60968
         Fatigue utilisation against the required factor
 
-5. RESULTS
-  s_trav = 39.999 mm    Working travel s₂ − s₁
+5. Results
+  k = 9.9 N/mm    Rate
+  F_1 = 50.0 N    Force at point 1
+  F_2 = 445.0 N    Force at point 2
+  L_s = 75.0 mm    Solid length
+  f_n = 82.12 Hz    Surge frequency
+  s_trav = 40.0 mm    Working travel s₂ − s₁
   C = 8.3333    Spring index
-  Rm = 1500 MPa    Wire tensile strength R_m(d)
-  k = 9.8743 N/mm    Rate
+  Rm = 1500.0 MPa    Wire tensile strength R_m(d)
   k_c = 1.1648    Stress correction factor
   n_t = 12.5    Total coils
-  L_s = 75 mm    Solid length
-  p = 12.667 mm    Pitch
-  F_1 = 50 N    Force at point 1
-  F_2 = 444.96 N    Force at point 2
-  s_1 = 5.0637 mm    Deflection at point 1
-  s_2 = 45.063 mm    Deflection at point 2
-  L_1 = 139.94 mm    Length at point 1
-  L_2 = 99.937 mm    Length at point 2
-  s_c = 70 mm    Travel to solid
+  p = 12.7 mm    Pitch
+  s_1 = 5.1 mm    Deflection at point 1
+  s_2 = 45.1 mm    Deflection at point 2
+  L_1 = 139.9 mm    Length at point 1
+  L_2 = 99.9 mm    Length at point 2
+  s_c = 70.0 mm    Travel to solid
   F_c = 691.2 N    Force at solid
-  tau_1 = 34.331 MPa    Stress at point 1
-  tau_2 = 305.52 MPa    Stress at point 2
+  tau_1 = 34.3 MPa    Stress at point 1
+  tau_2 = 305.5 MPa    Stress at point 2
   tau_c = 474.6 MPa    Stress at solid
-  u_2 = 0.45262    Utilisation at point 2
-  u_c = 0.70311    Utilisation at solid
-  u_s = 0.64375    Working deflection / travel to solid
-  d_max = 6 mm    Maximum wire diameter
-  S_a = 12.863 mm    Minimum sum of coil clearances
-  L_n = 87.862 mm    Minimum length L_n
-  s_n = 57.137 mm    Travel to L_n
-  u_n = 0.78867    Working deflection / travel to L_n
+  d_max = 6.0 mm    Maximum wire diameter
+  S_a = 12.9 mm    Minimum sum of coil clearances
+  L_n = 87.9 mm    Minimum length L_n
+  s_n = 57.1 mm    Travel to L_n
   y_cr = "— (stable at any deflection)"    Buckling deflection
-  u_b = 0    Deflection at point 2 / buckling deflection
   buckling = "PASS"    Buckling
-  f_n = 82.118 Hz    Surge frequency
   r_f = 32.847    Surge ratio f_n/f_op
-  u_f = 0.50807    Goodman utilisation
-  n_f = 1.9682    Goodman safety factor
+  n_f = 1.97    Goodman safety factor
+  u_2 = 0.45    Utilisation at point 2
+  u_c = 0.70    Utilisation at solid
+  u_s = 0.64    Working deflection / travel to solid
+  u_n = 0.79    Working deflection / travel to L_n (governing)
+  u_b = 0.00    Deflection at point 2 / buckling deflection
+  u_f = 0.51    Goodman utilisation
 
-6. CHECKS (governing first)
-  PASS  Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a: u_n = 0.78867 vs u_n ≤ 1  utilisation 0.789  « EN 13906-1
-  PASS  Static shear stress at solid length: u_c = 0.70311 vs u_c ≤ 1  utilisation 0.703  « EN 13906-1
-  PASS  Working deflection within the travel to solid: u_s = 0.64375 vs u_s ≤ 1  utilisation 0.644  « EN 13906-1
-  PASS  Goodman fatigue against the required safety factor: u_fat = 0.60968 vs u_fat ≤ 1  utilisation 0.61  « Goodman, as M4
+6. Checks (governing first)
+  PASS  Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a: u_n = 0.79 vs u_n ≤ 1  utilisation 0.79  « EN 13906-1
+  PASS  Static shear stress at solid length: u_c = 0.70 vs u_c ≤ 1  utilisation 0.70  « EN 13906-1
+  PASS  Working deflection within the travel to solid: u_s = 0.64 vs u_s ≤ 1  utilisation 0.64  « EN 13906-1
+  PASS  Goodman fatigue against the required safety factor: u_fat = 0.61 vs u_fat ≤ 1  utilisation 0.61  « Goodman, as M4
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: G, E, rho (Material properties); Rm (Wire tensile strength R_m(d)); f_tau, f_sigma, f_su (Permissible and ultimate stress fractions); nu_seat (End-support coefficient); S_e (Endurance strength). Enter each as one so its source, edition and licence travel with it.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are G, E, rho (Material properties); Rm (Wire tensile strength R_m(d)); f_tau, f_sigma, f_su (Permissible and ultimate stress fractions); nu_seat (End-support coefficient); S_e (Endurance strength). Enter each as one so its source, edition and licence travel with it.  [record]
 
-8. VERIFICATION
-  Template: mech.spring@1.3.1
-  Content hash: f236fe54380fb9be
+8. Verification
+  Template: mech.spring@1.3.2
+  Content hash: 0ba43838cef719e9
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 14:32 UTC
   Application: TempestOS test
+
+9. References
+  1. EN 13906-1 Calculation of compression springs — Rate, stress correction, solid length, buckling, fatigue, surge
+  2. EN 13906-2 Calculation of extension springs — Rate, initial tension, hook stress
+  3. EN 13906-3 Calculation of torsion springs — Rate, bending stress with curvature correction
+  4. Shigley's Mechanical Engineering Design 10th ed., Ch. 10 — Helical springs: end geometry, buckling, critical frequency, extension and torsion springs
 
 
 CALCULATION SHEET — ISSUED
 Project: Carton tamper station 4
 Calc ID: Cam shaft    Revision: A
-Title: Shaft: static, fatigue, keys, critical speed
+Title: Shaft design
 Author: unknown    Authored: 2026-10-26
 Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
 
-1. SCOPE AND METHOD
+1. Scope and method
 A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a torque with a steady (mean) part and an optional alternating part: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.
 Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²) Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1) Endurance limit: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R Fatigue (DE-Goodman, bending fully reversed, torque T_m ± T_a): 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_pk²), τ_pk from the larger of T_m + T_a and the peak torque T_pk when given Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²), y signed (an overhung mass lifts the span, which lowers the quotient); Dunkerley 1/ω² = Σ m_i·δ_ii (lower bound, used for the ratio to the operating speed) Weight loads (with w_masses): F_y,i = −m_i·g at each node, m_i the carried mass plus the shaft's own mass split to the node; without it the loads table is the whole load Parallel key, on the peak torque T_k = the larger of T_m + T_a and T_pk: τ = 2T_k/(d·w·L), σ = 4T_k/(d·h·L); required length L = max(2T_k·n_target/(d·w·0.577·S_y,key), 4T_k·n_target/(d·h·S_y,min)), S_y,min the lowest of the key, the shaft and (when entered) the hub; a shoulder is checked on both sides and the lower n_f governs
-  Ref: Shigley's Mechanical Engineering Design 10th ed., Ch. 6 (§6-9, Table 6-2 Marin surface factors), Ch. 7 (§7-4 to §7-7) — Fatigue, shaft stresses, deflection, critical speeds, keys
-  Ref: Mott, Machine Elements in Mechanical Design 6th ed., Ch. 12 — Shaft design
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   segments | Shaft segments (left to right) | 3 row(s) |  | drawing: DRG-TMP-420 rev B | any
   segments[1] |  | x_end = 50 mm; d = 20 mm; d_i = 0 mm |  |  | 
@@ -634,9 +642,9 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   loads | Radial loads and masses (a carried mass adds no weight unless w_masses is on: enter its weight as a force in F_y) | 1 row(s) |  | drawing: DRG-TMP-420 rev B | any
   loads[1] |  | x = 150 mm; F_y = 0.44496 kN; F_z = 0 kN; m = 3 kg |  | F_y: link: Tamper cam rev A · F_pin_pk | 
   w_masses | Add the weight of the carried masses and of the shaft itself as downward vertical loads (off: the loads table is the whole load; the masses then enter the critical speed only) | no |  | assumption: Sheet default value; no project figure given. | any
-  T | Torque transmitted, steady or mean part T_m | 0 | kN*m | assumption: Sheet default value; no project figure given. | 0 … 50 kN*m
-  T_a | Alternating torque amplitude T_a about the mean (blank: 0, a steady torque; a reversing or cyclic drive needs it) | 0.0101113 | kN*m | link: Tamper cam rev A · input_torque | 0 … 50 kN*m
-  T_pk | Peak torque for the yield check and the key (blank: T + T_a) | 0.0101113 | kN*m | link: Tamper cam rev A · input_torque | 0 … 50 kN*m
+  T | Torque transmitted, steady or mean part T_m | 0 | kN·m | assumption: Sheet default value; no project figure given. | 0 … 50 kN·m
+  T_a | Alternating torque amplitude T_a about the mean (blank: 0, a steady torque; a reversing or cyclic drive needs it) | 0.0101113 | kN·m | link: Tamper cam rev A · input_torque | 0 … 50 kN·m
+  T_pk | Peak torque for the yield check and the key (blank: T + T_a) | 0.0101113 | kN·m | link: Tamper cam rev A · input_torque | 0 … 50 kN·m
   x_T1 | Torque enters at | 0 | mm | drawing: DRG-TMP-420 rev B | 0 … 3000 mm
   x_T2 | Torque leaves at (blank: the shaft length, so every section beyond x_T1 carries the torque) | 150 | mm | drawing: DRG-TMP-420 rev B | 0 … 3000 mm
   n | Operating speed | 150 | rpm | link: Tamper cam rev A · n_in | 0 … 30000 rpm
@@ -646,7 +654,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   S_ut | Ultimate tensile strength | 850 | MPa | drawing: DRG-TMP-420 rev B | 300 … 2000 MPa
   S_y | Yield strength | 650 | MPa | drawing: DRG-TMP-420 rev B | 150 … 1900 MPa
   E | Young's modulus | 207 | GPa | drawing: DRG-TMP-420 rev B | 50 … 250 GPa
-  rho | Density (shaft self-mass in the critical speed) | 7850 | kg/m^3 | drawing: DRG-TMP-420 rev B | 0 … 20000 kg/m^3
+  rho | Density (shaft self-mass in the critical speed) | 7850 | kg/m³ | drawing: DRG-TMP-420 rev B | 0 … 20000 kg/m³
   finish | Surface finish | ground |  | drawing: DRG-TMP-420 rev B | any
   R | Reliability | 99 | % | assumption: Sheet default value; no project figure given. | 50 … 99.9 %
   k_d | Temperature factor k_d | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1.1
@@ -655,7 +663,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   theta_max | Slope limit at the bearings | 0.001 | rad | assumption: Sheet default value; no project figure given. | 0.00001 … 0.1 rad
   y_max | Deflection limit at the loads | 0.13 | mm | assumption: Sheet default value; no project figure given. | 0.001 … 10 mm
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation; torque a steady part T_m plus an alternating part T_a about it (fully alternating when T_m = 0), both acting between the torque-in and torque-out positions. (Shigley 10th ed. §7-4.)
   A2. No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound. (Shigley 10th ed. §7-6.)
   A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (No stress-concentration chart is shipped; the factors are entered or derived.)
@@ -663,7 +671,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   A5. The loads table is the whole load: a carried mass adds no weight to the reactions, the moment or the deflection, and neither does the shaft's own weight, unless w_masses is on (which adds m·g at the nodes in the vertical plane). (Stated limitation; w_masses adds the weights.)
   A6. Loads, sections and steps closer together than 1/200 of the shaft length share one node. (Keeps the beam model well conditioned.)
   A7. w_masses (Add the weight of the carried masses and of the shaft itself as downward vertical loads (off: the loads table is the whole load; the masses then enter the critical speed only)) is taken as no. (Sheet default value; no project figure given.)
-  A8. T (Torque transmitted, steady or mean part T_m) is taken as 0 kN*m. (Sheet default value; no project figure given.)
+  A8. T (Torque transmitted, steady or mean part T_m) is taken as 0 kN·m. (Sheet default value; no project figure given.)
   A9. R (Reliability) is taken as 99 %. (Sheet default value; no project figure given.)
   A10. k_d (Temperature factor k_d) is taken as 1. (Sheet default value; no project figure given.)
   A11. k_f (Miscellaneous factor k_f) is taken as 1. (Sheet default value; no project figure given.)
@@ -671,7 +679,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   A13. theta_max (Slope limit at the bearings) is taken as 0.001 rad. (Sheet default value; no project figure given.)
   A14. y_max (Deflection limit at the loads) is taken as 0.13 mm. (Sheet default value; no project figure given.)
 
-4. WORKING
+4. Working
   [18] R_A = √(R_A,y² + R_A,z²)
       = √(-0.22248² + 0²)
       = 0.22248 kN
@@ -765,39 +773,43 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
       = 0.28395
         Deflection utilisation
 
-5. RESULTS
-  R_A = 0.22248 kN    Reaction at A
-  R_B = 0.22248 kN    Reaction at B
-  d_A = 20 mm    Seat diameter at A
-  d_B = 20 mm    Seat diameter at B
-  M_max = 0.02781 kN·m    Largest bending moment
-  theta_A = 0.00046315 rad    Slope at A
-  theta_B = 0.00046315 rad    Slope at B
-  y_load = 0.036913 mm    Deflection at the loads
-  S_e = 270.68 MPa    Endurance limit
-  n_f_min = 8.9994    Lowest fatigue safety factor
-  n_y_min = 21.611    Lowest yield safety factor
+5. Results
+  R_A = 0.22 kN    Reaction at A
+  R_B = 0.22 kN    Reaction at B
+  d_A = 20.0 mm    Seat diameter at A
+  d_B = 20.0 mm    Seat diameter at B
+  n_f_min = 9.00    Lowest fatigue safety factor
   n_c = 17796 rpm    First critical speed (Rayleigh)
+  M_max = 0.028 kN·m    Largest bending moment
+  theta_A = 0.00046 rad    Slope at A
+  theta_B = 0.00046 rad    Slope at B
+  y_load = 0.037 mm    Deflection at the loads
+  S_e = 270.7 MPa    Endurance limit
+  n_y_min = 21.61    Lowest yield safety factor
   n_c_D = 17662 rpm    Dunkerley lower bound
   r_c = 117.75    Critical-speed ratio
 
-6. CHECKS (governing first)
-  PASS  Slope at the bearings against limit: u_slope = 0.46315 vs u_slope ≤ 1  utilisation 0.463
-  PASS  Deflection at the loads against limit: u_defl = 0.28395 vs u_defl ≤ 1  utilisation 0.284
-  PASS  Fatigue safety factor against target (DE-Goodman): u_f = 0.16668 vs u_f ≤ 1  utilisation 0.167  « Shigley 10th ed. §7-4
-  PASS  Yield safety factor against target: u_y = 0.06941 vs u_y ≤ 1  utilisation 0.0694
+6. Checks (governing first)
+  PASS  Slope at the bearings against limit: u_slope = 0.46 vs u_slope ≤ 1  utilisation 0.46
+  PASS  Deflection at the loads against limit: u_defl = 0.28 vs u_defl ≤ 1  utilisation 0.28
+  PASS  Fatigue safety factor against target (DE-Goodman): u_f = 0.17 vs u_f ≤ 1  utilisation 0.17  « Shigley 10th ed. §7-4
+  PASS  Yield safety factor against target: u_y = 0.07 vs u_y ≤ 1  utilisation 0.07
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.
-  WARNING mass-weight: m: the carried mass (3 kg) adds no weight to the reactions, the moment or the deflection, and neither does the shaft's own weight; switch w_masses on to add them, or enter the weights as forces in F_y.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  m: the carried mass (3 kg) adds no weight to the reactions, the moment or the deflection, and neither does the shaft's own weight; switch w_masses on to add them, or enter the weights as forces in F_y.  [mass-weight]
 
-8. VERIFICATION
-  Template: mech.shaft@1.3.0
-  Content hash: 5710b2c29e98924d
+8. Verification
+  Template: mech.shaft@1.4.0
+  Content hash: 49ee0fed96b7a3d7
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 14:32 UTC
   Application: TempestOS test
+
+9. References
+  1. Shigley's Mechanical Engineering Design 10th ed., Ch. 6 (§6-9, Table 6-2 Marin surface factors), Ch. 7 (§7-4 to §7-7) — Fatigue, shaft stresses, deflection, critical speeds, keys
+  2. Mott, Machine Elements in Mechanical Design 6th ed., Ch. 12 — Shaft design
 
 
 CALCULATION SHEET — ISSUED
@@ -808,15 +820,11 @@ Author: unknown    Authored: 2026-10-26
 Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
 
-1. SCOPE AND METHOD
+1. Scope and method
 The basic and modified rating life of a rolling bearing under a steady load or a duty cycle, at a chosen reliability, against a required life; and the static safety factor against a required value.
 Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 0 for a single-row radial ball bearing), else P = X·F_r + Y·F_a (Y = 0 is refused when an axial load acts above e_lim) Duty cycle: P_eq = (Σ P_i^p·U_i / Σ U_i)^(1/p) Basic rating life: L_10 = (C/P)^p million revolutions, p = 3 ball, 10/3 roller Life in hours: L_10h = 10⁶·L_10 / (60·n) Reliability factor (ISO 281:2007, derived): a_1 = 0.95·[ln(100/R)/ln(100/90)]^(2/3) + 0.05 Modified life: L_nm = a_1·a_ISO·L_10 Static safety: P_0 = max(X_0·F_r + Y_0·F_a, F_r), s_0 = C_0/P_0
-  Ref: ISO 281:2007 cl. 6–7 — Dynamic equivalent load and basic rating life
-  Ref: ISO 281:2007 cl. 9 — Modified rating life
-  Ref: ISO 76:2006 cl. 6–7 — Static equivalent load and static safety factor
-  Ref: Shigley's Mechanical Engineering Design 11th ed., Ch. 11 — Rolling-contact bearings
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   type | Bearing type | ball (p = 3) |  | spec: SPEC-TMP-04 §5 (bearing schedule) | any
   F_r | Radial load | 0.22248 | kN | link: Cam shaft rev A · R_A | 0 … 2000 kN
@@ -836,7 +844,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   L_req | Required life | 20000 | h | spec: SPEC-TMP-04 §5 (bearing schedule) | 1 … 1000000 h
   s_0_req | Required static safety factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 4
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Ratings C and C₀, factors X, Y, e, X₀, Y₀ and a_ISO are the manufacturer's values for the bearing, entered as reference records. (No catalogue table ships with TempestOS.)
   A2. a₁ uses the ISO 281:2007 Weibull form (0.64 at 95 %, 0.25 at 99 %); ISO 281:1990 gave 0.62 and 0.21. (Edition stated on the sheet.)
   A3. Loads are steady within each duty step; speed is constant. (Duty steps weighted by share of revolutions.)
@@ -851,7 +859,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   A12. a_iso (Life modification factor a_ISO (from the manufacturer's tool)) is taken as 1. (Sheet default value; no project figure given.)
   A13. s_0_req (Required static safety factor) is taken as 1. (Sheet default value; no project figure given.)
 
-4. WORKING
+4. Working
   [18] p = 3    « ISO 281:2007 cl. 6–7
       = 3
         Life exponent, ball bearing
@@ -896,32 +904,38 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
       = 0.1236
         Static utilisation (required / actual safety factor)
 
-5. RESULTS
-  P = 0.22248 kN    Equivalent dynamic load
+5. Results
+  L_nmh = 432602 h    Modified rating life
+  L_10h = 432602 h    Basic rating life
+  P = 0.22 kN    Equivalent dynamic load
+  P_0 = 0.22 kN    Equivalent static load
+  s_0 = 8.09    Static safety factor
   L_10 = 3893.4    Basic rating life (Mrev)
-  L_10h = 432600 h    Basic rating life
   a_1 = 1    Reliability factor
   L_nm = 3893.4    Modified rating life (Mrev)
-  L_nmh = 432600 h    Modified rating life
-  P_0 = 0.22248 kN    Equivalent static load
-  s_0 = 8.0906    Static safety factor
-  u_life = 0.046232    Life utilisation
-  u_s0 = 0.1236    Static utilisation
+  u_life = 0.05    Life utilisation
+  u_s0 = 0.12    Static utilisation (governing)
 
-6. CHECKS (governing first)
-  PASS  Static safety factor against required: u_s0 = 0.1236 vs u_s0 ≤ 1  utilisation 0.124  « ISO 76:2006
-  PASS  Modified rating life against required life: u_life = 0.046232 vs u_life ≤ 1  utilisation 0.0462  « ISO 281:2007 cl. 9
+6. Checks (governing first)
+  PASS  Static safety factor against required: u_s0 = 0.12 vs u_s0 ≤ 1  utilisation 0.12  « ISO 76:2006
+  PASS  Modified rating life against required life: u_life = 0.05 vs u_life ≤ 1  utilisation 0.05  « ISO 281:2007 cl. 9
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: C, C_0 (Bearing load ratings); e_lim, X_1, Y_1, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing a_ISO). Enter each as one so its source, edition and licence travel with it.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are C, C_0 (Bearing load ratings); e_lim, X_1, Y_1, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing a_ISO). Enter each as one so its source, edition and licence travel with it.  [record]
 
-8. VERIFICATION
-  Template: mech.bearing-life@1.1.0
-  Content hash: 555757395aab4030
+8. Verification
+  Template: mech.bearing-life@1.2.0
+  Content hash: 53a676ddb446057a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 14:32 UTC
   Application: TempestOS test
+
+9. References
+  1. ISO 281:2007 cl. 6–7 — Dynamic equivalent load and basic rating life
+  2. ISO 281:2007 cl. 9 — Modified rating life
+  3. ISO 76:2006 cl. 6–7 — Static equivalent load and static safety factor
+  4. Shigley's Mechanical Engineering Design 11th ed., Ch. 11 — Rolling-contact bearings
 
 
 CALCULATION SHEET — ISSUED
@@ -932,26 +946,24 @@ Author: unknown    Authored: 2026-10-26
 Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
 
-1. SCOPE AND METHOD
+1. Scope and method
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
 Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load; deceleration T_dec = −T_acc + T_load; the peak check is on the larger magnitude, SF·max(|T_pk|, |T_dec|) ≤ T_peak, and the braking power is P_brake = max(0, −T_dec·ω_pk). Design torque for a coupling or any part downstream that must carry what the drive can deliver, on the basis the owner chooses (T_basis): the load peak T_design = max(|T_pk|, |T_dec|) (default; T_pk alone in continuous duty, where there is no deceleration), the motor peak T_design = T_peak, a service factor on the rated torque T_design = SF_c·T_rated, or a protective limit T_design = T_lim (a torque limiter or a drive setting). Holding torque in the dwell of a linear mechanism that is not held by a brake: T_hold = m g sin θ·k (efficiency not credited: it is a torque to stand still); it is part of the RMS torque for the whole dwell. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle), the dwell at T_hold. RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont; continuous duty needs the steady load torque T_L (blank or zero is refused: it would size the motor for no load). Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60; check P_cont ≤ P_rated, u_power = P_cont/P_rated.
-  Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
-  Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mechanism | Mechanism | gearbox rotary |  | spec: SPEC-TMP-04 §6 (cam drive) | any
   i | Gear ratio i (motor : output, 1 = none) | 9.6 |  | spec: SPEC-TMP-04 §6 (cam drive) | 1 … 1000
   eta | Mechanism efficiency (overall) | 0.9 |  | spec: SPEC-TMP-04 §6 (cam drive) | 0.3 … 1
   p_screw | Screw lead (per revolution of the screw) | 10 | mm | assumption: Sheet default value; no project figure given. | 1 … 100 mm
-  J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0.0002 | kg*m^2 | spec: SPEC-TMP-04 §6 (cam drive) | 0 … 10 kg*m^2
+  J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0.0002 | kg·m² | spec: SPEC-TMP-04 §6 (cam drive) | 0 … 10 kg·m²
   m | Moved mass (linear mechanisms) | 50 | kg | assumption: Sheet default value; no project figure given. | 0 … 100000 kg
   mu | Friction coefficient (guide / bearing) | 0.1 |  | assumption: Sheet default value; no project figure given. | 0 … 1
-  theta | Incline from horizontal (+ moving uphill) | 0 | deg | assumption: Sheet default value; no project figure given. | -90 … 90 deg
+  theta | Incline from horizontal (+ moving uphill) | 0 | ° | assumption: Sheet default value; no project figure given. | -90 … 90 °
   F_p | Process force opposing the move (linear) | 0 | N | assumption: Sheet default value; no project figure given. | 0 … 1000000 N
-  J_L | Load inertia at the output (rotary mechanisms) | 0.05 | kg*m^2 | spec: SPEC-TMP-04 §6 (cam drive) | 0 … 10000 kg*m^2
+  J_L | Load inertia at the output (rotary mechanisms) | 0.05 | kg·m² | spec: SPEC-TMP-04 §6 (cam drive) | 0 … 10000 kg·m²
   brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | assumption: Sheet default value; no project figure given. | any
-  T_L | Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused) | 4.81616 | N*m | link: Tamper cam rev A · T_rms_in | 0 … 100000 N*m
+  T_L | Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused) | 4.81616 | N·m | link: Tamper cam rev A · T_rms_in | 0 … 100000 N·m
   duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | continuous |  | spec: SPEC-TMP-04 §6 (cam drive) | any
   n_L | Load speed at the output (continuous duty) | 150 | rpm | link: Tamper cam rev A · n_in | 1 … 100000 rpm
   t_start | Run-up time to full speed (continuous duty) | 2 | s | spec: SPEC-TMP-04 §6 (cam drive) | 0.1 … 600 s
@@ -960,16 +972,16 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   t_move | Move time | 0.5 | s | assumption: Sheet default value; no project figure given. | 0.01 … 3600 s
   f_acc | Acceleration (and deceleration) fraction of the move time | 0.333333 |  | assumption: Sheet default value; no project figure given. | 0.05 … 0.5
   t_dwell | Dwell between moves | 0.5 | s | assumption: Sheet default value; no project figure given. | 0 … 3600 s
-  J_motor | Candidate motor rotor inertia | 0.0005 | kg*m^2 | spec: SPEC-TMP-04 §6 (cam drive) | 1e-7 … 10 kg*m^2
-  T_rated | Candidate motor continuous (rated) torque | 1 | N*m | spec: SPEC-TMP-04 §6 (cam drive) | 0.01 … 100000 N*m
-  T_peak | Candidate motor peak torque | 3 | N*m | spec: SPEC-TMP-04 §6 (cam drive) | 0.01 … 100000 N*m
+  J_motor | Candidate motor rotor inertia | 0.0005 | kg·m² | spec: SPEC-TMP-04 §6 (cam drive) | 1e-7 … 10 kg·m²
+  T_rated | Candidate motor continuous (rated) torque | 1 | N·m | spec: SPEC-TMP-04 §6 (cam drive) | 0.01 … 100000 N·m
+  T_peak | Candidate motor peak torque | 3 | N·m | spec: SPEC-TMP-04 §6 (cam drive) | 0.01 … 100000 N·m
   n_rated | Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (leave blank if not known: there is then no P_rated) | 1440 | rpm | spec: SPEC-TMP-04 §6 (cam drive) | 10 … 100000 rpm
   T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Sheet default value; no project figure given. | any
   n_max | Candidate motor maximum speed | 3000 | rpm | spec: SPEC-TMP-04 §6 (cam drive) | 10 … 100000 rpm
   SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
   J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Rigid transmission; the mechanism efficiency applies to the driving direction and is also used in the deceleration phase (conservative for peak, slightly pessimistic for RMS). (Servo-sizing practice.)
   A2. The friction force is Coulomb friction on the moved mass; viscous and breakaway friction are not modelled unless included in F_p. (Load model.)
   A3. Continuous duty: the load torque is constant at the stated speed and the motor accelerates the whole inertia linearly to speed in t_start while carrying the full load torque (conservative); the move distance, move time, acceleration fraction, dwell and profile are ignored. (Run-up idealisation for pumps and fans.)
@@ -977,7 +989,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   A5. p_screw (Screw lead (per revolution of the screw)) is taken as 10 mm. (Sheet default value; no project figure given.)
   A6. m (Moved mass (linear mechanisms)) is taken as 50 kg. (Sheet default value; no project figure given.)
   A7. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Sheet default value; no project figure given.)
-  A8. theta (Incline from horizontal (+ moving uphill)) is taken as 0 deg. (Sheet default value; no project figure given.)
+  A8. theta (Incline from horizontal (+ moving uphill)) is taken as 0 °. (Sheet default value; no project figure given.)
   A9. F_p (Process force opposing the move (linear)) is taken as 0 N. (Sheet default value; no project figure given.)
   A10. brake (A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor) is taken as no. (Sheet default value; no project figure given.)
   A11. profile (Motion profile) is taken as trapezoidal. (Sheet default value; no project figure given.)
@@ -989,7 +1001,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   A17. SF (Safety margin on torque) is taken as 1.25. (Sheet default value; no project figure given.)
   A18. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
 
-4. WORKING
+4. Working
   [19] k = 1 / i
       = 1 / 9.6
       = 0.10417
@@ -1107,54 +1119,58 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 0.55743
         Thermal duty (without margin)
 
-5. RESULTS
-  k = 0.10417    Transmission constant
-  T_load = 0.55743 N·m    Load torque at motor
-  J_refl = 0.00060282 kg·m²    Reflected load inertia
-  J_total = 0.0013028 kg·m²    Total inertia
-  alpha_pk = 75.398 rad/s²    Run-up angular acceleration
-  T_acc = 0.09823 N·m    Run-up torque
-  T_pk = 0.65566 N·m    Peak torque
-  T_design = 0.65566 N·m    Design torque for downstream couplings
+5. Results
+  T_load = 0.56 N·m    Load torque at motor
+  J_refl = 0.00060 kg·m²    Reflected load inertia
+  J_total = 0.0013 kg·m²    Total inertia
+  alpha_pk = 75.40 rad/s²    Run-up angular acceleration
+  T_acc = 0.098 N·m    Run-up torque
+  T_pk = 0.66 N·m    Peak torque
+  T_rms = 0.56 N·m    RMS torque
+  T_design = 0.66 N·m    Design torque for downstream couplings
   T_hold = 0 N·m    Holding torque in the dwell
   T_alt = 0 N·m    Alternating torque amplitude
   F_ax_pk = 0 N    Peak axial thrust on a screw's bearings
-  T_rms = 0.55743 N·m    RMS torque
+  T_out_m = 4.82 N·m    Output shaft mean torque
+  T_out_a = 0 N·m    Output shaft alternating torque
+  T_out_pk = 5.66 N·m    Output shaft peak torque
+  n_out = 150 rpm    Output shaft speed
   n_pk = 1440 rpm    Motor speed
-  P_cont = 84.058 W    Continuous power
+  n_mean = 1440 rpm    Mean motor speed (the steady speed)
+  P_pk = 0.099 kW    Peak power
   P_brake = 0 kW    Peak braking power
-  P_pk = 0.098871 kW    Peak power
-  P_rms = 0.084058 kW    RMS power (continuous equivalent)
+  P_cont = 84.1 W    Continuous power
+  P_rated = 150.8 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
+  P_rms = 0.084 kW    RMS power (continuous equivalent)
   J_ratio = 1.6056    Inertia ratio
   duty = 0.55743    Thermal duty
-  u_peak = 0.27319    Peak utilisation
-  u_rms = 0.69678    Continuous utilisation
+  u_peak = 0.27    Peak utilisation
+  u_power = 0.56    Rated power utilisation P_cont/P_rated
+  u_rms = 0.70    Continuous utilisation (governing)
   u_speed = 0.48    Speed utilisation
-  T_out_m = 4.8162 N·m    Output shaft mean torque
-  T_out_a = 0 N·m    Output shaft alternating torque
-  T_out_pk = 5.6649 N·m    Output shaft peak torque
-  n_out = 150 rpm    Output shaft speed
-  n_mean = 1440 rpm    Mean motor speed (the steady speed)
-  P_rated = 150.8 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
-  u_power = 0.55743    Rated power utilisation P_cont/P_rated
+  k = 0.10417    Transmission constant
 
-6. CHECKS (governing first)
-  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.69678 vs u_rms ≤ 1  utilisation 0.697
-  PASS  Rated power P_cont ≤ P_rated: u_power = 0.55743 vs u_power ≤ 1  utilisation 0.557
+6. Checks (governing first)
+  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.70 vs u_rms ≤ 1  utilisation 0.70
+  PASS  Rated power P_cont ≤ P_rated: u_power = 0.56 vs u_power ≤ 1  utilisation 0.56
   PASS  Speed n_pk ≤ n_max: u_speed = 0.48 vs u_speed ≤ 1  utilisation 0.48
-  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.27319 vs u_peak ≤ 1  utilisation 0.273
+  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.27 vs u_peak ≤ 1  utilisation 0.27
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.
-  WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.  [continuous-ignored]
 
-8. VERIFICATION
+8. Verification
   Template: elec.motor-sizing@1.9.0
   Content hash: b13348936aa53b72
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 14:32 UTC
   Application: TempestOS test
+
+9. References
+  1. Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
+  2. Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
 
 CALCULATION SHEET — ISSUED
@@ -1165,17 +1181,11 @@ Author: unknown    Authored: 2026-10-26
 Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
 
-1. SCOPE AND METHOD
+1. Scope and method
 One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without I₂, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or I₂ must be entered (machine wiring); every other number is the same in both contexts.
 Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to E5 so the fault check uses the device chosen here)
-  Ref: BS 7671:2018 (as amended) reg. 433.1.1 — Co-ordination of conductors and overload protective devices
-  Ref: BS 7671:2018 (as amended) reg. 523.1 — Current-carrying capacity of a cable
-  Ref: BS EN 60204-1:2018 cl. 12.4 — Current-carrying capacity of conductors and cables in normal service
-  Ref: BS EN 60204-1:2018 cl. 7.2 — Overcurrent protection
-  Ref: BS EN 60898-1 clause number to be checked — Circuit-breakers for overcurrent protection: conventional tripping current
-  Ref: BS 7671:2018 (as amended) reg. 433.1.201, 433.1.202 — Overload protection by gG fuses and semi-enclosed fuses: deemed conditions
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   context | Design context (changes clause citations and the scope note only) | BS EN 60204-1 machine wiring |  | assumption: Sheet default value; no project figure given. | any
   supply | Supply | three-phase |  | assumption: Sheet default value; no project figure given. | any
@@ -1184,7 +1194,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   cos_phi | Power factor (not used for DC) | 0.8 |  | spec: SPEC-TMP-04 §7 (power supply) | 0.5 … 1
   eta | Efficiency (not used for DC) | 0.8 |  | spec: SPEC-TMP-04 §7 (power supply) | 0.5 … 1
   L | Circuit length (carried to the voltage-drop calculation) | 15 | m | spec: SPEC-TMP-04 §7 (power supply) | 0.1 … 500 m
-  theta_a | Ambient temperature | 30 | degC | assumption: Sheet default value; no project figure given. | -10 … 70 degC
+  theta_a | Ambient temperature | 30 | °C | assumption: Sheet default value; no project figure given. | -10 … 70 °C
   insulation | Insulation | PVC 70 °C |  | spec: SPEC-TMP-04 §7 (power supply) | any
   method | Installation method key (descriptive only, e.g. B2, C, E) | C |  | spec: SPEC-TMP-04 §7 (power supply) | any
   N_g | Grouped circuits | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 20
@@ -1194,7 +1204,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   C_g | Grouping correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   C_i | Thermal insulation correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
-  theta_ref | Reference ambient temperature for the derived C_a | 30 | degC | assumption: Sheet default value; no project figure given. | 0 … 60 degC
+  theta_ref | Reference ambient temperature for the derived C_a | 30 | °C | assumption: Sheet default value; no project figure given. | 0 … 60 °C
   ratings | Preferred device ratings | 9 row(s) |  | record: SYNTHETIC device ratings (test values, not a manufacturer table) — Synthetic test data, not from any catalogue, n/a, invented values for the worked example rev 1 | any
   ratings[1] |  | I_n = 6 A |  |  | 
   ratings[2] |  | I_n = 10 A |  |  | 
@@ -1212,7 +1222,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   ampacity[4] |  | CSA = 6 mm^2; I_t = 31.9 A |  |  | 
   ampacity[5] |  | CSA = 10 mm^2; I_t = 44.6 A |  |  | 
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator. (No table from a standard or a manufacturer is shipped.)
   A2. The capacities in the table are for the installation method stated; the method key is descriptive and is not interpreted. (Records carry their source and edition.)
   A3. A gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671 (installation context); an IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. (BS 7671 reg. 433.1.201; IEC 60269-1.)
@@ -1223,17 +1233,17 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   A8. DC circuits use I_b = P/U; the power factor and efficiency are not applied. (Method.)
   A9. context (Design context (changes clause citations and the scope note only)) is taken as BS EN 60204-1 machine wiring. (Sheet default value; no project figure given.)
   A10. supply (Supply) is taken as three-phase. (Sheet default value; no project figure given.)
-  A11. theta_a (Ambient temperature) is taken as 30 degC. (Sheet default value; no project figure given.)
+  A11. theta_a (Ambient temperature) is taken as 30 °C. (Sheet default value; no project figure given.)
   A12. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
   A13. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
   A14. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
   A15. C_g (Grouping correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
   A16. C_i (Thermal insulation correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
   A17. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
-  A18. theta_ref (Reference ambient temperature for the derived C_a) is taken as 30 degC. (Sheet default value; no project figure given.)
+  A18. theta_ref (Reference ambient temperature for the derived C_a) is taken as 30 °C. (Sheet default value; no project figure given.)
   A19. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
 
-4. WORKING
+4. Working
   [14] I_b = P / (sqrt(3) * U * cos_phi * eta)
       = 0.1508 kW / (sqrt(3) × 400 V × 0.8 × 0.8)
       = 0.34009 A
@@ -1286,34 +1296,42 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = 0.4878
         I₂ utilisation of 1.45 I_z
 
-5. RESULTS
-  I_b = 0.34009 A    Design current
-  I_n = 6 A    Rated current of the device
+5. Results
+  I_b = 0.34 A    Design current
+  I_n = 6.00 A    Rated current of the device
+  CSA = 1.5 mm²    Selected cross-section
+  I_z = 12.30 A    Current-carrying capacity
+  L = 15.00 m    Circuit length
+  theta_op = 70.0 °C    Conductor operating temperature for the insulation
+  device_code = 2    Protective device type code
   C_c = 1    Semi-enclosed fuse factor
   C_a = 1    Ambient factor
-  I_t_req = 6 A    Required tabulated capacity
-  CSA = 1.5 mm²    Selected cross-section
-  I_z = 12.3 A    Current-carrying capacity
-  L = 15 m    Circuit length
-  u_Ib = 0.056681    I_b / I_n
-  u_In = 0.4878    I_n / I_z
-  theta_op = 70 degC    Conductor operating temperature for the insulation
-  I2 = 8.7 A    Conventional operating current
-  u_I2 = 0.4878    I₂ / (1.45 I_z)
-  device_code = 2    Protective device type code
+  I_t_req = 6.00 A    Required tabulated capacity
+  I2 = 8.70 A    Conventional operating current
+  u_Ib = 0.06    I_b / I_n
+  u_In = 0.49    I_n / I_z (governing)
+  u_I2 = 0.49    I₂ / (1.45 I_z)
 
-6. CHECKS (governing first)
-  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.4878 vs u_In ≤ 1  utilisation 0.488  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.4878 vs u_I2 ≤ 1  utilisation 0.488  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.056681 vs u_Ib ≤ 1  utilisation 0.0567  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+6. Checks (governing first)
+  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.49 vs u_In ≤ 1  utilisation 0.49  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.49 vs u_I2 ≤ 1  utilisation 0.49  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.06 vs u_Ib ≤ 1  utilisation 0.06  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.  [record]
 
-8. VERIFICATION
+8. Verification
   Template: elec.conductor-sizing@1.3.0
   Content hash: 549b80a7a72f70a5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 14:32 UTC
   Application: TempestOS test
+
+9. References
+  1. BS 7671:2018 (as amended) reg. 433.1.1 — Co-ordination of conductors and overload protective devices
+  2. BS 7671:2018 (as amended) reg. 523.1 — Current-carrying capacity of a cable
+  3. BS EN 60204-1:2018 cl. 12.4 — Current-carrying capacity of conductors and cables in normal service
+  4. BS EN 60204-1:2018 cl. 7.2 — Overcurrent protection
+  5. BS EN 60898-1 clause number to be checked — Circuit-breakers for overcurrent protection: conventional tripping current
+  6. BS 7671:2018 (as amended) reg. 433.1.201, 433.1.202 — Overload protection by gG fuses and semi-enclosed fuses: deemed conditions

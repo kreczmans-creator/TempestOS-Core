@@ -50,6 +50,6 @@ M_vm = centre = 57.492 N·m/m
 sigma_max = 6 × 57.492 N·m/m / (4 mm)² = 21.56 MPa
 sigma_principal = 6 × 65.6 N·m/m / (4 mm)² = 24.6 MPa
 … 5 more step(s) on the sheet
-Governing: PASS  Deflection w_max ≤ span/ratio: u_defl = 0.73745 vs u_defl ≤ 1  utilisation 0.737  « Serviceability
+Governing: PASS  Deflection w_max ≤ span/ratio: u_defl = 0.74 vs u_defl ≤ 1  utilisation 0.74  « Serviceability
 ```
 <!-- hand-arithmetic:end -->

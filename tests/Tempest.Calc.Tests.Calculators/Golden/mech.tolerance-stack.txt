@@ -1,16 +1,13 @@
 CALCULATION SHEET — DRAFT
 Project: GOLDEN
 Calc ID: mech.tolerance-stack    Revision: A
-Title: Tolerance stack-up (1D) v2
+Title: Tolerance stack-up (1D)
 
-1. SCOPE AND METHOD
+1. Scope and method
 A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.
 Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of squares, the statistical stack: T_rss = √Σ half². Modified RSS, a factor on the RSS (Bender-style): T_mrss = factor × RSS. Predicted standard deviation of the stack, from each contributor's distribution: σ = √Σ σ_i². Process capability, taken from the nearer limit: C_pk = min(USL − μ, μ − LSL)/(3σ). Monte Carlo check, every contributor sampled from a fixed seed and summed with its sign: stack = Σ s_i x_i.
-  Ref: BS 8888 — Technical product documentation and specification
-  Ref: ASME Y14.5 — Dimensioning and tolerancing
-  Ref: ISO 2768-1 — General tolerances (where a contributor's band is a general tolerance)
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   contributors | Contributors in the loop | 4 row(s) |  | manual | any
   contributors[1] |  | name = a shoulder length; direction = adds; nominal = 1.75 in; upper = 0.003 in; lower = -0.003 in |  |  | 
@@ -25,12 +22,12 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
   seed | Monte Carlo seed | 1 |  | manual | 0 … 4295000000
   notation | Drawing notation | BS 8888 |  | manual | any
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Every contributor acts along the one axis of the stack. (A linear stack: no angular or datum-shift effects beyond what the user enters as a contributor.)
   A2. Statistical figures assume contributors vary independently about their mid-limit (plus any stated mean shift), each with the distribution stated for it. (The worst case is a guarantee; every statistical figure is a prediction about a population.)
   A3. A position or profile contributor contributes ± half its tolerance zone, plus half the stated MMC bonus. (Diametral zones are bilateral about the true position.)
 
-4. WORKING
+4. Working
   [6] c1 = + 1.75 ±0.003
       = mid 1.75 in, ± 0.003 in, σ 0.001 in (normal)
       = 1.75 in
@@ -132,32 +129,37 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
       = 84.61 %
         Monte Carlo yield
 
-5. RESULTS
-  x_nom = 0.005 in    Nominal result
-  x_mean = 0.005 in    Mean result
-  t_wc = 0.01 in    Worst-case tolerance (±)
-  x_wc_min = -0.005 in    Worst-case minimum
+5. Results
+  x_nom = 0.0050 in    Nominal result
+  x_mean = 0.0050 in    Mean result
+  t_wc = 0.010 in    Worst-case tolerance (±)
+  x_wc_min = -0.0050 in    Worst-case minimum
   x_wc_max = 0.015 in    Worst-case maximum
-  t_rss = 0.006 in    RSS tolerance (±)
-  t_mrss = 0.009 in    Modified RSS tolerance (±)
-  sigma = 0.002 in    Predicted σ
-  m_min = -0.008 in    Worst-case margin to the minimum
+  t_rss = 0.0060 in    RSS tolerance (±)
+  t_mrss = 0.0090 in    Modified RSS tolerance (±)
+  sigma = 0.0020 in    Predicted σ
+  m_min = -0.0080 in    Worst-case margin to the minimum
   cpk = 0.33333    C_pk
   dpmo = 158660    DPMO (predicted)
-  yield = 84.134 %    Yield (predicted)
-  mc_mean = 0.0050019 in    Monte Carlo mean
-  mc_sigma = 0.0019919 in    Monte Carlo σ
-  mc_p05 = 0.0017324 in    Monte Carlo 5th percentile
-  mc_p95 = 0.0082769 in    Monte Carlo 95th percentile
-  mc_yield = 84.61 %    Monte Carlo yield
+  yield = 84.1 %    Yield (predicted)
+  mc_mean = 0.0050 in    Monte Carlo mean
+  mc_sigma = 0.0020 in    Monte Carlo σ
+  mc_p05 = 0.0017 in    Monte Carlo 5th percentile
+  mc_p95 = 0.0083 in    Monte Carlo 95th percentile
+  mc_yield = 84.6 %    Monte Carlo yield
 
-6. CHECKS (governing first)
-  FAIL  Worst case within requirement: -0.005 … 0.015 in vs 0.003 … open in  utilisation —
+6. Checks (governing first)
+  FAIL  Worst case within requirement: -0.005 … 0.015 in vs 0.003 … open in
   FAIL  C_pk against target: u_cpk = 3.99 vs u_cpk ≤ 1  utilisation 3.99
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
-  Template: mech.tolerance-stack@2.2.0
+8. Verification
+  Template: mech.tolerance-stack@2.2.1
   Known-answer cases passed: 7/7
+
+9. References
+  1. BS 8888 — Technical product documentation and specification
+  2. ASME Y14.5 — Dimensioning and tolerancing
+  3. ISO 2768-1 — General tolerances (where a contributor's band is a general tolerance)

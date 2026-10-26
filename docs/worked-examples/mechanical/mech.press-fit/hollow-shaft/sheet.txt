@@ -6,13 +6,11 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.
 Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Stresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p. Stresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p. Surface smoothing on assembly (when Rz is entered): δ_eff = max(δ − 0.8·(Rz_h + Rz_s), 0), p_eff = p·δ_eff/δ. Axial force and torque the fit holds by friction, on p_eff: F = μ·p_eff·2πR·L; T = μ·p_eff·2πR²·L. The stresses stay at the nominal p (the larger interference of the fit). Temperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).
-  Ref: Shigley's Mechanical Engineering Design §3-16, §3-17 — Press and shrink fits; stresses in pressurised cylinders
-  Ref: Roark's Formulas for Stress and Strain Ch. 13, Table 13.5 — Thick-walled cylinders under pressure
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   d | Interface (nominal) diameter | 50 | mm | drawing: DRG-HUB-04 rev C | 1 … 1000 mm
   delta | Diametral interference | 40 | µm | drawing: DRG-HUB-04 rev C | 1 … 500 µm
@@ -29,7 +27,7 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
   alpha_h | Hub thermal expansion coefficient | 0.000012 | 1/K | spec: steel | 0.000005 … 0.00003 1/K
   c_a | Assembly clearance wanted for shrink fitting | 20 | µm | assumption: Assembly clearance. | 0 … 500 µm
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Both parts are long cylinders in plane stress; the interface pressure is uniform along the engagement. (Lamé thick-cylinder relations; end effects neglected.)
   A2. The interference is the nominal one given: the torque and the press force need the minimum interference of the fit, the stresses the maximum, and the surface roughness smooths on assembly and takes about 0.8·(Rz_h + Rz_s) off it unless the roughness is entered. (DIN 7190-1; enter Rz to apply the smoothing to the torque and the force.)
   A3. The friction coefficient is as entered and the same for assembly and for torque transmission. (Enter it with its source; it dominates the force and torque results.)
@@ -38,7 +36,7 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
   A6. c_a (Assembly clearance wanted for shrink fitting) is taken as 20 µm. (Assembly clearance.)
   A7. No surface smoothing is applied: the torque and the press force are at the nominal interference. Roughness takes about 0.8·(Rz_h + Rz_s) off it on assembly, so a fine fit grips less than shown; check the torque at the minimum interference of the fit and the stresses at the maximum. (Enter Rz_h and Rz_s to apply the smoothing (DIN 7190-1).)
 
-4. WORKING
+4. Working
   [15] R = d / 2
       = 50 mm / 2
       = 25 mm
@@ -124,30 +122,34 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
       = 100 K
         Hub temperature rise for shrink fitting
 
-5. RESULTS
-  p = 49.68 MPa    Interface pressure
+5. Results
+  p = 49.7 MPa    Interface pressure
   sigma_t_hub = 82.8 MPa    Hub hoop stress at bore
   sigma_t_shaft = -82.8 MPa    Shaft hoop stress at surface
-  sigma_vm_hub = 115.92 MPa    Hub von Mises stress
-  sigma_vm_shaft = 72.183 MPa    Shaft von Mises stress at the surface
-  sigma_vm_shaft_bore = 132.48 MPa    Shaft von Mises stress at the shaft bore
-  sigma_vm_shaft_max = 132.48 MPa    Largest shaft von Mises stress (surface or bore)
-  delta_eff = 40 µm    Effective interference after smoothing
-  p_eff = 49.68 MPa    Gripping interface pressure
-  F_a = 70.233 kN    Assembly force
+  sigma_vm_hub = 115.9 MPa    Hub von Mises stress
+  sigma_vm_shaft = 72.2 MPa    Shaft von Mises stress at the surface
+  sigma_vm_shaft_bore = 132.5 MPa    Shaft von Mises stress at the shaft bore
+  sigma_vm_shaft_max = 132.5 MPa    Largest shaft von Mises stress (surface or bore) (governing)
+  delta_eff = 40.0 µm    Effective interference after smoothing
+  p_eff = 49.7 MPa    Gripping interface pressure
+  F_a = 70.23 kN    Assembly force
   T = 1755.8 N·m    Torque capacity
-  dT = 100 K    Shrink-fit temperature rise
+  dT = 100.0 K    Shrink-fit temperature rise
 
-6. CHECKS (governing first)
-  PASS  Shaft yield, surface and bore: 132.48 MPa vs 355 MPa  utilisation 0.373
-  PASS  Hub yield: 115.92 MPa vs 355 MPa  utilisation 0.327
+6. Checks (governing first)
+  PASS  Shaft yield, surface and bore: 132.5 MPa vs 355.0 MPa  utilisation 0.37
+  PASS  Hub yield: 115.9 MPa vs 355.0 MPa  utilisation 0.33
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: mech.press-fit@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 2/2
   Test run: —
+
+9. References
+  1. Shigley's Mechanical Engineering Design §3-16, §3-17 — Press and shrink fits; stresses in pressurised cylinders
+  2. Roark's Formulas for Stress and Strain Ch. 13, Table 13.5 — Thick-walled cylinders under pressure

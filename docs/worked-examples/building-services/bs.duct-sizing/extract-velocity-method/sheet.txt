@@ -6,20 +6,16 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 Sizes each duct section by the equal-friction method (a target friction rate) or the velocity method (a target velocity), rounds to standard sizes, and reports velocity, friction rate, friction and fitting losses per section and the total pressure drop along the index run, with warnings against user velocity and pressure-drop limits.
 Round duct diameter from the design target: D by Colebrook with the air properties at T (equal friction), or D = √(4Q/πv) (velocity), rounded up to the next standard size. Rectangular duct of equal friction and capacity: D_e = 1.30 (ab)^0.625/(a + b)^0.25. Flat-oval duct of equal friction and capacity: D_e = 1.55 A^0.625/P^0.25, with A = πb²/4 + b(a − b) and P = πb + 2(a − b). Velocity method, rectangular or flat-oval duct with side a fixed: b from the free area A = Q/v (rectangle b = A/a; flat oval the smaller root of (1 − π/4)b² − ab + A = 0), rounded up; D_e is kept for the friction only. Friction loss per metre, at the velocity v_e of the equivalent round duct: Δp/L = f ρ v_e²/(2D_e). Fitting losses, at the actual velocity: Δp = ΣC ρ v²/2. Index-run totals, summed over every section of the run: Δp_run = Σ(Δp/L · L + ΣC ρ v²/2).
-  Ref: ASHRAE Handbook — Fundamentals Ch. 21 — Duct design (friction chart basis, equivalent diameters, loss coefficients)
-  Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts
-  Ref: BS EN 1505 — Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions
-  Ref: BS EN 1506 — Ventilation for buildings: sheet metal air ducts and fittings with circular cross-section, dimensions
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   method | Sizing method | velocity |  | assumption: Velocity method for an extract system. | any
   dp_target | Target friction rate (equal friction) | 1 | Pa/m | default | 0.3 … 5 Pa/m
   v_target | Target velocity (velocity method) | 10 | m/s | spec: Dust-carrying extract: 10 m/s minimum transport velocity, SPEC-M-09 | 2 … 20 m/s
-  T | Air temperature | 25 | degC | assumption: Workshop air 25 °C. | -20 … 60 degC
+  T | Air temperature | 25 | °C | assumption: Workshop air 25 °C. | -20 … 60 °C
   p_atm | Barometric pressure | 100.5 | kPa | assumption: Site 70 m AOD, ≈ 100.5 kPa. | 80 … 105 kPa
   eps | Duct roughness | 0.15 | mm | assumption: Spiral-wound galvanised duct with joints. | 0.03 … 3 mm
   sections | Duct sections | 3 row(s) |  | drawing: DRG-M-310 rev A | any
@@ -30,16 +26,16 @@ Round duct diameter from the design target: D by Colebrook with the air properti
   dp_limit | Total pressure-drop limit (check) | 600 | Pa | spec: Extract fan external static 600 Pa | 50 … 2000 Pa
   round_to | Round sizes up to a multiple of | 50 | mm | spec: BS EN 1506 preferred sizes | 1 … 100 mm
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Air is dry at the stated temperature and pressure (ρ = p/(287.055 T)); viscosity by Sutherland's law. (Standard air properties.)
   A2. Rectangular and flat-oval ducts are sized through the equivalent diameter for equal friction and capacity. (Huebscher / Heyt–Diaz relations as given in ASHRAE Fundamentals Ch. 21.)
   A3. Fitting loss coefficients C are user-supplied (manufacturer or ASHRAE/CIBSE data, not embedded) and refer to the section's velocity pressure. (Non-negotiable: no standard tables embedded.)
   A4. method (Sizing method) is taken as velocity. (Velocity method for an extract system.)
-  A5. T (Air temperature) is taken as 25 degC. (Workshop air 25 °C.)
+  A5. T (Air temperature) is taken as 25 °C. (Workshop air 25 °C.)
   A6. p_atm (Barometric pressure) is taken as 100.5 kPa. (Site 70 m AOD, ≈ 100.5 kPa.)
   A7. eps (Duct roughness) is taken as 0.15 mm. (Spiral-wound galvanised duct with joints.)
 
-4. WORKING
+4. Working
   [10] rho = p / (287.055 T)
       = 100500 Pa / (287.055 × 298.15 K)
       = 1.1743 kg/m³
@@ -165,45 +161,53 @@ Round duct diameter from the design target: D by Colebrook with the air properti
       = 0.55704
         Velocity utilisation
 
-5. RESULTS
-  D_s1 = 250 mm    D, hood branch
-  v_s1 = 7.1301 m/s    v, hood branch
+5. Results
+  D_s1 = 250.0 mm    D, hood branch
+  v_s1 = 7.13 m/s    v, hood branch
   Re_s1 = 113940    Re, hood branch
   f_s1 = 0.02041    f, hood branch
-  dpL_s1 = 2.4369 Pa/m    Δp/L, hood branch
-  dp_f_s1 = 14.622 Pa    Friction loss, hood branch
-  dp_fit_s1 = 44.774 Pa    Fitting loss, hood branch
-  dp_s1 = 179.4 Pa    Section loss, hood branch
-  D_s2 = 400 mm    D, main
-  v_s2 = 8.3556 m/s    v, main
+  dpL_s1 = 2.44 Pa/m    Δp/L, hood branch
+  dp_f_s1 = 15 Pa    Friction loss, hood branch
+  dp_fit_s1 = 45 Pa    Fitting loss, hood branch
+  dp_s1 = 179 Pa    Section loss, hood branch
+  D_s2 = 400.0 mm    D, main
+  v_s2 = 8.36 m/s    v, main
   Re_s2 = 213630    Re, main
   f_s2 = 0.018028    f, main
-  dpL_s2 = 1.8475 Pa/m    Δp/L, main
-  dp_f_s2 = 36.95 Pa    Friction loss, main
-  dp_fit_s2 = 24.595 Pa    Fitting loss, main
-  dp_s2 = 61.545 Pa    Section loss, main
-  D_s3 = 400 mm    D, stack
-  v_s3 = 8.3556 m/s    v, stack
+  dpL_s2 = 1.85 Pa/m    Δp/L, main
+  dp_f_s2 = 37 Pa    Friction loss, main
+  dp_fit_s2 = 25 Pa    Fitting loss, main
+  dp_s2 = 62 Pa    Section loss, main
+  D_s3 = 400.0 mm    D, stack
+  v_s3 = 8.36 m/s    v, stack
   Re_s3 = 213630    Re, stack
   f_s3 = 0.018028    f, stack
-  dpL_s3 = 1.8475 Pa/m    Δp/L, stack
-  dp_f_s3 = 14.78 Pa    Friction loss, stack
-  dp_fit_s3 = 40.992 Pa    Fitting loss, stack
-  dp_s3 = 85.772 Pa    Section loss, stack
-  dp_index = 326.71 Pa    Index-run Δp
-  dp_all = 326.71 Pa    Σ all sections
-  v_peak = 8.3556 m/s    Highest velocity
+  dpL_s3 = 1.85 Pa/m    Δp/L, stack
+  dp_f_s3 = 15 Pa    Friction loss, stack
+  dp_fit_s3 = 41 Pa    Fitting loss, stack
+  dp_s3 = 86 Pa    Section loss, stack
+  dp_index = 327 Pa    Index-run Δp
+  dp_all = 327 Pa    Σ all sections
+  v_peak = 8.36 m/s    Highest velocity
 
-6. CHECKS (governing first)
-  PASS  Velocity ≤ limit: u_v = 0.55704 vs u_v ≤ 1  utilisation 0.557
-  PASS  Index-run Δp ≤ limit: u_dp = 0.54452 vs u_dp ≤ 1  utilisation 0.545
+6. Checks (governing first)
+  PASS  Velocity ≤ limit: u_v = 0.56 vs u_v ≤ 1  utilisation 0.56
+  PASS  Index-run Δp ≤ limit: u_dp = 0.54 vs u_dp ≤ 1  utilisation 0.54
 
-7. APPLICABILITY
-  WARNING input.dp_target: dp_target (Target friction rate (equal friction)) was not entered; the template default 1 Pa/m is used.
+7. Applicability
+  None.
+  Defaults used (inputs left empty):
+    dp_target: not entered, so the default of 1 Pa/m is used.
 
-8. VERIFICATION
+8. Verification
   Template: bs.duct-sizing@1.1.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3
   Test run: —
+
+9. References
+  1. ASHRAE Handbook — Fundamentals Ch. 21 — Duct design (friction chart basis, equivalent diameters, loss coefficients)
+  2. CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts
+  3. BS EN 1505 — Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions
+  4. BS EN 1506 — Ventilation for buildings: sheet metal air ducts and fittings with circular cross-section, dimensions

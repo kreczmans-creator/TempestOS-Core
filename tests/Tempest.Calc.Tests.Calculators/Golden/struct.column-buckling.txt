@@ -3,28 +3,25 @@ Project: GOLDEN
 Calc ID: struct.column-buckling    Revision: A
 Title: Column buckling (Perry–Robertson)
 
-1. SCOPE AND METHOD
+1. Scope and method
 Compressive strength and resistance of a pin-ended strut of a given effective length, from Euler's critical stress reduced for initial imperfection by the Perry–Robertson formula, with the Robertson constant chosen by strut curve; utilisation against an applied axial load.
 Radius of gyration and slenderness: r = √(I/A); λ = L_E/r. Euler buckling stress and load: p_E = π²E/λ²; P_E = p_E·A. Limiting slenderness, below which the strut is not reduced for buckling: λ_0 = 0.2·√(π²E/p_y). Perry factor (Robertson constant a = 2.0, 3.5, 5.5, 8.0 for curves a–d): η = max(0.001·a·(λ − λ_0), 0). Compressive strength by the Perry–Robertson formula: φ = (p_y + (η + 1)·p_E)/2; p_c = p_E·p_y/(φ + √(φ² − p_E·p_y)). Compression resistance and utilisation: P_c = p_c·A; u = P/P_c.
-  Ref: BS 5950-1:2000 Annex C — Compressive strength (Perry strut formula)
-  Ref: BS 5950-1:2000 4.7.3.2 — Maximum slenderness
-  Ref: BS 5950-1:2000 Table 23 — Allocation of strut curve
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   L_E | Effective length | 3 | m | manual | 0.1 … 50 m
-  A | Cross-section area | 2000 | mm^2 | manual | 10 … 1000000 mm^2
-  I | Second moment of area about the weaker axis | 200 | cm^4 | manual | 0.01 … 10000000 cm^4
+  A | Cross-section area | 2000 | mm² | manual | 10 … 1000000 mm²
+  I | Second moment of area about the weaker axis | 200 | cm⁴ | manual | 0.01 … 10000000 cm⁴
   E | Modulus of elasticity | 205 | GPa | manual | 50 … 450 GPa
   p_y | Design strength (yield) | 275 | MPa | manual | 100 … 1000 MPa
   curve | Strut curve (selects the Robertson constant) | c |  | manual | any
   P | Applied axial load | 150 | kN | manual | 0 … 100000 kN
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Pin-ended, prismatic strut under axial load only; buckling about the axis of the given second moment. (Effective length carries the end restraint.)
   A2. Initial imperfection represented by the Perry factor η = 0.001·a·(λ − λ_0), with a from the strut curve. (Robertson's fit to strut tests.)
 
-4. WORKING
+4. Working
   [8] a_R = 5.5    « BS 5950-1 Annex C
       = 5.5
         Robertson constant for strut curve c
@@ -69,23 +66,28 @@ Radius of gyration and slenderness: r = √(I/A); λ = L_E/r. Euler buckling str
       = 0.56062
         Utilisation
 
-5. RESULTS
-  r = 31.623 mm    Radius of gyration
+5. Results
+  r = 31.6 mm    Radius of gyration
   lambda = 94.868    Slenderness
-  p_E = 224.81 MPa    Euler stress
+  p_E = 224.8 MPa    Euler stress
   P_E = 449.62 kN    Euler load
   lambda_0 = 17.155    Limiting slenderness
   eta = 0.42742    Perry factor
-  p_c = 133.78 MPa    Compressive strength
+  p_c = 133.8 MPa    Compressive strength
   P_c = 267.56 kN    Compression resistance
-  u = 0.56062    Utilisation
+  u = 0.56    Utilisation (governing)
 
-6. CHECKS (governing first)
-  PASS  Axial load against compression resistance: u = 0.56062 vs u ≤ 1  utilisation 0.561  « BS 5950-1 Annex C
+6. Checks (governing first)
+  PASS  Axial load against compression resistance: u = 0.56 vs u ≤ 1  utilisation 0.56  « BS 5950-1 Annex C
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: struct.column-buckling@1.0.1
   Known-answer cases passed: 3/3
+
+9. References
+  1. BS 5950-1:2000 Annex C — Compressive strength (Perry strut formula)
+  2. BS 5950-1:2000 4.7.3.2 — Maximum slenderness
+  3. BS 5950-1:2000 Table 23 — Allocation of strut curve

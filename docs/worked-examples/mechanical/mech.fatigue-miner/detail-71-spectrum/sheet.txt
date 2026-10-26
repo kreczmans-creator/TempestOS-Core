@@ -6,13 +6,11 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 Cumulative fatigue damage of a stress-range spectrum against an S–N curve of one slope through a reference point, with an optional endurance limit below which a range does no damage; the spectrum repetitions to failure.
 Cycles to failure at each stress range, from the S–N curve (unbounded at or below the endurance limit S_e): N_i = N_ref·(S_ref/S_i)^m. Damage done by each block of cycles: d_i = n_i/N_i. Total damage, and how many repetitions of the spectrum the part survives: D = Σ d_i; repetitions = 1/D. Acceptance by the Palmgren–Miner rule: D ≤ 1.
-  Ref: BS EN 1993-1-9 §8 — Fatigue resistance (S–N curves by detail category)
-  Ref: Shigley's Mechanical Engineering Design §6-15 — Cumulative fatigue damage
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   S_ref | Reference stress range (detail category or material fatigue strength) | 71 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 2000 MPa
   N_ref | Cycles at the reference stress range | 2000000 |  | spec: SPEC-MECH-03 design criteria | 10000 … 1000000000
@@ -22,11 +20,11 @@ Cycles to failure at each stress range, from the S–N curve (unbounded at or be
   blocks[2] |  | S = 60 MPa; n = 500000 |  |  | 
   blocks[3] |  | S = 40 MPa; n = 2000000 |  |  | 
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Damage accumulates linearly and independently of the order of the blocks. (Palmgren–Miner rule.)
   A2. One S–N slope over the whole range; no second slope below a knee. (Simplified curve; a two-slope curve is entered as two sheets or a lower slope.)
 
-4. WORKING
+4. Working
   [4] N_1 = N_ref · (S_ref / S_1)^m    « BS EN 1993-1-9 §8
       = 2000000 × (71 MPa / 100 MPa)^3
       = 715820
@@ -60,8 +58,8 @@ Cycles to failure at each stress range, from the S–N curve (unbounded at or be
       = 2.1304
         Spectrum repetitions to failure
 
-5. RESULTS
-  D = 0.46939    Total damage
+5. Results
+  D = 0.46939    Total damage (governing)
   R_f = 2.1304    Repetitions to failure
   N_1 = 715820    Life at block 1
   d_1 = 0.1397    Damage of block 1
@@ -70,15 +68,19 @@ Cycles to failure at each stress range, from the S–N curve (unbounded at or be
   N_3 = 11185000    Life at block 3
   d_3 = 0.17882    Damage of block 3
 
-6. CHECKS (governing first)
-  PASS  Cumulative damage D ≤ 1: D = 0.46939 vs D ≤ 1  utilisation 0.469  « Shigley §6-15
+6. Checks (governing first)
+  PASS  Cumulative damage D ≤ 1: D = 0.47 vs D ≤ 1  utilisation 0.47  « Shigley §6-15
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: mech.fatigue-miner@1.0.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 2/2
   Test run: —
+
+9. References
+  1. BS EN 1993-1-9 §8 — Fatigue resistance (S–N curves by detail category)
+  2. Shigley's Mechanical Engineering Design §6-15 — Cumulative fatigue damage

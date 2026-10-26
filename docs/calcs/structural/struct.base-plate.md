@@ -49,6 +49,6 @@ C_Ed = (95 kN·m + 210 kN × 185 mm)/306.5 mm = 436.7 kN
 T_Ed = 436.7 − 210 = 226.7 kN
 C_Ed_2 = other side = 0 kN
 … 20 more step(s) on the sheet
-Governing: PASS  Base plate tension T-stub (bending at the bolts): u_T = 0.55839 vs u_T ≤ 1  utilisation 0.558  « EN 1993-1-8 cl. 6.2.6.11
+Governing: PASS  Base plate tension T-stub (bending at the bolts): u_T = 0.56 vs u_T ≤ 1  utilisation 0.56  « EN 1993-1-8 cl. 6.2.6.11
 ```
 <!-- hand-arithmetic:end -->

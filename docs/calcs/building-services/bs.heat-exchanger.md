@@ -1,4 +1,4 @@
-# B5 — Heat exchanger, LMTD and ε-NTU (`bs.heat-exchanger@1.3.0`)
+# B5 — Heat exchanger, LMTD and ε-NTU (`bs.heat-exchanger@1.4.0`)
 
 **In plain terms.** A heat exchanger passes heat from a hot stream to a cold one through a wall, and how much it passes depends on the area, how well the wall conducts, and the flow arrangement. The worksheet gives either the duty and outlet temperatures of a given exchanger, or the area needed for a given duty, by the effectiveness-NTU method, and cross-checks the answer with the log-mean temperature difference.
 
@@ -9,6 +9,8 @@
 **Inputs.** `arrangement`, `const_side` (C_r = 0 only), `mode`; `m_h`, `m_c` 0.001–100 kg/s; `cp_h`, `cp_c` (record kind `fluid.properties`, or B2 for air); `T_h_in`, `T_c_in` −40 to 200 °C; `U` 10–10 000 W/m²K; `R_f`; `A` 0.01–1000 m² (rating); `Q_req` kW (sizing, optional in rating); `dT_min`.
 
 **Outputs.** `C_r`, `NTU`, `eps`, `Q`, `T_h_out`, `T_c_out`, `dT_lm`, `F`, `Q_lmtd`, `dT_app`, `UA`, `A_req` (sizing), and from 1.1.0 `dT_c` (cold-side rise, K) and `T_c_m` (mean cold-side temperature, °C). **Ports.** `Q`, `T_h_out`, `T_c_out`, `A_req`, `dT_c`, `T_c_m`, `cp_c` → B1: `Q` is its `Phi_load`, `dT_c` its `dT_load`, `T_c_m` its fluid temperature `T` and `cp_c` its `cp_load` (the cooling chain, `pack.cooling`); `Q_req` takes E2's `P_cool` and `T_h_in` E2's `T_max` (the enclosure air enters the coil at its limit; hot-side c_p 1006 J/(kg·K) is the conventional dry-air value E2 uses). **Checks.** approach against the minimum; duty against required (rating).
+
+**Port names (C-2).** Each port is listed under its public name, `<area>.<quantity>`; the output symbol stays as its symbol and as an alias, so a link, a pack binding or an inputs file written before the rename still resolves. `Q` = `exchanger.duty`; `T_h_out` = `exchanger.temperature_hot_out`; `T_c_out` = `exchanger.temperature_cold_out`; `A_req` = `exchanger.area_required`; `dT_c` = `exchanger.temperature_rise_cold`; `T_c_m` = `exchanger.temperature_cold_mean`; `cp_c` = `exchanger.specific_heat_cold`.
 
 **Dew point (1.3.0).** The duty is sensible only. The optional input `T_dew` (the dew point of the hot-side air, from the site's humidity) makes the sheet warn (rule `condensation`) when the cold-side inlet is below it: the coil surface lies between the water and the air temperature and can condense water, which this duty does not include and which needs a drain (35 °C and 60 % RH give a dew point of 26.07 °C, and the example coil's water enters at 22 °C). Blank: not checked.
 
@@ -35,6 +37,6 @@ T_c_out = 40 °C + 120000 / 6270 = 59.139 degC
 dT_c = 59.139 °C − 40 °C = 19.139 K
 T_c_m = (40 °C + 59.139 °C)/2 = 49.569 degC
 … 5 more step(s) on the sheet
-Governing: PASS  Approach against minimum: u_app = 0.18595 vs u_app ≤ 1  utilisation 0.186
+Governing: PASS  Approach against minimum: u_app = 0.19 vs u_app ≤ 1  utilisation 0.19
 ```
 <!-- hand-arithmetic:end -->
