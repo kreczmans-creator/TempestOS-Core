@@ -484,6 +484,14 @@ public static class CalcCsv
 
     private static string Truncate(string s) => s.Length > 40 ? s[..40] + "…" : s;
 
+    /// <summary>The block for a file of too many rows, and the rows that are within the cap: the row that went over it is not one of them.</summary>
+    private static List<List<string>> OverTheRowCap(List<List<string>> rows, List<CalcNotice> notices)
+    {
+        rows.RemoveRange(MaxRows, rows.Count - MaxRows);
+        notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"The file has more than {MaxRows} rows; only the first {MaxRows} were read."));
+        return rows;
+    }
+
     private static List<List<string>> ParseRows(string text, List<CalcNotice> notices)
     {
         var rows = new List<List<string>>();
@@ -537,10 +545,7 @@ public static class CalcCsv
                 row = [];
 
                 if (rows.Count > MaxRows)
-                {
-                    notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"The file has more than {MaxRows} rows; only the first {MaxRows} were read."));
-                    return rows;
-                }
+                    return OverTheRowCap(rows, notices);
             }
             else
             {
@@ -555,6 +560,10 @@ public static class CalcCsv
         {
             row.Add(field.ToString());
             rows.Add(row);
+
+            // The last line has no line break after it, so the loop above never counted it (found by the C-7 soak): the cap is the same with or without one.
+            if (rows.Count > MaxRows)
+                return OverTheRowCap(rows, notices);
         }
 
         if (inQuotes)
