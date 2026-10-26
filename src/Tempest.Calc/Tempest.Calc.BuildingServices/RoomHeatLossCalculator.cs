@@ -54,7 +54,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.2", CalcDiscipline.BuildingServices, "U-values and room heat loss",
+        Id, "1.3.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
         "U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.",
         "Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing\n" +
         "Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside\n" +
@@ -102,6 +102,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcApplicabilityRule("supply", "The MVHR supply temperature must not exceed the internal design temperature.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("u-override-layers", "Layers of an element with a U override are ignored.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("orphan-layers", "Layers naming an element that is not in the elements table are ignored.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("f-and-adjacent", "An element with both a temperature factor f below 1 and an adjacent temperature above θ_e takes both reductions; f is for elements facing the outside only.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("f-add-ignored", "The additional allowance applies to the DHDG method only.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("mvhr-no-infiltration", "An MVHR supply temperature is entered and the infiltration rate n_inf is blank: the room has no infiltration loss at the outside temperature.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("n-inf-ignored", "The infiltration rate applies with an MVHR supply temperature only.", CalcNoticeSeverity.Warning),
@@ -305,6 +306,9 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             var external = adjEntered is null || adjEntered <= thetaE + 1e-9;
             var adj = adjEntered ?? thetaE;
             var f = row.Get("f")?.Number ?? 1.0;
+
+            if (f < 1 - 1e-9 && adjEntered is { } adjacent && adjacent > thetaE + 1e-9)
+                c.Warn("f-and-adjacent", $"elements: {name} has both a temperature factor f = {F(f)} and an adjacent temperature of {F(adjacent - 273.15)} °C, so the temperature reduction is counted twice (θ_int − θ_adj and f). Use f for elements facing the outside only (a floor to ground, say) and the adjacent temperature for a neighbouring space; leave one of them blank.");
             var user = Si(row, "U_user", uUnit);
             var flow = row.Get("flow")?.Text is { Length: > 0 } flowText ? Clean(flowText) : Horizontal;
             var mine = new List<(string Layer, double D, double Lambda)>();
@@ -393,11 +397,13 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         var areaExt = elements.Where(e => e.External).Sum(e => e.Area);
         var areaTb = elements.Where(e => e.External).Sum(e => e.Area * e.F);
         var hT = elements.Sum(e => e.Area * e.U * e.F);
+        var hU = elements.Sum(e => e.Area * e.U);
 
         c.Record("A_fab", "Σ A", $"{F(areaAll)} m²", ScalarValue.Of(areaAll, m2), "Total fabric area");
         c.Record("A_ext", "Σ A facing outside", $"{F(areaExt)} m²", ScalarValue.Of(areaExt, m2), "Fabric area facing outside");
         c.Record("A_tb", "Σ A·f facing outside", $"{F(areaTb)} m²", ScalarValue.Of(areaTb, m2), "Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)", tClause);
-        c.Record("U_m", "Σ A·U·f / Σ A", $"{F(hT)} / {F(areaAll)}", ScalarValue.Of(hT / areaAll, uUnit), "Area-weighted mean U-value of the fabric");
+        c.Record("U_m", "Σ A·U / Σ A", $"{F(hU)} / {F(areaAll)}", ScalarValue.Of(hU / areaAll, uUnit), "Area-weighted mean U-value of the fabric (without the temperature factor f)");
+        c.Record("U_eff", "Σ A·U·f / Σ A", $"{F(hT)} / {F(areaAll)}", ScalarValue.Of(hT / areaAll, uUnit), "Heat-loss weighted mean U-value of the fabric (includes the temperature factor f)");
         c.Assign("dT", "theta_int - theta_e", "K", "Design temperature difference, inside to outside");
         c.Record("Phi_el", "Σ Φ_i", $"{F(sumPhi)} W", ScalarValue.Of(sumPhi, w), "Fabric loss through the elements", tClause);
         c.Assign("Phi_tb", "y_tb * A_tb * dT", "W", "Thermal-bridge allowance", tClause);
@@ -465,7 +471,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         foreach (var (symbol, text) in outputs)
             c.Output(symbol, text);
 
-        foreach (var (symbol, text) in new[] { ("A_fab", "Total fabric area"), ("A_ext", "Fabric area facing outside"), ("A_tb", "Fabric area facing outside weighted by f"), ("U_m", "Mean fabric U-value"), ("dT", "Design temperature difference"), ("Phi_el", "Element fabric loss"), ("Phi_tb", "Thermal-bridge allowance"), ("Phi_T", "Fabric heat loss"), ("q_v", "Ventilation air flow"), ("Phi_V", "Ventilation heat loss"), ("Phi_HL", "Room design heat loss"), ("HLC", "Heat loss coefficient") })
+        foreach (var (symbol, text) in new[] { ("A_fab", "Total fabric area"), ("A_ext", "Fabric area facing outside"), ("A_tb", "Fabric area facing outside weighted by f"), ("U_m", "Mean fabric U-value (area-weighted)"), ("U_eff", "Heat-loss weighted fabric U-value (with f)"), ("dT", "Design temperature difference"), ("Phi_el", "Element fabric loss"), ("Phi_tb", "Thermal-bridge allowance"), ("Phi_T", "Fabric heat loss"), ("q_v", "Ventilation air flow"), ("Phi_V", "Ventilation heat loss"), ("Phi_HL", "Room design heat loss"), ("HLC", "Heat loss coefficient") })
             c.Output(symbol, text);
 
         if (hasFloor)
