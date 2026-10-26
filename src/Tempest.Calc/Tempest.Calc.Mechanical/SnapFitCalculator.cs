@@ -40,6 +40,9 @@ public sealed class SnapFitCalculator : ICalcCalculator
     /// <summary>The slenderness l/h below which beam theory is no longer a good model and the sheet warns.</summary>
     public const double SlendernessLimit = 5;
 
+    /// <summary>The deflection over the length y/l above which the linear beam theory under-predicts the strain by about 4 % and the force by about 10 % (elastica of a fixed-direction tip load).</summary>
+    public const double LargeDeflectionLimit = 0.3;
+
     /// <summary>The bar twist above which the small-angle relation φ = y/a is no longer good (about 20°).</summary>
     public const double SmallAngleLimit = 0.35;
 
@@ -55,7 +58,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Mechanical, "Snap-fits: cantilever, annular, torsion",
+        Id, "1.3.1", CalcDiscipline.Mechanical, "Snap-fits: cantilever, annular, torsion",
         "A plastic snap-fit joint of one of five forms: a cantilever lug of constant section, of tapered thickness or of tapered width, an annular (closed ring) snap, or a torsion bar. The strain at the critical section against the permissible strain of the plastic (one-time or repeated joining), the deflection force with the secant modulus, the assembly force (inclined entry face) and the separation force (return face) with Coulomb friction, and whether the joint is self-locking.",
         "Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (constant section; the design guides print the rounded 0.67); a linear taper of the thickness to r_h = h_tip/h gives K_y = 2·J/φ_max with J = [2r_h − r_h²/2 − ln r_h − 3/2]/(1 − r_h)³ and φ_max = 1 for r_h ≥ 1/2 (otherwise the strain peaks inside the beam at t = (2a − 1)/a, a = 1 − r_h, with φ_max = (1 − t)/(1 − a·t)²); a linear taper of the width to r_b gives K_y = 2·J with J = [1/2 − 2r_b + 3r_b²/2 − r_b²·ln r_b]/(1 − r_b)³\n" +
         "Strain and force of the cantilever: ε = y·h/(K_y·l²); P = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε))\n" +
@@ -108,6 +111,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
             new CalcApplicabilityRule("geometry", "The mean diameter of the ring does not exceed its wall thickness.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("es-curve", "The W3 secant-modulus points hold no usable row (a strain of zero or more with a positive modulus).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("slender", "The beam is shorter than 5 times its thickness (l/h < 5): beam theory underestimates the stiffness and the strain is not reliable.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("large-deflection", "The cantilever deflection is more than 0.3 of its length: linear beam theory under-predicts the strain (about 4 % at 0.3, 8.5 % at 0.41) and the force (10 %, 22 %).", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("es-range", "The design strain is outside the strains of the secant-modulus points: the end value is held, with no extrapolation.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("assembly-jam", "μ·tan α is 1 or more: the entry face jams and the part cannot be pushed on.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("n-latch", "The number of latches must be a whole number.", CalcNoticeSeverity.Block),
@@ -257,6 +261,10 @@ public sealed class SnapFitCalculator : ICalcCalculator
 
         if (c.Si("l_h") < SlendernessLimit)
             c.Warn("slender", $"l: the beam is {F(c.Si("l_h"))} times as long as it is thick (l/h < {SlendernessLimit:0}); beam theory is no longer reliable, so check the strain with a finite-element model or a test.");
+
+        // mech.snap-fit-01: beam theory is linear, so a deflection that is a large share of the length is under-predicted in strain and force.
+        if (c.Si("y") / c.Si("l") > LargeDeflectionLimit)
+            c.Warn("large-deflection", $"y: the deflection is {F(c.Si("y") / c.Si("l"))} of the length l; beam theory is linear and under-predicts the strain and the force at this size (a large-deflection solution gives about +4 % strain and +10 % force at y/l 0.3, +8.5 % and +22 % at 0.41), so the strain check is unconservative; check by a large-deflection model or a test.");
 
         double ky;
         double phiMax = 1;

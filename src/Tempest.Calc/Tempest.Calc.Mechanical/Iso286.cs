@@ -117,6 +117,9 @@ public static class Iso286
     /// <summary>The note printed with a fit that uses an interference letter from the formulae.</summary>
     public const string InterferenceLetterNote = "the formula value of a letter from p to zc can lie several µm (up to about 9 µm in the 100 to 565 mm checks, p6 at 450 mm 62.2 against 68 µm tabulated) below the tabulated deviation, because the standard's tables add their own increments and sub-steps; the maximum interference is then understated";
 
+    /// <summary>The size above which the standard has a t shaft (24 mm); below it there is none, and the 24 to 30 mm sub-step has its own mean diameter √(24·30).</summary>
+    public const double TShaftFromMm = 24.0;
+
     public static readonly IReadOnlyList<string> ShaftLetters = ["a", "b", "c", "cd", "d", "e", "ef", "f", "fg", "g", "h", "js", "j", "k", "m", "n", "p", "r", "s", "t", "u", "v", "x", "y", "z", "za", "zb", "zc"];
 
     public static readonly IReadOnlyList<string> HoleLetters = ["A", "B", "C", "CD", "D", "E", "EF", "F", "FG", "G", "H", "JS", "J", "K", "M", "N", "P", "R", "S", "T", "U", "V", "X", "Y", "Z", "ZA", "ZB", "ZC"];
@@ -149,7 +152,7 @@ public static class Iso286
             "p" => d > 500 ? 0.072 * d + 37.8 : Tolerance(sizeMm, 7) + 0.0,
             "r" => Math.Sqrt((Tolerance(sizeMm, 7) + 0.0) * S(d, sizeMm)),
             "s" => S(d, sizeMm),
-            "t" => d > 24 ? Tolerance(sizeMm, 7) + 0.63 * d : S(d, sizeMm),
+            "t" => sizeMm > TShaftFromMm ? Tolerance(sizeMm, 7) + 0.63 * (sizeMm <= 30 ? Math.Sqrt(TShaftFromMm * 30) : d) : null,
             "u" => Tolerance(sizeMm, 7) + d,
             "v" => d > 14 ? Tolerance(sizeMm, 7) + 1.25 * d : Tolerance(sizeMm, 7) + d,
             "x" => Tolerance(sizeMm, 7) + 1.6 * d,
@@ -177,7 +180,8 @@ public static class Iso286
         if (lower == "js")
             return Tolerance(sizeMm, grade) / 2;
 
-        var shaft = ShaftFundamentalDeviation(lower, sizeMm, grade);
+        // K, M and N up to IT8 take the deviation of the shaft letter at the grade the table lists it for: the k formula is 0 at IT8, but a K8 hole keeps the k deviation of IT4 to IT7 (mech.iso286-fit-03).
+        var shaft = ShaftFundamentalDeviation(lower, sizeMm, lower == "k" && grade == 8 ? 7 : grade);
 
         if (shaft is null)
             return null;

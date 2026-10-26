@@ -46,8 +46,8 @@ public sealed class MotorCircuitChainTests
         Assert.Equal(Si(e6, "Phi"), InputSi(e2, "P_add"), 9);
         Assert.Equal(6, made.Pack.InstanceIds.Count);
 
-        // The motor is outside the panel: E6's heat (24 V electronics and the fan, all of their input) is what the enclosure receives.
-        Assert.Equal(0.12e3 + 0.02e3, Si(e6, "Phi"), 6);
+        // The motor is outside the panel: E6's heat (24 V electronics and the fan, all of their input, and the 24 V supply's own loss 120 W × (1/0.9 − 1) = 13.333 W: elec.load-budget-05) is what the enclosure receives.
+        Assert.Equal(0.12e3 + 0.02e3 + 0.12e3 * (1 / 0.9 - 1), Si(e6, "Phi"), 6);
         Assert.Equal(0.7841424404208093e3, Si(e1, "P_rms"), 6);
 
         // E3 is run as a three-phase circuit (it was DC), and the enclosure holds its limit.

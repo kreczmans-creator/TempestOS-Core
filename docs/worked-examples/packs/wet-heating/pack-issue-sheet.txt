@@ -40,7 +40,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 24/24
-  Test run: 2026-10-26 11:22 UTC
+  Test run: 2026-10-26 13:10 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -206,7 +206,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: 3e4b1ea3ce5d1522
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 11:22 UTC
+  Test run: 2026-10-26 13:10 UTC
   Application: TempestOS test
 
 
@@ -390,7 +390,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: 3e4b1ea3ce5d1522
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 11:22 UTC
+  Test run: 2026-10-26 13:10 UTC
   Application: TempestOS test
 
 
@@ -532,7 +532,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   Content hash: 957f282656ddee12
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 11:22 UTC
+  Test run: 2026-10-26 13:10 UTC
   Application: TempestOS test
 
 
@@ -721,7 +721,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   Content hash: 4723d62a61e80298
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 11:22 UTC
+  Test run: 2026-10-26 13:10 UTC
   Application: TempestOS test
 
 
@@ -764,7 +764,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   J_motor | Candidate motor rotor inertia | 0.0002 | kg*m^2 | assumption: Sheet default value; no project figure given. | 1e-7 … 10 kg*m^2
   T_rated | Candidate motor continuous (rated) torque | 2 | N*m | assumption: Sheet default value; no project figure given. | 0.01 … 100000 N*m
   T_peak | Candidate motor peak torque | 6 | N*m | assumption: Sheet default value; no project figure given. | 0.01 … 100000 N*m
-  n_rated | Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (continuous duty; leave blank if not known: there is then no P_rated) | 2850 | rpm | spec: SPEC-HTG-01 §3 | 10 … 100000 rpm
+  n_rated | Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (leave blank if not known: there is then no P_rated) | 2850 | rpm | spec: SPEC-HTG-01 §3 | 10 … 100000 rpm
   T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Sheet default value; no project figure given. | any
   n_max | Candidate motor maximum speed | 6000 | rpm | assumption: Sheet default value; no project figure given. | 10 … 100000 rpm
   SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
@@ -885,27 +885,31 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 0.14241 N·m × 293.22 rad/s
       = 0.041756 kW
         Peak mechanical power (end of the run-up)
-  [44] P_rms = P_cont
+  [44] n_mean = omega_pk
+      = 293.22 rad/s
+      = 2800 rpm
+        Mean motor speed: the steady running speed
+  [45] P_rms = P_cont
       = 0.10536 W
       = 0.00010536 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
-  [45] J_ratio = (J_refl + J_mech) / J_motor
+  [46] J_ratio = (J_refl + J_mech) / J_motor
       = (0.0022222 kg·m² + 0 kg·m²) / 0.0002 kg·m²
       = 11.111
         Inertia ratio (load : motor)
-  [46] u_peak = SF * T_pk / T_peak
+  [47] u_peak = SF * T_pk / T_peak
       = 1.25 × 0.14241 N·m / 6 N·m
       = 0.029668
         Peak torque utilisation with safety margin
-  [47] u_rms = SF * T_rms / T_rated
+  [48] u_rms = SF * T_rms / T_rated
       = 1.25 × 0.00035933 N·m / 2 N·m
       = 0.00022458
         Continuous torque utilisation with safety margin
-  [48] u_speed = n_pk / n_max
+  [49] u_speed = n_pk / n_max
       = 2800 rpm / 6000 rpm
       = 0.46667
         Speed utilisation
-  [49] duty = T_rms / T_rated
+  [50] duty = T_rms / T_rated
       = 0.00035933 N·m / 2 N·m
       = 0.00017966
         Thermal duty (without margin)
@@ -937,6 +941,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   T_out_a = 0 N·m    Output shaft alternating torque
   T_out_pk = 0.12817 N·m    Output shaft peak torque
   n_out = 2800 rpm    Output shaft speed
+  n_mean = 2800 rpm    Mean motor speed (the steady speed)
   P_rated = 596.9 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
   u_power = 0.00017651    Rated power utilisation P_cont/P_rated
 
@@ -953,9 +958,9 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING inertia-ratio: J_motor: the inertia ratio 11.1 exceeds 10.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.8.0
-  Content hash: cfcdbae91693adc3
+  Template: elec.motor-sizing@1.9.0
+  Content hash: b13348936aa53b72
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 11:22 UTC
+  Test run: 2026-10-26 13:10 UTC
   Application: TempestOS test

@@ -351,7 +351,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d22585e0938149db8f6cadb8e355e79f#T_load",
+        "Reference": "calc:04d986fe5a124b7889745a94b664beaa#T_load",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -363,7 +363,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d22585e0938149db8f6cadb8e355e79f#T_alt",
+        "Reference": "calc:04d986fe5a124b7889745a94b664beaa#T_alt",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -375,7 +375,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d22585e0938149db8f6cadb8e355e79f#T_pk",
+        "Reference": "calc:04d986fe5a124b7889745a94b664beaa#T_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -450,7 +450,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d22585e0938149db8f6cadb8e355e79f#n_pk",
+        "Reference": "calc:04d986fe5a124b7889745a94b664beaa#n_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -602,6 +602,16 @@
       "ValueText": "0.001"
     },
     {
+      "Symbol": "w_masses",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
       "Symbol": "x_A",
       "Number": 25,
       "Unit": "mm",
@@ -690,7 +700,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d22585e0938149db8f6cadb8e355e79f#F_ax_pk",
+        "Reference": "calc:04d986fe5a124b7889745a94b664beaa#F_ax_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -702,7 +712,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:2cb415ce34214a7fbc340c13e9d30d78#R_A",
+        "Reference": "calc:7dff2bb0e8f1497d93a09b830b34c2bc#R_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -816,7 +826,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d22585e0938149db8f6cadb8e355e79f#n_pk",
+        "Reference": "calc:04d986fe5a124b7889745a94b664beaa#n_mean",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -850,7 +860,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:2cb415ce34214a7fbc340c13e9d30d78#d_A",
+        "Reference": "calc:7dff2bb0e8f1497d93a09b830b34c2bc#d_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1013,7 +1023,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d22585e0938149db8f6cadb8e355e79f#T_design",
+        "Reference": "calc:04d986fe5a124b7889745a94b664beaa#T_design",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

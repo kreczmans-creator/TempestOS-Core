@@ -1,4 +1,4 @@
-# E3 — Voltage drop and I²R loss (`elec.voltage-drop@1.1.0`)
+# E3 — Voltage drop and I²R loss (`elec.voltage-drop@1.2.0`)
 
 **In plain terms.** Current flowing through a cable's resistance and reactance loses some voltage before it reaches the load. How much depends on the current, the length, the conductor and, for alternating current, the power factor and whether the supply is single- or three-phase. The drop is compared with the allowed percentage of the supply voltage, and the same current gives the heat lost in the cable and an estimate of how warm the conductor runs.
 
@@ -9,6 +9,8 @@
 **Inputs.** `system`, `V_n`, `I`, `L`, `cos_phi`, `n_par`, `data`, `rho_20`, `alpha`, `A_c`, `T_c`, `R_km`, `X_km`, `mVAm`, `dv_limit`, `I_z`, `T_rated`, `T_amb`. **Outputs.** `R`, `X`, `dV`, `dV_pct`, `P_loss`, `T_c_est`. **Checks.** drop ≤ limit; I ≤ I_z (when given); warnings for overload and for an estimated temperature above T_c.
 
 **Changes in 1.1.0 (elec.voltage-drop-01).** The default `rho_20` is 0.0194 Ω·mm²/m instead of 0.01724: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm² (0.387 Ω/km at 50 mm² is 0.01935), so the drop is not below the cable tables the regulations' mV/A/m figures are built on. Enter 0.01724 for pure annealed copper or 0.0282 for aluminium; a stated value is used as entered.
+
+**Changes in 1.2.0 (elec.voltage-drop-02, -03).** On the resistivity route a blank `A_c` or `rho_20` takes the template default (35 mm², 0.0194 Ω·mm²/m) and the sheet now says so (warning `default-conductor`, one per blank input; the KAT answer 0.04715 Ω came with no notice). The overload check `I ≤ I_z` and the conductor temperature estimate now run on every route when `I_z` is entered, the mV/A/m route included (60 A on a 50 A cable gave only the drop check; now `u_Iz` 1.2 fails, the warning `overload` is raised and `T_c_est` is 87.6 °C); the `temperature` warning stays with the resistivity route, the one that takes a conductor temperature.
 
 **Test cases.** DC 48 V / 6 mm², three-phase 400 V / 35 mm² with reactance, mV/A/m route — all analytic (Confirmed).
 

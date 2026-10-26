@@ -33,7 +33,7 @@ public sealed class PcbTraceCalculator : ICalcCalculator
     public const double FitMinRiseK = 10.0;
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.3", CalcDiscipline.Electrical, "PCB trace width (IPC-2221 legacy)",
+        Id, "1.1.0", CalcDiscipline.Electrical, "PCB trace width (IPC-2221 legacy)",
         "The minimum width of a printed-circuit trace for a current and an allowed temperature rise, from the legacy IPC-2221 curve-fit, and the resistance, voltage drop and I²R loss of the trace as drawn: " + SheetLabel + ". External or internal layer; copper weight in oz/ft²; resistance at the trace's operating temperature (ambient plus rise). The IPC-2152 method (charts, plane and board-thickness factors) is not implemented.",
         "Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with A in mil², k = 0.048 external, 0.024 internal\n" +
         "Copper thickness: t = w_Cu·t_oz, t_oz = 1.378 mil per oz/ft² (35 µm, derived)\n" +
@@ -67,6 +67,7 @@ public sealed class PcbTraceCalculator : ICalcCalculator
             new CalcClauseRef("Hughes, Electrical and Electronic Technology", "Ch. on DC circuits", "Resistivity and temperature coefficient of resistance"),
         ],
         [
+            new CalcApplicabilityRule("narrow", "The trace as drawn is narrower than the minimum for the allowed rise (u_w above 1): it runs hotter, and the resistance, drop and loss are taken at the rise the curve-fit gives for the drawn width.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("width", "The minimum width exceeds 10 mm, beyond the range of the source curve-fit.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("input.I", "The current exceeds 35 A (the usual-range notice on I), beyond the range of the source curve-fit.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("copper", "The copper weight is outside 1 to 3 oz/ft², the range the source curve-fit was drawn for.", CalcNoticeSeverity.Warning),
@@ -86,9 +87,9 @@ public sealed class PcbTraceCalculator : ICalcCalculator
                 [CalcInputValue.Quantity("I", 5, "A"), CalcInputValue.Quantity("dT", 20, "K"), CalcInputValue.Quantity("T_amb", 25, "degC"), CalcInputValue.Choice("layer", External), CalcInputValue.Of("Cu_oz", 2), CalcInputValue.Quantity("w_act", 2.5, "mm"), CalcInputValue.Quantity("L", 100, "mm")],
                 [new CalcExpectedValue("w_min", 0.9079000638, "mm", 1e-9), new CalcExpectedValue("trace_R", 10.818960492, "mohm", 1e-9), new CalcExpectedValue("vdrop", 54.09480246, "mV", 1e-9), new CalcExpectedValue("trace_Ploss", 270.4740123, "mW", 1e-9), new CalcExpectedValue("u_w", 0.3631600255, "", 1e-9)]),
             new CalcTestCase("ka-half-oz-internal-narrow", "1 A, 30 K rise, 0.5 oz copper, internal, 200 mm long at 0.5 mm: too narrow (analytic)",
-                new CalcReferenceSource("Analytic (IPC-2221 legacy curve-fit, copper resistivity)", null, "A = 21.7636 mil², t = 0.689 mil, w_min = 0.802317 mm > 0.5 mm so u_w = 1.60463 (FAIL); T = 70 °C, ρ = 0.02062766 Ω·mm²/m; R = 471.473 mΩ; ΔV = 0.471473 V; P = 0.471473 W"),
+                new CalcReferenceSource("Analytic (IPC-2221 legacy curve-fit, copper resistivity)", null, "A = 21.7636 mil², t = 0.689 mil, w_min = 0.802317 mm > 0.5 mm so u_w = 1.60463 (FAIL); the drawn trace has A_act = 13.563 mil² and runs at ΔT = (1/(0.024·13.563^0.725))^(1/0.44) = 65.392 K (not the allowed 30 K), so T = 105.392 °C, ρ = 0.02302559 Ω·mm²/m; R = 526.281 mΩ; ΔV = 0.526281 V; P = 0.526281 W"),
                 [CalcInputValue.Quantity("I", 1, "A"), CalcInputValue.Quantity("dT", 30, "K"), CalcInputValue.Quantity("T_amb", 40, "degC"), CalcInputValue.Choice("layer", Internal), CalcInputValue.Of("Cu_oz", 0.5), CalcInputValue.Quantity("w_act", 0.5, "mm"), CalcInputValue.Quantity("L", 200, "mm")],
-                [new CalcExpectedValue("w_min", 0.8023171756, "mm", 1e-9), new CalcExpectedValue("u_w", 1.604634351, "", 1e-9), new CalcExpectedValue("trace_R", 471.4732066, "mohm", 1e-9), new CalcExpectedValue("trace_Ploss", 471.4732066, "mW", 1e-9)]),
+                [new CalcExpectedValue("w_min", 0.8023171756, "mm", 1e-9), new CalcExpectedValue("u_w", 1.604634351, "", 1e-9), new CalcExpectedValue("dT_act", 65.39206189, "K", 1e-9), new CalcExpectedValue("trace_R", 526.2810520, "mohm", 1e-9), new CalcExpectedValue("trace_Ploss", 526.2810520, "mW", 1e-9)]),
             new CalcTestCase("ka-published-3a-10k-1oz", "3 A, 10 K, 1 oz: widely quoted widths of about 1.37 mm external and 3.56 mm internal",
                 new CalcReferenceSource("IPC-2221 trace-width calculators and PCB design guides as quoted second-hand", null, "≈ 1.37 mm external and ≈ 3.56 mm internal for 3 A, 10 K rise, 1 oz copper; to be checked against the owner's copy of IPC-2221 and a trace-width calculator", Secondary: true),
                 [CalcInputValue.Quantity("I", 3, "A"), CalcInputValue.Quantity("dT", 10, "K"), CalcInputValue.Choice("layer", External), CalcInputValue.Of("Cu_oz", 1), CalcInputValue.Quantity("w_act", 2, "mm")],
@@ -130,15 +131,35 @@ public sealed class PcbTraceCalculator : ICalcCalculator
         c.Assign("w_min", "A_req / t_Cu", "mm", "Minimum trace width");
         c.Assign("u_w", "w_min / w_act", null, "Width utilisation (minimum / as drawn)");
 
-        c.Assign("T_trace", "T_amb + dT", "degC", "Trace operating temperature");
-        c.Assign("rho_T", "rho_20 * (1 + alpha * (T_trace - 20 degC))", "ohm*mm^2/m", "Copper resistivity at the operating temperature");
         c.Assign("A_act", "w_act * t_Cu", "mm^2", "Cross-section of the trace as drawn");
+
+        // elec.pcb-trace-02: a trace narrower than the minimum runs hotter than the allowed rise; the curve-fit solved for the rise at the drawn cross-section gives
+        // the temperature the resistance, drop and loss belong to. A trace that is wide enough keeps the allowed rise (the higher figure, so conservative).
+        var narrow = c.Si("u_w") > 1;
+
+        if (narrow)
+        {
+            c.Assign("dT_act", "(I_n / (k * (A_act / (1 mil^2))^n_A))^(1 / n_dT) * (1 K)", "K", "Temperature rise of the trace as drawn (the curve-fit solved for the rise)", "IPC-2221 §6 (legacy)");
+            c.Assign("T_trace", "T_amb + dT_act", "degC", "Trace operating temperature (at the rise of the trace as drawn)");
+        }
+        else
+        {
+            c.Assign("T_trace", "T_amb + dT", "degC", "Trace operating temperature");
+        }
+
+        c.Assign("rho_T", "rho_20 * (1 + alpha * (T_trace - 20 degC))", "ohm*mm^2/m", "Copper resistivity at the operating temperature");
         c.Assign("trace_R", "rho_T * L / A_act", "mohm", "Trace resistance at the operating temperature");
         c.Assign("vdrop", "I * trace_R", "mV", "Voltage drop along the trace");
         c.Assign("trace_Ploss", "I^2 * trace_R", "mW", "Power loss in the trace (I²R)");
 
         foreach (var (symbol, text) in new[] { ("A_req", "Minimum cross-section"), ("w_min", "Minimum trace width"), ("u_w", "Width utilisation"), ("trace_R", "Trace resistance"), ("vdrop", "Voltage drop"), ("trace_Ploss", "Power loss") })
             c.Output(symbol, text);
+
+        if (narrow)
+        {
+            c.Output("dT_act", "Temperature rise of the trace as drawn");
+            c.Warn("narrow", $"w_act: the trace as drawn is narrower than the minimum for {CalcValue.FormatNumber(c.Si("dT"))} K, so it runs hotter, about {CalcValue.FormatNumber(c.Si("dT_act"), 3)} K above ambient by the curve-fit; the resistance, drop and loss are taken at that rise. Widen the trace.");
+        }
 
         c.CheckUtilisation("Trace width as drawn against the minimum for the rise", "u_w", "IPC-2221 §6 (legacy)");
 

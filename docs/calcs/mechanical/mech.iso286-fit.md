@@ -1,4 +1,4 @@
-# M2a — ISO 286 limits and fits (`mech.iso286-fit@1.3.0`)
+# M2a — ISO 286 limits and fits (`mech.iso286-fit@1.4.0`)
 
 **In plain terms.** A hole and a shaft each get a tolerance band from the ISO system: the letter fixes how far the band sits from the nominal size and the number fixes how wide it is. Pairing the largest hole with the smallest shaft gives the loosest fit, and the smallest hole with the largest shaft the tightest. If the hole is always larger the fit has clearance, if it is always smaller it has interference, and if the bands overlap it is a transition fit that can go either way.
 
@@ -16,6 +16,8 @@
 **Outputs.** `IT_hole`, `IT_shaft`, `ES`, `EI`, `es`, `ei`, limits, `fit` (clearance / transition / interference), `c_max`, `c_min`, `i_max`, `i_min`, `c_mean`.
 
 **Limitations.** Unrounded formula values; for the clearance and transition letters (a to n) the tabulated values differ by the standard's rounding (about 1 µm). For the interference letters p to zc the tables also carry the standard's own increments and sub-steps (p6 at 450 mm: 62.2 µm from the formula against 68 µm tabulated; up to about 9 µm in the 100 to 565 mm checks), so the formula value can be several µm below the tabulated one and the maximum interference is understated: since 1.3.0 the sheet warns (`interference-letter`) for any p to zc letter taken from the formula, and the overrides carry the tabulated value. Letters a, b, c, j need overrides.
+
+**Changes in 1.4.0 (mech.iso286-fit-03, -04).** -03: a hole K at IT8 keeps the k deviation: `ES = −ei(k) + Δ` takes the shaft k of the grades the standard lists it for (IT4 to IT7), because the shaft formula returns 0 at IT8 and the K8 hole lost it (25 mm K8: ES 11.766 µm before, 10.054 µm now, the table value for 18 to 30 mm being +10 µm; K7, K6, M8 and K above IT8 are unchanged). -04: the t shaft (and T hole) exists above 24 mm only; at 24 mm and below the sheet now refuses it with a message naming the 24 mm limit instead of returning the s value (10 mm H7/t6 gave ei 23.453 µm, the s value), and from 24 to 30 mm it is evaluated at the sub-step mean `√(24·30)` (28 mm: ei 33.684 µm before, 37.823 µm now, in the family of the formula-versus-table notice for the letters p to zc).
 
 **Test cases.** `ka-h7g6-25` (25 mm H7/g6: 21/13 µm, g −7 µm, clearance 7…41 µm, within 3–6 %); `ka-h7p6-50` (50 mm H7/p6, interference up to 42 µm); `ka-bearing-bore-k6` (35 mm bore 0/−9 µm on k6: c_max −2.030 µm, c_min −26.642 µm — formula values recomputed in python3, Confirmed; the bore deviations are invented for the test).
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
