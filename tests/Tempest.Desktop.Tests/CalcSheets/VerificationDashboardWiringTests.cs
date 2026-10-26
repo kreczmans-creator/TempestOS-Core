@@ -7,7 +7,7 @@ using Tempest.Core.Identity;
 using Tempest.Desktop.CalcSheets;
 using Tempest.Desktop.Views;
 using Tempest.Workspace.Shell;
-using DashboardOutcome = Tempest.Calc.Library.Dashboard.ManualTestOutcome;
+using DashboardOutcome = Tempest.Calc.Library.Dashboard.DashboardManualTestOutcome;
 
 namespace Tempest.Desktop.Tests.CalcSheets;
 

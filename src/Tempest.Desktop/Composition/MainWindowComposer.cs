@@ -1065,7 +1065,7 @@ internal sealed partial class MainWindowComposer
             calcInstances.Catalogue, calcInstances.PackTemplates, snapshot: null,
             records: new Tempest.Calc.Library.Dashboard.RecordRequirementsRecordsSource(calcInstances.Store),
             manual: manualTests is null
-                ? new Tempest.Calc.Library.Dashboard.NoManualTestStatusSource()
+                ? new Tempest.Calc.Library.Dashboard.NoDashboardManualTestSource()
                 : new Tempest.Calc.Library.Dashboard.GuidedManualTestStatusSource(manualTests));
     }
 

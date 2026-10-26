@@ -71,7 +71,7 @@ public sealed class VerificationDashboardView : UserControl
         var title = new TextBlock { Text = Heading, FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeTitle };
         var note = new TextBlock
         {
-            Text = "Read-only. It lists what the tests, the Track P verification documents and the records in this database say about each calculator and chain; it changes none of them.",
+            Text = "Read-only. It lists what the tests, the independent verification documents and the records in this database say about each calculator and chain; it changes none of them.",
             FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, Opacity = 0.8,
         };
         var filters = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
@@ -85,7 +85,7 @@ public sealed class VerificationDashboardView : UserControl
         panel.Children.Add(filters);
         panel.Children.Add(_summary);
         panel.Children.Add(_statusLine);
-        panel.Children.Add(Row(Header("Calculator or chain"), Header("Discipline"), Header("Version"), Header("Known answers"), Header("Unconf."), Header("Second."), Header("Track P re-derivation"), Header("Records not entered"), Header("Open defects"), Header("Manual test")));
+        panel.Children.Add(Row(Header("Calculator or chain"), Header("Discipline"), Header("Version"), Header("Known answers"), Header("Unconfirmed"), Header("Secondary"), Header("Independent re-derivation"), Header("Records not entered"), Header("Open defects"), Header("Manual test")));
         panel.Children.Add(_rows);
 
         Content = new ScrollViewer { Content = panel, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };

@@ -110,7 +110,7 @@ Findings:
 - GR-C-02 (Low, Open): an upgrade that regenerates any worked example resets the manual-test status of every template to "Not tested". Proposed fix: count a result while its own step is unchanged (a hash per step: template version, inputs and expected values) instead of requiring the whole script version.
 - GR-C-03 (Low, Open, owner, DC-05): a draft re-run on the new E3 and E5 versions picks up the higher resistance defaults, which can turn a PASS into a FAIL (the `workshop-radial-c16` example now fails Z_s by 2.8 %). This is intended, but it is not said on the new-sheet message. Proposed fix: name the changed defaults in the "opened as a new sheet on the current version" message.
 - GR-C-04 (Info): an installed demo goes out of date at the next version bump. Remove and Install again is the route; the user page could say so.
-- The removed demo project staying in the project lists is Black B-C-03.
+- The removed demo project staying in the project lists was Black B-C-03, fixed in the second colour round: the lists leave deleted projects out, and a deleted project keeps its number.
 
 > The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
 

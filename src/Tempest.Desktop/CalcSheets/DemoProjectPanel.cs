@@ -44,15 +44,15 @@ public sealed class DemoProjectPanel : StackPanel
         Children.Add(buttons);
         Children.Add(_status);
 
-        _install.Click += async (_, _) => await GuardedAsync(() => _model.InstallAsync()).ConfigureAwait(true);
-        _remove.Click += async (_, _) => await GuardedAsync(() => _model.RemoveAsync()).ConfigureAwait(true);
+        _install.Click += async (_, _) => await GuardedAsync(() => _model.InstallAsync(), "install the demo project").ConfigureAwait(true);
+        _remove.Click += async (_, _) => await GuardedAsync(() => _model.RemoveAsync(), "remove the demo project").ConfigureAwait(true);
         _model.Changed += Render;
         Render();
     }
 
     public DemoProjectViewModel Model => _model;
 
-    private async Task GuardedAsync(Func<Task> action)
+    private async Task GuardedAsync(Func<Task> action, string what)
     {
         try
         {
@@ -60,7 +60,7 @@ public sealed class DemoProjectPanel : StackPanel
         }
         catch (Exception failure) when (failure is not OperationCanceledException)
         {
-            _status.Text = $"The demo project act failed: {failure.Message}";
+            _status.Text = $"Could not {what}: {failure.Message}";
         }
     }
 

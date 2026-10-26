@@ -71,7 +71,8 @@ public sealed class AddendumCColourRegressionTests
         Assert.Equal(RecordImportService.MaxFileRows - 1, atCap.Planned.Count);
         Assert.False(overRows.CanCommit);
         Assert.Empty(overRows.Planned);
-        Assert.Contains("more than", overRows.Refusal, StringComparison.Ordinal);
+        // Y-C-04: the person counts data rows, not the header.
+        Assert.Equal("The file has more than 1,000 data rows; split it into files of at most 1,000 rows, each with the header.", overRows.Refusal);
         Assert.False(overColumns.CanCommit);
         Assert.NotNull(overColumns.Refusal);
         Assert.Empty(await host.Store.ListRecordsAsync("joint.friction"));
@@ -118,5 +119,124 @@ public sealed class AddendumCColourRegressionTests
         Assert.True(conductor.Single(r => r.Kind == "cable.ampacity").Present);
         Assert.Equal(3, conductor.Single(r => r.Kind == "cable.ampacity").Count);
         Assert.True(counting.Counts.GetValueOrDefault("ReadAllAsync") <= 2, $"{counting.Counts.GetValueOrDefault("ReadAllAsync")} reads of a whole collection for two calculators");
+    }
+
+    // ------------------------------------------------------------------ Black B-C-02, B-C-03, B-C-04
+
+    [Fact]
+    public async Task Black_B_C_03_A_Removed_Demo_Project_Is_Not_Listed_For_A_Person_But_Still_Holds_Its_Number()
+    {
+        var host = DemoHost.New();
+        var demo = DemoHost.Service(host);
+        var real = await host.ProjectAsync();
+        var directory = new Tempest.Workspace.Projects.ProjectDirectory(host.Context);
+        Assert.True((await demo.InstallAsync()).Succeeded);
+        Assert.Contains(await directory.ListAsync(), p => p.Identifier == CalcDemoProject.Identifier);
+
+        Assert.True((await demo.RemoveAsync()).Succeeded);
+
+        // Before the fix the soft-deleted demo stayed in the Projects browser and the Reports picker, and a re-install listed it twice.
+        var listed = await directory.ListAsync();
+        Assert.DoesNotContain(listed, p => p.Identifier == CalcDemoProject.Identifier);
+        Assert.Contains(listed, p => p.Id == real);
+        Assert.Contains(await directory.ListIncludingDeletedAsync(), p => p.Identifier == CalcDemoProject.Identifier);
+        await Assert.ThrowsAsync<Tempest.Workspace.Projects.DuplicateProjectIdentifierException>(() => directory.CreateAsync(CalcDemoProject.Identifier, "Someone else's project"));
+
+        Assert.True((await demo.InstallAsync()).Succeeded);
+        Assert.Single(await directory.ListAsync(), p => p.Identifier == CalcDemoProject.Identifier);
+        Assert.Equal(2, (await directory.ListIncludingDeletedAsync()).Count(p => p.Identifier == CalcDemoProject.Identifier));
+    }
+
+    [Fact]
+    public async Task Black_B_C_02_Remove_Keeps_A_Demo_Scan_Profile_A_Calculation_In_Another_Project_Uses_And_Says_So()
+    {
+        var host = DemoHost.New();
+        var demo = DemoHost.Service(host);
+        Assert.True((await demo.InstallAsync()).Succeeded);
+        var real = await host.ProjectAsync();
+        var stack = await host.Service.CreateAsync("mech.tolerance-stack", real, "Real groove stack", CalcDemoProject.SealStackInputs());
+        var applied = await host.Service.ApplyScanImportAsync(stack.Id, new ScanImportRequest([CalcDemoProject.ScanFile()], CalcDemoProject.StackProfile, CalcDemoProject.ScanSettings));
+        Assert.True(applied.Action.Succeeded, applied.Action.Reason);
+
+        var removed = await demo.RemoveAsync();
+
+        Assert.True(removed.Succeeded, removed.Message);
+        Assert.Contains($"The scan profile '{CalcDemoProject.StackProfileId}' version 1 was kept, because a calculation in another project uses it.", removed.Message, StringComparison.Ordinal);
+        Assert.NotNull(await host.Service.FindScanProfileAsync(CalcDemoProject.StackProfileId, 1));
+        Assert.Null(await host.Service.FindScanProfileAsync(CalcDemoProject.GlandProfileId, 1));
+        Assert.Single((await host.Store.FindInstanceAsync(stack.Id))!.ScanImports!);
+
+        // The kept profile is the install's own, so the demo installs and removes again; the profile stays while the real calculation cites it.
+        Assert.True((await demo.InstallAsync()).Succeeded);
+        Assert.Contains("was kept", (await demo.RemoveAsync()).Message, StringComparison.Ordinal);
+        Assert.NotNull(await host.Service.FindScanProfileAsync(CalcDemoProject.StackProfileId, 1));
+    }
+
+    private sealed class Now(Action<string> act) : IProgress<string>
+    {
+        public void Report(string value) => act(value);
+    }
+
+    [Fact]
+    public async Task Black_B_C_04_A_Cancelled_Install_Whose_Clean_Up_Fails_Says_Part_Of_It_Is_Left()
+    {
+        var host = DemoHost.New();
+        var demo = DemoHost.Service(host);
+        using var cancel = new CancellationTokenSource();
+
+        // Cancel once every pack is made and the check begins, and make every commit fail from then on, so the clean-up cannot remove what was made.
+        // The in-memory store does not observe the token, so the cancellation is raised where a store that does would raise it: inside the install.
+        var outcome = await demo.InstallAsync(new Now(line =>
+        {
+            if (line.StartsWith("Checking every calculation", StringComparison.Ordinal))
+            {
+                host.Failing.FailEveryCommit = true;
+                cancel.Cancel();
+                cancel.Token.ThrowIfCancellationRequested();
+            }
+        }), cancel.Token);
+
+        Assert.False(outcome.Succeeded);
+        Assert.True(outcome.PartlyDone);
+        Assert.Equal("Installing the demo project was cancelled; part of it is left; use Remove demo project to clear it.", outcome.Message);
+
+        // The sentence is true, and the removal it names clears it.
+        host.Failing.FailEveryCommit = false;
+        Assert.True((await demo.StatusAsync()).Installed);
+        Assert.True((await demo.RemoveAsync()).Succeeded);
+        Assert.Empty(host.Backing.CommittedKeys(CalcInstanceStore.InstanceCollection));
+    }
+
+    [Fact]
+    public async Task Black_B_C_04_A_Cancelled_Install_Whose_Clean_Up_Works_Is_Still_A_Cancellation_And_Leaves_Nothing()
+    {
+        var host = DemoHost.New();
+        var demo = DemoHost.Service(host);
+        using var cancel = new CancellationTokenSource();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => demo.InstallAsync(new Now(line =>
+        {
+            if (line.StartsWith("Checking every calculation", StringComparison.Ordinal))
+            {
+                cancel.Cancel();
+                cancel.Token.ThrowIfCancellationRequested();
+            }
+        }), cancel.Token));
+
+        Assert.False((await demo.StatusAsync()).Installed);
+        Assert.Empty(host.Backing.CommittedKeys(CalcInstanceStore.InstanceCollection));
+    }
+
+    // ------------------------------------------------------------------ Green G-C-01
+
+    [Fact]
+    public void Green_G_C_01_The_Dashboard_And_The_Guided_Test_Types_Can_Be_Named_In_One_File()
+    {
+        // This file imports both namespaces; before the rename these names were ambiguous (CS0104) and the file did not compile.
+        Assert.NotEqual(typeof(IManualTestStatusSource), typeof(IDashboardManualTestSource));
+        Assert.NotEqual(typeof(ManualTestStatus), typeof(DashboardManualTestStatus));
+        Assert.NotEqual(typeof(ManualTestOutcome), typeof(DashboardManualTestOutcome));
+        Assert.NotEqual(typeof(RecordRequirement), typeof(DashboardRecordRequirement));
+        Assert.Equal(DashboardManualTestOutcome.Failed, GuidedManualTestStatusSource.Map(new ManualTestStatus("t.a", ManualTestOutcome.Fail, DateTimeOffset.UnixEpoch, "c", "t", Guid.Empty, 1, 1)).Outcome);
     }
 }

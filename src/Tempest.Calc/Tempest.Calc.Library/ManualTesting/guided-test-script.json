@@ -1,6 +1,6 @@
 {
  "format": 1,
- "scriptVersion": "0.26.0+905e2d35",
+ "scriptVersion": "0.26.0+c2fa6697",
  "release": "0.26.0",
  "generatedFrom": "docs/testing/v0.26.0-runbook.md, docs/worked-examples (scripts/generate-guided-test-script.py)",
  "steps": [
@@ -17,7 +17,7 @@
  {"id":"import-w1","kind":"Import","section":"7","title":"W1 CAD import","instructions":["W1 CAD import: owner test pack T-W1. Import an NX .exp, a SolidWorks design table and a CSV. Re-import a changed file, and the dependent sheet goes stale.","- A comma-delimited CSV with a decimal comma must be refused unless its numbers are quoted."],"passWhen":null},
  {"id":"import-w2","kind":"Import","section":"7","title":"W2 scan import","instructions":["W2 scan import: owner test pack T-W2. Load the Zeiss groove CSV and check the statistics. σ_within is c4-corrected; see the test values."],"passWhen":null},
  {"id":"import-w3","kind":"Import","section":"7","title":"W3 materials and licensed records","instructions":["W3 materials and licensed records: T-W3 and T-REC. A record marked licensed never leaves in an export, in any revision."],"passWhen":null},
- {"id":"import-13","kind":"Import","section":"7","title":"C-3 records screen and CSV import","instructions":["C-3 records screen and CSV import: owner test pack section 5.5 (R20 to R30). A worksheet that lacks records (Conductor sizing) lists the required ones with a Fill link to Engineering → Modules → Calculations → Reference records. Import a Track P template filled from your own copy: a wrong unit, a bad row or a malformed file saves nothing; a good one saves the whole table, licensed by default, with the file's SHA-256 stamped. No button exports a record."],"passWhen":null},
+ {"id":"import-13","kind":"Import","section":"7","title":"C-3 records screen and CSV import","instructions":["C-3 records screen and CSV import: owner test pack section 5.5 (R20 to R30). A worksheet that lacks records (Conductor sizing) lists the required ones with a Fill link to Engineering → Modules → Calculations → Reference records. Import a record template (from docs/verification/record-templates/) filled from your own copy: a wrong unit, a bad row or a malformed file saves nothing; a good one saves the whole table, licensed by default, with the file's SHA-256 stamped. No button exports a record."],"passWhen":null},
  {"id":"lifting-1","kind":"Lifting","section":"8","title":"Lifting 1: With the flag off, neither lifting worksheet is listed","instructions":["With the flag off, neither lifting worksheet is listed. A saved lifting calculation refuses to open or run. The refusal names the admin setting."],"passWhen":null},
  {"id":"lifting-2","kind":"Lifting","section":"8","title":"Lifting 2: Switch the flag on","instructions":["Switch the flag on. Run PowerShell as administrator:","New-Item -Path 'HKLM:\\SOFTWARE\\Policies\\TempestOS\\Features' -Force | Out-Null","New-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\TempestOS\\Features' -Name Lifting -PropertyType DWord -Value 1 -Force | Out-Null","Restart the app. Both lifting worksheets appear. The log records the source."],"passWhen":null},
  {"id":"lifting-3","kind":"Lifting","section":"8","title":"Lifting 3: Run the struct.lifting test set from v0.26.0-test-values.md","instructions":["Run the struct.lifting test set from v0.26.0-test-values.md."],"passWhen":null},

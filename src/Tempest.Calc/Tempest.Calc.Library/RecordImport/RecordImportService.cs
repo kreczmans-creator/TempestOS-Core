@@ -283,12 +283,18 @@ public sealed class RecordImportService
             delimiter = request.Delimiter ?? CsvReader.DetectDelimiter(text);
             table = CsvReader.Read(text, delimiter, new ImportBudget(new ImportLimits { MaxRows = MaxFileRows, MaxColumns = 64 }, cancellationToken));
         }
+        catch (ImportRefusedException ex) when (ex.Code == ImportRefusalCode.TooManyRows)
+        {
+            // The reader counts the header among its lines; a person counts data rows (yellow-team Y-C-04).
+            var cap = (MaxFileRows - 1).ToString("N0", CultureInfo.InvariantCulture);
+            return Refuse($"The file has more than {cap} data rows; split it into files of at most {cap} rows, each with the header.", template, request.FileName);
+        }
         catch (ImportRefusedException ex)
         {
             return Refuse(ex.Message, template, request.FileName);
         }
 
-        var sha = request.FileName is null ? null : file.Sha256;
+        var sha =request.FileName is null ? null : file.Sha256;
         var fileIssues = new List<RecordImportIssue>();
         var profile = request.Number ?? NumberProfile.Point;
 

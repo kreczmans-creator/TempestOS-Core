@@ -18,6 +18,13 @@ public sealed record CalcDemoOutcome(bool Succeeded, string Message, int Calcula
     internal static CalcDemoOutcome Refused(string message) => new(false, message);
 }
 
+/// <summary>What the demonstration's row deletion did: the rows it deleted, and the scan-profile versions it kept because a calculation of another project uses them.</summary>
+/// <param name="Instances">Calculation rows deleted.</param>
+/// <param name="Packs">Pack rows deleted.</param>
+/// <param name="ScanProfiles">Scan-profile versions deleted.</param>
+/// <param name="KeptScanProfiles">The named scan-profile versions kept, because a calculation outside the demonstration cites them.</param>
+public sealed record CalcDemoDeletion(int Instances, int Packs, int ScanProfiles, IReadOnlyList<(string Id, int Version)> KeptScanProfiles);
+
 /// <summary>Whether the demonstration project is in this database, and why it cannot be installed or removed if it cannot.</summary>
 /// <param name="Installed">A live project is the demonstration (it carries the flag and the number).</param>
 /// <param name="ProjectId">That project's id, when installed.</param>
@@ -129,7 +136,11 @@ public class CalcDemoProjectService
             }
             catch (OperationCanceledException)
             {
-                await RollBackAsync(projectId).ConfigureAwait(false);
+                // A cancelled install removes what it made. When that clean-up fails too, say so as the failure path does, rather than let the
+                // cancellation read as "nothing was kept" (black-team B-C-04).
+                if (!await RollBackAsync(projectId).ConfigureAwait(false))
+                    return new CalcDemoOutcome(false, "Installing the demo project was cancelled; part of it is left; use Remove demo project to clear it.", PartlyDone: true);
+
                 throw;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -367,7 +378,8 @@ public class CalcDemoProjectService
         if (await FirstIssuedEvidenceAsync(projectId, cancellationToken).ConfigureAwait(false) is { } issued)
             return CalcDemoOutcome.Refused($"The demo project was not removed: the evidence '{issued.DisplayName}' is {issued.Status.ToString().ToLowerInvariant()}, and issued evidence is never deleted.");
 
-        var (instances, packs, profiles) = await _service.Store.DeleteDemonstrationRowsAsync(projectId, CalcDemoProject.ScanProfiles, cancellationToken).ConfigureAwait(false);
+        var deletion = await _service.Store.DeleteDemonstrationAsync(projectId, CalcDemoProject.ScanProfiles, cancellationToken).ConfigureAwait(false);
+        var (instances, packs, profiles) = (deletion.Instances, deletion.Packs, deletion.ScanProfiles);
 
         // From here the rows are gone. What was deleted goes on the audit trail now, whatever happens next; a retry finds no rows (0 and 0) and records nothing again.
         Exception? unrecorded = null;
@@ -397,6 +409,10 @@ public class CalcDemoProjectService
         var done = instances + packs == 0
             ? $"Removed the demo project '{CalcDemoProject.DisplayName}' (its calculations had been removed already)."
             : $"Removed the demo project '{CalcDemoProject.DisplayName}': {instances} calculations and {packs} packs.";
+
+        // A demo scan profile that a calculation of another project uses stays, so that calculation's import can be repeated (black-team B-C-02).
+        if (deletion.KeptScanProfiles.Count > 0)
+            done += $" The scan profile {string.Join(" and ", deletion.KeptScanProfiles.Select(p => $"'{p.Id}' version {p.Version}"))} was kept, because a calculation in another project uses it.";
         return new CalcDemoOutcome(true, unrecorded is null ? done : $"{done} The audit row for it could not be written ({Sentence(unrecorded.Message)}).", instances, packs);
     }
 

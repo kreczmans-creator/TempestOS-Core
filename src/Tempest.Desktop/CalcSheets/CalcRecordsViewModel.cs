@@ -163,7 +163,25 @@ public sealed class CalcRecordsViewModel
     // ------------------------------------------------------------------ actions
 
     /// <summary>Re-reads the types and the records of the shown one; <paramref name="selectKind"/> shows that type.</summary>
+    /// <remarks>
+    /// A failure to read the store is the screen's own sentence in <see cref="Status"/>, never an exception: the screen is opened from the
+    /// Engineering tree's selection handler, which nobody awaits, so a thrown failure was lost and the screen said nothing (black-team B-C-05).
+    /// </remarks>
     public async Task RefreshAsync(string? selectKind = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await RefreshCoreAsync(selectKind, cancellationToken).ConfigureAwait(true);
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            _logger?.Warning($"The reference records could not be read: {failure.Message}");
+            Status = $"Could not open the reference records: {failure.Message}";
+            Changed?.Invoke();
+        }
+    }
+
+    private async Task RefreshCoreAsync(string? selectKind, CancellationToken cancellationToken)
     {
         Types = await _service.RecordImport.ListTypesAsync(cancellationToken).ConfigureAwait(true);
 

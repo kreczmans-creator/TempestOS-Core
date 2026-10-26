@@ -40,7 +40,7 @@ public static class VerificationMarkdown
         if (report.Truncated)
             sb.Append("**Note.** The report holds the first ").Append(report.Rows.Count).Append(" of ").Append(report.TotalRows).Append(" rows.\n\n");
 
-        sb.Append("| Kind | Id | Title | Discipline | Version | Known answers | Unconfirmed | Secondary | Track P re-derivation | Records not entered | Open defects | Manual test |\n");
+        sb.Append("| Kind | Id | Title | Discipline | Version | Known answers | Unconfirmed | Secondary | Independent re-derivation | Records not entered | Open defects | Manual test |\n");
         sb.Append("|---|---|---|---|---|---|---|---|---|---|---|---|\n");
         var written = 0;
 
@@ -109,8 +109,8 @@ public static class VerificationMarkdown
         sb.Append("\n## How to read the columns\n\n");
         sb.Append("- **Known answers.** For a calculator, its known-answer cases and how many passed in the last recorded run (`docs/testing/kat-results.json`); \"not run\" when the results are for another version. For a chain, the worst of the last recorded run of its worked example (issued as one pack, every link current) and the known-answer results of each of its calculators.\n");
         sb.Append("- **Unconfirmed and Secondary.** Known-answer cases whose reference value could not be confirmed against its source, and cases taken from a secondary source (a solutions manual, a website, course notes). For a chain, the sums over its calculators.\n");
-        sb.Append("- **Track P re-derivation.** The result of the independent re-derivation and the findings of Medium or above it raised, fixed or not. \"Not re-derived\" means no independent re-derivation exists yet; such a row is never Clean.\n");
-        sb.Append("- **Open defects.** Track P findings not marked Fixed; \"unknown\" when the verification data could not be read. A chain also shows \"step defects\": the open defects of its calculators.\n");
+        sb.Append("- **Independent re-derivation.** The result of the independent re-derivation and the findings of Medium or above it raised, fixed or not. \"Not re-derived\" means no independent re-derivation exists yet; such a row is never Clean.\n");
+        sb.Append("- **Open defects.** Findings of the independent verification not marked Fixed; \"unknown\" when the verification data could not be read. A chain also shows \"step defects\": the open defects of its calculators.\n");
         sb.Append("- **Records not entered.** Record kinds the calculator can draw on that have no record in this database yet.\n");
         sb.Append("- **Manual test.** The outcome of your own test of the calculator, from the guided test runs; \"Not tested\" until one is recorded.\n");
         return sb.ToString();

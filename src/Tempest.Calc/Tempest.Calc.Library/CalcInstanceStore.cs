@@ -244,6 +244,17 @@ public sealed class CalcInstanceStore
     /// <returns>How many calculation rows, pack rows and scan-profile rows were deleted.</returns>
     public async Task<(int Instances, int Packs, int ScanProfiles)> DeleteDemonstrationRowsAsync(Guid projectId, IReadOnlyCollection<(string Id, int Version)> scanProfiles, CancellationToken cancellationToken = default)
     {
+        var deletion = await DeleteDemonstrationAsync(projectId, scanProfiles, cancellationToken).ConfigureAwait(false);
+        return (deletion.Instances, deletion.Packs, deletion.ScanProfiles);
+    }
+
+    /// <summary>
+    /// As <see cref="DeleteDemonstrationRowsAsync"/>, and says which of the named scan-profile versions were kept: a version that a calculation of any
+    /// other project cites in its scan imports is not deleted, because that calculation's import names it and may be repeated with it (black-team B-C-02).
+    /// The check is made inside the same transaction as the deletion.
+    /// </summary>
+    public async Task<CalcDemoDeletion> DeleteDemonstrationAsync(Guid projectId, IReadOnlyCollection<(string Id, int Version)> scanProfiles, CancellationToken cancellationToken = default)
+    {
         ArgumentNullException.ThrowIfNull(scanProfiles);
 
         if (projectId == Guid.Empty)
@@ -253,12 +264,29 @@ public sealed class CalcInstanceStore
             throw new ArgumentException($"Only scan profiles whose id starts with '{CalcDemoProject.ScanProfilePrefix}' belong to the demonstration.", nameof(scanProfiles));
 
         var counts = (Instances: 0, Packs: 0, ScanProfiles: 0);
+        var kept = new List<(string Id, int Version)>();
 
         await _store.ExecuteInTransactionAsync(async (tx, token) =>
         {
             // A transaction may be retried; count from nothing each time.
             counts = (0, 0, 0);
+            kept.Clear();
             var prefix = projectId.ToString("N") + "/";
+
+            // The profile versions a calculation outside the demonstration cites (read before anything is deleted; only the profiles named are looked for).
+            var citedElsewhere = new HashSet<(string Id, int Version)>();
+
+            foreach (var key in await tx.ListKeysAsync(InstanceCollection, string.Empty, token).ConfigureAwait(false))
+            {
+                if (key.StartsWith(prefix, StringComparison.Ordinal))
+                    continue;
+
+                if (Deserialise<CalcInstance>(await tx.ReadAsync(InstanceCollection, key, token).ConfigureAwait(false)) is { ScanImports: { Count: > 0 } imports })
+                {
+                    foreach (var import in imports.Where(i => scanProfiles.Contains((i.ProfileId, i.ProfileVersion))))
+                        citedElsewhere.Add((import.ProfileId, import.ProfileVersion));
+                }
+            }
 
             foreach (var key in await tx.ListKeysAsync(InstanceCollection, prefix, token).ConfigureAwait(false))
             {
@@ -292,6 +320,12 @@ public sealed class CalcInstanceStore
 
             foreach (var (profileId, version) in scanProfiles)
             {
+                if (citedElsewhere.Contains((profileId, version)))
+                {
+                    kept.Add((profileId, version));
+                    continue;
+                }
+
                 var key = ImportProfileKey(profileId, version);
 
                 if (await tx.ReadAsync(ScanProfileCollection, key, token).ConfigureAwait(false) is null)
@@ -302,7 +336,7 @@ public sealed class CalcInstanceStore
             }
         }, cancellationToken).ConfigureAwait(false);
 
-        return counts;
+        return new CalcDemoDeletion(counts.Instances, counts.Packs, counts.ScanProfiles, [.. kept]);
     }
 
     public async Task<CalcPack?> FindPackAsync(Guid id, CancellationToken cancellationToken = default)

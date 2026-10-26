@@ -88,7 +88,7 @@ Checked at `v0.26.0/addC-reviews-colour` on `1474cd0a` (`release/v0.26.0` after 
 | Licence: no new dependency | `git diff 76935116..HEAD -- '*.csproj'` adds two `EmbeddedResource` items to `Tempest.Calc.Library.csproj` and no `PackageReference`. `THIRD-PARTY-NOTICES.md` is unchanged and complete. | Pass |
 | ADRs and register | ADR-0174, ADR-0175 and ADR-0176 are in `docs/adr/` and Accepted. The ADR Register had no rows for them, so the governance health check (Checks 1 and 14, required by the CI Gate) would fail on this release: 176 files against 173 rows (W-C-01). Fixed in this change: 176 files, 176 rows, no gaps and no orphans (re-derived by script). | Fixed |
 | DECISIONS | DC-01 … DC-14 are in order with no gaps, each with its reason. DC-03, DC-05, DC-07, DC-08 and DC-09 list the C-1 items that need the owner's licensed copy. | Pass |
-| CHANGELOG | Has a C-3 entry. It has no entry for C-1, C-4, C-5 or C-6 (W-C-03). | Partly |
+| CHANGELOG | Had a C-3 entry only (W-C-03). C-1, C-4, C-5 and C-6 entries were added in the second colour round, in the C-3 form. | Pass |
 | Branch naming | `v0.26.0/addC-1-fixes`, `-2-consistency`, `-3-records`, `-4-dashboard`, `-5-guided`, `-6-demo`, `-7-soak` on origin, and this branch, `v0.26.0/addC-reviews-colour`. | Pass |
 | Markdown budget | Since `76935116`: 1,109 Markdown lines added against 26,765 lines of C#, Python and PowerShell. | Pass |
 
@@ -96,5 +96,5 @@ Findings:
 
 - W-C-01 (High, Fixed in this change): ADR-0174 to ADR-0176 had no ADR Register rows. The required Governance Health Check fails on 176 files against 173 rows. The three rows were added and the "Last Reviewed" line was updated.
 - W-C-02 (Low, Open, owner, DC-05): `k_R` 1.125 and the E3 `rho_20` default of 0.0194 Ω·mm²/m are "the cable standard's maximum conductor resistance as recalled". They reproduce no row of a table, but the input text describes them as the standard's own figure. Proposed fix: confirm both against the owner's copy, or reword them as a stated conservative envelope ("about 12 % above pure copper") that cites no table.
-- W-C-03 (Low, Open): CHANGELOG has no entry for C-1, C-4, C-5 or C-6. Proposed fix: one line each under v0.26.0, Addendum C, in the C-3 form.
+- W-C-03 (Low, Fixed in the second colour round): CHANGELOG had no entry for C-1, C-4, C-5 or C-6. One line each was added under v0.26.0, in the C-3 form.
 - W-C-04 (Info): Addendum B's W-B-04 and W-B-05 still apply to the C-1 known answers. The seven new C-1 cases are analytic, and Green recomputed all seven independently (`green-team.md`, Addendum C).

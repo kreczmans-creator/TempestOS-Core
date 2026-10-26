@@ -14,8 +14,18 @@ namespace Tempest.Workspace.Projects;
 /// </remarks>
 public interface IProjectDirectory
 {
-    /// <summary>Lists every project, ordered by identifier then display name.</summary>
+    /// <summary>
+    /// Lists every live project, ordered by identifier then display name. A deleted project (soft-deleted, `ADR-0074`; for example a removed
+    /// demonstration project, `ADR-0176`) is left out: this is the list the Projects browser, the Reports picker and every project picker show.
+    /// </summary>
     Task<IReadOnlyList<ProjectSummary>> ListAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lists every project, deleted ones included, in the same order. For what a project number must stay unique against (a deleted project
+    /// keeps its number: <see cref="CreateAsync"/> refuses it, so the next free number and the new-project prompt read this), never for a list a
+    /// person picks from.
+    /// </summary>
+    Task<IReadOnlyList<ProjectSummary>> ListIncludingDeletedAsync(CancellationToken cancellationToken = default) => ListAsync(cancellationToken);
 
     /// <summary>Finds one project by its own engineering-object Id, or <see langword="null"/> if no such project exists.</summary>
     Task<ProjectSummary?> FindAsync(Guid projectId, CancellationToken cancellationToken = default);

@@ -294,10 +294,10 @@ One contrived decimal-point shape still only warns (P-B-04, Info), and it is acc
 | Identity is the flag and the number; a real project is never removed as the demo | `Installing_Again_Is_Refused_In_A_Sentence_And_Makes_Nothing`, `A_Real_Project_That_Holds_The_Number_Stops_The_Install_And_Is_Never_Removed_As_The_Demo` | Exercised |
 | An issued record is never deleted (service and store) | `An_Issued_Demo_Pack_Is_Never_Deleted_…`, `Issued_Evidence_Under_The_Demo_Refuses_The_Removal_Naming_It_And_Changes_Nothing`, `The_Store_Deletes_Nothing_But_A_Projects_Rows_And_Demonstration_Scan_Profiles` (including the `ArgumentException` for an empty project and a non-demo profile id) | Exercised |
 | One transaction; audit before the soft delete; a retry finishes it | `The_Row_Deletion_Is_One_Transaction_Body_…`, `An_Install_And_A_Removal_Each_Leave_One_Audit_Row_…`, `A_Failure_After_The_Rows_Are_Deleted_Is_Audited_With_The_Real_Counts_…` | Exercised |
-| Only the profile versions the install wrote | `Remove_Deletes_Only_The_Scan_Profile_Versions_The_Install_Wrote_And_Keeps_A_Later_Version_A_Person_Saved` | Exercised; a profile used outside the demo is still deleted (Black B-C-02) |
+| Only the profile versions the install wrote | `Remove_Deletes_Only_The_Scan_Profile_Versions_The_Install_Wrote_And_Keeps_A_Later_Version_A_Person_Saved` | Exercised; and a version a calculation outside the demo uses is kept: `AddendumCColourRegressionTests.Black_B_C_02_…` (B-C-02, fixed) |
 | A stale write to a removed calculation or pack is refused | `A_Stale_Update_Of_A_Calculation_Deleted_Since_It_Was_Read_…`, `A_Stale_Update_Of_A_Pack_Deleted_Since_It_Was_Read_…` | Exercised |
 | The watermark follows the project flag only | `Every_Calculation_Title_And_Reference_Says_Demo_And_Every_Sheet_Carries_The_Watermark_From_The_Project_Flag`, `A_Calculation_In_A_Real_Project_Carries_No_Demo_Mark`, `DemoWatermarkTests`, `DemoWatermarkPdfTests` | Exercised |
-| A failed install cleans up, and says so when it cannot | `A_Failed_Install_Removes_What_It_Made_And_Says_Why`, `A_Failed_Install_Whose_Clean_Up_Also_Fails_Says_Part_Of_It_Is_Left_And_Remove_Clears_It` | Exercised; the cancel path is not covered (Black B-C-04) |
+| A failed install cleans up, and says so when it cannot | `A_Failed_Install_Removes_What_It_Made_And_Says_Why`, `A_Failed_Install_Whose_Clean_Up_Also_Fails_Says_Part_Of_It_Is_Left_And_Remove_Clears_It` | Exercised; the cancel path too: `AddendumCColourRegressionTests.Black_B_C_04_…` (two tests; B-C-04, fixed) |
 
 ### Purple findings
 

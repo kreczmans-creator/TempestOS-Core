@@ -127,7 +127,7 @@ public sealed class DemoProjectViewModel
             return;
         }
 
-        await RunAsync(progress => _service.InstallAsync(progress, cancellationToken), "Installing the demo project…", cancellationToken).ConfigureAwait(true);
+        await RunAsync(progress => _service.InstallAsync(progress, cancellationToken), "Installing the demo project", "Install demo project", "what it had made was removed", cancellationToken).ConfigureAwait(true);
     }
 
     /// <summary>"Remove demo project": asks, then removes the demonstration and only the demonstration. Does nothing while an act is asking or running.</summary>
@@ -178,12 +178,17 @@ public sealed class DemoProjectViewModel
             return;
         }
 
-        await RunAsync(_ => _service.RemoveAsync(cancellationToken), "Removing the demo project…", cancellationToken).ConfigureAwait(true);
+        await RunAsync(_ => _service.RemoveAsync(cancellationToken), "Removing the demo project", "Remove demo project", "nothing was removed", cancellationToken).ConfigureAwait(true);
     }
 
-    private async Task RunAsync(Func<IProgress<string>, Task<CalcDemoOutcome>> act, string starting, CancellationToken cancellationToken)
+    /// <param name="act">The service call.</param>
+    /// <param name="doing">What the act is, as the status line names it ("Installing the demo project").</param>
+    /// <param name="button">The button that runs it again.</param>
+    /// <param name="cancelled">What a cancellation leaves; the service returns its own sentence when it leaves more.</param>
+    /// <param name="cancellationToken">Cancels the act.</param>
+    private async Task RunAsync(Func<IProgress<string>, Task<CalcDemoOutcome>> act, string doing, string button, string cancelled, CancellationToken cancellationToken)
     {
-        Status = starting;
+        Status = doing + "…";
         RaiseChanged();
 
         CalcDemoOutcome outcome;
@@ -200,13 +205,13 @@ public sealed class DemoProjectViewModel
         }
         catch (OperationCanceledException)
         {
-            outcome = new CalcDemoOutcome(false, "The demo project act was cancelled; whatever it had started was undone.");
+            outcome = new CalcDemoOutcome(false, $"{doing} was cancelled; {cancelled}.");
         }
         catch (Exception ex)
         {
             // The service reports its own refusals as outcomes; this is anything else (the store, the engineering domain) failing, said without a stack trace.
             // Whatever it was, the section is refreshed and the shell told below, because the act may have changed some of what is stored before it failed.
-            outcome = new CalcDemoOutcome(false, $"The demo project act failed ({ex.Message.TrimEnd('.')}); press the action again, or check the demo project in the Project Explorer.", PartlyDone: true);
+            outcome = new CalcDemoOutcome(false, $"{doing} failed ({ex.Message.TrimEnd('.')}); press {button} again, or check the demo project in the Project Explorer.", PartlyDone: true);
         }
 
         try
