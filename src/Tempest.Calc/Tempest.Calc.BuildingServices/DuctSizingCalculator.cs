@@ -38,9 +38,9 @@ public sealed class DuctSizingCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.BuildingServices, "Duct sizing",
+        Id, "1.1.0", CalcDiscipline.BuildingServices, "Duct sizing",
         "Sizes each duct section by the equal-friction method (a target friction rate) or the velocity method (a target velocity), rounds to standard sizes, and reports velocity, friction rate, friction and fitting losses per section and the total pressure drop along the index run, with warnings against user velocity and pressure-drop limits.",
-        "Round duct diameter from the design target: D by Colebrook with the air properties at T (equal friction), or D = √(4Q/πv) (velocity), rounded up to the next standard size.\nRectangular duct of equal friction and capacity: D_e = 1.30 (ab)^0.625/(a + b)^0.25.\nFlat-oval duct of equal friction and capacity: D_e = 1.55 A^0.625/P^0.25, with A = πb²/4 + b(a − b) and P = πb + 2(a − b).\nFriction loss per metre, at the velocity v_e of the equivalent round duct: Δp/L = f ρ v_e²/(2D_e).\nFitting losses, at the actual velocity: Δp = ΣC ρ v²/2.\nIndex-run totals, summed over every section of the run: Δp_run = Σ(Δp/L · L + ΣC ρ v²/2).",
+        "Round duct diameter from the design target: D by Colebrook with the air properties at T (equal friction), or D = √(4Q/πv) (velocity), rounded up to the next standard size.\nRectangular duct of equal friction and capacity: D_e = 1.30 (ab)^0.625/(a + b)^0.25.\nFlat-oval duct of equal friction and capacity: D_e = 1.55 A^0.625/P^0.25, with A = πb²/4 + b(a − b) and P = πb + 2(a − b).\nVelocity method, rectangular or flat-oval duct with side a fixed: b from the free area A = Q/v (rectangle b = A/a; flat oval the smaller root of (1 − π/4)b² − ab + A = 0), rounded up; D_e is kept for the friction only.\nFriction loss per metre, at the velocity v_e of the equivalent round duct: Δp/L = f ρ v_e²/(2D_e).\nFitting losses, at the actual velocity: Δp = ΣC ρ v²/2.\nIndex-run totals, summed over every section of the run: Δp_run = Σ(Δp/L · L + ΣC ρ v²/2).",
         [
             new CalcInputSpec("method", "Sizing method", CalcInputKind.Choice, Choices: [MethodEqualFriction, MethodVelocity], DefaultChoice: MethodEqualFriction, Group: "Design"),
             new CalcInputSpec("dp_target", "Target friction rate (equal friction)", CalcInputKind.Quantity, "Pa/m", Default: 1.0, Min: 0.3, Max: 5, HardMin: 0.01, HardMax: 100, Group: "Design"),
@@ -209,6 +209,26 @@ public sealed class DuctSizingCalculator : ICalcCalculator
                 {
                     dimB = dGiven;
                 }
+                else if (method == MethodVelocity)
+                {
+                    // The velocity method sizes the free area, Q/v (D_e is kept for the friction calculation only): a rectangle of the round duct's D_e has more area than the round duct.
+                    var areaTarget = q / vTarget;
+                    double b;
+
+                    if (shape == ShapeRectangular)
+                    {
+                        b = areaTarget / dimA;
+                    }
+                    else
+                    {
+                        // Flat oval: A = π b²/4 + b (a − b) = a b − (1 − π/4) b², so (1 − π/4) b² − a b + A = 0 (the smaller root); b = a (a circle) is the most area a given a can have.
+                        var kOval = 1 - Math.PI / 4;
+                        var disc = dimA * dimA - 4 * kOval * areaTarget;
+                        b = disc <= 0 ? dimA : (dimA - Math.Sqrt(disc)) / (2 * kOval);
+                    }
+
+                    dimB = RoundUp(b, roundTo);
+                }
                 else
                 {
                     var b = Engine.Numerics.RootFinding.Bisect(bb => Equivalent(shape, dimA, bb) - deTarget, 0.01, Math.Max(dimA, deTarget) * 4, 1e-10, 200);
@@ -254,7 +274,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
             else
             {
                 c.Record($"a_{k}", $"{name}: side a", double.IsNaN(aGiven) ? "chosen" : "as given", ScalarValue.Of(dimA * 1e3, mm), $"Side a, {name}");
-                c.Record($"b_{k}", $"{name}: side b", double.IsNaN(dGiven) ? $"from the target equivalent diameter {F(deTarget * 1e3)} mm" : "as given", ScalarValue.Of(dimB * 1e3, mm), $"Side b, {name}");
+                c.Record($"b_{k}", $"{name}: side b", double.IsNaN(dGiven) ? (method == MethodVelocity ? $"from the free area Q/v = {F(q / vTarget * 1e6)} mm² at the target velocity" : $"from the target equivalent diameter {F(deTarget * 1e3)} mm") : "as given", ScalarValue.Of(dimB * 1e3, mm), $"Side b, {name}");
                 c.Record($"De_{k}", $"{name}: equivalent diameter", shape == ShapeRectangular ? "1.30 (ab)^0.625/(a + b)^0.25" : "1.55 A^0.625/P^0.25", ScalarValue.Of(de * 1e3, mm), $"Equivalent diameter, {name}", "ASHRAE Ch. 21");
                 c.Output($"a_{k}", $"a, {name}");
                 c.Output($"b_{k}", $"b, {name}");

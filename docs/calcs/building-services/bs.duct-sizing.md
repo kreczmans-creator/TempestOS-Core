@@ -1,4 +1,4 @@
-# B3 — Duct sizing (`bs.duct-sizing@1.0.1`)
+# B3 — Duct sizing (`bs.duct-sizing@1.1.0`)
 
 **In plain terms.** Ducts are sized so that air does not lose too much pressure per metre or move fast enough to be noisy. The equal-friction method picks each size to give the same pressure loss per metre; the velocity method picks it to give a target speed. A rectangular duct is compared with the round duct that has the same friction, and the losses along the longest run, straight ducts plus fittings, give the pressure the fan must supply.
 
@@ -7,6 +7,8 @@
 **Method.** Dry air ρ = p/(287.055 T), Sutherland viscosity; Darcy–Weisbach Δp/L = f ρ v²/(2D_e) with Colebrook (laminar/transition warned); equal friction solves D for the target rate by bisection; D_e,rect = 1.30 (ab)^0.625/(a + b)^0.25, D_e,oval = 1.55 A^0.625/P^0.25 (ASHRAE Ch. 21 relations, cited); loss coefficients C are user inputs (D-19).
 
 **Inputs.** `method`, `dp_target`, `v_target`, `T`, `p_atm`, `eps`, `sections` (name, Q, L, shape, a, D/b, ΣC, dp_eq, index), `v_limit`, `dp_limit`, `round_to`. **Outputs.** per section `D_s<i>` or `a_s<i>`, `b_s<i>`, `De_s<i>`; `v_s<i>`, `Re_s<i>`, `f_s<i>`, `dpL_s<i>`, `dp_f_s<i>`, `dp_fit_s<i>`, `dp_s<i>` (≤ 50 sections); `dp_index`, `dp_all`, `v_peak`. **Checks.** index-run Δp ≤ limit; velocity ≤ limit.
+
+**Changes in 1.1.0.** Velocity method, rectangular or flat-oval duct with side `a` fixed (or chosen): `b` is sized from the free area `A = Q/v` (rectangle `b = A/a`; flat oval the smaller root of `(1 − π/4) b² − a b + A = 0`), then rounded up, and `D_e` is used for the friction only. Sizing `b` from the `D_e` of the round duct at the target velocity gave a duct about 5 to 12 % too large with a velocity below target (`Q` 0.5 m³/s, `a` 500 mm, 6 m/s, 10 mm steps: rectangle `b` 190 → 170 mm, `v` 5.26 → 5.88 m/s; flat oval `b` 200 → 190 mm, `v` 5.47 → 5.73 m/s). The equal-friction method is unchanged.
 
 **Test cases.** 400 mm round at 1 m³/s against the ASHRAE friction-chart point (Colebrook, within 0.5 %); 600 × 300 rectangular equivalent diameter (ASHRAE relation); velocity-method rounding (analytic).
 
