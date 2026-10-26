@@ -24,6 +24,11 @@ public sealed class RenamedElectricalInputAliasTests
         new("elec.fault-protection", "theta", "T_op", CalcInputValue.Quantity("theta", 80, "degC")),
         new("elec.load-budget", "margin", "SF", CalcInputValue.Of("margin", 1.3)),
         new("elec.load-budget", "theta", "T_amb", CalcInputValue.Quantity("theta", 45, "degC")),
+        new("elec.containment", "D_c", "D_int", CalcInputValue.Quantity("D_c", 32, "mm")),
+        new("elec.containment", "W_c", "W_int", CalcInputValue.Quantity("W_c", 100, "mm"), CalcInputValue.Choice("cont_type", ContainmentCalculator.Trunking), CalcInputValue.Quantity("H_int", 50, "mm")),
+        new("elec.containment", "H_c", "H_int", CalcInputValue.Quantity("H_c", 50, "mm"), CalcInputValue.Choice("cont_type", ContainmentCalculator.Trunking), CalcInputValue.Quantity("W_int", 100, "mm")),
+        new("elec.enclosure-heat", "h", "h_conv", CalcInputValue.Quantity("h", 6.5, "W/(m^2*K)")),
+        new("elec.motor-start", "cos_phi2", "cos_phi_target", CalcInputValue.Of("cos_phi2", 0.97)),
     ];
 
     public static TheoryData<string> Cases => [.. Renames.Select(r => r.ToString())];
@@ -36,7 +41,7 @@ public sealed class RenamedElectricalInputAliasTests
     private static CalcInputSet Inputs(Rename rename, bool oldForm)
     {
         var template = Calculator(rename.TemplateId).Template;
-        var set = new CalcInputSet(template.TestCases[0].Inputs);
+        var set = new CalcInputSet(template.TestCases[0].Inputs.Where(v => !oldForm || v.Symbol != rename.Current));
         set = rename.With.Aggregate(set, (s, v) => s.With(v));
         var value = oldForm ? rename.Value : rename.Value with { Symbol = rename.Current };
         return set.With(value);

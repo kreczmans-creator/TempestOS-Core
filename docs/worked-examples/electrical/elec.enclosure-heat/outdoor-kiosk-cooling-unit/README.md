@@ -1,6 +1,6 @@
 # Outdoor kiosk in the sun: cooling-unit capacity (`elec.enclosure-heat`)
 
-**Source.** Effective-surface method with solar gain, P_cool = P_total − h A_eff (T_max − T_amb) — Confirmed.
+**Source.** Effective-surface method with solar gain, P_cool = P_total − h_conv·A_eff·(T_max − T_amb) — Confirmed.
 
 With 192 W of solar gain on top of 300 W internal load and only 5 K allowed above a 40 °C ambient, natural dissipation holds a fraction of the load; ventilation at 5 K rise would need a large airflow, so the sheet reports the cooling-unit capacity needed.
 
@@ -21,11 +21,11 @@ With 192 W of solar gain on top of 300 W internal load and only 5 K allowed abov
 | `f_rear` | 1 | assumption: Free-standing. |
 | `f_right` | 1 | assumption: Free-standing kiosk, bottom on a plinth. |
 | `f_top` | 1 | assumption: Free-standing kiosk, bottom on a plinth. |
-| `h` | 5.5 W/(m^2*K) | reference: Reference record: painted steel enclosure, still air, 5.5 W/m²K |
+| `h_conv` | 5.5 W/(m^2*K) | reference: Reference record: painted steel enclosure, still air, 5.5 W/m²K |
 | `loads` | 2 row(s) | spec: Panel schedule PNL-09 |
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `P_total` | 492 W | 492 W | PASS |
+| `P_total` | 0.492 kW | 0.492 kW | PASS |
 
-Governing check: Natural dissipation holds T_max — FAIL (utilisation 11.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Natural temperature rise against the allowed rise — FAIL (utilisation 11.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

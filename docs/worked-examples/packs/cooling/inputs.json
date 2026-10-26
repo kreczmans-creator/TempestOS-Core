@@ -406,15 +406,15 @@
     },
     {
       "Symbol": "P_add",
-      "Number": 3510.0000000000027,
-      "Unit": "W",
+      "Number": 3.510000000000003,
+      "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:2a2f5cdec0994702bda176c2b0c59e4f#Phi",
+        "Reference": "calc:801dde702cd64854a59025b172a32011#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "3510"
+      "ValueText": "3.51"
     },
     {
       "Symbol": "T_amb",
@@ -551,7 +551,7 @@
       "ValueText": "1"
     },
     {
-      "Symbol": "h",
+      "Symbol": "h_conv",
       "Number": 5.5,
       "Unit": "W/(m^2*K)",
       "Provenance": {
@@ -609,7 +609,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:ae036775434647ef953e6bde9a18dedd#P_cool",
+        "Reference": "calc:ed5e8ac02ef840bf98afcaac743b5fc5#P_cool",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -643,7 +643,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:ae036775434647ef953e6bde9a18dedd#T_max",
+        "Reference": "calc:ed5e8ac02ef840bf98afcaac743b5fc5#T_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -773,7 +773,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:aa9a724ba8e444689684a49e5c32bb1b#Q",
+        "Reference": "calc:67b1e6f7a6e24e8fa2a9429c26440930#Q",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -785,7 +785,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:aa9a724ba8e444689684a49e5c32bb1b#T_c_m",
+        "Reference": "calc:67b1e6f7a6e24e8fa2a9429c26440930#T_c_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -808,7 +808,7 @@
       "Unit": "J/(kg*K)",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:aa9a724ba8e444689684a49e5c32bb1b#cp_c",
+        "Reference": "calc:67b1e6f7a6e24e8fa2a9429c26440930#cp_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -820,7 +820,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:aa9a724ba8e444689684a49e5c32bb1b#dT_c",
+        "Reference": "calc:67b1e6f7a6e24e8fa2a9429c26440930#dT_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

@@ -20,8 +20,8 @@ A 160 kW pump on a 500 kVA, 4 % transformer fed from a weak 15 MVA network (mini
 | `alpha` | 0.00393 1/K | reference: record: annealed copper, 0.00393 per K at 20 °C, derived physical constant |
 | `cable_data` | resistivity and area | spec: Cable schedule CS-31: resistivity route as E3 |
 | `cos_phi` | 0.88 | spec: Motor datasheet MD-21: 0.88 at full load (test value invented for this example) |
-| `cos_phi2` | 0.95 | spec: Connection agreement CA-2: power factor not below 0.95 |
 | `cos_phi_st` | 0.3 | reference: record: motor MD-21 locked-rotor power factor 0.3 (datasheet; test value invented for this example) |
+| `cos_phi_target` | 0.95 | spec: Connection agreement CA-2: power factor not below 0.95 |
 | `dip_limit` | 10 % | spec: Machine specification MS-3: motor terminal voltage not below 90 % while starting |
 | `dip_limit_pcc` | 7 % | spec: Connection agreement CA-2: 7 % at the point of common coupling (test value invented for this example) |
 | `eta` | 0.95 | spec: Motor datasheet MD-21: 95 % at full load (test value invented for this example) |
@@ -48,4 +48,4 @@ A 160 kW pump on a 500 kVA, 4 % transformer fed from a weak 15 MVA network (mini
 | `S_sc` | 6.8334 MVA | 6.8334 MVA | PASS |
 | `h_res` | 13.865  | 13.865  | PASS |
 
-Governing check: Point-of-common-coupling dip within the limit — PASS (utilisation 0.85). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Point-of-common-coupling dip against the limit — PASS (utilisation 0.85). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

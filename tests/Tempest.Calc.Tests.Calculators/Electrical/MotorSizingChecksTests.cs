@@ -94,11 +94,11 @@ public sealed class MotorSizingChecksTests
 
         Assert.Equal(20.943951, r.OutputSi("P_rated"), 5);
         Assert.Equal(244.3461 / 20.943951, r.OutputSi("u_power"), 4);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Rated power", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Continuous power against", StringComparison.Ordinal) && !c.Passed);
 
         var nameplate = Run(Case(2));
         Assert.Equal(244.3461 / 596.9026, nameplate.OutputSi("u_power"), 5);
-        Assert.Contains(nameplate.Checks, c => c.Name.StartsWith("Rated power", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(nameplate.Checks, c => c.Name.StartsWith("Continuous power against", StringComparison.Ordinal) && c.Passed);
     }
 
     [Fact]

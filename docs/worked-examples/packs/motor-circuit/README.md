@@ -40,7 +40,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | Cable and device | `I_n` | Fault protection | `I_n` | 6 A |
 | Cable and device | `device_code` | Fault protection | `device_code` | 2 |
 | Cable and device | `T_op` | Fault protection | `T_op` | 70 degC |
-| Load budget | `Phi` | Enclosure heat | `P_add` | 153.333 W |
+| Load budget | `Phi` | Enclosure heat | `P_add` | 0.153333 kW |
 
 ## Inputs and provenance
 

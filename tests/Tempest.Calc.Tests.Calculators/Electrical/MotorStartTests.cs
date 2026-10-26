@@ -175,7 +175,7 @@ public sealed class MotorStartTests
     [Fact]
     public void Capacitor_Kvar_Follows_P_Times_The_Difference_Of_Tangents_And_Warns_When_No_Capacitor_Is_Needed()
     {
-        var r = Run(Q("P", 22, "kW"), N("eta", 0.91), N("cos_phi", 0.83), N("cos_phi2", 0.95));
+        var r = Run(Q("P", 22, "kW"), N("eta", 0.91), N("cos_phi", 0.83), N("cos_phi_target", 0.95));
         var pIn = 22 / 0.91;
         var expected = pIn * (Math.Tan(Math.Acos(0.83)) - Math.Tan(Math.Acos(0.95)));
         Assert.Equal(expected, r.OutputSi("kvar") / 1000, 9);
@@ -183,7 +183,7 @@ public sealed class MotorStartTests
         Assert.True(r.OutputSi("I_run2") < r.OutputSi("I_run1"));
         Assert.DoesNotContain(r.Warnings, w => w.RuleId == "pfc");
 
-        var none = Run(N("cos_phi", 0.95), N("cos_phi2", 0.9));
+        var none = Run(N("cos_phi", 0.95), N("cos_phi_target", 0.9));
         Assert.Equal(0, none.OutputSi("kvar"));
         Assert.Contains(none.Warnings, w => w.RuleId == "pfc");
         Assert.Null(none.FindOutput("h_res"));
@@ -193,7 +193,7 @@ public sealed class MotorStartTests
     public void The_Resonance_Order_Is_Shown_And_Only_Warns_When_Harmonic_Loads_Are_Flagged()
     {
         // A weak 0.5 MVA bus with about 20 kvar: h ≈ √(500/20) ≈ 5.
-        var weak = new[] { Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", 0.5, "MVA"), N("cos_phi", 0.8), N("cos_phi2", 0.95), Q("P", 40, "kW"), N("eta", 0.92) };
+        var weak = new[] { Choice("source", MotorStartCalculator.SourceFault), Choice("fault_basis", MotorStartCalculator.BasisSk), Q("S_k", 0.5, "MVA"), N("cos_phi", 0.8), N("cos_phi_target", 0.95), Q("P", 40, "kW"), N("eta", 0.92) };
         var quiet = Run(weak);
         var flagged = Run([.. weak, CalcInputValue.Switch("harmonics", true)]);
         var kvar = quiet.OutputSi("kvar") / 1000;
@@ -218,7 +218,7 @@ public sealed class MotorStartTests
     [Fact]
     public void Inputs_Outside_Their_Hard_Ranges_Block_And_A_Missing_R_Per_Km_Says_What_To_Enter()
     {
-        foreach (var (symbol, value, unit) in new[] { ("cos_phi_st", 0.0, ""), ("cos_phi_st", 1.2, ""), ("cos_phi2", 0.4, ""), ("cos_phi", 0.0, ""), ("eta", 1.2, ""), ("I_LR_r", 0.5, ""), ("I_LR_r", 30.0, ""), ("XR", -1.0, ""), ("c_src", 0.5, ""), ("U", 20.0, "V"), ("L_cab", -1.0, "m"), ("u_k", 40.0, "%"), ("dip_limit", 0.0, "%") })
+        foreach (var (symbol, value, unit) in new[] { ("cos_phi_st", 0.0, ""), ("cos_phi_st", 1.2, ""), ("cos_phi_target", 0.4, ""), ("cos_phi", 0.0, ""), ("eta", 1.2, ""), ("I_LR_r", 0.5, ""), ("I_LR_r", 30.0, ""), ("XR", -1.0, ""), ("c_src", 0.5, ""), ("U", 20.0, "V"), ("L_cab", -1.0, "m"), ("u_k", 40.0, "%"), ("dip_limit", 0.0, "%") })
         {
             var spec = Start.Template.Inputs.Single(i => i.Symbol == symbol);
             var changed = With(spec.Kind == CalcInputKind.Quantity ? Q(symbol, value, unit) : N(symbol, value));
@@ -392,8 +392,8 @@ public sealed class MotorStartTests
         // The text does not assume 1.1 is right for every E5 setting: the fault level's voltage factor must match c_src, and linking c_src from c_k3 removes the mismatch.
         Assert.DoesNotContain("computed with c = 1.1", wrong.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("Set c_src to 1.1", wrong.Message, StringComparison.Ordinal);
-        Assert.Contains("must match c_src", wrong.Message, StringComparison.Ordinal);
-        Assert.Contains("Link c_src from the fault-protection step's c_k3", wrong.Message, StringComparison.Ordinal);
+        Assert.Contains("must use the same factor c as c_src", wrong.Message, StringComparison.Ordinal);
+        Assert.Contains("Link c_src from the fault-protection c_k3", wrong.Message, StringComparison.Ordinal);
         Assert.DoesNotContain(Run([.. linked, N("c_src", 1.1)]).Warnings, w => w.RuleId == "c_src");
         Assert.DoesNotContain(Run(linked).Warnings, w => w.RuleId == "c_src");
     }
@@ -401,11 +401,11 @@ public sealed class MotorStartTests
     [Fact]
     public void A_Drive_Corrects_From_Its_Own_Displacement_Factor_Not_The_Motors()
     {
-        var motor = Run(Choice("starter", MotorStartCalculator.StarterVfd), N("cos_phi", 0.8), N("cos_phi_vfd", 0.95), N("cos_phi2", 0.95));
+        var motor = Run(Choice("starter", MotorStartCalculator.StarterVfd), N("cos_phi", 0.8), N("cos_phi_vfd", 0.95), N("cos_phi_target", 0.95));
         Assert.Equal(0, motor.OutputSi("kvar"));
         Assert.Contains(motor.Warnings, w => w.RuleId == "pfc" && w.Message.Contains("drive's displacement", StringComparison.Ordinal));
 
-        var lower = Run(Choice("starter", MotorStartCalculator.StarterVfd), N("cos_phi", 0.8), N("cos_phi_vfd", 0.85), N("cos_phi2", 0.95), Q("P", 40, "kW"), N("eta", 0.92));
+        var lower = Run(Choice("starter", MotorStartCalculator.StarterVfd), N("cos_phi", 0.8), N("cos_phi_vfd", 0.85), N("cos_phi_target", 0.95), Q("P", 40, "kW"), N("eta", 0.92));
         var expected = 40 / 0.92 * (Math.Tan(Math.Acos(0.85)) - Math.Tan(Math.Acos(0.95)));
         Assert.Equal(expected, lower.OutputSi("kvar") / 1000, 9);
         Assert.Equal(40 / 0.92 * 1000 / (Math.Sqrt(3) * 400 * 0.85), lower.OutputSi("I_run1"), 9);
@@ -416,7 +416,7 @@ public sealed class MotorStartTests
     [Fact]
     public void An_Entered_Rated_Current_Sets_The_Correction_Power_And_A_Mismatch_Warns()
     {
-        var fromCurrent = Run(Q("I_n", 100, "A"), Q("P", 55, "kW"), N("eta", 0.93), N("cos_phi", 0.88), N("cos_phi2", 0.95));
+        var fromCurrent = Run(Q("I_n", 100, "A"), Q("P", 55, "kW"), N("eta", 0.93), N("cos_phi", 0.88), N("cos_phi_target", 0.95));
         var pIn = Math.Sqrt(3) * 400 * 100 * 0.88;
         Assert.Equal(pIn, fromCurrent.OutputSi("P_in"), 6);
         Assert.Equal(pIn / 1000 * (Math.Tan(Math.Acos(0.88)) - Math.Tan(Math.Acos(0.95))), fromCurrent.OutputSi("kvar") / 1000, 9);

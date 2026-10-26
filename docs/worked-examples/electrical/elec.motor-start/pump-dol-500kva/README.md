@@ -18,8 +18,8 @@ A 75 kW pump started direct on line (7 × I_n = 922 A at power factor 0.3) from 
 | `alpha` | 0.00393 1/K | reference: record: annealed copper, 0.00393 per K at 20 °C, derived physical constant |
 | `cable_data` | resistivity and area | spec: Cable schedule CS-31: resistivity route as E3 |
 | `cos_phi` | 0.87 | spec: Motor datasheet MD-12: 0.87 at full load (test value invented for this example) |
-| `cos_phi2` | 0.95 | spec: Connection agreement CA-2: power factor not below 0.95 |
 | `cos_phi_st` | 0.3 | reference: record: motor MD-12 locked-rotor power factor 0.3 (datasheet; test value invented for this example) |
+| `cos_phi_target` | 0.95 | spec: Connection agreement CA-2: power factor not below 0.95 |
 | `dip_limit` | 10 % | spec: Machine specification MS-3: motor terminal voltage not below 90 % while starting |
 | `dip_limit_pcc` | 5 % | spec: Connection agreement CA-2: 5 % at the point of common coupling (test value invented for this example) |
 | `eta` | 0.945 | spec: Motor datasheet MD-12: 94.5 % at full load (test value invented for this example) |
@@ -45,4 +45,4 @@ A 75 kW pump started direct on line (7 × I_n = 922 A at power factor 0.3) from 
 | `I_cap` | 27.2686 A | 27.2686 A | PASS |
 | `h_res` | 25.7225  | 25.7225  | PASS |
 
-Governing check: Point-of-common-coupling dip within the limit — PASS (utilisation 0.93). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Point-of-common-coupling dip against the limit — PASS (utilisation 0.93). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

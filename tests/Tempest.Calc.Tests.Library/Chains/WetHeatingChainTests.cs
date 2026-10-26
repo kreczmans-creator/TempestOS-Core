@@ -105,7 +105,7 @@ public sealed class WetHeatingChainTests
         Assert.Equal(2800.0 / 6000, Si(e1, "u_speed"), 9);
         Assert.Equal(Si(e1, "u_rms"), e1.Checks.Single(check => check.Name.StartsWith("RMS torque", StringComparison.Ordinal)).Utilisation, 12);
         Assert.Equal(Si(e1, "u_peak"), e1.Checks.Single(check => check.Name.StartsWith("Peak torque", StringComparison.Ordinal)).Utilisation, 12);
-        Assert.Equal(Si(e1, "u_speed"), e1.Checks.Single(check => check.Name.StartsWith("Speed", StringComparison.Ordinal)).Utilisation, 12);
+        Assert.Equal(Si(e1, "u_speed"), e1.Checks.Single(check => check.Name.StartsWith("Peak speed", StringComparison.Ordinal)).Utilisation, 12);
         Assert.Contains(e1.Warnings, w => w.RuleId == "continuous-ignored");
 
         Assert.Equal(5, made.Pack.InstanceIds.Count);

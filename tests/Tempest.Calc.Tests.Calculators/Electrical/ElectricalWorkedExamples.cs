@@ -46,12 +46,12 @@ public static class ElectricalWorkedExamples
             "A 90° index in 0.3 s through a 10:1 gearbox: the motor sees 5.9e-3 kg·m² of reflected inertia, nearly twelve times its own rotor inertia, so the sheet warns on the inertia ratio even though the torque and speed checks pass."),
 
         new(EnclosureHeatCalculator.Id, "wall-mounted-plc-panel", "Wall-mounted PLC panel, natural dissipation and fan",
-            new CalcReferenceSource("Effective-surface method (IEC TR 60890 approach; manufacturer guides)", null, "A_eff from face exposure; ΔT = P/(h A_eff); V = P/(ρ c_p ΔT)"),
+            new CalcReferenceSource("Effective-surface method (IEC TR 60890 approach)", null, "A_eff from face exposure; ΔT = P/(h_conv·A_eff); V = P/(ρ c_p ΔT)"),
             FromCase(new EnclosureHeatCalculator(), 1, s => s switch
             {
                 "loads" => Spec("Panel schedule PNL-04: PLC 80 W, 4 drives at 55 W"),
                 "W" or "H" or "D" => Spec("Enclosure datasheet AE-1380: 600 × 800 × 300"),
-                "h" => CalcProvenance.FromReference("Reference record: painted steel enclosure, still air, 5.5 W/m²K (manufacturer guide)"),
+                "h_conv" => CalcProvenance.FromReference("Reference record: painted steel enclosure, still air, 5.5 W/m²K (manufacturer guide)"),
                 "T_amb" or "T_max" => Spec("Site conditions SC-2: 35 °C plant room; 50 °C inside limit for the drives"),
                 "V_pts" or "p_pts" => Spec("Fan datasheet FF-120: curve points"),
                 "p_sys" or "V_ref" => Spec("Filter datasheet: 20 Pa at 100 m³/h"),
@@ -61,16 +61,16 @@ public static class ElectricalWorkedExamples
             "300 W in a wall-mounted 600 × 800 × 300 enclosure gives a 48 K natural rise against a 15 K allowance, so natural dissipation fails; a filter fan delivering 114 m³/h at its duty point covers the 62 m³/h needed with margin."),
 
         new(EnclosureHeatCalculator.Id, "outdoor-kiosk-cooling-unit", "Outdoor kiosk in the sun: cooling-unit capacity",
-            new CalcReferenceSource("Effective-surface method with solar gain", null, "P_cool = P_total − h A_eff (T_max − T_amb)"),
+            new CalcReferenceSource("Effective-surface method with solar gain", null, "P_cool = P_total − h_conv·A_eff·(T_max − T_amb)"),
             FromCase(new EnclosureHeatCalculator(), 0, s => s switch
             {
                 "loads" => Spec("Panel schedule PNL-09"),
                 "W" or "H" or "D" => Spec("Enclosure datasheet AE-1380"),
-                "h" => CalcProvenance.FromReference("Reference record: painted steel enclosure, still air, 5.5 W/m²K"),
+                "h_conv" => CalcProvenance.FromReference("Reference record: painted steel enclosure, still air, 5.5 W/m²K"),
                 "T_amb" or "T_max" => Spec("Site conditions SC-5: 40 °C design ambient; 45 °C inside limit"),
                 _ => CalcProvenance.Assumed("Free-standing kiosk, bottom on a plinth."),
             }, CalcInputValue.Quantity("T_amb", 40, "degC", Spec("Site conditions SC-5")), CalcInputValue.Quantity("T_max", 45, "degC", Spec("Site conditions SC-5")), CalcInputValue.Quantity("I_sun", 800, "W/m^2", Spec("Site conditions SC-5: 800 W/m² on the sunlit side")), CalcInputValue.Quantity("A_sun", 0.48, "m^2", CalcProvenance.Assumed("One 600 × 800 face in the sun.")), CalcInputValue.Of("alpha_sun", 0.5, CalcProvenance.Assumed("Light-grey paint.")), CalcInputValue.Of("f_rear", 1, CalcProvenance.Assumed("Free-standing."))),
-            [new CalcExpectedValue("P_total", 492, "W", 1e-9)],
+            [new CalcExpectedValue("P_total", 0.492, "kW", 1e-9)],
             "With 192 W of solar gain on top of 300 W internal load and only 5 K allowed above a 40 °C ambient, natural dissipation holds a fraction of the load; ventilation at 5 K rise would need a large airflow, so the sheet reports the cooling-unit capacity needed."),
 
         new(VoltageDropCalculator.Id, "three-phase-motor-feeder", "Three-phase motor feeder, 100 A over 80 m",
@@ -240,7 +240,7 @@ public static class ElectricalWorkedExamples
                 CalcInputValue.Quantity("X_km", 0.08, "ohm/km", CalcProvenance.FromReference("record: cable reactance 0.08 Ω/km (generic value as the E3 default; replace with the cable datasheet figure)")),
                 CalcInputValue.Quantity("dip_limit", 10, "%", CalcProvenance.Specification("Machine specification MS-3: motor terminal voltage not below 90 % while starting")),
                 CalcInputValue.Quantity("dip_limit_pcc", 5, "%", CalcProvenance.Specification("Connection agreement CA-2: 5 % at the point of common coupling (test value invented for this example)")),
-                CalcInputValue.Of("cos_phi2", 0.95, CalcProvenance.Specification("Connection agreement CA-2: power factor not below 0.95")),
+                CalcInputValue.Of("cos_phi_target", 0.95, CalcProvenance.Specification("Connection agreement CA-2: power factor not below 0.95")),
                 CalcInputValue.Switch("harmonics", false, CalcProvenance.Assumed("No drives or other harmonic loads on the supply.")),
             ]),
             [new CalcExpectedValue("I_rated", 131.6708331, "A", 1e-9), new CalcExpectedValue("I_start", 921.6958320, "A", 1e-9), new CalcExpectedValue("Z_src", 0.0128, "ohm", 1e-9), new CalcExpectedValue("I_dip", 850.0271945, "A", 1e-9), new CalcExpectedValue("V_m", 368.8970548, "V", 1e-9), new CalcExpectedValue("start_dip", 7.775736312, "%", 1e-9), new CalcExpectedValue("dip_pcc", 4.674562050, "%", 1e-9), new CalcExpectedValue("u_dip", 0.7775736312, "", 1e-9), new CalcExpectedValue("u_dip_pcc", 0.9349124100, "", 1e-9), new CalcExpectedValue("kvar", 18.89222313, "kvar", 1e-9), new CalcExpectedValue("I_cap", 27.26857527, "A", 1e-9), new CalcExpectedValue("h_res", 25.72251762, "", 1e-9)],
@@ -273,7 +273,7 @@ public static class ElectricalWorkedExamples
                 CalcInputValue.Quantity("X_km", 0.08, "ohm/km", CalcProvenance.FromReference("record: cable reactance 0.08 Ω/km (generic value as the E3 default; replace with the cable datasheet figure)")),
                 CalcInputValue.Quantity("dip_limit", 10, "%", CalcProvenance.Specification("Machine specification MS-3: motor terminal voltage not below 90 % while starting")),
                 CalcInputValue.Quantity("dip_limit_pcc", 7, "%", CalcProvenance.Specification("Connection agreement CA-2: 7 % at the point of common coupling (test value invented for this example)")),
-                CalcInputValue.Of("cos_phi2", 0.95, CalcProvenance.Specification("Connection agreement CA-2: power factor not below 0.95")),
+                CalcInputValue.Of("cos_phi_target", 0.95, CalcProvenance.Specification("Connection agreement CA-2: power factor not below 0.95")),
                 CalcInputValue.Switch("harmonics", false, CalcProvenance.Assumed("No drives or other harmonic loads on the supply.")),
             ]),
             [new CalcExpectedValue("I_rated", 276.2441479, "A", 1e-9), new CalcExpectedValue("I_start", 644.5696785, "A", 1e-9), new CalcExpectedValue("Z_src", 0.02341439298, "ohm", 1e-8), new CalcExpectedValue("I_dip", 592.0565524, "A", 1e-8), new CalcExpectedValue("V_m", 367.4119786, "V", 1e-8), new CalcExpectedValue("start_dip", 8.14700534, "%", 1e-8), new CalcExpectedValue("dip_pcc", 5.92894525, "%", 1e-8), new CalcExpectedValue("u_dip", 0.814700534, "", 1e-8), new CalcExpectedValue("u_dip_pcc", 0.8469921786, "", 1e-8), new CalcExpectedValue("kvar", 35.54673128, "kvar", 1e-9), new CalcExpectedValue("I_cap", 51.30728718, "A", 1e-9), new CalcExpectedValue("S_sc", 6.833403717, "MVA", 1e-8), new CalcExpectedValue("h_res", 13.86496266, "", 1e-8)],
@@ -286,7 +286,7 @@ public static class ElectricalWorkedExamples
             [
                 ContainmentCalculator.Cables(("Servo power", 14, 2, 0.35, 600), ("Encoder and control", 9, 4, 0.12, 200)) with { Provenance = CalcProvenance.Specification("Cable data sheets CDS-21 (servo power) and CDS-22 (encoder): overall diameter, mass and maximum pulling tension") },
                 CalcInputValue.Choice("cont_type", ContainmentCalculator.Conduit, CalcProvenance.Drawing("CND-ROUTE-07", "C")),
-                CalcInputValue.Quantity("D_c", 40, "mm", CalcProvenance.Drawing("CND-ROUTE-07", "C")),
+                CalcInputValue.Quantity("D_int", 40, "mm", CalcProvenance.Drawing("CND-ROUTE-07", "C")),
                 CalcInputValue.Of("f_max", 0.5, CalcProvenance.FromReference("record: space factor for this arrangement (a value invented for this example; enter your own from your installation standard or company rule)")),
                 CalcInputValue.Of("n_bend", 10, CalcProvenance.FromReference("record: minimum bend radius multiple (a value invented for this example; enter the largest multiple from the cable data sheets)")),
                 ContainmentCalculator.Route(ContainmentCalculator.RS(6), ContainmentCalculator.RB(90, 500), ContainmentCalculator.RS(14), ContainmentCalculator.RB(90, 400), ContainmentCalculator.RS(9), ContainmentCalculator.RB(45, 600)) with { Provenance = CalcProvenance.Drawing("CND-ROUTE-07", "C") },

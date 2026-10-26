@@ -6,7 +6,7 @@ Two 14 mm servo power cables and four 9 mm encoder cables fill 44.75 % of a 40 m
 
 | Input | Value | Source |
 |---|---|---|
-| `D_c` | 40 mm | drawing: CND-ROUTE-07 rev C |
+| `D_int` | 40 mm | drawing: CND-ROUTE-07 rev C |
 | `P_lim` | 3000 N/m | reference: record: sidewall pressure limit (a value invented for this example; enter the cable maker's figure) |
 | `T_1` | 150 N | spec: Pulling method statement PMS-4: 150 N rope and pulling-head tension at the start of the pull |
 | `cables` | 2 row(s) | spec: Cable data sheets CDS-21 (servo power) and CDS-22 (encoder): overall diameter, mass and maximum pulling tension |
@@ -32,4 +32,4 @@ Two 14 mm servo power cables and four 9 mm encoder cables fill 44.75 % of a 40 m
 | `u_T` | 0.555213  | 0.555213  | PASS |
 | `u_P` | 0.430284  | 0.430284  | PASS |
 
-Governing check: Fill against the space factor — PASS (utilisation 0.90). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Fill against the space factor limit — PASS (utilisation 0.90). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

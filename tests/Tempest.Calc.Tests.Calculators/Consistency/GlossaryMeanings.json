@@ -81,14 +81,6 @@
    "mech.fatigue-miner"
   ]
  },
- "D_c": {
-  "conduit-internal-diameter": [
-   "elec.containment"
-  ],
-  "extrusion-gap-mating-diameter": [
-   "fp.oring-gland"
-  ]
- },
  "D_i": {
   "inside-diameter": [
    "bs.insulation",
@@ -1182,9 +1174,6 @@
    "struct.en1993-member",
    "struct.ltb-interaction",
    "struct.section-properties"
-  ],
-  "film-coefficient": [
-   "elec.enclosure-heat"
   ],
   "hole-to-weld-distance": [
    "struct.lifting"

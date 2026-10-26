@@ -158,7 +158,7 @@
     "ValueText": "1"
   },
   {
-    "Symbol": "h",
+    "Symbol": "h_conv",
     "Number": 5.5,
     "Unit": "W/(m^2*K)",
     "Provenance": {
