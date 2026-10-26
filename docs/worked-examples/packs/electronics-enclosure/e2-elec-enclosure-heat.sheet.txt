@@ -122,20 +122,20 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
         Airflow crediting natural dissipation
 
 5. Results
-  P_total = 77.0 W    Total heat
+  P_total = 77.01 W    Total heat
   P_cool = 0 W    Cooling unit needed
-  P_nat_max = 88.0 W    Natural dissipation at the limit
-  T_max = 60.0 °C    Internal temperature limit
-  dT_nat = 21.9 K    Natural temperature rise
-  T_int = 56.9 °C    Internal temperature (natural)
-  V_req = 9.6 m³/h    Required airflow
-  dp_seal = 1.0 kPa    Pressure difference of the sealed enclosure
-  F_seal = 300.0 N    Force on the cover
-  dp_gas = 10.8 kPa    Gas-law pressure difference (no breather)
-  P_loads = 4.0 W    Internal heat load
+  P_nat_max = 88 W    Natural dissipation at the limit
+  T_max = 60 °C    Internal temperature limit
+  dT_nat = 21.88 K    Natural temperature rise
+  T_int = 56.88 °C    Internal temperature (natural)
+  V_req = 9.623 m³/h    Required airflow
+  dp_seal = 1 kPa    Pressure difference of the sealed enclosure
+  F_seal = 300 N    Force on the cover
+  dp_gas = 10.83 kPa    Gas-law pressure difference (no breather)
+  P_loads = 4 W    Internal heat load
   P_solar = 0 W    Solar gain
-  A_eff = 0.64 m²    Effective surface
-  rho_air = 1.1 kg/m³    Air density
+  A_eff = 0.6400 m²    Effective surface
+  rho_air = 1.145 kg/m³    Air density
   V_req_net = 0 m³/h    Required airflow (net)
 
 6. Checks (governing first)
@@ -149,7 +149,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   Content hash: 6c68c61c7df7f4fe
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

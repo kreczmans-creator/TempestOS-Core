@@ -107,10 +107,10 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
 5. Results
   Z_s = 1.1236 Ω    Loop impedance
   I_f = 194.47 A    Earth fault current
-  S_min = 1.1 mm²    Minimum cross-section
+  S_min = 1.067 mm²    Minimum cross-section
   R_12 = 0.7736 Ω    R₁ + R₂
-  I_a = 60.00 A    Disconnection current
-  t_d = 0.10 s    Disconnection time
+  I_a = 60 A    Disconnection current
+  t_d = 0.1000 s    Disconnection time
   Z_s_max = 3.6417 Ω    Maximum loop impedance
   Z_test = 2.9133 Ω    Field-test maximum (rule of thumb)
   k = 114.84    Adiabatic k (derived)
@@ -122,7 +122,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   PASS  Protective conductor against adiabatic minimum: u_cpc = 0.71 vs u_cpc ≤ 1  utilisation 0.71  « BS 7671 reg. 543.1.3
   PASS  Line conductor against adiabatic minimum: u_line = 0.71 vs u_line ≤ 1  utilisation 0.71  « BS 7671 reg. 434.5.2
   PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.31 vs u_Zs ≤ 1  utilisation 0.31  « BS 7671 reg. 411.4.4
-  PASS  Disconnection time within required: 0.10 s vs 0.40 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
+  PASS  Disconnection time within required: 0.1000 s vs 0.4000 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let (Device time–current points). Enter each as one so its source, edition and licence travel with it.  [record]
@@ -132,7 +132,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   Content hash: 33b657ca63c7d15d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

@@ -126,17 +126,17 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
         Deflection utilisation
 
 5. Results
-  w_max = 0.86 mm    Maximum deflection
-  sigma_max = 5.9 MPa    Greatest von Mises stress
+  w_max = 0.8552 mm    Maximum deflection
+  sigma_max = 5.899 MPa    Greatest von Mises stress
   f1 = 65.83 Hz    Fundamental frequency
-  sigma_principal = 6.0 MPa    Greatest principal stress
+  sigma_principal = 5.973 MPa    Greatest principal stress
   w_over_t = 0.21379    Deflection over thickness
   D = 412.97 N·m    Flexural rigidity
   terms_used = 128    Series terms used
   M_x_c = 12.91 N·m/m    M_x at the centre
   M_y_c = 15.93 N·m/m    M_y at the centre
-  M_xy_k = 9.08 N·m/m    Corner twisting moment
-  R_corner = 0.018 kN    Corner reaction
+  M_xy_k = 9.083 N·m/m    Corner twisting moment
+  R_corner = 0.01817 kN    Corner reaction
   location = "corner (twisting moment)"    Governing stress point
   u_stress = 0.05    Stress utilisation
   u_defl = 0.43    Deflection utilisation (governing)
@@ -153,7 +153,7 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   Content hash: 82862b637af72f75
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

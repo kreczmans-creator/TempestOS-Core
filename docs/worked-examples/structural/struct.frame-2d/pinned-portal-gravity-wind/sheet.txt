@@ -19,12 +19,12 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   nodes[3] |  | id = 3; x = 8 m; y = 5 m; support = free |  |  | 
   nodes[4] |  | id = 4; x = 8 m; y = 0 m; support = pin |  |  | 
   elements | Elements | 3 row(s) |  | reference: UC 203×203×46 columns, UB 305×165×40 rafter (Blue Book) | any
-  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm^2; I = 4568 cm^4; rel_i = no; rel_j = no |  |  | 
-  elements[2] |  | id = 2; i = 2; j = 3; A = 51.3 cm^2; I = 8503 cm^4; rel_i = no; rel_j = no |  |  | 
-  elements[3] |  | id = 3; i = 3; j = 4; A = 58.7 cm^2; I = 4568 cm^4; rel_i = no; rel_j = no |  |  | 
+  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm²; I = 4568 cm⁴; rel_i = no; rel_j = no |  |  | 
+  elements[2] |  | id = 2; i = 2; j = 3; A = 51.3 cm²; I = 8503 cm⁴; rel_i = no; rel_j = no |  |  | 
+  elements[3] |  | id = 3; i = 3; j = 4; A = 58.7 cm²; I = 4568 cm⁴; rel_i = no; rel_j = no |  |  | 
   loads | Loads | 2 row(s) |  | spec: Load schedule LS-02: roof 15 kN/m; wind 24 kN at eaves | any
-  loads[1] |  | case = 1; kind = udl; target = 2; a = 0 m; b = 8 m; w1 = -15 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
-  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 24 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
+  loads[1] |  | case = 1; kind = udl; target = 2; a = 0 m; b = 8 m; w1 = -15 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN·m |  |  | 
+  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 24 kN; F_y = 0 kN; M = 0 kN·m |  |  | 
   combinations | Combinations (blank = each case alone) | 3 row(s) |  | assumption: Characteristic combinations for the worked example. | any
   combinations[1] |  | name = G+W; case = 1; factor = 1 |  |  | 
   combinations[2] |  | name = G+W; case = 2; factor = 1 |  |  | 
@@ -223,47 +223,47 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
         Maximum deflection over all combinations
 
 5. Results
-  R1_x = -3.00 kN    R_x node 1
-  R1_y = 45.00 kN    R_y node 1
+  R1_x = -2.997 kN    R_x node 1
+  R1_y = 45 kN    R_y node 1
   R1_m = 0 kN·m    M node 1
-  R1_x_abs = 3.00 kN    |R_x| node 1
+  R1_x_abs = 2.997 kN    |R_x| node 1
   R1_m_abs = 0 kN·m    |M| node 1
-  N_e1 = -45.00 kN    N, member 1
-  V_e1 = 3.00 kN    |V| max, member 1
+  N_e1 = -45 kN    N, member 1
+  V_e1 = 2.997 kN    |V| max, member 1
   M_abs_e1 = 14.98 kN·m    |M| max, member 1
   M_max_e1 = 14.98 kN·m    M max, member 1
   M_min_e1 = 0 kN·m    M min, member 1
-  V_e2 = 75.00 kN    |V| max, member 2
+  V_e2 = 75 kN    |V| max, member 2
   M_abs_e2 = 105.02 kN·m    |M| max, member 2
-  sum_R_y = 120.00 kN    Σ R_y
-  sum_R_x = -24.00 kN    Σ R_x
+  sum_R_y = 120 kN    Σ R_y
+  sum_R_x = -24 kN    Σ R_x
   M_max = 82.48 kN·m    M max
   M_min = -105.02 kN·m    M min
-  V_max = 75.00 kN    |V| max
+  V_max = 75 kN    |V| max
   N_max = -21.00 kN    N max (tension)
-  N_min = -75.00 kN    N min (compression)
-  d_max = 75.0 mm    δ max
+  N_min = -75 kN    N min (compression)
+  d_max = 75.04 mm    δ max
   R4_x = -21.00 kN    R_x node 4
-  R4_y = 75.00 kN    R_y node 4
+  R4_y = 75 kN    R_y node 4
   R4_m = 0 kN·m    M node 4
   R4_x_abs = 21.00 kN    |R_x| node 4
   R4_m_abs = 0 kN·m    |M| node 4
-  d_e1 = 74.7 mm    δ max, member 1
+  d_e1 = 74.68 mm    δ max, member 1
   M_max_e2 = 82.48 kN·m    M max, member 2
   M_min_e2 = -105.02 kN·m    M min, member 2
   N_e2 = -21.00 kN    N, member 2
-  d_e2 = 25.4 mm    δ max, member 2
+  d_e2 = 25.45 mm    δ max, member 2
   M_max_e3 = 0 kN·m    M max, member 3
   M_min_e3 = -105.02 kN·m    M min, member 3
   M_abs_e3 = 105.02 kN·m    |M| max, member 3
   V_e3 = 21.00 kN    |V| max, member 3
-  N_e3 = -75.00 kN    N, member 3
-  d_e3 = 75.0 mm    δ max, member 3
-  x_Mmax = 3.00 m    x of M max
+  N_e3 = -75 kN    N, member 3
+  d_e3 = 75.04 mm    δ max, member 3
+  x_Mmax = 3 m    x of M max
   M_max_env = 82.48 kN·m    M max, envelope
   M_min_env = -105.02 kN·m    M min, envelope
-  V_max_env = 75.00 kN    |V| max, envelope
-  d_max_env = 75.0 mm    δ max, envelope
+  V_max_env = 75 kN    |V| max, envelope
+  d_max_env = 75.04 mm    δ max, envelope
 
 6. Checks (governing first)
   None.

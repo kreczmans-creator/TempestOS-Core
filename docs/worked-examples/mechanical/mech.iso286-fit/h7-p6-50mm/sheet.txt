@@ -98,22 +98,22 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
         Mean clearance
 
 5. Results
-  IT_hole = 25.0 µm    Hole tolerance
-  IT_shaft = 15.6 µm    Shaft tolerance
-  ES = 25.0 µm    Hole upper deviation
+  IT_hole = 24.98 µm    Hole tolerance
+  IT_shaft = 15.61 µm    Shaft tolerance
+  ES = 24.98 µm    Hole upper deviation
   EI = 0 µm    Hole lower deviation
-  es = 40.6 µm    Shaft upper deviation
-  ei = 25.0 µm    Shaft lower deviation
-  D_hole_max = 50.0 mm    Hole maximum
-  D_hole_min = 50.0 mm    Hole minimum
-  d_shaft_max = 50.0 mm    Shaft maximum
-  d_shaft_min = 50.0 mm    Shaft minimum
+  es = 40.59 µm    Shaft upper deviation
+  ei = 24.98 µm    Shaft lower deviation
+  D_hole_max = 50.02 mm    Hole maximum
+  D_hole_min = 50 mm    Hole minimum
+  d_shaft_max = 50.04 mm    Shaft maximum
+  d_shaft_min = 50.02 mm    Shaft minimum
   fit = "interference"    Fit kind
   c_max = 0 µm    Maximum clearance
-  c_min = -40.6 µm    Minimum clearance
-  i_max = 40.6 µm    Maximum interference
+  c_min = -40.59 µm    Minimum clearance
+  i_max = 40.59 µm    Maximum interference
   i_min = 0 µm    Minimum interference
-  c_mean = -20.3 µm    Mean clearance
+  c_mean = -20.30 µm    Mean clearance
 
 6. Checks (governing first)
   PASS  Fit classified: H7/p6 vs interference

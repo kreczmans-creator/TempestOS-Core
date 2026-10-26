@@ -21,11 +21,11 @@ Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Con
   n_bend | Minimum bend radius as a multiple of the largest cable diameter (from your record) | 10 |  | reference: record: minimum bend radius multiple (a value invented for this example; enter the largest multiple from the cable data sheets) | 1 … 100
   route | Pull route in pull order (straight lengths and bends) | 6 row(s) |  | drawing: CND-ROUTE-07 rev C | any
   route[1] |  | kind = Straight; L = 6 m |  |  | 
-  route[2] |  | kind = Bend; theta = 90 deg; R = 500 mm |  |  | 
+  route[2] |  | kind = Bend; theta = 90°; R = 500 mm |  |  | 
   route[3] |  | kind = Straight; L = 14 m |  |  | 
-  route[4] |  | kind = Bend; theta = 90 deg; R = 400 mm |  |  | 
+  route[4] |  | kind = Bend; theta = 90°; R = 400 mm |  |  | 
   route[5] |  | kind = Straight; L = 9 m |  |  | 
-  route[6] |  | kind = Bend; theta = 45 deg; R = 600 mm |  |  | 
+  route[6] |  | kind = Bend; theta = 45°; R = 600 mm |  |  | 
   T_1 | Tension at the start of the pull (pulling rope, drum or head) | 150 | N | spec: Pulling method statement PMS-4: 150 N rope and pulling-head tension at the start of the pull | 0 … 10000 N
   bend_model | Tension round a bend: horizontal bend with the cable's weight on the containment floor (default), or the capstan equation without the weight term | Horizontal bend, cable on the containment floor (weight term) |  | default | any
   mu | Coefficient of friction, cable sheath on containment (from your record) | 0.3 |  | reference: record: coefficient of friction, sheath on lubricated conduit (a value invented for this example; enter your own) | 0 … 2
@@ -215,19 +215,19 @@ Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Con
         Sidewall pressure utilisation against the limit
 
 5. Results
-  fill = 44.8 %    Fill
+  fill = 44.75 %    Fill
   max_tension = 666.3 N    Maximum tension, recommended direction
   A_cab = 562.3 mm²    Total cable cross-section
   A_int = 1256.6 mm²    Internal cross-section
-  OD_max = 14.0 mm    Largest cable diameter
+  OD_max = 14 mm    Largest cable diameter
   w = 1.180 kg/m    Mass per metre of the bundle
-  R_min = 140.0 mm    Minimum bend radius
+  R_min = 140 mm    Minimum bend radius
   T_max_a = 693.1 N    Maximum tension, as listed
   T_max_b = 666.3 N    Maximum tension, reversed
   P_max_a = 1291 N/m    Maximum sidewall pressure, as listed
   P_max_b = 1291 N/m    Maximum sidewall pressure, reversed
   P_max = 1291 N/m    Maximum sidewall pressure, recommended direction
-  T_cab = 1200.0 N    Pulling tension limit from the cables
+  T_cab = 1200 N    Pulling tension limit from the cables
   direction = "Reverse: pull from segment 6 to segment 1"    Recommended pull direction
   u_fill = 0.90    Fill utilisation (governing)
   u_bend = 0.35    Bend radius utilisation

@@ -143,25 +143,25 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
         Monte Carlo yield
 
 5. Results
-  x_nom = 0.50 mm    Nominal result
-  x_mean = 0.61 mm    Mean result
-  t_wc = 0.13 mm    Worst-case tolerance (±)
-  x_wc_min = 0.48 mm    Worst-case minimum
-  x_wc_max = 0.74 mm    Worst-case maximum
-  t_rss = 0.081 mm    RSS tolerance (±)
-  t_mrss = 0.12 mm    Modified RSS tolerance (±)
-  sigma = 0.027 mm    Predicted σ
-  m_min = 0.080 mm    Worst-case margin to the minimum
-  m_max = 0.060 mm    Worst-case margin to the maximum
+  x_nom = 0.5000 mm    Nominal result
+  x_mean = 0.6100 mm    Mean result
+  t_wc = 0.1300 mm    Worst-case tolerance (±)
+  x_wc_min = 0.4800 mm    Worst-case minimum
+  x_wc_max = 0.7400 mm    Worst-case maximum
+  t_rss = 0.08062 mm    RSS tolerance (±)
+  t_mrss = 0.1209 mm    Modified RSS tolerance (±)
+  sigma = 0.02687 mm    Predicted σ
+  m_min = 0.08000 mm    Worst-case margin to the minimum
+  m_max = 0.06000 mm    Worst-case margin to the maximum
   cp = 2.4807    C_p
   cpk = 2.3567    C_pk
   dpmo = 7.7755e-7    DPMO (predicted)
-  yield = 100.0 %    Yield (predicted)
-  mc_mean = 0.61 mm    Monte Carlo mean
-  mc_sigma = 0.027 mm    Monte Carlo σ
-  mc_p05 = 0.57 mm    Monte Carlo 5th percentile
-  mc_p95 = 0.65 mm    Monte Carlo 95th percentile
-  mc_yield = 100.0 %    Monte Carlo yield
+  yield = 100 %    Yield (predicted)
+  mc_mean = 0.6099 mm    Monte Carlo mean
+  mc_sigma = 0.02723 mm    Monte Carlo σ
+  mc_p05 = 0.5659 mm    Monte Carlo 5th percentile
+  mc_p95 = 0.6546 mm    Monte Carlo 95th percentile
+  mc_yield = 100 %    Monte Carlo yield
 
 6. Checks (governing first)
   PASS  C_pk against target: u_cpk = 0.56 vs u_cpk ≤ 1  utilisation 0.56

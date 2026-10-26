@@ -128,21 +128,21 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
         Vessel utilisation
 
 5. Results
-  Phi_tot = 5100.0 W    Total heat required
-  V_s = 91.0 L    System water volume
-  V_e = 3.5 L    Minimum vessel volume
-  dT = 29.0 K    Mean temperature difference
-  dT_fr = 10.0 K    Flow-to-return temperature difference
-  t_m = 50.0 °C    Mean water temperature
+  Phi_tot = 5100 W    Total heat required
+  V_s = 91 L    System water volume
+  V_e = 3.531 L    Minimum vessel volume
+  dT = 29 K    Mean temperature difference
+  dT_fr = 10 K    Flow-to-return temperature difference
+  t_m = 50 °C    Mean water temperature
   f_dT = 0.49256    Output correction factor
   R1 = 3654.4 W    Lounge: Φ50 needed
   R2 = 2233.2 W    Kitchen: Φ50 needed
   R3 = 1827.2 W    Bed 1: Φ50 needed
   R4 = 1421.2 W    Bed 2: Φ50 needed
   R5 = 1218.1 W    Bathroom: Φ50 needed
-  V_em = 36.0 L    Emitter water content
+  V_em = 36 L    Emitter water content
   e_x = 0.016783    Expansion coefficient
-  p_i = 0.99 bar    Pre-charge pressure
+  p_i = 0.9863 bar    Pre-charge pressure
   u_emit = 1.11    Emitter utilisation (governing)
   u_vessel = 0.29    Vessel utilisation
 

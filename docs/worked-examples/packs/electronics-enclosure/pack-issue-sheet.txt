@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 36/36
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -149,8 +149,8 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
   trace_R = 23.55 mΩ    Trace resistance
   trace_Ploss = 1507.3 mW    Power loss
   vdrop = 188.4 mV    Voltage drop
-  A_req = 147 mil²    Minimum cross-section
-  w_min = 1.4 mm    Minimum trace width
+  A_req = 147.3 mil²    Minimum cross-section
+  w_min = 1.357 mm    Minimum trace width
   u_w = 0.68    Width utilisation (governing)
 
 6. Checks (governing first)
@@ -164,7 +164,7 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
   Content hash: 37987e56ed61a674
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -321,20 +321,20 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
         Power factor of the linked machine
 
 5. Results
-  P_dem = 0.24 kW    Demand active power
-  S_dem = 0.27 kVA    Demand apparent power
+  P_dem = 0.2385 kW    Demand active power
+  S_dem = 0.2650 kVA    Demand apparent power
   I_3ph = 0 A    Three-phase bus current
-  I_1ph = 1.15 A    Single-phase bus current
-  I_DC = 9.94 A    DC bus current
-  Phi = 0.073 kW    Heat dissipated inside the enclosure
-  U_L = 400.0 V    Three-phase line voltage
+  I_1ph = 1.152 A    Single-phase bus current
+  I_DC = 9.938 A    DC bus current
+  Phi = 0.07301 kW    Heat dissipated inside the enclosure
+  U_L = 400 V    Three-phase line voltage
   pf_link = 0.85    Power factor of the linked machine
-  P_conn = 0.24 kW    Connected load
+  P_conn = 0.2385 kW    Connected load
   P_PSU_req = 298.1 W    Minimum PSU rating
-  S_T_req = 0.33 kVA    Minimum transformer rating, running load
-  S_peak = 0.27 kVA    Peak apparent power at start
-  S_T_req_start = 0.088 kVA    Minimum transformer rating, starting peak
-  S_T_min = 0.33 kVA    Minimum transformer rating, running and starting
+  S_T_req = 0.3313 kVA    Minimum transformer rating, running load
+  S_peak = 0.2650 kVA    Peak apparent power at start
+  S_T_req_start = 0.08834 kVA    Minimum transformer rating, starting peak
+  S_T_min = 0.3313 kVA    Minimum transformer rating, running and starting
 
 6. Checks (governing first)
   None.
@@ -347,7 +347,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: 63496058c8dcaccb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -479,20 +479,20 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
         Airflow crediting natural dissipation
 
 5. Results
-  P_total = 77.0 W    Total heat
+  P_total = 77.01 W    Total heat
   P_cool = 0 W    Cooling unit needed
-  P_nat_max = 88.0 W    Natural dissipation at the limit
-  T_max = 60.0 °C    Internal temperature limit
-  dT_nat = 21.9 K    Natural temperature rise
-  T_int = 56.9 °C    Internal temperature (natural)
-  V_req = 9.6 m³/h    Required airflow
-  dp_seal = 1.0 kPa    Pressure difference of the sealed enclosure
-  F_seal = 300.0 N    Force on the cover
-  dp_gas = 10.8 kPa    Gas-law pressure difference (no breather)
-  P_loads = 4.0 W    Internal heat load
+  P_nat_max = 88 W    Natural dissipation at the limit
+  T_max = 60 °C    Internal temperature limit
+  dT_nat = 21.88 K    Natural temperature rise
+  T_int = 56.88 °C    Internal temperature (natural)
+  V_req = 9.623 m³/h    Required airflow
+  dp_seal = 1 kPa    Pressure difference of the sealed enclosure
+  F_seal = 300 N    Force on the cover
+  dp_gas = 10.83 kPa    Gas-law pressure difference (no breather)
+  P_loads = 4 W    Internal heat load
   P_solar = 0 W    Solar gain
-  A_eff = 0.64 m²    Effective surface
-  rho_air = 1.1 kg/m³    Air density
+  A_eff = 0.6400 m²    Effective surface
+  rho_air = 1.145 kg/m³    Air density
   V_req_net = 0 m³/h    Required airflow (net)
 
 6. Checks (governing first)
@@ -506,7 +506,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   Content hash: 6c68c61c7df7f4fe
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -634,15 +634,15 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
         Utilisation of the latches' holding force
 
 5. Results
-  assembly_force = 4.4 N    Assembly force
-  retention_force = 71.9 N    Separation force
+  assembly_force = 4.402 N    Assembly force
+  retention_force = 71.93 N    Separation force
   strain_util = 0.56    Strain / permissible strain
   F_hold = 431.6 N    Holding force of the latches
-  eps = 1.7 %    Maximum strain
-  eps_perm = 3.0 %    Permissible strain
-  Es = 1400.0 MPa    Secant modulus used
-  P = 4.1 N    Deflection force
-  y_perm = 1.8 mm    Permissible deflection
+  eps = 1.667 %    Maximum strain
+  eps_perm = 3 %    Permissible strain
+  Es = 1400 MPa    Secant modulus used
+  P = 4.148 N    Deflection force
+  y_perm = 1.800 mm    Permissible deflection
   l_h = 7.5    Slenderness l/h
   K_y = 0.66667    Deflection factor K_y
   phi_max = 1    Strain shape maximum
@@ -664,7 +664,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   Content hash: 5f5ba7b76701c269
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -800,17 +800,17 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
         Deflection utilisation
 
 5. Results
-  w_max = 0.86 mm    Maximum deflection
-  sigma_max = 5.9 MPa    Greatest von Mises stress
+  w_max = 0.8552 mm    Maximum deflection
+  sigma_max = 5.899 MPa    Greatest von Mises stress
   f1 = 65.83 Hz    Fundamental frequency
-  sigma_principal = 6.0 MPa    Greatest principal stress
+  sigma_principal = 5.973 MPa    Greatest principal stress
   w_over_t = 0.21379    Deflection over thickness
   D = 412.97 N·m    Flexural rigidity
   terms_used = 128    Series terms used
   M_x_c = 12.91 N·m/m    M_x at the centre
   M_y_c = 15.93 N·m/m    M_y at the centre
-  M_xy_k = 9.08 N·m/m    Corner twisting moment
-  R_corner = 0.018 kN    Corner reaction
+  M_xy_k = 9.083 N·m/m    Corner twisting moment
+  R_corner = 0.01817 kN    Corner reaction
   location = "corner (twisting moment)"    Governing stress point
   u_stress = 0.05    Stress utilisation
   u_defl = 0.43    Deflection utilisation (governing)
@@ -827,7 +827,7 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   Content hash: 82862b637af72f75
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

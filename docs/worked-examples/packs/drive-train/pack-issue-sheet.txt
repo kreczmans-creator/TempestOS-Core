@@ -7,7 +7,7 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 PACK INDEX
-  1. Motor sizing — Motor and actuator sizing — rev A — ISSUED — RMS torque SF·T_rms ≤ T_rated PASS
+  1. Motor sizing — Motor and actuator sizing — rev A — ISSUED — Motor speed against the rated speed PASS
   2. Shaft — Shaft design — rev A — ISSUED — Slope at the bearings against limit PASS
   3. Bearing A life — Rolling bearing life (ISO 281) — rev A — ISSUED — Modified rating life against required life PASS
   4. Bearing A seat fit — Limits and fits (ISO 286) — rev A — ISSUED — Fit classified PASS
@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 22/22
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -225,28 +225,32 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 1475 rpm / 3000 rpm
       = 0.49167
         Speed utilisation
-  [50] duty = T_rms / T_rated
+  [50] u_rated_speed = n_pk / n_rated
+      = 1475 rpm / 1480 rpm
+      = 0.99662
+        Motor speed over the rated (nameplate) speed
+  [51] duty = T_rms / T_rated
       = 151.58 N·m / 200 N·m
       = 0.75789
         Thermal duty (without margin)
 
 5. Results
   T_load = 151.58 N·m    Load torque at motor
-  J_refl = 0.0269 kg·m²    Reflected load inertia
+  J_refl = 0.02695 kg·m²    Reflected load inertia
   J_total = 0.1489 kg·m²    Total inertia
   alpha_pk = 51.49 rad/s²    Run-up angular acceleration
-  T_acc = 7.67 N·m    Run-up torque
+  T_acc = 7.669 N·m    Run-up torque
   T_pk = 159.25 N·m    Peak torque
   T_rms = 151.58 N·m    RMS torque
   T_design = 159.25 N·m    Design torque for downstream couplings
   T_hold = 0 N·m    Holding torque in the dwell
   T_alt = 0 N·m    Alternating torque amplitude
   F_ax_pk = 0 N    Peak axial thrust on a screw's bearings
-  T_out_m = 1800.0 N·m    Output shaft mean torque
+  T_out_m = 1800 N·m    Output shaft mean torque
   T_out_a = 0 N·m    Output shaft alternating torque
   T_out_pk = 1891.1 N·m    Output shaft peak torque
   n_out = 118 rpm    Output shaft speed
-  n_pk = 1475 rpm    Motor speed
+  n_pk = 1475 rpm    Motor speed (governing)
   n_mean = 1475 rpm    Mean motor speed (the steady speed)
   P_pk = 24.60 kW    Peak power
   P_brake = 0 kW    Peak braking power
@@ -257,11 +261,13 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   duty = 0.75789    Thermal duty
   u_peak = 0.50    Peak utilisation
   u_power = 0.76    Rated power utilisation P_cont/P_rated
-  u_rms = 0.95    Continuous utilisation (governing)
+  u_rms = 0.95    Continuous utilisation
   u_speed = 0.49    Speed utilisation
   k = 0.08    Transmission constant
+  u_rated_speed = 0.99662    Motor speed over the rated speed
 
 6. Checks (governing first)
+  PASS  Motor speed against the rated speed: 1475 rpm vs 1480 rpm  utilisation 1.00
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.95 vs u_rms ≤ 1  utilisation 0.95
   PASS  Rated power P_cont ≤ P_rated: u_power = 0.76 vs u_power ≤ 1  utilisation 0.76
   PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.50 vs u_peak ≤ 1  utilisation 0.50
@@ -272,11 +278,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING  duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.  [continuous-ignored]
 
 8. Verification
-  Template: elec.motor-sizing@1.9.0
-  Content hash: b13348936aa53b72
+  Template: elec.motor-sizing@1.10.0
+  Content hash: 3989917de380d03f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -420,55 +426,60 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
       = 49494 / 1475
       = 33.555
         Critical-speed ratio (Dunkerley lower bound over operating speed)
-  [40] u_f = n_target/n_f,min
+  [40] n_c_req = 2·n
+      = 2 × 1475 rpm
+      = 2950 rpm
+        Critical speed required, twice the operating speed
+  [41] u_f = n_target/n_f,min
       = 1.5 / 6.9906
       = 0.21457
         Fatigue utilisation
-  [41] u_y = n_target/n_y,min
+  [42] u_y = n_target/n_y,min
       = 1.5 / 13.214
       = 0.11351
         Yield utilisation
-  [42] u_slope = max(θ_A, θ_B)/θ_max
+  [43] u_slope = max(θ_A, θ_B)/θ_max
       = 0.00026987 / 0.001
       = 0.26987
         Slope utilisation
-  [43] u_defl = y_load/y_max
+  [44] u_defl = y_load/y_max
       = 0.021323 / 0.13 mm
       = 0.16403
         Deflection utilisation
 
 5. Results
-  R_A = 1.35 kN    Reaction at A
-  R_B = 1.35 kN    Reaction at B
-  d_A = 35.0 mm    Seat diameter at A
-  d_B = 35.0 mm    Seat diameter at B
-  n_f_min = 6.99    Lowest fatigue safety factor
+  R_A = 1.346 kN    Reaction at A
+  R_B = 1.346 kN    Reaction at B
+  d_A = 35 mm    Seat diameter at A
+  d_B = 35 mm    Seat diameter at B
+  n_f_min = 6.9905    Lowest fatigue safety factor
   n_c = 50409 rpm    First critical speed (Rayleigh)
-  M_max = 0.17 kN·m    Largest bending moment
-  theta_A = 0.00027 rad    Slope at A
-  theta_B = 0.00027 rad    Slope at B
-  y_load = 0.021 mm    Deflection at the loads
+  M_max = 0.1683 kN·m    Largest bending moment
+  theta_A = 0.0002699 rad    Slope at A
+  theta_B = 0.0002699 rad    Slope at B
+  y_load = 0.02132 mm    Deflection at the loads
   S_e = 254.2 MPa    Endurance limit
-  n_y_min = 13.21    Lowest yield safety factor
+  n_y_min = 13.214    Lowest yield safety factor
   n_c_D = 49494 rpm    Dunkerley lower bound
-  r_c = 33.555    Critical-speed ratio
+  r_c = 33.554    Critical-speed ratio
 
 6. Checks (governing first)
   PASS  Slope at the bearings against limit: u_slope = 0.27 vs u_slope ≤ 1  utilisation 0.27
   PASS  Fatigue safety factor against target (DE-Goodman): u_f = 0.21 vs u_f ≤ 1  utilisation 0.21  « Shigley 10th ed. §7-4
   PASS  Deflection at the loads against limit: u_defl = 0.16 vs u_defl ≤ 1  utilisation 0.16
   PASS  Yield safety factor against target: u_y = 0.11 vs u_y ≤ 1  utilisation 0.11
+  PASS  Critical speed against the operating speed: 2950 rpm vs 49494 rpm  utilisation 0.06  « Shigley 10th ed. §7-6
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.  [record]
   WARNING  m: the carried mass (3 kg) adds no weight to the reactions, the moment or the deflection, and neither does the shaft's own weight; switch w_masses on to add them, or enter the weights as forces in F_y.  [mass-weight]
 
 8. Verification
-  Template: mech.shaft@1.4.0
-  Content hash: 49ee0fed96b7a3d7
+  Template: mech.shaft@1.5.0
+  Content hash: db865fbd25585805
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -570,9 +581,9 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
 5. Results
   L_nmh = 76825 h    Modified rating life
   L_10h = 76825 h    Basic rating life
-  P = 1.35 kN    Equivalent dynamic load
-  P_0 = 1.35 kN    Equivalent static load
-  s_0 = 11.37    Static safety factor
+  P = 1.346 kN    Equivalent dynamic load
+  P_0 = 1.346 kN    Equivalent static load
+  s_0 = 11.366    Static safety factor
   L_10 = 6799    Basic rating life (Mrev)
   a_1 = 1    Reliability factor
   L_nm = 6799    Modified rating life (Mrev)
@@ -591,7 +602,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   Content hash: 53a676ddb446057a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -705,22 +716,22 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
         Mean clearance
 
 5. Results
-  IT_hole = 25.0 µm    Hole tolerance
-  IT_shaft = 15.6 µm    Shaft tolerance
+  IT_hole = 24.98 µm    Hole tolerance
+  IT_shaft = 15.61 µm    Shaft tolerance
   ES = 0 µm    Hole upper deviation
-  EI = -9.0 µm    Hole lower deviation
-  es = 17.6 µm    Shaft upper deviation
-  ei = 2.0 µm    Shaft lower deviation
-  D_hole_max = 35.0 mm    Hole maximum
-  D_hole_min = 35.0 mm    Hole minimum
-  d_shaft_max = 35.0 mm    Shaft maximum
-  d_shaft_min = 35.0 mm    Shaft minimum
+  EI = -9 µm    Hole lower deviation
+  es = 17.64 µm    Shaft upper deviation
+  ei = 2.030 µm    Shaft lower deviation
+  D_hole_max = 35 mm    Hole maximum
+  D_hole_min = 34.99 mm    Hole minimum
+  d_shaft_max = 35.02 mm    Shaft maximum
+  d_shaft_min = 35.00 mm    Shaft minimum
   fit = "interference"    Fit kind
-  c_max = -2.0 µm    Maximum clearance
-  c_min = -26.6 µm    Minimum clearance
-  i_max = 26.6 µm    Maximum interference
-  i_min = 2.0 µm    Minimum interference
-  c_mean = -14.3 µm    Mean clearance
+  c_max = -2.030 µm    Maximum clearance
+  c_min = -26.64 µm    Minimum clearance
+  i_max = 26.64 µm    Maximum interference
+  i_min = 2.030 µm    Minimum interference
+  c_mean = -14.34 µm    Mean clearance
 
 6. Checks (governing first)
   PASS  Fit classified: bearing bore/k6 vs interference
@@ -733,7 +744,7 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   Content hash: 42c6d2c30c0bc9d4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -756,10 +767,10 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   bolts | Bolt positions and areas | 4 row(s) |  | drawing: DRG-CNV-412 rev B | any
-  bolts[1] |  | x = 40 mm; y = 0 mm; A = 36.6 mm^2 |  |  | 
-  bolts[2] |  | x = 0 mm; y = 40 mm; A = 36.6 mm^2 |  |  | 
-  bolts[3] |  | x = -40 mm; y = 0 mm; A = 36.6 mm^2 |  |  | 
-  bolts[4] |  | x = 0 mm; y = -40 mm; A = 36.6 mm^2 |  |  | 
+  bolts[1] |  | x = 40 mm; y = 0 mm; A = 36.6 mm² |  |  | 
+  bolts[2] |  | x = 0 mm; y = 40 mm; A = 36.6 mm² |  |  | 
+  bolts[3] |  | x = -40 mm; y = 0 mm; A = 36.6 mm² |  |  | 
+  bolts[4] |  | x = 0 mm; y = -40 mm; A = 36.6 mm² |  |  | 
   F_x | In-plane force, x | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
   F_y | In-plane force, y | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
   e_x | Point of application, x | 0 | mm | drawing: DRG-CNV-412 rev B | -100000 … 100000 mm
@@ -855,9 +866,9 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
         Linear shear–tension interaction, the highest over all bolts
 
 5. Results
-  T = 0.16 kN·m    Torque about the centroid
+  T = 0.1592 kN·m    Torque about the centroid
   J = 234240 mm⁴    Polar second moment of bolt areas
-  v_max = 1.00 kN    Maximum shear on any bolt
+  v_max = 0.9953 kN    Maximum shear on any bolt
   t_max = 0 kN    Maximum tension on any bolt
   bolt_v = "bolt 1"    Bolt with the largest shear
   bolt_t = "bolt 1"    Bolt with the largest tension
@@ -880,7 +891,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 51d1bceeeb8e14ba
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

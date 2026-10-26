@@ -87,9 +87,9 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
 5. Results
   trace_R = 13.04 mΩ    Trace resistance
   trace_Ploss = 117.4 mW    Power loss
-  vdrop = 39.1 mV    Voltage drop
-  A_req = 74 mil²    Minimum cross-section
-  w_min = 1.4 mm    Minimum trace width
+  vdrop = 39.12 mV    Voltage drop
+  A_req = 74.16 mil²    Minimum cross-section
+  w_min = 1.367 mm    Minimum trace width
   u_w = 0.68    Width utilisation (governing)
 
 6. Checks (governing first)

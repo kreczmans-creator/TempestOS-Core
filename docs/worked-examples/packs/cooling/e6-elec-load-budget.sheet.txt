@@ -153,8 +153,8 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   I_3ph = 179.66 A    Three-phase bus current
   I_1ph = 0 A    Single-phase bus current
   I_DC = 0 A    DC bus current
-  Phi = 3.51 kW    Heat dissipated inside the enclosure
-  U_L = 400.0 V    Three-phase line voltage
+  Phi = 3.510 kW    Heat dissipated inside the enclosure
+  U_L = 400 V    Three-phase line voltage
   pf_link = 0.85    Power factor of the linked machine
   P_conn = 116.50 kW    Connected load
   P_PSU_req = 0 W    Minimum PSU rating
@@ -174,7 +174,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: 63496058c8dcaccb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

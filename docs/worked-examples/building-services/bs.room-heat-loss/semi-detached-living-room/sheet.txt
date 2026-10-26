@@ -16,20 +16,20 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   theta_int | Internal design temperature | 21 | °C | spec: SPEC-A-02 §3.1: living-room design temperature | 16 … 24 °C
   theta_e | External design temperature (location record) | -3 | °C | assumption: Illustrative location design temperature; take the project's own from its design-temperature record. | -15 … 5 °C
   layers | Construction layers (several elements share the table, keyed by element name) | 8 row(s) |  | drawing: A-210 rev C | any
-  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m*K) |  |  | 
-  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m*K) |  |  | 
-  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m*K) |  |  | 
-  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m*K) |  |  | 
-  layers[5] |  | element = Party wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m*K) |  |  | 
-  layers[6] |  | element = Party wall; name = Block leaf 1; d = 100 mm; lambda = 0.6 W/(m*K) |  |  | 
-  layers[7] |  | element = Party wall; name = Block leaf 2; d = 100 mm; lambda = 0.6 W/(m*K) |  |  | 
-  layers[8] |  | element = Party wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m*K) |  |  | 
+  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m·K) |  |  | 
+  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m·K) |  |  | 
+  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m·K) |  |  | 
+  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m·K) |  |  | 
+  layers[5] |  | element = Party wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m·K) |  |  | 
+  layers[6] |  | element = Party wall; name = Block leaf 1; d = 100 mm; lambda = 0.6 W/(m·K) |  |  | 
+  layers[7] |  | element = Party wall; name = Block leaf 2; d = 100 mm; lambda = 0.6 W/(m·K) |  |  | 
+  layers[8] |  | element = Party wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m·K) |  |  | 
   elements | Building elements bounding the room | 5 row(s) |  | drawing: A-101 rev C | any
-  elements[1] |  | name = Front wall; construction = Cavity wall; area = 8.7 m^2 |  |  | 
-  elements[2] |  | name = Window; area = 2.1 m^2; U_user = 1.4 W/(m^2*K) |  |  | 
-  elements[3] |  | name = Gable wall; construction = Cavity wall; area = 8.64 m^2 |  |  | 
-  elements[4] |  | name = Party wall; area = 8.64 m^2; theta_adj = 18 degC; Rg = 0.18 m^2*K/W; U_max = 1.2 W/(m^2*K) |  |  | 
-  elements[5] |  | name = Ground floor; area = 16.2 m^2; U_user = 0.25 W/(m^2*K) |  |  | 
+  elements[1] |  | name = Front wall; construction = Cavity wall; area = 8.7 m² |  |  | 
+  elements[2] |  | name = Window; area = 2.1 m²; U_user = 1.4 W/(m²·K) |  |  | 
+  elements[3] |  | name = Gable wall; construction = Cavity wall; area = 8.64 m² |  |  | 
+  elements[4] |  | name = Party wall; area = 8.64 m²; theta_adj = 18 °C; Rg = 0.18 m²·K/W; U_max = 1.2 W/(m²·K) |  |  | 
+  elements[5] |  | name = Ground floor; area = 16.2 m²; U_user = 0.25 W/(m²·K) |  |  | 
   y_tb | Thermal-bridge allowance on the area facing outside | 0.1 | W/(m²·K) | assumption: Illustrative thermal-bridge allowance; replace with the project's bridging record. | 0 … 0.3 W/(m²·K)
   U_target | Target U for built-up elements without their own target | 0.3 | W/(m²·K) | spec: SPEC-A-02 §4.2: external wall U-value target | 0.05 … 8 W/(m²·K)
   n | Air change rate | 0.8 | 1/h | assumption: Natural ventilation allowance for a living room. | 0.1 … 3 1/h
@@ -179,33 +179,33 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
 
 5. Results
   Phi_HL = 638.1 W    Room design heat loss
-  theta_int = 21.0 °C    Internal design temperature
+  theta_int = 21 °C    Internal design temperature
   HLC = 26.59 W/K    Heat loss coefficient
   Phi_T = 384.3 W    Fabric heat loss
   Phi_V = 253.8 W    Ventilation heat loss
-  U_1 = 0.24 W/(m²·K)    Front wall: U-value
+  U_1 = 0.2405 W/(m²·K)    Front wall: U-value
   R_1 = 4.158 m²·K/W    Front wall: thermal resistance
-  Phi_1 = 50.2 W    Front wall: fabric loss
-  U_2 = 1.40 W/(m²·K)    Window: U-value
-  Phi_2 = 70.6 W    Window: fabric loss
+  Phi_1 = 50.22 W    Front wall: fabric loss
+  U_2 = 1.400 W/(m²·K)    Window: U-value
+  Phi_2 = 70.56 W    Window: fabric loss
   R_3 = 4.158 m²·K/W    Gable wall: thermal resistance
-  U_3 = 0.24 W/(m²·K)    Gable wall: U-value
-  Phi_3 = 49.9 W    Gable wall: fabric loss
-  R_4 = 0.838 m²·K/W    Party wall: thermal resistance
-  U_4 = 1.19 W/(m²·K)    Party wall: U-value
-  Phi_4 = 30.9 W    Party wall: fabric loss
-  U_5 = 0.25 W/(m²·K)    Ground floor: U-value
-  Phi_5 = 97.2 W    Ground floor: fabric loss
+  U_3 = 0.2405 W/(m²·K)    Gable wall: U-value
+  Phi_3 = 49.87 W    Gable wall: fabric loss
+  R_4 = 0.8383 m²·K/W    Party wall: thermal resistance
+  U_4 = 1.193 W/(m²·K)    Party wall: U-value
+  Phi_4 = 30.92 W    Party wall: fabric loss
+  U_5 = 0.2500 W/(m²·K)    Ground floor: U-value
+  Phi_5 = 97.20 W    Ground floor: fabric loss
   A_fab = 44.28 m²    Total fabric area
   A_ext = 35.64 m²    Fabric area facing outside
   A_tb = 35.64 m²    Fabric area facing outside weighted by f
-  U_m = 0.48 W/(m²·K)    Mean fabric U-value (area-weighted)
-  U_eff = 0.48 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
-  dT = 24.0 K    Design temperature difference
+  U_m = 0.4848 W/(m²·K)    Mean fabric U-value (area-weighted)
+  U_eff = 0.4848 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
+  dT = 24 K    Design temperature difference
   Phi_el = 298.8 W    Element fabric loss
-  Phi_tb = 85.5 W    Thermal-bridge allowance
-  q_v = 31.1 m³/h    Ventilation air flow
-  Phi_A = 39.4 W/m²    Heat loss per floor area
+  Phi_tb = 85.54 W    Thermal-bridge allowance
+  q_v = 31.10 m³/h    Ventilation air flow
+  Phi_A = 39.39 W/m²    Heat loss per floor area
   u_1 = 0.80    Front wall: U against target
   u_3 = 0.80    Gable wall: U against target
   u_4 = 0.99    Party wall: U against target (governing)

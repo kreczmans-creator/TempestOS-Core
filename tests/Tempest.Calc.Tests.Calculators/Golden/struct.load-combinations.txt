@@ -94,17 +94,17 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
         SLS quasi-permanent effect, minimum
 
 5. Results
-  E_d_max = 21.00 kN    ULS design effect, maximum
-  E_d_min = 10.00 kN    ULS design effect, minimum
-  E_k_max = 15.00 kN    SLS characteristic effect, maximum
+  E_d_max = 21 kN    ULS design effect, maximum
+  E_d_min = 10 kN    ULS design effect, minimum
+  E_k_max = 15 kN    SLS characteristic effect, maximum
   E_qp_max = 11.50 kN    SLS quasi-permanent effect, maximum
   E_d_gov = "ULS 6.10, Office imposed leading"    ULS design effect, governing (max)
-  E_k_min = 10.00 kN    SLS characteristic effect, minimum
+  E_k_min = 10 kN    SLS characteristic effect, minimum
   E_k_gov = "SLS characteristic 6.14b, Office imposed leading"    SLS characteristic effect, governing (max)
   E_fr_max = 12.50 kN    SLS frequent effect, maximum
-  E_fr_min = 10.00 kN    SLS frequent effect, minimum
+  E_fr_min = 10 kN    SLS frequent effect, minimum
   E_fr_gov = "SLS frequent 6.15b, Office imposed leading"    SLS frequent effect, governing (max)
-  E_qp_min = 10.00 kN    SLS quasi-permanent effect, minimum
+  E_qp_min = 10 kN    SLS quasi-permanent effect, minimum
   E_qp_gov = "SLS quasi-permanent 6.16b"    SLS quasi-permanent effect, governing (max)
 
 6. Checks (governing first)

@@ -10,10 +10,10 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   bolts | Bolt positions and areas | 4 row(s) |  | manual | any
-  bolts[1] |  | x = 0 mm; y = 0 mm; A = 84.3 mm^2 |  |  | 
-  bolts[2] |  | x = 100 mm; y = 0 mm; A = 84.3 mm^2 |  |  | 
-  bolts[3] |  | x = 100 mm; y = 100 mm; A = 84.3 mm^2 |  |  | 
-  bolts[4] |  | x = 0 mm; y = 100 mm; A = 84.3 mm^2 |  |  | 
+  bolts[1] |  | x = 0 mm; y = 0 mm; A = 84.3 mm² |  |  | 
+  bolts[2] |  | x = 100 mm; y = 0 mm; A = 84.3 mm² |  |  | 
+  bolts[3] |  | x = 100 mm; y = 100 mm; A = 84.3 mm² |  |  | 
+  bolts[4] |  | x = 0 mm; y = 100 mm; A = 84.3 mm² |  |  | 
   F_x | In-plane force, x | 0 | kN | manual | -1000000 … 1000000 kN
   F_y | In-plane force, y | -50 | kN | manual | -1000000 … 1000000 kN
   e_x | Point of application, x | 200 | mm | manual | -100000 … 100000 mm
@@ -109,7 +109,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
         Linear shear–tension interaction, the highest over all bolts
 
 5. Results
-  T = -7.50 kN·m    Torque about the centroid
+  T = -7.500 kN·m    Torque about the centroid
   J = 1686000 mm⁴    Polar second moment of bolt areas
   v_max = 36.44 kN    Maximum shear on any bolt
   t_max = 0 kN    Maximum tension on any bolt

@@ -45,7 +45,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | drawing: DRG-PIP-611 rev B | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.79 | mm² | drawing: DRG-PIP-611 rev B | 50 … 1500 mm²
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.48 | kN | drawing: DRG-PIP-611 rev B | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 9963247e34a0419b9c0290a3be8a9553/a37be04a9b8a4fb58807572ef115124a | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: da9ff4e00363424cbb056085e6b83e26/adbe75c4fd1c48ae84e837b039e87f97 | any
 
 3. Assumptions
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -212,17 +212,17 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
 
 5. Results
   F_t_Ed = 56.26 kN    Bolt tension per bolt (to PROFIS)
-  V_b_Ed = 2.25 kN    Shear per anchor bolt (to PROFIS)
+  V_b_Ed = 2.246 kN    Shear per anchor bolt (to PROFIS)
   N_j_Rd = 958.76 kN    Axial bearing resistance
   u_max = 0.40    Governing utilisation
-  f_cd = 14.2 MPa    Concrete design strength
+  f_cd = 14.17 MPa    Concrete design strength
   beta_j = 0.66667    Joint coefficient β_j
-  f_jd = 9.4 MPa    Bearing strength f_jd
-  c = 77.9 mm    Bearing outstand c
+  f_jd = 9.444 MPa    Bearing strength f_jd
+  c = 77.89 mm    Bearing outstand c
   A_eff = 101516 mm²    Effective bearing area
-  t_req_N = 10.0 mm    Plate thickness required for axial bearing alone
-  t_req = 12.3 mm    Plate thickness required (bearing, compression and tension T-stubs)
-  z_C = 93.9 mm    Compression lever arm z_C
+  t_req_N = 10 mm    Plate thickness required for axial bearing alone
+  t_req = 12.29 mm    Plate thickness required (bearing, compression and tension T-stubs)
+  z_C = 93.86 mm    Compression lever arm z_C
   z = 228.9 mm    Lever arm z
   C_Ed = 120.62 kN    Compression resultant
   C_Ed_2 = 0 kN    Compression resultant, other side
@@ -230,14 +230,14 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   T_Ed_2 = 0 kN    Tension resultant, other row
   A_flange = 48686 mm²    Compression-side bearing area
   C_Rd = 459.81 kN    Compression-side resistance
-  M_pl_Rd = 6.45 kN·m    Plate plastic moment
+  M_pl_Rd = 6.445 kN·m    Plate plastic moment
   T_Rd_1 = 460.38 kN    T-stub mode 1-2, no prying
-  T_Rd_3 = 282.00 kN    T-stub mode 3
-  T_Rd = 282.00 kN    Tension T-stub resistance
+  T_Rd_3 = 282 kN    T-stub mode 3
+  T_Rd = 282 kN    Tension T-stub resistance
   alpha_bc = 0.248    Anchor shear factor α_bc
   F_2_vb_Rd = 38.85 kN    Anchor shear resistance F_2,vb,Rd
   F_vb_Rd = 38.85 kN    Anchor shear resistance per bolt
-  F_f_Rd = 1.62 kN    Friction resistance
+  F_f_Rd = 1.620 kN    Friction resistance
   V_Rd = 157.03 kN    Shear resistance
   regime = "tension at one bolt row, compression under the other flange (Table 6.7, z = z_C + x_b)"    Force regime (Table 6.7)
   T_mode = "mode 3 (bolt failure)"    Governing T-stub mode
@@ -265,7 +265,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: cf631b3ae895bf39
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

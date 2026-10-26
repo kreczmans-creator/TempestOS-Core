@@ -55,13 +55,13 @@ Bending stress, with its stress concentration: σ = K_t·32M/(πd³). Torsional 
         Required over governing factor of safety
 
 5. Results
-  sigma = 79.6 MPa    Bending stress
-  tau = 63.7 MPa    Torsional shear
-  tau_max = 75.1 MPa    Maximum shear stress
+  sigma = 79.58 MPa    Bending stress
+  tau = 63.66 MPa    Torsional shear
+  tau_max = 75.07 MPa    Maximum shear stress
   sigma_vm = 136.0 MPa    von Mises stress
-  n_T = 2.33    Factor of safety (Tresca)
-  n_VM = 2.57    Factor of safety (von Mises)
-  n_min = 2.33    Governing factor of safety
+  n_T = 2.331    Factor of safety (Tresca)
+  n_VM = 2.5738    Factor of safety (von Mises)
+  n_min = 2.331    Governing factor of safety
 
 6. Checks (governing first)
   PASS  Factor of safety against the required factor: u = 0.86 vs u ≤ 1  utilisation 0.86  « Shigley §7-4

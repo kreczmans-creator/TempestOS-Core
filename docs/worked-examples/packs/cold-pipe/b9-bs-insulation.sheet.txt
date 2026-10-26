@@ -85,14 +85,14 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
         Utilisation, anti-condensation margin
 
 5. Results
-  thickness = 7.5 mm    Governing required thickness
-  q_per_m = 6.5 W/m    Heat flow per metre (heat gain)
-  theta_se = 25.5 °C    Outer surface temperature
-  theta_dew = 19.5 °C    Dew point of the ambient air
-  t_dew = 7.5 mm    Required thickness, anti-condensation margin
-  theta_m = 15.7 °C    Mean insulation temperature
+  thickness = 7.521 mm    Governing required thickness
+  q_per_m = 6.542 W/m    Heat flow per metre (heat gain)
+  theta_se = 25.50 °C    Outer surface temperature
+  theta_dew = 19.51 °C    Dew point of the ambient air
+  t_dew = 7.521 mm    Required thickness, anti-condensation margin
+  theta_m = 15.75 °C    Mean insulation temperature
   R = 3.363 m·K/W    Total resistance
-  D_crit = 8.8 mm    Critical diameter (at the bare-surface h_se)
+  D_crit = 8.750 mm    Critical diameter (at the bare-surface h_se)
   governing = "anti-condensation margin"    Governing criterion
   u_dew = 0.33    Utilisation, anti-condensation margin (governing)
 
@@ -107,7 +107,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   Content hash: 1838108ae7379e74
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 14/14
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

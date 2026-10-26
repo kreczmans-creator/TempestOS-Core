@@ -195,26 +195,26 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   A_m = 4211.7 mm²    Metal cross-section
   I_x = 2386.1 cm⁴    Second moment of area
   Z_x = 217.8 cm³    Section modulus
-  dT = 140.0 K    Temperature change
-  L_tot = 60.00 m    Length that grows
+  dT = 140 K    Temperature change
+  L_tot = 60 m    Length that grows
   dL_signed = 100.8 mm    Thermal movement, signed
   sigma_res = 352.8 MPa    Fully restrained stress
   F_res = 1485.9 kN    Fully restrained force
   direction = "growth: the pipe lengthens; fully restrained it presses on its anchors (compression)"    Direction of the movement
   F_friction = 0 N    Support friction on the run
   Delta = 100.8 mm    Movement absorbed by each leg
-  L_req = 9.33 m    Required leg length
+  L_req = 9.325 m    Required leg length
   F_leg = 7069.5 N    Force of the leg
   M_leg = 33580 N·m    Moment at the leg root
   sigma_leg = 154.2 MPa    Bending stress at the leg root
-  Delta_run = 16.0 mm    Leg growth absorbed by the run or runs
+  Delta_run = 15.96 mm    Leg growth absorbed by the run or runs
   S_run = 216000 m³    Flexibility of the runs
-  F_run = 4.4 N    Force of the runs
-  sigma_run = 0.61 MPa    Bending stress at the first run root
-  L_req_run = 3.71 m    Required length of the first run
+  F_run = 4.443 N    Force of the runs
+  sigma_run = 0.6119 MPa    Bending stress at the first run root
+  L_req_run = 3.711 m    Required length of the first run
   M_run = 133.29 N·m    Moment at the first run root
   F_along_run = 7069.5 N    Anchor force component along the run
-  F_along_leg = 4.4 N    Anchor force component along the leg
+  F_along_leg = 4.443 N    Anchor force component along the leg
   L_dev = 69.50 m    Developed length
   U_a = 60.75 m    Anchor distance
   Y_scr = 102.1 mm    Resultant displacement Y
@@ -241,7 +241,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   Content hash: 8dd3b0517fce49e5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

@@ -60,7 +60,6 @@ Cycles to failure at each stress range, from the S–N curve (unbounded at or be
         Spectrum repetitions to failure
 
 5. Results
-  D = 1.433    Total damage (governing)
   R_f = 0.69786    Repetitions to failure
   N_1 = 3051800    Life at block 1
   d_1 = 0.65536    Damage of block 1
@@ -68,6 +67,7 @@ Cycles to failure at each stress range, from the S–N curve (unbounded at or be
   d_2 = 0.7776    Damage of block 2
   N_3 = "unbounded"    Life at block 3
   d_3 = 0    Damage of block 3
+  D = 1.44    Total damage (governing)
 
 6. Checks (governing first)
   FAIL  Cumulative damage D ≤ 1: D = 1.44 vs D ≤ 1  utilisation 1.44  « Shigley §6-15

@@ -150,57 +150,61 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
       = 37295 / 1450
       = 25.721
         Critical-speed ratio (Dunkerley lower bound over operating speed)
-  [44] tau_key = 2T/(d·w·L)    « Shigley 10th ed. §7-7
+  [40] n_c_req = 2·n
+      = 2 × 1450 rpm
+      = 2900 rpm
+        Critical speed required, twice the operating speed
+  [45] tau_key = 2T/(d·w·L)    « Shigley 10th ed. §7-7
       = 2 × 300 N·m / (45 × 14 × 40) mm³
       = 23.81 MPa
         Key shear stress
-  [45] sigma_key = 4T/(d·h·L)    « Shigley 10th ed. §7-7
+  [46] sigma_key = 4T/(d·h·L)    « Shigley 10th ed. §7-7
       = 4 × 300 N·m / (45 × 9 × 40) mm³
       = 74.074 MPa
         Key bearing stress
-  [47] L_key_req = max(2T·n_target/(d·w·0.577S_y,key), 4T·n_target/(d·h·S_y,min))
+  [48] L_key_req = max(2T·n_target/(d·w·0.577S_y,key), 4T·n_target/(d·h·S_y,min))
       = n_target = 1.5, S_y,min = 400 MPa (key 400, shaft 500)
       = 11.111 mm
         Key length required
-  [48] u_key = L_req/L
+  [49] u_key = L_req/L
       = 11.111 / 40
       = 0.27778
         Key utilisation
-  [49] u_f = n_target/n_f,min
+  [50] u_f = n_target/n_f,min
       = 1.5 / 1.6909
       = 0.88712
         Fatigue utilisation
-  [50] u_y = n_target/n_y,min
+  [51] u_y = n_target/n_y,min
       = 1.5 / 4.1532
       = 0.36117
         Yield utilisation
-  [51] u_slope = max(θ_A, θ_B)/θ_max
+  [52] u_slope = max(θ_A, θ_B)/θ_max
       = 0.0008961 / 0.001
       = 0.8961
         Slope utilisation
-  [52] u_defl = y_load/y_max
+  [53] u_defl = y_load/y_max
       = 0.071775 / 0.13 mm
       = 0.55212
         Deflection utilisation
 
 5. Results
-  R_A = 3.20 kN    Reaction at A
-  R_B = 3.20 kN    Reaction at B
-  d_A = 35.0 mm    Seat diameter at A
-  d_B = 35.0 mm    Seat diameter at B
-  n_f_min = 1.69    Lowest fatigue safety factor
+  R_A = 3.195 kN    Reaction at A
+  R_B = 3.195 kN    Reaction at B
+  d_A = 35 mm    Seat diameter at A
+  d_B = 35 mm    Seat diameter at B
+  n_f_min = 1.6908    Lowest fatigue safety factor
   n_c = 38275 rpm    First critical speed (Rayleigh)
-  M_max = 0.42 kN·m    Largest bending moment
-  theta_A = 0.00090 rad    Slope at A
-  theta_B = 0.00090 rad    Slope at B
-  y_load = 0.072 mm    Deflection at the loads
+  M_max = 0.4154 kN·m    Largest bending moment
+  theta_A = 0.0008961 rad    Slope at A
+  theta_B = 0.0008961 rad    Slope at B
+  y_load = 0.07178 mm    Deflection at the loads
   S_e = 186.8 MPa    Endurance limit
-  n_y_min = 4.15    Lowest yield safety factor
+  n_y_min = 4.1531    Lowest yield safety factor
   n_c_D = 37295 rpm    Dunkerley lower bound
-  r_c = 25.721    Critical-speed ratio
-  tau_key = 23.8 MPa    Key shear
-  sigma_key = 74.1 MPa    Key bearing
-  L_key_req = 11.1 mm    Key length required
+  r_c = 25.72    Critical-speed ratio
+  tau_key = 23.81 MPa    Key shear
+  sigma_key = 74.07 MPa    Key bearing
+  L_key_req = 11.11 mm    Key length required
   u_key = 0.28    Key utilisation
 
 6. Checks (governing first)
@@ -209,6 +213,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   PASS  Deflection at the loads against limit: u_defl = 0.55 vs u_defl ≤ 1  utilisation 0.55
   PASS  Yield safety factor against target: u_y = 0.36 vs u_y ≤ 1  utilisation 0.36
   PASS  Key length against required: u_key = 0.28 vs u_key ≤ 1  utilisation 0.28
+  PASS  Critical speed against the operating speed: 2900 rpm vs 37295 rpm  utilisation 0.08  « Shigley 10th ed. §7-6
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.  [record]
@@ -217,7 +222,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   WARNING  S_y_hub: no hub strength is entered, so the key bearing is checked against the key and the shaft only; the hub is often the weakest part, enter its yield strength.  [key-hub]
 
 8. Verification
-  Template: mech.shaft@1.4.0
+  Template: mech.shaft@1.5.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

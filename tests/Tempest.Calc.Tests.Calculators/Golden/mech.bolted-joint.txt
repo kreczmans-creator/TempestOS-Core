@@ -202,22 +202,22 @@ Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d
 5. Results
   n_0 = 2.284    Load factor against separation
   n_L = 5.393    Load factor against axial yield
-  A_s = 84.3 mm²    Tensile stress area
+  A_s = 84.27 mm²    Tensile stress area
   F_M = 38.75 kN    Assembly preload (maximum)
   F_M_min = 24.22 kN    Minimum preload
   sigma_M = 459.9 MPa    Preload stress
   k_S = 321186 kN/m    Bolt stiffness
   k_P = 1907819 kN/m    Members' stiffness
   Phi = 0.072047    Load factor
-  F_Z = 3.02 kN    Embedding loss
-  F_SA = 0.72 kN    Additional bolt load
+  F_Z = 3.024 kN    Embedding loss
+  F_SA = 0.7205 kN    Additional bolt load
   F_KR = 11.92 kN    Residual clamp
   F_A_sep = 22.84 kN    Separation load
   F_S_max = 39.47 kN    Maximum bolt load
   sigma_z_max = 468.4 MPa    Maximum bolt tensile stress
   sigma_red_B = 503.7 MPa    Working equivalent stress
-  sigma_a = 4.3 MPa    Fatigue amplitude
-  m_min = 6.5 mm    Engagement needed
+  sigma_a = 4.275 MPa    Fatigue amplitude
+  m_min = 6.544 mm    Engagement needed
   nu_M = 0.92    Assembly utilisation of proof strength
   u_assembly = 0.92    Assembly utilisation over the permitted ν (governing)
 

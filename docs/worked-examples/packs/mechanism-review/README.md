@@ -13,10 +13,10 @@ A carton tamper: a 4 kg follower on a Ø30 roller (60 mm base circle, in line) r
 | Step | Calculator | Revision | Checks |
 |---|---|---|---|
 | Tamper cam | `mech.mechanism` | A | 3 of 3 PASS |
-| Follower return spring | `mech.spring` | A | 4 of 4 PASS |
-| Cam shaft | `mech.shaft` | A | 4 of 4 PASS |
+| Follower return spring | `mech.spring` | A | 5 of 5 PASS |
+| Cam shaft | `mech.shaft` | A | 5 of 5 PASS |
 | Cam shaft bearing A | `mech.bearing-life` | A | 2 of 2 PASS |
-| Cam drive motor | `elec.motor-sizing` | A | 4 of 4 PASS |
+| Cam drive motor | `elec.motor-sizing` | A | 5 of 5 PASS |
 | Cam drive supply cable | `elec.conductor-sizing` | A | 3 of 3 PASS |
 
 ## Links

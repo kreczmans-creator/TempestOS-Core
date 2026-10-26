@@ -51,9 +51,9 @@ Thickness needed for the circumferential stress: t_c = P·R/(S·E − 0.6·P). T
         Required over provided thickness
 
 5. Results
-  t_c = 16.5 mm    Thickness, circumferential stress
-  t_l = 8.1 mm    Thickness, longitudinal stress
-  t_req = 18.0 mm    Required nominal thickness
+  t_c = 16.52 mm    Thickness, circumferential stress
+  t_l = 8.117 mm    Thickness, longitudinal stress
+  t_req = 18.02 mm    Required nominal thickness
   sigma_h = 168.5 MPa    Hoop stress at the corroded thickness
   u = 1.21    Thickness utilisation (governing)
 

@@ -130,23 +130,23 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
         Monte Carlo yield
 
 5. Results
-  x_nom = 0.0050 in    Nominal result
-  x_mean = 0.0050 in    Mean result
-  t_wc = 0.010 in    Worst-case tolerance (±)
-  x_wc_min = -0.0050 in    Worst-case minimum
-  x_wc_max = 0.015 in    Worst-case maximum
-  t_rss = 0.0060 in    RSS tolerance (±)
-  t_mrss = 0.0090 in    Modified RSS tolerance (±)
-  sigma = 0.0020 in    Predicted σ
-  m_min = -0.0080 in    Worst-case margin to the minimum
+  x_nom = 0.005000 in    Nominal result
+  x_mean = 0.005000 in    Mean result
+  t_wc = 0.01000 in    Worst-case tolerance (±)
+  x_wc_min = -0.005000 in    Worst-case minimum
+  x_wc_max = 0.01500 in    Worst-case maximum
+  t_rss = 0.006000 in    RSS tolerance (±)
+  t_mrss = 0.009000 in    Modified RSS tolerance (±)
+  sigma = 0.002000 in    Predicted σ
+  m_min = -0.008000 in    Worst-case margin to the minimum
   cpk = 0.33333    C_pk
   dpmo = 158660    DPMO (predicted)
-  yield = 84.1 %    Yield (predicted)
-  mc_mean = 0.0050 in    Monte Carlo mean
-  mc_sigma = 0.0020 in    Monte Carlo σ
-  mc_p05 = 0.0017 in    Monte Carlo 5th percentile
-  mc_p95 = 0.0083 in    Monte Carlo 95th percentile
-  mc_yield = 84.6 %    Monte Carlo yield
+  yield = 84.13 %    Yield (predicted)
+  mc_mean = 0.005002 in    Monte Carlo mean
+  mc_sigma = 0.001992 in    Monte Carlo σ
+  mc_p05 = 0.001732 in    Monte Carlo 5th percentile
+  mc_p95 = 0.008277 in    Monte Carlo 95th percentile
+  mc_yield = 84.61 %    Monte Carlo yield
 
 6. Checks (governing first)
   FAIL  Worst case within requirement: -0.005 … 0.015 in vs 0.003 … open in

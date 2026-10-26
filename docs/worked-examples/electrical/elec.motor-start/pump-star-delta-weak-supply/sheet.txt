@@ -236,18 +236,18 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
         Point-of-common-coupling dip against the limit
 
 5. Results
-  start_dip = 8.1 %    Voltage dip at the motor terminals
+  start_dip = 8.147 %    Voltage dip at the motor terminals
   kvar = 35.55 kvar    Capacitor kvar to the target power factor
   I_start = 644.57 A    Starting current at rated voltage
   I_rated = 276.24 A    Motor rated current
-  Z_src = 0.0234 Ω    Source impedance (magnitude)
+  Z_src = 0.02341 Ω    Source impedance (magnitude)
   Z_m = 0.3583 Ω    Motor starting impedance (magnitude)
   S_start = 446.57 kVA    Starting apparent power
   I_dip = 592.06 A    Starting current at the dipped voltage
   V_m = 367.4 V    Voltage at the motor terminals while starting
   V_pcc = 376.3 V    Point of common coupling voltage while starting
-  dip_pcc = 5.9 %    Voltage dip at the point of common coupling
-  dV_cab = 8.7 V    Cable drop along the starting voltage
+  dip_pcc = 5.929 %    Voltage dip at the point of common coupling
+  dV_cab = 8.703 V    Cable drop along the starting voltage
   k_T = 0.8437    Torque factor at the dipped voltage
   P_in = 168.42 kW    Motor input power at rated load
   I_cap = 51.31 A    Capacitor current

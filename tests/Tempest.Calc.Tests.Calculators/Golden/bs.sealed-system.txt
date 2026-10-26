@@ -94,17 +94,17 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
         Emitter utilisation (governing room)
 
 5. Results
-  Phi_tot = 1500.0 W    Total heat required
-  V_s = 38.0 L    System water volume
-  V_e = 2.5 L    Minimum vessel volume
-  dT = 50.0 K    Mean temperature difference
-  dT_fr = 10.0 K    Flow-to-return temperature difference
-  t_m = 70.0 °C    Mean water temperature
+  Phi_tot = 1500 W    Total heat required
+  V_s = 38 L    System water volume
+  V_e = 2.496 L    Minimum vessel volume
+  dT = 50 K    Mean temperature difference
+  dT_fr = 10 K    Flow-to-return temperature difference
+  t_m = 70 °C    Mean water temperature
   f_dT = 1    Output correction factor
-  R1 = 1500.0 W    Lounge: Φ50 needed
-  V_em = 8.0 L    Emitter water content
+  R1 = 1500 W    Lounge: Φ50 needed
+  V_em = 8 L    Emitter water content
   e_x = 0.032086    Expansion coefficient
-  p_i = 0.79 bar    Pre-charge pressure
+  p_i = 0.7902 bar    Pre-charge pressure
   u_emit = 0.94    Emitter utilisation (governing)
 
 6. Checks (governing first)

@@ -97,14 +97,14 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
         Separation force W′ = P·(μ + tan α′)/(1 − μ·tan α′)
 
 5. Results
-  assembly_force = 9.1 N    Assembly force
-  retention_force = 36.1 N    Separation force
+  assembly_force = 9.055 N    Assembly force
+  retention_force = 36.10 N    Separation force
   strain_util = 0.33    Strain / permissible strain (governing)
-  eps = 1.3 %    Maximum strain
-  eps_perm = 4.0 %    Permissible strain
-  Es = 2400.0 MPa    Secant modulus used
-  P = 8.5 N    Deflection force
-  y_perm = 3.0 mm    Permissible deflection
+  eps = 1.333 %    Maximum strain
+  eps_perm = 4 %    Permissible strain
+  Es = 2400 MPa    Secant modulus used
+  P = 8.533 N    Deflection force
+  y_perm = 3 mm    Permissible deflection
   l_h = 7.5    Slenderness l/h
   K_y = 0.66667    Deflection factor K_y
   phi_max = 1    Strain shape maximum

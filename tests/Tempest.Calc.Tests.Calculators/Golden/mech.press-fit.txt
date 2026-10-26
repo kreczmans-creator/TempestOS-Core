@@ -114,22 +114,22 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
         Hub temperature rise for shrink fitting
 
 5. Results
-  p = 62.1 MPa    Interface pressure
+  p = 62.10 MPa    Interface pressure
   sigma_t_hub = 103.5 MPa    Hub hoop stress at bore
-  sigma_t_shaft = -62.1 MPa    Shaft hoop stress at surface
+  sigma_t_shaft = -62.10 MPa    Shaft hoop stress at surface
   sigma_vm_hub = 144.9 MPa    Hub von Mises stress (governing)
-  sigma_vm_shaft = 62.1 MPa    Shaft von Mises stress at the surface
-  sigma_vm_shaft_bore = 62.1 MPa    Shaft von Mises stress at the shaft bore
-  sigma_vm_shaft_max = 62.1 MPa    Largest shaft von Mises stress (surface or bore)
-  delta_eff = 40.0 µm    Effective interference after smoothing
-  p_eff = 62.1 MPa    Gripping interface pressure
+  sigma_vm_shaft = 62.10 MPa    Shaft von Mises stress at the surface
+  sigma_vm_shaft_bore = 62.10 MPa    Shaft von Mises stress at the shaft bore
+  sigma_vm_shaft_max = 62.10 MPa    Largest shaft von Mises stress (surface or bore)
+  delta_eff = 40 µm    Effective interference after smoothing
+  p_eff = 62.10 MPa    Gripping interface pressure
   F_a = 87.79 kN    Assembly force
   T = 2194.8 N·m    Torque capacity
-  dT = 100.0 K    Shrink-fit temperature rise
+  dT = 100 K    Shrink-fit temperature rise
 
 6. Checks (governing first)
-  PASS  Hub yield: 144.9 MPa vs 350.0 MPa  utilisation 0.41
-  PASS  Shaft yield, surface and bore: 62.1 MPa vs 350.0 MPa  utilisation 0.18
+  PASS  Hub yield: 144.9 MPa vs 350 MPa  utilisation 0.41
+  PASS  Shaft yield, surface and bore: 62.10 MPa vs 350 MPa  utilisation 0.18
 
 7. Applicability
   None.

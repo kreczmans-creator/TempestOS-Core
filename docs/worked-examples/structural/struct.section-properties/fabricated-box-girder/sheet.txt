@@ -107,7 +107,7 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
         Shape factor about x
 
 5. Results
-  A = 384.00 cm²    Area
+  A = 384 cm²    Area
   x_c = 0 mm    Centroid x
   y_c = 0 mm    Centroid y
   I_xx = 193152 cm⁴    I_xx
@@ -118,10 +118,10 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   theta = 0°    Principal axis angle
   W_el_x = 6438.4 cm³    W_el,x
   W_el_y = 5113.6 cm³    W_el,y
-  W_pl_x = 7776.0 cm³    W_pl,x
-  W_pl_y = 5856.0 cm³    W_pl,y
-  i_x = 22.4 cm    i_x
-  i_y = 16.3 cm    i_y
+  W_pl_x = 7776 cm³    W_pl,x
+  W_pl_y = 5856 cm³    W_pl,y
+  i_x = 22.43 cm    i_x
+  i_y = 16.32 cm    i_y
   alpha_pl_x = 1.2078    Shape factor, x
 
 6. Checks (governing first)

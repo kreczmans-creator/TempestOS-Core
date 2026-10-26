@@ -13,13 +13,13 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   theta_int | Internal design temperature | 21 | °C | manual | 16 … 24 °C
   theta_e | External design temperature (location record) | -3 | °C | manual | -15 … 5 °C
   layers | Construction layers (several elements share the table, keyed by element name) | 4 row(s) |  | manual | any
-  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m*K) |  |  | 
-  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m*K) |  |  | 
-  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m*K) |  |  | 
-  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m*K) |  |  | 
+  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m·K) |  |  | 
+  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m·K) |  |  | 
+  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m·K) |  |  | 
+  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m·K) |  |  | 
   elements | Building elements bounding the room | 2 row(s) |  | manual | any
-  elements[1] |  | name = Cavity wall; area = 20 m^2 |  |  | 
-  elements[2] |  | name = Window; area = 3 m^2; U_user = 1.4 W/(m^2*K) |  |  | 
+  elements[1] |  | name = Cavity wall; area = 20 m² |  |  | 
+  elements[2] |  | name = Window; area = 3 m²; U_user = 1.4 W/(m²·K) |  |  | 
   y_tb | Thermal-bridge allowance on the area facing outside | 0 | W/(m²·K) | manual | 0 … 0.3 W/(m²·K)
   U_target | Target U for built-up elements without their own target | 0.3 | W/(m²·K) | manual | 0.05 … 8 W/(m²·K)
   n | Air change rate | 0.5 | 1/h | manual | 0.1 … 3 1/h
@@ -120,24 +120,24 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
 
 5. Results
   Phi_HL = 379.4 W    Room design heat loss
-  theta_int = 21.0 °C    Internal design temperature
+  theta_int = 21 °C    Internal design temperature
   HLC = 15.81 W/K    Heat loss coefficient
   Phi_T = 216.2 W    Fabric heat loss
   Phi_V = 163.2 W    Ventilation heat loss
-  U_1 = 0.24 W/(m²·K)    Cavity wall: U-value
+  U_1 = 0.2405 W/(m²·K)    Cavity wall: U-value
   R_1 = 4.158 m²·K/W    Cavity wall: thermal resistance
   Phi_1 = 115.4 W    Cavity wall: fabric loss
-  U_2 = 1.40 W/(m²·K)    Window: U-value
+  U_2 = 1.400 W/(m²·K)    Window: U-value
   Phi_2 = 100.8 W    Window: fabric loss
-  A_fab = 23.00 m²    Total fabric area
-  A_ext = 23.00 m²    Fabric area facing outside
-  A_tb = 23.00 m²    Fabric area facing outside weighted by f
-  U_m = 0.39 W/(m²·K)    Mean fabric U-value (area-weighted)
-  U_eff = 0.39 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
-  dT = 24.0 K    Design temperature difference
+  A_fab = 23 m²    Total fabric area
+  A_ext = 23 m²    Fabric area facing outside
+  A_tb = 23 m²    Fabric area facing outside weighted by f
+  U_m = 0.3917 W/(m²·K)    Mean fabric U-value (area-weighted)
+  U_eff = 0.3917 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
+  dT = 24 K    Design temperature difference
   Phi_el = 216.2 W    Element fabric loss
   Phi_tb = 0 W    Thermal-bridge allowance
-  q_v = 20.0 m³/h    Ventilation air flow
+  q_v = 20 m³/h    Ventilation air flow
   u_1 = 0.80    Cavity wall: U against target (governing)
 
 6. Checks (governing first)

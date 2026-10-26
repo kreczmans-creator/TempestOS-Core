@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 12/12
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -166,22 +166,22 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
         Hub temperature rise for shrink fitting
 
 5. Results
-  p = 62.1 MPa    Interface pressure
+  p = 62.10 MPa    Interface pressure
   sigma_t_hub = 103.5 MPa    Hub hoop stress at bore
-  sigma_t_shaft = -62.1 MPa    Shaft hoop stress at surface
+  sigma_t_shaft = -62.10 MPa    Shaft hoop stress at surface
   sigma_vm_hub = 144.9 MPa    Hub von Mises stress (governing)
-  sigma_vm_shaft = 62.1 MPa    Shaft von Mises stress at the surface
-  sigma_vm_shaft_bore = 62.1 MPa    Shaft von Mises stress at the shaft bore
-  sigma_vm_shaft_max = 62.1 MPa    Largest shaft von Mises stress (surface or bore)
-  delta_eff = 40.0 µm    Effective interference after smoothing
-  p_eff = 62.1 MPa    Gripping interface pressure
+  sigma_vm_shaft = 62.10 MPa    Shaft von Mises stress at the surface
+  sigma_vm_shaft_bore = 62.10 MPa    Shaft von Mises stress at the shaft bore
+  sigma_vm_shaft_max = 62.10 MPa    Largest shaft von Mises stress (surface or bore)
+  delta_eff = 40 µm    Effective interference after smoothing
+  p_eff = 62.10 MPa    Gripping interface pressure
   F_a = 87.79 kN    Assembly force
   T = 2194.8 N·m    Torque capacity
-  dT = 100.0 K    Shrink-fit temperature rise
+  dT = 100 K    Shrink-fit temperature rise
 
 6. Checks (governing first)
-  PASS  Hub yield: 144.9 MPa vs 350.0 MPa  utilisation 0.41
-  PASS  Shaft yield, surface and bore: 62.1 MPa vs 350.0 MPa  utilisation 0.18
+  PASS  Hub yield: 144.9 MPa vs 350 MPa  utilisation 0.41
+  PASS  Shaft yield, surface and bore: 62.10 MPa vs 350 MPa  utilisation 0.18
 
 7. Applicability
   None.
@@ -191,7 +191,7 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
   Content hash: 85c16c3f7bfa63b4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -406,22 +406,22 @@ Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d
 5. Results
   n_0 = 2.284    Load factor against separation
   n_L = 5.393    Load factor against axial yield
-  A_s = 84.3 mm²    Tensile stress area
+  A_s = 84.27 mm²    Tensile stress area
   F_M = 38.75 kN    Assembly preload (maximum)
   F_M_min = 24.22 kN    Minimum preload
   sigma_M = 459.9 MPa    Preload stress
   k_S = 321186 kN/m    Bolt stiffness
   k_P = 1907819 kN/m    Members' stiffness
   Phi = 0.072047    Load factor
-  F_Z = 3.02 kN    Embedding loss
-  F_SA = 0.72 kN    Additional bolt load
+  F_Z = 3.024 kN    Embedding loss
+  F_SA = 0.7205 kN    Additional bolt load
   F_KR = 11.92 kN    Residual clamp
   F_A_sep = 22.84 kN    Separation load
   F_S_max = 39.47 kN    Maximum bolt load
   sigma_z_max = 468.4 MPa    Maximum bolt tensile stress
   sigma_red_B = 503.7 MPa    Working equivalent stress
-  sigma_a = 4.3 MPa    Fatigue amplitude
-  m_min = 6.5 mm    Engagement needed
+  sigma_a = 4.275 MPa    Fatigue amplitude
+  m_min = 6.544 mm    Engagement needed
   nu_M = 0.92    Assembly utilisation of proof strength
   u_assembly = 0.92    Assembly utilisation over the permitted ν (governing)
 
@@ -443,7 +443,7 @@ Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d
   Content hash: df65ae01a912bd25
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -558,7 +558,7 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
         Torsion constant
 
 5. Results
-  A = 200.00 cm²    Area
+  A = 200 cm²    Area
   x_c = 0 mm    Centroid x
   y_c = 0 mm    Centroid y
   I_xx = 6666.7 cm⁴    I_xx
@@ -569,10 +569,10 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   theta = 0°    Principal axis angle
   W_el_x = 666.7 cm³    W_el,x
   W_el_y = 333.3 cm³    W_el,y
-  W_pl_x = 1000.0 cm³    W_pl,x
-  W_pl_y = 500.0 cm³    W_pl,y
-  i_x = 5.8 cm    i_x
-  i_y = 2.9 cm    i_y
+  W_pl_x = 1000 cm³    W_pl,x
+  W_pl_y = 500 cm³    W_pl,y
+  i_x = 5.774 cm    i_x
+  i_y = 2.887 cm    i_y
   alpha_pl_x = 1.5    Shape factor, x
   J = 4573.6 cm⁴    Torsion constant J
 
@@ -587,7 +587,7 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   Content hash: 18d6536f1f7df3e1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

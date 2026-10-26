@@ -113,7 +113,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
         Pressure ratio p2/p0 (p0 at the minimum temperature) against the rule
 
 5. Results
-  V0 = 1.3 L    Accumulator gas volume required
+  V0 = 1.310 L    Accumulator gas volume required
   p0 = 46.28 bar a    Pre-charge, absolute, at the charging temperature
   p0_set = 45.26 bar g    Pre-charge to set at the charging temperature
   p0_min = 44.70 bar a    Pre-charge, absolute, at the minimum operating temperature
@@ -139,7 +139,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   Content hash: ebe37e59c3db34a4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

@@ -18,11 +18,11 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   nodes[2] |  | id = 2; x = 0 m; y = 3 m; support = free |  |  | 
   nodes[3] |  | id = 3; x = 1 m; y = 3 m; support = free |  |  | 
   elements | Elements | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
-  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm^2; I = 4568 cm^4; rel_i = no; rel_j = no |  |  | 
-  elements[2] |  | id = 2; i = 2; j = 3; A = 58.7 cm^2; I = 4568 cm^4; rel_i = no; rel_j = no |  |  | 
+  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm²; I = 4568 cm⁴; rel_i = no; rel_j = no |  |  | 
+  elements[2] |  | id = 2; i = 2; j = 3; A = 58.7 cm²; I = 4568 cm⁴; rel_i = no; rel_j = no |  |  | 
   loads | Loads | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
-  loads[1] |  | case = 1; kind = nodal; target = 3; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -28.2 kN; M = 0 kN*m |  | F_y: link: Load combinations rev A · E_d_min | 
-  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 5 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
+  loads[1] |  | case = 1; kind = nodal; target = 3; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -28.2 kN; M = 0 kN·m |  | F_y: link: Load combinations rev A · E_d_min | 
+  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 5 kN; F_y = 0 kN; M = 0 kN·m |  |  | 
   combinations | Combinations (blank = each case alone) | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
   combinations[1] |  | name = ULS; case = 1; factor = 1 |  |  | 
   combinations[2] |  | name = ULS; case = 2; factor = 1 |  |  | 
@@ -158,32 +158,32 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
         Maximum transverse deflection
 
 5. Results
-  R1_x = -5.00 kN    R_x node 1
+  R1_x = -5 kN    R_x node 1
   R1_y = 28.20 kN    R_y node 1
   R1_m = 43.20 kN·m    M node 1
-  R1_x_abs = 5.00 kN    |R_x| node 1
+  R1_x_abs = 5 kN    |R_x| node 1
   R1_m_abs = 43.20 kN·m    |M| node 1
   N_e1 = -28.20 kN    N, member 1
-  V_e1 = 5.00 kN    |V| max, member 1
+  V_e1 = 5 kN    |V| max, member 1
   M_abs_e1 = 43.20 kN·m    |M| max, member 1
   M_max_e1 = -28.20 kN·m    M max, member 1
   M_min_e1 = -43.20 kN·m    M min, member 1
   V_e2 = 28.20 kN    |V| max, member 2
   M_abs_e2 = 28.20 kN·m    |M| max, member 2
   sum_R_y = 28.20 kN    Σ R_y
-  sum_R_x = -5.00 kN    Σ R_x
+  sum_R_x = -5 kN    Σ R_x
   M_max = 0 kN·m    M max
   M_min = -43.20 kN·m    M min
   V_max = 28.20 kN    |V| max
   N_max = 0 kN    N max (tension)
   N_min = -28.20 kN    N min (compression)
-  d_max = 17.9 mm    δ max
-  d_e1 = 17.9 mm    δ max, member 1
+  d_max = 17.92 mm    δ max
+  d_e1 = 17.92 mm    δ max, member 1
   M_max_e2 = 0 kN·m    M max, member 2
   M_min_e2 = -28.20 kN·m    M min, member 2
   N_e2 = 0 kN    N, member 2
-  d_e2 = 12.2 mm    δ max, member 2
-  x_Mmax = 1.00 m    x of M max
+  d_e2 = 12.21 mm    δ max, member 2
+  x_Mmax = 1 m    x of M max
 
 6. Checks (governing first)
   None.
@@ -196,7 +196,7 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   Content hash: a6389d664ba5a5eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

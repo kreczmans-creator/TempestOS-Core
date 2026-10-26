@@ -11,7 +11,7 @@ PACK INDEX
   2. Room B heat loss — U-values and room heat loss — rev A — ISSUED
   3. Sealed system — Sealed heating system — rev A — ISSUED
   4. Primary pipework and pump — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
-  5. Circulator motor — Motor and actuator sizing — rev A — ISSUED — Speed n_pk ≤ n_max PASS
+  5. Circulator motor — Motor and actuator sizing — rev A — ISSUED — Motor speed against the rated speed PASS
 
 REVISIONS
   A  2026-10-26  test.engineer  First issue
@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 24/24
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -67,13 +67,13 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   theta_int | Internal design temperature | 21 | °C | spec: SPEC-HTG-01 §3 | 16 … 24 °C
   theta_e | External design temperature (location record) | -3 | °C | spec: SPEC-HTG-01 §3 | -15 … 5 °C
   layers | Construction layers (several elements share the table, keyed by element name) | 4 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m*K) |  |  | 
-  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m*K) |  |  | 
-  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m*K) |  |  | 
-  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m*K) |  |  | 
+  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m·K) |  |  | 
+  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m·K) |  |  | 
+  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m·K) |  |  | 
+  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m·K) |  |  | 
   elements | Building elements bounding the room | 2 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  elements[1] |  | name = Cavity wall; area = 20 m^2 |  |  | 
-  elements[2] |  | name = Window; area = 3 m^2; U_user = 1.4 W/(m^2*K) |  |  | 
+  elements[1] |  | name = Cavity wall; area = 20 m² |  |  | 
+  elements[2] |  | name = Window; area = 3 m²; U_user = 1.4 W/(m²·K) |  |  | 
   y_tb | Thermal-bridge allowance on the area facing outside | 0 | W/(m²·K) | assumption: Sheet default value; no project figure given. | 0 … 0.3 W/(m²·K)
   U_target | Target U for built-up elements without their own target | 0.3 | W/(m²·K) | spec: SPEC-HTG-01 §3 | 0.05 … 8 W/(m²·K)
   n | Air change rate | 0.5 | 1/h | spec: SPEC-HTG-01 §3 | 0.1 … 3 1/h
@@ -177,24 +177,24 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
 
 5. Results
   Phi_HL = 379.4 W    Room design heat loss
-  theta_int = 21.0 °C    Internal design temperature
+  theta_int = 21 °C    Internal design temperature
   HLC = 15.81 W/K    Heat loss coefficient
   Phi_T = 216.2 W    Fabric heat loss
   Phi_V = 163.2 W    Ventilation heat loss
-  U_1 = 0.24 W/(m²·K)    Cavity wall: U-value
+  U_1 = 0.2405 W/(m²·K)    Cavity wall: U-value
   R_1 = 4.158 m²·K/W    Cavity wall: thermal resistance
   Phi_1 = 115.4 W    Cavity wall: fabric loss
-  U_2 = 1.40 W/(m²·K)    Window: U-value
+  U_2 = 1.400 W/(m²·K)    Window: U-value
   Phi_2 = 100.8 W    Window: fabric loss
-  A_fab = 23.00 m²    Total fabric area
-  A_ext = 23.00 m²    Fabric area facing outside
-  A_tb = 23.00 m²    Fabric area facing outside weighted by f
-  U_m = 0.39 W/(m²·K)    Mean fabric U-value (area-weighted)
-  U_eff = 0.39 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
-  dT = 24.0 K    Design temperature difference
+  A_fab = 23 m²    Total fabric area
+  A_ext = 23 m²    Fabric area facing outside
+  A_tb = 23 m²    Fabric area facing outside weighted by f
+  U_m = 0.3917 W/(m²·K)    Mean fabric U-value (area-weighted)
+  U_eff = 0.3917 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
+  dT = 24 K    Design temperature difference
   Phi_el = 216.2 W    Element fabric loss
   Phi_tb = 0 W    Thermal-bridge allowance
-  q_v = 20.0 m³/h    Ventilation air flow
+  q_v = 20 m³/h    Ventilation air flow
   u_1 = 0.80    Cavity wall: U against target (governing)
 
 6. Checks (governing first)
@@ -208,7 +208,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: 3e4b1ea3ce5d1522
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -236,16 +236,16 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   theta_int | Internal design temperature | 21 | °C | spec: SPEC-HTG-01 §3 | 16 … 24 °C
   theta_e | External design temperature (location record) | -3 | °C | spec: SPEC-HTG-01 §3 | -15 … 5 °C
   layers | Construction layers (several elements share the table, keyed by element name) | 6 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m*K) |  |  | 
-  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m*K) |  |  | 
-  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m*K) |  |  | 
-  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m*K) |  |  | 
-  layers[5] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.22 W/(m*K) |  |  | 
-  layers[6] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.22 W/(m*K) |  |  | 
+  layers[1] |  | element = Cavity wall; name = Outer brick leaf; d = 102.5 mm; lambda = 0.84 W/(m·K) |  |  | 
+  layers[2] |  | element = Cavity wall; name = Insulation; d = 100 mm; lambda = 0.03 W/(m·K) |  |  | 
+  layers[3] |  | element = Cavity wall; name = Inner block leaf; d = 100 mm; lambda = 0.2 W/(m·K) |  |  | 
+  layers[4] |  | element = Cavity wall; name = Plaster; d = 13 mm; lambda = 0.4 W/(m·K) |  |  | 
+  layers[5] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.22 W/(m·K) |  |  | 
+  layers[6] |  | element = Partition; name = Plasterboard; d = 12.5 mm; lambda = 0.22 W/(m·K) |  |  | 
   elements | Building elements bounding the room | 3 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  elements[1] |  | name = Cavity wall; area = 15 m^2 |  |  | 
-  elements[2] |  | name = Partition; area = 12 m^2; theta_adj = 18 degC; Rg = 0.18 m^2*K/W |  |  | 
-  elements[3] |  | name = Ground floor; area = 10 m^2; f = 0.6; U_user = 0.25 W/(m^2*K) |  |  | 
+  elements[1] |  | name = Cavity wall; area = 15 m² |  |  | 
+  elements[2] |  | name = Partition; area = 12 m²; theta_adj = 18 °C; Rg = 0.18 m²·K/W |  |  | 
+  elements[3] |  | name = Ground floor; area = 10 m²; f = 0.6; U_user = 0.25 W/(m²·K) |  |  | 
   y_tb | Thermal-bridge allowance on the area facing outside | 0.05 | W/(m²·K) | spec: SPEC-HTG-01 §3 | 0 … 0.3 W/(m²·K)
   n | Air change rate | 0.6 | 1/h | spec: SPEC-HTG-01 §3 | 0.1 … 3 1/h
   V | Room volume | 50 | m³ | spec: SPEC-HTG-01 §3 | 5 … 1000 m³
@@ -361,27 +361,27 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
 
 5. Results
   Phi_HL = 304.6 W    Room design heat loss
-  theta_int = 21.0 °C    Internal design temperature
+  theta_int = 21 °C    Internal design temperature
   HLC = 12.69 W/K    Heat loss coefficient
   Phi_T = 212.8 W    Fabric heat loss
-  Phi_V = 91.8 W    Ventilation heat loss
-  U_1 = 0.24 W/(m²·K)    Cavity wall: U-value
+  Phi_V = 91.80 W    Ventilation heat loss
+  U_1 = 0.2405 W/(m²·K)    Cavity wall: U-value
   R_1 = 4.158 m²·K/W    Cavity wall: thermal resistance
-  Phi_1 = 86.6 W    Cavity wall: fabric loss
-  R_2 = 0.554 m²·K/W    Partition: thermal resistance
-  U_2 = 1.81 W/(m²·K)    Partition: U-value
-  Phi_2 = 65.0 W    Partition: fabric loss
-  U_3 = 0.25 W/(m²·K)    Ground floor: U-value
-  Phi_3 = 36.0 W    Ground floor: fabric loss
-  A_fab = 37.00 m²    Total fabric area
-  A_ext = 25.00 m²    Fabric area facing outside
-  A_tb = 21.00 m²    Fabric area facing outside weighted by f
-  U_m = 0.75 W/(m²·K)    Mean fabric U-value (area-weighted)
-  U_eff = 0.72 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
-  dT = 24.0 K    Design temperature difference
+  Phi_1 = 86.58 W    Cavity wall: fabric loss
+  R_2 = 0.5536 m²·K/W    Partition: thermal resistance
+  U_2 = 1.806 W/(m²·K)    Partition: U-value
+  Phi_2 = 65.02 W    Partition: fabric loss
+  U_3 = 0.2500 W/(m²·K)    Ground floor: U-value
+  Phi_3 = 36 W    Ground floor: fabric loss
+  A_fab = 37 m²    Total fabric area
+  A_ext = 25 m²    Fabric area facing outside
+  A_tb = 21 m²    Fabric area facing outside weighted by f
+  U_m = 0.7509 W/(m²·K)    Mean fabric U-value (area-weighted)
+  U_eff = 0.7239 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
+  dT = 24 K    Design temperature difference
   Phi_el = 187.6 W    Element fabric loss
-  Phi_tb = 25.2 W    Thermal-bridge allowance
-  q_v = 30.0 m³/h    Ventilation air flow
+  Phi_tb = 25.20 W    Thermal-bridge allowance
+  q_v = 30 m³/h    Ventilation air flow
 
 6. Checks (governing first)
   None.
@@ -394,7 +394,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: 3e4b1ea3ce5d1522
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -419,8 +419,8 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   rooms | Rooms and emitters | 2 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  rooms[1] |  | name = Room A; Phi = 379.44 W; V_em = 4 L; t_i = 21 degC |  | Phi: link: Room A heat loss rev A · Phi_HL; t_i: link: Room A heat loss rev A · theta_int | 
-  rooms[2] |  | name = Room B; Phi = 304.61 W; V_em = 4 L; t_i = 21 degC |  | Phi: link: Room B heat loss rev A · Phi_HL; t_i: link: Room B heat loss rev A · theta_int | 
+  rooms[1] |  | name = Room A; Phi = 379.44 W; V_em = 4 L; t_i = 21 °C |  | Phi: link: Room A heat loss rev A · Phi_HL; t_i: link: Room A heat loss rev A · theta_int | 
+  rooms[2] |  | name = Room B; Phi = 304.61 W; V_em = 4 L; t_i = 21 °C |  | Phi: link: Room B heat loss rev A · Phi_HL; t_i: link: Room B heat loss rev A · theta_int | 
   t_f | Flow temperature | 75 | °C | assumption: Sheet default value; no project figure given. | 30 … 90 °C
   t_r | Return temperature | 65 | °C | assumption: Sheet default value; no project figure given. | 30 … 90 °C
   t_i | Room temperature | 20 | °C | assumption: Sheet default value; no project figure given. | 16 … 24 °C
@@ -517,17 +517,17 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
 
 5. Results
   Phi_tot = 684.1 W    Total heat required
-  V_s = 21.1 L    System water volume
-  V_e = 1.4 L    Minimum vessel volume
-  dT = 50.0 K    Mean temperature difference
-  dT_fr = 10.0 K    Flow-to-return temperature difference
-  t_m = 70.0 °C    Mean water temperature
+  V_s = 21.14 L    System water volume
+  V_e = 1.388 L    Minimum vessel volume
+  dT = 50 K    Mean temperature difference
+  dT_fr = 10 K    Flow-to-return temperature difference
+  t_m = 70 °C    Mean water temperature
   f_dT = 1    Output correction factor
   R1 = 389.5 W    Room A: Φ50 needed
   R2 = 312.7 W    Room B: Φ50 needed
-  V_em = 8.0 L    Emitter water content
+  V_em = 8 L    Emitter water content
   e_x = 0.032086    Expansion coefficient
-  p_i = 0.79 bar    Pre-charge pressure
+  p_i = 0.7902 bar    Pre-charge pressure
 
 6. Checks (governing first)
   None.
@@ -540,7 +540,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   Content hash: 8f4c0fb390c63009
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -697,25 +697,25 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
         Velocity utilisation
 
 5. Results
-  Q_design = 0.060 m³/h    Design flow
+  Q_design = 0.06017 m³/h    Design flow
   H_static = 0 m    Static head
-  V_pipe = 3.1 L    Water held in the pipes
-  H_sys = 0.41 m    System head at Q
-  h_f_total = 0.41 m    Σ h_f
-  dp_total = 4.0 kPa    Friction Δp
-  dp_sys = 4.0 kPa    System Δp
-  P_hyd = 0.000066 kW    Hydraulic power
-  P_shaft_design = 0.000095 kW    Shaft power at the design flow
-  T_shaft = 0.00032 N·m    Shaft torque
+  V_pipe = 3.142 L    Water held in the pipes
+  H_sys = 0.4142 m    System head at Q
+  h_f_total = 0.4142 m    Σ h_f
+  dp_total = 3.972 kPa    Friction Δp
+  dp_sys = 3.972 kPa    System Δp
+  P_hyd = 0.00006638 kW    Hydraulic power
+  P_shaft_design = 0.00009482 kW    Shaft power at the design flow
+  T_shaft = 0.0003234 N·m    Shaft torque
   n_shaft = 2800 rpm    Shaft speed
-  v_peak = 0.21 m/s    Highest velocity
-  T_line = 70.0 °C    Line design temperature
-  NPSH_a = 7.31 m    NPSH available
-  v_s1 = 0.21 m/s    Velocity, primary flow and return
+  v_peak = 0.2128 m/s    Highest velocity
+  T_line = 70 °C    Line design temperature
+  NPSH_a = 7.314 m    NPSH available
+  v_s1 = 0.2128 m/s    Velocity, primary flow and return
   Re_s1 = 5154.2    Re, primary flow and return
   f_s1 = 0.041851    f, primary flow and return
   f_sj_s1 = 0.042818    f (Swamee–Jain), primary flow and return
-  h_f_s1 = 0.41 m    h_f, primary flow and return
+  h_f_s1 = 0.4142 m    h_f, primary flow and return
 
 6. Checks (governing first)
   PASS  Velocity ≤ limit: u_v = 0.07 vs u_v ≤ 1  utilisation 0.07
@@ -729,7 +729,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   Content hash: 4723d62a61e80298
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -921,47 +921,53 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 2800 rpm / 6000 rpm
       = 0.46667
         Speed utilisation
-  [50] duty = T_rms / T_rated
+  [50] u_rated_speed = n_pk / n_rated
+      = 2800 rpm / 2850 rpm
+      = 0.98246
+        Motor speed over the rated (nameplate) speed
+  [51] duty = T_rms / T_rated
       = 0.00035933 N·m / 2 N·m
       = 0.00017966
         Thermal duty (without margin)
 
 5. Results
-  T_load = 0.00036 N·m    Load torque at motor
-  J_refl = 0.0022 kg·m²    Reflected load inertia
-  J_total = 0.0024 kg·m²    Total inertia
+  T_load = 0.0003593 N·m    Load torque at motor
+  J_refl = 0.002222 kg·m²    Reflected load inertia
+  J_total = 0.002422 kg·m²    Total inertia
   alpha_pk = 58.64 rad/s²    Run-up angular acceleration
-  T_acc = 0.14 N·m    Run-up torque
-  T_pk = 0.14 N·m    Peak torque
-  T_rms = 0.00036 N·m    RMS torque
-  T_design = 0.14 N·m    Design torque for downstream couplings
+  T_acc = 0.1420 N·m    Run-up torque
+  T_pk = 0.1424 N·m    Peak torque
+  T_rms = 0.0003593 N·m    RMS torque
+  T_design = 0.1424 N·m    Design torque for downstream couplings
   T_hold = 0 N·m    Holding torque in the dwell
   T_alt = 0 N·m    Alternating torque amplitude
   F_ax_pk = 0 N    Peak axial thrust on a screw's bearings
-  T_out_m = 0.00032 N·m    Output shaft mean torque
+  T_out_m = 0.0003234 N·m    Output shaft mean torque
   T_out_a = 0 N·m    Output shaft alternating torque
-  T_out_pk = 0.13 N·m    Output shaft peak torque
+  T_out_pk = 0.1282 N·m    Output shaft peak torque
   n_out = 2800 rpm    Output shaft speed
-  n_pk = 2800 rpm    Motor speed
+  n_pk = 2800 rpm    Motor speed (governing)
   n_mean = 2800 rpm    Mean motor speed (the steady speed)
-  P_pk = 0.042 kW    Peak power
+  P_pk = 0.04176 kW    Peak power
   P_brake = 0 kW    Peak braking power
-  P_cont = 0.11 W    Continuous power
+  P_cont = 0.1054 W    Continuous power
   P_rated = 596.9 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
-  P_rms = 0.00011 kW    RMS power (continuous equivalent)
+  P_rms = 0.0001054 kW    RMS power (continuous equivalent)
   J_ratio = 11.111    Inertia ratio
   duty = 0.00017966    Thermal duty
   u_peak = 0.03    Peak utilisation
-  u_power = 0.00    Rated power utilisation P_cont/P_rated
-  u_rms = 0.00    Continuous utilisation
-  u_speed = 0.47    Speed utilisation (governing)
+  u_power = 0.00018    Rated power utilisation P_cont/P_rated
+  u_rms = 0.00022    Continuous utilisation
+  u_speed = 0.47    Speed utilisation
   k = 1    Transmission constant
+  u_rated_speed = 0.98246    Motor speed over the rated speed
 
 6. Checks (governing first)
+  PASS  Motor speed against the rated speed: 2800 rpm vs 2850 rpm  utilisation 0.98
   PASS  Speed n_pk ≤ n_max: u_speed = 0.47 vs u_speed ≤ 1  utilisation 0.47
   PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.03 vs u_peak ≤ 1  utilisation 0.03
-  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.00 vs u_rms ≤ 1  utilisation 0.00
-  PASS  Rated power P_cont ≤ P_rated: u_power = 0.00 vs u_power ≤ 1  utilisation 0.00
+  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.00022 vs u_rms ≤ 1  utilisation 0.00022
+  PASS  Rated power P_cont ≤ P_rated: u_power = 0.00018 vs u_power ≤ 1  utilisation 0.00018
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.  [record]
@@ -970,11 +976,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING  J_motor: the inertia ratio 11.1 exceeds 10.  [inertia-ratio]
 
 8. Verification
-  Template: elec.motor-sizing@1.9.0
-  Content hash: b13348936aa53b72
+  Template: elec.motor-sizing@1.10.0
+  Content hash: 3989917de380d03f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

@@ -13,9 +13,9 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   layers | Wall layers from the inside outwards (d, λ, μ; the shape of the B4 layers table plus μ) | 3 row(s) |  | drawing: A-310 rev B | any
-  layers[1] |  | name = Plasterboard; d = 12.5 mm; lambda = 0.25 W/(m*K); mu = 8 |  |  | 
-  layers[2] |  | name = Mineral wool; d = 50 mm; lambda = 0.035 W/(m*K); mu = 1 |  |  | 
-  layers[3] |  | name = Existing brick; d = 215 mm; lambda = 0.8 W/(m*K); mu = 10 |  |  | 
+  layers[1] |  | name = Plasterboard; d = 12.5 mm; lambda = 0.25 W/(m·K); mu = 8 |  |  | 
+  layers[2] |  | name = Mineral wool; d = 50 mm; lambda = 0.035 W/(m·K); mu = 1 |  |  | 
+  layers[3] |  | name = Existing brick; d = 215 mm; lambda = 0.8 W/(m·K); mu = 10 |  |  | 
   Rsi | Internal surface resistance R_si | 0.13 | m²·K/W | spec: Project surface-resistance record (internal, horizontal flow), assumed | 0.04 … 0.25 m²·K/W
   Rse | External surface resistance R_se | 0.04 | m²·K/W | spec: Project surface-resistance record (external), assumed | 0.02 … 0.25 m²·K/W
   Rsi_f | Internal surface resistance R_si,f for the f_Rsi check (0.25 m²K/W is the conventional value for an opaque element, a record to check against the owner's copy of ISO 13788; 0.13 for glazing) | 0.25 | m²·K/W | spec: Conventional R_si,f = 0.25 m²K/W for the surface-condensation check of an opaque element (a record, to be checked against the owner's copy of ISO 13788), assumed | 0.04 … 0.5 m²·K/W
@@ -24,18 +24,18 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   RH_int | Internal relative humidity (constant-humidity mode) | 50 | % | spec: SPEC-A-02 §3.1: internal design humidity | 20 … 90 %
   dp_f | Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (design margin, 1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788) | 1.1 |  | default | 1 … 1.5
   climate | Twelve monthly outside conditions (the user's climate record, in the order the year is run) | 12 row(s) |  | assumption: Invented illustrative maritime year; replace with the project's own monthly climate record (take it from your licensed source). | any
-  climate[1] |  | month = M1; theta_e = 2 degC; RH_e = 90 % |  |  | 
-  climate[2] |  | month = M2; theta_e = 3 degC; RH_e = 88 % |  |  | 
-  climate[3] |  | month = M3; theta_e = 6 degC; RH_e = 84 % |  |  | 
-  climate[4] |  | month = M4; theta_e = 9 degC; RH_e = 80 % |  |  | 
-  climate[5] |  | month = M5; theta_e = 13 degC; RH_e = 76 % |  |  | 
-  climate[6] |  | month = M6; theta_e = 16 degC; RH_e = 74 % |  |  | 
-  climate[7] |  | month = M7; theta_e = 18 degC; RH_e = 74 % |  |  | 
-  climate[8] |  | month = M8; theta_e = 18 degC; RH_e = 76 % |  |  | 
-  climate[9] |  | month = M9; theta_e = 15 degC; RH_e = 82 % |  |  | 
-  climate[10] |  | month = M10; theta_e = 11 degC; RH_e = 87 % |  |  | 
-  climate[11] |  | month = M11; theta_e = 6 degC; RH_e = 90 % |  |  | 
-  climate[12] |  | month = M12; theta_e = 3 degC; RH_e = 91 % |  |  | 
+  climate[1] |  | month = M1; theta_e = 2 °C; RH_e = 90 % |  |  | 
+  climate[2] |  | month = M2; theta_e = 3 °C; RH_e = 88 % |  |  | 
+  climate[3] |  | month = M3; theta_e = 6 °C; RH_e = 84 % |  |  | 
+  climate[4] |  | month = M4; theta_e = 9 °C; RH_e = 80 % |  |  | 
+  climate[5] |  | month = M5; theta_e = 13 °C; RH_e = 76 % |  |  | 
+  climate[6] |  | month = M6; theta_e = 16 °C; RH_e = 74 % |  |  | 
+  climate[7] |  | month = M7; theta_e = 18 °C; RH_e = 74 % |  |  | 
+  climate[8] |  | month = M8; theta_e = 18 °C; RH_e = 76 % |  |  | 
+  climate[9] |  | month = M9; theta_e = 15 °C; RH_e = 82 % |  |  | 
+  climate[10] |  | month = M10; theta_e = 11 °C; RH_e = 87 % |  |  | 
+  climate[11] |  | month = M11; theta_e = 6 °C; RH_e = 90 % |  |  | 
+  climate[12] |  | month = M12; theta_e = 3 °C; RH_e = 91 % |  |  | 
   RH_crit | Critical surface relative humidity | 80 | % | spec: SPEC-A-02 §4.4: critical surface humidity | 50 … 100 %
   Mc_limit | Limit on the condensate on any interface (blank = report only) | 500 | g/m² | spec: SPEC-A-02 §4.4: limit on the condensate per interface | 1 … 5000 g/m²
   breathable | The build-up is timber or breathable (hygroscopic layers, capillary transport) | no |  | assumption: Mineral wool and brick: no timber or hygroscopic layers. | any
@@ -236,11 +236,11 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
 
 5. Results
   Mc_max = 3022.6 g/m²    Most condensate on any interface
-  fRsi = 0.87729    Temperature factor of the internal surface
+  fRsi = 0.87728    Temperature factor of the internal surface
   pass = 0    All checks pass
-  U_wall = 0.52 W/(m²·K)    U-value of the wall
+  U_wall = 0.5216 W/(m²·K)    U-value of the wall
   R_T = 1.917 m²·K/W    Total thermal resistance
-  S_d = 2.30 m    Total diffusion-equivalent air layer thickness
+  S_d = 2.300 m    Total diffusion-equivalent air layer thickness
   psat_i = 2337 Pa    Saturation vapour pressure at the internal temperature
   p_ext_m = [634.76, 666.5, 785.09, 917.96, 1137.7, 1344.8, 1526.5, 1567.8, 1397.6, 1141.4, 841.16, 689.22] Pa    Outside vapour pressure by month
   p_int_m = [1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5] Pa    Inside vapour pressure by month

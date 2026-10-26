@@ -40,11 +40,13 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   curve_z | Buckling curve about z-z | c |  | assumption: Sheet default value; no project figure given. | any
   k_yy | Interaction factor k_yy (member check) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2
   k_zz | Interaction factor k_zz (member check) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2
+  ltb | Compression flange against lateral-torsional buckling (not restrained: outside this sheet) | Restrained |  | assumption: Sheet default value; no project figure given. | any
+  gamma_M2 | Partial factor γ_M2 (net-section fracture) | 1.1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.35
 
 3. Assumptions
   A1. The cross-section class is as stated by the user (1, 2 or 3); class 4 effective properties are not derived here. (6.2.2.5 effective widths are outside this sheet.)
-  A2. Lateral-torsional buckling is not checked: the compression flange is assumed restrained, or LTB is checked elsewhere. (6.3.2 not implemented.)
-  A3. The member interaction uses the user's k_yy and k_zz (default 1.0) with the smaller flexural-buckling reduction on the axial term; the Annex A/B interaction factors are not derived. (6.3.3 simplified.)
+  A2. The compression flange is restrained against lateral-torsional buckling, as the input ltb says. (6.3.2 is outside this sheet: a member that is not restrained is checked on the LTB interaction sheet.)
+  A3. A k left at 1.0 under N_Ed/N_b,Rd above 0.3 is replaced by the Annex A/B upper bound C_m(1 + 0.8n). (6.3.3 simplified: the smaller flexural-buckling reduction is used on the axial term and the factors are not derived.)
   A4. Imperfection factors per curve are the textbook values and may be overridden; partial factors default to 1.0 (UK National Annex) and may be overridden. (User-editable with provenance.)
   A5. E (Modulus of elasticity) is taken as 210 GPa. (Sheet default value; no project figure given.)
   A6. gamma_M0 (Partial factor γ_M0 (cross-section resistance)) is taken as 1. (Sheet default value; no project figure given.)
@@ -62,136 +64,139 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   A18. curve_z (Buckling curve about z-z) is taken as c. (Sheet default value; no project figure given.)
   A19. k_yy (Interaction factor k_yy (member check)) is taken as 1. (Sheet default value; no project figure given.)
   A20. k_zz (Interaction factor k_zz (member check)) is taken as 1. (Sheet default value; no project figure given.)
+  A21. ltb (Compression flange against lateral-torsional buckling (not restrained: outside this sheet)) is taken as Restrained. (Sheet default value; no project figure given.)
+  A22. gamma_M2 (Partial factor γ_M2 (net-section fracture)) is taken as 1.1. (Sheet default value; no project figure given.)
+  A23. The compression flange is restrained against lateral-torsional buckling, as the input ltb says. (Input ltb.)
 
 4. Working
-  [27] r_h = r
+  [28] r_h = r
       = 10.2 mm
       = 10.2 mm
         Root radius used by the helper
-  [28] A_v_rolled = A - 2 * b * t_f + (t_w + 2 * r_h) * t_f    « 6.2.6(3)
+  [29] A_v_rolled = A - 2 * b * t_f + (t_w + 2 * r_h) * t_f    « 6.2.6(3)
       = 58.7 cm² − 2 × 203.6 mm × 11 mm + (7.2 mm + 2 × 10.2 mm) × 11 mm
       = 16.944 cm²
         Rolled I shear area, load parallel to the web
-  [29] A_v_min = eta * (h - 2 * t_f) * t_w    « 6.2.6(3)
+  [30] A_v_min = eta * (h - 2 * t_f) * t_w    « 6.2.6(3)
       = 1 × (203.2 mm − 2 × 11 mm) × 7.2 mm
       = 13.046 cm²
         Lower bound η h_w t_w
-  [30] A_v = max(A_v_rolled, A_v_min)
+  [31] A_v = max(A_v_rolled, A_v_min)
       = max(16.944 cm², 13.046 cm²)
       = 16.944 cm²
         Shear area
-  [31] N_pl_Rd = A * f_y / gamma_M0    « 6.2.3(2), 6.2.4(2)
+  [32] N_pl_Rd = A * f_y / gamma_M0    « 6.2.3(2), 6.2.4(2)
       = 58.7 cm² × 355 MPa / 1
       = 2083.8 kN
         Plastic axial resistance
-  [32] W_y = W_pl_y    « 6.2.5(2)
+  [33] W_y = W_pl_y    « 6.2.5(2)
       = 497 cm³
       = 497 cm³
         Section modulus about y (plastic, class 1–2)
-  [33] W_z = W_pl_z    « 6.2.5(2)
+  [34] W_z = W_pl_z    « 6.2.5(2)
       = 231 cm³
       = 231 cm³
         Section modulus about z (plastic)
-  [34] V_pl_Rd = A_v * f_y / (sqrt(3) * gamma_M0)    « 6.2.6(2)
+  [35] V_pl_Rd = A_v * f_y / (sqrt(3) * gamma_M0)    « 6.2.6(2)
       = 16.944 cm² × 355 MPa / (sqrt(3) × 1)
       = 347.28 kN
         Plastic shear resistance
-  [35] u_V = V_Ed / V_pl_Rd
+  [36] u_V = V_Ed / V_pl_Rd
       = 5 kN / 347.28 kN
       = 0.014397
         Shear utilisation
-  [36] rho = 0    « 6.2.8(2)
+  [37] rho = 0    « 6.2.8(2)
       = 0
         Shear reduction factor (V_Ed ≤ 0.5 V_pl,Rd)
-  [37] M_y_c_Rd = (1 - rho) * W_y * f_y / gamma_M0    « 6.2.5(2), 6.2.8
+  [38] M_y_c_Rd = (1 - rho) * W_y * f_y / gamma_M0    « 6.2.5(2), 6.2.8
       = (1 − 0) × 497 cm³ × 355 MPa / 1
       = 176.44 kN·m
         Bending resistance about y
-  [38] M_z_c_Rd = (1 - rho) * W_z * f_y / gamma_M0    « 6.2.5(2)
+  [39] M_z_c_Rd = (1 - rho) * W_z * f_y / gamma_M0    « 6.2.5(2)
       = (1 − 0) × 231 cm³ × 355 MPa / 1
       = 82.005 kN·m
         Bending resistance about z
-  [39] u_M_y = M_y_Ed / M_y_c_Rd
+  [40] u_M_y = M_y_Ed / M_y_c_Rd
       = 43.2 kN·m / 176.44 kN·m
       = 0.24485
         Bending utilisation, y
-  [40] u_M_z = M_z_Ed / M_z_c_Rd
+  [41] u_M_z = M_z_Ed / M_z_c_Rd
       = 0 kN·m / 82.005 kN·m
       = 0
         Bending utilisation, z
-  [41] u_N = abs(N_Ed) / N_pl_Rd
+  [42] u_N = abs(N_Ed) / N_pl_Rd
       = abs(-28.2 kN) / 2083.8 kN
       = 0.013533
         Compression (cross-section) utilisation
-  [42] u_section = u_N + u_M_y + u_M_z    « 6.2.1(7)
+  [43] u_section = u_N + u_M_y + u_M_z    « 6.2.1(7)
       = 0.013533 + 0.24485 + 0
       = 0.25838
         Linear cross-section interaction
-  [45] alpha_y = imperfection factor, curve b    « 6.3.1.2
+  [46] alpha_y = imperfection factor, curve b    « 6.3.1.2
       = Designers' Guide §6.3.1
       = 0.34
         Imperfection factor about y
-  [46] alpha_z = imperfection factor, curve c    « 6.3.1.2
+  [47] alpha_z = imperfection factor, curve c    « 6.3.1.2
       = Designers' Guide §6.3.1
       = 0.49
         Imperfection factor about z
-  [47] N_cr_y = pi^2 * E * I_y / L_cr_y^2    « 6.3.1.2(1)
+  [48] N_cr_y = pi^2 * E * I_y / L_cr_y^2    « 6.3.1.2(1)
       = π^2 × 210 GPa × 4568 cm⁴ / (6 m)^2
       = 2629.9 kN
         Elastic critical force about y
-  [48] lambda_y = sqrt(A * f_y / N_cr_y)    « 6.3.1.2(1)
+  [49] lambda_y = sqrt(A * f_y / N_cr_y)    « 6.3.1.2(1)
       = sqrt(58.7 cm² × 355 MPa / 2629.9 kN)
       = 0.89015
         Non-dimensional slenderness about y
-  [49] Phi_y = 0.5 * (1 + alpha_y * (lambda_y - 0.2) + lambda_y^2)    « 6.3.1.2(1)
+  [50] Phi_y = 0.5 * (1 + alpha_y * (lambda_y - 0.2) + lambda_y^2)    « 6.3.1.2(1)
       = 0.5 × (1 + 0.34 × (0.89015 − 0.2) + 0.89015^2)
       = 1.0135
         Φ about y
-  [50] chi_y = min(1, 1 / (Phi_y + sqrt(Phi_y^2 - lambda_y^2)))    « 6.3.1.2(1)
+  [51] chi_y = min(1, 1 / (Phi_y + sqrt(Phi_y^2 - lambda_y^2)))    « 6.3.1.2(1)
       = min(1, 1 / (1.0135 + sqrt(1.0135^2 − 0.89015^2)))
       = 0.66751
         Reduction factor χ about y
-  [51] N_b_y_Rd = chi_y * A * f_y / gamma_M1    « 6.3.1.1(3)
+  [52] N_b_y_Rd = chi_y * A * f_y / gamma_M1    « 6.3.1.1(3)
       = 0.66751 × 58.7 cm² × 355 MPa / 1
       = 1391 kN
         Buckling resistance about y
-  [52] N_cr_z = pi^2 * E * I_z / L_cr_z^2    « 6.3.1.2(1)
+  [53] N_cr_z = pi^2 * E * I_z / L_cr_z^2    « 6.3.1.2(1)
       = π^2 × 210 GPa × 1548 cm⁴ / (6 m)^2
       = 891.23 kN
         Elastic critical force about z
-  [53] lambda_z = sqrt(A * f_y / N_cr_z)    « 6.3.1.2(1)
+  [54] lambda_z = sqrt(A * f_y / N_cr_z)    « 6.3.1.2(1)
       = sqrt(58.7 cm² × 355 MPa / 891.23 kN)
       = 1.5291
         Non-dimensional slenderness about z
-  [54] Phi_z = 0.5 * (1 + alpha_z * (lambda_z - 0.2) + lambda_z^2)    « 6.3.1.2(1)
+  [55] Phi_z = 0.5 * (1 + alpha_z * (lambda_z - 0.2) + lambda_z^2)    « 6.3.1.2(1)
       = 0.5 × (1 + 0.49 × (1.5291 − 0.2) + 1.5291^2)
       = 1.9947
         Φ about z
-  [55] chi_z = min(1, 1 / (Phi_z + sqrt(Phi_z^2 - lambda_z^2)))    « 6.3.1.2(1)
+  [56] chi_z = min(1, 1 / (Phi_z + sqrt(Phi_z^2 - lambda_z^2)))    « 6.3.1.2(1)
       = min(1, 1 / (1.9947 + sqrt(1.9947^2 − 1.5291^2)))
       = 0.30528
         Reduction factor χ about z
-  [56] N_b_z_Rd = chi_z * A * f_y / gamma_M1    « 6.3.1.1(3)
+  [57] N_b_z_Rd = chi_z * A * f_y / gamma_M1    « 6.3.1.1(3)
       = 0.30528 × 58.7 cm² × 355 MPa / 1
       = 636.17 kN
         Buckling resistance about z
-  [57] N_b_Rd = min(N_b_y_Rd, N_b_z_Rd)
+  [58] N_b_Rd = min(N_b_y_Rd, N_b_z_Rd)
       = min(1391 kN, 636.17 kN)
       = 636.17 kN
         Governing buckling resistance
-  [58] u_buckling = abs(N_Ed) / N_b_Rd    « 6.3.1.1(1)
+  [59] u_buckling = abs(N_Ed) / N_b_Rd    « 6.3.1.1(1)
       = abs(-28.2 kN) / 636.17 kN
       = 0.044328
         Flexural buckling utilisation
-  [59] M_y_b_Rd = W_y * f_y / gamma_M1    « 6.3.3, Eq. 6.61
+  [60] M_y_b_Rd = W_y * f_y / gamma_M1    « 6.3.3, Eq. 6.61
       = 497 cm³ × 355 MPa / 1
       = 176.44 kN·m
         Characteristic bending resistance about y over γ_M1 (member check, no shear reduction)
-  [60] M_z_b_Rd = W_z * f_y / gamma_M1    « 6.3.3, Eq. 6.62
+  [61] M_z_b_Rd = W_z * f_y / gamma_M1    « 6.3.3, Eq. 6.62
       = 231 cm³ × 355 MPa / 1
       = 82.005 kN·m
         Characteristic bending resistance about z over γ_M1 (member check, no shear reduction)
-  [61] u_member = abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_b_Rd + k_zz * M_z_Ed / M_z_b_Rd    « 6.3.3(4)
+  [62] u_member = abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_b_Rd + k_zz * M_z_Ed / M_z_b_Rd    « 6.3.3(4)
       = abs(-28.2 kN) / 636.17 kN + 1 × 43.2 kN·m / 176.44 kN·m + 1 × 0 kN·m / 82.005 kN·m
       = 0.28918
         Simplified member interaction
@@ -232,14 +237,14 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   PASS  Bending z M_z,Ed ≤ M_z,c,Rd: u_M_z = 0.00 vs u_M_z ≤ 1  utilisation 0.00  « 6.2.5
 
 7. Applicability
-  WARNING  M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.  [no-ltb]
+  None.
 
 8. Verification
-  Template: struct.en1993-member@1.3.1
-  Content hash: a2e6114eb2412c02
+  Template: struct.en1993-member@1.4.0
+  Content hash: fdf55f0878a74ece
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

@@ -90,16 +90,16 @@ Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(
 
 5. Results
   sigma_r_a = 0 MPa    Radial stress, bore
-  sigma_t_a = -72.0 MPa    Hoop stress, bore
-  sigma_r_b = -20.0 MPa    Radial stress, outer
-  sigma_t_b = -52.0 MPa    Hoop stress, outer
-  sigma_z = -36.0 MPa    Axial stress
-  sigma_vm_a = 62.4 MPa    von Mises, bore
-  sigma_vm_b = 27.7 MPa    von Mises, outer
-  sigma_tr_a = 72.0 MPa    Tresca, bore
-  sigma_tr_b = 32.0 MPa    Tresca, outer
-  sigma_vm_max = 62.4 MPa    Maximum von Mises
-  sigma_thin = -50.0 MPa    Thin-wall hoop estimate
+  sigma_t_a = -72 MPa    Hoop stress, bore
+  sigma_r_b = -20 MPa    Radial stress, outer
+  sigma_t_b = -52 MPa    Hoop stress, outer
+  sigma_z = -36 MPa    Axial stress
+  sigma_vm_a = 62.35 MPa    von Mises, bore
+  sigma_vm_b = 27.71 MPa    von Mises, outer
+  sigma_tr_a = 72 MPa    Tresca, bore
+  sigma_tr_b = 32 MPa    Tresca, outer
+  sigma_vm_max = 62.35 MPa    Maximum von Mises
+  sigma_thin = -50 MPa    Thin-wall hoop estimate
   k_wall = 1.5    Wall ratio
   u = 0.62    Utilisation (governing)
 

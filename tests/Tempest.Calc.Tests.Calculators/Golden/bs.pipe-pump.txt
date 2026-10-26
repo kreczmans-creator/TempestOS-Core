@@ -103,20 +103,20 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
         Velocity utilisation
 
 5. Results
-  Q_design = 1.0 m³/h    Design flow
+  Q_design = 1 m³/h    Design flow
   H_static = 0 m    Static head
-  V_pipe = 78.5 L    Water held in the pipes
-  H_sys = 6.65 m    System head at Q
-  h_f_total = 6.65 m    Σ h_f
-  dp_total = 57.9 kPa    Friction Δp
-  dp_sys = 57.9 kPa    System Δp
-  P_hyd = 0.016 kW    Hydraulic power
-  v_peak = 0.14 m/s    Highest velocity
-  T_line = 20.0 °C    Line design temperature
-  v_s1 = 0.14 m/s    Velocity, oil line
+  V_pipe = 78.54 L    Water held in the pipes
+  H_sys = 6.654 m    System head at Q
+  h_f_total = 6.654 m    Σ h_f
+  dp_total = 57.95 kPa    Friction Δp
+  dp_sys = 57.95 kPa    System Δp
+  P_hyd = 0.01610 kW    Hydraulic power
+  v_peak = 0.1415 m/s    Highest velocity
+  T_line = 20 °C    Line design temperature
+  v_s1 = 0.1415 m/s    Velocity, oil line
   Re_s1 = 7.8516    Re, oil line
   f_s1 = 8.1512    f, oil line
-  h_f_s1 = 6.65 m    h_f, oil line
+  h_f_s1 = 6.654 m    h_f, oil line
 
 6. Checks (governing first)
   PASS  Velocity ≤ limit: u_v = 0.05 vs u_v ≤ 1  utilisation 0.05

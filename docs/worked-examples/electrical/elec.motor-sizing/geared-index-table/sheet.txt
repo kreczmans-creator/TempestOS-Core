@@ -186,16 +186,16 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
 
 5. Results
   T_load = 0 N·m    Load torque at motor
-  J_refl = 0.0059 kg·m²    Reflected load inertia
-  J_total = 0.0064 kg·m²    Total inertia
+  J_refl = 0.005882 kg·m²    Reflected load inertia
+  J_total = 0.006382 kg·m²    Total inertia
   alpha_pk = 785.40 rad/s²    Motor angular acceleration
-  T_acc = 5.01 N·m    Acceleration torque
-  T_pk = 5.01 N·m    Peak torque
-  T_dec = -5.01 N·m    Deceleration torque
-  T_rms = 2.24 N·m    RMS torque
-  T_design = 5.01 N·m    Design torque for downstream couplings
+  T_acc = 5.013 N·m    Acceleration torque
+  T_pk = 5.013 N·m    Peak torque
+  T_dec = -5.013 N·m    Deceleration torque
+  T_rms = 2.242 N·m    RMS torque
+  T_design = 5.013 N·m    Design torque for downstream couplings
   T_hold = 0 N·m    Holding torque in the dwell
-  T_alt = 5.01 N·m    Alternating torque amplitude
+  T_alt = 5.013 N·m    Alternating torque amplitude
   F_ax_pk = 0 N    Peak axial thrust on a screw's bearings
   T_out_m = 0 N·m    Output shaft mean torque
   T_out_a = 42.61 N·m    Output shaft alternating torque
@@ -203,9 +203,9 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   n_out = 75 rpm    Output shaft speed
   n_pk = 750 rpm    Peak speed
   n_mean = 150 rpm    Mean motor speed over the cycle
-  P_pk = 0.39 kW    Peak power
-  P_brake = 0.39 kW    Peak braking power
-  P_rms = 0.10 kW    RMS power (continuous equivalent)
+  P_pk = 0.3937 kW    Peak power
+  P_brake = 0.3937 kW    Peak braking power
+  P_rms = 0.1017 kW    RMS power (continuous equivalent)
   J_ratio = 11.765    Inertia ratio
   duty = 0.74725    Thermal duty
   u_peak = 0.70    Peak utilisation
@@ -232,7 +232,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
     T_basis: not entered, so the default of 'Load peak (T_pk)' is used.
 
 8. Verification
-  Template: elec.motor-sizing@1.9.0
+  Template: elec.motor-sizing@1.10.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

@@ -12,8 +12,8 @@ A 4-pole motor (about 23 kW at 1475 rpm) turns a conveyor drum at 118 rpm throug
 
 | Step | Calculator | Revision | Checks |
 |---|---|---|---|
-| Motor sizing | `elec.motor-sizing` | A | 4 of 4 PASS |
-| Shaft | `mech.shaft` | A | 4 of 4 PASS |
+| Motor sizing | `elec.motor-sizing` | A | 5 of 5 PASS |
+| Shaft | `mech.shaft` | A | 5 of 5 PASS |
 | Bearing A life | `mech.bearing-life` | A | 2 of 2 PASS |
 | Bearing A seat fit | `mech.iso286-fit` | A | 1 of 1 PASS |
 | Coupling flange bolts | `mech.bolt-group` | A | 4 of 4 PASS |

@@ -71,13 +71,13 @@ Radius of gyration and slenderness: r = √(I/A); λ = L_E/r. Euler buckling str
         Utilisation
 
 5. Results
-  r = 10.0 mm    Radius of gyration
+  r = 10 mm    Radius of gyration
   lambda = 150    Slenderness
-  p_E = 89.9 MPa    Euler stress
+  p_E = 89.92 MPa    Euler stress
   P_E = 107.91 kN    Euler load
   lambda_0 = 15.099    Limiting slenderness
   eta = 0.47215    Perry factor
-  p_c = 78.0 MPa    Compressive strength
+  p_c = 77.97 MPa    Compressive strength
   P_c = 93.57 kN    Compression resistance
   u = 1.07    Utilisation (governing)
 

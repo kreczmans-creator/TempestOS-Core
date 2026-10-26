@@ -112,8 +112,8 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   F_b_Rd = 99.39 kN    Bearing resistance
   F_t_Rd = 141.00 kN    Tension resistance
   A_s = 244.8 mm²    Stress area
-  f_ub = 800.0 MPa    Bolt ultimate strength
-  f_yb = 640.0 MPa    Bolt yield strength
+  f_ub = 800 MPa    Bolt ultimate strength
+  f_yb = 640 MPa    Bolt yield strength
   alpha_v = 0.6    Shear factor
   alpha_b = 0.60606    Bearing factor
   k_1 = 2.5    Bearing factor k₁

@@ -17,10 +17,10 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   nodes[1] |  | id = 1; x = 0 m; y = 0 m; support = fixed |  |  | 
   nodes[2] |  | id = 2; x = 0 m; y = 2.5 m; support = free |  |  | 
   elements | Elements | 1 row(s) |  | drawing: DRG-PIP-610 rev B | any
-  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm^2; I = 4568 cm^4; rel_i = no; rel_j = no |  |  | 
+  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm²; I = 4568 cm⁴; rel_i = no; rel_j = no |  |  | 
   loads | Loads | 2 row(s) |  | drawing: DRG-PIP-610 rev B | any
-  loads[1] |  | case = 1; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 7.0695 kN; F_y = 0 kN; M = 0 kN*m |  | F_x: link: Pipe expansion and anchor force rev A · anchor_force | 
-  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -6 kN; M = 0 kN*m |  |  | 
+  loads[1] |  | case = 1; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 7.0695 kN; F_y = 0 kN; M = 0 kN·m |  | F_x: link: Pipe expansion and anchor force rev A · anchor_force | 
+  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -6 kN; M = 0 kN·m |  |  | 
   combinations | Combinations (blank = each case alone) | 2 row(s) |  | drawing: DRG-PIP-610 rev B | any
   combinations[1] |  | name = ULS; case = 1; factor = 1.5 |  |  | 
   combinations[2] |  | name = ULS; case = 2; factor = 1.35 |  |  | 
@@ -133,25 +133,25 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
 
 5. Results
   R1_x = -10.60 kN    R_x node 1
-  R1_y = 8.10 kN    R_y node 1
+  R1_y = 8.100 kN    R_y node 1
   R1_m = 26.51 kN·m    M node 1
   R1_x_abs = 10.60 kN    |R_x| node 1
   R1_m_abs = 26.51 kN·m    |M| node 1
-  N_e1 = -8.10 kN    N, member 1
+  N_e1 = -8.100 kN    N, member 1
   V_e1 = 10.60 kN    |V| max, member 1
   M_abs_e1 = 26.51 kN·m    |M| max, member 1
   M_max_e1 = 0 kN·m    M max, member 1
   M_min_e1 = -26.51 kN·m    M min, member 1
-  sum_R_y = 8.10 kN    Σ R_y
+  sum_R_y = 8.100 kN    Σ R_y
   sum_R_x = -10.60 kN    Σ R_x
   M_max = 0 kN·m    M max
   M_min = -26.51 kN·m    M min
   V_max = 10.60 kN    |V| max
-  N_max = -8.10 kN    N max (tension)
-  N_min = -8.10 kN    N min (compression)
-  d_max = 5.8 mm    δ max
-  d_e1 = 5.8 mm    δ max, member 1
-  x_Mmax = 2.50 m    x of M max
+  N_max = -8.100 kN    N max (tension)
+  N_min = -8.100 kN    N min (compression)
+  d_max = 5.757 mm    δ max
+  d_e1 = 5.757 mm    δ max, member 1
+  x_Mmax = 2.500 m    x of M max
 
 6. Checks (governing first)
   None.
@@ -164,7 +164,7 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   Content hash: a6389d664ba5a5eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

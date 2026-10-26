@@ -32,7 +32,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
 3. Assumptions
   A1. Balanced load; conductor reactance from the stated X′ (zero when using resistivity alone unless X_km is given); the drop is the arithmetic (R cos φ + X sin φ) form. (Standard engineering approximation.)
   A2. A mV/A/m figure is used as tabulated, with its own temperature and system convention. (Cable table convention.)
-  A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. (BS 7671 Appendix 4 approach, formula only.)
+  A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. When the estimate is above T_c the resistance and the drop are computed at the estimate. (BS 7671 Appendix 4 approach, formula only.)
   A4. system (System) is taken as AC three-phase. (Design convention.)
   A5. V_n (Nominal voltage (line-to-line for three-phase)) is taken as 400 V. (Design convention.)
   A6. cos_phi (Power factor (AC)) is taken as 0.85. (Design convention.)
@@ -47,50 +47,50 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
       = sqrt(1 − 0.85^2)
       = 0.52678
         sin φ
-  [15] rho_T = rho_20 * (1 + alpha * (T_c - 20 degC) / (1 K))
-      = 0.01724 ohm·mm²/m × (1 + 0.00393 × (70 degC − 20 degC) / 1 K)
-      = 0.020628 ohm·mm²/m
-        Resistivity at the operating temperature
-  [16] R = rho_T * L / (A_c * n_par)
-      = 0.020628 ohm·mm²/m × 80 m / (35 mm² × 1)
-      = 0.047149 ohm
-        Conductor resistance (one conductor, parallel paths combined)
-  [17] X = X_km * L / n_par
-      = 0.08 ohm/km × 80 m / 1
-      = 0.0064 ohm
-        Conductor reactance
-  [18] dV = sqrt(3) * I * (R * cos_phi + X * sin_phi)
-      = sqrt(3) × 100 A × (0.047149 ohm × 0.85 + 0.0064 ohm × 0.52678)
-      = 7.5254 V
-        Voltage drop
-  [19] dV_pct = 100 * dV / V_n
-      = 100 × 7.5254 V / 400 V
-      = 1.8814
-        Voltage drop, per cent
-  [20] P_loss = 3 * I^2 * R
-      = 3 × (100 A)^2 × 0.047149 ohm
-      = 1414.5 W
-        Conductor power loss
-  [21] u_dv = dV_pct / dv_limit
-      = 1.8814 / 5
-      = 0.37627
-        Drop utilisation against the limit
-  [25] u_Iz = I / I_z
+  [18] u_Iz = I / I_z
       = 100 A / 119 A
       = 0.84034
         Load against the current-carrying capacity
-  [26] T_c_est = T_amb + (T_rated - T_amb) * u_Iz^2    « BS 7671 App. 4 §6 form
+  [19] T_c_est = T_amb + (T_rated - T_amb) * u_Iz^2    « BS 7671 App. 4 §6 form
       = 30 degC + (70 degC − 30 degC) × 0.84034^2
       = 58.247 degC
         Estimated conductor temperature
+  [20] rho_T = rho_20 * (1 + alpha * (T_c - 20 degC) / (1 K))
+      = 0.01724 ohm·mm²/m × (1 + 0.00393 × (70 degC − 20 degC) / 1 K)
+      = 0.020628 ohm·mm²/m
+        Resistivity at the operating temperature
+  [21] R = rho_T * L / (A_c * n_par)
+      = 0.020628 ohm·mm²/m × 80 m / (35 mm² × 1)
+      = 0.047149 ohm
+        Conductor resistance (one conductor, parallel paths combined)
+  [22] X = X_km * L / n_par
+      = 0.08 ohm/km × 80 m / 1
+      = 0.0064 ohm
+        Conductor reactance
+  [23] dV = sqrt(3) * I * (R * cos_phi + X * sin_phi)
+      = sqrt(3) × 100 A × (0.047149 ohm × 0.85 + 0.0064 ohm × 0.52678)
+      = 7.5254 V
+        Voltage drop
+  [24] dV_pct = 100 * dV / V_n
+      = 100 × 7.5254 V / 400 V
+      = 1.8814
+        Voltage drop, per cent
+  [25] P_loss = 3 * I^2 * R
+      = 3 × (100 A)^2 × 0.047149 ohm
+      = 1414.5 W
+        Conductor power loss
+  [26] u_dv = dV_pct / dv_limit
+      = 1.8814 / 5
+      = 0.37627
+        Drop utilisation against the limit
 
 5. Results
-  R = 0.0471 Ω    Resistance
-  X = 0.0064 Ω    Reactance
-  dV = 7.5 V    Voltage drop
+  R = 0.04715 Ω    Resistance
+  X = 0.006400 Ω    Reactance
+  dV = 7.525 V    Voltage drop
   dV_pct = 1.8814    Voltage drop (%)
   P_loss = 1414.5 W    Power loss
-  T_c_est = 58.2 °C    Estimated conductor temperature
+  T_c_est = 58.25 °C    Estimated conductor temperature
 
 6. Checks (governing first)
   PASS  I ≤ I_z: u_Iz = 0.84 vs u_Iz ≤ 1  utilisation 0.84  « BS 7671 523
@@ -100,7 +100,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   None.
 
 8. Verification
-  Template: elec.voltage-drop@1.2.0
+  Template: elec.voltage-drop@1.3.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

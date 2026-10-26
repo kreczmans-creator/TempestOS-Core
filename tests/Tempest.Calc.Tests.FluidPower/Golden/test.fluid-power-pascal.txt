@@ -22,7 +22,7 @@ Force: F = p·A (Pascal's law, gauge pressure on the full bore area; no seal fri
         Cylinder force
 
 5. Results
-  F = 10.00 kN    Cylinder force
+  F = 10 kN    Cylinder force
 
 6. Checks (governing first)
   None.

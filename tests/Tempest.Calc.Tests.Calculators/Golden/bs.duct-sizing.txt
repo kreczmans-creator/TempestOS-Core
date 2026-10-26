@@ -16,7 +16,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
   p_atm | Barometric pressure | 101.325 | kPa | manual | 80 … 105 kPa
   eps | Duct roughness | 0.09 | mm | manual | 0.03 … 3 mm
   sections | Duct sections | 1 row(s) |  | manual | any
-  sections[1] |  | name = main; Q = 1 m^3/s; L = 10 m; shape = round; a = —; D = 400 mm; C = 0; dp_eq = 0 Pa; index = yes |  |  | 
+  sections[1] |  | name = main; Q = 1 m³/s; L = 10 m; shape = round; a = —; D = 400 mm; C = 0; dp_eq = 0 Pa; index = yes |  |  | 
   v_limit | Velocity limit (warning and check) | 8 | m/s | manual | 2 … 30 m/s
   dp_limit | Total pressure-drop limit (check) | 300 | Pa | manual | 50 … 2000 Pa
   round_to | Round sizes up to a multiple of | 50 | mm | manual | 1 … 100 mm
@@ -89,17 +89,17 @@ Round duct diameter from the design target: D by Colebrook with the air properti
         Velocity utilisation
 
 5. Results
-  D_s1 = 400.0 mm    D, main
-  v_s1 = 7.96 m/s    v, main
+  D_s1 = 400 mm    D, main
+  v_s1 = 7.958 m/s    v, main
   Re_s1 = 211370    Re, main
   f_s1 = 0.017137    f, main
-  dpL_s1 = 1.63 Pa/m    Δp/L, main
-  dp_f_s1 = 16 Pa    Friction loss, main
+  dpL_s1 = 1.633 Pa/m    Δp/L, main
+  dp_f_s1 = 16.33 Pa    Friction loss, main
   dp_fit_s1 = 0 Pa    Fitting loss, main
-  dp_s1 = 16 Pa    Section loss, main
-  dp_index = 16 Pa    Index-run Δp
-  dp_all = 16 Pa    Σ all sections
-  v_peak = 7.96 m/s    Highest velocity
+  dp_s1 = 16.33 Pa    Section loss, main
+  dp_index = 16.33 Pa    Index-run Δp
+  dp_all = 16.33 Pa    Σ all sections
+  v_peak = 7.958 m/s    Highest velocity
 
 6. Checks (governing first)
   PASS  Velocity ≤ limit: u_v = 0.99 vs u_v ≤ 1  utilisation 0.99

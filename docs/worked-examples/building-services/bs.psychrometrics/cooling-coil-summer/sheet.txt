@@ -150,29 +150,29 @@ Saturation vapour pressure at the dry-bulb temperature, over water at or above 0
         Sensible heat ratio
 
 5. Results
-  t_1_out = 28.0 °C    Dry-bulb 1
-  p_ws_1 = 3.8 kPa    p_ws 1
-  p_w_1 = 2.3 kPa    p_w 1
+  t_1_out = 28 °C    Dry-bulb 1
+  p_ws_1 = 3.782 kPa    p_ws 1
+  p_w_1 = 2.269 kPa    p_w 1
   W_1 = 14.249    W 1 (g/kg)
   RH_1 = 60    RH 1 (%)
-  phi_1 = 60.0 %    φ 1 (RH as a % quantity, for linking)
-  t_dp_1 = 19.5 °C    Dew point 1
-  t_wb_1 = 22.1 °C    Wet-bulb 1
+  phi_1 = 60 %    φ 1 (RH as a % quantity, for linking)
+  t_dp_1 = 19.51 °C    Dew point 1
+  t_wb_1 = 22.07 °C    Wet-bulb 1
   h_1 = 64.546    h 1 (kJ/kg)
   v_1 = 0.8727 m³/kg    v 1
-  rho_1 = 1.2 kg/m³    ρ 1
-  t_2_out = 12.0 °C    Dry-bulb 2
-  p_ws_2 = 1.4 kPa    p_ws 2
-  p_w_2 = 1.3 kPa    p_w 2
+  rho_1 = 1.162 kg/m³    ρ 1
+  t_2_out = 12 °C    Dry-bulb 2
+  p_ws_2 = 1.403 kPa    p_ws 2
+  p_w_2 = 1.332 kPa    p_w 2
   W_2 = 8.2878    W 2 (g/kg)
   RH_2 = 95    RH 2 (%)
-  phi_2 = 95.0 %    φ 2 (RH as a % quantity, for linking)
-  t_dp_2 = 11.2 °C    Dew point 2
-  t_wb_2 = 11.6 °C    Wet-bulb 2
+  phi_2 = 95 %    φ 2 (RH as a % quantity, for linking)
+  t_dp_2 = 11.22 °C    Dew point 2
+  t_wb_2 = 11.55 °C    Wet-bulb 2
   h_2 = 32.985    h 2 (kJ/kg)
   v_2 = 0.8186 m³/kg    v 2
-  rho_2 = 1.2 kg/m³    ρ 2
-  m_w = 0.014 kg/s    Condensate
+  rho_2 = 1.232 kg/m³    ρ 2
+  m_w = 0.01431 kg/s    Condensate
   Q_total = 75.03 kW    Total cooling
   Q_sensible = 39.65 kW    Sensible cooling
   Q_latent = 36.10 kW    Latent cooling

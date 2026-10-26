@@ -60,7 +60,7 @@ Equivalent dynamic load from the radial and axial loads: P = X·F_r + Y·F_a. Ba
         Required over modified life
 
 5. Results
-  P = 3.93 kN    Equivalent dynamic load
+  P = 3.930 kN    Equivalent dynamic load
   k_P = 0.1572    Load ratio
   L_10 = 257.42    L₁₀ (millions of revolutions)
   L_10h = 4290 h    L₁₀ in hours
