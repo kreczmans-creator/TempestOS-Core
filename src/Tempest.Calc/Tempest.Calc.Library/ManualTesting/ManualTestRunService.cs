@@ -5,6 +5,12 @@ using Tempest.Core.Persistence;
 
 namespace Tempest.Calc.Library.ManualTesting;
 
+/// <summary>How many runs are on file, how many of them are finished and the newest one that is not (see <see cref="ManualTestRunService.OverviewAsync"/>).</summary>
+public sealed record ManualTestOverview(int Total, int Finished, ManualTestRun? NewestUnfinished);
+
+/// <summary>What deleting the older finished runs would remove: the newest <paramref name="Keep"/> finished runs stay; <paramref name="Delete"/> are the rest, less <paramref name="KeptForStatus"/> that still hold a template's latest result.</summary>
+public sealed record ManualTestTrimPlan(int Keep, int Finished, IReadOnlyList<Guid> Delete, int KeptForStatus);
+
 /// <summary>A test-run action the service refused; the message is one plain sentence for the tester.</summary>
 public sealed class ManualTestRefusedException(string message) : InvalidOperationException(message);
 
@@ -23,6 +29,12 @@ public sealed class ManualTestRunService : IManualTestStatusSource
 
     /// <summary>The most runs one listing returns.</summary>
     public const int MaxListed = 100;
+
+    /// <summary>How many of the newest finished runs "delete older finished runs" keeps.</summary>
+    public const int DefaultKeepFinished = 50;
+
+    /// <summary>The sentence given when nobody is signed in: a run is kept under the person who made it and only they can continue it.</summary>
+    public const string SignInRefusal = "Nobody is signed in, so no test run can be started or changed; sign in first, because a run is kept under the name of the person who made it and only they can continue it.";
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.General)
     {
@@ -61,10 +73,14 @@ public sealed class ManualTestRunService : IManualTestStatusSource
     public GuidedTestScript Script => _script;
 
     /// <summary>Starts a new run for the person signed in, on this build and this script.</summary>
-    /// <exception cref="ManualTestRefusedException">The store already holds the most runs it keeps.</exception>
+    /// <exception cref="ManualTestRefusedException">Nobody is signed in, or the store already holds the most runs it keeps.</exception>
     public async Task<ManualTestRun> StartAsync(CancellationToken cancellationToken = default)
     {
         var (testerId, testerName) = _tester();
+
+        if (string.IsNullOrWhiteSpace(testerId))
+            throw new ManualTestRefusedException(SignInRefusal);
+
         var run = new ManualTestRun
         {
             Id = Guid.NewGuid(),
@@ -73,7 +89,7 @@ public sealed class ManualTestRunService : IManualTestStatusSource
             Build = Clip(_build(), ManualTestRun.MaxIdentityLength),
             BuildCommit = Clip(string.IsNullOrWhiteSpace(_buildCommit()) ? "unknown" : _buildCommit(), ManualTestRun.MaxIdentityLength),
             Tester = Clip(string.IsNullOrWhiteSpace(testerName) ? (string.IsNullOrWhiteSpace(testerId) ? "unknown" : testerId) : testerName, ManualTestRun.MaxIdentityLength),
-            TesterId = Clip(testerId ?? string.Empty, ManualTestRun.MaxIdentityLength),
+            TesterId = Clip(testerId, ManualTestRun.MaxIdentityLength),
         };
 
         await _store.ExecuteInTransactionAsync(async (tx, token) =>
@@ -81,7 +97,7 @@ public sealed class ManualTestRunService : IManualTestStatusSource
             var existing = await tx.ListKeysAsync(Collection, string.Empty, token).ConfigureAwait(false);
 
             if (existing.Count >= _maxRuns)
-                throw new ManualTestRefusedException($"There are already {existing.Count} test runs on file, which is the most this build keeps; export the ones you need and ask for the old ones to be cleared.");
+                throw new ManualTestRefusedException($"There are already {existing.Count} test runs on file, which is the most this build keeps; save the results sheets you need, then use \"Delete older finished runs\" on the Guided test screen (a run that is not finished has to be finished first).");
 
             await tx.WriteAsync(Collection, Key(run.Id), Serialise(run), token).ConfigureAwait(false);
         }, cancellationToken).ConfigureAwait(false);
@@ -97,9 +113,37 @@ public sealed class ManualTestRunService : IManualTestStatusSource
         return Deserialise(read.GetValueOrDefault(key));
     }
 
-    /// <summary>The newest run that is not finished (the one to offer to resume), or <see langword="null"/>.</summary>
+    /// <summary>The newest run that is not finished (the one to offer to resume), or <see langword="null"/>. Every run on file is considered, not only the newest listed.</summary>
     public async Task<ManualTestRun?> FindUnfinishedAsync(CancellationToken cancellationToken = default) =>
-        (await ListAsync(MaxListed, cancellationToken).ConfigureAwait(false)).FirstOrDefault(r => !r.IsFinished);
+        (await OverviewAsync(cancellationToken).ConfigureAwait(false)).NewestUnfinished;
+
+    /// <summary>
+    /// How many runs are on file, how many of them are finished, and the newest unfinished one: what the Guided test screen needs each time it is
+    /// shown. A finished run carries a <c>FinishedUtc</c> property and an unfinished one does not (the null is not written), and a note cannot contain
+    /// the property name as such (its quotes are escaped), so the finished runs are counted without being deserialised; only the unfinished ones are.
+    /// </summary>
+    public async Task<ManualTestOverview> OverviewAsync(CancellationToken cancellationToken = default)
+    {
+        var all = await _store.ReadAllAsync(Collection, cancellationToken).ConfigureAwait(false);
+        var finished = 0;
+        ManualTestRun? newest = null;
+
+        foreach (var (_, json) in all)
+        {
+            if (IsMarkedFinished(json))
+            {
+                finished++;
+                continue;
+            }
+
+            if (Deserialise(json) is { IsFinished: false } run && (newest is null || run.StartedUtc > newest.StartedUtc || (run.StartedUtc == newest.StartedUtc && run.Id.CompareTo(newest.Id) < 0)))
+                newest = run;
+        }
+
+        return new ManualTestOverview(all.Count, finished, newest);
+    }
+
+    private static bool IsMarkedFinished(string json) => json.Contains("\"FinishedUtc\":", StringComparison.Ordinal);
 
     /// <summary>The newest runs first, at most <paramref name="limit"/> (and never more than <see cref="MaxListed"/>); a record that cannot be read is left out.</summary>
     public async Task<IReadOnlyList<ManualTestRun>> ListAsync(int limit = MaxListed, CancellationToken cancellationToken = default)
@@ -136,7 +180,7 @@ public sealed class ManualTestRunService : IManualTestStatusSource
 
         await _store.ExecuteInTransactionAsync(async (tx, token) =>
         {
-            var run = await ReadForChangeAsync(tx, runId, token).ConfigureAwait(false);
+            var run = await ReadForChangeAsync(tx, runId, closing: false, token).ConfigureAwait(false);
 
             if (!string.Equals(run.ScriptVersion, _script.ScriptVersion, StringComparison.Ordinal))
                 throw new ManualTestRefusedException($"This run was started on script {run.ScriptVersion} and this build carries script {_script.ScriptVersion}; finish the run and start a new one.");
@@ -171,7 +215,7 @@ public sealed class ManualTestRunService : IManualTestStatusSource
                 return;
             }
 
-            var run = await ReadForChangeAsync(tx, runId, token).ConfigureAwait(false);
+            var run = await ReadForChangeAsync(tx, runId, closing: true, token).ConfigureAwait(false);
             saved = run with { FinishedUtc = _clock().ToUniversalTime() };
             await tx.WriteAsync(Collection, Key(runId), Serialise(saved), token).ConfigureAwait(false);
         }, cancellationToken).ConfigureAwait(false);
@@ -182,26 +226,16 @@ public sealed class ManualTestRunService : IManualTestStatusSource
     /// <summary>The run as a markdown results sheet in the runbook's section 11 format.</summary>
     public string ExportMarkdown(ManualTestRun run) => ManualTestMarkdown.Export(run, _script);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// The manual status of each template, counting only what is final: results in a <b>finished</b> run that was made on the <b>current script</b>
+    /// (the one this build carries). A result in a run still being worked on may yet be changed, and one made against an earlier script was made against
+    /// worked examples that may since have changed, so neither is shown as the template's manual status. A template whose only results are of those
+    /// kinds is absent. (The choice, and the alternative of exposing the version and finished flag, are in ADR-0175, "Changes after review".)
+    /// </summary>
     public async Task<IReadOnlyDictionary<string, ManualTestStatus>> LatestByTemplateAsync(CancellationToken cancellationToken = default)
     {
         var runs = await ReadAllAsync(cancellationToken).ConfigureAwait(false);
-
-        // The latest counted result of each worked example, over every run (a skipped step is not a result).
-        var latest = new Dictionary<string, (ManualTestStepResult Result, ManualTestRun Run)>(StringComparer.Ordinal);
-
-        foreach (var run in runs)
-        {
-            foreach (var result in run.Results.Where(r => r.Outcome != ManualTestOutcome.Skipped))
-            {
-                if (_script.Find(result.StepId) is not { Kind: GuidedStepKind.Example })
-                    continue;
-
-                if (!latest.TryGetValue(result.StepId, out var held) || result.RecordedUtc > held.Result.RecordedUtc)
-                    latest[result.StepId] = (result, run);
-            }
-        }
-
+        var latest = LatestPerExample(runs);
         var status = new Dictionary<string, ManualTestStatus>(StringComparer.Ordinal);
 
         foreach (var group in latest.GroupBy(kv => _script.Find(kv.Key)!.TemplateId!, StringComparer.Ordinal))
@@ -218,6 +252,70 @@ public sealed class ManualTestRunService : IManualTestStatusSource
         return status;
     }
 
+    /// <summary>The latest counted result of each worked example, over the finished runs of the current script (a skipped step is not a result).</summary>
+    private Dictionary<string, (ManualTestStepResult Result, ManualTestRun Run)> LatestPerExample(IEnumerable<ManualTestRun> runs)
+    {
+        var latest = new Dictionary<string, (ManualTestStepResult Result, ManualTestRun Run)>(StringComparer.Ordinal);
+
+        foreach (var run in runs.Where(r => r.IsFinished && string.Equals(r.ScriptVersion, _script.ScriptVersion, StringComparison.Ordinal)))
+        {
+            foreach (var result in run.Results.Where(r => r.Outcome != ManualTestOutcome.Skipped))
+            {
+                if (_script.Find(result.StepId) is not { Kind: GuidedStepKind.Example })
+                    continue;
+
+                if (!latest.TryGetValue(result.StepId, out var held) || result.RecordedUtc > held.Result.RecordedUtc)
+                    latest[result.StepId] = (result, run);
+            }
+        }
+
+        return latest;
+    }
+
+    /// <summary>
+    /// What "delete older finished runs" would do with the newest <paramref name="keep"/> finished runs kept: the finished runs beyond them, except
+    /// any that still holds the latest result of a worked example (the dashboard's status is worked out from the runs on file, so such a run is kept).
+    /// A run that is not finished is never a candidate.
+    /// </summary>
+    public async Task<ManualTestTrimPlan> PlanTrimAsync(int keep = DefaultKeepFinished, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(keep, 1);
+        var runs = await ReadAllAsync(cancellationToken).ConfigureAwait(false);
+        var finished = runs.Where(r => r.IsFinished).OrderByDescending(r => r.FinishedUtc).ThenByDescending(r => r.StartedUtc).ThenBy(r => r.Id).ToList();
+        var holders = LatestPerExample(runs).Values.Select(v => v.Run.Id).ToHashSet();
+        var older = finished.Skip(keep).ToList();
+        var delete = older.Where(r => !holders.Contains(r.Id)).Select(r => r.Id).ToList();
+        return new ManualTestTrimPlan(keep, finished.Count, delete, older.Count - delete.Count);
+    }
+
+    /// <summary>
+    /// Deletes the finished runs <see cref="PlanTrimAsync"/> names, from <see cref="Collection"/> only, in one transaction; each run is read again
+    /// first and is left alone if it is no longer finished. Returns how many were deleted. Only a signed-in person may do it.
+    /// </summary>
+    /// <exception cref="ManualTestRefusedException">Nobody is signed in.</exception>
+    public async Task<int> DeleteOlderFinishedAsync(int keep = DefaultKeepFinished, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(_tester().Id))
+            throw new ManualTestRefusedException(SignInRefusal);
+
+        var plan = await PlanTrimAsync(keep, cancellationToken).ConfigureAwait(false);
+        var deleted = 0;
+
+        await _store.ExecuteInTransactionAsync(async (tx, token) =>
+        {
+            foreach (var id in plan.Delete)
+            {
+                if (Deserialise(await tx.ReadAsync(Collection, Key(id), token).ConfigureAwait(false)) is not { IsFinished: true })
+                    continue;
+
+                await tx.DeleteAsync(Collection, Key(id), token).ConfigureAwait(false);
+                deleted++;
+            }
+        }, cancellationToken).ConfigureAwait(false);
+
+        return deleted;
+    }
+
     private async Task<IReadOnlyList<ManualTestRun>> ReadAllAsync(CancellationToken cancellationToken)
     {
         var all = await _store.ReadAllAsync(Collection, cancellationToken).ConfigureAwait(false);
@@ -225,7 +323,7 @@ public sealed class ManualTestRunService : IManualTestStatusSource
     }
 
     /// <summary>Reads a run inside a transaction and refuses a change to one that is missing, finished, written by a newer build or started by someone else.</summary>
-    private async Task<ManualTestRun> ReadForChangeAsync(IPersistenceTransaction tx, Guid runId, CancellationToken token)
+    private async Task<ManualTestRun> ReadForChangeAsync(IPersistenceTransaction tx, Guid runId, bool closing, CancellationToken token)
     {
         var run = Deserialise(await tx.ReadAsync(Collection, Key(runId), token).ConfigureAwait(false))
             ?? throw new ManualTestRefusedException("That test run is not on file.");
@@ -235,7 +333,20 @@ public sealed class ManualTestRunService : IManualTestStatusSource
 
         var (testerId, _) = _tester();
 
-        if (run.TesterId.Length > 0 && !string.Equals(run.TesterId, testerId, StringComparison.Ordinal))
+        if (string.IsNullOrWhiteSpace(testerId))
+            throw new ManualTestRefusedException(SignInRefusal);
+
+        // The ids are always compared. A run kept under no id (made by an earlier build while nobody was signed in) belongs to nobody who can sign in
+        // now, so nothing can be added to it; it can only be finished, by whoever is signed in, so that it can be cleared away.
+        if (run.TesterId.Length == 0)
+        {
+            if (closing)
+                return run;
+
+            throw new ManualTestRefusedException($"That test run was started by {run.Tester} with nobody signed in, so nothing can be added to it; finish it, or start a new run.");
+        }
+
+        if (!string.Equals(run.TesterId, testerId, StringComparison.Ordinal))
             throw new ManualTestRefusedException($"That test run was started by {run.Tester}; switch back to them to continue it, or start a new run.");
 
         return run;

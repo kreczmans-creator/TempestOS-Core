@@ -6,7 +6,8 @@ the same sources the owner's paper pack uses:
 
 * one step per worked example (docs/worked-examples/<discipline>/<template>/<example>/): its inputs.json, the inputs table
   of sheet.txt, and the README "Output | Expected" table and "Governing check" line (see scripts/generate-test-values.py);
-* the manual steps of docs/testing/v0.26.0-runbook.md: the smoke test (section 4), the linked packs (6), imports (7),
+* the manual steps of the release's runbook, docs/testing/v<VERSION>-runbook.md (named from the VERSION file, so a new release's runbook is
+  picked up without editing this script): the smoke test (section 4), the linked packs (6), imports (7),
   lifting (8) and legacy records (9).
 
 The result is written to src/Tempest.Calc/Tempest.Calc.Library/ManualTesting/guided-test-script.json, which the library embeds
@@ -24,7 +25,8 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 WE = ROOT / "docs" / "worked-examples"
-RUNBOOK = ROOT / "docs" / "testing" / "v0.26.0-runbook.md"
+RELEASE = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+RUNBOOK = ROOT / "docs" / "testing" / f"v{RELEASE}-runbook.md"
 OUT = ROOT / "src" / "Tempest.Calc" / "Tempest.Calc.Library" / "ManualTesting" / "guided-test-script.json"
 DISCIPLINES = [("mechanical", "Mechanical"), ("structural", "Structural"), ("building-services", "Building services"),
                ("electrical", "Electrical"), ("fluid-power", "Fluid power")]
@@ -220,6 +222,22 @@ def inputs_rows(sheet: str) -> list[dict]:
     return rows
 
 
+def governing_of(lines: list[str], where: str) -> dict | None:
+    """The README's 'Governing check:' line as a dict, or None for an example that states 'Governing check: none'.
+
+    A line that is neither is an error, not a silent 'none': the app compares the form's governing check with this, so an unparsed line would
+    quietly turn "the form must show this check" into "the form must show none"."""
+    line = next((l for l in lines if l.startswith("Governing check:")), None)
+    if line is None:
+        raise SystemExit(f"{where}: the README has no 'Governing check:' line (write 'Governing check: none' for an example with no check)")
+    if re.match(r"^Governing check: none\b", line):
+        return None
+    m = re.match(r"^Governing check: (.*?) — (PASS|FAIL) \(utilisation ([^)]+)\)", line)
+    if not m:
+        raise SystemExit(f"{where}: cannot parse the 'Governing check:' line {line!r}; expected 'Governing check: <name> — PASS|FAIL (utilisation <n>)' or 'Governing check: none'")
+    return {"name": m.group(1), "outcome": m.group(2), "utilisation": m.group(3)}
+
+
 def example_step(disc: str, template: str, folder: pathlib.Path) -> dict:
     readme = lf((folder / "README.md").read_text(encoding="utf-8"))
     sheet = lf((folder / "sheet.txt").read_text(encoding="utf-8")) if (folder / "sheet.txt").exists() else ""
@@ -234,11 +252,7 @@ def example_step(disc: str, template: str, folder: pathlib.Path) -> dict:
         computed, _ = split_number(row[2]) if len(row) > 2 else ("", "")
         expected.append({"symbol": row[0].strip("`"), "value": value, "unit": unit, "computed": computed})
 
-    governing = None
-    line = next((l for l in lines if l.startswith("Governing check:")), "")
-    m = re.match(r"^Governing check: (.*?) — (PASS|FAIL) \(utilisation ([^)]+)\)", line)
-    if m:
-        governing = {"name": m.group(1), "outcome": m.group(2), "utilisation": m.group(3)}
+    governing = governing_of(lines, f"{template}/{folder.name}")
 
     inputs = json.loads(lf((folder / "inputs.json").read_text(encoding="utf-8")))
     example = folder.name
@@ -280,14 +294,14 @@ def build() -> dict:
         if len(s.get("expected", [])) > MAX_EXPECTED or len(s.get("inputs", [])) > MAX_INPUT_ROWS:
             raise SystemExit(f"step {s['id']} exceeds a cap")
 
-    release = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    release = RELEASE
     content = json.dumps(steps, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
     return {
         "format": 1,
         "scriptVersion": f"{release}+{digest[:8]}",
         "release": release,
-        "generatedFrom": "docs/testing/v0.26.0-runbook.md, docs/worked-examples (scripts/generate-guided-test-script.py)",
+        "generatedFrom": f"docs/testing/v{release}-runbook.md, docs/worked-examples (scripts/generate-guided-test-script.py)",
         "steps": steps,
     }
 

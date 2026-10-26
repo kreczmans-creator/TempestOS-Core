@@ -59,14 +59,29 @@ public static class GuidedAutoCompare
         {
             var form = run.Governing;
             var outcomeText = form is null ? "none" : form.Passed ? "PASS" : "FAIL";
-            rows.Add(new GuidedOutputComparison("governing check", governing.Outcome, outcomeText, GuidedTolerance.CompareText("governing check", governing.Outcome, outcomeText)));
+
+            // The check's name is compared with its outcome: a worksheet whose governing check is another one is not the example, though both may PASS.
+            var expectedCheck = $"{governing.Outcome} — {governing.Name}";
+            var shownCheck = form is null ? "none" : $"{outcomeText} — {form.Name}";
+            rows.Add(new GuidedOutputComparison("governing check", expectedCheck, shownCheck, GuidedTolerance.CompareText("governing check", expectedCheck, shownCheck)));
 
             var shownUtilisation = form is null ? null : double.IsInfinity(form.Utilisation) ? "—" : CalcValue.FormatNumber(form.Utilisation, UtilisationSignificantFigures);
             var utilisation = form is null
                 ? new GuidedComparison(GuidedCompareOutcome.Mismatch, "governing utilisation: the form has no governing check.")
                 : GuidedTolerance.CompareShown("governing utilisation", governing.Utilisation, string.Empty, shownUtilisation, UtilisationSignificantFigures);
             rows.Add(new GuidedOutputComparison("governing utilisation", governing.Utilisation, shownUtilisation ?? "—", utilisation));
-            shown.Add($"governing {outcomeText} (utilisation {shownUtilisation ?? "—"})");
+            shown.Add(form is null ? "governing none" : $"governing {outcomeText} — {form.Name} (utilisation {shownUtilisation ?? "—"})");
+        }
+        else if (example.Kind == GuidedStepKind.Example)
+        {
+            // The example documents no governing check ("Governing check: none"), so a form that shows one is not what the example describes.
+            var form = run.Governing;
+            var formText = form is null ? "none" : $"{(form.Passed ? "PASS" : "FAIL")} — {form.Name}";
+            var comparison = form is null
+                ? new GuidedComparison(GuidedCompareOutcome.Match, "governing check: the form has none, as the example says.")
+                : new GuidedComparison(GuidedCompareOutcome.Mismatch, $"governing check: the form shows a governing check ('{form.Name}', {(form.Passed ? "PASS" : "FAIL")}) where the example has none.");
+            rows.Add(new GuidedOutputComparison("governing check", "none", formText, comparison));
+            shown.Add("governing " + formText);
         }
 
         ManualTestOutcome? suggested = rows.Any(r => r.Comparison.Outcome == GuidedCompareOutcome.Mismatch) ? ManualTestOutcome.Fail

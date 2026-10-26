@@ -200,6 +200,7 @@ public sealed class ManualTestRunServiceTests
 
         var refusal = await Assert.ThrowsAsync<ManualTestRefusedException>(() => service.StartAsync());
         Assert.Contains("already 3 test runs", refusal.Message, StringComparison.Ordinal);
+        Assert.Contains("Delete older finished runs", refusal.Message, StringComparison.Ordinal);
         Assert.Equal(3, store.CommittedKeys(ManualTestRunService.Collection).Count);
         Assert.Throws<ArgumentOutOfRangeException>(() => Make(maxRuns: 0));
     }
@@ -301,6 +302,7 @@ public sealed class ManualTestRunServiceTests
         var second = await service.StartAsync();
         await service.RecordAsync(second.Id, "example:t.a/e1", ManualTestOutcome.Pass, "", null);
         await service.RecordAsync(second.Id, "example:t.b/e2", ManualTestOutcome.Skipped, "", null);
+        await service.FinishAsync(second.Id);
         var after = await service.LatestByTemplateAsync();
 
         Assert.Equal(ManualTestOutcome.Pass, after["t.a"].Outcome);
