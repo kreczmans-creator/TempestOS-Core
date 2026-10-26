@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150">
+  <rect x="10" y="10" width="50" height="30" fill="#1c2d97"/>
+  <rect x="70" y="10" width="50" height="30" rx="8" ry="8" fill="#40a2ce" stroke="#000000" stroke-width="2"/>
+  <circle cx="150" cy="25" r="15" fill="#6c29d9"/>
+  <ellipse cx="35" cy="70" rx="25" ry="12" fill="none" stroke="#c0392b" stroke-width="3"/>
+  <line x1="70" y1="55" x2="120" y2="85" stroke="#000000" stroke-width="4"/>
+  <polyline points="130,55 150,85 170,55 190,85" fill="none" stroke="#1c2d97" stroke-width="2"/>
+  <polygon points="20,100 60,100 50,140 30,140" fill="#e4e7ee" stroke="#000000" stroke-width="1.5"/>
+  <path d="M70 140 L80 100 H110 V120 L100 140 Z" fill="#40a2ce"/>
+  <path d="M120,140 C120,100 160,100 160,140 S200,180 190,120" fill="none" stroke="#6c29d9" stroke-width="2"/>
+  <path d="M130 95 Q145 70 160 95 T190 95" fill="none" stroke="#c0392b" stroke-width="2"/>
+  <path d="M165 115 a 12 12 0 1 0 24 0 a 12 12 0 1 0 -24 0" fill="#1c2d97"/>
+  <path d="m 10 145 l 30 0 l -15 -8 z" fill="#000000"/>
+</svg>

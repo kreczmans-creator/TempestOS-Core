@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150">
+  <style>
+    .plate { fill: #e4e7ee; stroke: #000000; stroke-width: 2; }
+    rect.load { fill: tomato; }
+  </style>
+  <rect class="plate" x="10" y="10" width="60" height="40"/>
+  <rect class="load" x="80" y="10" width="40" height="40"/>
+  <rect x="130" y="10" width="60" height="40" style="fill: rgb(28, 45, 151); stroke: steelblue; stroke-width: 6"/>
+  <rect x="10" y="60" width="60" height="30" fill="#6c29d9" opacity="0.5"/>
+  <rect x="80" y="60" width="40" height="30" fill="#6c29d9" fill-opacity="0.25" stroke="#000000" stroke-opacity="0.5" stroke-width="6"/>
+  <line x1="130" y1="65" x2="190" y2="65" stroke="#000" stroke-width="4" stroke-dasharray="8 4"/>
+  <line x1="130" y1="78" x2="190" y2="78" stroke="#000" stroke-width="8" stroke-linecap="round"/>
+  <line x1="130" y1="90" x2="190" y2="90" stroke="#000" stroke-width="8" stroke-linecap="square"/>
+  <polyline points="10,140 30,100 50,140" fill="none" stroke="#1c2d97" stroke-width="10" stroke-linejoin="round"/>
+  <polyline points="60,140 80,100 100,140" fill="none" stroke="#1c2d97" stroke-width="10" stroke-linejoin="bevel"/>
+  <path d="M110 100 h40 v40 h-40 z M120 110 h20 v20 h-20 z" fill="#c0392b" fill-rule="evenodd"/>
+  <g color="#40a2ce"><rect x="160" y="100" width="30" height="40" fill="currentColor"/></g>
+  <rect x="160" y="100" width="30" height="40" fill="#ff0000" visibility="hidden"/>
+  <rect x="0" y="0" width="200" height="150" fill="#00ff00" display="none"/>
+  <rect x="0" y="0" width="200" height="150" fill="none" stroke="none"/>
+</svg>
