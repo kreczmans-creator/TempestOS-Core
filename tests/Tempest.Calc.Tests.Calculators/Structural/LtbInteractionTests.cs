@@ -36,7 +36,7 @@ public sealed class LtbInteractionTests
         var r = Run(N("psi_y", psi), Q("L", lengthM, "m"));
         Assert.Equal(expectedC1, r.OutputSi("C_1"), 9);
         var warning = Assert.Single(r.Warnings, w => w.RuleId == "c1-psi" && w.Message.StartsWith("C_1:", StringComparison.Ordinal));
-        Assert.Contains("exceed the exact elastic value by up to about 10 %", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("up to 10 % above the exact value", warning.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public sealed class LtbInteractionTests
         var warning = Assert.Single(frameProgram.Warnings, w => w.RuleId == "double-curvature");
         Assert.Contains("double curvature", warning.Message, StringComparison.Ordinal);
         Assert.Contains("C₁ = 2.7", warning.Message, StringComparison.Ordinal);
-        Assert.Contains("end actions", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("same-sign ordinates", warning.Message, StringComparison.Ordinal);
         Assert.Contains("340", warning.Message, StringComparison.Ordinal);
         Assert.Contains("-170", warning.Message, StringComparison.Ordinal);
 
@@ -235,14 +235,14 @@ public sealed class LtbInteractionTests
         foreach (var change in new[]
         {
             Q("f_y", 200, "MPa"), Q("f_y", 500, "MPa"), Q("E", 180, "GPa"), N("k", 0.4), N("k", 1.1), N("k_w", 0.4), Q("L", 0, "m"), Q("L", 150, "m"), Q("N_Ed", 100, "kN"),
-            N("psi_y", 1.5), N("psi_z", -1.2), Q("t_f", 1, "mm"), Q("t_f", 200, "mm"), Q("A", 1, "cm^2"), Q("I_w", 0, "dm^6"), N("C_2", -0.1), N("C_1", 0.9), N("alpha_d", 0), N("beta_LT", 1.5), N("gamma_M1", 0.9),
+            N("psi_y", 1.5), N("psi_z", -1.2), Q("t_f", 1, "mm"), Q("t_f", 200, "mm"), Q("A", 1, "cm^2"), Q("I_w", 0, "cm^6"), N("C_2", -0.1), N("C_1", 0.9), N("alpha_d", 0), N("beta_LT", 1.5), N("gamma_M1", 0.9),
         })
         {
             var notices = CalcInputValidator.Validate(Ltb.Template, Defaults().With(change));
             Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Block && n.RuleId.Contains(change.Symbol, StringComparison.Ordinal));
         }
 
-        Assert.All(Ltb.Template.Inputs.Where(i => i.Kind is CalcInputKind.Quantity or CalcInputKind.Number), i => Assert.True(i.HardMin == i.Min && i.HardMax == i.Max, $"{i.Symbol}: the soft and hard ranges must be the same"));
+        Assert.All(Ltb.Template.Inputs.Where(i => i.Kind is CalcInputKind.Quantity or CalcInputKind.Number), i => Assert.True(i.HardMin <= i.Min && i.HardMax >= i.Max && (i.HardMin < i.Min || i.HardMax > i.Max), $"{i.Symbol}: the usual range must lie inside the hard range and differ from it at one end at least"));
     }
 
     [Fact]
@@ -388,7 +388,7 @@ public sealed class LtbInteractionTests
 
         // Curve a chosen by hand with a reverse-symmetric moment (ψ = −1, C₁ = 2.7, k_c = 0.6024) and 12 m between restraints: χ_LT,mod = χ_LT/f = 0.7248 would exceed 1/λ̄² = 0.6720.
         var r = Run(Choice("section_class", "1"), Choice("ltb_curve", "a"), CalcInputValue.Switch("use_f", true), N("psi_y", -1), Q("L", 12, "m"), Q("N_Ed", 0, "kN"), Q("M_y_Ed", 100, "kN*m"),
-            Q("I_z", 2347.0, "cm^4"), Q("I_t", 121.29, "cm^4"), Q("I_w", 1.1755, "dm^6"), Q("W_pl_y", 2232.5, "cm^3"), Q("W_el_y", 1957.5, "cm^3"), Q("W_pl_z", 378.9, "cm^3"), Q("W_el_z", 243.47, "cm^3"), Q("A", 125.27, "cm^2"), Q("I_y", 45728, "cm^4"));
+            Q("I_z", 2347.0, "cm^4"), Q("I_t", 121.29, "cm^4"), Q("I_w", 1175500, "cm^6"), Q("W_pl_y", 2232.5, "cm^3"), Q("W_el_y", 1957.5, "cm^3"), Q("W_pl_z", 378.9, "cm^3"), Q("W_el_z", 243.47, "cm^3"), Q("A", 125.27, "cm^2"), Q("I_y", 45728, "cm^4"));
         var lambda = r.OutputSi("lambda_LT");
         Assert.Equal(1 / (lambda * lambda), r.OutputSi("chi_LT"), 12);
         Assert.Equal(0.6719504886914954, r.OutputSi("chi_LT"), 4);
@@ -478,8 +478,8 @@ public sealed class LtbInteractionTests
         var inputs = Ltb.Template.TestCases.Single(t => t.Id == "ka-mcr-uniform-6322").Inputs;
         var iw = inputs.Single(i => i.Symbol == "I_w");
         var flanges = 2 * (16.0 * 200 * 200 * 200 / 12);
-        Assert.Equal("dm^6", iw.Unit);
-        Assert.Equal(flanges * 484 * 484 / 4 / 1e12, iw.Number!.Value, 12);
+        Assert.Equal("cm^6", iw.Unit);
+        Assert.Equal(flanges * 484 * 484 / 4 / 1e6, iw.Number!.Value, 6);
         Assert.Equal(Iw, flanges * 484 * 484 / 4, Iw * 1e-12);
 
         // The classical closed form with that I_w gives the case's M_cr to 1e-6, so the case is exact for the plates.
@@ -602,8 +602,20 @@ public sealed class LtbInteractionTests
     [Fact]
     public void Review_Low_The_Edition_2022_Label_Only_Decision_Is_Stated_On_The_Template_And_The_Sheet()
     {
-        Assert.Contains(Ltb.Template.Assumptions, a => a.Statement.Contains("label printed on the sheet only, by decision", StringComparison.Ordinal));
+        Assert.Contains(Ltb.Template.Assumptions, a => a.Statement.Contains("printed label only", StringComparison.Ordinal));
         var warning = Assert.Single(Run(Choice("edition", LtbInteractionCalculator.Edition2022)).Warnings, w => w.RuleId == "edition");
-        Assert.Contains("label only", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("printed label", warning.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Warping_Constant_Entered_In_The_Old_Unit_Gives_The_Same_Result()
+    {
+        // Before 1.3.0 the sheet took I_w in dm^6; it takes cm^6 now, the unit of the section properties sheet. 1 dm^6 is 1e6 cm^6.
+        Assert.Equal("cm^6", Ltb.Template.FindInput("I_w")!.DefaultUnit);
+        var inNew = Run(Q("I_w", 1175500, "cm^6"));
+        var inOld = Run(Q("I_w", 1.1755, "dm^6"));
+        Assert.False(inOld.IsBlocked);
+        Assert.Equal(inNew.OutputSi("Mcr"), inOld.OutputSi("Mcr"), 6);
+        Assert.Equal(inNew.OutputSi("u_member"), inOld.OutputSi("u_member"), 12);
     }
 }

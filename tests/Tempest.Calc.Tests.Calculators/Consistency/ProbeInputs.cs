@@ -70,6 +70,6 @@ internal static class ProbeInputs
     internal static CalcInputSet LongClampedPlate() =>
         CalcTemplateHasher.DefaultInputs(new PlateBendingCalculator().Template)
             .With(CalcInputValue.Choice("shape", PlateBendingCalculator.Rectangular)).With(CalcInputValue.Choice("support", PlateBendingCalculator.Clamped)).With(CalcInputValue.Choice("load_type", PlateBendingCalculator.Uniform))
-            .With(CalcInputValue.Quantity("a", 2500, "mm")).With(CalcInputValue.Quantity("b", 500, "mm")).With(CalcInputValue.Quantity("t", 8, "mm")).With(CalcInputValue.Quantity("q", 10, "kPa"))
+            .With(CalcInputValue.Quantity("a", 2500, "mm")).With(CalcInputValue.Quantity("b", 500, "mm")).With(CalcInputValue.Quantity("t_p", 8, "mm")).With(CalcInputValue.Quantity("q", 10, "kPa"))
             .With(CalcInputValue.Quantity("E", 210, "GPa")).With(CalcInputValue.Of("nu", 0.3));
 }

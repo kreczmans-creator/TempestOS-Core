@@ -197,4 +197,35 @@ public sealed class StructuralRenamedSymbolTests
         Assert.True(thicker.Succeeded, thicker.Reason);
         Assert.Equal(12, thicker.Instance!.Inputs.Single(i => i.Symbol == "t_wall").Number);
     }
+
+    [Fact]
+    public async Task The_Old_Thickness_And_Force_Symbols_Of_The_Plate_Are_Stored_Under_T_p_And_F_And_The_Old_Rigidity_Symbol_Still_Links()
+    {
+        var host = new LibraryTestHost(calculators: [new PlateBendingCalculator(), new BeamFormulasCalculator()]);
+        var project = await host.ProjectAsync();
+        var cases = new PlateBendingCalculator().Template.TestCases;
+
+        // The inputs as a saved calculation had them before the rename: the thickness is t, and the ring force is P.
+        var oldClamped = WithDrawing(cases[0].Inputs.Select(v => v.Symbol == "t_p" ? CalcInputValue.Quantity("t", 5, "mm") : v));
+        var plate = await host.Service.CreateAsync(PlateBendingCalculator.Id, project, "Plate (old form)", oldClamped);
+        Assert.Empty(plate.Blocks);
+        Assert.Equal(5, plate.Inputs.Single(i => i.Symbol == "t_p").Number);
+        Assert.DoesNotContain(plate.Inputs, i => i.Symbol == "t");
+        Assert.Equal(0.533203125, plate.Outputs.Single(o => o.Symbol == "w_max").Si!.Value * 1e3, 9);
+
+        var oldRing = WithDrawing(cases[3].Inputs.Select(v => v.Symbol == "F" ? CalcInputValue.Quantity("P", 4, "kN") : v));
+        var ring = await host.Service.CreateAsync(PlateBendingCalculator.Id, project, "Ring (old form)", oldRing);
+        Assert.Empty(ring.Blocks);
+        Assert.Equal(4, ring.Inputs.Single(i => i.Symbol == "F").Number);
+        Assert.DoesNotContain(ring.Inputs, i => i.Symbol == "P");
+
+        // The flexural rigidity was the output D; a link by that symbol, by the new symbol or by the public name resolves to the same value.
+        foreach (var name in new[] { "D", "D_flex", "plate.rigidity_flexural" })
+        {
+            var beam = await host.Service.CreateAsync(BeamFormulasCalculator.Id, project, $"Beam with a couple from {name}");
+            var bound = await host.Service.BindAsync(beam.Id, "M_0", plate.Id, name);
+            Assert.True(bound.Succeeded, bound.Reason);
+            Assert.Equal(plate.Outputs.Single(o => o.Symbol == "D_flex").Si!.Value / 1e3, bound.Instance!.Inputs.Single(i => i.Symbol == "M_0").Number!.Value, 9);
+        }
+    }
 }

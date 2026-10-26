@@ -1385,7 +1385,7 @@
           "units": [],
           "descriptions": [
             "C₁",
-            "C₁ (blank: from ψ, end moments with k = 1; enter it for transverse loads, and then also k_c and C_my: they are not taken from ψ)"
+            "Moment diagram factor C₁ (optional; blank = derived from ψ, valid for end moments with k = 1)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1401,7 +1401,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C₂ (0 for end moments; enter it for transverse loads)"
+            "Moment diagram factor C₂ (0 for end moments; enter it for a transverse load)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1586,7 +1586,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_mLT"
+            "Equivalent uniform moment factor for lateral-torsional buckling"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1602,7 +1602,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_mLT (Annex B; blank: as C_my)"
+            "Equivalent uniform moment factor for lateral-torsional buckling in Annex B (optional; blank = the value of C_my)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1618,7 +1618,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_my (Annex B; blank: 0.6 + 0.4ψ_y ≥ 0.4, linear diagram; required when C₁ is entered, unless the diagram is given as end moments)"
+            "Equivalent uniform moment factor about y-y in Annex B (optional; blank = 0.6 + 0.4ψ_y, at least 0.4)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1634,7 +1634,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_mz (Annex B; blank: 0.6 + 0.4ψ_z ≥ 0.4)"
+            "Equivalent uniform moment factor about z-z in Annex B (optional; blank = 0.6 + 0.4ψ_z, at least 0.4)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1666,7 +1666,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_my"
+            "Equivalent uniform moment factor about y-y"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1682,7 +1682,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_mz"
+            "Equivalent uniform moment factor about z-z"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1793,19 +1793,6 @@
           ],
           "templates": [
             "elec.enclosure-heat"
-          ]
-        },
-        {
-          "meaning": "flexural-rigidity",
-          "quantity": "Moment, torque",
-          "units": [
-            "N·m"
-          ],
-          "descriptions": [
-            "Flexural rigidity"
-          ],
-          "templates": [
-            "struct.plate-bending"
           ]
         },
         {
@@ -1920,6 +1907,24 @@
           ],
           "templates": [
             "bs.insulation"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "D_flex",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Moment, torque",
+          "units": [
+            "kN·m"
+          ],
+          "descriptions": [
+            "Flexural rigidity"
+          ],
+          "templates": [
+            "struct.plate-bending"
           ]
         }
       ]
@@ -2664,6 +2669,19 @@
           ],
           "templates": [
             "bs.heat-exchanger"
+          ]
+        },
+        {
+          "meaning": "plate-load-total",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Total force (force basis: uniform, patch and ring loads; a ring load always uses the force)"
+          ],
+          "templates": [
+            "struct.plate-bending"
           ]
         },
         {
@@ -4516,7 +4534,7 @@
             "cm⁴"
           ],
           "descriptions": [
-            "Torsion constant I_t (S1: J)"
+            "Torsion constant"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -4603,12 +4621,10 @@
           "meaning": "warping-constant",
           "quantity": "Warping constant",
           "units": [
-            "cm⁶",
-            "dm⁶"
+            "cm⁶"
           ],
           "descriptions": [
-            "Warping constant",
-            "Warping constant I_w"
+            "Warping constant"
           ],
           "templates": [
             "struct.ltb-interaction",
@@ -4647,7 +4663,7 @@
           "descriptions": [
             "Second moment of area about the y-y axis",
             "Second moment of area about y-y",
-            "Second moment of area, major axis I_y (S1: I_xx)"
+            "Second moment of area about y-y (major axis)"
           ],
           "templates": [
             "struct.en1993-member",
@@ -4687,7 +4703,7 @@
           "descriptions": [
             "Second moment of area about the z-z axis",
             "Second moment of area about z-z",
-            "Second moment of area, minor axis I_z (S1: I_yy)"
+            "Second moment of area about z-z (minor axis)"
           ],
           "templates": [
             "struct.en1993-member",
@@ -5816,7 +5832,7 @@
           "meaning": "",
           "quantity": "Moment per unit length",
           "units": [
-            "N·m/m"
+            "kN·m/m"
           ],
           "descriptions": [
             "Moment at the centre"
@@ -5834,7 +5850,7 @@
           "meaning": "",
           "quantity": "Moment per unit length",
           "units": [
-            "N·m/m"
+            "kN·m/m"
           ],
           "descriptions": [
             "Edge moment"
@@ -6061,7 +6077,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "Moment at end A about y-y, as an ordinate of the bending-moment diagram (end-moment mode): the same sign at both ends is single curvature, opposite signs double curvature. Not the end actions of a stiffness analysis, which flip sign at one end"
+            "Moment at end A about y-y as an ordinate of the bending-moment diagram, with the same sign at both ends for single curvature, unlike the end actions of a stiffness analysis (optional; blank = the sheet is blocked in the end-moment mode)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -6079,7 +6095,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "Moment at end B about y-y, same convention as A: a bending-moment-diagram ordinate, the same sign as A for single curvature (end-moment mode)"
+            "Moment at end B about y-y, with the same convention as end A: an ordinate of the bending-moment diagram, the same sign as A for single curvature (optional; blank = the sheet is blocked in the end-moment mode)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -6099,7 +6115,7 @@
           "descriptions": [
             "Design moment about y-y (major axis)",
             "Greatest design moment about y-y",
-            "Greatest design moment about y-y (ψ mode; S2 M_abs_e1 or S5)"
+            "Greatest design moment about y-y, used in the ψ mode (optional; blank = the sheet is blocked in the ψ mode)"
           ],
           "templates": [
             "struct.en1993-member",
@@ -6742,7 +6758,7 @@
             "kN"
           ],
           "descriptions": [
-            "Design axial force, TENSION positive and compression negative (as S2 N_e1 and S3; 6.3.3 applies to compression)",
+            "Design axial force, tension positive and compression negative (a positive value is outside the range)",
             "Design axial force, tension positive and compression negative, opposite in sign to the base plate sheet's axial force"
           ],
           "templates": [
@@ -6775,7 +6791,7 @@
             "kN"
           ],
           "descriptions": [
-            "N_Rk"
+            "Characteristic axial resistance"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -7214,19 +7230,6 @@
           ],
           "templates": [
             "mech.bolted-joint"
-          ]
-        },
-        {
-          "meaning": "total-force",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Total force P (force basis: uniform, patch and ring loads; a ring load always uses P)"
-          ],
-          "templates": [
-            "struct.plate-bending"
           ]
         }
       ]
@@ -11749,7 +11752,6 @@
             "cm³"
           ],
           "descriptions": [
-            "Elastic modulus, major axis (S1: W_el_x)",
             "Elastic section modulus about the y-y axis",
             "Elastic section modulus about y-y"
           ],
@@ -11771,7 +11773,6 @@
             "cm³"
           ],
           "descriptions": [
-            "Elastic modulus, minor axis (S1: W_el_y)",
             "Elastic section modulus about the z-z axis",
             "Elastic section modulus about z-z"
           ],
@@ -11793,7 +11794,6 @@
             "cm³"
           ],
           "descriptions": [
-            "Plastic modulus, major axis (S1: W_pl_x)",
             "Plastic section modulus about the y-y axis",
             "Plastic section modulus about y-y"
           ],
@@ -11815,7 +11815,6 @@
             "cm³"
           ],
           "descriptions": [
-            "Plastic modulus, minor axis (S1: W_pl_y)",
             "Plastic section modulus about the z-z axis",
             "Plastic section modulus about z-z"
           ],
@@ -11855,7 +11854,7 @@
             "cm³"
           ],
           "descriptions": [
-            "W_y"
+            "Section modulus for bending about y-y"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12283,7 +12282,7 @@
             "mm"
           ],
           "descriptions": [
-            "Radius a (circular) or side a (rectangular)"
+            "Plate radius (circular) or length in the x direction (rectangular)"
           ],
           "templates": [
             "struct.plate-bending"
@@ -12596,7 +12595,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α, curve a (recommended 0.21)"
+            "Imperfection factor for curve a (recommended 0.21)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12612,7 +12611,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α, curve a0 (recommended 0.13)"
+            "Imperfection factor for curve a0 (recommended 0.13)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12639,7 +12638,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α, curve b (recommended 0.34)"
+            "Imperfection factor for curve b (recommended 0.34)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12671,7 +12670,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α, curve c (recommended 0.49)"
+            "Imperfection factor for curve c (recommended 0.49)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12703,7 +12702,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α, curve d (recommended 0.76)"
+            "Imperfection factor for curve d (recommended 0.76)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -13024,9 +13023,9 @@
           ],
           "descriptions": [
             "Column width, along the plate width B (I/H and RHS)",
-            "Flange width b",
+            "Flange width",
             "Groove width b",
-            "Side b (rectangular; not used for a circular plate)",
+            "Length in the y direction (rectangular plate only, not used for a circular plate)",
             "Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube)",
             "Width for the shear area (optional; blank = use A_v)",
             "Width or horizontal leg"
@@ -13222,7 +13221,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "β for 6.3.2.3 (recommended 0.75)"
+            "Slenderness correction factor for cl. 6.3.2.3 (recommended 0.75)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -14902,7 +14901,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Deflection limit: span/ratio (span = diameter of a circular plate, shorter side of a rectangle)"
+            "Deflection limit as span/ratio (span = diameter of a circular plate, shorter side of a rectangle)"
           ],
           "templates": [
             "struct.plate-bending"
@@ -16905,7 +16904,6 @@
           "descriptions": [
             "Plate yield strength",
             "Yield strength",
-            "Yield strength (for the thickness)",
             "Yield strength f_y of the lug plate for its thickness",
             "Yield strength for the thickness",
             "Yield strength of the rod"
@@ -16939,6 +16937,24 @@
           "templates": [
             "struct.base-plate",
             "struct.connection-ec3"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "f_yd",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Design yield strength"
+          ],
+          "templates": [
+            "struct.plate-bending"
           ]
         }
       ]
@@ -17140,7 +17156,7 @@
           "descriptions": [
             "Partial factor for cross-section resistance",
             "Partial factor for the plate",
-            "Partial factor γ_M0 on the resistance of the cross-section"
+            "Partial factor on the resistance of the cross-section"
           ],
           "templates": [
             "struct.base-plate",
@@ -17159,8 +17175,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Partial factor for member buckling",
-            "Partial factor γ_M1 (member buckling)"
+            "Partial factor for member buckling"
           ],
           "templates": [
             "struct.en1993-member",
@@ -17310,7 +17325,7 @@
             "Depth for the shear area (optional; blank = use A_v)",
             "Depth or vertical leg",
             "Depth, vertical leg, or diameter of a circle or tube",
-            "Overall depth h"
+            "Overall section depth"
           ],
           "templates": [
             "struct.base-plate",
@@ -17878,7 +17893,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Effective length factor k (end rotation about the minor axis)"
+            "Effective length factor for end rotation about the minor axis"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -18165,7 +18180,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "k_c for the f modification (blank: 1/(1.33 − 0.33ψ) for a linear diagram; required when C₁ is entered, unless the diagram is given as end moments)"
+            "Correction factor for the f modification (optional; blank = 1/(1.33 − 0.33ψ) for a linear diagram)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -18518,7 +18533,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Warping factor k_w"
+            "Effective length factor for warping"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -18587,7 +18602,7 @@
           "units": [],
           "descriptions": [
             "Interaction factor for bending about y-y in the member check",
-            "k_yy"
+            "Interaction factor for major-axis bending in equation 6.61"
           ],
           "templates": [
             "struct.en1993-member",
@@ -18604,7 +18619,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "k_yz"
+            "Interaction factor for minor-axis bending in equation 6.61"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -18620,7 +18635,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "k_zy"
+            "Interaction factor for major-axis bending in equation 6.62"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -18637,7 +18652,7 @@
           "units": [],
           "descriptions": [
             "Interaction factor for bending about z-z in the member check",
-            "k_zz"
+            "Interaction factor for minor-axis bending in equation 6.62"
           ],
           "templates": [
             "struct.en1993-member",
@@ -18906,7 +18921,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "λ̄_LT,0 for 6.3.2.3 (recommended 0.4)"
+            "Plateau slenderness for cl. 6.3.2.3 (recommended 0.4)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -21553,8 +21568,8 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "ψ of the M_y diagram",
-            "ψ of the M_y diagram (ψ mode: ratio of the end moments, +1 uniform moment (the default, conservative), −1 reverse symmetric)"
+            "Ratio of the end moments about y-y, +1 for a uniform moment (optional; blank = 1, the conservative diagram)",
+            "ψ of the M_y diagram"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -21570,7 +21585,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "ψ of the M_z diagram"
+            "Ratio of the end moments about z-z"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -21612,7 +21627,7 @@
             "kPa"
           ],
           "descriptions": [
-            "Pressure q on the loaded area (uniform and patch loads, pressure basis)"
+            "Pressure on the loaded area (uniform and patch loads, pressure basis)"
           ],
           "templates": [
             "struct.plate-bending"
@@ -23514,14 +23529,12 @@
           "descriptions": [
             "Lug plate thickness t",
             "Lug thickness",
-            "Plate thickness",
             "Thickness"
           ],
           "templates": [
             "bs.plane-wall",
             "mech.lifting-lug",
-            "struct.lifting",
-            "struct.plate-bending"
+            "struct.lifting"
           ]
         },
         {
@@ -23801,7 +23814,7 @@
             "Flange thickness",
             "Flange thickness (I/H)",
             "Flange thickness for the shear area (optional; blank = use A_v)",
-            "Flange thickness t_f (S1: t_f; selects the flexural buckling curves of Table 6.2)"
+            "Flange thickness, which selects the flexural buckling curves of Table 6.2"
           ],
           "templates": [
             "struct.base-plate",
@@ -24017,7 +24030,8 @@
           "templates": [
             "mech.thin-vessel",
             "struct.base-plate",
-            "struct.connection-ec3"
+            "struct.connection-ec3",
+            "struct.plate-bending"
           ]
         }
       ]
@@ -27741,7 +27755,7 @@
             "mm"
           ],
           "descriptions": [
-            "Load height z_g above the shear centre, towards the compression flange (positive destabilises)"
+            "Load height above the shear centre, positive towards the compression flange (destabilising)"
           ],
           "templates": [
             "struct.ltb-interaction"

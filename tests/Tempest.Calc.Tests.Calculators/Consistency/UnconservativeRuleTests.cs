@@ -28,7 +28,7 @@ public sealed class UnconservativeRuleTests
         new("mech.shaft", "critical-speed", "Critical speed", () => UnconservativePassTests.RoomyShaft().With(CalcInputValue.Quantity("n", 4000, "rpm"))),
         new("mech.spring", "buckling", "Working deflection against the buckling", () => UnconservativePassTests.SlenderSpringInputs(60)),
         new("elec.motor-sizing", "speed-above-rated", "Motor speed against the rated speed", UnconservativePassTests.MotorAboveRated),
-        new("struct.ltb-interaction", "table-b1", "Interaction, equation 6.62", ProbeInputs.LtbTableB1),
+        new("struct.ltb-interaction", "table-b1", "Interaction equation 6.62 against its limit", ProbeInputs.LtbTableB1),
         new("mech.shaft", "critical-speed-skipped", "Critical speed", ProbeInputs.ShaftWithoutCriticalSpeed),
         new("mech.mechanism", "contact", "Follower stays on the cam", ProbeInputs.WeakSpringCam),
         new("bs.pipe-pump", "duty-unstable", "Duty point against a stable crossing", ProbeInputs.UnstablePump),

@@ -74,9 +74,6 @@
   "enclosure-depth": [
    "elec.enclosure-heat"
   ],
-  "flexural-rigidity": [
-   "struct.plate-bending"
-  ],
   "total-damage": [
    "mech.fatigue-miner"
   ]
@@ -121,6 +118,9 @@
   ],
   "lmtd-correction-factor": [
    "bs.heat-exchanger"
+  ],
+  "plate-load-total": [
+   "struct.plate-bending"
   ],
   "point-load": [
    "struct.beam-formulas"
@@ -474,9 +474,6 @@
   ],
   "thread-pitch": [
    "mech.bolted-joint"
-  ],
-  "total-force": [
-   "struct.plate-bending"
   ]
  },
  "P_add": {
@@ -1561,8 +1558,7 @@
   "thickness": [
    "bs.plane-wall",
    "mech.lifting-lug",
-   "struct.lifting",
-   "struct.plate-bending"
+   "struct.lifting"
   ],
   "time": [
    "elec.fault-protection"
@@ -1605,7 +1601,8 @@
   "plate-thickness": [
    "mech.thin-vessel",
    "struct.base-plate",
-   "struct.connection-ec3"
+   "struct.connection-ec3",
+   "struct.plate-bending"
   ]
  },
  "t_req": {

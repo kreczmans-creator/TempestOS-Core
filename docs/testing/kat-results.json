@@ -514,7 +514,7 @@
     },
     {
       "id": "struct.ltb-interaction",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "kats": 8,
       "katsPassed": 8,
       "failedKats": [],
@@ -524,7 +524,7 @@
     },
     {
       "id": "struct.plate-bending",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "kats": 11,
       "katsPassed": 11,
       "failedKats": [],

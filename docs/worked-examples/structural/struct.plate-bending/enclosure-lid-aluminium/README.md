@@ -19,17 +19,17 @@ A 300 × 200 × 4 mm aluminium lid under 20 kPa. The plate is thin (span/t = 50)
 | `rho` | 2700 kg/m^3 | reference: record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed 'Aluminium alloy (generic)', rho: indicative |
 | `shape` | rectangular | drawing: ENC-LID-01 rev A |
 | `support` | simply supported | assumption: The lid sits on a gasket land and is bolted at close pitch: treated as simply supported, which is the safe side for deflection and the central stress. |
-| `t` | 4 mm | drawing: ENC-LID-01 rev A |
+| `t_p` | 4 mm | drawing: ENC-LID-01 rev A |
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `D` | 418.958 N*m | 418.958 N*m | PASS |
+| `D_flex` | 0.418958 kN*m | 0.418958 kN*m | PASS |
 | `w_max` | 0.589961 mm | 0.589961 mm | PASS |
-| `M_x_c` | 41.6203 N*m/m | 41.6203 N*m/m | PASS |
-| `M_y_c` | 65.6005 N*m/m | 65.6005 N*m/m | PASS |
-| `M_xy_k` | 32.8736 N*m/m | 32.8736 N*m/m | PASS |
+| `M_x_c` | 0.0416203 kN*m/m | 0.0416203 kN*m/m | PASS |
+| `M_y_c` | 0.0656005 kN*m/m | 0.0656005 kN*m/m | PASS |
+| `M_xy_k` | 0.0328736 kN*m/m | 0.0328736 kN*m/m | PASS |
 | `sigma_max` | 21.5596 MPa | 21.5596 MPa | PASS |
 | `f1` | 353.292 Hz | 353.292 Hz | PASS |
 | `u_defl` | 0.737451  | 0.737451  | PASS |
 
-Governing check: Deflection w_max ≤ span/ratio — PASS (utilisation 0.74). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Deflection against the deflection limit — PASS (utilisation 0.74). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

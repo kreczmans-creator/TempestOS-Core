@@ -23,7 +23,7 @@ public sealed class PlateBendingTimingTests
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
 
     private static CalcInputValue[] Rect(bool clamped, double a = 500, double b = 500, string load = PlateBendingCalculator.Uniform) =>
-        [CalcInputValue.Choice("shape", PlateBendingCalculator.Rectangular), CalcInputValue.Choice("support", clamped ? PlateBendingCalculator.Clamped : PlateBendingCalculator.Simple), CalcInputValue.Choice("load_type", load), Q("a", a, "mm"), Q("b", b, "mm"), Q("t", 8, "mm"), Q("q", 10, "kPa"), Q("E", 210, "GPa"), CalcInputValue.Of("nu", 0.3)];
+        [CalcInputValue.Choice("shape", PlateBendingCalculator.Rectangular), CalcInputValue.Choice("support", clamped ? PlateBendingCalculator.Clamped : PlateBendingCalculator.Simple), CalcInputValue.Choice("load_type", load), Q("a", a, "mm"), Q("b", b, "mm"), Q("t_p", 8, "mm"), Q("q", 10, "kPa"), Q("E", 210, "GPa"), CalcInputValue.Of("nu", 0.3)];
 
     private static CalcInputSet Sheet(IEnumerable<CalcInputValue> values) => values.Aggregate(Defaults(), (set, v) => set.With(v));
 
