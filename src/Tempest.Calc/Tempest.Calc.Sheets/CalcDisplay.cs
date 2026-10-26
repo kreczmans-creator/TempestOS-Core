@@ -244,14 +244,16 @@ public static class CalcDisplay
 
     /// <summary>
     /// <paramref name="value"/> rounded to a multiple of 1/<paramref name="scale"/> in the direction <paramref name="mode"/>. A value that is a hair
-    /// from a multiple (2.3 held as 2.2999999999999998) counts as the multiple, so rounding up or down never moves a clean number.
+    /// from a multiple (2.3 held as 2.2999999999999998) counts as the multiple, so rounding up or down never moves a clean number, unless
+    /// <paramref name="strict"/>: a value shown for a check that fails, whose clean-number snap would put it on the passing side of its limit, is rounded in its
+    /// direction whatever its distance from the multiple, because a hair over a limit is over it (a failing utilisation of 1.0000000001 is 1.01, never 1.00).
     /// </summary>
-    private static double RoundScaled(double value, double scale, Rounding mode)
+    private static double RoundScaled(double value, double scale, Rounding mode, bool strict = false)
     {
         var scaled = value * scale;
         var near = Math.Round(scaled, MidpointRounding.ToEven);
 
-        if (mode == Rounding.Nearest || Math.Abs(scaled - near) <= 1e-9 * Math.Max(1.0, Math.Abs(near)))
+        if (mode == Rounding.Nearest || (!strict && Math.Abs(scaled - near) <= 1e-9 * Math.Max(1.0, Math.Abs(near))))
             return near / scale;
 
         var rounded = mode switch
@@ -267,13 +269,13 @@ public static class CalcDisplay
     private static int MagnitudeOf(double value) => (int)Math.Floor(Math.Log10(Math.Abs(value)));
 
     /// <summary><paramref name="value"/> rounded to <paramref name="significantFigures"/> significant figures in the direction <paramref name="mode"/>.</summary>
-    private static double RoundSignificant(double value, int significantFigures, Rounding mode)
+    private static double RoundSignificant(double value, int significantFigures, Rounding mode, bool strict = false)
     {
         if (value == 0 || !double.IsFinite(value))
             return value;
 
         var decimals = significantFigures - 1 - MagnitudeOf(value);
-        return decimals >= 0 ? RoundScaled(value, Math.Pow(10, Math.Min(decimals, 300)), mode) : RoundScaled(value, 1 / Math.Pow(10, -decimals), mode);
+        return decimals >= 0 ? RoundScaled(value, Math.Pow(10, Math.Min(decimals, 300)), mode, strict) : RoundScaled(value, 1 / Math.Pow(10, -decimals), mode, strict);
     }
 
     /// <summary>
@@ -281,7 +283,7 @@ public static class CalcDisplay
     /// significant figures, with at least <paramref name="decimals"/> decimals (the table of <see cref="Rules"/>) where those fit. A whole number
     /// is printed exactly and zero is "0". The rounding direction is <paramref name="mode"/>.
     /// </summary>
-    public static string Number(double value, int decimals, Rounding mode = Rounding.Nearest)
+    public static string Number(double value, int decimals, Rounding mode = Rounding.Nearest, bool strict = false)
     {
         if (!double.IsFinite(value))
             return CalcValue.FormatNumber(value);
@@ -289,18 +291,18 @@ public static class CalcDisplay
         if (value == 0)
             return "0";
 
-        if (IsWhole(value))
+        if (IsWhole(value) && (!strict || value == Math.Round(value)))
             return Math.Round(value).ToString("F0", CultureInfo.InvariantCulture);
 
         var magnitude = MagnitudeOf(value);
 
         if (magnitude >= 15 || magnitude < -6)
-            return CalcValue.FormatNumber(RoundSignificant(value, MaximumSignificantFigures, mode), MaximumSignificantFigures);
+            return CalcValue.FormatNumber(RoundSignificant(value, MaximumSignificantFigures, mode, strict), MaximumSignificantFigures);
 
         var places = Math.Max(decimals, MinimumSignificantFigures - 1 - magnitude);
         places = Math.Min(places, Math.Max(0, MaximumSignificantFigures - 1 - magnitude));
         places = Math.Clamp(places, 0, 15);
-        var rounded = RoundScaled(value, Math.Pow(10, places), mode);
+        var rounded = RoundScaled(value, Math.Pow(10, places), mode, strict);
 
         if (rounded == 0)
             return "0";
@@ -309,15 +311,22 @@ public static class CalcDisplay
     }
 
     /// <summary>A plain number (no unit rule): five significant figures, trailing zeros dropped, in the direction <paramref name="mode"/>.</summary>
-    public static string Plain(double value, Rounding mode = Rounding.Nearest) =>
-        mode == Rounding.Nearest || !double.IsFinite(value) ? CalcValue.FormatNumber(value, MaximumSignificantFigures) : CalcValue.FormatNumber(RoundSignificant(value, MaximumSignificantFigures, mode), MaximumSignificantFigures);
+    public static string Plain(double value, Rounding mode = Rounding.Nearest, bool strict = false) =>
+        mode == Rounding.Nearest || !double.IsFinite(value) ? CalcValue.FormatNumber(value, MaximumSignificantFigures) : CalcValue.FormatNumber(RoundSignificant(value, MaximumSignificantFigures, mode, strict), MaximumSignificantFigures);
 
     /// <summary>
-    /// A utilisation to 2 decimals (2 significant figures below 0.005, so 0.00022 is not shown as 0.00). A value above <paramref name="limit"/> is
-    /// rounded up, so a failing check never prints at or below its limit (1.004 is 1.01, not 1.00); a negative utilisation (a capacity that is
-    /// negative or inverted, which never passes) is rounded away from zero.
+    /// A utilisation to 2 decimals (2 significant figures below 0.005, so 0.00022 is not shown as 0.00), for a utilisation no check was made on: it is taken
+    /// to pass when it is within its <paramref name="limit"/>. A utilisation a check was made on is shown by <see cref="Utilisation(double, bool, double)"/>
+    /// with that check's verdict.
     /// </summary>
-    public static string Utilisation(double u, double limit = 1.0)
+    public static string Utilisation(double u, double limit = 1.0) => Utilisation(u, u >= 0 && u <= limit + 1e-9, limit);
+
+    /// <summary>
+    /// A utilisation to 2 decimals, in the direction of the check's verdict, never of a threshold of its own (C2-21): a utilisation of a check that fails is
+    /// rounded up (a negative one, which never passes, away from zero) with no clean-number snap, so it never prints at or below the limit (1.0000001 is 1.01,
+    /// not 1.00); one of a check that passes is rounded to the nearest and never prints above the limit (a pass within the check's tolerance of 1.0049 is 1.00).
+    /// </summary>
+    public static string Utilisation(double u, bool passed, double limit = 1.0)
     {
         if (!double.IsFinite(u))
             return CalcValue.FormatNumber(u);
@@ -325,23 +334,42 @@ public static class CalcDisplay
         if (u == 0)
             return "0.00";
 
-        var mode = u < 0 ? Rounding.Down : u > limit + 1e-9 ? Rounding.Up : Rounding.Nearest;
+        var failing = !passed;
+        var mode = !failing ? Rounding.Nearest : u < 0 ? Rounding.Down : Rounding.Up;
 
-        if (Math.Abs(u) <= SmallUtilisation)
+        string Print(bool strict)
         {
-            var small = RoundSignificant(u, SmallUtilisationSignificantFigures, mode);
-            var places = Math.Clamp(SmallUtilisationSignificantFigures - 1 - MagnitudeOf(small), 0, 15);
-            return small.ToString("F" + places.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+            if (Math.Abs(u) <= SmallUtilisation)
+            {
+                var small = RoundSignificant(u, SmallUtilisationSignificantFigures, mode, strict);
+                var places = Math.Clamp(SmallUtilisationSignificantFigures - 1 - MagnitudeOf(small), 0, 15);
+                return small.ToString("F" + places.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+            }
+
+            var shown = RoundScaled(u, Math.Pow(10, UtilisationDecimals), mode, strict);
+            return shown == 0 ? "0.00" : shown.ToString("F2", CultureInfo.InvariantCulture);
         }
 
-        var shown = RoundScaled(u, Math.Pow(10, UtilisationDecimals), mode);
-        return shown == 0 ? "0.00" : shown.ToString("F2", CultureInfo.InvariantCulture);
+        // A clean number stays clean (1.25 held as 1.2500000000000002 prints 1.25), but the snap is refused when it would print a failing utilisation at or below its limit.
+        var text = Print(strict: false);
+
+        if (failing && u > limit && double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var snapped) && snapped <= limit + 1e-12)
+            text = Print(strict: true);
+
+        // A check that passes never prints above its limit: a pass that rounds past it (within the check's tolerance) prints the limit.
+        if (!failing && double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var printed) && printed > limit + 1e-12)
+            return RoundScaled(limit, Math.Pow(10, UtilisationDecimals), Rounding.Down).ToString("F2", CultureInfo.InvariantCulture);
+
+        return text;
     }
 
     /// <summary>
     /// A utilisation as a saved calculation stores it: an infinite one (a failed yes/no check, a zero capacity) is kept as 1e9, and a check with
-    /// no ratio is kept as 0. The register shows it the way the sheet does: two decimals, rounded up when it fails, and "—" for the stored infinity.
+    /// no ratio is kept as 0. The register shows it the way the sheet does: two decimals, rounded up when the check fails, and "—" for the stored infinity.
     /// </summary>
+    public static string StoredUtilisation(double stored, bool passed) => stored >= 1e9 ? "—" : Utilisation(stored, passed);
+
+    /// <summary>A stored utilisation of which only the number is known: it passes when it is within 1.</summary>
     public static string StoredUtilisation(double stored) => stored >= 1e9 ? "—" : Utilisation(stored);
 
     /// <summary>
@@ -349,21 +377,31 @@ public static class CalcDisplay
     /// <paramref name="kind"/> says how the number is checked (a utilisation is shown to two decimals and rounded up when it fails; a value that
     /// must be at least a limit is rounded down); <paramref name="decimals"/> overrides the table for one output where the template justifies it.
     /// </summary>
-    public static string Format(ScalarValue value, CalcOutputKind kind = CalcOutputKind.Value, int? decimals = null, Rounding mode = Rounding.Nearest)
+    public static string Format(ScalarValue value, CalcOutputKind kind = CalcOutputKind.Value, int? decimals = null, Rounding mode = Rounding.Nearest, bool? passed = null, bool strict = false)
     {
         var unit = value.DisplayUnit.Symbol;
         var unitless = value.Dimension.IsDimensionless && unit.Length == 0;
         var shownUnit = CalcUnitText.Pretty(unit);
 
         if (unitless && decimals is null && kind == CalcOutputKind.Utilisation)
-            return Utilisation(value.Si);
+            return passed is { } verdict ? Utilisation(value.Si, verdict) : Utilisation(value.Si);
 
         if (kind == CalcOutputKind.AtLeast && mode == Rounding.Nearest)
             mode = Rounding.Down;
 
         var places = decimals ?? (unitless ? null : DecimalsFor(value.Dimension, unit));
-        var number = places is { } p ? Number(value.Displayed, p, mode) : Plain(value.Displayed, mode);
+        var number = places is { } p ? Number(value.Displayed, p, mode, strict) : Plain(value.Displayed, mode, strict);
         return shownUnit.Length == 0 ? number : shownUnit == "°" ? number + shownUnit : $"{number} {shownUnit}";
+    }
+
+    /// <summary>The number a shown text opens with ("144.9 MPa" is 144.9, "40.01°" is 40.01, "—" is none): what a reader compares a demand with a capacity by.</summary>
+    public static double? LeadingNumber(string? shownText)
+    {
+        if (string.IsNullOrWhiteSpace(shownText))
+            return null;
+
+        var m = System.Text.RegularExpressions.Regex.Match(shownText.Trim(), @"^[-−+]?\d+(?:\.\d+)?(?:e[-+]?\d+)?", System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return m.Success && double.TryParse(m.Value.Replace('−', '-'), NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? number : null;
     }
 
     /// <summary>
@@ -376,6 +414,10 @@ public static class CalcDisplay
         if (output.DisplayText is not null || output.Value is not ScalarValue s || !double.IsFinite(s.Si))
             return Rounding.Nearest;
 
+        // The direction the run settled on from the verdicts of the checks made on this output (a failing demand up, a failing capacity down, a failing utilisation up).
+        if (output.Rounded is { } settled && !(output.Kind == CalcOutputKind.AtLeast && settled == Rounding.Nearest))
+            return settled switch { Rounding.AwayFromZero => Rounding.Up, Rounding.TowardZero => Rounding.Down, var other => other };
+
         if (output.Kind == CalcOutputKind.AtLeast)
             return Rounding.Down;
 
@@ -386,7 +428,10 @@ public static class CalcDisplay
     }
 
     /// <summary>The text of an output on its own: its kind and decimals decide the form. A value the run recognised as solver noise carries its own text (<see cref="CalcOutput.DisplayText"/>).</summary>
-    public static string Format(CalcOutput output) => output.Value is ScalarValue s ? Format(s, output.Kind, output.Decimals) : output.Value.Format(5);
+    public static string Format(CalcOutput output) => output.Value is ScalarValue s
+        ? Format(s, output.Kind, output.Decimals, output.Kind == CalcOutputKind.Utilisation ? Rounding.Nearest : output.Rounded ?? Rounding.Nearest,
+            output.Kind == CalcOutputKind.Utilisation && output.Rounded is { } r ? r == Rounding.Nearest : null, output.StrictRounding)
+        : output.Value.Format(5);
 
     /// <summary>
     /// The size of the last digit of a shown number: "144.9 MPa" is 0.1, "0.003400 N·m" is 0.000001, "150000 h" is 1, "1.8626e-15 MPa" is 1e-19, so a reader who

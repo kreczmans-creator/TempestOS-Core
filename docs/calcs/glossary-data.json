@@ -9381,19 +9381,30 @@
       "symbol": "S_e",
       "meanings": [
         {
-          "meaning": "endurance-limit",
+          "meaning": "bending-endurance-limit",
           "quantity": "Stress, pressure",
           "units": [
             "MPa"
           ],
           "descriptions": [
             "Endurance limit",
-            "Endurance limit (ranges at or below it do no damage)",
-            "Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference)"
+            "Endurance limit (ranges at or below it do no damage)"
           ],
           "templates": [
             "mech.fatigue-miner",
-            "mech.shaft",
+            "mech.shaft"
+          ]
+        },
+        {
+          "meaning": "spring-shear-endurance-strength",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference)"
+          ],
+          "templates": [
             "mech.spring"
           ]
         }
@@ -22171,17 +22182,6 @@
           ]
         },
         {
-          "meaning": "density-ratio",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "ρ"
-          ],
-          "templates": [
-            "struct.en1993-member"
-          ]
-        },
-        {
           "meaning": "fluid-density",
           "quantity": "Density",
           "units": [
@@ -22192,6 +22192,17 @@
           ],
           "templates": [
             "fp.cylinder"
+          ]
+        },
+        {
+          "meaning": "shear-reduction-factor",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Shear reduction factor ρ"
+          ],
+          "templates": [
+            "struct.en1993-member"
           ]
         }
       ]

@@ -178,7 +178,7 @@ public static class CalcCsv
         // An input given under its current symbol and again under an old symbol with a different value is refused, not resolved by whichever row comes last.
         void Put(CalcInputValue value, string nameUsed, int rowNumber)
         {
-            if (givenAs.TryGetValue(value.Symbol, out var prior) && !string.Equals(prior.Name, nameUsed, StringComparison.Ordinal) && !CalcInputAliases.SameValue(prior.Value, value))
+            if (givenAs.TryGetValue(value.Symbol, out var prior) && !string.Equals(prior.Name, nameUsed, StringComparison.Ordinal) && !CalcInputAliases.SameValue(template.FindInput(value.Symbol), prior.Value, value))
             {
                 notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {rowNumber}: {value.Symbol} is given as '{prior.Name}' and again as '{nameUsed}' with a different value; keep one."));
                 return;

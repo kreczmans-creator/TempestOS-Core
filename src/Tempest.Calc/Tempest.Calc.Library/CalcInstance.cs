@@ -17,8 +17,11 @@ public enum CalcInstanceStatus
 /// <summary>A stored output: text for display, SI value and unit for re-use.</summary>
 public sealed record CalcOutputSnapshot(string Symbol, string Description, string Text, double? Si, string? Unit);
 
-/// <summary>A stored check row.</summary>
-public sealed record CalcCheckSnapshot(string Name, string Demand, string Capacity, double Utilisation, bool Passed);
+/// <summary>
+/// A stored check row. <paramref name="HasUtilisation"/> is false for a yes/no check (a fit class, a separation test): it has no ratio, so the register shows
+/// PASS or FAIL and no utilisation (C-2, row 3). A calculation saved before the field existed reads as true.
+/// </summary>
+public sealed record CalcCheckSnapshot(string Name, string Demand, string Capacity, double Utilisation, bool Passed, bool HasUtilisation = true);
 
 /// <summary>A stored notice.</summary>
 public sealed record CalcNoticeSnapshot(string RuleId, string Severity, string Message);

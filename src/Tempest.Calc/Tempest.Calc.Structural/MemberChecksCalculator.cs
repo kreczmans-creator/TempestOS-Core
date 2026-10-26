@@ -302,7 +302,7 @@ public sealed class MemberChecksCalculator : ICalcCalculator
             }
         }
 
-        foreach (var (symbol, text) in new[] { ("A_v", "Shear area"), ("N_pl_Rd", "N_pl,Rd"), ("V_pl_Rd", "V_pl,Rd"), ("rho", "ρ"), ("M_y_c_Rd", "M_y,c,Rd"), ("M_z_c_Rd", "M_z,c,Rd"), ("M_y_b_Rd", "M_y,Rk/γ_M1"), ("M_z_b_Rd", "M_z,Rk/γ_M1"), ("N_cr_y", "N_cr,y"), ("N_cr_z", "N_cr,z"), ("lambda_y", "λ̄_y"), ("lambda_z", "λ̄_z"), ("chi_y", "χ_y"), ("chi_z", "χ_z"), ("N_b_y_Rd", "N_b,y,Rd"), ("N_b_z_Rd", "N_b,z,Rd"), ("N_b_Rd", "N_b,Rd"), ("u_N", "Axial utilisation"), ("u_M_y", "Bending y utilisation"), ("u_M_z", "Bending z utilisation"), ("u_V", "Shear utilisation"), ("u_section", "Cross-section interaction"), ("u_buckling", "Buckling utilisation"), ("u_member", "Member interaction") })
+        foreach (var (symbol, text) in new[] { ("A_v", "Shear area"), ("N_pl_Rd", "N_pl,Rd"), ("V_pl_Rd", "V_pl,Rd"), ("rho", "Shear reduction factor ρ"), ("M_y_c_Rd", "M_y,c,Rd"), ("M_z_c_Rd", "M_z,c,Rd"), ("M_y_b_Rd", "M_y,Rk/γ_M1"), ("M_z_b_Rd", "M_z,Rk/γ_M1"), ("N_cr_y", "N_cr,y"), ("N_cr_z", "N_cr,z"), ("lambda_y", "λ̄_y"), ("lambda_z", "λ̄_z"), ("chi_y", "χ_y"), ("chi_z", "χ_z"), ("N_b_y_Rd", "N_b,y,Rd"), ("N_b_z_Rd", "N_b,z,Rd"), ("N_b_Rd", "N_b,Rd"), ("u_N", "Axial utilisation"), ("u_M_y", "Bending y utilisation"), ("u_M_z", "Bending z utilisation"), ("u_V", "Shear utilisation"), ("u_section", "Cross-section interaction"), ("u_buckling", "Buckling utilisation"), ("u_member", "Member interaction") })
             c.Output(symbol, text);
 
         if (kyLeft)

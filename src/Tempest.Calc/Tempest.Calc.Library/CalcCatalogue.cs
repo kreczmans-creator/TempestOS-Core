@@ -51,8 +51,8 @@ public sealed class CalcCatalogue
 
         // One run on the defaults gives the formulas the content hash covers and the output symbols a port alias must not take.
         var defaultRun = CalcRunner.Run(calculator, CalcTemplateHasher.DefaultInputs(template));
-        ValidatePortAliases(template, defaultRun);
         var contentHash = CalcTemplateHasher.Hash(template, CalcTemplateHasher.Formulas(defaultRun));
+        ValidatePortAliases(calculator, defaultRun, contentHash);
 
         lock (_gate)
         {
@@ -127,17 +127,25 @@ public sealed class CalcCatalogue
     public CalcCatalogueEntry Get(string reference) =>
         Find(reference) ?? throw (FeatureRefusal(reference) is { } switchedOff ? new CalcFeatureDisabledException(switchedOff) : new KeyNotFoundException($"No calculator '{reference}' is registered."));
 
+    /// <summary>The outputs of a run of every known-answer case of a template, by the template's reference and content: the runs are the same every time a catalogue is built.</summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, IReadOnlySet<string>> CaseOutputSymbols = new(StringComparer.Ordinal);
+
     /// <summary>
     /// C-2: a port is also known by its public name and its aliases, so none of them may be the symbol of an output that is not that port: a link by that
-    /// symbol would then name two outputs. The outputs are those of a run on the defaults and the symbols the known-answer cases expect.
+    /// symbol would then name two outputs. The outputs are those of a run on the defaults, the symbols the known-answer cases expect and the outputs of a run of
+    /// every known-answer case, because what a template outputs depends on its mode (a name free on the defaults may be an output of another kind of spring or section).
     /// </summary>
-    private static void ValidatePortAliases(CalcTemplate t, CalcRunResult defaultRun)
+    private static void ValidatePortAliases(ICalcCalculator calculator, CalcRunResult defaultRun, string contentHash)
     {
-        if (t.OutputPorts is not { Count: > 0 } ports)
+        var t = calculator.Template;
+
+        if (t.OutputPorts is not { Count: > 0 } ports || !ports.Any(p => p.Name is { Length: > 0 } || p.Aliases is { Count: > 0 }))
             return;
 
         var portSymbols = ports.Select(p => p.Symbol).ToHashSet(StringComparer.Ordinal);
-        var others = defaultRun.Outputs.Select(o => o.Symbol).Concat(t.TestCases.SelectMany(c => c.Expected).Select(e => e.Symbol))
+        var fromCases = CaseOutputSymbols.GetOrAdd(t.Reference + "|" + contentHash, _ =>
+            t.TestCases.SelectMany(c => CalcRunner.Run(calculator, new CalcInputSet(c.Inputs)).Outputs.Select(o => o.Symbol)).ToHashSet(StringComparer.Ordinal));
+        var others = defaultRun.Outputs.Select(o => o.Symbol).Concat(t.TestCases.SelectMany(c => c.Expected).Select(e => e.Symbol)).Concat(fromCases)
             .Where(s => !portSymbols.Contains(s)).ToHashSet(StringComparer.Ordinal);
 
         foreach (var port in ports)

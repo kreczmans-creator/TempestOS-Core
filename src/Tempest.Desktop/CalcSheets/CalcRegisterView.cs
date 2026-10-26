@@ -79,7 +79,7 @@ public sealed class CalcRegisterView : UserControl
                 CalcInstanceStatus.Superseded => Brushes.Gray,
                 _ => Brushes.DarkOrange,
             };
-            var check = Cell(governing is null ? "—" : $"{(governing.Passed ? "PASS" : "FAIL")} u = {CalcDisplay.StoredUtilisation(governing.Utilisation)}");
+            var check = Cell(governing is null ? "—" : governing.HasUtilisation ? $"{(governing.Passed ? "PASS" : "FAIL")} u = {CalcDisplay.StoredUtilisation(governing.Utilisation, governing.Passed)}" : governing.Passed ? "PASS" : "FAIL");
 
             if (governing is not null)
                 check.Foreground = governing.Passed ? Brushes.SeaGreen : Brushes.IndianRed;

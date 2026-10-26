@@ -106,7 +106,7 @@ public sealed class LegacyCalculationMigration
         }
 
         var checks = record.Validation.ConstraintChecks
-            .Select(c => new CalcCheckSnapshot(c.Description, c.Detail ?? string.Empty, string.Empty, c.IsSatisfied ? 0.0 : 1.0, c.IsSatisfied))
+            .Select(c => new CalcCheckSnapshot(c.Description, c.Detail ?? string.Empty, string.Empty, c.IsSatisfied ? 0.0 : 1.0, c.IsSatisfied, HasUtilisation: false))
             .ToList();
 
         var notes = new List<string>

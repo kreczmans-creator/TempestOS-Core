@@ -392,4 +392,173 @@ public sealed class DisplayRulesTests
         Assert.Contains("utilisation 1.01", text, StringComparison.Ordinal);
         Assert.Contains("u = 1.01 vs u ≤ 1", text, StringComparison.Ordinal);
     }
+
+    // ---- the direction of a displayed value is the verdict of its check (C2-21, F3 and F4) ---------------------------------------------------------
+
+    [Fact]
+    public void A_Failing_Checks_Demand_And_Capacity_Rows_Are_Not_Shown_On_The_Passing_Side()
+    {
+        // u = 1.0000012: the hub stress is 350.00042 MPa against 350 MPa. At one decimal the nearest text of the stress is 350.0, equal to the capacity while the check fails.
+        var r = Run(c =>
+        {
+            c.Record("sigma_vm", "stress", "from the loads", ScalarValue.Of(350.00042, "MPa"), "Von Mises stress");
+            c.Record("S_y", "capacity", "from the material", ScalarValue.Of(349.99999, "MPa"), "Yield strength");
+            c.Output("sigma_vm", "Von Mises stress");
+            c.Output("S_y", "Yield strength");
+            c.Check("Stress against yield", "sigma_vm", "S_y");
+        });
+
+        var check = Assert.Single(r.Checks);
+        Assert.False(check.Passed);
+        Assert.Equal("350.1 MPa", check.DemandText);
+        Assert.Equal("349.9 MPa", check.CapacityText);
+
+        // The Results rows say the same as the check line: the demand up, the capacity down.
+        Assert.Equal("350.1 MPa", r.FindOutput("sigma_vm")!.ValueText);
+        Assert.Equal("349.9 MPa", r.FindOutput("S_y")!.ValueText);
+        Assert.Equal(CalcDisplay.Rounding.Up, CalcDisplay.RoundingOf(r.FindOutput("sigma_vm")!));
+        Assert.Equal(CalcDisplay.Rounding.Down, CalcDisplay.RoundingOf(r.FindOutput("S_y")!));
+    }
+
+    [Fact]
+    public void A_Quantity_That_Is_Not_On_A_Failing_Check_Keeps_Its_Nearest_Text_And_A_Passing_Check_Changes_Nothing()
+    {
+        var r = Run(c =>
+        {
+            c.Record("sigma_vm", "stress", "from the loads", ScalarValue.Of(349.96, "MPa"), "Von Mises stress");
+            c.Record("S_y", "capacity", "from the material", ScalarValue.Of(350, "MPa"), "Yield strength");
+            c.Record("other", "stress", "a second quantity", ScalarValue.Of(100.04, "MPa"), "Second stress");
+            c.Output("sigma_vm", "Von Mises stress");
+            c.Output("S_y", "Yield strength");
+            c.Output("other", "Second stress");
+            c.Check("Stress against yield", "sigma_vm", "S_y");
+        });
+
+        Assert.True(r.Checks[0].Passed);
+        Assert.Equal("350.0 MPa", r.FindOutput("sigma_vm")!.ValueText);
+        Assert.Equal("100.0 MPa", r.FindOutput("other")!.ValueText);
+    }
+
+    [Fact]
+    public void A_Failing_Demand_That_Is_A_Hair_From_A_Whole_Number_Is_Not_Printed_As_That_Whole_Number()
+    {
+        // 12.0000001 mm against 11.99999 mm: a clean-number snap would print 12 against 11.99, and the failing demand is above 12.
+        var r = Run(c =>
+        {
+            c.Record("s_2", "deflection", "from the loads", ScalarValue.Of(12.0000001, "mm"), "Deflection");
+            c.Record("y_cr", "limit", "from the geometry", ScalarValue.Of(11.99999, "mm"), "Buckling deflection");
+            c.Output("s_2", "Deflection");
+            c.Output("y_cr", "Buckling deflection");
+            c.Check("Deflection against the buckling deflection", "s_2", "y_cr");
+        });
+
+        Assert.False(r.Checks[0].Passed);
+        Assert.Equal("12.01 mm", r.FindOutput("s_2")!.ValueText);
+        Assert.Equal("11.99 mm", r.FindOutput("y_cr")!.ValueText);
+    }
+
+    [Fact]
+    public void A_Failure_A_Hair_Over_The_Limit_Is_Not_Erased_By_The_Clean_Number_Snap_In_The_Check_Line_Or_In_Results()
+    {
+        // 350.000000035 MPa against 350 MPa with a tolerance of 1e-12: u = 1 + 1e-10 fails. The clean-number snap would print the demand as 350.0, equal to the capacity.
+        var r = Run(c =>
+        {
+            c.Record("sigma", "stress", "from the loads", ScalarValue.Of(350.000000035, "MPa"), "Stress");
+            c.Record("S_y", "capacity", "from the material", ScalarValue.Of(350, "MPa"), "Yield strength");
+            c.Output("sigma", "Stress");
+            c.Output("S_y", "Yield strength");
+            Assert.False(c.Check("Stress against yield", "sigma", "S_y", tolerance: 1e-12).Passed);
+        });
+
+        Assert.Equal("350.1 MPa", r.Checks[0].DemandText);
+        Assert.Equal("350 MPa", r.Checks[0].CapacityText);
+        Assert.Equal("350.1 MPa", r.FindOutput("sigma")!.ValueText);
+        Assert.Equal("350 MPa", r.FindOutput("S_y")!.ValueText);
+    }
+
+    [Fact]
+    public void A_Failure_Well_Over_The_Limit_Keeps_The_Clean_Number_It_Has()
+    {
+        // 1.25 held as 1.2500000000000002 is shown 1.25: the snap only yields where it would put a failure on the passing side.
+        Assert.Equal("1.25", CalcDisplay.Utilisation(1.2500000000000002, passed: false));
+        Assert.Equal("1.25", CalcDisplay.Utilisation(1.25, passed: false));
+    }
+
+    [Theory]
+    [InlineData(1.0000000001, false, "1.01")] // a failing utilisation a hair over its limit is never printed as 1.00 (a clean-number snap printed it so)
+    [InlineData(1.0000012, false, "1.01")]
+    [InlineData(1.004, false, "1.01")]
+    [InlineData(1.004, true, "1.00")] // a pass within the check's tolerance never prints above the limit
+    [InlineData(1.0049, true, "1.00")]
+    [InlineData(0.996, true, "1.00")]
+    [InlineData(0.994, true, "0.99")]
+    [InlineData(0.004, true, "0.0040")]
+    [InlineData(-0.5, false, "-0.50")]
+    [InlineData(-0.456, false, "-0.46")]
+    public void The_Utilisation_Is_Rounded_By_The_Verdict_Of_Its_Check_Not_By_A_Threshold(double u, bool passed, string expected) =>
+        Assert.Equal(expected, CalcDisplay.Utilisation(u, passed));
+
+    [Fact]
+    public void A_Check_With_A_Tolerance_Tighter_Than_The_Display_Snap_Prints_A_Failing_Utilisation_Above_Its_Limit()
+    {
+        var failing = Run(c =>
+        {
+            c.Record("u", "u", "a ratio a hair over 1", new ScalarValue(1.0 + 1e-10), "Utilisation");
+            c.Output("u", "Utilisation");
+            var check = c.CheckUtilisation("Stress against allowable", "u", tolerance: 1e-12);
+            Assert.False(check.Passed);
+        });
+
+        Assert.Equal("u = 1.01", failing.Checks[0].DemandText);
+        Assert.Equal("1.01", failing.Checks[0].UtilisationText);
+        Assert.Equal("1.01", failing.FindOutput("u")!.ValueText);
+        Assert.Equal("FAIL — Stress against allowable: utilisation 1.01", CalcSheetStandard.GoverningBanner(failing.Checks[0]));
+    }
+
+    [Fact]
+    public void A_Check_That_Passes_Within_Its_Tolerance_Prints_The_Limit_And_Never_A_Value_Above_It()
+    {
+        var passing = Run(c =>
+        {
+            c.Record("u", "u", "a ratio within the check's tolerance of 1", new ScalarValue(1.006), "Utilisation");
+            c.Output("u", "Utilisation");
+            var check = c.CheckUtilisation("Stress against allowable", "u", tolerance: 0.01);
+            Assert.True(check.Passed);
+        });
+
+        Assert.Equal("u = 1.00", passing.Checks[0].DemandText);
+        Assert.Equal("1.00", passing.Checks[0].UtilisationText);
+        Assert.Equal("1.00", passing.FindOutput("u")!.ValueText);
+        Assert.Equal("PASS — Stress against allowable: utilisation 1.00", CalcSheetStandard.GoverningBanner(passing.Checks[0]));
+    }
+
+    [Fact]
+    public void The_Banner_And_The_Register_Round_By_The_Stored_Verdict()
+    {
+        var passing = new CalcCheck("Stress against allowable", "u = 1.00", "u ≤ 1", 1.004, true, "u");
+        var failing = passing with { Passed = false };
+
+        Assert.Equal("1.00", passing.UtilisationText);
+        Assert.Equal("1.01", failing.UtilisationText);
+        Assert.Equal("1.00", CalcDisplay.StoredUtilisation(1.004, true));
+        Assert.Equal("1.01", CalcDisplay.StoredUtilisation(1.004, false));
+        Assert.Equal("—", CalcDisplay.StoredUtilisation(1e9, false));
+    }
+
+    [Fact]
+    public void An_Output_Declared_As_A_Utilisation_Is_Shown_By_The_Verdict_Of_The_Check_Made_On_It_And_Rounds_Up_When_Nothing_Checks_It_Above_One()
+    {
+        var r = Run(c =>
+        {
+            c.Record("u_a", "u", "within tolerance", new ScalarValue(1.006), "Utilisation");
+            c.Record("u_b", "u", "no check made", new ScalarValue(1.006), "Utilisation");
+            c.MarkUtilisation("u_b");
+            c.Output("u_a", "Utilisation a");
+            c.Output("u_b", "Utilisation b");
+            c.CheckUtilisation("Stress against allowable", "u_a", tolerance: 0.01);
+        });
+
+        Assert.Equal("1.00", r.FindOutput("u_a")!.ValueText);
+        Assert.Equal("1.01", r.FindOutput("u_b")!.ValueText);
+    }
 }

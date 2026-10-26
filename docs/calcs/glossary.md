@@ -123,7 +123,7 @@ A bare symbol that means one kind of quantity wherever it appears. Another quant
 | `D` | A diameter or a depth | 17 |
 | `L` | Length | 17 |
 
-## Symbols with more than one meaning today (99)
+## Symbols with more than one meaning today (100)
 
 Each of these symbols is used for different quantities in different templates. Every use of a symbol that two or more templates share declares its meaning (`symbol:meaning`, in `GlossaryMeanings.json`), so two meanings of one quantity type (an efficiency and a Perry factor, both plain numbers) are told apart. Phases B and C resolve every one: give each quantity its own symbol (keeping the old symbol as an input or port alias), or make the templates agree. Status `RESOLVE` marks the rows in the full table below.
 
@@ -152,6 +152,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `R`: `R:radius` Length (containment, thin-vessel, lifting); `R:reliability` Percent quantity (bearing-life, shaft); `R:thermal-resistance` Thermal resistance (insulation, thermal-chain); `R:resistance` Resistance, impedance (voltage-drop)
 - `R_f`: `R_f:fouling-resistance` Thermal resistance (heat-exchanger); `R_f:repetitions-to-failure` Plain number (fatigue-miner)
 - `S`: `S:allowable-stress` Stress, pressure (thin-vessel); `S:stress-range` Stress, pressure (fatigue-miner)
+- `S_e`: `S_e:bending-endurance-limit` Stress, pressure (fatigue-miner, shaft); `S_e:spring-shear-endurance-strength` Stress, pressure (spring)
 - `T`: `T:torque` Moment, torque (bolt-group, press-fit, shaft, shaft-stress, …); `T:temperature` Temperature (duct-sizing, pipe-pump)
 - `T_1`: `T_1:side-1-temperature` Temperature (plane-wall, thermal-chain); `T_1:pull-start-tension` Force (containment)
 - `T_a`: `T_a:alternating-torque` Moment, torque (shaft); `T_a:ambient-temperature` Temperature (thermal-chain)
@@ -205,7 +206,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `phi_max`: `phi_max:maximum-pressure-angle` Angle (mechanism); `phi_max:strain-shape-maximum` Plain number (snap-fit)
 - `q`: `q:heat-flux` Heat flux (plane-wall); `q:notch-sensitivity` Plain number (shaft); `q:pressure-on-loaded-area` Stress, pressure (plate-bending)
 - `r`: `r:root-radius` Length (en1993-member, section-properties); `r:radius-of-gyration` Length (column-buckling)
-- `rho`: `rho:material-density` Density (shaft, spring, plate-bending); `rho:density-ratio` Plain number (en1993-member); `rho:fluid-density` Density (cylinder)
+- `rho`: `rho:material-density` Density (shaft, spring, plate-bending); `rho:fluid-density` Density (cylinder); `rho:shear-reduction-factor` Plain number (en1993-member)
 - `s`: `s:fillet-leg` Length (weld-group); `s:move-distance` Plain number (motor-sizing)
 - `sigma`: `sigma:stress` Stress, pressure (material-margin, shaft-stress, thermal-expansion); `sigma:standard-deviation` Length (oring-gland, tolerance-stack)
 - `t`: `t:thickness` Length (plane-wall, lifting-lug, base-plate, connection-ec3, …); `t:time` Time (fault-protection)
@@ -722,7 +723,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `S_cpc` | — | Area | mm² | Protective conductor cross-section | elec.fault-protection | ok |
 | `S_d` | — | Length | m | Total diffusion-equivalent air layer thickness | bs.glaser | ok |
 | `S_dem` | — | Apparent and reactive power | kVA | Demand apparent power | elec.load-budget | ok |
-| `S_e` | `S_e:endurance-limit` | Stress, pressure | MPa | Endurance limit; Endurance limit (ranges at or below it do no damage); Endurance strength for the stress kind (shear; bending in torsion) at… | mech.fatigue-miner, mech.shaft, mech.spring | ok |
+| `S_e` | `S_e:bending-endurance-limit` | Stress, pressure | MPa | Endurance limit; Endurance limit (ranges at or below it do no damage) | mech.fatigue-miner, mech.shaft | RESOLVE (2 meanings) |
+| `S_e` | `S_e:spring-shear-endurance-strength` | Stress, pressure | MPa | Endurance strength for the stress kind (shear; bending in torsion) at… | mech.spring | RESOLVE (2 meanings) |
 | `S_e_b` | — | Stress, pressure | MPa | Bending endurance strength of the hook (extension) at N_c cycles, alt… | mech.spring | ok |
 | `S_f` | — | Plain number | — | Safety factor on the critical load | fp.cylinder | ok |
 | `S_k` | — | Apparent and reactive power | MVA | Three-phase fault level at the point of supply (use the minimum fault… | elec.motor-start | ok |
@@ -1473,8 +1475,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `res_vel_max` | — | Plain number | — | Largest velocity-loop residual, relative to the size of its terms | mech.mechanism | ok |
 | `retention_force` | — | Force | N | Separation force | mech.snap-fit | ok |
 | `rho` | `rho:material-density` | Density | kg/m³ | Density; Density (for the frequency); Density (shaft self-mass in the critical speed) | mech.shaft, mech.spring, struct.plate-bending | RESOLVE (3 meanings) |
-| `rho` | `rho:density-ratio` | Plain number | — | ρ | struct.en1993-member | RESOLVE (3 meanings) |
 | `rho` | `rho:fluid-density` | Density | kg/m³ | Fluid density | fp.cylinder | RESOLVE (3 meanings) |
+| `rho` | `rho:shear-reduction-factor` | Plain number | — | Shear reduction factor ρ | struct.en1993-member | RESOLVE (3 meanings) |
 | `rho_1` | — | Density | kg/m³ | ρ 1 | bs.psychrometrics | ok |
 | `rho_20` | `rho_20:resistivity-at-20c` | Resistivity | Ω·mm, Ω·mm²/m | Copper resistivity at 20 °C (annealed copper, 1.724e-8 Ω·m); Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m); Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R); … (4 descriptions) | elec.fault-protection, elec.motor-start, elec.pcb-trace, elec.voltage-drop | ok |
 | `rho_air` | — | Density | kg/m³ | Air density | elec.enclosure-heat | ok |

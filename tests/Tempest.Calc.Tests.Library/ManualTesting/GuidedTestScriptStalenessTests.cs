@@ -311,7 +311,7 @@ public sealed partial class GuidedTestScriptStalenessTests
             return null;
 
         // Neither a check nor "none": the README is not read as "none" by default (the app would then insist the form shows no check).
-        var match = Regex.Match(line, @"^Governing check: (.*?) — (PASS|FAIL) \(utilisation ([^)]+)\)");
+        var match = Regex.Match(line, @"^Governing check: (.*?) — (PASS|FAIL)(?: \(utilisation ([^)]+)\))?(?:\.| Files:|$)");
         Assert.True(match.Success, $"A worked example README has a 'Governing check:' line the guided test cannot read: {line}");
         return (match.Groups[1].Value, match.Groups[2].Value, match.Groups[3].Value);
     }

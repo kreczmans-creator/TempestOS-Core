@@ -1,13 +1,17 @@
 namespace Tempest.Calc.Sheets;
 
 /// <summary>
-/// An input was given under both an old symbol and the symbol it has become, with different values. Neither is dropped: the caller refuses the set
-/// and says which two to reconcile.
+/// An input was given under two of its names (the symbol it has now, or one of its old symbols) with different values. Neither is dropped: the caller refuses the set
+/// and says which two names to reconcile. The message names the two names that were actually given, never the current symbol when only old ones were.
 /// </summary>
-public sealed class CalcInputAliasConflictException(string alias, string symbol) : ArgumentException($"{symbol}: given as '{symbol}' and as its old symbol '{alias}' with different values; keep one.")
+public sealed class CalcInputAliasConflictException(string firstGiven, string secondGiven, string symbol)
+    : ArgumentException($"{(string.Equals(firstGiven, symbol, StringComparison.Ordinal) || string.Equals(secondGiven, symbol, StringComparison.Ordinal) ? symbol : firstGiven)}: the input is given as '{firstGiven}' and as '{secondGiven}' with different values. Keep one.")
 {
-    /// <summary>The old symbol.</summary>
-    public string Alias { get; } = alias;
+    /// <summary>The two names the input was given under, in the order they were met.</summary>
+    public IReadOnlyList<string> Given { get; } = [firstGiven, secondGiven];
+
+    /// <summary>An old symbol among the two names given (the second when neither is the current symbol).</summary>
+    public string Alias { get; } = string.Equals(secondGiven, symbol, StringComparison.Ordinal) ? firstGiven : secondGiven;
 
     /// <summary>The current symbol of the input.</summary>
     public string Symbol { get; } = symbol;
@@ -49,9 +53,13 @@ public static class CalcInputAliases
             return values;
 
         var kept = new Dictionary<string, CalcInputValue>(StringComparer.Ordinal);
+        var givenAs = new Dictionary<string, string>(StringComparer.Ordinal);
 
         foreach (var v in values.Where(v => template.FindInput(v.Symbol) is not null))
-            kept.TryAdd(v.Symbol, v);
+        {
+            if (kept.TryAdd(v.Symbol, v))
+                givenAs[v.Symbol] = v.Symbol;
+        }
 
         var result = new List<CalcInputValue>(values.Count);
         var added = new HashSet<string>(StringComparer.Ordinal);
@@ -66,13 +74,14 @@ public static class CalcInputAliases
 
             if (kept.TryGetValue(spec.Symbol, out var existing))
             {
-                if (!SameValue(existing, v))
-                    throw new CalcInputAliasConflictException(v.Symbol, spec.Symbol);
+                if (!SameValue(spec, existing, v))
+                    throw new CalcInputAliasConflictException(givenAs.GetValueOrDefault(spec.Symbol, spec.Symbol), v.Symbol, spec.Symbol);
 
                 continue;
             }
 
             kept[spec.Symbol] = v with { Symbol = spec.Symbol };
+            givenAs[spec.Symbol] = v.Symbol;
 
             if (added.Add(spec.Symbol))
                 result.Add(kept[spec.Symbol]);
@@ -101,23 +110,53 @@ public static class CalcInputAliases
         }
     }
 
-    /// <summary>Whether two inputs hold the same value (number, unit, text, flag, vector, table); the symbol and the provenance are not compared.</summary>
-    public static bool SameValue(CalcInputValue a, CalcInputValue b)
+    /// <summary>Whether two inputs hold the same value (number, unit, text, flag, vector, table); the symbol and the provenance are not compared. A quantity is compared in SI.</summary>
+    public static bool SameValue(CalcInputValue a, CalcInputValue b) => SameValue(null, a, b);
+
+    /// <summary>
+    /// Whether two inputs hold the same value, a quantity compared in SI: 12000 N and 12 kN are the same force, 0.012 m and 12 mm the same length. An input with no unit of its own
+    /// is in the default unit of <paramref name="spec"/>. Text, flags and the shape of a vector or table are compared as they are.
+    /// </summary>
+    public static bool SameValue(CalcInputSpec? spec, CalcInputValue a, CalcInputValue b)
     {
         ArgumentNullException.ThrowIfNull(a);
         ArgumentNullException.ThrowIfNull(b);
 
-        return a.Number == b.Number
-            && string.Equals(a.Unit, b.Unit, StringComparison.Ordinal)
+        var defaultUnit = spec?.DefaultUnit;
+
+        return SameQuantity(a.Number, a.Unit, b.Number, b.Unit, defaultUnit)
             && string.Equals(a.Text, b.Text, StringComparison.Ordinal)
             && a.Flag == b.Flag
-            && ((a.Vector is null && b.Vector is null) || (a.Vector is not null && b.Vector is not null && a.Vector.SequenceEqual(b.Vector)))
+            && ((a.Vector is null && b.Vector is null) || (a.Vector is not null && b.Vector is not null && a.Vector.Count == b.Vector.Count && a.Vector.Zip(b.Vector).All(p => SameQuantity(p.First, a.Unit, p.Second, b.Unit, defaultUnit))))
             && ((a.Rows is null && b.Rows is null) || (a.Rows is not null && b.Rows is not null && a.Rows.Count == b.Rows.Count && a.Rows.Zip(b.Rows).All(p => SameRow(p.First, p.Second))));
     }
 
     private static bool SameRow(CalcRow x, CalcRow y) =>
         x.Cells.Count == y.Cells.Count
-        && x.Cells.All(p => y.Cells.TryGetValue(p.Key, out var o) && p.Value.Number == o.Number && string.Equals(p.Value.Unit, o.Unit, StringComparison.Ordinal) && string.Equals(p.Value.Text, o.Text, StringComparison.Ordinal) && p.Value.Flag == o.Flag);
+        && x.Cells.All(p => y.Cells.TryGetValue(p.Key, out var o) && SameQuantity(p.Value.Number, p.Value.Unit, o.Number, o.Unit, null) && string.Equals(p.Value.Text, o.Text, StringComparison.Ordinal) && p.Value.Flag == o.Flag);
+
+    /// <summary>Two numbers in their units are the same quantity when they are equal in SI (to a part in 10^12); with no unit parsed on either side they are equal only when the numbers and the unit texts are.</summary>
+    private static bool SameQuantity(double? x, string? xUnit, double? y, string? yUnit, string? defaultUnit)
+    {
+        if (x is null || y is null)
+            return x is null && y is null && string.Equals(xUnit, yUnit, StringComparison.Ordinal);
+
+        var xText = string.IsNullOrEmpty(xUnit) ? defaultUnit ?? string.Empty : xUnit;
+        var yText = string.IsNullOrEmpty(yUnit) ? defaultUnit ?? string.Empty : yUnit;
+
+        if (xText.Length == 0 && yText.Length == 0)
+            return x == y;
+
+        if (!Engine.Units.UnitCatalog.TryParse(xText, out var xParsed, out _) || !Engine.Units.UnitCatalog.TryParse(yText, out var yParsed, out _))
+            return x == y && string.Equals(xText, yText, StringComparison.Ordinal);
+
+        if (xParsed.Dimension != yParsed.Dimension)
+            return false;
+
+        var xSi = xParsed.ToSi(x.Value);
+        var ySi = yParsed.ToSi(y.Value);
+        return xSi == ySi || Math.Abs(xSi - ySi) <= 1e-12 * Math.Max(Math.Abs(xSi), Math.Abs(ySi));
+    }
 
     /// <summary><see cref="Canonicalise(CalcTemplate, IReadOnlyList{CalcInputValue})"/> for an input set.</summary>
     public static CalcInputSet Canonicalise(CalcTemplate template, CalcInputSet inputs)

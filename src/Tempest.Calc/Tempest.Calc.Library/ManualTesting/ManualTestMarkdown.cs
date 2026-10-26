@@ -97,7 +97,7 @@ public static class ManualTestMarkdown
         var parts = (step.Expected ?? []).Select(e => $"{e.Symbol} = {e.Value}{(e.Unit.Length > 0 ? " " + e.Unit : string.Empty)}").ToList();
 
         if (step.Governing is { } governing)
-            parts.Add($"governing {governing.Outcome} (utilisation {governing.Utilisation})");
+            parts.Add(governing.Utilisation.Length > 0 ? $"governing {governing.Outcome} (utilisation {governing.Utilisation})" : $"governing {governing.Outcome}");
 
         return string.Join("; ", parts);
     }

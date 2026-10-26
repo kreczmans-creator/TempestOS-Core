@@ -27,9 +27,11 @@ public enum CalcOutputKind
 /// one output where the template justifies it. <see cref="Kind"/> is what the template says the output is checked against.
 /// <see cref="NoiseProne"/> is set by a template for a solver residual, an equilibrium sum or a computed zero: only such an output is shown as 0
 /// when it is solver noise (C2-20). <see cref="DisplayText"/> is the text a run settled on for a noise-prone output that came out as noise; an
-/// output built by hand has none and shows its own.
+/// output built by hand has none and shows its own. <see cref="Rounded"/> is the direction the run settled on from the checks made on the output (C2-21): the
+/// demand of a failing check is rounded away from its limit and its capacity toward it, a utilisation by the verdict of its check; it is <see langword="null"/>
+/// for an output no failing check is made on.
 /// </summary>
-public sealed record CalcOutput(string Symbol, string Description, CalcValue Value, int? Decimals = null, string? DisplayText = null, CalcOutputKind Kind = CalcOutputKind.Value, bool NoiseProne = false)
+public sealed record CalcOutput(string Symbol, string Description, CalcValue Value, int? Decimals = null, string? DisplayText = null, CalcOutputKind Kind = CalcOutputKind.Value, bool NoiseProne = false, CalcDisplay.Rounding? Rounded = null, bool StrictRounding = false)
 {
     public string ValueText => DisplayText ?? CalcDisplay.Format(this);
 }
@@ -42,7 +44,7 @@ public sealed record CalcOutput(string Symbol, string Description, CalcValue Val
 public sealed record CalcCheck(string Name, string DemandText, string CapacityText, double Utilisation, bool Passed, string? StepSymbol = null, string? Clause = null, bool HasUtilisation = true)
 {
     /// <summary>The utilisation as a sheet prints it: 2 decimals, or "—" for a yes/no check.</summary>
-    public string UtilisationText => !HasUtilisation || double.IsInfinity(Utilisation) ? "—" : CalcDisplay.Utilisation(Utilisation);
+    public string UtilisationText => !HasUtilisation || double.IsInfinity(Utilisation) ? "—" : CalcDisplay.Utilisation(Utilisation, Passed);
 }
 
 /// <summary>What a notice is: an applicability rule that fired, or the plain note that an input was not entered and its default was used.</summary>
@@ -119,6 +121,10 @@ public sealed class CalcRunContext
     private readonly List<CalcAssumption> _assumptions = [];
     private readonly Dictionary<string, CalcOutputKind> _kinds = new(StringComparer.Ordinal);
     private readonly HashSet<string> _noiseProne = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _failingDemands = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _failingCapacities = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _strictSymbols = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, bool> _utilisationVerdicts = new(StringComparer.Ordinal);
 
     public CalcRunContext(ICalcSession session, CalcInputSet inputs, CalcTemplate template, CancellationToken cancellationToken)
     {
@@ -238,12 +244,35 @@ public sealed class CalcRunContext
 
         var u = c.Si == 0 ? double.PositiveInfinity : Math.Abs(d.Si) / Math.Abs(c.Si);
         var passed = u <= 1.0 + tolerance;
-        var check = new CalcCheck(
-            name,
-            CalcDisplay.Format(d, mode: passed ? CalcDisplay.Rounding.Nearest : CalcDisplay.Rounding.AwayFromZero),
-            CalcDisplay.Format(c, mode: passed ? CalcDisplay.Rounding.Nearest : CalcDisplay.Rounding.TowardZero),
-            u, passed, demandSymbol, clause);
+        var demandText = CalcDisplay.Format(d, mode: passed ? CalcDisplay.Rounding.Nearest : CalcDisplay.Rounding.AwayFromZero);
+        var capacityText = CalcDisplay.Format(c, mode: passed ? CalcDisplay.Rounding.Nearest : CalcDisplay.Rounding.TowardZero);
+        var strict = false;
+
+        // The clean-number snap must not erase a failure: when the two texts of a failing check read as passing (the demand no larger than the capacity), both are rounded
+        // strictly in their directions, whatever their distance from a clean number.
+        if (!passed && CalcDisplay.LeadingNumber(demandText) is { } shownDemand && CalcDisplay.LeadingNumber(capacityText) is { } shownCapacity && Math.Abs(shownDemand) <= Math.Abs(shownCapacity))
+        {
+            strict = true;
+            demandText = CalcDisplay.Format(d, mode: CalcDisplay.Rounding.AwayFromZero, strict: true);
+            capacityText = CalcDisplay.Format(c, mode: CalcDisplay.Rounding.TowardZero, strict: true);
+        }
+
+        var check = new CalcCheck(name, demandText, capacityText, u, passed, demandSymbol, clause);
         _checks.Add(check);
+
+        // The Results rows of the two quantities must not show the passing side either: the demand of a failing check is shown rounded up and its capacity rounded down (C2-21).
+        if (!passed)
+        {
+            _failingDemands.Add(demandSymbol);
+            _failingCapacities.Add(capacitySymbol);
+
+            if (strict)
+            {
+                _strictSymbols.Add(demandSymbol);
+                _strictSymbols.Add(capacitySymbol);
+            }
+        }
+
         return check;
     }
 
@@ -262,8 +291,12 @@ public sealed class CalcRunContext
 
         // A negative utilisation means the capacity is negative or inverted (a negative NPSH available): never a pass (G-03).
         // Written as "u = 1.719 vs u ≤ 1" so a ratio is never read as a demand quantity (Black B-18).
-        var check = new CalcCheck(name, $"{utilisationSymbol} = {CalcDisplay.Utilisation(u.Si, limit + tolerance)}", $"{utilisationSymbol} ≤ {CalcValue.FormatNumber(limit)}", u.Si / limit, u.Si >= 0 && u.Si <= limit + tolerance, utilisationSymbol, clause);
+        var passed = u.Si >= 0 && u.Si <= limit + tolerance;
+        var check = new CalcCheck(name, $"{utilisationSymbol} = {CalcDisplay.Utilisation(u.Si, passed, limit)}", $"{utilisationSymbol} ≤ {CalcValue.FormatNumber(limit)}", u.Si / limit, passed, utilisationSymbol, clause);
         _checks.Add(check);
+
+        // An output of this symbol is shown by this check's verdict, not by a threshold of its own.
+        _utilisationVerdicts[utilisationSymbol] = _utilisationVerdicts.TryGetValue(utilisationSymbol, out var earlier) ? earlier && passed : passed;
         return check;
     }
 
@@ -293,6 +326,17 @@ public sealed class CalcRunContext
         foreach (var o in _outputs)
         {
             var settled = o.Kind == CalcOutputKind.Value && _kinds.TryGetValue(o.Symbol, out var declared) ? o with { Kind = declared } : o;
+
+            // The direction the failing checks of the run give this output (C2-21): the verdict of a utilisation check, the demand of a failing check up, its capacity down.
+            if (settled.Rounded is null && settled.Value is ScalarValue { IsFinite: true } scalar)
+            {
+                if (settled.Kind == CalcOutputKind.Utilisation && _utilisationVerdicts.TryGetValue(settled.Symbol, out var verdict))
+                    settled = settled with { Rounded = verdict ? CalcDisplay.Rounding.Nearest : scalar.Si < 0 ? CalcDisplay.Rounding.Down : CalcDisplay.Rounding.Up };
+                else if (_failingDemands.Contains(settled.Symbol) && !_failingCapacities.Contains(settled.Symbol))
+                    settled = settled with { Rounded = CalcDisplay.Rounding.AwayFromZero, StrictRounding = _strictSymbols.Contains(settled.Symbol) };
+                else if (_failingCapacities.Contains(settled.Symbol) && !_failingDemands.Contains(settled.Symbol))
+                    settled = settled with { Rounded = CalcDisplay.Rounding.TowardZero, StrictRounding = _strictSymbols.Contains(settled.Symbol) };
+            }
 
             if ((settled.NoiseProne || _noiseProne.Contains(settled.Symbol)) && settled.Value is ScalarValue { IsFinite: true } s && s.Si != 0)
             {

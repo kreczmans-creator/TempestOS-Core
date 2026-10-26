@@ -594,9 +594,11 @@
   ]
  },
  "S_e": {
-  "endurance-limit": [
+  "bending-endurance-limit": [
    "mech.fatigue-miner",
-   "mech.shaft",
+   "mech.shaft"
+  ],
+  "spring-shear-endurance-strength": [
    "mech.spring"
   ]
  },
@@ -1502,9 +1504,6 @@
   ]
  },
  "rho": {
-  "density-ratio": [
-   "struct.en1993-member"
-  ],
   "fluid-density": [
    "fp.cylinder"
   ],
@@ -1512,6 +1511,9 @@
    "mech.shaft",
    "mech.spring",
    "struct.plate-bending"
+  ],
+  "shear-reduction-factor": [
+   "struct.en1993-member"
   ]
  },
  "rho_20": {

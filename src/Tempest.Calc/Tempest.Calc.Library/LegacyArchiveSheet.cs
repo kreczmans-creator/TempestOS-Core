@@ -49,7 +49,7 @@ public static class LegacyArchiveSheet
 
         var assumptions = (instance.Notes ?? []).Select(n => new CalcAssumption(n, null)).ToList();
         var outputs = instance.Outputs.Select(o => new CalcOutput(o.Symbol, o.Description, ValueOf(o))).ToList();
-        var checks = instance.Checks.Select(c => new CalcCheck(c.Name, c.Demand, c.Capacity, c.Utilisation, c.Passed)).ToList();
+        var checks = instance.Checks.Select(c => new CalcCheck(c.Name, c.Demand, c.Capacity, c.Utilisation, c.Passed, HasUtilisation: c.HasUtilisation)).ToList();
         var footer = new CalcSheetFooter(instance.TemplateReference, "legacy", engineVersion, 0, 0, now, applicationVersion);
 
         return new CalcSheet(

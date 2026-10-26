@@ -501,7 +501,9 @@ public sealed class GuidedTestViewModel
                 var outcome = byName.GetValueOrDefault("governing check");
                 var utilisation = byName.GetValueOrDefault("governing utilisation");
                 lines.Add(new GuidedExpectedLine("governing check", $"{governing.Outcome} — {governing.Name}", "exact text", outcome?.Shown, outcome?.Comparison.Outcome));
-                lines.Add(new GuidedExpectedLine("governing utilisation", governing.Utilisation, GuidedTolerance.AllowanceText(governing.Utilisation), utilisation?.Shown, utilisation?.Comparison.Outcome, utilisation?.Comparison.Allowance));
+
+                if (governing.Utilisation.Length > 0)
+                    lines.Add(new GuidedExpectedLine("governing utilisation", governing.Utilisation, GuidedTolerance.AllowanceText(governing.Utilisation), utilisation?.Shown, utilisation?.Comparison.Outcome, utilisation?.Comparison.Allowance));
             }
             else if (example.Kind == GuidedStepKind.Example)
             {

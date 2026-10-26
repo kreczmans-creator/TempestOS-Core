@@ -34,6 +34,39 @@ public sealed class CalcRegisterViewTests
         Assert.Contains("PASS u = 0.83", texts);
     }
 
+    private static CalcInstance WithChecks(string name, params CalcCheckSnapshot[] checks) =>
+        Instance(name, CalcInstanceStatus.Draft, 1) with { Checks = checks };
+
+    /// <summary>C-2 verification F5: the register printed "PASS u = 0.00" for a calculation whose governing check is a yes/no check (a fit class, a separation test): there is no ratio to print.</summary>
+    [AvaloniaFact]
+    public void A_Yes_No_Governing_Check_Shows_Pass_Or_Fail_And_No_Utilisation_And_A_Ratio_Check_Still_Shows_Its_Utilisation()
+    {
+        var view = new CalcRegisterView();
+        var fit = new CalcCheckSnapshot("Fit class", "H7/g6", "clearance", 0.0, true, HasUtilisation: false);
+        var separation = new CalcCheckSnapshot("Separation", "no", "yes", 1e9, false, HasUtilisation: false);
+        var ratio = new CalcCheckSnapshot("Yield", "0.8", "1", 0.826, true);
+        view.ShowEntries([WithChecks("Fit", fit), WithChecks("Gap", ratio, separation), WithChecks("Beam", ratio)], null, _ => null);
+
+        var texts = view.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        Assert.Contains("PASS", texts);
+        Assert.Contains("FAIL", texts);
+        Assert.Contains("PASS u = 0.83", texts);
+        Assert.DoesNotContain("PASS u = 0.00", texts);
+        Assert.DoesNotContain("FAIL u = —", texts);
+    }
+
+    /// <summary>A calculation saved before the field existed has no HasUtilisation: it reads as a ratio check, as it was shown.</summary>
+    [Fact]
+    public void A_Check_Saved_Without_The_Field_Reads_As_A_Ratio_Check_And_A_Yes_No_Check_Round_Trips()
+    {
+        var old = System.Text.Json.JsonSerializer.Deserialize<CalcCheckSnapshot>("""{"Name":"Yield","Demand":"0.8","Capacity":"1","Utilisation":0.826,"Passed":true}""")!;
+        Assert.True(old.HasUtilisation);
+
+        var yesNo = new CalcCheckSnapshot("Fit class", "H7/g6", "clearance", 0.0, true, HasUtilisation: false);
+        var back = System.Text.Json.JsonSerializer.Deserialize<CalcCheckSnapshot>(System.Text.Json.JsonSerializer.Serialize(yesNo))!;
+        Assert.False(back.HasUtilisation);
+    }
+
     [AvaloniaFact]
     public void Open_Asks_For_That_Calculation()
     {

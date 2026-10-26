@@ -45,6 +45,35 @@ public sealed partial class GlossaryTests
             [.. m.Groups["templates"].Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)], m.Groups["status"].Value.Trim()))];
     }
 
+    /// <summary>
+    /// C-2 verification F8: the glossary called the member check's <c>rho</c> a "density ratio". It is the shear reduction factor of EN 1993-1-1 clause 6.2.8 (0 up to half the
+    /// plastic shear resistance, (2V_Ed/V_pl,Rd - 1)^2 above it). And <c>S_e</c> was one meaning for the bending endurance limit of a shaft or a fatigue curve and the shear
+    /// endurance strength of a spring wire at N_c cycles, which are different quantities with different values.
+    /// </summary>
+    [Fact]
+    public void The_Shear_Reduction_Factor_Is_Not_A_Density_Ratio_And_The_Endurance_Of_A_Spring_Is_Not_The_Bending_Endurance_Limit()
+    {
+        var rows = GlossaryRows();
+
+        var rho = Assert.Single(rows, r => r.Symbol == "rho" && r.Templates.Contains("struct.en1993-member"));
+        Assert.Equal("shear-reduction-factor", rho.Meaning);
+        Assert.Equal(["struct.en1993-member"], rho.Templates);
+        Assert.DoesNotContain(rows, r => r.Meaning.Contains("density-ratio", StringComparison.Ordinal));
+
+        var bending = Assert.Single(rows, r => r.Symbol == "S_e" && r.Meaning == "bending-endurance-limit");
+        Assert.Equal(["mech.fatigue-miner", "mech.shaft"], bending.Templates);
+        var spring = Assert.Single(rows, r => r.Symbol == "S_e" && r.Meaning == "spring-shear-endurance-strength");
+        Assert.Equal(["mech.spring"], spring.Templates);
+        Assert.Equal("RESOLVE (2 meanings)", spring.Status);
+
+        // The description the sheet prints for the output says what it is, and the glossary row quotes it.
+        var member = Facts.Value.Single(f => f.Id == "struct.en1993-member");
+        var run = member.CaseRuns.Prepend(member.DefaultRun).First(r => r.FindOutput("rho") is not null);
+        Assert.Equal("Shear reduction factor ρ", run.FindOutput("rho")!.Description);
+        var text = File.ReadAllText(GlossaryPath).Replace("\r\n", "\n", StringComparison.Ordinal);
+        Assert.Contains("| Plain number | — | Shear reduction factor ρ | struct.en1993-member |", text, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void The_Glossary_Data_File_Matches_The_Catalogue()
     {

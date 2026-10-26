@@ -232,10 +232,11 @@ def governing_of(lines: list[str], where: str) -> dict | None:
         raise SystemExit(f"{where}: the README has no 'Governing check:' line (write 'Governing check: none' for an example with no check)")
     if re.match(r"^Governing check: none\b", line):
         return None
-    m = re.match(r"^Governing check: (.*?) — (PASS|FAIL) \(utilisation ([^)]+)\)", line)
+    m = re.match(r"^Governing check: (.*?) — (PASS|FAIL)(?: \(utilisation ([^)]+)\))?(?:\.| Files:|$)", line)
     if not m:
-        raise SystemExit(f"{where}: cannot parse the 'Governing check:' line {line!r}; expected 'Governing check: <name> — PASS|FAIL (utilisation <n>)' or 'Governing check: none'")
-    return {"name": m.group(1), "outcome": m.group(2), "utilisation": m.group(3)}
+        raise SystemExit(f"{where}: cannot parse the 'Governing check:' line {line!r}; expected 'Governing check: <name> — PASS|FAIL (utilisation <n>)' (a yes/no check has no utilisation: 'Governing check: <name> — PASS') or 'Governing check: none'")
+    # A yes/no check has no utilisation (C-2, row 3): the script says so with an empty one and the compare leaves the line out.
+    return {"name": m.group(1), "outcome": m.group(2), "utilisation": m.group(3) or ""}
 
 
 def example_step(disc: str, template: str, folder: pathlib.Path) -> dict:

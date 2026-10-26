@@ -281,6 +281,47 @@ public sealed class ConsistencyStandardTests
         Assert.Single(set.Values, v => v.Symbol == "F_axial");
     }
 
+    /// <summary>C-2 verification F9: 12000 N and 12 kN were two values, so a saved set that gave a force under its old symbol in newtons and its new one in kilonewtons was refused.</summary>
+    [Fact]
+    public void The_Same_Quantity_In_Two_Units_Is_The_Same_Value_And_Is_Kept_Once()
+    {
+        var oldInNewtons = new CalcInputSet([CalcInputValue.Quantity("F", 12000, "N"), CalcInputValue.Quantity("F_axial", 12, "kN"), CalcInputValue.Quantity("A", 200, "mm^2")]);
+        var set = CalcInputAliases.Canonicalise(Calculator.Template, oldInNewtons);
+        Assert.Single(set.Values, v => v.Symbol == "F_axial");
+        Assert.Null(set.Find("F"));
+
+        // The two old symbols of one input, in two units, and a value with no unit of its own (the input's default unit, kN).
+        var twoOld = CalcInputAliases.Canonicalise(Calculator.Template, [CalcInputValue.Quantity("F", 12000, "N"), CalcInputValue.Quantity("F_old", 12, "kN")]);
+        Assert.Single(twoOld);
+        var noUnit = CalcInputAliases.Canonicalise(Calculator.Template, [CalcInputValue.Quantity("F", 12000, "N"), new CalcInputValue("F_axial", Number: 12)]);
+        Assert.Single(noUnit);
+
+        // A different quantity is still a conflict, whatever the units: 12.1 kN is not 12000 N.
+        Assert.Throws<CalcInputAliasConflictException>(() => CalcInputAliases.Canonicalise(Calculator.Template, [CalcInputValue.Quantity("F", 12000, "N"), CalcInputValue.Quantity("F_axial", 12.1, "kN")]));
+
+        // The run, the inputs file and the CSV file read them the same way.
+        Assert.False(CalcRunner.Run(Calculator, new CalcInputSet([.. oldInNewtons.Values])).IsBlocked);
+        var (_, csvNotices) = CalcCsv.ImportInputs(Calculator.Template, "symbol,value,unit\nF,12000,N\nF_axial,12,kN\nA,200,mm^2\n");
+        Assert.DoesNotContain(csvNotices, n => n.Severity == CalcNoticeSeverity.Block);
+    }
+
+    /// <summary>C-2 verification F9: with two old symbols given and the current one absent, the message named the current symbol as if it had been given.</summary>
+    [Fact]
+    public void The_Conflict_Message_Names_Only_The_Symbols_Actually_Given()
+    {
+        var twoOld = Assert.Throws<CalcInputAliasConflictException>(() => CalcInputAliases.Canonicalise(Calculator.Template, [CalcInputValue.Quantity("F", 99, "kN"), CalcInputValue.Quantity("F_old", 12, "kN")]));
+        Assert.Equal(["F", "F_old"], twoOld.Given);
+        Assert.Equal("F: the input is given as 'F' and as 'F_old' with different values. Keep one.", twoOld.Message);
+        Assert.DoesNotContain("F_axial", twoOld.Message, StringComparison.Ordinal);
+
+        var withCurrent = Assert.Throws<CalcInputAliasConflictException>(() => CalcInputAliases.Canonicalise(Calculator.Template, [CalcInputValue.Quantity("F_axial", 12, "kN"), CalcInputValue.Quantity("F_old", 13, "kN")]));
+        Assert.Equal("F_axial: the input is given as 'F_axial' and as 'F_old' with different values. Keep one.", withCurrent.Message);
+
+        // The message is one of the standard shape: the symbol the user changes, then plain sentences of at most twenty words and no semicolon.
+        Assert.DoesNotContain(';', twoOld.Message);
+        Assert.Empty(CalcMessageShape.Problems(twoOld.Message));
+    }
+
     [Fact]
     public void An_Input_Given_Under_Its_Old_And_Its_Current_Symbol_With_Different_Values_Is_Refused_And_Neither_Is_Dropped()
     {

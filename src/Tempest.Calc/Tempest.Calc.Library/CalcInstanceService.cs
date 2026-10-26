@@ -1422,7 +1422,7 @@ public sealed partial class CalcInstanceService
         return instance with
         {
             Outputs = outputs,
-            Checks = result.Checks.Select(c => new CalcCheckSnapshot(c.Name, c.DemandText, c.CapacityText, double.IsFinite(c.Utilisation) ? c.Utilisation : 1e9, c.Passed)).ToList(),
+            Checks = result.Checks.Select(c => new CalcCheckSnapshot(c.Name, c.DemandText, c.CapacityText, double.IsFinite(c.Utilisation) ? c.Utilisation : 1e9, c.Passed, c.HasUtilisation)).ToList(),
             Warnings = result.Warnings.Select(n => new CalcNoticeSnapshot(n.RuleId, n.Severity.ToString(), n.Message)).ToList(),
             Blocks = result.Blocks.Select(n => new CalcNoticeSnapshot(n.RuleId, n.Severity.ToString(), n.Message)).ToList(),
             OutputsHash = HashOutputs(outputs),

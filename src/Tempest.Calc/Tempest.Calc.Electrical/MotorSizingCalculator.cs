@@ -151,7 +151,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
-        c.MarkUtilisation("u_peak", "u_power", "u_rms", "u_speed");
+        c.MarkUtilisation("u_peak", "u_power", "u_rms", "u_speed", "u_rated_speed");
         var mech = c.InputText("mechanism");
         var continuous = c.InputText("duty_mode") == DutyContinuous;
 

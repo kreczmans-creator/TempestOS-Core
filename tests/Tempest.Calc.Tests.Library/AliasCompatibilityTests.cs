@@ -238,6 +238,55 @@ public sealed class AliasCompatibilityTests
         Assert.NotNull(new CalcCatalogue([RenamedWith(ports: [new CalcOutputPort("sigma", "MPa", "Stress", "stress.axial", ["sigma_old", "sigma_before"]), new CalcOutputPort("A_req", "mm^2", "Area", "stress.area_required")])]).Find("test.renamed"));
     }
 
+    /// <summary>
+    /// C-2 verification F9: the port-alias check searched a run on the defaults and the symbols the known-answer cases expect, so an alias that is an output of another mode
+    /// (here <c>y_b</c>, which only mode B outputs and no case expects) went through. It now also searches the outputs of a run of every known-answer case.
+    /// </summary>
+    [Fact]
+    public void A_Port_Alias_Equal_To_An_Output_Of_Another_Mode_That_A_Known_Answer_Case_Runs_Is_Refused()
+    {
+        var refused = Assert.Throws<ArgumentException>(() => new CalcCatalogue([new ModalCalculator(alias: "y_b")]));
+        Assert.Contains("'y_b'", refused.Message, StringComparison.Ordinal);
+        Assert.Contains("another output", refused.Message, StringComparison.Ordinal);
+
+        // A name that no mode outputs is fine, and so is the same template with nothing aliased.
+        Assert.NotNull(new CalcCatalogue([new ModalCalculator(alias: "x_old")]).Find("test.modal"));
+        Assert.NotNull(new CalcCatalogue([new ModalCalculator(alias: null)]).Find("test.modal"));
+    }
+
+    [Fact]
+    public void Every_Shipped_Calculator_Registers_With_The_Port_Alias_Check_Over_All_Its_Known_Answer_Cases()
+    {
+        var catalogue = new CalcCatalogue(ShippedCalculators.All);
+        Assert.Equal(ShippedCalculators.All.Count, catalogue.Current().Count + ShippedCalculators.All.Count(c => catalogue.IsWithheld(c.Template.Reference)));
+    }
+
+    /// <summary>A template whose outputs depend on its mode: mode A gives <c>x</c> and mode B gives <c>x</c> and <c>y_b</c>; the port is <c>x</c>.</summary>
+    private sealed class ModalCalculator(string? alias) : ICalcCalculator
+    {
+        public CalcTemplate Template { get; } = new(
+            "test.modal", "1.0.0", CalcDiscipline.Structural, "Modal (test)", "Calculates a value in two modes.", "Value: x = 2.",
+            [new CalcInputSpec("mode", "Mode", CalcInputKind.Choice, Choices: ["A", "B"], DefaultChoice: "A")],
+            [], [], [],
+            [
+                new CalcTestCase("ka-b", "Mode B", new CalcReferenceSource("Hand calculation", null, "x = 2"), [CalcInputValue.Choice("mode", "B")], [new CalcExpectedValue("x", 2, "", 1e-9)]),
+            ],
+            Category: "Members",
+            OutputPorts: [new CalcOutputPort("x", "", "Value", "stress.axial", alias is null ? null : [alias])]);
+
+        public void Run(CalcRunContext c)
+        {
+            c.Assign("x", "2", null, "Value");
+            c.Output("x", "Value");
+
+            if (c.InputText("mode") == "B")
+            {
+                c.Assign("y_b", "3", null, "Second value");
+                c.Output("y_b", "Second value");
+            }
+        }
+    }
+
     [Fact]
     public async Task An_Input_Given_Under_Its_Old_And_Its_Current_Symbol_With_Different_Values_Is_Refused_On_Create_And_On_Update()
     {

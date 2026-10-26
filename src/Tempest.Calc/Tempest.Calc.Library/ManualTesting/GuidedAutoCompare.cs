@@ -62,13 +62,25 @@ public static class GuidedAutoCompare
             var shownCheck = form is null ? "none" : $"{outcomeText} — {form.Name}";
             rows.Add(new GuidedOutputComparison("governing check", expectedCheck, shownCheck, GuidedTolerance.CompareText("governing check", expectedCheck, shownCheck)));
 
-            // What the governing banner prints for a ratio: two decimals, by the display's own formatter (not a figure count of this class's own); the digits shown decide the allowance.
-            var shownUtilisation = form is null ? null : double.IsInfinity(form.Utilisation) ? "—" : CalcDisplay.Utilisation(form.Utilisation);
-            var utilisation = form is null
-                ? new GuidedComparison(GuidedCompareOutcome.Mismatch, "governing utilisation: the form has no governing check.")
-                : GuidedTolerance.CompareShown("governing utilisation", governing.Utilisation, string.Empty, shownUtilisation, form.Utilisation > 1.0 + 1e-9 ? CalcDisplay.Rounding.Up : CalcDisplay.Rounding.Nearest);
-            rows.Add(new GuidedOutputComparison("governing utilisation", governing.Utilisation, shownUtilisation ?? "—", utilisation));
-            shown.Add(form is null ? "governing none" : $"governing {outcomeText} — {form.Name} (utilisation {shownUtilisation ?? "—"})");
+            // What the governing banner prints (CalcCheck.UtilisationText: two decimals, rounded up when the check fails); the digits shown decide the allowance.
+            // A yes/no check has no utilisation, so the example states none and there is nothing to compare.
+            var shownUtilisation = form is null ? null : form.UtilisationText;
+
+            if (governing.Utilisation.Length > 0)
+            {
+                var utilisation = form is null
+                    ? new GuidedComparison(GuidedCompareOutcome.Mismatch, "governing utilisation: the form has no governing check.")
+                    : form.HasUtilisation
+                        ? GuidedTolerance.CompareShown("governing utilisation", governing.Utilisation, string.Empty, shownUtilisation, form.Passed ? CalcDisplay.Rounding.Nearest : CalcDisplay.Rounding.Up)
+                        : new GuidedComparison(GuidedCompareOutcome.Mismatch, "governing utilisation: the form shows none for this check (a yes/no check has no utilisation) where the example gives one.");
+                rows.Add(new GuidedOutputComparison("governing utilisation", governing.Utilisation, shownUtilisation ?? "—", utilisation));
+            }
+            else if (form is { HasUtilisation: true })
+            {
+                rows.Add(new GuidedOutputComparison("governing utilisation", "none", shownUtilisation ?? "—", new GuidedComparison(GuidedCompareOutcome.Mismatch, $"governing utilisation: the form shows {shownUtilisation} where the example gives none (a yes/no check).")));
+            }
+
+            shown.Add(form is null ? "governing none" : form.HasUtilisation ? $"governing {outcomeText} — {form.Name} (utilisation {shownUtilisation ?? "—"})" : $"governing {outcomeText} — {form.Name}");
         }
         else if (example.Kind == GuidedStepKind.Example)
         {
