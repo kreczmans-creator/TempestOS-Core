@@ -353,20 +353,20 @@ public static class CalcDiagrams
     private static CalculationDiagramSpec ThinVessel() =>
         new(ThinVesselCalculator.Id,
         [
-            new DiagramVariant("A thin-walled cylinder in section under internal pressure: inside radius R, shell thickness t_p including the corrosion allowance c", Always,
+            new DiagramVariant("A thin-walled cylinder in section under internal pressure: inside radius R_in, shell thickness t_p including the corrosion allowance c", Always,
             [
                 new DiagramLabel("section-note", new(120, 22), Symbol: "Shell section"),
                 new DiagramCircle("shell", new(120, 124), 86, Filled: true, "t_p"),
-                new DiagramCircle("bore", new(120, 124), 76, Filled: false, "R"),
-                new DiagramPointLoad("pressure-up", new(120, 54), DiagramDirection.Up, 30, "P", "P", new(120, 100)),
-                new DiagramPointLoad("pressure-left", new(50, 124), DiagramDirection.Left, 30, "P"),
-                new DiagramPointLoad("pressure-right", new(190, 124), DiagramDirection.Right, 30, "P"),
-                new DiagramDimension("radius", new(120, 124), new(66.3, 177.7), 0, "R", "R", new(146, 162)),
+                new DiagramCircle("bore", new(120, 124), 76, Filled: false, "R_in"),
+                new DiagramPointLoad("pressure-up", new(120, 54), DiagramDirection.Up, 30, "p_design", "p_design", new(120, 100)),
+                new DiagramPointLoad("pressure-left", new(50, 124), DiagramDirection.Left, 30, "p_design"),
+                new DiagramPointLoad("pressure-right", new(190, 124), DiagramDirection.Right, 30, "p_design"),
+                new DiagramDimension("radius", new(120, 124), new(66.3, 177.7), 0, "R_in", "R_in", new(146, 162)),
                 new DiagramDimension("thickness", new(196, 124), new(206, 124), -24, "t_p", "t_p", new(252, 96)),
                 new DiagramLabel("allowable", new(320, 86), "S", "S"),
                 new DiagramLabel("joint-efficiency", new(320, 112), "E_j", "E"),
                 new DiagramLabel("corrosion", new(320, 138), "c", "c"),
-                new DiagramLabel("design-factor", new(320, 164), "n", "n"),
+                new DiagramLabel("design-factor", new(320, 164), "n_design", "n_design"),
             ]),
         ]);
 

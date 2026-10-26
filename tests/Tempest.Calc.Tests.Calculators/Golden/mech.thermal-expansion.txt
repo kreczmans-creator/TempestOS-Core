@@ -4,17 +4,17 @@ Calc ID: mech.thermal-expansion    Revision: A
 Title: Thermal expansion of a restrained bar
 
 1. Scope and method
-A bar heated or cooled between two restraints: its free movement, the part closed by a gap before the restraint engages, the restraint force for a rigid or an elastic restraint, the axial stress that results and the movement that actually occurs, with the stress against an allowable.
+Calculates the free movement, restraint force, axial stress and actual movement of a bar heated or cooled between two restraints. A gap and a rigid or elastic restraint are allowed, and the stress is compared with an allowable.
 Free expansion of the bar: δ_free = α·L·ΔT. Expansion actually restrained, once any gap g has closed: δ_e = sign(δ_free)·max(|δ_free| − g, 0). Axial stiffness of the bar: k_bar = E·A/L. Restraint force, from rigid supports or an elastic restraint k_s: F = δ_e·k_bar (rigid); F = δ_e/(1/k_bar + 1/k_s) (elastic). Thermal stress in the bar, compressive on heating: σ = −F/A. Net movement of the bar end: δ = δ_free − F/k_bar.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   L | Bar length | 2 | m | manual | 0.01 … 1000 m
   A | Cross-section area | 500 | mm² | manual | 1 … 1000000 mm²
-  E | Modulus of elasticity | 200 | GPa | manual | 1 … 500 GPa
+  g | Gap closed before the restraint engages | 0 | mm | manual | 0 … 1000 mm
+  E | Young's modulus | 200 | GPa | manual | 1 … 500 GPa
   alpha | Coefficient of thermal expansion | 0.000012 | 1/K | manual | 1e-7 … 0.0001 1/K
   dT | Temperature change (positive heating) | 60 | K | manual | -300 … 1000 K
-  g | Gap closed before the restraint engages | 0 | mm | manual | 0 … 1000 mm
   sigma_allow | Allowable stress | 150 | MPa | manual | 1 … 2000 MPa
 
 3. Assumptions
@@ -32,44 +32,49 @@ Free expansion of the bar: δ_free = α·L·ΔT. Expansion actually restrained, 
         Movement after the gap closes (engaged movement)
   [10] k_bar = E * A / L
       = 200 GPa × 500 mm² / 2 m
-      = 50 kN/mm
+      = 50000 kN/m
         Axial stiffness of the bar
   [11] F = delta_e * k_bar    « Roark Ch. 15
-      = 1.44 mm × 50 kN/mm
-      = 72000 N
+      = 1.44 mm × 50000 kN/m
+      = 72 kN
         Restraint force (rigid restraint)
   [12] sigma = -F / A
-      = −72000 N / 500 mm²
+      = −72 kN / 500 mm²
       = -144 MPa
         Axial stress (negative compressive)
   [13] delta = delta_free - F / k_bar
-      = 1.44 mm − 72000 N / 50 kN/mm
+      = 1.44 mm − 72 kN / 50000 kN/m
       = 0 mm
         Actual movement
-  [14] u = abs(sigma) / sigma_allow
-      = abs(-144 MPa) / 150 MPa
+  [14] sigma_abs = abs(sigma)
+      = abs(-144 MPa)
+      = 144 MPa
+        Stress magnitude
+  [15] u = sigma_abs / sigma_allow
+      = 144 MPa / 150 MPa
       = 0.96
         Stress utilisation
 
 5. Results
   delta_free = 1.440 mm    Free movement
-  delta_e = 1.440 mm    Engaged movement
-  k_bar = 50 kN/mm    Bar stiffness
-  F = 72000 N    Restraint force
+  F = 72 kN    Restraint force
   sigma = -144 MPa    Axial stress
   delta = 0 mm    Actual movement
-  u = 0.96    Stress utilisation (governing)
+  delta_e = 1.440 mm    Engaged movement
+  k_bar = 50000 kN/m    Bar stiffness
+  sigma_abs = 144 MPa    Stress magnitude (governing)
+  u = 0.96    Stress utilisation
 
 6. Checks (governing first)
-  PASS  Thermal stress against allowable: u = 0.96 vs u ≤ 1  utilisation 0.96
+  PASS  Thermal stress against allowable: 144 MPa vs 150 MPa  utilisation 0.96
 
 7. Applicability
   None.
 
 8. Verification
-  Template: mech.thermal-expansion@1.0.1
+  Template: mech.thermal-expansion@1.1.0
   Known-answer cases passed: 5/5
 
 9. References
-  1. Roark's Formulas for Stress and Strain Ch. 15 — Thermal stresses
-  2. Shigley's Mechanical Engineering Design §3-17 — Thermal stresses and strains
+  1. Young, Roark's Formulas for Stress and Strain Ch. 15, 8th ed. — Thermal stresses
+  2. Budynas, Shigley's Mechanical Engineering Design §3-17, 10th ed. — Thermal stresses and strains

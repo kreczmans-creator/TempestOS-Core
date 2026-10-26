@@ -4,8 +4,8 @@
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
   "knownDefects": "f503dc243b72bd6d14a26dd72c715cf4ef74eecacdd6bcf48830d5d1c2fd8ac3",
-  "katResults": "0f96e6c1ca3454e8058daaeee6c1e7a494d55816e2732dfe38b4de1cbb7525f0",
-  "workedExamples": "ad239e32ba38a7c5448ba7bc0f639857bb66d23e5ff3987f4293bebc5e72b5aa",
+  "katResults": "859fbe3af297ddbafc7d092ee5578d8fbf482414cebf5abb3830739a0f188b54",
+  "workedExamples": "4e56c0e19b455629cc9611d531735d7c9aac488b6f50cf8305cfe1d09f66d0e1",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
  "defectTotals": {
@@ -1686,7 +1686,7 @@
   "mech.shaft-stress": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.0.1",
+    "version": "1.1.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -1806,7 +1806,7 @@
   "mech.thermal-expansion": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.0.1",
+    "version": "1.1.0",
     "kats": 5,
     "katsPassed": 5,
     "failedKats": [],
@@ -1817,7 +1817,7 @@
   "mech.thick-cylinder": {
    "workedExamples": 2,
    "kat": {
-    "version": "2.1.1",
+    "version": "2.2.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -1854,7 +1854,7 @@
   "mech.thin-vessel": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.0.1",
+    "version": "1.1.0",
     "kats": 2,
     "katsPassed": 2,
     "failedKats": [],
@@ -1865,7 +1865,7 @@
   "mech.tolerance-stack": {
    "workedExamples": 2,
    "kat": {
-    "version": "2.2.1",
+    "version": "2.3.0",
     "kats": 7,
     "katsPassed": 7,
     "failedKats": [],
@@ -1912,7 +1912,7 @@
   "mech.weld-group": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.2.0",
+    "version": "1.3.0",
     "kats": 4,
     "katsPassed": 4,
     "failedKats": [],

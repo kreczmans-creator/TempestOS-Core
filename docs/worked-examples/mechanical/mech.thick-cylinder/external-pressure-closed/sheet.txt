@@ -7,22 +7,22 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-Radial, hoop and axial stresses at the bore and the outer surface of a thick-walled cylinder under internal and external pressure, the von Mises and Tresca equivalents, utilisation against an allowable, and the thin-wall estimate for comparison.
+Calculates the radial, hoop and axial stresses at the bore and outer surface of a thick-walled cylinder under internal and external pressure. It also gives von Mises and Tresca stresses, the utilisation and a thin-wall estimate.
 Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(b² − a²); B = a² b² (p_i − p_o)/(b² − a²). Radial and hoop stress at radius r: σ_r = A − B/r²; σ_θ = A + B/r². Axial stress, closed or open ends: σ_z = A (closed); σ_z = 0 (open). Equivalent stresses from the three principal stresses: von Mises; Tresca = the largest principal difference.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
+  closed | Closed ends (axial stress carried by the wall) | yes |  | drawing: DRG-CYL-02 rev B | any
   a | Inner radius | 40 | mm | drawing: DRG-CYL-02 rev B | 0.1 … 5000 mm
   b | Outer radius | 60 | mm | drawing: DRG-CYL-02 rev B | 0.1 … 5000 mm
-  p_i | Internal pressure | 0 | MPa | assumption: Vented bore. | 0 … 1000 MPa
-  p_o | External pressure | 20 | MPa | spec: SPEC-SUB-1 §2 external pressure | 0 … 1000 MPa
-  closed | Closed ends (axial stress carried by the wall) | yes |  | drawing: DRG-CYL-02 rev B | any
   E | Young's modulus (the elastic collapse pressure under external pressure only) | 207 | GPa | default | 1 … 500 GPa
   nu | Poisson's ratio (the elastic collapse pressure under external pressure only) | 0.3 |  | default | 0.1 … 0.49
+  p_i | Internal pressure | 0 | MPa | assumption: Vented bore. | 0 … 1000 MPa
+  p_o | External pressure | 20 | MPa | spec: SPEC-SUB-1 §2 external pressure | 0 … 1000 MPa
   sigma_allow | Allowable stress | 100 | MPa | spec: SPEC-SUB-1 §4 | 1 … 3000 MPa
 
 3. Assumptions
-  A1. Long cylinder, elastic, isotropic; stresses vary with radius only. (Lamé solution; end effects neglected.)
+  A1. The cylinder is long, elastic and isotropic, and its stresses vary with radius only. (Lamé solution, with end effects neglected.)
   A2. Closed ends carry the pressure end load as a uniform axial stress. (σ_z = A.)
   A3. p_i (Internal pressure) is taken as 0 MPa. (Vented bore.)
 
@@ -89,8 +89,9 @@ Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(
         Wall ratio b/a
 
 5. Results
-  sigma_r_a = 0 MPa    Radial stress, bore
   sigma_t_a = -72 MPa    Hoop stress, bore
+  sigma_vm_max = 62.35 MPa    Maximum von Mises (governing)
+  sigma_r_a = 0 MPa    Radial stress, bore
   sigma_r_b = -20 MPa    Radial stress, outer
   sigma_t_b = -52 MPa    Hoop stress, outer
   sigma_z = -36 MPa    Axial stress
@@ -98,13 +99,12 @@ Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(
   sigma_vm_b = 27.71 MPa    von Mises, outer
   sigma_tr_a = 72 MPa    Tresca, bore
   sigma_tr_b = 32 MPa    Tresca, outer
-  sigma_vm_max = 62.35 MPa    Maximum von Mises
   sigma_thin = -50 MPa    Thin-wall hoop estimate
   k_wall = 1.5    Wall ratio
-  u = 0.62    Utilisation (governing)
+  u = 0.62    Utilisation
 
 6. Checks (governing first)
-  PASS  von Mises against allowable: u = 0.62 vs u ≤ 1  utilisation 0.62
+  PASS  von Mises against allowable: 62.35 MPa vs 100 MPa  utilisation 0.62
 
 7. Applicability
   None.
@@ -113,12 +113,12 @@ Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(
     nu: not entered, so the default of 0.3 is used.
 
 8. Verification
-  Template: mech.thick-cylinder@2.1.1
+  Template: mech.thick-cylinder@2.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3
   Test run: —
 
 9. References
-  1. Roark's Formulas for Stress and Strain Ch. 13, Table 13.5 — Thick-walled cylinders
-  2. Shigley's Mechanical Engineering Design §3-14 — Stresses in pressurised cylinders
+  1. Young, Roark's Formulas for Stress and Strain Ch. 13, Table 13.5, 8th ed. — Thick-walled cylinders
+  2. Budynas, Shigley's Mechanical Engineering Design §3-14, 10th ed. — Stresses in pressurised cylinders

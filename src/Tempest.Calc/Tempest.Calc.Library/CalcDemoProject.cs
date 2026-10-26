@@ -198,7 +198,7 @@ public static class CalcDemoProject
         CalcInputValue.Quantity("maximum", 51.6, "mm", SealDrawing),
         CalcInputValue.Of("k", 3, SealDrawing),
         CalcInputValue.Of("f_rss", 1.5, SealDrawing),
-        CalcInputValue.Of("cpk_target", 1.33, SealDrawing),
+        CalcInputValue.Of("cpk_req", 1.33, SealDrawing),
         CalcInputValue.Of("n_mc", 2000, SealDrawing),
         CalcInputValue.Of("seed", 1, SealDrawing),
         CalcInputValue.Choice("notation", "BS 8888", SealDrawing),

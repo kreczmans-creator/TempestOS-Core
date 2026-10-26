@@ -10,18 +10,7 @@
     "ValueText": "1"
   },
   {
-    "Symbol": "P",
-    "Number": 3,
-    "Unit": "MPa",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "LOAD-SCHEDULE-01",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "3"
-  },
-  {
-    "Symbol": "R",
+    "Symbol": "R_in",
     "Number": 750,
     "Unit": "mm",
     "Provenance": {
@@ -55,7 +44,7 @@
     "ValueText": "1.5"
   },
   {
-    "Symbol": "n",
+    "Symbol": "n_design",
     "Number": 1,
     "Provenance": {
       "Kind": "Specification",
@@ -63,6 +52,17 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "1"
+  },
+  {
+    "Symbol": "p_design",
+    "Number": 3,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
   },
   {
     "Symbol": "t_p",

@@ -78,7 +78,7 @@
     "ValueText": "3 row(s)"
   },
   {
-    "Symbol": "cpk_target",
+    "Symbol": "cpk_req",
     "Number": 1.33,
     "Provenance": {
       "Kind": "Assumption",

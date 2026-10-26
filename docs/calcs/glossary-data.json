@@ -2630,7 +2630,6 @@
           "meaning": "force",
           "quantity": "Force",
           "units": [
-            "N",
             "kN"
           ],
           "descriptions": [
@@ -5655,7 +5654,6 @@
           "meaning": "moment",
           "quantity": "Moment, torque",
           "units": [
-            "N·m",
             "kN·m"
           ],
           "descriptions": [
@@ -7154,19 +7152,6 @@
           ]
         },
         {
-          "meaning": "internal-design-pressure",
-          "quantity": "Stress, pressure",
-          "units": [
-            "MPa"
-          ],
-          "descriptions": [
-            "Internal design pressure"
-          ],
-          "templates": [
-            "mech.thin-vessel"
-          ]
-        },
-        {
           "meaning": "lug-load",
           "quantity": "Force",
           "units": [
@@ -8289,13 +8274,11 @@
             "mm"
           ],
           "descriptions": [
-            "Inside radius (corroded)",
             "Lug end radius R about the hole centre (the plate is 2R wide at the hole)",
             "Radius (bend)"
           ],
           "templates": [
             "elec.containment",
-            "mech.thin-vessel",
             "struct.lifting"
           ]
         },
@@ -8854,6 +8837,24 @@
           ],
           "templates": [
             "bs.plane-wall"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "R_in",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Inside radius (corroded)"
+          ],
+          "templates": [
+            "mech.thin-vessel"
           ]
         }
       ]
@@ -13835,6 +13836,22 @@
       ]
     },
     {
+      "symbol": "cpk_req",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Required C_pk"
+          ],
+          "templates": [
+            "mech.tolerance-stack"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "cpk_sq_max",
       "meanings": [
         {
@@ -13878,22 +13895,6 @@
           ],
           "templates": [
             "fp.oring-gland"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "cpk_target",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Required C_pk"
-          ],
-          "templates": [
-            "mech.tolerance-stack"
           ]
         }
       ]
@@ -18235,7 +18236,7 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "kN/mm"
+            "kN/m"
           ],
           "descriptions": [
             "Bar stiffness"
@@ -18474,10 +18475,10 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "kN/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Restraint stiffness (leave empty for a rigid restraint)"
+            "Restraint stiffness (optional; blank = a rigid restraint)"
           ],
           "templates": [
             "mech.thermal-expansion"
@@ -19293,7 +19294,7 @@
           "meaning": "worst-case-margin-to-minimum",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Worst-case margin to the minimum"
@@ -19384,7 +19385,7 @@
             "mm"
           ],
           "descriptions": [
-            "Maximum acceptable result"
+            "Maximum acceptable result (optional; blank = no maximum)"
           ],
           "templates": [
             "mech.tolerance-stack"
@@ -19399,7 +19400,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Monte Carlo mean"
@@ -19417,10 +19418,10 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
-            "Monte Carlo 5th percentile"
+            "Monte Carlo 5 % quantile"
           ],
           "templates": [
             "mech.tolerance-stack"
@@ -19435,10 +19436,10 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
-            "Monte Carlo 95th percentile"
+            "Monte Carlo 95 % quantile"
           ],
           "templates": [
             "mech.tolerance-stack"
@@ -19453,7 +19454,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Monte Carlo σ"
@@ -19510,7 +19511,7 @@
             "mm"
           ],
           "descriptions": [
-            "Minimum acceptable result"
+            "Minimum acceptable result (optional; blank = no minimum)"
           ],
           "templates": [
             "mech.tolerance-stack"
@@ -19743,17 +19744,6 @@
           "templates": [
             "mech.bolted-joint"
           ]
-        },
-        {
-          "meaning": "thickness-design-factor",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Design factor on the computed thickness (legacy; 1 for none)"
-          ],
-          "templates": [
-            "mech.thin-vessel"
-          ]
         }
       ]
     },
@@ -19946,6 +19936,22 @@
           ],
           "templates": [
             "elec.pcb-trace"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "n_design",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Design factor on the computed thickness (legacy; 1 for none)"
+          ],
+          "templates": [
+            "mech.thin-vessel"
           ]
         }
       ]
@@ -20977,6 +20983,24 @@
           ],
           "templates": [
             "struct.column-buckling"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "p_design",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Internal design pressure"
+          ],
+          "templates": [
+            "mech.thin-vessel"
           ]
         }
       ]
@@ -22688,7 +22712,6 @@
           "meaning": "standard-deviation",
           "quantity": "Length",
           "units": [
-            "in",
             "mm"
           ],
           "descriptions": [
@@ -22753,6 +22776,24 @@
           ],
           "templates": [
             "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "sigma_abs",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Stress magnitude"
+          ],
+          "templates": [
+            "mech.thermal-expansion"
           ]
         }
       ]
@@ -24025,7 +24066,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Modified RSS tolerance (±)"
@@ -24186,7 +24227,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "RSS tolerance (±)"
@@ -24345,7 +24386,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Worst-case tolerance (±)"
@@ -27445,7 +27486,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Mean result"
@@ -27463,7 +27504,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Nominal result"
@@ -27481,7 +27522,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Worst-case maximum"
@@ -27499,7 +27540,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Worst-case minimum"

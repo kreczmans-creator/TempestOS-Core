@@ -7,11 +7,11 @@ A 1 m diameter receiver at 2 MPa with spot-radiographed seams (E = 0.85) and 3 m
 | Input | Value | Source |
 |---|---|---|
 | `E_j` | 0.85 | spec: SPEC-MECH-03 design criteria |
-| `P` | 2 MPa | spec: LOAD-SCHEDULE-01 |
-| `R` | 500 mm | drawing: DRG-PV-601 rev A |
+| `R_in` | 500 mm | drawing: DRG-PV-601 rev A |
 | `S` | 138 MPa | spec: SPEC-MECH-03 design criteria |
 | `c` | 3 mm | spec: SPEC-MECH-03 design criteria |
-| `n` | 1 | spec: SPEC-MECH-03 design criteria |
+| `n_design` | 1 | spec: SPEC-MECH-03 design criteria |
+| `p_design` | 2 MPa | spec: LOAD-SCHEDULE-01 |
 | `t_p` | 12 mm | drawing: DRG-PV-601 rev A |
 
 | Output | Expected | Computed | Result |

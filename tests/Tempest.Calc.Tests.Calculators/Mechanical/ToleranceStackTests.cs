@@ -44,7 +44,7 @@ public sealed class ToleranceStackTests
         Assert.False(r.Passed);
         Assert.Equal(-0.07e-3, r.OutputSi("m_min") , 12);
         Assert.Equal(0.74420841, r.OutputSi("cpk"), 5);
-        Assert.Contains(r.Checks, c => c.Name == "Worst case within requirement" && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name == "Worst-case range against the requirement" && !c.Passed);
     }
 
     [Fact]
@@ -132,7 +132,7 @@ public sealed class ToleranceStackTests
     {
         var r = CalcRunner.Run(Calculator, Housing().With(Contributors("mm", ("Bad", "adds", 10, -0.1, 0.1))));
         Assert.True(r.IsBlocked);
-        Assert.Contains(r.Blocks, b => b.Message.Contains("row 1 (Bad)", StringComparison.Ordinal));
+        Assert.Contains(r.Blocks, b => b.Message.StartsWith("contributors[1].lower:", StringComparison.Ordinal) && b.Message.Contains("'Bad'", StringComparison.Ordinal));
     }
 
     [Fact]

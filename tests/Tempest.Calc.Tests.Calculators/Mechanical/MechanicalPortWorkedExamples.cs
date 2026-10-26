@@ -79,19 +79,19 @@ public static class MechanicalPortWorkedExamples
 
         new(ThermalExpansionCalculator.Id, "bar-with-gap", "Steel bar heated 60 K against a 0.5 mm gap", Legacy("calc.thermal-expansion-stress", 2),
             Sourced("DRG-TX-501", ["dT"], ["sigma_allow"], Thermal(60, 0.5, null)),
-            [new CalcExpectedValue("F", 47_000, "N", 5e-5), new CalcExpectedValue("sigma", -94.000, "MPa", 5e-5), new CalcExpectedValue("delta", 0.50000, "mm", 5e-5)],
+            [new CalcExpectedValue("F", 47, "kN", 5e-5), new CalcExpectedValue("sigma", -94.000, "MPa", 5e-5), new CalcExpectedValue("delta", 0.50000, "mm", 5e-5)],
             "The bar wants to grow 1.44 mm; the first 0.5 mm closes the gap freely and the rest is resisted by rigid walls, giving 94 MPa compression."),
         new(ThermalExpansionCalculator.Id, "bar-elastic-restraint", "Steel bar heated 60 K against an elastic restraint", Legacy("calc.thermal-expansion-stress", 3),
             Sourced("DRG-TX-502", ["dT"], ["sigma_allow", "k_s"], Thermal(60, 0, 100)),
-            [new CalcExpectedValue("F", 48_000, "N", 5e-5), new CalcExpectedValue("sigma", -96.000, "MPa", 5e-5), new CalcExpectedValue("delta", 0.48000, "mm", 5e-5)],
+            [new CalcExpectedValue("F", 48, "kN", 5e-5), new CalcExpectedValue("sigma", -96.000, "MPa", 5e-5), new CalcExpectedValue("delta", 0.48000, "mm", 5e-5)],
             "A 100 kN/mm restraint in series with the bar's own 50 kN/mm takes a third of the movement as deflection; the force is 48 kN instead of the rigid 72 kN."),
 
         new(ThinVesselCalculator.Id, "receiver-2MPa", "Air receiver shell, 2 MPa", new CalcReferenceSource("Hand calculation, ASME VIII-1 UG-27(c) forms", null, "t_c = 8.6133 mm, t_l = 4.2481 mm, t_req = 11.613 mm"),
-            Sourced("DRG-PV-601", ["P"], ["S", "E_j", "n", "c"], CalcInputValue.Quantity("P", 2, "MPa"), CalcInputValue.Quantity("R", 500, "mm"), CalcInputValue.Quantity("S", 138, "MPa"), CalcInputValue.Of("E_j", 0.85), CalcInputValue.Of("n", 1), CalcInputValue.Quantity("c", 3, "mm"), CalcInputValue.Quantity("t_p", 12, "mm")),
+            Sourced("DRG-PV-601", ["p_design"], ["S", "E_j", "n_design", "c"], CalcInputValue.Quantity("p_design", 2, "MPa"), CalcInputValue.Quantity("R_in", 500, "mm"), CalcInputValue.Quantity("S", 138, "MPa"), CalcInputValue.Of("E_j", 0.85), CalcInputValue.Of("n_design", 1), CalcInputValue.Quantity("c", 3, "mm"), CalcInputValue.Quantity("t_p", 12, "mm")),
             [new CalcExpectedValue("t_c", 8.6133, "mm", 5e-5), new CalcExpectedValue("t_req", 11.613, "mm", 5e-5), new CalcExpectedValue("u", 0.96777, "", 5e-5)],
             "A 1 m diameter receiver at 2 MPa with spot-radiographed seams (E = 0.85) and 3 mm corrosion allowance needs 11.6 mm; the 12 mm plate provided passes at 0.97."),
         new(ThinVesselCalculator.Id, "vessel-3MPa-thin", "Vessel shell at 3 MPa — plate too thin", new CalcReferenceSource("Hand calculation, ASME VIII-1 UG-27(c) forms", null, "t_c = 2250/136.2 = 16.520 mm; t_req = 18.020 mm against 15 mm"),
-            Sourced("DRG-PV-602", ["P"], ["S", "E_j", "n", "c"], CalcInputValue.Quantity("P", 3, "MPa"), CalcInputValue.Quantity("R", 750, "mm"), CalcInputValue.Quantity("S", 138, "MPa"), CalcInputValue.Of("E_j", 1.0), CalcInputValue.Of("n", 1), CalcInputValue.Quantity("c", 1.5, "mm"), CalcInputValue.Quantity("t_p", 15, "mm")),
+            Sourced("DRG-PV-602", ["p_design"], ["S", "E_j", "n_design", "c"], CalcInputValue.Quantity("p_design", 3, "MPa"), CalcInputValue.Quantity("R_in", 750, "mm"), CalcInputValue.Quantity("S", 138, "MPa"), CalcInputValue.Of("E_j", 1.0), CalcInputValue.Of("n_design", 1), CalcInputValue.Quantity("c", 1.5, "mm"), CalcInputValue.Quantity("t_p", 15, "mm")),
             [new CalcExpectedValue("t_c", 16.520, "mm", 5e-5), new CalcExpectedValue("t_req", 18.020, "mm", 5e-5), new CalcExpectedValue("sigma_h", 168.47, "MPa", 5e-5), new CalcExpectedValue("u", 1.2013, "", 5e-5)],
             "A 1.5 m vessel at 3 MPa needs 18 mm; the 15 mm plate fails at 1.20, and its hoop stress at the corroded thickness, 168 MPa, is above the 138 MPa allowable."),
 

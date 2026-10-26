@@ -457,9 +457,6 @@
   "heat-loss-per-item": [
    "elec.enclosure-heat"
   ],
-  "internal-design-pressure": [
-   "mech.thin-vessel"
-  ],
   "lug-load": [
    "mech.lifting-lug"
   ],
@@ -514,7 +511,6 @@
  "R": {
   "radius": [
    "elec.containment",
-   "mech.thin-vessel",
    "struct.lifting"
   ],
   "reliability": [
@@ -1346,9 +1342,6 @@
    "mech.bearing-life",
    "mech.bearing-life-basic",
    "mech.shaft"
-  ],
-  "thickness-design-factor": [
-   "mech.thin-vessel"
   ]
  },
  "n_L": {
