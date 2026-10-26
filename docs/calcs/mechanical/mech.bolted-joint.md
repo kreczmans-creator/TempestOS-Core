@@ -1,4 +1,4 @@
-# M3a — Bolted joint, simplified VDI 2230 (`mech.bolted-joint@1.2.0`)
+# M3a — Bolted joint, simplified VDI 2230 (`mech.bolted-joint@1.2.1`)
 
 **In plain terms.** Tightening a bolt stretches it and squeezes the parts it clamps, like a soft spring pulling against a stiffer one. When a working load then pulls the joint apart, most of it relaxes the squeeze on the parts and only a fraction, set by the two stiffnesses, adds to the bolt. The joint is checked five ways: the parts must not separate, enough clamp must remain, the bolt must not yield under tension plus thread torsion, the alternating stress must stay below the endurance limit, and the thread must not strip. Torque gives preload only roughly, which is why the scatter factor is applied.
 
@@ -11,6 +11,8 @@
 **Outputs.** `A_s`, `F_M`, `F_M_min`, `sigma_M`, `nu_M`, `u_assembly` (`nu_M/nu_perm`), `k_S`, `k_P`, `Phi`, `F_Z`, `F_SA`, `F_KR`, `F_A_sep` (working load at separation), `F_S_max`, `sigma_red_B`, `sigma_a`, `m_min`; with a working load, the joint-diagram load factors `n_0 = F_A,sep/F_A` (against separation) and `n_L = (R_p02·A_s − F_M)/F_SA` (against axial yield, torsion excluded), carried from the legacy `calc.bolted-joint-preload` (ADR-0167). **Checks.** equivalent stress at assembly within the permitted ν of the proof strength (1.2.0: M12 8.8 friction method at 95 N·m reads `nu_M` 1.150, σ_red,M 736 MPa against R_p0.2 640 MPa, and all five checks passed before; the warning `preload-yield` above 90 % stays and says when the bolt yields in tightening); no separation; residual clamp vs required; yield; fatigue; stripping.
 
 **Limitations.** Concentric only; frusta with the hole diameter inside; torsion kept at 50 % in service; stripping by a half-pitch shear area; no thermal or transverse-slip checks.
+
+**Changes in 1.2.1 (mech.bolted-joint-01, -R2).** Statements only, no number changes. The thread torsion modulus is stated: `W_p = π/16·d_3³` at the minor diameter, which is conservative against the VDI 2230 mean diameter `d_S = (d_2 + d_3)/2` (at the m12-88 defaults `τ_M` is 16 % higher and `ν_M` 0.9687 against 0.9180, 5.5 % higher); the method text and an assumption say so. `F_M` is the maximum preload, so the nut factor `K` and the friction coefficients `μ_G`, `μ_K` are now labelled as the smallest values the joint can have (a mean friction coefficient understates the maximum preload by about 23 % at α_A 1.6, and the yield and stripping checks then use too low a load), and an assumption states it.
 
 **Test cases.** `ka-m12-88-nut-factor` (A_s 84.27 mm², F_M 38.75 kN — analytic, Confirmed); `ka-shigley-stiffness` (k_P 1.908e6 kN/m, Φ 0.0720, F_M 40.69 kN — re-derived from Shigley eqs 8-17/8-20, Confirmed); the legacy module's three vectors `ka-legacy-given-1`, `-2` and `-given-separates` (given preload and stiffnesses; vector 2's yield factor corrected to 3.2578 because the joint separates first, D-42).
 
