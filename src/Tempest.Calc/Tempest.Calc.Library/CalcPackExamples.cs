@@ -86,7 +86,7 @@ internal static class CalcPackExamples
     public static IReadOnlyList<CalcInputValue> MotorE1 { get; } =
     [
         C("mechanism", "lead / ball screw"), Q("p_screw", 10, "mm"), Q("m", 50, "kg"), N("mu", 0.1), N("s", 0.5), Q("t_move", 0.5, "s"),
-        Q("n_max", 10000, "rpm"),
+        Q("n_max", 10000, "rpm"), Q("n_rated", 3000, "rpm"),
     ];
 
     /// <summary>
@@ -513,8 +513,7 @@ internal static class CalcPackExamples
     /// <summary>
     /// The board's loads (24 V DC, fed from the single-phase mains through a 90 % efficient supply that sits INSIDE the enclosure). Row 0 is the power trace itself: its input power is a 1 W placeholder that the trace
     /// step's I²R loss replaces by cell link, all of it released as heat inside the enclosure. The gate drivers and logic and the display release all their input as heat; the power stage releases its loss
-    /// only (the share is left blank, so 1 − η). The last row is the supply's own loss, which the sheet counts only if it is a row (E6's convention): 26.5 W = the 238.5 W the DC loads draw × (1/0.9 − 1), typed
-    /// (a test guards it against the loads; it does not follow them automatically). The loads, efficiencies and the supply are invented illustrations.
+    /// only (the share is left blank, so 1 − η). The supply's own loss is counted by the sheet itself (E6 1.4.0): the DC loads' 238.5 W × (1/0.9 − 1) = 26.5 W, because the supply's bus is chosen and its efficiency is entered, so it follows the loads. The loads, efficiencies and the supply are invented illustrations.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxE6 { get; } =
     [
@@ -522,9 +521,8 @@ internal static class CalcPackExamples
             DcLoad("Power trace loss (PCB)", 0.001, 1, 1, 1),
             DcLoad("Gate drivers and logic", 0.025, 0.9, 1, 1),
             CalcRow.Of(Txt("name", "Power stage"), Txt("supply", "DC"), ("P", new CalcCell(0.2, "kW")), Num("cosphi", 1), Num("eta", 0.96), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false))),
-            DcLoad("Display and sensors", 0.012, 1, 1, 1),
-            CalcRow.Of(Txt("name", "24 V supply loss"), Txt("supply", "AC single-phase"), ("P", new CalcCell(0.0265, "kW")), Num("cosphi", 1), Num("eta", 1), Num("heat", 1), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)))),
-        C("psu_bus", "AC single-phase"),
+            DcLoad("Display and sensors", 0.012, 1, 1, 1)),
+        C("psu_bus", "AC single-phase"), N("eta_psu", 0.9),
     ];
 
     private static CalcRow DcLoad(string name, double kw, double eta, double heat, double duty) =>

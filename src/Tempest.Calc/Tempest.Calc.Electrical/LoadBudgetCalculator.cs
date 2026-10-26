@@ -41,6 +41,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         [
             new CalcInputSpec("loads", "Loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 100),
             new CalcInputSpec("P_add", "Additional three-phase load (linked from E1's RMS power)", CalcInputKind.Quantity, "kW", Default: 0, Min: 0, Max: 200, HardMin: 0, HardMax: 200, Group: "Loads"),
+            new CalcInputSpec("P_rated_add", "Rated (nameplate) shaft power of the additional machine (linked from E1's P_rated): the supply carries the larger of this and the duty power P_add; blank: the machine is sized on its duty only", CalcInputKind.Quantity, "kW", Min: 0, Max: 200, HardMin: 0, HardMax: 200, IsOptional: true, Group: "Loads"),
             new CalcInputSpec("cosphi_add", "Power factor of the additional load", CalcInputKind.Number, Default: 0.85, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Loads"),
             new CalcInputSpec("eta_add", "Efficiency of the additional load", CalcInputKind.Number, Default: 0.9, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Loads"),
             new CalcInputSpec("inrush_add", "Starting multiple of the additional load", CalcInputKind.Number, Default: 1, Min: 1, Max: 20, HardMin: 1, HardMax: 20, Group: "Loads"),
@@ -83,6 +84,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             new CalcApplicabilityRule("load-defaults", "A load row with a blank optional cell (η, d, k or inrush): the blank is taken as 1, which understates the heat (η) and the starting peak (inrush) and overstates the demand (d, k).", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("psu_bus", "DC loads with no AC bus chosen for their power supply: the AC bus currents and the transformer demand omit its input.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("derate", "Ambient above 40 °C with no PSU derating entered.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("rated-add", "A linked machine with no rated power: the supply is sized on its duty power only, and the machine's rating can be higher.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("battery-charge", "A battery-backed load with an autonomy: the power supply rating omits the battery's charging power.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("peukert-range", "An autonomy beyond the Peukert rated hour rate: the capacity is not taken below the plain product I_b·t.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("peukert", "Peukert needs both the exponent and the hour rate.", CalcNoticeSeverity.Warning),
@@ -119,6 +121,8 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             new CalcOutputPort("I_1ph", "A", "Single-phase bus current"),
             new CalcOutputPort("I_DC", "A", "DC bus current"),
             new CalcOutputPort("Phi", "kW", "Heat dissipated inside the enclosure (→ E2)"),
+            new CalcOutputPort("U_L", "V", "Three-phase line voltage of the bus (→ E3 V_n)"),
+            new CalcOutputPort("pf_link", "", "Power factor of the linked machine (→ E3 cos φ)"),
             new CalcOutputPort("C_req", "A*h", "Minimum battery capacity"),
         ],
         RecordKinds:
@@ -203,8 +207,21 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
 
         // A linked machine (E1's continuous power) enters as a three-phase load drawing P_add/η_add (Addendum A §A7 motor circuit). The machine is outside the
         // enclosure, so by default none of its loss is panel heat (heat_add = 0).
-        if (c.Si("P_add") > 0)
-            loads.Add(new Load(loads.Count + 1, "Linked load", Ac3, c.Si("P_add") / c.InputSi("eta_add"), c.InputSi("cosphi_add"), c.InputSi("eta_add"), 1, 1, c.InputSi("inrush_add"), false, c.InputSi("heat_add"), psuEta));
+        // The supply carries the machine the circuit is for, not only the duty it is asked to do (chain.motor-circuit-04): the larger of the duty power and the rated shaft power.
+        var pLinked = c.Si("P_add");
+
+        if (c.Has("P_rated_add"))
+        {
+            c.Input("P_rated_add");
+            pLinked = Math.Max(pLinked, c.Si("P_rated_add"));
+        }
+        else if (pLinked > 0)
+        {
+            c.Warn("rated-add", "P_rated_add: the linked machine is sized on its duty power only; its rated (nameplate) power, which the drive and the supply must carry, can be higher (a larger motor on the same duty draws more current). Enter P_rated_add, or link E1's P_rated, to size the cable and the device for the machine.");
+        }
+
+        if (pLinked > 0)
+            loads.Add(new Load(loads.Count + 1, "Linked load", Ac3, pLinked / c.InputSi("eta_add"), c.InputSi("cosphi_add"), c.InputSi("eta_add"), 1, 1, c.InputSi("inrush_add"), false, c.InputSi("heat_add"), psuEta));
 
         var kW = UnitCatalog.Parse("kW");
         var kVA = UnitCatalog.Parse("kVA");
@@ -292,6 +309,11 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             c.Assign("C_req", "Ah / (DoD * eta_b * k_temp * k_age)", "A*h", "Minimum battery capacity");
             outputs.AddRange([("I_b", "Battery discharge current"), ("Ah", "Discharge capacity"), ("C_req", "Minimum battery capacity")]);
         }
+
+        // The supply voltage and the linked machine's power factor travel on to the voltage-drop step (chain.motor-circuit-07).
+        c.Record("U_L", "U_3ph", $"{F(c.Si("U_3ph"))} V", ScalarValue.Of(c.Si("U_3ph"), "V"), "Three-phase line voltage of the bus");
+        c.Record("pf_link", "cosφ of the linked machine", F(c.InputSi("cosphi_add")), new ScalarValue(c.InputSi("cosphi_add")), "Power factor of the linked machine");
+        outputs.AddRange([("U_L", "Three-phase line voltage"), ("pf_link", "Power factor of the linked machine")]);
 
         foreach (var (symbol, text) in outputs)
             c.Output(symbol, text);

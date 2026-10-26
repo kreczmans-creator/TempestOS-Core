@@ -55,27 +55,29 @@ public sealed class ElectronicsEnclosureChainTests
         Assert.All(e6.CellLinks, l => Assert.Equal(("loads", "P"), (l.Symbol, l.Column)));
         Assert.Empty(e6.Links);
 
-        // E6: the heat released inside, Φ = Σ h·P·d·k = 1.507335 + 25 + (1 − 0.96) × 200 + 12 + 26.5 W = 73.007335 W (the trace's whole loss, the drivers' and display's whole input, the power stage's loss, the supply's loss).
-        Assert.Equal(1.5073351085105653 + 25 + 0.04 * 200 + 12 + 26.5, Si(e6, "Phi"), 9);
-        Assert.Equal(73.00733510851057, Si(e6, "Phi"), 9);
+        // E6: the heat released inside, Φ = Σ h·P·d·k + P_DC (1/η_PSU − 1) = 1.507335 + 25 + (1 − 0.96) × 200 + 12 + 238.507335 × (1/0.9 − 1) W = 73.008150 W (the trace's whole loss, the drivers' and display's whole input,
+        // the power stage's loss, and the supply's own loss, which the sheet adds itself since 1.4.0: elec.load-budget-05; the typed 26.5 W row it replaces was 0.0008 W low) (python3).
+        var dcDraw = 1.5073351085105653 + 25 + 200 + 12;
+        Assert.Equal(1.5073351085105653 + 25 + 0.04 * 200 + 12 + dcDraw * (1 / 0.9 - 1), Si(e6, "Phi"), 9);
+        Assert.Equal(73.0081501205673, Si(e6, "Phi"), 9);
 
         // E6 → E2, kW into W: the board's heat is the enclosure's additional load.
         Assert.Equal(Si(e6, "Phi"), InputSi(e2, "P_add"), 9);
-        Assert.Equal(73.00733510851057, e2.Inputs.Single(i => i.Symbol == "P_add").Number!.Value, 9);
+        Assert.Equal(73.0081501205673, e2.Inputs.Single(i => i.Symbol == "P_add").Number!.Value, 9);
         Assert.Equal("W", e2.Inputs.Single(i => i.Symbol == "P_add").Unit);
 
-        // E2: 500 × 600 × 200 against a wall: A_eff = top 0.1 + front 0.3 + two sides 0.24 = 0.64 m²; P = 4 + 73.007335 = 77.007335 W; ΔT = P/(5.5 × 0.64) = 21.8771 K; 56.8771 °C inside, 60 °C limit.
+        // E2: 500 × 600 × 200 against a wall: A_eff = top 0.1 + front 0.3 + two sides 0.24 = 0.64 m²; P = 4 + 73.008150 = 77.008150 W; ΔT = P/(5.5 × 0.64) = 21.8773 K; 56.8773 °C inside, 60 °C limit.
         Assert.Equal(0.64, Si(e2, "A_eff"), 12);
-        Assert.Equal(77.00733510851057, Si(e2, "P_total"), 9);
-        Assert.Equal(21.87708383764505, Si(e2, "dT_nat"), 9);
-        Assert.Equal(56.877083837645046 + 273.15, Si(e2, "T_int"), 9);
+        Assert.Equal(77.0081501205673, Si(e2, "P_total"), 9);
+        Assert.Equal(21.877315375161164, Si(e2, "dT_nat"), 9);
+        Assert.Equal(56.87731537516116 + 273.15, Si(e2, "T_int"), 9);
         Assert.Equal(88, Si(e2, "P_nat_max"), 9);
         Assert.All(e2.Checks, c => Assert.True(c.Passed, c.Name));
         Assert.DoesNotContain(e2.Warnings, w => w.RuleId == "cooling-unit");
 
-        // E2, sealed at 25 °C: the gas-law difference is 101.325 kPa × (T_int/T_seal − 1) = 101.325 × (330.027084/298.15 − 1) = 10.83329 kPa, but the 1 kPa breather opens first: dp_seal = 1 kPa (notice), and on the 0.3 m² cover it is 300 N.
-        Assert.Equal(101325 * ((56.877083837645046 + 273.15) / 298.15 - 1), Si(e2, "dp_gas"), 6);
-        Assert.Equal(10833.29035669759, Si(e2, "dp_gas"), 6);
+        // E2, sealed at 25 °C: the gas-law difference is 101.325 kPa × (T_int/T_seal − 1) = 101.325 × (330.027315/298.15 − 1) = 10.83337 kPa, but the 1 kPa breather opens first: dp_seal = 1 kPa (notice), and on the 0.3 m² cover it is 300 N.
+        Assert.Equal(101325 * ((56.87731537516116 + 273.15) / 298.15 - 1), Si(e2, "dp_gas"), 6);
+        Assert.Equal(10833.369043730354, Si(e2, "dp_gas"), 6);
         Assert.Equal(1000, Si(e2, "dp_seal"), 9);
         Assert.Contains(e2.Warnings, w => w.RuleId == "seal-relief");
         Assert.Equal(300, Si(e2, "F_seal"), 9);
@@ -83,7 +85,7 @@ public sealed class ElectronicsEnclosureChainTests
 
         // E2 → M8, degC to degC: the enclosure's internal temperature is the latch's temperature of use.
         Assert.Equal(Si(e2, "T_int"), InputSi(m8, "T_use"), 9);
-        Assert.Equal(56.877083837645046, m8.Inputs.Single(i => i.Symbol == "T_use").Number!.Value, 9);
+        Assert.Equal(56.87731537516116, m8.Inputs.Single(i => i.Symbol == "T_use").Number!.Value, 9);
         Assert.Equal("degC", m8.Inputs.Single(i => i.Symbol == "T_use").Unit);
 
         // M8: ε = y·h/((2/3)·l²) = 1.6667 %, P = b·h²·Es·ε/(6·l) = 4.1481 N, u = 0.5556; W = 4.4018 N; W′ = 71.925 N (α′ 70°, below the 73.3° that would lock).
@@ -226,7 +228,8 @@ public sealed class ElectronicsEnclosureChainTests
         var host = Host();
         var made = await InstantiateAsync(host);
 
-        // 8 A to 24 A: the trace loses 13.566 W, the enclosure reaches 60.303 °C against the 60 °C the plastic and the alloy were typed for, and its own check fails.
+        // 8 A to 24 A: the 2 mm trace is now 3.09 times too narrow (u_w 3.0887), so it runs at the rise the curve-fit gives for its drawn width, 192.37 K (elec.pcb-trace-02; it was held at the allowed 30 K before), R 35.339 mΩ, and loses 20.355 W;
+        // the budget's heat is 20.355 + 45 + (20.355 + 237)/9 = 93.950 W, and the enclosure reaches 62.827 °C against the 60 °C the plastic and the alloy were typed for, and its own check fails (python3).
         var e7 = made.Instances["e7"];
         Assert.True((await host.Service.UpdateInputsAsync(e7.Id, Scale("I", 3)(e7.Inputs))).Succeeded);
 
@@ -234,25 +237,27 @@ public sealed class ElectronicsEnclosureChainTests
             Assert.True((await host.Service.UpdateLinksAsync(made.Instances[key].Id)).Succeeded, key);
 
         var e2 = await Fresh(host, made, "e2");
-        Assert.Equal(60.30284544789633 + 273.15, Si(e2, "T_int"), 6);
+        Assert.Equal(62.82677691940542 + 273.15, Si(e2, "T_int"), 6);
         Assert.Contains(e2.Checks, c => !c.Passed && c.Name.StartsWith("Natural dissipation holds T_max", StringComparison.Ordinal));
     }
 
     [Fact]
-    public async Task The_Supply_Loss_Row_Matches_The_Loads_It_Serves()
+    public async Task The_Supply_Loss_Follows_The_Loads_It_Serves_Because_The_Sheet_Adds_It_Itself()
     {
         var host = Host();
         var made = await InstantiateAsync(host);
         var e6 = made.Instances["e6"];
         var rows = e6.Inputs.Single(i => i.Symbol == "loads").Rows!;
 
-        // The 24 V supply (90 %) sits inside the enclosure: its loss is the DC loads' draw × (1/0.9 − 1), typed as a row because E6 counts it only if it is one.
+        // The 24 V supply (90 %) sits inside the enclosure: its loss is the DC loads' draw × (1/0.9 − 1), added by E6 (1.4.0) when the supply's bus and efficiency are entered; there is no typed row to keep in step.
         var dc = rows.Where(r => r.Get("supply")!.Text == "DC").Sum(r => r.Get("P")!.Number!.Value * (r.Get("d")?.Number ?? 1));
         Assert.Equal(0.23850733510851058, dc, 12);
-        var supply = Assert.Single(rows, r => r.Get("name")!.Text == "24 V supply loss");
-        Assert.Equal(1.0, supply.Get("heat")!.Number!.Value, 12);
-        Assert.Equal(dc * (1 / 0.9 - 1), supply.Get("P")!.Number!.Value, 0.01 * dc * (1 / 0.9 - 1));
+        Assert.DoesNotContain(rows, r => r.Get("name")!.Text == "24 V supply loss");
         Assert.Equal(0.9, e6.Inputs.Single(i => i.Symbol == "eta_psu").Number!.Value, 12);
+        Assert.Equal("AC single-phase", e6.Inputs.Single(i => i.Symbol == "psu_bus").Text);
+
+        // The supply's loss in Φ is exactly the DC draw × (1/0.9 − 1): Φ less the other rows' heat (the trace's whole loss, 25 W, 8 W, 12 W).
+        Assert.Equal(1.0 / 0.9 * dc * 1000 - dc * 1000, Si(e6, "Phi") - (1.5073351085105653 + 25 + 8 + 12), 9);
     }
 
     [Fact]
@@ -272,17 +277,17 @@ public sealed class ElectronicsEnclosureChainTests
         Assert.Equal(0.023552111070477583, Si(e7, "trace_R"), 12);
         Assert.Equal(0.8727687516920095, Si(e7, "u_w"), 12);
 
-        // ... into the load table (row 0) ..., the budget's heat 73.670563 W, the enclosure's 77.670563 W and 57.065501 °C, and the latch's temperature of use.
+        // ... into the load table (row 0) ..., the budget's heat 73.745070 W, the enclosure's 77.745070 W and 57.086667 °C, and the latch's temperature of use.
         Assert.Equal(Si(e7, "trace_Ploss"), CellSi(e6, "loads", 0, "P"), 9);
-        Assert.Equal(73.67056255625522, Si(e6, "Phi"), 9);
+        Assert.Equal(73.74506950695024, Si(e6, "Phi"), 9);
         Assert.Equal(Si(e6, "Phi"), InputSi(e2, "P_add"), 9);
-        Assert.Equal(77.67056255625522, Si(e2, "P_total"), 9);
-        Assert.Equal(57.06550072620887 + 273.15, Si(e2, "T_int"), 9);
+        Assert.Equal(77.74506950695024, Si(e2, "P_total"), 9);
+        Assert.Equal(57.08666747356541 + 273.15, Si(e2, "T_int"), 9);
         Assert.Equal(Si(e2, "T_int"), InputSi(m8, "T_use"), 9);
         Assert.NotEqual(InputSi(m8Before, "T_use"), InputSi(m8, "T_use"));
 
-        // ... and the gas-law pressure rises to 10.897323 kPa (10.833290 before), but the 1 kPa breather governs both times, so the cover's pressure and the force on the latches do not move and the cover plate is current again after the update.
-        Assert.Equal(10897.323028955603, Si(e2, "dp_gas"), 6);
+        // ... and the gas-law pressure rises to 10.904516 kPa (10.833369 before), but the 1 kPa breather governs both times, so the cover's pressure and the force on the latches do not move and the cover plate is current again after the update.
+        Assert.Equal(10904.516457350379, Si(e2, "dp_gas"), 6);
         Assert.Equal(1000, Si(e2, "dp_seal"), 9);
         Assert.Equal(Si(e2, "dp_seal"), InputSi(s9, "q"), 6);
         Assert.Equal(InputSi(s9Before, "q"), InputSi(s9, "q"), 9);

@@ -16,7 +16,8 @@ public static class CalcPackTemplates
     /// quantity and is not a shaft torque. E1's peak torque <c>T_pk</c> is the peak torque the load demands at the motor shaft, run-up included (the motor's own limit <c>T_peak</c> is a check on E1); it is the torque the shaft's yield check and key
     /// see (<c>T_pk</c>, M4). The coupling flange bolt group (M3, <c>mech.bolt-group</c>) carries E1's design torque <c>T_design</c> about its centroid (<c>T_z</c>), on the basis the owner chooses in E1's <c>T_basis</c>:
     /// the load peak <c>T_pk</c> (the default, as before), the motor's typed peak torque <c>T_peak</c>, a service factor on the rated torque (<c>SF_c</c>·<c>T_rated</c>) or a protective torque limit (<c>T_lim</c>); the basis is a design decision, not a calculation. E1's peak axial
-    /// thrust <c>F_ax_pk</c> (a ball screw's; 0 for a rotary mechanism) is the bearing's axial load <c>F_a</c>, peak rather than the cube-mean equivalent, so conservative for life.
+    /// thrust <c>F_ax_pk</c> (a ball screw's; 0 for a rotary mechanism) is the bearing's axial load <c>F_a</c>, peak rather than the cube-mean equivalent, so conservative for life. The bearing's speed is E1's mean motor speed over the cycle <c>n_mean</c> (the turns per cycle time, dwell included; the
+    /// steady speed in continuous duty), the speed its life in hours is counted at: the peak speed <c>n_pk</c> (still the shaft's, for its critical speed) would understate the life of a cycle with a dwell by the ratio of the two.
     /// The shaft's mesh forces are entered (derived for the E1 torque; re-derive them when it changes). M3 must be given its bolt pattern as an input.
     /// </summary>
     public static CalcPackTemplate DriveTrain { get; } = new(
@@ -34,7 +35,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("e1", "T_alt", "m4", "T_a"),
             new CalcPackBinding("e1", "n_pk", "m4", "n"),
             new CalcPackBinding("m4", "R_A", "m5", "F_r"),
-            new CalcPackBinding("e1", "n_pk", "m5", "n"),
+            new CalcPackBinding("e1", "n_mean", "m5", "n"),
             new CalcPackBinding("e1", "F_ax_pk", "m5", "F_a"),
             new CalcPackBinding("m4", "d_A", "m2", "D"),
             new CalcPackBinding("e1", "T_pk", "m4", "T_pk"),
@@ -44,8 +45,9 @@ public static class CalcPackTemplates
     /// <summary>
     /// Motor circuit: motor (E1) → load budget (E6) → cable (E4) → voltage drop (E3) and fault protection (E5) →
     /// enclosure heat (E2). E1's RMS power (the thermal-equivalent continuous power, not the instantaneous peak) enters E6 as a linked
-    /// load; E6's bus current sizes the cable; the cable's size, length, rated current and device type code feed E3 and E5 (the protective conductor is taken as the same size as the line conductor, <c>S_cpc</c> = the cable's CSA; above 16 mm² a smaller protective conductor is usual: unlink and enter it) (E5 is blocked
-    /// if the device chosen on it is not the one the cable step sized); E6's heat released inside the enclosure enters E2 (the linked
+    /// load, and E1's rated shaft power (<c>P_rated</c>, from the motor's rated speed) as its rating (<c>P_rated_add</c>): the supply carries the larger of the two, so a bigger motor on the same duty draws a bigger cable and device; E6's bus current sizes the cable; the cable's size, length, rated current and device type code feed E3 and E5 (the protective conductor is taken as the same size as the line conductor, <c>S_cpc</c> = the cable's CSA; above 16 mm² a smaller protective conductor is usual: unlink and enter it) (E5 is blocked
+    /// if the device chosen on it is not the one the cable step sized); E6's line voltage and the linked machine's power factor are E3's voltage and power factor, and the cable's conductor operating temperature for its insulation (70 °C PVC, 90 °C XLPE) is E5's loop temperature and E3's conductor temperature. E5's phase-to-earth
+    /// voltage <c>U_0</c> is not linked (the nominal 230 V of a 400 V system is not exactly 400/√3): on a supply other than 230/400 V set it with E6's line voltage; E6's heat released inside the enclosure enters E2 (the linked
     /// motor is outside it). The steps carry example inputs except E4's two record tables, which no build ships: the chain is refused at
     /// E4 until the user supplies his own.
     /// </summary>
@@ -63,15 +65,20 @@ public static class CalcPackTemplates
         ],
         [
             new CalcPackBinding("e1", "P_rms", "e6", "P_add"),
+            new CalcPackBinding("e1", "P_rated", "e6", "P_rated_add"),
             new CalcPackBinding("e6", "I_3ph", "e4", "I_b_in"),
             new CalcPackBinding("e4", "I_b", "e3", "I"),
             new CalcPackBinding("e4", "L", "e3", "L"),
             new CalcPackBinding("e4", "CSA", "e3", "A_c"),
+            new CalcPackBinding("e6", "U_L", "e3", "V_n"),
+            new CalcPackBinding("e6", "pf_link", "e3", "cos_phi"),
+            new CalcPackBinding("e4", "theta_op", "e3", "T_c"),
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
             new CalcPackBinding("e4", "CSA", "e5", "S_cpc"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
             new CalcPackBinding("e4", "device_code", "e5", "device_code"),
+            new CalcPackBinding("e4", "theta_op", "e5", "theta"),
             new CalcPackBinding("e6", "Phi", "e2", "P_add"),
         ]);
 
@@ -242,11 +249,13 @@ public static class CalcPackTemplates
             new CalcPackBinding("e4", "I_b", "e3", "I"),
             new CalcPackBinding("e4", "L", "e3", "L"),
             new CalcPackBinding("e4", "CSA", "e3", "A_c"),
+            new CalcPackBinding("e4", "theta_op", "e3", "T_c"),
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
             new CalcPackBinding("e4", "CSA", "e5", "S_cpc"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
             new CalcPackBinding("e4", "device_code", "e5", "device_code"),
+            new CalcPackBinding("e4", "theta_op", "e5", "theta"),
             new CalcPackBinding("e1", "P_rated", "e9", "P"),
             new CalcPackBinding("e4", "CSA", "e9", "A_c"),
             new CalcPackBinding("e4", "L", "e9", "L_cab"),
@@ -411,8 +420,8 @@ public static class CalcPackTemplates
     /// Electronics enclosure: PCB power trace (E7) → load budget (E6) → enclosure heat (E2) → cover latches (M8) and cover plate (S9).
     /// <para>
     /// E7 → E6: the trace's I²R loss (<c>trace_Ploss</c>, W) is the input power of a row of the board's load table (<c>loads</c> row 0, column <c>P</c>, kW), a table-cell link; all of it is released as heat inside the enclosure
-    /// (the row's heat share is 1). E6 → E2: the heat the loads release inside (<c>Phi</c>, kW) is the enclosure's additional load (<c>P_add</c>, W), as in the cooling chain. The supply's own loss is a TYPED row of the load table (E6 counts it
-    /// only if it is a row); a test guards it against the loads. E2 → M8: the enclosure's internal temperature (<c>T_int</c>) is the latches' temperature of use (<c>T_use</c>). The enclosure is sealed (<c>T_seal</c>) with a
+    /// (the row's heat share is 1). E6 → E2: the heat the loads release inside (<c>Phi</c>, kW) is the enclosure's additional load (<c>P_add</c>, W), as in the cooling chain. The supply's own loss is E6's own: with the supply's bus and efficiency entered it adds the DC loads' draw × (1/η − 1)
+    /// to the heat, so it follows the loads. E2 → M8: the enclosure's internal temperature (<c>T_int</c>) is the latches' temperature of use (<c>T_use</c>). The enclosure is sealed (<c>T_seal</c>) with a
     /// pressure-compensation breather (<c>dp_relief</c>), so the air warming from the sealing temperature to <c>T_int</c> at constant volume would put p0·(T_int/T_seal − 1) across the walls (an upper bound) and the breather
     /// limits it: <c>dp_seal</c> = min of the two. E2 → S9: <c>dp_seal</c> is the uniform pressure <c>q</c> on the cover plate. E2 → M8: the force <c>F_seal</c> = <c>dp_seal</c>·<c>A_cover</c> on the cover is the force <c>F_req</c> the
     /// <c>n_latch</c> latches (typed: six) must hold, each by its separation force W′; M8 checks <c>F_req</c> ≤ n·W′. The cover area is typed in E2 and in the plate's dimensions (a test guards the match).

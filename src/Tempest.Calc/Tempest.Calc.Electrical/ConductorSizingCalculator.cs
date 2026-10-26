@@ -150,6 +150,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             new CalcOutputPort("CSA", "mm^2", "Selected conductor cross-section"),
             new CalcOutputPort("I_z", "A", "Current-carrying capacity of the selected conductor"),
             new CalcOutputPort("L", "m", "Circuit length"),
+            new CalcOutputPort("theta_op", "degC", "Conductor operating temperature for the insulation (70 PVC, 90 XLPE, the entered θ_p for 'user'; → E5 θ, E3 T_c)"),
             new CalcOutputPort("device_code", "", "Protective device type code: 1 MCB B, 2 MCB C, 3 MCB D, 4 fuse, MCCB or MPCB (→ E5 device_code)"),
         ],
         RecordKinds:
@@ -365,6 +366,17 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
                 c.Warn("theta_a", $"theta_a: the ambient {F(ambient)} °C is above the reference {F(reference)} °C but C_a is 1, so the ambient has not been applied to the conductor and it is sized as if the ambient were the reference; enter C_a from your licensed table for this ambient, or tick derive_Ca (the approximation) and compare it with the table.");
         }
 
+        // The conductor's operating temperature for its insulation (chain.motor-circuit-R1): the loop-impedance and voltage-drop steps take their resistance at it.
+        var operating = c.InputText("insulation") switch
+        {
+            Pvc => 70.0,
+            Xlpe => 90.0,
+            _ => c.Has("theta_p") ? c.InputSi("theta_p") - 273.15 : double.NaN,
+        };
+
+        if (!double.IsNaN(operating))
+            c.Assign("theta_op", c.InputText("insulation") switch { Pvc => "70 degC", Xlpe => "90 degC", _ => "theta_p" }, "degC", "Conductor operating temperature for the insulation (→ E5 θ, E3 T_c)");
+
         c.Input("C_g");
         c.Input("C_i");
 
@@ -391,6 +403,9 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         c.Assign("u_In", "I_n / I_z", null, "Device rating utilisation of the conductor", coordination);
 
         var outputs = new List<(string, string)> { ("I_b", "Design current"), ("I_n", "Rated current of the device"), ("C_c", "Semi-enclosed fuse factor"), ("C_a", "Ambient factor"), ("I_t_req", "Required tabulated capacity"), ("CSA", "Selected cross-section"), ("I_z", "Current-carrying capacity"), ("L", "Circuit length"), ("u_Ib", "I_b / I_n"), ("u_In", "I_n / I_z") };
+
+        if (!double.IsNaN(operating))
+            outputs.Add(("theta_op", "Conductor operating temperature for the insulation"));
 
         // I₂: inherent 1.45·I_n for MCBs; 2·I_n by default for a semi-enclosed fuse; an entered I₂ is always checked. A gG fuse (to BS 88),
         // an MCCB or an MPCB without I₂ is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only in the BS 7671 installation context: an
