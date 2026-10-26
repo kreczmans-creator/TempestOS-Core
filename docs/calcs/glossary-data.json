@@ -9400,6 +9400,24 @@
       ]
     },
     {
+      "symbol": "S_e_b",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Bending endurance strength of the hook (extension) at N_c cycles, alternating (optional; blank = hook bending fatigue is not assessed)"
+          ],
+          "templates": [
+            "mech.spring"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "S_f",
       "meanings": [
         {

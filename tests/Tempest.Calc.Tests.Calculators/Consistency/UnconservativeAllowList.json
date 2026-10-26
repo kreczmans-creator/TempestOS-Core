@@ -120,7 +120,6 @@
   },
   "struct.base-plate": {
     "alpha_basis": "A concentration factor above 1 needs foundation geometry that is not verified; require the geometry.",
-    "alpha_bc": "An anchor strength above 800 MPa is outside the alpha_bc formula; block outside 235 to 640 MPa.",
     "anchorage-result": "The anchorage is not assessed and u_max excludes it unless u_profis is entered; require u_profis.",
     "f_y_thickness": "One plate yield strength is used at every thickness, so a thicker plate is overstated; take f_y by thickness.",
     "grout": "beta_j = 2/3 needs a grout condition that is not verified; require it.",

@@ -54,7 +54,7 @@ public sealed class SpringCalculator : ICalcCalculator
     private const string Part3 = "EN 13906-3";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.Mechanical, "Helical springs",
+        Id, "1.4.1", CalcDiscipline.Mechanical, "Helical springs",
         "A cylindrical helical spring of round wire, cold-coiled, with a linear characteristic: compression (rate, working points, solid length by end type, stress at the working points and at solid, buckling, Goodman fatigue, surge frequency), extension (the same with the initial tension and the hook stresses) or torsion (rate with the legs, curvature-corrected bending stress, wound diameter and body length).",
         "Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n + (l₁ + l₂)/(3π·D) (torsion)\n" +
         "Spring stress: τ_k = k_c·8·F·D/(π·d³), k_c = (C + 0.5)/(C − 0.75) (Bergsträsser) or (4C − 1)/(4C − 4) + 0.615/C (Wahl); torsion σ = q·32·M/(π·d³) with q = (C + 0.07)/(C − 0.75) (EN 13906-3, the default) or K_i = (4C² − C − 1)/(4C·(C − 1)) (Shigley)\n" +
@@ -102,9 +102,9 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcInputSpec("f_su", "Ultimate shear strength as a fraction of R_m (Goodman, shear; generic textbook default, replace with the licensed EN 13906 value)", CalcInputKind.Number, Default: 0.67, Min: 0.4, Max: 0.9, HardMin: 0.05, HardMax: 1, Group: "Strength"),
             new CalcInputSpec("nu_seat", "End-support coefficient ν (0.5 both ends fixed, 0.7 one fixed one pinned, 1 both pinned, 2 one free)", CalcInputKind.Number, Default: 0.5, Min: 0.5, Max: 2, HardMin: 0.25, HardMax: 5, Group: "Buckling"),
             new CalcInputSpec("S_e", "Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 2000, HardMin: 1, HardMax: 1e4, Group: "Fatigue and surge"),
-            new CalcInputSpec("S_e_b", "Bending endurance strength of the hook (extension) at N_c cycles, alternating (no default; blank: hook bending fatigue is not assessed)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 3000, HardMin: 1, HardMax: 1e4, IsOptional: true, Group: "Fatigue and surge"),
             new CalcInputSpec("N_c", "Required life the endurance strength belongs to", CalcInputKind.Number, Default: 1e7, Min: 1e4, Max: 1e10, HardMin: 1, HardMax: 1e12, Group: "Fatigue and surge"),
             new CalcInputSpec("n_f_req", "Required Goodman safety factor", CalcInputKind.Number, Default: 1.2, Min: 1, Max: 5, HardMin: 0.5, HardMax: 20, Group: "Fatigue and surge"),
+            new CalcInputSpec("S_e_b", "Bending endurance strength of the hook (extension) at N_c cycles, alternating (optional; blank = hook bending fatigue is not assessed)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 3000, HardMin: 1, HardMax: 1e4, IsOptional: true, Group: "Fatigue and surge"),
             new CalcInputSpec("f_op", "Operating (excitation) frequency", CalcInputKind.Quantity, "Hz", Default: 10, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Fatigue and surge"),
         ],
         [
@@ -716,7 +716,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_fat_B", "n_f_req * u_f_B", null, "Hook side-bend fatigue utilisation against the required factor");
         c.Output("u_f_B", "Goodman utilisation, hook side bend");
         c.Output("n_f_B", "Goodman safety factor, hook side bend");
-        c.CheckUtilisation("Goodman fatigue of the hook side-bend torsion against the required safety factor", "u_fat_B", "Goodman, as M4");
+        c.Check("Goodman fatigue of the hook side-bend torsion against the required safety factor", "n_f_req", "n_f_B", "Goodman, as M4");
 
         if (!c.Has("S_e_b"))
         {
@@ -733,7 +733,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_fat_A", "n_f_req * u_f_A", null, "Hook bending fatigue utilisation against the required factor");
         c.Output("u_f_A", "Goodman utilisation, hook bending");
         c.Output("n_f_A", "Goodman safety factor, hook bending");
-        c.CheckUtilisation("Goodman fatigue of the hook bending against the required safety factor", "u_fat_A", "Goodman, as M4");
+        c.Check("Goodman fatigue of the hook bending against the required safety factor", "n_f_req", "n_f_A", "Goodman, as M4");
     }
 
     /// <summary>The Goodman check on the stresses at the two working points. The endurance strength has no default: a blank one is refused before the run.</summary>

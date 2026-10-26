@@ -17,7 +17,7 @@ namespace Tempest.Calc.Tests.Calculators.Consistency;
 public sealed class UnconservativeRuleTests
 {
     /// <summary>The number of entries on the allow-list today. Lower it with every entry removed; never raise it.</summary>
-    public const int Ceiling = 92;
+    public const int Ceiling = 91;
 
     /// <summary>One unconservative warning proved to be paired with a failing check: the template, the rule, the check that fails and inputs that make the rule fire.</summary>
     private sealed record Probe(string Template, string Rule, string CheckStartsWith, Func<CalcInputSet> Inputs);

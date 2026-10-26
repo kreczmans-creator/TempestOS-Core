@@ -227,7 +227,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1400 symbols in 54 templates)
+## All symbols (1401 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -723,6 +723,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `S_d` | — | Length | m | Total diffusion-equivalent air layer thickness | bs.glaser | ok |
 | `S_dem` | — | Apparent and reactive power | kVA | Demand apparent power | elec.load-budget | ok |
 | `S_e` | `S_e:endurance-limit` | Stress, pressure | MPa | Endurance limit; Endurance limit (ranges at or below it do no damage); Endurance strength for the stress kind (shear; bending in torsion) at… | mech.fatigue-miner, mech.shaft, mech.spring | ok |
+| `S_e_b` | — | Stress, pressure | MPa | Bending endurance strength of the hook (extension) at N_c cycles, alt… | mech.spring | ok |
 | `S_f` | — | Plain number | — | Safety factor on the critical load | fp.cylinder | ok |
 | `S_k` | — | Apparent and reactive power | MVA | Three-phase fault level at the point of supply (use the minimum fault… | elec.motor-start | ok |
 | `S_kQ` | — | Apparent and reactive power | MVA | Upstream network fault level at the transformer primary, in series wi… | elec.motor-start | ok |

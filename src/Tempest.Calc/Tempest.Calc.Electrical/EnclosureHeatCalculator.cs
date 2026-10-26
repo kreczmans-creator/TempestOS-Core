@@ -153,7 +153,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
         c.Assign("P_cool", "max(0 W, P_total - P_nat_max)", "W", hotAmbient ? "Cooling-unit capacity needed: the heat inside plus the gain through the walls" : "Cooling-unit capacity needed if ventilation is not used");
 
         if (hotAmbient)
-            c.Warn("limit", $"T_max: the maximum internal temperature ({CalcValue.FormatNumber(c.Si("T_max") - 273.15, 4)} °C) does not exceed the ambient ({CalcValue.FormatNumber(c.Si("T_amb") - 273.15, 4)} °C), so only a cooling unit can hold it: it must remove the {CalcValue.FormatNumber(c.Si("P_total"), 4)} W inside plus {CalcValue.FormatNumber(-c.Si("P_nat_max"), 4)} W that the enclosure gains from the ambient, P_cool = {CalcValue.FormatNumber(c.Si("P_cool"), 4)} W. No ventilation airflow, fan duty or natural-dissipation utilisation is given.");
+            c.Warn("limit", $"T_max: the limit is at or below the ambient ({CalcValue.FormatNumber(c.Si("T_amb") - 273.15, 4)} °C), so only a cooling unit can hold it. It removes the {CalcValue.FormatNumber(c.Si("P_total"), 4)} W inside and the {CalcValue.FormatNumber(-c.Si("P_nat_max"), 4)} W gained from the ambient, so P_cool = {CalcValue.FormatNumber(c.Si("P_cool"), 4)} W.");
         else if (c.Si("P_cool") > 0)
             c.Warn("cooling-unit", $"T_max: natural dissipation holds {CalcValue.FormatNumber(c.Si("P_nat_max"), 4)} W of {CalcValue.FormatNumber(c.Si("P_total"), 4)} W; ventilate or fit a {CalcValue.FormatNumber(c.Si("P_cool"), 4)} W cooling unit.");
 

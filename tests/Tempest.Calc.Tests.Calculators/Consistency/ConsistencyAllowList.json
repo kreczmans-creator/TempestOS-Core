@@ -365,7 +365,7 @@
     "mech.thin-vessel": 2,
     "mech.tolerance-stack": 2,
     "mech.weld-group": 1,
-    "struct.base-plate": 18,
+    "struct.base-plate": 14,
     "struct.beam-formulas": 1,
     "struct.connection-ec3": 6,
     "struct.en1993-member": 3,

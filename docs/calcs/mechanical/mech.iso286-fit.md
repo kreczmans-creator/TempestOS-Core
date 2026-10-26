@@ -1,4 +1,4 @@
-# M2a — ISO 286 limits and fits (`mech.iso286-fit@1.4.1`)
+# M2a — ISO 286 limits and fits (`mech.iso286-fit@1.5.1`)
 
 **In plain terms.** A hole and a shaft each get a tolerance band from the ISO system: the letter fixes how far the band sits from the nominal size and the number fixes how wide it is. Pairing the largest hole with the smallest shaft gives the loosest fit, and the smallest hole with the largest shaft the tightest. If the hole is always larger the fit has clearance, if it is always smaller it has interference, and if the bands overlap it is a transition fit that can go either way.
 
@@ -16,6 +16,8 @@
 **Outputs.** `IT_hole`, `IT_shaft`, `ES`, `EI`, `es`, `ei`, limits, `fit` (clearance / transition / interference), `c_max`, `c_min`, `i_max`, `i_min`, `c_mean`.
 
 **Limitations.** Unrounded formula values; for the clearance and transition letters (a to n) the tabulated values differ by the standard's rounding (about 1 µm). For the interference letters p to zc the tables also carry the standard's own increments and sub-steps (p6 at 450 mm: 62.2 µm from the formula against 68 µm tabulated; up to about 9 µm in the 100 to 565 mm checks), so the formula value can be several µm below the tabulated one and the maximum interference is understated: since 1.3.0 the sheet warns (`interference-letter`) for any p to zc letter taken from the formula, and the overrides carry the tabulated value. Letters a, b, c, j need overrides.
+
+**Changes in 1.5.1 (merge of the C-1 line's 1.5.0 and the C-2 line's 1.4.1).** The C-1 line had 1.5.0 (K3 and Δ below IT3) and the C-2 line 1.4.1 (the catalogue title `Limits and fits (ISO 286)`); the merged template is 1.5.1, above both. No number changes from the merge.
 
 **Changes in 1.5.0 (mech.iso286-fit-03, from the C-1 verification).** The K row's `ES = −ei(k) + Δ` form applies to every grade up to IT8, and the k deviation in it is `0.6·D^(1/3)` (the shaft k of IT4 to IT7), but only IT8 had been given it: a K3 hole still used the shaft formula's 0 for IT3, so its `ES` was `0.6·D^(1/3)` µm too high (25 mm K3: ES +1.328 µm before, −0.384 µm now; K5, K6, K7 are unchanged at +1.860, +2.210, +6.132 µm). Δ is applied from IT3 to IT8 only, as the standard gives it; below IT3 it is 0 (K1, K2 and the M, N and P to ZC holes of IT1 and IT2 no longer carry `IT(n) − IT(n−1)`). The owner is asked to confirm the K rows below IT4 against the licensed copy (DECISIONS text in the C-1 report).
 

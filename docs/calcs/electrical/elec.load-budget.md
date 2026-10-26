@@ -1,4 +1,4 @@
-# E6 — Load budget, PSU, transformer and battery (`elec.load-budget@1.5.0`)
+# E6 — Load budget, PSU, transformer and battery (`elec.load-budget@1.5.1`)
 
 **In plain terms.** A supply must be sized for what is connected, not just the sum of the nameplates, because loads are not all on at once. The worksheet adds each load with its duty and diversity, gives the current on each supply, sizes the DC power supply, the transformer (including the demand when motors start) and the battery for the backup time you need, and reports the heat released inside the enclosure.
 
@@ -15,6 +15,8 @@
 **Limitations.** No harmonic or unbalance assessment; inrush only for the single largest start.
 
 **Changes in 1.3.0 (elec.load-budget-03, -R1).** The bus currents `I_3ph`, `I_1ph`, `I_DC` and the PSU rating `P_PSU_req` are for the loads while they are on: `P·k` (and `P·k/cosφ`), not `P·d·k`, because the duty `d` is the share of time on and a cable, a bus or a supply carries the load while it is on. The demand `P_dem`, `S_dem`, the transformer rating, the starting peak, the enclosure heat `Phi` and the battery energy stay duty-weighted. A load row with blank optional cells (`eta` when `heat` is blank, `d`, `k`, `inrush` on an AC row) now warns by row and cell (rule `load-defaults`); an AC row with a blank `cosphi` is refused (rule `cosphi`, block) instead of being read as 1.
+
+**Changes in 1.5.1 (merge of the C-1 line's 1.4.1 and the C-2 line's 1.5.0).** The C-1 line had 1.4.1 (the supply-loss assumption) and the C-2 line 1.5.0 (the public port names `load.*` and `battery.*` with their aliases); the merged template is 1.5.1, above both. No number changes from the merge.
 
 **Changes in 1.4.1 (elec.load-budget-05, from the C-1 verification).** The load-convention assumption no longer says the power supply's own loss is "a load row if its heat is wanted": since 1.4.0 `Phi` adds `P_DC·(1/η_PSU − 1)` itself whenever `psu_bus` and `η_PSU` are set, so a row for the supply would count the loss twice. It now says the sheet adds the loss itself and the supply is not to be entered as a load row. Text only; no number changes.
 
