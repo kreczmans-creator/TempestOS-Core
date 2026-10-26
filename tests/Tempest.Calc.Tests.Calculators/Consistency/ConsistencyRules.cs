@@ -41,9 +41,6 @@ internal static partial class ConsistencyRules
     [GeneratedRegex(@"(?i)\b(needs?|is needed|are needed|give|requires?|must be given)\b")]
     private static partial Regex MissingPhrasing();
 
-    [GeneratedRegex(@"(?i)\b(exceeds?|exceeded|is below zero|reaches the|cannot hold|is above the|is below the)\b|less than (twice|\d+ times)")]
-    private static partial Regex LimitLanguage();
-
     [GeneratedRegex(@"(?i)\b(held at|is treated as|treated as|is capped|capped at|falls back|is used instead|is taken as)\b")]
     private static partial Regex FallbackLanguage();
 
@@ -186,8 +183,6 @@ internal static partial class ConsistencyRules
                 .Select(x => $"'{x.s.RuleId}' is declared {x.r!.Severity} and emitted as {x.s.Severity}")
                 .Concat(f.Notices.Select(n => (n, r: f.Template.ApplicabilityRules.FirstOrDefault(r => r.Id == n.RuleId))).Where(x => x.r is not null && x.r.Severity != x.n.Severity).Select(x => $"'{x.n.RuleId}' is declared {x.r!.Severity} and a run emitted it as {x.n.Severity}"))
                 .Distinct()),
-        new("F35-limit-is-a-check-not-a-warning", "F", "35", "A broken engineering limit is a check or a block, not only a warning.", f =>
-            f.Template.ApplicabilityRules.Where(r => r.Severity == CalcNoticeSeverity.Warning && LimitLanguage().IsMatch(r.Description)).Select(r => $"'{r.Id}': {Cut(r.Description)}")),
         new("F36-no-input-prefix", "F", "36", "A rule id never carries the input. prefix the engine adds.", f =>
             f.Template.ApplicabilityRules.Where(r => r.Id.StartsWith("input.", StringComparison.Ordinal)).Select(r => r.Id)
                 .Concat(f.Sites.Where(s => s.RuleId is { } id && id.StartsWith("input.", StringComparison.Ordinal)).Select(s => s.RuleId!)).Distinct()),

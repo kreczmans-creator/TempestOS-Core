@@ -19,7 +19,7 @@ public sealed class CalcInstanceServiceTests
         Assert.Equal("test.direct-stress@1.0.0", instance.TemplateReference);
         Assert.NotNull(instance.EvidenceId);
         Assert.NotNull(instance.RegisterObjectId);
-        Assert.Contains(instance.Outputs, o => o.Symbol == "sigma" && o.Text == "60.0 MPa");
+        Assert.Contains(instance.Outputs, o => o.Symbol == "sigma" && o.Text == "60 MPa");
         Assert.NotNull(instance.OutputsHash);
 
         var evidence = await host.Context.Repository.FindAsync(instance.EvidenceId!.Value) as Evidence;
@@ -63,7 +63,7 @@ public sealed class CalcInstanceServiceTests
         var instance = await host.Service.CreateAsync("test.direct-stress", await host.ProjectAsync(), "C1", LibraryTestHost.ProvenancedInputs());
         var updated = await host.Service.UpdateInputsAsync(instance.Id, LibraryTestHost.ProvenancedInputs(f: 24));
         Assert.True(updated.Succeeded);
-        Assert.Contains(updated.Instance!.Outputs, o => o.Symbol == "sigma" && o.Text == "120.0 MPa");
+        Assert.Contains(updated.Instance!.Outputs, o => o.Symbol == "sigma" && o.Text == "120 MPa");
         Assert.NotEqual(instance.OutputsHash, updated.Instance.OutputsHash);
 
         var check = await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);

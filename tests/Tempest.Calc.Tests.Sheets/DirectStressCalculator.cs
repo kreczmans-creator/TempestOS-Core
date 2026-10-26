@@ -20,8 +20,8 @@ public sealed class DirectStressCalculator : ICalcCalculator
         [new CalcAssumption("The load acts through the centroid.", "No bending from eccentricity.")],
         [new CalcClauseRef("EN 1993-1-1", "6.2.3", "Tension")],
         [
-            new CalcApplicabilityRule("high-stress", "Stress above 80 % of allowable is flagged.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("slender", "A slender member cannot be checked in direct compression here.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("high-stress", "Stress above 80 % of allowable is flagged.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("slender", "A slender member cannot be checked in direct compression here.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-1", "12 kN on 200 mm²", new CalcReferenceSource("Hand calculation", null, "σ = 12 000 / 200 = 60 MPa"),
