@@ -33,9 +33,9 @@ public sealed class PsychrometricsCalculator : ICalcCalculator
     public const string ProcessMixing = "adiabatic mixing";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.BuildingServices, "Psychrometrics",
+        Id, "1.3.0", CalcDiscipline.BuildingServices, "Psychrometrics",
         "The state of moist air (humidity ratio, relative humidity, dew point, wet-bulb, enthalpy, specific volume, density) from dry-bulb and one other property at a stated pressure or altitude, and one air-handling process from that state with its heat and moisture balance: sensible heating or cooling, cooling with dehumidification, steam humidification, adiabatic humidification, or mixing with a second stream.",
-        "Saturation vapour pressure at the dry-bulb temperature, over water at or above 0 °C and over ice below: p_ws(t) by Hyland–Wexler.\nMoisture content (humidity ratio) of the air: W = 0.621945 p_w/(p − p_w).\nRelative humidity: φ = p_w/p_ws.\nSpecific enthalpy per kilogram of dry air: h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da.\nSpecific volume: v = 0.287042 (t + 273.15)(1 + 1.607858 W)/p.\nDew point and wet-bulb temperatures, by bisection (wet-bulb from the adiabatic-saturation relation): p_ws(t_dp) = p_w.\nSensible heating or cooling at constant moisture content: Q = ṁ (h₂ − h₁).\nCooling with dehumidification, less the heat leaving in the condensate: Q_total = ṁ(h₁ − h₂) − ṁ_w h_w, with ṁ_w = ṁ(W₁ − W₂).\nSteam humidification: h₂ = h₁ + (W₂ − W₁) h_steam.\nAdiabatic (spray) humidification, at constant enthalpy: h₂ = h₁.\nMixing two airstreams, weighted by dry-air mass flow: W_mix = Σṁ W/Σṁ; h_mix = Σṁ h/Σṁ.",
+        "Saturation vapour pressure at the dry-bulb temperature, over water at or above 0 °C and over ice below: p_ws(t) by Hyland–Wexler.\nMoisture content (humidity ratio) of the air: W = 0.621945 p_w/(p − p_w).\nRelative humidity: φ = p_w/p_ws.\nSpecific enthalpy per kilogram of dry air: h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da.\nSpecific volume: v = 0.287042 (t + 273.15)(1 + 1.607858 W)/p.\nDew point and wet-bulb temperatures, by bisection (wet-bulb from the adiabatic-saturation relation): p_ws(t_dp) = p_w.\nSensible heating or cooling at constant moisture content: Q = ṁ (h₂ − h₁).\nCooling with dehumidification, less the heat leaving in the condensate: Q_total = ṁ(h₁ − h₂) − ṁ_w h_w, with ṁ_w = ṁ(W₁ − W₂).\nSensible and latent split of the coil load, along the path t₁ → t₂ at W₁ then W₁ → W₂ at t₂: Q_sensible = ṁ(h₁ − h(t₂, W₁)); Q_latent = ṁ(h(t₂, W₁) − h₂); SHR = Q_sensible/(Q_sensible + Q_latent). With RH_2 blank and t₂ above the entering dew point the coil is dry: W₂ = W₁, no condensate, sensible only.\nSteam humidification: h₂ = h₁ + (W₂ − W₁) h_steam.\nAdiabatic (spray) humidification, at constant enthalpy: h₂ = h₁.\nMixing two airstreams, weighted by dry-air mass flow: W_mix = Σṁ W/Σṁ; h_mix = Σṁ h/Σṁ.",
         [
             new CalcInputSpec("altitude", "Altitude (used when pressure is blank)", CalcInputKind.Quantity, "m", Default: 0, Min: -500, Max: 5000, HardMin: -1000, HardMax: 10000, Group: "Pressure"),
             new CalcInputSpec("p", "Barometric pressure (blank = standard atmosphere at the altitude)", CalcInputKind.Quantity, "kPa", Min: 50, Max: 110, HardMin: 10, HardMax: 1000, IsOptional: true, Group: "Pressure"),
@@ -71,7 +71,8 @@ public sealed class PsychrometricsCalculator : ICalcCalculator
             new CalcApplicabilityRule("second-property", "The chosen second property has no value.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("supersaturated", "The state lies above saturation (RH > 100 %).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("process-input", "The process needs a leaving-state value that was not given, or it is not reachable.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("no-dehumidification", "The leaving state holds more moisture than the entering state: no condensate; use heating or humidification.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("no-dehumidification", "The mixture is supersaturated: fog forms and the state shown is nominal.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("dry-coil", "Cooling with dehumidification and RH_2 blank, but t_2 is above the entering dew point: the coil is dry, the leaving moisture is held at the entering value and the load is sensible only.", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-saturation-20", "Saturated air at 20 °C, 101.325 kPa",
@@ -175,18 +176,32 @@ public sealed class PsychrometricsCalculator : ICalcCalculator
             {
                 if (!c.Has("t_2")) { c.Block("process-input", "t_2: give the coil leaving dry-bulb."); return; }
                 c.Input("t_2");
-                var rh2 = c.Has("RH_2") ? c.InputSi("RH_2") / 100 : 1.0;
+                var rh2Given = c.Has("RH_2");
+                var rh2 = rh2Given ? c.InputSi("RH_2") / 100 : 1.0;
                 s2 = MoistAir.FromRelativeHumidity(c.Si("t_2") - 273.15, rh2, p);
-                if (s2.W > s1.W + 1e-12) c.Warn("no-dehumidification", "RH_2/t_2: the leaving state holds more moisture than the entering state; no condensate forms.");
+
+                if (s2.W > s1.W + 1e-12)
+                {
+                    if (rh2Given)
+                    {
+                        c.Block("process-input", $"RH_2: a coil cannot add moisture; the leaving state ({F(s2.W * 1000)} g/kg) is wetter than the entering state ({F(s1.W * 1000)} g/kg). Lower RH_2 or t_2, or use sensible cooling.");
+                        return;
+                    }
+
+                    // RH_2 blank: the coil surface is above the entering dew point, so the coil is dry and the air leaves at the entering moisture.
+                    s2 = new MoistAirState(s2.T, s1.W, p);
+                    c.Warn("dry-coil", "t_2: the leaving temperature is above the entering dew point, so the coil is dry; no condensate forms, the leaving moisture is held at the entering value and the load is sensible only.");
+                }
+
                 WriteState(c, "2", s2, "leaving");
                 var mw = Math.Max(0, mda * (s1.W - s2.W));
                 var hMid = MoistAir.Enthalpy(s2.T, s1.W);
                 c.Record("m_w", "ṁ (W₁ − W₂)", $"{F(mda)} × ({F(s1.W * 1000)} − {F(s2.W * 1000)}) g/kg", ScalarValue.Of(mw, "kg/s"), "Condensate");
                 c.Record("h_w", "4.186 t₂ (condensate enthalpy)", $"4.186 × {F(s2.T)}", new ScalarValue(4.186 * s2.T), "Condensate enthalpy, kJ/kg");
                 c.Record("Q_total", "ṁ (h₁ − h₂) − ṁ_w h_w", $"{F(mda)} × ({F(s1.Enthalpy)} − {F(s2.Enthalpy)}) − {F(mw)} × {F(4.186 * s2.T)}", ScalarValue.Of(mda * (s1.Enthalpy - s2.Enthalpy) - mw * 4.186 * s2.T, "kW"), "Total cooling load");
-                c.Record("Q_sensible", "ṁ (h(t₂, W₁) − h₂)", $"{F(mda)} × ({F(hMid)} − {F(s2.Enthalpy)})", ScalarValue.Of(mda * (hMid - s2.Enthalpy), "kW"), "Sensible part (temperature change at W₁ … approximated at W₁)");
-                c.Record("Q_latent", "ṁ (h₁ − h(t₂, W₁))", $"{F(mda)} × ({F(s1.Enthalpy)} − {F(hMid)})", ScalarValue.Of(mda * (s1.Enthalpy - hMid), "kW"), "Latent part");
-                c.Record("SHR", "Q_sensible / (Q_sensible + Q_latent)", "", new ScalarValue(mda * (hMid - s2.Enthalpy) / Math.Max(1e-12, mda * (s1.Enthalpy - s2.Enthalpy))), "Sensible heat ratio");
+                c.Record("Q_sensible", "ṁ (h₁ − h(t₂, W₁))", $"{F(mda)} × ({F(s1.Enthalpy)} − {F(hMid)})", ScalarValue.Of(mda * (s1.Enthalpy - hMid), "kW"), "Sensible part: the air cooled from t₁ to t₂ at the entering humidity ratio W₁");
+                c.Record("Q_latent", "ṁ (h(t₂, W₁) − h₂)", $"{F(mda)} × ({F(hMid)} − {F(s2.Enthalpy)})", ScalarValue.Of(mda * (hMid - s2.Enthalpy), "kW"), "Latent part: the moisture removed from W₁ to W₂ at t₂");
+                c.Record("SHR", "Q_sensible / (Q_sensible + Q_latent)", "", new ScalarValue(mda * (s1.Enthalpy - hMid) / Math.Max(1e-12, mda * (s1.Enthalpy - s2.Enthalpy))), "Sensible heat ratio");
                 foreach (var o in new[] { ("m_w", "Condensate"), ("Q_total", "Total cooling"), ("Q_sensible", "Sensible cooling"), ("Q_latent", "Latent cooling"), ("SHR", "Sensible heat ratio") }) c.Output(o.Item1, o.Item2);
                 break;
             }
