@@ -109,12 +109,68 @@ public sealed class RecordImportTests
         var outcome = await host.Service.RecordImport.CommitAsync(Request("06", Csv(AmbientFactors, "air,PVC,20,0.99", "air,PVC,30,0.9"), Provenance("Ambient (test)")));
 
         Assert.True(outcome.Committed, outcome.Refusal);
-        Assert.Equal(["Ambient (test) [air, PVC, theta_a 20 degC]", "Ambient (test) [air, PVC, theta_a 30 degC]"], outcome.Records.Select(r => r.Title).Order());
-        var first = outcome.Records.Single(r => r.Title.Contains("theta_a 20", StringComparison.Ordinal));
+
+        // Review finding 4: the title carries the text labels and the row number, never a number from the (licensed) table: the title is
+        // printed in the citation on every sheet.
+        Assert.Equal(["Ambient (test) [air, PVC, row 1]", "Ambient (test) [air, PVC, row 2]"], outcome.Records.Select(r => r.Title).Order());
+        var first = outcome.Records.Single(r => r.Title.EndsWith("row 1]", StringComparison.Ordinal));
         Assert.Equal(0.99, first.Values.Single(v => v.Symbol == "C_a").Number);
         Assert.Equal(20, first.Values.Single(v => v.Symbol == "theta_a").Number);
         Assert.Equal("degC", first.Values.Single(v => v.Symbol == "theta_a").Unit);
         Assert.Equal("PVC", first.Values.Single(v => v.Symbol == "insulation").Text);
+    }
+
+    [Fact]
+    public async Task A_Row_Without_A_Text_Label_Is_Titled_By_Its_Row_Number_Never_By_A_Value_From_The_Table()
+    {
+        var host = Host();
+
+        // Template 07's arrangement is a text label; n_circuits is a stored number that used to join the title.
+        var outcome = await host.Service.RecordImport.CommitAsync(Request("07", Csv("arrangement[text],n_circuits[-],C_g[-]", "Bunched,2,0.8", "Bunched,3,0.7"), Provenance("Grouping (test)")));
+        Assert.True(outcome.Committed, outcome.Refusal);
+        Assert.Equal(["Grouping (test) [Bunched, row 1]", "Grouping (test) [Bunched, row 2]"], outcome.Records.Select(r => r.Title).Order());
+
+        // No label at all: the row number.
+        var bare = await host.Service.RecordImport.CommitAsync(Request("11", Csv("factor[text],theta_a[degC],n_circuits[-],C_a[-],C_g[-]", ",35,,0.9,", ",45,,0.8,"), Provenance("Machine factors")));
+        Assert.True(bare.Committed, bare.Refusal + " " + Describe(bare.Preview));
+        Assert.Equal(["Machine factors [row 1]", "Machine factors [row 2]"], bare.Records.Select(r => r.Title).Order());
+    }
+
+    [Theory]
+    [InlineData("06", "medium[text],insulation[text],theta_a[degC],C_a[-]", "air,PVC,1e300,0.9", "theta_a")]
+    [InlineData("11", "factor[text],theta_a[degC],n_circuits[-],C_a[-],C_g[-]", "air,1e300,,0.9,", "theta_a")]
+    [InlineData("11", "factor[text],theta_a[degC],n_circuits[-],C_a[-],C_g[-]", "air,,1e300,,0.9", "n_circuits")]
+    [InlineData("07", "arrangement[text],n_circuits[-],C_g[-]", "Bunched,1e300,0.8", "n_circuits")]
+    [InlineData("08", "length_in_insulation[mm],C_i[-]", "1e300,0.8", "length_in_insulation")]
+    [InlineData("12", "grade[text],t_min[mm],t_max[mm],f_y[MPa],f_u[MPa]", "TEST,0,1e300,275,410", "t_max")]
+    [InlineData("12", "grade[text],t_min[mm],t_max[mm],f_y[MPa],f_u[MPa]", "TEST,1e300,1e301,275,410", "t_min")]
+    [InlineData("22", "material[text],d_min[mm],d_max[mm],S_ut[MPa],S_y[MPa],E[GPa]", "Steel,0,1e300,600,400,200", "d_max")]
+    [InlineData("40", "wire_grade[text],condition[text],d_min[mm],d_max[mm],f_tau[-],f_sigma[-],f_su[-]", "DH,static,0.1,1e300,0.5,0.6,0.7", "d_max")]
+    [InlineData("29", "psu[text],theta[degC],altitude[m],f_derate[-]", "P1,1e300,0,0.9", "theta")]
+    [InlineData("29", "psu[text],theta[degC],altitude[m],f_derate[-]", "P1,40,1e300,0.9", "altitude")]
+    [InlineData("30", "battery[text],theta[degC],DoD[-],eta_b[-],k_temp[-],k_age[-],k_p[-],H_rate[h]", "B1,1e300,0.8,0.9,0.9,0.9,,", "theta")]
+    [InlineData("25", "bearing_type[text],Fa_C0[-],e_lim[-],X[-],Y[-],X_0[-],Y_0[-]", "Ball,1e300,0.3,0.5,1,0.6,0.5", "Fa_C0")]
+    [InlineData("27", "fluid[text],concentration[%],t_fill[degC],t_max[degC],e_fluid[-]", "Glycol,30,1e300,1e301,0.05", "t_fill")]
+    [InlineData("16", "fluid_h[text],t_mean_h[degC],cp_h[J/(kg*K)],fluid_c[text],t_mean_c[degC],cp_c[J/(kg*K)]", "Water,1e300,4180,Glycol,20,3500", "t_mean_h")]
+    [InlineData("53", "wire[text],stress[text],N_c[-],S_e[MPa]", "DH,pulsating,1e300,400", "N_c")]
+    [InlineData("39", "grade[text],d[mm],Rm[MPa]", "DH,1e300,1500", "d")]
+    public async Task A_Stored_But_Unapplied_Number_Outside_Any_Sensible_Range_Is_Refused(string id, string header, string row, string column)
+    {
+        var host = Host();
+        var preview = await host.Service.RecordImport.PreviewAsync(Request(id, Csv(header, row), Provenance("Absurd")));
+
+        Assert.False(preview.CanCommit, Describe(preview));
+        Assert.Contains(preview.Errors, e => e.Column == column && e.Message.Contains("outside", StringComparison.Ordinal));
+        Assert.Empty(await host.Store.ListRecordsAsync());
+    }
+
+    [Fact]
+    public async Task A_Sensible_Value_In_A_Stored_Column_Is_Still_Taken()
+    {
+        var host = Host();
+        var outcome = await host.Service.RecordImport.CommitAsync(Request("06", Csv(AmbientFactors, "air,PVC,-10,1.1", "air,PVC,60,0.7"), Provenance("Ambient (test)")));
+
+        Assert.True(outcome.Committed, outcome.Refusal + " " + Describe(outcome.Preview));
     }
 
     [Fact]
@@ -182,6 +238,71 @@ public sealed class RecordImportTests
     }
 
     [Fact]
+    public async Task A_Material_Imported_As_Its_Next_Revision_Keeps_The_Values_The_File_Does_Not_Set()
+    {
+        // Review finding 3: 62 as the next revision used to save only the columns the file filled, dropping every other property and the
+        // temperature tables added by 63. A value the file leaves blank is carried forward from the latest revision, as 63 to 65 do.
+        var host = Host();
+        var service = host.Service.RecordImport;
+        const string materialHeader = "material[text],E[GPa],G[GPa],nu[-],rho[kg/m3]";
+        var made = await service.CommitAsync(Request("62", Csv(materialHeader, "Test alloy,200,77,0.3,7800"), Provenance(string.Empty)));
+        Assert.True(made.Committed, made.Refusal);
+
+        var tables = Csv("material[text],property[text],T[degC],v[-],v_unit[text]", "Test alloy,E,20,200,GPa", "Test alloy,E,100,195,GPa", "Test alloy,E,200,185,GPa");
+        var added = await service.CommitAsync(Request("63", tables, Provenance(string.Empty)));
+        Assert.True(added.Committed, added.Refusal);
+        Assert.Equal(2, added.Records[0].Revision);
+
+        // Revision 3 changes E and leaves G blank and nu, rho out of the file: they, and the E(T) table, stay.
+        var again = Request("62", Csv("material[text],E[GPa],G[GPa]", "Test alloy,205,"), Provenance(string.Empty)) with { AsRevision = true };
+        var preview = await service.PreviewAsync(again);
+        Assert.True(preview.CanCommit, Describe(preview));
+        var carried = Assert.Single(preview.Warnings, w => w.Message.Contains("carried forward", StringComparison.Ordinal));
+        Assert.Contains("revision 2", carried.Message, StringComparison.Ordinal);
+        Assert.Contains("E(T), G, nu, rho are carried forward from revision 2", carried.Message, StringComparison.Ordinal);
+
+        var outcome = await service.CommitAsync(again);
+        Assert.True(outcome.Committed, outcome.Refusal);
+        var revised = Assert.Single(outcome.Records);
+        Assert.Equal(3, revised.Revision);
+        Assert.Equal(added.Records[0].Id, revised.Id);
+        Assert.Equal(["E", "E(T)", "G", "nu", "rho"], revised.Values.Select(v => v.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(205, revised.Values.Single(v => v.Symbol == "E").Number);
+        Assert.Equal(3, revised.Values.Single(v => v.Symbol == "E(T)").Rows!.Count);
+        Assert.Equal(7800, revised.Values.Single(v => v.Symbol == "rho").Number);
+
+        // The earlier revision is as it was.
+        Assert.Equal(200, (await host.Store.FindRecordAsync(revised.Id, 2))!.Values.Single(v => v.Symbol == "E").Number);
+
+        // A first import of a new material has nothing to carry, and says nothing about it.
+        var fresh = await service.PreviewAsync(Request("62", Csv("material[text],E[GPa]", "Brand new,70"), Provenance(string.Empty)) with { AsRevision = true });
+        Assert.DoesNotContain(fresh.Warnings, w => w.Message.Contains("carried forward", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_Time_Current_Curve_With_The_Same_Current_Twice_Is_Refused_And_Any_Order_Of_Distinct_Currents_Is_Taken()
+    {
+        // Review finding 5: two points at one current give the curve two times there; the calculator interpolates on I, so the second is never reached.
+        var host = Host();
+        var service = host.Service.RecordImport;
+        const string header = "I2t_let[A2*s],I_cn[kA],t[s],I[A]";
+
+        var twice = await service.PreviewAsync(Request("02", Csv(header, "50000,10,0.1,500", ",,1,200", ",,5,200", ",,10,100"), Provenance("Synthetic fuse")));
+        Assert.False(twice.CanCommit);
+        var error = Assert.Single(twice.Errors);
+        Assert.Equal(4, error.Line);
+        Assert.Equal("I", error.Column);
+        Assert.Contains("repeats line 3", error.Message, StringComparison.Ordinal);
+
+        // The same current written two ways is the same number.
+        Assert.False((await service.PreviewAsync(Request("02", Csv(header, "50000,10,0.1,500", ",,1,200", ",,5,200.0")))).CanCommit);
+
+        // Distinct currents in any order of rows are fine: the order of the rows does not matter, only that no current repeats.
+        var shuffled = await service.PreviewAsync(Request("02", Csv(header, "50000,10,10,100", ",,0.1,500", ",,1,200"), Provenance("Synthetic fuse")));
+        Assert.True(shuffled.CanCommit, Describe(shuffled));
+    }
+
+    [Fact]
     public async Task A_Table_Typed_On_The_Screen_Has_No_File_Hash_And_Says_It_Was_Typed()
     {
         var host = Host();
@@ -224,6 +345,34 @@ public sealed class RecordImportTests
         Assert.Equal(RecordUnitCheck.Missing, (await host.Service.RecordImport.PreviewAsync(Request("06", noUnit.Bytes, fileName: null))).Columns.Single(c => c.Symbol == "theta_a").Unit);
     }
 
+    [Theory]
+    [InlineData("mm,evil")]
+    [InlineData("mm\"x")]
+    [InlineData("mm]")]
+    [InlineData("[mm")]
+    [InlineData("mm\n=1+2")]
+    [InlineData("m\rm")]
+    public async Task A_Grid_Unit_With_A_Comma_Quote_Bracket_Or_Line_Break_Is_Refused_And_Cannot_Rewrite_The_Header(string unit)
+    {
+        // Review finding 6: the unit goes into the header between brackets, unquoted; a comma or a bracket in it would add a column or end the header.
+        var host = Host();
+        var template = RecordTemplates.Find("06")!;
+        var csv = RecordImportService.GridToCsv(template, ["", "", unit, ""], [["air", "PVC", "20", "0.9"]]);
+
+        var problem = Assert.Single(csv.Problems);
+        Assert.Contains("theta_a", problem, StringComparison.Ordinal);
+        Assert.Contains("comma, a quote, a bracket or a line break", problem, StringComparison.Ordinal);
+
+        // Whatever a caller does with the bytes, the header is still four columns and the importer refuses the file.
+        var header = Encoding.UTF8.GetString(csv.Bytes).Split("\r\n")[0];
+        Assert.Equal("medium[text],insulation[text],theta_a[?],C_a[-]", header);
+        var preview = await host.Service.RecordImport.PreviewAsync(Request("06", csv.Bytes, fileName: null));
+        Assert.False(preview.CanCommit);
+
+        // A unit typed for a text column is not written at all, and a plain unit raises nothing.
+        Assert.Empty(RecordImportService.GridToCsv(template, ["a,b", "[", "degC", ""], [["air", "PVC", "20", "0.9"]]).Problems);
+    }
+
     [Fact]
     public async Task The_Number_Format_Is_Declared_Never_Guessed_And_A_Decimal_Comma_File_Is_Read_Under_It()
     {
@@ -234,6 +383,15 @@ public sealed class RecordImportTests
         Assert.False(wrong.CanCommit);
         Assert.Contains(wrong.Errors, e => e.Message.Contains("decimal mark", StringComparison.Ordinal) && e.Line == 2);
         Assert.Contains(wrong.Warnings, w => w.Message.Contains("semicolon", StringComparison.Ordinal) || w.Message.Contains(";", StringComparison.Ordinal));
+
+        // The hint about the other decimal mark is said once, not twice (the number reader already words it).
+        var hinted = wrong.Errors.Where(e => e.Line == 2).ToList();
+        Assert.NotEmpty(hinted);
+        Assert.All(hinted, e => Assert.Equal(1, e.Message.Split("number format").Length - 1));
+
+        // A number the reader does not word a hint for still gets the importer's one hint.
+        var grouped = await host.Service.RecordImport.PreviewAsync(Request("04", Utf8("CSA[mm2],AWG[-],I_t[A]\r\n1.234.567,5,,20\r\n")));
+        Assert.All(grouped.Errors.Where(e => e.Column == "CSA"), e => Assert.Equal(1, e.Message.Split("number format").Length - 1));
 
         var right = await host.Service.RecordImport.CommitAsync(Request("04", file) with { Number = NumberProfile.Comma });
         Assert.True(right.Committed, right.Refusal);
@@ -342,6 +500,70 @@ public sealed class RecordImportTests
 
         var minus = await service.PreviewAsync(Request("06", Csv(AmbientFactors, "-air,PVC,20,0.99")));
         Assert.Contains(minus.Errors, e => e.Column == "medium");
+    }
+
+    [Theory]
+    [InlineData("x\n=1+2")]
+    [InlineData("x\r=1+2")]
+    [InlineData("x\r\n=1+2")]
+    [InlineData("x\t=1+2")]
+    [InlineData("x\u2028=1+2")]
+    public async Task A_Text_Cell_With_A_Line_Break_Or_Control_Character_Is_Refused_Naming_The_Column_And_The_Row(string text)
+    {
+        // Review finding 2: a formula behind a line break in a quoted cell is not at the start of the cell, so the formula check missed it, and a
+        // spreadsheet or a line-based tool reading an export would take it as a row of its own.
+        var host = Host();
+        var preview = await host.Service.RecordImport.PreviewAsync(Request("51", Csv("grout[text],C_fd[-]", "Fine grout,0.2", $"\"{text}\",0.3"), Provenance("Unlicensed grout", licensed: false)));
+
+        Assert.False(preview.CanCommit);
+        var error = Assert.Single(preview.Errors);
+        Assert.Equal("grout", error.Column);
+        Assert.Equal(3, error.Line);
+        Assert.Contains("line break or other control character", error.Message, StringComparison.Ordinal);
+        Assert.Empty(await host.Store.ListRecordsAsync());
+
+        // The same cell typed on the screen goes through the same check.
+        var typed = RecordImportService.GridToCsv(RecordTemplates.Find("51")!, ["", ""], [[text, "0.3"]]);
+        var typedPreview = await host.Service.RecordImport.PreviewAsync(Request("51", typed.Bytes, fileName: null));
+        Assert.Contains(typedPreview.Errors, e => e.Column == "grout" && e.Line == 2);
+    }
+
+    [Fact]
+    public async Task A_Label_Or_Material_Name_With_A_Line_Break_Is_Refused_Too()
+    {
+        var host = Host();
+        var label = await host.Service.RecordImport.PreviewAsync(Request("06", Csv(AmbientFactors, "\"air\n=1\",PVC,20,0.99")));
+        Assert.Contains(label.Errors, e => e.Column == "medium" && e.Message.Contains("line break", StringComparison.Ordinal));
+
+        var material = await host.Service.RecordImport.PreviewAsync(Request("62", Csv("material[text],E[GPa]", "\"Steel\n=1\",200"), Provenance(string.Empty)));
+        Assert.Contains(material.Errors, e => e.Column == "material" && e.Message.Contains("line break", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_Provenance_File_Field_With_A_Line_Break_Is_Refused_Naming_The_Column_And_The_Line()
+    {
+        const string header = "kind,title,source_title,edition,amendment,table_or_clause,licence_holder,entered_by,licensed_source,origin,notes\r\n";
+        var text = header
+            + "cable.ampacity,\"Two\nlines\",Test Wiring Rules,2018,,Table 4D2A,Own copy,someone,true,UserEntered,\r\n"
+            + "cable.ampacity,Good,Test Wiring Rules,2018,,Table 4D2A,\"Own\r=1+2\",someone,true,UserEntered,\r\n"
+            + "cable.ampacity,Fine,Test Wiring Rules,2018,,Table 4D2A,Own copy,someone,true,UserEntered,Note\r\n";
+        var rows = RecordImportService.ReadProvenanceFile(Utf8(text), out var problems);
+
+        var kept = Assert.Single(rows);
+        Assert.Equal("Fine", kept.Provenance.Title);
+        Assert.Equal(2, problems.Count);
+        Assert.Contains(problems, p => p.Contains("title", StringComparison.Ordinal) && p.Contains("Line 2", StringComparison.Ordinal) && p.Contains("line break", StringComparison.Ordinal));
+        Assert.Contains(problems, p => p.Contains("licence_holder", StringComparison.Ordinal) && p.Contains("Line 4", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Provenance_Typed_On_The_Screen_With_A_Line_Break_Is_Refused()
+    {
+        var host = Host();
+        var preview = await host.Service.RecordImport.PreviewAsync(Request("47", Csv("I_n[A]", "6"), Provenance() with { SourceTitle = "Rules\n=1+2" }));
+
+        Assert.False(preview.CanCommit);
+        Assert.Contains(preview.Errors, e => e.Message.Contains("source title", StringComparison.Ordinal) && e.Message.Contains("line break", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -498,10 +720,11 @@ public sealed class RecordImportTests
         // Ambient factors fall as the ambient temperature rises: 20 degC 0.8 then 30 degC 0.9 is the wrong way round.
         var wrong = await service.PreviewAsync(Request("06", Csv(AmbientFactors, "air,PVC,20,0.8", "air,PVC,30,0.9", "air,PVC,40,0.7")));
         Assert.False(wrong.CanCommit);
-        var error = Assert.Single(wrong.Errors);
-        Assert.Equal(3, error.Line);
-        Assert.Equal("C_a", error.Column);
-        Assert.Contains("must fall as theta_a rises", error.Message, StringComparison.Ordinal);
+
+        // The break is named on both rows of the pair (20 degC and 30 degC), so neither is overlooked.
+        Assert.Equal([2, 3], wrong.Errors.Select(e => e.Line!.Value).Order());
+        Assert.All(wrong.Errors, e => Assert.Equal("C_a", e.Column));
+        Assert.All(wrong.Errors, e => Assert.Contains("must fall as theta_a rises", e.Message, StringComparison.Ordinal));
 
         // The order of the rows does not matter, only the pairing: a separate group is judged on its own.
         var fine = await service.PreviewAsync(Request("06", Csv(AmbientFactors, "air,PVC,40,0.7", "air,PVC,20,0.9", "ground,PVC,20,0.5", "ground,PVC,30,0.6")));
@@ -515,15 +738,65 @@ public sealed class RecordImportTests
     }
 
     [Fact]
+    public async Task An_Ampacity_Table_Whose_Capacity_Does_Not_Rise_With_The_Cross_Section_Is_Refused_And_Both_Rows_Are_Named()
+    {
+        var host = Host();
+        var service = host.Service.RecordImport;
+
+        // Review finding 1: the calculator picks the smallest cross-section whose I_t carries the current, so 270 A at 4 mm2 and 34 A at 6 mm2
+        // would silently pick the wrong conductor. The table is refused, not warned about.
+        var bad = Csv(Ampacity, "1.5,,15", "2.5,,20", "4,,270", "6,,34", "10,,46");
+
+        foreach (var id in new[] { "04", "10" })
+        {
+            var preview = await service.PreviewAsync(Request(id, bad));
+            Assert.False(preview.CanCommit, id);
+            Assert.Equal([4, 5], preview.Errors.Select(e => e.Line!.Value).Order());
+            Assert.All(preview.Errors, e => Assert.Equal("I_t", e.Column));
+            Assert.All(preview.Errors, e => Assert.Contains("CSA", e.Message, StringComparison.Ordinal));
+            Assert.Contains(preview.Errors, e => e.Message.Contains("CSA 4", StringComparison.Ordinal) && e.Message.Contains("CSA 6", StringComparison.Ordinal));
+
+            var outcome = await service.CommitAsync(Request(id, bad));
+            Assert.False(outcome.Committed);
+            Assert.Empty(await host.Store.ListRecordsAsync("cable.ampacity"));
+        }
+
+        // The same table with the capacity mended is accepted. An AWG table runs the other way (a larger gauge number is a thinner wire), and is judged so.
+        Assert.True((await service.PreviewAsync(Request("04", Csv(Ampacity, "1.5,,15", "2.5,,20", "4,,27", "6,,34", "10,,46")))).CanCommit);
+        Assert.True((await service.PreviewAsync(Request("04", Csv(Ampacity, ",14,15", ",12,20", ",10,27")))).CanCommit);
+
+        var awg = await service.PreviewAsync(Request("04", Csv(Ampacity, ",14,30", ",12,20", ",10,27")));
+        Assert.False(awg.CanCommit);
+        Assert.All(awg.Errors, e => Assert.Contains("AWG", e.Message, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_Spring_Wire_Strength_That_Rises_With_The_Diameter_Is_Warned_About_As_The_Notes_Ask_And_One_That_Falls_Is_Not()
+    {
+        var host = Host();
+        var service = host.Service.RecordImport;
+        const string header = "grade[text],d[mm],Rm[MPa]";
+
+        // Template 39's note: "Within one grade, warn when Rm rises as d rises". Each row is its own record, and the calculator reads one Rm, so it is a warning.
+        var rising = await service.PreviewAsync(Request("39", Csv(header, "DH,1,1500", "DH,2,1600")));
+        Assert.True(rising.CanCommit, Describe(rising));
+        Assert.Contains(rising.Warnings, w => w.Column == "Rm" && w.Message.Contains("must not rise as d rises", StringComparison.Ordinal));
+
+        var falling = await service.PreviewAsync(Request("39", Csv(header, "DH,1,1700", "DH,2,1600")));
+        Assert.True(falling.CanCommit, Describe(falling));
+        Assert.DoesNotContain(falling.Warnings, w => w.Column == "Rm");
+    }
+
+    [Fact]
     public async Task A_Warning_Does_Not_Stop_An_Import_But_An_Error_Does_And_Row_Counts_Are_Held()
     {
         var host = Host();
         var service = host.Service.RecordImport;
 
-        // CSA and I_t not rising together is a warning only.
-        var odd = await service.PreviewAsync(Request("04", Csv(Ampacity, "1.5,,30", "2.5,,20")));
+        // A suction velocity above the pressure-line velocity is a warning only (CSA and I_t out of step is an error: see the ampacity test).
+        var odd = await service.PreviewAsync(Request("17", Csv("basis[text],v_suc_max[m/s],v_prs_max[m/s],v_ret_max[m/s]", "Test basis,3,2,2")));
         Assert.True(odd.CanCommit, Describe(odd));
-        Assert.Contains(odd.Warnings, w => w.Column == "I_t");
+        Assert.Contains(odd.Warnings, w => w.Column == "v_suc_max");
 
         var rows = Enumerable.Range(1, 61).Select(i => $"{i},,{10 + i}").ToArray();
         var tooMany = await service.PreviewAsync(Request("04", Csv(Ampacity, rows)));
@@ -582,18 +855,77 @@ public sealed class RecordImportTests
     }
 
     [Fact]
-    public async Task A_Revision_Taken_Between_Preview_And_Commit_Rolls_The_Whole_Import_Back()
+    public async Task A_Batch_That_Repeats_A_Revision_Is_Refused_By_The_Store_As_A_Whole_And_Leaves_It_As_It_Was()
     {
         var host = Host();
         var store = host.Store;
         var first = await host.Service.RecordImport.CommitAsync(Request("51", Csv("grout[text],C_fd[-]", "Test grout,0.2"), Provenance("Grout friction")));
         Assert.True(first.Committed, first.Refusal);
 
-        // A batch that repeats a revision of one record (the second write of the same key) is refused as a whole.
+        // The store's own guard, tested directly: a batch that repeats a revision of one record (the second write of the same key) is refused as a whole.
         var one = first.Records[0];
         var other = one with { Id = Guid.NewGuid(), Title = "Another grout" };
         await Assert.ThrowsAsync<CalcInstanceImmutableException>(() => store.SaveRecordsAsync([other, one]));
         Assert.Single(await store.ListRecordsAsync("joint.friction"));
+    }
+
+    [Fact]
+    public async Task A_Title_Taken_Between_Preview_And_Commit_Refuses_The_Whole_Import_Because_The_Commit_Judges_The_File_Against_The_Store_As_It_Is_Then()
+    {
+        var host = Host();
+        var service = host.Service.RecordImport;
+        var request = Request("06", Csv(AmbientFactors, "air,PVC,20,0.99", "air,PVC,30,0.9", "air,PVC,40,0.8"), Provenance("Ambient (test)"));
+
+        var preview = await service.PreviewAsync(request);
+        Assert.True(preview.CanCommit, Describe(preview));
+        Assert.Equal(3, preview.Planned.Count);
+
+        // Someone else saves a record with the title of the second row after the preview was read.
+        var taken = new CalcDataRecord(Guid.Empty, "cable.correction-factors", preview.Planned[1].Title, 0, "Other source", "2018", "Table 1", "Own copy", "someone else", false, CalcDataOrigin.UserEntered,
+            [new CalcDataValue("C_a", Number: 0.5)], DateTimeOffset.UnixEpoch, null);
+        var (other, refusal) = await host.Service.SaveRecordAsync(taken);
+        Assert.NotNull(other);
+        Assert.Null(refusal);
+
+        var outcome = await service.CommitAsync(request);
+
+        Assert.False(outcome.Committed);
+        Assert.StartsWith("Nothing was saved", outcome.Refusal, StringComparison.Ordinal);
+        Assert.Contains(outcome.Preview.Errors, e => e.Message.Contains("exists already", StringComparison.Ordinal));
+        Assert.Empty(outcome.Records);
+
+        // Only the other save is in the store: none of the three rows, not even the two that were fine.
+        var stored = Assert.Single(await host.Store.ListRecordsAsync("cable.correction-factors"));
+        Assert.Equal(other.Id, stored.Id);
+    }
+
+    [Fact]
+    public async Task A_Revision_Saved_Between_Preview_And_Commit_Makes_The_Import_The_Revision_After_It_And_Loses_Neither()
+    {
+        var host = Host();
+        var service = host.Service.RecordImport;
+        var first = await service.CommitAsync(Request("47", Csv("I_n[A]", "6", "10"), Provenance("Ratings (test)")));
+        Assert.True(first.Committed, first.Refusal);
+
+        var request = Request("47", Csv("I_n[A]", "6", "10", "16"), Provenance("Ratings (test)")) with { AsRevision = true };
+        var preview = await service.PreviewAsync(request);
+        Assert.Equal(2, Assert.Single(preview.Planned).Revision);
+
+        // Another save lands as revision 2 after the preview was read.
+        var (other, refusal) = await host.Service.SaveRecordAsync(first.Records[0] with { Notes = "Saved by someone else" });
+        Assert.Equal(2, other!.Revision);
+        Assert.Null(refusal);
+
+        var outcome = await service.CommitAsync(request);
+
+        Assert.True(outcome.Committed, outcome.Refusal);
+        var saved = Assert.Single(outcome.Records);
+        Assert.Equal(3, saved.Revision);
+        Assert.Equal(first.Records[0].Id, saved.Id);
+        Assert.Equal(3, saved.Values.Single().Rows!.Count);
+        Assert.Equal("Saved by someone else", (await host.Store.FindRecordAsync(saved.Id, 2))!.Notes);
+        Assert.Equal(2, (await host.Store.FindRecordAsync(saved.Id, 2))!.Values.Single().Rows!.Count);
+        Assert.Equal(3, (await host.Store.FindRecordAsync(saved.Id))!.Revision);
     }
 
     // ------------------------------------------------------------------
@@ -777,21 +1109,105 @@ public sealed class RecordImportTests
         Assert.Equal("grout[text],C_fd[-]\r\n", RecordImportService.BlankTemplateCsv(RecordTemplates.Find("51")!));
     }
 
+    [Theory]
+    [InlineData("line one\nline two", "\"line one\nline two\"")]
+    [InlineData("line one\rline two", "\"line one\rline two\"")]
+    [InlineData("plain", "plain")]
+    [InlineData("a,b", "\"a,b\"")]
+    [InlineData("say \"hi\"", "\"say \"\"hi\"\"\"")]
+    [InlineData("=1+2", "'=1+2")]
+    public void An_Exported_Value_With_A_Line_Break_Is_Quoted_And_A_Formula_Is_Still_Neutralised(string value, string expected) =>
+        Assert.Equal(expected, CalcInstanceService.Csv(value));
+
     [Fact]
-    public async Task A_Licensed_Material_Added_To_By_An_Import_Never_Exports()
+    public async Task An_Exported_Record_Holding_A_Line_Break_Keeps_It_Inside_One_Quoted_Cell()
     {
         var host = Host();
-        var made = await host.Service.RecordImport.CommitAsync(Request("62", Csv("material[text],E[GPa],nu[-]", "Locked alloy,200,0.3"), Provenance(string.Empty)));
-        Assert.True(made.Committed, made.Refusal);
+        var draft = new CalcDataRecord(Guid.Empty, "joint.friction", "Open grout", 0, "Test Rules", "2018", "Table 1", "Own copy", "me", false, CalcDataOrigin.UserEntered,
+            [new CalcDataValue("C_fd", Number: 0.2), new CalcDataValue("note", Text: "first\n=2+2")], DateTimeOffset.UnixEpoch, null);
+        var (saved, refusal) = await host.Service.SaveRecordAsync(draft);
+        Assert.NotNull(saved);
+        Assert.Null(refusal);
 
-        var (csv, refusal) = await host.Service.Materials.ExportCsvAsync(made.Records[0].Id);
-        Assert.Null(csv);
-        Assert.Contains("licensed", refusal, StringComparison.OrdinalIgnoreCase);
+        var (csv, exportRefusal) = await host.Service.ExportRecordAsync(saved.Id);
+
+        Assert.Null(exportRefusal);
+        Assert.Contains("note,,,\"first\n=2+2\"\n", csv, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Licensed_Material_Added_To_By_An_Import_Never_Exports_In_Any_Revision()
+    {
+        var host = Host();
+        var service = host.Service.RecordImport;
+        var made = await service.CommitAsync(Request("62", Csv("material[text],E[GPa],nu[-]", "Locked alloy,200,0.3"), Provenance(string.Empty)));
+        Assert.True(made.Committed, made.Refusal);
+        var id = made.Records[0].Id;
+
+        // Each table template adds a revision; each says its source is NOT licensed, and the material stays licensed all the same (once licensed, always).
+        var open = Provenance(string.Empty, licensed: false);
+        var temperature = await service.CommitAsync(Request("63", Csv("material[text],property[text],T[degC],v[-],v_unit[text]", "Locked alloy,E,20,200,GPa", "Locked alloy,E,100,195,GPa"), open));
+        var curve = await service.CommitAsync(Request("64", Csv("material[text],eps[-],Es[MPa]", "Locked alloy,0.001,200000", "Locked alloy,0.002,190000"), open));
+        var pairs = await service.CommitAsync(Request("65", Csv("material[text],pair[text],mu[-]", "Locked alloy,steel on steel,0.3"), open));
+
+        foreach (var (outcome, revision) in new[] { (temperature, 2), (curve, 3), (pairs, 4) })
+        {
+            Assert.True(outcome.Committed, outcome.Refusal + " " + Describe(outcome.Preview));
+            Assert.Equal(revision, outcome.Records[0].Revision);
+            Assert.True(outcome.Records[0].IsLicensed(), $"revision {revision} must stay licensed");
+        }
+
+        // No revision exports, in any of the three export paths, newest or oldest.
+        foreach (int? revision in new int?[] { null, 1, 2, 3, 4 })
+        {
+            var (csv, csvRefusal) = await host.Service.Materials.ExportCsvAsync(id, revision);
+            Assert.Null(csv);
+            Assert.Contains("licensed", csvRefusal, StringComparison.OrdinalIgnoreCase);
+
+            var (json, jsonRefusal) = await host.Service.Materials.ExportJsonAsync(id, revision);
+            Assert.Null(json);
+            Assert.Contains("licensed", jsonRefusal, StringComparison.OrdinalIgnoreCase);
+
+            var (record, recordRefusal) = await host.Service.ExportRecordAsync(id, revision);
+            Assert.Null(record);
+            Assert.Contains("never exported", recordRefusal, StringComparison.Ordinal);
+        }
     }
 
     // ------------------------------------------------------------------
     // Materials: refusals
     // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(CalcDataOrigin.UserEntered)]
+    [InlineData(CalcDataOrigin.Derived)]
+    public async Task A_Table_Added_To_A_Shipped_Seed_Material_Is_Cited_As_The_Persons_Entry_Not_As_Indicative(CalcDataOrigin origin)
+    {
+        // Review finding 7: the preserve rule kept "Indicative" on the next revision of a seed, so licensed user data was cited "(indicative)".
+        var host = Host();
+        await host.Service.Materials.EnsureSeededAsync();
+        var seed = (await host.Store.ListRecordsAsync(MaterialLibrary.Kind)).First(m => m.Origin == CalcDataOrigin.Indicative);
+
+        var tables = Csv("material[text],property[text],T[degC],v[-],v_unit[text]", $"{seed.Title},E,20,200,GPa", $"{seed.Title},E,100,195,GPa");
+        var added = await host.Service.RecordImport.CommitAsync(Request("63", tables, Provenance(string.Empty) with { Origin = origin }));
+
+        Assert.True(added.Committed, added.Refusal + " " + Describe(added.Preview));
+        var revised = Assert.Single(added.Records);
+        Assert.Equal(seed.Id, revised.Id);
+        Assert.Equal(2, revised.Revision);
+        Assert.Equal(origin, revised.Origin);
+        Assert.Equal("Test Wiring Rules", revised.SourceTitle);
+        Assert.DoesNotContain("indicative", revised.Citation, StringComparison.OrdinalIgnoreCase);
+        Assert.True(revised.IsLicensed());
+
+        // The seed's own revision stays as shipped.
+        Assert.Equal(CalcDataOrigin.Indicative, (await host.Store.FindRecordAsync(seed.Id, 1))!.Origin);
+
+        // Adding to a material of the person's own leaves its origin alone, and 62 as its next revision is the person's entry as before.
+        var again = await host.Service.RecordImport.CommitAsync(Request("65", Csv("material[text],pair[text],mu[-]", $"{seed.Title},steel on steel,0.3"), Provenance(string.Empty) with { Origin = CalcDataOrigin.ManufacturerExample }));
+        Assert.True(again.Committed, again.Refusal + " " + Describe(again.Preview));
+        Assert.Equal(origin, again.Records[0].Origin);
+    }
 
     [Fact]
     public async Task A_Temperature_Table_For_A_Material_That_Is_Not_In_The_Library_Or_With_The_Wrong_Unit_Is_Refused()

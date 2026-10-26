@@ -33,6 +33,30 @@ public sealed class RecordTemplateContractTests
     }
 
     [Fact]
+    public async Task Every_Number_That_Is_Stored_And_Never_Applied_Has_A_Hard_Range_With_Both_Ends()
+    {
+        // Review finding 4: a stored-but-unapplied column (theta_a, t_min, altitude, ...) is read by no calculator, so no calculator limit judges it;
+        // the template must, or 1e300 would be saved as a temperature.
+        var service = Host().Service.RecordImport;
+        var missing = new List<string>();
+
+        foreach (var template in service.ImportableTemplates())
+        {
+            var preview = await service.PreviewAsync(Request(template.Id, Utf8(RecordImportService.BlankTemplateCsv(template))));
+
+            foreach (var column in preview.Columns.Where(c => c.Role == RecordColumnRole.Extra && c.TemplateSymbol is not null))
+            {
+                var hard = template.Checks.Any(c => c.Kind == RecordCheckKind.Range && c.Severity == RecordSeverity.Error && c.Columns.Contains(column.TemplateSymbol!) && c.Lo is not null && c.Hi is not null);
+
+                if (!hard)
+                    missing.Add($"{template.Id}:{column.TemplateSymbol}");
+            }
+        }
+
+        Assert.True(missing.Count == 0, "No hard range on: " + string.Join(", ", missing));
+    }
+
+    [Fact]
     public void The_Template_Files_Hold_A_Header_And_No_Data_Rows()
     {
         foreach (var file in TemplateFiles())

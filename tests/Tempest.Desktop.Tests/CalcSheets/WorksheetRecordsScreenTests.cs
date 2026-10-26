@@ -134,6 +134,14 @@ public sealed class WorksheetRecordsScreenTests
             Assert.False(ButtonOf(screen, CalcRecordsView.SaveGridCaption).IsEnabled);
             Assert.Contains(screen.Model.GridIssueLines, l => l.StartsWith("Error", StringComparison.Ordinal) && l.Contains("does not measure the same quantity", StringComparison.Ordinal));
 
+            // A unit typed with a comma or a bracket cannot rewrite the header: it is refused in words and nothing can be saved.
+            Type(screen, "Unit of I_n", "A,x");
+            await Settle();
+            Assert.Contains(screen.Model.GridIssueLines, l => l.Contains("comma, a quote, a bracket or a line break", StringComparison.Ordinal));
+            Assert.False(ButtonOf(screen, CalcRecordsView.SaveGridCaption).IsEnabled);
+            Assert.Null(await screen.Model.SaveGridAsync());
+            Assert.Contains("Nothing was saved", screen.Model.Status, StringComparison.Ordinal);
+
             // A unit of the same kind is kept as typed and judged in the calculator's unit.
             Type(screen, "Unit of I_n", "mA");
             Type(screen, "Row 1 I_n", "6000");

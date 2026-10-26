@@ -3,6 +3,26 @@ using Tempest.Calc.Engine.Units;
 
 namespace Tempest.Calc.Library;
 
+/// <summary>The one rule about what a text cell of a record file may hold, shared by the importer, the provenance file and the provenance typed on the screen.</summary>
+internal static class RecordText
+{
+    /// <summary>
+    /// Whether the text holds a line break, a tab or any other control character, or a Unicode line or paragraph separator. A text cell is one
+    /// line: a formula behind a line break is not at the start of the cell, so the formula check would miss it, and a spreadsheet or a
+    /// line-based tool reading an export would take it as a row of its own.
+    /// </summary>
+    public static bool HasControlCharacter(string? text)
+    {
+        foreach (var c in text ?? string.Empty)
+        {
+            if (char.IsControl(c) || c is '\u2028' or '\u2029')
+                return true;
+        }
+
+        return false;
+    }
+}
+
 /// <summary>One cell of the file as read: the text, and the number or flag it holds when the column takes one.</summary>
 internal sealed class ParsedCell
 {
@@ -196,7 +216,9 @@ internal static class RecordTemplateChecks
                         var shown = InTemplateUnit(column, v);
 
                         if (shown is { } s && ((check.Lo is { } lo && s < lo) || (check.Hi is { } hi && s > hi)))
-                            row.Add(check.Severity, column.Symbol, $"{column.Symbol} = {Show(s)}{UnitSuffix(column)} is outside the usual range ({Range(check.Lo, check.Hi)}{UnitSuffix(column)}). Check it against your source.");
+                            row.Add(check.Severity, column.Symbol, check.Severity == RecordSeverity.Error
+                                ? $"{column.Symbol} = {Show(s)}{UnitSuffix(column)} is outside what a record can hold ({Range(check.Lo, check.Hi)}{UnitSuffix(column)}). A slip in the unit or a column is likely."
+                                : $"{column.Symbol} = {Show(s)}{UnitSuffix(column)} is outside the usual range ({Range(check.Lo, check.Hi)}{UnitSuffix(column)}). Check it against your source.");
                     }, inTemplateUnit: true);
                     break;
 
@@ -488,7 +510,11 @@ internal static class RecordTemplateChecks
                         _ => "not rise",
                     };
                     var where = groupNames.Count > 0 ? $" within {string.Join(", ", groupNames.Select(g => crow.Cell(g)?.Raw))}" : string.Empty;
-                    crow.Add(check.Severity, value.Symbol, $"{value.Symbol} must {wanted} as {order.Symbol} rises{where}; line {prow.Line} and this row are the other way round.");
+
+                    // Both rows of the pair carry the finding, and it names the values: the row that breaks the run may be either one (270 A at CSA 4 then 34 A at CSA 6).
+                    var named = $"{order.Symbol} {prow.Cell(order.Symbol)?.Raw} has {value.Symbol} {prow.Cell(value.Symbol)?.Raw}, but {order.Symbol} {crow.Cell(order.Symbol)?.Raw} has {value.Symbol} {crow.Cell(value.Symbol)?.Raw}";
+                    prow.Add(check.Severity, value.Symbol, $"{value.Symbol} must {wanted} as {order.Symbol} rises{where}: {named} (line {prow.Line} and line {crow.Line}).");
+                    crow.Add(check.Severity, value.Symbol, $"{value.Symbol} must {wanted} as {order.Symbol} rises{where}: {named} (line {prow.Line} and line {crow.Line}).");
                 }
             }
         }

@@ -63,7 +63,30 @@ public sealed class RecordImportService
         ArgumentNullException.ThrowIfNull(rows);
 
         var sb = new System.Text.StringBuilder();
-        sb.Append(string.Join(',', template.Columns.Select((c, i) => $"{QuoteCsv(c.Symbol)}[{(c.IsText ? "text" : string.IsNullOrWhiteSpace(i < units.Count ? units[i] : null) ? "-" : units[i].Trim())}]"))).Append("\r\n");
+        var problems = new List<string>();
+
+        // The unit is written into the header cell between brackets, unquoted: a comma, a quote, a bracket or a line break in it would end the cell, the
+        // unit or the row, and make the header say something else. A unit never holds one, so the grid is refused (the bytes carry '?', which the importer refuses too).
+        string UnitOf(RecordTemplateColumn c, int i)
+        {
+            if (c.IsText)
+                return "text";
+
+            var typed = (i < units.Count ? units[i] : null)?.Trim() ?? string.Empty;
+
+            if (typed.Length == 0)
+                return "-";
+
+            if (typed.IndexOfAny([',', '"', '[', ']', '\r', '\n']) >= 0)
+            {
+                problems.Add($"The unit of {c.Symbol} holds a comma, a quote, a bracket or a line break. A unit is typed on its own (mm2, kN, degC).");
+                return "?";
+            }
+
+            return typed;
+        }
+
+        sb.Append(string.Join(',', template.Columns.Select((c, i) => $"{QuoteCsv(c.Symbol)}[{UnitOf(c, i)}]"))).Append("\r\n");
         var lineOf = new List<int>();
 
         for (var r = 0; r < rows.Count; r++)
@@ -77,7 +100,7 @@ public sealed class RecordImportService
             lineOf.Add(r + 1);
         }
 
-        return new RecordGridCsv(new System.Text.UTF8Encoding(false).GetBytes(sb.ToString()), lineOf);
+        return new RecordGridCsv(new System.Text.UTF8Encoding(false).GetBytes(sb.ToString()), lineOf) { Problems = problems };
     }
 
     private static string QuoteCsv(string text) =>
@@ -132,6 +155,12 @@ public sealed class RecordImportService
         {
             var row = table.Rows[r];
             var line = table.Lines[r];
+            if (new[] { "kind", "title", "source_title", "edition", "amendment", "table_or_clause", "licence_holder", "entered_by", "notes" }.FirstOrDefault(name => RecordText.HasControlCharacter(Cell(row, name))) is { } broken)
+            {
+                issues.Add($"Line {line}: {broken} holds a line break or other control character. Put it on one line.");
+                continue;
+            }
+
             var licensedText = Cell(row, "licensed_source");
             bool licensed;
 
@@ -680,7 +709,9 @@ public sealed class RecordImportService
         {
             case RecordColumnKind.Text:
             case RecordColumnKind.Choice:
-                if (CsvSafeWriter.IsFormulaLike(cell.Raw))
+                if (RecordText.HasControlCharacter(cell.Raw))
+                    row.Add(RecordSeverity.Error, column.Symbol, $"{column.Symbol}: the text on line {row.Line} holds a line break or other control character. Put it on one line.");
+                else if (CsvSafeWriter.IsFormulaLike(cell.Raw))
                     row.Add(RecordSeverity.Error, column.Symbol, $"{column.Symbol}: '{Clip(cell.Raw)}' starts with = + - or @, which a spreadsheet would read as a formula. Remove the sign.");
                 else if (cell.Raw.Length > CalcDataRecord.MaxTextLength)
                     row.Add(RecordSeverity.Error, column.Symbol, $"{column.Symbol}: the text is longer than {CalcDataRecord.MaxTextLength} characters.");
@@ -712,7 +743,10 @@ public sealed class RecordImportService
                 }
                 else
                 {
-                    var hint = LocaleNumber.LooksLikeOtherMark(cell.Raw, profile) ? " If the file's numbers use the other decimal mark, choose that number format." : string.Empty;
+                    // The number reader words this hint itself when the cell has a point or a comma in the wrong place; it is added here only when the reader's message has none.
+                    var hint = LocaleNumber.LooksLikeOtherMark(cell.Raw, profile) && !problem.Contains("number format", StringComparison.Ordinal)
+                        ? " If the file's numbers use the other decimal mark, choose that number format."
+                        : string.Empty;
                     row.Add(RecordSeverity.Error, column.Symbol, $"{column.Symbol}: {problem}{hint}");
                 }
 
@@ -810,7 +844,7 @@ public sealed class RecordImportService
         var drafts = new List<(CalcDataRecord Draft, int Line, ParsedRow? Row)>();
 
         if (schema.IsMaterial)
-            await PlanMaterialsAsync(template, bound, valid, source, notes, prov, drafts, cancellationToken).ConfigureAwait(false);
+            await PlanMaterialsAsync(template, bound, valid, source, notes, prov, request.AsRevision, drafts, cancellationToken).ConfigureAwait(false);
         else if (bound.Values.Any(c => c.Role == RecordColumnRole.TableColumn))
             PlanTable(template, bound, valid, source, notes, prov, drafts, fileIssues);
         else
@@ -893,6 +927,7 @@ public sealed class RecordImportService
             var values = new List<CalcDataValue>();
             var labels = new List<string>();
             var scalars = 0;
+            var numbers = 0;
 
             foreach (var column in bound.Values.Where(c => c.Mapped))
             {
@@ -912,8 +947,9 @@ public sealed class RecordImportService
                         break;
 
                     case RecordColumnRole.Extra when cell.Number is { } x:
+                        // Stored, never applied, and never in the title: the number is from the table (often a licensed one) and the title is printed in the citation on every sheet.
                         values.Add(new CalcDataValue(column.Symbol, Number: x, Unit: UnitOrNull(column), Source: source));
-                        labels.Add($"{column.Symbol} {RecordTemplateChecks.Show(x)}{(UnitOrNull(column) is { } u ? " " + u : string.Empty)}");
+                        numbers++;
                         break;
                 }
             }
@@ -924,7 +960,9 @@ public sealed class RecordImportService
                 continue;
             }
 
-            var title = labels.Count > 0 ? $"{prov.Title.Trim()} [{string.Join(", ", labels)}]" : valid.Count > 1 ? $"{prov.Title.Trim()} [row {n}]" : prov.Title.Trim();
+            // A row is named by its text labels and, when it also holds numbers the labels do not tell apart (or has no label), by its row number: never by a value from the table.
+            List<string> parts = valid.Count > 1 && (labels.Count == 0 || numbers > 0) ? [.. labels, $"row {n}"] : labels;
+            var title = parts.Count > 0 ? $"{prov.Title.Trim()} [{string.Join(", ", parts)}]" : prov.Title.Trim();
             drafts.Add((NewDraft(template, prov, Truncate(title), values, notes, person, now), row.Line, row));
         }
     }
@@ -1018,6 +1056,7 @@ public sealed class RecordImportService
         CalcValueSource source,
         string notes,
         RecordProvenanceInput prov,
+        bool asRevision,
         List<(CalcDataRecord, int, ParsedRow?)> drafts,
         CancellationToken cancellationToken)
     {
@@ -1045,7 +1084,24 @@ public sealed class RecordImportService
                     continue;
                 }
 
-                drafts.Add((new CalcDataRecord(Guid.Empty, MaterialLibrary.Kind, name, 0, prov.SourceTitle.Trim(), prov.EditionAndAmendment, prov.TableOrClause.Trim(), prov.LicenceHolder.Trim(), person, prov.LicensedSource, prov.Origin, values, now, notes), row.Line, row));
+                // As the next revision of a material in the library, what the file leaves blank is carried forward from its latest revision (other
+                // properties, the temperature tables and curves that 63 to 65 added), as 63 to 65 carry the rest: a revision is the whole material.
+                var carriedNotes = notes;
+
+                if (asRevision && library.Where(m => string.Equals(m.Title, name, StringComparison.OrdinalIgnoreCase)).ToList() is [var prior])
+                {
+                    var carried = prior.Values.Where(v => !values.Any(n => string.Equals(n.Symbol, v.Symbol, StringComparison.Ordinal))).ToList();
+
+                    if (carried.Count > 0)
+                    {
+                        row.Add(RecordSeverity.Warning, null, $"'{name}' is saved as its next revision: {string.Join(", ", carried.Select(v => v.Symbol).Order(StringComparer.Ordinal))} are carried forward from revision {prior.Revision} because the file does not set them.");
+                        values = [.. carried, .. values];
+                    }
+
+                    carriedNotes = prior.Notes is { Length: > 0 } ? prior.Notes + NoteSeparator + notes : notes;
+                }
+
+                drafts.Add((new CalcDataRecord(Guid.Empty, MaterialLibrary.Kind, name, 0, prov.SourceTitle.Trim(), prov.EditionAndAmendment, prov.TableOrClause.Trim(), prov.LicenceHolder.Trim(), person, prov.LicensedSource, prov.Origin, values, now, carriedNotes), row.Line, row));
             }
 
             return;
@@ -1084,7 +1140,16 @@ public sealed class RecordImportService
         {
             var kept = material.Values.Where(v => !values.Any(n => string.Equals(n.Symbol, v.Symbol, StringComparison.Ordinal))).ToList();
             var combined = material.Notes is { Length: > 0 } ? material.Notes + NoteSeparator + notes : notes;
-            drafts.Add((material with { Values = [.. kept, .. values], LicensedSource = material.LicensedSource || prov.LicensedSource, Notes = combined }, line, row));
+
+            // A shipped seed is "indicative" and cites generic textbook values; once the person's own data is on it, the revision is the person's entry, so the origin and the
+            // record's source are theirs and a sheet does not cite their (licensed) table as "(indicative)". The seed's own values keep the source each one carries.
+            var seed = material.Origin == CalcDataOrigin.Indicative;
+            var entered = material with { Values = [.. kept, .. values], LicensedSource = material.LicensedSource || prov.LicensedSource, Notes = combined };
+
+            if (seed)
+                entered = entered with { Origin = prov.Origin, SourceTitle = prov.SourceTitle.Trim(), Edition = prov.EditionAndAmendment, TableOrClause = prov.TableOrClause.Trim(), LicenceHolder = prov.LicenceHolder.Trim() };
+
+            drafts.Add((entered, line, row));
         }
     }
 
