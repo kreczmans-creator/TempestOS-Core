@@ -49,7 +49,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
     public readonly record struct Required(double? Value, string? Text);
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.1", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
+        Id, "1.2.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
         "An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.",
         "Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)]\n" +
         "Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd\n" +
@@ -57,7 +57,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
         "Plate T-stub (cl. 6.2.6.11, 6.2.4, Table 6.2): M_pl,Rd = 0.25·l_eff·t_p²·f_y/γ_M0; without prying min(2·M_pl,Rd/m, n_t·F_t,Rd); with prying the modes 4·M_pl,Rd/m, (2·M_pl,Rd + n·ΣF_t,Rd)/(m + n) with n = min(e_min, 1.25m), and n_t·F_t,Rd; l_eff is the total for the n_t bolts\n" +
         "Compression T-stub (cl. 6.2.6.9, 6.2.6.10): C_Rd = f_jd·A_flange, checked when M_Ed > 0 and the resultant is in compression\n" +
         "Shear (cl. 6.2.2): F_2,vb,Rd = α_bc·f_ub·A_s/γ_M2, α_bc = 0.44 − 0.0003·f_yb; F_vb,Rd = min(F_1,vb,Rd, F_2,vb,Rd); V_Rd = C_f,d·N_c,Ed + n_b·F_vb,Rd; V_b,Ed = max(V_Ed − C_f,d·N_c,Ed, 0)/n_b\n" +
-        "Required thickness: the smallest t_p in 10–100 mm with u_N, u_C and u_T all ≤ 1 (each falls as t_p rises)",
+        "Required thickness: the smallest t_p in 10–100 mm with u_N, u_C and u_T all ≤ 1, z_C, C_Ed and T_Ed re-evaluated at every trial t_p",
         [
             new CalcInputSpec("column", "Column section type", CalcInputKind.Choice, Choices: [ColumnIH, ColumnRhs, ColumnChs], DefaultChoice: ColumnIH, Group: "Column"),
             new CalcInputSpec("h", "Column depth, along the plate length L (I/H and RHS)", CalcInputKind.Quantity, "mm", Default: 260, Min: 50, Max: 1200, HardMin: 50, HardMax: 1200, IsOptional: true, Group: "Column"),
@@ -161,9 +161,9 @@ public sealed class BasePlateCalculator : ICalcCalculator
                 [Choice("column", ColumnChs), Q("D", 220, "mm"), Q("t", 10, "mm"), Q("B", 350, "mm"), Q("L", 350, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), N("alpha", 1.5), Q("m", 28, "mm"), Q("l_eff", 200, "mm"), Q("N_Ed", 800, "kN"), Q("M_Ed", 0, "kN*m"), Q("V_Ed", 0, "kN")],
                 [new CalcExpectedValue("A_eff", 73724.93227, "mm^2", 1e-6), new CalcExpectedValue("N_j_Rd", 1044.436541, "kN", 1e-6), new CalcExpectedValue("u_N", 0.7659632433, "", 1e-6), new CalcExpectedValue("t_req", 14.85923906, "mm", 1e-6)]),
             new CalcTestCase("ka-chs-moment", "CHS 220×10 on a 350×350×20 plate with N = 200 kN, M = 60 kN·m, bolt rows at 140 mm: lever arm from the half-annulus centroid",
-                new CalcReferenceSource("Analytic (EN 1993-1-8 Table 6.7 regime 1 with the half-annulus centroid as z_C)", "EN 1993-1-8:2005", "R = 110 + 50.8747, r = 110 − 10 − 50.8747: z_C = 4(R³ − r³)/(3π(R² − r²)) = 73.1546 mm, z = 213.1546 mm: C_Ed = (60 + 200·0.14)/0.21315 = 412.85 kN, T_Ed = 212.85 kN, 106.42 kN per bolt; C_Rd = 14.1667·36 862.47 = 522.22 kN"),
+                new CalcReferenceSource("Analytic (EN 1993-1-8 Table 6.7 regime 1 with the half-annulus centroid as z_C)", "EN 1993-1-8:2005", "R = 110 + 50.8747, r = 110 − 10 − 50.8747: z_C = 4(R³ − r³)/(3π(R² − r²)) = 73.1546 mm, z = 213.1546 mm: C_Ed = (60 + 200·0.14)/0.21315 = 412.85 kN, T_Ed = 212.85 kN, 106.42 kN per bolt; C_Rd = 14.1667·36 862.47 = 522.22 kN; t_req = 15.587 mm with z_C, C_Ed and T_Ed re-evaluated at each trial t_p (bisection)"),
                 [Choice("column", ColumnChs), Q("D", 220, "mm"), Q("t", 10, "mm"), Q("B", 350, "mm"), Q("L", 350, "mm"), Q("t_p", 20, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), N("alpha", 1.5), Q("N_Ed", 200, "kN"), Q("M_Ed", 60, "kN*m"), Q("V_Ed", 0, "kN"), Q("x_b", 140, "mm"), Q("m", 25, "mm"), Q("l_eff", 200, "mm")],
-                [new CalcExpectedValue("z_C", 73.15464965, "mm", 1e-6), new CalcExpectedValue("z", 213.1546497, "mm", 1e-6), new CalcExpectedValue("C_Ed", 412.8457913, "kN", 1e-6), new CalcExpectedValue("T_Ed", 212.8457913, "kN", 1e-6), new CalcExpectedValue("F_t_Ed", 106.4228956, "kN", 1e-6), new CalcExpectedValue("C_Rd", 522.2182703, "kN", 1e-6), new CalcExpectedValue("u_C", 0.7905617532, "", 1e-6), new CalcExpectedValue("t_req", 15.39956042, "mm", 1e-6)]),
+                [new CalcExpectedValue("z_C", 73.15464965, "mm", 1e-6), new CalcExpectedValue("z", 213.1546497, "mm", 1e-6), new CalcExpectedValue("C_Ed", 412.8457913, "kN", 1e-6), new CalcExpectedValue("T_Ed", 212.8457913, "kN", 1e-6), new CalcExpectedValue("F_t_Ed", 106.4228956, "kN", 1e-6), new CalcExpectedValue("C_Rd", 522.2182703, "kN", 1e-6), new CalcExpectedValue("u_C", 0.7905617532, "", 1e-6), new CalcExpectedValue("t_req", 15.58734927, "mm", 1e-6)]),
             new CalcTestCase("ka-ih-overlap-clip", "Small I-section 150×150 on a 300×400×40 plate: the strips overlap and the outstand across the width is cut back to the plate edge",
                 new CalcReferenceSource("Analytic (EN 1993-1-8 cl. 6.2.5 relations, outstand cut at the plate edge)", "EN 1993-1-8:2005", "c = 40·√(275/(3·14.1667)) = 101.749 mm; h − 2t_f − 2c < 0 so the full rectangle is used; the outstands are min(c, 75) = 75 mm across the width and min(c, 125) = 101.749 mm along the length: A_eff = (150 + 150)(150 + 203.499) = 106 049.64 mm² (the uncut rectangle clipped to B·L would be 120 000 mm²); N_j,Rd = 1502.37 kN"),
                 [Choice("column", "I/H"), Q("h", 150, "mm"), Q("b", 150, "mm"), Q("t_f", 10, "mm"), Q("t_w", 6, "mm"), Q("B", 300, "mm"), Q("L", 400, "mm"), Q("t_p", 40, "mm"), Q("f_y", 275, "MPa"), Q("f_ck", 25, "MPa"), N("alpha", 1.5), Q("m", 28, "mm"), Q("l_eff", 200, "mm"), Q("N_Ed", 1000, "kN"), Q("M_Ed", 0, "kN*m"), Q("V_Ed", 0, "kN")],
@@ -326,24 +326,74 @@ public sealed class BasePlateCalculator : ICalcCalculator
         Bisect(t => nEdKn <= 0 || fjd * Effective(s, Outstand(t, fy, fjd, gammaM0), plateB, plateL).Area / 1e3 >= nEdKn);
 
     /// <summary>
-    /// The smallest plate thickness in 10–100 mm with u_N, u_C and u_T all ≤ 1 (each falls as t_p rises): bearing under the axial
-    /// force, the compression T-stub (when <paramref name="checkCompression"/>) and the tension T-stub. When the bolts alone cannot
-    /// carry the tension (mode 3) no thickness helps.
+    /// The smallest plate thickness in 10–100 mm with u_N, u_C and u_T all ≤ 1: bearing under the axial force, the compression
+    /// T-stub and the tension T-stub. The compression lever arm z_C (the strip or half-annulus centroid, which depends on the outstand
+    /// c and so on t_p, unless <paramref name="zCEntered"/> is given) and with it the Table 6.7 forces C_Ed and T_Ed are recomputed at
+    /// every trial thickness, so the reported t_req passes its own checks (P1-struct.base-plate-01). The search scans the range in
+    /// 0.05 mm steps and bisects the first passing step, so it does not rely on the forces falling monotonically with t_p. When the
+    /// bolts alone cannot carry the tension at the 100 mm end (mode 3) no thickness helps.
     /// </summary>
-    public static Required RequiredThicknessAll(Section s, double plateB, double plateL, double fy, double fjd, double gammaM0, double nEdKn, bool checkCompression, double cEdKn, double tEdKn, double lEff, double m, double eMin, double nT, double ftRd, bool prying)
+    public static Required RequiredThicknessAll(Section s, double plateB, double plateL, double fy, double fjd, double gammaM0, double nEdSignedKn, double mEdKnm, double xB, double? zCEntered, double lEff, double m, double eMin, double nT, double ftRd, bool prying)
     {
-        if (tEdKn > nT * ftRd * (1 + 1e-9))
-            return new Required(null, "bolts govern (T_Ed exceeds n_t·F_t,Rd, so no thickness helps)");
+        var nEdKn = Math.Max(nEdSignedKn, 0);
 
-        var found = Bisect(t =>
+        bool Carries(double t)
         {
             var area = Effective(s, Outstand(t, fy, fjd, gammaM0), plateB, plateL);
+            var forces = Statics(nEdSignedKn, mEdKnm, zCEntered ?? area.Centroid, xB);
+            var checkCompression = mEdKnm > 0 && forces.C > 0;
             return (nEdKn <= 0 || fjd * area.Area / 1e3 >= nEdKn)
-                && (!checkCompression || cEdKn <= fjd * area.FlangeArea / 1e3)
-                && tEdKn <= TensionTStub(t, fy, gammaM0, lEff, m, eMin, nT, ftRd, prying).Resistance + 1e-12;
-        });
+                && (!checkCompression || forces.C <= fjd * area.FlangeArea / 1e3)
+                && forces.T <= TensionTStub(t, fy, gammaM0, lEff, m, eMin, nT, ftRd, prying).Resistance + 1e-12;
+        }
 
-        return found is { } value ? new Required(value, null) : new Required(null, "> 100 mm");
+        var found = Search(Carries);
+
+        if (found is { } value)
+            return new Required(value, null);
+
+        var top = Effective(s, Outstand(MaxThickness, fy, fjd, gammaM0), plateB, plateL);
+        var tAtMax = Statics(nEdSignedKn, mEdKnm, zCEntered ?? top.Centroid, xB).T;
+
+        return tAtMax > nT * ftRd * (1 + 1e-9)
+            ? new Required(null, "bolts govern (T_Ed exceeds n_t·F_t,Rd at the 100 mm end of the range, so no thickness helps)")
+            : new Required(null, "> 100 mm");
+    }
+
+    /// <summary>The first passing thickness of a 0.05 mm scan of 10–100 mm, refined by bisection inside that step; <see langword="null"/> when none passes.</summary>
+    private static double? Search(Func<double, bool> carries)
+    {
+        if (carries(MinThickness))
+            return MinThickness;
+
+        const double step = 0.05;
+        var previous = MinThickness;
+
+        for (var i = 1; MinThickness + i * step <= MaxThickness + 1e-9; i++)
+        {
+            var t = Math.Min(MinThickness + i * step, MaxThickness);
+
+            if (carries(t))
+            {
+                double lo = previous, hi = t;
+
+                for (var k = 0; k < 100; k++)
+                {
+                    var mid = (lo + hi) / 2;
+
+                    if (carries(mid))
+                        hi = mid;
+                    else
+                        lo = mid;
+                }
+
+                return hi;
+            }
+
+            previous = t;
+        }
+
+        return null;
     }
 
     private static double? Bisect(Func<double, bool> carries)
@@ -632,10 +682,10 @@ public sealed class BasePlateCalculator : ICalcCalculator
         var modeName = governingMode switch { "T_Rd_1" => prying ? "mode 1 (plate yielding)" : "mode 1-2 (plate yielding, no prying)", "T_Rd_2" => "mode 2 (plate yielding and bolt failure)", _ => "mode 3 (bolt failure)" };
 
         // Required thickness for bearing, the compression T-stub and the tension T-stub together.
-        var required = RequiredThicknessAll(section, plateB, plateL, fy, fjd, gM0, nCompression, checkCompression, forces.C, forces.T, c.Si("l_eff") * 1e3, mDist, eMin, nT, c.Si("F_t_Rd") / 1e3, prying);
+        var required = RequiredThicknessAll(section, plateB, plateL, fy, fjd, gM0, nEd, mEd, xB, c.Has("z_C_in") ? zC : null, c.Si("l_eff") * 1e3, mDist, eMin, nT, c.Si("F_t_Rd") / 1e3, prying);
 
         if (required.Value is { } tReq)
-            c.Record("t_req", "smallest t_p in 10–100 mm with u_N, u_C, u_T ≤ 1 (bisection)", $"N_c,Ed = {F(nCompression)} kN, C_Ed = {F(forces.C)} kN, T_Ed = {F(forces.T)} kN" + (tReq <= MinThickness + 1e-9 ? "; carried at the 10 mm minimum" : string.Empty), ScalarValue.Of(tReq, mm), "Plate thickness required", "EN 1993-1-8 cl. 6.2.5, 6.2.6.9, 6.2.6.11");
+            c.Record("t_req", "smallest t_p in 10–100 mm with u_N, u_C, u_T ≤ 1, with z_C, C_Ed and T_Ed recomputed at every trial t_p (scan and bisection)", $"N_c,Ed = {F(nCompression)} kN, C_Ed = {F(forces.C)} kN, T_Ed = {F(forces.T)} kN" + (tReq <= MinThickness + 1e-9 ? "; carried at the 10 mm minimum" : string.Empty), ScalarValue.Of(tReq, mm), "Plate thickness required", "EN 1993-1-8 cl. 6.2.5, 6.2.6.9, 6.2.6.11");
 
         // Shear: friction on the compression plus the anchor bolts (cl. 6.2.2).
         var fyb = c.Si("f_yb") / 1e6;

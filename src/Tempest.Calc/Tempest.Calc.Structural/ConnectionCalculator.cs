@@ -12,6 +12,9 @@ namespace Tempest.Calc.Structural;
 public sealed class ConnectionCalculator : ICalcCalculator
 {
     public const string Id = "struct.connection-ec3";
+    public const string HoleNormal = "Normal clearance";
+    public const string HoleOversize = "Oversize";
+    public const string HoleSlot = "Slot across the load";
 
     /// <summary>Metric coarse sizes M12–M36: (d, pitch, nut across-flats) in mm, ISO 261 / ISO 4032.</summary>
     public static IReadOnlyList<(string Name, double D, double Pitch, double AcrossFlats)> Sizes { get; } =
@@ -26,11 +29,11 @@ public sealed class ConnectionCalculator : ICalcCalculator
     public static IReadOnlyList<(string Grade, double BetaW)> Steels { get; } = [("S235", 0.8), ("S275", 0.85), ("S355", 0.9), ("S420", 1.0), ("S460", 1.0)];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
+        Id, "1.3.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
         "The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.",
         "Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P\n" +
         "Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane)\n" +
-        "Bolt bearing resistance: F_b,Rd = k₁·α_b·f_u·d·t/γ_M2; α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)\n" +
+        "Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load)\n" +
         "Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1\n" +
         "Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0)\n" +
         "Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2",
@@ -38,6 +41,8 @@ public sealed class ConnectionCalculator : ICalcCalculator
             new CalcInputSpec("grade", "Bolt property class", CalcInputKind.Choice, Choices: Grades, DefaultChoice: "8.8", Group: "Bolt"),
             new CalcInputSpec("size", "Bolt size", CalcInputKind.Choice, Choices: [.. Sizes.Select(s => s.Name)], DefaultChoice: "M20", Group: "Bolt"),
             new CalcInputSpec("d_0", "Hole diameter (blank: normal clearance d + 2, or d + 3 from M27)", CalcInputKind.Quantity, "mm", Min: 13, Max: 40, HardMin: 13, HardMax: 40, IsOptional: true, Group: "Bolt"),
+            new CalcInputSpec("hole_type", "Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize)", CalcInputKind.Choice, Choices: [HoleNormal, HoleOversize, HoleSlot], DefaultChoice: HoleNormal, Group: "Bolt"),
+            new CalcInputSpec("single_lap", "Single-lap joint with only one bolt row (limits the bearing resistance to 1.5·f_u·d·t/γ_M2, cl. 3.6.1)", CalcInputKind.Boolean, Default: 0, Group: "Bolt"),
             new CalcInputSpec("n_s", "Shear planes", CalcInputKind.Number, Default: 1, Min: 1, Max: 4, HardMin: 1, HardMax: 4, Group: "Bolt"),
             new CalcInputSpec("threads", "Threads in the shear plane", CalcInputKind.Boolean, Default: 1, Group: "Bolt"),
             new CalcInputSpec("steel", "Plate steel grade (β_w)", CalcInputKind.Choice, Choices: [.. Steels.Select(s => s.Grade)], DefaultChoice: "S275", Group: "Plate"),
@@ -69,6 +74,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
         [
             new CalcAssumption("Static loading; category A (bearing type) shear and category D (non-preloaded) tension; no slip-resistant joints or moment end plates.", "Scope of S4."),
             new CalcAssumption("Bearing is taken at the worst of an end bolt and an inner bolt, and at an edge bolt across the load (k₁ with e₂ and p₂).", "Conservative for every bolt in the group."),
+            new CalcAssumption("Oversize holes reduce the bearing resistance by 0.8 and a slot across the load by 0.6; a d₀ above the normal clearance (d + 2, d + 3 from M27) with the hole type left at normal is treated as oversize. The single-lap cap on the bearing resistance applies only when the single-lap switch is on (a warning says when it would bind).", "EN 1993-1-8 cl. 3.6.1, Table 3.4."),
             new CalcAssumption("Spacing minima (Table 3.3) and γ_M factors are entered from a National Annex record; the values shown default to EN 1993-1-8 recommended.", "A small set of factors only; no table from a standard is shipped."),
             new CalcAssumption("Group forces come from M3 and weld forces per length from M6 by link.", "Group forces and weld forces are linked from the bolt-group and weld-group calculations."),
         ],
@@ -81,6 +87,8 @@ public sealed class ConnectionCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("hole", "The hole must be larger than the bolt.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("hole_clearance", "A d₀ above the normal clearance with the hole type left at normal is treated as oversize (bearing × 0.8).", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("single_lap", "With one shear plane and k₁·α_b above 1.5 the bearing resistance is capped for a single-lap joint with one bolt row; the sheet warns until the joint type is stated.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("spacing", "The edge distance e₂, the gauge p₂ and the pitch p₁ must leave a positive bearing factor (k₁ and α_b above 0).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("e_head", "The across-corners dimension cannot be less than the across-flats dimension of the nut.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("block", "Block tearing needs the group force and both net areas.", CalcNoticeSeverity.Warning),
@@ -95,6 +103,14 @@ public sealed class ConnectionCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (EN 1993-1-8 Table 3.4, d_m = (s + e)/2)", "EN 1993-1-8:2005", "s = 30 mm, e = 34 mm (illustrative): d_m = 32 mm, B_p,Rd = 0.6π·32·10·410/1.25 = 197.8449 kN" ),
                 [Choice("grade", "8.8"), Choice("size", "M20"), Q("e_head", 34, "mm")],
                 [new CalcExpectedValue("B_p_Rd", 197.8449, "kN", 1e-6)]),
+            new CalcTestCase("ka-m20-single-lap-cap", "M20 8.8, 10 mm S275, e₁ = e₂ = 60 in a single-lap joint with one bolt row: the cap 1.5·f_u·d·t/γ_M2 governs",
+                new CalcReferenceSource("Analytic (EN 1993-1-8 cl. 3.6.1 single-lap limit)", "EN 1993-1-8:2005", "d₀ 22, e₁ = e₂ = 60: α_d = 60/66 = 0.9091, α_b = min(0.9091, 800/410, 1) = 0.9091, k₁ = min(2.8·60/22 − 1.7, 2.5) = 2.5, so k₁α_b = 2.2727 > 1.5 and F_b,Rd = 2.5·0.9091·410·20·10/1.25 = 149.09 kN is limited to 1.5·410·20·10/1.25 = 98.4 kN"),
+                [Choice("grade", "8.8"), Choice("size", "M20"), Q("e_1", 60, "mm"), Q("e_2", 60, "mm"), CalcInputValue.Switch("single_lap", true)],
+                [new CalcExpectedValue("F_b_Rd", 98.4, "kN", 1e-9)]),
+            new CalcTestCase("ka-m20-oversize-hole", "M20 8.8, 10 mm S275, e₁ = e₂ = 40, an oversize hole d₀ = 24: bearing × 0.8",
+                new CalcReferenceSource("Analytic (EN 1993-1-8 cl. 3.6.1, Table 3.4 hole factor)", "EN 1993-1-8:2005", "d₀ 24: α_d = 40/72 = 0.5556, k₁ = min(2.8·40/24 − 1.7, 2.5) = 2.5, 2.5·0.5556·410·20·10/1.25 = 91.111 kN; × 0.8 (oversize) = 72.889 kN; × 0.6 (slot across the load) = 54.667 kN"),
+                [Choice("grade", "8.8"), Choice("size", "M20"), Q("d_0", 24, "mm"), Choice("hole_type", HoleOversize)],
+                [new CalcExpectedValue("F_b_Rd", 72.88889, "kN", 1e-6)]),
             new CalcTestCase("ka-m20-109-threads", "M20 10.9 with threads in the shear plane: α_v = 0.5",
                 new CalcReferenceSource("Analytic (EN 1993-1-8 Table 3.4)", "EN 1993-1-8:2005", "F_v,Rd = 0.5·1000·244.79/1.25 = 97.918 kN (with the shank in the plane it would be 0.6·1000·314.16/1.25 = 150.80 kN)"),
                 [Choice("grade", "10.9"), Choice("size", "M20")],
@@ -216,8 +232,25 @@ public sealed class ConnectionCalculator : ICalcCalculator
 
         c.Record("alpha_b", "min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)", $"min({F(alphaEnd)}, {(double.IsInfinity(alphaInner) ? "—" : F(alphaInner))}, {F(fub / fu)}, 1)", new ScalarValue(alphaB), "Bearing factor α_b", "EN 1993-1-8 Table 3.4");
         c.Record("k_1", "min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)", $"e₂ = {F(e2)}, p₂ = {(p2 is { } g ? F(g) : "—")}, d₀ = {F(d0)}", new ScalarValue(k1), "Bearing factor k₁", "EN 1993-1-8 Table 3.4");
-        var fb = Math.Max(k1, 0) * alphaB * fu * d * t / g2;
-        c.Record("F_b_Rd", "k₁·α_b·f_u·d·t/γ_M2", $"{F(k1)} × {F(alphaB)} × {F(fu)} × {F(d)} × {F(t)} / {F(g2)}", ScalarValue.Of(fb / 1e3, kN), "Bearing resistance per bolt", "EN 1993-1-8 Table 3.4");
+        var normalHole = d + (d >= 27 ? 3 : 2);
+        var holeType = c.InputText("hole_type");
+        var holeFactor = holeType switch { HoleSlot => 0.6, HoleOversize => 0.8, _ => d0 > normalHole + 1e-9 ? 0.8 : 1.0 };
+
+        if (holeType == HoleNormal && d0 > normalHole + 1e-9)
+            c.Warn("hole_clearance", $"d_0: the hole ({F(d0)} mm) is larger than the normal clearance ({F(normalHole)} mm) but the hole type is Normal clearance; the bearing resistance is reduced by 0.8 as for an oversize hole (cl. 3.6.1, Table 3.4). Select the hole type to state it.");
+
+        var fbBase = Math.Max(k1, 0) * alphaB * fu * d * t / g2;
+        var fbCap = 1.5 * fu * d * t / g2;
+        var singleLap = c.InputFlag("single_lap") && Math.Abs(ns - 1) < 1e-9;
+        var fbLap = singleLap ? Math.Min(fbBase, fbCap) : fbBase;
+
+        if (!singleLap && Math.Abs(ns - 1) < 1e-9 && fbBase > fbCap + 1e-9)
+            c.Warn("single_lap", $"single_lap: k₁·α_b = {F(k1 * alphaB)} exceeds 1.5, so for a single-lap joint with only one bolt row the bearing resistance is limited to {F(fbCap * holeFactor / 1e3)} kN (1.5·f_u·d·t/γ_M2, cl. 3.6.1) against the {F(fbBase * holeFactor / 1e3)} kN shown. Switch 'single lap, one bolt row' on if that is the joint.");
+
+        var fb = holeFactor * fbLap;
+        var fbFormula = (singleLap ? "min(k₁·α_b, 1.5)" : "k₁·α_b") + "·f_u·d·t/γ_M2" + (holeFactor < 1 ? " × k_h" : string.Empty);
+        var fbSubstitution = singleLap ? $"min({F(k1)} × {F(alphaB)}, 1.5) × {F(fu)} × {F(d)} × {F(t)} / {F(g2)}" : $"{F(k1)} × {F(alphaB)} × {F(fu)} × {F(d)} × {F(t)} / {F(g2)}";
+        c.Record("F_b_Rd", fbFormula, fbSubstitution + (holeFactor < 1 ? $" × {F(holeFactor)}" : string.Empty), ScalarValue.Of(fb / 1e3, kN), "Bearing resistance per bolt", "EN 1993-1-8 cl. 3.6.1, Table 3.4");
         c.Record("F_t_Rd", "k₂·f_ub·A_s/γ_M2, k₂ = 0.9", $"0.9 × {F(fub)} × {F(asArea)} / {F(g2)}", ScalarValue.Of(0.9 * fub * asArea / g2 / 1e3, kN), "Tension resistance per bolt", "EN 1993-1-8 Table 3.4");
         // d_m is the mean of the across-flats and the across-corners dimension of the smaller of head and nut (Table 3.4). The across-corners of a
         // sharp hexagon (1.1547·s) is an upper bound the real nut does not reach, so without the entered e the across-flats s is used (Green G-A-09).

@@ -2,13 +2,13 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Arm connection bolts    Revision: A
 Title: Bolts and fillet welds (EN 1993-1-8)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.
-Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bolt bearing resistance: F_b,Rd = k₁·α_b·f_u·d·t/γ_M2; α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
+Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
   Ref: EN 1993-1-8:2005 cl. 3.5, Table 3.3 — Positioning of holes for bolts
   Ref: EN 1993-1-8:2005 cl. 3.6.1, Table 3.4 — Design resistance of individual fasteners
   Ref: EN 1993-1-8:2005 cl. 3.10.2 — Block tearing
@@ -19,6 +19,8 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Symbol | Description | Value | Unit | Source | Valid range
   grade | Bolt property class | 8.8 |  | drawing: DRG-STR-312 rev B | any
   size | Bolt size | M20 |  | drawing: DRG-STR-312 rev B | any
+  hole_type | Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize) | Normal clearance |  | assumption: Sheet default value; no project figure given. | any
+  single_lap | Single-lap joint with only one bolt row (limits the bearing resistance to 1.5·f_u·d·t/γ_M2, cl. 3.6.1) | no |  | assumption: Sheet default value; no project figure given. | any
   n_s | Shear planes | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 4
   threads | Threads in the shear plane | yes |  | assumption: Sheet default value; no project figure given. | any
   steel | Plate steel grade (β_w) | S275 |  | drawing: DRG-STR-312 rev B | any
@@ -44,18 +46,21 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
 3. ASSUMPTIONS
   A1. Static loading; category A (bearing type) shear and category D (non-preloaded) tension; no slip-resistant joints or moment end plates. (Scope of S4.)
   A2. Bearing is taken at the worst of an end bolt and an inner bolt, and at an edge bolt across the load (k₁ with e₂ and p₂). (Conservative for every bolt in the group.)
-  A3. Spacing minima (Table 3.3) and γ_M factors are entered from a National Annex record; the values shown default to EN 1993-1-8 recommended. (A small set of factors only; no table from a standard is shipped.)
-  A4. Group forces come from M3 and weld forces per length from M6 by link. (Group forces and weld forces are linked from the bolt-group and weld-group calculations.)
-  A5. n_s (Shear planes) is taken as 1. (Sheet default value; no project figure given.)
-  A6. threads (Threads in the shear plane) is taken as yes. (Sheet default value; no project figure given.)
-  A7. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
-  A8. f_u (Plate ultimate strength) is taken as 410 MPa. (Sheet default value; no project figure given.)
-  A9. k_e1 (Minimum e₁/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
-  A10. k_e2 (Minimum e₂/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
-  A11. k_p1 (Minimum p₁/d₀) is taken as 2.2. (Sheet default value; no project figure given.)
-  A12. k_p2 (Minimum p₂/d₀) is taken as 2.4. (Sheet default value; no project figure given.)
-  A13. gamma_M2 (γ_M2) is taken as 1.25. (Sheet default value; no project figure given.)
-  A14. gamma_M0 (γ_M0) is taken as 1. (Sheet default value; no project figure given.)
+  A3. Oversize holes reduce the bearing resistance by 0.8 and a slot across the load by 0.6; a d₀ above the normal clearance (d + 2, d + 3 from M27) with the hole type left at normal is treated as oversize. The single-lap cap on the bearing resistance applies only when the single-lap switch is on (a warning says when it would bind). (EN 1993-1-8 cl. 3.6.1, Table 3.4.)
+  A4. Spacing minima (Table 3.3) and γ_M factors are entered from a National Annex record; the values shown default to EN 1993-1-8 recommended. (A small set of factors only; no table from a standard is shipped.)
+  A5. Group forces come from M3 and weld forces per length from M6 by link. (Group forces and weld forces are linked from the bolt-group and weld-group calculations.)
+  A6. hole_type (Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize)) is taken as Normal clearance. (Sheet default value; no project figure given.)
+  A7. single_lap (Single-lap joint with only one bolt row (limits the bearing resistance to 1.5·f_u·d·t/γ_M2, cl. 3.6.1)) is taken as no. (Sheet default value; no project figure given.)
+  A8. n_s (Shear planes) is taken as 1. (Sheet default value; no project figure given.)
+  A9. threads (Threads in the shear plane) is taken as yes. (Sheet default value; no project figure given.)
+  A10. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
+  A11. f_u (Plate ultimate strength) is taken as 410 MPa. (Sheet default value; no project figure given.)
+  A12. k_e1 (Minimum e₁/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
+  A13. k_e2 (Minimum e₂/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
+  A14. k_p1 (Minimum p₁/d₀) is taken as 2.2. (Sheet default value; no project figure given.)
+  A15. k_p2 (Minimum p₂/d₀) is taken as 2.4. (Sheet default value; no project figure given.)
+  A16. gamma_M2 (γ_M2) is taken as 1.25. (Sheet default value; no project figure given.)
+  A17. gamma_M0 (γ_M0) is taken as 1. (Sheet default value; no project figure given.)
 
 4. WORKING
   [20] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
@@ -90,39 +95,39 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
       = e₂ = 40, p₂ = 120, d₀ = 22
       = 2.5
         Bearing factor k₁
-  [28] F_b_Rd = k₁·α_b·f_u·d·t/γ_M2    « EN 1993-1-8 Table 3.4
+  [30] F_b_Rd = k₁·α_b·f_u·d·t/γ_M2    « EN 1993-1-8 cl. 3.6.1, Table 3.4
       = 2.5 × 0.60606 × 410 × 20 × 20 / 1.25
       = 198.79 kN
         Bearing resistance per bolt
-  [29] F_t_Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9    « EN 1993-1-8 Table 3.4
+  [31] F_t_Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9    « EN 1993-1-8 Table 3.4
       = 0.9 × 800 × 244.79 / 1.25
       = 141 kN
         Tension resistance per bolt
-  [30] B_p_Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = s (e not entered)    « EN 1993-1-8 Table 3.4
+  [32] B_p_Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = s (e not entered)    « EN 1993-1-8 Table 3.4
       = 0.6π × 30 × 20 × 410 / 1.25
       = 370.96 kN
         Punching shear resistance
-  [31] u_v = F_v_Ed / F_v_Rd
+  [33] u_v = F_v_Ed / F_v_Rd
       = 4.7 kN / 94.001 kN
       = 0.049999
         Shear utilisation
-  [32] u_b = F_v_Ed / F_b_Rd
+  [34] u_b = F_v_Ed / F_b_Rd
       = 4.7 kN / 198.79 kN
       = 0.023643
         Bearing utilisation
-  [33] u_t = F_t_Ed / min(F_t_Rd, B_p_Rd)
+  [35] u_t = F_t_Ed / min(F_t_Rd, B_p_Rd)
       = 47 kN / min(141 kN, 370.96 kN)
       = 0.33333
         Tension utilisation (tension or punching)
-  [34] u_vt = F_v_Ed / F_v_Rd + F_t_Ed / (1.4 * F_t_Rd)    « EN 1993-1-8 Table 3.4
+  [36] u_vt = F_v_Ed / F_v_Rd + F_t_Ed / (1.4 * F_t_Rd)    « EN 1993-1-8 Table 3.4
       = 4.7 kN / 94.001 kN + 47 kN / (1.4 × 141 kN)
       = 0.28809
         Combined shear and tension
-  [38] V_eff_Rd = f_u * A_nt / gamma_M2 + f_y * A_nv / (sqrt(3) * gamma_M0)    « EN 1993-1-8 cl. 3.10.2
+  [40] V_eff_Rd = f_u * A_nt / gamma_M2 + f_y * A_nv / (sqrt(3) * gamma_M0)    « EN 1993-1-8 cl. 3.10.2
       = 410 MPa × 1200 mm² / 1.25 + 275 MPa × 2400 mm² / (sqrt(3) × 1)
       = 774.65 kN
         Block tearing resistance (concentric)
-  [39] u_block = V_Ed / V_eff_Rd
+  [41] u_block = V_Ed / V_eff_Rd
       = 28.2 kN / 774.65 kN
       = 0.036403
         Block tearing utilisation
@@ -156,11 +161,12 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: gamma_M2, gamma_M0, k_e1, k_e2, k_p1, k_p2 (EN 1993-1-8 National Annex factors); f_y, f_u (Plate strengths). Enter each as one so its source, edition and licence travel with it.
+  WARNING single_lap: single_lap: k₁·α_b = 1.5152 exceeds 1.5, so for a single-lap joint with only one bolt row the bearing resistance is limited to 196.8 kN (1.5·f_u·d·t/γ_M2, cl. 3.6.1) against the 198.79 kN shown. Switch 'single lap, one bolt row' on if that is the joint.
 
 8. VERIFICATION
-  Template: struct.connection-ec3@1.2.1
-  Content hash: 0b622311bc82e8b2
+  Template: struct.connection-ec3@1.3.0
+  Content hash: 98d5d1a33491feda
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 6/6
-  Test run: 2026-10-25 22:51 UTC
+  Known-answer cases passed: 8/8
+  Test run: 2026-10-26 08:39 UTC
   Application: TempestOS test

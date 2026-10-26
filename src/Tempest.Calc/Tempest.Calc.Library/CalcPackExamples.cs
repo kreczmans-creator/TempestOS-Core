@@ -268,10 +268,11 @@ internal static class CalcPackExamples
         CalcRow.Of(Num("case", @case), Txt("kind", "nodal"), Num("target", node), ("a", new CalcCell(0, "m")), ("b", new CalcCell(0, "m")), ("w1", new CalcCell(0, "kN/m")), ("w2", new CalcCell(0, "kN/m")),
             ("F_x", new CalcCell(fx, "kN")), ("F_y", new CalcCell(fy, "kN")), ("M", new CalcCell(0, "kN*m")));
 
-    /// <summary>The column: 203 × 203 UC in S355 (properties as in S3's defaults), fixed base and free top, buckling length 2 × 3 m.</summary>
+    /// <summary>The column: 203 × 203 UC in S355 (A, W and I as in S3's defaults; the shear-area helper dimensions h, b, t_w, t_f, r of the UC 203×203×46 are stated here, since S3 no longer seeds them), fixed base and free top, buckling length 2 × 3 m.</summary>
     public static IReadOnlyList<CalcInputValue> SteelS3 { get; } =
     [
         Q("M_z_Ed", 0, "kN*m"), Q("f_y", 355, "MPa"), Q("L_cr_y", 6, "m"), Q("L_cr_z", 6, "m"),
+        Q("h", 203.2, "mm"), Q("b", 203.6, "mm"), Q("t_w", 7.2, "mm"), Q("t_f", 11, "mm"), Q("r", 10.2, "mm"),
     ];
 
     /// <summary>

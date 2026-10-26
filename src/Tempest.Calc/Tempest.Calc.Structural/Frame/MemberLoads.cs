@@ -23,6 +23,9 @@ public sealed class MemberLoads
     /// <summary>Positions where the internal-force functions kink or jump, for station placement.</summary>
     public IEnumerable<double> Breakpoints => _transverse.SelectMany(t => new[] { t.A, t.B }).Concat(_points.Select(p => p.A)).Concat(_couples.Select(c => c.A)).Concat(_axial.SelectMany(t => new[] { t.A, t.B })).Concat(_axialPoints.Select(p => p.A));
 
+    /// <summary>Positions of the applied couples, where the moment diagram jumps.</summary>
+    public IEnumerable<double> CouplePositions => _couples.Select(c => c.A);
+
     public void AddTransverse(double a, double b, double w1, double w2) => _transverse.Add((a, b, w1, w2));
 
     public void AddPoint(double a, double p) => _points.Add((a, p));

@@ -73,7 +73,7 @@ public sealed class FrameCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
+        Id, "1.3.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
         "Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.",
         "Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L and bending EI/L³ terms.\nEnd releases (pins) are taken out by static condensation; supports remove freedoms or add spring stiffness.\nSpan loads become equivalent nodal loads, the exact fixed-end forces.\nDisplacements, by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism): K u = F.\nInternal forces and deflections follow from the member end actions and Macaulay functions of the span loads.\nExtremes are found at stations along each member, plus the zero-shear and zero-slope points found by bisection.",
         [
@@ -123,6 +123,10 @@ public sealed class FrameCalculator : ICalcCalculator
                 new CalcReferenceSource("Statics (hinge makes the right span simply supported)", null, "Span 2 (4 m) with a hinge at its left end and a 40 kN load at midspan: R3 = 20 kN, M_max = 40 kN·m; span 1 (fixed–pin) carries 20 kN at its right end as a cantilever: M_fixed = −20 × 5 = −100 kN·m"),
                 [CalcInputValue.Quantity("E", 210, "GPa"), Nodes((1, 0, 0, SupportFixed), (2, 5, 0, SupportRollerY), (3, 9, 0, SupportRollerY)), Elements((1, 1, 2, 80, 5000, false, false), (2, 2, 3, 80, 5000, true, false)), Loads((1, "point", 2, 2, 0, 0, 0, 0, -40, 0)), CalcInputValue.Of("n_div", 10)],
                 [new CalcExpectedValue("R3_y", 20, "kN", 1e-9), new CalcExpectedValue("R2_y", 20, "kN", 1e-9), new CalcExpectedValue("R1_y", 0, "kN", 1e-9), new CalcExpectedValue("R1_m", 0, "kN*m", 1e-9), new CalcExpectedValue("M_max", 40, "kN*m", 1e-9)]),
+            new CalcTestCase("ka-ss-couple", "Simply supported beam, concentrated couple at midspan (the moment diagram jumps)",
+                new CalcReferenceSource("Statics (closed form)", null, "Span 6 m, couple 30 kN·m at 3 m: the reactions are ±M/L = 5 kN, so the moment is +5x up to the couple (+15 kN·m just before it) and 5x − 30 after it (−15 kN·m just after): M_max = 15, M_min = −15 kN·m, both at 3 m, one on each side of the jump"),
+                [CalcInputValue.Quantity("E", 210, "GPa"), Nodes((1, 0, 0, SupportPin), (2, 6, 0, SupportRollerY)), Elements((1, 1, 2, 100, 8000)), Loads((1, "moment", 1, 3, 0, 0, 0, 0, 0, 30)), CalcInputValue.Of("n_div", 20)],
+                [new CalcExpectedValue("M_max", 15, "kN*m", 1e-6), new CalcExpectedValue("M_min", -15, "kN*m", 1e-6)]),
         ],
         DiagramKey: "frame-2d",
         Category: "Analysis",
@@ -372,6 +376,10 @@ public sealed class FrameCalculator : ICalcCalculator
                 "moment" => FrameLoadKind.Moment,
                 _ => FrameLoadKind.Point,
             };
+
+            if (kind is FrameLoadKind.Point or FrameLoadKind.Moment && row.Get("a")?.Number is null)
+                throw new FrameModelException($"loads: the {(kind == FrameLoadKind.Moment ? "couple" : "point load")} in case {Int(row, "case")} on element {Int(row, "target")} has no position; enter a, its distance from end i (0 for the start of the member).");
+
             return new FrameLoad(Int(row, "case"), kind, Int(row, "target"), Si(row, "a", "m"), Si(row, "b", "m"), Si(row, "w1", "kN/m"), Si(row, "w2", "kN/m"), Si(row, "F_x", "kN"), Si(row, "F_y", "kN"), Si(row, "M", "kN*m"), row.Get("gravity")?.Flag ?? false);
         }).ToList();
 
