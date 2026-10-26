@@ -13,11 +13,17 @@ How it is held:
 - **Catalogue rules** (47, 48) are applied to all 54 templates in this phase and held by contract tests with no exceptions.
 - **Template rules** (everything else) are held by the contract tests in `tests/Tempest.Calc.Tests.Calculators/Consistency/`: one rule per row
   of the audit, run over all 54 templates. A template that does not meet a rule yet is named in
-  `ConsistencyAllowList.json` (one entry per template and rule). The allow-list **only shrinks**: a template that breaks a rule and is not on the
-  list fails the build, and so does a template that is on the list and now meets the rule (remove its entry). Phases B and C (the
-  per-template work) empty the list; `docs/calcs/consistency-work-list.md` is generated from it and says what is wrong in each template.
+  `ConsistencyAllowList.json`, keyed by rule, template and the **number of offences** the template has today (C2-26). The allow-list **only shrinks**:
+  a template that breaks a rule and is not on the list fails the build, so does a template that is on the list and gains an offence (its count
+  rises), and so does one that has fixed an offence and not lowered its count. The write mode lowers or removes entries and refuses to add one or to raise a
+  number. Phases B and C (the per-template work) empty the list; `docs/calcs/consistency-work-list.md` is generated from it and says what is wrong in each template.
+- **Applicability rules** declare their effect on the result, `CalcRuleEffect.Conservative` or `Unconservative`, on every rule of every template (C2-25);
+  an unconservative rule is a block, or is paired with a check that fails when it fires, or is on `UnconservativeAllowList.json` with its reason.
+  `UnconservativeRuleTests` holds it. Nothing matches words.
 - **The glossary** (`docs/calcs/glossary.md`) is generated from the catalogue; `GlossaryTests` fails when a template uses a symbol it lacks or
-  lists under another quantity type.
+  lists under another quantity type, and when a use of a symbol that two or more templates share has no declared meaning id (`eta:efficiency`,
+  `eta:perry-factor`; `GlossaryMeanings.json`), so two meanings in one quantity type are told apart (C2-27). `python3 scripts/generate-glossary.py --check`
+  runs in CI.
 
 Each section below is one category of the audit: the rule, one good example, and how it is enforced (the contract test, by rule id).
 
@@ -32,7 +38,7 @@ Where the audit offered options or a proposal met saved data, the choice is reco
 | C2-03 | What does a yes/no check print where a ratio check prints its utilisation? | The text sheet prints `PASS` or `FAIL` and the check, no utilisation; the PDF column shows `—`. A check carries `HasUtilisation` (false for `CheckCondition`). A ratio check that fails by an infinite ratio still prints `utilisation —`. | Printing `—` in the text line as well (the audit's wording); printing 0. |
 | C2-04 | Where do default-value notices go, and in what words? | Under Applicability in their own sub-list, `Defaults used (inputs left empty)`, one line each: `F_r: not entered, so the default of 2 kN is used.` They are `CalcNoticeKind.DefaultUsed`, not warnings (`CalcRunResult.EngineeringWarnings` leaves them out). | The audit's two-sentence example (`F_r was not entered. The default of 2 kN is used.`), which does not fit the one-sentence message shape of row 31; dropping them. |
 | C2-05 | Order of the Results. | Headline results first (the output ports, in the order the template declares them), then supporting values in the order produced, then utilisations; the governing result is marked `(governing)`. A template with no ports has no headline group. | Declared order only. |
-| C2-06 | How are numbers rounded for display? | By quantity type, by the renderers and `CalcOutput`, from one table (`CalcDisplay.Rules`): fixed decimals per dimension and unit, never fewer than 2 or more than 5 significant figures, zero is `0`, a value below 1e-9 of the largest of its dimension in the same results is shown as `0`. A utilisation is 2 decimals, rounded up above 1. A plain number that is not a utilisation, safety factor, efficiency or power factor keeps five significant figures. A template may override the decimals of one output (`c.Output(symbol, text, decimals: n)`) where it can justify it. | The audit's bare decimals (no limit on significant figures), which print `321190.4 kN/m` and `0.0 MPa`. |
+| C2-06 | How are numbers rounded for display? | By quantity type, by the renderers and `CalcOutput`, from one table (`CalcDisplay.Rules`, the **least** decimals shown): decimals per dimension and unit, zero is `0`. A plain number that has no unit rule keeps five significant figures. A template may raise the decimals of one output (`c.Output(symbol, text, decimals: n)`) where it can justify it. **Amended by C2-20 (the noise rule) and C2-21 (at least 4 and at most 5 significant figures, whole numbers exact, rounding that cannot cross a limit, utilisation by declaration).** | The audit's bare decimals (no limit on significant figures), which print `321190.4 kN/m` and `0.0 MPa`. |
 | C2-07 | Message shape. | `<symbol>: <one sentence>.` The symbol is the one input the user changes; a failure that belongs to no one input is written under the symbol `calculation`. The engine wraps every exception in this shape (`CalcMessageShape.Engine`) and the input validator speaks it. Messages of an import file (CSV, JSON) keep their `Row n:` form: they are about a file, not an input. | Free wording with the symbol anywhere. |
 | C2-08 | Severity. | A rule's emitted severity equals its declared severity; every emitted rule id is declared once; a broken engineering limit is a check or a block, not only a warning; a block is for a method that gives no result and a warning for a documented fallback (rows 34 to 36). | Warnings for broken limits. |
 | C2-09 | Port names and old symbols. | A port keeps its output symbol (what saved links and stored outputs are keyed by) and gains a public name `<area>.<quantity>` (`CalcOutputPort.Name`) and optional aliases. A link, a pack binding or an inputs file that names the old symbol, the public name or an alias resolves to the same output. Nothing writes an alias. A new link made in the Desktop stores the output symbol, so a build before this one can still read it. | Renaming the output symbol (breaks every saved link); storing only the new name. |
@@ -46,18 +52,53 @@ Where the audit offered options or a proposal met saved data, the choice is reco
 | C2-17 | Contract tests that most templates fail today. | Held by the allow-list (section 2). | Failing the build; skipping the tests. |
 | C2-18 | Display precision of a yes/no check and of `Working`. | Working steps keep five significant figures (they show the arithmetic); only Results, Checks and messages use the precision table. | Applying the table to working. |
 | C2-19 | Where is the standard written? | This page, the glossary, and the code tables they are generated from or tested against (`CalcDisplay.Rules`, `CalcUnitStandard`, `CalcSymbolStandard`, `CalcPortNames`, `CalcCatalogueStandard`). A test holds each page to its table. | Prose only. |
+| C2-20 | Which outputs may be shown as `0` for being solver noise? | Only an output its template flags as noise-prone (`c.MarkNoiseProne(...)` or `c.Output(..., noiseProne: true)`): a solver residual, an equilibrium sum, a computed zero (the radial stress at a free surface, a reaction moment on a pinned support, a loop-closure residual). Such an output is shown as `0` when it is more than nine orders of magnitude below the largest working value of the same dimension and unit in the same run. The comparison is never with another output as such, and an unflagged output is never zeroed: `Z_x = 3.1595 cm³` beside `S_run = 13824 m³`, `0.4 ms` beside `150000 h` and `3 mN·m` beside `5 MJ` print as they are. The flagged outputs are `mech.thick-cylinder` (`sigma_r_a`, `sigma_r_b`), `mech.mechanism` (every kinematic scalar) and `struct.frame-2d` (reactions, their sum, member extremes). | The audit's grouping by dimension, which zeroed real values; a single absolute threshold; a scale symbol named by each template. |
+| C2-21 | How many figures, and which way does a displayed number round? | A result is shown with at least four and at most five significant figures (the table's decimals are the least; `3.160 cm³`, `0.003400 m³`, `144.9 MPa`); a whole number prints exactly (`150000 h`, `13824 m³`, `2 kN`); zero is `0`. No displayed value appears on the passing side of a limit its check fails. A value that must be at least a limit (a safety factor, a margin, `n_*` against a target) is declared `AtLeast` and rounds **down** (1.4999 against 1.5 prints `1.4999`, never `1.50`). A utilisation, and any value checked against a maximum, rounds **up** whenever it exceeds its limit (u 1.004 prints `1.01`; `CheckUtilisation` does so for any `limit`, not only 1); a negative utilisation rounds away from zero; one below 0.005 prints two significant figures (`0.00022`). A failing `Check` shows its demand rounded up and its capacity rounded down (an angle of 40.004° against 40° prints `40.01°` against `40°`). A utilisation is what a template **declares** (`c.MarkUtilisation(...)`, `kind: Utilisation`) or the symbol a utilisation check is made on, never what the symbol or the description says: `u_ratio`, "Factor applied to utilisation", is a plain number. | Two decimals for safety factors and efficiencies; finding utilisations by their names; rounding every value to nearest. |
+| C2-22 | One formatter for the sheet, the PDF, the Desktop form, the governing banner and the register? | Yes. `CalcOutput.ValueText`, `CalcSheetStandard.GoverningBanner` and `FormCheckText` and `CalcDisplay.StoredUtilisation` are the only forms; the form showed a 3-figure utilisation in the banner and the register (`1.25` for a failing `1.2516`) and a yes/no check as `u = 0`. `docs/testing/v0.26.0-test-values.md` is regenerated, and its Expected column is written in the unit symbols its introduction promises (`kN·m`, `93.89°`). **For the guided test mode:** it assumes the form shows five significant figures (`GuidedTolerance.FormSignificantFigures = 5`). The form now shows 4 or 5 figures, a whole number exactly, and a utilisation to two decimals, so the allowance must come from the digits shown: `CalcDisplay.ShownResolution(shownText)` gives the size of the last shown digit (`144.9 MPa` is 0.1, `0.003400 N·m` is 0.000001, `150000 h` is 1) and half of it is the allowance. | Keeping a second formatter in the Desktop. |
+| C2-23 | What happens to calculations saved on an older template version when a template is bumped? | Nothing is released, so no migration now: the catalogue registers only the current version, and a calculation saved on an older one is carried forward by the draft upgrade plan (its inputs are kept) or re-entered. To keep that small, phases B and C bump a template at most once each beyond phase A and this fix: a phase bumps a template only when its version on that phase's branch is still the one phase A and this fix ship, and the integrator keeps the higher version where both branches bumped the same template and re-records its manifest line. **DECISIONS text:** before the first release the owner may want old template versions kept resolvable for re-running issued calculations. Option 1: keep a registry of superseded template versions (the catalogue then registers every released version, and an issued calculation re-runs on the version it was issued on). Option 2: exclude display-only text (titles, descriptions, messages, categories) from the content hash, so that a wording change does not make a new version. Neither is implemented. | Migrating saved calculations now. |
+| C2-24 | The five checks that passed while their warning said the result was unsafe. | Fixed, each with a test that fails before: `struct.en1993-member` `k-default` (a k_yy or k_zz left at 1.0 under N_Ed/N_b,Rd above 0.3, not recorded as an assumption, is replaced in the check by the Annex A/B bound C_m(1 + 0.8n); a k entered with a recorded basis is the user's, with the warning kept); `elec.voltage-drop` `temperature` (the resistance and the drop are computed at the estimated conductor temperature when it is above the one entered); `mech.spring` `buckling` (a check in the verdict for a compression spring, and the status reads FAIL); `mech.shaft` `critical-speed` (a check that the critical speed is at least twice the operating speed); `elec.motor-sizing` `speed-above-rated` (a check that the motor speed is not above the rated speed). `net-section` and `no-ltb` of `struct.en1993-member` are blocks: a tension member needs `A_net` and `f_u` (and is checked for N_u,Rd = 0.9 A_net f_u/γ_M2, 6.2.3(2)(b)); a member bending about y with `ltb` = Not restrained is refused. Each template went up one minor version. | For the temperature, the insulation's maximum operating temperature; for `k-default`, failing the check instead of using the bound; keeping `net-section` and `no-ltb` as warnings. |
+| C2-25 | How is an unconservative applicability rule found? | By a declaration, not by words: every `CalcApplicabilityRule` states its `CalcRuleEffect` (not part of the content hash). The contract: an unconservative rule is a block, or is paired with a check that fails when it fires (`UnconservativeRuleTests.Probes` runs the template on inputs that make it fire), or is on `UnconservativeAllowList.json` with the reason it is not yet one of those. The list has a ceiling and only shrinks. | The word-matching rule `F35-limit-is-a-check-not-a-warning`, which guessed from "exceeds" and "below". |
+| C2-26 | What is the allow-list keyed by? | Rule, template and the number of offences. A template on the list that gains an offence fails; the write mode lowers or removes and never adds or raises. | A list of templates per rule, in which a new offence inside a listed template went unseen. |
+| C2-27 | How are two meanings of one symbol in one quantity type told apart? | By a declared meaning id for every use of a symbol that two or more templates share (`GlossaryMeanings.json`; `eta:efficiency`, `eta:perry-factor`, `eta:shear-area-factor`; `n:active-coils`, `n:gas-exponent`, …). The glossary lists one row per symbol, meaning and quantity type, and marks a symbol with several `RESOLVE`. `python3 scripts/generate-glossary.py --check` runs in the CI step that checks the licences. | Grouping by quantity type alone. |
+| C2-28 | Aliases. | The catalogue refuses a port name or alias equal to the symbol of any other output of the template (a run on the defaults and the known-answer expectations are searched). `CalcInputAliases.Canonicalise` refuses (`CalcInputAliasConflictException`) an input given under an old and a current symbol with different values, instead of dropping one; a run, an inputs file, a CSV file, `CreateAsync` and `UpdateInputsAsync` report it. The Desktop form canonicalises the saved inputs when it opens a calculation. | Letting the current symbol win. |
 
 ## 2. Contract tests and the allow-list
 
-`ConsistencyRules.All` holds one rule per audit row that a program can check. `ConsistencyContractTests` runs each rule over all 54 templates:
-a template that breaks it is on the allow-list or the test fails; a template on the list that no longer breaks it fails the test too. To rewrite the
-list and the work list after fixing templates:
+`ConsistencyRules.All` holds one rule per audit row that a program can check. `ConsistencyContractTests` runs each rule over all 54 templates and compares
+what it finds with `ConsistencyAllowList.json`, which is `{ rule: { template: offences } }`:
+
+- a template that breaks a rule and has no entry fails the test;
+- a template whose offences rise above its entry fails it (a new offence inside a listed template is a failure, not a quiet addition);
+- a template that has fewer offences than its entry fails it too: lower the entry.
+
+To lower the list and rewrite the work list after fixing templates:
 
 ```
 TEMPEST_WRITE_CONSISTENCY_ALLOWLIST=1 dotnet test tests/Tempest.Calc.Tests.Calculators --filter ConsistencyContractTests
 ```
 
-Never add an entry. A reviewer rejects a diff that does. The rules with no entry hold for every template today: `E29`, `E30`, `F34`, `I47`, `I48`.
+The write mode only lowers and removes: it refuses (the test fails and nothing is written) when a template has no entry or more offences than its entry, so it cannot be used to
+grow the list. A reviewer rejects a diff that raises a number by hand. The rules with no entry hold for every template today: `E29`, `E30`, `F34`, `I47`, `I48`.
+
+**Unconservative applicability rules.** Every applicability rule of every template declares its `CalcRuleEffect`. `UnconservativeRuleTests` requires an unconservative rule
+(the sheet can still pass although the result may be on the unsafe side: a demand understated, a capacity overstated, a check not made, a method used outside its range) to be
+
+1. a **block**, as `net-section` and `no-ltb` of `struct.en1993-member` now are; or
+2. **paired with a check that fails when it fires**: `struct.en1993-member` `k-default`, `mech.shaft` `critical-speed`, `mech.spring` `buckling`, `elec.motor-sizing` `speed-above-rated`
+   (each is a probe that runs the template on inputs that make the rule fire and requires the named check to fail); or
+3. on `tests/Tempest.Calc.Tests.Calculators/Consistency/UnconservativeAllowList.json` (`{ template: { rule: reason } }`), each with the reason it is not yet one of those and what is left to do.
+   The list has 92 entries (`UnconservativeRuleTests.Ceiling`); remove an entry and lower the ceiling in the same commit; adding one fails the build.
+
+## 3. Versions in phases B and C, and the guided test mode
+
+- Phase A and this fix bumped these templates (the manifest has the lines): the 20 of phase A (11 patch for a title, 6 minor for ports, 3 minor for ports and a title), and one minor
+  version each for `struct.en1993-member` 1.4.0, `elec.voltage-drop` 1.3.0, `mech.spring` 1.4.0, `mech.shaft` 1.5.0 and `elec.motor-sizing` 1.10.0 (C2-24).
+  Display-only changes (the precision, the unit symbols in table cells, the utilisation and noise declarations, the glossary) are not in the content hash and bump nothing.
+- Phases B and C bump a template **at most once each** beyond that (C2-23). A phase bumps a template only when its version on that phase's branch is still the one this branch ships
+  (check `git diff <this branch> -- <calculator file>` for the `Id, "x.y.z"` line before editing it); a second change to the same template on the same branch keeps the version
+  already bumped. Where both phases bumped one template, the integrator keeps the higher version and re-records the manifest line
+  (`TEMPEST_UPDATE_TEMPLATE_MANIFEST=1`, which only adds lines).
+- The guided test mode (another branch) takes its tolerance from the digits the form shows, `CalcDisplay.ShownResolution(shownText)` (C2-22), not from a fixed five figures.
 
 ## A. Layout and section order (rows 1 to 4)
 
@@ -126,7 +167,8 @@ sheet: y-y is major and z-z minor; a section sheet that draws x horizontal says 
 
 **Enforced by** `C10-temperature-symbols`, `C11-theta-is-an-angle`, `C12-torque-and-time`, `C13-no-case-only-pairs`, `C14-quantity-letters`, `C15-no-bare-p`,
 `C16-greek-letters`, `C17-single-letters`, `C18-sibling-symbols`, `C19-iso-axes`; and `GlossaryTests` (a symbol absent from the glossary, or listed under
-another quantity type, fails; every symbol with several meanings is marked `RESOLVE` for phases B and C). Renames in B and C keep the old symbol as an alias
+another quantity type, fails; every use of a symbol that two or more templates share declares a meaning id, `GlossaryMeanings.json`, so `eta` is `eta:efficiency`,
+`eta:perry-factor` and `eta:shear-area-factor` even though all three are plain numbers; every symbol with several meanings is marked `RESOLVE` for phases B and C). Renames in B and C keep the old symbol as an alias
 (section H).
 
 ## D. Units for the same quantity type (rows 20 to 28)
@@ -164,25 +206,35 @@ The sheet shows symbols by `CalcUnitText.Pretty` (Sheets test `Units_Are_Written
 ## E. Decimals and significant figures (rows 29 and 30)
 
 **Rule.** The decimals depend on the quantity type, not on the template: one table (`CalcDisplay.Rules`, in the glossary as "Quantity types: units and
-decimals"). A force is 2 decimals in kN, a stress 1 in MPa, a length 1 in mm and 2 in m, a temperature 1, a time 2 s and 0 h. Never fewer than two or more than
-five significant figures; zero is `0`; a value more than nine orders of magnitude below the largest of its dimension in the results is solver noise and is
-shown as `0` (`1.8626e-15 MPa` beside `144.9 MPa`). A utilisation, a safety factor, an efficiency and a power factor are 2 decimals; a utilisation above 1 is
-rounded up, so a failing check never prints `1.00`. The same rule applies in Results, Checks and the Desktop form. Rounding is for display only: no value,
-output, stored output, hash or export is rounded.
+decimals"; its decimals are the **least** shown). A result is shown with at least four and at most five significant figures: a force 2194.8 N·m, a stress
+144.9 MPa, 3.160 cm³, 0.003400 m³; a whole number is printed exactly (150000 h, 13824 m³, 2 kN); zero is `0`. No displayed value appears on the passing side of a limit
+its check fails (C2-21): a value that must be at least a limit (a safety factor, a margin, `n_*` against a target) rounds **down**, so 1.4999 against 1.5 prints `1.4999`; a utilisation
+and any value checked against a maximum rounds **up** whenever it exceeds its limit, so u = 1.004 prints `1.01` (not only above 1: a check against a limit of 0.5 prints 0.504 as `0.51`);
+a negative utilisation rounds away from zero; a utilisation below 0.005 prints two significant figures (`0.00022`); a failing check line shows its demand rounded up and its capacity
+rounded down (`40.01°` against `40°`). A utilisation is what the template declares (`c.MarkUtilisation(...)`, or the symbol a utilisation check is made on), never what its symbol or description
+says: `u_ratio`, "Factor applied to utilisation", prints as the plain number it is. A value is shown as `0` for being solver noise only when its template flags it noise-prone (C2-20),
+and then only against the working values of its own dimension and unit in the same run (`1.8626e-15 MPa` beside `144.9 MPa` prints `0 MPa` for the flagged radial stress; an unflagged
+`3.1595 cm³` beside `13824 m³` is `3.160 cm³`). The same rules apply in Results, Checks, the Desktop form, the governing banner and the register: one formatter (C2-22). Rounding is for display
+only: no value, output, stored output, hash or export is rounded. What a reader sees differently from phase A is listed, old and new, in [`display-changes.md`](display-changes.md).
 
-**Good example.** `sigma_t_a = 144.9 MPa`, `T = 2194.8 N·m`, `u_life = 0.94`, `sigma_r_b = 0 MPa`.
+**Good example.** `sigma_t_a = 144.9 MPa`, `T = 2194.8 N·m`, `u_life = 0.94`, `sigma_r_b = 0 MPa` (flagged), `t_life = 150000 h`, `n_f = 1.4999` against a target of 1.5.
 
-**Enforced by** `ConsistencyStandardTests.A_Scalar_Is_Shown_At_The_Decimals_Of_Its_Quantity_Type`, `Display_Rounds_The_Text_Only_And_Never_The_Value`,
-`A_Value_Below_A_Billionth_Of_The_Largest_Of_Its_Dimension_Is_Shown_As_Zero`, `A_Utilisation_Is_Shown_To_Two_Decimals_And_A_Failing_One_Is_Rounded_Up`,
-`Every_Rule_Of_The_Table_Names_A_Unit_The_Engine_Parses_In_Its_Dimension_And_Is_Listed_Once`; contract rules `E29-output-unit-has-a-precision` and
-`E30-utilisation-two-decimals` (no exceptions); `GlossaryTests.The_Quantity_Type_Table_States_The_Units_And_Decimals_Of_The_Code`.
+**Enforced by** `DisplayRulesTests` (Sheets): `A_Scalar_Is_Shown_At_The_Decimals_Of_Its_Quantity_Type_And_Never_With_Fewer_Than_Four_Figures`, `A_Result_Shows_At_Least_Four_And_At_Most_Five_Significant_Figures`,
+`A_Whole_Number_Is_Printed_Exactly_Without_Decimals`, `Display_Rounds_The_Text_Only_And_Never_The_Value`,
+`An_Output_Is_Never_Shown_As_Zero_For_Being_Small_Beside_Another_Output_Of_Its_Dimension` and `Only_An_Output_The_Template_Flags_As_Noise_Prone_Is_Shown_As_Zero_And_Only_When_It_Is_Noise_Beside_Its_Working_Values` (the three cases of the audit),
+`A_Utilisation_Is_Two_Decimals_Two_Figures_Below_0_005_And_Rounded_Up_When_It_Fails_And_Away_From_Zero_When_Negative`, `A_Utilisation_Is_Rounded_Up_Whenever_It_Exceeds_Its_Own_Limit_Not_Only_Above_One`,
+`A_Safety_Factor_That_Must_Be_At_Least_Its_Target_Is_Rounded_Down_And_Never_Reads_At_The_Target`, `A_Failing_Check_Shows_Its_Demand_Rounded_Up_And_Its_Capacity_Rounded_Down_And_A_Passing_One_Rounds_To_The_Nearest`,
+`A_Utilisation_Is_Known_By_The_Declaration_Or_The_Check_Made_On_It_And_Not_By_Its_Symbol_Or_Description`, `The_Form_Banner_And_Register_Print_The_Utilisation_The_Sheet_Prints` (Sheets) and
+`TheForm_ShowsEachResultCheckAndTheBanner_AsTheSheetDoes` (Desktop); `ConsistencyStandardTests.Every_Rule_Of_The_Table_Names_A_Unit_The_Engine_Parses_In_Its_Dimension_And_Is_Listed_Once`;
+contract rules `E29-output-unit-has-a-precision` and `E30-utilisation-two-decimals` (no exceptions); `GlossaryTests.The_Quantity_Type_Table_States_The_Units_And_Decimals_Of_The_Code`.
 
 ## F. Warning and block wording (rows 31 to 37)
 
 **Rule.** A message is `<symbol>: <one plain sentence>.` The symbol is the one input the user changes; there is one symbol, not `F_r/F_a`. A missing input reads
 `<symbol>: enter <thing>.` A message states the condition in sentence 1 and, if it helps, the action in sentence 2; no semicolon; each sentence at most 20 words.
 A rule's emitted severity equals its declared severity and every emitted rule id is declared once, without the engine's `input.` prefix. A block is for a method that
-gives no result; a warning for a documented fallback, named in the message. A broken engineering limit is a check, or a block, never only a warning. A number in a message
+gives no result; a warning for a documented fallback, named in the message. A broken engineering limit is a check, or a block, never only a warning: an applicability rule declares its effect (`CalcRuleEffect`), and an unconservative rule is a block, is
+paired with a failing check, or is on the allow-list with its reason (section 2, C2-25). A number in a message
 has the decimals of its glossary entry; a range in a sentence is `<low> to <high> <unit>`; no comma as thousands separator.
 
 **Good example.**
@@ -191,8 +243,10 @@ has the decimals of its glossary entry; a range in a sentence is `<low> to <high
 
 **Enforced by** `F31-message-shape` (every literal message in a calculator's source and every notice its known-answer runs raise),
 `F32-missing-input-phrasing`, `F33-one-idea-per-message`, `F34-severity-fits-the-condition`, `F35-emitted-severity-equals-declared` (declared severity equals the severity
-of every `Warn`/`Block` call), `F35-limit-is-a-check-not-a-warning`, `F36-emitted-ids-declared`, `F36-no-input-prefix`, `F37-numbers-in-text`. The engine wraps its exceptions
-with `CalcMessageShape.Engine` (Sheets tests `An_Engine_Failure_Is_Wrapped_In_The_Same_Shape`, `The_Validator_Messages_Follow_The_Shape`).
+of every `Warn`/`Block` call), `F36-emitted-ids-declared`, `F36-no-input-prefix`, `F37-numbers-in-text`. The engine wraps its exceptions
+with `CalcMessageShape.Engine` (Sheets tests `An_Engine_Failure_Is_Wrapped_In_The_Same_Shape`, `The_Validator_Messages_Follow_The_Shape`). The declared effect of every applicability rule is held by
+`UnconservativeRuleTests` (`An_Unconservative_Rule_Is_A_Block_Or_Is_Paired_With_A_Failing_Check_Or_Is_On_The_Allow_List_With_A_Reason`, `Each_Probe_Makes_Its_Rule_Fire_And_Fails_The_Check_It_Is_Paired_With`,
+`The_Allow_List_Only_Shrinks_Its_Entry_Count_Is_The_Ceiling`), and the five checks that passed while their warning said the result was unsafe by `UnconservativePassTests` (C2-24).
 
 ## G. Input order and grouping (rows 38 to 42)
 
@@ -216,7 +270,8 @@ that does not exist. A record kind's title repeats the noun of its id.
 **Compatibility.** A port keeps its output symbol (`Symbol`), gains a public name (`Name`) and may list aliases (`Aliases`). Every place that resolves a port or an input
 accepts any of its names: a saved link (`calc:<id>#<symbol>`), a pack binding or example, `BindAsync`, an inputs file, a CSV, a draft carried to a newer version. To rename an
 input or output symbol in phases B and C: change the symbol, add the old one to `Aliases` (`CalcInputSpec.Aliases`, `CalcOutputPort.Aliases`), bump the template's minor version,
-and add a test that loads an old-form instance. The registration refuses an alias that names another input or port. Phase A renames no symbol; it names the ports of the nine
+and add a test that loads an old-form instance. The registration refuses an alias that names another input or port, and a port name or alias that is the symbol of any other output of the template (C2-28).
+An input given under an old and a current symbol with different values is refused (`CalcInputAliasConflictException`), never resolved by dropping one; the Desktop form canonicalises the saved inputs when it opens a calculation. Phase A renames no symbol; it names the ports of the nine
 calculators the audit lists (`bearing-life`, `shaft`, `weld-group`, `connection-ec3`, `load-combinations`, `load-budget`, `fault-protection`, `heat-exchanger`,
 `sealed-system`).
 
@@ -268,7 +323,8 @@ The nine calculators of the audit's port map, as named:
 **Good example.** `{ Symbol: "L_nmh", Unit: "h", Name: "bearing.life_modified" }`; a pack binding `("shaft", "R_A", "bearing", "F_r")` and a link saved as `calc:<id>#R_A` still resolve.
 
 **Enforced by** `H43-port-names`, `H44-ports-declared`, `H45-no-legacy-codes`, `H46-record-kinds`; `AliasCompatibilityTests` (Library: a link by old symbol, alias or public name, a link saved
-before the rename updated after the upstream changes, a pack template and example written with old symbols, a draft upgrade carrying a renamed input, input and port aliases refused when they clash)
+before the rename updated after the upstream changes, a pack template and example written with old symbols, a draft upgrade carrying a renamed input, input and port aliases refused when they clash,
+a port name or alias equal to another output refused, a conflicting old and current symbol refused on create and update)
 and `ConsistencyStandardTests` (Sheets: inputs.json, CSV, runner and sheet read an old input symbol; hashes unchanged for a template with no alias).
 
 ## I. Catalogue titles, categories, scope and method (rows 47 to 50)
@@ -326,7 +382,10 @@ Test cases (Ports and Checks only where the template has them; the plural always
 | What | Where |
 |---|---|
 | Section headings, empty text, notice and check lines, result order | `Tempest.Calc.Sheets/CalcSheetStandard.cs` |
-| Display precision, utilisation rounding, the noise rule | `Tempest.Calc.Sheets/CalcDisplay.cs` |
+| Display precision, rounding direction, utilisation, the noise rule, `ShownResolution` | `Tempest.Calc.Sheets/CalcDisplay.cs` |
+| What an output is checked against (`CalcOutputKind`), `MarkUtilisation`, `MarkAtLeast`, `MarkNoiseProne` | `Tempest.Calc.Sheets/RunResult.cs` |
+| What an applicability rule says about the result (`CalcRuleEffect`) | `Tempest.Calc.Sheets/Template.cs` |
+| The governing banner and the form's check text | `Tempest.Calc.Sheets/CalcSheetStandard.cs` |
 | Unit symbols | `Tempest.Calc.Sheets/CalcUnitText.cs` |
 | One unit per quantity type | `Tempest.Calc.Sheets/CalcUnitStandard.cs` |
 | Reserved and retired symbols | `Tempest.Calc.Sheets/CalcSymbolStandard.cs` |
@@ -334,4 +393,4 @@ Test cases (Ports and Checks only where the template has them; the plural always
 | Port names and areas | `Tempest.Calc.Sheets/CalcPortNames.cs`, `CalcLink.cs` (`CalcOutputPort`) |
 | Input aliases | `Tempest.Calc.Sheets/CalcInputAliases.cs`, `Template.cs` (`CalcInputSpec.Aliases`) |
 | Titles and categories | `Tempest.Calc.Sheets/CalcCatalogueStandard.cs` |
-| The contract | `tests/Tempest.Calc.Tests.Calculators/Consistency/` |
+| The contract | `tests/Tempest.Calc.Tests.Calculators/Consistency/` (`ConsistencyRules.cs`, `ConsistencyAllowList.json`, `UnconservativeRuleTests.cs`, `UnconservativeAllowList.json`, `GlossaryMeanings.json`) |

@@ -1,4 +1,4 @@
-# M4 — Shaft: static, fatigue, keys, critical speed (`mech.shaft@1.4.0`)
+# M4 — Shaft: static, fatigue, keys, critical speed (`mech.shaft@1.5.0`)
 
 **In plain terms.** A shaft carries gears, pulleys and bearings, so it bends and twists, and every turn the bending stress reverses, which is why shafts fail by fatigue at shoulders and keyways. The worksheet takes the stepped shaft, its loads and torque, finds the bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections you mark, the keys, and the speed at which the shaft would whirl.
 
@@ -15,6 +15,8 @@
 **Limitations.** Linear elastic; two simple supports (the bearings must be at least 1/200 of the shaft length apart, else the sheet blocks in its own words); no torsional vibration; first lateral mode only; K_t from records or fit equations, never a digitised chart.
 
 **Changes in 1.3.0 (mech.shaft-01 to -05).** -01: the Rayleigh quotient uses the signed static deflection, so an overhung mass that lifts the span no longer inflates the numerator (bearings at 100 and 500 mm, 40 mm shaft of 700 mm, 5 kg at the tip: `n_c` 7975.0 rpm before, 7246.6 rpm now against the consistent-mass eigenvalue 7189.7 rpm; Dunkerley 7006.7 rpm stays below). -02: a shoulder is checked on both sides, each on its own diameter and bore, and the lower fatigue safety factor governs (Ø50 with a Ø46 bore beside Ø40 solid, 2 kN at the shoulder: `n_f` 5.3065 before, 2.8700 now). -03: `x_T2` has no 400 mm default; blank is the shaft length (L 800 mm, T 1 kN·m, section at 600 mm: `n_f` 5.3065 with no torque there, 2.3914 now), and a torque with a section or key outside `x_T1 … x_T2` warns (`torque-span`). -04: the carried-mass column and the shaft's own weight add no weight unless the new switch `w_masses` is on, which loads the vertical plane with m·g at the nodes (20 kg at mid-span with 2 kN: `M_max` 200 N·m, 219.61 N·m with the switch); a carried mass with the switch off warns (`mass-weight`) and the label and assumption say so. -05: the key bearing uses the lowest yield strength of the key, the shaft and the new optional `S_y_hub` (shaft 250 MPa, key 400 MPa, T 1.2 kN·m, Ø50, 14 × 9 key, n_target 2: `L_key_req` 53.33 mm before, 85.33 mm now; a 200 MPa hub gives 106.67 mm); without a hub strength the key check warns (`key-hub`).
+
+**Changes in 1.5.0 (C-2 fix, M1).** `critical-speed`: the first critical speed (Dunkerley) must be at least twice the operating speed; below that the new check "Critical speed against the operating speed" fails (input `n_c_req = 2·n`, capacity `n_c_D`), where it only warned before. Every other value is unchanged.
 
 **Test cases.** `ka-simply-supported` (slope 2.430 mrad, deflection 0.3240 mm, n_c 5305.2 rpm — analytic, Confirmed), `ka-key` (τ 36.99, σ 84.56 MPa — analytic, Confirmed), `ka-shigley-7-1` (S_e 201.50 MPa, n_f 1.621, n_y 4.489 with the example's data converted to SI exactly — **Unconfirmed** until compared with the book's printed answers). Mott 6th ed. shaft examples are not pinned (owner copy needed). 1.2.0: alternating torque T_m 50 + T_a 150 N·m on the Example 7-1 shaft with a 28.48 N·m bending moment (n_f 2.1325 against 6.9987 for the 50 N·m taken alone, n_y 4.9555), fully alternating 124.28 N·m (n_f 1.5999 against 1.6210 as a steady torque), and the key on T_pk, all from the formulas above in python3.
 
@@ -36,7 +38,7 @@ S_e1 = 700 MPa = 350 MPa
 X1 = x = 120 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 0 N·m, σ_a = 79.334 MPa, τ_m = 0 MPa (shoulder: the side with d = 40 mm governs, of 2) = 2.3845
 X2 = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 186.8 MPa, K_f = 1.912, K_fs = 2.8, M = 415.39 N·m, T = 300 N·m, σ_a = 88.778 MPa, τ_m = 46.947 MPa = 1.6909
 X3 = x = 180 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 300 N·m, σ_a = 79.334 MPa, τ_m = 34.616 MPa (shoulder: the side with d = 40 mm governs, of 2) = 1.9801
-… 15 more step(s) on the sheet
+… 16 more step(s) on the sheet
 Governing: PASS  Slope at the bearings against limit: u_slope = 0.90 vs u_slope ≤ 1  utilisation 0.90
 ```
 <!-- hand-arithmetic:end -->
