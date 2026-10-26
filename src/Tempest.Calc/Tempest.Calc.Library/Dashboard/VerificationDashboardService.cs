@@ -66,6 +66,16 @@ public interface IManualTestStatusSource
     Task<ManualTestStatus> StatusAsync(string id, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// A manual-test source that answers every row from one read (the guided test's run records are read once per report, not once per row). The
+/// dashboard asks it once, before the rows; an id it does not hold is "not tested".
+/// </summary>
+public interface IBulkManualTestStatusSource : IManualTestStatusSource
+{
+    /// <summary>The status of every id that has one, keyed by template (or pack template) id, ordinal.</summary>
+    Task<IReadOnlyDictionary<string, ManualTestStatus>> AllAsync(CancellationToken cancellationToken = default);
+}
+
 /// <summary>The default manual-test source: nothing has been tested.</summary>
 public sealed class NoManualTestStatusSource : IManualTestStatusSource
 {
@@ -152,6 +162,12 @@ public sealed class VerificationDashboardService
             : await _records.RequirementsAsync(templates, cancellationToken).ConfigureAwait(false);
         var rows = new List<VerificationRow>();
 
+        // A source that can read everything at once is read once; the rows then look their status up.
+        var allManual = _manual is IBulkManualTestStatusSource bulk ? await bulk.AllAsync(cancellationToken).ConfigureAwait(false) : null;
+
+        async Task<ManualTestStatus> ManualAsync(string id) =>
+            allManual is null ? await _manual.StatusAsync(id, cancellationToken).ConfigureAwait(false) : allManual.GetValueOrDefault(id) ?? ManualTestStatus.NotTested;
+
         // Without the document data the open defects are not known: the rows say so instead of showing zero.
         var defectsKnown = _snapshot.Problem is null;
 
@@ -159,14 +175,14 @@ public sealed class VerificationDashboardService
         {
             cancellationToken.ThrowIfCancellationRequested();
             var item = _snapshot.Items.GetValueOrDefault(template.Id);
-            var manual = await _manual.StatusAsync(template.Id, cancellationToken).ConfigureAwait(false);
+            var manual = await ManualAsync(template.Id).ConfigureAwait(false);
             rows.Add(CalculatorRow(template, item, requirements.GetValueOrDefault(template.Id) ?? [], manual, defectsKnown));
         }
 
         foreach (var pack in _packTemplates.OrderBy(p => p.Title, StringComparer.Ordinal))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var manual = await _manual.StatusAsync(pack.Id, cancellationToken).ConfigureAwait(false);
+            var manual = await ManualAsync(pack.Id).ConfigureAwait(false);
             rows.Add(ChainRow(pack, _snapshot.Items.GetValueOrDefault(pack.Id), requirements, manual, defectsKnown));
         }
 

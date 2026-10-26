@@ -820,16 +820,13 @@ internal sealed partial class MainWindowComposer
         var worksheetRecords = new Tempest.Desktop.CalcSheets.CalcRecordsView(new Tempest.Desktop.CalcSheets.CalcRecordsViewModel(
             host.CalcInstances!, () => recordPrincipals.Current?.Identity.Id, (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger))));
 
-        // Addendum C, C-4: Calculations → Verification. Read-only over the catalogue, the embedded document data and the records store.
-        // The manual-test source is the default "not tested" one until C-5's guided-run records are wired in here.
+        // Addendum C, C-4: Calculations → Verification. Read-only over the catalogue, the embedded document data, the records store (C-3's
+        // required kinds) and the guided test's run records (C-5).
         Tempest.Desktop.CalcSheets.VerificationDashboardView? verificationDashboard = null;
 
         if (host.CalcInstances is { } calcInstances)
         {
-            var verificationService = new Tempest.Calc.Library.Dashboard.VerificationDashboardService(
-                calcInstances.Catalogue, calcInstances.PackTemplates, snapshot: null,
-                records: new Tempest.Calc.Library.Dashboard.StoreRequiredRecordsSource(calcInstances.Store),
-                manual: new Tempest.Calc.Library.Dashboard.NoManualTestStatusSource());
+            var verificationService = ComposeVerificationService(calcInstances, host.ManualTests);
             verificationDashboard = new Tempest.Desktop.CalcSheets.VerificationDashboardView(new Tempest.Desktop.CalcSheets.VerificationDashboardViewModel(
                 verificationService, evidenceFilePicker,
                 new Tempest.Desktop.CalcSheets.VerificationPdfRenderer { IdentityProvider = () => session.OrganisationIdentity.ToIdentity() }, ApplicationVersionText));
@@ -1052,6 +1049,24 @@ internal sealed partial class MainWindowComposer
     {
         await host.ShutdownAsync().ConfigureAwait(false);
         await host.DisposeAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Addendum C integration: the verification dashboard's service as the app composes it. Records not entered come from C-3's required kinds
+    /// per calculator (<see cref="Tempest.Calc.Library.Dashboard.RecordRequirementsRecordsSource"/>, C-4's "usable for real work" rule kept);
+    /// the manual-test column comes from the guided test's finished runs (<paramref name="manualTests"/>, C-5) and reads "not tested" when the
+    /// build has no guided test. <c>internal</c> so a Desktop test drives the same wiring.
+    /// </summary>
+    internal static Tempest.Calc.Library.Dashboard.VerificationDashboardService ComposeVerificationService(
+        Tempest.Calc.Library.CalcInstanceService calcInstances, Tempest.Calc.Library.ManualTesting.IManualTestStatusSource? manualTests)
+    {
+        ArgumentNullException.ThrowIfNull(calcInstances);
+        return new Tempest.Calc.Library.Dashboard.VerificationDashboardService(
+            calcInstances.Catalogue, calcInstances.PackTemplates, snapshot: null,
+            records: new Tempest.Calc.Library.Dashboard.RecordRequirementsRecordsSource(calcInstances.Store),
+            manual: manualTests is null
+                ? new Tempest.Calc.Library.Dashboard.NoManualTestStatusSource()
+                : new Tempest.Calc.Library.Dashboard.GuidedManualTestStatusSource(manualTests));
     }
 
     /// <summary>

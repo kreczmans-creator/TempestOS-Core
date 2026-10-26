@@ -1279,13 +1279,17 @@ public sealed class RecordImportService
             var records = await _service.Store.ListRecordsAsync(kind.Kind, cancellationToken).ConfigureAwait(false);
             var present = MaterialLibrary.IsMaterial(kind.Kind)
                 ? records.Count > 0
-                : records.Any(r => r.Values.Any(v => kind.Symbols.Contains(v.Symbol, StringComparer.Ordinal)));
+                : records.Any(r => HoldsValueFor(r, kind));
             var (need, reason) = RecordRequirements.For(entry.Template.Id, kind.Kind);
             result.Add(new RecordRequirement(kind.Kind, kind.Title, kind.Symbols, need, reason, present, records.Count, RecordTemplates.ForKind(kind.Kind)));
         }
 
         return result;
     }
+
+    /// <summary>Whether <paramref name="record"/> holds a value the calculator takes for <paramref name="kind"/> (one of the kind's input symbols).</summary>
+    internal static bool HoldsValueFor(CalcDataRecord record, CalcRecordKind kind) =>
+        record.Values.Any(v => kind.Symbols.Contains(v.Symbol, StringComparer.Ordinal));
 
     /// <summary>The required records of a calculator that no record satisfies.</summary>
     public async Task<IReadOnlyList<RecordRequirement>> MissingRequiredAsync(string templateReference, CancellationToken cancellationToken = default) =>
