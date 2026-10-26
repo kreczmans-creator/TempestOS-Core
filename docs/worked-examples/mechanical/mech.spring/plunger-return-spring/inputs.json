@@ -177,7 +177,7 @@
     "ValueText": "Compression"
   },
   {
-    "Symbol": "n",
+    "Symbol": "n_active",
     "Number": 9,
     "Provenance": {
       "Kind": "Drawing",

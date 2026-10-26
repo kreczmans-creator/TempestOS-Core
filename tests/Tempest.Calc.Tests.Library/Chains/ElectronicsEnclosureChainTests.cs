@@ -90,8 +90,8 @@ public sealed class ElectronicsEnclosureChainTests
 
         // M8: ε = y·h/((2/3)·l²) = 1.6667 %, P = b·h²·Es·ε/(6·l) = 4.1481 N, u = 0.5556; W = 4.4018 N; W′ = 71.925 N (α′ 70°, below the 73.3° that would lock).
         // Six latches hold 6 × 71.925 = 431.55 N against the 300 N on the cover (E2 F_seal → M8 F_req, N into N): utilisation 0.6952.
-        Assert.Equal(0.016666666666666666, Si(m8, "eps"), 12);
-        Assert.Equal(4.148148148148149, Si(m8, "P"), 9);
+        Assert.Equal(0.016666666666666666, Si(m8, "eps_max"), 12);
+        Assert.Equal(4.148148148148149, Si(m8, "F_defl"), 9);
         Assert.Equal(0.5555555555555556, Si(m8, "strain_util"), 12);
         Assert.Equal(4.401791556421135, Si(m8, "assembly_force"), 9);
         Assert.Equal(71.92546559978396, Si(m8, "retention_force"), 9);
@@ -104,7 +104,7 @@ public sealed class ElectronicsEnclosureChainTests
         Assert.Equal(431.5527935987038, Si(m8, "F_hold"), 8);
         Assert.Equal(300 / 431.5527935987038, Si(m8, "u_hold"), 12);
         Assert.True(6 * Si(m8, "retention_force") >= Si(e2, "dp_seal") * InputSi(e2, "A_cover"));
-        Assert.Contains(m8.Checks, c => c.Name.StartsWith("Latches hold the load", StringComparison.Ordinal));
+        Assert.Contains(m8.Checks, c => c.Name.StartsWith("Required holding force", StringComparison.Ordinal));
         Assert.All(m8.Checks, c => Assert.True(c.Passed, c.Name));
 
         // E2 → S9, kPa into kPa: the sealed enclosure's pressure difference, limited by the breather, is the uniform pressure on the cover.
@@ -218,7 +218,7 @@ public sealed class ElectronicsEnclosureChainTests
         Assert.Equal(Si(e2, "F_seal"), InputSi(m8, "F_req"), 9);
         Assert.Equal(8.551608852897289e-4 * 1.5, Si(s9, "w_max"), 1e-9);
         Assert.Equal(450 / 431.5527935987038, Si(m8, "u_hold"), 12);
-        Assert.Contains(m8.Checks, c => !c.Passed && c.Name.StartsWith("Latches hold the load", StringComparison.Ordinal));
+        Assert.Contains(m8.Checks, c => !c.Passed && c.Name.StartsWith("Required holding force", StringComparison.Ordinal));
         Assert.All(s9.Checks, c => Assert.True(c.Passed, c.Name));
     }
 

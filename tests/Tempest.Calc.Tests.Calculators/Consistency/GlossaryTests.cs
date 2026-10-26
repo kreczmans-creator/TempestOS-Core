@@ -189,11 +189,10 @@ public sealed partial class GlossaryTests
         Assert.Contains(rows, r => r.Symbol == "eta" && r.Meaning == "perry-factor" && r.Templates.SequenceEqual(["struct.column-buckling"]));
         Assert.Contains(rows, r => r.Symbol == "eta" && r.Meaning == "shear-area-factor" && r.Templates.SequenceEqual(["struct.en1993-member"]));
 
-        // n: the plain-number uses are five meanings, the speed uses are two (the thin-vessel design factor is n_design since C-2 phase B).
+        // n: the plain-number uses are four meanings, the speed uses are two (the thin-vessel design factor is n_design and the spring's active coils are n_active since C-2 phase B).
         var n = rows.Where(r => r.Symbol == "n").ToList();
-        Assert.Equal(7, n.Count);
-        Assert.Equal(5, n.Count(r => r.Quantity == "Plain number"));
-        Assert.Contains(n, r => r.Meaning == "active-coils" && r.Templates.SequenceEqual(["mech.spring"]));
+        Assert.Equal(6, n.Count);
+        Assert.Equal(4, n.Count(r => r.Quantity == "Plain number"));
         Assert.Contains(n, r => r.Meaning == "gas-exponent" && r.Templates.SequenceEqual(["fp.accumulator"]));
         Assert.All(n, r => Assert.StartsWith("RESOLVE", r.Status, StringComparison.Ordinal));
     }

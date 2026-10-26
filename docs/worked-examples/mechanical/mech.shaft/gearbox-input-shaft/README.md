@@ -8,7 +8,7 @@ The pinion sits mid-way between the bearings, so each bearing carries √(2.2² 
 |---|---|---|
 | `E` | 207 GPa | assumption: Steel. |
 | `L_key` | 40 mm | drawing: GBX-SH-01 rev C |
-| `R` | 99 % | assumption: Design reliability. |
+| `R_rel` | 99 % | assumption: Design reliability. |
 | `S_ut` | 700 MPa | spec: EN 10083-3 42CrMo4 +QT, certificate |
 | `S_y` | 500 MPa | spec: EN 10083-3 42CrMo4 +QT, certificate |
 | `S_y_key` | 400 MPa | spec: C45 key steel |

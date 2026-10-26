@@ -441,9 +441,6 @@
   "applied-axial-load": [
    "struct.column-buckling"
   ],
-  "deflection-force": [
-   "mech.snap-fit"
-  ],
   "dissipated-power": [
    "elec.thermal-chain"
   ],
@@ -514,8 +511,7 @@
    "struct.lifting"
   ],
   "reliability": [
-   "mech.bearing-life",
-   "mech.shaft"
+   "mech.bearing-life"
   ],
   "resistance": [
    "elec.voltage-drop"
@@ -1062,9 +1058,6 @@
   "emissivity": [
    "bs.insulation"
   ],
-  "maximum-strain": [
-   "mech.snap-fit#output"
-  ],
   "roughness": [
    "bs.duct-sizing",
    "bs.pipe-pump"
@@ -1320,9 +1313,6 @@
   ]
  },
  "n": {
-  "active-coils": [
-   "mech.spring"
-  ],
   "air-change-rate": [
    "bs.room-heat-loss"
   ],
@@ -1404,9 +1394,6 @@
   ],
   "interface-pressure": [
    "mech.press-fit"
-  ],
-  "pitch": [
-   "mech.spring"
   ],
   "pressure": [
    "fp.oring-gland"

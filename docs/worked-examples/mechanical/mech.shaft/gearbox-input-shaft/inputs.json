@@ -23,7 +23,7 @@
     "ValueText": "40"
   },
   {
-    "Symbol": "R",
+    "Symbol": "R_rel",
     "Number": 99,
     "Unit": "%",
     "Provenance": {

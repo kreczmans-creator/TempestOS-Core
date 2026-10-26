@@ -17,6 +17,10 @@ public sealed class RenamedInputsOldFormTests
         { "mech.thin-vessel", "R", "R_in" },
         { "mech.thin-vessel", "n", "n_design" },
         { "mech.tolerance-stack", "cpk_target", "cpk_req" },
+        { "mech.shaft", "R", "R_rel" },
+        { "mech.spring", "n", "n_active" },
+        { "mech.spring", "l_1", "l_leg_1" },
+        { "mech.spring", "l_2", "l_leg_2" },
     };
 
     private static CalcInputSet Current(ICalcCalculator calculator) => CalcTemplateHasher.DefaultInputs(calculator.Template);
@@ -109,7 +113,7 @@ public sealed class RenamedInputsOldFormTests
         var calculator = AllCalculators.Get(templateId);
         var current = Current(calculator);
         var value = current.Find(currentSymbol)!;
-        var other = value with { Symbol = oldSymbol, Number = value.Number is { } n ? n * 1.5 : 1 };
+        var other = value with { Symbol = oldSymbol, Number = (value.Number ?? 0) * 1.5 + 1 };
 
         Assert.Throws<CalcInputAliasConflictException>(() => CalcInputAliases.Canonicalise(calculator.Template, [.. current.Values, other]));
     }
