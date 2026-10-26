@@ -1807,17 +1807,6 @@
           "templates": [
             "struct.plate-bending"
           ]
-        },
-        {
-          "meaning": "total-damage",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Total damage"
-          ],
-          "templates": [
-            "mech.fatigue-miner"
-          ]
         }
       ]
     },
@@ -2154,6 +2143,22 @@
           ],
           "templates": [
             "fp.oring-gland"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "D_tot",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Total damage"
+          ],
+          "templates": [
+            "mech.fatigue-miner"
           ]
         }
       ]

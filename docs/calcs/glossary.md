@@ -130,7 +130,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `A_b`: `A_b:bearing-area` Area (lifting); `A_b:bore-area` Area (cylinder)
 - `A_eff`: `A_eff:bellows-effective-area` Area (pipe-expansion); `A_eff:effective-bearing-area` Area (base-plate); `A_eff:effective-surface-area` Area (enclosure-heat)
 - `C`: `C:basic-dynamic-load-rating` Force (bearing-life, bearing-life-basic); `C:fitting-loss-coefficient-sum` Plain number (duct-sizing); `C:spring-index` Plain number (spring)
-- `D`: `D:diameter` Length (duct-sizing, pipe-pump, cylinder, iso286-fit, …); `D:enclosure-depth` Length (enclosure-heat); `D:flexural-rigidity` Moment, torque (plate-bending); `D:total-damage` Plain number (fatigue-miner)
+- `D`: `D:diameter` Length (duct-sizing, pipe-pump, cylinder, iso286-fit, …); `D:enclosure-depth` Length (enclosure-heat); `D:flexural-rigidity` Moment, torque (plate-bending)
 - `D_c`: `D_c:conduit-internal-diameter` Length (containment); `D_c:extrusion-gap-mating-diameter` Length (oring-gland)
 - `F`: `F:force` Force (thermal-expansion, fillet-weld); `F:lmtd-correction-factor` Plain number (heat-exchanger)
 - `F_a`: `F_a:axial-load` Force (bearing-life, bearing-life-basic); `F_a:assembly-force` Force (press-fit)
@@ -228,7 +228,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1403 symbols in 54 templates)
+## All symbols (1404 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -295,10 +295,9 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `C_req` | — | Charge | A·h | Minimum battery capacity | elec.load-budget | ok |
 | `Cr` | — | Plain number | — | Pin-clearance factor C_r | struct.lifting | ok |
 | `Cu_oz` | — | Plain number | — | Finished copper weight in oz/ft² (0.5 to 6), not a thickness in µm: 1… | elec.pcb-trace | ok |
-| `D` | `D:diameter` | Length | mm | Bore; Given diameter or side b (blank = size); Inner diameter; … (6 descriptions) | bs.duct-sizing, bs.pipe-pump, fp.cylinder, mech.iso286-fit, mech.spring, struct.base-plate | RESOLVE (4 meanings) |
-| `D` | `D:enclosure-depth` | Length | m | Enclosure depth | elec.enclosure-heat | RESOLVE (4 meanings) |
-| `D` | `D:flexural-rigidity` | Moment, torque | N·m | Flexural rigidity | struct.plate-bending | RESOLVE (4 meanings) |
-| `D` | `D:total-damage` | Plain number | — | Total damage | mech.fatigue-miner | RESOLVE (4 meanings) |
+| `D` | `D:diameter` | Length | mm | Bore; Given diameter or side b (blank = size); Inner diameter; … (6 descriptions) | bs.duct-sizing, bs.pipe-pump, fp.cylinder, mech.iso286-fit, mech.spring, struct.base-plate | RESOLVE (3 meanings) |
+| `D` | `D:enclosure-depth` | Length | m | Enclosure depth | elec.enclosure-heat | RESOLVE (3 meanings) |
+| `D` | `D:flexural-rigidity` | Moment, torque | N·m | Flexural rigidity | struct.plate-bending | RESOLVE (3 meanings) |
 | `D_bth` | — | Force | kN | Design load on each lug | struct.lifting | ok |
 | `D_c` | `D_c:conduit-internal-diameter` | Length | mm | Conduit internal diameter (conduit) | elec.containment | RESOLVE (2 meanings) |
 | `D_c` | `D_c:extrusion-gap-mating-diameter` | Length | mm | Mating part that sets the extrusion gap: the piston outside diameter,… | fp.oring-gland | RESOLVE (2 meanings) |
@@ -318,6 +317,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `D_s1` | — | Length | mm | D, main | bs.duct-sizing | ok |
 | `D_s_l` | — | Length | mm | Sealing-surface diameter, lower deviation | fp.oring-gland | ok |
 | `D_s_u` | — | Length | mm | Sealing-surface diameter, upper deviation | fp.oring-gland | ok |
+| `D_tot` | — | Plain number | — | Total damage | mech.fatigue-miner | ok |
 | `Delta` | — | Length | mm | Movement absorbed by each leg | bs.pipe-expansion | ok |
 | `Delta_run` | — | Length | mm | Leg growth absorbed by the run or runs | bs.pipe-expansion | ok |
 | `Dh` | — | Length | mm | Hole diameter D_h | struct.lifting | ok |

@@ -61,11 +61,11 @@ public static class MechanicalPortWorkedExamples
 
         new(FatigueMinerCalculator.Id, "detail-71-spectrum", "Welded detail category 71 under a three-block spectrum", Legacy("calc.fatigue-miner", 1),
             Sourced("DRG-FT-301", ["blocks"], ["S_ref", "N_ref", "m"], CalcInputValue.Quantity("S_ref", 71, "MPa"), CalcInputValue.Of("N_ref", 2e6), CalcInputValue.Of("m", 3), FatigueMinerCalculator.Blocks((100, 1e5), (60, 5e5), (40, 2e6))),
-            [new CalcExpectedValue("D", 0.46939, "", 5e-5), new CalcExpectedValue("R_f", 2.1304, "", 5e-5)],
+            [new CalcExpectedValue("D_tot", 0.46939, "", 5e-5), new CalcExpectedValue("R_f", 2.1304, "", 5e-5)],
             "Three stress-range blocks on a category-71 detail. Each block's share of the damage is close to the others; the total 0.47 means the spectrum can be repeated about twice before failure."),
         new(FatigueMinerCalculator.Id, "slope-5-endurance-limit", "Slope-5 curve with an endurance limit — damage above one", Legacy("calc.fatigue-miner", 2),
             Sourced("DRG-FT-302", ["blocks"], ["S_ref", "N_ref", "m", "S_e"], CalcInputValue.Quantity("S_ref", 150, "MPa"), CalcInputValue.Of("N_ref", 1e6), CalcInputValue.Of("m", 5), CalcInputValue.Quantity("S_e", 60, "MPa"), FatigueMinerCalculator.Blocks((120, 2e6), (90, 1e7), (50, 1e7))),
-            [new CalcExpectedValue("D", 1.4330, "", 5e-5), new CalcExpectedValue("R_f", 0.69786, "", 5e-5)],
+            [new CalcExpectedValue("D_tot", 1.4330, "", 5e-5), new CalcExpectedValue("R_f", 0.69786, "", 5e-5)],
             "The 50 MPa block lies below the 60 MPa endurance limit and does no damage, but the other two sum to 1.43: the detail fails before one spectrum is complete."),
 
         new(ShaftStressCalculator.Id, "shaft-40mm", "40 mm shaft in bending and torsion", Legacy("calc.shaft-combined-stress", 1),

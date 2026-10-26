@@ -7,8 +7,8 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-Cumulative fatigue damage of a stress-range spectrum against an S–N curve of one slope through a reference point, with an optional endurance limit below which a range does no damage; the spectrum repetitions to failure.
-Cycles to failure at each stress range, from the S–N curve (unbounded at or below the endurance limit S_e): N_i = N_ref·(S_ref/S_i)^m. Damage done by each block of cycles: d_i = n_i/N_i. Total damage, and how many repetitions of the spectrum the part survives: D = Σ d_i; repetitions = 1/D. Acceptance by the Palmgren–Miner rule: D ≤ 1.
+Calculates the cumulative fatigue damage of a stress-range spectrum against an S–N curve of one slope, with an optional endurance limit, and the spectrum repetitions to failure. It excludes life below 10⁴ cycles and a second S–N slope.
+Cycles to failure at each stress range, from the S–N curve (unbounded at or below the endurance limit S_e): N_i = N_ref·(S_ref/S_i)^m. Damage done by each block of cycles: d_i = n_i/N_i. Total damage, and how many repetitions of the spectrum the part survives: D_tot = Σ d_i; repetitions = 1/D_tot. Acceptance by the Palmgren–Miner rule: D_tot ≤ 1.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -23,10 +23,10 @@ Cycles to failure at each stress range, from the S–N curve (unbounded at or be
 
 3. Assumptions
   A1. Damage accumulates linearly and independently of the order of the blocks. (Palmgren–Miner rule.)
-  A2. One S–N slope over the whole range; no second slope below a knee. (Simplified curve; a two-slope curve is entered as two sheets or a lower slope.)
+  A2. The S–N curve has one slope over the whole range, with no second slope below a knee. (A simplified curve: enter a two-slope curve as two sheets or with a lower slope.)
 
 4. Working
-  [5] N_1 = N_ref · (S_ref / S_1)^m    « BS EN 1993-1-9 §8
+  [5] N_1 = N_ref · (S_ref / S_1)^m    « BS EN 1993-1-9:2005 cl. 8
       = 1000000 × (150 MPa / 120 MPa)^5
       = 3051800
         Life at block 1
@@ -34,7 +34,7 @@ Cycles to failure at each stress range, from the S–N curve (unbounded at or be
       = 2000000 / 3051800
       = 0.65536
         Damage of block 1
-  [7] N_2 = N_ref · (S_ref / S_2)^m    « BS EN 1993-1-9 §8
+  [7] N_2 = N_ref · (S_ref / S_2)^m    « BS EN 1993-1-9:2005 cl. 8
       = 1000000 × (150 MPa / 90 MPa)^5
       = 12860000
         Life at block 2
@@ -50,16 +50,20 @@ Cycles to failure at each stress range, from the S–N curve (unbounded at or be
       = 10000000 / ∞
       = 0
         Damage of block 3
-  [11] D = Σ d_i    « Shigley §6-15
+  [11] D_tot = Σ d_i    « Shigley §6-15
       = 0.65536 + 0.7776 + 0
       = 1.433
         Total damage (Palmgren–Miner)
-  [12] R_f = 1 / D
+  [12] D_lim = 1    « Shigley §6-15
+      = 1
+        Damage limit of the Palmgren–Miner rule
+  [13] R_f = 1 / D_tot
       = 1 / 1.433
       = 0.69786
         Spectrum repetitions to failure
 
 5. Results
+  D_tot = 1.44    Total damage (governing)
   R_f = 0.69786    Repetitions to failure
   N_1 = 3051800    Life at block 1
   d_1 = 0.65536    Damage of block 1
@@ -67,21 +71,20 @@ Cycles to failure at each stress range, from the S–N curve (unbounded at or be
   d_2 = 0.7776    Damage of block 2
   N_3 = "unbounded"    Life at block 3
   d_3 = 0    Damage of block 3
-  D = 1.44    Total damage (governing)
 
 6. Checks (governing first)
-  FAIL  Cumulative damage D ≤ 1: D = 1.44 vs D ≤ 1  utilisation 1.44  « Shigley §6-15
+  FAIL  Total damage against the damage limit: 1.433 vs 1  utilisation 1.44  « Shigley §6-15
 
 7. Applicability
   None.
 
 8. Verification
-  Template: mech.fatigue-miner@1.0.1
+  Template: mech.fatigue-miner@1.1.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 2/2
   Test run: —
 
 9. References
-  1. BS EN 1993-1-9 §8 — Fatigue resistance (S–N curves by detail category)
-  2. Shigley's Mechanical Engineering Design §6-15 — Cumulative fatigue damage
+  1. BS EN 1993-1-9:2005 cl. 8 — Fatigue resistance (S–N curves by detail category)
+  2. Budynas and Nisbett, Shigley's Mechanical Engineering Design §6-15, 11th ed. — Cumulative fatigue damage

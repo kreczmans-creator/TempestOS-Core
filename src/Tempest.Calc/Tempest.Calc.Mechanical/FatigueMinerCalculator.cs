@@ -33,9 +33,9 @@ public sealed class FatigueMinerCalculator : ICalcCalculator
         new("TempestOS calc.fatigue-miner (v0.21.0) hand calculation", null, $"docs/engineering/calculations/calc.fatigue-miner.md, Example {n}");
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Mechanical, "Fatigue damage (Palmgren–Miner)",
-        "Cumulative fatigue damage of a stress-range spectrum against an S–N curve of one slope through a reference point, with an optional endurance limit below which a range does no damage; the spectrum repetitions to failure.",
-        "Cycles to failure at each stress range, from the S–N curve (unbounded at or below the endurance limit S_e): N_i = N_ref·(S_ref/S_i)^m.\nDamage done by each block of cycles: d_i = n_i/N_i.\nTotal damage, and how many repetitions of the spectrum the part survives: D = Σ d_i; repetitions = 1/D.\nAcceptance by the Palmgren–Miner rule: D ≤ 1.",
+        Id, "1.1.0", CalcDiscipline.Mechanical, "Fatigue damage (Palmgren–Miner)",
+        "Calculates the cumulative fatigue damage of a stress-range spectrum against an S–N curve of one slope, with an optional endurance limit, and the spectrum repetitions to failure. It excludes life below 10⁴ cycles and a second S–N slope.",
+        "Cycles to failure at each stress range, from the S–N curve (unbounded at or below the endurance limit S_e): N_i = N_ref·(S_ref/S_i)^m.\nDamage done by each block of cycles: d_i = n_i/N_i.\nTotal damage, and how many repetitions of the spectrum the part survives: D_tot = Σ d_i; repetitions = 1/D_tot.\nAcceptance by the Palmgren–Miner rule: D_tot ≤ 1.",
         [
             new CalcInputSpec("S_ref", "Reference stress range (detail category or material fatigue strength)", CalcInputKind.Quantity, "MPa", ReferenceLibrary: "Materials", ReferenceProperty: "FatigueStrength", ReferenceDimension: "Pressure", Default: 71, Min: 1, Max: 2000, HardMin: 1e-6, HardMax: 1e5),
             new CalcInputSpec("N_ref", "Cycles at the reference stress range", CalcInputKind.Number, Default: 2e6, Min: 1e4, Max: 1e9, HardMin: 1, HardMax: 1e15),
@@ -45,11 +45,11 @@ public sealed class FatigueMinerCalculator : ICalcCalculator
         ],
         [
             new CalcAssumption("Damage accumulates linearly and independently of the order of the blocks.", "Palmgren–Miner rule."),
-            new CalcAssumption("One S–N slope over the whole range; no second slope below a knee.", "Simplified curve; a two-slope curve is entered as two sheets or a lower slope."),
+            new CalcAssumption("The S–N curve has one slope over the whole range, with no second slope below a knee.", "A simplified curve: enter a two-slope curve as two sheets or with a lower slope."),
         ],
         [
-            new CalcClauseRef("BS EN 1993-1-9", "§8", "Fatigue resistance (S–N curves by detail category)"),
-            new CalcClauseRef("Shigley's Mechanical Engineering Design", "§6-15", "Cumulative fatigue damage"),
+            new CalcClauseRef("BS EN 1993-1-9:2005", "cl. 8", "Fatigue resistance (S–N curves by detail category)"),
+            new CalcClauseRef("Budynas and Nisbett, Shigley's Mechanical Engineering Design", "§6-15, 11th ed.", "Cumulative fatigue damage"),
         ],
         [
             new CalcApplicabilityRule("no-blocks", "At least one stress-range block is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -58,15 +58,21 @@ public sealed class FatigueMinerCalculator : ICalcCalculator
         [
             new CalcTestCase("ka-legacy-cat71", "Legacy example 1: detail category 71, no cut-off", Legacy(1),
                 [CalcInputValue.Quantity("S_ref", 71, "MPa"), CalcInputValue.Of("N_ref", 2e6), CalcInputValue.Of("m", 3), Blocks((100, 1e5), (60, 5e5), (40, 2e6))],
-                [new CalcExpectedValue("N_1", 715_822, "", 5e-5), new CalcExpectedValue("d_1", 0.13970, "", 5e-5), new CalcExpectedValue("N_2", 3_313_991, "", 5e-5), new CalcExpectedValue("d_2", 0.15088, "", 5e-5), new CalcExpectedValue("N_3", 11_184_719, "", 5e-5), new CalcExpectedValue("d_3", 0.17882, "", 5e-5), new CalcExpectedValue("D", 0.46939, "", 5e-5), new CalcExpectedValue("R_f", 2.1304, "", 5e-5)]),
+                [new CalcExpectedValue("N_1", 715_822, "", 5e-5), new CalcExpectedValue("d_1", 0.13970, "", 5e-5), new CalcExpectedValue("N_2", 3_313_991, "", 5e-5), new CalcExpectedValue("d_2", 0.15088, "", 5e-5), new CalcExpectedValue("N_3", 11_184_719, "", 5e-5), new CalcExpectedValue("d_3", 0.17882, "", 5e-5), new CalcExpectedValue("D_tot", 0.46939, "", 5e-5), new CalcExpectedValue("R_f", 2.1304, "", 5e-5)]),
             new CalcTestCase("ka-legacy-slope5-limit", "Legacy example 2: slope 5 with an endurance limit, damage above one", Legacy(2),
                 [CalcInputValue.Quantity("S_ref", 150, "MPa"), CalcInputValue.Of("N_ref", 1e6), CalcInputValue.Of("m", 5), CalcInputValue.Quantity("S_e", 60, "MPa"), Blocks((120, 2e6), (90, 1e7), (50, 1e7))],
-                [new CalcExpectedValue("N_1", 3_051_758, "", 5e-5), new CalcExpectedValue("d_1", 0.65536, "", 5e-5), new CalcExpectedValue("N_2", 12_860_082, "", 5e-5), new CalcExpectedValue("d_2", 0.77760, "", 5e-5), new CalcExpectedValue("d_3", 0, "", 1e-12), new CalcExpectedValue("D", 1.4330, "", 5e-5), new CalcExpectedValue("R_f", 0.69786, "", 5e-5)]),
+                [new CalcExpectedValue("N_1", 3_051_758, "", 5e-5), new CalcExpectedValue("d_1", 0.65536, "", 5e-5), new CalcExpectedValue("N_2", 12_860_082, "", 5e-5), new CalcExpectedValue("d_2", 0.77760, "", 5e-5), new CalcExpectedValue("d_3", 0, "", 1e-12), new CalcExpectedValue("D_tot", 1.4330, "", 5e-5), new CalcExpectedValue("R_f", 0.69786, "", 5e-5)]),
         ],
-        Category: "Strength");
+        Category: "Strength",
+        OutputPorts:
+        [
+            new CalcOutputPort("D_tot", "", "Total damage by the Palmgren–Miner rule", "fatigue.damage_total", ["D"]),
+            new CalcOutputPort("R_f", "", "Repetitions of the spectrum to failure", "fatigue.repetitions_failure"),
+        ]);
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("D_tot");
         c.Input("S_ref");
         c.Input("N_ref");
         c.Input("m");
@@ -79,7 +85,7 @@ public sealed class FatigueMinerCalculator : ICalcCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("no-blocks", "blocks: at least one stress-range block is needed.");
+            c.Block("no-blocks", "blocks: enter at least one stress-range block.");
             return;
         }
 
@@ -108,11 +114,11 @@ public sealed class FatigueMinerCalculator : ICalcCalculator
             }
 
             var life = nRef * Math.Pow(sRef / s, m);
-            c.Record($"N_{k}", $"N_ref · (S_ref / S_{k})^m", $"{F(nRef)} × ({F(mpa.FromSi(sRef))} MPa / {F(mpa.FromSi(s))} MPa)^{F(m)}", new ScalarValue(life), $"Life at block {k}", "BS EN 1993-1-9 §8");
+            c.Record($"N_{k}", $"N_ref · (S_ref / S_{k})^m", $"{F(nRef)} × ({F(mpa.FromSi(sRef))} MPa / {F(mpa.FromSi(s))} MPa)^{F(m)}", new ScalarValue(life), $"Life at block {k}", "BS EN 1993-1-9:2005 cl. 8");
 
             if (life < MinimumLife)
             {
-                c.Block("low-cycle", $"blocks row {k}: the predicted life {F(life)} cycles is below 10⁴, the low-cycle regime where a stress–life curve does not apply.");
+                c.Block("low-cycle", $"blocks: row {k} has a predicted life of {F(life)} cycles, below 10⁴. The stress–life curve does not apply in that low-cycle regime.");
                 return;
             }
 
@@ -122,14 +128,15 @@ public sealed class FatigueMinerCalculator : ICalcCalculator
         }
 
         var total = damages.Sum();
-        c.Record("D", "Σ d_i", string.Join(" + ", damages.Select(F)), new ScalarValue(total), "Total damage (Palmgren–Miner)", "Shigley §6-15");
+        c.Record("D_tot", "Σ d_i", string.Join(" + ", damages.Select(F)), new ScalarValue(total), "Total damage (Palmgren–Miner)", "Shigley §6-15");
+        c.Assign("D_lim", "1", null, "Damage limit of the Palmgren–Miner rule", "Shigley §6-15");
 
         if (total > 0)
-            c.Record("R_f", "1 / D", $"1 / {F(total)}", new ScalarValue(1 / total), "Spectrum repetitions to failure");
+            c.Record("R_f", "1 / D_tot", $"1 / {F(total)}", new ScalarValue(1 / total), "Spectrum repetitions to failure");
         else
-            c.Record("R_f", "1 / D", "1 / 0", new TextValue("unbounded"), "Spectrum repetitions to failure");
+            c.Record("R_f", "1 / D_tot", "1 / 0", new TextValue("unbounded"), "Spectrum repetitions to failure");
 
-        c.Output("D", "Total damage");
+        c.Output("D_tot", "Total damage");
         c.Output("R_f", "Repetitions to failure");
 
         for (var k = 1; k <= rows.Count; k++)
@@ -138,6 +145,6 @@ public sealed class FatigueMinerCalculator : ICalcCalculator
             c.Output($"d_{k}", $"Damage of block {k}");
         }
 
-        c.CheckUtilisation("Cumulative damage D ≤ 1", "D", "Shigley §6-15");
+        c.Check("Total damage against the damage limit", "D_tot", "D_lim", "Shigley §6-15");
     }
 }

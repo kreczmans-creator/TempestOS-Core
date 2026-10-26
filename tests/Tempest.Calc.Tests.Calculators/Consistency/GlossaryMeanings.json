@@ -76,9 +76,6 @@
   ],
   "flexural-rigidity": [
    "struct.plate-bending"
-  ],
-  "total-damage": [
-   "mech.fatigue-miner"
   ]
  },
  "D_c": {
