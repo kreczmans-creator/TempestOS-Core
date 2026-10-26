@@ -593,6 +593,14 @@
    "mech.fatigue-miner"
   ]
  },
+ "SF": {
+  "sizing-safety-factor": [
+   "elec.load-budget"
+  ],
+  "torque-safety-factor": [
+   "elec.motor-sizing"
+  ]
+ },
  "S_e": {
   "bending-endurance-limit": [
    "mech.fatigue-miner",
@@ -646,7 +654,9 @@
  },
  "T_amb": {
   "ambient-temperature": [
+   "elec.conductor-sizing",
    "elec.enclosure-heat",
+   "elec.load-budget",
    "elec.pcb-trace",
    "elec.voltage-drop"
   ]
@@ -681,6 +691,12 @@
   "minimum-temperature": [
    "fp.accumulator",
    "fp.oring-gland"
+  ]
+ },
+ "T_op": {
+  "conductor-operating-temperature": [
+   "elec.conductor-sizing",
+   "elec.fault-protection"
   ]
  },
  "T_pk": {
@@ -1636,14 +1652,8 @@
   ]
  },
  "theta": {
-  "ambient-temperature": [
-   "elec.load-budget"
-  ],
   "bend-angle": [
    "elec.containment"
-  ],
-  "conductor-temperature": [
-   "elec.fault-protection"
   ],
   "incline-angle": [
    "elec.motor-sizing"
@@ -1657,8 +1667,7 @@
  },
  "theta_a": {
   "ambient-temperature": [
-   "bs.insulation",
-   "elec.conductor-sizing"
+   "bs.insulation"
   ],
   "cold-point-outside-temperature": [
    "bs.glaser"

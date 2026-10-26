@@ -47,10 +47,10 @@ public static class RecordTemplates
     private static IReadOnlyList<RecordTemplate> Build() =>
     [
         T("01", "conductor.material", "Conductor material constants", Conductor,
-            "material[text],rho_20[ohm*mm],alpha[1/K],Q_c[J/(K*mm3)],beta[K],theta_i[degC],theta_f[degC]",
+            "material[text],rho_20[ohm*mm^2/m],alpha[1/K],Q_c[J/(K*mm3)],beta[K],theta_i[degC],theta_f[degC]",
             "One record per row (a material). Used by E5, E3 and E7.",
             Req("rho_20", "alpha", "Q_c", "beta", "theta_i", "theta_f"), Pos("rho_20", "alpha", "Q_c", "beta", "theta_i", "theta_f"),
-            Lt("theta_i", "theta_f"), Warn("rho_20", 1e-6, 1e-4), Warn("alpha", 0.001, 0.01), Warn("Q_c", 1e-3, 1e-2), Warn("beta", 100, 400),
+            Lt("theta_i", "theta_f"), Warn("rho_20", 1e-3, 1e-1), Warn("alpha", 0.001, 0.01), Warn("Q_c", 1e-3, 1e-2), Warn("beta", 100, 400),
             Warn("theta_i", 20, 250), Warn("theta_f", 100, 400)),
 
         T("02", "device.characteristic", "Device time-current points", "device.characteristic",

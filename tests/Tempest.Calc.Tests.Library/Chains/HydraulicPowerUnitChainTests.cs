@@ -216,7 +216,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.All(e3.Checks, c => Assert.True(c.Passed, c.Name));
 
         // E4 → E5: the conductor area (the line conductor), the length, the device rating and the device type code; the protective conductor is typed the cable's size (guarded), and the transformer is entered here, once.
-        Assert.Equal(["I_n", "L", "S_cpc", "S_line", "device_code", "theta"], e5.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(["I_n", "L", "S_cpc", "S_line", "T_op", "device_code"], e5.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
         Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_line"), 15);
         Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_cpc"), 15);
         Assert.Equal(Si(e4, "L"), InputSi(e5, "L"), 9);
@@ -320,8 +320,8 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(
             [
                 ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "p_push", "f2", "p_load"), ("f1", "Q_prs", "b1", "Q"), ("f1", "rho", "b1", "rho_custom"), ("f1", "d_prs", "b1", "segments"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_rated", "e4", "P"),
-                ("e4", "I_b", "e3", "I"), ("e4", "L", "e3", "L"), ("e4", "CSA", "e3", "A_c"), ("e4", "theta_op", "e3", "T_c"),
-                ("e4", "CSA", "e5", "S_line"), ("e4", "CSA", "e5", "S_cpc"), ("e4", "L", "e5", "L"), ("e4", "I_n", "e5", "I_n"), ("e4", "device_code", "e5", "device_code"), ("e4", "theta_op", "e5", "theta"),
+                ("e4", "I_b", "e3", "I"), ("e4", "L", "e3", "L"), ("e4", "CSA", "e3", "A_c"), ("e4", "T_op", "e3", "T_c"),
+                ("e4", "CSA", "e5", "S_line"), ("e4", "CSA", "e5", "S_cpc"), ("e4", "L", "e5", "L"), ("e4", "I_n", "e5", "I_n"), ("e4", "device_code", "e5", "device_code"), ("e4", "T_op", "e5", "T_op"),
                 ("e1", "P_rated", "e9", "P"), ("e4", "CSA", "e9", "A_c"), ("e4", "L", "e9", "L_cab"), ("e5", "I_k3", "e9", "I_k"), ("e5", "c_k3", "e9", "c_src"),
             ],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));

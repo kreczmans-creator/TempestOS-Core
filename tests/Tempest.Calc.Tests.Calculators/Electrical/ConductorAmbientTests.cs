@@ -13,14 +13,14 @@ public sealed class ConductorAmbientTests
     private static readonly ConductorSizingCalculator Sizing = new();
 
     /// <summary>The first known-answer case with its factors reset to 1 (C_a, C_g), one circuit and a 30 °C ambient, so the ambient is the only thing that differs.</summary>
-    private static CalcRunResult Run(params CalcInputValue[] overrides) => CalcRunner.Run(Sizing, overrides.Aggregate(CalcTemplateHasher.DefaultInputs(Sizing.Template).With(CalcInputValue.Of("C_a", 1)).With(CalcInputValue.Of("C_g", 1)).With(CalcInputValue.Of("N_g", 1)).With(Q("theta_a", 30, "degC")), (set, v) => set.With(v)));
+    private static CalcRunResult Run(params CalcInputValue[] overrides) => CalcRunner.Run(Sizing, overrides.Aggregate(CalcTemplateHasher.DefaultInputs(Sizing.Template).With(CalcInputValue.Of("C_a", 1)).With(CalcInputValue.Of("C_g", 1)).With(CalcInputValue.Of("N_g", 1)).With(Q("T_amb", 30, "degC")), (set, v) => set.With(v)));
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
 
     [Fact]
     public void A_Hot_Ambient_With_C_a_Left_At_One_Is_Warned_Because_The_Ambient_Was_Not_Applied()
     {
-        var r = Run(Q("theta_a", 50, "degC"));
+        var r = Run(Q("T_amb", 50, "degC"));
 
         Assert.False(r.IsBlocked);
         var warning = Assert.Single(r.Warnings, w => w.RuleId == "theta_a");
@@ -32,12 +32,12 @@ public sealed class ConductorAmbientTests
     [Fact]
     public void Entering_C_a_Or_Deriving_It_Applies_The_Ambient_And_Raises_No_Warning()
     {
-        var typed = Run(Q("theta_a", 50, "degC"), CalcInputValue.Of("C_a", Math.Sqrt(20.0 / 40.0)));
+        var typed = Run(Q("T_amb", 50, "degC"), CalcInputValue.Of("C_a", Math.Sqrt(20.0 / 40.0)));
         Assert.DoesNotContain(typed.Warnings, w => w.RuleId == "theta_a");
         Assert.Equal(16 / Math.Sqrt(0.5), typed.OutputSi("I_t_req"), 9);
         Assert.Equal(4, typed.OutputSi("CSA") * 1e6, 9);
 
-        var derived = Run(Q("theta_a", 50, "degC"), CalcInputValue.Switch("derive_Ca", true));
+        var derived = Run(Q("T_amb", 50, "degC"), CalcInputValue.Switch("derive_Ca", true));
         Assert.DoesNotContain(derived.Warnings, w => w.RuleId == "theta_a");
         Assert.Equal(Math.Sqrt(0.5), derived.OutputSi("C_a"), 9);
     }
@@ -46,7 +46,7 @@ public sealed class ConductorAmbientTests
     public void An_Ambient_At_Or_Below_The_Reference_Needs_No_Warning()
     {
         Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "theta_a");
-        Assert.DoesNotContain(Run(Q("theta_a", 25, "degC")).Warnings, w => w.RuleId == "theta_a");
+        Assert.DoesNotContain(Run(Q("T_amb", 25, "degC")).Warnings, w => w.RuleId == "theta_a");
     }
 
     [Theory]
@@ -55,7 +55,7 @@ public sealed class ConductorAmbientTests
     [InlineData(ConductorSizingCalculator.Xlpe, 70.0, false)]
     public void An_Ambient_At_The_Conductor_Operating_Temperature_Is_Refused(string insulation, double ambient, bool blocked)
     {
-        var r = Run(CalcInputValue.Choice("insulation", insulation), Q("theta_a", ambient, "degC"));
+        var r = Run(CalcInputValue.Choice("insulation", insulation), Q("T_amb", ambient, "degC"));
 
         Assert.Equal(blocked, r.IsBlocked);
 
@@ -63,7 +63,7 @@ public sealed class ConductorAmbientTests
         {
             var block = Assert.Single(r.Blocks);
             Assert.Equal("theta_a-limit", block.RuleId);
-            Assert.StartsWith("theta_a:", block.Message, StringComparison.Ordinal);
+            Assert.StartsWith("T_amb:", block.Message, StringComparison.Ordinal);
         }
     }
 }

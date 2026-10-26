@@ -21,17 +21,17 @@ public sealed class ConductorSizingOperatingTemperatureTests
     {
         var r = Run(CalcInputValue.Choice("insulation", insulation));
 
-        Assert.Equal(expected + 273.15, r.OutputSi("theta_op"), 9);
-        Assert.Contains(Sizing.Template.OutputPorts!, p => p is { Symbol: "theta_op", Unit: "degC" });
+        Assert.Equal(expected + 273.15, r.OutputSi("T_op"), 9);
+        Assert.Contains(Sizing.Template.OutputPorts!, p => p is { Symbol: "T_op", Unit: "degC" });
     }
 
     [Fact]
     public void A_User_Insulation_Gives_The_Entered_Temperature_And_None_Without_It()
     {
-        var entered = Run(CalcInputValue.Choice("insulation", ConductorSizingCalculator.UserInsulation), CalcInputValue.Quantity("theta_p", 105, "degC"));
-        Assert.Equal(105 + 273.15, entered.OutputSi("theta_op"), 9);
+        var entered = Run(CalcInputValue.Choice("insulation", ConductorSizingCalculator.UserInsulation), CalcInputValue.Quantity("T_user", 105, "degC"));
+        Assert.Equal(105 + 273.15, entered.OutputSi("T_op"), 9);
 
         var blank = Run(CalcInputValue.Choice("insulation", ConductorSizingCalculator.UserInsulation));
-        Assert.Null(blank.FindOutput("theta_op"));
+        Assert.Null(blank.FindOutput("T_op"));
     }
 }

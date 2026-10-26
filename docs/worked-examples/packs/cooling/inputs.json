@@ -22,6 +22,27 @@
       "ValueText": "0"
     },
     {
+      "Symbol": "SF",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 40,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
       "Symbol": "U_1ph",
       "Number": 230,
       "Unit": "V",
@@ -315,16 +336,6 @@
       "ValueText": "4 row(s)"
     },
     {
-      "Symbol": "margin",
-      "Number": 1.25,
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "1.25"
-    },
-    {
       "Symbol": "psu_bus",
       "Text": "not counted on an AC bus",
       "Provenance": {
@@ -344,17 +355,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "0"
-    },
-    {
-      "Symbol": "theta",
-      "Number": 40,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "40"
     }
   ],
   "e2": [
@@ -410,7 +410,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1f02bcd5845e4c888a1cc3bc32815ceb#Phi",
+        "Reference": "calc:2a2f5cdec0994702bda176c2b0c59e4f#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -609,7 +609,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8859eb3650fa42b68b22d4c6380e07dd#P_cool",
+        "Reference": "calc:ae036775434647ef953e6bde9a18dedd#P_cool",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -643,7 +643,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8859eb3650fa42b68b22d4c6380e07dd#T_max",
+        "Reference": "calc:ae036775434647ef953e6bde9a18dedd#T_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -773,7 +773,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:bc8d8c959a7944abb7c9c12eb405a92e#Q",
+        "Reference": "calc:aa9a724ba8e444689684a49e5c32bb1b#Q",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -785,7 +785,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:bc8d8c959a7944abb7c9c12eb405a92e#T_c_m",
+        "Reference": "calc:aa9a724ba8e444689684a49e5c32bb1b#T_c_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -808,7 +808,7 @@
       "Unit": "J/(kg*K)",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:bc8d8c959a7944abb7c9c12eb405a92e#cp_c",
+        "Reference": "calc:aa9a724ba8e444689684a49e5c32bb1b#cp_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -820,7 +820,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:bc8d8c959a7944abb7c9c12eb405a92e#dT_c",
+        "Reference": "calc:aa9a724ba8e444689684a49e5c32bb1b#dT_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

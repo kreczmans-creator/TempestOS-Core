@@ -24,7 +24,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   V_n | Nominal voltage (line-to-line for three-phase) | 400 | V | spec: SPEC-HPU-05 §6 (power supply) | 12 … 1000 V
   I | Design current | 33.47 | A | link: Motor supply cable rev A · I_b | 0.1 … 5000 A
   cos_phi | Power factor (AC) | 0.86 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
-  T_c | Conductor operating temperature for the resistance | 70 | °C | link: Motor supply cable rev A · theta_op | 20 … 90 °C
+  T_c | Conductor operating temperature for the resistance | 70 | °C | link: Motor supply cable rev A · T_op | 20 … 90 °C
   T_amb | Ambient temperature | 30 | °C | spec: SPEC-HPU-05 §6 (power supply) | 0 … 60 °C
   dv_limit | Voltage-drop limit | 5 |  | assumption: Sheet default value; no project figure given. | 1 … 10
 
@@ -100,7 +100,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   Content hash: 3a115f95fa99ee42
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 21:08 UTC
+  Test run: 2026-10-26 21:51 UTC
   Application: TempestOS test
 
 9. References

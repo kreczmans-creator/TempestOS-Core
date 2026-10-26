@@ -12,7 +12,7 @@ Status: existing CalcRecordKind
 
 ## Columns
 - `material[text]`: label, for example the conductor metal and insulation type.
-- `rho_20[ohm*mm]`: resistivity at 20 degC. E3 reads ohm*mm2/m and the engine converts the unit.
+- `rho_20[ohm*mm^2/m]`: resistivity at 20 degC, for example 0.01724 for annealed copper. A file in ohm*mm is converted by the importer.
 - `alpha[1/K]`: temperature coefficient of resistance.
 - `Q_c[J/(K*mm3)]`: volumetric heat capacity.
 - `beta[K]`: reciprocal temperature coefficient.

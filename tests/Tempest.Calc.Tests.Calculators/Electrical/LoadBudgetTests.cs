@@ -31,8 +31,8 @@ public sealed class LoadBudgetTests
     public void Inrush_Of_The_Largest_Motor_Fails_A_Small_Transformer()
     {
         var r = CalcRunner.Run(Budget, Defaults().With(CalcInputValue.Quantity("S_T", 15, "kVA")));
-        Assert.Contains(r.Checks, c => c.Name == "Transformer rating against required" && c.Passed);
-        Assert.Contains(r.Checks, c => c.Name == "Starting peak against transformer overload" && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name == "Required transformer rating against the selected rating" && c.Passed);
+        Assert.Contains(r.Checks, c => c.Name == "Starting peak against the transformer short-time rating" && !c.Passed);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class LoadBudgetTests
     [Fact]
     public void Hot_Ambient_Without_Derating_Warns()
     {
-        var r = CalcRunner.Run(Budget, Defaults().With(CalcInputValue.Quantity("theta", 55, "degC")));
+        var r = CalcRunner.Run(Budget, Defaults().With(CalcInputValue.Quantity("T_amb", 55, "degC")));
         Assert.Contains(r.Warnings, w => w.RuleId == "derate");
     }
 

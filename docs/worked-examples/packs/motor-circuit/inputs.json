@@ -281,7 +281,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:0d3f7a727f7341be83d2a5e6bab02f3b#P_rms",
+        "Reference": "calc:019d1de64ee34f35935a9ba0491afc10#P_rms",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -293,11 +293,32 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:0d3f7a727f7341be83d2a5e6bab02f3b#P_rated",
+        "Reference": "calc:019d1de64ee34f35935a9ba0491afc10#P_rated",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "0.628319"
+    },
+    {
+      "Symbol": "SF",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 40,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
     },
     {
       "Symbol": "U_1ph",
@@ -535,16 +556,6 @@
       "ValueText": "2 row(s)"
     },
     {
-      "Symbol": "margin",
-      "Number": 1.25,
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "1.25"
-    },
-    {
       "Symbol": "psu_bus",
       "Text": "AC single-phase",
       "Provenance": {
@@ -564,17 +575,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "0"
-    },
-    {
-      "Symbol": "theta",
-      "Number": 40,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "40"
     }
   ],
   "e4": [
@@ -614,7 +614,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d5f7cec655b94c3c8661c77ba9eb4d21#I_3ph",
+        "Reference": "calc:7c40037e5e9443bebd97a4335cf84cf8#I_3ph",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -651,6 +651,28 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "7.5"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 30,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "T_ref",
+      "Number": 30,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
     },
     {
       "Symbol": "U",
@@ -729,7 +751,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:4228c3cd7e65426e9979c7bec8066010@1 \u00B7 invented values for the worked example",
+        "Reference": "record:0b2d00bde7624ebd9cafa8a641fb3a9c@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -883,7 +905,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:166fc5975217413593bbf14cebc027cd@1 \u00B7 invented values for the worked example",
+        "Reference": "record:5ed2cd9cb11143f0ab99bffcd9db389a@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -908,28 +930,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "metric"
-    },
-    {
-      "Symbol": "theta_a",
-      "Number": 30,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "30"
-    },
-    {
-      "Symbol": "theta_ref",
-      "Number": 30,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "30"
     }
   ],
   "e3": [
@@ -939,7 +939,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:de1806244634457bbdeee24200fcb638#CSA",
+        "Reference": "calc:4b0d5815c0db43c0b4a30e59f11a76e0#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -951,7 +951,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:de1806244634457bbdeee24200fcb638#I_b",
+        "Reference": "calc:4b0d5815c0db43c0b4a30e59f11a76e0#I_b",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -963,7 +963,7 @@
       "Unit": "m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:de1806244634457bbdeee24200fcb638#L",
+        "Reference": "calc:4b0d5815c0db43c0b4a30e59f11a76e0#L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -986,7 +986,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:de1806244634457bbdeee24200fcb638#theta_op",
+        "Reference": "calc:4b0d5815c0db43c0b4a30e59f11a76e0#T_op",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1009,7 +1009,7 @@
       "Unit": "V",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d5f7cec655b94c3c8661c77ba9eb4d21#U_L",
+        "Reference": "calc:7c40037e5e9443bebd97a4335cf84cf8#U_L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1041,7 +1041,7 @@
       "Number": 0.85,
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d5f7cec655b94c3c8661c77ba9eb4d21#pf_link",
+        "Reference": "calc:7c40037e5e9443bebd97a4335cf84cf8#pf_link",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1127,7 +1127,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:de1806244634457bbdeee24200fcb638#I_n",
+        "Reference": "calc:4b0d5815c0db43c0b4a30e59f11a76e0#I_n",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1139,7 +1139,7 @@
       "Unit": "m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:de1806244634457bbdeee24200fcb638#L",
+        "Reference": "calc:4b0d5815c0db43c0b4a30e59f11a76e0#L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1162,7 +1162,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:de1806244634457bbdeee24200fcb638#CSA",
+        "Reference": "calc:4b0d5815c0db43c0b4a30e59f11a76e0#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1174,11 +1174,23 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:de1806244634457bbdeee24200fcb638#CSA",
+        "Reference": "calc:4b0d5815c0db43c0b4a30e59f11a76e0#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "1.5"
+    },
+    {
+      "Symbol": "T_op",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:4b0d5815c0db43c0b4a30e59f11a76e0#T_op",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
     },
     {
       "Symbol": "U_0",
@@ -1249,7 +1261,7 @@
       "Number": 2,
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:de1806244634457bbdeee24200fcb638#device_code",
+        "Reference": "calc:4b0d5815c0db43c0b4a30e59f11a76e0#device_code",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1267,14 +1279,14 @@
     },
     {
       "Symbol": "rho_20",
-      "Number": 1.7241E-05,
-      "Unit": "ohm*mm",
+      "Number": 0.017241,
+      "Unit": "ohm*mm^2/m",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.000017241"
+      "ValueText": "0.017241"
     },
     {
       "Symbol": "t_req",
@@ -1286,18 +1298,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "0.4"
-    },
-    {
-      "Symbol": "theta",
-      "Number": 70,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Link",
-        "Reference": "calc:de1806244634457bbdeee24200fcb638#theta_op",
-        "Revision": "A",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "70"
     },
     {
       "Symbol": "theta_f",
@@ -1375,7 +1375,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d5f7cec655b94c3c8661c77ba9eb4d21#Phi",
+        "Reference": "calc:7c40037e5e9443bebd97a4335cf84cf8#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

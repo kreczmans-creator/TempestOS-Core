@@ -1471,7 +1471,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table)",
+            "Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table)",
             "Ambient factor"
           ],
           "templates": [
@@ -1650,7 +1650,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Voltage factor C_min"
+            "Voltage factor for the minimum fault"
           ],
           "templates": [
             "elec.fault-protection"
@@ -7281,7 +7281,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Selected PSU rating"
@@ -7299,7 +7299,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Minimum PSU rating"
@@ -7322,7 +7322,7 @@
           ],
           "descriptions": [
             "Additional heat load (linked from E6's dissipated heat or another calculation)",
-            "Additional three-phase load (linked from E1's RMS power)"
+            "Additional three-phase load (linked from the motor-sizing RMS power)"
           ],
           "templates": [
             "elec.enclosure-heat",
@@ -7696,7 +7696,7 @@
             "kW"
           ],
           "descriptions": [
-            "Rated (nameplate) shaft power of the additional machine (linked from E1's P_rated): the supply carries the larger of this and the duty power P_add; blank: the machine is sized on its duty only"
+            "Rated (nameplate) shaft power of the additional machine (linked from the motor-sizing P_rated); the supply carries the larger of this and the duty power P_add (optional; blank = the machine is sized on its duty only)"
           ],
           "templates": [
             "elec.load-budget"
@@ -9205,7 +9205,18 @@
       "symbol": "SF",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "sizing-safety-factor",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Sizing safety factor"
+          ],
+          "templates": [
+            "elec.load-budget"
+          ]
+        },
+        {
+          "meaning": "torque-safety-factor",
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
@@ -10122,7 +10133,9 @@
             "Ambient temperature at the board"
           ],
           "templates": [
+            "elec.conductor-sizing",
             "elec.enclosure-heat",
+            "elec.load-budget",
             "elec.pcb-trace",
             "elec.voltage-drop"
           ]
@@ -10584,6 +10597,26 @@
       ]
     },
     {
+      "symbol": "T_op",
+      "meanings": [
+        {
+          "meaning": "conductor-operating-temperature",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Conductor operating temperature for the insulation",
+            "Conductor temperature for Z_s"
+          ],
+          "templates": [
+            "elec.conductor-sizing",
+            "elec.fault-protection"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "T_operate",
       "meanings": [
         {
@@ -10667,6 +10700,24 @@
           ],
           "templates": [
             "elec.motor-sizing"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_ref",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Reference ambient temperature for the derived C_a"
+          ],
+          "templates": [
+            "elec.conductor-sizing"
           ]
         }
       ]
@@ -10793,6 +10844,24 @@
           ],
           "templates": [
             "mech.snap-fit"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_user",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Conductor operating temperature for 'user' insulation"
+          ],
+          "templates": [
+            "elec.conductor-sizing"
           ]
         }
       ]
@@ -17945,7 +18014,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Adiabatic k (derived)"
+            "Adiabatic factor (derived)"
           ],
           "templates": [
             "elec.fault-protection"
@@ -18096,7 +18165,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it)"
+            "Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the default of 1.125 takes pure copper to the cable standard's maximum conductor resistances, so Z_s is not understated; k is not changed by it)"
           ],
           "templates": [
             "elec.fault-protection"
@@ -19318,22 +19387,6 @@
           ],
           "templates": [
             "mech.mechanism"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "margin",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Sizing margin"
-          ],
-          "templates": [
-            "elec.load-budget"
           ]
         }
       ]
@@ -22264,7 +22317,6 @@
           "meaning": "resistivity-at-20c",
           "quantity": "Resistivity",
           "units": [
-            "Ω·mm",
             "Ω·mm²/m"
           ],
           "descriptions": [
@@ -24587,19 +24639,6 @@
       "symbol": "theta",
       "meanings": [
         {
-          "meaning": "ambient-temperature",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Ambient temperature"
-          ],
-          "templates": [
-            "elec.load-budget"
-          ]
-        },
-        {
           "meaning": "bend-angle",
           "quantity": "Angle",
           "units": [
@@ -24610,19 +24649,6 @@
           ],
           "templates": [
             "elec.containment"
-          ]
-        },
-        {
-          "meaning": "conductor-temperature",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Conductor temperature for Z_s"
-          ],
-          "templates": [
-            "elec.fault-protection"
           ]
         },
         {
@@ -24802,12 +24828,10 @@
             "°C"
           ],
           "descriptions": [
-            "Ambient air temperature (also the radiation sink)",
-            "Ambient temperature"
+            "Ambient air temperature (also the radiation sink)"
           ],
           "templates": [
-            "bs.insulation",
-            "elec.conductor-sizing"
+            "bs.insulation"
           ]
         },
         {
@@ -25023,42 +25047,6 @@
       ]
     },
     {
-      "symbol": "theta_op",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Conductor operating temperature for the insulation"
-          ],
-          "templates": [
-            "elec.conductor-sizing"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "theta_p",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Conductor operating temperature for 'user' insulation"
-          ],
-          "templates": [
-            "elec.conductor-sizing"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "theta_range",
       "meanings": [
         {
@@ -25072,24 +25060,6 @@
           ],
           "templates": [
             "mech.mechanism"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "theta_ref",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Reference ambient temperature for the derived C_a"
-          ],
-          "templates": [
-            "elec.conductor-sizing"
           ]
         }
       ]

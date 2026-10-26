@@ -44,7 +44,7 @@ public sealed class LoadBudgetRunningTests
 
         Assert.Equal(250, r.OutputSi("P_PSU_req"), 9);
         Assert.Equal(250.0 / 30, r.OutputSi("u_PSU"), 9);
-        Assert.Contains(r.Checks, c => c.Name == "PSU rating against required" && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name == "Required PSU rating against the selected rating" && !c.Passed);
         Assert.Equal(200.0 / 24, r.OutputSi("I_DC"), 9);
         Assert.Equal(0.1 * 0.2 * 1000, r.OutputSi("P_dem") , 9);
     }

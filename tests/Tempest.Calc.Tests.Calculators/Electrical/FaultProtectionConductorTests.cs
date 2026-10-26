@@ -40,10 +40,10 @@ public sealed class FaultProtectionConductorTests
     public void A_Protective_Conductor_Equal_To_The_Line_Conductor_Above_16_mm2_Is_Warned(double sLine, double sCpc, bool warned)
     {
         var r = Run(CalcInputValue.Quantity("S_line", sLine, "mm^2"), CalcInputValue.Quantity("S_cpc", sCpc, "mm^2"));
-        Assert.Equal(warned, r.Warnings.Any(w => w.RuleId == "cpc-full-size"));
+        Assert.Equal(warned, r.Warnings.Any(w => w.RuleId == "resistance" && w.Message.StartsWith("S_cpc:", StringComparison.Ordinal)));
 
         if (warned)
-            Assert.Contains("enter the real S_cpc", r.Warnings.Single(w => w.RuleId == "cpc-full-size").Message, StringComparison.Ordinal);
+            Assert.Contains("enter the real S_cpc", r.Warnings.Single(w => w.RuleId == "resistance" && w.Message.StartsWith("S_cpc:", StringComparison.Ordinal)).Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -56,8 +56,8 @@ public sealed class FaultProtectionConductorTests
         Assert.Equal(0.017241 * 1.125 * 20 * 1.1965 * (2.0 / 35), full.OutputSi("R_12"), 6);
         Assert.Equal(0.017241 * 1.125 * 20 * 1.1965 * (1.0 / 35 + 1.0 / 16), reduced.OutputSi("R_12"), 6);
         Assert.True(reduced.OutputSi("Z_s") > full.OutputSi("Z_s"));
-        Assert.Contains(full.Warnings, w => w.RuleId == "cpc-full-size");
-        Assert.DoesNotContain(reduced.Warnings, w => w.RuleId == "cpc-full-size");
+        Assert.Contains(full.Warnings, w => w.RuleId == "resistance" && w.Message.StartsWith("S_cpc:", StringComparison.Ordinal));
+        Assert.DoesNotContain(reduced.Warnings, w => w.RuleId == "resistance" && w.Message.StartsWith("S_cpc:", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -79,8 +79,8 @@ public sealed class FaultProtectionConductorTests
         var origin = Assert.Single(r.Checks, c => c.Name == "Conductors against let-through at the origin");
         Assert.False(origin.Passed);
         Assert.Contains("I2t_let", origin.DemandText, StringComparison.Ordinal);
-        Assert.Contains(r.Warnings, w => w.RuleId == "let-through" && w.Message.Contains("near the origin", StringComparison.Ordinal));
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Protective conductor", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(r.Warnings, w => w.RuleId == "let-through" && w.Message.Contains("fails until I2t_let is entered", StringComparison.Ordinal));
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Adiabatic minimum against the protective", StringComparison.Ordinal) && c.Passed);
     }
 
     [Fact]
@@ -92,8 +92,8 @@ public sealed class FaultProtectionConductorTests
         Assert.DoesNotContain(r.Checks, c => c.Name == "Conductors against let-through at the origin");
         Assert.Equal(Math.Sqrt(90000) / 114.83611 / 1.5, r.OutputSi("u_cpc"), 4);
         Assert.Equal(1.7416, r.OutputSi("u_cpc"), 3);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Protective conductor", StringComparison.Ordinal) && !c.Passed);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Line conductor", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Adiabatic minimum against the protective", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Adiabatic minimum against the line", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]

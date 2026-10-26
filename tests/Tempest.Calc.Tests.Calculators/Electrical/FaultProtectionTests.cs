@@ -26,7 +26,7 @@ public sealed class FaultProtectionTests
     [Fact]
     public void Inputs_Outside_Their_Range_Are_A_Hard_Fail()
     {
-        foreach (var (symbol, value, unit) in new[] { ("Z_e", 3.5, "ohm"), ("theta", 95.0, "degC"), ("t_req", 6.0, "s"), ("U_0", 20.0, "V") })
+        foreach (var (symbol, value, unit) in new[] { ("Z_e", 3.5, "ohm"), ("T_op", 95.0, "degC"), ("t_req", 6.0, "s"), ("U_0", 20.0, "V") })
             Assert.Contains(CalcInputValidator.Validate(Fault.Template, Defaults().With(CalcInputValue.Quantity(symbol, value, unit))), n => n.Severity == CalcNoticeSeverity.Block);
     }
 
@@ -82,19 +82,19 @@ public sealed class FaultProtectionTests
         // line check of 0.45-0.5 "PASS". The line conductor (reg. 434.5.2) needs the let-through at the maximum prospective fault.
         var withoutLet = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("S_line", 1.5, "mm^2")));
         Assert.Null(withoutLet.FindOutput("u_line"));
-        Assert.DoesNotContain(withoutLet.Checks, c => c.Name.StartsWith("Line conductor", StringComparison.Ordinal));
-        Assert.Contains(withoutLet.Checks, c => c.Name.StartsWith("Protective conductor", StringComparison.Ordinal));
+        Assert.DoesNotContain(withoutLet.Checks, c => c.Name.StartsWith("Adiabatic minimum against the line", StringComparison.Ordinal));
+        Assert.Contains(withoutLet.Checks, c => c.Name.StartsWith("Adiabatic minimum against the protective", StringComparison.Ordinal));
         var warning = Assert.Single(withoutLet.Warnings, w => w.RuleId == "let-through");
-        Assert.Contains("line conductor check", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("Conductors against let-through at the origin", warning.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("conservative", warning.Message, StringComparison.OrdinalIgnoreCase);
 
         // A let-through of 3e4 A2s at the maximum fault needs sqrt(3e4)/k = 1.5083 mm2: 1.5 mm2 fails, 2.5 mm2 passes.
         var k = 114.83611;
         var thin = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("S_line", 1.5, "mm^2")).With(CalcInputValue.Quantity("I2t_let", 3e4, "A^2*s")));
         Assert.Equal(Math.Sqrt(3e4) / k / 1.5, thin.OutputSi("u_line"), 4);
-        Assert.Contains(thin.Checks, c => c.Name.StartsWith("Line conductor", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(thin.Checks, c => c.Name.StartsWith("Adiabatic minimum against the line", StringComparison.Ordinal) && !c.Passed);
         var thick = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("S_line", 2.5, "mm^2")).With(CalcInputValue.Quantity("I2t_let", 3e4, "A^2*s")));
-        Assert.Contains(thick.Checks, c => c.Name.StartsWith("Line conductor", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(thick.Checks, c => c.Name.StartsWith("Adiabatic minimum against the line", StringComparison.Ordinal) && c.Passed);
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public sealed class FaultProtectionTests
     {
         // Black B-A-14: the time check printed utilisation 0 whenever it passed. t_d = 0.1 s against t_req = 0.4 s is 0.25.
         var r = CalcRunner.Run(Fault, Defaults());
-        var check = Assert.Single(r.Checks, c => c.Name == "Disconnection time within required");
+        var check = Assert.Single(r.Checks, c => c.Name == "Disconnection time against the required time");
         Assert.Equal(0.25, check.Utilisation, 9);
         Assert.True(check.Passed);
         Assert.Equal("0.1000 s", check.DemandText);
@@ -146,8 +146,9 @@ public sealed class FaultProtectionTests
     [Fact]
     public void A_Fractional_Or_Out_Of_Range_Device_Code_Is_Refused()
     {
-        Assert.Contains(CalcInputValidator.Validate(Fault.Template, Defaults().With(CalcInputValue.Of("device_code", 5))), n => n.Severity == CalcNoticeSeverity.Block);
-        Assert.Contains(CalcInputValidator.Validate(Fault.Template, Defaults().With(CalcInputValue.Of("device_code", 0))), n => n.Severity == CalcNoticeSeverity.Block);
+        // The sheet itself refuses a code outside 1 to 4 (the hard limits are 0 to 9, so the usual range 1 to 4 can sit inside them).
+        Assert.Equal("device_code", Assert.Single(CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Of("device_code", 5))).Blocks).RuleId);
+        Assert.Equal("device_code", Assert.Single(CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Of("device_code", 0))).Blocks).RuleId);
         var r = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Of("device_code", 1.5)));
         Assert.Equal("device_code", Assert.Single(r.Blocks).RuleId);
     }
@@ -167,7 +168,7 @@ public sealed class FaultProtectionTests
         var r = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("L", 200, "m")));
         Assert.Null(r.FindOutput("S_min"));
         Assert.Contains(r.Warnings, w => w.RuleId == "adiabatic");
-        Assert.Contains(r.Checks, c => c.Name == "Disconnection achieved" && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name == "Fault current against the disconnection current" && !c.Passed);
     }
 
     [Fact]
@@ -179,7 +180,7 @@ public sealed class FaultProtectionTests
         Assert.Equal(0.1, r.OutputSi("t_d"), 12);
         Assert.NotNull(r.FindOutput("S_min"));
         Assert.Contains(r.Warnings, w => w.RuleId == "curve-range" && w.Message.Contains("upper bound", StringComparison.Ordinal));
-        Assert.DoesNotContain(r.Checks, c => c.Name == "Disconnection achieved");
+        Assert.DoesNotContain(r.Checks, c => c.Name == "Fault current against the disconnection current");
     }
 
     [Fact]
@@ -187,7 +188,7 @@ public sealed class FaultProtectionTests
     {
         var r = CalcRunner.Run(Fault, Defaults().With(CalcInputValue.Quantity("L", 200, "m"))
             .With(CalcInputValue.Quantity("S_r", 500, "kVA")).With(CalcInputValue.Quantity("u_k", 5, "%")).With(CalcInputValue.Quantity("I_cn", 10, "kA")));
-        Assert.Contains(r.Checks, c => c.Name == "Breaking capacity against prospective fault" && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name == "Prospective fault against the breaking capacity" && !c.Passed);
     }
 
     [Fact]

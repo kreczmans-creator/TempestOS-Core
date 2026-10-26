@@ -51,14 +51,14 @@ public sealed class FaultProtectionTimeAndTemperatureTests
     [Fact]
     public void A_Loop_Temperature_Below_The_Conductor_Temperature_Of_The_Adiabatic_Check_Is_Warned()
     {
-        var r = Run(CalcInputValue.Of("k_R", 1), Q("theta_i", 90, "degC"), Q("theta_f", 250, "degC"), Q("theta", 70, "degC"));
+        var r = Run(CalcInputValue.Of("k_R", 1), Q("theta_i", 90, "degC"), Q("theta_f", 250, "degC"), Q("T_op", 70, "degC"));
 
         var warning = Assert.Single(r.Warnings, w => w.RuleId == "theta");
         Assert.Contains("90", warning.Message, StringComparison.Ordinal);
         Assert.Contains("understated", warning.Message, StringComparison.Ordinal);
         Assert.Equal(0.7901, r.OutputSi("Z_s"), 4);
 
-        var matched = Run(CalcInputValue.Of("k_R", 1), Q("theta_i", 90, "degC"), Q("theta_f", 250, "degC"), Q("theta", 90, "degC"));
+        var matched = Run(CalcInputValue.Of("k_R", 1), Q("theta_i", 90, "degC"), Q("theta_f", 250, "degC"), Q("T_op", 90, "degC"));
         Assert.DoesNotContain(matched.Warnings, w => w.RuleId == "theta");
         Assert.Equal(0.8190, matched.OutputSi("Z_s"), 4);
     }

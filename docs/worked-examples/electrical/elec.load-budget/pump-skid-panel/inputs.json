@@ -34,6 +34,16 @@
     "ValueText": "240"
   },
   {
+    "Symbol": "SF",
+    "Number": 1.25,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "25 % growth margin.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.25"
+  },
+  {
     "Symbol": "S_T",
     "Number": 25,
     "Unit": "kVA",
@@ -43,6 +53,17 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "25"
+  },
+  {
+    "Symbol": "T_amb",
+    "Number": 45,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Plant room design maximum",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "45"
   },
   {
     "Symbol": "U_1ph",
@@ -365,16 +386,6 @@
     "ValueText": "6 row(s)"
   },
   {
-    "Symbol": "margin",
-    "Number": 1.25,
-    "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "25 % growth margin.",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "1.25"
-  },
-  {
     "Symbol": "psu_bus",
     "Text": "AC single-phase",
     "Provenance": {
@@ -395,16 +406,5 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "2"
-  },
-  {
-    "Symbol": "theta",
-    "Number": 45,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Plant room design maximum",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "45"
   }
 ]
