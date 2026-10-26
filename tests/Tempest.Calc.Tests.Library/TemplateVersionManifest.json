@@ -55,6 +55,7 @@
   "struct.lifting@1.1.1": "2d4633b8b90f303665cd8d3edaee7a406a106fe71d3ee91c2af6a734e8982e2a",
   "struct.load-combinations@1.0.0": "60a0615ba7745102251e77d717f5163ee51d17270a63eb7ab4279119fa7f95e4",
   "struct.ltb-interaction@1.1.1": "86f1461e4261a2c487f47a6f3792e07b3f5345c9a3d9964857d290e22dc36736",
+  "struct.ltb-interaction@1.1.2": "2a1a1c66639687f9b062e1c196f704ee2c7756b2cccf4acc923eccd0c7b9ce11",
   "struct.plate-bending@1.2.2": "82862b637af72f752357986b5011869b8d454f677561c4ff8661fec80945926e",
   "struct.section-properties@1.0.1": "b7d59144d05267d439aaa63ba5cee6000f9f4f055ef9797e660451e0e7b95a0c"
 }
