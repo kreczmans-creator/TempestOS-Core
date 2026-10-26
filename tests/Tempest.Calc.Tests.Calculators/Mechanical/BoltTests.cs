@@ -35,7 +35,7 @@ public sealed class BoltTests
     {
         var r = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Quantity("F_A", 60, "kN")));
         Assert.Contains(r.Warnings, w => w.RuleId == "separation");
-        Assert.Contains(r.Checks, c => c.Name == "No separation" && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name == "Residual clamp force against separation" && !c.Passed);
         Assert.False(r.Passed);
     }
 
@@ -75,9 +75,9 @@ public sealed class BoltTests
     {
         Gen.Select(Gen.Double[0, 1], Gen.Double[10, 200], Gen.Double[6, 30]).Sample((n, lk, d) =>
         {
-            var inputs = JointInputs().With(CalcInputValue.Of("n", n)).With(CalcInputValue.Quantity("l_k", lk, "mm")).With(CalcInputValue.Quantity("d", d, "mm")).With(CalcInputValue.Quantity("P", d / 8, "mm")).With(CalcInputValue.Quantity("d_h", d + 1, "mm")).With(CalcInputValue.Quantity("d_w", 1.5 * d, "mm"));
+            var inputs = JointInputs().With(CalcInputValue.Of("n_load", n)).With(CalcInputValue.Quantity("l_k", lk, "mm")).With(CalcInputValue.Quantity("d", d, "mm")).With(CalcInputValue.Quantity("p_thread", d / 8, "mm")).With(CalcInputValue.Quantity("d_h", d + 1, "mm")).With(CalcInputValue.Quantity("d_w", 1.5 * d, "mm"));
             var r = CalcRunner.Run(Joint, inputs);
-            return r.IsBlocked || (r.OutputSi("Phi") >= 0 && r.OutputSi("Phi") <= n + 1e-12);
+            return r.IsBlocked || (r.OutputSi("Phi_K") >= 0 && r.OutputSi("Phi_K") <= n + 1e-12);
         }, iter: 60);
     }
 
@@ -89,7 +89,7 @@ public sealed class BoltTests
         Assert.Equal(0, r.OutputSi("F_KR"), 9);
         Assert.Equal(80e3, r.OutputSi("F_S_max"), 3);
         Assert.Equal((80e3 - r.OutputSi("F_M")) / (2 * r.OutputSi("A_s")), r.OutputSi("sigma_a"), 0);
-        Assert.Contains(r.Checks, c => c.Name == "Residual clamp against requirement" && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name == "Required residual clamp force against the residual clamp force" && !c.Passed);
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public sealed class BoltTests
         var r = CalcRunner.Run(Joint, given.With(CalcInputValue.Quantity("F_V", 30, "kN")).With(CalcInputValue.Quantity("k_S_given", 300, "kN/mm")).With(CalcInputValue.Quantity("k_P_given", 900, "kN/mm")).With(CalcInputValue.Quantity("A_s_given", 84.3, "mm^2")));
         Assert.Equal(30e3, r.OutputSi("F_M"), 6);
         Assert.Equal(84.3e-6, r.OutputSi("A_s"), 12);
-        Assert.Equal(0.5 * 300.0 / (300 + 900), r.OutputSi("Phi"), 9);
+        Assert.Equal(0.5 * 300.0 / (300 + 900), r.OutputSi("Phi_K"), 9);
     }
 
     [Fact]
@@ -151,17 +151,17 @@ public sealed class BoltTests
         var over = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Choice("method", "friction")).With(CalcInputValue.Quantity("M_A", 95, "N*m")));
         Assert.Equal(1.15028, over.OutputSi("nu_M"), 5);
         Assert.Equal(1.15028, over.OutputSi("u_assembly"), 5);
-        Assert.Contains(over.Checks, c => c.Name.StartsWith("Equivalent stress at assembly", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(over.Checks, c => c.Name.StartsWith("Assembly equivalent stress against", StringComparison.Ordinal) && !c.Passed);
         Assert.False(over.Passed);
         Assert.Contains(over.Warnings, w => w.RuleId == "preload-yield" && w.Message.Contains("yields in tightening", StringComparison.Ordinal));
 
         // M_A 80 N.m (the worked example): nu_M 0.96866 passes against the default permitted 1.0; a permitted 0.9 (the usual VDI 2230 target) makes it a FAIL, 0.96866/0.9 = 1.0763.
         var ok = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Choice("method", "friction")).With(CalcInputValue.Quantity("M_A", 80, "N*m")));
         Assert.Equal(0.96866, ok.OutputSi("nu_M"), 5);
-        Assert.Contains(ok.Checks, c => c.Name.StartsWith("Equivalent stress at assembly", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(ok.Checks, c => c.Name.StartsWith("Assembly equivalent stress against", StringComparison.Ordinal) && c.Passed);
         var strict = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Choice("method", "friction")).With(CalcInputValue.Quantity("M_A", 80, "N*m")).With(CalcInputValue.Of("nu_perm", 0.9)));
         Assert.Equal(0.96866 / 0.9, strict.OutputSi("u_assembly"), 4);
-        Assert.Contains(strict.Checks, c => c.Name.StartsWith("Equivalent stress at assembly", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(strict.Checks, c => c.Name.StartsWith("Assembly equivalent stress against", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]

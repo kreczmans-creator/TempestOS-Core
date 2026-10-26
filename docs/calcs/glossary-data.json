@@ -1161,7 +1161,7 @@
             "mm²"
           ],
           "descriptions": [
-            "Tensile stress area, from a fastener record (blank = from d and P)"
+            "Tensile stress area, from a fastener record (optional; blank = from d and p_thread)"
           ],
           "templates": [
             "mech.bolted-joint"
@@ -2906,7 +2906,7 @@
             "kN"
           ],
           "descriptions": [
-            "Preload (given-preload method: measured, or from a tightening specification)"
+            "Preload (optional; blank = the preload comes from the tightening torque; the given-preload method needs it)"
           ],
           "templates": [
             "mech.bolted-joint"
@@ -5794,7 +5794,7 @@
           "meaning": "",
           "quantity": "Moment, torque",
           "units": [
-            "N·m"
+            "kN·m"
           ],
           "descriptions": [
             "Tightening torque"
@@ -7245,19 +7245,6 @@
           ]
         },
         {
-          "meaning": "thread-pitch",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Thread pitch"
-          ],
-          "templates": [
-            "mech.bolted-joint"
-          ]
-        },
-        {
           "meaning": "total-force",
           "quantity": "Force",
           "units": [
@@ -7882,17 +7869,6 @@
             "bs.sealed-system",
             "elec.load-budget"
           ]
-        },
-        {
-          "meaning": "load-factor",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Load factor"
-          ],
-          "templates": [
-            "mech.bolted-joint"
-          ]
         }
       ]
     },
@@ -7964,6 +7940,22 @@
           ],
           "templates": [
             "bs.room-heat-loss"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "Phi_K",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Load factor"
+          ],
+          "templates": [
+            "mech.bolted-joint"
           ]
         }
       ]
@@ -16353,24 +16345,6 @@
       ]
     },
     {
-      "symbol": "f_Z",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Length",
-          "units": [
-            "µm"
-          ],
-          "descriptions": [
-            "Embedding (settling) loss"
-          ],
-          "templates": [
-            "mech.bolted-joint"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "f_acc",
       "meanings": [
         {
@@ -16538,6 +16512,24 @@
           ],
           "templates": [
             "elec.load-budget"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "f_embed",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "µm"
+          ],
+          "descriptions": [
+            "Embedding (settling) loss"
+          ],
+          "templates": [
+            "mech.bolted-joint"
           ]
         }
       ]
@@ -18092,10 +18084,10 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "kN/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Clamped members' stiffness, measured or from an FE model (blank = two frusta)"
+            "Clamped members' stiffness, measured or from an FE model (optional; blank = two frusta)"
           ],
           "templates": [
             "mech.bolted-joint"
@@ -18144,10 +18136,10 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "kN/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Bolt stiffness, measured or from an FE model (blank = from the geometry)"
+            "Bolt stiffness, measured or from an FE model (optional; blank = from the geometry)"
           ],
           "templates": [
             "mech.bolted-joint"
@@ -19749,17 +19741,6 @@
           ]
         },
         {
-          "meaning": "load-introduction-factor",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Load introduction factor (0 = at the clamped faces, 1 = under the head)"
-          ],
-          "templates": [
-            "mech.bolted-joint"
-          ]
-        },
-        {
           "meaning": "thickness-design-factor",
           "quantity": "Plain number",
           "units": [],
@@ -20126,6 +20107,22 @@
           ],
           "templates": [
             "mech.snap-fit"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "n_load",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Load introduction factor (0 = at the clamped faces, 1 = under the head)"
+          ],
+          "templates": [
+            "mech.bolted-joint"
           ]
         }
       ]
@@ -21334,6 +21331,24 @@
           ],
           "templates": [
             "elec.enclosure-heat"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "p_thread",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Thread pitch"
+          ],
+          "templates": [
+            "mech.bolted-joint"
           ]
         }
       ]
@@ -22724,24 +22739,6 @@
       ]
     },
     {
-      "symbol": "sigma_A",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Stress, pressure",
-          "units": [
-            "MPa"
-          ],
-          "descriptions": [
-            "Bolt endurance limit (stress amplitude)"
-          ],
-          "templates": [
-            "mech.bolted-joint"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "sigma_M",
       "meanings": [
         {
@@ -22770,6 +22767,24 @@
           ],
           "descriptions": [
             "Fatigue amplitude"
+          ],
+          "templates": [
+            "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "sigma_a_limit",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Bolt endurance limit (stress amplitude)"
           ],
           "templates": [
             "mech.bolted-joint"

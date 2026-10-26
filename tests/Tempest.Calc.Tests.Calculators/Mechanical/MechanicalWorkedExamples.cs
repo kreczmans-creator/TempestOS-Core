@@ -135,7 +135,7 @@ public static class MechanicalWorkedExamples
         new(BoltedJointCalculator.Id, "m12-88-flange", "M12 class 8.8 flange bolt, 80 N·m, 10 kN working load",
             new CalcReferenceSource("Analytic (VDI 2230 Part 1 steps R0–R9; Shigley eqs 8-17, 8-20)", null, "F_M = 40.69 kN; Φ = 0.0720; F_KR = 25.4 − 9.3 − 3.0 ≈ 13 kN"),
             JointInputs(80, "friction", 10),
-            [new CalcExpectedValue("F_M", 40.69, "kN", 2e-3), new CalcExpectedValue("Phi", 0.07205, "", 3e-3)],
+            [new CalcExpectedValue("F_M", 40.69, "kN", 2e-3), new CalcExpectedValue("Phi_K", 0.07205, "", 3e-3)],
             "A steel flange clamped 40 mm thick by an M12 class 8.8 bolt torqued to 80 N·m with μ = 0.12: the bolt takes 7 % of the 10 kN working load, keeps about 13 kN of clamp after scatter and embedding, and sits well inside yield and the 50 MPa endurance amplitude."),
 
         new(BoltedJointCalculator.Id, "m12-88-overloaded", "The same bolt under a 60 kN working load (separation)",
@@ -338,12 +338,12 @@ public static class MechanicalWorkedExamples
 
     private static CalcInputSet JointInputs(double torque, string method, double workingLoad) => new(
     [
-        CalcInputValue.Quantity("d", 12, "mm", CalcProvenance.Drawing("DRG-FLG-02", "A")), CalcInputValue.Quantity("P", 1.75, "mm", CalcProvenance.Specification("ISO 261 coarse pitch")),
+        CalcInputValue.Quantity("d", 12, "mm", CalcProvenance.Drawing("DRG-FLG-02", "A")), CalcInputValue.Quantity("p_thread", 1.75, "mm", CalcProvenance.Specification("ISO 261 coarse pitch")),
         CalcInputValue.Quantity("R_p02", 640, "MPa", CalcProvenance.Specification("ISO 898-1 class 8.8")), CalcInputValue.Quantity("E_S", 205, "GPa", CalcProvenance.Specification("steel")),
-        CalcInputValue.Quantity("sigma_A", 50, "MPa", CalcProvenance.Assumed("Rolled-before-heat-treatment M12, VDI 2230 order of magnitude.")),
+        CalcInputValue.Quantity("sigma_a_limit", 50, "MPa", CalcProvenance.Assumed("Rolled-before-heat-treatment M12, VDI 2230 order of magnitude.")),
         CalcInputValue.Quantity("l_k", 40, "mm", CalcProvenance.Drawing("DRG-FLG-02", "A")), CalcInputValue.Quantity("d_h", 13, "mm", CalcProvenance.Drawing("DRG-FLG-02", "A")),
         CalcInputValue.Quantity("d_w", 18, "mm", CalcProvenance.Specification("ISO 4762 head bearing")), CalcInputValue.Quantity("E_P", 205, "GPa", CalcProvenance.Specification("steel")),
-        CalcInputValue.Of("n", 0.5, CalcProvenance.Assumed("Load introduced at mid-thickness.")), CalcInputValue.Quantity("f_Z", 11, "µm", CalcProvenance.Assumed("Three interfaces, machined.")),
+        CalcInputValue.Of("n_load", 0.5, CalcProvenance.Assumed("Load introduced at mid-thickness.")), CalcInputValue.Quantity("f_embed", 11, "µm", CalcProvenance.Assumed("Three interfaces, machined.")),
         CalcInputValue.Choice("method", method, CalcProvenance.Specification("Assembly procedure AP-7")), CalcInputValue.Quantity("M_A", torque, "N*m", CalcProvenance.Specification("Assembly procedure AP-7")),
         CalcInputValue.Of("K", 0.2, CalcProvenance.Assumed("Not used by the friction method.")), CalcInputValue.Of("mu_G", 0.12, CalcProvenance.Assumed("Lightly oiled zinc-plated thread.")),
         CalcInputValue.Of("mu_K", 0.12, CalcProvenance.Assumed("Lightly oiled head bearing.")), CalcInputValue.Of("alpha_A", 1.6, CalcProvenance.Assumed("Torque wrench, VDI 2230 Table A8 order.")),

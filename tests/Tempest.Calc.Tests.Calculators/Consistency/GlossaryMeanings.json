@@ -482,9 +482,6 @@
   "point-load": [
    "struct.beam-formulas"
   ],
-  "thread-pitch": [
-   "mech.bolted-joint"
-  ],
   "total-force": [
    "struct.plate-bending"
   ]
@@ -507,9 +504,6 @@
   "heat-flow": [
    "bs.sealed-system",
    "elec.load-budget"
-  ],
-  "load-factor": [
-   "mech.bolted-joint"
   ]
  },
  "Q": {
@@ -1349,9 +1343,6 @@
   ],
   "gas-exponent": [
    "fp.accumulator"
-  ],
-  "load-introduction-factor": [
-   "mech.bolted-joint"
   ],
   "operating-speed": [
    "mech.bearing-life",

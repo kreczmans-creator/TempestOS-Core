@@ -123,7 +123,7 @@ A bare symbol that means one kind of quantity wherever it appears. Another quant
 | `D` | A diameter or a depth | 17 |
 | `L` | Length | 17 |
 
-## Symbols with more than one meaning today (98)
+## Symbols with more than one meaning today (97)
 
 Each of these symbols is used for different quantities in different templates. Every use of a symbol that two or more templates share declares its meaning (`symbol:meaning`, in `GlossaryMeanings.json`), so two meanings of one quantity type (an efficiency and a Perry factor, both plain numbers) are told apart. Phases B and C resolve every one: give each quantity its own symbol (keeping the old symbol as an input or port alias), or make the templates agree. Status `RESOLVE` marks the rows in the full table below.
 
@@ -145,9 +145,8 @@ Each of these symbols is used for different quantities in different templates. E
 - `L2`: `L2:crank-length` Length (mechanism); `L2:second-run-length` Length (pipe-expansion)
 - `L_req`: `L_req:required-life` Time, rating life (bearing-life, bearing-life-basic); `L_req:required-leg-length` Length (pipe-expansion)
 - `N_Ed`: `N_Ed:axial-force-tension-positive` Force (en1993-member, ltb-interaction); `N_Ed:axial-force-compression-positive` Force (base-plate)
-- `P`: `P:motor-rated-output-power` Power, heat flow (conductor-sizing, motor-start); `P:applied-axial-load` Force (column-buckling); `P:deflection-force` Force (snap-fit); `P:dissipated-power` Power, heat flow (thermal-chain); `P:electrical-input-power` Power, heat flow (load-budget); `P:heat-loss-per-item` Power, heat flow (enclosure-heat); `P:internal-design-pressure` Stress, pressure (thin-vessel); `P:lug-load` Force (lifting-lug); `P:point-load` Force (beam-formulas); `P:thread-pitch` Length (bolted-joint); `P:total-force` Force (plate-bending)
+- `P`: `P:motor-rated-output-power` Power, heat flow (conductor-sizing, motor-start); `P:applied-axial-load` Force (column-buckling); `P:deflection-force` Force (snap-fit); `P:dissipated-power` Power, heat flow (thermal-chain); `P:electrical-input-power` Power, heat flow (load-budget); `P:heat-loss-per-item` Power, heat flow (enclosure-heat); `P:internal-design-pressure` Stress, pressure (thin-vessel); `P:lug-load` Force (lifting-lug); `P:point-load` Force (beam-formulas); `P:total-force` Force (plate-bending)
 - `P_b`: `P_b:bearing-force` Force (lifting); `P_b:bellows-governing-pressure` Stress, pressure (pipe-expansion)
-- `Phi`: `Phi:heat-flow` Power, heat flow (sealed-system, load-budget); `Phi:load-factor` Plain number (bolted-joint)
 - `Q`: `Q:volumetric-flow` Volumetric flow (duct-sizing, pipe-pump, cylinder); `Q:heat-flow` Power, heat flow (heat-exchanger, plane-wall)
 - `R`: `R:radius` Length (containment, thin-vessel, lifting); `R:thermal-resistance` Thermal resistance (insulation, thermal-chain); `R:reliability` Percent quantity (shaft); `R:resistance` Resistance, impedance (voltage-drop)
 - `R_f`: `R_f:fouling-resistance` Thermal resistance (heat-exchanger); `R_f:repetitions-to-failure` Plain number (fatigue-miner)
@@ -194,7 +193,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `m`: `m:mass` Mass (motor-sizing, shaft); `m:bolt-to-weld-toe-distance` Length (base-plate); `m:sn-slope` Plain number (fatigue-miner)
 - `m_min`: `m_min:engagement-needed` Length (bolted-joint); `m_min:worst-case-margin-to-minimum` Length (tolerance-stack)
 - `mu`: `mu:friction-coefficient` Plain number (pipe-expansion, containment, motor-sizing, press-fit, …); `mu:vapour-resistance-factor` Plain number (glaser)
-- `n`: `n:operating-speed` Rotational speed, frequency (bearing-life, bearing-life-basic, shaft); `n:active-coils` Plain number (spring); `n:air-change-rate` Rotational speed, frequency (room-heat-loss); `n:cycles` Plain number (fatigue-miner); `n:emitter-exponent` Plain number (sealed-system); `n:gas-exponent` Plain number (accumulator); `n:load-introduction-factor` Plain number (bolted-joint); `n:thickness-design-factor` Plain number (thin-vessel)
+- `n`: `n:operating-speed` Rotational speed, frequency (bearing-life, bearing-life-basic, shaft); `n:active-coils` Plain number (spring); `n:air-change-rate` Rotational speed, frequency (room-heat-loss); `n:cycles` Plain number (fatigue-miner); `n:emitter-exponent` Plain number (sealed-system); `n:gas-exponent` Plain number (accumulator); `n:thickness-design-factor` Plain number (thin-vessel)
 - `n_L`: `n_L:load-factor-against-axial-yield` Plain number (bolted-joint); `n_L:load-speed-at-the-output` Rotational speed, frequency (motor-sizing)
 - `n_t`: `n_t:holding-down-bolts-per-row` Plain number (base-plate); `n_t:total-coils` Plain number (spring)
 - `p`: `p:barometric-pressure` Stress, pressure (psychrometrics); `p:pitch` Length (spring); `p:pressure` Stress, pressure (oring-gland); `p:supply-pressure` Stress, pressure (cylinder)
@@ -226,7 +225,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1406 symbols in 54 templates)
+## All symbols (1409 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -257,7 +256,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `A_r` | — | Area | cm² | Rod area | fp.cylinder | ok |
 | `A_req` | — | Area | mil² | Minimum cross-section | elec.pcb-trace | ok |
 | `A_s` | `A_s:stress-area` | Area | mm² | Anchor bolt tensile stress area (from S4); Stress area; Tensile stress area | mech.bolted-joint, struct.base-plate, struct.connection-ec3 | ok |
-| `A_s_given` | — | Area | mm² | Tensile stress area, from a fastener record (blank = from d and P) | mech.bolted-joint | ok |
+| `A_s_given` | — | Area | mm² | Tensile stress area, from a fastener record (optional; blank = from d… | mech.bolted-joint | ok |
 | `A_sun` | — | Area | m² | Sunlit area | elec.enclosure-heat | ok |
 | `A_t` | — | Area | mm² | Tension area beyond the hole | struct.lifting | ok |
 | `A_tb` | — | Area | m² | Fabric area facing outside weighted by f | bs.room-heat-loss | ok |
@@ -356,7 +355,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `F_M_min` | — | Force | kN | Minimum preload | mech.bolted-joint | ok |
 | `F_SA` | — | Force | kN | Additional bolt load | mech.bolted-joint | ok |
 | `F_S_max` | — | Force | kN | Maximum bolt load | mech.bolted-joint | ok |
-| `F_V` | — | Force | kN | Preload (given-preload method: measured, or from a tightening specifi… | mech.bolted-joint | ok |
+| `F_V` | — | Force | kN | Preload (optional; blank = the preload comes from the tightening torq… | mech.bolted-joint | ok |
 | `F_Z` | — | Force | kN | Embedding loss | mech.bolted-joint | ok |
 | `F_a` | `F_a:axial-load` | Force | kN | Axial load | mech.bearing-life, mech.bearing-life-basic | RESOLVE (2 meanings) |
 | `F_a` | `F_a:assembly-force` | Force | kN | Assembly force | mech.press-fit | RESOLVE (2 meanings) |
@@ -517,7 +516,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `M_0` | — | Moment, torque | kN·m | Applied couple | struct.beam-formulas | ok |
 | `M_1` | — | Moment, torque | N·m | Torque at working point 1 (torsion, loads) | mech.spring | ok |
 | `M_2` | — | Moment, torque | N·m | Torque at working point 2 (torsion, loads) | mech.spring | ok |
-| `M_A` | — | Moment, torque | N·m | Tightening torque | mech.bolted-joint | ok |
+| `M_A` | — | Moment, torque | kN·m | Tightening torque | mech.bolted-joint | ok |
 | `M_Ed` | — | Moment, torque | kN·m | Major-axis moment (uniaxial) | struct.base-plate | ok |
 | `M_abs_e1` | — | Moment, torque | kN·m | /M/ max, member 1 | struct.frame-2d | ok |
 | `M_c` | — | Moment per unit length | N·m/m | Moment at the centre | struct.plate-bending | ok |
@@ -591,17 +590,16 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `Nd` | — | Plain number | — | Design factor N_d of the Design Category (BTH-1 mode; user record) | struct.lifting | ok |
 | `OD` | `OD:pipe-outside-diameter` | Length | mm | Outside diameter of the pipe (optional; the first segment's is offere…; Pipe outside diameter | bs.pipe-expansion, bs.pipe-pump | ok |
 | `OD_max` | — | Length | mm | Largest cable diameter | elec.containment | ok |
-| `P` | `P:motor-rated-output-power` | Power, heat flow | kW | Motor rated output (shaft) power, from the nameplate (E1 P_cont is on…; Rated output (shaft) power; η converts it to input (DC: electrical po… | elec.conductor-sizing, elec.motor-start | RESOLVE (11 meanings) |
-| `P` | `P:applied-axial-load` | Force | kN | Applied axial load | struct.column-buckling | RESOLVE (11 meanings) |
-| `P` | `P:deflection-force` | Force | N | Deflection force | mech.snap-fit | RESOLVE (11 meanings) |
-| `P` | `P:dissipated-power` | Power, heat flow | W | Steady power dissipated (the heat flow through every stage) | elec.thermal-chain | RESOLVE (11 meanings) |
-| `P` | `P:electrical-input-power` | Power, heat flow | kW | Electrical input power | elec.load-budget | RESOLVE (11 meanings) |
-| `P` | `P:heat-loss-per-item` | Power, heat flow | W | Heat loss per item | elec.enclosure-heat | RESOLVE (11 meanings) |
-| `P` | `P:internal-design-pressure` | Stress, pressure | MPa | Internal design pressure | mech.thin-vessel | RESOLVE (11 meanings) |
-| `P` | `P:lug-load` | Force | kN | Load on the lug (along the lug) | mech.lifting-lug | RESOLVE (11 meanings) |
-| `P` | `P:point-load` | Force | kN | Point load (downward) | struct.beam-formulas | RESOLVE (11 meanings) |
-| `P` | `P:thread-pitch` | Length | mm | Thread pitch | mech.bolted-joint | RESOLVE (11 meanings) |
-| `P` | `P:total-force` | Force | kN | Total force P (force basis: uniform, patch and ring loads; a ring loa… | struct.plate-bending | RESOLVE (11 meanings) |
+| `P` | `P:motor-rated-output-power` | Power, heat flow | kW | Motor rated output (shaft) power, from the nameplate (E1 P_cont is on…; Rated output (shaft) power; η converts it to input (DC: electrical po… | elec.conductor-sizing, elec.motor-start | RESOLVE (10 meanings) |
+| `P` | `P:applied-axial-load` | Force | kN | Applied axial load | struct.column-buckling | RESOLVE (10 meanings) |
+| `P` | `P:deflection-force` | Force | N | Deflection force | mech.snap-fit | RESOLVE (10 meanings) |
+| `P` | `P:dissipated-power` | Power, heat flow | W | Steady power dissipated (the heat flow through every stage) | elec.thermal-chain | RESOLVE (10 meanings) |
+| `P` | `P:electrical-input-power` | Power, heat flow | kW | Electrical input power | elec.load-budget | RESOLVE (10 meanings) |
+| `P` | `P:heat-loss-per-item` | Power, heat flow | W | Heat loss per item | elec.enclosure-heat | RESOLVE (10 meanings) |
+| `P` | `P:internal-design-pressure` | Stress, pressure | MPa | Internal design pressure | mech.thin-vessel | RESOLVE (10 meanings) |
+| `P` | `P:lug-load` | Force | kN | Load on the lug (along the lug) | mech.lifting-lug | RESOLVE (10 meanings) |
+| `P` | `P:point-load` | Force | kN | Point load (downward) | struct.beam-formulas | RESOLVE (10 meanings) |
+| `P` | `P:total-force` | Force | kN | Total force P (force basis: uniform, patch and ring loads; a ring loa… | struct.plate-bending | RESOLVE (10 meanings) |
 | `PS` | — | Stress, pressure | bar | Vessel maximum allowable pressure PS, bar gauge (nameplate or relief … | fp.accumulator | ok |
 | `P_0` | — | Force | kN | Equivalent static load | mech.bearing-life | ok |
 | `P_E` | — | Force | kN | Euler load | struct.column-buckling | ok |
@@ -635,12 +633,12 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `P_t` | — | Force | kN | Tension beyond the hole | struct.lifting | ok |
 | `P_total` | — | Power, heat flow | W | Total heat | elec.enclosure-heat | ok |
 | `P_v` | — | Force | kN | Double-plane shear | struct.lifting | ok |
-| `Phi` | `Phi:heat-flow` | Power, heat flow | W, kW | Heat dissipated inside the enclosure; Heat required | bs.sealed-system, elec.load-budget | RESOLVE (2 meanings) |
-| `Phi` | `Phi:load-factor` | Plain number | — | Load factor | mech.bolted-joint | RESOLVE (2 meanings) |
+| `Phi` | `Phi:heat-flow` | Power, heat flow | W, kW | Heat dissipated inside the enclosure; Heat required | bs.sealed-system, elec.load-budget | ok |
 | `Phi50` | — | Power, heat flow | W | Selected emitter output at ΔT 50 K | bs.sealed-system | ok |
 | `Phi_1` | — | Power, heat flow | W | Cavity wall: fabric loss | bs.room-heat-loss | ok |
 | `Phi_2` | — | Power, heat flow | W | Window: fabric loss | bs.room-heat-loss | ok |
 | `Phi_HL` | — | Power, heat flow | W | Room design heat loss | bs.room-heat-loss | ok |
+| `Phi_K` | — | Plain number | — | Load factor | mech.bolted-joint | ok |
 | `Phi_LT` | — | Plain number | — | Φ_LT | struct.ltb-interaction | ok |
 | `Phi_T` | — | Power, heat flow | W | Fabric heat loss | bs.room-heat-loss | ok |
 | `Phi_V` | — | Power, heat flow | W | Ventilation heat loss | bs.room-heat-loss | ok |
@@ -1124,7 +1122,6 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `fRsi` | — | Plain number | — | Temperature factor of the internal surface | bs.glaser | ok |
 | `fRsi_min` | — | Plain number | — | Minimum temperature factor | bs.glaser | ok |
 | `f_T` | — | Plain number | — | Gas volume scaling T_max/T_min | fp.accumulator | ok |
-| `f_Z` | — | Length | µm | Embedding (settling) loss | mech.bolted-joint | ok |
 | `f_acc` | — | Plain number | — | Acceleration (and deceleration) fraction of the move time | elec.motor-sizing | ok |
 | `f_add` | — | Percent quantity | % | Additional allowance on the room load (CIBSE DHDG method only) | bs.room-heat-loss | ok |
 | `f_b_pin` | — | Stress, pressure | MPa | Allowable bending stress, pin | mech.lifting-lug | ok |
@@ -1135,6 +1132,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `f_ck_g` | — | Stress, pressure | MPa | Grout characteristic strength (optional: checks the β_j = 2/3 conditi… | struct.base-plate | ok |
 | `f_dT` | — | Plain number | — | Output correction factor | bs.sealed-system | ok |
 | `f_derate` | — | Plain number | — | PSU derating factor at the ambient and altitude | elec.load-budget | ok |
+| `f_embed` | — | Length | µm | Embedding (settling) loss | mech.bolted-joint | ok |
 | `f_front` | — | Plain number | — | Front exposure | elec.enclosure-heat | ok |
 | `f_in` | — | Rotational speed, frequency | Hz | Input (crank) frequency, for the spring surge check of M7 (mech.f_in) | mech.mechanism | ok |
 | `f_jd` | — | Stress, pressure | MPa | Bearing strength f_jd | struct.base-plate | ok |
@@ -1227,10 +1225,10 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `k_1` | — | Plain number | — | Bearing factor k₁ | struct.connection-ec3 | ok |
 | `k_P` | `k_P:load-ratio` | Plain number | — | Load ratio | mech.bearing-life-basic | RESOLVE (2 meanings) |
 | `k_P` | `k_P:members-stiffness` | Line force, distributed load, stiffness | kN/m | Members' stiffness | mech.bolted-joint | RESOLVE (2 meanings) |
-| `k_P_given` | — | Line force, distributed load, stiffness | kN/mm | Clamped members' stiffness, measured or from an FE model (blank = two… | mech.bolted-joint | ok |
+| `k_P_given` | — | Line force, distributed load, stiffness | kN/m | Clamped members' stiffness, measured or from an FE model (optional; b… | mech.bolted-joint | ok |
 | `k_R` | — | Plain number | — | Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity i… | elec.fault-protection | ok |
 | `k_S` | — | Line force, distributed load, stiffness | kN/m | Bolt stiffness | mech.bolted-joint | ok |
-| `k_S_given` | — | Line force, distributed load, stiffness | kN/mm | Bolt stiffness, measured or from an FE model (blank = from the geomet… | mech.bolted-joint | ok |
+| `k_S_given` | — | Line force, distributed load, stiffness | kN/m | Bolt stiffness, measured or from an FE model (optional; blank = from … | mech.bolted-joint | ok |
 | `k_T` | `k_T:torque-factor-at-dipped-voltage` | Plain number | — | Torque factor at the dipped voltage | elec.motor-start | RESOLVE (2 meanings) |
 | `k_T` | `k_T:transformer-overload-factor` | Plain number | — | Transformer short-time overload allowed for inrush | elec.load-budget | RESOLVE (2 meanings) |
 | `k_a` | — | Plain number | — | Surface factor override (blank: k_a = a·S_ut^b, Shigley 10th ed. Tabl… | mech.shaft | ok |
@@ -1322,14 +1320,13 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `mu_custom` | — | Dynamic viscosity | mPa·s | Dynamic viscosity (custom fluid) | bs.pipe-pump | ok |
 | `mu_min` | — | Angle | ° | Smallest transmission angle over the sweep | mech.mechanism | ok |
 | `mu_req` | — | Angle | ° | Minimum transmission angle required (linkages) | mech.mechanism | ok |
-| `n` | `n:operating-speed` | Rotational speed, frequency | rpm | Operating speed; Speed | mech.bearing-life, mech.bearing-life-basic, mech.shaft | RESOLVE (8 meanings) |
-| `n` | `n:active-coils` | Plain number | — | Active coils (torsion: coils of the body) | mech.spring | RESOLVE (8 meanings) |
-| `n` | `n:air-change-rate` | Rotational speed, frequency | 1/h | Air change rate | bs.room-heat-loss | RESOLVE (8 meanings) |
-| `n` | `n:cycles` | Plain number | — | Cycles | mech.fatigue-miner | RESOLVE (8 meanings) |
-| `n` | `n:emitter-exponent` | Plain number | — | Emitter exponent | bs.sealed-system | RESOLVE (8 meanings) |
-| `n` | `n:gas-exponent` | Plain number | — | Gas exponent n of the discharge (1 isothermal, slow; 1.4 adiabatic, f… | fp.accumulator | RESOLVE (8 meanings) |
-| `n` | `n:load-introduction-factor` | Plain number | — | Load introduction factor (0 = at the clamped faces, 1 = under the hea… | mech.bolted-joint | RESOLVE (8 meanings) |
-| `n` | `n:thickness-design-factor` | Plain number | — | Design factor on the computed thickness (legacy; 1 for none) | mech.thin-vessel | RESOLVE (8 meanings) |
+| `n` | `n:operating-speed` | Rotational speed, frequency | rpm | Operating speed; Speed | mech.bearing-life, mech.bearing-life-basic, mech.shaft | RESOLVE (7 meanings) |
+| `n` | `n:active-coils` | Plain number | — | Active coils (torsion: coils of the body) | mech.spring | RESOLVE (7 meanings) |
+| `n` | `n:air-change-rate` | Rotational speed, frequency | 1/h | Air change rate | bs.room-heat-loss | RESOLVE (7 meanings) |
+| `n` | `n:cycles` | Plain number | — | Cycles | mech.fatigue-miner | RESOLVE (7 meanings) |
+| `n` | `n:emitter-exponent` | Plain number | — | Emitter exponent | bs.sealed-system | RESOLVE (7 meanings) |
+| `n` | `n:gas-exponent` | Plain number | — | Gas exponent n of the discharge (1 isothermal, slow; 1.4 adiabatic, f… | fp.accumulator | RESOLVE (7 meanings) |
+| `n` | `n:thickness-design-factor` | Plain number | — | Design factor on the computed thickness (legacy; 1 for none) | mech.thin-vessel | RESOLVE (7 meanings) |
 | `n_0` | — | Plain number | — | Load factor against separation | mech.bolted-joint | ok |
 | `n_A` | — | Plain number | — | Exponent of the cross-section | elec.pcb-trace | ok |
 | `n_L` | `n_L:load-factor-against-axial-yield` | Plain number | — | Load factor against axial yield | mech.bolted-joint | RESOLVE (2 meanings) |
@@ -1352,6 +1349,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `n_in` | — | Rotational speed, frequency | rpm | Input (crank) speed, passed through for E1's load speed (mech.n_in); Input speed (constant) | mech.mechanism | ok |
 | `n_inf` | — | Rotational speed, frequency | 1/h | Infiltration air change rate at outside temperature, with MVHR only (… | bs.room-heat-loss | ok |
 | `n_latch` | — | Plain number | — | Number of identical latches that share a holding load (a whole number… | mech.snap-fit | ok |
+| `n_load` | — | Plain number | — | Load introduction factor (0 = at the clamped faces, 1 = under the hea… | mech.bolted-joint | ok |
 | `n_max` | — | Rotational speed, frequency | rpm | Candidate motor maximum speed | elec.motor-sizing | ok |
 | `n_mc` | `n_mc:monte-carlo-samples` | Plain number | — | Monte Carlo samples | fp.oring-gland, mech.tolerance-stack | ok |
 | `n_mean` | — | Rotational speed, frequency | rpm | Mean motor speed over the cycle | elec.motor-sizing | ok |
@@ -1422,6 +1420,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `p_sq_min` | — | Percent quantity | % | Fraction outside the limit: squeeze below the lower limit (cold end) | fp.oring-gland | ok |
 | `p_stretch` | — | Percent quantity | % | Fraction outside the limit: installed stretch outside its limits | fp.oring-gland | ok |
 | `p_sys` | — | Stress, pressure | Pa | System resistance (filters, grilles) at the reference airflow | elec.enclosure-heat | ok |
+| `p_thread` | — | Length | mm | Thread pitch | mech.bolted-joint | ok |
 | `p_v_custom` | — | Stress, pressure | kPa | Vapour pressure of the custom fluid at T, absolute (needed for NPSH_a… | bs.pipe-pump | ok |
 | `p_w_1` | — | Stress, pressure | kPa | p_w 1 | bs.psychrometrics | ok |
 | `p_ws_1` | — | Stress, pressure | kPa | p_ws 1 | bs.psychrometrics | ok |
@@ -1503,9 +1502,9 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `side` | — | Length | mm | Edge distance on each side of the hole | struct.lifting | ok |
 | `sigma` | `sigma:stress` | Stress, pressure | MPa | Applied (equivalent) stress; Axial stress; Bending stress | mech.material-margin, mech.shaft-stress, mech.thermal-expansion | RESOLVE (2 meanings) |
 | `sigma` | `sigma:standard-deviation` | Length | in, mm | Measured standard deviation; Predicted σ; Standard deviation (normal contributors; replaces band/k for the stat… | fp.oring-gland, mech.tolerance-stack | RESOLVE (2 meanings) |
-| `sigma_A` | — | Stress, pressure | MPa | Bolt endurance limit (stress amplitude) | mech.bolted-joint | ok |
 | `sigma_M` | — | Stress, pressure | MPa | Preload stress | mech.bolted-joint | ok |
 | `sigma_a` | — | Stress, pressure | MPa | Fatigue amplitude | mech.bolted-joint | ok |
+| `sigma_a_limit` | — | Stress, pressure | MPa | Bolt endurance limit (stress amplitude) | mech.bolted-joint | ok |
 | `sigma_allow` | `sigma_allow:allowable-stress` | Stress, pressure | MPa | Allowable bending stress; Allowable stress | mech.thermal-expansion, mech.thick-cylinder, struct.beam-formulas | ok |
 | `sigma_b` | — | Stress, pressure | MPa | Pin bending stress | mech.lifting-lug | ok |
 | `sigma_br` | — | Stress, pressure | MPa | Bearing stress | mech.lifting-lug | ok |
