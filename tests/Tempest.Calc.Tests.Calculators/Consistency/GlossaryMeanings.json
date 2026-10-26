@@ -115,9 +115,6 @@
   "force": [
    "mech.thermal-expansion",
    "struct.fillet-weld"
-  ],
-  "lmtd-correction-factor": [
-   "bs.heat-exchanger"
   ]
  },
  "F_a": {
@@ -493,6 +490,8 @@
  },
  "Phi": {
   "heat-flow": [
+   "bs.heat-exchanger",
+   "bs.plane-wall",
    "bs.sealed-system",
    "elec.load-budget"
   ],
@@ -501,10 +500,6 @@
   ]
  },
  "Q": {
-  "heat-flow": [
-   "bs.heat-exchanger",
-   "bs.plane-wall"
-  ],
   "volumetric-flow": [
    "bs.duct-sizing",
    "bs.pipe-pump",
@@ -525,7 +520,6 @@
    "elec.voltage-drop"
   ],
   "thermal-resistance": [
-   "bs.insulation",
    "elec.thermal-chain"
   ]
  },
@@ -563,6 +557,7 @@
  },
  "R_tot": {
   "total-thermal-resistance": [
+   "bs.insulation",
    "bs.plane-wall",
    "elec.thermal-chain"
   ]
@@ -609,10 +604,6 @@
   ]
  },
  "T": {
-  "temperature": [
-   "bs.duct-sizing",
-   "bs.pipe-pump"
-  ],
   "torque": [
    "mech.bolt-group",
    "mech.press-fit",
@@ -631,6 +622,9 @@
   ]
  },
  "T_2": {
+  "leaving-dry-bulb-temperature": [
+   "bs.psychrometrics"
+  ],
   "side-2-temperature": [
    "bs.plane-wall",
    "elec.thermal-chain"
@@ -646,6 +640,7 @@
  },
  "T_amb": {
   "ambient-temperature": [
+   "bs.insulation",
    "elec.enclosure-heat",
    "elec.pcb-trace",
    "elec.voltage-drop"
@@ -660,15 +655,41 @@
    "elec.voltage-drop"
   ]
  },
+ "T_dew": {
+  "dew-point-temperature": [
+   "bs.heat-exchanger",
+   "bs.insulation"
+  ]
+ },
+ "T_int": {
+  "enclosure-internal-temperature": [
+   "elec.enclosure-heat"
+  ],
+  "internal-design-temperature": [
+   "bs.glaser",
+   "bs.room-heat-loss"
+  ]
+ },
  "T_load": {
   "load-torque": [
    "elec.motor-sizing",
    "mech.mechanism"
   ]
  },
+ "T_m": {
+  "mean-insulation-temperature": [
+   "bs.insulation"
+  ],
+  "mean-water-temperature": [
+   "bs.sealed-system"
+  ]
+ },
  "T_max": {
   "maximum-pulling-tension": [
    "elec.containment"
+  ],
+  "maximum-system-temperature": [
+   "bs.sealed-system"
   ],
   "maximum-temperature": [
    "elec.enclosure-heat",
@@ -698,16 +719,18 @@
   ]
  },
  "U": {
-  "overall-heat-transfer-coefficient": [
-   "bs.heat-exchanger",
-   "bs.plane-wall"
-  ],
   "share-of-revolutions": [
    "mech.bearing-life"
   ],
   "supply-voltage": [
    "elec.conductor-sizing",
    "elec.motor-start"
+  ]
+ },
+ "U_wall": {
+  "wall-u-value": [
+   "bs.glaser",
+   "bs.plane-wall"
   ]
  },
  "V": {
@@ -1070,7 +1093,6 @@
    "mech.snap-fit#output"
   ],
   "roughness": [
-   "bs.duct-sizing",
    "bs.pipe-pump"
   ],
   "strain": [
@@ -1181,9 +1203,6 @@
   ],
   "root-thickness": [
    "mech.snap-fit"
-  ],
-  "specific-enthalpy": [
-   "bs.psychrometrics"
   ]
  },
  "h_1": {
@@ -1336,9 +1355,6 @@
   "emitter-exponent": [
    "bs.sealed-system"
   ],
-  "gas-exponent": [
-   "fp.accumulator"
-  ],
   "load-introduction-factor": [
    "mech.bolted-joint"
   ],
@@ -1406,9 +1422,6 @@
   ]
  },
  "p": {
-  "barometric-pressure": [
-   "bs.psychrometrics"
-  ],
   "interface-pressure": [
    "mech.press-fit"
   ],
@@ -1417,9 +1430,6 @@
   ],
   "pressure": [
    "fp.oring-gland"
-  ],
-  "supply-pressure": [
-   "fp.cylinder"
   ]
  },
  "p_1": {
@@ -1442,6 +1452,7 @@
   "atmospheric-pressure": [
    "bs.duct-sizing",
    "bs.pipe-pump",
+   "bs.psychrometrics",
    "fp.accumulator"
   ]
  },
@@ -1451,6 +1462,14 @@
   ],
   "pre-charge-pressure": [
    "bs.sealed-system"
+  ]
+ },
+ "p_sys": {
+  "supply-pressure": [
+   "fp.cylinder"
+  ],
+  "system-resistance": [
+   "elec.enclosure-heat"
   ]
  },
  "pass": {
@@ -1570,14 +1589,6 @@
    "elec.fault-protection"
   ]
  },
- "t_2": {
-  "leaving-dry-bulb-temperature": [
-   "bs.psychrometrics"
-  ],
-  "other-ply-thickness": [
-   "struct.connection-ec3"
-  ]
- },
  "t_dwell": {
   "dwell-time": [
    "elec.motor-sizing",
@@ -1590,17 +1601,6 @@
    "struct.en1993-member",
    "struct.ltb-interaction",
    "struct.section-properties"
-  ],
-  "flow-temperature": [
-   "bs.sealed-system"
-  ]
- },
- "t_max": {
-  "maximum-bolt-tension": [
-   "mech.bolt-group"
-  ],
-  "maximum-system-temperature": [
-   "bs.sealed-system"
   ]
  },
  "t_p": {
@@ -1657,7 +1657,6 @@
  },
  "theta_a": {
   "ambient-temperature": [
-   "bs.insulation",
    "elec.conductor-sizing"
   ],
   "cold-point-outside-temperature": [
@@ -1666,20 +1665,6 @@
  },
  "theta_e": {
   "external-design-temperature": [
-   "bs.glaser",
-   "bs.room-heat-loss"
-  ]
- },
- "theta_i": {
-  "adiabatic-initial-temperature": [
-   "elec.fault-protection"
-  ],
-  "process-temperature": [
-   "bs.insulation"
-  ]
- },
- "theta_int": {
-  "internal-design-temperature": [
    "bs.glaser",
    "bs.room-heat-loss"
   ]
@@ -1790,11 +1775,9 @@
    "struct.lifting"
   ]
  },
- "v_max": {
-  "maximum-bolt-shear": [
-   "mech.bolt-group"
-  ],
+ "v_limit": {
   "velocity-limit": [
+   "bs.duct-sizing",
    "bs.pipe-pump"
   ]
  },

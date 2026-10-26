@@ -131,7 +131,7 @@ public sealed partial class GlossaryTests
             Assert.All(group, r => Assert.Equal(several, r.Status.StartsWith("RESOLVE", StringComparison.Ordinal)));
         }
 
-        Assert.Contains(rows, r => r.Symbol == "T" && r.Status.StartsWith("RESOLVE", StringComparison.Ordinal));
+        Assert.Contains(rows, r => r.Symbol == "R" && r.Status.StartsWith("RESOLVE", StringComparison.Ordinal));
         Assert.Contains(rows, r => r.Symbol == "theta" && r.Status.StartsWith("RESOLVE", StringComparison.Ordinal));
     }
 
@@ -189,12 +189,11 @@ public sealed partial class GlossaryTests
         Assert.Contains(rows, r => r.Symbol == "eta" && r.Meaning == "perry-factor" && r.Templates.SequenceEqual(["struct.column-buckling"]));
         Assert.Contains(rows, r => r.Symbol == "eta" && r.Meaning == "shear-area-factor" && r.Templates.SequenceEqual(["struct.en1993-member"]));
 
-        // n: the plain-number uses are six meanings, the speed uses are two.
+        // n: the plain-number uses are five meanings, the speed uses are two (the gas exponent of fp.accumulator is n_gas since 1.7.0).
         var n = rows.Where(r => r.Symbol == "n").ToList();
-        Assert.Equal(8, n.Count);
-        Assert.Equal(6, n.Count(r => r.Quantity == "Plain number"));
+        Assert.Equal(7, n.Count);
+        Assert.Equal(5, n.Count(r => r.Quantity == "Plain number"));
         Assert.Contains(n, r => r.Meaning == "active-coils" && r.Templates.SequenceEqual(["mech.spring"]));
-        Assert.Contains(n, r => r.Meaning == "gas-exponent" && r.Templates.SequenceEqual(["fp.accumulator"]));
         Assert.All(n, r => Assert.StartsWith("RESOLVE", r.Status, StringComparison.Ordinal));
     }
 

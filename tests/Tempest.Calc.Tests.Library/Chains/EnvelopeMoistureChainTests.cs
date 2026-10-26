@@ -50,22 +50,22 @@ public sealed class EnvelopeMoistureChainTests
         // The wall's U against its 0.45 target: 0.887 (the window has a U override, so only the wall is held to the target).
         var wallCheck = Assert.Single(b4.Checks);
         Assert.True(wallCheck.Passed);
-        Assert.Equal(0.39913520705138866 / 0.45, Si(b4, "u_1"), 12);
+        Assert.Equal(0.39913520705138866 / 0.45, Si(b4, "u_target_1"), 12);
 
         // B2: 21 °C, 50 % at sea level: the state's dry-bulb and its relative humidity as a percentage quantity (SI 0.5).
-        Assert.Equal(21 + 273.15, Si(b2, "t_1_out"), 9);
+        Assert.Equal(21 + 273.15, Si(b2, "T_1_out"), 9);
         Assert.Equal(0.5, Si(b2, "phi_1"), 12);
         Assert.Equal(50, Si(b2, "RH_1"), 9);
 
         // B4 → B7, U-value (W/(m²·K)): B7's U_ref; B2 → B7, dry-bulb (K, shown in °C) and relative humidity (SI 0.5, shown in %).
         Assert.Equal(Si(b4, "U_1"), InputSi(b7, "U_ref"), 12);
-        Assert.Equal(Si(b2, "t_1_out"), InputSi(b7, "theta_int"), 9);
-        Assert.Equal(294.15, InputSi(b7, "theta_int"), 9);
+        Assert.Equal(Si(b2, "T_1_out"), InputSi(b7, "T_int"), 9);
+        Assert.Equal(294.15, InputSi(b7, "T_int"), 9);
         Assert.Equal(Si(b2, "phi_1"), InputSi(b7, "RH_int"), 12);
         Assert.Equal(0.5, InputSi(b7, "RH_int"), 12);
-        Assert.Equal("degC", b7.Inputs.Single(i => i.Symbol == "theta_int").Unit);
+        Assert.Equal("degC", b7.Inputs.Single(i => i.Symbol == "T_int").Unit);
         Assert.Equal("%", b7.Inputs.Single(i => i.Symbol == "RH_int").Unit);
-        Assert.Equal(21, b7.Inputs.Single(i => i.Symbol == "theta_int").Number!.Value, 9);
+        Assert.Equal(21, b7.Inputs.Single(i => i.Symbol == "T_int").Number!.Value, 9);
         Assert.Equal(50, b7.Inputs.Single(i => i.Symbol == "RH_int").Number!.Value, 9);
 
         // B7: R_T = 0.13 + 0.05 + 0.0002/0.35 + 2 + 0.26875 + 0.015/0.9 + 0.04 = 2.5059881 m²K/W, U = 0.39904419 W/m²K, 0.0228 % from B4's: no warning.
@@ -114,7 +114,7 @@ public sealed class EnvelopeMoistureChainTests
         Assert.Equal(["b4", "b2", "b7"], template.Steps.Select(s => s.Key));
         Assert.Equal(["bs.room-heat-loss", "bs.psychrometrics", "bs.glaser"], template.Steps.Select(s => s.TemplateId));
         Assert.Equal(
-            [("b4", "U_1", "b7", "U_ref"), ("b2", "t_1_out", "b7", "theta_int"), ("b2", "phi_1", "b7", "RH_int")],
+            [("b4", "U_1", "b7", "U_ref"), ("b2", "T_1_out", "b7", "T_int"), ("b2", "phi_1", "b7", "RH_int")],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));
         Assert.All(template.Bindings, b => Assert.Null(b.Row));
 
@@ -129,7 +129,7 @@ public sealed class EnvelopeMoistureChainTests
         // Nothing else is linked: the layers, the surface resistances, the climate and the limits are entered (the heat-loss step offers no per-layer output).
         Assert.Equal(3, made.Instances.Values.Sum(i => i.Links.Count));
         Assert.Equal(0, made.Instances.Values.Sum(i => i.CellLinks.Count));
-        Assert.Equal(["RH_int", "U_ref", "theta_int"], made.Instances["b7"].Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(["RH_int", "T_int", "U_ref"], made.Instances["b7"].Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
         Assert.Empty(made.Instances["b4"].Links);
         Assert.Empty(made.Instances["b2"].Links);
     }
@@ -166,8 +166,8 @@ public sealed class EnvelopeMoistureChainTests
         // The surface resistances agree (B4's conventional horizontal 0.13 and outside 0.04 are B7's Rsi and Rse), and B4's typed internal design temperature is the air state's.
         Assert.Equal(0.13, InputSi(b7, "Rsi"), 12);
         Assert.Equal(0.04, InputSi(b7, "Rse"), 12);
-        Assert.Equal(InputSi(b4, "theta_int"), InputSi(b2, "t_db"), 9);
-        Assert.Equal(InputSi(b4, "theta_int"), InputSi(b7, "theta_int"), 9);
+        Assert.Equal(InputSi(b4, "T_int"), InputSi(b2, "T_db"), 9);
+        Assert.Equal(InputSi(b4, "T_int"), InputSi(b7, "T_int"), 9);
         Assert.Equal("External wall", b4.Inputs.Single(i => i.Symbol == "elements").Rows![0].Get("name")!.Text);
         Assert.Equal("External wall", b7.Inputs.Single(i => i.Symbol == "element").Text);
     }
@@ -250,7 +250,7 @@ public sealed class EnvelopeMoistureChainTests
         var staleness = await host.Service.StalenessAsync(await Fresh(host, made, "b7"));
         Assert.True(staleness.IsStale);
         Assert.Contains(staleness.Reasons, r => r.Contains("'RH_int'", StringComparison.Ordinal) && r.Contains("different 'phi_1'", StringComparison.Ordinal));
-        Assert.DoesNotContain(staleness.Reasons, r => r.Contains("'theta_int'", StringComparison.Ordinal));
+        Assert.DoesNotContain(staleness.Reasons, r => r.Contains("'T_int'", StringComparison.Ordinal));
         Assert.DoesNotContain(staleness.Reasons, r => r.Contains("'U_ref'", StringComparison.Ordinal));
         Assert.False((await host.Service.StalenessAsync(await Fresh(host, made, "b4"))).IsStale);
 
@@ -290,7 +290,7 @@ public sealed class EnvelopeMoistureChainTests
 
         var wall = await host.Service.UpdateInputsAsync(b4.Id, ScaleCell("layers", 1, "d", 1.25)(b4.Inputs));
         Assert.True(wall.Succeeded, wall.Reason);
-        var air = await host.Service.UpdateInputsAsync(b2.Id, Scale("t_db", 1.1)(b2.Inputs));
+        var air = await host.Service.UpdateInputsAsync(b2.Id, Scale("T_db", 1.1)(b2.Inputs));
         Assert.True(air.Succeeded, air.Reason);
 
         // Neither root is stale; the Glaser step takes from both, so it is, and its reasons say which values moved.
@@ -299,7 +299,7 @@ public sealed class EnvelopeMoistureChainTests
         var staleness = await host.Service.StalenessAsync(await Fresh(host, made, "b7"));
         Assert.True(staleness.IsStale);
         Assert.Contains(staleness.Reasons, r => r.Contains("'U_ref'", StringComparison.Ordinal) && r.Contains("different 'U_1'", StringComparison.Ordinal));
-        Assert.Contains(staleness.Reasons, r => r.Contains("'theta_int'", StringComparison.Ordinal) && r.Contains("different 't_1_out'", StringComparison.Ordinal));
+        Assert.Contains(staleness.Reasons, r => r.Contains("'T_int'", StringComparison.Ordinal) && r.Contains("different 'T_1_out'", StringComparison.Ordinal));
         Assert.DoesNotContain(staleness.Reasons, r => r.Contains("'RH_int'", StringComparison.Ordinal));
 
         host.Principal = "j.reviewer";
@@ -324,7 +324,7 @@ public sealed class EnvelopeMoistureChainTests
         var sheet = await CheckAndIssueAsync(host, made, CalcPackTemplates.EnvelopeMoisture, "ENV-001", "Client Co", "Checked against SPEC-ENV-02.");
 
         Assert.Contains("link: Room heat loss rev A · U_1", sheet, StringComparison.Ordinal);
-        Assert.Contains("link: Room air state rev A · t_1_out", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Room air state rev A · T_1_out", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Room air state rev A · phi_1", sheet, StringComparison.Ordinal);
     }
 

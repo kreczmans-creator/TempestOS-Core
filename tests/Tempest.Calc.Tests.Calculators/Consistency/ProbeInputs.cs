@@ -38,12 +38,12 @@ internal static class ProbeInputs
     /// <summary>The DN80 100 m line with a pump curve that crosses the system curve once, where the pump curve rises (3.41 m³/h): the operating point is unstable.</summary>
     internal static CalcInputSet UnstablePump() => new(
     [
-        CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("Q", 15, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
+        CalcInputValue.Quantity("T_fluid", 20, "degC"), CalcInputValue.Quantity("Q", 15, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
         CalcInputValue.VectorOf("Q_pump", [0, 10, 20], "m^3/h"), CalcInputValue.VectorOf("H_pump", [8, 14, 18], "m"),
     ]);
 
     /// <summary>An emergency stroke sized with the isothermal exponent n = 1 (and a real-gas factor entered, so only the exponent can fail): n below 1.3 for a fast discharge.</summary>
-    internal static CalcInputSet SlowEmergencyAccumulator() => AccumulatorBase().With(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency)).With(CalcInputValue.Of("n", 1)).With(CalcInputValue.Of("f_rg", 1.15));
+    internal static CalcInputSet SlowEmergencyAccumulator() => AccumulatorBase().With(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency)).With(CalcInputValue.Of("n_gas", 1)).With(CalcInputValue.Of("f_rg", 1.15));
 
     /// <summary>The Parker numbers at 210 bar absolute with the ideal gas (f_rg left at 1): the real-gas check fails.</summary>
     internal static CalcInputSet IdealGasAccumulator() => AccumulatorBase();
@@ -51,7 +51,7 @@ internal static class ProbeInputs
     private static CalcInputSet AccumulatorBase() => new(
     [
         CalcInputValue.Quantity("dV", 14, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), CalcInputValue.Quantity("p_0", 90, "bar"), CalcInputValue.Quantity("p_1", 100, "bar"),
-        CalcInputValue.Quantity("p_2", 210, "bar"), CalcInputValue.Of("n", 1), CalcInputValue.Quantity("T_min", 50, "degC"),
+        CalcInputValue.Quantity("p_2", 210, "bar"), CalcInputValue.Of("n_gas", 1), CalcInputValue.Quantity("T_min", 50, "degC"),
     ]);
 
     /// <summary>A half-ounce trace, drawn wide enough: only the copper weight (outside 1 to 3 oz/ft²) fails.</summary>

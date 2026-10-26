@@ -24,13 +24,13 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
-| Room A heat loss | `Phi_HL` | Sealed system | `rooms` row 1 (`Phi`), a table-cell link | 379.444 W |
-| Room B heat loss | `Phi_HL` | Sealed system | `rooms` row 2 (`Phi`), a table-cell link | 304.608 W |
-| Room A heat loss | `theta_int` | Sealed system | `rooms` row 1 (`t_i`), a table-cell link | 21 degC |
-| Room B heat loss | `theta_int` | Sealed system | `rooms` row 2 (`t_i`), a table-cell link | 21 degC |
-| Sealed system | `Phi_tot` | Primary pipework and pump | `Phi_load` | 684.052 W |
+| Room A heat loss | `Phi_HL` | Sealed system | `rooms` row 1 (`Phi`), a table-cell link | 0.379444 kW |
+| Room B heat loss | `Phi_HL` | Sealed system | `rooms` row 2 (`Phi`), a table-cell link | 0.304608 kW |
+| Room A heat loss | `T_int` | Sealed system | `rooms` row 1 (`t_i`), a table-cell link | 21 degC |
+| Room B heat loss | `T_int` | Sealed system | `rooms` row 2 (`t_i`), a table-cell link | 21 degC |
+| Sealed system | `Phi_tot` | Primary pipework and pump | `Phi_load` | 0.684052 kW |
 | Sealed system | `dT_fr` | Primary pipework and pump | `dT_load` | 10 K |
-| Sealed system | `t_m` | Primary pipework and pump | `T` | 70 degC |
+| Sealed system | `T_m` | Primary pipework and pump | `T_fluid` | 70 degC |
 | Primary pipework and pump | `T_shaft` | Circulator motor | `T_L` | 0.000323393 N*m |
 | Primary pipework and pump | `n_shaft` | Circulator motor | `n_L` | 2800 rpm |
 
