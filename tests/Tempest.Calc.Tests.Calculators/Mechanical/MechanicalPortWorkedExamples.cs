@@ -52,11 +52,11 @@ public static class MechanicalPortWorkedExamples
 
         new(BearingLifeBasicCalculator.Id, "ball-bearing-radial", "Deep-groove ball bearing under radial load", Legacy("calc.bearing-rating-life", 1),
             Sourced("DRG-GB-210", ["F_r", "F_a", "n"], ["a_1", "L_req"], CalcInputValue.Choice("type", BearingLifeBasicCalculator.Ball), CalcInputValue.Quantity("C", 35.1, "kN"), CalcInputValue.Quantity("F_r", 4, "kN"), CalcInputValue.Quantity("F_a", 0, "kN"), CalcInputValue.Of("X", 1), CalcInputValue.Of("Y", 0), CalcInputValue.Quantity("n", 1500, "rpm"), CalcInputValue.Of("a_1", 1), CalcInputValue.Quantity("L_req", 5000, "h")),
-            [new CalcExpectedValue("P", 4.000, "kN", 5e-5), new CalcExpectedValue("L_10", 675.68, "", 5e-5), new CalcExpectedValue("L_10h", 7507.6, "h", 5e-5)],
+            [new CalcExpectedValue("F_dyn", 4.000, "kN", 5e-5), new CalcExpectedValue("L_10", 675.68, "", 5e-5), new CalcExpectedValue("L_10h", 7507.6, "h", 5e-5)],
             "A 35.1 kN-rated ball bearing at 4 kN and 1,500 rev/min. Its basic rating life is 7,500 h against 5,000 h required."),
         new(BearingLifeBasicCalculator.Id, "ball-bearing-combined-95", "Ball bearing, combined load, 95 % reliability", Legacy("calc.bearing-rating-life", 3),
             Sourced("DRG-GB-211", ["F_r", "F_a", "n"], ["a_1", "L_req"], CalcInputValue.Choice("type", BearingLifeBasicCalculator.Ball), CalcInputValue.Quantity("C", 25, "kN"), CalcInputValue.Quantity("F_r", 3, "kN"), CalcInputValue.Quantity("F_a", 1.5, "kN"), CalcInputValue.Of("X", 0.56), CalcInputValue.Of("Y", 1.5), CalcInputValue.Quantity("n", 1000, "rpm"), CalcInputValue.Of("a_1", 0.64), CalcInputValue.Quantity("L_req", 2000, "h")),
-            [new CalcExpectedValue("P", 3.930, "kN", 5e-5), new CalcExpectedValue("L_10h", 4290.3, "h", 5e-5), new CalcExpectedValue("L_nmh", 2745.8, "h", 5e-5)],
+            [new CalcExpectedValue("F_dyn", 3.930, "kN", 5e-5), new CalcExpectedValue("L_10h", 4290.3, "h", 5e-5), new CalcExpectedValue("L_nmh", 2745.8, "h", 5e-5)],
             "Radial and axial load combine through the catalogue X and Y factors into a 3.93 kN equivalent load. At 95 % reliability (a₁ = 0.64) the life is 2,746 h against 2,000 h required."),
 
         new(FatigueMinerCalculator.Id, "detail-71-spectrum", "Welded detail category 71 under a three-block spectrum", Legacy("calc.fatigue-miner", 1),

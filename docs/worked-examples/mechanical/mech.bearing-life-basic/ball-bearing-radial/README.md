@@ -18,8 +18,8 @@ A 35.1 kN-rated ball bearing at 4 kN and 1,500 rev/min. Its basic rating life is
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `P` | 4 kN | 4 kN | PASS |
+| `F_dyn` | 4 kN | 4 kN | PASS |
 | `L_10` | 675.68  | 675.68  | PASS |
 | `L_10h` | 7507.6 h | 7507.56 h | PASS |
 
-Governing check: Modified life against required life — PASS (utilisation 0.67). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Required life against modified life — PASS (utilisation 0.67). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

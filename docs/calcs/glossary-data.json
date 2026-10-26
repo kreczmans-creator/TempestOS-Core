@@ -3109,6 +3109,24 @@
       ]
     },
     {
+      "symbol": "F_dyn",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Equivalent dynamic load"
+          ],
+          "templates": [
+            "mech.bearing-life-basic"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "F_ext",
       "meanings": [
         {
@@ -7065,20 +7083,6 @@
       "symbol": "P",
       "meanings": [
         {
-          "meaning": "equivalent-dynamic-load",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Equivalent dynamic load"
-          ],
-          "templates": [
-            "mech.bearing-life",
-            "mech.bearing-life-basic"
-          ]
-        },
-        {
           "meaning": "motor-rated-output-power",
           "quantity": "Power, heat flow",
           "units": [
@@ -7143,6 +7147,19 @@
           ],
           "templates": [
             "elec.load-budget"
+          ]
+        },
+        {
+          "meaning": "equivalent-dynamic-load",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Equivalent dynamic load"
+          ],
+          "templates": [
+            "mech.bearing-life"
           ]
         },
         {

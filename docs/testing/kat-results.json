@@ -244,7 +244,7 @@
     },
     {
       "id": "mech.bearing-life-basic",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],

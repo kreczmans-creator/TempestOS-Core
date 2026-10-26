@@ -145,7 +145,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `L2`: `L2:crank-length` Length (mechanism); `L2:second-run-length` Length (pipe-expansion)
 - `L_req`: `L_req:required-life` Time, rating life (bearing-life, bearing-life-basic); `L_req:required-leg-length` Length (pipe-expansion)
 - `N_Ed`: `N_Ed:axial-force-tension-positive` Force (en1993-member, ltb-interaction); `N_Ed:axial-force-compression-positive` Force (base-plate)
-- `P`: `P:equivalent-dynamic-load` Force (bearing-life, bearing-life-basic); `P:motor-rated-output-power` Power, heat flow (conductor-sizing, motor-start); `P:applied-axial-load` Force (column-buckling); `P:deflection-force` Force (snap-fit); `P:dissipated-power` Power, heat flow (thermal-chain); `P:electrical-input-power` Power, heat flow (load-budget); `P:heat-loss-per-item` Power, heat flow (enclosure-heat); `P:internal-design-pressure` Stress, pressure (thin-vessel); `P:lug-load` Force (lifting-lug); `P:point-load` Force (beam-formulas); `P:thread-pitch` Length (bolted-joint); `P:total-force` Force (plate-bending)
+- `P`: `P:motor-rated-output-power` Power, heat flow (conductor-sizing, motor-start); `P:applied-axial-load` Force (column-buckling); `P:deflection-force` Force (snap-fit); `P:dissipated-power` Power, heat flow (thermal-chain); `P:electrical-input-power` Power, heat flow (load-budget); `P:equivalent-dynamic-load` Force (bearing-life); `P:heat-loss-per-item` Power, heat flow (enclosure-heat); `P:internal-design-pressure` Stress, pressure (thin-vessel); `P:lug-load` Force (lifting-lug); `P:point-load` Force (beam-formulas); `P:thread-pitch` Length (bolted-joint); `P:total-force` Force (plate-bending)
 - `P_b`: `P_b:bearing-force` Force (lifting); `P_b:bellows-governing-pressure` Stress, pressure (pipe-expansion)
 - `Phi`: `Phi:heat-flow` Power, heat flow (sealed-system, load-budget); `Phi:load-factor` Plain number (bolted-joint)
 - `Q`: `Q:volumetric-flow` Volumetric flow (duct-sizing, pipe-pump, cylinder); `Q:heat-flow` Power, heat flow (heat-exchanger, plane-wall)
@@ -228,7 +228,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1405 symbols in 54 templates)
+## All symbols (1406 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -370,6 +370,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `F_buck` | — | Force | kN | Rod load judged for buckling: the larger of the push load and the sta… | fp.cylinder | ok |
 | `F_c` | — | Force | N | Force at solid | mech.spring | ok |
 | `F_cr` | — | Force | kN | Critical load (screening) | fp.cylinder | ok |
+| `F_dyn` | — | Force | kN | Equivalent dynamic load | mech.bearing-life-basic | ok |
 | `F_ext` | `F_ext:extend-force` | Force | kN | Extend force | fp.cylinder | RESOLVE (2 meanings) |
 | `F_ext` | `F_ext:follower-external-load` | Force | N | External load on the follower, positive against the rise | mech.mechanism | RESOLVE (2 meanings) |
 | `F_f_Rd` | — | Force | kN | Friction resistance | struct.base-plate | ok |
@@ -590,12 +591,12 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `Nd` | — | Plain number | — | Design factor N_d of the Design Category (BTH-1 mode; user record) | struct.lifting | ok |
 | `OD` | `OD:pipe-outside-diameter` | Length | mm | Outside diameter of the pipe (optional; the first segment's is offere…; Pipe outside diameter | bs.pipe-expansion, bs.pipe-pump | ok |
 | `OD_max` | — | Length | mm | Largest cable diameter | elec.containment | ok |
-| `P` | `P:equivalent-dynamic-load` | Force | kN | Equivalent dynamic load | mech.bearing-life, mech.bearing-life-basic | RESOLVE (12 meanings) |
 | `P` | `P:motor-rated-output-power` | Power, heat flow | kW | Motor rated output (shaft) power, from the nameplate (E1 P_cont is on…; Rated output (shaft) power; η converts it to input (DC: electrical po… | elec.conductor-sizing, elec.motor-start | RESOLVE (12 meanings) |
 | `P` | `P:applied-axial-load` | Force | kN | Applied axial load | struct.column-buckling | RESOLVE (12 meanings) |
 | `P` | `P:deflection-force` | Force | N | Deflection force | mech.snap-fit | RESOLVE (12 meanings) |
 | `P` | `P:dissipated-power` | Power, heat flow | W | Steady power dissipated (the heat flow through every stage) | elec.thermal-chain | RESOLVE (12 meanings) |
 | `P` | `P:electrical-input-power` | Power, heat flow | kW | Electrical input power | elec.load-budget | RESOLVE (12 meanings) |
+| `P` | `P:equivalent-dynamic-load` | Force | kN | Equivalent dynamic load | mech.bearing-life | RESOLVE (12 meanings) |
 | `P` | `P:heat-loss-per-item` | Power, heat flow | W | Heat loss per item | elec.enclosure-heat | RESOLVE (12 meanings) |
 | `P` | `P:internal-design-pressure` | Stress, pressure | MPa | Internal design pressure | mech.thin-vessel | RESOLVE (12 meanings) |
 | `P` | `P:lug-load` | Force | kN | Load on the lug (along the lug) | mech.lifting-lug | RESOLVE (12 meanings) |

@@ -379,7 +379,7 @@ public sealed class GuidedTestViewModelTests
         model.Select(BearingExample);
 
         var lines = model.ExpectedLines;
-        Assert.Contains(lines, l => l.Symbol == "P" && l.Expected == "3.93 kN" && l.Allowance == "±0.005");
+        Assert.Contains(lines, l => l.Symbol == "F_dyn" && l.Expected == "3.93 kN" && l.Allowance == "±0.005");
         Assert.Contains(lines, l => l.Symbol == "L_10h" && l.Expected == "4290.3 h" && l.Allowance == "±0.05");
         Assert.Contains(lines, l => l.Symbol == "governing check" && l.Expected.StartsWith("PASS", StringComparison.Ordinal) && l.Allowance == "exact text");
         Assert.Contains(lines, l => l.Symbol == "governing utilisation" && l.Expected == "0.73"); // the README prints the sheet's own two decimals (C2-31)
@@ -402,7 +402,7 @@ public sealed class GuidedTestViewModelTests
         Assert.Equal(ManualTestOutcome.Pass, model.DraftOutcome);
         Assert.Equal(ManualTestOutcome.Pass, model.Suggested);
         Assert.Contains("Pass is ticked; record it to confirm", model.Status, StringComparison.Ordinal);
-        Assert.Contains("P = 3.930 kN", model.DraftValues, StringComparison.Ordinal);
+        Assert.Contains("F_dyn = 3.930 kN", model.DraftValues, StringComparison.Ordinal);
         Assert.Contains("L_10h = 4290 h", model.DraftValues, StringComparison.Ordinal);
         Assert.All(model.ExpectedLines, l => Assert.Equal(GuidedCompareOutcome.Match, l.Outcome));
         Assert.Empty(model.ComparisonNotes);
@@ -413,7 +413,7 @@ public sealed class GuidedTestViewModelTests
         model.SetDraftNote("Agrees with the sheet.");
         await model.RecordAsync();
         Assert.Equal(ManualTestOutcome.Pass, model.Recorded!.Outcome);
-        Assert.Contains("P = 3.930 kN", model.Recorded.ValuesShown, StringComparison.Ordinal);
+        Assert.Contains("F_dyn = 3.930 kN", model.Recorded.ValuesShown, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -443,7 +443,7 @@ public sealed class GuidedTestViewModelTests
         var wrong = FakeWorksheet.Engine(model.Current!);
         kit.Worksheet.Shown["mech.bearing-life-basic"] = wrong with
         {
-            Outputs = [.. wrong.Outputs.Select(o => o.Symbol == "P" ? o with { Value = new Tempest.Calc.Engine.Values.ScalarValue(4000, o.Value.Dimension, o.Value.DisplayUnit) } : o)],
+            Outputs = [.. wrong.Outputs.Select(o => o.Symbol == "F_dyn" ? o with { Value = new Tempest.Calc.Engine.Values.ScalarValue(4000, o.Value.Dimension, o.Value.DisplayUnit) } : o)],
         };
 
         model.OpenWorksheet();
@@ -452,8 +452,8 @@ public sealed class GuidedTestViewModelTests
         Assert.Equal(ManualTestOutcome.Fail, model.DraftOutcome);
         Assert.Contains("differ", model.Status, StringComparison.Ordinal);
         var note = Assert.Single(model.ComparisonNotes);
-        Assert.StartsWith("P:", note, StringComparison.Ordinal);
-        Assert.Contains(model.ExpectedLines, l => l.Symbol == "P" && l.Outcome == GuidedCompareOutcome.Mismatch);
+        Assert.StartsWith("F_dyn:", note, StringComparison.Ordinal);
+        Assert.Contains(model.ExpectedLines, l => l.Symbol == "F_dyn" && l.Outcome == GuidedCompareOutcome.Mismatch);
     }
 
     [Fact]

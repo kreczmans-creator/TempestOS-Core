@@ -121,7 +121,7 @@ public sealed class GuidedTestViewTests
         await Click(view, GuidedTestView.CompareCaption);
 
         Assert.True(Named<RadioButton>(view, "Pass").IsChecked);
-        Assert.Contains("P = 3.930 kN", Named<TextBox>(view, "Values shown").Text, StringComparison.Ordinal);
+        Assert.Contains("F_dyn = 3.930 kN", Named<TextBox>(view, "Values shown").Text, StringComparison.Ordinal);
         Assert.Null(kit.Model.Recorded);
         Assert.Equal($"0 pass, 0 fail, 0 blocked, 0 skipped, {GuidedKit.ScriptSteps} not run", Named<TextBlock>(view, "Run tally").Text);
         Assert.Contains(Named<StackPanel>(view, "Expected outputs").GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "agrees");

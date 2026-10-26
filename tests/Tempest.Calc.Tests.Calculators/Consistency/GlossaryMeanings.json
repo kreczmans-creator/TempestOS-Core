@@ -448,8 +448,7 @@
    "elec.load-budget"
   ],
   "equivalent-dynamic-load": [
-   "mech.bearing-life",
-   "mech.bearing-life-basic"
+   "mech.bearing-life"
   ],
   "heat-loss-per-item": [
    "elec.enclosure-heat"
