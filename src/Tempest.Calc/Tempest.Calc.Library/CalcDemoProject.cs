@@ -27,8 +27,10 @@ internal sealed record CalcDemoArea(
 /// support stand and its base plate, a heating-main anchor, the welfare room's heating and wall, the control panel's cooling and its chilled-water feed, the
 /// operator pendant box, and the locking cylinder's piston seal (scan to seal, from a synthetic scan table).
 /// <para>
-/// <b>Everything in it is invented.</b> No figure is a licensed value: the example inputs are the pack templates' own (each already recorded as an invented
-/// illustration), the cable tables are the synthetic test tables, and the scan table is generated from fixed numbers. The project carries a flag (the tag
+/// <b>Its figures are invented, with one exception.</b> No figure is a licensed value: the example inputs are the pack templates' own (each already recorded as
+/// an invented illustration), the cable tables are the synthetic test tables, and the scan table is generated from fixed numbers. The exception is the
+/// dimensions of the published UC 203×203×46 section in the steel-support and heating-main packs, which are published figures, cited as such and labelled
+/// indicative (<see cref="SectionDimensions"/>) rather than as an invented specification's. The project carries a flag (the tag
 /// <see cref="Tag"/>) and every sheet made under a flagged project says DEMO in its header (<see cref="Watermark"/>): the flag lives on the project, so no
 /// calculation text holds it and no real project carries it unless someone tags one.
 /// </para>
@@ -55,6 +57,12 @@ public static class CalcDemoProject
 
     /// <summary>The prefix of the demonstration's scan profile ids; a removal deletes profiles of no other name.</summary>
     public const string ScanProfilePrefix = "demo-press-";
+
+    /// <summary>
+    /// The scan profile versions the install writes, and the only ones a removal deletes: the exact keys, not every version under the id, so a later version of
+    /// either profile that a person saved after the install is theirs and stays.
+    /// </summary>
+    internal static IReadOnlyList<(string Id, int Version)> ScanProfiles { get; } = [(StackProfileId, 1), (GlandProfileId, 1)];
 
     /// <summary>The scan profile that reads the synthetic table into the groove-root stack.</summary>
     public const string StackProfileId = ScanProfilePrefix + "seal-stack";
@@ -98,8 +106,14 @@ public static class CalcDemoProject
         new("pack.actuated-linkage", "Part ejector", "DEMO-SPEC-PC-04", "The part ejector's crank slider, replaced by a cylinder, and its emergency stroke."),
         new("pack.mechanism-review", "Blank-stack tamper", "DEMO-SPEC-PC-05", "The cam, spring, shaft, bearing, motor and cable of the blank-stack tamper."),
         new("pack.steel-support", "Support stand ES-4", "DEMO-SPEC-PC-06", "The support stand for the control desk: loads, frame, column, joint, bolts and base plate.",
-            Adjust: (key, inputs) => key == "s5" ? Rename(inputs, "actions", 0, "name", "Control desk and pendant dead load") : inputs),
-        new("pack.pipework-supports", "Heating main anchor", "DEMO-SPEC-PC-07", "The heating main's growth, the anchor post that holds it and its base plate."),
+            Adjust: (key, inputs) => key switch
+            {
+                "s5" => Rename(inputs, "actions", 0, "name", "Control desk and pendant dead load"),
+                "s3" or "s6" => PublishedSection(inputs),
+                _ => inputs,
+            }),
+        new("pack.pipework-supports", "Heating main anchor", "DEMO-SPEC-PC-07", "The heating main's growth, the anchor post that holds it and its base plate.",
+            Adjust: (key, inputs) => key == "s6" ? PublishedSection(inputs) : inputs),
         new("pack.wet-heating", "Welfare room heating", "DEMO-SPEC-PC-08", "The welfare room and washroom heat losses, the sealed system, the pipework and its circulator.",
             StepNames: new Dictionary<string, string>(StringComparer.Ordinal) { ["b4a"] = "Welfare room heat loss", ["b4b"] = "Washroom heat loss" },
             Adjust: (key, inputs) => key == "b6" ? Rename(Rename(inputs, "rooms", 0, "name", "Welfare room"), "rooms", 1, "name", "Washroom") : inputs),
@@ -134,6 +148,23 @@ public static class CalcDemoProject
     /// <summary>The provenance of the synthetic cable tables.</summary>
     internal static CalcProvenance SyntheticTables { get; } =
         CalcProvenance.Specification("DEMO SYNTHETIC cable capacities and device ratings: invented, not a regulation or manufacturer table");
+
+    /// <summary>The provenance of the published UC 203×203×46 dimensions: published figures, not an invented specification's, and indicative until the user's own section is entered.</summary>
+    internal static CalcProvenance SectionDimensions { get; } = CalcProvenance.Assumed("published UC 203×203×46 dimensions (indicative)");
+
+    /// <summary>The section dimensions the pack examples state for the published UC 203×203×46 (mm).</summary>
+    private static readonly IReadOnlyDictionary<string, double> SectionFigures = new Dictionary<string, double>(StringComparer.Ordinal)
+    {
+        ["h"] = 203.2, ["b"] = 203.6, ["t_w"] = 7.2, ["t_f"] = 11, ["r"] = 10.2,
+    };
+
+    /// <summary>
+    /// A step's inputs with the published section's dimensions given their own provenance (<see cref="SectionDimensions"/>) in place of the area's invented
+    /// specification clause, which every other figure the step chooses keeps. An input is retagged only when it is one of the section's dimensions at the
+    /// section's own value, so a figure the user later changes under the same name is not mislabelled by this class.
+    /// </summary>
+    private static IReadOnlyList<CalcInputValue> PublishedSection(IReadOnlyList<CalcInputValue> inputs) =>
+        [.. inputs.Select(i => SectionFigures.TryGetValue(i.Symbol, out var figure) && i.Number == figure ? i with { Provenance = SectionDimensions } : i)];
 
     private static IReadOnlyList<CalcInputValue> Rename(IReadOnlyList<CalcInputValue> inputs, string table, int row, string column, string text) =>
         [.. inputs.Select(i => i.Symbol != table || i.Rows is not { } rows ? i : i with
