@@ -21,6 +21,11 @@
     <ProjectReference Include="..\..\Tempest.Core\Tempest.Core.csproj" />
   </ItemGroup>
 
+  <!-- Addendum C, C-4: the document-derived data of the verification dashboard, made by scripts/generate-verification-snapshot.py. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Dashboard\verification-snapshot.json" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Tempest.Calc.Tests.Library" />
   </ItemGroup>

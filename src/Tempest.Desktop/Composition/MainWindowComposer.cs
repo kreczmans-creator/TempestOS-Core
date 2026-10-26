@@ -812,6 +812,21 @@ internal sealed partial class MainWindowComposer
         var worksheetRecords = new Tempest.Desktop.CalcSheets.CalcRecordsView(new Tempest.Desktop.CalcSheets.CalcRecordsViewModel(
             host.CalcInstances!, () => recordPrincipals.Current?.Identity.Id, (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger))));
 
+        // Addendum C, C-4: Calculations → Verification. Read-only over the catalogue, the embedded document data and the records store.
+        // The manual-test source is the default "not tested" one until C-5's guided-run records are wired in here.
+        Tempest.Desktop.CalcSheets.VerificationDashboardView? verificationDashboard = null;
+
+        if (host.CalcInstances is { } calcInstances)
+        {
+            var verificationService = new Tempest.Calc.Library.Dashboard.VerificationDashboardService(
+                calcInstances.Catalogue, calcInstances.PackTemplates, snapshot: null,
+                records: new Tempest.Calc.Library.Dashboard.StoreRequiredRecordsSource(calcInstances.Store),
+                manual: new Tempest.Calc.Library.Dashboard.NoManualTestStatusSource());
+            verificationDashboard = new Tempest.Desktop.CalcSheets.VerificationDashboardView(new Tempest.Desktop.CalcSheets.VerificationDashboardViewModel(
+                verificationService, evidenceFilePicker,
+                new Tempest.Desktop.CalcSheets.VerificationPdfRenderer { IdentityProvider = () => session.OrganisationIdentity.ToIdentity() }, ApplicationVersionText));
+        }
+
         // `WP 19.6A`: the "cited by" read side — a fresh Evidence scan
         // over the same already-composed domain, holding no state of its
         // own (`Workspace/Evidence/ReferenceCitationIndex.cs`'s own
@@ -931,7 +946,7 @@ internal sealed partial class MainWindowComposer
             host.ShellNavigator!, tasksReadModel, engineeringCalculation, referenceDataLibrariesView,
             engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp,
             engineeringAssetsView, worksheets, callbacks.EnterWorksheetsAsync,
-            worksheetRegister, callbacks.EnterCalcRegisterAsync, callbacks.OpenWorksheetInstanceAsync, worksheetRecords)
+            worksheetRegister, callbacks.EnterCalcRegisterAsync, callbacks.OpenWorksheetInstanceAsync, worksheetRecords, verificationDashboard)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
