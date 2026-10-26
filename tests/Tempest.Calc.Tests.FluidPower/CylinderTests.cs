@@ -257,15 +257,15 @@ public sealed class CylinderTests
     [Fact]
     public void A_Stalled_Cylinder_Loads_The_Rod_With_Its_Thrust_So_A_Slender_Rod_Fails_Whatever_The_Push_Load_Entered()
     {
-        // H1: 40 mm rod over 2100 mm, Euler F_cr = 59.06 kN. A stalled cylinder at 160 bar carries p·A_b = 80.42 kN (76.40 kN with the seal friction, which does not relieve a stalled rod), above F_cr even with a safety factor of 1.
+        // H1: 40 mm rod over a 4100 mm pin-to-pin length (2 × 2000 stroke + 100, the body included), Euler F_cr = 15.49 kN. A stalled cylinder at 160 bar carries p·A_b = 80.42 kN (76.40 kN with the seal friction, which does not relieve a stalled rod), above F_cr even with a safety factor of 1.
         var slender = Run(Q("D", 80, "mm"), Q("d_r", 40, "mm"), Q("stroke", 2000, "mm"), Q("F_push", 15, "kN"));
-        double thrust = 160 * Bar * Area(80) * 0.95, stall = 160 * Bar * Area(80), fcr = Math.PI * Math.PI * 210e9 * (Math.PI * Math.Pow(0.04, 4) / 64) / (2.1 * 2.1);
+        double thrust = 160 * Bar * Area(80) * 0.95, stall = 160 * Bar * Area(80), fcr = Math.PI * Math.PI * 210e9 * (Math.PI * Math.Pow(0.04, 4) / 64) / (4.1 * 4.1);
         Assert.Equal(thrust, slender.OutputSi("F_ext"), 6);
         Assert.Equal(stall, slender.OutputSi("F_stall"), 6);
         Assert.Equal(stall, slender.OutputSi("F_buck"), 6);
         Assert.True(slender.OutputSi("F_buck") > slender.OutputSi("F_ext"));
         Assert.Equal(stall * 3.5 / fcr, slender.OutputSi("u_buck"), 9);
-        Assert.InRange(slender.OutputSi("u_buck"), 4.76, 4.77);
+        Assert.InRange(slender.OutputSi("u_buck"), 18.16, 18.18);
         Assert.Contains(slender.Checks, c => c.Name.StartsWith("Rod buckling", StringComparison.Ordinal) && !c.Passed);
         Assert.False(slender.Passed);
 
@@ -283,6 +283,47 @@ public sealed class CylinderTests
         // A push load above the stall thrust is the load judged.
         var heavy = Run(Q("F_push", 200, "kN"));
         Assert.Equal(200e3, heavy.OutputSi("F_buck"), 6);
+    }
+
+    [Fact]
+    public void The_Buckling_Length_Is_The_Pin_To_Pin_Length_At_Full_Stroke_With_The_Body_Included()
+    {
+        // fp.cylinder-R1: 63/45 x 1000 mm, K_m 1, L_add 100: L_eff was 1100 mm (the rod alone, the body left out), F_cr 344.8 kN and u_buck 0.506 (a pass) for a clevis-to-clevis cylinder
+        // that buckles over its whole length. The closed length plus the stroke is the length; with the closed length blank it is estimated as stroke + L_add, so L_b = 2 × 1000 + 100.
+        var blank = Run(Q("D", 63, "mm"), Q("d_r", 45, "mm"), Q("stroke", 1000, "mm"), Q("F_push", 0, "kN"));
+        Assert.Equal(2.1, blank.OutputSi("L_b"), 12);
+        Assert.Equal(2.1, blank.OutputSi("L_eff"), 12);
+        Assert.Contains(blank.Warnings, w => w.RuleId == "length" && w.Message.Contains("2100 mm", StringComparison.Ordinal));
+
+        // python3: I = pi 45^4/64 = 201289 mm4, lam = 2100/11.25 = 186.7 above lam_c 91.05 (Euler): F_cr = pi^2 210e3 I / 2100^2 = 94.6 kN, stall 160 bar x 31.17 cm2 = 49.88 kN, u = 49.88 x 3.5 / 94.6 = 1.846.
+        var fcr = Math.PI * Math.PI * 210e9 * (Math.PI * Math.Pow(0.045, 4) / 64) / (2.1 * 2.1);
+        Assert.Equal(fcr, blank.OutputSi("F_cr"), 3);
+        Assert.Equal(94.6, blank.OutputSi("F_cr") / 1e3, 1);
+        Assert.Equal(160 * Bar * Area(63) * 3.5 / fcr, blank.OutputSi("u_buck"), 9);
+        Assert.InRange(blank.OutputSi("u_buck"), 1.84, 1.85);
+        Assert.Contains(blank.Checks, c => c.Name.StartsWith("Rod buckling", StringComparison.Ordinal) && !c.Passed);
+
+        // The real closed pin-to-pin length (1150 mm closed for a 1000 mm stroke) replaces the estimate: L_b = 1150 + 1000, no notice.
+        var entered = Run(Q("D", 63, "mm"), Q("d_r", 45, "mm"), Q("stroke", 1000, "mm"), Q("F_push", 0, "kN"), Q("L_closed", 1150, "mm"));
+        Assert.Equal(2.15, entered.OutputSi("L_b"), 12);
+        Assert.DoesNotContain(entered.Warnings, w => w.RuleId == "length");
+        Assert.Equal(Math.PI * Math.PI * 210e9 * (Math.PI * Math.Pow(0.045, 4) / 64) / (2.15 * 2.15), entered.OutputSi("F_cr"), 3);
+
+        // The mounting factor then scales the whole pin-to-pin length.
+        Assert.Equal(2 * 2.15, Run(Q("D", 63, "mm"), Q("d_r", 45, "mm"), Q("stroke", 1000, "mm"), Q("L_closed", 1150, "mm"), CalcInputValue.Of("K_m", 2)).OutputSi("L_eff"), 12);
+    }
+
+    [Fact]
+    public void The_Pressure_The_Push_Load_Needs_Is_An_Output_For_The_Accumulator_To_Check_Against()
+    {
+        // chain.hydraulic-power-unit-02: F_push 100 kN on the 100 mm bore needs 100 kN/(A_b eta_m) = 134.0 bar at the cylinder; with a back pressure p_back on the annulus it is (F/eta_m + p_back A_a)/A_b.
+        var plain = Run(Q("F_push", 100, "kN"));
+        Assert.Equal(100e3 / (Area(100) * 0.95), plain.OutputSi("p_push"), 6);
+        Assert.Equal(134.0, plain.OutputSi("p_push") / Bar, 1);
+        var back = Run(Q("F_push", 100, "kN"), Q("p_back", 10, "bar"));
+        Assert.Equal((100e3 / 0.95 + 10 * Bar * (Area(100) - Area(70))) / Area(100), back.OutputSi("p_push"), 6);
+        var regen = Run(Q("F_push", 40, "kN"), CalcInputValue.Choice("mode", CylinderCalculator.Regenerative));
+        Assert.Equal(40e3 / (0.95 * Area(70)), regen.OutputSi("p_push"), 6);
     }
 
     [Fact]
@@ -317,7 +358,7 @@ public sealed class CylinderTests
     [Fact]
     public void The_Template_Version_Is_Bumped_For_The_Changed_Model()
     {
-        Assert.Equal("1.3.1", Cylinder.Template.Version);
+        Assert.Equal("1.4.0", Cylinder.Template.Version);
     }
 
     [Fact]
@@ -406,7 +447,7 @@ public sealed class CylinderTests
     public void A_Slender_Rod_Buckles_As_Euler_And_A_Stocky_One_As_Johnson_And_The_Sheet_Says_Screening()
     {
         var slender = Run(Q("D", 80, "mm"), Q("d_r", 40, "mm"), Q("stroke", 2000, "mm"), Q("F_push", 15, "kN"));
-        Assert.Equal(Math.PI * Math.PI * 210e9 * (Math.PI * Math.Pow(0.04, 4) / 64) / (2.1 * 2.1), slender.OutputSi("F_cr"), 3);
+        Assert.Equal(Math.PI * Math.PI * 210e9 * (Math.PI * Math.Pow(0.04, 4) / 64) / (4.1 * 4.1), slender.OutputSi("F_cr"), 3);
         Assert.Contains("slender", Assert.IsType<TextValue>(slender.FindOutput("buckling_note")!.Value).Value, StringComparison.Ordinal);
 
         var stocky = Run();
@@ -430,7 +471,7 @@ public sealed class CylinderTests
         {
             var d = bore * rodRatio;
             var r = Run(Q("D", bore, "mm"), Q("d_r", d, "mm"), Q("stroke", stroke, "mm"), CalcInputValue.Of("K_m", k), Q("f_y", fy, "MPa"), Q("E", e, "GPa"));
-            double leff = k * (stroke + 100), lam = leff / (d / 4), lamC = Math.PI * Math.Sqrt(2 * e * 1e3 / fy);
+            double leff = k * (2 * stroke + 100), lam = leff / (d / 4), lamC = Math.PI * Math.Sqrt(2 * e * 1e3 / fy);
             double a = Math.PI * d * d / 4, i = Math.PI * Math.Pow(d, 4) / 64;
             var euler = Math.PI * Math.PI * e * 1e3 * i / (leff * leff);
             var johnson = a * fy * (1 - fy * lam * lam / (4 * Math.PI * Math.PI * e * 1e3));
@@ -445,8 +486,8 @@ public sealed class CylinderTests
     {
         var pinned = Run(Q("stroke", 1500, "mm"));
         var cantilever = Run(Q("stroke", 1500, "mm"), CalcInputValue.Of("K_m", 2));
-        Assert.Equal(1.6, pinned.OutputSi("L_eff"), 9);
-        Assert.Equal(3.2, cantilever.OutputSi("L_eff"), 9);
+        Assert.Equal(3.1, pinned.OutputSi("L_eff"), 9);
+        Assert.Equal(6.2, cantilever.OutputSi("L_eff"), 9);
         Assert.True(cantilever.OutputSi("F_cr") < pinned.OutputSi("F_cr"));
         // The rod is judged at the larger of the push load and the stall thrust p·A_b (here the stall thrust, 125.7 kN).
         Assert.Equal(160 * Bar * Area(100) * 3.5 / pinned.OutputSi("F_cr"), pinned.OutputSi("u_buck"), 9);
@@ -487,7 +528,7 @@ public sealed class CylinderTests
     public void The_Ports_Are_Outputs_Of_A_Default_Run_With_The_Declared_Units()
     {
         var r = Run();
-        Assert.Equal(["Q", "p", "P_pump", "u_buck", "F_ext", "dV", "T_shaft", "n_shaft", "Q_prs", "rho", "d_prs"], Cylinder.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal(["Q", "p", "P_pump", "u_buck", "F_ext", "dV", "p_push", "T_shaft", "n_shaft", "Q_prs", "rho", "d_prs"], Cylinder.Template.OutputPorts!.Select(p => p.Symbol));
         Assert.Equal(870, r.OutputSi("rho"), 9);
         Assert.Equal(0.016, r.OutputSi("d_prs"), 12);
         Assert.Equal(r.OutputSi("Q_rtn"), r.OutputSi("Q_prs"), 12);

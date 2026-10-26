@@ -336,10 +336,11 @@ internal static class CalcPackExamples
     /// An emergency stroke: the accumulator carries the whole stroke volume (linked) from the system pressure (linked) down to 120 bar gauge, above the 107 bar the 80 kN
     /// push needs on the 100 mm bore (80 kN / (78.5 cm² × 0.95)). The accumulator is held at the system pressure (charged slowly, isothermally, by the duty default) and discharged fast, so n = 1.4 for the discharge; 105 bar gauge pre-charge (at 50 °C) from the manufacturer's rule of
     /// p0 below 0.9 p1 on absolute pressures; a cold shed at 10 °C. These are invented illustrations.
+    /// The real-gas factor f_rg = 1.311 takes the ideal-gas 30.08 L to the 39.43 L that nitrogen needs for this duty (held at 160 bar gauge at ambient, 10 °C, then the 3.927 L stroke at the isentropic path; reference equation of state for nitrogen, Span et al. 2000, as the verification re-derivation computes it): ideal gas at n = 1.4 is about 30 % short at these pressures, and the factor is the user's, from a gas-property source. The lowest working pressure p_1 is checked against the pressure the 80 kN push needs, linked from the cylinder step (<c>p_push</c> to <c>p_load</c>).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuF2 { get; } =
     [
-        C("mode", "Emergency stroke"), Q("p_0", 105, "bar"), Q("p_1", 120, "bar"), N("n", 1.4), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
+        C("mode", "Emergency stroke"), Q("p_0", 105, "bar"), Q("p_1", 120, "bar"), N("n", 1.4), N("f_rg", 1.311), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
     ];
 
     /// <summary>
