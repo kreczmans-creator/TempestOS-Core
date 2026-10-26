@@ -5,7 +5,7 @@ using Tempest.Calc.Library;
 namespace Tempest.Desktop.Tests.Soak;
 
 /// <summary>
-/// Skipped unless <c>TEMPEST_SOAK=full</c> is set: the full soak (the specification's numbers, half an hour) is not part of an ordinary test run.
+/// Skipped unless <c>TEMPEST_SOAK=full</c> is set: the full soak (the specification's numbers, about 20 minutes) is not part of an ordinary test run.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class SoakFullFactAttribute : FactAttribute
@@ -13,7 +13,7 @@ public sealed class SoakFullFactAttribute : FactAttribute
     public SoakFullFactAttribute()
     {
         if (!SoakScale.FullRequested)
-            Skip = $"Set {SoakScale.EnvironmentVariable}=full to run the full performance and stability soak (about half an hour); it rewrites docs/verification/soak.md.";
+            Skip = $"Set {SoakScale.EnvironmentVariable}=full to run the full performance and stability soak (about 20 minutes); it rewrites docs/verification/soak.md.";
     }
 }
 
