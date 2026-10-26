@@ -553,17 +553,26 @@ public sealed class BasePlateTests
     }
 
     [Fact]
-    public void An_Anchor_Bolt_Strength_Above_800_MPa_Warns_That_Alpha_Bc_Is_Not_Defined_For_Its_Yield_Strength()
+    public void An_Anchor_Bolt_Strength_Above_800_MPa_Is_Blocked_Unless_The_Anchor_Design_Is_Entered()
     {
-        // struct.base-plate-03: f_ub 1000 with f_yb capped at 640 gave alpha_bc 0.248 and u_V 0.983 (pass); at the f_yb of 900 MPa a class 10.9 bolt has, the
-        // same formula gives 0.17 and u_V 1.29 (FAIL). python3: 0.44 - 0.0003*900 = 0.17; V_Rd = 0.2*300 + 4*0.17*1000*244.79/1.25/1e3.
+        // struct.base-plate-03 (and its verification): f_ub 1000 with f_yb capped at 640 gave alpha_bc 0.248 and u_V 0.983 (pass) with only a warning; at the f_yb of 900 MPa a
+        // class 10.9 bolt has, the same formula gives 0.17 and u_V 1.29 (FAIL). python3: 0.44 - 0.0003*900 = 0.17; V_Rd = 0.2*300 + 4*0.17*1000*244.79/1.25/1e3 = 193.2 kN, u_V = 250/193.2 = 1.294.
+        // alpha_bc is not defined above 800 MPa, so the sheet is blocked; entering the anchor design's governing utilisation (u_profis) lets it run with a warning that u_V is not reliable.
         var set = Q2(Q2(Loads(300, 100, 250), "f_ub", 1000, "MPa"), "f_yb", 640, "MPa");
         var r = CalcRunner.Run(Plate, set);
-        Assert.Equal(0.248, r.OutputSi("alpha_bc"), 9);
-        var warning = Assert.Single(r.Warnings, w => w.RuleId == "alpha_bc");
-        Assert.Contains("640", warning.Message, StringComparison.Ordinal);
+        Assert.True(r.IsBlocked);
+        var block = Assert.Single(r.Blocks, b => b.RuleId == "alpha_bc");
+        Assert.Contains("not defined above 800 MPa", block.Message, StringComparison.Ordinal);
+        Assert.Contains("u_profis", block.Message, StringComparison.Ordinal);
 
-        Assert.DoesNotContain(CalcRunner.Run(Plate, Q2(Loads(300, 100, 250), "f_ub", 800, "MPa")).Warnings, w => w.RuleId == "alpha_bc");
+        var withReport = CalcRunner.Run(Plate, set.With(CalcInputValue.Of("u_profis", 0.9)));
+        Assert.False(withReport.IsBlocked);
+        Assert.Equal(0.248, withReport.OutputSi("alpha_bc"), 9);
+        Assert.Single(withReport.Warnings, w => w.RuleId == "alpha_bc_profis" && w.Message.Contains("640", StringComparison.Ordinal));
+
+        var atLimit = CalcRunner.Run(Plate, Q2(Loads(300, 100, 250), "f_ub", 800, "MPa"));
+        Assert.False(atLimit.IsBlocked);
+        Assert.DoesNotContain(atLimit.Warnings, w => w.RuleId is "alpha_bc" or "alpha_bc_profis");
     }
 
     [Fact]
@@ -578,6 +587,29 @@ public sealed class BasePlateTests
 
         var thin = CalcRunner.Run(Plate, Q2(Loads(100, 0), "t_p", 12, "mm"));
         Assert.DoesNotContain(thin.Warnings, w => w.RuleId == "f_y_thickness");
+    }
+
+    [Fact]
+    public void The_Thickness_Warning_Names_Only_The_Thicknesses_Above_16_Mm()
+    {
+        // struct.base-plate-R1 (verification): steel-support S6 printed "t_p = 25 mm and t_req = 15.423 mm pass the first step" although t_req is below 16 mm.
+        var r = CalcRunner.Run(Plate, Q2(Loads(100, 0), "t_p", 25, "mm"));
+        var tReq = r.OutputSi("t_req") * 1e3;
+        Assert.InRange(tReq, 10, 16);
+
+        var warning = Assert.Single(r.Warnings, w => w.RuleId == "f_y_thickness");
+        Assert.Contains("t_p = 25 mm", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("t_req", warning.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Anchorage_Check_Cites_The_Report_And_EN_1992_4_Not_The_Steel_Anchor_Bolt_Clause()
+    {
+        // chain.steel-support-04 (verification): the anchorage is designed to EN 1992-4 or taken from the PROFIS report, not to EN 1993-1-8 cl. 6.2.6.12 (steel anchor bolts in tension).
+        var r = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Of("u_profis", 0.8)));
+        var check = Assert.Single(r.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal));
+        Assert.Equal("PROFIS report (EN 1992-4)", check.Clause);
+        Assert.Equal("EN 1993-1-8 cl. 6.2.6.12", r.Checks.Single(c => c.Name == "Holding-down bolt tension").Clause);
     }
 
     private static CalcInputSet E1(string column, double tp) => column == "ih"
