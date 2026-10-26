@@ -37,7 +37,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   W_el_z | W_el,z | 152 | cm^3 | reference: S1 section sheet / Blue Book | 0.1 … 10000000 cm^3
   I_y | I_y | 4568 | cm^4 | reference: S1 section sheet / Blue Book | 0.1 … 1000000000 cm^4
   I_z | I_z | 1548 | cm^4 | reference: S1 section sheet / Blue Book | 0.1 … 1000000000 cm^4
-  h | Depth h (shear-area helper) | 203.2 | mm | spec: BS EN 10365 UC 203×203×46 | 1 … 5000 mm
+  h | Depth h (shear-area helper; leave blank when A_v is given) | 203.2 | mm | spec: BS EN 10365 UC 203×203×46 | 1 … 5000 mm
   b | Width b (helper) | 203.6 | mm | spec: BS EN 10365 UC 203×203×46 | 1 … 5000 mm
   t_w | Web thickness (helper) | 7.2 | mm | spec: BS EN 10365 UC 203×203×46 | 0.1 … 500 mm
   t_f | Flange thickness (helper) | 11 | mm | spec: BS EN 10365 UC 203×203×46 | 0.1 … 500 mm
@@ -221,9 +221,10 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
 
 7. APPLICABILITY
   WARNING no-ltb: M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.
+  WARNING k-default: k_yy, k_zz: k_yy is left at 1.0 although N_Ed/N_b,Rd = 0.817 exceeds 0.3. Annex A or B give k above 1 here (at most C_m(1 + 0.8n), which is k_yy = 1.411 with C_m = 1); with those values the member interaction would be 1.137 against 1.044 shown. Enter k from Annex A or B.
 
 8. VERIFICATION
-  Template: struct.en1993-member@1.1.0
+  Template: struct.en1993-member@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

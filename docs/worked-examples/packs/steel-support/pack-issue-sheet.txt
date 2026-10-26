@@ -42,7 +42,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 46/46
-  Test run: 2026-10-26 08:39 UTC
+  Test run: 2026-10-26 08:48 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -178,7 +178,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 60a0615ba7745102
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 08:39 UTC
+  Test run: 2026-10-26 08:48 UTC
   Application: TempestOS test
 
 
@@ -383,7 +383,7 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   Content hash: 1b81d6b769125a7e
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 08:39 UTC
+  Test run: 2026-10-26 08:48 UTC
   Application: TempestOS test
 
 
@@ -426,11 +426,11 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   W_el_z | W_el,z | 152 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
   I_y | I_y | 4568 | cm^4 | assumption: Sheet default value; no project figure given. | 0.1 … 1000000000 cm^4
   I_z | I_z | 1548 | cm^4 | assumption: Sheet default value; no project figure given. | 0.1 … 1000000000 cm^4
-  h | Depth h (shear-area helper) | 203.2 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
-  b | Width b (helper) | 203.6 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
-  t_w | Web thickness (helper) | 7.2 | mm | assumption: Sheet default value; no project figure given. | 0.1 … 500 mm
-  t_f | Flange thickness (helper) | 11 | mm | assumption: Sheet default value; no project figure given. | 0.1 … 500 mm
-  r | Root radius (helper) | 10.2 | mm | assumption: Sheet default value; no project figure given. | 0 … 500 mm
+  h | Depth h (shear-area helper; leave blank when A_v is given) | 203.2 | mm | spec: SPEC-STR-09 §3 (members) | 1 … 5000 mm
+  b | Width b (helper) | 203.6 | mm | spec: SPEC-STR-09 §3 (members) | 1 … 5000 mm
+  t_w | Web thickness (helper) | 7.2 | mm | spec: SPEC-STR-09 §3 (members) | 0.1 … 500 mm
+  t_f | Flange thickness (helper) | 11 | mm | spec: SPEC-STR-09 §3 (members) | 0.1 … 500 mm
+  r | Root radius (helper) | 10.2 | mm | spec: SPEC-STR-09 §3 (members) | 0 … 500 mm
   eta | Shear-area factor η | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.2
   L_cr_y | Buckling length about y-y | 6 | m | spec: SPEC-STR-09 §3 (members) | 0.1 … 100 m
   L_cr_z | Buckling length about z-z | 6 | m | spec: SPEC-STR-09 §3 (members) | 0.1 … 100 m
@@ -455,16 +455,11 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   A13. W_el_z (W_el,z) is taken as 152 cm^3. (Sheet default value; no project figure given.)
   A14. I_y (I_y) is taken as 4568 cm^4. (Sheet default value; no project figure given.)
   A15. I_z (I_z) is taken as 1548 cm^4. (Sheet default value; no project figure given.)
-  A16. h (Depth h (shear-area helper)) is taken as 203.2 mm. (Sheet default value; no project figure given.)
-  A17. b (Width b (helper)) is taken as 203.6 mm. (Sheet default value; no project figure given.)
-  A18. t_w (Web thickness (helper)) is taken as 7.2 mm. (Sheet default value; no project figure given.)
-  A19. t_f (Flange thickness (helper)) is taken as 11 mm. (Sheet default value; no project figure given.)
-  A20. r (Root radius (helper)) is taken as 10.2 mm. (Sheet default value; no project figure given.)
-  A21. eta (Shear-area factor η) is taken as 1. (Sheet default value; no project figure given.)
-  A22. curve_y (Buckling curve about y-y) is taken as b. (Sheet default value; no project figure given.)
-  A23. curve_z (Buckling curve about z-z) is taken as c. (Sheet default value; no project figure given.)
-  A24. k_yy (Interaction factor k_yy (member check)) is taken as 1. (Sheet default value; no project figure given.)
-  A25. k_zz (Interaction factor k_zz (member check)) is taken as 1. (Sheet default value; no project figure given.)
+  A16. eta (Shear-area factor η) is taken as 1. (Sheet default value; no project figure given.)
+  A17. curve_y (Buckling curve about y-y) is taken as b. (Sheet default value; no project figure given.)
+  A18. curve_z (Buckling curve about z-z) is taken as c. (Sheet default value; no project figure given.)
+  A19. k_yy (Interaction factor k_yy (member check)) is taken as 1. (Sheet default value; no project figure given.)
+  A20. k_zz (Interaction factor k_zz (member check)) is taken as 1. (Sheet default value; no project figure given.)
 
 4. WORKING
   [27] r_h = r
@@ -628,11 +623,11 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   WARNING no-ltb: M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.
 
 8. VERIFICATION
-  Template: struct.en1993-member@1.1.0
-  Content hash: 2cf9aafbdb831be1
+  Template: struct.en1993-member@1.2.0
+  Content hash: 5c47accf06a9faee
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 08:39 UTC
+  Test run: 2026-10-26 08:48 UTC
   Application: TempestOS test
 
 
@@ -772,7 +767,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 1d9f5c56b95ecdb6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 08:39 UTC
+  Test run: 2026-10-26 08:48 UTC
   Application: TempestOS test
 
 
@@ -946,7 +941,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 98d5d1a33491feda
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 08:39 UTC
+  Test run: 2026-10-26 08:48 UTC
   Application: TempestOS test
 
 
@@ -1105,7 +1100,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 98d5d1a33491feda
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 08:39 UTC
+  Test run: 2026-10-26 08:48 UTC
   Application: TempestOS test
 
 
@@ -1166,7 +1161,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm^2 | link: Holding-down bolts rev A · A_s | 50 … 1500 mm^2
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 427faec7878c4a539505e818770960c2/bd1d2bdad2134910b26b514f617ff352 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 650973fd16584458b91f7c65cb88151d/78da19e25adc4924bf5b79a0ca1ae3da | any
 
 3. ASSUMPTIONS
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -1384,5 +1379,5 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: 78225cb0777ee5bb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 08:39 UTC
+  Test run: 2026-10-26 08:48 UTC
   Application: TempestOS test

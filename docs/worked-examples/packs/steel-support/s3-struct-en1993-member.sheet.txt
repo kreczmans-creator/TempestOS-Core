@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Column check    Revision: A
 Title: EN 1993-1-1 member checks (basic)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Resistance checks of a steel member of class 1, 2 or 3 cross-section: tension (6.2.3), compression (6.2.4) and flexural buckling about y and z (6.3.1), bending about y and z (6.2.5), shear with the high-shear reduction (6.2.6, 6.2.8), the linear cross-section interaction (6.2.1(7)) and a simplified member interaction (6.3.3 with user-entered k factors). Lateral-torsional buckling and class 4 sections are outside this sheet.
@@ -37,11 +37,11 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   W_el_z | W_el,z | 152 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
   I_y | I_y | 4568 | cm^4 | assumption: Sheet default value; no project figure given. | 0.1 … 1000000000 cm^4
   I_z | I_z | 1548 | cm^4 | assumption: Sheet default value; no project figure given. | 0.1 … 1000000000 cm^4
-  h | Depth h (shear-area helper) | 203.2 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
-  b | Width b (helper) | 203.6 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
-  t_w | Web thickness (helper) | 7.2 | mm | assumption: Sheet default value; no project figure given. | 0.1 … 500 mm
-  t_f | Flange thickness (helper) | 11 | mm | assumption: Sheet default value; no project figure given. | 0.1 … 500 mm
-  r | Root radius (helper) | 10.2 | mm | assumption: Sheet default value; no project figure given. | 0 … 500 mm
+  h | Depth h (shear-area helper; leave blank when A_v is given) | 203.2 | mm | spec: SPEC-STR-09 §3 (members) | 1 … 5000 mm
+  b | Width b (helper) | 203.6 | mm | spec: SPEC-STR-09 §3 (members) | 1 … 5000 mm
+  t_w | Web thickness (helper) | 7.2 | mm | spec: SPEC-STR-09 §3 (members) | 0.1 … 500 mm
+  t_f | Flange thickness (helper) | 11 | mm | spec: SPEC-STR-09 §3 (members) | 0.1 … 500 mm
+  r | Root radius (helper) | 10.2 | mm | spec: SPEC-STR-09 §3 (members) | 0 … 500 mm
   eta | Shear-area factor η | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.2
   L_cr_y | Buckling length about y-y | 6 | m | spec: SPEC-STR-09 §3 (members) | 0.1 … 100 m
   L_cr_z | Buckling length about z-z | 6 | m | spec: SPEC-STR-09 §3 (members) | 0.1 … 100 m
@@ -66,16 +66,11 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   A13. W_el_z (W_el,z) is taken as 152 cm^3. (Sheet default value; no project figure given.)
   A14. I_y (I_y) is taken as 4568 cm^4. (Sheet default value; no project figure given.)
   A15. I_z (I_z) is taken as 1548 cm^4. (Sheet default value; no project figure given.)
-  A16. h (Depth h (shear-area helper)) is taken as 203.2 mm. (Sheet default value; no project figure given.)
-  A17. b (Width b (helper)) is taken as 203.6 mm. (Sheet default value; no project figure given.)
-  A18. t_w (Web thickness (helper)) is taken as 7.2 mm. (Sheet default value; no project figure given.)
-  A19. t_f (Flange thickness (helper)) is taken as 11 mm. (Sheet default value; no project figure given.)
-  A20. r (Root radius (helper)) is taken as 10.2 mm. (Sheet default value; no project figure given.)
-  A21. eta (Shear-area factor η) is taken as 1. (Sheet default value; no project figure given.)
-  A22. curve_y (Buckling curve about y-y) is taken as b. (Sheet default value; no project figure given.)
-  A23. curve_z (Buckling curve about z-z) is taken as c. (Sheet default value; no project figure given.)
-  A24. k_yy (Interaction factor k_yy (member check)) is taken as 1. (Sheet default value; no project figure given.)
-  A25. k_zz (Interaction factor k_zz (member check)) is taken as 1. (Sheet default value; no project figure given.)
+  A16. eta (Shear-area factor η) is taken as 1. (Sheet default value; no project figure given.)
+  A17. curve_y (Buckling curve about y-y) is taken as b. (Sheet default value; no project figure given.)
+  A18. curve_z (Buckling curve about z-z) is taken as c. (Sheet default value; no project figure given.)
+  A19. k_yy (Interaction factor k_yy (member check)) is taken as 1. (Sheet default value; no project figure given.)
+  A20. k_zz (Interaction factor k_zz (member check)) is taken as 1. (Sheet default value; no project figure given.)
 
 4. WORKING
   [27] r_h = r
@@ -239,9 +234,9 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   WARNING no-ltb: M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.
 
 8. VERIFICATION
-  Template: struct.en1993-member@1.1.0
-  Content hash: 2cf9aafbdb831be1
+  Template: struct.en1993-member@1.2.0
+  Content hash: 5c47accf06a9faee
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 22:51 UTC
+  Test run: 2026-10-26 08:48 UTC
   Application: TempestOS test

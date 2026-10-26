@@ -15,6 +15,65 @@ public sealed class MemberChecksTests
         return new CalcInputSet([.. baseline.Values]);
     }
 
+    private static CalcInputSet Shs(params CalcInputValue[] more) =>
+        Uc([
+            CalcInputValue.Quantity("N_Ed", -700, "kN"), CalcInputValue.Quantity("M_y_Ed", 20, "kN*m"), CalcInputValue.Quantity("M_z_Ed", 0, "kN*m"), CalcInputValue.Quantity("V_Ed", 0, "kN"),
+            CalcInputValue.Quantity("A", 40, "cm^2"), CalcInputValue.Quantity("W_pl_y", 150, "cm^3"), CalcInputValue.Quantity("W_pl_z", 150, "cm^3"),
+            CalcInputValue.Quantity("I_y", 1200, "cm^4"), CalcInputValue.Quantity("I_z", 1200, "cm^4"), CalcInputValue.Quantity("A_v", 20, "cm^2"),
+            CalcInputValue.Quantity("L_cr_y", 3, "m"), CalcInputValue.Quantity("L_cr_z", 3, "m"), CalcInputValue.Choice("curve_y", "a"), CalcInputValue.Choice("curve_z", "a"),
+            .. more]);
+
+    [Fact]
+    public void A_Member_Interaction_With_The_Default_K_Of_One_Under_Heavy_Compression_Warns_And_Shows_The_Annex_B_Bound()
+    {
+        // P1-struct.en1993-member-02. SHS 40 cm2, W_pl 150 cm3, I 1200 cm4, S355, curve a, L 3 m, N -700, uniform M_y 20.
+        // python3: lambda 0.71683, chi 0.83970, N_b 1192.37 kN, n 0.58707; u_member 0.96265 with k_yy = 1; with 1 + 0.8n = 1.46965 it is 1.13905; with k_yy 1.3034 it is 1.07661.
+        var r = CalcRunner.Run(Calc, Shs());
+        Assert.Equal(0.9626522, r.OutputSi("u_member"), 6);
+        var warning = Assert.Single(r.Notices, n => n.RuleId == "k-default");
+        Assert.Contains("1.470", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("1.139", warning.Message, StringComparison.Ordinal);
+
+        var entered = CalcRunner.Run(Calc, Shs(CalcInputValue.Of("k_yy", 1.3034)));
+        Assert.Equal(1.0766052, entered.OutputSi("u_member"), 6);
+        Assert.DoesNotContain(entered.Notices, n => n.RuleId == "k-default");
+
+        // Light compression (N/N_b,Rd <= 0.3), no moment about the axis, or tension: no warning.
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("N_Ed", -300, "kN"))).Notices, n => n.RuleId == "k-default");
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("M_y_Ed", 0, "kN*m"))).Notices, n => n.RuleId == "k-default");
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("N_Ed", 700, "kN"))).Notices, n => n.RuleId == "k-default");
+    }
+
+    [Fact]
+    public void The_Shear_Area_Helper_Has_No_Section_Defaults_So_A_New_Sheet_Cannot_Borrow_Another_Sections_Shear_Area()
+    {
+        // P1-struct.en1993-member-R1. Before: A 252 cm2 with the seeded UC 203 helper gave A_v 210.24 cm2, V_pl,Rd 4309 kN and u_V 0.348 for V_Ed 1500 kN.
+        var opened = CalcTemplateHasher.NewSheetInputs(Calc.Template);
+
+        foreach (var symbol in new[] { "h", "b", "t_w", "t_f", "r" })
+            Assert.Null(opened.Find(symbol));
+
+        var blocked = CalcRunner.Run(Calc, opened.With(CalcInputValue.Quantity("A", 252, "cm^2")).With(CalcInputValue.Quantity("V_Ed", 1500, "kN")));
+        Assert.True(blocked.IsBlocked);
+        Assert.Equal("shear-area", blocked.Blocks[0].RuleId);
+    }
+
+    [Fact]
+    public void Helper_Dimensions_That_Do_Not_Match_The_Entered_Area_Warn()
+    {
+        // The UC 203x203x46 helper (2bt_f + (h - 2t_f)t_w = 57.84 cm2 by python3) against A = 252 cm2 gives the old A_v of 210.24 cm2 and u_V 0.348.
+        var r = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("A", 252, "cm^2"), CalcInputValue.Quantity("V_Ed", 1500, "kN")));
+        Assert.Equal(210.244e-4, r.OutputSi("A_v"), 8);
+        var warning = Assert.Single(r.Notices, n => n.RuleId == "helper-area");
+        Assert.Contains("57.8", warning.Message, StringComparison.Ordinal);
+
+        // The matching section raises none.
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Uc()).Notices, n => n.RuleId == "helper-area");
+
+        // A_v entered: the helper is not used and not checked.
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("A", 252, "cm^2"), CalcInputValue.Quantity("A_v", 70, "cm^2"))).Notices, n => n.RuleId == "helper-area");
+    }
+
     [Fact]
     public void Reduction_Factor_Is_One_For_Stocky_And_Falls_With_Slenderness()
     {

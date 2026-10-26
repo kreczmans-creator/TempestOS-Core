@@ -29,7 +29,7 @@ public sealed class MemberChecksCalculator : ICalcCalculator
     };
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Structural, "EN 1993-1-1 member checks (basic)",
+        Id, "1.2.0", CalcDiscipline.Structural, "EN 1993-1-1 member checks (basic)",
         "Resistance checks of a steel member of class 1, 2 or 3 cross-section: tension (6.2.3), compression (6.2.4) and flexural buckling about y and z (6.3.1), bending about y and z (6.2.5), shear with the high-shear reduction (6.2.6, 6.2.8), the linear cross-section interaction (6.2.1(7)) and a simplified member interaction (6.3.3 with user-entered k factors). Lateral-torsional buckling and class 4 sections are outside this sheet.",
         "Axial plastic resistance: N_pl,Rd = A f_y/γ_M0.\nBending resistance, plastic modulus for class 1–2 and elastic for class 3: M_c,Rd = W f_y/γ_M0.\nShear resistance: V_pl,Rd = A_v f_y/(√3 γ_M0).\nBending resistance reduced by high shear, when V_Ed > 0.5 V_pl,Rd: ρ = (2V_Ed/V_pl,Rd − 1)², resistance × (1 − ρ).\nElastic critical load and non-dimensional slenderness: N_cr = π²EI/L_cr²; λ̄ = √(A f_y/N_cr).\nBuckling reduction factor and buckling resistance: Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²]; χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1; N_b,Rd = χ A f_y/γ_M1.\nCross-section check, linear interaction: N_Ed/N_Rd + M_y,Ed/M_y,Rd + M_z,Ed/M_z,Rd ≤ 1.\nMember check, axial force and bending with buckling: N_Ed/N_b,Rd,min + k_yy M_y,Ed/M_y,Rd + k_zz M_z,Ed/M_z,Rd ≤ 1.",
         [
@@ -50,11 +50,11 @@ public sealed class MemberChecksCalculator : ICalcCalculator
             new CalcInputSpec("I_y", "I_y", CalcInputKind.Quantity, "cm^4", Default: 4568, Min: 0.1, Max: 1e9, HardMin: 1e-6, HardMax: 1e12, Group: "Section"),
             new CalcInputSpec("I_z", "I_z", CalcInputKind.Quantity, "cm^4", Default: 1548, Min: 0.1, Max: 1e9, HardMin: 1e-6, HardMax: 1e12, Group: "Section"),
             new CalcInputSpec("A_v", "Shear area A_v (blank = rolled I from h, b, t_w, t_f, r)", CalcInputKind.Quantity, "cm^2", Min: 0.1, Max: 1e5, HardMin: 1e-3, HardMax: 1e7, IsOptional: true, Group: "Section"),
-            new CalcInputSpec("h", "Depth h (shear-area helper)", CalcInputKind.Quantity, "mm", Default: 203.2, Min: 1, Max: 5000, HardMin: 1e-3, HardMax: 1e5, IsOptional: true, Group: "Section"),
-            new CalcInputSpec("b", "Width b (helper)", CalcInputKind.Quantity, "mm", Default: 203.6, Min: 1, Max: 5000, HardMin: 1e-3, HardMax: 1e5, IsOptional: true, Group: "Section"),
-            new CalcInputSpec("t_w", "Web thickness (helper)", CalcInputKind.Quantity, "mm", Default: 7.2, Min: 0.1, Max: 500, HardMin: 1e-3, HardMax: 1e4, IsOptional: true, Group: "Section"),
-            new CalcInputSpec("t_f", "Flange thickness (helper)", CalcInputKind.Quantity, "mm", Default: 11, Min: 0.1, Max: 500, HardMin: 1e-3, HardMax: 1e4, IsOptional: true, Group: "Section"),
-            new CalcInputSpec("r", "Root radius (helper)", CalcInputKind.Quantity, "mm", Default: 10.2, Min: 0, Max: 500, HardMin: 0, HardMax: 1e4, IsOptional: true, Group: "Section"),
+            new CalcInputSpec("h", "Depth h (shear-area helper; leave blank when A_v is given)", CalcInputKind.Quantity, "mm", Min: 1, Max: 5000, HardMin: 1e-3, HardMax: 1e5, IsOptional: true, Group: "Section"),
+            new CalcInputSpec("b", "Width b (helper)", CalcInputKind.Quantity, "mm", Min: 1, Max: 5000, HardMin: 1e-3, HardMax: 1e5, IsOptional: true, Group: "Section"),
+            new CalcInputSpec("t_w", "Web thickness (helper)", CalcInputKind.Quantity, "mm", Min: 0.1, Max: 500, HardMin: 1e-3, HardMax: 1e4, IsOptional: true, Group: "Section"),
+            new CalcInputSpec("t_f", "Flange thickness (helper)", CalcInputKind.Quantity, "mm", Min: 0.1, Max: 500, HardMin: 1e-3, HardMax: 1e4, IsOptional: true, Group: "Section"),
+            new CalcInputSpec("r", "Root radius (helper)", CalcInputKind.Quantity, "mm", Min: 0, Max: 500, HardMin: 0, HardMax: 1e4, IsOptional: true, Group: "Section"),
             new CalcInputSpec("eta", "Shear-area factor η", CalcInputKind.Number, Default: 1.0, Min: 1.0, Max: 1.2, HardMin: 0.5, HardMax: 2, Group: "Section"),
             new CalcInputSpec("L_cr_y", "Buckling length about y-y", CalcInputKind.Quantity, "m", Default: 4, Min: 0.1, Max: 100, HardMin: 1e-3, HardMax: 1e4, Group: "Buckling"),
             new CalcInputSpec("L_cr_z", "Buckling length about z-z", CalcInputKind.Quantity, "m", Default: 4, Min: 0.1, Max: 100, HardMin: 1e-3, HardMax: 1e4, Group: "Buckling"),
@@ -85,6 +85,8 @@ public sealed class MemberChecksCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("class-4", "Class 4 cross-sections need effective properties: outside this sheet.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("shear-area", "No shear area and no rolled-I helper dimensions: the shear check cannot run.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("helper-area", "The rolled-I helper dimensions give a web-and-flange area that differs from A by more than 10 %: the helper dimensions probably belong to another section.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("k-default", "k_yy or k_zz is left at 1.0 although N_Ed/N_b,Rd exceeds 0.3: Annex A or B give k above 1 and the member interaction is then unconservative.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("high-shear", "V_Ed exceeds half the plastic shear resistance: the bending resistance is reduced (6.2.8).", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("no-ltb", "Lateral-torsional buckling is not checked by this sheet.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("slender", "Non-dimensional slenderness above 2.0: check the member is intended to be this slender.", CalcNoticeSeverity.Warning),
@@ -132,6 +134,12 @@ public sealed class MemberChecksCalculator : ICalcCalculator
         {
             c.Input("h"); c.Input("b"); c.Input("t_w"); c.Input("t_f");
             if (c.Has("r")) c.Input("r");
+            var helperArea = 2 * c.InputSi("b") * c.InputSi("t_f") + (c.InputSi("h") - 2 * c.InputSi("t_f")) * c.InputSi("t_w");
+            var givenArea = c.InputSi("A");
+
+            if (Math.Abs(helperArea - givenArea) > 0.10 * givenArea)
+                c.Warn("helper-area", $"h, b, t_w, t_f: 2·b·t_f + (h − 2·t_f)·t_w = {helperArea * 1e4:0.0} cm² differs from A = {givenArea * 1e4:0.0} cm² by more than 10 %, so the helper dimensions do not describe the section whose A, W and I are entered and the shear area would be wrong. Enter the section's own dimensions or A_v.");
+
             c.Assign("r_h", c.Has("r") ? "r" : "0 mm", "mm", "Root radius used by the helper");
             c.Assign("A_v_rolled", "A - 2 * b * t_f + (t_w + 2 * r_h) * t_f", "cm^2", "Rolled I shear area, load parallel to the web", "6.2.6(3)");
             c.Assign("A_v_min", "eta * (h - 2 * t_f) * t_w", "cm^2", "Lower bound η h_w t_w", "6.2.6(3)");
@@ -139,7 +147,7 @@ public sealed class MemberChecksCalculator : ICalcCalculator
         }
         else
         {
-            c.Block("shear-area", "A_v: give the shear area, or h, b, t_w and t_f for the rolled-I helper.");
+            c.Block("shear-area", "A_v: enter the shear area, or h, b, t_w and t_f of the section for the rolled-I helper.");
             return;
         }
 
@@ -191,6 +199,25 @@ public sealed class MemberChecksCalculator : ICalcCalculator
         c.Assign("N_b_Rd", "min(N_b_y_Rd, N_b_z_Rd)", "kN", "Governing buckling resistance");
         c.Assign("u_buckling", compression ? "abs(N_Ed) / N_b_Rd" : "0", null, compression ? "Flexural buckling utilisation" : "Flexural buckling utilisation (tension: not applicable)", "6.3.1.1(1)");
         c.Assign("u_member", compression ? "abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_c_Rd + k_zz * M_z_Ed / M_z_c_Rd" : "u_M_y + u_M_z", null, "Simplified member interaction", "6.3.3(4)");
+
+        if (compression)
+        {
+            var nBuckling = c.Si("u_buckling");
+            var kyDefault = Math.Abs(c.InputSi("k_yy") - 1.0) < 1e-12 && c.Si("M_y_Ed") > 0;
+            var kzDefault = Math.Abs(c.InputSi("k_zz") - 1.0) < 1e-12 && c.Si("M_z_Ed") > 0;
+
+            if (nBuckling > 0.3 && (kyDefault || kzDefault))
+            {
+                var nY = Math.Abs(c.Si("N_Ed")) / c.Si("N_b_y_Rd");
+                var nZ = Math.Abs(c.Si("N_Ed")) / c.Si("N_b_z_Rd");
+                var kyBound = kyDefault ? 1 + 0.8 * nY : c.InputSi("k_yy");
+                var kzBound = kzDefault ? 1 + 0.8 * nZ : c.InputSi("k_zz");
+                var uBound = nBuckling + kyBound * c.Si("u_M_y") + kzBound * c.Si("u_M_z");
+                var which = kyDefault && kzDefault ? "k_yy and k_zz are" : kyDefault ? "k_yy is" : "k_zz is";
+                var bounds = kyDefault && kzDefault ? $"k_yy = {kyBound:0.000} and k_zz = {kzBound:0.000}" : kyDefault ? $"k_yy = {kyBound:0.000}" : $"k_zz = {kzBound:0.000}";
+                c.Warn("k-default", $"k_yy, k_zz: {which} left at 1.0 although N_Ed/N_b,Rd = {nBuckling:0.000} exceeds 0.3. Annex A or B give k above 1 here (at most C_m(1 + 0.8n), which is {bounds} with C_m = 1); with those values the member interaction would be {uBound:0.000} against {c.Si("u_member"):0.000} shown. Enter k from Annex A or B.");
+            }
+        }
 
         foreach (var (symbol, text) in new[] { ("A_v", "Shear area"), ("N_pl_Rd", "N_pl,Rd"), ("V_pl_Rd", "V_pl,Rd"), ("rho", "ρ"), ("M_y_c_Rd", "M_y,c,Rd"), ("M_z_c_Rd", "M_z,c,Rd"), ("N_cr_y", "N_cr,y"), ("N_cr_z", "N_cr,z"), ("lambda_y", "λ̄_y"), ("lambda_z", "λ̄_z"), ("chi_y", "χ_y"), ("chi_z", "χ_z"), ("N_b_y_Rd", "N_b,y,Rd"), ("N_b_z_Rd", "N_b,z,Rd"), ("N_b_Rd", "N_b,Rd"), ("u_N", "Axial utilisation"), ("u_M_y", "Bending y utilisation"), ("u_M_z", "Bending z utilisation"), ("u_V", "Shear utilisation"), ("u_section", "Cross-section interaction"), ("u_buckling", "Buckling utilisation"), ("u_member", "Member interaction") })
             c.Output(symbol, text);

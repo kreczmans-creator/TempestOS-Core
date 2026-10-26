@@ -37,7 +37,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   W_el_z | W_el,z | 92.6 | cm^3 | reference: S1 section sheet / Blue Book | 0.1 … 10000000 cm^3
   I_y | I_y | 8503 | cm^4 | reference: S1 section sheet / Blue Book | 0.1 … 1000000000 cm^4
   I_z | I_z | 764 | cm^4 | reference: S1 section sheet / Blue Book | 0.1 … 1000000000 cm^4
-  h | Depth h (shear-area helper) | 303.4 | mm | spec: BS EN 10365 UB 305×165×40 | 1 … 5000 mm
+  h | Depth h (shear-area helper; leave blank when A_v is given) | 303.4 | mm | spec: BS EN 10365 UB 305×165×40 | 1 … 5000 mm
   b | Width b (helper) | 165 | mm | spec: BS EN 10365 UB 305×165×40 | 1 … 5000 mm
   t_w | Web thickness (helper) | 6 | mm | spec: BS EN 10365 UB 305×165×40 | 0.1 … 500 mm
   t_f | Flange thickness (helper) | 10.2 | mm | spec: BS EN 10365 UB 305×165×40 | 0.1 … 500 mm
@@ -220,7 +220,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   WARNING no-ltb: M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.
 
 8. VERIFICATION
-  Template: struct.en1993-member@1.1.0
+  Template: struct.en1993-member@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3
