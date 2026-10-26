@@ -142,6 +142,8 @@ internal static partial class SoakScenarios
                 }
             }
 
+            outcome.Item(cycle + 1, scale.Cycles + 1);
+
             if ((cycle + 1) % 10 == 0)
                 SoakScale.Progress($"cycles: {cycle + 1} of {scale.Cycles + 1}");
         }

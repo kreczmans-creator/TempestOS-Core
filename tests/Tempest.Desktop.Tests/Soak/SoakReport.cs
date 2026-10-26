@@ -52,7 +52,7 @@ internal static class SoakReport
             var a = run.Passes[0];
             var b = run.Passes[1];
             text.AppendLine(CultureInfo.InvariantCulture,
-                $"| {run.Scenario.Title} | {Short(run)} | {Num(a.Seconds)} / {Num(b.Seconds)} | {Mib(run.Passes.Max(p => p.PeakWorkingSetBytes))} | {Mib(run.Passes.Max(p => p.PeakManagedBytes))} | {Mib(run.Passes.Max(p => p.DbBytes + p.WalBytes))} | {Mib(run.HeapGrowthBytes)} | {(run.Passed ? "clean" : "**FAILED**")} |");
+                $"| {run.Title} | {Short(run)} | {Num(a.Seconds)} / {Num(b.Seconds)} | {Mib(run.Passes.Max(p => p.PeakWorkingSetBytes))} | {Mib(run.Passes.Max(p => p.PeakManagedBytes))} | {Mib(run.Passes.Max(p => p.DbBytes + p.WalBytes))} | {Mib(run.HeapGrowthBytes)} | {(run.Passed ? "clean" : "**FAILED**")} |");
         }
 
         text.AppendLine();
@@ -68,6 +68,7 @@ internal static class SoakReport
         text.AppendLine("- **Database size** is `tempest.db` and its write-ahead log at the end of the scenario with the host still running, and `tempest.db` again once the host is shut down and the log has been folded in.");
         text.AppendLine("- **Handles** are the process's open file descriptors (`/proc/self/fd`), and, separately, those open on the database's own files, which is the footprint of the pooled SQLite connections. The process's handles after the second pass's host is disposed are compared with those after the first's (the first pass also opens what loading the application's assemblies opens, once); the database's handles must not grow during the scenario and must be none once the host is disposed.");
         text.AppendLine(CultureInfo.InvariantCulture, $"- **Leak check.** Each scenario runs twice in the same process. The managed heap left after the second pass's host is disposed may not exceed the first pass's by more than {SoakRunner.HeapGrowthBoundBytes / (1024 * 1024)} MiB (a leak worth the name is tens of kilobytes per item over hundreds of items, many times that, and keeps growing). If it does, a third pass is run: the heap is a leak only if it is still rising by more than half the bound; a one-off step (buffers the runtime keeps for a while after a large file is read) that then stays flat is reported as such and is not. The process may end the second pass with no more than {SoakRunner.HandleSlack} more handles than the first, the database's handles may not grow by more than {SoakRunner.HandleSlack} during a scenario and must be none after the host is disposed, and the second pass may not take more than {SoakRunner.SlowdownFactor:0.#} times the first plus five seconds.");
+        text.AppendLine(CultureInfo.InvariantCulture, $"- **Leak check within one host.** The comparison between passes cannot see a service that keeps what it is given in a field of its own: it is thrown away with its host, so the heap left after disposal is the same each time. So a scenario that does the same thing over and over also reports its items, and the settled heap (as above, with the host still running and everything the scenario still holds alive) is taken after the first half of them (and after any warm-up, such as the first round of the catalogue's templates) and again after the last. The second half may add no more than {SoakRunner.InHostBaseBytes / (1024 * 1024)} MiB plus {SoakRunner.InHostBytesPerItem / 1024} KiB an item, with at least {SoakRunner.InHostMinItems} items in it, and a finding needs every pass that was measured to exceed it. The base is what the runtime's own caches and pooled buffers settle by in a normal run; the per-item figure is a few times what the application and the scenarios legitimately keep for each item (measured, up to 5.4 KiB) and well below what a retained calculation, run or sheet costs (tens of kilobytes). It therefore catches an item-by-item retention of about {SoakRunner.InHostBytesPerItem * 2 / 1024} KiB an item or more over a few hundred items, and does not see a smaller one. It also cannot see: growth that is not in the managed heap (native memory, SQLite's page cache, file handles are counted separately), a retention that stops growing before the half (a cache that fills once), growth that depends on something the scenario does not do (a screen, a window), or a scenario with a handful of large steps instead of many items (the imports, the record import's caps, which are reported as not measured).");
         text.AppendLine("- **Stale-flag errors** are both kinds: a calculation reported stale when nothing it depends on changed, and one not reported stale when something did.");
         text.AppendLine("- **Immutability breaches** are any change to an issued revision after its issue: its stored record (with only its status and time set aside, the two fields supersession changes), its outputs, its sheet text, its PDF sheet in the content store, or its Evidence; and any attempt to edit one that is not refused.");
         text.AppendLine();
@@ -120,7 +121,7 @@ internal static class SoakReport
     private static void RenderScenario(StringBuilder text, SoakRun run)
     {
         var passes = run.Passes;
-        text.AppendLine(CultureInfo.InvariantCulture, $"## {run.Scenario.Title}");
+        text.AppendLine(CultureInfo.InvariantCulture, $"## {run.Title}");
         text.AppendLine();
         text.AppendLine(run.Scenario.Covers);
         text.AppendLine();
@@ -157,6 +158,9 @@ internal static class SoakReport
         Row("tempest.db after shutdown, MiB", p => Mib(p.DbBytesAfterShutdown));
         Row("Open handles: before the host / before the scenario / after / after dispose", p => $"{p.HandlesBaseline} / {p.HandlesBefore} / {p.HandlesAfter} / {p.HandlesAfterDispose}");
         Row("Handles on the database files: before / after / after dispose", p => $"{p.SqliteHandlesBefore} / {p.SqliteHandlesAfter} / {p.SqliteHandlesAfterDispose}");
+        Row("Growth within the host: settled heap after the first half of the items / after all of them / added by the second half, MiB (allowed)", p => p.InHost is { } h
+            ? $"{Mib(h.HeapAtHalf)} / {Mib(h.HeapAtEnd)} / {(h.SecondHalfGrowth < 0 ? "-" : "+")}{Mib(Math.Abs(h.SecondHalfGrowth))} ({Mib(SoakRunner.InHostBound(h.SecondHalfItems))}, {h.SecondHalfItems:N0} of {h.Items:N0} items)"
+            : p.ItemsTotal > 0 ? $"too few items to say ({p.ItemsTotal:N0})" : "not measured (a few large steps, not a repeated item)");
         Row("Generation 2 collections", p => p.Gen2Collections.ToString(CultureInfo.InvariantCulture));
         Row("Allocated, GiB", p => Num(p.AllocatedBytes / (1024.0 * 1024 * 1024), "0.00"));
         text.AppendLine();

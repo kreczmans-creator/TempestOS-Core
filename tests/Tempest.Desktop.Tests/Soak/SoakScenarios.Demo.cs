@@ -146,6 +146,9 @@ internal static partial class SoakScenarios
 
             residualBytes.Add(SoakProbe.LogicalDatabase(host.DatabasePath).UsedBytes - usedAtStart);
             keptObjects.Add((await domain.Repository.ListAllAsync(cancellationToken)).Count - objectsAtStart);
+
+            // The unit of what the application may keep for each cycle is a calculation or a pack (its Evidence and register entry stay, by design).
+            outcome.Item(cycle * (calculationsPerInstall + packsPerInstall), scale.DemoCycles * (calculationsPerInstall + packsPerInstall));
             SoakScale.Progress($"7-demo: cycle {cycle} done, install {installMs[^1]:0} ms, remove {removeMs[^1]:0} ms, {residualBytes[^1] / 1024.0:0} KiB left");
         }
 
@@ -224,8 +227,14 @@ internal static partial class SoakScenarios
                     outcome.Fact("Removal with an issued calculation", "refused: " + refused.Message);
                 }
                 else
-                    outcome.Fact("Removal with an issued calculation", $"not tried: the calculation could not be issued ({demoIssue.Reason})");
+                {
+                    // Not "not tried": that an issued calculation stops the removal cannot be shown then, and that is a failure of the soak, not a thing to skip.
+                    outcome.Expect(false, () => $"A calculation of the demonstration could not be issued, so that an issued calculation stops its removal was not tried: {demoIssue.Reason}");
+                    outcome.Fact("Removal with an issued calculation", $"NOT TRIED, a failure: the calculation could not be issued ({demoIssue.Reason})");
+                }
             }
+            else
+                outcome.Expect(false, () => "The demonstration holds no calculation that can be checked and issued on its own, so that an issued calculation stops its removal was not tried.");
         }
         else
             outcome.Expect(false, () => $"The final install was refused: {again.Message}");

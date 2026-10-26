@@ -86,6 +86,8 @@ internal static partial class SoakScenarios
                 SoakScale.Progress($"9-guided: {number} runs, read {line.Text}");
             }
 
+            outcome.Item(number, scale.GuidedRuns);
+
             if (number % 50 == 0)
                 SoakScale.Progress($"9-guided: run {number} of {scale.GuidedRuns} finished");
         }

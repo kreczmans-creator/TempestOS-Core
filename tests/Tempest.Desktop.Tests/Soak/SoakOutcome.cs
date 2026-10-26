@@ -46,6 +46,51 @@ internal sealed class SoakOutcome
     public void Fact(string key, long value) => Fact(key, value.ToString("N0", CultureInfo.InvariantCulture));
 
     public string? FactValue(string key) => _facts.FirstOrDefault(f => f.Key == key).Value;
+
+    /// <summary>What the scenario's repeated work held at its halfway point and at its end, for the check on growth within one host (see <see cref="SoakRunner.InHostBaseBytes"/>); <see langword="null"/> when the scenario did not report its items.</summary>
+    public SoakInHostSample? InHost { get; private set; }
+
+    private int _itemsTotal;
+    private int _itemsAtHalf = -1;
+    private long _heapAtHalf;
+
+    /// <summary>
+    /// A scenario that does the same work over and over (calculations created, revisions issued, runs made) calls this after each item, with the number of
+    /// items done so far and the number it will do. At the first item at or after the halfway point (and not before <paramref name="warmUp"/> items, for work
+    /// that does a different thing for each of its first few, such as one of each template) the settled managed heap is measured, and again after the last
+    /// item, both with everything the scenario still holds alive: so the second half's growth is the heap the host and the scenario kept for those items
+    /// and is not diluted by the work's one-off set-up. The collections it makes take a moment, so it measures twice and does nothing in between.
+    /// </summary>
+    public void Item(int done, int total, int warmUp = 0)
+    {
+        if (total <= 0)
+            return;
+
+        _itemsTotal = total;
+
+        if (_itemsAtHalf < 0 && done < total && done >= Math.Max((total + 1) / 2, warmUp))
+        {
+            _itemsAtHalf = done;
+            _heapAtHalf = SoakProbe.SettledHeap();
+        }
+        else if (done == total && _itemsAtHalf >= 0 && InHost is null)
+        {
+            InHost = new SoakInHostSample(total, total - _itemsAtHalf, _heapAtHalf, SoakProbe.SettledHeap());
+        }
+    }
+
+    /// <summary>The number of items the scenario said it would do (0 when it did not say).</summary>
+    public int ItemsTotal => _itemsTotal;
+}
+
+/// <summary>The settled managed heap of one pass at the halfway point of a scenario's items and after the last one.</summary>
+/// <param name="Items">All the items the scenario did.</param>
+/// <param name="SecondHalfItems">The items done between the two measurements.</param>
+/// <param name="HeapAtHalf">The settled heap after the first half, host running.</param>
+/// <param name="HeapAtEnd">The settled heap after the last item, host running.</param>
+internal sealed record SoakInHostSample(int Items, int SecondHalfItems, long HeapAtHalf, long HeapAtEnd)
+{
+    public long SecondHalfGrowth => HeapAtEnd - HeapAtHalf;
 }
 
 /// <summary>The worked-example inputs shipped under docs/worked-examples, by template: the inputs the soak creates every calculation from.</summary>

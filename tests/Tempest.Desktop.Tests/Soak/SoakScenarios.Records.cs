@@ -277,6 +277,8 @@ internal static partial class SoakScenarios
             if (!revised.Committed)
                 break;
 
+            outcome.Item(k, scale.RecordRevisions);
+
             // Looked at every tenth revision, and the last: the lock holds as the revisions pile up.
             if (k % 10 == 0 || k == scale.RecordRevisions)
             {

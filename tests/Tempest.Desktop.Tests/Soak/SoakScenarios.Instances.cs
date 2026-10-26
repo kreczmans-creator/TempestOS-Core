@@ -51,6 +51,7 @@ internal static partial class SoakScenarios
             if (examples.Count == 0)
             {
                 outcome.Expect(false, () => $"Template {templateId} has no worked example to create an instance from.");
+                outcome.Item(i + 1, scale.Instances, entries.Count);
                 continue;
             }
 
@@ -85,6 +86,10 @@ internal static partial class SoakScenarios
             outcome.Expect(again.Succeeded, () => $"{name}: saving the same inputs again was refused: {again.Reason}");
             outcome.Expect(again.Instance?.OutputsHash == instance.OutputsHash, () => $"{name}: saving the same inputs again changed the outputs hash.");
             saved.Add((instance.Id, instance.OutputsHash ?? string.Empty, instance.Outputs.Count));
+
+            // Each of the first round of the catalogue is a different template (its formulas compiled, its worked example read, once): the check on growth
+            // within the host begins after them, when every further calculation is more of the same.
+            outcome.Item(i + 1, scale.Instances, entries.Count);
 
             if ((i + 1) % 100 == 0)
                 SoakScale.Progress($"instances: {i + 1} of {scale.Instances}");
@@ -252,6 +257,7 @@ internal static partial class SoakScenarios
             var loop = await service.BindAsync(chains[0][0].Id, "D", chains[0][scale.ChainDepth].Id, ChainOutput, cancellationToken);
             outcome.Expect(!loop.Succeeded && loop.Reason?.Contains("cycle", StringComparison.Ordinal) == true, () => $"Project {p}: a link round a loop was not refused as a cycle: {loop.Reason}");
 
+            outcome.Item(Math.Min(scale.Chains, (p + 1) * 2) * (scale.ChainDepth + 1), scale.Chains * (scale.ChainDepth + 1));
             SoakScale.Progress($"chains: project {p + 1} of {projectCount}");
         }
 

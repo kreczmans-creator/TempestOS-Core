@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 using Tempest.Calc.Library;
 using Tempest.Calc.Library.Dashboard;
 using Tempest.Calc.Library.ManualTesting;
-using DashboardOutcome = Tempest.Calc.Library.Dashboard.ManualTestOutcome;
+using DashboardOutcome = Tempest.Calc.Library.Dashboard.DashboardManualTestOutcome;
 using ManualTestOutcome = Tempest.Calc.Library.ManualTesting.ManualTestOutcome;
 
 namespace Tempest.Desktop.Tests.Soak;
@@ -120,7 +120,7 @@ internal static partial class SoakScenarios
         outcome.Fact("Reading all the runs for the manual status (ms)", runsRead.Elapsed.TotalMilliseconds, "0");
 
         // ---- built on the full store ------------------------------------------------------------------------
-        var full = await BuildRepeatedlyAsync(dashboard, scale.DashboardBuilds, outcome, "on the full store", cancellationToken);
+        var full = await BuildRepeatedlyAsync(dashboard, scale.DashboardBuilds, outcome, "on the full store", cancellationToken, countItems: true);
         outcome.Expect(full.Report.Rows.Count == rowCount, () => $"The dashboard has {full.Report.Rows.Count} rows on the full store and {rowCount} on the seeded one.");
         var tested = full.Report.Rows.Count(r => r.ManualTest.Outcome == DashboardOutcome.Passed);
         outcome.Expect(tested > 0 && tested >= statuses.Count(kv => kv.Value.StepsRecorded >= kv.Value.StepsInScript) - 1, () => $"{tested} rows show a passed manual test; the runs hold {statuses.Count} templates with results.");
@@ -149,7 +149,7 @@ internal static partial class SoakScenarios
     private sealed record Built(VerificationReport Report, IReadOnlyList<double> Millis);
 
     /// <summary>Builds the dashboard <paramref name="count"/> times; every build must give the same rows as the first, and the last few may not be slower than the first few.</summary>
-    private static async Task<Built> BuildRepeatedlyAsync(VerificationDashboardService dashboard, int count, SoakOutcome outcome, string where, CancellationToken cancellationToken)
+    private static async Task<Built> BuildRepeatedlyAsync(VerificationDashboardService dashboard, int count, SoakOutcome outcome, string where, CancellationToken cancellationToken, bool countItems = false)
     {
         var millis = new List<double>(count);
         VerificationReport? first = null;
@@ -171,6 +171,9 @@ internal static partial class SoakScenarios
             }
             else
                 outcome.Expect(hash == firstHash, () => $"Build {i + 1} {where} gave different rows from build 1.");
+
+            if (countItems)
+                outcome.Item(i + 1, count);
         }
 
         var head = millis.Take(Math.Min(5, count)).Average();

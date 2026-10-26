@@ -23,6 +23,8 @@ namespace Tempest.Desktop.Tests.Soak;
 /// <param name="DatabaseBytesBefore">tempest.db and its write-ahead log before the scenario: the seeded database every pass starts from.</param>
 /// <param name="SqliteHandlesAfterDispose">Handles still open on the database's own files once the host is disposed: none may be.</param>
 /// <param name="HandlesBaseline">Open file handles of the process before the host was built.</param>
+/// <param name="InHost">The settled heap at the halfway point of the scenario's items and after the last, within this one host; <see langword="null"/> where the scenario has too few items to say.</param>
+/// <param name="ItemsTotal">The items the scenario did (0 when it did not report them).</param>
 /// <param name="Gen2Collections">Generation 2 collections the scenario caused.</param>
 /// <param name="AllocatedBytes">Bytes the scenario allocated in total.</param>
 internal sealed record SoakPass(
@@ -46,7 +48,9 @@ internal sealed record SoakPass(
     int Gen2Collections,
     long AllocatedBytes,
     int SqliteHandlesAfterDispose = 0,
-    long DatabaseBytesBefore = 0);
+    long DatabaseBytesBefore = 0,
+    SoakInHostSample? InHost = null,
+    int ItemsTotal = 0);
 
 /// <summary>The probes a soak reads: managed heap after a full collection, working set, open handles and the database's size.</summary>
 internal static class SoakProbe

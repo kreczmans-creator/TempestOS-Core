@@ -40,12 +40,12 @@ public sealed class SoakCiTests
         if (Environment.GetEnvironmentVariable("TEMPEST_SOAK_DUMP") is { Length: > 0 } dump)
             File.AppendAllText(dump, SoakReport.RenderSection(run) + Environment.NewLine);
 
-        Assert.True(run.Passed, $"{run.Scenario.Title}:{Environment.NewLine}{string.Join(Environment.NewLine, run.Failures.Take(15))}");
+        Assert.True(run.Passed, $"{run.Title}:{Environment.NewLine}{string.Join(Environment.NewLine, run.Failures.Take(15))}");
         Assert.All(run.Passes, p =>
         {
-            Assert.True(p.Seconds < PassSecondsBound, $"{run.Scenario.Title}: a pass took {p.Seconds:0.0} s (bound {PassSecondsBound} s).");
-            Assert.True(p.PeakWorkingSetBytes < WorkingSetBoundBytes, $"{run.Scenario.Title}: the working set reached {p.PeakWorkingSetBytes / (1024.0 * 1024):0} MiB.");
-            Assert.True(p.DbBytes + p.WalBytes < DatabaseBoundBytes, $"{run.Scenario.Title}: the database grew to {(p.DbBytes + p.WalBytes) / (1024.0 * 1024):0} MiB.");
+            Assert.True(p.Seconds < PassSecondsBound, $"{run.Title}: a pass took {p.Seconds:0.0} s (bound {PassSecondsBound} s).");
+            Assert.True(p.PeakWorkingSetBytes < WorkingSetBoundBytes, $"{run.Title}: the working set reached {p.PeakWorkingSetBytes / (1024.0 * 1024):0} MiB.");
+            Assert.True(p.DbBytes + p.WalBytes < DatabaseBoundBytes, $"{run.Title}: the database grew to {(p.DbBytes + p.WalBytes) / (1024.0 * 1024):0} MiB.");
         });
     }
 
@@ -103,7 +103,7 @@ public sealed class SoakFullTests
         var context = new SoakReportContext(commit, branch, DateTimeOffset.UtcNow, SoakProbe.MachineDescription(), total.Elapsed.TotalMinutes);
         File.WriteAllText(path, SoakReport.Render(runs, scale, context, SoakReport.ExistingNotes(path)));
 
-        var failures = runs.SelectMany(r => r.Failures.Select(f => $"{r.Scenario.Title}: {f}")).ToList();
+        var failures = runs.SelectMany(r => r.Failures.Select(f => $"{r.Title}: {f}")).ToList();
         Assert.True(failures.Count == 0, $"The soak found {failures.Count} problem(s); see docs/verification/soak.md:{Environment.NewLine}{string.Join(Environment.NewLine, failures.Take(15))}");
     }
 }
@@ -111,8 +111,87 @@ public sealed class SoakFullTests
 /// <summary>The soak's own machinery: its leak check can fail, its files sit exactly at the caps, and its report keeps what a person wrote in it.</summary>
 public sealed class SoakHarnessTests
 {
-    private static SoakPass Pass(double seconds = 10, long heapAfterDispose = 100, long heapBefore = 100, long heapAfter = 200, int handlesBaseline = 20, int handlesAfterDispose = 20, int sqliteBefore = 2, int sqliteAfter = 2, int sqliteAfterDispose = 0) =>
-        new(seconds, 5, heapBefore, heapAfter, heapAfterDispose, 300, 400, 500, 10, 1, 10, 25, 25, sqliteBefore, sqliteAfter, handlesAfterDispose, handlesBaseline, 3, 1000, sqliteAfterDispose);
+    private static SoakPass Pass(double seconds = 10, long heapAfterDispose = 100, long heapBefore = 100, long heapAfter = 200, int handlesBaseline = 20, int handlesAfterDispose = 20, int sqliteBefore = 2, int sqliteAfter = 2, int sqliteAfterDispose = 0, SoakInHostSample? inHost = null) =>
+        new(seconds, 5, heapBefore, heapAfter, heapAfterDispose, 300, 400, 500, 10, 1, 10, 25, 25, sqliteBefore, sqliteAfter, handlesAfterDispose, handlesBaseline, 3, 1000, sqliteAfterDispose, 0, inHost, inHost?.Items ?? 0);
+
+    /// <summary>A scenario of <paramref name="items"/> items whose settled heap grew by <paramref name="growth"/> bytes over its second half.</summary>
+    private static SoakInHostSample Sample(long growth, int items = 400) => new(items, items / 2, 50_000_000, 50_000_000 + growth);
+
+    [Fact]
+    public void Growth_Within_One_Host_Over_The_Bound_In_Every_Pass_Is_A_Leak_Even_When_Nothing_Is_Left_After_The_Host_Is_Disposed()
+    {
+        var bound = SoakRunner.InHostBound(200);
+        Assert.Equal(1L * 1024 * 1024 + 200 * 16 * 1024, bound);
+
+        // The heap after disposal is flat, so the comparison between the passes sees nothing; the second half of the items grew the heap in each pass.
+        var findings = SoakRunner.Evaluate([Pass(heapAfterDispose: 50_000_000, inHost: Sample(bound + 1)), Pass(heapAfterDispose: 50_000_000, inHost: Sample(bound + 1))]);
+
+        var finding = Assert.Single(findings);
+        Assert.StartsWith("LEAK: within one host the settled managed heap grew", finding, StringComparison.Ordinal);
+        Assert.Contains("200 of 400 items", finding, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Growth_Within_One_Host_At_Or_Under_The_Bound_Or_In_Only_One_Pass_Or_Over_Too_Few_Items_Is_Not_A_Leak()
+    {
+        var bound = SoakRunner.InHostBound(200);
+
+        Assert.Empty(SoakRunner.Evaluate([Pass(inHost: Sample(bound)), Pass(inHost: Sample(bound))]));
+        Assert.Empty(SoakRunner.Evaluate([Pass(inHost: Sample(10 * bound)), Pass(inHost: Sample(0))]));
+        Assert.Empty(SoakRunner.Evaluate([Pass(inHost: Sample(100_000_000, items: 2 * (SoakRunner.InHostMinItems - 1))), Pass(inHost: Sample(100_000_000, items: 2 * (SoakRunner.InHostMinItems - 1)))]));
+        Assert.Empty(SoakRunner.Evaluate([Pass(), Pass()]));
+
+        // Shrinking is never a finding.
+        Assert.Empty(SoakRunner.Evaluate([Pass(inHost: Sample(-5_000_000)), Pass(inHost: Sample(-5_000_000))]));
+    }
+
+    [Fact]
+    public void A_Scenario_Reports_Its_Items_And_The_Heap_Is_Taken_At_The_Half_After_Any_Warm_Up_And_After_The_Last()
+    {
+        var outcome = new SoakOutcome();
+
+        for (var i = 1; i <= 100; i++)
+            outcome.Item(i, 100);
+
+        Assert.NotNull(outcome.InHost);
+        Assert.Equal((100, 50), (outcome.InHost.Items, outcome.InHost.SecondHalfItems));
+
+        // Work whose first 70 items are each different has its half after them.
+        var warm = new SoakOutcome();
+
+        for (var i = 1; i <= 100; i++)
+            warm.Item(i, 100, warmUp: 70);
+
+        Assert.Equal(30, warm.InHost!.SecondHalfItems);
+
+        // Items in steps (a chain's calculations a project at a time) take the half at the first step that reaches it.
+        var steps = new SoakOutcome();
+
+        for (var i = 42; i <= 420; i += 42)
+            steps.Item(i, 420);
+
+        Assert.Equal(210, 420 - steps.InHost!.SecondHalfItems);
+
+        // A scenario that does not report, or stops short, has no sample to be judged on.
+        Assert.Null(new SoakOutcome().InHost);
+        var stopped = new SoakOutcome();
+        stopped.Item(10, 100);
+        Assert.Null(stopped.InHost);
+    }
+
+    [Fact]
+    public void A_Run_Is_Titled_With_The_Numbers_It_Ran_At()
+    {
+        var instances = SoakScenarios.All[0];
+        Assert.Equal("500 calculation instances", instances.TitleFor(SoakScale.Full));
+        Assert.Equal("54 calculation instances", instances.TitleFor(SoakScale.Ci));
+        Assert.Equal("10 revise and supersede cycles", SoakScenarios.All[2].TitleFor(SoakScale.Ci));
+        Assert.Equal("100 Monte Carlo runs", SoakScenarios.All[3].TitleFor(SoakScale.Ci));
+        Assert.Equal("1,000 Monte Carlo runs", SoakScenarios.All[3].TitleFor(SoakScale.Full));
+        Assert.Equal("Imports at their size caps", SoakScenarios.All[4].TitleFor(SoakScale.Full));
+        Assert.Contains("10%", SoakScenarios.All[4].TitleFor(SoakScale.Ci), StringComparison.Ordinal);
+        Assert.Equal(SoakScenarios.All[6].Title, SoakScenarios.All[6].TitleFor(SoakScale.Ci));
+    }
 
     [Fact]
     public void A_Heap_That_Is_Flat_From_One_Pass_To_The_Next_Is_Clean()
@@ -252,7 +331,8 @@ public sealed class SoakHarnessTests
 
         var text = SoakReport.Render([run], SoakScale.Full, context, "A note written by a person.");
         Assert.Contains("# Performance and stability soak", text, StringComparison.Ordinal);
-        Assert.Contains(scenario.Title, text, StringComparison.Ordinal);
+        Assert.Contains(run.Title, text, StringComparison.Ordinal);
+        Assert.Contains("500 calculation instances", text, StringComparison.Ordinal);
         Assert.Contains("Calculations created, run and saved | 500", text, StringComparison.Ordinal);
         Assert.Contains("`abc123` on `branch`", text, StringComparison.Ordinal);
         Assert.Contains("FAILED", text, StringComparison.Ordinal);
@@ -379,11 +459,61 @@ public sealed class SoakHostTests
     }
 }
 
-/// <summary>The leak check run for real: a scenario that keeps what it allocates is caught by the runner, over a real host and two passes.</summary>
+/// <summary>
+/// The leak checks run for real: a scenario that keeps what it allocates is caught by the runner, over a real host and two passes; and so is a service that
+/// keeps what it is given in a field of its own and is thrown away with its host, which the comparison between passes cannot see.
+/// </summary>
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class SoakLeakDetectorTests
 {
     private static readonly List<byte[]> Kept = [];
+
+    /// <summary>A service of the kind the application has: it is made with the host, does its work item by item and is dropped with the host.</summary>
+    private sealed class ItemService(bool keepEverything)
+    {
+        private readonly List<byte[]> _seen = [];
+
+        public int Handle(int item)
+        {
+            var result = new byte[48 * 1024];
+            result[0] = (byte)item;
+
+            if (keepEverything)
+                _seen.Add(result);
+
+            return result.Length + _seen.Count;
+        }
+    }
+
+    private static SoakScenario Items(string id, bool keepEverything) => new(id, id, "400 items through a service.", [], (_, _, outcome, _) =>
+    {
+        var service = new ItemService(keepEverything);
+
+        for (var item = 1; item <= 400; item++)
+        {
+            service.Handle(item);
+            outcome.Item(item, 400);
+        }
+
+        outcome.Fact("Items", 400L);
+        return Task.CompletedTask;
+    });
+
+    [Fact]
+    public async Task A_Service_That_Keeps_Every_Item_In_A_Field_Is_Caught_Within_One_Host_Though_Nothing_Is_Left_After_Disposal_And_One_That_Does_Not_Is_Not()
+    {
+        var caught = await SoakRunner.RunAsync(Items("x-caches", keepEverything: true), SoakScale.Ci);
+
+        // The comparison between passes sees nothing: the service went with its host, so the heap left after disposal is the same each time.
+        Assert.DoesNotContain(caught.LeakFindings, f => f.Contains("left after the host was disposed", StringComparison.Ordinal));
+        Assert.Contains(caught.LeakFindings, f => f.StartsWith("LEAK: within one host", StringComparison.Ordinal));
+        Assert.False(caught.Passed);
+        Assert.All(caught.Passes, p => Assert.True(p.InHost!.SecondHalfGrowth > SoakRunner.InHostBound(200), $"The second half grew by {p.InHost.SecondHalfGrowth / 1024.0:0} KiB."));
+
+        var fine = await SoakRunner.RunAsync(Items("x-drops", keepEverything: false), SoakScale.Ci);
+        Assert.True(fine.Passed, string.Join(Environment.NewLine, fine.Failures));
+        Assert.All(fine.Passes, p => Assert.True(p.InHost!.SecondHalfGrowth <= SoakRunner.InHostBound(200), $"The second half grew by {p.InHost.SecondHalfGrowth / 1024.0:0} KiB."));
+    }
 
     [Fact]
     public async Task A_Scenario_That_Leaks_Is_Caught_By_The_Runner_And_One_That_Does_Not_Is_Not()

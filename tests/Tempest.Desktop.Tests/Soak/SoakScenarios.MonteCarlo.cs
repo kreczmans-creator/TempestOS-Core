@@ -50,6 +50,8 @@ internal static partial class SoakScenarios
                 outcome.Expect(again.Mean == result.Mean && again.StandardDeviation == result.StandardDeviation && again.Histogram.Select(b => b.Count).SequenceEqual(result.Histogram.Select(b => b.Count)), () => $"Engine run {run}: the same seed gave a different answer.");
             }
 
+            outcome.Item(run + 1, scale.EngineMonteCarloRuns);
+
             if ((run + 1) % 250 == 0)
                 SoakScale.Progress($"monte carlo (engine): {run + 1} of {scale.EngineMonteCarloRuns}");
         }
