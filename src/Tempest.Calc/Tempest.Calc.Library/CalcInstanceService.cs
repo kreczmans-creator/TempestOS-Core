@@ -1483,16 +1483,8 @@ public sealed partial class CalcInstanceService
 
     private static IReadOnlyList<CalcInputValue> DefaultInputs(CalcTemplate template) => CalcTemplateHasher.NewSheetInputs(template).Values.ToList();
 
-    internal static string NextRevision(string revision)
-    {
-        if (revision.Length == 1 && revision[0] is >= 'A' and < 'Z')
-            return ((char)(revision[0] + 1)).ToString();
-
-        if (int.TryParse(revision, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n))
-            return (n + 1).ToString(CultureInfo.InvariantCulture);
-
-        return revision + "+";
-    }
+    /// <summary>The label of the revision after <paramref name="revision"/>: A … Z, AA … AZ, BA … (DC-15); see <see cref="CalcRevisionLabel"/>.</summary>
+    internal static string NextRevision(string revision) => CalcRevisionLabel.Next(revision);
 
     private string SheetFileName(CalcInstance instance, string issueReference) =>
         $"{Safe(instance.Name)}-{Safe(issueReference)}-{Safe(instance.Revision)}{(_renderer is null ? ".txt" : SheetFileExtension)}";

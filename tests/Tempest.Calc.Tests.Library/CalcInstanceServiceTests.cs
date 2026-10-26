@@ -438,7 +438,10 @@ public sealed class CalcInstanceServiceTests
     [InlineData("A", "B")]
     [InlineData("Y", "Z")]
     [InlineData("3", "4")]
-    [InlineData("Z", "Z+")]
+    [InlineData("Z", "AA")]
+    [InlineData("AZ", "BA")]
+    [InlineData("ZZ", "AAA")]
+    [InlineData("Z+", "AB")]
     public void Next_Revision(string from, string to) => Assert.Equal(to, CalcInstanceService.NextRevision(from));
 
     [Theory]

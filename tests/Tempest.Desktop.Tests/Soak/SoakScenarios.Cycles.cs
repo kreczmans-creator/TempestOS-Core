@@ -162,8 +162,18 @@ internal static partial class SoakScenarios
         var walked = 0;
 
         for (var at = fingerprints.Count == 0 ? null : byId.GetValueOrDefault(fingerprints[^1].Id); at is not null; at = at.PredecessorId is { } p ? byId.GetValueOrDefault(p) : null)
+        {
             walked++;
 
+            // DC-15: each revision is labelled as the one before it is followed (A … Z, AA … AZ, BA …), so the 101st is two letters, not a 76-character label.
+            if (at.PredecessorId is { } before && byId.GetValueOrDefault(before) is { } earlier)
+            {
+                var (label, earlierLabel) = (at.Revision, earlier.Revision);
+                outcome.Expect(string.Equals(label, CalcRevisionLabel.Next(earlierLabel), StringComparison.Ordinal), () => $"Revision {label} does not follow {earlierLabel}.");
+            }
+        }
+
+        outcome.Expect(longestRevision <= 2 || fingerprints.Count > 702, () => $"A revision label is {longestRevision} characters; the first 702 are at most two letters.");
         outcome.Expect(walked == fingerprints.Count, () => $"Following predecessors from the last revision reaches {walked} revisions; {fingerprints.Count} were issued.");
 
         if (fingerprints.Count > 1)
