@@ -124,6 +124,73 @@ public sealed class FrameTests
             FrameCalculator.Elements((1, 1, 2, 100, 8000)), CalcInputValue.Table("loads", [zero]), CalcInputValue.Of("n_div", 20)).IsBlocked);
     }
 
+    [Theory]
+    [InlineData("udl", "w1", 0)]
+    [InlineData("trapezoid", "w2", 1)]
+    [InlineData("trapezoid", "w1", 2)]
+    [InlineData("point", "F_y", 3)]
+    [InlineData("moment", "M", 4)]
+    [InlineData("nodal", "F_y", 5)]
+    public void A_Load_Row_With_A_Blank_Magnitude_Is_Blocked_Instead_Of_Running_As_Zero(string kind, string blankSymbol, int index)
+    {
+        // struct.frame-2d-R1: SS 6 m, trapezoid a 0, b 6, w1 -10, w2 blank gave SUM R_y 30 kN and M_max 23.09 kN.m (a triangle) where the uniform intent gives 60 kN and 45 kN.m;
+        // a udl row with only F_y filled carried nothing. A blank magnitude is not zero: it is blocked, and an explicit 0 is accepted.
+        _ = index;
+        var cells = new Dictionary<string, CalcCell>
+        {
+            ["case"] = new(1), ["kind"] = new(Text: kind), ["target"] = new(kind == "nodal" ? 2 : 1), ["a"] = new(kind is "point" or "moment" ? 3 : 0, "m"), ["b"] = new(kind is "udl" or "trapezoid" ? 6 : 0, "m"),
+            ["w1"] = new(-10, "kN/m"), ["w2"] = new(-10, "kN/m"), ["F_x"] = new(0, "kN"), ["F_y"] = new(-60, "kN"), ["M"] = new(30, "kN*m"),
+        };
+        CalcRunResult WithRow(IEnumerable<string> blank, double? explicitValue = null)
+        {
+            var row = CalcRow.Of(cells.Where(kv => !blank.Contains(kv.Key)).Select(kv => (kv.Key, kv.Value)).ToArray());
+            return Run(CalcInputValue.Quantity("E", 210, "GPa"), FrameCalculator.Nodes((1, 0, 0, FrameCalculator.SupportPin), (2, 6, 0, FrameCalculator.SupportRollerY)),
+                FrameCalculator.Elements((1, 1, 2, 100, 8000)), CalcInputValue.Table("loads", [row]), CalcInputValue.Of("n_div", 20));
+        }
+
+        // Blank in the field that matters (a point row is blank when F_x and F_y both are, a nodal row when F_x, F_y and M all are).
+        var blanks = kind == "nodal" ? new[] { "F_x", "F_y", "M" } : kind == "point" ? ["F_x", "F_y"] : [blankSymbol];
+        var r = WithRow(blanks);
+        Assert.True(r.IsBlocked);
+        var block = Assert.Single(r.Blocks);
+        Assert.Equal("model", block.RuleId);
+        Assert.StartsWith("loads:", block.Message, StringComparison.Ordinal);
+        Assert.Contains(blanks[0], block.Message, StringComparison.Ordinal);
+
+        Assert.False(WithRow([]).IsBlocked);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    public void A_Couple_At_A_Member_End_Reports_The_Full_Jump_In_The_Greatest_Moment_Port(double a)
+    {
+        // struct.frame-2d-D1: SS 6 m, 30 kN.m couple at the member end: M_abs_e1 was 28.5 kN.m, the correct value is 30 (the stations stop one step short of the jump).
+        var r = Run(CalcInputValue.Quantity("E", 210, "GPa"), FrameCalculator.Nodes((1, 0, 0, FrameCalculator.SupportPin), (2, 6, 0, FrameCalculator.SupportRollerY)),
+            FrameCalculator.Elements((1, 1, 2, 100, 8000)), FrameCalculator.Loads((1, "moment", 1, a, 0, 0, 0, 0, 0, 30)), CalcInputValue.Of("n_div", 20));
+        Assert.Equal(30, r.OutputSi("M_abs_e1") / 1e3, 6);
+    }
+
+    [Fact]
+    public void A_Long_Beam_Cut_Into_Short_Elements_Does_Not_Warn_Large_Deflection_Against_Each_Elements_Own_Length()
+    {
+        // struct.frame-2d-03: 10 m simply supported beam in 20 elements of 0.5 m, midspan deflection 27.2 mm (span/368): 16 warnings "deflects ... more than L/50" (L = 0.5 m, 10 mm).
+        // python3: EI = 210 GPa x 22800 cm4 = 47880 kN.m2; 5 w L^4/(384 EI) with w 10 kN/m = 27.2 mm.
+        const int n = 20;
+        var nodes = Enumerable.Range(0, n + 1).Select(i => (i + 1, 10.0 * i / n, 0.0, i == 0 ? FrameCalculator.SupportPin : i == n ? FrameCalculator.SupportRollerY : FrameCalculator.SupportFree)).ToArray();
+        var elements = Enumerable.Range(0, n).Select(i => (i + 1, i + 1, i + 2, 100.0, 22800.0)).ToArray();
+        var loads = Enumerable.Range(0, n).Select(i => (1, "udl", i + 1, 0.0, 0.0, -10.0, 0.0, 0.0, 0.0, 0.0)).ToArray();
+        var r = Run(CalcInputValue.Quantity("E", 210, "GPa"), FrameCalculator.Nodes(nodes), FrameCalculator.Elements(elements), FrameCalculator.Loads(loads), CalcInputValue.Of("n_div", 8));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(27.2, r.OutputSi("d_max") * 1e3, 1);
+        Assert.DoesNotContain(r.Notices, nt => nt.RuleId == "large-deflection");
+
+        // A single 10 m member deflecting more than L/50 = 200 mm still warns (EI 1/10: 272 mm).
+        var single = Run(CalcInputValue.Quantity("E", 210, "GPa"), FrameCalculator.Nodes((1, 0, 0, FrameCalculator.SupportPin), (2, 10, 0, FrameCalculator.SupportRollerY)),
+            FrameCalculator.Elements((1, 1, 2, 100, 2280)), FrameCalculator.Loads((1, "udl", 1, 0, 0, -10, 0, 0, 0, 0)), CalcInputValue.Of("n_div", 8));
+        Assert.Contains(single.Notices, nt => nt.RuleId == "large-deflection");
+    }
+
     [Fact]
     public void Released_End_Carries_No_Moment()
     {

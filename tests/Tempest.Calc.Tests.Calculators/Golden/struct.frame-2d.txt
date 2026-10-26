@@ -179,5 +179,5 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   No warnings.
 
 8. VERIFICATION
-  Template: struct.frame-2d@1.3.0
+  Template: struct.frame-2d@1.4.0
   Known-answer cases passed: 6/6
