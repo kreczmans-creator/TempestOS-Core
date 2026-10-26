@@ -3112,7 +3112,7 @@
       "symbol": "F_dyn",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "equivalent-dynamic-load",
           "quantity": "Force",
           "units": [
             "kN"
@@ -3121,6 +3121,7 @@
             "Equivalent dynamic load"
           ],
           "templates": [
+            "mech.bearing-life",
             "mech.bearing-life-basic"
           ]
         }
@@ -5226,7 +5227,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Basic rating life (Mrev)",
+            "Basic rating life in millions of revolutions",
             "L₁₀ (millions of revolutions)"
           ],
           "templates": [
@@ -5501,7 +5502,7 @@
           "units": [],
           "descriptions": [
             "Modified life (millions of revolutions)",
-            "Modified rating life (Mrev)"
+            "Modified rating life in millions of revolutions"
           ],
           "templates": [
             "mech.bearing-life",
@@ -7150,19 +7151,6 @@
           ]
         },
         {
-          "meaning": "equivalent-dynamic-load",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Equivalent dynamic load"
-          ],
-          "templates": [
-            "mech.bearing-life"
-          ]
-        },
-        {
           "meaning": "heat-loss-per-item",
           "quantity": "Power, heat flow",
           "units": [
@@ -8322,20 +8310,6 @@
           ]
         },
         {
-          "meaning": "reliability",
-          "quantity": "Percent quantity",
-          "units": [
-            "%"
-          ],
-          "descriptions": [
-            "Reliability"
-          ],
-          "templates": [
-            "mech.bearing-life",
-            "mech.shaft"
-          ]
-        },
-        {
           "meaning": "thermal-resistance",
           "quantity": "Thermal resistance",
           "units": [
@@ -8349,6 +8323,19 @@
           "templates": [
             "bs.insulation",
             "elec.thermal-chain"
+          ]
+        },
+        {
+          "meaning": "reliability",
+          "quantity": "Percent quantity",
+          "units": [
+            "%"
+          ],
+          "descriptions": [
+            "Reliability"
+          ],
+          "templates": [
+            "mech.shaft"
           ]
         },
         {
@@ -8968,6 +8955,24 @@
           ],
           "templates": [
             "mech.mechanism"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "R_rel",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Percent quantity",
+          "units": [
+            "%"
+          ],
+          "descriptions": [
+            "Reliability"
+          ],
+          "templates": [
+            "mech.bearing-life"
           ]
         }
       ]
@@ -11948,7 +11953,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Radial factor X for F_a/F_r > e",
+            "Radial factor for F_a/F_r above e",
             "Radial load factor (bearing catalogue)"
           ],
           "templates": [
@@ -12080,7 +12085,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Axial factor Y for F_a/F_r > e (from the manufacturer; Y = 0 makes the axial load count for nothing and is refused when one acts)",
+            "Axial factor for F_a/F_r above e (from the manufacturer; zero makes the axial load count for nothing and is refused when one acts)",
             "Axial load factor (bearing catalogue)"
           ],
           "templates": [
@@ -18765,7 +18770,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Viscosity ratio κ used for a_ISO (0.1 to 100; above 4 it is read at 4)"
+            "Viscosity ratio κ, 0.1 to 100, used for a_ISO (optional; blank = κ is not checked; above 4 it is read at 4)"
           ],
           "templates": [
             "mech.bearing-life"

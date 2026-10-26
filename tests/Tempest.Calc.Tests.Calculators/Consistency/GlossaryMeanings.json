@@ -126,6 +126,12 @@
    "mech.bearing-life-basic"
   ]
  },
+ "F_dyn": {
+  "equivalent-dynamic-load": [
+   "mech.bearing-life",
+   "mech.bearing-life-basic"
+  ]
+ },
  "F_ext": {
   "extend-force": [
    "fp.cylinder"
@@ -447,9 +453,6 @@
   "electrical-input-power": [
    "elec.load-budget"
   ],
-  "equivalent-dynamic-load": [
-   "mech.bearing-life"
-  ],
   "heat-loss-per-item": [
    "elec.enclosure-heat"
   ],
@@ -514,7 +517,6 @@
    "struct.lifting"
   ],
   "reliability": [
-   "mech.bearing-life",
    "mech.shaft"
   ],
   "resistance": [

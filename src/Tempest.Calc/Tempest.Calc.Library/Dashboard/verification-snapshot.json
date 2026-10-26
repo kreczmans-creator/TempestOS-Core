@@ -4,8 +4,8 @@
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
   "knownDefects": "f503dc243b72bd6d14a26dd72c715cf4ef74eecacdd6bcf48830d5d1c2fd8ac3",
-  "katResults": "24ea1a37ef0bb6c0556ee2fbe4d472c5078f91361bb4ff4721f2d8bae1ba16f5",
-  "workedExamples": "bfd54360313446ace0e144a032c17a3df9863885d4d180e621e8c004c1c51254",
+  "katResults": "56995b7e7747b118cb00b4764994448507be538e6597a6bff46ef4a52c08fd7a",
+  "workedExamples": "54447b2e3a9b197ad17efa410299ea6ea12ae70c5d5ade023c810bcb062e44e4",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
  "defectTotals": {
@@ -1269,7 +1269,7 @@
   "mech.bearing-life": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.2.0",
+    "version": "1.3.0",
     "kats": 5,
     "katsPassed": 5,
     "failedKats": [],

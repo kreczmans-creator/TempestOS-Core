@@ -40,7 +40,7 @@ Factor of safety against yield and against ultimate: n_y = f_y/σ; n_u = f_u/σ.
   n_gov = 2.5    Governing factor
   n_y = 2.5    Factor on yield
   n_u = 3.75    Factor on ultimate
-  u = 0.60    Utilisation
+  u = 0.60    Utilisation (governing)
 
 6. Checks (governing first)
   PASS  Required factor of safety against the governing factor: 1.5 vs 2.5  utilisation 0.60  « Shigley §1-10

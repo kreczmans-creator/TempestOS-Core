@@ -235,9 +235,11 @@ public sealed class CalcRunContext
 
     /// <summary>
     /// Records a utilisation check: demand/capacity, passed when utilisation ≤ 1 (within a hair of rounding). A failing check shows its demand rounded up and
-    /// its capacity rounded down, so the two never print as equal or in the passing order (C2-21).
+    /// its capacity rounded down, so the two never print as equal or in the passing order (C2-21). <paramref name="resultSymbol"/> names the output the sheet
+    /// marks as governing when this check governs (the utilisation the demand and the capacity give); it is the demand when it is not given, so a check
+    /// whose demand is an input (a required life against the life achieved) can still mark the utilisation output it belongs to.
     /// </summary>
-    public CalcCheck Check(string name, string demandSymbol, string capacitySymbol, string? clause = null, double tolerance = 1e-9)
+    public CalcCheck Check(string name, string demandSymbol, string capacitySymbol, string? clause = null, double tolerance = 1e-9, string? resultSymbol = null)
     {
         var d = Session.GetScalar(demandSymbol);
         var c = Session.GetScalar(capacitySymbol);
@@ -260,8 +262,15 @@ public sealed class CalcRunContext
             capacityText = CalcDisplay.Format(c, mode: CalcDisplay.Rounding.TowardZero, strict: true);
         }
 
-        var check = new CalcCheck(name, demandText, capacityText, u, passed, demandSymbol, clause);
+        var check = new CalcCheck(name, demandText, capacityText, u, passed, resultSymbol ?? demandSymbol, clause);
         _checks.Add(check);
+
+        // An output named as the result of this check is its utilisation: it is shown by this check's verdict, as an output of a utilisation check is (C2-31).
+        if (resultSymbol is not null)
+        {
+            _kinds.TryAdd(resultSymbol, CalcOutputKind.Utilisation);
+            _utilisationVerdicts[resultSymbol] = _utilisationVerdicts.TryGetValue(resultSymbol, out var earlier) ? earlier && passed : passed;
+        }
 
         // The Results rows of the two quantities must not show the passing side either: the demand of a failing check is shown rounded up and its capacity rounded down (C2-21).
         if (!passed)

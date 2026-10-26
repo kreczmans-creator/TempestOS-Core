@@ -108,7 +108,7 @@ public sealed class BearingLifeBasicCalculator : ICalcCalculator
         if (c.Si("L_req") > 0)
         {
             c.Assign("u_life", "L_req / L_nmh", null, "Required over modified life");
-            c.Check("Required life against modified life", "L_req", "L_nmh", "ISO 281:2007 cl. 6");
+            c.Check("Required life against modified life", "L_req", "L_nmh", "ISO 281:2007 cl. 6", resultSymbol: "u_life");
         }
     }
 }

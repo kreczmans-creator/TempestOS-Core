@@ -73,6 +73,6 @@ public sealed class MaterialMarginCalculator : ICalcCalculator
         c.Output("n_y", "Factor on yield");
         c.Output("n_gov", "Governing factor");
         c.Output("u", "Utilisation");
-        c.Check("Required factor of safety against the governing factor", "n_req", "n_gov", "Shigley §1-10");
+        c.Check("Required factor of safety against the governing factor", "n_req", "n_gov", "Shigley §1-10", resultSymbol: "u");
     }
 }

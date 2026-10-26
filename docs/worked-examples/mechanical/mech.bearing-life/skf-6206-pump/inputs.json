@@ -55,7 +55,7 @@
     "ValueText": "5000"
   },
   {
-    "Symbol": "R",
+    "Symbol": "R_rel",
     "Number": 95,
     "Unit": "%",
     "Provenance": {

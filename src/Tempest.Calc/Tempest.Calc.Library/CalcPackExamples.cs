@@ -59,7 +59,7 @@ internal static class CalcPackExamples
 
     public static IReadOnlyList<CalcInputValue> DriveM5 { get; } =
     [
-        C("type", "ball (p = 3)"), Q("C", 25.5, "kN"), Q("C_0", 15.3, "kN"), Q("R", 90, "%"), Q("L_req", 20000, "h"),
+        C("type", "ball (p = 3)"), Q("C", 25.5, "kN"), Q("C_0", 15.3, "kN"), Q("R_rel", 90, "%"), Q("L_req", 20000, "h"),
     ];
 
     /// <summary>
@@ -660,7 +660,7 @@ internal static class CalcPackExamples
     /// <summary>Cam-shaft bearing A: a ball bearing with INVENTED ratings (C 3.5 kN, C₀ 1.8 kN), 90 % reliability and a 20 000 h life; its radial load and speed arrive by link.</summary>
     public static IReadOnlyList<CalcInputValue> CamM5 { get; } =
     [
-        C("type", "ball (p = 3)"), Q("C", 3.5, "kN"), Q("C_0", 1.8, "kN"), Q("R", 90, "%"), Q("L_req", 20000, "h"),
+        C("type", "ball (p = 3)"), Q("C", 3.5, "kN"), Q("C_0", 1.8, "kN"), Q("R_rel", 90, "%"), Q("L_req", 20000, "h"),
     ];
 
     /// <summary>

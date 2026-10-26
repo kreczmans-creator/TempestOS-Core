@@ -170,7 +170,7 @@ public static class MechanicalWorkedExamples
                 CalcInputValue.Of("Y", 2, Book("Manufacturer factor for single-row deep groove bearings")),
                 CalcInputValue.Of("X_0", 0.6, Book("Manufacturer static factor")),
                 CalcInputValue.Of("Y_0", 0.5, Book("Manufacturer static factor")),
-                CalcInputValue.Quantity("R", 95, "%", CalcProvenance.Assumed("Client reliability target.")),
+                CalcInputValue.Quantity("R_rel", 95, "%", CalcProvenance.Assumed("Client reliability target.")),
                 CalcInputValue.Of("a_iso", 2, CalcProvenance.Assumed("Read from the manufacturer's life tool for clean ISO VG 68 oil.")),
                 CalcInputValue.Quantity("L_req", 5000, "h", CalcProvenance.Specification("Pump specification, minimum bearing life")),
                 CalcInputValue.Of("s_0_req", 1, CalcProvenance.Assumed("Normal running, smooth loads.")),
