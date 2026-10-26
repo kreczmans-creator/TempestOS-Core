@@ -159,12 +159,16 @@ public sealed class RecordImportTests
         var made = await host.Service.RecordImport.CommitAsync(Request("62", materials, Provenance(title: string.Empty)));
         Assert.True(made.Committed, made.Refusal);
         Assert.Equal(["Test alloy", "Test plastic"], made.Records.Select(r => r.Title).Order());
+
+        // A material states each property in the unit of its datasheet (GPa for E): any unit of the right kind is a match, with no warning.
+        Assert.DoesNotContain(made.Preview.Warnings, w => w.Message.Contains("the header gives", StringComparison.Ordinal));
         Assert.Equal(1, made.Records[0].Revision);
         Assert.True(made.Records.All(r => r.IsLicensed()));
 
         var tables = Csv("material[text],property[text],T[degC],v[-],v_unit[text]", "Test alloy,E,20,200,GPa", "Test alloy,E,100,195,GPa", "Test alloy,E,200,185,GPa");
         var added = await host.Service.RecordImport.CommitAsync(Request("63", tables, Provenance(title: string.Empty)));
         Assert.True(added.Committed, added.Refusal);
+        Assert.DoesNotContain(added.Preview.Warnings, w => w.Message.Contains("the header gives", StringComparison.Ordinal));
         var alloy = Assert.Single(added.Records);
         Assert.Equal(2, alloy.Revision);
         Assert.Equal(made.Records.Single(r => r.Title == "Test alloy").Id, alloy.Id);
@@ -187,6 +191,37 @@ public sealed class RecordImportTests
         var record = Assert.Single(outcome.Records);
         Assert.Null(record.Values[0].Source!.EvidenceSha256);
         Assert.Contains("Typed on the records screen", record.Notes, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Typed_Grid_Becomes_The_Same_Csv_A_File_Is_And_Its_Findings_Name_The_Typed_Row()
+    {
+        var host = Host();
+        var template = RecordTemplates.Find("06")!;
+        var rows = new IReadOnlyList<string>[]
+        {
+            ["air, dry", "PVC", "20", "0.99"],
+            ["", "", "", ""],
+            ["air, dry", "PVC", "30", "oops"],
+        };
+        var csv = RecordImportService.GridToCsv(template, ["", "", "degC", ""], rows);
+
+        // A blank row is left out and the typed row of each line is kept; a comma in a cell is quoted.
+        Assert.Equal([1, 3], csv.GridRowOfLine);
+        var text = Encoding.UTF8.GetString(csv.Bytes);
+        Assert.StartsWith("medium[text],insulation[text],theta_a[degC],C_a[-]\r\n\"air, dry\",PVC,20,0.99\r\n", text, StringComparison.Ordinal);
+
+        var preview = await host.Service.RecordImport.PreviewAsync(Request("06", csv.Bytes, fileName: null));
+        var error = Assert.Single(preview.Errors);
+        Assert.Equal(3, error.Line);
+        Assert.Equal(3, csv.GridRowOfLine[error.Line!.Value - 2]);
+
+        // A unit typed for a dimensionless column is refused; one left blank on a dimensioned column is a missing unit.
+        var wrongUnit = RecordImportService.GridToCsv(template, ["", "", "", "kg"], [["air", "PVC", "20", "0.9"]]);
+        Assert.Equal(RecordUnitCheck.Mismatch, (await host.Service.RecordImport.PreviewAsync(Request("06", wrongUnit.Bytes, fileName: null))).Columns.Single(c => c.Symbol == "C_a").Unit);
+        var noUnit = RecordImportService.GridToCsv(template, ["", "", "", ""], [["air", "PVC", "20", "0.9"]]);
+        Assert.Equal("-", RecordUnits.SplitHeader(Encoding.UTF8.GetString(noUnit.Bytes).Split("\r\n")[0].Split(',')[2]).Unit);
+        Assert.Equal(RecordUnitCheck.Missing, (await host.Service.RecordImport.PreviewAsync(Request("06", noUnit.Bytes, fileName: null))).Columns.Single(c => c.Symbol == "theta_a").Unit);
     }
 
     [Fact]
@@ -234,6 +269,47 @@ public sealed class RecordImportTests
         Assert.Contains("empty", empty.Refusal, StringComparison.Ordinal);
 
         Assert.Empty(await host.Store.ListRecordsAsync());
+    }
+
+    [Fact]
+    public async Task Hostile_Files_Are_Refused_By_The_Hardened_Primitives_And_Never_Throw()
+    {
+        var host = Host();
+        var service = host.Service.RecordImport;
+        var header = "CSA[mm2],AWG[-],I_t[A]\r\n";
+
+        var tooBig = await service.PreviewAsync(Request("04", new byte[6 * 1024 * 1024]));
+        Assert.Contains("larger than", tooBig.Refusal, StringComparison.Ordinal);
+
+        var tooManyRows = await service.PreviewAsync(Request("04", Utf8(header + string.Concat(Enumerable.Repeat("1,,2\r\n", 1100)))));
+        Assert.Contains("more than", tooManyRows.Refusal, StringComparison.Ordinal);
+
+        var longField = await service.PreviewAsync(Request("06", Utf8("medium[text],insulation[text],theta_a[degC],C_a[-]\r\n" + new string('x', 5000) + ",PVC,20,0.9\r\n")));
+        Assert.Contains("longer than", longField.Refusal, StringComparison.Ordinal);
+
+        var bidi = await service.PreviewAsync(Request("06", Utf8("medium[text],insulation[text],theta_a[degC],C_a[-]\r\nai‮r,PVC,20,0.9\r\n")));
+        Assert.Contains("direction-changing", bidi.Refusal, StringComparison.Ordinal);
+
+        var tooManyColumns = await service.PreviewAsync(Request("04", Utf8(string.Join(',', Enumerable.Range(0, 80).Select(i => "c" + i)) + "\r\n1\r\n")));
+        Assert.Contains("columns", tooManyColumns.Refusal, StringComparison.Ordinal);
+
+        // A byte order mark is dropped, and a file with LF line ends reads as one with CRLF.
+        var bom = new byte[] { 0xEF, 0xBB, 0xBF }.Concat(Utf8(header + "1.5,,15\n2.5,,20\n")).ToArray();
+        Assert.True((await service.PreviewAsync(Request("04", bom))).CanCommit);
+
+        // Whatever bytes arrive, the answer is a preview, not an exception.
+        var random = new Random(26_10_2026);
+
+        for (var i = 0; i < 150; i++)
+        {
+            var junk = new byte[random.Next(1, 400)];
+            random.NextBytes(junk);
+            var templateId = new[] { "04", "06", "02", "45", "62", "63", "64", "65" }[i % 8];
+            var preview = await service.PreviewAsync(Request(templateId, i % 3 == 0 ? junk : Utf8(RecordTemplates.Find(templateId)!.Header + "\r\n" + Encoding.Latin1.GetString(junk).Replace('\0', ' '))));
+            Assert.False(preview.CanCommit);
+        }
+
+        Assert.Empty(await host.Store.ListRecordsAsync("cable.ampacity"));
     }
 
     [Fact]

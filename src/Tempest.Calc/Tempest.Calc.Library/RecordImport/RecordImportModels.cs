@@ -62,6 +62,9 @@ public sealed record RecordProvenanceInput(
     }
 }
 
+/// <summary>A table typed on the screen written as the CSV the importer reads, with the typed row each data line came from (1-based, line 2 first).</summary>
+public sealed record RecordGridCsv(byte[] Bytes, IReadOnlyList<int> GridRowOfLine);
+
 /// <summary>One row of a Track P <c>_provenance.csv</c> as read: the kind it names and the provenance fields.</summary>
 public sealed record RecordProvenanceRow(string Kind, RecordProvenanceInput Provenance, string EnteredBy);
 

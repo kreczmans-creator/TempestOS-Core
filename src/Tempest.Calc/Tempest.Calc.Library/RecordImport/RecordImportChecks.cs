@@ -90,6 +90,9 @@ internal sealed class BoundColumn
     /// <summary>Any unit is accepted (a coefficient whose unit follows another value), but one must be given.</summary>
     public bool AnyUnit { get; set; }
 
+    /// <summary>Any unit of the expected dimension is simply a match (a material states its properties in the unit of its datasheet; a temperature is in degC, K or degF).</summary>
+    public bool DimensionOnly { get; set; }
+
     public RecordUnitCheck UnitCheck { get; set; } = RecordUnitCheck.NotApplicable;
 
     public string UnitMessage { get; set; } = string.Empty;

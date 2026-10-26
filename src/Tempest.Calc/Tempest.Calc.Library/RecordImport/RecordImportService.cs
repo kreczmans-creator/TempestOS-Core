@@ -48,6 +48,41 @@ public sealed class RecordImportService
         return template.Header + "\r\n";
     }
 
+    /// <summary>
+    /// A table typed on the records screen, as the CSV the importer reads: the template's header (with the units the person set), then the rows
+    /// that have anything in them. <see cref="RecordGridCsv.GridRowOfLine"/> says which typed row each data line is, so a finding on line 3 is
+    /// reported against the right row. The typed table goes through the same checks as a file.
+    /// </summary>
+    /// <param name="template">The template whose columns the grid has.</param>
+    /// <param name="units">The unit of each column as typed (ignored for a text column; blank for a dimensionless one).</param>
+    /// <param name="rows">The typed rows, one text per column.</param>
+    public static RecordGridCsv GridToCsv(RecordTemplate template, IReadOnlyList<string> units, IReadOnlyList<IReadOnlyList<string>> rows)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        ArgumentNullException.ThrowIfNull(units);
+        ArgumentNullException.ThrowIfNull(rows);
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append(string.Join(',', template.Columns.Select((c, i) => $"{QuoteCsv(c.Symbol)}[{(c.IsText ? "text" : string.IsNullOrWhiteSpace(i < units.Count ? units[i] : null) ? "-" : units[i].Trim())}]"))).Append("\r\n");
+        var lineOf = new List<int>();
+
+        for (var r = 0; r < rows.Count; r++)
+        {
+            var cells = Enumerable.Range(0, template.Columns.Count).Select(i => i < rows[r].Count ? rows[r][i] ?? string.Empty : string.Empty).ToList();
+
+            if (cells.All(string.IsNullOrWhiteSpace))
+                continue;
+
+            sb.Append(string.Join(',', cells.Select(c => QuoteCsv(c.Trim())))).Append("\r\n");
+            lineOf.Add(r + 1);
+        }
+
+        return new RecordGridCsv(new System.Text.UTF8Encoding(false).GetBytes(sb.ToString()), lineOf);
+    }
+
+    private static string QuoteCsv(string text) =>
+        text.IndexOfAny([',', '"', '\r', '\n']) >= 0 ? "\"" + text.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"" : text;
+
     // ------------------------------------------------------------------
     // Provenance file
     // ------------------------------------------------------------------
@@ -438,6 +473,7 @@ public sealed class RecordImportService
                     column.Role = RecordColumnRole.MaterialProperty;
                     column.Target = "T";
                     Expect(column, CalcInputKind.Quantity, "K");
+                    column.DimensionOnly = true;
                     break;
 
                 case ("63", "v"):
@@ -456,6 +492,7 @@ public sealed class RecordImportService
                     column.Role = RecordColumnRole.MaterialProperty;
                     column.Target = "Es";
                     Expect(column, CalcInputKind.Quantity, "Pa");
+                    column.DimensionOnly = true;
                     break;
 
                 case ("65", "mu"):
@@ -489,6 +526,7 @@ public sealed class RecordImportService
         }
 
         Expect(column, CalcInputKind.Quantity, siUnit);
+        column.DimensionOnly = true;
     }
 
     private static void Expect(BoundColumn column, CalcInputKind kind, string unit)
@@ -560,6 +598,9 @@ public sealed class RecordImportService
 
         if (fileUnit.Dimension != expected.Dimension)
             return (RecordUnitCheck.Mismatch, $"{symbol}: the unit '{given}' does not measure the same quantity as '{c.ExpectedUnitText}', the unit the calculator takes.");
+
+        if (c.DimensionOnly)
+            return (RecordUnitCheck.Match, string.Empty);
 
         if (Math.Abs(fileUnit.Factor - expected.Factor) <= 1e-12 * Math.Abs(expected.Factor) && Math.Abs(fileUnit.Offset - expected.Offset) <= 1e-12 * Math.Max(1, Math.Abs(expected.Offset)))
             return (RecordUnitCheck.Match, string.Empty);
