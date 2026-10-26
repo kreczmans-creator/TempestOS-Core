@@ -28,6 +28,29 @@ public sealed class PipeExpansionTests
 
     private static string Screen(CalcRunResult r) => ((TextValue)r.FindOutput("screen")!.Value).Value;
 
+    [Fact]
+    public void The_Anchor_Force_Can_Include_The_Friction_Of_The_Sliding_Supports_And_Warns_When_It_Does_Not()
+    {
+        // bs.pipe-expansion-R1: 88.9 x 3.2 steel, water-filled 12.1 kg/m, 50 m on slides at mu 0.3: friction 0.3 x 12.1 x 9.80665 x 50 = 1779.9 N (python3), 4.6 times the 388 N leg force
+        // the anchor_force output held alone; with friction on the run the resultant is sqrt((388.109 + 1779.9)^2 + 0.0805^2) = 2168.0 N.
+        var without = Run();
+        Assert.Equal(388.1088, without.OutputSi("anchor_force"), 3);
+        Assert.Equal(0, without.OutputSi("F_friction"));
+        Assert.Contains(without.Warnings, w => w.RuleId == "friction");
+
+        var with = Run(CalcInputValue.Of("mu", 0.3), Q("w_pipe", 12.1, "kg/m"));
+        Assert.Equal(1779.9, with.OutputSi("F_friction"), 1);
+        Assert.Equal(Math.Sqrt(Math.Pow(388.1088087998 + 1779.9, 2) + 0.0804782 * 0.0804782), with.OutputSi("anchor_force"), 1);
+        Assert.Equal(2168.0, with.OutputSi("anchor_force"), 0);
+        Assert.DoesNotContain(with.Warnings, w => w.RuleId == "friction");
+
+        // Only the length on slides counts: half of the 50 m.
+        Assert.Equal(889.95, Run(CalcInputValue.Of("mu", 0.3), Q("w_pipe", 12.1, "kg/m"), Q("L_slide", 25, "m")).OutputSi("F_friction"), 1);
+
+        // One of the two entered: not used, and the sheet says which is missing.
+        Assert.Contains(Run(CalcInputValue.Of("mu", 0.3)).Warnings, w => w.RuleId == "friction" && w.Message.Contains("w_pipe", StringComparison.Ordinal));
+    }
+
     // ------------------------------------------------------------------ growth and the restrained case
 
     [Fact]

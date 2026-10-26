@@ -1,4 +1,4 @@
-# B8 — Pipe expansion, loops and anchor forces (`bs.pipe-expansion@1.2.2`)
+# B8 — Pipe expansion, loops and anchor forces (`bs.pipe-expansion@1.3.0`)
 
 **In plain terms.** A hot pipe grows longer, and if its ends are held it pushes on its anchors or buckles; a cold pipe shrinks and pulls. The worksheet works out the growth between anchors from the temperature change, the force and stress if the pipe is fully restrained, and the length of an offset or loop that absorbs the growth within a stress range you allow. It is a quick screening, not a piping stress analysis.
 
@@ -41,6 +41,8 @@
 **Version 1.1.0 (review fixes).** Screening `Y` is the resultant `α·|ΔT|·U` (was `ΔL`: unconservative for an offset leg); the run of an offset leg is checked for the leg's growth; the axial bellows layout; `E` is the reference-temperature modulus with an optional `E_hot` for the reactions; `pass` is 0 without a `K1`; the section, `ΔL` and `F_r` no longer wait for `Sa`; `dL_signed` and `direction`; `dT_in` limit −300 K; the short-leg warning is about the available leg only; the elbow intensification factor is its own assumption.
 
 **Version 1.2.0 (second review).** `anchor_force` is the resultant `√(F_leg² + F_run²)` of the perpendicular components (also reported separately); `anchor_moment` is stated as the guided-cantilever simplification and not a frame anchor moment; the optional second run `L2` makes the offset-leg layout a Z-bend, each run checked as its own cantilever (replacing the earlier advice to enter a combined spacing); the method text is reworded; `k1-unused` is its own warning and the warnings are prefixed with the input they are about; `P_b` is the governing pressure and the compression/extension rating note is added.
+
+**Version 1.3.0 (support friction).** The anchor force holds the leg's (or runs', or bellows') force alone; the slides and guides between the anchor and the loop add `μ·w·L_slide` along the run (88.9 × 3.2 steel, water-filled 12.1 kg/m, 50 m on slides at μ 0.3: 1.78 kN against the leg's 388 N). New optional inputs `mu`, `w_pipe` (kg/m) and `L_slide` (blank: the anchor spacing `L`) give the output `F_friction` and fold it into `F_along_run` and `anchor_force` (the resultant for an offset leg or Z-bend, the sum for a U-loop or bellows); when `μ` and `w_pipe` are not both entered `F_friction` is 0 and the sheet warns (rule `friction`) that the anchor force holds no support friction. The pack `pack.pipework-supports` binds `anchor_force` to the post's `F_x`; its example enters no friction, so it carries the warning.
 
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
 **Worked example, by hand.** Low-temperature hot-water main, 50 m between anchors: a U-loop of two 4 m legs ([sheet](../../worked-examples/building-services/bs.pipe-expansion/lthw-main-expansion-loop/sheet.txt)).
