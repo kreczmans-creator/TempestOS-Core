@@ -49,6 +49,24 @@ internal sealed record SoakScale
     /// <summary>Scenario 5: the share of each import cap the accepted "largest" files reach (1 is the cap itself).</summary>
     public required double ImportFraction { get; init; }
 
+    /// <summary>Scenario 6: times the licensed reference record is revised (each attempt to release it from the licence lock failing first).</summary>
+    public required int RecordRevisions { get; init; }
+
+    /// <summary>Scenario 7: times the demonstration project is installed and removed.</summary>
+    public required int DemoCycles { get; init; }
+
+    /// <summary>Scenario 8: reference records in the store when the dashboard is built on a full store.</summary>
+    public required int DashboardRecords { get; init; }
+
+    /// <summary>Scenario 8: finished guided runs (of the whole script) in the store when the dashboard is built on a full store.</summary>
+    public required int DashboardRuns { get; init; }
+
+    /// <summary>Scenario 8: times the dashboard is built on the full store (and a fifth of that on the seeded one).</summary>
+    public required int DashboardBuilds { get; init; }
+
+    /// <summary>Scenario 9: guided runs started, filled in step by step (all 110 steps) and finished through the service; the run store's cap is 1,000, and a smaller number here is topped up to it directly.</summary>
+    public required int GuidedRuns { get; init; }
+
     /// <summary>The scale <c>TEMPEST_SOAK=full</c> selects: the specification's numbers.</summary>
     public static SoakScale Full { get; } = new()
     {
@@ -64,6 +82,12 @@ internal sealed record SoakScale
         RunAtCalculatorCap = true,
         TornadoSweeps = 1_000,
         ImportFraction = 1.0,
+        RecordRevisions = 100,
+        DemoCycles = 20,
+        DashboardRecords = 10_000,
+        DashboardRuns = 1_000,
+        DashboardBuilds = 40,
+        GuidedRuns = 1_000,
     };
 
     /// <summary>The always-on scale: about a tenth of <see cref="Full"/>, with the depth of a chain and the import caps' refusals unchanged.</summary>
@@ -81,6 +105,12 @@ internal sealed record SoakScale
         RunAtCalculatorCap = false,
         TornadoSweeps = 100,
         ImportFraction = 0.1,
+        RecordRevisions = 10,
+        DemoCycles = 2,
+        DashboardRecords = 300,
+        DashboardRuns = 20,
+        DashboardBuilds = 5,
+        GuidedRuns = 12,
     };
 
     /// <summary>Whether this run was asked for the full soak.</summary>

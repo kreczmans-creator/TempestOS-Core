@@ -120,6 +120,29 @@ internal static class SoakProbe
         return count;
     }
 
+    /// <summary>
+    /// What the database holds, counted in its own pages by a second, short-lived connection (the write-ahead log is part of what it sees): the
+    /// pages in use and the pages on its free list (deleted rows' pages, reused before the file grows again), in bytes. The file's size cannot say this:
+    /// SQLite never shortens its file when rows are deleted, and the write-ahead log is folded into it at moments the soak does not choose.
+    /// </summary>
+    public static (long UsedBytes, long FreeBytes) LogicalDatabase(string path)
+    {
+        using var connection = new Microsoft.Data.Sqlite.SqliteConnection(new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder { DataSource = path, Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadWrite, Pooling = false }.ToString());
+        connection.Open();
+
+        long Pragma(string name)
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA " + name + ";";
+            return Convert.ToInt64(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        var pageSize = Pragma("page_size");
+        var pages = Pragma("page_count");
+        var free = Pragma("freelist_count");
+        return ((pages - free) * pageSize, free * pageSize);
+    }
+
     public static long FileBytes(string path) => File.Exists(path) ? new FileInfo(path).Length : 0;
 
     /// <summary>A one-line description of the machine, for the report.</summary>

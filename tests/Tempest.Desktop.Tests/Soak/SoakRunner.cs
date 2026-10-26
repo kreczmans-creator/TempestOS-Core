@@ -8,7 +8,7 @@ internal sealed record SoakScenario(string Id, string Title, string Covers, IRea
 
 internal static partial class SoakScenarios
 {
-    /// <summary>The five scenarios of Addendum C, C-7, in the order the specification lists them.</summary>
+    /// <summary>The five scenarios of Addendum C, C-7, in the order the specification lists them, then the four that soak what the merged features (C-3 record import, C-6 demo project, C-4 dashboard, C-5 guided test) add.</summary>
     public static IReadOnlyList<SoakScenario> All { get; } =
     [
         new("1-instances", "500 calculation instances", "Create, run and save a calculation of every template, from its shipped worked example, in one project.", ["Calculations created, run and saved", "Templates covered", "Database growth per calculation (KB)"], InstancesAsync),
@@ -16,6 +16,10 @@ internal static partial class SoakScenarios
         new("3-cycles", "100 revise and supersede cycles", "Revise, change, check, issue and supersede one calculation over and over; every issued revision stays byte-identical and refuses edits.", ["Revisions issued", "Edit attempts refused", "Database growth per issued revision (KB)"], CyclesAsync),
         new("4-monte-carlo", "1,000 Monte Carlo runs", "The Monte Carlo service (engine and through a calculator) at its default sample count, its caps, and a tornado sweep.", ["Engine runs (default samples each)", "Calculator evaluations", "Tornado sweeps"], MonteCarloAsync),
         new("5-imports", "Imports at their size caps", "Scan tables, CAD expression files and parameter CSVs, and reference records, each at its cap and one past it.", ["Largest scan table accepted (bytes)", "CAD parameters accepted", "Refusals one past a cap"], ImportsAsync),
+        new("6-record-import", "Record import at its caps", "Track P record templates imported at the 5 MB, 1,001-row, 64-column and 4,096-character caps, one past each cap refused, all or nothing, and the licence lock after many revisions.", ["Templates imported", "Records committed at the caps", "Refusals one past a cap"], RecordsAsync),
+        new("7-demo-project", "Demo project installed and removed", "The demonstration project installed and removed over and over, a real project beside it byte for byte unchanged, nothing leaked and the database growing only by what a removal keeps by design.", ["Install and remove cycles", "Install (mean ms)", "Database a removal leaves, first cycle (KiB)"], DemoAsync),
+        new("8-dashboard", "Verification dashboard built repeatedly", "The verification dashboard built over and over on a store with thousands of reference records and hundreds of guided runs; the time per build.", ["Reference records in the store", "Finished guided runs in the store", "Build on the full store: mean (ms)"], DashboardAsync),
+        new("9-guided-runs", "Guided test runs to the run cap", "Guided runs started, filled in (110 steps), finished and repeated to the 1,000-run cap, then the older ones deleted; the time to read the run store as it grows.", ["Runs made through the service (started, 110 steps recorded, finished)", "Record one step (mean ms)", "Delete older finished runs: deleted, kept (the newest 50 and those holding a template's latest result)"], GuidedAsync),
     ];
 }
 

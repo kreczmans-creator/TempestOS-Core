@@ -63,6 +63,18 @@ public sealed class SoakCiTests
 
     [Fact]
     public Task Imports_At_Their_Caps_Are_Read_And_One_Past_Them_Are_Refused_Cleanly() => RunAsync(4);
+
+    [Fact]
+    public Task Record_Imports_At_Their_Caps_Commit_All_Or_Nothing_And_The_Licence_Lock_Holds_After_Many_Revisions() => RunAsync(5);
+
+    [Fact]
+    public Task The_Demo_Project_Installs_And_Removes_Over_And_Over_Leaving_A_Real_Project_Byte_Identical() => RunAsync(6);
+
+    [Fact]
+    public Task The_Dashboard_Built_Repeatedly_Over_Many_Records_And_Runs_Gives_The_Same_Rows_And_Writes_Nothing() => RunAsync(7);
+
+    [Fact]
+    public Task Guided_Runs_Are_Made_To_The_Run_Cap_And_The_Older_Ones_Deleted_Without_Changing_A_Calculation() => RunAsync(8);
 }
 
 /// <summary>Addendum C, C-7: the full soak. Runs only with <c>TEMPEST_SOAK=full</c>, and writes <c>docs/verification/soak.md</c>.</summary>
@@ -76,11 +88,17 @@ public sealed class SoakFullTests
         var total = Stopwatch.StartNew();
         var runs = new List<SoakRun>();
 
-        foreach (var scenario in SoakScenarios.All)
+        // TEMPEST_SOAK_ONLY=6,8 runs only the scenarios whose number is listed, at full scale, and writes TEMPEST_SOAK_REPORT (never docs/verification/soak.md,
+        // which is the report of the whole soak): for looking at one scenario's full-scale numbers without the 20 minutes of the others.
+        var only = Environment.GetEnvironmentVariable("TEMPEST_SOAK_ONLY")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var scenario in SoakScenarios.All.Where(s => only is null || only.Contains(s.Id.Split('-')[0], StringComparer.Ordinal)))
             runs.Add(await SoakRunner.RunAsync(scenario, scale));
 
         total.Stop();
-        var path = Path.Combine(DesktopTestHelpers.RepositoryRoot, "docs", "verification", "soak.md");
+        var path = only is null
+            ? Path.Combine(DesktopTestHelpers.RepositoryRoot, "docs", "verification", "soak.md")
+            : Environment.GetEnvironmentVariable("TEMPEST_SOAK_REPORT") ?? Path.Combine(Path.GetTempPath(), "soak-partial.md");
         var (commit, branch) = SoakReport.GitState(DesktopTestHelpers.RepositoryRoot);
         var context = new SoakReportContext(commit, branch, DateTimeOffset.UtcNow, SoakProbe.MachineDescription(), total.Elapsed.TotalMinutes);
         File.WriteAllText(path, SoakReport.Render(runs, scale, context, SoakReport.ExistingNotes(path)));
@@ -188,6 +206,41 @@ public sealed class SoakHarnessTests
     }
 
     [Fact]
+    public void The_Generated_Record_Files_Sit_Exactly_At_The_Caps_They_Are_Built_For()
+    {
+        var sample = SoakRecordFiles.Samples.Single(s => s.Id == "24");
+        var pad = SoakRecordFiles.ColumnCap - sample.Template.Columns.Count;
+        var atCaps = SoakRecordFiles.Build(sample, SoakRecordFiles.RowCap - 1, pad, SoakRecordFiles.FieldCap, SoakRecordFiles.ByteCap);
+        Assert.Equal(SoakRecordFiles.ByteCap, atCaps.Length);
+
+        var text = System.Text.Encoding.UTF8.GetString(atCaps);
+        var lines = text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(SoakRecordFiles.RowCap, lines.Length);
+        Assert.All(lines, l => Assert.Equal(SoakRecordFiles.ColumnCap, l.Split(',').Length));
+        Assert.Equal(SoakRecordFiles.FieldCap, lines.SelectMany(l => l.Split(',')).Max(f => f.Length));
+
+        // One past each cap: the builders move exactly one thing.
+        Assert.Equal(SoakRecordFiles.ByteCap + 1, SoakRecordFiles.Build(sample, SoakRecordFiles.RowCap - 1, pad, SoakRecordFiles.FieldCap, SoakRecordFiles.ByteCap + 1).Length);
+        Assert.Equal(SoakRecordFiles.RowCap + 1, System.Text.Encoding.UTF8.GetString(SoakRecordFiles.Build(sample, SoakRecordFiles.RowCap)).Split("\r\n", StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.Throws<InvalidOperationException>(() => SoakRecordFiles.Build(sample, 10, pad, SoakRecordFiles.FieldCap, SoakRecordFiles.ByteCap));
+
+        // Every sample's valid rows are valid for the template's own width, and the padding is named by the column map.
+        Assert.All(SoakRecordFiles.Samples, s => Assert.Equal(s.Template.Columns.Count, s.Row(0).Length));
+        Assert.Equal(pad, SoakRecordFiles.PadMap(pad).Count);
+        Assert.All(SoakRecordFiles.PadMap(pad).Values, v => Assert.Null(v));
+    }
+
+    [Fact]
+    public void The_Real_Project_Fingerprint_Sees_A_Changed_A_Missing_And_An_Added_Document()
+    {
+        var before = new SoakScenarios.RealFingerprint(new Dictionary<string, string?> { ["a"] = "1", ["b"] = "2" });
+        Assert.Empty(before.Differences(new SoakScenarios.RealFingerprint(new Dictionary<string, string?> { ["a"] = "1", ["b"] = "2" })));
+        Assert.Equal(["b"], before.Differences(new SoakScenarios.RealFingerprint(new Dictionary<string, string?> { ["a"] = "1", ["b"] = "3" })));
+        Assert.Equal(["b"], before.Differences(new SoakScenarios.RealFingerprint(new Dictionary<string, string?> { ["a"] = "1" })));
+        Assert.Equal(["c"], before.Differences(new SoakScenarios.RealFingerprint(new Dictionary<string, string?> { ["a"] = "1", ["b"] = "2", ["c"] = "3" })));
+    }
+
+    [Fact]
     public void The_Report_Names_Every_Scenario_Its_Numbers_And_Keeps_The_Notes_A_Person_Wrote()
     {
         var outcome = new SoakOutcome();
@@ -223,12 +276,18 @@ public sealed class SoakHarnessTests
     [Fact]
     public void Every_Scenario_Of_The_Specification_Is_Present_In_Order()
     {
-        Assert.Equal(["1-instances", "2-chains", "3-cycles", "4-monte-carlo", "5-imports"], SoakScenarios.All.Select(s => s.Id));
+        Assert.Equal(["1-instances", "2-chains", "3-cycles", "4-monte-carlo", "5-imports", "6-record-import", "7-demo-project", "8-dashboard", "9-guided-runs"], SoakScenarios.All.Select(s => s.Id));
         Assert.Equal(500, SoakScale.Full.Instances);
         Assert.Equal(20, SoakScale.Full.ChainDepth);
         Assert.Equal(100, SoakScale.Full.Cycles);
         Assert.Equal(1_000, SoakScale.Full.EngineMonteCarloRuns);
         Assert.Equal(1.0, SoakScale.Full.ImportFraction);
+
+        // The merged features (C-3, C-6, C-4, C-5): the numbers the brief names.
+        Assert.Equal(20, SoakScale.Full.DemoCycles);
+        Assert.Equal(2, SoakScale.Ci.DemoCycles);
+        Assert.Equal(Tempest.Calc.Library.ManualTesting.ManualTestRunService.DefaultMaxRuns, SoakScale.Full.GuidedRuns);
+        Assert.True(SoakScale.Ci.GuidedRuns < SoakScale.Full.GuidedRuns);
         Assert.True(SoakScale.Ci.Instances >= 54, "The CI scale must still touch every template.");
         Assert.Equal(SoakScale.Full.ChainDepth, SoakScale.Ci.ChainDepth);
     }
@@ -280,6 +339,29 @@ public sealed class SoakHostTests
 
         Assert.Empty(after.Failures);
         Assert.True(after.Checks >= fingerprints.Count * 5, "Every revision is looked at five ways.");
+    }
+
+    [Fact]
+    public async Task The_Database_Is_Counted_In_Its_Own_Pages_And_Gives_Pages_Back_When_Rows_Are_Deleted()
+    {
+        await using var host = await SoakHost.StartAsync(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), fullDurability: false);
+        var (used, free) = SoakProbe.LogicalDatabase(host.DatabasePath);
+        Assert.True(used > 1_000_000, "A seeded database holds more than a megabyte.");
+
+        var project = await host.Host.ProjectDirectory!.CreateAsync("SOAK-T2", "Soak pages test");
+        var made = new List<CalcInstance>();
+
+        for (var i = 0; i < 10; i++)
+            made.Add(await host.Service.CreateAsync("mech.iso286-fit", project.Id, $"Pages {i}", SoakExamples.For("mech.iso286-fit")[0].Inputs));
+
+        var grown = SoakProbe.LogicalDatabase(host.DatabasePath);
+        Assert.True(grown.UsedBytes > used, "Ten calculations take pages.");
+
+        foreach (var instance in made)
+            await host.Service.Store.DeleteDraftInstanceAsync(instance.Id);
+
+        var shrunk = SoakProbe.LogicalDatabase(host.DatabasePath);
+        Assert.True(shrunk.FreeBytes > free, "Deleting rows puts their pages on the free list.");
     }
 
     [Fact]
