@@ -136,6 +136,33 @@ public sealed class SpringTests
     }
 
     [Fact]
+    public void A_Guided_Spring_Skips_The_Free_Buckling_Check_And_Says_So_And_A_Saved_Instance_Without_The_Input_Is_Unchanged()
+    {
+        // F7: a spring guided by a mandrel or in a bore cannot buckle freely, but the sheet failed it on the free-buckling check with no way to say so. guided = on skips that check, records the
+        // assumption, and claims no buckling pass (no buckling row in the checks).
+        var slender = new[] { Q("D", 20, "mm"), CalcInputValue.Of("n", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 80, "mm"), CalcInputValue.Of("nu_seat", 1), Q("F_1", 8, "N"), Q("F_2", 60, "N") };
+        var free = Run(slender);
+        Assert.Equal("FAIL", Text(free, "buckling"));
+        Assert.Contains(free.Checks, c => c.Name.StartsWith("Working deflection against the buckling", StringComparison.Ordinal) && !c.Passed);
+
+        var guided = Run([.. slender, CalcInputValue.Switch("guided", true)]);
+        Assert.False(guided.IsBlocked);
+        Assert.Equal("not checked (guided)", Text(guided, "buckling"));
+        Assert.DoesNotContain(guided.Checks, c => c.Name.StartsWith("Working deflection against the buckling", StringComparison.Ordinal));
+        Assert.DoesNotContain(guided.Warnings, w => w.RuleId == "buckling");
+        Assert.Contains(guided.RunAssumptions, a => a.Statement.Contains("guided by a mandrel", StringComparison.Ordinal));
+
+        // The other checks are untouched by it.
+        Assert.Equal(free.OutputSi("u_2"), guided.OutputSi("u_2"), 12);
+        Assert.Equal(free.OutputSi("u_s"), guided.OutputSi("u_s"), 12);
+
+        // A saved instance has no 'guided' value: it reads as off, and the run is the same as before.
+        var saved = Run([.. slender, CalcInputValue.Switch("guided", false)]);
+        Assert.Equal("FAIL", Text(saved, "buckling"));
+        Assert.Equal(free.OutputSi("u_b"), saved.OutputSi("u_b"), 12);
+    }
+
+    [Fact]
     public void A_Short_Spring_Is_Stable_At_Any_Deflection()
     {
         var r = Run();

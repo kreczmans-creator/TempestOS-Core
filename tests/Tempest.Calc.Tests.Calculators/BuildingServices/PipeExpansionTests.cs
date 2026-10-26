@@ -209,11 +209,19 @@ public sealed class PipeExpansionTests
     }
 
     [Fact]
-    public void A_Leg_Under_Ten_Diameters_Warns_That_The_Beam_Model_Does_Not_Hold()
+    public void A_Leg_Under_Ten_Diameters_Is_Refused_Because_The_Beam_Model_Does_Not_Hold()
     {
-        Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "short-leg");
+        // F2: the guided-cantilever model is not valid under ten diameters and its force and stress are not safe there; the sheet warned and passed. It is now refused.
+        Assert.DoesNotContain(Run().Notices, n => n.RuleId == "short-leg");
         var short_ = Run(Q("H", 0.8, "m"));
-        Assert.Contains(short_.Warnings, w => w.RuleId == "short-leg");
+        Assert.True(short_.IsBlocked);
+        var block = Assert.Single(short_.Blocks);
+        Assert.Equal("short-leg", block.RuleId);
+        Assert.NotEqual(true, short_.Passed);
+        Assert.Null(short_.FindOutput("u_leg"));
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+        // Exactly ten diameters (OD 88.9 mm: 0.889 m) is the model's edge and runs.
+        Assert.False(Run(Q("H", 0.89, "m")).IsBlocked);
     }
 
     // ------------------------------------------------------------------ review fixes (version 1.1.0)
@@ -342,23 +350,27 @@ public sealed class PipeExpansionTests
     }
 
     [Fact]
-    public void Black_B_B_03_A_Pipe_Modulus_Typed_In_MPa_Is_Warned_Or_Refused_And_A_Plastic_Pipe_Stays_Valid()
+    public void Black_B_B_03_A_Pipe_Modulus_Typed_In_MPa_Is_Refused_And_A_Plastic_Pipe_Stays_Valid()
     {
         // Copper 120 GPa typed with the unit MPa is 0.12 GPa: the leg looked 1000 times more flexible, a failing leg
         // passed and the anchor force fell 1000-fold, silently.
         var good = Run(Q("E", 120, "GPa"), Q("H", 2.5, "m"));
         var slip = Run(Q("E", 120, "MPa"), Q("H", 2.5, "m"));
-        Assert.False(slip.IsBlocked);
-        var warning = Assert.Single(slip.Warnings, w => w.RuleId == "modulus-low");
-        Assert.StartsWith("E:", warning.Message, StringComparison.Ordinal);
-        Assert.Contains("is E in GPa?", warning.Message, StringComparison.Ordinal);
-        Assert.Contains("MPa", warning.Message, StringComparison.Ordinal);
-        Assert.True(slip.OutputSi("anchor_force") < good.OutputSi("anchor_force") / 100);
+        // F2: it warned and the sheet passed 1000 times too flexible; it is now refused.
+        Assert.False(good.IsBlocked);
+        Assert.True(slip.IsBlocked);
+        var block = Assert.Single(slip.Blocks);
+        Assert.Equal("modulus-low", block.RuleId);
+        Assert.StartsWith("E:", block.Message, StringComparison.Ordinal);
+        Assert.Contains("is E in GPa?", block.Message, StringComparison.Ordinal);
+        Assert.Contains("MPa", block.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+        Assert.Null(slip.FindOutput("anchor_force"));
         Assert.Equal(0.5, Pipe.Template.FindInput("E")!.Min);
 
         // The same slip of the hot modulus, which sets the anchor reactions.
         var hot = Run(Q("E_hot", 120, "MPa"));
-        Assert.Contains(hot.Warnings, w => w.RuleId == "modulus-low" && w.Message.StartsWith("E_hot:", StringComparison.Ordinal));
+        Assert.Contains(hot.Blocks, b => b.RuleId == "modulus-low" && b.Message.StartsWith("E_hot:", StringComparison.Ordinal));
 
         // Below the plausible floor the input is refused (a ×1000 slip of aluminium, copper or steel in MPa to GPa is above it,
         // so the warning above carries those; 10 MPa is no pipe).
@@ -367,9 +379,9 @@ public sealed class PipeExpansionTests
 
         // Plastic pipe (PE 100, PP-R, PVC-U and the soft end of PEX) and every metal run without the warning.
         foreach (var gpa in new[] { 0.6, 0.8, 1.0, 1.5, 3.0, 70, 120, 210 })
-            Assert.DoesNotContain(Run(Q("E", gpa, "GPa"), Q("H", 6, "m")).Warnings, w => w.RuleId == "modulus-low");
+            Assert.DoesNotContain(Run(Q("E", gpa, "GPa"), Q("H", 6, "m")).Notices, n => n.RuleId == "modulus-low");
 
-        Assert.Contains(Pipe.Template.ApplicabilityRules, r => r.Id == "modulus-low" && r.Severity == CalcNoticeSeverity.Warning);
+        Assert.Contains(Pipe.Template.ApplicabilityRules, r => r.Id == "modulus-low" && r.Severity == CalcNoticeSeverity.Block && r.Effect == CalcRuleEffect.Unconservative);
     }
 
     [Fact]
@@ -508,14 +520,14 @@ public sealed class PipeExpansionTests
     [Fact]
     public void N4_Short_Leg_Warnings_Are_Prefixed_With_The_Input_They_Are_About()
     {
-        var shortLeg = Assert.Single(Run(Q("H", 0.8, "m")).Warnings, w => w.RuleId == "short-leg");
+        var shortLeg = Assert.Single(Run(Q("H", 0.8, "m")).Blocks, b => b.RuleId == "short-leg");
         Assert.StartsWith("H: ", shortLeg.Message, StringComparison.Ordinal);
 
         var shortRun = Run(Q("L", 0.8, "m"));
-        Assert.StartsWith("L: ", Assert.Single(shortRun.Warnings, w => w.RuleId == "short-leg").Message, StringComparison.Ordinal);
+        Assert.StartsWith("L: ", Assert.Single(shortRun.Blocks, b => b.RuleId == "short-leg").Message, StringComparison.Ordinal);
 
         var shortSecond = Run(Q("L", 30, "m"), Q("L2", 0.8, "m"));
-        Assert.StartsWith("L2: ", Assert.Single(shortSecond.Warnings, w => w.RuleId == "short-leg").Message, StringComparison.Ordinal);
+        Assert.StartsWith("L2: ", Assert.Single(shortSecond.Blocks, b => b.RuleId == "short-leg").Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -556,8 +568,8 @@ public sealed class PipeExpansionTests
         // A tiny movement needs a leg of well under ten diameters, yet the 6 m available leg is long: no warning.
         var tiny = Run(Q("L", 1, "m"), Q("T_operate", 11, "degC"));
         Assert.True(tiny.OutputSi("L_req") < 10 * 0.0889);
-        Assert.DoesNotContain(tiny.Warnings, w => w.RuleId == "short-leg");
-        Assert.Contains(Run(Q("H", 0.8, "m")).Warnings, w => w.RuleId == "short-leg");
+        Assert.DoesNotContain(tiny.Notices, n => n.RuleId == "short-leg");
+        Assert.Contains(Run(Q("H", 0.8, "m")).Blocks, b => b.RuleId == "short-leg");
     }
 
     [Fact]

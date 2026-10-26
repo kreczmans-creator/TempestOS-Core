@@ -126,6 +126,28 @@ public sealed class ShaftTests
     }
 
     [Fact]
+    public void A_Running_Shaft_With_No_Critical_Speed_Found_Fails_The_Critical_Speed_Check_And_A_Shaft_At_Rest_Does_Not()
+    {
+        // F2: with every mass on a bearing and no density no critical speed is found, the check that it clears the running speed was left out and the sheet passed a shaft that runs. It now fails,
+        // while a shaft at rest (n = 0) has no critical speed to clear and is not failed on it.
+        var running = CalcRunner.Run(Shaft, Defaults().With(ShaftCalculator.Loads((0, -2, 0, 20))).With(CalcInputValue.Quantity("n", 1500, "rpm")));
+        Assert.False(running.IsBlocked, string.Join("; ", running.Blocks.Select(b => b.Message)));
+        Assert.Contains(running.Warnings, w => w.RuleId == "critical-speed-skipped");
+        var check = Assert.Single(running.Checks, c => c.Name.StartsWith("Critical speed against the operating speed", StringComparison.Ordinal));
+        Assert.False(check.Passed);
+        Assert.False(running.Passed);
+
+        var atRest = CalcRunner.Run(Shaft, Defaults().With(ShaftCalculator.Loads((0, -2, 0, 20))).With(CalcInputValue.Quantity("n", 0, "rpm")));
+        Assert.Contains(atRest.Warnings, w => w.RuleId == "critical-speed-skipped");
+        Assert.DoesNotContain(atRest.Checks, c => c.Name.StartsWith("Critical speed against", StringComparison.Ordinal));
+
+        // With a density the critical speed is found and the check is the ordinary one.
+        var found = CalcRunner.Run(Shaft, Defaults().With(ShaftCalculator.Loads((0, -2, 0, 20))).With(CalcInputValue.Quantity("n", 1500, "rpm")).With(CalcInputValue.Quantity("rho", 7850, "kg/m^3")));
+        Assert.DoesNotContain(found.Warnings, w => w.RuleId == "critical-speed-skipped");
+        Assert.NotNull(found.FindOutput("n_c"));
+    }
+
+    [Fact]
     public void Bearings_Closer_Than_A_Two_Hundredth_Of_The_Length_Block_In_The_Shafts_Own_Words()
     {
         // Black B-A-07(b): x_B = 1 mm on a 400 mm shaft used to surface "the structure is a mechanism (non-positive stiffness pivot…)".

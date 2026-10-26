@@ -50,7 +50,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
     public const double ThinPlateRatio = 10;
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.2", CalcDiscipline.Structural, "Plate bending",
+        Id, "1.3.0", CalcDiscipline.Structural, "Plate bending",
         "Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.",
         "Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²)\n" +
         "Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²)\n" +
@@ -107,10 +107,10 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             new CalcApplicabilityRule("ring-radius", "The ring radius must lie between 1 % and 99 % of the plate radius.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("engine", "The solution could not be evaluated for these inputs.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("large-deflection", "w/t above 0.5: the small-deflection theory is not valid.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("thin-plate", "span/t below 10: shear deformation matters and the thin-plate theory over-states the stiffness.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("thin-plate", "span/t below 10: shear deformation matters and the thin-plate theory over-states the stiffness, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("patch-thin", "A patch smaller than the thickness is a concentrated load: the local stress is not given by thin-plate theory.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("navier-converge", "The Navier series reached its cap without changing by less than the tolerance.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("ritz-converge", "The Ritz solution reached its highest order without changing by less than the tolerance.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("navier-converge", "The Navier series reached its cap without changing by less than the tolerance, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("ritz-converge", "The Ritz solution reached its highest order without changing by less than the tolerance: the convergence check fails (a block would refuse the clamped patch at its documented minimum and the long clamped plates the sheet runs).", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("ritz-frequency", "The inverse iteration for the clamped rectangle's fundamental frequency did not settle.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("ritz-approx", "The clamped rectangle is a Ritz approximation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
@@ -262,8 +262,12 @@ public sealed class PlateBendingCalculator : ICalcCalculator
 
         var span = circular ? 2 * a : Math.Min(a, b);
 
+        // Shear deformation is not in thin-plate theory: below span/t = 10 the plate is stiffer and less stressed in the theory than in reality (it warned and passed): refused.
         if (span / t < ThinPlateRatio)
-            c.Warn("thin-plate", $"t: span/t = {F(span / t)} is below {ThinPlateRatio:0}; shear deformation is not in thin-plate theory and the plate is stiffer and less stressed here than in reality.");
+        {
+            c.Block("thin-plate", $"t: span/t = {F(span / t)} is below {ThinPlateRatio:0}; shear deformation is not in thin-plate theory and the plate would come out stiffer and less stressed than it is. Use a longer span or a thinner plate (span/t of at least {ThinPlateRatio:0}), or a thick-plate method.");
+            return;
+        }
 
         // The load: its extent (patch or ring) and its pressure and total force.
         double rc = a;
@@ -440,8 +444,12 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             var sums = $"{nav.TermsPerDirection} odd terms per direction ({F(terms)} terms), last change {F(nav.LastChange)}";
             c.Record("terms_used", "odd terms per direction N (m, n = 1, 3, … 2N − 1)", sums, new ScalarValue(nav.TermsPerDirection), "Terms of the Navier series used", "T&WK Ch. 5");
 
+            // A series that stopped at its cap has not converged, and its moments are not the plate's (it warned and passed): refused.
             if (!nav.Converged)
-                c.Warn("navier-converge", $"a: the Navier series reached its cap of {NavierTermCap} odd terms per direction with a last change of {F(nav.LastChange)} (tolerance {NavierTolerance:0e0}); the change is measured on the deflection, the centre von Mises moment and the corner twisting moment, the last of which is Richardson-extrapolated (1/N² tail removed).");
+            {
+                c.Block("navier-converge", $"a: the Navier series reached its cap of {NavierTermCap} odd terms per direction with a last change of {F(nav.LastChange)} (tolerance {NavierTolerance:0e0}), so it has not converged; the change is measured on the deflection, the centre von Mises moment and the corner twisting moment, the last of which is Richardson-extrapolated (1/N² tail removed). Enlarge the patch or use the uniform load.");
+                return;
+            }
 
             c.Record("w_max", load == Uniform ? "16q/(π⁶D)·Σ (−1)^((m+n)/2−1)/(m·n·(m²/a² + n²/b²)²), m, n odd" : "16q/(π⁶D)·Σ sin(mπu/2a)·sin(nπv/2b)/(m·n·(m²/a² + n²/b²)²), m, n odd", sums, ScalarValue.Of(nav.Deflection * 1e3, "mm"), "Maximum deflection (centre)", "T&WK Ch. 5");
             c.Record("M_x_c", "D·π²·Σ W_mn(m²/a² + ν·n²/b²)·sin·sin at the centre", sums, ScalarValue.Of(nav.Mx, "N*m/m"), "M_x at the centre", "T&WK Ch. 5");
@@ -510,8 +518,13 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             var sums = $"K = {ritz!.Terms} terms per direction, last change {F(change)}";
             c.Record("terms_used", "Ritz order K (terms per direction)", sums, new ScalarValue(ritz.Terms), "Order of the Ritz solution used", "T&WK Ch. 6");
 
+            // A Ritz solution that stopped without converging has a stress error several times its last change (it warned and passed): the convergence check fails. It is a failing check, not a
+            // block, because the clamped patch at its documented minimum (a quarter of the plate) and the long clamped plates stop at the stall rule, and the sheet reports them.
             if (!converged)
-                c.Warn("ritz-converge", $"a: the Ritz solution stopped at K = {ritz.Terms} ({(stalled ? "the change stopped falling" : "the highest order")}) with a last change of {F(change)} (tolerance {RitzTolerance:0e0}); the stress error can be several times that change (about {F(3 * change)}; an estimate, not a bound) because the plate is long or the patch small for this basis. Compare with finite elements.");
+            {
+                c.Warn("ritz-converge", $"a: the Ritz solution stopped at K = {ritz.Terms} ({(stalled ? "the change stopped falling" : "the highest order")}) with a last change of {F(change)} (tolerance {RitzTolerance:0e0}); the stress error can be several times that change (about {F(3 * change)}; an estimate, not a bound) because the plate is long or the patch small for this basis, so the convergence check fails. Compare with finite elements.");
+                c.CheckCondition("Ritz change against the tolerance", false, $"last change {F(change)}", $"tolerance {RitzTolerance:0e0}", "terms_used");
+            }
 
             var centre = ritz.At(a / 2, b / 2);
             wMax = centre.W;

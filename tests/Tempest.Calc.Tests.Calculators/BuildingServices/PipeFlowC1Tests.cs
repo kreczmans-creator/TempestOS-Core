@@ -34,7 +34,7 @@ public sealed class PipeFlowC1Tests
     }
 
     [Fact]
-    public void A_Custom_Fluid_With_NPSH_Required_Gets_NPSH_Available_Or_A_Notice()
+    public void A_Custom_Fluid_With_NPSH_Required_Gets_NPSH_Available_Or_Is_Refused()
     {
         // bs.pipe-pump-01: rho 1050, mu 3 mPa.s, 30 m3/h through 10 m DN80 (eps 0.045, K 2) marked suction, z_s -8 m, NPSH_r 3 m, p_v 20 kPa absolute.
         // Independent python: h_f,suction 0.68389 m; NPSH_a = 101.325e3/(rho g) - 8 - 0.68389 - 20e3/(rho g) = -0.78594 m, so the check fails.
@@ -46,10 +46,15 @@ public sealed class PipeFlowC1Tests
         Assert.False(withVapour.Passed);
         Assert.DoesNotContain(withVapour.Notices, n => n.RuleId is "npsh-custom" or "npsh-no-suction");
 
+        // F2: with no vapour pressure there is no NPSH_a and no NPSH check, and the sheet warned and passed; it is now refused.
         var without = Run(Inputs());
         Assert.Null(without.FindOutput("NPSH_a"));
-        var warning = Assert.Single(without.Warnings, w => w.RuleId == "npsh-custom");
-        Assert.Contains("p_v_custom", warning.Message, StringComparison.Ordinal);
+        Assert.True(without.IsBlocked);
+        var block = Assert.Single(without.Blocks);
+        Assert.Equal("npsh-custom", block.RuleId);
+        Assert.StartsWith("p_v_custom:", block.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+        Assert.NotEqual(true, without.Passed);
 
         // No NPSH_r asked: nothing to warn about.
         Assert.DoesNotContain(Run(Inputs(new CalcInputValue("NPSH_r"))).Notices, n => n.RuleId == "npsh-custom");
@@ -161,6 +166,26 @@ public sealed class PipeFlowC1Tests
         Assert.Contains("3.41", warning.Message, StringComparison.Ordinal);
         Assert.Contains("unstable", warning.Message, StringComparison.Ordinal);
         Assert.Contains(r.Checks, k => k.Name.StartsWith("Duty point exists", StringComparison.Ordinal) && k.Passed);
+    }
+
+    [Fact]
+    public void A_Crossing_Only_On_A_Rising_Part_Of_The_Pump_Curve_Fails_The_Stable_Duty_Check()
+    {
+        // F2: the same DN80 100 m line, rise 10 m, 15 m3/h, water 20 C, pump (0,8) (10,14) (20,18): the pump curve crosses the system curve once, at about 3.41 m3/h, where the pump curve
+        // rises (python3 scan of the example above: 3.4147 m3/h, and the pump stays above the system curve to its end at 20 m3/h). The sheet warned that the point is unstable and passed.
+        var r = Run(CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("Q", 15, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
+            CalcInputValue.VectorOf("Q_pump", [0, 10, 20], "m^3/h"), CalcInputValue.VectorOf("H_pump", [8, 14, 18], "m"));
+        Assert.Equal(3.41, r.OutputSi("Q_duty") * 3600, 1);
+        Assert.Contains(r.Warnings, w => w.RuleId == "duty-unstable");
+        var check = Assert.Single(r.Checks, k => k.Name.StartsWith("Duty point against a stable crossing", StringComparison.Ordinal));
+        Assert.False(check.Passed);
+        Assert.False(r.Passed);
+
+        // A falling crossing (the other example) keeps passing: no stable-duty check is added.
+        var stable = Run(CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
+            CalcInputValue.VectorOf("Q_pump", [0, 10, 40, 70], "m^3/h"), CalcInputValue.VectorOf("H_pump", [8, 14, 18, 2], "m"));
+        Assert.DoesNotContain(stable.Checks, k => k.Name.StartsWith("Duty point against a stable crossing", StringComparison.Ordinal));
+        Assert.Contains(Calc.Template.ApplicabilityRules, x => x.Id == "duty-unstable" && x.Effect == CalcRuleEffect.Unconservative);
     }
 
     [Fact]

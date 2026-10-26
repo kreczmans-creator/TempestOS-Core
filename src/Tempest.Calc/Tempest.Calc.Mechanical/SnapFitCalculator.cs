@@ -58,7 +58,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.2", CalcDiscipline.Mechanical, "Snap-fits",
+        Id, "1.4.0", CalcDiscipline.Mechanical, "Snap-fits",
         "A plastic snap-fit joint of one of five forms: a cantilever lug of constant section, of tapered thickness or of tapered width, an annular (closed ring) snap, or a torsion bar. The strain at the critical section against the permissible strain of the plastic (one-time or repeated joining), the deflection force with the secant modulus, the assembly force (inclined entry face) and the separation force (return face) with Coulomb friction, and whether the joint is self-locking.",
         "Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (constant section; the design guides print the rounded 0.67); a linear taper of the thickness to r_h = h_tip/h gives K_y = 2·J/φ_max with J = [2r_h − r_h²/2 − ln r_h − 3/2]/(1 − r_h)³ and φ_max = 1 for r_h ≥ 1/2 (otherwise the strain peaks inside the beam at t = (2a − 1)/a, a = 1 − r_h, with φ_max = (1 − t)/(1 − a·t)²); a linear taper of the width to r_b gives K_y = 2·J with J = [1/2 − 2r_b + 3r_b²/2 − r_b²·ln r_b]/(1 − r_b)³\n" +
         "Strain and force of the cantilever: ε = y·h/(K_y·l²); P = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε))\n" +
@@ -110,15 +110,15 @@ public sealed class SnapFitCalculator : ICalcCalculator
             new CalcApplicabilityRule("missing", "An input the chosen form, or the chosen source of the secant modulus or the permissible strain, needs is blank.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("geometry", "The mean diameter of the ring does not exceed its wall thickness.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("es-curve", "The W3 secant-modulus points hold no usable row (a strain of zero or more with a positive modulus).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("slender", "The beam is shorter than 5 times its thickness (l/h < 5): beam theory underestimates the stiffness and the strain is not reliable.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("slender", "The beam is shorter than 5 times its thickness (l/h < 5): beam theory underestimates the stiffness and the strain is not reliable, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("large-deflection", "The cantilever deflection is more than 0.3 of its length: linear beam theory under-predicts the strain (about 4 % at 0.3, 8.5 % at 0.41) and the force (10 %, 22 %).", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("es-range", "The design strain is outside the strains of the secant-modulus points: the end value is held, with no extrapolation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("assembly-jam", "μ·tan α is 1 or more: the entry face jams and the part cannot be pushed on.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("n-latch", "The number of latches must be a whole number.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("hold-unused", "A force to hold is given without a number of latches: the holding check is not made.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("self-locking", "The return angle α′ is at or above arctan(1/μ): the joint cannot be separated by pulling, however large the force.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("thick-ring", "The ring's wall is more than a tenth of its mean diameter (h/D > 0.1): the thin-ring model no longer holds.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("small-angle", "The torsion-bar twist is above about 20°: the small-angle relation φ = y/a is no longer good.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("thick-ring", "The ring's wall is more than a tenth of its mean diameter (h/D > 0.1): the thin-ring model no longer holds, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("small-angle", "The torsion-bar twist is above about 20°: the small-angle relation φ = y/a is no longer good, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-constant", "Cantilever of constant section: strain, deflection force, assembly and separation forces",
@@ -260,8 +260,12 @@ public sealed class SnapFitCalculator : ICalcCalculator
 
         c.Assign("l_h", "l / h", null, "Slenderness of the beam l/h");
 
+        // Beam theory under-estimates the stiffness and the strain of a beam shorter than five thicknesses (it warned and passed): refused.
         if (c.Si("l_h") < SlendernessLimit)
-            c.Warn("slender", $"l: the beam is {F(c.Si("l_h"))} times as long as it is thick (l/h < {SlendernessLimit:0}); beam theory is no longer reliable, so check the strain with a finite-element model or a test.");
+        {
+            c.Block("slender", $"l: the beam is {F(c.Si("l_h"))} times as long as it is thick (l/h < {SlendernessLimit:0}); beam theory is not reliable there. Lengthen the beam or thin it to at least {SlendernessLimit:0} thicknesses, or check the strain with a finite-element model or a test.");
+            return false;
+        }
 
         // mech.snap-fit-01: beam theory is linear, so a deflection that is a large share of the length is under-predicted in strain and force.
         if (c.Si("y") / c.Si("l") > LargeDeflectionLimit)
@@ -325,8 +329,13 @@ public sealed class SnapFitCalculator : ICalcCalculator
         c.Assign("eps_inner", "dD / (D_ring - h)", "%", "Nominal strain at the inner (contact) surface ΔD/(D − h)", DerivedRing);
         c.Assign("eps", "max(K_ann * eps_nom, eps_inner)", "%", "Hoop strain checked: the larger of the nominal strain times the user's strain factor K_ann and the inner-surface strain", DerivedRing);
 
-        if (c.Si("h") / c.Si("D_ring") > 0.1 + 1e-12) // tolerance: a ring exactly at 10 % does not warn
-            c.Warn("thick-ring", $"h: the wall is {F(c.Si("h") / c.Si("D_ring") * 100)} % of the mean diameter (h/D > 10 %); the thin-ring model of the hoop strain and force is no longer good, so check the ring with a finite-element model or a test.");
+        // The thin-ring model of the hoop strain and force is not good beyond h/D = 10 % (it warned and passed): refused.
+        if (c.Si("h") / c.Si("D_ring") > 0.1 + 1e-12) // tolerance: a ring exactly at 10 % is not refused
+        {
+            c.Block("thick-ring", $"h: the wall is {F(c.Si("h") / c.Si("D_ring") * 100)} % of the mean diameter (h/D > 10 %); the thin-ring model of the hoop strain and force is not good there. Thin the wall or enlarge the ring, or check the ring with a finite-element model or a test.");
+            return false;
+        }
+
         return true;
     }
 
@@ -351,8 +360,12 @@ public sealed class SnapFitCalculator : ICalcCalculator
         c.Record("n_bar", both ? "2 (two halves in parallel)" : "1", both ? "held at both ends" : "held at one end", new ScalarValue(both ? 2 : 1), "Number of bar lengths twisting", DerivedBar);
         c.Assign("phi", "y / a_arm", "deg", "Twist of the bar (small angle: lever deflection / lever length)", DerivedBar);
 
+        // The small-angle relation φ = y/a is not good above about 20° (it warned and passed): refused.
         if (c.Si("phi") > SmallAngleLimit)
-            c.Warn("small-angle", $"y: the bar twists {F(c.Si("phi") * 180 / Math.PI)}°; the small-angle relation φ = y/a is no longer good above about 20°.");
+        {
+            c.Block("small-angle", $"y: the bar twists {F(c.Si("phi") * 180 / Math.PI)}°; the small-angle relation φ = y/a is not good above about 20°. Lengthen the lever or reduce the deflection.");
+            return false;
+        }
 
         c.Assign("gamma", "phi * r_bar / l_eff", null, "Shear strain at the surface of the bar", both ? DerivedBar : Ref);
         c.Assign("eps", "gamma / (1 + nu)", "%", "Equivalent tensile strain γ/(1 + ν)", DerivedBar);

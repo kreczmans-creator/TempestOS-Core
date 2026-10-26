@@ -109,6 +109,7 @@ public sealed class SnapFitTests
     {
         Gen.Select(Gen.Double[5, 40], Gen.Double[0.5, 4], Gen.Double[2, 20], Gen.Double[0.05, 3], Gen.Double[500, 5000]).Sample((l, h, b, y, es) =>
         {
+            l = Math.Max(l, 5.01 * h); // a beam under five thicknesses is refused (F2)
             var r = Run(Q("l", l, "mm"), Q("h", h, "mm"), Q("b", b, "mm"), Q("y", y, "mm"), Q("Es", es, "MPa"));
             var eps = 1.5 * h * y / (l * l);
             var p = b * h * h / 6 * (es * eps / l);
@@ -149,13 +150,18 @@ public sealed class SnapFitTests
     }
 
     [Fact]
-    public void A_Beam_Shorter_Than_Five_Thicknesses_Warns()
+    public void A_Beam_Shorter_Than_Five_Thicknesses_Is_Refused()
     {
-        Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "slender");
-        Assert.DoesNotContain(Run(Q("l", 10, "mm")).Warnings, w => w.RuleId == "slender");
+        // F2: beam theory is not reliable under l/h = 5 and the sheet warned and passed; it is now refused (the default beam is 2 mm thick).
+        Assert.DoesNotContain(Run().Notices, n => n.RuleId == "slender");
+        Assert.DoesNotContain(Run(Q("l", 10, "mm")).Notices, n => n.RuleId == "slender");
         var short1 = Run(Q("l", 9.9, "mm"));
-        Assert.Contains(short1.Warnings, w => w.RuleId == "slender" && w.Message.StartsWith("l:", StringComparison.Ordinal));
-        Assert.Contains(Run(Mode(SnapFitCalculator.TaperedWidth), Q("l", 6, "mm")).Warnings, w => w.RuleId == "slender");
+        Assert.True(short1.IsBlocked);
+        var block = Assert.Single(short1.Blocks, b => b.RuleId == "slender");
+        Assert.StartsWith("l:", block.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+        Assert.NotEqual(true, short1.Passed);
+        Assert.Contains(Run(Mode(SnapFitCalculator.TaperedWidth), Q("l", 6, "mm")).Blocks, b => b.RuleId == "slender");
     }
 
     // ------------------------------------------------------------------ assembly and separation
@@ -226,6 +232,7 @@ public sealed class SnapFitTests
     {
         Gen.Select(Gen.Double[10, 100], Gen.Double[0.05, 1], Gen.Double[0.5, 2], Gen.Double[0.8, 4], Gen.Double[2, 20], Gen.Double[800, 4000], Gen.Double[0.5, 3]).Sample((d, dd, k, h, b, es, kf) =>
         {
+            h = Math.Min(h, 0.099 * d); // a ring thicker than a tenth of its diameter is refused (F2)
             var r = Run(Mode(SnapFitCalculator.Annular), Q("D_ring", d, "mm"), Q("dD", dd, "mm"), CalcInputValue.Of("K_ann", k), CalcInputValue.Of("K_F", kf), Q("h", h, "mm"), Q("b", b, "mm"), Q("Es", es, "MPa"));
             var epsNom = dd / d;
 
@@ -273,9 +280,13 @@ public sealed class SnapFitTests
         Assert.True(inner.OutputSi("eps") > inner.OutputSi("eps_nom"));
         Assert.Equal(plain.OutputSi("P"), inner.OutputSi("P"), plain.OutputSi("P") * 1e-12);
 
-        // A wall above a tenth of the mean diameter warns that the thin-ring model has run out.
-        Assert.DoesNotContain(Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1), Q("h", 3, "mm"), Q("D_ring", 30, "mm")).Warnings, w => w.RuleId == "thick-ring");
-        Assert.Contains(Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1), Q("h", 3.1, "mm"), Q("D_ring", 30, "mm")).Warnings, w => w.RuleId == "thick-ring" && w.Message.StartsWith("h:", StringComparison.Ordinal));
+        // A wall above a tenth of the mean diameter is refused: the thin-ring model has run out (it warned and passed).
+        Assert.DoesNotContain(Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1), Q("h", 3, "mm"), Q("D_ring", 30, "mm")).Notices, n => n.RuleId == "thick-ring");
+        var thick = Run(Mode(SnapFitCalculator.Annular), CalcInputValue.Of("K_ann", 1), Q("h", 3.1, "mm"), Q("D_ring", 30, "mm"));
+        Assert.True(thick.IsBlocked);
+        var thickBlock = Assert.Single(thick.Blocks, b => b.RuleId == "thick-ring");
+        Assert.StartsWith("h:", thickBlock.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(thickBlock.Message));
 
         // The ring must be wider than its wall.
         Assert.Contains(Run([.. ring, Q("D_ring", 1, "mm"), Q("h", 1.5, "mm")]).Blocks, b => b.RuleId == "geometry" && b.Message.StartsWith("D_ring:", StringComparison.Ordinal));
@@ -296,7 +307,14 @@ public sealed class SnapFitTests
         var blank = Run([.. torsion, new CalcInputValue("nu")]);
         Assert.True(blank.IsBlocked);
         Assert.Contains(blank.Blocks, b => b.RuleId == "missing" && b.Message.StartsWith("nu: enter", StringComparison.Ordinal));
-        Assert.Contains(Run(Mode(SnapFitCalculator.Torsion), Q("y", 5, "mm"), Q("a_arm", 10, "mm"), CalcInputValue.Of("nu", 0.38)).Warnings, w => w.RuleId == "small-angle");
+
+        // A twist of 5/10 rad = 28.6 degrees is above 20: refused (it warned and passed); 1.5/10 rad = 8.6 degrees is not.
+        var twisted = Run(Mode(SnapFitCalculator.Torsion), Q("y", 5, "mm"), Q("a_arm", 10, "mm"), CalcInputValue.Of("nu", 0.38));
+        Assert.True(twisted.IsBlocked);
+        var twistBlock = Assert.Single(twisted.Blocks, b => b.RuleId == "small-angle");
+        Assert.StartsWith("y:", twistBlock.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(twistBlock.Message));
+        Assert.DoesNotContain(r.Notices, n => n.RuleId == "small-angle");
     }
 
     [Fact]
@@ -345,6 +363,7 @@ public sealed class SnapFitTests
     {
         Gen.Select(Gen.Double[0.05, 0.49], Gen.Double[8, 40], Gen.Double[1, 4], Gen.Double[2, 15], Gen.Double[0.05, 1.5], Gen.Double[800, 4000]).Sample((ratio, l, h, b, y, es) =>
         {
+            l = Math.Max(l, 5.01 * h); // a beam under five thicknesses is refused (F2)
             var r = Run(Mode(SnapFitCalculator.TaperedThickness), CalcInputValue.Of("h_ratio", ratio), Q("l", l, "mm"), Q("h", h, "mm"), Q("b", b, "mm"), Q("y", y, "mm"), Q("Es", es, "MPa"));
 
             // P from the tip deflection alone: y = 12·P·l³·J/(E·b·h³), no strain shape involved.

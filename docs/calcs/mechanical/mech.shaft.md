@@ -1,4 +1,4 @@
-# M4 — Shaft: static, fatigue, keys, critical speed (`mech.shaft@1.5.1`)
+# M4 — Shaft: static, fatigue, keys, critical speed (`mech.shaft@1.6.0`)
 
 **In plain terms.** A shaft carries gears, pulleys and bearings, so it bends and twists, and every turn the bending stress reverses, which is why shafts fail by fatigue at shoulders and keyways. The worksheet takes the stepped shaft, its loads and torque, finds the bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections you mark, the keys, and the speed at which the shaft would whirl.
 
@@ -22,6 +22,8 @@
 
 **Changes in 1.5.0 (C-2 fix, M1; shipped as part of 1.5.1).** `critical-speed`: the first critical speed (Dunkerley) must be at least twice the operating speed; below that the new check "Critical speed against the operating speed" fails (input `n_c_req = 2·n`, capacity `n_c_D`), where it only warned before. Every other value is unchanged.
 
+**Changes in 1.6.0 (C-2 fix, F2 and F7).** A carried mass has a weight, and the sheet no longer leaves it out in silence: `w_masses` is optional with **no default**, and a mass carried with `w_masses` blank blocks (`mass-weight`; it warned and passed with the weight out of the reactions, the moment and the deflection). On adds the weights of the masses and of the shaft; off says the loads table is the whole load, the weights entered as forces, and the masses enter the critical speed only. A saved instance with the switch set reads as before; one that never set it and carries a mass blocks until it does. With no mass carried a blank switch is fine. The margin of the critical-speed check is an input, `r_c_min` (smallest ratio of the first critical speed to the operating speed, default 2, usual 1.5 to 4, hard 1 to 10): the check "Critical speed against the operating speed" compares `n_c,D` with `r_c_min` × the operating speed (default 2: results unchanged). When no critical speed is found (every mass on a bearing and ρ = 0; `critical-speed-skipped`, now declared unconservative) a **running** shaft (n above 0) fails that check, "no critical speed found", where the check was left out and the sheet passed; a shaft at rest is not failed on it. The known-answer case `ka-simply-supported`, the gearbox worked example and the drive chain's M4 step record `w_masses` off, as they were computed.
+
 **Test cases.** `ka-simply-supported` (slope 2.430 mrad, deflection 0.3240 mm, n_c 5305.2 rpm — analytic, Confirmed), `ka-key` (τ 36.99, σ 84.56 MPa — analytic, Confirmed), `ka-shigley-7-1` (S_e 201.50 MPa, n_f 1.621, n_y 4.489 with the example's data converted to SI exactly — **Unconfirmed** until compared with the book's printed answers). Mott 6th ed. shaft examples are not pinned (owner copy needed). 1.2.0: alternating torque T_m 50 + T_a 150 N·m on the Example 7-1 shaft with a 28.48 N·m bending moment (n_f 2.1325 against 6.9987 for the 50 N·m taken alone, n_y 4.9555), fully alternating 124.28 N·m (n_f 1.5999 against 1.6210 as a steady torque), and the key on T_pk, all from the formulas above in python3.
 
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
@@ -42,7 +44,7 @@ S_e1 = 700 MPa = 350 MPa
 X1 = x = 120 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 0 N·m, σ_a = 79.334 MPa, τ_m = 0 MPa, n_y = 6.3025 (shoulder: the side with d = 40 mm governs, of 2) = 2.3845
 X2 = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 186.8 MPa, K_f = 1.912, K_fs = 2.8, M = 415.39 N·m, T = 300 N·m, σ_a = 88.778 MPa, τ_m = 46.947 MPa, n_y = 4.1532 = 1.6909
 X3 = x = 180 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 300 N·m, σ_a = 79.334 MPa, τ_m = 34.616 MPa, n_y = 5.0281 (shoulder: the side with d = 40 mm governs, of 2) = 1.9801
-… 15 more step(s) on the sheet
-Governing: PASS  Slope at the bearings against limit: u_slope = 0.8961 vs u_slope ≤ 1  utilisation 0.896
+… 16 more step(s) on the sheet
+Governing: PASS  Slope at the bearings against limit: u_slope = 0.90 vs u_slope ≤ 1  utilisation 0.90
 ```
 <!-- hand-arithmetic:end -->

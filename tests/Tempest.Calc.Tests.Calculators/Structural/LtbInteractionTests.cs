@@ -40,14 +40,24 @@ public sealed class LtbInteractionTests
     }
 
     [Fact]
-    public void Table_B1_Chosen_For_An_Open_I_Section_That_Buckles_Laterally_Warns_That_It_Is_Not_Susceptible()
+    public void Table_B1_Chosen_For_An_Open_I_Section_That_Buckles_Laterally_Is_Checked_On_Table_B2_Unless_A_Basis_Is_Recorded()
     {
         // struct.ltb-interaction-R2: the Annex B Table B.1 choice ("not susceptible to torsional deformation") with chi_LT below 1 gave k_zy = 0.6 k_yy = 0.509 against 0.918 from Table B.2
-        // (u_62 1.008 against 1.248, -19 %) and no notice. An open I-section is susceptible unless restrained against twist.
+        // (u_62 1.008 against 1.248, -19 %) and a warning only: the sheet passed what Table B.2 fails. An open I-section is susceptible unless restrained against twist, so a choice with no
+        // recorded basis is checked on Table B.2 (the same pattern as the member sheet's k left at 1.0); one the person recorded a basis for is theirs and keeps the warning.
+        var b2 = Run(Choice("torsion", LtbInteractionCalculator.Susceptible));
         var b1 = Run(Choice("torsion", LtbInteractionCalculator.NotSusceptible));
         Assert.True(b1.OutputSi("chi_LT") < 1);
+        Assert.Equal(b2.OutputSi("u_62"), b1.OutputSi("u_62"), 12);
+        Assert.Equal(b2.OutputSi("u_member"), b1.OutputSi("u_member"), 12);
         var warning = Assert.Single(b1.Warnings, w => w.RuleId == "table-b1");
-        Assert.Contains("susceptible", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("the check uses Table B.2", warning.Message, StringComparison.Ordinal);
+
+        var basis = CalcInputValue.Choice("torsion", LtbInteractionCalculator.NotSusceptible, CalcProvenance.Assumed("The member is restrained against twist by the purlin cleats at both ends."));
+        var kept = Run(basis);
+        Assert.True(kept.OutputSi("u_62") < b2.OutputSi("u_62"));
+        Assert.Equal(1.008, kept.OutputSi("u_62"), 2);
+        Assert.Contains("recorded basis", Assert.Single(kept.Warnings, w => w.RuleId == "table-b1").Message, StringComparison.Ordinal);
 
         Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "table-b1");
         // No lateral-torsional buckling (chi_LT = 1: a very short member): Table B.1 is not contradicted.
@@ -495,11 +505,20 @@ public sealed class LtbInteractionTests
         Assert.False(withEnds.IsBlocked, string.Join("; ", withEnds.Blocks.Select(b => b.Message)));
         Assert.DoesNotContain(withEnds.Warnings, w => w.RuleId is "input.M_y_Ed" or "input.psi_y");
 
-        // ψ mode needs both: a blank one is said so, and the (conservative, uniform-moment) default is used.
+        // ψ mode: a blank ψ_y is the uniform moment, ψ = 1, the conservative diagram: it runs on it (listed as a default used). A blank greatest moment blocks (F2): it ran on the
+        // template default of 300 kN·m, a moment nobody entered, and passed a member whose real moment was higher.
         var missing = CalcRunner.Run(Ltb, Defaults().With(new CalcInputValue("psi_y")));
         Assert.False(missing.IsBlocked);
-        Assert.Contains(missing.Warnings, w => w.RuleId == "moment" && w.Message.StartsWith("psi_y:", StringComparison.Ordinal) && w.Message.Contains("default 1", StringComparison.Ordinal));
+        Assert.DoesNotContain(missing.Notices, n => n.RuleId == "moment");
         Assert.Equal(1.0, missing.OutputSi("C_1"), 12);
+
+        var noMoment = CalcRunner.Run(Ltb, Defaults().With(new CalcInputValue("M_y_Ed")));
+        Assert.True(noMoment.IsBlocked);
+        var block = Assert.Single(noMoment.Blocks);
+        Assert.Equal("moment", block.RuleId);
+        Assert.Equal("M_y_Ed: enter the greatest design moment about y-y, or give the moment diagram as end moments.", block.Message);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+        Assert.Null(noMoment.FindOutput("u_member"));
     }
 
     [Fact]

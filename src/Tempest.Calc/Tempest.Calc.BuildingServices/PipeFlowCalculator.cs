@@ -42,7 +42,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.8.1", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
+        Id, "1.9.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
         "Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.",
         "Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT).\nMean velocity in the pipe: v = Q/(πD²/4).\nReynolds number, which decides laminar or turbulent flow: Re = ρvD/μ.\nFriction factor for laminar flow (Re < 2300): f = 64/Re.\nFriction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)).\nHead lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g.\nSystem curve, with the friction of a turbulent or transitional segment and every fitting loss scaled from the design flow as Q², and the friction of a laminar segment (Re < 2300, h_f ∝ Q) as Q (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f,lam·(Q/Q₀) + Σh_f,other·(Q/Q₀)².\nWater held in the pipes: V_pipe = Σ π/4·D²·L.\nDuty point, where the pump and system curves cross (every crossing is found by a scan and refined by bisection; the stable one, where the pump curve falls through the system curve, nearest the design flow is reported): H_pump(Q) = H_sys(Q).\nPump affinity laws for a change of speed n: Q ∝ n; H ∝ n². For a change of impeller diameter D, by the choice: a trimmed impeller of the same casing, Q ∝ D and H ∝ D² (the default, the usual practice for a trim); or a geometrically similar pump scaled in all dimensions, Q ∝ D³ and H ∝ D². Speed and diameter combine as Q ∝ n·D^a, H ∝ n²·D², a = 1 or 3.\nNet positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with p_v from the water correlation or, for a custom fluid, from the vapour pressure entered. The friction h_f,suction is that of the segments marked 'suction' only, at the larger of the design flow and the duty flow the pump runs at.\nShaft torque for the motor: T = P/ω with P the larger of the design-flow shaft power and the duty-point shaft power, at the speed n_pump; when a speed or diameter ratio shifts the duty, the shifted duty power at the shifted speed n_pump·n₂/n₁.",
         [
@@ -96,13 +96,13 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcApplicabilityRule("fittings", "Fitting loss coefficients K are entered for a segment below Re 4000: K is a turbulent-flow value and rises at low Re, so the fittings term K·v²/2g is understated.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("velocity", "A segment exceeds the velocity limit.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("pump-curve", "The pump curve needs at least two points with matching flow and head counts, flows increasing.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("npsh-custom", "NPSH_r is entered for a custom fluid with no vapour pressure p_v_custom: NPSH_a is not computed and no NPSH check is made.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("npsh-custom", "NPSH_r is entered for a custom fluid with no vapour pressure p_v_custom: NPSH_a cannot be computed and no NPSH check could be made, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("npsh-no-suction", "NPSH_r is entered but no segment is marked 'suction' (a blank side column means discharge): NPSH_a carries no suction friction and is optimistic unless the suction line has no friction.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("no-duty", "The pump curve and the system curve do not cross within the curve's flow range.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("plant-loss", "A heat-load sheet has no outlet head h_out: the pump head then holds pipe friction only, without the water-side loss of the boiler, heat exchanger, coil, valves and emitters.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("fluid-cp", "The specific heat of the heat-load flow differs from water's by more than 5 %: the fluid is not water, but this sheet is on water unless a custom fluid is chosen, so the flow, friction and torque are those of water.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("multi-duty", "The pump curve crosses the system curve more than once: all crossings are listed and the stable one nearest the design flow is reported.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("duty-unstable", "The only crossing of the pump curve and the system curve is on a rising part of the pump curve, where the operating point is unstable.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("duty-unstable", "The only crossing of the pump curve and the system curve is on a rising part of the pump curve, where the operating point is unstable: the stable-duty check fails.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("eta-default", "The pump efficiency is the default 0.7 for a pump of under about 1 kW shaft power: small circulators have a far lower overall efficiency, so the shaft power and torque are understated.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("summary-only", "More than 50 segments: per-segment lines are omitted.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
@@ -541,8 +541,12 @@ public sealed class PipeFlowCalculator : ICalcCalculator
 
         var customVapour = fluid != FluidWater && c.Has("p_v_custom");
 
+        // A custom fluid with an NPSH_r and no vapour pressure has no NPSH_a, so the cavitation check is not made and a pass said nothing about cavitation (it warned and passed): refused.
         if (fluid != FluidWater && c.Has("NPSH_r") && !customVapour)
-            c.Warn("npsh-custom", "p_v_custom: NPSH_r is entered for a custom fluid but no vapour pressure; NPSH_a is not computed and NPSH_r ≤ NPSH_a is not checked, so a pass says nothing about cavitation. Enter the fluid's absolute vapour pressure at T (p_v_custom).");
+        {
+            c.Block("npsh-custom", "p_v_custom: NPSH_r is entered for a custom fluid but no vapour pressure, so NPSH_a cannot be computed and NPSH_r ≤ NPSH_a cannot be checked. Enter the fluid's absolute vapour pressure at T (p_v_custom), or clear NPSH_r.");
+            return;
+        }
 
         if (c.Has("NPSH_r") && (fluid == FluidWater || customVapour) && !segments.Any(s => s.Suction))
             c.Warn("npsh-no-suction", "segments: NPSH_r is entered but no segment has its Pump side set to 'suction' (a blank side means discharge), so NPSH_a carries no suction-line friction and is optimistic. Mark the suction segments, or accept that the suction line has no friction loss.");
@@ -627,8 +631,12 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         if (crossings.Count > 1)
             c.Warn("multi-duty", $"Q_pump: the pump curve {label} crosses the system curve {crossings.Count} times, at {string.Join(", ", crossings.Select(x => $"{F(x.Flow * 3600)} m³/h ({(x.Stable ? "stable" : "unstable")})"))}; the stable crossing nearest the design flow, {F(chosen.Flow * 3600)} m³/h, is reported.");
 
+        // The operating point on a rising part of the pump curve is unstable: the pump does not hold it. That is a failed duty, not a notice (it warned and the sheet passed).
         if (stable.Count == 0)
+        {
             c.Warn("duty-unstable", $"Q_pump: the pump curve {label} crosses the system curve only where the pump curve rises ({F(chosen.Flow * 3600)} m³/h): the operating point is unstable, so the pump will not hold it.");
+            c.CheckCondition($"Duty point against a stable crossing ({label})", false, $"{F(chosen.Flow * 3600)} m³/h on a rising pump curve", "a crossing where the pump curve falls", null);
+        }
 
         var qd = chosen.Flow;
         var hd = hSys(qd);

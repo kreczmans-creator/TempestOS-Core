@@ -385,16 +385,28 @@ public sealed class BasePlateTests
     }
 
     [Fact]
-    public void Prying_Is_Off_By_Default_Is_Conservative_And_Warns_That_Q_Is_Not_Included()
+    public void Prying_Is_Off_By_Default_Is_Conservative_And_Fails_A_Check_When_On_Unless_The_Anchor_Design_Takes_Q()
     {
         Assert.False(Defaults().Find("prying")!.Flag);
         var off = CalcRunner.Run(Plate, Defaults());
-        Assert.DoesNotContain(off.Warnings, w => w.RuleId == "prying");
+        Assert.DoesNotContain(off.Notices, n => n.RuleId is "prying" or "prying-anchor");
         Assert.Equal(2 * 5.5e3 / 28.0, Kn(off, "T_Rd_1"), 6);
         Assert.Null(off.FindOutput("T_Rd_2"));
 
-        var on = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Switch("prying", true)));
-        Assert.Contains(on.Warnings, w => w.RuleId == "prying" && w.Message.Contains("not included", StringComparison.Ordinal));
+        // F2: with prying on the force Q is not in F_t,Ed, so the bolt tension is understated and the sheet warned and passed. Without u_profis (the anchor design, which adds Q) the prying check
+        // fails (a failing check, not a block, because the prying known-answer case is a shipped case); with it the anchor design's utilisation is counted and only the warning stays.
+        var flagged = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Switch("prying", true)));
+        Assert.False(flagged.IsBlocked);
+        Assert.Contains(flagged.Warnings, w => w.RuleId == "prying" && w.Message.Contains("not included", StringComparison.Ordinal));
+        var check = Assert.Single(flagged.Checks, k => k.Name.StartsWith("Prying force against the bolt tension", StringComparison.Ordinal));
+        Assert.False(check.Passed);
+        Assert.False(flagged.Passed);
+        Assert.Contains(Plate.Template.ApplicabilityRules, r => r.Id == "prying" && r.Severity == CalcNoticeSeverity.Warning && r.Effect == CalcRuleEffect.Unconservative);
+
+        var on = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Switch("prying", true)).With(CalcInputValue.Of("u_profis", 0.6)));
+        Assert.False(on.IsBlocked);
+        Assert.Contains(on.Warnings, w => w.RuleId == "prying-anchor" && w.Message.Contains("not included", StringComparison.Ordinal));
+        Assert.DoesNotContain(on.Checks, k => k.Name.StartsWith("Prying force against", StringComparison.Ordinal));
         Assert.Equal(2 * Kn(off, "T_Rd_1"), Kn(on, "T_Rd_1"), 6);
         Assert.True(Kn(on, "T_Rd_2") > 0);
     }

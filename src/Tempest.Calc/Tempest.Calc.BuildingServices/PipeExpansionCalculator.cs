@@ -42,7 +42,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
     private const string ScreeningClause = "ASME B31.3 para. 319.4.1 (screening form; number to be checked against the owner's copy)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
+        Id, "1.4.0", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
         "Screening only — not a piping stress analysis. Thermal growth of a straight run between anchors, the fully restrained stress and force, the leg an offset leg or a U-loop (two guided cantilevers) needs to absorb the growth within the owner's allowable displacement-stress range Sa and whether the available leg is long enough (an offset leg or Z-bend also loads its run or runs with the leg's own growth), the force on the anchors and the largest root moment of the guided-cantilever model, the screening ratio D·Y/(L − U)² against the owner's K1 (PASS, or the line needs a formal stress analysis), and, for an axial bellows, the anchor force P·A_eff plus its spring force. No allowable stress, K1 or code table ships.",
         "Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴ − d_i⁴); Z = I/(OD/2)\n" +
         "Temperature change: ΔT = T_operate − T_install, or as entered; the movement uses |ΔT| and its sign gives the direction\n" +
@@ -101,8 +101,8 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             new CalcApplicabilityRule("dT_in", "Enter the temperature change when it is the source of the movement; it must not be zero.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("dT-zero", "Install and operating temperatures are equal: there is no movement to absorb.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("bellows", "An axial bellows needs both the pressure P_b and the effective area A_eff.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("modulus-low", "E (or E_hot) is below 0.5 GPa, lower than any usual pipe material: it may have been typed in MPa.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("short-leg", "The available leg (or, for an offset leg or Z-bend, a run) is shorter than ten pipe diameters: the guided-cantilever beam model is not valid.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("modulus-low", "E (or E_hot) is below 0.5 GPa, lower than any usual pipe material: it may have been typed in MPa, which makes a leg look 1000 times more flexible and passes a leg that fails, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("short-leg", "The available leg (or, for an offset leg or Z-bend, a run) is shorter than ten pipe diameters: the guided-cantilever beam model is not valid, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("bellows-unused", "Bellows inputs are given with a leg or loop layout and are not used; choose the axial bellows layout.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("k1-unused", "K1 is given with the axial bellows layout, which has no screening; it is not used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("l2-unused", "L2 is given with a layout other than the offset leg; it is not used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
@@ -216,8 +216,12 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             {
                 var gpa = c.Si(symbol) / 1e9;
 
+                // A metal's modulus typed in MPa lands near 0.1 to 0.2 GPa: the leg looked 1000 times more flexible, a failing leg passed and the anchor force was 1000 times low (it warned and passed).
                 if (gpa < PlausibleMinModulusGPa)
-                    c.Warn("modulus-low", $"{symbol}: {F(gpa)} GPa is below any usual pipe material (steel 210, copper 120, PE and PP about 1 GPa); is E in GPa? A metal's modulus typed in MPa (steel 210 000 MPa) lands near 0.1 to 0.2 GPa, which makes a leg look 1000 times more flexible, passes a leg that fails and gives an anchor force 1000 times low. Enter {symbol} in GPa, or take it from a material.");
+                {
+                    c.Block("modulus-low", $"{symbol}: {F(gpa)} GPa is below any usual pipe material (steel 210, copper 120, PE and PP about 1 GPa); is E in GPa? A metal's modulus typed in MPa (steel 210 000 MPa) lands near 0.1 to 0.2 GPa. Enter {symbol} in GPa, or take it from a material.");
+                    return;
+                }
             }
         }
 
@@ -341,14 +345,24 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             c.Assign("anchor_moment", "M_leg", "N*m", "Moment at the root of the loop's legs");
         }
 
+        // The guided-cantilever model is not valid for a leg or run under ten diameters, and its force and stress there are not safe (it warned and passed): the sheet is refused.
         if (leg < ShortLegDiameters * od)
-            c.Warn("short-leg", $"H: the available leg ({F(leg)} m) is shorter than ten pipe diameters ({F(ShortLegDiameters * od)} m); the guided-cantilever beam model is not valid for such short legs. Use a flexibility analysis.");
+        {
+            c.Block("short-leg", $"H: the available leg ({F(leg)} m) is shorter than ten pipe diameters ({F(ShortLegDiameters * od)} m); the guided-cantilever beam model is not valid for such short legs. Lengthen the leg, or use a flexibility analysis.");
+            return;
+        }
 
         if (offset && run < ShortLegDiameters * od)
-            c.Warn("short-leg", $"L: the run ({F(run)} m) is shorter than ten pipe diameters ({F(ShortLegDiameters * od)} m); the guided-cantilever beam model is not valid for such a short run. Use a flexibility analysis.");
+        {
+            c.Block("short-leg", $"L: the run ({F(run)} m) is shorter than ten pipe diameters ({F(ShortLegDiameters * od)} m); the guided-cantilever beam model is not valid for such a short run. Lengthen the run, or use a flexibility analysis.");
+            return;
+        }
 
         if (z && c.Si("L2") < ShortLegDiameters * od)
-            c.Warn("short-leg", $"L2: the second run ({F(c.Si("L2"))} m) is shorter than ten pipe diameters ({F(ShortLegDiameters * od)} m); the guided-cantilever beam model is not valid for such a short run. Use a flexibility analysis.");
+        {
+            c.Block("short-leg", $"L2: the second run ({F(c.Si("L2"))} m) is shorter than ten pipe diameters ({F(ShortLegDiameters * od)} m); the guided-cantilever beam model is not valid for such a short run. Lengthen the run, or use a flexibility analysis.");
+            return;
+        }
 
         // Screening: Y is the free growth between the anchors, alpha·|dT|·U.
         var hasK1 = c.Has("K_scr");

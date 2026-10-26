@@ -17,7 +17,7 @@ namespace Tempest.Calc.Tests.Calculators.Consistency;
 public sealed class UnconservativeRuleTests
 {
     /// <summary>The number of entries on the allow-list today. Lower it with every entry removed; never raise it.</summary>
-    public const int Ceiling = 91;
+    public const int Ceiling = 72;
 
     /// <summary>One unconservative warning proved to be paired with a failing check: the template, the rule, the check that fails and inputs that make the rule fire.</summary>
     private sealed record Probe(string Template, string Rule, string CheckStartsWith, Func<CalcInputSet> Inputs);
@@ -28,6 +28,15 @@ public sealed class UnconservativeRuleTests
         new("mech.shaft", "critical-speed", "Critical speed", () => UnconservativePassTests.RoomyShaft().With(CalcInputValue.Quantity("n", 4000, "rpm"))),
         new("mech.spring", "buckling", "Working deflection against the buckling", () => UnconservativePassTests.SlenderSpringInputs(60)),
         new("elec.motor-sizing", "speed-above-rated", "Motor speed against the rated speed", UnconservativePassTests.MotorAboveRated),
+        new("struct.ltb-interaction", "table-b1", "Interaction, equation 6.62", ProbeInputs.LtbTableB1),
+        new("mech.shaft", "critical-speed-skipped", "Critical speed", ProbeInputs.ShaftWithoutCriticalSpeed),
+        new("mech.mechanism", "contact", "Follower stays on the cam", ProbeInputs.WeakSpringCam),
+        new("bs.pipe-pump", "duty-unstable", "Duty point against a stable crossing", ProbeInputs.UnstablePump),
+        new("fp.accumulator", "exponent", "Gas exponent against a fast discharge", ProbeInputs.SlowEmergencyAccumulator),
+        new("fp.accumulator", "realgas", "Real-gas factor against", ProbeInputs.IdealGasAccumulator),
+        new("elec.pcb-trace", "copper", "Copper weight against the range", ProbeInputs.HalfOunceTrace),
+        new("struct.base-plate", "prying", "Prying force against the bolt tension", ProbeInputs.PryingBasePlate),
+        new("struct.plate-bending", "ritz-converge", "Ritz change against the tolerance", ProbeInputs.LongClampedPlate),
     ];
 
     private static string AllowListPath([CallerFilePath] string callerFilePath = "") => Path.Combine(Path.GetDirectoryName(callerFilePath)!, "UnconservativeAllowList.json");

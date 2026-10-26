@@ -45,7 +45,7 @@ public sealed class ShaftCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.1", CalcDiscipline.Mechanical, "Shaft design",
+        Id, "1.6.0", CalcDiscipline.Mechanical, "Shaft design",
         "A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a torque with a steady (mean) part and an optional alternating part: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.",
         "Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²)\n" +
         "Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1)\n" +
@@ -59,7 +59,7 @@ public sealed class ShaftCalculator : ICalcCalculator
             new CalcInputSpec("x_A", "Bearing A position", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 3000, HardMin: 0, HardMax: 3000, Group: "Geometry"),
             new CalcInputSpec("x_B", "Bearing B position", CalcInputKind.Quantity, "mm", Default: 400, Min: 1, Max: 3000, HardMin: 1, HardMax: 3000, Group: "Geometry"),
             new CalcInputSpec("loads", "Radial loads and masses (a carried mass adds no weight unless w_masses is on: enter its weight as a force in F_y)", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 20, Group: "Loads"),
-            new CalcInputSpec("w_masses", "Add the weight of the carried masses and of the shaft itself as downward vertical loads (off: the loads table is the whole load; the masses then enter the critical speed only)", CalcInputKind.Boolean, Default: 0, Group: "Loads"),
+            new CalcInputSpec("w_masses", "Add the weight of the carried masses and of the shaft itself as downward vertical loads (optional; blank = refused when a mass is carried; off: the loads table is the whole load, the weights are entered as forces and the masses enter the critical speed only)", CalcInputKind.Boolean, IsOptional: true, Group: "Loads"),
             new CalcInputSpec("T", "Torque transmitted, steady or mean part T_m", CalcInputKind.Quantity, "kN*m", Default: 0, Min: 0, Max: 50, HardMin: 0, HardMax: 50, Group: "Loads"),
             new CalcInputSpec("T_a", "Alternating torque amplitude T_a about the mean (blank: 0, a steady torque; a reversing or cyclic drive needs it)", CalcInputKind.Quantity, "kN*m", Min: 0, Max: 50, HardMin: 0, HardMax: 50, IsOptional: true, Group: "Loads"),
             new CalcInputSpec("T_pk", "Peak torque for the yield check and the key (blank: T + T_a)", CalcInputKind.Quantity, "kN*m", Min: 0, Max: 50, HardMin: 0, HardMax: 50, IsOptional: true, Group: "Loads"),
@@ -77,6 +77,7 @@ public sealed class ShaftCalculator : ICalcCalculator
             new CalcInputSpec("k_a", "Surface factor override (blank: k_a = a·S_ut^b, Shigley 10th ed. Table 6-2)", CalcInputKind.Number, Min: 0.1, Max: 1.5, HardMin: 0.05, HardMax: 2, IsOptional: true, Group: "Fatigue"),
             new CalcInputSpec("k_f", "Miscellaneous factor k_f", CalcInputKind.Number, Default: 1, Min: 0.3, Max: 1.5, HardMin: 0.1, HardMax: 2, Group: "Fatigue"),
             new CalcInputSpec("n_target", "Target safety factor", CalcInputKind.Number, Default: 1.5, Min: 1.2, Max: 4, HardMin: 1.2, HardMax: 4, Group: "Requirements"),
+            new CalcInputSpec("r_c_min", "Smallest ratio of the first critical speed to the operating speed", CalcInputKind.Number, Default: 2, Min: 1.5, Max: 4, HardMin: 1, HardMax: 10, Group: "Requirements"),
             new CalcInputSpec("theta_max", "Slope limit at the bearings", CalcInputKind.Quantity, "rad", Default: 0.001, Min: 1e-5, Max: 0.1, HardMin: 1e-6, HardMax: 0.5, Group: "Requirements"),
             new CalcInputSpec("y_max", "Deflection limit at the loads", CalcInputKind.Quantity, "mm", Default: 0.13, Min: 0.001, Max: 10, HardMin: 1e-4, HardMax: 100, Group: "Requirements"),
             new CalcInputSpec("x_key", "Key position", CalcInputKind.Quantity, "mm", Min: 0, Max: 3000, HardMin: 0, HardMax: 3000, IsOptional: true, Group: "Key"),
@@ -100,9 +101,9 @@ public sealed class ShaftCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("geometry", "Segments must run left to right, bearings and loads must lie on the shaft, and the bearings must be at least 1/200 of the shaft length apart.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("critical-speed", "The first critical speed (the Dunkerley lower bound) is less than twice the operating speed: the critical-speed check fails.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("critical-speed-skipped", "No critical speed is found when no mass deflects (ρ = 0 and every carried mass sits on a bearing).", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("mass-weight", "A carried mass is entered and w_masses is off: its weight is not in the reactions, the moment or the deflection.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("critical-speed", "The first critical speed (the Dunkerley lower bound) is less than r_c_min times the operating speed (2 by default): the critical-speed check fails.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("critical-speed-skipped", "No critical speed is found when no mass deflects (ρ = 0 and every carried mass sits on a bearing): with an operating speed the critical-speed check fails instead of being left out.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("mass-weight", "A carried mass is entered and w_masses is blank: the sheet cannot tell whether its weight is in the reactions, the moment and the deflection, so it is refused until w_masses says (on: added here; off: entered as forces).", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("torque-span", "A torque is transmitted and a section or the key lies outside x_T1 … x_T2: it carries no torque.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("key-hub", "A key check without a hub strength: the key bearing is checked against the key and the shaft only.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("key", "A key check needs its position, width, height and length.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
@@ -112,7 +113,7 @@ public sealed class ShaftCalculator : ICalcCalculator
         [
             new CalcTestCase("ka-simply-supported", "Uniform shaft, central load and mass: slope, deflection, critical speed",
                 new CalcReferenceSource("Analytic (beam formulas; single-mass Rayleigh)", null, "d = 30 mm, L = 400 mm, E = 207 GPa, P = 2 kN at mid-span: M = PL/4 = 200 N·m; θ_A = PL²/(16EI) = 2.42999e-3 rad; y = PL³/(48EI) = 0.323999 mm; 20 kg at mid-span, massless shaft: n_c = (60/2π)·√(48EI/(L³m)) = 5305.17 rpm"),
-                [Segments((400, 30, 0)), Q("x_A", 0, "mm"), Q("x_B", 400, "mm"), Loads((200, -2, 0, 20)), Q("rho", 0, "kg/m^3"), Sections((200, 1, 1, 0, 0))],
+                [Segments((400, 30, 0)), Q("x_A", 0, "mm"), Q("x_B", 400, "mm"), Loads((200, -2, 0, 20)), CalcInputValue.Switch("w_masses", false), Q("rho", 0, "kg/m^3"), Sections((200, 1, 1, 0, 0))],
                 [new CalcExpectedValue("R_A", 1, "kN", 1e-6), new CalcExpectedValue("M_max", 0.2, "kN*m", 1e-6), new CalcExpectedValue("theta_A", 2.429991e-3, "rad", 1e-5), new CalcExpectedValue("y_load", 0.3239989, "mm", 1e-5), new CalcExpectedValue("n_c", 5305.174, "rpm", 1e-5), new CalcExpectedValue("n_c_D", 5305.174, "rpm", 1e-5)]),
             new CalcTestCase("ka-key", "Parallel key, 124.3 N·m on a 28 mm shaft",
                 new CalcReferenceSource("Analytic (key shear and bearing)", null, "w = 8, h = 7, L = 30 mm: τ = 2T/(d w L) = 36.994 MPa; σ = 4T/(d h L) = 84.558 MPa"),
@@ -297,11 +298,16 @@ public sealed class ShaftCalculator : ICalcCalculator
         foreach (var l in loads)
             masses[NodeAt(l.X) - 1] += l.Mass;
 
-        var addWeights = c.InputFlag("w_masses");
         var carried = loads.Sum(l => l.Mass);
 
-        if (!addWeights && carried > 0)
-            c.Warn("mass-weight", $"m: the carried mass ({F(carried)} kg) adds no weight to the reactions, the moment or the deflection, and neither does the shaft's own weight; switch w_masses on to add them, or enter the weights as forces in F_y.");
+        // A carried mass has a weight. Left blank, the switch said nothing about it and the sheet quietly left the weight out (1.5.1 and before: a warning that did not stop a pass).
+        if (carried > 0 && !c.Has("w_masses"))
+        {
+            c.Block("mass-weight", $"w_masses: a mass of {F(carried)} kg is carried; say whether the sheet adds the weights (on) or they are entered as forces in F_y (off).");
+            return;
+        }
+
+        var addWeights = c.Has("w_masses") && c.InputFlag("w_masses");
 
         // A plane with no load carries nothing (the frame model refuses an empty load case).
         FrameResult? SolvePlane(Func<Load, double> force, bool weights)
@@ -457,6 +463,11 @@ public sealed class ShaftCalculator : ICalcCalculator
             c.Warn("critical-speed-skipped", masses.Sum() > 0
                 ? "rho: every carried mass sits on a bearing and ρ is 0, so no mass deflects and no critical speed is found; enter ρ or move a mass off the bearings."
                 : "rho: no mass is carried and ρ is 0, so no critical speed is found; enter ρ (the shaft's own mass) or a carried mass.");
+
+            // A shaft that runs has a critical speed: with no mass to deflect none can be found, and the check that it is far enough above the running speed is not made, so it fails
+            // (it was left out and the sheet passed). A shaft at rest (n = 0) has none to clear.
+            if (opSpeed > 0)
+                c.CheckCondition("Critical speed against the operating speed", false, "no critical speed found", "n_c,D at least r_c_min × n", null, "Shigley 10th ed. §7-6");
         }
         else
         {
@@ -488,12 +499,13 @@ public sealed class ShaftCalculator : ICalcCalculator
                 c.Record("r_c", "n_c,D/n", $"{F(rpm.FromSi(omegaD))} / {F(rpm.FromSi(opSpeed))}", new ScalarValue(ratio), "Critical-speed ratio (Dunkerley lower bound over operating speed)");
                 outputs.Add(("r_c", "Critical-speed ratio"));
 
-                // The first critical speed must be at least twice the operating speed: below that the shaft runs near resonance, so the check fails (it only warned before).
-                c.Record("n_c_req", "2·n", $"2 × {F(rpm.FromSi(opSpeed))} rpm", ScalarValue.Of(2 * rpm.FromSi(opSpeed), rpm), "Critical speed required, twice the operating speed");
+                // The first critical speed must be at least r_c_min times the operating speed (2 by default): below that the shaft runs near resonance, so the check fails (it only warned before).
+                var rcMin = c.InputSi("r_c_min");
+                c.Record("n_c_req", "r_c,min·n", $"{F(rcMin)} × {F(rpm.FromSi(opSpeed))} rpm", ScalarValue.Of(rcMin * rpm.FromSi(opSpeed), rpm), "Critical speed required, r_c_min times the operating speed");
                 c.Check("Critical speed against the operating speed", "n_c_req", "n_c_D", "Shigley 10th ed. §7-6");
 
-                if (ratio < 2)
-                    c.Warn("critical-speed", $"n: the first critical speed (Dunkerley lower bound) is {CalcValue.FormatNumber(ratio, 3)} times the operating speed; keep it at least twice.");
+                if (ratio < rcMin)
+                    c.Warn("critical-speed", $"n: the first critical speed (Dunkerley lower bound) is {CalcValue.FormatNumber(ratio, 3)} times the operating speed; keep it at least {CalcValue.FormatNumber(rcMin, 3)} times.");
             }
         }
 

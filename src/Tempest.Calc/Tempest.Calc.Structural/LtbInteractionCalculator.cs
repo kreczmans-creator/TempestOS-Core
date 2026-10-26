@@ -39,7 +39,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.4", CalcDiscipline.Structural, "Lateral-torsional buckling and N+M interaction (EN 1993-1-1)",
+        Id, "1.2.0", CalcDiscipline.Structural, "Lateral-torsional buckling and N+M interaction (EN 1993-1-1)",
         "Lateral-torsional buckling (6.3.2), flexural buckling (6.3.1) and the interaction of axial compression with bending (6.3.3) for a uniform doubly-symmetric I-section member on fork supports, class 1 to 3: M_cr, λ̄_LT, χ_LT and M_b,Rd; χ_y, χ_z and N_b,Rd; the Annex B (or Annex A) interaction factors and both interaction ratios, with the governing check.",
         "Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)²·I_w/I_z + (kL)²·G·I_t/(π²E·I_z) + (C₂z_g)²) − C₂z_g]; C₁ = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70 (end moments, k = 1) unless entered\n" +
         "LTB slenderness: λ̄_LT = √(W_y·f_y/M_cr), W_y = W_pl,y (class 1, 2) or W_el,y (class 3)\n" +
@@ -134,14 +134,14 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             new CalcApplicabilityRule("end-moments", "End-moment mode needs both end moments.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("n-cr", "The design compression must stay below the elastic buckling forces (Annex A).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("edition", "The 2022 edition choice changes the label only.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("moment", "The ψ mode needs the greatest moment M_y,Ed and ψ_y: a blank one falls back to the template default.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("moment", "The ψ mode needs the greatest moment M_y,Ed: a blank one is refused, since the template default of 300 kN·m is not the member's moment (give the diagram as end moments instead).", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("k_c", "With C₁ entered the f modification needs k_c entered (unless the diagram is given as end moments).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("C_m_y", "With C₁ entered Annex B needs C_my entered (unless the diagram is given as end moments).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("C_m_LT", "Table B.2 divides by C_mLT − 0.25: C_mLT must exceed 0.25.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("curve", "The automatic flexural buckling curve is not defined for this section (f_y above 420 MPa, or a Table 6.2 combination without a row): choose the curve.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("engine", "The elastic critical moment could not be evaluated for these inputs.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("c1-psi", "C₁ from the ψ formula applies to end moments with k = 1 and can exceed the exact elastic value by up to about 10 % when ψ < 0.25; Annex A takes C_my,0 from ψ.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("table-b1", "Table B.1 is for members not susceptible to torsional deformation; an open I-section whose χ_LT is below 1 is susceptible unless it is restrained against twist.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("table-b1", "Table B.1 is chosen for an open I-section whose χ_LT is below 1, which is susceptible to torsional deformation unless it is restrained against twist: the check uses Table B.2 unless a basis for B.1 is recorded.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("zg-c2", "z_g has no effect while C₂ = 0.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("double-curvature", "End moments of opposite sign are taken as double curvature (ψ < 0, C₁ up to its cap): bending-moment-diagram ordinates, not stiffness-analysis end actions.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("use-f", "The f modification belongs to 6.3.2.3 and is not applied with 6.3.2.2.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
@@ -178,7 +178,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             new CalcTestCase("ka-annex-b-class3-b1", "Annex B, Table B.1, class 3 (elastic moduli): the same actions",
                 new CalcReferenceSource("Analytic from the Annex B expressions as implemented, recomputed in python; coefficients to be checked against the owner's copy of the standard", "EN 1993-1-1:2005+A1:2014",
                     "Class 3: W_el governs, λ̄_LT = 1.119598, χ_LT = 0.494537; Table B.1 elastic: k_yy = C_my(1 + 0.6λ̄_y n_y) = 0.860536, k_yz = k_zz = 1.271128, k_zy = 0.8·k_yy = 0.688429; 6.61 = 1.11105, 6.62 = 1.18268"),
-                [.. WeldedSection(), Choice("section_class", "3"), Choice("ltb_method", Rolled), Choice("torsion", NotSusceptible), N("psi_y", 0.5), Q("M_y_Ed", 200, "kN*m"), Q("M_z_Ed", 15, "kN*m"), Q("N_Ed", -1200, "kN"), Q("L_cr_y", 6, "m"), Q("L_cr_z", 3, "m"), Choice("curve_y", "b"), Choice("curve_z", "c")],
+                [.. WeldedSection(), Choice("section_class", "3"), Choice("ltb_method", Rolled), CalcInputValue.Choice("torsion", NotSusceptible, CalcProvenance.Assumed("Table B.1 is checked here as the standard states it: the member is taken as not susceptible to torsional deformation.")), N("psi_y", 0.5), Q("M_y_Ed", 200, "kN*m"), Q("M_z_Ed", 15, "kN*m"), Q("N_Ed", -1200, "kN"), Q("L_cr_y", 6, "m"), Q("L_cr_z", 3, "m"), Choice("curve_y", "b"), Choice("curve_z", "c")],
                 [new CalcExpectedValue("lambda_LT", 1.11959778027, "", 1e-6), new CalcExpectedValue("chi_LT", 0.49453731243, "", 1e-6), new CalcExpectedValue("k_yy", 0.860536013656, "", 1e-6), new CalcExpectedValue("k_yz", 1.27112814635, "", 1e-6), new CalcExpectedValue("k_zy", 0.688428810924, "", 1e-6), new CalcExpectedValue("k_zz", 1.27112814635, "", 1e-6), new CalcExpectedValue("u_61", 1.11104576816, "", 1e-6), new CalcExpectedValue("u_62", 1.18267539476, "", 1e-6)],
                 CalcReferenceStatus.Unconfirmed),
             new CalcTestCase("ka-annex-a-class2", "Annex A, class 2: the actions of the Annex B case",
@@ -351,11 +351,12 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         }
         else
         {
-            // Optional on the template because the end-moment mode does not use them; the ψ mode does, so a blank one is said so (and the default, a uniform moment of 300 kN·m, is used).
-            foreach (var symbol in new[] { "M_y_Ed", "psi_y" })
+            // M_y_Ed is optional on the template because the end-moment mode does not use it; the ψ mode does, and a blank one is refused (it ran on the template default of 300 kN·m, a
+            // moment nobody entered). ψ_y blank is the uniform moment, ψ = 1, which is the conservative diagram: it is listed as a default used.
+            if (!c.Has("M_y_Ed"))
             {
-                if (!c.Has(symbol))
-                    c.Warn("moment", $"{symbol}: not entered; the ψ mode needs '{c.Template.FindInput(symbol)!.Description}', so the template default {F(c.Template.FindInput(symbol)!.Default ?? 0)} is used. Enter it, or give the moment diagram as end moments.");
+                c.Block("moment", "M_y_Ed: enter the greatest design moment about y-y, or give the moment diagram as end moments.");
+                return;
             }
 
             c.Input("M_y_Ed");
@@ -557,6 +558,8 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         c.Record("M_z_Rk", "W_z·f_y (W_pl,z class 1, 2; W_el,z class 3)", $"{F(mzSlab / 1e3)} cm³ × {F(fy)} MPa", ScalarValue.Of(mzRk / 1e6, "kN*m"), "Characteristic bending resistance about z", "6.3.3");
 
         LtbInteractionMath.Factors k2;
+        var b1Replaced = false;
+        var torsionUsed = torsion;
 
         if (annexA)
         {
@@ -605,7 +608,19 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
                 return;
             }
 
-            k2 = LtbInteractionMath.AnnexB(ny, nz, lamY, lamZ, cmy, cmz, cmLt, plastic, torsion);
+            // Table B.1 is for a member not susceptible to torsional deformation. An open I-section that buckles laterally (χ_LT < 1) is susceptible unless it is restrained against twist, and
+            // Table B.1 then gives k_zy = 0.6·k_yy, far below Table B.2's (about 20 % unconservative). A B.1 choice with no recorded basis is therefore checked on Table B.2; one the person
+            // recorded a basis for (an assumption, a specification, a drawing) is theirs, with the warning kept.
+            b1Replaced = !torsion && chiUsed < 1 - 1e-9 && !c.HasRecordedBasis("torsion");
+            torsionUsed = torsion || b1Replaced;
+
+            if (b1Replaced && cmLt <= 0.25 + 1e-9)
+            {
+                c.Block("C_m_LT", "C_m_LT: enter a C_mLT above 0.25 (Table B.2 divides by C_mLT − 0.25).");
+                return;
+            }
+
+            k2 = LtbInteractionMath.AnnexB(ny, nz, lamY, lamZ, cmy, cmz, cmLt, plastic, torsionUsed);
         }
 
         if (annexA)
@@ -615,10 +630,12 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             c.Record("C_mLT", "C_my²·a_LT/√((1 − N/N_cr,z)(1 − N/N_cr,T)) ≥ 1", "Annex A Table A.2", new ScalarValue(k2.CmLT), "Equivalent uniform moment factor for lateral-torsional buckling", "Annex A Table A.2");
         }
 
-        var table = annexA ? "Annex A Table A.1" : (torsion ? "Annex B Table B.2" : "Annex B Table B.1");
+        var table = annexA ? "Annex A Table A.1" : (torsionUsed ? "Annex B Table B.2" : "Annex B Table B.1");
 
-        if (!annexA && !torsion && chiUsed < 1 - 1e-9)
-            c.Warn("table-b1", $"torsion: Table B.1 (not susceptible to torsional deformation) is chosen, but this I-section buckles laterally (χ_LT = {F(chiUsed)} < 1). An open I-section is susceptible to torsional deformation unless it is restrained against twist, and Table B.1 then gives a k_zy of 0.6·k_yy, far below Table B.2's: the interaction can be about 20 % unconservative. Choose Table B.2 unless the member is restrained against twist.");
+        if (b1Replaced)
+            c.Warn("table-b1", $"torsion: Table B.1 is chosen, but this I-section buckles laterally (χ_LT = {F(chiUsed)} < 1) and is susceptible to torsional deformation unless it is restrained against twist, so the check uses Table B.2. Record the basis of Table B.1 on this input to use it.");
+        else if (!annexA && !torsion && chiUsed < 1 - 1e-9)
+            c.Warn("table-b1", $"torsion: Table B.1 is used on your recorded basis, but this I-section buckles laterally (χ_LT = {F(chiUsed)} < 1). Table B.1 gives a k_zy of 0.6·k_yy, far below Table B.2's, so the interaction can be about 20 % unconservative unless the member is restrained against twist.");
         c.Record("k_yy", annexA ? "Annex A: C_my·C_mLT·μ_y/(1 − N/N_cr,y)/C_yy" : "Annex B: C_my(1 + (λ̄_y − 0.2)n_y) ≤ C_my(1 + 0.8n_y) (class 1, 2)", $"n_y = {F(ny)}", new ScalarValue(k2.Kyy), "Interaction factor k_yy", table);
         c.Record("k_yz", annexA ? "Annex A: C_mz·μ_y/(1 − N/N_cr,z)/C_yz·0.6√(w_z/w_y)" : "Annex B: 0.6k_zz (class 1, 2), k_zz (class 3)", "as above", new ScalarValue(k2.Kyz), "Interaction factor k_yz", table);
         c.Record("k_zy", annexA ? "Annex A: C_my·C_mLT·μ_z/(1 − N/N_cr,y)/C_zy·0.6√(w_y/w_z)" : "Annex B: Table B.1 0.6k_yy / 0.8k_yy; Table B.2 from λ̄_z, n_z and C_mLT", $"n_z = {F(nz)}", new ScalarValue(k2.Kzy), "Interaction factor k_zy", table);

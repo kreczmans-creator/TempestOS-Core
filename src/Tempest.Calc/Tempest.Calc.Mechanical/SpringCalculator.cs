@@ -54,7 +54,7 @@ public sealed class SpringCalculator : ICalcCalculator
     private const string Part3 = "EN 13906-3";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.1", CalcDiscipline.Mechanical, "Helical springs",
+        Id, "1.5.0", CalcDiscipline.Mechanical, "Helical springs",
         "A cylindrical helical spring of round wire, cold-coiled, with a linear characteristic: compression (rate, working points, solid length by end type, stress at the working points and at solid, buckling, Goodman fatigue, surge frequency), extension (the same with the initial tension and the hook stresses) or torsion (rate with the legs, curvature-corrected bending stress, wound diameter and body length).",
         "Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n + (l₁ + l₂)/(3π·D) (torsion)\n" +
         "Spring stress: τ_k = k_c·8·F·D/(π·d³), k_c = (C + 0.5)/(C − 0.75) (Bergsträsser) or (4C − 1)/(4C − 4) + 0.615/C (Wahl); torsion σ = q·32·M/(π·d³) with q = (C + 0.07)/(C − 0.75) (EN 13906-3, the default) or K_i = (4C² − C − 1)/(4C·(C − 1)) (Shigley)\n" +
@@ -101,6 +101,7 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcInputSpec("f_sigma", "Permissible bending stress as a fraction of R_m (torsion, hooks; generic textbook default, replace with the licensed EN 13906 value)", CalcInputKind.Number, Default: 0.75, Min: 0.3, Max: 1, HardMin: 0.01, HardMax: 1.5, IsOptional: true, Group: "Strength"),
             new CalcInputSpec("f_su", "Ultimate shear strength as a fraction of R_m (Goodman, shear; generic textbook default, replace with the licensed EN 13906 value)", CalcInputKind.Number, Default: 0.67, Min: 0.4, Max: 0.9, HardMin: 0.05, HardMax: 1, Group: "Strength"),
             new CalcInputSpec("nu_seat", "End-support coefficient ν (0.5 both ends fixed, 0.7 one fixed one pinned, 1 both pinned, 2 one free)", CalcInputKind.Number, Default: 0.5, Min: 0.5, Max: 2, HardMin: 0.25, HardMax: 5, Group: "Buckling"),
+            new CalcInputSpec("guided", "Spring guided by a mandrel or in a bore (compression): the guide restrains it against buckling, so the free-buckling check is not made", CalcInputKind.Boolean, Default: 0, Group: "Buckling"),
             new CalcInputSpec("S_e", "Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 2000, HardMin: 1, HardMax: 1e4, Group: "Fatigue and surge"),
             new CalcInputSpec("N_c", "Required life the endurance strength belongs to", CalcInputKind.Number, Default: 1e7, Min: 1e4, Max: 1e10, HardMin: 1, HardMax: 1e12, Group: "Fatigue and surge"),
             new CalcInputSpec("n_f_req", "Required Goodman safety factor", CalcInputKind.Number, Default: 1.2, Min: 1, Max: 5, HardMin: 0.5, HardMax: 20, Group: "Fatigue and surge"),
@@ -394,7 +395,12 @@ public sealed class SpringCalculator : ICalcCalculator
             c.Assign("u_n", "s_2 / s_n", null, "Working deflection / travel to the minimum length (coil clearance at L₂)");
         }
 
-        Buckling(c);
+        var guided = c.InputFlag("guided");
+
+        if (guided)
+            c.Assume("The spring is guided by a mandrel or in a bore, which restrains it against buckling, so the free-buckling check is not made; the guide must keep it from bowing at the working deflection.", "Input guided: the guide and its clearance are the user's, not checked here.");
+
+        Buckling(c, guided);
 
         foreach (var (symbol, text) in new[] { ("C", "Spring index"), ("Rm", "Wire tensile strength R_m(d)"), ("k", "Rate"), ("k_c", "Stress correction factor"), ("n_t", "Total coils"), ("L_s", "Solid length"), ("p", "Pitch"), ("F_1", "Force at point 1"), ("F_2", "Force at point 2"), ("s_1", "Deflection at point 1"), ("s_2", "Deflection at point 2"), ("L_1", "Length at point 1"), ("L_2", "Length at point 2"), ("s_c", "Travel to solid"), ("F_c", "Force at solid"), ("tau_1", "Stress at point 1"), ("tau_2", "Stress at point 2"), ("tau_c", "Stress at solid"), ("u_2", "Utilisation at point 2"), ("u_c", "Utilisation at solid"), ("u_s", "Working deflection / travel to solid") })
             c.Output(symbol, text);
@@ -405,16 +411,17 @@ public sealed class SpringCalculator : ICalcCalculator
                 c.Output(symbol, text);
         }
 
-        BucklingOutputs(c);
+        BucklingOutputs(c, guided);
         Surge(c);
         Fatigue(c, "tau_1", "tau_2", "S_su", shear: true);
 
         c.CheckUtilisation("Static shear stress at solid length", "u_c", Part1);
 
-        // A compression spring whose deflection at point 2 reaches the buckling deflection fails; one that is stable at any deflection has no buckling deflection to reach.
-        if (c.Session.Find("y_cr") is not null)
+        // A compression spring whose deflection at point 2 reaches the buckling deflection fails; one that is stable at any deflection has no buckling deflection to reach; a guided one is
+        // not checked here (its assumption says so), so no pass is claimed for it.
+        if (!guided && c.Session.Find("y_cr") is not null)
             c.Check("Working deflection against the buckling deflection", "s_2", "y_cr", "Shigley 10th ed. Ch. 10, buckling");
-        else
+        else if (!guided)
             c.CheckCondition("Working deflection against the buckling deflection", true, "stable at any deflection", "λ_eff² < C₂′", "u_b", "Shigley 10th ed. Ch. 10, buckling");
 
         c.CheckUtilisation("Working deflection within the travel to solid", "u_s", Part1);
@@ -435,8 +442,14 @@ public sealed class SpringCalculator : ICalcCalculator
         _ => (2, 0, 2, 0),
     };
 
-    private static void Buckling(CalcRunContext c)
+    private static void Buckling(CalcRunContext c, bool guided)
     {
+        if (guided)
+        {
+            c.Record("u_b", "guided: not checked", "the guide restrains the spring", new ScalarValue(0), "Deflection at point 2 against the buckling deflection (none: guided)");
+            return;
+        }
+
         var e = c.Si("E");
         var g = c.Si("G");
         var lambda = c.Si("nu_seat") * c.Si("L0") / c.Si("D");
@@ -458,8 +471,15 @@ public sealed class SpringCalculator : ICalcCalculator
         }
     }
 
-    private static void BucklingOutputs(CalcRunContext c)
+    private static void BucklingOutputs(CalcRunContext c, bool guided)
     {
+        if (guided)
+        {
+            c.Output("y_cr", "Buckling deflection", new TextValue("— (guided: not checked)"));
+            c.Output("buckling", "Buckling", new TextValue("not checked (guided)"));
+            return;
+        }
+
         var stable = c.Session.Find("y_cr") is null;
         var ub = c.Si("u_b");
 

@@ -31,7 +31,7 @@ public sealed class LtbInteractionMaterialTests
         Assert.Null(refusal);
 
         var calc = await host.Service.CreateAsync(LtbInteractionCalculator.Id, project, "Beam-column 1",
-            [CalcInputValue.Quantity("E", 1, "GPa", CalcProvenance.Specification("typed"))]);
+            [CalcInputValue.Quantity("E", 1, "GPa", CalcProvenance.Specification("typed")), CalcInputValue.Quantity("M_y_Ed", 100, "kN*m", CalcProvenance.Specification("typed"))]);
         var applied = await host.Service.Materials.ApplyAsync(calc.Id, steel!.Id);
         Assert.True(applied.Succeeded, applied.Reason);
 

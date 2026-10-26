@@ -50,7 +50,7 @@ internal static class CalcPackExamples
         Table("segments",
             CalcRow.Of(Mm("x_end", 50), Mm("d", 35), Mm("d_i", 0)), CalcRow.Of(Mm("x_end", 250), Mm("d", 45), Mm("d_i", 0)), CalcRow.Of(Mm("x_end", 300), Mm("d", 35), Mm("d_i", 0))),
         Q("x_A", 25, "mm"), Q("x_B", 275, "mm"),
-        Table("loads", CalcRow.Of(Mm("x", 150), ("F_y", new CalcCell(-0.92, "kN")), ("F_z", new CalcCell(2.53, "kN")), ("m", new CalcCell(3, "kg")))),
+        Table("loads", CalcRow.Of(Mm("x", 150), ("F_y", new CalcCell(-0.92, "kN")), ("F_z", new CalcCell(2.53, "kN")), ("m", new CalcCell(3, "kg")))), CalcInputValue.Switch("w_masses", false),
         Q("x_T1", 0, "mm"), Q("x_T2", 150, "mm"),
         Table("sections",
             CalcRow.Of(Mm("x", 50), Num("K_t", 1.7), Num("K_ts", 1.5), Num("q", 0.85), Num("q_s", 0.9)), CalcRow.Of(Mm("x", 150), Num("K_t", 1.7), Num("K_ts", 1.5), Num("q", 0.85), Num("q_s", 0.9))),
@@ -269,10 +269,17 @@ internal static class CalcPackExamples
             ("F_x", new CalcCell(fx, "kN")), ("F_y", new CalcCell(fy, "kN")), ("M", new CalcCell(0, "kN*m")));
 
     /// <summary>The column: 203 × 203 UC in S355 (A, W and I as in S3's defaults; the shear-area helper dimensions h, b, t_w, t_f, r of the UC 203×203×46 are stated here, since S3 no longer seeds them), fixed base and free top, buckling length 2 × 3 m.</summary>
+    /// <remarks>
+    /// The column's compression flange is stated as restrained against lateral-torsional buckling (the member sheet has no default for it since 1.5.0): an ASSUMPTION of this example, not a
+    /// finding. The column is a 3 m cantilever with a free top, which nothing restrains laterally, so by its own description the flange is NOT restrained. The member sheet cannot check
+    /// that (Not restrained blocks it, and the LTB interaction sheet models fork supports, not a cantilever), so the example takes the flange as restrained, says so in the pack's purpose
+    /// and makes no lateral-torsional buckling check; a real design checks the cantilever by another method before relying on this step.
+    /// </remarks>
     public static IReadOnlyList<CalcInputValue> SteelS3 { get; } =
     [
         Q("M_z_Ed", 0, "kN*m"), Q("f_y", 355, "MPa"), Q("L_cr_y", 6, "m"), Q("L_cr_z", 6, "m"),
         Q("h", 203.2, "mm"), Q("b", 203.6, "mm"), Q("t_w", 7.2, "mm"), Q("t_f", 11, "mm"), Q("r", 10.2, "mm"),
+        C("ltb", "Restrained"),
     ];
 
     /// <summary>

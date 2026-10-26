@@ -52,7 +52,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
     public readonly record struct Required(double? Value, string? Text);
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
+        Id, "1.6.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
         "An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.",
         "Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)]\n" +
         "Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd\n" +
@@ -138,7 +138,8 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcApplicabilityRule("outstand-cut", "With the bearing outstand cut at the plate edge a thicker plate can raise the compression utilisation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("alpha_basis", "A concentration factor above 1 needs its foundation geometry stated.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("grout", "β_j = 2/3 needs the grout at least 0.2·f_ck and no thicker than 0.2 of the smaller plate dimension.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("prying", "With prying the prying force is not in F_t,Ed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("prying", "With prying switched on and no anchor design utilisation u_profis entered, the prying force Q is not in F_t,Ed, so the bolt tension is understated: the prying check fails.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("prying-anchor", "Prying is switched on and u_profis is entered: the prying force Q is not in F_t,Ed, and the anchor design must add it to the bolt tension.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("anchorage", "The PROFIS report is not attached as Evidence (a typed reference is not enough).", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("anchorage-result", "The anchorage (concrete cone, pull-out, edge and shear failure of the anchors) is not assessed on this sheet and u_max excludes it, unless the report's governing utilisation u_profis is entered.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
@@ -693,7 +694,18 @@ public sealed class BasePlateCalculator : ICalcCalculator
             c.Assign("T_Rd", "min(T_Rd_1, T_Rd_2, T_Rd_3)", "kN", "Tension T-stub resistance", "EN 1993-1-8 cl. 6.2.4");
             modes.AddRange(["T_Rd_1", "T_Rd_2", "T_Rd_3"]);
             outputs.AddRange([("M_pl_Rd", "Plate plastic moment"), ("T_Rd_1", "T-stub mode 1"), ("n_pry", "Prying length n"), ("T_Rd_2", "T-stub mode 2"), ("T_Rd_3", "T-stub mode 3"), ("T_Rd", "Tension T-stub resistance")]);
-            c.Warn("prying", "prying: the prying force Q is not included in F_t_Ed; Hilti PROFIS must add it to the bolt tension.");
+
+            // The prying force Q is not in F_t,Ed, so the bolt tension and the anchor check are understated unless the anchor design takes it (it warned and passed). With u_profis entered the
+            // anchor design's utilisation is counted and the warning stays; without it the prying check fails. It is a failing check, not a block, because the prying known-answer case is a shipped case.
+            if (c.Has("u_profis"))
+            {
+                c.Warn("prying-anchor", "prying: the prying force Q is not included in F_t_Ed. The anchor design (u_profis) must add it to the bolt tension.");
+            }
+            else
+            {
+                c.Warn("prying", "prying: the prying force Q is not included in F_t_Ed, so the bolt tension is understated. Enter u_profis, the anchor design that adds Q, or switch prying off.");
+                c.CheckCondition("Prying force against the bolt tension", false, $"F_t,Ed = {F(c.Si("F_t_Ed") / 1e3)} kN without Q", "F_t,Ed + Q, with Q from the anchor design", "F_t_Ed", "EN 1993-1-8 Table 6.2");
+            }
         }
         else
         {

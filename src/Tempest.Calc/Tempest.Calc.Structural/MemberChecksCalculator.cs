@@ -35,7 +35,7 @@ public sealed class MemberChecksCalculator : ICalcCalculator
     public const string NotRestrained = "Not restrained";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.Structural, "Member checks (EN 1993-1-1)",
+        Id, "1.5.0", CalcDiscipline.Structural, "Member checks (EN 1993-1-1)",
         "Resistance checks of a steel member of class 1, 2 or 3 cross-section: tension (6.2.3), compression (6.2.4) and flexural buckling about y and z (6.3.1), bending about y and z (6.2.5), shear with the high-shear reduction (6.2.6, 6.2.8), the linear cross-section interaction (6.2.1(7)) and a simplified member interaction (6.3.3 with user-entered k factors). Lateral-torsional buckling and class 4 sections are outside this sheet.",
         "Axial plastic resistance: N_pl,Rd = A f_y/γ_M0.\nBending resistance, plastic modulus for class 1–2 and elastic for class 3: M_c,Rd = W f_y/γ_M0.\nShear resistance: V_pl,Rd = A_v f_y/(√3 γ_M0).\nBending resistance reduced by high shear, when V_Ed > 0.5 V_pl,Rd: ρ = (2V_Ed/V_pl,Rd − 1)². Class 1–2 I-section with h, t_w, t_f entered: M_y,V,Rd = (W_pl,y − ρ A_w²/(4 t_w)) f_y/γ_M0, A_w = (h − 2t_f) t_w, and M_z,c,Rd is not reduced; otherwise the whole resistance × (1 − ρ).\nElastic critical load and non-dimensional slenderness: N_cr = π²EI/L_cr²; λ̄ = √(A f_y/N_cr).\nBuckling reduction factor and buckling resistance: Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²]; χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1; N_b,Rd = χ A f_y/γ_M1.\nCross-section check, linear interaction: N_Ed/N_Rd + M_y,Ed/M_y,Rd + M_z,Ed/M_z,Rd ≤ 1.\nMember check, axial force and bending with buckling (6.61, 6.62): N_Ed/N_b,Rd,min + k_yy M_y,Ed/(W_y f_y/γ_M1) + k_zz M_z,Ed/(W_z f_y/γ_M1) ≤ 1, the characteristic bending resistance M_Rk over γ_M1 without the shear reduction.",
         [
@@ -70,7 +70,7 @@ public sealed class MemberChecksCalculator : ICalcCalculator
             new CalcInputSpec("alpha_z", "Imperfection factor α_z (blank = from the curve)", CalcInputKind.Number, Min: 0.1, Max: 0.8, HardMin: 0, HardMax: 2, IsOptional: true, Group: "Buckling"),
             new CalcInputSpec("k_yy", "Interaction factor k_yy (member check)", CalcInputKind.Number, Default: 1.0, Min: 0.5, Max: 2.0, HardMin: 0.1, HardMax: 10, Group: "Buckling"),
             new CalcInputSpec("k_zz", "Interaction factor k_zz (member check)", CalcInputKind.Number, Default: 1.0, Min: 0.5, Max: 2.0, HardMin: 0.1, HardMax: 10, Group: "Buckling"),
-            new CalcInputSpec("ltb", "Compression flange against lateral-torsional buckling (not restrained: outside this sheet)", CalcInputKind.Choice, Choices: [Restrained, NotRestrained], DefaultChoice: Restrained, Group: "Buckling"),
+            new CalcInputSpec("ltb", "Compression flange against lateral-torsional buckling (optional; blank = blocks when M_y_Ed is above 0; not restrained: outside this sheet)", CalcInputKind.Choice, Choices: [Restrained, NotRestrained], IsOptional: true, Group: "Buckling"),
             new CalcInputSpec("A_net", "Net area of a tension member (A where there are no holes; needed when N_Ed is tension)", CalcInputKind.Quantity, "cm^2", Min: 0.1, Max: 1e5, HardMin: 1e-3, HardMax: 1e7, IsOptional: true, Group: "Section"),
             new CalcInputSpec("gamma_M2", "Partial factor γ_M2 (net-section fracture)", CalcInputKind.Number, Default: 1.1, Min: 1.0, Max: 1.35, HardMin: 0.5, HardMax: 5, Group: "Material"),
             new CalcInputSpec("f_u", "Ultimate tensile strength (needed when N_Ed is tension)", CalcInputKind.Quantity, "MPa", Min: 300, Max: 900, HardMin: 1, HardMax: 3000, IsOptional: true, Group: "Material"),
@@ -96,9 +96,10 @@ public sealed class MemberChecksCalculator : ICalcCalculator
             new CalcApplicabilityRule("class-4", "Class 4 cross-sections need effective properties: outside this sheet.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("shear-area", "No shear area and no rolled-I helper dimensions: the shear check cannot run.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("helper-area", "The rolled-I helper dimensions give a web-and-flange area that differs from A by more than 10 %: the helper dimensions probably belong to another section.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("k-default", "k_yy or k_zz is left at 1.0 although N_Ed/N_b,Rd exceeds 0.3: Annex A or B give k above 1, so the check uses the upper bound C_m(1 + 0.8n); a k entered as 1.0 with a recorded basis is used as entered.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("k-default", "k_yy or k_zz is left at 1.0 under compression with a moment: Annex A or B give k above 1, so the check uses the upper bound C_m(1 + 0.8n); a k entered as 1.0 with a recorded basis is used as entered.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("high-shear", "V_Ed exceeds half the plastic shear resistance: the bending resistance is reduced (6.2.8).", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("net-section", "A member in tension needs its net area A_net (A where there are no holes) and f_u: the net-section fracture resistance N_u,Rd (6.2.3(2)(b)) is checked, and the sheet is blocked when they are blank.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("ltb", "A member bending about y must say whether its compression flange is restrained against lateral-torsional buckling: the sheet has no default for it, and blocks until it is entered.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("no-ltb", "A member bending about y whose compression flange is not restrained is outside this sheet: lateral-torsional buckling (6.3.2) is checked on the LTB interaction sheet.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("slender", "Non-dimensional slenderness above 2.0: check the member is intended to be this slender.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
@@ -110,7 +111,7 @@ public sealed class MemberChecksCalculator : ICalcCalculator
                 CalcReferenceStatus.Unconfirmed),
             new CalcTestCase("ka-ub-bending-shear", "UB 305×165×40 S275, bending and shear (rolled-I shear area helper)",
                 new CalcReferenceSource("Analytic (EN 1993-1-1 6.2.5, 6.2.6) with Blue Book properties", null, "M_c,Rd = 623e3·275 = 171.3 kN·m; A_v = A − 2bt_f + (t_w + 2r)t_f = 5130 − 3366 + 242.8 = 2006.8 mm²; V_pl,Rd = 2006.8·275/√3 = 318.6 kN"),
-                [CalcInputValue.Quantity("N_Ed", 0, "kN"), CalcInputValue.Quantity("M_y_Ed", 120, "kN*m"), CalcInputValue.Quantity("M_z_Ed", 0, "kN*m"), CalcInputValue.Quantity("V_Ed", 100, "kN"), CalcInputValue.Quantity("f_y", 275, "MPa"), CalcInputValue.Quantity("E", 210, "GPa"), CalcInputValue.Choice("section_class", "1"), CalcInputValue.Quantity("A", 51.3, "cm^2"), CalcInputValue.Quantity("W_pl_y", 623, "cm^3"), CalcInputValue.Quantity("W_el_y", 560, "cm^3"), CalcInputValue.Quantity("W_pl_z", 142, "cm^3"), CalcInputValue.Quantity("W_el_z", 92.6, "cm^3"), CalcInputValue.Quantity("I_y", 8503, "cm^4"), CalcInputValue.Quantity("I_z", 764, "cm^4"), CalcInputValue.Quantity("h", 303.4, "mm"), CalcInputValue.Quantity("b", 165, "mm"), CalcInputValue.Quantity("t_w", 6, "mm"), CalcInputValue.Quantity("t_f", 10.2, "mm"), CalcInputValue.Quantity("r", 8.9, "mm"), CalcInputValue.Quantity("L_cr_y", 6, "m"), CalcInputValue.Quantity("L_cr_z", 1.5, "m"), CalcInputValue.Choice("curve_y", "a"), CalcInputValue.Choice("curve_z", "b")],
+                [CalcInputValue.Quantity("N_Ed", 0, "kN"), CalcInputValue.Quantity("M_y_Ed", 120, "kN*m"), CalcInputValue.Quantity("M_z_Ed", 0, "kN*m"), CalcInputValue.Quantity("V_Ed", 100, "kN"), CalcInputValue.Quantity("f_y", 275, "MPa"), CalcInputValue.Quantity("E", 210, "GPa"), CalcInputValue.Choice("section_class", "1"), CalcInputValue.Choice("ltb", Restrained), CalcInputValue.Quantity("A", 51.3, "cm^2"), CalcInputValue.Quantity("W_pl_y", 623, "cm^3"), CalcInputValue.Quantity("W_el_y", 560, "cm^3"), CalcInputValue.Quantity("W_pl_z", 142, "cm^3"), CalcInputValue.Quantity("W_el_z", 92.6, "cm^3"), CalcInputValue.Quantity("I_y", 8503, "cm^4"), CalcInputValue.Quantity("I_z", 764, "cm^4"), CalcInputValue.Quantity("h", 303.4, "mm"), CalcInputValue.Quantity("b", 165, "mm"), CalcInputValue.Quantity("t_w", 6, "mm"), CalcInputValue.Quantity("t_f", 10.2, "mm"), CalcInputValue.Quantity("r", 8.9, "mm"), CalcInputValue.Quantity("L_cr_y", 6, "m"), CalcInputValue.Quantity("L_cr_z", 1.5, "m"), CalcInputValue.Choice("curve_y", "a"), CalcInputValue.Choice("curve_z", "b")],
                 [new CalcExpectedValue("M_y_c_Rd", 171.325, "kN*m", 1e-4), new CalcExpectedValue("A_v", 20.068, "cm^2", 1e-4), new CalcExpectedValue("V_pl_Rd", 318.62, "kN", 1e-3), new CalcExpectedValue("u_M_y", 0.70043, "", 1e-3), new CalcExpectedValue("u_V", 0.31385, "", 1e-3)]),
             new CalcTestCase("ka-tension-class3", "Class 3 tie, tension with minor-axis moment (elastic modulus governs)",
                 new CalcReferenceSource("Analytic (6.2.3, 6.2.5 class 3, 6.2.1(7))", null, "N_pl,Rd = 2000·355 = 710 kN; M_z,c,Rd = W_el,z f_y = 30e3·355 = 10.65 kN·m; linear interaction 400/710 + 5/10.65 = 0.5634 + 0.4695 = 1.0329 → FAIL"),
@@ -136,8 +137,15 @@ public sealed class MemberChecksCalculator : ICalcCalculator
 
         var plastic = cls is "1" or "2";
 
-        // Lateral-torsional buckling is not checked here, so a member whose compression flange can buckle laterally is refused, not passed (it was a warning on every run).
-        if (c.InputText("ltb") == NotRestrained && c.Si("M_y_Ed") > 0)
+        // Lateral-torsional buckling is not checked here. A member bending about y must say whether its compression flange is restrained (no default: a sheet that assumed it
+        // passed an unrestrained beam), and one that is not restrained is refused, not passed.
+        if (c.Si("M_y_Ed") > 0 && !c.Has("ltb"))
+        {
+            c.Block("ltb", "ltb: enter whether the compression flange is restrained against lateral-torsional buckling.");
+            return;
+        }
+
+        if (c.Si("M_y_Ed") > 0 && c.InputText("ltb") == NotRestrained)
         {
             c.Block("no-ltb", "ltb: a member bending about y with an unrestrained compression flange is checked on the LTB interaction sheet, not here.");
             return;
@@ -259,13 +267,14 @@ public sealed class MemberChecksCalculator : ICalcCalculator
         c.Assign("M_y_b_Rd", "W_y * f_y / gamma_M1", "kN*m", "Characteristic bending resistance about y over γ_M1 (member check, no shear reduction)", "6.3.3, Eq. 6.61");
         c.Assign("M_z_b_Rd", "W_z * f_y / gamma_M1", "kN*m", "Characteristic bending resistance about z over γ_M1 (member check, no shear reduction)", "6.3.3, Eq. 6.62");
 
-        // k_yy and k_zz open at 1.0. Under heavy compression that is not a safe value (Annex A and B give k up to C_m(1 + 0.8 n)), so a k left at 1.0 (not entered, or
-        // entered as 1.0 with no recorded basis) is replaced in the check by that bound; a k the user recorded as an assumption, a specification or any other basis is theirs.
+        // k_yy and k_zz open at 1.0. Under compression with a moment that is not a safe value (Annex A and B give k up to C_m(1 + 0.8 n), which is above 1 for any n),
+        // so a k left at 1.0 (not entered, or entered as 1.0 with no recorded basis) is replaced in the check by that bound, whatever the compression; a k the user recorded as
+        // an assumption, a specification or any other basis is theirs. (Until 1.5.0 this applied only above n = 0.3: N_Ed/N_b,Rd = 0.297 passed at 0.99 where the bound gives 1.157.)
         var nBuckling = compression ? c.Si("u_buckling") : 0.0;
         var kyOne = compression && c.Si("M_y_Ed") > 0 && Math.Abs(c.InputSi("k_yy") - 1.0) < 1e-12;
         var kzOne = compression && c.Si("M_z_Ed") > 0 && Math.Abs(c.InputSi("k_zz") - 1.0) < 1e-12;
-        var kyLeft = kyOne && nBuckling > 0.3 && !Deliberate(c, "k_yy");
-        var kzLeft = kzOne && nBuckling > 0.3 && !Deliberate(c, "k_zz");
+        var kyLeft = kyOne && !c.HasRecordedBasis("k_yy");
+        var kzLeft = kzOne && !c.HasRecordedBasis("k_zz");
         var kyTerm = "k_yy";
         var kzTerm = "k_zz";
 
@@ -283,10 +292,10 @@ public sealed class MemberChecksCalculator : ICalcCalculator
 
         c.Assign("u_member", compression ? $"abs(N_Ed) / N_b_Rd + {kyTerm} * M_y_Ed / M_y_b_Rd + {kzTerm} * M_z_Ed / M_z_b_Rd" : "u_M_y + u_M_z", null, "Simplified member interaction", "6.3.3(4)");
 
-        // One warning for each k left at, or entered as, 1.0 above the threshold (one symbol each).
+        // One warning for each k left at, or entered as, 1.0 (one symbol each).
         foreach (var (symbol, one, left, n) in new[] { ("k_yy", kyOne, kyLeft, Math.Abs(c.Si("N_Ed")) / c.Si("N_b_y_Rd")), ("k_zz", kzOne, kzLeft, Math.Abs(c.Si("N_Ed")) / c.Si("N_b_z_Rd")) })
         {
-            if (!(nBuckling > 0.3 && one))
+            if (!one)
                 continue;
 
             var bound = 1 + 0.8 * n;
@@ -330,7 +339,4 @@ public sealed class MemberChecksCalculator : ICalcCalculator
             c.CheckUtilisation("Member interaction (simplified)", "u_member", "6.3.3");
         }
     }
-
-    /// <summary>Whether the user recorded a basis for an input (an assumption, a specification, a drawing or any kind other than a bare manual entry): then it is theirs, and not a value left at the default.</summary>
-    private static bool Deliberate(CalcRunContext c, string symbol) => c.Inputs.Find(symbol)?.Provenance is { Kind: not CalcProvenanceKind.Manual };
 }

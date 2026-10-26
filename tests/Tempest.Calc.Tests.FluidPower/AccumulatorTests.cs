@@ -26,17 +26,24 @@ public sealed class AccumulatorTests
     private static double V0(double dv, double p0, double p1, double p2, double n) => dv / (Math.Pow(p0 / p1, 1 / n) - Math.Pow(p0 / p2, 1 / n));
 
     [Fact]
-    public void A_Linked_Pressure_Warns_When_The_Pressures_Are_Entered_As_Absolute()
+    public void A_Linked_Pressure_Is_Gauge_And_Gets_The_Atmosphere_Added_When_The_Pressures_Are_Entered_As_Absolute()
     {
-        // L-g: the cylinder's supply pressure p (gauge) linked to p_2 is read on p_basis; Absolute would take it one atmosphere low.
+        // L-g: the cylinder's supply pressure p (gauge) linked to p_2 was read on p_basis: Absolute took it one atmosphere low and only warned (1.5.1 and before). F2: the atmospheric pressure is
+        // added to a linked pressure on the Absolute basis. python3: p_0 90 and p_1 100 bar abs, p_2 = 160 + 1.01325 = 161.01325 bar abs, dV 14 L, n = 1: V0 = 14/(0.9 - 90/161.01325) = 41.0509284 L
+        // (the old reading, 160 bar abs: 41.4814815 L).
         var link = CalcProvenance.Link(Guid.NewGuid(), "p", "A");
         var linked = CalcInputValue.Quantity("p_2", 160, "bar", link);
 
         var absolute = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), linked);
         var warning = Assert.Single(absolute.Warnings, w => w.RuleId == "link-basis");
         Assert.StartsWith("p_2:", warning.Message, StringComparison.Ordinal);
-        Assert.Contains("bar low", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("is added to the linked value", warning.Message, StringComparison.Ordinal);
         Assert.Contains("p_basis", warning.Message, StringComparison.Ordinal);
+        Assert.Equal(41.05092837302644, absolute.OutputSi("V0") / Litre, 9);
+
+        // The same sheet on the Gauge basis, the other two pressures given as the same absolute pressures less one atmosphere, gives the same volume.
+        var gauge = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), Bars("p_0", 90 - 1.01325), Bars("p_1", 100 - 1.01325), linked);
+        Assert.Equal(absolute.OutputSi("V0"), gauge.OutputSi("V0"), 6);
 
         // Gauge (the default the pack uses), or a typed value, is consistent and silent; so is a link to another pressure only when it is on the gauge basis.
         Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), linked).Warnings, w => w.RuleId == "link-basis");
@@ -45,8 +52,8 @@ public sealed class AccumulatorTests
         // Every pressure input is covered.
         var all = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), CalcInputValue.Quantity("p_0", 90, "bar", link), CalcInputValue.Quantity("p_1", 100, "bar", link), linked);
         Assert.Equal(3, all.Warnings.Count(w => w.RuleId == "link-basis"));
-        Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "link-basis");
-        Assert.Equal("1.5.1", Accumulator.Template.Version);
+        Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "link-basis" && r.Effect == CalcRuleEffect.Conservative);
+        Assert.Equal("1.6.0", Accumulator.Template.Version);
     }
 
     [Fact]
@@ -102,7 +109,9 @@ public sealed class AccumulatorTests
     [Fact]
     public void The_Pre_Charge_Rules_Are_Records_And_Are_Checked_Pass_Or_Fail()
     {
-        Assert.True(Run().Passed);
+        // The Parker numbers reach 210 bar absolute, where the ideal gas fails the real-gas check (F2): a real-gas factor is entered so the pre-charge rules are what is judged here.
+        var real = CalcInputValue.Of("f_rg", 1.15);
+        Assert.True(Run(real).Passed);
 
         var high = Run(Bars("p_0", 95));
         Assert.Contains(high.Checks, c => c.Name.StartsWith("Pre-charge within", StringComparison.Ordinal) && !c.Passed);
@@ -111,8 +120,8 @@ public sealed class AccumulatorTests
         Assert.Contains(steep.Checks, c => c.Name.StartsWith("Pressure ratio within", StringComparison.Ordinal) && !c.Passed);
 
         // The limits are inputs a record fills: a manufacturer allowing p0 up to p1 and a ratio of 6 passes both.
-        Assert.True(Run(Bars("p_0", 95), CalcInputValue.Of("r_0", 1)).Passed);
-        Assert.True(Run(Bars("p_0", 40), Bars("p_2", 200), CalcInputValue.Of("r_p", 6)).Passed);
+        Assert.True(Run(real, Bars("p_0", 95), CalcInputValue.Of("r_0", 1)).Passed);
+        Assert.True(Run(real, Bars("p_0", 40), Bars("p_2", 200), CalcInputValue.Of("r_p", 6)).Passed);
         Assert.Contains(Accumulator.Template.RecordKinds!, k => k.Kind == "accumulator.rules" && k.Symbols.Contains("r_0") && k.Symbols.Contains("r_p"));
     }
 
@@ -326,6 +335,65 @@ public sealed class AccumulatorTests
         var emergency = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n", 1.4));
         Assert.DoesNotContain(emergency.Warnings, w => w.RuleId == "exponent");
         Assert.Contains(emergency.RunAssumptions, a => a.Statement.Contains("Emergency stroke", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void F2_A_Slow_Exponent_On_A_Fast_Discharge_Fails_The_Exponent_Check_Unless_The_Basis_Of_N_Is_Recorded()
+    {
+        // The emergency stroke and the shock duty are fast: n = 1 sizes 29.7 L where n = 1.4 (held at p_2) needs 46.7 L, and the sheet warned and passed. python3 (ka-held-slow-charge-fast-discharge):
+        // V0(n = 1.4) = 14 x (210/90)/((210/100)^(1/1.4) - 1) = 46.74304 L; V0(n = 1) = 14 x (210/90)/(210/100 - 1) = 29.69697 L.
+        var real = CalcInputValue.Of("f_rg", 1.15);
+        var emergency = CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency);
+        var slow = Run(real, emergency, CalcInputValue.Of("n", 1));
+        Assert.Contains(slow.Warnings, w => w.RuleId == "exponent");
+        var check = Assert.Single(slow.Checks, c => c.Name.StartsWith("Gas exponent against a fast discharge", StringComparison.Ordinal));
+        Assert.False(check.Passed);
+        Assert.False(slow.Passed);
+        Assert.Equal(14 * (210.0 / 90) / (210.0 / 100 - 1) * 1.15, slow.OutputSi("V0") / Litre, 6);
+
+        var fast = Run(real, emergency, CalcInputValue.Of("n", 1.4));
+        Assert.DoesNotContain(fast.Checks, c => c.Name.StartsWith("Gas exponent", StringComparison.Ordinal));
+        Assert.True(fast.Passed);
+        Assert.Equal(14 * (210.0 / 90) / (Math.Pow(210.0 / 100, 1 / 1.4) - 1) * 1.15, fast.OutputSi("V0") / Litre, 6);
+
+        var shock = Run(real, CalcInputValue.Choice("mode", AccumulatorCalculator.ModeShock), CalcInputValue.Of("n", 1.2));
+        Assert.False(Assert.Single(shock.Checks, c => c.Name.StartsWith("Gas exponent", StringComparison.Ordinal)).Passed);
+
+        // A basis recorded for n (the stroke takes minutes) is the person's: the warning stays, no check is failed on it.
+        var recorded = Run(real, emergency, CalcInputValue.Of("n", 1) with { Provenance = CalcProvenance.Assumed("The stroke takes about four minutes against the closed valve, so the gas exchanges heat: isothermal.") });
+        Assert.Contains(recorded.Warnings, w => w.RuleId == "exponent" && w.Message.Contains("recorded basis", StringComparison.Ordinal));
+        Assert.DoesNotContain(recorded.Checks, c => c.Name.StartsWith("Gas exponent", StringComparison.Ordinal));
+        Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "exponent" && r.Effect == CalcRuleEffect.Unconservative);
+    }
+
+    [Fact]
+    public void F2_The_Ideal_Gas_Above_100_Bar_Absolute_Fails_The_Real_Gas_Check_Until_The_Factor_Is_Entered()
+    {
+        // Above 100 bar absolute the ideal-gas volume is too small (the sheet warned and passed); with f_rg left at 1 the real-gas check fails, with f_rg entered it is made no more. A block stays above 300 bar.
+        var ideal = Run();
+        var check = Assert.Single(ideal.Checks, c => c.Name.StartsWith("Real-gas factor against", StringComparison.Ordinal));
+        Assert.False(check.Passed);
+        Assert.False(ideal.Passed);
+        Assert.Contains(ideal.Warnings, w => w.RuleId == "realgas");
+
+        var entered = Run(CalcInputValue.Of("f_rg", 1.15));
+        Assert.DoesNotContain(entered.Checks, c => c.Name.StartsWith("Real-gas factor against", StringComparison.Ordinal));
+        Assert.True(entered.Passed);
+
+        // The ideal gas taken on a recorded basis (the clamp-circuit worked example) is the person's: the warning stays and no check is failed on it.
+        var recorded = Run(CalcInputValue.Of("f_rg", 1, CalcProvenance.Assumed("Ideal gas; the highest pressure is just above 200 bar, so the sheet warns.")));
+        Assert.Contains(recorded.Warnings, w => w.RuleId == "realgas");
+        Assert.DoesNotContain(recorded.Checks, c => c.Name.StartsWith("Real-gas factor against", StringComparison.Ordinal));
+        Assert.True(recorded.Passed);
+
+        // Below 100 bar absolute the ideal gas is the usual relation and nothing is failed.
+        var low = Run(Bars("p_0", 40), Bars("p_1", 50), Bars("p_2", 80));
+        Assert.DoesNotContain(low.Checks, c => c.Name.StartsWith("Real-gas factor against", StringComparison.Ordinal));
+        Assert.True(low.Passed);
+
+        // At exactly 100 bar absolute the early notice does not start; above it does.
+        Assert.DoesNotContain(Run(Bars("p_0", 40), Bars("p_1", 50), Bars("p_2", 100)).Checks, c => c.Name.StartsWith("Real-gas factor against", StringComparison.Ordinal));
+        Assert.Contains(Run(Bars("p_0", 40), Bars("p_1", 50), Bars("p_2", 100.5)).Checks, c => c.Name.StartsWith("Real-gas factor against", StringComparison.Ordinal));
     }
 
     [Fact]

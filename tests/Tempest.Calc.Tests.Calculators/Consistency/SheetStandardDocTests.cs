@@ -39,7 +39,7 @@ public sealed class SheetStandardDocTests
         Assert.All(CalcPortNames.Areas, pair => Assert.True(text.Contains($"`{pair.Key}`", StringComparison.Ordinal) && pair.Value.All(a => text.Contains($"`{a}`", StringComparison.Ordinal)), $"sheet-standard.md does not give {pair.Key} its area."));
         Assert.All(CalcCatalogueStandard.Categories, pair => Assert.All(pair.Value, c => Assert.Contains(c, text, StringComparison.Ordinal)));
 
-        foreach (var n in Enumerable.Range(1, 34))
+        foreach (var n in Enumerable.Range(1, 39))
             Assert.Contains($"| C2-{n:00} |", text, StringComparison.Ordinal);
     }
 

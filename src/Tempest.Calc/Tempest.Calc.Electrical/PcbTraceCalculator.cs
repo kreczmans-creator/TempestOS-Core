@@ -33,7 +33,7 @@ public sealed class PcbTraceCalculator : ICalcCalculator
     public const double FitMinRiseK = 10.0;
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.1", CalcDiscipline.Electrical, "PCB trace width (IPC-2221)",
+        Id, "1.2.0", CalcDiscipline.Electrical, "PCB trace width (IPC-2221)",
         "The minimum width of a printed-circuit trace for a current and an allowed temperature rise, from the legacy IPC-2221 curve-fit, and the resistance, voltage drop and I²R loss of the trace as drawn: " + SheetLabel + ". External or internal layer; copper weight in oz/ft²; resistance at the trace's operating temperature (ambient plus rise). The IPC-2152 method (charts, plane and board-thickness factors) is not implemented.",
         "Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with A in mil², k = 0.048 external, 0.024 internal\n" +
         "Copper thickness: t = w_Cu·t_oz, t_oz = 1.378 mil per oz/ft² (35 µm, derived)\n" +
@@ -41,7 +41,7 @@ public sealed class PcbTraceCalculator : ICalcCalculator
         "Resistivity at the operating temperature: ρ_T = ρ_20·[1 + α·(T_amb + ΔT − 20)]\n" +
         "Trace resistance: R = ρ_T·L/(w_act·t); voltage drop ΔV = I·R; loss P = I²·R",
         [
-            new CalcInputSpec("I", "Trace current", CalcInputKind.Quantity, "A", Default: 3, Min: 0.01, Max: 35, HardMin: 1e-3, HardMax: 1000, Group: "Load"),
+            new CalcInputSpec("I", "Trace current (the curve-fit was drawn for up to 35 A: above it the sheet is refused)", CalcInputKind.Quantity, "A", Default: 3, Min: 0.01, Max: 35, HardMin: 1e-3, HardMax: 35, Group: "Load"),
             new CalcInputSpec("dT", "Allowed temperature rise above ambient", CalcInputKind.Quantity, "K", Default: 10, Min: 1, Max: 100, HardMin: 0.1, HardMax: 300, Group: "Load"),
             new CalcInputSpec("T_amb", "Ambient temperature at the board", CalcInputKind.Quantity, "degC", Default: 25, Min: -40, Max: 125, HardMin: -100, HardMax: 500, Group: "Load"),
             new CalcInputSpec("layer", "Layer", CalcInputKind.Choice, Choices: [External, Internal], DefaultChoice: External, Group: "Trace"),
@@ -68,10 +68,10 @@ public sealed class PcbTraceCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("narrow", "The trace as drawn is narrower than the minimum for the allowed rise (u_w above 1): it runs hotter, and the resistance, drop and loss are taken at the rise the curve-fit gives for the drawn width.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("width", "The minimum width exceeds 10 mm, beyond the range of the source curve-fit.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("input.I", "The current exceeds 35 A (the usual-range notice on I), beyond the range of the source curve-fit.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("copper", "The copper weight is outside 1 to 3 oz/ft², the range the source curve-fit was drawn for.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("rise", "The allowed temperature rise is below 10 K, the smallest rise the source curve-fit was drawn for.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("width", "The minimum width exceeds 10 mm, beyond the range of the source curve-fit, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("input.I", "The current exceeds 35 A, beyond the range of the source curve-fit, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("copper", "The copper weight is outside 1 to 3 oz/ft², the range the source curve-fit was drawn for: the copper-range check fails (a block would refuse the half-ounce known-answer case).", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("rise", "The allowed temperature rise is below 10 K, the smallest rise the source curve-fit was drawn for, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-3a-10k-1oz-external", "3 A, 10 K rise, 1 oz copper, external layer (analytic)",
@@ -120,6 +120,13 @@ public sealed class PcbTraceCalculator : ICalcCalculator
         foreach (var s in new[] { "I", "dT", "T_amb", "Cu_oz", "w_act", "L", "n_dT", "n_A", "t_oz", "rho_20", "alpha" })
             c.Input(s);
 
+        // A rise below 10 K is outside the curve-fit (it warned and passed on an extrapolated width): refused.
+        if (c.Si("dT") < FitMinRiseK)
+        {
+            c.Block("rise", $"dT: a rise of {CalcValue.FormatNumber(c.Si("dT"))} K is below the {CalcValue.FormatNumber(FitMinRiseK)} K the curve-fit was drawn for. Enter a rise of at least {CalcValue.FormatNumber(FitMinRiseK)} K, or check the width by test.");
+            return;
+        }
+
         var internalLayer = c.InputText("layer") == Internal;
         c.Input(internalLayer ? "k_int" : "k_ext");
 
@@ -130,6 +137,14 @@ public sealed class PcbTraceCalculator : ICalcCalculator
         c.Assign("A_req", "(I_n / (k * dT_n^n_dT))^(1 / n_A) * (1 mil^2)", "mil^2", "Minimum conductor cross-section", "IPC-2221 §6 (legacy)");
         c.Assign("t_Cu", "Cu_oz * t_oz", "um", "Copper thickness");
         c.Assign("w_min", "A_req / t_Cu", "mm", "Minimum trace width");
+
+        // A minimum width above 10 mm is beyond the curve-fit (it warned and passed): refused.
+        if (c.Si("w_min") > WidthWarnMm / 1000.0)
+        {
+            c.Block("width", $"w_min: the minimum width {CalcValue.FormatNumber(c.Si("w_min") * 1000, 4)} mm is above {CalcValue.FormatNumber(WidthWarnMm)} mm, beyond the curve-fit. Use a plane, a pour or parallel layers, and check by test.");
+            return;
+        }
+
         c.Assign("u_w", "w_min / w_act", null, "Width utilisation (minimum / as drawn)");
 
         c.Assign("A_act", "w_act * t_Cu", "mm^2", "Cross-section of the trace as drawn");
@@ -166,13 +181,11 @@ public sealed class PcbTraceCalculator : ICalcCalculator
 
         var oz = c.Si("Cu_oz");
 
+        // A copper weight outside 1 to 3 oz/ft² is an extrapolation of the curve-fit (it warned and passed). It is a failing check, not a block, because the half-ounce known-answer case (a trace too narrow for 0.5 oz) is a shipped case.
         if (oz < FitMinOz || oz > FitMaxOz)
-            c.Warn("copper", $"Cu_oz: {CalcValue.FormatNumber(oz)} oz/ft² is outside the 1 to 3 oz/ft² the source curve-fit was drawn for; the width is an extrapolation, check by test or a thermal analysis.");
-
-        if (c.Si("dT") < FitMinRiseK)
-            c.Warn("rise", $"dT: a rise of {CalcValue.FormatNumber(c.Si("dT"))} K is below the 10 K the source curve-fit was drawn for; the width is an extrapolation, check by test or a thermal analysis.");
-
-        if (c.Si("w_min") > WidthWarnMm / 1000.0)
-            c.Warn("width", $"w_min: the minimum width {CalcValue.FormatNumber(c.Si("w_min") * 1000, 4)} mm is above {CalcValue.FormatNumber(WidthWarnMm)} mm, beyond the range of the source curve-fit; use a plane, a pour or parallel layers and check by test.");
+        {
+            c.Warn("copper", $"Cu_oz: {CalcValue.FormatNumber(oz)} oz/ft² is outside the 1 to 3 oz/ft² the curve-fit was drawn for, so the copper-range check fails.");
+            c.CheckCondition("Copper weight against the range of the curve-fit", false, $"{CalcValue.FormatNumber(oz)} oz/ft²", "1 to 3 oz/ft²", "w_min", "IPC-2221 §6 (legacy)");
+        }
     }
 }

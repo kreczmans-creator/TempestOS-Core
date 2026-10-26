@@ -228,7 +228,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1401 symbols in 54 templates)
+## All symbols (1403 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -416,7 +416,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `H_rate` | — | Time, rating life | h | Hour rate of the rated capacity (Peukert) | elec.load-budget | ok |
 | `H_static` | — | Length | m | Static head | bs.pipe-pump | ok |
 | `H_sys` | — | Length | m | System head at Q | bs.pipe-pump | ok |
-| `I` | `I:current` | Current | A | Current; Design current; Trace current | elec.fault-protection, elec.pcb-trace, elec.voltage-drop | RESOLVE (2 meanings) |
+| `I` | `I:current` | Current | A | Current; Design current; Trace current (the curve-fit was drawn for up to 35 A: above it the s… | elec.fault-protection, elec.pcb-trace, elec.voltage-drop | RESOLVE (2 meanings) |
 | `I` | `I:second-moment-of-area` | Second moment of area | cm⁴ | Second moment I; Second moment of area; Second moment of area about the weaker axis | struct.beam-formulas, struct.column-buckling, struct.frame-2d | RESOLVE (2 meanings) |
 | `I2` | — | Current | A | Conventional operating current; Conventional operating current I₂ (gG fuse, MCCB, MPCB: required in t… | elec.conductor-sizing | ok |
 | `I2t_let` | — | s·A² | A²·s | Device let-through energy I²t at the maximum prospective fault (disco… | elec.fault-protection | ok |
@@ -947,6 +947,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `beta` | `beta:reciprocal-temperature-coefficient` | Temperature, temperature difference | K | Reciprocal temperature coefficient β | elec.fault-protection | RESOLVE (3 meanings) |
 | `beta` | `beta:sling-out-of-plane-angle` | Angle | ° | Out-of-plane angle β of the sling out of the lug plane | struct.lifting | RESOLVE (3 meanings) |
 | `beta_LT` | — | Plain number | — | β for 6.3.2.3 (recommended 0.75) | struct.ltb-interaction | ok |
+| `beta_Lw` | — | Plain number | — | Long-joint factor | struct.fillet-weld | ok |
 | `beta_j` | — | Plain number | — | Joint coefficient β_j | struct.base-plate | ok |
 | `beta_w` | — | Plain number | — | Correlation factor β_w (0.8 S235, 0.85 S275, 0.9 S355, 1.0 S420/S460) | struct.fillet-weld | ok |
 | `bonus` | — | Length | mm | MMC bonus (position/profile) | mech.tolerance-stack | ok |
@@ -1463,6 +1464,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `r_0` | — | Plain number | — | Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolu… | fp.accumulator | ok |
 | `r_bar` | — | Length | mm | Radius of the torsion bar | mech.snap-fit | ok |
 | `r_c` | — | Plain number | — | Critical-speed ratio | mech.shaft | ok |
+| `r_c_min` | — | Plain number | — | Smallest ratio of the first critical speed to the operating speed | mech.shaft | ok |
 | `r_f` | — | Plain number | — | Surge ratio f_n/f_op | mech.spring | ok |
 | `r_g` | — | Length | mm | Groove bottom corner radius | fp.oring-gland | ok |
 | `r_h1` | — | Length | mm | Hook mean radius, bending (extension) | mech.spring | ok |

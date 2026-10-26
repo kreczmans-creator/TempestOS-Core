@@ -205,6 +205,7 @@ public static class MechanicalWorkedExamples
                 CalcInputValue.Quantity("x_A", 20, "mm", CalcProvenance.Drawing("GBX-SH-01", "C")),
                 CalcInputValue.Quantity("x_B", 280, "mm", CalcProvenance.Drawing("GBX-SH-01", "C")),
                 ShaftCalculator.Loads((150, -2.2, 6, 4)) with { Provenance = CalcProvenance.Specification("Gear mesh forces from the gear calculation") },
+                CalcInputValue.Switch("w_masses", false, CalcProvenance.Assumed("The loads table is the whole load: the pinion's weight (4 kg, 39 N) is small against the 6 kN mesh force and is not added; the mass enters the critical speed only.")),
                 CalcInputValue.Quantity("T", 0.3, "kN*m", CalcProvenance.Specification("Motor rated torque × service factor (E1)")),
                 CalcInputValue.Quantity("x_T1", 150, "mm", CalcProvenance.Drawing("GBX-SH-01", "C")),
                 CalcInputValue.Quantity("x_T2", 330, "mm", CalcProvenance.Drawing("GBX-SH-01", "C")),

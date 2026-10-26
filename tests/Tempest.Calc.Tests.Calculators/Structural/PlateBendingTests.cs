@@ -244,6 +244,13 @@ public sealed class PlateBendingTests
         foreach (var w in long5.Warnings.Where(w => w.RuleId is "ritz-converge" or "ritz-approx"))
             Assert.DoesNotContain("accurate to about that change", w.Message, StringComparison.Ordinal);
 
+        // F2: a Ritz solution that did not converge warned and passed; its convergence check now fails (the stress is still shown).
+        Assert.False(long5.IsBlocked);
+        var convergence = Assert.Single(long5.Checks, k => k.Name == "Ritz change against the tolerance");
+        Assert.False(convergence.Passed);
+        Assert.False(long5.Passed);
+        Assert.Contains(ok.Checks, k => k.Name == "Ritz change against the tolerance" && !k.Passed);
+
         // Order 30 settles the square (w to ~1e-10 relative).
         const double a = 0.5;
         var d = PlateBendingMath.Rigidity(210e9, 0.008, Nu);
@@ -283,7 +290,7 @@ public sealed class PlateBendingTests
         Assert.Equal(0, r.OutputSi("M_edge"));
         Assert.Contains(Plate.Template.ClauseRefs, c => c.Clause == "6.2.1(5)");
         Assert.DoesNotContain(Plate.Template.ApplicabilityRules, x => x.Id == "ring-basis");
-        Assert.Equal("1.2.2", Plate.Template.Version);
+        Assert.Equal("1.3.0", Plate.Template.Version);
     }
 
     [Fact]
@@ -395,7 +402,15 @@ public sealed class PlateBendingTests
         Assert.Contains(thin.Warnings, w => w.RuleId == "large-deflection" && w.Message.StartsWith("t:", StringComparison.Ordinal));
         Assert.DoesNotContain(Run(Circle(true)).Warnings, w => w.RuleId == "large-deflection");
 
-        Assert.Contains(With(Circle(true), Q("t", 60, "mm")).Warnings, w => w.RuleId == "thin-plate");
+        // F2: below span/t = 10 the thin-plate theory is stiffer than the plate and the sheet warned and passed; it is refused (the default circle is 250 mm in radius: span 500 mm, so t = 60 mm is span/t 8.3).
+        var thickPlate = With(Circle(true), Q("t", 60, "mm"));
+        Assert.True(thickPlate.IsBlocked);
+        var thickBlock = Assert.Single(thickPlate.Blocks, b => b.RuleId == "thin-plate");
+        Assert.StartsWith("t:", thickBlock.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(thickBlock.Message));
+        Assert.DoesNotContain(With(Circle(true), Q("t", 50, "mm")).Notices, n => n.RuleId == "thin-plate");
+        Assert.All(new[] { "thin-plate", "navier-converge" }, id => Assert.Contains(Plate.Template.ApplicabilityRules, r => r.Id == id && r.Severity == CalcNoticeSeverity.Block && r.Effect == CalcRuleEffect.Unconservative));
+        Assert.Contains(Plate.Template.ApplicabilityRules, r => r.Id == "ritz-converge" && r.Severity == CalcNoticeSeverity.Warning && r.Effect == CalcRuleEffect.Unconservative);
         Assert.DoesNotContain(With(Circle(true, PlateBendingCalculator.Ring), Q("P", 4, "kN"), Q("r_ring", 125, "mm")).Warnings, w => w.RuleId.Contains("ring", StringComparison.Ordinal));
         Assert.Contains(With(Rect(true)).Warnings, w => w.RuleId == "ritz-approx");
     }
@@ -460,6 +475,7 @@ public sealed class PlateBendingTests
     {
         Gen.Double[1.0, 5.0].Select(Gen.Double[1.0, 2.5], Gen.Int[0, 3]).Sample((t, grow, which) =>
         {
+            grow = Math.Min(grow, 40.0 / (t * 4)); // the thick plate stays at span/t of at least 10 on the shortest span of 400 mm (F2)
             CalcInputValue[] set = which switch
             {
                 0 => Circle(true),

@@ -95,18 +95,29 @@ public sealed class ShaftMediumFindingsTests
     }
 
     [Fact]
-    public void Carried_Masses_Are_Stated_To_Add_No_Weight_And_The_Option_Adds_It()
+    public void A_Carried_Mass_Needs_A_Stated_Answer_On_Its_Weight_And_The_Option_Adds_It()
     {
-        // ka-simply-supported: 2 kN and 20 kg at mid-span, massless shaft. Without the option M_max = PL/4 = 0.2 kN.m; with it P = 2 + 20 x 9.80665/1000 = 2.196133 kN, M_max 0.2196133 kN.m (python3).
-        var off = Run(Base());
+        // ka-simply-supported: 2 kN and 20 kg at mid-span, massless shaft. With w_masses off (the weights entered as forces) M_max = PL/4 = 0.2 kN.m; with it on P = 2 + 20 x 9.80665/1000 = 2.196133 kN,
+        // M_max 0.2196133 kN.m (python3). With it blank the sheet cannot tell: it blocked on neither (1.5.1 and before: a warning, and a pass with the weight left out).
+        var off = Run(Base(CalcInputValue.Switch("w_masses", false)));
         Assert.Equal(200, off.OutputSi("M_max"), 6);
-        var warning = Assert.Single(off.Warnings, w => w.RuleId == "mass-weight");
-        Assert.Contains("weight", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(off.Notices, n => n.RuleId == "mass-weight");
 
         var on = Run(Base(CalcInputValue.Switch("w_masses", true)));
         Assert.Equal(219.6133, on.OutputSi("M_max"), 4);
         Assert.Equal(1.0980665e3, on.OutputSi("R_A"), 2);
         Assert.DoesNotContain(on.Warnings, w => w.RuleId == "mass-weight");
+
+        var blank = Run(new CalcInputSet(Base().Values.Where(v => v.Symbol != "w_masses")));
+        Assert.True(blank.IsBlocked);
+        var block = Assert.Single(blank.Blocks);
+        Assert.Equal("mass-weight", block.RuleId);
+        Assert.StartsWith("w_masses:", block.Message, StringComparison.Ordinal);
+        Assert.Contains("20 kg", block.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+
+        // No carried mass, nothing to say: a blank switch is fine.
+        Assert.False(Run(new CalcInputSet(Base(ShaftCalculator.Loads((200, -2, 0, 0))).Values.Where(v => v.Symbol != "w_masses"))).IsBlocked);
     }
 
     [Fact]

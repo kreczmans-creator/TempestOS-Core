@@ -3938,7 +3938,7 @@
           "descriptions": [
             "Current",
             "Design current",
-            "Trace current"
+            "Trace current (the curve-fit was drawn for up to 35 A: above it the sheet is refused)"
           ],
           "templates": [
             "elec.fault-protection",
@@ -13287,6 +13287,22 @@
       ]
     },
     {
+      "symbol": "beta_Lw",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Long-joint factor"
+          ],
+          "templates": [
+            "struct.fillet-weld"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "beta_j",
       "meanings": [
         {
@@ -21962,6 +21978,22 @@
           "units": [],
           "descriptions": [
             "Critical-speed ratio"
+          ],
+          "templates": [
+            "mech.shaft"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "r_c_min",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Smallest ratio of the first critical speed to the operating speed"
           ],
           "templates": [
             "mech.shaft"

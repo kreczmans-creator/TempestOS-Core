@@ -179,6 +179,9 @@ public sealed class CalcRunContext
     /// <summary>Whether an optional input was given.</summary>
     public bool Has(string symbol) => Inputs.Find(symbol) is { } v && (v.Number is not null || v.Text is not null || v.Flag is not null || v.Vector is not null || v.Rows is not null);
 
+    /// <summary>Whether the person recorded a basis for an input (an assumption, a specification, a drawing, a link ...): a value typed with no provenance is not deliberate.</summary>
+    public bool HasRecordedBasis(string symbol) => Inputs.Find(symbol)?.Provenance is { Kind: not CalcProvenanceKind.Manual };
+
     /// <summary>The rows of a table input (empty when absent).</summary>
     public IReadOnlyList<CalcRow> Rows(string symbol) => Inputs.Find(symbol)?.Rows ?? [];
 

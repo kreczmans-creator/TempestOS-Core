@@ -22,6 +22,7 @@ public sealed class UnconservativePassTests
         // A new sheet opens with the declared defaults: k_yy and k_zz at 1.0 with no provenance, which is what "left at the default" means.
         baseline["k_yy"] = CalcInputValue.Of("k_yy", 1.0);
         baseline["k_zz"] = CalcInputValue.Of("k_zz", 1.0);
+        baseline["ltb"] = CalcInputValue.Choice("ltb", MemberChecksCalculator.Restrained);
 
         foreach (var v in new[]
         {
@@ -56,6 +57,40 @@ public sealed class UnconservativePassTests
         var warning = Assert.Single(r.Notices, n => n.RuleId == "k-default");
         Assert.StartsWith("k_yy:", warning.Message, StringComparison.Ordinal);
         Assert.Contains("1.470", warning.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// C-2 verification F1: the bound C_m(1 + 0.8n) replaced a k left at 1.0 only above N_Ed/N_b,Rd = 0.3, so a member at 0.297 passed on k = 1 and failed on the bound it warned about.
+    /// python3 (SHS A 40 cm2, I 1200 cm4, W_pl,y 150 cm3, S355, E 210 GPa, curve a, L_cr 4.2 m, N 280 kN, M_y 37 kN·m): N_cr = 1409.94 kN, lambda = 1.00356, chi = 0.66311,
+    /// N_b = 941.62 kN, n = 0.297359, M_y,b = 53.25 kN·m; u with k = 1: 0.297359 + 37/53.25 = 0.992195 (PASS); bound 1 + 0.8n = 1.237888, u = 0.297359 + 1.237888 × 37/53.25 = 1.157488 (FAIL).
+    /// </summary>
+    [Fact]
+    public void A_Member_Below_The_Old_Threshold_With_The_Default_K_Is_Computed_With_The_Annex_Bound_And_Fails()
+    {
+        var calc = new MemberChecksCalculator();
+        var inputs = ShsMember(CalcInputValue.Quantity("N_Ed", -280, "kN"), CalcInputValue.Quantity("M_y_Ed", 37, "kN*m"), CalcInputValue.Quantity("L_cr_y", 4.2, "m"), CalcInputValue.Quantity("L_cr_z", 4.2, "m"));
+        var r = CalcRunner.Run(calc, inputs);
+
+        Assert.False(r.IsBlocked);
+        Assert.True(r.OutputSi("u_buckling") < 0.3);
+        Assert.Equal(0.2973593, r.OutputSi("u_buckling"), 5);
+        Assert.Equal(1.2378875, r.OutputSi("k_yy_eff"), 5);
+        Assert.Equal(1.1574877, r.OutputSi("u_member"), 5);
+        Assert.False(Assert.Single(r.Checks, c => c.Name.StartsWith("Member interaction", StringComparison.Ordinal)).Passed);
+        Assert.False(r.Passed);
+        Assert.StartsWith("k_yy:", Assert.Single(r.Notices, n => n.RuleId == "k-default").Message, StringComparison.Ordinal);
+
+        // A k = 1 the person recorded a basis for is theirs, as before: 0.992195 passes and the sheet still says the bound is higher.
+        var assumed = CalcRunner.Run(calc, inputs.With(CalcInputValue.Of("k_yy", 1.0, CalcProvenance.Assumed("Annex B, C_my = 0.4: k_yy is near 1 for this moment diagram."))));
+        Assert.Equal(0.9921950, assumed.OutputSi("u_member"), 5);
+        Assert.True(assumed.Passed);
+        Assert.Contains(assumed.Notices, n => n.RuleId == "k-default");
+
+        // Any compression with a moment: n = 0.05 still takes the bound 1.04 (it was k = 1 below 0.3).
+        var light = CalcRunner.Run(calc, ShsMember(CalcInputValue.Quantity("N_Ed", -50, "kN"), CalcInputValue.Quantity("M_y_Ed", 20, "kN*m"), CalcInputValue.Quantity("L_cr_y", 2, "m"), CalcInputValue.Quantity("L_cr_z", 2, "m")));
+        Assert.True(light.OutputSi("u_buckling") < 0.1);
+        Assert.Equal(1 + 0.8 * light.OutputSi("u_buckling"), light.OutputSi("k_yy_eff"), 9);
+        Assert.Contains(light.Notices, n => n.RuleId == "k-default");
     }
 
     [Fact]

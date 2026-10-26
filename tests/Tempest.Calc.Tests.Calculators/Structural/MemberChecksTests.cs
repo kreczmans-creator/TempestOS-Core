@@ -11,6 +11,9 @@ public sealed class MemberChecksTests
     private static CalcInputSet Uc(params CalcInputValue[] overrides)
     {
         var baseline = Calc.Template.TestCases[0].Inputs.ToDictionary(v => v.Symbol);
+
+        // The sheet has no default for ltb (1.5.0): a member that bends about y says whether its compression flange is restrained.
+        baseline["ltb"] = CalcInputValue.Choice("ltb", MemberChecksCalculator.Restrained);
         foreach (var o in overrides) baseline[o.Symbol] = o;
         return new CalcInputSet([.. baseline.Values]);
     }
@@ -39,8 +42,8 @@ public sealed class MemberChecksTests
         Assert.Equal(1.0766052, entered.OutputSi("u_member"), 6);
         Assert.DoesNotContain(entered.Notices, n => n.RuleId == "k-default");
 
-        // Light compression (N/N_b,Rd <= 0.3), no moment about the axis, or tension: no warning.
-        Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("N_Ed", -300, "kN"))).Notices, n => n.RuleId == "k-default");
+        // Light compression (N/N_b,Rd = 0.25) takes the bound too (1.5.0: it was left at k = 1 below 0.3); no moment about the axis, or tension: no warning.
+        Assert.Contains(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("N_Ed", -300, "kN"))).Notices, n => n.RuleId == "k-default");
         Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("M_y_Ed", 0, "kN*m"))).Notices, n => n.RuleId == "k-default");
         Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("N_Ed", 700, "kN"), CalcInputValue.Quantity("A_net", 40, "cm^2"), CalcInputValue.Quantity("f_u", 510, "MPa"))).Notices, n => n.RuleId == "k-default");
     }
@@ -54,7 +57,7 @@ public sealed class MemberChecksTests
         foreach (var symbol in new[] { "h", "b", "t_w", "t_f", "r" })
             Assert.Null(opened.Find(symbol));
 
-        var blocked = CalcRunner.Run(Calc, opened.With(CalcInputValue.Quantity("A", 252, "cm^2")).With(CalcInputValue.Quantity("V_Ed", 1500, "kN")));
+        var blocked = CalcRunner.Run(Calc, opened.With(CalcInputValue.Quantity("A", 252, "cm^2")).With(CalcInputValue.Quantity("V_Ed", 1500, "kN")).With(CalcInputValue.Choice("ltb", MemberChecksCalculator.Restrained)));
         Assert.True(blocked.IsBlocked);
         Assert.Equal("shear-area", blocked.Blocks[0].RuleId);
     }
@@ -191,6 +194,20 @@ public sealed class MemberChecksTests
     [Fact]
     public void A_Member_Bending_About_Y_With_An_Unrestrained_Compression_Flange_Is_Blocked_Not_Passed()
     {
+        // struct.en1993-member ltb (F7): the compression flange has no default. A sheet that opened on "Restrained" passed an unrestrained beam when nobody had said so; a member that bends
+        // about y now blocks, in a sentence that names ltb, until the person enters it, and a member with no major-axis moment needs no answer.
+        var inputs = new CalcInputSet(Uc(CalcInputValue.Quantity("M_y_Ed", 120, "kN*m"), CalcInputValue.Quantity("N_Ed", 0, "kN")).Values.Where(v => v.Symbol != "ltb"));
+        var blank = CalcRunner.Run(Calc, inputs);
+        Assert.True(blank.IsBlocked);
+        var block = Assert.Single(blank.Blocks);
+        Assert.Equal("ltb", block.RuleId);
+        Assert.Equal("ltb: enter whether the compression flange is restrained against lateral-torsional buckling.", block.Message);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+        Assert.Null(Calc.Template.FindInput("ltb")!.DefaultChoice);
+        Assert.False(CalcRunner.Run(Calc, new CalcInputSet(inputs.Values.Where(v => v.Symbol != "M_y_Ed").Append(CalcInputValue.Quantity("M_y_Ed", 0, "kN*m")))).IsBlocked);
+        Assert.True(CalcRunner.Run(Calc, CalcTemplateHasher.NewSheetInputs(Calc.Template)).IsBlocked);
+        Assert.False(CalcRunner.Run(Calc, inputs.With(CalcInputValue.Choice("ltb", MemberChecksCalculator.Restrained))).IsBlocked);
+
         // struct.en1993-member no-ltb: lateral-torsional buckling is not checked, so the sheet used to warn on every run and pass an unrestrained beam.
         var restrained = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("M_y_Ed", 120, "kN*m"), CalcInputValue.Quantity("N_Ed", 0, "kN")));
         Assert.False(restrained.IsBlocked);
