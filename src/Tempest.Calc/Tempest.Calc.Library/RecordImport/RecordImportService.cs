@@ -743,7 +743,10 @@ public sealed class RecordImportService
                 }
                 else
                 {
-                    var hint = LocaleNumber.LooksLikeOtherMark(cell.Raw, profile) ? " If the file's numbers use the other decimal mark, choose that number format." : string.Empty;
+                    // The number reader words this hint itself when the cell has a point or a comma in the wrong place; it is added here only when the reader's message has none.
+                    var hint = LocaleNumber.LooksLikeOtherMark(cell.Raw, profile) && !problem.Contains("number format", StringComparison.Ordinal)
+                        ? " If the file's numbers use the other decimal mark, choose that number format."
+                        : string.Empty;
                     row.Add(RecordSeverity.Error, column.Symbol, $"{column.Symbol}: {problem}{hint}");
                 }
 
@@ -1137,7 +1140,16 @@ public sealed class RecordImportService
         {
             var kept = material.Values.Where(v => !values.Any(n => string.Equals(n.Symbol, v.Symbol, StringComparison.Ordinal))).ToList();
             var combined = material.Notes is { Length: > 0 } ? material.Notes + NoteSeparator + notes : notes;
-            drafts.Add((material with { Values = [.. kept, .. values], LicensedSource = material.LicensedSource || prov.LicensedSource, Notes = combined }, line, row));
+
+            // A shipped seed is "indicative" and cites generic textbook values; once the person's own data is on it, the revision is the person's entry, so the origin and the
+            // record's source are theirs and a sheet does not cite their (licensed) table as "(indicative)". The seed's own values keep the source each one carries.
+            var seed = material.Origin == CalcDataOrigin.Indicative;
+            var entered = material with { Values = [.. kept, .. values], LicensedSource = material.LicensedSource || prov.LicensedSource, Notes = combined };
+
+            if (seed)
+                entered = entered with { Origin = prov.Origin, SourceTitle = prov.SourceTitle.Trim(), Edition = prov.EditionAndAmendment, TableOrClause = prov.TableOrClause.Trim(), LicenceHolder = prov.LicenceHolder.Trim() };
+
+            drafts.Add((entered, line, row));
         }
     }
 

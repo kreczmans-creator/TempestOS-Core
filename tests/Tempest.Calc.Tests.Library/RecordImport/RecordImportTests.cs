@@ -384,6 +384,15 @@ public sealed class RecordImportTests
         Assert.Contains(wrong.Errors, e => e.Message.Contains("decimal mark", StringComparison.Ordinal) && e.Line == 2);
         Assert.Contains(wrong.Warnings, w => w.Message.Contains("semicolon", StringComparison.Ordinal) || w.Message.Contains(";", StringComparison.Ordinal));
 
+        // The hint about the other decimal mark is said once, not twice (the number reader already words it).
+        var hinted = wrong.Errors.Where(e => e.Line == 2).ToList();
+        Assert.NotEmpty(hinted);
+        Assert.All(hinted, e => Assert.Equal(1, e.Message.Split("number format").Length - 1));
+
+        // A number the reader does not word a hint for still gets the importer's one hint.
+        var grouped = await host.Service.RecordImport.PreviewAsync(Request("04", Utf8("CSA[mm2],AWG[-],I_t[A]\r\n1.234.567,5,,20\r\n")));
+        Assert.All(grouped.Errors.Where(e => e.Column == "CSA"), e => Assert.Equal(1, e.Message.Split("number format").Length - 1));
+
         var right = await host.Service.RecordImport.CommitAsync(Request("04", file) with { Number = NumberProfile.Comma });
         Assert.True(right.Committed, right.Refusal);
         Assert.Equal(2.5, right.Records[0].Values[0].Rows![0].Cells["CSA"].Number);
@@ -846,18 +855,77 @@ public sealed class RecordImportTests
     }
 
     [Fact]
-    public async Task A_Revision_Taken_Between_Preview_And_Commit_Rolls_The_Whole_Import_Back()
+    public async Task A_Batch_That_Repeats_A_Revision_Is_Refused_By_The_Store_As_A_Whole_And_Leaves_It_As_It_Was()
     {
         var host = Host();
         var store = host.Store;
         var first = await host.Service.RecordImport.CommitAsync(Request("51", Csv("grout[text],C_fd[-]", "Test grout,0.2"), Provenance("Grout friction")));
         Assert.True(first.Committed, first.Refusal);
 
-        // A batch that repeats a revision of one record (the second write of the same key) is refused as a whole.
+        // The store's own guard, tested directly: a batch that repeats a revision of one record (the second write of the same key) is refused as a whole.
         var one = first.Records[0];
         var other = one with { Id = Guid.NewGuid(), Title = "Another grout" };
         await Assert.ThrowsAsync<CalcInstanceImmutableException>(() => store.SaveRecordsAsync([other, one]));
         Assert.Single(await store.ListRecordsAsync("joint.friction"));
+    }
+
+    [Fact]
+    public async Task A_Title_Taken_Between_Preview_And_Commit_Refuses_The_Whole_Import_Because_The_Commit_Judges_The_File_Against_The_Store_As_It_Is_Then()
+    {
+        var host = Host();
+        var service = host.Service.RecordImport;
+        var request = Request("06", Csv(AmbientFactors, "air,PVC,20,0.99", "air,PVC,30,0.9", "air,PVC,40,0.8"), Provenance("Ambient (test)"));
+
+        var preview = await service.PreviewAsync(request);
+        Assert.True(preview.CanCommit, Describe(preview));
+        Assert.Equal(3, preview.Planned.Count);
+
+        // Someone else saves a record with the title of the second row after the preview was read.
+        var taken = new CalcDataRecord(Guid.Empty, "cable.correction-factors", preview.Planned[1].Title, 0, "Other source", "2018", "Table 1", "Own copy", "someone else", false, CalcDataOrigin.UserEntered,
+            [new CalcDataValue("C_a", Number: 0.5)], DateTimeOffset.UnixEpoch, null);
+        var (other, refusal) = await host.Service.SaveRecordAsync(taken);
+        Assert.NotNull(other);
+        Assert.Null(refusal);
+
+        var outcome = await service.CommitAsync(request);
+
+        Assert.False(outcome.Committed);
+        Assert.StartsWith("Nothing was saved", outcome.Refusal, StringComparison.Ordinal);
+        Assert.Contains(outcome.Preview.Errors, e => e.Message.Contains("exists already", StringComparison.Ordinal));
+        Assert.Empty(outcome.Records);
+
+        // Only the other save is in the store: none of the three rows, not even the two that were fine.
+        var stored = Assert.Single(await host.Store.ListRecordsAsync("cable.correction-factors"));
+        Assert.Equal(other.Id, stored.Id);
+    }
+
+    [Fact]
+    public async Task A_Revision_Saved_Between_Preview_And_Commit_Makes_The_Import_The_Revision_After_It_And_Loses_Neither()
+    {
+        var host = Host();
+        var service = host.Service.RecordImport;
+        var first = await service.CommitAsync(Request("47", Csv("I_n[A]", "6", "10"), Provenance("Ratings (test)")));
+        Assert.True(first.Committed, first.Refusal);
+
+        var request = Request("47", Csv("I_n[A]", "6", "10", "16"), Provenance("Ratings (test)")) with { AsRevision = true };
+        var preview = await service.PreviewAsync(request);
+        Assert.Equal(2, Assert.Single(preview.Planned).Revision);
+
+        // Another save lands as revision 2 after the preview was read.
+        var (other, refusal) = await host.Service.SaveRecordAsync(first.Records[0] with { Notes = "Saved by someone else" });
+        Assert.Equal(2, other!.Revision);
+        Assert.Null(refusal);
+
+        var outcome = await service.CommitAsync(request);
+
+        Assert.True(outcome.Committed, outcome.Refusal);
+        var saved = Assert.Single(outcome.Records);
+        Assert.Equal(3, saved.Revision);
+        Assert.Equal(first.Records[0].Id, saved.Id);
+        Assert.Equal(3, saved.Values.Single().Rows!.Count);
+        Assert.Equal("Saved by someone else", (await host.Store.FindRecordAsync(saved.Id, 2))!.Notes);
+        Assert.Equal(2, (await host.Store.FindRecordAsync(saved.Id, 2))!.Values.Single().Rows!.Count);
+        Assert.Equal(3, (await host.Store.FindRecordAsync(saved.Id))!.Revision);
     }
 
     // ------------------------------------------------------------------
@@ -1068,20 +1136,78 @@ public sealed class RecordImportTests
     }
 
     [Fact]
-    public async Task A_Licensed_Material_Added_To_By_An_Import_Never_Exports()
+    public async Task A_Licensed_Material_Added_To_By_An_Import_Never_Exports_In_Any_Revision()
     {
         var host = Host();
-        var made = await host.Service.RecordImport.CommitAsync(Request("62", Csv("material[text],E[GPa],nu[-]", "Locked alloy,200,0.3"), Provenance(string.Empty)));
+        var service = host.Service.RecordImport;
+        var made = await service.CommitAsync(Request("62", Csv("material[text],E[GPa],nu[-]", "Locked alloy,200,0.3"), Provenance(string.Empty)));
         Assert.True(made.Committed, made.Refusal);
+        var id = made.Records[0].Id;
 
-        var (csv, refusal) = await host.Service.Materials.ExportCsvAsync(made.Records[0].Id);
-        Assert.Null(csv);
-        Assert.Contains("licensed", refusal, StringComparison.OrdinalIgnoreCase);
+        // Each table template adds a revision; each says its source is NOT licensed, and the material stays licensed all the same (once licensed, always).
+        var open = Provenance(string.Empty, licensed: false);
+        var temperature = await service.CommitAsync(Request("63", Csv("material[text],property[text],T[degC],v[-],v_unit[text]", "Locked alloy,E,20,200,GPa", "Locked alloy,E,100,195,GPa"), open));
+        var curve = await service.CommitAsync(Request("64", Csv("material[text],eps[-],Es[MPa]", "Locked alloy,0.001,200000", "Locked alloy,0.002,190000"), open));
+        var pairs = await service.CommitAsync(Request("65", Csv("material[text],pair[text],mu[-]", "Locked alloy,steel on steel,0.3"), open));
+
+        foreach (var (outcome, revision) in new[] { (temperature, 2), (curve, 3), (pairs, 4) })
+        {
+            Assert.True(outcome.Committed, outcome.Refusal + " " + Describe(outcome.Preview));
+            Assert.Equal(revision, outcome.Records[0].Revision);
+            Assert.True(outcome.Records[0].IsLicensed(), $"revision {revision} must stay licensed");
+        }
+
+        // No revision exports, in any of the three export paths, newest or oldest.
+        foreach (int? revision in new int?[] { null, 1, 2, 3, 4 })
+        {
+            var (csv, csvRefusal) = await host.Service.Materials.ExportCsvAsync(id, revision);
+            Assert.Null(csv);
+            Assert.Contains("licensed", csvRefusal, StringComparison.OrdinalIgnoreCase);
+
+            var (json, jsonRefusal) = await host.Service.Materials.ExportJsonAsync(id, revision);
+            Assert.Null(json);
+            Assert.Contains("licensed", jsonRefusal, StringComparison.OrdinalIgnoreCase);
+
+            var (record, recordRefusal) = await host.Service.ExportRecordAsync(id, revision);
+            Assert.Null(record);
+            Assert.Contains("never exported", recordRefusal, StringComparison.Ordinal);
+        }
     }
 
     // ------------------------------------------------------------------
     // Materials: refusals
     // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(CalcDataOrigin.UserEntered)]
+    [InlineData(CalcDataOrigin.Derived)]
+    public async Task A_Table_Added_To_A_Shipped_Seed_Material_Is_Cited_As_The_Persons_Entry_Not_As_Indicative(CalcDataOrigin origin)
+    {
+        // Review finding 7: the preserve rule kept "Indicative" on the next revision of a seed, so licensed user data was cited "(indicative)".
+        var host = Host();
+        await host.Service.Materials.EnsureSeededAsync();
+        var seed = (await host.Store.ListRecordsAsync(MaterialLibrary.Kind)).First(m => m.Origin == CalcDataOrigin.Indicative);
+
+        var tables = Csv("material[text],property[text],T[degC],v[-],v_unit[text]", $"{seed.Title},E,20,200,GPa", $"{seed.Title},E,100,195,GPa");
+        var added = await host.Service.RecordImport.CommitAsync(Request("63", tables, Provenance(string.Empty) with { Origin = origin }));
+
+        Assert.True(added.Committed, added.Refusal + " " + Describe(added.Preview));
+        var revised = Assert.Single(added.Records);
+        Assert.Equal(seed.Id, revised.Id);
+        Assert.Equal(2, revised.Revision);
+        Assert.Equal(origin, revised.Origin);
+        Assert.Equal("Test Wiring Rules", revised.SourceTitle);
+        Assert.DoesNotContain("indicative", revised.Citation, StringComparison.OrdinalIgnoreCase);
+        Assert.True(revised.IsLicensed());
+
+        // The seed's own revision stays as shipped.
+        Assert.Equal(CalcDataOrigin.Indicative, (await host.Store.FindRecordAsync(seed.Id, 1))!.Origin);
+
+        // Adding to a material of the person's own leaves its origin alone, and 62 as its next revision is the person's entry as before.
+        var again = await host.Service.RecordImport.CommitAsync(Request("65", Csv("material[text],pair[text],mu[-]", $"{seed.Title},steel on steel,0.3"), Provenance(string.Empty) with { Origin = CalcDataOrigin.ManufacturerExample }));
+        Assert.True(again.Committed, again.Refusal + " " + Describe(again.Preview));
+        Assert.Equal(origin, again.Records[0].Origin);
+    }
 
     [Fact]
     public async Task A_Temperature_Table_For_A_Material_That_Is_Not_In_The_Library_Or_With_The_Wrong_Unit_Is_Refused()
