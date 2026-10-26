@@ -63,6 +63,36 @@ def source_files():
 
 SECTION = re.compile(r"^###\s+(Critical|High|Medium)\b")
 ID_CELL = re.compile(r"^[a-z][a-z0-9.\-]*-[A-Za-z0-9]+$")
+ID_START = re.compile(r"^`?([a-z][a-z0-9.\-]*-[A-Za-z0-9]+)`?")
+BULK_LINE = re.compile(r"^Still open, [^(]*\((\d+)\):\s*(.*)$")
+
+
+def bulk_ids(text):
+    """The ids of a bulk line: comma-separated at bracket depth 0 (a note in brackets may hold commas), each item's id taken from its
+    start (backticks dropped, a trailing bracketed note ignored). An item that does not start with an id is an error, never skipped."""
+    items = []
+    depth = 0
+    current = ""
+    for ch in text.strip().rstrip("."):
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth = max(0, depth - 1)
+        if ch == "," and depth == 0:
+            items.append(current)
+            current = ""
+        else:
+            current += ch
+    items.append(current)
+    ids = []
+    for item in (i.strip() for i in items):
+        if not item:
+            continue
+        m = ID_START.match(item)
+        if not m:
+            raise SystemExit(f"known-defects: '{item[:40]}' in a 'Still open' line does not start with a finding id")
+        ids.append(m.group(1))
+    return ids
 
 
 def cells(line):
@@ -80,17 +110,18 @@ def classify(decision):
         return "owner-decision"
     if text.startswith("fixed"):
         return "fixed"
-    if text.startswith("still open"):
-        return "open"
+    if text.startswith("still open") or text.startswith("partly fixed"):
+        return "open"  # "Partly fixed" is not Fixed: the finding is still listed as open
     raise SystemExit(f"known-defects: cannot classify the decision '{decision}'")
 
 
-def read_defects():
-    """Finding id -> {severity, status, decision}, plus the summary table the document prints (for a cross-check)."""
+def read_defects(path=None):
+    """Finding id -> {severity, status, decision}. The summary table the document prints is a cross-check (SystemExit when the rows
+    parse to other counts). <path> is the document; a test passes its own."""
     rows = {}
     summary = {}
     section = None
-    lines = DEFECTS.read_text(encoding="utf-8").splitlines()
+    lines = (path or DEFECTS).read_text(encoding="utf-8").splitlines()
     for line in lines:
         m = SECTION.match(line)
         if m:
@@ -108,17 +139,19 @@ def read_defects():
         m = re.match(r"^\|\s*(Critical|High|Medium)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|", line)
         if m:
             summary[m.group(1)] = [int(m.group(i)) for i in range(2, 7)]
-    # "Still open, code unchanged (35): id, id, ..." lists Medium rows that are not in a table.
+    # "Still open, code unchanged (35): id, id, ..." and "Still open, listed for the owner (1): id (a note)." list Medium rows that are
+    # not in a table: any "Still open, <words> (n): ..." line is read the same way.
     for line in lines:
-        m = re.match(r"^Still open, code unchanged \((\d+)\):\s*(.*)$", line)
+        m = BULK_LINE.match(line)
         if m:
-            ids = [i.strip() for i in m.group(2).rstrip(".").split(",") if i.strip()]
+            label = re.sub(r"\s+", " ", line.split("(")[0].strip())
+            ids = bulk_ids(m.group(2))
             if len(ids) != int(m.group(1)):
-                raise SystemExit(f"known-defects: the 'code unchanged' line says {m.group(1)} ids and lists {len(ids)}")
+                raise SystemExit(f"known-defects: the '{label}' line says {m.group(1)} ids and lists {len(ids)}")
             for i in ids:
                 if i in rows:
-                    raise SystemExit(f"known-defects: {i} is in a table and in the 'code unchanged' line")
-                rows[i] = {"severity": "Medium", "status": "open", "decision": "Still open, code unchanged"}
+                    raise SystemExit(f"known-defects: {i} is in a table and in the '{label}' line")
+                rows[i] = {"severity": "Medium", "status": "open", "decision": label[:60]}
     # Cross-check against the document's own summary table.
     counted = {}
     for r in rows.values():

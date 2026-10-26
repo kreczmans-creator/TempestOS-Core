@@ -102,7 +102,7 @@ public sealed class VerificationMarkdownTests
 
         Assert.All(report.Rows, r => Assert.Contains($"`{r.Id}`", text, StringComparison.Ordinal));
         Assert.Contains("## Open defects", text, StringComparison.Ordinal);
-        Assert.Contains("- `mech.shaft` (", text, StringComparison.Ordinal);
+        Assert.Contains("- `elec.load-budget` (", text, StringComparison.Ordinal); // elec.load-budget-02 is Still open (partly fixed)
         Assert.DoesNotContain("not run (", text, StringComparison.Ordinal);
     }
 }

@@ -3,9 +3,9 @@
  "generatedBy": "scripts/generate-verification-snapshot.py",
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
-  "knownDefects": "3201e115e39c9be52fbb3e5ac3619867b0ffb9ab83d49a1bb113b04ed0062e21",
-  "katResults": "ae2437e601e4589da011baf842ac2e16517e927efb50754c98acd7b80ac68e58",
-  "workedExamples": "90dc338939ed86afe05f24a1ed7787c43e0db6bdd3cb780cb34c9fbe15381834"
+  "knownDefects": "a245de68e931920a0110eb3933900ffd1b2b65b7db5af36cc9d69c85d26702f6",
+  "katResults": "2e21ea781afa28d739d5f668e1c604e44444e4abdd2554fb42be493b7ccfb2f5",
+  "workedExamples": "7086e24fe933302712cfe3eafea13bf1408727c4459cfe3f921bf2445552f52a"
  },
  "defectTotals": {
   "Critical": {
@@ -16,8 +16,8 @@
    "owner-decision": 5
   },
   "Medium": {
-   "fixed": 35,
-   "open": 48,
+   "fixed": 75,
+   "open": 8,
    "owner-decision": 3
   }
  },
@@ -514,7 +514,7 @@
   "elec.conductor-sizing": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.2.0",
+    "version": "1.3.0",
     "kats": 6,
     "katsPassed": 6,
     "failedKats": [],
@@ -533,12 +533,12 @@
      {
       "id": "elec.conductor-sizing-02",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.conductor-sizing-03",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.conductor-sizing-04",
@@ -548,7 +548,7 @@
      {
       "id": "elec.conductor-sizing-05",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.conductor-sizing-06",
@@ -628,7 +628,7 @@
   "elec.enclosure-heat": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.5.0",
+    "version": "1.5.1",
     "kats": 4,
     "katsPassed": 4,
     "failedKats": [],
@@ -642,7 +642,7 @@
      {
       "id": "elec.enclosure-heat-01",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.enclosure-heat-02",
@@ -680,7 +680,7 @@
   "elec.fault-protection": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.1",
+    "version": "1.3.2",
     "kats": 6,
     "katsPassed": 6,
     "failedKats": [],
@@ -714,12 +714,12 @@
      {
       "id": "elec.fault-protection-05",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.fault-protection-06",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.fault-protection-07",
@@ -777,7 +777,7 @@
   "elec.load-budget": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.4.0",
     "kats": 4,
     "katsPassed": 4,
     "failedKats": [],
@@ -806,17 +806,17 @@
      {
       "id": "elec.load-budget-04",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.load-budget-05",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.load-budget-06",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.load-budget-07",
@@ -854,7 +854,7 @@
   "elec.motor-sizing": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.8.0",
+    "version": "1.9.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -878,12 +878,12 @@
      {
       "id": "elec.motor-sizing-03",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.motor-sizing-04",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.motor-sizing-05",
@@ -938,12 +938,12 @@
      {
       "id": "elec.motor-sizing-R1",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.motor-sizing-R2",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      }
     ]
    }
@@ -962,7 +962,7 @@
   "elec.pcb-trace": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.0.3",
+    "version": "1.1.0",
     "kats": 6,
     "katsPassed": 6,
     "failedKats": [],
@@ -981,7 +981,7 @@
      {
       "id": "elec.pcb-trace-02",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.pcb-trace-03",
@@ -1015,7 +1015,7 @@
   "elec.voltage-drop": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -1034,12 +1034,12 @@
      {
       "id": "elec.voltage-drop-02",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.voltage-drop-03",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "elec.voltage-drop-04",
@@ -1067,7 +1067,7 @@
   "fp.accumulator": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.5.0",
+    "version": "1.5.1",
     "kats": 10,
     "katsPassed": 10,
     "failedKats": [],
@@ -1091,7 +1091,7 @@
      {
       "id": "fp.accumulator-03",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "fp.accumulator-04",
@@ -1186,7 +1186,7 @@
   "fp.oring-gland": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.4.0",
     "kats": 13,
     "katsPassed": 13,
     "failedKats": [],
@@ -1205,12 +1205,12 @@
      {
       "id": "fp.oring-gland-02",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "fp.oring-gland-03",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "fp.oring-gland-04",
@@ -1260,7 +1260,7 @@
      {
       "id": "fp.oring-gland-R1",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      }
     ]
    }
@@ -1326,7 +1326,7 @@
   "mech.bolt-group": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.4.0",
     "kats": 8,
     "katsPassed": 8,
     "failedKats": [],
@@ -1355,7 +1355,7 @@
      {
       "id": "mech.bolt-group-04",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "mech.bolt-group-05",
@@ -1383,7 +1383,7 @@
   "mech.bolted-joint": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.2.0",
+    "version": "1.2.1",
     "kats": 5,
     "katsPassed": 5,
     "failedKats": [],
@@ -1397,7 +1397,7 @@
      {
       "id": "mech.bolted-joint-01",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "mech.bolted-joint-02",
@@ -1437,7 +1437,7 @@
      {
       "id": "mech.bolted-joint-R2",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      }
     ]
    }
@@ -1456,7 +1456,7 @@
   "mech.iso286-fit": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.4.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -1480,12 +1480,12 @@
      {
       "id": "mech.iso286-fit-03",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "mech.iso286-fit-04",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "mech.iso286-fit-05",
@@ -1561,7 +1561,7 @@
   "mech.press-fit": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "kats": 2,
     "katsPassed": 2,
     "failedKats": [],
@@ -1595,7 +1595,7 @@
      {
       "id": "mech.press-fit-R1",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      }
     ]
    }
@@ -1603,7 +1603,7 @@
   "mech.shaft": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.2.0",
+    "version": "1.3.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -1617,27 +1617,27 @@
      {
       "id": "mech.shaft-01",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "mech.shaft-02",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "mech.shaft-03",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "mech.shaft-04",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "mech.shaft-05",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "mech.shaft-06",
@@ -1696,7 +1696,7 @@
   "mech.snap-fit": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.3.1",
     "kats": 11,
     "katsPassed": 11,
     "failedKats": [],
@@ -1710,7 +1710,7 @@
      {
       "id": "mech.snap-fit-01",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "mech.snap-fit-02",
@@ -1738,7 +1738,7 @@
   "mech.spring": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.3.1",
     "kats": 8,
     "katsPassed": 8,
     "failedKats": [],
@@ -1797,7 +1797,7 @@
      {
       "id": "mech.spring-R1",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      }
     ]
    }
@@ -2062,7 +2062,7 @@
      {
       "id": "chain.drive-train-03",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "chain.drive-train-04",
@@ -2102,7 +2102,7 @@
      {
       "id": "chain.drive-train-C1",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "chain.drive-train-D1",
@@ -2224,12 +2224,12 @@
      {
       "id": "chain.motor-circuit-04",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "chain.motor-circuit-05",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "chain.motor-circuit-06",
@@ -2239,7 +2239,7 @@
      {
       "id": "chain.motor-circuit-07",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      },
      {
       "id": "chain.motor-circuit-08",
@@ -2274,7 +2274,7 @@
      {
       "id": "chain.motor-circuit-R1",
       "severity": "Medium",
-      "defect": "open"
+      "defect": "fixed"
      }
     ]
    }
