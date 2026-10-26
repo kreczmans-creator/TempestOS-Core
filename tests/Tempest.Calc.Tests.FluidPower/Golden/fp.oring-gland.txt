@@ -4,7 +4,7 @@ Calc ID: fp.oring-gland    Revision: A
 Title: O-ring and seal gland
 
 1. Scope and method
-Squeeze, stretch, gland fill and extrusion gap of a radial piston, radial rod or face O-ring seal, from the ring and groove dimensions with their tolerances, at the cold and shrunk and at the hot and swollen end of the temperature and swell range. The ring's cross-section shrinks with stretch by a relation you choose (none, constant-volume rubber, the quadratic cited from Parker ORD 5700 section 3.5, or linear in stretch). The worst case and the capability indices run through the tolerance-stack engine of M1, and the seeded Monte Carlo of the engine runs the exact non-linear model and reports the fraction outside each limit. A face seal is entered with the pressure on its outside or its inside. Measured groove distributions (from the scan import) can replace the toleranced dimensions. Ring sizes, the squeeze and fill bands and the extrusion limit are your own records: no O-ring size table, gland table or extrusion chart is shipped.
+Calculates squeeze, stretch, gland fill and extrusion gap of a piston, rod or face O-ring seal at the cold and hot ends of its temperature and swell range. You supply the ring sizes, bands and extrusion limits.
 Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits on (groove root for a piston or face seal, rod for a rod seal); f = (1 + α(T − 20 °C))(1 + swell)^(1/3) the ring and g = 1 + α_m(T − 20 °C) the groove metal Ring cross-section: W_eff = f·W·(1 − r(X))/√(1 − c), r(X) the chosen relation (none; 1 − 1/√(1+X); Y = 0.56 + 0.59X − 0.0046X² per cent as cited, used for about 3 to 25 % stretch only; ν·X) and c the compression of the ring outside diameter where it is held (rod seal in the housing groove; internal-pressure face seal on the groove outer wall), c = 1 − g·D_g/(f·(d + 2W)) Depth and gap: piston h = (D_s − D_g)/2, gap = D_s − D_c; rod h = (D_g − D_s)/2, gap = D_c − D_s; face h and gap entered directly (all times g) Ring squeeze: q = 1 − g·h/W_eff, minimum at the cold end from the largest depth over the smallest W_eff, maximum at the hot end Gland fill: ring area over the groove area g·b·g·h − 2(1 − π/4)(g·r_g)²; maximum at the hot end on a volume basis, (π/4)·(f·W)²·(f/g) with f³ = (1 + αΔT)³(1 + s) (an outside diameter held in the groove: (π/4)·(f·W)²/(1 − c)), minimum at the cold end (π/4)·W_eff² Worst case: each range from the engine's worst-case stack of the dimension (Σ|coefficient|·half-band), combined at the corner that is worst for the quantity Monte Carlo: the engine's seeded Monte Carlo on the exact criterion, each dimension from its own distribution; the fraction below the lower and above the upper limit. The capability index C_pk uses the criterion linearised about the mean dimensions (secant slope across each band) Extrusion gap: the largest gap over the installed, cold and hot temperatures (the sealing-surface part and the groove metal each with its own expansion) plus the bore dilation under pressure, against the permitted gap from your record (interpolated in hardness and pressure) or the value entered; with neither the check fails (not verified)
 
 2. Inputs
@@ -14,7 +14,7 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   face_p | Face seal only: which side the pressure acts on (external: the ring ID seats on the groove inner wall and is stretched; internal: the ring OD seats on the groove outer wall and is compressed) | External (ring ID seated on the groove) |  | manual | any
   d_r | Ring inside diameter d (mean of the supplier's tolerance) | 50 | mm | manual | 3 … 500 mm
   d_r_tol | Ring inside diameter tolerance, plus or minus | 0.4 | mm | manual | 0 … 2 mm
-  W | Ring cross-section diameter W | 3.5 | mm | manual | 1 … 10 mm
+  W | Ring cross-section diameter | 3.5 | mm | manual | 1 … 10 mm
   W_tol | Ring cross-section tolerance, plus or minus | 0.1 | mm | manual | 0 … 0.4 mm
   D_s | Sealing-surface diameter: the bore of a piston seal, the rod of a rod seal (not used for a face seal) | 56.9 | mm | manual | 5 … 1000 mm
   D_s_u | Sealing-surface diameter, upper deviation | 0.046 | mm | manual | -0.5 … 0.5 mm
@@ -25,13 +25,13 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   D_c | Mating part that sets the extrusion gap: the piston outside diameter, or the housing bore round the rod (not used for a face seal) | 56.9 | mm | manual | 5 … 1000 mm
   D_c_u | Mating part diameter, upper deviation | -0.03 | mm | manual | -0.5 … 0.5 mm
   D_c_l | Mating part diameter, lower deviation | -0.06 | mm | manual | -0.5 … 0.5 mm
-  h_f | Face-seal groove depth (face seal only; the ring is compressed over h_f + e_f) | 2.7 | mm | manual | 0.3 … 20 mm
+  h_f | Face-seal groove depth (face seal only), where the ring is compressed over the depth plus the gap | 2.7 | mm | manual | 0.3 … 20 mm
   h_f_u | Face-seal groove depth, upper deviation | 0.05 | mm | manual | -0.5 … 0.5 mm
   h_f_l | Face-seal groove depth, lower deviation | 0 | mm | manual | -0.5 … 0.5 mm
-  e_f | Face-seal gap between the flanges (face seal only): the extrusion gap, and it adds to the compression height h_f + e_f | 0.05 | mm | manual | 0 … 2 mm
+  e_f | Face-seal gap between the flanges (face seal only), which is the extrusion gap and adds to the compression height | 0.05 | mm | manual | 0 … 2 mm
   e_f_u | Face-seal gap, upper deviation | 0.05 | mm | manual | -0.5 … 0.5 mm
   e_f_l | Face-seal gap, lower deviation | 0 | mm | manual | -0.5 … 0.5 mm
-  b | Groove width b | 4.8 | mm | manual | 1 … 20 mm
+  b | Groove width | 4.8 | mm | manual | 1 … 20 mm
   b_u | Groove width, upper deviation | 0.1 | mm | manual | -0.5 … 0.5 mm
   b_l | Groove width, lower deviation | 0 | mm | manual | -0.5 … 0.5 mm
   ecc | Gland eccentricity or run-out (one-sided offset; it deepens the gland by this much where the squeeze is least and shallows it where the squeeze is most; 0 if none) | 0 | mm | manual | 0 … 0.5 mm
@@ -58,19 +58,45 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   dD_p | Diametral growth under the operating pressure of the bore (piston seal) or of the housing bore round the rod (rod seal), from your cylinder or housing calculation; added to the extrusion gap (0 if not known) | 0 | mm | manual | 0 … 0.5 mm
   gap_allow | Largest permitted extrusion gap at this pressure and hardness, if you have it as one value: diametral (the clearance D_s − D_c) for a radial seal, axial for a face seal; a radial chart value is half of it | 0.15 | mm | manual | 0.01 … 1 mm
   n_mc | Monte Carlo samples | 10000 |  | manual | 1000 … 100000
-  seed | Monte Carlo seed | 1 |  | manual | 0 … 4295000000
+  seed | Monte Carlo seed | 1 |  | manual | 0 … 1000000
   k_sigma | Standard deviations per half-band (normal tolerances and measured normals) | 3 |  | manual | 1 … 6
   dist | Distribution of the toleranced dimensions | Normal |  | manual | any
 
 3. Assumptions
-  A1. The gland is a plain rectangular groove with a bottom corner radius; the ring is a circle of the stated cross-section. Edge breaks, groove wall angles and surface finish are not modelled. (Closed-form gland geometry; no gland table.)
-  A2. Squeeze is the compressed fraction of the effective cross-section W_eff, which is the nominal section after thermal expansion, swell and the cross-section reduction of the stretch. The reduction relation is chosen by the user; the quadratic of Parker ORD 5700 section 3.5 is implemented as quoted second-hand, used for about 3 to 25 % stretch only, and is not confirmed against the handbook. Where the ring outside diameter is held (a rod seal in its housing groove, an internal-pressure face seal), the compression c thickens the section to W/√(1 − c). (The relation is an input choice; the default is the constant-volume rubber relation, derived.)
-  A3. The cold end is the lowest temperature with the least swell and sets the minimum squeeze and fill; the hot end is the highest temperature with the most swell and sets the maximum. This assumes the ring expands more than the groove metal (alpha above alpha_m). (Bounding cases of a monotonic model.)
-  A4. The worst case combines each dimension at its extreme independently. Where one dimension appears twice (the groove root diameter sets both the depth and the stretch of a piston seal) the worst case is slightly conservative. (Independent ends of linear stacks.)
-  A5. The Monte Carlo samples each dimension from its own distribution about its mean and evaluates each criterion exactly (the non-linear model) on the engine's seeded sampler. It counts the fraction outside each limit at the cold or hot end; it does not model pressure, friction or compression set. The capability index C_pk uses the first-order (secant) linearisation. (Exact model on the engine's seeded sampler.)
-  A6. The gland fill at the hot end is on a volume basis: a ring held circumferentially by the groove takes the whole volume change of thermal expansion and swell in its section, (1 + αΔT)³(1 + s), while the groove circumference grows with the groove metal. This is higher than scaling the section area isotropically. (Volume conservation of the held ring.)
-  A7. The extrusion gap is the largest diametral clearance of a radial seal (the axial gap of a face seal) over the installed, cold and hot temperatures, the sealing-surface part and the groove metal each with its own expansion coefficient, plus the diametral growth of the bore under pressure that the user enters (0 if none). The permitted gap is the user's record; the sheet never states a handbook value. With no permitted gap entered the extrusion check fails (not verified) while the operating pressure is above zero. (Extrusion limits are licensed data and are not shipped.)
-  A8. Static duty: the squeeze band for static seals from the oring.criteria record is used. (The bands are the user's record.)
+  A1. The gland is a plain rectangular groove with a bottom corner radius. (Closed-form gland geometry; no gland table.)
+  A2. The ring is a circle of the stated cross-section. (Closed-form gland geometry; no gland table.)
+  A3. Edge breaks, groove wall angles and surface finish are not modelled. (Closed-form gland geometry; no gland table.)
+  A4. Squeeze is the compressed fraction of the effective cross-section W_eff. (The relation is an input choice, and the default is the constant-volume rubber relation, derived.)
+  A5. W_eff is the nominal section after thermal expansion, swell and the cross-section reduction of the stretch. (The relation is an input choice, and the default is the constant-volume rubber relation, derived.)
+  A6. The reduction relation is your choice, and the default is the constant-volume rubber relation. (The relation is an input choice, and the default is the constant-volume rubber relation, derived.)
+  A7. The quadratic from the Parker handbook is implemented as quoted second-hand and is not confirmed against the handbook. (The relation is an input choice, and the default is the constant-volume rubber relation, derived.)
+  A8. The quadratic is used for about 3 to 25 % stretch only. (The relation is an input choice, and the default is the constant-volume rubber relation, derived.)
+  A9. Below 3 % the reduction is blended linearly to zero. (The relation is an input choice, and the default is the constant-volume rubber relation, derived.)
+  A10. Above 25 % the reduction is held at its 25 % value. (The relation is an input choice, and the default is the constant-volume rubber relation, derived.)
+  A11. Where the ring outside diameter is held, the compression c thickens the section to W/√(1 − c). (The relation is an input choice, and the default is the constant-volume rubber relation, derived.)
+  A12. A rod seal in its housing groove and an internal-pressure face seal hold the ring outside diameter. (The relation is an input choice, and the default is the constant-volume rubber relation, derived.)
+  A13. The cold end is the lowest temperature with the least swell, and it sets the minimum squeeze and fill. (Bounding cases of a monotonic model.)
+  A14. The hot end is the highest temperature with the most swell, and it sets the maximum squeeze and fill. (Bounding cases of a monotonic model.)
+  A15. This assumes the ring expands more than the groove metal (alpha above alpha_m). (Bounding cases of a monotonic model.)
+  A16. The worst case combines each dimension at its extreme independently. (Independent ends of linear stacks.)
+  A17. Where one dimension appears twice, the worst case is slightly conservative. (Independent ends of linear stacks.)
+  A18. The groove root diameter sets both the depth and the stretch of a piston seal. (Independent ends of linear stacks.)
+  A19. The Monte Carlo samples each dimension from its own distribution about its mean. (Exact model on the engine's seeded sampler.)
+  A20. It evaluates each criterion exactly, with the non-linear model, on the seeded sampler of the engine. (Exact model on the engine's seeded sampler.)
+  A21. It counts the fraction outside each limit at the cold or hot end. (Exact model on the engine's seeded sampler.)
+  A22. It does not model pressure, friction or compression set. (Exact model on the engine's seeded sampler.)
+  A23. The capability index C_pk uses the first-order (secant) linearisation. (Exact model on the engine's seeded sampler.)
+  A24. The gland fill at the hot end is on a volume basis. (Volume conservation of the held ring.)
+  A25. A ring held circumferentially by the groove takes the whole volume change of thermal expansion and swell in its section. (Volume conservation of the held ring.)
+  A26. That change is (1 + αΔT)³(1 + s), while the groove circumference grows with the groove metal. (Volume conservation of the held ring.)
+  A27. This is higher than scaling the section area isotropically. (Volume conservation of the held ring.)
+  A28. The extrusion gap is the largest diametral clearance of a radial seal over the installed, cold and hot temperatures. (Extrusion limits are licensed data and are not shipped.)
+  A29. The extrusion gap of a face seal is its axial gap. (Extrusion limits are licensed data and are not shipped.)
+  A30. The sealing-surface part and the groove metal each have their own expansion coefficient. (Extrusion limits are licensed data and are not shipped.)
+  A31. The gap adds the diametral growth of the bore under pressure that you enter, or 0 if none. (Extrusion limits are licensed data and are not shipped.)
+  A32. The permitted gap is your record, and the sheet never states a handbook value. (Extrusion limits are licensed data and are not shipped.)
+  A33. With no permitted gap entered, the extrusion check fails (not verified) while the operating pressure is above zero. (Extrusion limits are licensed data and are not shipped.)
+  A34. Static duty: the squeeze band for static seals from the oring.criteria record is used. (The bands are the user's record.)
 
 4. Working
   [42] v_W = mid ± half-band, σ (normal)
@@ -308,24 +334,24 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   u_gap = 0.71    Largest gap against the permitted gap
 
 6. Checks (governing first)
-  PASS  Squeeze minimum within the band: squeeze_min 16.956 % vs ≥ 15 %  « oring.criteria record
-  PASS  Squeeze maximum within the band: squeeze_max 26.957 % vs ≤ 30 %  « oring.criteria record
-  PASS  Gland fill maximum within the band: fill_max 84.643 % vs ≤ 85 %  « oring.criteria record
-  PASS  Gland fill minimum within the band: fill_min 63.951 % vs ≥ 60 %  « oring.criteria record
-  PASS  Installed stretch not above the limit: stretch 3.8306 % vs ≤ 6 %  « oring.criteria record; PTD 5705 installation rule
-  PASS  Installed stretch not above the limit at the cold end: X_c 4.4072 % vs ≤ 6 %  « oring.criteria record
-  PASS  Installed stretch not below the limit: stretch_min 2.0833 % vs ≥ 0 %  « oring.criteria record
-  PASS  Extrusion gap within the permitted gap: gap_max 0.10608 mm vs ≤ 0.15 mm (entered 0.15 mm)  « oring.extrusion record
+  PASS  Squeeze minimum against the lower band limit: squeeze_min 16.956 % vs ≥ 15 %  « oring.criteria record
+  PASS  Squeeze maximum against the upper band limit: squeeze_max 26.957 % vs ≤ 30 %  « oring.criteria record
+  PASS  Gland fill maximum against the upper band limit: fill_max 84.643 % vs ≤ 85 %  « oring.criteria record
+  PASS  Gland fill minimum against the lower band limit: fill_min 63.951 % vs ≥ 60 %  « oring.criteria record
+  PASS  Installed stretch against the upper limit: stretch 3.8306 % vs ≤ 6 %  « oring.criteria record; PTD 5705 installation rule
+  PASS  Installed stretch at the cold end against the upper limit: X_c 4.4072 % vs ≤ 6 %  « oring.criteria record
+  PASS  Installed stretch against the lower limit: stretch_min 2.0833 % vs ≥ 0 %  « oring.criteria record
+  PASS  Extrusion gap against the permitted gap: gap_max 0.10608 mm vs ≤ 0.15 mm (entered 0.15 mm)  « oring.extrusion record
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are alpha, nu (Material properties); d_r, d_r_tol, W, W_tol (Ring size); q_lo_s, q_hi_s, q_lo_d, q_hi_d, fill_lo, fill_hi, x_lo, x_hi, od_hi (Squeeze, fill and stretch bands); gap_allow (Permitted extrusion gap). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  records: tabulated values not taken from a reference record are alpha, nu (Material properties); d_r, d_r_tol, W, W_tol (Ring size); q_lo_s, q_hi_s, q_lo_d, q_hi_d, fill_lo, fill_hi, x_lo, x_hi, od_hi (Squeeze, fill and stretch criteria); gap_allow (Permitted extrusion gap). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: fp.oring-gland@1.4.0
+  Template: fp.oring-gland@1.5.0
   Known-answer cases passed: 13/13
 
 9. References
-  1. Parker O-Ring Handbook ORD 5700 Section 3.5 — Cross-section reduction with stretch (relation quoted second-hand; not confirmed)
+  1. Parker O-Ring Handbook ORD 5700 §3.5 — Cross-section reduction with stretch (relation quoted second-hand; not confirmed)
   2. Parker PTD 5705 — O-ring installation guidance (stretch rule quoted second-hand; not confirmed)
-  3. ISO 3601-1 — O-rings: inside diameters, cross-sections, tolerances and size codes
-  4. ISO 3601-2 — O-rings: housing dimensions for general applications
+  3. ISO 3601-1:2012 — O-rings: inside diameters, cross-sections, tolerances and size codes
+  4. ISO 3601-2:2016 — O-rings: housing dimensions for general applications

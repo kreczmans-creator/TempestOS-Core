@@ -28,8 +28,8 @@ The ram makes 209.8 kN on the press stroke and 101.1 kN on the return, against l
 | `hoses` | 7 row(s) | reference: record: illustrative hose size list invented for this example, to be replaced by the supplier's range |
 | `mode` | Standard | assumption: Standard connection: the ram needs its full bore force for the press stroke. |
 | `n_p` | 1450 rpm | spec: Hydraulic specification HS-31: 4-pole motor, 1450 rpm |
-| `p` | 180 bar | spec: Hydraulic specification HS-31: relief valve set 180 bar at the ram |
 | `p_back` | 0 bar | assumption: Return line direct to tank; the return filter drop is neglected for this example. |
+| `p_sys` | 180 bar | spec: Hydraulic specification HS-31: relief valve set 180 bar at the ram |
 | `rho` | 870 kg/m^3 | reference: fluid data sheet: mineral oil, density at 40 °C, to be taken from the oil supplier's data |
 | `stroke` | 800 mm | drawing: DWG-4310 rev B |
 | `t_dwell` | 0 s | assumption: Cycle time of the strokes only; dwell added by the machine controller. |
@@ -57,4 +57,4 @@ The ram makes 209.8 kN on the press stroke and 101.1 kN on the return, against l
 | `F_buck` | 220.893 kN | 220.893 kN | PASS |
 | `u_buck` | 0.382668  | 0.382668  | PASS |
 
-Governing check: Pump delivery covers the circuit flow — PASS (utilisation 0.97). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Circuit flow against the pump delivery — PASS (utilisation 0.97). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -31,13 +31,13 @@ public sealed class AccumulatorTests
         // L-g: the cylinder's supply pressure p (gauge) linked to p_2 was read on p_basis: Absolute took it one atmosphere low and only warned (1.5.1 and before). F2: the atmospheric pressure is
         // added to a linked pressure on the Absolute basis. python3: p_0 90 and p_1 100 bar abs, p_2 = 160 + 1.01325 = 161.01325 bar abs, dV 14 L, n = 1: V0 = 14/(0.9 - 90/161.01325) = 41.0509284 L
         // (the old reading, 160 bar abs: 41.4814815 L).
-        var link = CalcProvenance.Link(Guid.NewGuid(), "p", "A");
+        var link = CalcProvenance.Link(Guid.NewGuid(), "p_sys", "A");
         var linked = CalcInputValue.Quantity("p_2", 160, "bar", link);
 
         var absolute = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), linked);
         var warning = Assert.Single(absolute.Warnings, w => w.RuleId == "link-basis");
         Assert.StartsWith("p_2:", warning.Message, StringComparison.Ordinal);
-        Assert.Contains("is added to the linked value", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("is added to it", warning.Message, StringComparison.Ordinal);
         Assert.Contains("p_basis", warning.Message, StringComparison.Ordinal);
         Assert.Equal(41.05092837302644, absolute.OutputSi("V0") / Litre, 9);
 
@@ -53,7 +53,7 @@ public sealed class AccumulatorTests
         var all = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), CalcInputValue.Quantity("p_0", 90, "bar", link), CalcInputValue.Quantity("p_1", 100, "bar", link), linked);
         Assert.Equal(3, all.Warnings.Count(w => w.RuleId == "link-basis"));
         Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "link-basis" && r.Effect == CalcRuleEffect.Conservative);
-        Assert.Equal("1.6.0", Accumulator.Template.Version);
+        Assert.Equal("1.7.0", Accumulator.Template.Version);
     }
 
     [Fact]
@@ -67,8 +67,8 @@ public sealed class AccumulatorTests
     [Fact]
     public void A_Fast_Discharge_Needs_A_Larger_Volume_Than_A_Slow_One()
     {
-        var slow = Run(CalcInputValue.Of("n", 1)).OutputSi("V0");
-        var fast = Run(CalcInputValue.Of("n", 1.4)).OutputSi("V0");
+        var slow = Run(CalcInputValue.Of("n_gas", 1)).OutputSi("V0");
+        var fast = Run(CalcInputValue.Of("n_gas", 1.4)).OutputSi("V0");
         Assert.True(fast > slow);
         Assert.Equal(V0(14, 90, 100, 210, 1.4), fast / Litre, 9);
     }
@@ -86,7 +86,7 @@ public sealed class AccumulatorTests
 
             // Above the block pressure the ideal gas is refused (fp.accumulator-01), so a real-gas factor is entered there and divided out again.
             var frg = p2 > AccumulatorCalculator.RealGasBlockBar ? 1.5 : 1.0;
-            var r = Run(CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Of("n", n), CalcInputValue.Of("f_rg", frg));
+            var r = Run(CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Of("n_gas", n), CalcInputValue.Of("f_rg", frg));
             var v0 = r.OutputSi("V0") / Litre / frg;
             var delivered = v0 * Math.Pow(p0 / p1, 1 / n) - v0 * Math.Pow(p0 / p2, 1 / n);
             return Math.Abs(delivered - dv) <= 1e-9 * dv;
@@ -114,10 +114,10 @@ public sealed class AccumulatorTests
         Assert.True(Run(real).Passed);
 
         var high = Run(Bars("p_0", 95));
-        Assert.Contains(high.Checks, c => c.Name.StartsWith("Pre-charge within", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(high.Checks, c => c.Name.StartsWith("Pre-charge against", StringComparison.Ordinal) && !c.Passed);
 
         var steep = Run(Bars("p_0", 40), Bars("p_2", 200));
-        Assert.Contains(steep.Checks, c => c.Name.StartsWith("Pressure ratio within", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(steep.Checks, c => c.Name.StartsWith("Pressure ratio against", StringComparison.Ordinal) && !c.Passed);
 
         // The limits are inputs a record fills: a manufacturer allowing p0 up to p1 and a ratio of 6 passes both.
         Assert.True(Run(real, Bars("p_0", 95), CalcInputValue.Of("r_0", 1)).Passed);
@@ -146,11 +146,11 @@ public sealed class AccumulatorTests
     {
         Assert.All(Accumulator.Template.Inputs.Where(i => i.Kind is CalcInputKind.Quantity or CalcInputKind.Number), spec =>
         {
-            Assert.Equal(spec.Min, spec.HardMin);
-            Assert.Equal(spec.Max, spec.HardMax);
+            Assert.True(spec.Min is null || spec.Min >= spec.HardMin, spec.Symbol);
+            Assert.True(spec.Max is null || spec.Max <= spec.HardMax, spec.Symbol);
         });
 
-        foreach (var (symbol, value, unit) in new[] { ("n", 1.5, ""), ("n", 0.9, ""), ("dV", 0.0, "L"), ("dV", 2000.0, "L"), ("p_2", 800.0, "bar"), ("p_0", -1.0, "bar"), ("f_rg", 3.1, ""), ("f_rg", 0.95, ""), ("T_min", -50.0, "degC"), ("T_min", 200.0, "degC"), ("PS", -1.0, "bar"), ("V_vessel", 0.0, "L"), ("T_max", 200.0, "degC"), ("r_0", 1.5, ""), ("r_p", 25.0, "") })
+        foreach (var (symbol, value, unit) in new[] { ("n_gas", 1.5, ""), ("n_gas", 0.9, ""), ("dV", 0.0, "L"), ("dV", 2000.0, "L"), ("p_2", 800.0, "bar"), ("p_0", -1.0, "bar"), ("f_rg", 3.1, ""), ("f_rg", 0.95, ""), ("T_min", -50.0, "degC"), ("T_min", 200.0, "degC"), ("PS", -1.0, "bar"), ("V_vessel", 0.0, "L"), ("T_max", 200.0, "degC"), ("r_0", 1.5, ""), ("r_p", 25.0, "") })
         {
             var value1 = unit.Length > 0 ? CalcInputValue.Quantity(symbol, value, unit) : CalcInputValue.Of(symbol, value);
             Assert.Contains(CalcInputValidator.Validate(Accumulator.Template, With(value1)), n => n.Severity == CalcNoticeSeverity.Block);
@@ -175,7 +175,7 @@ public sealed class AccumulatorTests
         var r = Run(Sizes(10, 20));
         Assert.Contains(r.Warnings, w => w.RuleId == "size");
         Assert.Null(r.FindOutput("V_sel"));
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("A listed size covers", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Required volume against", StringComparison.Ordinal) && !c.Passed);
         Assert.False(r.Passed);
     }
 
@@ -261,8 +261,8 @@ public sealed class AccumulatorTests
 
         // A cold limit that pushes p2/p0 over the rule fails the ratio check although the warm pre-charge passes it.
         var cold = Run(Bars("p_0", 50), Bars("p_2", 190), CalcInputValue.Quantity("T_min", -40, "degC"));
-        Assert.Contains(cold.Checks, c => c.Name.StartsWith("Pressure ratio within", StringComparison.Ordinal) && !c.Passed);
-        Assert.Contains(Run(Bars("p_0", 50), Bars("p_2", 190)).Checks, c => c.Name.StartsWith("Pressure ratio within", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(cold.Checks, c => c.Name.StartsWith("Pressure ratio against", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(Run(Bars("p_0", 50), Bars("p_2", 190)).Checks, c => c.Name.StartsWith("Pressure ratio against", StringComparison.Ordinal) && c.Passed);
     }
 
     [Fact]
@@ -332,7 +332,7 @@ public sealed class AccumulatorTests
         Assert.Contains(shock.Warnings, w => w.RuleId == "exponent");
         Assert.Contains(shock.RunAssumptions, a => a.Statement.Contains("screening", StringComparison.Ordinal));
 
-        var emergency = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n", 1.4));
+        var emergency = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n_gas", 1.4));
         Assert.DoesNotContain(emergency.Warnings, w => w.RuleId == "exponent");
         Assert.Contains(emergency.RunAssumptions, a => a.Statement.Contains("Emergency stroke", StringComparison.Ordinal));
     }
@@ -344,23 +344,23 @@ public sealed class AccumulatorTests
         // V0(n = 1.4) = 14 x (210/90)/((210/100)^(1/1.4) - 1) = 46.74304 L; V0(n = 1) = 14 x (210/90)/(210/100 - 1) = 29.69697 L.
         var real = CalcInputValue.Of("f_rg", 1.15);
         var emergency = CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency);
-        var slow = Run(real, emergency, CalcInputValue.Of("n", 1));
+        var slow = Run(real, emergency, CalcInputValue.Of("n_gas", 1));
         Assert.Contains(slow.Warnings, w => w.RuleId == "exponent");
         var check = Assert.Single(slow.Checks, c => c.Name.StartsWith("Gas exponent against a fast discharge", StringComparison.Ordinal));
         Assert.False(check.Passed);
         Assert.False(slow.Passed);
         Assert.Equal(14 * (210.0 / 90) / (210.0 / 100 - 1) * 1.15, slow.OutputSi("V0") / Litre, 6);
 
-        var fast = Run(real, emergency, CalcInputValue.Of("n", 1.4));
+        var fast = Run(real, emergency, CalcInputValue.Of("n_gas", 1.4));
         Assert.DoesNotContain(fast.Checks, c => c.Name.StartsWith("Gas exponent", StringComparison.Ordinal));
         Assert.True(fast.Passed);
         Assert.Equal(14 * (210.0 / 90) / (Math.Pow(210.0 / 100, 1 / 1.4) - 1) * 1.15, fast.OutputSi("V0") / Litre, 6);
 
-        var shock = Run(real, CalcInputValue.Choice("mode", AccumulatorCalculator.ModeShock), CalcInputValue.Of("n", 1.2));
+        var shock = Run(real, CalcInputValue.Choice("mode", AccumulatorCalculator.ModeShock), CalcInputValue.Of("n_gas", 1.2));
         Assert.False(Assert.Single(shock.Checks, c => c.Name.StartsWith("Gas exponent", StringComparison.Ordinal)).Passed);
 
         // A basis recorded for n (the stroke takes minutes) is the person's: the warning stays, no check is failed on it.
-        var recorded = Run(real, emergency, CalcInputValue.Of("n", 1) with { Provenance = CalcProvenance.Assumed("The stroke takes about four minutes against the closed valve, so the gas exchanges heat: isothermal.") });
+        var recorded = Run(real, emergency, CalcInputValue.Of("n_gas", 1) with { Provenance = CalcProvenance.Assumed("The stroke takes about four minutes against the closed valve, so the gas exchanges heat: isothermal.") });
         Assert.Contains(recorded.Warnings, w => w.RuleId == "exponent" && w.Message.Contains("recorded basis", StringComparison.Ordinal));
         Assert.DoesNotContain(recorded.Checks, c => c.Name.StartsWith("Gas exponent", StringComparison.Ordinal));
         Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "exponent" && r.Effect == CalcRuleEffect.Unconservative);
@@ -428,7 +428,7 @@ public sealed class AccumulatorTests
         Assert.Equal("realgas-ideal", block.RuleId);
         Assert.StartsWith("f_rg:", block.Message, StringComparison.Ordinal);
         Assert.Contains("700 bar absolute", block.Message, StringComparison.Ordinal);
-        Assert.Contains("Enter the real-gas factor", block.Message, StringComparison.Ordinal);
+        Assert.Contains("enter f_rg", block.Message, StringComparison.Ordinal);
         Assert.Null(ideal.FindOutput("V0"));
         Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "realgas-ideal" && r.Severity == CalcNoticeSeverity.Block);
 
@@ -458,9 +458,9 @@ public sealed class AccumulatorTests
         var narrow = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 170), Bars("p_1", 190), Bars("p_2", 200), CalcInputValue.Quantity("dV", 10, "L"));
         Assert.Equal(10 / (170.0 / 190 - 170.0 / 200), narrow.OutputSi("V0") / Litre, 9);
         Assert.Equal(223.529, narrow.OutputSi("V0") / Litre, 3);
-        Assert.Contains(narrow.Warnings, w => w.RuleId == "realgas" && w.Message.Contains("real-gas factor is left at 1", StringComparison.Ordinal));
+        Assert.Contains(narrow.Warnings, w => w.RuleId == "realgas" && w.Message.Contains("f_rg is left at 1", StringComparison.Ordinal));
         var window = Assert.Single(narrow.Warnings, w => w.RuleId == "realgas-window");
-        Assert.Contains("larger than the compressibility factor", window.Message, StringComparison.Ordinal);
+        Assert.Contains("f_rg is larger than Z at p_2", window.Message, StringComparison.Ordinal);
 
         // A factor entered silences the left-at-1 notice (the window notice stays: the factor must be the bracket ratio, not Z at p_2) and below 100 bar nothing is said.
         var entered = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 170), Bars("p_1", 190), Bars("p_2", 200), CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Of("f_rg", 1.134));
@@ -476,38 +476,38 @@ public sealed class AccumulatorTests
     public void An_Exponent_Above_One_Warns_From_50_Bar_That_Real_Nitrogen_Is_Stiffer_Than_The_Ideal_Gas()
     {
         // fp.accumulator-R2: 10 L, 90/100/200 bar abs, n 1.4 gave 27.61 L and no notice; real nitrogen (effective exponent about 1.5 to 2.1) needs 13 to 24 % more.
-        var adiabatic = Run(CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 90), Bars("p_1", 100), Bars("p_2", 200), CalcInputValue.Of("n", 1.4));
+        var adiabatic = Run(CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 90), Bars("p_1", 100), Bars("p_2", 200), CalcInputValue.Of("n_gas", 1.4));
         Assert.Equal(V0(10, 90, 100, 200, 1.4), adiabatic.OutputSi("V0") / Litre, 9);
         Assert.Equal(27.61, adiabatic.OutputSi("V0") / Litre, 2);
         var warning = Assert.Single(adiabatic.Warnings, w => w.RuleId == "exponent-real");
         Assert.Contains("stiffer", warning.Message, StringComparison.Ordinal);
-        Assert.Contains("real-gas factor", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("f_rg", warning.Message, StringComparison.Ordinal);
 
         // With your factor entered the warning says it is applied on top; an isothermal discharge, or a low pressure, is not warned.
-        var withFactor = Run(CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 90), Bars("p_1", 100), Bars("p_2", 200), CalcInputValue.Of("n", 1.4), CalcInputValue.Of("f_rg", 1.144));
-        Assert.Contains("applied on top", Assert.Single(withFactor.Warnings, w => w.RuleId == "exponent-real").Message, StringComparison.Ordinal);
-        Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 90), Bars("p_1", 100), Bars("p_2", 200), CalcInputValue.Of("n", 1)).Warnings, w => w.RuleId == "exponent-real");
-        Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 20), Bars("p_1", 25), Bars("p_2", 45), CalcInputValue.Of("n", 1.4)).Warnings, w => w.RuleId == "exponent-real");
+        var withFactor = Run(CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 90), Bars("p_1", 100), Bars("p_2", 200), CalcInputValue.Of("n_gas", 1.4), CalcInputValue.Of("f_rg", 1.144));
+        Assert.Contains("applies on top", Assert.Single(withFactor.Warnings, w => w.RuleId == "exponent-real").Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 90), Bars("p_1", 100), Bars("p_2", 200), CalcInputValue.Of("n_gas", 1)).Warnings, w => w.RuleId == "exponent-real");
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 20), Bars("p_1", 25), Bars("p_2", 45), CalcInputValue.Of("n_gas", 1.4)).Warnings, w => w.RuleId == "exponent-real");
     }
 
     [Fact]
     public void An_Emergency_Stroke_Fails_When_The_Lowest_Pressure_Is_Below_What_The_Push_Load_Needs()
     {
         // chain.hydraulic-power-unit-02: nothing tied p_1 to the push load; a 100 kN push needs 134.0 bar at the 100 mm bore (100 kN/(78.54 cm² × 0.95)) and p_1 stayed 120 bar with every check green.
-        var emergency = new[] { CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), CalcInputValue.Quantity("dV", 3.927, "L"), Bars("p_0", 105), Bars("p_1", 120), Bars("p_2", 160), CalcInputValue.Of("n", 1.4), CalcInputValue.Quantity("T_min", 10, "degC") };
+        var emergency = new[] { CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), CalcInputValue.Quantity("dV", 3.927, "L"), Bars("p_0", 105), Bars("p_1", 120), Bars("p_2", 160), CalcInputValue.Of("n_gas", 1.4), CalcInputValue.Quantity("T_min", 10, "degC") };
         var needed = 100e3 / (Math.PI * 0.1 * 0.1 / 4 * 0.95) / Bar;
         Assert.Equal(134.0, needed, 1);
 
         var weak = Run([.. emergency, Bars("p_load", needed)]);
         Assert.Equal(needed / 120, weak.OutputSi("u_load"), 9);
-        Assert.Contains(weak.Checks, c => c.Name.StartsWith("Lowest working pressure p_1 carries the load", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(weak.Checks, c => c.Name.StartsWith("Load pressure against", StringComparison.Ordinal) && !c.Passed);
         Assert.False(weak.Passed);
 
         var enough = Run([.. emergency, Bars("p_load", 107.2)]);
-        Assert.Contains(enough.Checks, c => c.Name.StartsWith("Lowest working pressure p_1 carries the load", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(enough.Checks, c => c.Name.StartsWith("Load pressure against", StringComparison.Ordinal) && c.Passed);
 
         // Absolute basis: p_load is a gauge pressure, p_1 is compared on the same gauge basis (p_1 abs − p_atm).
-        var absolute = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 106.01325), Bars("p_1", 121.01325), Bars("p_2", 161.01325), CalcInputValue.Of("n", 1.4), Bars("p_load", 120));
+        var absolute = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 106.01325), Bars("p_1", 121.01325), Bars("p_2", 161.01325), CalcInputValue.Of("n_gas", 1.4), Bars("p_load", 120));
         Assert.Equal(1.0, absolute.OutputSi("u_load"), 9);
 
         // No load pressure entered: an emergency stroke says so; other duties stay silent.
@@ -521,7 +521,7 @@ public sealed class AccumulatorTests
     public void An_Emergency_Stroke_Is_Charged_Slowly_And_Discharged_At_N_By_Default()
     {
         // python3: 14 × (210/90) / ((210/100)^(1/1.4) − 1) = 46.743039671582224 L, against 36.69278925358671 L with one exponent both ways.
-        var emergency = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n", 1.4));
+        var emergency = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n_gas", 1.4));
         Assert.Equal(46.743039671582224, emergency.OutputSi("V0") / Litre, 9);
         Assert.Equal(Held(14, 90, 100, 210, 1.4), emergency.OutputSi("V0") / Litre, 9);
         Assert.DoesNotContain(emergency.Warnings, w => w.RuleId == "process");
@@ -539,15 +539,15 @@ public sealed class AccumulatorTests
     [Fact]
     public void The_Emergency_Stroke_Default_Can_Be_Set_To_One_Exponent_Both_Ways_And_Warns()
     {
-        var same = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame), CalcInputValue.Of("n", 1.4));
+        var same = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame), CalcInputValue.Of("n_gas", 1.4));
         Assert.Equal(36.69278925358671, same.OutputSi("V0") / Litre, 9);
         var warning = Assert.Single(same.Warnings, w => w.RuleId == "process");
         Assert.Contains("held at p_2", warning.Message, StringComparison.Ordinal);
         Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "process");
 
         // The explicit slow charge is the same as the emergency default.
-        var explicitSlow = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n", 1.4));
-        var byDuty = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n", 1.4));
+        var explicitSlow = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n_gas", 1.4));
+        var byDuty = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n_gas", 1.4));
         Assert.Equal(byDuty.OutputSi("V0"), explicitSlow.OutputSi("V0"), 15);
     }
 
@@ -555,25 +555,25 @@ public sealed class AccumulatorTests
     public void Energy_Storage_Keeps_One_Exponent_By_Default_And_Offers_The_Slow_Charge_As_A_Choice()
     {
         // The existing behaviour: the energy-storage default is the one-exponent relation, unchanged.
-        Assert.Equal(V0(14, 90, 100, 210, 1.4), Run(CalcInputValue.Of("n", 1.4)).OutputSi("V0") / Litre, 9);
-        Assert.Equal(V0(14, 90, 100, 210, 1.4), Run(CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame), CalcInputValue.Of("n", 1.4)).OutputSi("V0") / Litre, 9);
+        Assert.Equal(V0(14, 90, 100, 210, 1.4), Run(CalcInputValue.Of("n_gas", 1.4)).OutputSi("V0") / Litre, 9);
+        Assert.Equal(V0(14, 90, 100, 210, 1.4), Run(CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame), CalcInputValue.Of("n_gas", 1.4)).OutputSi("V0") / Litre, 9);
         Assert.Equal(AccumulatorCalculator.ProcessByDuty, Accumulator.Template.Inputs.Single(i => i.Symbol == "process").DefaultChoice);
         Assert.Equal([AccumulatorCalculator.ProcessByDuty, AccumulatorCalculator.ProcessSame, AccumulatorCalculator.ProcessSlowCharge], Accumulator.Template.Inputs.Single(i => i.Symbol == "process").Choices);
 
         // A held energy-storage accumulator, charged slowly and discharged fast.
-        var slow = Run(CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n", 1.4));
+        var slow = Run(CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n_gas", 1.4));
         Assert.Equal(46.743039671582224, slow.OutputSi("V0") / Litre, 9);
         Assert.DoesNotContain(slow.Warnings, w => w.RuleId == "process");
 
         // Isothermal discharge: both processes are the same relation.
-        Assert.Equal(14 / (0.9 - 90.0 / 210), Run(CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n", 1)).OutputSi("V0") / Litre, 9);
+        Assert.Equal(14 / (0.9 - 90.0 / 210), Run(CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n_gas", 1)).OutputSi("V0") / Litre, 9);
     }
 
     [Fact]
     public void The_Shock_Duty_Uses_One_Exponent_Whatever_Process_Is_Chosen()
     {
-        var shock = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeShock), CalcInputValue.Of("n", 1.4));
-        var chosen = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeShock), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n", 1.4));
+        var shock = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeShock), CalcInputValue.Of("n_gas", 1.4));
+        var chosen = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeShock), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSlowCharge), CalcInputValue.Of("n_gas", 1.4));
         Assert.Equal(V0(14, 90, 100, 210, 1.4), shock.OutputSi("V0") / Litre, 9);
         Assert.Equal(shock.OutputSi("V0"), chosen.OutputSi("V0"), 15);
         Assert.DoesNotContain(shock.Warnings, w => w.RuleId == "process");
@@ -586,7 +586,7 @@ public sealed class AccumulatorTests
         // python3: hydraulic power unit F2 inputs (105/120/160 bar gauge, ΔV 3.92699 L, n 1.4, 10 to 50 °C): 30.080873024534817 L (26.695181275084906 L with one exponent).
         var pa = 1.01325;
         var f = (50 + 273.15) / (10 + 273.15);
-        var r = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), CalcInputValue.Quantity("dV", 3.926990816987242, "L"), Bars("p_0", 105), Bars("p_1", 120), Bars("p_2", 160), CalcInputValue.Of("n", 1.4), CalcInputValue.Of("f_rg", 1.05), CalcInputValue.Quantity("T_min", 10, "degC"));
+        var r = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), CalcInputValue.Quantity("dV", 3.926990816987242, "L"), Bars("p_0", 105), Bars("p_1", 120), Bars("p_2", 160), CalcInputValue.Of("n_gas", 1.4), CalcInputValue.Of("f_rg", 1.05), CalcInputValue.Quantity("T_min", 10, "degC"));
         Assert.Equal(1.05 * f * Held(3.926990816987242, 105 + pa, 120 + pa, 160 + pa, 1.4), r.OutputSi("V0") / Litre, 9);
         Assert.Equal(1.05 * 30.080873024534817, r.OutputSi("V0") / Litre, 9);
     }
@@ -602,7 +602,7 @@ public sealed class AccumulatorTests
                 return true;
 
             var frg = p2 > AccumulatorCalculator.RealGasBlockBar ? 1.5 : 1.0;
-            var r = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Of("n", n), CalcInputValue.Of("f_rg", frg));
+            var r = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Of("n_gas", n), CalcInputValue.Of("f_rg", frg));
             var v0 = r.OutputSi("V0") / Litre / frg;
             var held = v0 * p0 / p2;
             var delivered = held * Math.Pow(p2 / p1, 1 / n) - held;
@@ -620,7 +620,7 @@ public sealed class AccumulatorTests
         Assert.NotNull(Run().FindOutput("V0"));
         Assert.NotNull(Run().FindOutput("p0"));
         Assert.DoesNotContain(r.Checks, c => c.Name.Contains("PD 5500", StringComparison.Ordinal) || c.Name.Contains("EN 13445", StringComparison.Ordinal) || c.Name.Contains("ASME", StringComparison.Ordinal));
-        Assert.Contains("Not a pressure-vessel code check", Accumulator.Template.Scope, StringComparison.Ordinal);
+        Assert.Contains("not a pressure-vessel code check", Accumulator.Template.Scope, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -659,7 +659,7 @@ public sealed class AccumulatorTests
             Assert.All(new[] { "p_0", "p_1", "p_2" }, symbol => Assert.Equal(label, UnitOf(symbol)));
             Assert.Equal("bar a", UnitOf("p_atm"));
             Assert.Equal("bar g", UnitOf("PS"));
-            Assert.EndsWith("700 bar " + label[^1], sheet.Inputs.Single(i => i.Symbol == "p_0").ValidRange, StringComparison.Ordinal);
+            Assert.EndsWith("400 bar " + label[^1], sheet.Inputs.Single(i => i.Symbol == "p_0").ValidRange, StringComparison.Ordinal);
 
             // No pressure input prints a bare "bar".
             Assert.DoesNotContain(sheet.Inputs, i => i.Unit == "bar");

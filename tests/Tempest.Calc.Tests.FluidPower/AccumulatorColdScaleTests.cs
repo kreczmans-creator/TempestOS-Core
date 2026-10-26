@@ -15,7 +15,7 @@ public sealed class AccumulatorColdScaleTests
 
     private static CalcInputSet Case(params CalcInputValue[] overrides) => overrides.Aggregate(CalcTemplateHasher.DefaultInputs(Accumulator.Template)
         .With(CalcInputValue.Quantity("dV", 10, "L")).With(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge)).With(CalcInputValue.Quantity("p_0", 90, "bar")).With(CalcInputValue.Quantity("p_1", 100, "bar"))
-        .With(CalcInputValue.Quantity("p_2", 200, "bar")).With(CalcInputValue.Of("n", 1.4)).With(CalcInputValue.Quantity("T_max", 60, "degC")).With(CalcInputValue.Quantity("T_min", -20, "degC")).With(CalcInputValue.Of("f_rg", 1)), (set, v) => set.With(v));
+        .With(CalcInputValue.Quantity("p_2", 200, "bar")).With(CalcInputValue.Of("n_gas", 1.4)).With(CalcInputValue.Quantity("T_max", 60, "degC")).With(CalcInputValue.Quantity("T_min", -20, "degC")).With(CalcInputValue.Of("f_rg", 1)), (set, v) => set.With(v));
 
     [Fact]
     public void One_Exponent_Both_Ways_Scales_The_Cold_Gas_By_The_Temperature_Ratio_To_The_Power_One_Over_n()
@@ -53,7 +53,7 @@ public sealed class AccumulatorColdScaleTests
     [Fact]
     public void An_Isothermal_Gas_Is_Unchanged()
     {
-        var r = CalcRunner.Run(Accumulator, Case(CalcInputValue.Of("n", 1), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame)));
+        var r = CalcRunner.Run(Accumulator, Case(CalcInputValue.Of("n_gas", 1), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame)));
 
         Assert.Equal(333.15 / 253.15, r.OutputSi("f_T"), 9);
     }

@@ -13,7 +13,7 @@ public static class FluidPowerWorkedExamples
             new CalcInputSet(
             [
                 CalcInputValue.Choice("mode", CylinderCalculator.Standard, CalcProvenance.Assumed("Standard connection: the ram needs its full bore force for the press stroke.")),
-                CalcInputValue.Quantity("p", 180, "bar", CalcProvenance.Specification("Hydraulic specification HS-31: relief valve set 180 bar at the ram")),
+                CalcInputValue.Quantity("p_sys", 180, "bar", CalcProvenance.Specification("Hydraulic specification HS-31: relief valve set 180 bar at the ram")),
                 CalcInputValue.Quantity("p_back", 0, "bar", CalcProvenance.Assumed("Return line direct to tank; the return filter drop is neglected for this example.")),
                 CalcInputValue.Quantity("Q", 60, "L/min", CalcProvenance.Specification("Hydraulic specification HS-31: ram flow 60 L/min")),
                 CalcInputValue.Quantity("rho", 870, "kg/m^3", CalcProvenance.FromReference("fluid data sheet: mineral oil, density at 40 °C, to be taken from the oil supplier's data")),
@@ -58,7 +58,7 @@ public static class FluidPowerWorkedExamples
                 CalcInputValue.Quantity("p_1", 100, "bar", CalcProvenance.Specification("Hydraulic specification HS-12: lowest clamp pressure 100 bar")),
                 CalcInputValue.Quantity("p_2", 210, "bar", CalcProvenance.Specification("Hydraulic specification HS-12: pump cut-out 210 bar")),
                 CalcInputValue.Quantity("p_atm", 1.01325, "bar", CalcProvenance.Assumed("Standard atmosphere, derived constant.")),
-                CalcInputValue.Of("n", 1, CalcProvenance.Assumed("Isothermal: the clamp holds for minutes between cycles.")),
+                CalcInputValue.Of("n_gas", 1, CalcProvenance.Assumed("Isothermal: the clamp holds for minutes between cycles.")),
                 CalcInputValue.Of("f_rg", 1, CalcProvenance.Assumed("Ideal gas; the highest pressure is just above 200 bar, so the sheet warns.")),
                 CalcInputValue.Quantity("T_max", 50, "degC", CalcProvenance.Specification("Hydraulic specification HS-12: oil temperature limit 50 °C")),
                 CalcInputValue.Quantity("T_min", 30, "degC", CalcProvenance.Assumed("Oil temperature range assumed 30 to 50 °C in service (invented for this example); the gas is coldest at 30 °C.")),
