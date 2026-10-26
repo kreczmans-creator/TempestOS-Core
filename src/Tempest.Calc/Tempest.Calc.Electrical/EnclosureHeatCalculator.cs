@@ -26,9 +26,9 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.1", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
+        Id, "1.6.0", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
         "Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.",
-        "Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun).\nEffective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face.\nTemperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h A_eff).\nAir flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K).\nFan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)².\nCooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h A_eff (T_max − T_amb).\nSealed enclosure (sealing temperature T_seal entered, no breather), pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below): Δp = p_site·|T_int/T_seal − 1|.\nA pressure-compensation element (breather or relief) limits it to its cracking pressure: dp_seal = min(Δp, dp_relief).\nForce of that pressure on a cover of area A_cover: F_seal = dp_seal·A_cover.",
+        "Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun).\nEffective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face.\nTemperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h A_eff).\nAir flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K).\nFan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)².\nCooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h A_eff (T_max − T_amb); with T_max at or below T_amb the term is a gain, P_cool = P + h A_eff (T_amb − T_max), and no ventilation airflow or fan duty is given.\nSealed enclosure (sealing temperature T_seal entered, no breather), pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below): Δp = p_site·|T_int/T_seal − 1|.\nA pressure-compensation element (breather or relief) limits it to its cracking pressure: dp_seal = min(Δp, dp_relief).\nForce of that pressure on a cover of area A_cover: F_seal = dp_seal·A_cover.",
         [
             new CalcInputSpec("loads", "Heat loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 500, Group: "Heat load"),
             new CalcInputSpec("P_add", "Additional heat load (linked from E6's dissipated heat or another calculation)", CalcInputKind.Quantity, "W", Default: 0, Min: 0, Max: 1e5, HardMin: 0, HardMax: 1e6, Group: "Heat load"),
@@ -69,7 +69,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
         ],
         [
             new CalcApplicabilityRule("loads", "At least one heat load is needed.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("limit", "The maximum internal temperature must exceed the ambient.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("limit", "The maximum internal temperature is at or below the ambient: only a cooling unit holds it, P_cool includes the heat gained through the walls, and no ventilation airflow or fan duty is given.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("fan-curve", "The fan curve needs at least two points with matching counts, flows increasing.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("no-fan-duty", "The fan curve and the system resistance do not cross: no duty point.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("seal-relief", "The breather or relief element opens before the gas-law pressure difference is reached: dp_seal is the cracking pressure.", CalcNoticeSeverity.Warning),
@@ -141,17 +141,19 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
         c.Assign("T_int", "T_amb + dT_nat", "degC", "Internal temperature with natural dissipation");
         c.Assign("dT_allow", "T_max - T_amb", "K", "Allowed rise");
 
-        if (c.Si("dT_allow") <= 0)
-        {
-            c.Block("limit", "T_max: the maximum internal temperature must exceed the ambient.");
-            return;
-        }
+        // T_max at or below the ambient (elec.enclosure-heat-R2, chain.cooling-04): the usual case for a cooling unit. Natural dissipation and ventilation cannot hold the limit,
+        // and the walls gain heat from the hotter ambient, so the unit removes P_total + h·A_eff·(T_amb − T_max); the airflow, the fan duty and u_nat have no meaning there.
+        var hotAmbient = c.Si("dT_allow") <= 0;
 
-        c.Assign("u_nat", "dT_nat / dT_allow", null, "Natural dissipation utilisation");
-        c.Assign("P_nat_max", "h * A_eff * dT_allow", "W", "Heat the enclosure dissipates naturally at the limit");
-        c.Assign("P_cool", "max(0 W, P_total - P_nat_max)", "W", "Cooling-unit capacity needed if ventilation is not used");
+        if (!hotAmbient)
+            c.Assign("u_nat", "dT_nat / dT_allow", null, "Natural dissipation utilisation");
 
-        if (c.Si("P_cool") > 0)
+        c.Assign("P_nat_max", "h * A_eff * dT_allow", "W", hotAmbient ? "Heat the enclosure gains from the ambient at the limit (negative: the walls do not dissipate, they absorb)" : "Heat the enclosure dissipates naturally at the limit");
+        c.Assign("P_cool", "max(0 W, P_total - P_nat_max)", "W", hotAmbient ? "Cooling-unit capacity needed: the heat inside plus the gain through the walls" : "Cooling-unit capacity needed if ventilation is not used");
+
+        if (hotAmbient)
+            c.Warn("limit", $"T_max: the maximum internal temperature ({CalcValue.FormatNumber(c.Si("T_max") - 273.15, 4)} °C) does not exceed the ambient ({CalcValue.FormatNumber(c.Si("T_amb") - 273.15, 4)} °C), so only a cooling unit can hold it: it must remove the {CalcValue.FormatNumber(c.Si("P_total"), 4)} W inside plus {CalcValue.FormatNumber(-c.Si("P_nat_max"), 4)} W that the enclosure gains from the ambient, P_cool = {CalcValue.FormatNumber(c.Si("P_cool"), 4)} W. No ventilation airflow, fan duty or natural-dissipation utilisation is given.");
+        else if (c.Si("P_cool") > 0)
             c.Warn("cooling-unit", $"T_max: natural dissipation holds {CalcValue.FormatNumber(c.Si("P_nat_max"), 4)} W of {CalcValue.FormatNumber(c.Si("P_total"), 4)} W; ventilate or fit a {CalcValue.FormatNumber(c.Si("P_cool"), 4)} W cooling unit.");
 
         // Forced ventilation.
@@ -197,11 +199,23 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
             c.Warn("seal-unused", "T_seal: a relief pressure or a cover area was given without a sealing temperature, so the enclosure is taken as vented and they are not used.");
         }
 
-        c.Assign("rho_air", "p_site / (287.055 J/(kg*K) * T_amb)", "kg/m^3", "Air density at ambient and altitude");
-        c.Assign("V_req", "P_total / (rho_air * 1006 J/(kg*K) * dT_allow)", "m^3/h", "Airflow for forced ventilation at the allowed rise (natural dissipation neglected)");
-        c.Assign("V_req_net", "max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))", "m^3/h", "Airflow crediting natural dissipation");
+        if (!hotAmbient)
+        {
+            c.Assign("rho_air", "p_site / (287.055 J/(kg*K) * T_amb)", "kg/m^3", "Air density at ambient and altitude");
+            c.Assign("V_req", "P_total / (rho_air * 1006 J/(kg*K) * dT_allow)", "m^3/h", "Airflow for forced ventilation at the allowed rise (natural dissipation neglected)");
+            c.Assign("V_req_net", "max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))", "m^3/h", "Airflow crediting natural dissipation");
+        }
 
-        foreach (var (symbol, text) in new[] { ("P_loads", "Internal heat load"), ("P_solar", "Solar gain"), ("P_total", "Total heat"), ("A_eff", "Effective surface"), ("dT_nat", "Natural temperature rise"), ("T_int", "Internal temperature (natural)"), ("P_nat_max", "Natural dissipation at the limit"), ("P_cool", "Cooling unit needed"), ("T_max", "Internal temperature limit"), ("rho_air", "Air density"), ("V_req", "Required airflow"), ("V_req_net", "Required airflow (net)") })
+        foreach (var (symbol, text) in new[] { ("P_loads", "Internal heat load"), ("P_solar", "Solar gain"), ("P_total", "Total heat"), ("A_eff", "Effective surface"), ("dT_nat", "Natural temperature rise"), ("T_int", "Internal temperature (natural)"), ("P_nat_max", hotAmbient ? "Heat gained from the ambient at the limit (negative)" : "Natural dissipation at the limit"), ("P_cool", "Cooling unit needed"), ("T_max", "Internal temperature limit") })
+            c.Output(symbol, text);
+
+        if (hotAmbient)
+        {
+            c.CheckCondition("Natural dissipation holds T_max", false, "T_max is at or below the ambient", "T_max above the ambient");
+            return;
+        }
+
+        foreach (var (symbol, text) in new[] { ("rho_air", "Air density"), ("V_req", "Required airflow"), ("V_req_net", "Required airflow (net)") })
             c.Output(symbol, text);
 
         c.CheckUtilisation("Natural dissipation holds T_max", "u_nat");
