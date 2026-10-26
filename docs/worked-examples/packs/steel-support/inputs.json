@@ -264,7 +264,7 @@
               "Unit": "kN",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:f8706bc6f0e946c9a8f582d5271d136c#E_d_min",
+                "Reference": "calc:7f70d4235d894a838c4a735036ca2b25#E_d_min",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -486,7 +486,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#M_abs_e1",
+        "Reference": "calc:84b7ec9d75fd4de79299d8b52dda3a05#M_abs_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -509,7 +509,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#N_e1",
+        "Reference": "calc:84b7ec9d75fd4de79299d8b52dda3a05#N_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -521,7 +521,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#V_e1",
+        "Reference": "calc:84b7ec9d75fd4de79299d8b52dda3a05#V_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -737,7 +737,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#V_e2",
+        "Reference": "calc:84b7ec9d75fd4de79299d8b52dda3a05#V_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -749,7 +749,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#M_abs_e2",
+        "Reference": "calc:84b7ec9d75fd4de79299d8b52dda3a05#M_abs_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -979,7 +979,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:29bf48666bba4afe938261caeaa7fa08#t_max",
+        "Reference": "calc:4f0318a648114e5da82833ad567c92c1#t_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -991,7 +991,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:29bf48666bba4afe938261caeaa7fa08#v_max",
+        "Reference": "calc:4f0318a648114e5da82833ad567c92c1#v_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1003,7 +1003,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#V_e2",
+        "Reference": "calc:84b7ec9d75fd4de79299d8b52dda3a05#V_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1087,6 +1087,16 @@
       "ValueText": "8.8"
     },
     {
+      "Symbol": "hole_type",
+      "Text": "Normal clearance",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Normal clearance"
+    },
+    {
       "Symbol": "k_e1",
       "Number": 1.2,
       "Provenance": {
@@ -1159,6 +1169,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "120"
+    },
+    {
+      "Symbol": "single_lap",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
     },
     {
       "Symbol": "size",
@@ -1308,6 +1328,16 @@
       "ValueText": "8.8"
     },
     {
+      "Symbol": "hole_type",
+      "Text": "Normal clearance",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Normal clearance"
+    },
+    {
       "Symbol": "k_e1",
       "Number": 1.2,
       "Provenance": {
@@ -1370,6 +1400,16 @@
       "ValueText": "150"
     },
     {
+      "Symbol": "single_lap",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
       "Symbol": "size",
       "Text": "M20",
       "Provenance": {
@@ -1421,7 +1461,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:acd10929b15b4ce0b4acb2b3dd3108c5#A_s",
+        "Reference": "calc:927b4546617c48239adb909d9a04942d#A_s",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1466,7 +1506,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:acd10929b15b4ce0b4acb2b3dd3108c5#F_b_Rd",
+        "Reference": "calc:927b4546617c48239adb909d9a04942d#F_b_Rd",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1478,7 +1518,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:acd10929b15b4ce0b4acb2b3dd3108c5#F_t_Rd",
+        "Reference": "calc:927b4546617c48239adb909d9a04942d#F_t_Rd",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1502,7 +1542,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#R1_m_abs",
+        "Reference": "calc:84b7ec9d75fd4de79299d8b52dda3a05#R1_m_abs",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1514,7 +1554,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#R1_y",
+        "Reference": "calc:84b7ec9d75fd4de79299d8b52dda3a05#R1_y",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1526,7 +1566,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#R1_x_abs",
+        "Reference": "calc:84b7ec9d75fd4de79299d8b52dda3a05#R1_x_abs",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1605,7 +1645,7 @@
       "Unit": "MPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:acd10929b15b4ce0b4acb2b3dd3108c5#f_ub",
+        "Reference": "calc:927b4546617c48239adb909d9a04942d#f_ub",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1628,7 +1668,7 @@
       "Unit": "MPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:acd10929b15b4ce0b4acb2b3dd3108c5#f_yb",
+        "Reference": "calc:927b4546617c48239adb909d9a04942d#f_yb",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1725,7 +1765,7 @@
       "Text": "PROFIS-BP1-PLACEHOLDER.txt",
       "Provenance": {
         "Kind": "Evidence",
-        "Reference": "25ab1eb3d3a64cf7a8df1a5a42b6f193/3478dfcc2a1345f0b6d64ce780dc97ab",
+        "Reference": "427faec7878c4a539505e818770960c2/bd1d2bdad2134910b26b514f617ff352",
         "IsSufficientToIssue": true
       },
       "ValueText": "PROFIS-BP1-PLACEHOLDER.txt"

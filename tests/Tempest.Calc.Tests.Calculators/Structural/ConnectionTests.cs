@@ -9,6 +9,9 @@ public sealed class ConnectionTests
 
     private static CalcInputSet Defaults() => CalcTemplateHasher.DefaultInputs(Ec3.Template);
 
+    /// <summary>The defaults with the pitch and gauge opened out so that only e₁ and e₂ govern the bearing factors (the finding's single-bolt reproductions).</summary>
+    private static CalcInputSet EdgeOnly() => Defaults().With(CalcInputValue.Quantity("p_1", 200, "mm")).With(CalcInputValue.Quantity("p_2", 200, "mm"));
+
     [Theory]
     [InlineData(12, 1.75, 84.3)]
     [InlineData(16, 2.0, 157)]
@@ -57,6 +60,47 @@ public sealed class ConnectionTests
             var r = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Quantity("e_1", e1, "mm")));
             Assert.True(r.OutputSi("F_b_Rd") <= 2.5 * 410e6 * 0.020 * 0.010 / 1.25 + 1e-6);
         }
+    }
+
+    [Fact]
+    public void An_Oversize_Hole_Reduces_Bearing_By_0_8_And_Says_So_Even_When_The_Type_Is_Left_At_Normal()
+    {
+        // P1-struct.connection-ec3-01. M20 8.8, 10 mm S275, e1 = e2 = 40, d0 24: python3 2.5*(40/72)*410*20*10/1.25/1e3 = 91.111 kN, x 0.8 = 72.889 kN.
+        var left = CalcRunner.Run(Ec3, EdgeOnly().With(CalcInputValue.Quantity("d_0", 24, "mm")));
+        Assert.Equal(72.88889, left.OutputSi("F_b_Rd") / 1e3, 4);
+        Assert.Contains(left.Warnings, w => w.RuleId == "hole_clearance");
+
+        var oversize = CalcRunner.Run(Ec3, EdgeOnly().With(CalcInputValue.Quantity("d_0", 24, "mm")).With(CalcInputValue.Choice("hole_type", ConnectionCalculator.HoleOversize)));
+        Assert.Equal(72.88889, oversize.OutputSi("F_b_Rd") / 1e3, 4);
+        Assert.DoesNotContain(oversize.Warnings, w => w.RuleId == "hole_clearance");
+
+        var slot = CalcRunner.Run(Ec3, EdgeOnly().With(CalcInputValue.Quantity("d_0", 24, "mm")).With(CalcInputValue.Choice("hole_type", ConnectionCalculator.HoleSlot)));
+        Assert.Equal(54.66667, slot.OutputSi("F_b_Rd") / 1e3, 4);
+
+        var normal = CalcRunner.Run(Ec3, EdgeOnly());
+        Assert.Equal(99.39394, normal.OutputSi("F_b_Rd") / 1e3, 4);
+        Assert.DoesNotContain(normal.Warnings, w => w.RuleId == "hole_clearance");
+    }
+
+    [Fact]
+    public void A_Single_Lap_Joint_With_One_Bolt_Row_Caps_Bearing_At_1_5_Fu_D_T()
+    {
+        // P1-struct.connection-ec3-03. e1 = e2 = 60: k1*alpha_b = 2.5*0.9091 = 2.27 > 1.5; python3 gives 149.091 kN uncapped and 1.5*410*20*10/1.25/1e3 = 98.4 kN capped.
+        var wide = EdgeOnly().With(CalcInputValue.Quantity("e_1", 60, "mm")).With(CalcInputValue.Quantity("e_2", 60, "mm"));
+        var capped = CalcRunner.Run(Ec3, wide.With(CalcInputValue.Switch("single_lap", true)));
+        Assert.Equal(98.4, capped.OutputSi("F_b_Rd") / 1e3, 6);
+        Assert.DoesNotContain(capped.Warnings, w => w.RuleId == "single_lap");
+
+        var unstated = CalcRunner.Run(Ec3, wide);
+        Assert.Equal(149.09091, unstated.OutputSi("F_b_Rd") / 1e3, 4);
+        Assert.Contains(unstated.Warnings, w => w.RuleId == "single_lap" && w.Message.Contains("98.4", StringComparison.Ordinal));
+
+        var doubleShear = CalcRunner.Run(Ec3, wide.With(CalcInputValue.Switch("single_lap", true)).With(CalcInputValue.Of("n_s", 2)));
+        Assert.Equal(149.09091, doubleShear.OutputSi("F_b_Rd") / 1e3, 4);
+        Assert.DoesNotContain(doubleShear.Warnings, w => w.RuleId == "single_lap");
+
+        // The default M20 case binds by 1 %: 99.39 > 98.40 kN.
+        Assert.Contains(CalcRunner.Run(Ec3, EdgeOnly()).Warnings, w => w.RuleId == "single_lap");
     }
 
     [Fact]
